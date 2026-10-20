@@ -1,14 +1,17 @@
 import { faSquare } from '@fortawesome/free-regular-svg-icons'
 import { faPlus } from '@fortawesome/free-solid-svg-icons'
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome'
-import { Element, ElementType } from '@klicker-uzh/graphql/dist/ops'
+import type { Element, ElementType } from '@klicker-uzh/graphql/dist/ops'
 import { Button } from '@uzh-bf/design-system'
 import { useTranslations } from 'next-intl'
 import { useDrop } from 'react-dnd'
 import { isEmpty } from 'remeda'
 import { twMerge } from 'tailwind-merge'
-import { ElementDragDropTypes } from '../../elements/Element'
-import { ElementBlockFormValues, ElementStackFormValues } from './WizardLayout'
+import type { ElementDragDropTypes } from '../../elements/Element'
+import type {
+  ElementBlockFormValues,
+  ElementStackFormValues,
+} from './WizardLayout'
 
 interface AddStackButtonProps {
   type: 'stack'
@@ -105,7 +108,7 @@ function AddStackButton({
               }
               resetSelection?.()
             }}
-            data={{ cy: 'add-stack-with-selected' }}
+            data={{ cy: `add-selection-to-one-${type}` }}
             // react-dnd's connector returns the rendered element, which a
             // callback ref may not do; discard the return value.
             ref={(node) => {
@@ -159,7 +162,7 @@ function AddStackButton({
               })
               resetSelection?.()
             }}
-            data={{ cy: 'add-stack-with-selected' }}
+            data={{ cy: `create-one-${type}-per-selected-element` }}
             // react-dnd's connector returns the rendered element, which a
             // callback ref may not do; discard the return value.
             ref={(node) => {

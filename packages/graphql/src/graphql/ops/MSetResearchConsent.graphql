@@ -1,0 +1,13 @@
+mutation SetResearchConsent(
+  $consent: Boolean!
+  $expectedRevision: Int!
+  $disclosureVersion: String!
+) {
+  setResearchConsent(
+    consent: $consent
+    expectedRevision: $expectedRevision
+    disclosureVersion: $disclosureVersion
+  ) {
+    ...ParticipantDataUseData
+  }
+}

@@ -17,6 +17,7 @@ import type { AppProps } from 'next/app'
 import { useRouter } from 'next/router'
 import { useEffect } from 'react'
 
+import 'katex/dist/katex.min.css'
 import '../globals.css'
 
 config.autoAddCss = false

@@ -1,1 +1,2 @@
-pnpm run build
+bash util/check-git-identity.sh pre-push
+bash util/run-hook-pnpm.sh build

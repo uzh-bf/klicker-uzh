@@ -8,4 +8,7 @@ export const COURSE_ID_TEST2 = '09d7e367-b9af-4bbc-b051-4ac32d2c09c3'
 export const COURSE_ID_TEST3 = 'efd54f15-ba92-4291-8ea8-911f365ae10b'
 export const COURSE_ID_TEST4 = '156d1069-434c-4f5a-b541-5637987ee504'
 export const COURSE_ID_TEST5 = 'd60a72a2-7e1d-4c6f-846f-68eb163a31b0'
+export const COURSE_ID_ASSESSMENT_ENDED = 'e3a7c1f0-5b2d-4c8e-9f61-2d4b8a0c7e15'
 export const COURSE_ID_CALENDAR = 'b79b1c94-5ad3-4839-b4c0-240c6bca5b98'
+export const COURSE_ID_DUPLICATION_STRESS =
+  '4f8e2e21-3c7c-4c94-8f19-9a96f1529a53'

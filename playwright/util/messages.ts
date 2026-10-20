@@ -2,6 +2,10 @@ import en from '../../packages/i18n/messages/en.js'
 
 export const enMessages = en
 
+import de from '../../packages/i18n/messages/de.js'
+
+export const deMessages = de
+
 export const statusLabels = {
   draft: enMessages.shared.DRAFT.statusLabel as 'Draft',
   review: enMessages.shared.REVIEW.statusLabel as 'Review',

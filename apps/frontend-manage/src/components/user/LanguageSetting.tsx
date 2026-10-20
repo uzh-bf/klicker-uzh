@@ -1,18 +1,18 @@
 import { useMutation } from '@apollo/client'
 import {
   ChangeUserLocaleDocument,
-  LocaleType,
-  User,
+  type LocaleType,
   UserProfileDocument,
+  type UserProfileQuery,
 } from '@klicker-uzh/graphql/dist/ops'
 import { routing } from '@klicker-uzh/i18n'
 import { Select } from '@uzh-bf/design-system'
-import { useTranslations } from 'next-intl'
 import { useRouter } from 'next/router'
+import { useTranslations } from 'next-intl'
 import SimpleSetting from '../../components/user/SimpleSetting'
 
 interface LanguageSettingProps {
-  user: User
+  user: NonNullable<UserProfileQuery['userProfile']>
 }
 
 function LanguageSetting({ user }: LanguageSettingProps) {

@@ -1,4 +1,4 @@
-import { prisma } from '@klicker-uzh/prisma'
+import { prisma, requireDisposableDatabase } from '@klicker-uzh/prisma'
 import * as Prisma from '@klicker-uzh/prisma/client'
 import { ActivityType, type ElementOptionsCaseStudy } from '@klicker-uzh/types'
 import {
@@ -11,6 +11,7 @@ import {
 import generatePassword from 'generate-password'
 import {
   COURSE_ID_TEST4 as COURSE_ID_ASSESSMENT,
+  COURSE_ID_ASSESSMENT_ENDED,
   COURSE_ID_CALENDAR,
   COURSE_ID_TEST,
   COURSE_ID_TEST2,
@@ -115,6 +116,7 @@ export const PARTICIPANT_GROUP_IDS = [
 ]
 
 async function seedTest(prisma: Prisma.PrismaClient) {
+  await requireDisposableDatabase(prisma)
   if (process.env.ENV !== 'development') process.exit(1)
 
   await seedLevels(prisma)
@@ -324,6 +326,29 @@ async function seedTest(prisma: Prisma.PrismaClient) {
       pinCode: null,
       startDate: new Date('2023-01-01T00:00'),
       endDate: new Date('2030-01-01T23:59'),
+      isGroupCreationEnabled: false,
+      groupDeadlineDate: new Date('2025-01-01T00:01'),
+      maxGroupSize: 5,
+      preferredGroupSize: 3,
+      notificationEmail: 'notifications@df.uzh.ch',
+    })
+  )
+
+  // Ended courses issue assessment reports with the peer comparison.
+  await prisma.course.upsert(
+    prepareCourse({
+      id: COURSE_ID_ASSESSMENT_ENDED,
+      name: 'Ended Assessment Course',
+      displayName: 'Ended Assessment Course',
+      description:
+        'This is an assessment course whose end date has passed (gamification disabled).',
+      isGamificationEnabled: false,
+      isAssessmentEnabled: true,
+      ownerId: USER_ID_TEST,
+      color: '#166b16',
+      pinCode: null,
+      startDate: new Date('2025-02-01T00:00'),
+      endDate: new Date('2025-07-31T23:59'),
       isGroupCreationEnabled: false,
       groupDeadlineDate: new Date('2025-01-01T00:01'),
       maxGroupSize: 5,
@@ -749,6 +774,18 @@ async function seedTest(prisma: Prisma.PrismaClient) {
       courseId: COURSE_ID_ASSESSMENT,
       ...quiz,
     })),
+    {
+      courseId: COURSE_ID_ASSESSMENT_ENDED,
+      id: '8b1e6f3a-9c27-4d5e-b0a4-6f2c1d8e9a73',
+      name: 'Ended Assessment Live Quiz',
+      displayName: 'Ended Assessment Live Quiz',
+      description: 'Assessment activity of a course that has ended.',
+      status: Prisma.PublicationStatus.DRAFT,
+      pointsMultiplier: 1,
+      isGamificationEnabled: false,
+      isAssessmentEnabled: true,
+      pinCode: 'ASM002',
+    },
   ]) {
     const liveQuiz = await prisma.liveQuiz.upsert({
       where: { id: quizData.id },
@@ -867,7 +904,10 @@ async function seedTest(prisma: Prisma.PrismaClient) {
   ]
   await Promise.all(
     PARTICIPANT_GROUP_IDS_SINGLE.map(async (id, ix) => {
-      const code = 100000 + Math.floor(Math.random() * 900000)
+      // A group code is unique per course, so it is derived from the group's
+      // position instead of being drawn at random: two draws could collide and
+      // fail the seed on the [courseId, code] constraint.
+      const code = 900100 + ix
 
       return prisma.participantGroup.upsert({
         where: {
@@ -963,7 +1003,9 @@ async function seedTest(prisma: Prisma.PrismaClient) {
   // create participant groups
   await Promise.all(
     PARTICIPANT_GROUP_IDS.map(async (id, ix) => {
-      const code = 100000 + Math.floor(Math.random() * 900000)
+      // Same collision-free derivation as the single groups above, in its own
+      // range so the two blocks can never hand out the same code.
+      const code = 900200 + ix
 
       return prisma.participantGroup.upsert({
         where: {
@@ -2467,6 +2509,7 @@ Once this microlearning is published, it will be immediately accessible
     COURSE_ID_TEST2,
     COURSE_ID_TEST3,
     COURSE_ID_ASSESSMENT,
+    COURSE_ID_ASSESSMENT_ENDED,
     COURSE_ID_TEST5,
     COURSE_ID_CALENDAR,
   ]

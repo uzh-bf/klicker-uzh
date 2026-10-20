@@ -1,16 +1,3 @@
-import { MANAGER_COOKIE_NAME, PARTICIPANT_COOKIE_NAME } from '@/lib/constants'
-import {
-  createOrLinkParticipant,
-  createUserAffiliations,
-  decode,
-  encode,
-  ExtendedProfile,
-  ExtendedUser,
-  getAuthContext,
-  getLecturerHosts,
-  getStudentHosts,
-} from '@/lib/helpers'
-import { sendTeamsNotifications } from '@/lib/util'
 import { PrismaAdapter } from '@auth/prisma-adapter'
 import { prisma } from '@klicker-uzh/prisma'
 import { UserLoginScope } from '@klicker-uzh/prisma/client'
@@ -25,13 +12,76 @@ import type { NextApiRequest, NextApiResponse } from 'next'
 import type { NextAuthOptions } from 'next-auth'
 import NextAuth from 'next-auth'
 import CredentialsProvider from 'next-auth/providers/credentials'
-import { Provider } from 'next-auth/providers/index'
+import type { Provider } from 'next-auth/providers/index'
+import type { UserinfoEndpointHandler } from 'next-auth/providers/oauth'
+import {
+  type AuthAudience,
+  audienceCookieNames,
+  audienceCookieOptions,
+  resolveSecureCookies,
+} from '@/lib/authCookies'
+import { MANAGER_COOKIE_NAME, PARTICIPANT_COOKIE_NAME } from '@/lib/constants'
+import {
+  isProviderErrorCallback,
+  parseAuthAction,
+  resolveCallbackAudience,
+  resolveInitiationAudience,
+} from '@/lib/dispatch'
+import {
+  authServiceBaseUrl,
+  installParticipantFailureRecovery,
+  participantRestartTarget,
+} from '@/lib/errorRecovery'
+import {
+  createOrLinkParticipant,
+  createUserAffiliations,
+  type ExtendedProfile,
+  type ExtendedUser,
+  getLecturerHosts,
+  getStudentHosts,
+} from '@/lib/helpers'
+import { decode as jwtDecode, encode as jwtEncode } from '@/lib/jwt'
+import { isSameOriginRedirect } from '@/lib/redirect'
+import { hostFromUrl, validateRedirectTarget } from '@/lib/redirectTarget'
+import { authEvent } from '@/lib/telemetry'
+import { sendTeamsNotifications } from '@/lib/util'
 
 // Validate required environment variables
 if (!process.env.APP_ORIGIN_AUTH) {
   console.error('APP_ORIGIN_AUTH is required but not defined')
   process.exit(1)
 }
+
+function eduIdProviderId(): string {
+  return process.env.NEXT_PUBLIC_EDUID_ID || 'eduid'
+}
+
+// SWITCH edu-ID decides per attribute whether a claim is released in the ID token
+// or only from the UserInfo endpoint, and that choice lives in the AAI Resource
+// Registry rather than in this repository. NextAuth builds the profile purely from
+// the ID token whenever a provider sets `idToken`, so any attribute that edu-ID
+// only exposes through UserInfo would silently arrive as undefined.
+//
+// Setting EDUID_FETCH_USERINFO=true additionally calls the UserInfo endpoint and
+// merges its claims over the ID token ones, which makes the Resource Registry's
+// ID-token settings irrelevant. The ID token is still validated either way. The
+// flag defaults to off so the deployed behaviour only changes when it is set.
+const eduIdUserinfo: UserinfoEndpointHandler | undefined =
+  process.env.EDUID_FETCH_USERINFO === 'true'
+    ? {
+        async request({ tokens, client }) {
+          // NextAuth types `tokens` with its own loose TokenSet, but what arrives
+          // here is the openid-client TokenSet holding the validated ID token.
+          const oidcTokens = tokens as unknown as Parameters<
+            typeof client.userinfo
+          >[0] & { claims: () => Record<string, unknown> }
+          return {
+            ...oidcTokens.claims(),
+            ...(await client.userinfo(oidcTokens)),
+          }
+        },
+      }
+    : undefined
 
 const SHARED_OPTIONS: Partial<NextAuthOptions> = {
   secret: process.env.APP_SECRET,
@@ -41,9 +91,67 @@ const SHARED_OPTIONS: Partial<NextAuthOptions> = {
   },
 
   jwt: {
-    decode,
-    encode,
+    // Salt-bearing calls (temporary OAuth cookies) delegate to next-auth's
+    // default A256GCM implementation keyed by (secret, salt); salt-free calls
+    // keep the HS256 session contract the backend verifies.
+    decode: jwtDecode,
+    encode: jwtEncode,
   },
+}
+
+function secureCookies(): boolean {
+  return resolveSecureCookies(
+    process.env.NEXTAUTH_URL,
+    process.env.AUTH_SECURE_COOKIES
+  )
+}
+
+function participantFallbackUrl(): string {
+  return (
+    process.env.NEXT_PUBLIC_ASSESSMENT_URL ||
+    'https://assessment.klicker.uzh.ch'
+  )
+}
+
+// The audience-specific callback-URL cookie is the only stored destination the
+// library consults on an OAuth callback (core/lib/callback-url.js). Without a
+// valid stored value it keeps the auth origin — the lecturer-facing homepage —
+// and never calls the application redirect callback, so the participant
+// fallback there cannot run. Supplying the verified destination as the request
+// parameter routes every successful participant callback through the
+// participant redirect callback and gives a missing or invalid stored value the
+// assessment root instead of the auth homepage. The value is always computed
+// here; client-supplied parameters are stripped before dispatch.
+function participantReturnTarget({
+  requestId,
+  secure,
+  storedTarget,
+}: {
+  requestId: string
+  secure: boolean
+  storedTarget: string | undefined
+}): string {
+  const validation = validateRedirectTarget(storedTarget, getStudentHosts(), {
+    secure,
+  })
+
+  if (validation.ok && validation.url) {
+    authEvent('auth.callback_destination', requestId, {
+      audience: 'participant',
+      outcome: 'stored',
+      destinationHost: hostFromUrl(validation.url),
+    })
+    return validation.url
+  }
+
+  const fallback = participantFallbackUrl()
+  authEvent('auth.callback_destination', requestId, {
+    audience: 'participant',
+    outcome: 'default',
+    destinationHost: hostFromUrl(fallback),
+    errorCategory: validation.reason,
+  })
+  return fallback
 }
 
 function getParticipantConfig({
@@ -57,12 +165,13 @@ function getParticipantConfig({
   const cookieDomain: string | undefined = deriveCookieDomainFromURL(
     process.env.NEXTAUTH_URL
   )
+  const secure = secureCookies()
 
   // EduID Provider for Participant Authentication
   const EduIDParticipantProvider: Provider | null =
     typeof process.env.EDUID_CLIENT_SECRET !== 'undefined'
       ? {
-          id: process.env.NEXT_PUBLIC_EDUID_ID || 'eduid',
+          id: eduIdProviderId(),
           wellKnown: process.env.EDUID_WELL_KNOWN,
           clientId: process.env.EDUID_CLIENT_ID,
           clientSecret: process.env.EDUID_CLIENT_SECRET,
@@ -71,26 +180,38 @@ function getParticipantConfig({
           type: 'oauth',
           authorization: {
             params: {
+              // SWITCH edu-ID does not advertise claims_parameter_supported in its
+              // discovery document, so this claims request is not honoured: claim
+              // release is driven purely by the requested scopes plus the attribute
+              // settings registered in the AAI Resource Registry. It is kept as a
+              // record of which claims the client depends on. The scope list follows
+              // the SWITCH integration guide; `profile` is what releases given_name
+              // and family_name, and `User.Read` the swissEduPerson* claims.
               claims: {
                 id_token: {
                   sub: { essential: true },
                   email: { essential: true },
                   swissEduPersonUniqueID: { essential: true },
+                  given_name: { essential: true },
+                  family_name: { essential: true },
+                  swissEduPersonMatriculationNumber: { essential: false },
                   swissEduIDLinkedAffiliation: { essential: false },
                   swissEduIDLinkedAffiliationMail: { essential: false },
                   swissEduIDLinkedAffiliationUniqueID: { essential: false },
                 },
               },
-              scope: 'openid email https://login.eduid.ch/authz/User.Read',
+              scope:
+                'openid email profile https://login.eduid.ch/authz/User.Read',
             },
           },
           idToken: true,
+          userinfo: eduIdUserinfo,
           checks: ['pkce', 'state'],
 
           profile(profile) {
             // Ensure we have the required fields for NextAuth
             if (!profile.sub) {
-              console.error('Missing sub in EduID profile:', profile)
+              console.error('Missing sub in EduID profile')
               throw new Error('Missing sub in EduID profile')
             }
 
@@ -108,9 +229,14 @@ function getParticipantConfig({
   return {
     ...SHARED_OPTIONS,
 
+    useSecureCookies: secure,
+
     providers: EduIDParticipantProvider ? [EduIDParticipantProvider] : [],
 
     cookies: {
+      // Temporary OAuth cookies are namespaced per audience so overlapping
+      // participant and lecturer attempts cannot overwrite each other.
+      ...audienceCookieOptions('participant', secure),
       sessionToken: {
         name: PARTICIPANT_COOKIE_NAME,
         options: {
@@ -119,16 +245,17 @@ function getParticipantConfig({
           path: '/',
           httpOnly: true,
           sameSite: 'lax',
-          secure: process.env.NODE_ENV === 'production',
+          secure,
         },
       },
     },
 
     callbacks: {
       async signIn({ user, account, profile, email }) {
-        console.log(`[AUTH ${requestId}] [participant] signIn`, {
-          provider: account?.provider,
-          hasProfile: Boolean(profile),
+        authEvent('auth.account_handling', requestId, {
+          audience: 'participant',
+          outcome: 'start',
+          providerId: account?.provider,
         })
 
         if (!profile) {
@@ -149,9 +276,10 @@ function getParticipantConfig({
           }
           // Store participantId for jwt callback
           ;(profile as any).participantId = participant.id
-          console.log(
-            `Participant ${participant.id} authenticated successfully`
-          )
+          authEvent('auth.account_handling', requestId, {
+            audience: 'participant',
+            outcome: 'linked',
+          })
           return true
         } catch (error) {
           console.error('Failed to create/link participant:', error)
@@ -161,10 +289,6 @@ function getParticipantConfig({
 
       async jwt({ token, profile }) {
         token.scope = UserLoginScope.EDUID
-        console.log(`[AUTH ${requestId}] [participant] jwt`, {
-          hasProfile: Boolean(profile),
-          role: token?.role,
-        })
 
         // Handle initial sign-in with participant profile
         if (profile && (profile as any).participantId) {
@@ -195,44 +319,37 @@ function getParticipantConfig({
       },
 
       async redirect({ url, baseUrl }) {
-        console.log(`[AUTH ${requestId}] [participant] redirect check`, {
-          url,
-          baseUrl,
-        })
-        // Handle relative URLs
-        if (url.startsWith('/')) {
+        // Relative paths stay supported for internal hand-offs. The auth
+        // service's own homepage is deliberately excluded: it renders the
+        // lecturer login, so an assessment login must never return there.
+        if (url.startsWith('/') && url !== '/') {
           const out = `${baseUrl}${url}`
-          console.log(
-            `[AUTH ${requestId}] [participant] redirect relative ->`,
-            out
-          )
           return out
         }
 
-        // Parse and validate against allowed hostnames
-        try {
-          const parsedUrl = new URL(url)
-          const allowedHosts = getStudentHosts()
-
-          if (
-            allowedHosts.includes(parsedUrl.host) ||
-            allowedHosts.includes(parsedUrl.hostname)
-          ) {
-            console.log(
-              `[AUTH ${requestId}] [participant] redirect allow ->`,
-              url
-            )
-            return url
-          }
-        } catch {
-          // Invalid URL, fall through to baseUrl
+        // Parse and validate against allowed student hosts
+        const validation = validateRedirectTarget(url, getStudentHosts(), {
+          secure: secureCookies(),
+        })
+        if (validation.ok && validation.url) {
+          authEvent('auth.redirect', requestId, {
+            audience: 'participant',
+            destinationHost: hostFromUrl(validation.url),
+            outcome: 'allowed',
+          })
+          return validation.url
         }
 
-        console.log(
-          `[AUTH ${requestId}] [participant] redirect fallback ->`,
-          baseUrl
-        )
-        return baseUrl
+        // A failed participant authentication must fall back to the
+        // participant journey root, never to manage or the auth homepage.
+        const fallback = participantFallbackUrl()
+        authEvent('auth.redirect', requestId, {
+          audience: 'participant',
+          destinationHost: hostFromUrl(fallback),
+          outcome: 'fallback',
+          errorCategory: validation.reason,
+        })
+        return fallback
       },
     },
   }
@@ -249,12 +366,13 @@ function getLecturerConfig({
   const cookieDomain: string | undefined = deriveCookieDomainFromURL(
     process.env.NEXTAUTH_URL
   )
+  const secure = secureCookies()
 
   // EduID Provider for Lecturer Authentication
   const EduIDLecturerProvider: Provider | null =
     typeof process.env.EDUID_CLIENT_SECRET !== 'undefined'
       ? {
-          id: process.env.NEXT_PUBLIC_EDUID_ID || 'eduid',
+          id: eduIdProviderId(),
           wellKnown: process.env.EDUID_WELL_KNOWN,
           clientId: process.env.EDUID_CLIENT_ID,
           clientSecret: process.env.EDUID_CLIENT_SECRET,
@@ -277,6 +395,7 @@ function getLecturerConfig({
             },
           },
           idToken: true,
+          userinfo: eduIdUserinfo,
           checks: ['pkce', 'state'],
 
           profile(profile) {
@@ -328,12 +447,11 @@ function getLecturerConfig({
       if (!user) return null
 
       // go through each login and compare credentials with the login password
-      for (let login of user.logins) {
+      for (const login of user.logins) {
         const isLoginValid = await bcrypt.compare(
           credentials.password,
           login.password
         )
-
         if (isLoginValid) {
           await prisma.userLogin.update({
             where: { id: login.id },
@@ -359,12 +477,15 @@ function getLecturerConfig({
   return {
     ...SHARED_OPTIONS,
 
+    useSecureCookies: secure,
+
     adapter: PrismaAdapter(prisma),
     providers: EduIDLecturerProvider
       ? [EduIDLecturerProvider, CredentialProvider]
       : [CredentialProvider],
 
     cookies: {
+      ...audienceCookieOptions('lecturer', secure),
       sessionToken: {
         name: MANAGER_COOKIE_NAME,
         options: {
@@ -373,16 +494,17 @@ function getLecturerConfig({
           path: '/',
           httpOnly: true,
           sameSite: 'lax',
-          secure: process.env.NODE_ENV === 'production',
+          secure,
         },
       },
     },
 
     callbacks: {
       async signIn({ user, account, profile, email }) {
-        console.log(`[AUTH ${requestId}] [lecturer] signIn`, {
-          provider: account?.provider,
-          hasProfile: Boolean(profile),
+        authEvent('auth.account_handling', requestId, {
+          audience: 'lecturer',
+          outcome: 'start',
+          providerId: account?.provider,
         })
 
         // Lecturer authentication flow (existing logic)
@@ -433,11 +555,6 @@ function getLecturerConfig({
       },
 
       async jwt({ token, user, profile }) {
-        console.log(`[AUTH ${requestId}] [lecturer] jwt`, {
-          hasProfile: Boolean(profile),
-          hasUser: Boolean(user),
-          role: token?.role,
-        })
         // Lecturer JWT handling (existing logic)
         const profileData = profile as ExtendedProfile
         const userData = user as ExtendedUser
@@ -479,73 +596,218 @@ function getLecturerConfig({
       },
 
       async redirect({ url, baseUrl }) {
-        console.log(`[AUTH ${requestId}] [lecturer] redirect check`, {
-          url,
-          baseUrl,
-        })
-        // Handle relative URLs
+        if (isSameOriginRedirect(url, baseUrl)) {
+          return url
+        }
+
+        // Handle relative URLs (preserves internal handoffs such as
+        // /discourse_handoff supplied by NextAuth as a same-origin path)
         if (url.startsWith('/')) {
           const out = `${baseUrl}${url}`
-          console.log(
-            `[AUTH ${requestId}] [lecturer] redirect relative ->`,
-            out
-          )
           return out
         }
 
-        // Parse and validate against allowed hostnames
-        try {
-          const parsedUrl = new URL(url)
-          const allowedHosts = getLecturerHosts()
-
-          if (
-            allowedHosts.includes(parsedUrl.host) ||
-            allowedHosts.includes(parsedUrl.hostname)
-          ) {
-            console.log(`[AUTH ${requestId}] [lecturer] redirect allow ->`, url)
-            return url
-          }
-        } catch {
-          // Invalid URL, fall through to baseUrl
+        // Parse and validate against allowed lecturer hosts
+        const validation = validateRedirectTarget(url, getLecturerHosts(), {
+          secure: secureCookies(),
+        })
+        if (validation.ok && validation.url) {
+          authEvent('auth.redirect', requestId, {
+            audience: 'lecturer',
+            destinationHost: hostFromUrl(validation.url),
+            outcome: 'allowed',
+          })
+          return validation.url
         }
 
-        console.log(
-          `[AUTH ${requestId}] [lecturer] redirect fallback ->`,
-          baseUrl
-        )
-        return baseUrl
+        const fallback = baseUrl
+        authEvent('auth.redirect', requestId, {
+          audience: 'lecturer',
+          destinationHost: hostFromUrl(fallback),
+          outcome: 'fallback',
+          errorCategory: validation.reason,
+        })
+        return fallback
       },
     },
   }
 }
 
-// Dynamic NextAuth configuration based on context
+function sendRestartRedirect(res: NextApiResponse) {
+  res.writeHead(302, { Location: '/restart' })
+  res.end()
+}
+
+// Dynamic NextAuth configuration based on strictly resolved transaction context.
+//
+// The intended account audience is resolved once per request:
+//  - OAuth callbacks (eduid) from the audience-namespaced state cookies only.
+//    Missing, expired, malformed, duplicated or contradictory context fails
+//    safely to the neutral restart page without any account handling. The same
+//    resolution covers a provider error response: a verified participant is
+//    returned to the participant restart page with the bounded error code,
+//    while lecturer and unverified attempts stay neutral.
+//  - Initiation (signin/signout) from the explicit audience parameter.
+//  - Generic actions (session, csrf, providers, error) stay on the lecturer
+//    configuration; participants use /api/student-session instead.
+// A participant callback destination is resolved from verified stored state
+// with the assessment root as its default, and a failure inside the library is
+// returned to the participant restart page instead of the generic sign-in
+// journey (see lib/errorRecovery.ts and participantReturnTarget above).
+// Callback-supplied audience/target parameters are stripped before the
+// handler runs so a query can never replace verified transaction context.
 export default async function auth(req: NextApiRequest, res: NextApiResponse) {
+  const startedAt = Date.now()
   const headerRequestId = Array.isArray(req.headers['x-request-id'])
     ? req.headers['x-request-id'][0]
     : req.headers['x-request-id']
   const requestId =
     headerRequestId || `na-${crypto.randomBytes(6).toString('hex')}`
 
-  console.log(`[AUTH ${requestId}] Request start`, {
-    url: req.url,
+  const { nextauth, ...query } = req.query as { nextauth?: string[] } & Record<
+    string,
+    string | string[] | undefined
+  >
+  const { action, providerId } = parseAuthAction(nextauth)
+
+  authEvent('auth.request', requestId, {
+    action,
+    providerId,
     method: req.method,
-    ua: req.headers['user-agent'],
+    path: req.url?.split('?')[0],
   })
 
-  const context = getAuthContext(req, requestId)
-  console.log(`[AUTH ${requestId}] Using context: ${context}`)
+  if (action === 'callback' && providerId === eduIdProviderId()) {
+    // Never let callback query parameters override verified context.
+    delete req.query.participant
+    delete req.query.callbackUrl
 
-  // Configure providers based on context
-  let authOptions: NextAuthOptions
+    const secure = secureCookies()
+    const resolution = await resolveCallbackAudience({
+      query,
+      cookies: req.cookies,
+      expectedProviderId: eduIdProviderId(),
+      candidates: [
+        {
+          audience: 'participant',
+          stateCookieName: audienceCookieNames('participant', secure).state,
+        },
+        {
+          audience: 'lecturer',
+          stateCookieName: audienceCookieNames('lecturer', secure).state,
+        },
+      ],
+      decodeStateCookie: async (token, salt) =>
+        jwtDecode({
+          token,
+          salt,
+          secret: process.env.APP_SECRET ?? '',
+        }),
+    })
 
-  if (context === 'participant') {
-    authOptions = getParticipantConfig({ requestId })
-  } else {
-    authOptions = getLecturerConfig({ requestId })
+    if (isProviderErrorCallback(query)) {
+      // Provider errors still echo state. Keep verified participant recovery
+      // without exchanging a code or logging provider-supplied diagnostics.
+      authEvent('auth.callback_rejected', requestId, {
+        audience: resolution.audience,
+        providerId,
+        outcome: 'provider_error',
+        errorCategory:
+          resolution.audience === null ? resolution.reason : undefined,
+        elapsedMs: Date.now() - startedAt,
+      })
+
+      if (resolution.audience === 'participant') {
+        res.writeHead(302, {
+          Location: participantRestartTarget(
+            typeof query.error === 'string' ? query.error : undefined
+          ),
+        })
+        res.end()
+        return
+      }
+
+      return sendRestartRedirect(res)
+    }
+
+    if (!resolution.audience) {
+      authEvent('auth.callback_rejected', requestId, {
+        audience: null,
+        providerId,
+        outcome: resolution.reason,
+        elapsedMs: Date.now() - startedAt,
+      })
+      return sendRestartRedirect(res)
+    }
+
+    authEvent('auth.callback_context', requestId, {
+      audience: resolution.audience,
+      providerId,
+      outcome: 'resolved',
+      elapsedMs: Date.now() - startedAt,
+    })
+
+    if (resolution.audience === 'participant') {
+      req.query.callbackUrl = participantReturnTarget({
+        requestId,
+        secure,
+        storedTarget:
+          req.cookies[audienceCookieNames('participant', secure).callbackUrl],
+      })
+    }
+
+    return runAudienceConfig(resolution.audience)
   }
 
-  const handler = NextAuth(authOptions)
+  const audience = resolveInitiationAudience({
+    action,
+    providerId,
+    query: req.query as Record<string, string | string[] | undefined>,
+  })
 
-  return handler(req, res)
+  if (!audience) {
+    authEvent('auth.initiation_rejected', requestId, {
+      action,
+      providerId,
+      outcome: 'contradictory_audience',
+    })
+    res.status(400).end()
+    return
+  }
+
+  authEvent('auth.initiation', requestId, {
+    action,
+    providerId,
+    audience,
+  })
+  return runAudienceConfig(audience)
+
+  function runAudienceConfig(audience: AuthAudience) {
+    const authOptions =
+      audience === 'participant'
+        ? getParticipantConfig({ requestId })
+        : getLecturerConfig({ requestId })
+
+    if (audience === 'participant') {
+      // A failure inside the library returns a redirect to its generic
+      // endpoints instead of throwing, so participant recovery has to happen on
+      // the response rather than in a try/catch around the handler.
+      const authBase = authServiceBaseUrl(req.headers)
+      installParticipantFailureRecovery(res, {
+        authBase,
+        onRewrite: (from, to) => {
+          authEvent('auth.failure_recovery', requestId, {
+            audience: 'participant',
+            outcome: 'participant_restart',
+            path: to,
+            errorCategory:
+              new URL(from, authBase).searchParams.get('error') ?? undefined,
+          })
+        },
+      })
+    }
+
+    const handler = NextAuth(authOptions)
+    return handler(req, res)
+  }
 }

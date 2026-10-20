@@ -1,5 +1,8 @@
 import { expect, Page } from '@playwright/test'
-import { setSessionCookieForUrl } from '../authSession.js'
+import {
+  setSessionCookieForUrl,
+  waitForClientHydration,
+} from '../authSession.js'
 import {
   LECTURER_EMAIL,
   URL_MANAGE,
@@ -56,6 +59,9 @@ export async function useStudentContextFixture(
 
   // login
   await expect(page.getByTestId('login-logo')).toBeVisible()
+  // The form is server-rendered and visible before the client bundle runs;
+  // filling it that early loses the values at hydration.
+  await waitForClientHydration(page)
   await page.getByTestId('username-field').fill(options.usernameOrEmail)
   await page.getByTestId('password-field').fill(options.password)
   await page.getByTestId('submit-login').click()

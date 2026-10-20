@@ -13,7 +13,7 @@ function modesResponse(mode: string) {
   return {
     ok: true,
     json: async () => ({
-      systemPrompts: { [mode]: { description: `${mode} mode` } },
+      modeOptions: { [mode]: `${mode} mode` },
     }),
   }
 }
@@ -24,7 +24,6 @@ describe('settingsStore mode loading', () => {
     useSettingsStore.setState({
       modeOptions: {},
       modeOptionsChatbotId: null,
-      modeOptionsAreFallback: true,
       selectedMode: 'tutor',
     })
   })
@@ -76,9 +75,9 @@ describe('settingsStore mode loading', () => {
       vi.fn().mockResolvedValue({
         ok: true,
         json: async () => ({
-          systemPrompts: {
-            tutor: { description: 'Tutor mode' },
-            custom: { description: '' },
+          modeOptions: {
+            tutor: 'Tutor mode',
+            custom: '',
           },
         }),
       })
@@ -91,21 +90,23 @@ describe('settingsStore mode loading', () => {
       tutor: 'Tutor mode',
       custom: '',
     })
-    expect(useSettingsStore.getState().modeOptionsAreFallback).toBe(false)
   })
 
-  test('marks synthesized mode descriptions as the localized fallback', async () => {
+  test('accepts an empty server-resolved mode set', async () => {
     vi.stubGlobal(
       'fetch',
       vi.fn().mockResolvedValue({
         ok: true,
-        json: async () => ({ systemPrompts: null }),
+        json: async () => ({ modeOptions: {} }),
       })
     )
 
-    await useSettingsStore.getState().loadModeOptions('chatbot-1')
+    await useSettingsStore.getState().loadModeOptions('chatbot-1', {
+      tutor: 'Stale initial mode',
+    })
 
-    expect(useSettingsStore.getState().modeOptionsAreFallback).toBe(true)
+    expect(useSettingsStore.getState().modeOptions).toEqual({})
+    expect(useSettingsStore.getState().selectedMode).toBe('')
   })
 
   test('keeps initial chatbot modes when the mode refresh fails', async () => {
@@ -120,7 +121,6 @@ describe('settingsStore mode loading', () => {
     expect(useSettingsStore.getState().modeOptions).toEqual({
       explainer: 'Explainer mode',
     })
-    expect(useSettingsStore.getState().modeOptionsAreFallback).toBe(false)
   })
 
   test('keeps initial chatbot modes on a non-ok mode refresh', async () => {
@@ -141,6 +141,14 @@ describe('settingsStore mode loading', () => {
     expect(useSettingsStore.getState().modeOptions).toEqual({
       custom: 'Custom mode',
     })
-    expect(useSettingsStore.getState().modeOptionsAreFallback).toBe(false)
+  })
+
+  test('keeps an empty initial mode set when the refresh fails', async () => {
+    vi.stubGlobal('fetch', vi.fn().mockRejectedValue(new Error('network down')))
+
+    await useSettingsStore.getState().loadModeOptions('chatbot-1', {})
+
+    expect(useSettingsStore.getState().modeOptions).toEqual({})
+    expect(useSettingsStore.getState().selectedMode).toBe('')
   })
 })

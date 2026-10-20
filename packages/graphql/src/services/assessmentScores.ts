@@ -64,26 +64,9 @@ export function getInstanceAvailablePoints({
 }
 
 export async function calculateAssessmentCourseScores(
-  {
-    courseId,
-    participantScope,
-  }: { courseId: string; participantScope: 'ALL' | 'ACTIVE' },
+  { courseId }: { courseId: string },
   ctx: { prisma: PrismaTransactionClient }
 ): Promise<CourseScoreAggregate | null> {
-  const activeParticipationWhere =
-    participantScope === 'ACTIVE'
-      ? { isActive: true, participant: { isActive: true } }
-      : undefined
-  const activeResponseWhere =
-    participantScope === 'ACTIVE'
-      ? {
-          participant: {
-            isActive: true,
-            participations: { some: { courseId, isActive: true } },
-          },
-        }
-      : undefined
-
   const course = await ctx.prisma.course.findUnique({
     where: { id: courseId, isAssessmentEnabled: true },
     select: {
@@ -107,7 +90,6 @@ export async function calculateAssessmentCourseScores(
                   elementType: true,
                   options: true,
                   liveQuizResponses: {
-                    where: activeResponseWhere,
                     select: {
                       participantId: true,
                       elementBlockExecution: true,
@@ -125,7 +107,6 @@ export async function calculateAssessmentCourseScores(
         },
       },
       participations: {
-        where: activeParticipationWhere,
         select: { participantId: true },
       },
     },

@@ -1,12 +1,12 @@
 import { useQuery } from '@apollo/client'
 import {
-  ActivityInfo,
+  type ActivityInfo,
   ActivityType,
   ObjectType,
   PublicationStatus,
   UserProfileDocument,
 } from '@klicker-uzh/graphql/dist/ops'
-import { Dispatch, SetStateAction, useMemo, useState } from 'react'
+import { type Dispatch, type SetStateAction, useMemo, useState } from 'react'
 import PracticeQuizDeletionModal from '../../courses/modals/PracticeQuizDeletionModal'
 import PracticeQuizPublishingModal from '../../courses/modals/PracticeQuizPublishingModal'
 import ActivityLogDialog from '../../sharing/ActivityLogDialog'
@@ -99,11 +99,11 @@ function PracticeQuizActions({
         'openPreview',
         'openEvaluation',
         'activityLog',
-        ...(user?.publicPreview ? ['analyticsPracticeQuiz'] : []),
+        'analyticsPracticeQuiz',
       ],
       isRemovable: ['removePracticeQuiz'],
     }),
-    [user?.publicPreview, user?.privatePreview]
+    [user?.privatePreview]
   )
 
   const actions = usePracticeQuizActions({

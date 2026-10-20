@@ -1,8 +1,9 @@
-import { PrismaClient } from '@klicker-uzh/prisma/client'
+import type { PrismaClient } from '@klicker-uzh/prisma/client'
 import type {
   ActivityLogModificationDetails,
-  AssessmentReportSnapshotV1,
+  AssessmentReportSnapshot,
   AvatarSettings,
+  ChatbotStandardModeConfig,
   ElementData,
   ElementInstanceOptions,
   ElementInstanceResults,
@@ -42,7 +43,8 @@ declare global {
     type PrismaGroupActivityDecisions = GroupActivityDecisions
     type PrismaGroupActivityResults = GroupActivityResults
     type PrismaActivityLogModificationDetails = ActivityLogModificationDetails
-    type PrismaAssessmentReportSnapshot = AssessmentReportSnapshotV1
+    type PrismaAssessmentReportSnapshot = AssessmentReportSnapshot
+    type PrismaChatbotStandardModeConfig = ChatbotStandardModeConfig
   }
 }
 // #endregion

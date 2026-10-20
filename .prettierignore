@@ -17,7 +17,6 @@ project/
 .github/skills
 CLAUDE.md
 
-ops.schema.json
 ops.ts
 schema.graphql
 nexus-typegen.ts

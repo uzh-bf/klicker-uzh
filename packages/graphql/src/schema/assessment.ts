@@ -1,5 +1,5 @@
 import * as DB from '@klicker-uzh/prisma/client'
-import {
+import type {
   ActivityStudentPerformance as ActivityStudentPerformanceType,
   AssessmentResultsCourse as AssessmentResultsCourseType,
   AssessmentResultsLiveQuiz as AssessmentResultsLiveQuizType,
@@ -94,6 +94,16 @@ export const StudentAssessmentResultsItem =
     fields: (t) => ({
       participantId: t.exposeString('participantId'),
       participantEmail: t.exposeString('participantEmail'),
+      assessmentGivenName: t.exposeString('assessmentGivenName', {
+        nullable: true,
+      }),
+      assessmentSurname: t.exposeString('assessmentSurname', {
+        nullable: true,
+      }),
+      assessmentMatriculationNumber: t.exposeString(
+        'assessmentMatriculationNumber',
+        { nullable: true }
+      ),
       basePoints: t.exposeFloat('basePoints'),
       correctnessPoints: t.exposeFloat('correctnessPoints'),
       bonusPoints: t.exposeFloat('bonusPoints'),

@@ -13,22 +13,23 @@ import {
   type ThreadMessageLike,
 } from '@assistant-ui/react'
 import { useParams, useRouter, useSearchParams } from 'next/navigation'
+import { useLocale, useTranslations } from 'next-intl'
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import { useChatUi } from '../components/chat-ui-context'
+import { ModeOptionsProvider } from '../components/mode-options-context'
 import { imageAttachmentAdapter } from '../lib/attachments/imageAttachmentAdapter'
 import { resolveSelectedMode } from '../lib/config/modes'
+import { useLocalSpeechSynthesis } from '../lib/speech/localSpeechSynthesis'
 
 const EMPTY_MESSAGES: ExtendedThreadMessageLike[] = []
 
 export function RuntimeProvider({
   chatbotId,
   initialModeOptions,
-  initialModeOptionsAreFallback,
   children,
 }: Readonly<{
   chatbotId: string
   initialModeOptions: Record<string, string>
-  initialModeOptionsAreFallback: boolean
   children: React.ReactNode
 }>) {
   const { embedded } = useChatUi()
@@ -64,10 +65,7 @@ export function RuntimeProvider({
         ?.supportsImageAttachments !== false
   )
   const activeModeOptions =
-    modeOptionsChatbotId === chatbotId &&
-    Object.keys(loadedModeOptions).length > 0
-      ? loadedModeOptions
-      : initialModeOptions
+    modeOptionsChatbotId === chatbotId ? loadedModeOptions : initialModeOptions
   const effectiveSelectedMode = resolveSelectedMode(
     activeModeOptions,
     selectedMode
@@ -113,11 +111,7 @@ export function RuntimeProvider({
       // (mode options, credits) are still needed for the embedded chrome.
       previousRuntimeContext.current = { chatbotId, embedded, threadId }
       void (async () => {
-        await loadModeOptions(
-          chatbotId,
-          initialModeOptions,
-          initialModeOptionsAreFallback
-        )
+        await loadModeOptions(chatbotId, initialModeOptions)
         await loadCredits(chatbotId)
       })()
       return
@@ -153,18 +147,13 @@ export function RuntimeProvider({
     })()
 
     void (async () => {
-      await loadModeOptions(
-        chatbotId,
-        initialModeOptions,
-        initialModeOptionsAreFallback
-      )
+      await loadModeOptions(chatbotId, initialModeOptions)
       await loadCredits(chatbotId)
     })()
   }, [
     chatbotId,
     embedded,
     initialModeOptions,
-    initialModeOptionsAreFallback,
     loadCredits,
     loadModeOptions,
     loadThreads,
@@ -315,10 +304,21 @@ export function RuntimeProvider({
     [setMessagesInternal]
   )
 
+  const t = useTranslations()
+  const locale = useLocale()
+  const speechAdapter = useLocalSpeechSynthesis({
+    locale,
+    formulaLabel: t('chat.message.readAloudFormula'),
+    disabled: embedded,
+  })
   const adapters = useMemo(
-    () =>
-      supportsImageAttachments ? { attachments: imageAttachmentAdapter } : {},
-    [supportsImageAttachments]
+    () => ({
+      ...(supportsImageAttachments
+        ? { attachments: imageAttachmentAdapter }
+        : {}),
+      ...(speechAdapter ? { speech: speechAdapter } : {}),
+    }),
+    [supportsImageAttachments, speechAdapter]
   )
 
   // runtime config for assistant UI
@@ -334,9 +334,21 @@ export function RuntimeProvider({
     adapters,
   })
 
+  // A new answer, a thread switch, or leaving the chat stops read-aloud;
+  // otherwise the voice keeps talking with no stop button in view.
+  useEffect(() => {
+    const stopSpeaking = () => {
+      if (runtime.thread.getState().speech) runtime.thread.stopSpeaking()
+    }
+    if (isRunning) stopSpeaking()
+    return stopSpeaking
+  }, [runtime, isRunning, activeThreadId])
+
   return (
-    <AssistantRuntimeProvider runtime={runtime}>
-      {children}
-    </AssistantRuntimeProvider>
+    <ModeOptionsProvider modeOptions={activeModeOptions}>
+      <AssistantRuntimeProvider runtime={runtime}>
+        {children}
+      </AssistantRuntimeProvider>
+    </ModeOptionsProvider>
   )
 }

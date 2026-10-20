@@ -1,0 +1,106 @@
+import { LECTURER_ID } from '../util/constants.js'
+import { expect, test } from '../util/fixtures.js'
+import { selectOption } from '../util/fixtures/activities.js'
+import { createQuestionSC } from '../util/fixtures/elements.js'
+import { createLiveQuiz, deleteLiveQuiz } from '../util/fixtures/manage.js'
+
+async function expectSummariesEqual(page: import('@playwright/test').Page) {
+  const top = page.getByTestId('result-range-summary-top')
+  const bottom = page.getByTestId('result-range-summary')
+  await expect(top).toBeVisible()
+  await expect(bottom).toBeVisible()
+  const bottomText = await bottom.innerText()
+  await expect(top).toHaveText(bottomText)
+}
+
+async function expectAllResultsLoaded(page: import('@playwright/test').Page) {
+  const summary = page.getByTestId('result-range-summary')
+  await expect(summary).toBeVisible()
+
+  const summaryText = await summary.textContent()
+  const match = summaryText?.match(/Showing 1 to (\d+) of (\d+) results/)
+  if (!match) {
+    throw new Error(`Unexpected pagination summary: ${summaryText}`)
+  }
+
+  return Number(match[2])
+}
+
+test.describe('Show all pagination option', () => {
+  test.beforeEach(async ({ loginLecturer }) => {
+    await loginLecturer()
+  })
+
+  test('supports all and explicit batch selection for elements and activities', async ({
+    page,
+  }, testInfo) => {
+    const testSuffix = `${testInfo.workerIndex}-${testInfo.retry}`
+    const questionName = `Pagination Test Question ${testSuffix}`
+    const liveQuizName = `Pagination Test Live Quiz ${testSuffix}`
+
+    // Arrange selectable records for both lists. Earlier serial specs may leave
+    // only running activities, whose disabled rows cannot open batch actions.
+    await createQuestionSC({
+      name: questionName,
+      content: 'Synthetic pagination test content.',
+      choices: [{ value: 'Correct' }, { value: 'Incorrect' }],
+      userId: LECTURER_ID,
+    })
+    const liveQuizId = await createLiveQuiz({
+      name: liveQuizName,
+      displayName: liveQuizName,
+      ownerId: LECTURER_ID,
+      elementNames: [questionName],
+    })
+
+    try {
+      await page.reload()
+
+      await expect(page.getByTestId('pagination-page-size')).toBeVisible()
+      await expectSummariesEqual(page)
+
+      await selectOption(page, '[data-cy="pagination-page-size"]', 'all')
+      await expect(page.getByTestId('pagination-page-size')).toContainText(
+        'All'
+      )
+      await expectSummariesEqual(page)
+      await expect(page.getByTestId('pagination-next')).toHaveCount(0)
+      const totalElements = await expectAllResultsLoaded(page)
+      await expectSummariesEqual(page)
+      await expect(page.locator('[data-cy^="element-item-"]')).toHaveCount(
+        totalElements
+      )
+      await expect(page.getByTestId('element-batch-operations')).toHaveCount(0)
+
+      await page.getByTestId('select-all-elements').click()
+      await expect(page.getByTestId('element-batch-operations')).toBeVisible()
+
+      await selectOption(page, '[data-cy="pagination-page-size"]', '50')
+      await expect(page.getByTestId('pagination-page-size')).toContainText('50')
+      await expectSummariesEqual(page)
+
+      await page.getByTestId('activities').click()
+      await expect(page).toHaveURL(/\/activities/)
+      await expect(page.getByTestId('pagination-page-size')).toBeVisible()
+
+      await selectOption(page, '[data-cy="pagination-page-size"]', 'all')
+      await expect(page.getByTestId('pagination-page-size')).toContainText(
+        'All'
+      )
+      await expect(page.getByTestId('pagination-next')).toHaveCount(0)
+      const totalActivities = await expectAllResultsLoaded(page)
+      await expect(page.locator('[data-cy-row^="activity-item-"]')).toHaveCount(
+        totalActivities
+      )
+      await expect(page.getByTestId('activity-batch-operations')).toHaveCount(0)
+
+      await page.getByTestId('select-all-activities').click()
+      await expect(page.getByTestId('activity-batch-operations')).toBeVisible()
+
+      await selectOption(page, '[data-cy="pagination-page-size"]', '50')
+      await expect(page.getByTestId('pagination-page-size')).toContainText('50')
+    } finally {
+      await deleteLiveQuiz(liveQuizId)
+    }
+  })
+})

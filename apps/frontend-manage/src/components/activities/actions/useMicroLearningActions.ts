@@ -19,17 +19,18 @@ import {
   faUserGroup,
   faX,
 } from '@fortawesome/free-solid-svg-icons'
+import { useFeatureFlag } from '@klicker-uzh/feature-flags/react'
 import {
-  ActivityInfo,
+  type ActivityInfo,
   ActivityType,
   GetSingleCourseDocument,
   UnpublishMicroLearningDocument,
 } from '@klicker-uzh/graphql/dist/ops'
 import { toast } from '@uzh-bf/design-system'
-import { useTranslations } from 'next-intl'
 import { useRouter } from 'next/router'
-import { Dispatch, SetStateAction, useMemo } from 'react'
-import { ActivityAction } from './useAvailableActions'
+import { useTranslations } from 'next-intl'
+import { type Dispatch, type SetStateAction, useCallback, useMemo } from 'react'
+import type { ActivityAction } from './useAvailableActions'
 
 function useMicroLearningActions({
   microLearning,
@@ -54,15 +55,19 @@ function useMicroLearningActions({
 }): ActivityAction[] {
   const t = useTranslations()
   const router = useRouter()
+  const learningAnalyticsEnabled = useFeatureFlag('learning-analytics')
   const [unpublishMicroLearning, { loading: unpublishing }] = useMutation(
     UnpublishMicroLearningDocument
   )
-  const onSuccessToast = () =>
-    toast({
-      type: 'success',
-      message: t('manage.course.linkAccessCopied'),
-      options: { duration: 4000 },
-    })
+  const onSuccessToast = useCallback(
+    () =>
+      toast({
+        type: 'success',
+        message: t('manage.course.linkAccessCopied'),
+        options: { duration: 4000 },
+      }),
+    [t]
+  )
 
   const href = `${process.env.NEXT_PUBLIC_PWA_URL}${microLearning.courseLanguage ? `/${microLearning.courseLanguage}` : ''}/course/${microLearning.courseId}/microLearnings/${microLearning.id}/`
   const actions = useMemo(
@@ -82,7 +87,7 @@ function useMicroLearningActions({
           try {
             navigator.clipboard.writeText(href)
             onSuccessToast()
-          } catch (e) {}
+          } catch {}
         },
         data: { cy: `copy-microlearning-link-${microLearning.name}` },
       },
@@ -95,7 +100,7 @@ function useMicroLearningActions({
             const link = `${process.env.NEXT_PUBLIC_LTI_URL}?redirectTo=${href}`
             await navigator.clipboard.writeText(link)
             onSuccessToast()
-          } catch (e) {}
+          } catch {}
         },
         data: { cy: `copy-lti-link-${microLearning.name}` },
       },
@@ -183,7 +188,13 @@ function useMicroLearningActions({
           router.push(
             `/analytics/${microLearning.courseId}/quizzes/${microLearning.id}`
           ),
-        data: { cy: `open-analytics-async-activity` },
+        disabled: !learningAnalyticsEnabled,
+        tooltip: !learningAnalyticsEnabled
+          ? t('manage.analytics.featureUnavailable')
+          : undefined,
+        data: {
+          cy: `open-analytics-microlearning-${microLearning.name}`,
+        },
       },
       {
         id: 'shareMicroLearning',
@@ -267,6 +278,7 @@ function useMicroLearningActions({
       microLearning.name,
       microLearning.courseId,
       href,
+      learningAnalyticsEnabled,
       setPublishModal,
       setExtensionModal,
       setEndingModal,
@@ -275,6 +287,9 @@ function useMicroLearningActions({
       setDeletionModal,
       setRemovalModal,
       setActivityLogOpen,
+      onSuccessToast,
+      refetchActivities,
+      unpublishing,
     ]
   )
 

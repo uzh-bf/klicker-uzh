@@ -19,7 +19,6 @@
 @import "tw-animate-css";
 
 @plugin "@tailwindcss/typography";
-@plugin "@tailwindcss/aspect-ratio";
 @plugin "@tailwindcss/forms";
 @plugin "@tailwindcss/container-queries";
 

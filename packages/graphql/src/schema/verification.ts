@@ -1,18 +1,22 @@
 import * as DB from '@klicker-uzh/prisma/client'
-import type { AssessmentReportSnapshotV1 } from '@klicker-uzh/types'
+import type {
+  AssessmentReportPublicSnapshot,
+  AssessmentReportSnapshot,
+  AssessmentReportSnapshotV1,
+} from '@klicker-uzh/types'
 import builder from '../builder.js'
 import {
-  issueAssessmentReport,
   type IssuedAssessmentReport,
+  issueAssessmentReport,
 } from '../services/assessmentReports.js'
 import {
+  type CourseAssessmentReportRecord,
+  type CourseAssessmentReportRecordPage,
   getCourseAssessmentReportRecordCount,
   getCourseAssessmentReportRecords,
   getPublicAssessmentReport,
-  revokeAssessmentReport,
-  type CourseAssessmentReportRecord,
-  type CourseAssessmentReportRecordPage,
   type PublicAssessmentReportVerification,
+  revokeAssessmentReport,
 } from '../services/verification.js'
 
 const asParticipant = {
@@ -39,16 +43,43 @@ export const AssessmentReportIdentitySource = builder.enumType(
   {
     values: {
       COURSE_INVITATION: { value: 'COURSE_INVITATION' },
+      SWITCH_EDUID: { value: 'SWITCH_EDUID' },
     } as const,
   }
 )
 
 const AssessmentReportSubjectRef = builder.objectRef<
-  AssessmentReportSnapshotV1['subject']
+  AssessmentReportSnapshot['subject']
 >('AssessmentReportSubject')
 builder.objectType(AssessmentReportSubjectRef, {
   fields: (t) => ({
     email: t.exposeString('email'),
+    givenName: t.field({
+      type: 'String',
+      nullable: true,
+      resolve: (subject) => ('givenName' in subject ? subject.givenName : null),
+    }),
+    surname: t.field({
+      type: 'String',
+      nullable: true,
+      resolve: (subject) => ('surname' in subject ? subject.surname : null),
+    }),
+    matriculationNumber: t.field({
+      type: 'String',
+      nullable: true,
+      resolve: (subject) =>
+        'matriculationNumber' in subject ? subject.matriculationNumber : null,
+    }),
+    source: t.expose('source', { type: AssessmentReportIdentitySource }),
+  }),
+})
+
+const PublicAssessmentReportSubjectRef = builder.objectRef<
+  AssessmentReportPublicSnapshot['subject']
+>('PublicAssessmentReportSubject')
+builder.objectType(PublicAssessmentReportSubjectRef, {
+  fields: (t) => ({
+    name: t.exposeString('name', { nullable: true }),
     source: t.expose('source', { type: AssessmentReportIdentitySource }),
   }),
 })
@@ -116,8 +147,9 @@ builder.objectType(AssessmentReportComparisonRef, {
   }),
 })
 
-const AssessmentReportSnapshotRef =
-  builder.objectRef<AssessmentReportSnapshotV1>('AssessmentReportSnapshot')
+const AssessmentReportSnapshotRef = builder.objectRef<AssessmentReportSnapshot>(
+  'AssessmentReportSnapshot'
+)
 builder.objectType(AssessmentReportSnapshotRef, {
   fields: (t) => ({
     version: t.exposeInt('version'),
@@ -132,13 +164,13 @@ builder.objectType(AssessmentReportSnapshotRef, {
 })
 
 const PublicAssessmentReportSnapshotRef =
-  builder.objectRef<AssessmentReportSnapshotV1>(
+  builder.objectRef<AssessmentReportPublicSnapshot>(
     'PublicAssessmentReportSnapshot'
   )
 builder.objectType(PublicAssessmentReportSnapshotRef, {
   fields: (t) => ({
     version: t.exposeInt('version'),
-    subject: t.expose('subject', { type: AssessmentReportSubjectRef }),
+    subject: t.expose('subject', { type: PublicAssessmentReportSubjectRef }),
     course: t.field({
       type: PublicAssessmentReportCourseRef,
       resolve: (snapshot) => snapshot.course,

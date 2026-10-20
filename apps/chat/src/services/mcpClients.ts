@@ -1,17 +1,30 @@
 'use server'
 
+import { createHash, randomUUID } from 'node:crypto'
 import { experimental_createMCPClient as createSDKMCPClient } from '@ai-sdk/mcp'
 import { safeDecrypt } from '@klicker-uzh/util'
 import { StreamableHTTPClientTransport } from '@modelcontextprotocol/sdk/client/streamableHttp.js'
-import { createHash } from 'crypto'
 import {
   MAX_TOOL_NAME_LENGTH,
   TOOL_NAME_SUFFIX_LENGTH,
 } from '@/src/lib/config/toolNames'
 import {
+  createDocQueryScopedFetch,
+  type DocQueryScopedFetch,
+  signDocQueryScopeToken,
+} from '@/src/lib/server/docQueryScopeToken'
+import {
   parseMCPRuntimePolicy,
   RequiredMCPUnavailableError,
 } from '@/src/lib/server/mcpRuntimePolicy'
+import {
+  assertDocQueryRequestScope,
+  assertDocQueryTransportSecurity,
+  DOC_QUERY_MCP_SERVER_NAME,
+  DOC_QUERY_SCOPE_TOKEN_HEADER,
+  normalizeDocQueryKbIds,
+  resolveDocQueryScopedRoute,
+} from './mcpScope'
 
 // Type definitions for MCP server configuration
 export interface MCPServerConfig {
@@ -35,6 +48,12 @@ export interface MCPConfigSettings {
 export interface MCPServerWithConfig {
   server: MCPServerConfig
   config: MCPConfigSettings
+}
+
+export interface MCPRequestOptions {
+  requestTimeoutMs?: number
+  kbIds?: readonly string[]
+  sessionId?: string
 }
 
 function toToolNameHash(rawName: string): string {
@@ -101,16 +120,120 @@ function toSafeToolName(
   return candidate
 }
 
+async function applyDocQueryAuthHeaders(
+  headers: Record<string, string>,
+  server: MCPServerConfig,
+  chatbotId: string,
+  options: MCPRequestOptions,
+  authType: string
+): Promise<boolean> {
+  if (server.name !== DOC_QUERY_MCP_SERVER_NAME) return false
+  if (!options.kbIds || !options.sessionId) {
+    throw new Error('Scoped knowledge retrieval is not available')
+  }
+  if (authType !== 'bearer' || !server.authSecret) {
+    throw new Error('Doc Query transport authentication is invalid')
+  }
+  if (
+    typeof options.sessionId !== 'string' ||
+    options.sessionId.trim().length === 0
+  ) {
+    throw new Error('Scoped knowledge retrieval is not available')
+  }
+
+  assertDocQueryTransportSecurity(server.url)
+
+  const kbIds = normalizeDocQueryKbIds(options.kbIds)
+  headers.Authorization = `Bearer ${safeDecrypt(server.authSecret)}`
+  const token = await signDocQueryScopeToken({
+    kbIds,
+    chatbotId,
+    sessionId: options.sessionId,
+    jti: randomUUID(),
+  })
+  headers[DOC_QUERY_SCOPE_TOKEN_HEADER] = `Bearer ${token}`
+  return true
+}
+
+interface MCPTransportRequest {
+  url: URL
+  headers: Record<string, string>
+  fetch?: DocQueryScopedFetch
+}
+
+/**
+ * Binds the modern KB server to the deployment-controlled scoped route. The
+ * stored bearer and its auth type are ignored here: destination and credential
+ * both come from configuration, so neither a database URL edit nor an expired
+ * stored credential can redirect or weaken the request.
+ */
+function createScopedDocQueryTransport(
+  server: MCPServerConfig,
+  chatbotId: string,
+  options: MCPRequestOptions
+): { url: URL; fetch: DocQueryScopedFetch } | undefined {
+  const target = resolveDocQueryScopedRoute(server)
+  if (!target) return undefined
+
+  if (!options.kbIds || !options.sessionId) {
+    throw new Error('Scoped knowledge retrieval is not available')
+  }
+  if (
+    typeof options.sessionId !== 'string' ||
+    options.sessionId.trim().length === 0
+  ) {
+    throw new Error('Scoped knowledge retrieval is not available')
+  }
+
+  const kbIds = normalizeDocQueryKbIds(options.kbIds)
+
+  return {
+    url: target,
+    fetch: createDocQueryScopedFetch({
+      target,
+      kbIds,
+      chatbotId,
+      sessionId: options.sessionId,
+    }),
+  }
+}
+
 /**
  * Creates authentication headers based on server auth type
  */
-function createAuthHeaders(
+async function createMCPTransportRequest(
   server: MCPServerConfig,
-  chatbotId: string
-): Record<string, string> {
+  chatbotId: string,
+  options: MCPRequestOptions = {}
+): Promise<MCPTransportRequest> {
   const baseHeaders = Object.assign(Object.create(null), {
     'Content-Type': 'application/json',
   }) as Record<string, string>
+
+  const scopedTransport = createScopedDocQueryTransport(
+    server,
+    chatbotId,
+    options
+  )
+  if (scopedTransport) {
+    return { ...scopedTransport, headers: baseHeaders }
+  }
+
+  const url = new URL(server.url)
+
+  const authType = server.authType.toLowerCase()
+
+  if (
+    await applyDocQueryAuthHeaders(
+      baseHeaders,
+      server,
+      chatbotId,
+      options,
+      authType
+    )
+  ) {
+    return { url, headers: baseHeaders }
+  }
 
   // Add chatbot ID if configured (new behavior - defaults to false for backward compatibility)
   if (server.passChatbotId) {
@@ -120,12 +243,12 @@ function createAuthHeaders(
   }
 
   if (!server.authSecret) {
-    return baseHeaders
+    return { url, headers: baseHeaders }
   }
 
   const decryptedSecret = safeDecrypt(server.authSecret)
 
-  switch (server.authType.toLowerCase()) {
+  switch (authType) {
     case 'custom':
       // Parse and apply custom headers from JSON
       {
@@ -172,29 +295,34 @@ function createAuthHeaders(
       break
   }
 
-  return baseHeaders
+  return { url, headers: baseHeaders }
 }
 
 /**
  * Creates and initializes a single MCP client for a specific server configuration
  */
-export async function createMCPClient(
+async function createMCPClient(
   server: MCPServerConfig,
-  chatbotId: string
+  chatbotId: string,
+  options: MCPRequestOptions = {}
 ) {
   if (!server.url) {
     throw new Error(`MCP server ${server.name} has no URL defined`)
   }
 
   try {
-    const headers = createAuthHeaders(server, chatbotId)
+    const request = await createMCPTransportRequest(server, chatbotId, options)
 
-    const httpTransport = new StreamableHTTPClientTransport(
-      new URL(server.url),
-      {
-        requestInit: { headers },
-      }
-    )
+    const httpTransport = new StreamableHTTPClientTransport(request.url, {
+      requestInit: {
+        headers: request.headers,
+        redirect: 'error',
+        ...(options.requestTimeoutMs
+          ? { signal: AbortSignal.timeout(options.requestTimeoutMs) }
+          : {}),
+      },
+      ...(request.fetch ? { fetch: request.fetch } : {}),
+    })
 
     const client = await createSDKMCPClient({
       transport: httpTransport,
@@ -221,8 +349,9 @@ function isToolAllowed(toolName: string, allowedTools: string[]): boolean {
   }
 
   return allowedTools.some((pattern) => {
-    // Convert wildcard pattern to regex
+    // Escape regex syntax so only the documented wildcards stay special.
     const regexPattern = pattern
+      .replace(/[.+^${}()|[\]\\]/g, '\\$&')
       .replace(/\*/g, '.*') // Replace * with .*
       .replace(/\?/g, '.') // Replace ? with .
 
@@ -236,7 +365,8 @@ function isToolAllowed(toolName: string, allowedTools: string[]): boolean {
  */
 async function loadServerTools(
   serverWithConfig: MCPServerWithConfig,
-  chatbotId: string
+  chatbotId: string,
+  options: MCPRequestOptions = {}
 ): Promise<Record<string, any>> {
   const { server, config } = serverWithConfig
   const runtimePolicy = parseMCPRuntimePolicy(config.parameters)
@@ -246,7 +376,7 @@ async function loadServerTools(
     const configuredTool = config.allowedTools?.[0]
     if (
       !Array.isArray(config.allowedTools) ||
-      config.allowedTools?.length !== 1 ||
+      config.allowedTools.length !== 1 ||
       typeof configuredTool !== 'string' ||
       configuredTool.length === 0 ||
       /[*?]/.test(configuredTool)
@@ -264,7 +394,10 @@ async function loadServerTools(
   }
 
   try {
-    const client = await createMCPClient(server, chatbotId)
+    if (server.name === DOC_QUERY_MCP_SERVER_NAME) {
+      assertDocQueryRequestScope(config.parameters, options.kbIds)
+    }
+    const client = await createMCPClient(server, chatbotId, options)
     const rawTools = await client.tools()
 
     if (runtimePolicy.required && requiredRawToolName) {
@@ -326,7 +459,8 @@ async function loadServerTools(
  */
 export async function getAggregatedMCPTools(
   serversWithConfigs: MCPServerWithConfig[],
-  chatbotId: string
+  chatbotId: string,
+  options: MCPRequestOptions = {}
 ): Promise<Record<string, any>> {
   console.log(`Loading MCP Tools from ${serversWithConfigs.length} servers...`)
 
@@ -349,7 +483,11 @@ export async function getAggregatedMCPTools(
       const runtimePolicy = parseMCPRuntimePolicy(
         serverWithConfig.config.parameters
       )
-      const serverTools = await loadServerTools(serverWithConfig, chatbotId)
+      const serverTools = await loadServerTools(
+        serverWithConfig,
+        chatbotId,
+        options
+      )
       for (const [name, def] of Object.entries(serverTools)) {
         if (!(name in aggregatedTools)) {
           aggregatedTools[name] = def

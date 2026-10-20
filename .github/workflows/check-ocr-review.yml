@@ -1,0 +1,155 @@
+name: AI code review (OpenCodeReview)
+
+on:
+  pull_request_target:
+    types: [opened, synchronize, reopened, ready_for_review, converted_to_draft]
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.event.pull_request.number || github.ref_name }}
+  cancel-in-progress: true
+
+# The runner checks out only trusted policy and reads PR-head objects for the diff.
+# Do not add checkout, build, test, install, or execution steps for PR-head content here.
+permissions:
+  contents: read
+  pull-requests: write
+
+jobs:
+  ocr-review:
+    # The CLI spawns a detached `npm i -g` self-update on its first invocation
+    # unless this is set. That global reinstall removes and re-extracts the
+    # package while the review is starting, so the job dies on a
+    # module-resolution error instead of reviewing the pull request.
+    env:
+      OCR_NO_UPDATE: '1'
+      OCR_ADAPTER_PROVIDER: openrouter
+    if: >-
+      github.event.pull_request.user.login != 'dependabot[bot]' &&
+      github.event.pull_request.draft == true
+    runs-on: ubuntu-latest
+    timeout-minutes: 45
+    steps:
+      - name: Checkout trusted review policy
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          ref: ${{ github.event.repository.default_branch }}
+          persist-credentials: false
+          fetch-depth: 0
+          sparse-checkout: |
+            .github/scripts
+            .agents/skills
+            docs
+            .opencodereview
+
+      - name: Prepare bounded review context
+        id: context
+        env:
+          PR_TITLE: ${{ github.event.pull_request.title }}
+          PR_BODY: ${{ github.event.pull_request.body }}
+        run: |
+          node - <<'NODE'
+          const { randomUUID } = require('node:crypto')
+          const fs = require('node:fs')
+          const { buildReviewBackground } = require('./.github/scripts/final-ai-review.js')
+          const background = buildReviewBackground(process.env.PR_TITLE, process.env.PR_BODY)
+          const delimiter = randomUUID()
+          fs.appendFileSync(process.env.GITHUB_OUTPUT, `background<<${delimiter}\n${background}\n${delimiter}\n`)
+          NODE
+
+      - name: Checkout pinned review publisher
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          repository: alibaba/open-code-review
+          ref: 1672852136fc87748249d22bce0819f33419ea79 # v1.13.0
+          path: .ocr-upstream
+          persist-credentials: false
+          sparse-checkout: scripts/github-actions
+
+      - name: Resolve immutable review range
+        id: range
+        env:
+          PR_NUMBER: ${{ github.event.pull_request.number }}
+          HEAD_SHA: ${{ github.event.pull_request.head.sha }}
+          BASE_SHA: ${{ github.event.pull_request.base.sha }}
+        run: |
+          set -euo pipefail
+          [[ "${PR_NUMBER}" =~ ^[1-9][0-9]*$ ]]
+          [[ "${HEAD_SHA}" =~ ^[a-f0-9]{40}$ ]]
+          [[ "${BASE_SHA}" =~ ^[a-f0-9]{40}$ ]]
+          git fetch --no-tags origin "pull/${PR_NUMBER}/head"
+          test "$(git rev-parse FETCH_HEAD)" = "${HEAD_SHA}"
+          git fetch --no-tags origin "${BASE_SHA}"
+          REVIEW_FROM="$(git merge-base "${BASE_SHA}" "${HEAD_SHA}")"
+          [[ "${REVIEW_FROM}" =~ ^[a-f0-9]{40}$ ]]
+          echo "from=${REVIEW_FROM}" >> "${GITHUB_OUTPUT}"
+
+      - name: Install pinned OpenCodeReview CLI
+        run: |
+          npm install -g @alibaba-group/open-code-review@1.13.0
+          ocr version
+          node .github/scripts/ocr-draft-review.cjs verify-install
+
+      - name: Run bounded draft review
+        id: review
+        env:
+          OPENROUTER_API_KEY: ${{ secrets.OPENROUTER_API_KEY }}
+          MISTRAL_API_KEY: ${{ secrets.MISTRAL_API_KEY }}
+          CONTEXT7_API_KEY: ${{ secrets.CONTEXT7_API_KEY }}
+          HEAD_SHA: ${{ github.event.pull_request.head.sha }}
+          REVIEW_FROM: ${{ steps.range.outputs.from }}
+          BACKGROUND: ${{ steps.context.outputs.background }}
+        run: node .github/scripts/ocr-draft-review.cjs run
+
+      - name: Validate draft result envelope
+        env:
+          HEAD_SHA: ${{ github.event.pull_request.head.sha }}
+        run: node .github/scripts/ocr-draft-review.cjs validate
+
+      - name: Publish draft findings
+        uses: actions/github-script@3a2844b7e9c422d3c10d287c895573f7108da1b3 # v9.0.0
+        with:
+          script: |
+            const fs = require('node:fs')
+            const path = require('node:path')
+            const { runPostReviewComments } = require('./.ocr-upstream/scripts/github-actions/post-review-comments.js')
+            try {
+              await runPostReviewComments({
+                github, context, fs,
+                core: { ...core, info: () => {}, warning: () => core.warning('OCR publisher reported a warning') },
+                prNumber: context.payload.pull_request.number,
+                resultPath: path.join(process.env.RUNNER_TEMP, 'draft-ai-review-publication.json'),
+                stderrPath: path.join(process.env.RUNNER_TEMP, 'draft-ai-review-publisher-stderr.log'),
+                stickySummary: true,
+                incremental: true,
+                incrementalOverlapThreshold: 0.6,
+                reviewCommentBatchSize: 50,
+                routeSeverityBelow: 'low',
+                routeCategories: '',
+                checkpointEnabled: false,
+                checkpointCarry: '',
+                checkpointFingerprint: '',
+                rangeMode: '', rangeFrom: '', rangeTo: '',
+                resolveOutdated: 'false',
+              })
+            } catch {
+              throw new Error('OCR draft publication failed')
+            }
+
+      - name: Upload sanitized draft adapter diagnostics
+        if: always()
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4
+        with:
+          name: draft-ai-review-adapter-diagnostics-${{ github.run_id }}-${{ github.run_attempt }}
+          path: |
+            ${{ runner.temp }}/draft-ai-review-adapter-diagnostics.jsonl
+            ${{ runner.temp }}/draft-ai-review-outcome.json
+            ${{ runner.temp }}/draft-ai-review-tools.json
+            ${{ runner.temp }}/draft-ai-review-advisor-expectations.json
+            ${{ runner.temp }}/draft-ai-review-advisor-diagnostics.jsonl
+          if-no-files-found: warn
+          retention-days: 7
+
+      - name: Summarize OCR estimated cost and caching savings
+        if: always()
+        continue-on-error: true
+        run: node .github/scripts/ocr-draft-review.cjs summary

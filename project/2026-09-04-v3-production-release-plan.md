@@ -1,0 +1,89 @@
+# V3 release preparation
+
+## Research and scope
+
+- Goal: prepare current v3 for tagging and release creation. The user explicitly removed backup/restore exercises, a scheduled freeze, and production cutover preparation from this package on September 4.
+- Branch: rs/v3-production-release, tracking origin/v3. Baseline: 468f05b91503b133670dda235be9a4b38bba2155. Remote refreshed September 4; zero ahead/behind. Preserve unrelated changes in the primary checkout.
+- General production baseline: v3.4.0-alpha.73. Compare Chat-only hotfixes separately against v3.4.0-alpha.73.3; that maintenance tag does not change the database baseline.
+- Database evidence: 179 successful production migrations match alpha.73 names and checksums. Candidate adds four SQL files, reaching 183; no historical SQL changed. Regular and assessment backend database identity matches. Analytics schema mirrors match. Generated migration provenance remains unverified.
+- Independent standards and specification reviews are complete. No new high-severity defect was identified in the prioritized database-related source. These were source reviews, not exhaustive application audits or runtime proof.
+- Existing blockers: current v3 has a failing live-citation overflow assertion; Next.js and next-auth need patch updates; the production Chat disclaimer fix must not be lost when replacing its maintenance image.
+
+## Execution contract
+
+- Authority: the user's instruction to make everything ready authorizes the narrowed local preparation package, checks, reviews and local commits. Main owns integration and verification.
+- Terminal: reviewed local release-hardening commits, verified release tooling and concise release notes/checklist. Report the exact remaining merge/publication actions; do not claim the changed branch is already v3.
+- Withheld: pushes, PR publication, upstream integration, merges, release tag/publication, production changes, GrowthBook changes, infrastructure actions and deletion. No new cluster connectivity.
+- Non-goals: backup/restore rehearsal, maintenance/drain exercises, a calendar freeze, production deployment approval, v3-ai integration, new feature stacks, architecture redesign, new migrations or blanket AI gates.
+- Pause only for missing authority or required capability, a failed check requiring a materially different change, or a new product/data-integrity decision. Do not stop at routine slice or review boundaries.
+- Plan review: the previous broader plan completed three native planner rounds, ending with two mechanical ownership corrections that were applied. It was not labeled APPROVED. The user's narrowed instruction supersedes its operational gates. Reuse its source findings; no new design or migration strategy is introduced by this scope reduction.
+- Packaging: one cohesive release-hardening package on this worktree, plus the existing disclaimer PR. No stack restructuring. No new product primitive or ADR decision.
+
+## Work and ownership
+
+| Work                                                                   | Owner                                                                  | Acceptance                                                                                                                     |
+| ---------------------------------------------------------------------- | ---------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------ |
+| Stabilize the citation layout assertion and correct the credit comment | Main; small edits cost less than delegation                            | Same paused-stream contract; focused Chromium repetitions without retry masking; formatting/type checks                        |
+| Patch Next.js and next-auth consistently                               | Native executor for mechanical updates; main owns security disposition | Exact versions and lockfile agree; frozen install, package checks, supported builds and relevant tests                         |
+| Verify database release payload                                        | Main; coupled data-integrity evidence                                  | Four unchanged additive migrations; valid matching schemas; synthetic migration smoke where available; no production mutations |
+| Reconcile hotfixes, open PRs and release tooling                       | Main                                                                   | Explicit required/deferred PR list; release dry-run; release notes distinguish features, flags and database changes            |
+| Review complete preparation package                                    | Native final reviewer                                                  | Exact committed range; correctness, security, maintainability and plan compliance; honest CI-only gaps                         |
+
+## Test portfolio
+
+| Risk                                                   | Obligation                                        | Evidence                                                                                                      |
+| ------------------------------------------------------ | ------------------------------------------------- | ------------------------------------------------------------------------------------------------------------- |
+| Live citation layout timing                            | Extend existing observation, no new test          | Existing paused stream, sources hidden while running, viewport overflow and follow-scroll assertions          |
+| Framework/auth patch regression                        | Reuse existing tests                              | Frozen install; check:all; production and test build paths; Chat tests; focused auth/browser checks           |
+| Migration payload inconsistency                        | No new permanent test by default                  | SQL delta/checksums, Prisma validation, Analytics mirror check, disposable migration smoke if supported       |
+| Lost Chat maintenance behavior                         | Reuse existing PR evidence plus interaction check | Disclaimer patch is retained before Chat release; no import of the larger conflicting Doc Query stack         |
+| Release command changes files or selects wrong version | No new test                                       | Repository-native release dry-run only; inspect resulting proposed version and changelog without tag creation |
+
+## Source preparation
+
+- Patch Next.js 16.2.10 to 16.2.11 in direct application dependencies, keeping related framework package resolution and workspace peer ranges consistent. Patch next-auth 4.24.14 to 4.24.15 in Auth and backend. Regenerate the lockfile with the configured pnpm version; no major upgrades or unrelated refresh.
+- Change the immediate viewport overflow measurement to bounded retrying observation. Preserve the paused stream and all source-card and scrolling expectations. The timing diagnosis remains provisional until the focused test passes.
+- Correct the credit-decrement comment: the implementation clamps the balance at zero, not an insufficient-funds exception. No behavior change.
+- Keep the unused nullable aiChatbotCostCenter field for this release. Do not rewrite a merged migration or add a consumer just to justify it.
+- Preserve [PR #5696, Chat disclaimer dark-mode fix](https://github.com/uzh-bf/klicker-uzh/pull/5696). Reuse that existing PR; merge remains separately authorized.
+- Do not import [PR #5709, scoped Doc Query activation stack](https://github.com/uzh-bf/klicker-uzh/pull/5709): relevant runtime work is already merged and the broader branch conflicts.
+- Defer [PR #5694, topology spreading](https://github.com/uzh-bf/klicker-uzh/pull/5694), optional [PR #5725, nanoid update](https://github.com/uzh-bf/klicker-uzh/pull/5725), and new features. Assess [PR #5724, Tornado update](https://github.com/uzh-bf/klicker-uzh/pull/5724) only if Analytics is included in the release artifacts.
+- Commit the plan, dependency patch and assertion/comment fixes separately after applicable checks. Mechanical dependency edits and assertion-only edits do not need a simplifier; dependencies arm a bounded security slice review. Complete integrated final review after all authorized local checks.
+
+## Database and flags in release notes
+
+| Migration                                          | Released effect                                                                                                   |
+| -------------------------------------------------- | ----------------------------------------------------------------------------------------------------------------- |
+| 20260820151622_chatbot_lifecycle_and_ai_capability | Adds publication states and owner capability fields; existing bots become PUBLISHED and new bots default to DRAFT |
+| 20260822075407_chat_account_usage                  | Adds initially empty monthly owner usage accounting                                                               |
+| 20260826012006_chat_turn_lifecycle_claim           | Adds COMPLETED default and nullable attempt ID; SQL is not explicitly wrapped in a transaction                    |
+| 20260902100000_course_deletion_request             | Adds nullable asynchronous deletion request marker                                                                |
+
+- Usage UI and protected query use ai-beta. beta-signup governs new enrollment and discovery while preserving opt-out when closed. Do not activate or broaden either remotely.
+- Catalyst/full-access chatbot authoring is not universally gated by ai-beta. Publishing has separate entitlement and approval checks.
+- Participation existence is the access boundary regardless of isActive; isActive controls leaderboard inclusion only. Preserve Luna fallback and prompt privacy.
+- Record known recovery limitations, not release-preparation gates: abandoned IN_PROGRESS claims and a crash between deletion marker persistence and event publication need guarded operator recovery. Attempt tracking off still permits lifecycle rows. Old publication/status-unaware readers are not a safe blanket application rollback.
+- Tagging and release creation do not deploy the database or approve production operations. No deployment-readiness claim will be made.
+
+## Progress
+
+- Completed: remote refresh, live production baseline comparison, four-migration inventory, independent standards/specification reviews and main disposition.
+- Active: local source preparation on the unchanged v3 baseline. Dependency patch committed as 5854717115; no push or upstream integration.
+- Release dry-run passed and proposes v3.4.0-alpha.74 with alpha.73 as its changelog baseline. No release files or tags were created. Release notes are drafted at project/2026-09-04-v3-release-notes.md.
+- Tornado is only reachable through Analytics' development notebook dependencies. The production Dockerfile installs with --no-dev, so its open patch PR is optional maintenance rather than a production artifact blocker.
+- Verification passed: frozen pnpm 11.5.0 install; complete check:all (35 type/build tasks and all lint/guard tasks); Prisma schema validation and Analytics mirror check; local migrate status reports all 183 migrations applied; Auth redirect, Prisma adapter and assessment identity tests; Chat suite with PostgreSQL accounting integration enabled (54 files, 564 tests, no skips).
+- Local verification correction: Analytics initially selected Python 3.14 and tried to compile pandas without a C compiler. Reusing its production Python 3.12 toolchain made lint pass without changing dependency definitions.
+- Production and test-mode builds passed for all six affected apps and their dependency graph: 15/15 tasks each, no cache. Durations: 5m28s production, 3m08s test mode. The first production invocation had an extra argument separator and failed before compilation; the corrected command passed.
+- Dependency slice review completed: DONE_WITH_CONCERNS, no blocking defect. Existing Next 15 peer-only resolutions remain deferred; actual Next servers use 16.2.11. Required local routing verification is now complete.
+- Historical runtime blocker: `Managed runtime state is degraded; refusing a new profile transition until drift is repaired.` An ordinary stop did not clear the failed transition. The user approved exact disposable-runtime recreation; no global metadata or lifecycle bypass was used.
+- Current status: local preparation complete; runtime stopped and verified. Integrated final review passed (DONE) over `468f05b91503b133670dda235be9a4b38bba2155..b4c9a74f0e29d8e68c7d5c54908841801012332d`, with no blocking findings. The citation assertion is committed as 987901e045 and passes three consecutive Chromium runs without retries (28.0 seconds total). No push, PR publication, upstream integration, merge or release tag is authorized yet.
+- Review reports: project/\_local/reviews/2026-09-04-v3-unreleased-code-quality.md and the earlier plan-hardening report. Both are ignored local evidence.
+- Runtime stopped after final verification: `/Users/rschlae/Git/klicker/klicker-uzh/trees/rs/v3-production-release`, provider ID `rs-v3-production-release`, Devsy context `default`, Docker provider. `devrouter stop` returned stopped=true and removed ten routes. Fresh `devrouter ls --json` contains no exact-source routes; `devsy workspace status rs-v3-production-release --result-format json` reports `Stopped`. Worktree, commits and current runtime data are preserved. The isolated agent-browser session is closed.
+- Runtime recreation approved on 2026-09-05: `devrouter stop /Users/rschlae/Git/klicker/klicker-uzh/trees/rs/v3-production-release --delete`, followed by `devrouter ensure /Users/rschlae/Git/klicker/klicker-uzh/trees/rs/v3-production-release --profile full`. Deletion returned `deleted=true`; the old provider registration, exact compose containers and routes were confirmed absent before successful full-profile recreation. The source worktree and commits were preserved. This approval does not extend to publication or another deletion.
+- Proposed publication boundary after local completion, not granted: push `origin rs/v3-production-release` and open a draft PR against `v3`. Merge, tag and release publication remain separate.
+- Recreation result: full-profile startup passed with zero drift in compose project `default-rs-01df8`. The canonical host launcher then installed its missing filtered Playwright dependencies. All three browser attempts failed before the citation assertion with HTTP 502 and a missing composer. Chat logged `Next.js package not found` and the shared Turbo process exited. Docker metadata advertised nested dependency volumes, but the app container's actual mount table exposed only the checkout bind mount. The host install removed Next packages visible to the container. A full frozen container reinstall recovered them; no application or test behavior changed for this environment failure.
+- Bounded recovery passed: `env CI=true pnpm install --frozen-lockfile` inside the exact runtime restored the full dependency graph without changing the lockfile. The canonical host launcher then ran with `pnpm_config_verify_deps_before_run=warn`, which reports cross-platform workspace drift without automatically reinstalling. Its three citation tests passed with one worker and retries disabled. This is a local verification workaround, not a fix for Devsy mount isolation; keep provider repair outside the release source package.
+- The focused cross-app batch finished with 24 passes and two failures. Student sign-in, lecturer session routing, safe return targets, Manage expired-session recovery, all selected beta/usage flag contracts and all Chat access cases passed. Control authenticated and created/started a quiz, but `/session/<synthetic-id>` returned HTML 404; its dependent cleanup then failed because the quiz was still running. The dynamic route source exists and its static props return a page, not a 404. One canonical `request-repair frontend-control` cache repair was applied before the successful rerun. No production source changed for this diagnostic attempt.
+- Final browser result: all five Control workflow tests passed after that bounded cache repair, with retries disabled (13.8 seconds). The other 21 cases in the cross-app batch passed. The lecturer E2E helper injects a session cookie; it proves routing, not delegated login. A separate agent-browser check exposed stale Auth API routes, then passed the actual delegated credentials form after one canonical Auth cache repair and reached the authenticated Manage library. Screenshots remain outside Git in the task's visualization directory. Focused Playwright TypeScript and formatting checks pass.
+- Local runtime limitations: the Devsy nested-volume discrepancy and pnpm cross-platform auto-install behavior are not repaired in source. The frozen-install plus warning-only host invocation is a verified local workaround. Defer provider changes and durable provider guidance until that separate root cause is resolved; do not broaden this release package or claim runtime recreation alone solved isolation.
+- Final review independently verified all 14 changed paths, dependency scope, preserved citation assertions and the four-migration inventory. Report: `project/_local/reviews/2026-09-05-v3-release-final.md`. This final progress update is documentation-only and does not invalidate that review. The branch has 32 changed lines excluding lockfile and project documents; it is one cohesive release-hardening package. Next boundary: approval to push `origin rs/v3-production-release` and open a draft PR targeting `v3`. The existing disclaimer PR and later release publication remain separate actions.

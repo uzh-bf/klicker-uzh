@@ -188,6 +188,9 @@ describe('@klicker-uzh/export', () => {
     const row = {
       isActive: true,
       createdAt: new Date('2026-01-01T00:00:00.000Z'),
+      assessmentGivenName: 'Ada',
+      assessmentSurname: 'Lovelace',
+      assessmentMatriculationNumber: '00-123-456',
       participant: {
         id: 'participant-1',
         email: 'participant@example.org',
@@ -216,6 +219,9 @@ describe('@klicker-uzh/export', () => {
     expect(transformParticipant(row)).toEqual([
       'participant-1',
       'participant@example.org',
+      'Ada',
+      'Lovelace',
+      '00-123-456',
       true,
       '2026-01-01T00:00:00.000Z',
       'EDUID',
@@ -333,6 +339,9 @@ describe('@klicker-uzh/export', () => {
     const participant = {
       isActive: true,
       createdAt: new Date('2026-01-01T00:00:00.000Z'),
+      assessmentGivenName: 'Ada',
+      assessmentSurname: 'Lovelace',
+      assessmentMatriculationNumber: '12-345-678',
       participant: {
         id: 'participant-1',
         email: 'participant@example.org',
@@ -353,8 +362,11 @@ describe('@klicker-uzh/export', () => {
     expect(pRow[0]).toBe('participant-1') // opaque UUID kept
     expect(pRow[1]).toMatch(/^[0-9a-f]{16}$/) // email hashed
     expect(pRow[1]).not.toBe('participant@example.org')
-    expect(pRow[5]).toMatch(/^[0-9a-f]{16}$/) // ssoId hashed
-    expect(pRow[6]).toMatch(/^[0-9a-f]{16}$/) // ssoEmail hashed
+    expect(pRow[2]).toMatch(/^[0-9a-f]{16}$/) // given name hashed
+    expect(pRow[3]).toMatch(/^[0-9a-f]{16}$/) // surname hashed
+    expect(pRow[4]).toMatch(/^[0-9a-f]{16}$/) // matriculation number hashed
+    expect(pRow[8]).toMatch(/^[0-9a-f]{16}$/) // ssoId hashed
+    expect(pRow[9]).toMatch(/^[0-9a-f]{16}$/) // ssoEmail hashed
 
     const invitation = {
       id: 1,

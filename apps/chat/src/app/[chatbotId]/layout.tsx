@@ -1,11 +1,11 @@
-import { prisma } from '@klicker-uzh/prisma'
+import { cookies } from 'next/headers'
 import { notFound } from 'next/navigation'
 import { Assistant } from '../../components/assistant'
 import {
-  hasConfiguredModeDescriptions,
-  resolveModeDescriptions,
-} from '../../lib/config/modes'
-import { z } from 'zod'
+  getChatbotOr404,
+  withChatbotTokenAuth,
+} from '../../lib/server/apiGuards'
+import { resolveEffectiveChatModeOptions } from '../../lib/server/effectiveChatModes'
 
 interface ChatLayoutProps {
   children: React.ReactNode
@@ -18,18 +18,37 @@ export default async function ChatLayout({
 }: ChatLayoutProps) {
   const { chatbotId } = await params
 
-  if (!z.string().uuid().safeParse(chatbotId).success) notFound()
+  const cookieStore = await cookies()
+  const authResult = await withChatbotTokenAuth(
+    cookieStore.get('participant_token')?.value,
+    chatbotId
+  )
+  if ('response' in authResult) notFound()
 
-  const chatbot = await prisma.chatbot.findUnique({
-    where: { id: chatbotId },
-    select: { id: true, name: true, avatar: true, systemPrompts: true },
+  const chatbotResult = await getChatbotOr404(chatbotId, {
+    id: true,
+    name: true,
+    avatar: true,
+    systemPrompts: true,
+    standardModeConfig: true,
+    mcpConfigurations: {
+      select: {
+        allowedTools: true,
+        chatMode: true,
+        isEnabled: true,
+        parameters: true,
+        priority: true,
+        mcpServer: { select: { id: true } },
+      },
+    },
   })
+  if ('response' in chatbotResult) notFound()
+  const { chatbot } = chatbotResult
 
-  if (!chatbot) notFound()
-
-  const initialModeOptions = resolveModeDescriptions(chatbot.systemPrompts)
-  const initialModeOptionsAreFallback = !hasConfiguredModeDescriptions(
-    chatbot.systemPrompts
+  const initialModeOptions = resolveEffectiveChatModeOptions(
+    chatbot.systemPrompts,
+    chatbot.mcpConfigurations,
+    chatbot.standardModeConfig
   )
 
   return (
@@ -41,7 +60,6 @@ export default async function ChatLayout({
           avatar: chatbot.avatar ?? undefined,
         }}
         initialModeOptions={initialModeOptions}
-        initialModeOptionsAreFallback={initialModeOptionsAreFallback}
       />
       {children}
     </>

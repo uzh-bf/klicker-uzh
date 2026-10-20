@@ -1,3 +1,4 @@
+import { useThreadViewportStore } from '@assistant-ui/react'
 import {
   BookOpenIcon,
   ExternalLinkIcon,
@@ -7,15 +8,22 @@ import {
   PlayIcon,
 } from 'lucide-react'
 import { useTranslations } from 'next-intl'
-import { type ComponentType, type SVGProps } from 'react'
-import { twMerge } from 'tailwind-merge'
-
 import {
-  getSourceSecondaryLine,
-  isMediaSource,
-} from '@/src/lib/sources/sourceDisplay'
+  type ComponentType,
+  type SVGProps,
+  useLayoutEffect,
+  useRef,
+} from 'react'
+import { twMerge } from 'tailwind-merge'
+import { getSourceSecondaryLine } from '@/src/lib/sources/sourceDisplay'
+import { getSourceNavigationUrl } from '@/src/lib/sources/sourceUrl'
 import type { ChatSource, ChatSourceType } from '@/src/lib/sources/types'
-import { useMessageSourcesContext } from './message-sources-context'
+import {
+  partitionSources,
+  useMessageSourcesContext,
+} from './message-sources-context'
+import { SourcePreviewContent } from './source-preview-content'
+import { Tooltip, TooltipContent, TooltipTrigger } from './ui/tooltip'
 
 // Module-scope map (not a function returning a component per call) so
 // `<Icon />` below resolves to a stable, already-existing component
@@ -30,6 +38,12 @@ const SOURCE_TYPE_ICONS: Record<
   document: FileTextIcon,
 }
 
+// Cited cards are previewed inline up to this count. The remaining cited cards
+// move into the "Other retrieved material" disclosure together with the
+// uncited sources; every card still renders and keeps its `src-...` DOM id, so
+// a citation chip can open the disclosure and focus its card.
+const CITED_SOURCES_PREVIEW_LIMIT = 12
+
 function SourceCard({
   source,
   messageId,
@@ -39,7 +53,6 @@ function SourceCard({
 }) {
   const t = useTranslations()
   const Icon = SOURCE_TYPE_ICONS[source.type]
-  const isMedia = isMediaSource(source)
   const secondaryLine = getSourceSecondaryLine(source, t)
 
   const inner = (
@@ -71,24 +84,16 @@ function SourceCard({
       <span className="min-w-0 flex-1">
         {/* Two lines, not `truncate`: these are file names like
             `kapitel-4-erwartungswert-und-varianz.pdf`, which a single
-            ellipsized line cuts before the part that identifies it. `title`
-            keeps the untruncated name reachable on hover. No `block` here —
+            ellipsized line cuts before the part that identifies it. No
+            `block` here —
             it would override the `display: -webkit-box` that `line-clamp-2`
             needs, silently disabling the clamp. */}
-        <span
-          title={source.title}
-          className="text-foreground line-clamp-2 break-words text-sm font-medium"
-        >
+        <span className="text-foreground line-clamp-2 break-words text-sm font-medium">
           {source.title}
         </span>
         {secondaryLine && (
           <span className="text-muted-foreground block truncate text-xs">
             {secondaryLine}
-          </span>
-        )}
-        {source.excerpt && (
-          <span className="text-muted-foreground mt-1 line-clamp-2 block text-xs italic">
-            {source.excerpt}
           </span>
         )}
       </span>
@@ -106,41 +111,41 @@ function SourceCard({
     'data-cy': 'chat-source-card',
     className: twMerge(
       // `focus-visible` applies to both branches: a citation chip can send
-      // programmatic focus to a non-url card too (see `tabIndex={-1}`
-      // below), and that focus needs to stay visible even though the card
-      // itself isn't a link. The hover treatment stays url-only — hovering
-      // a card that does nothing would be a misleading affordance.
-      'border-border bg-background focus-visible:ring-ring flex min-w-0 items-start gap-2 rounded-lg border p-2 text-left transition-colors focus-visible:outline-none focus-visible:ring-1',
-      isMedia && 'w-auto max-w-[16rem]',
+      // programmatic focus to a non-url card too, and that focus needs to
+      // stay visible even though the card itself isn't a link. All cards use
+      // the same passive tooltip for their source details.
+      'border-border bg-background focus-visible:ring-ring flex h-full min-w-0 items-start gap-2 rounded-lg border p-2 text-left transition-colors focus-visible:outline-none focus-visible:ring-1',
       source.url && 'hover:bg-accent hover:text-accent-foreground'
     ),
   }
 
-  // Only sources with a url are interactive for Tab navigation — everything
-  // else stays role-less and out of the tab order. `tabIndex={-1}` on the
-  // non-url card below only enables the programmatic focus a citation chip
-  // sends here (see citation-chip.tsx); Tab still skips straight past it.
-  if (source.url) {
-    return (
-      <a
-        {...sharedProps}
-        href={source.url}
-        target="_blank"
-        rel="noopener noreferrer"
-      >
-        {inner}
-        {/* `target="_blank"` is otherwise only signalled visually (the
+  const card = source.url ? (
+    <a
+      {...sharedProps}
+      href={getSourceNavigationUrl(source.url, source.page)}
+      target="_blank"
+      rel="noopener noreferrer"
+    >
+      {inner}
+      {/* `target="_blank"` is otherwise only signalled visually (the
             external-link icon above is aria-hidden), so the accessible name
             has to carry the new-tab hint itself. */}
-        <span className="sr-only">{t('chat.common.opensInNewTab')}</span>
-      </a>
-    )
-  }
-
-  return (
-    <div {...sharedProps} tabIndex={-1}>
+      <span className="sr-only">{t('chat.common.opensInNewTab')}</span>
+    </a>
+  ) : (
+    // biome-ignore lint/a11y/noNoninteractiveTabindex: The passive source card must be keyboard-focusable so its hover-equivalent preview is available without presenting a fake action.
+    <div {...sharedProps} tabIndex={0}>
       {inner}
     </div>
+  )
+
+  return (
+    <Tooltip>
+      <TooltipTrigger asChild>{card}</TooltipTrigger>
+      <TooltipContent className="max-w-64 text-left">
+        <SourcePreviewContent source={source} />
+      </TooltipContent>
+    </Tooltip>
   )
 }
 
@@ -149,21 +154,51 @@ export function SourcesSection() {
   // Computed once in `AssistantMessage` (see `useMessageSources`) and shared
   // via context with the inline citation chips, instead of re-parsing the
   // tool JSON here again.
-  const { messageId, sources } = useMessageSourcesContext()
+  const { citationCounts, citationsReady, messageId, sources } =
+    useMessageSourcesContext()
+  const threadViewportStore = useThreadViewportStore()
+  const revealOnMountRef = useRef(threadViewportStore.getState().isAtBottom)
+  const didRevealRef = useRef(false)
+  const headingRef = useRef<HTMLHeadingElement>(null)
 
-  if (sources.length === 0) return null
+  // Auto-scroll follows the answer while it streams but deliberately switches
+  // off before this terminal-only section mounts. If the participant was still
+  // following at the bottom, reveal just the sources heading with the smallest
+  // possible scroll instead of jumping to the final card. If they had scrolled
+  // up, preserve their position entirely.
+  useLayoutEffect(() => {
+    if (!citationsReady || didRevealRef.current || !revealOnMountRef.current) {
+      return
+    }
 
-  const documentSources = sources.filter((s) => !isMediaSource(s))
-  const mediaSources = sources.filter((s) => isMediaSource(s))
+    if (!headingRef.current) return
+    headingRef.current?.scrollIntoView({ block: 'nearest', inline: 'nearest' })
+    didRevealRef.current = true
+  }, [citationsReady])
+
+  if (sources.length === 0 || !citationsReady) return null
+
+  const { citedSources, uncitedSources } = partitionSources(
+    sources,
+    citationCounts
+  )
+
+  const previewSources = citedSources.slice(0, CITED_SOURCES_PREVIEW_LIMIT)
+  const otherSources = [
+    ...citedSources.slice(CITED_SOURCES_PREVIEW_LIMIT),
+    ...uncitedSources,
+  ]
+
   const headingId = `chat-sources-heading-${messageId}`
 
   return (
     <section
       aria-labelledby={headingId}
       data-cy="chat-sources-section"
-      className="border-border mt-3 border-t border-dashed pt-3"
+      className="border-border animate-in fade-in mt-3 min-w-0 border-t border-dashed pt-3 duration-300 motion-reduce:animate-none"
     >
       <h3
+        ref={headingRef}
         id={headingId}
         className="text-muted-foreground mb-2 flex items-center gap-1.5 text-xs font-semibold uppercase tracking-wide"
       >
@@ -171,30 +206,52 @@ export function SourcesSection() {
         {t('chat.sources.title')} · {sources.length}
       </h3>
 
-      {/* `auto-fit`, not `auto-fill`: with fewer cards than would fit, the
-          empty tracks collapse and the cards stretch across the full row —
-          cards only wrap when they genuinely no longer fit. The `min(230px,
-          100%)` floor keeps a track from forcing horizontal overflow in
-          containers narrower than 230px (embedded mode). */}
-      {documentSources.length > 0 && (
-        <div className="grid grid-cols-[repeat(auto-fit,minmax(min(230px,100%),1fr))] gap-2">
-          {documentSources.map((source) => (
-            <SourceCard key={source.id} source={source} messageId={messageId} />
-          ))}
-        </div>
+      {previewSources.length > 0 && (
+        <>
+          <h4 className="text-muted-foreground mb-2 text-xs font-semibold uppercase tracking-wide">
+            {t('chat.sources.cited')}
+          </h4>
+          {/* All source types share one responsive grid. Equal-width tracks keep
+              mixed document/media results aligned, while min(230px, 100%) prevents
+              horizontal overflow in mobile and embedded containers. */}
+          <div
+            data-cy="chat-cited-sources"
+            className="grid grid-cols-[repeat(auto-fit,minmax(min(230px,100%),1fr))] items-stretch gap-2"
+          >
+            {previewSources.map((source) => (
+              <SourceCard
+                key={source.id}
+                source={source}
+                messageId={messageId}
+              />
+            ))}
+          </div>
+        </>
       )}
 
-      {mediaSources.length > 0 && (
-        <div
-          className={twMerge(
-            'flex flex-wrap gap-2',
-            documentSources.length > 0 && 'mt-2'
-          )}
+      {otherSources.length > 0 && (
+        <details
+          data-cy="chat-other-sources"
+          className="mt-3 rounded-md border border-dashed px-3 py-2"
         >
-          {mediaSources.map((source) => (
-            <SourceCard key={source.id} source={source} messageId={messageId} />
-          ))}
-        </div>
+          <summary
+            data-cy="chat-other-sources-toggle"
+            className="text-muted-foreground cursor-pointer text-xs font-semibold uppercase tracking-wide outline-none focus-visible:ring-1"
+          >
+            {t('chat.sources.otherRetrieved', {
+              count: otherSources.length,
+            })}
+          </summary>
+          <div className="mt-2 grid grid-cols-[repeat(auto-fit,minmax(min(230px,100%),1fr))] items-stretch gap-2">
+            {otherSources.map((source) => (
+              <SourceCard
+                key={source.id}
+                source={source}
+                messageId={messageId}
+              />
+            ))}
+          </div>
+        </details>
       )}
     </section>
   )

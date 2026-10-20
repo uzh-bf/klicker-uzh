@@ -6,15 +6,21 @@
  * course editing/archiving, deletion, and course sharing permissions.
  */
 
-import { PermissionLevel } from '@klicker-uzh/prisma/client'
-import { type Page } from '@playwright/test'
+import { InvitationStatus, PermissionLevel } from '@klicker-uzh/prisma/client'
+import { type Page, type Response } from '@playwright/test'
+import { readFile } from 'node:fs/promises'
+import { getPrisma } from '../global-setup.js'
 import {
   chooseActivityAction,
   chooseCourseAction,
+  openActionMenuByTestId,
+  filterActivitiesByName,
   openCourseActionMenu,
 } from '../util/actions.js'
 import { cleanupTest } from '../util/cleanup.js'
 import {
+  COURSE_ID_TEST2,
+  COURSE_ID_TEST3,
   LECTURER_EMAIL,
   LECTURER_ID,
   LECTURER_IND_EMAIL,
@@ -51,11 +57,13 @@ import {
   createLiveQuiz as createLiveQuizActivity,
   createMicroLearning as createMicroLearningActivity,
   createPracticeQuiz as createPracticeQuizActivity,
+  selectOption,
 } from '../util/fixtures/activities.js'
 import {
   attachCourseCompetencyTree,
   createCourseDuplicationFailureFixture,
   createCourseRecord,
+  createParticipantInvitationRecord,
   createDeletedCourseActivities,
   deleteCourseWithActivitiesByName,
   deleteLiveQuizDirectPermission,
@@ -298,7 +306,8 @@ const PERM_EXECUTE = 'Execution'
 const PERM_ADMIN = 'Admin'
 const PERM_OWNER = 'Owner'
 const COURSE_DUPLICATION_RESPONSE_TIMEOUT = 120_000
-const COURSE_DUPLICATION_TEST_TIMEOUT = 180_000
+const COURSE_DUPLICATION_STATUS_TIMEOUT = 150_000
+const COURSE_DUPLICATION_TEST_TIMEOUT = 360_000
 const SHARING_COURSE_GROUP_DEADLINE = new Date(
   new Date().getFullYear(),
   new Date().getMonth() + 1,
@@ -312,6 +321,21 @@ function getNativeDateInputValue(date: Date) {
   const day = String(date.getDate()).padStart(2, '0')
 
   return `${year}-${month}-${day}`
+}
+
+function getCalendarDayDelta(laterDate: Date, earlierDate: Date) {
+  const laterDateUTC = Date.UTC(
+    laterDate.getFullYear(),
+    laterDate.getMonth(),
+    laterDate.getDate()
+  )
+  const earlierDateUTC = Date.UTC(
+    earlierDate.getFullYear(),
+    earlierDate.getMonth(),
+    earlierDate.getDate()
+  )
+
+  return Math.round((laterDateUTC - earlierDateUTC) / (24 * 60 * 60 * 1000))
 }
 
 const permissionTestIds: Record<string, string> = {
@@ -879,7 +903,9 @@ async function verifyCourseAccessLost(page: Page) {
 async function loginStudentPassword(page: Page, username: string) {
   await page.context().clearCookies()
   await page.goto('about:blank').catch(() => undefined)
-  await page.goto(URL_STUDENT_LOGIN, { waitUntil: 'commit', timeout: 300_000 })
+  await page.goto(process.env.URL_STUDENT_LOGIN ?? URL_STUDENT_LOGIN, {
+    timeout: 300_000,
+  })
   await page.evaluate(() => {
     try {
       localStorage.clear()
@@ -888,6 +914,8 @@ async function loginStudentPassword(page: Page, username: string) {
   })
   await page.getByTestId('username-field').fill(username)
   await page.getByTestId('password-field').fill(STUDENT_PASSWORD)
+  await expect(page.getByTestId('username-field')).toHaveValue(username)
+  await expect(page.getByTestId('password-field')).toHaveValue(STUDENT_PASSWORD)
   await expect(page.getByTestId('submit-login')).toBeEnabled()
   await page.getByTestId('submit-login').click()
   await expect(page.getByTestId('homepage')).toBeVisible()
@@ -952,11 +980,77 @@ async function confirmCourseDeletion(page: Page) {
 }
 
 async function openCourseInManage(page: Page, courseName: string) {
-  await page.getByTestId('courses').click()
-  await page.getByTestId(`course-list-button-${courseName}`).click()
-  await expect(page.getByTestId('tab-liveQuizzes')).toBeVisible({
-    timeout: 30_000,
-  })
+  const coursesNavigation = page.getByTestId('courses')
+  if (await coursesNavigation.isVisible({ timeout: 5000 }).catch(() => false)) {
+    await coursesNavigation.click()
+  } else {
+    await page.getByRole('menuitem', { name: 'Courses' }).click()
+  }
+  const courseButton = page.getByTestId(`course-list-button-${courseName}`)
+  await expect(courseButton).toBeVisible({ timeout: 30_000 })
+  await courseButton.click()
+  const liveQuizzesTab = page.getByTestId('tab-liveQuizzes')
+  if (await liveQuizzesTab.isVisible({ timeout: 5000 }).catch(() => false)) {
+    await expect(liveQuizzesTab).toBeVisible({ timeout: 30_000 })
+  } else {
+    await expect(page.getByRole('tab', { name: 'Live Quizzes' })).toBeVisible({
+      timeout: 30_000,
+    })
+  }
+}
+
+async function chooseCourseDuplicationAction(page: Page) {
+  const duplicateAction = page.getByTestId('course-duplicate-button')
+  if (await duplicateAction.isVisible({ timeout: 5000 }).catch(() => false)) {
+    await duplicateAction.click()
+    return
+  }
+
+  await page.getByRole('button', { name: 'More course actions' }).click()
+  await page.getByRole('menuitem', { name: 'Duplicate course' }).click()
+}
+
+async function selectCourseDuplicationStartDate(
+  page: Page,
+  {
+    expectInitialEmpty = false,
+    durationDays,
+  }: { expectInitialEmpty?: boolean; durationDays?: number } = {}
+): Promise<Date | undefined> {
+  const startDateInput = page.getByTestId('course-start-date')
+  const endDateInput = page.getByTestId('course-end-date')
+
+  await expect(endDateInput).toBeDisabled()
+
+  if (expectInitialEmpty) {
+    await expect(startDateInput).toHaveValue('')
+    await expect(endDateInput).toHaveValue('')
+    await expect(page.getByTestId('manipulate-course-submit')).toBeDisabled()
+  } else if (await startDateInput.inputValue()) {
+    return
+  }
+
+  const startDate = new Date()
+  startDate.setDate(startDate.getDate() + 1)
+  const startDateValue = getNativeDateInputValue(startDate)
+  await startDateInput.fill(startDateValue)
+  await expect(startDateInput).toHaveValue(startDateValue)
+  await expect(endDateInput).not.toHaveValue('')
+
+  if (durationDays !== undefined) {
+    const expectedEndDate = new Date(startDate)
+    expectedEndDate.setDate(expectedEndDate.getDate() + durationDays)
+    await expect(endDateInput).toHaveValue(
+      getNativeDateInputValue(expectedEndDate)
+    )
+  }
+
+  return startDate
+}
+
+function courseDuplicationStatusTrigger(page: Page) {
+  const trigger = page.getByTestId('course-duplication-status-trigger')
+  return trigger.or(page.getByRole('button', { name: /Course duplications/ }))
 }
 
 async function submitCourseDuplication(page: Page, copyName?: string) {
@@ -967,41 +1061,152 @@ async function submitCourseDuplication(page: Page, copyName?: string) {
     await page.getByTestId('course-display-name').fill(copyName)
   }
 
-  await submitCourseFormAndWaitForCreateCourse(page)
+  await submitCourseFormAndWaitForDuplication(page)
 }
 
-async function submitCourseFormAndWaitForCreateCourse(
+async function submitCourseFormAndWaitForDuplication(
   page: Page,
   { expectSuccess = true }: { expectSuccess?: boolean } = {}
 ) {
-  const createCourseResponse = page.waitForResponse(
+  await selectCourseDuplicationStartDate(page)
+  const courseNameInput = page.getByTestId('course-name')
+  const targetCourseName = await courseNameInput.inputValue()
+  let jobId: string | undefined
+  let terminalStatus: string | undefined
+  const statusesById = new Map<string, string>()
+  let resolveStatus: (() => void) | undefined
+  let rejectStatus: ((error: Error) => void) | undefined
+  const statusPromise = new Promise<void>((resolve, reject) => {
+    resolveStatus = resolve
+    rejectStatus = reject
+  })
+
+  const statusResponseListener = (statusResponse: Response) => {
+    const request = statusResponse.request()
+    const postData = request.postData() ?? ''
+    const operationName = new URL(statusResponse.url()).searchParams.get(
+      'operationName'
+    )
+
+    if (
+      (!postData.includes('GetCourseDuplicationStatuses') &&
+        operationName !== 'GetCourseDuplicationStatuses') ||
+      !statusResponse.ok()
+    ) {
+      return
+    }
+
+    void (async () => {
+      const statusBody = (await statusResponse.json().catch(() => null)) as {
+        data?: {
+          courseDuplicationStatuses?: Array<{
+            id?: unknown
+            status?: unknown
+          }>
+        }
+      } | null
+
+      const statuses = statusBody?.data?.courseDuplicationStatuses
+      if (!Array.isArray(statuses)) return
+
+      for (const status of statuses) {
+        if (
+          typeof status.id === 'string' &&
+          typeof status.status === 'string'
+        ) {
+          statusesById.set(status.id, status.status)
+        }
+      }
+
+      if (!jobId) return
+
+      const status = statusesById.get(jobId)
+      if (status === 'COMPLETED' || status === 'FAILED') {
+        terminalStatus = status
+        resolveStatus?.()
+      }
+    })().catch(() => undefined)
+  }
+
+  page.on('response', statusResponseListener)
+
+  const startCourseDuplicationResponse = page.waitForResponse(
     (response) => {
       const request = response.request()
       const postData = request.postData() ?? ''
 
       return (
         request.method() === 'POST' &&
-        postData.includes('CreateCourse') &&
+        postData.includes('StartCourseDuplication') &&
         response.status() < 500
       )
     },
     { timeout: COURSE_DUPLICATION_RESPONSE_TIMEOUT }
   )
 
-  await page.getByTestId('manipulate-course-submit').click()
-  const response = await createCourseResponse
-  const body = (await response.json().catch(() => null)) as {
-    errors?: unknown[]
-  } | null
+  try {
+    await page.getByTestId('manipulate-course-submit').click()
+    const response = await startCourseDuplicationResponse
+    const body = (await response.json().catch(() => null)) as {
+      errors?: unknown[]
+      data?: {
+        startCourseDuplication?: {
+          id?: unknown
+        } | null
+      }
+    } | null
 
-  if (expectSuccess) {
     expect(response.ok()).toBeTruthy()
     expect(body?.errors ?? []).toEqual([])
-    await expect(page.getByTestId('course-name')).not.toBeVisible({
-      timeout: 30_000,
-    })
-  } else {
-    expect(body?.errors?.length ?? 0).toBeGreaterThan(0)
+    const parsedJobId = body?.data?.startCourseDuplication?.id
+    expect(parsedJobId).toEqual(expect.any(String))
+    if (typeof parsedJobId !== 'string') {
+      throw new Error('Course duplication response did not contain a job ID')
+    }
+    jobId = parsedJobId
+    const duplicationJobId = parsedJobId
+
+    await expect(courseNameInput).not.toBeVisible({ timeout: 30_000 })
+
+    const timeout = setTimeout(() => {
+      rejectStatus?.(
+        new Error(
+          `Course duplication job ${jobId} did not reach a terminal status within ${COURSE_DUPLICATION_STATUS_TIMEOUT}ms`
+        )
+      )
+    }, COURSE_DUPLICATION_STATUS_TIMEOUT)
+
+    try {
+      const knownStatus = statusesById.get(duplicationJobId)
+      if (knownStatus === 'COMPLETED' || knownStatus === 'FAILED') {
+        terminalStatus = knownStatus
+      } else {
+        await statusPromise
+        terminalStatus = statusesById.get(duplicationJobId)
+      }
+    } finally {
+      clearTimeout(timeout)
+    }
+
+    expect(terminalStatus).toBe(expectSuccess ? 'COMPLETED' : 'FAILED')
+
+    if (expectSuccess) {
+      await expect(
+        page.getByText(
+          messages.manage.courseList.courseDuplicationSucceeded.replace(
+            '{name}',
+            targetCourseName
+          )
+        )
+      ).toBeVisible({ timeout: 30_000 })
+      await expect(
+        page.getByRole('button', {
+          name: messages.manage.courseList.courseDuplicationOpenCourse,
+        })
+      ).toBeVisible({ timeout: 30_000 })
+    }
+  } finally {
+    page.off('response', statusResponseListener)
   }
 }
 
@@ -1011,8 +1216,9 @@ async function expectCourseCardPermission(
   permissionLevel: string
 ) {
   const courseCard = page.getByTestId(`course-list-button-${courseName}`)
+  await expect(courseCard).toBeVisible()
   await expect(
-    courseCard.getByTestId(`permission-level-${courseName}-${permissionLevel}`)
+    page.getByTestId(`permission-level-${courseName}-${permissionLevel}`)
   ).toBeVisible()
 }
 
@@ -1022,6 +1228,15 @@ async function expectActivityOverviewPermission(
   activityName: string,
   permissionLevel: string
 ) {
+  if (
+    await page
+      .getByTestId('activities-search-input')
+      .isVisible()
+      .catch(() => false)
+  ) {
+    await filterActivitiesByName(page, activityName)
+  }
+
   const activityRow = page.getByTestId(`activity-${type}-${activityName}`)
   await expect(activityRow).toBeVisible()
   await expect(
@@ -1130,7 +1345,17 @@ async function expectDuplicatedCourseSummary({
   return summary!
 }
 
-async function verifyCourseDuplicationModalUi(page: Page) {
+async function verifyCourseDuplicationModalUi(
+  page: Page,
+  {
+    durationDays,
+    groupDeadlineOffsetDays,
+  }: { durationDays?: number; groupDeadlineOffsetDays?: number } = {}
+) {
+  const selectedStartDate = await selectCourseDuplicationStartDate(page, {
+    durationDays,
+    expectInitialEmpty: true,
+  })
   await expect(page.getByTestId('course-name')).toHaveValue(
     `${SHARING.course} Copy`
   )
@@ -1149,8 +1374,18 @@ async function verifyCourseDuplicationModalUi(page: Page) {
   )
   const groupDeadlineInput = page.getByTestId('group-creation-deadline')
   await expect(groupDeadlineInput).toHaveAttribute('type', 'date')
+  if (selectedStartDate && groupDeadlineOffsetDays !== undefined) {
+    const expectedGroupDeadline = new Date(selectedStartDate)
+    expectedGroupDeadline.setDate(
+      expectedGroupDeadline.getDate() + groupDeadlineOffsetDays
+    )
+    await expect(groupDeadlineInput).toHaveValue(
+      getNativeDateInputValue(expectedGroupDeadline)
+    )
+  }
   await groupDeadlineInput.fill(adjustedGroupDeadlineValue)
   await expect(groupDeadlineInput).toHaveValue(adjustedGroupDeadlineValue)
+  await expect(page.getByTestId('manipulate-course-submit')).toBeEnabled()
 
   for (const testId of [
     'course-live-quizzes',
@@ -1563,9 +1798,7 @@ async function verifyCopiedCoursePermissionBadges({
   await page.getByTestId('courses').click()
   const courseCard = page.getByTestId(`course-list-button-${courseName}`)
   await expect(
-    courseCard.getByTestId(
-      `permission-level-${courseName}-${coursePermissionLevel}`
-    )
+    page.getByTestId(`permission-level-${courseName}-${coursePermissionLevel}`)
   ).toBeVisible()
   await courseCard.click()
   await page.getByTestId('tab-liveQuizzes').click()
@@ -1849,8 +2082,18 @@ test.describe('Part 2: Randomized group creation', () => {
       await openStudentCourse(page, COURSE2.displayName)
       await openStudentGroupTab(page)
       await page.getByTestId('student-course-create-group').click()
-      await page.getByTestId('enter-random-group-pool').click()
-      await expect(page.getByTestId('leave-random-group-pool')).toBeVisible()
+      const enterPool = page.getByTestId('enter-random-group-pool')
+      const leavePool = page.getByTestId('leave-random-group-pool')
+      // A previous attempt may have enrolled this student before failing later.
+      // Leave first so every attempt still exercises entering the pool.
+      if (testInfo.retry > 0) {
+        await expect(enterPool.or(leavePool)).toBeVisible()
+        if (await leavePool.isVisible()) {
+          await leavePool.click()
+        }
+      }
+      await enterPool.click()
+      await expect(leavePool).toBeVisible()
     }
   })
 
@@ -1949,6 +2192,60 @@ test.describe('Part 2: Randomized group creation', () => {
 test.describe('Part 3: Course overview, editing, and archiving', () => {
   test.beforeEach(async ({ loginLecturer }) => {
     await loginLecturer()
+  })
+
+  test('Course navigation, missing metadata, and empty tabs remain usable by keyboard', async ({
+    page,
+  }) => {
+    const name = `course-clarity-${crypto.randomUUID()}`
+    const course = await createCourseRecord({
+      name,
+      displayName: name,
+      startDate: new Date('2020-01-01'),
+      endDate: new Date('2099-01-01'),
+    })
+    const prisma = await getPrisma()
+    try {
+      await page.getByTestId('courses').click()
+      const link = page.getByTestId(`course-list-button-${name}`)
+      await expect(link).toHaveAttribute('href', `/courses/${course.id}`)
+      await openActionMenuByTestId(page, `course-list-actions-${name}`)
+      await page.keyboard.press('Escape')
+      await expect(
+        page.getByTestId(`course-list-actions-${name}`)
+      ).toBeFocused()
+      await link.focus()
+      await page.keyboard.press('Enter')
+      const email = page.getByTestId('course-notification-email-value')
+      const language = page.getByTestId('course-language')
+      await expect(email).toBeVisible()
+      await expect(email).not.toBeEmpty()
+      await expect(language).toBeVisible()
+      const emailBox = await email.boundingBox()
+      const languageBox = await language.boundingBox()
+      expect(emailBox).not.toBeNull()
+      expect(languageBox).not.toBeNull()
+      expect(Math.abs(emailBox!.x - languageBox!.x)).toBeLessThan(2)
+      expect(languageBox!.y).toBeGreaterThan(emailBox!.y)
+
+      for (const [tab, action] of [
+        ['liveQuizzes', 'live-quiz'],
+        ['practiceQuizzes', 'practice-quiz'],
+        ['microLearnings', 'microlearning'],
+        ['groupActivities', 'group-activity'],
+      ]) {
+        await page.getByTestId(`tab-${tab}`).click()
+        const libraryLink = page.getByTestId(`course-empty-${action}-library`)
+        await expect(libraryLink).toHaveAttribute('href', '/')
+        await libraryLink.focus()
+        await page.keyboard.press('Enter')
+        await expect(page.getByTestId('create-question')).toBeVisible()
+        await page.getByTestId('courses').click()
+        await page.getByTestId(`course-list-button-${name}`).click()
+      }
+    } finally {
+      await prisma.course.delete({ where: { id: course.id } })
+    }
   })
 
   test('Uses a contextual primary action and an overflow menu for course actions', async ({
@@ -2078,11 +2375,21 @@ test.describe('Part 3: Course overview, editing, and archiving', () => {
     await page.getByTestId('courses').click()
 
     // Running course cannot be archived
+    await openActionMenuByTestId(
+      page,
+      `course-list-actions-${RUNNING_COURSE.name}`
+    )
     await expect(
       page.getByTestId(`archive-course-${RUNNING_COURSE.name}`)
     ).toBeDisabled()
 
+    await page.keyboard.press('Escape')
+
     // Past course can be archived
+    await openActionMenuByTestId(
+      page,
+      `course-list-actions-${PAST_COURSE.name}`
+    )
     await expect(
       page.getByTestId(`archive-course-${PAST_COURSE.name}`)
     ).not.toBeDisabled()
@@ -2090,6 +2397,10 @@ test.describe('Part 3: Course overview, editing, and archiving', () => {
     // Cancel then confirm archiving
     await page.getByTestId(`archive-course-${PAST_COURSE.name}`).click()
     await page.getByTestId('course-archive-modal-cancel').click()
+    await openActionMenuByTestId(
+      page,
+      `course-list-actions-${PAST_COURSE.name}`
+    )
     await page.getByTestId(`archive-course-${PAST_COURSE.name}`).click()
     await page.getByTestId('course-archive-modal-confirm').click()
     await expect(
@@ -2101,6 +2412,10 @@ test.describe('Part 3: Course overview, editing, and archiving', () => {
     await expect(
       page.getByTestId(`course-list-button-${PAST_COURSE.name}`)
     ).toBeVisible()
+    await openActionMenuByTestId(
+      page,
+      `course-list-actions-${PAST_COURSE.name}`
+    )
     await page.getByTestId(`archive-course-${PAST_COURSE.name}`).click()
     await page.getByTestId('course-archive-modal-confirm').click()
     await page.getByTestId('toggle-course-archive').click()
@@ -2198,9 +2513,19 @@ test.describe('Part 4: Course deletion', () => {
       page.getByTestId(`course-list-button-${DELETION.courseName}`)
     ).toBeVisible()
 
+    await openActionMenuByTestId(
+      page,
+      `course-list-actions-${DELETION.courseName}`
+    )
     await page.getByTestId(`delete-course-${DELETION.courseName}`).click()
     await page.getByTestId('course-deletion-modal-cancel').click()
+    await expect(page.getByTestId('course-deletion-modal-cancel')).toBeHidden()
 
+    await openActionMenuByTestId(
+      page,
+      `course-list-actions-${DELETION.courseName}`,
+      `delete-course-${DELETION.courseName}`
+    )
     await page.getByTestId(`delete-course-${DELETION.courseName}`).click()
 
     // No participations — participation confirm should not exist
@@ -2208,10 +2533,20 @@ test.describe('Part 4: Course deletion', () => {
       page.getByTestId('course-deletion-participations-confirm')
     ).not.toBeVisible()
 
-    // Confirm LQ, PQ, ML deletions
+    // Changing the draft-deletion option invalidates the previous LQ confirmation
     await expect(
       page.getByTestId('course-deletion-live-quiz-confirm')
     ).toBeVisible()
+    await page.getByTestId('course-deletion-live-quiz-confirm').click()
+    await expect(
+      page.getByTestId('course-deletion-delete-draft-activities')
+    ).toBeVisible()
+    await page.getByTestId('course-deletion-delete-draft-activities').click()
+    await expect(
+      page.getByTestId('course-deletion-live-quiz-confirm')
+    ).toBeVisible()
+
+    // Confirm LQ, PQ, and ML deletion after opting into draft cleanup
     await page.getByTestId('course-deletion-live-quiz-confirm').click()
     await expect(
       page.getByTestId('course-deletion-modal-confirm')
@@ -2247,24 +2582,20 @@ test.describe('Part 4: Course deletion', () => {
       page.getByTestId(`course-list-button-${DELETION.courseName}`)
     ).not.toBeVisible()
 
-    // Verify live quiz still exists (unassigned)
+    // Verify the linked draft live quiz was deleted instead of disconnected
     await page.getByTestId('activities').click()
     await expect(
       page.getByTestId(`activity-LIVE_QUIZ-${DELETION.lqName}`)
-    ).toBeVisible({ timeout: 30_000 })
+    ).not.toBeVisible({ timeout: 30_000 })
   })
 
-  test('Cleanup: Delete the live quiz that is not assigned to the course anymore', async ({
+  test('Verify the draft live quiz was deleted with the course', async ({
     page,
   }) => {
     await page.getByTestId('activities').click()
     await expect(
       page.getByTestId(`activity-LIVE_QUIZ-${DELETION.lqName}`)
-    ).toBeVisible({ timeout: 30_000 })
-    await page.getByTestId(`actions-LIVE_QUIZ-${DELETION.lqName}`).click()
-    await page.getByTestId(`delete-live-quiz-${DELETION.lqName}`).click()
-    await page.getByTestId('confirmation-modal-confirm').click()
-    await expect(page.getByText(DELETION.lqName)).not.toBeVisible()
+    ).not.toBeVisible({ timeout: 30_000 })
   })
 
   test('Cleanup: Delete all created courses and created questions', async ({
@@ -2273,11 +2604,13 @@ test.describe('Part 4: Course deletion', () => {
     await page.getByTestId('courses').click()
 
     // Delete non-gamified course (renamed in Part 3)
+    await openActionMenuByTestId(page, `course-list-actions-${COURSE1.nameNew}`)
     await page.getByTestId(`delete-course-${COURSE1.nameNew}`).click()
     await page.getByTestId('course-deletion-modal-confirm').click()
     await expect(page.getByText(COURSE1.nameNew)).not.toBeVisible()
 
     // Delete gamified course (has participations and groups)
+    await openActionMenuByTestId(page, `course-list-actions-${COURSE2.name}`)
     await page.getByTestId(`delete-course-${COURSE2.name}`).click()
     const participationsConfirm = page.getByTestId(
       'course-deletion-participations-confirm'
@@ -2310,6 +2643,253 @@ test.describe('Part 4: Course deletion', () => {
     await expect(
       page.getByTestId(`element-item-${DELETION.qTitle}`)
     ).not.toBeVisible()
+  })
+})
+
+// ===========================================================================
+// Part 4b: Assessment participant invitations
+// ===========================================================================
+test.describe('Part 4b: Assessment participant invitations', () => {
+  test('Imports participant invitations and deletes pending invitations', async ({
+    loginLecturer,
+    page,
+  }) => {
+    const courseName = 'Assessment Participant Invitation Course'
+    const acceptedEmail = 'accepted-assessment-invitation@example.org'
+    const pendingEmail = 'pending-assessment-invitation@example.org'
+    const startDate = new Date()
+    const endDate = new Date(startDate.getTime() + 24 * 60 * 60 * 1000)
+
+    await deleteCourseWithActivitiesByName({
+      courseName,
+      ownerId: LECTURER_ID,
+    })
+    const course = await createCourseRecord({
+      name: courseName,
+      displayName: courseName,
+      notificationEmail: LECTURER_EMAIL,
+      startDate,
+      endDate,
+      isAssessmentEnabled: true,
+      isGamificationEnabled: true,
+      isGroupCreationEnabled: false,
+    })
+    await createParticipantInvitationRecord({
+      courseId: course.id,
+      email: acceptedEmail,
+      matriculationNumber: '11-111-111',
+      status: InvitationStatus.ACCEPTED,
+      participantUsername: STUDENT_USERNAME,
+    })
+
+    try {
+      await loginLecturer()
+      await openCourseInManage(page, courseName)
+      await chooseCourseAction(
+        page,
+        'assessment-course-participant-invitations'
+      )
+
+      await expect(
+        page.getByRole('heading', {
+          name: messages.manage.assessment.participantInvitations,
+          level: 1,
+        })
+      ).toBeVisible()
+      await expect(
+        page.getByTestId('assessment-invitations-affiliation-warning')
+      ).toContainText(messages.manage.assessment.invitationAffiliationWarning)
+
+      const downloadPromise = page.waitForEvent('download')
+      await page.getByTestId('assessment-invitations-download-template').click()
+      const download = await downloadPromise
+      expect(download.suggestedFilename()).toBe(
+        'assessment-participant-invitations-template.csv'
+      )
+      const downloadPath = await download.path()
+      if (!downloadPath) throw new Error('CSV template download has no path')
+      expect(await readFile(downloadPath, 'utf8')).toBe(
+        'email,matriculationNumber\r\n'
+      )
+
+      const acceptedRow = page.getByRole('row').filter({
+        hasText: acceptedEmail,
+      })
+      await expect(acceptedRow).toContainText(
+        messages.manage.assessment.invitationStatusAccepted
+      )
+      await expect(acceptedRow.getByRole('button')).toHaveCount(0)
+
+      const csvInput = page.getByTestId('assessment-invitations-csv-input')
+      await csvInput.setInputFiles({
+        name: 'invalid-invitations.csv',
+        mimeType: 'text/csv',
+        buffer: Buffer.from('email\ninvalid@example.org'),
+      })
+      await expect(
+        page.getByTestId('assessment-invitations-csv-error')
+      ).toContainText(messages.manage.assessment.invitationCsvMissingHeaders)
+
+      await csvInput.setInputFiles({
+        name: 'duplicate-headers.csv',
+        mimeType: 'text/csv',
+        buffer: Buffer.from(
+          'email,e-mail,matriculationNumber\nfirst@example.org,second@example.org,12-345-678'
+        ),
+      })
+      await expect(
+        page.getByTestId('assessment-invitations-csv-error')
+      ).toContainText(messages.manage.assessment.invitationCsvInvalidHeaders)
+
+      await csvInput.setInputFiles({
+        name: 'uneven-rows.csv',
+        mimeType: 'text/csv',
+        buffer: Buffer.from(
+          'email,matriculationNumber\ninvalid@example.org,12-345-678,unexpected'
+        ),
+      })
+      await expect(
+        page.getByTestId('assessment-invitations-csv-error')
+      ).toContainText(messages.manage.assessment.invitationCsvInvalidRows)
+
+      await csvInput.setInputFiles({
+        name: 'malformed-quotes.csv',
+        mimeType: 'text/csv',
+        buffer: Buffer.from(
+          'email,matriculationNumber\n"invalid@example.org"unexpected,12-345-678'
+        ),
+      })
+      await expect(
+        page.getByTestId('assessment-invitations-csv-error')
+      ).toContainText(messages.manage.assessment.invitationCsvParseError)
+
+      await csvInput.setInputFiles({
+        name: 'assessment-invitations.csv',
+        mimeType: 'text/csv',
+        buffer: Buffer.from(
+          `\uFEFFemail;matriculationNumber;note\n"${pendingEmail}";12-345-678;"quoted ""note"""\nnot-an-email;98-765-432;invalid`
+        ),
+      })
+      await expect(page.getByText('2 rows ready to import')).toBeVisible()
+      await page.getByTestId('assessment-invitations-import').click()
+
+      const importResult = page.getByTestId(
+        'assessment-invitations-import-result'
+      )
+      await expect(importResult).toContainText('1 pending')
+      await expect(importResult).toContainText('1 error')
+      await expect(importResult).toContainText(
+        messages.manage.assessment.invitationImportInvalidEmail
+      )
+      await expect(importResult).toContainText('not-an-email')
+
+      const pendingRow = page.getByRole('row').filter({ hasText: pendingEmail })
+      await expect(pendingRow).toContainText('12-345-678')
+      await expect(pendingRow).toContainText(
+        messages.manage.assessment.invitationStatusPending
+      )
+      await pendingRow.getByRole('button').click()
+      await expect(page.getByRole('dialog')).toContainText(pendingEmail)
+      await page.getByTestId('assessment-invitation-confirm-delete').click()
+      await expect(pendingRow).not.toBeAttached()
+      await expect(acceptedRow).toBeVisible()
+    } finally {
+      await deleteCourseWithActivitiesByName({
+        courseName,
+        ownerId: LECTURER_ID,
+      })
+    }
+  })
+
+  test('Paginates invitation history and rejects oversized CSV imports', async ({
+    loginLecturer,
+    page,
+  }) => {
+    const courseName = 'Assessment Participant Invitation Capacity Course'
+    const startDate = new Date()
+    const endDate = new Date(startDate.getTime() + 24 * 60 * 60 * 1000)
+
+    await deleteCourseWithActivitiesByName({
+      courseName,
+      ownerId: LECTURER_ID,
+    })
+    const course = await createCourseRecord({
+      name: courseName,
+      displayName: courseName,
+      notificationEmail: LECTURER_EMAIL,
+      startDate,
+      endDate,
+      isAssessmentEnabled: true,
+      isGamificationEnabled: true,
+      isGroupCreationEnabled: false,
+    })
+
+    for (let index = 0; index < 51; index++) {
+      await createParticipantInvitationRecord({
+        courseId: course.id,
+        email: `capacity-${index}@example.org`,
+        matriculationNumber: `${String(index).padStart(2, '0')}-123-456`,
+      })
+    }
+
+    try {
+      await loginLecturer()
+      await openCourseInManage(page, courseName)
+      await chooseCourseAction(
+        page,
+        'assessment-course-participant-invitations'
+      )
+
+      await expect(page.getByText('51 invitations')).toBeVisible()
+      await expect(page.getByTestId('pagination-page-size')).toContainText(
+        '50 entries per page'
+      )
+      await expect(page.getByTestId('pagination-page-size-all')).toHaveCount(0)
+
+      await selectOption(page, '[data-cy="pagination-page-size"]', '10')
+      await expect(page.getByTestId('pagination-page-2')).toBeVisible()
+      await page.getByTestId('pagination-page-2').click()
+      await expect(
+        page.getByText(/Showing 11 to 20 of 51 results/)
+      ).toBeVisible()
+      await expect(page.getByRole('row')).toHaveCount(11)
+
+      const csvInput = page.getByTestId('assessment-invitations-csv-input')
+      await csvInput.setInputFiles({
+        name: 'oversized-invitations.csv',
+        mimeType: 'text/csv',
+        buffer: Buffer.alloc(1024 * 1024 + 1, 'a'),
+      })
+      await expect(
+        page.getByTestId('assessment-invitations-csv-error')
+      ).toContainText(messages.manage.assessment.invitationCsvTooLarge)
+
+      const rows = Array.from(
+        { length: 201 },
+        (_, index) => `capacity-import-${index}@example.org,${index}-123-456`
+      ).join('\n')
+      await csvInput.setInputFiles({
+        name: 'too-many-invitations.csv',
+        mimeType: 'text/csv',
+        buffer: Buffer.from(`email,matriculationNumber\n${rows}`),
+      })
+      await expect(
+        page.getByTestId('assessment-invitations-csv-error')
+      ).toContainText(
+        messages.manage.assessment.invitationCsvTooManyRows.replace(
+          '{count}',
+          '200'
+        )
+      )
+      await expect(
+        page.getByTestId('assessment-invitations-import')
+      ).not.toBeVisible()
+    } finally {
+      await deleteCourseWithActivitiesByName({
+        courseName,
+        ownerId: LECTURER_ID,
+      })
+    }
   })
 })
 
@@ -2539,12 +3119,27 @@ test.describe('Part 5: Course Sharing - Individual permissions', () => {
       ownerId: LECTURER_ID,
       treeName: competencyTreeName,
     })
+    const sourceCourseSummary = await getCourseDuplicationSummary({
+      courseName: SHARING.course,
+      ownerId: LECTURER_ID,
+    })
+    expect(sourceCourseSummary).not.toBeNull()
 
     await loginLecturer()
     await openCourseInManage(page, SHARING.course)
     await chooseCourseAction(page, 'course-duplicate-button')
-    const adjustedGroupDeadline = await verifyCourseDuplicationModalUi(page)
-    await submitCourseFormAndWaitForCreateCourse(page)
+    const adjustedGroupDeadline = await verifyCourseDuplicationModalUi(page, {
+      durationDays: getCalendarDayDelta(
+        sourceCourseSummary!.endDate,
+        sourceCourseSummary!.startDate
+      ),
+      groupDeadlineOffsetDays: getCalendarDayDelta(
+        sourceCourseSummary!.groupDeadlineDate,
+        sourceCourseSummary!.startDate
+      ),
+    })
+    const sourceCourseUrl = page.url()
+    await submitCourseFormAndWaitForDuplication(page)
 
     await expect(
       page.getByText(
@@ -2554,6 +3149,18 @@ test.describe('Part 5: Course Sharing - Individual permissions', () => {
         )
       )
     ).toBeVisible()
+    await expect(page).toHaveURL(sourceCourseUrl)
+    const successToast = page
+      .getByLabel(/Notifications/)
+      .getByRole('listitem')
+      .filter({ hasText: copyName })
+    await expect(successToast).toBeVisible()
+    const openCourseAction = successToast.getByRole('button', {
+      name: messages.manage.courseList.courseDuplicationOpenCourse,
+    })
+    await expect(openCourseAction).toBeVisible()
+    await openCourseAction.focus()
+    await openCourseAction.press('Enter')
     await expect(page).toHaveURL(/\/courses\/[0-9a-f-]{36}/, {
       timeout: 30_000,
     })
@@ -2668,6 +3275,555 @@ test.describe('Part 5: Course Sharing - Individual permissions', () => {
     )
   })
 
+  test('Keeps concurrent duplication status responses paired with their request IDs', async ({
+    loginLecturer,
+    page,
+  }) => {
+    test.setTimeout(180_000)
+
+    const firstJobId = '11111111-1111-4111-8111-111111111111'
+    const secondJobId = '22222222-2222-4222-8222-222222222222'
+    const persistedOperations = JSON.parse(
+      await readFile(
+        new URL(
+          '../../packages/graphql/src/public/client.json',
+          import.meta.url
+        ),
+        'utf8'
+      )
+    ) as Record<string, string>
+    const startHash = persistedOperations.StartCourseDuplication
+    const statusHash = persistedOperations.GetCourseDuplicationStatuses
+    await page.addInitScript(
+      ({ firstJobId, secondJobId, startHash, statusHash }) => {
+        let startCount = 0
+        const makeJob = (
+          id: string,
+          sourceCourseId: string,
+          targetCourseName: string
+        ) => ({
+          id,
+          status: 'PENDING',
+          sourceCourseId,
+          sourceCourseName: 'Synthetic source course',
+          targetCourseName,
+          createdCourseId: null,
+          errorType: null,
+          errorMessage: null,
+          createdAt: new Date().toISOString(),
+          updatedAt: new Date().toISOString(),
+        })
+        const originalFetch = window.fetch.bind(window)
+        window.fetch = async (input, init) => {
+          let operationName: string | undefined
+          let variables:
+            | { ids?: string[]; sourceCourseId?: string; name?: string }
+            | undefined
+          if (typeof input === 'string' || input instanceof URL) {
+            try {
+              const url = new URL(String(input), window.location.origin)
+              const extensions = url.searchParams.get('extensions') || ''
+              const marker = String.fromCharCode(
+                34,
+                115,
+                104,
+                97,
+                50,
+                53,
+                54,
+                72,
+                97,
+                115,
+                104,
+                34,
+                58,
+                34
+              )
+              const idx = extensions.indexOf(marker)
+              let h = ''
+              if (idx >= 0) {
+                const s = idx + marker.length
+                const e2 = extensions.indexOf(String.fromCharCode(34), s)
+                if (e2 > s) h = extensions.slice(s, e2)
+              }
+              operationName = url.searchParams.get('operationName') || undefined
+              const rawVariables = url.searchParams.get('variables')
+              if (rawVariables) {
+                try {
+                  variables = JSON.parse(rawVariables)
+                } catch {
+                  // malformed variables; treat as a non-matching request
+                }
+              }
+              if (h === statusHash)
+                operationName = 'GetCourseDuplicationStatuses'
+              else if (h === startHash) operationName = 'StartCourseDuplication'
+            } catch {
+              // relative or malformed URL; fall through to real fetch
+            }
+          }
+          if (!operationName && typeof init?.body === 'string') {
+            try {
+              const body = JSON.parse(init.body) as {
+                operationName?: string
+                variables?: typeof variables
+              }
+              operationName = body.operationName
+              variables = body.variables
+            } catch {
+              // not a JSON body; fall through to real fetch
+            }
+          }
+          if (operationName === 'StartCourseDuplication') {
+            const jobId = startCount === 0 ? firstJobId : secondJobId
+            startCount += 1
+            return new window.Response(
+              JSON.stringify({
+                data: {
+                  startCourseDuplication: makeJob(
+                    jobId,
+                    String(variables?.sourceCourseId),
+                    String(variables?.name)
+                  ),
+                },
+              }),
+              { headers: { 'Content-Type': 'application/json' } }
+            )
+          }
+          if (operationName === 'GetCourseDuplicationStatuses') {
+            const requestedIds = variables?.ids ?? []
+            if (requestedIds.length === 1 && requestedIds[0] === firstJobId) {
+              ;(
+                window as unknown as {
+                  __firstDuplicationStatusObserved?: boolean
+                }
+              ).__firstDuplicationStatusObserved = true
+              await new Promise<void>((resolve) => {
+                window.addEventListener(
+                  'course-duplication-release',
+                  () => resolve(),
+                  { once: true }
+                )
+              })
+            }
+            const statuses = requestedIds.includes(firstJobId)
+              ? [makeJob(firstJobId, 'source-a', 'Copy A')]
+              : []
+            return new window.Response(
+              JSON.stringify({ data: { courseDuplicationStatuses: statuses } }),
+              { headers: { 'Content-Type': 'application/json' } }
+            )
+          }
+          return originalFetch(input, init)
+        }
+      },
+      { firstJobId, secondJobId, startHash, statusHash }
+    )
+
+    await loginLecturer()
+    await page.getByRole('menuitem', { name: 'Courses' }).click()
+    await openCourseInManage(page, RUNNING_COURSE.name)
+    await chooseCourseDuplicationAction(page)
+    // Explicitly satisfy the shared course form: defaults derived from the
+    // user profile can arrive late under the fetch-level mock and leave the
+    // submit button disabled through no fault of the duplication flow.
+    await page
+      .getByRole('textbox', { name: 'Course name' })
+      .fill(`${RUNNING_COURSE.name} Copy A`)
+    await page
+      .getByRole('textbox', { name: 'Course display name' })
+      .fill(`${RUNNING_COURSE.name} Copy A`)
+    await page
+      .getByRole('textbox', { name: 'finance@uzh.ch' })
+      .fill('lecturer@df.uzh.ch')
+    await selectCourseDuplicationStartDate(page)
+    // The seeded source course carries a group-creation deadline older than
+    // its start date; adjust it into the copied date range so the shared
+    // form passes validation.
+    await page
+      .getByRole('textbox', { name: 'Group Creation Deadline' })
+      .fill(getNativeDateInputValue(new Date('2035-06-30T12:00')))
+    await page.getByRole('button', { name: 'Duplicate' }).click()
+    await page.waitForFunction(
+      () =>
+        Boolean(
+          (
+            window as unknown as {
+              __firstDuplicationStatusObserved?: boolean
+            }
+          ).__firstDuplicationStatusObserved
+        ),
+      undefined,
+      { timeout: 30_000 }
+    )
+    await page.getByRole('menuitem', { name: 'Courses' }).click()
+    await openCourseInManage(page, PAST_COURSE.name)
+    await chooseCourseDuplicationAction(page)
+    await page
+      .getByRole('textbox', { name: 'Course name' })
+      .fill(`${PAST_COURSE.name} Copy B`)
+    await page
+      .getByRole('textbox', { name: 'Course display name' })
+      .fill(`${PAST_COURSE.name} Copy B`)
+    await page
+      .getByRole('textbox', { name: 'finance@uzh.ch' })
+      .fill('lecturer@df.uzh.ch')
+    await selectCourseDuplicationStartDate(page)
+    await page.getByRole('button', { name: 'Duplicate' }).click()
+    await expect(courseDuplicationStatusTrigger(page)).toContainText('2')
+
+    await page.evaluate(() => {
+      window.dispatchEvent(new Event('course-duplication-release'))
+    })
+    await expect(courseDuplicationStatusTrigger(page)).toContainText('2')
+
+    await expect(courseDuplicationStatusTrigger(page)).toContainText('1', {
+      timeout: 15_000,
+    })
+  })
+
+  test('Shows separate actions for restored completed duplication jobs', async ({
+    loginLecturer,
+    page,
+  }) => {
+    test.setTimeout(120_000)
+
+    const copyAName = 'Restored Copy A'
+    const copyBName = 'Restored Copy B'
+
+    // Use deterministic seeded courses as valid destinations for the restored
+    // jobs, keeping this browser-only test independent of host-side Prisma TLS.
+    const seededCourseA = { courseId: COURSE_ID_TEST2 }
+    const seededCourseB = { courseId: COURSE_ID_TEST3 }
+
+    const restoredJobs = [
+      {
+        id: '55555555-5555-4555-8555-555555555555',
+        name: copyAName,
+        createdCourseId: seededCourseA!.courseId,
+      },
+      {
+        id: '66666666-6666-4666-8666-666666666666',
+        name: copyBName,
+        createdCourseId: seededCourseB!.courseId,
+      },
+    ]
+
+    await loginLecturer()
+    // Mock at the fetch level inside the browser: Playwright's page.route()
+    // reissues intercepted requests outside the browser network stack and
+    // drops httpOnly cookies there, so even a narrowed pattern breaks auth.
+    const persistedOperations = JSON.parse(
+      await readFile(
+        new URL(
+          '../../packages/graphql/src/public/client.json',
+          import.meta.url
+        ),
+        'utf8'
+      )
+    ) as Record<string, string>
+    const statusHash = persistedOperations.GetCourseDuplicationStatuses
+    await page.addInitScript(
+      ({ statusHash, jobs }) => {
+        const originalFetch = window.fetch.bind(window)
+        window.fetch = async (input, init) => {
+          let isStatusPoll = false
+          if (
+            typeof input === 'string' ||
+            input instanceof URL ||
+            input instanceof Request
+          ) {
+            try {
+              const url = new URL(
+                input instanceof Request ? input.url : String(input),
+                window.location.origin
+              )
+              const extensions = url.searchParams.get('extensions') || ''
+              const idx = extensions.indexOf(
+                String.fromCharCode(
+                  34,
+                  115,
+                  104,
+                  97,
+                  50,
+                  53,
+                  54,
+                  72,
+                  97,
+                  115,
+                  104,
+                  34,
+                  58,
+                  34
+                )
+              )
+              let h = ''
+              if (idx >= 0) {
+                const s = idx + 14
+                const e2 = extensions.indexOf(String.fromCharCode(34), s)
+                if (e2 > s) h = extensions.slice(s, e2)
+              }
+              if (h === statusHash) isStatusPoll = true
+            } catch (e) {
+              // relative or malformed URL; treat as non-matching
+            }
+          }
+
+          if (!isStatusPoll && typeof init?.body === 'string') {
+            try {
+              if (
+                JSON.parse(init.body).operationName ===
+                'GetCourseDuplicationStatuses'
+              ) {
+                isStatusPoll = true
+              }
+            } catch {
+              // not a JSON body; fall through to real fetch
+            }
+          }
+
+          if (!isStatusPoll) return originalFetch(input, init)
+
+          return new window.Response(
+            JSON.stringify({
+              data: {
+                courseDuplicationStatuses: jobs.map((job) => ({
+                  id: job.id,
+                  status: 'COMPLETED',
+                  sourceCourseId: 'source-restored',
+                  sourceCourseName: 'Synthetic source course',
+                  targetCourseName: job.name,
+                  createdCourseId: job.createdCourseId,
+                  errorType: null,
+                  errorMessage: null,
+                  createdAt: new Date().toISOString(),
+                  updatedAt: new Date().toISOString(),
+                })),
+              },
+            }),
+            { headers: { 'Content-Type': 'application/json' } }
+          )
+        }
+      },
+      {
+        statusHash,
+        jobs: restoredJobs.map(({ id, name, createdCourseId }) => ({
+          id,
+          name,
+          createdCourseId,
+        })),
+      }
+    )
+
+    // Seed the persisted ids before the provider mounts on the next page. The
+    // one-shot marker prevents later navigations from reintroducing them.
+    const manageUrl = process.env.URL_MANAGE ?? 'http://127.0.0.1:3002'
+    await page.addInitScript((jobs) => {
+      const marker = '__pr5446-restored-duplication-seeded'
+      if (window.sessionStorage.getItem(marker)) return
+
+      window.localStorage.setItem(
+        'course-duplication-job-ids',
+        JSON.stringify(jobs.map((job) => job.id))
+      )
+      window.sessionStorage.setItem(marker, '1')
+    }, restoredJobs)
+    await page.goto(`${manageUrl}/?dup-verify=1`, {
+      waitUntil: 'domcontentloaded',
+    })
+    // Completion must not navigate automatically; capture this URL and
+    // require it to be unchanged until the user clicks a toast action.
+    const preActionUrl = page.url()
+
+    const toaster = page.getByLabel(/Notifications/)
+    const toastB = toaster
+      .getByRole('listitem')
+      .filter({ hasText: restoredJobs[1].name })
+    await expect(toastB).toBeVisible({ timeout: 30_000 })
+    await expect(
+      page.getByText(
+        messages.manage.courseList.courseDuplicationSucceeded.replace(
+          '{name}',
+          restoredJobs[0].name
+        )
+      )
+    ).toBeVisible({ timeout: 30_000 })
+    await expect(
+      page.getByText(
+        messages.manage.courseList.courseDuplicationSucceeded.replace(
+          '{name}',
+          restoredJobs[1].name
+        )
+      )
+    ).toBeVisible({ timeout: 30_000 })
+
+    const openCourseActions = page.getByRole('button', {
+      name: messages.manage.courseList.courseDuplicationOpenCourse,
+    })
+    await expect(openCourseActions).toHaveCount(2)
+    await expect(page).toHaveURL(preActionUrl)
+    // Sonner stacks collapsed toasts on top of each other; hovering the
+    // front toast expands the stack so every action becomes clickable.
+    await toaster.getByRole('listitem').first().hover()
+    await toastB
+      .getByRole('button', {
+        name: messages.manage.courseList.courseDuplicationOpenCourse,
+      })
+      .click()
+    await expect(page).toHaveURL(
+      new RegExp(`/courses/${seededCourseB!.courseId}`)
+    )
+  })
+
+  test('Batches restored duplication status requests above the API limit', async ({
+    loginLecturer,
+    page,
+  }) => {
+    test.setTimeout(60_000)
+
+    const restoredJobs = Array.from({ length: 51 }, (_, index) => ({
+      id: `77777777-7777-4777-8777-${String(index).padStart(12, '0')}`,
+      name: `Batch Copy ${index}`,
+      createdCourseId: null,
+    }))
+
+    await loginLecturer()
+    const persistedOperations = JSON.parse(
+      await readFile(
+        new URL(
+          '../../packages/graphql/src/public/client.json',
+          import.meta.url
+        ),
+        'utf8'
+      )
+    ) as Record<string, string>
+    const statusHash = persistedOperations.GetCourseDuplicationStatuses
+
+    await page.addInitScript(
+      ({ statusHash, jobs }) => {
+        const originalFetch = window.fetch.bind(window)
+        window.fetch = async (input, init) => {
+          let isStatusPoll = false
+          let requestedIds: string[] = []
+
+          if (
+            typeof input === 'string' ||
+            input instanceof URL ||
+            input instanceof Request
+          ) {
+            try {
+              const url = new URL(
+                input instanceof Request ? input.url : String(input),
+                window.location.origin
+              )
+              const extensions = url.searchParams.get('extensions') || ''
+              const marker = String.fromCharCode(
+                34,
+                115,
+                104,
+                97,
+                50,
+                53,
+                54,
+                72,
+                97,
+                115,
+                104,
+                34,
+                58,
+                34
+              )
+              const hashStart = extensions.indexOf(marker)
+              if (hashStart >= 0) {
+                const hashEnd = extensions.indexOf(
+                  String.fromCharCode(34),
+                  hashStart + marker.length
+                )
+                isStatusPoll =
+                  extensions.slice(hashStart + marker.length, hashEnd) ===
+                  statusHash
+              }
+              const rawVariables = url.searchParams.get('variables')
+              if (rawVariables) {
+                requestedIds = JSON.parse(rawVariables).ids ?? []
+              }
+            } catch {
+              // malformed persisted-query parameters; use the request body
+            }
+          }
+
+          if (!isStatusPoll && typeof init?.body === 'string') {
+            try {
+              const body = JSON.parse(init.body)
+              isStatusPoll =
+                body.operationName === 'GetCourseDuplicationStatuses'
+              requestedIds = body.variables?.ids ?? []
+            } catch {
+              // not a JSON body; fall through to real fetch
+            }
+          }
+
+          if (!isStatusPoll) return originalFetch(input, init)
+
+          const batchSizes = ((
+            window as unknown as { __duplicationBatchSizes?: number[] }
+          ).__duplicationBatchSizes ??= [])
+          batchSizes.push(requestedIds.length)
+
+          return new window.Response(
+            JSON.stringify({
+              data: {
+                courseDuplicationStatuses: jobs
+                  .filter((job) => requestedIds.includes(job.id))
+                  .map((job) => ({
+                    id: job.id,
+                    status: 'PENDING',
+                    sourceCourseId: 'source-batched',
+                    sourceCourseName: 'Synthetic source course',
+                    targetCourseName: job.name,
+                    createdCourseId: null,
+                    errorType: null,
+                    errorMessage: null,
+                    createdAt: new Date().toISOString(),
+                    updatedAt: new Date().toISOString(),
+                  })),
+              },
+            }),
+            { headers: { 'Content-Type': 'application/json' } }
+          )
+        }
+      },
+      { statusHash, jobs: restoredJobs }
+    )
+
+    const manageUrl = process.env.URL_MANAGE ?? 'http://127.0.0.1:3002'
+    await page.addInitScript((jobs) => {
+      window.localStorage.setItem(
+        'course-duplication-job-ids',
+        JSON.stringify(jobs.map((job) => job.id))
+      )
+    }, restoredJobs)
+    await page.goto(`${manageUrl}/?dup-batch-verify=1`, {
+      waitUntil: 'domcontentloaded',
+    })
+
+    await page.waitForFunction(
+      () =>
+        ((window as unknown as { __duplicationBatchSizes?: number[] })
+          .__duplicationBatchSizes?.length ?? 0) >= 2,
+      undefined,
+      { timeout: 30_000 }
+    )
+    await expect(courseDuplicationStatusTrigger(page)).toContainText('51')
+    const batchSizes = await page.evaluate(
+      () =>
+        (window as unknown as { __duplicationBatchSizes?: number[] })
+          .__duplicationBatchSizes ?? []
+    )
+    expect(batchSizes.slice(0, 2)).toEqual([50, 1])
+    expect(batchSizes.every((batchSize) => batchSize <= 50)).toBe(true)
+  })
+
   test('Duplicate the course without group creation and verify group activities are not copied', async ({
     loginLecturer,
     page,
@@ -2700,7 +3856,7 @@ test.describe('Part 5: Course Sharing - Individual permissions', () => {
       'unchecked'
     )
     await expect(page.getByTestId('course-group-activities')).toBeDisabled()
-    await submitCourseFormAndWaitForCreateCourse(page)
+    await submitCourseFormAndWaitForDuplication(page)
 
     await page.getByTestId('courses').click()
     await expect(
@@ -2738,28 +3894,18 @@ test.describe('Part 5: Course Sharing - Individual permissions', () => {
       await chooseCourseAction(page, 'course-duplicate-button')
       await page.getByTestId('course-name').fill(copyName)
       await page.getByTestId('course-display-name').fill(copyName)
-      const errorMessages = [
-        messages.manage.courseList.courseDuplicationPartialFailure,
-        messages.manage.courseList.courseDuplicationNoAccess,
-        messages.manage.courseList.courseDuplicationFailed,
-      ]
-      const visibleErrorToast = Promise.race(
-        errorMessages.map(async (message) => {
-          await page
-            .getByText(message)
-            .waitFor({ state: 'visible', timeout: 15_000 })
-          return message
-        })
-      )
-      const [errorMessage] = await Promise.all([
-        visibleErrorToast,
-        submitCourseFormAndWaitForCreateCourse(page, {
-          expectSuccess: false,
-        }),
-      ])
-      expect(errorMessage).toBe(
-        messages.manage.courseList.courseDuplicationPartialFailure
-      )
+      await selectCourseDuplicationStartDate(page, {
+        durationDays: 1,
+        expectInitialEmpty: true,
+      })
+      await submitCourseFormAndWaitForDuplication(page, {
+        expectSuccess: false,
+      })
+      await expect(
+        page.getByText(
+          messages.manage.courseList.courseDuplicationPartialFailure
+        )
+      ).toBeVisible({ timeout: 30_000 })
       await expect(async () => {
         const summary = await getCourseDuplicationSummary({
           courseName: copyName,
@@ -3124,6 +4270,7 @@ test.describe('Part 5: Course Sharing - Individual permissions', () => {
     await chooseCourseAction(page, 'course-duplicate-button')
     await page.getByTestId('course-name').fill(copyName)
     await page.getByTestId('course-display-name').fill(copyName)
+    await selectCourseDuplicationStartDate(page)
     for (const testId of [
       'course-practice-quizzes',
       'course-microlearnings',
@@ -3139,7 +4286,7 @@ test.describe('Part 5: Course Sharing - Individual permissions', () => {
         'unchecked'
       )
     }
-    await submitCourseFormAndWaitForCreateCourse(page)
+    await submitCourseFormAndWaitForDuplication(page)
 
     await page.getByTestId('courses').click()
     await expect(
@@ -3153,13 +4300,30 @@ test.describe('Part 5: Course Sharing - Individual permissions', () => {
       practiceQuizzes: 0,
       microLearnings: 0,
       groupActivities: 0,
-      directPermissions: 5,
+      directPermissions: 6,
     })
     expectPermissionDetail({
       summary,
       detailsKey: 'directPermissionDetails',
       objectType: 'COURSE',
       objectId: summary.courseId,
+      userShortname: LECTURER_SHORTNAME,
+      permissionLevel: 'ADMIN',
+      propagation: false,
+    })
+
+    // the source activity owner (lecturer) also keeps ADMIN access on the copy
+    const copiedLiveQuiz = getActivityReference({
+      summary,
+      collection: 'liveQuizzes',
+      activityName: SHARING.liveQuiz,
+    })
+    expect(copiedLiveQuiz).toBeTruthy()
+    expectPermissionDetail({
+      summary,
+      detailsKey: 'directPermissionDetails',
+      objectType: 'LIVE_QUIZ',
+      objectId: copiedLiveQuiz!.id,
       userShortname: LECTURER_SHORTNAME,
       permissionLevel: 'ADMIN',
       propagation: false,
@@ -3310,6 +4474,7 @@ test.describe('Part 5b: Course Sharing - User group permissions', () => {
     await page.getByTestId('user-group-name').fill(SHARING.group1)
     await page.getByTestId('member-shortname-email-0').fill(LECTURER_IND_EMAIL)
     await page.getByTestId('submit-create-user-group').click()
+    await expect(page.getByTestId(`user-group-${SHARING.group1}`)).toBeVisible()
 
     // Create group2 with pro2 as admin
     await page.getByTestId('create-user-group').click()
@@ -3317,6 +4482,7 @@ test.describe('Part 5b: Course Sharing - User group permissions', () => {
     await page.getByTestId('member-shortname-email-0').fill(LECTURER_INST_EMAIL)
     await page.getByTestId('member-admin-0').click()
     await page.getByTestId('submit-create-user-group').click()
+    await expect(page.getByTestId(`user-group-${SHARING.group2}`)).toBeVisible()
 
     // Create group3 with pro3 as admin
     await page.getByTestId('create-user-group').click()
@@ -3326,6 +4492,7 @@ test.describe('Part 5b: Course Sharing - User group permissions', () => {
       .fill(LECTURER_INST2_SHORTNAME)
     await page.getByTestId('member-admin-0').click()
     await page.getByTestId('submit-create-user-group').click()
+    await expect(page.getByTestId(`user-group-${SHARING.group3}`)).toBeVisible()
     await logoutUser()
 
     // Create group4 in pro4 account with lecturer as user
@@ -3336,6 +4503,7 @@ test.describe('Part 5b: Course Sharing - User group permissions', () => {
     await page.getByTestId('user-group-name').fill(SHARING.group4)
     await page.getByTestId('member-shortname-email-0').fill(LECTURER_SHORTNAME)
     await page.getByTestId('submit-create-user-group').click()
+    await expect(page.getByTestId(`user-group-${SHARING.group4}`)).toBeVisible()
     await logoutUser()
 
     // Create group5 in pro5 account with lecturer as admin
@@ -3347,6 +4515,7 @@ test.describe('Part 5b: Course Sharing - User group permissions', () => {
     await page.getByTestId('member-shortname-email-0').fill(LECTURER_SHORTNAME)
     await page.getByTestId('member-admin-0').click()
     await page.getByTestId('submit-create-user-group').click()
+    await expect(page.getByTestId(`user-group-${SHARING.group5}`)).toBeVisible()
     await logoutUser()
 
     // Share course with groups
@@ -3640,12 +4809,15 @@ test.describe('Part 5b: Course Sharing - User group permissions', () => {
     await verifyCourseAdminPermissions(page, false)
 
     await page.getByTestId('courses').click()
+    await openActionMenuByTestId(page, `course-list-actions-${SHARING.course}`)
     await expect(
       page.getByTestId(`delete-course-${SHARING.course}`)
     ).toBeVisible()
     await expect(
       page.getByTestId(`remove-course-${SHARING.course}`)
     ).not.toBeVisible()
+
+    await page.keyboard.press('Escape')
 
     await page.getByTestId(`course-list-button-${SHARING.course}`).click()
     await chooseCourseAction(page, 'course-share-button')
@@ -3673,6 +4845,7 @@ test.describe('Part 5b: Course Sharing - User group permissions', () => {
   }) => {
     await loginIndividualCatalyst()
     await page.getByTestId('courses').click()
+    await openActionMenuByTestId(page, `course-list-actions-${SHARING.course}`)
     await page.getByTestId(`remove-course-${SHARING.course}`).click()
     await page.getByTestId('confirm-deletion-final').click()
     await page.getByTestId('confirm-dependency-access').click()
@@ -3699,6 +4872,8 @@ test.describe('Part 5b: Course Sharing - User group permissions', () => {
     loginLecturer,
     page,
   }) => {
+    test.setTimeout(COURSE_DUPLICATION_TEST_TIMEOUT)
+
     const copyName = `${SHARING.course} Copy`
     const updatedLiveQuizElementContent = `Updated sharing live quiz question content ${Date.now()}`
 

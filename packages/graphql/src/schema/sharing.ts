@@ -6,6 +6,13 @@ import {
   SharingType as SharingTypeEnum,
 } from '@klicker-uzh/types'
 import builder from '../builder.js'
+import {
+  ELEMENT_BATCH_SHARING_REASONS,
+  ELEMENT_BATCH_SHARING_STATUSES,
+  ELEMENT_BATCH_SHARING_TARGET_ERRORS,
+  type ElementBatchSharingOutcome as ElementBatchSharingOutcomeType,
+  type ElementBatchSharingResult as ElementBatchSharingResultType,
+} from '../services/sharing.js'
 import { IUserInfo, UserInfo } from './user.js'
 
 export const ObjectAccess = builder.enumType('ObjectAccess', {
@@ -35,6 +42,55 @@ export const ActivityLogModificationFieldType = builder.enumType(
 export const PermissionLevel = builder.enumType('PermissionLevel', {
   values: Object.values(DB.PermissionLevel),
 })
+
+export const ElementBatchSharingStatus = builder.enumType(
+  'ElementBatchSharingStatus',
+  { values: ELEMENT_BATCH_SHARING_STATUSES }
+)
+
+export const ElementBatchSharingReason = builder.enumType(
+  'ElementBatchSharingReason',
+  {
+    values: ELEMENT_BATCH_SHARING_REASONS,
+  }
+)
+
+export const ElementBatchSharingTargetError = builder.enumType(
+  'ElementBatchSharingTargetError',
+  {
+    values: ELEMENT_BATCH_SHARING_TARGET_ERRORS,
+  }
+)
+
+export const ElementBatchSharingOutcomeRef =
+  builder.objectRef<ElementBatchSharingOutcomeType>(
+    'ElementBatchSharingOutcome'
+  )
+export const ElementBatchSharingOutcome =
+  ElementBatchSharingOutcomeRef.implement({
+    fields: (t) => ({
+      elementId: t.exposeInt('elementId'),
+      status: t.expose('status', { type: ElementBatchSharingStatus }),
+      reason: t.expose('reason', {
+        type: ElementBatchSharingReason,
+        nullable: true,
+      }),
+    }),
+  })
+
+export const ElementBatchSharingResultRef =
+  builder.objectRef<ElementBatchSharingResultType>('ElementBatchSharingResult')
+export const ElementBatchSharingResult = ElementBatchSharingResultRef.implement(
+  {
+    fields: (t) => ({
+      targetError: t.expose('targetError', {
+        type: ElementBatchSharingTargetError,
+        nullable: true,
+      }),
+      outcomes: t.expose('outcomes', { type: [ElementBatchSharingOutcome] }),
+    }),
+  }
+)
 
 // ----- CATALOG OBJECTS -----
 // #region

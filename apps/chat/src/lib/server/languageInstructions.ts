@@ -1,24 +1,18 @@
-/**
- * Appended to every chatbot system prompt so answers use Swiss High German
- * orthography. This cannot live only in `DEFAULT_PROMPT`: a chatbot's stored
- * prompt replaces the default entirely, so a rule written there silently
- * disappears the moment a lecturer saves a custom prompt. Applying it
- * server-side in the chat route (same pattern as `withCitationContract`)
- * makes the orthography independent of what any individual prompt says.
- *
- * Phrased conditionally ("when writing German") so prompts that answer in
- * another language are unaffected — the rule is about spelling, not about
- * which language to answer in.
- */
-const LANGUAGE_STYLE_CONTRACT =
-  'Language style: when writing German, use Swiss High German orthography. ' +
-  'Write "ss" instead of "ß" (e.g. "gross", not "groß"), and always use real ' +
-  'umlauts (ä, ö, ü and Ä, Ö, Ü). Never transliterate umlauts to ae, oe or ue.'
+import { renderPromptTemplate } from '@/src/lib/server/promptTemplates'
 
 /**
- * Appends the Swiss High German orthography contract to `systemPrompt`.
- * Unconditional — unlike the citation contract, this does not depend on
- * which tools are available.
+ * Appended to every chatbot system prompt so the response language follows
+ * the user rather than the language of the persona or retrieved material.
+ * This cannot live only in `DEFAULT_PROMPT`: standard-mode lecturer guidance
+ * and custom personas are separate prompt layers, and neither owns platform
+ * language policy.
+ */
+const LANGUAGE_STYLE_CONTRACT = renderPromptTemplate('language-style', {})
+
+/**
+ * Appends the conversation-language and Swiss Standard German contract to
+ * `systemPrompt`. It is unconditional because it must survive every stored
+ * lecturer prompt and does not depend on which tools are available.
  */
 export function withLanguageStyleContract(systemPrompt: string): string {
   const trimmedBase = systemPrompt.trimEnd()
@@ -26,3 +20,15 @@ export function withLanguageStyleContract(systemPrompt: string): string {
     ? `${trimmedBase}\n\n${LANGUAGE_STYLE_CONTRACT}`
     : LANGUAGE_STYLE_CONTRACT
 }
+
+/**
+ * Restates the reply-language rule as the last message of every model step.
+ * The rule in the system prompt alone loses to long other-language material,
+ * such as retrieved passages, that the model reads just before answering.
+ * The model identifies the language itself, so the reminder works for any
+ * language the user writes in.
+ */
+export const REPLY_LANGUAGE_REMINDER = {
+  role: 'system',
+  content: renderPromptTemplate('reply-language-reminder', {}),
+} as const

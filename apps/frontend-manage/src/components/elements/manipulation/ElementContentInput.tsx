@@ -102,6 +102,7 @@ function ElementContentInput({
                 setFieldValue('content', newValue)
               }
               showToolbarOnFocus={disabled} // show toolbar only when not disabled
+              allowVideoEmbedding
               placeholder={t(placeholderMap[values.type])}
               key={`${values.type}-content`}
               data={{ cy: 'insert-question-text' }}

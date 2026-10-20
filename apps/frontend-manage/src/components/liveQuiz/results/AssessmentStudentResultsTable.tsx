@@ -1,11 +1,11 @@
 import { faChevronRight } from '@fortawesome/free-solid-svg-icons'
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome'
-import { GetAssessmentResultsLiveQuizQuery } from '@klicker-uzh/graphql/dist/ops'
+import type { GetAssessmentResultsLiveQuizQuery } from '@klicker-uzh/graphql/dist/ops'
 import DataTable from '@klicker-uzh/shared-components/src/DataTable'
 import TableSortingButton from '@klicker-uzh/shared-components/src/TableSortingButton'
 import { Select } from '@uzh-bf/design-system'
 import { useFormatter, useTranslations } from 'next-intl'
-import { Dispatch, SetStateAction, useMemo } from 'react'
+import { type Dispatch, type SetStateAction, useMemo } from 'react'
 import { twMerge } from 'tailwind-merge'
 
 type AssessmentStudentResult = NonNullable<
@@ -130,6 +130,23 @@ function AssessmentStudentResultsTable({
             ),
             className:
               'max-w-[16rem] pr-2 text-left sm:max-w-[10rem] md:max-w-[12rem] lg:max-w-[14rem]',
+          },
+          {
+            accessorKey: 'assessmentGivenName',
+            displayName: t('manage.assessment.liveQuizStudentGivenNameColumn'),
+            csvOnly: true,
+          },
+          {
+            accessorKey: 'assessmentSurname',
+            displayName: t('manage.assessment.liveQuizStudentSurnameColumn'),
+            csvOnly: true,
+          },
+          {
+            accessorKey: 'assessmentMatriculationNumber',
+            displayName: t(
+              'manage.assessment.liveQuizStudentMatriculationNumberColumn'
+            ),
+            csvOnly: true,
           },
           {
             accessorKey: 'basePoints',

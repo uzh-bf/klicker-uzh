@@ -29,42 +29,57 @@ Use this skill for Klicker-specific Playwright work. Combine it with `playwright
 Useful check:
 
 ```bash
-volta run pnpm --filter @klicker-uzh/playwright exec playwright test --list --project=chromium
+node util/run-playwright-host.mjs --list --project=chromium
 rg -n "test\\(" playwright/tests
 ```
 
 ## Local Test Setup
 
-Run from repo root. Use Volta when Node/pnpm versions are confusing.
-
-```bash
-docker compose down -v
-./_run_app_dependencies.sh
-pnpm run dev:playwright
-```
-
-Run Playwright:
+Run every local Playwright command from a **host shell** at the repository root.
+The host launcher reconciles the exact devrouter workspace, maps all app URLs
+and the worktree database, installs host-only Playwright dependencies and
+browsers when missing, and then runs the browser on the host. The applications,
+workers, and data services remain inside the devcontainer.
 
 ```bash
 # list active Chromium tests without executing them
-volta run pnpm --filter @klicker-uzh/playwright exec playwright test --list --project=chromium
+node util/run-playwright-host.mjs --list --project=chromium
 
 # focused specs
-volta run pnpm --filter @klicker-uzh/playwright exec playwright test --project=chromium tests/O-live-quiz.spec.ts
+node util/run-playwright-host.mjs --project=chromium tests/O-live-quiz.spec.ts
 
 # full active Chromium suite
-volta run pnpm --filter @klicker-uzh/playwright test -- --project=chromium
+node util/run-playwright-host.mjs --project=chromium
+
+# inspect the resolved workspace without exposing credentials
+node util/run-playwright-host.mjs --print-env
 ```
 
-For live quiz answer submission, response processing, scheduled microlearnings, or Hatchet workflow failures, start the missing services explicitly:
+Do not run `playwright test`, package-local raw scripts, browser installation,
+or the host launcher through `devrouter exec` or a DevPod shell. The Playwright
+config rejects direct local invocations before global setup, and the
+devcontainer cannot store Playwright browser binaries. GitHub Actions is the
+explicit exception and keeps running in the official Playwright container.
 
-```bash
-pnpm --filter @klicker-uzh/response-api dev
-pnpm --filter @klicker-uzh/hatchet-worker-response-processor dev
-./util/_run_with_infisical.sh --env dev-playwright pnpm --filter @klicker-uzh/hatchet-worker-general dev
-```
+The launcher infers the runtime profile from explicit spec-file arguments by
+taking the union of their `playwright/profiles.json` entries; broad runs,
+unresolved filters, and unrecognized options use the maximal `playwright`
+profile, and an explicit `--runtime-profile` always wins. Focused activity
+runs may explicitly request
+`node util/run-playwright-host.mjs --runtime-profile manage,live-quiz --project=chromium tests/MA-elements-operations.spec.ts`.
+The caller still owns profile sufficiency for deliberately narrowed
+selections. Put launcher options before Playwright arguments; an explicit
+`--` ends their prefix.
+`--print-env` also reconciles the selected runtime and can start services.
+`--show-report` cannot be combined with a runtime profile.
+Ensure the response processor is not running with
+`ASSESSMENT_MODE=true` when validating live quiz mode.
 
-Ensure the response processor is not running with `ASSESSMENT_MODE=true` when validating live quiz mode.
+For a focused test against an existing synthetic database, the explicit local
+options `--runtime-profile chat --preserve-database` may precede Playwright
+arguments. This skips global reset/seed only; selected specs still perform
+their own fixture writes and cleanup. Inspect those fixtures before opting in.
+CI and ordinary invocations retain their existing setup behavior.
 
 For `apps/chat` app-router recovery, authenticate the browser with a seeded
 participant before exercising `/<chatbotId>` routes. Both a malformed ID and a
@@ -76,12 +91,13 @@ text. Keep the `/noLogin` assertion focused on the login action and concise
 return copy, not a raw redirect URL.
 
 For chat settings coverage, seed credits through the existing `setCredits`
-helper rather than mocking the credits route. A zero-credit response must leave
-only the fallback model available, reconcile an unavailable persisted model to
-that fallback, and expose the fallback notice in the sidebar-enabled mobile
-layout outside the closed drawer. Set the viewport before `visitChat`; embedded
-chat already owns its compact `EmbeddedCreditsBar` and should not receive the
-sidebar mobile bar.
+helper rather than mocking the credits route. A zero-credit response keeps the
+chatbot's allow-listed models visible and preserves the selected usage class.
+The runtime may choose only an allowed same-class fallback; when none exists,
+it denies the turn instead of switching classes. Assert the neutral model-
+availability notice in the sidebar-enabled mobile layout outside the closed
+drawer. Set the viewport before `visitChat`; embedded chat already owns its
+compact `EmbeddedCreditsBar` and should not receive the sidebar mobile bar.
 
 For chat welcome coverage, assert that the chatbot name and selected mode
 description are visible before clicking a starter. Starter clicks populate the
@@ -92,7 +108,8 @@ render of the starter grid.
 
 ## Fast Failure Triage
 
-- `net::ERR_CONNECTION_REFUSED http://127.0.0.1:3002/`: the app server is down, not a selector issue. Check `pnpm run dev:playwright` and service readiness first.
+- Nested development routes returning 404 despite existing source files can indicate overlapping Next.js route scans. Compare the live development pages manifest with dynamic source routes and verify the Pages-only development configuration; see `docs/solutions/runtime-error/next-development-route-scans-overlap.md`. Do not mask missing routes with longer test timeouts or treat an incomplete inventory as cache damage.
+- `net::ERR_CONNECTION_REFUSED`: the routed app is down, not a selector issue. Run `node util/run-playwright-host.mjs --print-env` and inspect `devrouter exec . -- tail -f /tmp/dev.log` first.
 - `ECONNREFUSED 127.0.0.1:7078`: `response-api` is not running.
 - Hatchet `workflow not found`: the relevant Hatchet worker is not registered/running, often `hatchet-worker-general` for scheduled tasks.
 - Sudden Firefox/WebKit execution: Playwright is running all configured projects. Pass `--project=chromium` or keep non-Chromium projects commented in config if Chromium-only is desired.
@@ -102,10 +119,8 @@ render of the starter grid.
 Before blaming a test, probe the apps:
 
 ```bash
-curl -s -o /dev/null -w '%{http_code}\n' http://127.0.0.1:3000/healthz
-curl -s -o /dev/null -w '%{http_code}\n' http://127.0.0.1:3001
-curl -s -o /dev/null -w '%{http_code}\n' http://127.0.0.1:3002
-curl -s -o /dev/null -w '%{http_code}\n' http://127.0.0.1:3010
+node util/run-playwright-host.mjs --print-env
+devrouter exec . -- tail -n 100 /tmp/dev.log
 ```
 
 ## Klicker Helper Patterns
@@ -114,7 +129,7 @@ Prefer existing helpers before adding new ones.
 
 Action menus:
 
-- Use `openActionMenuByTestId(page, triggerTestId, expectedActionTestId?)` for repeated/portal-backed menus.
+- Use `openActionMenuByTestId(page, triggerTestId, expectedActionTestId?)` for repeated Radix dropdown or menubar portals.
 - Use `chooseActionByTestId(page, triggerTestId, actionTestId)` for generic action menus.
 - Use `expectActionMenuItems(page, triggerTestId, { visible, hidden })` for permission matrices.
 - Keep `chooseActivityAction(page, type, name, actionTestId)` for activity list actions.
@@ -150,11 +165,22 @@ Cleanup dialogs:
 - **Verify after reorder**: never click a `FastField`-wrapped `ContentInput` when verifying content after a `move()` — use `scrollIntoViewIfNeeded` + `toContainText` only; clicking can trigger a stale re-render showing the previous value. (`playwright/util/fixtures/elements.ts`)
 - **react-select**: target the inner `<input>` via `#container-id input` for `.fill()`/`.press()`/visibility assertions — typing against the wrapper does not work. (`playwright/tests/K-elements-selection.spec.ts`)
 - **localforage**: Playwright creates a fresh context per test, so IndexedDB does not carry across tests. Serial workflows depending on previous PWA answers must snapshot/restore localforage — and direct QR links may need restoration on the `https://pwa.klicker.com` origin, not `127.0.0.1`. (`playwright/util/workflow.ts`)
-- **PIN-cookie bridges**: clear test-side PIN cookie bridges wherever a spec clears cookies, or later direct-link checks bypass the expected PIN form via a stale `live-quiz-pin-*` cookie. (`playwright/tests/O-live-quiz.spec.ts`)
+- **PIN-cookie bridges**: clear test-side PIN cookie bridges wherever a spec clears cookies, or later direct-link checks bypass the expected PIN form via a stale `live-quiz-pin-*` cookie. (`playwright/tests/O2-live-quiz-collaboration.spec.ts`)
+- **Shardable serial workflows**: the timing-aware CI sharder assigns complete spec files. Split a long serial workflow only at a boundary where the new file can reset and seed its own database state. Repeated setup is expected when the files may land on different shards; never rely on spec-file execution order.
 
 ## CI Notes
 
+- Frontend `build:test` delegates to the canonical production build and `start:test` runs its relocated standalone server, both with `NODE_ENV=production`. Keep `.next/playwright-runtime.tar` inside the trusted artifact transfer: it preserves dependencies and generated public/service-worker assets. Startup rejects missing or inconsistent artifacts. `KLICKER_PLAYWRIGHT_FIXTURES` enables only the local image and synthetic feature-flag proxy settings; backend fixtures retain their separate test mode. Local host runs remain a development loop and do not substitute for this production CI proof.
+
 - For Chromium-only CI, run with `--project=chromium`.
+- Assign every active spec to the smallest sufficient profile in `playwright/profiles.json`. Each spec must appear exactly once; missing, stale, or duplicate entries fail `pnpm check:playwright-ci`. Both Playwright workflows pass each shard's canonical profile union through `devrouter profile plan`, the repository-owned `playwright/runtime-contract.yml`, and `util/playwright-profile-runtime.mjs`. The trusted planner may assign a candidate-only spec to `full`; the adapter resolves a trusted `full` union through the explicit `playwright` Devrouter profile, which contains every CI-supported app but none of the local-only optional services or processes. Keep that path fail closed, keep app-to-Turbo and endpoint mappings in the contract, and retain the adapter's exact binding-key and safe-literal checks. A caller checkout where all three profile-runtime files are absent may use the explicit legacy full-stack startup so open PRs created before the migration remain runnable; a partially present profile runtime must fail closed. Job service containers remain static because GitHub creates them before workflow steps.
+- The Playwright CI cache contract is versioned and architecture-specific. It includes the lockfile, workspace and Turbo configuration, tracked package manifests, Node/pnpm versions, the synthetic build-environment schema, and the digest-pinned Playwright image. The trusted `v3` seed workflow is the only cache writer; hosted and public-PR jobs restore pnpm and `.turbo` state without saving it. Public PR restore remains disabled until an explicit global or exact-canary control is enabled, and any miss or unavailable cache must leave the normal build path valid. Read `playwright-build-telemetry`, shard telemetry, and the hosted `playwright-queue-telemetry` artifact before attributing a speed change to caching; these artifacts contain only route, cache, timing, task-count, runner, and status metadata.
+- Specs that publish, schedule, start, or end activities must include `live-quiz` in their manifest profile so both Hatchet workers run. Do not rely on another spec in the same timing-balanced shard to supply this dependency.
+- The public ARM64 pool is one backend of the pinned `public-pr-playwright-shards.yml` execution envelope. A hosted preparation job computes one trusted route and one canonical selector plan; the hosted and public build/shard jobs consume that same plan, so backend choice cannot change the selected tests, profiles, shard count, artifacts, or status semantics. The execution jobs call the trusted `v3` composite actions remotely; candidate code supplies source and tests but cannot replace the orchestration action. Ready PRs always run all eight shards. Draft PRs never enter the execution envelope; the caller skips the reusable workflow and `test-playwright-status` reports the skip. The legacy smart-draft selection controls remain in the trusted routing code but cannot override the ready-only caller. Forks, bots, private repositories, pushes, malformed event or policy data, and disabled smart routing remain hosted full; an inconsistent explicit route hint rejects the invocation. `PUBLIC_PR_ARM64_PLAYWRIGHT_FORCE_HOSTED_CANARY_PR` forces one exact PR to hosted execution. Public jobs must use read-only contents permission, receive no secrets, not publish service ports, and not persist checkout credentials; every shard needs a run-specific Hatchet volume. Preserve all result artifact names when changing either path. Keep the route-neutral concurrency group only on the caller's reusable-workflow job; the called workflow defines no concurrency, and `test-playwright-status` remains outside that group. After every public container checkout, trust only the exact `GITHUB_WORKSPACE`; wildcard safe-directory rules are forbidden.
+- A candidate cannot add a runtime package to its own public-PR artifact by editing the trusted composite action because the job executes that action from `v3`. When a candidate service starts importing a new workspace package, either bundle it into an artifact path already transferred by the trusted action or land the artifact-contract support on `v3` first. If every shard fails before tests with `ERR_MODULE_NOT_FOUND`, inspect the downloaded build artifact before changing selectors, profiles, or service readiness.
+- The trusted preparation step emits a `playwright-selector-shadow` artifact for draft pull-request transitions without changing execution. It reads selector code, profiles, timings, and the relevance manifest from trusted `v3`, while the candidate checkout is data only. A draft plan may select relevant specs and one to four balanced shards; a ready plan is always full. The artifact is not a correctness gate and never allocates the `public-pr-arm64` group. Treat unknown, global, malformed, missing-history, or missing-manifest input as a full-suite fallback. Do not enable draft-selective execution until ten representative shadow comparisons show no unexplained missed failures and the later backend-neutral rollout canary passes.
+- Keep the `public-pr-arm64` runner group restricted to `uzh-bf/klicker-uzh` and `uzh-bf/klicker-uzh/.github/workflows/public-pr-playwright-shards.yml@refs/heads/v3`. Changing the workflow path or trusted branch requires updating that organization policy before rollout. A pull-request branch cannot prove changes to this reusable workflow on the restricted group; prove its shared logic on the hosted route first, then require a direct `v3` public run after merge.
+- The Playwright caller uses the short `@v3` ref, which GitHub records as `refs/heads/v3`; keep the full `@refs/heads/v3` spelling for the organization runner-group policy and trusted composite action refs. The full spelling in the reusable-workflow caller creates a zero-job workflow run. The trusted cache seed marks only its exact checked-out workspace as a Git safe directory before reading repository metadata inside its container.
 - To avoid browser install hangs, prefer the Playwright Docker image matching the lockfile-resolved Playwright version, such as `mcr.microsoft.com/playwright:v<version>-noble`, and remove the separate browser install step.
 - In GitHub job containers, service dependencies are reached by service hostnames, not localhost: `postgres`, `redis_exec`, `redis_cache`, `redis_assessment_exec`, and `hatchet`.
 - App URLs can still be `127.0.0.1:<port>` when the apps run in the same job container as Playwright.
@@ -171,7 +197,9 @@ For refactors, run:
 ```bash
 volta run pnpm exec prettier --check playwright/util/actions.ts playwright/tests/<changed-spec>.spec.ts
 volta run pnpm --filter @klicker-uzh/playwright exec tsc --noEmit --project tsconfig.json
-volta run pnpm --filter @klicker-uzh/playwright exec playwright test --list --project=chromium
+node util/run-playwright-host.mjs --list --project=chromium
 ```
 
-Only run browser specs when the local stack is up. If endpoints are down, report that runtime validation was not possible instead of producing noisy connection-refused failures.
+The type and format checks can run in the devcontainer; the Playwright command
+cannot. If the host launcher cannot prove the routed stack, report that runtime
+validation was not possible instead of bypassing the boundary.

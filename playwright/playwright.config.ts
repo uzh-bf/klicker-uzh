@@ -1,4 +1,7 @@
 import { defineConfig, devices } from '@playwright/test'
+import { assertPlaywrightHostBoundary } from '../util/playwright-host-policy.mjs'
+
+assertPlaywrightHostBoundary()
 
 const isCI = !!process.env.CI
 
@@ -14,8 +17,13 @@ export default defineConfig({
   fullyParallel: false,
   forbidOnly: isCI,
   retries: isCI ? 1 : 0,
-  // Serial execution by default (mirrors Cypress sequential spec ordering)
-  workers: isCI ? 1 : 1,
+  // Serial execution by default (mirrors Cypress sequential spec ordering).
+  // Routes can raise this via PLAYWRIGHT_WORKERS to run spec files in parallel.
+  workers:
+    Number.isInteger(Number(process.env.PLAYWRIGHT_WORKERS)) &&
+    Number(process.env.PLAYWRIGHT_WORKERS) > 0
+      ? Number(process.env.PLAYWRIGHT_WORKERS)
+      : 1,
   timeout: 60_000,
   expect: {
     timeout: 10_000,
@@ -29,6 +37,7 @@ export default defineConfig({
         ['list'],
         ['html', { outputFolder: 'playwright-report', open: 'never' }],
         ['junit', { outputFile: 'test-results/junit.xml' }],
+        ['json', { outputFile: 'test-results/results.json' }],
       ]
     : [
         ['list'],
@@ -41,11 +50,10 @@ export default defineConfig({
     testIdAttribute: 'data-cy',
     trace: 'retain-on-failure',
     screenshot: 'only-on-failure',
-    video: 'retain-on-failure',
+    video: isCI ? 'off' : 'retain-on-failure',
     actionTimeout: 15_000,
     navigationTimeout: 30_000,
     ignoreHTTPSErrors: true,
-    // Disable CSS animations to stabilise interactions (mirrors cypress support/e2e.ts)
     launchOptions: {
       args: ['--lang=en-US'],
     },

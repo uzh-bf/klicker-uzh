@@ -1,5 +1,9 @@
 import { test as base, BrowserContext, Page } from '@playwright/test'
-import { disableAnimations, setSessionCookieForUrl } from './authSession.js'
+import {
+  disableAnimations,
+  setSessionCookieForUrl,
+  waitForClientHydration,
+} from './authSession.js'
 import {
   LECTURER_EMAIL,
   LECTURER_IND_EMAIL,
@@ -29,6 +33,7 @@ import { createElementFixture, ElementOptions } from './fixtures/elements.js'
 import {
   createLiveQuizFixture,
   CreateLiveQuizOptions,
+  mockGrowthBookLearningAnalytics,
   validateFeatureAvailabilityFixture,
   ValidateFeatureAvailabilityOptions,
 } from './fixtures/manage.js'
@@ -73,6 +78,9 @@ async function setSessionCookie(
 // Fixture types
 // ---------------------------------------------------------------------------
 type KlickerUZHFixtures = {
+  /** Keep the existing learning analytics baseline enabled unless a test overrides it. */
+  growthBookFeatureFlags: void
+
   /** Low-level factory: sign any token data, set the cookie, navigate */
   loginFactory: (
     tokenData: TokenData,
@@ -137,6 +145,14 @@ type KlickerUZHFixtures = {
 // Extended test object with all KlickerUZH fixtures
 // ---------------------------------------------------------------------------
 export const test = base.extend<KlickerUZHFixtures>({
+  growthBookFeatureFlags: [
+    async ({ page }, use) => {
+      await mockGrowthBookLearningAnalytics(page, true)
+      await use()
+    },
+    { auto: true },
+  ],
+
   loginFactory: async ({ page, context }, use) => {
     await use(
       async (
@@ -281,6 +297,9 @@ export const test = base.extend<KlickerUZHFixtures>({
       })
       await disableAnimations(page)
 
+      // The form arrives in the server-rendered HTML; filling it before the
+      // client bundle runs loses the values at hydration.
+      await waitForClientHydration(page)
       await page.getByTestId('username-field').fill(username)
       await page
         .getByTestId('password-field')

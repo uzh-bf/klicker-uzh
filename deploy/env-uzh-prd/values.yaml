@@ -4,6 +4,7 @@ heartbeats:
   dailyGroupScores: https://betteruptime.com/api/v1/heartbeat/xN8ytcTixyVXsWnNjk9ndimD
 
 global:
+  deploymentEnvironment: production
   appOrigins:
     api: 'https://backend-sls.klicker.uzh.ch'
     auth: 'https://auth.klicker.uzh.ch'
@@ -20,15 +21,37 @@ podAnnotations:
 hatchet:
   client:
     tlsStrategy: 'none'
-    apiUrl: 'http://app-klicker-uzh-hatchet-api.prd-hatchet.svc.cluster.local:8080'
+    apiUrl: 'http://app-hatchet-svc-api.prd-hatchet-svc.svc.cluster.local:8080'
+  kbIngestion:
+    apiUrl: 'http://ingestion-resource-api.prd-ingestion.svc.cluster.local:8000'
+    sourceGatewayUrl: 'http://app-klicker-klicker-uzh-v2-backend-graphql.prd-klicker.svc.cluster.local:3000'
+    workerDisabled: false
+  kbGraph:
+    disabled: false
+    hostPort: 'hatchet-grpc.prd-hatchet-svc.svc.cluster.local:7070'
+    apiUrl: 'http://app-hatchet-svc-api.prd-hatchet-svc.svc.cluster.local:8080'
+    tlsStrategy: 'none'
+    workflowName: 'course-kg-ingestion'
+    standardGenerationModel: 'klickeruzh/azure/gpt-6-luna'
+    standardCleaningModel: 'klickeruzh/azure/gpt-6-luna'
+    highGenerationModel: 'klickeruzh/azure/gpt-6-luna'
+    highCleaningModel: 'klickeruzh/azure/gpt-6-luna'
   workers:
     general:
-      replicaCount: 2
+      replicaCount: 4
+      podDisruptionBudget:
+        minAvailable: 1
       priorityClassName: production-workload
       image:
         repository: ghcr.io/uzh-bf/klicker-uzh/hatchet-worker-general-arm
-        pullPolicy: Always
-        tag: v3.4.0-alpha.62
+        pullPolicy: IfNotPresent
+        tag: v3.4.0-alpha.88
+      resources:
+        requests:
+          cpu: 50m
+          memory: 512Mi
+        limits:
+          memory: 2Gi
       affinity:
         podAntiAffinity:
           preferredDuringSchedulingIgnoredDuringExecution:
@@ -57,11 +80,19 @@ hatchet:
 
     responseProcessor:
       replicaCount: 4
+      podDisruptionBudget:
+        minAvailable: 2
       priorityClassName: production-workload
       image:
         repository: ghcr.io/uzh-bf/klicker-uzh/hatchet-worker-response-processor-arm
-        pullPolicy: Always
-        tag: v3.4.0-alpha.62
+        pullPolicy: IfNotPresent
+        tag: v3.4.0-alpha.88
+      resources:
+        requests:
+          cpu: 25m
+          memory: 192Mi
+        limits:
+          memory: 512Mi
       affinity:
         podAntiAffinity:
           preferredDuringSchedulingIgnoredDuringExecution:
@@ -90,11 +121,19 @@ hatchet:
 
     responseProcessorAssessment:
       replicaCount: 4
+      podDisruptionBudget:
+        minAvailable: 2
       priorityClassName: production-workload
       image:
         repository: ghcr.io/uzh-bf/klicker-uzh/hatchet-worker-response-processor-arm
-        pullPolicy: Always
-        tag: v3.4.0-alpha.62
+        pullPolicy: IfNotPresent
+        tag: v3.4.0-alpha.88
+      resources:
+        requests:
+          cpu: 50m
+          memory: 192Mi
+        limits:
+          memory: 512Mi
       affinity:
         podAntiAffinity:
           preferredDuringSchedulingIgnoredDuringExecution:
@@ -139,9 +178,6 @@ auth:
 
   replicaCount: 3
 
-  autoscaling:
-    enabled: false
-
   affinity:
     podAntiAffinity:
       preferredDuringSchedulingIgnoredDuringExecution:
@@ -157,8 +193,8 @@ auth:
 
   image:
     repository: ghcr.io/uzh-bf/klicker-uzh/auth-arm
-    pullPolicy: Always
-    tag: v3.4.0-alpha.62
+    pullPolicy: IfNotPresent
+    tag: v3.4.0-alpha.88
 
   ingress:
     annotations:
@@ -182,10 +218,10 @@ auth:
 
   resources:
     requests:
-      cpu: 50m
-      memory: 50Mi
+      cpu: 25m
+      memory: 192Mi
     limits:
-      memory: 200Mi
+      memory: 512Mi
 
 chat:
   allowedFrameAncestors: 'https://*.klicker.uzh.ch https://lms.uzh.ch https://*.olat.uzh.ch https://elearning.klicker.uzh.ch https://*.df-app.ch'
@@ -197,105 +233,113 @@ chat:
 
   telemetry:
     enabled: false
+    environment: 'production'
 
-  replicaCount: 1
+  # Account usage stays inert in production: the base-budget backfill has not
+  # run there, so turning enforcement on would refuse every unbudgeted account.
+  # The lifecycle switch alone records usage without refusing anything. Both
+  # values are written out explicitly so the production cutover is a deliberate
+  # change with the procedure in docs/chat-platform.md, "Account usage
+  # activation".
+  lifecycleWritersEnabled: false
+  accountUsageEnforcementEnabled: false
 
-  autoscaling:
-    enabled: false
+  replicaCount: 3
 
   automaticModels:
     primaryId: auto
-    fallbackId: gpt-4.1-mini
+    fallbackId: gpt-6-luna
 
   modelRegistry:
-    # "Auto" routes through the LiteLLM auto-router, which self-selects the
-    # tier per request (SIMPLE=gpt-5.6-luna-medium, MEDIUM=gpt-5.6-luna-high,
-    # COMPLEX=gpt-5.6-luna-xhigh, REASONING=gpt-5.6-sol-medium; match_threshold
-    # 0.55). It is a normal selectable model (fallback: false) and is also the
-    # global automatic-model primary. Chatbots using automatic model selection
-    # therefore use Auto by default; explicit model selections remain respected.
+    # Auto is the global automatic-model primary, so chatbots using automatic
+    # model selection route through auto-router-v2, as on staging. Explicit
+    # model selections remain respected. GPT-6 Luna is the participant-credit
+    # fallback.
+    # "Auto" routes through the LiteLLM auto-router-v2, which self-selects the
+    # tier per request (SIMPLE=gpt-6-luna-high, MEDIUM=gpt-6.1-sol-low,
+    # COMPLEX=gpt-6.1-sol-medium, REASONING=gpt-6.1-sol-high), as on staging.
+    # Auto is a BASE model; Sol selected directly stays ADVANCED.
     # A chatbot can be pinned to Auto-only via its DB columns
     # (modelSelection=false + allowedModelIds=["auto"]).
-    # cost mirrors the gpt-5.6-luna tier (the typical COMPLEX route); REASONING
-    # (gpt-5.6-sol-medium) is rare. Tune if the routed mix shifts.
+    # Auto's accounting rate matches a generation mix of about 50% Luna and
+    # 50% Sol at GPT-6 list prices. Classifier overhead remains outside the
+    # registry's selected-model token fields.
     - id: auto
-      deploymentId: klickeruzh/azure/auto-router
+      deploymentId: klickeruzh/azure/auto-router-v2
       name: Auto
       description: Automatic model selection (routes to the best model per request)
       supportsImageAttachments: true
       usesResponsesApi: true
       fallback: false
+      usageClass: BASE
+      maxOutputTokens: 4096
       cost:
-        input: 1.25
-        output: 10.0
-    - id: gpt-4.1
-      deploymentId: klickeruzh/azure/gpt-4.1
-      name: GPT-4.1
-      description: OpenAI model
+        input: 1.0
+        output: 5.0
+    - id: gpt-6-luna
+      deploymentId: klickeruzh/azure/gpt-6-luna
+      name: GPT-6 Luna
+      description: OpenAI reasoning model
       supportsImageAttachments: true
+      supportsReasoning: true
+      supportedReasoningEfforts:
+        - low
+        - medium
+        - high
+        - xhigh
+      fallback: true
+      usageClass: BASE
+      maxOutputTokens: 4096
+      cost:
+        input: 0.1
+        output: 0.5
+    - id: gpt-6-sol
+      deploymentId: klickeruzh/azure/gpt-6-sol
+      name: GPT-6 Sol
+      description: OpenAI frontier reasoning model
+      supportsImageAttachments: true
+      supportsReasoning: true
+      supportedReasoningEfforts:
+        - low
+        - medium
+        - high
       fallback: false
+      usageClass: ADVANCED
+      maxOutputTokens: 4096
       cost:
         input: 2.0
-        output: 8.0
-    - id: gpt-5.1
-      deploymentId: klickeruzh/azure/gpt-5.1
-      name: GPT-5.1
-      description: OpenAI reasoning model
-      supportsImageAttachments: true
-      supportsReasoning: true
-      supportedReasoningEfforts:
-        - none
-        - minimal
-        - low
-        - medium
-        - high
-      fallback: false
-      cost:
-        input: 1.25
         output: 10.0
-    - id: gpt-5.4
-      deploymentId: klickeruzh/azure/gpt-5.4
-      name: GPT-5.4
-      description: OpenAI reasoning model
+    - id: gpt-6.1-sol
+      deploymentId: klickeruzh/azure/gpt-6.1-sol
+      name: GPT-6.1 Sol
+      description: OpenAI frontier reasoning model
       supportsImageAttachments: true
       supportsReasoning: true
       supportedReasoningEfforts:
-        - minimal
         - low
         - medium
         - high
-        - xhigh
       fallback: false
+      usageClass: ADVANCED
+      maxOutputTokens: 4096
       cost:
-        input: 1.25
+        input: 2.0
         output: 10.0
-    - id: gpt-5.5
-      deploymentId: klickeruzh/azure/gpt-5.5
-      name: GPT-5.5
-      description: OpenAI reasoning model
+    - id: gpt-5.6-sol
+      deploymentId: klickeruzh/azure/gpt-5.6-sol
+      name: GPT-5.6 Sol
+      description: OpenAI frontier reasoning model
       supportsImageAttachments: true
       supportsReasoning: true
       supportedReasoningEfforts:
-        - none
-        - minimal
         - low
         - medium
-        - high
-        - xhigh
       fallback: false
+      usageClass: ADVANCED
+      maxOutputTokens: 4096
       cost:
         input: 5.0
         output: 30.0
-    - id: gpt-4.1-mini
-      deploymentId: klickeruzh/azure/gpt-4.1-mini
-      name: GPT-4.1 Mini
-      description: Small OpenAI model
-      supportsImageAttachments: true
-      fallback: true
-      cost:
-        input: 0.4
-        output: 1.6
-
   affinity:
     podAntiAffinity:
       preferredDuringSchedulingIgnoredDuringExecution:
@@ -310,8 +354,8 @@ chat:
             topologyKey: kubernetes.io/hostname
   image:
     repository: ghcr.io/uzh-bf/klicker-uzh/chat-arm
-    pullPolicy: Always
-    tag: v3.4.0-alpha.64
+    pullPolicy: IfNotPresent
+    tag: v3.4.0-alpha.88
 
   ingress:
     annotations:
@@ -336,13 +380,113 @@ chat:
   resources:
     requests:
       cpu: 50m
-      memory: 250Mi
+      memory: 384Mi
     limits:
       cpu: 200m
-      memory: 768Mi
+      memory: 1Gi
+
+mcpStudent:
+  priorityClassName: production-workload
+
+  replicaCount: 2
+
+  autoscaling:
+    enabled: false
+
+  affinity:
+    podAntiAffinity:
+      preferredDuringSchedulingIgnoredDuringExecution:
+        - weight: 100
+          podAffinityTerm:
+            labelSelector:
+              matchExpressions:
+                - key: app.kubernetes.io/component
+                  operator: In
+                  values:
+                    - mcp-student
+            topologyKey: kubernetes.io/hostname
+
+  topologySpreadConstraints:
+    - maxSkew: 1
+      topologyKey: topology.kubernetes.io/zone
+      whenUnsatisfiable: ScheduleAnyway
+      labelSelector:
+        matchLabels:
+          app.kubernetes.io/component: mcp-student
+    - maxSkew: 1
+      topologyKey: kubernetes.io/hostname
+      whenUnsatisfiable: ScheduleAnyway
+      labelSelector:
+        matchLabels:
+          app.kubernetes.io/component: mcp-student
+
+  image:
+    repository: ghcr.io/uzh-bf/klicker-uzh/mcp-student-arm
+    pullPolicy: IfNotPresent
+    tag: v3.4.0-alpha.88
+
+  strategy:
+    type: RollingUpdate
+
+  resources:
+    requests:
+      cpu: 25m
+      memory: 160Mi
+    limits:
+      memory: 320Mi
+
+mcpLecturer:
+  priorityClassName: production-workload
+
+  replicaCount: 2
+
+  autoscaling:
+    enabled: false
+
+  affinity:
+    podAntiAffinity:
+      preferredDuringSchedulingIgnoredDuringExecution:
+        - weight: 100
+          podAffinityTerm:
+            labelSelector:
+              matchExpressions:
+                - key: app.kubernetes.io/component
+                  operator: In
+                  values:
+                    - mcp-lecturer
+            topologyKey: kubernetes.io/hostname
+
+  topologySpreadConstraints:
+    - maxSkew: 1
+      topologyKey: topology.kubernetes.io/zone
+      whenUnsatisfiable: ScheduleAnyway
+      labelSelector:
+        matchLabels:
+          app.kubernetes.io/component: mcp-lecturer
+    - maxSkew: 1
+      topologyKey: kubernetes.io/hostname
+      whenUnsatisfiable: ScheduleAnyway
+      labelSelector:
+        matchLabels:
+          app.kubernetes.io/component: mcp-lecturer
+
+  image:
+    repository: ghcr.io/uzh-bf/klicker-uzh/mcp-lecturer-arm
+    pullPolicy: IfNotPresent
+    tag: v3.4.0-alpha.88
+
+  strategy:
+    type: RollingUpdate
+
+  resources:
+    requests:
+      cpu: 25m
+      memory: 160Mi
+    limits:
+      memory: 320Mi
 
 frontendPWA:
-  allowedFrameAncestors: 'https://*.klicker.uzh.ch https://lms.uzh.ch https://*.olat.uzh.ch https://elearning.klicker.uzh.ch https://ius.zone https://*.df-app.ch'
+  allowedFrameAncestors: 'https://*.klicker.uzh.ch https://lms.uzh.ch https://*.olat.uzh.ch https://elearning.klicker.uzh.ch https://ius.zone https://*.df-app.ch https://moodle.fernuni.ch https://*.localhost'
   priorityClassName: production-workload
 
   replicaCount: 4
@@ -365,8 +509,8 @@ frontendPWA:
 
   image:
     repository: ghcr.io/uzh-bf/klicker-uzh/frontend-pwa-arm
-    pullPolicy: Always
-    tag: v3.4.0-alpha.62
+    pullPolicy: IfNotPresent
+    tag: v3.4.0-alpha.88
 
   ingress:
     className: haproxy
@@ -391,9 +535,9 @@ frontendPWA:
   resources:
     requests:
       cpu: 100m
-      memory: 200Mi
+      memory: 320Mi
     limits:
-      memory: 600Mi
+      memory: 1Gi
 
 frontendManage:
   priorityClassName: production-workload
@@ -418,8 +562,8 @@ frontendManage:
 
   image:
     repository: ghcr.io/uzh-bf/klicker-uzh/frontend-manage-arm
-    pullPolicy: Always
-    tag: v3.4.0-alpha.62
+    pullPolicy: IfNotPresent
+    tag: v3.4.0-alpha.88
 
   ingress:
     className: haproxy
@@ -443,10 +587,10 @@ frontendManage:
 
   resources:
     requests:
-      cpu: 50m
-      memory: 50Mi
+      cpu: 25m
+      memory: 256Mi
     limits:
-      memory: 200Mi
+      memory: 512Mi
 
 frontendControl:
   allowedFrameAncestors: 'https://*.klicker.uzh.ch https://lms.uzh.ch https://*.olat.uzh.ch https://elearning.klicker.uzh.ch https://*.df-app.ch'
@@ -456,11 +600,8 @@ frontendControl:
 
   image:
     repository: ghcr.io/uzh-bf/klicker-uzh/frontend-control-arm
-    pullPolicy: Always
-    tag: v3.4.0-alpha.62
-
-  autoscaling:
-    enabled: false
+    pullPolicy: IfNotPresent
+    tag: v3.4.0-alpha.88
 
   affinity:
     podAntiAffinity:
@@ -497,13 +638,44 @@ frontendControl:
 
   resources:
     requests:
-      cpu: 50m
-      memory: 50Mi
+      cpu: 25m
+      memory: 96Mi
     limits:
-      memory: 200Mi
+      memory: 512Mi
 
 backendGraphql:
+  betaSavedGroupId: grp_2CeKcuxYw3c567fSV7CPPQ
   priorityClassName: production-workload
+
+  knowledgeGraph:
+    host: 'prd-falkordb-aigeneric-falkordb-falkordb.prd-kb-falkordb-aigeneric.svc.cluster.local'
+    port: '6379'
+    tls: 'false'
+    queryTimeoutMs: '5000'
+    cost:
+      currency: 'CHF'
+      standardEstimateMinorUnits: '100'
+      highEstimateMinorUnits: '200'
+      maxCostMinorUnits: '250'
+      semesterQuotaMinorUnits: '1000'
+      pricingVersion: 'prd-graph-v1'
+      billingMode: 'SEMESTER_QUOTA'
+      semesterKey: '2026-H2'
+
+  elementGeneration:
+    enabled: true
+    hatchetHostPort: 'hatchet-grpc.prd-hatchet-svc.svc.cluster.local:7070'
+    hatchetServerUrl: 'http://app-hatchet-svc-api.prd-hatchet-svc.svc.cluster.local:8080'
+    graphArtifactContainer: 'kg-graph-artifacts'
+    graphArtifactPrefix: 'graph-artifacts'
+    inputContainer: 'question-inputs'
+    outputContainer: 'question-results'
+    outputPrefix: 'question-builds'
+    cost:
+      questionMinorUnits: '1'
+      flashcardMinorUnits: '1'
+      flashcardRetryMinorUnits: '1'
+      pricingVersion: 'prd-elements-v1'
 
   replicaCount: 4
 
@@ -525,8 +697,8 @@ backendGraphql:
 
   image:
     repository: ghcr.io/uzh-bf/klicker-uzh/backend-docker-arm
-    pullPolicy: Always
-    tag: v3.4.0-alpha.62
+    pullPolicy: IfNotPresent
+    tag: v3.4.0-alpha.88
 
   appManageSubdomain: manage
   appStudentSubdomain: pwa
@@ -567,9 +739,9 @@ backendGraphql:
   resources:
     requests:
       cpu: 100m
-      memory: 200Mi
+      memory: 448Mi
     limits:
-      memory: 600Mi
+      memory: 1Gi
 
 olatApi:
   priorityClassName: production-workload
@@ -578,11 +750,8 @@ olatApi:
 
   image:
     repository: ghcr.io/uzh-bf/klicker-uzh/olat-api-arm
-    pullPolicy: Always
-    tag: v3.4.0-alpha.62
-
-  autoscaling:
-    enabled: false
+    pullPolicy: IfNotPresent
+    tag: v3.4.0-alpha.88
 
   affinity:
     podAntiAffinity:
@@ -619,10 +788,10 @@ olatApi:
 
   resources:
     requests:
-      cpu: 50m
-      memory: 50Mi
+      cpu: 25m
+      memory: 128Mi
     limits:
-      memory: 200Mi
+      memory: 512Mi
 
 lti:
   priorityClassName: production-workload
@@ -651,8 +820,8 @@ lti:
 
   image:
     repository: ghcr.io/uzh-bf/klicker-uzh/lti-arm
-    pullPolicy: Always
-    tag: v3.4.0-alpha.62
+    pullPolicy: IfNotPresent
+    tag: v3.4.0-alpha.88
 
   ingress:
     className: haproxy
@@ -668,6 +837,13 @@ lti:
         hosts:
           - lti.klicker.uzh.ch
 
+  resources:
+    requests:
+      cpu: 50m
+      memory: 200Mi
+    limits:
+      memory: 1Gi
+
 responseApi:
   corsAllowedOrigins: 'https://pwa.klicker.uzh.ch'
 
@@ -677,11 +853,8 @@ responseApi:
 
   image:
     repository: ghcr.io/uzh-bf/klicker-uzh/response-api-arm
-    tag: v3.4.0-alpha.62
-    pullPolicy: Always
-
-  autoscaling:
-    enabled: false
+    tag: v3.4.0-alpha.88
+    pullPolicy: IfNotPresent
 
   affinity:
     podAntiAffinity:
@@ -718,17 +891,15 @@ responseApi:
 
   resources:
     requests:
-      cpu: 50m
-      memory: 50Mi
+      cpu: 25m
+      memory: 96Mi
     limits:
-      memory: 200Mi
+      memory: 512Mi
 
 assessment:
   frontendPWA:
     priorityClassName: production-workload
     replicaCount: 4
-    autoscaling:
-      enabled: false
 
     affinity:
       podAntiAffinity:
@@ -740,7 +911,7 @@ assessment:
                   - key: app.kubernetes.io/component
                     operator: In
                     values:
-                      - frontend-pwa-assessment
+                      - frontend-assessment
               topologyKey: kubernetes.io/hostname
       nodeAffinity:
         requiredDuringSchedulingIgnoredDuringExecution:
@@ -750,19 +921,19 @@ assessment:
                   operator: In
                   values:
                     - reserved
-      topologySpreadConstraints:
-        - maxSkew: 1
-          topologyKey: topology.kubernetes.io/zone
-          whenUnsatisfiable: ScheduleAnyway
-          labelSelector:
-            matchLabels:
-              app.kubernetes.io/component: frontend-pwa-assessment
-        - maxSkew: 1
-          topologyKey: kubernetes.io/hostname
-          whenUnsatisfiable: ScheduleAnyway
-          labelSelector:
-            matchLabels:
-              app.kubernetes.io/component: frontend-pwa-assessment
+    topologySpreadConstraints:
+      - maxSkew: 1
+        topologyKey: topology.kubernetes.io/zone
+        whenUnsatisfiable: ScheduleAnyway
+        labelSelector:
+          matchLabels:
+            app.kubernetes.io/component: frontend-assessment
+      - maxSkew: 1
+        topologyKey: kubernetes.io/hostname
+        whenUnsatisfiable: ScheduleAnyway
+        labelSelector:
+          matchLabels:
+            app.kubernetes.io/component: frontend-assessment
     tolerations:
       - key: klickerasm
         operator: Equal
@@ -771,8 +942,8 @@ assessment:
 
     image:
       repository: ghcr.io/uzh-bf/klicker-uzh/frontend-assessment-arm
-      pullPolicy: Always
-      tag: v3.4.0-alpha.62
+      pullPolicy: IfNotPresent
+      tag: v3.4.0-alpha.88
 
     ingress:
       className: haproxy
@@ -799,13 +970,11 @@ assessment:
         cpu: 100m
         memory: 200Mi
       limits:
-        memory: 600Mi
+        memory: 1Gi
 
   backendGraphql:
     priorityClassName: production-workload
     replicaCount: 4
-    autoscaling:
-      enabled: false
 
     affinity:
       podAntiAffinity:
@@ -827,19 +996,19 @@ assessment:
                   operator: In
                   values:
                     - reserved
-      topologySpreadConstraints:
-        - maxSkew: 1
-          topologyKey: topology.kubernetes.io/zone
-          whenUnsatisfiable: ScheduleAnyway
-          labelSelector:
-            matchLabels:
-              app.kubernetes.io/component: backend-assessment
-        - maxSkew: 1
-          topologyKey: kubernetes.io/hostname
-          whenUnsatisfiable: ScheduleAnyway
-          labelSelector:
-            matchLabels:
-              app.kubernetes.io/component: backend-assessment
+    topologySpreadConstraints:
+      - maxSkew: 1
+        topologyKey: topology.kubernetes.io/zone
+        whenUnsatisfiable: ScheduleAnyway
+        labelSelector:
+          matchLabels:
+            app.kubernetes.io/component: backend-assessment
+      - maxSkew: 1
+        topologyKey: kubernetes.io/hostname
+        whenUnsatisfiable: ScheduleAnyway
+        labelSelector:
+          matchLabels:
+            app.kubernetes.io/component: backend-assessment
     tolerations:
       - key: klickerasm
         operator: Equal
@@ -848,8 +1017,8 @@ assessment:
 
     image:
       repository: ghcr.io/uzh-bf/klicker-uzh/backend-docker-arm
-      pullPolicy: Always
-      tag: v3.4.0-alpha.62
+      pullPolicy: IfNotPresent
+      tag: v3.4.0-alpha.88
 
     appManageSubdomain: manage
     appStudentSubdomain: assessment
@@ -885,9 +1054,9 @@ assessment:
     resources:
       requests:
         cpu: 100m
-        memory: 200Mi
+        memory: 384Mi
       limits:
-        memory: 600Mi
+        memory: 1Gi
 
   responseApi:
     corsAllowedOrigins: 'https://assessment.klicker.uzh.ch'
@@ -895,9 +1064,6 @@ assessment:
     priorityClassName: production-workload
 
     replicaCount: 3
-
-    autoscaling:
-      enabled: false
 
     affinity:
       podAntiAffinity:
@@ -927,8 +1093,8 @@ assessment:
 
     image:
       repository: ghcr.io/uzh-bf/klicker-uzh/response-api-arm
-      pullPolicy: Always
-      tag: v3.4.0-alpha.62
+      pullPolicy: IfNotPresent
+      tag: v3.4.0-alpha.88
 
     ingress:
       className: haproxy
@@ -953,23 +1119,33 @@ assessment:
     resources:
       requests:
         cpu: 50m
-        memory: 50Mi
+        memory: 96Mi
       limits:
-        memory: 200Mi
+        memory: 512Mi
 
 # Migration hook image: only the repo is pinned; the tag auto-tracks the
 # backendGraphql image tag above (see chart job-migrate.yaml).
 #
-# DISABLED UNTIL THE FIRST POST-HOOK RELEASE. No migrator image exists for any
-# release tag cut before this feature landed, so while backendGraphql.image.tag
-# still points at such a tag the hook would fail on ImagePullBackOff and abort
-# every prd sync — including a rollback to an older tag. Flip this to true in the
-# same commit that bumps the prd image tags to the first release whose CI built
-# `backend-docker-migrator-arm`. Until then prd migrations stay manual
-# (`prisma:deploy:prod`). Rolling back to a pre-hook tag requires setting this
-# back to false. See docs/data-and-migrations.md → Recovering a failed hook.
+# Enabled because the pinned production tags have matching migrator images; the
+# tag auto-tracks backendGraphql.image.tag. Keep this true for migrator-bearing
+# release tags. Rolling back to a pre-hook tag requires setting this back to
+# false and using the manual migration path. See docs/data-and-migrations.md →
+# Recovering a failed hook.
 migrator:
-  enabled: false
+  enabled: true
   priorityClassName: production-workload
   image:
     repository: ghcr.io/uzh-bf/klicker-uzh/backend-docker-migrator-arm
+    pullPolicy: IfNotPresent
+
+# Modern Klicker KB retrieval authenticates with a fresh five-minute ES256
+# scope token on the dedicated Doc Query route instead of the shared transport
+# bearer. All three values move together: the chart refuses to render a partial
+# triple, and scope mode ignores the stored credential for this server. The
+# server id and legacy URL are this environment's existing KB MCP server row, so
+# a database edit cannot redirect a scope token.
+docQuery:
+  scopedMcp:
+    serverId: 'e05030e6-d799-4e9b-91c7-da2e074d14a8'
+    legacyUrl: 'http://mcp-doc-query.prd-doc-query.svc.cluster.local:1417/mcp/klicker'
+    url: 'http://mcp-doc-query.prd-doc-query.svc.cluster.local:1417/mcp/klicker/kb'

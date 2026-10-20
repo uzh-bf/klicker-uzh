@@ -14,6 +14,7 @@ import {
   ManipulateSelectionQuestionDocument,
   UpdateElementInstancesDocument,
 } from '@klicker-uzh/graphql/dist/ops'
+import { ELEMENT_CREATION_AUTOSAVE_KEY } from '@lib/elementCreationRecovery'
 import { useLocalStorage } from '@uidotdev/usehooks'
 import { useRouter } from 'next/router'
 import React, { useMemo, useState } from 'react'
@@ -41,6 +42,7 @@ export enum ElementEditMode {
 interface ElementEditModalProps {
   inputsDisabled?: boolean
   isOpen: boolean
+  preserveDraftOnDismiss?: boolean
   handleSetIsOpen: (open: boolean) => void
   triggerSuccessToast: () => void
   elementId?: number
@@ -51,6 +53,7 @@ interface ElementEditModalProps {
 function ElementEditModal({
   inputsDisabled = false,
   isOpen,
+  preserveDraftOnDismiss = false,
   handleSetIsOpen,
   triggerSuccessToast,
   elementId,
@@ -65,7 +68,7 @@ function ElementEditModal({
   const [autoSavedElement, setAutoSavedElement] =
     useLocalStorage<ElementFormTypes>(
       typeof elementId === 'undefined' || isDuplication
-        ? 'autosave-element-creation'
+        ? ELEMENT_CREATION_AUTOSAVE_KEY
         : `autosave-element-${elementId}`,
       undefined
     )
@@ -127,6 +130,7 @@ function ElementEditModal({
       mode={mode}
       elementId={elementId}
       inputsDisabled={inputsDisabled}
+      preserveDraftOnDismiss={preserveDraftOnDismiss}
       loading={
         loadingQuestion ||
         !formikInitialValues ||
@@ -381,7 +385,7 @@ function ElementEditModal({
         if (autoSavedElement) {
           localStorage.removeItem(
             typeof elementId === 'undefined' || isDuplication
-              ? 'autosave-element-creation'
+              ? ELEMENT_CREATION_AUTOSAVE_KEY
               : `autosave-element-${elementId}`
           )
         }

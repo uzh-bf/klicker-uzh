@@ -18,6 +18,13 @@ export const ASSESSMENT_REPORT_COURSE_NAME = 'Credential Assessment Course'
 export const ASSESSMENT_REPORT_COURSE_REFERENCE = 'credential-assessment-course'
 export const ASSESSMENT_REPORT_SUBJECT_EMAIL =
   'assessment-report-student@example.org'
+// Freely editable profile address, deliberately different from the invitation
+// email, so tests can prove it never reaches the credential.
+export const ASSESSMENT_REPORT_PROFILE_EMAIL =
+  'assessment-report-profile@example.org'
+export const ASSESSMENT_REPORT_EDUID_GIVEN_NAME = 'Ada'
+export const ASSESSMENT_REPORT_EDUID_SURNAME = 'Lovelace'
+export const ASSESSMENT_REPORT_EDUID_MATRICULATION_NUMBER = '00-123-456'
 export const ASSESSMENT_REPORT_PARTICIPANT_IDS = Array.from(
   { length: 10 },
   (_, index) => `a1000000-0000-4000-8000-${String(index + 1).padStart(12, '0')}`

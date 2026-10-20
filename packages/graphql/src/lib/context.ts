@@ -1,4 +1,8 @@
 import { Hatchet } from '@hatchet-dev/typescript-sdk'
+import type {
+  FeatureFlagAttributes,
+  FeatureFlagKey,
+} from '@klicker-uzh/feature-flags'
 import {
   PrismaClient,
   UserLoginScope,
@@ -33,6 +37,12 @@ export interface Context extends BaseContext {
   hatchet: Hatchet
   // available hatchet tasks
   tasks: PreparedHatchetTasks
+  // request-local evaluations on a process-level, multi-user client
+  featureFlags?: FeatureFlagEvaluator
+  betaPreference?: {
+    userId: string
+    value: Promise<boolean | null>
+  }
 }
 
 export interface ContextWithUser extends Context {
@@ -54,6 +64,11 @@ export type PrismaTransactionContextWithUser = Omit<
     PrismaClient,
     '$connect' | '$disconnect' | '$on' | '$transaction' | '$use' | '$extends'
   >
+}
+
+export interface FeatureFlagEvaluator {
+  isEnabled(key: FeatureFlagKey, attributes: FeatureFlagAttributes): boolean
+  refresh(): Promise<void>
 }
 
 function enhanceContext(args = {}) {

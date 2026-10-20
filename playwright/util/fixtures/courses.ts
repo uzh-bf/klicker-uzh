@@ -1,6 +1,7 @@
 import {
   CourseAuthType,
   ElementBlockStatus,
+  InvitationStatus,
   PermissionLevel,
   PublicationStatus,
   ResponseCorrectness,
@@ -40,6 +41,8 @@ export type CourseDuplicationSummary = {
   isGamificationEnabled: boolean
   isAssessmentEnabled: boolean
   pinCode: number | null
+  startDate: Date
+  endDate: Date
   groupDeadlineDate: Date
   competencyTreeId: number | null
   competencyTreeName: string | null
@@ -252,6 +255,53 @@ export async function createCourseRecord({
   }
 
   return course
+}
+
+export async function createParticipantInvitationRecord({
+  courseId,
+  email,
+  matriculationNumber,
+  status = InvitationStatus.PENDING,
+  participantUsername,
+}: {
+  courseId: string
+  email: string
+  matriculationNumber?: string
+  status?: InvitationStatus
+  participantUsername?: string
+}) {
+  const prisma = await getPrisma()
+  const participant = participantUsername
+    ? await prisma.participant.findUnique({
+        where: { username: participantUsername },
+        select: { id: true },
+      })
+    : null
+
+  if (participantUsername && !participant) {
+    throw new Error(
+      'Participant invitation fixture requires an existing participant'
+    )
+  }
+
+  if (status === InvitationStatus.ACCEPTED && !participant) {
+    throw new Error('Accepted invitations require an existing participant')
+  }
+
+  if (status !== InvitationStatus.ACCEPTED && participant) {
+    throw new Error('Pending invitations must not reference a participant')
+  }
+
+  return await prisma.participantInvitation.create({
+    data: {
+      courseId,
+      email,
+      matriculationNumber,
+      status,
+      participantId: participant?.id,
+      acceptedAt: status === InvitationStatus.ACCEPTED ? new Date() : null,
+    },
+  })
 }
 
 export async function updateCourseGroupDeadlineDate({
@@ -1183,6 +1233,8 @@ export async function getCourseDuplicationSummary({
       isGamificationEnabled: true,
       isAssessmentEnabled: true,
       pinCode: true,
+      startDate: true,
+      endDate: true,
       groupDeadlineDate: true,
       competencyTree: {
         select: {
@@ -1496,6 +1548,8 @@ export async function getCourseDuplicationSummary({
     isGamificationEnabled: course.isGamificationEnabled,
     isAssessmentEnabled: course.isAssessmentEnabled,
     pinCode: course.pinCode,
+    startDate: course.startDate,
+    endDate: course.endDate,
     groupDeadlineDate: course.groupDeadlineDate,
     competencyTreeId: course.competencyTree?.id ?? null,
     competencyTreeName: course.competencyTree?.name ?? null,

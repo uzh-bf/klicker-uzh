@@ -1,3 +1,47 @@
+import { EventEmitter } from 'node:events'
+import type { Hatchet } from '@hatchet-dev/typescript-sdk'
+import { hatchetClient } from '@klicker-uzh/hatchet'
+import { prisma, requireDisposableDatabase } from '@klicker-uzh/prisma'
+import {
+  type AnswerCollection,
+  type CatalogCollection,
+  CourseAuthType,
+  type Element,
+  ElementInstanceType,
+  ElementStackType,
+  ElementType,
+  ObjectAccess,
+  PermissionLevel,
+  type PrismaClient,
+  PublicationStatus,
+  ResponseCorrectness,
+  UserLoginScope,
+  UserRole,
+} from '@klicker-uzh/prisma/client'
+import {
+  type CourseDeletionEvent,
+  DisplayMode,
+  type ElementData,
+  type ElementInstanceOptions,
+  type ElementInstanceResults,
+} from '@klicker-uzh/types'
+import {
+  getInitialInstanceResults,
+  MISSING_CATALOG_COLLECTION_ID,
+  PARTICIPANT_DATA_USE_DISCLOSURE_VERSION,
+  processElementData,
+  recomputeDerivedPermissions,
+} from '@klicker-uzh/util'
+import generatePassword from 'generate-password'
+import { createPubSub, Repeater } from 'graphql-yoga'
+import { Redis } from 'ioredis'
+import { v4 as uuidv4 } from 'uuid'
+import { vi } from 'vitest'
+import {
+  handleProcessCourseDuplication,
+  handleSweepStaleCourseDuplications,
+} from '@/services/courseDuplication.js'
+import { handleProcessCourseDeletion } from '@/services/courseDeletion.js'
 import {
   handleEndExpiredGroupActivity,
   handlePublishScheduledGroupActivity,
@@ -12,43 +56,6 @@ import {
   handlePublishScheduledMicroLearning,
 } from '@/services/microLearning.js'
 import { handlePublishScheduledPracticeQuiz } from '@/services/practiceQuizzes.js'
-import type { Hatchet } from '@hatchet-dev/typescript-sdk'
-import { hatchetClient } from '@klicker-uzh/hatchet'
-import { prisma } from '@klicker-uzh/prisma'
-import {
-  AnswerCollection,
-  CatalogCollection,
-  CourseAuthType,
-  Element,
-  ElementInstanceType,
-  ElementStackType,
-  ElementType,
-  ObjectAccess,
-  PermissionLevel,
-  PrismaClient,
-  PublicationStatus,
-  ResponseCorrectness,
-  UserLoginScope,
-  UserRole,
-} from '@klicker-uzh/prisma/client'
-import {
-  DisplayMode,
-  ElementData,
-  ElementInstanceOptions,
-  ElementInstanceResults,
-} from '@klicker-uzh/types'
-import {
-  getInitialInstanceResults,
-  MISSING_CATALOG_COLLECTION_ID,
-  processElementData,
-  recomputeDerivedPermissions,
-} from '@klicker-uzh/util'
-import { EventEmitter } from 'events'
-import generatePassword from 'generate-password'
-import { createPubSub, Repeater } from 'graphql-yoga'
-import { Redis } from 'ioredis'
-import { v4 as uuidv4 } from 'uuid'
-import { vi } from 'vitest'
 import type { ContextWithUser } from '../src/lib/context.js'
 import { createAnswerCollection } from '../src/services/resources.js'
 import { createCatalogCollection } from '../src/services/sharing.js'
@@ -83,6 +90,7 @@ export async function testInitialization(
   hatchet: Hatchet,
   emitter: EventEmitter
 ): Promise<TestInitializationResult> {
+  await requireDisposableDatabase(prisma)
   // upsert all users in the database
   await Promise.all(
     [userOne, userTwo, userThree, userFour, userFive, userSix].map(
@@ -137,6 +145,7 @@ export async function testInitialization(
     redisExec,
     redisAssessmentExec,
     prisma,
+    tasks: {} as ContextWithUser['tasks'],
   }
 
   // initialize tasks to be called
@@ -278,7 +287,41 @@ export async function testInitialization(
         return { success }
       },
     }),
+    processCourseDuplication: hatchet.task({
+      name: 'process-course-duplication',
+      fn: vi.fn(async ({ jobId }: { jobId: string }, executionCtx) => {
+        const success = await handleProcessCourseDuplication(
+          { jobId },
+          hatchetCtx,
+          executionCtx
+        )
+        return { success }
+      }),
+    }),
+    sweepStaleCourseDuplications: hatchet.task({
+      name: 'sweep-stale-course-duplications',
+      fn: vi.fn(async (_input: Record<string, never>, executionCtx) => {
+        const success = await handleSweepStaleCourseDuplications(
+          {},
+          hatchetCtx,
+          executionCtx
+        )
+        return { success }
+      }),
+    }),
+    processCourseDeletion: hatchet.task({
+      name: 'process-course-deletion',
+      fn: vi.fn(async (input: CourseDeletionEvent, executionCtx) => {
+        const success = await handleProcessCourseDeletion(
+          input,
+          hatchetCtx,
+          executionCtx
+        )
+        return { success }
+      }),
+    }),
   }
+  hatchetCtx.tasks = tasks
 
   // mock context with user including all required properties
   const userOneCtx: ContextWithUser = {
@@ -337,6 +380,7 @@ export async function testInitialization(
 
 // function to be run at the end of a test suite / test case to ensure complete deletion of all test data
 export async function testCleanup(prisma: PrismaClient) {
+  await requireDisposableDatabase(prisma)
   // delete all catalog collections (including top-level) and other objects from the database
   await prisma.catalogCollection.deleteMany()
   await prisma.answerCollection.deleteMany()
@@ -364,20 +408,17 @@ export async function testCleanup(prisma: PrismaClient) {
 }
 
 // setup test database configuration
-// use the DATABASE_URL environment variable if available (for CI or local dev)
+// Tests require an explicit disposable database; there is no retained-data fallback.
 export function getDatabaseUrl() {
-  if (process.env.DATABASE_URL) {
-    return process.env.DATABASE_URL
-  }
-
-  // as a fallback, use default PostgreSQL connection
-  process.env.DATABASE_URL =
-    'postgresql://klicker-prod:klicker@localhost:5432/klicker-prod'
+  if (!process.env.DATABASE_URL)
+    throw new Error('DATABASE_URL is required for tests')
+  return process.env.DATABASE_URL
 }
 
 export async function initializePrisma() {
   // configure database
   getDatabaseUrl()
+  await requireDisposableDatabase(prisma)
 
   try {
     // create EventEmitter for test context
@@ -1084,6 +1125,30 @@ export async function seedGroupActivity(
 
 // ! Specific test case helpers (e.g. seeding of live quiz including responses to test correction workflows)
 // #region
+// Synthetic test participants must satisfy the persisted account data-use
+// gate. A recorded refusal of both optional purposes is a valid, complete
+// state; only the metadata marks the account as already onboarded.
+const acknowledgedParticipantDataUse = {
+  researchConsent: false,
+  learningAnalyticsConsent: false,
+  researchConsentChoiceAt: new Date(),
+  researchConsentDisclosureVersion: PARTICIPANT_DATA_USE_DISCLOSURE_VERSION,
+  learningAnalyticsChoiceAt: new Date(),
+  learningAnalyticsDisclosureVersion: PARTICIPANT_DATA_USE_DISCLOSURE_VERSION,
+  dataUseAcknowledgedAt: new Date(),
+  dataUseAcknowledgedVersion: PARTICIPANT_DATA_USE_DISCLOSURE_VERSION,
+  dataUseRevision: 1,
+  dataUseEvents: {
+    create: {
+      revision: 1,
+      disclosureVersion: PARTICIPANT_DATA_USE_DISCLOSURE_VERSION,
+      researchConsent: false,
+      learningAnalyticsConsent: false,
+      acknowledged: true,
+    },
+  },
+}
+
 export async function seedLiveQuizWithResponses({
   userOneCtx,
   userTwoCtx,
@@ -1268,6 +1333,7 @@ export async function seedLiveQuizWithResponses({
   // create participant 1 with a correct answer to both questions
   const participant1 = await prisma.participant.create({
     data: {
+      ...acknowledgedParticipantDataUse,
       id: '36a3b9cf-00eb-46f3-a701-b222b68d0386',
       username: 'participant1',
       password: 'participant1',
@@ -1320,6 +1386,7 @@ export async function seedLiveQuizWithResponses({
   // create participant 2 with a partially correct answer to the first question and no answer to the second one
   const participant2 = await prisma.participant.create({
     data: {
+      ...acknowledgedParticipantDataUse,
       id: 'fbdc8107-0f7e-4b9b-9dc5-9268c99dc784',
       username: 'participant2',
       password: 'participant2',
@@ -1351,6 +1418,7 @@ export async function seedLiveQuizWithResponses({
   // create participant 3 with a course participation but no answers
   const participant3 = await prisma.participant.create({
     data: {
+      ...acknowledgedParticipantDataUse,
       id: '56409db9-4bba-425d-81f6-98864ca3daed',
       username: 'participant3',
       password: 'participant3',

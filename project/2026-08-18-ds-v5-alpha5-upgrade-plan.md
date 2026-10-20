@@ -6,6 +6,14 @@
 
 **Approval mode:** executable batch, approved by the user on 2026-10-20.
 
+**Current status:** startup works and the user confirmed Manage in Browser.
+The compact wizard action overlap and details-modal focus return now have
+focused source corrections and browser proof. The resolved v3 merge remains
+ready to commit after the integrated checks passed. The user approved the narrow
+Office plugin parser metadata repair; frozen installation and Office lint pass.
+The existing approved delivery sequence remains active. See the latest Progress
+entry for current evidence.
+
 The historical pilot at commit `1de7ad9` has not accepted the final candidate
 tarball because its canonical Auth development server returns 404 for the
 NextAuth catch-all route before the handler runs. The same source under
@@ -28,17 +36,10 @@ then one canonical ensure. That recovery succeeded. The existing post-create
 hook completed its approved reset, schema push and synthetic seed. The runtime
 is active for acceptance and will be stopped and verified after its final check.
 
-All nine installed candidate resolutions matched the complete 248-file archive.
-Auth providers/CSRF and fresh delegated login pass. Synthetic cancel/reopen,
-invalid interval protection, create/reset and edit/save/reload pass. Stale Next
-development CSS was found after package replacement; isolated fresh output
-confirmed candidate styles and supplied current English/German desktop/compact
-captures. Temporary source configuration was restored. A check invocation then
-revealed pnpm 11 ignores the old `npm_config_` prefix and auto-reinstalled the
-registry package. That run was stopped; reinstall and byte verification use
-`pnpm_config_verify_deps_before_run=false` before candidate checks resume.
-Merge, readiness, release, deployment and human-review notifications remain
-outside the existing approval.
+Historical-pilot acceptance and source checks are recorded in
+[Progress](#exact-recovery-and-acceptance-progress--2026-10-20). Current `v3`
+integration and its acceptance remain pending. Merge into the target, readiness,
+release, deployment and human-review notifications remain outside approval.
 
 ## Execution details — 2026-10-19 pilot resumption
 
@@ -356,9 +357,13 @@ PR against `v3`. The user separately approved the exact `waitFor` carry-forward,
 bounded ensure/provider attempts, possible local post-create reset, then removal
 of the eight verified inactive containers and one canonical ensure. The final
 recovery succeeded while preserving named volumes. Its post-create hook reset,
-pushed and reseeded the local DB. The runtime is active for approved acceptance;
-stop and verify it after the final dependent check. Extra container replacement,
-volume removal or another database reset is not authorized.
+pushed and reseeded the local DB. The user then approved the reviewed integrated
+runtime transition, including create-only disposable database provisioning,
+removal of the eight current containers, one ensure and its failure-stop branch.
+That attempt is consumed: provisioning and removal completed, but lifecycle
+admission blocked ensure before startup. Named volumes remain; no project
+containers remain. Provider state is NotFound and stale routes remain, so runtime
+release is incomplete. Further recovery, deletion or reset is not authorized.
 
 **Withheld:** another runtime recovery attempt or any unapproved database reset,
 container/workspace deletion, force/protected or default-branch pushes, merging
@@ -373,7 +378,7 @@ acceptance and inspected screenshot evidence, restored temporary configuration,
 and a stopped/verified owned runtime; or one concrete runtime-capability or
 authority blocker after all independent source work is complete. Runtime release
 requires Devsy `stopped` for this exact source checkout and zero devrouter routes.
-The current runtime is active for the approved acceptance sequence.
+The current runtime is unavailable after the failed integrated transition.
 
 **Pause:** stop at a concrete unmet acceptance, capability or new authority
 boundary after independent work is complete. The missing-network blocker is
@@ -854,3 +859,251 @@ resolved task target is `v3`. Plan commit: `17cc9da64aa336a797b650d89f6ec3ee3c1c
   all 22 tasks with zero cache hits in 1m43s; existing translation/page-size
   warnings remain. After-build byte verification is recorded separately.
   Host gitleaks found no staged leak. No new maintained test was added.
+
+### Readiness integration — 2026-10-20
+
+- Historical Auth slice committed as `abf02f148b72dbbaa214149e2dd87bb9e6d9a749`.
+  Independent slice review approved with no findings; simplifier found no code
+  reduction and one repeated plan paragraph, now consolidated. Private reports
+  record exact scope and limitations. Host hooks were split: equivalent container
+  checks/build and host staged gitleaks passed before `HUSKY=0` commit.
+- Began the one approved readiness merge of
+  `e48fc5c29f71613bbc7278f2292f08fb94d1a2ef`. Conflicts preserve current target
+  dependency versions, behavior, IDs and accessibility while applying v5 imports,
+  tokens, callback refs, modal sizing and the three Auth development commands.
+  Newly introduced target call sites receive the same mechanical migration.
+- Merged registry baseline is preserved before temporary archive installation.
+  All nine integrated candidate resolutions again match every archive file.
+  Temporary refs and exact age exceptions are restored to the merged baseline.
+- Runtime qualification blocker: the retained image has Node 24.16.0 while the
+  integrated image pins 24.21.0; it lacks the new per-workspace dependency mounts.
+  Read-only exact Postgres metadata confirms the restricted test role and both
+  marked disposable databases are absent. Current guarded bootstrap cannot use
+  this historical database without separate provisioning/replacement authority.
+  Do not rerun post-create or bypass guards. Integrated browser/DB acceptance
+  remains unperformed.
+- Integrated type checks passed 34 of 35 tasks before finding three obsolete
+  Button props in two newly introduced target files. Their minimal v5 API
+  correction passes the focused Manage check. All six non-Office lint tasks
+  pass. Office lint fails on an undeclared parser required by its unchanged
+  plugin; the public registry archive confirms the same implementation. No
+  unrelated dependency change was made; the complete root gate is not green.
+- A fresh integrated production build passes 23 of 23 tasks, with zero cache
+  hits. The first build found duplicate generated development/production Next
+  types. The owned development process was stopped through its delivered
+  helper, and development output was preserved outside the compiler inputs.
+  The successful rerun took 2m9.937s. Existing build warnings remain visible.
+- Changed-file formatting, syncpack, agent-document checks, removed-artifact
+  policy, Prisma schema synchronization and five Git identity checks pass.
+  Host-only launcher checks pass 52 of 52; source-only CI checks pass 97 of 97.
+  Final byte readback again passes all nine complete 248-file resolutions.
+  All temporary manifests, lock and age policy match the merged registry
+  baseline. All consumer overrides remain in place.
+- Main completed the historical gallery after the executor's image route
+  reported unsupported input. Twelve captures were inspected and rendered;
+  the local HTML loads every image at desktop and compact widths. The manifest
+  records the Auth viewport discrepancy, compact application overflow, missing
+  variants, unproven modal scrolling and lack of integrated browser acceptance.
+- Canonical shutdown failed with `Initial managed stop requires the drained
+  ensure's recorded profile.` Fresh exact-source provider readback remains
+  running, with eight containers and ten routes. The development process is
+  stopped; provider release is incomplete. No configuration downgrade, raw
+  fallback stop, further container removal or extra ensure was performed.
+- Source conflicts are resolved and the readiness merge remains uncommitted.
+  A new create-only disposable-database and exact-container transition is
+  recorded privately, with one top-level ensure and explicit bootstrap retry
+  bounds. Integrated acceptance, the merge commit, integrated reviews, push and
+  draft PR remain pending; no PR exists yet.
+
+### Integrated runtime transition — 2026-10-20
+
+- The user approved the reviewed transition. Its source and identity checks
+  passed. The create-only helper provisioned the restricted role and marked
+  disposable databases; the eight pinned containers were stopped and removed
+  without force or volume-removal flags. All original named volumes remain.
+- The single canonical ensure failed before provider startup because lifecycle
+  admission retained phase `stopping` with desired state `stopped-by-user`.
+  The failed assumption was that removing the old containers would let ensure
+  reconcile the historical stop state. It does not clear that admission gate.
+- The approved failure branch attempted canonical non-deleting stop, which
+  again refused the missing drained-profile proof. No containers remained for
+  the validated Docker-stop fallback. Fresh provider state is NotFound, exact
+  project container count is zero, and ten stale routes remain. No runtime
+  readiness or complete lifecycle release is claimed.
+- The attempt and its authority are consumed. No second ensure, registration
+  deletion, journal edit, volume operation or further recovery was performed.
+  A supported data-preserving lifecycle repair is now the capability blocker.
+  Source and candidate acceptance remain at the prior recorded evidence; the
+  resolved merge is staged and uncommitted, with no push or draft PR.
+- The refreshed target advanced by one unrelated review-tool documentation and
+  script change. The approved integration remains held at
+  `e48fc5c29f71613bbc7278f2292f08fb94d1a2ef`; drift alone does not add another
+  integration or recovery attempt.
+
+### Latest source and Devrouter update — 2026-10-20
+
+- The user requested current source and Devrouter. The pending merge now targets
+  refreshed `origin/v3` at `c58e111ea3d606b3a99dd0664351b5df97fd90c8`. Its additional
+  review-tool prompt and documentation changes are exact upstream content.
+  The complete resolved tree was preserved before renewing the merge metadata;
+  no conflict resolution or user change was discarded. No unmerged paths remain.
+- Host Devrouter is upgraded through Volta from 0.5.2 to the latest published
+  stable release, 0.5.4. Registry integrity and the installed bundle match the
+  published archive. The CI installer also selects 0.5.4. The repository minimum
+  remains 0.5.1 because selected Playwright jobs use the trusted `v3` installer;
+  raising the minimum before that installer reaches `v3` would block those jobs.
+- The 0.5.4 adaptation has no configuration migration. Diagnostics confirm the
+  existing Devsy 1.19.0 agent is ready. Profile resolution and source syntax
+  checks pass. Runtime smoke and integrated acceptance remain unavailable.
+- Published 0.5.4 source retains the same initial-stop and stopping-admission
+  guards. Independent bounded source inspection confirms journal settlement
+  does not clear this phase or create the missing stop proof. A canonical
+  non-deleting stop on 0.5.4 still returns the missing drained-profile error.
+  No ensure, reset, deletion, journal edit or new runtime recovery was attempted.
+- The version/source refresh is complete in the pending tree. The merge remains
+  staged and uncommitted until integrated acceptance; there is still no PR.
+  The next required capability is a supported lifecycle repair that preserves
+  retained data and proves the absent runtime before clearing its stale routes.
+
+### Startup repair and integrated acceptance — 2026-10-20
+
+- The user requested startup repair and Claude consultation. Runtime source
+  matches current `v3`; the fault was a stale per-worktree stopping record.
+  The journal retained its ensure profile history, but the latest operation
+  was an exec, which the published initial-stop guard cannot reconcile.
+- Claude Fable 5.1 assessed a synthetic conceptual recovery description and
+  returned `DONE_WITH_CONCERNS`. Main verified the actual reducer and live
+  ownership evidence. Private source consultation was unavailable after
+  automatic approval review rejected that payload; the accepted consultation
+  contained no private paths or artifacts.
+- An ignored, exact-checkout recovery adapter used the installed CLI's lifecycle
+  locks, ownership/absence readers and stop-proof reducer. It preserved the
+  registration, volumes, operation history and identity; removed only stale
+  routes after repeated absence proof; and settled the stopping record.
+  No installed CLI or application runtime configuration was modified.
+- Canonical startup then exited successfully with a managed stop baseline,
+  healthy services and no runtime drift. Bootstrap completed under the already
+  approved marked disposable database boundary. Node 24.21.0 and pnpm 11.5.0
+  match the integrated toolchain. Providers/CSRF and synthetic delegated login
+  pass. Warm canonical ensure also succeeds without container replacement.
+- Bootstrap initially installed registry alpha.5, whose bytes differ from the
+  review candidate. The same temporary archive references and exact age
+  exceptions restored the candidate. All nine complete 248-file resolutions
+  match before/after process restart and after checks/build. All eleven saved
+  public dependency input files are restored to the merged registry baseline.
+- Integrated browser journeys pass cancel/discard/reopen, invalid-interval
+  blocking, date-picker Escape focus return, single synthetic creation, empty
+  create-another reopening, edited save/reload and gamification arrow navigation.
+  Fifteen current captures cover English/German and desktop/compact states.
+  All 27 current/historical gallery images load; provenance distinguishes them.
+- Acceptance remains incomplete: compact wizard actions overlap, a menu-launched
+  detail modal returned focus to the page body, and this fixture did not provoke
+  horizontal table scrolling. Every consumer override is retained.
+- The host launcher checks pass 41/41 and CI contracts pass 97/97. Forced
+  container typecheck passes 35/35 and production build passes 23/23 with zero
+  cache hits. Root checks remain blocked by the pre-existing Office lint plugin's
+  undeclared parser dependency; its manifest/config are identical to current
+  target. The aggregate's host-only checks pass when run on the required host.
+- The merge remains resolved, staged and uncommitted pending the remaining
+  acceptance/check gates. No push or draft PR has occurred. Private receipts
+  and the exact repair are in the existing ignored evidence directory.
+- Final canonical stop succeeds using the new retained baseline. Fresh exact
+  source-path readback confirms provider `Stopped`, zero routes and stopped
+  containers; original named volumes and registration remain. The runtime is
+  released, and both browser sessions and the gallery browser are closed.
+
+
+### Remaining acceptance corrections — 2026-10-20
+
+- The user confirmed the running Manage app in Browser. The exact checkout is
+  retained for manual use and pinned against the host's enabled idle sweep.
+  The pin is task-specific; no global idle-stop policy changed. This explicit
+  keep-running request supersedes the earlier stop-after-acceptance terminal
+  for the current manual session. Revisit it at the next lifecycle checkpoint.
+- Startup had refreshed the registry alpha.5 installation. Reinstalled the same
+  approved archive, verified all nine complete 248-file resolutions, and
+  restored all eleven public dependency inputs to their merged baseline.
+  Current captures and source checks again use the exact candidate. A later
+  ordinary startup can reinstall registry bytes; a version label alone remains
+  insufficient evidence of candidate identity.
+- Reproduced compact navigation overlap with real button rectangles. The
+  existing two-column grid squeezed Cancel beneath Continue. A one-line change
+  stacks action groups below the small breakpoint and retains the desktop row.
+  English/German checks at 390x844 and 1440x900 confirm non-overlapping actions,
+  including the description step's Back button. The correction affects the
+  shared activity wizard navigation; labels, validation and submit handlers are
+  unchanged. One bounded read-only explorer mapped the layout; main verified
+  its recommendation against the running app and owns integration.
+- Reproduced menu-launched Activity Details returning focus to BODY. This
+  controlled modal has no mounted dialog trigger, and its opening menu item is
+  removed. ActivityListEntry now remembers the persistent menu button and
+  restores focus after the modal unmounts. English desktop and German compact
+  keyboard entry, Tab, Escape and focus readback pass against the candidate.
+- The existing seeded assessment quiz supplies a genuinely wider table. At
+  compact width it overflows within a 306-pixel scroll container; German
+  scrolling reaches the rightmost columns with scrollLeft 392. No fixture or
+  database change was needed. Existing compact page/navigation overflow remains
+  outside these corrections.
+- Manage typecheck and repository ESLint pass; existing ESLint warnings remain.
+  Biome formatting passes for both corrected files. An extra whole-file Biome
+  lint invocation reported existing static-click accessibility findings outside
+  the changed hunks; no unrelated cleanup was applied. No maintained test was
+  added, changed or removed. The existing real-browser portfolio covers these
+  consequential interaction regressions.
+- Office lint still fails before source analysis because its published plugin
+  imports @typescript-eslint/parser without declaring the dependency. The
+  parser version already resolved by typescript-eslint is 8.63.0. The user approved the one-entry pnpm package-extension scope extension.
+  It declares the plugin's parser dependency at the already resolved 8.63.0.
+  Regeneration adds the dependency edge and peer-context snapshots, with no
+  package-version additions or upgrades. Frozen installation and Office lint pass.
+- Ten inspected new captures extend the same ignored gallery to 37 images.
+  Captures 36-45 document the before/after action layout, both locales, focus
+  return and actual table scrolling. Earlier evidence remains explicitly
+  historical where a correction changes its contract. The forced production
+  build passes 23/23 tasks with zero cache hits in 1m50.701s after preserving
+  development output outside compiler inputs. All 37 images load in the
+  rendered gallery at desktop and compact widths; long source hashes remain
+  in manifest metadata while the visible revision label stays readable.
+  The pending merge is still held at c58e111ea3d606b3a99dd0664351b5df97fd90c8;
+  target drift alone does not trigger another integration. No push or PR exists.
+
+- Post-build candidate verification passes: all nine consumers resolve to three
+  complete package directories, each matching every archive file. The first
+  canonical resumption stalled after Prisma Rollup reported output complete;
+  no app process started. Canonical non-deleting stop interrupted the operation,
+  preserved containers/data and removed the eleven routes. Read-only archive
+  copies from that stopped exact container proved the post-build package bytes.
+  Canonical retained repair restored the user's requested pinned stack without
+  recreation. An OIDC guard compared service:app with its resolved container
+  network namespace. Normalizing that single field to the exact existing app
+  container reproduced the stored Compose hash. A temporary equivalent source
+  declaration allowed canonical repair; the original source was restored in a
+  finally block. Readiness and Manage HTTP 200 pass. This registry startup is
+  separate from the completed candidate browser/build evidence.
+- Host staged gitleaks passes. The new corrections remain unstaged while the
+  existing resolved merge is staged. No commit is attempted while the full
+  check gate is blocked. The Office plugin parser package-extension repair is now explicitly approved.
+  Reviews, commit, push and draft creation follow after its required checks pass.
+
+### Integrated checks after parser repair — 2026-10-20
+
+- The exact candidate was reinstalled with the approved parser metadata repair.
+  All nine consumers match every archive file before and after checks. All
+  eleven public dependency inputs are restored, including the approved extension.
+- Forced type checks pass 35/35 tasks and lint passes 7/7 tasks, both with zero
+  cache hits. Staged formatting, syncpack, agent documents, removed-document
+  policy and Prisma synchronization pass. Unchanged host-only Git identity,
+  launcher and CI-contract checks retain their passing evidence. The aggregate
+  is split by its required execution environment because the host launcher
+  deliberately rejects execution inside a container.
+- The production build after the UI corrections remains valid at 23/23 tasks
+  with zero cache hits. The parser metadata extension changes only the lint
+  plugin's dependency graph; it does not change application build inputs.
+  The 37-image gallery remains valid for the recorded application source.
+- Gitleaks and net staged whitespace checks pass. Incoming v3 content is exact
+  upstream except for recorded conflict resolutions and task changes. No
+  synthetic screenshots, temporary archive references or ignored recovery
+  artifacts are staged. The original Compose network declaration is restored.
+- Proceed with the resolved integration commit, its simplifier and slice review,
+  then the integrated final review and approved draft delivery. The runtime
+  remains retained and pinned for the user's manual Browser session.

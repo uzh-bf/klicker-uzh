@@ -1,9 +1,10 @@
 import { EnsureParticipationDocument } from '@klicker-uzh/graphql/dist/ops'
+import { buildChatbotRedirectParams } from '@klicker-uzh/shared-components/src/utils/handoff'
 import { parseEmbedParam } from '@klicker-uzh/shared-components/src/utils/parseEmbedParam'
 import { UserNotification } from '@uzh-bf/design-system'
 import { GetServerSidePropsContext } from 'next'
-import { useTranslations } from 'next-intl'
 import Link from 'next/link'
+import { useTranslations } from 'next-intl'
 import Layout from '../../../../components/Layout'
 import { initializeApollo } from '../../../../lib/apollo'
 import getParticipantToken from '../../../../lib/getParticipantToken'
@@ -31,6 +32,7 @@ export async function getServerSideProps(ctx: GetServerSidePropsContext) {
     const courseId = ctx.params.courseId as string
     const chatbotId = ctx.params.chatbotId as string
     const embedded = parseEmbedParam(ctx.query.embed)
+    const handoffParameters = buildChatbotRedirectParams(ctx.query, embedded)
 
     const { participantToken } = await getParticipantToken({
       apolloClient,
@@ -42,7 +44,8 @@ export async function getServerSideProps(ctx: GetServerSidePropsContext) {
     const coursePath = `${localePrefix}/course/${courseId}`
 
     if (!participantToken) {
-      const currentPath = `${coursePath}/chatbot/${chatbotId}${embedded ? '?embed=true' : ''}`
+      const handoffQuery = handoffParameters.toString()
+      const currentPath = `${coursePath}/chatbot/${chatbotId}${handoffQuery ? `?${handoffQuery}` : ''}`
       const loginUrl = `${localePrefix}/login?redirect_to=${encodeURIComponent(currentPath)}`
 
       return {
@@ -89,8 +92,8 @@ export async function getServerSideProps(ctx: GetServerSidePropsContext) {
       encodeURIComponent(chatbotId),
       process.env.NEXT_PUBLIC_CHAT_URL
     )
-    if (embedded) {
-      chatDestination.searchParams.set('embed', 'true')
+    for (const [key, value] of handoffParameters) {
+      chatDestination.searchParams.set(key, value)
     }
 
     return {

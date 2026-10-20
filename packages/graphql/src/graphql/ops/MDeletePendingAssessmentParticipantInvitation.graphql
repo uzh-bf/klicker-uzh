@@ -1,0 +1,11 @@
+mutation DeletePendingAssessmentParticipantInvitation(
+  $courseId: String!
+  $invitationId: Int!
+) {
+  deletePendingAssessmentParticipantInvitation(
+    courseId: $courseId
+    invitationId: $invitationId
+  ) {
+    id
+  }
+}

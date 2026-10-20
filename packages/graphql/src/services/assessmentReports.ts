@@ -1,9 +1,14 @@
 import * as DB from '@klicker-uzh/prisma/client'
 import type {
   AssessmentReportHistogramBin,
+  AssessmentReportSnapshot,
   AssessmentReportSnapshotV1,
 } from '@klicker-uzh/types'
-import { normalizeEmail, type PrismaTransactionClient } from '@klicker-uzh/util'
+import {
+  normalizeEmail,
+  normalizeIdentityValue,
+  type PrismaTransactionClient,
+} from '@klicker-uzh/util'
 import { createHash, randomBytes } from 'crypto'
 import { GraphQLError } from 'graphql'
 import { z } from 'zod'
@@ -43,6 +48,100 @@ const assessmentReportComparisonSchema = z
   .strict()
   .nullable()
 
+const nullableIdentityValueSchema = z.string().trim().min(1).nullable()
+
+type AssessmentReportScoredFields = {
+  results: {
+    basePoints: number
+    availableBasePoints: number
+    correctnessPoints: number
+    availableCorrectnessPoints: number
+    bonusPoints: number
+    availableBonusPoints: number
+    totalPoints: number
+    availableTotalPoints: number
+  }
+  comparison: z.infer<typeof assessmentReportComparisonSchema>
+}
+
+function validateAssessmentReportSnapshot(
+  snapshot: AssessmentReportScoredFields,
+  ctx: z.RefinementCtx
+) {
+  const expectedTotal =
+    snapshot.results.basePoints +
+    snapshot.results.correctnessPoints +
+    snapshot.results.bonusPoints
+  const expectedAvailableTotal =
+    snapshot.results.availableBasePoints +
+    snapshot.results.availableCorrectnessPoints +
+    snapshot.results.availableBonusPoints
+
+  if (snapshot.results.totalPoints !== expectedTotal) {
+    ctx.addIssue({
+      code: z.ZodIssueCode.custom,
+      message: 'The total score does not match its components',
+      path: ['results', 'totalPoints'],
+    })
+  }
+  if (snapshot.results.availableTotalPoints !== expectedAvailableTotal) {
+    ctx.addIssue({
+      code: z.ZodIssueCode.custom,
+      message: 'The available total does not match its components',
+      path: ['results', 'availableTotalPoints'],
+    })
+  }
+
+  if (snapshot.comparison) {
+    const histogramCount = snapshot.comparison.histogram.reduce(
+      (count, bin) => count + bin.count,
+      0
+    )
+    if (histogramCount !== snapshot.comparison.cohortSize) {
+      ctx.addIssue({
+        code: z.ZodIssueCode.custom,
+        message: 'The histogram does not match the cohort size',
+        path: ['comparison', 'histogram'],
+      })
+    }
+
+    snapshot.comparison.histogram.forEach((bin, index, bins) => {
+      const previous = bins[index - 1]
+      if (
+        bin.binEnd <= bin.binStart ||
+        (previous && bin.binStart !== previous.binEnd)
+      ) {
+        ctx.addIssue({
+          code: z.ZodIssueCode.custom,
+          message: 'The histogram boundaries are invalid',
+          path: ['comparison', 'histogram', index],
+        })
+      }
+    })
+  }
+}
+
+const assessmentReportCourseSchema = z
+  .object({
+    id: z.string().min(1),
+    name: z.string().min(1),
+    displayName: z.string().min(1),
+  })
+  .strict()
+
+const assessmentReportResultsSchema = z
+  .object({
+    basePoints: nonnegativeNumberSchema,
+    availableBasePoints: nonnegativeNumberSchema,
+    correctnessPoints: nonnegativeNumberSchema,
+    availableCorrectnessPoints: nonnegativeNumberSchema,
+    bonusPoints: nonnegativeNumberSchema,
+    availableBonusPoints: nonnegativeNumberSchema,
+    totalPoints: nonnegativeNumberSchema,
+    availableTotalPoints: nonnegativeNumberSchema,
+  })
+  .strict()
+
 export const assessmentReportSnapshotV1Schema = z
   .object({
     version: z.literal(1),
@@ -52,87 +151,37 @@ export const assessmentReportSnapshotV1Schema = z
         source: z.literal('COURSE_INVITATION'),
       })
       .strict(),
-    course: z
-      .object({
-        id: z.string().min(1),
-        name: z.string().min(1),
-        displayName: z.string().min(1),
-      })
-      .strict(),
-    results: z
-      .object({
-        basePoints: nonnegativeNumberSchema,
-        availableBasePoints: nonnegativeNumberSchema,
-        correctnessPoints: nonnegativeNumberSchema,
-        availableCorrectnessPoints: nonnegativeNumberSchema,
-        bonusPoints: nonnegativeNumberSchema,
-        availableBonusPoints: nonnegativeNumberSchema,
-        totalPoints: nonnegativeNumberSchema,
-        availableTotalPoints: nonnegativeNumberSchema,
-      })
-      .strict(),
+    course: assessmentReportCourseSchema,
+    results: assessmentReportResultsSchema,
     comparison: assessmentReportComparisonSchema,
   })
   .strict()
-  .superRefine((snapshot, ctx) => {
-    const expectedTotal =
-      snapshot.results.basePoints +
-      snapshot.results.correctnessPoints +
-      snapshot.results.bonusPoints
-    const expectedAvailableTotal =
-      snapshot.results.availableBasePoints +
-      snapshot.results.availableCorrectnessPoints +
-      snapshot.results.availableBonusPoints
+  .superRefine(validateAssessmentReportSnapshot)
 
-    if (snapshot.results.totalPoints !== expectedTotal) {
-      ctx.addIssue({
-        code: z.ZodIssueCode.custom,
-        message: 'The total score does not match its components',
-        path: ['results', 'totalPoints'],
+export const assessmentReportSnapshotV2Schema = z
+  .object({
+    version: z.literal(2),
+    subject: z
+      .object({
+        email: normalizedEmailSchema,
+        givenName: nullableIdentityValueSchema,
+        surname: nullableIdentityValueSchema,
+        matriculationNumber: nullableIdentityValueSchema,
+        source: z.literal('SWITCH_EDUID'),
       })
-    }
-    if (snapshot.results.availableTotalPoints !== expectedAvailableTotal) {
-      ctx.addIssue({
-        code: z.ZodIssueCode.custom,
-        message: 'The available total does not match its components',
-        path: ['results', 'availableTotalPoints'],
-      })
-    }
-
-    if (snapshot.comparison) {
-      const histogramCount = snapshot.comparison.histogram.reduce(
-        (count, bin) => count + bin.count,
-        0
-      )
-      if (histogramCount !== snapshot.comparison.cohortSize) {
-        ctx.addIssue({
-          code: z.ZodIssueCode.custom,
-          message: 'The histogram does not match the cohort size',
-          path: ['comparison', 'histogram'],
-        })
-      }
-
-      snapshot.comparison.histogram.forEach((bin, index, bins) => {
-        const previous = bins[index - 1]
-        if (
-          bin.binEnd <= bin.binStart ||
-          (previous && bin.binStart !== previous.binEnd)
-        ) {
-          ctx.addIssue({
-            code: z.ZodIssueCode.custom,
-            message: 'The histogram boundaries are invalid',
-            path: ['comparison', 'histogram', index],
-          })
-        }
-      })
-    }
+      .strict(),
+    course: assessmentReportCourseSchema,
+    results: assessmentReportResultsSchema,
+    comparison: assessmentReportComparisonSchema,
   })
+  .strict()
+  .superRefine(validateAssessmentReportSnapshot)
 
 export type IssuedAssessmentReport = {
   token: string
   status: DB.CredentialStatus
   issuedAt: Date
-  snapshot: AssessmentReportSnapshotV1
+  snapshot: AssessmentReportSnapshot
 }
 
 function assessmentReportError(
@@ -263,22 +312,22 @@ export function canonicalizeJson(value: unknown): string {
 }
 
 export function hashAssessmentReportSnapshot(
-  snapshot: AssessmentReportSnapshotV1
+  snapshot: AssessmentReportSnapshot
 ) {
   return createHash('sha256').update(canonicalizeJson(snapshot)).digest('hex')
 }
 
 export function withoutAssessmentReportComparison(
-  snapshot: AssessmentReportSnapshotV1
-): AssessmentReportSnapshotV1 {
+  snapshot: AssessmentReportSnapshot
+): AssessmentReportSnapshot {
   return snapshot.comparison === null
     ? snapshot
     : { ...snapshot, comparison: null }
 }
 
 export function assessmentReportClaimsMatch(
-  left: AssessmentReportSnapshotV1,
-  right: AssessmentReportSnapshotV1
+  left: AssessmentReportSnapshot,
+  right: AssessmentReportSnapshot
 ) {
   return (
     hashAssessmentReportSnapshot(withoutAssessmentReportComparison(left)) ===
@@ -292,10 +341,16 @@ export function parseAssessmentReportSnapshot({
 }: {
   snapshotVersion: number
   snapshot: unknown
-}): AssessmentReportSnapshotV1 | null {
-  if (snapshotVersion !== 1) return null
-  const parsed = assessmentReportSnapshotV1Schema.safeParse(snapshot)
-  return parsed.success ? parsed.data : null
+}): AssessmentReportSnapshot | null {
+  if (snapshotVersion === 1) {
+    const parsed = assessmentReportSnapshotV1Schema.safeParse(snapshot)
+    return parsed.success ? parsed.data : null
+  }
+  if (snapshotVersion === 2) {
+    const parsed = assessmentReportSnapshotV2Schema.safeParse(snapshot)
+    return parsed.success ? parsed.data : null
+  }
+  return null
 }
 
 export async function buildAssessmentReportSnapshotV1({
@@ -314,7 +369,6 @@ export async function buildAssessmentReportSnapshotV1({
       participations: {
         some: {
           participantId,
-          isActive: true,
           participant: { isActive: true },
         },
       },
@@ -323,6 +377,7 @@ export async function buildAssessmentReportSnapshotV1({
       id: true,
       name: true,
       displayName: true,
+      endDate: true,
       participantInvitations: {
         where: {
           participantId,
@@ -346,7 +401,7 @@ export async function buildAssessmentReportSnapshotV1({
   }
 
   const courseResults = await calculateAssessmentCourseScores(
-    { courseId, participantScope: 'ACTIVE' },
+    { courseId },
     { prisma }
   )
   const studentResults = courseResults?.studentResults.find(
@@ -387,13 +442,80 @@ export async function buildAssessmentReportSnapshotV1({
       totalPoints,
       availableTotalPoints,
     },
-    comparison: buildAssessmentReportComparison({
-      scores,
-      studentScore: totalPoints,
-      availableTotalPoints,
-    }),
+    // Interim reports during the course carry no peer comparison; every
+    // report issued after the course end date includes it.
+    comparison:
+      course.endDate <= new Date()
+        ? buildAssessmentReportComparison({
+            scores,
+            studentScore: totalPoints,
+            availableTotalPoints,
+          })
+        : null,
   } satisfies AssessmentReportSnapshotV1)
 
+  if (!parsed.success) {
+    throw assessmentReportError('ASSESSMENT_REPORT_INVALID_DATA')
+  }
+  return parsed.data
+}
+
+export async function buildAssessmentReportSnapshot({
+  courseId,
+  participantId,
+  prisma,
+}: {
+  courseId: string
+  participantId: string
+  prisma: PrismaTransactionClient
+}): Promise<AssessmentReportSnapshot> {
+  const snapshotV1 = await buildAssessmentReportSnapshotV1({
+    courseId,
+    participantId,
+    prisma,
+  })
+  const participation = await prisma.participation.findUnique({
+    where: {
+      courseId_participantId: { courseId, participantId },
+    },
+    select: {
+      assessmentGivenName: true,
+      assessmentSurname: true,
+      assessmentMatriculationNumber: true,
+    },
+  })
+
+  const givenName = normalizeIdentityValue(
+    participation?.assessmentGivenName ?? null
+  )
+  const surname = normalizeIdentityValue(
+    participation?.assessmentSurname ?? null
+  )
+  const matriculationNumber = normalizeIdentityValue(
+    participation?.assessmentMatriculationNumber ?? null
+  )
+
+  if (givenName === null && surname === null && matriculationNumber === null) {
+    return snapshotV1
+  }
+
+  // The subject email stays the accepted course-invitation address rather than
+  // Participant.email: invitations are only ever auto-accepted against a verified
+  // edu-ID linked affiliation address, while Participant.email is freely editable
+  // by the participant and therefore carries no edu-ID provenance.
+  const parsed = assessmentReportSnapshotV2Schema.safeParse({
+    version: 2,
+    subject: {
+      email: snapshotV1.subject.email,
+      givenName,
+      surname,
+      matriculationNumber,
+      source: 'SWITCH_EDUID',
+    },
+    course: snapshotV1.course,
+    results: snapshotV1.results,
+    comparison: snapshotV1.comparison,
+  })
   if (!parsed.success) {
     throw assessmentReportError('ASSESSMENT_REPORT_INVALID_DATA')
   }
@@ -440,26 +562,21 @@ async function issueAssessmentReportInTransaction({
     courseId,
     type: DB.CredentialType.COURSE_ASSESSMENT_INSIGHTS,
   }
-  const [activeRecord, historyRecord] = await Promise.all([
+  const [activeRecord, course] = await Promise.all([
     prisma.verifiableCredential.findFirst({
       where: { ...recordKey, status: DB.CredentialStatus.ACTIVE },
     }),
-    prisma.verifiableCredential.findFirst({
-      where: recordKey,
-      select: { id: true },
+    prisma.course.findUnique({
+      where: { id: courseId },
+      select: { endDate: true },
     }),
   ])
-  const fullSnapshot = await buildAssessmentReportSnapshotV1({
+  const fullSnapshot = await buildAssessmentReportSnapshot({
     courseId,
     participantId,
     prisma,
   })
   const fullSnapshotHash = hashAssessmentReportSnapshot(fullSnapshot)
-  const privateReplacementSnapshot =
-    withoutAssessmentReportComparison(fullSnapshot)
-  const privateReplacementHash = hashAssessmentReportSnapshot(
-    privateReplacementSnapshot
-  )
 
   if (activeRecord) {
     const activeSnapshot = parseAssessmentReportSnapshot(activeRecord)
@@ -469,18 +586,23 @@ async function issueAssessmentReportInTransaction({
     ) {
       throw assessmentReportError('ASSESSMENT_REPORT_INVALID_DATA')
     }
+    // While the student's own claims are unchanged, a report issued after the
+    // course end keeps its comparison. Reissuing only because peer scores
+    // changed would let two reports be differenced to infer a peer's change.
+    // A comparison issued before the course end is replaced by a current one.
+    const keepsComparison =
+      fullSnapshot.comparison === null ||
+      (activeSnapshot.comparison !== null &&
+        course !== null &&
+        activeRecord.issuedAt >= course.endDate)
     if (
       activeRecord.snapshotHash === fullSnapshotHash ||
-      assessmentReportClaimsMatch(activeSnapshot, fullSnapshot)
+      (keepsComparison &&
+        assessmentReportClaimsMatch(activeSnapshot, fullSnapshot))
     ) {
       return toIssuedAssessmentReport(activeRecord)
     }
   }
-
-  // Comparisons are released only once. Replacements omit them so two
-  // downloadable reports cannot be differenced after a cohort change.
-  const snapshot = historyRecord ? privateReplacementSnapshot : fullSnapshot
-  const snapshotHash = historyRecord ? privateReplacementHash : fullSnapshotHash
 
   const revokedRecords = await prisma.verifiableCredential.findMany({
     where: {
@@ -504,7 +626,6 @@ async function issueAssessmentReportInTransaction({
 
     return (
       record.snapshotHash === fullSnapshotHash ||
-      record.snapshotHash === privateReplacementHash ||
       assessmentReportClaimsMatch(revokedSnapshot, fullSnapshot)
     )
   })
@@ -531,10 +652,10 @@ async function issueAssessmentReportInTransaction({
       type: recordKey.type,
       participantId,
       courseId,
-      subjectEmail: snapshot.subject.email,
-      snapshot,
-      snapshotVersion: snapshot.version,
-      snapshotHash,
+      subjectEmail: fullSnapshot.subject.email,
+      snapshot: fullSnapshot,
+      snapshotVersion: fullSnapshot.version,
+      snapshotHash: fullSnapshotHash,
     },
   })
   return toIssuedAssessmentReport(created)
@@ -572,7 +693,7 @@ async function getEquivalentActiveRecord({
 
       const activeSnapshot = parseAssessmentReportSnapshot(activeRecord)
       if (!activeSnapshot) return null
-      const currentSnapshot = await buildAssessmentReportSnapshotV1({
+      const currentSnapshot = await buildAssessmentReportSnapshot({
         courseId,
         participantId,
         prisma: tx,

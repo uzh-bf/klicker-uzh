@@ -3,12 +3,18 @@
 # workspace packages the apps import, prepares the DB, and picks up the Hatchet
 # token. Every routed app plus the two Hatchet workers.
 set -euo pipefail
-cd /workspaces/klicker-uzh
+SCRIPT_ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
+bash "$SCRIPT_ROOT/util/dev-runtime.sh" begin-bootstrap
+
+ROOT="${KLICKER_DEVCONTAINER_ROOT:-/workspaces/klicker-uzh}"
+ROOT="$(cd "$ROOT" && pwd)"
+HATCHET_TOKEN_FILE="${KLICKER_HATCHET_TOKEN_FILE:-/config/authdisabled-token}"
+cd "$ROOT"
 
 # DevPod truncates env_file values at '=' (a URL ...?schema=public arrives as
 # ...?schema). Re-source the canonical env file so values with '=' are intact. (GOTCHAS #1)
 set -a
-. /workspaces/klicker-uzh/.devcontainer/devcontainer.env
+. "$ROOT/.devcontainer/devcontainer.env"
 set +a
 
 # No-TTY pnpm hardening: CI=true auto-confirms a stale node_modules purge;
@@ -31,7 +37,8 @@ retry() {
 }
 
 echo "[post-create] Installing dependencies (pnpm)..."
-pnpm install --no-frozen-lockfile
+pnpm install --prefer-offline --no-frozen-lockfile
+bash ./util/dev-runtime.sh stamp-dependencies
 
 # Build the workspace PACKAGES (graphql, prisma, util, markdown, transactional,
 # types, i18n, ...) the apps import — turbo orders them by their dep graph, and
@@ -57,33 +64,35 @@ retry 12 "prisma reset/push" bash -c '
 echo "[post-create] Seeding test data (lecturer/abcd, testuser1..50/abcdabcd)..."
 retry 5 "prisma-data seed" pnpm --filter @klicker-uzh/prisma-data run seed:raw || exit 1
 
-# response-api + both hatchet workers run `tsx --watch --env-file=.env`, and node
-# 24 HARD-ERRORS if .env is missing (it's --env-file, not --env-file-if-exists).
-# We keep no per-app .env in the container — every var comes from the inherited
-# container env (devcontainer.env). Seed an EMPTY .env in each dir so the flag
-# resolves; empty adds nothing, so the container env wins. (Copying .env.example
+# response-api uses `tsx --watch --env-file=.env`; both Hatchet workers use
+# nodemon with `node --env-file .env`. Node 24 HARD-ERRORS if .env is missing
+# (it's --env-file, not --env-file-if-exists). We keep no per-app .env contents
+# in the container — every var comes from the inherited container env
+# (devcontainer.env). Seed an EMPTY .env in each dir so the runners resolve the
+# file; empty adds nothing, so the container env wins. (Copying .env.example
 # would wrongly override the compose-DNS hosts with localhost.) touch is
 # idempotent and never clobbers existing contents. (GOTCHAS #28)
-echo "[post-create] Seeding empty per-app .env files (tsx --env-file needs the file present)..."
+echo "[post-create] Seeding empty per-app .env files (dev runners need the file present)..."
 for app in response-api hatchet-worker-general hatchet-worker-response-processor; do
-  touch "/workspaces/klicker-uzh/apps/${app}/.env"
+  touch "$ROOT/apps/${app}/.env"
 done
 
-# Hatchet client token — automatically created by hatchet-lite-dev at /config/authdisabled-token.
+# Hatchet client token — automatically created by hatchet-lite-dev at the path
+# configured by HATCHET_TOKEN_FILE.
 # The backend's HatchetClient.init runs at MODULE LOAD (not lazy), so the backend
 # CRASHES at boot without it — capture it here so post-start sources it before
 # turbo dev.
-echo "[post-create] Waiting for the Hatchet client token (/config/authdisabled-token)..."
-HATCHET_ENV=/workspaces/klicker-uzh/.devcontainer/.hatchet.env
+echo "[post-create] Waiting for the Hatchet client token ($HATCHET_TOKEN_FILE)..."
+HATCHET_ENV="$ROOT/.devcontainer/.hatchet.env"
 : > "$HATCHET_ENV"
 for attempt in $(seq 1 30); do
-  if [ -s /config/authdisabled-token ]; then
-    TOKEN=$(cat /config/authdisabled-token | tr -d '[:space:]')
+  if [ -s "$HATCHET_TOKEN_FILE" ]; then
+    TOKEN=$(tr -d '[:space:]' < "$HATCHET_TOKEN_FILE")
     echo "HATCHET_CLIENT_TOKEN=${TOKEN}" > "$HATCHET_ENV"
-    echo "[post-create] Hatchet token captured from /config/authdisabled-token."
+    echo "[post-create] Hatchet token captured from $HATCHET_TOKEN_FILE."
 
     # Populate packages/graphql/.env for Vitest
-    cat <<EOF > /workspaces/klicker-uzh/packages/graphql/.env
+    cat <<EOF > "$ROOT/packages/graphql/.env"
 HATCHET_CLIENT_TOKEN=${TOKEN}
 HATCHET_CLIENT_HOST_PORT=hatchet:7077
 HATCHET_CLIENT_TLS_STRATEGY=none
@@ -95,7 +104,8 @@ EOF
   sleep 1
 done
 if [ ! -s "$HATCHET_ENV" ]; then
-  echo "[post-create] WARNING: /config/authdisabled-token not present yet; backend will wait for post-start or container env." >&2
+  echo "[post-create] WARNING: $HATCHET_TOKEN_FILE not present yet; backend will wait for post-start or container env." >&2
 fi
 
-echo "[post-create] Done."
+echo "[post-create] Bootstrap steps succeeded; publishing completion marker."
+bash "$ROOT/util/dev-runtime.sh" complete-bootstrap

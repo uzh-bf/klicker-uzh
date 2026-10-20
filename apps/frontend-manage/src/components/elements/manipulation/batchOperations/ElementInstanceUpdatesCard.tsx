@@ -44,10 +44,8 @@ function ElementInstanceUpdatesCard({
       <CardContent className="px-0">
         <div className="flex flex-col gap-2">
           <div className="flex items-center gap-2">
-            <span className="text-sm text-gray-600">
-              {t('manage.questionPool.draftScheduledActivities')}
-            </span>
             <Switch
+              id="batch-update-instances"
               checked={selectedActions.updateInstances ?? false}
               onCheckedChange={(checked) => {
                 setSelectedActions((prev) => ({
@@ -60,12 +58,16 @@ function ElementInstanceUpdatesCard({
               }}
               data={{ cy: 'instance-updates-switch' }}
             />
+            <label
+              htmlFor="batch-update-instances"
+              className="text-sm text-gray-600"
+            >
+              {t('manage.questionPool.batchUpdateInstancesConsequence')}
+            </label>
           </div>
           <div className="flex items-center gap-2">
-            <span className="text-sm text-gray-600">
-              {t('manage.questionPool.templateUpdates')}
-            </span>
             <Switch
+              id="batch-update-template-instances"
               disabled={!selectedActions.updateInstances}
               checked={selectedActions.updateTemplateInstances ?? false}
               onCheckedChange={(checked) => {
@@ -76,6 +78,15 @@ function ElementInstanceUpdatesCard({
               }}
               data={{ cy: 'template-updates-switch' }}
             />
+            <label
+              htmlFor="batch-update-template-instances"
+              className={twMerge(
+                'text-sm text-gray-600',
+                !selectedActions.updateInstances && 'text-gray-400'
+              )}
+            >
+              {t('manage.questionPool.batchUpdateTemplateInstancesConsequence')}
+            </label>
           </div>
         </div>
       </CardContent>

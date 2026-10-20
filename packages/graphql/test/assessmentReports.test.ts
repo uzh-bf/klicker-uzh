@@ -1,4 +1,7 @@
-import type { AssessmentReportSnapshotV1 } from '@klicker-uzh/types'
+import type {
+  AssessmentReportSnapshotV1,
+  AssessmentReportSnapshotV2,
+} from '@klicker-uzh/types'
 import { describe, expect, it } from 'vitest'
 import {
   assessmentReportClaimsMatch,
@@ -38,6 +41,21 @@ function createSnapshot(): AssessmentReportSnapshotV1 {
         { binStart: 0, binEnd: 5, count: 4 },
         { binStart: 5, binEnd: 10, count: 6 },
       ],
+    },
+  }
+}
+
+function createSnapshotV2(): AssessmentReportSnapshotV2 {
+  const snapshot = createSnapshot()
+  return {
+    ...snapshot,
+    version: 2,
+    subject: {
+      email: snapshot.subject.email,
+      givenName: 'Ada',
+      surname: 'Lovelace',
+      matriculationNumber: '00-123-456',
+      source: 'SWITCH_EDUID',
     },
   }
 }
@@ -102,8 +120,15 @@ describe('assessment report snapshots', () => {
 
   it('rejects unknown versions and malformed stored snapshots', () => {
     const snapshot = createSnapshot()
+    const snapshotV2 = createSnapshotV2()
     expect(
-      parseAssessmentReportSnapshot({ snapshotVersion: 2, snapshot })
+      parseAssessmentReportSnapshot({
+        snapshotVersion: 2,
+        snapshot: snapshotV2,
+      })
+    ).toEqual(snapshotV2)
+    expect(
+      parseAssessmentReportSnapshot({ snapshotVersion: 3, snapshot })
     ).toBeNull()
     expect(
       parseAssessmentReportSnapshot({
@@ -114,6 +139,15 @@ describe('assessment report snapshots', () => {
             ...snapshot.subject,
             source: 'EDUID',
           },
+        },
+      })
+    ).toBeNull()
+    expect(
+      parseAssessmentReportSnapshot({
+        snapshotVersion: 2,
+        snapshot: {
+          ...snapshotV2,
+          subject: { ...snapshotV2.subject, givenName: '' },
         },
       })
     ).toBeNull()
@@ -165,6 +199,18 @@ describe('assessment report snapshots', () => {
         availableTotalPoints: 0,
       })
     ).toBeNull()
+  })
+
+  it('counts inclusive ties and rounds the percentile to the nearest integer', () => {
+    const comparison = buildAssessmentReportComparison({
+      scores: [0, 1, 2, 3, 3, 4, 5, 6, 7, 8, 9],
+      studentScore: 3,
+      availableTotalPoints: 10,
+    })
+
+    expect(comparison).not.toBeNull()
+    expect(comparison!.cohortSize).toBe(11)
+    expect(comparison!.percentile).toBe(45)
   })
 
   it('preserves distinct bins for a very small non-zero score range', () => {

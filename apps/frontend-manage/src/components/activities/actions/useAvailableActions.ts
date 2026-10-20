@@ -1,5 +1,5 @@
-import { IconDefinition } from '@fortawesome/free-solid-svg-icons'
-import { PublicationStatus } from '@klicker-uzh/graphql/dist/ops'
+import type { IconDefinition } from '@fortawesome/free-solid-svg-icons'
+import type { PublicationStatus } from '@klicker-uzh/graphql/dist/ops'
 import { useMemo } from 'react'
 
 export type ActivityAction = {
@@ -11,6 +11,7 @@ export type ActivityAction = {
     cy?: string
   }
   disabled?: boolean
+  tooltip?: string
   className?: string
 }
 

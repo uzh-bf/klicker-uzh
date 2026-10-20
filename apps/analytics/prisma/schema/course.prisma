@@ -17,6 +17,9 @@ model Course {
   areAnalyticsValid Boolean  @default(false)
   isArchived        Boolean  @default(false)
 
+  // set while a course deletion request is pending permanent deletion
+  deletionRequestedAt DateTime?
+
   authType CourseAuthType @default(PIN)
   pinCode  Int?           @unique
 

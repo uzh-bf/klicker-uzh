@@ -1,17 +1,22 @@
-import { PrismaTransactionContextWithUser } from '@/lib/context.js'
 import * as DB from '@klicker-uzh/prisma/client'
 import { ActivityType as ActivityTypeEnum } from '@klicker-uzh/types'
+import type { PrismaTransactionContextWithUser } from '@/lib/context.js'
 import builder from '../builder.js'
 import * as AccountService from '../services/accounts.js'
 import * as ActivityService from '../services/activities.js'
 import * as AnalyticsService from '../services/analytics.js'
+import * as BetaEnrollmentService from '../services/betaEnrollment.js'
+import * as ChatAccountUsageService from '../services/chatAccountUsage.js'
 import * as ChatbotsService from '../services/chatbots.js'
+import * as CourseDuplicationService from '../services/courseDuplication.js'
 import * as CourseService from '../services/courses.js'
 import * as ElementService from '../services/elements.js'
 import * as FeedbackService from '../services/feedbacks.js'
 import * as GroupService from '../services/groups.js'
 import * as LiveQuizService from '../services/liveQuizzes.js'
 import * as MicroLearningService from '../services/microLearning.js'
+import { getParticipantAccountDataUse } from '../services/participantAccountDataUse.js'
+import * as ParticipantInvitationService from '../services/participantInvitations.js'
 import * as ParticipantService from '../services/participants.js'
 import * as PracticeQuizService from '../services/practiceQuizzes.js'
 import * as ResourcesService from '../services/resources.js'
@@ -39,9 +44,11 @@ import {
   StudentAssessmentBlockResponse,
   StudentAssessmentResults,
 } from './assessment.js'
+import { asChatbotAuthor } from './authScopes.js'
 import {
   AssessmentParticipant,
   Course,
+  CourseDuplicationStatus,
   CourseLeaderboard,
   CourseListEntry,
   CourseOverview,
@@ -79,12 +86,14 @@ import {
 import { MicroLearning } from './microLearning.js'
 import {
   Participant,
+  ParticipantAccountDataUse,
   ParticipantGroup,
   ParticipantLearningData,
   ParticipantWithAchievements,
   Participation,
   StudentCourseLeaderboard,
 } from './participant.js'
+import { AssessmentParticipantInvitationPage } from './participantInvitation.js'
 import {
   ActivitySummary,
   ElementStack,
@@ -96,9 +105,11 @@ import {
 import {
   AnswerCollection,
   AnswerCollectionPreviewEntry,
-  ChatModelCapability,
+  ChatAccountUsageOverviewRef,
   Chatbot,
   ChatbotPublic,
+  ChatbotPublicationReview,
+  ChatModelCapability,
 } from './resource.js'
 import {
   ActivityLogEntry,
@@ -118,7 +129,14 @@ import {
   ActivityTemplateMetadata,
   TemplateElementInformation,
 } from './template.js'
-import { MediaFile, User, UserInfo, UserLogin, UserLoginScope } from './user.js'
+import {
+  BetaEnrollmentCapability,
+  MediaFile,
+  User,
+  UserInfo,
+  UserLogin,
+  UserLoginScope,
+} from './user.js'
 
 // shortcut notations
 const checkAccess = SharingService.checkAccess
@@ -136,6 +154,12 @@ export const Query = builder.queryType({
         type: Participant,
         args: { liveQuizId: t.arg.string({ required: false }) },
         resolve: async (_, args, ctx) => ParticipantService.getSelf(args, ctx),
+      }),
+
+      selfAccountDataUse: t.withAuth(asParticipant).field({
+        nullable: true,
+        type: ParticipantAccountDataUse,
+        resolve: (_, _args, ctx) => getParticipantAccountDataUse(ctx),
       }),
 
       selfWithAchievements: t.withAuth(asParticipant).field({
@@ -247,6 +271,13 @@ export const Query = builder.queryType({
         },
       }),
 
+      betaEnrollment: t.withAuth(asUser).field({
+        type: BetaEnrollmentCapability,
+        resolve: async (_, __, ctx) => {
+          return await BetaEnrollmentService.getBetaEnrollment({}, ctx)
+        },
+      }),
+
       getUsersPrivatePreview: t.withAuth(asAdmin).field({
         nullable: true,
         type: [UserInfo],
@@ -274,8 +305,8 @@ export const Query = builder.queryType({
           sortByType: t.arg({ type: SortByType, required: true }),
           sortByAsc: t.arg.boolean({ required: true }),
           showArchived: t.arg.boolean({ required: true }),
-          numEntries: t.arg.int({ required: true }),
-          offset: t.arg.int({ required: true }),
+          numEntries: t.arg.int({ required: false }),
+          offset: t.arg.int({ required: false }),
         },
         resolve: async (_, args, ctx) => {
           return await ElementService.getUserElements(args, ctx)
@@ -322,6 +353,19 @@ export const Query = builder.queryType({
         type: [Course],
         resolve: async (_, __, ctx) => {
           return await CourseService.getUserCourses(ctx)
+        },
+      }),
+
+      courseDuplicationStatuses: t.withAuth(asUser).field({
+        type: [CourseDuplicationStatus],
+        args: {
+          ids: t.arg.stringList({ required: true }),
+        },
+        resolve: async (_, args, ctx) => {
+          return await CourseDuplicationService.getCourseDuplicationStatuses(
+            args,
+            ctx
+          )
         },
       }),
 
@@ -960,6 +1004,35 @@ export const Query = builder.queryType({
         ),
       }),
 
+      assessmentParticipantInvitations: t.withAuth(asUser).field({
+        nullable: true,
+        type: AssessmentParticipantInvitationPage,
+        args: {
+          courseId: t.arg.string({ required: true }),
+          numEntries: t.arg.int({
+            required: false,
+            validate: {
+              min: 1,
+              max: ParticipantInvitationService.MAX_PARTICIPANT_INVITATION_PAGE_SIZE,
+            },
+          }),
+          offset: t.arg.int({
+            required: false,
+            validate: { min: 0 },
+          }),
+        },
+        resolve: withPermission(
+          (args) => ({ courseId: args.courseId }),
+          DB.PermissionLevel.ADMIN,
+          async (_, args, ctx) => {
+            return await ParticipantInvitationService.getAssessmentParticipantInvitationPage(
+              args,
+              ctx
+            )
+          }
+        ),
+      }),
+
       liveQuizStudentAssessmentResponses: t.withAuth(asUser).field({
         nullable: true,
         type: [StudentAssessmentBlockResponse],
@@ -1417,11 +1490,34 @@ export const Query = builder.queryType({
         },
       }),
 
+      getPendingChatbotPublications: t.withAuth(asAdmin).field({
+        type: [ChatbotPublicationReview],
+        resolve: (_, _args, ctx) =>
+          ChatbotsService.getPendingChatbotPublications(ctx),
+      }),
+
       getChatbotsInfo: t.withAuth(asUser).field({
         nullable: true,
         type: [Chatbot],
         resolve: async (_, __, ctx) => {
           return await ChatbotsService.getChatbotsInfo(ctx)
+        },
+      }),
+
+      getChatbotPublishingCapability: t.withAuth(asChatbotAuthor).boolean({
+        resolve: async (_, __, ctx) => {
+          return await ChatbotsService.getChatbotPublishingCapability(ctx)
+        },
+      }),
+
+      getChatAccountUsage: t.withAuth(asUser).field({
+        nullable: true,
+        type: ChatAccountUsageOverviewRef,
+        args: {
+          ownerId: t.arg.string({ required: false }),
+        },
+        resolve: async (_, args, ctx) => {
+          return await ChatAccountUsageService.getChatAccountUsage(args, ctx)
         },
       }),
 
@@ -1663,7 +1759,7 @@ export const Query = builder.queryType({
             const validAccess = await checkAccess(
               [
                 {
-                  answerCollectionId: parseInt(args.objectId),
+                  answerCollectionId: parseInt(args.objectId, 10),
                   minimumPermissionLevel: DB.PermissionLevel.ADMIN,
                 },
               ],
@@ -1674,7 +1770,7 @@ export const Query = builder.queryType({
             }
 
             return await SharingService.getAnswerCollectionPermissions(
-              { id: parseInt(args.objectId) },
+              { id: parseInt(args.objectId, 10) },
               ctx
             )
           } else if (args.objectType === DB.ObjectType.ELEMENT) {
@@ -1682,7 +1778,7 @@ export const Query = builder.queryType({
             const validAccess = await checkAccess(
               [
                 {
-                  elementId: parseInt(args.objectId),
+                  elementId: parseInt(args.objectId, 10),
                   minimumPermissionLevel: DB.PermissionLevel.ADMIN,
                 },
               ],
@@ -1693,7 +1789,7 @@ export const Query = builder.queryType({
             }
 
             return await SharingService.getElementPermissions(
-              { id: parseInt(args.objectId) },
+              { id: parseInt(args.objectId, 10) },
               ctx
             )
           } else if (args.objectType === DB.ObjectType.COURSE) {
@@ -1813,7 +1909,7 @@ export const Query = builder.queryType({
             const validAccess = await checkAccess(
               [
                 {
-                  answerCollectionId: parseInt(args.objectId),
+                  answerCollectionId: parseInt(args.objectId, 10),
                   minimumPermissionLevel: DB.PermissionLevel.ADMIN,
                 },
               ],
@@ -1825,7 +1921,7 @@ export const Query = builder.queryType({
 
             return (
               (await SharingService.getDerivedAnswerCollectionPermissions(
-                { id: parseInt(args.objectId) },
+                { id: parseInt(args.objectId, 10) },
                 ctx
               )) ?? []
             )
@@ -1834,7 +1930,7 @@ export const Query = builder.queryType({
             const validAccess = await checkAccess(
               [
                 {
-                  elementId: parseInt(args.objectId),
+                  elementId: parseInt(args.objectId, 10),
                   minimumPermissionLevel: DB.PermissionLevel.ADMIN,
                 },
               ],
@@ -1846,7 +1942,7 @@ export const Query = builder.queryType({
 
             return (
               (await SharingService.getDerivedElementPermissions(
-                { id: parseInt(args.objectId) },
+                { id: parseInt(args.objectId, 10) },
                 ctx
               )) ?? []
             )
@@ -1986,7 +2082,7 @@ export const Query = builder.queryType({
               ...(args.objectType === DB.ObjectType.ELEMENT
                 ? [
                     {
-                      elementId: parseInt(args.objectId),
+                      elementId: parseInt(args.objectId, 10),
                       minimumPermissionLevel: DB.PermissionLevel.READ,
                     },
                   ]
@@ -1994,7 +2090,7 @@ export const Query = builder.queryType({
               ...(args.objectType === DB.ObjectType.ANSWER_COLLECTION
                 ? [
                     {
-                      answerCollectionId: parseInt(args.objectId),
+                      answerCollectionId: parseInt(args.objectId, 10),
                       minimumPermissionLevel: DB.PermissionLevel.READ,
                     },
                   ]

@@ -8,8 +8,8 @@ import { FontAwesomeIcon } from '@fortawesome/react-fontawesome'
 import {
   ChangeShortnameDocument,
   CheckShortnameAvailableDocument,
-  User,
   UserProfileDocument,
+  type UserProfileQuery,
 } from '@klicker-uzh/graphql/dist/ops'
 import DebouncedUsernameField from '@klicker-uzh/shared-components/src/DebouncedUsernameField'
 import { Button, Tooltip } from '@uzh-bf/design-system'
@@ -20,7 +20,7 @@ import * as Yup from 'yup'
 import SimpleSetting from '../../components/user/SimpleSetting'
 
 interface ShortnameSettingProps {
-  user?: User | null
+  user?: NonNullable<UserProfileQuery['userProfile']> | null
 }
 
 function ShortnameSetting({ user }: ShortnameSettingProps) {
