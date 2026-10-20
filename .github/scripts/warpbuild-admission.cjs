@@ -50,6 +50,7 @@ function validateIdentity(identity) {
 }
 
 function validatePolicy(policy, now) {
+  if (!Number.isSafeInteger(now) || now < 0) throw new Error('invalid clock')
   const fields = [
     'windowId',
     'expiresAt',
@@ -66,7 +67,9 @@ function validatePolicy(policy, now) {
   if (!policy || !isDeepStrictEqual(Object.keys(policy).sort(), fields.sort()))
     throw new Error('invalid policy')
   if (
+    typeof policy.windowId !== 'string' ||
     !/^[a-zA-Z0-9-]{1,80}$/.test(policy.windowId) ||
+    typeof policy.controlSha !== 'string' ||
     !/^[a-f0-9]{40}$/.test(policy.controlSha)
   )
     throw new Error('invalid policy')
@@ -192,8 +195,7 @@ class AdmissionStore {
   change(now, update) {
     if (!Number.isSafeInteger(now) || now < 0) throw new Error('invalid clock')
     return this.transaction((state) => {
-      if (state?.schema !== 1)
-        throw new Error('ledger not initialized')
+      if (state?.schema !== 1) throw new Error('ledger not initialized')
       if (now < state.lastObservedAt) throw new Error('clock moved backwards')
       state.lastObservedAt = now
       return { next: state, result: update(state) }
@@ -337,6 +339,14 @@ class AdmissionStore {
         !isDeepStrictEqual(reservation.settlement, receipt)
       )
         throw new Error('settlement conflict')
+      if (
+        Object.values(state.reservations).some(
+          (other) =>
+            other !== reservation &&
+            other.settlement?.receiptSha256 === receipt.receiptSha256
+        )
+      )
+        throw new Error('receipt already used for another reservation')
       reservation.settlement = receipt
       if (
         !receipt.successful ||

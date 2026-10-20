@@ -249,6 +249,7 @@ function validatePublicRunnerRoles(workflow) {
     FORCE_HOSTED_CANARY_PR: `\${{ vars.PUBLIC_PR_ARM64_PLAYWRIGHT_FORCE_HOSTED_CANARY_PR }}`,
     ROUTE_HINT: `\${{ inputs.route_hint }}`,
     WARPBUILD_ADMISSIONS: `\${{ vars.PUBLIC_PR_PLAYWRIGHT_WARPBUILD_ADMISSIONS }}`,
+    WARPBUILD_ADMISSION_URL: `\${{ vars.PUBLIC_PR_PLAYWRIGHT_WARPBUILD_ADMISSION_URL }}`,
     HEAD_SHA: `\${{ github.event.pull_request.head.sha }}`,
     BASE_SHA: `\${{ github.event.pull_request.base.sha }}`,
     CONTROL_SHA: `\${{ job.workflow_sha }}`,
@@ -663,10 +664,11 @@ function validatePublicPlaywrightWorkflow(root) {
       contents: 'read',
       actions: 'read',
       'pull-requests': 'read',
+      'id-token': 'write',
     })
   ) {
     issues.push(
-      'caller execution must forward contents, actions, and pull-requests read permissions'
+      'caller execution must forward read permissions and the preparation identity token'
     )
   }
 

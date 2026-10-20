@@ -167,6 +167,11 @@ test('public runner jobs require their exact scheduling role and reject unknown 
       w.jobs.prepare.steps.find((s) => s.id === 'route').env.PR_DRAFT = 'false'
     },
     (w) => {
+      w.jobs.prepare.steps.find(
+        (s) => s.id === 'route'
+      ).env.WARPBUILD_ADMISSION_URL = `\${{ github.event.pull_request.title }}`
+    },
+    (w) => {
       w.jobs.prepare.steps.find((s) => s.id === 'route').run =
         'node .candidate/.github/scripts/playwright-route.cjs --output route.json'
     },

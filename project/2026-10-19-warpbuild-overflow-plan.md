@@ -121,9 +121,35 @@ The authenticated handler, existing route client and reservation owner pass 30
 focused tests together. Synthetic signed tokens prove the trust claims; scoped
 forge-response fixtures reject changed, draft or ambiguous executions. Endpoint
 absence, legacy callers, outages and invalid tickets retain ordinary routing.
-No live authentication or deployment is claimed. The active slice is workflow
-wiring and integrated verification. Draft delivery remains open. The native goal owns
-continuation; a checkpoint is not source-package completion.
+No live authentication or deployment is claimed. Workflow wiring and its
+mutation guard pass, including the default-off endpoint and preparation-only
+identity permission. The existing application actions and deployment files have
+no diff. The package script adds tests only; dependency metadata and lockfile
+are unchanged.
+
+The complete Playwright CI portfolio has 109 passing checks in isolated Node
+24.21.0 and one passing side-effect-free host Devrouter planning check. The
+container command reports that one missing planner capability; it is not
+recorded as a wholly passing container run. Twenty event-gate contracts also
+pass. Initial verification needed executable temporary fixtures and the
+existing read-only dependency mount; no application runtime was started.
+Syntax, focused formatting, identity checks and staged secret scans pass.
+Scoped static analysis found no findings in the changed executable surface;
+the existing GitHub-expression lint warning remains unchanged.
+
+Main-session integrated review added complete access-policy readback, denial
+when job wrappers have started without step detail, and single-reservation
+receipt use. Thirty affected admission/route/transport tests pass afterward.
+The hardest decision is introducing a private persistent owner; a repository
+variable cannot supply the required transaction. The least-proven boundary is
+live OIDC/forge response compatibility and coordinator deployment. That remains
+an explicit live qualification gate rather than synthetic-test acceptance.
+
+Delivery remains one cohesive draft: the ledger, authenticated handler and
+preparation client implement one admission contract, and an isolated layer
+would not provide usable overload admission. No native stack topology is
+created. The active work is final committed-range review and draft publication.
+The native goal owns continuation; a checkpoint is not source-package completion.
 
 ## Historical source package
 

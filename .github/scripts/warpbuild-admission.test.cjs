@@ -122,7 +122,14 @@ test('only complete terminal reconciliation releases a hold and never resets cou
   assert.equal(store.status().spentMicros, 200000)
   assert.equal(store.reserve(identity, now).reason, 'already-settled')
   assert.ok(store.reserve({ ...identity, runId: '101' }, now).ticket)
-  store.reconcile({ ...identity, runId: '101' }, receipt, now)
+  assert.throws(() =>
+    store.reconcile({ ...identity, runId: '101' }, receipt, now)
+  )
+  store.reconcile(
+    { ...identity, runId: '101' },
+    { ...receipt, receiptSha256: 'f'.repeat(64) },
+    now
+  )
   assert.equal(
     store.reserve({ ...identity, runId: '102' }, now).reason,
     'count-exhausted'

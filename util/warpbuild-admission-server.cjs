@@ -104,12 +104,32 @@ async function github(route) {
 
 async function verifyRun(identity, config, api = github) {
   const root = `/repos/${config.repository}`
-  const [run, pr] = await Promise.all([
+  const [run, pr, group, repositories] = await Promise.all([
     api(
       `${root}/actions/runs/${identity.runId}/attempts/${identity.runAttempt}`
     ),
     api(`${root}/pulls/${identity.pullRequestNumber}`),
+    api(`/orgs/uzh-bf/actions/runner-groups/${config.groupId}`),
+    api(
+      `/orgs/uzh-bf/actions/runner-groups/${config.groupId}/repositories?per_page=100`
+    ),
   ])
+  if (
+    String(group.id) !== config.groupId ||
+    group.name !== 'Default' ||
+    group.visibility !== 'selected' ||
+    group.allows_public_repositories !== true ||
+    group.restricted_to_workflows !== true ||
+    group.inherited !== false ||
+    !Array.isArray(group.selected_workflows) ||
+    JSON.stringify([...group.selected_workflows].sort()) !==
+      JSON.stringify([...config.selectedWorkflows].sort()) ||
+    repositories.total_count !== 1 ||
+    repositories.repositories?.length !== 1 ||
+    String(repositories.repositories[0].id) !== config.repositoryId ||
+    repositories.repositories[0].full_name !== config.repository
+  )
+    return false
   const binding = run.pull_requests?.filter(
     (item) => String(item.number) === identity.pullRequestNumber
   )
@@ -137,7 +157,8 @@ async function verifyRun(identity, config, api = github) {
     pr.base?.repo?.full_name !== config.repository ||
     pr.head?.repo?.private !== false ||
     typeof pr.user?.login !== 'string' ||
-    pr.user.login.endsWith('[bot]')
+    !pr.user.login.trim() ||
+    pr.user.login.toLowerCase().endsWith('[bot]')
   )
     return false
   // Multiple invocations of the reusable envelope in one run must not share
@@ -160,9 +181,10 @@ async function verifyRun(identity, config, api = github) {
     (job) =>
       job.name.startsWith('test-playwright-execution / ') &&
       !job.name.endsWith(' / prepare') &&
-      (job.steps ?? []).some(
-        (step) => step.status !== 'pending' && step.status !== 'queued'
-      )
+      (!['queued', 'waiting', 'pending'].includes(job.status) ||
+        (job.steps ?? []).some(
+          (step) => step.status !== 'pending' && step.status !== 'queued'
+        ))
   )
 }
 
@@ -184,7 +206,20 @@ function createAdmissionHandler({
 }) {
   if (
     config.repository !== 'uzh-bf/klicker-uzh' ||
-    !/^[1-9]\d+$/.test(config.repositoryId) ||
+    typeof config.repositoryId !== 'string' ||
+    !/^[1-9]\d{0,19}$/.test(config.repositoryId) ||
+    typeof config.groupId !== 'string' ||
+    !/^[1-9]\d{0,19}$/.test(config.groupId) ||
+    !Array.isArray(config.selectedWorkflows) ||
+    config.selectedWorkflows.length > 8 ||
+    !config.selectedWorkflows.includes(WORKFLOW) ||
+    new Set(config.selectedWorkflows).size !==
+      config.selectedWorkflows.length ||
+    config.selectedWorkflows.some(
+      (workflow) =>
+        typeof workflow !== 'string' ||
+        !workflow.startsWith('uzh-bf/klicker-uzh/.github/workflows/')
+    ) ||
     config.workflowRef !== WORKFLOW ||
     config.audience !== AUDIENCE
   )
@@ -234,6 +269,7 @@ async function main(argv = process.argv.slice(2)) {
     )
   const store = new AdmissionStore(filename)
   if (command === 'serve') {
+    store.status()
     const config = JSON.parse(fs.readFileSync(configFile, 'utf8'))
     const handler = createAdmissionHandler({ store, config })
     const server = http.createServer(

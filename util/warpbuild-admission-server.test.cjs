@@ -6,6 +6,9 @@ const path = require('node:path')
 const test = require('node:test')
 const { AdmissionStore } = require('../.github/scripts/warpbuild-admission.cjs')
 const {
+  chooseRouteWithAdmission,
+} = require('../.github/scripts/playwright-route.cjs')
+const {
   createAdmissionHandler,
   verifyRun,
   verifyToken,
@@ -23,6 +26,10 @@ const identity = {
 const config = {
   repository: 'uzh-bf/klicker-uzh',
   repositoryId: '123',
+  groupId: '7',
+  selectedWorkflows: [
+    'uzh-bf/klicker-uzh/.github/workflows/public-pr-playwright-shards.yml@refs/heads/v3',
+  ],
   workflowRef:
     'uzh-bf/klicker-uzh/.github/workflows/public-pr-playwright-shards.yml@refs/heads/v3',
   audience: 'klicker-playwright-admission',
@@ -151,6 +158,31 @@ test('authenticated request verifies live eligibility before a durable ticket is
   assert.equal(response.status, 200)
   assert.deepEqual(Object.keys(await response.json()), ['ticket'])
   assert.equal(store.status().reservedMicros, 1000000)
+  const route = await chooseRouteWithAdmission(
+    {
+      ...identity,
+      eventName: 'pull_request',
+      repository: config.repository,
+      repositoryPrivate: 'false',
+      headRepository: config.repository,
+      prAuthor: 'synthetic-contributor',
+      prDraft: 'false',
+      publicRolloutEnabled: 'true',
+      now: new Date(now).toISOString(),
+    },
+    {
+      WARPBUILD_ADMISSION_URL: 'https://admission.example.invalid/admit',
+      ACTIONS_ID_TOKEN_REQUEST_URL:
+        'https://pipelines.actions.githubusercontent.com/token',
+      ACTIONS_ID_TOKEN_REQUEST_TOKEN: 'synthetic',
+    },
+    async (url, options) =>
+      new URL(url).hostname === 'pipelines.actions.githubusercontent.com'
+        ? Response.json({ value: token() })
+        : handler(new Request(url, options))
+  )
+  assert.equal(route.provider, 'warpbuild')
+  assert.equal(store.status().submissions, 1)
   assert.equal(
     (await handler(new Request('https://admission.example.invalid/status')))
       .status,
@@ -160,6 +192,19 @@ test('authenticated request verifies live eligibility before a durable ticket is
 
 test('forge evidence rejects drafts, source drift, ambiguous preparation and started work', async () => {
   const baseline = {
+    group: {
+      id: 7,
+      name: 'Default',
+      visibility: 'selected',
+      allows_public_repositories: true,
+      restricted_to_workflows: true,
+      inherited: false,
+      selected_workflows: [...config.selectedWorkflows],
+    },
+    repositories: {
+      total_count: 1,
+      repositories: [{ id: 123, full_name: config.repository }],
+    },
     run: {
       id: 100,
       run_attempt: 1,
@@ -200,14 +245,30 @@ test('forge evidence rejects drafts, source drift, ambiguous preparation and sta
   }
   const verify = (data) =>
     verifyRun(identity, config, async (route) =>
-      route.includes('/jobs?')
-        ? data.jobs
-        : route.includes('/pulls/')
-          ? data.pr
-          : data.run
+      route.includes('/repositories?')
+        ? data.repositories
+        : route.startsWith('/orgs/')
+          ? data.group
+          : route.includes('/jobs?')
+            ? data.jobs
+            : route.includes('/pulls/')
+              ? data.pr
+              : data.run
     )
   assert.equal(await verify(baseline), true)
   for (const mutate of [
+    (data) => {
+      data.group.selected_workflows.push('external/workflow')
+    },
+    (data) => {
+      data.group.restricted_to_workflows = false
+    },
+    (data) => {
+      data.repositories.total_count = 2
+    },
+    (data) => {
+      data.repositories.repositories[0].id = 124
+    },
     (data) => {
       data.pr.draft = true
     },
@@ -248,7 +309,16 @@ test('forge evidence rejects drafts, source drift, ambiguous preparation and sta
     (data) => {
       data.jobs.jobs.push({
         name: 'test-playwright-execution / build-public',
+        status: 'queued',
         steps: [{ status: 'in_progress' }],
+      })
+      data.jobs.total_count = 2
+    },
+    (data) => {
+      data.jobs.jobs.push({
+        name: 'test-playwright-execution / test-playwright-public-pr (1)',
+        status: 'in_progress',
+        steps: [],
       })
       data.jobs.total_count = 2
     },

@@ -858,6 +858,90 @@ charges before expanding. Keep fixed capacity available during qualification.
 Source publication alone changes no group policy or admission variable. The
 historical trial workflow remains separate and disabled.
 
+#### Reserved burst admission
+
+An optional coordinator can reserve a validation during trusted preparation,
+before runner selection. Configure `PUBLIC_PR_PLAYWRIGHT_WARPBUILD_ADMISSION_URL`
+only through an approved deployment packet. Its value is an HTTPS endpoint
+ending in `/admit`, with no query, credentials or fragment. An absent endpoint
+keeps the manual-ticket behavior. The client makes one bounded request, never
+retries a paid attempt, and keeps ordinary routing on denial or an unavailable
+response. Existing exact manual tickets take precedence.
+
+The caller forwards `id-token: write` for hosted trusted preparation. Candidate
+build and shard jobs explicitly retain only `contents: read`. Preparation
+requests audience `klicker-playwright-admission`. The coordinator verifies the
+GitHub signature, issuer, audience, repository ID, public PR event, run/attempt,
+PR ref and exact trusted reusable workflow revision. It independently verifies
+the current open, ready, same-repository PR and the single active preparation
+through host `gh`. A changed source, ambiguous invocation, started workload or
+incomplete API response admits no cloud work. Legacy callers without identity
+token access keep ordinary routing.
+
+`util/warpbuild-admission-server.cjs` is a Node 24 operator program. Its database
+and configuration belong in an owner-only directory outside the repository.
+Use a local filesystem with SQLite locking and durable storage; shared network
+filesystems and multiple independent database copies are unsupported. The
+database initializes once per approved burst and cannot reset its limits. The
+source provides no deployment, daemon installation, TLS configuration or
+credential provisioning. See [ADR 0052](adr/0052-private-playwright-admission-reservations.md).
+
+The local commands are:
+
+```bash
+node util/warpbuild-admission-server.cjs init /private/operator/state.sqlite < /private/operator/policy.json
+node util/warpbuild-admission-server.cjs billing /private/operator/state.sqlite < /private/operator/billing.json
+node util/warpbuild-admission-server.cjs serve /private/operator/state.sqlite /private/operator/config.json
+node util/warpbuild-admission-server.cjs reconcile /private/operator/state.sqlite < /private/operator/receipt.json
+node util/warpbuild-admission-server.cjs disable /private/operator/state.sqlite
+node util/warpbuild-admission-server.cjs status /private/operator/state.sqlite
+```
+
+Paths above are placeholders. Keep command output and all files private. Serve
+binds loopback port 8080 and exposes only `POST /admit`; ledger administration
+is local. A later deployment must supply an approved HTTPS ingress, request
+limits, service supervision, durable storage and existing read-only forge
+authentication. Neither the PR nor the endpoint receives the forge credential.
+
+The private policy supplies `windowId`, `expiresAt`, `controlSha`,
+`maxSubmissions`, `maxConcurrent`, `budgetMicros`, `reservationMicros`,
+`accountLimitMicros`, `historicalLiabilityMicros`, `maxBillingAgeSeconds` and
+`ticketSeconds`. Amounts are nonnegative integer millionths of one currency,
+used consistently for the burst, account and receipts. The window lasts at most
+24 hours; at most two unreconciled validations may coexist. Billing observations
+are at most 15 minutes old, ticket lifetime at most four hours. Start with one
+concurrent validation. All operational values require the finite operator
+packet; the source supplies no spending defaults.
+
+The configuration contains `repository`, its decimal-string `repositoryId`,
+decimal-string `groupId`, the complete approved `selectedWorkflows` list,
+`workflowRef` and `audience`. Every admission rechecks the group restrictions
+and exact repository/workflow selection; unknown or changed access denies it.
+The repository and reusable workflow are fixed to
+this public repository and its normal `v3` execution envelope. Billing input
+contains `observedAt` and `reportedMicros`; observations must be monotonic.
+The operator accounts for unrelated usage and retained historical liabilities
+before refreshing headroom. Reported spend plus all window charges and holds is
+conservative: it can count a reconciled charge twice rather than omit exposure.
+
+Reconciliation supplies the original `identity` and a `receipt` containing
+`terminal: true`, `completeBilling: true`, boolean `successful`, integer
+`actualMicros`, and `receiptSha256` binding the privately inspected evidence for
+that validation. The same receipt cannot settle a different reservation.
+These are operator attestations, not an automated billing verifier. Only after
+checking every actual producer, aggregate and job-linked charge may the operator
+release a hold. Failure or an overrun permanently disables further admission
+for that window. An expired ticket, cancelled job, lost response or coordinator
+restart alone never releases a hold or resets the submission count.
+
+Disabling admission prevents future ticket responses; it cannot retract a
+response already delivered or stop submitted jobs. Preserve those jobs and
+reconcile them. Before enabling a successor window, reconcile the predecessor
+or explicitly carry its unresolved liabilities into the approved policy.
+This is bounded operator-enabled burst admission. Queue-pressure activation,
+automated billing collection and comparative speed qualification remain later
+work; source tests do not establish them.
+
 Run the policy reconciler from a trusted administrator checkout. Both modes
 accept `GH_TOKEN` or a hidden prompt for a short-lived fine-grained token;
 `--check` needs organization
