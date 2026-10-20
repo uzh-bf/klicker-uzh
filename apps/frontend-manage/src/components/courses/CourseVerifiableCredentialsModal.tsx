@@ -181,6 +181,7 @@ export default function CourseVerifiableCredentialsModal({
             </label>
             <Select
               id="assessment-report-status-filter"
+              ariaLabel={t('manage.assessment.reportStatus')}
               value={statusFilter}
               onChange={(value) => {
                 setStatusFilter(value as StatusFilter)

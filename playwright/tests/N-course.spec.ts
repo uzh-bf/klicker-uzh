@@ -3443,7 +3443,7 @@ test.describe('Part 5: Course Sharing - Individual permissions', () => {
     await page
       .getByTestId('group-creation-deadline')
       .fill(getNativeDateInputValue(new Date('2035-06-30T12:00')))
-    await page.getByRole('button', { name: 'Duplicate' }).click()
+    await page.getByTestId('manipulate-course-submit').click()
     await page.waitForFunction(
       () =>
         Boolean(
@@ -3469,7 +3469,7 @@ test.describe('Part 5: Course Sharing - Individual permissions', () => {
       .getByTestId('course-notification-email')
       .fill('lecturer@df.uzh.ch')
     await selectCourseDuplicationStartDate(page)
-    await page.getByRole('button', { name: 'Duplicate' }).click()
+    await page.getByTestId('manipulate-course-submit').click()
     await expect(courseDuplicationStatusTrigger(page)).toContainText('2')
 
     await page.evaluate(() => {

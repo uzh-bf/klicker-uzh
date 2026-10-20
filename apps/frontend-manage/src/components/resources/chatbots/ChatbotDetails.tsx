@@ -951,6 +951,7 @@ function ChatbotDetails({
                     </p>
                     <Select
                       id="chatbot-fixed-model"
+                      ariaLabel={t('manage.resources.selectedModel')}
                       data={{ cy: 'chatbot-fixed-model' }}
                       value={fixedModelId}
                       disabled={isSaving || !modelSettingsEditable}
@@ -1056,6 +1057,9 @@ function ChatbotDetails({
                                 </label>
                                 <Select
                                   id={`chatbot-reasoning-select-${model.id}`}
+                                  ariaLabel={t(
+                                    'manage.resources.reasoningEffort'
+                                  )}
                                   data={{
                                     cy: `chatbot-reasoning-${model.id}`,
                                   }}

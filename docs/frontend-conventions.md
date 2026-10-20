@@ -73,6 +73,7 @@ unchanged.
   package-local assets and provenance remain under
   `packages/shared-components/src/fonts/` but are no longer imported.
 - **Design system first**: `@uzh-bf/design-system` provides `Button`, `Modal`, `FormikTextField`, `H1–H4`, `toast`, etc. Design-system components take the test hook as a prop: `data={{ cy: 'save-button' }}`; raw elements use a plain `data-cy` attribute.
+- When a root `Switch` or `Select` uses an external native label, pass the translated visible label through `ariaLabel` (or use `Select`'s `ariaLabelledBy`). The fallback `aria-label` can override `htmlFor` alone.
 - **Tailwind v4, CSS-first**: no `tailwind.config.js`. Each stylesheet imports
   `@uzh-bf/design-system/css` unlayered, followed by Tailwind theme/utilities
   without a second preflight. `packages/shared-components/src/theme.css`
