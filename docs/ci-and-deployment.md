@@ -413,7 +413,12 @@ Shard durations differ by architecture, so `playwright/timings.json` names the a
   with fixed stages and sanitized reasons. A local dispatch is not evidence of a
   provider request. Deadline labels distinguish timer expiry from client
   cancellation while preserving existing client errors and counters. Older
-  receipts report unknown outcome details. Tool discovery describes the complete
+  receipts report unknown outcome details. Advice validation reasons distinguish
+  finish status, tool count/name, argument JSON, object shape, assessment, answer
+  type/length, evidence array/count and source evidence. These fixed codes retain
+  the client error `invalid_advice`; receipts include no answer, source or private
+  reasoning. Older generic `invalid_advice` receipts cannot identify which check
+  failed. Tool discovery describes the complete
   16 KiB serialized request bound, including overhead, the 256 KiB source-file
   bound and each range's 120-line/8 KiB bound; prefer minimal sufficient ranges.
   Bracket paths such as Next.js dynamic routes retain the same immutable-source

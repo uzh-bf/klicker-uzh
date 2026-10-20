@@ -173,6 +173,69 @@ test('combined cost estimates use both provider rates and withhold totals for mi
     assert.equal(malformed.status, 0, malformed.stderr)
     assert.match(malformed.stdout, /attempt_outcomes=unknown/)
     assert.doesNotMatch(malformed.stdout, /PRIVATE_SENTINEL/)
+    const diagnosticReasons = [
+      'length',
+      'invalid_finish_reason',
+      'invalid_tool_call_count',
+      'invalid_tool_name',
+      'invalid_response',
+      'invalid_advice_shape',
+      'invalid_assessment',
+      'invalid_answer_type',
+      'invalid_answer_length',
+      'invalid_evidence_type',
+      'invalid_evidence_count',
+      'invalid_evidence',
+      'invalid_advice',
+    ]
+    for (let index = 0; index < diagnosticReasons.length; index += 2) {
+      const reasons = diagnosticReasons.slice(index, index + 2)
+      const outcomes = reasons.map((reason, offset) => ({
+        attempt: offset + 1,
+        stage: 'advice',
+        outcome: 'failed',
+        reason,
+        dispatched: true,
+        raw: 'PRIVATE_SENTINEL',
+      }))
+      fs.writeFileSync(
+        toolsPath,
+        JSON.stringify({
+          schema: 'ocr-review-tools/v1',
+          ...advisor,
+          attempted: outcomes.length,
+          dispatched: outcomes.length,
+          completed: 0,
+          failed: outcomes.length,
+          rejected: 0,
+          cancelled: 0,
+          attempt_outcomes: outcomes,
+          docs,
+        })
+      )
+      const diagnostic = run()
+      assert.equal(diagnostic.status, 0, diagnostic.stderr)
+      const line = diagnostic.stdout
+        .split('\n')
+        .find((value) => value.startsWith('OCR advisor '))
+      assert.ok(line)
+      assert.deepEqual(
+        JSON.parse(line.split('attempt_outcomes=')[1]).map(
+          ({ reason }) => reason
+        ),
+        reasons
+      )
+      assert.ok(
+        fs
+          .readFileSync(path.join(directory, 'summary.md'), 'utf8')
+          .includes(line)
+      )
+      assert.doesNotMatch(diagnostic.stdout, /PRIVATE_SENTINEL/)
+      assert.doesNotMatch(
+        fs.readFileSync(path.join(directory, 'summary.md'), 'utf8'),
+        /PRIVATE_SENTINEL/
+      )
+    }
     for (const failure of [
       {
         last_failure: 'PRIVATE_SENTINEL',
