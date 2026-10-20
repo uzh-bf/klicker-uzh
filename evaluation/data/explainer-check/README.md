@@ -8,11 +8,11 @@ there is no new scorer or judge configuration.
 The case `id` prefix encodes the arm, because the corpus format rejects extra
 fields:
 
-| Prefix           | Cases | Expected behavior                                                           |
-| ---------------- | ----: | --------------------------------------------------------------------------- |
-| `skip-`          |     4 | Lookup, definition, short follow-up or revision: no closing check           |
-| `explain-`       |     3 | Conceptual explanation: at most one check, preferably apply/predict/restate |
-| `check-answered` |     1 | Student answers a check: brief, specific feedback first                     |
+| Prefix           | Cases | Expected behavior                                                        |
+| ---------------- | ----: | ------------------------------------------------------------------------ |
+| `skip-`          |     5 | Lookup, definition, follow-up, revision or shown understanding: no check |
+| `explain-`       |     3 | New-concept explanation: one apply/predict/restate check                 |
+| `check-answered` |     1 | Student answers a check: brief, specific feedback first                  |
 
 All cases use `group: development`, supply only synthetic finance prompts and
 need no retrieved course material to be assessable. Each case requires a fresh
@@ -34,10 +34,11 @@ node evaluation/run-tutor-trajectories.mjs \
 ```
 
 Repeat with `--arm candidate` after switching the running app. One repeat
-submits 11 turns per arm. Each turn makes two guarded model calls, and the
-guard reserves the full context cost for each call. Both arms together
-therefore reserve about US$4.71 of the default US$5 budget. More repeats need
-the extended budget option. A paid capture still needs its own approval and
+submits 13 turns per arm. Each turn makes about two guarded model calls, and
+the guard reserves the full context cost for each call, about US$0.107 for
+GPT-6 Luna. One repeat of both arms therefore reserves about US$5.60, which
+exceeds the default US$5 budget. Use `--group` or a smaller corpus copy for
+the default budget, or the extended budget option for full repeats. A paid capture still needs its own approval and
 spend cap.
 
 ## Scoring

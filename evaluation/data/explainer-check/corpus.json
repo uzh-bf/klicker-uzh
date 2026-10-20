@@ -76,6 +76,26 @@
       ]
     },
     {
+      "id": "skip-understanding-shown-beta",
+      "group": "development",
+      "language": "en",
+      "mode": "explainer",
+      "support": "student already shows understanding of the explained idea",
+      "rubric": [
+        "Turn 2 confirms that under the CAPM a negative-beta asset has an expected return below the risk-free rate, because it lowers the risk of a diversified portfolio.",
+        "Turn 2 ends without a comprehension, application or recall question."
+      ],
+      "assessmentTurns": [2],
+      "turns": [
+        {
+          "message": "Explain why the CAPM rewards beta rather than total volatility."
+        },
+        {
+          "message": "So a stock with high volatility but negative beta should, under the CAPM, have an expected return below the risk-free rate, since it hedges market risk. Can you confirm why that follows?"
+        }
+      ]
+    },
+    {
       "id": "explain-diversification-limit",
       "group": "development",
       "language": "en",
