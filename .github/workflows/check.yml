@@ -158,6 +158,7 @@ jobs:
           judge_image="$(python3 -c "import runpy; print(runpy.run_path('util/klicker-eval-judge.py')['IMAGE'])")"
           docker run --rm --network none --env KLICKER_EVAL_GATEWAY_TEST=1 --env LITELLM_LOCAL_MODEL_COST_MAP=True --mount "type=bind,source=$GITHUB_WORKSPACE,target=/work,readonly" --workdir /work --entrypoint python3 "$judge_image" -m unittest util/test-klicker-eval-judge.py
           uv run --no-project --python 3.12 --with pytest==9.1.1 python -m pytest -q -p no:cacheprovider evaluation/tests/test_klicker_trajectories.py
+          uv run --no-project --python 3.12 --with pytest==9.1.1 python -m pytest -q -p no:cacheprovider evaluation/tests/test_budget_admission.py
 
       - name: Install Devrouter profile planner
         run: bash .github/scripts/install-devrouter.sh
