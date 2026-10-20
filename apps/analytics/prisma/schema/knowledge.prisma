@@ -109,6 +109,14 @@ model KB {
   activeGraphBuildId String? @db.Uuid
   // the build FalkorDB currently serves, kept in place even once its digest goes stale
   publishedGraphBuildId String? @db.Uuid
+  // The subject area and language the lecturer chose for this knowledge base.
+  // Each graph build snapshots them, so changing them here never rewrites what
+  // an existing build represents. All-null rows have no explicit choice and
+  // keep the provider's legacy default policy.
+  domainPolicyId       String?
+  domainPolicyVersion  Int?
+  domainPolicyLanguage String?
+
   // graph generation is opt-in per KB; the lecturer-level preview flag is a separate gate
   knowledgeGraphEnabled Boolean @default(false)
   // Optional per-KB storage capacity in MiB; null uses the shared default.

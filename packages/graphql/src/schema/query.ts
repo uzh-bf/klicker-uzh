@@ -1618,7 +1618,7 @@ export const Query = builder.queryType({
       getKbKnowledgeGraphDomainConfig: t.withAuth(asUserFullAccess).field({
         nullable: false,
         type: KBKnowledgeGraphDomainConfigType,
-        args: { kbId: t.arg.id({ required: true }) },
+        args: { kbId: t.arg.id({ required: false }) },
         resolve: async (_, args, ctx) => {
           return await KnowledgeService.getKbKnowledgeGraphDomainConfig(
             args,
