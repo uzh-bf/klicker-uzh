@@ -217,6 +217,9 @@ export default {
       editDisabledTooltip:
         'Bearbeiten nicht möglich: Das ausgewählte Modell unterstützt keine Bilder',
       copy: 'Kopieren',
+      readAloud: 'Vorlesen',
+      stopReadAloud: 'Vorlesen stoppen',
+      readAloudFormula: 'Formel',
       refresh: 'Aktualisieren',
       retry: 'Erneut versuchen',
       rateUp: 'Hilfreiche Antwort',
