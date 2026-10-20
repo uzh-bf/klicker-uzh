@@ -8,12 +8,12 @@
 
 **Current status:** the approved parser repair and integration checks pass.
 [Draft PR #6652](https://github.com/uzh-bf/klicker-uzh/pull/6652) targets `v3` and
-contains all 37 native screenshot attachments, verified in the rendered PR. The
+contains all 49 native screenshot attachments, verified in the rendered PR. The
 slice review approved after a frontend documentation correction; simplification
 found no justified changes. Integrated final review found no source correctness issue. Its stale dependency
 comment is corrected, and a separate registry browser pass now closes its
-artifact-behavior concern. Hosted checks and focused final-review disposition
-remain pending. The user runtime remains ready and pinned for manual Browser use.
+artifact-behavior concern. The focused final review passes. Hosted checks remain pending; the repository
+final AI workflow requires a ready PR, while this approved terminal keeps it draft. The user runtime remains ready and pinned for manual Browser use.
 
 The historical pilot at commit `1de7ad9` has not accepted the final candidate
 tarball because its canonical Auth development server returns 404 for the
@@ -1163,3 +1163,25 @@ resolved task target is `v3`. Plan commit: `17cc9da64aa336a797b650d89f6ec3ee3c1c
   and the repository final AI review are outstanding. The comment/progress
   correction changes no application input, so passing application checks and
   browser evidence are reused.
+
+### Reviewed draft checkpoint — 2026-10-20
+
+- The focused final-review correction passes with no remaining source/browser
+  findings. It reuses the complete 73-path review and verifies the comment and
+  registry-evidence correction. Process success, schema validation and zero
+  permission denials were checked. No new test or application change was needed.
+- PR #6652 now contains all 49 native attachments. The complete description was
+  fetched before replacement, successful old URLs were preserved, and every new
+  upload was matched to its exact image/hash. All 49 images load in the public
+  rendered PR; the registry table was visually inspected there.
+- Current target policy explicitly excludes draft PRs from /final-review:
+  .github/scripts/final-ai-review.js:771 requires !pull.draft and :1955 rejects
+  an ineligible command. The live v3 policy blob matches this checkout. Marking
+  ready remains outside the approved draft authority, so do not invoke that
+  command or change readiness merely to clear its pending status. This is a
+  repository-policy conflict with the plan's earlier command sequence; retain
+  the reviewed draft and report the separate readiness gate after ordinary CI.
+- Hosted checks are active on the pushed correction head. Reuse passing source
+  and browser proof for this documentation-only checkpoint. The exact checkout
+  remains retained/pinned for the user's explicit manual Browser session; both
+  isolated registry browser sessions and the PR-rendering session are closed.
