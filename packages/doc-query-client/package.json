@@ -19,7 +19,7 @@
     "typescript": "~6.0.3"
   },
   "scripts": {
-    "build": "rollup -c",
+    "build": "rollup -c --forceExit",
     "build:test": "pnpm run build",
     "check": "tsc --noEmit --tsBuildInfoFile dist/tsconfig.check.tsbuildinfo",
     "dev": "rollup -c --watch",
