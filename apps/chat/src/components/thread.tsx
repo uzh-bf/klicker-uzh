@@ -846,6 +846,8 @@ const getAttachmentErrorMessage = (
       return t('chat.composer.documentNoText')
     case DOCUMENT_ERROR_CODE.pdfNoText:
       return t('chat.composer.documentPdfNoText')
+    case DOCUMENT_ERROR_CODE.presentation:
+      return t('chat.composer.documentPresentation')
     case DOCUMENT_ERROR_CODE.readFailed:
       return t('chat.composer.documentReadError')
     default:
@@ -1041,9 +1043,6 @@ const DocumentChip: FC<{
       ? [
           document.pages != null
             ? t('chat.composer.documentPages', { count: document.pages })
-            : null,
-          document.slides != null
-            ? t('chat.composer.documentSlides', { count: document.slides })
             : null,
           t('chat.composer.documentTokens', {
             count: format.number(document.tokenEstimate),

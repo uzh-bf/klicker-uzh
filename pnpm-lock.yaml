@@ -485,9 +485,6 @@ importers:
       jose:
         specifier: 5.9.4
         version: 5.9.4
-      jszip:
-        specifier: 3.10.1
-        version: 3.10.1
       katex:
         specifier: 0.16.22
         version: 0.16.22
