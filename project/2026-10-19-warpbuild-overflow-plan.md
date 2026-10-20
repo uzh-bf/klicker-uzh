@@ -112,10 +112,14 @@ from every source change and public description.
 
 Roadmap review and source inspection are complete. The task worktree is based on
 current `v3`; no live setting or paid execution has changed. Planning and trust
-analysis are main-session self-review. The active slice is durable reservation
-and its synthetic failure proof. Implementation, integrated verification and
-draft delivery remain open. The native goal owns continuation through those
-steps; a checkpoint is not source-package completion.
+analysis are main-session self-review. The durable reservation slice passes
+seven synthetic tests in network-isolated Node 24.21.0, including simultaneous
+connections, restart, reconciliation, limits and private-file protection.
+The first reservation and reconciliation checks failed before implementation.
+Slice review is main-session self-review; no independent review is claimed.
+The active slice is authenticated preparation and bounded failure fallback.
+Integrated verification and draft delivery remain open. The native goal owns
+continuation; a checkpoint is not source-package completion.
 
 ## Historical source package
 
@@ -200,12 +204,12 @@ for source delivery or operator-exported billing evidence.
 
 ### Test portfolio
 
-| Consequential risk              | Obligation and primary seam                           | Existing protection and distinct failure                                                                                                 |
-| ------------------------------- | ----------------------------------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------- |
-| Unapproved paid allocation      | Extend route tests through the execution selector     | Existing trust eligibility; add exact ticket, malformed/expired/duplicate and mismatched identity rejection                              |
-| Runner or attempt drift         | Extend metadata, workflow policy and event-gate tests | Existing role/permission contracts; add closed selectors, independent attempt guards, legacy required-coverage refusal and output wiring |
-| Reuse hides cloud validation    | Extend workflow policy mutation coverage              | Existing equivalent-result proof; ensure admitted cloud work bypasses optional reuse                                                     |
-| Coverage or artifact regression | Reuse full CI contract suite                          | Existing canonical plan, build graph, services, caches, shard and required-status contracts                                              |
+| Consequential risk | Obligation and primary seam | Existing protection and distinct failure |
+| --- | --- | --- |
+| Unapproved paid allocation | Extend route tests through the execution selector | Existing trust eligibility; add exact ticket, malformed/expired/duplicate and mismatched identity rejection |
+| Runner or attempt drift | Extend metadata, workflow policy and event-gate tests | Existing role/permission contracts; add closed selectors, independent attempt guards, legacy required-coverage refusal and output wiring |
+| Reuse hides cloud validation | Extend workflow policy mutation coverage | Existing equivalent-result proof; ensure admitted cloud work bypasses optional reuse |
+| Coverage or artifact regression | Reuse full CI contract suite | Existing canonical plan, build graph, services, caches, shard and required-status contracts |
 
 ### Sequence and verification
 
