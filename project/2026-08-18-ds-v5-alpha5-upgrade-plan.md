@@ -6,14 +6,15 @@
 
 **Approval mode:** executable batch, approved by the user on 2026-10-20.
 
-**Current status:** the approved parser repair and integration checks pass.
-[Draft PR #6652](https://github.com/uzh-bf/klicker-uzh/pull/6652) targets `v3` and
-contains all 49 native screenshot attachments, verified in the rendered PR. The
-slice review approved after a frontend documentation correction; simplification
-found no justified changes. Integrated final review found no source correctness issue. Its stale dependency
-comment is corrected, and a separate registry browser pass now closes its
-artifact-behavior concern. The focused final review passes. Hosted checks remain pending; the repository
-final AI workflow requires a ready PR, while this approved terminal keeps it draft. The user runtime remains ready and pinned for manual Browser use.
+**Current status:** the approved parser repair passes local and hosted quality
+checks. [Draft PR #6652](https://github.com/uzh-bf/klicker-uzh/pull/6652) targets
+`v3` and contains 49 verified native screenshot attachments. Hosted browser CI
+has exposed further compatibility failures. Their bounded source and existing
+test corrections are in progress, with affected checks, screenshots and reviews
+to follow. Earlier integrated review coverage remains valid for unchanged
+paths. The repository final AI workflow requires a ready PR; the approved
+terminal keeps it draft. The user runtime remains retained and pinned for
+manual Browser use.
 
 The historical pilot at commit `1de7ad9` has not accepted the final candidate
 tarball because its canonical Auth development server returns 404 for the
@@ -396,7 +397,7 @@ stop and reverify if pnpm replaces the candidate.
 | Plan | `project/2026-08-18-ds-v5-alpha5-upgrade-plan.md` |
 | Branch | `rs/ds-v5-alpha5-upgrade` |
 | Target | `v3` |
-| PR | none yet |
+| PR | [Draft #6652](https://github.com/uzh-bf/klicker-uzh/pull/6652) |
 | Ceremony tier | Full path — public contract, theming and styling surfaces across six apps |
 | Topology | Single PR. Not stackable: `4.1.8` has no `./primitives` target and v5 removes the `Shadcn*` root exports, so the bump, the import rewrite and the CSS rework have no valid ordering apart from together. |
 
@@ -1210,3 +1211,59 @@ resolved task target is `v3`. Plan commit: `17cc9da64aa336a797b650d89f6ec3ee3c1c
   Diagnose that harness boundary separately while hosted CI verifies the
   existing workflows on the repaired assertions. No database reset or runtime
   replacement is inferred from this test correction.
+### Hosted compatibility corrections — 2026-10-21
+
+- The registry quality suite at 649433ea6a45 passes, including Office lint with
+  the approved parser extension. Three browser shards pass; five expose a lost
+  editor click, duplicate alert roles, switch naming, stale course locators and
+  an invalid numeric-entry sequence. No failed shard is reported as accepted.
+- Main owns integration, runtime and final proof. Bounded read-only explorers
+  mapped the failing call sites. A Claude advisory challenged the editor-click
+  hypothesis. Pointer events and scroll offsets then demonstrated scroll
+  anchoring moving the switch between pointerdown and pointerup; no change
+  handler ran. Disabling anchoring on the editor modal makes the existing
+  uninterrupted Single Choice edit/save journey pass in host Chromium.
+- The existing Single Choice test uses a normal click and checks switch state.
+  Course duplication uses the existing stable field hooks. Numeric bounds
+  checks submit complete negative candidates and retain the same valid-value
+  expectations. No maintained test is added, skipped or deleted.
+- Preserve translated switch names where the v5 fallback overrides an external
+  native label: the two batch opt-ins, reusable chatbot mode switches and
+  chatbot model selection. Batch mouse/Space interaction, off defaults and the
+  template dependency pass in the local browser; the dialog closes unapplied.
+  Error notices retain one library-owned alert role instead of nested alerts.
+- Restore library responsive utility ordering through the shared stylesheet's
+  published-dist source. The real modal heading is left-aligned at desktop and
+  centered at compact width. Chat's token documentation now agrees with its
+  design-system ownership. These address the two ordinary automated comments.
+- The Docs smoke check exposed per-file cascade-layer transformation raising
+  preflight above Infima. Disable only that transform through the existing
+  Docusaurus PostCSS hook. The rebuilt public site has a 32-pixel navbar logo,
+  correct padding and no horizontal page overflow at 1440 and 390 pixels.
+  Compact navigation opens, reaches the guide and closes. Five captures were
+  refreshed after the shared source change; before captures remain historical.
+- Current registry checks pass 35/35 type tasks, 7/7 lint tasks, syncpack and
+  focused formatting. The production build retry isolates retained generated
+  development declarations after their duplicate names blocked the first run;
+  the 23 build tasks pass, but Next cleaned the holding directory before the
+  wrapper could restore development declarations. The first warm startup then
+  refused a changed Git-head fingerprint because the source commit landed
+  during preparation. Complete the documentation commit before one canonical
+  warm retry on the held head; no container recreation is permitted. Candidate
+  refresh, follow-up review, gallery publication and new-head CI remain in progress.
+- The scroll-anchoring lesson belongs in
+  docs/solutions/runtime-error/element-editor-clicks-lost-to-scroll-anchoring.md;
+  this reversible incident correction needs no ADR. It records the failed
+  normal-click hypothesis and the successful existing behavioral check.
+- The fetched target is eccb64b4cb20. Its sole new commit concerns OCR tooling
+  and does not overlap these application changes or create a readiness blocker.
+  Keep the deliberate c58e111ea3d6 integration and hold the verified source;
+  target drift alone does not justify another merge.
+- New Docs and modal captures use the in-app Browser; its rendering engine is
+  not exposed. Host Chromium supplies the editor regression check. Compact
+  editor content clipping remains an explicit limitation. Pure switch-name
+  and alert-role corrections have no visible delta. No Safari, screen reader,
+  physical-device or complete GA acceptance is claimed.
+- The exact task runtime remains retained/pinned under the user's manual-use
+  ruling. No replacement, reset, cleanup, readiness change, merge, release,
+  deployment or human-review notification is performed by this correction.

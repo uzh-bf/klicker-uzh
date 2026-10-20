@@ -77,16 +77,23 @@ unchanged.
   `@uzh-bf/design-system/css` unlayered, followed by Tailwind theme/utilities
   without a second preflight. `packages/shared-components/src/theme.css`
   registers shared token names and Klicker-specific colour families; runtime
-  design-system values remain authoritative. The four Pages Router apps and
+  design-system values remain authoritative. It also scans the published
+  design-system `dist` so library responsive variants sort with each app's
+  generated utilities, after conflicting base utilities. The four Pages Router apps and
   docs also import `theme-app.css` for focus-ring and animation tokens; Chat
   keeps the design-system ring defaults. Docusaurus owns its root `data-theme`,
   so docs selects UZH colours through explicit theme-variable assignments.
+  Its `configurePostCss` hook disables only Preset Env's cascade-layer
+  transform: transforming files separately gives preflight artificial
+  specificity above Infima. Preserve native layers so Infima's unlayered
+  layout rules keep their intended priority.
   Conditional classes use `twMerge`.
 - **Shared components** (`packages/shared-components`): Loader, DataTable, question renderers, Leaderboard, charts, evaluation. **Deep-import** them (`@klicker-uzh/shared-components/src/Loader`) — there is no barrel index.
 - **Animations**: `motion` (declared as a dependency of `packages/shared-components`) powers the shared Leaderboard — podium rise-in, FLIP rank reordering on score changes, and staggered row entry. Gate every motion animation on `useReducedMotion()` from `motion/react`; keep durations at or below 0.5s. For app-local animation needs, prefer the Tailwind v4 `--animate-*` tokens defined in the shared `theme-app.css` (e.g. `animate-fade-in`) or the installed `tw-animate-css` utilities over adding another JS animation dependency.
 - Function components with hooks only; PascalCase files; app-local components under `src/components/` with relative imports.
 - Clickable rows must ignore events from marked interactive subtrees so opening a dropdown or modal cannot also trigger the row navigation.
 - Async Formik submit handlers must return or await their mutation promise so `isSubmitting` remains active and users cannot navigate away before the save completes.
+- The element editor disables scroll anchoring on its modal content so a rich-text toolbar closing on blur cannot move a switch during a click; see [lost editor clicks](solutions/runtime-error/element-editor-clicks-lost-to-scroll-anchoring.md).
 - **Pinned list controls**: pagination / entries-per-page controls must never scroll away with their list. On a page, make the container `flex flex-col`, give the scrolling list its own `min-h-0 flex-1 overflow-y-auto` child, and keep the pager a `flex-none` sibling below it (`pages/index.tsx`, `pages/activities.tsx`). When the list itself scrolls, the same result-range summary the pager shows must also render above the scroll boundary, derived from the same calculation and values (`pages/index.tsx`, `apps/frontend-manage/src/lib/resultRange.ts:computeResultRange`). Inside the design-system `Modal` — whose content is itself `overflow-y-auto` — neutralize that with `className.content: 'overflow-visible'` and cap the list with `max-h-[...] overflow-y-auto` so it is the single scroll boundary (`ExistingElementSelectionModal.tsx`, `courses/CourseVerifiableCredentialsModal.tsx`).
 
 ### Domain-specific creation actions
