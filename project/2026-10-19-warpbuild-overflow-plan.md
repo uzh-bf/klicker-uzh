@@ -1,5 +1,124 @@
 # Opt-in cloud capacity for public Playwright validation
 
+## Current roadmap and executable source package
+
+The operator approved updating this roadmap and executing the next source
+package on 2026-10-20. The earlier sections below are historical delivery
+records; their pending states do not reopen merged work. Current source includes
+the optional backend, preparation guards, required-status recovery and corrected
+shard outcome reporting. Operational qualification and its limitations are
+recorded privately. They establish no standing spending authority, comparative
+speed claim or permission to remove fixed capacity.
+
+The next outcome is a bounded burst that makes its admission decision during
+trusted preparation, before the build or shards select runners. A periodic
+operator inventory cannot reliably insert an exact ticket before preparation.
+Keep the existing execution envelope and immutable ticket checks, and give
+admission a private durable owner. The initial control is an operator-enabled
+burst window; queue-triggered activation is a later phase.
+
+### Authority and delivery
+
+Approval mode: **executable batch, source only**. Main session owns design,
+implementation, verification, simplification and integrated self-review. The
+existing no-subagent instruction remains binding. Execution mode remains
+standard with that explicit main-session override; self-review is not
+independent evidence. Target `v3`, baseline
+`c58e111ea3d606b3a99dd0664351b5df97fd90c8`, branch
+`rs/warpbuild-burst-admission`, worktree
+`trees/rs/warpbuild-burst-admission`. No PR exists yet.
+
+The approved terminal is a verified, self-reviewed source package published as
+a draft PR. Ordinary task commits and pushes are included. Deployment of a
+coordinator, its hosting and network exposure, credentials, live workflow
+permissions/settings, paid qualification, readiness and merge retain their
+separate approval gates. Earlier finite pilot limits and cleanup obligations
+are not reset by this source goal. No existing run is cancelled or retried.
+
+### Admission design
+
+- Use a small trusted coordinator with a private SQLite reservation database.
+  It returns only an exact execution ticket; financial state stays outside
+  repository variables, workflow logs and CI artifacts. Node's built-in SQLite
+  avoids a new package or shared application database. A transaction must
+  reserve the whole validation before a response can authorize cloud work.
+- Authenticate preparation with GitHub OIDC, bound to the configured audience,
+  repository, exact reusable workflow revision, run and attempt. Verify current
+  PR eligibility and run identity through host `gh`. Candidate input alone
+  cannot establish eligibility. Candidate build and shard jobs retain read-only
+  permissions and never receive coordinator credentials or ledger access.
+- Operator policy fixes the burst's expiry, allowed control revision, count,
+  concurrency and monetary reservation limits. Fresh private headroom evidence
+  includes unresolved liabilities. Concurrent admission and duplicate requests
+  cannot spend a reservation twice. Restart preserves consumed submissions.
+  Expired tickets and cancelled jobs do not release financial exposure without
+  complete reconciliation.
+- Keep the integration disabled when no endpoint is configured. Missing OIDC,
+  denied admission, timeout or unavailable coordinator keeps ordinary routing.
+  A lost response retains its reservation. Existing exact manual tickets remain
+  compatible. Old callers without OIDC permission retain their normal behavior.
+- Start with an explicit burst window and one admitted validation at a time.
+  Policy may permit a second concurrent validation only under a later qualified
+  activation packet. The repository variable is not an atomic account ledger,
+  and the coordinator cannot control unrelated account spending.
+
+The new persistent admission owner and workflow authentication boundary warrant
+ADR 0052. Deployment location is intentionally not selected by source delivery.
+The implementation must not assume a reachable endpoint or silently introduce
+an application service, cluster resource or new credential.
+
+### Delivery sequence and acceptance
+
+| Phase                      | Outcome                                                                                  | Acceptance                                                                                                           |
+| -------------------------- | ---------------------------------------------------------------------------------------- | -------------------------------------------------------------------------------------------------------------------- |
+| Current: bounded admission | Reserve and authenticate before backend selection; preserve ordinary fallback            | Durable concurrent reservation tests, authenticated synthetic request through route selection, exact workflow guards |
+| Current: failure handling  | Preserve limits across duplicate requests, stale identity, unavailable state and restart | Negative cases deny cloud admission; unknown execution or billing retains exposure                                   |
+| Later: live qualification  | Deploy to a separately approved owner and run a capped burst                             | Actual provider, build, every consumer, artifact digests, aggregate and complete job-linked billing                  |
+| Later: useful relief       | Compare representative bursts with ordinary execution                                    | Separate preparation, queue, execution and reporting times; complete costs and declared coverage limitations         |
+| Later: automatic trigger   | Activate on sustained pressure in the eligible pool                                      | Bounded threshold, cooldown, concurrency cap and verified return to ordinary routing                                 |
+
+Existing CI-efficiency work remains complementary: reuse valid outputs and
+avoid unnecessary work before expanding capacity. This package does not route
+drafts, forks, bots, pushes, image publication or unrelated hosted checks.
+
+### Source slices and test portfolio
+
+1. Update this existing shared roadmap and record ADR 0052. Implement the
+   private reservation owner in new `.github/scripts/warpbuild-admission.cjs`
+   with its synthetic `warpbuild-admission.test.cjs`. Verify atomic admission,
+   immutable identity, count/concurrency/exposure ceilings, restart and
+   conservative reconciliation through the public reservation interface.
+2. Implement the trusted transport in new
+   `util/warpbuild-admission-server.cjs` and its synthetic test. Extend existing
+   `playwright-route.cjs` and its tests to request admission before selection.
+   Verify authentication, bounded network failure and fallback without a live
+   credential, provider request or external service.
+3. Extend the existing caller/reusable workflows and their policy validator
+   and mutation tests. Wire the new tests into the existing check command;
+   update the CI operations guide. Preserve canonical coverage, independent
+   attempt guards, artifact consumption and separate aggregate reporting.
+4. Run affected contracts in an isolated Node 24 container, syntax, formatting,
+   focused static checks and staged privacy checks. Review the complete range
+   for simplification, correctness, trust, persistence and compatibility; then
+   publish the draft with honest remaining runtime gates.
+
+The new tests protect previously absent persistent and authentication contracts.
+Existing route and workflow suites are extended rather than duplicated. No UI,
+application build, seeded data or local application runtime is required. All
+fixtures use invented identities and amounts. Private pilot facts are excluded
+from every source change and public description.
+
+### Current progress
+
+Roadmap review and source inspection are complete. The task worktree is based on
+current `v3`; no live setting or paid execution has changed. Planning and trust
+analysis are main-session self-review. The active slice is durable reservation
+and its synthetic failure proof. Implementation, integrated verification and
+draft delivery remain open. The native goal owns continuation through those
+steps; a checkpoint is not source-package completion.
+
+## Historical source package
+
 ## Approval summary
 
 Prepare an operator-controlled WarpBuild backend for the existing public
@@ -81,12 +200,12 @@ for source delivery or operator-exported billing evidence.
 
 ### Test portfolio
 
-| Consequential risk | Obligation and primary seam | Existing protection and distinct failure |
-| --- | --- | --- |
-| Unapproved paid allocation | Extend route tests through the execution selector | Existing trust eligibility; add exact ticket, malformed/expired/duplicate and mismatched identity rejection |
-| Runner or attempt drift | Extend metadata, workflow policy and event-gate tests | Existing role/permission contracts; add closed selectors, independent attempt guards, legacy required-coverage refusal and output wiring |
-| Reuse hides cloud validation | Extend workflow policy mutation coverage | Existing equivalent-result proof; ensure admitted cloud work bypasses optional reuse |
-| Coverage or artifact regression | Reuse full CI contract suite | Existing canonical plan, build graph, services, caches, shard and required-status contracts |
+| Consequential risk              | Obligation and primary seam                           | Existing protection and distinct failure                                                                                                 |
+| ------------------------------- | ----------------------------------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------- |
+| Unapproved paid allocation      | Extend route tests through the execution selector     | Existing trust eligibility; add exact ticket, malformed/expired/duplicate and mismatched identity rejection                              |
+| Runner or attempt drift         | Extend metadata, workflow policy and event-gate tests | Existing role/permission contracts; add closed selectors, independent attempt guards, legacy required-coverage refusal and output wiring |
+| Reuse hides cloud validation    | Extend workflow policy mutation coverage              | Existing equivalent-result proof; ensure admitted cloud work bypasses optional reuse                                                     |
+| Coverage or artifact regression | Reuse full CI contract suite                          | Existing canonical plan, build graph, services, caches, shard and required-status contracts                                              |
 
 ### Sequence and verification
 
