@@ -51,12 +51,18 @@ export default {
       },
       answerStyleLabel: 'Answer style',
       answerStyleHint:
-        'Changes the length and layout of new answers. Earlier answers stay as they are.',
+        'Changes how new answers are written, not how much help you get.',
       answerStyles: {
         balanced: 'Balanced',
-        brief: 'Brief',
-        bullets: 'Step-by-step bullet points',
-        detailed: 'Detailed',
+        detailed: 'New to this topic',
+        brief: 'I know the basics',
+        bullets: 'Bullet points',
+      },
+      answerToneLabel: 'Tone',
+      answerTones: {
+        neutral: 'Neutral',
+        friendly: 'Friendly',
+        direct: 'Direct',
       },
     },
     credits: {

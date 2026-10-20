@@ -52,12 +52,18 @@ export default {
       },
       answerStyleLabel: 'Antwortstil',
       answerStyleHint:
-        'Ändert Länge und Aufbau neuer Antworten. Frühere Antworten bleiben, wie sie sind.',
+        'Ändert, wie neue Antworten geschrieben sind, nicht wie viel Unterstützung Du bekommst.',
       answerStyles: {
         balanced: 'Ausgewogen',
-        brief: 'Kurz',
-        bullets: 'Schritt für Schritt in Stichpunkten',
-        detailed: 'Ausführlich',
+        detailed: 'Neu im Thema',
+        brief: 'Ich kenne die Grundlagen',
+        bullets: 'Stichpunkte',
+      },
+      answerToneLabel: 'Ton',
+      answerTones: {
+        neutral: 'Neutral',
+        friendly: 'Freundlich',
+        direct: 'Direkt',
       },
     },
     credits: {

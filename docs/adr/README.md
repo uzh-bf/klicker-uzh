@@ -36,7 +36,7 @@ The durable record of **why** — the significant, hard-to-reverse choices behin
 - [0042](./0042-version-chatbot-disclaimers-by-replacement.md) — Version lecturer-edited chatbot disclaimers by transactional replacement
 - [0043](./0043-sonar-analysis-credential-and-coverage-input-boundary.md) — Sonar analysis credentials stay out of contributor-controlled execution
 - [0051](./0051-ai-releases-tag-v3-ai-with-deploy-parity.md) — AI releases are tagged on `v3-ai` and rendered from `v3` under deploy parity
-- [0054](./0054-student-answer-style-layer.md) — Students choose an answer style that shapes form only, below every fixed prompt contract
+- [0054](./0054-student-answer-style-layer.md) — Students choose how answers read (style and tone), never how much help they get, below every fixed prompt contract
 
 `0001`, `0003`, and `0008` are each used twice — their lines were numbered
 independently before this index existed. Numbers are not reassigned, because

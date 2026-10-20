@@ -3,7 +3,12 @@
 import { ChevronDown, Zap } from 'lucide-react'
 import { useTranslations } from 'next-intl'
 import { twMerge } from 'tailwind-merge'
-import { ANSWER_STYLES, type AnswerStyle } from '../lib/config/answerStyles'
+import {
+  ANSWER_STYLES,
+  ANSWER_TONES,
+  type AnswerStyle,
+  type AnswerTone,
+} from '../lib/config/answerStyles'
 import { isKnownMode } from '../lib/config/modes'
 import { useSettingsStore } from '../stores/settingsStore'
 import { useChatUi } from './chat-ui-context'
@@ -20,6 +25,8 @@ export function EmbeddedSettings() {
     setSelectedMode,
     answerStyle,
     setAnswerStyle,
+    answerTone,
+    setAnswerTone,
   } = useSettingsStore()
 
   if (!showMinimalSettings) return null
@@ -71,6 +78,25 @@ export function EmbeddedSettings() {
           {ANSWER_STYLES.map((value) => (
             <option key={value} value={value}>
               {t(`chat.settingsPanel.answerStyles.${value}`)}
+            </option>
+          ))}
+        </select>
+        <ChevronDown
+          aria-hidden
+          className="text-muted-foreground pointer-events-none absolute right-2 top-1/2 size-3 -translate-y-1/2"
+        />
+      </div>
+      <div className="relative min-w-0 max-w-[7rem] shrink sm:max-w-[9rem]">
+        <select
+          data-cy="chat-embedded-answer-tone-select"
+          value={answerTone}
+          onChange={(e) => setAnswerTone(e.target.value as AnswerTone)}
+          aria-label={t('chat.settingsPanel.answerToneLabel')}
+          className={COMPACT_SELECT_CLASS}
+        >
+          {ANSWER_TONES.map((value) => (
+            <option key={value} value={value}>
+              {t(`chat.settingsPanel.answerTones.${value}`)}
             </option>
           ))}
         </select>

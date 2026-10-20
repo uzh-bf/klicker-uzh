@@ -42,6 +42,7 @@ export function useChatResponse(
 
   const loadCredits = useSettingsStore((state) => state.loadCredits)
   const answerStyle = useSettingsStore((state) => state.answerStyle)
+  const answerTone = useSettingsStore((state) => state.answerTone)
 
   // AbortController to handle request cancellation
   const abortControllerRef = useRef<AbortController | null>(null)
@@ -219,6 +220,7 @@ export function useChatResponse(
             selectedMode,
             reasoningEffort: selectedReasoningEffort,
             answerStyle,
+            answerTone,
             parentId: parentId || undefined,
             assistantMessageId,
             ...(options.allowRegeneration ? { allowRegeneration: true } : {}),
@@ -833,6 +835,7 @@ export function useChatResponse(
       selectedMode,
       selectedReasoningEffort,
       answerStyle,
+      answerTone,
       chatbotId,
       loadCredits,
       t,

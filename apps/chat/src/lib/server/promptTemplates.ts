@@ -28,9 +28,11 @@ type PromptContext = {
   }
   'lecturer-standard-context': { personaContextJson: string }
   'student-answer-style': {
+    detailed: boolean
     brief: boolean
     bullets: boolean
-    detailed: boolean
+    friendly: boolean
+    direct: boolean
   }
   'image-description': { userContent: string }
 }

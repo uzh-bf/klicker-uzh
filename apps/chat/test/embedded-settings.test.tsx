@@ -14,6 +14,8 @@ const mocks = vi.hoisted(() => ({
     setSelectedMode: () => {},
     answerStyle: 'balanced',
     setAnswerStyle: () => {},
+    answerTone: 'neutral',
+    setAnswerTone: () => {},
   },
 }))
 
@@ -40,6 +42,7 @@ describe('EmbeddedSettings', () => {
     mocks.showMinimalSettings = true
     mocks.settings.modeOptions = { tutor: 'Tutor' }
     mocks.settings.answerStyle = 'brief'
+    mocks.settings.answerTone = 'direct'
   })
 
   test('renders the answer-style select even when only one mode exists', () => {
@@ -53,7 +56,7 @@ describe('EmbeddedSettings', () => {
     expect(markup).toMatch(/<option value="brief" selected="">/)
   })
 
-  test('renders both selects when several modes exist', () => {
+  test('renders the mode select next to them when several modes exist', () => {
     mocks.settings.modeOptions = { tutor: 'Tutor', explainer: 'Explainer' }
 
     const markup = render()

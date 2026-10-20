@@ -31,7 +31,7 @@ const PARTIAL_RETRIEVAL_MARK = 'Retrieved results are a partial'
 const OUTPUT_FORMAT_MARK = 'Output format:'
 const CITATION_MARK = '<SYNTHETIC-CITATION-CONTRACT>'
 const LANGUAGE_MARK = 'Swiss Standard German orthography'
-const ANSWER_STYLE_MARK = '## Student answer-style preference'
+const ANSWER_STYLE_MARK = '## Student answer preferences'
 
 const DOC_TOOL = 'KB_doc_query'
 const NON_DOC_TOOL = 'get_weather'
@@ -433,69 +433,96 @@ describe('compileSystemPrompt', () => {
   })
 })
 
-describe('compileSystemPrompt student answer style', () => {
+describe('compileSystemPrompt student answer preferences', () => {
   const cases = [
     { name: 'tutor', systemPrompts: { tutor: { prompt: 'STORED' } } },
     { name: 'quizzer', systemPrompts: null },
     { name: 'custom', systemPrompts: { custom: { prompt: 'PERSONA' } } },
   ] as const
+  const styles = ['balanced', 'detailed', 'brief', 'bullets'] as const
+  const tones = ['neutral', 'friendly', 'direct'] as const
+  const nonDefaultCombinations = styles
+    .flatMap((answerStyle) =>
+      tones.map((answerTone) => ({ answerStyle, answerTone }))
+    )
+    .filter(
+      ({ answerStyle, answerTone }) =>
+        answerStyle !== 'balanced' || answerTone !== 'neutral'
+    )
 
-  function compileWithStyle(
+  function compileWithPreferences(
     systemPrompts: unknown,
     selectedMode: string,
-    answerStyle?: 'balanced' | 'brief' | 'bullets' | 'detailed'
+    preferences: {
+      answerStyle?: (typeof styles)[number]
+      answerTone?: (typeof tones)[number]
+    } = {}
   ): string {
     return compileSystemPrompt(systemPrompts, selectedMode, {
       courseDisplayName: COURSE_DISPLAY_NAME,
       toolNames: [DOC_TOOL],
-      answerStyle,
+      ...preferences,
     })
   }
 
   test.each(
     cases
-  )('keeps the $name prompt byte-identical for the balanced default', ({
+  )('keeps the $name prompt byte-identical for the default style and tone', ({
     name,
     systemPrompts,
   }) => {
-    const withoutStyle = compileWithStyle(systemPrompts, name)
+    const withoutPreferences = compileWithPreferences(systemPrompts, name)
 
-    expect(compileWithStyle(systemPrompts, name, 'balanced')).toBe(withoutStyle)
-    expect(withoutStyle).not.toContain(ANSWER_STYLE_MARK)
+    expect(
+      compileWithPreferences(systemPrompts, name, {
+        answerStyle: 'balanced',
+        answerTone: 'neutral',
+      })
+    ).toBe(withoutPreferences)
+    expect(withoutPreferences).not.toContain(ANSWER_STYLE_MARK)
   })
 
   test.each(
     cases
-  )('adds exactly one section after the $name mode sections for every other preset', ({
+  )('adds exactly one section after the $name mode sections for every other combination', ({
     name,
     systemPrompts,
   }) => {
-    const baseline = compileWithStyle(systemPrompts, name)
+    const baseline = compileWithPreferences(systemPrompts, name)
     const sections = new Set<string>()
 
-    for (const answerStyle of ['brief', 'bullets', 'detailed'] as const) {
-      const result = compileWithStyle(systemPrompts, name, answerStyle)
-      const styleIdx = result.indexOf(ANSWER_STYLE_MARK)
+    for (const preferences of nonDefaultCombinations) {
+      const result = compileWithPreferences(systemPrompts, name, preferences)
+      const sectionIdx = result.indexOf(ANSWER_STYLE_MARK)
       const inputContextIdx = result.indexOf(INPUT_CONTEXT_MARK)
 
       expect(result.split(ANSWER_STYLE_MARK)).toHaveLength(2)
       expect(result.match(/^## /gm)).toHaveLength(
         (baseline.match(/^## /gm) ?? []).length + 1
       )
-      expect(styleIdx).toBeGreaterThan(
+      expect(sectionIdx).toBeGreaterThan(
         name === 'custom'
           ? result.indexOf(CUSTOM_PERSONA_MARK)
           : result.indexOf(PLATFORM_MODE_MARK)
       )
-      expect(inputContextIdx).toBeGreaterThan(styleIdx)
-      expect(result.indexOf(OUTPUT_FORMAT_MARK)).toBeGreaterThan(styleIdx)
-      // Removing the inserted section restores the default prompt exactly.
-      expect(result.slice(0, styleIdx) + result.slice(inputContextIdx)).toBe(
+      expect(inputContextIdx).toBeGreaterThan(sectionIdx)
+      expect(result.indexOf(OUTPUT_FORMAT_MARK)).toBeGreaterThan(sectionIdx)
+      // Removing the inserted section restores the default prompt exactly,
+      // so the mode contract and every fixed contract stay untouched.
+      expect(result.slice(0, sectionIdx) + result.slice(inputContextIdx)).toBe(
         baseline
       )
-      sections.add(result.slice(styleIdx, inputContextIdx))
+      sections.add(result.slice(sectionIdx, inputContextIdx))
     }
 
-    expect(sections.size).toBe(3)
+    expect(sections.size).toBe(nonDefaultCombinations.length)
+  })
+
+  test('emits the section for a non-default tone alone', () => {
+    const result = compileWithPreferences(null, 'tutor', {
+      answerTone: 'direct',
+    })
+
+    expect(result.split(ANSWER_STYLE_MARK)).toHaveLength(2)
   })
 })
