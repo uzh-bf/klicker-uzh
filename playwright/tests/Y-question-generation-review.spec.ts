@@ -1,4 +1,5 @@
 import { mkdirSync, readFileSync } from 'node:fs'
+import type { Page } from '@playwright/test'
 import { expect, test } from '../util/fixtures.js'
 import { getPrisma } from '../global-setup.js'
 import { URL_MANAGE, USER_ID_TEST } from '../util/constants.js'
@@ -1103,5 +1104,295 @@ test('refreshes the generation capabilities after a rejected submission', async 
     graphBuildId: source.basis.graphBuildId,
     basisFingerprint: source.basis.fingerprint,
     focusTopic: 'Synthetic topic',
+  })
+})
+
+test.describe('Generation source readiness', () => {
+  type SyntheticSource = {
+    kbId: string
+    kbName: string
+    preparationState: string
+    preparationPendingReason: string | null
+    basis: {
+      graphBuildId: string
+      fingerprint: string
+      language: string
+      indexedAt: string
+      recentChangesExcluded: boolean
+      sourceCount: number
+      sources: Array<{
+        resourceId: string
+        title: string
+        sourceFile: string
+        pageCount: number | null
+      }>
+    } | null
+  }
+
+  function syntheticSource(
+    suffix: string,
+    preparationState: string,
+    resourceSuffixes: string[] = [suffix]
+  ): SyntheticSource {
+    return {
+      kbId: `b2100000-0000-4000-8000-00000000000${suffix}`,
+      kbName: `Synthetic readiness course ${suffix}`,
+      preparationState,
+      preparationPendingReason: null,
+      basis:
+        preparationState === 'READY'
+          ? {
+              graphBuildId: `b1100000-0000-4000-8000-00000000000${suffix}`,
+              fingerprint: `synthetic-readiness-${resourceSuffixes.join('')}`,
+              language: 'en',
+              indexedAt: '2026-09-01T00:00:00Z',
+              recentChangesExcluded: false,
+              sourceCount: resourceSuffixes.length,
+              sources: resourceSuffixes.map((resource) => ({
+                resourceId: `b3100000-0000-4000-8000-00000000000${resource}`,
+                title: `Synthetic material ${resource}`,
+                sourceFile: `material-${resource}.md`,
+                pageCount: null,
+              })),
+            }
+          : null,
+    }
+  }
+
+  // Serves the generation form from synthetic sources. `sources` is read on
+  // every request so a test can change the preparation between refreshes.
+  async function routeGenerationForm(
+    page: Page,
+    options: {
+      sources: () => SyntheticSource[]
+      onStart: (input: Record<string, unknown>) => unknown
+    }
+  ) {
+    const persisted = JSON.parse(
+      readFileSync(
+        new URL(
+          '../../packages/graphql/src/public/client.json',
+          import.meta.url
+        ),
+        'utf8'
+      )
+    ) as Record<string, string>
+    const operationNames = new Map(
+      Object.entries(persisted).map(([name, hash]) => [hash, name])
+    )
+    const counts = { sources: 0 }
+    await page.route('**/graphql*', async (route) => {
+      const request = route.request()
+      const url = new URL(request.url())
+      const body = request.method() === 'POST' ? request.postDataJSON() : null
+      const extensions =
+        body?.extensions ??
+        JSON.parse(url.searchParams.get('extensions') ?? '{}')
+      const operation =
+        body?.operationName ??
+        url.searchParams.get('operationName') ??
+        operationNames.get(extensions.persistedQuery?.sha256Hash)
+      if (operation === 'ElementGenerationSourcesWithLanguage') {
+        counts.sources += 1
+        await route.fulfill({
+          json: { data: { elementGenerationSources: options.sources() } },
+        })
+        return
+      }
+      if (operation === 'ElementGenerationCapabilities') {
+        await route.fulfill({
+          json: {
+            data: {
+              elementGenerationCapabilities: {
+                configured: true,
+                elementTypes: ['SC'],
+                languages: ['en'],
+                bloomLevels: ['understand'],
+                difficultyLevels: [1, 2, 3, 4, 5],
+                supportsIndividualRegeneration: false,
+                typeCapabilities: [
+                  {
+                    elementType: 'SC',
+                    reviewGates: ['DESIGN', 'PLAN'],
+                    supportsSourceScopes: true,
+                    supportsDifficulty: true,
+                    supportsBloomLevels: true,
+                    supportsFocusTopic: false,
+                    supportsRetry: false,
+                    supportsIncompletePublication: false,
+                  },
+                ],
+              },
+            },
+          },
+        })
+        return
+      }
+      if (operation === 'StartElementGeneration') {
+        await route.fulfill({ json: options.onStart(body.variables.input) })
+        return
+      }
+      await route.continue()
+    })
+    return counts
+  }
+
+  async function refreshOnReturn(page: Page) {
+    await page.evaluate(() =>
+      document.dispatchEvent(new Event('visibilitychange'))
+    )
+  }
+
+  test('keeps a requested unready knowledge base selected while another is ready', async ({
+    loginLecturer,
+    page,
+  }) => {
+    const ready = syntheticSource('1', 'READY')
+    let requested: SyntheticSource = {
+      ...syntheticSource('2', 'QUEUED'),
+      preparationPendingReason: 'SETTINGS_CHANGED',
+    }
+    const delayed = syntheticSource('3', 'DELAYED')
+    const submitted: Array<Record<string, unknown>> = []
+    const counts = await routeGenerationForm(page, {
+      sources: () => [ready, requested, delayed],
+      onStart: (input) => {
+        submitted.push(input)
+        return { errors: [{ message: 'Synthetic dispatch intercepted' }] }
+      },
+    })
+    await loginLecturer()
+    const manageUrl = process.env.URL_MANAGE ?? URL_MANAGE
+    await gotoCommit(
+      page,
+      `${manageUrl}/elements/generate?kbId=${requested.kbId}`
+    )
+
+    await expect(
+      page.getByTestId(`element-generation-source-${requested.kbId}`)
+    ).toBeChecked()
+    const detail = page.getByTestId('element-generation-preparation-detail')
+    await expect(detail).toHaveAttribute('data-state', 'QUEUED')
+    await expect(
+      page.getByTestId('element-generation-settings-changed')
+    ).toBeVisible()
+    await expect(
+      page.getByTestId('element-generation-preparation-contact')
+    ).toHaveCount(0)
+    await expect(
+      page.getByTestId(`element-generation-preparation-${delayed.kbId}`)
+    ).toHaveAttribute('data-state', 'DELAYED')
+    await expect(
+      page.getByTestId(`element-generation-preparation-${ready.kbId}`)
+    ).toHaveCount(0)
+
+    // An unready selection is never submitted, and no other KB stands in.
+    await page.getByTestId('element-generation-start').click()
+    await expect(page.getByTestId('element-generation-scope-0')).toHaveCount(0)
+
+    // Finished preparation updates the form on return but starts nothing.
+    requested = syntheticSource('2', 'READY')
+    const before = counts.sources
+    await refreshOnReturn(page)
+    await expect.poll(() => counts.sources).toBeGreaterThan(before)
+    await expect(detail).toHaveCount(0)
+    await expect(page.getByTestId('element-generation-scope-0')).toBeVisible()
+    await expect(
+      page.getByTestId(`element-generation-source-${requested.kbId}`)
+    ).toBeChecked()
+    expect(submitted).toHaveLength(0)
+
+    // A delayed KB offers the escalation route instead of a waiting time.
+    await page.getByTestId(`element-generation-source-${delayed.kbId}`).check()
+    await expect(detail).toHaveAttribute('data-state', 'DELAYED')
+    await expect(
+      page.getByTestId('element-generation-preparation-contact')
+    ).toHaveAttribute('href', /^mailto:/)
+  })
+
+  test('reports a missing requested knowledge base without substituting another', async ({
+    loginLecturer,
+    page,
+  }) => {
+    const ready = syntheticSource('4', 'READY')
+    const submitted: Array<Record<string, unknown>> = []
+    await routeGenerationForm(page, {
+      sources: () => [ready],
+      onStart: (input) => {
+        submitted.push(input)
+        return { errors: [{ message: 'Synthetic dispatch intercepted' }] }
+      },
+    })
+    await loginLecturer()
+    const manageUrl = process.env.URL_MANAGE ?? URL_MANAGE
+    await gotoCommit(
+      page,
+      `${manageUrl}/elements/generate?kbId=b2100000-0000-4000-8000-0000000000ff`
+    )
+
+    await expect(
+      page.getByTestId('element-generation-requested-source-missing')
+    ).toBeVisible()
+    await expect(
+      page.getByTestId(`element-generation-source-${ready.kbId}`)
+    ).not.toBeChecked()
+    await page.getByTestId('element-generation-start').click()
+    await expect(page.getByTestId('element-generation-start')).toBeEnabled()
+    expect(submitted).toHaveLength(0)
+  })
+
+  test('shows the refreshed basis after a basis-changed rejection', async ({
+    loginLecturer,
+    page,
+  }) => {
+    let current = syntheticSource('5', 'READY', ['5', '6', '7'])
+    const submitted: Array<Record<string, unknown>> = []
+    const counts = await routeGenerationForm(page, {
+      sources: () => [current],
+      onStart: (input) => {
+        submitted.push(input)
+        if (submitted.length === 1) {
+          // The basis moves on while the lecturer reviews the form.
+          current = syntheticSource('5', 'READY', ['5', '6'])
+          return {
+            errors: [
+              {
+                message: 'Synthetic basis changed',
+                extensions: { code: 'KB_GRAPH_BASIS_CHANGED' },
+              },
+            ],
+          }
+        }
+        return { errors: [{ message: 'Synthetic dispatch intercepted' }] }
+      },
+    })
+    await loginLecturer()
+    const manageUrl = process.env.URL_MANAGE ?? URL_MANAGE
+    await gotoCommit(
+      page,
+      `${manageUrl}/elements/generate?kbId=${current.kbId}`
+    )
+
+    await expect(page.getByTestId('element-generation-scope-2')).toBeVisible()
+    // A deselected source stays deselected when the basis is refreshed.
+    await page.getByTestId('element-generation-scope-0').uncheck()
+    const before = counts.sources
+    await page.getByTestId('element-generation-start').click()
+    await expect.poll(() => counts.sources).toBeGreaterThan(before)
+    await expect(page.getByTestId('element-generation-scope-2')).toHaveCount(0)
+    await expect(
+      page.getByTestId('element-generation-scope-0')
+    ).not.toBeChecked()
+    await expect(page.getByTestId('element-generation-scope-1')).toBeChecked()
+    expect(submitted).toHaveLength(1)
+
+    // The next submission carries the refreshed basis.
+    await page.getByTestId('element-generation-start').click()
+    await expect.poll(() => submitted.length).toBe(2)
+    expect(submitted[1]).toMatchObject({
+      kbId: current.kbId,
+      basisFingerprint: current.basis?.fingerprint,
+      sourceScopes: [{ resourceId: current.basis?.sources[1].resourceId }],
+    })
   })
 })

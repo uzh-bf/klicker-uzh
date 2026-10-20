@@ -3,6 +3,8 @@ import {
   ElementGenerationBloomLevel,
   ElementGenerationCapabilitiesDocument,
   ElementGenerationDifficultyPreset,
+  ElementGenerationPreparationPendingReason,
+  ElementGenerationPreparationState,
   type ElementGenerationSourceScopeInput,
   ElementGenerationSourcesWithLanguageDocument,
   GeneratableElementType,
@@ -64,15 +66,49 @@ const BLOOM_LEVEL_STYLES = {
   },
 } as const
 
-function scopeValues(
+// States in which the listed preparation can still change without lecturer
+// action, so the sources are refreshed while the page is visible.
+const PREPARATION_IN_PROGRESS = new Set<ElementGenerationPreparationState>([
+  ElementGenerationPreparationState.WaitingForMaterials,
+  ElementGenerationPreparationState.Queued,
+  ElementGenerationPreparationState.Processing,
+  ElementGenerationPreparationState.Delayed,
+])
+const PREPARATION_POLL_INTERVAL_MS = 60_000
+// States whose remedy is outside the lecturer's control.
+const PREPARATION_CONTACT_STATES = new Set<ElementGenerationPreparationState>([
+  ElementGenerationPreparationState.Delayed,
+  ElementGenerationPreparationState.NeedsAttention,
+  ElementGenerationPreparationState.Unavailable,
+])
+const SUPPORT_EMAIL = 'klicker@df.uzh.ch'
+
+// A ready KB without a usable basis cannot be fixed by waiting.
+function effectivePreparationState(source: {
+  preparationState: ElementGenerationPreparationState
+  basis?: object | null
+}) {
+  return source.preparationState === ElementGenerationPreparationState.Ready &&
+    !source.basis
+    ? ElementGenerationPreparationState.NeedsAttention
+    : source.preparationState
+}
+
+// Aligns the scopes with the listed basis sources, keeping the choices made
+// for sources that are still part of the basis.
+function reconcileScopes(
+  current: SourceScopeValue[],
   sources: Array<{ resourceId: string }>
 ): SourceScopeValue[] {
-  return sources.map(({ resourceId }) => ({
-    resourceId,
-    selected: true,
-    pageFromText: '',
-    pageToText: '',
-  }))
+  return sources.map(
+    ({ resourceId }) =>
+      current.find((scope) => scope.resourceId === resourceId) ?? {
+        resourceId,
+        selected: true,
+        pageFromText: '',
+        pageToText: '',
+      }
+  )
 }
 
 function optionalPage(value: string) {
@@ -91,7 +127,9 @@ export default function ElementGenerationConfigure({
   const t = useTranslations('manage.elementGeneration')
   const format = useFormatter()
   const capabilitiesQuery = useQuery(ElementGenerationCapabilitiesDocument)
-  const sourcesQuery = useQuery(ElementGenerationSourcesWithLanguageDocument)
+  const sourcesQuery = useQuery(ElementGenerationSourcesWithLanguageDocument, {
+    skipPollAttempt: () => document.visibilityState === 'hidden',
+  })
   const [startGeneration] = useMutation(StartElementGenerationDocument)
   const [selectedKbId, setSelectedKbId] = useState<string>()
   const [elementType, setElementType] = useState<GeneratableElementType>(
@@ -137,6 +175,9 @@ export default function ElementGenerationConfigure({
   const requestedSourceMissing =
     expectedKbId !== undefined &&
     !sources.some((source) => source.kbId === expectedKbId)
+  const selectedPreparationState = selectedSource
+    ? effectivePreparationState(selectedSource)
+    : undefined
   const selectedCapability = capabilities?.typeCapabilities.find(
     (capability) => capability.elementType === elementType
   )
@@ -151,8 +192,34 @@ export default function ElementGenerationConfigure({
         : (sources.find((candidate) => candidate.basis) ?? sources[0])
     if (!source) return
     setSelectedKbId(source.kbId)
-    setSourceScopes(scopeValues(source.basis?.sources ?? []))
   }, [preselectedKbId, selectedKbId, sources])
+
+  // A refreshed or newly prepared basis updates the scopes in place. Without a
+  // listed basis the scopes are kept; nothing can be submitted until one exists.
+  useEffect(() => {
+    if (!basis) return
+    setSourceScopes((current) => reconcileScopes(current, basis.sources))
+  }, [basis])
+
+  // Preparation runs without the lecturer, so refresh while it can still
+  // change and when the lecturer returns to the page. A finished preparation
+  // only updates the form; generation still starts on submission.
+  const preparationInProgress = sources.some((source) =>
+    PREPARATION_IN_PROGRESS.has(source.preparationState)
+  )
+  const { refetch: refetchSources, startPolling, stopPolling } = sourcesQuery
+  useEffect(() => {
+    if (!preparationInProgress) return
+    startPolling(PREPARATION_POLL_INTERVAL_MS)
+    function refreshOnReturn() {
+      if (document.visibilityState === 'visible') void refetchSources()
+    }
+    document.addEventListener('visibilitychange', refreshOnReturn)
+    return () => {
+      stopPolling()
+      document.removeEventListener('visibilitychange', refreshOnReturn)
+    }
+  }, [preparationInProgress, refetchSources, startPolling, stopPolling])
 
   useEffect(() => {
     if (supportedTypes.length > 0 && !supportedTypes.includes(elementType)) {
@@ -168,7 +235,12 @@ export default function ElementGenerationConfigure({
     )
   }
 
-  if (capabilitiesQuery.error || sourcesQuery.error || !capabilities) {
+  // A failed background refresh keeps the last listed sources on screen.
+  if (
+    capabilitiesQuery.error ||
+    (sourcesQuery.error && !sourcesQuery.data) ||
+    !capabilities
+  ) {
     return (
       <UserNotification
         type="error"
@@ -205,13 +277,12 @@ export default function ElementGenerationConfigure({
     const source = sources.find((candidate) => candidate.kbId === nextKbId)
     if (!source) return
     setSelectedKbId(nextKbId)
-    setSourceScopes(scopeValues(source.basis?.sources ?? []))
   }
 
-  function updateScope(index: number, update: Partial<SourceScopeValue>) {
+  function updateScope(resourceId: string, update: Partial<SourceScopeValue>) {
     setSourceScopes((current) =>
-      current.map((scope, scopeIndex) =>
-        scopeIndex === index ? { ...scope, ...update } : scope
+      current.map((scope) =>
+        scope.resourceId === resourceId ? { ...scope, ...update } : scope
       )
     )
   }
@@ -330,15 +401,10 @@ export default function ElementGenerationConfigure({
       if (code === 'KB_GRAPH_BASIS_CHANGED') {
         setSubmissionError(t('errors.basisChanged'))
         // Show the refreshed basis for review; nothing is started with it
-        // until the lecturer submits again.
+        // until the lecturer submits again. A KB that is no longer listed is
+        // reported as unavailable.
         try {
-          const refreshed = await sourcesQuery.refetch()
-          const source = refreshed.data?.elementGenerationSources.find(
-            (candidate) => candidate.kbId === selectedSource.kbId
-          )
-          // A KB that is no longer listed keeps its scopes; the form reports
-          // it as unavailable instead of showing an empty basis.
-          if (source) setSourceScopes(scopeValues(source.basis?.sources ?? []))
+          await refetchSources()
         } catch {
           // Keep the current scopes rather than clearing them without a
           // refreshed basis to show in their place.
@@ -382,6 +448,7 @@ export default function ElementGenerationConfigure({
             <div className="mt-4 grid gap-3 md:grid-cols-2">
               {sources.map((source) => {
                 const checked = selectedKbId === source.kbId
+                const preparationState = effectivePreparationState(source)
                 return (
                   <label
                     key={source.kbId}
@@ -419,23 +486,73 @@ export default function ElementGenerationConfigure({
                                 ),
                               })}
                             </span>
+                            <span className="mt-1 block text-xs text-slate-500">
+                              {t('configure.basisLanguage', {
+                                language: t(
+                                  `language.${source.basis.language}`
+                                ),
+                              })}
+                            </span>
                             {source.basis.recentChangesExcluded ? (
                               <span className="mt-2 inline-flex rounded-full bg-amber-100 px-2 py-0.5 text-xs font-semibold text-amber-900">
                                 {t('configure.staleGraph')}
                               </span>
                             ) : null}
                           </>
-                        ) : (
-                          <span className="mt-1 block text-xs text-slate-600">
-                            {t('configure.sourceNotReady')}
+                        ) : null}
+                        {preparationState !==
+                        ElementGenerationPreparationState.Ready ? (
+                          <span
+                            className="mt-1 block text-xs text-slate-600"
+                            data-cy={`element-generation-preparation-${source.kbId}`}
+                            data-state={preparationState}
+                          >
+                            {t(`configure.preparation.${preparationState}`)}
                           </span>
-                        )}
+                        ) : null}
                       </span>
                     </span>
                   </label>
                 )
               })}
             </div>
+
+            {/* While a usable basis exists, the stale-graph notice explains
+                that generation uses the previously prepared material; only
+                states that need support are explained here as well. */}
+            {selectedPreparationState &&
+            selectedPreparationState !==
+              ElementGenerationPreparationState.Ready &&
+            (!basis ||
+              PREPARATION_CONTACT_STATES.has(selectedPreparationState)) ? (
+              <div
+                className="mt-5 rounded-lg border border-slate-200 bg-slate-50 p-4 text-sm text-slate-700"
+                data-cy="element-generation-preparation-detail"
+                data-state={selectedPreparationState}
+              >
+                <p>
+                  {t(`configure.preparationHelp.${selectedPreparationState}`)}
+                </p>
+                {selectedSource?.preparationPendingReason ===
+                ElementGenerationPreparationPendingReason.SettingsChanged ? (
+                  <p
+                    className="mt-2"
+                    data-cy="element-generation-settings-changed"
+                  >
+                    {t('configure.settingsChangedHelp')}
+                  </p>
+                ) : null}
+                {PREPARATION_CONTACT_STATES.has(selectedPreparationState) ? (
+                  <a
+                    href={`mailto:${SUPPORT_EMAIL}`}
+                    className="text-primary-100 mt-2 inline-block font-medium underline"
+                    data-cy="element-generation-preparation-contact"
+                  >
+                    {t('configure.contactSupport', { email: SUPPORT_EMAIL })}
+                  </a>
+                ) : null}
+              </div>
+            ) : null}
 
             {basis && selectedCapability?.supportsSourceScopes ? (
               <fieldset className="mt-5 border-t border-slate-200 pt-5">
@@ -444,7 +561,9 @@ export default function ElementGenerationConfigure({
                 </legend>
                 <div className="mt-3 space-y-3">
                   {basis.sources.map((source, index) => {
-                    const scope = sourceScopes[index]
+                    const scope = sourceScopes.find(
+                      (candidate) => candidate.resourceId === source.resourceId
+                    )
                     if (!scope) return null
                     return (
                       <div
@@ -457,7 +576,7 @@ export default function ElementGenerationConfigure({
                             type="checkbox"
                             checked={scope.selected}
                             onChange={(event) =>
-                              updateScope(index, {
+                              updateScope(source.resourceId, {
                                 selected: event.target.checked,
                               })
                             }
@@ -486,7 +605,7 @@ export default function ElementGenerationConfigure({
                                 max={source.pageCount}
                                 value={scope.pageFromText}
                                 onChange={(event) =>
-                                  updateScope(index, {
+                                  updateScope(source.resourceId, {
                                     pageFromText: event.target.value,
                                   })
                                 }
@@ -502,7 +621,7 @@ export default function ElementGenerationConfigure({
                                 max={source.pageCount}
                                 value={scope.pageToText}
                                 onChange={(event) =>
-                                  updateScope(index, {
+                                  updateScope(source.resourceId, {
                                     pageToText: event.target.value,
                                   })
                                 }
