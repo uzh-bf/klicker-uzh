@@ -54,6 +54,21 @@ describe('concept links in answer markdown', () => {
     expect(tree.children?.[1]?.children).toEqual([text('Present value again.')])
   })
 
+  test('never links a term inside a hyphenated compound', () => {
+    const tree: MarkdownAstNode = {
+      type: 'root',
+      children: [
+        { type: 'paragraph', children: [text('Der t-Test prüft den Test.')] },
+      ],
+    }
+    transformConceptLinks(tree, [{ nodeId: '4', text: 'Test' }])
+    expect(tree.children?.[0]?.children).toEqual([
+      text('Der t-Test prüft den '),
+      conceptLink('4', 'Test'),
+      text('.'),
+    ])
+  })
+
   test('leaves existing links, code and math untouched', () => {
     const tree: MarkdownAstNode = {
       type: 'root',

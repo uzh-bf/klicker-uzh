@@ -11,7 +11,9 @@ export type ConceptLinkTerm = { nodeId: string; text: string }
 
 const CONCEPT_HREF_PREFIX = '#concept-'
 const SKIPPED_PARENT_TYPES = new Set(['link', 'linkReference'])
-const WORD_CHARACTER = /[\p{L}\p{N}]/u
+// Hyphens join words, as in the server's matcher, so "Test" never links
+// inside "t-Test".
+const WORD_CHARACTER = /[\p{L}\p{N}-]/u
 
 export function conceptHrefFor(nodeId: string): string {
   return `${CONCEPT_HREF_PREFIX}${nodeId}`
