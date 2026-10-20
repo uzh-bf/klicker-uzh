@@ -1284,14 +1284,13 @@ async function startAdapter(options = {}) {
           reason: 'unknown',
         }
         diagnostics.last_upstream_error = rejection
-        Object.assign(
-          rejection,
-          upstreamErrorDetails(
-            await drain(upstream, maxResponseBytes),
-            profile.name,
-            upstream.status
-          )
+        const details = upstreamErrorDetails(
+          await drain(upstream, maxResponseBytes),
+          profile.name,
+          upstream.status
         )
+        rejection.code = details.code
+        rejection.reason = details.reason
         sendAdapterError(res, new AdapterError('upstream_error', 'status'))
         return
       }

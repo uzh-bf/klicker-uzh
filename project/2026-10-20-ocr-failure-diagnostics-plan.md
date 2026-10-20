@@ -123,8 +123,10 @@ PR-body update. Preserve applicable verification when source is unchanged.
 - Coverage investigation running; budget documentation retrieved from official
   OpenRouter sources through Context7. No paid requests or settings changes.
 - Native planner approved round two after clarifying classification precedence,
-  slice ownership and reason-field regression coverage. Opposing-provider
-  advisory challenge is running. No product primitive or architecture change.
+  slice ownership and reason-field regression coverage. The optional AGY
+  challenge returned no review because headless command permission was denied;
+  no permission bypass or client setting change was used. Native approval holds.
+  No product primitive or architecture change.
 - Budget diagnosis implemented; adapter suite passes 97/97 on pinned Node
   24.21.0. An existing short-deadline transport test was transiently delayed;
   the unchanged test passes on the subsequent complete run. Test delta: one
@@ -135,6 +137,14 @@ PR-body update. Preserve applicable verification when source is unchanged.
   sanitized builder. The draft suite passes five tests with one optional binary
   test skipped; its existing fake-child test covers all fixed categories and
   arbitrary-field exclusion. Test delta: one existing test extended, none added
-  or removed. Focused Opengrep reports no findings or errors.
+  or removed. Focused Opengrep flagged broad object assignment of a fixed
+  two-field internal result; explicit assignments replace it for clarity. The
+  repeated focused scan has zero findings/errors, and seven affected checks pass.
+- Integrated six-suite verification passes 253 tests with one optional binary
+  skip. Both workflow definitions, shared validator, request translation,
+  accounting/cost and retry/failure machinery match the base. No application
+  runtime, paid replay or account change occurred. Both simplifiers found no
+  justified reduction; the slice reviewers are running. The existing CI guide
+  contains the durable diagnostic contract; another solution doc would duplicate it.
 - Next: complete slice reviews and integrated verification, then publish the
   reviewed draft. PR not yet created.
