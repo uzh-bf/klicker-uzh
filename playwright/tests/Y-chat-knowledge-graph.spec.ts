@@ -182,6 +182,67 @@ test('Native knowledge graph exploration and lecturer visibility policy', async 
   }
 })
 
+test('Native answer concepts link to the published graph', async ({ page }) => {
+  test.skip(
+    !process.env.GRAPH_RETRIEVAL_TEST_PORT,
+    'Requires local FalkorDB fixture'
+  )
+  const prisma = await getPrisma()
+  const policy = await prisma.chatbot.findUniqueOrThrow({
+    where: { id: CHATBOT_ID },
+    select: { knowledgeGraphVisible: true },
+  })
+  const participantId = await getEnrolledParticipantId()
+  await setDisclaimerState(participantId, 'accepted')
+  await setParticipantToken(page, participantId)
+  await prisma.chatbot.update({
+    where: { id: CHATBOT_ID },
+    data: { knowledgeGraphVisible: true },
+  })
+  try {
+    await page.setViewportSize({ width: 1440, height: 1000 })
+    const thread = await seedThread(participantId, {
+      title: 'Native linked concepts',
+      messages: [
+        { role: 'user', content: [{ type: 'text', text: 'Explain it.' }] },
+        {
+          role: 'assistant',
+          content: [
+            {
+              type: 'text',
+              text: 'Diversification lowers portfolio risk when the covariance between assets is low.',
+            },
+          ],
+        },
+      ],
+    })
+    await page.goto(`${chatUrl()}/${CHATBOT_ID}/threads/${thread.id}`)
+
+    const links = page.getByTestId('chat-concept-link')
+    await expect(links).toHaveText([
+      'Diversification',
+      'portfolio risk',
+      'covariance',
+    ])
+    await links.filter({ hasText: 'covariance' }).click()
+
+    await expect(page.getByTestId('chat-knowledge-graph-panel')).toBeVisible()
+    await expect(
+      page
+        .getByTestId('knowledge-graph-loaded-node')
+        .filter({ hasText: 'Covariance' })
+    ).toBeVisible()
+    await expect(
+      page.getByTestId('knowledge-graph-back-to-overview')
+    ).toBeVisible()
+  } finally {
+    await prisma.chatbot.update({
+      where: { id: CHATBOT_ID },
+      data: { knowledgeGraphVisible: policy.knowledgeGraphVisible },
+    })
+  }
+})
+
 // ===========================================================================
 // Suggestion request lifecycle (hermetic, browser-fulfilled responses)
 // ===========================================================================

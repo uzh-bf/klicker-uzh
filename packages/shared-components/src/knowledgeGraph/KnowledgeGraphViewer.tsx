@@ -160,6 +160,9 @@ export function KnowledgeGraphViewer({
   const searchFirst = initialView === 'search'
   const initialViewRef = useRef(initialView)
   initialViewRef.current = initialView
+  // Cleared whenever the source resets the view, so a requested focus is
+  // applied again on top of the fresh overview instead of being lost.
+  const handledFocusNonceRef = useRef<number | null>(null)
   const labels = useMemo(
     () => resolveKnowledgeGraphLabels(labelOverrides),
     [labelOverrides]
@@ -467,6 +470,7 @@ export function KnowledgeGraphViewer({
     renderedBuildIdRef.current = null
     expansionOriginRef.current = null
     pendingFocusRef.current = null
+    handledFocusNonceRef.current = null
     cyRef.current?.elements().remove()
     setSearchQuery('')
     setActiveSuggestionIndex(-1)
@@ -938,7 +942,6 @@ export function KnowledgeGraphViewer({
 
   const focusResolvedConceptRef = useRef(focusResolvedConcept)
   focusResolvedConceptRef.current = focusResolvedConcept
-  const handledFocusNonceRef = useRef<number | null>(null)
   useEffect(() => {
     if (
       focusRequest === undefined ||
