@@ -1,7 +1,9 @@
 import { createHash, randomUUID } from 'node:crypto'
+import { realpathSync } from 'node:fs'
 import { open, readFile, rename, unlink } from 'node:fs/promises'
 import { createConnection, createServer } from 'node:net'
 import { dirname, resolve } from 'node:path'
+import { fileURLToPath } from 'node:url'
 
 export const MAX_SUBMITTED_TURNS = 120
 export const MAX_PROVIDER_MICRO_USD = 5_000_000
@@ -269,20 +271,35 @@ export function assertBudgetCanStart(ledger) {
     throw budgetError('budget_spend_exhausted')
 }
 
-export async function beginBudgetTurn(path) {
+async function beginBudgetTurnState(path) {
   const token = randomUUID()
-  await mutateBudget(path, (ledger) => {
+  const ledger = await mutateBudget(path, (ledger) => {
     assertBudgetCanStart(ledger)
     ledger.submittedTurns += 1
     ledger.uncertain = true
     ledger.activeTurn = token
   })
-  return token
+  return { token, reservedProviderMicroUsd: ledger.reservedProviderMicroUsd }
 }
 
-export async function finishBudgetTurn(path, token, credits) {
+export async function beginBudgetTurn(path) {
+  return (await beginBudgetTurnState(path)).token
+}
+
+export async function finishBudgetTurn(
+  path,
+  token,
+  credits,
+  reservationBaseline
+) {
   return mutateBudget(path, (ledger) => {
     if (ledger.activeTurn !== token) throw budgetError('budget_turn_mismatch')
+    if (reservationBaseline !== undefined) {
+      if (!integer(reservationBaseline, 0))
+        throw budgetError('provider_reservation_invalid')
+      if (ledger.reservedProviderMicroUsd <= reservationBaseline)
+        throw budgetError('budget_turn_unreserved')
+    }
     if (
       typeof credits !== 'number' ||
       !Number.isFinite(credits) ||
@@ -312,3 +329,141 @@ export async function reserveProviderSpend(path, policyHash, microUsd) {
     ledger.reservedProviderMicroUsd += microUsd
   })
 }
+
+const ADMISSION_MAX_FRAME_BYTES = 64
+const ADMISSION_MAX_REPLY_BYTES = 128
+
+function sendAdmissionLine(output, line) {
+  if (Buffer.byteLength(line, 'ascii') + 1 > ADMISSION_MAX_REPLY_BYTES)
+    throw new Error('admission reply exceeds its bound')
+  return new Promise((resolveWrite, rejectWrite) => {
+    output.write(line + '\n', (error) =>
+      error ? rejectWrite(error) : resolveWrite()
+    )
+  })
+}
+
+// One run lease and at most one turn token. A protocol error ends the session,
+// and a finish is never repeated after its reply is lost.
+export async function runAdmissionSession({
+  budgetFile,
+  policyHash,
+  input = process.stdin,
+  output = process.stdout,
+} = {}) {
+  let release = null
+  let token = null
+  let baseline = 0
+  let buffer = Buffer.alloc(0)
+  let result = { status: 'closed' }
+  try {
+    const initial = await readBudgetLedger(budgetFile)
+    if (!/^[a-f0-9]{64}$/.test(policyHash) || initial.policyHash !== policyHash)
+      throw budgetError('budget_policy_mismatch')
+    assertBudgetCanStart(initial)
+    release = await acquireBudgetLock(budgetFile, '.run')
+    const current = await readBudgetLedger(budgetFile)
+    if (current.policyHash !== policyHash)
+      throw budgetError('budget_policy_mismatch')
+    assertBudgetCanStart(current)
+    await sendAdmissionLine(output, 'ready')
+    read: for await (const chunk of input) {
+      buffer = Buffer.concat([buffer, Buffer.from(chunk)])
+      while (buffer.includes(0x0a)) {
+        const index = buffer.indexOf(0x0a)
+        const frame = buffer.subarray(0, index)
+        buffer = buffer.subarray(index + 1)
+        if (
+          frame.length > ADMISSION_MAX_FRAME_BYTES ||
+          frame.some((byte) => byte > 0x7f)
+        )
+          throw budgetError('budget_command_invalid')
+        const line = frame.toString('ascii')
+        if (line === 'begin') {
+          if (token !== null) throw budgetError('budget_turn_active')
+          const state = await beginBudgetTurnState(budgetFile)
+          token = state.token
+          baseline = state.reservedProviderMicroUsd
+          await sendAdmissionLine(output, 'ok')
+        } else if (line === 'finish') {
+          if (token === null) throw budgetError('budget_turn_missing')
+          await assertRunLease(budgetFile)
+          await finishBudgetTurn(budgetFile, token, 0, baseline)
+          token = null
+          await sendAdmissionLine(output, 'ok')
+        } else if (line === 'close') {
+          const releaseRun = release
+          release = null
+          await releaseRun()
+          await sendAdmissionLine(output, 'ok')
+          break read
+        } else {
+          throw budgetError('budget_command_invalid')
+        }
+      }
+      if (buffer.length > ADMISSION_MAX_FRAME_BYTES)
+        throw budgetError('budget_command_invalid')
+    }
+    if (buffer.length) throw budgetError('budget_command_invalid')
+  } catch (error) {
+    if (typeof error?.code === 'string' && error.code.startsWith('budget_')) {
+      result = { status: 'rejected', code: error.code }
+      try {
+        await sendAdmissionLine(output, `error ${error.code}`)
+      } catch (writeError) {
+        result = { status: 'failed', code: error.code, error: writeError }
+      }
+    } else {
+      result = { status: 'failed', error }
+    }
+  } finally {
+    if (release) {
+      try {
+        await release()
+      } catch (error) {
+        result = { ...result, status: 'failed', error: result.error ?? error }
+      }
+    }
+  }
+  return result
+}
+
+async function runAdmissionCli(argv) {
+  const [mode, budgetFile, policyHash, ...extra] = argv
+  if (
+    mode !== '--admission-session' ||
+    !budgetFile ||
+    !policyHash ||
+    extra.length
+  ) {
+    process.stderr.write(
+      'usage: node evaluation/evaluation-budget.mjs --admission-session <budgetFile> <policyHash>\n'
+    )
+    process.exitCode = 2
+    return
+  }
+  let terminated = false
+  const onSignal = () => {
+    terminated = true
+    process.stdin.destroy()
+  }
+  process.once('SIGTERM', onSignal)
+  try {
+    const result = await runAdmissionSession({ budgetFile, policyHash })
+    process.exitCode = terminated ? 143 : result.status === 'closed' ? 0 : 1
+  } finally {
+    process.removeListener('SIGTERM', onSignal)
+  }
+}
+
+function isDirectInvocation() {
+  try {
+    return (
+      realpathSync(process.argv[1] ?? '') === fileURLToPath(import.meta.url)
+    )
+  } catch {
+    return false
+  }
+}
+
+if (isDirectInvocation()) await runAdmissionCli(process.argv.slice(2))

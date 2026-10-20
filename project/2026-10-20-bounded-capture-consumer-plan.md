@@ -150,5 +150,20 @@ The framework prerequisite is merged and exact post-merge CI passed. The existin
 69 importer tests pass offline. Initial attempts to invoke Vitest files through
 Node's test runner and pytest tests through bare unittest used the wrong test
 tools; neither is source failure. Their installed runners remain required.
-Implementation has not started. No application runtime, paid call or real ledger
-mutation has occurred.
+Implementation is complete pending source reviews and draft delivery. The bounded
+executor added the budget-session interface; main integrated the Python context,
+the merged framework pin, existing integration pin assertion, docs and CI.
+The closed protocol was reduced from an initial queue-based draft to raw serial
+stdin iteration. Main reproduced and fixed acceptance of an unterminated frame.
+
+All 20 consumer tests pass with the real pinned framework explicitly enabled,
+including both native API paths, replay, first-failure stopping and lost-finish
+acknowledgement. The 69 existing importer tests pass. Ordinary public mode
+passes its consumer contracts and explicitly skips four private-framework cases.
+The existing wrapper suite passes. Ruff, formatting, focused Biome and Opengrep
+checks pass; only existing nonblocking Biome advice remains. All verification
+uses synthetic temporary state in one-shot containers with external networking
+disabled. No application runtime, paid call or real ledger mutation occurred.
+
+Test delta: one new synthetic consumer test module; no existing test removed or
+weakened. Required simplification, risk review and integrated final review remain.
