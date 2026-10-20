@@ -450,13 +450,10 @@ async function runAdmissionCli(argv) {
   process.once('SIGTERM', onSignal)
   try {
     const result = await runAdmissionSession({ budgetFile, policyHash })
-    process.exitCode = terminated
-      ? 143
-      : result.status === 'closed'
-        ? 0
-        : result.status === 'rejected'
-          ? 1
-          : 2
+    if (terminated) process.exitCode = 143
+    else if (result.status === 'closed') process.exitCode = 0
+    else if (result.status === 'rejected') process.exitCode = 1
+    else process.exitCode = 2
   } finally {
     process.removeListener('SIGTERM', onSignal)
   }

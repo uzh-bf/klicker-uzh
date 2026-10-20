@@ -157,7 +157,7 @@ the merged framework pin, existing integration pin assertion, docs and CI.
 The closed protocol was reduced from an initial queue-based draft to raw serial
 stdin iteration. Main reproduced and fixed acceptance of an unterminated frame.
 
-All 21 consumer tests pass with the real pinned framework explicitly enabled,
+All 22 consumer tests pass with the real pinned framework explicitly enabled,
 including both native API paths, replay, first-failure stopping and lost-finish
 acknowledgement. The 69 existing importer tests pass. Ordinary public mode
 passes its consumer contracts and explicitly skips four private-framework cases.
@@ -167,19 +167,24 @@ checks pass; only existing nonblocking Biome advice remains. All verification
 uses synthetic temporary state in one-shot containers with external networking
 disabled. No application runtime, paid call or real ledger mutation occurred.
 
-Test delta: one new synthetic consumer module with 21 tests, including four
+Test delta: one new synthetic consumer module with 22 tests, including four
 private-framework integration cases; no existing test removed or weakened.
 The simplifier found no justified reduction. Risk review identified a hidden
 cleanup failure after rejection; main reproduced it, gave failed cleanup a
 distinct child exit status and retained both exceptions. Focused verification
 closed that finding. Integrated final review of the complete range through
 `a3d690b9041a9027dd7520f6acb8c6001b8981ee` passed with no remaining finding.
-This later progress update changes no executable source or verification boundary.
+That progress-only head subsequently passed ordinary CI. A final forge-feedback
+sweep then found a low-severity startup-error inconsistency: a failed process
+spawn escaped as raw OSError. Main reproduced it and normalized startup I/O
+failure to the adapter's existing error category, without consuming a turn.
+The exit-code mapping was also made explicit with equivalent if/else branches.
+Focused final-review verification of this correction is tracked in the PR.
 
-Substantive package size excluding project artifacts: 875 added, 7 removed lines.
+Substantive package size excluding project artifacts: 887 added, 7 removed lines.
 The single package is independently functional, reviewable and testable; it adds
-no default live effect. Hosted CI is still running at this save; the draft PR
-description and exact-head checks hold its authoritative final disposition.
+no default live effect. Hosted CI is rechecked after the corrective push; the
+draft PR description and exact-head checks hold its authoritative disposition.
 The manual repository final-review gate requires a ready PR and remains a later
 authority boundary. No ready transition, merge, deployment or paid execution is
 included in this source delivery.

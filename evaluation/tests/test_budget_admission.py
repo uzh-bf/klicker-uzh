@@ -78,6 +78,18 @@ def test_admitted_turn_reserves_and_releases_live_lease(ledger):
     assert not Path(str(ledger) + ".lease").exists()
 
 
+def test_spawn_failure_uses_admission_error_contract(ledger, monkeypatch):
+    def fail_spawn(*args, **kwargs):
+        raise PermissionError("synthetic spawn denied")
+
+    monkeypatch.setattr(subprocess, "Popen", fail_spawn)
+    with pytest.raises(BudgetAdmissionError, match="budget_admission_unavailable"):
+        with admission(ledger):
+            pytest.fail("failed spawn admitted")
+    assert read_ledger(ledger)["submittedTurns"] == 0
+    assert not Path(str(ledger) + ".run").exists()
+
+
 @pytest.mark.parametrize("failure", [RuntimeError, KeyboardInterrupt])
 def test_failed_turn_keeps_uncertainty_and_reservation(ledger, failure):
     with pytest.raises(failure):

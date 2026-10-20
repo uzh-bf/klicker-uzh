@@ -103,13 +103,16 @@ class BudgetAdmission:
             )
             self._read("ready")
         except BaseException as error:
+            if isinstance(error, OSError):
+                error = BudgetAdmissionError("budget_admission_unavailable")
+                self._failure = self._failure or error
             try:
                 self._stop()
             except BaseException as cleanup:
                 raise BaseExceptionGroup(
                     "Admission startup and cleanup failed", [error, cleanup]
                 )
-            raise
+            raise error from None
         return self
 
     def _stop(self):
