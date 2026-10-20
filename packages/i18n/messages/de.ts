@@ -8,6 +8,7 @@ export default {
       fullscreen: 'Graph im Vollbild anzeigen',
       restore: 'Graph in der Seitenleiste anzeigen',
       ask: 'Dazu eine Frage stellen',
+      showConcept: 'Begriff im Wissensgraph anzeigen',
       nodePrompt: 'Hilf mir, den Begriff «{topic}» zu verstehen.',
       edgePrompt:
         'Erkläre die Beziehung «{relationship}» zwischen «{source}» und «{target}».',

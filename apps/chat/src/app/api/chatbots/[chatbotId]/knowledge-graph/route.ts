@@ -72,11 +72,55 @@ function parseReadRequest(
   return { operation: 'overview' }
 }
 
+const mentionsBodySchema = z.object({
+  text: z.string().trim().min(1).max(8000),
+  kbId: z.string().uuid().optional(),
+})
+
 export async function GET(
   req: NextRequest,
   { params }: { params: Promise<{ chatbotId: string }> }
 ) {
   const { chatbotId } = await params
+  return serveKnowledgeGraphRead(req, chatbotId, async () => {
+    const readRequest = parseReadRequest(req)
+    if (readRequest === null) return null
+    const kbId = z
+      .string()
+      .uuid()
+      .optional()
+      .safeParse(req.nextUrl.searchParams.get('kbId') ?? undefined)
+    if (!kbId.success) return null
+    if (kbId.data !== undefined) readRequest.kbId = kbId.data
+    return readRequest
+  })
+}
+
+/** Finds the concepts a finished answer names, so the UI can link them. */
+export async function POST(
+  req: NextRequest,
+  { params }: { params: Promise<{ chatbotId: string }> }
+) {
+  const { chatbotId } = await params
+  return serveKnowledgeGraphRead(req, chatbotId, async () => {
+    if (req.nextUrl.searchParams.get('operation') !== 'mentions') return null
+    const body = mentionsBodySchema.safeParse(
+      await req.json().catch(() => null)
+    )
+    if (!body.success) return null
+    return {
+      operation: 'mentions',
+      text: body.data.text,
+      ...(body.data.kbId === undefined ? {} : { kbId: body.data.kbId }),
+    }
+  })
+}
+
+async function serveKnowledgeGraphRead(
+  req: NextRequest,
+  chatbotId: string,
+  parse: () => Promise<ChatbotKnowledgeGraphReadRequest | null>
+) {
   const authResult = await withChatbotAuth(req, chatbotId)
   if ('response' in authResult) {
     return authResult.response
@@ -94,18 +138,10 @@ export async function GET(
     )
   }
 
-  const readRequest = parseReadRequest(req)
+  const readRequest = await parse()
   if (readRequest === null) {
     return invalidRequestResponse()
   }
-
-  const kbId = z
-    .string()
-    .uuid()
-    .optional()
-    .safeParse(req.nextUrl.searchParams.get('kbId') ?? undefined)
-  if (!kbId.success) return invalidRequestResponse()
-  if (kbId.data !== undefined) readRequest.kbId = kbId.data
 
   const slot = admission.acquire(authResult.participantId)
   if (!slot.allowed) {

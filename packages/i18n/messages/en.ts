@@ -8,6 +8,7 @@ export default {
       fullscreen: 'Expand graph to fullscreen',
       restore: 'Return graph to sidebar',
       ask: 'Ask about this',
+      showConcept: 'Show this concept in the knowledge graph',
       nodePrompt: 'Help me understand the concept “{topic}”.',
       edgePrompt:
         'Explain the relationship “{relationship}” between “{source}” and “{target}”.',

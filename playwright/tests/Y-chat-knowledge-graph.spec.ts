@@ -680,6 +680,68 @@ test.describe('Knowledge graph suggestion request lifecycle', () => {
     await expect(page.getByTestId('knowledge-graph-suggestion')).toHaveCount(0)
   })
 
+  test('a concept named in an answer opens the panel focused on that concept', async ({
+    page,
+  }) => {
+    const concept = { ...syntheticNode('Synthetic linked concept'), id: '101' }
+    await page.route('**/api/chatbots/*/knowledge-graph**', async (route) => {
+      const operation = new URL(route.request().url()).searchParams.get(
+        'operation'
+      )
+      if (operation === 'mentions') {
+        await route.fulfill({
+          status: 200,
+          contentType: 'application/json',
+          body: JSON.stringify({
+            ...syntheticGraphResponse([]),
+            nodes: [concept],
+            mentions: [{ nodeId: '101', text: 'synthetic linked concept' }],
+          }),
+        })
+        return
+      }
+      await route.fulfill({
+        status: 200,
+        contentType: 'application/json',
+        body: JSON.stringify(
+          syntheticGraphResponse(operation === 'overview' ? overviewLabels : [])
+        ),
+      })
+    })
+    await page.setViewportSize({ width: 1440, height: 1000 })
+    const thread = await seedThread(await getEnrolledParticipantId(), {
+      title: 'Linked concepts',
+      messages: [
+        { role: 'user', content: [{ type: 'text', text: 'Explain it.' }] },
+        {
+          role: 'assistant',
+          content: [
+            {
+              type: 'text',
+              text: 'The synthetic linked concept connects both ideas.',
+            },
+          ],
+        },
+      ],
+    })
+    await page.goto(`${chatUrl()}/${CHATBOT_ID}/threads/${thread.id}`)
+
+    const link = page.getByTestId('chat-concept-link')
+    await expect(link).toHaveText('synthetic linked concept')
+    await expect(page.getByTestId('chat-knowledge-graph-panel')).toHaveCount(0)
+    await link.click()
+
+    await expect(page.getByTestId('chat-knowledge-graph-panel')).toBeVisible()
+    await expect(
+      page
+        .getByTestId('knowledge-graph-loaded-node')
+        .filter({ hasText: 'Synthetic linked concept' })
+    ).toBeVisible()
+    await expect(
+      page.getByTestId('knowledge-graph-back-to-overview')
+    ).toBeVisible()
+  })
+
   test('selecting a suggestion with the pointer replaces the view with its node', async ({
     page,
   }) => {

@@ -10,13 +10,18 @@ import {
   useIsMarkdownCodeBlock,
 } from '@assistant-ui/react-markdown'
 import { parseVideoEmbedUrl, VideoEmbed } from '@klicker-uzh/markdown'
+import type { KnowledgeGraphResponse } from '@klicker-uzh/types'
 import { CheckIcon, CopyIcon } from 'lucide-react'
 import { useTranslations } from 'next-intl'
 import {
   type ComponentProps,
+  createContext,
   type FC,
   memo,
+  type ReactNode,
   useCallback,
+  useContext,
+  useMemo,
   useState,
 } from 'react'
 import rehypeKatex from 'rehype-katex'
@@ -29,23 +34,73 @@ import {
   remarkCitationMarkers,
 } from '../lib/markdown/remarkCitationMarkers'
 import {
+  parseConceptHref,
+  remarkConceptLinks,
+} from '../lib/markdown/remarkConceptLinks'
+import {
   hideIncompleteMath,
   inspectStreamingMath,
 } from '../lib/markdown/streamingMath'
 import { cn } from '../lib/utils/ui'
 import { CitationChip } from './citation-chip'
+import { useConceptMentions } from './knowledge-graph/ChatGraphConcepts'
 import { Tooltip, TooltipContent, TooltipTrigger } from './ui/tooltip'
 
 // Stable module-scope reference: recreating this array on every render would
 // defeat `MarkdownTextPrimitive`'s own memoization of the parsed tree.
-const remarkPlugins = [remarkGfm, remarkMath, remarkCitationMarkers]
+type RemarkPlugins = NonNullable<
+  ComponentProps<typeof MarkdownTextPrimitive>['remarkPlugins']
+>
+const remarkPlugins: RemarkPlugins = [
+  remarkGfm,
+  remarkMath,
+  remarkCitationMarkers,
+]
 const rehypePlugins: NonNullable<
   ComponentProps<typeof MarkdownTextPrimitive>['rehypePlugins']
 > = [[rehypeKatex, { trust: false }]]
 
+// Answer-specific concept links; read by the `a` override, which is memoized
+// at module scope and therefore cannot receive per-message props.
+const ConceptLinkContext = createContext<{
+  response: KnowledgeGraphResponse
+  focusConcept: (response: KnowledgeGraphResponse, nodeId: string) => void
+} | null>(null)
+
+function ConceptLink({
+  nodeId,
+  children,
+}: {
+  nodeId: string
+  children: ReactNode
+}) {
+  const t = useTranslations('chat.graphPanel')
+  const context = useContext(ConceptLinkContext)
+  if (context === null) return <>{children}</>
+  return (
+    <button
+      type="button"
+      onClick={() => context.focusConcept(context.response, nodeId)}
+      title={t('showConcept')}
+      data-cy="chat-concept-link"
+      className="focus-visible:ring-ring decoration-primary/60 hover:decoration-primary cursor-pointer rounded-sm underline decoration-dotted decoration-2 underline-offset-4 focus-visible:outline-none focus-visible:ring-2"
+    >
+      {children}
+    </button>
+  )
+}
+
 const MarkdownTextImpl = () => {
   const { text, status } = useMessagePartText()
   const isRunning = status.type === 'running'
+  const concepts = useConceptMentions(text, !isRunning)
+  const plugins = useMemo<RemarkPlugins>(
+    () =>
+      concepts === null
+        ? remarkPlugins
+        : [...remarkPlugins, [remarkConceptLinks, { terms: concepts.terms }]],
+    [concepts]
+  )
   const { hasMathOpener } = inspectStreamingMath(text)
   const preprocess = useCallback(
     (input: string) =>
@@ -54,14 +109,16 @@ const MarkdownTextImpl = () => {
   )
 
   return (
-    <MarkdownTextPrimitive
-      remarkPlugins={remarkPlugins}
-      rehypePlugins={rehypePlugins}
-      preprocess={preprocess}
-      smooth={isRunning && !hasMathOpener}
-      className="aui-md"
-      components={defaultComponents}
-    />
+    <ConceptLinkContext.Provider value={concepts}>
+      <MarkdownTextPrimitive
+        remarkPlugins={plugins}
+        rehypePlugins={rehypePlugins}
+        preprocess={preprocess}
+        smooth={isRunning && !hasMathOpener}
+        className="aui-md"
+        components={defaultComponents}
+      />
+    </ConceptLinkContext.Provider>
   )
 }
 
@@ -183,6 +240,9 @@ const defaultComponents = memoizeMarkdownComponents({
   a: ({ className, children, href, ...props }) => {
     const citationIndex = parseCitationHref(href)
     if (citationIndex !== null) return <CitationChip index={citationIndex} />
+    const conceptNodeId = parseConceptHref(href)
+    if (conceptNodeId !== null)
+      return <ConceptLink nodeId={conceptNodeId}>{children}</ConceptLink>
 
     // Model-written course video links arrive as `[video](...)` / `[embed](...)`.
     // Reuse the shared player so they play inline instead of opening an anchor.
