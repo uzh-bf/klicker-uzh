@@ -121,14 +121,29 @@ export function useOnDeviceDictation({
     [availability, language]
   )
 
-  return {
-    availability,
-    adapter,
-    error,
-    clearError: () => setError(null),
-    install,
-    refresh,
-    installSheetOpen,
-    setInstallSheetOpen,
-  }
+  const clearError = useCallback(() => setError(null), [])
+
+  // RuntimeProvider re-renders on every streamed chunk; a stable value keeps
+  // the composer subtree from re-rendering with it.
+  return useMemo(
+    () => ({
+      availability,
+      adapter,
+      error,
+      clearError,
+      install,
+      refresh,
+      installSheetOpen,
+      setInstallSheetOpen,
+    }),
+    [
+      availability,
+      adapter,
+      error,
+      clearError,
+      install,
+      refresh,
+      installSheetOpen,
+    ]
+  )
 }

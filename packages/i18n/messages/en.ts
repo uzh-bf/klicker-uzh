@@ -240,7 +240,7 @@ export default {
       dictationSetup: 'Set up dictation',
       dictationStop: 'Stop dictation',
       dictationListening: 'Listening...',
-      dictationLanguageHint: 'German dictation uses Standard German.',
+      dictationLanguageHint: 'English dictation uses US English.',
       dictationSheetTitle: 'Enable on-device dictation',
       dictationSheetBody:
         'Recognition runs on this device, and no audio is sent to the chat service. Your browser will ask for microphone access when you start dictation.',
