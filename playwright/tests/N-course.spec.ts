@@ -3431,17 +3431,17 @@ test.describe('Part 5: Course Sharing - Individual permissions', () => {
       .getByRole('textbox', { name: 'Course name' })
       .fill(`${RUNNING_COURSE.name} Copy A`)
     await page
-      .getByRole('textbox', { name: 'Course display name' })
+      .getByTestId('course-display-name')
       .fill(`${RUNNING_COURSE.name} Copy A`)
     await page
-      .getByRole('textbox', { name: 'finance@uzh.ch' })
+      .getByTestId('course-notification-email')
       .fill('lecturer@df.uzh.ch')
     await selectCourseDuplicationStartDate(page)
     // The seeded source course carries a group-creation deadline older than
     // its start date; adjust it into the copied date range so the shared
     // form passes validation.
     await page
-      .getByRole('textbox', { name: 'Group Creation Deadline' })
+      .getByTestId('group-creation-deadline')
       .fill(getNativeDateInputValue(new Date('2035-06-30T12:00')))
     await page.getByRole('button', { name: 'Duplicate' }).click()
     await page.waitForFunction(
@@ -3463,10 +3463,10 @@ test.describe('Part 5: Course Sharing - Individual permissions', () => {
       .getByRole('textbox', { name: 'Course name' })
       .fill(`${PAST_COURSE.name} Copy B`)
     await page
-      .getByRole('textbox', { name: 'Course display name' })
+      .getByTestId('course-display-name')
       .fill(`${PAST_COURSE.name} Copy B`)
     await page
-      .getByRole('textbox', { name: 'finance@uzh.ch' })
+      .getByTestId('course-notification-email')
       .fill('lecturer@df.uzh.ch')
     await selectCourseDuplicationStartDate(page)
     await page.getByRole('button', { name: 'Duplicate' }).click()

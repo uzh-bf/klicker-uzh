@@ -206,7 +206,9 @@ function ElementEditForm({
       onClose={() => handleCloseRequest(formikContextRef.current)}
       className={{
         title: 'text-xl',
-        content: 'h-max pb-1 text-sm md:text-base 2xl:max-w-[1400px]',
+        // Keep controls stationary when editor toolbars collapse during a click.
+        content:
+          'h-max pb-1 text-sm [overflow-anchor:none] md:text-base 2xl:max-w-[1400px]',
         footer: twMerge(isTemplate ? 'justify-end' : 'justify-between'),
       }}
       dataCloseButton={{ cy: 'close-element-modal' }}

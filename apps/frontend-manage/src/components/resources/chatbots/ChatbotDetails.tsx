@@ -924,6 +924,7 @@ function ChatbotDetails({
                     </label>
                     <Switch
                       id="chatbot-model-selection-switch"
+                      ariaLabel={t('manage.resources.modelSelection')}
                       checked={modelSelectionEnabled}
                       disabled={isSaving || !modelSettingsEditable}
                       onCheckedChange={handleModelSelectionChange}

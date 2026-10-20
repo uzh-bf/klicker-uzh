@@ -19,6 +19,9 @@
  * v5's values win unless visual review shows otherwise.
  */
 
+/* Generate library variants with app utilities to preserve responsive ordering. */
+@source "../node_modules/@uzh-bf/design-system/dist";
+
 @theme inline {
   /* Fonts. The design system declares `--font-sans` and emits `.font-sans`; it
      declares neither `--font-mono` nor `.font-mono`, so the mono face has to be

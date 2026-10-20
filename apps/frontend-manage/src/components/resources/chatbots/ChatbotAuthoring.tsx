@@ -110,6 +110,7 @@ function StandardModeCard({
         </label>
         <Switch
           id={switchId}
+          ariaLabel={title}
           checked={enabled}
           disabled={disabled}
           onCheckedChange={onChange}

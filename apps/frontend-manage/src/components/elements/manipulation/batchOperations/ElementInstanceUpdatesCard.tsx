@@ -46,6 +46,9 @@ function ElementInstanceUpdatesCard({
           <div className="flex items-center gap-2">
             <Switch
               id="batch-update-instances"
+              ariaLabel={t(
+                'manage.questionPool.batchUpdateInstancesConsequence'
+              )}
               checked={selectedActions.updateInstances ?? false}
               onCheckedChange={(checked) => {
                 setSelectedActions((prev) => ({
@@ -68,6 +71,9 @@ function ElementInstanceUpdatesCard({
           <div className="flex items-center gap-2">
             <Switch
               id="batch-update-template-instances"
+              ariaLabel={t(
+                'manage.questionPool.batchUpdateTemplateInstancesConsequence'
+              )}
               disabled={!selectedActions.updateInstances}
               checked={selectedActions.updateTemplateInstances ?? false}
               onCheckedChange={(checked) => {

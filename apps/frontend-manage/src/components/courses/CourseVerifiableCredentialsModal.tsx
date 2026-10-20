@@ -211,7 +211,7 @@ export default function CourseVerifiableCredentialsModal({
         </div>
 
         {error ? (
-          <div className="mb-4" role="alert">
+          <div className="mb-4">
             <UserNotification
               type="error"
               message={t('manage.assessment.reportRecordsLoadError')}

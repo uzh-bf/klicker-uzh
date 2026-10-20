@@ -2158,7 +2158,8 @@ test.describe.serial('Core live-quiz workflows', () => {
       'not.exist'
     )
     await page.getByTestId('live-quiz-default-points').click()
-    await typeInto(page.getByTestId('live-quiz-default-points'), '-10')
+    await page.getByTestId('live-quiz-default-points').fill('10')
+    await page.getByTestId('live-quiz-default-points').fill('-10')
     await expectByAssertion(
       page.getByTestId('live-quiz-default-points'),
       'have.value',
@@ -2186,7 +2187,8 @@ test.describe.serial('Core live-quiz workflows', () => {
       'not.exist'
     )
     await page.getByTestId('live-quiz-default-correct-points').click()
-    await typeInto(page.getByTestId('live-quiz-default-correct-points'), '-20')
+    await page.getByTestId('live-quiz-default-correct-points').fill('20')
+    await page.getByTestId('live-quiz-default-correct-points').fill('-20')
     await expectByAssertion(
       page.getByTestId('live-quiz-default-correct-points'),
       'have.value',
@@ -2209,7 +2211,8 @@ test.describe.serial('Core live-quiz workflows', () => {
       'not.exist'
     )
     await page.getByTestId('live-quiz-max-bonus-points').click()
-    await typeInto(page.getByTestId('live-quiz-max-bonus-points'), '-30')
+    await page.getByTestId('live-quiz-max-bonus-points').fill('30')
+    await page.getByTestId('live-quiz-max-bonus-points').fill('-30')
     await expectByAssertion(
       page.getByTestId('live-quiz-max-bonus-points'),
       'have.value',
@@ -2232,7 +2235,8 @@ test.describe.serial('Core live-quiz workflows', () => {
       'not.exist'
     )
     await page.getByTestId('live-quiz-time-to-zero-bonus').click()
-    await typeInto(page.getByTestId('live-quiz-time-to-zero-bonus'), '-40')
+    await page.getByTestId('live-quiz-time-to-zero-bonus').fill('40')
+    await page.getByTestId('live-quiz-time-to-zero-bonus').fill('-40')
     await expectByAssertion(
       page.getByTestId('live-quiz-time-to-zero-bonus'),
       'have.value',

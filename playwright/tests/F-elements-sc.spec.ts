@@ -144,7 +144,11 @@ test.describe('Test creation and editing functionalities for Single Choice eleme
     await expect(page.getByTestId('save-new-question')).not.toBeDisabled()
 
     // Add sample solution — at least one correct answer required
-    await page.getByTestId('configure-sample-solution').click({ force: true })
+    await page.getByTestId('configure-sample-solution').click()
+    await expect(page.getByTestId('configure-sample-solution')).toHaveAttribute(
+      'aria-checked',
+      'true'
+    )
     await expect(page.getByTestId('save-new-question')).toBeDisabled()
 
     await page.getByTestId('set-correctness-0').click()
