@@ -2113,7 +2113,12 @@ export async function POST(
             turnSettings.replyLanguage ?? null,
             req.cookies.get('NEXT_LOCALE')?.value
           ),
-          (finish) => logEvent('stream.provider_refusal.substituted', finish)
+          (finish) =>
+            console.warn('[chat] Provider refusal replaced:', {
+              requestId,
+              chatMode: selectedMode,
+              ...finish,
+            })
         ),
         instructions: turnRequest.instructions,
 

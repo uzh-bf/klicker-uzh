@@ -47,10 +47,10 @@ export function isUnbilledProviderReply(usage: LanguageModelUsage): boolean {
 /**
  * Replaces a step's text with `deflection` when the step turns out to be an
  * unbilled provider reply, so a chat mode never shows the provider's generic
- * refusal and a persona never breaks role. Each step's parts are held until the step finishes, until
- * the model streams reasoning or calls a tool, or until the held text exceeds
- * a canned sentence; each of those proves a genuine answer and releases the
- * step unchanged.
+ * refusal and a persona never breaks role. Only a step's text is held, and
+ * only until the step finishes, the model streams reasoning or calls a tool,
+ * or the held text exceeds a canned sentence; each of those proves a genuine
+ * answer and releases the text unchanged. Other parts pass through at once.
  */
 export function providerRefusalTransform<TOOLS extends ToolSet>(
   deflection: string,
@@ -103,14 +103,26 @@ export function providerRefusalTransform<TOOLS extends ToolSet>(
           return
         }
 
+        const isText =
+          part.type === 'text-start' ||
+          part.type === 'text-delta' ||
+          part.type === 'text-end'
+        if (!isText) {
+          const provesGenuineAnswer =
+            (part.type === 'reasoning-delta' && part.text.length > 0) ||
+            part.type === 'tool-input-start' ||
+            part.type === 'tool-call'
+          if (provesGenuineAnswer) {
+            for (const p of held) controller.enqueue(p)
+            held = null
+          }
+          controller.enqueue(part)
+          return
+        }
+
         held.push(part)
         if (part.type === 'text-delta') heldTextLength += part.text.length
-        const provesGenuineAnswer =
-          heldTextLength > MAX_HELD_TEXT_LENGTH ||
-          (part.type === 'reasoning-delta' && part.text.length > 0) ||
-          part.type === 'tool-input-start' ||
-          part.type === 'tool-call'
-        if (provesGenuineAnswer) {
+        if (heldTextLength > MAX_HELD_TEXT_LENGTH) {
           for (const p of held) controller.enqueue(p)
           held = null
         }

@@ -93,6 +93,20 @@ describe('providerRefusalTransform', () => {
   })
 })
 
+describe('providerRefusalTransform non-text parts', () => {
+  test('passes a non-text part through while text is held', async () => {
+    const [start, textStart, delta, textEnd, finish] = step(['Short.'], {
+      inputTokens: 4000,
+      outputTokens: 2,
+    })
+    const source = { type: 'source', id: 's1' } as unknown as Part
+
+    expect(
+      await run([start, textStart, delta, source, textEnd, finish])
+    ).toEqual([start, source, textStart, delta, textEnd, finish])
+  })
+})
+
 describe('providerRefusalDeflection', () => {
   test('prefers the locked language, then the interface locale', () => {
     expect(providerRefusalDeflection('en', 'de')).toBe(
