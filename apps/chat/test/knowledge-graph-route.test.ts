@@ -85,6 +85,7 @@ const response: KnowledgeGraphResponse = {
           resourceId: publication.sources[0]!.resourceId,
           title: publication.sources[0]!.title,
           reference: 'p. 4',
+          pages: [4],
         },
       ],
     },
@@ -96,6 +97,15 @@ const response: KnowledgeGraphResponse = {
       target: '13',
       type: 'RELATED_TO',
       label: 'related to',
+      relationType: 'part_of',
+      relationStatus: 'source',
+      sourceReferences: [
+        {
+          resourceId: publication.sources[0]!.resourceId,
+          title: publication.sources[0]!.title,
+          pages: [1, 2],
+        },
+      ],
       properties: { confidence: 0.8 },
     },
   ],
@@ -538,7 +548,19 @@ describe('participant knowledge graph route', () => {
           sourceReferences: [unsafeSource],
         },
       ],
-      edges: [{ ...response.edges[0]!, cypher: 'MATCH (n) RETURN n' }],
+      edges: [
+        {
+          ...response.edges[0]!,
+          cypher: 'MATCH (n) RETURN n',
+          internal_evidence_refs: 'resource|1',
+          sourceReferences: [
+            {
+              ...response.edges[0]!.sourceReferences[0]!,
+              sourceUrl: 'https://blob.example/private.pdf?sig=secret',
+            } as KnowledgeGraphSourceReference,
+          ],
+        },
+      ],
     })
 
     const result = await callRoute('operation=overview')
@@ -546,7 +568,7 @@ describe('participant knowledge graph route', () => {
 
     expect(body).toEqual(response)
     expect(JSON.stringify(body)).not.toMatch(
-      /connectionString|embedding|graphName|sourceUrl|cypher|secret/
+      /connectionString|embedding|graphName|sourceUrl|cypher|secret|internal/
     )
   })
 })

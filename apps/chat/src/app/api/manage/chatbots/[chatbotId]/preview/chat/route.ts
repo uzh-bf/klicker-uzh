@@ -19,11 +19,15 @@ import {
 } from '@/src/lib/server/chatModelRegistry'
 import { withModelCitationIndices } from '@/src/lib/server/citationInstructions'
 import {
+  getCustomModeTurnSettings,
   resolveEffectiveChatModeOptions,
   resolveEffectiveMCPConfigurations,
   resolveRequestedChatMode,
 } from '@/src/lib/server/effectiveChatModes'
-import { REPLY_LANGUAGE_REMINDER } from '@/src/lib/server/languageInstructions'
+import {
+  formatMeetingClock,
+  replyLanguageReminder,
+} from '@/src/lib/server/languageInstructions'
 import {
   MANAGE_CHAT_BODY_TIMEOUT_MS,
   MANAGE_CHAT_TOTAL_TIMEOUT_MS,
@@ -347,6 +351,16 @@ async function handlePOST(
         customModeConfig: resolveOwnerPreviewModeConfiguration(chatbot),
       }
     )
+    // Preview persists no thread and its messages carry no timestamps, so a
+    // meeting clock reports zero elapsed minutes here.
+    const turnSettings = getCustomModeTurnSettings(
+      resolveOwnerPreviewModeConfiguration(chatbot),
+      selectedMode
+    )
+    const languageReminder = replyLanguageReminder(
+      turnSettings.replyLanguage ?? null,
+      formatMeetingClock(turnSettings.meetingClock ?? null, null, new Date())
+    )
 
     const modelMessages = await convertToModelMessages(parsed.messages, {
       ignoreIncompleteToolCalls: true,
@@ -423,7 +437,7 @@ async function handlePOST(
           ...(docQueryToolName && stepNumber > 0
             ? withModelCitationIndices(responseMessages, steps)
             : responseMessages),
-          REPLY_LANGUAGE_REMINDER,
+          languageReminder,
         ],
       }),
       tools: promptCacheRequest?.tools ?? tools,

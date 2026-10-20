@@ -1,6 +1,7 @@
 import type { GetPendingChatbotRevisionReviewsQuery } from '@klicker-uzh/graphql/dist/ops'
 import { useTranslations } from 'next-intl'
 import type { ReactNode } from 'react'
+import { formatCustomModeSettings } from '../resources/chatbots/ChatbotAuthoring'
 import ChatbotDisclaimerPreview from '../resources/chatbots/ChatbotDisclaimerPreview'
 
 type Review =
@@ -205,6 +206,9 @@ function ChatbotPublicationDetails({
                     ? 'manage.resources.chatbotCustomModeReasoningShown'
                     : 'manage.resources.chatbotCustomModeReasoningHidden'
                 )}
+              </p>
+              <p data-cy={`chatbot-admin-review-settings-${mode.key}`}>
+                {formatCustomModeSettings(t, mode)}
               </p>
             </ReviewField>
           ))}

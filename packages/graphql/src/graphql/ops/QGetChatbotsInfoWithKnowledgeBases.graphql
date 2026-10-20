@@ -29,6 +29,8 @@ query QGetChatbotsInfoWithKnowledgeBases {
         welcomeMessage
         starterPrompts
         showReasoning
+        replyLanguage
+        meetingClock
       }
     }
     authoringRevision {

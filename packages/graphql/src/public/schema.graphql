@@ -1673,8 +1673,10 @@ input ChatbotCreditPolicyInput {
 type ChatbotCustomMode {
   description: String
   key: String!
+  meetingClock: ChatbotCustomModeMeetingClock
   name: String!
   personaText: String
+  replyLanguage: LocaleType
   showReasoning: Boolean!
   starterPrompts: [String!]
   welcomeMessage: String
@@ -1691,11 +1693,18 @@ input ChatbotCustomModeConfigInput {
 input ChatbotCustomModeInput {
   description: String
   key: String
+  meetingClock: ChatbotCustomModeMeetingClock
   name: String!
   personaText: String
+  replyLanguage: LocaleType
   showReasoning: Boolean
   starterPrompts: [String!]
   welcomeMessage: String
+}
+
+enum ChatbotCustomModeMeetingClock {
+  ELAPSED
+  ELAPSED_AND_TIME
 }
 
 type ChatbotDisclaimerSummary {
@@ -3768,7 +3777,10 @@ type KnowledgeGraphEdge {
   id: ID!
   label: String!
   properties: Json!
+  relationStatus: String!
+  relationType: String!
   source: ID!
+  sourceReferences: [KnowledgeGraphSourceReference!]!
   target: ID!
   type: String!
 }
@@ -3794,6 +3806,7 @@ type KnowledgeGraphResponse {
 }
 
 type KnowledgeGraphSourceReference {
+  pages: [Int!]
   reference: String
   resourceId: ID!
   title: String!

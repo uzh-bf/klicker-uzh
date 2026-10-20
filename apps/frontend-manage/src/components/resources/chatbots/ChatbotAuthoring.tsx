@@ -2,8 +2,9 @@ import { useMutation } from '@apollo/client'
 import { useFeatureFlag } from '@klicker-uzh/feature-flags/react'
 import {
   type ChatbotCustomModeInput,
+  ChatbotCustomModeMeetingClock,
   ChatbotStatus,
-  type LocaleType,
+  LocaleType,
   MSaveChatbotRevisionDocument,
   QGetChatbotsInfoWithKnowledgeBasesDocument,
 } from '@klicker-uzh/graphql/dist/ops'
@@ -24,6 +25,7 @@ import {
   AccordionItem,
   AccordionTrigger,
   Button,
+  FormikSelectField,
   FormikTextareaField,
   FormikTextField,
   H4,
@@ -113,7 +115,44 @@ type CustomModeFormValues = {
     starterPrompts: string[]
     personaText: string
     showReasoning: boolean
+    replyLanguage: ReplyLanguageOption
+    meetingClock: MeetingClockOption
   }[]
+}
+
+// Select values for the two optional per-mode settings; the unset choice needs
+// a non-empty value of its own and is sent as null.
+type ReplyLanguageOption = LocaleType | 'FOLLOW'
+type MeetingClockOption = ChatbotCustomModeMeetingClock | 'OFF'
+
+const REPLY_LANGUAGE_LABELS = {
+  FOLLOW: 'manage.resources.chatbotCustomModeReplyLanguageFollow',
+  [LocaleType.En]: 'manage.resources.chatbotCustomModeReplyLanguageEn',
+  [LocaleType.De]: 'manage.resources.chatbotCustomModeReplyLanguageDe',
+} as const satisfies Record<ReplyLanguageOption, string>
+
+const MEETING_CLOCK_LABELS = {
+  OFF: 'manage.resources.chatbotCustomModeMeetingClockOff',
+  [ChatbotCustomModeMeetingClock.Elapsed]:
+    'manage.resources.chatbotCustomModeMeetingClockElapsed',
+  [ChatbotCustomModeMeetingClock.ElapsedAndTime]:
+    'manage.resources.chatbotCustomModeMeetingClockElapsedAndTime',
+} as const satisfies Record<MeetingClockOption, string>
+
+/**
+ * One-line summary of a custom mode's reply language and meeting clock, for
+ * the authoring and publication review summaries.
+ */
+export function formatCustomModeSettings(
+  t: ReturnType<typeof useTranslations<never>>,
+  mode: {
+    replyLanguage?: ReplyLanguageOption | null
+    meetingClock?: MeetingClockOption | null
+  }
+): string {
+  const replyLanguage = t(REPLY_LANGUAGE_LABELS[mode.replyLanguage ?? 'FOLLOW'])
+  const meetingClock = t(MEETING_CLOCK_LABELS[mode.meetingClock ?? 'OFF'])
+  return `${t('manage.resources.chatbotCustomModeReplyLanguage')}: ${replyLanguage} · ${t('manage.resources.chatbotCustomModeMeetingClock')}: ${meetingClock}`
 }
 
 function getCustomModeFormValues(
@@ -132,6 +171,8 @@ function getCustomModeFormValues(
       starterPrompts: [...(mode.starterPrompts ?? [])],
       personaText: mode.personaText ?? '',
       showReasoning: mode.showReasoning,
+      replyLanguage: mode.replyLanguage ?? 'FOLLOW',
+      meetingClock: mode.meetingClock ?? 'OFF',
     })),
   }
 }
@@ -151,6 +192,8 @@ function getCustomModeInputs(
       .filter((prompt) => prompt.length > 0),
     personaText: mode.personaText || null,
     showReasoning: mode.showReasoning,
+    replyLanguage: mode.replyLanguage === 'FOLLOW' ? null : mode.replyLanguage,
+    meetingClock: mode.meetingClock === 'OFF' ? null : mode.meetingClock,
   }))
 }
 
@@ -741,6 +784,68 @@ function CustomModesEditor({
                             }}
                           />
                         </div>
+                        <div className="grid gap-4 md:grid-cols-2">
+                          <div>
+                            <FormikSelectField
+                              name={`modes[${index}].replyLanguage`}
+                              className={{ select: { trigger: 'w-full' } }}
+                              label={t(
+                                'manage.resources.chatbotCustomModeReplyLanguage'
+                              )}
+                              labelType="small"
+                              disabled={controlsDisabled}
+                              items={(
+                                Object.keys(
+                                  REPLY_LANGUAGE_LABELS
+                                ) as ReplyLanguageOption[]
+                              ).map((value) => ({
+                                value,
+                                label: t(REPLY_LANGUAGE_LABELS[value]),
+                                data: {
+                                  cy: `chatbot-custom-mode-reply-language-${index}-${value}`,
+                                },
+                              }))}
+                              data={{
+                                cy: `chatbot-custom-mode-reply-language-${index}`,
+                              }}
+                            />
+                            <p className="mt-1 text-sm text-gray-600">
+                              {t(
+                                'manage.resources.chatbotCustomModeReplyLanguageDescription'
+                              )}
+                            </p>
+                          </div>
+                          <div>
+                            <FormikSelectField
+                              name={`modes[${index}].meetingClock`}
+                              className={{ select: { trigger: 'w-full' } }}
+                              label={t(
+                                'manage.resources.chatbotCustomModeMeetingClock'
+                              )}
+                              labelType="small"
+                              disabled={controlsDisabled}
+                              items={(
+                                Object.keys(
+                                  MEETING_CLOCK_LABELS
+                                ) as MeetingClockOption[]
+                              ).map((value) => ({
+                                value,
+                                label: t(MEETING_CLOCK_LABELS[value]),
+                                data: {
+                                  cy: `chatbot-custom-mode-meeting-clock-${index}-${value}`,
+                                },
+                              }))}
+                              data={{
+                                cy: `chatbot-custom-mode-meeting-clock-${index}`,
+                              }}
+                            />
+                            <p className="mt-1 text-sm text-gray-600">
+                              {t(
+                                'manage.resources.chatbotCustomModeMeetingClockDescription'
+                              )}
+                            </p>
+                          </div>
+                        </div>
                       </div>
                     ))}
                   </div>
@@ -765,6 +870,8 @@ function CustomModesEditor({
                           starterPrompts: [],
                           personaText: '',
                           showReasoning: false,
+                          replyLanguage: 'FOLLOW',
+                          meetingClock: 'OFF',
                         },
                       ])
                     }}
@@ -1972,6 +2079,12 @@ function ChatbotAuthoring({
                                 ? 'manage.resources.chatbotCustomModeReasoningShown'
                                 : 'manage.resources.chatbotCustomModeReasoningHidden'
                             )}
+                          </div>
+                          <div
+                            className="mt-1 text-gray-700"
+                            data-cy={`chatbot-review-custom-mode-settings-${index}`}
+                          >
+                            {formatCustomModeSettings(t, mode)}
                           </div>
                         </li>
                       ))}

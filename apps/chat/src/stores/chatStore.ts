@@ -38,6 +38,8 @@ const runRatingRequest = createRatingRequestCoordinator<MessageRating | null>()
 /**
  * Extended thread message type that includes parentId for conversation branching
  */
+export type MeetingClockAnchor = { startedAt: string; skewMs: number }
+
 export type ExtendedThreadMessageLike = ThreadMessageLike & {
   parentId?: string | null
   attachmentSourceMessageId?: string | null
@@ -47,6 +49,9 @@ export type ExtendedThreadMessageLike = ThreadMessageLike & {
   reasoningContent?: string | null
   creditsUsed?: number | null
   rating?: MessageRating | null
+  // Server start of a custom mode's meeting clock, received with a streamed
+  // answer, and the offset of the server clock from this browser's clock.
+  meetingClock?: MeetingClockAnchor | null
   // Verified learning-context snapshot on eLearning-origin user messages.
   learningContext?: unknown
   imageAttachments?: {

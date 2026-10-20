@@ -303,6 +303,22 @@ export function isParticipantReasoningVisible(
   return !isChatbotCustomModeKey(mode)
 }
 
+/**
+ * The per-turn settings of the custom mode `mode` in `customModeConfig`: its
+ * locked reply language and meeting clock. Standard modes and keys without a
+ * custom mode have neither.
+ */
+export function getCustomModeTurnSettings(
+  customModeConfig: unknown,
+  mode: string
+): Pick<ChatbotCustomMode, 'replyLanguage' | 'meetingClock'> {
+  const customMode = getApprovedCustomModesByKey(customModeConfig).get(mode)
+  return {
+    replyLanguage: customMode?.replyLanguage ?? null,
+    meetingClock: customMode?.meetingClock ?? null,
+  }
+}
+
 function getCustomModeDescription(mode: ChatbotCustomMode): string {
   // The switcher and the welcome card fall back to this string for a mode
   // without an i18n entry, so a mode without a description still needs label
@@ -318,6 +334,8 @@ function getCustomModeOption(mode: ChatbotCustomMode): ChatModeOption {
     ...(mode.starterPrompts?.length
       ? { starterPrompts: mode.starterPrompts }
       : {}),
+    ...(mode.replyLanguage ? { replyLanguage: mode.replyLanguage } : {}),
+    ...(mode.meetingClock ? { meetingClock: mode.meetingClock } : {}),
   }
 }
 
