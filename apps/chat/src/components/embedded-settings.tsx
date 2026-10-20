@@ -9,7 +9,7 @@ import { useSettingsStore } from '../stores/settingsStore'
 import { useChatUi } from './chat-ui-context'
 
 const COMPACT_SELECT_CLASS =
-  'border-input bg-background text-foreground hover:border-ring focus-visible:ring-ring w-full cursor-pointer appearance-none truncate rounded-md border py-1 pl-2 pr-6 text-xs outline-none transition-colors focus-visible:ring-1'
+  'border-input bg-background bg-none text-foreground hover:border-ring focus-visible:ring-ring w-full cursor-pointer appearance-none truncate rounded-md border py-1 pl-2 pr-6 text-xs outline-none transition-colors focus-visible:ring-1'
 
 export function EmbeddedSettings() {
   const t = useTranslations()
