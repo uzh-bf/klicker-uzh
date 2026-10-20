@@ -653,6 +653,8 @@ function ChatbotDetails({
   const chatbotStatusLabel = t(getChatbotStatusTranslationKey(chatbot.status))
   const modelSettingsEditable = isChatbotRevisionEditable(chatbot)
   const revisionPending = isChatbotRevisionPending(chatbot)
+  // The request card reports its submission through the authoring state.
+  const publicationSubmitting = authoringNavigationState.pending
 
   const handleAllowedModelToggle = (modelId: string, checked: boolean) => {
     setSaveError(null)
@@ -844,7 +846,12 @@ function ChatbotDetails({
             <Switch
               id="chatbot-model-selection-switch"
               checked={modelSelectionEnabled}
-              disabled={isSaving || !modelSettingsEditable || revisionPending}
+              disabled={
+                isSaving ||
+                !modelSettingsEditable ||
+                revisionPending ||
+                publicationSubmitting
+              }
               onCheckedChange={handleModelSelectionChange}
               data={{ cy: 'chatbot-model-selection-switch' }}
             />
@@ -871,7 +878,12 @@ function ChatbotDetails({
               id="chatbot-fixed-model"
               data={{ cy: 'chatbot-fixed-model' }}
               value={fixedModelId}
-              disabled={isSaving || !modelSettingsEditable || revisionPending}
+              disabled={
+                isSaving ||
+                !modelSettingsEditable ||
+                revisionPending ||
+                publicationSubmitting
+              }
               items={modelRegistry.map((model) => ({
                 value: model.id,
                 label: model.name,
@@ -1008,7 +1020,8 @@ function ChatbotDetails({
                           disabled={
                             isSaving ||
                             !modelSettingsEditable ||
-                            revisionPending
+                            revisionPending ||
+                            publicationSubmitting
                           }
                           items={supportedEfforts.map((effort) => ({
                             value: effort,
@@ -1112,7 +1125,12 @@ function ChatbotDetails({
             <Switch
               id="chatbot-knowledge-graph-visible-switch"
               checked={knowledgeGraphPolicy.visible}
-              disabled={isSaving || !modelSettingsEditable || revisionPending}
+              disabled={
+                isSaving ||
+                !modelSettingsEditable ||
+                revisionPending ||
+                publicationSubmitting
+              }
               onCheckedChange={(checked) => {
                 setKnowledgeGraphSaveError(null)
                 clearRevisionConflict()
@@ -1143,7 +1161,12 @@ function ChatbotDetails({
               <Switch
                 id="chatbot-knowledge-graph-retrieval-switch"
                 checked={knowledgeGraphPolicy.retrievalEnabled}
-                disabled={isSaving || !modelSettingsEditable || revisionPending}
+                disabled={
+                  isSaving ||
+                  !modelSettingsEditable ||
+                  revisionPending ||
+                  publicationSubmitting
+                }
                 onCheckedChange={(checked) => {
                   setKnowledgeGraphSaveError(null)
                   clearRevisionConflict()
@@ -1843,6 +1866,7 @@ function ChatbotDetails({
             </p>
             <ChatbotAuthoring
               key={`${chatbot.id}:disclaimer`}
+              publicationSubmitting={publicationSubmitting}
               chatbot={chatbot}
               advancedManagement={advancedManagement}
               step="disclaimer"
@@ -1888,6 +1912,7 @@ function ChatbotDetails({
           >
             <ChatbotAuthoring
               key={`${chatbot.id}:behavior`}
+              publicationSubmitting={publicationSubmitting}
               chatbot={chatbot}
               advancedManagement={advancedManagement}
               step="modes"
@@ -1971,7 +1996,7 @@ function ChatbotDetails({
             <ChatbotCreditPolicy
               key={chatbot.id}
               chatbot={chatbot}
-              publicationPending={false}
+              publicationPending={publicationSubmitting}
               embedded
               formRef={creditFormRef}
               onSaved={() => closeSetupSection('usage')}
@@ -2094,6 +2119,7 @@ function ChatbotDetails({
           >
             <ChatbotAuthoring
               key={`${chatbot.id}:basics`}
+              publicationSubmitting={publicationSubmitting}
               chatbot={chatbot}
               advancedManagement={advancedManagement}
               step="basics"

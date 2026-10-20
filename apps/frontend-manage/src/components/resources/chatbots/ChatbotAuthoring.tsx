@@ -851,6 +851,7 @@ function ChatbotAuthoring({
   embedded = false,
   siblingDirty = false,
   siblingPending = false,
+  publicationSubmitting = false,
   formRef,
   customModesFormRef,
   blockers,
@@ -869,6 +870,9 @@ function ChatbotAuthoring({
   // Unsaved or pending edits in other editors on the same page.
   siblingDirty?: boolean
   siblingPending?: boolean
+  // A publication request submitted from another editor on the same page.
+  // Its fields lock here too, so late edits cannot diverge from the request.
+  publicationSubmitting?: boolean
   // An embedded editor has no footer of its own; the host page saves its form
   // through these refs and learns about a successful save through onSaved.
   formRef?: ChatbotFormRef
@@ -958,7 +962,8 @@ function ChatbotAuthoring({
     modeNavigationState.pending ||
     customModeNavigationState.pending ||
     disclaimerNavigationState.pending
-  const publicationPending = publicationNavigationState.pending
+  const publicationPending =
+    publicationNavigationState.pending || publicationSubmitting
 
   const openSection = useCallback(
     (section: ChatbotSetupStep) => {
