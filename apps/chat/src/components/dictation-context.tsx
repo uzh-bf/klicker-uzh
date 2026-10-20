@@ -8,6 +8,7 @@ import {
   useContext,
   useEffect,
   useMemo,
+  useRef,
   useState,
 } from 'react'
 import {
@@ -57,29 +58,40 @@ export function useOnDeviceDictation({
     useState<DictationAvailability>('unsupported')
   const [error, setError] = useState<DictationErrorCode | null>(null)
   const [installSheetOpen, setInstallSheetOpen] = useState(false)
+  // While a user-started install is pending, the browser can still report the
+  // pack as downloadable; probe results from that window must not reset the
+  // sheet to `needs-install` and allow a second, concurrent install.
+  const installInFlight = useRef(false)
 
   const refresh = useCallback(async () => {
     if (disabled) {
       setAvailability('unsupported')
       return
     }
+    let next: DictationAvailability
     try {
-      setAvailability(await probeOnDeviceDictation(language))
+      next = await probeOnDeviceDictation(language)
     } catch {
-      setAvailability('unavailable')
+      next = 'unavailable'
     }
+    if (installInFlight.current) return
+    setAvailability(next)
   }, [disabled, language])
 
   const install = useCallback(async () => {
+    if (installInFlight.current) return
+    installInFlight.current = true
     setError(null)
     setAvailability('installing')
+    let installed = false
     try {
-      if (!(await installOnDeviceDictation(language))) {
-        setAvailability('needs-install')
-        setError('install-failed')
-        return
-      }
+      installed = await installOnDeviceDictation(language)
     } catch {
+      installed = false
+    } finally {
+      installInFlight.current = false
+    }
+    if (!installed) {
       setAvailability('needs-install')
       setError('install-failed')
       return
@@ -95,7 +107,9 @@ export function useOnDeviceDictation({
   // `downloading`; keep checking until the language pack settles.
   useEffect(() => {
     if (availability !== 'installing') return
-    const interval = window.setInterval(() => void refresh(), 1000)
+    const interval = window.setInterval(() => {
+      if (!installInFlight.current) void refresh()
+    }, 1000)
     return () => window.clearInterval(interval)
   }, [availability, refresh])
 
