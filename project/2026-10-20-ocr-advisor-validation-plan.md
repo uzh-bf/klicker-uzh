@@ -90,6 +90,15 @@ and publish one draft against `v3`; no human review requests or extra paid runs.
 - Baseline: 19 focused tests passed; optional pinned-CLI case skipped.
 - Planning: initial planner requested explicit codes, null-call handling and a
   definite test owner. Those findings are incorporated; the second pass approved the plan.
-- Implementation and reviews: pending.
+- Implementation: fixed reasons flow through existing broker receipts and runner
+  output. Null calls now fail with the same safe validation error.
+- Verification: 19 broker/runner tests and 100 adapter/policy tests passed; optional
+  pinned-CLI integration skipped. Syntax, Biome (existing warnings), Prettier,
+  diff checks and scoped Opengrep (200 rules, no findings) passed. No task host
+  dependency install exists, so the native hook wrapper leaves full monorepo
+  checks/build to required CI. No runtime was started.
+- Test delta: two existing cases expanded; no new test module or test case.
+- Packaging: one package; 337 substantive added/deleted lines before review,
+  excluding this plan. Simplification and bounded review pending.
 - Live cause: remains unknown until a natural advisor consultation uses the
   merged diagnostics. This delivery does not claim a functional advisor fix.
