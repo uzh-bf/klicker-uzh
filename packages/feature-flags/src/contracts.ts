@@ -30,6 +30,10 @@ export const FEATURE_FLAG_DEFAULTS = {
   // edits from 10,000 to 100,000 characters. Stored long personas stay
   // readable and savable unchanged without it.
   'chatbot-long-custom-prompts': false,
+  // Admits the owner of a knowledge base to scheduled graph preparation, so
+  // the platform prepares graphs without a lecturer request. Each automatic
+  // build still passes the owner's AI entitlement and `kb-graph-builds`.
+  'kb-auto-graph-preparation': false,
 } as const satisfies Record<string, false>
 
 export type KlickerFeatureFlags = {
