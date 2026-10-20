@@ -17,6 +17,11 @@ query GetUserKbs($first: Int, $after: String, $search: String) {
         processingResourceCount
         failedResourceCount
       }
+      questionPreparation {
+        state
+        pendingReason
+        hasBasis
+      }
     }
     pageInfo {
       hasNextPage

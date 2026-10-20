@@ -11,12 +11,13 @@ import {
   TextField,
   UserNotification,
 } from '@uzh-bf/design-system'
-import { useTranslations } from 'next-intl'
 import Link from 'next/link'
+import { useTranslations } from 'next-intl'
 import React, { useDeferredValue, useState } from 'react'
 import CreateKnowledgeBaseModal from './components/CreateKnowledgeBaseModal'
 import DeleteKnowledgeBaseModal from './components/DeleteKnowledgeBaseModal'
 import KnowledgeBaseMaterialsReadiness from './components/KnowledgeBaseMaterialsReadiness'
+import KnowledgeBaseQuestionReadiness from './components/KnowledgeBaseQuestionReadiness'
 import { getGraphQLErrorCode } from './graphqlError'
 import { kbDomainLabelForId, useKbDomainLabels } from './kbDomainSettings'
 
@@ -200,6 +201,16 @@ function KnowledgeBaseManager() {
                     <span className="mt-1 block">
                       <KnowledgeBaseMaterialsReadiness
                         metrics={kb.materialsReadiness}
+                      />
+                    </span>
+                  ) : null}
+                  {kb.questionPreparation ? (
+                    <span className="mt-1 block">
+                      {/* The card is a link, so the contact link is shown
+                          on the detail page only. */}
+                      <KnowledgeBaseQuestionReadiness
+                        preparation={kb.questionPreparation}
+                        showContact={false}
                       />
                     </span>
                   ) : null}
