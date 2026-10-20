@@ -8,6 +8,9 @@ fragment PracticeQuizDataWithoutSolutions on PracticeQuiz {
   resetTimeDays
   availableFrom
   orderType
+  mode
+  adaptiveMaximumQuestions
+  adaptiveRetakeCooldownDays
   numOfStacks
   # previouslyAnswered
   # previousScore

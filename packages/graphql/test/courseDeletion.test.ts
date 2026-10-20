@@ -44,6 +44,10 @@ function createContext() {
     groupActivities: [],
   }
   const transactionClient = {
+    $queryRaw: vi.fn().mockResolvedValue([{ id: 'course-id' }]),
+    practiceQuiz: { findMany: vi.fn().mockResolvedValue([]) },
+    adaptivePracticeQuizAttempt: { count: vi.fn().mockResolvedValue(0) },
+    adaptivePracticeQuizCohortSnapshot: { count: vi.fn().mockResolvedValue(0) },
     course: {
       delete: vi.fn().mockResolvedValue({ id: course.id }),
     },
@@ -163,6 +167,12 @@ describe('deleteCourse', () => {
       groupActivities: [],
     }
     const transactionClient = {
+      $queryRaw: vi.fn().mockResolvedValue([{ id: 'course-id' }]),
+      practiceQuiz: { findMany: vi.fn().mockResolvedValue([]) },
+      adaptivePracticeQuizAttempt: { count: vi.fn().mockResolvedValue(0) },
+      adaptivePracticeQuizCohortSnapshot: {
+        count: vi.fn().mockResolvedValue(0),
+      },
       course: {
         updateMany: vi
           .fn()
@@ -176,7 +186,6 @@ describe('deleteCourse', () => {
       derivedPermission: {
         findFirst: vi.fn().mockResolvedValue({ id: 1 }),
       },
-      $queryRaw: vi.fn(),
     }
     const emitter = { emit: vi.fn() }
     const ctx = {

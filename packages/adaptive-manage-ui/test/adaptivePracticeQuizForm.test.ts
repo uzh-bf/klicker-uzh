@@ -1,0 +1,287 @@
+import {
+  AdaptivePracticeQuizPreset,
+  PracticeQuizMode,
+} from '@klicker-uzh/graphql/dist/ops'
+import { describe, expect, test } from 'vitest'
+import {
+  applyPlacementPilotDefaults,
+  createAdaptivePracticeQuizDefaultConfig,
+  getAdaptivePracticeQuizEffectiveSettings,
+  getAuthorableAdaptivePresets,
+  isManageAdaptivePresetSelectable,
+  mapAdaptivePracticeQuizPreviewToForm,
+  serializeAdaptivePracticeQuizConfig,
+  withoutUnauthorableScale,
+} from '../src/components/activities/creation/practiceQuiz/adaptivePracticeQuizForm'
+
+describe('adaptive practice quiz Manage form', () => {
+  test('offers only the diagnostic preset while research and v2 authoring are hidden', () => {
+    expect(
+      getAuthorableAdaptivePresets(AdaptivePracticeQuizPreset.Diagnostic)
+    ).toEqual([AdaptivePracticeQuizPreset.Diagnostic])
+  })
+
+  test.each([
+    AdaptivePracticeQuizPreset.Research,
+    AdaptivePracticeQuizPreset.Placement,
+  ])('keeps the current %s preset of an existing quiz listed', (preset) => {
+    expect(getAuthorableAdaptivePresets(preset)).toEqual([
+      AdaptivePracticeQuizPreset.Diagnostic,
+      preset,
+    ])
+  })
+
+  test.each([
+    '1.28',
+    '1.645',
+    '1.96',
+  ])('keeps the 50-question default and selected interval %s', (classificationZ) => {
+    const config = createAdaptivePracticeQuizDefaultConfig()
+    expect(config.totalQuestionCap).toBe('50')
+    expect(
+      serializeAdaptivePracticeQuizConfig({
+        ...config,
+        competenceTreeId: 'tree-id',
+        classificationZ,
+      })
+    ).toMatchObject({
+      totalQuestionCap: 50,
+      classificationZ: Number(classificationZ),
+    })
+  })
+
+  test('serializes optional duration in seconds and preserves explicit unlimited time', () => {
+    const config = {
+      ...createAdaptivePracticeQuizDefaultConfig(),
+      competenceTreeId: 'tree-id',
+    }
+    expect(
+      serializeAdaptivePracticeQuizConfig({ ...config, timeLimitMinutes: '90' })
+        ?.timeLimitSeconds
+    ).toBe(5400)
+    expect(
+      serializeAdaptivePracticeQuizConfig({ ...config, timeLimitMinutes: '' })
+        ?.timeLimitSeconds
+    ).toBeNull()
+    expect(
+      serializeAdaptivePracticeQuizConfig({
+        ...config,
+        timeLimitMinutes: '0.5',
+      })?.timeLimitSeconds
+    ).toBe(30)
+  })
+
+  test('requires an explicit scale for Placement pilot', () => {
+    expect(
+      isManageAdaptivePresetSelectable(AdaptivePracticeQuizPreset.Diagnostic)
+    ).toBe(true)
+    expect(
+      isManageAdaptivePresetSelectable(AdaptivePracticeQuizPreset.Research)
+    ).toBe(true)
+    expect(
+      isManageAdaptivePresetSelectable(AdaptivePracticeQuizPreset.Placement)
+    ).toBe(false)
+    expect(
+      isManageAdaptivePresetSelectable(
+        AdaptivePracticeQuizPreset.Placement,
+        'scale-id'
+      )
+    ).toBe(true)
+  })
+
+  test('preserves the tree question limit and never submits a model probability as a Z interval', () => {
+    const config = applyPlacementPilotDefaults({
+      ...createAdaptivePracticeQuizDefaultConfig(),
+      competenceTreeId: 'tree-id',
+      scaleVersionId: 'scale-id',
+      totalQuestionCap: '70',
+    })
+    expect(serializeAdaptivePracticeQuizConfig(config)).toMatchObject({
+      preset: AdaptivePracticeQuizPreset.Placement,
+      totalQuestionCap: 70,
+      minQuestionsPerLeaf: 4,
+      classificationZ: undefined,
+    })
+    expect(getAdaptivePracticeQuizEffectiveSettings(config)).toMatchObject({
+      levelMappingRule: 'NEAREST',
+      attemptSelectionPolicy: 'LATEST_COMPLETED',
+    })
+    expect(
+      getAdaptivePracticeQuizEffectiveSettings({
+        ...config,
+        scaleVersionId: undefined,
+      })
+    ).toMatchObject({
+      levelMappingRule: 'MASTERY',
+      attemptSelectionPolicy: 'FIRST_COMPLETED',
+    })
+  })
+
+  test('does not submit raw discrimination overrides from Research authoring', () => {
+    const config = createAdaptivePracticeQuizDefaultConfig()
+    const serialized = serializeAdaptivePracticeQuizConfig({
+      ...config,
+      competenceTreeId: 'tree-id',
+      preset: AdaptivePracticeQuizPreset.Research,
+      defaultDiscrimination: '8.5',
+      elementOverrides: [
+        { assignmentId: 12, enabled: true, discrimination: '9.5' },
+      ],
+    })
+
+    expect(serialized).toMatchObject({
+      competenceTreeId: 'tree-id',
+      preset: AdaptivePracticeQuizPreset.Research,
+      researchSettings: { defaultDiscrimination: undefined },
+      elementOverrides: [
+        { assignmentId: 12, enabled: true, discrimination: undefined },
+      ],
+    })
+  })
+
+  test('selects v2 with an immutable scale and omits legacy policy controls', () => {
+    const config = createAdaptivePracticeQuizDefaultConfig()
+    const serialized = serializeAdaptivePracticeQuizConfig({
+      ...config,
+      competenceTreeId: 'tree-id',
+      scaleVersionId: 'scale-id',
+      preset: AdaptivePracticeQuizPreset.Research,
+      classificationZ: '4.5',
+    })
+
+    expect(serialized).toMatchObject({
+      competenceTreeId: 'tree-id',
+      scaleVersionId: 'scale-id',
+      preset: AdaptivePracticeQuizPreset.Research,
+      classificationZ: undefined,
+      researchSettings: {
+        attemptSelectionPolicy: 'LATEST_COMPLETED',
+        defaultDiscrimination: undefined,
+      },
+    })
+  })
+
+  test('retains adaptive mode defaults without exposing psychometric controls', () => {
+    const config = createAdaptivePracticeQuizDefaultConfig()
+
+    expect(config.preset).toBe(AdaptivePracticeQuizPreset.Diagnostic)
+    expect(PracticeQuizMode.Adaptive).toBe('ADAPTIVE')
+  })
+
+  test.each([
+    ['1', 1],
+    ['3', 3],
+    ['5', 5],
+    ['', 5],
+  ])('serializes a coverage-cell minimum of "%s" as %i', (value, expected) => {
+    const config = createAdaptivePracticeQuizDefaultConfig()
+    expect(config.minItemsPerCoverageCell).toBe('5')
+    expect(
+      serializeAdaptivePracticeQuizConfig({
+        ...config,
+        competenceTreeId: 'tree-id',
+        minItemsPerCoverageCell: value,
+      })?.minItemsPerCoverageCell
+    ).toBe(expected)
+  })
+
+  test('maps the stored coverage-cell minimum back into the form', () => {
+    const preview = {
+      config: {
+        competenceTreeId: 'tree-id',
+        scaleVersionId: null,
+        preset: AdaptivePracticeQuizPreset.Diagnostic,
+        totalQuestionCap: 50,
+        timeLimitSeconds: null,
+        perLeafQuestionCap: null,
+        minQuestionsPerLeaf: 2,
+        minItemsPerCoverageCell: 3,
+        classificationZ: 1.28,
+        showTimer: true,
+        attemptSelectionPolicy: 'LATEST_COMPLETED',
+        levelMappingRule: 'NEAREST',
+        topInformationRatio: 0.8,
+        defaultDiscrimination: 1.2,
+      },
+      nodes: [],
+      assignments: [],
+    } as unknown as Parameters<typeof mapAdaptivePracticeQuizPreviewToForm>[0]
+
+    const form = mapAdaptivePracticeQuizPreviewToForm(preview)
+    expect(form.minItemsPerCoverageCell).toBe('3')
+    expect(
+      serializeAdaptivePracticeQuizConfig(form)?.minItemsPerCoverageCell
+    ).toBe(3)
+  })
+})
+
+describe('switched-off competences in a stored quiz', () => {
+  test('keep no weight, so editing or duplicating stays valid', () => {
+    const preview = {
+      config: {
+        competenceTreeId: 'tree-id',
+        scaleVersionId: null,
+        preset: AdaptivePracticeQuizPreset.Diagnostic,
+        totalQuestionCap: 20,
+        timeLimitSeconds: null,
+        perLeafQuestionCap: null,
+        minQuestionsPerLeaf: 2,
+        minItemsPerCoverageCell: 5,
+        classificationZ: 1.28,
+        classificationToleranceBands: 0,
+        showTimer: true,
+        retakeStartFromPreviousResult: true,
+        retakeStartMaxAgeDays: 30,
+        retakePreferNewQuestions: true,
+        attemptSelectionPolicy: 'LATEST_COMPLETED',
+        levelMappingRule: 'NEAREST',
+        topInformationRatio: 0.8,
+        defaultDiscrimination: 1.2,
+      },
+      // Competence 1 is on, competence 2 is switched off; the server reports
+      // the normalized share of the overall level, 0 for a switched-off one.
+      nodes: [
+        { id: 1, overrideEnabled: true, weight: 1, questionCap: null },
+        { id: 2, overrideEnabled: false, weight: 0, questionCap: null },
+        { id: 3, overrideEnabled: true, weight: null, questionCap: null },
+      ],
+      assignments: [],
+    } as unknown as Parameters<typeof mapAdaptivePracticeQuizPreviewToForm>[0]
+
+    const form = mapAdaptivePracticeQuizPreviewToForm(preview)
+    expect(
+      form.nodeOverrides.map(({ nodeId, weight }) => [nodeId, weight])
+    ).toEqual([
+      [1, '1'],
+      [2, ''],
+      [3, ''],
+    ])
+    expect(
+      serializeAdaptivePracticeQuizConfig(form)?.nodeOverrides?.find(
+        ({ nodeId }) => nodeId === 2
+      )
+    ).toMatchObject({ enabled: false, weight: undefined })
+  })
+})
+
+describe('scale on new quizzes while IRT v2 authoring is disabled', () => {
+  const config = {
+    ...createAdaptivePracticeQuizDefaultConfig(),
+    competenceTreeId: 'tree-id',
+    scaleVersionId: 'stale-scale-id',
+  }
+
+  test('drops a scale restored from a draft or a duplicated quiz', () => {
+    const cleaned = withoutUnauthorableScale(config, false)
+    expect(cleaned.scaleVersionId).toBeUndefined()
+    expect(serializeAdaptivePracticeQuizConfig(cleaned)).toMatchObject({
+      scaleVersionId: undefined,
+    })
+  })
+
+  test('keeps the scale of an existing quiz being edited', () => {
+    expect(withoutUnauthorableScale(config, true).scaleVersionId).toBe(
+      'stale-scale-id'
+    )
+  })
+})

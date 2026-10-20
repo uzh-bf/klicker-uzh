@@ -1,9 +1,12 @@
+import { adaptiveAttemptDiagnosticsMutationFields } from '@klicker-uzh/adaptive-server/schema/adaptiveAttemptDiagnostics'
+import { adaptiveMutationFields } from '@klicker-uzh/adaptive-server/schema/adaptiveMutationFields'
 import * as DB from '@klicker-uzh/prisma/client'
 import { ActivityType as ActivityTypeEnum } from '@klicker-uzh/types'
 import { MISSING_CATALOG_COLLECTION_ID } from '@klicker-uzh/util'
 import builder from '../builder.js'
 import * as AccountService from '../services/accounts.js'
 import * as ActivitiesService from '../services/activities.js'
+import * as AdaptiveElementService from '../services/adaptiveElementCommands.js'
 import * as BetaEnrollmentService from '../services/betaEnrollment.js'
 import * as ChatAccountUsageService from '../services/chatAccountUsage.js'
 import * as ChatbotsService from '../services/chatbots.js'
@@ -33,9 +36,34 @@ import * as StacksService from '../services/stacks.js'
 import * as SupportService from '../services/support.js'
 import * as TemplateService from '../services/templates.js'
 import { ActivityInfo } from './activities.js'
+import {
+  AdaptiveAttemptEstimateBackfillRef,
+  AdaptiveAttemptExpectedLevelInput,
+  AdaptiveAttemptReviewRef,
+} from './adaptiveAttemptDiagnostics.js'
+import { AdaptivePracticeQuizConfigInput } from './adaptivePracticeQuiz.js'
+import {
+  AdaptivePracticeQuizAttemptStateRef,
+  AdaptivePracticeQuizResponseInput,
+} from './adaptivePracticeQuizRuntime.js'
 import { ActivityType, ElementFeedback } from './analytics.js'
 import { PointCorrection, PointCorrectionType } from './assessment.js'
 import { asChatbotAuthor } from './authScopes.js'
+import {
+  CompetenceTree,
+  CompetenceTreeElementAssignmentCreateInput,
+  CompetenceTreeElementAssignmentUpdateInput,
+  CompetenceTreeInput,
+  CompetenceTreeMetadataInput,
+  DuplicateCompetenceTreeInput,
+} from './competenceTree.js'
+import {
+  AdaptiveCalibrationExportRequestRef,
+  AdaptiveCalibrationImportReceiptRef,
+  AdaptiveReviewDecision,
+  AdaptiveWorkflowReceiptRef,
+  CompetenceTreeScaleLevelInput,
+} from './competenceTreeCalibration.js'
 import {
   Course,
   CourseDeletionRequestPayload,
@@ -119,6 +147,7 @@ import {
   ElementOrderType,
   ElementStackInput,
   PracticeQuiz,
+  PracticeQuizMode,
   ReviewStatus,
   StackFeedback,
   StackResponseInput,
@@ -764,7 +793,8 @@ export const Mutation = builder.mutationType({
           DB.PermissionLevel.EXECUTE,
           async (_, args, ctx) => {
             return await LiveQuizService.cancelLiveQuiz(args, ctx)
-          }
+          },
+          { actionType: 'ASSESSMENT_CANCEL' }
         ),
       }),
 
@@ -779,6 +809,27 @@ export const Mutation = builder.mutationType({
             return await CourseService.enableGamification(args, ctx)
           }
         ),
+      }),
+      ...adaptiveMutationFields(t, {
+        AdaptivePracticeQuizAttemptStateRef,
+        AdaptivePracticeQuizResponseInput,
+        CompetenceTree,
+        CompetenceTreeElementAssignmentUpdateInput,
+        CompetenceTreeInput,
+        CompetenceTreeMetadataInput,
+        DuplicateCompetenceTreeInput,
+        AdaptiveCalibrationExportRequestRef,
+        AdaptiveCalibrationImportReceiptRef,
+        AdaptiveReviewDecision,
+        AdaptiveWorkflowReceiptRef,
+        CompetenceTreeScaleLevelInput,
+        Course,
+      }),
+      ...adaptiveAttemptDiagnosticsMutationFields(t, {
+        withPermission,
+        AdaptiveAttemptReviewRef,
+        AdaptiveAttemptExpectedLevelInput,
+        AdaptiveAttemptEstimateBackfillRef,
       }),
 
       requestCourseDeletion: t.withAuth(asUser).field({
@@ -844,7 +895,8 @@ export const Mutation = builder.mutationType({
           DB.PermissionLevel.EXECUTE,
           async (_, args, ctx) => {
             return await LiveQuizService.endLiveQuiz(args, ctx)
-          }
+          },
+          { actionType: 'ASSESSMENT_COMPLETE' }
         ),
       }),
 
@@ -857,7 +909,8 @@ export const Mutation = builder.mutationType({
           DB.PermissionLevel.EXECUTE,
           async (_, args, ctx) => {
             return await LiveQuizService.startLiveQuiz(args, ctx)
-          }
+          },
+          { actionType: 'ASSESSMENT_START' }
         ),
       }),
 
@@ -873,7 +926,8 @@ export const Mutation = builder.mutationType({
           DB.PermissionLevel.EXECUTE,
           async (_, args, ctx) => {
             return await LiveQuizService.scheduleLiveQuiz(args, ctx)
-          }
+          },
+          { actionType: 'ASSESSMENT_SCHEDULE' }
         ),
       }),
 
@@ -886,7 +940,8 @@ export const Mutation = builder.mutationType({
           DB.PermissionLevel.EXECUTE,
           async (_, args, ctx) => {
             return await LiveQuizService.unpublishLiveQuiz(args, ctx)
-          }
+          },
+          { actionType: 'ASSESSMENT_UNPUBLISH' }
         ),
       }),
 
@@ -902,7 +957,8 @@ export const Mutation = builder.mutationType({
           DB.PermissionLevel.EXECUTE,
           async (_, args, ctx) => {
             return await FeedbackService.deleteFeedback(args, ctx)
-          }
+          },
+          { actionType: 'ASSESSMENT_FEEDBACK_DELETE' }
         ),
       }),
 
@@ -918,7 +974,8 @@ export const Mutation = builder.mutationType({
           DB.PermissionLevel.EXECUTE,
           async (_, args, ctx) => {
             return await FeedbackService.deleteFeedbackResponse(args, ctx)
-          }
+          },
+          { actionType: 'ASSESSMENT_FEEDBACK_RESPONSE_DELETE' }
         ),
       }),
 
@@ -935,7 +992,8 @@ export const Mutation = builder.mutationType({
           DB.PermissionLevel.EXECUTE,
           async (_, args, ctx) => {
             return await FeedbackService.pinFeedback(args, ctx)
-          }
+          },
+          { actionType: 'ASSESSMENT_FEEDBACK_PIN' }
         ),
       }),
 
@@ -952,7 +1010,8 @@ export const Mutation = builder.mutationType({
           DB.PermissionLevel.EXECUTE,
           async (_, args, ctx) => {
             return await FeedbackService.publishFeedback(args, ctx)
-          }
+          },
+          { actionType: 'ASSESSMENT_FEEDBACK_PUBLISH' }
         ),
       }),
 
@@ -969,7 +1028,8 @@ export const Mutation = builder.mutationType({
           DB.PermissionLevel.EXECUTE,
           async (_, args, ctx) => {
             return await FeedbackService.resolveFeedback(args, ctx)
-          }
+          },
+          { actionType: 'ASSESSMENT_FEEDBACK_RESOLVE' }
         ),
       }),
 
@@ -986,7 +1046,8 @@ export const Mutation = builder.mutationType({
           DB.PermissionLevel.EXECUTE,
           async (_, args, ctx) => {
             return await FeedbackService.respondToFeedback(args, ctx)
-          }
+          },
+          { actionType: 'ASSESSMENT_FEEDBACK_RESPOND' }
         ),
       }),
 
@@ -1008,7 +1069,8 @@ export const Mutation = builder.mutationType({
           DB.PermissionLevel.EXECUTE,
           async (_, args, ctx) => {
             return await LiveQuizService.deactivateLiveQuizBlock(args, ctx)
-          }
+          },
+          { actionType: 'ASSESSMENT_BLOCK_CLOSE' }
         ),
       }),
 
@@ -1026,7 +1088,8 @@ export const Mutation = builder.mutationType({
           DB.PermissionLevel.EXECUTE,
           async (_, args, ctx) => {
             return await LiveQuizService.changeLiveQuizSettings(args, ctx)
-          }
+          },
+          { actionType: 'ASSESSMENT_CONFIGURATION_CHANGE' }
         ),
       }),
 
@@ -1042,7 +1105,8 @@ export const Mutation = builder.mutationType({
           DB.PermissionLevel.EXECUTE,
           async (_, args, ctx) => {
             return await LiveQuizService.activateLiveQuizBlock(args, ctx)
-          }
+          },
+          { actionType: 'ASSESSMENT_BLOCK_ACTIVATE' }
         ),
       }),
 
@@ -1099,7 +1163,8 @@ export const Mutation = builder.mutationType({
           DB.PermissionLevel.WRITE,
           async (_, args, ctx) => {
             return await LiveQuizService.manipulateLiveQuiz(args, ctx)
-          }
+          },
+          { actionType: 'ASSESSMENT_CONFIGURATION_CHANGE' }
         ),
       }),
 
@@ -1147,7 +1212,7 @@ export const Mutation = builder.mutationType({
             }
           }
 
-          return await ElementService.manipulateElement(
+          return await ElementService.manipulateElementWithAssessmentAudit(
             { ...args, type: DB.ElementType.CONTENT },
             ctx
           )
@@ -1184,7 +1249,7 @@ export const Mutation = builder.mutationType({
             }
           }
 
-          return await ElementService.manipulateElement(
+          return await ElementService.manipulateElementWithAssessmentAudit(
             { ...args, type: DB.ElementType.FLASHCARD },
             ctx
           )
@@ -1195,6 +1260,15 @@ export const Mutation = builder.mutationType({
         nullable: true,
         type: Element,
         args: {
+          initialCompetenceTreeAssignments: t.arg({
+            type: [CompetenceTreeElementAssignmentCreateInput],
+            required: false,
+          }),
+          initialCompetenceTreeAssignment: t.arg({
+            type: CompetenceTreeElementAssignmentCreateInput,
+            required: false,
+          }),
+          creationRequestId: t.arg.string({ required: false }),
           id: t.arg.int({ required: false }),
           status: t.arg({ type: ElementStatus, required: false }),
           type: t.arg({ required: true, type: ElementType }),
@@ -1225,7 +1299,31 @@ export const Mutation = builder.mutationType({
             }
           }
 
-          return await ElementService.manipulateElement(args, ctx)
+          const {
+            initialCompetenceTreeAssignment,
+            initialCompetenceTreeAssignments,
+            creationRequestId,
+            ...elementInput
+          } = args
+          if (
+            initialCompetenceTreeAssignment != null ||
+            (initialCompetenceTreeAssignments?.length ?? 0) > 0 ||
+            creationRequestId != null
+          ) {
+            return await AdaptiveElementService.manipulateElementWithInitialCompetenceTreeAssignment(
+              {
+                elementInput,
+                initialCompetenceTreeAssignment,
+                initialCompetenceTreeAssignments,
+                creationRequestId,
+              },
+              ctx
+            )
+          }
+          return await ElementService.manipulateElementWithAssessmentAudit(
+            elementInput,
+            ctx
+          )
         },
       }),
 
@@ -1233,6 +1331,15 @@ export const Mutation = builder.mutationType({
         nullable: true,
         type: Element,
         args: {
+          initialCompetenceTreeAssignments: t.arg({
+            type: [CompetenceTreeElementAssignmentCreateInput],
+            required: false,
+          }),
+          initialCompetenceTreeAssignment: t.arg({
+            type: CompetenceTreeElementAssignmentCreateInput,
+            required: false,
+          }),
+          creationRequestId: t.arg.string({ required: false }),
           id: t.arg.int({ required: false }),
           status: t.arg({ type: ElementStatus, required: false }),
           name: t.arg.string({ required: false }),
@@ -1262,8 +1369,33 @@ export const Mutation = builder.mutationType({
             }
           }
 
-          return await ElementService.manipulateElement(
-            { ...args, type: DB.ElementType.NUMERICAL },
+          const {
+            initialCompetenceTreeAssignment,
+            initialCompetenceTreeAssignments,
+            creationRequestId,
+            ...elementInput
+          } = args
+          const numericalElementInput = {
+            ...elementInput,
+            type: DB.ElementType.NUMERICAL,
+          }
+          if (
+            initialCompetenceTreeAssignment != null ||
+            (initialCompetenceTreeAssignments?.length ?? 0) > 0 ||
+            creationRequestId != null
+          ) {
+            return await AdaptiveElementService.manipulateElementWithInitialCompetenceTreeAssignment(
+              {
+                elementInput: numericalElementInput,
+                initialCompetenceTreeAssignment,
+                initialCompetenceTreeAssignments,
+                creationRequestId,
+              },
+              ctx
+            )
+          }
+          return await ElementService.manipulateElementWithAssessmentAudit(
+            numericalElementInput,
             ctx
           )
         },
@@ -1273,6 +1405,15 @@ export const Mutation = builder.mutationType({
         nullable: true,
         type: Element,
         args: {
+          initialCompetenceTreeAssignments: t.arg({
+            type: [CompetenceTreeElementAssignmentCreateInput],
+            required: false,
+          }),
+          initialCompetenceTreeAssignment: t.arg({
+            type: CompetenceTreeElementAssignmentCreateInput,
+            required: false,
+          }),
+          creationRequestId: t.arg.string({ required: false }),
           id: t.arg.int({ required: false }),
           status: t.arg({ type: ElementStatus, required: false }),
           name: t.arg.string({ required: false }),
@@ -1302,8 +1443,33 @@ export const Mutation = builder.mutationType({
             }
           }
 
-          return await ElementService.manipulateElement(
-            { ...args, type: DB.ElementType.FREE_TEXT },
+          const {
+            initialCompetenceTreeAssignment,
+            initialCompetenceTreeAssignments,
+            creationRequestId,
+            ...elementInput
+          } = args
+          const freeTextElementInput = {
+            ...elementInput,
+            type: DB.ElementType.FREE_TEXT,
+          }
+          if (
+            initialCompetenceTreeAssignment != null ||
+            (initialCompetenceTreeAssignments?.length ?? 0) > 0 ||
+            creationRequestId != null
+          ) {
+            return await AdaptiveElementService.manipulateElementWithInitialCompetenceTreeAssignment(
+              {
+                elementInput: freeTextElementInput,
+                initialCompetenceTreeAssignment,
+                initialCompetenceTreeAssignments,
+                creationRequestId,
+              },
+              ctx
+            )
+          }
+          return await ElementService.manipulateElementWithAssessmentAudit(
+            freeTextElementInput,
             ctx
           )
         },
@@ -1342,7 +1508,7 @@ export const Mutation = builder.mutationType({
             }
           }
 
-          return await ElementService.manipulateElement(
+          return await ElementService.manipulateElementWithAssessmentAudit(
             { ...args, type: DB.ElementType.SELECTION },
             ctx
           )
@@ -1382,7 +1548,7 @@ export const Mutation = builder.mutationType({
             }
           }
 
-          return await ElementService.manipulateElement(
+          return await ElementService.manipulateElementWithAssessmentAudit(
             { ...args, type: DB.ElementType.CASE_STUDY },
             ctx
           )
@@ -1457,11 +1623,9 @@ export const Mutation = builder.mutationType({
           (args) => ({ elementId: args.elementId }),
           DB.PermissionLevel.WRITE,
           async (_, args, ctx) => {
-            return await ElementService.updateElementInstances(
+            return await ElementService.updateElementInstancesWithAssessmentAudit(
               args,
-              ctx.prisma,
-              ctx.emitter,
-              ctx.user.sub
+              ctx
             )
           }
         ),
@@ -1474,10 +1638,9 @@ export const Mutation = builder.mutationType({
           (args) => ({ elementId: args.elementId }),
           DB.PermissionLevel.WRITE,
           async (_, args, ctx) => {
-            return await ElementService.flagOutdatedElementInstances(
+            return await ElementService.flagOutdatedElementInstancesWithAssessmentAudit(
               args,
-              ctx.prisma,
-              ctx.emitter
+              ctx
             )
           }
         ),
@@ -1782,7 +1945,8 @@ export const Mutation = builder.mutationType({
           DB.PermissionLevel.ADMIN,
           async (_, args, ctx) => {
             return await LiveQuizService.deleteLiveQuiz(args, ctx)
-          }
+          },
+          { actionType: 'ASSESSMENT_DELETE' }
         ),
       }),
 
@@ -1795,7 +1959,8 @@ export const Mutation = builder.mutationType({
           DB.PermissionLevel.ADMIN,
           async (_, args, ctx) => {
             return await LiveQuizService.resetAssessmentLiveQuiz(args, ctx)
-          }
+          },
+          { actionType: 'ASSESSMENT_RESET' }
         ),
       }),
 
@@ -1824,7 +1989,8 @@ export const Mutation = builder.mutationType({
                 args,
                 ctx
               )
-            }
+            },
+            { actionType: 'ASSESSMENT_PARTICIPANT_INVITATION_CREATE' }
           ),
         }),
 
@@ -1845,7 +2011,8 @@ export const Mutation = builder.mutationType({
                 args,
                 ctx
               )
-            }
+            },
+            { actionType: 'ASSESSMENT_PARTICIPANT_INVITATION_DELETE' }
           ),
         }),
 
@@ -1903,20 +2070,13 @@ export const Mutation = builder.mutationType({
         },
         resolve: async (_, args, ctx) => {
           if (args.type === ActivityTypeEnum.LIVE_QUIZ) {
-            const validAccess = await checkAccess(
-              [
-                {
-                  liveQuizId: args.id,
-                  minimumPermissionLevel: DB.PermissionLevel.WRITE,
-                },
-              ],
-              ctx
-            )
-            if (!validAccess) {
-              return null
-            }
-
-            return await LiveQuizService.changeLiveQuizName(args, ctx)
+            return await withPermission<unknown, typeof args, boolean>(
+              (selectorArgs) => ({ liveQuizId: selectorArgs.id }),
+              DB.PermissionLevel.WRITE,
+              async (_, resolverArgs, resolverCtx) =>
+                LiveQuizService.changeLiveQuizName(resolverArgs, resolverCtx),
+              { actionType: 'ASSESSMENT_CONFIGURATION_CHANGE' }
+            )(_, args, ctx)
           } else if (args.type === ActivityTypeEnum.PRACTICE_QUIZ) {
             const validAccess = await checkAccess(
               [
@@ -3872,6 +4032,11 @@ export const Mutation = builder.mutationType({
           nullable: true,
           type: ActivityInfo,
           args: {
+            mode: t.arg({ type: PracticeQuizMode, required: false }),
+            adaptiveConfig: t.arg({
+              type: AdaptivePracticeQuizConfigInput,
+              required: false,
+            }),
             name: t.arg.string({ required: true }),
             displayName: t.arg.string({ required: true }),
             description: t.arg.string({ required: false }),
@@ -3898,6 +4063,11 @@ export const Mutation = builder.mutationType({
           nullable: true,
           type: ActivityInfo,
           args: {
+            mode: t.arg({ type: PracticeQuizMode, required: false }),
+            adaptiveConfig: t.arg({
+              type: AdaptivePracticeQuizConfigInput,
+              required: false,
+            }),
             id: t.arg.string({ required: true }),
             name: t.arg.string({ required: true }),
             displayName: t.arg.string({ required: true }),
@@ -4357,8 +4527,6 @@ export const Mutation = builder.mutationType({
           return await SupportService.requestCatalystAccess(args, ctx)
         },
       }),
-
-      // #endregion
     }
   },
 })

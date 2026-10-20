@@ -25,7 +25,7 @@ test('allows only the supported operation flags', () => {
     'diff',
     '--from-config-datasource',
     '--to-migrations',
-    'src/prisma/schema/migrations',
+    'src/prisma/.adaptive-schema/migrations',
     '--script',
   ])
 })

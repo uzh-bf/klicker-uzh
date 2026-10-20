@@ -1,0 +1,5 @@
+mutation ReplaceCompetenceTree($id: String!, $input: CompetenceTreeInput!) {
+  replaceCompetenceTree(id: $id, input: $input) {
+    ...CompetenceTreeData
+  }
+}
