@@ -26,7 +26,8 @@ standard with that explicit main-session override; self-review is not
 independent evidence. Target `v3`, baseline
 `c58e111ea3d606b3a99dd0664351b5df97fd90c8`, branch
 `rs/warpbuild-burst-admission`, worktree
-`trees/rs/warpbuild-burst-admission`. No PR exists yet.
+`trees/rs/warpbuild-burst-admission`. Published as
+[draft PR #6651](https://github.com/uzh-bf/klicker-uzh/pull/6651).
 
 The approved terminal is a verified, self-reviewed source package published as
 a draft PR. Ordinary task commits and pushes are included. Deployment of a
@@ -155,10 +156,26 @@ was needed. The architecture decision remains ADR 0052; no application-domain
 primitive changes. Focused static analysis of the corrected coordinator also
 passed. Local verification replaces the application-wide hooks for this
 CI-only package; no full application build/check is claimed.
-The active work is draft publication and hosted feedback.
+Draft publication and initial hosted verification are complete at
+`4cbe77d75697f4eecd7c635caa0c6f25687763a7`: all eight required contexts pass.
+The actual check suite passes all 110 Playwright CI contracts; the hosted
+shared build, all eight shared shard producers and separate aggregate pass.
+This is ordinary source validation, not coordinator deployment qualification.
+The draft review completed only part of its selected work and posted no
+findings; retain that coverage gap. No independent final review is claimed.
+The final-review workflow requires a non-draft PR. Readiness is not authorized
+in this source package, so no ineffective command is posted while draft.
+This final progress/link update changes documentation only and reuses the
+passing executable-source evidence above; any new platform checks remain
+required before later readiness or merge.
 The package has 1,487 substantive added/deleted lines outside documentation,
 including the synthetic persistence, authentication and workflow contracts.
-The native goal owns continuation; a checkpoint is not source-package completion.
+The source-package terminal is a verified, self-reviewed published draft.
+The next sequence is readiness and final review, then normal merge and a
+separately approved deployment/qualification packet. The later packet must
+name the coordinator owner, durable storage, approved HTTPS ingress, existing
+forge-read capability, exact access and endpoint changes, finite burst limits,
+success/failure proof and owned cleanup. No automatic pressure policy is active.
 
 ## Historical source package
 
