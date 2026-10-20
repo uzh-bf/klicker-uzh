@@ -102,7 +102,9 @@ and publish one draft against `v3`; no human review requests or extra paid runs.
   excluding this plan. Simplifier found no justified reductions; bounded
   correctness/privacy review found no actionable issues.
 - Draft delivery: [PR #6650](https://github.com/uzh-bf/klicker-uzh/pull/6650)
-  is open; final review and hosted CI remain pending.
+  is open with the implementation committed and pushed. Integrated final review
+  passed without findings; focused verification is complete. Hosted CI remains
+  pending and is separate from completed draft delivery.
 - Knowledge capture: the existing CI guide owns the diagnostic distinction and
   legacy-receipt caveat; no duplicate solution document or ADR is needed.
 - Live cause: remains unknown until a natural advisor consultation uses the
