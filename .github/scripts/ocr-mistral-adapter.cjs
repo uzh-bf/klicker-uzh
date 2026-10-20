@@ -78,6 +78,16 @@ const MAX_REQUEST_BYTES = 2 * 1024 * 1024
 const MAX_RESPONSE_BYTES = 32 * 1024 * 1024
 const MAX_UPSTREAM_ERROR_BODY_BYTES = 16 * 1024
 const UPSTREAM_ERROR_CODES = new Set([400, 401, 402, 403, 408, 429, 502, 503])
+const OPENROUTER_LIMIT_REASONS = {
+  openrouter_key_limit: 'key_budget_exhausted',
+  openrouter_guardrail_budget: 'guardrail_budget_exhausted',
+  openrouter_in_flight_budget: 'in_flight_budget_exhausted',
+  openrouter_credits: 'credits_insufficient',
+}
+const UPSTREAM_ERROR_REASONS = new Set([
+  ...Object.values(OPENROUTER_LIMIT_REASONS),
+  'unknown',
+])
 const DEFAULT_TIMEOUT_MS = 45 * 60 * 1000
 const DEFAULT_MAX_LIFETIME_MS = 50 * 60 * 1000
 const DEFAULT_MAX_HISTORY_ENTRIES = 2000
@@ -876,22 +886,44 @@ async function drain(response, limit) {
   }
 }
 
-// Provider messages and metadata remain private; retain only fixed error codes
+// Provider messages and metadata remain private; retain only fixed error details
 // from a small, already bounded JSON response.
-function upstreamErrorCode(body) {
+function upstreamErrorDetails(body, provider, status) {
+  const details = { code: 'unknown', reason: 'unknown' }
   if (
     typeof body !== 'string' ||
     Buffer.byteLength(body, 'utf8') > MAX_UPSTREAM_ERROR_BODY_BYTES
   )
-    return undefined
+    return details
   let payload
   try {
     payload = JSON.parse(body)
   } catch {
-    return undefined
+    return details
   }
-  const code = payload?.error?.code
-  return UPSTREAM_ERROR_CODES.has(code) ? code : undefined
+  const error = payload?.error
+  if (!isPlainObject(error)) return details
+  if (UPSTREAM_ERROR_CODES.has(error.code)) details.code = error.code
+  if (provider !== 'openrouter' || ![402, 403].includes(status)) return details
+  if (Object.hasOwn(error, 'metadata')) {
+    if (!isPlainObject(error.metadata)) return details
+    if (Object.hasOwn(error.metadata, 'limit_source')) {
+      const source = error.metadata.limit_source
+      if (
+        typeof source === 'string' &&
+        Object.hasOwn(OPENROUTER_LIMIT_REASONS, source)
+      )
+        details.reason = OPENROUTER_LIMIT_REASONS[source]
+      return details
+    }
+  }
+  if (
+    status === 403 &&
+    typeof error.message === 'string' &&
+    /^Key limit exceeded(?:$|[\s.:(])/i.test(error.message)
+  )
+    details.reason = 'key_budget_exhausted'
+  return details
 }
 
 // Fetch's implicit five-minute header/body deadlines would preempt the
@@ -1249,11 +1281,16 @@ async function startAdapter(options = {}) {
               ? upstream.status
               : null,
           code: 'unknown',
+          reason: 'unknown',
         }
         diagnostics.last_upstream_error = rejection
-        rejection.code =
-          upstreamErrorCode(await drain(upstream, maxResponseBytes)) ??
-          'unknown'
+        const details = upstreamErrorDetails(
+          await drain(upstream, maxResponseBytes),
+          profile.name,
+          upstream.status
+        )
+        rejection.code = details.code
+        rejection.reason = details.reason
         sendAdapterError(res, new AdapterError('upstream_error', 'status'))
         return
       }
@@ -1921,14 +1958,16 @@ function upstreamErrorSummary(rows) {
           value.http_status >= 100 &&
           value.http_status <= 599)
       ) ||
-      !(UPSTREAM_ERROR_CODES.has(value.code) || value.code === 'unknown')
+      !(UPSTREAM_ERROR_CODES.has(value.code) || value.code === 'unknown') ||
+      (Object.hasOwn(value, 'reason') &&
+        !UPSTREAM_ERROR_REASONS.has(value.reason))
     )
       return 'OCR upstream_error status=unknown stage=adapter'
     rejection = value
   }
   if (!rows.length) return 'OCR upstream_error status=unavailable stage=adapter'
   if (!rejection) return 'OCR upstream_error status=none stage=adapter'
-  return `OCR upstream_error status=complete stage=adapter http_status=${rejection.http_status ?? 'unknown'} code=${rejection.code}`
+  return `OCR upstream_error status=complete stage=adapter http_status=${rejection.http_status ?? 'unknown'} code=${rejection.code} reason=${rejection.reason ?? 'unknown'}`
 }
 
 function commandSummary(args) {
@@ -2087,6 +2126,8 @@ function commandSummary(args) {
     upstreamErrorSummary(adapterRows),
     '',
     ...executionSummary(adapterRows, failureStatus === 'complete'),
+    compressionSummary(adapterRows, failureStatus === 'complete'),
+    'Compression estimates describe rebuilt snapshots, including background results that may not be applied; they are not usage or monetary savings.',
     '',
     'OCR budget counters use uncached input plus output as reported to OCR. Provider usage includes cached input; estimated USD charges it at the pinned cached-input rate. Failed calls can have provider usage without appearing in the OCR result counters.',
     '',
@@ -2113,7 +2154,54 @@ function commandSummary(args) {
   return 0
 }
 
-function createProgressFilter(write) {
+function createCompressionCounters() {
+  return {
+    started: 0,
+    rebuilt: 0,
+    unchanged: 0,
+    failed: 0,
+    cancelled: 0,
+    rebuilt_before_estimated_tokens: 0,
+    rebuilt_after_estimated_tokens: 0,
+  }
+}
+
+function compressionSummary(rows, complete) {
+  const counters = createCompressionCounters()
+  if (!complete || !rows.length) return 'OCR compression status=unavailable'
+  for (const row of rows) {
+    const receipt = row.compression
+    if (
+      receipt?.schema_version !== 1 ||
+      receipt.complete !== true ||
+      Object.keys(counters).some(
+        (field) => !Number.isSafeInteger(receipt[field]) || receipt[field] < 0
+      ) ||
+      receipt.started !==
+        receipt.rebuilt +
+          receipt.unchanged +
+          receipt.failed +
+          receipt.cancelled ||
+      (receipt.rebuilt === 0 &&
+        (receipt.rebuilt_before_estimated_tokens !== 0 ||
+          receipt.rebuilt_after_estimated_tokens !== 0))
+    )
+      return 'OCR compression status=unavailable'
+    for (const field of Object.keys(counters)) {
+      const sum = counters[field] + receipt[field]
+      if (!Number.isSafeInteger(sum))
+        return 'OCR compression status=unavailable'
+      counters[field] = sum
+    }
+  }
+  return `OCR compression status=complete stage=adapter ${Object.entries(
+    counters
+  )
+    .map(([field, value]) => `${field}=${value}`)
+    .join(' ')}`
+}
+
+function createProgressFilter(write, onCompression = () => {}) {
   const decoder = new StringDecoder('utf8')
   let pending = ''
   let dropping = false
@@ -2134,7 +2222,41 @@ function createProgressFilter(write) {
         /^\[ocr\] Summary: (\d{1,12}) file\(s\) reviewed, (\d{1,12}) comment\(s\), ~(\d{1,12}) token\(s\) used(?:[ ,]|$)/.exec(
           line
         )
-      if (tool) {
+      const compressionStarted =
+        /^\[ocr\] compression_started before_estimated_tokens=(\d{1,12})$/.exec(
+          line
+        )
+      const compressionFinished =
+        /^\[ocr\] compression_finished outcome=(rebuilt|unchanged|failed|cancelled) before_estimated_tokens=(\d{1,12}) after_estimated_tokens=(\d{1,12})$/.exec(
+          line
+        )
+      if (line.startsWith('[ocr] compression_')) {
+        let record = null
+        if (line === '[ocr] compression_telemetry version=1') {
+          record = { kind: 'ready' }
+          event = 'event=compression_ready version=1'
+        } else if (compressionStarted) {
+          record = { kind: 'started', before: Number(compressionStarted[1]) }
+          event = `event=compression_started before_estimated_tokens=${record.before}`
+        } else if (compressionFinished) {
+          record = {
+            kind: 'finished',
+            outcome: compressionFinished[1],
+            before: Number(compressionFinished[2]),
+            after: Number(compressionFinished[3]),
+          }
+          event = `event=compression_finished outcome=${record.outcome} before_estimated_tokens=${record.before} after_estimated_tokens=${record.after}`
+          if (record.outcome !== 'rebuilt' && record.before !== record.after) {
+            record = null
+            event = undefined
+          }
+        }
+        try {
+          onCompression(record)
+        } catch {
+          // Diagnostic consumers cannot change process output or completion.
+        }
+      } else if (tool) {
         const state = { '▶': 'started', '✔': 'completed', '✘': 'failed' }[
           tool[1]
         ]
@@ -2185,6 +2307,13 @@ function createProgressFilter(write) {
       else if (!dropping && pending.length + part.length <= 4096)
         pending += part
       else {
+        if ((pending + part.slice(0, 30)).startsWith('[ocr] compression_')) {
+          try {
+            onCompression(null)
+          } catch {
+            // Diagnostic consumers cannot change stream handling.
+          }
+        }
         pending = ''
         dropping = true
       }
@@ -2198,6 +2327,14 @@ function createProgressFilter(write) {
     },
     end() {
       consume(decoder.end())
+      if (pending.startsWith('[ocr] compression_')) {
+        try {
+          onCompression(null)
+        } catch {
+          // A truncated telemetry record remains informational.
+        }
+        pending = ''
+      }
       flush()
     },
   }
@@ -2211,6 +2348,10 @@ function createProgressReporter(write, options = {}) {
   let lastProgress = started
   let lastOutput = started
   let finished = false
+  let compressionReady = false
+  let compressionValid = true
+  let streamComplete = false
+  const compression = createCompressionCounters()
   function emit(line, time = now()) {
     lastOutput = time
     try {
@@ -2219,10 +2360,47 @@ function createProgressReporter(write, options = {}) {
       // Progress reporting must not change process results or private streams.
     }
   }
-  const filter = createProgressFilter((line) => {
-    lastProgress = now()
-    emit(line, lastProgress)
-  })
+  const filter = createProgressFilter(
+    (line) => {
+      lastProgress = now()
+      emit(line, lastProgress)
+    },
+    (record) => {
+      if (!record) {
+        compressionValid = false
+        return
+      }
+      if (record.kind === 'ready') compressionReady = true
+      else {
+        if (!compressionReady) compressionValid = false
+        const additions =
+          record.kind === 'started'
+            ? { started: 1 }
+            : {
+                [record.outcome]: 1,
+                ...(record.outcome === 'rebuilt'
+                  ? {
+                      rebuilt_before_estimated_tokens: record.before,
+                      rebuilt_after_estimated_tokens: record.after,
+                    }
+                  : {}),
+              }
+        for (const [field, value] of Object.entries(additions)) {
+          const sum = compression[field] + value
+          if (Number.isSafeInteger(sum)) compression[field] = sum
+          else compressionValid = false
+        }
+        if (
+          compression.rebuilt +
+            compression.unchanged +
+            compression.failed +
+            compression.cancelled >
+          compression.started
+        )
+          compressionValid = false
+      }
+    }
+  )
   const timer = schedule(() => {
     const time = now()
     if (!finished && time - lastOutput >= 60000) {
@@ -2245,6 +2423,7 @@ function createProgressReporter(write, options = {}) {
       finished = true
       cancel(timer)
       filter.end()
+      streamComplete = result.stderrComplete !== false
       const code =
         Number.isInteger(result.code) && result.code >= 0 && result.code <= 255
           ? result.code
@@ -2252,6 +2431,22 @@ function createProgressReporter(write, options = {}) {
       emit(
         `OCR progress event=process_exited exit_code=${code} signaled=${Boolean(result.signal)} spawn_failed=${Boolean(result.failed)} elapsed_ms=${Math.floor(now() - started)}\n`
       )
+    },
+    compression() {
+      return {
+        schema_version: 1,
+        complete:
+          finished &&
+          streamComplete &&
+          compressionReady &&
+          compressionValid &&
+          compression.started ===
+            compression.rebuilt +
+              compression.unchanged +
+              compression.failed +
+              compression.cancelled,
+        ...compression,
+      }
     },
   }
 }
@@ -2327,10 +2522,14 @@ async function commandRun(args) {
   }
   const profile = providerConfig(process.env.OCR_ADAPTER_PROVIDER)
   const apiKey = requireEnv(profile.secret)
+  let executionReceipt
+  let progress
   const adapter = await startAdapter({
     apiKey,
     provider: profile.name,
-    onClose: writeDiagnostics,
+    onClose: (snapshot) => {
+      executionReceipt = snapshot
+    },
   })
   const childEnv = { ...process.env }
   delete childEnv.MISTRAL_API_KEY
@@ -2351,14 +2550,17 @@ async function commandRun(args) {
       stdio: liveProgress ? ['inherit', 'inherit', 'pipe'] : 'inherit',
       env: childEnv,
     })
-    let progress
     let stderrClosed
+    let stderrComplete = false
     if (liveProgress) {
       // The workflow binds fd 3 to its console before redirecting fd 2 privately.
       // OCR receives neither this descriptor nor the option selecting it.
       progress = createProgressReporter((line) => fs.writeSync(3, line))
       stderrClosed = new Promise((resolve) =>
-        child.stderr.once('close', resolve)
+        child.stderr.once('close', () => {
+          stderrComplete = true
+          resolve()
+        })
       )
       child.stderr.on('data', (chunk) => {
         process.stderr.write(chunk)
@@ -2407,7 +2609,7 @@ async function commandRun(args) {
         }
       }
     } finally {
-      progress?.finish(result)
+      progress?.finish({ ...result, stderrComplete })
     }
     if (result.failed) {
       throw new AdapterError(
@@ -2421,7 +2623,16 @@ async function commandRun(args) {
     try {
       await adapter.close()
     } finally {
-      restoreConfig?.()
+      try {
+        if (executionReceipt) {
+          writeDiagnostics({
+            ...executionReceipt,
+            ...(progress ? { compression: progress.compression() } : {}),
+          })
+        }
+      } finally {
+        restoreConfig?.()
+      }
     }
   }
 }

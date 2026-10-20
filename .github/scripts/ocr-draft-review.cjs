@@ -528,7 +528,10 @@ async function runDraftReview(options) {
     const counts = ['selected', 'completed', 'failed', 'reused', 'waived']
       .map((key) => `${key}=${coverage[key] ?? 'unknown'}`)
       .join(' ')
-    const line = `OCR coverage status=${coverage.observed_status} ${counts}`
+    const failures = coverage.failure_classes
+      ? JSON.stringify(coverage.failure_classes)
+      : 'unknown'
+    const line = `OCR coverage status=${coverage.observed_status} ${counts} failure_classes=${failures}`
     appendSummary(line, write)
     if (coverage.observed_status !== 'complete') write(`::warning::${line}\n`)
     fs.writeFileSync(

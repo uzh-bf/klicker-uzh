@@ -108,5 +108,164 @@ establish current live savings or complete provider review acceptance.
   passed on refresh commit `10295e6830`; no qualifying findings. Source and
   verification remain unchanged by this progress update. Hosted CI is pending;
   no new application or paid-provider acceptance claimed.
-- Existing [PR #6531](https://github.com/uzh-bf/klicker-uzh/pull/6531) stays open;
-  merge and live activation remain separately gated.
+- Previous [PR #6531](https://github.com/uzh-bf/klicker-uzh/pull/6531) merged.
+  Its live canary completed; the follow-up below adds direct compression telemetry.
+
+
+## Compression telemetry follow-up
+
+### Approval summary
+
+The user approved adding sanitized compression counts and estimated context sizes,
+qualifying the new telemetry offline, and checking it during the next normal
+substantive review. This follow-up exposes compression activity without changing
+its algorithm, thresholds, prompts, file selection, model, reasoning, budgets,
+accounting, deadlines, retries or resume behavior. The patched engine emits fixed
+compression lifecycle records containing only outcome labels and nonnegative
+estimates. The adapter validates those records before live-log output, retains
+bounded aggregate counters in existing diagnostics, and prints an explicit
+compression summary alongside cost reporting. Missing telemetry remains unknown;
+draft released binaries are not represented as instrumented.
+
+Verification uses the existing repeated-compression Go tests, adapter tests and
+synthetic mock-provider stress experiment. It checks immutable instructions,
+rolling evidence, complete coverage, accurate totals, malformed-log rejection and
+unchanged process/usage results. Telemetry write failures remain informational.
+No application runtime or paid replay is required. Draft PR delivery is authorized;
+merge, readiness and a new paid canary remain separate actions. Post-merge live
+qualification should accompany the next normal substantive review. The three
+findings from the previous live canary are triaged read-only; their application
+fixes belong to their owning PR, outside this telemetry source change.
+
+### Execution details
+
+Approval mode: executable batch. Execution mode: standard (exact main model ID
+is unavailable). Reuse trees/final-review-compression on branch
+rs/ocr-compression-telemetry from v3 e8aa3c94579b42f8f54f8a6a1a69a6e5f48187dc.
+Continue this existing plan in project/; no new root or plan file.
+
+Ownership: main owns engine instrumentation and adapter integration, verification,
+Git/PR effects and final proof. These coupled producer/parser/receipt semantics
+remain main-owned. One read-only explore child triages the three public canary
+findings independently. A planner hardens this derived scope, the simplifier and
+risk reviewer inspect the committed telemetry range, and configured integrated
+final review follows local checks.
+
+Test portfolio:
+- Extend existing upstream compression tests for exact lifecycle outcomes and
+  before/after estimates, repeated summaries and silent disabled/no-work paths.
+- Extend existing adapter progress/summary/runner tests for strict bounded parsing,
+  secret sentinel rejection, complete/unknown receipt labeling, sink failure and
+  unchanged child exit/usage. No extra content-pinning tests.
+- Reuse the existing synthetic provider stress fixture and actual installer for
+  repeated compression and full selected-file coverage; record offline estimates
+  as synthetic, never provider pricing or live savings.
+
+One implementation slice: .github/open-code-review/ocr-compression.patch,
+.github/scripts/ocr-mistral-adapter.cjs and its existing test file,
+docs/ci-and-deployment.md, plus this plan's progress. Touch the installer only if
+its existing patch-derived version identity needs a verified correction; no new
+module or dependency is planned. The existing installer reruns affected Go race
+suites and rebuilds provenance using the changed patch digest.
+
+Acceptance: keyless Go race suites and real patched executable stress pass; valid
+telemetry reaches filtered live logs and seven-day diagnostics with correct
+counts and estimates, malformed/untrusted strings are suppressed, unknown remains
+unknown, all selected files complete, and settings/accounting/retry diffs are zero.
+Native formatting/syntax/hygiene/secret checks, exact diff review and configured
+reviews precede ordinary push and one draft PR against v3. No application runtime,
+UI change or screenshot applies.
+
+### Progress
+
+- Delivery: implemented, qualified and published as
+  [draft PR #6633](https://github.com/uzh-bf/klicker-uzh/pull/6633), targeting v3.
+- Reviews: planner approved; simplifier and focused risk reviewer found no
+  required changes; configured Claude final review passed the complete five-path
+  package. Canonical review JSON was validated before accepting the result.
+- Verification: 209 focused repository checks, six actual-binary runner checks,
+  upstream Go race suites and the five-file keyless stress passed. All 17
+  compression computations matched observed lifecycle records. Hosted codebase
+  and Playwright workflows passed at the implementation head.
+- Canary triage: all three findings on
+  [PR #5709](https://github.com/uzh-bf/klicker-uzh/pull/5709) are valid from public
+  source: interruption recovery needs state reconciliation, nullable JSON needs
+  the database-null sentinel, and selected KB mode validation needs effective
+  inherited configuration. Application fixes remain with that owning PR.
+
+Automatic draft OCR failed after upstream HTTP 403 rejections with zero provider
+responses. It provides no passed review or live telemetry evidence; route and
+credential repair remain outside this package.
+
+Live qualification is pending the next normal substantive review after merge.
+No extra paid replay, merge, readiness change or repository setting mutation was
+performed. Reasoning, budgets, accounting and retry behavior are unchanged.
+
+Terminal: reviewed ordinary push and draft publication complete; merge and
+post-merge live acceptance remain separately gated.
+
+
+### Telemetry protocol and receipt contract
+
+Fixed producer records: a version-one marker when a main task starts;
+started plus the input context estimate immediately before each eligible
+compression request; finished with outcome rebuilt, unchanged, failed or
+cancelled and the input/returned-snapshot estimates. Disabled/no-work paths do
+not create attempts. A rebuilt background snapshot can be superseded or discarded;
+these are computation counters, never application or savings claims. Each finish
+record is self-contained and concurrent attempts aggregate without path IDs.
+
+The parser accepts only anchored records with bounded safe nonnegative integers
+and fixed enums. It marks malformed fixed-prefix records, counter overflow,
+unfinished starts and truncated stderr unavailable/incomplete. A version marker,
+fully drained stream and balanced lifecycle establish zero or complete observed
+telemetry; absent markers (including released draft binaries) remain unknown.
+Context estimates sum only rebuilt input/returned snapshots and are labelled as
+snapshot estimates, separate from usage, billable tokens and USD. Mixed adapter
+lifetimes report unavailable unless every expected row has valid complete
+compression telemetry; this never changes cost completeness or publication.
+
+For commandRun only, capture the settled usage snapshot in onClose and persist it
+exactly once after bounded stderr drain and progress finalization, including
+configuration/spawn failure and signal cleanup. Preserve serve/stop persistence
+before listener closure, all shutdown bounds and exit behavior.
+
+Delegation Map: main owns the single telemetry implementation and its producer,
+parser, runner-receipt and summary tests; gate dependency is planner approval,
+acceptance is the stated keyless suites and source/settings checks. Explore owns
+the independent read-only canary triage. The configured simplifier, risk reviewer
+and final reviewer own their immutable committed-range passes. Stop at reviewed
+ordinary push and draft PR; record live proof as pending the next normal review.
+
+Verification fixture: /private/tmp/olat-efficiency-compression-probe.cjs, existing
+five-file synthetic provider. Run in the existing disposable build image with
+network disabled, OLAT_PROBE_ADAPTER pointing to this adapter and
+OLAT_PROBE_BINARY pointing to the freshly built patched executable, using
+node <fixture> --max-tokens 4000. Adapt only its private harness to collect the
+new progress records and compare attempts with actual synthetic summarization
+calls. No new repository fixture/module is needed. Run actual installer/races
+first; then the existing focused native runner contract and synthetic experiment.
+Test obligations are extend existing for upstream compression lifecycle, parser
+privacy, aggregate consistency/unknown states, runner late-stderr/signal/drain
+cleanup and heartbeat behavior; none for prose or provenance wording. Existing
+coverage and usage invariants remain the stress experiment's assertions.
+
+Planner round one: REVISE; accepted all four concrete findings. This section
+defines snapshot outcomes, explicit receipt ordering, incomplete-telemetry cases,
+ownership and the existing fixture. Installer changes remain unnecessary.
+
+Planner round two: APPROVED. Proceed with the approved telemetry slice.
+
+Telemetry implementation is complete. The first real-binary probe caught a
+marker emitted before JSON routing; moving the marker to main-task startup
+preserves structured stdout. The final installer, actual-binary and repeat
+compression checks below qualify that fix. No workflow settings changed.
+
+Fresh qualification: 209 repository checks passed; all six native runner tests
+passed with the actual patched executable, including the initially skipped
+binary case. Both upstream Go race suites passed. The network-disabled synthetic
+stress completed all five selected files and matched 17 compression lifecycle
+records to 17 mock summarization requests. These are synthetic counts, not live
+performance or savings measurements. Format/syntax and diff hygiene passed;
+unified-patch context whitespace is checked separately from ordinary source.
+No workflow, model, reasoning, accounting or retry settings changed.

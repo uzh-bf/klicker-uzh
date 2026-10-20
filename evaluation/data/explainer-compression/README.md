@@ -15,8 +15,8 @@ there is no new scorer, judge configuration or target-runtime dependency.
 
 Both existing cases retain `group: development`. The control role does not change the
 existing case's capture identity. These inspected examples are not holdouts.
-The four additional cases use `group: reserved`: authored and unrun validation
-examples, not blind holdouts. Their first prompts supply the relevant material.
+The four additional cases use `group: reserved`: authored validation examples,
+not blind holdouts. Their first prompts supply the relevant material.
 No case includes a reference model answer, and both development case objects
 and the original control rubric remain unchanged.
 Each case requires a fresh thread; its two turns share their parent chain.
@@ -87,9 +87,23 @@ the application-owned offline importer for its strict version-2 receipts.
 Keep additional private tool excerpts outside the importer receipt contract.
 Capture authorization, model configuration and budget remain separate from
 this corpus. Adding the cases does not authorize running them or reusing an
-exhausted ledger. Model performance on the new case remains unassessed.
+exhausted ledger. Execution status and private assessment custody are recorded
+in the current plan; corpus validity alone is not model-quality evidence.
 
-## Proposed broader comparison
+## Current comparison status
+
+The [approved attribution protocol](../../../project/2026-10-18-explainer-assessment-readiness-plan.md#approved-attribution-execution)
+uses the existing reserved group, two arms and one repeat: sixteen learner
+turns. It uses the exact separate attribution guidance, the original rubrics and
+manual checks of actual answers and passages. Its finite execution and private
+assessment are complete; that authority is consumed. Development controls and
+combined guidance remain outside that comparison. Further capture requires a
+named decision, not replay of a completed operation or historical command.
+The [real-course acceptance preparation](../../../project/2026-10-18-explainer-assessment-readiness-plan.md#real-course-acceptance-preparation)
+is a separate baseline diagnostic; this synthetic corpus is not real-course
+retrieval evidence and is not replaced or expanded by that protocol.
+The older 48-turn protocol below is preparation history, not an instruction to
+run both repetitions automatically.
 
 The protocol and budget proposal below are retained from the original preparation.
 The [current migration plan](../../../project/2026-10-17-trajectory-contract-plan.md)

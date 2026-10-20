@@ -504,6 +504,87 @@ test('progress heartbeats reflect quiet time and finish clears the timer exactly
   assert.doesNotMatch(records.join(''), /SENTINEL|::/)
 })
 
+test('compression telemetry records bounded snapshots and rejects incomplete or untrusted records', () => {
+  const marker = '[ocr] compression_telemetry version=1\n'
+  const start = '[ocr] compression_started before_estimated_tokens=200\n'
+  const end =
+    '[ocr] compression_finished outcome=rebuilt before_estimated_tokens=200 after_estimated_tokens=50\n'
+  const records = []
+  let time = 0
+  let tick
+  const progress = createProgressReporter((line) => records.push(line), {
+    now: () => time,
+    setInterval(callback) {
+      tick = callback
+      return { unref() {} }
+    },
+    clearInterval() {},
+  })
+  progress.write(marker + start + start)
+  assert.equal(progress.compression().complete, false)
+  time = 60000
+  tick()
+  assert.match(records.at(-1), /event=heartbeat elapsed_ms=60000 idle_ms=60000/)
+  progress.write(end.slice(0, 45))
+  progress.write(end.slice(45))
+  progress.write(
+    '[ocr] compression_finished outcome=cancelled before_estimated_tokens=200 after_estimated_tokens=200\n'
+  )
+  progress.finish({ code: 7 })
+  assert.deepEqual(progress.compression(), {
+    schema_version: 1,
+    complete: true,
+    started: 2,
+    rebuilt: 1,
+    unchanged: 0,
+    failed: 0,
+    cancelled: 1,
+    rebuilt_before_estimated_tokens: 200,
+    rebuilt_after_estimated_tokens: 50,
+  })
+  assert.match(records.join(''), /event=compression_finished outcome=rebuilt/)
+  const snapshot = progress.compression()
+  snapshot.started = 999
+  assert.equal(progress.compression().started, 2)
+  for (const [text, drained] of [
+    ['', true],
+    [marker + start, true],
+    [marker + end, true],
+    [start + end, true],
+    [marker + start + end.trimEnd(), true],
+    [marker + start + end, false],
+    [
+      marker +
+        '[ocr] compression_started before_estimated_tokens=1000000000000\n',
+      true,
+    ],
+    [marker + '[ocr] compression_finished outcome=PRIVATE_SENTINEL\n', true],
+    [
+      marker + '[ocr] compression_' + 'PRIVATE_SENTINEL'.repeat(400) + '\n',
+      true,
+    ],
+    [
+      marker +
+        '[ocr] compression_finished outcome=failed before_estimated_tokens=2 after_estimated_tokens=1\n',
+      true,
+    ],
+  ]) {
+    const live = []
+    const reporter = createProgressReporter((line) => live.push(line))
+    reporter.write(text)
+    reporter.finish({ code: 0, stderrComplete: drained })
+    assert.equal(reporter.compression().complete, false)
+    assert.doesNotMatch(live.join(''), /PRIVATE_SENTINEL|::/)
+  }
+  const zero = createProgressReporter(() => {
+    throw new Error('synthetic sink failure')
+  })
+  zero.write(marker)
+  zero.finish({ code: 0 })
+  assert.equal(zero.compression().complete, true)
+  assert.equal(zero.compression().started, 0)
+})
+
 test('heartbeat and terminal sink failures preserve lifecycle cleanup', () => {
   let time = 0
   let tick
@@ -876,22 +957,26 @@ test('upstream error summaries validate fields and retain the final non-null rej
     last_upstream_error,
   })
   const first = row({ http_status: 401, code: 401 })
-  const last = row({ http_status: 402, code: 402 })
+  const last = row({
+    http_status: 402,
+    code: 402,
+    reason: 'key_budget_exhausted',
+  })
   const cases = [
     [[], 'status=unavailable'],
     [[{ schema_version: 1 }], 'status=unavailable'],
     [[row(null)], 'status=none'],
     [
       [first, last, row(null)],
-      'status=complete stage=adapter http_status=402 code=402',
+      'status=complete stage=adapter http_status=402 code=402 reason=key_budget_exhausted',
     ],
     [
       [row({ http_status: 404, code: 'unknown' })],
-      'status=complete stage=adapter http_status=404 code=unknown',
+      'status=complete stage=adapter http_status=404 code=unknown reason=unknown',
     ],
     [
       [row({ http_status: null, code: 'unknown' })],
-      'status=complete stage=adapter http_status=unknown code=unknown',
+      'status=complete stage=adapter http_status=unknown code=unknown reason=unknown',
     ],
     ...[
       'PRIVATE_PROVIDER_SENTINEL',
@@ -899,6 +984,8 @@ test('upstream error summaries validate fields and retain the final non-null rej
       { http_status: 999, code: 401 },
       { http_status: 401, code: 'PRIVATE_PROVIDER_SENTINEL' },
       { http_status: 401, code: 418 },
+      { http_status: 403, code: 403, reason: 'PRIVATE_PROVIDER_SENTINEL' },
+      { http_status: 403, code: 403, reason: null },
     ].map((value) => [[first, row(value)], 'status=unknown']),
   ]
   try {
@@ -958,6 +1045,17 @@ test('execution summary validates new timing and history independently of legacy
       miss_unknown_turn: 1,
       miss_ambiguous_turn: 1,
     })
+    receipt.compression = {
+      schema_version: 1,
+      complete: true,
+      started: 2,
+      rebuilt: 1,
+      unchanged: 1,
+      failed: 0,
+      cancelled: 0,
+      rebuilt_before_estimated_tokens: 200,
+      rebuilt_after_estimated_tokens: 50,
+    }
     const receiptPath = path.join(directory, 'receipt.jsonl')
     const summaryPath = path.join(directory, 'summary.md')
     fs.writeFileSync(
@@ -978,6 +1076,36 @@ test('execution summary validates new timing and history independently of legacy
       /^OCR history status=complete stage=adapter misses=6 miss_no_reasoning=2 miss_unknown_turn=2 miss_ambiguous_turn=2$/m
     )
     assert.doesNotMatch(result.stdout, /PRIVATE_SENTINEL/)
+    assert.match(
+      result.stdout,
+      /^OCR compression status=complete stage=adapter started=4 rebuilt=2 unchanged=2 failed=0 cancelled=0 rebuilt_before_estimated_tokens=400 rebuilt_after_estimated_tokens=100$/m
+    )
+    for (const compression of [
+      undefined,
+      { ...receipt.compression, complete: false },
+      { ...receipt.compression, started: 1 },
+      {
+        ...receipt.compression,
+        rebuilt_before_estimated_tokens: 'PRIVATE_SENTINEL',
+      },
+      {
+        ...receipt.compression,
+        rebuilt_before_estimated_tokens: Number.MAX_SAFE_INTEGER,
+      },
+    ]) {
+      const row = { ...receipt, compression }
+      fs.writeFileSync(
+        receiptPath,
+        [receipt, row, row].map(JSON.stringify).join('\n')
+      )
+      result = await runCli(['summary', receiptPath, 'adapter=3'], {
+        GITHUB_STEP_SUMMARY: summaryPath,
+      })
+      assert.equal(result.code, 0)
+      assert.match(result.stdout, /^OCR compression status=unavailable$/m)
+      assert.match(result.stdout, /^OCR cost status=complete reasons=none$/m)
+      assert.doesNotMatch(result.stdout, /PRIVATE_SENTINEL/)
+    }
     for (const variant of ['legacy', 'invalid', 'unfinished', 'usage']) {
       const row = structuredClone(receipt)
       if (variant === 'legacy') {
@@ -2911,6 +3039,7 @@ test('rejection diagnostics keep only HTTP status and allowlisted numeric codes'
       assert.deepEqual(receipt.last_upstream_error, {
         http_status: 401,
         code: expected,
+        reason: 'unknown',
       })
       assert.equal(receipt.upstream_attempts, 1)
       assert.equal(receipt.responses, 0)
@@ -2956,10 +3085,102 @@ test('rejection diagnostics keep only HTTP status and allowlisted numeric codes'
       assert.deepEqual(adapter.diagnostics().last_upstream_error, {
         http_status: 401,
         code: 'unknown',
+        reason: 'unknown',
       })
       assert.equal(adapter.diagnostics().failures.upstream_rejected, 1)
     } finally {
       await adapter.close()
+    }
+  }
+})
+
+test('OpenRouter budget reasons are content-free, bounded and provider-scoped', async () => {
+  const secret = 'PRIVATE_PROVIDER_SENTINEL'
+  const legacy = `Key limit exceeded (daily limit). ${secret}`
+  const metadata = (limit_source) => ({ limit_source, details: secret })
+  const cases = [
+    ...[
+      ['openrouter_key_limit', 'key_budget_exhausted'],
+      ['openrouter_guardrail_budget', 'guardrail_budget_exhausted'],
+      ['openrouter_in_flight_budget', 'in_flight_budget_exhausted'],
+      ['openrouter_credits', 'credits_insufficient'],
+    ].flatMap(([source, reason]) =>
+      [402, 403].map((status) => [
+        status,
+        { metadata: metadata(source) },
+        reason,
+      ])
+    ),
+    [403, { message: legacy }, 'key_budget_exhausted'],
+    [
+      403,
+      { message: 'Key limit exceeded', metadata: {} },
+      'key_budget_exhausted',
+    ],
+    [402, { message: legacy }, 'unknown'],
+    [401, { metadata: metadata('openrouter_key_limit') }, 'unknown'],
+    [
+      403,
+      { message: legacy, metadata: metadata('openrouter_credits') },
+      'credits_insufficient',
+    ],
+    ...[
+      null,
+      [],
+      metadata(null),
+      metadata({}),
+      metadata(secret),
+      metadata('__proto__'),
+    ].map((value) => [403, { message: legacy, metadata: value }, 'unknown']),
+    ...[
+      secret,
+      `Not ${legacy}`,
+      `${secret} ${legacy}`,
+      'Key limit exceededly',
+    ].map((message) => [403, { message }, 'unknown']),
+    [403, {}, 'unknown'],
+    [
+      403,
+      {
+        metadata: metadata('openrouter_key_limit'),
+        padding: secret.repeat(2000),
+      },
+      'unknown',
+      'unknown',
+    ],
+  ]
+  for (const provider of ['openrouter', 'mistral']) {
+    for (const [status, error, reason, expectedCode = status] of cases) {
+      const adapter = await startAdapter({
+        provider,
+        apiKey: secret,
+        fetchImpl: upstream(() =>
+          jsonResponse(status, { error: { code: status, ...error } })
+        ),
+      })
+      try {
+        const response = await postJson(adapter, {
+          messages: [{ role: 'user', content: 'synthetic' }],
+        })
+        assert.equal(response.status, 502)
+        assert.equal(response.json.error.code, 'upstream_error')
+        const receipt = adapter.diagnostics()
+        assert.deepEqual(receipt.last_upstream_error, {
+          http_status: status,
+          code: expectedCode,
+          reason: provider === 'openrouter' ? reason : 'unknown',
+        })
+        assert.equal(receipt.upstream_attempts, 1)
+        assert.equal(receipt.responses, 0)
+        assert.equal(receipt.failures.upstream_rejected, 1)
+        assert.equal(estimateCost(JSON.stringify(receipt)), null)
+        assert.doesNotMatch(
+          JSON.stringify(receipt) + response.text,
+          /PRIVATE_PROVIDER_SENTINEL/
+        )
+      } finally {
+        await adapter.close()
+      }
     }
   }
 })
@@ -2971,7 +3192,7 @@ test('late rejection bodies cannot overwrite a newer observed error or an earlie
   const fetchImpl = upstream((_request, index) =>
     index === 1
       ? {
-          status: 401,
+          status: 403,
           ok: false,
           body: {
             getReader: () => ({
@@ -2987,24 +3208,35 @@ test('late rejection bodies cannot overwrite a newer observed error or an earlie
             }),
           },
         }
-      : jsonResponse(402, { error: { code: 402 } })
+      : jsonResponse(402, {
+          error: {
+            code: 402,
+            metadata: { limit_source: 'openrouter_credits' },
+          },
+        })
   )
-  const adapter = await startAdapter({ apiKey: 'synthetic', fetchImpl })
+  const adapter = await startAdapter({
+    provider: 'openrouter',
+    apiKey: 'synthetic',
+    fetchImpl,
+  })
   const body = { messages: [{ role: 'user', content: 'synthetic' }] }
   const first = postJson(adapter, body)
   try {
     await draining.promise
     const snapshot = adapter.diagnostics()
     assert.equal((await postJson(adapter, body)).status, 502)
-    release.resolve('{"error":{"code":401}}')
+    release.resolve('{"error":{"code":403,"message":"Key limit exceeded"}}')
     assert.equal((await first).status, 502)
     assert.deepEqual(adapter.diagnostics().last_upstream_error, {
       http_status: 402,
       code: 402,
+      reason: 'credits_insufficient',
     })
     assert.deepEqual(snapshot.last_upstream_error, {
-      http_status: 401,
+      http_status: 403,
       code: 'unknown',
+      reason: 'unknown',
     })
     assert.equal(adapter.diagnostics().upstream_attempts, 2)
     assert.equal(adapter.diagnostics().failures.upstream_rejected, 2)
@@ -3485,6 +3717,7 @@ test('rejection status survives stalled bodies and client cancellation under the
       const receipt = adapter.diagnostics()
       assert.equal(receipt.last_upstream_error.http_status, 429)
       assert.equal(receipt.last_upstream_error.code, 'unknown')
+      assert.equal(receipt.last_upstream_error.reason, 'unknown')
       assert.equal(receipt.upstream_attempts, 1)
       assert.equal(receipt.responses, 0)
       assert.equal(receipt.failures.upstream_throttled, 1)
@@ -3877,9 +4110,12 @@ test('a missing live-log descriptor never falls back into result or private stde
 })
 
 test('live progress cleanup is bounded when a descendant keeps stderr open', async (t) => {
+  const directory = fs.mkdtempSync(path.join(os.tmpdir(), 'ocr-drain-'))
+  const diagnosticsPath = path.join(directory, 'diagnostics.jsonl')
   const script = `
     const { spawn } = require('node:child_process')
     const fs = require('node:fs')
+    fs.writeSync(2, '[ocr] compression_telemetry version=1\\n')
     const descendant = spawn(process.execPath, ['-e', 'setInterval(() => {}, 1000)'], {
       detached: true, stdio: ['ignore', 'ignore', 'inherit']
     })
@@ -3895,6 +4131,7 @@ test('live progress cleanup is bounded when a descendant keeps stderr open', asy
         ...process.env,
         MISTRAL_API_KEY: 'synthetic-upstream-key',
         OCR_ADAPTER_PROGRESS_FD: '3',
+        OCR_ADAPTER_DIAGNOSTICS_PATH: diagnosticsPath,
       },
       stdio: ['ignore', 'pipe', 'pipe', 'pipe'],
     }
@@ -3915,6 +4152,7 @@ test('live progress cleanup is bounded when a descendant keeps stderr open', asy
       } catch {}
     }
     if (child.exitCode === null) child.kill('SIGKILL')
+    fs.rmSync(directory, { recursive: true, force: true })
   })
   await waitFor(() => {
     try {
@@ -3935,8 +4173,49 @@ test('live progress cleanup is bounded when a descendant keeps stderr open', asy
     const receipt = JSON.parse(stdout)
     assert.doesNotThrow(() => process.kill(receipt.pid, 0))
     await assert.rejects(fetch(receipt.url, { method: 'POST', body: '{}' }))
+    const diagnostics = JSON.parse(fs.readFileSync(diagnosticsPath, 'utf8'))
+    assert.equal(diagnostics.compression.complete, false)
+    assert.equal(diagnostics.compression.started, 0)
   } finally {
     clearTimeout(timer)
+  }
+})
+
+test('run retains compression telemetry arriving after direct-child exit before persisting one receipt', async () => {
+  const directory = fs.mkdtempSync(path.join(os.tmpdir(), 'ocr-late-stderr-'))
+  const diagnosticsPath = path.join(directory, 'diagnostics.jsonl')
+  const script = `
+    const { spawn } = require('node:child_process')
+    process.stderr.write('[ocr] compression_telemetry version=1\\n[ocr] compression_started before_estimated_tokens=200\\n')
+    const descendant = spawn(process.execPath, ['-e',
+      "setTimeout(() => process.stderr.write('[ocr] compression_finished outcome=rebuilt before_estimated_tokens=200 after_estimated_tokens=50\\\\n'), 100)"
+    ], { detached: true, stdio: ['ignore', 'ignore', 'inherit'] })
+    descendant.unref()
+    process.exitCode = 7
+  `
+  try {
+    const result = await runCli(
+      ['run', '--', process.execPath, '-e', script],
+      {
+        MISTRAL_API_KEY: 'synthetic-upstream-key',
+        OCR_ADAPTER_PROGRESS_FD: '3',
+        OCR_ADAPTER_DIAGNOSTICS_PATH: diagnosticsPath,
+      },
+      { liveProgress: true }
+    )
+    assert.equal(result.code, 7)
+    const rows = fs.readFileSync(diagnosticsPath, 'utf8').trim().split('\n')
+    assert.equal(rows.length, 1)
+    const receipt = JSON.parse(rows[0])
+    assert.equal(receipt.compression.complete, true)
+    assert.equal(receipt.compression.started, 1)
+    assert.equal(receipt.compression.rebuilt, 1)
+    assert.equal(receipt.compression.rebuilt_after_estimated_tokens, 50)
+    assert.equal(receipt.requests, 0)
+    assert.match(result.live, /event=compression_finished outcome=rebuilt/)
+    assert.match(result.live, /event=process_exited exit_code=7/)
+  } finally {
+    fs.rmSync(directory, { recursive: true, force: true })
   }
 })
 

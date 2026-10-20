@@ -470,6 +470,7 @@ Shard durations differ by architecture, so `playwright/timings.json` names the a
   with the requested workflow URL.
 - **Publisher rejection diagnostics**: A failed validation or publisher step keeps its exact rejected JSON input as a one-day workflow artifact. The individual job retains its initial, resumed, or final result JSON as applicable. An allowed resume that remains partial is reported as an incomplete review instead of an identity mismatch. The stack job normally retains the combined code result and optional topology result. An incremental validation or resume failure may instead retain the exact affected range result JSONs, while a combine failure retains every range result passed to the failed combine step. The workflow never adds stderr, Mistral configuration, stack manifests, review-range directories as directories, unrelated wildcard inputs, or runner workspaces to these artifacts. Treat the payloads as public because this repository is public: use them only for offline parser diagnosis, never as authorization to replay or publish a review. The upload runs only after the corresponding validation or publisher step fails and does not change the failed job or final status. Live artifact proof remains a post-merge check because `pull_request_target` uses workflow code from the default branch. See [OpenCodeReview publisher rejection payloads](./solutions/integration/opencodereview-publisher-rejection-payloads.md) for the failure pattern and safe diagnostic boundary.
 - **Final-review compression engine**: The manual individual and stack jobs build OCR 1.13.0 from immutable upstream commit `1672852136fc87748249d22bce0819f33419ea79` using Go 1.26.9, a verified source archive and the repository's compression patch. Installation runs the affected upstream race tests and fails closed; it never falls back to an unpatched executable. The installer and patch participate in review policy identity, and every attempt checks the executable's source/patch version marker. The compressor preserves the original review instructions, reserves their context cost, keeps one rolling summary in compressible history and includes evicted tool calls and results in the next summary. Group dispatch reserves rendered rules and maximum plan output before splitting oversized groups without excluding any selected path; oversized singletons still fail. Prompt, completion and aggregate ceilings, model, reasoning effort and complete-coverage validation remain unchanged. Synthetic request/token improvements establish an execution regression fix; complete live review remains a separate activation check.
+- **Compression telemetry**: Patched manual binaries emit fixed lifecycle records with estimated context tokens before and after each compression computation. The adapter exposes sanitized progress events and bounded aggregate counts in the existing execution artifact and job summary. `rebuilt` means a usable snapshot was produced; a background snapshot can later be discarded, so these estimates are neither applied-context reductions nor billable usage or USD savings. Failed, cancelled and unchanged computations retain distinct counts. A version marker and fully drained, balanced records establish complete telemetry, including zero attempts. Missing instrumentation, malformed records, overflow or an incomplete stderr drain reports telemetry as unavailable while preserving cost accounting and the review outcome. Released draft binaries remain uninstrumented.
 - **Offline qualification**: Public-safe synthetic receipts and a dependency-free evaluator live under `.github/open-code-review/qualification/`. The evaluator's strict synthetic contract covers explicit blocker and false-blocker dispositions, prompt-injection text treated as untrusted data, valid and invalid stack topology, exact path ownership, incomplete coverage, and token-counter consistency. It is intentionally separate from the runtime OCR parser and does not claim to validate live provider receipts. Run `node --test .github/open-code-review/qualification/final-review-qualification.test.js` and `node .github/open-code-review/qualification/final-review-qualification.js`; this checks deterministic local contracts and reports offline-only metrics. OCR 1.13.0 synthetic qualification exercises the released binary against the same adapter without a live key. Source tests cover token translation, native thinking-history restoration, bounded requests and cache, capability authentication, child isolation, and shutdown. The adapter digest participates in final-review policy identity, so earlier route evidence cannot silently qualify the new route. Neither offline path qualifies live model behavior, proves first-trigger success, or makes a merge-readiness decision. Real `/final-review` and `/final-review-stack` proof remains a post-merge gate because `pull_request_target` executes trusted default-branch workflow code.
 
 Manual workflows run `final-ai-review.test.js` and
@@ -562,13 +563,29 @@ are kept.
 Adapter receipts retain the latest observed rejection as `last_upstream_error`
 with an integer HTTP status and an allowlisted numeric `error.code`, or `unknown`.
 Only codes 400, 401, 402, 403, 408, 429, 502 and 503 are retained from the top-level
-JSON error envelope ([OpenRouter error codes](https://openrouter.ai/docs/api_reference/errors-and-debugging)). Messages, metadata and arbitrary codes are discarded. Parsing
+JSON error envelope ([OpenRouter error codes](https://openrouter.ai/docs/api_reference/errors-and-debugging)). For OpenRouter HTTP 402/403, a fixed `reason` distinguishes
+`key_budget_exhausted`, `guardrail_budget_exhausted`,
+`in_flight_budget_exhausted` and `credits_insufficient` from the documented
+`error.metadata.limit_source` allowlist. HTTP 403 can also identify a key cap
+from the documented leading `Key limit exceeded` phrase when structured limit
+evidence is absent. Unknown or malformed structured evidence blocks that legacy
+fallback; an arbitrary 403 remains `unknown`. These classifications follow the
+[OpenRouter limits contract](https://openrouter.ai/docs/api_reference/limits).
+Messages, metadata values, account amounts and arbitrary codes are discarded. Parsing
 uses at most 16 KiB of an already bounded response; a body read failure preserves
 the observed HTTP status. Concurrent rejection bodies cannot overwrite a later
 observed rejection. The `OCR upstream_error` summary revalidates these fields and
 uses the last non-null rejection in receipt order, separately from cost and usage
-accounting. Older receipts report this diagnostic as unavailable. Preflight and
+accounting. Older receipts with status/code but no reason report `reason=unknown`;
+receipts without status/code report this diagnostic as unavailable. Preflight and
 stack topology `callMistral` receipts retain their existing behavior.
+
+Draft `OCR coverage` log and summary lines also include the existing sanitized
+`failure_classes` counts (`budget`, `provider`, `timeout`, or `other`) from the
+outcome diagnostic. These are OCR coverage-item classifications, independent of
+the adapter's provider-budget reasons. They do not identify an individual
+request or establish an account-spending cause. Missing coverage evidence is
+`unknown`; raw failed-item reasons, paths and arbitrary classifications stay private.
 
 History diagnostics retain the existing total misses and add one reason for
 each miss: the fallback lacked usable reasoning, no exact reasoned turn matched,
