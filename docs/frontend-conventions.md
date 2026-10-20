@@ -65,17 +65,25 @@ unchanged.
 
 ## Components and styling
 
-- **Local fonts**: all five Next.js apps load Source Sans 3 through
-  `packages/shared-components/src/font.ts`; Chat and Manage also use JetBrains
-  Mono. Both families use package-local WOFF2 assets. Keep the existing exports
-  and CSS variables when changing typography, and keep production builds
-  independent of external font services. Upstream versions, licenses, and asset
-  hashes live beside the files in
-  `packages/shared-components/src/fonts/PROVENANCE.md`.
+- **Local fonts**: the design system's compiled CSS supplies the self-hosted
+  Source Sans 3 and JetBrains Mono faces. The five Next.js roots select
+  `data-theme="uzh"`; the shared token bridge maps `font-sans` and `font-mono`
+  to those runtime theme values. Keep production builds independent of external
+  font services and avoid adding duplicate `next/font` declarations. Historical
+  package-local assets and provenance remain under
+  `packages/shared-components/src/fonts/` but are no longer imported.
 - **Design system first**: `@uzh-bf/design-system` provides `Button`, `Modal`, `FormikTextField`, `H1–H4`, `toast`, etc. Design-system components take the test hook as a prop: `data={{ cy: 'save-button' }}`; raw elements use a plain `data-cy` attribute.
-- **Tailwind v4, CSS-first**: no `tailwind.config.js` — theme tokens live in each app's `globals.css` (`@theme` block, `--color-uzh-blue`, shadcn-style tokens) and the design system is scanned via `@source "../node_modules/@uzh-bf/design-system/src"`. Conditional classes via `twMerge`.
+- **Tailwind v4, CSS-first**: no `tailwind.config.js`. Each stylesheet imports
+  `@uzh-bf/design-system/css` unlayered, followed by Tailwind theme/utilities
+  without a second preflight. `packages/shared-components/src/theme.css`
+  registers shared token names and Klicker-specific colour families; runtime
+  design-system values remain authoritative. The four Pages Router apps and
+  docs also import `theme-app.css` for focus-ring and animation tokens; Chat
+  keeps the design-system ring defaults. Docusaurus owns its root `data-theme`,
+  so docs selects UZH colours through explicit theme-variable assignments.
+  Conditional classes use `twMerge`.
 - **Shared components** (`packages/shared-components`): Loader, DataTable, question renderers, Leaderboard, charts, evaluation. **Deep-import** them (`@klicker-uzh/shared-components/src/Loader`) — there is no barrel index.
-- **Animations**: `motion` (declared as a dependency of `packages/shared-components`) powers the shared Leaderboard — podium rise-in, FLIP rank reordering on score changes, and staggered row entry. Gate every motion animation on `useReducedMotion()` from `motion/react`; keep durations at or below 0.5s. For app-local animation needs, prefer the Tailwind v4 `--animate-*` tokens already defined in each app's `globals.css` (e.g. `animate-fade-in`) or the installed `tw-animate-css` utilities over adding another JS animation dependency.
+- **Animations**: `motion` (declared as a dependency of `packages/shared-components`) powers the shared Leaderboard — podium rise-in, FLIP rank reordering on score changes, and staggered row entry. Gate every motion animation on `useReducedMotion()` from `motion/react`; keep durations at or below 0.5s. For app-local animation needs, prefer the Tailwind v4 `--animate-*` tokens defined in the shared `theme-app.css` (e.g. `animate-fade-in`) or the installed `tw-animate-css` utilities over adding another JS animation dependency.
 - Function components with hooks only; PascalCase files; app-local components under `src/components/` with relative imports.
 - Clickable rows must ignore events from marked interactive subtrees so opening a dropdown or modal cannot also trigger the row navigation.
 - Async Formik submit handlers must return or await their mutation promise so `isSubmitting` remains active and users cannot navigate away before the save completes.
