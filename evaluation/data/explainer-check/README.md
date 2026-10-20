@@ -28,14 +28,17 @@ version-2 budget file:
 ```bash
 node evaluation/run-tutor-trajectories.mjs \
   --corpus evaluation/data/explainer-check/corpus.json \
-  --arm baseline --repeats 2 \
+  --arm baseline --repeats 1 \
   --output project/_local/explainer-check-baseline.jsonl \
   --budget-file "$KLICKER_EVAL_BUDGET_FILE"
 ```
 
-Repeat with `--arm candidate` after switching the running app. Two repeats
-submit 22 turns per arm (44 in total), within the default 120-turn budget.
-A paid capture still needs its own approval and spend cap.
+Repeat with `--arm candidate` after switching the running app. One repeat
+submits 11 turns per arm. Each turn makes two guarded model calls, and the
+guard reserves the full context cost for each call. Both arms together
+therefore reserve about US$4.71 of the default US$5 budget. More repeats need
+the extended budget option. A paid capture still needs its own approval and
+spend cap.
 
 ## Scoring
 
