@@ -50,6 +50,15 @@ export default {
         high: 'Hoch',
         xhigh: 'Sehr hoch',
       },
+      answerStyleLabel: 'Antwortstil',
+      answerStyleHint:
+        'Ändert Länge und Aufbau neuer Antworten. Frühere Antworten bleiben, wie sie sind.',
+      answerStyles: {
+        balanced: 'Ausgewogen',
+        brief: 'Kurz',
+        bullets: 'Schritt für Schritt in Stichpunkten',
+        detailed: 'Ausführlich',
+      },
     },
     credits: {
       title: 'Verfügbare Credits',

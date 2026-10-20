@@ -21,6 +21,7 @@ import {
 import { after, type NextRequest, NextResponse } from 'next/server'
 import { z } from 'zod'
 import type { ReasoningEffort } from '@/src/lib/config/reasoning'
+import { answerStyleSchema } from '@/src/lib/server/answerStyleInstructions'
 import { withChatbotAuth } from '@/src/lib/server/apiGuards'
 import { withCalculatorTool } from '@/src/lib/server/calculatorTool'
 import {
@@ -669,6 +670,7 @@ export async function POST(
     selectedModel: z.string().min(1),
     selectedMode: z.string().optional().default('tutor'),
     reasoningEffort: z.string().min(1).optional().default('none'),
+    answerStyle: answerStyleSchema,
     parentId: z.string().min(1).nullable().optional(),
     assistantMessageId: z.string().min(1),
     allowRegeneration: z.boolean().optional().default(false),
@@ -699,6 +701,7 @@ export async function POST(
     threadId,
     selectedMode: requestedMode,
     reasoningEffort: requestedReasoningEffort,
+    answerStyle,
     parentId,
     assistantMessageId,
     allowRegeneration,
@@ -1177,6 +1180,7 @@ export async function POST(
         courseDisplayName: chatbot.course.displayName,
         toolNames,
         standardModeConfig: chatbot.standardModeConfig,
+        answerStyle,
       }
     )
 
@@ -1330,6 +1334,7 @@ export async function POST(
       selectedMode,
       reasoningEffort: appliedReasoningEffort,
       allowedReasoningEfforts,
+      answerStyle,
       maxOutputTokens: maxOutputTokens ?? null,
       toolCount: toolNames.length,
       toolNames,

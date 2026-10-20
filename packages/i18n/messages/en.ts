@@ -49,6 +49,15 @@ export default {
         high: 'High',
         xhigh: 'Extra high',
       },
+      answerStyleLabel: 'Answer style',
+      answerStyleHint:
+        'Changes the length and layout of new answers. Earlier answers stay as they are.',
+      answerStyles: {
+        balanced: 'Balanced',
+        brief: 'Brief',
+        bullets: 'Step-by-step bullet points',
+        detailed: 'Detailed',
+      },
     },
     credits: {
       title: 'Available credits',

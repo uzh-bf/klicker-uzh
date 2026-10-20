@@ -822,15 +822,17 @@ this order:
    section for Quizzer, when valid and present;
 4. the platform-owned Tutor, Explainer, or Quizzer contract from `DEFAULT_PROMPT`, or instead the
    lecturer-defined persona for a custom mode;
-5. fixed image-attachment description handling from
+5. the student answer-style preference, when the student chose a non-default style (see
+   [Student answer style](#student-answer-style));
+6. fixed image-attachment description handling from
    `src/lib/server/inputContextInstructions.ts:withInputContextContract`;
-6. fixed course-scope, evidence, tool/conversation privacy, safety, non-disclosure, and epistemic
+7. fixed course-scope, evidence, tool/conversation privacy, safety, non-disclosure, and epistemic
    integrity policy from `src/lib/server/coursePolicyInstructions.ts:withCoursePolicyContract`;
-7. fixed Markdown, inline/display mathematics, and fenced-code rules from
+8. fixed Markdown, inline/display mathematics, and fenced-code rules from
    `src/lib/server/outputFormatInstructions.ts:withOutputFormatContract`;
-8. the conditional citation policy when a `doc_query`-style tool is available; and
-9. the fixed conversation-language and Swiss Standard German policy from
-   `src/lib/server/languageInstructions.ts:withLanguageStyleContract`.
+9. the conditional citation policy when a `doc_query`-style tool is available; and
+10. the fixed conversation-language and Swiss Standard German policy from
+    `src/lib/server/languageInstructions.ts:withLanguageStyleContract`.
 
 The course-data and typed-context sections explicitly treat their entire JSON values as data
 rather than instructions. Quotes, newlines, and instruction-like text in a display name or typed
@@ -876,6 +878,28 @@ therefore restates the rule where the model reads it last: `prepareStep` appends
 step. The reminder names no language. The model identifies the user's language itself, which works
 for any language and avoids a brittle server-side detector on short or mixed messages. The reminder
 leaves `instructions` unchanged, so the prompt-cache identity is stable, and it is never persisted.
+
+### Student answer style
+
+Students choose an "Answer style" (DE "Antwortstil") in the sidebar settings panel or in the
+compact embedded header: `balanced` (default), `brief`, `bullets` (step-by-step bullet points), or
+`detailed` ([ADR 0054](./adr/0054-student-answer-style-layer.md)). The list lives in
+`src/lib/config/answerStyles.ts`. The preset is stored only in the browser's `settings-storage`
+entry and sent as `answerStyle` with each chat request from `useChatResponse`. The route's
+`answerStyleSchema` (`src/lib/server/answerStyleInstructions.ts`) maps a missing or unknown value to
+`balanced` instead of rejecting the request.
+
+`balanced` adds nothing, so the default prompt, its prompt-cache key, and `systemPromptHash` are
+unchanged. Any other preset renders `src/prompts/student-answer-style.hbs` as one section after the
+mode sections. The template limits the preference to length and structure of explanations and
+feedback. It never changes the Tutor's teaching move or how much of a solution it reveals, never
+touches Quizzer question stems, options, or structured output, yields voice, tone, and any
+lecturer-named length or format to lecturer guidance, and yields to every fixed contract below it.
+The trailing per-step message does not repeat the style. `request.context` logs the applied
+`answerStyle` next to the reasoning effort, which explains a differing `systemPromptHash`.
+
+The preference is per browser. Embedded iframes whose browser blocks third-party storage can lose it
+on reload, the same limit as the persisted mode selection.
 
 ## Sources and citations
 

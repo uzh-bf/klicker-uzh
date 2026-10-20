@@ -31,6 +31,7 @@ const PARTIAL_RETRIEVAL_MARK = 'Retrieved results are a partial'
 const OUTPUT_FORMAT_MARK = 'Output format:'
 const CITATION_MARK = '<SYNTHETIC-CITATION-CONTRACT>'
 const LANGUAGE_MARK = 'Swiss Standard German orthography'
+const ANSWER_STYLE_MARK = '## Student answer-style preference'
 
 const DOC_TOOL = 'KB_doc_query'
 const NON_DOC_TOOL = 'get_weather'
@@ -429,5 +430,72 @@ describe('compileSystemPrompt', () => {
     expect(result).toContain('do not fill the gap from general knowledge')
     expect(result).toContain('locked conversation language')
     expect(result).toContain('exact non-personal course and source labels')
+  })
+})
+
+describe('compileSystemPrompt student answer style', () => {
+  const cases = [
+    { name: 'tutor', systemPrompts: { tutor: { prompt: 'STORED' } } },
+    { name: 'quizzer', systemPrompts: null },
+    { name: 'custom', systemPrompts: { custom: { prompt: 'PERSONA' } } },
+  ] as const
+
+  function compileWithStyle(
+    systemPrompts: unknown,
+    selectedMode: string,
+    answerStyle?: 'balanced' | 'brief' | 'bullets' | 'detailed'
+  ): string {
+    return compileSystemPrompt(systemPrompts, selectedMode, {
+      courseDisplayName: COURSE_DISPLAY_NAME,
+      toolNames: [DOC_TOOL],
+      answerStyle,
+    })
+  }
+
+  test.each(
+    cases
+  )('keeps the $name prompt byte-identical for the balanced default', ({
+    name,
+    systemPrompts,
+  }) => {
+    const withoutStyle = compileWithStyle(systemPrompts, name)
+
+    expect(compileWithStyle(systemPrompts, name, 'balanced')).toBe(withoutStyle)
+    expect(withoutStyle).not.toContain(ANSWER_STYLE_MARK)
+  })
+
+  test.each(
+    cases
+  )('adds exactly one section after the $name mode sections for every other preset', ({
+    name,
+    systemPrompts,
+  }) => {
+    const baseline = compileWithStyle(systemPrompts, name)
+    const sections = new Set<string>()
+
+    for (const answerStyle of ['brief', 'bullets', 'detailed'] as const) {
+      const result = compileWithStyle(systemPrompts, name, answerStyle)
+      const styleIdx = result.indexOf(ANSWER_STYLE_MARK)
+      const inputContextIdx = result.indexOf(INPUT_CONTEXT_MARK)
+
+      expect(result.split(ANSWER_STYLE_MARK)).toHaveLength(2)
+      expect(result.match(/^## /gm)).toHaveLength(
+        (baseline.match(/^## /gm) ?? []).length + 1
+      )
+      expect(styleIdx).toBeGreaterThan(
+        name === 'custom'
+          ? result.indexOf(CUSTOM_PERSONA_MARK)
+          : result.indexOf(PLATFORM_MODE_MARK)
+      )
+      expect(inputContextIdx).toBeGreaterThan(styleIdx)
+      expect(result.indexOf(OUTPUT_FORMAT_MARK)).toBeGreaterThan(styleIdx)
+      // Removing the inserted section restores the default prompt exactly.
+      expect(result.slice(0, styleIdx) + result.slice(inputContextIdx)).toBe(
+        baseline
+      )
+      sections.add(result.slice(styleIdx, inputContextIdx))
+    }
+
+    expect(sections.size).toBe(3)
   })
 })

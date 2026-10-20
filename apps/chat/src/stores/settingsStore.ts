@@ -1,6 +1,10 @@
 'use client'
 import { create } from 'zustand'
 import { persist } from 'zustand/middleware'
+import {
+  type AnswerStyle,
+  DEFAULT_ANSWER_STYLE,
+} from '../lib/config/answerStyles'
 import { DEFAULT_MODE_DESCRIPTIONS } from '../lib/config/mode-descriptions'
 import { type ModelID, type ModelOption } from '../lib/config/models'
 import { parseModeOptions, resolveSelectedMode } from '../lib/config/modes'
@@ -56,6 +60,7 @@ interface SettingsState {
   selectedModel: ModelID
   selectedMode: string
   selectedReasoningEffort: ReasoningEffort
+  answerStyle: AnswerStyle
   credits: {
     current: number
     total: number
@@ -77,6 +82,7 @@ interface SettingsState {
   setSelectedModel: (model: ModelID) => void
   setSelectedMode: (mode: string) => void
   setSelectedReasoningEffort: (effort: ReasoningEffort) => void
+  setAnswerStyle: (answerStyle: AnswerStyle) => void
   loadModeOptions: (
     chatbotId: string,
     initialModeOptions?: Record<string, string>
@@ -93,6 +99,7 @@ export const useSettingsStore = create<SettingsState>()(
       selectedModel: 'gpt-4.1',
       selectedMode: 'tutor',
       selectedReasoningEffort: 'none',
+      answerStyle: DEFAULT_ANSWER_STYLE,
       credits: {
         current: 0.0,
         total: 0.0,
@@ -134,6 +141,7 @@ export const useSettingsStore = create<SettingsState>()(
 
           return { selectedReasoningEffort: resolvedEffort }
         }),
+      setAnswerStyle: (answerStyle: AnswerStyle) => set({ answerStyle }),
 
       loadModeOptions: async (
         chatbotId: string,
@@ -293,6 +301,7 @@ export const useSettingsStore = create<SettingsState>()(
         selectedModel: state.selectedModel,
         selectedMode: state.selectedMode,
         selectedReasoningEffort: state.selectedReasoningEffort,
+        answerStyle: state.answerStyle,
       }),
     }
   )
