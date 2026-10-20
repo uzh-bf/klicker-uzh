@@ -1,6 +1,330 @@
 # Upgrade KlickerUZH to @uzh-bf/design-system 5.0.0-alpha.5
 
 **Branch:** `rs/ds-v5-alpha5-upgrade` · **Worktree:** `trees/ds-v5-alpha5-upgrade` · **Base:** `origin/v3`
+
+## Approval summary — 2026-10-20 pilot resumption
+
+**Approval mode:** executable batch, approved by the user on 2026-10-20.
+
+The historical pilot at commit `1de7ad9` has not accepted the final candidate
+tarball because its canonical Auth development server returns 404 for the
+NextAuth catch-all route before the handler runs. The same source under
+Webpack returns the configured providers response. This proposal changes only
+Auth’s three development scripts to use Next.js’s documented Webpack option;
+production builds and authentication policy remain unchanged.
+
+After that repair, the plan installs the exact design-system tarball identified
+below through a temporary relative file reference, checks its installed bytes,
+and runs the consumer build plus synthetic browser journeys. It removes a
+consumer override only when the candidate and a real interaction prove the
+override redundant. Formik support and application-specific layout remain
+part of acceptance.
+
+The prior design-system roadmap ruling approved direction and plan construction
+only. The user approved the named source work, checks, reviews, commits, normal
+push to the existing task branch, and a draft PR targeting `v3`. Merge,
+readiness, release, deployment, human-review notifications, and container
+replacement remain outside this approval. The 2026-10-20 stop returned
+`stopped: true` and routes remain at zero, but Devsy still reports `Busy` and
+the `devpod` executable is unavailable. If acceptance requires replacing the
+runtime, request that exact effect after completing independent source work.
+
+## Execution details — 2026-10-19 pilot resumption
+
+### Evidence and binding contracts
+
+- The work resumes in this plan, branch `rs/ds-v5-alpha5-upgrade`, at
+  `1de7ad918145cf659e547057d04c448fb9a255fd`. No live PR exists. The fresh
+  task context reports the primary checkout on `v3-ai` with upstream
+  `origin/v3-ai`; the separate task worktree tracks `origin/v3`. For this
+  worktree, `v3` is the resolved target: repository guidance says feature
+  branches start from `v3`, `origin/HEAD` is `origin/v3`, and the existing plan
+  agrees. Keep the primary checkout's 85-commit upstream drift separate from
+  this worktree's 15-ahead/454-behind relationship to `origin/v3`. The refs were
+  refreshed by the host shortly before this plan update; a sandboxed fetch
+  could not write the linked worktree's `FETCH_HEAD`.
+- Current `origin/v3` differs in `apps/auth/package.json`, the Group Activity
+  wizard, frontend conventions, the root manifest, and the lockfile. Preserve
+  the historical baseline through exact-candidate acceptance as the approved
+  pilot-first direction requires. Near readiness, make one deliberate merge of
+  the refreshed `origin/v3` into this task branch if the overlapping changes
+  still materially affect delivery; record the target SHA and re-run affected
+  checks and browser acceptance. Preserve the branch history and user changes.
+  If a conflict requires a product or behavior choice, pause for that decision.
+- The exact candidate is
+  `project/_local/ga-qualification-candidate/uzh-bf-design-system-5.0.0-alpha.5.tgz`
+  under the design-system repository’s `trees/rs-v5-uzh-alignment` worktree.
+  Its expected SHA-256 is
+  `f4208e6faebade6d775e663e43cebac8f7e27d46b70ab464a9ce2e3a99ec49a9`.
+  The design-system owner has not published this candidate. Recompute its hash
+  before install and verify all nine workspace links resolve to the archive-
+  backed package. Compare the complete installed file set and hashes against
+  the tarball. A matching version string is insufficient. The consumer PR will
+  retain registry dependency references, so its body must distinguish the
+  local candidate acceptance from the package installed later by CI.
+- The binding direction-only ruling is in the design-system repository’s
+  `project/2026-08-10-v5-ga-readiness-roadmap.md`, section “Next package —
+  Klicker pilot routing and exact-package acceptance”. The candidate’s manual
+  procedure is in `project/2026-10-19-v5-ga-qualification-plan.md`, section
+  “Candidate and manual acceptance”. Both are read-only inputs owned by the
+  design-system task.
+- The prior same-source diagnostic used Next.js `16.2.10`: Turbopack returned
+  404 from `/api/auth/providers` without entering the catch-all handler, while
+  Webpack returned the existing providers JSON and entered it. The
+  [Next.js development guide](https://github.com/vercel/next.js/blob/v16.2.9/docs/01-app/02-guides/local-development.mdx)
+  documents `next dev --webpack`; its versioned docs are `16.2.9`, the nearest
+  Context7 release available during planning. The change therefore uses a
+  supported dev-only option and does not edit the NextAuth handler or auth
+  options.
+- Current runtime evidence is preserved in the ignored local report
+  `project/_local/reviews/2026-10-19-ds-v5-alpha5-pilot-runtime-diagnostic.md`.
+  This checkout reports legacy/full runtime mode. Devsy reports the exact
+  workspace `Busy`, and devrouter reports zero routes. The exact canonical stop
+  completed on 2026-10-19 (`stopped: true`, zero routes freed); a fresh
+  source-path workspace readback shows `ownerStatus: present`, `devpodStatus:
+  owned`, `routeCount: 0`, and no hosts. Devsy still reports `Busy`, so provider
+  state is not verified `stopped`; do not claim runtime release complete. Exact
+  stopped containers retain references to a Compose network that the prior
+  diagnostic reported absent.
+  Devrouter `0.5.2` documents `ensure --repair` for retained managed runtimes;
+  the tagged [`workspace-ensure.ts`](https://github.com/rschlaefli/devrouter/blob/v0.5.2/src/core/workspace-ensure.ts)
+  path does not start or recreate a provider workspace for this checkout’s
+  legacy configuration. Normal `ensure` may trigger provider recreation, so it
+  is not treated as a non-destructive repair. Do not delete or replace its
+  containers, network, volumes, or workspace without separate approval.
+- Context7’s devrouter resolver still returns an unrelated library after the
+  user added devrouter. Planning used the official versioned CLI source and
+  current lifecycle guide directly; this lookup limitation does not change the
+  runtime authority boundary.
+
+### Research
+
+- Question: can the Auth catch-all use a documented bundler option without
+  changing production behavior? The Next.js 16.2.9 guide documents
+  `next dev --webpack`; the app is pinned to 16.2.10. The same-source browser
+  differential is the exact consumer evidence. Research owner: main session.
+- Question: does current repair safely restore this runtime? Context7 still
+  resolves an unrelated library. The official Devrouter 0.5.2 source and
+  lifecycle guide show `ensure --repair` is for retained managed runtime state;
+  this checkout reports legacy mode and no managed state. Research owner: main
+  session. No provider mutation or container recreation is inferred from this
+  documentation lookup.
+- Question: how can the repository checks bypass Turbo's cache? The pinned root
+  build script invokes `turbo run build`; the official [Turborepo run
+  reference](https://turborepo.dev/docs/reference/run) documents `--force` and
+  `TURBO_FORCE`, and [pnpm 11 script
+  docs](https://pnpm.io/11.x/cli/run) confirm that arguments after the script
+  name are forwarded to it. Use `TURBO_FORCE=true pnpm run check:all` and
+  `pnpm run build --force`. Research owner: main session.
+
+### Scope, invariants, and exclusions
+
+- Change `apps/auth/package.json` scripts `dev`, `dev:offline`, and `dev:test`
+  from `--turbopack` to `--webpack`. Keep `build` and `build:test` on
+  Turbopack. Update `docs/frontend-conventions.md` to record the Auth
+  development exception.
+- Preserve the catch-all route, credentials provider, callback/session
+  configuration, cookie names, middleware, and all authorization behavior.
+  Do not add an auth bypass, dependency, migration, major upgrade, or route
+  handler workaround.
+- Use only the local seeded lecturer and synthetic course/activity data. Do
+  not reset the database or inspect real application content.
+- Keep Formik wrappers and application-specific layout. Inspect the existing
+  tooltip `z-20` overrides in
+  `apps/frontend-manage/src/components/activities/creation/groupActivity/GroupActivitySettingsStep.tsx`;
+  remove them only if they are redundant with both the exact candidate and the
+  dependency source restored for the consumer PR. If they work only with the
+  unpublished tarball, retain them until that candidate is published. Retain
+  width, density, and layout overrides unless an equivalent behavior is
+  demonstrated at both widths.
+- Initial acceptance qualifies the historical pilot baseline. After the single
+  target integration, recheck the Auth route and Group Activity flows on the
+  integrated PR head. This does not qualify the whole current `v3` trunk, all
+  consumers, GA, Safari, screen readers, or physical devices.
+- Existing ADRs 0011 and 0012 remain accurate. This development-tool routing
+  fix changes no product primitive or public contract and does not require a
+  new ADR.
+
+### Ownership and sequence
+
+| Workstream | Owner | Dependency | Acceptance |
+| --- | --- | --- | --- |
+| Auth development routing and its local-workflow documentation | One executor after plan approval | None | Three Auth development scripts use Webpack; build scripts and auth source are unchanged; route and delegated login checks pass |
+| Candidate install, consumer checks, and browser acceptance | Main session | Runtime available and Auth routing change applied | Exact archive installed and byte-verified; Auth and Manage resolve it; builds and synthetic journeys pass |
+| Override retirement, when supported by both candidate and delivered dependency | Main session | Browser comparison complete | Each removed override is shown redundant with the resolved package that the PR will install |
+| Integration, review, and draft delivery | Main session | Accepted checks and reviewer findings | Reviewed source, exact-head CI disposition, accurate draft PR, screenshots published and read back |
+
+#### Commit boundaries
+
+- `fix(auth): restore local catch-all route` contains the three Auth development
+  script changes, the frontend conventions update, and the approved resumption
+  plan section. It does not change the NextAuth handler or policy.
+- If the candidate and the delivered registry dependency both prove specific
+  overrides redundant, `enhance(design-system): remove proven redundant
+  overrides` contains only those override removals and their progress update.
+  Omit this commit when no override meets that evidence condition.
+- After draft creation, update the same plan with its PR link and final status
+  in a normal documentation commit. No plan-only PR is created.
+
+The main session owns plan integration, the Auth/runtime seam, the exact
+candidate and data boundary, acceptance, reviews, and final proof. The finite
+sequence is:
+
+1. Change only the three Auth development scripts and
+   `docs/frontend-conventions.md`. If this fails to restore the documented
+   catch-all route, stop before editing the handler, middleware, auth options,
+   or another source file. That would change the approved seam.
+2. Once the exact devcontainer is available, copy the supplied tarball into the
+   ignored consumer path under `project/_local/ga-qualification-candidate/`.
+   Temporarily change the nine existing design-system dependency entries to
+   the relative
+   `file:../../project/_local/ga-qualification-candidate/uzh-bf-design-system-5.0.0-alpha.5.tgz`
+   reference. Generate a temporary lock resolution with pnpm 11.5.0, then run
+   `pnpm install --frozen-lockfile`. Verify each of the nine workspace links
+   resolves to the archive-backed package, then compare the complete installed
+   file set and hashes with the archive. Restart only the Auth and Manage app
+   processes through the supported runtime helper, then confirm their resolved
+   package entries point to the candidate-backed install. Keep the temporary
+   references and exact candidate installed through browser acceptance. Record local
+   candidate evidence separately from registry-package CI evidence.
+3. Use the required `agent-browser` against the exact routed checkout with
+   synthetic local data. Verify `/api/auth/providers` and `/api/auth/csrf`
+   return normal JSON responses, record status and response shape without
+   printing provider options or the CSRF token, then complete delegated login.
+   In the Manage Group Activity wizard, open a synthetic draft, cancel it,
+   reopen and confirm its default values, then submit an invalid date interval
+   and confirm no activity is created. Create one valid synthetic activity.
+   Use the completion step’s “Create another activity” action to verify form
+   reset, then exit without creating a duplicate. Reopen the synthetic activity
+   in edit mode, change and save it, and confirm the persisted state after
+   reload. Exercise the `FormikDatetimePicker` help/picker, focus return, and
+   the three tooltip overrides in `GroupActivitySettingsStep`. Open the
+   read-only `ActivityDetailsModal` for keyboard entry, Escape dismissal, and
+   compact table scrolling; use `CourseGamificationInfos` for tab-arrow
+   navigation. The relevant implementations are
+   `GroupActivityWizard.tsx`, `CompletionStep.tsx`,
+   `GroupActivitySettingsStep.tsx`, `ActivityDetailsModal.tsx`, and
+   `CourseGamificationInfos.tsx`. Capture the changed states at `1440x900` and
+   `390x844` in English and German.
+4. Build and inspect the screenshot manifest at
+   `project/_local/ds-v5-alpha5-pilot-gallery/manifest.json`. Record source
+   revision, runtime, viewport, locale, synthetic-data status, interaction
+   results, and any coverage gap. Keep screenshots out of Git.
+5. After browser acceptance and gallery capture, restore only the nine
+   temporary dependency specifiers to their post-source baseline and restore
+   `pnpm-lock.yaml` from that baseline; preserve Auth script changes. Do not
+   reinstall, because that would replace the exact candidate in `node_modules`.
+   Verify the installed links still resolve to the candidate, the package
+   specifiers and lock match their baseline, no tracked local `file:` reference
+   remains, and all three Auth scripts still use Webpack. Run
+   `TURBO_FORCE=true pnpm run check:all` and a fresh
+   `pnpm run build --force` in the exact devcontainer while the candidate
+   remains installed. These checks prove the source tree against the local
+   candidate; they do not prove what the registry will serve. Stage explicit
+   source paths and run gitleaks on staged content on the host. The host hooks
+   invoke those same pnpm commands, but container-dependent checks must stay in
+   the devcontainer. After equivalent checks and the host secret scan pass,
+   set `HUSKY=0` only for host commit/push operations. Record this hook split;
+   do not skip equivalent checks or CI secret scanning.
+6. Commit the Auth fix as
+   `fix(auth): restore local catch-all route`. Include the plan resumption
+   section with this slice. Review the immutable Auth commit with the configured
+   slice reviewer and simplifier in parallel. Apply valid findings, run affected
+   checks, and re-review the corrected commit. Keep all dependency overrides
+   for now.
+7. At readiness, fetch `origin/v3` on the host, record its exact SHA, and begin
+   one `git merge --no-commit --no-ff <target-sha>` into the task branch. Resolve
+   conflicts only from verified source evidence and stop for any behavior
+   decision. Once conflicts are resolved, preserve the resulting manifests and
+   lockfile under the ignored `project/_local/merged-dependency-baseline/` path.
+   If candidate dependencies need reinstalling, temporarily use the same
+   archive references, regenerate the temporary lock resolution with pnpm
+   11.5.0, then run `pnpm install --frozen-lockfile` and repeat the full file
+   and hash comparison at all nine consumer resolutions. Run the affected Auth
+   checks and Group Activity browser acceptance on the integrated tree, then
+   restore temporary dependency references and lockfile changes to the resolved
+   merged baseline while retaining the verified candidate installation.
+   Reconfirm its bytes. Run `TURBO_FORCE=true pnpm run check:all` and
+   `pnpm run build --force` in the devcontainer against this integrated tree.
+   Run gitleaks and inspect all staged content. After these checks pass, create
+   the merge commit with `HUSKY=0` for that host Git operation.
+   If the exact registry dependency is available, install it from the restored
+   merged baseline with `pnpm install --frozen-lockfile`, verify the resolved
+   package bytes, and compare it to the local candidate. Perform the relevant
+   browser checks in both viewports and locales before considering override
+   removal; otherwise retain every override. If an override is proven redundant
+   with both packages, run `TURBO_FORCE=true pnpm run check:all`,
+   `pnpm run build --force`, and its browser checks against the registry package
+   before a separate commit and staged-content scan.
+   Review the integrated task changes with the configured slice reviewer and
+   simplifier in parallel, then run one integrated final reviewer on the
+   complete committed result after all findings, corrections, and checks are
+   complete. The runtime stays active through integration, correction, build,
+   and browser checks. Then stop the exact owned runtime with canonical
+   `devrouter stop` and verify provider state `stopped` and exact route count
+   zero. No container replacement is authorized here.
+8. Inspect the full branch delta against the resolved `v3` target. Push normally
+   to the existing task branch and create/update one draft PR using
+   `rs-mr-description-writer`. State that the candidate tarball SHA was tested
+   locally while the PR restores registry dependency references. Publish the
+   inspected synthetic gallery through the existing project and verify the
+   uploaded images. Commit and push the final plan progress with the PR link,
+   then wait for exact-head hosted CI and ordinary feedback to settle. Run the
+   repository-authorized `/final-review` on that settled head. For any finding,
+   correct the source, resume the exact runtime only if an existing workspace
+   can be reused without replacing containers, rerun invalidated checks and
+   reviews, settle CI on the corrected head, and stop/verify the runtime again.
+   If runtime resumption requires container replacement, stop at that concrete
+   authority gate. If CI cannot install the registry package because it is
+   unpublished, keep the PR draft and record that dependency blocker. Do not
+   request human reviewers or mark the draft ready.
+
+### Verification portfolio
+
+| Risk | Existing evidence | Test obligation | Required check | Distinct failure |
+| --- | --- | --- | --- | --- |
+| Auth catch-all is absent in canonical local development | Same-source Webpack/Turbopack differential | None — use direct API and browser checks | Providers and CSRF HTTP/JSON checks plus synthetic delegated login | Route returns 404 or handler does not enter |
+| Wrong design-system artifact is installed | Supplied SHA-256 and package version | None — verify package bytes | Recompute archive SHA; compare all consumer resolutions, installed files, and Auth/Manage process resolution | Installed files differ despite `5.0.0-alpha.5` label |
+| Formik and changed defaults regress a real consumer flow | Existing package builds and prior historical screenshots | None — use real synthetic journeys | Frozen install, forced `TURBO_FORCE=true pnpm run check:all`, fresh `pnpm run build --force`, and browser journeys | Type/build failure, invalid-state loss, failed save/reload, clipping, or broken keyboard interaction |
+| A consumer override is removed too early | Existing overrides and old screenshots | None — do not add snapshot assertions | Before/after browser evidence at both widths and locales, against the candidate and delivered dependency when available | Tooltip layering, modal sizing, or application layout regresses |
+| Runtime cleanup is overstated | Source-path status and route listing | None | Canonical stop plus fresh Devsy/provider and route readback | Provider remains Busy or exact routes remain |
+
+No maintained test is planned: direct API and real-browser interactions cover
+the affected contracts better than a new test pinning package copy or prose.
+The screenshot table is required for the visible candidate defaults and Auth
+login flow. A missing runtime or browser leaves those checks blocked; a source
+build alone cannot satisfy acceptance.
+
+### Authority and terminal
+
+**Boundary owner:** main session.
+
+**Authority:** the user approved on 2026-10-20 the named Auth development fix,
+exact-artifact qualification, evidence-supported override removals, one
+readiness integration of refreshed `origin/v3` into the task branch, the listed
+reviews, commits, normal push to the existing task branch, and a draft PR
+against `v3`. This is one executable batch.
+
+**Withheld:** container/workspace deletion or replacement, force/protected or
+default-branch pushes, merging the task branch into its target, ready state,
+release, deployment, production access, real-environment content, and human
+reviewer notifications. The one readiness integration of refreshed `origin/v3`
+into the task branch is part of this plan; it does not authorize merging the
+task branch into `v3`. If the only runtime recovery requires replacing existing
+containers, ask separately after the independent source work is complete.
+
+**Terminal:** a reviewed consumer draft with exact-artifact installation
+evidence, Auth route/login proof, build/check results, synthetic browser
+acceptance and inspected screenshot evidence, restored temporary configuration,
+and a stopped/verified owned runtime; or one concrete runtime-capability or
+authority blocker after all independent source work is complete. Stop only
+after Devsy reports `stopped` for this exact source checkout and devrouter
+reports zero routes; the current `Busy` result fails this lifecycle condition.
+
+**Pause:** if the pilot cannot resume without replacing its exact containers,
+finish independent source work and request that exact target/effect before
+runtime-dependent checks.
+
 **Decisions:** [ADR 0011](../docs/adr/0011-uzh-theme-selected-by-root-data-attribute.md),
 [ADR 0012](../docs/adr/0012-klicker-declares-token-names-not-values.md)
 
@@ -425,3 +749,30 @@ which is the maintenance burden this upgrade exists to shed.
 - `devrouter ensure` fails at `post-start` on the chat local MCP fixture
   (`localhost:1417` never becomes healthy). Unrelated to this upgrade on the evidence so
   far, but confirm it reproduces on `v3` before slice 7 depends on the runtime.
+
+### Planning review and progress — 2026-10-20
+
+- Plan reviewer: rounds 1–3 returned `REVISE`; round 4 approved after all
+  findings were addressed on 2026-10-19. Review and arbitration evidence is in
+  the ignored local record. The approved target remains `v3`.
+- Current code commit: `1de7ad918145cf659e547057d04c448fb9a255fd`; source edits: none.
+- Host refs were refreshed on 2026-10-20: `origin/v3` is
+  `d6eac932f336407de4b77d6ec31ae0e0d7c38219`; this branch is 15 ahead and 455
+  behind it. No live PR exists.
+- Candidate SHA rechecked on 2026-10-19 and matched the supplied digest.
+- The user approved the executable batch on 2026-10-20. Execution mode is
+  `standard`; the first action is to commit this plan, then implement the Auth
+  development routing and documentation slice.
+- Completed: branch/PR target resolution, routing differential review, exact
+  runtime diagnosis, target-drift review, plan construction, planner approval,
+  plan approval, and all plan-review corrections.
+- Runtime after the exact stop: `devrouter stop` returned `stopped: true` and
+  zero routes; fresh source-path metadata confirms `routeCount: 0` and no
+  hosts. Devsy still reports `Busy`, and `devpod` is unavailable, so provider
+  shutdown is unverified. Container replacement remains separately gated.
+- Remaining: plan commit, Auth source/doc change, exact-artifact install/builds,
+  browser acceptance and screenshots, required implementation reviews, target
+  integration near readiness, and draft delivery.
+- Next: commit the approved plan as the first new branch commit, then delegate
+  the Auth source/doc slice. If runtime-dependent acceptance needs replacement,
+  finish independent source work first and request that exact effect.
