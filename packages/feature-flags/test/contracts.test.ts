@@ -12,6 +12,7 @@ describe('feature flag contracts', () => {
       'ai-beta': false,
       'learning-analytics': false,
       'chatbot-graphrag': false,
+      'ai-advanced-management': false,
       'kb-ingestion': false,
       'kb-graph-builds': false,
       'kb-graph-domain-selection': false,
