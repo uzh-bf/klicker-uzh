@@ -72,6 +72,10 @@ import {
 import { buildPromptCacheRequest } from '@/src/lib/server/promptCacheIdentity'
 import { renderPromptTemplate } from '@/src/lib/server/promptTemplates'
 import {
+  PROVIDER_REFUSAL_DEFLECTION,
+  providerRefusalTransform,
+} from '@/src/lib/server/providerRefusal'
+import {
   createResponseExampleSearchTool,
   loadResponseExampleRuntimeSkill,
   RESPONSE_EXAMPLE_SEARCH_TOOL_NAME,
@@ -2102,6 +2106,16 @@ export async function POST(
           ],
         }),
         stopWhen: isStepCount(5),
+        // Custom personas replace a provider's canned, unbilled refusal with a
+        // neutral platform line instead of breaking role.
+        ...(Object.hasOwn(DEFAULT_PROMPT, selectedMode)
+          ? {}
+          : {
+              experimental_transform: providerRefusalTransform(
+                PROVIDER_REFUSAL_DEFLECTION[turnSettings.replyLanguage ?? 'en'],
+                () => logEvent('stream.provider_refusal.substituted', {})
+              ),
+            }),
         instructions: turnRequest.instructions,
 
         abortSignal: req.signal,
