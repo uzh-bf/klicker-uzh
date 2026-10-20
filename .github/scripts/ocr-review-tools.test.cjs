@@ -636,61 +636,259 @@ test('invalid source and truncated advice consume attempts without retries or ac
   ])
 })
 
-test('advisor validation diagnostics distinguish malformed, schema and evidence failures', async (t) => {
+test('advisor validation diagnostics preserve rejection precedence and exact boundaries', async (t) => {
   const base = fixture(t)
+  const response = (payload) => new Response(JSON.stringify(payload))
+  const parsedResponse = async (mutate = () => {}) => {
+    const payload = await advice().json()
+    mutate(payload)
+    return response(payload)
+  }
+  const adviceResponse = async (value) =>
+    parsedResponse((payload) => {
+      payload.choices[0].message.tool_calls[0].function.arguments =
+        JSON.stringify(value)
+    })
   const cases = [
-    [
-      'invalid_response',
-      async () => {
+    {
+      label: 'missing envelope',
+      reason: 'invalid_finish_reason',
+      response: () => response({ raw: 'PRIVATE_SENTINEL' }),
+    },
+    {
+      label: 'invalid envelope',
+      reason: 'invalid_finish_reason',
+      response: () =>
+        response({
+          choices: 'PRIVATE_SENTINEL',
+          raw: 'PRIVATE_SENTINEL',
+        }),
+    },
+    {
+      label: 'length precedes malformed calls',
+      reason: 'length',
+      response: () =>
+        response({
+          choices: [
+            {
+              finish_reason: 'length',
+              message: {
+                tool_calls: null,
+                reasoning_content: 'PRIVATE_SENTINEL',
+              },
+            },
+          ],
+        }),
+    },
+    {
+      label: 'finish reason precedes malformed calls',
+      reason: 'invalid_finish_reason',
+      response: () =>
+        response({
+          choices: [{ finish_reason: 'stop', message: { tool_calls: null } }],
+        }),
+    },
+    {
+      label: 'tool count precedes call details',
+      reason: 'invalid_tool_call_count',
+      response: () =>
+        parsedResponse((payload) => {
+          payload.choices[0].message.tool_calls = []
+        }),
+    },
+    {
+      label: 'null tool call has a name diagnostic',
+      reason: 'invalid_tool_name',
+      response: () =>
+        parsedResponse((payload) => {
+          payload.choices[0].message.tool_calls = [null]
+        }),
+    },
+    {
+      label: 'invalid argument JSON',
+      reason: 'invalid_response',
+      response: async () => {
         const payload = await advice().json()
-        payload.choices[0].message.tool_calls[0].function.arguments = '{'
-        return new Response(JSON.stringify(payload))
+        payload.choices[0].message.tool_calls[0].function.arguments =
+          '{"PRIVATE_SENTINEL":'
+        return response(payload)
       },
-    ],
-    [
-      'invalid_advice',
-      async () => {
-        const payload = await advice().json()
-        payload.choices[0].message.tool_calls[0].function.arguments = '{}'
-        return new Response(JSON.stringify(payload))
-      },
-    ],
-    [
-      'invalid_evidence',
-      async () => {
-        const payload = await advice().json()
-        const call = payload.choices[0].message.tool_calls[0]
-        const value = JSON.parse(call.function.arguments)
-        value.evidence[0].line = 2
-        call.function.arguments = JSON.stringify(value)
-        return new Response(JSON.stringify(payload))
-      },
-    ],
+    },
+    {
+      label: 'unknown advice field',
+      reason: 'invalid_advice_shape',
+      response: () =>
+        adviceResponse({
+          assessment: 'PRIVATE_SENTINEL',
+          answer: 1,
+          evidence: null,
+          raw: 'PRIVATE_SENTINEL',
+        }),
+    },
+    {
+      label: 'invalid assessment',
+      reason: 'invalid_assessment',
+      response: () =>
+        adviceResponse({
+          assessment: 'PRIVATE_SENTINEL',
+          answer: 1,
+          evidence: null,
+        }),
+    },
+    {
+      label: 'answer type precedes answer length',
+      reason: 'invalid_answer_type',
+      response: () =>
+        adviceResponse({
+          assessment: 'uncertain',
+          answer: { raw: 'PRIVATE_SENTINEL' },
+          evidence: null,
+        }),
+    },
+    {
+      label: 'answer length precedes evidence',
+      reason: 'invalid_answer_length',
+      response: () =>
+        adviceResponse({
+          assessment: 'uncertain',
+          answer: 'x'.repeat(4001),
+          evidence: null,
+        }),
+    },
+    {
+      label: 'evidence type precedes evidence count',
+      reason: 'invalid_evidence_type',
+      response: () =>
+        adviceResponse({
+          assessment: 'uncertain',
+          answer: 'synthetic answer',
+          evidence: { raw: 'PRIVATE_SENTINEL' },
+        }),
+    },
+    {
+      label: 'evidence count precedes item validation',
+      reason: 'invalid_evidence_count',
+      response: () =>
+        adviceResponse({
+          assessment: 'uncertain',
+          answer: 'synthetic answer',
+          evidence: Array.from({ length: 5 }, () => ({
+            path: 'source.js',
+            line: 2,
+            detail: 'PRIVATE_SENTINEL',
+          })),
+        }),
+    },
+    {
+      label: 'evidence item range',
+      reason: 'invalid_evidence',
+      response: () =>
+        adviceResponse({
+          assessment: 'uncertain',
+          answer: 'synthetic answer',
+          evidence: [
+            {
+              path: 'source.js',
+              line: 2,
+              detail: 'PRIVATE_SENTINEL',
+            },
+          ],
+        }),
+    },
+    {
+      label: 'evidence detail length',
+      reason: 'invalid_evidence',
+      response: () =>
+        adviceResponse({
+          assessment: 'uncertain',
+          answer: 'synthetic answer',
+          evidence: [
+            {
+              path: 'source.js',
+              line: 1,
+              detail: 'x'.repeat(501),
+            },
+          ],
+        }),
+    },
   ]
-  for (const [reason, response] of cases) {
+  for (const { label, reason, response } of cases) {
+    let calls = 0
     const { broker, tool } = await client(t, {
       ...base,
       advisorUrl: 'http://127.0.0.1:12345/v1/chat/completions',
       advisorToken: 'local',
-      fetchImpl: response,
+      fetchImpl: async () => {
+        calls += 1
+        return response()
+      },
     })
     const result = await tool('ask_review_advisor', question)
-    assert.equal(result.result.content[0].text, 'invalid_advice')
-    assert.equal(broker.diagnostics().dispatched, 1)
-    assert.deepEqual(broker.diagnostics().attempt_outcomes, [
-      {
-        attempt: 1,
-        stage: 'advice',
-        outcome: 'failed',
-        reason,
-        dispatched: true,
-      },
-    ])
+    assert.equal(result.result.content[0].text, 'invalid_advice', label)
+    assert.equal(calls, 1, label)
+    assert.equal(broker.diagnostics().attempted, 1, label)
+    assert.equal(broker.diagnostics().dispatched, 1, label)
+    assert.equal(broker.diagnostics().completed, 0, label)
+    assert.equal(broker.diagnostics().failed, 1, label)
+    assert.deepEqual(
+      broker.diagnostics().attempt_outcomes,
+      [
+        {
+          attempt: 1,
+          stage: 'advice',
+          outcome: 'failed',
+          reason,
+          dispatched: true,
+        },
+      ],
+      label
+    )
     assert.doesNotMatch(
       JSON.stringify(broker.diagnostics()),
-      /PRIVATE_SENTINEL/
+      /PRIVATE_SENTINEL/,
+      label
     )
+    assert.doesNotMatch(JSON.stringify(result), /PRIVATE_SENTINEL/, label)
   }
+
+  let calls = 0
+  const { broker, tool } = await client(t, {
+    ...base,
+    advisorUrl: 'http://127.0.0.1:12345/v1/chat/completions',
+    advisorToken: 'local',
+    fetchImpl: async () => {
+      calls += 1
+      return adviceResponse({
+        assessment: 'uncertain',
+        answer: 'x'.repeat(4000),
+        evidence: Array.from({ length: 4 }, () => ({
+          path: 'source.js',
+          line: 1,
+          detail: 'd'.repeat(500),
+        })),
+      })
+    },
+  })
+  const accepted = await tool('ask_review_advisor', question)
+  assert.notEqual(accepted.result.isError, true)
+  const acceptedAdvice = JSON.parse(accepted.result.content[0].text)
+  assert.equal(acceptedAdvice.answer.length, 4000)
+  assert.equal(acceptedAdvice.evidence.length, 4)
+  assert.ok(acceptedAdvice.evidence.every((item) => item.detail.length === 500))
+  assert.equal(calls, 1)
+  assert.equal(broker.diagnostics().attempted, 1)
+  assert.equal(broker.diagnostics().dispatched, 1)
+  assert.equal(broker.diagnostics().completed, 1)
+  assert.equal(broker.diagnostics().failed, 0)
+  assert.deepEqual(broker.diagnostics().attempt_outcomes, [
+    {
+      attempt: 1,
+      stage: 'advice',
+      outcome: 'completed',
+      reason: null,
+      dispatched: true,
+    },
+  ])
 })
 
 test('unavailable advisors consume one attempt without dispatch', async (t) => {
