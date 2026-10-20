@@ -224,7 +224,13 @@ test('Native answer concepts link to the published graph', async ({ page }) => {
       'portfolio risk',
       'covariance',
     ])
-    await links.filter({ hasText: 'covariance' }).click()
+    const covariance = links.filter({ hasText: 'covariance' })
+    await covariance.hover()
+    // The fixture merges two descriptions; only the first one is shown.
+    const hoverCard = page.getByTestId('chat-concept-definition')
+    await expect(hoverCard).toContainText('how two asset returns move together')
+    await expect(hoverCard).not.toContainText('<SEP>')
+    await covariance.click()
 
     await expect(page.getByTestId('chat-knowledge-graph-panel')).toBeVisible()
     await expect(
@@ -232,6 +238,9 @@ test('Native answer concepts link to the published graph', async ({ page }) => {
         .getByTestId('knowledge-graph-loaded-node')
         .filter({ hasText: 'Covariance' })
     ).toBeVisible()
+    await expect(page.getByTestId('knowledge-graph-definition')).toContainText(
+      'how two asset returns move together'
+    )
     await expect(
       page.getByTestId('knowledge-graph-back-to-overview')
     ).toBeVisible()

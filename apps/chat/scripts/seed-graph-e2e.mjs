@@ -139,7 +139,9 @@ try {
     } else {
       await graph.query(`
       MERGE (a:Concept {name: 'Diversification'})
+      SET a.description = 'Synthetic definition: spreading an investment across several assets.'
       MERGE (b:Concept {name: 'Covariance'})
+      SET b.description = 'Synthetic definition: how two asset returns move together.<SEP>A second merged synthetic description.'
       MERGE (c:Concept {name: 'Portfolio risk'})
       MERGE (a)-[:RELATED]->(b)
       MERGE (b)-[:RELATED]->(c)

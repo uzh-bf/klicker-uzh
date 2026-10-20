@@ -10,6 +10,7 @@ import {
   useIsMarkdownCodeBlock,
 } from '@assistant-ui/react-markdown'
 import { parseVideoEmbedUrl, VideoEmbed } from '@klicker-uzh/markdown'
+import { conceptDefinition } from '@klicker-uzh/shared-components/src/knowledgeGraph/knowledgeGraphView'
 import type { KnowledgeGraphResponse } from '@klicker-uzh/types'
 import { CheckIcon, CopyIcon } from 'lucide-react'
 import { useTranslations } from 'next-intl'
@@ -77,16 +78,35 @@ function ConceptLink({
   const t = useTranslations('chat.graphPanel')
   const context = useContext(ConceptLinkContext)
   if (context === null) return <>{children}</>
+  const node = context.response.nodes.find(
+    (candidate) => candidate.id === nodeId
+  )
+  const definition = node === undefined ? undefined : conceptDefinition(node)
   return (
-    <button
-      type="button"
-      onClick={() => context.focusConcept(context.response, nodeId)}
-      title={t('showConcept')}
-      data-cy="chat-concept-link"
-      className="focus-visible:ring-ring decoration-primary/60 hover:decoration-primary cursor-pointer rounded-sm underline decoration-dotted decoration-2 underline-offset-4 focus-visible:outline-none focus-visible:ring-2"
-    >
-      {children}
-    </button>
+    <Tooltip delayDuration={200}>
+      <TooltipTrigger asChild>
+        <button
+          type="button"
+          onClick={() => context.focusConcept(context.response, nodeId)}
+          data-cy="chat-concept-link"
+          className="focus-visible:ring-ring decoration-primary/60 hover:decoration-primary cursor-pointer rounded-sm underline decoration-dotted decoration-2 underline-offset-4 focus-visible:outline-none focus-visible:ring-2"
+        >
+          {children}
+        </button>
+      </TooltipTrigger>
+      <TooltipContent
+        className="max-w-xs text-left"
+        data-cy="chat-concept-definition"
+      >
+        {node === undefined ? null : (
+          <p className="font-semibold">{node.displayLabel}</p>
+        )}
+        {definition === undefined ? null : (
+          <p className="mt-1 leading-5">{definition}</p>
+        )}
+        <p className="text-muted-foreground mt-1">{t('showConcept')}</p>
+      </TooltipContent>
+    </Tooltip>
   )
 }
 
