@@ -39,6 +39,10 @@ import { getOpenAIResponsesStore } from '@/src/lib/server/openaiResponsesOptions
 import { withOwnerPreviewAuth } from '@/src/lib/server/ownerPreviewAuth'
 import { resolveOwnerPreviewModeConfiguration } from '@/src/lib/server/previewAuthoringConfig'
 import { buildPromptCacheRequest } from '@/src/lib/server/promptCacheIdentity'
+import {
+  providerRefusalDeflection,
+  providerRefusalTransform,
+} from '@/src/lib/server/providerRefusal'
 import { withRouteLogging } from '@/src/lib/server/requestLogging'
 import { compileSystemPrompt } from '@/src/lib/server/systemPromptCompiler'
 import { isDocQueryToolName } from '@/src/lib/sources/normalizeSources'
@@ -411,6 +415,18 @@ async function handlePOST(
         },
       },
       stopWhen: isStepCount(5),
+      // Same provider-refusal replacement as the participant chat.
+      experimental_transform: providerRefusalTransform(
+        providerRefusalDeflection(
+          turnSettings.replyLanguage ?? null,
+          req.cookies.get('NEXT_LOCALE')?.value
+        ),
+        () =>
+          log.warn(
+            { event: 'chat.preview.provider_refusal.replaced' },
+            'Owner preview provider refusal replaced'
+          )
+      ),
       toolChoice: 'auto',
       // The reply-language reminder ends every step, after tool output, so
       // retrieved material in another language cannot set the reply language.
