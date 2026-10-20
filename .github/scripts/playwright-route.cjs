@@ -232,23 +232,110 @@ function parseArgs(argv) {
   return { output: argv[1] }
 }
 
-function main(argv = process.argv.slice(2), env = process.env) {
+async function admissionJson(response, maximum) {
+  if (!response.ok) throw new Error('admission unavailable')
+  let length = 0
+  const chunks = []
+  for await (const chunk of response.body) {
+    length += chunk.length
+    if (length > maximum) throw new Error('admission response too large')
+    chunks.push(Buffer.from(chunk))
+  }
+  return JSON.parse(Buffer.concat(chunks).toString('utf8'))
+}
+
+async function chooseRouteWithAdmission(
+  input,
+  env = process.env,
+  network = fetch
+) {
+  const ordinary = choosePlaywrightRoute(input)
+  if (
+    ordinary.route !== 'public-pr' ||
+    ordinary.provider === 'warpbuild' ||
+    input.runAttempt !== '1' ||
+    !env.WARPBUILD_ADMISSION_URL ||
+    !env.ACTIONS_ID_TOKEN_REQUEST_URL ||
+    !env.ACTIONS_ID_TOKEN_REQUEST_TOKEN
+  )
+    return ordinary
+  try {
+    const endpoint = new URL(env.WARPBUILD_ADMISSION_URL)
+    const tokenUrl = new URL(env.ACTIONS_ID_TOKEN_REQUEST_URL)
+    if (
+      endpoint.protocol !== 'https:' ||
+      endpoint.pathname !== '/admit' ||
+      endpoint.username ||
+      endpoint.password ||
+      endpoint.search ||
+      endpoint.hash ||
+      tokenUrl.protocol !== 'https:' ||
+      !tokenUrl.hostname.endsWith('.actions.githubusercontent.com') ||
+      tokenUrl.username ||
+      tokenUrl.password ||
+      tokenUrl.hash
+    )
+      return ordinary
+    tokenUrl.searchParams.set('audience', 'klicker-playwright-admission')
+    const signal = AbortSignal.timeout(12000)
+    const tokenResponse = await network(tokenUrl, {
+      signal,
+      redirect: 'error',
+      headers: {
+        authorization: `Bearer ${env.ACTIONS_ID_TOKEN_REQUEST_TOKEN}`,
+      },
+    })
+    const { value } = await admissionJson(tokenResponse, 20000)
+    if (typeof value !== 'string' || !value || value.length > 16384)
+      return ordinary
+    const identity = Object.fromEntries(
+      [
+        'runId',
+        'runAttempt',
+        'pullRequestNumber',
+        'headSha',
+        'baseSha',
+        'controlSha',
+      ].map((key) => [key, input[key]])
+    )
+    const response = await network(endpoint, {
+      method: 'POST',
+      signal,
+      redirect: 'error',
+      headers: {
+        authorization: `Bearer ${value}`,
+        'content-type': 'application/json',
+      },
+      body: JSON.stringify(identity),
+    })
+    const { ticket } = await admissionJson(response, 4096)
+    return choosePlaywrightRoute({
+      ...input,
+      warpbuildAdmissions: JSON.stringify([ticket]),
+    })
+  } catch {
+    // An absent response cannot prove that no reservation was made. The
+    // coordinator retains that exposure while this run keeps ordinary routing.
+    return ordinary
+  }
+}
+
+async function main(argv = process.argv.slice(2), env = process.env) {
   const { output } = parseArgs(argv)
-  const route = choosePlaywrightRoute(envInput(env))
+  const route = await chooseRouteWithAdmission(envInput(env), env)
   fs.writeFileSync(output, `${JSON.stringify(route, null, 2)}\n`)
 }
 
 if (require.main === module) {
-  try {
-    main()
-  } catch (error) {
+  main().catch((error) => {
     console.error(`Playwright route selection failed: ${error.message}`)
     process.exitCode = 1
-  }
+  })
 }
 
 module.exports = {
   ROUTE_SCHEMA_VERSION,
   choosePlaywrightRoute,
+  chooseRouteWithAdmission,
   envInput,
 }

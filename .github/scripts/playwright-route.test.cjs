@@ -1,7 +1,10 @@
 const assert = require('node:assert/strict')
 const test = require('node:test')
 
-const { choosePlaywrightRoute } = require('./playwright-route.cjs')
+const {
+  choosePlaywrightRoute,
+  chooseRouteWithAdmission,
+} = require('./playwright-route.cjs')
 
 function pullRequest(overrides = {}) {
   return {
@@ -38,6 +41,107 @@ function cloudAdmission(overrides = {}) {
     ...overrides,
   })
 }
+
+test('preparation obtains an exact ticket before selecting the paid backend', async () => {
+  const input = cloudAdmission({ warpbuildAdmissions: '' })
+  const ticket = { ...JSON.parse(cloudAdmission().warpbuildAdmissions)[0] }
+  const env = {
+    WARPBUILD_ADMISSION_URL: 'https://admission.example.invalid/admit',
+    ACTIONS_ID_TOKEN_REQUEST_URL:
+      'https://pipelines.actions.githubusercontent.com/token',
+    ACTIONS_ID_TOKEN_REQUEST_TOKEN: 'synthetic-request-credential',
+  }
+  const calls = []
+  const network = async (url, options) => {
+    calls.push({ url: String(url), options })
+    return calls.length === 1
+      ? Response.json({ value: 'synthetic-jwt' })
+      : Response.json({ ticket })
+  }
+  const result = await chooseRouteWithAdmission(input, env, network)
+  assert.equal(result.provider, 'warpbuild')
+  assert.equal(result.admissionAttempt, '1')
+  assert.equal(calls.length, 2)
+  assert.equal(
+    new URL(calls[0].url).searchParams.get('audience'),
+    'klicker-playwright-admission'
+  )
+  assert.equal(calls[1].options.headers.authorization, 'Bearer synthetic-jwt')
+  assert.deepEqual(JSON.parse(calls[1].options.body), {
+    runId: input.runId,
+    runAttempt: input.runAttempt,
+    pullRequestNumber: input.pullRequestNumber,
+    headSha: input.headSha,
+    baseSha: input.baseSha,
+    controlSha: input.controlSha,
+  })
+})
+
+test('disabled, legacy and ineligible preparations never request coordinator credentials', async () => {
+  const input = cloudAdmission({ warpbuildAdmissions: '' })
+  const env = {
+    WARPBUILD_ADMISSION_URL: 'https://admission.example.invalid/admit',
+    ACTIONS_ID_TOKEN_REQUEST_URL:
+      'https://pipelines.actions.githubusercontent.com/token',
+    ACTIONS_ID_TOKEN_REQUEST_TOKEN: 'synthetic',
+  }
+  for (const [changes, settings] of [
+    [{}, { WARPBUILD_ADMISSION_URL: '' }],
+    [{}, { ACTIONS_ID_TOKEN_REQUEST_TOKEN: '' }],
+    [{ prDraft: 'true' }, {}],
+    [{ headRepository: 'external/fork' }, {}],
+    [{ runAttempt: '2' }, {}],
+    [{}, { WARPBUILD_ADMISSION_URL: 'http://example.invalid/admit' }],
+    [{}, { ACTIONS_ID_TOKEN_REQUEST_URL: 'https://example.invalid/token' }],
+  ]) {
+    let called = false
+    const candidate = { ...input, ...changes }
+    assert.deepEqual(
+      await chooseRouteWithAdmission(
+        candidate,
+        { ...env, ...settings },
+        async () => {
+          called = true
+          throw new Error('unexpected request')
+        }
+      ),
+      choosePlaywrightRoute(candidate)
+    )
+    assert.equal(called, false)
+  }
+})
+
+test('coordinator denial, outages and invalid tickets preserve ordinary routing', async () => {
+  const input = cloudAdmission({ warpbuildAdmissions: '' })
+  const env = {
+    WARPBUILD_ADMISSION_URL: 'https://admission.example.invalid/admit',
+    ACTIONS_ID_TOKEN_REQUEST_URL:
+      'https://pipelines.actions.githubusercontent.com/token',
+    ACTIONS_ID_TOKEN_REQUEST_TOKEN: 'synthetic',
+  }
+  const ticket = JSON.parse(cloudAdmission().warpbuildAdmissions)[0]
+  for (const result of [
+    () => Response.json({ reason: 'unavailable' }, { status: 409 }),
+    () => {
+      throw new Error('network timeout')
+    },
+    () => Response.json({ ticket: { ...ticket, runId: '999' } }),
+    () =>
+      Response.json({
+        ticket: { ...ticket, expiresAt: '2025-01-01T00:00:00Z' },
+      }),
+    () => new Response('malformed'),
+    () => new Response('x'.repeat(4097)),
+  ]) {
+    let calls = 0
+    const network = async () =>
+      ++calls === 1 ? Response.json({ value: 'synthetic-token' }) : result()
+    assert.deepEqual(
+      await chooseRouteWithAdmission(input, env, network),
+      choosePlaywrightRoute(input)
+    )
+  }
+})
 
 test('paid admission binds the complete execution identity and eligibility', () => {
   const admitted = choosePlaywrightRoute(cloudAdmission())

@@ -117,8 +117,12 @@ seven synthetic tests in network-isolated Node 24.21.0, including simultaneous
 connections, restart, reconciliation, limits and private-file protection.
 The first reservation and reconciliation checks failed before implementation.
 Slice review is main-session self-review; no independent review is claimed.
-The active slice is authenticated preparation and bounded failure fallback.
-Integrated verification and draft delivery remain open. The native goal owns
+The authenticated handler, existing route client and reservation owner pass 30
+focused tests together. Synthetic signed tokens prove the trust claims; scoped
+forge-response fixtures reject changed, draft or ambiguous executions. Endpoint
+absence, legacy callers, outages and invalid tickets retain ordinary routing.
+No live authentication or deployment is claimed. The active slice is workflow
+wiring and integrated verification. Draft delivery remains open. The native goal owns
 continuation; a checkpoint is not source-package completion.
 
 ## Historical source package
