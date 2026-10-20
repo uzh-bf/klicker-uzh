@@ -67,12 +67,12 @@ export async function readConceptMentions(
   )
   if (response.status === 429) {
     const seconds = Number(response.headers.get('Retry-After'))
-    throw new ConceptMentionsBusyError(
-      Math.min(
-        MENTION_BUSY_MAX_WAIT_MS,
-        Number.isFinite(seconds) && seconds > 0 ? seconds * 1000 : 1000
-      )
-    )
+    const waitMs =
+      Number.isFinite(seconds) && seconds > 0 ? seconds * 1000 : 1000
+    // A longer wait means a rate limit, not a concurrent read; waiting would
+    // only hold up the answers queued behind this one.
+    if (waitMs > MENTION_BUSY_MAX_WAIT_MS) return null
+    throw new ConceptMentionsBusyError(waitMs)
   }
   if (!response.ok) return null
   const body: unknown = await response.json().catch(() => null)
