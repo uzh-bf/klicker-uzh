@@ -113,6 +113,18 @@ from every source change and public description.
 
 ### Current progress
 
+The next ordinary-review round identified admission before the plan's skip
+decision. Admission now runs in the existing metadata step after full plan
+validation; initial route selection makes no request. Skipped and invalid plans
+cannot reserve capacity. Workflow guards bind the later step's environment.
+Suffixed forge workflow paths are accepted only for the same fixed workflow;
+failed requests emit one fixed, non-sensitive warning. Issued tickets leave a
+minute below the client lifetime ceiling, and the permission fixture no longer
+depends on the test process umask. The new regressions failed before correction.
+The complete portfolio now has 111 passing container checks plus its separate
+passing host-only planner check. Scoped static analysis covers five executable
+files with no findings. Main-session integrated review remains self-review.
+
 Readiness follow-up: the client now gives admission its own bounded deadline,
 with room for signing-key retrieval, both forge batches and ledger contention.
 The regression failed before correction; all 30 focused admission tests pass

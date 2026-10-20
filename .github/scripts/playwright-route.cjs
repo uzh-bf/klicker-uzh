@@ -275,7 +275,7 @@ async function chooseRouteWithAdmission(
       tokenUrl.password ||
       tokenUrl.hash
     )
-      return ordinary
+      throw new Error('invalid admission endpoint')
     tokenUrl.searchParams.set('audience', 'klicker-playwright-admission')
     const tokenResponse = await network(tokenUrl, {
       signal: AbortSignal.timeout(12000),
@@ -286,7 +286,7 @@ async function chooseRouteWithAdmission(
     })
     const { value } = await admissionJson(tokenResponse, 20000)
     if (typeof value !== 'string' || !value || value.length > 16384)
-      return ordinary
+      throw new Error('invalid identity token')
     const identity = Object.fromEntries(
       IDENTITY_FIELDS.map((key) => [key, input[key]])
     )
@@ -303,20 +303,23 @@ async function chooseRouteWithAdmission(
       body: JSON.stringify(identity),
     })
     const { ticket } = await admissionJson(response, 4096)
-    return choosePlaywrightRoute({
+    const admitted = choosePlaywrightRoute({
       ...input,
       warpbuildAdmissions: JSON.stringify([ticket]),
     })
+    if (admitted.provider !== 'warpbuild') throw new Error('invalid ticket')
+    return admitted
   } catch {
     // An absent response cannot prove that no reservation was made. The
     // coordinator retains that exposure while this run keeps ordinary routing.
+    console.warn('WarpBuild admission unavailable; using ordinary routing')
     return ordinary
   }
 }
 
 async function main(argv = process.argv.slice(2), env = process.env) {
   const { output } = parseArgs(argv)
-  const route = await chooseRouteWithAdmission(envInput(env), env)
+  const route = choosePlaywrightRoute(envInput(env))
   fs.writeFileSync(output, `${JSON.stringify(route, null, 2)}\n`)
 }
 
@@ -328,6 +331,7 @@ if (require.main === module) {
 }
 
 module.exports = {
+  main,
   ROUTE_SCHEMA_VERSION,
   choosePlaywrightRoute,
   chooseRouteWithAdmission,

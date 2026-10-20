@@ -246,5 +246,15 @@ test('ledger refuses public files and symlinks', (t) => {
   assert.throws(() => new AdmissionStore(link))
   const publicFile = path.join(path.dirname(filename), 'public.sqlite')
   fs.writeFileSync(publicFile, '', { mode: 0o644 })
+  fs.chmodSync(publicFile, 0o644)
   assert.throws(() => new AdmissionStore(publicFile))
+})
+
+test('maximum ticket lifetime leaves room for a runner clock one minute behind', (t) => {
+  const { store } = fixture(t, {
+    ticketSeconds: 14400,
+    expiresAt: '2026-01-02T11:00:00Z',
+  })
+  const { ticket } = store.reserve(identity, now)
+  assert.ok(Date.parse(ticket.expiresAt) <= now - 60000 + 4 * 60 * 60 * 1000)
 })

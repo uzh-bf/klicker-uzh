@@ -280,7 +280,8 @@ class AdmissionStore {
         ...identity,
         expiresAt: new Date(
           Math.min(
-            now + policy.ticketSeconds * 1000,
+            // Keep a minute of clock margin below the client's four-hour bound.
+            now + Math.min(policy.ticketSeconds, 14340) * 1000,
             timestamp(policy.expiresAt)
           )
         ).toISOString(),

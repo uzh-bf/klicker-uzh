@@ -866,12 +866,15 @@ historical trial workflow remains separate and disabled.
 #### Reserved burst admission
 
 An optional coordinator can reserve a validation during trusted preparation,
-before runner selection. Configure `PUBLIC_PR_PLAYWRIGHT_WARPBUILD_ADMISSION_URL`
+after the canonical plan is validated and before runner selection. Skipped
+plans make no admission request. Configure `PUBLIC_PR_PLAYWRIGHT_WARPBUILD_ADMISSION_URL`
 only through an approved deployment packet. Its value is an HTTPS endpoint
 ending in `/admit`, with no query, credentials or fragment. An absent endpoint
 keeps the manual-ticket behavior. The client makes one bounded request, never
 retries a paid attempt, and keeps ordinary routing on denial or an unavailable
 response. Existing exact manual tickets take precedence.
+Failed requests emit only a fixed warning, without tokens, endpoints or
+coordinator reasons; a lost response still retains its reservation.
 
 The caller forwards `id-token: write` for hosted trusted preparation. Candidate
 build and shard jobs explicitly retain only `contents: read`. Preparation
@@ -914,7 +917,8 @@ The private policy supplies `windowId`, `expiresAt`, `controlSha`,
 `ticketSeconds`. Amounts are nonnegative integer millionths of one currency,
 used consistently for the burst, account and receipts. The window lasts at most
 24 hours; at most two unreconciled validations may coexist. Billing observations
-are at most 15 minutes old, ticket lifetime at most four hours. Start with one
+are at most 15 minutes old. Issued tickets retain a one-minute clock margin
+below the client's four-hour lifetime ceiling. Start with one
 concurrent validation. All operational values require the finite operator
 packet; the source supplies no spending defaults.
 

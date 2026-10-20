@@ -76,6 +76,10 @@ test('preparation obtains an exact ticket before selecting the paid backend', as
     'klicker-playwright-admission'
   )
   assert.equal(calls[1].options.headers.authorization, 'Bearer synthetic-jwt')
+  assert.equal(
+    calls[0].options.headers.authorization,
+    `Bearer ${env.ACTIONS_ID_TOKEN_REQUEST_TOKEN}`
+  )
   assert.deepEqual(JSON.parse(calls[1].options.body), {
     runId: input.runId,
     runAttempt: input.runAttempt,
@@ -142,7 +146,9 @@ test('disabled, legacy and ineligible preparations never request coordinator cre
   }
 })
 
-test('coordinator denial, outages and invalid tickets preserve ordinary routing', async () => {
+test('coordinator denial, outages and invalid tickets preserve ordinary routing', async (t) => {
+  const warnings = []
+  t.mock.method(console, 'warn', (...values) => warnings.push(values))
   const input = cloudAdmission({ warpbuildAdmissions: '' })
   const env = {
     WARPBUILD_ADMISSION_URL: 'https://admission.example.invalid/admit',
@@ -171,6 +177,30 @@ test('coordinator denial, outages and invalid tickets preserve ordinary routing'
       await chooseRouteWithAdmission(input, env, network),
       choosePlaywrightRoute(input)
     )
+  }
+  assert.equal(warnings.length, 6)
+  assert.equal(
+    new Set(warnings.map((values) => JSON.stringify(values))).size,
+    1
+  )
+  assert.ok(
+    warnings.every((values) => !JSON.stringify(values).includes('synthetic'))
+  )
+  for (const tokenResponse of [
+    Response.json({}, { status: 503 }),
+    new Response('x'.repeat(20001)),
+    Response.json({}),
+    Response.json({ value: 42 }),
+  ]) {
+    let calls = 0
+    assert.deepEqual(
+      await chooseRouteWithAdmission(input, env, async () => {
+        calls++
+        return tokenResponse
+      }),
+      choosePlaywrightRoute(input)
+    )
+    assert.equal(calls, 1)
   }
 })
 

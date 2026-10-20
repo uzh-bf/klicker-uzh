@@ -138,7 +138,8 @@ async function verifyRun(identity, config, api = github) {
     String(run.run_attempt) !== identity.runAttempt ||
     run.event !== 'pull_request' ||
     run.status !== 'in_progress' ||
-    run.path !== '.github/workflows/test-playwright.yml' ||
+    typeof run.path !== 'string' ||
+    run.path.split('@')[0] !== '.github/workflows/test-playwright.yml' ||
     run.head_sha !== identity.headSha ||
     String(run.repository?.id) !== config.repositoryId ||
     run.repository?.private !== false ||

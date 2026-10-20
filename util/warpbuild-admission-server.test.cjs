@@ -256,6 +256,9 @@ test('forge evidence rejects drafts, source drift, ambiguous preparation and sta
               : data.run
     )
   assert.equal(await verify(baseline), true)
+  const suffixed = structuredClone(baseline)
+  suffixed.run.path += '@refs/pull/1234/merge'
+  assert.equal(await verify(suffixed), true)
   for (const mutate of [
     (data) => {
       data.group.selected_workflows.push('external/workflow')
