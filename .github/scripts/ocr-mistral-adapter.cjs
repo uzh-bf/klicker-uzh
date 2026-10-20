@@ -78,6 +78,16 @@ const MAX_REQUEST_BYTES = 2 * 1024 * 1024
 const MAX_RESPONSE_BYTES = 32 * 1024 * 1024
 const MAX_UPSTREAM_ERROR_BODY_BYTES = 16 * 1024
 const UPSTREAM_ERROR_CODES = new Set([400, 401, 402, 403, 408, 429, 502, 503])
+const OPENROUTER_LIMIT_REASONS = {
+  openrouter_key_limit: 'key_budget_exhausted',
+  openrouter_guardrail_budget: 'guardrail_budget_exhausted',
+  openrouter_in_flight_budget: 'in_flight_budget_exhausted',
+  openrouter_credits: 'credits_insufficient',
+}
+const UPSTREAM_ERROR_REASONS = new Set([
+  ...Object.values(OPENROUTER_LIMIT_REASONS),
+  'unknown',
+])
 const DEFAULT_TIMEOUT_MS = 45 * 60 * 1000
 const DEFAULT_MAX_LIFETIME_MS = 50 * 60 * 1000
 const DEFAULT_MAX_HISTORY_ENTRIES = 2000
@@ -876,22 +886,44 @@ async function drain(response, limit) {
   }
 }
 
-// Provider messages and metadata remain private; retain only fixed error codes
+// Provider messages and metadata remain private; retain only fixed error details
 // from a small, already bounded JSON response.
-function upstreamErrorCode(body) {
+function upstreamErrorDetails(body, provider, status) {
+  const details = { code: 'unknown', reason: 'unknown' }
   if (
     typeof body !== 'string' ||
     Buffer.byteLength(body, 'utf8') > MAX_UPSTREAM_ERROR_BODY_BYTES
   )
-    return undefined
+    return details
   let payload
   try {
     payload = JSON.parse(body)
   } catch {
-    return undefined
+    return details
   }
-  const code = payload?.error?.code
-  return UPSTREAM_ERROR_CODES.has(code) ? code : undefined
+  const error = payload?.error
+  if (!isPlainObject(error)) return details
+  if (UPSTREAM_ERROR_CODES.has(error.code)) details.code = error.code
+  if (provider !== 'openrouter' || ![402, 403].includes(status)) return details
+  if (Object.hasOwn(error, 'metadata')) {
+    if (!isPlainObject(error.metadata)) return details
+    if (Object.hasOwn(error.metadata, 'limit_source')) {
+      const source = error.metadata.limit_source
+      if (
+        typeof source === 'string' &&
+        Object.hasOwn(OPENROUTER_LIMIT_REASONS, source)
+      )
+        details.reason = OPENROUTER_LIMIT_REASONS[source]
+      return details
+    }
+  }
+  if (
+    status === 403 &&
+    typeof error.message === 'string' &&
+    /^Key limit exceeded(?:$|[\s.:(])/i.test(error.message)
+  )
+    details.reason = 'key_budget_exhausted'
+  return details
 }
 
 // Fetch's implicit five-minute header/body deadlines would preempt the
@@ -1249,11 +1281,17 @@ async function startAdapter(options = {}) {
               ? upstream.status
               : null,
           code: 'unknown',
+          reason: 'unknown',
         }
         diagnostics.last_upstream_error = rejection
-        rejection.code =
-          upstreamErrorCode(await drain(upstream, maxResponseBytes)) ??
-          'unknown'
+        Object.assign(
+          rejection,
+          upstreamErrorDetails(
+            await drain(upstream, maxResponseBytes),
+            profile.name,
+            upstream.status
+          )
+        )
         sendAdapterError(res, new AdapterError('upstream_error', 'status'))
         return
       }
@@ -1921,14 +1959,16 @@ function upstreamErrorSummary(rows) {
           value.http_status >= 100 &&
           value.http_status <= 599)
       ) ||
-      !(UPSTREAM_ERROR_CODES.has(value.code) || value.code === 'unknown')
+      !(UPSTREAM_ERROR_CODES.has(value.code) || value.code === 'unknown') ||
+      (Object.hasOwn(value, 'reason') &&
+        !UPSTREAM_ERROR_REASONS.has(value.reason))
     )
       return 'OCR upstream_error status=unknown stage=adapter'
     rejection = value
   }
   if (!rows.length) return 'OCR upstream_error status=unavailable stage=adapter'
   if (!rejection) return 'OCR upstream_error status=none stage=adapter'
-  return `OCR upstream_error status=complete stage=adapter http_status=${rejection.http_status ?? 'unknown'} code=${rejection.code}`
+  return `OCR upstream_error status=complete stage=adapter http_status=${rejection.http_status ?? 'unknown'} code=${rejection.code} reason=${rejection.reason ?? 'unknown'}`
 }
 
 function commandSummary(args) {

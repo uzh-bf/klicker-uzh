@@ -563,12 +563,21 @@ are kept.
 Adapter receipts retain the latest observed rejection as `last_upstream_error`
 with an integer HTTP status and an allowlisted numeric `error.code`, or `unknown`.
 Only codes 400, 401, 402, 403, 408, 429, 502 and 503 are retained from the top-level
-JSON error envelope ([OpenRouter error codes](https://openrouter.ai/docs/api_reference/errors-and-debugging)). Messages, metadata and arbitrary codes are discarded. Parsing
+JSON error envelope ([OpenRouter error codes](https://openrouter.ai/docs/api_reference/errors-and-debugging)). For OpenRouter HTTP 402/403, a fixed `reason` distinguishes
+`key_budget_exhausted`, `guardrail_budget_exhausted`,
+`in_flight_budget_exhausted` and `credits_insufficient` from the documented
+`error.metadata.limit_source` allowlist. HTTP 403 can also identify a key cap
+from the documented leading `Key limit exceeded` phrase when structured limit
+evidence is absent. Unknown or malformed structured evidence blocks that legacy
+fallback; an arbitrary 403 remains `unknown`. These classifications follow the
+[OpenRouter limits contract](https://openrouter.ai/docs/api_reference/limits).
+Messages, metadata values, account amounts and arbitrary codes are discarded. Parsing
 uses at most 16 KiB of an already bounded response; a body read failure preserves
 the observed HTTP status. Concurrent rejection bodies cannot overwrite a later
 observed rejection. The `OCR upstream_error` summary revalidates these fields and
 uses the last non-null rejection in receipt order, separately from cost and usage
-accounting. Older receipts report this diagnostic as unavailable. Preflight and
+accounting. Older receipts with status/code but no reason report `reason=unknown`;
+receipts without status/code report this diagnostic as unavailable. Preflight and
 stack topology `callMistral` receipts retain their existing behavior.
 
 History diagnostics retain the existing total misses and add one reason for

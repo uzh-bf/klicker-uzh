@@ -125,5 +125,10 @@ PR-body update. Preserve applicable verification when source is unchanged.
 - Native planner approved round two after clarifying classification precedence,
   slice ownership and reason-field regression coverage. Opposing-provider
   advisory challenge is running. No product primitive or architecture change.
-- Public outcome evidence confirms the category-log omission. Next: commit the
-  plan and implement the diagnostic slice. PR not yet created.
+- Budget diagnosis implemented; adapter suite passes 97/97 on pinned Node
+  24.21.0. An existing short-deadline transport test was transiently delayed;
+  the unchanged test passes on the subsequent complete run. Test delta: one
+  behavioral matrix added, existing summary/concurrency/stalled-body cases
+  extended, no tests removed. Formatter and data/secret checks pass.
+- Public outcome evidence confirms the category-log omission. Next: review
+  slice one and add category counts to the draft log. PR not yet created.
