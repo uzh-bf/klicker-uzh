@@ -6,6 +6,7 @@ import { useFormatter, useTranslations } from 'next-intl'
 import React, { useRef, useState } from 'react'
 import KnowledgeBaseAddResourceModal from './components/KnowledgeBaseAddResourceModal'
 import KnowledgeBaseChatbotBindings from './components/KnowledgeBaseChatbotBindings'
+import KnowledgeBaseDomainSettings from './components/KnowledgeBaseDomainSettings'
 import KnowledgeBaseImportedSourceList from './components/KnowledgeBaseImportedSourceList'
 import KnowledgeBaseResourceList from './components/KnowledgeBaseResourceList'
 import KnowledgeGraphPanel from './components/KnowledgeGraphPanel'
@@ -103,6 +104,14 @@ function KnowledgeBaseDetail({ kbId }: { kbId: string }) {
           {data.getKb.description}
         </p>
       ) : null}
+      <KnowledgeBaseDomainSettings
+        kbId={kbId}
+        domain={{
+          id: data.getKb.domainPolicyId ?? null,
+          version: data.getKb.domainPolicyVersion ?? null,
+          language: data.getKb.domainPolicyLanguage ?? null,
+        }}
+      />
       {metrics ? (
         <section
           className="mt-6"
