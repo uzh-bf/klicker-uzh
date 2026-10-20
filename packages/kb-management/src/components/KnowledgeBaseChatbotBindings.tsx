@@ -12,6 +12,7 @@ import {
   UserNotification,
   toast,
 } from '@uzh-bf/design-system'
+import Link from 'next/link'
 import { useTranslations } from 'next-intl'
 import React, { useState } from 'react'
 import { refreshAfterMutation } from '../refreshAfterMutation'
@@ -123,6 +124,15 @@ function KnowledgeBaseChatbotBindings({
       </summary>
       <section className="mt-3" data-cy="kb-chatbot-bindings">
         <p className="text-sm text-slate-600">{t('kb.chatbotsDescription')}</p>
+        {/* The chatbots page validates this id against the lecturer's own
+            knowledge bases before offering to connect it. */}
+        <Link
+          href={`/resources/chatbots?createForKb=${encodeURIComponent(kbId)}`}
+          className="mt-2 inline-block text-sm font-medium text-primary-100 hover:underline"
+          data-cy="kb-create-chatbot"
+        >
+          {t('manage.resources.chatbotKnowledgeBaseCreateChatbot')}
+        </Link>
 
         {loading ? (
           <Skeleton
