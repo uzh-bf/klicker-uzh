@@ -1051,6 +1051,12 @@ streaming regression in `playwright/tests/Y-chat.spec.ts` pauses before a closin
 observes the DOM for raw delimiters, partial formulas, and KaTeX errors, then asserts the final
 formula, surrounding Markdown, and assistant-row identity.
 
+## Read-aloud
+
+Assistant answers can be read aloud with assistant-ui's `ActionBarPrimitive.Speak` and `StopSpeaking` next to Copy in `src/components/thread.tsx`. The runtime's speech adapter is `LocalSpeechSynthesisAdapter` in `src/lib/speech/localSpeechSynthesis.ts`. It mirrors assistant-ui's `WebSpeechSynthesisAdapter` because that class queues its utterance before a voice can be set. Before speaking, `toSpeakableText` (`src/lib/speech/readAloudText.ts`) skips fenced code, replaces display math with a localized word, strips citation markers, and keeps inline code and inline math without their delimiters.
+
+The privacy contract is on-device voices only. Chrome also lists network voices that send the text to Google, so `useLocalSpeechSynthesis` picks a `localService` voice for the chat locale and passes no adapter when none exists; the button is then hidden. Embedded chats never show it. Starting a new answer, switching threads, or leaving the chat stops playback.
+
 ## Localization
 
 Chat has no locale switcher: the locale comes from the `NEXT_LOCALE` cookie and falls back to `en` ([ADR 0001](./adr/0001-chat-locale-from-cookie.md)). It is resolved **directly in the chat-local `getRequestConfig`** (`src/types/i18n.ts`). Relying on `setRequestLocale`/`requestLocale` alone produces a split brain — `<html lang>` follows the cookie while server-side `getTranslations()` stays on the default locale. Messages come from the static `messagesByLocale` map exported there, which the root layout reuses: Turbopack cannot build a dynamic-import context for a bare package subpath (`import('@klicker-uzh/i18n/messages/' + locale)`), so the dynamic form silently resolves nothing in this app. Strings live in `packages/i18n/messages/{en,de}.ts`; `apps/chat/src/types/app.d.ts` enforces en/de key parity through a `DeepIntersection`, so a missing key fails `pnpm --filter @klicker-uzh/chat check` rather than at runtime. German addressed to students is informal (`Du`/`Dein`/`Dir`), instructors are "Dozierende", and Swiss `ss` is used instead of `ß`.

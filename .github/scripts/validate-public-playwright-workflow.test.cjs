@@ -66,6 +66,29 @@ test('the current public workflow satisfies the runner trust boundary', () => {
   )
 })
 
+test('shard telemetry reports the test producer outcome before the composite completes', () => {
+  const action = YAML.parse(
+    fs.readFileSync(
+      path.join(__dirname, '../actions/playwright-shard/action.yml'),
+      'utf8'
+    )
+  )
+  const producer = action.runs.steps.find((step) =>
+    step.run?.includes('exec playwright test')
+  )
+  const telemetry = action.runs.steps.find(
+    (step) => step.env?.PLAYWRIGHT_TELEMETRY_PHASE === 'shard'
+  )
+
+  assert.equal(typeof producer?.id, 'string')
+  assert.notEqual(producer['continue-on-error'], true)
+  assert.equal(telemetry.if, 'always()')
+  assert.equal(
+    telemetry.env.PLAYWRIGHT_CONCLUSION,
+    `\${{ steps.${producer.id}.outcome }}`
+  )
+})
+
 test('public runner jobs require their exact scheduling role and reject unknown pool jobs', () => {
   const source = YAML.parse(
     fs.readFileSync(

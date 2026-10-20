@@ -25,6 +25,7 @@ import {
   SquareIcon,
   ThumbsDownIcon,
   ThumbsUpIcon,
+  Volume2Icon,
   XIcon,
 } from 'lucide-react'
 import Image from 'next/image'
@@ -1964,6 +1965,46 @@ const AssistantActionBar: FC<{ embedded?: boolean }> = ({ embedded }) => {
           </TooltipTrigger>
           <TooltipContent>{t('chat.message.copy')}</TooltipContent>
         </Tooltip>
+        <AuiIf
+          condition={(s) =>
+            s.thread.capabilities.speech && s.message.speech == null
+          }
+        >
+          <Tooltip>
+            <TooltipTrigger asChild>
+              <ActionBarPrimitive.Speak asChild>
+                <button
+                  data-cy="chat-read-aloud-button"
+                  aria-pressed={false}
+                  className={actionBarButtonClassName}
+                >
+                  <Volume2Icon />
+                  <span className="sr-only">{t('chat.message.readAloud')}</span>
+                </button>
+              </ActionBarPrimitive.Speak>
+            </TooltipTrigger>
+            <TooltipContent>{t('chat.message.readAloud')}</TooltipContent>
+          </Tooltip>
+        </AuiIf>
+        <AuiIf condition={(s) => s.message.speech != null}>
+          <Tooltip>
+            <TooltipTrigger asChild>
+              <ActionBarPrimitive.StopSpeaking asChild>
+                <button
+                  data-cy="chat-stop-read-aloud-button"
+                  aria-pressed={true}
+                  className={actionBarButtonClassName}
+                >
+                  <SquareIcon />
+                  <span className="sr-only">
+                    {t('chat.message.stopReadAloud')}
+                  </span>
+                </button>
+              </ActionBarPrimitive.StopSpeaking>
+            </TooltipTrigger>
+            <TooltipContent>{t('chat.message.stopReadAloud')}</TooltipContent>
+          </Tooltip>
+        </AuiIf>
         {!hideAnswerActions && hasAvailableMode && (
           <Tooltip>
             <TooltipTrigger asChild>

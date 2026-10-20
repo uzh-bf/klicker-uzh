@@ -14,6 +14,7 @@ import {
   type ThreadMessageLike,
 } from '@assistant-ui/react'
 import { useParams, useRouter, useSearchParams } from 'next/navigation'
+import { useLocale, useTranslations } from 'next-intl'
 import {
   useCallback,
   useEffect,
@@ -32,6 +33,7 @@ import {
 import { parseMessageDocuments } from '../lib/attachments/documentText'
 import { imageAttachmentAdapter } from '../lib/attachments/imageAttachmentAdapter'
 import { resolveSelectedMode } from '../lib/config/modes'
+import { useLocalSpeechSynthesis } from '../lib/speech/localSpeechSynthesis'
 
 const EMPTY_MESSAGES: ExtendedThreadMessageLike[] = []
 
@@ -334,6 +336,13 @@ export function RuntimeProvider({
     [setMessagesInternal]
   )
 
+  const t = useTranslations()
+  const locale = useLocale()
+  const speechAdapter = useLocalSpeechSynthesis({
+    locale,
+    formulaLabel: t('chat.message.readAloudFormula'),
+    disabled: embedded,
+  })
   // Documents are read as text in the browser, so they work with every model;
   // images only join when the selected model accepts them.
   const adapters = useMemo(
@@ -344,8 +353,9 @@ export function RuntimeProvider({
             documentAttachmentAdapter,
           ])
         : documentAttachmentAdapter,
+      ...(speechAdapter ? { speech: speechAdapter } : {}),
     }),
-    [supportsImageAttachments]
+    [supportsImageAttachments, speechAdapter]
   )
 
   const readingDocument = useSyncExternalStore(
@@ -367,6 +377,16 @@ export function RuntimeProvider({
     convertMessage,
     adapters,
   })
+
+  // A new answer, a thread switch, or leaving the chat stops read-aloud;
+  // otherwise the voice keeps talking with no stop button in view.
+  useEffect(() => {
+    const stopSpeaking = () => {
+      if (runtime.thread.getState().speech) runtime.thread.stopSpeaking()
+    }
+    if (isRunning) stopSpeaking()
+    return stopSpeaking
+  }, [runtime, isRunning, activeThreadId])
 
   return (
     <ModeOptionsProvider modeOptions={activeModeOptions}>

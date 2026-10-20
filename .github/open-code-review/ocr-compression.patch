@@ -81,7 +81,7 @@
  		if m.ReasoningContent != "" {
  			sb.WriteString("    <reasoning>\n")
  			sb.WriteString(fmt.Sprintf("      %s\n", m.ReasoningContent))
-@@ -218,14 +220,17 @@
+@@ -218,17 +220,31 @@
  
  // runCompression performs three-zone memory compression on the given
  // messages, summarizing the compress zone while preserving the active zone
@@ -102,7 +102,21 @@
  	if part.compressEnd <= part.frozenEnd {
  		return msgs, nil
  	}
-@@ -274,7 +279,7 @@
++
++	before := CountMessagesTokens(msgs)
++	after := before
++	outcome := "failed"
++	fmt.Fprintf(stdout.Writer(), "[ocr] compression_started before_estimated_tokens=%d\n", before)
++	defer func() {
++		if outcome == "failed" && ctx.Err() != nil {
++			outcome = "cancelled"
++		}
++		fmt.Fprintf(stdout.Writer(), "[ocr] compression_finished outcome=%s before_estimated_tokens=%d after_estimated_tokens=%d\n", outcome, before, after)
++	}()
+ 
+ 	contextXML := buildMessageXML(msgs[part.frozenEnd:part.compressEnd])
+ 
+@@ -274,24 +290,31 @@
  		atomic.AddInt64(&r.totalCacheWriteTokens, resp.Usage.CacheWriteTokens)
  	}
  
@@ -111,7 +125,10 @@
  	if rawSummary == "" {
  		// Empty summary: keep the original conversation rather than dropping
  		// everything below the frozen zone.
-@@ -284,14 +289,17 @@
++		outcome = "unchanged"
+ 		return msgs, nil
+ 	}
+ 
  	rebuilt := make([]llm.Message, 2)
  	copy(rebuilt, msgs[:2])
  
@@ -126,25 +143,31 @@
  		rebuilt = append(rebuilt, msgs[i])
  	}
  
-+	if CountMessagesTokens(rebuilt) >= PromptTokenLimit(r.deps.Template.MaxTokens) {
++	rebuiltTokens := CountMessagesTokens(rebuilt)
++	if rebuiltTokens >= PromptTokenLimit(r.deps.Template.MaxTokens) {
 +		return msgs, fmt.Errorf("compressed summary exceeds the available context")
 +	}
++	after = rebuiltTokens
++	outcome = "rebuilt"
  	return rebuilt, nil
  }
  
 --- a/internal/llmloop/compression_test.go
 +++ b/internal/llmloop/compression_test.go
-@@ -4,6 +4,9 @@
+@@ -4,6 +4,12 @@
  package llmloop
  
  import (
++	"bytes"
 +	"context"
++	"fmt"
 +	"github.com/alibaba/open-code-review/internal/config/template"
++	"github.com/alibaba/open-code-review/internal/stdout"
 +	"reflect"
  	"strings"
  	"testing"
  
-@@ -191,11 +194,11 @@
+@@ -191,11 +197,11 @@
  		msg("tool", "ok"),
  	}
  	result := partitionMessages(messages, 100000, 0)
@@ -161,20 +184,29 @@
  	}
  }
  
-@@ -316,3 +319,78 @@
+@@ -316,3 +322,159 @@
  		}
  	}
  }
 +
-+type compressionRecordingClient struct{ requests []llm.ChatRequest }
++type compressionRecordingClient struct {
++	requests []llm.ChatRequest
++	response *llm.ChatResponse
++	err      error
++}
 +
 +func (c *compressionRecordingClient) CompletionsWithCtx(_ context.Context, req llm.ChatRequest) (*llm.ChatResponse, error) {
 +	c.requests = append(c.requests, req)
++	if c.response != nil || c.err != nil {
++		return c.response, c.err
++	}
 +	text := "bounded current summary"
 +	return &llm.ChatResponse{Choices: []llm.Choice{{Message: llm.ResponseMessage{Content: &text}}}}, nil
 +}
 +
 +func TestCompressionFrozenPromptAndRollingSummary(t *testing.T) {
++	var progress bytes.Buffer
++	defer stdout.Swap(&progress)()
 +	t_tempDir = t.TempDir()
 +	client := &compressionRecordingClient{}
 +	r := newTestRunner(client, template.Template{MaxTokens: 1000, MemoryCompressionTask: template.LlmConversation{Messages: []template.ChatMessage{{Role: "user", Content: "{{context}}"}}}})
@@ -196,6 +228,10 @@
 +	if CountMessagesTokens(got) >= PromptTokenLimit(1000) {
 +		t.Fatal("compression did not reserve the fixed prompt and summary")
 +	}
++	expectedFirst := fmt.Sprintf("[ocr] compression_finished outcome=rebuilt before_estimated_tokens=%d after_estimated_tokens=%d\n", CountMessagesTokens(messages), CountMessagesTokens(got))
++	if !strings.Contains(progress.String(), expectedFirst) {
++		t.Fatal("compression estimates do not describe the returned snapshot")
++	}
 +	previous := got[2].ExtractText()
 +	for i := 0; i < 8; i++ {
 +		got = append(got, msg("assistant", strings.Repeat("new evidence ", 150)), msg("tool", strings.Repeat("new result ", 150)))
@@ -215,6 +251,12 @@
 +	}
 +	if CountMessagesTokens(again) >= PromptTokenLimit(1000) {
 +		t.Fatal("recompression retained too much active history")
++	}
++	if strings.Count(progress.String(), "compression_started ") != len(client.requests) || strings.Count(progress.String(), "compression_finished outcome=rebuilt ") != len(client.requests) {
++		t.Fatal("telemetry lifecycle does not match actual summarization requests")
++	}
++	if strings.Contains(progress.String(), "synthetic.go") || strings.Contains(progress.String(), "bounded current summary") {
++		t.Fatal("telemetry contains task or summary content")
 +	}
 +}
 +
@@ -238,6 +280,68 @@
 +	}
 +	if !reflect.DeepEqual(got, initial) {
 +		t.Fatal("reasoning-only output must not replace unsummarized evidence")
++	}
++}
++
++func TestCompressionTelemetryPreservesFailureAndNoWorkResults(t *testing.T) {
++	for _, outcome := range []string{"unchanged", "failed", "cancelled", "oversized", "disabled", "no_work"} {
++		t.Run(outcome, func(t *testing.T) {
++			var progress bytes.Buffer
++			defer stdout.Swap(&progress)()
++			t_tempDir = t.TempDir()
++			client := &compressionRecordingClient{}
++			tmpl := template.Template{MaxTokens: 1000, MemoryCompressionTask: template.LlmConversation{Messages: []template.ChatMessage{{Role: "user", Content: "{{context}}"}}}}
++			msgs := []llm.Message{msg("system", "immutable"), msg("user", "instructions")}
++			for i := 0; i < 8; i++ {
++				msgs = append(msgs, msg("assistant", strings.Repeat("context ", 150)), msg("tool", strings.Repeat("evidence ", 150)))
++			}
++			ctx, cancel := context.WithCancel(context.Background())
++			defer cancel()
++			empty := ""
++			switch outcome {
++			case "unchanged":
++				client.response = &llm.ChatResponse{Choices: []llm.Choice{{Message: llm.ResponseMessage{Content: &empty}}}}
++			case "failed":
++				client.err = fmt.Errorf("private synthetic provider detail")
++			case "cancelled":
++				cancel()
++				client.err = context.Canceled
++			case "oversized":
++				huge := strings.Repeat("summary ", 5000)
++				client.response = &llm.ChatResponse{Choices: []llm.Choice{{Message: llm.ResponseMessage{Content: &huge}}}}
++			case "disabled":
++				tmpl.MemoryCompressionTask.Messages = nil
++				msgs = msgs[:2]
++			case "no_work":
++				msgs = msgs[:2]
++			}
++			r := newTestRunner(client, tmpl)
++			got, err := r.runCompression(ctx, msgs, "private-task-key")
++			if !reflect.DeepEqual(got, msgs) {
++				t.Fatal("instrumentation changed unchanged-history result")
++			}
++			wantError := outcome == "failed" || outcome == "cancelled" || outcome == "oversized"
++			if (err != nil) != wantError {
++				t.Fatal("unexpected compression error behavior")
++			}
++			if outcome == "disabled" || outcome == "no_work" {
++				if len(client.requests) != 0 || strings.Contains(progress.String(), "compression_started ") {
++					t.Fatal("no-work path counted as request")
++				}
++			} else {
++				status := outcome
++				if status == "oversized" {
++					status = "failed"
++				}
++				expected := fmt.Sprintf("[ocr] compression_finished outcome=%s before_estimated_tokens=%d after_estimated_tokens=%d\n", status, CountMessagesTokens(msgs), CountMessagesTokens(msgs))
++				if len(client.requests) != 1 || !strings.Contains(progress.String(), expected) {
++					t.Fatal("wrong telemetry result or request count")
++				}
++			}
++			if strings.Contains(progress.String(), "private-") || strings.Contains(progress.String(), "provider detail") {
++				t.Fatal("telemetry leaked private details")
++			}
++		})
 +	}
 +}
 --- a/internal/llmloop/runner_test.go
@@ -368,3 +472,13 @@
 +		t.Fatal("oversized singleton must fail the unchanged hard guard")
 +	}
 +}
+--- a/internal/llmloop/loop.go
++++ b/internal/llmloop/loop.go
+@@ -372,6 +372,7 @@
+ // Review calls this once per review round, so one review subtask can drive
+ // several of these conversations in sequence.
+ func (r *Runner) RunMainTask(ctx context.Context, messages []llm.Message, taskKey string) (bool, MainLoopStop, error) {
++	fmt.Fprintln(stdout.Writer(), "[ocr] compression_telemetry version=1")
+ 	// Every round of this loop re-sends the growing conversation, so each
+ 	// request is a prefix extension of the previous one — exactly what
+ 	// provider prompt caches reuse. Scope the affinity key to this subtask's
