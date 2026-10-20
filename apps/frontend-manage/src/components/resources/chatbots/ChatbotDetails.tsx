@@ -2090,7 +2090,7 @@ function ChatbotDetails({
             }}
             dataSecondaryAction={{ cy: 'chatbot-edit-details-cancel' }}
             className={{ content: 'max-w-2xl' }}
-            data={{ cy: 'chatbot-edit-details-modal' }}
+            dataContent={{ cy: 'chatbot-edit-details-modal' }}
           >
             <ChatbotAuthoring
               key={`${chatbot.id}:basics`}
@@ -2113,7 +2113,7 @@ function ChatbotDetails({
             title={t('manage.resources.chatbotStudentsPreviewTitle')}
             onClose={() => setStudentsPreview(null)}
             className={{ content: 'max-w-2xl' }}
-            data={{ cy: 'chatbot-students-preview-modal' }}
+            dataContent={{ cy: 'chatbot-students-preview-modal' }}
           >
             <ChatbotDisclaimerPreview
               title={studentsPreview?.title ?? ''}
