@@ -72,6 +72,10 @@ import {
 import { buildPromptCacheRequest } from '@/src/lib/server/promptCacheIdentity'
 import { renderPromptTemplate } from '@/src/lib/server/promptTemplates'
 import {
+  providerRefusalDeflection,
+  providerRefusalTransform,
+} from '@/src/lib/server/providerRefusal'
+import {
   createResponseExampleSearchTool,
   loadResponseExampleRuntimeSkill,
   RESPONSE_EXAMPLE_SEARCH_TOOL_NAME,
@@ -2102,6 +2106,20 @@ export async function POST(
           ],
         }),
         stopWhen: isStepCount(5),
+        // A provider's canned, unbilled refusal is replaced with a neutral
+        // platform line, so no mode shows it and a persona keeps its role.
+        experimental_transform: providerRefusalTransform(
+          providerRefusalDeflection(
+            turnSettings.replyLanguage ?? null,
+            req.cookies.get('NEXT_LOCALE')?.value
+          ),
+          (finish) =>
+            console.warn('[chat] Provider refusal replaced:', {
+              requestId,
+              chatMode: selectedMode,
+              ...finish,
+            })
+        ),
         instructions: turnRequest.instructions,
 
         abortSignal: req.signal,
