@@ -74,6 +74,12 @@ query QGetChatbotsInfoWithKnowledgeBases {
     enabledKnowledgeBases {
       id
       name
+      materialsReadiness {
+        visibleResourceCount
+        servingResourceCount
+        processingResourceCount
+        failedResourceCount
+      }
     }
     createdAt
     updatedAt

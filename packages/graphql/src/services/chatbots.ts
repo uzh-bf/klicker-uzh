@@ -35,6 +35,7 @@ import {
   MAX_SIGNED_INT32,
   normalizeAndValidateCreditPolicy,
 } from './chatbotCreditPolicy.js'
+import { getKbMetricsMap } from './knowledge.js'
 
 const chatModelSchema = z
   .object({
@@ -2020,6 +2021,13 @@ export async function getChatbotsInfo(ctx: ContextWithUser) {
   const messageCountById = new Map(
     messageCountRows.map((row) => [row.chatbotId, Number(row.count)])
   )
+  const kbMetricsById = await getKbMetricsMap(ctx.prisma, [
+    ...new Set(
+      chatbots.flatMap((chatbot) =>
+        chatbot.knowledgeBases.map(({ kb }) => kb.id)
+      )
+    ),
+  ])
 
   return chatbots.map((chatbot) => {
     const creditAggregate = creditAggregateById.get(chatbot.id)
@@ -2056,14 +2064,19 @@ export async function getChatbotsInfo(ctx: ContextWithUser) {
         }
       : null
 
+    const enabledKnowledgeBases = chatbot.knowledgeBases.map(({ kb }) => ({
+      ...kb,
+      metrics: kbMetricsById.get(kb.id) ?? null,
+    }))
+
     return {
       ...shapeChatbotResponse(chatbot),
       usageSummary,
       disclaimerSummary,
-      enabledKnowledgeBases: chatbot.knowledgeBases.map(({ kb }) => kb),
+      enabledKnowledgeBases,
       enabledKnowledgeBase:
-        chatbot.knowledgeBases.length === 1
-          ? (chatbot.knowledgeBases[0]?.kb ?? null)
+        enabledKnowledgeBases.length === 1
+          ? (enabledKnowledgeBases[0] ?? null)
           : null,
     }
   })

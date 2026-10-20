@@ -4,7 +4,7 @@ import {
   KB_SOURCE_ORIGINS,
   type KBImportedSource as KBImportedSourceType,
 } from '../services/knowledge.js'
-import { ChatbotKnowledgeBaseSummaryRef } from './resource.js'
+import { ChatbotKnowledgeBaseSummaryRef, ChatbotStatus } from './resource.js'
 
 interface IKBFileUpload {
   uploadSasURL: string
@@ -110,6 +110,9 @@ interface IKBMetrics {
   reservedResourceCount: number
   reservedSizeBytes: number
   linkedConsumerCount: number
+  servingResourceCount: number
+  processingResourceCount: number
+  failedResourceCount: number
 }
 
 function validateKbByteMetric(value: number): number {
@@ -148,6 +151,39 @@ export const KBMetrics = KBMetricsRef.implement({
   }),
 })
 
+// How far a knowledge base's materials can be retrieved by a connected
+// chatbot. It is derived from resource statuses and serving revisions and says
+// nothing about question generation.
+export const KBMaterialsReadinessRef = builder.objectRef<
+  Pick<
+    IKBMetrics,
+    | 'visibleResourceCount'
+    | 'servingResourceCount'
+    | 'processingResourceCount'
+    | 'failedResourceCount'
+  >
+>('KBMaterialsReadiness')
+export const KBMaterialsReadiness = KBMaterialsReadinessRef.implement({
+  fields: (t) => ({
+    visibleResourceCount: t.exposeInt('visibleResourceCount'),
+    // Resources a connected chatbot can retrieve through their serving
+    // revision, including one whose newer revision is still being prepared.
+    servingResourceCount: t.exposeInt('servingResourceCount'),
+    processingResourceCount: t.exposeInt('processingResourceCount'),
+    failedResourceCount: t.exposeInt('failedResourceCount'),
+  }),
+})
+
+// Only the chatbot list resolves this; readers that need just the connection
+// leave it empty.
+builder.objectField(ChatbotKnowledgeBaseSummaryRef, 'materialsReadiness', (t) =>
+  t.field({
+    type: KBMaterialsReadinessRef,
+    nullable: true,
+    resolve: (kb) => kb.metrics ?? null,
+  })
+)
+
 interface IKB extends DB.KB {
   metrics?: IKBMetrics
 }
@@ -167,6 +203,11 @@ export const KB = KBRef.implement({
     }),
     metrics: t.field({
       type: KBMetricsRef,
+      nullable: true,
+      resolve: (kb) => kb.metrics ?? null,
+    }),
+    materialsReadiness: t.field({
+      type: KBMaterialsReadinessRef,
       nullable: true,
       resolve: (kb) => kb.metrics ?? null,
     }),
@@ -287,6 +328,7 @@ export const KBIngestAllResult = KBIngestAllResultRef.implement({
 interface IKBChatbotBinding {
   chatbotId: string
   chatbotName: string
+  chatbotStatus: DB.ChatbotStatus
   enabledKbId: string | null
   enabledKbName: string | null
   enabledKbs: { id: string; name: string }[]
@@ -298,6 +340,7 @@ export const KBChatbotBinding = KBChatbotBindingRef.implement({
   fields: (t) => ({
     chatbotId: t.exposeID('chatbotId'),
     chatbotName: t.exposeString('chatbotName'),
+    chatbotStatus: t.expose('chatbotStatus', { type: ChatbotStatus }),
     enabledKbId: t.exposeID('enabledKbId', {
       nullable: true,
       deprecationReason: 'Use enabledKbs for all attached knowledge bases.',
