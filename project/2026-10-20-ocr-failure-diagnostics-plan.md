@@ -119,32 +119,29 @@ PR-body update. Preserve applicable verification when source is unchanged.
 
 ## Progress
 
-- Remote refs refreshed; baseline adapter/draft suites pass. No source edit yet.
-- Coverage investigation running; budget documentation retrieved from official
-  OpenRouter sources through Context7. No paid requests or settings changes.
-- Native planner approved round two after clarifying classification precedence,
-  slice ownership and reason-field regression coverage. The optional AGY
-  challenge returned no review because headless command permission was denied;
-  no permission bypass or client setting change was used. Native approval holds.
-  No product primitive or architecture change.
-- Budget diagnosis implemented; adapter suite passes 97/97 on pinned Node
-  24.21.0. An existing short-deadline transport test was transiently delayed;
-  the unchanged test passes on the subsequent complete run. Test delta: one
-  behavioral matrix added, existing summary/concurrency/stalled-body cases
-  extended, no tests removed. Formatter and data/secret checks pass.
-- Slice-one simplifier found no justified reduction; privacy/correctness review
-  is running. Category counts now reach the draft log through the existing
-  sanitized builder. The draft suite passes five tests with one optional binary
-  test skipped; its existing fake-child test covers all fixed categories and
-  arbitrary-field exclusion. Test delta: one existing test extended, none added
-  or removed. Focused Opengrep flagged broad object assignment of a fixed
-  two-field internal result; explicit assignments replace it for clarity. The
-  repeated focused scan has zero findings/errors, and seven affected checks pass.
-- Integrated six-suite verification passes 253 tests with one optional binary
-  skip. Both workflow definitions, shared validator, request translation,
-  accounting/cost and retry/failure machinery match the base. No application
-  runtime, paid replay or account change occurred. Both simplifiers found no
-  justified reduction; the slice reviewers are running. The existing CI guide
-  contains the durable diagnostic contract; another solution doc would duplicate it.
-- Next: complete slice reviews and integrated verification, then publish the
-  reviewed draft. PR not yet created.
+- Complete: fixed provider-budget reasons and draft coverage-category logs are
+  implemented. The existing outcome artifact classified incomplete work, but
+  did not establish file-to-request causes. Underlying model/resource failures
+  remain unresolved; no retry, coverage or budget policy changed.
+- Verification: pinned Node 24.21.0 integrated six-suite run passed 253 tests
+  with one optional binary skip. Seven affected checks pass after the explicit
+  field-assignment cleanup. One existing short-deadline transport check was
+  transiently delayed and passed on the subsequent unchanged full suite.
+  Formatters, secret scan and focused Opengrep pass. Both workflows, the shared
+  validator and request/accounting/retry machinery match the base.
+- Test delta: one synthetic behavioral matrix added; existing summary,
+  concurrency, stalled-body and fake-child checks extended; none removed.
+  Substantive size: 224 changed lines excluding this project plan. One cohesive
+  diagnostics package; no stack, dependency, runtime or UI work.
+- Reviews: planner approved; both simplifiers found no justified reduction;
+  both privacy/correctness slice reviews completed with no findings. Integrated
+  Claude review of `d6eac932..ee546400` found no code/privacy issues and one
+  advisory about stale progress text, corrected by this final entry. This
+  documentation-only correction preserves the tested source and review scope.
+- Delivered as [draft PR #6640](https://github.com/uzh-bf/klicker-uzh/pull/6640)
+  against `v3`. Source implementation and investigation are complete. Required
+  hosted checks are tracked on the PR; source proof is separate from CI and
+  live acceptance. Live qualification remains the next normal draft review
+  after merge. No paid replay, account setting, credential or deployment change
+  occurred. The existing CI guide contains the durable contract; another
+  solution document would duplicate it.
