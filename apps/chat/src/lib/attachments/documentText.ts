@@ -23,6 +23,7 @@ const MARKER_LINE_PATTERN =
 export type DocumentAttachmentInfo = {
   name: string
   pages: number | null
+  slides: number | null
   shortened: boolean
   tokenEstimate: number
   text: string
@@ -66,15 +67,18 @@ export function buildDocumentBlock({
   name,
   text,
   pages,
+  slides,
   shortened,
 }: {
   name: string
   text: string
   pages?: number | null
+  slides?: number | null
   shortened: boolean
 }): string {
   const meta = [
     pages != null ? `${pages} ${pages === 1 ? 'page' : 'pages'}` : null,
+    slides != null ? `${slides} ${slides === 1 ? 'slide' : 'slides'}` : null,
     shortened ? `shortened to ~${MAX_DOCUMENT_TOKENS} tokens` : null,
   ].filter(Boolean)
   const header = `${HEADER_PREFIX}${sanitizeName(name)}${
@@ -104,9 +108,11 @@ function parseHeader(
   if (!match) return null
   const meta = match[2] ?? ''
   const pages = /(\d+) pages?/.exec(meta)
+  const slides = /(\d+) slides?/.exec(meta)
   return {
     name: match[1],
     pages: pages ? Number(pages[1]) : null,
+    slides: slides ? Number(slides[1]) : null,
     shortened: /shortened/.test(meta),
   }
 }

@@ -1089,10 +1089,12 @@ The trace contract is metadata-only: AI SDK input/output recording and media upl
 
 ## Document attachments
 
-Students can attach up to three documents per message: PDF, Word (`.docx`), and `.txt`,
-`.md` or `.csv` files. Parsing runs in the browser (`documentAttachmentAdapter.ts`); the file
+Students can attach up to three documents per message: PDF, Word (`.docx`), PowerPoint
+(`.pptx`), and `.txt`, `.md` or `.csv` files. Parsing runs in the browser (`documentAttachmentAdapter.ts`); the file
 itself is never uploaded. PDF text comes from `unpdf` in a Web Worker (`pdfText.worker.ts`) and
-Word text from `mammoth`. Both load with `import()` only when a document is picked. The adapter
+Word text from `mammoth`. PowerPoint text comes from the slide XML, read with `jszip` in
+presentation order and labelled `Slide N`, with speaker notes; charts and images are not read.
+These libraries load with `import()` only when a document is picked. The adapter
 checks the 15 MB size cap before reading. It then cuts each file to about 20,000 tokens, estimated
 as characters ÷ 4. A PDF without selectable text, such as a scan, gets a localized error, because
 OCR is not supported. Documents work with every model, so the attach button and the dropzone stay
@@ -1100,7 +1102,7 @@ available when the selected model cannot read images.
 
 The extracted text travels inside the user message. `useThreadManagement` appends one block per
 file after the typed question, and a file-only message gets the localized default question. Each
-block starts with `--- Attached document: <name> (<pages>, shortened …) ---` and ends with
+block starts with `--- Attached document: <name> (<pages or slides>, shortened …) ---` and ends with
 `--- End of attached document ---` (`documentText.ts`). This header is a stored format: history
 returns the user message as one text string, and `RuntimeProvider.convertMessage` parses the
 blocks back into `metadata.custom.documentAttachments`. The bubble then shows file chips, while

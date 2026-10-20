@@ -244,9 +244,9 @@ export default {
       removeAttachment: 'Remove attachment',
       attachFile: 'Attach an image or document',
       attachmentTypeError:
-        'This file type cannot be attached. Use an image, PDF, Word (.docx), text, Markdown or CSV file.',
+        'This file type cannot be attached. Use an image, PDF, Word (.docx), PowerPoint (.pptx), text, Markdown or CSV file.',
       documentOnlyTypeError:
-        'The selected model cannot read images. Use a PDF, Word (.docx), text, Markdown or CSV file.',
+        'The selected model cannot read images. Use a PDF, Word (.docx), PowerPoint (.pptx), text, Markdown or CSV file.',
       documentLimitError: 'You can only attach up to {max} documents.',
       documentTooLarge: 'Documents must be smaller than {max} MB.',
       documentNoText: 'This file contains no readable text.',
@@ -256,6 +256,7 @@ export default {
         'The document could not be read. Please try a different file.',
       documentReading: 'Reading document…',
       documentPages: '{count, plural, one {# page} other {# pages}}',
+      documentSlides: '{count, plural, one {# slide} other {# slides}}',
       documentTokens: '~{count} tokens',
       documentShortened: 'Shortened to the first {max} tokens',
       documentDefaultQuestion: 'Please refer to the attached file(s).',

@@ -3,6 +3,7 @@ import type {
   CompleteAttachment,
   PendingAttachment,
 } from '@assistant-ui/react'
+import type JSZip from 'jszip'
 import {
   buildDocumentBlock,
   MAX_DOCUMENT_SIZE_BYTES,
@@ -18,10 +19,12 @@ export const DOCUMENT_ERROR_CODE = {
   readFailed: 'document-read-failed',
 } as const
 
-type DocumentKind = 'text' | 'pdf' | 'docx'
+type DocumentKind = 'text' | 'pdf' | 'docx' | 'pptx'
 
 const DOCX_TYPE =
   'application/vnd.openxmlformats-officedocument.wordprocessingml.document'
+const PPTX_TYPE =
+  'application/vnd.openxmlformats-officedocument.presentationml.presentation'
 
 // Extensions as well as MIME types: browsers often report `.md` and `.csv`
 // files with an empty or platform-specific type.
@@ -32,11 +35,13 @@ const ACCEPT = [
   '.csv',
   '.pdf',
   '.docx',
+  '.pptx',
   'text/plain',
   'text/markdown',
   'text/csv',
   'application/pdf',
   DOCX_TYPE,
+  PPTX_TYPE,
 ].join(',')
 
 export function getDocumentKind(file: {
@@ -46,6 +51,7 @@ export function getDocumentKind(file: {
   const extension = file.name.split('.').pop()?.toLowerCase() ?? ''
   if (file.type === 'application/pdf' || extension === 'pdf') return 'pdf'
   if (file.type === DOCX_TYPE || extension === 'docx') return 'docx'
+  if (file.type === PPTX_TYPE || extension === 'pptx') return 'pptx'
   if (
     ['txt', 'md', 'markdown', 'csv'].includes(extension) ||
     ['text/plain', 'text/markdown', 'text/csv'].includes(file.type)
@@ -88,13 +94,127 @@ async function extractDocxText(data: ArrayBuffer): Promise<string> {
   return value
 }
 
+const XML_ENTITIES: Record<string, string> = {
+  amp: '&',
+  lt: '<',
+  gt: '>',
+  quot: '"',
+  apos: "'",
+}
+
+const decodeXml = (text: string): string =>
+  text.replace(/&(#x[0-9a-f]+|#\d+|amp|lt|gt|quot|apos);/gi, (_, entity) =>
+    entity.startsWith('#x') || entity.startsWith('#X')
+      ? String.fromCodePoint(Number.parseInt(entity.slice(2), 16))
+      : entity.startsWith('#')
+        ? String.fromCodePoint(Number(entity.slice(1)))
+        : XML_ENTITIES[entity.toLowerCase()]
+  )
+
+const readAttribute = (tag: string, name: string): string | undefined =>
+  new RegExp(`\\s${name}="([^"]*)"`).exec(tag)?.[1]
+
+/**
+ * The visible text of a slide or notes part, one line per paragraph. Fields
+ * such as slide numbers and dates are layout chrome, not content.
+ */
+function readDrawingText(xml: string): string {
+  return xml
+    .replace(/<a:fld\b[\s\S]*?<\/a:fld>/g, '')
+    .replace(/<a:br\b[^>]*\/>/g, '<a:t>\n</a:t>')
+    .split('</a:p>')
+    .map((paragraph) =>
+      [...paragraph.matchAll(/<a:t(?:\s[^>]*)?>([^<]*)<\/a:t>/g)]
+        .map((match) => decodeXml(match[1]))
+        .join('')
+        .trim()
+    )
+    .filter(Boolean)
+    .join('\n')
+}
+
+// Relationship targets are relative to the part that declares them.
+function resolvePartPath(fromPart: string, target: string): string {
+  if (target.startsWith('/')) return target.slice(1)
+  const segments = fromPart.split('/').slice(0, -1)
+  for (const segment of target.split('/')) {
+    if (segment === '..') segments.pop()
+    else if (segment !== '.') segments.push(segment)
+  }
+  return segments.join('/')
+}
+
+async function readRelationships(
+  zip: JSZip,
+  part: string
+): Promise<{ type: string; target: string; id: string }[]> {
+  const folder = part.split('/').slice(0, -1).join('/')
+  const name = part.split('/').pop()
+  const xml = await zip.file(`${folder}/_rels/${name}.rels`)?.async('string')
+  return [...(xml ?? '').matchAll(/<Relationship\b[^>]*>/g)].map(([tag]) => ({
+    id: readAttribute(tag, 'Id') ?? '',
+    type: readAttribute(tag, 'Type') ?? '',
+    target: resolvePartPath(part, readAttribute(tag, 'Target') ?? ''),
+  }))
+}
+
+/**
+ * Slide text in presentation order, with speaker notes. Slide files are
+ * numbered by creation, so the order comes from the presentation's slide list.
+ */
+export async function extractPptxSlides(data: ArrayBuffer): Promise<string[]> {
+  const { default: JSZip } = await import('jszip')
+  const zip = await JSZip.loadAsync(data)
+  const presentationPart = 'ppt/presentation.xml'
+  const presentation = await zip.file(presentationPart)?.async('string')
+  if (!presentation) throw new Error('Not a PowerPoint presentation')
+
+  const targets = new Map(
+    (await readRelationships(zip, presentationPart)).map((relation) => [
+      relation.id,
+      relation.target,
+    ])
+  )
+  const slideParts = [...presentation.matchAll(/<p:sldId\b[^>]*>/g)]
+    .map(([tag]) => targets.get(readAttribute(tag, 'r:id') ?? ''))
+    .filter((part): part is string => Boolean(part))
+
+  return Promise.all(
+    slideParts.map(async (slidePart) => {
+      const slide = readDrawingText(
+        (await zip.file(slidePart)?.async('string')) ?? ''
+      )
+      const notesPart = (await readRelationships(zip, slidePart)).find(
+        (relation) => relation.type.endsWith('/notesSlide')
+      )?.target
+      const notes = notesPart
+        ? readDrawingText((await zip.file(notesPart)?.async('string')) ?? '')
+        : ''
+      return notes ? `${slide}\nSpeaker notes: ${notes}`.trim() : slide
+    })
+  )
+}
+
 async function extractText(
   file: File,
   kind: DocumentKind
-): Promise<{ text: string; pages: number | null }> {
+): Promise<{ text: string; pages: number | null; slides?: number }> {
   if (kind === 'text') return { text: await file.text(), pages: null }
   const data = await file.arrayBuffer()
   if (kind === 'docx') return { text: await extractDocxText(data), pages: null }
+  if (kind === 'pptx') {
+    const slides = await extractPptxSlides(data)
+    return {
+      text: slides
+        .map((slide, index) =>
+          slide.trim() ? `Slide ${index + 1}\n${slide.trim()}` : ''
+        )
+        .filter(Boolean)
+        .join('\n\n'),
+      pages: null,
+      slides: slides.length,
+    }
+  }
 
   const pages = await extractPdfInWorker(data)
   return {
@@ -107,7 +227,7 @@ async function extractText(
 }
 
 async function readDocumentBlock(file: File, kind: DocumentKind) {
-  let extracted: { text: string; pages: number | null }
+  let extracted: Awaited<ReturnType<typeof extractText>>
   try {
     extracted = await extractText(file, kind)
   } catch (error) {
@@ -128,6 +248,7 @@ async function readDocumentBlock(file: File, kind: DocumentKind) {
     name: file.name,
     text,
     pages: extracted.pages,
+    slides: extracted.slides,
     shortened,
   })
 }
@@ -154,7 +275,7 @@ export const isReadingDocument = (): boolean => readingCount > 0
 const removedWhileReading = new Set<string>()
 
 /**
- * Reads PDF, Word and plain-text files in the browser and turns them into one
+ * Reads PDF, Word, PowerPoint and plain-text files in the browser and turns them into one
  * text part. The file itself never leaves the device; only the extracted text
  * is sent with the message. Errors carry stable codes so the composer can
  * show a localized message.
