@@ -304,13 +304,21 @@ async function main(argv = process.argv.slice(2)) {
     try {
       await new Promise((resolve, reject) => {
         server.once('error', reject)
-        server.listen(8080, '127.0.0.1', resolve)
+        server.listen(8080, '127.0.0.1', () => {
+          server.off('error', reject)
+          resolve()
+        })
       })
     } catch (error) {
       store.close()
       throw error
     }
     server.once('close', () => store.close())
+    server.once('error', () => {
+      console.error('Admission server failed; operator recovery required.')
+      process.exitCode = 1
+      server.close()
+    })
     return server
   }
   try {

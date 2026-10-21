@@ -194,6 +194,12 @@ test('authenticated request verifies live eligibility before a durable ticket is
 })
 
 test('serve resolves only after binding and rejects asynchronous bind errors', async (t) => {
+  const previousExitCode = process.exitCode
+  t.after(() => {
+    process.exitCode = previousExitCode
+  })
+  const errors = []
+  t.mock.method(console, 'error', (...values) => errors.push(values))
   const directory = fs.mkdtempSync(path.join(os.tmpdir(), 'admission-bind-'))
   t.after(() => fs.rmSync(directory, { recursive: true, force: true }))
   const filename = path.join(directory, 'state.sqlite')
@@ -219,6 +225,11 @@ test('serve resolves only after binding and rejects asynchronous bind errors', a
   fs.writeFileSync(configFile, JSON.stringify(config))
   for (const fail of [false, true]) {
     const server = new EventEmitter()
+    let closed = false
+    server.close = () => {
+      closed = true
+      server.emit('close')
+    }
     let bound
     server.listen = (port, host, callback) => {
       assert.equal(port, 8080)
@@ -248,7 +259,12 @@ test('serve resolves only after binding and rejects asynchronous bind errors', a
     } else {
       bound()
       assert.equal(await pending, server)
-      server.emit('close')
+      server.emit('error', new Error('synthetic sensitive runtime detail'))
+      assert.equal(closed, true)
+      assert.equal(process.exitCode, 1)
+      assert.equal(errors.length, 1)
+      assert.ok(!JSON.stringify(errors).includes('synthetic sensitive'))
+      process.exitCode = previousExitCode
     }
     mock.mock.restore()
   }
