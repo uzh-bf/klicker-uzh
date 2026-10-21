@@ -93,8 +93,9 @@ files are required.
 - `complete` describes observation capture, never review success or coverage.
   Both wrappers explicitly pass stderr drain status. Missing capture, spawn
   failure, drain timeout and a truncated producer line are incomplete.
-- Draft outcome artifact includes `producer`; job log/summary prints a fixed
-  counter summary. Manual adapter receipts include the same producer snapshot.
+- Draft outcome artifact and main adapter receipt include `producer`;
+  job log/summary prints a fixed counter summary. Manual adapter receipts include
+  the same producer snapshot.
 - Diagnostics are informational, tolerate missing evidence and failing sinks,
   and preserve private stderr, process results and cleanup behavior.
 
@@ -120,7 +121,17 @@ No new paid replay or provider fallback is implied by offline test failure.
 
 ## Progress
 
-- Planning: awaiting internal challenge; executable user approval already granted.
-- Implementation and verification: pending.
-- Reviews and draft delivery: pending.
-- Substantive size and final test delta: record after integration.
+- Planning: approved by native planner after one focused correction. Executable
+  user approval already granted. Private report: `_local/reviews/2026-10-21-ocr-producer-diagnostics-planner.md`.
+- Implementation: complete in the existing adapter, runner, tests and guide.
+  Captured valid unknown errors remain complete observations; malformed framing
+  and truncated capture remain incomplete. No model or coverage result is inferred.
+- Verification: adapter 101 tests pass; draft 8 tests pass with released OCR1.13.0
+  and deterministic HTTP200 mocks; final/stack/policy 131 tests and script
+  invocation 2 tests pass. No paid calls or app runtime. Installed formatter and
+  scoped Opengrep checks run; hook wrappers defer dependency-based checks/build
+  to required CI because this worktree has no dependency install.
+- Slice/simplification, integrated final review and draft delivery: pending.
+- Substantive implementation size: 887 added/deleted lines across five existing
+  files, excluding the plan. Test delta: 2 draft and 4 adapter cases added, with
+  existing cases extended for diagnostics, privacy, accounting and exits.
