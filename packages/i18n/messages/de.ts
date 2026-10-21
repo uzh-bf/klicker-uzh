@@ -245,10 +245,29 @@ export default {
       attachmentReadError:
         'Das Bild konnte nicht gelesen werden. Bitte versuche es mit einer anderen Datei.',
       dismissError: 'Fehler schliessen',
-      dropImages: 'Bilder zum Anhängen hier ablegen',
+      dropFiles: 'Dateien zum Anhängen hier ablegen',
       attachmentPreviewAlt: 'Anhang-Vorschau',
       removeAttachment: 'Anhang entfernen',
-      attachImage: 'Bild anhängen',
+      attachFile: 'Bild oder Dokument anhängen',
+      attachmentTypeError:
+        'Dieser Dateityp kann nicht angehängt werden. Verwende ein Bild, ein PDF, eine Word-Datei (.docx) oder eine Text-, Markdown- oder CSV-Datei.',
+      documentOnlyTypeError:
+        'Das ausgewählte Modell kann keine Bilder lesen. Verwende ein PDF, eine Word-Datei (.docx) oder eine Text-, Markdown- oder CSV-Datei.',
+      documentLimitError: 'Du kannst höchstens {max} Dokumente anhängen.',
+      documentTooLarge: 'Dokumente müssen kleiner als {max} MB sein.',
+      documentNoText: 'Diese Datei enthält keinen lesbaren Text.',
+      documentPdfNoText:
+        'Dieses PDF enthält keinen markierbaren Text. Gescannte PDFs können noch nicht gelesen werden.',
+      documentPresentation:
+        'PowerPoint-Dateien können nicht gelesen werden. Speichere die Präsentation als PDF und hänge das PDF an.',
+      documentReadError:
+        'Das Dokument konnte nicht gelesen werden. Bitte versuche es mit einer anderen Datei.',
+      documentReading: 'Dokument wird gelesen…',
+      documentPages: '{count, plural, one {# Seite} other {# Seiten}}',
+      documentTokens: '~{count} Tokens',
+      documentShortened: 'Auf die ersten {max} Tokens gekürzt',
+      documentDefaultQuestion:
+        'Bitte beziehe dich auf die angehängte(n) Datei(en).',
       dictation: 'Nachricht diktieren',
       dictationSetup: 'Diktieren einrichten',
       dictationStop: 'Diktieren beenden',

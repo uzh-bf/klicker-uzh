@@ -41,7 +41,7 @@ Chatbot route recovery is intentionally split by cause. `src/app/[chatbotId]/lay
 - `src/lib/markdown/remarkCitationMarkers.ts` — the remark plugin that rewrites `[n]` and contiguous
   `[n–m]` markers into citation links.
 - `src/lib/toolOutput.ts` — live-SSE tool-result normalization (the streaming half of the provider-error redaction boundary).
-- `src/lib/attachments/` — image attachment adapter plus attachment state and UI helpers.
+- `src/lib/attachments/` — image and document attachment adapters plus attachment state and UI helpers.
 - Local model proxy: the `litellm` compose service (port 4000).
 - Local MCP fixture: `scripts/local-mcp-server.mjs` exposes a deterministic,
   read-only `doc_query` tool on port 1417 for the seeded Benibot. It returns
@@ -1094,6 +1094,33 @@ Tracing is a strict opt-in. It starts only when `CHAT_ENABLE_AI_TELEMETRY=true` 
 The Helm chart requires an HTTPS URL when `chat.telemetry.baseUrl` is configured.
 
 The trace contract is metadata-only: AI SDK input/output recording and media upload are disabled, image-description calls are explicitly untraced, and no participant `userId`, raw thread/message/chatbot ID, prompt, answer, tool argument/result, or image payload is exported. A deterministic pseudonymous session groups turns from one thread; the trace includes allowlisted model, routing, mode, reasoning, tool/attachment counts, lifecycle status, and response lengths. Export masking redacts Langfuse keys, bearer credentials, and data URLs as defense in depth. A privacy-preserving processor also replaces span status messages and removes exception-event attributes before Langfuse receives them; if that sanitization fails, the span is dropped. Export failures are fail-open and must never change the chat response. The batched processor owns delivery in the long-running chat process. Each traced route registers a [Next.js `after()` callback](https://nextjs.org/docs/app/api-reference/functions/after) that flushes the completed batch after the streamed response closes. The Chat image uses exec-form `CMD` so Next receives Kubernetes termination signals, and the pod allows a 90-second grace period for active requests and pending `after()` work. This does not guarantee that unbounded active requests finish before forced termination; live rollout must verify shutdown delivery.
+
+## Document attachments
+
+Students can attach up to three documents per message: PDF, Word (`.docx`), and `.txt`,
+`.md` or `.csv` files. Parsing runs in the browser (`documentAttachmentAdapter.ts`); the file
+itself is never uploaded. PDF text comes from `unpdf` in a Web Worker (`pdfText.worker.ts`) and
+Word text from `mammoth`. Both load with `import()` only when a document is picked. The adapter
+checks the 15 MB size cap before reading. It then cuts each file to about 20,000 tokens, estimated
+as characters ÷ 4. A PDF without selectable text, such as a scan, gets a localized error, because
+OCR is not supported. A PowerPoint file gets a localized message asking for a PDF export; the
+adapter accepts `.pptx` and `.ppt` only to show that message. Documents work with every model, so
+the attach button and the dropzone stay available when the selected model cannot read images.
+
+The extracted text travels inside the user message. `useThreadManagement` appends one block per
+file after the typed question, and a file-only message gets the localized default question. Each
+block starts with `--- Attached document: <name> (<pages>, shortened …) ---` and ends with
+`--- End of attached document ---` (`documentText.ts`). This header is a stored format: history
+returns the user message as one text string, and `RuntimeProvider.convertMessage` parses the
+blocks back into `metadata.custom.documentAttachments`. The bubble then shows file chips, while
+copy and the edit composer see only the question. An edit keeps the original documents unless the
+student removes them. Titles (`extractThreadTitle`) and the history rail strip the blocks.
+Changing the header or footer wording breaks the chips of existing messages.
+
+Data boundary: the extracted text is stored in `ChatMessage.content`, sent to the model provider,
+and sent again with every later turn of the thread. The server does not limit message length, so
+the client cap is a UX rule, not enforcement. Uploads stay in the thread and never enter a course
+knowledge base.
 
 ## Client-state gotchas
 

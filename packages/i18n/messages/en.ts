@@ -243,10 +243,28 @@ export default {
       attachmentReadError:
         'The image could not be read. Please try a different file.',
       dismissError: 'Dismiss error',
-      dropImages: 'Drop images to attach',
+      dropFiles: 'Drop files to attach',
       attachmentPreviewAlt: 'Attachment preview',
       removeAttachment: 'Remove attachment',
-      attachImage: 'Attach image',
+      attachFile: 'Attach an image or document',
+      attachmentTypeError:
+        'This file type cannot be attached. Use an image, PDF, Word (.docx), text, Markdown or CSV file.',
+      documentOnlyTypeError:
+        'The selected model cannot read images. Use a PDF, Word (.docx), text, Markdown or CSV file.',
+      documentLimitError: 'You can only attach up to {max} documents.',
+      documentTooLarge: 'Documents must be smaller than {max} MB.',
+      documentNoText: 'This file contains no readable text.',
+      documentPdfNoText:
+        'This PDF contains no selectable text. Scanned PDFs cannot be read yet.',
+      documentPresentation:
+        'PowerPoint files cannot be read. Save the presentation as a PDF and attach the PDF.',
+      documentReadError:
+        'The document could not be read. Please try a different file.',
+      documentReading: 'Reading document…',
+      documentPages: '{count, plural, one {# page} other {# pages}}',
+      documentTokens: '~{count} tokens',
+      documentShortened: 'Shortened to the first {max} tokens',
+      documentDefaultQuestion: 'Please refer to the attached file(s).',
       dictation: 'Dictate message',
       dictationSetup: 'Set up dictation',
       dictationStop: 'Stop dictation',

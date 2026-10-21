@@ -15,6 +15,10 @@ vi.mock('next/navigation', () => ({
   useSearchParams: () => ({ toString: () => '' }),
 }))
 
+vi.mock('next-intl', () => ({
+  useTranslations: () => (key: string) => key,
+}))
+
 vi.mock('react', async () => {
   const actual = await vi.importActual<typeof import('react')>('react')
 
