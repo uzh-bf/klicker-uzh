@@ -1,11 +1,14 @@
 import { randomUUID } from 'node:crypto'
+import { EventEmitter } from 'node:events'
 import { type EventType, runInAuditTransaction } from '@klicker-uzh/audit'
 import { prisma, requireDisposableDatabase } from '@klicker-uzh/prisma'
 import {
   processElementData,
   recomputeDerivedPermissions,
 } from '@klicker-uzh/util'
+import type { ContextWithUser } from '../src/lib/context.js'
 import {
+  loadAssessmentAuditSnapshot,
   persistPreparedAssessmentAuditActivation,
   persistPreparedAssessmentAuditActivationInTransaction,
   prepareAssessmentAuditActivation,
@@ -13,8 +16,13 @@ import {
 } from '../src/services/assessmentAuditActivation.js'
 import {
   assessmentAuditUserOperation,
+  buildAssessmentMutationAuditDrafts,
   emitCoveredAssessmentAuditEvents,
 } from '../src/services/assessmentAuditProducers.js'
+import {
+  joinCourseLeaderboard,
+  leaveCourseLeaderboard,
+} from '../src/services/courses.js'
 
 describe('assessment audit activation', () => {
   let userId: string
@@ -331,5 +339,205 @@ describe('assessment audit activation', () => {
     expect(
       await prisma.assessmentAuditOutboxEvent.count({ where: { liveQuizId } })
     ).toBe(0)
+  })
+
+  async function activate() {
+    return persistPreparedAssessmentAuditActivation({
+      client: prisma,
+      prepared: await prepare(),
+      actor: { kind: 'USER', userId },
+      correlationId: randomUUID(),
+    })
+  }
+
+  async function countEvents(eventType: EventType) {
+    return prisma.assessmentAuditOutboxEvent.count({
+      where: { liveQuizId, eventType },
+    })
+  }
+
+  it('records exactly one baseline when two activations of an epoch race', async () => {
+    const first = await prepare()
+    const second = await prepare()
+    expect(second.lifecycleEpoch).toBe(first.lifecycleEpoch)
+    expect(second.baselineId).not.toBe(first.baselineId)
+
+    const results = await Promise.allSettled(
+      [first, second].map((prepared) =>
+        persistPreparedAssessmentAuditActivation({
+          client: prisma,
+          prepared,
+          actor: { kind: 'USER', userId },
+          correlationId: randomUUID(),
+        })
+      )
+    )
+
+    const winners = results.flatMap((result) =>
+      result.status === 'fulfilled' ? [result.value] : []
+    )
+    expect(winners).toHaveLength(1)
+    expect(results.map((result) => result.status).sort()).toEqual([
+      'fulfilled',
+      'rejected',
+    ])
+    expect(await countEvents('ASSESSMENT_AUDIT_ACTIVATED')).toBe(1)
+    expect(await countEvents('ASSESSMENT_BASELINE_ROOT_RECORDED')).toBe(1)
+    expect(
+      await prisma.assessmentAuditScope.findMany({
+        where: { liveQuizId },
+        select: { coverageState: true, baselineId: true },
+      })
+    ).toEqual([
+      { coverageState: 'COVERED', baselineId: winners[0]!.baselineId },
+    ])
+  })
+
+  async function setAssessmentMode(isAssessmentEnabled: boolean) {
+    const operation = assessmentAuditUserOperation({
+      userId,
+      requiredPermission: 'WRITE',
+    })
+    await runInAuditTransaction(prisma, async (tx, auditTx) => {
+      const before = await loadAssessmentAuditSnapshot(tx, liveQuizId)
+      await tx.liveQuiz.update({
+        where: { id: liveQuizId },
+        data: { isAssessmentEnabled },
+      })
+      const after = await loadAssessmentAuditSnapshot(tx, liveQuizId)
+      await emitCoveredAssessmentAuditEvents({
+        tx,
+        auditTx,
+        liveQuizId,
+        operation,
+        drafts: buildAssessmentMutationAuditDrafts({
+          before: before!,
+          after: after!,
+          producerOperationId: operation.correlationId,
+        }),
+      })
+    })
+  }
+
+  it('rejects disabling assessment mode once a covered assessment is scheduled', async () => {
+    await activate()
+    await prisma.liveQuiz.update({
+      where: { id: liveQuizId },
+      data: {
+        status: 'SCHEDULED',
+        availableFrom: new Date(Date.now() + 60_000),
+      },
+    })
+
+    await expect(setAssessmentMode(false)).rejects.toThrow(
+      'Assessment mode cannot be disabled'
+    )
+    expect(
+      await prisma.liveQuiz.findUniqueOrThrow({ where: { id: liveQuizId } })
+    ).toMatchObject({ isAssessmentEnabled: true })
+    expect(await countEvents('ASSESSMENT_MODE_CHANGED')).toBe(0)
+  })
+
+  it('lets a covered draft leave assessment mode and records the change', async () => {
+    await activate()
+
+    await setAssessmentMode(false)
+
+    expect(
+      await prisma.liveQuiz.findUniqueOrThrow({ where: { id: liveQuizId } })
+    ).toMatchObject({ isAssessmentEnabled: false })
+    expect(await countEvents('ASSESSMENT_MODE_CHANGED')).toBe(1)
+  })
+
+  it('records eligibility only when the leaderboard creates the participation', async () => {
+    const identity = randomUUID().replaceAll('-', '')
+    const course = await prisma.course.create({
+      data: {
+        name: `audit-${identity}`,
+        displayName: 'Audit course',
+        pinCode: Number.parseInt(identity.slice(0, 7), 16),
+        startDate: new Date(),
+        endDate: new Date(Date.now() + 86_400_000),
+        groupDeadlineDate: new Date(Date.now() + 43_200_000),
+        owner: { connect: { id: userId } },
+      },
+    })
+    const participants = await Promise.all(
+      ['new', 'invited'].map((label) =>
+        prisma.participant.create({
+          data: {
+            email: `audit-${label}-${identity}@example.invalid`,
+            username: `a${label}${identity}`.slice(0, 20),
+            password: 'unused',
+            isSSOAccount: false,
+          },
+        })
+      )
+    )
+    const [newParticipant, invitedParticipant] = participants
+    try {
+      await prisma.liveQuiz.update({
+        where: { id: liveQuizId },
+        data: { courseId: course.id },
+      })
+      await prisma.participation.create({
+        data: { courseId: course.id, participantId: invitedParticipant!.id },
+      })
+      await activate()
+      const ctxFor = (participantId: string) =>
+        ({
+          prisma,
+          user: { sub: participantId },
+          emitter: new EventEmitter(),
+        }) as unknown as ContextWithUser
+      const eligibilityEvents = () =>
+        prisma.assessmentAuditOutboxEvent.findMany({
+          where: {
+            liveQuizId,
+            eventType: 'ASSESSMENT_PARTICIPANT_ELIGIBILITY_CHANGED',
+          },
+          select: { participantId: true },
+        })
+
+      // The baseline already lists the invited participant, whose leaderboard
+      // opt-in is false; joining and leaving the leaderboard changes nothing.
+      await joinCourseLeaderboard(
+        { courseId: course.id },
+        ctxFor(invitedParticipant!.id)
+      )
+      await leaveCourseLeaderboard(
+        { courseId: course.id },
+        ctxFor(invitedParticipant!.id)
+      )
+      expect(await eligibilityEvents()).toEqual([])
+
+      // Joining creates the participation, which grants eligibility.
+      await joinCourseLeaderboard(
+        { courseId: course.id },
+        ctxFor(newParticipant!.id)
+      )
+      await leaveCourseLeaderboard(
+        { courseId: course.id },
+        ctxFor(newParticipant!.id)
+      )
+      expect(await eligibilityEvents()).toEqual([
+        { participantId: newParticipant!.id },
+      ])
+    } finally {
+      await prisma.leaderboardEntry.deleteMany({
+        where: { courseId: course.id },
+      })
+      await prisma.participation.deleteMany({ where: { courseId: course.id } })
+      await prisma.liveQuiz.update({
+        where: { id: liveQuizId },
+        data: { courseId: null },
+      })
+      await prisma.course.delete({ where: { id: course.id } })
+      await prisma.participant.deleteMany({
+        where: {
+          id: { in: participants.map((participant) => participant.id) },
+        },
+      })
+    }
   })
 })

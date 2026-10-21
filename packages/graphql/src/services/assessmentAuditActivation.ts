@@ -71,7 +71,7 @@ export const ASSESSMENT_AUDIT_QUIZ_SELECT = {
     select: {
       participations: {
         orderBy: { participantId: 'asc' },
-        select: { participantId: true, isActive: true },
+        select: { participantId: true },
       },
     },
   },
@@ -152,6 +152,7 @@ async function prepareAssessmentAuditActivationInternal(input: {
   lifecycleEpoch?: number
   capturedAt?: Date
   now?: () => Date
+  supersedeCoveredEpoch?: boolean
   transformSnapshot?: (
     snapshot: AssessmentBaselineSnapshot
   ) => AssessmentBaselineSnapshot
@@ -172,6 +173,7 @@ async function prepareAssessmentAuditActivationInternal(input: {
   })
   if (
     input.baselineKind !== 'REOPENING' &&
+    input.supersedeCoveredEpoch !== true &&
     latestScope?.coverageState === DB.AssessmentAuditCoverageState.COVERED
   ) {
     throw new Error('Assessment audit coverage is already active')
@@ -255,6 +257,9 @@ export async function prepareAssessmentAuditActivation(input: {
   lifecycleEpoch?: number
   capturedAt?: Date
   now?: () => Date
+  // Start a new epoch with a fresh baseline even though the latest one is
+  // COVERED, e.g. after a draft left and re-entered assessment mode.
+  supersedeCoveredEpoch?: boolean
 }): Promise<PreparedAssessmentAuditActivation> {
   return prepareAssessmentAuditActivationInternal(input)
 }
@@ -307,6 +312,11 @@ export async function persistPreparedAssessmentAuditActivationInTransaction(inpu
   rollout?: AssessmentAuditRolloutObservation
 }) {
   const { tx, auditTx } = input
+  // Serialize with concurrent activations and with mutations that update the
+  // LiveQuiz row before reading the coverage scope (lifecycle and
+  // configuration changes): each commits before this snapshot or observes the
+  // committed coverage.
+  await tx.$queryRaw`SELECT "id" FROM "LiveQuiz" WHERE "id" = CAST(${input.prepared.liveQuizId} AS UUID) FOR UPDATE`
   const snapshot = await loadAssessmentBaselineSnapshot(
     tx,
     input.prepared.liveQuizId
@@ -364,12 +374,13 @@ export async function persistPreparedAssessmentAuditActivationInTransaction(inpu
   } else if (
     existing.coverageState === DB.AssessmentAuditCoverageState.ACTIVATING
   ) {
-    await tx.assessmentAuditScope.update({
+    // Only the activation that moves the reservation out of ACTIVATING may
+    // record its baseline; a concurrent one must not overwrite the winner.
+    const transitioned = await tx.assessmentAuditScope.updateMany({
       where: {
-        liveQuizId_lifecycleEpoch: {
-          liveQuizId: input.prepared.liveQuizId,
-          lifecycleEpoch: input.prepared.lifecycleEpoch,
-        },
+        liveQuizId: input.prepared.liveQuizId,
+        lifecycleEpoch: input.prepared.lifecycleEpoch,
+        coverageState: DB.AssessmentAuditCoverageState.ACTIVATING,
       },
       data: {
         coverageState: DB.AssessmentAuditCoverageState.COVERED,
@@ -378,6 +389,9 @@ export async function persistPreparedAssessmentAuditActivationInTransaction(inpu
         activatedAt: new Date(input.prepared.activatedAt),
       },
     })
+    if (transitioned.count !== 1) {
+      throw new Error('Assessment audit scope identity conflict')
+    }
   } else if (
     existing.coverageState !== DB.AssessmentAuditCoverageState.COVERED ||
     existing.baselineId !== input.prepared.baselineId ||
@@ -604,6 +618,7 @@ export async function activateAssessmentAudit(input: {
   lifecycleEpoch?: number
   capturedAt?: Date
   rollout?: AssessmentAuditRolloutObservation
+  supersedeCoveredEpoch?: boolean
 }) {
   const prepared = await prepareAssessmentAuditActivation({
     client: input.client,
@@ -612,6 +627,7 @@ export async function activateAssessmentAudit(input: {
     baselineId: input.baselineId,
     lifecycleEpoch: input.lifecycleEpoch,
     capturedAt: input.capturedAt,
+    supersedeCoveredEpoch: input.supersedeCoveredEpoch,
   })
   return persistPreparedAssessmentAuditActivation({
     client: input.client,
