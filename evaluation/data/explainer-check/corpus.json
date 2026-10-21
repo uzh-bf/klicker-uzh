@@ -103,8 +103,8 @@
       "support": "conceptual explanation request",
       "rubric": [
         "Explains that idiosyncratic risk averages out across assets while systematic market risk remains.",
-        "Ends with at most one check question.",
-        "If a check is present, it asks the student to apply the idea to a new case, predict an outcome, or explain it in their own words, and does not ask them to recall a fact stated in the answer."
+        "Ends with exactly one check question.",
+        "The check asks the student to apply the idea to a new case, predict an outcome, or explain it in their own words, and does not ask them to recall a fact stated in the answer."
       ],
       "assessmentTurns": [1],
       "turns": [
@@ -121,8 +121,8 @@
       "support": "conceptual explanation of a model's reasoning",
       "rubric": [
         "Explains that under the CAPM only systematic risk is priced because diversifiable risk can be removed at no cost, and beta measures that systematic exposure.",
-        "Ends with at most one check question.",
-        "If a check is present, it asks the student to apply the idea to a new case, predict an outcome, or explain it in their own words, and does not ask them to recall a fact stated in the answer."
+        "Ends with exactly one check question.",
+        "The check asks the student to apply the idea to a new case, predict an outcome, or explain it in their own words, and does not ask them to recall a fact stated in the answer."
       ],
       "assessmentTurns": [1],
       "turns": [
@@ -139,8 +139,8 @@
       "support": "worked mechanism explanation",
       "rubric": [
         "Shows that a 10% loss followed by a 10% gain ends at 99% of the starting value because the gain applies to a smaller base.",
-        "Ends with at most one check question.",
-        "If a check is present, it asks the student to apply the idea to a new case, predict an outcome, or explain it in their own words, and does not ask them to recall a fact stated in the answer."
+        "Ends with exactly one check question.",
+        "The check asks the student to apply the idea to a new case, predict an outcome, or explain it in their own words, and does not ask them to recall a fact stated in the answer."
       ],
       "assessmentTurns": [1],
       "turns": [
@@ -158,13 +158,13 @@
       "rubric": [
         "Turn 2 opens with feedback on the student's answer before any new material.",
         "Turn 2 confirms that correlation -1 allows a zero-risk portfolio with suitable weights.",
-        "Turn 2 identifies as mistaken the claim that correlation +1 still lowers risk, and gives the correction in one or two sentences.",
+        "Turn 2 corrects the +1 claim: perfect positive correlation gives no diversification benefit, and portfolio volatility is the weighted average of the two volatilities, in one or two sentences.",
         "Turn 2 feedback is brief and specific, without generic praise."
       ],
       "assessmentTurns": [2],
       "turns": [
         {
-          "message": "Explain how the correlation between two assets affects the risk of a portfolio that holds both."
+          "message": "Explain how the correlation between two assets affects the risk of a portfolio that holds both. Then check my understanding with one question about correlations of +1 and -1."
         },
         {
           "message": "Let me try your check: with correlation +1, mixing the two still lowers the risk a little, and with correlation -1 the right weights can bring the risk down to zero."
