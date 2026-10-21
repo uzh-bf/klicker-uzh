@@ -2112,8 +2112,7 @@ function aggregateTaskDoneFailures(rows, rowsComplete) {
     )
       complete = false
   }
-  if (observed === 0)
-    return 'OCR task_done status=unavailable stage=adapter'
+  if (observed === 0) return 'OCR task_done status=unavailable stage=adapter'
   return `OCR task_done status=${complete ? 'complete' : 'partial'} stage=adapter task_done_failed_responses=${total}`
 }
 
