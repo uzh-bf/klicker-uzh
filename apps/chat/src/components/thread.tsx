@@ -1155,6 +1155,48 @@ const DocumentChip: FC<{
   )
 }
 
+type ComposerAttachmentList = readonly (NonNullable<
+  Parameters<typeof extractDocumentsForSending>[0]
+>[number] & { id: string })[]
+
+// Every document chip needs the projection of all composer documents. It is
+// computed once per attachments array and model capability, not per chip.
+const composerDocumentProjections = new WeakMap<
+  object,
+  { supportsImages: boolean; blocks: Map<string, string> }
+>()
+
+function projectComposerDocuments(
+  attachments: ComposerAttachmentList,
+  supportsImages: boolean
+): Map<string, string> {
+  const cached = composerDocumentProjections.get(attachments)
+  if (cached?.supportsImages === supportsImages) return cached.blocks
+  const documents = attachments
+    .filter((attachment) => attachment.type === 'document')
+    .slice(0, MAX_DOCUMENT_ATTACHMENTS)
+  // A document still being read has no block yet and keeps its place.
+  const { blocks } = applyVisualReview(
+    documents.map(
+      (attachment) =>
+        extractDocumentsForSending([attachment])[0] ?? {
+          block: '',
+          pageImages: [],
+        }
+    ),
+    { supportsImages }
+  )
+  const blocksById = new Map<string, string>()
+  documents.forEach((attachment, index) => {
+    if (blocks[index]) blocksById.set(attachment.id, blocks[index])
+  })
+  composerDocumentProjections.set(attachments, {
+    supportsImages,
+    blocks: blocksById,
+  })
+  return blocksById
+}
+
 const ComposerDocumentAttachment: FC = () => {
   const name = useAuiState((s) => selectAttachmentName(s.attachment))
   const reading = useAuiState((s) => s.attachment.status.type === 'running')
@@ -1167,26 +1209,13 @@ const ComposerDocumentAttachment: FC = () => {
   // The attachments array keeps its identity between stream updates, so the
   // projection below only reruns when the composer's attachments change.
   const composerAttachments = useAuiState((s) => s.composer.attachments)
-  const sendBlockText = useMemo(() => {
-    const documents = composerAttachments
-      .filter((attachment) => attachment.type === 'document')
-      .slice(0, MAX_DOCUMENT_ATTACHMENTS)
-    const index = documents.findIndex(
-      (attachment) => attachment.id === attachmentId
-    )
-    if (index === -1) return null
-    // A document still being read has no block yet and keeps its place.
-    const forSending = documents.map(
-      (attachment) =>
-        extractDocumentsForSending([attachment])[0] ?? {
-          block: '',
-          pageImages: [],
-        }
-    )
-    return (
-      applyVisualReview(forSending, { supportsImages }).blocks[index] || null
-    )
-  }, [attachmentId, composerAttachments, supportsImages])
+  const sendBlockText = useMemo(
+    () =>
+      projectComposerDocuments(composerAttachments, supportsImages).get(
+        attachmentId
+      ) ?? null,
+    [attachmentId, composerAttachments, supportsImages]
+  )
   const document = useMemo(() => {
     const text = sendBlockText ?? blockText
     return text ? parseMessageDocuments(text).documents[0] : undefined

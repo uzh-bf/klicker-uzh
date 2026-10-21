@@ -238,7 +238,21 @@ export function useChatResponse(
             ...resolvedMessagesToSend.slice(0, -1),
             updated,
           ]
-          updateThreadMessages(resolvedMessagesToSend)
+          // Both arrays carry the message; branch switches rebuild the
+          // visible path from allMessages.
+          useChatStore.setState((state) => ({
+            threads: state.threads.map((thread) =>
+              thread.id === threadId
+                ? {
+                    ...thread,
+                    messages: resolvedMessagesToSend,
+                    allMessages: thread.allMessages.map((existing) =>
+                      existing.id === updated.id ? updated : existing
+                    ),
+                  }
+                : thread
+            ),
+          }))
         }
         if (takenDocumentPages.length > 0 && documentPages.length === 0) {
           dropPageReview()

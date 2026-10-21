@@ -1,5 +1,4 @@
 import {
-  clearPendingDocumentPages,
   extractDocumentsForSending,
   extractLocalImageAttachments,
   getDocumentAttachmentKey,
@@ -80,29 +79,34 @@ export function useThreadManagement(
   // Document text follows the typed question in a single text part, so it is
   // sent, stored and reloaded like typed text. A message with only files
   // gets a default question so the thread title and history stay readable.
-  // Rendered PDF pages are held aside for the request of this message only.
+  // Rendered PDF pages are returned separately; the send flow holds them
+  // aside for the request of this message only.
   const buildContent = useCallback(
     (
       message: AppendMessage,
-      messageId: string,
       documents: DocumentForSending[]
-    ): ExtendedThreadMessageLike['content'] => {
+    ): {
+      content: ExtendedThreadMessageLike['content']
+      pageImages: string[]
+    } => {
       const { blocks, pageImages } = applyVisualReview(
         documents.slice(0, MAX_DOCUMENT_ATTACHMENTS),
         { supportsImages: supportsImageAttachments }
       )
-      setPendingDocumentPages(messageId, pageImages)
-      if (blocks.length === 0) return message.content
+      if (blocks.length === 0) return { content: message.content, pageImages }
       const typedText = getTypedText(message).trim()
-      return [
-        {
-          type: 'text',
-          text: composeMessageText(
-            typedText || t('chat.composer.documentDefaultQuestion'),
-            blocks
-          ),
-        },
-      ]
+      return {
+        content: [
+          {
+            type: 'text',
+            text: composeMessageText(
+              typedText || t('chat.composer.documentDefaultQuestion'),
+              blocks
+            ),
+          },
+        ],
+        pageImages,
+      }
     },
     [supportsImageAttachments, t]
   )
@@ -140,14 +144,14 @@ export function useThreadManagement(
 
       // create user message with unique ID and metadata
       const userMessageId = generateId()
+      const { content, pageImages } = buildContent(
+        message,
+        extractDocumentsForSending(message.attachments)
+      )
       const userMessage: ExtendedThreadMessageLike = {
         id: userMessageId,
         role: 'user',
-        content: buildContent(
-          message,
-          userMessageId,
-          extractDocumentsForSending(message.attachments)
-        ),
+        content,
         createdAt: new Date(),
         parentId: message.parentId || null,
         chatMode: selectedMode,
@@ -163,13 +167,9 @@ export function useThreadManagement(
 
       try {
         const addedThreadId = await addMessage(chatbotId, userMessage, threadId)
-        if (!addedThreadId) {
-          clearPendingDocumentPages(userMessageId)
-          return
-        }
+        if (!addedThreadId) return
       } catch (error) {
         console.error('Failed to add message', error)
-        clearPendingDocumentPages(userMessageId)
         return
       }
 
@@ -178,6 +178,7 @@ export function useThreadManagement(
           ?.messages || []
 
       // generate response based on current conversation
+      setPendingDocumentPages(userMessageId, pageImages)
       await generateChatResponse(currentMessages, threadId)
     },
     [
@@ -301,13 +302,11 @@ export function useThreadManagement(
         : []
       // Kept documents have no page images any more, so applyVisualReview
       // marks their pages as not reviewed in the new message.
-      editedMessage = {
-        ...editedMessage,
-        content: buildContent(message, editedMessageNewId, [
-          ...keptDocumentBlocks.map((block) => ({ block, pageImages: [] })),
-          ...extractDocumentsForSending(message.attachments),
-        ]),
-      }
+      const { content, pageImages } = buildContent(message, [
+        ...keptDocumentBlocks.map((block) => ({ block, pageImages: [] })),
+        ...extractDocumentsForSending(message.attachments),
+      ])
+      editedMessage = { ...editedMessage, content }
       editedMessage.attachmentSourceMessageId =
         originalMessage?.attachmentSourceMessageId ??
         originalMessage?.id ??
@@ -344,6 +343,7 @@ export function useThreadManagement(
       }))
 
       // generate new response from the edited conversation state
+      setPendingDocumentPages(editedMessageNewId, pageImages)
       await generateChatResponse(newCurrentPath, threadId)
     },
     [

@@ -1375,7 +1375,9 @@ export async function POST(
     if (documentPageSummaryTask) {
       const { result: summaryResult, error } = await documentPageSummaryTask
       if (summaryResult) {
-        documentPageSummary = summaryResult.text
+        // A blank summary (for example a filtered completion) is not stored,
+        // so it cannot replace an earlier one; its usage is still charged.
+        documentPageSummary = summaryResult.text.trim() || null
         if (summaryResult.usage) {
           imageDescriptionCost += calcCost(
             selectedModelConfig.cost,

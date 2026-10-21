@@ -226,10 +226,6 @@ export function setPendingDocumentPages(
   }
 }
 
-export function clearPendingDocumentPages(messageId: string): void {
-  pendingDocumentPages.delete(messageId)
-}
-
 export function takePendingDocumentPages(messageId?: string | null): string[] {
   if (!messageId) return []
   const pageImages = pendingDocumentPages.get(messageId) ?? []
