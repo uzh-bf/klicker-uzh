@@ -320,9 +320,8 @@ export function RuntimeProvider({
         reasoningEffort: reasoningEffort ?? null,
         creditsUsed: creditsUsed ?? null,
         imageAttachments: imageAttachments ?? [],
-        documentAttachments: documents.map(
-          ({ text: _text, ...document }) => document
-        ),
+        // The text stays with the chip for the document preview.
+        documentAttachments: documents,
       }
 
       return {

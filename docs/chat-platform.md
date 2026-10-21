@@ -1166,6 +1166,14 @@ would make it explicit at the cost of a migration.
 Data boundary: the page images go to the model provider for the current turn and the summary call,
 but are not stored. The summary is stored with the message and sent with every later turn.
 
+Clicking a document chip, in the composer, the edit composer or a sent message, opens
+`DocumentPreviewModal`. A PDF still in this tab opens in the browser's own PDF viewer from an
+object URL; other files show the extracted text with a link to the original. Sent messages keep
+their originals in an in-memory map in `attachmentState.ts`, keyed by message ID and document
+position and bounded to the newest 20; an edit copies the entries of kept documents. The original
+file is never uploaded or stored, so after a reload the preview shows the stored extracted text,
+which is what the model received.
+
 ## Client-state gotchas
 
 - **Zustand async actions must set fallback state in `catch`**, not just log — otherwise the UI hangs in loading state on network errors.

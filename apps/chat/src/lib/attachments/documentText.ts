@@ -196,6 +196,8 @@ export type DocumentForSending = {
   block: string
   /** JPEG data URLs of the rendered pages; empty when none were rendered. */
   pageImages: string[]
+  /** The original file, while it is still in this browser tab. */
+  file?: Blob
 }
 
 /**

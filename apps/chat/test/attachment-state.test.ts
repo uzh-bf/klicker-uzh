@@ -1,6 +1,9 @@
 import { describe, expect, test } from 'vitest'
 import {
   appendTextToModelContent,
+  copyDocumentOriginal,
+  getDocumentOriginal,
+  rememberDocumentOriginal,
   setPendingDocumentPages,
   takePendingDocumentPages,
   hasAllImageAttachmentsHydrated,
@@ -10,6 +13,20 @@ import {
 } from '../src/lib/attachments/attachmentState'
 
 describe('attachmentState', () => {
+  test('an edited message previews the original of a kept document', () => {
+    const file = new Blob(['%PDF'], { type: 'application/pdf' })
+    rememberDocumentOriginal('sent', 1, file)
+    copyDocumentOriginal(
+      { messageId: 'sent', index: 1 },
+      { messageId: 'edited', index: 0 }
+    )
+    expect(getDocumentOriginal('edited', 0)).toEqual(
+      getDocumentOriginal('sent', 1)
+    )
+    expect(getDocumentOriginal('sent', 1)?.type).toBe('application/pdf')
+    expect(getDocumentOriginal('sent', 0)).toBeNull()
+  })
+
   test('restored pending pages survive a later send of another message', () => {
     setPendingDocumentPages('failed', ['page-1'])
     const restored = takePendingDocumentPages('failed')

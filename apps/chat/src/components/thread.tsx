@@ -45,8 +45,10 @@ import {
 import { twMerge } from 'tailwind-merge'
 import { useMessageSources } from '@/src/hooks/useMessageSources'
 import {
+  type DocumentOriginal,
   extractDocumentsForSending,
   getDocumentAttachmentKey,
+  getDocumentOriginal,
   getImageAttachmentKey,
   hasAnyImageAttachmentData,
   parentMessageHasImageAttachment,
@@ -105,6 +107,7 @@ import {
   useDictationErrorMessage,
 } from './dictation-controls'
 import { HistoryRail } from './history-rail'
+import { DocumentPreviewModal } from './document-preview-modal'
 import { MessageAttachments } from './message-attachments'
 import { AssistantMessageParts } from './message-parts'
 import { hasChatError, isStoppedWithoutText } from './message-parts-state'
@@ -160,7 +163,7 @@ type MessageWithCustomMetadata = {
   } | null
 }
 
-type DocumentChipInfo = Omit<DocumentAttachmentInfo, 'text'>
+type DocumentChipInfo = DocumentAttachmentInfo
 
 const extractMessageText = (message: {
   content?: readonly { type: string; text?: string }[]
@@ -1080,8 +1083,16 @@ const DocumentChip: FC<{
   document?: DocumentChipInfo
   reading?: boolean
   removable?: boolean
+  onPreview?: () => void
   children?: ReactNode
-}> = ({ name, document, reading = false, removable = false, children }) => {
+}> = ({
+  name,
+  document,
+  reading = false,
+  removable = false,
+  onPreview,
+  children,
+}) => {
   const t = useTranslations()
   const format = useFormatter()
   const details = reading
@@ -1098,16 +1109,8 @@ const DocumentChip: FC<{
           .filter(Boolean)
           .join(' · ')
       : null
-
-  return (
-    <div
-      data-cy="chat-document-attachment"
-      className={twMerge(
-        'bg-background relative flex max-w-64 min-w-0 items-center gap-2 rounded-lg border py-1.5 pl-2 pr-3 text-left text-xs',
-        removable && 'pr-14 fine-pointer:pr-9',
-        document?.shortened && 'border-amber-500/50 bg-amber-50'
-      )}
-    >
+  const chipContent = (
+    <>
       <span
         aria-hidden
         className="bg-primary/10 text-primary flex size-8 shrink-0 items-center justify-center rounded"
@@ -1150,8 +1153,80 @@ const DocumentChip: FC<{
           </span>
         )}
       </span>
+    </>
+  )
+
+  return (
+    <div
+      data-cy="chat-document-attachment"
+      className={twMerge(
+        'bg-background relative flex max-w-64 min-w-0 items-center gap-2 rounded-lg border py-1.5 pl-2 pr-3 text-left text-xs',
+        removable && 'pr-14 fine-pointer:pr-9',
+        document?.shortened && 'border-amber-500/50 bg-amber-50'
+      )}
+    >
+      {onPreview && !reading ? (
+        <button
+          type="button"
+          data-cy="chat-document-preview-open"
+          onClick={onPreview}
+          aria-haspopup="dialog"
+          title={t('chat.documentPreview.open', { name })}
+          className="focus-visible:ring-ring flex min-w-0 items-center gap-2 rounded text-left focus-visible:outline-none focus-visible:ring-2"
+        >
+          {chipContent}
+        </button>
+      ) : (
+        chipContent
+      )}
       {children}
     </div>
+  )
+}
+
+/**
+ * A document chip that opens the document preview. `resolveOriginal` returns
+ * the original file while it is still in this tab, and a release callback for
+ * an object URL created just for this preview.
+ */
+const PreviewableDocumentChip: FC<{
+  name: string
+  document?: DocumentChipInfo
+  reading?: boolean
+  removable?: boolean
+  resolveOriginal: () => {
+    original: DocumentOriginal | null
+    release?: () => void
+  }
+  children?: ReactNode
+}> = ({ resolveOriginal, children, ...chipProps }) => {
+  const [preview, setPreview] = useState<{
+    original: DocumentOriginal | null
+    release?: () => void
+  } | null>(null)
+  // Frees an object URL created for the preview when it closes or unmounts.
+  useEffect(() => () => preview?.release?.(), [preview])
+
+  return (
+    <>
+      <DocumentChip
+        {...chipProps}
+        onPreview={
+          chipProps.document ? () => setPreview(resolveOriginal()) : undefined
+        }
+      >
+        {children}
+      </DocumentChip>
+      {chipProps.document && (
+        <DocumentPreviewModal
+          name={chipProps.name}
+          text={chipProps.document.text}
+          original={preview?.original ?? null}
+          isOpen={preview != null}
+          onClose={() => setPreview(null)}
+        />
+      )}
+    </>
   )
 }
 
@@ -1201,6 +1276,7 @@ const ComposerDocumentAttachment: FC = () => {
   const name = useAuiState((s) => selectAttachmentName(s.attachment))
   const reading = useAuiState((s) => s.attachment.status.type === 'running')
   const blockText = useAuiState((s) => selectAttachmentDocument(s.attachment))
+  const file = useAuiState((s) => s.attachment.file)
   const supportsImages = useReadsDocumentPages()
   // The status the pages will get when the message is sent: the model may
   // have changed since the file was read, and earlier documents may already
@@ -1223,11 +1299,24 @@ const ComposerDocumentAttachment: FC = () => {
 
   return (
     <AttachmentPrimitive.Root className="relative">
-      <DocumentChip name={name} document={document} reading={reading} removable>
+      <PreviewableDocumentChip
+        name={name}
+        document={document}
+        reading={reading}
+        removable
+        resolveOriginal={() => {
+          if (!(file instanceof Blob)) return { original: null }
+          const url = URL.createObjectURL(file)
+          return {
+            original: { url, type: file.type },
+            release: () => URL.revokeObjectURL(url),
+          }
+        }}
+      >
         <AttachmentPrimitive.Remove asChild>
           <AttachmentRemoveButton />
         </AttachmentPrimitive.Remove>
-      </DocumentChip>
+      </PreviewableDocumentChip>
     </AttachmentPrimitive.Root>
   )
 }
@@ -1599,11 +1688,14 @@ const UserMessage: FC = () => {
         {documents.length > 0 && (
           <div className="mb-2 flex flex-wrap gap-2">
             {documents.map((document, index) => (
-              <DocumentChip
+              <PreviewableDocumentChip
                 // biome-ignore lint/suspicious/noArrayIndexKey: documents have no id and keep their order
                 key={index}
                 name={document.name}
                 document={document}
+                resolveOriginal={() => ({
+                  original: getDocumentOriginal(message.id, index),
+                })}
               />
             ))}
           </div>
@@ -1757,6 +1849,7 @@ const EditComposer: FC = () => {
               }),
             },
       key: getDocumentAttachmentKey(index),
+      index,
     }))
     .filter(({ key }) => !removedAttachmentKeySet.has(key))
   const totalAttachmentCount =
@@ -1837,17 +1930,20 @@ const EditComposer: FC = () => {
             visibleDocumentEntries.length > 0 ||
             pendingAttachmentCount > 0) && (
             <div className="flex flex-wrap gap-2">
-              {visibleDocumentEntries.map(({ document, key }) => (
-                <DocumentChip
+              {visibleDocumentEntries.map(({ document, key, index }) => (
+                <PreviewableDocumentChip
                   key={key}
                   name={document.name}
                   document={document}
                   removable
+                  resolveOriginal={() => ({
+                    original: getDocumentOriginal(message.id, index),
+                  })}
                 >
                   <AttachmentRemoveButton
                     onClick={() => addEditRemovedAttachmentKey(message.id, key)}
                   />
-                </DocumentChip>
+                </PreviewableDocumentChip>
               ))}
               {visibleAttachmentEntries.map(({ attachment, key }) => {
                 const previewSrc = getAttachmentPreviewSrc(attachment, 'edit')

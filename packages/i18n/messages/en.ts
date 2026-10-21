@@ -141,6 +141,13 @@ export default {
         'Image attachments for this message could not be loaded. Please try again.',
       attachedImageAlt: 'Attached image {index}',
     },
+    documentPreview: {
+      open: 'Preview {name}',
+      extractedText: 'Text the chat read from this file:',
+      extractedTextOnly:
+        'The original file is not stored, so after a reload only the text the chat read from it is shown:',
+      openOriginal: 'Open original file',
+    },
     imageViewer: {
       previewUnavailable: 'Preview unavailable',
       title: 'Image attachment',

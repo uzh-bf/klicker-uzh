@@ -149,6 +149,7 @@ export function extractLocalImageAttachments(
 type ComposerDocumentAttachmentInput = {
   type?: string
   content?: readonly unknown[]
+  file?: unknown
 }
 
 /** Text blocks of the document attachments, in the order they were added. */
@@ -200,9 +201,63 @@ export function extractDocumentsForSending(
           pageImages: (attachment.content ?? [])
             .filter(isPageImagePart)
             .map((part) => part.data),
+          ...(attachment.file instanceof Blob ? { file: attachment.file } : {}),
         },
       ]
     })
+}
+
+// Original files of sent documents, for the preview until the page reloads.
+// Only the extracted text is stored; after a reload the preview shows that.
+// Keyed by message ID and the document's position in the message.
+export type DocumentOriginal = { url: string; type: string }
+const documentOriginals = new Map<string, DocumentOriginal>()
+const MAX_DOCUMENT_ORIGINALS = 20
+const documentOriginalKey = (messageId: string, index: number) =>
+  `${messageId}:${index}`
+
+function storeDocumentOriginal(key: string, original: DocumentOriginal) {
+  documentOriginals.delete(key)
+  documentOriginals.set(key, original)
+  for (const [oldestKey, oldest] of documentOriginals) {
+    if (documentOriginals.size <= MAX_DOCUMENT_ORIGINALS) break
+    documentOriginals.delete(oldestKey)
+    // An edited message shares the URL of the message it was edited from.
+    const stillUsed = [...documentOriginals.values()].some(
+      (entry) => entry.url === oldest.url
+    )
+    if (!stillUsed) URL.revokeObjectURL(oldest.url)
+  }
+}
+
+export function rememberDocumentOriginal(
+  messageId: string,
+  index: number,
+  file: Blob
+): void {
+  storeDocumentOriginal(documentOriginalKey(messageId, index), {
+    url: URL.createObjectURL(file),
+    type: file.type,
+  })
+}
+
+export function copyDocumentOriginal(
+  from: { messageId: string; index: number },
+  to: { messageId: string; index: number }
+): void {
+  const original = documentOriginals.get(
+    documentOriginalKey(from.messageId, from.index)
+  )
+  if (original) {
+    storeDocumentOriginal(documentOriginalKey(to.messageId, to.index), original)
+  }
+}
+
+export function getDocumentOriginal(
+  messageId: string,
+  index: number
+): DocumentOriginal | null {
+  return documentOriginals.get(documentOriginalKey(messageId, index)) ?? null
 }
 
 // Page images ride along with the request that answers their message and
