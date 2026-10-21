@@ -889,8 +889,7 @@ this topic"), `brief` ("I know the basics"), and `bullets` ("Bullet points"). Th
 are written, not how much help the student gets. Do not present them as matching how a student
 learns or claim a learning benefit (see the ADR's evidence). Both lists live in `src/lib/config/answerStyles.ts`.
 
-The values are stored only in the browser's `settings-storage` entry: the style per chatbot ID
-(`answerStyles`, default entries are not stored), the tone once for every chatbot. They are sent as `answerStyle` and
+The values are stored only in the browser's `settings-storage` entry and sent as `answerStyle` and
 `answerTone` with each chat request from `useChatResponse`. The route's `answerStyleSchema` and
 `answerToneSchema` (`src/lib/server/answerStyleInstructions.ts`) map a missing or unknown value to the
 default instead of rejecting the request.

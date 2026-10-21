@@ -37,7 +37,6 @@ vi.mock('../src/stores/settingsStore', () => ({
     const state = { loadCredits: loadCreditsMock }
     return selector ? selector(state) : state
   },
-  answerStyleForChatbot: () => 'balanced',
 }))
 
 vi.mock('../src/stores/chatStore', () => ({

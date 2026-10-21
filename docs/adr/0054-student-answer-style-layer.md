@@ -87,9 +87,7 @@ without weakening any of these rules.
   language reminders. The preferences are not repeated there.
 - The client stores both values only in the browser's `settings-storage`
   localStorage entry and sends them as `answerStyle` and `answerTone` with each
-  chat request. The style is kept per chatbot, because prior knowledge differs
-  by course; a chatbot the student has not set uses `balanced`. The tone is a
-  personal reading preference and applies to every chatbot. The chat route accepts only the listed values and maps a missing
+  chat request. The chat route accepts only the listed values and maps a missing
   or unknown value to the default without rejecting the request. No participant
   data is stored server-side, and no database or GraphQL schema changes.
 - Product copy describes the setting as changing how answers are written, not

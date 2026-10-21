@@ -2,7 +2,6 @@
 
 import { Select } from '@uzh-bf/design-system'
 import { ChevronDown, ChevronUp, Settings2 } from 'lucide-react'
-import { useParams } from 'next/navigation'
 import { useTranslations } from 'next-intl'
 import { useState } from 'react'
 import {
@@ -16,10 +15,7 @@ import {
   formatReasoningEffort,
   type ReasoningEffort,
 } from '../lib/config/reasoning'
-import {
-  answerStyleForChatbot,
-  useSettingsStore,
-} from '../stores/settingsStore'
+import { useSettingsStore } from '../stores/settingsStore'
 
 /**
  * Ids that tie each visible label to the control it names. The design system
@@ -34,11 +30,10 @@ const ANSWER_TONE_SELECT_ID = 'chat-answer-tone-select'
 
 export function SettingsPanel() {
   const t = useTranslations()
-  const { chatbotId } = useParams<{ chatbotId: string }>()
   const {
     selectedModel,
     selectedReasoningEffort,
-    answerStyles,
+    answerStyle,
     answerTone,
     credits,
     modelOptions,
@@ -48,7 +43,6 @@ export function SettingsPanel() {
     setAnswerStyle,
     setAnswerTone,
   } = useSettingsStore()
-  const answerStyle = answerStyleForChatbot({ answerStyles }, chatbotId)
   const [open, setOpen] = useState(false)
 
   const handleModelChange = (value: string) => {
@@ -215,7 +209,7 @@ export function SettingsPanel() {
                 label: t(`chat.settingsPanel.answerStyles.${value}`),
               }))}
               onChange={(newValue) => {
-                setAnswerStyle(chatbotId, newValue as AnswerStyle)
+                setAnswerStyle(newValue as AnswerStyle)
               }}
               value={answerStyle}
             />

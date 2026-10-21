@@ -1892,16 +1892,12 @@ test.describe('Chatbot Settings Panel', () => {
     await expect(modelSection).not.toContainText('GPT-4.1 Mini')
   })
 
-  // The style is stored per chatbot and the tone once for every chatbot.
   async function readAnswerPreferences(page: Page) {
-    return page.evaluate((chatbotId) => {
+    return page.evaluate(() => {
       const stored = window.localStorage.getItem('settings-storage')
       const state = stored ? JSON.parse(stored).state : {}
-      return {
-        answerStyle: state.answerStyles?.[chatbotId] ?? 'balanced',
-        answerTone: state.answerTone,
-      }
-    }, CHATBOT_ID)
+      return { answerStyle: state.answerStyle, answerTone: state.answerTone }
+    })
   }
 
   function waitForChatRequest(page: Page) {

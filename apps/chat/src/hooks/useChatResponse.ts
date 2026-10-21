@@ -11,10 +11,7 @@ import {
   type ExtendedThreadMessageLike,
   type ThreadRunOutcome,
 } from '../stores/chatStore'
-import {
-  answerStyleForChatbot,
-  useSettingsStore,
-} from '../stores/settingsStore'
+import { useSettingsStore } from '../stores/settingsStore'
 
 type GenerateChatResponseOptions = {
   allowRegeneration?: boolean
@@ -44,9 +41,7 @@ export function useChatResponse(
   const t = useTranslations()
 
   const loadCredits = useSettingsStore((state) => state.loadCredits)
-  const answerStyle = useSettingsStore((state) =>
-    answerStyleForChatbot(state, chatbotId)
-  )
+  const answerStyle = useSettingsStore((state) => state.answerStyle)
   const answerTone = useSettingsStore((state) => state.answerTone)
 
   // AbortController to handle request cancellation

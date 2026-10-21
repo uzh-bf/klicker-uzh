@@ -1,7 +1,6 @@
 'use client'
 
 import { ChevronDown, Zap } from 'lucide-react'
-import { useParams } from 'next/navigation'
 import { useTranslations } from 'next-intl'
 import { twMerge } from 'tailwind-merge'
 import {
@@ -11,10 +10,7 @@ import {
   type AnswerTone,
 } from '../lib/config/answerStyles'
 import { isKnownMode } from '../lib/config/modes'
-import {
-  answerStyleForChatbot,
-  useSettingsStore,
-} from '../stores/settingsStore'
+import { useSettingsStore } from '../stores/settingsStore'
 import { useChatUi } from './chat-ui-context'
 
 const COMPACT_SELECT_CLASS =
@@ -23,17 +19,15 @@ const COMPACT_SELECT_CLASS =
 export function EmbeddedSettings() {
   const t = useTranslations()
   const { showMinimalSettings } = useChatUi()
-  const { chatbotId } = useParams<{ chatbotId: string }>()
   const {
     selectedMode,
     modeOptions,
     setSelectedMode,
-    answerStyles,
+    answerStyle,
     setAnswerStyle,
     answerTone,
     setAnswerTone,
   } = useSettingsStore()
-  const answerStyle = answerStyleForChatbot({ answerStyles }, chatbotId)
 
   if (!showMinimalSettings) return null
 
@@ -77,9 +71,7 @@ export function EmbeddedSettings() {
         <select
           data-cy="chat-embedded-answer-style-select"
           value={answerStyle}
-          onChange={(e) =>
-            setAnswerStyle(chatbotId, e.target.value as AnswerStyle)
-          }
+          onChange={(e) => setAnswerStyle(e.target.value as AnswerStyle)}
           aria-label={t('chat.settingsPanel.answerStyleLabel')}
           className={COMPACT_SELECT_CLASS}
         >
