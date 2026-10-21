@@ -86,15 +86,15 @@ export function DocumentNoticeGate() {
       onClose={removeDocuments}
       hideCloseButton
     >
-      <div className="space-y-4 text-sm">
-        <ul className="list-disc space-y-2 pl-5">
+      <div className="mt-4 space-y-5 text-sm leading-relaxed">
+        <ul className="list-disc space-y-3 pl-5">
           <li>{t('chat.documentNotice.allowed')}</li>
           <li>{t('chat.documentNotice.notAllowed')}</li>
           <li>{t('chat.documentNotice.access')}</li>
           <li>{t('chat.documentNotice.dataBoundary')}</li>
         </ul>
         <p className="text-muted-foreground">{t('chat.documentNotice.once')}</p>
-        <div className="flex flex-col gap-3 sm:flex-row sm:justify-end">
+        <div className="flex flex-col gap-3 pt-2 sm:flex-row sm:justify-end">
           <Button
             data-cy="chat-document-notice-remove"
             onClick={removeDocuments}
