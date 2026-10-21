@@ -11,6 +11,7 @@ const baseMessages = {
       fullscreen: 'Graph im Vollbild anzeigen',
       restore: 'Graph in der Seitenleiste anzeigen',
       ask: 'Dazu eine Frage stellen',
+      showConcept: 'Begriff im Wissensgraph anzeigen',
       nodePrompt: 'Hilf mir, den Begriff «{topic}» zu verstehen.',
       edgePrompt:
         'Erkläre die Beziehung «{relationship}» zwischen «{source}» und «{target}».',
@@ -5431,8 +5432,10 @@ Da die KlickerUZH-App noch nicht im iOS-App-Store verfügbar ist, folgen Sie die
         'Aus: Die Konzeptkarte bleibt für Teilnehmende verborgen.',
       knowledgeGraphRetrieval:
         'Graphverbindungen für die Dokumentsuche verwenden',
-      knowledgeGraphRetrievalDescription:
+      knowledgeGraphRetrievalEnabledDescription:
         'Ein: Die Dokumentsuche kann verwandte Konzepte aus dem veröffentlichten Graphen als zusätzliche Suchhinweise verwenden. Antworten belegen weiterhin ausschliesslich Dokumentstellen.',
+      knowledgeGraphRetrievalDisabledDescription:
+        'Aus: Die Dokumentsuche verwendet nur die Frage, ohne Hinweise aus dem Graphen.',
       knowledgeGraphSave: 'Wissensgraph-Einstellungen speichern',
       knowledgeGraphSaveSuccess: 'Wissensgraph-Einstellungen gespeichert.',
       noEnabledKnowledgeBase:

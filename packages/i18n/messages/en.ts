@@ -11,6 +11,7 @@ const baseMessages = {
       fullscreen: 'Expand graph to fullscreen',
       restore: 'Return graph to sidebar',
       ask: 'Ask about this',
+      showConcept: 'Show this concept in the knowledge graph',
       nodePrompt: 'Help me understand the concept “{topic}”.',
       edgePrompt:
         'Explain the relationship “{relationship}” between “{source}” and “{target}”.',
@@ -5309,8 +5310,10 @@ Since the KlickerUZH app is not yet available in the iOS App Store, follow these
       knowledgeGraphVisibleDisabledDescription:
         'Off: the concept map stays hidden from participants.',
       knowledgeGraphRetrieval: 'Use graph connections for document search',
-      knowledgeGraphRetrievalDescription:
+      knowledgeGraphRetrievalEnabledDescription:
         'On: document search may use related concepts from the published graph as additional search hints. Answers still cite document passages only.',
+      knowledgeGraphRetrievalDisabledDescription:
+        'Off: document search uses the question only, without graph hints.',
       knowledgeGraphSave: 'Save knowledge graph settings',
       knowledgeGraphSaveSuccess: 'Knowledge graph settings saved.',
       noEnabledKnowledgeBase:

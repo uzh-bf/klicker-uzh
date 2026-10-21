@@ -7,6 +7,7 @@ import type {
 } from '@klicker-uzh/types'
 import {
   getPublishedKnowledgeGraphForChatbot,
+  readKnowledgeGraphMentions,
   readKnowledgeGraphNeighbors,
   readKnowledgeGraphOverview,
   searchKnowledgeGraph,
@@ -19,9 +20,17 @@ export {
 
 export type ChatbotKnowledgeGraphReadRequest = { kbId?: string } & (
   | { operation: 'overview' }
+  | { operation: 'mentions'; text: string }
   | { operation: 'search'; query: string }
   | { operation: 'neighbors'; nodeId: string; kbId: string; buildId: string }
 )
+
+/** A concept named verbatim in an answer, located by its text there. */
+export type ChatbotKnowledgeGraphMention = { nodeId: string; text: string }
+
+export type ChatbotKnowledgeGraphReadResponse = KnowledgeGraphResponse & {
+  mentions?: ChatbotKnowledgeGraphMention[]
+}
 
 export class KnowledgeGraphBuildChangedError extends Error {
   constructor() {
@@ -84,7 +93,7 @@ function browserSafeResponse(
 export async function readPublishedChatbotKnowledgeGraph(
   chatbotId: string,
   request: ChatbotKnowledgeGraphReadRequest
-): Promise<KnowledgeGraphResponse> {
+): Promise<ChatbotKnowledgeGraphReadResponse> {
   const publication = await getPublishedKnowledgeGraphForChatbot(
     prisma,
     chatbotId,
@@ -101,12 +110,27 @@ export async function readPublishedChatbotKnowledgeGraph(
     throw new KnowledgeGraphBuildChangedError()
   }
 
-  const response =
-    request.operation === 'overview'
-      ? await readKnowledgeGraphOverview(publication)
-      : request.operation === 'search'
-        ? await searchKnowledgeGraph(publication, request.query)
-        : await readKnowledgeGraphNeighbors(publication, request.nodeId)
+  let mentions: ChatbotKnowledgeGraphMention[] | undefined
+  let response: KnowledgeGraphResponse
+  if (request.operation === 'mentions') {
+    const found = await readKnowledgeGraphMentions(publication, request.text)
+    mentions = found.map(({ node, text }) => ({ nodeId: node.id, text }))
+    response = {
+      kbId: publication.kbId,
+      buildId: publication.buildId,
+      isStale: publication.isStale,
+      nodes: found.map(({ node }) => node),
+      edges: [],
+      truncated: false,
+    }
+  } else {
+    response =
+      request.operation === 'overview'
+        ? await readKnowledgeGraphOverview(publication)
+        : request.operation === 'search'
+          ? await searchKnowledgeGraph(publication, request.query)
+          : await readKnowledgeGraphNeighbors(publication, request.nodeId)
+  }
 
   const current = await getPublishedKnowledgeGraphForChatbot(
     prisma,
@@ -116,5 +140,6 @@ export async function readPublishedChatbotKnowledgeGraph(
   if (current.isStale || current.buildId !== publication.buildId) {
     throw new KnowledgeGraphBuildChangedError()
   }
-  return browserSafeResponse(response)
+  const safe = browserSafeResponse(response)
+  return mentions === undefined ? safe : { ...safe, mentions }
 }

@@ -1,6 +1,9 @@
 'use client'
 
-import type { KnowledgeGraphResponse } from '@klicker-uzh/types'
+import type {
+  KnowledgeGraphNode,
+  KnowledgeGraphResponse,
+} from '@klicker-uzh/types'
 import cytoscape from 'cytoscape'
 import React, {
   type FormEvent,
@@ -72,6 +75,14 @@ type KnowledgeGraphViewerProps = {
   detailsLayout?: 'sidebar' | 'contained'
   /** Keeps the current zoom and pan when the canvas container resizes. */
   preserveViewportOnResize?: boolean
+  /** Focuses a concept the host already resolved; a new nonce repeats it. */
+  focusRequest?: KnowledgeGraphFocusRequest
+}
+
+export type KnowledgeGraphFocusRequest = {
+  response: KnowledgeGraphResponse
+  nodeId: string
+  nonce: number
 }
 
 function fitGraphElements(cy: cytoscape.Core) {
@@ -144,10 +155,14 @@ export function KnowledgeGraphViewer({
   onAsk,
   detailsLayout = 'sidebar',
   preserveViewportOnResize = false,
+  focusRequest,
 }: KnowledgeGraphViewerProps) {
   const searchFirst = initialView === 'search'
   const initialViewRef = useRef(initialView)
   initialViewRef.current = initialView
+  // Cleared whenever the source resets the view, so a requested focus is
+  // applied again on top of the fresh overview instead of being lost.
+  const handledFocusNonceRef = useRef<number | null>(null)
   const labels = useMemo(
     () => resolveKnowledgeGraphLabels(labelOverrides),
     [labelOverrides]
@@ -455,6 +470,7 @@ export function KnowledgeGraphViewer({
     renderedBuildIdRef.current = null
     expansionOriginRef.current = null
     pendingFocusRef.current = null
+    handledFocusNonceRef.current = null
     cyRef.current?.elements().remove()
     setSearchQuery('')
     setActiveSuggestionIndex(-1)
@@ -897,7 +913,13 @@ export function KnowledgeGraphViewer({
     if (suggestion === undefined || response === null) {
       return
     }
+    await focusResolvedConcept(response, suggestion)
+  }
 
+  async function focusResolvedConcept(
+    response: KnowledgeGraphResponse,
+    suggestion: KnowledgeGraphNode
+  ) {
     // The suggestion keeps its originating build and node id; its label is
     // never used to refetch the concept.
     beginViewRequest()
@@ -917,6 +939,24 @@ export function KnowledgeGraphViewer({
       buildId: response.buildId,
     })
   }
+
+  const focusResolvedConceptRef = useRef(focusResolvedConcept)
+  focusResolvedConceptRef.current = focusResolvedConcept
+  useEffect(() => {
+    if (
+      focusRequest === undefined ||
+      handledFocusNonceRef.current === focusRequest.nonce
+    )
+      return
+    handledFocusNonceRef.current = focusRequest.nonce
+    const node = focusRequest.response.nodes.find(
+      (candidate) => candidate.id === focusRequest.nodeId
+    )
+    if (node !== undefined) {
+      setSearchQuery(node.displayLabel)
+      void focusResolvedConceptRef.current(focusRequest.response, node)
+    }
+  }, [focusRequest])
 
   const resetToOverview = useCallback(() => {
     beginViewRequest()

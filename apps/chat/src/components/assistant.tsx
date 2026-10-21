@@ -607,6 +607,8 @@ function SidebarMain({
             chatbotId={chatbot.id}
             open={graphPanel.open}
             onClose={graphPanel.close}
+            focusRequest={graphPanel.focusRequest}
+            onFocusConcept={graphPanel.focusConcept}
           >
             <Thread
               chatbotAvatar={chatbot.avatar ?? ''}
@@ -690,6 +692,8 @@ function AssistantLayout({
             chatbotId={chatbot.id}
             open={graphPanel.open}
             onClose={graphPanel.close}
+            focusRequest={graphPanel.focusRequest}
+            onFocusConcept={graphPanel.focusConcept}
           >
             <Thread
               chatbotAvatar={chatbot.avatar ?? ''}

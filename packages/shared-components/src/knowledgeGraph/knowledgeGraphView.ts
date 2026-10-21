@@ -63,6 +63,47 @@ export function boundKnowledgeGraphAskLabel(label: string): string {
     : trimmed
 }
 
+const CONCEPT_DEFINITION_MAX_LENGTH = 220
+// Graph extraction joins the descriptions it merges for one concept with this
+// separator; the first one is the concept's own definition.
+const MERGED_DESCRIPTION_SEPARATOR = '<SEP>'
+
+/**
+ * A one- or two-sentence definition of a concept from its graph summary or
+ * description, for hover cards and the details heading. Undefined when the
+ * graph has no text for the concept.
+ */
+export function conceptDefinition(
+  node: Pick<KnowledgeGraphNode, 'summary' | 'content'>
+): string | undefined {
+  const source = node.summary ?? node.content
+  const text = source
+    ?.split(MERGED_DESCRIPTION_SEPARATOR)[0]
+    ?.replace(/\s+/g, ' ')
+    .trim()
+  if (!text) return undefined
+  if (text.length <= CONCEPT_DEFINITION_MAX_LENGTH) return text
+  const window = text.slice(0, CONCEPT_DEFINITION_MAX_LENGTH)
+  const sentenceEnd = Math.max(
+    window.lastIndexOf('. '),
+    window.lastIndexOf('! '),
+    window.lastIndexOf('? ')
+  )
+  if (sentenceEnd >= CONCEPT_DEFINITION_MAX_LENGTH / 3)
+    return window.slice(0, sentenceEnd + 1)
+  const wordEnd = window.lastIndexOf(' ')
+  return `${window.slice(0, wordEnd > 0 ? wordEnd : undefined).trimEnd()}…`
+}
+
+/** Shows merged graph descriptions as separate paragraphs. */
+export function readableDescription(text: string): string {
+  return text
+    .split(MERGED_DESCRIPTION_SEPARATOR)
+    .map((part) => part.trim())
+    .filter((part) => part.length > 0)
+    .join('\n\n')
+}
+
 export function nodeAskSelection(
   node: KnowledgeGraphNode
 ): KnowledgeGraphAskSelection {
