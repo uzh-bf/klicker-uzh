@@ -1,0 +1,5 @@
+query QAdaptivePracticeQuizAttemptState($practiceQuizId: String!) {
+  adaptivePracticeQuizAttemptState(practiceQuizId: $practiceQuizId) {
+    ...FAdaptivePracticeQuizAttemptState
+  }
+}

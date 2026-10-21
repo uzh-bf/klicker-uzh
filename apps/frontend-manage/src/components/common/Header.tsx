@@ -68,6 +68,13 @@ function Header({
 
   const resourceElements: NavigationMenuItemProps[] = [
     {
+      key: 'competence-trees-item',
+      type: 'link' as const,
+      label: t('manage.resources.competenceTrees'),
+      onClick: () => router.push('/resources/competenceTrees'),
+      data: { cy: 'competence-trees' },
+    },
+    {
       key: 'answer-collections-item',
       type: 'link' as const,
       label: t('manage.resources.answerCollections'),
@@ -189,6 +196,7 @@ function Header({
       label: t('manage.general.resources'),
       icon: faBolt,
       active:
+        router.pathname.startsWith('/resources/competenceTrees') ||
         router.pathname === '/resources/answerCollections' ||
         router.pathname === '/resources/catalog' ||
         router.pathname === '/resources/userGroups' ||

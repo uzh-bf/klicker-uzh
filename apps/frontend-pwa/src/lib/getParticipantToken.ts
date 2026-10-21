@@ -3,6 +3,7 @@ import {
   LoginParticipantWithLtiDocument,
   type LoginParticipantWithLtiMutation,
 } from '@klicker-uzh/graphql/dist/ops'
+import { toSafeError } from '@klicker-uzh/logging/node'
 import { verifyJWT } from '@klicker-uzh/util'
 import {
   cookieSecurityOptions,
@@ -11,6 +12,7 @@ import {
 } from '@klicker-uzh/util/auth'
 import type { GetServerSidePropsContext } from 'next'
 import nookies from 'nookies'
+import { logger } from './server/logger'
 
 function appendCookieAttribute(
   ctx: GetServerSidePropsContext,
@@ -143,8 +145,14 @@ export default async function getParticipantToken({
       participant: result?.data?.loginParticipantWithLti,
       cookiesAvailable,
     }
-  } catch (e) {
-    console.error(e)
+  } catch {
+    logger.error(
+      {
+        event: 'ssr.participant_token.failed',
+        err: toSafeError('Failed to resolve participant token during SSR'),
+      },
+      'Failed to resolve participant token during SSR'
+    )
   }
 
   return {

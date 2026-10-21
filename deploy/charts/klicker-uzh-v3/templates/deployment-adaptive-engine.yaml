@@ -1,0 +1,86 @@
+{{- if .Values.adaptiveEngine.enabled -}}
+{{- $fullName := include "chart.fullname" . -}}
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: {{ $fullName }}-adaptive-engine
+  labels:
+    {{- include "chart.labels" . | nindent 4 }}
+    app.kubernetes.io/component: adaptive-engine
+  annotations:
+    reloader.stakater.com/auto: "true"
+spec:
+  revisionHistoryLimit: 5
+  replicas: {{ .Values.adaptiveEngine.replicaCount }}
+  selector:
+    matchLabels:
+      {{- include "chart.selectorLabels" . | nindent 6 }}
+      app.kubernetes.io/component: adaptive-engine
+  template:
+    metadata:
+      {{- with .Values.adaptiveEngine.podAnnotations }}
+      annotations:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
+      labels:
+        {{- include "chart.selectorLabels" . | nindent 8 }}
+        app.kubernetes.io/component: adaptive-engine
+    spec:
+      priorityClassName: {{ $fullName }}-{{ .Values.adaptiveEngine.priorityClassName }}
+      automountServiceAccountToken: false
+      # The engine image is a private GHCR package; the pull secret is
+      # provisioned outside the chart (df-cloud ExternalSecret).
+      imagePullSecrets:
+        - name: {{ .Values.adaptiveEngine.imagePullSecretName | default (printf "%s-registry-secret-adaptive-engine" $fullName) }}
+      securityContext:
+        {{- toYaml .Values.adaptiveEngine.podSecurityContext | nindent 8 }}
+      containers:
+        - name: adaptive-engine
+          securityContext:
+            {{- toYaml .Values.adaptiveEngine.securityContext | nindent 12 }}
+          image: "{{ .Values.adaptiveEngine.image.repository }}:{{ required "adaptiveEngine.image.tag must pin an immutable <commit>-arm tag when the engine is enabled" .Values.adaptiveEngine.image.tag }}"
+          imagePullPolicy: {{ .Values.adaptiveEngine.image.pullPolicy }}
+          ports:
+            - name: http
+              containerPort: {{ .Values.adaptiveEngine.service.port }}
+              protocol: TCP
+          env:
+            - name: ADAPTIVE_ENGINE_PORT
+              value: {{ .Values.adaptiveEngine.service.port | quote }}
+            # The same token the backend and general worker send, so both
+            # sides read one source of truth.
+            - name: ADAPTIVE_ENGINE_TOKEN
+              valueFrom:
+                secretKeyRef:
+                  name: {{ $fullName }}-secret-backend-graphql
+                  key: ADAPTIVE_ENGINE_TOKEN
+          livenessProbe:
+            httpGet:
+              path: /healthz
+              port: http
+          readinessProbe:
+            httpGet:
+              path: /healthz
+              port: http
+          resources:
+            {{- toYaml .Values.adaptiveEngine.resources | nindent 12 }}
+          volumeMounts:
+            - name: tmp
+              mountPath: /tmp
+      volumes:
+        - name: tmp
+          emptyDir:
+            sizeLimit: 16Mi
+      {{- with .Values.adaptiveEngine.nodeSelector }}
+      nodeSelector:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
+      {{- with .Values.adaptiveEngine.affinity }}
+      affinity:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
+      {{- with .Values.adaptiveEngine.tolerations }}
+      tolerations:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
+{{- end }}

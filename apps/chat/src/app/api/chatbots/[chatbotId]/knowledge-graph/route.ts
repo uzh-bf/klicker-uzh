@@ -1,5 +1,5 @@
+import type { AppLogger } from '@klicker-uzh/logging/node'
 import { type NextRequest, NextResponse } from 'next/server'
-import { z } from 'zod'
 import { withChatbotAuth } from '@/src/lib/server/apiGuards'
 import {
   type ChatbotKnowledgeGraphReadRequest,
@@ -8,7 +8,9 @@ import {
   KnowledgeGraphSelectionRequiredError,
   readPublishedChatbotKnowledgeGraph,
 } from '@/src/lib/server/knowledgeGraph'
+import { withRouteLogging } from '@/src/lib/server/requestLogging'
 import { createKnowledgeGraphAdmission } from '@/src/services/knowledgeGraphAdmission'
+import { z } from 'zod'
 
 export const runtime = 'nodejs'
 
@@ -77,12 +79,13 @@ const mentionsBodySchema = z.object({
   kbId: z.string().uuid().optional(),
 })
 
-export async function GET(
+async function handleGET(
   req: NextRequest,
-  { params }: { params: Promise<{ chatbotId: string }> }
+  { params }: { params: Promise<{ chatbotId: string }> },
+  log: AppLogger
 ) {
   const { chatbotId } = await params
-  return serveKnowledgeGraphRead(req, chatbotId, () => {
+  return serveKnowledgeGraphRead(req, chatbotId, log, () => {
     const readRequest = parseReadRequest(req)
     if (readRequest === null) return null
     const kbId = z
@@ -97,12 +100,13 @@ export async function GET(
 }
 
 /** Finds the concepts a finished answer names, so the UI can link them. */
-export async function POST(
+async function handlePOST(
   req: NextRequest,
-  { params }: { params: Promise<{ chatbotId: string }> }
+  { params }: { params: Promise<{ chatbotId: string }> },
+  log: AppLogger
 ) {
   const { chatbotId } = await params
-  return serveKnowledgeGraphRead(req, chatbotId, async () => {
+  return serveKnowledgeGraphRead(req, chatbotId, log, async () => {
     if (req.nextUrl.searchParams.get('operation') !== 'mentions') return null
     const body = mentionsBodySchema.safeParse(
       await req.json().catch(() => null)
@@ -119,12 +123,13 @@ export async function POST(
 async function serveKnowledgeGraphRead(
   req: NextRequest,
   chatbotId: string,
+  log: AppLogger,
   parse: () =>
     | ChatbotKnowledgeGraphReadRequest
     | null
     | Promise<ChatbotKnowledgeGraphReadRequest | null>
 ) {
-  const authResult = await withChatbotAuth(req, chatbotId)
+  const authResult = await withChatbotAuth(req, chatbotId, log)
   if ('response' in authResult) {
     return authResult.response
   }
@@ -198,10 +203,10 @@ async function serveKnowledgeGraphRead(
       )
     }
 
-    console.error('Participant knowledge graph read failed', {
-      chatbotId,
-      operation: readRequest.operation,
-    })
+    log.error(
+      { event: 'chat.knowledge_graph.read.failed' },
+      'Participant knowledge graph read failed'
+    )
     return NextResponse.json(
       {
         code: 'KNOWLEDGE_GRAPH_TEMPORARILY_UNAVAILABLE',
@@ -212,4 +217,26 @@ async function serveKnowledgeGraphRead(
   } finally {
     slot.release()
   }
+}
+
+export function GET(
+  req: NextRequest,
+  context: { params: Promise<{ chatbotId: string }> }
+) {
+  return withRouteLogging(
+    req,
+    '/api/chatbots/:chatbotId/knowledge-graph',
+    (log) => handleGET(req, context, log)
+  )
+}
+
+export function POST(
+  req: NextRequest,
+  context: { params: Promise<{ chatbotId: string }> }
+) {
+  return withRouteLogging(
+    req,
+    '/api/chatbots/:chatbotId/knowledge-graph',
+    (log) => handlePOST(req, context, log)
+  )
 }

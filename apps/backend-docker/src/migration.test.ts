@@ -1,6 +1,7 @@
 import assert from 'node:assert/strict'
 import { describe, it } from 'node:test'
 import type { PrismaClient } from '@klicker-uzh/prisma/client'
+import { logger } from './logger.js'
 import { type Migration, migrate } from './migration.js'
 
 interface FakeDatabase {
@@ -68,7 +69,7 @@ function setup(migrations: Migration[]) {
 
 describe('migrate', () => {
   it('applies a transactional migration once under the advisory lock', async (t) => {
-    t.mock.method(console, 'log', () => {})
+    t.mock.method(logger, 'info', () => {})
     let runs = 0
     const { db, run } = setup([
       {
@@ -88,7 +89,7 @@ describe('migrate', () => {
   })
 
   it('propagates a unique constraint violation raised by the migration body', async (t) => {
-    t.mock.method(console, 'log', () => {})
+    t.mock.method(logger, 'info', () => {})
     const { db, run } = setup([
       {
         id: 'tx-migration',
@@ -103,7 +104,7 @@ describe('migrate', () => {
   })
 
   it('tolerates a concurrent record insert for an idempotent migration', async (t) => {
-    t.mock.method(console, 'log', () => {})
+    t.mock.method(logger, 'info', () => {})
     let runs = 0
     const { db, run } = setup([
       {
@@ -124,8 +125,8 @@ describe('migrate', () => {
   })
 
   it('retries transient database errors before applying the migration', async (t) => {
-    t.mock.method(console, 'log', () => {})
-    const warn = t.mock.method(console, 'warn', () => {})
+    t.mock.method(logger, 'info', () => {})
+    const warn = t.mock.method(logger, 'warn', () => {})
     let runs = 0
     const { db, run } = setup([
       {
@@ -148,8 +149,8 @@ describe('migrate', () => {
   })
 
   it('fails fast on non-transient errors', async (t) => {
-    t.mock.method(console, 'log', () => {})
-    const warn = t.mock.method(console, 'warn', () => {})
+    t.mock.method(logger, 'info', () => {})
+    const warn = t.mock.method(logger, 'warn', () => {})
     const { db, run } = setup([
       {
         id: 'tx-migration',
@@ -165,8 +166,8 @@ describe('migrate', () => {
   })
 
   it('gives up after the retry budget is exhausted', async (t) => {
-    t.mock.method(console, 'log', () => {})
-    const warn = t.mock.method(console, 'warn', () => {})
+    t.mock.method(logger, 'info', () => {})
+    const warn = t.mock.method(logger, 'warn', () => {})
     const { db, run } = setup([{ id: 'tx-migration', migrate: async () => {} }])
     db.findFirstFailures.push(
       prismaError('P1001'),
