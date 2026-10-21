@@ -4279,6 +4279,11 @@ Da die KlickerUZH-App noch nicht im iOS-App-Store verfügbar ist, folgen Sie die
         'Inaktiv: Der Chatbot verwendet genau ein von der Lehrperson ausgewähltes Modell.',
       modelSelectionFixedDescription:
         'Teilnehmende verwenden dieses Modell. Neue Chatbots starten mit Auto.',
+      answerPreferences: 'Antwortformat und Ton durch Teilnehmende',
+      answerPreferencesEnabledDescription:
+        'Aktiv: Teilnehmende können für neue Antworten Stichpunkte und einen freundlichen oder direkten Ton wählen.',
+      answerPreferencesDisabledDescription:
+        'Inaktiv: Alle Teilnehmenden erhalten dasselbe Antwortformat und denselben Ton.',
       modelSelectionParticipantDescription:
         'Teilnehmende können zwischen diesen Modellen wählen. Wählen Sie mindestens eines.',
       selectedModel: 'Ausgewähltes Modell',

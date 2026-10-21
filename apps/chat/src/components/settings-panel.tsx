@@ -35,6 +35,7 @@ export function SettingsPanel() {
     selectedReasoningEffort,
     answerStyle,
     answerTone,
+    answerPreferencesEnabled,
     credits,
     modelOptions,
     modelSelectionEnabled,
@@ -194,50 +195,54 @@ export function SettingsPanel() {
             ) : null}
           </div>
 
-          <div data-cy="chat-answer-style-selection" className="space-y-1">
-            <label
-              htmlFor={ANSWER_STYLE_SELECT_ID}
-              className="text-sm font-bold"
-            >
-              {t('chat.settingsPanel.answerStyleLabel')}
-            </label>
-            <Select
-              id={ANSWER_STYLE_SELECT_ID}
-              data={{ cy: 'chat-answer-style-select' }}
-              items={ANSWER_STYLES.map((value) => ({
-                value,
-                label: t(`chat.settingsPanel.answerStyles.${value}`),
-              }))}
-              onChange={(newValue) => {
-                setAnswerStyle(newValue as AnswerStyle)
-              }}
-              value={answerStyle}
-            />
-            <p className="text-muted-foreground text-sm">
-              {t('chat.settingsPanel.answerStyleHint')}
-            </p>
-          </div>
+          {answerPreferencesEnabled ? (
+            <>
+              <div data-cy="chat-answer-style-selection" className="space-y-1">
+                <label
+                  htmlFor={ANSWER_STYLE_SELECT_ID}
+                  className="text-sm font-bold"
+                >
+                  {t('chat.settingsPanel.answerStyleLabel')}
+                </label>
+                <Select
+                  id={ANSWER_STYLE_SELECT_ID}
+                  data={{ cy: 'chat-answer-style-select' }}
+                  items={ANSWER_STYLES.map((value) => ({
+                    value,
+                    label: t(`chat.settingsPanel.answerStyles.${value}`),
+                  }))}
+                  onChange={(newValue) => {
+                    setAnswerStyle(newValue as AnswerStyle)
+                  }}
+                  value={answerStyle}
+                />
+                <p className="text-muted-foreground text-sm">
+                  {t('chat.settingsPanel.answerStyleHint')}
+                </p>
+              </div>
 
-          <div data-cy="chat-answer-tone-selection" className="space-y-1">
-            <label
-              htmlFor={ANSWER_TONE_SELECT_ID}
-              className="text-sm font-bold"
-            >
-              {t('chat.settingsPanel.answerToneLabel')}
-            </label>
-            <Select
-              id={ANSWER_TONE_SELECT_ID}
-              data={{ cy: 'chat-answer-tone-select' }}
-              items={ANSWER_TONES.map((value) => ({
-                value,
-                label: t(`chat.settingsPanel.answerTones.${value}`),
-              }))}
-              onChange={(newValue) => {
-                setAnswerTone(newValue as AnswerTone)
-              }}
-              value={answerTone}
-            />
-          </div>
+              <div data-cy="chat-answer-tone-selection" className="space-y-1">
+                <label
+                  htmlFor={ANSWER_TONE_SELECT_ID}
+                  className="text-sm font-bold"
+                >
+                  {t('chat.settingsPanel.answerToneLabel')}
+                </label>
+                <Select
+                  id={ANSWER_TONE_SELECT_ID}
+                  data={{ cy: 'chat-answer-tone-select' }}
+                  items={ANSWER_TONES.map((value) => ({
+                    value,
+                    label: t(`chat.settingsPanel.answerTones.${value}`),
+                  }))}
+                  onChange={(newValue) => {
+                    setAnswerTone(newValue as AnswerTone)
+                  }}
+                  value={answerTone}
+                />
+              </div>
+            </>
+          ) : null}
         </div>
       )}
     </div>

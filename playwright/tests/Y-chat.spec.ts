@@ -1998,6 +1998,43 @@ test.describe('Chatbot Settings Panel', () => {
     await expect(toneSelect).toHaveValue('friendly')
   })
 
+  test('A lecturer can turn the answer preferences off for a chatbot', async ({
+    page,
+  }) => {
+    const prisma = await getPrisma()
+    await prisma.chatbot.update({
+      where: { id: CHATBOT_ID },
+      data: { answerPreferencesEnabled: false },
+    })
+    try {
+      await visitChat(page)
+      await openSettings(page)
+      await expect(page.getByTestId('chat-model-selection')).toBeVisible()
+      await expect(page.getByTestId('chat-answer-style-selection')).toHaveCount(
+        0
+      )
+      await expect(page.getByTestId('chat-answer-tone-selection')).toHaveCount(
+        0
+      )
+
+      await page.goto(`${chatUrl()}/${CHATBOT_ID}?embed=true`, {
+        waitUntil: 'domcontentloaded',
+      })
+      await expect(page.getByTestId('chat-composer')).toBeVisible()
+      await expect(
+        page.getByTestId('chat-embedded-answer-style-select')
+      ).toHaveCount(0)
+      await expect(
+        page.getByTestId('chat-embedded-answer-tone-select')
+      ).toHaveCount(0)
+    } finally {
+      await prisma.chatbot.update({
+        where: { id: CHATBOT_ID },
+        data: { answerPreferencesEnabled: true },
+      })
+    }
+  })
+
   test('Mobile keeps the credit balance and fallback notice outside the sidebar', async ({
     page,
   }) => {

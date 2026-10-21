@@ -83,7 +83,10 @@ import {
 
 const KB_ID = '7016810d-31e9-4b39-9529-cd46feb2bf63'
 
-function createRequest(selectedMode?: string) {
+function createRequest(
+  selectedMode?: string,
+  extraBody: Record<string, unknown> = {}
+) {
   return new NextRequest('http://localhost/api/chatbots/chatbot-1/chat', {
     method: 'POST',
     headers: { 'content-type': 'application/json' },
@@ -94,6 +97,7 @@ function createRequest(selectedMode?: string) {
       selectedModel: 'gpt-4.1',
       ...(selectedMode ? { selectedMode } : {}),
       assistantMessageId: 'assistant-1',
+      ...extraBody,
     }),
   })
 }
@@ -133,6 +137,7 @@ function createChatbot(overrides: Record<string, unknown> = {}) {
     course: { displayName: 'Informatik und Wirtschaft' },
     allowedModelIds: ['gpt-4.1'],
     modelSelection: true,
+    answerPreferencesEnabled: true,
     systemPrompts: { tutor: { prompt: 'Use course material.' } },
     standardModeConfig: null,
     mcpConfigurations: [createMcpConfiguration()],
@@ -358,6 +363,44 @@ describe('required MCP chat preflight', () => {
         answerStyle: 'balanced',
         answerTone: 'neutral',
       }
+    )
+  })
+
+  test.each([
+    {
+      enabled: true,
+      expected: { answerStyle: 'bullets', answerTone: 'direct' },
+    },
+    {
+      enabled: false,
+      expected: { answerStyle: 'balanced', answerTone: 'neutral' },
+    },
+  ])('applies student answer preferences only when the chatbot allows them (enabled: $enabled)', async ({
+    enabled,
+    expected,
+  }) => {
+    mocks.findUnique.mockResolvedValueOnce(
+      createChatbot({ answerPreferencesEnabled: enabled })
+    )
+    mocks.getAggregatedMCPTools.mockResolvedValueOnce({})
+    mocks.compileSystemPrompt.mockImplementationOnce(() => {
+      throw new Error('stop after prompt compilation')
+    })
+
+    await expect(
+      POST(
+        createRequest(undefined, {
+          answerStyle: 'bullets',
+          answerTone: 'direct',
+        }),
+        { params: Promise.resolve({ chatbotId: 'chatbot-1' }) }
+      )
+    ).rejects.toThrow('stop after prompt compilation')
+
+    expect(mocks.compileSystemPrompt).toHaveBeenLastCalledWith(
+      expect.anything(),
+      'tutor',
+      expect.objectContaining(expected)
     )
   })
 

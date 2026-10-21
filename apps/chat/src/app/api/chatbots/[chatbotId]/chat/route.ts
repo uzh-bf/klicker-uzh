@@ -20,6 +20,10 @@ import {
 } from 'ai'
 import { after, type NextRequest, NextResponse } from 'next/server'
 import { z } from 'zod'
+import {
+  DEFAULT_ANSWER_STYLE,
+  DEFAULT_ANSWER_TONE,
+} from '@/src/lib/config/answerStyles'
 import type { ReasoningEffort } from '@/src/lib/config/reasoning'
 import {
   answerStyleSchema,
@@ -812,6 +816,15 @@ export async function POST(
     modelRegistry.some((model) => allowedIds.has(model.id))
   let automaticModelId: string | null = null
 
+  // A lecturer can turn the student choices off for this chatbot (ADR 0054).
+  // The defaults then apply, whatever a browser still sends.
+  const appliedAnswerStyle = chatbot.answerPreferencesEnabled
+    ? answerStyle
+    : DEFAULT_ANSWER_STYLE
+  const appliedAnswerTone = chatbot.answerPreferencesEnabled
+    ? answerTone
+    : DEFAULT_ANSWER_TONE
+
   if (!chatbot.modelSelection) {
     automaticModelId = getAutomaticModelId(chatbot.allowedModelIds as string[])
     if (!automaticModelId) {
@@ -1185,8 +1198,8 @@ export async function POST(
         courseDisplayName: chatbot.course.displayName,
         toolNames,
         standardModeConfig: chatbot.standardModeConfig,
-        answerStyle,
-        answerTone,
+        answerStyle: appliedAnswerStyle,
+        answerTone: appliedAnswerTone,
       }
     )
 
@@ -1340,8 +1353,8 @@ export async function POST(
       selectedMode,
       reasoningEffort: appliedReasoningEffort,
       allowedReasoningEfforts,
-      answerStyle,
-      answerTone,
+      answerStyle: appliedAnswerStyle,
+      answerTone: appliedAnswerTone,
       maxOutputTokens: maxOutputTokens ?? null,
       toolCount: toolNames.length,
       toolNames,

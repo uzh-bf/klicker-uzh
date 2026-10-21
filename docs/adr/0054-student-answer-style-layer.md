@@ -92,6 +92,12 @@ without weakening any of these rules.
   chat request. The chat route accepts only the listed values and maps a missing
   or unknown value to the default without rejecting the request. No participant
   data is stored server-side, and no database or GraphQL schema changes.
+- A lecturer can turn both choices off per chatbot
+  (`Chatbot.answerPreferencesEnabled`, default on) when every student should
+  get the same answers. The chat route then compiles with the defaults
+  whatever the request carries, and the chat UI hides both controls. The
+  switch is saved with the chatbot's model policy, so it stays editable on a
+  published chatbot.
 - Product copy describes the setting as changing how answers are written, not
   how much help the student gets, and makes no learning claim.
 
@@ -109,8 +115,6 @@ without weakening any of these rules.
   small live evaluation through the chat route (see `docs/chat-platform.md`)
   led to the explicit solution-scope and closing-check rules; a larger repeated
   evaluation remains a follow-up.
-- Planned follow-up: a lecturer setting per chatbot that turns the student
-  choices off, so every student on that chatbot gets the same answers.
 - Planned follow-up: adapting depth to prior knowledge from mastery evidence
   (quiz results, learning analytics). It processes data about learners and
   needs its own data-protection review and decision. Adding options, free text,
