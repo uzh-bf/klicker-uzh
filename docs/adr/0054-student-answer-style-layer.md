@@ -72,7 +72,8 @@ without weakening any of these rules.
   - the preferences change how an answer reads, never how much help the student
     gets. They never change the teaching move or how much of a solution the
     Tutor reveals; the Tutor still asks for an attempt and gives hints before a
-    full solution, and `brief` never means answer-only;
+    full solution, and `brief` never means answer-only. More detail means fuller
+    explanation, never working out a result the student is asked to find;
   - they keep any comprehension or application check the mode contract calls
     for and never add or remove it;
   - they apply to explanations and feedback, never to Quizzer question stems,
@@ -103,7 +104,9 @@ without weakening any of these rules.
   and in embedded iframes where the browser blocks third-party storage they can
   reset on reload, like the mode selection.
 - Model compliance with the precedence rules is not proven by unit tests. A
-  judge criterion per preset and tone is a follow-up.
+  small live evaluation through the chat route (see `docs/chat-platform.md`)
+  led to the explicit detail and closing-check rules; a larger repeated
+  evaluation remains a follow-up.
 - Planned follow-up: a lecturer setting that restricts the offered options per
   chatbot (shared control). Adding options, free text, or server-side storage
   would need a new decision.

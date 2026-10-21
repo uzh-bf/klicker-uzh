@@ -897,12 +897,20 @@ default instead of rejecting the request.
 With both defaults nothing is added, so the default prompt, its prompt-cache key, and
 `systemPromptHash` are unchanged. Otherwise `src/prompts/student-answer-style.hbs` renders one
 `Student answer preferences` section after the mode sections. The template keeps the Tutor's
-attempt-first and hint-before-solution behavior for every option, keeps any comprehension check the
-mode contract calls for, never touches Quizzer question stems, options, or structured output, yields
+attempt-first and hint-before-solution behavior for every option, treats more detail as fuller
+explanation rather than working out results the student should find, keeps any comprehension check
+the mode contract calls for (also at the end of a detailed or bulleted answer), never touches Quizzer question stems, options, or structured output, yields
 voice, tone, and any lecturer-named length or format to lecturer guidance, and yields to every fixed
 contract below it. The trailing per-step message does not repeat the preferences. `request.context`
 logs the applied `answerStyle` and `answerTone` next to the reasoning effort, which explains a
 differing `systemPromptHash`.
+
+A live check through the real chat route on the developer Foundry (synthetic Tutor and Explainer
+cases, one turn each, every option against the default, judged by a second model) found that
+without the last two rules, Detailed and Bullets could drop the Tutor's closing question and some
+options worked out corrected results the default left to the student. With them, no option changed
+the teaching move in the rerun. The sample was small; repeat it when the template or model changes.
+`evaluation/run-tutor-trajectories.mjs` accepts `--answer-style` and `--answer-tone` for this.
 
 The preferences are per browser. Embedded iframes whose browser blocks third-party storage can lose
 them on reload, the same limit as the persisted mode selection.
