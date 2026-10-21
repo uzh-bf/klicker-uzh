@@ -321,6 +321,9 @@ jobs:
       - name: Check KB ingestion staging render
         run: pnpm run check:kb-ingestion-stg
 
+      - name: Check assessment audit rollout render
+        run: pnpm run check:assessment-audit-rollout
+
       - name: Build packages for typecheck (turbo)
         if: >-
           github.event_name != 'pull_request' ||
