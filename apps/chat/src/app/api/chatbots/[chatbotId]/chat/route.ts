@@ -1283,6 +1283,8 @@ export async function POST(
     const documentPageSummaryTask = hasDocumentPages
       ? generateText({
           model: model,
+          // A client that cancels before the answer starts also stops this call.
+          abortSignal: req.signal,
           messages: [
             {
               role: 'user',

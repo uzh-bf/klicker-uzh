@@ -45,6 +45,11 @@ export function useChatResponse(
   const t = useTranslations()
 
   const loadCredits = useSettingsStore((state) => state.loadCredits)
+  const modelReadsImages = useSettingsStore(
+    (state) =>
+      state.modelOptions.find((model) => model.id === selectedModel)
+        ?.supportsImageAttachments !== false
+  )
 
   // AbortController to handle request cancellation
   const abortControllerRef = useRef<AbortController | null>(null)
@@ -111,11 +116,13 @@ export function useChatResponse(
       let resolvedTriggerMessage = triggerMessage
       let resolvedMessagesToSend = messagesToSend
       // Taken up front so no early return can strand them; given back when
-      // the server never accepted the request, so "Try again" sends them.
-      const documentPages = takePendingDocumentPages(triggerMessage?.id)
+      // the request failed for a transient reason, so "Try again" sends them.
+      // A model switched to one without image support drops them.
+      const takenDocumentPages = takePendingDocumentPages(triggerMessage?.id)
+      const documentPages = modelReadsImages ? takenDocumentPages : []
       let requestAccepted = false
       const restoreDocumentPages = () => {
-        if (!requestAccepted && triggerMessage?.id) {
+        if (!requestAccepted && triggerMessage?.id && documentPages.length) {
           setPendingDocumentPages(triggerMessage.id, documentPages)
         }
       }
@@ -250,7 +257,10 @@ export function useChatResponse(
         })
 
         if (!response.ok) {
-          restoreDocumentPages()
+          // A 4xx rejection repeats on every retry, so the pages stay dropped.
+          if (response.status >= 500 || response.status === 429) {
+            restoreDocumentPages()
+          }
           // raw server-provided error detail is console-only; the student sees a
           // localized generic message instead (server text may be unlocalized or
           // leak implementation detail)
@@ -845,6 +855,7 @@ export function useChatResponse(
       }
     },
     [
+      modelReadsImages,
       selectedModel,
       selectedMode,
       selectedReasoningEffort,

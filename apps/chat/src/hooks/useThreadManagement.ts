@@ -161,7 +161,11 @@ export function useThreadManagement(
       }
 
       try {
-        await addMessage(chatbotId, userMessage, threadId)
+        const addedThreadId = await addMessage(chatbotId, userMessage, threadId)
+        if (!addedThreadId) {
+          clearPendingDocumentPages(userMessageId)
+          return
+        }
       } catch (error) {
         console.error('Failed to add message', error)
         clearPendingDocumentPages(userMessageId)

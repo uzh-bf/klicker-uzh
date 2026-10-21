@@ -1154,12 +1154,16 @@ const ComposerDocumentAttachment: FC = () => {
   // The status the pages will get when the message is sent: the model may
   // have changed since the file was read, and earlier documents may already
   // use up the page budget.
-  const sendBlockText = useAuiState((s) => {
-    const documents = s.composer.attachments
+  const attachmentId = useAuiState((s) => s.attachment.id)
+  // The attachments array keeps its identity between stream updates, so the
+  // projection below only reruns when the composer's attachments change.
+  const composerAttachments = useAuiState((s) => s.composer.attachments)
+  const sendBlockText = useMemo(() => {
+    const documents = composerAttachments
       .filter((attachment) => attachment.type === 'document')
       .slice(0, MAX_DOCUMENT_ATTACHMENTS)
     const index = documents.findIndex(
-      (attachment) => attachment.id === s.attachment.id
+      (attachment) => attachment.id === attachmentId
     )
     if (index === -1) return null
     // A document still being read has no block yet and keeps its place.
@@ -1173,7 +1177,7 @@ const ComposerDocumentAttachment: FC = () => {
     return (
       applyVisualReview(forSending, { supportsImages }).blocks[index] || null
     )
-  })
+  }, [attachmentId, composerAttachments, supportsImages])
   const document = useMemo(() => {
     const text = sendBlockText ?? blockText
     return text ? parseMessageDocuments(text).documents[0] : undefined

@@ -1140,8 +1140,9 @@ documents kept while editing, whose pages are not sent again, and pages the brow
 render; a render failure never blocks the text. The composer chip runs the same decision, so it shows the
 status the message will have. Page images wait in a module map in `attachmentState.ts` until
 `useChatResponse` sends them as `documentPages`; they never enter the thread state, history or
-Markdown export. `useChatResponse` takes them before any early return and gives them back only
-when the server did not accept the request, so "Try again" sends them again.
+Markdown export. The map keeps only the latest send's pages. `useChatResponse` takes them before
+any early return and gives them back only after a network error, a 5xx or a 429, so "Try again"
+sends them again; a 4xx rejection or a switch to a model without image support drops them.
 
 The chat route accepts `documentPages` separately from `images`: at most 10 JPEG data URLs, each
 capped at 2,000,000 characters. It returns `400` with `DOCUMENT_PAGES_NOT_SUPPORTED` when the

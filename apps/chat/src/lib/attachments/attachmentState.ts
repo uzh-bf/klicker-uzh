@@ -213,8 +213,10 @@ export function setPendingDocumentPages(
   messageId: string,
   pageImages: string[]
 ): void {
+  // Only the latest send keeps its pages, so pages of a message that was
+  // discarded or never sent cannot pile up for the rest of the session.
+  pendingDocumentPages.clear()
   if (pageImages.length > 0) pendingDocumentPages.set(messageId, pageImages)
-  else pendingDocumentPages.delete(messageId)
 }
 
 export function clearPendingDocumentPages(messageId: string): void {
