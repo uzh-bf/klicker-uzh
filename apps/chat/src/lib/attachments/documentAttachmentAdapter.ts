@@ -11,7 +11,7 @@ import {
   type VisualReviewStatus,
 } from './documentText'
 import { AttachmentAdapterError } from './imageAttachmentAdapter'
-import { type PdfReadResult, PDF_TEXT_MESSAGE, readPdf } from './pdfText'
+import { PDF_TEXT_MESSAGE, type PdfReadResult, readPdf } from './pdfText'
 
 export const DOCUMENT_ERROR_CODE = {
   tooLarge: 'document-too-large',
@@ -149,7 +149,12 @@ function getVisualReviewStatus(
 ): VisualReviewStatus | null {
   if (extracted.pages == null) return null
   if (extracted.pageImages) return 'reviewed'
-  return renderPages ? 'too-many-pages' : 'no-image-support'
+  if (!renderPages) return 'no-image-support'
+  // Not rendered although the model reads images: over the page limit, or
+  // the browser could not render the pages.
+  return extracted.pages > MAX_VISUAL_REVIEW_PAGES
+    ? 'too-many-pages'
+    : 'skipped'
 }
 
 async function readDocument(

@@ -20,6 +20,16 @@ import {
 } from 'ai'
 import { after, type NextRequest, NextResponse } from 'next/server'
 import { z } from 'zod'
+import {
+  buildDocumentPageSummaryRow,
+  DOCUMENT_PAGE_SUMMARY_ROW_FILTER,
+  IMAGE_ROW_FILTER,
+  MAX_DOCUMENT_PAGE_DATA_URL_LENGTH,
+} from '@/src/lib/attachments/attachmentState'
+import {
+  MAX_VISUAL_REVIEW_PAGES,
+  stripDocumentBlocks,
+} from '@/src/lib/attachments/documentText'
 import type { ReasoningEffort } from '@/src/lib/config/reasoning'
 import { withChatbotAuth } from '@/src/lib/server/apiGuards'
 import { withCalculatorTool } from '@/src/lib/server/calculatorTool'
@@ -37,16 +47,6 @@ import {
   resolveRequestedChatMode,
 } from '@/src/lib/server/effectiveChatModes'
 import { trailingStepMessage } from '@/src/lib/server/feedbackEvidence'
-import {
-  buildDocumentPageSummaryRow,
-  DOCUMENT_PAGE_SUMMARY_ROW_FILTER,
-  IMAGE_ROW_FILTER,
-  MAX_DOCUMENT_PAGE_DATA_URL_LENGTH,
-} from '@/src/lib/attachments/attachmentState'
-import {
-  MAX_VISUAL_REVIEW_PAGES,
-  stripDocumentBlocks,
-} from '@/src/lib/attachments/documentText'
 import { ensureImagePreviewBase64 } from '@/src/lib/server/imagePreview'
 import {
   flushLangfuseTelemetry,

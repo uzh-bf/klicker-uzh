@@ -22,7 +22,7 @@ import {
 } from '../src/lib/attachments/documentText'
 import { readPdf } from '../src/lib/attachments/pdfText'
 
-const fakePdf = vi.hoisted(() => ({ numPages: 0 }))
+const fakePdf = vi.hoisted(() => ({ numPages: 0, renderFails: false }))
 
 // PDF.js and canvas rendering need a browser; the stand-ins only report page
 // counts and record how many pages were drawn.
@@ -35,7 +35,11 @@ vi.mock('unpdf', () => ({
         width: 800 * scale,
         height: 600 * scale,
       }),
-      render: () => ({ promise: Promise.resolve() }),
+      render: () => ({
+        promise: fakePdf.renderFails
+          ? Promise.reject(new Error('render failed'))
+          : Promise.resolve(),
+      }),
       cleanup: () => {},
     }),
   }),
@@ -267,6 +271,16 @@ describe('visual review of PDF pages', () => {
     )
   })
 
+  test('drops the text-only reason once a model that reads images sends it', () => {
+    const { blocks } = applyVisualReview(
+      [{ block: pdfBlock('no-image-support'), pageImages: [] }],
+      { supportsImages: true }
+    )
+    expect(parseMessageDocuments(blocks[0]).documents[0]?.visualReview).toBe(
+      'skipped'
+    )
+  })
+
   test('marks kept pages of an edited message as not reviewed', () => {
     const { blocks, pageImages } = applyVisualReview(
       [{ block: pdfBlock('reviewed'), pageImages: [] }],
@@ -338,6 +352,17 @@ describe('readPdf page rendering', () => {
     fakePdf.numPages = 11
     const result = await readPdf(new ArrayBuffer(8), { maxRenderedPages: 10 })
     expect(result.pages).toHaveLength(11)
+    expect(result.pageImages).toBeNull()
+  })
+
+  test('keeps the text when page rendering fails', async () => {
+    stubCanvas()
+    vi.spyOn(console, 'warn').mockImplementation(() => {})
+    fakePdf.numPages = 3
+    fakePdf.renderFails = true
+    const result = await readPdf(new ArrayBuffer(8), { maxRenderedPages: 10 })
+    fakePdf.renderFails = false
+    expect(result.pages).toHaveLength(3)
     expect(result.pageImages).toBeNull()
   })
 

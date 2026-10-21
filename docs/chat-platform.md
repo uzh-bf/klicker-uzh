@@ -1135,8 +1135,9 @@ The final decision happens at send time in `applyVisualReview` (`documentText.ts
 student may switch models after attaching. Pages are sent only if the model reads images and the
 whole document fits into the 10-page budget of the message, in attachment order. The block header
 records the outcome as a stored meta token: `pages reviewed visually`, or `pages not reviewed
-visually` with the reason (page limit, model cannot read images, or none for documents kept while
-editing, whose pages are not sent again). The composer chip runs the same decision, so it shows the
+visually` with the reason (page limit, or model cannot read images). Without a reason it covers
+documents kept while editing, whose pages are not sent again, and pages the browser could not
+render; a render failure never blocks the text. The composer chip runs the same decision, so it shows the
 status the message will have. Page images wait in a module map in `attachmentState.ts` until
 `useChatResponse` sends them as `documentPages`; they never enter the thread state, history or
 Markdown export.

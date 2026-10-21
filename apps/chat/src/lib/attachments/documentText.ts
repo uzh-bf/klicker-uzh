@@ -212,6 +212,11 @@ export function applyVisualReview(
     if (!document || document.visualReview == null) return block
 
     let visualReview = document.visualReview
+    // Read for a text-only model, sent with one that reads images: the pages
+    // were never rendered, so the stored reason would be wrong.
+    if (visualReview === 'no-image-support' && supportsImages) {
+      visualReview = 'skipped'
+    }
     if (visualReview === 'reviewed' || pages.length > 0) {
       if (!supportsImages) {
         visualReview = 'no-image-support'

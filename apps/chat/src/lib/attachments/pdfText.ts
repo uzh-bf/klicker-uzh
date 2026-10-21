@@ -76,43 +76,56 @@ export async function readPdf(
       pdf.numPages <= maxRenderedPages
     if (!canRender) return { pages: text, pageImages: null }
 
-    const canvasFactory = new OffscreenCanvasFactory()
-    const pageImages: string[] = []
-    for (let pageNumber = 1; pageNumber <= pdf.numPages; pageNumber++) {
-      const page = await pdf.getPage(pageNumber)
-      const { width, height } = page.getViewport({ scale: 1 })
-      const viewport = page.getViewport({
-        scale: PAGE_IMAGE_LONGEST_SIDE / Math.max(width, height),
-      })
-      const target = canvasFactory.create(
-        Math.round(viewport.width),
-        Math.round(viewport.height)
-      )
-      try {
-        const { canvas, context } = target as {
-          canvas: OffscreenCanvas
-          context: OffscreenCanvasRenderingContext2D
-        }
-        // JPEG has no transparency, and PDF pages assume a white sheet.
-        context.fillStyle = '#ffffff'
-        context.fillRect(0, 0, canvas.width, canvas.height)
-        await page.render({
-          canvas: canvas as unknown as HTMLCanvasElement,
-          canvasContext: context as unknown as CanvasRenderingContext2D,
-          viewport,
-        }).promise
-        const blob = await canvas.convertToBlob({
-          type: 'image/jpeg',
-          quality: PAGE_IMAGE_QUALITY,
-        })
-        pageImages.push(await blobToDataUrl(blob))
-      } finally {
-        canvasFactory.destroy(target)
-        page.cleanup()
-      }
+    try {
+      return { pages: text, pageImages: await renderPages(pdf) }
+    } catch (error) {
+      // Rendering is more fragile than text extraction; the text still goes
+      // through, only without the page images.
+      console.warn('PDF page rendering failed:', error)
+      return { pages: text, pageImages: null }
     }
-    return { pages: text, pageImages }
   } finally {
     await pdf.loadingTask.destroy()
   }
+}
+
+async function renderPages(
+  pdf: Awaited<ReturnType<typeof import('unpdf').getDocumentProxy>>
+): Promise<string[]> {
+  const canvasFactory = new OffscreenCanvasFactory()
+  const pageImages: string[] = []
+  for (let pageNumber = 1; pageNumber <= pdf.numPages; pageNumber++) {
+    const page = await pdf.getPage(pageNumber)
+    const { width, height } = page.getViewport({ scale: 1 })
+    const viewport = page.getViewport({
+      scale: PAGE_IMAGE_LONGEST_SIDE / Math.max(width, height),
+    })
+    const target = canvasFactory.create(
+      Math.round(viewport.width),
+      Math.round(viewport.height)
+    )
+    try {
+      const { canvas, context } = target as {
+        canvas: OffscreenCanvas
+        context: OffscreenCanvasRenderingContext2D
+      }
+      // JPEG has no transparency, and PDF pages assume a white sheet.
+      context.fillStyle = '#ffffff'
+      context.fillRect(0, 0, canvas.width, canvas.height)
+      await page.render({
+        canvas: canvas as unknown as HTMLCanvasElement,
+        canvasContext: context as unknown as CanvasRenderingContext2D,
+        viewport,
+      }).promise
+      const blob = await canvas.convertToBlob({
+        type: 'image/jpeg',
+        quality: PAGE_IMAGE_QUALITY,
+      })
+      pageImages.push(await blobToDataUrl(blob))
+    } finally {
+      canvasFactory.destroy(target)
+      page.cleanup()
+    }
+  }
+  return pageImages
 }
