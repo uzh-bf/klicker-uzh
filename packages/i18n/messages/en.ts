@@ -169,6 +169,10 @@ export default {
       filterPlaceholder: 'Filter by title',
       filterClear: 'Clear filter',
       filterNoMatch: 'No conversations match this filter.',
+      exportMarkdown: 'Export as Markdown',
+      exportUserLabel: 'You',
+      exportAssistantLabel: 'Assistant',
+      exportSourcesLabel: 'Sources',
     },
     thread: {
       viewportLabel: 'Conversation transcript',
