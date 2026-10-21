@@ -3,6 +3,7 @@ import {
   Prisma,
   type PrismaClient,
 } from '@klicker-uzh/prisma/client'
+import { compareAuditText } from '../canonical/compare.js'
 
 export const AUDIT_OUTBOX_LEASE_MILLISECONDS = 2 * 60 * 1000
 export const AUDIT_OUTBOX_CLAIM_MAX_EVENTS = 100
@@ -76,7 +77,7 @@ export async function claimAuditOutboxEvents(
   return claimed.sort(
     (left, right) =>
       left.recordedAt.getTime() - right.recordedAt.getTime() ||
-      left.eventId.localeCompare(right.eventId)
+      compareAuditText(left.eventId, right.eventId)
   )
 }
 
