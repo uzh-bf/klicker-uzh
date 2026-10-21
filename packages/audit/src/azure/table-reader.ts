@@ -226,6 +226,16 @@ function assertRequestedScope(
   return evidence
 }
 
+export type AuditEvidenceReadFailure = {
+  eventId: string
+  reason:
+    | 'RETENTION_INDEX_MISSING'
+    | 'LOCATOR_MISSING'
+    | 'EVIDENCE_MISSING'
+    | 'VERIFICATION_FAILED'
+  detail: string
+}
+
 export class AzureTableAuditReader {
   private readonly clients: AuditTableReaderClients
 
@@ -444,44 +454,25 @@ export class AzureTableAuditReader {
     )
   }
 
-  async exportQuizWithFailures(input: {
+  /**
+   * Point-read and verify known events of one assessment, e.g. the sealable
+   * outbox rows. Unlike an export, cost scales with the requested IDs.
+   */
+  async verifyEvents(input: {
     liveQuizId: string
     lifecycleEpoch?: number
-    participantId?: string
+    eventIds: readonly string[]
   }): Promise<{
     verified: VerifiedAuditEvidence[]
-    failures: {
-      eventId: string
-      reason:
-        | 'RETENTION_INDEX_MISSING'
-        | 'LOCATOR_MISSING'
-        | 'EVIDENCE_MISSING'
-        | 'VERIFICATION_FAILED'
-      detail: string
-    }[]
+    failures: AuditEvidenceReadFailure[]
   }> {
-    const eventIds = await this.listQuizEventIds({
-      liveQuizId: input.liveQuizId,
-      lifecycleEpoch: input.lifecycleEpoch,
-    })
-    type ExportResult =
+    type ReadResult =
       | { eventId: string; evidence: VerifiedAuditEvidence }
-      | {
-          eventId: string
-          failure: {
-            eventId: string
-            reason:
-              | 'RETENTION_INDEX_MISSING'
-              | 'LOCATOR_MISSING'
-              | 'EVIDENCE_MISSING'
-              | 'VERIFICATION_FAILED'
-            detail: string
-          }
-        }
+      | { eventId: string; failure: AuditEvidenceReadFailure }
     const results = await mapInParallel(
-      eventIds,
+      [...input.eventIds],
       AUDIT_EXPORT_READ_CONCURRENCY,
-      async (eventId): Promise<ExportResult> => {
+      async (eventId): Promise<ReadResult> => {
         try {
           return {
             eventId,
@@ -500,18 +491,33 @@ export class AzureTableAuditReader {
         }
       }
     )
-    const verified = results
-      .filter(
-        (result): result is Extract<ExportResult, { evidence: unknown }> =>
-          'evidence' in result
-      )
-      .map((result) => result.evidence)
-    const failures = results
-      .filter(
-        (result): result is Extract<ExportResult, { failure: unknown }> =>
-          'failure' in result
-      )
-      .map((result) => result.failure)
+    return {
+      verified: results.flatMap((result) =>
+        'evidence' in result ? [result.evidence] : []
+      ),
+      failures: results.flatMap((result) =>
+        'failure' in result ? [result.failure] : []
+      ),
+    }
+  }
+
+  async exportQuizWithFailures(input: {
+    liveQuizId: string
+    lifecycleEpoch?: number
+    participantId?: string
+  }): Promise<{
+    verified: VerifiedAuditEvidence[]
+    failures: AuditEvidenceReadFailure[]
+  }> {
+    const eventIds = await this.listQuizEventIds({
+      liveQuizId: input.liveQuizId,
+      lifecycleEpoch: input.lifecycleEpoch,
+    })
+    const { verified, failures } = await this.verifyEvents({
+      liveQuizId: input.liveQuizId,
+      lifecycleEpoch: input.lifecycleEpoch,
+      eventIds,
+    })
     const participantScoped =
       input.participantId === undefined
         ? verified
