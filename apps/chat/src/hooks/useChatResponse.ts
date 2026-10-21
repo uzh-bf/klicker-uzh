@@ -3,6 +3,7 @@ import { useParams } from 'next/navigation'
 import { useCallback, useRef } from 'react'
 import {
   hasAllImageAttachmentsHydrated,
+  setPendingDocumentPages,
   takePendingDocumentPages,
 } from '../lib/attachments/attachmentState'
 import { type ReasoningEffort } from '../lib/config/reasoning'
@@ -109,6 +110,15 @@ export function useChatResponse(
       const parentId = triggerMessage?.parentId
       let resolvedTriggerMessage = triggerMessage
       let resolvedMessagesToSend = messagesToSend
+      // Taken up front so no early return can strand them; given back when
+      // the server never accepted the request, so "Try again" sends them.
+      const documentPages = takePendingDocumentPages(triggerMessage?.id)
+      let requestAccepted = false
+      const restoreDocumentPages = () => {
+        if (!requestAccepted && triggerMessage?.id) {
+          setPendingDocumentPages(triggerMessage.id, documentPages)
+        }
+      }
 
       // generate assistant message ID; also sent to backend for consistency
       const assistantMessageId = generateId()
@@ -184,6 +194,7 @@ export function useChatResponse(
             console.error(
               'Image attachments for this message could not be loaded.'
             )
+            restoreDocumentPages()
             return
           }
 
@@ -196,9 +207,6 @@ export function useChatResponse(
 
         // send request to API with streaming enabled
         const handoffSource = readHandoffSource()
-        const documentPages = takePendingDocumentPages(
-          resolvedTriggerMessage?.id
-        )
         const response = await fetch(`/api/chatbots/${chatbotId}/chat`, {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
@@ -242,6 +250,7 @@ export function useChatResponse(
         })
 
         if (!response.ok) {
+          restoreDocumentPages()
           // raw server-provided error detail is console-only; the student sees a
           // localized generic message instead (server text may be unlocalized or
           // leak implementation detail)
@@ -287,6 +296,7 @@ export function useChatResponse(
         }
 
         // setup streaming response parsing
+        requestAccepted = true
         const reader = response.body?.getReader()
         const decoder = new TextDecoder()
         let buffer = ''
@@ -729,6 +739,7 @@ export function useChatResponse(
           hasStreamError || !hasFinishEvent ? 'error' : 'completed'
         )
       } catch (error) {
+        restoreDocumentPages()
         if (error instanceof Error && error.name === 'AbortError') {
           // request was cancelled by user — keep the turn: whatever streamed
           // plus a `chat-stopped` marker (mirrors what the server persists in

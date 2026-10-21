@@ -1,5 +1,6 @@
 import { describe, expect, test } from 'vitest'
 import {
+  appendTextToModelContent,
   hasAllImageAttachmentsHydrated,
   mergeHydratedAttachments,
   parentMessageHasImageAttachment,
@@ -7,6 +8,20 @@ import {
 } from '../src/lib/attachments/attachmentState'
 
 describe('attachmentState', () => {
+  test('appendTextToModelContent keeps image parts of a multipart message', () => {
+    const parts = [
+      { type: 'text' as const, text: 'What does the chart show?' },
+      { type: 'image' as const, image: 'data:image/jpeg;base64,AAAA' },
+    ]
+    expect(appendTextToModelContent(parts, 'note')).toEqual([
+      ...parts,
+      { type: 'text', text: 'note' },
+    ])
+    expect(appendTextToModelContent('question', 'note')).toBe(
+      'question\n\nnote'
+    )
+  })
+
   test('sortAttachmentsByPosition sorts attachments by ascending position', () => {
     expect(
       sortAttachmentsByPosition([

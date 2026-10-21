@@ -1140,7 +1140,8 @@ documents kept while editing, whose pages are not sent again, and pages the brow
 render; a render failure never blocks the text. The composer chip runs the same decision, so it shows the
 status the message will have. Page images wait in a module map in `attachmentState.ts` until
 `useChatResponse` sends them as `documentPages`; they never enter the thread state, history or
-Markdown export.
+Markdown export. `useChatResponse` takes them before any early return and gives them back only
+when the server did not accept the request, so "Try again" sends them again.
 
 The chat route accepts `documentPages` separately from `images`: at most 10 JPEG data URLs, each
 capped at 2,000,000 characters. It returns `400` with `DOCUMENT_PAGES_NOT_SUPPORTED` when the
@@ -1150,7 +1151,8 @@ visual summary of all pages, and its cost counts toward the turn's credits like 
 descriptions. The route stores only that summary, as a `ChatAttachment` row of type `IMAGE` with
 both image fields `null` and the summary in `imageDescription`. History routes load attachments
 with `IMAGE_ROW_FILTER`, so the row never shows as an image. Later turns, and a regenerated answer
-for the same message, append it as `[Visual summary of the attached document pages: …]`. The
+for the same message, append it as `[Visual summary of the attached document pages: …]`, a marker
+the input-context prompt (`input-context.hbs`) explains next to the image descriptions. The
 `null` image fields are the only marker of this row kind; a dedicated `ChatAttachmentType` value
 would make it explicit at the cost of a migration.
 

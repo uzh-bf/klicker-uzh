@@ -21,6 +21,7 @@ import {
 import { after, type NextRequest, NextResponse } from 'next/server'
 import { z } from 'zod'
 import {
+  appendTextToModelContent,
   buildDocumentPageSummaryRow,
   DOCUMENT_PAGE_SUMMARY_ROW_FILTER,
   IMAGE_ROW_FILTER,
@@ -1532,10 +1533,14 @@ export async function POST(
           }
           for (const summary of pageSummariesByMsgId.get(messages[i].id) ??
             []) {
+            const marker = `[Visual summary of the attached document pages: ${summary}]`
             modelMessages[i] = {
               ...modelMessages[i],
-              content: `${modelMessages[i].content}\n\n[Visual summary of the attached document pages: ${summary}]`,
-            }
+              content: appendTextToModelContent(
+                modelMessages[i].content,
+                marker
+              ),
+            } as (typeof modelMessages)[number]
           }
         }
       } catch (error) {

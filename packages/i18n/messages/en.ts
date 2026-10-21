@@ -264,12 +264,14 @@ export default {
       documentPages: '{count, plural, one {# page} other {# pages}}',
       documentTokens: '~{count} tokens',
       documentShortened: 'Shortened to the first {max} tokens',
-      documentVisualReviewed: 'Pages reviewed visually',
+      documentVisualReviewed:
+        '{count, plural, one {Page reviewed visually} other {Pages reviewed visually}}',
       documentVisualTooManyPages:
-        'Pages not reviewed visually: up to {max} pages per message',
+        '{count, plural, one {Page not reviewed visually} other {Pages not reviewed visually}}: up to {max} pages per message',
       documentVisualNoImageSupport:
-        'Pages not reviewed visually: this model cannot read images',
-      documentVisualSkipped: 'Pages not reviewed visually',
+        '{count, plural, one {Page not reviewed visually} other {Pages not reviewed visually}}: this model cannot read images',
+      documentVisualSkipped:
+        '{count, plural, one {Page not reviewed visually} other {Pages not reviewed visually}}',
       documentDefaultQuestion: 'Please refer to the attached file(s).',
       dictation: 'Dictate message',
       dictationSetup: 'Set up dictation',

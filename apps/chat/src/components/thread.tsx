@@ -1047,19 +1047,22 @@ const selectAttachmentDocument = (
 
 const getVisualReviewLabel = (
   t: ReturnType<typeof useTranslations<never>>,
-  status: VisualReviewStatus
+  status: VisualReviewStatus,
+  pages: number | null
 ): string => {
+  const count = pages ?? 2
   switch (status) {
     case 'reviewed':
-      return t('chat.composer.documentVisualReviewed')
+      return t('chat.composer.documentVisualReviewed', { count })
     case 'too-many-pages':
       return t('chat.composer.documentVisualTooManyPages', {
+        count,
         max: MAX_VISUAL_REVIEW_PAGES,
       })
     case 'no-image-support':
-      return t('chat.composer.documentVisualNoImageSupport')
+      return t('chat.composer.documentVisualNoImageSupport', { count })
     case 'skipped':
-      return t('chat.composer.documentVisualSkipped')
+      return t('chat.composer.documentVisualSkipped', { count })
   }
 }
 
@@ -1134,7 +1137,7 @@ const DocumentChip: FC<{
             data-status={document.visualReview}
             className="text-muted-foreground block whitespace-normal"
           >
-            {getVisualReviewLabel(t, document.visualReview)}
+            {getVisualReviewLabel(t, document.visualReview, document.pages)}
           </span>
         )}
       </span>

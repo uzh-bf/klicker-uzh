@@ -121,6 +121,11 @@ async function renderPages(
         type: 'image/jpeg',
         quality: PAGE_IMAGE_QUALITY,
       })
+      // Browsers that cannot encode JPEG fall back to PNG, which the chat
+      // route rejects; the caller then keeps the text without pages.
+      if (blob.type !== 'image/jpeg') {
+        throw new Error('JPEG page rendering is not supported')
+      }
       pageImages.push(await blobToDataUrl(blob))
     } finally {
       canvasFactory.destroy(target)

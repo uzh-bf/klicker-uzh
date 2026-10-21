@@ -30,7 +30,9 @@ export type VisualReviewStatus =
 
 const VISUAL_REVIEW_META: Record<VisualReviewStatus, string> = {
   reviewed: 'pages reviewed visually',
-  'too-many-pages': `pages not reviewed visually: limit of ${MAX_VISUAL_REVIEW_PAGES} pages per message`,
+  // Stored wording stays independent of the limit, so changing the limit
+  // keeps older messages parseable.
+  'too-many-pages': 'pages not reviewed visually: page limit per message',
   'no-image-support': 'pages not reviewed visually: model cannot read images',
   skipped: 'pages not reviewed visually',
 }

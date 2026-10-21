@@ -217,6 +217,10 @@ export function setPendingDocumentPages(
   else pendingDocumentPages.delete(messageId)
 }
 
+export function clearPendingDocumentPages(messageId: string): void {
+  pendingDocumentPages.delete(messageId)
+}
+
 export function takePendingDocumentPages(messageId?: string | null): string[] {
   if (!messageId) return []
   const pageImages = pendingDocumentPages.get(messageId) ?? []
@@ -329,4 +333,18 @@ export function buildHistoryAttachmentDto(attachment: HistoryAttachmentInput): {
     imageDescription: attachment.imageDescription ?? null,
     hasFullImage: attachment.imageBase64 != null,
   }
+}
+
+/**
+ * Appends a text note to a model message's content. A regenerated message
+ * that re-sends its images already carries text and image parts, so the note
+ * joins them as one more part instead of turning the parts into a string.
+ */
+export function appendTextToModelContent<Part>(
+  content: string | Part[],
+  text: string
+): string | (Part | { type: 'text'; text: string })[] {
+  return typeof content === 'string'
+    ? `${content}\n\n${text}`
+    : [...content, { type: 'text' as const, text }]
 }

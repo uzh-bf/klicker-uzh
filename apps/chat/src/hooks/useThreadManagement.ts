@@ -1,4 +1,5 @@
 import {
+  clearPendingDocumentPages,
   extractDocumentsForSending,
   extractLocalImageAttachments,
   getDocumentAttachmentKey,
@@ -163,6 +164,7 @@ export function useThreadManagement(
         await addMessage(chatbotId, userMessage, threadId)
       } catch (error) {
         console.error('Failed to add message', error)
+        clearPendingDocumentPages(userMessageId)
         return
       }
 
