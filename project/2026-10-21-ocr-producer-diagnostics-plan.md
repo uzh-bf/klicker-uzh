@@ -131,7 +131,19 @@ No new paid replay or provider fallback is implied by offline test failure.
   invocation 2 tests pass. No paid calls or app runtime. Installed formatter and
   scoped Opengrep checks run; hook wrappers defer dependency-based checks/build
   to required CI because this worktree has no dependency install.
-- Slice/simplification, integrated final review and draft delivery: pending.
-- Substantive implementation size: 887 added/deleted lines across five existing
+- Simplification and privacy/correctness slice review: complete. Removed two
+  unnecessary aggregation flags. Both slice and final reviewers identified the
+  same raw-versus-normalized counter mismatch; the correction now counts the
+  forwarded normalized call and extends its existing HTTP-boundary regression.
+  The same slice reviewer accepted the focused correction. Claude's schema-
+  validated integrated final review and focused correction report no remaining
+  findings at implementation head `4a25cd7c03672bd2e2ac315b9a1d8bc3ed451c3d`.
+- Integrated adapter/draft verification: 109 passing tests after the correction;
+  earlier unaffected 131 policy/final/stack and 2 invocation checks remain valid.
+  No live application runtime or provider call was required.
+- Delivery: draft [PR6661](https://github.com/uzh-bf/klicker-uzh/pull/6661) against v3.
+  Implementation and review are complete; the draft records remaining hosted CI.
+  This does not establish merge readiness or live behavior.
+- Substantive implementation size: 893 added/deleted lines across five existing
   files, excluding the plan. Test delta: 2 draft and 4 adapter cases added, with
   existing cases extended for diagnostics, privacy, accounting and exits.
