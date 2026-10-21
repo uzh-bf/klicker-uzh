@@ -6,6 +6,7 @@ import {
   setPendingDocumentPages,
   takePendingDocumentPages,
 } from '../lib/attachments/attachmentState'
+import { withoutPageReview } from '../lib/attachments/documentText'
 import { type ReasoningEffort } from '../lib/config/reasoning'
 import { readHandoffSource } from '../lib/handoff'
 import { normalizeLiveToolOutput } from '../lib/toolOutput'
@@ -213,6 +214,36 @@ export function useChatResponse(
           ]
         }
 
+        // Pages that will not be sent must not stay announced as reviewed.
+        const dropPageReview = () => {
+          const message = resolvedTriggerMessage
+          if (message?.role !== 'user' || !Array.isArray(message.content)) {
+            return
+          }
+          const updated: ExtendedThreadMessageLike = {
+            ...message,
+            content: message.content.map((part) =>
+              part.type === 'text'
+                ? {
+                    ...part,
+                    text: withoutPageReview(part.text, {
+                      supportsImages: modelReadsImages,
+                    }),
+                  }
+                : part
+            ),
+          }
+          resolvedTriggerMessage = updated
+          resolvedMessagesToSend = [
+            ...resolvedMessagesToSend.slice(0, -1),
+            updated,
+          ]
+          updateThreadMessages(resolvedMessagesToSend)
+        }
+        if (takenDocumentPages.length > 0 && documentPages.length === 0) {
+          dropPageReview()
+        }
+
         // send request to API with streaming enabled
         const handoffSource = readHandoffSource()
         const response = await fetch(`/api/chatbots/${chatbotId}/chat`, {
@@ -261,6 +292,8 @@ export function useChatResponse(
           // A 4xx rejection repeats on every retry, so the pages stay dropped.
           if (response.status >= 500 || response.status === 429) {
             restoreDocumentPages()
+          } else if (documentPages.length > 0) {
+            dropPageReview()
           }
           // raw server-provided error detail is console-only; the student sees a
           // localized generic message instead (server text may be unlocalized or

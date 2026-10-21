@@ -221,6 +221,24 @@ export function visualReviewWithoutPages(
   return visualReview
 }
 
+/**
+ * Rewrites the document headers of a message whose pages were not sent after
+ * all, so the prompt and the chip stop claiming a visual review.
+ */
+export function withoutPageReview(
+  text: string,
+  { supportsImages }: { supportsImages: boolean }
+): string {
+  return getDocumentBlocks(text).reduce((result, block) => {
+    const [updated] = applyVisualReview([{ block, pageImages: [] }], {
+      supportsImages,
+    }).blocks
+    return updated && updated !== block
+      ? result.replace(block, updated)
+      : result
+  }, text)
+}
+
 export function applyVisualReview(
   documents: DocumentForSending[],
   { supportsImages }: { supportsImages: boolean }

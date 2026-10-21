@@ -19,6 +19,7 @@ import {
   stripDocumentBlocks,
   truncateDocumentText,
   type VisualReviewStatus,
+  withoutPageReview,
 } from '../src/lib/attachments/documentText'
 import { readPdf } from '../src/lib/attachments/pdfText'
 
@@ -229,6 +230,14 @@ const pdfBlock = (visualReview: VisualReviewStatus | null, pages = 3) =>
   })
 
 describe('visual review of PDF pages', () => {
+  test('a message whose pages were dropped no longer claims a review', () => {
+    const text = composeMessageText('Question', [pdfBlock('reviewed')])
+    const [document] = parseMessageDocuments(
+      withoutPageReview(text, { supportsImages: false })
+    ).documents
+    expect(document).toMatchObject({ visualReview: 'no-image-support' })
+  })
+
   test.each<VisualReviewStatus>([
     'reviewed',
     'too-many-pages',

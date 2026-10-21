@@ -1,3 +1,5 @@
+import { MAX_DOCUMENT_PAGE_DATA_URL_LENGTH } from './attachmentState'
+
 // PDF.js recognises a worker scope and posts its own handshake messages on
 // `self`, so the extraction result carries a tag the main thread can filter on.
 export const PDF_TEXT_MESSAGE = 'klicker-pdf-text'
@@ -126,7 +128,12 @@ async function renderPages(
       if (blob.type !== 'image/jpeg') {
         throw new Error('JPEG page rendering is not supported')
       }
-      pageImages.push(await blobToDataUrl(blob))
+      const dataUrl = await blobToDataUrl(blob)
+      // The chat route rejects larger pages; the caller keeps the text instead.
+      if (dataUrl.length > MAX_DOCUMENT_PAGE_DATA_URL_LENGTH) {
+        throw new Error('Rendered page exceeds the page size limit')
+      }
+      pageImages.push(dataUrl)
     } finally {
       canvasFactory.destroy(target)
       page.cleanup()

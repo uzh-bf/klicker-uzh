@@ -1145,7 +1145,9 @@ in `settingsStore.ts`); until then documents are read as text only. Page images 
 `useChatResponse` sends them as `documentPages`; they never enter the thread state, history or
 Markdown export. Entries stay per message, and only the newest three are kept. `useChatResponse` takes them before
 any early return and gives them back only after a network error, a 5xx or a 429, so "Try again"
-sends them again; a 4xx rejection or a switch to a model without image support drops them.
+sends them again; a 4xx rejection or a switch to a model without image support drops them. When pages are dropped, `withoutPageReview` rewrites the message's document headers, so neither
+the prompt nor the chip claims a review. A rendered page larger than the route's 2,000,000-character
+cap counts as a render failure, so the document goes through as text.
 
 The chat route accepts `documentPages` separately from `images`: at most 10 JPEG data URLs, each
 capped at 2,000,000 characters. It returns `400` with `DOCUMENT_PAGES_NOT_SUPPORTED` when the
