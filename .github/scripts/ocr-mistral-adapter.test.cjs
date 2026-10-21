@@ -2439,6 +2439,7 @@ test('task_done FAILED counts once per accepted main response without changing r
     ['{"state":"FAILED"}'],
     ['{"state":"FAILED"}'],
     ['{"state":"FAILED"}'],
+    ['{"state":"FAILED"}'],
   ]
   const fetchImpl = upstream((_record, index) => {
     const message = {
@@ -2446,7 +2447,7 @@ test('task_done FAILED counts once per accepted main response without changing r
       content: '',
       tool_calls: argumentsValues[index - 1].map((value, call) => ({
         id: `done-${call}`,
-        type: 'function',
+        ...(index === 9 ? {} : { type: 'function' }),
         function: { name: 'task_done', arguments: value },
       })),
     }
@@ -2484,14 +2485,27 @@ test('task_done FAILED counts once per accepted main response without changing r
       ).status,
       200
     )
+    const normalized = await postJson(adapter, {
+      ...mainBody(),
+      messages: [{ role: 'user', content: 'synthetic normalized response' }],
+    })
+    assert.equal(normalized.status, 200)
+    assert.equal(
+      normalized.json.choices[0].message.tool_calls[0].type,
+      'function'
+    )
+    assert.equal(
+      normalized.json.choices[0].message.tool_calls[0].function.arguments,
+      '{"state":"FAILED"}'
+    )
     const receipt = adapter.diagnostics()
-    assert.equal(receipt.task_done_failed_responses, 2)
-    assert.equal(receipt.request_types.main.task_done_failed_responses, 2)
+    assert.equal(receipt.task_done_failed_responses, 3)
+    assert.equal(receipt.request_types.main.task_done_failed_responses, 3)
     assert.equal(receipt.request_types.auxiliary.task_done_failed_responses, 0)
     assert.equal(receipt.conversations[0].task_done_failed_responses, 1)
-    assert.equal(receipt.accepted_responses, 7)
-    assert.equal(receipt.prompt_tokens, 24)
-    assert.equal(receipt.completion_tokens, 32)
+    assert.equal(receipt.accepted_responses, 8)
+    assert.equal(receipt.prompt_tokens, 27)
+    assert.equal(receipt.completion_tokens, 36)
     assert.doesNotMatch(JSON.stringify(receipt), /synthetic-failed/)
   } finally {
     await adapter.close()

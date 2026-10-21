@@ -1387,7 +1387,7 @@ async function startAdapter(options = {}) {
       if (normalized.usage) normalized.usage = billableUsage(normalized.usage)
       sendJson(res, 200, normalized)
       accepted = true
-      failedTaskDoneResponse = main && hasFailedTaskDone(message)
+      failedTaskDoneResponse = main && hasFailedTaskDone(choice.message)
     } catch (error) {
       fail(controller.signal.aborted ? 'cancelled' : responseFailure(error))
       sendAdapterError(res, error)
