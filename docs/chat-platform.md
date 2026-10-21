@@ -536,7 +536,7 @@ semantic Tailwind utility names to those runtime values.
 - `@uzh-bf/design-system`'s `SidebarTrigger` and `SidebarRail` render a hardcoded English
   `sr-only` "Toggle Sidebar" label. Pass an explicit localized `aria-label`; it wins the
   accessible-name computation.
-- The design system's `Select` renders a Radix `SelectTrigger` — a real `<button role="combobox">`, so a plain `<label htmlFor>` does name it. Without that, the combobox's accessible name is whatever value is currently selected, which leaves several selects on a panel indistinguishable. Pass `id` to `Select` (it forwards to the trigger) and point the visible label at it.
+- The design system's `Select` renders a `<button role="combobox">`. Pass `id` for native label activation and a matching translated `ariaLabel`, or `ariaLabelledBy` referencing the visible label. Its fallback `aria-label` overrides `<label htmlFor>` alone, so `id` is insufficient to preserve the accessible name. See [Frontend conventions](./frontend-conventions.md).
 - Tooltips (`src/components/ui/tooltip.tsx`) are the neutral popover style — `bg-popover text-popover-foreground border shadow-md` — not inverted brand blue. Anything rendered _inside_ a tooltip must use foreground/muted-foreground tones; `text-primary-foreground/70`-style spans were readable on the old blue surface and invisible on the white one. The arrow's `border-b border-r` assumes `side="top"`, which is the only side the app uses.
 - Hover states on saturated color surfaces must **darken**, not alpha-lighten: `hover:bg-destructive/90` drops white-on-red text below AA (~3.5:1), so the declined-screen button uses `hover:brightness-90` instead. Blue (`bg-primary`) tolerates `/90`; red does not.
 
