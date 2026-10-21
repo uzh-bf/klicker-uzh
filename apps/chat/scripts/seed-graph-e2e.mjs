@@ -107,7 +107,13 @@ try {
     throw new Error('Seeded chatbot must have exactly one KB')
   const kbId = bindings[0].kbId
   const resources = await prisma.kBResource.findMany({
-    where: { kbId, deletedAt: null, activeContentSha256: { not: null } },
+    // Match the app's staleness digest, which covers course content only.
+    where: {
+      kbId,
+      deletedAt: null,
+      activeContentSha256: { not: null },
+      materialType: 'COURSE_CONTENT',
+    },
     select: { id: true, activeContentSha256: true },
     orderBy: { id: 'asc' },
   })
@@ -133,7 +139,9 @@ try {
     } else {
       await graph.query(`
       MERGE (a:Concept {name: 'Diversification'})
+      SET a.description = 'Synthetic definition: spreading an investment across several assets.'
       MERGE (b:Concept {name: 'Covariance'})
+      SET b.description = 'Synthetic definition: how two asset returns move together.<SEP>A second merged synthetic description.'
       MERGE (c:Concept {name: 'Portfolio risk'})
       MERGE (a)-[:RELATED]->(b)
       MERGE (b)-[:RELATED]->(c)

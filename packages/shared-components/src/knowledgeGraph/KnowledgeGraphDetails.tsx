@@ -8,7 +8,9 @@ import type {
 import React from 'react'
 import type { KnowledgeGraphDetailsLabels } from './knowledgeGraphLabels'
 import {
+  conceptDefinition,
   type KnowledgeGraphAskSelection,
+  readableDescription,
   relationshipDisplayLabel,
   SYMMETRIC_RELATION_TYPE,
 } from './knowledgeGraphView'
@@ -174,6 +176,7 @@ export function KnowledgeGraphDetails({
       ? undefined
       : relationshipDisplayLabel(edge, labels.relationTypes)) ??
     labels.detailsFallback
+  const definition = node === undefined ? undefined : conceptDefinition(node)
   const layoutClasses =
     layout === 'contained' ? CONTAINED_LAYOUT_CLASSES : SIDEBAR_LAYOUT_CLASSES
 
@@ -196,6 +199,14 @@ export function KnowledgeGraphDetails({
             <h2 className="break-words text-lg font-semibold leading-snug text-[#121212]">
               {heading}
             </h2>
+            {definition === undefined ? null : (
+              <p
+                className="mt-1 text-sm leading-6 text-[#4C4C4C]"
+                data-cy="knowledge-graph-definition"
+              >
+                {definition}
+              </p>
+            )}
           </div>
           <button
             type="button"
@@ -234,7 +245,8 @@ export function KnowledgeGraphDetails({
               </div>
             </dl>
 
-            {node.summary === undefined ? null : (
+            {node.summary === undefined ||
+            node.summary === definition ? null : (
               <section aria-labelledby="knowledge-graph-summary-heading">
                 <h3
                   id="knowledge-graph-summary-heading"
@@ -243,13 +255,14 @@ export function KnowledgeGraphDetails({
                   {labels.summary}
                 </h3>
                 <p className="whitespace-pre-wrap text-sm leading-6 text-[#4C4C4C]">
-                  {node.summary}
+                  {readableDescription(node.summary)}
                 </p>
               </section>
             )}
 
             {node.content === undefined ||
-            node.content === node.summary ? null : (
+            node.content === node.summary ||
+            node.content === definition ? null : (
               <section aria-labelledby="knowledge-graph-content-heading">
                 <h3
                   id="knowledge-graph-content-heading"
@@ -258,7 +271,7 @@ export function KnowledgeGraphDetails({
                   {labels.content}
                 </h3>
                 <p className="whitespace-pre-wrap text-sm leading-6 text-[#4C4C4C]">
-                  {node.content}
+                  {readableDescription(node.content)}
                 </p>
               </section>
             )}

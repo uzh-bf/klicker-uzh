@@ -1,5 +1,6 @@
 'use client'
 
+import type { KnowledgeGraphFocusRequest } from '@klicker-uzh/shared-components/src/knowledgeGraph/KnowledgeGraphViewer'
 import type { KnowledgeGraphDataSource } from '@klicker-uzh/shared-components/src/knowledgeGraph/knowledgeGraphState'
 import {
   KnowledgeGraphBuildChangedError,
@@ -235,7 +236,7 @@ function isKnowledgeGraphEdge(value: unknown): boolean {
   )
 }
 
-function isKnowledgeGraphResponse(
+export function isKnowledgeGraphResponse(
   value: unknown
 ): value is KnowledgeGraphResponse {
   return (
@@ -292,9 +293,11 @@ export function createChatKnowledgeGraphDataSource(
 export function ChatKnowledgeGraphWorkspace({
   chatbotId,
   onAsk,
+  focusRequest,
 }: {
   chatbotId: string
   onAsk?: (selection: KnowledgeGraphAskSelection) => void
+  focusRequest?: KnowledgeGraphFocusRequest
 }) {
   const t = useTranslations('pwa.chatbot')
   const [selection, setSelection] = useState<{
@@ -365,6 +368,7 @@ export function ChatKnowledgeGraphWorkspace({
           key={`${chatbotId}:${kbId ?? ''}`}
           dataSource={dataSource}
           onAsk={onAsk}
+          focusRequest={focusRequest}
         />
       ) : null}
     </section>
