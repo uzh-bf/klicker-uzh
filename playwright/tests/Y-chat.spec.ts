@@ -1929,31 +1929,31 @@ test.describe('Chatbot Settings Panel', () => {
     await selectOption(
       page,
       '[data-cy="chat-answer-style-select"]',
-      'New to this topic'
+      'Bullet points'
     )
     await selectOption(page, '[data-cy="chat-answer-tone-select"]', 'Direct')
     await expect
       .poll(() => readAnswerPreferences(page))
-      .toEqual({ answerStyle: 'detailed', answerTone: 'direct' })
+      .toEqual({ answerStyle: 'bullets', answerTone: 'direct' })
 
     const chosenRequest = waitForChatRequest(page)
     await sendMessage(page, 'Chosen answer preferences check')
     expect((await chosenRequest).postDataJSON()).toMatchObject({
-      answerStyle: 'detailed',
+      answerStyle: 'bullets',
       answerTone: 'direct',
     })
 
     await page.reload({ waitUntil: 'domcontentloaded' })
     await expect(page.getByTestId('chat-composer')).toBeVisible()
     expect(await readAnswerPreferences(page)).toEqual({
-      answerStyle: 'detailed',
+      answerStyle: 'bullets',
       answerTone: 'direct',
     })
 
     const reloadedRequest = waitForChatRequest(page)
     await sendMessage(page, 'Reloaded answer preferences check')
     expect((await reloadedRequest).postDataJSON()).toMatchObject({
-      answerStyle: 'detailed',
+      answerStyle: 'bullets',
       answerTone: 'direct',
     })
   })
@@ -1983,18 +1983,18 @@ test.describe('Chatbot Settings Panel', () => {
     await expect(toneSelect).toHaveValue('neutral')
     await expect(page.getByTestId('chat-settings-toggle')).toHaveCount(0)
 
-    await styleSelect.selectOption('brief')
+    await styleSelect.selectOption('balanced')
     await toneSelect.selectOption('friendly')
 
     const embeddedRequest = waitForChatRequest(page)
     await sendMessage(page, 'Embedded answer preferences check')
     expect((await embeddedRequest).postDataJSON()).toMatchObject({
-      answerStyle: 'brief',
+      answerStyle: 'balanced',
       answerTone: 'friendly',
     })
 
     await page.reload({ waitUntil: 'domcontentloaded' })
-    await expect(styleSelect).toHaveValue('brief')
+    await expect(styleSelect).toHaveValue('balanced')
     await expect(toneSelect).toHaveValue('friendly')
   })
 

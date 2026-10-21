@@ -36,7 +36,7 @@ export const TRAJECTORY_ARMS = ['baseline', 'candidate', 'auto']
 // apps/chat/src/lib/config/answerStyles.ts. The chat route silently maps an
 // unknown value to the default, so the runner rejects it instead of quietly
 // measuring the default prompt.
-export const ANSWER_STYLES = ['balanced', 'detailed', 'brief', 'bullets']
+export const ANSWER_STYLES = ['balanced', 'bullets']
 export const ANSWER_TONES = ['neutral', 'friendly', 'direct']
 
 const VALUE_FLAGS = {
@@ -52,7 +52,7 @@ const VALUE_FLAGS = {
 }
 
 const USAGE = [
-  'Usage: node evaluation/run-tutor-trajectories.mjs --corpus <file> --output <file> --arm <baseline|candidate|auto> --budget-file <file> [--repeats <n>] [--group <development|reserved|control>] [--numeric <sidecar>] [--answer-style <balanced|detailed|brief|bullets>] [--answer-tone <neutral|friendly|direct>]',
+  'Usage: node evaluation/run-tutor-trajectories.mjs --corpus <file> --output <file> --arm <baseline|candidate|auto> --budget-file <file> [--repeats <n>] [--group <development|reserved|control>] [--numeric <sidecar>] [--answer-style <balanced|bullets>] [--answer-tone <neutral|friendly|direct>]',
   '',
   'Runs a frozen trajectory corpus against the local evaluation target and',
   'writes one sanitized JSONL receipt per verified turn. The output file is',

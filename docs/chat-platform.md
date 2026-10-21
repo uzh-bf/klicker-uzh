@@ -881,10 +881,11 @@ leaves `instructions` unchanged, so the prompt-cache identity is stable, and it 
 
 ### Student answer style and tone
 
-Students choose an "Answer style" (DE "Antwortstil") and a "Tone" (DE "Ton") in the sidebar settings
-panel or in the compact embedded header ([ADR 0054](./adr/0054-student-answer-style-layer.md)). The
-style frames length and structure around prior knowledge: `balanced` (default), `detailed` ("New to
-this topic"), `brief` ("I know the basics"), and `bullets` ("Bullet points"). The tone is `neutral`
+Students choose an "Answer format" (DE "Antwortformat") and a "Tone" (DE "Ton") in the sidebar
+settings panel or in the compact embedded header ([ADR 0054](./adr/0054-student-answer-style-layer.md)).
+The format (`answerStyle`) changes layout only: `balanced` ("Standard", default) or `bullets` ("Bullet
+points"). Prior knowledge is deliberately not a student option; depth should follow mastery evidence
+in a later, separately reviewed change. The tone is `neutral`
 (default), `friendly`, or `direct`. Copy presents both as reading preferences that change how answers
 are written, not how much help the student gets. Do not present them as matching how a student
 learns or claim a learning benefit (see the ADR's evidence). Both lists live in `src/lib/config/answerStyles.ts`.
@@ -897,9 +898,10 @@ default instead of rejecting the request.
 With both defaults nothing is added, so the default prompt, its prompt-cache key, and
 `systemPromptHash` are unchanged. Otherwise `src/prompts/student-answer-style.hbs` renders one
 `Student answer preferences` section after the mode sections. The template keeps the Tutor's
-attempt-first and hint-before-solution behavior for every option, treats more detail as fuller
-explanation rather than working out results the student should find, keeps any comprehension check
-the mode contract calls for (also at the end of a detailed or bulleted answer), never touches Quizzer question stems, options, or structured output, yields
+attempt-first and hint-before-solution behavior for every option, never lets a layout or tone work
+out results the student should find, says the preferences carry no information about prior knowledge,
+keeps any comprehension check the mode contract calls for (also at the end of a bulleted answer),
+never touches Quizzer question stems, options, or structured output, yields
 voice, tone, and any lecturer-named length or format to lecturer guidance, and yields to every fixed
 contract below it. The trailing per-step message does not repeat the preferences. `request.context`
 logs the applied `answerStyle` and `answerTone` next to the reasoning effort, which explains a
@@ -907,9 +909,10 @@ differing `systemPromptHash`.
 
 A live check through the real chat route on the developer Foundry (synthetic Tutor and Explainer
 cases, one turn each, every option against the default, judged by a second model) found that
-without the last two rules, Detailed and Bullets could drop the Tutor's closing question and some
-options worked out corrected results the default left to the student. With them, no option changed
-the teaching move in the rerun. The sample was small; repeat it when the template or model changes.
+without the solution-scope and closing-check rules, bulleted and prior-knowledge answers could drop
+the Tutor's closing question and some options worked out corrected results the default left to the
+student. With them, no option changed the teaching move in the rerun. The prior-knowledge options
+were removed afterwards. The sample was small; repeat it when the template or model changes.
 `evaluation/run-tutor-trajectories.mjs` accepts `--answer-style` and `--answer-tone` for this.
 
 The preferences are per browser. Embedded iframes whose browser blocks third-party storage can lose

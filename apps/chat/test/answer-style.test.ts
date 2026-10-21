@@ -10,7 +10,7 @@ import {
 
 describe('answer preference request fields', () => {
   test('accepts every style and tone', () => {
-    for (const style of ['balanced', 'detailed', 'brief', 'bullets']) {
+    for (const style of ['balanced', 'bullets']) {
       expect(answerStyleSchema.parse(style)).toBe(style)
     }
     for (const tone of ['neutral', 'friendly', 'direct']) {
@@ -55,13 +55,13 @@ describe('answer preference settings', () => {
     items.set(
       'settings-storage',
       JSON.stringify({
-        state: { answerStyle: 'detailed', answerTone: 'direct' },
+        state: { answerStyle: 'bullets', answerTone: 'direct' },
         version: 0,
       })
     )
     await useSettingsStore.persist.rehydrate()
     expect(useSettingsStore.getState()).toMatchObject({
-      answerStyle: 'detailed',
+      answerStyle: 'bullets',
       answerTone: 'direct',
     })
   })

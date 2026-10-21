@@ -28,8 +28,6 @@ type PromptContext = {
   }
   'lecturer-standard-context': { personaContextJson: string }
   'student-answer-style': {
-    detailed: boolean
-    brief: boolean
     bullets: boolean
     friendly: boolean
     direct: boolean

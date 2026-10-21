@@ -41,7 +41,7 @@ describe('EmbeddedSettings', () => {
   beforeEach(() => {
     mocks.showMinimalSettings = true
     mocks.settings.modeOptions = { tutor: 'Tutor' }
-    mocks.settings.answerStyle = 'brief'
+    mocks.settings.answerStyle = 'bullets'
     mocks.settings.answerTone = 'direct'
   })
 
@@ -50,10 +50,10 @@ describe('EmbeddedSettings', () => {
 
     expect(markup).toContain('aria-label="chat.settingsPanel.answerStyleLabel"')
     expect(markup).not.toContain('aria-label="chat.modes.switcherLabel"')
-    for (const style of ['balanced', 'brief', 'bullets', 'detailed']) {
+    for (const style of ['balanced', 'bullets']) {
       expect(markup).toContain(`value="${style}"`)
     }
-    expect(markup).toMatch(/<option value="brief" selected="">/)
+    expect(markup).toMatch(/<option value="bullets" selected="">/)
   })
 
   test('renders the mode select next to them when several modes exist', () => {

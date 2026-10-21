@@ -49,13 +49,11 @@ export default {
         high: 'High',
         xhigh: 'Extra high',
       },
-      answerStyleLabel: 'Answer style',
+      answerStyleLabel: 'Answer format',
       answerStyleHint:
-        'Changes how new answers are written, not how much help you get.',
+        'Changes how new answers are laid out, not how much help you get.',
       answerStyles: {
-        balanced: 'Balanced',
-        detailed: 'New to this topic',
-        brief: 'I know the basics',
+        balanced: 'Standard',
         bullets: 'Bullet points',
       },
       answerToneLabel: 'Tone',

@@ -36,8 +36,6 @@ export function answerStyleInstructions(
   }
 
   return renderPromptTemplate('student-answer-style', {
-    detailed: style === 'detailed',
-    brief: style === 'brief',
     bullets: style === 'bullets',
     friendly: tone === 'friendly',
     direct: tone === 'direct',

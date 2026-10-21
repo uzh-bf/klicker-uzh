@@ -1,16 +1,12 @@
 /**
- * Student-chosen reading preferences (ADR 0054). The answer style frames length
- * and structure around prior knowledge; the tone changes wording and warmth.
- * Neither changes how much help the student gets. The defaults add nothing to
+ * Student-chosen reading preferences (ADR 0054). The answer style is the
+ * layout (prose or bullet points); the tone changes wording and warmth.
+ * Neither changes how much help the student gets, and neither describes what
+ * the student already knows. The defaults add nothing to
  * the system prompt. Both lists are closed: the chat route maps any other
  * value to the default.
  */
-export const ANSWER_STYLES = [
-  'balanced',
-  'detailed',
-  'brief',
-  'bullets',
-] as const
+export const ANSWER_STYLES = ['balanced', 'bullets'] as const
 
 export type AnswerStyle = (typeof ANSWER_STYLES)[number]
 

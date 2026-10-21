@@ -439,7 +439,7 @@ describe('compileSystemPrompt student answer preferences', () => {
     { name: 'quizzer', systemPrompts: null },
     { name: 'custom', systemPrompts: { custom: { prompt: 'PERSONA' } } },
   ] as const
-  const styles = ['balanced', 'detailed', 'brief', 'bullets'] as const
+  const styles = ['balanced', 'bullets'] as const
   const tones = ['neutral', 'friendly', 'direct'] as const
   const nonDefaultCombinations = styles
     .flatMap((answerStyle) =>

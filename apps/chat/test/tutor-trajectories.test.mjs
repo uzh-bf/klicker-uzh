@@ -1120,13 +1120,13 @@ test('runner argument validation fails closed before any file or network use', (
     parseArguments([
       ...required,
       '--answer-style',
-      'brief',
+      'bullets',
       '--answer-tone',
       'direct',
     ]),
     {
       ...parseArguments(required),
-      answerStyle: 'brief',
+      answerStyle: 'bullets',
       answerTone: 'direct',
     }
   )

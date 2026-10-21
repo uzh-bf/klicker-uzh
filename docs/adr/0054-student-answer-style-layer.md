@@ -7,9 +7,8 @@ Accepted
 ## Context
 
 Students differ in how they want the chat assistant's answers to read. Some
-are new to a topic and need terms and steps spelled out; others know the
-basics and find that repetition in the way. Some prefer bullet points, and
-some prefer a warmer or plainer tone.
+prefer bullet points, and some prefer a warmer or plainer tone. Students also
+differ in prior knowledge, which changes how much explanation helps them.
 
 The evidence limits what such a setting may promise and change:
 
@@ -24,8 +23,9 @@ The evidence limits what such a setting may promise and change:
   more prior knowledge, the expertise reversal effect ([Kalyuga & Renkl, 2009](https://doi.org/10.1007/s11251-009-9102-0)).
   The effect was absent in a less structured legal-reasoning task
   ([Nievelstein et al., 2013](https://doi.org/10.1016/j.cedpsych.2012.12.004)),
-  so worked steps stay worthwhile there. Prior knowledge is a better-grounded
-  frame for length than plain short or long.
+  so worked steps stay worthwhile there. Adapting depth to prior knowledge
+  needs a reliable estimate of that knowledge, which a self-rating does not
+  give (see the previous point).
 - Reduced verbosity was studied as a support for learners using imperfect
   pedagogical chatbots ([Li et al., 2026](https://doi.org/10.1145/3772318.3791940)),
   which supports a concise default.
@@ -53,11 +53,12 @@ without weakening any of these rules.
 ## Decision
 
 - Students pick from two closed lists. There is no free text.
-  - **Answer style** frames length and structure around prior knowledge:
-    `balanced` (default), `detailed` ("New to this topic": define key terms and
-    show worked steps), `brief` ("I know the basics": skip fundamentals and use
-    fewer worked steps, but keep the background the answer needs), and
-    `bullets` ("Bullet points": structure only).
+  - **Answer format** (`answerStyle`) changes layout only: `balanced`
+    ("Standard", default) and `bullets` ("Bullet points").
+  - Prior knowledge is not a student option. A first version offered "New to
+    this topic" and "I know the basics"; they were removed before release
+    because depth should follow mastery evidence, such as quiz results and
+    learning analytics, rather than a self-rating.
   - **Tone** changes wording and warmth only: `neutral` (default), `friendly`
     (warm and encouraging, without empty praise or diluted corrections), and
     `direct` (plain wording; feedback on mistakes stays polite and specific).
@@ -72,8 +73,9 @@ without weakening any of these rules.
   - the preferences change how an answer reads, never how much help the student
     gets. They never change the teaching move or how much of a solution the
     Tutor reveals; the Tutor still asks for an attempt and gives hints before a
-    full solution, and `brief` never means answer-only. More detail means fuller
-    explanation, never working out a result the student is asked to find;
+    full solution. A different layout or tone never means working out a
+    result the student is asked to find, and the preferences say nothing about
+    what the student already knows;
   - they keep any comprehension or application check the mode contract calls
     for and never add or remove it;
   - they apply to explanations and feedback, never to Quizzer question stems,
@@ -105,8 +107,11 @@ without weakening any of these rules.
   reset on reload, like the mode selection.
 - Model compliance with the precedence rules is not proven by unit tests. A
   small live evaluation through the chat route (see `docs/chat-platform.md`)
-  led to the explicit detail and closing-check rules; a larger repeated
+  led to the explicit solution-scope and closing-check rules; a larger repeated
   evaluation remains a follow-up.
-- Planned follow-up: a lecturer setting that restricts the offered options per
-  chatbot (shared control). Adding options, free text, or server-side storage
-  would need a new decision.
+- Planned follow-up: a lecturer setting per chatbot that turns the student
+  choices off, so every student on that chatbot gets the same answers.
+- Planned follow-up: adapting depth to prior knowledge from mastery evidence
+  (quiz results, learning analytics). It processes data about learners and
+  needs its own data-protection review and decision. Adding options, free text,
+  or server-side storage would also need a new decision.

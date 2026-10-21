@@ -50,13 +50,11 @@ export default {
         high: 'Hoch',
         xhigh: 'Sehr hoch',
       },
-      answerStyleLabel: 'Antwortstil',
+      answerStyleLabel: 'Antwortformat',
       answerStyleHint:
-        'Ändert, wie neue Antworten geschrieben sind, nicht wie viel Unterstützung Du bekommst.',
+        'Ändert, wie neue Antworten gegliedert sind, nicht wie viel Unterstützung Du bekommst.',
       answerStyles: {
-        balanced: 'Ausgewogen',
-        detailed: 'Neu im Thema',
-        brief: 'Ich kenne die Grundlagen',
+        balanced: 'Standard',
         bullets: 'Stichpunkte',
       },
       answerToneLabel: 'Ton',
