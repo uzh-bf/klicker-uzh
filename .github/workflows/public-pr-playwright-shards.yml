@@ -165,6 +165,26 @@ jobs:
       - name: Validate plan and expose workflow outputs
         id: metadata
         shell: bash
+        env:
+          EVENT_NAME: ${{ github.event_name }}
+          REPOSITORY: ${{ github.repository }}
+          REPOSITORY_PRIVATE: ${{ github.event.repository.private }}
+          HEAD_REPOSITORY: ${{ github.event.pull_request.head.repo.full_name }}
+          PR_AUTHOR: ${{ github.event.pull_request.user.login }}
+          PR_DRAFT: ${{ github.event.pull_request.draft }}
+          HEAD_REF: ${{ github.event.pull_request.head.ref }}
+          PR_NUMBER: ${{ github.event.pull_request.number }}
+          PUBLIC_ROLLOUT_ENABLED: ${{ vars.PUBLIC_PR_ARM64_PLAYWRIGHT_ENABLED }}
+          PUBLIC_ROLLOUT_CANARY_PR: ${{ vars.PUBLIC_PR_ARM64_PLAYWRIGHT_CANARY_PR }}
+          SMART_DRAFT_ENABLED: ${{ vars.PUBLIC_PR_PLAYWRIGHT_SMART_DRAFT_ENABLED }}
+          SMART_DRAFT_CANARY_PR: ${{ vars.PUBLIC_PR_PLAYWRIGHT_SMART_DRAFT_CANARY_PR }}
+          FORCE_HOSTED_CANARY_PR: ${{ vars.PUBLIC_PR_ARM64_PLAYWRIGHT_FORCE_HOSTED_CANARY_PR }}
+          ROUTE_HINT: ${{ inputs.route_hint }}
+          WARPBUILD_ADMISSIONS: ${{ vars.PUBLIC_PR_PLAYWRIGHT_WARPBUILD_ADMISSIONS }}
+          WARPBUILD_ADMISSION_URL: ${{ vars.PUBLIC_PR_PLAYWRIGHT_WARPBUILD_ADMISSION_URL }}
+          HEAD_SHA: ${{ github.event.pull_request.head.sha }}
+          BASE_SHA: ${{ github.event.pull_request.base.sha }}
+          CONTROL_SHA: ${{ job.workflow_sha }}
         run: |
           node .ci-control/.github/scripts/playwright-plan-metadata.cjs \
             --plan playwright-execution-plan.json \
