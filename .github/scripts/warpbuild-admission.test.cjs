@@ -185,6 +185,21 @@ test('budget, account headroom, attempt and control boundaries deny without allo
 })
 
 test('expiry, stale billing and the kill switch retain existing exposure', (t) => {
+  const duplicate = fixture(t, { ticketSeconds: 1800 }).store
+  const original = duplicate.reserve(identity, now)
+  assert.equal(
+    duplicate.reserve(identity, now + 901000).reason,
+    'billing-stale'
+  )
+  duplicate.recordBilling(
+    {
+      observedAt: new Date(now + 902000).toISOString(),
+      reportedMicros: 500000,
+    },
+    now + 902000
+  )
+  assert.deepEqual(duplicate.reserve(identity, now + 902000), original)
+  assert.equal(duplicate.status().submissions, 1)
   const { store } = fixture(t)
   store.reserve(identity, now)
   assert.equal(store.reserve(identity, now + 301000).reason, 'ticket-expired')
@@ -203,7 +218,9 @@ test('expiry, stale billing and the kill switch retain existing exposure', (t) =
     )
   )
   assert.throws(() => store.reserve(identity, now))
-  store.disable(now + 902000)
+  store.disable(now)
+  assert.equal(store.status().disabled, true)
+  assert.throws(() => store.reserve(identity, now))
   assert.equal(store.reserve(identity, now + 902000).reason, 'disabled')
   assert.equal(store.status().reservedMicros, 1000000)
   const other = fixture(t).store
@@ -239,6 +256,35 @@ test('invalid financial inputs and uninitialized state cannot authorize work', (
   )
 })
 
+test('failed commits preserve their error and quarantine a connection after rollback fails', (t) => {
+  for (const alreadyRolledBack of [false, true]) {
+    const { store } = fixture(t)
+    const execute = store.db.exec.bind(store.db)
+    const failure = new Error('synthetic storage failure')
+    let begins = 0
+    let failCommit = true
+    t.mock.method(store.db, 'exec', (sql) => {
+      if (sql === 'BEGIN IMMEDIATE') begins++
+      if (sql === 'COMMIT' && failCommit) {
+        if (alreadyRolledBack) execute('ROLLBACK')
+        throw failure
+      }
+      return execute(sql)
+    })
+    assert.throws(
+      () => store.reserve(identity, now),
+      (error) => error === failure
+    )
+    failCommit = false
+    if (alreadyRolledBack) {
+      assert.throws(() => store.reserve(identity, now), /unavailable/)
+      assert.equal(begins, 1)
+    } else {
+      assert.ok(store.reserve(identity, now).ticket)
+    }
+  }
+})
+
 test('ledger refuses public files and symlinks', (t) => {
   const { filename } = fixture(t)
   const link = path.join(path.dirname(filename), 'alias.sqlite')
@@ -248,6 +294,11 @@ test('ledger refuses public files and symlinks', (t) => {
   fs.writeFileSync(publicFile, '', { mode: 0o644 })
   fs.chmodSync(publicFile, 0o644)
   assert.throws(() => new AdmissionStore(publicFile))
+  fs.chmodSync(path.dirname(filename), 0o755)
+  assert.throws(() => new AdmissionStore(filename))
+  fs.chmodSync(path.dirname(filename), 0o700)
+  fs.linkSync(filename, path.join(path.dirname(filename), 'hardlink.sqlite'))
+  assert.throws(() => new AdmissionStore(filename))
 })
 
 test('maximum ticket lifetime leaves room for a runner clock one minute behind', (t) => {

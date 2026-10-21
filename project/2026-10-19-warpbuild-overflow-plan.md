@@ -113,6 +113,19 @@ from every source change and public description.
 
 ### Current progress
 
+On 2026-10-21 the operator approved one further bounded correction round after
+reassessment. Emergency disable now persists across backward clock changes
+without relaxing the admission clock guard. Transaction failures preserve the
+original error and quarantine the connection when rollback fails. Server startup
+waits for binding and propagates bind errors through the fixed operator failure
+path. Each defect has red/green regression evidence. All 45 focused tests pass,
+including no-retry, redirect, metadata fallback, exact forge endpoints and private
+file protection. Billing freshness still gates duplicate requests; refreshed
+billing recovers the same unexpired ticket without allocating another hold.
+Current strict freshness requires integration of `8ab99bd5fe` before delivery.
+The previously approved ready/final-review/normal-merge sequence resumes after
+current-head verification. Deployment and paid qualification remain separate.
+
 The next ordinary-review round identified admission before the plan's skip
 decision. Admission now runs in the existing metadata step after full plan
 validation; initial route selection makes no request. Skipped and invalid plans

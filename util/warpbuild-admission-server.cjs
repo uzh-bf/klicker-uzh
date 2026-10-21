@@ -301,7 +301,16 @@ async function main(argv = process.argv.slice(2)) {
       }
     )
     // Exposure and TLS are deliberately owned by a later deployment packet.
-    server.listen(8080, '127.0.0.1')
+    try {
+      await new Promise((resolve, reject) => {
+        server.once('error', reject)
+        server.listen(8080, '127.0.0.1', resolve)
+      })
+    } catch (error) {
+      store.close()
+      throw error
+    }
+    server.once('close', () => store.close())
     return server
   }
   try {
@@ -327,4 +336,4 @@ if (require.main === module)
     )
     process.exitCode = 1
   })
-module.exports = { createAdmissionHandler, verifyRun, verifyToken }
+module.exports = { createAdmissionHandler, verifyRun, verifyToken, main }

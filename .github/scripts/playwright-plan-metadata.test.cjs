@@ -101,6 +101,21 @@ test('only a validated nonempty plan can request admission before output publica
   fs.writeFileSync(planFile, JSON.stringify(plan('full', 0)))
   await assert.rejects(main(args, env, network))
   assert.equal(calls, 2)
+  fs.writeFileSync(planFile, JSON.stringify(plan('full', 8)))
+  fs.writeFileSync(routeFile, JSON.stringify(route))
+  fs.writeFileSync(output, '')
+  let fallbackCalls = 0
+  await main(args, env, async () =>
+    ++fallbackCalls === 1
+      ? Response.json({ value: 'synthetic-token' })
+      : Response.json({ reason: 'unavailable' }, { status: 409 })
+  )
+  const fallback = JSON.parse(fs.readFileSync(routeFile))
+  assert.equal(fallbackCalls, 2)
+  assert.equal(fallback.provider, undefined)
+  assert.equal(fallback.admissionAttempt, undefined)
+  assert.match(fs.readFileSync(output, 'utf8'), /^provider=public-pool$/m)
+  assert.match(fs.readFileSync(output, 'utf8'), /^should_run=true$/m)
 })
 
 test('provider metadata selects only fixed runners and binds paid attempts', () => {

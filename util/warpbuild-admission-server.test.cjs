@@ -3,6 +3,8 @@ const crypto = require('node:crypto')
 const fs = require('node:fs')
 const os = require('node:os')
 const path = require('node:path')
+const http = require('node:http')
+const { EventEmitter } = require('node:events')
 const test = require('node:test')
 const { AdmissionStore } = require('../.github/scripts/warpbuild-admission.cjs')
 const {
@@ -12,6 +14,7 @@ const {
   createAdmissionHandler,
   verifyRun,
   verifyToken,
+  main,
 } = require('./warpbuild-admission-server.cjs')
 
 const now = Date.parse('2026-01-01T12:00:00Z')
@@ -190,6 +193,67 @@ test('authenticated request verifies live eligibility before a durable ticket is
   )
 })
 
+test('serve resolves only after binding and rejects asynchronous bind errors', async (t) => {
+  const directory = fs.mkdtempSync(path.join(os.tmpdir(), 'admission-bind-'))
+  t.after(() => fs.rmSync(directory, { recursive: true, force: true }))
+  const filename = path.join(directory, 'state.sqlite')
+  const configFile = path.join(directory, 'config.json')
+  const store = new AdmissionStore(filename)
+  store.initialize(
+    {
+      windowId: 'synthetic',
+      expiresAt: '2026-01-01T13:00:00Z',
+      controlSha: identity.controlSha,
+      maxSubmissions: 1,
+      maxConcurrent: 1,
+      budgetMicros: 1000000,
+      reservationMicros: 1000000,
+      accountLimitMicros: 10000000,
+      historicalLiabilityMicros: 0,
+      maxBillingAgeSeconds: 900,
+      ticketSeconds: 300,
+    },
+    now
+  )
+  store.close()
+  fs.writeFileSync(configFile, JSON.stringify(config))
+  for (const fail of [false, true]) {
+    const server = new EventEmitter()
+    let bound
+    server.listen = (port, host, callback) => {
+      assert.equal(port, 8080)
+      assert.equal(host, '127.0.0.1')
+      bound = callback
+    }
+    const mock = t.mock.method(http, 'createServer', () => server)
+    let settled = false
+    const pending = main(['serve', filename, configFile])
+    pending.then(
+      () => {
+        settled = true
+      },
+      () => {
+        settled = true
+      }
+    )
+    await Promise.resolve()
+    await Promise.resolve()
+    assert.equal(settled, false)
+    if (fail) {
+      const failure = Object.assign(new Error('synthetic bind failure'), {
+        code: 'EADDRINUSE',
+      })
+      server.emit('error', failure)
+      await assert.rejects(pending, (error) => error === failure)
+    } else {
+      bound()
+      assert.equal(await pending, server)
+      server.emit('close')
+    }
+    mock.mock.restore()
+  }
+})
+
 test('forge evidence rejects drafts, source drift, ambiguous preparation and started work', async () => {
   const baseline = {
     group: {
@@ -244,17 +308,21 @@ test('forge evidence rejects drafts, source drift, ambiguous preparation and sta
     },
   }
   const verify = (data) =>
-    verifyRun(identity, config, async (route) =>
-      route.includes('/repositories?')
-        ? data.repositories
-        : route.startsWith('/orgs/')
-          ? data.group
-          : route.includes('/jobs?')
-            ? data.jobs
-            : route.includes('/pulls/')
-              ? data.pr
-              : data.run
-    )
+    verifyRun(identity, config, async (route) => {
+      const root = `/repos/${config.repository}`
+      const routes = {
+        [`/orgs/uzh-bf/actions/runner-groups/${config.groupId}/repositories?per_page=100`]:
+          data.repositories,
+        [`/orgs/uzh-bf/actions/runner-groups/${config.groupId}`]: data.group,
+        [`${root}/actions/runs/${identity.runId}/attempts/${identity.runAttempt}/jobs?per_page=100`]:
+          data.jobs,
+        [`${root}/pulls/${identity.pullRequestNumber}`]: data.pr,
+        [`${root}/actions/runs/${identity.runId}/attempts/${identity.runAttempt}`]:
+          data.run,
+      }
+      assert.ok(Object.hasOwn(routes, route), `unexpected endpoint ${route}`)
+      return routes[route]
+    })
   assert.equal(await verify(baseline), true)
   const suffixed = structuredClone(baseline)
   suffixed.run.path += '@refs/pull/1234/merge'

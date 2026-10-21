@@ -153,6 +153,7 @@ class AdmissionStore {
   }
 
   transaction(update) {
+    if (this.broken) throw new Error('ledger connection unavailable')
     this.db.exec('BEGIN IMMEDIATE')
     try {
       const row = this.db
@@ -168,7 +169,12 @@ class AdmissionStore {
       this.db.exec('COMMIT')
       return result
     } catch (error) {
-      this.db.exec('ROLLBACK')
+      try {
+        this.db.exec('ROLLBACK')
+      } catch {
+        // The transaction state is uncertain; reopening requires operator recovery.
+        this.broken = true
+      }
       throw error
     }
   }
@@ -221,8 +227,12 @@ class AdmissionStore {
   }
 
   disable(now = Date.now()) {
-    return this.change(now, (state) => {
+    if (!Number.isSafeInteger(now) || now < 0) throw new Error('invalid clock')
+    return this.transaction((state) => {
+      if (state?.schema !== 1) throw new Error('ledger not initialized')
       state.disabled = true
+      state.lastObservedAt = Math.max(state.lastObservedAt, now)
+      return { next: state, result: undefined }
     })
   }
 

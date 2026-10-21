@@ -69,8 +69,10 @@ test('preparation obtains an exact ticket before selecting the paid backend', as
   assert.equal(calls.length, 2)
   assert.equal(calls[1].url, env.WARPBUILD_ADMISSION_URL)
   assert.equal(calls[1].options.method, 'POST')
+  assert.equal(calls[0].options.redirect, 'error')
+  assert.equal(calls[1].options.redirect, 'error')
   assert.notEqual(calls[0].options.signal, calls[1].options.signal)
-  assert.ok(deadlines[1] >= 20000)
+  assert.deepEqual(deadlines, [12000, 20000])
   assert.equal(
     new URL(calls[0].url).searchParams.get('audience'),
     'klicker-playwright-admission'
@@ -177,6 +179,7 @@ test('coordinator denial, outages and invalid tickets preserve ordinary routing'
       await chooseRouteWithAdmission(input, env, network),
       choosePlaywrightRoute(input)
     )
+    assert.equal(calls, 2)
   }
   assert.equal(warnings.length, 6)
   assert.equal(
