@@ -12,7 +12,7 @@ const mocks = vi.hoisted(() => ({
     modeOptions: {} as Record<string, string>,
     selectedMode: 'tutor',
     setSelectedMode: () => {},
-    answerStyle: 'balanced',
+    answerStyles: {} as Record<string, string>,
     setAnswerStyle: () => {},
     answerTone: 'neutral',
     setAnswerTone: () => {},
@@ -27,7 +27,12 @@ vi.mock('../src/components/chat-ui-context', () => ({
   useChatUi: () => ({ showMinimalSettings: mocks.showMinimalSettings }),
 }))
 
-vi.mock('../src/stores/settingsStore', () => ({
+vi.mock('next/navigation', () => ({
+  useParams: () => ({ chatbotId: 'chatbot-a' }),
+}))
+
+vi.mock('../src/stores/settingsStore', async (importOriginal) => ({
+  ...(await importOriginal<typeof import('../src/stores/settingsStore')>()),
   useSettingsStore: () => mocks.settings,
 }))
 
@@ -41,11 +46,14 @@ describe('EmbeddedSettings', () => {
   beforeEach(() => {
     mocks.showMinimalSettings = true
     mocks.settings.modeOptions = { tutor: 'Tutor' }
-    mocks.settings.answerStyle = 'brief'
+    mocks.settings.answerStyles = {
+      'chatbot-a': 'brief',
+      'chatbot-b': 'bullets',
+    }
     mocks.settings.answerTone = 'direct'
   })
 
-  test('renders the answer-style select even when only one mode exists', () => {
+  test('renders the answer-style select for this chatbot even when only one mode exists', () => {
     const markup = render()
 
     expect(markup).toContain('aria-label="chat.settingsPanel.answerStyleLabel"')

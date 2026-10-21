@@ -62,7 +62,9 @@ interface SettingsState {
   selectedModel: ModelID
   selectedMode: string
   selectedReasoningEffort: ReasoningEffort
-  answerStyle: AnswerStyle
+  // Answer style describes prior knowledge, which differs by course, so it is
+  // kept per chatbot. Tone is a personal reading preference and stays global.
+  answerStyles: Record<string, AnswerStyle>
   answerTone: AnswerTone
   credits: {
     current: number
@@ -85,7 +87,7 @@ interface SettingsState {
   setSelectedModel: (model: ModelID) => void
   setSelectedMode: (mode: string) => void
   setSelectedReasoningEffort: (effort: ReasoningEffort) => void
-  setAnswerStyle: (answerStyle: AnswerStyle) => void
+  setAnswerStyle: (chatbotId: string, answerStyle: AnswerStyle) => void
   setAnswerTone: (answerTone: AnswerTone) => void
   loadModeOptions: (
     chatbotId: string,
@@ -96,6 +98,13 @@ interface SettingsState {
   resetCredits: () => void
 }
 
+export function answerStyleForChatbot(
+  state: Pick<SettingsState, 'answerStyles'>,
+  chatbotId: string | undefined
+): AnswerStyle {
+  return (chatbotId && state.answerStyles[chatbotId]) || DEFAULT_ANSWER_STYLE
+}
+
 export const useSettingsStore = create<SettingsState>()(
   persist(
     (set) => ({
@@ -103,7 +112,7 @@ export const useSettingsStore = create<SettingsState>()(
       selectedModel: 'gpt-4.1',
       selectedMode: 'tutor',
       selectedReasoningEffort: 'none',
-      answerStyle: DEFAULT_ANSWER_STYLE,
+      answerStyles: {},
       answerTone: DEFAULT_ANSWER_TONE,
       credits: {
         current: 0.0,
@@ -146,7 +155,17 @@ export const useSettingsStore = create<SettingsState>()(
 
           return { selectedReasoningEffort: resolvedEffort }
         }),
-      setAnswerStyle: (answerStyle: AnswerStyle) => set({ answerStyle }),
+      setAnswerStyle: (chatbotId: string, answerStyle: AnswerStyle) =>
+        set((state) => {
+          // The default is not stored, so untouched chatbots add no entries.
+          const answerStyles = { ...state.answerStyles }
+          if (answerStyle === DEFAULT_ANSWER_STYLE) {
+            delete answerStyles[chatbotId]
+          } else {
+            answerStyles[chatbotId] = answerStyle
+          }
+          return { answerStyles }
+        }),
       setAnswerTone: (answerTone: AnswerTone) => set({ answerTone }),
 
       loadModeOptions: async (
@@ -307,7 +326,7 @@ export const useSettingsStore = create<SettingsState>()(
         selectedModel: state.selectedModel,
         selectedMode: state.selectedMode,
         selectedReasoningEffort: state.selectedReasoningEffort,
-        answerStyle: state.answerStyle,
+        answerStyles: state.answerStyles,
         answerTone: state.answerTone,
       }),
     }

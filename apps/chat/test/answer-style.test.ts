@@ -39,30 +39,46 @@ describe('answer preference settings', () => {
         removeItem: (key: string) => void items.delete(key),
       },
     })
-    const { useSettingsStore } = await import('../src/stores/settingsStore')
+    const { answerStyleForChatbot, useSettingsStore } = await import(
+      '../src/stores/settingsStore'
+    )
+    const styleOf = (chatbotId: string) =>
+      answerStyleForChatbot(useSettingsStore.getState(), chatbotId)
 
-    expect(useSettingsStore.getState()).toMatchObject({
-      answerStyle: DEFAULT_ANSWER_STYLE,
-      answerTone: DEFAULT_ANSWER_TONE,
-    })
+    expect(styleOf('chatbot-a')).toBe(DEFAULT_ANSWER_STYLE)
+    expect(useSettingsStore.getState().answerTone).toBe(DEFAULT_ANSWER_TONE)
 
-    useSettingsStore.getState().setAnswerStyle('bullets')
+    // The style is kept per chatbot; the tone applies to every chatbot.
+    useSettingsStore.getState().setAnswerStyle('chatbot-a', 'bullets')
     useSettingsStore.getState().setAnswerTone('friendly')
+    expect(styleOf('chatbot-a')).toBe('bullets')
+    expect(styleOf('chatbot-b')).toBe(DEFAULT_ANSWER_STYLE)
     expect(
       JSON.parse(items.get('settings-storage') ?? '{}').state
-    ).toMatchObject({ answerStyle: 'bullets', answerTone: 'friendly' })
+    ).toMatchObject({
+      answerStyles: { 'chatbot-a': 'bullets' },
+      answerTone: 'friendly',
+    })
+
+    // Choosing the default again removes the stored entry.
+    useSettingsStore
+      .getState()
+      .setAnswerStyle('chatbot-a', DEFAULT_ANSWER_STYLE)
+    expect(useSettingsStore.getState().answerStyles).toEqual({})
 
     items.set(
       'settings-storage',
       JSON.stringify({
-        state: { answerStyle: 'detailed', answerTone: 'direct' },
+        state: {
+          answerStyles: { 'chatbot-b': 'detailed' },
+          answerTone: 'direct',
+        },
         version: 0,
       })
     )
     await useSettingsStore.persist.rehydrate()
-    expect(useSettingsStore.getState()).toMatchObject({
-      answerStyle: 'detailed',
-      answerTone: 'direct',
-    })
+    expect(styleOf('chatbot-b')).toBe('detailed')
+    expect(styleOf('chatbot-a')).toBe(DEFAULT_ANSWER_STYLE)
+    expect(useSettingsStore.getState().answerTone).toBe('direct')
   })
 })
