@@ -2053,16 +2053,13 @@ function summarizeProducer(snapshot) {
 }
 
 function aggregateProducer(rows, rowsComplete) {
+  if (!rowsComplete) return 'OCR producer status=unavailable'
   const counters = createProducerCounters()
   let observed = 0
-  let complete = rowsComplete && rows.length > 0
-  let missingEvidence = !rowsComplete
+  let complete = rows.length > 0
   for (const row of rows) {
-    if (!Object.hasOwn(row ?? {}, 'producer')) {
-      missingEvidence = true
-      complete = false
-      continue
-    }
+    if (!Object.hasOwn(row ?? {}, 'producer'))
+      return 'OCR producer status=unavailable'
     const producer = readProducerSnapshot(row?.producer)
     if (!producer) {
       complete = false
@@ -2076,22 +2073,18 @@ function aggregateProducer(rows, rowsComplete) {
       else counters[reason] = sum
     }
   }
-  if (observed === 0 || missingEvidence)
-    return 'OCR producer status=unavailable'
+  if (observed === 0) return 'OCR producer status=unavailable'
   return producerLine(complete ? 'complete' : 'partial', counters)
 }
 
 function aggregateTaskDoneFailures(rows, rowsComplete) {
+  if (!rowsComplete) return 'OCR task_done status=unavailable stage=adapter'
   let total = 0
   let observed = 0
-  let complete = rowsComplete && rows.length > 0
-  let missingEvidence = !rowsComplete
+  let complete = rows.length > 0
   for (const row of rows) {
-    if (!Object.hasOwn(row ?? {}, 'task_done_failed_responses')) {
-      missingEvidence = true
-      complete = false
-      continue
-    }
+    if (!Object.hasOwn(row ?? {}, 'task_done_failed_responses'))
+      return 'OCR task_done status=unavailable stage=adapter'
     const value = row?.task_done_failed_responses
     if (!Number.isSafeInteger(value) || value < 0) {
       complete = false
@@ -2119,7 +2112,7 @@ function aggregateTaskDoneFailures(rows, rowsComplete) {
     )
       complete = false
   }
-  if (observed === 0 || missingEvidence)
+  if (observed === 0)
     return 'OCR task_done status=unavailable stage=adapter'
   return `OCR task_done status=${complete ? 'complete' : 'partial'} stage=adapter task_done_failed_responses=${total}`
 }
