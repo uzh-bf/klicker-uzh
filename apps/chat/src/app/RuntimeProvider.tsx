@@ -24,6 +24,10 @@ import {
   useSyncExternalStore,
 } from 'react'
 import { useChatUi } from '../components/chat-ui-context'
+import {
+  DictationProvider,
+  useOnDeviceDictation,
+} from '../components/dictation-context'
 import { ModeOptionsProvider } from '../components/mode-options-context'
 import {
   documentAttachmentAdapter,
@@ -336,6 +340,7 @@ export function RuntimeProvider({
     [setMessagesInternal]
   )
 
+  const dictation = useOnDeviceDictation({ disabled: embedded })
   const t = useTranslations()
   const locale = useLocale()
   const speechAdapter = useLocalSpeechSynthesis({
@@ -353,9 +358,10 @@ export function RuntimeProvider({
             documentAttachmentAdapter,
           ])
         : documentAttachmentAdapter,
+      ...(dictation.adapter ? { dictation: dictation.adapter } : {}),
       ...(speechAdapter ? { speech: speechAdapter } : {}),
     }),
-    [supportsImageAttachments, speechAdapter]
+    [supportsImageAttachments, dictation.adapter, speechAdapter]
   )
 
   const readingDocument = useSyncExternalStore(
@@ -391,7 +397,7 @@ export function RuntimeProvider({
   return (
     <ModeOptionsProvider modeOptions={activeModeOptions}>
       <AssistantRuntimeProvider runtime={runtime}>
-        {children}
+        <DictationProvider value={dictation}>{children}</DictationProvider>
       </AssistantRuntimeProvider>
     </ModeOptionsProvider>
   )
