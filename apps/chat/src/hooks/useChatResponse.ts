@@ -1,7 +1,10 @@
 import { useTranslations } from 'next-intl'
 import { useParams } from 'next/navigation'
 import { useCallback, useRef } from 'react'
-import { hasAllImageAttachmentsHydrated } from '../lib/attachments/attachmentState'
+import {
+  hasAllImageAttachmentsHydrated,
+  takePendingDocumentPages,
+} from '../lib/attachments/attachmentState'
 import { type ReasoningEffort } from '../lib/config/reasoning'
 import { readHandoffSource } from '../lib/handoff'
 import { normalizeLiveToolOutput } from '../lib/toolOutput'
@@ -193,6 +196,9 @@ export function useChatResponse(
 
         // send request to API with streaming enabled
         const handoffSource = readHandoffSource()
+        const documentPages = takePendingDocumentPages(
+          resolvedTriggerMessage?.id
+        )
         const response = await fetch(`/api/chatbots/${chatbotId}/chat`, {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
@@ -231,6 +237,7 @@ export function useChatResponse(
                 } => typeof attachment.imageBase64 === 'string'
               )
               .map((attachment) => attachment.imageBase64),
+            ...(documentPages.length > 0 ? { documentPages } : {}),
           }),
         })
 

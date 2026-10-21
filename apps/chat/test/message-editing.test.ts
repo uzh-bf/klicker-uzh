@@ -38,6 +38,7 @@ vi.mock('../src/stores/settingsStore', () => ({
       selectedMode: 'chat',
       selectedModel: 'gpt-test',
       selectedReasoningEffort: 'medium',
+      modelOptions: [],
     }
     return selector ? selector(state) : state
   },

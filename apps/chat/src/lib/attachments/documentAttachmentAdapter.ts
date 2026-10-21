@@ -6,10 +6,12 @@ import type {
 import {
   buildDocumentBlock,
   MAX_DOCUMENT_SIZE_BYTES,
+  MAX_VISUAL_REVIEW_PAGES,
   truncateDocumentText,
+  type VisualReviewStatus,
 } from './documentText'
 import { AttachmentAdapterError } from './imageAttachmentAdapter'
-import { extractPdfPages, PDF_TEXT_MESSAGE } from './pdfText'
+import { type PdfReadResult, PDF_TEXT_MESSAGE, readPdf } from './pdfText'
 
 export const DOCUMENT_ERROR_CODE = {
   tooLarge: 'document-too-large',
@@ -64,26 +66,37 @@ export function getDocumentKind(file: {
   return null
 }
 
-async function extractPdfInWorker(data: ArrayBuffer): Promise<string[]> {
-  if (typeof Worker === 'undefined') return await extractPdfPages(data)
+async function readPdfInWorker(
+  data: ArrayBuffer,
+  maxRenderedPages: number
+): Promise<PdfReadResult> {
+  if (typeof Worker === 'undefined') {
+    return await readPdf(data, { maxRenderedPages })
+  }
 
   const worker = new Worker(new URL('./pdfText.worker.ts', import.meta.url), {
     type: 'module',
   })
   try {
-    return await new Promise<string[]>((resolve, reject) => {
+    return await new Promise<PdfReadResult>((resolve, reject) => {
       worker.onmessage = (
         event: MessageEvent<
-          | { type?: unknown; ok: true; pages: string[] }
+          | ({ type?: unknown; ok: true } & PdfReadResult)
           | { type?: unknown; ok: false; message: string }
         >
       ) => {
         if (event.data?.type !== PDF_TEXT_MESSAGE) return
-        if (event.data.ok) resolve(event.data.pages)
-        else reject(new Error(event.data.message))
+        if (event.data.ok) {
+          resolve({
+            pages: event.data.pages,
+            pageImages: event.data.pageImages,
+          })
+        } else reject(new Error(event.data.message))
       }
       worker.onerror = (event) => reject(new Error(event.message))
-      worker.postMessage({ type: PDF_TEXT_MESSAGE, data }, [data])
+      worker.postMessage({ type: PDF_TEXT_MESSAGE, data, maxRenderedPages }, [
+        data,
+      ])
     })
   } finally {
     worker.terminate()
@@ -97,28 +110,56 @@ async function extractDocxText(data: ArrayBuffer): Promise<string> {
   return value
 }
 
+type ExtractedDocument = {
+  text: string
+  pages: number | null
+  pageImages: string[] | null
+}
+
 async function extractText(
   file: File,
-  kind: DocumentKind
-): Promise<{ text: string; pages: number | null }> {
-  if (kind === 'text') return { text: await file.text(), pages: null }
+  kind: DocumentKind,
+  renderPages: boolean
+): Promise<ExtractedDocument> {
+  if (kind === 'text') {
+    return { text: await file.text(), pages: null, pageImages: null }
+  }
   const data = await file.arrayBuffer()
-  if (kind === 'docx') return { text: await extractDocxText(data), pages: null }
+  if (kind === 'docx') {
+    return { text: await extractDocxText(data), pages: null, pageImages: null }
+  }
 
-  const pages = await extractPdfInWorker(data)
+  const { pages, pageImages } = await readPdfInWorker(
+    data,
+    renderPages ? MAX_VISUAL_REVIEW_PAGES : 0
+  )
   return {
     text: pages
       .map((page) => page.trim())
       .filter(Boolean)
       .join('\n\n'),
     pages: pages.length,
+    pageImages,
   }
 }
 
-async function readDocumentBlock(file: File, kind: DocumentKind) {
-  let extracted: { text: string; pages: number | null }
+function getVisualReviewStatus(
+  extracted: ExtractedDocument,
+  renderPages: boolean
+): VisualReviewStatus | null {
+  if (extracted.pages == null) return null
+  if (extracted.pageImages) return 'reviewed'
+  return renderPages ? 'too-many-pages' : 'no-image-support'
+}
+
+async function readDocument(
+  file: File,
+  kind: DocumentKind,
+  renderPages: boolean
+): Promise<{ block: string; pageImages: string[] }> {
+  let extracted: ExtractedDocument
   try {
-    extracted = await extractText(file, kind)
+    extracted = await extractText(file, kind, renderPages)
   } catch (error) {
     console.error('Document text extraction failed:', error)
     throw new AttachmentAdapterError(DOCUMENT_ERROR_CODE.readFailed)
@@ -133,12 +174,16 @@ async function readDocumentBlock(file: File, kind: DocumentKind) {
   }
 
   const { text, shortened } = truncateDocumentText(extracted.text.trim())
-  return buildDocumentBlock({
-    name: file.name,
-    text,
-    pages: extracted.pages,
-    shortened,
-  })
+  return {
+    block: buildDocumentBlock({
+      name: file.name,
+      text,
+      pages: extracted.pages,
+      shortened,
+      visualReview: getVisualReviewStatus(extracted, renderPages),
+    }),
+    pageImages: extracted.pageImages ?? [],
+  }
 }
 
 // How many documents are being read right now. Sending waits for this to
@@ -165,10 +210,17 @@ const removedWhileReading = new Set<string>()
 /**
  * Reads PDF, Word and plain-text files in the browser and turns them into one
  * text part. The file itself never leaves the device; only the extracted text
- * is sent with the message. Errors carry stable codes so the composer can
- * show a localized message.
+ * is sent with the message. With `renderPages`, every page of a PDF of up to
+ * ten pages is also rendered as a JPEG and kept as a `file` part, so the
+ * model can see slides and figures; those images are sent with the message
+ * but never stored. Errors carry stable codes so the composer can show a
+ * localized message.
  */
-export const documentAttachmentAdapter: AttachmentAdapter = {
+const createDocumentAttachmentAdapter = ({
+  renderPages,
+}: {
+  renderPages: boolean
+}): AttachmentAdapter => ({
   accept: ACCEPT,
 
   async *add({ file }) {
@@ -202,9 +254,9 @@ export const documentAttachmentAdapter: AttachmentAdapter = {
         status: { type: 'running', reason: 'uploading', progress: 0 },
       } satisfies PendingAttachment
 
-      let text: string
+      let document: { block: string; pageImages: string[] }
       try {
-        text = await readDocumentBlock(file, kind)
+        document = await readDocument(file, kind, renderPages)
       } catch (error) {
         if (removedWhileReading.has(attachment.id)) return
         throw error
@@ -213,7 +265,15 @@ export const documentAttachmentAdapter: AttachmentAdapter = {
 
       yield {
         ...attachment,
-        content: [{ type: 'text', text }],
+        content: [
+          { type: 'text', text: document.block },
+          ...document.pageImages.map((data, index) => ({
+            type: 'file' as const,
+            mimeType: 'image/jpeg',
+            filename: `${file.name} – page ${index + 1}.jpg`,
+            data,
+          })),
+        ],
         status: { type: 'requires-action', reason: 'composer-send' },
       } satisfies PendingAttachment
     } finally {
@@ -234,4 +294,14 @@ export const documentAttachmentAdapter: AttachmentAdapter = {
       removedWhileReading.add(attachment.id)
     }
   },
-}
+})
+
+/** Text only, for models that cannot read images. */
+export const documentAttachmentAdapter = createDocumentAttachmentAdapter({
+  renderPages: false,
+})
+
+/** Text plus rendered PDF pages, for models that read images. */
+export const visualDocumentAttachmentAdapter = createDocumentAttachmentAdapter({
+  renderPages: true,
+})

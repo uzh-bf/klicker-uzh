@@ -1,12 +1,15 @@
 import {
-  extractDocumentBlocks,
+  extractDocumentsForSending,
   extractLocalImageAttachments,
   getDocumentAttachmentKey,
   getEditedMessageSource,
   getImageAttachmentKey,
+  setPendingDocumentPages,
 } from '@/src/lib/attachments/attachmentState'
 import {
+  applyVisualReview,
   composeMessageText,
+  type DocumentForSending,
   getDocumentBlocks,
   MAX_DOCUMENT_ATTACHMENTS,
 } from '@/src/lib/attachments/documentText'
@@ -66,28 +69,40 @@ export function useThreadManagement(
   const selectedReasoningEffort = useSettingsStore(
     (state) => state.selectedReasoningEffort
   )
+  const supportsImageAttachments = useSettingsStore(
+    (state) =>
+      state.modelOptions.find((model) => model.id === selectedModel)
+        ?.supportsImageAttachments !== false
+  )
 
   // Document text follows the typed question in a single text part, so it is
   // sent, stored and reloaded like typed text. A message with only files
   // gets a default question so the thread title and history stay readable.
+  // Rendered PDF pages are held aside for the request of this message only.
   const buildContent = useCallback(
     (
       message: AppendMessage,
-      documentBlocks: string[]
+      messageId: string,
+      documents: DocumentForSending[]
     ): ExtendedThreadMessageLike['content'] => {
-      if (documentBlocks.length === 0) return message.content
+      const { blocks, pageImages } = applyVisualReview(
+        documents.slice(0, MAX_DOCUMENT_ATTACHMENTS),
+        { supportsImages: supportsImageAttachments }
+      )
+      setPendingDocumentPages(messageId, pageImages)
+      if (blocks.length === 0) return message.content
       const typedText = getTypedText(message).trim()
       return [
         {
           type: 'text',
           text: composeMessageText(
             typedText || t('chat.composer.documentDefaultQuestion'),
-            documentBlocks.slice(0, MAX_DOCUMENT_ATTACHMENTS)
+            blocks
           ),
         },
       ]
     },
-    [t]
+    [supportsImageAttachments, t]
   )
 
   /**
@@ -122,12 +137,14 @@ export function useThreadManagement(
       ).slice(0, MAX_IMAGE_ATTACHMENTS)
 
       // create user message with unique ID and metadata
+      const userMessageId = generateId()
       const userMessage: ExtendedThreadMessageLike = {
-        id: generateId(),
+        id: userMessageId,
         role: 'user',
         content: buildContent(
           message,
-          extractDocumentBlocks(message.attachments)
+          userMessageId,
+          extractDocumentsForSending(message.attachments)
         ),
         createdAt: new Date(),
         parentId: message.parentId || null,
@@ -205,10 +222,11 @@ export function useThreadManagement(
       const sourceMessageId = sourceId ?? editedMessageId
 
       // create edited message with new ID
+      const editedMessageNewId = generateId()
       let editedMessage: ExtendedThreadMessageLike = {
         role: 'user',
         content: message.content,
-        id: generateId(),
+        id: editedMessageNewId,
         createdAt: new Date(),
         parentId: parentId,
         chatMode: selectedMode,
@@ -274,11 +292,13 @@ export function useThreadManagement(
               !removedAttachmentKeys.has(getDocumentAttachmentKey(index))
           )
         : []
+      // Kept documents have no page images any more, so applyVisualReview
+      // marks their pages as not reviewed in the new message.
       editedMessage = {
         ...editedMessage,
-        content: buildContent(message, [
-          ...keptDocumentBlocks,
-          ...extractDocumentBlocks(message.attachments),
+        content: buildContent(message, editedMessageNewId, [
+          ...keptDocumentBlocks.map((block) => ({ block, pageImages: [] })),
+          ...extractDocumentsForSending(message.attachments),
         ]),
       }
       editedMessage.attachmentSourceMessageId =

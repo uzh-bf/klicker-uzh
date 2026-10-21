@@ -1,3 +1,5 @@
+import type { DocumentForSending } from './documentText'
+
 type AttachmentRecord = {
   id: string
   type: 'image'
@@ -168,6 +170,60 @@ export function extractDocumentBlocks(
     .map((part) => part.text)
 }
 
+const isPageImagePart = (
+  part: unknown
+): part is { type: 'file'; mimeType: string; data: string } =>
+  typeof part === 'object' &&
+  part !== null &&
+  'type' in part &&
+  part.type === 'file' &&
+  'mimeType' in part &&
+  part.mimeType === 'image/jpeg' &&
+  'data' in part &&
+  typeof part.data === 'string'
+
+/**
+ * Each document attachment with its text block and the JPEG pages rendered
+ * for it, in the order the files were added.
+ */
+export function extractDocumentsForSending(
+  attachments?: readonly ComposerDocumentAttachmentInput[]
+): DocumentForSending[] {
+  return (attachments ?? [])
+    .filter((attachment) => attachment.type === 'document')
+    .flatMap((attachment) => {
+      const block = extractDocumentBlocks([attachment])[0]
+      if (block == null) return []
+      return [
+        {
+          block,
+          pageImages: (attachment.content ?? [])
+            .filter(isPageImagePart)
+            .map((part) => part.data),
+        },
+      ]
+    })
+}
+
+// Page images ride along with the request that answers their message and
+// are then dropped: they are neither kept in the thread state nor stored.
+const pendingDocumentPages = new Map<string, string[]>()
+
+export function setPendingDocumentPages(
+  messageId: string,
+  pageImages: string[]
+): void {
+  if (pageImages.length > 0) pendingDocumentPages.set(messageId, pageImages)
+  else pendingDocumentPages.delete(messageId)
+}
+
+export function takePendingDocumentPages(messageId?: string | null): string[] {
+  if (!messageId) return []
+  const pageImages = pendingDocumentPages.get(messageId) ?? []
+  pendingDocumentPages.delete(messageId)
+  return pageImages
+}
+
 // Kept documents of an edited message are removed by key, like its images.
 export function getDocumentAttachmentKey(index: number): string {
   return `doc:${index}`
@@ -221,6 +277,40 @@ export function getEditedMessageSource<T extends EditableMessage>({
   }
 
   return messages.find((message) => message.id === editedMessageId)
+}
+
+/**
+ * The visual summary of a message's PDF pages is stored as a ChatAttachment
+ * row without any image data, next to the message's image rows. Only rows
+ * with image data are images; the summary row is model context and never
+ * shown as an attachment.
+ */
+export const IMAGE_ROW_FILTER = { imageBase64: { not: null } } as const
+export const DOCUMENT_PAGE_SUMMARY_ROW_FILTER = {
+  imageBase64: null,
+  imagePreviewBase64: null,
+} as const
+
+// About 1.5 MB of JPEG per page; a 1,600 px page is usually far smaller.
+export const MAX_DOCUMENT_PAGE_DATA_URL_LENGTH = 2_000_000
+
+export function buildDocumentPageSummaryRow({
+  messageId,
+  position,
+  summary,
+}: {
+  messageId: string
+  position: number
+  summary: string
+}) {
+  return {
+    type: 'IMAGE' as const,
+    messageId,
+    position,
+    imageBase64: null,
+    imagePreviewBase64: null,
+    imageDescription: summary,
+  }
 }
 
 export function buildHistoryAttachmentDto(attachment: HistoryAttachmentInput): {

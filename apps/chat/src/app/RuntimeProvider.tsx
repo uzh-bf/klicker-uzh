@@ -33,6 +33,7 @@ import {
   documentAttachmentAdapter,
   isReadingDocument,
   subscribeDocumentReading,
+  visualDocumentAttachmentAdapter,
 } from '../lib/attachments/documentAttachmentAdapter'
 import { parseMessageDocuments } from '../lib/attachments/documentText'
 import { imageAttachmentAdapter } from '../lib/attachments/imageAttachmentAdapter'
@@ -349,13 +350,14 @@ export function RuntimeProvider({
     disabled: embedded,
   })
   // Documents are read as text in the browser, so they work with every model;
-  // images only join when the selected model accepts them.
+  // images, and PDF pages rendered as images, only join when the selected
+  // model accepts them.
   const adapters = useMemo(
     () => ({
       attachments: supportsImageAttachments
         ? new CompositeAttachmentAdapter([
             imageAttachmentAdapter,
-            documentAttachmentAdapter,
+            visualDocumentAttachmentAdapter,
           ])
         : documentAttachmentAdapter,
       ...(dictation.adapter ? { dictation: dictation.adapter } : {}),

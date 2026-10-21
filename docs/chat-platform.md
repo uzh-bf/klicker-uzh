@@ -1122,6 +1122,40 @@ and sent again with every later turn of the thread. The server does not limit me
 the client cap is a UX rule, not enforcement. Uploads stay in the thread and never enter a course
 knowledge base.
 
+### Visual review of PDF pages
+
+When the selected model reads images (`supportsImageAttachments`), the adapter also renders every
+page of a PDF with at most 10 pages (`MAX_VISUAL_REVIEW_PAGES`) as a JPEG. The worker draws each
+page on an `OffscreenCanvas` at about 1,600 px on the longest side and quality 0.8 (`pdfText.ts`).
+PDF.js gets an `OffscreenCanvas` factory and draws fonts as paths, because a worker has no
+`document`. The pages are kept as `file` parts of the document attachment, so the image pipeline
+(`images`, at most 3) never sees them. A PDF with more pages is not rendered at all.
+
+The final decision happens at send time in `applyVisualReview` (`documentText.ts`), because the
+student may switch models after attaching. Pages are sent only if the model reads images and the
+whole document fits into the 10-page budget of the message, in attachment order. The block header
+records the outcome as a stored meta token: `pages reviewed visually`, or `pages not reviewed
+visually` with the reason (page limit, model cannot read images, or none for documents kept while
+editing, whose pages are not sent again). The composer chip runs the same decision, so it shows the
+status the message will have. Page images wait in a module map in `attachmentState.ts` until
+`useChatResponse` sends them as `documentPages`; they never enter the thread state, history or
+Markdown export.
+
+The chat route accepts `documentPages` separately from `images`: at most 10 JPEG data URLs, each
+capped at 2,000,000 characters. It returns `400` with `DOCUMENT_PAGES_NOT_SUPPORTED` when the
+effective model, after any zero-credit fallback, cannot read images. On the current turn the pages
+go to the model with the user message. One extra call (`document-pages-summary.hbs`) writes a
+visual summary of all pages, and its cost counts toward the turn's credits like image
+descriptions. The route stores only that summary, as a `ChatAttachment` row of type `IMAGE` with
+both image fields `null` and the summary in `imageDescription`. History routes load attachments
+with `IMAGE_ROW_FILTER`, so the row never shows as an image. Later turns, and a regenerated answer
+for the same message, append it as `[Visual summary of the attached document pages: …]`. The
+`null` image fields are the only marker of this row kind; a dedicated `ChatAttachmentType` value
+would make it explicit at the cost of a migration.
+
+Data boundary: the page images go to the model provider for the current turn and the summary call,
+but are not stored. The summary is stored with the message and sent with every later turn.
+
 ## Client-state gotchas
 
 - **Zustand async actions must set fallback state in `catch`**, not just log — otherwise the UI hangs in loading state on network errors.

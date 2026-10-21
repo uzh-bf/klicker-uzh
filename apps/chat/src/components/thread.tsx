@@ -45,6 +45,7 @@ import {
 import { twMerge } from 'tailwind-merge'
 import { useMessageSources } from '@/src/hooks/useMessageSources'
 import {
+  extractDocumentsForSending,
   getDocumentAttachmentKey,
   getImageAttachmentKey,
   hasAnyImageAttachmentData,
@@ -56,11 +57,14 @@ import {
   documentAttachmentAdapter,
 } from '@/src/lib/attachments/documentAttachmentAdapter'
 import {
+  applyVisualReview,
   type DocumentAttachmentInfo,
   MAX_DOCUMENT_ATTACHMENTS,
   MAX_DOCUMENT_SIZE_BYTES,
   MAX_DOCUMENT_TOKENS,
+  MAX_VISUAL_REVIEW_PAGES,
   parseMessageDocuments,
+  type VisualReviewStatus,
 } from '@/src/lib/attachments/documentText'
 import {
   ATTACHMENT_ERROR_CODE,
@@ -1041,6 +1045,24 @@ const selectAttachmentDocument = (
   return textPart?.text ?? null
 }
 
+const getVisualReviewLabel = (
+  t: ReturnType<typeof useTranslations<never>>,
+  status: VisualReviewStatus
+): string => {
+  switch (status) {
+    case 'reviewed':
+      return t('chat.composer.documentVisualReviewed')
+    case 'too-many-pages':
+      return t('chat.composer.documentVisualTooManyPages', {
+        max: MAX_VISUAL_REVIEW_PAGES,
+      })
+    case 'no-image-support':
+      return t('chat.composer.documentVisualNoImageSupport')
+    case 'skipped':
+      return t('chat.composer.documentVisualSkipped')
+  }
+}
+
 const DocumentChip: FC<{
   name: string
   document?: DocumentChipInfo
@@ -1106,6 +1128,15 @@ const DocumentChip: FC<{
             })}
           </span>
         )}
+        {!reading && document?.visualReview && (
+          <span
+            data-cy="chat-document-visual-review"
+            data-status={document.visualReview}
+            className="text-muted-foreground block whitespace-normal"
+          >
+            {getVisualReviewLabel(t, document.visualReview)}
+          </span>
+        )}
       </span>
       {children}
     </div>
@@ -1116,11 +1147,34 @@ const ComposerDocumentAttachment: FC = () => {
   const name = useAuiState((s) => selectAttachmentName(s.attachment))
   const reading = useAuiState((s) => s.attachment.status.type === 'running')
   const blockText = useAuiState((s) => selectAttachmentDocument(s.attachment))
-  const document = useMemo(
-    () =>
-      blockText ? parseMessageDocuments(blockText).documents[0] : undefined,
-    [blockText]
-  )
+  const supportsImages = useSupportsImageAttachments()
+  // The status the pages will get when the message is sent: the model may
+  // have changed since the file was read, and earlier documents may already
+  // use up the page budget.
+  const sendBlockText = useAuiState((s) => {
+    const documents = s.composer.attachments
+      .filter((attachment) => attachment.type === 'document')
+      .slice(0, MAX_DOCUMENT_ATTACHMENTS)
+    const index = documents.findIndex(
+      (attachment) => attachment.id === s.attachment.id
+    )
+    if (index === -1) return null
+    // A document still being read has no block yet and keeps its place.
+    const forSending = documents.map(
+      (attachment) =>
+        extractDocumentsForSending([attachment])[0] ?? {
+          block: '',
+          pageImages: [],
+        }
+    )
+    return (
+      applyVisualReview(forSending, { supportsImages }).blocks[index] || null
+    )
+  })
+  const document = useMemo(() => {
+    const text = sendBlockText ?? blockText
+    return text ? parseMessageDocuments(text).documents[0] : undefined
+  }, [blockText, sendBlockText])
 
   return (
     <AttachmentPrimitive.Root className="relative">

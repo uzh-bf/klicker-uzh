@@ -266,6 +266,12 @@ export default {
       documentPages: '{count, plural, one {# Seite} other {# Seiten}}',
       documentTokens: '~{count} Tokens',
       documentShortened: 'Auf die ersten {max} Tokens gekürzt',
+      documentVisualReviewed: 'Seiten visuell geprüft',
+      documentVisualTooManyPages:
+        'Seiten nicht visuell geprüft: höchstens {max} Seiten pro Nachricht',
+      documentVisualNoImageSupport:
+        'Seiten nicht visuell geprüft: Dieses Modell kann keine Bilder lesen',
+      documentVisualSkipped: 'Seiten nicht visuell geprüft',
       documentDefaultQuestion:
         'Bitte beziehe dich auf die angehängte(n) Datei(en).',
       dictation: 'Nachricht diktieren',

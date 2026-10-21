@@ -1,11 +1,15 @@
-import { describe, expect, test } from 'vitest'
-import { extractDocumentBlocks } from '../src/lib/attachments/attachmentState'
+import { describe, expect, test, vi } from 'vitest'
+import {
+  extractDocumentBlocks,
+  extractDocumentsForSending,
+} from '../src/lib/attachments/attachmentState'
 import {
   DOCUMENT_ERROR_CODE,
   documentAttachmentAdapter,
   getDocumentKind,
 } from '../src/lib/attachments/documentAttachmentAdapter'
 import {
+  applyVisualReview,
   buildDocumentBlock,
   composeMessageText,
   estimateTokens,
@@ -14,7 +18,31 @@ import {
   parseMessageDocuments,
   stripDocumentBlocks,
   truncateDocumentText,
+  type VisualReviewStatus,
 } from '../src/lib/attachments/documentText'
+import { readPdf } from '../src/lib/attachments/pdfText'
+
+const fakePdf = vi.hoisted(() => ({ numPages: 0 }))
+
+// PDF.js and canvas rendering need a browser; the stand-ins only report page
+// counts and record how many pages were drawn.
+vi.mock('unpdf', () => ({
+  getDocumentProxy: async () => ({
+    numPages: fakePdf.numPages,
+    loadingTask: { destroy: async () => {} },
+    getPage: async () => ({
+      getViewport: ({ scale }: { scale: number }) => ({
+        width: 800 * scale,
+        height: 600 * scale,
+      }),
+      render: () => ({ promise: Promise.resolve() }),
+      cleanup: () => {},
+    }),
+  }),
+  extractText: async () => ({
+    text: Array.from({ length: fakePdf.numPages }, (_, i) => `page ${i + 1}`),
+  }),
+}))
 
 describe('document message text', () => {
   test('round-trips question and documents through the stored text', () => {
@@ -40,6 +68,7 @@ describe('document message text', () => {
         name: 'notes.pdf',
         pages: 2,
         shortened: false,
+        visualReview: null,
         text: 'first page\n\nsecond page',
         tokenEstimate: estimateTokens('first page\n\nsecond page'),
       },
@@ -47,6 +76,7 @@ describe('document message text', () => {
         name: 'data.csv',
         pages: null,
         shortened: true,
+        visualReview: null,
         text: 'a,b\n1,2',
         tokenEstimate: estimateTokens('a,b\n1,2'),
       },
@@ -182,5 +212,139 @@ describe('documentAttachmentAdapter', () => {
     expect(getDocumentKind({ name: 'a.CSV', type: '' })).toBe('text')
     expect(getDocumentKind({ name: 'b.docx', type: '' })).toBe('docx')
     expect(getDocumentKind({ name: 'c.png', type: 'image/png' })).toBeNull()
+  })
+})
+
+const pdfBlock = (visualReview: VisualReviewStatus | null, pages = 3) =>
+  buildDocumentBlock({
+    name: 'slides.pdf',
+    text: 'slide text',
+    pages,
+    shortened: false,
+    visualReview,
+  })
+
+describe('visual review of PDF pages', () => {
+  test.each<VisualReviewStatus>([
+    'reviewed',
+    'too-many-pages',
+    'no-image-support',
+    'skipped',
+  ])('keeps the %s status through the stored text', (visualReview) => {
+    const [document] = parseMessageDocuments(
+      composeMessageText('Question', [pdfBlock(visualReview)])
+    ).documents
+    expect(document).toMatchObject({ pages: 3, visualReview })
+  })
+
+  test('sends pages of documents that fit into ten pages per message', () => {
+    const pages = (count: number) => Array(count).fill('data:image/jpeg;x')
+    const { blocks, pageImages } = applyVisualReview(
+      [
+        { block: pdfBlock('reviewed', 7), pageImages: pages(7) },
+        { block: pdfBlock('reviewed', 3), pageImages: pages(3) },
+        { block: pdfBlock('reviewed', 1), pageImages: pages(1) },
+      ],
+      { supportsImages: true }
+    )
+
+    expect(pageImages).toHaveLength(10)
+    expect(
+      blocks.map(
+        (block) => parseMessageDocuments(block).documents[0]?.visualReview
+      )
+    ).toEqual(['reviewed', 'reviewed', 'too-many-pages'])
+  })
+
+  test('sends no pages when the model cannot read images', () => {
+    const { blocks, pageImages } = applyVisualReview(
+      [{ block: pdfBlock('reviewed'), pageImages: ['data:image/jpeg;x'] }],
+      { supportsImages: false }
+    )
+    expect(pageImages).toEqual([])
+    expect(parseMessageDocuments(blocks[0]).documents[0]?.visualReview).toBe(
+      'no-image-support'
+    )
+  })
+
+  test('marks kept pages of an edited message as not reviewed', () => {
+    const { blocks, pageImages } = applyVisualReview(
+      [{ block: pdfBlock('reviewed'), pageImages: [] }],
+      { supportsImages: true }
+    )
+    expect(pageImages).toEqual([])
+    expect(parseMessageDocuments(blocks[0]).documents[0]?.visualReview).toBe(
+      'skipped'
+    )
+  })
+
+  test('takes page images only from document attachments', () => {
+    const documents = extractDocumentsForSending([
+      {
+        type: 'document',
+        content: [
+          { type: 'text', text: pdfBlock('reviewed') },
+          { type: 'file', mimeType: 'image/jpeg', data: 'data:image/jpeg;1' },
+        ],
+      },
+      {
+        type: 'image',
+        content: [{ type: 'image', image: 'data:image/png;2' }],
+      },
+    ])
+    expect(documents).toEqual([
+      { block: pdfBlock('reviewed'), pageImages: ['data:image/jpeg;1'] },
+    ])
+  })
+})
+
+describe('readPdf page rendering', () => {
+  const stubCanvas = () => {
+    class FakeCanvas {
+      constructor(
+        public width: number,
+        public height: number
+      ) {}
+      getContext() {
+        return { fillRect: () => {}, fillStyle: '' }
+      }
+      async convertToBlob() {
+        return new Blob(['jpeg'], { type: 'image/jpeg' })
+      }
+    }
+    class FakeReader {
+      result: string | null = null
+      onload: (() => void) | null = null
+      onerror: (() => void) | null = null
+      readAsDataURL() {
+        this.result = 'data:image/jpeg;base64,anBlZw=='
+        this.onload?.()
+      }
+    }
+    vi.stubGlobal('OffscreenCanvas', FakeCanvas)
+    vi.stubGlobal('FileReader', FakeReader)
+  }
+
+  test('renders every page of a ten-page PDF', async () => {
+    stubCanvas()
+    fakePdf.numPages = 10
+    const result = await readPdf(new ArrayBuffer(8), { maxRenderedPages: 10 })
+    expect(result.pages).toHaveLength(10)
+    expect(result.pageImages).toHaveLength(10)
+  })
+
+  test('renders no page of an eleven-page PDF', async () => {
+    stubCanvas()
+    fakePdf.numPages = 11
+    const result = await readPdf(new ArrayBuffer(8), { maxRenderedPages: 10 })
+    expect(result.pages).toHaveLength(11)
+    expect(result.pageImages).toBeNull()
+  })
+
+  test('renders nothing for a text-only model', async () => {
+    stubCanvas()
+    fakePdf.numPages = 2
+    const result = await readPdf(new ArrayBuffer(8))
+    expect(result.pageImages).toBeNull()
   })
 })
