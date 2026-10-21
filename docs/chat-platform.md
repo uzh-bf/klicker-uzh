@@ -2,7 +2,7 @@
 type: App Guide
 title: Chat Platform
 description: The apps/chat island — app router, zustand, assistant-ui, route-handler auth guards, and the model registry.
-timestamp: '2026-09-01'
+timestamp: '2026-10-14'
 tags:
   - frontend
   - chat
@@ -1610,9 +1610,19 @@ Ratings are currently **write-only**: nothing in the repository reads them back.
 
 PostgreSQL remains the only rating store. Do not mirror votes to Langfuse from the request route: exact retry and ordering semantics require a durable outbox. Add analytical mirroring only after that delivery lifecycle is designed.
 
-Chat tracing uses the Langfuse JS/TS SDK v5 and OpenTelemetry 2 through `@langfuse/otel`, `@langfuse/tracing`, `@langfuse/vercel-ai-sdk`, and `@opentelemetry/sdk-node`. This combination emits OTLP traces to `/api/public/otel/v1/traces` and is compatible with the self-hosted Langfuse v4 server line, including the deployed v4.28.1 target, according to the [Langfuse compatibility matrix](https://langfuse.com/self-hosting/upgrade/versioning). The SDK compatibility test exercises AI SDK 7 generation spans through the real Langfuse processor with an in-memory exporter, which catches the previous OTel 1.x/2.x mismatch without claiming to exercise a live server or sending test data over the network.
+Chat tracing uses the Langfuse JS/TS SDK v6 and OpenTelemetry 2 through `@langfuse/otel`, `@langfuse/tracing`, `@langfuse/vercel-ai-sdk`, and `@opentelemetry/sdk-node`. All Langfuse packages are pinned to the same release. Node.js 22+ is required (the app uses Node.js 24). SDK v6 requires Langfuse Cloud or **self-hosted Langfuse v4.59.0 or later**; it is not compatible with the previously documented v4.28.1 target. On 2026-10-14, a read-only request to the repository-referenced `https://langfuse.df-app.ch/api/public/health` returned `version: "4.24.0"`, which is below this minimum. This does not establish which endpoint the current staging secrets configure; verify the actual destination and its server version before rollout. See the [v5 → v6 migration guide](https://langfuse.com/docs/observability/sdk/upgrade-path/js-v5-to-v6) and [compatibility matrix](https://langfuse.com/self-hosting/upgrade/versioning).
 
-Tracing is a strict opt-in. It starts only when `CHAT_ENABLE_AI_TELEMETRY=true` and `LANGFUSE_PUBLIC_KEY`, `LANGFUSE_SECRET_KEY`, and an explicit self-hosted `LANGFUSE_BASE_URL` are all present. The Helm default, staging, and production values remain disabled; enabling an environment requires a separate privacy and operational review. `LANGFUSE_TRACING_ENVIRONMENT` and `LANGFUSE_RELEASE` label observations for filtering and regressions.
+**Merge/rollout gate:** staging already declares `chat.telemetry.enabled: true` in `deploy/env-uzh-stg/values.yaml`. Do not merge/promote this SDK upgrade into staging until the following are verified; retaining a draft PR does not establish runtime compatibility:
+
+1. Independently verify that its actual Langfuse server is v4.59.0 or later. Upgrade the server first if needed; server deployment is outside the SDK PR. Keep SDK v5 for any environment that must continue exporting to an older server.
+2. Verify that the ingress/proxy accepts the SDK's new gzip-compressed POSTs to `/api/public/otel/v1/traces`. Do not silently disable compression or alter credentials to work around an incompatible deployment.
+3. With separate operational/privacy approval, send a synthetic metadata-only trace and verify its session, model/usage, typed metadata, and absence of prompt, answer, tool, image, and error content in Langfuse. Then approve that environment's rollout. A green offline test is not live readiness evidence.
+
+SDK v6 JSON-encodes metadata values (including strings), so numeric/boolean metadata keeps its type. Its processor passes decoded observation metadata to `maskLangfuseData`; the recursive mask handles strings, arrays, objects, numbers, and booleans. Propagated trace metadata is not masked by the SDK, so keep it restricted to the existing allowlisted safe values. This app does not use the removed legacy client/read/trace-IO APIs, batch scores, or experiment APIs; the upgrade does not introduce a new data flow.
+
+The compatibility test exercises AI SDK 7 generation/tool/error spans through the real Langfuse processor with an in-memory exporter. It checks typed metadata and recursive masking, then replays only those synthetic sanitized spans through the default SDK exporter into a loopback receiver to verify gzip, the OTLP path, SDK version, and Basic authentication. It never contacts a model provider or Langfuse server, and does not prove server/proxy compatibility.
+
+Tracing is a strict opt-in. It starts only when `CHAT_ENABLE_AI_TELEMETRY=true` and `LANGFUSE_PUBLIC_KEY`, `LANGFUSE_SECRET_KEY`, and an explicit self-hosted `LANGFUSE_BASE_URL` are all present. The Helm default and production values are disabled; staging explicitly sets `chat.telemetry.enabled: true`. These are source configuration values, not proof of the live runtime or complete credentials. Enabling another environment requires a separate privacy and operational review. `LANGFUSE_TRACING_ENVIRONMENT` and `LANGFUSE_RELEASE` label observations for filtering and regressions.
 
 The Helm chart requires an HTTPS URL when `chat.telemetry.baseUrl` is configured.
 
