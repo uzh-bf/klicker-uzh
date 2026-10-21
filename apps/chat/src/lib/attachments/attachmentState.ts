@@ -208,15 +208,22 @@ export function extractDocumentsForSending(
 // Page images ride along with the request that answers their message and
 // are then dropped: they are neither kept in the thread state nor stored.
 const pendingDocumentPages = new Map<string, string[]>()
+const MAX_PENDING_DOCUMENT_MESSAGES = 3
 
 export function setPendingDocumentPages(
   messageId: string,
   pageImages: string[]
 ): void {
-  // Only the latest send keeps its pages, so pages of a message that was
-  // discarded or never sent cannot pile up for the rest of the session.
-  pendingDocumentPages.clear()
-  if (pageImages.length > 0) pendingDocumentPages.set(messageId, pageImages)
+  // Entries stay per message, so another send cannot drop the restored pages
+  // of a failed message before its retry. Only the newest few are kept, so
+  // pages of discarded messages cannot pile up for the rest of the session.
+  pendingDocumentPages.delete(messageId)
+  if (pageImages.length === 0) return
+  pendingDocumentPages.set(messageId, pageImages)
+  for (const oldestId of pendingDocumentPages.keys()) {
+    if (pendingDocumentPages.size <= MAX_PENDING_DOCUMENT_MESSAGES) break
+    pendingDocumentPages.delete(oldestId)
+  }
 }
 
 export function clearPendingDocumentPages(messageId: string): void {

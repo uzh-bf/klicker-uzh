@@ -23,7 +23,10 @@ import {
   MAX_IMAGE_ATTACHMENTS,
   useComposerStore,
 } from '@/src/stores/composerStore'
-import { useSettingsStore } from '@/src/stores/settingsStore'
+import {
+  selectModelReadsDocumentPages,
+  useSettingsStore,
+} from '@/src/stores/settingsStore'
 import { type AppendMessage } from '@assistant-ui/react'
 import { useTranslations } from 'next-intl'
 import { useParams, useRouter, useSearchParams } from 'next/navigation'
@@ -70,10 +73,8 @@ export function useThreadManagement(
   const selectedReasoningEffort = useSettingsStore(
     (state) => state.selectedReasoningEffort
   )
-  const supportsImageAttachments = useSettingsStore(
-    (state) =>
-      state.modelOptions.find((model) => model.id === selectedModel)
-        ?.supportsImageAttachments !== false
+  const supportsImageAttachments = useSettingsStore((state) =>
+    selectModelReadsDocumentPages(state, selectedModel)
   )
 
   // Document text follows the typed question in a single text part, so it is

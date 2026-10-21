@@ -204,6 +204,23 @@ export type DocumentForSending = {
  * fit into the per-message budget; the block header then records what was
  * actually sent, so the chip after a reload matches the request.
  */
+/**
+ * The status a document gets when it is sent without page images, such as a
+ * document kept while editing a message.
+ */
+export function visualReviewWithoutPages(
+  visualReview: VisualReviewStatus,
+  { supportsImages }: { supportsImages: boolean }
+): VisualReviewStatus {
+  if (visualReview === 'reviewed') {
+    return supportsImages ? 'skipped' : 'no-image-support'
+  }
+  // Read for a text-only model, sent with one that reads images: the pages
+  // were never rendered, so the stored reason would be wrong.
+  if (visualReview === 'no-image-support' && supportsImages) return 'skipped'
+  return visualReview
+}
+
 export function applyVisualReview(
   documents: DocumentForSending[],
   { supportsImages }: { supportsImages: boolean }
@@ -213,20 +230,14 @@ export function applyVisualReview(
     const document = parseMessageDocuments(block).documents[0]
     if (!document || document.visualReview == null) return block
 
-    let visualReview = document.visualReview
-    // Read for a text-only model, sent with one that reads images: the pages
-    // were never rendered, so the stored reason would be wrong.
-    if (visualReview === 'no-image-support' && supportsImages) {
-      visualReview = 'skipped'
-    }
-    if (visualReview === 'reviewed' || pages.length > 0) {
+    let visualReview = visualReviewWithoutPages(document.visualReview, {
+      supportsImages,
+    })
+    if (pages.length > 0) {
       if (!supportsImages) {
         visualReview = 'no-image-support'
-      } else if (
-        pages.length === 0 ||
-        pageImages.length + pages.length > MAX_VISUAL_REVIEW_PAGES
-      ) {
-        visualReview = pages.length === 0 ? 'skipped' : 'too-many-pages'
+      } else if (pageImages.length + pages.length > MAX_VISUAL_REVIEW_PAGES) {
+        visualReview = 'too-many-pages'
       } else {
         visualReview = 'reviewed'
         pageImages.push(...pages)

@@ -65,6 +65,7 @@ import {
   MAX_VISUAL_REVIEW_PAGES,
   parseMessageDocuments,
   type VisualReviewStatus,
+  visualReviewWithoutPages,
 } from '@/src/lib/attachments/documentText'
 import {
   ATTACHMENT_ERROR_CODE,
@@ -78,7 +79,10 @@ import {
   MAX_IMAGE_ATTACHMENTS,
   useComposerStore,
 } from '@/src/stores/composerStore'
-import { useSettingsStore } from '@/src/stores/settingsStore'
+import {
+  selectModelReadsDocumentPages,
+  useSettingsStore,
+} from '@/src/stores/settingsStore'
 import {
   formatModeLabel,
   getComposerSubmitMode,
@@ -165,6 +169,11 @@ const extractMessageText = (message: {
     .filter((part) => part.type === 'text' && typeof part.text === 'string')
     .map((part) => part.text ?? '')
     .join('')
+
+const useReadsDocumentPages = () =>
+  useSettingsStore((state) =>
+    selectModelReadsDocumentPages(state, state.selectedModel)
+  )
 
 const useSupportsImageAttachments = () => {
   const selectedModel = useSettingsStore((state) => state.selectedModel)
@@ -1150,7 +1159,7 @@ const ComposerDocumentAttachment: FC = () => {
   const name = useAuiState((s) => selectAttachmentName(s.attachment))
   const reading = useAuiState((s) => s.attachment.status.type === 'running')
   const blockText = useAuiState((s) => selectAttachmentDocument(s.attachment))
-  const supportsImages = useSupportsImageAttachments()
+  const supportsImages = useReadsDocumentPages()
   // The status the pages will get when the message is sent: the model may
   // have changed since the file was read, and earlier documents may already
   // use up the page budget.
@@ -1657,6 +1666,7 @@ const EditComposer: FC = () => {
   const t = useTranslations()
   const { showMessageActions } = useChatUi()
   const message = useAuiState((s) => s.message) as MessageWithCustomMetadata
+  const readsDocumentPages = useReadsDocumentPages()
   const [attachmentError, setAttachmentError] = useState<string | null>(null)
   const attachments = getMessageAttachments(message)
   const documents = getMessageDocuments(message)
@@ -1704,9 +1714,19 @@ const EditComposer: FC = () => {
   const visibleAttachmentEntries = attachmentEntries.filter(
     ({ key }) => !removedAttachmentKeySet.has(key)
   )
+  // Kept documents are sent again without page images, so their chips show
+  // the status the edited message will get.
   const visibleDocumentEntries = documents
     .map((document, index) => ({
-      document,
+      document:
+        document.visualReview == null
+          ? document
+          : {
+              ...document,
+              visualReview: visualReviewWithoutPages(document.visualReview, {
+                supportsImages: readsDocumentPages,
+              }),
+            },
       key: getDocumentAttachmentKey(index),
     }))
     .filter(({ key }) => !removedAttachmentKeySet.has(key))

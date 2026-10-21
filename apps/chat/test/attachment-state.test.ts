@@ -1,6 +1,8 @@
 import { describe, expect, test } from 'vitest'
 import {
   appendTextToModelContent,
+  setPendingDocumentPages,
+  takePendingDocumentPages,
   hasAllImageAttachmentsHydrated,
   mergeHydratedAttachments,
   parentMessageHasImageAttachment,
@@ -8,6 +10,15 @@ import {
 } from '../src/lib/attachments/attachmentState'
 
 describe('attachmentState', () => {
+  test('restored pending pages survive a later send of another message', () => {
+    setPendingDocumentPages('failed', ['page-1'])
+    const restored = takePendingDocumentPages('failed')
+    setPendingDocumentPages('failed', restored)
+    setPendingDocumentPages('other', [])
+    expect(takePendingDocumentPages('failed')).toEqual(['page-1'])
+    expect(takePendingDocumentPages('failed')).toEqual([])
+  })
+
   test('appendTextToModelContent keeps image parts of a multipart message', () => {
     const parts = [
       { type: 'text' as const, text: 'What does the chart show?' },

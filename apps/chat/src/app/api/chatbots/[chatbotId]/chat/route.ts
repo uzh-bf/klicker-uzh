@@ -1384,12 +1384,12 @@ export async function POST(
           )
         }
       } else {
+        // No summary row is written, so a transient failure cannot replace a
+        // stored summary or persist a placeholder; the text stays available.
         console.error('Failed to summarize document pages:', {
           requestId,
           error,
         })
-        documentPageSummary =
-          'The user attached document pages that could not be summarized automatically.'
       }
     }
 

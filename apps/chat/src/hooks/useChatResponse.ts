@@ -15,7 +15,10 @@ import {
   type ExtendedThreadMessageLike,
   type ThreadRunOutcome,
 } from '../stores/chatStore'
-import { useSettingsStore } from '../stores/settingsStore'
+import {
+  selectModelReadsDocumentPages,
+  useSettingsStore,
+} from '../stores/settingsStore'
 
 type GenerateChatResponseOptions = {
   allowRegeneration?: boolean
@@ -45,10 +48,8 @@ export function useChatResponse(
   const t = useTranslations()
 
   const loadCredits = useSettingsStore((state) => state.loadCredits)
-  const modelReadsImages = useSettingsStore(
-    (state) =>
-      state.modelOptions.find((model) => model.id === selectedModel)
-        ?.supportsImageAttachments !== false
+  const modelReadsImages = useSettingsStore((state) =>
+    selectModelReadsDocumentPages(state, selectedModel)
   )
 
   // AbortController to handle request cancellation

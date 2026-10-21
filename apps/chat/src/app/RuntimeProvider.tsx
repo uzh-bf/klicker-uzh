@@ -6,7 +6,10 @@ import {
   useChatStore,
   type ExtendedThreadMessageLike,
 } from '@/src/stores/chatStore'
-import { useSettingsStore } from '@/src/stores/settingsStore'
+import {
+  selectModelReadsDocumentPages,
+  useSettingsStore,
+} from '@/src/stores/settingsStore'
 import {
   AssistantRuntimeProvider,
   CompositeAttachmentAdapter,
@@ -87,6 +90,9 @@ export function RuntimeProvider({
     (state) =>
       state.modelOptions.find((model) => model.id === selectedModel)
         ?.supportsImageAttachments !== false
+  )
+  const readsDocumentPages = useSettingsStore((state) =>
+    selectModelReadsDocumentPages(state, selectedModel)
   )
   const activeModeOptions =
     modeOptionsChatbotId === chatbotId ? loadedModeOptions : initialModeOptions
@@ -357,13 +363,20 @@ export function RuntimeProvider({
       attachments: supportsImageAttachments
         ? new CompositeAttachmentAdapter([
             imageAttachmentAdapter,
-            visualDocumentAttachmentAdapter,
+            readsDocumentPages
+              ? visualDocumentAttachmentAdapter
+              : documentAttachmentAdapter,
           ])
         : documentAttachmentAdapter,
       ...(dictation.adapter ? { dictation: dictation.adapter } : {}),
       ...(speechAdapter ? { speech: speechAdapter } : {}),
     }),
-    [supportsImageAttachments, dictation.adapter, speechAdapter]
+    [
+      supportsImageAttachments,
+      readsDocumentPages,
+      dictation.adapter,
+      speechAdapter,
+    ]
   )
 
   const readingDocument = useSyncExternalStore(

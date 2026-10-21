@@ -1137,10 +1137,13 @@ whole document fits into the 10-page budget of the message, in attachment order.
 records the outcome as a stored meta token: `pages reviewed visually`, or `pages not reviewed
 visually` with the reason (page limit, or model cannot read images). Without a reason it covers
 documents kept while editing, whose pages are not sent again, and pages the browser could not
-render; a render failure never blocks the text. The composer chip runs the same decision, so it shows the
-status the message will have. Page images wait in a module map in `attachmentState.ts` until
+render; a render failure never blocks the text. The composer chip runs the same decision, and the
+edit composer shows kept documents with the status they get without pages
+(`visualReviewWithoutPages`), so each chip shows the status the message will have. A model counts as
+reading images for pages only once its loaded model option says so (`selectModelReadsDocumentPages`
+in `settingsStore.ts`); until then documents are read as text only. Page images wait in a module map in `attachmentState.ts` until
 `useChatResponse` sends them as `documentPages`; they never enter the thread state, history or
-Markdown export. The map keeps only the latest send's pages. `useChatResponse` takes them before
+Markdown export. Entries stay per message, and only the newest three are kept. `useChatResponse` takes them before
 any early return and gives them back only after a network error, a 5xx or a 429, so "Try again"
 sends them again; a 4xx rejection or a switch to a model without image support drops them.
 
@@ -1149,7 +1152,8 @@ capped at 2,000,000 characters. It returns `400` with `DOCUMENT_PAGES_NOT_SUPPOR
 effective model, after any zero-credit fallback, cannot read images. On the current turn the pages
 go to the model with the user message. One extra call (`document-pages-summary.hbs`) writes a
 visual summary of all pages, and its cost counts toward the turn's credits like image
-descriptions. The route stores only that summary, as a `ChatAttachment` row of type `IMAGE` with
+descriptions. If the summary call fails, nothing is stored, so an earlier summary of the same
+message stays and no placeholder replaces it. The route stores only that summary, as a `ChatAttachment` row of type `IMAGE` with
 both image fields `null` and the summary in `imageDescription`. History routes load attachments
 with `IMAGE_ROW_FILTER`, so the row never shows as an image. Later turns, and a regenerated answer
 for the same message, append it as `[Visual summary of the attached document pages: …]`, a marker
