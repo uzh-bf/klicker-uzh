@@ -24,9 +24,8 @@ on:
   pull_request:
     # No "edited": a title or body edit never changes the tested tree, and a
     # base retarget is revalidated by the restack push or a close and reopen.
-    # "ready_for_review" recomputes the required context at the ready boundary
-    # so a draft-era success cannot stand in for the ready state.
-    types: [opened, synchronize, reopened, ready_for_review]
+    # Readiness does not change this suite or its tested inputs.
+    types: [opened, synchronize, reopened]
 
 concurrency:
   group: ${{ github.workflow }}-${{ github.event.pull_request.number || github.ref_name }}

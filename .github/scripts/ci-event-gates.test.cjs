@@ -307,10 +307,6 @@ const READY_FOR_REVIEW_LIFECYCLE_WORKFLOWS = new Map([
     'the ready boundary runs the envelope so it can validate the existing full proof of an unchanged head instead of rebuilding and retesting it',
   ],
   [
-    'check.yml',
-    'the required check owns the ready boundary and must be recomputed there',
-  ],
-  [
     'check-ocr-final-review.yml',
     'final review ownership transfers from the draft review at the ready boundary',
   ],
@@ -835,8 +831,8 @@ test('the codebase check reuses prior validation without suppressing its context
     /needs\.select\.outputs\.should_run == 'true'/
   )
   assert.equal(workflow.permissions.checks, 'read')
-  // The ready boundary still recomputes.
-  assert.ok(workflow.on.pull_request.types.includes('ready_for_review'))
+  // Readiness cannot invalidate identical codebase inputs.
+  assert.ok(!workflow.on.pull_request.types.includes('ready_for_review'))
 })
 
 // The application-wide steps of the codebase check run in full unless the
