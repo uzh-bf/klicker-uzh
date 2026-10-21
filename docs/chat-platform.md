@@ -1107,6 +1107,11 @@ OCR is not supported. A PowerPoint file gets a localized message asking for a PD
 adapter accepts `.pptx` and `.ppt` only to show that message. Documents work with every model, so
 the attach button and the dropzone stay available when the selected model cannot read images.
 
+The first document a student attaches opens a notice (`document-notice-modal.tsx`) about what
+may be shared and where the text goes. Declining removes the documents; accepting is remembered
+in `localStorage` for that browser, not in the database, so it is a reminder rather than recorded
+consent.
+
 The extracted text travels inside the user message. `useThreadManagement` appends one block per
 file after the typed question, and a file-only message gets the localized default question. Each
 block starts with `--- Attached document: <name> (<pages>, shortened …) ---` and ends with

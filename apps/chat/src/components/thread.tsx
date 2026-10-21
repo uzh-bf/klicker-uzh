@@ -96,6 +96,7 @@ import {
   DictationSheet,
   useDictationErrorMessage,
 } from './dictation-controls'
+import { DocumentNoticeGate } from './document-notice-modal'
 import { HistoryRail } from './history-rail'
 import { MessageAttachments } from './message-attachments'
 import { AssistantMessageParts } from './message-parts'
@@ -989,13 +990,21 @@ const ComposerAttachments: FC<{
   )
 
   if (inline) {
-    return <>{primitive}</>
+    return (
+      <>
+        {primitive}
+        <DocumentNoticeGate />
+      </>
+    )
   }
 
   return (
-    <div className="flex w-full flex-wrap gap-2 py-2 empty:hidden">
-      {primitive}
-    </div>
+    <>
+      <div className="flex w-full flex-wrap gap-2 py-2 empty:hidden">
+        {primitive}
+      </div>
+      <DocumentNoticeGate />
+    </>
   )
 }
 
