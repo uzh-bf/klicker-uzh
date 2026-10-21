@@ -21,6 +21,24 @@
       "type": "RELATED"
     },
     {
+      "id": "rel_formula",
+      "properties": {
+        "description": "Permutation and Factorial (synthetic)",
+        "kg_direction": "source_to_target",
+        "kg_provenance_fingerprint": "formula",
+        "kg_relationship_id": "rel_formula",
+        "kg_source_node_id": "node_permutation",
+        "kg_target_node_id": "node_factorial",
+        "relation_status": "inferred",
+        "relation_type": "has_formula",
+        "source_id": "chunk-unmapped",
+        "weight": 1.0
+      },
+      "source": "node_permutation",
+      "target": "node_factorial",
+      "type": "RELATED"
+    },
+    {
       "id": "rel_legacy",
       "properties": {
         "description": "Factorial and Permutation (synthetic)",
@@ -92,15 +110,33 @@
       "source": "node_counting",
       "target": "node_combination",
       "type": "RELATED"
+    },
+    {
+      "id": "rel_synonym",
+      "properties": {
+        "description": "Combination and Binomial Coefficient (synthetic)",
+        "kg_direction": "source_to_target",
+        "kg_provenance_fingerprint": "synonym",
+        "kg_relationship_id": "rel_synonym",
+        "kg_source_node_id": "node_combination",
+        "kg_target_node_id": "node_binomial",
+        "relation_status": "source",
+        "relation_type": "synonym_of",
+        "source_id": "chunk-unmapped",
+        "weight": 1.0
+      },
+      "source": "node_combination",
+      "target": "node_binomial",
+      "type": "RELATED"
     }
   ],
   "nodes": [
     {
-      "degree": 1,
+      "degree": 2,
       "id": "node_binomial",
       "labels": ["Method"],
       "properties": {
-        "degree": 1,
+        "degree": 2,
         "description": "Binomial Coefficient (synthetic)",
         "entity_type": "Method",
         "kg_node_id": "node_binomial",
@@ -110,11 +146,11 @@
       }
     },
     {
-      "degree": 2,
+      "degree": 3,
       "id": "node_combination",
       "labels": ["Concept"],
       "properties": {
-        "degree": 2,
+        "degree": 3,
         "description": "Combination (synthetic)",
         "entity_type": "Concept",
         "internal_evidence_refs": "res-1|7",
@@ -140,11 +176,11 @@
       }
     },
     {
-      "degree": 2,
+      "degree": 3,
       "id": "node_factorial",
       "labels": ["Method"],
       "properties": {
-        "degree": 2,
+        "degree": 3,
         "description": "Factorial (synthetic)",
         "entity_type": "Method",
         "internal_evidence_refs": "res-2|4",
@@ -155,11 +191,11 @@
       }
     },
     {
-      "degree": 3,
+      "degree": 4,
       "id": "node_permutation",
       "labels": ["Concept"],
       "properties": {
-        "degree": 3,
+        "degree": 4,
         "description": "Permutation (synthetic)",
         "entity_type": "Concept",
         "internal_evidence_refs": "res-1|1,2",

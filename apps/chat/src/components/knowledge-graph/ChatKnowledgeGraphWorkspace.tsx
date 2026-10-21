@@ -38,7 +38,14 @@ const RELATION_TYPES = new Set<KnowledgeGraphRelationType>([
   'part_of',
   'example_of',
   'applies_to',
+  'is_a',
+  'has_formula',
+  'has_variable',
+  'decision_rule',
+  'advantage_of',
+  'disadvantage_of',
   'contrasts_with',
+  'synonym_of',
   'related',
 ])
 
