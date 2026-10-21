@@ -152,6 +152,34 @@ It contains no content and no identities.
     attempt export).
   - **Strings:** de and en. `data-cy` hooks `adaptive-dry-run-*`.
 
+## UI sketch (agreed 2026-10-21)
+
+The "Dry runs" section on the adaptive evaluation page, marked "Testing only",
+from top to bottom:
+
+1. **New dry run:**
+   - students (1–200);
+   - true levels: evenly over a range (from–to) or one fixed level;
+   - noise slider (default 2%);
+   - competences: same level in all / independent;
+   - seed.
+
+   Below that, "Stop settings for this run", prefilled from the quiz: max
+   questions, precision, confidence, min per subcompetence. Then the button
+   "Start dry run".
+2. **Run result:**
+   - header: run number, students, noise, precision, date, duration;
+   - metric tiles: exact sublevel, within ±1, bias in sublevels, questions per
+     attempt, share determined;
+   - a true × reported level table grouped by main level (green = correct,
+     amber = one level off). A cell opens the sublevels (e.g. B2.3 → C1.1) and
+     its students;
+   - stop reasons as bars, and question use (used / never used / most used);
+   - actions: Students (per-student answers), CSV, Run again (same seed).
+3. **Saved runs:** a table of past runs (settings, exact, ±1, bias,
+   questions). Tick two runs and use "Compare 2 runs" to see them side by
+   side.
+
 ## Slices
 
 1. **Catalyst: `/adaptive/v1/dry-run`.**
@@ -196,6 +224,7 @@ Catalyst PR. Deploy order: engine first, then host.
 
 ## Progress
 
+- 2026-10-21: UI sketch agreed (section above).
 - 2026-10-21: design agreed. Engine-side loop; ideal pattern with symmetric
   noise (default 2%); stop-setting overrides only; testing environments only,
   runs saved.
