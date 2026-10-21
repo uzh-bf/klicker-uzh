@@ -1106,6 +1106,37 @@ test('runner argument validation fails closed before any file or network use', (
     2
   )
   assert.throws(() => parseArguments([]), { code: 'corpus_argument_missing' })
+  const required = [
+    '--corpus',
+    'a',
+    '--output',
+    'b',
+    '--budget-file',
+    'c',
+    '--arm',
+    'candidate',
+  ]
+  assert.deepEqual(
+    parseArguments([
+      ...required,
+      '--answer-style',
+      'brief',
+      '--answer-tone',
+      'direct',
+    ]),
+    {
+      ...parseArguments(required),
+      answerStyle: 'brief',
+      answerTone: 'direct',
+    }
+  )
+  assert.throws(
+    () => parseArguments([...required, '--answer-style', 'short']),
+    { code: 'answer_style_invalid' }
+  )
+  assert.throws(() => parseArguments([...required, '--answer-tone', 'blunt']), {
+    code: 'answer_tone_invalid',
+  })
   assert.throws(
     () =>
       parseArguments([
@@ -1506,6 +1537,16 @@ test('runner writes one verified receipt per turn and keeps the ledger honest', 
       assert.equal(summary.reservedProviderMicroUsd, 2 * SYNTHETIC_RESERVATION)
       assert.equal(summary.uncertain, false)
       assert.equal(summary.model, SYNTHETIC_MODEL)
+      assert.equal(summary.answerStyle, 'balanced')
+      assert.equal(summary.answerTone, 'neutral')
+      const chatBodies = app.calls
+        .filter(({ requestUrl }) => requestUrl.endsWith('/chat'))
+        .map(({ body }) => JSON.parse(body))
+      assert.equal(chatBodies.length, 2)
+      for (const body of chatBodies) {
+        assert.equal(body.answerStyle, 'balanced')
+        assert.equal(body.answerTone, 'neutral')
+      }
 
       const ledger = await readBudgetLedger(paths.budget)
       assert.equal(ledger.submittedTurns, 2)
