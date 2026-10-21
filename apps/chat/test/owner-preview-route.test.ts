@@ -423,8 +423,12 @@ describe('POST owner preview chat', () => {
       expect.objectContaining({
         authMode: 'account',
         chatbotId: 'chatbot-id',
+        ownerPreviewUserId: 'owner-id',
         kbIds: [originalKbId],
       })
+    )
+    expect(mocks.getAggregatedMCPTools.mock.calls[0]?.[1]).not.toHaveProperty(
+      'participantId'
     )
     expect(mocks.compileSystemPrompt).toHaveBeenCalledWith(
       expect.objectContaining({ tutor: 'Tutor instructions' }),
