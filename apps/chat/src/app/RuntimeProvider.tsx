@@ -16,6 +16,10 @@ import { useParams, useRouter, useSearchParams } from 'next/navigation'
 import { useLocale, useTranslations } from 'next-intl'
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import { useChatUi } from '../components/chat-ui-context'
+import {
+  DictationProvider,
+  useOnDeviceDictation,
+} from '../components/dictation-context'
 import { ModeOptionsProvider } from '../components/mode-options-context'
 import { imageAttachmentAdapter } from '../lib/attachments/imageAttachmentAdapter'
 import { resolveSelectedMode } from '../lib/config/modes'
@@ -304,6 +308,7 @@ export function RuntimeProvider({
     [setMessagesInternal]
   )
 
+  const dictation = useOnDeviceDictation({ disabled: embedded })
   const t = useTranslations()
   const locale = useLocale()
   const speechAdapter = useLocalSpeechSynthesis({
@@ -316,9 +321,10 @@ export function RuntimeProvider({
       ...(supportsImageAttachments
         ? { attachments: imageAttachmentAdapter }
         : {}),
+      ...(dictation.adapter ? { dictation: dictation.adapter } : {}),
       ...(speechAdapter ? { speech: speechAdapter } : {}),
     }),
-    [supportsImageAttachments, speechAdapter]
+    [supportsImageAttachments, dictation.adapter, speechAdapter]
   )
 
   // runtime config for assistant UI
@@ -347,7 +353,7 @@ export function RuntimeProvider({
   return (
     <ModeOptionsProvider modeOptions={activeModeOptions}>
       <AssistantRuntimeProvider runtime={runtime}>
-        {children}
+        <DictationProvider value={dictation}>{children}</DictationProvider>
       </AssistantRuntimeProvider>
     </ModeOptionsProvider>
   )

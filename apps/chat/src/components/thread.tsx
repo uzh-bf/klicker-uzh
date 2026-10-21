@@ -76,6 +76,12 @@ import {
 } from '../lib/history-rail'
 import { BranchPicker } from './branch-picker'
 import { useChatUi, useDisclaimerGateOpen } from './chat-ui-context'
+import { useDictationContext } from './dictation-context'
+import {
+  DictationButton,
+  DictationSheet,
+  useDictationErrorMessage,
+} from './dictation-controls'
 import { HistoryRail } from './history-rail'
 import { MessageAttachments } from './message-attachments'
 import { AssistantMessageParts } from './message-parts'
@@ -651,6 +657,8 @@ const Composer: FC = () => {
   const { embedded } = useChatUi()
   const disclaimerGateOpen = useDisclaimerGateOpen()
   const [attachmentError, setAttachmentError] = useState<string | null>(null)
+  const { clearError: clearDictationError } = useDictationContext()
+  const dictationError = useDictationErrorMessage()
   const inputRef = useRef<HTMLTextAreaElement>(null)
   // Whether the gate was open the last time this ran, so only the *closing*
   // transition hands focus back — the ordinary, no-disclaimer mount is
@@ -685,8 +693,11 @@ const Composer: FC = () => {
         <ComposerAttachments />
 
         <AttachmentErrorBanner
-          error={attachmentError}
-          onDismiss={() => setAttachmentError(null)}
+          error={attachmentError ?? dictationError}
+          onDismiss={() => {
+            if (attachmentError) setAttachmentError(null)
+            else clearDictationError()
+          }}
           className="px-2 pt-2"
         />
 
@@ -706,9 +717,11 @@ const Composer: FC = () => {
               embedded ? 'max-h-20 py-2' : 'max-h-40 py-4'
             )}
           />
+          <DictationButton />
           <ComposerAction />
         </div>
       </ComposerPrimitive.Root>
+      <DictationSheet />
     </ComposerDropzone>
   )
 }

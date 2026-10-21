@@ -245,6 +245,39 @@ export default {
       attachmentPreviewAlt: 'Anhang-Vorschau',
       removeAttachment: 'Anhang entfernen',
       attachImage: 'Bild anhängen',
+      dictation: 'Nachricht diktieren',
+      dictationSetup: 'Diktieren einrichten',
+      dictationStop: 'Diktieren beenden',
+      dictationListening: 'Hört zu...',
+      dictationLanguageHint: 'Das deutsche Diktat verwendet Standarddeutsch.',
+      dictationSheetTitle: 'Lokales Diktieren aktivieren',
+      dictationSheetBody:
+        'Die Erkennung läuft auf diesem Gerät, und es wird kein Audio an den Chatdienst gesendet. Dein Browser fragt beim Start nach Mikrofonzugriff.',
+      dictationSheetDownload: 'Herunterladen',
+      dictationSheetNotNow: 'Jetzt nicht',
+      dictationSheetInstalling: 'Sprachpaket wird heruntergeladen...',
+      dictationSheetFailed:
+        'Das Sprachpaket konnte nicht installiert werden. Versuche es erneut oder schreibe weiter.',
+      dictationSheetRetry: 'Erneut herunterladen',
+      dictationSheetCheckAgain: 'Verfügbarkeit erneut prüfen',
+      dictationSheetReady: 'Das Sprachpaket ist auf diesem Gerät bereit.',
+      dictationSheetStart: 'Diktieren starten',
+      dictationErrorAborted: 'Das Diktieren wurde abgebrochen.',
+      dictationErrorAudioCapture:
+        'Das Mikrofon konnte nicht geöffnet werden. Überprüfe die Browserberechtigungen.',
+      dictationErrorInstall:
+        'Das lokale Sprachpaket konnte nicht installiert werden.',
+      dictationErrorLanguageNotSupported:
+        'Diese Sprache wird für lokales Diktieren nicht unterstützt.',
+      dictationErrorNetwork:
+        'Der Browser meldete einen Netzwerkfehler beim Diktieren.',
+      dictationErrorNoSpeech: 'Keine Sprache erkannt. Versuche es erneut.',
+      dictationErrorNotAllowed:
+        'Der Mikrofonzugriff wurde verweigert. Erlaube ihn in den Browsereinstellungen.',
+      dictationErrorServiceNotAllowed:
+        'Der Browser hat den Diktierdienst nicht zugelassen.',
+      dictationErrorUnknown:
+        'Das Diktieren konnte nicht gestartet werden. Versuche es erneut.',
       attachmentFallbackLabel: 'Anhang',
       editCancel: 'Abbrechen',
       editSend: 'Senden',
