@@ -1,6 +1,6 @@
 'use client'
 
-import { CheckIcon, EditIcon, Trash2, XIcon } from 'lucide-react'
+import { CheckIcon, Download, EditIcon, Trash2, XIcon } from 'lucide-react'
 import type { FC } from 'react'
 import { createElement, useEffect, useMemo, useRef, useState } from 'react'
 
@@ -8,6 +8,10 @@ import { TextField, useSidebar } from '@uzh-bf/design-system'
 import { useTranslations } from 'next-intl'
 import { useParams, useRouter } from 'next/navigation'
 import { formatModeLabel, getModeIcon } from '../lib/config/modes'
+import {
+  getThreadMarkdownFilename,
+  threadToMarkdown,
+} from '../lib/thread-markdown'
 import { useChatStore, type Thread } from '../stores/chatStore'
 import {
   filterThreadsByTitle,
@@ -352,6 +356,27 @@ const ThreadListItem: FC<ThreadListItemProps> = ({
     setIsEditing(true)
   }
 
+  const handleExport = () => {
+    revertDeleteConfirm()
+    const title = getThreadTitle()
+    const markdown = threadToMarkdown({
+      title,
+      messages: thread.messages,
+      labels: {
+        user: t('chat.threadList.exportUserLabel'),
+        assistant: t('chat.threadList.exportAssistantLabel'),
+        sources: t('chat.threadList.exportSourcesLabel'),
+      },
+    })
+    const blob = new Blob([markdown], { type: 'text/markdown' })
+    const url = URL.createObjectURL(blob)
+    const anchor = document.createElement('a')
+    anchor.href = url
+    anchor.download = getThreadMarkdownFilename(title, thread.id)
+    anchor.click()
+    URL.revokeObjectURL(url)
+  }
+
   const handleEditSave = async () => {
     if (editTitle.trim()) {
       await updateThreadTitle(chatbotId, thread.id, editTitle.trim())
@@ -454,6 +479,25 @@ const ThreadListItem: FC<ThreadListItemProps> = ({
               </p>
             )}
           </button>
+          {/* Only the open thread has its messages loaded; other rows hold
+              an empty list until selected, so exporting them would yield a
+              title-only file. */}
+          {isActive && thread.messages.length > 0 && (
+            <button
+              type="button"
+              data-cy="chat-thread-export-button"
+              onClick={handleExport}
+              disabled={thread.isRunning}
+              aria-label={t('chat.threadList.exportMarkdown')}
+              title={t('chat.threadList.exportMarkdown')}
+              className="text-foreground hover:text-primary focus-visible:ring-ring mr-1 inline-flex size-6 shrink-0 items-center justify-center whitespace-nowrap rounded-md p-1 text-sm font-medium focus-visible:outline-none focus-visible:ring-1 disabled:pointer-events-none disabled:opacity-50 [&>svg]:size-4"
+            >
+              <Download />
+              <span className="sr-only">
+                {t('chat.threadList.exportMarkdown')}
+              </span>
+            </button>
+          )}
           <button
             type="button"
             data-cy="chat-thread-edit-button"

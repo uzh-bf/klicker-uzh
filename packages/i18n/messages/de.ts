@@ -171,6 +171,10 @@ export default {
       filterPlaceholder: 'Nach Titel filtern',
       filterClear: 'Filter löschen',
       filterNoMatch: 'Kein Chat passt zu diesem Filter.',
+      exportMarkdown: 'Als Markdown exportieren',
+      exportUserLabel: 'Du',
+      exportAssistantLabel: 'Assistent',
+      exportSourcesLabel: 'Quellen',
     },
     thread: {
       viewportLabel: 'Gesprächsverlauf',
