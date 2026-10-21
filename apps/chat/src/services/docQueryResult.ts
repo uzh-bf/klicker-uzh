@@ -40,7 +40,7 @@ export function sanitizeDocQueryResult(value: unknown): unknown {
 // A queue belongs to one discovered tool/client. Keep its slot until the raw
 // provider operation settles, even if an outer graph deadline returns first.
 export function serializeDocQueryExecution<
-  Options extends { abortSignal?: AbortSignal },
+  Options extends { abortSignal?: AbortSignal } | undefined,
   Result,
 >(
   execute: (input: unknown, options: Options) => Result | PromiseLike<Result>

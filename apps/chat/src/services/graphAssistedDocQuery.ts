@@ -297,7 +297,7 @@ async function untilAbort<T>(
 }
 
 export function graphAssistedDocumentQuery<
-  Options extends { abortSignal?: AbortSignal },
+  Options extends { abortSignal?: AbortSignal } | undefined,
   Result,
 >(
   execute: Execute<Options, Result>,
@@ -311,7 +311,7 @@ export function graphAssistedDocumentQuery<
     let expansionAttempted = false
     let hintCount: number | null = null
     const signal =
-      options.abortSignal instanceof AbortSignal
+      options?.abortSignal instanceof AbortSignal
         ? options.abortSignal
         : undefined
     function finish(value: unknown, outcome: GraphQueryDiagnostic['outcome']) {
@@ -406,7 +406,11 @@ export function graphAssistedDocumentQuery<
                 ...(input as RecordValue),
                 [queryField]: `${query}\nRelated concepts: ${safeHints.join(', ')}`,
               },
-              { ...options, abortSignal: augmentationSignal }
+              // MCP permits omitted execution options. Do not manufacture a
+              // partial options object without its required context/messages.
+              options === undefined
+                ? options
+                : { ...options, abortSignal: augmentationSignal }
             )
           ),
           augmentationSignal
