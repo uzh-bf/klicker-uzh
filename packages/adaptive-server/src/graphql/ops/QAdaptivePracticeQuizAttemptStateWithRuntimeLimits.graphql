@@ -1,0 +1,7 @@
+query QAdaptivePracticeQuizAttemptStateWithRuntimeLimits(
+  $practiceQuizId: String!
+) {
+  adaptivePracticeQuizAttemptState(practiceQuizId: $practiceQuizId) {
+    ...FAdaptivePracticeQuizAttemptStateWithRuntimeLimits
+  }
+}

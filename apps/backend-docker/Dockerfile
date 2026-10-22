@@ -60,9 +60,9 @@ COPY --from=deps /app/out/pnpm* .
 # pin cannot move on its own: the Playwright composite actions take their pnpm
 # version from the target branch while package.json comes from the
 # pull-request head, so `pnpm/action-setup` aborts on the two declared versions.
-# npm itself goes last: its vendored undici and brace-expansion carry fixable
-# HIGH advisories that no npm release has picked up yet, and nothing runs npm
-# after this step.
+# npm itself goes last: no published npm release (11.20.0, 12.1.0 included)
+# vendors a patched brace-expansion (>=5.0.11) or undici (>=6.28.1) yet, and the
+# runtime never calls npm or npx, so the scanned image ships without it.
 RUN pnpm i --prod --ignore-scripts \
  && npm rm -g --ignore-scripts pnpm turbo \
  && rm -rf /root/.cache/pnpm /root/.local/share/pnpm /root/.npm \
@@ -77,6 +77,9 @@ COPY --from=builder /app/packages/grading/dist/ /app/packages/grading/dist/
 COPY --from=builder /app/packages/feature-flags/dist/ /app/packages/feature-flags/dist/
 COPY --from=builder /app/packages/doc-query-client/dist/ /app/packages/doc-query-client/dist/
 COPY --from=builder /app/packages/graphql/dist/ /app/packages/graphql/dist/
+# The GraphQL bundle imports these adaptive workspace packages at runtime.
+COPY --from=builder /app/packages/adaptive-contract/dist/ /app/packages/adaptive-contract/dist/
+COPY --from=builder /app/packages/adaptive-client/dist/ /app/packages/adaptive-client/dist/
 COPY --from=builder /app/packages/doc-query-client/dist/ /app/packages/doc-query-client/dist/
 COPY --from=builder /app/packages/knowledge-graph/dist/ /app/packages/knowledge-graph/dist/
 COPY --from=builder /app/packages/types/dist/ /app/packages/types/dist/

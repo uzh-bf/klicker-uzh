@@ -1,3 +1,4 @@
+import { prepareAdaptiveCourseDeletion } from '@klicker-uzh/adaptive-server/services/adaptiveCourseDeletion'
 import {
   type AuditEventDraft,
   emitCoveredParticipantEligibilityChange,
@@ -2981,6 +2982,7 @@ export async function toggleArchiveCourse(
 
   return course
 }
+export { setCourseAdaptiveLearningEnabled } from '@klicker-uzh/adaptive-server/services/adaptiveCourseCommands'
 
 interface UpdateCourseSettingsArgs {
   id: string
@@ -3145,6 +3147,7 @@ export async function updateCourseSettings(
                   updateMany: {
                     where: {
                       isDeleted: false,
+                      mode: DB.PracticeQuizMode.STANDARD,
                       status: {
                         in: [
                           DB.PublicationStatus.DRAFT,
@@ -3577,6 +3580,7 @@ export async function deleteCourse(
 
   const deletedCourse = await ctx.prisma.$transaction(
     async (prisma) => {
+      await prepareAdaptiveCourseDeletion({ courseId: id }, prisma)
       if (request) {
         // Claim the course row for this request. Besides rejecting stale events,
         // the update holds the row lock until the transaction completes.
@@ -3631,6 +3635,11 @@ export async function deleteCourse(
           return { deleted: null, deletionCancelled: true }
         }
       }
+
+      await prepareAdaptiveCourseDeletion(
+        { courseId: id, purgePublications: true },
+        prisma
+      )
 
       // optionally hard-delete linked draft live quizzes instead of
       // disconnecting them from the course
@@ -4102,6 +4111,7 @@ export async function getCourseData(
       isGamificationEnabled: practiceQuiz.isGamificationEnabled,
       isAssessmentEnabled: practiceQuiz.isAssessmentEnabled,
       type: ActivityType.PRACTICE_QUIZ,
+      mode: practiceQuiz.mode,
       status: practiceQuiz.status,
       courseId: course.id,
       courseName: course.name,
@@ -4623,6 +4633,7 @@ export async function getCoursePracticeQuiz(
     pointsMultiplier: 1,
     resetTimeDays: 6,
     orderType: DB.ElementOrderType.SPACED_REPETITION,
+    mode: DB.PracticeQuizMode.STANDARD,
     status: DB.PublicationStatus.PUBLISHED,
     stacks: orderedStacks.slice(0, 25),
     numOfStacks: 25,

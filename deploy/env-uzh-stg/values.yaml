@@ -437,6 +437,38 @@ mcpStudent:
       cpu: 200m
       memory: 200Mi
 
+# Private Catalyst adaptive engine. Requires ADAPTIVE_ENGINE_TOKEN and
+# ADAPTIVE_ENGINE_DOCKER_AUTH in the Klicker Infisical stg environment and the
+# df-cloud ExternalSecrets that project them (backend secret + pull secret).
+adaptiveEngine:
+  enabled: true
+  priorityClassName: staging-workload
+  # Each engine pod computes at most four requests at once (fixed in the
+  # Catalyst runner) and answers 503 beyond that. Two pods behind the Service
+  # double the burst capacity for a class starting a quiz together.
+  replicaCount: 2
+  affinity:
+    podAntiAffinity:
+      preferredDuringSchedulingIgnoredDuringExecution:
+        - weight: 100
+          podAffinityTerm:
+            labelSelector:
+              matchExpressions:
+                - key: app.kubernetes.io/component
+                  operator: In
+                  values:
+                    - adaptive-engine
+            topologyKey: kubernetes.io/hostname
+  image:
+    tag: 9f9afd457709fb089092cd7b31975c78b4130036-arm
+  resources:
+    requests:
+      cpu: 100m
+      memory: 128Mi
+    limits:
+      cpu: 1000m
+      memory: 1536Mi
+
 mcpLecturer:
   priorityClassName: staging-workload
 
@@ -633,6 +665,7 @@ frontendControl:
       memory: 200Mi
 
 backendGraphql:
+  adaptiveQuizShowSolutions: true
   betaSavedGroupId: grp_2CeKcuxYw3c567fSV7CPPQ
   priorityClassName: staging-workload
   podAnnotations:

@@ -10,6 +10,10 @@ RUN npm i -g --ignore-scripts pnpm@11.5.0 turbo@2.10.11
 COPY package.json pnpm-lock.yaml pnpm-workspace.yaml turbo.json ./
 COPY apps/mcp-lecturer ./apps/mcp-lecturer
 COPY packages/prisma ./packages/prisma
+COPY packages/adaptive-persistence ./packages/adaptive-persistence
+COPY packages/adaptive-client ./packages/adaptive-client
+COPY packages/adaptive-contract ./packages/adaptive-contract
+COPY packages/prisma-data ./packages/prisma-data
 COPY packages/util ./packages/util
 
 RUN turbo prune --scope=@klicker-uzh/mcp-lecturer --docker

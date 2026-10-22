@@ -1,9 +1,12 @@
+import { adaptiveAttemptDiagnosticsMutationFields } from '@klicker-uzh/adaptive-server/schema/adaptiveAttemptDiagnostics'
+import { adaptiveMutationFields } from '@klicker-uzh/adaptive-server/schema/adaptiveMutationFields'
 import * as DB from '@klicker-uzh/prisma/client'
 import { ActivityType as ActivityTypeEnum } from '@klicker-uzh/types'
 import { MISSING_CATALOG_COLLECTION_ID } from '@klicker-uzh/util'
 import builder from '../builder.js'
 import * as AccountService from '../services/accounts.js'
 import * as ActivitiesService from '../services/activities.js'
+import * as AdaptiveElementService from '../services/adaptiveElementCommands.js'
 import * as BetaEnrollmentService from '../services/betaEnrollment.js'
 import * as ChatAccountUsageService from '../services/chatAccountUsage.js'
 import * as ChatbotsService from '../services/chatbots.js'
@@ -33,9 +36,34 @@ import * as StacksService from '../services/stacks.js'
 import * as SupportService from '../services/support.js'
 import * as TemplateService from '../services/templates.js'
 import { ActivityInfo } from './activities.js'
+import {
+  AdaptiveAttemptEstimateBackfillRef,
+  AdaptiveAttemptExpectedLevelInput,
+  AdaptiveAttemptReviewRef,
+} from './adaptiveAttemptDiagnostics.js'
+import { AdaptivePracticeQuizConfigInput } from './adaptivePracticeQuiz.js'
+import {
+  AdaptivePracticeQuizAttemptStateRef,
+  AdaptivePracticeQuizResponseInput,
+} from './adaptivePracticeQuizRuntime.js'
 import { ActivityType, ElementFeedback } from './analytics.js'
 import { PointCorrection, PointCorrectionType } from './assessment.js'
 import { asChatbotAuthor } from './authScopes.js'
+import {
+  CompetenceTree,
+  CompetenceTreeElementAssignmentCreateInput,
+  CompetenceTreeElementAssignmentUpdateInput,
+  CompetenceTreeInput,
+  CompetenceTreeMetadataInput,
+  DuplicateCompetenceTreeInput,
+} from './competenceTree.js'
+import {
+  AdaptiveCalibrationExportRequestRef,
+  AdaptiveCalibrationImportReceiptRef,
+  AdaptiveReviewDecision,
+  AdaptiveWorkflowReceiptRef,
+  CompetenceTreeScaleLevelInput,
+} from './competenceTreeCalibration.js'
 import {
   Course,
   CourseDeletionRequestPayload,
@@ -119,6 +147,7 @@ import {
   ElementOrderType,
   ElementStackInput,
   PracticeQuiz,
+  PracticeQuizMode,
   ReviewStatus,
   StackFeedback,
   StackResponseInput,
@@ -781,6 +810,27 @@ export const Mutation = builder.mutationType({
           }
         ),
       }),
+      ...adaptiveMutationFields(t, {
+        AdaptivePracticeQuizAttemptStateRef,
+        AdaptivePracticeQuizResponseInput,
+        CompetenceTree,
+        CompetenceTreeElementAssignmentUpdateInput,
+        CompetenceTreeInput,
+        CompetenceTreeMetadataInput,
+        DuplicateCompetenceTreeInput,
+        AdaptiveCalibrationExportRequestRef,
+        AdaptiveCalibrationImportReceiptRef,
+        AdaptiveReviewDecision,
+        AdaptiveWorkflowReceiptRef,
+        CompetenceTreeScaleLevelInput,
+        Course,
+      }),
+      ...adaptiveAttemptDiagnosticsMutationFields(t, {
+        withPermission,
+        AdaptiveAttemptReviewRef,
+        AdaptiveAttemptExpectedLevelInput,
+        AdaptiveAttemptEstimateBackfillRef,
+      }),
 
       requestCourseDeletion: t.withAuth(asUser).field({
         nullable: true,
@@ -1210,6 +1260,15 @@ export const Mutation = builder.mutationType({
         nullable: true,
         type: Element,
         args: {
+          initialCompetenceTreeAssignments: t.arg({
+            type: [CompetenceTreeElementAssignmentCreateInput],
+            required: false,
+          }),
+          initialCompetenceTreeAssignment: t.arg({
+            type: CompetenceTreeElementAssignmentCreateInput,
+            required: false,
+          }),
+          creationRequestId: t.arg.string({ required: false }),
           id: t.arg.int({ required: false }),
           status: t.arg({ type: ElementStatus, required: false }),
           type: t.arg({ required: true, type: ElementType }),
@@ -1240,8 +1299,29 @@ export const Mutation = builder.mutationType({
             }
           }
 
+          const {
+            initialCompetenceTreeAssignment,
+            initialCompetenceTreeAssignments,
+            creationRequestId,
+            ...elementInput
+          } = args
+          if (
+            initialCompetenceTreeAssignment != null ||
+            (initialCompetenceTreeAssignments?.length ?? 0) > 0 ||
+            creationRequestId != null
+          ) {
+            return await AdaptiveElementService.manipulateElementWithInitialCompetenceTreeAssignment(
+              {
+                elementInput,
+                initialCompetenceTreeAssignment,
+                initialCompetenceTreeAssignments,
+                creationRequestId,
+              },
+              ctx
+            )
+          }
           return await ElementService.manipulateElementWithAssessmentAudit(
-            args,
+            elementInput,
             ctx
           )
         },
@@ -1251,6 +1331,15 @@ export const Mutation = builder.mutationType({
         nullable: true,
         type: Element,
         args: {
+          initialCompetenceTreeAssignments: t.arg({
+            type: [CompetenceTreeElementAssignmentCreateInput],
+            required: false,
+          }),
+          initialCompetenceTreeAssignment: t.arg({
+            type: CompetenceTreeElementAssignmentCreateInput,
+            required: false,
+          }),
+          creationRequestId: t.arg.string({ required: false }),
           id: t.arg.int({ required: false }),
           status: t.arg({ type: ElementStatus, required: false }),
           name: t.arg.string({ required: false }),
@@ -1280,8 +1369,33 @@ export const Mutation = builder.mutationType({
             }
           }
 
+          const {
+            initialCompetenceTreeAssignment,
+            initialCompetenceTreeAssignments,
+            creationRequestId,
+            ...elementInput
+          } = args
+          const numericalElementInput = {
+            ...elementInput,
+            type: DB.ElementType.NUMERICAL,
+          }
+          if (
+            initialCompetenceTreeAssignment != null ||
+            (initialCompetenceTreeAssignments?.length ?? 0) > 0 ||
+            creationRequestId != null
+          ) {
+            return await AdaptiveElementService.manipulateElementWithInitialCompetenceTreeAssignment(
+              {
+                elementInput: numericalElementInput,
+                initialCompetenceTreeAssignment,
+                initialCompetenceTreeAssignments,
+                creationRequestId,
+              },
+              ctx
+            )
+          }
           return await ElementService.manipulateElementWithAssessmentAudit(
-            { ...args, type: DB.ElementType.NUMERICAL },
+            numericalElementInput,
             ctx
           )
         },
@@ -1291,6 +1405,15 @@ export const Mutation = builder.mutationType({
         nullable: true,
         type: Element,
         args: {
+          initialCompetenceTreeAssignments: t.arg({
+            type: [CompetenceTreeElementAssignmentCreateInput],
+            required: false,
+          }),
+          initialCompetenceTreeAssignment: t.arg({
+            type: CompetenceTreeElementAssignmentCreateInput,
+            required: false,
+          }),
+          creationRequestId: t.arg.string({ required: false }),
           id: t.arg.int({ required: false }),
           status: t.arg({ type: ElementStatus, required: false }),
           name: t.arg.string({ required: false }),
@@ -1320,8 +1443,33 @@ export const Mutation = builder.mutationType({
             }
           }
 
+          const {
+            initialCompetenceTreeAssignment,
+            initialCompetenceTreeAssignments,
+            creationRequestId,
+            ...elementInput
+          } = args
+          const freeTextElementInput = {
+            ...elementInput,
+            type: DB.ElementType.FREE_TEXT,
+          }
+          if (
+            initialCompetenceTreeAssignment != null ||
+            (initialCompetenceTreeAssignments?.length ?? 0) > 0 ||
+            creationRequestId != null
+          ) {
+            return await AdaptiveElementService.manipulateElementWithInitialCompetenceTreeAssignment(
+              {
+                elementInput: freeTextElementInput,
+                initialCompetenceTreeAssignment,
+                initialCompetenceTreeAssignments,
+                creationRequestId,
+              },
+              ctx
+            )
+          }
           return await ElementService.manipulateElementWithAssessmentAudit(
-            { ...args, type: DB.ElementType.FREE_TEXT },
+            freeTextElementInput,
             ctx
           )
         },
@@ -3884,6 +4032,11 @@ export const Mutation = builder.mutationType({
           nullable: true,
           type: ActivityInfo,
           args: {
+            mode: t.arg({ type: PracticeQuizMode, required: false }),
+            adaptiveConfig: t.arg({
+              type: AdaptivePracticeQuizConfigInput,
+              required: false,
+            }),
             name: t.arg.string({ required: true }),
             displayName: t.arg.string({ required: true }),
             description: t.arg.string({ required: false }),
@@ -3910,6 +4063,11 @@ export const Mutation = builder.mutationType({
           nullable: true,
           type: ActivityInfo,
           args: {
+            mode: t.arg({ type: PracticeQuizMode, required: false }),
+            adaptiveConfig: t.arg({
+              type: AdaptivePracticeQuizConfigInput,
+              required: false,
+            }),
             id: t.arg.string({ required: true }),
             name: t.arg.string({ required: true }),
             displayName: t.arg.string({ required: true }),
@@ -4369,8 +4527,6 @@ export const Mutation = builder.mutationType({
           return await SupportService.requestCatalystAccess(args, ctx)
         },
       }),
-
-      // #endregion
     }
   },
 })
