@@ -132,9 +132,13 @@ targets workflow definitions, despite the pinned
 SDK's misleading description; passing a run ID excludes the triggering event.
 Resends share submission metadata, so that metadata alone is not sufficient to
 identify the event. The lookup does not filter by event key because Hatchet may
-namespace pushed keys. Missing associations remain retryable and ambiguous matches
-fail rather than inventing provenance. It never substitutes the workflow
-run ID for the event ID. This provenance lookup occurs only after the quiz is
+namespace pushed keys. The lookup backs off for about three seconds before an
+attempt fails. Missing associations remain retryable and ambiguous matches
+fail rather than inventing provenance. Acceptance and outcome evidence never
+substitute the workflow run ID for the event ID. Only the failure evidence of an
+attempt whose event stayed unresolved is keyed by the explicitly prefixed
+`unresolved-run:<workflowRunId>` with reason `HATCHET_EVENT_UNRESOLVED`, so a
+receipt is never left without evidence. This provenance lookup occurs only after the quiz is
 confirmed as covered, so deliberately uncovered quizzes retain their existing
 processing path without an audit-only dependency. For covered assessments it
 records server acceptance and validation before terminal completion. Rejection
@@ -546,7 +550,9 @@ positive when monitoring is enabled.
 The non-terminal submission query is a PostgreSQL anti-join scoped by quiz,
 lifecycle epoch, and correlation ID. The anti-join also matches the canonical envelope's
 `hatchetEventId`. Two transport commands sharing a submission UUID each need
-their own terminal outcome. A migration-owned partial index covers
+their own terminal outcome. The same count includes submissions whose only
+evidence is `SUBMISSION_PROCESSING_FAILED`, until any acceptance or terminal
+outcome for the submission appears in that epoch. A migration-owned partial index covers
 `SUBMISSION_SERVER_ACCEPTED` rows, and a companion composite index accelerates
 terminal-event lookups; Prisma does not currently express the partial-index
 predicate in the schema. Before launch, staging must capture
