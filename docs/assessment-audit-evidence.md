@@ -385,9 +385,12 @@ Sealing does not delete the outbox rows.
 ## Periodic sealing
 
 `sealAssessmentAudit` runs every five minutes on the dedicated `sealer` worker.
-It enumerates Table evidence for retained assessment scopes, verifies canonical
-bytes and required indexes, and conditionally creates batches of at most 100
-event IDs, event hashes, and canonical hashes. Each lifecycle has a contiguous
+For each retained assessment scope it point-reads only the events whose outbox
+row is `DELIVERED_UNSEALED`, verifies their canonical bytes and required
+indexes, and conditionally creates batches of at most 100 event IDs, event
+hashes, and canonical hashes. Its Table reads therefore scale with the unsealed
+backlog, not with the assessment's history: already sealed events were verified
+when they were sealed, and the owner export re-verifies the complete history. Each lifecycle has a contiguous
 sequence with a previous-manifest hash. Late events join a later batch regardless
 of their original `recordedAt`. Each run creates at most ten batches per quiz;
 a backlog therefore takes multiple runs. Each batch selects the lifecycle
@@ -398,9 +401,8 @@ manifest proposal for the currently implemented event store.
 Only events whose outbox row is `DELIVERED_UNSEALED` can enter a manifest. The
 dispatcher writes Table rows before it marks a row delivered, so evidence of
 `PENDING` or `LEASED` rows may be incomplete: those events are left for a later
-run, reported as `awaitingDeliveryCount`, and their Table verification failures
-do not block the rest of the assessment. Verification failures of any other
-event still fail the assessment. Every retained scope is visited on each run so
+run, reported as `awaitingDeliveryCount`, and are not read. A verification
+failure of any delivered event still fails the assessment. Every retained scope is visited on each run so
 that listing renews manifest retention; a scope without sealable rows skips the
 Table read. PostgreSQL is also an independent checkpoint for manifest loss: an
 event marked `SEALED` that no listed manifest contains fails the run. The task
@@ -412,11 +414,13 @@ The immutable manifest is the durable retry checkpoint at
 `audit-manifests/manifest/v1/<quiz>/<epoch>/<12-digit-sequence>.json`.
 Concurrent workers use create-only writes at the same next sequence and verify
 the winning batch. After exact-version byte/hash/MIME/policy readback and a fresh
-Table verification, the sealer changes the matching `DELIVERED_UNSEALED` rows
+Table verification of that batch's members, the sealer changes the matching `DELIVERED_UNSEALED` rows
 of a batch to `SEALED` in one transaction, setting one `sealedAt`. A manifest
 member whose row is missing, differs, or is in any other state aborts that
 transition instead of being skipped. A crash before that transition is recovered
-from the existing manifest on the next run. PostgreSQL
+on the next run: a still-unsealed event listed by an existing manifest is checked
+against that manifest entry and marked `SEALED`. Manifest scope and duplicate
+membership are checked across every listed member on each run. PostgreSQL
 state is operational bookkeeping, never the export's proof of immutability.
 
 Exports enumerate **all blob versions** under the quiz prefix, verify locked
