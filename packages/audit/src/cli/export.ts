@@ -12,6 +12,7 @@ import {
   compareAssessmentBaselineParts,
 } from '../baseline/parts.js'
 import { canonicalizeJson } from '../canonical/canonicalize.js'
+import { compareAuditText } from '../canonical/compare.js'
 import { hashCanonicalValue } from '../canonical/hash.js'
 import type {
   BaselinePartPayload,
@@ -324,7 +325,7 @@ function collectBaselineReconstructions(
   return [...groups.values()].sort(
     (left, right) =>
       left.lifecycleEpoch - right.lifecycleEpoch ||
-      left.baselineId.localeCompare(right.baselineId)
+      compareAuditText(left.baselineId, right.baselineId)
   )
 }
 

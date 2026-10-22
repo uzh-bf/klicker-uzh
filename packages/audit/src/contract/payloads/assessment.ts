@@ -1,4 +1,5 @@
 import { z } from 'zod'
+import { compareAuditText } from '../../canonical/compare.js'
 import {
   sha256Schema,
   stableCodeSchema,
@@ -200,7 +201,7 @@ export const elementContentOptionsSchema = z.discriminatedUnion('kind', [
           const rightOrder = right.order ?? Number.MAX_SAFE_INTEGER
           return (
             leftOrder - rightOrder ||
-            left.criterionId.localeCompare(right.criterionId)
+            compareAuditText(left.criterionId, right.criterionId)
           )
         })
       ),
@@ -209,7 +210,8 @@ export const elementContentOptionsSchema = z.discriminatedUnion('kind', [
           const leftOrder = left.order ?? Number.MAX_SAFE_INTEGER
           const rightOrder = right.order ?? Number.MAX_SAFE_INTEGER
           return (
-            leftOrder - rightOrder || left.caseId.localeCompare(right.caseId)
+            leftOrder - rightOrder ||
+            compareAuditText(left.caseId, right.caseId)
           )
         })
       ),

@@ -582,8 +582,10 @@ Layer 5 adds loopback Response API tests and real-PostgreSQL processor tests for
 all supported response families, stable receipts, duplicate and changed-answer
 commands, late and missing-participation rejection, persistence/evidence
 rollback, retry/recovery, terminal cardinality, and dispatcher outage/drain.
-It also covers inactive participation, delayed processing and retries across
-reopening, and stale Redis/database block executions. The Response API forwards
+It also covers acceptance of participants who left the leaderboard (course
+participation, not `Participation.isActive`, grants assessment access),
+delayed processing and retries across reopening, and stale Redis/database block
+executions. The Response API forwards
 the execution number from the signed correlation token, never from a caller
 field. The processor binds acceptance to that execution and the receipt-time
 audit epoch; subsequent retries keep the same command binding. A completed old

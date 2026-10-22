@@ -95,3 +95,14 @@ Create the name of the service account to use
 {{- default "default" .Values.serviceAccount.name }}
 {{- end }}
 {{- end }}
+
+{{/*
+Assessment audit rollout selection. Every process that can activate audit
+coverage needs it: the backend (new and reopened quizzes) and the general
+Hatchet worker (course copies, scheduled readiness). Render it from one place
+so the two cannot drift; outside an enabled audit the code defaults to disabled.
+*/}}
+{{- define "chart.assessmentAuditRolloutEnv" -}}
+ASSESSMENT_AUDIT_ROLLOUT: {{ .Values.assessmentAudit.rollout | quote }}
+ASSESSMENT_AUDIT_PILOT_LIVE_QUIZ_IDS: {{ .Values.assessmentAudit.pilotLiveQuizIds | quote }}
+{{- end }}
