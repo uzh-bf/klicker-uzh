@@ -201,15 +201,19 @@ function parseArgs(argv) {
 async function main(
   argv = process.argv.slice(2),
   env = process.env,
-  network = fetch
+  network = fetch,
+  github
 ) {
   const args = parseArgs(argv)
   const plan = readJson(args.plan, 'Playwright plan')
   let route = readJson(args.route, 'Playwright route decision')
   let metadata = buildPlanMetadata(plan, route)
   // Validate the entire plan before a request can reserve paid capacity.
-  if (metadata.shouldRun && env.WARPBUILD_ADMISSION_URL) {
-    route = await chooseRouteWithAdmission(envInput(env), env, network)
+  if (
+    metadata.shouldRun &&
+    (env.WARPBUILD_BURST_GRANT || env.WARPBUILD_ADMISSION_URL)
+  ) {
+    route = await chooseRouteWithAdmission(envInput(env), env, network, github)
     metadata = buildPlanMetadata(plan, route)
     fs.writeFileSync(args.route, `${JSON.stringify(route, null, 2)}\n`)
   }

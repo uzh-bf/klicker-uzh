@@ -329,6 +329,8 @@ function validatePublicRunnerRoles(workflow) {
       env: {
         ...expectedEnv,
         WARPBUILD_ADMISSION_URL: `\${{ vars.PUBLIC_PR_PLAYWRIGHT_WARPBUILD_ADMISSION_URL }}`,
+        WARPBUILD_BURST_GRANT: `\${{ vars.PUBLIC_PR_PLAYWRIGHT_WARPBUILD_BURST_GRANT }}`,
+        GH_TOKEN: `\${{ github.token }}`,
       },
       run: 'node .ci-control/.github/scripts/playwright-plan-metadata.cjs --plan playwright-execution-plan.json --route route.json --output "$GITHUB_OUTPUT"',
     },

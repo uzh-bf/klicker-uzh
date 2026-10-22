@@ -1,4 +1,6 @@
 const fs = require('node:fs')
+const { execFile } = require('node:child_process')
+const { promisify } = require('node:util')
 
 const { isSyncBranch } = require('./draft-sync-prs.cjs')
 
@@ -247,13 +249,122 @@ async function admissionJson(response, maximum) {
 async function chooseRouteWithAdmission(
   input,
   env = process.env,
-  network = fetch
+  network = fetch,
+  github = async (route) => {
+    const { stdout } = await promisify(execFile)('gh', ['api', route], {
+      env: { ...env, GODEBUG: 'netdns=go' },
+      timeout: 5000,
+      maxBuffer: 1024 * 1024,
+    })
+    return JSON.parse(stdout)
+  }
 ) {
   const ordinary = choosePlaywrightRoute(input)
   if (
     ordinary.route !== 'public-pr' ||
     ordinary.provider === 'warpbuild' ||
-    input.runAttempt !== '1' ||
+    input.runAttempt !== '1'
+  )
+    return ordinary
+  if (env.WARPBUILD_BURST_GRANT) {
+    try {
+      if (env.WARPBUILD_BURST_GRANT.length > 4096) return ordinary
+      const grant = JSON.parse(env.WARPBUILD_BURST_GRANT)
+      const fields = [
+        'workflowId',
+        'runNumber',
+        'pullRequestNumber',
+        'headSha',
+        'baseSha',
+        'controlSha',
+        'expiresAt',
+      ]
+      if (
+        !grant ||
+        Array.isArray(grant) ||
+        Object.keys(grant).sort().join(',') !== fields.sort().join(',') ||
+        !['workflowId', 'runNumber'].every(
+          (key) =>
+            typeof grant[key] === 'string' && /^[1-9]\d*$/.test(grant[key])
+        ) ||
+        grant.runNumber !== env.GITHUB_RUN_NUMBER ||
+        env.GITHUB_REF !== `refs/pull/${input.pullRequestNumber}/merge` ||
+        (input.warpbuildAdmissions && input.warpbuildAdmissions !== '[]')
+      )
+        return ordinary
+      const { workflowId, runNumber, ...source } = grant
+      const ticket = { ...source, runId: input.runId, runAttempt: '1' }
+      const admitted = choosePlaywrightRoute({
+        ...input,
+        warpbuildAdmissions: JSON.stringify([ticket]),
+      })
+      if (admitted.provider !== 'warpbuild') return ordinary
+      const root = `/repos/${input.repository}`
+      const attemptPath = `${root}/actions/runs/${input.runId}/attempts/1`
+      const run = await github(attemptPath)
+      // PR links may be absent; the runner PR ref and live PR still bind the source.
+      if (
+        String(run.id) !== input.runId ||
+        String(run.workflow_id) !== workflowId ||
+        String(run.run_number) !== runNumber ||
+        run.run_attempt !== 1 ||
+        run.event !== 'pull_request' ||
+        run.status !== 'in_progress' ||
+        run.head_sha !== input.headSha ||
+        run.repository?.full_name !== input.repository ||
+        run.repository?.private !== false ||
+        typeof run.path !== 'string' ||
+        run.path.split('@')[0] !== '.github/workflows/test-playwright.yml' ||
+        !Array.isArray(run.pull_requests) ||
+        run.pull_requests.length > 1 ||
+        run.pull_requests.some(
+          (pr) =>
+            String(pr.number) !== input.pullRequestNumber ||
+            pr.head?.sha !== input.headSha ||
+            pr.base?.sha !== input.baseSha
+        )
+      )
+        return ordinary
+      const pr = await github(`${root}/pulls/${input.pullRequestNumber}`)
+      if (
+        String(pr.number) !== input.pullRequestNumber ||
+        pr.state !== 'open' ||
+        pr.draft !== false ||
+        pr.head?.sha !== input.headSha ||
+        pr.base?.sha !== input.baseSha ||
+        pr.head?.repo?.full_name !== input.repository ||
+        pr.base?.repo?.full_name !== input.repository
+      )
+        return ordinary
+      const jobs = await github(`${attemptPath}/jobs?per_page=100`)
+      if (!Array.isArray(jobs.jobs) || jobs.total_count !== jobs.jobs.length)
+        return ordinary
+      const preparations = jobs.jobs.filter((job) =>
+        job.name?.endsWith(' / prepare')
+      )
+      if (
+        preparations.length !== 1 ||
+        preparations[0].name !== 'test-playwright-execution / prepare' ||
+        preparations[0].status !== 'in_progress' ||
+        jobs.jobs.some(
+          (job) =>
+            / \/ (build-and-compile|test-playwright)-/.test(job.name) &&
+            (job.status === 'in_progress' ||
+              (job.status === 'completed' && job.conclusion !== 'skipped'))
+        )
+      )
+        return ordinary
+      // Recheck expiry after the bounded API observations; no shared claim is written.
+      return choosePlaywrightRoute({
+        ...input,
+        warpbuildAdmissions: JSON.stringify([ticket]),
+      })
+    } catch {
+      console.warn('WarpBuild admission unavailable; using ordinary routing')
+      return ordinary
+    }
+  }
+  if (
     !env.WARPBUILD_ADMISSION_URL ||
     !env.ACTIONS_ID_TOKEN_REQUEST_URL ||
     !env.ACTIONS_ID_TOKEN_REQUEST_TOKEN

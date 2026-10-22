@@ -102,11 +102,23 @@ Node 24 contracts in an isolated container, format and secret/diff checks, and
 review the integrated source. Current-head CI and live provider qualification are
 distinct evidence layers.
 
-Progress: design resolved to a single prospective grant with an explicit missed-slot
-tradeoff. Implementation and verification pending; no new PR yet. Original merged
-branch is preserved. The native goal still reports blocked and requires the app's
-user-controlled resume action; direct source execution continues under the human's
-renewed instruction without replacing that goal.
+Progress: prospective grants are implemented with the explicit missed-slot
+tradeoff. A red/green route regression and 46 affected contracts pass in an isolated
+Node 24 container. A broader 104-test portfolio passed; the separate profile-runtime
+file was excluded, so this is not a full application or complete runtime check.
+Focused formatting, Biome and diff checks pass. Scoped Opengrep checked three
+executables with 200 applicable rules and no findings. The API binding requires
+the immutable runner PR ref plus current PR data and rejects conflicting optional
+run PR links. Main-session review covers authorization, malformed/partial evidence,
+attempt replay, read-only transport and default-off behavior; it is self-review.
+
+One grant admits at most one validation. Sequential operation across successive
+grants remains an operator obligation, not a global concurrency lock. The source
+preserves the existing PR lifecycle cancellation behavior rather than introducing
+a cloud-wide queue that could cancel unrelated pending work. Live compatibility,
+whole-wave provider acceptance and billing remain unqualified. Current-head hosted
+CI and ordinary feedback are pending; no new PR yet. Original merged branch is
+preserved.
 
 The sections below preserve the prior source package and its verification
 history. Their references to a next coordinator deployment, draft status or
