@@ -446,6 +446,7 @@ export async function processAssessmentResponse(
         | 'CONTENT',
       response: message.response,
       restrictions: parsedRestrictions,
+      choiceCount: choiceCount === undefined ? undefined : Number(choiceCount),
     })
     if (!validation.valid) {
       await reject(validation.reasonCode)
@@ -645,8 +646,9 @@ export async function processAssessmentResponse(
         const block = instance?.elementBlock
         let rejectionReason: string | undefined
         if (lifecycleChanged) rejectionReason = 'SUBMISSION_LIFECYCLE_CHANGED'
-        else if (!participation?.isActive)
-          rejectionReason = 'PARTICIPATION_NOT_FOUND'
+        // Course participation, not the leaderboard opt-in (isActive), grants
+        // assessment access; this matches the running-quiz access check.
+        else if (!participation) rejectionReason = 'PARTICIPATION_NOT_FOUND'
         else if (
           block?.liveQuizId !== message.liveQuizId ||
           block.execution !== message.blockExecution ||

@@ -23,6 +23,7 @@ import {
   joinCourseLeaderboard,
   leaveCourseLeaderboard,
 } from '../src/services/courses.js'
+import { handlePublishScheduledLiveQuiz } from '../src/services/liveQuizzes.js'
 
 describe('assessment audit activation', () => {
   let userId: string
@@ -539,5 +540,52 @@ describe('assessment audit activation', () => {
         },
       })
     }
+  })
+
+  it('publishes a scheduled covered assessment through the Hatchet handler', async () => {
+    const prepared = await prepare()
+    await persistPreparedAssessmentAuditActivation({
+      client: prisma,
+      prepared,
+      actor: { kind: 'USER', userId },
+      correlationId: randomUUID(),
+    })
+    await prisma.liveQuiz.update({
+      where: { id: liveQuizId },
+      data: {
+        status: 'SCHEDULED',
+        availableFrom: new Date(Date.now() - 60_000),
+      },
+    })
+    const redis = {
+      pipeline: () => {
+        const pipeline = { hmset: () => pipeline, exec: async () => [] }
+        return pipeline
+      },
+    }
+    const logger = { info: () => undefined, error: () => undefined }
+
+    await expect(
+      handlePublishScheduledLiveQuiz(
+        { liveQuizId, initiatedByUserId: userId },
+        {
+          prisma,
+          redisExec: redis,
+          redisAssessmentExec: redis,
+          emitter: new EventEmitter(),
+        } as never,
+        { logger } as never
+      )
+    ).resolves.toBe(true)
+
+    expect(
+      await prisma.liveQuiz.findUniqueOrThrow({ where: { id: liveQuizId } })
+    ).toMatchObject({ status: 'PUBLISHED' })
+    const published = await prisma.assessmentAuditOutboxEvent.findFirstOrThrow({
+      where: { liveQuizId, eventType: 'ASSESSMENT_PUBLISHED' },
+    })
+    expect(published.correlationId).toMatch(
+      /^[0-9a-f]{8}-[0-9a-f]{4}-5[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/
+    )
   })
 })

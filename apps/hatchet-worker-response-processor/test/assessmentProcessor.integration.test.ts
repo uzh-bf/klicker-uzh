@@ -904,8 +904,9 @@ describe.runIf(runDatabaseTests)(
       )
     })
 
-    it('rejects an inactive participant without persisting a response', async () => {
+    it('accepts a participant who opted out of the leaderboard', async () => {
       const testHarness = harness()
+      // isActive is the leaderboard opt-in and must not gate assessment access.
       await prisma.participation.update({
         where: {
           courseId_participantId: {
@@ -916,16 +917,17 @@ describe.runIf(runDatabaseTests)(
         data: { isActive: false },
       })
       try {
-        await expect(
-          processAssessmentResponse(
-            command(),
-            testHarness.context,
-            testHarness.dependencies
-          )
-        ).rejects.toThrow('PARTICIPATION_NOT_FOUND')
+        const result = await processAssessmentResponse(
+          command(),
+          testHarness.context,
+          testHarness.dependencies
+        )
+        expect(result.status).toBe(200)
         expect(
-          await prisma.liveQuizResponse.count({ where: { instanceId } })
-        ).toBe(0)
+          await prisma.liveQuizResponse.count({
+            where: { submissionId: SUBMISSION_ID },
+          })
+        ).toBe(1)
         expect(
           await prisma.assessmentAuditOutboxEvent.count({
             where: {
@@ -934,7 +936,7 @@ describe.runIf(runDatabaseTests)(
               eventType: 'SUBMISSION_REJECTED',
             },
           })
-        ).toBe(1)
+        ).toBe(0)
       } finally {
         await prisma.participation.update({
           where: {

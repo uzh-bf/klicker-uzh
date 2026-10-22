@@ -265,3 +265,35 @@ describe('assessment response receipt', () => {
     expect(deps.pushEvent).not.toHaveBeenCalled()
   })
 })
+
+describe('regular response transport', () => {
+  it('answers 500 instead of crashing when Hatchet publication fails', async () => {
+    const unhandled = vi.fn()
+    process.on('unhandledRejection', unhandled)
+    try {
+      const deps = dependencies({
+        assessmentMode: false,
+        pushEvent: vi.fn().mockRejectedValue(new Error('transport details')),
+      })
+      const baseUrl = await startServer(deps)
+
+      const response = await fetch(`${baseUrl}/AddResponse`, {
+        method: 'POST',
+        headers: { 'content-type': 'application/json' },
+        body: JSON.stringify({
+          liveQuizId: LIVE_QUIZ_ID,
+          instanceId: 7,
+          response: { value: RAW_ANSWER },
+        }),
+      })
+
+      expect(response.status).toBe(500)
+      expect(await response.json()).toEqual({ error: 'Internal server error' })
+      await new Promise((resolve) => setImmediate(resolve))
+      expect(unhandled).not.toHaveBeenCalled()
+      expect(JSON.stringify(logRecords)).not.toContain(RAW_ANSWER)
+    } finally {
+      process.off('unhandledRejection', unhandled)
+    }
+  })
+})

@@ -1,5 +1,5 @@
 import type { AssessmentBaselineContent } from '@klicker-uzh/audit'
-import { hashCanonicalValue } from '@klicker-uzh/audit'
+import { compareAuditText, hashCanonicalValue } from '@klicker-uzh/audit'
 import type {
   ElementData,
   ElementInstanceOptions,
@@ -231,12 +231,12 @@ export function mapScoringRules(elementData: ElementData) {
                     maximum: criterion.max,
                   }))
                   .sort((left, right) =>
-                    left.criterionId.localeCompare(right.criterionId)
+                    compareAuditText(left.criterionId, right.criterionId)
                   ),
               }))
               .sort((left, right) => left.itemId - right.itemId),
           }))
-          .sort((left, right) => left.caseId.localeCompare(right.caseId)),
+          .sort((left, right) => compareAuditText(left.caseId, right.caseId)),
       } as const
     }
     case 'CONTENT':
@@ -436,7 +436,7 @@ export function buildAssessmentBaselineContents(input: {
     // assessment access, so every participation is eligible.
     ...[...snapshot.participations]
       .sort((left, right) =>
-        left.participantId.localeCompare(right.participantId)
+        compareAuditText(left.participantId, right.participantId)
       )
       .map(
         (participation): AssessmentBaselineContent => ({
@@ -446,7 +446,7 @@ export function buildAssessmentBaselineContents(input: {
         })
       ),
     ...[...snapshot.permissions]
-      .sort((left, right) => left.userId.localeCompare(right.userId))
+      .sort((left, right) => compareAuditText(left.userId, right.userId))
       .map(
         (permission): AssessmentBaselineContent => ({
           kind: 'LECTURER_PERMISSION',
