@@ -5,6 +5,7 @@ import type {
 } from '@assistant-ui/react'
 import {
   buildDocumentBlock,
+  type ImageSupport,
   MAX_DOCUMENT_SIZE_BYTES,
   MAX_VISUAL_REVIEW_PAGES,
   truncateDocumentText,
@@ -119,7 +120,7 @@ type ExtractedDocument = {
 async function extractText(
   file: File,
   kind: DocumentKind,
-  renderPages: boolean
+  renderPages: ImageSupport
 ): Promise<ExtractedDocument> {
   if (kind === 'text') {
     return { text: await file.text(), pages: null, pageImages: null }
@@ -145,11 +146,12 @@ async function extractText(
 
 function getVisualReviewStatus(
   extracted: ExtractedDocument,
-  renderPages: boolean
+  renderPages: ImageSupport
 ): VisualReviewStatus | null {
   if (extracted.pages == null) return null
   if (extracted.pageImages) return 'reviewed'
-  if (!renderPages) return 'no-image-support'
+  if (renderPages === false) return 'no-image-support'
+  if (renderPages == null) return 'skipped'
   // Not rendered although the model reads images: over the page limit, or
   // the browser could not render the pages.
   return extracted.pages > MAX_VISUAL_REVIEW_PAGES
@@ -160,7 +162,7 @@ function getVisualReviewStatus(
 async function readDocument(
   file: File,
   kind: DocumentKind,
-  renderPages: boolean
+  renderPages: ImageSupport
 ): Promise<{ block: string; pageImages: string[] }> {
   let extracted: ExtractedDocument
   try {
@@ -224,7 +226,7 @@ const removedWhileReading = new Set<string>()
 const createDocumentAttachmentAdapter = ({
   renderPages,
 }: {
-  renderPages: boolean
+  renderPages: ImageSupport
 }): AttachmentAdapter => ({
   accept: ACCEPT,
 
@@ -305,6 +307,14 @@ const createDocumentAttachmentAdapter = ({
 export const documentAttachmentAdapter = createDocumentAttachmentAdapter({
   renderPages: false,
 })
+
+/**
+ * Text only, while the selected model's image support is not known yet; PDF
+ * headers then say the pages were not reviewed, without blaming the model.
+ */
+export const pendingDocumentAttachmentAdapter = createDocumentAttachmentAdapter(
+  { renderPages: null }
+)
 
 /** Text plus rendered PDF pages, for models that read images. */
 export const visualDocumentAttachmentAdapter = createDocumentAttachmentAdapter({

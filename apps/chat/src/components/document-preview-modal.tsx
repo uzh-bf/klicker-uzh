@@ -2,6 +2,7 @@
 
 import { Modal } from '@uzh-bf/design-system'
 import { useTranslations } from 'next-intl'
+import { useEffect, useRef } from 'react'
 import type { DocumentOriginal } from '@/src/lib/attachments/attachmentState'
 
 interface DocumentPreviewModalProps {
@@ -28,6 +29,13 @@ export function DocumentPreviewModal({
 }: DocumentPreviewModalProps) {
   const t = useTranslations()
   const isPdf = original?.type === 'application/pdf'
+  const contentRef = useRef<HTMLDivElement>(null)
+
+  // The design-system Modal prevents Radix from moving focus into the dialog
+  // (see disclaimer-modal.tsx), so the preview content takes focus itself.
+  useEffect(() => {
+    if (isOpen) contentRef.current?.focus()
+  }, [isOpen])
 
   return (
     <Modal
@@ -40,7 +48,11 @@ export function DocumentPreviewModal({
       open={isOpen}
       onClose={onClose}
     >
-      <div className="space-y-3">
+      <div
+        ref={contentRef}
+        tabIndex={-1}
+        className="space-y-3 focus:outline-none"
+      >
         {isPdf ? (
           <iframe
             data-cy="chat-document-preview-original"

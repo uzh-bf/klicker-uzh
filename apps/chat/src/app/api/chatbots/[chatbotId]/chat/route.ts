@@ -1388,10 +1388,20 @@ export async function POST(
       } else {
         // No summary row is written, so a transient failure cannot replace a
         // stored summary or persist a placeholder; the text stays available.
-        console.error('Failed to summarize document pages:', {
-          requestId,
-          error,
-        })
+        // A cancelled request is not a failure. The provider error is reduced
+        // to name and message: it may echo the request with the page images.
+        const aborted =
+          req.signal.aborted ||
+          (error instanceof Error && error.name === 'AbortError')
+        if (!aborted) {
+          console.error('Failed to summarize document pages:', {
+            requestId,
+            error:
+              error instanceof Error
+                ? { name: error.name, message: error.message.slice(0, 500) }
+                : 'unknown error',
+          })
+        }
       }
     }
 

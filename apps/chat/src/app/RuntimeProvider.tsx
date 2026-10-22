@@ -35,6 +35,7 @@ import { ModeOptionsProvider } from '../components/mode-options-context'
 import {
   documentAttachmentAdapter,
   isReadingDocument,
+  pendingDocumentAttachmentAdapter,
   subscribeDocumentReading,
   visualDocumentAttachmentAdapter,
 } from '../lib/attachments/documentAttachmentAdapter'
@@ -364,7 +365,9 @@ export function RuntimeProvider({
             imageAttachmentAdapter,
             readsDocumentPages
               ? visualDocumentAttachmentAdapter
-              : documentAttachmentAdapter,
+              : readsDocumentPages === false
+                ? documentAttachmentAdapter
+                : pendingDocumentAttachmentAdapter,
           ])
         : documentAttachmentAdapter,
       ...(dictation.adapter ? { dictation: dictation.adapter } : {}),

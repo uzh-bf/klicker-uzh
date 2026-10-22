@@ -230,6 +230,17 @@ const pdfBlock = (visualReview: VisualReviewStatus | null, pages = 3) =>
   })
 
 describe('visual review of PDF pages', () => {
+  test('unknown image support never claims the model cannot read images', () => {
+    const { blocks, pageImages } = applyVisualReview(
+      [{ block: pdfBlock('reviewed'), pageImages: ['data:image/jpeg;x'] }],
+      { supportsImages: null }
+    )
+    expect(pageImages).toEqual([])
+    expect(parseMessageDocuments(blocks[0] ?? '').documents[0]).toMatchObject({
+      visualReview: 'skipped',
+    })
+  })
+
   test('rewriting a header keeps dollar sequences in the document text', () => {
     const block = buildDocumentBlock({
       name: 'script.pdf',

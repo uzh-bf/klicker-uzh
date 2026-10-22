@@ -1141,7 +1141,7 @@ render; a render failure never blocks the text. The composer chip runs the same 
 edit composer shows kept documents with the status they get without pages
 (`visualReviewWithoutPages`), so each chip shows the status the message will have. A model counts as
 reading images for pages only once its loaded model option says so (`selectModelReadsDocumentPages`
-in `settingsStore.ts`); until then documents are read as text only. Page images wait in a module map in `attachmentState.ts` until
+in `settingsStore.ts`); until then documents are read as text only and their headers say the pages were not reviewed, without claiming the model cannot read images. Page images wait in a module map in `attachmentState.ts` until
 `useChatResponse` sends them as `documentPages`; they never enter the thread state, history or
 Markdown export. Entries stay per message, and only the newest three are kept. `useChatResponse` takes them before
 any early return and gives them back only after a network error, a 5xx or a 429, so "Try again"
@@ -1170,7 +1170,7 @@ Clicking a document chip, in the composer, the edit composer or a sent message, 
 `DocumentPreviewModal`. A PDF still in this tab opens in the browser's own PDF viewer from an
 object URL; other files show the extracted text with a link to the original. Sent messages keep
 their originals in an in-memory map in `attachmentState.ts`, keyed by message ID and document
-position and bounded to the newest 20; an edit copies the entries of kept documents. The original
+position and bounded to the newest 20 and 50 MB in total; an edit copies the entries of kept documents. The original
 file is never uploaded or stored, so after a reload the preview shows the stored extracted text,
 which is what the model received.
 

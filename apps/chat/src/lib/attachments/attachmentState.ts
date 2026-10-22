@@ -210,17 +210,34 @@ export function extractDocumentsForSending(
 // Original files of sent documents, for the preview until the page reloads.
 // Only the extracted text is stored; after a reload the preview shows that.
 // Keyed by message ID and the document's position in the message.
-export type DocumentOriginal = { url: string; type: string }
+export type DocumentOriginal = { url: string; type: string; size: number }
 const documentOriginals = new Map<string, DocumentOriginal>()
 const MAX_DOCUMENT_ORIGINALS = 20
+// Each object URL keeps its whole file in memory, so the total is capped too.
+const MAX_DOCUMENT_ORIGINAL_BYTES = 50 * 1024 * 1024
 const documentOriginalKey = (messageId: string, index: number) =>
   `${messageId}:${index}`
+
+// Shared URLs (an edited message and its source) count once.
+const originalBytes = () =>
+  [
+    ...new Map(
+      [...documentOriginals.values()].map((entry) => [entry.url, entry.size])
+    ).values(),
+  ].reduce((total, size) => total + size, 0)
 
 function storeDocumentOriginal(key: string, original: DocumentOriginal) {
   documentOriginals.delete(key)
   documentOriginals.set(key, original)
   for (const [oldestKey, oldest] of documentOriginals) {
-    if (documentOriginals.size <= MAX_DOCUMENT_ORIGINALS) break
+    if (
+      documentOriginals.size <= MAX_DOCUMENT_ORIGINALS &&
+      originalBytes() <= MAX_DOCUMENT_ORIGINAL_BYTES
+    ) {
+      break
+    }
+    // The newest entry stays, even when it alone exceeds the budget.
+    if (oldestKey === key) break
     documentOriginals.delete(oldestKey)
     // An edited message shares the URL of the message it was edited from.
     const stillUsed = [...documentOriginals.values()].some(
@@ -238,6 +255,7 @@ export function rememberDocumentOriginal(
   storeDocumentOriginal(documentOriginalKey(messageId, index), {
     url: URL.createObjectURL(file),
     type: file.type,
+    size: file.size,
   })
 }
 

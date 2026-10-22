@@ -88,18 +88,17 @@ interface SettingsState {
 
 /**
  * Whether rendered PDF pages may be sent to the given model. Unlike image
- * attachments, an unknown model (options not loaded yet, or no longer listed)
- * counts as text-only, so a chip never claims a visual review the request
- * then drops.
+ * attachments, pages are only sent once the model option confirms image
+ * support. An unknown model (options not loaded yet, or no longer listed)
+ * returns null: no pages, but no stored claim that it cannot read images.
  */
 export function selectModelReadsDocumentPages(
   state: { modelOptions: ModelOption[] },
   modelId: string
-): boolean {
-  return (
-    state.modelOptions.find((model) => model.id === modelId)
-      ?.supportsImageAttachments === true
-  )
+): boolean | null {
+  const option = state.modelOptions.find((model) => model.id === modelId)
+  if (!option || option.supportsImageAttachments == null) return null
+  return option.supportsImageAttachments
 }
 
 export const useSettingsStore = create<SettingsState>()(

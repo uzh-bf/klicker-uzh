@@ -207,15 +207,21 @@ export type DocumentForSending = {
  * actually sent, so the chip after a reload matches the request.
  */
 /**
+ * Whether the model reads images: null while its model option is not loaded,
+ * so no stored header claims the model cannot read images.
+ */
+export type ImageSupport = boolean | null
+
+/**
  * The status a document gets when it is sent without page images, such as a
  * document kept while editing a message.
  */
 export function visualReviewWithoutPages(
   visualReview: VisualReviewStatus,
-  { supportsImages }: { supportsImages: boolean }
+  { supportsImages }: { supportsImages: ImageSupport }
 ): VisualReviewStatus {
   if (visualReview === 'reviewed') {
-    return supportsImages ? 'skipped' : 'no-image-support'
+    return supportsImages === false ? 'no-image-support' : 'skipped'
   }
   // Read for a text-only model, sent with one that reads images: the pages
   // were never rendered, so the stored reason would be wrong.
@@ -229,7 +235,7 @@ export function visualReviewWithoutPages(
  */
 export function withoutPageReview(
   text: string,
-  { supportsImages }: { supportsImages: boolean }
+  { supportsImages }: { supportsImages: ImageSupport }
 ): string {
   return getDocumentBlocks(text).reduce((result, block) => {
     const [updated] = applyVisualReview([{ block, pageImages: [] }], {
@@ -245,7 +251,7 @@ export function withoutPageReview(
 
 export function applyVisualReview(
   documents: DocumentForSending[],
-  { supportsImages }: { supportsImages: boolean }
+  { supportsImages }: { supportsImages: ImageSupport }
 ): { blocks: string[]; pageImages: string[] } {
   const pageImages: string[] = []
   const blocks = documents.map(({ block, pageImages: pages }) => {
@@ -257,7 +263,7 @@ export function applyVisualReview(
     })
     if (pages.length > 0) {
       if (!supportsImages) {
-        visualReview = 'no-image-support'
+        visualReview = supportsImages === false ? 'no-image-support' : 'skipped'
       } else if (pageImages.length + pages.length > MAX_VISUAL_REVIEW_PAGES) {
         visualReview = 'too-many-pages'
       } else {

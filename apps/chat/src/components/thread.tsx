@@ -61,6 +61,7 @@ import {
 import {
   applyVisualReview,
   type DocumentAttachmentInfo,
+  type ImageSupport,
   MAX_DOCUMENT_ATTACHMENTS,
   MAX_DOCUMENT_SIZE_BYTES,
   MAX_DOCUMENT_TOKENS,
@@ -1238,12 +1239,12 @@ type ComposerAttachmentList = readonly (NonNullable<
 // computed once per attachments array and model capability, not per chip.
 const composerDocumentProjections = new WeakMap<
   object,
-  { supportsImages: boolean; blocks: Map<string, string> }
+  { supportsImages: ImageSupport; blocks: Map<string, string> }
 >()
 
 function projectComposerDocuments(
   attachments: ComposerAttachmentList,
-  supportsImages: boolean
+  supportsImages: ImageSupport
 ): Map<string, string> {
   const cached = composerDocumentProjections.get(attachments)
   if (cached?.supportsImages === supportsImages) return cached.blocks
@@ -1308,7 +1309,7 @@ const ComposerDocumentAttachment: FC = () => {
           if (!(file instanceof Blob)) return { original: null }
           const url = URL.createObjectURL(file)
           return {
-            original: { url, type: file.type },
+            original: { url, type: file.type, size: file.size },
             release: () => URL.revokeObjectURL(url),
           }
         }}
