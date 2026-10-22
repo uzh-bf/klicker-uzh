@@ -304,8 +304,10 @@ export function useChatResponse(
         })
 
         if (!response.ok) {
-          // A 4xx rejection repeats on every retry, so the pages stay dropped.
-          if (response.status >= 500 || response.status === 429) {
+          // Only a rejected payload (400, 413) repeats on every retry, so only
+          // then are the pages dropped; after other errors, such as missing
+          // credits or a concurrent run, "Try again" sends them again.
+          if (response.status !== 400 && response.status !== 413) {
             restoreDocumentPages()
           } else if (documentPages.length > 0) {
             dropPageReview()

@@ -1144,8 +1144,8 @@ reading images for pages only once its loaded model option says so (`selectModel
 in `settingsStore.ts`); until then documents are read as text only and their headers say the pages were not reviewed, without claiming the model cannot read images. Page images wait in a module map in `attachmentState.ts` until
 `useChatResponse` sends them as `documentPages`; they never enter the thread state, history or
 Markdown export. Entries stay per message, and only the newest three are kept. `useChatResponse` takes them before
-any early return and gives them back only after a network error, a 5xx or a 429, so "Try again"
-sends them again; a 4xx rejection or a switch to a model without image support drops them. When pages are dropped, `withoutPageReview` rewrites the message's document headers, so neither
+any early return and gives them back after any failure except a rejected payload (400 or 413), so "Try again"
+sends them again; such a rejection or a switch to a model without image support drops them. When pages are dropped, `withoutPageReview` rewrites the message's document headers, so neither
 the prompt nor the chip claims a review. A rendered page larger than the route's 2,000,000-character
 cap counts as a render failure, so the document goes through as text.
 

@@ -1280,39 +1280,45 @@ export async function POST(
     let documentPageSummary: string | null = null
     const hasDocumentPages =
       documentPages.length > 0 && lastMessage?.role === 'user'
+    // Built inside a promise, so a prompt-rendering error also ends in the
+    // "no summary" path instead of failing the turn.
     const documentPageSummaryTask = hasDocumentPages
-      ? generateText({
-          model: model,
-          // A client that cancels before the answer starts also stops this call.
-          abortSignal: req.signal,
-          messages: [
-            {
-              role: 'user',
-              content: [
-                ...documentPages.map((page) => ({
-                  type: 'image' as const,
-                  image: page,
-                })),
+      ? Promise.resolve()
+          .then(() =>
+            generateText({
+              model: model,
+              // A client that cancels before the answer starts also stops this call.
+              abortSignal: req.signal,
+              messages: [
                 {
-                  type: 'text',
-                  text: renderPromptTemplate('document-pages-summary', {
-                    userContent: stripDocumentBlocks(
-                      lastMessage?.content ?? ''
-                    ),
-                    pageCount: documentPages.length,
-                  }),
+                  role: 'user',
+                  content: [
+                    ...documentPages.map((page) => ({
+                      type: 'image' as const,
+                      image: page,
+                    })),
+                    {
+                      type: 'text',
+                      text: renderPromptTemplate('document-pages-summary', {
+                        userContent: stripDocumentBlocks(
+                          lastMessage?.content ?? ''
+                        ),
+                        pageCount: documentPages.length,
+                      }),
+                    },
+                  ],
                 },
               ],
-            },
-          ],
-          maxOutputTokens: 1500,
-          telemetry: { isEnabled: false },
-        }).then(
-          // settled here, so a failure while the image descriptions are still
-          // running is never an unhandled rejection
-          (result) => ({ result, error: null }),
-          (error: unknown) => ({ result: null, error })
-        )
+              maxOutputTokens: 1500,
+              telemetry: { isEnabled: false },
+            })
+          )
+          .then(
+            // settled here, so a failure while the image descriptions are still
+            // running is never an unhandled rejection
+            (result) => ({ result, error: null }),
+            (error: unknown) => ({ result: null, error })
+          )
       : null
     if (normalizedImages.length > 0 && lastMessage?.role === 'user') {
       const results = await Promise.allSettled(
