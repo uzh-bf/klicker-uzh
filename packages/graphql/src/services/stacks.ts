@@ -3597,6 +3597,13 @@ function computeFreeTextEvaluation({
     results: {
       totalAnswers: results.total + anonymousResults.total,
       anonymousAnswers: anonymousResults.total,
+      // only set when a response limit above 1 allowed several responses per participant
+      respondents:
+        typeof results.respondents === 'number' ||
+        typeof anonymousResults.respondents === 'number'
+          ? (results.respondents ?? results.total) +
+            (anonymousResults.respondents ?? anonymousResults.total)
+          : undefined,
       maxLength: options.restrictions?.maxLength,
       solutions: options.solutions,
       responses: combineFreeTextResults({

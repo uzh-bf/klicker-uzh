@@ -66,15 +66,21 @@ function EvaluationFooter({
       {typeof activeStack === 'number' && (
         <div className="m-0 flex flex-row items-center justify-between py-2.5">
           <div className="text-lg" data-cy="live-quiz-total-participants">
-            {(currentInstance?.results.anonymousAnswers ?? 0) > 0 &&
-            type === 'Asynchronous'
-              ? t('manage.evaluation.totalParticipantsInclAnon', {
-                  number: currentInstance?.results.totalAnswers ?? 0,
-                  anonymous: currentInstance?.results.anonymousAnswers ?? 0,
+            {currentInstance?.__typename === 'FreeTextActivityEvaluationData' &&
+            typeof currentInstance.results.respondents === 'number'
+              ? t('manage.evaluation.totalResponsesFromRespondents', {
+                  number: currentInstance.results.totalAnswers,
+                  respondents: currentInstance.results.respondents,
                 })
-              : t('manage.evaluation.totalParticipants', {
-                  number: currentInstance?.results.totalAnswers ?? 0,
-                })}
+              : (currentInstance?.results.anonymousAnswers ?? 0) > 0 &&
+                  type === 'Asynchronous'
+                ? t('manage.evaluation.totalParticipantsInclAnon', {
+                    number: currentInstance?.results.totalAnswers ?? 0,
+                    anonymous: currentInstance?.results.anonymousAnswers ?? 0,
+                  })
+                : t('manage.evaluation.totalParticipants', {
+                    number: currentInstance?.results.totalAnswers ?? 0,
+                  })}
           </div>
           <div className="flex flex-row items-center gap-7">
             <div className="ml-2 flex flex-row items-center gap-2">

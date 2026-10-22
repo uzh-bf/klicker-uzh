@@ -3478,6 +3478,8 @@ Da die KlickerUZH-App noch nicht im iOS-App-Store verfügbar ist, folgen Sie die
       totalParticipants: 'Total Teilnehmende: {number}',
       totalParticipantsInclAnon:
         'Total Teilnehmende: {number} ({anonymous} anonym)',
+      totalResponsesFromRespondents:
+        'Total Antworten: {number} von {respondents} Teilnehmenden',
       showSolution: 'Lösung anzeigen',
       showExplanation: 'Erklärung anzeigen',
       showSolutionInfo:

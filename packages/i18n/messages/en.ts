@@ -3422,6 +3422,8 @@ Since the KlickerUZH app is not yet available in the iOS App Store, follow these
       totalParticipants: 'Total participants: {number}',
       totalParticipantsInclAnon:
         'Total participants: {number} ({anonymous} anonymous)',
+      totalResponsesFromRespondents:
+        'Total responses: {number} from {respondents, plural, one {# participant} other {# participants}}',
       showSolution: 'Show solution',
       showExplanation: 'Show explanation',
       showSolutionInfo:
