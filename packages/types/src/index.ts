@@ -158,6 +158,7 @@ export type OptionsFreeTextInput = {
   restrictions?: FreeTextRestrictionsInput | null
   solutions?: string[] | null
   feedback?: string | null
+  responseLimit?: number | null
 }
 
 export type CaseStudyCriteriaSolutionInput = {
@@ -534,6 +535,8 @@ export type FreeTextRestrictions = {
 export interface ElementOptionsFreeText extends BaseElementOptions {
   restrictions?: FreeTextRestrictions | null
   solutions?: string[] | null
+  // responses accepted per participant in standard live quizzes (absent means 1)
+  responseLimit?: number | null
 }
 
 export type ElementOptionsAnswerCollectionEntry = {
@@ -682,6 +685,8 @@ export type ElementResultsOpen = {
     }
   }
   total: number
+  // distinct participants, written only when the response limit was above 1
+  respondents?: number
 }
 
 export type ElementResultsFlashcard = {

@@ -11,7 +11,15 @@ import type {
   LiveQuizResponseInput,
   NumericalRestrictions,
 } from '@klicker-uzh/types'
-import { verifyJWT, type JWTPayload } from '@klicker-uzh/util'
+import {
+  admitLiveQuizResponse,
+  getResponseAdmissionKeys,
+  parseResponseLimit,
+  undoLiveQuizResponseAdmission,
+  verifyJWT,
+  type JWTPayload,
+  type ResponseAdmissionArgs,
+} from '@klicker-uzh/util'
 import { strict as assert } from 'assert'
 import { createHash } from 'crypto'
 import type { ChainableCommander } from 'ioredis'
@@ -39,6 +47,7 @@ export async function processResponseMessage(
     response: LiveQuizResponseInput
     cookie?: string
     responseTimestamp: number
+    isFirstResponse?: boolean
   },
   ctx: Context<JsonObject, {}> | DurableContext<JsonObject, {}>
 ) {
@@ -65,6 +74,18 @@ export async function processResponseMessage(
   let redisMulti: ChainableCommander
   // redisMulti = redisExec.multi() -> transaction
   redisMulti = redisExec.pipeline() // -> pipeline (not atomic)
+
+  // set once a response was admitted under a response limit above 1, so the
+  // admission can be reverted when the response is not written afterwards
+  let admission: ResponseAdmissionArgs | undefined
+  const undoAdmission = async () => {
+    if (!admission) return
+    try {
+      await undoLiveQuizResponseAdmission(admission)
+    } catch (e) {
+      ctx.logger.error(`Response admission undo failed: ${String(e)}`)
+    }
+  }
 
   try {
     const liveQuizKey = `lq:${message.sessionId}`
@@ -124,8 +145,12 @@ export async function processResponseMessage(
       }
 
       // if the participant has already responded to the question instance, return instantly
+      // (elements with a response limit above 1 are admitted per response further below)
       if (
         participantData &&
+        parseResponseLimit(
+          await redisExec.hget(`${instanceKey}:info`, 'responseLimit')
+        ) === 1 &&
         (await redisExec.hexists(
           `${instanceKey}:responses`,
           participantData.role === 'TEMPORARY_PARTICIPANT'
@@ -403,6 +428,41 @@ export async function processResponseMessage(
         const MD5 = createHash('md5')
         MD5.update(cleanResponseValue)
         const responseHash = MD5.digest('hex')
+
+        // with a response limit above 1, admit each response atomically; only
+        // a participant's first response is marked as responded and earns points
+        let isFirstResponse = true
+        const responseLimit = parseResponseLimit(instanceInfo.responseLimit)
+        if (responseLimit > 1) {
+          const admissionArgs: ResponseAdmissionArgs = {
+            redis: redisExec,
+            instanceKey,
+            messageId: message.messageId,
+            participantKey: participantData
+              ? participantData.role === 'TEMPORARY_PARTICIPANT'
+                ? `temporary-${participantData.sub}`
+                : participantData.sub
+              : undefined,
+            responseHash,
+            responseLimit,
+            anonymousIsFirstResponse: message.isFirstResponse !== false,
+          }
+          const result = await admitLiveQuizResponse(admissionArgs)
+          if (!result.admitted) {
+            ctx.logger.info(`Response not admitted: ${result.reason}`, {
+              messageId: message.messageId,
+              sessionId: message.sessionId,
+              instanceId: message.instanceId,
+            })
+            return { status: 200 }
+          }
+          admission = admissionArgs
+          isFirstResponse = result.isFirstResponse
+          if (isFirstResponse) {
+            redisMulti.incr(getResponseAdmissionKeys(instanceKey).respondents)
+          }
+        }
+
         redisMulti.hincrby(`${instanceKey}:results`, responseHash, 1)
         redisMulti.hset(
           `${instanceKey}:responseHashes`,
@@ -412,7 +472,7 @@ export async function processResponseMessage(
         redisMulti.hincrby(`${instanceKey}:results`, 'participants', 1)
 
         // if the participant was logged in, award points (and xp if regular student acount was used)
-        if (participantData) {
+        if (participantData && isFirstResponse) {
           // add the participant's response to the corresponding redis hash
           redisMulti.hset(
             `${instanceKey}:responses`,
@@ -662,6 +722,7 @@ export async function processResponseMessage(
         })
     )
     redisMulti?.discard()
+    await undoAdmission()
     return { status: 500 }
   }
 
@@ -683,6 +744,7 @@ export async function processResponseMessage(
         })
     )
     redisMulti?.discard()
+    await undoAdmission()
     throw new Error(`Redis transaction failed ${String(e)}`)
   }
 }
