@@ -180,6 +180,9 @@ test('public runner jobs require their exact scheduling role and reject unknown 
       delete w.jobs.prepare.steps.find((s) => s.id === 'metadata').env.GH_TOKEN
     },
     (w) => {
+      w.jobs[build].env = { GH_TOKEN: `\${{ github.token }}` }
+    },
+    (w) => {
       w.jobs.prepare.steps.find((s) => s.id === 'route').run =
         'node .candidate/.github/scripts/playwright-route.cjs --output route.json'
     },

@@ -42,7 +42,13 @@ function cloudAdmission(overrides = {}) {
   })
 }
 
-test('a prospective workflow number binds one first-attempt validation without a coordinator', async () => {
+test('a prospective workflow number binds one first-attempt validation without a coordinator', async (t) => {
+  let coordinatorCalls = 0
+  const noCoordinator = async () => {
+    coordinatorCalls++
+    throw new Error('unexpected coordinator')
+  }
+  t.mock.method(globalThis, 'fetch', noCoordinator)
   const input = cloudAdmission({ warpbuildAdmissions: '' })
   const { runId, runAttempt, ...source } = JSON.parse(
     cloudAdmission().warpbuildAdmissions
@@ -50,6 +56,10 @@ test('a prospective workflow number binds one first-attempt validation without a
   const env = {
     GITHUB_RUN_NUMBER: '42',
     GITHUB_REF: 'refs/pull/1234/merge',
+    WARPBUILD_ADMISSION_URL: 'https://admission.example.invalid/admit',
+    ACTIONS_ID_TOKEN_REQUEST_URL:
+      'https://pipelines.actions.githubusercontent.com/token',
+    ACTIONS_ID_TOKEN_REQUEST_TOKEN: 'synthetic',
     WARPBUILD_BURST_GRANT: JSON.stringify({
       ...source,
       workflowId: '900',
@@ -98,14 +108,7 @@ test('a prospective workflow number binds one first-attempt validation without a
       ],
     }
   }
-  const result = await chooseRouteWithAdmission(
-    input,
-    env,
-    async () => {
-      assert.fail('prospective admission must not contact the coordinator')
-    },
-    api
-  )
+  const result = await chooseRouteWithAdmission(input, env, noCoordinator, api)
   assert.equal(result.provider, 'warpbuild')
   assert.equal(result.admissionAttempt, '1')
   assert.deepEqual(calls, [
@@ -150,7 +153,7 @@ test('a prospective workflow number binds one first-attempt validation without a
           WARPBUILD_BURST_GRANT: raw,
           WARPBUILD_ADMISSION_URL: 'https://must-not-call.invalid/admit',
         },
-        async () => assert.fail('no coordinator fallback'),
+        noCoordinator,
         api
       ),
       ordinary
@@ -186,6 +189,23 @@ test('a prospective workflow number binds one first-attempt validation without a
     ['pr', { head: { sha: 'd'.repeat(40) } }],
     ['pr', { base: { sha: 'd'.repeat(40) } }],
     ['jobs', { total_count: 101 }],
+    ...['build-and-compile-public-pr', 'future-workload'].map((name) => [
+      'jobs',
+      {
+        total_count: 2,
+        jobs: [
+          {
+            name: 'test-playwright-execution / prepare',
+            status: 'in_progress',
+          },
+          {
+            name: `test-playwright-execution / ${name}`,
+            status: 'queued',
+            steps: [{ status: 'in_progress' }],
+          },
+        ],
+      },
+    ]),
     [
       'jobs',
       {
@@ -218,11 +238,9 @@ test('a prospective workflow number binds one first-attempt validation without a
   ]) {
     const changedApi = async (route) => {
       const result = await api(route)
-      const type = route.includes('/pulls/')
-        ? 'pr'
-        : route.includes('/jobs?')
-          ? 'jobs'
-          : 'run'
+      let type = 'run'
+      if (route.includes('/pulls/')) type = 'pr'
+      else if (route.includes('/jobs?')) type = 'jobs'
       return type === kind ? { ...result, ...change } : result
     }
     assert.deepEqual(
@@ -258,6 +276,7 @@ test('a prospective workflow number binds one first-attempt validation without a
       ordinary
     )
   }
+  assert.equal(coordinatorCalls, 0)
 })
 
 test('preparation obtains an exact ticket before selecting the paid backend', async (t) => {

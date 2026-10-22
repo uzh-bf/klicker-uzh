@@ -181,6 +181,18 @@ function validatePublicRunnerRoles(workflow) {
     'test-playwright-public-pr': 'shard_runner',
   }
   const jobs = workflow?.jobs ?? {}
+  for (const [name, job] of Object.entries(jobs)) {
+    if (
+      name !== 'prepare' &&
+      /github\s*(?:\.\s*token|\[\s*['"]token['"]\s*\])/.test(
+        JSON.stringify(job)
+      )
+    ) {
+      issues.push(
+        'explicit GitHub token exposure must stay in trusted preparation'
+      )
+    }
+  }
   for (const [name, output] of Object.entries(roles)) {
     const runner = jobs[name]?.['runs-on']
     if (

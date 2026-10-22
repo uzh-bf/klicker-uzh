@@ -122,6 +122,17 @@ CI and ordinary feedback are pending on
 branch is preserved. The package adds roughly 400 substantive source/test lines
 in one cohesive existing admission path; it adds no service or new workflow.
 
+The initial published head passed all eight required contexts and its actual
+contract producers, hosted build, selected shard and separate aggregate. Canonical
+partition and build-artifact digest consumption were verified; this was bounded
+source CI, not cloud qualification. Ordinary draft review completed and published
+two inline findings plus three summary advisories. The first correction strengthens
+started-workload checks to include step state and every envelope job, proves zero
+coordinator calls with its configuration enabled, restricts explicit token exposure
+to preparation and flattens the test helper. The stale-job-state regression was
+reproduced red before correction; all 46 affected contracts pass afterward.
+Current-head CI must be re-established after publishing that correction.
+
 The sections below preserve the prior source package and its verification
 history. Their references to a next coordinator deployment, draft status or
 pending merge are historical, not current instructions or renewed authority.

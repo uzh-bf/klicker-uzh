@@ -348,9 +348,12 @@ async function chooseRouteWithAdmission(
         preparations[0].status !== 'in_progress' ||
         jobs.jobs.some(
           (job) =>
-            / \/ (build-and-compile|test-playwright)-/.test(job.name) &&
-            (job.status === 'in_progress' ||
-              (job.status === 'completed' && job.conclusion !== 'skipped'))
+            job.name.startsWith('test-playwright-execution / ') &&
+            !job.name.endsWith(' / prepare') &&
+            (!['queued', 'waiting', 'pending'].includes(job.status) ||
+              (job.steps ?? []).some(
+                (step) => !['pending', 'queued'].includes(step.status)
+              ))
         )
       )
         return ordinary

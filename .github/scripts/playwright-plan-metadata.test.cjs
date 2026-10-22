@@ -129,6 +129,7 @@ test('only a validated nonempty plan can request admission before output publica
     expiresAt: new Date(Date.now() + 60000).toISOString(),
   })
   let apiCalls = 0
+  let coordinatorCalls = 0
   const deniedApi = async () => {
     apiCalls++
     throw new Error('unavailable')
@@ -143,7 +144,10 @@ test('only a validated nonempty plan can request admission before output publica
     await main(
       args,
       env,
-      async () => assert.fail('no external coordinator'),
+      async () => {
+        coordinatorCalls++
+        throw new Error('unexpected coordinator')
+      },
       deniedApi
     )
     assert.equal(apiCalls, candidate.mode === 'skip' ? 0 : 1)
@@ -153,6 +157,18 @@ test('only a validated nonempty plan can request admission before output publica
   fs.writeFileSync(planFile, JSON.stringify(plan('full', 0)))
   await assert.rejects(main(args, env, undefined, deniedApi))
   assert.equal(apiCalls, 1)
+  env.WARPBUILD_ADMISSION_URL = 'https://admission.example.invalid/admit'
+  fs.writeFileSync(planFile, JSON.stringify(plan('full', 8)))
+  await main(
+    args,
+    env,
+    async () => {
+      coordinatorCalls++
+      throw new Error('unexpected coordinator')
+    },
+    deniedApi
+  )
+  assert.equal(coordinatorCalls, 0)
 })
 
 test('provider metadata selects only fixed runners and binds paid attempts', () => {
