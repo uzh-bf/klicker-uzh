@@ -83,12 +83,33 @@ function mapCandidate(quiz: RolloutQuiz): AssessmentAuditRolloutCandidate {
   }
 }
 
+const SETTLED_COVERAGE_STATES = new Set<DB.AssessmentAuditCoverageState>([
+  DB.AssessmentAuditCoverageState.COVERED,
+  DB.AssessmentAuditCoverageState.EXCLUDED_TERMINAL,
+])
+
+async function latestCoverageStates(
+  client: Pick<DB.PrismaClient, 'assessmentAuditScope'>,
+  liveQuizIds: readonly string[]
+): Promise<Map<string, DB.AssessmentAuditCoverageState>> {
+  if (liveQuizIds.length === 0) return new Map()
+  const scopes = await client.assessmentAuditScope.findMany({
+    where: { liveQuizId: { in: [...liveQuizIds] } },
+    orderBy: [{ liveQuizId: 'asc' }, { lifecycleEpoch: 'desc' }],
+    distinct: ['liveQuizId'],
+    select: { liveQuizId: true, coverageState: true },
+  })
+  return new Map(scopes.map((scope) => [scope.liveQuizId, scope.coverageState]))
+}
+
 export async function discoverAssessmentAuditRolloutCandidates(input: {
   client: DB.PrismaClient
   liveQuizIds?: readonly string[]
+  includeSettled?: boolean
 }): Promise<{
   candidates: AssessmentAuditRolloutCandidate[]
   missingLiveQuizIds: string[]
+  settledLiveQuizIds: string[]
 }> {
   const requested = [...new Set(input.liveQuizIds ?? [])].sort()
   const quizzes = await input.client.liveQuiz.findMany({
@@ -101,9 +122,19 @@ export async function discoverAssessmentAuditRolloutCandidates(input: {
     select: ROLLOUT_QUIZ_SELECT,
   })
   const found = new Set(quizzes.map((quiz) => quiz.id))
+  // A rerun must not re-baseline covered or terminally excluded assessments;
+  // their latest epoch already accounts for them.
+  const coverage = input.includeSettled
+    ? new Map<string, DB.AssessmentAuditCoverageState>()
+    : await latestCoverageStates(input.client, [...found])
+  const isSettled = (liveQuizId: string) => {
+    const state = coverage.get(liveQuizId)
+    return state !== undefined && SETTLED_COVERAGE_STATES.has(state)
+  }
   return {
-    candidates: quizzes.map(mapCandidate),
+    candidates: quizzes.filter((quiz) => !isSettled(quiz.id)).map(mapCandidate),
     missingLiveQuizIds: requested.filter((id) => !found.has(id)),
+    settledLiveQuizIds: [...found].filter(isSettled),
   }
 }
 
@@ -380,6 +411,7 @@ export async function processAssessmentAuditRolloutItem(input: {
   candidate: AssessmentAuditRolloutCandidate
   inventory: AssessmentAuditRolloutInventoryItem
   baselineKind?: 'CREATION' | 'ROLLOUT_CONFIGURATION_CURRENT_STATE'
+  supersedeCoveredEpoch?: boolean
 }): Promise<DB.AssessmentAuditRolloutOutcome> {
   if (input.inventory.outcome !== DB.AssessmentAuditRolloutOutcome.PENDING) {
     return input.inventory.outcome
@@ -404,6 +436,7 @@ export async function processAssessmentAuditRolloutItem(input: {
       actor: { kind: 'SYSTEM' },
       correlationId: randomUUID(),
       rollout: input.inventory,
+      supersedeCoveredEpoch: input.supersedeCoveredEpoch,
     })
     return input.baselineKind === 'CREATION'
       ? DB.AssessmentAuditRolloutOutcome.ACTIVATED
@@ -425,6 +458,7 @@ export async function activateNewAssessmentAuditIfSelected(input: {
   const discovered = await discoverAssessmentAuditRolloutCandidates({
     client: input.client,
     liveQuizIds: [input.liveQuizId],
+    includeSettled: true,
   })
   const candidate = discovered.candidates[0]
   if (candidate === undefined) {
@@ -439,11 +473,16 @@ export async function activateNewAssessmentAuditIfSelected(input: {
   if (inventory === undefined) {
     throw new Error('New assessment audit inventory was not created')
   }
+  // A covered draft that left assessment mode and re-entered it has edits
+  // without evidence; start a new epoch with a fresh baseline of its state.
+  const latest = await latestCoverageStates(input.client, [input.liveQuizId])
   return processAssessmentAuditRolloutItem({
     client: input.client,
     candidate,
     inventory,
     baselineKind: 'CREATION',
+    supersedeCoveredEpoch:
+      latest.get(input.liveQuizId) === DB.AssessmentAuditCoverageState.COVERED,
   })
 }
 

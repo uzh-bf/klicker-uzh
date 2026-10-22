@@ -269,11 +269,15 @@ and therefore have no participant scope. Scheduled publication and timed block
 closure use a `SYSTEM` actor; the scheduling lecturer is retained as
 `initiatedBy` when the task input has that identity.
 
-Course participation evidence is based on the effective `Participation.isActive`
-transition and stores only the stable participant UUID. This includes
-participant join/leave flows, invitation auto-acceptance, and the
-semester-start invitation import's accepted-invitation repair paths; all reuse
-the same transactional acceptance helper. Lecturer access evidence is computed
+Participant eligibility evidence is based on the existence of the course
+`Participation`, the same rule that grants assessment access, and stores only
+the stable participant UUID. `Participation.isActive` is the leaderboard opt-in
+and never changes eligibility: baselines list every participation, and joining
+the leaderboard emits an eligibility event only when it creates the
+participation, while leaving it emits none. Invitation auto-acceptance and the
+semester-start invitation import's accepted-invitation repair paths record
+eligibility when they create the participation; all reuse the same
+transactional acceptance helper. Lecturer access evidence is computed
 from effective `DerivedPermission` state before and after recomputation.
 Changing a direct or group permission that leaves the effective assessment
 permission unchanged emits no assessment evidence.
@@ -318,8 +322,11 @@ loads and canonicalizes an explicit assessment snapshot, including the public
 image URLs in its content, and then opens a second database transaction. That
 transaction reloads the snapshot, rejects any
 concurrent change, and atomically writes the scope, baseline root and parts,
-activation event, and rollout-inventory outcome. Exact retries are idempotent;
-different evidence for an already activated scope fails closed.
+activation event, and rollout-inventory outcome. That transaction first locks
+the `LiveQuiz` row and moves the scope out of `ACTIVATING` with a conditional
+update, so of two concurrent activations exactly one records its baseline.
+Exact retries are idempotent; different evidence for an already activated scope
+fails closed.
 
 Activation reserves the lifecycle scope as `ACTIVATING` before building its
 baseline. Baseline failures transition that reservation to `FAILED`; an
@@ -329,8 +336,8 @@ the latest lifecycle per quiz so a repaired retry clears the active failure
 signal.
 
 The baseline includes effective quiz configuration, ordered blocks and element
-instances, effective element content and scoring, active participant UUIDs,
-and effective permissions. Image links live in the content itself; new baselines
+instances, effective element content and scoring, the UUIDs of every course
+participant, and effective permissions. Image links live in the content itself; new baselines
 have zero separate media-reference or external-media limitation parts. The baseline
 does not copy participant profiles, PINs, or other authentication material.
 Baseline parts are independently hashed, and the root commits to each part key
@@ -342,11 +349,20 @@ configured LiveQuiz UUID. A scan receives an operator-supplied stable scan ID,
 creates `PENDING` inventory before activation work, records terminal quizzes as
 excluded, and records every success or stable failure. Rerunning the same scan
 resumes pending entries and preserves already-recorded failures instead of
-hiding or duplicating a gap. The owner CLI supports dry-run discovery and
+hiding or duplicating a gap. Discovery skips quizzes whose latest scope is
+already `COVERED` or `EXCLUDED_TERMINAL` and reports them as
+`ALREADY_SETTLED`, so a new scan never re-baselines or fails them. The owner CLI supports dry-run discovery and
 explicit quiz IDs; apply mode refuses to run without a scan ID. In `all` mode,
 newly created assessment quizzes are automatically selected for activation.
 Creation is teaching-available: an activation failure does not undo the quiz,
 but the failed gap is durably recorded for a later repair scan.
+
+Edits made while a quiz is outside assessment mode produce no evidence.
+Disabling assessment mode for a covered quiz that has been scheduled or started
+is therefore rejected and rolls back. A covered draft may leave assessment
+mode, which records `ASSESSMENT_MODE_CHANGED`; when it re-enters in `all` mode,
+activation starts a new lifecycle epoch with a fresh `CREATION` baseline of its
+current state instead of continuing the old epoch.
 
 Starting an assessment remains teaching-available and emits a stable warning if
 the latest lifecycle epoch is not covered. Reopening is stricter because it

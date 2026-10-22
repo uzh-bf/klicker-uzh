@@ -274,4 +274,116 @@ describe('assessment audit rollout', () => {
       })
     ).toMatchObject({ outcome: 'ACTIVATED', stableReason: null })
   })
+
+  async function withRolloutMode<T>(mode: string, run: () => Promise<T>) {
+    const previousMode = process.env.ASSESSMENT_AUDIT_ROLLOUT
+    process.env.ASSESSMENT_AUDIT_ROLLOUT = mode
+    try {
+      return await run()
+    } finally {
+      if (previousMode === undefined) {
+        delete process.env.ASSESSMENT_AUDIT_ROLLOUT
+      } else {
+        process.env.ASSESSMENT_AUDIT_ROLLOUT = previousMode
+      }
+    }
+  }
+
+  it('skips covered and excluded assessments when a new scan reruns', async () => {
+    const draftId = await createAssessment()
+    const completedId = await createAssessment({
+      status: PublicationStatus.ENDED,
+      startedAt: new Date(Date.now() - 120_000),
+      finishedAt: new Date(Date.now() - 60_000),
+    })
+    const first = await discoverAssessmentAuditRolloutCandidates({
+      client: prisma,
+      liveQuizIds: [draftId, completedId],
+    })
+    const inventory = await beginOrResumeAssessmentAuditRollout({
+      client: prisma,
+      scanId: randomUUID(),
+      observedAt: new Date(),
+      candidates: first.candidates,
+    })
+    for (const item of inventory) {
+      await processAssessmentAuditRolloutItem({
+        client: prisma,
+        candidate: first.candidates.find(
+          (candidate) => candidate.liveQuizId === item.liveQuizId
+        )!,
+        inventory: item,
+      })
+    }
+    const eventCount = await prisma.assessmentAuditOutboxEvent.count({
+      where: { liveQuizId: { in: [draftId, completedId] } },
+    })
+
+    const rerun = await discoverAssessmentAuditRolloutCandidates({
+      client: prisma,
+      liveQuizIds: [draftId, completedId],
+    })
+
+    expect(rerun.candidates).toEqual([])
+    expect(rerun.missingLiveQuizIds).toEqual([])
+    expect(rerun.settledLiveQuizIds.sort()).toEqual(
+      [draftId, completedId].sort()
+    )
+    expect(
+      await prisma.assessmentAuditOutboxEvent.count({
+        where: { liveQuizId: { in: [draftId, completedId] } },
+      })
+    ).toBe(eventCount)
+  })
+
+  it('starts a new epoch when a covered draft re-enters assessment mode', async () => {
+    const liveQuizId = await createAssessment()
+    await withRolloutMode('all', async () => {
+      expect(
+        await activateNewAssessmentAuditIfSelected({
+          client: prisma,
+          liveQuizId,
+        })
+      ).toBe('ACTIVATED')
+      await prisma.liveQuiz.update({
+        where: { id: liveQuizId },
+        data: { isAssessmentEnabled: false },
+      })
+      await prisma.liveQuiz.update({
+        where: { id: liveQuizId },
+        data: { displayName: 'Edited outside assessment mode' },
+      })
+      await prisma.liveQuiz.update({
+        where: { id: liveQuizId },
+        data: { isAssessmentEnabled: true },
+      })
+      expect(
+        await activateNewAssessmentAuditIfSelected({
+          client: prisma,
+          liveQuizId,
+        })
+      ).toBe('ACTIVATED')
+    })
+
+    expect(
+      await prisma.assessmentAuditScope.findMany({
+        where: { liveQuizId },
+        orderBy: { lifecycleEpoch: 'asc' },
+        select: {
+          lifecycleEpoch: true,
+          coverageState: true,
+          baselineKind: true,
+        },
+      })
+    ).toEqual([
+      { lifecycleEpoch: 1, coverageState: 'COVERED', baselineKind: 'CREATION' },
+      { lifecycleEpoch: 2, coverageState: 'COVERED', baselineKind: 'CREATION' },
+    ])
+    expect(
+      await prisma.assessmentAuditRolloutInventory.findMany({
+        where: { liveQuizId },
+        select: { outcome: true },
+      })
+    ).toEqual([{ outcome: 'ACTIVATED' }, { outcome: 'ACTIVATED' }])
+  })
 })

@@ -71,7 +71,7 @@ describe('assessment audit baseline snapshot mapping', () => {
   it('whitelists effective assessment, scoring, eligibility and permission state', () => {
     const courseId = randomUUID()
     const participantId = randomUUID()
-    const inactiveParticipantId = randomUUID()
+    const leaderboardOptOutParticipantId = randomUUID()
     const userId = randomUUID()
     const contents = buildAssessmentBaselineContents({
       snapshot: {
@@ -153,20 +153,26 @@ describe('assessment audit baseline snapshot mapping', () => {
           },
         ],
         participations: [
-          { participantId, isActive: true },
-          { participantId: inactiveParticipantId, isActive: false },
+          { participantId },
+          { participantId: leaderboardOptOutParticipantId },
         ],
         permissions: [{ userId, permissionLevel: 'OWNER', effective: true }],
       },
     })
 
-    expect(contents).toHaveLength(6)
-    expect(contents).toContainEqual({
-      kind: 'PARTICIPANT_ELIGIBILITY',
+    // Every course participation is eligible, including participants who
+    // never joined or left the leaderboard.
+    expect(contents).toHaveLength(7)
+    for (const eligibleParticipantId of [
       participantId,
-      eligible: true,
-    })
-    expect(JSON.stringify(contents)).not.toContain(inactiveParticipantId)
+      leaderboardOptOutParticipantId,
+    ]) {
+      expect(contents).toContainEqual({
+        kind: 'PARTICIPANT_ELIGIBILITY',
+        participantId: eligibleParticipantId,
+        eligible: true,
+      })
+    }
     expect(contents).toContainEqual({
       kind: 'LECTURER_PERMISSION',
       userId,
