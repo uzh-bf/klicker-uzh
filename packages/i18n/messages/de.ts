@@ -184,6 +184,10 @@ export default {
       filterPlaceholder: 'Nach Titel filtern',
       filterClear: 'Filter löschen',
       filterNoMatch: 'Kein Chat passt zu diesem Filter.',
+      exportMarkdown: 'Als Markdown exportieren',
+      exportUserLabel: 'Du',
+      exportAssistantLabel: 'Assistent',
+      exportSourcesLabel: 'Quellen',
     },
     thread: {
       viewportLabel: 'Gesprächsverlauf',
@@ -254,10 +258,62 @@ export default {
       attachmentReadError:
         'Das Bild konnte nicht gelesen werden. Bitte versuche es mit einer anderen Datei.',
       dismissError: 'Fehler schliessen',
-      dropImages: 'Bilder zum Anhängen hier ablegen',
+      dropFiles: 'Dateien zum Anhängen hier ablegen',
       attachmentPreviewAlt: 'Anhang-Vorschau',
       removeAttachment: 'Anhang entfernen',
-      attachImage: 'Bild anhängen',
+      attachFile: 'Bild oder Dokument anhängen',
+      attachmentTypeError:
+        'Dieser Dateityp kann nicht angehängt werden. Verwende ein Bild, ein PDF, eine Word-Datei (.docx) oder eine Text-, Markdown- oder CSV-Datei.',
+      documentOnlyTypeError:
+        'Das ausgewählte Modell kann keine Bilder lesen. Verwende ein PDF, eine Word-Datei (.docx) oder eine Text-, Markdown- oder CSV-Datei.',
+      documentLimitError: 'Du kannst höchstens {max} Dokumente anhängen.',
+      documentTooLarge: 'Dokumente müssen kleiner als {max} MB sein.',
+      documentNoText: 'Diese Datei enthält keinen lesbaren Text.',
+      documentPdfNoText:
+        'Dieses PDF enthält keinen markierbaren Text. Gescannte PDFs können noch nicht gelesen werden.',
+      documentPresentation:
+        'PowerPoint-Dateien können nicht gelesen werden. Speichere die Präsentation als PDF und hänge das PDF an.',
+      documentReadError:
+        'Das Dokument konnte nicht gelesen werden. Bitte versuche es mit einer anderen Datei.',
+      documentReading: 'Dokument wird gelesen…',
+      documentPages: '{count, plural, one {# Seite} other {# Seiten}}',
+      documentTokens: '~{count} Tokens',
+      documentShortened: 'Auf die ersten {max} Tokens gekürzt',
+      documentDefaultQuestion:
+        'Bitte beziehe dich auf die angehängte(n) Datei(en).',
+      dictation: 'Nachricht diktieren',
+      dictationSetup: 'Diktieren einrichten',
+      dictationStop: 'Diktieren beenden',
+      dictationListening: 'Hört zu...',
+      dictationLanguageHint: 'Das deutsche Diktat verwendet Standarddeutsch.',
+      dictationSheetTitle: 'Lokales Diktieren aktivieren',
+      dictationSheetBody:
+        'Die Erkennung läuft auf diesem Gerät, und es wird kein Audio an den Chatdienst gesendet. Dein Browser fragt beim Start nach Mikrofonzugriff.',
+      dictationSheetDownload: 'Herunterladen',
+      dictationSheetNotNow: 'Jetzt nicht',
+      dictationSheetInstalling: 'Sprachpaket wird heruntergeladen...',
+      dictationSheetFailed:
+        'Das Sprachpaket konnte nicht installiert werden. Versuche es erneut oder schreibe weiter.',
+      dictationSheetRetry: 'Erneut herunterladen',
+      dictationSheetCheckAgain: 'Verfügbarkeit erneut prüfen',
+      dictationSheetReady: 'Das Sprachpaket ist auf diesem Gerät bereit.',
+      dictationSheetStart: 'Diktieren starten',
+      dictationErrorAborted: 'Das Diktieren wurde abgebrochen.',
+      dictationErrorAudioCapture:
+        'Das Mikrofon konnte nicht geöffnet werden. Überprüfe die Browserberechtigungen.',
+      dictationErrorInstall:
+        'Das lokale Sprachpaket konnte nicht installiert werden.',
+      dictationErrorLanguageNotSupported:
+        'Diese Sprache wird für lokales Diktieren nicht unterstützt.',
+      dictationErrorNetwork:
+        'Der Browser meldete einen Netzwerkfehler beim Diktieren.',
+      dictationErrorNoSpeech: 'Keine Sprache erkannt. Versuche es erneut.',
+      dictationErrorNotAllowed:
+        'Der Mikrofonzugriff wurde verweigert. Erlaube ihn in den Browsereinstellungen.',
+      dictationErrorServiceNotAllowed:
+        'Der Browser hat den Diktierdienst nicht zugelassen.',
+      dictationErrorUnknown:
+        'Das Diktieren konnte nicht gestartet werden. Versuche es erneut.',
       attachmentFallbackLabel: 'Anhang',
       editCancel: 'Abbrechen',
       editSend: 'Senden',

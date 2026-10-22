@@ -326,6 +326,10 @@ function validatePublicRunnerRoles(workflow) {
     {
       id: 'metadata',
       shell: 'bash',
+      env: {
+        ...expectedEnv,
+        WARPBUILD_ADMISSION_URL: `\${{ vars.PUBLIC_PR_PLAYWRIGHT_WARPBUILD_ADMISSION_URL }}`,
+      },
       run: 'node .ci-control/.github/scripts/playwright-plan-metadata.cjs --plan playwright-execution-plan.json --route route.json --output "$GITHUB_OUTPUT"',
     },
     {
@@ -663,10 +667,11 @@ function validatePublicPlaywrightWorkflow(root) {
       contents: 'read',
       actions: 'read',
       'pull-requests': 'read',
+      'id-token': 'write',
     })
   ) {
     issues.push(
-      'caller execution must forward contents, actions, and pull-requests read permissions'
+      'caller execution must forward read permissions and the preparation identity token'
     )
   }
 

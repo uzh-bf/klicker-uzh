@@ -1,6 +1,7 @@
 const fs = require('node:fs')
 
 const { CHANGE_CLASS, isKnownClass } = require('./minimum-validation-class.cjs')
+const { chooseRouteWithAdmission, envInput } = require('./playwright-route.cjs')
 
 const PLAN_SCHEMA_VERSION = 1
 
@@ -197,25 +198,33 @@ function parseArgs(argv) {
   return args
 }
 
-function main(argv = process.argv.slice(2)) {
+async function main(
+  argv = process.argv.slice(2),
+  env = process.env,
+  network = fetch
+) {
   const args = parseArgs(argv)
-  const metadata = buildPlanMetadata(
-    readJson(args.plan, 'Playwright plan'),
-    readJson(args.route, 'Playwright route decision')
-  )
+  const plan = readJson(args.plan, 'Playwright plan')
+  let route = readJson(args.route, 'Playwright route decision')
+  let metadata = buildPlanMetadata(plan, route)
+  // Validate the entire plan before a request can reserve paid capacity.
+  if (metadata.shouldRun && env.WARPBUILD_ADMISSION_URL) {
+    route = await chooseRouteWithAdmission(envInput(env), env, network)
+    metadata = buildPlanMetadata(plan, route)
+    fs.writeFileSync(args.route, `${JSON.stringify(route, null, 2)}\n`)
+  }
   writeGithubOutputs(metadata, args.output)
 }
 
 if (require.main === module) {
-  try {
-    main()
-  } catch (error) {
+  main().catch((error) => {
     console.error(`Playwright plan metadata failed: ${error.message}`)
     process.exitCode = 1
-  }
+  })
 }
 
 module.exports = {
+  main,
   PLAN_SCHEMA_VERSION,
   buildPlanMetadata,
   writeGithubOutputs,

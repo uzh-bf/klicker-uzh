@@ -3,6 +3,14 @@ const fs = require('node:fs')
 const { isSyncBranch } = require('./draft-sync-prs.cjs')
 
 const ROUTE_SCHEMA_VERSION = 1
+const IDENTITY_FIELDS = [
+  'runId',
+  'runAttempt',
+  'pullRequestNumber',
+  'headSha',
+  'baseSha',
+  'controlSha',
+]
 
 function fail(message) {
   throw new Error(message)
@@ -27,14 +35,6 @@ function admittedWarpbuildAttempt(input) {
     return ''
   const now = Date.parse(input.now ?? new Date().toISOString())
   if (!Number.isFinite(now)) return ''
-  const identity = [
-    'runId',
-    'runAttempt',
-    'pullRequestNumber',
-    'headSha',
-    'baseSha',
-    'controlSha',
-  ]
   try {
     const tickets = JSON.parse(raw)
     if (!Array.isArray(tickets) || tickets.length > 3) return ''
@@ -44,10 +44,10 @@ function admittedWarpbuildAttempt(input) {
         return ''
       if (
         Object.keys(ticket).sort().join(',') !==
-        [...identity, 'expiresAt'].sort().join(',')
+        [...IDENTITY_FIELDS, 'expiresAt'].sort().join(',')
       )
         return ''
-      for (const key of identity) {
+      for (const key of IDENTITY_FIELDS) {
         const pattern = key.endsWith('Sha') ? /^[a-f0-9]{40}$/ : /^[1-9]\d*$/
         if (typeof ticket[key] !== 'string' || !pattern.test(ticket[key]))
           return ''
@@ -67,7 +67,7 @@ function admittedWarpbuildAttempt(input) {
       seen.add(key)
     }
     const match = tickets.find((ticket) =>
-      identity.every((key) => ticket[key] === input[key])
+      IDENTITY_FIELDS.every((key) => ticket[key] === input[key])
     )
     return match?.runAttempt ?? ''
   } catch {
@@ -232,23 +232,108 @@ function parseArgs(argv) {
   return { output: argv[1] }
 }
 
-function main(argv = process.argv.slice(2), env = process.env) {
+async function admissionJson(response, maximum) {
+  if (!response.ok) throw new Error('admission unavailable')
+  let length = 0
+  const chunks = []
+  for await (const chunk of response.body) {
+    length += chunk.length
+    if (length > maximum) throw new Error('admission response too large')
+    chunks.push(Buffer.from(chunk))
+  }
+  return JSON.parse(Buffer.concat(chunks).toString('utf8'))
+}
+
+async function chooseRouteWithAdmission(
+  input,
+  env = process.env,
+  network = fetch
+) {
+  const ordinary = choosePlaywrightRoute(input)
+  if (
+    ordinary.route !== 'public-pr' ||
+    ordinary.provider === 'warpbuild' ||
+    input.runAttempt !== '1' ||
+    !env.WARPBUILD_ADMISSION_URL ||
+    !env.ACTIONS_ID_TOKEN_REQUEST_URL ||
+    !env.ACTIONS_ID_TOKEN_REQUEST_TOKEN
+  )
+    return ordinary
+  try {
+    const endpoint = new URL(env.WARPBUILD_ADMISSION_URL)
+    const tokenUrl = new URL(env.ACTIONS_ID_TOKEN_REQUEST_URL)
+    if (
+      endpoint.protocol !== 'https:' ||
+      endpoint.pathname !== '/admit' ||
+      endpoint.username ||
+      endpoint.password ||
+      endpoint.search ||
+      endpoint.hash ||
+      tokenUrl.protocol !== 'https:' ||
+      !tokenUrl.hostname.endsWith('.actions.githubusercontent.com') ||
+      tokenUrl.username ||
+      tokenUrl.password ||
+      tokenUrl.hash
+    )
+      throw new Error('invalid admission endpoint')
+    tokenUrl.searchParams.set('audience', 'klicker-playwright-admission')
+    const tokenResponse = await network(tokenUrl, {
+      signal: AbortSignal.timeout(12000),
+      redirect: 'error',
+      headers: {
+        authorization: `Bearer ${env.ACTIONS_ID_TOKEN_REQUEST_TOKEN}`,
+      },
+    })
+    const { value } = await admissionJson(tokenResponse, 20000)
+    if (typeof value !== 'string' || !value || value.length > 16384)
+      throw new Error('invalid identity token')
+    const identity = Object.fromEntries(
+      IDENTITY_FIELDS.map((key) => [key, input[key]])
+    )
+    const response = await network(endpoint, {
+      method: 'POST',
+      // Leave room for signing keys, both forge batches and SQLite contention,
+      // independently of time already spent obtaining the identity token.
+      signal: AbortSignal.timeout(20000),
+      redirect: 'error',
+      headers: {
+        authorization: `Bearer ${value}`,
+        'content-type': 'application/json',
+      },
+      body: JSON.stringify(identity),
+    })
+    const { ticket } = await admissionJson(response, 4096)
+    const admitted = choosePlaywrightRoute({
+      ...input,
+      warpbuildAdmissions: JSON.stringify([ticket]),
+    })
+    if (admitted.provider !== 'warpbuild') throw new Error('invalid ticket')
+    return admitted
+  } catch {
+    // An absent response cannot prove that no reservation was made. The
+    // coordinator retains that exposure while this run keeps ordinary routing.
+    console.warn('WarpBuild admission unavailable; using ordinary routing')
+    return ordinary
+  }
+}
+
+async function main(argv = process.argv.slice(2), env = process.env) {
   const { output } = parseArgs(argv)
   const route = choosePlaywrightRoute(envInput(env))
   fs.writeFileSync(output, `${JSON.stringify(route, null, 2)}\n`)
 }
 
 if (require.main === module) {
-  try {
-    main()
-  } catch (error) {
+  main().catch((error) => {
     console.error(`Playwright route selection failed: ${error.message}`)
     process.exitCode = 1
-  }
+  })
 }
 
 module.exports = {
+  main,
   ROUTE_SCHEMA_VERSION,
   choosePlaywrightRoute,
+  chooseRouteWithAdmission,
   envInput,
 }

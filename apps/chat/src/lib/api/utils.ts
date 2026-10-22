@@ -1,4 +1,5 @@
 import { ExtendedThreadMessageLike } from '../../stores/chatStore'
+import { stripDocumentBlocks } from '../attachments/documentText'
 
 /**
  * Builds path from leaf message to the root of the conversation tree
@@ -157,7 +158,8 @@ export const extractThreadTitle = (
     : message.content
 
   if (content && typeof content === 'string') {
-    return content.slice(0, 50) + (content.length > 50 ? '...' : '')
+    const question = stripDocumentBlocks(content)
+    return question.slice(0, 50) + (question.length > 50 ? '...' : '')
   }
 
   return null

@@ -1,5 +1,219 @@
 # Opt-in cloud capacity for public Playwright validation
 
+## Current roadmap and executable source package
+
+The operator approved updating this roadmap and executing the next source
+package on 2026-10-20. The earlier sections below are historical delivery
+records; their pending states do not reopen merged work. Current source includes
+the optional backend, preparation guards, required-status recovery and corrected
+shard outcome reporting. Operational qualification and its limitations are
+recorded privately. They establish no standing spending authority, comparative
+speed claim or permission to remove fixed capacity.
+
+The next outcome is a bounded burst that makes its admission decision during
+trusted preparation, before the build or shards select runners. A periodic
+operator inventory cannot reliably insert an exact ticket before preparation.
+Keep the existing execution envelope and immutable ticket checks, and give
+admission a private durable owner. The initial control is an operator-enabled
+burst window; queue-triggered activation is a later phase.
+
+### Authority and delivery
+
+Approval mode: **executable batch, source only**. Main session owns design,
+implementation, verification, simplification and integrated self-review. The
+existing no-subagent instruction remains binding. Execution mode remains
+standard with that explicit main-session override; self-review is not
+independent evidence. Target `v3`, baseline
+`c58e111ea3d606b3a99dd0664351b5df97fd90c8`, branch
+`rs/warpbuild-burst-admission`, worktree
+`trees/rs/warpbuild-burst-admission`. Published as
+[draft PR #6651](https://github.com/uzh-bf/klicker-uzh/pull/6651).
+
+The source terminal was a verified, self-reviewed draft. The operator subsequently
+approved readiness, actual final review and normal squash merge after required
+CI and applicable platform gates. Ordinary task commits and pushes are included.
+Deployment of a
+coordinator, its hosting and network exposure, credentials, live workflow
+permissions/settings and paid qualification retain their
+separate approval gates. Earlier finite pilot limits and cleanup obligations
+are not reset by this source goal. No existing run is cancelled or retried.
+
+### Admission design
+
+- Use a small trusted coordinator with a private SQLite reservation database.
+  It returns only an exact execution ticket; financial state stays outside
+  repository variables, workflow logs and CI artifacts. Node's built-in SQLite
+  avoids a new package or shared application database. A transaction must
+  reserve the whole validation before a response can authorize cloud work.
+- Authenticate preparation with GitHub OIDC, bound to the configured audience,
+  repository, exact reusable workflow revision, run and attempt. Verify current
+  PR eligibility and run identity through host `gh`. Candidate input alone
+  cannot establish eligibility. Candidate build and shard jobs retain read-only
+  permissions and never receive coordinator credentials or ledger access.
+- Operator policy fixes the burst's expiry, allowed control revision, count,
+  concurrency and monetary reservation limits. Fresh private headroom evidence
+  includes unresolved liabilities. Concurrent admission and duplicate requests
+  cannot spend a reservation twice. Restart preserves consumed submissions.
+  Expired tickets and cancelled jobs do not release financial exposure without
+  complete reconciliation.
+- Keep the integration disabled when no endpoint is configured. Missing OIDC,
+  denied admission, timeout or unavailable coordinator keeps ordinary routing.
+  A lost response retains its reservation. Existing exact manual tickets remain
+  compatible. Old callers without OIDC permission retain their normal behavior.
+- Start with an explicit burst window and one admitted validation at a time.
+  Policy may permit a second concurrent validation only under a later qualified
+  activation packet. The repository variable is not an atomic account ledger,
+  and the coordinator cannot control unrelated account spending.
+
+The new persistent admission owner and workflow authentication boundary warrant
+ADR 0052. Deployment location is intentionally not selected by source delivery.
+The implementation must not assume a reachable endpoint or silently introduce
+an application service, cluster resource or new credential.
+
+### Delivery sequence and acceptance
+
+| Phase                      | Outcome                                                                                  | Acceptance                                                                                                           |
+| -------------------------- | ---------------------------------------------------------------------------------------- | -------------------------------------------------------------------------------------------------------------------- |
+| Current: bounded admission | Reserve and authenticate before backend selection; preserve ordinary fallback            | Durable concurrent reservation tests, authenticated synthetic request through route selection, exact workflow guards |
+| Current: failure handling  | Preserve limits across duplicate requests, stale identity, unavailable state and restart | Negative cases deny cloud admission; unknown execution or billing retains exposure                                   |
+| Later: live qualification  | Deploy to a separately approved owner and run a capped burst                             | Actual provider, build, every consumer, artifact digests, aggregate and complete job-linked billing                  |
+| Later: useful relief       | Compare representative bursts with ordinary execution                                    | Separate preparation, queue, execution and reporting times; complete costs and declared coverage limitations         |
+| Later: automatic trigger   | Activate on sustained pressure in the eligible pool                                      | Bounded threshold, cooldown, concurrency cap and verified return to ordinary routing                                 |
+
+Existing CI-efficiency work remains complementary: reuse valid outputs and
+avoid unnecessary work before expanding capacity. This package does not route
+drafts, forks, bots, pushes, image publication or unrelated hosted checks.
+
+### Source slices and test portfolio
+
+1. Update this existing shared roadmap and record ADR 0052. Implement the
+   private reservation owner in new `.github/scripts/warpbuild-admission.cjs`
+   with its synthetic `warpbuild-admission.test.cjs`. Verify atomic admission,
+   immutable identity, count/concurrency/exposure ceilings, restart and
+   conservative reconciliation through the public reservation interface.
+2. Implement the trusted transport in new
+   `util/warpbuild-admission-server.cjs` and its synthetic test. Extend existing
+   `playwright-route.cjs` and its tests to request admission before selection.
+   Verify authentication, bounded network failure and fallback without a live
+   credential, provider request or external service.
+3. Extend the existing caller/reusable workflows and their policy validator
+   and mutation tests. Wire the new tests into the existing check command;
+   update the CI operations guide. Preserve canonical coverage, independent
+   attempt guards, artifact consumption and separate aggregate reporting.
+4. Run affected contracts in an isolated Node 24 container, syntax, formatting,
+   focused static checks and staged privacy checks. Review the complete range
+   for simplification, correctness, trust, persistence and compatibility; then
+   publish the draft with honest remaining runtime gates.
+
+The new tests protect previously absent persistent and authentication contracts.
+Existing route and workflow suites are extended rather than duplicated. No UI,
+application build, seeded data or local application runtime is required. All
+fixtures use invented identities and amounts. Private pilot facts are excluded
+from every source change and public description.
+
+### Current progress
+
+On 2026-10-21 the operator approved one further bounded correction round after
+reassessment. Emergency disable now persists across backward clock changes
+without relaxing the admission clock guard. Transaction failures preserve the
+original error and quarantine the connection when rollback fails. Server startup
+waits for binding and propagates bind errors through the fixed operator failure
+path. Each defect has red/green regression evidence. All 45 focused tests pass,
+including no-retry, redirect, metadata fallback, exact forge endpoints and private
+file protection. Billing freshness still gates duplicate requests; refreshed
+billing recovers the same unexpired ticket without allocating another hold.
+Current strict freshness requires integration of `8ab99bd5fe` before delivery.
+The previously approved ready/final-review/normal-merge sequence resumes after
+current-head verification. Deployment and paid qualification remain separate.
+
+The next ordinary-review round identified admission before the plan's skip
+decision. Admission now runs in the existing metadata step after full plan
+validation; initial route selection makes no request. Skipped and invalid plans
+cannot reserve capacity. Workflow guards bind the later step's environment.
+Suffixed forge workflow paths are accepted only for the same fixed workflow;
+failed requests emit one fixed, non-sensitive warning. Issued tickets leave a
+minute below the client lifetime ceiling, and the permission fixture no longer
+depends on the test process umask. The new regressions failed before correction.
+The complete portfolio now has 111 passing container checks plus its separate
+passing host-only planner check. Scoped static analysis covers five executable
+files with no findings. Main-session integrated review remains self-review.
+
+Readiness follow-up: the client now gives admission its own bounded deadline,
+with room for signing-key retrieval, both forge batches and ledger contention.
+The regression failed before correction; all 30 focused admission tests pass
+afterward. Existing route tests additionally protect manual-ticket precedence,
+URL restrictions and the POST contract. The route uses one identity-field list.
+Strict target freshness requires integration of `eccb64b4cb` before final gates.
+Main-session review covers these corrections; hosted final review remains pending.
+
+Roadmap review and source inspection are complete. The task worktree is based on
+current `v3`; no live setting or paid execution has changed. Planning and trust
+analysis are main-session self-review. The durable reservation slice passes
+seven synthetic tests in network-isolated Node 24.21.0, including simultaneous
+connections, restart, reconciliation, limits and private-file protection.
+The first reservation and reconciliation checks failed before implementation.
+Slice review is main-session self-review; no independent review is claimed.
+The authenticated handler, existing route client and reservation owner pass 30
+focused tests together. Synthetic signed tokens prove the trust claims; scoped
+forge-response fixtures reject changed, draft or ambiguous executions. Endpoint
+absence, legacy callers, outages and invalid tickets retain ordinary routing.
+No live authentication or deployment is claimed. Workflow wiring and its
+mutation guard pass, including the default-off endpoint and preparation-only
+identity permission. The existing application actions and deployment files have
+no diff. The package script adds tests only; dependency metadata and lockfile
+are unchanged.
+
+The complete Playwright CI portfolio has 109 passing checks in isolated Node
+24.21.0 and one passing side-effect-free host Devrouter planning check. The
+container command reports that one missing planner capability; it is not
+recorded as a wholly passing container run. Twenty event-gate contracts also
+pass. Initial verification needed executable temporary fixtures and the
+existing read-only dependency mount; no application runtime was started.
+Syntax, focused formatting, identity checks and staged secret scans pass.
+Scoped static analysis found no findings in the changed executable surface;
+the existing GitHub-expression lint warning remains unchanged.
+
+Main-session integrated review added complete access-policy readback, denial
+when job wrappers have started without step detail, and single-reservation
+receipt use. Thirty affected admission/route/transport tests pass afterward.
+The hardest decision is introducing a private persistent owner; a repository
+variable cannot supply the required transaction. The least-proven boundary is
+live OIDC/forge response compatibility and coordinator deployment. That remains
+an explicit live qualification gate rather than synthetic-test acceptance.
+
+Delivery remains one cohesive draft: the ledger, authenticated handler and
+preparation client implement one admission contract, and an isolated layer
+would not provide usable overload admission. No native stack topology is
+created. Main-session simplification and final review covered the complete
+committed range through `c888e7d3ac` across correctness, plan compliance,
+maintainability, trust and persistence. No additional abstraction or dependency
+was needed. The architecture decision remains ADR 0052; no application-domain
+primitive changes. Focused static analysis of the corrected coordinator also
+passed. Local verification replaces the application-wide hooks for this
+CI-only package; no full application build/check is claimed.
+Draft publication and initial hosted verification are complete at
+`4cbe77d75697f4eecd7c635caa0c6f25687763a7`: all eight required contexts pass.
+The actual check suite passes all 110 Playwright CI contracts; the hosted
+shared build, all eight shared shard producers and separate aggregate pass.
+This is ordinary source validation, not coordinator deployment qualification.
+The draft review completed only part of its selected work and posted no
+findings; retain that coverage gap. No independent final review is claimed.
+The final-review workflow requires a non-draft PR. Readiness is not authorized
+in this source package, so no ineffective command is posted while draft.
+This final progress/link update changes documentation only and reuses the
+passing executable-source evidence above; any new platform checks remain
+required before later readiness or merge.
+The package has 1,487 substantive added/deleted lines outside documentation,
+including the synthetic persistence, authentication and workflow contracts.
+The source-package terminal is a verified, self-reviewed published draft.
+The next sequence is readiness and final review, then normal merge and a
+separately approved deployment/qualification packet. The later packet must
+name the coordinator owner, durable storage, approved HTTPS ingress, existing
+forge-read capability, exact access and endpoint changes, finite burst limits,
+success/failure proof and owned cleanup. No automatic pressure policy is active.
+
+## Historical source package
+
 ## Approval summary
 
 Prepare an operator-controlled WarpBuild backend for the existing public
