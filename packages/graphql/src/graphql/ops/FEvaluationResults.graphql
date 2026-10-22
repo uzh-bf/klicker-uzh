@@ -88,6 +88,7 @@ fragment EvaluationResults on ActivityEvaluation {
         results {
           totalAnswers
           anonymousAnswers
+          respondents
           maxLength
           solutions
           responses {
