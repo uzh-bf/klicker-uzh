@@ -26,9 +26,17 @@ export function relationshipLabels(
   }
 }
 
-/** The one symmetric relation type; views draw it without a direction. */
-export const SYMMETRIC_RELATION_TYPE =
-  'contrasts_with' satisfies KnowledgeGraphRelationType
+/** Symmetric relation types; views draw them without a direction. */
+export const SYMMETRIC_RELATION_TYPES = [
+  'contrasts_with',
+  'synonym_of',
+] as const satisfies readonly KnowledgeGraphRelationType[]
+
+export function isSymmetricRelationType(
+  relationType: KnowledgeGraphRelationType
+): boolean {
+  return (SYMMETRIC_RELATION_TYPES as readonly string[]).includes(relationType)
+}
 
 /**
  * Generated edges carry no label of their own, so their label falls back to

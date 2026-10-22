@@ -48,6 +48,7 @@ import {
 } from './knowledgeGraphState'
 import {
   edgeAskSelection,
+  isSymmetricRelationType,
   KNOWLEDGE_GRAPH_MAX_ZOOM,
   KNOWLEDGE_GRAPH_MIN_ZOOM,
   type KnowledgeGraphAskSelection,
@@ -55,7 +56,6 @@ import {
   nodeAskSelection,
   relationshipDisplayLabel,
   relationshipLabels,
-  SYMMETRIC_RELATION_TYPE,
 } from './knowledgeGraphView'
 
 type KnowledgeGraphViewerProps = {
@@ -1469,7 +1469,7 @@ export function KnowledgeGraphViewer({
                           source,
                           target,
                           relationshipLabel,
-                          edge.relationType === SYMMETRIC_RELATION_TYPE
+                          isSymmetricRelationType(edge.relationType)
                         )}
                         aria-pressed={state.selectedEdgeId === edge.id}
                         onClick={() =>
@@ -1484,7 +1484,7 @@ export function KnowledgeGraphViewer({
                       >
                         <span className="block font-semibold">
                           {source}{' '}
-                          {edge.relationType === SYMMETRIC_RELATION_TYPE
+                          {isSymmetricRelationType(edge.relationType)
                             ? '–'
                             : '→'}{' '}
                           {target}

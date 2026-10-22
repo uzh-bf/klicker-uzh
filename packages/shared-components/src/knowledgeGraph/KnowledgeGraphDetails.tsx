@@ -9,10 +9,10 @@ import React from 'react'
 import type { KnowledgeGraphDetailsLabels } from './knowledgeGraphLabels'
 import {
   conceptDefinition,
+  isSymmetricRelationType,
   type KnowledgeGraphAskSelection,
   readableDescription,
   relationshipDisplayLabel,
-  SYMMETRIC_RELATION_TYPE,
 } from './knowledgeGraphView'
 
 const SIDEBAR_LAYOUT_CLASSES =
@@ -125,7 +125,7 @@ function EdgeEndpoints({
   endpoints: { source: string; target: string }
   labels: KnowledgeGraphDetailsLabels
 }) {
-  if (edge.relationType === SYMMETRIC_RELATION_TYPE) {
+  if (isSymmetricRelationType(edge.relationType)) {
     return (
       <div>
         <dt className="font-semibold text-[#4C4C4C]">{labels.concepts}</dt>
