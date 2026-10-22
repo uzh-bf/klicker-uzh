@@ -3,13 +3,11 @@ import { DisplayMode, ElementOptionsInput } from '@klicker-uzh/types'
 function validateSharedChoicesFields(options?: ElementOptionsInput | null) {
   // options and choices therein need to be defined
   if (!options || !options.choices) {
-    console.error('Options are required on choices questions')
     return false
   }
 
   // at least one choice needs to be defined
   if (options.choices.length === 0) {
-    console.error('At least one choice is required')
     return false
   }
 
@@ -23,7 +21,6 @@ function validateSharedChoicesFields(options?: ElementOptionsInput | null) {
         choice.value !== ''
     )
   ) {
-    console.error('Every choice needs to have a valid ix and value')
     return false
   }
 
@@ -33,9 +30,6 @@ function validateSharedChoicesFields(options?: ElementOptionsInput | null) {
     options.displayMode === null ||
     !Object.values(DisplayMode).includes(options.displayMode)
   ) {
-    console.error(
-      'Display mode is required for choices questions and needs to be valid'
-    )
     return false
   }
 
@@ -46,7 +40,6 @@ function validateSharedChoicesFields(options?: ElementOptionsInput | null) {
     typeof options.hasAnswerFeedbacks !== 'boolean' ||
     options.hasAnswerFeedbacks === null
   ) {
-    console.error('Sample solution and answer feedback flags are required')
     return false
   }
 
@@ -55,9 +48,6 @@ function validateSharedChoicesFields(options?: ElementOptionsInput | null) {
     options.hasSampleSolution &&
     !options.choices.every((choice) => typeof choice.correct === 'boolean')
   ) {
-    console.error(
-      'Every choice needs to have a correct flag if sample solution is enabled'
-    )
     return false
   }
 
@@ -72,9 +62,6 @@ function validateSharedChoicesFields(options?: ElementOptionsInput | null) {
         !choice.feedback.match(/^(<br>(\n)*)$/g)
     )
   ) {
-    console.error(
-      'Every choice needs to have a feedback specified if the corresponding flag is set'
-    )
     return false
   }
 
