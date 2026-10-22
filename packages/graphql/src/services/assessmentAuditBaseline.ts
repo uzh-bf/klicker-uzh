@@ -55,7 +55,7 @@ export type AssessmentBaselineSnapshot = {
       elementData: ElementData
     }>
   }>
-  participations: Array<{ participantId: string; isActive: boolean }>
+  participations: Array<{ participantId: string }>
   permissions: Array<{
     userId: string
     permissionLevel: string
@@ -432,8 +432,9 @@ export function buildAssessmentBaselineContents(input: {
   }
 
   contents.push(
+    // Course participation, not the leaderboard opt-in (isActive), grants
+    // assessment access, so every participation is eligible.
     ...[...snapshot.participations]
-      .filter((participation) => participation.isActive)
       .sort((left, right) =>
         compareAuditText(left.participantId, right.participantId)
       )

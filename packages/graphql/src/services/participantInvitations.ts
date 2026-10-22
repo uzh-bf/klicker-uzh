@@ -455,7 +455,7 @@ async function autoAcceptInvitation(
             participantId,
           },
         },
-        select: { isActive: true },
+        select: { id: true },
       })
 
       // Create or update participation
@@ -473,7 +473,9 @@ async function autoAcceptInvitation(
         update: {},
       })
 
-      if (previous?.isActive !== true) {
+      // A new course participation is what makes the participant eligible;
+      // isActive is only the leaderboard opt-in.
+      if (previous === null) {
         await emitCoveredParticipantEligibilityChange({
           tx,
           auditTx,
@@ -531,7 +533,7 @@ export async function acceptParticipantInvitation(
             participantId: input.participantId,
           },
         },
-        select: { isActive: true },
+        select: { id: true },
       })
 
       const invitation =
@@ -569,7 +571,9 @@ export async function acceptParticipantInvitation(
         update: {},
       })
 
-      if (previous?.isActive !== true) {
+      // A new course participation is what makes the participant eligible;
+      // isActive is only the leaderboard opt-in.
+      if (previous === null) {
         await emitCoveredParticipantEligibilityChange({
           tx,
           auditTx,
