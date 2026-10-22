@@ -4718,4 +4718,125 @@ test.describe.serial('Core live-quiz workflows', () => {
     await clickIfVisible(page, 'confirm-deletion-confusion-feedbacks')
     await page.getByTestId(`confirmation-modal-confirm`).click()
   })
+  test('Create a free-text question with a response limit and a live quiz containing it', async ({
+    page: testPage,
+  }, testInfo) => {
+    page = testPage
+    aliases.clear()
+    testInfo.setTimeout(600_000)
+    page.setDefaultNavigationTimeout(300_000)
+    const quiz = data.liveQuizResponseLimit
+    await loginLecturer(page)
+    await createQuestionFT(page, {
+      name: quiz.question.title,
+      content: quiz.question.content,
+      userId: env('LECTURER_ID'),
+    })
+
+    // set the response limit in the element editor and verify that it persists
+    await editElement(page, { element: quiz.question.title })
+    await page
+      .getByTestId('set-free-text-response-limit')
+      .fill(quiz.responseLimit)
+    await page.getByTestId('save-new-question').click()
+    await page.waitForTimeout(1000)
+    await editElement(page, { element: quiz.question.title })
+    await expect(page.getByTestId('set-free-text-response-limit')).toHaveValue(
+      quiz.responseLimit
+    )
+
+    await createLiveQuiz(page, {
+      name: quiz.name,
+      displayName: quiz.displayName,
+      courseName: quiz.course,
+      blocks: [{ elements: [quiz.question.title] }],
+    })
+  })
+
+  test('Respond several times to a free-text question with a response limit', async ({
+    page: testPage,
+  }, testInfo) => {
+    page = testPage
+    aliases.clear()
+    testInfo.setTimeout(600_000)
+    page.setDefaultNavigationTimeout(300_000)
+    const quiz = data.liveQuizResponseLimit
+    const [first, second, third] = quiz.answers
+    await loginLecturer(page)
+    await page.getByTestId('activities').click()
+    await page.getByTestId(`start-live-quiz-${quiz.name}`).click()
+    await page.waitForTimeout(1000)
+    await page.getByTestId('next-block-timeline').click()
+    await page.waitForTimeout(500)
+
+    await loginStudentWithStoredPwaState(page)
+    await page.getByTestId(`live-quiz-${quiz.displayName}`).click()
+    const input = page.getByTestId('free-text-input-0')
+    const ownResponses = page.getByTestId('free-text-own-responses')
+
+    // the question stays open after the first response
+    await typeInto(input, first)
+    await page.getByTestId('student-submit-answer').click()
+    await expect(ownResponses.getByRole('listitem')).toHaveCount(1)
+    await expect(input).toBeEnabled()
+    await expect(input).toHaveValue('')
+
+    // an identical response is not submitted again
+    await typeInto(input, first)
+    await page.getByTestId('student-submit-answer').click()
+    await page.waitForTimeout(500)
+    await expect(ownResponses.getByRole('listitem')).toHaveCount(1)
+    await input.clear()
+
+    // the open state and the earlier responses survive a reload
+    await page.reload()
+    await expect(ownResponses.getByRole('listitem')).toHaveCount(1)
+    await expect(input).toBeEnabled()
+
+    await typeInto(input, second)
+    await page.getByTestId('student-submit-answer').click()
+    await expect(ownResponses.getByRole('listitem')).toHaveCount(2)
+    await typeInto(input, third)
+    await page.getByTestId('student-submit-answer').click()
+    await expect(ownResponses.getByRole('listitem')).toHaveCount(3)
+
+    // the question closes once the limit is reached
+    await expect(input).toBeDisabled()
+  })
+
+  test('Show responses and respondents in the evaluation and end the live quiz', async ({
+    page: testPage,
+  }, testInfo) => {
+    page = testPage
+    aliases.clear()
+    testInfo.setTimeout(600_000)
+    page.setDefaultNavigationTimeout(300_000)
+    const quiz = data.liveQuizResponseLimit
+    await loginLecturer(page)
+    await page.getByTestId('activities').click()
+    await page.getByTestId(`live-quiz-cockpit-${quiz.name}`).click()
+    await visitEvaluationFromCockpit(page)
+
+    // three responses from a single respondent
+    await expect(page.getByTestId('live-quiz-total-participants')).toHaveText(
+      /\b3\b.*\b1\b/,
+      { timeout: 30000 }
+    )
+
+    await page.getByTestId('activities').click()
+    await page.getByTestId(`live-quiz-cockpit-${quiz.name}`).click()
+    await page.waitForTimeout(1000)
+    await page.getByTestId('next-block-timeline').click()
+    await page.waitForTimeout(500)
+    await page.getByTestId('next-block-timeline').click()
+    await page.waitForTimeout(500)
+
+    await page.getByTestId('activities').click()
+    await page.getByTestId(`actions-LIVE_QUIZ-${quiz.name}`).click()
+    await page.getByTestId(`delete-live-quiz-${quiz.name}`).click()
+    await confirmResponseDeletionIfAvailable(page)
+    await clickIfVisible(page, 'confirm-deletion-qa-feedbacks')
+    await clickIfVisible(page, 'confirm-deletion-confusion-feedbacks')
+    await page.getByTestId(`confirmation-modal-confirm`).click()
+  })
 })

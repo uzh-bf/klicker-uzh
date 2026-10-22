@@ -141,3 +141,26 @@ export async function loadStoredResponse({
     console.error(e)
   }
 }
+
+// responses submitted on this device to a free-text element that accepts
+// several responses (response limit above 1)
+export async function loadSubmittedResponses({
+  quizId,
+  execution,
+  currentInstance,
+}: {
+  quizId: string
+  execution: number
+  currentInstance: ElementInstance | undefined
+}): Promise<{ responses: string[]; responseTimestamp: number } | null> {
+  if (!currentInstance) return null
+  try {
+    const stored = (await localforage.getItem(
+      `lq-${quizId}-ex-${execution}-i-${currentInstance.id}-responses`
+    )) as { responses: string[]; responseTimestamp: number } | null
+    return stored && Array.isArray(stored.responses) ? stored : null
+  } catch (e) {
+    console.error(e)
+    return null
+  }
+}

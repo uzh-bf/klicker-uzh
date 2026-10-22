@@ -35,6 +35,7 @@ mutation ManipulateFreeTextQuestion(
         restrictions {
           maxLength
         }
+        responseLimit
         solutions
       }
       tags {

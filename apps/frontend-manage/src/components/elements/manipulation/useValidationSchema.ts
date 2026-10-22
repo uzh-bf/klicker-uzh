@@ -384,6 +384,12 @@ function useOptionsSchemaFreeText() {
         .min(1, t('manage.formErrors.FTMaxLength'))
         .nullable(),
     }),
+    responseLimit: yup
+      .number()
+      .integer(t('manage.formErrors.FTResponseLimit'))
+      .min(1, t('manage.formErrors.FTResponseLimit'))
+      .max(10, t('manage.formErrors.FTResponseLimit'))
+      .nullable(),
     solutions: yup
       .array()
       .of(

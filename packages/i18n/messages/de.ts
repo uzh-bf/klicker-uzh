@@ -1378,6 +1378,8 @@ Da die KlickerUZH-App noch nicht im iOS-App-Store verfügbar ist, folgen Sie die
         'Aktuell ist keine Frage aktiv... Sobald eine neue Frage aktiviert wird, wird sie automatisch angezeigt. Alternativ können Sie auch die Seite <reload>aktualisieren</reload>, um ein Update zu erzwingen.',
       allQuestionsAnswered:
         'Sie haben bereits alle aktiven Fragen beantwortet oder der Block wurde geschlossen.',
+      ownResponses: 'Ihre Antworten: {count} von {limit}',
+      responseAlreadySubmitted: 'Sie haben diese Antwort bereits abgegeben.',
       previousCase: 'Vorheriger Fall',
       nextCase: 'Nächster Fall',
       thisLiveQuizGamified: 'Diese Live-Quiz ist gamifiziert!',
@@ -2663,6 +2665,9 @@ Da die KlickerUZH-App noch nicht im iOS-App-Store verfügbar ist, folgen Sie die
       addSolutionRange: 'Neuen Lösungsbereich hinzufügen',
       addExactSolution: 'Neue exakte Lösung hinzufügen',
       maximumLength: 'Maximale Länge',
+      responseLimit: 'Antworten pro Teilnehmende',
+      responseLimitTooltip:
+        'In regulären Live Quizzes können Teilnehmende bis zu so viele unterschiedliche Antworten abgeben (höchstens 10). Nur die erste Antwort gibt Punkte. Live Quizzes im Assessment-Modus und alle anderen Aktivitäten akzeptieren immer eine Antwort.',
       answerLength: 'Antwort Länge',
       possibleSolutionN: 'Mögliche Lösung {number}',
       possibleSolutions: 'Mögliche Lösungen',
@@ -3191,6 +3196,8 @@ Da die KlickerUZH-App noch nicht im iOS-App-Store verfügbar ist, folgen Sie die
         'Bei MC-Fragen muss mindestens eine Antwort korrekt sein.',
       enterSolution: 'Bitte geben Sie eine Lösung ein.',
       FTMaxLength: 'Die maximale Länge der Lösung muss mindestens 1 betragen.',
+      FTResponseLimit:
+        'Die Anzahl Antworten pro Teilnehmende muss eine ganze Zahl zwischen 1 und 10 sein.',
       solutionRequired:
         'Bitte geben Sie mindestens eine Lösung an oder deaktivieren Sie die Musterlösung.',
       NRMinLessThanMaxSol:

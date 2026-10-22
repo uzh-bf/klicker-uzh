@@ -50,12 +50,14 @@ async function handleNewResponse({
   type,
   answer,
   correlationKey,
+  isFirstResponse,
 }: {
   liveQuizId: string
   instanceId: number
   type: ElementType
   answer: any
   correlationKey?: string | null
+  isFirstResponse?: boolean
 }): // statusCode: 0 = client-side invalid input / general error; otherwise HTTP status codes 200, 208, 400, 401, 404, 500
 Promise<{ statusCode: number; responseTimestamp?: number }> {
   let requestOptions: RequestInit = {
@@ -84,6 +86,7 @@ Promise<{ statusCode: number; responseTimestamp?: number }> {
         instanceId,
         liveQuizId,
         response: { value: answer },
+        isFirstResponse,
       }),
     }
   } else if (type === ElementType.Selection) {
@@ -439,6 +442,7 @@ function Index({ id }: { id: string }) {
         selectedBlock={selectedBlock}
         onSelectBlock={setSelectedBlock}
         isGamificationEnabled={isGamificationEnabled}
+        isAssessmentEnabled={isAssessmentEnabled}
         handleNewResponse={handleNewResponse}
         className={extraClassName}
       />

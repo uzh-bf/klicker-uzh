@@ -63,6 +63,7 @@ export interface ElementFormTypesFreeText extends SharedQuestionFormProps {
       maxLength?: number | string | null
     } | null
     solutions?: string[] | null
+    responseLimit?: number | string | null
   }
 }
 

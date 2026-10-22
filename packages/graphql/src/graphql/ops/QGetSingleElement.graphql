@@ -95,6 +95,7 @@ query GetSingleElement($id: Int!) {
         restrictions {
           maxLength
         }
+        responseLimit
         solutions
       }
 

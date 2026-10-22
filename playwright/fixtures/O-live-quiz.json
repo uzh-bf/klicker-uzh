@@ -36,6 +36,17 @@
     "newSCTitle": "New SC Title",
     "newSCContent": "New SC Content"
   },
+  "liveQuizResponseLimit": {
+    "course": "Testkurs",
+    "name": "Live Quiz Response Limit",
+    "displayName": "Live Quiz Response Limit (Display)",
+    "question": {
+      "title": "FT Response Limit Question",
+      "content": "Name up to three words that come to mind"
+    },
+    "responseLimit": "3",
+    "answers": ["Alpha", "Beta", "Gamma"]
+  },
   "liveQuizWordCloud": {
     "course": "Testkurs",
     "name": "Live Quiz Word Cloud",
