@@ -200,7 +200,7 @@ top PR after exact-head CI settles (standing-authorized by `AGENTS.md`).
 
 ## Progress
 
-- Status: all three slices implemented and verified; draft stacked PR pending.
+- Status: all three slices implemented and verified; draft stack [#6681](https://github.com/uzh-bf/klicker-uzh/pull/6680) open with layers [#6678](https://github.com/uzh-bf/klicker-uzh/pull/6678) (admission), [#6679](https://github.com/uzh-bf/klicker-uzh/pull/6679) (counts), and [#6680](https://github.com/uzh-bf/klicker-uzh/pull/6680) (authoring and student flow).
 - Approval: executable batch approved on 2026-10-22. The branch was rebased onto `origin/v3` `4a9305739a` before slice 1 because it had not been pushed; no planned file had changed upstream.
 - Slice 1 (layer 01, admission): done. Admission tests (8) pass against the container Redis; types, util, graphql, response-api, and worker typecheck and build.
 - Slice 2 (layer 02, counts): done. Graphql and manage typecheck. Evaluation footer and cockpit verified in the browser while the block was active and after it closed.
@@ -210,4 +210,4 @@ top PR after exact-head CI settles (standing-authorized by `AGENTS.md`).
 - Deviations: the student flow renders the response list in `QuestionArea` and leaves `FreeTextQuestion` and `useRemainingInstances` unchanged, because the open state only needs the input-disabled flag. `docs/async-and-workers.md` documents the admission contract.
 - Review: solo mode. The main session ran the end-of-package simplification and self-review; an advisor check added the two-question navigation check and the lint run. Final AI review follows on the stack after CI.
 - Substantive size: about 880 added and 28 deleted lines across 36 files, including tests and fixtures.
-- Next action: create the three-layer draft stack against `v3`, then run `/final-review-stack` after exact-head CI settles.
+- Next action: settle exact-head CI per layer. `/final-review-stack` needs every layer open and ready, so it waits until a maintainer marks the stack ready; marking ready, merging, and deployment stay withheld.
