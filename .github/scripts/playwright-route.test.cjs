@@ -131,6 +131,7 @@ test('a prospective workflow number binds one first-attempt validation without a
     { runId: '100' },
     { runAttempt: '2' },
   ]) {
+    calls.length = 0
     assert.deepEqual(
       await chooseRouteWithAdmission(
         input,
@@ -143,8 +144,10 @@ test('a prospective workflow number binds one first-attempt validation without a
       ),
       ordinary
     )
+    if (change.workflowId === undefined) assert.deepEqual(calls, [])
   }
   for (const raw of ['{', '[]', 'null', '0', 'x'.repeat(4097)]) {
+    calls.length = 0
     assert.deepEqual(
       await chooseRouteWithAdmission(
         input,
@@ -158,6 +161,7 @@ test('a prospective workflow number binds one first-attempt validation without a
       ),
       ordinary
     )
+    assert.deepEqual(calls, [])
   }
   for (const change of [
     { runAttempt: '2' },
@@ -166,12 +170,19 @@ test('a prospective workflow number binds one first-attempt validation without a
     { headRepository: 'fork/repo' },
     { publicRolloutEnabled: 'false' },
     { prAuthor: 'automation[bot]' },
+    {
+      warpbuildAdmissions: JSON.stringify([
+        { ...source, runId: '999', runAttempt: '1' },
+      ]),
+    },
   ]) {
+    calls.length = 0
     const changed = { ...input, ...change }
     assert.deepEqual(
       await chooseRouteWithAdmission(changed, env, undefined, api),
       choosePlaywrightRoute(changed)
     )
+    if (change.runId === undefined) assert.deepEqual(calls, [])
   }
   for (const [kind, change] of [
     ['run', { workflow_id: 901 }],
