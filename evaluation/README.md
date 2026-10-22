@@ -10,6 +10,10 @@ Klicker application stack.
 - `data/` contains committed synthetic evaluation assets, including ground
   truth cases under `data/ground_truth/`. Do not add production or personal
   data.
+- `data/context/` is the judge context the launcher passes as `EVAL_CONTEXT_DIR`.
+  Top-level `*.md` files go to every case; `data/context/chat_modes/<mode>.md`
+  goes only to cases whose `mode`/`chat_mode` matches. Regenerate the mode files
+  with `evaluation/scripts/render-chat-context.mts`, which writes there by default.
 
 ## Trajectories and provider admission
 
