@@ -1,6 +1,6 @@
 import { randomUUID } from 'node:crypto'
-import { UserLoginScope } from '@klicker-uzh/prisma/client'
 import { toSafeError } from '@klicker-uzh/logging/node'
+import { UserLoginScope } from '@klicker-uzh/prisma/client'
 import type {
   AssessmentResponseCommand,
   AssessmentResponseReceipt,
@@ -513,9 +513,11 @@ export function createResponseServer(dependencies: ResponseServerDependencies) {
         })
       }
       if (url.pathname === '/AddResponse' && req.method === 'POST') {
-        return dependencies.assessmentMode
+        // Await inside the try: a rejected handler must reach the catch below
+        // and answer 500, not escape as an unhandled rejection.
+        return await (dependencies.assessmentMode
           ? handleAddAssessmentResponse(req, res, dependencies, requestLog)
-          : handleAddResponse(req, res, dependencies, requestLog)
+          : handleAddResponse(req, res, dependencies, requestLog))
       }
       return sendJson(req, res, dependencies.allowedOrigins, 404, {
         error: 'Not found',

@@ -1,5 +1,6 @@
 import type { TableEntity, TableEntityResult } from '@azure/data-tables'
 import { canonicalizeJson } from '../canonical/canonicalize.js'
+import { compareAuditText } from '../canonical/compare.js'
 import {
   type AppendAuditRecord,
   type AppendAuditResult,
@@ -70,7 +71,7 @@ function normalizeTableEntity(
         ([key]) =>
           key !== 'etag' && key !== 'timestamp' && key !== 'odata.metadata'
       )
-      .sort(([left], [right]) => left.localeCompare(right))
+      .sort(([left], [right]) => compareAuditText(left, right))
       .map(([key, value]) => [key, normalizeTableValue(value)])
   )
 }

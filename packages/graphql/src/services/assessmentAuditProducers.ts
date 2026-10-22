@@ -5,6 +5,7 @@ import {
   type AuditEventDraft,
   type AuditTransactionClient,
   canonicalizeJson,
+  compareAuditText,
   createTrustedAuditContext,
   emitAuditEvents,
   hashCanonicalValue,
@@ -506,7 +507,7 @@ function normalizedLiveQuizAnswer(
       return {
         kind: 'CASE_STUDY',
         cases: Object.entries(response.assessment)
-          .sort(([left], [right]) => left.localeCompare(right))
+          .sort(([left], [right]) => compareAuditText(left, right))
           .map(([caseId, itemResponses]) => ({
             caseId,
             items: Object.entries(itemResponses)
@@ -514,7 +515,7 @@ function normalizedLiveQuizAnswer(
               .map(([itemId, criterionResponses]) => ({
                 itemId: Number(itemId),
                 criteria: Object.entries(criterionResponses)
-                  .sort(([left], [right]) => left.localeCompare(right))
+                  .sort(([left], [right]) => compareAuditText(left, right))
                   .map(([criterionId, criterionResponse]) => ({
                     criterionId,
                     response: criterionResponse,
@@ -574,7 +575,7 @@ export function assessmentParticipantResetDrafts(input: {
   }
 
   return [...snapshotsByParticipant.entries()]
-    .sort(([left], [right]) => left.localeCompare(right))
+    .sort(([left], [right]) => compareAuditText(left, right))
     .map(([participantId, snapshots]) => {
       const orderedSnapshots = [...snapshots].sort(
         (left, right) => left.responseId - right.responseId

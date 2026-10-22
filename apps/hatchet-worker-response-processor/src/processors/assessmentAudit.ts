@@ -1,6 +1,7 @@
 import {
   type AuditEventDraft,
   type AuditTransactionClient,
+  compareAuditText,
   createTrustedAuditContext,
   deriveAuditEventIdentity,
   emitAuditEvents,
@@ -95,7 +96,7 @@ export function normalizeAssessmentAnswer(input: {
       return {
         kind: 'CASE_STUDY' as const,
         cases: Object.entries(input.response.assessment)
-          .sort(([left], [right]) => left.localeCompare(right))
+          .sort(([left], [right]) => compareAuditText(left, right))
           .map(([caseId, itemResponses]) => ({
             caseId,
             items: Object.entries(itemResponses)
@@ -103,7 +104,7 @@ export function normalizeAssessmentAnswer(input: {
               .map(([itemId, criterionResponses]) => ({
                 itemId: Number(itemId),
                 criteria: Object.entries(criterionResponses)
-                  .sort(([left], [right]) => left.localeCompare(right))
+                  .sort(([left], [right]) => compareAuditText(left, right))
                   .map(([criterionId, response]) => ({
                     criterionId,
                     response,

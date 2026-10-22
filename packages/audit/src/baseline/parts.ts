@@ -1,5 +1,6 @@
 import { createHash } from 'node:crypto'
 import { canonicalizeJson } from '../canonical/canonicalize.js'
+import { compareAuditText } from '../canonical/compare.js'
 import { hashCanonicalValue } from '../canonical/hash.js'
 import {
   type BaselinePartPayload,
@@ -71,7 +72,7 @@ export function compareAssessmentBaselineParts(
 ): number {
   return (
     PART_KIND_ORDER[left.content.kind] - PART_KIND_ORDER[right.content.kind] ||
-    left.partKey.localeCompare(right.partKey)
+    compareAuditText(left.partKey, right.partKey)
   )
 }
 

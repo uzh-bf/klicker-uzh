@@ -1,6 +1,7 @@
 import { createHash, createHmac, timingSafeEqual } from 'node:crypto'
 import {
   type AuditTransactionClient,
+  deriveAuditCorrelationId,
   runInAuditTransaction,
 } from '@klicker-uzh/audit'
 import * as DB from '@klicker-uzh/prisma/client'
@@ -4467,7 +4468,9 @@ export const handlePublishScheduledLiveQuiz: HatchetHandlers['handlePublishSched
                   ...(initiatedByUserId === undefined
                     ? {}
                     : { initiatedByUserId }),
-                  correlationId: `hatchet:publish:${liveQuizId}:${startedAt.toISOString()}`,
+                  correlationId: deriveAuditCorrelationId(
+                    `hatchet:publish:${liveQuizId}:${startedAt.toISOString()}`
+                  ),
                   occurredAt: startedAt,
                 }),
                 drafts: [

@@ -3,6 +3,7 @@ import {
   type TableEntityQueryOptions,
   type TableEntityResult,
 } from '@azure/data-tables'
+import { compareAuditText } from '../canonical/compare.js'
 import { sha256Hex } from '../canonical/hash.js'
 import {
   type AuditEnvelope,
@@ -439,8 +440,8 @@ export class AzureTableAuditReader {
           )
     return participantScoped.sort(
       (left, right) =>
-        left.envelope.recordedAt.localeCompare(right.envelope.recordedAt) ||
-        left.envelope.eventId.localeCompare(right.envelope.eventId)
+        compareAuditText(left.envelope.recordedAt, right.envelope.recordedAt) ||
+        compareAuditText(left.envelope.eventId, right.envelope.eventId)
     )
   }
 
@@ -521,8 +522,10 @@ export class AzureTableAuditReader {
     return {
       verified: participantScoped.sort(
         (left, right) =>
-          left.envelope.recordedAt.localeCompare(right.envelope.recordedAt) ||
-          left.envelope.eventId.localeCompare(right.envelope.eventId)
+          compareAuditText(
+            left.envelope.recordedAt,
+            right.envelope.recordedAt
+          ) || compareAuditText(left.envelope.eventId, right.envelope.eventId)
       ),
       failures,
     }

@@ -2,6 +2,7 @@ import type {
   AzureTableAuditReader,
   VerifiedAuditEvidence,
 } from '../azure/table-reader.js'
+import { compareAuditText } from '../canonical/compare.js'
 import { sha256Hex } from '../canonical/hash.js'
 import { retentionBatchFor } from '../media/retention-horizon.js'
 import type { AuditManifestStore, StoredAuditManifest } from './manifest.js'
@@ -111,8 +112,8 @@ export async function sealAssessmentAudit(input: {
           .filter(isPending(sealed))
           .sort(
             (a, b) =>
-              a.envelope.recordedAt.localeCompare(b.envelope.recordedAt) ||
-              a.envelope.eventId.localeCompare(b.envelope.eventId)
+              compareAuditText(a.envelope.recordedAt, b.envelope.recordedAt) ||
+              compareAuditText(a.envelope.eventId, b.envelope.eventId)
           )
         // Keep each batch in one lifecycle, prioritizing its oldest pending event.
         const epoch = remaining[0]?.envelope.scope.lifecycleEpoch
@@ -133,8 +134,13 @@ export async function sealAssessmentAudit(input: {
           events: remaining
             .filter((item) => item.envelope.scope.lifecycleEpoch === epoch)
             .slice(0, maxBatchEvents)
+            // validateAuditManifest requires code-unit order of event IDs
             .sort((a, b) =>
-              a.envelope.eventId.localeCompare(b.envelope.eventId)
+              a.envelope.eventId < b.envelope.eventId
+                ? -1
+                : a.envelope.eventId > b.envelope.eventId
+                  ? 1
+                  : 0
             )
             .map((item) => ({
               eventId: item.envelope.eventId,

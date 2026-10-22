@@ -1,4 +1,5 @@
 import { z } from 'zod'
+import { compareAuditText } from '../../canonical/compare.js'
 
 export type JsonValue =
   | null
@@ -175,7 +176,7 @@ const caseStudyAnswerSchema = z
                       )
                       .transform((criteria) =>
                         [...criteria].sort((left, right) =>
-                          left.criterionId.localeCompare(right.criterionId)
+                          compareAuditText(left.criterionId, right.criterionId)
                         )
                       ),
                   })
@@ -189,7 +190,7 @@ const caseStudyAnswerSchema = z
       )
       .transform((cases) =>
         [...cases].sort((left, right) =>
-          left.caseId.localeCompare(right.caseId)
+          compareAuditText(left.caseId, right.caseId)
         )
       ),
   })

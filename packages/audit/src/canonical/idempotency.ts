@@ -17,6 +17,25 @@ export function deriveAuditEventId(idempotencyKey: string): string {
   return uuidV5(idempotencyKey, ASSESSMENT_AUDIT_EVENT_NAMESPACE)
 }
 
+/**
+ * Derives a stable correlation UUID from a descriptive operation name, so a
+ * retried system operation (for example a scheduled publication) keeps one
+ * correlation identity. The envelope requires a UUID, never free text.
+ */
+export function deriveAuditCorrelationId(operationName: string): string {
+  if (operationName.trim() === '') {
+    throw new TypeError('Audit correlation operation name must not be empty')
+  }
+  return uuidV5(
+    canonicalizeJson([
+      'klicker-assessment-audit-correlation',
+      1,
+      operationName,
+    ]),
+    ASSESSMENT_AUDIT_EVENT_NAMESPACE
+  )
+}
+
 export function deriveAuditEventIdentity(input: AuditEventIdentityInput): {
   idempotencyKey: string
   eventId: string
