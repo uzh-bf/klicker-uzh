@@ -155,7 +155,18 @@ test('only a validated nonempty plan can request admission before output publica
     assert.match(fs.readFileSync(output, 'utf8'), /^provider=public-pool$/m)
   }
   fs.writeFileSync(planFile, JSON.stringify(plan('full', 0)))
-  await assert.rejects(main(args, env, undefined, deniedApi))
+  await assert.rejects(
+    main(
+      args,
+      env,
+      async () => {
+        coordinatorCalls++
+        throw new Error('unexpected coordinator')
+      },
+      deniedApi
+    ),
+    /at least one shard/
+  )
   assert.equal(apiCalls, 1)
   env.WARPBUILD_ADMISSION_URL = 'https://admission.example.invalid/admit'
   fs.writeFileSync(planFile, JSON.stringify(plan('full', 8)))
@@ -169,6 +180,7 @@ test('only a validated nonempty plan can request admission before output publica
     deniedApi
   )
   assert.equal(coordinatorCalls, 0)
+  assert.equal(apiCalls, 2)
 })
 
 test('provider metadata selects only fixed runners and binds paid attempts', () => {
