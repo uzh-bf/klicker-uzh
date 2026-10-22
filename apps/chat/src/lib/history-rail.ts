@@ -1,4 +1,5 @@
 import type { ExtendedThreadMessageLike } from '../stores/chatStore'
+import { stripDocumentBlocks } from './attachments/documentText'
 
 export type HistoryRailEntryKind = 'turn'
 
@@ -67,7 +68,10 @@ const getMessageText = (message: MessageWithId): string | undefined => {
     .join('\n\n')
     .trim()
 
-  return text || undefined
+  // Attached document text is far too long for a navigation label or popover.
+  return (
+    (message.role === 'user' ? stripDocumentBlocks(text) : text) || undefined
+  )
 }
 
 // Best-effort Markdown stripper, not a full CommonMark parser: it keeps text

@@ -84,7 +84,8 @@ stopping. It sends no model or judge request. Do not substitute this evidence fo
 real-provider qualification, permission to transmit source material or a paid run.
 
 The app owns the trajectory-capture importer and the synthetic
-[Explainer compression regression and control](data/explainer-compression/README.md).
+[Explainer compression regression and control](data/explainer-compression/README.md)
+and the [Explainer closing-check corpus](data/explainer-check/README.md).
 These authored development cases do not authorize model calls or judge execution.
 
 ### Offline capture import
