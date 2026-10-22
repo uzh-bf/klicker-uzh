@@ -1,6 +1,118 @@
 # Opt-in cloud capacity for public Playwright validation
 
-## Current roadmap and executable source package
+## Current roadmap: Actions-only bounded bursts (2026-10-22)
+
+The operator selected Actions-only bounded bursts as the next delivery direction.
+The outcome is practical, explicitly authorized queue relief using the existing
+trusted Playwright execution envelope. A public admission endpoint, coordinator
+deployment and database hosting are deferred. The coordinator source delivered
+in [merged PR #6651](https://github.com/uzh-bf/klicker-uzh/pull/6651) remains
+available but is not a prerequisite for this next stage. This decision does not
+remove that code or establish live qualification.
+
+### Contract and limits
+
+- Decide cloud routing during trusted preparation. Preserve exact repository,
+  run, attempt, head, base and trusted-control binding. Candidate code cannot
+  authorize itself or receive privileged credentials. Ordinary routing remains
+  the default when authorization is absent, invalid or expired.
+- Authorize a finite set of validations and an expiry, with explicit concurrency
+  and duration bounds covering the build and every consuming shard. A retry is
+  a new attempt requiring new authorization. No blanket label or unbounded
+  enabled flag substitutes for this finite scope.
+- Treat concurrency and timeouts as workload controls, not a transactional
+  currency guarantee. Repository variables, artifacts and caches are not an
+  atomic spending ledger. GitHub billing controls do not establish WarpBuild
+  spending limits.
+- Require current operator-verified headroom and conservative whole-validation
+  exposure before a batch. Reconcile complete provider charges before another
+  batch; uncertain execution or missing billing retains the exposure. Keep
+  financial evidence and operational identities private.
+- Preserve submitted work. Automatic cancellation, paid retries, capacity
+  removal and queue-triggered unattended allocation are outside this stage.
+
+### Next steps and acceptance
+
+| Stage | Deliverable | Acceptance |
+| --- | --- | --- |
+| Next: source design | Select the smallest Actions-native authorization path before preparation | Verify current concurrency/queue semantics, attempt replay protection, trust boundaries and finite-set enforcement; document cancellation/crash behavior without assuming transactional variable writes |
+| Source delivery | Extend existing routing and workflow contracts only where needed | Synthetic positive and negative tests prove exact identity, expiry, unauthorized retry rejection, ordinary fallback and whole-validation concurrency; focused checks and current-head CI pass |
+| Separately approved qualification | One explicitly authorized validation, initially sequential | Actual provider assignment, successful build, every consuming shard, matching artifact identities/digests, separate aggregate and complete job-linked charges |
+| Useful relief | Repeat only within a newly approved finite batch after reconciliation | Demonstrate queue relief with comparable coverage and distinguish queue, execution and reporting time; document remaining operator work |
+| Deferred | Unattended queue-triggered allocation or external coordinator | Revisit only if bounded operation proves insufficient and the stronger accounting or automation requirement is explicitly selected |
+
+The immediate action is to resolve the Actions-native authorization mechanism;
+the previous race of installing a ticket after preparation must not return.
+Holding a lock for preparation alone does not bound the lifetime of paid work.
+Do not claim the mechanism implemented until these cases are verified.
+
+### Authority and historical status
+
+The operator subsequently approved source execution and draft delivery. This
+approval grants no deployment,
+access or admission-variable write, new paid batch, cancellation, retry or reset
+of expired operational limits. Exact live targets, finite bounds, success checks
+and owned cleanup require a separate activation packet. Coordinator hosting
+comparisons are parked; no Kubernetes, Container Apps or Container Instances
+deployment is selected by this roadmap.
+
+### Executable source package: workflow-number grants
+
+Approval mode: executable batch, source only. Main session owns the full-path
+package under the retained no-subagent restriction; integrated simplification
+and review are self-performed and are not independent evidence. Target `v3`,
+baseline `4a9305739a516480e2b1e948a1eda8f61c974749`, branch
+`rs/warpbuild-actions-bursts`, retained worktree `trees/rs/warpbuild-burst-admission`.
+Terminal: verified source, ordinary feedback disposition and a draft PR. Live
+activation, spending, readiness and merge remain separately authorized.
+
+Extend the existing authorization primitive with one optional repository-variable
+grant for a particular workflow ID and run number, attempt one, exact PR/head/base/
+trusted-control revisions and expiry. GitHub documents run numbers as unique per
+workflow and unchanged by reruns. Preparation verifies the actual workflow ID,
+run number, run ID, attempt, PR and single active preparation through read-only
+GitHub calls, then constructs the existing exact-run ticket in memory. It performs
+no shared-state write. An unrelated event taking the nominated number consumes
+the opportunity rather than widening authorization; the run uses ordinary routing.
+The operator may not replace a grant until prior exposure is reconciled. This is
+one validation per grant, not a global monetary ledger or automatic rolling window.
+
+Research: [GitHub variables](https://docs.github.com/en/actions/reference/workflows-and-actions/variables)
+defines run-number identity. A manual environment gate was rejected because its
+rejection fails the workflow. Git-ref claim storage was rejected because it adds
+privileged writes and public claim state. Neither is needed for an exact workflow
+number. The prospective grant must fail closed on API failures, malformed or
+partial responses, duplicate preparations, changed source, expiry and reruns.
+Existing manual exact-run tickets remain compatible; a configured prospective
+grant never falls through to the external coordinator when denied.
+
+One coherent implementation slice extends `playwright-route.cjs` and its existing
+tests, `playwright-plan-metadata.cjs` and its integration tests, the existing
+reusable workflow and its validator/mutation tests, plus the CI operations guide
+and ADR 0052. No new helper, dependency, workflow or application runtime is needed.
+All verification uses synthetic identities. No private operational evidence belongs
+in this package. Existing artifact/aggregate/attempt guards remain mandatory.
+
+Test portfolio: extend route tests for exact prospective admission and a table of
+identity, replay, malformed grant, API failure and eligibility denials; extend the
+metadata integration seam to prove plan validation precedes admission; extend the
+workflow validator mutations to protect trusted grant/token wiring. Reuse existing
+runner selection, fixed duration, artifact and aggregate tests. Run the affected
+Node 24 contracts in an isolated container, format and secret/diff checks, and
+review the integrated source. Current-head CI and live provider qualification are
+distinct evidence layers.
+
+Progress: design resolved to a single prospective grant with an explicit missed-slot
+tradeoff. Implementation and verification pending; no new PR yet. Original merged
+branch is preserved. The native goal still reports blocked and requires the app's
+user-controlled resume action; direct source execution continues under the human's
+renewed instruction without replacing that goal.
+
+The sections below preserve the prior source package and its verification
+history. Their references to a next coordinator deployment, draft status or
+pending merge are historical, not current instructions or renewed authority.
+
+## Historical coordinator source package (2026-10-20)
 
 The operator approved updating this roadmap and executing the next source
 package on 2026-10-20. The earlier sections below are historical delivery
