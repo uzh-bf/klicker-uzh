@@ -237,4 +237,72 @@ describe('assessment audit monitor PostgreSQL queries', () => {
       })
     }
   })
+
+  it('counts a processing failure without acceptance as a submission gap', async () => {
+    const ids = Array.from({ length: 3 }, () => randomUUID())
+    const [failedOnly, failedAccepted, failedPersisted] = ids
+    const event = (
+      liveQuizId: string,
+      eventType: string,
+      minute: number,
+      index: number,
+      hatchetEventId?: string
+    ) =>
+      createOutboxEvent(
+        {
+          liveQuizId,
+          lifecycleEpoch: 1,
+          correlationId: liveQuizId,
+          eventType,
+          recordedAt: new Date(`2026-08-11T09:0${minute}:00.000Z`),
+          hatchetEventId,
+        },
+        index
+      )
+
+    try {
+      for (const liveQuizId of ids) await createScope(liveQuizId!, 1, 'COVERED')
+      // The Hatchet event never resolved: only fallback failure evidence.
+      await event(
+        failedOnly!,
+        'SUBMISSION_PROCESSING_FAILED',
+        1,
+        0,
+        'unresolved-run:1'
+      )
+      // Accepted after an earlier failure: counted once, by the accepted gap.
+      await event(
+        failedAccepted!,
+        'SUBMISSION_PROCESSING_FAILED',
+        2,
+        1,
+        'unresolved-run:2'
+      )
+      await event(failedAccepted!, 'SUBMISSION_SERVER_ACCEPTED', 3, 2)
+      // A later retry persisted the submission: no gap.
+      await event(
+        failedPersisted!,
+        'SUBMISSION_PROCESSING_FAILED',
+        4,
+        3,
+        'unresolved-run:3'
+      )
+      await event(failedPersisted!, 'SUBMISSION_SERVER_ACCEPTED', 5, 4)
+      await event(failedPersisted!, 'SUBMISSION_PERSISTED', 6, 5)
+
+      const counts = await new PrismaAuditMonitorRepository(prisma).readCounts()
+
+      expect(counts.coveredSubmissionWithoutTerminalCount).toBe(2)
+      expect(counts.oldestCoveredSubmissionWithoutTerminalAt).toEqual(
+        new Date('2026-08-11T09:01:00.000Z')
+      )
+    } finally {
+      await prisma.assessmentAuditOutboxEvent.deleteMany({
+        where: { liveQuizId: { in: ids } },
+      })
+      await prisma.assessmentAuditScope.deleteMany({
+        where: { liveQuizId: { in: ids } },
+      })
+    }
+  })
 })

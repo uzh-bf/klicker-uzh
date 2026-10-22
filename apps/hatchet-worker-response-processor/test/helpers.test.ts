@@ -268,10 +268,18 @@ describe('Hatchet receipt resolution', () => {
       rows: [event('other-event', 'other-run'), event('')],
     })
 
-    await expect(
-      resolveTriggeringHatchetEventId(message, contextWithEvents(list))
-    ).rejects.toThrow('Hatchet triggering event is not yet available')
-    expect(list).toHaveBeenCalledTimes(3)
+    vi.useFakeTimers()
+    try {
+      const resolution = expect(
+        resolveTriggeringHatchetEventId(message, contextWithEvents(list))
+      ).rejects.toThrow('Hatchet triggering event is not yet available')
+      await vi.runAllTimersAsync()
+      await resolution
+    } finally {
+      vi.useRealTimers()
+    }
+    // One initial lookup plus five backed-off retries.
+    expect(list).toHaveBeenCalledTimes(6)
   })
 
   it('rejects ambiguous triggering events across pages', async () => {

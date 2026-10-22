@@ -83,35 +83,71 @@ export class PrismaAuditMonitorRepository implements AuditMonitorRepository {
       `),
       this.client.$queryRaw<Array<{ count: bigint; oldest: Date | null }>>(
         Prisma.sql`
-          SELECT COUNT(*)::bigint AS count, MIN(accepted."recordedAt") AS oldest
+          SELECT COUNT(*)::bigint AS count, MIN(gap."recordedAt") AS oldest
           FROM (
-            SELECT DISTINCT ON (accepted."liveQuizId", accepted."lifecycleEpoch", accepted."correlationId", accepted."canonicalEnvelope"::jsonb ->> 'hatchetEventId')
-              accepted."liveQuizId",
-              accepted."lifecycleEpoch",
-              accepted."correlationId",
-              accepted."canonicalEnvelope"::jsonb ->> 'hatchetEventId' AS "hatchetEventId",
-              accepted."recordedAt"
-            FROM "AssessmentAuditOutboxEvent" accepted
-            INNER JOIN "AssessmentAuditScope" scope
-              ON scope."liveQuizId" = accepted."liveQuizId"
-              AND scope."lifecycleEpoch" = accepted."lifecycleEpoch"
-              AND scope."coverageState" = 'COVERED'
-            WHERE accepted."eventType" = 'SUBMISSION_SERVER_ACCEPTED'
-            ORDER BY accepted."liveQuizId", accepted."lifecycleEpoch", accepted."correlationId", accepted."canonicalEnvelope"::jsonb ->> 'hatchetEventId', accepted."recordedAt", accepted."eventId"
-          ) accepted
-          WHERE NOT EXISTS (
-            SELECT 1
-            FROM "AssessmentAuditOutboxEvent" terminal
-            WHERE terminal."liveQuizId" = accepted."liveQuizId"
-              AND terminal."lifecycleEpoch" = accepted."lifecycleEpoch"
-              AND terminal."correlationId" = accepted."correlationId"
-              AND terminal."canonicalEnvelope"::jsonb ->> 'hatchetEventId' = accepted."hatchetEventId"
-              AND terminal."eventType" IN (
-                'SUBMISSION_REJECTED',
-                'SUBMISSION_DUPLICATE',
-                'SUBMISSION_PERSISTED'
-              )
-          )
+            SELECT accepted."recordedAt"
+            FROM (
+              SELECT DISTINCT ON (accepted."liveQuizId", accepted."lifecycleEpoch", accepted."correlationId", accepted."canonicalEnvelope"::jsonb ->> 'hatchetEventId')
+                accepted."liveQuizId",
+                accepted."lifecycleEpoch",
+                accepted."correlationId",
+                accepted."canonicalEnvelope"::jsonb ->> 'hatchetEventId' AS "hatchetEventId",
+                accepted."recordedAt"
+              FROM "AssessmentAuditOutboxEvent" accepted
+              INNER JOIN "AssessmentAuditScope" scope
+                ON scope."liveQuizId" = accepted."liveQuizId"
+                AND scope."lifecycleEpoch" = accepted."lifecycleEpoch"
+                AND scope."coverageState" = 'COVERED'
+              WHERE accepted."eventType" = 'SUBMISSION_SERVER_ACCEPTED'
+              ORDER BY accepted."liveQuizId", accepted."lifecycleEpoch", accepted."correlationId", accepted."canonicalEnvelope"::jsonb ->> 'hatchetEventId', accepted."recordedAt", accepted."eventId"
+            ) accepted
+            WHERE NOT EXISTS (
+              SELECT 1
+              FROM "AssessmentAuditOutboxEvent" terminal
+              WHERE terminal."liveQuizId" = accepted."liveQuizId"
+                AND terminal."lifecycleEpoch" = accepted."lifecycleEpoch"
+                AND terminal."correlationId" = accepted."correlationId"
+                AND terminal."canonicalEnvelope"::jsonb ->> 'hatchetEventId' = accepted."hatchetEventId"
+                AND terminal."eventType" IN (
+                  'SUBMISSION_REJECTED',
+                  'SUBMISSION_DUPLICATE',
+                  'SUBMISSION_PERSISTED'
+                )
+            )
+            UNION ALL
+            -- A submission can fail before it is accepted, e.g. when its
+            -- Hatchet event cannot be resolved. Its failure evidence is then
+            -- the only trace of the receipt, so it is a gap until any accepted
+            -- or terminal outcome for the submission appears.
+            SELECT failed."recordedAt"
+            FROM (
+              SELECT DISTINCT ON (failed."liveQuizId", failed."lifecycleEpoch", failed."correlationId")
+                failed."liveQuizId",
+                failed."lifecycleEpoch",
+                failed."correlationId",
+                failed."recordedAt"
+              FROM "AssessmentAuditOutboxEvent" failed
+              INNER JOIN "AssessmentAuditScope" scope
+                ON scope."liveQuizId" = failed."liveQuizId"
+                AND scope."lifecycleEpoch" = failed."lifecycleEpoch"
+                AND scope."coverageState" = 'COVERED'
+              WHERE failed."eventType" = 'SUBMISSION_PROCESSING_FAILED'
+              ORDER BY failed."liveQuizId", failed."lifecycleEpoch", failed."correlationId", failed."recordedAt", failed."eventId"
+            ) failed
+            WHERE NOT EXISTS (
+              SELECT 1
+              FROM "AssessmentAuditOutboxEvent" outcome
+              WHERE outcome."liveQuizId" = failed."liveQuizId"
+                AND outcome."lifecycleEpoch" = failed."lifecycleEpoch"
+                AND outcome."correlationId" = failed."correlationId"
+                AND outcome."eventType" IN (
+                  'SUBMISSION_SERVER_ACCEPTED',
+                  'SUBMISSION_REJECTED',
+                  'SUBMISSION_DUPLICATE',
+                  'SUBMISSION_PERSISTED'
+                )
+            )
+          ) gap
         `
       ),
     ])
