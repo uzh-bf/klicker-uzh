@@ -200,7 +200,14 @@ top PR after exact-head CI settles (standing-authorized by `AGENTS.md`).
 
 ## Progress
 
-- Status: plan drafted and planner-reviewed (one REVISE round, five findings applied), awaiting approval.
-- Branch: `enhance/live-quiz-response-limit` in `trees/enhance-live-quiz-response-limit`, based on `origin/v3` `c58e111ea3`.
-- Uncommitted: `CONTEXT.md` glossary terms, this plan.
-- Next action: on approval, commit the plan and glossary, then start slice 1.
+- Status: all three slices implemented and verified; draft stacked PR pending.
+- Approval: executable batch approved on 2026-10-22. The branch was rebased onto `origin/v3` `4a9305739a` before slice 1 because it had not been pushed; no planned file had changed upstream.
+- Slice 1 (layer 01, admission): done. Admission tests (8) pass against the container Redis; types, util, graphql, response-api, and worker typecheck and build.
+- Slice 2 (layer 02, counts): done. Graphql and manage typecheck. Evaluation footer and cockpit verified in the browser while the block was active and after it closed.
+- Slice 3 (layer 03, authoring and student flow): done. Effective-limit unit tests (4) pass; PWA and manage typecheck; ESLint has no errors. Browser checks covered the editor field, anonymous and logged-in student flows, duplicate blocking, reload, the closed state at the limit, a two-question block, Redis admission state, and points awarded once.
+- Test delta: added `packages/graphql/test/liveQuizResponseAdmission.test.ts`, `apps/frontend-pwa/src/components/liveQuiz/responseLimit.test.ts`, and three O1 Playwright steps; changed none; removed none.
+- Playwright: not run locally (host runs disturb the container install); CI runs the O1 scenario.
+- Deviations: the student flow renders the response list in `QuestionArea` and leaves `FreeTextQuestion` and `useRemainingInstances` unchanged, because the open state only needs the input-disabled flag. `docs/async-and-workers.md` documents the admission contract.
+- Review: solo mode. The main session ran the end-of-package simplification and self-review; an advisor check added the two-question navigation check and the lint run. Final AI review follows on the stack after CI.
+- Substantive size: about 880 added and 28 deleted lines across 36 files, including tests and fixtures.
+- Next action: create the three-layer draft stack against `v3`, then run `/final-review-stack` after exact-head CI settles.

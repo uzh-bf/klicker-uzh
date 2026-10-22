@@ -168,6 +168,7 @@ export const OptionsFreeTextInput = OptionsFreeTextInputRef.implement({
     }),
     solutions: t.stringList({ required: false }),
     feedback: t.string({ required: false }),
+    responseLimit: t.int({ required: false }),
   }),
 })
 

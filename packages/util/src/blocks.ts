@@ -15,6 +15,10 @@ import {
 import { Redis } from 'ioredis'
 import { omitBy } from 'remeda'
 import { getInitialInstanceResults } from './elements.js'
+import {
+  getResponseAdmissionKeys,
+  parseResponseLimit,
+} from './liveQuizResponseAdmission.js'
 
 export async function getCachedBlockResults({
   redisExec,
@@ -67,11 +71,15 @@ export async function getCachedBlockResults({
       `lq:${activeBlock.liveQuizId}:i:${instance.id}:responses`
     )
     redisMulti.hgetall(`lq:${activeBlock.liveQuizId}:i:${instance.id}:results`)
+    redisMulti.get(
+      getResponseAdmissionKeys(`lq:${activeBlock.liveQuizId}:i:${instance.id}`)
+        .respondents
+    )
     const cacheData = await redisMulti.exec()
 
     if (!cacheData) return
     const mappedResults: any[] = cacheData.map(([_, result]) => result)
-    const [info, responseHashes, _, results] = mappedResults
+    const [info, responseHashes, _, results, respondents] = mappedResults
 
     // TODO: if possible, split up results and anonymous results here (potentially the cache content needs to augmented)
     let anonymousResults:
@@ -170,6 +178,10 @@ export async function getCachedBlockResults({
       anonymousResults = {
         responses,
         total: parseInt(results.participants),
+        // with a response limit above 1, responses and respondents differ
+        ...(parseResponseLimit(info.responseLimit) > 1
+          ? { respondents: parseInt(respondents ?? '0') }
+          : {}),
       } as ElementResultsOpen
     } else if (instance.elementType === DB.ElementType.SELECTION) {
       const initialResults = getInitialInstanceResults(
