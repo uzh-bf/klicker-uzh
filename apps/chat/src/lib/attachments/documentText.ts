@@ -225,7 +225,10 @@ export function visualReviewWithoutPages(
   }
   // Read for a text-only model, sent with one that reads images: the pages
   // were never rendered, so the stored reason would be wrong.
-  if (visualReview === 'no-image-support' && supportsImages) return 'skipped'
+  // Unknown support makes no claim either.
+  if (visualReview === 'no-image-support' && supportsImages !== false) {
+    return 'skipped'
+  }
   return visualReview
 }
 

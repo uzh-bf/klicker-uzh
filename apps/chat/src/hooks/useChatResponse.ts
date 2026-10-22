@@ -6,7 +6,10 @@ import {
   setPendingDocumentPages,
   takePendingDocumentPages,
 } from '../lib/attachments/attachmentState'
-import { withoutPageReview } from '../lib/attachments/documentText'
+import {
+  type ImageSupport,
+  withoutPageReview,
+} from '../lib/attachments/documentText'
 import { type ReasoningEffort } from '../lib/config/reasoning'
 import { readHandoffSource } from '../lib/handoff'
 import { normalizeLiveToolOutput } from '../lib/toolOutput'
@@ -165,7 +168,9 @@ export function useChatResponse(
         }
 
         // Pages that will not be sent must not stay announced as reviewed.
-        const dropPageReview = () => {
+        const dropPageReview = (
+          supportsImages: ImageSupport = modelReadsImages
+        ) => {
           const message = resolvedTriggerMessage
           if (message?.role !== 'user' || !Array.isArray(message.content)) {
             return
@@ -176,9 +181,7 @@ export function useChatResponse(
               part.type === 'text'
                 ? {
                     ...part,
-                    text: withoutPageReview(part.text, {
-                      supportsImages: modelReadsImages,
-                    }),
+                    text: withoutPageReview(part.text, { supportsImages }),
                   }
                 : part
             ),
@@ -304,20 +307,15 @@ export function useChatResponse(
         })
 
         if (!response.ok) {
-          // Only a rejected payload (400, 413) repeats on every retry, so only
-          // then are the pages dropped; after other errors, such as missing
-          // credits or a concurrent run, "Try again" sends them again.
-          if (response.status !== 400 && response.status !== 413) {
-            restoreDocumentPages()
-          } else if (documentPages.length > 0) {
-            dropPageReview()
-          }
           // raw server-provided error detail is console-only; the student sees a
           // localized generic message instead (server text may be unlocalized or
           // leak implementation detail)
           let errorDetail = `HTTP error! status: ${response.status}`
+          let errorCode: string | null = null
           try {
             const errorPayload = await response.json()
+            errorCode =
+              typeof errorPayload?.code === 'string' ? errorPayload.code : null
             if (errorPayload?.error) {
               errorDetail = `${errorPayload.error}`
             } else if (errorPayload?.message) {
@@ -334,6 +332,22 @@ export function useChatResponse(
             }
           }
           console.error('Chat request failed:', errorDetail)
+
+          // Only a rejection of the pages themselves repeats on every retry:
+          // a model that cannot read them, a body that failed validation or a
+          // request that is too large. After any other error, such as missing
+          // credits or a concurrent run, "Try again" sends them again.
+          const pagesRejected =
+            errorCode === 'DOCUMENT_PAGES_NOT_SUPPORTED' ||
+            response.status === 413 ||
+            (response.status === 400 && errorDetail === 'Invalid request body')
+          if (!pagesRejected) {
+            restoreDocumentPages()
+          } else if (documentPages.length > 0) {
+            dropPageReview(
+              errorCode === 'DOCUMENT_PAGES_NOT_SUPPORTED' ? false : undefined
+            )
+          }
 
           const assistantMessage: ExtendedThreadMessageLike = {
             id: assistantMessageId,

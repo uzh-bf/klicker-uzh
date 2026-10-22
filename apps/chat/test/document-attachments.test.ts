@@ -241,6 +241,16 @@ describe('visual review of PDF pages', () => {
     })
   })
 
+  test('unknown image support drops a stored "cannot read images" reason', () => {
+    const { blocks } = applyVisualReview(
+      [{ block: pdfBlock('no-image-support'), pageImages: [] }],
+      { supportsImages: null }
+    )
+    expect(parseMessageDocuments(blocks[0] ?? '').documents[0]).toMatchObject({
+      visualReview: 'skipped',
+    })
+  })
+
   test('rewriting a header keeps dollar sequences in the document text', () => {
     const block = buildDocumentBlock({
       name: 'script.pdf',
