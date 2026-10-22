@@ -23,6 +23,8 @@ nexus-typegen.ts
 client.json
 server.json
 
+evaluation/data/context/chat_modes/
+
 *.sql
 *.prisma
 
