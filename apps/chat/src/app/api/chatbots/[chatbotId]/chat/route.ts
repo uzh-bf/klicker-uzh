@@ -41,6 +41,7 @@ import {
 import { buildChatTurnRequest } from '@/src/lib/server/chatTurnRequest'
 import { withModelCitationIndices } from '@/src/lib/server/citationInstructions'
 import {
+  getCustomModeTurnSettings,
   isParticipantReasoningVisible,
   resolveEffectiveChatModeOptions,
   resolveEffectiveMCPConfigurations,
@@ -56,6 +57,10 @@ import {
   LANGFUSE_CHAT_TRACE_NAME,
   registerLangfuseTelemetry,
 } from '@/src/lib/server/langfuseTracing'
+import {
+  formatMeetingClock,
+  replyLanguageReminder,
+} from '@/src/lib/server/languageInstructions'
 import { logger } from '@/src/lib/server/logger'
 import {
   REQUIRED_MCP_UNAVAILABLE_CODE,
@@ -69,6 +74,10 @@ import {
 } from '@/src/lib/server/persistedAssistantContent'
 import { buildPromptCacheRequest } from '@/src/lib/server/promptCacheIdentity'
 import { renderPromptTemplate } from '@/src/lib/server/promptTemplates'
+import {
+  providerRefusalDeflection,
+  providerRefusalTransform,
+} from '@/src/lib/server/providerRefusal'
 import {
   getRouteLogger,
   withRouteLogging,
@@ -1310,9 +1319,9 @@ async function handlePOST(
       // unavailable retrieval tool degrades to page-only grounding with the
       // limitation disclosed by the policy instead of withholding the answer.
       await closeMcpTools()
-      log.warn(
-        { event: 'chat.mcp.elearning_unavailable', selectedMode },
-        'eLearning thread answering without required retrieval tools'
+      console.warn(
+        'eLearning thread answering without required retrieval tools',
+        { requestId, chatbotId, selectedMode }
       )
     }
 
@@ -1468,9 +1477,9 @@ async function handlePOST(
           { status: 503 }
         )
       }
-      log.warn(
-        { event: 'chat.mcp.elearning_quizzer_unavailable' },
-        'eLearning thread answering without a quizzer retrieval tool'
+      console.warn(
+        'eLearning thread answering without a quizzer retrieval tool',
+        { requestId, chatbotId }
       )
     }
 
@@ -1524,7 +1533,43 @@ async function handlePOST(
       role: msg.role,
       content: msg.content,
     }))
-    const stepReminder = trailingStepMessage(selectedMode, messages)
+    // A custom mode's locked language and meeting clock join the trailing
+    // reminder, which is rebuilt for every request and never persisted, so
+    // the instructions prefix stays stable while the clock advances. The
+    // current user message is persisted later, so a first turn starts the
+    // clock now. The participant indicator receives the same start and
+    // server time through the message metadata and reloads the start from
+    // the same completed user messages.
+    const turnSettings = getCustomModeTurnSettings(
+      chatbot.customModeConfig,
+      selectedMode
+    )
+    const turnStartedAt = new Date()
+    const meetingClockStartedAt = turnSettings.meetingClock
+      ? ((
+          await prisma.chatMessage.findFirst({
+            where: {
+              threadId: owningThread.id,
+              role: 'user',
+              lifecycleStatus: 'COMPLETED',
+            },
+            orderBy: { createdAt: 'asc' },
+            select: { createdAt: true },
+          })
+        )?.createdAt ?? turnStartedAt)
+      : null
+    const stepReminder = trailingStepMessage(
+      selectedMode,
+      messages,
+      replyLanguageReminder(
+        turnSettings.replyLanguage ?? null,
+        formatMeetingClock(
+          turnSettings.meetingClock ?? null,
+          meetingClockStartedAt,
+          turnStartedAt
+        )
+      )
+    )
 
     const maxOutputTokens = selectedModelConfig.maxOutputTokens
 
@@ -2106,6 +2151,19 @@ async function handlePOST(
           ],
         }),
         stopWhen: isStepCount(5),
+        // A provider's canned, unbilled refusal is replaced with a neutral
+        // platform line, so no mode shows it and a persona keeps its role.
+        experimental_transform: providerRefusalTransform(
+          providerRefusalDeflection(
+            turnSettings.replyLanguage ?? null,
+            req.cookies.get('NEXT_LOCALE')?.value
+          ),
+          () =>
+            log.warn(
+              { event: 'chat.provider_refusal.replaced' },
+              'Provider refusal replaced'
+            )
+        ),
         instructions: turnRequest.instructions,
 
         abortSignal: req.signal,
@@ -2467,6 +2525,12 @@ async function handlePOST(
         return 'An error occurred while processing the request.'
       },
       messageMetadata: ({ part }) => {
+        if (part.type === 'start' && meetingClockStartedAt) {
+          return {
+            meetingClockStartedAt: meetingClockStartedAt.toISOString(),
+            serverNow: new Date().toISOString(),
+          }
+        }
         if (part.type !== 'finish') {
           return undefined
         }

@@ -1,6 +1,6 @@
 {
   "name": "@klicker-uzh/backend-docker",
-  "version": "3.4.0-alpha.87",
+  "version": "3.4.0-alpha.88",
   "license": "AGPL-3.0",
   "main": "dist/index.js",
   "types": "dist/index.d.ts",
@@ -70,7 +70,7 @@
     "build": "cross-env NODE_ENV=production run-s --npm-path pnpm build:ts",
     "build:instrument": "nyc instrument --compact=false src instrumented",
     "build:test": "run-s --npm-path pnpm build:instrument build:ts",
-    "build:ts": "rollup -c",
+    "build:ts": "rollup -c --forceExit",
     "check": "tsc --noEmit -p tsconfig.check.json",
     "dev": "npm-run-all --parallel dev:build dev:run",
     "dev:assessment": "pnpm run dev",

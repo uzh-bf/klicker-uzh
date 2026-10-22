@@ -42,6 +42,7 @@ import {
 } from 'react'
 import { twMerge } from 'tailwind-merge'
 import LearningContextCard from '@/src/components/learning-context-card'
+import { ModeSessionStatus } from '@/src/components/mode-session-status'
 import { useMessageSources } from '@/src/hooks/useMessageSources'
 import {
   getImageAttachmentKey,
@@ -419,6 +420,7 @@ export const Thread: FC<ThreadProps> = ({
             {t('chat.composer.modeUnavailable')}
           </p>
         )}
+        {hasAvailableMode && <ModeSessionStatus />}
         {hasAvailableMode && <ComposerHint />}
       </div>
     </ThreadPrimitive.Root>

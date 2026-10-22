@@ -1,3 +1,11 @@
+import type { Locale } from '@klicker-uzh/prisma/client'
+
+/**
+ * Time facts the server adds to each turn of a custom mode: the minutes since
+ * the participant's first message, optionally with the current time of day.
+ */
+export type ChatbotCustomModeMeetingClock = 'ELAPSED' | 'ELAPSED_AND_TIME'
+
 /**
  * A lecturer-authored chat mode. The key is minted by the server the first time
  * a mode is saved, never changes afterwards, and is what messages persist and
@@ -25,6 +33,14 @@ export type ChatbotCustomMode = {
    * shows it.
    */
   showReasoning?: boolean
+  /**
+   * The language every reply in this mode uses, whatever language the
+   * participant writes in or asks for. Absent or null means replies follow the
+   * participant's language.
+   */
+  replyLanguage?: Locale | null
+  /** Absent or null means the model receives no time facts. */
+  meetingClock?: ChatbotCustomModeMeetingClock | null
 }
 
 /** Persisted, platform-constrained set of custom chat modes for one chatbot. */
@@ -54,6 +70,10 @@ export type ChatbotCustomModeInput = {
   starterPrompts?: string[] | null
   /** Omission keeps the stored choice of an existing mode; null hides. */
   showReasoning?: boolean | null
+  /** Omission keeps the stored language of an existing mode; null clears. */
+  replyLanguage?: Locale | null
+  /** Omission keeps the stored clock of an existing mode; null turns it off. */
+  meetingClock?: ChatbotCustomModeMeetingClock | null
 }
 
 /** Full replacement input accepted by the section-patch save mutation. */

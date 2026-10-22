@@ -10,6 +10,7 @@ const boundaries = vi.hoisted(() => ({
   getPublishedKnowledgeGraph: vi.fn(),
   getPublishedKnowledgeGraphForChatbot: vi.fn(),
   isKnowledgeGraphNotPublishedError: vi.fn(),
+  readKnowledgeGraphMentions: vi.fn(),
   readKnowledgeGraphNeighbors: vi.fn(),
   readKnowledgeGraphOverview: vi.fn(),
   searchKnowledgeGraph: vi.fn(),
@@ -44,13 +45,17 @@ vi.mock('@/src/lib/server/knowledgeGraphRuntime', () => {
       boundaries.getPublishedKnowledgeGraphForChatbot,
     isKnowledgeGraphNotPublishedError:
       boundaries.isKnowledgeGraphNotPublishedError,
+    readKnowledgeGraphMentions: boundaries.readKnowledgeGraphMentions,
     readKnowledgeGraphNeighbors: boundaries.readKnowledgeGraphNeighbors,
     readKnowledgeGraphOverview: boundaries.readKnowledgeGraphOverview,
     searchKnowledgeGraph: boundaries.searchKnowledgeGraph,
   }
 })
 
-import { GET } from '../src/app/api/chatbots/[chatbotId]/knowledge-graph/route'
+import {
+  GET,
+  POST,
+} from '../src/app/api/chatbots/[chatbotId]/knowledge-graph/route'
 import { KnowledgeGraphSelectionRequiredError } from '../src/lib/server/knowledgeGraphRuntime'
 
 const chatbotId = '11111111-1111-4111-8111-111111111111'
@@ -85,6 +90,7 @@ const response: KnowledgeGraphResponse = {
           resourceId: publication.sources[0]!.resourceId,
           title: publication.sources[0]!.title,
           reference: 'p. 4',
+          pages: [4],
         },
       ],
     },
@@ -96,6 +102,15 @@ const response: KnowledgeGraphResponse = {
       target: '13',
       type: 'RELATED_TO',
       label: 'related to',
+      relationType: 'part_of',
+      relationStatus: 'source',
+      sourceReferences: [
+        {
+          resourceId: publication.sources[0]!.resourceId,
+          title: publication.sources[0]!.title,
+          pages: [1, 2],
+        },
+      ],
       properties: { confidence: 0.8 },
     },
   ],
@@ -538,7 +553,19 @@ describe('participant knowledge graph route', () => {
           sourceReferences: [unsafeSource],
         },
       ],
-      edges: [{ ...response.edges[0]!, cypher: 'MATCH (n) RETURN n' }],
+      edges: [
+        {
+          ...response.edges[0]!,
+          cypher: 'MATCH (n) RETURN n',
+          internal_evidence_refs: 'resource|1',
+          sourceReferences: [
+            {
+              ...response.edges[0]!.sourceReferences[0]!,
+              sourceUrl: 'https://blob.example/private.pdf?sig=secret',
+            } as KnowledgeGraphSourceReference,
+          ],
+        },
+      ],
     })
 
     const result = await callRoute('operation=overview')
@@ -546,7 +573,61 @@ describe('participant knowledge graph route', () => {
 
     expect(body).toEqual(response)
     expect(JSON.stringify(body)).not.toMatch(
-      /connectionString|embedding|graphName|sourceUrl|cypher|secret/
+      /connectionString|embedding|graphName|sourceUrl|cypher|secret|internal/
     )
+  })
+})
+
+describe('answer concept mentions', () => {
+  function mentionsRequest(body: unknown, operation = 'mentions') {
+    return POST(
+      new NextRequest(
+        `http://localhost/api/chatbots/${chatbotId}/knowledge-graph?operation=${operation}`,
+        { method: 'POST', body: JSON.stringify(body) }
+      ),
+      { params: Promise.resolve({ chatbotId }) }
+    )
+  }
+
+  it('returns the matched concepts with their answer text', async () => {
+    boundaries.readKnowledgeGraphMentions.mockResolvedValue([
+      { node: response.nodes[0], text: 'access control' },
+    ])
+
+    const result = await mentionsRequest({
+      text: '  Explain access control.  ',
+    })
+
+    expect(result.status).toBe(200)
+    const body = await result.json()
+    expect(body.mentions).toEqual([{ nodeId: '12', text: 'access control' }])
+    expect(body.nodes.map((node: { id: string }) => node.id)).toEqual(['12'])
+    expect(boundaries.readKnowledgeGraphMentions).toHaveBeenCalledWith(
+      publication,
+      'Explain access control.'
+    )
+  })
+
+  it('applies the concept-map gate before reading the graph', async () => {
+    boundaries.withChatbotAuth.mockResolvedValue({
+      participantId: 'participant-id',
+      authMode: 'account',
+      chatbot: { courseId: 'course-id', knowledgeGraphVisible: false },
+    })
+
+    const result = await mentionsRequest({ text: 'access control' })
+
+    expect(result.status).toBe(403)
+    expect(boundaries.readKnowledgeGraphMentions).not.toHaveBeenCalled()
+  })
+
+  it.each([
+    [{ text: '' }, 'mentions'],
+    [{ text: 'x'.repeat(8001) }, 'mentions'],
+    [{ text: 'access control' }, 'overview'],
+  ])('rejects an invalid mentions request', async (body, operation) => {
+    const result = await mentionsRequest(body, operation)
+    expect(result.status).toBe(400)
+    expect(boundaries.readKnowledgeGraphMentions).not.toHaveBeenCalled()
   })
 })

@@ -1,5 +1,6 @@
 import type { AppLogger } from '@klicker-uzh/logging/node'
 import { type NextRequest, NextResponse } from 'next/server'
+import { z } from 'zod'
 import { withChatbotAuth } from '@/src/lib/server/apiGuards'
 import {
   type ChatbotKnowledgeGraphReadRequest,
@@ -10,7 +11,6 @@ import {
 } from '@/src/lib/server/knowledgeGraph'
 import { withRouteLogging } from '@/src/lib/server/requestLogging'
 import { createKnowledgeGraphAdmission } from '@/src/services/knowledgeGraphAdmission'
-import { z } from 'zod'
 
 export const runtime = 'nodejs'
 
@@ -74,12 +74,61 @@ function parseReadRequest(
   return { operation: 'overview' }
 }
 
+const mentionsBodySchema = z.object({
+  text: z.string().trim().min(1).max(8000),
+  kbId: z.string().uuid().optional(),
+})
+
 async function handleGET(
   req: NextRequest,
   { params }: { params: Promise<{ chatbotId: string }> },
   log: AppLogger
 ) {
   const { chatbotId } = await params
+  return serveKnowledgeGraphRead(req, chatbotId, log, () => {
+    const readRequest = parseReadRequest(req)
+    if (readRequest === null) return null
+    const kbId = z
+      .string()
+      .uuid()
+      .optional()
+      .safeParse(req.nextUrl.searchParams.get('kbId') ?? undefined)
+    if (!kbId.success) return null
+    if (kbId.data !== undefined) readRequest.kbId = kbId.data
+    return readRequest
+  })
+}
+
+/** Finds the concepts a finished answer names, so the UI can link them. */
+async function handlePOST(
+  req: NextRequest,
+  { params }: { params: Promise<{ chatbotId: string }> },
+  log: AppLogger
+) {
+  const { chatbotId } = await params
+  return serveKnowledgeGraphRead(req, chatbotId, log, async () => {
+    if (req.nextUrl.searchParams.get('operation') !== 'mentions') return null
+    const body = mentionsBodySchema.safeParse(
+      await req.json().catch(() => null)
+    )
+    if (!body.success) return null
+    return {
+      operation: 'mentions',
+      text: body.data.text,
+      ...(body.data.kbId === undefined ? {} : { kbId: body.data.kbId }),
+    }
+  })
+}
+
+async function serveKnowledgeGraphRead(
+  req: NextRequest,
+  chatbotId: string,
+  log: AppLogger,
+  parse: () =>
+    | ChatbotKnowledgeGraphReadRequest
+    | null
+    | Promise<ChatbotKnowledgeGraphReadRequest | null>
+) {
   const authResult = await withChatbotAuth(req, chatbotId, log)
   if ('response' in authResult) {
     return authResult.response
@@ -97,18 +146,10 @@ async function handleGET(
     )
   }
 
-  const readRequest = parseReadRequest(req)
+  const readRequest = await parse()
   if (readRequest === null) {
     return invalidRequestResponse()
   }
-
-  const kbId = z
-    .string()
-    .uuid()
-    .optional()
-    .safeParse(req.nextUrl.searchParams.get('kbId') ?? undefined)
-  if (!kbId.success) return invalidRequestResponse()
-  if (kbId.data !== undefined) readRequest.kbId = kbId.data
 
   const slot = admission.acquire(authResult.participantId)
   if (!slot.allowed) {
@@ -186,5 +227,16 @@ export function GET(
     req,
     '/api/chatbots/:chatbotId/knowledge-graph',
     (log) => handleGET(req, context, log)
+  )
+}
+
+export function POST(
+  req: NextRequest,
+  context: { params: Promise<{ chatbotId: string }> }
+) {
+  return withRouteLogging(
+    req,
+    '/api/chatbots/:chatbotId/knowledge-graph',
+    (log) => handlePOST(req, context, log)
   )
 }

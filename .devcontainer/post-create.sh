@@ -61,7 +61,21 @@ bash ./util/dev-runtime.sh stamp-dependencies
 # (compile on the fly) so they are NOT pre-built. (GOTCHAS: build the graph
 # before any dev server.)
 echo "[post-create] Building workspace packages + backend (turbo)..."
-pnpm exec turbo run build --filter='./packages/*' --filter=@klicker-uzh/backend-docker --filter=@klicker-uzh/lti-service
+# The build writes its output to a log file instead of the lifecycle stdio
+# channel, so a failure can print a short tail below. One-shot rollup builds
+# pass --forceExit: @rollup/plugin-typescript runs a TypeScript watch program
+# even without --watch, and a file change in the last 250ms of a build can
+# recreate its file watchers after the plugin closes it. Without --forceExit
+# that rollup process prints "created dist" and never exits, which stalls
+# this script and container creation indefinitely.
+BUILD_LOG=/tmp/post-create-build.log
+if ! pnpm exec turbo run build --filter='./packages/*' --filter=@klicker-uzh/backend-docker --filter=@klicker-uzh/lti-service \
+  </dev/null >"$BUILD_LOG" 2>&1; then
+  echo "[post-create] ERROR: package build failed; last lines of $BUILD_LOG:" >&2
+  tail -n 60 "$BUILD_LOG" >&2
+  exit 1
+fi
+echo "[post-create] Build finished (full output: $BUILD_LOG)."
 
 # Prepare the database. klicker's prisma:reset prompts (and the non-interactive
 # variants wrap Infisical), so call prisma directly with --force. A brand-new

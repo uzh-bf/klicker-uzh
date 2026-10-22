@@ -1,6 +1,6 @@
 {
   "name": "@klicker-uzh/hatchet-worker-response-processor",
-  "version": "3.4.0-alpha.87",
+  "version": "3.4.0-alpha.88",
   "license": "AGPL-3.0",
   "main": "dist/index.js",
   "types": "dist/index.d.ts",
@@ -33,7 +33,7 @@
   "scripts": {
     "build": "run-s --npm-path pnpm build:ts",
     "build:test": "pnpm run build",
-    "build:ts": "cross-env NODE_ENV=production rollup -c",
+    "build:ts": "cross-env NODE_ENV=production rollup -c --forceExit",
     "check": "tsc --noEmit --tsBuildInfoFile dist/tsconfig.check.tsbuildinfo",
     "dev": "cross-env NODE_ENV=development run-s --npm-path pnpm build:ts dev:watch",
     "dev:assessment": "pnpm run dev",
