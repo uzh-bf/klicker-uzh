@@ -164,6 +164,51 @@ export function useChatResponse(
             .join('')
         }
 
+        // Pages that will not be sent must not stay announced as reviewed.
+        const dropPageReview = () => {
+          const message = resolvedTriggerMessage
+          if (message?.role !== 'user' || !Array.isArray(message.content)) {
+            return
+          }
+          const updated: ExtendedThreadMessageLike = {
+            ...message,
+            content: message.content.map((part) =>
+              part.type === 'text'
+                ? {
+                    ...part,
+                    text: withoutPageReview(part.text, {
+                      supportsImages: modelReadsImages,
+                    }),
+                  }
+                : part
+            ),
+          }
+          resolvedTriggerMessage = updated
+          resolvedMessagesToSend = [
+            ...resolvedMessagesToSend.slice(0, -1),
+            updated,
+          ]
+          // Both arrays carry the message; branch switches rebuild the
+          // visible path from allMessages.
+          useChatStore.setState((state) => ({
+            threads: state.threads.map((thread) =>
+              thread.id === threadId
+                ? {
+                    ...thread,
+                    messages: resolvedMessagesToSend,
+                    allMessages: thread.allMessages.map((existing) =>
+                      existing.id === updated.id ? updated : existing
+                    ),
+                  }
+                : thread
+            ),
+          }))
+        }
+        // Runs before image hydration, which may return early.
+        if (takenDocumentPages.length > 0 && documentPages.length === 0) {
+          dropPageReview()
+        }
+
         if (
           resolvedTriggerMessage?.role === 'user' &&
           resolvedTriggerMessage.imageAttachments?.length &&
@@ -212,50 +257,6 @@ export function useChatResponse(
             ...messagesToSend.slice(0, -1),
             hydratedTriggerMessage,
           ]
-        }
-
-        // Pages that will not be sent must not stay announced as reviewed.
-        const dropPageReview = () => {
-          const message = resolvedTriggerMessage
-          if (message?.role !== 'user' || !Array.isArray(message.content)) {
-            return
-          }
-          const updated: ExtendedThreadMessageLike = {
-            ...message,
-            content: message.content.map((part) =>
-              part.type === 'text'
-                ? {
-                    ...part,
-                    text: withoutPageReview(part.text, {
-                      supportsImages: modelReadsImages,
-                    }),
-                  }
-                : part
-            ),
-          }
-          resolvedTriggerMessage = updated
-          resolvedMessagesToSend = [
-            ...resolvedMessagesToSend.slice(0, -1),
-            updated,
-          ]
-          // Both arrays carry the message; branch switches rebuild the
-          // visible path from allMessages.
-          useChatStore.setState((state) => ({
-            threads: state.threads.map((thread) =>
-              thread.id === threadId
-                ? {
-                    ...thread,
-                    messages: resolvedMessagesToSend,
-                    allMessages: thread.allMessages.map((existing) =>
-                      existing.id === updated.id ? updated : existing
-                    ),
-                  }
-                : thread
-            ),
-          }))
-        }
-        if (takenDocumentPages.length > 0 && documentPages.length === 0) {
-          dropPageReview()
         }
 
         // send request to API with streaming enabled

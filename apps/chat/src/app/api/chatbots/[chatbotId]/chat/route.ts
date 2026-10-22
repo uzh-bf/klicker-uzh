@@ -1532,8 +1532,11 @@ export async function POST(
                     .join('\n\n')
             modelMessages[i] = {
               ...modelMessages[i],
-              content: `${modelMessages[i].content}${suffix}`,
-            }
+              content: appendTextToModelContent(
+                modelMessages[i].content,
+                suffix.trimStart()
+              ),
+            } as (typeof modelMessages)[number]
           }
           for (const summary of pageSummariesByMsgId.get(messages[i].id) ??
             []) {

@@ -235,8 +235,10 @@ export function withoutPageReview(
     const [updated] = applyVisualReview([{ block, pageImages: [] }], {
       supportsImages,
     }).blocks
+    // A function replacer inserts the block literally; a string would
+    // expand `$&`, `$$` and similar patterns in the document text.
     return updated && updated !== block
-      ? result.replace(block, updated)
+      ? result.replace(block, () => updated)
       : result
   }, text)
 }

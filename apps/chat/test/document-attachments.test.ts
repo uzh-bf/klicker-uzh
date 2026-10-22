@@ -230,6 +230,22 @@ const pdfBlock = (visualReview: VisualReviewStatus | null, pages = 3) =>
   })
 
 describe('visual review of PDF pages', () => {
+  test('rewriting a header keeps dollar sequences in the document text', () => {
+    const block = buildDocumentBlock({
+      name: 'script.pdf',
+      text: 'echo $$ and $& stay',
+      pages: 2,
+      shortened: false,
+      visualReview: 'reviewed',
+    })
+    const [document] = parseMessageDocuments(
+      withoutPageReview(composeMessageText('Question', [block]), {
+        supportsImages: false,
+      })
+    ).documents
+    expect(document?.text).toBe('echo $$ and $& stay')
+  })
+
   test('a message whose pages were dropped no longer claims a review', () => {
     const text = composeMessageText('Question', [pdfBlock('reviewed')])
     const [document] = parseMessageDocuments(
