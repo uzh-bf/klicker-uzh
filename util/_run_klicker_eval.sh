@@ -254,6 +254,8 @@ EFFECTIVE_TOOLS_PATH="${EVAL_TOOLS_PATH:-$REPO_ROOT/evaluation/data/tools/klicke
 EFFECTIVE_GT_ROOT_DIR="${GT_ROOT_DIR:-$REPO_ROOT/evaluation/data/ground_truth/klicker_fineco}"
 EFFECTIVE_DEFAULT_GT_DIR="${DEFAULT_GT_DIR:-$REPO_ROOT/evaluation/data/ground_truth/klicker_fineco}"
 EFFECTIVE_LOCAL_GT_DIR="${KLICKER_EVAL_GT_DIR:-$EFFECTIVE_DEFAULT_GT_DIR}"
+# Top-level *.md files are shared judge context; chat_modes/<mode>.md applies per mode.
+EFFECTIVE_CONTEXT_DIR="${EVAL_CONTEXT_DIR:-$REPO_ROOT/evaluation/data/context}"
 set -- ${EVAL_ARGS[@]+"${EVAL_ARGS[@]}"}
 
 require_readable_file() {
@@ -407,7 +409,7 @@ validate_framework_args() {
           index=$((index + 1))
         done
         ;;
-      --no-dotenv|--smoke|--all|--recursive)
+      --no-dotenv|--smoke|--recursive)
         index=$((index + 1))
         ;;
       --*)
@@ -437,6 +439,7 @@ EFFECTIVE_TOOLS_PATH="$(resolve_input_path "$EFFECTIVE_TOOLS_PATH")"
 EFFECTIVE_GT_ROOT_DIR="$(resolve_input_path "$EFFECTIVE_GT_ROOT_DIR")"
 EFFECTIVE_DEFAULT_GT_DIR="$(resolve_input_path "$EFFECTIVE_DEFAULT_GT_DIR")"
 EFFECTIVE_LOCAL_GT_DIR="$(resolve_input_path "$EFFECTIVE_LOCAL_GT_DIR")"
+EFFECTIVE_CONTEXT_DIR="$(resolve_input_path "$EFFECTIVE_CONTEXT_DIR")"
 
 validate_framework_args
 set -- ${EVAL_ARGS[@]+"${EVAL_ARGS[@]}"}
@@ -794,6 +797,7 @@ EVAL_ENV+=(
   "EVAL_TOOLS_PATH=$EFFECTIVE_TOOLS_PATH"
   "GT_ROOT_DIR=$EFFECTIVE_GT_ROOT_DIR"
   "DEFAULT_GT_DIR=$EFFECTIVE_DEFAULT_GT_DIR"
+  "EVAL_CONTEXT_DIR=$EFFECTIVE_CONTEXT_DIR"
   "TOOL_PROFILE=${TOOL_PROFILE:-catalog_expert_v1}"
 )
 if [ "$NEEDS_JUDGE" = true ]; then
