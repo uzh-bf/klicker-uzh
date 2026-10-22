@@ -5,6 +5,7 @@ import {
   type AuditEventDraft,
   type AuditTransactionClient,
   canonicalizeJson,
+  compareAuditText,
   createTrustedAuditContext,
   emitAuditEvents,
   hashCanonicalValue,
@@ -14,6 +15,7 @@ import {
 import type { Prisma } from '@klicker-uzh/prisma/client'
 import * as DB from '@klicker-uzh/prisma/client'
 import type { SingleQuestionResponseLiveQuiz } from '@klicker-uzh/types'
+import { GraphQLError } from 'graphql'
 import {
   type AssessmentBaselineSnapshot,
   assessmentBlockState,
@@ -109,8 +111,34 @@ async function coveredScope(
   })
 }
 
+// Edits made outside assessment mode produce no evidence, so a covered
+// assessment that has been scheduled or started must stay in assessment mode.
+// A covered draft may leave it; re-entering starts a new coverage epoch.
+async function assertCoveredAssessmentModeRetained(
+  tx: Pick<Prisma.TransactionClient, 'liveQuiz'>,
+  liveQuizId: string,
+  drafts: readonly AuditEventDraft[]
+) {
+  const disablesAssessmentMode = drafts.some(
+    (draft) =>
+      draft.eventType === 'ASSESSMENT_MODE_CHANGED' &&
+      'assessmentEnabledAfter' in draft.payload &&
+      draft.payload.assessmentEnabledAfter === false
+  )
+  if (!disablesAssessmentMode) return
+  const quiz = await tx.liveQuiz.findUniqueOrThrow({
+    where: { id: liveQuizId },
+    select: { status: true },
+  })
+  if (quiz.status !== DB.PublicationStatus.DRAFT) {
+    throw new GraphQLError(
+      'Assessment mode cannot be disabled for an audited assessment that has been scheduled or started'
+    )
+  }
+}
+
 export async function emitCoveredAssessmentAuditEvents(input: {
-  tx: Pick<Prisma.TransactionClient, 'assessmentAuditScope'>
+  tx: Pick<Prisma.TransactionClient, 'assessmentAuditScope' | 'liveQuiz'>
   auditTx: AuditTransactionClient
   liveQuizId: string
   courseId?: string | null
@@ -120,6 +148,11 @@ export async function emitCoveredAssessmentAuditEvents(input: {
   if (input.drafts.length === 0) return []
   const scope = await coveredScope(input.tx, input.liveQuizId)
   if (scope === null) return []
+  await assertCoveredAssessmentModeRetained(
+    input.tx,
+    input.liveQuizId,
+    input.drafts
+  )
 
   const context = createTrustedAuditContext({
     recordedVia: 'TRANSACTIONAL_OUTBOX',
@@ -349,7 +382,7 @@ export function permissionTargetIds(
 }
 
 export async function emitAssessmentLecturerPermissionChanges(input: {
-  tx: Pick<Prisma.TransactionClient, 'assessmentAuditScope'>
+  tx: Pick<Prisma.TransactionClient, 'assessmentAuditScope' | 'liveQuiz'>
   auditTx: AuditTransactionClient
   operation: AssessmentAuditOperation
   before: AssessmentLecturerPermissionState
@@ -506,7 +539,7 @@ function normalizedLiveQuizAnswer(
       return {
         kind: 'CASE_STUDY',
         cases: Object.entries(response.assessment)
-          .sort(([left], [right]) => left.localeCompare(right))
+          .sort(([left], [right]) => compareAuditText(left, right))
           .map(([caseId, itemResponses]) => ({
             caseId,
             items: Object.entries(itemResponses)
@@ -514,7 +547,7 @@ function normalizedLiveQuizAnswer(
               .map(([itemId, criterionResponses]) => ({
                 itemId: Number(itemId),
                 criteria: Object.entries(criterionResponses)
-                  .sort(([left], [right]) => left.localeCompare(right))
+                  .sort(([left], [right]) => compareAuditText(left, right))
                   .map(([criterionId, criterionResponse]) => ({
                     criterionId,
                     response: criterionResponse,
@@ -574,7 +607,7 @@ export function assessmentParticipantResetDrafts(input: {
   }
 
   return [...snapshotsByParticipant.entries()]
-    .sort(([left], [right]) => left.localeCompare(right))
+    .sort(([left], [right]) => compareAuditText(left, right))
     .map(([participantId, snapshots]) => {
       const orderedSnapshots = [...snapshots].sort(
         (left, right) => left.responseId - right.responseId

@@ -5,6 +5,7 @@ import type {
 import { NonRetryableError } from '@hatchet-dev/typescript-sdk/index.js'
 import {
   dispatchAssessmentAuditOutbox,
+  PrismaAuditMonitorRepository,
   PrismaAuditOutboxRepository,
 } from '@klicker-uzh/audit'
 import { prisma, requireDisposableDatabase } from '@klicker-uzh/prisma'
@@ -904,8 +905,9 @@ describe.runIf(runDatabaseTests)(
       )
     })
 
-    it('rejects an inactive participant without persisting a response', async () => {
+    it('accepts a participant who opted out of the leaderboard', async () => {
       const testHarness = harness()
+      // isActive is the leaderboard opt-in and must not gate assessment access.
       await prisma.participation.update({
         where: {
           courseId_participantId: {
@@ -916,16 +918,17 @@ describe.runIf(runDatabaseTests)(
         data: { isActive: false },
       })
       try {
-        await expect(
-          processAssessmentResponse(
-            command(),
-            testHarness.context,
-            testHarness.dependencies
-          )
-        ).rejects.toThrow('PARTICIPATION_NOT_FOUND')
+        const result = await processAssessmentResponse(
+          command(),
+          testHarness.context,
+          testHarness.dependencies
+        )
+        expect(result.status).toBe(200)
         expect(
-          await prisma.liveQuizResponse.count({ where: { instanceId } })
-        ).toBe(0)
+          await prisma.liveQuizResponse.count({
+            where: { submissionId: SUBMISSION_ID },
+          })
+        ).toBe(1)
         expect(
           await prisma.assessmentAuditOutboxEvent.count({
             where: {
@@ -934,7 +937,7 @@ describe.runIf(runDatabaseTests)(
               eventType: 'SUBMISSION_REJECTED',
             },
           })
-        ).toBe(1)
+        ).toBe(0)
       } finally {
         await prisma.participation.update({
           where: {
@@ -999,6 +1002,51 @@ describe.runIf(runDatabaseTests)(
       expect(quarantine.canonicalEnvelope).toContain(
         'SUBMISSION_METADATA_MISMATCH'
       )
+    })
+
+    it('records failure evidence when the Hatchet event cannot be resolved', async () => {
+      const testHarness = harness()
+      const workflowRunId = '10000000-0000-4000-8000-000000000099'
+      const context = {
+        ...testHarness.context,
+        workflowRunId: () => workflowRunId,
+      } as unknown as ProcessorContext
+      testHarness.dependencies.resolveHatchetEventId.mockRejectedValueOnce(
+        new Error('Hatchet triggering event is not yet available')
+      )
+
+      await expect(
+        processAssessmentResponse(command(), context, testHarness.dependencies)
+      ).rejects.toThrow('Hatchet triggering event is not yet available')
+
+      // The receipt is not left without evidence, and the monitor sees the
+      // submission as a gap until an outcome is recorded.
+      const failure = await prisma.assessmentAuditOutboxEvent.findFirstOrThrow({
+        where: {
+          liveQuizId: LIVE_QUIZ_ID,
+          eventType: 'SUBMISSION_PROCESSING_FAILED',
+        },
+        select: { canonicalEnvelope: true, correlationId: true },
+      })
+      expect(failure.correlationId).toBe(SUBMISSION_ID)
+      expect(JSON.parse(failure.canonicalEnvelope)).toMatchObject({
+        hatchetEventId: `unresolved-run:${workflowRunId}`,
+        payload: { reasonCode: 'HATCHET_EVENT_UNRESOLVED' },
+      })
+      const monitor = new PrismaAuditMonitorRepository(prisma)
+      expect(
+        (await monitor.readCounts()).coveredSubmissionWithoutTerminalCount
+      ).toBe(1)
+
+      const result = await processAssessmentResponse(
+        command(),
+        testHarness.context,
+        testHarness.dependencies
+      )
+      expect(result).toMatchObject({ status: 200 })
+      expect(
+        (await monitor.readCounts()).coveredSubmissionWithoutTerminalCount
+      ).toBe(0)
     })
 
     it('records recovery when a retry succeeds after transient processing failure', async () => {

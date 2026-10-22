@@ -1,5 +1,6 @@
 import type { AppLogger } from '@klicker-uzh/logging/node'
 import { type NextRequest, NextResponse } from 'next/server'
+import { z } from 'zod'
 import { withChatbotAuth } from '@/src/lib/server/apiGuards'
 import {
   type ChatbotKnowledgeGraphReadRequest,
@@ -10,7 +11,6 @@ import {
 } from '@/src/lib/server/knowledgeGraph'
 import { withRouteLogging } from '@/src/lib/server/requestLogging'
 import { createKnowledgeGraphAdmission } from '@/src/services/knowledgeGraphAdmission'
-import { z } from 'zod'
 
 export const runtime = 'nodejs'
 

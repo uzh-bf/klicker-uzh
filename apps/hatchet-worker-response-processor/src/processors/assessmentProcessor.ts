@@ -57,6 +57,10 @@ type AssessmentProcessorDependencies = {
 const sleep = (milliseconds: number) =>
   new Promise<void>((resolve) => setTimeout(resolve, milliseconds))
 
+// Hatchet indexes a pushed event shortly after it triggers the run. Back off
+// for about three seconds before this attempt fails and Hatchet retries it.
+const EVENT_RESOLUTION_BACKOFF_MS = [100, 200, 400, 800, 1600]
+
 export async function resolveTriggeringHatchetEventId(
   message: AssessmentCommand,
   ctx: AssessmentContext
@@ -66,7 +70,11 @@ export async function resolveTriggeringHatchetEventId(
     throw new NonRetryableError('SUBMISSION_METADATA_MISMATCH')
   }
   const workflowRunId = ctx.workflowRunId()
-  for (let attempt = 0; attempt < 3; attempt++) {
+  for (
+    let attempt = 0;
+    attempt <= EVENT_RESOLUTION_BACKOFF_MS.length;
+    attempt++
+  ) {
     const candidateIds = new Set<string>()
     const pageSize = 100
     for (let offset = 0; ; offset += pageSize) {
@@ -95,7 +103,8 @@ export async function resolveTriggeringHatchetEventId(
       if (rows.length < pageSize) break
     }
     if (candidateIds.size === 1) return [...candidateIds][0]!
-    await sleep(50 * (attempt + 1))
+    const delay = EVENT_RESOLUTION_BACKOFF_MS[attempt]
+    if (delay !== undefined) await sleep(delay)
   }
   throw new Error('Hatchet triggering event is not yet available')
 }
@@ -141,6 +150,7 @@ export async function processAssessmentResponse(
   }
 
   const emitStandalone = async (
+    commandId: string,
     drafts: Parameters<typeof emitSubmissionAuditEvents>[0]['drafts']
   ) => {
     const scope = coveredScope
@@ -151,7 +161,7 @@ export async function processAssessmentResponse(
         auditTx,
         message,
         scope,
-        hatchetEventId: requireHatchetEventId(),
+        hatchetEventId: commandId,
         courseId,
         recordedAt: dependencies.now(),
         drafts,
@@ -446,6 +456,7 @@ export async function processAssessmentResponse(
         | 'CONTENT',
       response: message.response,
       restrictions: parsedRestrictions,
+      choiceCount: choiceCount === undefined ? undefined : Number(choiceCount),
     })
     if (!validation.valid) {
       await reject(validation.reasonCode)
@@ -459,7 +470,7 @@ export async function processAssessmentResponse(
           : undefined,
     })
     if (coveredScope !== null) {
-      await emitStandalone([
+      await emitStandalone(requireHatchetEventId(), [
         submissionDraft(message, requireHatchetEventId(), {
           eventType: 'SUBMISSION_VALIDATED',
           operationSuffix: 'validated',
@@ -645,8 +656,9 @@ export async function processAssessmentResponse(
         const block = instance?.elementBlock
         let rejectionReason: string | undefined
         if (lifecycleChanged) rejectionReason = 'SUBMISSION_LIFECYCLE_CHANGED'
-        else if (!participation?.isActive)
-          rejectionReason = 'PARTICIPATION_NOT_FOUND'
+        // Course participation, not the leaderboard opt-in (isActive), grants
+        // assessment access; this matches the running-quiz access check.
+        else if (!participation) rejectionReason = 'PARTICIPATION_NOT_FOUND'
         else if (
           block?.liveQuizId !== message.liveQuizId ||
           block.execution !== message.blockExecution ||
@@ -936,16 +948,24 @@ export async function processAssessmentResponse(
   } catch (error) {
     if (error instanceof NonRetryableError) throw error
     if (coveredScope !== null) {
+      // Without a resolved Hatchet event the command is still identified by
+      // its workflow run, so the receipt never lacks failure evidence.
+      const commandId =
+        hatchetEventId ?? `unresolved-run:${ctx.workflowRunId()}`
+      const reasonCode =
+        hatchetEventId === null
+          ? 'HATCHET_EVENT_UNRESOLVED'
+          : 'TRANSIENT_PROCESSING_FAILURE'
       try {
-        await emitStandalone([
-          submissionDraft(message, requireHatchetEventId(), {
+        await emitStandalone(commandId, [
+          submissionDraft(message, commandId, {
             eventType: 'SUBMISSION_PROCESSING_FAILED',
             operationSuffix: `processing-failed:${ctx.retryCount()}`,
-            outcome: 'TRANSIENT_PROCESSING_FAILURE',
+            outcome: reasonCode,
             payload: {
               submissionId: message.submissionId,
               stage: 'PROCESSING_FAILED',
-              reasonCode: 'TRANSIENT_PROCESSING_FAILURE',
+              reasonCode,
             },
           }),
         ])

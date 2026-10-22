@@ -2,6 +2,7 @@ import type {
   AzureTableAuditReader,
   VerifiedAuditEvidence,
 } from '../azure/table-reader.js'
+import { compareAuditText } from '../canonical/compare.js'
 import { sha256Hex } from '../canonical/hash.js'
 import { retentionBatchFor } from '../media/retention-horizon.js'
 import type { AuditManifestStore, StoredAuditManifest } from './manifest.js'
@@ -29,7 +30,7 @@ const DEFAULT_MAX_BATCHES_PER_QUIZ = 10
 /** Azure manifests are the durable checkpoint; a failed DB update is replayable. */
 export async function sealAssessmentAudit(input: {
   repository: AuditSealRepository
-  reader: Pick<AzureTableAuditReader, 'exportQuizWithFailures'>
+  reader: Pick<AzureTableAuditReader, 'verifyEvents'>
   manifests: AuditManifestStore
   now?: () => Date
   maxBatchEvents?: number
@@ -78,32 +79,31 @@ export async function sealAssessmentAudit(input: {
       }
       if (state.sealable.size === 0) continue
 
-      const read = async () => {
-        const result = await input.reader.exportQuizWithFailures({ liveQuizId })
-        // Events still being delivered have incomplete Table rows by design.
-        const blocking = result.failures.filter(
-          ({ eventId }) => !state.inFlight.has(eventId)
-        )
-        if (blocking.length > 0) {
+      // Read only the events this run may seal, so cost scales with the
+      // backlog, not the quiz history. SEALED members were verified when they
+      // were sealed; the owner export re-verifies the complete history.
+      const read = async (eventIds: Iterable<string>) => {
+        const result = await input.reader.verifyEvents({
+          liveQuizId,
+          eventIds: [...eventIds],
+        })
+        if (result.failures.length > 0) {
           throw new Error(
-            `Assessment has ${blocking.length} evidence verification failures`
+            `Assessment has ${result.failures.length} evidence verification failures`
           )
         }
         return result.verified
       }
       const isPending =
         (sealed: Set<string>) => (item: VerifiedAuditEvidence) =>
-          !sealed.has(item.envelope.eventId) &&
-          state.sealable.has(item.envelope.eventId)
-      let evidence = await read()
-      let sealed = verifyManifestEvidence(manifests, evidence, liveQuizId)
+          !sealed.has(item.envelope.eventId)
+      const evidence = await read(state.sealable)
+      const sealed = verifyManifestEvidence(manifests, evidence, liveQuizId, {
+        onlyLoadedMembers: true,
+      })
       // Recover a crash after immutable publication and before the DB transition.
       sealedCount += await input.repository.markSealed(
-        evidence.filter(
-          (item) =>
-            sealed.has(item.envelope.eventId) &&
-            state.sealable.has(item.envelope.eventId)
-        ),
+        evidence.filter((item) => sealed.has(item.envelope.eventId)),
         clock()
       )
       for (let batch = 0; batch < maxBatchesPerQuiz; batch += 1) {
@@ -111,8 +111,8 @@ export async function sealAssessmentAudit(input: {
           .filter(isPending(sealed))
           .sort(
             (a, b) =>
-              a.envelope.recordedAt.localeCompare(b.envelope.recordedAt) ||
-              a.envelope.eventId.localeCompare(b.envelope.eventId)
+              compareAuditText(a.envelope.recordedAt, b.envelope.recordedAt) ||
+              compareAuditText(a.envelope.eventId, b.envelope.eventId)
           )
         // Keep each batch in one lifecycle, prioritizing its oldest pending event.
         const epoch = remaining[0]?.envelope.scope.lifecycleEpoch
@@ -133,8 +133,13 @@ export async function sealAssessmentAudit(input: {
           events: remaining
             .filter((item) => item.envelope.scope.lifecycleEpoch === epoch)
             .slice(0, maxBatchEvents)
+            // validateAuditManifest requires code-unit order of event IDs
             .sort((a, b) =>
-              a.envelope.eventId.localeCompare(b.envelope.eventId)
+              a.envelope.eventId < b.envelope.eventId
+                ? -1
+                : a.envelope.eventId > b.envelope.eventId
+                  ? 1
+                  : 0
             )
             .map((item) => ({
               eventId: item.envelope.eventId,
@@ -152,16 +157,24 @@ export async function sealAssessmentAudit(input: {
           )
         }
         manifests.push(winner)
-        // Re-read after publication; never trust a pre-upload snapshot for SEALED.
-        evidence = await read()
-        sealed = verifyManifestEvidence(manifests, evidence, liveQuizId)
-        const batchMembers = new Set(
-          winner.manifest.events.map((event) => event.eventId)
+        // Re-read the batch after publication; never trust a pre-upload
+        // snapshot for SEALED. A concurrent winner may list other events.
+        const batchMembers = winner.manifest.events.map(
+          ({ eventId }) => eventId
+        )
+        const batchEvidence = await read(batchMembers)
+        const batchSealed = verifyManifestEvidence(
+          [winner],
+          batchEvidence,
+          liveQuizId
         )
         sealedCount += await input.repository.markSealed(
-          evidence.filter((item) => batchMembers.has(item.envelope.eventId)),
+          batchEvidence.filter((item) =>
+            batchSealed.has(item.envelope.eventId)
+          ),
           clock()
         )
+        for (const eventId of batchSealed) sealed.add(eventId)
         manifestCount += 1
       }
       deferredCount += evidence.filter(isPending(sealed)).length

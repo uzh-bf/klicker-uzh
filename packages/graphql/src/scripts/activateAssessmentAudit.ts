@@ -55,6 +55,7 @@ async function main() {
           dryRun: true,
           rolloutMode: config.mode,
           candidates: discovered.candidates,
+          alreadySettled: discovered.settledLiveQuizIds,
           missing: discovered.missingLiveQuizIds.map((liveQuizId) => ({
             liveQuizId,
             result: 'NO_ROLLOUT_RECORD',
@@ -79,6 +80,7 @@ async function main() {
     candidates: discovered.candidates,
   })
   const inventoriedIds = new Set(inventory.map((item) => item.liveQuizId))
+  const settled = new Set(discovered.settledLiveQuizIds)
   const unknown = discovered.missingLiveQuizIds.filter(
     (liveQuizId) => !inventoriedIds.has(liveQuizId)
   )
@@ -89,11 +91,16 @@ async function main() {
     liveQuizId: string
     outcome: string
     reason?: string
-  }> = unknown.map((liveQuizId) => ({
-    liveQuizId,
-    outcome: 'NO_ROLLOUT_RECORD',
-    reason: 'PRE_INSTRUMENTATION_DELETION_UNKNOWABLE',
-  }))
+  }> = [
+    ...unknown.map((liveQuizId) => ({
+      liveQuizId,
+      outcome: 'NO_ROLLOUT_RECORD',
+      reason: 'PRE_INSTRUMENTATION_DELETION_UNKNOWABLE',
+    })),
+    ...[...settled]
+      .filter((liveQuizId) => !inventoriedIds.has(liveQuizId))
+      .map((liveQuizId) => ({ liveQuizId, outcome: 'ALREADY_SETTLED' })),
+  ]
 
   for (const item of inventory) {
     if (item.outcome !== AssessmentAuditRolloutOutcome.PENDING) {
@@ -101,6 +108,11 @@ async function main() {
       continue
     }
     const candidate = candidates.get(item.liveQuizId)
+    if (candidate === undefined && settled.has(item.liveQuizId)) {
+      // Another path covered or excluded it since this scan was inventoried.
+      results.push({ liveQuizId: item.liveQuizId, outcome: 'ALREADY_SETTLED' })
+      continue
+    }
     if (candidate === undefined) {
       results.push({
         liveQuizId: item.liveQuizId,
@@ -121,6 +133,7 @@ async function main() {
     unknown.length === 0 &&
     results.every(
       (result) =>
+        result.outcome === 'ALREADY_SETTLED' ||
         result.outcome === AssessmentAuditRolloutOutcome.ACTIVATED ||
         result.outcome === AssessmentAuditRolloutOutcome.ROLLOUT_BASELINED ||
         result.outcome === AssessmentAuditRolloutOutcome.EXCLUDED_TERMINAL

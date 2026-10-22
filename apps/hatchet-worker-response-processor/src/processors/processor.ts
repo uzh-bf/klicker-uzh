@@ -273,6 +273,7 @@ export async function processResponseMessage(
       type: type as any,
       response,
       restrictions: parsedRestrictions,
+      choiceCount: choiceCount === undefined ? undefined : Number(choiceCount),
     })
 
     if (!valid) {

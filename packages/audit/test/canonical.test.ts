@@ -2,6 +2,8 @@ import { normalizedAnswerSchema } from '../src/contract/payloads/common.js'
 import {
   canonicalByteLength,
   canonicalizeJson,
+  compareAuditText,
+  deriveAuditCorrelationId,
   deriveAuditEventIdentity,
 } from '../src/index.js'
 
@@ -71,5 +73,33 @@ describe('audit event identity', () => {
     expect(first.eventId).toMatch(
       /^[0-9a-f]{8}-[0-9a-f]{4}-5[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/
     )
+  })
+})
+
+describe('audit text ordering', () => {
+  it('uses a fixed collation independent of the host locale', () => {
+    // Under some locales (e.g. lt-LT) "y" sorts before "j"; evidence order must not.
+    expect(compareAuditText('j1', 'y1')).toBeLessThan(0)
+    expect(['y1', 'j1', 'a1'].sort(compareAuditText)).toEqual([
+      'a1',
+      'j1',
+      'y1',
+    ])
+  })
+})
+
+describe('audit correlation IDs', () => {
+  it('derives a stable UUID from a descriptive operation name', () => {
+    const name = 'hatchet:publish:quiz:2026-10-21T08:00:00.000Z'
+    const id = deriveAuditCorrelationId(name)
+    expect(id).toMatch(
+      /^[0-9a-f]{8}-[0-9a-f]{4}-5[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/
+    )
+    expect(deriveAuditCorrelationId(name)).toBe(id)
+    expect(deriveAuditCorrelationId(`${name}x`)).not.toBe(id)
+  })
+
+  it('rejects an empty operation name', () => {
+    expect(() => deriveAuditCorrelationId(' ')).toThrow('must not be empty')
   })
 })

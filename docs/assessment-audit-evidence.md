@@ -132,9 +132,13 @@ targets workflow definitions, despite the pinned
 SDK's misleading description; passing a run ID excludes the triggering event.
 Resends share submission metadata, so that metadata alone is not sufficient to
 identify the event. The lookup does not filter by event key because Hatchet may
-namespace pushed keys. Missing associations remain retryable and ambiguous matches
-fail rather than inventing provenance. It never substitutes the workflow
-run ID for the event ID. This provenance lookup occurs only after the quiz is
+namespace pushed keys. The lookup backs off for about three seconds before an
+attempt fails. Missing associations remain retryable and ambiguous matches
+fail rather than inventing provenance. Acceptance and outcome evidence never
+substitute the workflow run ID for the event ID. Only the failure evidence of an
+attempt whose event stayed unresolved is keyed by the explicitly prefixed
+`unresolved-run:<workflowRunId>` with reason `HATCHET_EVENT_UNRESOLVED`, so a
+receipt is never left without evidence. This provenance lookup occurs only after the quiz is
 confirmed as covered, so deliberately uncovered quizzes retain their existing
 processing path without an audit-only dependency. For covered assessments it
 records server acceptance and validation before terminal completion. Rejection
@@ -269,11 +273,15 @@ and therefore have no participant scope. Scheduled publication and timed block
 closure use a `SYSTEM` actor; the scheduling lecturer is retained as
 `initiatedBy` when the task input has that identity.
 
-Course participation evidence is based on the effective `Participation.isActive`
-transition and stores only the stable participant UUID. This includes
-participant join/leave flows, invitation auto-acceptance, and the
-semester-start invitation import's accepted-invitation repair paths; all reuse
-the same transactional acceptance helper. Lecturer access evidence is computed
+Participant eligibility evidence is based on the existence of the course
+`Participation`, the same rule that grants assessment access, and stores only
+the stable participant UUID. `Participation.isActive` is the leaderboard opt-in
+and never changes eligibility: baselines list every participation, and joining
+the leaderboard emits an eligibility event only when it creates the
+participation, while leaving it emits none. Invitation auto-acceptance and the
+semester-start invitation import's accepted-invitation repair paths record
+eligibility when they create the participation; all reuse the same
+transactional acceptance helper. Lecturer access evidence is computed
 from effective `DerivedPermission` state before and after recomputation.
 Changing a direct or group permission that leaves the effective assessment
 permission unchanged emits no assessment evidence.
@@ -318,8 +326,11 @@ loads and canonicalizes an explicit assessment snapshot, including the public
 image URLs in its content, and then opens a second database transaction. That
 transaction reloads the snapshot, rejects any
 concurrent change, and atomically writes the scope, baseline root and parts,
-activation event, and rollout-inventory outcome. Exact retries are idempotent;
-different evidence for an already activated scope fails closed.
+activation event, and rollout-inventory outcome. That transaction first locks
+the `LiveQuiz` row and moves the scope out of `ACTIVATING` with a conditional
+update, so of two concurrent activations exactly one records its baseline.
+Exact retries are idempotent; different evidence for an already activated scope
+fails closed.
 
 Activation reserves the lifecycle scope as `ACTIVATING` before building its
 baseline. Baseline failures transition that reservation to `FAILED`; an
@@ -329,8 +340,8 @@ the latest lifecycle per quiz so a repaired retry clears the active failure
 signal.
 
 The baseline includes effective quiz configuration, ordered blocks and element
-instances, effective element content and scoring, active participant UUIDs,
-and effective permissions. Image links live in the content itself; new baselines
+instances, effective element content and scoring, the UUIDs of every course
+participant, and effective permissions. Image links live in the content itself; new baselines
 have zero separate media-reference or external-media limitation parts. The baseline
 does not copy participant profiles, PINs, or other authentication material.
 Baseline parts are independently hashed, and the root commits to each part key
@@ -342,11 +353,20 @@ configured LiveQuiz UUID. A scan receives an operator-supplied stable scan ID,
 creates `PENDING` inventory before activation work, records terminal quizzes as
 excluded, and records every success or stable failure. Rerunning the same scan
 resumes pending entries and preserves already-recorded failures instead of
-hiding or duplicating a gap. The owner CLI supports dry-run discovery and
+hiding or duplicating a gap. Discovery skips quizzes whose latest scope is
+already `COVERED` or `EXCLUDED_TERMINAL` and reports them as
+`ALREADY_SETTLED`, so a new scan never re-baselines or fails them. The owner CLI supports dry-run discovery and
 explicit quiz IDs; apply mode refuses to run without a scan ID. In `all` mode,
 newly created assessment quizzes are automatically selected for activation.
 Creation is teaching-available: an activation failure does not undo the quiz,
 but the failed gap is durably recorded for a later repair scan.
+
+Edits made while a quiz is outside assessment mode produce no evidence.
+Disabling assessment mode for a covered quiz that has been scheduled or started
+is therefore rejected and rolls back. A covered draft may leave assessment
+mode, which records `ASSESSMENT_MODE_CHANGED`; when it re-enters in `all` mode,
+activation starts a new lifecycle epoch with a fresh `CREATION` baseline of its
+current state instead of continuing the old epoch.
 
 Starting an assessment remains teaching-available and emits a stable warning if
 the latest lifecycle epoch is not covered. Reopening is stricter because it
@@ -365,9 +385,12 @@ Sealing does not delete the outbox rows.
 ## Periodic sealing
 
 `sealAssessmentAudit` runs every five minutes on the dedicated `sealer` worker.
-It enumerates Table evidence for retained assessment scopes, verifies canonical
-bytes and required indexes, and conditionally creates batches of at most 100
-event IDs, event hashes, and canonical hashes. Each lifecycle has a contiguous
+For each retained assessment scope it point-reads only the events whose outbox
+row is `DELIVERED_UNSEALED`, verifies their canonical bytes and required
+indexes, and conditionally creates batches of at most 100 event IDs, event
+hashes, and canonical hashes. Its Table reads therefore scale with the unsealed
+backlog, not with the assessment's history: already sealed events were verified
+when they were sealed, and the owner export re-verifies the complete history. Each lifecycle has a contiguous
 sequence with a previous-manifest hash. Late events join a later batch regardless
 of their original `recordedAt`. Each run creates at most ten batches per quiz;
 a backlog therefore takes multiple runs. Each batch selects the lifecycle
@@ -378,9 +401,8 @@ manifest proposal for the currently implemented event store.
 Only events whose outbox row is `DELIVERED_UNSEALED` can enter a manifest. The
 dispatcher writes Table rows before it marks a row delivered, so evidence of
 `PENDING` or `LEASED` rows may be incomplete: those events are left for a later
-run, reported as `awaitingDeliveryCount`, and their Table verification failures
-do not block the rest of the assessment. Verification failures of any other
-event still fail the assessment. Every retained scope is visited on each run so
+run, reported as `awaitingDeliveryCount`, and are not read. A verification
+failure of any delivered event still fails the assessment. Every retained scope is visited on each run so
 that listing renews manifest retention; a scope without sealable rows skips the
 Table read. PostgreSQL is also an independent checkpoint for manifest loss: an
 event marked `SEALED` that no listed manifest contains fails the run. The task
@@ -392,11 +414,13 @@ The immutable manifest is the durable retry checkpoint at
 `audit-manifests/manifest/v1/<quiz>/<epoch>/<12-digit-sequence>.json`.
 Concurrent workers use create-only writes at the same next sequence and verify
 the winning batch. After exact-version byte/hash/MIME/policy readback and a fresh
-Table verification, the sealer changes the matching `DELIVERED_UNSEALED` rows
+Table verification of that batch's members, the sealer changes the matching `DELIVERED_UNSEALED` rows
 of a batch to `SEALED` in one transaction, setting one `sealedAt`. A manifest
 member whose row is missing, differs, or is in any other state aborts that
 transition instead of being skipped. A crash before that transition is recovered
-from the existing manifest on the next run. PostgreSQL
+on the next run: a still-unsealed event listed by an existing manifest is checked
+against that manifest entry and marked `SEALED`. Manifest scope and duplicate
+membership are checked across every listed member on each run. PostgreSQL
 state is operational bookkeeping, never the export's proof of immutability.
 
 Exports enumerate **all blob versions** under the quiz prefix, verify locked
@@ -530,7 +554,9 @@ positive when monitoring is enabled.
 The non-terminal submission query is a PostgreSQL anti-join scoped by quiz,
 lifecycle epoch, and correlation ID. The anti-join also matches the canonical envelope's
 `hatchetEventId`. Two transport commands sharing a submission UUID each need
-their own terminal outcome. A migration-owned partial index covers
+their own terminal outcome. The same count includes submissions whose only
+evidence is `SUBMISSION_PROCESSING_FAILED`, until any acceptance or terminal
+outcome for the submission appears in that epoch. A migration-owned partial index covers
 `SUBMISSION_SERVER_ACCEPTED` rows, and a companion composite index accelerates
 terminal-event lookups; Prisma does not currently express the partial-index
 predicate in the schema. Before launch, staging must capture
@@ -582,8 +608,10 @@ Layer 5 adds loopback Response API tests and real-PostgreSQL processor tests for
 all supported response families, stable receipts, duplicate and changed-answer
 commands, late and missing-participation rejection, persistence/evidence
 rollback, retry/recovery, terminal cardinality, and dispatcher outage/drain.
-It also covers inactive participation, delayed processing and retries across
-reopening, and stale Redis/database block executions. The Response API forwards
+It also covers acceptance of participants who left the leaderboard (course
+participation, not `Participation.isActive`, grants assessment access),
+delayed processing and retries across reopening, and stale Redis/database block
+executions. The Response API forwards
 the execution number from the signed correlation token, never from a caller
 field. The processor binds acceptance to that execution and the receipt-time
 audit epoch; subsequent retries keep the same command binding. A completed old

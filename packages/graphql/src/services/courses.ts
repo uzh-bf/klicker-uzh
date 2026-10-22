@@ -142,7 +142,7 @@ export async function joinCourseLeaderboard(
             participantId: ctx.user.sub,
           },
         },
-        select: { isActive: true },
+        select: { id: true },
       })
       const participation = await tx.participation.upsert({
         where: {
@@ -175,7 +175,9 @@ export async function joinCourseLeaderboard(
         },
         update: {},
       })
-      if (previous?.isActive !== true) {
+      // Joining the leaderboard only changes assessment eligibility when it
+      // creates the course participation; the isActive opt-in does not.
+      if (previous === null) {
         await emitCoveredParticipantEligibilityChange({
           tx,
           auditTx,
@@ -247,70 +249,44 @@ export async function leaveCourseLeaderboard(
   { courseId }: { courseId: string },
   ctx: ContextWithUser
 ) {
-  const auditOperation = assessmentAuditParticipantOperation({
-    participantId: ctx.user.sub,
-  })
   // leave a course leaderboard as a participant
   // deletes the leaderboard entries related to the course and sets the participation to inactive
   // meaning that no further points will be collected
-  const participation = await runInAuditTransaction(
-    ctx.prisma,
-    async (tx, auditTx) => {
-      const previous = await tx.participation.findUniqueOrThrow({
-        where: {
-          courseId_participantId: {
-            courseId,
-            participantId: ctx.user.sub,
-          },
-        },
-        select: { isActive: true },
-      })
-      const participation = await tx.participation.update({
-        where: {
-          courseId_participantId: {
-            courseId,
-            participantId: ctx.user.sub,
-          },
-        },
-        data: { isActive: false },
-      })
-
-      // delete the leaderboard entries linked to the participation
-      await tx.leaderboardEntry.delete({
-        where: {
-          type_participantId_courseId: {
-            type: DB.LeaderboardType.COURSE,
-            participantId: ctx.user.sub,
-            courseId,
-          },
-        },
-      })
-      await tx.leaderboardEntry.deleteMany({
-        where: { participation: { id: participation.id } },
-      })
-      await tx.leaderboardEntry.deleteMany({
-        where: { sessionParticipationId: participation.id },
-      })
-      await tx.timelineEntry.updateMany({
-        where: { participationId: participation.id },
-        data: { collectedPoints: 0 },
-      })
-      if (previous.isActive) {
-        await emitCoveredParticipantEligibilityChange({
-          tx,
-          auditTx,
+  // Leaving the leaderboard keeps the course participation, so it does not
+  // change assessment eligibility and records no assessment evidence.
+  const participation = await ctx.prisma.$transaction(async (tx) => {
+    const participation = await tx.participation.update({
+      where: {
+        courseId_participantId: {
           courseId,
           participantId: ctx.user.sub,
-          eligible: false,
-          actor: auditOperation.actor,
-          correlationId: auditOperation.correlationId,
-          occurredAt: auditOperation.occurredAt,
-          producerOperationId: `${auditOperation.correlationId}:eligibility-removed`,
-        })
-      }
-      return participation
-    }
-  )
+        },
+      },
+      data: { isActive: false },
+    })
+
+    // delete the leaderboard entries linked to the participation
+    await tx.leaderboardEntry.delete({
+      where: {
+        type_participantId_courseId: {
+          type: DB.LeaderboardType.COURSE,
+          participantId: ctx.user.sub,
+          courseId,
+        },
+      },
+    })
+    await tx.leaderboardEntry.deleteMany({
+      where: { participation: { id: participation.id } },
+    })
+    await tx.leaderboardEntry.deleteMany({
+      where: { sessionParticipationId: participation.id },
+    })
+    await tx.timelineEntry.updateMany({
+      where: { participationId: participation.id },
+      data: { collectedPoints: 0 },
+    })
+    return participation
+  })
 
   // TODO: reset collected points and points dates on questionresponse and questionresponsedetail
 
@@ -1250,7 +1226,7 @@ async function recordRejectedAssessmentPointCorrection(input: {
 }
 
 async function emitPointCorrectionAuditEvents(input: {
-  tx: Pick<DB.Prisma.TransactionClient, 'assessmentAuditScope'>
+  tx: Pick<DB.Prisma.TransactionClient, 'assessmentAuditScope' | 'liveQuiz'>
   auditTx: Parameters<typeof emitCoveredAssessmentAuditEvents>[0]['auditTx']
   liveQuizId: string
   courseId: string

@@ -61,6 +61,39 @@ describe('assessment response validation', () => {
     })
   })
 
+  it.each([
+    ['out-of-range', 'MC', [{ ix: 4, selected: true }]],
+    ['negative', 'MC', [{ ix: -1, selected: true }]],
+    ['fractional', 'MC', [{ ix: 0.5, selected: true }]],
+    [
+      'duplicate',
+      'MC',
+      [
+        { ix: 1, selected: true },
+        { ix: 1, selected: false },
+      ],
+    ],
+    ['duplicate', 'KPRIM', [0, 0, 1, 2].map((ix) => ({ ix, selected: true }))],
+  ] as const)('rejects a %s %s option index', (_label, type, choices) => {
+    expect(
+      validateStudentResponse({
+        type,
+        response: { choices: [...choices] },
+        choiceCount: 4,
+      })
+    ).toMatchObject({ valid: false, reasonCode: 'CHOICES_INDEX_INVALID' })
+  })
+
+  it('accepts the sparse choices payload the PWA sends', () => {
+    expect(
+      validateStudentResponse({
+        type: 'MC',
+        response: { choices: [{ ix: 2, selected: true }] },
+        choiceCount: 4,
+      })
+    ).toEqual({ valid: true })
+  })
+
   it('returns a stable reason without embedding the raw answer', () => {
     const rawAnswer = 'sensitive-answer-value'
     const result = validateStudentResponse({
@@ -235,10 +268,18 @@ describe('Hatchet receipt resolution', () => {
       rows: [event('other-event', 'other-run'), event('')],
     })
 
-    await expect(
-      resolveTriggeringHatchetEventId(message, contextWithEvents(list))
-    ).rejects.toThrow('Hatchet triggering event is not yet available')
-    expect(list).toHaveBeenCalledTimes(3)
+    vi.useFakeTimers()
+    try {
+      const resolution = expect(
+        resolveTriggeringHatchetEventId(message, contextWithEvents(list))
+      ).rejects.toThrow('Hatchet triggering event is not yet available')
+      await vi.runAllTimersAsync()
+      await resolution
+    } finally {
+      vi.useRealTimers()
+    }
+    // One initial lookup plus five backed-off retries.
+    expect(list).toHaveBeenCalledTimes(6)
   })
 
   it('rejects ambiguous triggering events across pages', async () => {

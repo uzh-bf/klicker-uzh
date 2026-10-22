@@ -94,6 +94,32 @@ function fixture() {
     }),
   }
   const reader = {
+    verifyEvents: vi.fn(
+      async ({
+        eventIds,
+      }: {
+        eventIds: readonly string[]
+      }): Promise<
+        Awaited<ReturnType<AzureTableAuditReader['verifyEvents']>>
+      > => {
+        const byId = new Map(
+          records.map((record) => [record.envelope.eventId, record])
+        )
+        return {
+          verified: eventIds.flatMap((id) => {
+            const record = byId.get(id)
+            return record === undefined ? [] : [record]
+          }),
+          failures: eventIds
+            .filter((id) => !byId.has(id))
+            .map((eventId) => ({
+              eventId,
+              reason: 'EVIDENCE_MISSING' as const,
+              detail: 'root row missing',
+            })),
+        }
+      }
+    ),
     exportQuizWithFailures: vi.fn(
       async (): Promise<
         Awaited<ReturnType<AzureTableAuditReader['exportQuizWithFailures']>>
@@ -259,21 +285,11 @@ describe('assessment sealing', () => {
     expect(report.verification.sealStatus).toBe('INVALID')
   })
 
-  it('waits for delivery: in-flight events neither block nor enter a manifest', async () => {
+  it('waits for delivery: in-flight events are neither read nor sealed', async () => {
     const f = fixture()
     const delivering = event()
     f.records.push(delivering)
     f.inFlight.add(delivering.envelope.eventId)
-    f.reader.exportQuizWithFailures.mockImplementation(async () => ({
-      verified: [...f.records],
-      failures: [
-        {
-          eventId: delivering.envelope.eventId,
-          reason: 'LOCATOR_MISSING' as const,
-          detail: 'locator not written yet',
-        },
-      ],
-    }))
     expect(await sealAssessmentAudit(f)).toMatchObject({
       sealedCount: 1,
       awaitingDeliveryCount: 1,
@@ -281,13 +297,12 @@ describe('assessment sealing', () => {
       failures: [],
     })
     expect(
+      f.reader.verifyEvents.mock.calls.flatMap(([{ eventIds }]) => eventIds)
+    ).not.toContain(delivering.envelope.eventId)
+    expect(
       f.stored.flatMap(({ manifest }) => manifest.events.map((e) => e.eventId))
     ).not.toContain(delivering.envelope.eventId)
     f.inFlight.clear()
-    f.reader.exportQuizWithFailures.mockImplementation(async () => ({
-      verified: [...f.records],
-      failures: [],
-    }))
     expect(await sealAssessmentAudit(f)).toMatchObject({
       sealedCount: 1,
       manifestCount: 1,
@@ -297,19 +312,40 @@ describe('assessment sealing', () => {
 
   it('still fails on verification failures of delivered events', async () => {
     const f = fixture()
-    f.reader.exportQuizWithFailures.mockImplementation(async () => ({
-      verified: [...f.records],
-      failures: [
-        {
-          eventId: randomUUID(),
-          reason: 'EVIDENCE_MISSING' as const,
-          detail: 'root row missing',
-        },
-      ],
+    f.reader.verifyEvents.mockImplementation(async ({ eventIds }) => ({
+      verified: [],
+      failures: eventIds.map((eventId) => ({
+        eventId,
+        reason: 'EVIDENCE_MISSING' as const,
+        detail: 'root row missing',
+      })),
     }))
     const result = await sealAssessmentAudit(f)
     expect(result.failures[0]?.detail).toContain('verification failures')
     expect(f.stored).toHaveLength(0)
+  })
+
+  it('reads only the sealable events and each new batch, not the history', async () => {
+    const f = fixture()
+    f.records.push(...Array.from({ length: 249 }, () => event()))
+    expect(await sealAssessmentAudit(f)).toMatchObject({
+      sealedCount: 250,
+      failures: [],
+    })
+    const late = event()
+    f.records.push(late)
+    f.reader.verifyEvents.mockClear()
+
+    expect(await sealAssessmentAudit(f)).toMatchObject({
+      sealedCount: 1,
+      manifestCount: 1,
+      failures: [],
+    })
+    // One read of the sealable backlog, one re-read of the published batch.
+    expect(
+      f.reader.verifyEvents.mock.calls.map(([{ eventIds }]) => [...eventIds])
+    ).toEqual([[late.envelope.eventId], [late.envelope.eventId]])
+    expect(f.reader.exportQuizWithFailures).not.toHaveBeenCalled()
   })
 
   it('detects whole manifest loss from the PostgreSQL SEALED checkpoint', async () => {
@@ -326,7 +362,7 @@ describe('assessment sealing', () => {
   it('renews retention without reading evidence when nothing is sealable', async () => {
     const f = fixture()
     await sealAssessmentAudit(f)
-    f.reader.exportQuizWithFailures.mockClear()
+    f.reader.verifyEvents.mockClear()
     const list = vi.spyOn(f.manifests, 'list')
     expect(await sealAssessmentAudit(f)).toMatchObject({
       sealedCount: 0,
@@ -337,7 +373,7 @@ describe('assessment sealing', () => {
       quiz,
       expect.objectContaining({ repairPending: true })
     )
-    expect(f.reader.exportQuizWithFailures).not.toHaveBeenCalled()
+    expect(f.reader.verifyEvents).not.toHaveBeenCalled()
   })
 
   it('rejects non-positive batch limits', async () => {

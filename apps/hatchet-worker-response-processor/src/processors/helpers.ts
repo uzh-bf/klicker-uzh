@@ -132,7 +132,11 @@ export function validateStudentResponse({
   type,
   response,
   restrictions,
+  choiceCount,
 }: {
+  // Number of answer options of a choices question; when known, every
+  // submitted index must address one of them.
+  choiceCount?: number
   type:
     | 'SC'
     | 'MC'
@@ -162,6 +166,29 @@ export function validateStudentResponse({
         valid: false,
         reasonCode: 'CHOICES_FORMAT_INVALID',
         message: 'Invalid response submitted for choices question',
+      }
+    }
+
+    // indices must be distinct integers addressing an existing option, so a
+    // crafted payload cannot add phantom options to the live result counts
+    const indices = response.choices.map((r) => r.ix)
+    const hasOptionCount =
+      typeof choiceCount === 'number' &&
+      Number.isSafeInteger(choiceCount) &&
+      choiceCount > 0
+    if (
+      new Set(indices).size !== indices.length ||
+      indices.some(
+        (ix) =>
+          !Number.isSafeInteger(ix) ||
+          ix < 0 ||
+          (hasOptionCount && ix >= choiceCount)
+      )
+    ) {
+      return {
+        valid: false,
+        reasonCode: 'CHOICES_INDEX_INVALID',
+        message: 'Invalid answer option submitted for choices question',
       }
     }
 

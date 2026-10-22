@@ -32,7 +32,7 @@
   "scripts": {
     "build": "run-s --npm-path pnpm generate build:ts",
     "build:test": "pnpm run build",
-    "build:ts": "cross-env NODE_ENV=production rollup -c",
+    "build:ts": "cross-env NODE_ENV=production rollup -c --forceExit",
     "check": "run-s --npm-path pnpm generate check:ts",
     "check:ts": "tsc --noEmit -p tsconfig.check.json",
     "generate": "prisma generate",
