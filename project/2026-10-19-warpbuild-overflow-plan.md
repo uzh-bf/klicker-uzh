@@ -117,8 +117,10 @@ grants remains an operator obligation, not a global concurrency lock. The source
 preserves the existing PR lifecycle cancellation behavior rather than introducing
 a cloud-wide queue that could cancel unrelated pending work. Live compatibility,
 whole-wave provider acceptance and billing remain unqualified. Current-head hosted
-CI and ordinary feedback are pending; no new PR yet. Original merged branch is
-preserved.
+CI and ordinary feedback are pending on
+[draft PR #6675](https://github.com/uzh-bf/klicker-uzh/pull/6675). Original merged
+branch is preserved. The package adds roughly 400 substantive source/test lines
+in one cohesive existing admission path; it adds no service or new workflow.
 
 The sections below preserve the prior source package and its verification
 history. Their references to a next coordinator deployment, draft status or
