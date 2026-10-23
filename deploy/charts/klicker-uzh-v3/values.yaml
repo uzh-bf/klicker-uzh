@@ -538,6 +538,8 @@ backendGraphql:
     inputContainer: 'question-inputs'
     outputContainer: 'question-results'
     outputPrefix: 'question-builds'
+    libraryComparison:
+      maxElements: 500
     cost:
       questionMinorUnits: ''
       flashcardMinorUnits: ''

@@ -1018,6 +1018,34 @@ describe('question-generation artifact normalization', () => {
     expect(JSON.stringify(summary)).not.toContain('DISTINCTIVE RAW EXCERPT')
   })
 
+  it('preserves the library-overlap warning code in the Plan summary', () => {
+    const artifact = plan()
+    Object.assign(artifact.questions[0]!, {
+      manual_review_required: true,
+      verification_issues: [
+        'LIBRARY_SEMANTIC_OVERLAP: question q01 may duplicate library element 42 (version 3, similarity 0.913); review the existing library question before approval.',
+        'LIBRARY_COMPARISON_TRUNCATED: compared against 500 selected library questions; additional eligible questions were not included.',
+      ],
+    })
+
+    const summary = parseQuestionGenerationPlan(bytes(artifact), {
+      buildId: BUILD_ID,
+      configuration,
+      sourceSnapshot,
+    })
+
+    expect(summary.warnings).toContainEqual({
+      code: 'LIBRARY_SEMANTIC_OVERLAP',
+      message:
+        'LIBRARY_SEMANTIC_OVERLAP: question q01 may duplicate library element 42 (version 3, similarity 0.913); review the existing library question before approval.',
+    })
+    expect(summary.warnings).toContainEqual({
+      code: 'LIBRARY_COMPARISON_TRUNCATED',
+      message:
+        'LIBRARY_COMPARISON_TRUNCATED: compared against 500 selected library questions; additional eligible questions were not included.',
+    })
+  })
+
   it('accepts worker-classified Bloom for an objective without a fixed level', () => {
     const artifact = plan()
     artifact.questions[0]!.bloom_level = 'apply'

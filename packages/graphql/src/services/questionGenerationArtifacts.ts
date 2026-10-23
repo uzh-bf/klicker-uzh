@@ -22,6 +22,7 @@ import type {
 import { SaxesParser, type SaxesTagNS } from 'saxes'
 import { parser as streamJsonParser, type Token } from 'stream-json/parser.js'
 import { z } from 'zod'
+import { QUESTION_LIBRARY_WARNING_CODES } from './questionGenerationContracts.js'
 import {
   QuestionGenerationServiceError,
   questionGenerationServiceError,
@@ -2018,7 +2019,7 @@ export function parseQuestionGenerationPlan(
       )
     }
     for (const issue of question.verification_issues ?? []) {
-      result.push(warning('PIPELINE_VERIFICATION_WARNING', issue))
+      result.push(warning(verificationWarningCode(issue), issue))
     }
     return result
   })
@@ -2031,6 +2032,13 @@ export function parseQuestionGenerationPlan(
     questions: normalizedQuestions,
     warnings,
   }
+}
+
+function verificationWarningCode(issue: string): string {
+  const libraryWarningCode = Object.values(QUESTION_LIBRARY_WARNING_CODES).find(
+    (code) => issue.startsWith(`${code}:`)
+  )
+  return libraryWarningCode ?? 'PIPELINE_VERIFICATION_WARNING'
 }
 
 export function parseQuestionGenerationResult(
