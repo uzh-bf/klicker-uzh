@@ -73,3 +73,15 @@ Both PRs remain draft; this package stops at verified source delivery.
   and confirming ordinary automatic reviews remain within delivery authority.
   Main retained the small diagnostic edit because dispatch overhead exceeds its
   implementation; the independent public-source investigation completed.
+- Public suites pass with 121 tests; the optional released-binary fixture passes
+  separately. Adopter controller and pinned runner/broker suites pass. Synthetic
+  startup failure emits the fixed class without provider requests. Formatting,
+  Node syntax, Gitleaks and focused Opengrep pass; existing Biome advisories remain.
+- Simplification found no justified cleanup; risk and trusted integrated source
+  reviews passed with no findings. Source delivery is in
+  [draft PR #6687](https://github.com/uzh-bf/klicker-uzh/pull/6687). The public
+  engine source pin is `939cd26d1246fb1409609f87d64d984a8aada9b5`.
+- Substantive size excluding project artifacts: public package 53 additions
+  and 4 deletions; adopter package 26 additions and 6 deletions. The adopter is
+  floor-exempt because it repairs CI startup. Hosted checks are still pending;
+  both PRs remain draft and live acceptance follows the next normal merged run.
