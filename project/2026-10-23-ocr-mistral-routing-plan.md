@@ -92,3 +92,14 @@ state their dependent engine pin and any pending hosted CI.
 - Both previous OCR source packages were squash-merged.
 - Planner round one: revisions accepted for receipt identity, explicit native
   replay coverage, all runner selectors and deterministic ownership.
+
+- Planner round two: APPROVED. Implemented fixed `mistral-flash` routing and
+  model-bound pricing; final/advisor remain on `mistral`. Synthetic public suites
+  passed 256 tests with one optional binary fixture skipped; that fixture passed
+  separately against checksum-verified OCR 1.13.0 and mock providers. Three
+  workflow contracts passed. Biome formatting, Prettier and focused Opengrep
+  passed (zero findings); existing Biome advisory warnings remain. No app runtime.
+- Simplifier accepted: remove a redundant mock Response JSON round-trip and use
+  explicit provider/model pairs in the existing concurrent replay test. Both
+  cases pass. Package size is 600+ substantive code/test/config lines, mostly
+  parameterizing existing history scenarios; one cohesive provider migration.

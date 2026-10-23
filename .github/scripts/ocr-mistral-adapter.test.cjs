@@ -2730,7 +2730,10 @@ test('request conversion and native replay work over the loopback listener', asy
   }
 })
 
-for (const provider of ['mistral', 'mistral-flash'])
+for (const [provider, model] of [
+  ['mistral', MISTRAL_MODEL],
+  ['mistral-flash', MISTRAL_FLASH_MODEL],
+])
   test(`${provider}: native memory keeps concurrent groups with reused tool-call ids apart`, async () => {
     const make = (marker) => ({
       role: 'assistant',
@@ -2747,36 +2750,28 @@ for (const provider of ['mistral', 'mistral-flash'])
     const fetchImpl = upstream((record) => {
       const messages = record.body.messages
       if (messages.at(-1).role === 'user') {
-        return jsonResponse(
-          200,
-          completion(make(messages[0].content), 'tool_calls')
-        )
+        return jsonResponse(200, {
+          ...completion(make(messages[0].content), 'tool_calls'),
+          model,
+        })
       }
-      return jsonResponse(
-        200,
-        completion({ role: 'assistant', content: 'done' })
-      )
+      return jsonResponse(200, {
+        ...completion({ role: 'assistant', content: 'done' }),
+        model,
+      })
     })
     const adapter = await startAdapter({
       provider,
       apiKey: 'sk',
-      fetchImpl: async (...args) => {
-        const response = await fetchImpl(...args)
-        const payload = await response.json()
-        payload.model =
-          provider === 'mistral-flash' ? MISTRAL_FLASH_MODEL : MISTRAL_MODEL
-        return jsonResponse(200, payload)
-      },
+      fetchImpl,
     })
     try {
       const alpha = await postJson(adapter, {
-        model:
-          provider === 'mistral-flash' ? MISTRAL_FLASH_MODEL : MISTRAL_MODEL,
+        model,
         messages: [{ role: 'user', content: 'alpha' }],
       })
       const beta = await postJson(adapter, {
-        model:
-          provider === 'mistral-flash' ? MISTRAL_FLASH_MODEL : MISTRAL_MODEL,
+        model,
         messages: [{ role: 'user', content: 'beta' }],
       })
       assert.equal(
@@ -2786,8 +2781,7 @@ for (const provider of ['mistral', 'mistral-flash'])
       assert.equal(beta.json.choices[0].message.reasoning_content, 'beta-think')
 
       const replayAlpha = await postJson(adapter, {
-        model:
-          provider === 'mistral-flash' ? MISTRAL_FLASH_MODEL : MISTRAL_MODEL,
+        model,
         messages: [
           { role: 'user', content: 'alpha' },
           alpha.json.choices[0].message,
@@ -2795,8 +2789,7 @@ for (const provider of ['mistral', 'mistral-flash'])
         ],
       })
       const replayBeta = await postJson(adapter, {
-        model:
-          provider === 'mistral-flash' ? MISTRAL_FLASH_MODEL : MISTRAL_MODEL,
+        model,
         messages: [
           { role: 'user', content: 'beta' },
           beta.json.choices[0].message,
