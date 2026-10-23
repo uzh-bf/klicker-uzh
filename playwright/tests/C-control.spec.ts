@@ -319,6 +319,9 @@ test.describe
     await expect(
       page.getByTestId('audience-feedback-difficulty-meter')
     ).toHaveAttribute('aria-valuenow', '-1')
+    await expect(
+      page.getByTestId('audience-feedback-summary')
+    ).toHaveAccessibleName(/\b3\b/)
     feedbackMode = 'error'
     await expect(page.getByTestId('audience-feedback-summary')).toHaveAttribute(
       'data-state',

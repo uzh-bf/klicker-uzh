@@ -169,6 +169,22 @@ function AudienceFeedback({
       : refreshFailed
         ? t('control.liveQuiz.audienceFeedbackRefreshError')
         : t('control.liveQuiz.audienceFeedbackWindow')
+  const accessibleSummary = [
+    t('control.liveQuiz.audienceFeedbackOpen'),
+    disabled && t('control.liveQuiz.audienceFeedbackOff'),
+    speedLabel &&
+      `${t('control.liveQuiz.audienceFeedbackSpeed')}: ${speedLabel}`,
+    difficultyLabel &&
+      `${t('control.liveQuiz.audienceFeedbackDifficulty')}: ${difficultyLabel}`,
+    hasResponses
+      ? t('control.liveQuiz.audienceFeedbackCount', {
+          count: responseCount ?? 0,
+        })
+      : data && t('control.liveQuiz.audienceFeedbackNoResponses'),
+    statusMessage,
+  ]
+    .filter(Boolean)
+    .join('. ')
 
   const updateConfusionFeedback = async (isEnabled: boolean) => {
     setUpdatingConfusionFeedback(true)
@@ -199,7 +215,7 @@ function AudienceFeedback({
           type="button"
           onClick={() => setSheetOpen(true)}
           aria-busy={loading || updatingConfusionFeedback}
-          aria-label={t('control.liveQuiz.audienceFeedbackOpen')}
+          aria-label={accessibleSummary}
           data-cy="audience-feedback-summary"
           data-state={summaryState}
           className="hover:bg-ctrl-bg focus-visible:ring-uzh-blue w-full rounded-md px-4 py-3 text-left focus-visible:ring-2 focus-visible:ring-offset-2 focus-visible:outline-none"
