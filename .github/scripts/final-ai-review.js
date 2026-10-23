@@ -3816,6 +3816,7 @@ module.exports = {
   validateDispositionRecord,
   validateOCRResult,
   validateOCRPreview,
+  validateOCRCoverage,
   validateFinding,
   verifyMistralToolAccess,
   writeOCRConfig,

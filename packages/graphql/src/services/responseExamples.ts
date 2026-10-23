@@ -48,7 +48,7 @@ const responseExampleSetInclude = {
     },
   },
   chatbot: {
-    select: { systemPrompts: true },
+    select: { systemPrompts: true, standardModeConfig: true },
   },
 } satisfies Prisma.ResponseExampleSetInclude
 
@@ -69,7 +69,10 @@ function withChatbotModes(
 ): ResponseExampleSetWithModes {
   return {
     ...set,
-    chatModes: extractChatbotModes(set.chatbot.systemPrompts),
+    chatModes: extractChatbotModes(
+      set.chatbot.systemPrompts,
+      set.chatbot.standardModeConfig
+    ),
   }
 }
 
@@ -359,7 +362,9 @@ async function reviewResponseExample(
         },
         set: {
           select: {
-            chatbot: { select: { systemPrompts: true } },
+            chatbot: {
+              select: { systemPrompts: true, standardModeConfig: true },
+            },
           },
         },
       },
@@ -385,9 +390,10 @@ async function reviewResponseExample(
 
     if (
       status === DB.ResponseExampleStatus.APPROVED &&
-      !extractChatbotModes(example.set.chatbot.systemPrompts).includes(
-        example.chatMode
-      )
+      !extractChatbotModes(
+        example.set.chatbot.systemPrompts,
+        example.set.chatbot.standardModeConfig
+      ).includes(example.chatMode)
     ) {
       throw new GraphQLError(
         'The response example uses a chat mode that is not available for this chatbot.',
@@ -513,7 +519,9 @@ export async function editAndApproveResponseExample(
         },
         set: {
           select: {
-            chatbot: { select: { systemPrompts: true } },
+            chatbot: {
+              select: { systemPrompts: true, standardModeConfig: true },
+            },
           },
         },
       },
@@ -545,9 +553,10 @@ export async function editAndApproveResponseExample(
     }
 
     if (
-      !extractChatbotModes(example.set.chatbot.systemPrompts).includes(
-        input.chatMode
-      )
+      !extractChatbotModes(
+        example.set.chatbot.systemPrompts,
+        example.set.chatbot.standardModeConfig
+      ).includes(input.chatMode)
     ) {
       throw new GraphQLError(
         'The selected chat mode is not available for this chatbot.',

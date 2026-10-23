@@ -596,6 +596,10 @@ function createHistoryStore(options = {}) {
           'conflicting native reasoning for an identical turn'
         )
       }
+      // The same turn can be replayed under another conversation scope. That
+      // scope must be able to restore it after compression, and it shares the
+      // retained payload instead of consuming the bound a second time.
+      register(normalized, existing, scope)
       return
     }
     if (entries + 1 > maxEntries || bytes + size > maxBytes) {
@@ -608,6 +612,12 @@ function createHistoryStore(options = {}) {
     delete restorable.index
     const entry = { serialized, size, digest: hashIdentity(restorable) }
     native.set(key, entry)
+    register(normalized, entry, scope)
+    entries += 1
+    bytes += size
+  }
+
+  function register(normalized, entry, scope) {
     const turnKey = reasonedKey(normalized)
     if (turnKey) {
       // Compression rewrites the prefix. Only an exact reasoned turn with one
@@ -622,8 +632,6 @@ function createHistoryStore(options = {}) {
       if (!scopedTurns.has(scoped)) scopedTurns.set(scoped, entry)
       else if (prior?.digest !== entry.digest) scopedTurns.set(scoped, null)
     }
-    entries += 1
-    bytes += size
   }
 
   function restoreAssistant(prefixMessages, message, scope) {

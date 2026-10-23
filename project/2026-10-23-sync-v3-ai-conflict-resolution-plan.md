@@ -185,6 +185,24 @@ required draft CI and runtime/browser limitations remain separate conclusions.
 
 ## Progress
 
+Approved correction implementation is complete and awaiting committed review
+and fresh hosted CI. The derived plan passed its bounded three-round planner
+challenge. Existing response-example contract and authorization tests pass10;
+the new service regressions wait for the database-backed CI producer. GraphQL
+generation/schema/type checks, all42 workspace typechecks, syncpack and Prisma
+parity pass. The three focused review-tool suites pass176 with one pre-existing
+opt-in-binary skip; the publication suite independently passes six with that
+same skip. Format checks, synthetic Turbo strict-environment dry-run and Compose
+validation pass. Focused static analysis reports zero findings on five changed
+executable paths. Six lint tasks pass; unchanged Analytics lint cannot download
+its Python toolchain in the offline verification container and remains a CI
+obligation. Production builds are running separately. No application runtime
+or paid evaluation is needed for these source corrections. The correction adds
+no dependency or module, retains the existing draft and leaves the controller's
+description intact. Conditional hardening and other named residuals remain
+outside scope. Hooks use equivalent explicit checks because their default
+wrapper would start the stopped application runtime.
+
 Plan derived from the approved executable batch; planning challenge approved
 after correcting draft-check semantics, exact review scope and finite recovery.
 Initial dependency-free route/admission/controller checks: 48 passed, and the

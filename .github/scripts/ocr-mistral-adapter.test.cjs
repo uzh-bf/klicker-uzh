@@ -2602,6 +2602,52 @@ for (const provider of ['mistral', 'mistral-flash'])
   })
 
 for (const provider of ['mistral', 'mistral-flash'])
+  test(`${provider}: one native turn remembered in two scopes restores both compressed prefixes within one entry`, () => {
+    const history = createHistoryStore({ maxEntries: 1, provider })
+    const prefix = [{ role: 'user', content: 'original' }]
+    const native = {
+      role: 'assistant',
+      content: 'visible',
+      reasoning_content: 'retained private state',
+      tool_calls: [
+        {
+          id: 'shared-call',
+          type: 'function',
+          function: { name: 'file_read', arguments: '{"file_path":"a.ts"}' },
+        },
+      ],
+    }
+    const echo = { ...native }
+    delete echo.reasoning_content
+    const compressed = [{ role: 'user', content: 'summary' }]
+    history.remember(prefix, native, 'scope-one')
+    history.remember(prefix, native, 'scope-two')
+    assert.equal(history.entryCount(), 1)
+    assert.equal(history.byteCount(), Buffer.byteLength(JSON.stringify(native)))
+    for (const scope of ['scope-one', 'scope-two'])
+      assert.deepEqual(
+        history.restoreMessages([...compressed, echo], scope).at(-1),
+        native
+      )
+    assert.equal(history.diagnostics().compressed_hits, 2)
+    for (const scope of ['scope-three', undefined])
+      assert.throws(
+        () => history.restoreMessages([...compressed, echo], scope),
+        { code: 'history_missing' }
+      )
+    assert.throws(
+      () =>
+        history.remember(
+          [{ role: 'user', content: 'another group' }],
+          { ...native, reasoning_content: 'different private state' },
+          'scope-one'
+        ),
+      { code: 'history_exhausted' }
+    )
+    assert.equal(history.entryCount(), 1)
+  })
+
+for (const provider of ['mistral', 'mistral-flash'])
   test(`${provider}: compressed tool replay without echoed reasoning requires the same conversation and unique native state`, () => {
     const history = createHistoryStore({ maxEntries: 3, provider })
     const prefix = [{ role: 'user', content: 'original' }]

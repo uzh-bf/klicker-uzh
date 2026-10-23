@@ -1,10 +1,10 @@
 import type { EventEmitter } from 'node:events'
 import type { Hatchet } from '@hatchet-dev/typescript-sdk'
 import {
-  type Prisma,
-  type PrismaClient,
   KBResourceStatus,
   KBResourceType,
+  Prisma,
+  type PrismaClient,
   ResponseExampleStatus,
   ResponseExampleStyle,
 } from '@klicker-uzh/prisma/client'
@@ -365,13 +365,113 @@ describe('response-example foundation', () => {
 
     await prisma.chatbot.update({
       where: { id: chatbot.id },
-      data: { systemPrompts: { explainer: { prompt: 'Explainer' } } },
+      data: { systemPrompts: { tutor: { enabled: false } } },
     })
     const candidate = set.examples.find(
       (example) => example.status === ResponseExampleStatus.CANDIDATE
     )!
     await expect(
       approveResponseExample({ id: candidate.id }, userOneCtx)
+    ).rejects.toMatchObject({
+      extensions: { code: RESPONSE_EXAMPLE_MODE_UNAVAILABLE },
+    })
+  })
+
+  it('lists and approves default Explainer examples without prompt overrides', async () => {
+    const { chatbot, set } = await seedResponseExampleSet()
+    const candidate = set.examples.find(
+      (example) => example.status === ResponseExampleStatus.CANDIDATE
+    )!
+    await prisma.chatbot.update({
+      where: { id: chatbot.id },
+      data: { systemPrompts: Prisma.DbNull },
+    })
+    await prisma.responseExample.update({
+      where: { id: candidate.id },
+      data: { chatMode: 'explainer' },
+    })
+    const listed = await getChatbotResponseExamples(
+      { chatbotId: chatbot.id },
+      userOneCtx
+    )
+    expect(listed?.chatModes).toContain('explainer')
+    const approved = await approveResponseExample(
+      { id: candidate.id },
+      userOneCtx
+    )
+    const example = approved?.examples.find(({ id }) => id === candidate.id)
+    expect(example).toMatchObject({
+      chatMode: 'explainer',
+      status: ResponseExampleStatus.APPROVED,
+    })
+    if (!example) throw new Error('Missing approved response example')
+    const edited = await editAndApproveResponseExample(
+      {
+        id: candidate.id,
+        chatMode: 'explainer',
+        studentMessage: candidate.studentMessage,
+        referenceAnswer: candidate.referenceAnswer,
+        responseStyle: candidate.responseStyle,
+        expectedUpdatedAt: example.updatedAt,
+      },
+      userOneCtx
+    )
+    expect(edited?.examples.find(({ id }) => id === candidate.id)?.status).toBe(
+      ResponseExampleStatus.APPROVED
+    )
+  })
+
+  it.each([
+    'legacy',
+    'standard',
+  ] as const)('keeps %s-disabled Explainer unavailable to both approval paths', async (configuration) => {
+    const { chatbot, set } = await seedResponseExampleSet()
+    const candidate = set.examples.find(
+      (example) => example.status === ResponseExampleStatus.CANDIDATE
+    )!
+    await prisma.chatbot.update({
+      where: { id: chatbot.id },
+      data:
+        configuration === 'legacy'
+          ? { systemPrompts: { explainer: { enabled: false } } }
+          : {
+              standardModeConfig: {
+                tutorEnabled: true,
+                explainerEnabled: false,
+                quizzerEnabled: false,
+                courseName: null,
+                subjectDomain: null,
+                languageOfInstruction: null,
+                scopeNote: null,
+              },
+            },
+    })
+    const example = await prisma.responseExample.update({
+      where: { id: candidate.id },
+      data: { chatMode: 'explainer' },
+    })
+    const listed = await getChatbotResponseExamples(
+      { chatbotId: chatbot.id },
+      userOneCtx
+    )
+    expect(listed?.chatModes).not.toContain('explainer')
+    await expect(
+      approveResponseExample({ id: candidate.id }, userOneCtx)
+    ).rejects.toMatchObject({
+      extensions: { code: RESPONSE_EXAMPLE_MODE_UNAVAILABLE },
+    })
+    await expect(
+      editAndApproveResponseExample(
+        {
+          id: candidate.id,
+          chatMode: 'explainer',
+          studentMessage: candidate.studentMessage,
+          referenceAnswer: candidate.referenceAnswer,
+          responseStyle: candidate.responseStyle,
+          expectedUpdatedAt: example.updatedAt,
+        },
+        userOneCtx
+      )
     ).rejects.toMatchObject({
       extensions: { code: RESPONSE_EXAMPLE_MODE_UNAVAILABLE },
     })
