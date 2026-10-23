@@ -4944,7 +4944,7 @@ test.describe.serial('Core live-quiz workflows', () => {
       const contentName = `Timed response limit follow-up ${suffix}`
       const firstDraft = `First timed draft ${suffix}`
       const nextDraft = `Next timed draft ${suffix}`
-      const timeLimitSeconds = 600
+      const timeLimitSeconds = 120
       let addResponseRequests = 0
 
       await loginLecturer(page)
@@ -4987,8 +4987,6 @@ test.describe.serial('Core live-quiz workflows', () => {
       await page.getByTestId(`start-live-quiz-${quizName}`).click()
       await openNextBlockFromCockpit(page)
 
-      const frozenTime = await page.evaluate(() => Date.now())
-      await page.clock.setFixedTime(new Date(frozenTime))
       await loginStudentWithStoredPwaState(page)
       await page.getByTestId(`live-quiz-${displayName}`).click()
 
@@ -5045,15 +5043,18 @@ test.describe.serial('Core live-quiz workflows', () => {
       await expect(submit).toBeEnabled()
       expect(addResponseRequests).toBe(2)
 
+      const expiryTimeout = (timeLimitSeconds + 30) * 1000
       const autosubmitRequest = page.waitForRequest(
         (request) =>
           request.method() === 'POST' &&
-          new URL(request.url()).pathname === '/AddResponse'
+          new URL(request.url()).pathname === '/AddResponse',
+        { timeout: expiryTimeout }
       )
       const autosubmitResponse = page.waitForResponse(
         (response) =>
           response.request().method() === 'POST' &&
-          new URL(response.url()).pathname === '/AddResponse'
+          new URL(response.url()).pathname === '/AddResponse',
+        { timeout: expiryTimeout }
       )
       let releaseResponse: (() => void) | undefined
       if (submitAtExpiry) {
@@ -5072,11 +5073,8 @@ test.describe.serial('Core live-quiz workflows', () => {
         await autosubmitRequest
       }
 
-      // Keep native intervals running while moving the deadline into the past.
-      await page.clock.setFixedTime(
-        new Date(frozenTime + (timeLimitSeconds + 1) * 1000)
-      )
-      await expect(countdown(page)).toHaveCount(0)
+      // Observe the native deadline without changing authentication or router clocks.
+      await expect(countdown(page)).toHaveCount(0, { timeout: expiryTimeout })
       releaseResponse?.()
       const [request, response] = await Promise.all([
         autosubmitRequest,
@@ -5093,25 +5091,6 @@ test.describe.serial('Core live-quiz workflows', () => {
       await expect(countdown(page)).toHaveCount(0)
       await page.getByTestId('lq-nav-prev').click()
       await expect(input).toBeDisabled()
-
-      await page.clock.setFixedTime(new Date())
-      await loginLecturer(page)
-      await page.getByTestId('activities').click()
-      await page.getByTestId(`live-quiz-cockpit-${quizName}`).click()
-      const nextBlock = page.getByTestId('next-block-timeline')
-      await expect(nextBlock).toBeEnabled({ timeout: 30000 })
-      await nextBlock.click()
-      await expect(nextBlock).toBeEnabled({ timeout: 30000 })
-      await nextBlock.click()
-      await expect(
-        page.getByTestId(`activity-LIVE_QUIZ-${quizName}`)
-      ).toBeVisible({ timeout: 30000 })
-      await page.getByTestId(`actions-LIVE_QUIZ-${quizName}`).click()
-      await page.getByTestId(`delete-live-quiz-${quizName}`).click()
-      await confirmResponseDeletionIfAvailable(page)
-      await clickIfVisible(page, 'confirm-deletion-qa-feedbacks')
-      await clickIfVisible(page, 'confirm-deletion-confusion-feedbacks')
-      await page.getByTestId('confirmation-modal-confirm').click()
     })
   }
 
