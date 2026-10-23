@@ -2305,7 +2305,19 @@ function createProgressFilter(write, onCompression = () => {}) {
             line
           )
         const code = reviewFailed ? 'review_failed' : 'cli_failed'
-        const classification = marker ? marker[1] : 'unknown'
+        let classification = marker ? marker[1] : 'unknown'
+        if (
+          line.startsWith(
+            'Error: review failed: load diffs: get diffs: git diff failed:'
+          )
+        )
+          classification = 'git_diff'
+        else if (
+          line.startsWith(
+            'Error: review failed: load diffs: get diffs: cannot find merge-base between '
+          )
+        )
+          classification = 'merge_base'
         fatalEmitted = true
         event = `event=cli_error code=${code} classification=${classification}`
       }
