@@ -472,11 +472,12 @@ function QuestionArea({
         if (instanceId === activeInstanceIdRef.current) {
           setSubmittedResponses(responses)
           setSubmittedAt(responseTimestamp)
-          setStudentResponse({
-            type: ElementType.FreeText,
-            response: '',
-            valid: false,
-          })
+          setStudentResponse((current) =>
+            current.type === ElementType.FreeText &&
+            current.response === input.response
+              ? { ...current, response: '', valid: false }
+              : current
+          )
         }
         return true
       } else {
