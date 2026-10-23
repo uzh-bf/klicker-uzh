@@ -179,8 +179,8 @@ export async function getCachedBlockResults({
         responses,
         total: parseInt(results.participants),
         // with a response limit above 1, responses and respondents differ
-        ...(parseResponseLimit(info.responseLimit) > 1
-          ? { respondents: parseInt(respondents ?? '0') }
+        ...(parseResponseLimit(info.responseLimit) > 1 && respondents !== null
+          ? { respondents: parseInt(respondents) }
           : {}),
       } as ElementResultsOpen
     } else if (instance.elementType === DB.ElementType.SELECTION) {
