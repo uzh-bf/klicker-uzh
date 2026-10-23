@@ -199,9 +199,13 @@ const requestPromise = page.waitForRequest('**/api/submit')
 await page.click('button')
 const request = await requestPromise
 
-// Wait for no network activity
-await page.waitForLoadState('networkidle')
+// Then assert the user-visible result; unrelated requests may never settle.
+await expect(page.getByRole('status')).toHaveText('Saved')
 ```
+
+Do not use `networkidle` as application readiness. Playwright explicitly
+[discourages it for tests](https://playwright.dev/docs/api/class-page#page-wait-for-load-state);
+assert the relevant UI state, or await a specific response plus its UI result.
 
 ### Wait for Element State
 
