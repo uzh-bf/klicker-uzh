@@ -55,9 +55,24 @@ async function chatCookie(page: Page, name: string) {
 async function expectChatbotReached(page: Page) {
   await expect(page).toHaveURL(new RegExp(CHATBOT_ID), { timeout: 20_000 })
 
+  const dataUseSubmit = page.getByTestId('chat-data-use-submit')
   const accept = page.getByTestId('chat-disclaimer-accept')
   const composer = page.getByTestId('chat-composer')
   await expect(async () => {
+    // Chat answers on behalf of a persisted participant account, so an
+    // identity without a recorded disclosure meets the data-use notice before
+    // the chatbot disclaimer. Every guest persona and every synthetic account
+    // this spec creates starts in that state.
+    if (await dataUseSubmit.isVisible()) {
+      // The policy links render only on the client; wait for hydration before
+      // interacting with controls that are already present in the server HTML.
+      await expect(
+        dataUseSubmit.locator('..').locator('a[href$="/privacy_policy"]')
+      ).toBeVisible()
+      await page.getByTestId('chat-data-use-analytics-false').check()
+      await page.getByTestId('chat-data-use-acknowledged').check()
+      await dataUseSubmit.click()
+    }
     if (await accept.isVisible()) await accept.click()
     await expect(composer).toBeVisible({ timeout: 5_000 })
   }).toPass({ timeout: 30_000 })
@@ -165,6 +180,71 @@ test.describe('LTI chatbot launch identity resolution', () => {
     expect(
       cookieTokenSubject(await chatCookie(page, 'participant_token'))
     ).not.toBe(guestAccount?.participantId)
+  })
+
+  test('onboarding can recover after a revision conflict and a failed reload', async ({
+    page,
+  }) => {
+    let submittedRevision: number | undefined
+    let attempts = 0
+    let rejectReload = false
+    let releaseDisclaimer: (() => void) | undefined
+    const disclaimerReady = new Promise<void>((resolve) => {
+      releaseDisclaimer = resolve
+    })
+    await page.route('**/api/chatbots/*/disclaimer', async (route) => {
+      if (route.request().method() === 'GET') await disclaimerReady
+      await route.continue()
+    })
+    await page.route('**/api/chatbots/*/data-use', async (route) => {
+      if (route.request().method() === 'POST') {
+        attempts += 1
+        submittedRevision = route.request().postDataJSON().expectedRevision
+        if (attempts === 1) {
+          rejectReload = true
+          await route.fulfill({
+            status: 409,
+            json: { error: 'PARTICIPANT_DATA_USE_STALE_REVISION' },
+          })
+          return
+        }
+      } else if (route.request().method() === 'GET' && rejectReload) {
+        rejectReload = false
+        await route.fulfill({ status: 503, json: {} })
+        return
+      }
+      await route.continue()
+    })
+
+    await launchChatbot(page, { sub: LTI_SUB_GUEST })
+    const submit = page.getByTestId('chat-data-use-submit')
+    const acknowledge = page.getByTestId('chat-data-use-acknowledged')
+    await expect(
+      submit.locator('..').locator('a[href$="/privacy_policy"]')
+    ).toBeVisible()
+    await page.getByTestId('chat-data-use-analytics-false').check()
+    await acknowledge.check()
+    await submit.click()
+    await expect(acknowledge).not.toBeChecked()
+    await expect(submit).toBeDisabled()
+    await acknowledge.check()
+    await expect(submit).toBeEnabled()
+    await submit.click()
+    await expect(submit).toBeHidden()
+    await expect(page.getByTestId('chat-composer')).toBeHidden()
+    releaseDisclaimer?.()
+    await expect(page.getByTestId('chat-disclaimer-accept')).toBeVisible()
+    expect(attempts).toBe(2)
+    expect(submittedRevision).toBe(0)
+
+    const prisma = await getPrisma()
+    const guest = await prisma.participantAccount.findFirstOrThrow({
+      where: { ssoId: { startsWith: 'chat-guest:' } },
+      include: { participant: true },
+    })
+    expect(guest.participant.dataUseRevision).toBe(1)
+    expect(guest.participant.learningAnalyticsConsent).toBe(false)
+    expect(guest.participant.dataUseAcknowledgedAt).not.toBeNull()
   })
 
   test('a verified LTI-linked account signs in without a session and gets opt-out participation', async ({
