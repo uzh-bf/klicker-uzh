@@ -87,6 +87,17 @@ if redis.call('SISMEMBER', KEYS[1], ARGV[1]) == 1 then
   return 'processed'
 end
 
+local function non_negative_integer(value, label)
+  if value ~= '0' and string.match(value, '^[1-9]%d*$') == nil then
+    return nil, label .. ' is not a non-negative integer'
+  end
+  local parsed = tonumber(value)
+  if parsed == nil or parsed > MAX_SAFE_INTEGER then
+    return nil, label .. ' is outside the supported integer range'
+  end
+  return parsed
+end
+
 local isFirstResponse
 local count
 if isAnonymous then
@@ -98,29 +109,15 @@ else
     return 'duplicate'
   end
 
-  local rawCount = redis.call('HGET', KEYS[3], participantKey) or '0'
-  if rawCount ~= '0' and string.match(rawCount, '^[1-9]%d*$') == nil then
-    return redis.error_reply('participant response count is not a non-negative integer')
-  end
-  count = tonumber(rawCount)
-  if count == nil or count > MAX_SAFE_INTEGER then
-    return redis.error_reply('participant response count is outside the supported integer range')
-  end
+  local countError
+  count, countError = non_negative_integer(
+    redis.call('HGET', KEYS[3], participantKey) or '0', 'participant response count'
+  )
+  if count == nil then return redis.error_reply(countError) end
   if count >= tonumber(ARGV[6]) then
     return 'limit'
   end
   isFirstResponse = count == 0
-end
-
-local function non_negative_integer(value, label)
-  if value ~= '0' and string.match(value, '^[1-9]%d*$') == nil then
-    return nil, label .. ' is not a non-negative integer'
-  end
-  local parsed = tonumber(value)
-  if parsed == nil or parsed > MAX_SAFE_INTEGER then
-    return nil, label .. ' is outside the supported integer range'
-  end
-  return parsed
 end
 
 local resultCount, countError = non_negative_integer(
