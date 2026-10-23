@@ -1,4 +1,7 @@
-import { buildHistoryAttachmentDto } from '@/src/lib/attachments/attachmentState'
+import {
+  buildHistoryAttachmentDto,
+  IMAGE_ROW_FILTER,
+} from '@/src/lib/attachments/attachmentState'
 import { withChatbotAuth } from '@/src/lib/server/apiGuards'
 import { isParticipantReasoningVisible } from '@/src/lib/server/effectiveChatModes'
 import { withoutReasoningParts } from '@/src/lib/server/persistedAssistantContent'
@@ -38,6 +41,7 @@ export async function GET(
       },
       include: {
         attachments: {
+          where: IMAGE_ROW_FILTER,
           orderBy: { position: 'asc' },
         },
       },

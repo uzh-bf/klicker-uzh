@@ -20,6 +20,14 @@ RUN apt-get update \
 # the self-contained development environment.
 COPY --from=ghcr.io/astral-sh/uv:0.11.12 /uv /uvx /bin/
 
+# Optional additional trust root for managed cloud HTTPS proxies. Empty locally.
+ARG KLICKER_EXTRA_CA_PEM=""
+RUN if [ -n "$KLICKER_EXTRA_CA_PEM" ]; then \
+      printf '%s\n' "$KLICKER_EXTRA_CA_PEM" > /usr/local/share/ca-certificates/klicker-cloud-proxy.crt \
+      && update-ca-certificates; \
+    fi
+ENV NODE_USE_SYSTEM_CA=1
+
 # Install pnpm with npm (not corepack — signature verification can fail on a
 # pinned Node). Mirror the repo's packageManager pin. (GOTCHAS #8)
 RUN npm install -g pnpm@12.11.2

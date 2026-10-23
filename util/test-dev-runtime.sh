@@ -304,6 +304,7 @@ if [ "${2:-}" = --help ]; then
 fi
 [ "$1" = ensure ] || exit 0
 printf "%s\n%s\n" "$DATABASE_URL" "$SHADOW_DATABASE_URL" >"$KLICKER_TEST_PROCESS_ENV"
+printf "%s\n%s\n" "$BLOB_STORAGE_INTERNAL_ACCOUNT_URL" "$NO_PROXY" >>"$KLICKER_TEST_PROCESS_ENV"
 exit 23'
 chmod +x "$FAKE_BIN/process-helper"
 export KLICKER_TEST_PROCESS_ENV="$TEST_ROOT/process-env"
@@ -312,6 +313,7 @@ for profile in mcp chat; do
   KLICKER_DEVCONTAINER_ROOT="$ROOT" \
     DEVROUTER_PROFILE="$profile" \
     DEVROUTER_PROCESS_HELPER="$FAKE_BIN/process-helper" \
+    NO_PROXY=external.invalid \
     LOCAL_MCP_BOOTSTRAPPED="$([ "$profile" = mcp ] && echo 1 || echo 0)" \
     LOCAL_MCP_GENERATION=synthetic-generation \
     DATABASE_URL=postgresql://klicker_test:synthetic@mcp_postgres:5432/klicker_test \
@@ -325,6 +327,32 @@ for profile in mcp chat; do
     "postgresql://klicker_test:synthetic@${expected_host}:5432/klicker_test"
   assert_equal "$(sed -n '2p' "$KLICKER_TEST_PROCESS_ENV")" \
     "postgresql://klicker_test:synthetic@${expected_host}:5432/klicker_test_shadow"
+  blob_host="$(sed -n '3p' "$KLICKER_TEST_PROCESS_ENV")"
+  blob_host="${blob_host#http://}"
+  blob_host="${blob_host%%:*}"
+  assert_equal "$(sed -n '4p' "$KLICKER_TEST_PROCESS_ENV")" "external.invalid,$blob_host"
+done
+
+# Isolated startup preserves the supplied endpoint, so all local Blob naming
+# forms can be verified without a certificate mount or a real storage service.
+for blob_host in azurite klicker-uzh-azurite synthetic-workspace-azurite; do
+  (
+    . "$ROOT/util/local-kb/runtime-environment.sh"
+    local_kb_capture_environment >/dev/null 2>&1 || true
+    for key in "${LOCAL_KB_ENV_KEYS[@]}"; do
+      export "$key=synthetic-isolated-value"
+    done
+    status=0
+    KLICKER_DEVCONTAINER_ROOT="$ROOT" KLICKER_LOCAL_KB_RUNTIME_ONLY=1 LOCAL_MCP_BOOTSTRAPPED=0 \
+      BLOB_STORAGE_INTERNAL_ACCOUNT_URL="http://$blob_host:10000/klickerdev" \
+      DEVROUTER_PROFILE=chat DEVROUTER_PROCESS_HELPER="$FAKE_BIN/process-helper" \
+      NO_PROXY=external.invalid \
+      bash "$REPO_ROOT/.devcontainer/post-start.sh" >"$TEST_ROOT/blob-start.log" 2>&1 || status=$?
+    [ "$status" = 23 ] || cat "$TEST_ROOT/blob-start.log" >&2
+    assert_equal "$status" 23
+    assert_equal "$(sed -n '3p' "$KLICKER_TEST_PROCESS_ENV")" "http://$blob_host:10000/klickerdev"
+    assert_equal "$(sed -n '4p' "$KLICKER_TEST_PROCESS_ENV")" "external.invalid,$blob_host"
+  )
 done
 write_file "$ROOT/.devcontainer/devcontainer.env" ''
 : > "$INSTALL_LOG"

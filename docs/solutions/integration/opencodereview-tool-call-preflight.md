@@ -21,27 +21,82 @@ tags:
 
 # OpenCodeReview preflight passed while tool-bearing reviews failed
 
-## Current Mistral route
+## Current review routes
 
-As of the 1.13.0 upgrade, both draft and manual reviews use Mistral-hosted
-`zai-glm-5-3` at `reasoning_effort=max`. The manual tool canary and stack topology
-request call the fixed Mistral endpoint directly. OCR uses the runner-local
+Draft reviews use Mistral-hosted `zai-glm-5-3-flash`; manual reviews
+and the bounded draft advisor use Mistral-hosted `zai-glm-5-3`. Both models use
+maximum reasoning. The manual tool canary and stack topology request call the
+fixed Mistral endpoint directly. OCR uses the runner-local
 [adapter](../../../.github/scripts/ocr-mistral-adapter.cjs), which translates
 `max_completion_tokens` to `max_tokens` and restores native thinking chunks
 from bounded memory when OCR replays an assistant turn. Answer text and thinking
-metadata remain separate so strict topology JSON stays parseable.
+metadata remain separate so strict topology JSON stays parseable. Mistral's
+structured-output grammar rejects `uniqueItems` on topology layer arrays with
+HTTP 400. The request schema omits that keyword; `validateTopologyResult`
+still rejects duplicate layer numbers before publication. The topology call
+allows up to 65,536 completion tokens and ten minutes for maximum reasoning;
+length-truncated answers fail closed.
+
+Topology source evidence is assembled after the review job fetches the frozen
+commit range. Reading it while creating the earlier metadata snapshot would
+require additional fetches in a shallow checkout and put source into an artifact.
+The root layer uses the merge base rather than an advanced PR base; otherwise
+unrelated upstream changes appear as reversals. Local Git boundary tests cover
+that divergence and reject unavailable or oversized evidence before dispatch.
+The schema describes the confidence prefix using its existing vocabulary;
+the shared finding validator enforces it before publication. This keeps provider
+grammar compatibility separate from local acceptance checks.
 
 The upstream `MISTRAL_API_KEY` exists only in the adapter or direct request
 process. OCR receives a random loopback capability, and its mode-0600 config
 uses `auth_token_cmd` to read that capability from the environment. The attempt
-wrapper closes the adapter before returning. The config must omit `llm.url`:
+wrapper closes the adapter before returning. The manual config must omit `llm.url`:
 OCR 1.13.0 gives a saved URL precedence over `OCR_LLM_URL`, so a saved upstream
 URL bypasses the adapter and a saved loopback URL becomes stale on the next
-attempt. The released-binary probe exposed this precedence; each attempt now
-supplies its fresh URL through the environment. Draft reviews use a trusted
-runner-temporary copy and authenticated always-run shutdown; cleanup fails if
-listener termination cannot be proved. Live compatibility is proved by the
-first authorized hosted runs after secret provisioning and activation.
+attempt. The released-binary probe exposed this precedence; each manual attempt
+supplies its fresh URL through the environment. The draft runner starts its
+adapters in the trusted parent and writes fresh loopback configuration into an
+isolated temporary home. Live compatibility requires authorized hosted runs
+after trusted-policy activation.
+
+### Compression can remove replay identity
+
+OCR can replace the conversation prefix and omit echoed reasoning while keeping
+an assistant tool turn. Matching only the old prefix then rejects a retained
+native response as missing. A tool-call ID alone cannot establish provenance
+across concurrent workers.
+
+The adapter retains the exact-prefix and reasoned-turn matches, then allows a
+reasoning-free tool turn to match within its validated conversation cache key.
+The normalized assistant text and complete tool calls must still match exactly;
+ambiguous native payloads fail closed. Existing memory bounds, usage accounting
+and retries remain in force. The
+[adapter regression tests](../../../.github/scripts/ocr-mistral-adapter.test.cjs)
+cover compressed replay, missing keys, changed tools and cross-task rejection.
+
+Qualify tool extensions with the pinned released binary against synthetic
+providers. A successful MCP initialization proves discovery; actual tool
+invocation, bounded source reads and separate usage receipts prove the
+[draft runner contract](../../../.github/scripts/ocr-draft-review.test.cjs).
+
+### Credential-free reviews need complete Git objects
+
+A sparse `actions/checkout` implicitly requests `blob:none`, even when
+`fetch-depth: 0` supplies complete commit history. A later range fetch does not
+prove every blob is local. When OCR computes the diff after checkout credentials
+are removed, Git may try to fetch missing blobs and fail before any model call.
+
+Use a complete trusted-policy checkout with `fetch-depth: 0`, no `filter` and no
+`sparse-checkout`. Keep `persist-credentials: false`; the repair supplies local
+objects rather than credentials to OCR. The candidate remains in Git objects
+and is never checked out or executed. Unrelated publisher checkouts can remain
+sparse.
+
+A synthetic promisor clone with an unavailable remote reproduces the failure;
+a full clone of the same range loads the diff offline. File selection and model
+preflight cannot prove this input boundary. The shared progress filter emits
+`classification=git_diff` or `classification=merge_base` for the pinned CLI's
+fixed root errors and discards their untrusted details.
 
 The sections below record the original OpenRouter failure and its resolution.
 Their provider selection and high-reasoning settings are historical.

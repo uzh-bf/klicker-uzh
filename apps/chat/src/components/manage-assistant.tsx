@@ -35,6 +35,7 @@ import {
   type ManageAssistantContext,
 } from '../services/manageContext'
 import { ChatUiProvider, useChatUi } from './chat-ui-context'
+import { DictationProvider, useOnDeviceDictation } from './dictation-context'
 import { EmbeddedSettings } from './embedded-settings'
 import { ModeOptionsProvider } from './mode-options-context'
 import { Thread, type ThreadWelcomeCapability } from './thread'
@@ -51,6 +52,7 @@ export function ManageAssistant() {
 
 function ManageAssistantInner() {
   const t = useTranslations('chat.manageAssistant')
+  const dictation = useOnDeviceDictation({ disabled: true })
   const { embedded } = useChatUi()
   const context = useEmbeddedManageContext()
   const capability = useManageAssistantCapabilities()
@@ -202,17 +204,20 @@ function ManageAssistantInner() {
           phase={capability.phase}
           retry={capability.retry}
         />
-        <Thread
-          chatbotAvatar=""
-          chatbotFallbackIcon={WandSparkles}
-          chatbotName={MANAGE_ASSISTANT_NAME}
-          contextLabel={contextLabel}
-          suggestions={suggestions}
-          welcomeMessage={t('welcome')}
-          capabilities={capabilities}
-          limitsNote={limitsNote}
-          maxImageAttachments={MAX_MANAGE_IMAGE_ATTACHMENTS}
-        />
+        <DictationProvider value={dictation}>
+          <Thread
+            chatbotAvatar=""
+            chatbotFallbackIcon={WandSparkles}
+            chatbotName={MANAGE_ASSISTANT_NAME}
+            contextLabel={contextLabel}
+            suggestions={suggestions}
+            welcomeMessage={t('welcome')}
+            capabilities={capabilities}
+            limitsNote={limitsNote}
+            maxImageAttachments={MAX_MANAGE_IMAGE_ATTACHMENTS}
+            allowDocumentAttachments={false}
+          />
+        </DictationProvider>
       </div>
     </ManageAssistantRuntimeProvider>
   )

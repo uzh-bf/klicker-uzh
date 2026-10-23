@@ -13,6 +13,7 @@ const { EventEmitter } = require('node:events')
 const {
   MISTRAL_URL,
   MISTRAL_MODEL,
+  MISTRAL_FLASH_MODEL,
   normalizeMistralResponse,
   translateMistralRequest,
   createHistoryStore,
@@ -27,6 +28,81 @@ const {
 const ADAPTER = path.join(__dirname, 'ocr-mistral-adapter.cjs')
 const CHAT_PATH = '/v1/chat/completions'
 const SHUTDOWN_PATH = '/shutdown'
+
+test('Mistral Flash fixes the draft model and max effort while preserving native tool requests', () => {
+  const body = {
+    model: MISTRAL_FLASH_MODEL,
+    messages: [{ role: 'user', content: 'synthetic' }],
+    reasoning_effort: 'max',
+    reasoning: { effort: 'none' },
+    provider: { only: ['untrusted'] },
+    max_completion_tokens: 16384,
+    prompt_cache_key: 'synthetic-session',
+    tools: [{ type: 'function', function: { name: 'task_done' } }],
+  }
+  const translated = translateMistralRequest(body, undefined, 'mistral-flash')
+  assert.equal(translated.model, MISTRAL_FLASH_MODEL)
+  assert.equal(translated.reasoning_effort, 'max')
+  assert.equal(translated.reasoning, undefined)
+  assert.equal(translated.provider, undefined)
+  assert.equal(translated.max_tokens, 16384)
+  assert.equal(translated.prompt_cache_key, 'synthetic-session')
+  assert.equal(translated.tool_choice, 'any')
+  for (const [change, code] of [
+    [{ reasoning_effort: 'high' }, 'invalid_request'],
+    [{ model: MISTRAL_MODEL }, 'model_mismatch'],
+  ])
+    assert.throws(
+      () =>
+        translateMistralRequest(
+          { ...body, ...change },
+          undefined,
+          'mistral-flash'
+        ),
+      { code }
+    )
+  assert.throws(
+    () =>
+      normalizeMistralResponse(
+        completion({ role: 'assistant', content: 'ok' }),
+        'mistral-flash'
+      ),
+    { code: 'response_model_mismatch' }
+  )
+})
+
+test('Flash cost receipts use their model prices and reject mixed or unidentified models', () => {
+  const row = {
+    ...costReceipt(),
+    provider: 'mistral-flash',
+    model: MISTRAL_FLASH_MODEL,
+  }
+  const estimate = estimateCost(JSON.stringify(row), 'mistral-flash')
+  assert.ok(Math.abs(estimate.withCache - 0.11) < 1e-10)
+  assert.ok(Math.abs(estimate.withoutCache - 0.2) < 1e-10)
+  assert.ok(Math.abs(estimate.savings - 0.09) < 1e-10)
+  for (const bad of [
+    costReceipt(),
+    { ...row, model: MISTRAL_MODEL },
+    { ...row, provider: 'mistral' },
+  ]) {
+    const report = buildCostReport(
+      `${JSON.stringify(row)}\n${JSON.stringify({ ...bad, upstream_attempts: 2 })}`,
+      { adapter: 2 },
+      'mistral-flash'
+    )
+    assert.equal(report.estimate, null)
+    assert.equal(report.reportedResponseEstimate, null)
+    assert.ok(report.reasons.includes('provider_mismatch'))
+  }
+  assert.ok(estimateCost(JSON.stringify(costReceipt())))
+  for (const bad of [
+    row,
+    { ...row, provider: 'mistral' },
+    { ...costReceipt(), provider: 'mistral' },
+  ])
+    assert.equal(estimateCost(JSON.stringify(bad)), null)
+})
 
 test('draft routing uses the exact OpenRouter snapshot and max reasoning without accepting route overrides', () => {
   const body = {
@@ -103,7 +179,13 @@ test('OpenRouter native reasoning survives prefix and compressed replay with unc
   try {
     const prefix = [{ role: 'user', content: 'synthetic' }]
     const tools = [{ type: 'function', function: { name: 'task_done' } }]
-    const first = await postJson(adapter, { model, messages: prefix, tools })
+    const prompt_cache_key = 'synthetic-main-task'
+    const first = await postJson(adapter, {
+      model,
+      messages: prefix,
+      tools,
+      prompt_cache_key,
+    })
     assert.equal(first.status, 200)
     const normalized = first.json.choices[0].message
     assert.equal(normalized.content, '')
@@ -114,16 +196,21 @@ test('OpenRouter native reasoning survives prefix and compressed replay with unc
       completion_tokens: 8,
       total_tokens: 68,
     })
-    for (const replayPrefix of [
-      prefix,
-      [{ role: 'user', content: 'compressed' }],
+    for (const [replayPrefix, assistant] of [
+      [prefix, normalized],
+      [[{ role: 'user', content: 'compressed' }], normalized],
+      [
+        [{ role: 'user', content: 'compressed without echo' }],
+        { ...normalized, reasoning_content: undefined },
+      ],
     ]) {
       const replay = await postJson(adapter, {
         model,
         tools,
+        prompt_cache_key,
         messages: [
           ...replayPrefix,
-          normalized,
+          assistant,
           {
             role: 'tool',
             tool_call_id: 'call-read',
@@ -140,7 +227,7 @@ test('OpenRouter native reasoning survives prefix and compressed replay with unc
     )
     assert.deepEqual(fetchImpl.calls[0].body.reasoning, { effort: 'max' })
     assert.equal(adapter.diagnostics().history.prefix_hits, 1)
-    assert.equal(adapter.diagnostics().history.compressed_hits, 1)
+    assert.equal(adapter.diagnostics().history.compressed_hits, 2)
     assert.equal(adapter.diagnostics().provider, 'openrouter')
     assert.doesNotMatch(
       JSON.stringify(adapter.diagnostics()),
@@ -323,6 +410,9 @@ test('progress reconstructs known events without reflecting private fields or wo
       '[ocr]   ▶ file_read "OCR_PRIVATE_SENTINEL"',
       '[ocr]   ✔ file_read (3ms)',
       '[ocr]   ✘ code_search failed: OCR_PRIVATE_SENTINEL',
+      '[ocr]   ▶ lookup_library_docs "OCR_PRIVATE_SENTINEL"',
+      '[ocr]   ✔ lookup_library_docs (3ms)',
+      '[ocr]   ✘ lookup_library_docs failed: OCR_PRIVATE_SENTINEL',
       '[ocr] Plan completed for group "OCR_PRIVATE_SENTINEL"',
       '[ocr] Review filter removed 2 comment(s) for group "OCR_PRIVATE_SENTINEL"',
       '[ocr] token budget reached (used 3M + group est 2M) OCR_PRIVATE_SENTINEL',
@@ -346,6 +436,9 @@ test('progress reconstructs known events without reflecting private fields or wo
     'OCR progress event=tool_started tool=file_read\n',
     'OCR progress event=tool_completed tool=file_read\n',
     'OCR progress event=tool_failed tool=code_search\n',
+    'OCR progress event=tool_started tool=lookup_library_docs\n',
+    'OCR progress event=tool_completed tool=lookup_library_docs\n',
+    'OCR progress event=tool_failed tool=lookup_library_docs\n',
     'OCR progress event=phase_completed phase=planning\n',
     'OCR progress event=phase_completed phase=filtering\n',
     'OCR progress event=budget_reached\n',
@@ -402,6 +495,18 @@ test('progress classifies fatal CLI roots with fixed tokens and refuses non-root
       'OCR progress event=cli_error code=review_failed classification=unknown\n',
     ],
     [
+      'Error: review failed: load diffs: get diffs: git diff failed: OCR_PRIVATE_SENTINEL\n',
+      'OCR progress event=cli_error code=review_failed classification=git_diff\n',
+    ],
+    [
+      'Error: review failed: load diffs: get diffs: cannot find merge-base between OCR_PRIVATE_SENTINEL and OCR_PRIVATE_TOKEN\n',
+      'OCR progress event=cli_error code=review_failed classification=merge_base\n',
+    ],
+    [
+      'Error: review failed: OCR_PRIVATE_SENTINEL git diff failed: ::error::OCR_PRIVATE_TOKEN\n',
+      'OCR progress event=cli_error code=review_failed classification=unknown\n',
+    ],
+    [
       'Error: review failed without a marker: OCR_PRIVATE_SENTINEL\n',
       'OCR progress event=cli_error code=cli_failed classification=unknown\n',
     ],
@@ -414,11 +519,15 @@ test('progress classifies fatal CLI roots with fixed tokens and refuses non-root
       'OCR progress event=cli_error code=cli_failed classification=unknown\n',
     ],
     ['[ocr]   Error: review failed (timeout): OCR_PRIVATE_SENTINEL\n', ''],
+    [
+      '  Error: review failed: load diffs: get diffs: git diff failed: OCR_PRIVATE_SENTINEL\n',
+      '',
+    ],
   ]
   for (const [line, expected] of cases) {
     const records = []
     const progress = createProgressFilter((record) => records.push(record))
-    progress.write(line)
+    for (const byte of Buffer.from(line)) progress.write(Buffer.from([byte]))
     progress.end()
     assert.deepEqual(records, expected ? [expected] : [], line)
     assert.doesNotMatch(records.join(''), /SENTINEL|::/)
@@ -485,6 +594,87 @@ test('progress heartbeats reflect quiet time and finish clears the timer exactly
     1
   )
   assert.doesNotMatch(records.join(''), /SENTINEL|::/)
+})
+
+test('compression telemetry records bounded snapshots and rejects incomplete or untrusted records', () => {
+  const marker = '[ocr] compression_telemetry version=1\n'
+  const start = '[ocr] compression_started before_estimated_tokens=200\n'
+  const end =
+    '[ocr] compression_finished outcome=rebuilt before_estimated_tokens=200 after_estimated_tokens=50\n'
+  const records = []
+  let time = 0
+  let tick
+  const progress = createProgressReporter((line) => records.push(line), {
+    now: () => time,
+    setInterval(callback) {
+      tick = callback
+      return { unref() {} }
+    },
+    clearInterval() {},
+  })
+  progress.write(marker + start + start)
+  assert.equal(progress.compression().complete, false)
+  time = 60000
+  tick()
+  assert.match(records.at(-1), /event=heartbeat elapsed_ms=60000 idle_ms=60000/)
+  progress.write(end.slice(0, 45))
+  progress.write(end.slice(45))
+  progress.write(
+    '[ocr] compression_finished outcome=cancelled before_estimated_tokens=200 after_estimated_tokens=200\n'
+  )
+  progress.finish({ code: 7 })
+  assert.deepEqual(progress.compression(), {
+    schema_version: 1,
+    complete: true,
+    started: 2,
+    rebuilt: 1,
+    unchanged: 0,
+    failed: 0,
+    cancelled: 1,
+    rebuilt_before_estimated_tokens: 200,
+    rebuilt_after_estimated_tokens: 50,
+  })
+  assert.match(records.join(''), /event=compression_finished outcome=rebuilt/)
+  const snapshot = progress.compression()
+  snapshot.started = 999
+  assert.equal(progress.compression().started, 2)
+  for (const [text, drained] of [
+    ['', true],
+    [marker + start, true],
+    [marker + end, true],
+    [start + end, true],
+    [marker + start + end.trimEnd(), true],
+    [marker + start + end, false],
+    [
+      marker +
+        '[ocr] compression_started before_estimated_tokens=1000000000000\n',
+      true,
+    ],
+    [marker + '[ocr] compression_finished outcome=PRIVATE_SENTINEL\n', true],
+    [
+      marker + '[ocr] compression_' + 'PRIVATE_SENTINEL'.repeat(400) + '\n',
+      true,
+    ],
+    [
+      marker +
+        '[ocr] compression_finished outcome=failed before_estimated_tokens=2 after_estimated_tokens=1\n',
+      true,
+    ],
+  ]) {
+    const live = []
+    const reporter = createProgressReporter((line) => live.push(line))
+    reporter.write(text)
+    reporter.finish({ code: 0, stderrComplete: drained })
+    assert.equal(reporter.compression().complete, false)
+    assert.doesNotMatch(live.join(''), /PRIVATE_SENTINEL|::/)
+  }
+  const zero = createProgressReporter(() => {
+    throw new Error('synthetic sink failure')
+  })
+  zero.write(marker)
+  zero.finish({ code: 0 })
+  assert.equal(zero.compression().complete, true)
+  assert.equal(zero.compression().started, 0)
 })
 
 test('heartbeat and terminal sink failures preserve lifecycle cleanup', () => {
@@ -849,6 +1039,68 @@ test('failure summary emits only complete allowlisted counters without changing 
   }
 })
 
+test('upstream error summaries validate fields and retain the final non-null rejection', async () => {
+  const directory = fs.mkdtempSync(
+    path.join(os.tmpdir(), 'ocr-upstream-summary-')
+  )
+  const file = path.join(directory, 'receipt.jsonl')
+  const row = (last_upstream_error) => ({
+    schema_version: 1,
+    last_upstream_error,
+  })
+  const first = row({ http_status: 401, code: 401 })
+  const last = row({
+    http_status: 402,
+    code: 402,
+    reason: 'key_budget_exhausted',
+  })
+  const cases = [
+    [[], 'status=unavailable'],
+    [[{ schema_version: 1 }], 'status=unavailable'],
+    [[row(null)], 'status=none'],
+    [
+      [first, last, row(null)],
+      'status=complete stage=adapter http_status=402 code=402 reason=key_budget_exhausted',
+    ],
+    [
+      [row({ http_status: 404, code: 'unknown' })],
+      'status=complete stage=adapter http_status=404 code=unknown reason=unknown',
+    ],
+    [
+      [row({ http_status: null, code: 'unknown' })],
+      'status=complete stage=adapter http_status=unknown code=unknown reason=unknown',
+    ],
+    ...[
+      'PRIVATE_PROVIDER_SENTINEL',
+      { http_status: '401', code: 401 },
+      { http_status: 999, code: 401 },
+      { http_status: 401, code: 'PRIVATE_PROVIDER_SENTINEL' },
+      { http_status: 401, code: 418 },
+      { http_status: 403, code: 403, reason: 'PRIVATE_PROVIDER_SENTINEL' },
+      { http_status: 403, code: 403, reason: null },
+    ].map((value) => [[first, row(value)], 'status=unknown']),
+  ]
+  try {
+    for (const [rows, expected] of cases) {
+      fs.writeFileSync(file, rows.map(JSON.stringify).join('\n'))
+      const summaryPath = path.join(directory, 'summary.md')
+      fs.writeFileSync(summaryPath, '')
+      const result = await runCli(['summary', file], {
+        GITHUB_STEP_SUMMARY: summaryPath,
+      })
+      assert.equal(result.code, 0)
+      const line = result.stdout
+        .split('\n')
+        .find((line) => line.startsWith('OCR upstream_error '))
+      assert.ok(line.startsWith('OCR upstream_error ' + expected), line)
+      assert.ok(fs.readFileSync(summaryPath, 'utf8').includes(line))
+      assert.doesNotMatch(result.stdout, /PRIVATE_PROVIDER_SENTINEL/)
+    }
+  } finally {
+    fs.rmSync(directory, { recursive: true, force: true })
+  }
+})
+
 test('execution summary validates new timing and history independently of legacy cost coverage', async () => {
   const directory = fs.mkdtempSync(
     path.join(os.tmpdir(), 'ocr-execution-summary-')
@@ -885,6 +1137,17 @@ test('execution summary validates new timing and history independently of legacy
       miss_unknown_turn: 1,
       miss_ambiguous_turn: 1,
     })
+    receipt.compression = {
+      schema_version: 1,
+      complete: true,
+      started: 2,
+      rebuilt: 1,
+      unchanged: 1,
+      failed: 0,
+      cancelled: 0,
+      rebuilt_before_estimated_tokens: 200,
+      rebuilt_after_estimated_tokens: 50,
+    }
     const receiptPath = path.join(directory, 'receipt.jsonl')
     const summaryPath = path.join(directory, 'summary.md')
     fs.writeFileSync(
@@ -905,6 +1168,36 @@ test('execution summary validates new timing and history independently of legacy
       /^OCR history status=complete stage=adapter misses=6 miss_no_reasoning=2 miss_unknown_turn=2 miss_ambiguous_turn=2$/m
     )
     assert.doesNotMatch(result.stdout, /PRIVATE_SENTINEL/)
+    assert.match(
+      result.stdout,
+      /^OCR compression status=complete stage=adapter started=4 rebuilt=2 unchanged=2 failed=0 cancelled=0 rebuilt_before_estimated_tokens=400 rebuilt_after_estimated_tokens=100$/m
+    )
+    for (const compression of [
+      undefined,
+      { ...receipt.compression, complete: false },
+      { ...receipt.compression, started: 1 },
+      {
+        ...receipt.compression,
+        rebuilt_before_estimated_tokens: 'PRIVATE_SENTINEL',
+      },
+      {
+        ...receipt.compression,
+        rebuilt_before_estimated_tokens: Number.MAX_SAFE_INTEGER,
+      },
+    ]) {
+      const row = { ...receipt, compression }
+      fs.writeFileSync(
+        receiptPath,
+        [receipt, row, row].map(JSON.stringify).join('\n')
+      )
+      result = await runCli(['summary', receiptPath, 'adapter=3'], {
+        GITHUB_STEP_SUMMARY: summaryPath,
+      })
+      assert.equal(result.code, 0)
+      assert.match(result.stdout, /^OCR compression status=unavailable$/m)
+      assert.match(result.stdout, /^OCR cost status=complete reasons=none$/m)
+      assert.doesNotMatch(result.stdout, /PRIVATE_SENTINEL/)
+    }
     for (const variant of ['legacy', 'invalid', 'unfinished', 'usage']) {
       const row = structuredClone(receipt)
       if (variant === 'legacy') {
@@ -2239,85 +2532,186 @@ test('close bounds an uncooperative request and marks its accounting incomplete'
   }
 })
 
-test('compression restores only exact reasoned turns, retaining native thinking and bounds', () => {
-  const history = createHistoryStore({ maxEntries: 3 })
-  const prefix = [
-    { role: 'system', content: 's' },
-    { role: 'user', content: 'original' },
-  ]
-  const native = {
-    role: 'assistant',
-    index: 0,
-    content: [
-      { type: 'thinking', thinking: [{ type: 'text', text: 'reasoning' }] },
-    ],
-    tool_calls: [
-      {
-        id: 'id1',
-        type: 'function',
-        function: { name: 'file_read', arguments: '{"file_path":"a.ts"}' },
-      },
-    ],
-  }
-  history.remember(prefix, native)
-  const turn = normalizeMistralResponse(completion(native, 'tool_calls'))
-    .choices[0].message
-  const compressed = [
-    prefix[0],
-    { role: 'user', content: 'compressed summary' },
-  ]
-  const expected = { ...native }
-  delete expected.index
-  assert.deepEqual(
-    history.restoreMessages([...compressed, turn]).at(-1),
-    expected
-  )
-  assert.equal(history.diagnostics().compressed_hits, 1)
-  assert.equal(history.entryCount(), 1)
-  for (const altered of [
-    { ...turn, reasoning_content: undefined },
-    { ...turn, reasoning_content: 'different' },
-    { ...turn, content: 'different' },
-    { ...turn, tool_calls: [{ ...turn.tool_calls[0], id: 'id2' }] },
-    {
-      ...turn,
+for (const provider of ['mistral', 'mistral-flash'])
+  test(`${provider}: compression restores only exact reasoned turns, retaining native thinking and bounds`, () => {
+    const history = createHistoryStore({ maxEntries: 3, provider })
+    const prefix = [
+      { role: 'system', content: 's' },
+      { role: 'user', content: 'original' },
+    ]
+    const native = {
+      role: 'assistant',
+      index: 0,
+      content: [
+        { type: 'thinking', thinking: [{ type: 'text', text: 'reasoning' }] },
+      ],
       tool_calls: [
         {
-          ...turn.tool_calls[0],
-          function: { name: 'file_read', arguments: '{"file_path":"b.ts"}' },
+          id: 'id1',
+          type: 'function',
+          function: { name: 'file_read', arguments: '{"file_path":"a.ts"}' },
         },
       ],
-    },
-  ])
-    assert.throws(
-      () => history.restoreMessages([...compressed, altered]),
-      /unavailable/
+    }
+    history.remember(prefix, native)
+    const turn = normalizeMistralResponse(completion(native, 'tool_calls'))
+      .choices[0].message
+    const compressed = [
+      prefix[0],
+      { role: 'user', content: 'compressed summary' },
+    ]
+    const expected = { ...native }
+    delete expected.index
+    assert.deepEqual(
+      history.restoreMessages([...compressed, turn]).at(-1),
+      expected
     )
-  const secondPrefix = [prefix[0], { role: 'user', content: 'another group' }]
-  history.remember(secondPrefix, { ...native, index: 1 })
-  assert.deepEqual(
-    history.restoreMessages([...compressed, turn]).at(-1),
-    expected
-  )
-  history.remember([{ role: 'user', content: 'third group' }], {
-    ...native,
-    content: [{ ...native.content[0], signature: 'different native state' }],
+    assert.equal(history.diagnostics().compressed_hits, 1)
+    assert.equal(history.entryCount(), 1)
+    for (const altered of [
+      { ...turn, reasoning_content: undefined },
+      { ...turn, reasoning_content: 'different' },
+      { ...turn, content: 'different' },
+      { ...turn, tool_calls: [{ ...turn.tool_calls[0], id: 'id2' }] },
+      {
+        ...turn,
+        tool_calls: [
+          {
+            ...turn.tool_calls[0],
+            function: { name: 'file_read', arguments: '{"file_path":"b.ts"}' },
+          },
+        ],
+      },
+    ])
+      assert.throws(
+        () => history.restoreMessages([...compressed, altered]),
+        /unavailable/
+      )
+    const secondPrefix = [prefix[0], { role: 'user', content: 'another group' }]
+    history.remember(secondPrefix, { ...native, index: 1 })
+    assert.deepEqual(
+      history.restoreMessages([...compressed, turn]).at(-1),
+      expected
+    )
+    history.remember([{ role: 'user', content: 'third group' }], {
+      ...native,
+      content: [{ ...native.content[0], signature: 'different native state' }],
+    })
+    assert.deepEqual(
+      history.restoreMessages([...prefix, turn]).at(-1),
+      expected
+    )
+    assert.throws(
+      () => history.restoreMessages([...compressed, turn]),
+      /ambiguous/
+    )
+    assert.throws(
+      () =>
+        history.remember([{ role: 'user', content: 'fourth group' }], native),
+      /bound/
+    )
+    const misses = history.diagnostics()
+    assert.equal(misses.miss_no_reasoning, 1)
+    assert.equal(misses.miss_unknown_turn, 4)
+    assert.equal(misses.miss_ambiguous_turn, 1)
+    assert.equal(misses.misses, 6)
   })
-  assert.deepEqual(history.restoreMessages([...prefix, turn]).at(-1), expected)
-  assert.throws(
-    () => history.restoreMessages([...compressed, turn]),
-    /ambiguous/
-  )
-  assert.throws(
-    () => history.remember([{ role: 'user', content: 'fourth group' }], native),
-    /bound/
-  )
-  const misses = history.diagnostics()
-  assert.equal(misses.miss_no_reasoning, 1)
-  assert.equal(misses.miss_unknown_turn, 4)
-  assert.equal(misses.miss_ambiguous_turn, 1)
-  assert.equal(misses.misses, 6)
-})
+
+for (const provider of ['mistral', 'mistral-flash'])
+  test(`${provider}: one native turn remembered in two scopes restores both compressed prefixes within one entry`, () => {
+    const history = createHistoryStore({ maxEntries: 1, provider })
+    const prefix = [{ role: 'user', content: 'original' }]
+    const native = {
+      role: 'assistant',
+      content: 'visible',
+      reasoning_content: 'retained private state',
+      tool_calls: [
+        {
+          id: 'shared-call',
+          type: 'function',
+          function: { name: 'file_read', arguments: '{"file_path":"a.ts"}' },
+        },
+      ],
+    }
+    const echo = { ...native }
+    delete echo.reasoning_content
+    const compressed = [{ role: 'user', content: 'summary' }]
+    history.remember(prefix, native, 'scope-one')
+    history.remember(prefix, native, 'scope-two')
+    assert.equal(history.entryCount(), 1)
+    assert.equal(history.byteCount(), Buffer.byteLength(JSON.stringify(native)))
+    for (const scope of ['scope-one', 'scope-two'])
+      assert.deepEqual(
+        history.restoreMessages([...compressed, echo], scope).at(-1),
+        native
+      )
+    assert.equal(history.diagnostics().compressed_hits, 2)
+    for (const scope of ['scope-three', undefined])
+      assert.throws(
+        () => history.restoreMessages([...compressed, echo], scope),
+        { code: 'history_missing' }
+      )
+    assert.throws(
+      () =>
+        history.remember(
+          [{ role: 'user', content: 'another group' }],
+          { ...native, reasoning_content: 'different private state' },
+          'scope-one'
+        ),
+      { code: 'history_exhausted' }
+    )
+    assert.equal(history.entryCount(), 1)
+  })
+
+for (const provider of ['mistral', 'mistral-flash'])
+  test(`${provider}: compressed tool replay without echoed reasoning requires the same conversation and unique native state`, () => {
+    const history = createHistoryStore({ maxEntries: 3, provider })
+    const prefix = [{ role: 'user', content: 'original' }]
+    const native = {
+      role: 'assistant',
+      content: '  <think></think>visible  ',
+      reasoning_content: 'retained private state',
+      tool_calls: [
+        {
+          id: 'shared-call',
+          type: 'function',
+          function: { name: 'file_read', arguments: '{"file_path":"a.ts"}' },
+        },
+      ],
+    }
+    const scope = 'synthetic-main-task'
+    history.remember(prefix, native, scope)
+    const echo = { ...native, content: 'visible' }
+    delete echo.reasoning_content
+    const compressed = [{ role: 'user', content: 'summary' }]
+    assert.deepEqual(
+      history.restoreMessages([...compressed, echo], scope).at(-1),
+      native
+    )
+    assert.equal(history.diagnostics().compressed_hits, 1)
+    for (const [turn, key] of [
+      [echo, undefined],
+      [echo, 'different-task'],
+      [{ ...echo, content: 'changed' }, scope],
+      [{ ...echo, reasoning_content: 'invented' }, scope],
+      [
+        { ...echo, tool_calls: [{ ...echo.tool_calls[0], id: 'different' }] },
+        scope,
+      ],
+    ])
+      assert.throws(() => history.restoreMessages([...compressed, turn], key), {
+        code: 'history_missing',
+      })
+    history.remember(
+      [{ role: 'user', content: 'another prefix' }],
+      { ...native, reasoning_content: 'different private state' },
+      scope
+    )
+    assert.throws(() => history.restoreMessages([...compressed, echo], scope), {
+      code: 'history_collision',
+    })
+    assert.equal(history.entryCount(), 2)
+  })
 
 test('request conversion and native replay work over the loopback listener', async () => {
   const native = {
@@ -2419,72 +2813,86 @@ test('request conversion and native replay work over the loopback listener', asy
   }
 })
 
-test('native memory keeps concurrent groups with reused tool-call ids apart', async () => {
-  const make = (marker) => ({
-    role: 'assistant',
-    content: `${marker}-text`,
-    reasoning_content: `${marker}-think`,
-    tool_calls: [
-      {
-        id: 'call_shared',
-        type: 'function',
-        function: { name: 'read', arguments: '{}' },
-      },
-    ],
-  })
-  const fetchImpl = upstream((record) => {
-    const messages = record.body.messages
-    if (messages.at(-1).role === 'user') {
-      return jsonResponse(
-        200,
-        completion(make(messages[0].content), 'tool_calls')
+for (const [provider, model] of [
+  ['mistral', MISTRAL_MODEL],
+  ['mistral-flash', MISTRAL_FLASH_MODEL],
+])
+  test(`${provider}: native memory keeps concurrent groups with reused tool-call ids apart`, async () => {
+    const make = (marker) => ({
+      role: 'assistant',
+      content: `${marker}-text`,
+      reasoning_content: `${marker}-think`,
+      tool_calls: [
+        {
+          id: 'call_shared',
+          type: 'function',
+          function: { name: 'read', arguments: '{}' },
+        },
+      ],
+    })
+    const fetchImpl = upstream((record) => {
+      const messages = record.body.messages
+      if (messages.at(-1).role === 'user') {
+        return jsonResponse(200, {
+          ...completion(make(messages[0].content), 'tool_calls'),
+          model,
+        })
+      }
+      return jsonResponse(200, {
+        ...completion({ role: 'assistant', content: 'done' }),
+        model,
+      })
+    })
+    const adapter = await startAdapter({
+      provider,
+      apiKey: 'sk',
+      fetchImpl,
+    })
+    try {
+      const alpha = await postJson(adapter, {
+        model,
+        messages: [{ role: 'user', content: 'alpha' }],
+      })
+      const beta = await postJson(adapter, {
+        model,
+        messages: [{ role: 'user', content: 'beta' }],
+      })
+      assert.equal(
+        alpha.json.choices[0].message.reasoning_content,
+        'alpha-think'
       )
-    }
-    return jsonResponse(200, completion({ role: 'assistant', content: 'done' }))
-  })
-  const adapter = await startAdapter({ apiKey: 'sk', fetchImpl })
-  try {
-    const alpha = await postJson(adapter, {
-      model: MISTRAL_MODEL,
-      messages: [{ role: 'user', content: 'alpha' }],
-    })
-    const beta = await postJson(adapter, {
-      model: MISTRAL_MODEL,
-      messages: [{ role: 'user', content: 'beta' }],
-    })
-    assert.equal(alpha.json.choices[0].message.reasoning_content, 'alpha-think')
-    assert.equal(beta.json.choices[0].message.reasoning_content, 'beta-think')
+      assert.equal(beta.json.choices[0].message.reasoning_content, 'beta-think')
 
-    const replayAlpha = await postJson(adapter, {
-      model: MISTRAL_MODEL,
-      messages: [
-        { role: 'user', content: 'alpha' },
-        alpha.json.choices[0].message,
-        { role: 'tool', tool_call_id: 'call_shared', content: 'r' },
-      ],
-    })
-    const replayBeta = await postJson(adapter, {
-      model: MISTRAL_MODEL,
-      messages: [
-        { role: 'user', content: 'beta' },
-        beta.json.choices[0].message,
-        { role: 'tool', tool_call_id: 'call_shared', content: 'r' },
-      ],
-    })
-    assert.equal(replayAlpha.status, 200)
-    assert.equal(replayBeta.status, 200)
-    assert.equal(
-      fetchImpl.calls[2].body.messages[1].reasoning_content,
-      'alpha-think'
-    )
-    assert.equal(
-      fetchImpl.calls[3].body.messages[1].reasoning_content,
-      'beta-think'
-    )
-  } finally {
-    await adapter.close()
-  }
-})
+      const replayAlpha = await postJson(adapter, {
+        model,
+        messages: [
+          { role: 'user', content: 'alpha' },
+          alpha.json.choices[0].message,
+          { role: 'tool', tool_call_id: 'call_shared', content: 'r' },
+        ],
+      })
+      const replayBeta = await postJson(adapter, {
+        model,
+        messages: [
+          { role: 'user', content: 'beta' },
+          beta.json.choices[0].message,
+          { role: 'tool', tool_call_id: 'call_shared', content: 'r' },
+        ],
+      })
+      assert.equal(replayAlpha.status, 200)
+      assert.equal(replayBeta.status, 200)
+      assert.equal(
+        fetchImpl.calls[2].body.messages[1].reasoning_content,
+        'alpha-think'
+      )
+      assert.equal(
+        fetchImpl.calls[3].body.messages[1].reasoning_content,
+        'beta-think'
+      )
+    } finally {
+      await adapter.close()
+    }
+  })
 
 test('native memory restores assistant turns without tool calls', async () => {
   const native = {
@@ -2771,6 +3179,249 @@ test('upstream failures are redacted to a fixed safe error', async () => {
     assert.doesNotMatch(result.text, /sk-dummy-synthetic-upstream-secret/)
     assert.doesNotMatch(result.text, /boom/)
   } finally {
+    await adapter.close()
+  }
+})
+
+test('rejection diagnostics keep only HTTP status and allowlisted numeric codes', async () => {
+  const secret = 'PRIVATE_PROVIDER_SENTINEL'
+  const cases = [
+    ...[400, 401, 402, 403, 408, 429, 502, 503].map((code) => [
+      JSON.stringify({ error: { code, message: secret, metadata: secret } }),
+      code,
+    ]),
+    ...['401', 418, null, { code: 401 }, secret].map((code) => [
+      JSON.stringify({ error: { code, message: secret } }),
+      'unknown',
+    ]),
+    [
+      JSON.stringify({ code: 401, metadata: { error: { code: 401 } } }),
+      'unknown',
+    ],
+    [`{"error":${secret}`, 'unknown'],
+    ['', 'unknown'],
+    [
+      JSON.stringify({ error: { code: 401 }, padding: secret.repeat(2000) }),
+      'unknown',
+    ],
+  ]
+  for (const [body, expected] of cases) {
+    const fetchImpl = upstream(() => new Response(body, { status: 401 }))
+    const adapter = await startAdapter({ apiKey: secret, fetchImpl })
+    try {
+      const result = await postJson(adapter, {
+        messages: [{ role: 'user', content: 'synthetic' }],
+      })
+      assert.equal(result.status, 502)
+      assert.equal(result.json.error.code, 'upstream_error')
+      const receipt = adapter.diagnostics()
+      assert.deepEqual(receipt.last_upstream_error, {
+        http_status: 401,
+        code: expected,
+        reason: 'unknown',
+      })
+      assert.equal(receipt.upstream_attempts, 1)
+      assert.equal(receipt.responses, 0)
+      assert.equal(receipt.failures.upstream_rejected, 1)
+      assert.equal(estimateCost(JSON.stringify(receipt)), null)
+      assert.doesNotMatch(
+        JSON.stringify(receipt) + result.text,
+        /PRIVATE_PROVIDER_SENTINEL/
+      )
+    } finally {
+      await adapter.close()
+    }
+  }
+  for (const response of [
+    { status: 401, ok: false, body: null },
+    {
+      status: 401,
+      ok: false,
+      body: {
+        getReader: () => ({
+          read: async () => {
+            throw Error(secret)
+          },
+        }),
+      },
+    },
+    new Response('x'.repeat(65), { status: 401 }),
+  ]) {
+    const adapter = await startAdapter({
+      apiKey: secret,
+      maxResponseBytes: 64,
+      fetchImpl: async () => response,
+    })
+    try {
+      assert.equal(
+        (
+          await postJson(adapter, {
+            messages: [{ role: 'user', content: 'synthetic' }],
+          })
+        ).status,
+        502
+      )
+      assert.deepEqual(adapter.diagnostics().last_upstream_error, {
+        http_status: 401,
+        code: 'unknown',
+        reason: 'unknown',
+      })
+      assert.equal(adapter.diagnostics().failures.upstream_rejected, 1)
+    } finally {
+      await adapter.close()
+    }
+  }
+})
+
+test('OpenRouter budget reasons are content-free, bounded and provider-scoped', async () => {
+  const secret = 'PRIVATE_PROVIDER_SENTINEL'
+  const legacy = `Key limit exceeded (daily limit). ${secret}`
+  const metadata = (limit_source) => ({ limit_source, details: secret })
+  const cases = [
+    ...[
+      ['openrouter_key_limit', 'key_budget_exhausted'],
+      ['openrouter_guardrail_budget', 'guardrail_budget_exhausted'],
+      ['openrouter_in_flight_budget', 'in_flight_budget_exhausted'],
+      ['openrouter_credits', 'credits_insufficient'],
+    ].flatMap(([source, reason]) =>
+      [402, 403].map((status) => [
+        status,
+        { metadata: metadata(source) },
+        reason,
+      ])
+    ),
+    [403, { message: legacy }, 'key_budget_exhausted'],
+    [
+      403,
+      { message: 'Key limit exceeded', metadata: {} },
+      'key_budget_exhausted',
+    ],
+    [402, { message: legacy }, 'unknown'],
+    [401, { metadata: metadata('openrouter_key_limit') }, 'unknown'],
+    [
+      403,
+      { message: legacy, metadata: metadata('openrouter_credits') },
+      'credits_insufficient',
+    ],
+    ...[
+      null,
+      [],
+      metadata(null),
+      metadata({}),
+      metadata(secret),
+      metadata('__proto__'),
+    ].map((value) => [403, { message: legacy, metadata: value }, 'unknown']),
+    ...[
+      secret,
+      `Not ${legacy}`,
+      `${secret} ${legacy}`,
+      'Key limit exceededly',
+    ].map((message) => [403, { message }, 'unknown']),
+    [403, {}, 'unknown'],
+    [
+      403,
+      {
+        metadata: metadata('openrouter_key_limit'),
+        padding: secret.repeat(2000),
+      },
+      'unknown',
+      'unknown',
+    ],
+  ]
+  for (const provider of ['openrouter', 'mistral']) {
+    for (const [status, error, reason, expectedCode = status] of cases) {
+      const adapter = await startAdapter({
+        provider,
+        apiKey: secret,
+        fetchImpl: upstream(() =>
+          jsonResponse(status, { error: { code: status, ...error } })
+        ),
+      })
+      try {
+        const response = await postJson(adapter, {
+          messages: [{ role: 'user', content: 'synthetic' }],
+        })
+        assert.equal(response.status, 502)
+        assert.equal(response.json.error.code, 'upstream_error')
+        const receipt = adapter.diagnostics()
+        assert.deepEqual(receipt.last_upstream_error, {
+          http_status: status,
+          code: expectedCode,
+          reason: provider === 'openrouter' ? reason : 'unknown',
+        })
+        assert.equal(receipt.upstream_attempts, 1)
+        assert.equal(receipt.responses, 0)
+        assert.equal(receipt.failures.upstream_rejected, 1)
+        assert.equal(estimateCost(JSON.stringify(receipt)), null)
+        assert.doesNotMatch(
+          JSON.stringify(receipt) + response.text,
+          /PRIVATE_PROVIDER_SENTINEL/
+        )
+      } finally {
+        await adapter.close()
+      }
+    }
+  }
+})
+
+test('late rejection bodies cannot overwrite a newer observed error or an earlier snapshot', async () => {
+  const draining = Promise.withResolvers()
+  const release = Promise.withResolvers()
+  let read = false
+  const fetchImpl = upstream((_request, index) =>
+    index === 1
+      ? {
+          status: 403,
+          ok: false,
+          body: {
+            getReader: () => ({
+              read: async () => {
+                if (read) return { done: true }
+                read = true
+                draining.resolve()
+                return {
+                  done: false,
+                  value: Buffer.from(await release.promise),
+                }
+              },
+            }),
+          },
+        }
+      : jsonResponse(402, {
+          error: {
+            code: 402,
+            metadata: { limit_source: 'openrouter_credits' },
+          },
+        })
+  )
+  const adapter = await startAdapter({
+    provider: 'openrouter',
+    apiKey: 'synthetic',
+    fetchImpl,
+  })
+  const body = { messages: [{ role: 'user', content: 'synthetic' }] }
+  const first = postJson(adapter, body)
+  try {
+    await draining.promise
+    const snapshot = adapter.diagnostics()
+    assert.equal((await postJson(adapter, body)).status, 502)
+    release.resolve('{"error":{"code":403,"message":"Key limit exceeded"}}')
+    assert.equal((await first).status, 502)
+    assert.deepEqual(adapter.diagnostics().last_upstream_error, {
+      http_status: 402,
+      code: 402,
+      reason: 'credits_insufficient',
+    })
+    assert.deepEqual(snapshot.last_upstream_error, {
+      http_status: 403,
+      code: 'unknown',
+      reason: 'unknown',
+    })
+    assert.equal(adapter.diagnostics().upstream_attempts, 2)
+    assert.equal(adapter.diagnostics().failures.upstream_rejected, 2)
+  } finally {
+    release.resolve('{}')
+    await first
     await adapter.close()
   }
 })
@@ -3193,6 +3844,71 @@ test('default upstream transport cancels an open response when the adapter clien
   assert.equal(receipt.failures.upstream_timeout, 0)
 })
 
+test('rejection status survives stalled bodies and client cancellation under the existing deadline', {
+  timeout: 6000,
+}, async (t) => {
+  for (const cancel of [false, true]) {
+    await t.test(cancel ? 'cancelled' : 'deadline', async (t) => {
+      const arrived = Promise.withResolvers()
+      const disconnected = Promise.withResolvers()
+      const transport = await loadLoopbackTransport(t, (req, res) => {
+        req.resume()
+        res.once('close', disconnected.resolve)
+        res.writeHead(429, { 'content-type': 'application/json' })
+        res.write('{"partial":')
+        arrived.resolve()
+      })
+      const adapter = await transport.startAdapter({
+        apiKey: 'synthetic',
+        timeoutMs: cancel ? 1000 : 100,
+      })
+      t.after(() => adapter.close())
+      const controller = new AbortController()
+      const request = fetch(`${adapter.url}${CHAT_PATH}`, {
+        method: 'POST',
+        headers: { authorization: `Bearer ${adapter.token}` },
+        body: JSON.stringify({
+          messages: [{ role: 'user', content: 'synthetic' }],
+        }),
+        signal: controller.signal,
+      })
+      await arrived.promise
+      if (cancel) {
+        for (
+          let attempt = 0;
+          attempt < 100 && !adapter.diagnostics().last_upstream_error;
+          attempt++
+        )
+          await delay(1)
+        assert.equal(
+          adapter.diagnostics().last_upstream_error?.http_status,
+          429
+        )
+        controller.abort()
+        await assert.rejects(request, (error) => error.name === 'AbortError')
+      } else {
+        const response = await request
+        assert.equal(response.status, 504)
+        assert.equal((await response.json()).error.code, 'upstream_timeout')
+      }
+      await disconnected.promise
+      await adapter.close()
+      const receipt = adapter.diagnostics()
+      assert.equal(receipt.last_upstream_error.http_status, 429)
+      assert.equal(receipt.last_upstream_error.code, 'unknown')
+      assert.equal(receipt.last_upstream_error.reason, 'unknown')
+      assert.equal(receipt.upstream_attempts, 1)
+      assert.equal(receipt.responses, 0)
+      assert.equal(receipt.failures.upstream_throttled, 1)
+      assert.equal(
+        Object.values(receipt.failures).reduce((a, b) => a + b),
+        1
+      )
+      assert.equal(estimateCost(JSON.stringify(receipt)), null)
+    })
+  }
+})
+
 test('callMistral normalizes a direct canary request', async () => {
   const fetchImpl = upstream(() =>
     jsonResponse(200, completion({ role: 'assistant', content: 'pong' }))
@@ -3488,6 +4204,7 @@ test('run binds config validation to the opened file across pathname replacement
 test('run strips both upstream keys and injects only the selected loopback model', async () => {
   for (const [provider, model] of [
     [undefined, MISTRAL_MODEL],
+    ['mistral-flash', MISTRAL_FLASH_MODEL],
     ['openrouter', 'deepseek/deepseek-v4.1-flash-1017'],
   ]) {
     const result = await runCli(
@@ -3669,9 +4386,12 @@ test('a missing live-log descriptor never falls back into result or private stde
 })
 
 test('live progress cleanup is bounded when a descendant keeps stderr open', async (t) => {
+  const directory = fs.mkdtempSync(path.join(os.tmpdir(), 'ocr-drain-'))
+  const diagnosticsPath = path.join(directory, 'diagnostics.jsonl')
   const script = `
     const { spawn } = require('node:child_process')
     const fs = require('node:fs')
+    fs.writeSync(2, '[ocr] compression_telemetry version=1\\n')
     const descendant = spawn(process.execPath, ['-e', 'setInterval(() => {}, 1000)'], {
       detached: true, stdio: ['ignore', 'ignore', 'inherit']
     })
@@ -3687,6 +4407,7 @@ test('live progress cleanup is bounded when a descendant keeps stderr open', asy
         ...process.env,
         MISTRAL_API_KEY: 'synthetic-upstream-key',
         OCR_ADAPTER_PROGRESS_FD: '3',
+        OCR_ADAPTER_DIAGNOSTICS_PATH: diagnosticsPath,
       },
       stdio: ['ignore', 'pipe', 'pipe', 'pipe'],
     }
@@ -3707,6 +4428,7 @@ test('live progress cleanup is bounded when a descendant keeps stderr open', asy
       } catch {}
     }
     if (child.exitCode === null) child.kill('SIGKILL')
+    fs.rmSync(directory, { recursive: true, force: true })
   })
   await waitFor(() => {
     try {
@@ -3727,8 +4449,49 @@ test('live progress cleanup is bounded when a descendant keeps stderr open', asy
     const receipt = JSON.parse(stdout)
     assert.doesNotThrow(() => process.kill(receipt.pid, 0))
     await assert.rejects(fetch(receipt.url, { method: 'POST', body: '{}' }))
+    const diagnostics = JSON.parse(fs.readFileSync(diagnosticsPath, 'utf8'))
+    assert.equal(diagnostics.compression.complete, false)
+    assert.equal(diagnostics.compression.started, 0)
   } finally {
     clearTimeout(timer)
+  }
+})
+
+test('run retains compression telemetry arriving after direct-child exit before persisting one receipt', async () => {
+  const directory = fs.mkdtempSync(path.join(os.tmpdir(), 'ocr-late-stderr-'))
+  const diagnosticsPath = path.join(directory, 'diagnostics.jsonl')
+  const script = `
+    const { spawn } = require('node:child_process')
+    process.stderr.write('[ocr] compression_telemetry version=1\\n[ocr] compression_started before_estimated_tokens=200\\n')
+    const descendant = spawn(process.execPath, ['-e',
+      "setTimeout(() => process.stderr.write('[ocr] compression_finished outcome=rebuilt before_estimated_tokens=200 after_estimated_tokens=50\\\\n'), 100)"
+    ], { detached: true, stdio: ['ignore', 'ignore', 'inherit'] })
+    descendant.unref()
+    process.exitCode = 7
+  `
+  try {
+    const result = await runCli(
+      ['run', '--', process.execPath, '-e', script],
+      {
+        MISTRAL_API_KEY: 'synthetic-upstream-key',
+        OCR_ADAPTER_PROGRESS_FD: '3',
+        OCR_ADAPTER_DIAGNOSTICS_PATH: diagnosticsPath,
+      },
+      { liveProgress: true }
+    )
+    assert.equal(result.code, 7)
+    const rows = fs.readFileSync(diagnosticsPath, 'utf8').trim().split('\n')
+    assert.equal(rows.length, 1)
+    const receipt = JSON.parse(rows[0])
+    assert.equal(receipt.compression.complete, true)
+    assert.equal(receipt.compression.started, 1)
+    assert.equal(receipt.compression.rebuilt, 1)
+    assert.equal(receipt.compression.rebuilt_after_estimated_tokens, 50)
+    assert.equal(receipt.requests, 0)
+    assert.match(result.live, /event=compression_finished outcome=rebuilt/)
+    assert.match(result.live, /event=process_exited exit_code=7/)
+  } finally {
+    fs.rmSync(directory, { recursive: true, force: true })
   }
 })
 

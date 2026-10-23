@@ -12,8 +12,6 @@ on:
         # The ready boundary runs the envelope so it can validate the draft-era
         # full proof instead of rebuilding and retesting an unchanged head.
         ready_for_review,
-        # Converting back to a draft conservatively re-runs full validation.
-        converted_to_draft,
         # A closed pull request cancels its in-flight execution.
         closed,
       ]
@@ -53,6 +51,7 @@ jobs:
       contents: read
       actions: read
       pull-requests: read
+      id-token: write
     uses: uzh-bf/klicker-uzh/.github/workflows/public-pr-playwright-shards.yml@v3
     with:
       route_hint: auto
@@ -81,6 +80,9 @@ jobs:
           DUPLICATE_RUN_ID: ${{ needs.test-playwright-execution.outputs.duplicate_run_id }}
           EXECUTION_RESULT: ${{ needs.test-playwright-execution.result }}
           ROUTE: ${{ needs.test-playwright-execution.outputs.route }}
+          PROVIDER: ${{ needs.test-playwright-execution.outputs.provider }}
+          ADMISSION_ATTEMPT: ${{ needs.test-playwright-execution.outputs.admission_attempt }}
+          CURRENT_ATTEMPT: ${{ github.run_attempt }}
           MODE: ${{ needs.test-playwright-execution.outputs.mode }}
           ENVELOPE_CLASS: ${{ needs.test-playwright-execution.outputs.envelope_class }}
           SHOULD_RUN: ${{ needs.test-playwright-execution.outputs.should_run }}
@@ -128,6 +130,10 @@ jobs:
           fi
           if [ "$ROUTE" != 'hosted' ] && [ "$ROUTE" != 'public-pr' ]; then
             echo 'Playwright execution returned an invalid route.'
+            exit 1
+          fi
+          if [ "${PROVIDER:-}" = 'warpbuild' ] && [ "${ADMISSION_ATTEMPT:-}" != "${CURRENT_ATTEMPT:-}" ]; then
+            echo 'Paid validation was not admitted for this attempt.'
             exit 1
           fi
           # A pull-request lifecycle event may reuse validation: the trusted

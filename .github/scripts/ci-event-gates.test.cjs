@@ -37,6 +37,7 @@ function evaluateGate(
     'cancelled',
     'vars',
     'steps',
+    'format',
     `return (${normalized})`
   )(
     github,
@@ -44,9 +45,55 @@ function evaluateGate(
     () => true,
     () => cancelled,
     vars,
-    steps
+    steps,
+    (pattern, value) => {
+      assert.equal(pattern, '{0}')
+      return String(value)
+    }
   )
 }
+
+test('paid jobs and legacy required coverage reject stale preparation on rerun', () => {
+  const workflow = readWorkflow('public-pr-playwright-shards.yml')
+  for (const [provider, admitted, current, expected] of [
+    ['warpbuild', '1', 1, true],
+    ['warpbuild', '1', 2, false],
+    ['warpbuild', '2', 2, true],
+    ['warpbuild', '', 1, false],
+    ['public-pool', '', 2, true],
+  ]) {
+    const needs = {
+      prepare: {
+        outputs: {
+          provider,
+          admission_attempt: admitted,
+          duplicate_run_id: '',
+          should_run: 'true',
+          route: 'public-pr',
+        },
+      },
+    }
+    for (const name of [
+      'build-and-compile-public-pr',
+      'test-playwright-public-pr',
+    ]) {
+      assert.equal(
+        evaluateGate(workflow.jobs[name].if, { run_attempt: current }, needs),
+        expected
+      )
+    }
+    const output = workflow.on.workflow_call.outputs.should_run.value
+      .slice(3, -2)
+      .trim()
+    const jobs = { prepare: needs.prepare }
+    const returned = evaluateGate(
+      output.replaceAll('jobs.', 'needs.'),
+      { run_attempt: current },
+      jobs
+    )
+    assert.equal(returned, String(expected))
+  }
+})
 
 test('trusted review policy admits only lifecycle events and exact PR commands', () => {
   const workflow = readWorkflow('check-ocr-final-review.yml')
@@ -926,4 +973,51 @@ test('the bounded codebase check narrows only for a proven pull-request class', 
     false,
     'the bounded announcement must never claim a class that was not proven'
   )
+})
+
+test('OCR engine qualification only runs for related paths or an unproven diff', () => {
+  const steps = readWorkflow('check.yml').jobs['check-suite'].steps
+  const selector = steps.find((step) => step.id === 'ocr_engine')
+  assert.equal(selector.uses, './.github/actions/changed-paths')
+  const pattern = new RegExp(selector.with.pattern)
+  for (const file of [
+    '.github/scripts/install-patched-ocr.cjs',
+    '.github/open-code-review/ocr-compression.patch',
+    '.github/workflows/check.yml',
+    '.github/workflows/check-ocr-final-review.yml',
+  ])
+    assert.equal(pattern.test(file), true, file)
+  for (const file of ['apps/chat/src/proxy.ts', 'docs/ci-and-deployment.md']) {
+    assert.equal(pattern.test(file), false, file)
+  }
+  for (const name of [
+    'Set up pinned OCR build toolchain',
+    'Qualify the pinned OCR compression engine',
+  ]) {
+    const gate = steps.find((step) => step.name === name).if
+    assert.equal(
+      evaluateGate(
+        gate,
+        {},
+        {},
+        false,
+        {},
+        { ocr_engine: { outputs: { should_run: 'false' } } }
+      ),
+      false
+    )
+    for (const should_run of ['true', undefined]) {
+      assert.equal(
+        evaluateGate(
+          gate,
+          {},
+          {},
+          false,
+          {},
+          { ocr_engine: { outputs: { should_run } } }
+        ),
+        true
+      )
+    }
+  }
 })

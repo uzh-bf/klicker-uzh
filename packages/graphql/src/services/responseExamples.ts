@@ -31,6 +31,21 @@ type ResponseExamplePrisma = Pick<
   | 'responseExampleSet'
 >
 
+const responseExampleChatbotSelect = {
+  systemPrompts: true,
+  standardModeConfig: true,
+  mcpConfigurations: {
+    select: {
+      allowedTools: true,
+      chatMode: true,
+      isEnabled: true,
+      mcpServerId: true,
+      parameters: true,
+      priority: true,
+    },
+  },
+} satisfies Prisma.ChatbotSelect
+
 const responseExampleSetInclude = {
   examples: {
     orderBy: [{ chatMode: 'asc' }, { studentMessage: 'asc' }, { id: 'asc' }],
@@ -48,7 +63,7 @@ const responseExampleSetInclude = {
     },
   },
   chatbot: {
-    select: { systemPrompts: true },
+    select: responseExampleChatbotSelect,
   },
 } satisfies Prisma.ResponseExampleSetInclude
 
@@ -69,7 +84,11 @@ function withChatbotModes(
 ): ResponseExampleSetWithModes {
   return {
     ...set,
-    chatModes: extractChatbotModes(set.chatbot.systemPrompts),
+    chatModes: extractChatbotModes(
+      set.chatbot.systemPrompts,
+      set.chatbot.standardModeConfig,
+      set.chatbot.mcpConfigurations
+    ),
   }
 }
 
@@ -359,7 +378,9 @@ async function reviewResponseExample(
         },
         set: {
           select: {
-            chatbot: { select: { systemPrompts: true } },
+            chatbot: {
+              select: responseExampleChatbotSelect,
+            },
           },
         },
       },
@@ -385,9 +406,11 @@ async function reviewResponseExample(
 
     if (
       status === DB.ResponseExampleStatus.APPROVED &&
-      !extractChatbotModes(example.set.chatbot.systemPrompts).includes(
-        example.chatMode
-      )
+      !extractChatbotModes(
+        example.set.chatbot.systemPrompts,
+        example.set.chatbot.standardModeConfig,
+        example.set.chatbot.mcpConfigurations
+      ).includes(example.chatMode)
     ) {
       throw new GraphQLError(
         'The response example uses a chat mode that is not available for this chatbot.',
@@ -513,7 +536,9 @@ export async function editAndApproveResponseExample(
         },
         set: {
           select: {
-            chatbot: { select: { systemPrompts: true } },
+            chatbot: {
+              select: responseExampleChatbotSelect,
+            },
           },
         },
       },
@@ -545,9 +570,11 @@ export async function editAndApproveResponseExample(
     }
 
     if (
-      !extractChatbotModes(example.set.chatbot.systemPrompts).includes(
-        input.chatMode
-      )
+      !extractChatbotModes(
+        example.set.chatbot.systemPrompts,
+        example.set.chatbot.standardModeConfig,
+        example.set.chatbot.mcpConfigurations
+      ).includes(input.chatMode)
     ) {
       throw new GraphQLError(
         'The selected chat mode is not available for this chatbot.',

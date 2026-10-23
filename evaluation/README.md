@@ -20,8 +20,72 @@ canonical source mapping and persisted-history verification in
 `evaluation/adapters/`; generic normalized-artifact loading, DeepEval assessment
 and reporting belong to the private framework.
 
+### Provider-direct bounded capture
+
+For a supplied-text diagnostic without the application, use the pinned
+framework's `capture_conversation` library API and the consumer's
+`evaluation.adapters.budget_admission.BudgetAdmission` context manager. There
+is no additional capture runner. This path does not use the authenticated
+application target, execute retrieval tools or establish live-chat acceptance.
+
+The caller must select an already qualified fixed model and native output bound,
+point the framework client at the matching spend guard endpoint, and provide an
+existing version-2 ledger with that guard's policy hash. This adapter never
+initializes, resets or extends an allowance. The guard still reserves the full
+qualified provider cost before dispatch; an admission context alone is not cost
+or pricing qualification.
+
+With the repository root and `evaluation/framework/src` on `PYTHONPATH`, compose
+the existing capture API as follows. The client, prompts, turns, identity and
+policy binding remain caller-owned inputs:
+
+```python
+from evaluation.adapters.budget_admission import BudgetAdmission
+from evaluators.query_agent import capture_conversation
+
+with BudgetAdmission(
+    budget_file, policy_hash=policy_hash,
+    model=model, max_output_tokens=output_bound,
+) as admit:
+    artifact = capture_conversation(
+        client=client, model=model, system_prompt=system_prompt,
+        user_turns=user_turns, max_attempts=max_attempts,
+        admission_factory=admit, query_timeout=60,
+        conversation_id=conversation_id,
+    )
+# Persist privately only after the outer context closed successfully.
+```
+
+The adapter owns one local Node child running the existing budget module. Only
+budget commands cross its stdin/stdout; no prompts, answers or credentials do.
+It checks the factory's exact model/output binding, acquires a turn before each
+send and requires a new reservation before finishing it. Direct provider capture
+adds zero application credits; reserved provider dollars remain authoritative.
+Failure or interruption before finish retains the uncertain turn and all spend.
+A durable finish followed by lost acknowledgement remains a terminal session
+failure even when the ledger already records that finish. No automatic retry,
+refund, stale-lock recovery or later admission follows either failure.
+Framework-caught admission errors are also raised at outer context exit.
+
+Public CI runs the adapter's process/ledger contracts without private submodule
+access. The additional local integration requires that exact submodule and
+its frozen Python 3.12 environment, with Node 24 available:
+
+```bash
+KLICKER_EVAL_FRAMEWORK_INTEGRATION=1 \
+  uv run --frozen --offline --project evaluation/framework \
+  python -m pytest -q -p no:cacheprovider evaluation/tests/test_budget_admission.py
+```
+
+Explicit integration fails when the private framework is missing; ordinary CI
+skips those cases. It uses the real capture API and spend guard against temporary
+synthetic loopback providers, exercising replay, bounds, reservations and failure
+stopping. It sends no model or judge request. Do not substitute this evidence for
+real-provider qualification, permission to transmit source material or a paid run.
+
 The app owns the trajectory-capture importer and the synthetic
-[Explainer compression regression and control](data/explainer-compression/README.md).
+[Explainer compression regression and control](data/explainer-compression/README.md)
+and the [Explainer closing-check corpus](data/explainer-check/README.md).
 These authored development cases do not authorize model calls or judge execution.
 
 ### Offline capture import
@@ -450,7 +514,7 @@ UV_OFFLINE=true uv run --frozen --offline \
 ```
 
 The harness requires the framework gitlink at revision
-d4ee03e51566c3d8a847ff0daf28ad47332c8373.
+33fac627cb691813a777181c428d40c4355ea45f.
 
 The harness invokes the real launcher from outside the repository, uses one
 temporary synthetic ground-truth case and output directory (including paths

@@ -21,6 +21,7 @@ import {
 import { getDefaultReasoningEffort } from '@/src/lib/ownerPreviewPolicy'
 import { useSettingsStore } from '@/src/stores/settingsStore'
 import { ChatUiProvider } from './chat-ui-context'
+import { DictationProvider, useOnDeviceDictation } from './dictation-context'
 import { ModeOptionsProvider } from './mode-options-context'
 import { Thread } from './thread'
 
@@ -390,6 +391,7 @@ function OwnerPreviewConversation({
     ]
   )
   const runtime = useChatRuntime({ transport })
+  const dictation = useOnDeviceDictation({ disabled: true })
 
   return (
     <div
@@ -399,12 +401,15 @@ function OwnerPreviewConversation({
     >
       <ModeOptionsProvider modeOptions={initialModeOptions}>
         <AssistantRuntimeProvider runtime={runtime}>
-          <Thread
-            chatbotAvatar={chatbot.avatar ?? ''}
-            chatbotName={chatbot.name}
-            initialModeOptions={initialModeOptions}
-            maxImageAttachments={0}
-          />
+          <DictationProvider value={dictation}>
+            <Thread
+              chatbotAvatar={chatbot.avatar ?? ''}
+              chatbotName={chatbot.name}
+              initialModeOptions={initialModeOptions}
+              maxImageAttachments={0}
+              allowDocumentAttachments={false}
+            />
+          </DictationProvider>
         </AssistantRuntimeProvider>
       </ModeOptionsProvider>
     </div>

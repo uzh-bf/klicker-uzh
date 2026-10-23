@@ -4,7 +4,13 @@ const fs = require('node:fs')
 const os = require('node:os')
 const path = require('node:path')
 const test = require('node:test')
+const {
+  expectedVersion,
+  verifyVersion,
+  verifyArchive,
+} = require('./install-patched-ocr.cjs')
 
+const { invalidCleanCheckChanges } = require('./final-ai-review-fixtures')
 const {
   isConsolidationBaseBranch,
   isEligibleBaseBranch,
@@ -303,7 +309,7 @@ function executeExtractedOCRAttempt({
     OCR_VERSION_OUTPUT:
       versionMode === 'drift'
         ? `open-code-review v1.10.0 ${versionSentinel}`
-        : 'open-code-review v1.13.0 synthetic',
+        : `${expectedVersion()}linux/arm64`,
     OCR_VERSION_STATUS: String(versionStatus),
     OCR_VERSION_STDERR: 'OCR_VERSION_STDERR_SENTINEL',
     OUTPUT_PATH: outputPath,
@@ -328,6 +334,7 @@ function executeExtractedOCRAttempt({
     '  "$@"',
     '}',
     'node() {',
+    '  if [[ "$1" == .github/scripts/install-patched-ocr.cjs && "$2" == verify-version ]]; then command node "$@"; return; fi',
     '  if [[ "$1" == .github/scripts/final-ai-review.js && "$2" == validate-ocr-preview ]]; then',
     '    command node "$@" || return',
     '    printf "coverage checked\\n" >>"${OCR_CALLS_PATH}"',
@@ -1459,7 +1466,8 @@ test('uses one qualified canary and OCR release in both manual jobs', () => {
     )?.[1] ?? ''
 
   assert.equal(
-    source.match(/@alibaba-group\/open-code-review@1\.13\.0/g)?.length,
+    source.match(/install-patched-ocr\.cjs "\$\{RUNNER_TEMP\}\/patched-ocr"/g)
+      ?.length,
     2
   )
   assert.equal(source.match(/verify-mistral-tools/g)?.length, 2)
@@ -3239,6 +3247,73 @@ test('accepts a trusted clean status without requiring a review body', async () 
     repository: { full_name: 'uzh-bf/klicker-uzh' },
   }
 
+  const originalCheck = { ...state.checkRuns[0], id: 456 }
+  for (const details_url of [
+    'https://github.com/uzh-bf/klicker-uzh/actions/runs/123',
+    'https://github.com/uzh-bf/klicker-uzh/runs/456',
+  ]) {
+    state.checkRuns[0] = { ...originalCheck, details_url }
+    assert.equal(
+      await hasCurrentSuccessfulFinalReview({ github, context, pull, plan }),
+      true
+    )
+  }
+  const trustedCheck = state.checkRuns[0]
+  for (const change of invalidCleanCheckChanges(456, 123)) {
+    state.checkRuns[0] = { ...trustedCheck, ...change }
+    assert.equal(
+      await hasCurrentSuccessfulFinalReview({ github, context, pull, plan }),
+      false,
+      JSON.stringify(change)
+    )
+  }
+  state.checkRuns[0] = trustedCheck
+  const trustedWorkflow = state.workflowRun
+  for (const change of [
+    { id: 456 },
+    { event: 'pull_request_target' },
+    { path: '.github/workflows/other.yml' },
+    { head_branch: 'other' },
+    { head_sha: 'e'.repeat(40) },
+    { conclusion: 'failure' },
+    { repository: { full_name: 'other/repo' } },
+  ]) {
+    state.workflowRun = { ...trustedWorkflow, ...change }
+    assert.equal(
+      await hasCurrentSuccessfulFinalReview({ github, context, pull, plan }),
+      false,
+      JSON.stringify(change)
+    )
+  }
+  state.workflowRun = trustedWorkflow
+  const trustedStatus = state.statuses[0]
+  state.statuses[0] = { ...trustedStatus, target_url: trustedCheck.details_url }
+  assert.equal(
+    await hasCurrentSuccessfulFinalReview({ github, context, pull, plan }),
+    false
+  )
+  state.statuses[0] = trustedStatus
+  for (const change of [
+    { workflow_url: trustedCheck.details_url },
+    { workflow_run_id: 456 },
+    { evidence_digest: 'e'.repeat(64) },
+    { policy_digest: 'e'.repeat(64) },
+    { background_digest: 'e'.repeat(64) },
+  ]) {
+    state.checkRuns[0] = {
+      ...trustedCheck,
+      output: {
+        text: `<!-- ${FINAL_REVIEW_CLEAN_EVIDENCE_SCHEMA} ${encodeMetadata({ ...cleanEvidence, ...change })} -->`,
+      },
+    }
+    assert.equal(
+      await hasCurrentSuccessfulFinalReview({ github, context, pull, plan }),
+      false,
+      JSON.stringify(change)
+    )
+  }
+  state.checkRuns[0] = trustedCheck
+
   assert.equal(
     await hasCurrentSuccessfulFinalReview({ github, context, pull, plan }),
     true
@@ -4321,15 +4396,21 @@ test('selects incremental attestation only for bounded repaired changes', async 
   assert.equal(changedDigest.mode, 'full')
   state.rules = '{"rules":[]}'
 
-  state.policyFiles['.github/workflows/check-ocr-final-review.yml'] =
-    'changed trusted workflow'
-  const changedPolicy = await buildReviewPlan({
-    github,
-    context,
-    pull: state.pull,
-  })
-  assert.equal(changedPolicy.mode, 'full')
-  delete state.policyFiles['.github/workflows/check-ocr-final-review.yml']
+  for (const policyPath of [
+    '.github/workflows/check-ocr-final-review.yml',
+    '.github/scripts/final-ai-review-shared.js',
+    '.github/scripts/install-patched-ocr.cjs',
+    '.github/open-code-review/ocr-compression.patch',
+  ]) {
+    state.policyFiles[policyPath] = 'changed trusted policy'
+    const changedPolicy = await buildReviewPlan({
+      github,
+      context,
+      pull: state.pull,
+    })
+    assert.equal(changedPolicy.mode, 'full')
+    delete state.policyFiles[policyPath]
+  }
 
   state.pull = {
     ...state.pull,
@@ -4912,5 +4993,23 @@ test('treats chore/promote-stg-* as ordinary final-review policy', async () => {
   assert.doesNotMatch(
     source,
     /Generated staging promotion|isPromotionCandidate|validatePromotionContract/
+  )
+})
+
+test('patched executable provenance refuses an upstream binary or a changed patch', () => {
+  const patch = Buffer.from('synthetic compression patch')
+  const version = expectedVersion(patch) + 'linux/arm64'
+  verifyVersion(version, patch)
+  assert.throws(
+    () => verifyVersion('open-code-review v1.13.0 upstream', patch),
+    /does not match/
+  )
+  assert.throws(
+    () => verifyVersion(version, Buffer.from('different synthetic patch')),
+    /does not match/
+  )
+  assert.throws(
+    () => verifyArchive(Buffer.from('unexpected upstream archive')),
+    /checksum mismatch/
   )
 })

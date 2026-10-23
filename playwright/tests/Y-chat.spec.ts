@@ -1661,9 +1661,10 @@ test.describe('Chatbot Image Attachments', () => {
     await expect(
       page.getByText('You can only attach up to 3 images.')
     ).toBeVisible()
+    // Documents have their own limit, so the attach button stays available.
     await expect(
       composer.getByTestId('chat-composer-attach-button')
-    ).toHaveCount(0)
+    ).toHaveCount(1)
     await expect(composer.getByTestId('chat-composer-attachment')).toHaveCount(
       3
     )
@@ -1706,8 +1707,7 @@ test.describe('Chatbot Image Attachments', () => {
     ).toBeVisible()
     await expect(
       editComposer.getByTestId('chat-edit-composer-attach-button')
-    ).toHaveCount(0)
-    await expect(page.getByTestId('chat-composer-attach-button')).toHaveCount(1)
+    ).toHaveCount(1)
     await expect(
       editComposer.getByTestId('chat-composer-attachment')
     ).toHaveCount(3)
@@ -1724,7 +1724,6 @@ test.describe('Chatbot Image Attachments', () => {
     await expect(
       page.getByTestId('chat-composer').getByTestId('chat-composer-attachment')
     ).toHaveCount(3)
-    await expect(page.getByTestId('chat-composer-attach-button')).toHaveCount(0)
   })
 })
 

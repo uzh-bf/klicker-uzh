@@ -15,6 +15,10 @@ vi.mock('next/navigation', () => ({
   useSearchParams: () => ({ toString: () => '' }),
 }))
 
+vi.mock('next-intl', () => ({
+  useTranslations: () => (key: string) => key,
+}))
+
 vi.mock('react', async () => {
   const actual = await vi.importActual<typeof import('react')>('react')
 
@@ -29,11 +33,13 @@ vi.mock('../src/lib/utils/chatUtils', () => ({
 }))
 
 vi.mock('../src/stores/settingsStore', () => ({
+  selectModelReadsDocumentPages: () => false,
   useSettingsStore: (selector?: (state: any) => unknown) => {
     const state = {
       selectedMode: 'chat',
       selectedModel: 'gpt-test',
       selectedReasoningEffort: 'medium',
+      modelOptions: [],
     }
     return selector ? selector(state) : state
   },
