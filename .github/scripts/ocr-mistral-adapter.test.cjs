@@ -13,6 +13,7 @@ const { EventEmitter } = require('node:events')
 const {
   MISTRAL_URL,
   MISTRAL_MODEL,
+  MISTRAL_FLASH_MODEL,
   normalizeMistralResponse,
   translateMistralRequest,
   createHistoryStore,
@@ -27,6 +28,81 @@ const {
 const ADAPTER = path.join(__dirname, 'ocr-mistral-adapter.cjs')
 const CHAT_PATH = '/v1/chat/completions'
 const SHUTDOWN_PATH = '/shutdown'
+
+test('Mistral Flash fixes the draft model and max effort while preserving native tool requests', () => {
+  const body = {
+    model: MISTRAL_FLASH_MODEL,
+    messages: [{ role: 'user', content: 'synthetic' }],
+    reasoning_effort: 'max',
+    reasoning: { effort: 'none' },
+    provider: { only: ['untrusted'] },
+    max_completion_tokens: 16384,
+    prompt_cache_key: 'synthetic-session',
+    tools: [{ type: 'function', function: { name: 'task_done' } }],
+  }
+  const translated = translateMistralRequest(body, undefined, 'mistral-flash')
+  assert.equal(translated.model, MISTRAL_FLASH_MODEL)
+  assert.equal(translated.reasoning_effort, 'max')
+  assert.equal(translated.reasoning, undefined)
+  assert.equal(translated.provider, undefined)
+  assert.equal(translated.max_tokens, 16384)
+  assert.equal(translated.prompt_cache_key, 'synthetic-session')
+  assert.equal(translated.tool_choice, 'any')
+  for (const [change, code] of [
+    [{ reasoning_effort: 'high' }, 'invalid_request'],
+    [{ model: MISTRAL_MODEL }, 'model_mismatch'],
+  ])
+    assert.throws(
+      () =>
+        translateMistralRequest(
+          { ...body, ...change },
+          undefined,
+          'mistral-flash'
+        ),
+      { code }
+    )
+  assert.throws(
+    () =>
+      normalizeMistralResponse(
+        completion({ role: 'assistant', content: 'ok' }),
+        'mistral-flash'
+      ),
+    { code: 'response_model_mismatch' }
+  )
+})
+
+test('Flash cost receipts use their model prices and reject mixed or unidentified models', () => {
+  const row = {
+    ...costReceipt(),
+    provider: 'mistral-flash',
+    model: MISTRAL_FLASH_MODEL,
+  }
+  const estimate = estimateCost(JSON.stringify(row), 'mistral-flash')
+  assert.ok(Math.abs(estimate.withCache - 0.11) < 1e-10)
+  assert.ok(Math.abs(estimate.withoutCache - 0.2) < 1e-10)
+  assert.ok(Math.abs(estimate.savings - 0.09) < 1e-10)
+  for (const bad of [
+    costReceipt(),
+    { ...row, model: MISTRAL_MODEL },
+    { ...row, provider: 'mistral' },
+  ]) {
+    const report = buildCostReport(
+      `${JSON.stringify(row)}\n${JSON.stringify({ ...bad, upstream_attempts: 2 })}`,
+      { adapter: 2 },
+      'mistral-flash'
+    )
+    assert.equal(report.estimate, null)
+    assert.equal(report.reportedResponseEstimate, null)
+    assert.ok(report.reasons.includes('provider_mismatch'))
+  }
+  assert.ok(estimateCost(JSON.stringify(costReceipt())))
+  for (const bad of [
+    row,
+    { ...row, provider: 'mistral' },
+    { ...costReceipt(), provider: 'mistral' },
+  ])
+    assert.equal(estimateCost(JSON.stringify(bad)), null)
+})
 
 test('draft routing uses the exact OpenRouter snapshot and max reasoning without accepting route overrides', () => {
   const body = {
@@ -2425,134 +2501,140 @@ test('close bounds an uncooperative request and marks its accounting incomplete'
   }
 })
 
-test('compression restores only exact reasoned turns, retaining native thinking and bounds', () => {
-  const history = createHistoryStore({ maxEntries: 3 })
-  const prefix = [
-    { role: 'system', content: 's' },
-    { role: 'user', content: 'original' },
-  ]
-  const native = {
-    role: 'assistant',
-    index: 0,
-    content: [
-      { type: 'thinking', thinking: [{ type: 'text', text: 'reasoning' }] },
-    ],
-    tool_calls: [
-      {
-        id: 'id1',
-        type: 'function',
-        function: { name: 'file_read', arguments: '{"file_path":"a.ts"}' },
-      },
-    ],
-  }
-  history.remember(prefix, native)
-  const turn = normalizeMistralResponse(completion(native, 'tool_calls'))
-    .choices[0].message
-  const compressed = [
-    prefix[0],
-    { role: 'user', content: 'compressed summary' },
-  ]
-  const expected = { ...native }
-  delete expected.index
-  assert.deepEqual(
-    history.restoreMessages([...compressed, turn]).at(-1),
-    expected
-  )
-  assert.equal(history.diagnostics().compressed_hits, 1)
-  assert.equal(history.entryCount(), 1)
-  for (const altered of [
-    { ...turn, reasoning_content: undefined },
-    { ...turn, reasoning_content: 'different' },
-    { ...turn, content: 'different' },
-    { ...turn, tool_calls: [{ ...turn.tool_calls[0], id: 'id2' }] },
-    {
-      ...turn,
+for (const provider of ['mistral', 'mistral-flash'])
+  test(`${provider}: compression restores only exact reasoned turns, retaining native thinking and bounds`, () => {
+    const history = createHistoryStore({ maxEntries: 3, provider })
+    const prefix = [
+      { role: 'system', content: 's' },
+      { role: 'user', content: 'original' },
+    ]
+    const native = {
+      role: 'assistant',
+      index: 0,
+      content: [
+        { type: 'thinking', thinking: [{ type: 'text', text: 'reasoning' }] },
+      ],
       tool_calls: [
         {
-          ...turn.tool_calls[0],
-          function: { name: 'file_read', arguments: '{"file_path":"b.ts"}' },
+          id: 'id1',
+          type: 'function',
+          function: { name: 'file_read', arguments: '{"file_path":"a.ts"}' },
         },
       ],
-    },
-  ])
-    assert.throws(
-      () => history.restoreMessages([...compressed, altered]),
-      /unavailable/
+    }
+    history.remember(prefix, native)
+    const turn = normalizeMistralResponse(completion(native, 'tool_calls'))
+      .choices[0].message
+    const compressed = [
+      prefix[0],
+      { role: 'user', content: 'compressed summary' },
+    ]
+    const expected = { ...native }
+    delete expected.index
+    assert.deepEqual(
+      history.restoreMessages([...compressed, turn]).at(-1),
+      expected
     )
-  const secondPrefix = [prefix[0], { role: 'user', content: 'another group' }]
-  history.remember(secondPrefix, { ...native, index: 1 })
-  assert.deepEqual(
-    history.restoreMessages([...compressed, turn]).at(-1),
-    expected
-  )
-  history.remember([{ role: 'user', content: 'third group' }], {
-    ...native,
-    content: [{ ...native.content[0], signature: 'different native state' }],
-  })
-  assert.deepEqual(history.restoreMessages([...prefix, turn]).at(-1), expected)
-  assert.throws(
-    () => history.restoreMessages([...compressed, turn]),
-    /ambiguous/
-  )
-  assert.throws(
-    () => history.remember([{ role: 'user', content: 'fourth group' }], native),
-    /bound/
-  )
-  const misses = history.diagnostics()
-  assert.equal(misses.miss_no_reasoning, 1)
-  assert.equal(misses.miss_unknown_turn, 4)
-  assert.equal(misses.miss_ambiguous_turn, 1)
-  assert.equal(misses.misses, 6)
-})
-
-test('compressed tool replay without echoed reasoning requires the same conversation and unique native state', () => {
-  const history = createHistoryStore({ maxEntries: 3 })
-  const prefix = [{ role: 'user', content: 'original' }]
-  const native = {
-    role: 'assistant',
-    content: '  <think></think>visible  ',
-    reasoning_content: 'retained private state',
-    tool_calls: [
+    assert.equal(history.diagnostics().compressed_hits, 1)
+    assert.equal(history.entryCount(), 1)
+    for (const altered of [
+      { ...turn, reasoning_content: undefined },
+      { ...turn, reasoning_content: 'different' },
+      { ...turn, content: 'different' },
+      { ...turn, tool_calls: [{ ...turn.tool_calls[0], id: 'id2' }] },
       {
-        id: 'shared-call',
-        type: 'function',
-        function: { name: 'file_read', arguments: '{"file_path":"a.ts"}' },
+        ...turn,
+        tool_calls: [
+          {
+            ...turn.tool_calls[0],
+            function: { name: 'file_read', arguments: '{"file_path":"b.ts"}' },
+          },
+        ],
       },
-    ],
-  }
-  const scope = 'synthetic-main-task'
-  history.remember(prefix, native, scope)
-  const echo = { ...native, content: 'visible' }
-  delete echo.reasoning_content
-  const compressed = [{ role: 'user', content: 'summary' }]
-  assert.deepEqual(
-    history.restoreMessages([...compressed, echo], scope).at(-1),
-    native
-  )
-  assert.equal(history.diagnostics().compressed_hits, 1)
-  for (const [turn, key] of [
-    [echo, undefined],
-    [echo, 'different-task'],
-    [{ ...echo, content: 'changed' }, scope],
-    [{ ...echo, reasoning_content: 'invented' }, scope],
-    [
-      { ...echo, tool_calls: [{ ...echo.tool_calls[0], id: 'different' }] },
-      scope,
-    ],
-  ])
-    assert.throws(() => history.restoreMessages([...compressed, turn], key), {
-      code: 'history_missing',
+    ])
+      assert.throws(
+        () => history.restoreMessages([...compressed, altered]),
+        /unavailable/
+      )
+    const secondPrefix = [prefix[0], { role: 'user', content: 'another group' }]
+    history.remember(secondPrefix, { ...native, index: 1 })
+    assert.deepEqual(
+      history.restoreMessages([...compressed, turn]).at(-1),
+      expected
+    )
+    history.remember([{ role: 'user', content: 'third group' }], {
+      ...native,
+      content: [{ ...native.content[0], signature: 'different native state' }],
     })
-  history.remember(
-    [{ role: 'user', content: 'another prefix' }],
-    { ...native, reasoning_content: 'different private state' },
-    scope
-  )
-  assert.throws(() => history.restoreMessages([...compressed, echo], scope), {
-    code: 'history_collision',
+    assert.deepEqual(
+      history.restoreMessages([...prefix, turn]).at(-1),
+      expected
+    )
+    assert.throws(
+      () => history.restoreMessages([...compressed, turn]),
+      /ambiguous/
+    )
+    assert.throws(
+      () =>
+        history.remember([{ role: 'user', content: 'fourth group' }], native),
+      /bound/
+    )
+    const misses = history.diagnostics()
+    assert.equal(misses.miss_no_reasoning, 1)
+    assert.equal(misses.miss_unknown_turn, 4)
+    assert.equal(misses.miss_ambiguous_turn, 1)
+    assert.equal(misses.misses, 6)
   })
-  assert.equal(history.entryCount(), 2)
-})
+
+for (const provider of ['mistral', 'mistral-flash'])
+  test(`${provider}: compressed tool replay without echoed reasoning requires the same conversation and unique native state`, () => {
+    const history = createHistoryStore({ maxEntries: 3, provider })
+    const prefix = [{ role: 'user', content: 'original' }]
+    const native = {
+      role: 'assistant',
+      content: '  <think></think>visible  ',
+      reasoning_content: 'retained private state',
+      tool_calls: [
+        {
+          id: 'shared-call',
+          type: 'function',
+          function: { name: 'file_read', arguments: '{"file_path":"a.ts"}' },
+        },
+      ],
+    }
+    const scope = 'synthetic-main-task'
+    history.remember(prefix, native, scope)
+    const echo = { ...native, content: 'visible' }
+    delete echo.reasoning_content
+    const compressed = [{ role: 'user', content: 'summary' }]
+    assert.deepEqual(
+      history.restoreMessages([...compressed, echo], scope).at(-1),
+      native
+    )
+    assert.equal(history.diagnostics().compressed_hits, 1)
+    for (const [turn, key] of [
+      [echo, undefined],
+      [echo, 'different-task'],
+      [{ ...echo, content: 'changed' }, scope],
+      [{ ...echo, reasoning_content: 'invented' }, scope],
+      [
+        { ...echo, tool_calls: [{ ...echo.tool_calls[0], id: 'different' }] },
+        scope,
+      ],
+    ])
+      assert.throws(() => history.restoreMessages([...compressed, turn], key), {
+        code: 'history_missing',
+      })
+    history.remember(
+      [{ role: 'user', content: 'another prefix' }],
+      { ...native, reasoning_content: 'different private state' },
+      scope
+    )
+    assert.throws(() => history.restoreMessages([...compressed, echo], scope), {
+      code: 'history_collision',
+    })
+    assert.equal(history.entryCount(), 2)
+  })
 
 test('request conversion and native replay work over the loopback listener', async () => {
   const native = {
@@ -2648,72 +2730,86 @@ test('request conversion and native replay work over the loopback listener', asy
   }
 })
 
-test('native memory keeps concurrent groups with reused tool-call ids apart', async () => {
-  const make = (marker) => ({
-    role: 'assistant',
-    content: `${marker}-text`,
-    reasoning_content: `${marker}-think`,
-    tool_calls: [
-      {
-        id: 'call_shared',
-        type: 'function',
-        function: { name: 'read', arguments: '{}' },
-      },
-    ],
-  })
-  const fetchImpl = upstream((record) => {
-    const messages = record.body.messages
-    if (messages.at(-1).role === 'user') {
-      return jsonResponse(
-        200,
-        completion(make(messages[0].content), 'tool_calls')
+for (const [provider, model] of [
+  ['mistral', MISTRAL_MODEL],
+  ['mistral-flash', MISTRAL_FLASH_MODEL],
+])
+  test(`${provider}: native memory keeps concurrent groups with reused tool-call ids apart`, async () => {
+    const make = (marker) => ({
+      role: 'assistant',
+      content: `${marker}-text`,
+      reasoning_content: `${marker}-think`,
+      tool_calls: [
+        {
+          id: 'call_shared',
+          type: 'function',
+          function: { name: 'read', arguments: '{}' },
+        },
+      ],
+    })
+    const fetchImpl = upstream((record) => {
+      const messages = record.body.messages
+      if (messages.at(-1).role === 'user') {
+        return jsonResponse(200, {
+          ...completion(make(messages[0].content), 'tool_calls'),
+          model,
+        })
+      }
+      return jsonResponse(200, {
+        ...completion({ role: 'assistant', content: 'done' }),
+        model,
+      })
+    })
+    const adapter = await startAdapter({
+      provider,
+      apiKey: 'sk',
+      fetchImpl,
+    })
+    try {
+      const alpha = await postJson(adapter, {
+        model,
+        messages: [{ role: 'user', content: 'alpha' }],
+      })
+      const beta = await postJson(adapter, {
+        model,
+        messages: [{ role: 'user', content: 'beta' }],
+      })
+      assert.equal(
+        alpha.json.choices[0].message.reasoning_content,
+        'alpha-think'
       )
-    }
-    return jsonResponse(200, completion({ role: 'assistant', content: 'done' }))
-  })
-  const adapter = await startAdapter({ apiKey: 'sk', fetchImpl })
-  try {
-    const alpha = await postJson(adapter, {
-      model: MISTRAL_MODEL,
-      messages: [{ role: 'user', content: 'alpha' }],
-    })
-    const beta = await postJson(adapter, {
-      model: MISTRAL_MODEL,
-      messages: [{ role: 'user', content: 'beta' }],
-    })
-    assert.equal(alpha.json.choices[0].message.reasoning_content, 'alpha-think')
-    assert.equal(beta.json.choices[0].message.reasoning_content, 'beta-think')
+      assert.equal(beta.json.choices[0].message.reasoning_content, 'beta-think')
 
-    const replayAlpha = await postJson(adapter, {
-      model: MISTRAL_MODEL,
-      messages: [
-        { role: 'user', content: 'alpha' },
-        alpha.json.choices[0].message,
-        { role: 'tool', tool_call_id: 'call_shared', content: 'r' },
-      ],
-    })
-    const replayBeta = await postJson(adapter, {
-      model: MISTRAL_MODEL,
-      messages: [
-        { role: 'user', content: 'beta' },
-        beta.json.choices[0].message,
-        { role: 'tool', tool_call_id: 'call_shared', content: 'r' },
-      ],
-    })
-    assert.equal(replayAlpha.status, 200)
-    assert.equal(replayBeta.status, 200)
-    assert.equal(
-      fetchImpl.calls[2].body.messages[1].reasoning_content,
-      'alpha-think'
-    )
-    assert.equal(
-      fetchImpl.calls[3].body.messages[1].reasoning_content,
-      'beta-think'
-    )
-  } finally {
-    await adapter.close()
-  }
-})
+      const replayAlpha = await postJson(adapter, {
+        model,
+        messages: [
+          { role: 'user', content: 'alpha' },
+          alpha.json.choices[0].message,
+          { role: 'tool', tool_call_id: 'call_shared', content: 'r' },
+        ],
+      })
+      const replayBeta = await postJson(adapter, {
+        model,
+        messages: [
+          { role: 'user', content: 'beta' },
+          beta.json.choices[0].message,
+          { role: 'tool', tool_call_id: 'call_shared', content: 'r' },
+        ],
+      })
+      assert.equal(replayAlpha.status, 200)
+      assert.equal(replayBeta.status, 200)
+      assert.equal(
+        fetchImpl.calls[2].body.messages[1].reasoning_content,
+        'alpha-think'
+      )
+      assert.equal(
+        fetchImpl.calls[3].body.messages[1].reasoning_content,
+        'beta-think'
+      )
+    } finally {
+      await adapter.close()
+    }
+  })
 
 test('native memory restores assistant turns without tool calls', async () => {
   const native = {
@@ -3929,6 +4025,7 @@ test('run completes the existing OCR config per attempt and restores it on every
 test('run strips both upstream keys and injects only the selected loopback model', async () => {
   for (const [provider, model] of [
     [undefined, MISTRAL_MODEL],
+    ['mistral-flash', MISTRAL_FLASH_MODEL],
     ['openrouter', 'deepseek/deepseek-v4.1-flash-1017'],
   ]) {
     const result = await runCli(

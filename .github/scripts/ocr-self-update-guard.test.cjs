@@ -90,16 +90,17 @@ test('attempts draft diagnostics upload even after startup failure', () => {
   assert.equal(upload.with['if-no-files-found'], 'warn')
 })
 
-test('routes automatic drafts through the pinned adapter with OpenRouter max reasoning', () => {
+test('routes automatic drafts through Mistral Flash without changing the final provider', () => {
   const job = YAML.parse(
     fs.readFileSync(
       path.join(__dirname, '../workflows/check-ocr-review.yml'),
       'utf8'
     )
   ).jobs['ocr-review']
-  assert.equal(job.env.OCR_ADAPTER_PROVIDER, 'openrouter')
+  assert.equal(job.env.OCR_ADAPTER_PROVIDER, 'mistral-flash')
   const run = job.steps.find((step) => step.id === 'review')
-  assert.equal(run.env.OPENROUTER_API_KEY, '${{ secrets.OPENROUTER_API_KEY }}')
+  assert.equal(run.env.MISTRAL_API_KEY, '${{ secrets.MISTRAL_API_KEY }}')
+  assert.equal(run.env.OPENROUTER_API_KEY, undefined)
   assert.equal(run.env.CONTEXT7_API_KEY, '${{ secrets.CONTEXT7_API_KEY }}')
   const publisher = job.steps.find(
     (step) => step.with?.repository === 'alibaba/open-code-review'
