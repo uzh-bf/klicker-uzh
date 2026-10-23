@@ -1,5 +1,4 @@
-// mirrors the server-side bound for free-text response limits
-const MAX_RESPONSE_LIMIT = 10
+import { MAX_RESPONSE_LIMIT } from '@klicker-uzh/types'
 
 interface ResponseLimitInstance {
   elementData: {

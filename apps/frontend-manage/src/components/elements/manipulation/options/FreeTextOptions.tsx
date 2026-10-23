@@ -44,7 +44,6 @@ function FreeTextOptions({ inputsDisabled, values }: FreeTextOptionsProps) {
           min={1}
           max={10}
           data={{ cy: 'set-free-text-response-limit' }}
-          hideError
         />
       </div>
       {values.options.hasSampleSolution && (

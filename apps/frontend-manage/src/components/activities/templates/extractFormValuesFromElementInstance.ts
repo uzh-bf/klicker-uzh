@@ -90,6 +90,7 @@ function extractFormValuesFromElementInstance({
       type: ElementType.FreeText,
       options: {
         hasSampleSolution: options.hasSampleSolution ?? false,
+        responseLimit: options.responseLimit ?? undefined,
         restrictions: options.restrictions
           ? {
               maxLength: options.restrictions.maxLength,
