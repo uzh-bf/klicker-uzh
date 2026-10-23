@@ -223,6 +223,34 @@ running application code or adding recurring costs requires a later approved
 implementation plan. The first future decision is which preview audience and
 runtime owner justify a retained environment rather than a disposable CI run.
 
+## OCR improvement roadmap — 2026-10-23
+
+The full setup review identified the following work. The user approved source
+implementation and selected `klicker-uzh-catalyst` as the first adopter. Source
+delivery, merged activation and live quality evidence are separate milestones.
+The implementation sequence starts with the
+[stack evidence plan](2026-10-23-ocr-stack-evidence-plan.md).
+
+| Finding or capability | Status and next action | Acceptance |
+| --- | --- | --- |
+| Producer outcome diagnostics | Existing draft [PR #6661](https://github.com/uzh-bf/klicker-uzh/pull/6661); complete its independent readiness gates before authorized merge | Sanitized diagnostics observed on a normal post-merge run |
+| Stack topology has metadata and earlier findings but lacks source | Approved, active first package: supply bounded immutable layer diffs | Synthetic two-layer source reaches the model without prior findings; unavailable/oversized evidence fails before dispatch |
+| Topology findings lack the ordinary confidence/evidence gate | Approved, active first package: reuse the ordinary validator and align rules/schema | Missing and below-threshold evidence rejected; ownership checks retained |
+| Shared launch skill uses weaker installation, credential and completion defaults | Approved adoption work: a pinned controlled runner and adoption guidance; keep upstream `open-code-review` read-only and portable `ocr-reviewer` unchanged | Immutable range, runtime secret injection and explicit coverage determine success |
+| Context roots and policy revision are implicit in the current GitHub runner | Approved adoption work: explicit trusted revision and documented roots; cover nested trusted skill references | Candidate instructions cannot replace policy; required context is discoverable and bounded |
+| First additional GitHub repository | Selected: `uzh-bf/klicker-uzh-catalyst`, targeting its default branch `main`; prepare source and synthetic qualification after the stack package | Draft PR and offline proof; activation requires an explicit private-source egress decision and appropriate credentials |
+| Advisor usefulness and Context7 retrieval/cache proof | Observe next ordinary relevant reviews; avoid forced tool calls and extra paid replay | Distinguish accepted output, source-corroborated usefulness, incomplete usage and actual cache reuse |
+| Authorization infrastructure errors can leave pending final status | Follow-up reliability item: identity-safe terminal handling after actor and head are known | Injected API failure terminates the matching status without overwriting newer evidence or changing authorization |
+| GitLab controller and publisher | Follow the GitHub pilot; repository selection and private-data boundary remain open | Trusted policy separated from MR source; exact base/head/start diff positions, deduplication and status lifecycle qualified |
+| Exact-head CI evidence, application testing and previews | Future capabilities described above; no runtime/deployment activation in this batch | Versioned evidence first; later isolated synthetic execution with ownership, cost, access and cleanup contracts |
+
+Keep reviewer models, reasoning, budgets, accounting and retries unchanged
+through these source improvements. AI statuses remain advisory under existing
+branch protection. A green draft job can contain partial coverage; an accepted
+advisor response or registered Context7 tool does not alone establish usefulness.
+Manual final reviews currently do not load the draft broker or reviewer skill;
+extending those tools is a separate capability decision.
+
 ## Progress
 
 - Status: draft PR [#6593](https://github.com/uzh-bf/klicker-uzh/pull/6593)
