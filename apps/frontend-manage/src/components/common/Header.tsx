@@ -354,7 +354,7 @@ function Header({
         className="print:hidden! flex h-full w-full flex-row flex-wrap items-center justify-between border-b border-slate-300 bg-slate-100 font-bold text-slate-700"
         data-cy="navigation"
       >
-        <div className="ml-4 flex flex-row items-center gap-1.5">
+        <div className="ml-4 flex min-w-0 max-w-[calc(100%-1rem)] flex-row items-center gap-1.5 overflow-x-auto">
           <Image
             priority
             src="/img/klicker_icon_transparent.png"

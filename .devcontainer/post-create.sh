@@ -28,10 +28,9 @@ if [ "${KLICKER_LOCAL_KB_RUNTIME_ONLY:-0}" = 1 ]; then
   local_kb_restore_environment
 fi
 
-# No-TTY pnpm hardening: CI=true auto-confirms a stale node_modules purge;
-# verify-deps-before-run=false stops implicit installs hanging on stdin. (GOTCHAS #18)
+# Keep installs non-interactive and explicit. The workspace's
+# verifyDepsBeforeRun: error policy rejects drift before subsequent commands.
 export CI=true
-export npm_config_verify_deps_before_run=false
 
 # Retry a command through transient failures (e.g. fresh-Postgres warmup);
 # print a clear error and return non-zero if it never succeeds (caller `|| exit 1`).

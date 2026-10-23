@@ -221,11 +221,9 @@ services:
       # Machine-local, content-addressed package cache shared by every worktree.
       # node_modules remains isolated in the generated project-scoped volumes.
       - pnpm_store:/pnpm/.pnpm-store
-      # The workspace bind mount and the store volume are different devices
-      # inside the container, so pnpm can fall back from the configured store
-      # to <workspace>/.pnpm-store during installs. Mounting the same shared
-      # volume at that fallback path keeps such installs off the host bind
-      # mount while still sharing content across every worktree.
+      # Retain the legacy workspace-root fallback mount. pnpm 12 uses
+      # node_modules/.pnpm-store for its default sandbox fallback, but the
+      # image explicitly configures /pnpm/.pnpm-store for shared caching.
       - pnpm_store:/workspaces/klicker-uzh/.pnpm-store
       # Hatchet client token automatically minted by hatchet-lite-dev to /config/authdisabled-token
       - hatchet_lite_config:/config:ro

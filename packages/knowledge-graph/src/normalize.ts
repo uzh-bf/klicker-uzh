@@ -25,7 +25,14 @@ const TYPED_RELATION_TYPES: ReadonlySet<string> =
     'part_of',
     'example_of',
     'applies_to',
+    'is_a',
+    'has_formula',
+    'has_variable',
+    'decision_rule',
+    'advantage_of',
+    'disadvantage_of',
     'contrasts_with',
+    'synonym_of',
   ])
 // `extracted` belongs to untyped relations only, and `instructor` stays
 // unknown until lecturer-confirmed types exist.

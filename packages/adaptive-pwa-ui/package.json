@@ -17,7 +17,7 @@
     "@klicker-uzh/markdown": "workspace:*",
     "@klicker-uzh/shared-components": "workspace:*",
     "@uzh-bf/design-system": "4.1.8",
-    "next": "^16.3.4",
+    "next": "^16.4.1",
     "next-intl": "^4.13.7",
     "react": "^19.2.8",
     "react-dom": "^19.2.8",

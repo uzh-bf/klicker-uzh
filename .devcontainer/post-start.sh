@@ -205,12 +205,12 @@ case "$LOCAL_EDUID_STATE" in
     ;;
 esac
 
-# No-TTY pnpm hardening (see post-create.sh). (GOTCHAS #18)
+# Keep explicit dependency preparation non-interactive. Preserve the workspace's
+# verifyDepsBeforeRun: error policy so runtime commands cannot repair implicitly.
 if [ "${KLICKER_LOCAL_KB_RUNTIME_ONLY:-0}" = 1 ]; then
   local_kb_restore_environment
 fi
 export CI=true
-export npm_config_verify_deps_before_run=false
 
 # Profile selection (devrouter >= 0.0.40). DEVROUTER_PROFILE is injected by
 # `devrouter ensure --profile <name>`; empty means the config default (`standard`).

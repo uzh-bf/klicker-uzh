@@ -14,7 +14,9 @@ WORKDIR /app
 RUN apk add --no-cache libc6-compat
 RUN apk update
 
-RUN npm i -g --ignore-scripts pnpm@11.5.0 turbo@2.10.11
+# pnpm 12 needs native setup for direct child-process execution on Alpine.
+RUN npm i -g --ignore-scripts pnpm@12.11.2 turbo@2.10.11 \
+ && node "$(npm root -g)/pnpm/install.js"
 
 COPY . .
 
@@ -27,7 +29,8 @@ WORKDIR /app
 RUN apk add --no-cache libc6-compat
 RUN apk update
 
-RUN npm i -g --ignore-scripts pnpm@11.5.0 turbo@2.10.11
+RUN npm i -g --ignore-scripts pnpm@12.11.2 turbo@2.10.11 \
+ && node "$(npm root -g)/pnpm/install.js"
 
 COPY --from=deps /app/out/json/ .
 COPY --from=deps /app/out/pnpm* .
@@ -46,7 +49,8 @@ WORKDIR /app
 ARG NODE_ENV="production"
 ENV NODE_ENV=${NODE_ENV}
 
-RUN npm i -g --ignore-scripts pnpm@11.5.0 turbo@2.10.11
+RUN npm i -g --ignore-scripts pnpm@12.11.2 turbo@2.10.11 \
+ && node "$(npm root -g)/pnpm/install.js"
 
 COPY --from=deps /app/out/json/ .
 COPY --from=deps /app/out/pnpm* .
@@ -55,11 +59,10 @@ COPY --from=deps /app/out/pnpm* .
 # plain `node`. They are removed, together with the pnpm store, its metadata
 # cache and npm's cache, in the same RUN that installs: a separate layer would
 # keep the ~1.7 GB of build state in the image, and the tooling teardown would
-# only white it out. pnpm's vendored tar and undici carry fixable HIGH/CRITICAL
-# advisories that the scanned runtime image otherwise reports, and the toolchain
-# pin cannot move on its own: the Playwright composite actions take their pnpm
-# version from the target branch while package.json comes from the
-# pull-request head, so `pnpm/action-setup` aborts on the two declared versions.
+# only white it out. Removing build-only package managers also keeps their
+# vendored dependencies out of the scanned runtime image. Toolchain upgrades
+# need a coordinated trusted-v3 Playwright action rollout: those remote actions
+# and the candidate package.json must agree on pnpm before setup can succeed.
 # npm itself goes last: no published npm release (11.20.0, 12.1.0 included)
 # vendors a patched brace-expansion (>=5.0.11) or undici (>=6.28.1) yet, and the
 # runtime never calls npm or npx, so the scanned image ships without it.
