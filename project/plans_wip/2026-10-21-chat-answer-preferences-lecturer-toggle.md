@@ -4,7 +4,7 @@
 
 A lecturer can turn off the student answer-style and tone choices for one
 chatbot, so every student on that chatbot gets the same answers. The choices
-stay on by default. Builds on ADR 0054 (uzh-bf/klicker-uzh#6648).
+stay on by default. Builds on ADR 0054 ([student preferences PR](https://github.com/uzh-bf/klicker-uzh/pull/6648)).
 
 ## Decisions
 
@@ -20,8 +20,8 @@ stay on by default. Builds on ADR 0054 (uzh-bf/klicker-uzh#6648).
 
 ## Stack
 
-1. `feat/chat-answer-style` (#6648, existing): student answer style and tone.
-2. `feat/chat-answer-preferences-toggle` (new): the lecturer switch end to end.
+1. `feat/chat-answer-style` ([student preferences](https://github.com/uzh-bf/klicker-uzh/pull/6648), existing): student answer style and tone.
+2. `feat/chat-answer-preferences-toggle` ([lecturer switch](https://github.com/uzh-bf/klicker-uzh/pull/6669)): the lecturer switch end to end.
    - Prisma field plus one generated migration.
    - GraphQL: expose the field on `Chatbot` and add it to the chatbot settings
      mutation used by `ChatbotDetails`; regenerate codegen.
@@ -42,17 +42,33 @@ controls.
 
 ## Progress
 
-- Done: both stack layers are implemented and pushed. #6648 holds the student
-  answer format and tone; #6669 holds the lecturer switch with one generated
-  migration. The live answer-style evaluation passed within its approved cap.
-- Done (2026-10-22): #6648 is up to date with `v3`, CI passed and the final
-  AI review found no actionable findings. #6669 merged the updated #6648.
-- Open: on #6669, SonarCloud fails its maintainability gate on cognitive
-  complexity in the chat route handler, `settings-panel.tsx` and
-  `ChatbotDetails.tsx`. The maintainer decides whether to refactor or accept
-  it; the final AI review for #6669 waits for that decision.
-- Open: `T-chatbot-authoring.spec.ts` runs only in CI, because the `ai-beta`
-  flag is enabled only in CI's test-mode backend.
-- Next: merge #6648 first, then #6669, both with maintainer approval.
-- Follow-up, not built: adjusting answer depth from quiz results needs a data
-  protection review first.
+- Implemented and pushed both layers: [student preferences](https://github.com/uzh-bf/klicker-uzh/pull/6648)
+  and the [lecturer switch](https://github.com/uzh-bf/klicker-uzh/pull/6669), with
+  one generated migration. Integrated `v3` at
+  `996794ab05ff4fc6355843739c5f5d9c002e5aec` to resolve the conflicts after the
+  document-review, sharing-notice and seed-prompt changes landed.
+- Fixed at `09f3a88016`: changing the lecturer switch clears stale save
+  success and errors. The existing authoring test covers the saved-to-unsaved
+  transition. The embedded test waits for a successful settings response and
+  loaded credits before asserting that the preference controls are absent.
+- Independent final source review at `09f3a88016` found no executable-source
+  defects. Its sole finding was the ADR's stale no-schema-change statement;
+  the correction distinguishes browser preferences from the persisted
+  lecturer-owned switch. No simplification was needed for the two small fixes.
+- Verification: [student-layer CI](https://github.com/uzh-bf/klicker-uzh/pull/6648/checks)
+  passed codebase checks, unit tests, all eight Playwright shards and SonarCloud
+  at `41e4d2a0cf`. The executable corrections built successfully at
+  `09f3a88016`. Their authoring and embedded regressions must pass in the
+  [lecturer-layer CI](https://github.com/uzh-bf/klicker-uzh/pull/6669/checks)
+  for the final source state. The existing gallery covers
+  the unchanged chat layouts. Fresh manual captures of the manage switch and
+  saved-feedback transition are unavailable.
+- Outstanding: SonarCloud reports pre-existing cognitive complexity in the
+  chat route, settings panel and lecturer details. Maintainer disposition or a
+  broader behavior-preserving refactor is still required. Finish the hosted
+  checks and Final AI review, leaving the stack unmerged as requested. Any
+  later authorized landing should use the top lecturer-switch PR so the native
+  stack lands together.
+
+Follow-up, not built: adapting answer depth from quiz results requires its own
+data-protection review.
