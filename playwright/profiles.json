@@ -2,6 +2,10 @@
   "version": 1,
   "groups": [
     {
+      "profile": "chat",
+      "specs": ["Y-student-docs.spec.ts"]
+    },
+    {
       "profile": "manage,pwa",
       "specs": [
         "0-baseline-ops.spec.ts",
