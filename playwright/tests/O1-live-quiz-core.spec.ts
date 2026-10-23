@@ -4800,10 +4800,36 @@ test.describe.serial('Core live-quiz workflows', () => {
     await expect(ownResponses.getByRole('listitem')).toHaveCount(1)
     await expect(input).toBeEnabled()
 
+    let releaseResponse: () => void = () => {}
+    const responseGate = new Promise<void>((resolve) => {
+      releaseResponse = resolve
+    })
+    await page.route(
+      '**/AddResponse',
+      async (route) => {
+        await responseGate
+        await route.fallback()
+      },
+      { times: 1 }
+    )
+    const pendingRequest = page.waitForRequest(
+      (request) =>
+        request.method() === 'POST' &&
+        new URL(request.url()).pathname === '/AddResponse'
+    )
+    const pendingResponse = page.waitForResponse(
+      (response) =>
+        response.request().method() === 'POST' &&
+        new URL(response.url()).pathname === '/AddResponse'
+    )
     await typeInto(input, second)
     await page.getByTestId('student-submit-answer').click()
+    await pendingRequest
+    await input.fill(third)
+    releaseResponse()
+    expect((await pendingResponse).status()).toBe(200)
     await expect(ownResponses.getByRole('listitem')).toHaveCount(2)
-    await typeInto(input, third)
+    await expect(input).toHaveValue(third)
     await page.getByTestId('student-submit-answer').click()
     await expect(ownResponses.getByRole('listitem')).toHaveCount(3)
 
