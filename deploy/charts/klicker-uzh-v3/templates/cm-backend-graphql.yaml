@@ -7,6 +7,22 @@ metadata:
   labels:
     {{- include "chart.labels" . | nindent 4 }}
 data:
+  ADAPTIVE_QUIZ_SHOW_SOLUTIONS: {{ .Values.backendGraphql.adaptiveQuizShowSolutions | quote }}
+  {{- with include "chart.adaptiveEngineUrl" . }}
+  # ADAPTIVE_ENGINE_TOKEN is provisioned in the backend secret.
+  ADAPTIVE_ENGINE_URL: {{ . | quote }}
+  {{- end }}
+  {{- if and .Values.adaptiveEngine.enabled (not .Values.backendGraphql.adaptiveEngine.url) }}
+  # Keys the backend's cached engine validations to the deployed engine build,
+  # so an engine upgrade revalidates published banks.
+  ADAPTIVE_ENGINE_REVISION: {{ .Values.adaptiveEngine.image.tag | quote }}
+  {{- end }}
+  {{- if .Values.assessmentAudit.enabled }}
+  ASSESSMENT_AUDIT_ENVIRONMENT: {{ required "assessmentAudit.environment is required when assessment audit is enabled" .Values.assessmentAudit.environment | quote }}
+  {{- include "chart.assessmentAuditRolloutEnv" . | nindent 2 }}
+  ASSESSMENT_AUDIT_TABLE_ENDPOINT: {{ required "assessmentAudit.tableEndpoint is required when assessment audit is enabled" .Values.assessmentAudit.tableEndpoint | quote }}
+  ASSESSMENT_AUDIT_BLOB_ENDPOINT: {{ required "assessmentAudit.blobEndpoint is required when assessment audit is enabled" .Values.assessmentAudit.blobEndpoint | quote }}
+  {{- end }}
   API_DOMAIN: {{ .Values.backendGraphql.apiDomain | quote }}
   APP_MANAGE_DOMAIN: {{ .Values.backendGraphql.appManageDomain | quote }}
   APP_STUDENT_DOMAIN: {{ .Values.backendGraphql.appStudentDomain | quote }}

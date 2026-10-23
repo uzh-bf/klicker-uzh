@@ -1,0 +1,15 @@
+mutation MSubmitAdaptivePracticeQuizResponse(
+  $attemptId: String!
+  $servedItemId: Int!
+  $response: AdaptivePracticeQuizResponseInput!
+  $elapsedSeconds: Int
+) {
+  submitAdaptivePracticeQuizResponse(
+    attemptId: $attemptId
+    servedItemId: $servedItemId
+    response: $response
+    elapsedSeconds: $elapsedSeconds
+  ) {
+    ...FAdaptivePracticeQuizAttemptState
+  }
+}

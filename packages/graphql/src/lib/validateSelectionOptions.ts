@@ -7,9 +7,6 @@ function validateSelectionOptions(options?: ElementOptionsInput | null) {
     typeof options.hasSampleSolution !== 'boolean' ||
     options.hasSampleSolution === null
   ) {
-    console.error(
-      'Options and sample solution flag are required for selection questions'
-    )
     return false
   }
 
@@ -19,7 +16,6 @@ function validateSelectionOptions(options?: ElementOptionsInput | null) {
     options.numberOfInputs === null ||
     options.numberOfInputs < 1
   ) {
-    console.error('Number of inputs needs to be specified and valid')
     return false
   }
 
@@ -28,9 +24,6 @@ function validateSelectionOptions(options?: ElementOptionsInput | null) {
     typeof options.answerCollection !== 'number' ||
     options.answerCollection === null
   ) {
-    console.error(
-      'Answer collection needs to be specified for selection questions'
-    )
     return false
   }
 
@@ -40,9 +33,6 @@ function validateSelectionOptions(options?: ElementOptionsInput | null) {
     (!options.correctAnswers ||
       options.correctAnswers.length < options.numberOfInputs)
   ) {
-    console.error(
-      'Number of sample solutions needs to larger or equal to the number of inputs'
-    )
     return false
   }
 
