@@ -23,7 +23,7 @@ tags:
 
 ## Current review routes
 
-Draft reviews use DeepSeek V4.1 Flash 1017 through OpenRouter; manual reviews
+Draft reviews use Mistral-hosted `zai-glm-5-3-flash`; manual reviews
 and the bounded draft advisor use Mistral-hosted `zai-glm-5-3`. Both models use
 maximum reasoning. The manual tool canary and stack topology request call the
 fixed Mistral endpoint directly. OCR uses the runner-local
@@ -78,6 +78,25 @@ Qualify tool extensions with the pinned released binary against synthetic
 providers. A successful MCP initialization proves discovery; actual tool
 invocation, bounded source reads and separate usage receipts prove the
 [draft runner contract](../../../.github/scripts/ocr-draft-review.test.cjs).
+
+### Credential-free reviews need complete Git objects
+
+A sparse `actions/checkout` implicitly requests `blob:none`, even when
+`fetch-depth: 0` supplies complete commit history. A later range fetch does not
+prove every blob is local. When OCR computes the diff after checkout credentials
+are removed, Git may try to fetch missing blobs and fail before any model call.
+
+Use a complete trusted-policy checkout with `fetch-depth: 0`, no `filter` and no
+`sparse-checkout`. Keep `persist-credentials: false`; the repair supplies local
+objects rather than credentials to OCR. The candidate remains in Git objects
+and is never checked out or executed. Unrelated publisher checkouts can remain
+sparse.
+
+A synthetic promisor clone with an unavailable remote reproduces the failure;
+a full clone of the same range loads the diff offline. File selection and model
+preflight cannot prove this input boundary. The shared progress filter emits
+`classification=git_diff` or `classification=merge_base` for the pinned CLI's
+fixed root errors and discards their untrusted details.
 
 The sections below record the original OpenRouter failure and its resolution.
 Their provider selection and high-reasoning settings are historical.
