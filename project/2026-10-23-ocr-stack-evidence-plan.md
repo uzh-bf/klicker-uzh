@@ -114,9 +114,13 @@ remains separate. No extra paid review is needed for local acceptance.
   tests passed, one optional native-CLI fixture skipped; no paid model request.
   Biome, Prettier, diff checks, staged Gitleaks and focused Opengrep passed.
 - Simplifier: accepted removal of an unused fixture option; no behavior change.
-  Risk and integrated final reviews remain pending. Substantive change size at
+  Risk review passed with no findings and 135 independently rerun tests.
+  Integrated final review is pending. Substantive change size at
   the implementation commit: 605 added/deleted code/schema/test lines; one
   coherent stack evidence contract, mostly synthetic Git boundary tests.
+- Delivery: [draft PR #6684](https://github.com/uzh-bf/klicker-uzh/pull/6684).
+  Integrated `v3` at `996794ab05ff4fc6355843739c5f5d9c002e5aec` once for
+  freshness; all upstream changes were outside OCR. Hosted CI remains pending.
 - Main corrected the executor's initial source-read placement: source is read at
   topology dispatch rather than fetched and persisted during snapshot creation.
   The root-divergence fixture now excludes unrelated upstream changes. No model
