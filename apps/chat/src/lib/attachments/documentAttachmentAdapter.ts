@@ -78,8 +78,13 @@ async function readPdfInWorker(
   const worker = new Worker(new URL('./pdfText.worker.ts', import.meta.url), {
     type: 'module',
   })
+  let timeout: ReturnType<typeof setTimeout> | undefined
   try {
     return await new Promise<PdfReadResult>((resolve, reject) => {
+      timeout = setTimeout(
+        () => reject(new Error('PDF read timed out')),
+        30_000
+      )
       worker.onmessage = (
         event: MessageEvent<
           | ({ type?: unknown; ok: true } & PdfReadResult)
@@ -100,6 +105,7 @@ async function readPdfInWorker(
       ])
     })
   } finally {
+    if (timeout !== undefined) clearTimeout(timeout)
     worker.terminate()
   }
 }
