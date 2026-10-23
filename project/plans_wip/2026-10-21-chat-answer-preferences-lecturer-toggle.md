@@ -39,3 +39,20 @@ stay on by default. Builds on ADR 0054 (uzh-bf/klicker-uzh#6648).
 Container check, lint and unit tests; Playwright chat and manage specs on the
 host launcher; browser screenshots of the manage switch and the hidden chat
 controls.
+
+## Progress
+
+- Done: both stack layers are implemented and pushed. #6648 holds the student
+  answer format and tone; #6669 holds the lecturer switch with one generated
+  migration. The live answer-style evaluation passed within its approved cap.
+- Done (2026-10-22): #6648 is up to date with `v3`, CI passed and the final
+  AI review found no actionable findings. #6669 merged the updated #6648.
+- Open: on #6669, SonarCloud fails its maintainability gate on cognitive
+  complexity in the chat route handler, `settings-panel.tsx` and
+  `ChatbotDetails.tsx`. The maintainer decides whether to refactor or accept
+  it; the final AI review for #6669 waits for that decision.
+- Open: `T-chatbot-authoring.spec.ts` runs only in CI, because the `ai-beta`
+  flag is enabled only in CI's test-mode backend.
+- Next: merge #6648 first, then #6669, both with maintainer approval.
+- Follow-up, not built: adjusting answer depth from quiz results needs a data
+  protection review first.
