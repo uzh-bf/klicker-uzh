@@ -4860,9 +4860,9 @@ test.describe.serial('Core live-quiz workflows', () => {
     await page.getByTestId(`start-live-quiz-${quizName}`).click()
     await openNextBlockFromCockpit(page)
 
-    await loginStudentWithStoredPwaState(page)
     const frozenTime = await page.evaluate(() => Date.now())
-    await page.clock.install({ time: frozenTime })
+    await page.clock.setFixedTime(new Date(frozenTime))
+    await loginStudentWithStoredPwaState(page)
     await page.getByTestId(`live-quiz-${displayName}`).click()
 
     const input = page.getByTestId('free-text-input-0')
@@ -4928,10 +4928,14 @@ test.describe.serial('Core live-quiz workflows', () => {
         response.request().method() === 'POST' &&
         new URL(response.url()).pathname === '/AddResponse'
     )
-    await page.clock.fastForward((timeLimitSeconds + 1) * 1000)
-
-    const request = await autosubmitRequest
-    const response = await autosubmitResponse
+    // Keep native intervals running while moving the deadline into the past.
+    const [request, response] = await Promise.all([
+      autosubmitRequest,
+      autosubmitResponse,
+      page.clock.setFixedTime(
+        new Date(frozenTime + (timeLimitSeconds + 1) * 1000)
+      ),
+    ])
     expect(response.status()).toBe(200)
     expect(await request.postDataJSON()).toMatchObject({
       response: { value: nextDraft },
@@ -4944,6 +4948,7 @@ test.describe.serial('Core live-quiz workflows', () => {
     await page.getByTestId('lq-nav-prev').click()
     await expect(input).toBeDisabled()
 
+    await page.clock.setFixedTime(new Date())
     await loginLecturer(page)
     await page.getByTestId('activities').click()
     await page.getByTestId(`live-quiz-cockpit-${quizName}`).click()
