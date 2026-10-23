@@ -1,0 +1,10 @@
+fragment ElementDataWithResponseLimit on ElementInstance {
+  ...ElementData
+  elementData {
+    ... on FreeTextElementData {
+      options {
+        responseLimit
+      }
+    }
+  }
+}

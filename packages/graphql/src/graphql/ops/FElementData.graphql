@@ -65,7 +65,6 @@ fragment ElementData on ElementInstance {
         restrictions {
           maxLength
         }
-        responseLimit
         solutions
       }
     }
