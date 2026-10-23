@@ -64,11 +64,17 @@
 ## Progress
 
 - Execution mode: solo.
-- PR A is open as a draft into `v3-ai`.
-- PR B approved and implemented on `rs/kg-chat-concept-links`.
+- Delivered: PR A (#6645) merged as `b9962dc838` and PR B (#6647) as
+  `48839978f4`, both on 2026-10-21. Both reached staging through the
+  `v3-adaptive-learning` sync. Concept links, hover definitions and the
+  focused panel were checked there on a test chatbot.
+- Open: manage-setting screenshots for #6645 (on and off) are not captured
+  yet. Graph-assisted search in the owner preview is not confirmed; the
+  checked preview answered from document retrieval only.
+- PR B implementation:
   - Graph package: a mention matcher and a by-id node read.
   - Chat route: a `POST` mentions operation.
   - Panel: a focus context, with a viewer `focusRequest` prop.
   - Answers: a remark concept-link plugin.
   - Tests: unit tests for the matcher, plugin and route, plus a hermetic Playwright case.
-  - Local Playwright and browser screenshots are pending, because the devcontainer post-create build hangs. That is tracked separately.
+  - The devcontainer post-create hang that blocked local checks was fixed in #6646.
