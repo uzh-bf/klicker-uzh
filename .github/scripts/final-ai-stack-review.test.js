@@ -403,16 +403,14 @@ function gitCommit(repositoryPath, message) {
   return gitRun(repositoryPath, 'rev-parse', 'HEAD')
 }
 
-function githubForGitRepository(repositoryPath, treeOverrides = new Map()) {
+function githubForGitRepository(repositoryPath) {
   return {
     rest: {
       git: {
         getCommit: async ({ commit_sha }) => ({
           data: {
             tree: {
-              sha:
-                treeOverrides.get(commit_sha) ??
-                gitRun(repositoryPath, 'rev-parse', `${commit_sha}^{tree}`),
+              sha: gitRun(repositoryPath, 'rev-parse', `${commit_sha}^{tree}`),
             },
           },
         }),

@@ -105,15 +105,22 @@ remains separate. No extra paid review is needed for local acceptance.
 ## Progress
 
 - Scope and target refreshed; primary checkout clean and retained on `v3-ai`.
-- Current baseline matches the reviewed source. New task worktree is clean.
+- Current baseline matches the reviewed source; implementation committed on the task branch.
 - Planner round one corrections accepted: effective root merge base, binary
   classification and bounded reads, explicit incremental evidence, concrete ownership.
 - Planner round two: APPROVED. Jev comparison skipped because the task summary
   includes unpublished planning without a TypeSafe data-boundary approval.
-- Baseline: 128 individual/stack tests passed; implementation has not started.
+- Baseline: 128 individual/stack tests passed. Integrated qualification: 273
+  tests passed, one optional native-CLI fixture skipped; no paid model request.
+  Biome, Prettier, diff checks, staged Gitleaks and focused Opengrep passed.
+- Simplifier: accepted removal of an unused fixture option; no behavior change.
+  Risk and integrated final reviews remain pending. Substantive change size at
+  the implementation commit: 605 added/deleted code/schema/test lines; one
+  coherent stack evidence contract, mostly synthetic Git boundary tests.
 - Main corrected the executor's initial source-read placement: source is read at
   topology dispatch rather than fetched and persisted during snapshot creation.
   The root-divergence fixture now excludes unrelated upstream changes. No model
   request is needed for these offline checks.
-- Catalyst identified as first adopter, with activation pending a private-source
-  data-boundary ruling. No Catalyst mutation or provider call has occurred.
+- Catalyst is the first adopter; its source-only pilot runs as a separate
+  ordinary PR package. Activation remains pending a private-source data-boundary
+  ruling. No live provider call is authorized by this package.
