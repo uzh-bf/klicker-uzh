@@ -5113,7 +5113,7 @@ test.describe.serial('Core live-quiz workflows', () => {
       { timeout: 30000 }
     )
 
-    await page.getByTestId('activities').click()
+    await openActivitiesListForQuiz(page, quiz.name)
     await page.getByTestId(`live-quiz-cockpit-${quiz.name}`).click()
     await page.waitForTimeout(1000)
     await page.getByTestId('next-block-timeline').click()
