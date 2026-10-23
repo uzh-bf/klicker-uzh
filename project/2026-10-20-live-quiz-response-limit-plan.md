@@ -188,34 +188,27 @@ top PR after exact-head CI settles (standing-authorized by `AGENTS.md`).
 
 ## Roadmap and status
 
-The feature ships as one three-layer draft stack against `v3` (stack #6681). Later work is recorded as follow-up packages and is not part of this approval.
+The feature is implemented as draft stack [#6681](https://github.com/uzh-bf/klicker-uzh/pull/6680) against `v3`. The existing draft PRs and their current checks are authoritative for publication and CI state.
 
 | Item | Scope | State |
 | --- | --- | --- |
-| Layer 01, [#6678](https://github.com/uzh-bf/klicker-uzh/pull/6678) | Element option, Redis seeding, atomic admission and result commit, respondent counter, block-close persistence, worker docs | Implemented; exact-head CI green except the review gates below |
-| Layer 02, [#6679](https://github.com/uzh-bf/klicker-uzh/pull/6679) | Respondent count in the evaluation footer and cockpit | Implemented; readable count-label branching verified locally; publication and CI pending |
-| Layer 03, [#6680](https://github.com/uzh-bf/klicker-uzh/pull/6680) | Editor field, PWA open-question flow, O1 Playwright scenario | Template and timer review corrections under browser verification; publication and CI pending |
-| Final AI review | `/final-review-stack` on #6680 | Blocked until every layer is open and ready; marking ready is withheld |
+| Layer 01, [#6678](https://github.com/uzh-bf/klicker-uzh/pull/6678) | Element option, atomic response commit, respondent counter and persistence | Implemented; local regression tests and builds pass |
+| Layer 02, [#6679](https://github.com/uzh-bf/klicker-uzh/pull/6679) | Respondent count in evaluation and cockpit | Implemented; typechecks and browser count evidence pass |
+| Layer 03, [#6680](https://github.com/uzh-bf/klicker-uzh/pull/6680) | Editor, template reuse, repeated response and timer flow | Implemented; local typechecks, unit checks and browser interaction evidence pass; automated O1 coverage runs in CI |
+| Final stack AI review | `/final-review-stack` on the top PR | Requires every layer open and ready; marking ready remains withheld |
 | Readiness, merge, deployment | Human decisions | Withheld |
-| Follow-up: free-text case normalization | Make live and practice paths agree on case before hashing | Not started; separate package |
-| Follow-up: response-api rate limiting | Limit anonymous and over-cap traffic before Hatchet | Not started; separate package |
-| Follow-up candidate: server-side anonymous cap | Anonymous participants are capped only on their device | Accepted risk; revisit only with a device or session identity |
+
+Follow-up packages remain outside this approval: consistent free-text case normalization; response-api rate limiting for anonymous and over-cap traffic; and a server-side anonymous cap if a device/session identity is introduced.
 
 ## Progress
 
-- Status: draft stack open; takeover review corrections are being verified before publication. Existing PR heads remain the recorded handoff heads.
-- Approval: executable batch approved on 2026-10-22. The branch was rebased onto `origin/v3` `4a9305739a` before slice 1 because it had not been pushed; no planned file had changed upstream.
-- Slice 1 (layer 01, admission): done. Admission tests (8) pass against the container Redis; types, util, graphql, response-api, and worker typecheck and build.
-- Slice 2 (layer 02, counts): done. Graphql and manage typecheck. Evaluation footer and cockpit verified in the browser while the block was active and after it closed.
-- Slice 3 (layer 03, authoring and student flow): done. Effective-limit unit tests (4) pass; PWA and manage typecheck; ESLint has no errors. Browser checks covered the editor field, anonymous and logged-in student flows, duplicate blocking, reload, the closed state at the limit, a two-question block, Redis admission state, and points awarded once.
-- Test delta: added `packages/graphql/test/liveQuizResponseAdmission.test.ts`, `apps/frontend-pwa/src/components/liveQuiz/responseLimit.test.ts`, and three O1 Playwright steps; changed none; removed none.
-- Playwright: not run locally (host runs disturb the container install). The first CI run failed in the new O1 step because the element editor stayed open after the persistence check and covered the create-quiz button; layer 03 now closes it (`1655c85f7c` before restacking). Layers 01 and 02 passed their real runs; every workflow ran twice per head and the cancelled duplicate still shows as a failed status check.
-- Deviations: the student flow renders the response list in `QuestionArea` and leaves `FreeTextQuestion` and `useRemainingInstances` unchanged, because the open state only needs the input-disabled flag. `docs/async-and-workers.md` documents the admission contract.
-- Review: solo mode. The main session ran the end-of-package simplification and self-review; an advisor check added the two-question navigation check and the lint run. Final AI review follows on the stack after CI.
-- Substantive size: about 890 added and 28 deleted lines across 36 files, including tests and fixtures.
-- Local runtime: the devrouter runtime for this worktree runs the `full` profile. The local database holds three synthetic demo quizzes from browser checks (`Response Limit Demo`, `Response Limit Demo Course`, `Response Limit Navigation`). Stop the runtime once no further local check is needed.
-- Next action: confirm the layer 03 Playwright rerun is green on the exact head. Rerun the cancelled duplicate checks if a required status still shows red. `/final-review-stack` needs every layer open and ready, so it waits until a maintainer marks the stack ready. Marking ready, merging, and deployment stay withheld.
-
-- Takeover correction (2026-10-23): verified ordinary review findings and replaced split admission/undo with an atomic response commit. Preserved temporary leaderboard field identity and timing-bonus eligibility. Added wrong-type, integer-state, concurrent-cap and replay regression coverage in the existing Redis test file.
-- Frontend correction: template extraction preserves the limit; field errors render inline; a timed block containing repeated-response questions retains its countdown across navigation and closes every input at expiry. A valid open draft is submitted on expiry. Shared cap lives in the runtime-safe types package. A focused template extraction check passed for set, null and absent values.
-- Verification so far: 12 Redis regression tests, worker typecheck/build, GraphQL checks, both frontend typechecks, effective-limit unit tests and PWA ESLint (warnings only) passed in the container. Real-browser timer verification passed: countdown persisted after completing both questions, the next draft submitted on expiry, and returning to the question kept its input disabled. Desktop/mobile captures are retained. CI regression remains pending.
+- Approval: executable batch approved on 2026-10-22. Target `v3` remains `4a9305739a516480e2b1e948a1eda8f61c974749`. All three layers remain drafts; ready, merge and deployment are withheld.
+- Implementation: all three planned layers and takeover corrections are committed to their owning branches. Current publication and CI results are tracked on the linked PRs; no duplicate PR or worktree is needed.
+- Backend correction: one prevalidated Redis script replaces admission plus pipeline plus undo. Message replay cannot duplicate a committed response; first response alone increments respondents and scoring. Temporary leaderboard IDs and timing-bonus eligibility retain their existing semantics. Blank limited responses return a terminal validation result before admission starts.
+- Frontend correction: template extraction preserves the limit, validation messages can render inline, and the cap is shared through the browser-safe types package. The countdown persists after completing both questions and navigating back; expiry submits an open valid draft and closes all inputs.
+- Local verification: 12 real-Redis tests, 4 effective-limit unit tests, 3 synthetic template extraction cases, types/util builds, GraphQL checks, worker check/build and both frontend typechecks passed. PWA ESLint has no errors; existing warnings remain. Focused Opengrep and staged Gitleaks scans passed.
+- Browser evidence: original editor, anonymous/identified submissions, duplicate, reload, navigation, scoring and count checks remain applicable. The timed two-question scenario additionally passed natural expiry with one automatic draft submission and disabled input after returning. Desktop/mobile captures are embedded in the top PR with source provenance.
+- Test delta: the original admission test file now protects complete commit/replay and failed pre-write validation; its cleanup is isolated to its own synthetic keys. The effective-limit test file remains. O1 retains cap-three coverage and adds a timed navigation/autosubmit regression. No tests pin prose or fixture contents.
+- Review: the original package used solo self-review. The takeover used a configured simplifier and focused backend/frontend slice reviewers plus the configured integrated final-review route. The simplifier's integer-validation reduction was accepted; the backend reviewer confirmed atomicity and identified the terminal blank-input correction. Review artifacts stay in the existing ignored review directory, with later gate results recorded in the handoff and PR evidence.
+- Runtime: local browser sessions were closed and the exact task runtime stopped after local verification. The retained synthetic quiz data is available for a later authorized check. Runtime identity and stop evidence belong in the handoff.
+- Next action: finish current review/CI dispositions using the existing heads and watchers. Required cancelled duplicate checks may be rerun when the real run is terminal and still leaves a required failure. Once checks and reviews are settled, report the draft stack's readiness; the final stack workflow waits for the user's ready decision.

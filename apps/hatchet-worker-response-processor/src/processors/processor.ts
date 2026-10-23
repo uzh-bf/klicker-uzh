@@ -422,6 +422,7 @@ export async function processResponseMessage(
         // first-response scoring together in one Redis script
         const responseLimit = parseResponseLimit(instanceInfo.responseLimit)
         if (responseLimit > 1) {
+          if (cleanResponseValue.length === 0) return { status: 400 }
           responseAdmissionStarted = true
           const participantRole =
             participantData?.role === 'TEMPORARY_PARTICIPANT'
