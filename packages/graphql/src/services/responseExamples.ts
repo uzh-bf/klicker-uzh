@@ -31,6 +31,21 @@ type ResponseExamplePrisma = Pick<
   | 'responseExampleSet'
 >
 
+const responseExampleChatbotSelect = {
+  systemPrompts: true,
+  standardModeConfig: true,
+  mcpConfigurations: {
+    select: {
+      allowedTools: true,
+      chatMode: true,
+      isEnabled: true,
+      mcpServerId: true,
+      parameters: true,
+      priority: true,
+    },
+  },
+} satisfies Prisma.ChatbotSelect
+
 const responseExampleSetInclude = {
   examples: {
     orderBy: [{ chatMode: 'asc' }, { studentMessage: 'asc' }, { id: 'asc' }],
@@ -48,7 +63,7 @@ const responseExampleSetInclude = {
     },
   },
   chatbot: {
-    select: { systemPrompts: true, standardModeConfig: true },
+    select: responseExampleChatbotSelect,
   },
 } satisfies Prisma.ResponseExampleSetInclude
 
@@ -71,7 +86,8 @@ function withChatbotModes(
     ...set,
     chatModes: extractChatbotModes(
       set.chatbot.systemPrompts,
-      set.chatbot.standardModeConfig
+      set.chatbot.standardModeConfig,
+      set.chatbot.mcpConfigurations
     ),
   }
 }
@@ -363,7 +379,7 @@ async function reviewResponseExample(
         set: {
           select: {
             chatbot: {
-              select: { systemPrompts: true, standardModeConfig: true },
+              select: responseExampleChatbotSelect,
             },
           },
         },
@@ -392,7 +408,8 @@ async function reviewResponseExample(
       status === DB.ResponseExampleStatus.APPROVED &&
       !extractChatbotModes(
         example.set.chatbot.systemPrompts,
-        example.set.chatbot.standardModeConfig
+        example.set.chatbot.standardModeConfig,
+        example.set.chatbot.mcpConfigurations
       ).includes(example.chatMode)
     ) {
       throw new GraphQLError(
@@ -520,7 +537,7 @@ export async function editAndApproveResponseExample(
         set: {
           select: {
             chatbot: {
-              select: { systemPrompts: true, standardModeConfig: true },
+              select: responseExampleChatbotSelect,
             },
           },
         },
@@ -555,7 +572,8 @@ export async function editAndApproveResponseExample(
     if (
       !extractChatbotModes(
         example.set.chatbot.systemPrompts,
-        example.set.chatbot.standardModeConfig
+        example.set.chatbot.standardModeConfig,
+        example.set.chatbot.mcpConfigurations
       ).includes(input.chatMode)
     ) {
       throw new GraphQLError(

@@ -34,6 +34,87 @@ describe('response-example mode eligibility', () => {
       )
     ).toEqual(['tutor'])
   })
+
+  it('offers Quizzer without prompt overrides when a safe Tutor binding is inherited', () => {
+    expect(
+      extractChatbotModes(null, null, [
+        {
+          chatMode: 'tutor',
+          mcpServerId: 'course',
+          allowedTools: ['course_search'],
+          parameters: { required: true, toolAlias: 'doc_query' },
+        },
+      ])
+    ).toEqual(['explainer', 'quizzer', 'tutor'])
+  })
+
+  it.each([
+    { name: 'missing bindings', bindings: [] },
+    {
+      name: 'wildcard tools',
+      bindings: [
+        { chatMode: 'tutor', mcpServerId: 'course', allowedTools: ['*'] },
+      ],
+    },
+    {
+      name: 'a disabled exact override',
+      bindings: [
+        {
+          chatMode: 'tutor',
+          mcpServerId: 'course',
+          allowedTools: ['doc_query'],
+        },
+        {
+          chatMode: 'quizzer',
+          mcpServerId: 'course',
+          allowedTools: ['doc_query'],
+          isEnabled: false,
+        },
+      ],
+    },
+    {
+      name: 'an unsafe exact override',
+      bindings: [
+        {
+          chatMode: 'tutor',
+          mcpServerId: 'course',
+          allowedTools: ['doc_query'],
+        },
+        { chatMode: 'quizzer', mcpServerId: 'course', allowedTools: ['*'] },
+      ],
+    },
+    {
+      name: 'a required binding with the wrong alias',
+      bindings: [
+        {
+          chatMode: 'tutor',
+          mcpServerId: 'course',
+          allowedTools: ['doc_query'],
+          parameters: { required: true, toolAlias: 'other' },
+        },
+      ],
+    },
+  ])('does not advertise stored Quizzer with $name', ({ bindings }) => {
+    expect(extractChatbotModes({ quizzer: {} }, null, bindings)).not.toContain(
+      'quizzer'
+    )
+  })
+
+  it('keeps an explicitly disabled Quizzer unavailable with a safe binding', () => {
+    expect(
+      extractChatbotModes(
+        null,
+        { tutorEnabled: true, explainerEnabled: true, quizzerEnabled: false },
+        [
+          {
+            chatMode: 'tutor',
+            mcpServerId: 'course',
+            allowedTools: ['doc_query'],
+          },
+        ]
+      )
+    ).not.toContain('quizzer')
+  })
 })
 
 describe('response-example transition contract', () => {

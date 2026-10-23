@@ -189,7 +189,7 @@ services:
       - WORKSPACE=${WORKSPACE:-}
       - HTTP_PROXY=${HTTP_PROXY:-}
       - HTTPS_PROXY=${HTTPS_PROXY:-}
-      - NO_PROXY=${NO_PROXY:-localhost,127.0.0.1,.localhost,postgres,hatchet,redis_exec,redis_assessment,redis_cache,litellm,mailhog,oidc,azurite,klicker-uzh-azurite}
+      - NO_PROXY=${NO_PROXY:-localhost,127.0.0.1,.localhost,host.docker.internal,postgres,hatchet,redis_exec,redis_assessment,redis_cache,litellm,mailhog,oidc,azurite,klicker-uzh-azurite}
       - NODE_USE_ENV_PROXY=1
       - BLOB_STORAGE_ACCOUNT_NAME=klickerdev
       - BLOB_STORAGE_ACCESS_KEY=dGVzdA==

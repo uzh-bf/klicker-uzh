@@ -77,7 +77,7 @@ The app forwards the host's `HTTP_PROXY`, `HTTPS_PROXY`, and `NO_PROXY`, and
 Node enables environment-proxy support. Docker builds use Docker's standard
 proxy configuration. Proxy hostnames must resolve from Docker's network.
 When supplying `NO_PROXY`, retain loopback and `.localhost` plus the internal
-service names (`postgres`, `hatchet`, `redis_exec`, `redis_assessment`,
+host endpoint `host.docker.internal` and service names (`postgres`, `hatchet`, `redis_exec`, `redis_assessment`,
 `redis_cache`, `litellm`, `mailhog`, `oidc`, `azurite`, and `klicker-uzh-azurite`).
 Managed startup also appends the selected internal Blob hostname (including
 `${WORKSPACE}-azurite`) before storage setup and application tasks, preserving

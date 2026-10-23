@@ -259,6 +259,16 @@ all existing merge, deployment and evaluation authority gates.
 
 ## Progress
 
+The local-ingestion/Quizzer follow-up passed its planner challenge after clarifying
+selectable modes, retained examples, exclusive service-test ownership and the
+disabled exact-override regression. The same binding resolver now serves both
+consumers, preserving the app's exports. The new Quizzer contract failed before
+the fix and passes afterward; focused GraphQL contract/authorization and existing
+Chat mode/required-tool suites pass. The Compose default excludes the host-local
+endpoint and preserves supplied overrides. Source/type/build verification and
+the follow-up's configured reviews remain in progress; hosted database execution
+and fresh browser acceptance are not claimed.
+
 Approved correction implementation is complete and awaiting committed review
 and fresh hosted CI. The derived plan passed its bounded three-round planner
 challenge. Existing response-example contract and authorization tests pass10;
