@@ -101,5 +101,12 @@ state their dependent engine pin and any pending hosted CI.
   passed (zero findings); existing Biome advisory warnings remain. No app runtime.
 - Simplifier accepted: remove a redundant mock Response JSON round-trip and use
   explicit provider/model pairs in the existing concurrent replay test. Both
-  cases pass. Package size is 600+ substantive code/test/config lines, mostly
+  cases pass. Package size is 573 substantive code/test/config lines, mostly
   parameterizing existing history scenarios; one cohesive provider migration.
+
+- Independent risk and final source reviews passed without findings. Claude
+  weekly limit and AGY file-access failure required configured GLM continuity
+  for the public final pass; verbatim schema-valid output remains ignored locally.
+- Public delivery: [draft PR #6685](https://github.com/uzh-bf/klicker-uzh/pull/6685).
+  Engine consumers pin source commit `42baf5b5a83a5ba4a517642ffce0013d96647e10`;
+  later changes only simplify tests and record progress. Hosted CI is pending.
