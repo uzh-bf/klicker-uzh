@@ -1,9 +1,10 @@
 # Course-chatbot learning roadmap
 
-Updated 19 October 2026. The immediate focus is learner support in Explainer.
-Existing private reviews and finite comparisons are complete for selecting the
-first improvement hypothesis. Current course performance and learning gains
-remain unverified. Historical Tutor experiments remain below for reference.
+Updated 21 October 2026. The immediate focus is delivering faithful Explainer
+answers, usable citations and access to course materials. The next milestone is
+the course chatbot's learner-facing experience. Source delivery, functional
+acceptance and improved understanding require different evidence. Historical
+Tutor experiments remain below for reference.
 
 ## Current evaluation direction
 
@@ -34,41 +35,89 @@ runs. Answer checks do not establish understanding or transfer.
 
 ### Outcome milestones
 
-| Priority | Outcome | Completion and next boundary |
+| Priority | Outcome | Completion condition and authority |
 | --- | --- | --- |
-| 1 | Select one obstacle to useful understanding | Evidence synthesis and checklist preparation complete for this purpose; current performance and learning remain unassessed |
-| 2 | Establish faithful, course-grounded explanation and revision | Pending a separately authorized finite diagnostic: assess the baseline first, then at most one justified candidate; manually check answers, passage support and the unchanged control |
-| 3 | Make an evidence-backed improvement decision and inspect learner benefit | Propose rollout only after representative task and course-owner consumer acceptance; application and deployment need named authority; independent understanding and transfer need learner evidence |
+| 1 | Know what students actually use | Read-only evidence connects the named chatbot to its served prompt, retrieval producer and citation/navigation handling. Compare these with the tested source revisions; keep exact versions and environment records private. |
+| 2 | Deliver only the missing corrections | After named activation approval, verify the intended revisions on the actual serving path and the scoped source-metadata readback. Skip corrections already present and retain a verified restoration path. |
+| 3 | Accept the course experience | The course owner checks representative explanation, shortening and source-navigation tasks against checklist v1. Distinguish review of saved answers from a separately authorized fresh end-to-end check. |
+| 4 | Check understanding and application | After functional acceptance and approval of any learner involvement, use a brief explain-back or independent application task. Record limitations privately; a successful answer or lecturer walkthrough alone does not establish learning gains. |
 
-Next action: use the existing private source cards to prepare the smallest
-baseline decision under the
-[real-course protocol](2026-10-18-explainer-assessment-readiness-plan.md#real-course-acceptance-preparation).
-Prioritize meaning-preserving revision, multipart coverage and evidence limits.
-Unrun unit-lookup and cross-source tasks remain unassessed for broader acceptance.
+The main session owns technical qualification and the minimum activation
+proposal. The course owner supplies pedagogical acceptance; learner involvement
+is a later decision. These are responsibilities, not new tracker assignments.
 
-Reuse prepared guidance only if the baseline demonstrates its targeted obstacle;
-stop tuning if the baseline passes. Reject critical candidate/control regressions
-and redirect demonstrated content or retrieval failures to their owner. Synthetic
-success cannot authorize promotion. Later authorized learner feedback,
-explain-back or independent application may inform learning assessment; usage
-and assisted performance do not establish learning gains.
+### Immediate next action: qualify the serving path
+
+Trace the named chatbot's request path using scoped configuration and version
+evidence. Record each relevant correction as present, absent or unknown. A
+healthy development deployment does not identify the course chatbot's producer.
+Resolve that producer before selecting a release or promotion target. Use
+existing authorized access; unavailable connectivity is a blocker, not authority
+to establish a tunnel or change infrastructure.
+
+Finish this step with one minimum activation proposal: exact targets and missing
+changes, expected effects, verification, restoration and stop conditions. A
+remaining unknown blocks its dependent change, not independent preparation.
+This roadmap update authorizes no deployment or live metadata write.
+
+### Conditional delivery: explanations and course-material access
+
+Reuse the source-managed
+[Explainer revision](https://github.com/uzh-bf/klicker-uzh/pull/6607) and the generic
+[citation-identity correction](https://gitlab.uzh.ch/ai-infrastructure/mcp/mcp-doc-query/-/merge_requests/112).
+Retain the existing prompt decision; another variant requires a demonstrated,
+representative failure. Supporting diagnostic protocols remain reference material.
+
+Use the agreed OLAT course-element destination for video citations. Preserve
+distinct source identities, titles and descriptive time ranges; the destination
+opens the course element without selecting a video or playback timestamp.
+Before any approved metadata apply, qualify exact knowledge-base-owned records,
+detect drift and prove lossless restoration. Preserve vectors and unrelated
+metadata. Corpus replacement and re-embedding are outside this delivery.
+
+Verify source identity independently from navigation: different videos sharing
+one destination must retain separate citations. Metadata changes do not update
+historical answers, so old source cards cannot prove the new projection works.
+Handle content replacement as a separate decision.
+
+### Acceptance: useful answers first, then learner evidence
+
+Prepare a short lecturer walkthrough from the existing reviewed explanation,
+shortening follow-up and control artifacts. Assess checklist v1 against the
+original supporting passages. Check course-element access separately. This
+review can establish pedagogical suitability of those artifacts; it cannot
+establish fresh generation or changed metadata in the served chatbot.
+
+If fresh end-to-end evidence is still needed, propose only the smallest fixed
+task set using the existing capture and manual-assessment process. Name its
+route, full cost coverage and finite send limit before requesting execution.
+Keep the cumulative US$5 cap; remaining nominal capacity grants no new sends,
+and unqualified Auto/retrieval costs cannot be assumed to fit. Acceptance needs
+the actual answer, claim support and usable navigation, not only capture validity.
+
+Only after functional acceptance, propose a lightweight learner check of
+explanation and independent application. Keep identifying responses out of shared
+artifacts. Existing usage, assisted performance and lecturer acceptance remain
+distinct from evidence of understanding. Unrun unit-lookup and cross-source
+tasks remain unassessed; add coverage only for a concrete acceptance need.
 
 ### Parked work and authority
 
-Park gateway reservation repair, further route/pricing qualification, startup
-repairs, evaluator/framework expansion, automated judging, ranking changes and
-Tutor/Quizzer work. Revisit only when evidence links a concrete blocker or need
-to the selected learner outcome. A blocked paid route does not authorize an
-upstream infrastructure project. Reuse existing capture/import and assessment.
+Park gateway reservation repair, new prompt variants, evaluator/framework
+expansion, automated judging, ranking changes and Tutor/Quizzer work. Per-video
+URL recovery and timestamp deep links are outside the agreed navigation outcome.
+Revisit technical work only when evidence identifies a concrete blocker to the
+next learner-facing check. A blocked paid route does not authorize an upstream
+infrastructure project. Reuse existing capture/import and assessment.
 
-The approved implementation adds one instruction to the source-managed standard
-Explainer contract in this draft; its generated-answer effect is unassessed.
+The source-managed Explainer revision is delivered through PR 6607.
 The [continuation](2026-10-18-explainer-assessment-readiness-plan.md#current-learner-improvement-continuation)
-pins the pre-change baseline and one-instruction candidate for a later matched
-check. Stored lecturer guidance remains unchanged. Further inference needs a
-named budget, provider, source-use and enforceable cost authority; prior capture
-authority is consumed. Monitored spending is not a hard-cap substitute. Live
-prompt/KB changes, promotion, merge and deployment remain separately gated.
+retains the original baseline and candidate preparation as history, not a pending
+instruction to restart tuning. Private assessments and real-environment records
+stay private. Further inference needs named budget, provider, source-use and
+enforceable cost authority; prior finite capture authority is consumed. Monitored
+spending is not a hard-cap substitute. Live prompt/KB changes, promotion, merge,
+deployment and learner data collection require their own named approval.
 
 ## Existing foundations and deferred protocols
 
