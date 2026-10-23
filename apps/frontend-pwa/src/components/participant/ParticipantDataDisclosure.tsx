@@ -1,12 +1,12 @@
 import { faChevronDown, faChevronUp } from '@fortawesome/free-solid-svg-icons'
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome'
 import { Markdown } from '@klicker-uzh/markdown'
+import { H4 } from '@uzh-bf/design-system'
 import {
-  H4,
-  ShadcnCollapsible,
-  ShadcnCollapsibleContent,
-  ShadcnCollapsibleTrigger,
-} from '@uzh-bf/design-system'
+  Collapsible,
+  CollapsibleContent,
+  CollapsibleTrigger,
+} from '@uzh-bf/design-system/primitives'
 import { useTranslations } from 'next-intl'
 import { useState } from 'react'
 
@@ -54,7 +54,7 @@ function ParticipantDataDisclosure({
       {sections.map((section) => {
         const open = openSections[section.key] ?? false
         return (
-          <ShadcnCollapsible
+          <Collapsible
             className="border-b border-slate-200"
             key={section.key}
             open={open}
@@ -65,7 +65,7 @@ function ParticipantDataDisclosure({
               }))
             }
           >
-            <ShadcnCollapsibleTrigger
+            <CollapsibleTrigger
               className="flex w-full flex-row items-center justify-between gap-3 py-3 text-left"
               data-cy={`participant-data-disclosure-${section.key}`}
             >
@@ -78,16 +78,16 @@ function ParticipantDataDisclosure({
                 icon={open ? faChevronUp : faChevronDown}
                 size="sm"
               />
-            </ShadcnCollapsibleTrigger>
-            <ShadcnCollapsibleContent className="pb-3">
+            </CollapsibleTrigger>
+            <CollapsibleContent className="pb-3">
               <Markdown
                 withProse
                 withLinkButtons={false}
                 className={{ root: 'prose-sm' }}
                 content={t(`pwa.createAccount.signup.${section.notice}`)}
               />
-            </ShadcnCollapsibleContent>
-          </ShadcnCollapsible>
+            </CollapsibleContent>
+          </Collapsible>
         )
       })}
     </div>

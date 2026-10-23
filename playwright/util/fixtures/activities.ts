@@ -123,6 +123,32 @@ function getCalendarDataDay(validation: string) {
   ).toLocaleDateString()
 }
 
+export async function expectDatetime(
+  page: Page,
+  {
+    cyString,
+    datetime,
+  }: {
+    cyString: string
+    datetime: Pick<DatetimeType, 'validation' | 'hour' | 'minute'>
+  }
+) {
+  await page.getByTestId(cyString).click()
+  const calendar = page.getByTestId(`${cyString}-calendar`)
+  await expect(calendar).toBeVisible()
+  await expect(
+    calendar.locator(`[data-day="${getCalendarDataDay(datetime.validation)}"]`)
+  ).toHaveAttribute('data-selected-single', 'true')
+  await expect(page.getByTestId(`${cyString}-hours`)).toHaveValue(
+    String(datetime.hour).padStart(2, '0')
+  )
+  await expect(page.getByTestId(`${cyString}-minutes`)).toHaveValue(
+    String(datetime.minute).padStart(2, '0')
+  )
+  await page.keyboard.press('Escape')
+  await expect(calendar).not.toBeAttached()
+}
+
 export async function setDatetime(
   page: Page,
   {
@@ -156,10 +182,9 @@ export async function setDatetime(
     await expect(firstDay).not.toHaveAttribute('data-day', previousDay!)
   }
 
-  await calendar.locator(`[data-day="${targetDataDay}"]`).click()
-  await expect(page.getByTestId(cyString)).toContainText(
-    datetime.validation.match(/\d{1,2}\.\d{1,2}\.\d{4}/)![0]
-  )
+  const selectedDay = calendar.locator(`[data-day="${targetDataDay}"]`)
+  await selectedDay.click()
+  await expect(selectedDay).toHaveAttribute('data-selected-single', 'true')
 
   for (const [testId, value] of [
     [`${cyString}-hours`, hour],
@@ -184,7 +209,7 @@ export async function setDatetime(
   }
 
   await expect(minutesInput).not.toBeAttached()
-  await expect(page.getByTestId(cyString)).toContainText(datetime.validation)
+  await expectDatetime(page, { cyString, datetime })
 }
 
 export async function createLiveQuiz(

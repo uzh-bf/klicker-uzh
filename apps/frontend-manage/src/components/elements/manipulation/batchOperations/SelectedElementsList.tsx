@@ -1,14 +1,14 @@
 import { faCheck, faMinus, faX } from '@fortawesome/free-solid-svg-icons'
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome'
+import { Tooltip } from '@uzh-bf/design-system'
 import {
-  ShadcnTable,
-  ShadcnTableBody,
-  ShadcnTableCell,
-  ShadcnTableHead,
-  ShadcnTableHeader,
-  ShadcnTableRow,
-  Tooltip,
-} from '@uzh-bf/design-system'
+  Table,
+  TableBody,
+  TableCell,
+  TableHead,
+  TableHeader,
+  TableRow,
+} from '@uzh-bf/design-system/primitives'
 import { useTranslations } from 'next-intl'
 import { twMerge } from 'tailwind-merge'
 import ObjectPermissionLevel from '../../../sharing/ObjectPermissionLevel'
@@ -31,46 +31,46 @@ function SelectedElementsList({
 
   return (
     <div className="min-h-0 flex-1 overflow-auto">
-      <ShadcnTable className="mt-2">
-        <ShadcnTableHeader>
-          <ShadcnTableRow>
-            <ShadcnTableHead
+      <Table className="mt-2">
+        <TableHeader>
+          <TableRow>
+            <TableHead
               className="px-2 text-left"
               data-cy="batch-element-name-heading"
             >
               {t('manage.questionPool.batchElementName')}
-            </ShadcnTableHead>
+            </TableHead>
             {!allAdminPermissions ? (
-              <ShadcnTableHead
+              <TableHead
                 className="w-28 px-2 text-left"
                 data-cy="batch-element-permission-heading"
               >
                 {t('manage.questionPool.batchElementPermission')}
-              </ShadcnTableHead>
+              </TableHead>
             ) : null}
-            <ShadcnTableHead
+            <TableHead
               className="w-28 px-2 text-center"
               data-cy="batch-element-update-heading"
             >
               {t('manage.questionPool.batchUpdateStatus')}
-            </ShadcnTableHead>
+            </TableHead>
             {sharingEnabled ? (
-              <ShadcnTableHead
+              <TableHead
                 className="w-28 px-2 text-center"
                 data-cy="batch-element-sharing-heading"
               >
                 {t('manage.questionPool.batchSharingStatus')}
-              </ShadcnTableHead>
+              </TableHead>
             ) : null}
-          </ShadcnTableRow>
-        </ShadcnTableHeader>
-        <ShadcnTableBody>
+          </TableRow>
+        </TableHeader>
+        <TableBody>
           {affectedElements.map((element) => (
-            <ShadcnTableRow
+            <TableRow
               key={element.id}
               data-cy={`element-batch-entry-${element.name}`}
             >
-              <ShadcnTableCell
+              <TableCell
                 className={twMerge(
                   'line-clamp-1 h-7 whitespace-normal',
                   !element.actionsApplied &&
@@ -79,21 +79,21 @@ function SelectedElementsList({
                 )}
               >
                 {element.name}
-              </ShadcnTableCell>
+              </TableCell>
               {!allAdminPermissions ? (
                 !element.isOwner ? (
-                  <ShadcnTableCell className="w-28 px-2 text-center">
+                  <TableCell className="w-28 px-2 text-center">
                     <ObjectPermissionLevel
                       iconOnly
                       objectName={element.name}
                       permissionLevel={element.permissionLevel!}
                     />
-                  </ShadcnTableCell>
+                  </TableCell>
                 ) : (
-                  <ShadcnTableCell className="w-28 px-2" />
+                  <TableCell className="w-28 px-2" />
                 )
               ) : null}
-              <ShadcnTableCell className="w-28 px-2 text-center">
+              <TableCell className="w-28 px-2 text-center">
                 {!updatesConfigured ? (
                   <span
                     role="img"
@@ -153,9 +153,9 @@ function SelectedElementsList({
                     </button>
                   </Tooltip>
                 )}
-              </ShadcnTableCell>
+              </TableCell>
               {sharingEnabled ? (
-                <ShadcnTableCell className="w-28 px-2 text-center">
+                <TableCell className="w-28 px-2 text-center">
                   {element.sharingApplied ? (
                     <span
                       role="img"
@@ -201,12 +201,12 @@ function SelectedElementsList({
                       </button>
                     </Tooltip>
                   )}
-                </ShadcnTableCell>
+                </TableCell>
               ) : null}
-            </ShadcnTableRow>
+            </TableRow>
           ))}
-        </ShadcnTableBody>
-      </ShadcnTable>
+        </TableBody>
+      </Table>
     </div>
   )
 }

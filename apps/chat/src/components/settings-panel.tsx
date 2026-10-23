@@ -94,10 +94,10 @@ export function SettingsPanel() {
           <div>
             {/* model selection */}
             <div data-cy="chat-model-selection" className="space-y-1">
-              {/* htmlFor, not just visual proximity: the design-system Select
-                  renders a Radix combobox whose accessible name would otherwise
-                  be the currently selected value, leaving two comboboxes that
-                  screen readers cannot tell apart (WCAG 1.3.1 / 4.1.2). */}
+              {/* Pair htmlFor with ariaLabel: the design-system Select's fallback
+                  aria-label overrides htmlFor alone. Keep the visible labels as
+                  accessible names so screen readers can distinguish the controls
+                  (WCAG 1.3.1 / 4.1.2). */}
               <label
                 // Only the `modelSelectionEnabled` branch renders a control;
                 // the read-only branch is a plain div, and a `for` pointing at
@@ -111,6 +111,7 @@ export function SettingsPanel() {
                 <>
                   <Select
                     id={MODEL_SELECT_ID}
+                    ariaLabel={t('chat.settingsPanel.aiModelLabel')}
                     data={{ cy: 'chat-model-select' }}
                     placeholder={t('chat.settingsPanel.selectAiModel')}
                     items={modelOptions.map((option) => ({
@@ -164,6 +165,7 @@ export function SettingsPanel() {
                 </label>
                 <Select
                   id={REASONING_EFFORT_SELECT_ID}
+                  ariaLabel={t('chat.settingsPanel.reasoningEffortLabel')}
                   data={{ cy: 'chat-reasoning-effort-select' }}
                   placeholder={t('chat.settingsPanel.selectReasoningEffort')}
                   items={availableReasoningEfforts.map((value) => ({

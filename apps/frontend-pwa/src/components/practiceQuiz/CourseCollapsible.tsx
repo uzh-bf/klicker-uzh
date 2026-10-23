@@ -6,10 +6,10 @@ import {
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome'
 import { useLocalStorage } from '@uidotdev/usehooks'
 import {
-  ShadcnCollapsible,
-  ShadcnCollapsibleContent,
-  ShadcnCollapsibleTrigger,
-} from '@uzh-bf/design-system'
+  Collapsible,
+  CollapsibleContent,
+  CollapsibleTrigger,
+} from '@uzh-bf/design-system/primitives'
 import { useState } from 'react'
 import { twMerge } from 'tailwind-merge'
 import LinkButton from '../common/LinkButton'
@@ -34,14 +34,14 @@ function CourseCollapsible({
 
   return (
     <div>
-      <ShadcnCollapsible
+      <Collapsible
         open={open}
         onOpenChange={() => {
           setOpen((prev) => !prev)
           setStackStorage((prev) => !prev)
         }}
       >
-        <ShadcnCollapsibleTrigger
+        <CollapsibleTrigger
           className={twMerge(
             'flex w-full flex-row items-center justify-between border-b-2 text-lg font-bold text-slate-700',
             open && 'mb-2'
@@ -52,8 +52,8 @@ function CourseCollapsible({
             icon={open ? faChevronUp : faChevronDown}
             size="sm"
           />
-        </ShadcnCollapsibleTrigger>
-        <ShadcnCollapsibleContent>
+        </CollapsibleTrigger>
+        <CollapsibleContent>
           <div className="flex flex-col gap-2">
             {elements.map((element) => (
               <LinkButton
@@ -69,8 +69,8 @@ function CourseCollapsible({
               </LinkButton>
             ))}
           </div>
-        </ShadcnCollapsibleContent>
-      </ShadcnCollapsible>
+        </CollapsibleContent>
+      </Collapsible>
     </div>
   )
 }

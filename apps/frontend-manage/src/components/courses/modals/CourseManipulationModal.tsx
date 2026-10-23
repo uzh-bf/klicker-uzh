@@ -226,7 +226,7 @@ function CourseManipulationModal({
           : t('manage.courseList.createNewCourse')
       }
       onClose={onModalClose}
-      className={{ content: 'w-full!' }}
+      className={{ content: 'w-full! max-w-[calc(100%-2rem)]' }}
     >
       <Formik
         validateOnMount
@@ -324,6 +324,7 @@ function CourseManipulationModal({
                     name="color"
                     label={t('manage.courseList.courseColor')}
                     colorLabel={t('shared.generic.color')}
+                    triggerAriaLabel={t('manage.courseList.courseColor')}
                     position="top-left"
                     submitText={t('shared.generic.confirm')}
                     dataTrigger={{ cy: 'course-color-trigger' }}

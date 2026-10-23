@@ -5,10 +5,10 @@ import {
 } from '@fortawesome/free-solid-svg-icons'
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome'
 import {
-  ShadcnCollapsible,
-  ShadcnCollapsibleContent,
-  ShadcnCollapsibleTrigger,
-} from '@uzh-bf/design-system'
+  Collapsible,
+  CollapsibleContent,
+  CollapsibleTrigger,
+} from '@uzh-bf/design-system/primitives'
 import { twMerge } from 'tailwind-merge'
 
 export type TemplateCollapsibleState = {
@@ -50,8 +50,8 @@ const SectionCollapsible: React.FC<SectionCollapsibleProps> = ({
   }
 
   return (
-    <ShadcnCollapsible open={isOpen} onOpenChange={onOpenChange}>
-      <ShadcnCollapsibleTrigger
+    <Collapsible open={isOpen} onOpenChange={onOpenChange}>
+      <CollapsibleTrigger
         className="flex w-full items-center justify-between border-b px-1 py-1.5 transition-colors hover:bg-gray-50"
         data-cy={data?.cy}
         data-test={data?.test}
@@ -70,11 +70,11 @@ const SectionCollapsible: React.FC<SectionCollapsibleProps> = ({
             isOpen && 'rotate-180 transform'
           )}
         />
-      </ShadcnCollapsibleTrigger>
-      <ShadcnCollapsibleContent className="border-b pt-1">
+      </CollapsibleTrigger>
+      <CollapsibleContent className="border-b pt-1">
         <div className="px-1 py-2">{children}</div>
-      </ShadcnCollapsibleContent>
-    </ShadcnCollapsible>
+      </CollapsibleContent>
+    </Collapsible>
   )
 }
 

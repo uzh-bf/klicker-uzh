@@ -7,18 +7,15 @@ import {
   type GetAssessmentParticipantInvitationsQuery,
   type GetAssessmentParticipantInvitationsQueryVariables,
 } from '@klicker-uzh/graphql/dist/ops'
+import { Badge, Button, Modal, toast } from '@uzh-bf/design-system'
 import {
-  Badge,
-  Button,
-  Modal,
-  ShadcnTable,
-  ShadcnTableBody,
-  ShadcnTableCell,
-  ShadcnTableHead,
-  ShadcnTableHeader,
-  ShadcnTableRow,
-  toast,
-} from '@uzh-bf/design-system'
+  Table,
+  TableBody,
+  TableCell,
+  TableHead,
+  TableHeader,
+  TableRow,
+} from '@uzh-bf/design-system/primitives'
 import { useFormatter, useTranslations } from 'next-intl'
 import { useState } from 'react'
 
@@ -85,42 +82,36 @@ function ParticipantInvitationsTable({
   return (
     <>
       <div className="overflow-hidden rounded-md border border-slate-200 bg-white shadow-sm">
-        <ShadcnTable>
-          <ShadcnTableHeader className="bg-slate-50">
-            <ShadcnTableRow>
-              <ShadcnTableHead>
-                {t('manage.assessment.invitationEmail')}
-              </ShadcnTableHead>
-              <ShadcnTableHead>
+        <Table>
+          <TableHeader className="bg-slate-50">
+            <TableRow>
+              <TableHead>{t('manage.assessment.invitationEmail')}</TableHead>
+              <TableHead>
                 {t('manage.assessment.invitationMatriculationNumber')}
-              </ShadcnTableHead>
-              <ShadcnTableHead>
-                {t('manage.assessment.invitationStatus')}
-              </ShadcnTableHead>
-              <ShadcnTableHead>
+              </TableHead>
+              <TableHead>{t('manage.assessment.invitationStatus')}</TableHead>
+              <TableHead>
                 {t('manage.assessment.invitationInvitedAt')}
-              </ShadcnTableHead>
-              <ShadcnTableHead className="w-20 text-right">
+              </TableHead>
+              <TableHead className="w-20 text-right">
                 <span className="sr-only">
                   {t('manage.assessment.invitationActions')}
                 </span>
-              </ShadcnTableHead>
-            </ShadcnTableRow>
-          </ShadcnTableHeader>
-          <ShadcnTableBody>
+              </TableHead>
+            </TableRow>
+          </TableHeader>
+          <TableBody>
             {invitations.length > 0 ? (
               invitations.map((invitation) => (
-                <ShadcnTableRow
+                <TableRow
                   key={invitation.id}
                   data-cy={`assessment-invitation-${invitation.id}`}
                 >
-                  <ShadcnTableCell className="font-medium">
+                  <TableCell className="font-medium">
                     {invitation.email}
-                  </ShadcnTableCell>
-                  <ShadcnTableCell>
-                    {invitation.matriculationNumber ?? '—'}
-                  </ShadcnTableCell>
-                  <ShadcnTableCell>
+                  </TableCell>
+                  <TableCell>{invitation.matriculationNumber ?? '—'}</TableCell>
+                  <TableCell>
                     <Badge
                       className={
                         invitation.status ===
@@ -134,14 +125,14 @@ function ParticipantInvitationsTable({
                         ? t('manage.assessment.invitationStatusAccepted')
                         : t('manage.assessment.invitationStatusPending')}
                     </Badge>
-                  </ShadcnTableCell>
-                  <ShadcnTableCell>
+                  </TableCell>
+                  <TableCell>
                     {formatter.dateTime(new Date(invitation.invitedAt), {
                       dateStyle: 'medium',
                       timeStyle: 'short',
                     })}
-                  </ShadcnTableCell>
-                  <ShadcnTableCell className="text-right">
+                  </TableCell>
+                  <TableCell className="text-right">
                     {invitation.status ===
                     AssessmentParticipantInvitationStatus.Pending ? (
                       <Button
@@ -161,22 +152,22 @@ function ParticipantInvitationsTable({
                         <Button.Icon withoutLabel icon={faTrashCan} />
                       </Button>
                     ) : null}
-                  </ShadcnTableCell>
-                </ShadcnTableRow>
+                  </TableCell>
+                </TableRow>
               ))
             ) : (
-              <ShadcnTableRow>
-                <ShadcnTableCell
+              <TableRow>
+                <TableCell
                   colSpan={5}
                   className="h-28 text-center text-slate-600"
                   data-cy="assessment-invitations-empty"
                 >
                   {t('manage.assessment.invitationEmpty')}
-                </ShadcnTableCell>
-              </ShadcnTableRow>
+                </TableCell>
+              </TableRow>
             )}
-          </ShadcnTableBody>
-        </ShadcnTable>
+          </TableBody>
+        </Table>
       </div>
 
       {selectedInvitation ? (

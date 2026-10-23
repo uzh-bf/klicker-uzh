@@ -548,7 +548,7 @@ function ChatbotDetails({
                 >
                   <Link
                     href={`/courses/${course.id}`}
-                    className="text-primary-600 hover:text-primary-800 hover:underline"
+                    className="text-primary-100 hover:text-primary-80 hover:underline"
                   >
                     {course.name}
                   </Link>
@@ -557,7 +557,7 @@ function ChatbotDetails({
                       href={buildChatbotUrl(course.id)}
                       target="_blank"
                       rel="noopener noreferrer"
-                      className="text-primary-500 hover:text-primary-700 flex items-center gap-1.5 whitespace-nowrap text-xs hover:underline"
+                      className="text-primary-100 hover:text-primary-80 flex items-center gap-1.5 whitespace-nowrap text-xs hover:underline"
                       data-cy="chatbot-participant-link"
                     >
                       <span>{t('manage.resources.openChatbot')}</span>
@@ -924,6 +924,7 @@ function ChatbotDetails({
                     </label>
                     <Switch
                       id="chatbot-model-selection-switch"
+                      ariaLabel={t('manage.resources.modelSelection')}
                       checked={modelSelectionEnabled}
                       disabled={isSaving || !modelSettingsEditable}
                       onCheckedChange={handleModelSelectionChange}
@@ -950,6 +951,7 @@ function ChatbotDetails({
                     </p>
                     <Select
                       id="chatbot-fixed-model"
+                      ariaLabel={t('manage.resources.selectedModel')}
                       data={{ cy: 'chatbot-fixed-model' }}
                       value={fixedModelId}
                       disabled={isSaving || !modelSettingsEditable}
@@ -1055,6 +1057,9 @@ function ChatbotDetails({
                                 </label>
                                 <Select
                                   id={`chatbot-reasoning-select-${model.id}`}
+                                  ariaLabel={t(
+                                    'manage.resources.reasoningEffort'
+                                  )}
                                   data={{
                                     cy: `chatbot-reasoning-${model.id}`,
                                   }}

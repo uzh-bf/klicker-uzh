@@ -2,7 +2,7 @@ import { Head, Html, Main, NextScript } from 'next/document'
 
 export default function Document() {
   return (
-    <Html>
+    <Html data-theme="uzh">
       <Head>
         <meta name="application-name" content="KlickerUZH" />
         <meta name="apple-mobile-web-app-capable" content="yes" />

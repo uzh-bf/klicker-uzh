@@ -49,7 +49,7 @@ function ChatbotWorkspaceNavigation({
                 className={twMerge(
                   'min-h-11 whitespace-nowrap border-b-2 px-3 py-2 text-sm font-medium transition-colors',
                   active
-                    ? 'border-primary-600 text-primary-700'
+                    ? 'border-primary-100 text-primary-80'
                     : 'border-transparent text-gray-600 hover:border-gray-300 hover:text-gray-900'
                 )}
                 data-cy={`chatbot-view-${item.view}`}

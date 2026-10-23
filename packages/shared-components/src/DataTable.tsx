@@ -8,16 +8,16 @@ import {
   getSortedRowModel,
   useReactTable,
 } from '@tanstack/react-table'
+import { Button } from '@uzh-bf/design-system'
 import {
-  Button,
-  ShadcnTable,
-  ShadcnTableBody,
-  ShadcnTableCell,
-  ShadcnTableFooter,
-  ShadcnTableHead,
-  ShadcnTableHeader,
-  ShadcnTableRow,
-} from '@uzh-bf/design-system'
+  Table,
+  TableBody,
+  TableCell,
+  TableFooter,
+  TableHead,
+  TableHeader,
+  TableRow,
+} from '@uzh-bf/design-system/primitives'
 import dayjs from 'dayjs'
 import { useTranslations } from 'next-intl'
 import React, { useMemo, useState } from 'react'
@@ -103,14 +103,14 @@ function DataTable<TData, TValue>({
 
   return (
     <>
-      <ShadcnTable containerClassName={twMerge(className?.table)}>
-        <ShadcnTableHeader
+      <Table containerClassName={twMerge(className?.table)}>
+        <TableHeader
           className={twMerge('bg-white shadow-sm', className?.tableHeader)}
         >
           {table.getHeaderGroups().map((headerGroup) => (
-            <ShadcnTableRow key={headerGroup.id}>
+            <TableRow key={headerGroup.id}>
               {headerGroup.headers.map((header) => (
-                <ShadcnTableHead
+                <TableHead
                   key={header.id}
                   className={twMerge(
                     className?.tableCell,
@@ -123,15 +123,15 @@ function DataTable<TData, TValue>({
                         header.column.columnDef.header,
                         header.getContext()
                       )}
-                </ShadcnTableHead>
+                </TableHead>
               ))}
-            </ShadcnTableRow>
+            </TableRow>
           ))}
-        </ShadcnTableHeader>
-        <ShadcnTableBody>
+        </TableHeader>
+        <TableBody>
           {table.getRowModel().rows?.length ? (
             table.getRowModel().rows.map((row) => (
-              <ShadcnTableRow
+              <TableRow
                 key={row.id}
                 data-state={row.getIsSelected() && 'selected'}
                 onClick={() => onRowClick?.(row.original)}
@@ -141,33 +141,30 @@ function DataTable<TData, TValue>({
                 )}
               >
                 {row.getVisibleCells().map((cell) => (
-                  <ShadcnTableCell
+                  <TableCell
                     key={cell.id}
                     className={twMerge(className?.tableCell)}
                   >
                     {flexRender(cell.column.columnDef.cell, cell.getContext())}
-                  </ShadcnTableCell>
+                  </TableCell>
                 ))}
-              </ShadcnTableRow>
+              </TableRow>
             ))
           ) : (
-            <ShadcnTableRow>
-              <ShadcnTableCell
-                colSpan={columns.length}
-                className="h-24 text-center"
-              >
+            <TableRow>
+              <TableCell colSpan={columns.length} className="h-24 text-center">
                 {t('shared.table.noResults')}
-              </ShadcnTableCell>
-            </ShadcnTableRow>
+              </TableCell>
+            </TableRow>
           )}
-        </ShadcnTableBody>
+        </TableBody>
 
         {typeof footerContent !== 'undefined' && (
-          <ShadcnTableFooter>
-            <ShadcnTableRow>{footerContent}</ShadcnTableRow>
-          </ShadcnTableFooter>
+          <TableFooter>
+            <TableRow>{footerContent}</TableRow>
+          </TableFooter>
         )}
-      </ShadcnTable>
+      </Table>
 
       <div className="flex items-center justify-between space-x-2 py-2 text-sm">
         {typeof csvFilename === 'string' && (

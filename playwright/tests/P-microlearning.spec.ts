@@ -6,6 +6,7 @@
 import { expect, type Page } from '@playwright/test'
 import fs from 'node:fs'
 import { test } from '../util/fixtures.js'
+import { expectDatetime } from '../util/fixtures/activities.js'
 import { getDatetimeValidationString } from '../util/helpers.js'
 import { enMessages as messages } from '../util/messages.js'
 import {
@@ -1948,16 +1949,14 @@ test.describe.serial('Different microlearning workflows', () => {
     ).toContainText(data.running.descriptionNew)
     await page.getByTestId('next-or-submit').click()
     await page.waitForTimeout(500)
-    await expectByAssertion(
-      page.getByTestId('select-start-date'),
-      'contain',
-      startDate2
-    )
-    await expectByAssertion(
-      page.getByTestId('select-end-date'),
-      'contain',
-      endDate2
-    )
+    await expectDatetime(page, {
+      cyString: 'select-start-date',
+      datetime: { validation: startDate2, hour: 10, minute: 45 },
+    })
+    await expectDatetime(page, {
+      cyString: 'select-end-date',
+      datetime: { validation: endDate2, hour: 16, minute: 0 },
+    })
     await page.getByTestId('next-or-submit').click()
     await page.waitForTimeout(500)
     await expect(page.getByTestId('element-0-stack-0')).toContainText(
@@ -2054,16 +2053,14 @@ test.describe.serial('Different microlearning workflows', () => {
     await page.waitForTimeout(500)
     await selectOption(page, '[data-cy="select-course"]', data.course)
     await expect(page.getByTestId('select-course')).toContainText(data.course)
-    await expectByAssertion(
-      page.getByTestId('select-start-date'),
-      'contain',
-      startDate2
-    )
-    await expectByAssertion(
-      page.getByTestId('select-end-date'),
-      'contain',
-      endDate2
-    )
+    await expectDatetime(page, {
+      cyString: 'select-start-date',
+      datetime: { validation: startDate2, hour: 10, minute: 45 },
+    })
+    await expectDatetime(page, {
+      cyString: 'select-end-date',
+      datetime: { validation: endDate2, hour: 16, minute: 0 },
+    })
     await expectByAssertion(page.getByTestId('select-multiplier'), 'exist')
     await expect(page.getByTestId('select-multiplier')).toContainText(
       messages.manage.activityWizard.multiplier4

@@ -233,6 +233,7 @@ function Chatbots() {
               </span>
               <Select
                 id="chatbot-mobile-selector"
+                ariaLabel={t('manage.resources.chatbotMobileSelector')}
                 items={chatbots.map((chatbot) => ({
                   value: chatbot.id,
                   label: `${chatbot.name} · ${t(getChatbotStatusTranslationKey(chatbot.status))}`,

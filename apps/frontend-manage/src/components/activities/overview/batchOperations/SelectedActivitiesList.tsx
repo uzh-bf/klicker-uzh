@@ -1,13 +1,13 @@
 import { faCheck, faX } from '@fortawesome/free-solid-svg-icons'
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome'
 import { ActivityInfo } from '@klicker-uzh/graphql/dist/ops'
+import { Tooltip } from '@uzh-bf/design-system'
 import {
-  ShadcnTable,
-  ShadcnTableBody,
-  ShadcnTableCell,
-  ShadcnTableRow,
-  Tooltip,
-} from '@uzh-bf/design-system'
+  Table,
+  TableBody,
+  TableCell,
+  TableRow,
+} from '@uzh-bf/design-system/primitives'
 import { useTranslations } from 'next-intl'
 import { useMemo } from 'react'
 import { twMerge } from 'tailwind-merge'
@@ -33,35 +33,35 @@ function SelectedActivitiesList({
 
   return (
     <div className="min-h-0 flex-1 overflow-auto">
-      <ShadcnTable className="mt-2">
-        <ShadcnTableBody>
+      <Table className="mt-2">
+        <TableBody>
           {affectedActivities.map((activity) => (
-            <ShadcnTableRow
+            <TableRow
               key={activity.id}
               data-cy={`activity-batch-entry-${activity.name}`}
             >
-              <ShadcnTableCell
+              <TableCell
                 className={twMerge(
                   'line-clamp-1 h-7 whitespace-normal',
                   !activity.actionsApplied && 'text-black/30'
                 )}
               >
                 {activity.name}
-              </ShadcnTableCell>
+              </TableCell>
               {!allAdminPermissions ? (
                 !activity.isOwner ? (
-                  <ShadcnTableCell className="w-5.5 px-0 text-center">
+                  <TableCell className="w-5.5 px-0 text-center">
                     <ObjectPermissionLevel
                       iconOnly
                       objectName={activity.name}
                       permissionLevel={activity.permissionLevel!}
                     />
-                  </ShadcnTableCell>
+                  </TableCell>
                 ) : (
-                  <ShadcnTableCell className="w-5.5" />
+                  <TableCell className="w-5.5" />
                 )
               ) : null}
-              <ShadcnTableCell className="w-5.5 px-0 text-center">
+              <TableCell className="w-5.5 px-0 text-center">
                 {activity.actionsApplied ? (
                   <FontAwesomeIcon
                     icon={faCheck}
@@ -92,11 +92,11 @@ function SelectedActivitiesList({
                     />
                   </Tooltip>
                 )}
-              </ShadcnTableCell>
-            </ShadcnTableRow>
+              </TableCell>
+            </TableRow>
           ))}
-        </ShadcnTableBody>
-      </ShadcnTable>
+        </TableBody>
+      </Table>
     </div>
   )
 }

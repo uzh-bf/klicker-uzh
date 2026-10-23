@@ -522,15 +522,21 @@ Two further credit conventions are easy to break:
 
 ## Theming and design tokens
 
-Chat carries the UZH brand through the shadcn semantic tokens in `src/app/globals.css` (`--primary` = `#0028a5` etc.), not through per-component colours. Two rules:
+Chat loads the design system's compiled stylesheet and selects the UZH theme with
+`data-theme="uzh"` in `src/app/layout.tsx`. The shared `theme.css` bridge maps
+semantic Tailwind utility names to those runtime values.
 
-- **The light token block must be `:root:root`, not `:root`.** A dependency stylesheet (assistant-ui) defines the same shadcn tokens at plain `:root`, and its chunk loads _after_ `globals.css`, so an equal-specificity block silently loses the cascade and the brand colour never applies. Raising it to (0,2,0) outranks the dependency's (0,1,0).
+- **Keep the design system as the token owner.** The current vendor stylesheets,
+  `@assistant-ui/react-markdown/styles/dot.css` and KaTeX, do not declare the
+  shadcn root tokens. The former `:root:root` literals would override the active
+  theme, so they are removed. Recheck the cascade when adding another vendor
+  theme stylesheet before introducing a higher-specificity override.
 - There is no dark mode: a latent `:root.dark` block plus its `@custom-variant dark` was removed (D1) because nothing in the app ever applied a `.dark` class, and the forced-on preview was half-broken anyway (sidebar/composer/footer stayed light; `--primary` fell back to shadcn's default gray instead of UZH blue). Wiring dark mode properly would be a separate feature with its own plan.
 - Use the semantic tokens (`bg-muted`, `border-border`, `text-foreground`) rather than raw `gray-*`/`slate-*` utilities, or the surface stops following the theme. Note that `text-muted-foreground` on `bg-muted` computes to ≈4.4:1 — below the WCAG AA floor for body text; use `text-foreground` for text that sits on a muted surface.
 - `@uzh-bf/design-system`'s `SidebarTrigger` and `SidebarRail` render a hardcoded English
   `sr-only` "Toggle Sidebar" label. Pass an explicit localized `aria-label`; it wins the
   accessible-name computation.
-- The design system's `Select` renders a Radix `SelectTrigger` — a real `<button role="combobox">`, so a plain `<label htmlFor>` does name it. Without that, the combobox's accessible name is whatever value is currently selected, which leaves several selects on a panel indistinguishable. Pass `id` to `Select` (it forwards to the trigger) and point the visible label at it.
+- The design system's `Select` renders a `<button role="combobox">`. Pass `id` for native label activation and a matching translated `ariaLabel`, or `ariaLabelledBy` referencing the visible label. Its fallback `aria-label` overrides `<label htmlFor>` alone, so `id` is insufficient to preserve the accessible name. See [Frontend conventions](./frontend-conventions.md).
 - Tooltips (`src/components/ui/tooltip.tsx`) are the neutral popover style — `bg-popover text-popover-foreground border shadow-md` — not inverted brand blue. Anything rendered _inside_ a tooltip must use foreground/muted-foreground tones; `text-primary-foreground/70`-style spans were readable on the old blue surface and invisible on the white one. The arrow's `border-b border-r` assumes `side="top"`, which is the only side the app uses.
 - Hover states on saturated color surfaces must **darken**, not alpha-lighten: `hover:bg-destructive/90` drops white-on-red text below AA (~3.5:1), so the declined-screen button uses `hover:brightness-90` instead. Blue (`bg-primary`) tolerates `/90`; red does not.
 

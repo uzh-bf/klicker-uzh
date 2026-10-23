@@ -238,6 +238,7 @@ function Header({
       type: 'button',
       key: 'support-menubar-item',
       icon: faQuestionCircle,
+      ariaLabel: t('manage.support.modalTitle'),
       onClick: () => setShowSupportModal(true),
       data: { cy: 'support-menubar-item' },
       className: { icon: '-mx-1', root: 'px-3' },
@@ -246,6 +247,7 @@ function Header({
       type: 'dropdown',
       key: 'quizzes-menubar-dropdown',
       icon: faPlayCircle,
+      ariaLabel: t('manage.liveQuizzes.runningLiveQuizzes'),
       disabled: !quizzes || quizzes.length === 0,
       className: {
         trigger: 'px-3',

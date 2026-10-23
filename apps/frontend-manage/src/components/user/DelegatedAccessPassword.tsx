@@ -1,6 +1,5 @@
 import { faClipboard } from '@fortawesome/free-regular-svg-icons'
 import { faArrowsRotate } from '@fortawesome/free-solid-svg-icons'
-import { monoSpaceFont } from '@klicker-uzh/shared-components/src/font'
 import { Button, Label, toast } from '@uzh-bf/design-system'
 import generatePassword from 'generate-password'
 import { useTranslations } from 'next-intl'
@@ -49,7 +48,7 @@ function DelegatedAccessPassword({
           }}
           showTooltipSymbol
         />
-        <div className={monoSpaceFont.className}>{password}</div>
+        <div className="font-mono">{password}</div>
       </div>
       <div className="flex flex-row gap-0.5">
         <Button
