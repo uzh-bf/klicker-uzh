@@ -1319,9 +1319,9 @@ async function handlePOST(
       // unavailable retrieval tool degrades to page-only grounding with the
       // limitation disclosed by the policy instead of withholding the answer.
       await closeMcpTools()
-      console.warn(
-        'eLearning thread answering without required retrieval tools',
-        { requestId, chatbotId, selectedMode }
+      log.warn(
+        { event: 'chat.elearning.retrieval_unavailable', selectedMode },
+        'eLearning thread answering without required retrieval tools'
       )
     }
 
@@ -1477,9 +1477,9 @@ async function handlePOST(
           { status: 503 }
         )
       }
-      console.warn(
-        'eLearning thread answering without a quizzer retrieval tool',
-        { requestId, chatbotId }
+      log.warn(
+        { event: 'chat.elearning.quizzer_retrieval_unavailable' },
+        'eLearning thread answering without a quizzer retrieval tool'
       )
     }
 

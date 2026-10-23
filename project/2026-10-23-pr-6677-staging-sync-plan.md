@@ -117,4 +117,20 @@ after its final dependent check and verify shutdown. No cluster access is needed
   resolve that mismatch without crossing the default-branch policy boundary.
 - Sonar source-branch findings are captured privately for bounded gate triage;
   no finding has yet been declared fixed or waived.
-- Planning review, integration and verification pending.
+- Planning review approved after one correction round. No new maintained tests.
+- Local merge `03e21cd4e9` preserved both parents. A concurrent remote merge and
+  pnpm workflow fix advanced the published branch to `2e71ccb589`; reconciled
+  once without overwriting those changes. Its source tree is retained, including
+  structured chat logging and the smaller regenerated lockfile.
+- Frozen pnpm 12.11.2 lockfile validation, specifier/override policy, syncpack,
+  lockfile-reader tests and the host Git-dependent toolchain contract pass.
+  Container equivalents cover the focused checks; broad commit hooks are replaced
+  by these checks, identity validation and a staged secrets scan.
+- PR Sonar quality gate passes. The three remaining empty-CSS notices concern
+  generated email HTML; no gate or suppression was weakened.
+- Browser verification remains pending after managed runtime startup failed at
+  dependency verification. Runtime recovery and exact shutdown remain tracked
+  privately. Hosted Playwright still uses trusted `v3` control with pnpm 11.5.0.
+- Independent integration review and final committed-range review remain pending.
+  Hosted CI, exact-head final AI review and readiness remain unestablished.
+- PR: https://github.com/uzh-bf/klicker-uzh/pull/6677. Stop before merge.
