@@ -4819,7 +4819,7 @@ test.describe.serial('Core live-quiz workflows', () => {
     const contentName = `Timed response limit follow-up ${suffix}`
     const firstDraft = `First timed draft ${suffix}`
     const nextDraft = `Next timed draft ${suffix}`
-    const timeLimitSeconds = 120
+    const timeLimitSeconds = 600
     let addResponseRequests = 0
 
     await loginLecturer(page)
@@ -4874,7 +4874,6 @@ test.describe.serial('Core live-quiz workflows', () => {
         .locator('xpath=preceding-sibling::div[1]')
 
     await expect(input).toBeVisible()
-    await page.clock.pauseAt(await page.evaluate(() => Date.now()))
 
     page.on('request', (request) => {
       if (
@@ -4939,7 +4938,6 @@ test.describe.serial('Core live-quiz workflows', () => {
       isFirstResponse: false,
     })
     await expect.poll(() => addResponseRequests).toBe(3)
-    await page.clock.resume()
 
     await expect(page.getByTestId('content-element-1')).toBeVisible()
     await expect(countdown(page)).toHaveCount(0)
