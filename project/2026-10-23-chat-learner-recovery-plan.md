@@ -104,8 +104,11 @@ changes; preserve the complete review contract through authorized continuity.
   these checks do not establish real microphone, model or staging acceptance.
   Image hydration/cache eviction is covered at the request/store test seam.
 - Simplification recommends no changes. The independent slice review passes
-  the complete six-path implementation range. Integrated final review and
-  hosted draft CI remain pending; no PR exists yet.
+  the complete six-path implementation range. Integrated final source review
+  passes the complete seven-path package. The task runtime is stopped after
+  verification. [Draft PR 6693](https://github.com/uzh-bf/klicker-uzh/pull/6693)
+  contains the fixes and inspected synthetic screenshots. Hosted draft CI and
+  automated feedback remain pending; the ready-stage review is unperformed.
 - Package size: 304 substantive added/deleted lines across six source/test
   paths, excluding this plan. One coherent recovery package; no dependency,
   schema or evaluation changes. Keep the three consequential regressions at
@@ -113,5 +116,5 @@ changes; preserve the complete review contract through authorized continuity.
 - Durable lesson: normalization must run after hydration can replace a message,
   as well as before a hydration failure can return early. The existing helper,
   comments and regression test retain that contract without another abstraction
-  or a duplicate solution document. Next: stop the task runtime, complete the
-  final review and deliver the draft against `v3`.
+  or a duplicate solution document. Next: finish exact-head draft CI and feedback.
+  Staging promotion and live acceptance remain separate decisions.
