@@ -37,8 +37,14 @@ test('the current public workflow satisfies the runner trust boundary', () => {
     ),
   ]
   assert.ok(sources[0].includes(EXPECTED_CALL))
-  assert.match(sources[1], /playwright-build@refs\/heads\/v3/)
-  assert.match(sources[1], /playwright-shard@refs\/heads\/v3/)
+  assert.match(
+    sources[1],
+    /uses: \.\/\.ci-action\/\.github\/actions\/playwright-build/
+  )
+  assert.match(
+    sources[1],
+    /uses: \.\/\.ci-action\/\.github\/actions\/playwright-shard/
+  )
   assert.match(sources[2], /repository: \$\{\{ job\.workflow_repository \}\}/)
   assert.match(sources[2], /ref: \$\{\{ job\.workflow_sha \}\}/)
   // The build artifact archives every workspace package through one wildcard,
@@ -998,7 +1004,7 @@ test('status reporter accepts the trusted plan for drafts and a full plan for re
   assert.equal(pushSkippedSelection.status, 1, pushSkippedSelection.output)
 })
 
-test('status reporter reuses only validated pull-request runs', (t) => {
+test('status reporter accepts verified push reuse only after rollout opt-in', (t) => {
   // v3 and the staging source must validate their pushes independently: a
   // duplicate offered there, or while the staging source is unknown, is
   // rejected whatever it contains.
@@ -1047,6 +1053,7 @@ test('status reporter reuses only validated pull-request runs', (t) => {
   const integration = runStatusReporter(t, {
     ...push,
     PUSH_REF: 'refs/heads/v3-ai',
+    VERIFIED_REUSE_ENABLED: 'true',
   })
   assert.equal(integration.status, 0, integration.output)
 

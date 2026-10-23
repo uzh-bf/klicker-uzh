@@ -54,7 +54,14 @@ async function listAll(request, key) {
   throw new Error('API pagination limit reached')
 }
 
-async function readArtifactJson(github, repo, run, name, filename) {
+async function readArtifactJson(
+  github,
+  repo,
+  run,
+  name,
+  filename,
+  verified = false
+) {
   const artifacts = await listAll(
     (paging) =>
       github.rest.actions.listWorkflowRunArtifacts({
@@ -68,12 +75,32 @@ async function readArtifactJson(github, repo, run, name, filename) {
     (artifact) => artifact.name === name && !artifact.expired
   )
   if (matches.length !== 1 || matches[0].size_in_bytes > 1048576)
-    throw new Error('Missing or ambiguous artifact')
+    throw new Error('missing-or-ambiguous-artifact')
+  if (
+    verified &&
+    (matches[0].expired !== false ||
+      matches[0].workflow_run?.id !== run.id ||
+      matches[0].workflow_run?.head_sha !== run.head_sha ||
+      !/^sha256:[a-f0-9]{64}$/.test(matches[0].digest ?? ''))
+  )
+    throw new Error('artifact-provenance-invalid')
   const response = await github.rest.actions.downloadArtifact({
     ...repo,
     artifact_id: matches[0].id,
     archive_format: 'zip',
   })
+  if (Buffer.byteLength(response.data) > 1048576)
+    throw new Error('artifact-too-large')
+  if (
+    verified &&
+    'sha256:' +
+      require('node:crypto')
+        .createHash('sha256')
+        .update(Buffer.from(response.data))
+        .digest('hex') !==
+      matches[0].digest
+  )
+    throw new Error('artifact-digest-mismatch')
   const directory = fs.mkdtempSync(path.join(os.tmpdir(), 'ci-proof-'))
   try {
     const archive = path.join(directory, 'proof.zip')
@@ -739,6 +766,7 @@ async function reportEquivalentRun(options) {
 }
 
 module.exports = {
+  readArtifactJson,
   PR_REUSE_ACTIONS,
   listAll,
   samePull,

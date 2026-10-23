@@ -281,7 +281,7 @@ test('playwright execution and reporting run only for open pull requests', () =>
 // source must always validate their pushes independently. The reporter
 // therefore has to tie reuse acceptance to the event family and push ref
 // instead of rejecting every duplicate.
-test('the playwright reporter reuses only pull-request validation', () => {
+test('the playwright reporter requires rollout opt-in for verified push reuse', () => {
   const playwright = readWorkflow('test-playwright.yml')
   const report = playwright.jobs['test-playwright-status'].steps.find(
     (step) => step.name === 'Check result'
@@ -291,7 +291,7 @@ test('the playwright reporter reuses only pull-request validation', () => {
     report,
     /\[ -n "\$\{DUPLICATE_RUN_ID:-\}" \] && \[ "\$IS_PULL_REQUEST" != 'true' \]/
   )
-  assert.match(report, /Push validation cannot be reused/)
+  assert.match(report, /Verified push reuse is disabled/)
   assert.doesNotMatch(report, /Playwright validation cannot be reused/)
 })
 

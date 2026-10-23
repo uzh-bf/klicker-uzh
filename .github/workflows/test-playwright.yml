@@ -46,7 +46,8 @@ jobs:
       github.event.pull_request.state == 'open'
     concurrency:
       group: ${{ github.workflow }}-playwright-${{ github.event.pull_request.number || github.ref }}
-      cancel-in-progress: true
+      # A readiness event waits for the existing execution; new code still cancels.
+      cancel-in-progress: ${{ github.event.action != 'ready_for_review' }}
     permissions:
       contents: read
       actions: read
@@ -90,6 +91,7 @@ jobs:
           IS_DRAFT: ${{ github.event_name == 'pull_request' && github.event.pull_request.draft }}
           PUSH_REF: ${{ github.event_name == 'push' && github.ref || '' }}
           STG_SOURCE_BRANCH: ${{ vars.STG_SOURCE_BRANCH }}
+          VERIFIED_REUSE_ENABLED: ${{ vars.CI_VERIFIED_REUSE_ENABLED }}
         run: |
           set -euo pipefail
           {
@@ -135,26 +137,17 @@ jobs:
             echo 'Paid validation was not admitted for this attempt.'
             exit 1
           fi
-          # A pull-request lifecycle event may reuse validation: the trusted
-          # envelope emits a duplicate run id only after binding that run to the
-          # same pull request, head, base, merge tree, control revision, full
-          # plan and complete coverage, and then skips its own build and shards.
-          # A v3-* integration push may reuse the run that tested the merged
-          # pull request's exact tree. v3 and the staging source branch always
-          # validate their pushes independently, because the staging promoter
-          # admits only their own hosted shards.
+          # Only the trusted v2 verifier emits a source run ID. Promotion
+          # independently reconstructs the proof; this reporter grants no authority.
           if [ -n "${DUPLICATE_RUN_ID:-}" ] && [ "$IS_PULL_REQUEST" != 'true' ]; then
-            case "${PUSH_REF:-}" in
-              refs/heads/v3-*) ;;
-              *)
-                echo 'Push validation cannot be reused; it must run independently.'
-                exit 1
-                ;;
-            esac
-            if [ -z "${STG_SOURCE_BRANCH:-}" ] || [ "$PUSH_REF" = "refs/heads/$STG_SOURCE_BRANCH" ]; then
-              echo 'Push validation cannot be reused; it must run independently.'
+            if [ "${VERIFIED_REUSE_ENABLED:-}" != 'true' ]; then
+              echo 'Verified push reuse is disabled.'
               exit 1
             fi
+            case "${PUSH_REF:-}" in
+              refs/heads/v3 | refs/heads/v3-*) ;;
+              *) exit 1 ;;
+            esac
           fi
 
           # Every push and every ready pull request must attest the complete

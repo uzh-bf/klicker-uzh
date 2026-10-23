@@ -68,15 +68,20 @@ jobs:
       reason_codes: ${{ steps.metadata.outputs.reason_codes }}
     steps:
       - name: Check out trusted CI control
-        uses: actions/checkout@v4
+        uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4
         with:
           repository: ${{ job.workflow_repository }}
           ref: ${{ job.workflow_sha }}
           path: .ci-control
+          sparse-checkout-cone-mode: false
+          sparse-checkout: |
+            /.github/
+            /playwright/
+            /.devrouter.yml
           persist-credentials: false
 
       - name: Check out candidate as data
-        uses: actions/checkout@v4
+        uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4
         with:
           repository: ${{ github.event_name == 'pull_request' && github.event.pull_request.head.repo.full_name || github.repository }}
           ref: ${{ github.event_name == 'pull_request' && github.event.pull_request.head.sha || github.sha }}
@@ -173,30 +178,28 @@ jobs:
 
       - name: Reuse proven equivalent PR validation
         id: equivalent
-        # Push validation of a non-v3 branch may reuse its ready pull request's
-        # proof, and a v3-* integration push other than the staging source may
-        # reuse the run that tested the merged pull request's exact tree when
-        # the caller accepts it; a pull-request lifecycle event that kept the
-        # merge input unchanged may reuse the same head's completed full run.
-        # Every other event runs normal validation.
+        # New receipts and independent provenance are mandatory. The rollout
+        # is opt-in; misses retain actual execution, including architecture changes.
         if: >-
           steps.metadata.outputs.provider != 'warpbuild' &&
-          ((github.event_name == 'push' && github.ref != 'refs/heads/v3') ||
+          ((github.event_name == 'push' && inputs.allow_push_reuse) ||
           (github.event_name == 'pull_request' && contains(fromJSON('["ready_for_review","edited","reopened"]'), github.event.action)))
         continue-on-error: true
         uses: actions/github-script@3a2844b7e9c422d3c10d287c895573f7108da1b3 # v9.0.0
         env:
           CONTROL_SHA: ${{ job.workflow_sha }}
           ALLOW_PUSH_REUSE: ${{ inputs.allow_push_reuse }}
-          STG_SOURCE_BRANCH: ${{ vars.STG_SOURCE_BRANCH }}
+          CI_VERIFIED_REUSE_ENABLED: ${{ vars.CI_VERIFIED_REUSE_ENABLED }}
+          PUBLIC_WORKERS: ${{ vars.PUBLIC_PR_PLAYWRIGHT_WORKERS || '1' }}
         with:
           script: |
             const fs = require('node:fs')
-            await require('./.ci-control/.github/scripts/ci-equivalent-run.cjs').reportEquivalentRun({
+            await require('./.ci-control/.github/scripts/ci-verified-reuse.cjs').reportVerifiedRun({
               github, context, core, kind: 'playwright',
               controlSha: process.env.CONTROL_SHA,
               allowPushReuse: process.env.ALLOW_PUSH_REUSE === 'true',
-              stagingSourceBranch: process.env.STG_SOURCE_BRANCH,
+              enabled: process.env.CI_VERIFIED_REUSE_ENABLED === 'true',
+              workers: JSON.parse(fs.readFileSync('route.json', 'utf8')).route === 'hosted' ? '1' : process.env.PUBLIC_WORKERS,
               plan: JSON.parse(fs.readFileSync('playwright-execution-plan.json', 'utf8')),
               route: JSON.parse(fs.readFileSync('route.json', 'utf8')).route,
             })
@@ -227,7 +230,7 @@ jobs:
           NODE
 
       - name: Upload canonical execution plan
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4
         with:
           name: playwright-execution-plan
           path: playwright-execution-plan.json
@@ -235,7 +238,7 @@ jobs:
           retention-days: 7
 
       - name: Upload route metadata
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4
         with:
           name: playwright-route-metadata
           path: route.json
@@ -244,7 +247,7 @@ jobs:
 
       - name: Upload selector shadow plan
         if: github.event_name == 'pull_request' && github.event.pull_request.draft == true
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4
         with:
           name: playwright-selector-shadow
           path: playwright-selector-shadow.json
@@ -262,7 +265,7 @@ jobs:
       image: mcr.microsoft.com/playwright:v1.58.2-noble@sha256:6446946a1d9fd62d9ae501312a2d76a43ee688542b21622056a372959b65d63d
     steps:
       - name: Check out repository code
-        uses: actions/checkout@v4
+        uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4
         with:
           persist-credentials: false
 
@@ -274,12 +277,20 @@ jobs:
           SOURCE_HEAD_SHA: ${{ github.event.pull_request.head.sha }}
           SOURCE_BASE_SHA: ${{ github.event.pull_request.base.sha }}
           CONTROL_SHA: ${{ job.workflow_sha }}
+          EXECUTION_ROUTE: hosted
+          EXECUTION_WORKERS: '1'
         run: |
           node - <<'NODE'
           const fs = require('node:fs')
           const { execFileSync } = require('node:child_process')
           fs.writeFileSync('ci-validation-receipt.json', JSON.stringify({
-            schemaVersion: 1,
+            schemaVersion: 2,
+            repository: process.env.GITHUB_REPOSITORY,
+            route: process.env.EXECUTION_ROUTE,
+            runnerOs: process.env.RUNNER_OS,
+            runnerArch: process.env.RUNNER_ARCH,
+            workers: process.env.EXECUTION_WORKERS,
+            testedSha: execFileSync('git', ['-c', `safe.directory=${process.env.GITHUB_WORKSPACE}`, 'rev-parse', 'HEAD'], { encoding: 'utf8' }).trim(),
             event: process.env.GITHUB_EVENT_NAME,
             runId: Number(process.env.GITHUB_RUN_ID),
             runAttempt: Number(process.env.GITHUB_RUN_ATTEMPT),
@@ -293,14 +304,31 @@ jobs:
       - name: Upload tested source receipt
         continue-on-error: true
         if: github.event_name == 'pull_request'
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4
         with:
           name: ci-validation-receipt
           path: ci-validation-receipt.json
           retention-days: 7
 
+      - name: Reserve trusted action path
+        shell: bash
+        run: rm -rf -- "$GITHUB_WORKSPACE/.ci-action"
+
+      - name: Check out immutable execution actions
+        uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4
+        with:
+          repository: ${{ job.workflow_repository }}
+          ref: ${{ job.workflow_sha }}
+          path: .ci-action
+          sparse-checkout-cone-mode: false
+          sparse-checkout: |
+            /.github/
+            /playwright/
+            /.devrouter.yml
+          persist-credentials: false
+
       - name: Build shared Playwright artifact
-        uses: uzh-bf/klicker-uzh/.github/actions/playwright-build@refs/heads/v3
+        uses: ./.ci-action/.github/actions/playwright-build
         with:
           route: hosted
           mode: ${{ needs.prepare.outputs.mode }}
@@ -319,7 +347,7 @@ jobs:
       image: mcr.microsoft.com/playwright:v1.58.2-noble@sha256:6446946a1d9fd62d9ae501312a2d76a43ee688542b21622056a372959b65d63d
     steps:
       - name: Check out repository code
-        uses: actions/checkout@v4
+        uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4
         with:
           persist-credentials: false
 
@@ -331,12 +359,20 @@ jobs:
           SOURCE_HEAD_SHA: ${{ github.event.pull_request.head.sha }}
           SOURCE_BASE_SHA: ${{ github.event.pull_request.base.sha }}
           CONTROL_SHA: ${{ job.workflow_sha }}
+          EXECUTION_ROUTE: public-pr
+          EXECUTION_WORKERS: ${{ needs.prepare.outputs.provider == 'warpbuild' && '1' || vars.PUBLIC_PR_PLAYWRIGHT_WORKERS || '1' }}
         run: |
           node - <<'NODE'
           const fs = require('node:fs')
           const { execFileSync } = require('node:child_process')
           fs.writeFileSync('ci-validation-receipt.json', JSON.stringify({
-            schemaVersion: 1,
+            schemaVersion: 2,
+            repository: process.env.GITHUB_REPOSITORY,
+            route: process.env.EXECUTION_ROUTE,
+            runnerOs: process.env.RUNNER_OS,
+            runnerArch: process.env.RUNNER_ARCH,
+            workers: process.env.EXECUTION_WORKERS,
+            testedSha: execFileSync('git', ['-c', `safe.directory=${process.env.GITHUB_WORKSPACE}`, 'rev-parse', 'HEAD'], { encoding: 'utf8' }).trim(),
             event: process.env.GITHUB_EVENT_NAME,
             runId: Number(process.env.GITHUB_RUN_ID),
             runAttempt: Number(process.env.GITHUB_RUN_ATTEMPT),
@@ -350,14 +386,31 @@ jobs:
       - name: Upload tested source receipt
         continue-on-error: true
         if: github.event_name == 'pull_request'
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4
         with:
           name: ci-validation-receipt
           path: ci-validation-receipt.json
           retention-days: 7
 
+      - name: Reserve trusted action path
+        shell: bash
+        run: rm -rf -- "$GITHUB_WORKSPACE/.ci-action"
+
+      - name: Check out immutable execution actions
+        uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4
+        with:
+          repository: ${{ job.workflow_repository }}
+          ref: ${{ job.workflow_sha }}
+          path: .ci-action
+          sparse-checkout-cone-mode: false
+          sparse-checkout: |
+            /.github/
+            /playwright/
+            /.devrouter.yml
+          persist-credentials: false
+
       - name: Build shared Playwright artifact
-        uses: uzh-bf/klicker-uzh/.github/actions/playwright-build@refs/heads/v3
+        uses: ./.ci-action/.github/actions/playwright-build
         with:
           route: public-pr
           mode: ${{ needs.prepare.outputs.mode }}
@@ -379,7 +432,7 @@ jobs:
       matrix: ${{ fromJSON(needs.prepare.outputs.shard_matrix) }}
     services:
       postgres:
-        image: postgres:15
+        image: postgres:15@sha256:c99dd5066e988cd61a72ffe962da08e277eecaba000bbdda0bdaf9f63b56c174
         env:
           POSTGRES_USER: klicker-prod
           POSTGRES_PASSWORD: klicker #ggignore: fixed local test-service credential
@@ -390,7 +443,7 @@ jobs:
           --health-timeout 5s
           --health-retries 5
       postgres_hatchet:
-        image: postgres:15
+        image: postgres:15@sha256:c99dd5066e988cd61a72ffe962da08e277eecaba000bbdda0bdaf9f63b56c174
         env:
           POSTGRES_USER: hatchet
           POSTGRES_PASSWORD: hatchet
@@ -402,21 +455,21 @@ jobs:
           --health-retries 10
           --health-start-period 30s
       redis_cache:
-        image: redis:7
+        image: redis:7@sha256:44960b3100c48159a66d28c18b0588c193492e25f7551d60e51dd464fc3eca5b
         options: >-
           --health-cmd "redis-cli ping"
           --health-interval 5s
           --health-timeout 5s
           --health-retries 5
       redis_exec:
-        image: redis:7
+        image: redis:7@sha256:44960b3100c48159a66d28c18b0588c193492e25f7551d60e51dd464fc3eca5b
         options: >-
           --health-cmd "redis-cli ping"
           --health-interval 5s
           --health-timeout 5s
           --health-retries 5
       redis_assessment_exec:
-        image: redis:7
+        image: redis:7@sha256:44960b3100c48159a66d28c18b0588c193492e25f7551d60e51dd464fc3eca5b
         options: >-
           --health-cmd "redis-cli ping"
           --health-interval 5s
@@ -427,7 +480,7 @@ jobs:
       mailhog:
         image: mailhog/mailhog:v1.0.1@sha256:8d76a3d4ffa32a3661311944007a415332c4bb855657f4f6c57996405c009bea
       hatchet:
-        image: ghcr.io/hatchet-dev/hatchet/hatchet-lite-dev:v0.101.0
+        image: ghcr.io/hatchet-dev/hatchet/hatchet-lite-dev:v0.101.0@sha256:7dfc696a6f2e45f510002ac395f110f404e2207fb867b4e8d4412ae31ceb1ee5
         env:
           DATABASE_URL: 'postgresql://hatchet:hatchet@postgres_hatchet:5432/hatchet?sslmode=disable'
           SERVER_AUTH_COOKIE_DOMAIN: hatchet
@@ -452,12 +505,29 @@ jobs:
           - hatchet_lite_config_${{ github.run_id }}_${{ github.run_attempt }}_${{ matrix.shardIndex }}:/config
     steps:
       - name: Check out repository code
-        uses: actions/checkout@v4
+        uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4
         with:
           persist-credentials: false
 
+      - name: Reserve trusted action path
+        shell: bash
+        run: rm -rf -- "$GITHUB_WORKSPACE/.ci-action"
+
+      - name: Check out immutable execution actions
+        uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4
+        with:
+          repository: ${{ job.workflow_repository }}
+          ref: ${{ job.workflow_sha }}
+          path: .ci-action
+          sparse-checkout-cone-mode: false
+          sparse-checkout: |
+            /.github/
+            /playwright/
+            /.devrouter.yml
+          persist-credentials: false
+
       - name: Run shared Playwright shard
-        uses: uzh-bf/klicker-uzh/.github/actions/playwright-shard@refs/heads/v3
+        uses: ./.ci-action/.github/actions/playwright-shard
         with:
           route: hosted
           mode: ${{ needs.prepare.outputs.mode }}
@@ -483,7 +553,7 @@ jobs:
       matrix: ${{ fromJSON(needs.prepare.outputs.shard_matrix) }}
     services:
       postgres:
-        image: postgres:15
+        image: postgres:15@sha256:c99dd5066e988cd61a72ffe962da08e277eecaba000bbdda0bdaf9f63b56c174
         env:
           POSTGRES_USER: klicker-prod
           POSTGRES_PASSWORD: klicker #ggignore: fixed local test-service credential
@@ -494,7 +564,7 @@ jobs:
           --health-timeout 5s
           --health-retries 5
       postgres_hatchet:
-        image: postgres:15
+        image: postgres:15@sha256:c99dd5066e988cd61a72ffe962da08e277eecaba000bbdda0bdaf9f63b56c174
         env:
           POSTGRES_USER: hatchet
           POSTGRES_PASSWORD: hatchet
@@ -506,28 +576,28 @@ jobs:
           --health-retries 10
           --health-start-period 30s
       redis_cache:
-        image: redis:7
+        image: redis:7@sha256:44960b3100c48159a66d28c18b0588c193492e25f7551d60e51dd464fc3eca5b
         options: >-
           --health-cmd "redis-cli ping"
           --health-interval 5s
           --health-timeout 5s
           --health-retries 5
       redis_exec:
-        image: redis:7
+        image: redis:7@sha256:44960b3100c48159a66d28c18b0588c193492e25f7551d60e51dd464fc3eca5b
         options: >-
           --health-cmd "redis-cli ping"
           --health-interval 5s
           --health-timeout 5s
           --health-retries 5
       redis_assessment_exec:
-        image: redis:7
+        image: redis:7@sha256:44960b3100c48159a66d28c18b0588c193492e25f7551d60e51dd464fc3eca5b
         options: >-
           --health-cmd "redis-cli ping"
           --health-interval 5s
           --health-timeout 5s
           --health-retries 5
       hatchet:
-        image: ghcr.io/hatchet-dev/hatchet/hatchet-lite-dev:v0.101.0
+        image: ghcr.io/hatchet-dev/hatchet/hatchet-lite-dev:v0.101.0@sha256:7dfc696a6f2e45f510002ac395f110f404e2207fb867b4e8d4412ae31ceb1ee5
         env:
           DATABASE_URL: 'postgresql://hatchet:hatchet@postgres_hatchet:5432/hatchet?sslmode=disable'
           SERVER_AUTH_COOKIE_DOMAIN: hatchet
@@ -552,12 +622,29 @@ jobs:
           - hatchet_lite_config_${{ github.run_id }}_${{ github.run_attempt }}_${{ matrix.shardIndex }}:/config
     steps:
       - name: Check out repository code
-        uses: actions/checkout@v4
+        uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4
         with:
           persist-credentials: false
 
+      - name: Reserve trusted action path
+        shell: bash
+        run: rm -rf -- "$GITHUB_WORKSPACE/.ci-action"
+
+      - name: Check out immutable execution actions
+        uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4
+        with:
+          repository: ${{ job.workflow_repository }}
+          ref: ${{ job.workflow_sha }}
+          path: .ci-action
+          sparse-checkout-cone-mode: false
+          sparse-checkout: |
+            /.github/
+            /playwright/
+            /.devrouter.yml
+          persist-credentials: false
+
       - name: Run shared Playwright shard
-        uses: uzh-bf/klicker-uzh/.github/actions/playwright-shard@refs/heads/v3
+        uses: ./.ci-action/.github/actions/playwright-shard
         with:
           route: public-pr
           mode: ${{ needs.prepare.outputs.mode }}
