@@ -61,26 +61,35 @@ function EvaluationFooter({
     !currentInstance?.explanation.match(/^(<br>(\n)*)$/g)
   const hasSolutionAndExplanation = hasSolution && hasExplanation
 
+  let totalLabel: string
+  if (
+    currentInstance?.__typename === 'FreeTextActivityEvaluationData' &&
+    typeof currentInstance.results.respondents === 'number'
+  ) {
+    totalLabel = t('manage.evaluation.totalResponsesFromRespondents', {
+      number: currentInstance.results.totalAnswers,
+      respondents: currentInstance.results.respondents,
+    })
+  } else if (
+    (currentInstance?.results.anonymousAnswers ?? 0) > 0 &&
+    type === 'Asynchronous'
+  ) {
+    totalLabel = t('manage.evaluation.totalParticipantsInclAnon', {
+      number: currentInstance?.results.totalAnswers ?? 0,
+      anonymous: currentInstance?.results.anonymousAnswers ?? 0,
+    })
+  } else {
+    totalLabel = t('manage.evaluation.totalParticipants', {
+      number: currentInstance?.results.totalAnswers ?? 0,
+    })
+  }
+
   return (
     <Footer>
       {typeof activeStack === 'number' && (
         <div className="m-0 flex flex-row items-center justify-between py-2.5">
           <div className="text-lg" data-cy="live-quiz-total-participants">
-            {currentInstance?.__typename === 'FreeTextActivityEvaluationData' &&
-            typeof currentInstance.results.respondents === 'number'
-              ? t('manage.evaluation.totalResponsesFromRespondents', {
-                  number: currentInstance.results.totalAnswers,
-                  respondents: currentInstance.results.respondents,
-                })
-              : (currentInstance?.results.anonymousAnswers ?? 0) > 0 &&
-                  type === 'Asynchronous'
-                ? t('manage.evaluation.totalParticipantsInclAnon', {
-                    number: currentInstance?.results.totalAnswers ?? 0,
-                    anonymous: currentInstance?.results.anonymousAnswers ?? 0,
-                  })
-                : t('manage.evaluation.totalParticipants', {
-                    number: currentInstance?.results.totalAnswers ?? 0,
-                  })}
+            {totalLabel}
           </div>
           <div className="flex flex-row items-center gap-7">
             <div className="ml-2 flex flex-row items-center gap-2">
