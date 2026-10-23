@@ -54,6 +54,8 @@ Reuse the exact existing review worktree and managed runtime. Retained-runtime b
 
 ## Progress
 
-- Plan draft ready for hardening. Implementation not started.
-- Next action: planner review, then execute the approved correction batch.
-- Public delivery size will be recorded from the correction diff, excluding this plan and generated output.
+- Planner approved the transaction invariant and scoped synthetic-fixture strategy before implementation.
+- All three repairs are implemented. Six real PostgreSQL lifecycle regressions and all five Chromium controller workflow tests passed. Required container type, format, lint and hook checks passed.
+- The simplifier found only two redundant test counters; both were removed while retaining the six lifecycle cases and two-page polling assertions. Risk review and integrated final review precede publication.
+- Direct browser verification confirmed remote Q&A enable and disable in an already loaded controller. Desktop and compact screenshots use local synthetic fixtures; native iOS execution remains outside this correction's verification.
+- Next action: finish reviews, propagate the API and controller corrections into their existing layers with ancestry-preserving merges, verify the resulting tree and publish ordinary fast-forward updates. Keep the exact review runtime running for the user's manual testing.

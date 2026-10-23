@@ -230,7 +230,6 @@ function createRedisStub({
   xp = {},
   holdFirstRead = false,
 }: RedisStubOptions) {
-  const hgetallKeys: string[] = []
   const hold = holdFirstRead
     ? { entered: signal(), release: signal() }
     : undefined
@@ -242,7 +241,6 @@ function createRedisStub({
   }
   const pipeline = vi.fn(() => pipelineCommands)
   const hgetall = vi.fn(async (key: string) => {
-    hgetallKeys.push(key)
     if (hold && !isHeld) {
       isHeld = true
       hold.entered.resolve()
@@ -256,7 +254,6 @@ function createRedisStub({
   return {
     redis: { hgetall, pipeline } as unknown as Redis,
     hgetall,
-    hgetallKeys,
     pipeline,
     hold,
   }
@@ -431,9 +428,9 @@ describe('live quiz lifecycle concurrency', () => {
     if (activationResult.status === 'rejected') {
       expect(activationResult.reason).toMatchObject({ code: 'P2025' })
     }
-    expect(redis.hgetallKeys).toEqual([
-      `lq:${fixture.quizId}:lb`,
-      `lq:${fixture.quizId}:xp`,
+    expect(redis.hgetall.mock.calls).toEqual([
+      [`lq:${fixture.quizId}:lb`],
+      [`lq:${fixture.quizId}:xp`],
     ])
     expect(redis.pipeline).not.toHaveBeenCalled()
     expect(pubSubPublish).not.toHaveBeenCalled()
@@ -537,14 +534,14 @@ describe('live quiz lifecycle concurrency', () => {
         value: expect.objectContaining({ status: DB.PublicationStatus.ENDED }),
       }),
     ])
-    expect(redis.hgetallKeys).toEqual([
-      `lq:${fixture.quizId}:lb`,
-      `lq:${fixture.quizId}:xp`,
+    expect(redis.hgetall.mock.calls).toEqual([
+      [`lq:${fixture.quizId}:lb`],
+      [`lq:${fixture.quizId}:xp`],
     ])
 
     const repeated = await endLiveQuiz({ id: fixture.quizId }, context)
     expect(repeated?.status).toBe(DB.PublicationStatus.ENDED)
-    expect(redis.hgetallKeys).toHaveLength(2)
+    expect(redis.hgetall).toHaveBeenCalledTimes(2)
 
     await expectAwards(fixture)
   })
@@ -609,9 +606,9 @@ describe('live quiz lifecycle concurrency', () => {
       activeBlockId: null,
     })
     expect(result?.finishedAt).toBeInstanceOf(Date)
-    expect(redis.hgetallKeys).toEqual([
-      `lq:${fixture.quizId}:lb`,
-      `lq:${fixture.quizId}:xp`,
+    expect(redis.hgetall.mock.calls).toEqual([
+      [`lq:${fixture.quizId}:lb`],
+      [`lq:${fixture.quizId}:xp`],
     ])
     expect(
       await prisma.participation.findMany({

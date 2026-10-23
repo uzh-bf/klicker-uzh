@@ -171,7 +171,6 @@ test.describe('Test functionalities of frontend-control application', () => {
     const secondPage = await context.newPage()
     const sessionQuizId = sessionPath.split('/').at(-1) as string
     let feedbacksEnabled = false
-    let feedbackRequests = 0
     const feedbackPages = new Set<typeof page>()
     const remoteQuestion = {
       __typename: 'Feedback',
@@ -193,7 +192,6 @@ test.describe('Test functionalities of frontend-control application', () => {
         return
       }
 
-      feedbackRequests += 1
       const requestingPage = route.request().frame().page()
       if (requestingPage) feedbackPages.add(requestingPage)
       await route.fulfill({
@@ -216,7 +214,6 @@ test.describe('Test functionalities of frontend-control application', () => {
       secondPage.goto(`${controlOrigin}${sessionPath}`),
     ])
     await expect.poll(() => feedbackPages.size).toBe(2)
-    expect(feedbackRequests).toBeGreaterThanOrEqual(2)
     for (const controlPage of [page, secondPage]) {
       await expect(controlPage.getByTestId('session-tab-qa')).toBeVisible()
       await expect(
