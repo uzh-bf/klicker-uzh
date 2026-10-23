@@ -170,7 +170,7 @@ stays out of Git.
 
 ## Progress
 
-- Status: slice 1 committed; final review and draft PR next.
+- Status: delivered. #6613 merged into `v3-ai` as `ad826af393` on 2026-10-19.
 - Evidence: the focused fusion suite passes (37 tests). Biome reports no errors
   on the touched files, and Prettier passes on the docs page. The dev container
   could not start because the host's Docker network address pools are
@@ -185,4 +185,5 @@ stays out of Git.
   budget tests would break. All three are addressed above. The should-fix
   findings are resolved by keeping the original grouping, adding rank semantics,
   updating the docs contract and naming hook checks.
-- Next action: open the draft PR into `v3-ai` and watch CI.
+- Next action: rerun the matched W9 comparison with the new selection under
+  the adoption plan protocol. That run needs its own approval.
