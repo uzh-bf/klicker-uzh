@@ -112,6 +112,20 @@ export default {
       partial: 'Partial response',
       error: 'Error',
     },
+    documentNotice: {
+      title: 'Before you attach documents',
+      allowed:
+        'Attach only material you may share: your own notes and work, course material you have permission to use, or openly licensed material.',
+      notAllowed:
+        'Do not attach complete copyrighted works without permission, or documents with personal or confidential information about others, sensitive data or passwords.',
+      access:
+        'Having access to a file does not mean you may share it. When in doubt, ask your lecturer.',
+      dataBoundary:
+        'The text of your documents is sent to the AI model provider and saved with this conversation.',
+      once: 'This notice appears once on this device.',
+      remove: 'Remove documents',
+      accept: 'I understand',
+    },
     disclaimer: {
       mediaTitle: 'Disclaimer media',
       introAlt: 'Chatbot Introduction',

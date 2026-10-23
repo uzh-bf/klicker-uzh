@@ -113,6 +113,20 @@ export default {
       partial: 'Unvollständige Antwort',
       error: 'Fehler',
     },
+    documentNotice: {
+      title: 'Bevor du Dokumente anhängst',
+      allowed:
+        'Hänge nur Material an, das du teilen darfst: eigene Notizen und Arbeiten, Kursmaterial, das du verwenden darfst, oder frei lizenziertes Material.',
+      notAllowed:
+        'Hänge keine vollständigen urheberrechtlich geschützten Werke ohne Erlaubnis an und keine Dokumente mit persönlichen oder vertraulichen Informationen über andere, sensiblen Daten oder Passwörtern.',
+      access:
+        'Dass du Zugriff auf eine Datei hast, heisst nicht, dass du sie teilen darfst. Frag im Zweifel deine Dozierenden.',
+      dataBoundary:
+        'Der Text deiner Dokumente wird an den Anbieter des KI-Modells gesendet und mit diesem Gespräch gespeichert.',
+      once: 'Dieser Hinweis erscheint auf diesem Gerät nur einmal.',
+      remove: 'Dokumente entfernen',
+      accept: 'Verstanden',
+    },
     disclaimer: {
       mediaTitle: 'Haftungsausschluss-Medien',
       introAlt: 'Chatbot-Einführung',
