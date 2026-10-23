@@ -317,3 +317,12 @@ extending those tools is a separate capability decision.
   Trusted-policy activation and live-provider proof require a later merge and
   authorized verification. Future application testing and previews remain the
   planning-only options above.
+
+### Mistral routing update — 2026-10-23
+
+The user selected GLM 5.3 Flash max through Mistral for draft review and retained
+GLM 5.3 max through Mistral for final review and advisor calls. The
+[routing implementation plan](2026-10-23-ocr-mistral-routing-plan.md) records
+the shared engine and adopter changes. Existing budgets, accounting formulas
+and retries remain unchanged. The stack evidence and first adopter source
+packages were squash-merged; live tool usefulness remains ordinary-run evidence.
