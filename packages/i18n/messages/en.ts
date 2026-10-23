@@ -125,6 +125,20 @@ export default {
       partial: 'Partial response',
       error: 'Error',
     },
+    documentNotice: {
+      title: 'Before you attach documents',
+      allowed:
+        'Attach only material you may share: your own notes and work, course material you have permission to use, or openly licensed material.',
+      notAllowed:
+        'Do not attach complete copyrighted works without permission, or documents with personal or confidential information about others, sensitive data or passwords.',
+      access:
+        'Having access to a file does not mean you may share it. When in doubt, ask your lecturer.',
+      dataBoundary:
+        'The text of your documents is sent to the AI model provider and saved with this conversation.',
+      once: 'This notice appears once on this device.',
+      remove: 'Remove documents',
+      accept: 'I understand',
+    },
     disclaimer: {
       mediaTitle: 'Disclaimer media',
       introAlt: 'Chatbot Introduction',
@@ -153,6 +167,13 @@ export default {
       hydrationError:
         'Image attachments for this message could not be loaded. Please try again.',
       attachedImageAlt: 'Attached image {index}',
+    },
+    documentPreview: {
+      open: 'Preview {name}',
+      extractedText: 'Text the chat read from this file:',
+      extractedTextOnly:
+        'The original file is not stored, so after a reload only the text the chat read from it is shown:',
+      openOriginal: 'Open original file',
     },
     imageViewer: {
       previewUnavailable: 'Preview unavailable',
@@ -277,6 +298,14 @@ export default {
       documentPages: '{count, plural, one {# page} other {# pages}}',
       documentTokens: '~{count} tokens',
       documentShortened: 'Shortened to the first {max} tokens',
+      documentVisualReviewed:
+        '{count, plural, one {Page reviewed visually} other {Pages reviewed visually}}',
+      documentVisualTooManyPages:
+        '{count, plural, one {Page not reviewed visually} other {Pages not reviewed visually}}: up to {max} pages per message',
+      documentVisualNoImageSupport:
+        '{count, plural, one {Page not reviewed visually} other {Pages not reviewed visually}}: this model cannot read images',
+      documentVisualSkipped:
+        '{count, plural, one {Page not reviewed visually} other {Pages not reviewed visually}}',
       documentDefaultQuestion: 'Please refer to the attached file(s).',
       dictation: 'Dictate message',
       dictationSetup: 'Set up dictation',

@@ -20,6 +20,17 @@ import {
 } from 'ai'
 import { after, type NextRequest, NextResponse } from 'next/server'
 import { z } from 'zod'
+import {
+  appendTextToModelContent,
+  buildDocumentPageSummaryRow,
+  DOCUMENT_PAGE_SUMMARY_ROW_FILTER,
+  IMAGE_ROW_FILTER,
+  MAX_DOCUMENT_PAGE_DATA_URL_LENGTH,
+} from '@/src/lib/attachments/attachmentState'
+import {
+  MAX_VISUAL_REVIEW_PAGES,
+  stripDocumentBlocks,
+} from '@/src/lib/attachments/documentText'
 import type { ReasoningEffort } from '@/src/lib/config/reasoning'
 import {
   answerStyleSchema,
@@ -661,6 +672,15 @@ export async function POST(
       message: 'Must be a base64 data URL for jpeg, png, gif, or webp',
     })
 
+  // Rendered PDF pages: JPEG only, scaled to about 1,600 px in the browser,
+  // so one page stays far below the cap of a full-size image.
+  const documentPageDataUrlSchema = z
+    .string()
+    .max(MAX_DOCUMENT_PAGE_DATA_URL_LENGTH)
+    .refine((value) => value.startsWith('data:image/jpeg;base64,'), {
+      message: 'Must be a base64 data URL for jpeg',
+    })
+
   const bodySchema = z.object({
     messages: z.array(
       z.object({
@@ -692,6 +712,11 @@ export async function POST(
       .max(3)
       .optional()
       .default([]),
+    documentPages: z
+      .array(documentPageDataUrlSchema)
+      .max(MAX_VISUAL_REVIEW_PAGES)
+      .optional()
+      .default([]),
   })
   let parsed: z.infer<typeof bodySchema>
   try {
@@ -712,6 +737,7 @@ export async function POST(
     allowRegeneration,
     handoffSource,
     images,
+    documentPages,
   } = parsed
 
   const normalizedImages: IncomingImageAttachment[] = images.map((image) =>
@@ -910,6 +936,20 @@ export async function POST(
         return chatModelUnavailableResponse(selectedModelConfig.usageClass)
       }
     }
+  }
+
+  // Checked against the effective model, after any zero-credit fallback.
+  if (
+    documentPages.length > 0 &&
+    !selectedModelConfig.supportsImageAttachments
+  ) {
+    return NextResponse.json(
+      {
+        error: 'The selected model cannot read document pages as images',
+        code: 'DOCUMENT_PAGES_NOT_SUPPORTED',
+      },
+      { status: 400 }
+    )
   }
 
   const enabledMCPConfigurations = (chatbot.mcpConfigurations ?? []).filter(
@@ -1239,13 +1279,57 @@ export async function POST(
       normalizedImages.map((image) => ensureImagePreviewBase64(image))
     )
 
-    // create image descriptions if images attached
+    // create image descriptions if images attached, and one visual summary
+    // of the attached PDF pages; later turns see these texts, not the images
     let imageDescriptionCost: number = 0
     const imageAttachments: {
       imageBase64: string
       imagePreviewBase64: string | null
       imageDescription: string | null
     }[] = []
+    let documentPageSummary: string | null = null
+    const hasDocumentPages =
+      documentPages.length > 0 && lastMessage?.role === 'user'
+    // Built inside a promise, so a prompt-rendering error also ends in the
+    // "no summary" path instead of failing the turn.
+    const documentPageSummaryTask = hasDocumentPages
+      ? Promise.resolve()
+          .then(() =>
+            generateText({
+              model: model,
+              // A client that cancels before the answer starts also stops this call.
+              abortSignal: req.signal,
+              messages: [
+                {
+                  role: 'user',
+                  content: [
+                    ...documentPages.map((page) => ({
+                      type: 'image' as const,
+                      image: page,
+                    })),
+                    {
+                      type: 'text',
+                      text: renderPromptTemplate('document-pages-summary', {
+                        userContent: stripDocumentBlocks(
+                          lastMessage?.content ?? ''
+                        ),
+                        pageCount: documentPages.length,
+                      }),
+                    },
+                  ],
+                },
+              ],
+              maxOutputTokens: 1500,
+              telemetry: { isEnabled: false },
+            })
+          )
+          .then(
+            // settled here, so a failure while the image descriptions are still
+            // running is never an unhandled rejection
+            (result) => ({ result, error: null }),
+            (error: unknown) => ({ result: null, error })
+          )
+      : null
     if (normalizedImages.length > 0 && lastMessage?.role === 'user') {
       const results = await Promise.allSettled(
         resolvedImages.map(async (image) => {
@@ -1302,23 +1386,64 @@ export async function POST(
           })
         }
       }
+    }
 
-      const lastMessageIndex = messages.length - 1
-      if (lastMessageIndex >= 0) {
-        const messageText = messages[lastMessageIndex]?.content
-
-        modelMessages[lastMessageIndex] = {
-          ...modelMessages[lastMessageIndex],
-          content: [
-            ...(messageText
-              ? [{ type: 'text' as const, text: messageText }]
-              : []),
-            ...resolvedImages.map((image) => ({
-              type: 'image' as const,
-              image: image.imageBase64,
-            })),
-          ],
+    if (documentPageSummaryTask) {
+      const { result: summaryResult, error } = await documentPageSummaryTask
+      if (summaryResult) {
+        // A blank summary (for example a filtered completion) is not stored,
+        // so it cannot replace an earlier one; its usage is still charged.
+        documentPageSummary = summaryResult.text.trim() || null
+        if (summaryResult.usage) {
+          imageDescriptionCost += calcCost(
+            selectedModelConfig.cost,
+            summaryResult.usage.inputTokens || 0,
+            summaryResult.usage.outputTokens || 0
+          )
         }
+      } else {
+        // No summary row is written, so a transient failure cannot replace a
+        // stored summary or persist a placeholder; the text stays available.
+        // A cancelled request is not a failure. The provider error is reduced
+        // to name and message: it may echo the request with the page images.
+        const aborted =
+          req.signal.aborted ||
+          (error instanceof Error && error.name === 'AbortError')
+        if (!aborted) {
+          console.error('Failed to summarize document pages:', {
+            requestId,
+            error:
+              error instanceof Error
+                ? { name: error.name, message: error.message.slice(0, 500) }
+                : 'unknown error',
+          })
+        }
+      }
+    }
+
+    const lastMessageIndex = messages.length - 1
+    if (
+      lastMessageIndex >= 0 &&
+      lastMessage?.role === 'user' &&
+      (normalizedImages.length > 0 || hasDocumentPages)
+    ) {
+      const messageText = messages[lastMessageIndex]?.content
+
+      modelMessages[lastMessageIndex] = {
+        ...modelMessages[lastMessageIndex],
+        content: [
+          ...(messageText
+            ? [{ type: 'text' as const, text: messageText }]
+            : []),
+          ...resolvedImages.map((image) => ({
+            type: 'image' as const,
+            image: image.imageBase64,
+          })),
+          ...(hasDocumentPages ? documentPages : []).map((page) => ({
+            type: 'image' as const,
+            image: page,
+          })),
+        ],
       }
     }
 
@@ -1353,6 +1478,7 @@ export async function POST(
       imageAttachmentSizes: resolvedImages.map((image) =>
         Buffer.byteLength(image.imageBase64, 'utf8')
       ),
+      documentPageCount: documentPages.length,
       elapsedMsFromRequestStart: Date.now() - requestStartedAtMs,
     })
 
@@ -1362,24 +1488,55 @@ export async function POST(
     })
 
     // inject image descriptions from prior messages into model context; fetch from DB
-    const priorMessageIds = messages
-      .filter(
-        (m) =>
-          m.role === 'user' &&
-          !(imageAttachments.length > 0 && m.id === lastMessage?.id) // skip current
-      )
-      .map((m) => m.id)
-    if (owningThread && priorMessageIds.length > 0) {
+    // The current message is skipped for whichever kind it brings anew, so a
+    // regenerated answer still gets the stored text of the other kind.
+    const hasNewAttachments =
+      imageAttachments.length > 0 || documentPageSummary != null
+    const priorUserMessageIds = (skipCurrent: boolean) =>
+      messages
+        .filter(
+          (m) => m.role === 'user' && !(skipCurrent && m.id === lastMessage?.id)
+        )
+        .map((m) => m.id)
+    const priorMessageIds = priorUserMessageIds(imageAttachments.length > 0)
+    const priorSummaryMessageIds = priorUserMessageIds(
+      documentPageSummary != null
+    )
+    if (
+      owningThread &&
+      (priorMessageIds.length > 0 || priorSummaryMessageIds.length > 0)
+    ) {
       try {
-        const priorAttachments = await prisma.chatAttachment.findMany({
-          where: {
-            messageId: { in: priorMessageIds },
-            imageDescription: { not: null },
-            message: { threadId: owningThread.id },
-          },
-          select: { messageId: true, imageDescription: true },
-          orderBy: [{ messageId: 'asc' }, { position: 'asc' }],
-        })
+        const priorWhere = {
+          imageDescription: { not: null },
+          message: { threadId: owningThread.id },
+        }
+        const [priorAttachments, priorPageSummaries] = await Promise.all([
+          prisma.chatAttachment.findMany({
+            where: {
+              ...priorWhere,
+              ...IMAGE_ROW_FILTER,
+              messageId: { in: priorMessageIds },
+            },
+            select: { messageId: true, imageDescription: true },
+            orderBy: [{ messageId: 'asc' }, { position: 'asc' }],
+          }),
+          prisma.chatAttachment.findMany({
+            where: {
+              ...priorWhere,
+              ...DOCUMENT_PAGE_SUMMARY_ROW_FILTER,
+              messageId: { in: priorSummaryMessageIds },
+            },
+            select: { messageId: true, imageDescription: true },
+            orderBy: [{ messageId: 'asc' }, { position: 'asc' }],
+          }),
+        ])
+        const pageSummariesByMsgId = new Map<string, string[]>()
+        for (const a of priorPageSummaries) {
+          const existing = pageSummariesByMsgId.get(a.messageId) ?? []
+          existing.push(a.imageDescription!)
+          pageSummariesByMsgId.set(a.messageId, existing)
+        }
         const descriptionsByMsgId = new Map<string, string[]>()
         for (const a of priorAttachments) {
           // get existing descriptions for this message, append if exist, or create new array
@@ -1403,8 +1560,22 @@ export async function POST(
                     .join('\n\n')
             modelMessages[i] = {
               ...modelMessages[i],
-              content: `${modelMessages[i].content}${suffix}`,
-            }
+              content: appendTextToModelContent(
+                modelMessages[i].content,
+                suffix.trimStart()
+              ),
+            } as (typeof modelMessages)[number]
+          }
+          for (const summary of pageSummariesByMsgId.get(messages[i].id) ??
+            []) {
+            const marker = `[Visual summary of the attached document pages: ${summary}]`
+            modelMessages[i] = {
+              ...modelMessages[i],
+              content: appendTextToModelContent(
+                modelMessages[i].content,
+                marker
+              ),
+            } as (typeof modelMessages)[number]
           }
         }
       } catch (error) {
@@ -1430,20 +1601,40 @@ export async function POST(
         }
 
         const persistAttachments = async (messageId: string) => {
-          if (imageAttachments.length === 0) return
+          if (!hasNewAttachments) return
 
-          // delete existing attachments for this message, then create new ones
+          // replace the attachment kinds this request brings anew; the page
+          // summary row keeps only text, the page images are dropped
           await prisma.$transaction([
-            prisma.chatAttachment.deleteMany({ where: { messageId } }),
-            prisma.chatAttachment.createMany({
-              data: imageAttachments.map((att, position) => ({
-                type: 'IMAGE' as const,
+            prisma.chatAttachment.deleteMany({
+              where: {
                 messageId,
-                position,
-                imageBase64: att.imageBase64 ?? null,
-                imagePreviewBase64: att.imagePreviewBase64 ?? null,
-                imageDescription: att.imageDescription ?? null,
-              })),
+                ...(documentPageSummary == null ? IMAGE_ROW_FILTER : {}),
+                ...(imageAttachments.length === 0
+                  ? DOCUMENT_PAGE_SUMMARY_ROW_FILTER
+                  : {}),
+              },
+            }),
+            prisma.chatAttachment.createMany({
+              data: [
+                ...imageAttachments.map((att, position) => ({
+                  type: 'IMAGE' as const,
+                  messageId,
+                  position,
+                  imageBase64: att.imageBase64 ?? null,
+                  imagePreviewBase64: att.imagePreviewBase64 ?? null,
+                  imageDescription: att.imageDescription ?? null,
+                })),
+                ...(documentPageSummary != null
+                  ? [
+                      buildDocumentPageSummaryRow({
+                        messageId,
+                        position: imageAttachments.length,
+                        summary: documentPageSummary,
+                      }),
+                    ]
+                  : []),
+              ],
             }),
           ])
         }
