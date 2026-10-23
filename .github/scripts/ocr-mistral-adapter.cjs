@@ -20,6 +20,7 @@ const { Readable } = require('node:stream')
 
 const MISTRAL_URL = 'https://api.mistral.ai/v1/chat/completions'
 const MISTRAL_MODEL = 'zai-glm-5-3'
+const MISTRAL_FLASH_MODEL = 'zai-glm-5-3-flash'
 const MISTRAL_EFFORT = 'max'
 
 // USD per million tokens, checked 2026-10-16 against the provider's model page.
@@ -39,6 +40,21 @@ const PROVIDERS = {
     responseModels: [MISTRAL_MODEL],
     secret: 'MISTRAL_API_KEY',
     pricing: MISTRAL_PRICING,
+  },
+  'mistral-flash': {
+    name: 'mistral-flash',
+    label: 'Mistral',
+    url: MISTRAL_URL,
+    model: MISTRAL_FLASH_MODEL,
+    responseModels: [MISTRAL_FLASH_MODEL],
+    secret: 'MISTRAL_API_KEY',
+    pricing: {
+      date: '2026-10-23',
+      source: 'https://docs.mistral.ai/models/zai-glm-5-3-flash',
+      input: 0.15,
+      cachedInput: 0.03,
+      output: 0.5,
+    },
   },
   openrouter: {
     name: 'openrouter',
@@ -707,7 +723,7 @@ function translateMistralRequest(
       'reasoning effort must be high or max'
     )
   }
-  if (provider === 'openrouter' && effort !== 'max') {
+  if (['openrouter', 'mistral-flash'].includes(provider) && effort !== 'max') {
     throw new AdapterError('invalid_request', 'draft reasoning must be max')
   }
 
@@ -1441,9 +1457,8 @@ async function startAdapter(options = {}) {
   function snapshot() {
     return {
       schema_version: 1,
-      ...(profile.name === 'openrouter'
-        ? { provider: profile.name, model: profile.model }
-        : {}),
+      provider: profile.name,
+      model: profile.model,
       ...diagnostics,
       last_upstream_error: diagnostics.last_upstream_error
         ? { ...diagnostics.last_upstream_error }
@@ -1731,9 +1746,13 @@ function assessCostRows(rows, provider = 'mistral') {
   )
   const reasons = new Set()
   for (const row of rows) {
+    const legacyMistral =
+      provider === 'mistral' &&
+      row?.provider === undefined &&
+      row?.model === undefined
     if (
-      (row?.provider ?? 'mistral') !== provider ||
-      (provider === 'openrouter' &&
+      !legacyMistral &&
+      (row?.provider !== provider ||
         row?.model !== providerConfig(provider).model)
     ) {
       reasons.add('provider_mismatch')
@@ -2734,6 +2753,7 @@ async function main(argv) {
 module.exports = {
   MISTRAL_URL,
   MISTRAL_MODEL,
+  MISTRAL_FLASH_MODEL,
   MISTRAL_EFFORT,
   normalizeMistralResponse,
   translateMistralRequest,

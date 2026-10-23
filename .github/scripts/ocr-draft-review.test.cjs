@@ -66,11 +66,18 @@ test('combined cost estimates use both provider rates and withhold totals for mi
       path.join(directory, 'draft-ai-review-adapter-diagnostics.jsonl'),
       JSON.stringify({
         ...receipt,
-        provider: 'openrouter',
-        model: 'deepseek/deepseek-v4.1-flash-1017',
+        provider: 'mistral-flash',
+        model: 'zai-glm-5-3-flash',
       })
     )
-    fs.writeFileSync(advisorPath, JSON.stringify(receipt))
+    fs.writeFileSync(
+      advisorPath,
+      JSON.stringify({
+        ...receipt,
+        provider: 'mistral',
+        model: 'zai-glm-5-3',
+      })
+    )
     fs.writeFileSync(
       path.join(directory, 'draft-ai-review-advisor-expectations.json'),
       JSON.stringify({ expected_receipts: 1 })
@@ -285,9 +292,9 @@ test('combined cost estimates use both provider rates and withhold totals for mi
       )
     assert.ok(totals)
     for (const [index, expected] of [
-      [1, 0.99475],
-      [2, 2.05],
-      [3, 1.05525],
+      [1, 1.005],
+      [2, 2.04],
+      [3, 1.035],
     ])
       assert.ok(Math.abs(Number(totals[index]) - expected) < 0.000051)
     fs.writeFileSync(
@@ -310,6 +317,28 @@ test('combined cost estimates use both provider rates and withhold totals for mi
     assert.match(
       result.stdout,
       /^OCR cost scope=draft_and_advisor status=unavailable$/m
+    )
+    fs.writeFileSync(
+      advisorPath,
+      JSON.stringify({
+        ...receipt,
+        provider: 'mistral-flash',
+        model: 'zai-glm-5-3-flash',
+      })
+    )
+    assert.match(
+      run().stdout,
+      /^OCR cost scope=draft_and_advisor status=unavailable$/m
+    )
+    fs.writeFileSync(
+      path.join(directory, 'draft-ai-review-advisor-expectations.json'),
+      JSON.stringify({ expected_receipts: 0 })
+    )
+    const draftOnly = run()
+    assert.equal(draftOnly.status, 0, draftOnly.stderr)
+    assert.match(
+      draftOnly.stdout,
+      /^OCR cost scope=draft_and_advisor status=complete estimated_with_cache_usd=0\.1100 estimated_without_cache_usd=0\.2000 estimated_savings_usd=0\.0900 /m
     )
   } finally {
     fs.rmSync(directory, { recursive: true, force: true })
@@ -440,6 +469,7 @@ process.exitCode=7
     assert.equal(child.env.MISTRAL_API_KEY, undefined)
     assert.equal(child.env.CONTEXT7_API_KEY, undefined)
     assert.equal(child.env.OCR_NO_UPDATE, '1')
+    assert.equal(child.env.OCR_LLM_MODEL, 'zai-glm-5-3-flash')
     assert.deepEqual(child.args.slice(0, 9), [
       'review',
       '--from',
@@ -550,13 +580,13 @@ test('pinned OCR registers and invokes reviewer tools with trusted rules and com
     head,
     policy,
     executable: process.env.OCR_TEST_BINARY,
-    apiKey: 'synthetic-router',
+    apiKey: 'synthetic-mistral',
     advisorApiKey: 'synthetic-advisor',
     context7ApiKey: 'synthetic-docs',
     write: (text) => logs.push(text),
     fetchImpl: async (_url, init) => {
       const body = JSON.parse(init.body)
-      assert.equal(body.reasoning.effort, 'max')
+      assert.equal(body.reasoning_effort, 'max')
       const names = body.tools?.map((tool) => tool.function.name) ?? []
       offered ||=
         names.includes('ask_review_advisor') &&
@@ -566,7 +596,7 @@ test('pinned OCR registers and invokes reviewer tools with trusted rules and com
       )
       if (!names.includes('task_done'))
         return response(
-          'deepseek/deepseek-v4.1-flash-1017',
+          'zai-glm-5-3-flash',
           {
             role: 'assistant',
             content: JSON.stringify([{ label: 'source', files: [0] }]),
@@ -601,11 +631,15 @@ test('pinned OCR registers and invokes reviewer tools with trusted rules and com
                 }
               : { state: 'DONE' }
       return response(
-        'deepseek/deepseek-v4.1-flash-1017',
+        'zai-glm-5-3-flash',
         {
           role: 'assistant',
-          content: '',
-          reasoning: 'PRIVATE_SENTINEL',
+          content: [
+            {
+              type: 'thinking',
+              thinking: [{ type: 'text', text: 'PRIVATE_SENTINEL' }],
+            },
+          ],
           tool_calls: [
             {
               id: `call-${sequence}`,
