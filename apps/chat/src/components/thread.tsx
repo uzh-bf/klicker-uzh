@@ -45,7 +45,10 @@ import {
 import { twMerge } from 'tailwind-merge'
 import { useMessageSources } from '@/src/hooks/useMessageSources'
 import {
+  type DocumentOriginal,
+  extractDocumentsForSending,
   getDocumentAttachmentKey,
+  getDocumentOriginal,
   getImageAttachmentKey,
   hasAnyImageAttachmentData,
   parentMessageHasImageAttachment,
@@ -56,11 +59,16 @@ import {
   documentAttachmentAdapter,
 } from '@/src/lib/attachments/documentAttachmentAdapter'
 import {
+  applyVisualReview,
   type DocumentAttachmentInfo,
+  type ImageSupport,
   MAX_DOCUMENT_ATTACHMENTS,
   MAX_DOCUMENT_SIZE_BYTES,
   MAX_DOCUMENT_TOKENS,
+  MAX_VISUAL_REVIEW_PAGES,
   parseMessageDocuments,
+  type VisualReviewStatus,
+  visualReviewWithoutPages,
 } from '@/src/lib/attachments/documentText'
 import {
   ATTACHMENT_ERROR_CODE,
@@ -74,7 +82,10 @@ import {
   MAX_IMAGE_ATTACHMENTS,
   useComposerStore,
 } from '@/src/stores/composerStore'
-import { useSettingsStore } from '@/src/stores/settingsStore'
+import {
+  selectModelReadsDocumentPages,
+  useSettingsStore,
+} from '@/src/stores/settingsStore'
 import {
   formatModeLabel,
   getComposerSubmitMode,
@@ -96,7 +107,9 @@ import {
   DictationSheet,
   useDictationErrorMessage,
 } from './dictation-controls'
+import { DocumentNoticeGate } from './document-notice-modal'
 import { HistoryRail } from './history-rail'
+import { DocumentPreviewModal } from './document-preview-modal'
 import { MessageAttachments } from './message-attachments'
 import { AssistantMessageParts } from './message-parts'
 import { hasChatError, isStoppedWithoutText } from './message-parts-state'
@@ -152,7 +165,7 @@ type MessageWithCustomMetadata = {
   } | null
 }
 
-type DocumentChipInfo = Omit<DocumentAttachmentInfo, 'text'>
+type DocumentChipInfo = DocumentAttachmentInfo
 
 const extractMessageText = (message: {
   content?: readonly { type: string; text?: string }[]
@@ -161,6 +174,11 @@ const extractMessageText = (message: {
     .filter((part) => part.type === 'text' && typeof part.text === 'string')
     .map((part) => part.text ?? '')
     .join('')
+
+const useReadsDocumentPages = () =>
+  useSettingsStore((state) =>
+    selectModelReadsDocumentPages(state, state.selectedModel)
+  )
 
 const useSupportsImageAttachments = () => {
   const selectedModel = useSettingsStore((state) => state.selectedModel)
@@ -989,13 +1007,21 @@ const ComposerAttachments: FC<{
   )
 
   if (inline) {
-    return <>{primitive}</>
+    return (
+      <>
+        {primitive}
+        <DocumentNoticeGate />
+      </>
+    )
   }
 
   return (
-    <div className="flex w-full flex-wrap gap-2 py-2 empty:hidden">
-      {primitive}
-    </div>
+    <>
+      <div className="flex w-full flex-wrap gap-2 py-2 empty:hidden">
+        {primitive}
+      </div>
+      <DocumentNoticeGate />
+    </>
   )
 }
 
@@ -1041,13 +1067,42 @@ const selectAttachmentDocument = (
   return textPart?.text ?? null
 }
 
+const getVisualReviewLabel = (
+  t: ReturnType<typeof useTranslations<never>>,
+  status: VisualReviewStatus,
+  pages: number | null
+): string => {
+  const count = pages ?? 2
+  switch (status) {
+    case 'reviewed':
+      return t('chat.composer.documentVisualReviewed', { count })
+    case 'too-many-pages':
+      return t('chat.composer.documentVisualTooManyPages', {
+        count,
+        max: MAX_VISUAL_REVIEW_PAGES,
+      })
+    case 'no-image-support':
+      return t('chat.composer.documentVisualNoImageSupport', { count })
+    case 'skipped':
+      return t('chat.composer.documentVisualSkipped', { count })
+  }
+}
+
 const DocumentChip: FC<{
   name: string
   document?: DocumentChipInfo
   reading?: boolean
   removable?: boolean
+  onPreview?: () => void
   children?: ReactNode
-}> = ({ name, document, reading = false, removable = false, children }) => {
+}> = ({
+  name,
+  document,
+  reading = false,
+  removable = false,
+  onPreview,
+  children,
+}) => {
   const t = useTranslations()
   const format = useFormatter()
   const details = reading
@@ -1064,16 +1119,8 @@ const DocumentChip: FC<{
           .filter(Boolean)
           .join(' · ')
       : null
-
-  return (
-    <div
-      data-cy="chat-document-attachment"
-      className={twMerge(
-        'bg-background relative flex max-w-64 min-w-0 items-center gap-2 rounded-lg border py-1.5 pl-2 pr-3 text-left text-xs',
-        removable && 'pr-14 fine-pointer:pr-9',
-        document?.shortened && 'border-amber-500/50 bg-amber-50'
-      )}
-    >
+  const chipContent = (
+    <>
       <span
         aria-hidden
         className="bg-primary/10 text-primary flex size-8 shrink-0 items-center justify-center rounded"
@@ -1106,29 +1153,180 @@ const DocumentChip: FC<{
             })}
           </span>
         )}
+        {!reading && document?.visualReview && (
+          <span
+            data-cy="chat-document-visual-review"
+            data-status={document.visualReview}
+            className="text-muted-foreground block whitespace-normal"
+          >
+            {getVisualReviewLabel(t, document.visualReview, document.pages)}
+          </span>
+        )}
       </span>
+    </>
+  )
+
+  return (
+    <div
+      data-cy="chat-document-attachment"
+      className={twMerge(
+        'bg-background relative flex max-w-64 min-w-0 items-center gap-2 rounded-lg border py-1.5 pl-2 pr-3 text-left text-xs',
+        removable && 'pr-14 fine-pointer:pr-9',
+        document?.shortened && 'border-amber-500/50 bg-amber-50'
+      )}
+    >
+      {onPreview && !reading ? (
+        <button
+          type="button"
+          data-cy="chat-document-preview-open"
+          onClick={onPreview}
+          aria-haspopup="dialog"
+          title={t('chat.documentPreview.open', { name })}
+          className="focus-visible:ring-ring flex min-w-0 items-center gap-2 rounded text-left focus-visible:outline-none focus-visible:ring-2"
+        >
+          {chipContent}
+        </button>
+      ) : (
+        chipContent
+      )}
       {children}
     </div>
   )
+}
+
+/**
+ * A document chip that opens the document preview. `resolveOriginal` returns
+ * the original file while it is still in this tab, and a release callback for
+ * an object URL created just for this preview.
+ */
+const PreviewableDocumentChip: FC<{
+  name: string
+  document?: DocumentChipInfo
+  reading?: boolean
+  removable?: boolean
+  resolveOriginal: () => {
+    original: DocumentOriginal | null
+    release?: () => void
+  }
+  children?: ReactNode
+}> = ({ resolveOriginal, children, ...chipProps }) => {
+  const [preview, setPreview] = useState<{
+    original: DocumentOriginal | null
+    release?: () => void
+  } | null>(null)
+  // Frees an object URL created for the preview when it closes or unmounts.
+  useEffect(() => () => preview?.release?.(), [preview])
+
+  return (
+    <>
+      <DocumentChip
+        {...chipProps}
+        onPreview={
+          chipProps.document ? () => setPreview(resolveOriginal()) : undefined
+        }
+      >
+        {children}
+      </DocumentChip>
+      {chipProps.document && (
+        <DocumentPreviewModal
+          name={chipProps.name}
+          text={chipProps.document.text}
+          original={preview?.original ?? null}
+          isOpen={preview != null}
+          onClose={() => setPreview(null)}
+        />
+      )}
+    </>
+  )
+}
+
+type ComposerAttachmentList = readonly (NonNullable<
+  Parameters<typeof extractDocumentsForSending>[0]
+>[number] & { id: string })[]
+
+// Every document chip needs the projection of all composer documents. It is
+// computed once per attachments array and model capability, not per chip.
+const composerDocumentProjections = new WeakMap<
+  object,
+  { supportsImages: ImageSupport; blocks: Map<string, string> }
+>()
+
+function projectComposerDocuments(
+  attachments: ComposerAttachmentList,
+  supportsImages: ImageSupport
+): Map<string, string> {
+  const cached = composerDocumentProjections.get(attachments)
+  if (cached?.supportsImages === supportsImages) return cached.blocks
+  const documents = attachments
+    .filter((attachment) => attachment.type === 'document')
+    .slice(0, MAX_DOCUMENT_ATTACHMENTS)
+  // A document still being read has no block yet and keeps its place.
+  const { blocks } = applyVisualReview(
+    documents.map(
+      (attachment) =>
+        extractDocumentsForSending([attachment])[0] ?? {
+          block: '',
+          pageImages: [],
+        }
+    ),
+    { supportsImages }
+  )
+  const blocksById = new Map<string, string>()
+  documents.forEach((attachment, index) => {
+    if (blocks[index]) blocksById.set(attachment.id, blocks[index])
+  })
+  composerDocumentProjections.set(attachments, {
+    supportsImages,
+    blocks: blocksById,
+  })
+  return blocksById
 }
 
 const ComposerDocumentAttachment: FC = () => {
   const name = useAuiState((s) => selectAttachmentName(s.attachment))
   const reading = useAuiState((s) => s.attachment.status.type === 'running')
   const blockText = useAuiState((s) => selectAttachmentDocument(s.attachment))
-  const document = useMemo(
+  const file = useAuiState((s) => s.attachment.file)
+  const supportsImages = useReadsDocumentPages()
+  // The status the pages will get when the message is sent: the model may
+  // have changed since the file was read, and earlier documents may already
+  // use up the page budget.
+  const attachmentId = useAuiState((s) => s.attachment.id)
+  // The attachments array keeps its identity between stream updates, so the
+  // projection below only reruns when the composer's attachments change.
+  const composerAttachments = useAuiState((s) => s.composer.attachments)
+  const sendBlockText = useMemo(
     () =>
-      blockText ? parseMessageDocuments(blockText).documents[0] : undefined,
-    [blockText]
+      projectComposerDocuments(composerAttachments, supportsImages).get(
+        attachmentId
+      ) ?? null,
+    [attachmentId, composerAttachments, supportsImages]
   )
+  const document = useMemo(() => {
+    const text = sendBlockText ?? blockText
+    return text ? parseMessageDocuments(text).documents[0] : undefined
+  }, [blockText, sendBlockText])
 
   return (
     <AttachmentPrimitive.Root className="relative">
-      <DocumentChip name={name} document={document} reading={reading} removable>
+      <PreviewableDocumentChip
+        name={name}
+        document={document}
+        reading={reading}
+        removable
+        resolveOriginal={() => {
+          if (!(file instanceof Blob)) return { original: null }
+          const url = URL.createObjectURL(file)
+          return {
+            original: { url, type: file.type, size: file.size },
+            release: () => URL.revokeObjectURL(url),
+          }
+        }}
+      >
         <AttachmentPrimitive.Remove asChild>
           <AttachmentRemoveButton />
         </AttachmentPrimitive.Remove>
-      </DocumentChip>
+      </PreviewableDocumentChip>
     </AttachmentPrimitive.Root>
   )
 }
@@ -1500,11 +1698,14 @@ const UserMessage: FC = () => {
         {documents.length > 0 && (
           <div className="mb-2 flex flex-wrap gap-2">
             {documents.map((document, index) => (
-              <DocumentChip
+              <PreviewableDocumentChip
                 // biome-ignore lint/suspicious/noArrayIndexKey: documents have no id and keep their order
                 key={index}
                 name={document.name}
                 document={document}
+                resolveOriginal={() => ({
+                  original: getDocumentOriginal(message.id, index),
+                })}
               />
             ))}
           </div>
@@ -1596,6 +1797,7 @@ const EditComposer: FC = () => {
   const t = useTranslations()
   const { showMessageActions } = useChatUi()
   const message = useAuiState((s) => s.message) as MessageWithCustomMetadata
+  const readsDocumentPages = useReadsDocumentPages()
   const [attachmentError, setAttachmentError] = useState<string | null>(null)
   const attachments = getMessageAttachments(message)
   const documents = getMessageDocuments(message)
@@ -1643,10 +1845,21 @@ const EditComposer: FC = () => {
   const visibleAttachmentEntries = attachmentEntries.filter(
     ({ key }) => !removedAttachmentKeySet.has(key)
   )
+  // Kept documents are sent again without page images, so their chips show
+  // the status the edited message will get.
   const visibleDocumentEntries = documents
     .map((document, index) => ({
-      document,
+      document:
+        document.visualReview == null
+          ? document
+          : {
+              ...document,
+              visualReview: visualReviewWithoutPages(document.visualReview, {
+                supportsImages: readsDocumentPages,
+              }),
+            },
       key: getDocumentAttachmentKey(index),
+      index,
     }))
     .filter(({ key }) => !removedAttachmentKeySet.has(key))
   const totalAttachmentCount =
@@ -1727,17 +1940,20 @@ const EditComposer: FC = () => {
             visibleDocumentEntries.length > 0 ||
             pendingAttachmentCount > 0) && (
             <div className="flex flex-wrap gap-2">
-              {visibleDocumentEntries.map(({ document, key }) => (
-                <DocumentChip
+              {visibleDocumentEntries.map(({ document, key, index }) => (
+                <PreviewableDocumentChip
                   key={key}
                   name={document.name}
                   document={document}
                   removable
+                  resolveOriginal={() => ({
+                    original: getDocumentOriginal(message.id, index),
+                  })}
                 >
                   <AttachmentRemoveButton
                     onClick={() => addEditRemovedAttachmentKey(message.id, key)}
                   />
-                </DocumentChip>
+                </PreviewableDocumentChip>
               ))}
               {visibleAttachmentEntries.map(({ attachment, key }) => {
                 const previewSrc = getAttachmentPreviewSrc(attachment, 'edit')

@@ -1,3 +1,5 @@
+import type { DocumentForSending } from './documentText'
+
 type AttachmentRecord = {
   id: string
   type: 'image'
@@ -147,6 +149,7 @@ export function extractLocalImageAttachments(
 type ComposerDocumentAttachmentInput = {
   type?: string
   content?: readonly unknown[]
+  file?: unknown
 }
 
 /** Text blocks of the document attachments, in the order they were added. */
@@ -166,6 +169,141 @@ export function extractDocumentBlocks(
         typeof part.text === 'string'
     )
     .map((part) => part.text)
+}
+
+const isPageImagePart = (
+  part: unknown
+): part is { type: 'file'; mimeType: string; data: string } =>
+  typeof part === 'object' &&
+  part !== null &&
+  'type' in part &&
+  part.type === 'file' &&
+  'mimeType' in part &&
+  part.mimeType === 'image/jpeg' &&
+  'data' in part &&
+  typeof part.data === 'string'
+
+/**
+ * Each document attachment with its text block and the JPEG pages rendered
+ * for it, in the order the files were added.
+ */
+export function extractDocumentsForSending(
+  attachments?: readonly ComposerDocumentAttachmentInput[]
+): DocumentForSending[] {
+  return (attachments ?? [])
+    .filter((attachment) => attachment.type === 'document')
+    .flatMap((attachment) => {
+      const block = extractDocumentBlocks([attachment])[0]
+      if (block == null) return []
+      return [
+        {
+          block,
+          pageImages: (attachment.content ?? [])
+            .filter(isPageImagePart)
+            .map((part) => part.data),
+          ...(attachment.file instanceof Blob ? { file: attachment.file } : {}),
+        },
+      ]
+    })
+}
+
+// Original files of sent documents, for the preview until the page reloads.
+// Only the extracted text is stored; after a reload the preview shows that.
+// Keyed by message ID and the document's position in the message.
+export type DocumentOriginal = { url: string; type: string; size: number }
+const documentOriginals = new Map<string, DocumentOriginal>()
+const MAX_DOCUMENT_ORIGINALS = 20
+// Each object URL keeps its whole file in memory, so the total is capped too.
+const MAX_DOCUMENT_ORIGINAL_BYTES = 50 * 1024 * 1024
+const documentOriginalKey = (messageId: string, index: number) =>
+  `${messageId}:${index}`
+
+// Shared URLs (an edited message and its source) count once.
+const originalBytes = () =>
+  [
+    ...new Map(
+      [...documentOriginals.values()].map((entry) => [entry.url, entry.size])
+    ).values(),
+  ].reduce((total, size) => total + size, 0)
+
+function storeDocumentOriginal(key: string, original: DocumentOriginal) {
+  documentOriginals.delete(key)
+  documentOriginals.set(key, original)
+  for (const [oldestKey, oldest] of documentOriginals) {
+    if (
+      documentOriginals.size <= MAX_DOCUMENT_ORIGINALS &&
+      originalBytes() <= MAX_DOCUMENT_ORIGINAL_BYTES
+    ) {
+      break
+    }
+    // The newest entry stays, even when it alone exceeds the budget.
+    if (oldestKey === key) break
+    documentOriginals.delete(oldestKey)
+    // An edited message shares the URL of the message it was edited from.
+    const stillUsed = [...documentOriginals.values()].some(
+      (entry) => entry.url === oldest.url
+    )
+    if (!stillUsed) URL.revokeObjectURL(oldest.url)
+  }
+}
+
+export function rememberDocumentOriginal(
+  messageId: string,
+  index: number,
+  file: Blob
+): void {
+  storeDocumentOriginal(documentOriginalKey(messageId, index), {
+    url: URL.createObjectURL(file),
+    type: file.type,
+    size: file.size,
+  })
+}
+
+export function copyDocumentOriginal(
+  from: { messageId: string; index: number },
+  to: { messageId: string; index: number }
+): void {
+  const original = documentOriginals.get(
+    documentOriginalKey(from.messageId, from.index)
+  )
+  if (original) {
+    storeDocumentOriginal(documentOriginalKey(to.messageId, to.index), original)
+  }
+}
+
+export function getDocumentOriginal(
+  messageId: string,
+  index: number
+): DocumentOriginal | null {
+  return documentOriginals.get(documentOriginalKey(messageId, index)) ?? null
+}
+
+// Page images ride along with the request that answers their message and
+// are then dropped: they are neither kept in the thread state nor stored.
+const pendingDocumentPages = new Map<string, string[]>()
+const MAX_PENDING_DOCUMENT_MESSAGES = 3
+
+export function setPendingDocumentPages(
+  messageId: string,
+  pageImages: string[]
+): void {
+  // Entries stay per message, so another send cannot drop the restored pages
+  // of a failed message before its retry. Only the newest few are kept, so
+  // pages of discarded messages cannot pile up for the rest of the session.
+  pendingDocumentPages.delete(messageId)
+  if (pageImages.length === 0) return
+  pendingDocumentPages.set(messageId, pageImages)
+  for (const oldestId of pendingDocumentPages.keys()) {
+    if (pendingDocumentPages.size <= MAX_PENDING_DOCUMENT_MESSAGES) break
+    pendingDocumentPages.delete(oldestId)
+  }
+}
+
+export function takePendingDocumentPages(messageId?: string | null): string[] {
+  if (!messageId) return []
+  const pageImages = pendingDocumentPages.get(messageId) ?? []
+  pendingDocumentPages.delete(messageId)
+  return pageImages
 }
 
 // Kept documents of an edited message are removed by key, like its images.
@@ -223,6 +361,40 @@ export function getEditedMessageSource<T extends EditableMessage>({
   return messages.find((message) => message.id === editedMessageId)
 }
 
+/**
+ * The visual summary of a message's PDF pages is stored as a ChatAttachment
+ * row without any image data, next to the message's image rows. Only rows
+ * with image data are images; the summary row is model context and never
+ * shown as an attachment.
+ */
+export const IMAGE_ROW_FILTER = { imageBase64: { not: null } } as const
+export const DOCUMENT_PAGE_SUMMARY_ROW_FILTER = {
+  imageBase64: null,
+  imagePreviewBase64: null,
+} as const
+
+// About 1.5 MB of JPEG per page; a 1,600 px page is usually far smaller.
+export const MAX_DOCUMENT_PAGE_DATA_URL_LENGTH = 2_000_000
+
+export function buildDocumentPageSummaryRow({
+  messageId,
+  position,
+  summary,
+}: {
+  messageId: string
+  position: number
+  summary: string
+}) {
+  return {
+    type: 'IMAGE' as const,
+    messageId,
+    position,
+    imageBase64: null,
+    imagePreviewBase64: null,
+    imageDescription: summary,
+  }
+}
+
 export function buildHistoryAttachmentDto(attachment: HistoryAttachmentInput): {
   id: string
   type: 'image'
@@ -239,4 +411,18 @@ export function buildHistoryAttachmentDto(attachment: HistoryAttachmentInput): {
     imageDescription: attachment.imageDescription ?? null,
     hasFullImage: attachment.imageBase64 != null,
   }
+}
+
+/**
+ * Appends a text note to a model message's content. A regenerated message
+ * that re-sends its images already carries text and image parts, so the note
+ * joins them as one more part instead of turning the parts into a string.
+ */
+export function appendTextToModelContent<Part>(
+  content: string | Part[],
+  text: string
+): string | (Part | { type: 'text'; text: string })[] {
+  return typeof content === 'string'
+    ? `${content}\n\n${text}`
+    : [...content, { type: 'text' as const, text }]
 }

@@ -33,6 +33,7 @@ type PromptContext = {
     direct: boolean
   }
   'image-description': { userContent: string }
+  'document-pages-summary': { userContent: string; pageCount: number }
 }
 
 const templates = new Map<keyof PromptContext, Handlebars.TemplateDelegate>()

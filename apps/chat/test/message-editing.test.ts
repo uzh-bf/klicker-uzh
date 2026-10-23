@@ -33,11 +33,13 @@ vi.mock('../src/lib/utils/chatUtils', () => ({
 }))
 
 vi.mock('../src/stores/settingsStore', () => ({
+  selectModelReadsDocumentPages: () => false,
   useSettingsStore: (selector?: (state: any) => unknown) => {
     const state = {
       selectedMode: 'chat',
       selectedModel: 'gpt-test',
       selectedReasoningEffort: 'medium',
+      modelOptions: [],
     }
     return selector ? selector(state) : state
   },
