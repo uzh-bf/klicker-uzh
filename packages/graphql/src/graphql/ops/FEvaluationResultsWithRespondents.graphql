@@ -1,0 +1,12 @@
+fragment EvaluationResultsWithRespondents on ActivityEvaluation {
+  ...EvaluationResults
+  results {
+    instances {
+      ... on FreeTextActivityEvaluationData {
+        results {
+          respondents
+        }
+      }
+    }
+  }
+}
