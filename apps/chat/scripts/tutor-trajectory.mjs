@@ -27,6 +27,11 @@ export const EXPECTED_DOC_QUERY_TOOL = 'KB_doc_query'
 export const TRAJECTORY_GROUPS = ['development', 'reserved', 'control']
 export const TRAJECTORY_LANGUAGES = ['en', 'de']
 export const TRAJECTORY_MODES = ['tutor', 'explainer', 'quizzer']
+// A role-play case names a chatbot-configured custom mode instead of a
+// built-in one. The server still validates that the mode exists. Role-play
+// personas answer from their prompt, so no retrieval call is required, and
+// every assessment turn carries its own expected outcome.
+export const TRAJECTORY_ROLEPLAY_KIND = 'roleplay'
 
 // Bumped when the sanitized turn receipt shape changes.
 const TRAJECTORY_RECEIPT_VERSION = 2
@@ -35,12 +40,15 @@ const SOURCE_MAPPING_VERSION = 1
 
 const TRAJECTORY_CASE_FIELDS = new Set([
   'id',
+  'kind',
   'group',
   'language',
   'mode',
   'support',
   'rubric',
   'assessmentTurns',
+  'turnOutcomes',
+  'context',
   'turns',
 ])
 const TRAJECTORY_TURN_FIELDS = new Set(['message', 'repeatPrevious', 'suffix'])
@@ -92,13 +100,21 @@ export function validateTrajectoryCase(value) {
     }
   }
   const id = requireTrajectoryText(value.id, 'trajectory_case_id_invalid')
+  if (value.kind !== undefined && value.kind !== TRAJECTORY_ROLEPLAY_KIND) {
+    throw evaluationError('trajectory_case_kind_invalid')
+  }
+  const roleplay = value.kind === TRAJECTORY_ROLEPLAY_KIND
   if (!TRAJECTORY_GROUPS.includes(value.group)) {
     throw evaluationError('trajectory_case_group_invalid')
   }
   if (!TRAJECTORY_LANGUAGES.includes(value.language)) {
     throw evaluationError('trajectory_case_language_invalid')
   }
-  if (!TRAJECTORY_MODES.includes(value.mode)) {
+  if (
+    roleplay
+      ? typeof value.mode !== 'string' || value.mode.trim().length === 0
+      : !TRAJECTORY_MODES.includes(value.mode)
+  ) {
     throw evaluationError('trajectory_case_mode_invalid')
   }
   const support = requireTrajectoryText(
@@ -136,17 +152,64 @@ export function validateTrajectoryCase(value) {
     assessmentTurns.push(entry)
   }
   assessmentTurns.sort((left, right) => left - right)
+  const turnOutcomes = validateTurnOutcomes(
+    value.turnOutcomes,
+    assessmentTurns,
+    roleplay
+  )
+  let context
+  if (value.context !== undefined) {
+    if (!Array.isArray(value.context)) {
+      throw evaluationError('trajectory_case_context_invalid')
+    }
+    context = value.context.map((entry) =>
+      requireTrajectoryText(entry, 'trajectory_case_context_invalid')
+    )
+  }
 
   return {
     id,
+    ...(roleplay ? { kind: TRAJECTORY_ROLEPLAY_KIND } : {}),
     group: value.group,
     language: value.language,
     mode: value.mode,
     support,
     rubric,
     assessmentTurns,
+    ...(turnOutcomes ? { turnOutcomes } : {}),
+    ...(context ? { context } : {}),
     turns,
   }
+}
+
+// Turn outcomes map each assessment turn number to the behaviour expected at
+// that turn. They are required for role-play cases and must cover exactly the
+// assessment turns, so an evaluator never judges a turn against nothing.
+function validateTurnOutcomes(value, assessmentTurns, required) {
+  if (value === undefined) {
+    if (required) throw evaluationError('trajectory_case_turn_outcomes_invalid')
+    return null
+  }
+  if (!value || typeof value !== 'object' || Array.isArray(value)) {
+    throw evaluationError('trajectory_case_turn_outcomes_invalid')
+  }
+  const expected = assessmentTurns.map(String)
+  const keys = Object.keys(value)
+  if (
+    keys.length !== expected.length ||
+    !expected.every((key) => Object.hasOwn(value, key))
+  ) {
+    throw evaluationError('trajectory_case_turn_outcomes_invalid')
+  }
+  return Object.fromEntries(
+    expected.map((key) => [
+      key,
+      requireTrajectoryText(
+        value[key],
+        'trajectory_case_turn_outcomes_invalid'
+      ),
+    ])
+  )
 }
 
 export function validateTrajectoryCorpus(value) {
@@ -347,8 +410,9 @@ function isCompletedDocQueryPart(part) {
   return true
 }
 
-// Retrieval is required on the first turn. Later turns may acknowledge a
-// pause or discuss earlier work without another retrieval call.
+// Built-in modes require retrieval on the first turn; role-play cases do not.
+// Later turns may acknowledge a pause or discuss earlier work without another
+// retrieval call.
 function extractTrajectoryTurn(message, requireRetrieval) {
   if (!message || message.role !== 'assistant') {
     throw evaluationError('assistant_message_invalid')
@@ -393,7 +457,14 @@ function extractTrajectoryTurn(message, requireRetrieval) {
 // parent link, mode and model must match what was requested, previously
 // verified ancestors must still read the same, and the stream must have
 // carried the expected completed tool output itself.
-function verifyTrajectoryTurn({ messages, chain, mode, modelId, stream }) {
+function verifyTrajectoryTurn({
+  messages,
+  chain,
+  mode,
+  modelId,
+  stream,
+  firstTurnRetrieval = true,
+}) {
   if (messages.length !== chain.length * 2) {
     throw evaluationError('trajectory_ancestry_mismatch')
   }
@@ -452,7 +523,7 @@ function verifyTrajectoryTurn({ messages, chain, mode, modelId, stream }) {
           call.toolName === EXPECTED_DOC_QUERY_TOOL && call.output === true
       )
     : false
-  const requireRetrieval = chain.length === 1
+  const requireRetrieval = firstTurnRetrieval && chain.length === 1
   const hasPersistedTool = persistedAssistant.content?.some(
     (part) =>
       part?.type === 'tool-call' && part.toolName === EXPECTED_DOC_QUERY_TOOL
@@ -573,6 +644,7 @@ export async function runTrajectory(target, definition, options = {}) {
       mode: plan.mode,
       modelId: target.modelId,
       stream,
+      firstTurnRetrieval: plan.kind !== TRAJECTORY_ROLEPLAY_KIND,
     })
 
     const receipt = {
