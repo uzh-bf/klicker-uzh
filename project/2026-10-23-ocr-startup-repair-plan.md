@@ -69,3 +69,7 @@ Both PRs remain draft; this package stops at verified source delivery.
 - Initial public and adopter source suites pass; the released-binary mock
   provider fixture also passes. The adopted engine's intervening executable
   source and copied reviewer skill are unchanged.
+- Planner challenge approved after strengthening full-history workflow guards
+  and confirming ordinary automatic reviews remain within delivery authority.
+  Main retained the small diagnostic edit because dispatch overhead exceeds its
+  implementation; the independent public-source investigation completed.

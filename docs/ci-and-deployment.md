@@ -722,7 +722,9 @@ Its timer is unreferenced and cleared on exit, and all lifecycle events use the
 same filtered descriptor.
 Fatal CLI lines produce at most one fixed `cli_error` event per process with
 `review_failed` or `cli_failed` and an allowlisted classification
-(`budget`, `provider`, `timeout`, or `unknown`). Arbitrary error messages and
+(`budget`, `provider`, `timeout`, `git_diff`, `merge_base`, or `unknown`). Git
+input failures match the pinned CLI's fixed root prefixes; paths, revisions and
+Git error details stay private. Arbitrary error messages and
 continuation lines remain private. On nonzero CLI exit, the manual attempt
 functions also call `diagnose-ocr-failure` to emit content-free coverage counts
 and failure classes from any result JSON. Missing or malformed output produces
