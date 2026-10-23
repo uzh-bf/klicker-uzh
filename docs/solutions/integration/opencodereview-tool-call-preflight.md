@@ -37,6 +37,16 @@ still rejects duplicate layer numbers before publication. The topology call
 allows up to 65,536 completion tokens and ten minutes for maximum reasoning;
 length-truncated answers fail closed.
 
+Topology source evidence is assembled after the review job fetches the frozen
+commit range. Reading it while creating the earlier metadata snapshot would
+require additional fetches in a shallow checkout and put source into an artifact.
+The root layer uses the merge base rather than an advanced PR base; otherwise
+unrelated upstream changes appear as reversals. Local Git boundary tests cover
+that divergence and reject unavailable or oversized evidence before dispatch.
+The schema describes the confidence prefix using its existing vocabulary;
+the shared finding validator enforces it before publication. This keeps provider
+grammar compatibility separate from local acceptance checks.
+
 The upstream `MISTRAL_API_KEY` exists only in the adapter or direct request
 process. OCR receives a random loopback capability, and its mode-0600 config
 uses `auth_token_cmd` to read that capability from the environment. The attempt
