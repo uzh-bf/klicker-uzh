@@ -12,7 +12,7 @@ import dayjs from 'dayjs'
 import localforage from 'localforage'
 import { useTranslations } from 'next-intl'
 import dynamic from 'next/dynamic'
-import React, { useEffect, useRef, useState } from 'react'
+import React, { useEffect, useLayoutEffect, useRef, useState } from 'react'
 import { isDeepEqual } from 'remeda'
 import useRemainingInstances from '../hooks/useRemainingInstances'
 import { getEffectiveResponseLimit } from './responseLimit'
@@ -76,8 +76,11 @@ function QuestionArea({
   const [activeInstance, setActiveInstance] = useState<number>(0)
   const currentInstance = instances[activeInstance]
   const activeInstanceIdRef = useRef(currentInstance?.id)
-  activeInstanceIdRef.current = currentInstance?.id
   const pendingResponses = useRef(new Map<number, Promise<boolean>>())
+
+  useLayoutEffect(() => {
+    activeInstanceIdRef.current = currentInstance?.id
+  }, [currentInstance?.id])
 
   // free-text elements in standard live quizzes may accept several responses,
   // which stay open after the first one until the limit or the block end
