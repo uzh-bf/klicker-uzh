@@ -87,6 +87,7 @@ test.describe('Test functionalities of frontend-control application', () => {
     loginLecturerControl,
   }) => {
     await loginLecturerControl()
+    const controlOrigin = new URL(page.url()).origin
 
     // PPT link and start quiz
     await page.getByTestId('unassigned-live-quizzes').click()
@@ -140,7 +141,7 @@ test.describe('Test functionalities of frontend-control application', () => {
       await route.continue()
     })
 
-    await page.goto('/')
+    await page.goto(`${controlOrigin}/`)
     await page.getByTestId(`stop-running-quiz-${CONTROL_DATA.quizName}`).click()
     const confirmStop = page.getByTestId('confirm-stop-running-quiz')
     await expect(confirmStop).toBeEnabled()
@@ -210,7 +211,10 @@ test.describe('Test functionalities of frontend-control application', () => {
       })
     })
 
-    await Promise.all([page.goto(sessionPath), secondPage.goto(sessionPath)])
+    await Promise.all([
+      page.goto(`${controlOrigin}${sessionPath}`),
+      secondPage.goto(`${controlOrigin}${sessionPath}`),
+    ])
     await expect.poll(() => feedbackPages.size).toBe(2)
     expect(feedbackRequests).toBeGreaterThanOrEqual(2)
     for (const controlPage of [page, secondPage]) {
