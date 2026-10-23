@@ -5124,7 +5124,7 @@ test.describe.serial('Core live-quiz workflows', () => {
     await page.getByTestId('activities').click()
     await page.getByTestId(`actions-LIVE_QUIZ-${quiz.name}`).click()
     await page.getByTestId(`delete-live-quiz-${quiz.name}`).click()
-    await confirmResponseDeletionIfAvailable(page)
+    await page.getByTestId('confirm-deletion-responses').click()
     await clickIfVisible(page, 'confirm-deletion-qa-feedbacks')
     await clickIfVisible(page, 'confirm-deletion-confusion-feedbacks')
     await page.getByTestId(`confirmation-modal-confirm`).click()
