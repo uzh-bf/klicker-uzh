@@ -4805,6 +4805,166 @@ test.describe.serial('Core live-quiz workflows', () => {
     await expect(input).toBeDisabled()
   })
 
+  test('Keep a timed response-limit question open and autosubmit the next draft at expiry', async ({
+    page: testPage,
+  }, testInfo) => {
+    page = testPage
+    aliases.clear()
+    testInfo.setTimeout(600_000)
+    page.setDefaultNavigationTimeout(300_000)
+
+    const suffix = Date.now()
+    const quizName = `Synthetic timed response limit ${suffix}`
+    const displayName = `Synthetic timed response limit ${suffix}`
+    const contentName = `Timed response limit follow-up ${suffix}`
+    const firstDraft = `First timed draft ${suffix}`
+    const nextDraft = `Next timed draft ${suffix}`
+    const timeLimitSeconds = 120
+    let addResponseRequests = 0
+
+    await loginLecturer(page)
+    await createContent(page, {
+      name: contentName,
+      content: `Synthetic timed response-limit follow-up ${suffix}`,
+      userId: env('LECTURER_ID'),
+    })
+
+    await createLiveQuiz(page, {
+      name: quizName,
+      displayName,
+      courseName: data.liveQuizResponseLimit.course,
+      blocks: [
+        { elements: [data.liveQuizResponseLimit.question.title, contentName] },
+      ],
+    })
+
+    await openActivitiesListForQuiz(page, quizName)
+    await page.getByTestId(`actions-LIVE_QUIZ-${quizName}`).click()
+    await page.getByTestId(`edit-live-quiz-${quizName}`).click()
+    await page.getByTestId('next-or-submit').click()
+    await expect(page.getByTestId('insert-live-display-name')).toBeVisible()
+    await page.getByTestId('next-or-submit').click()
+    await expect(page.getByTestId('select-course')).toBeVisible()
+    await page.getByTestId('next-or-submit').click()
+    await expect(page.getByTestId('open-block-0-countdown')).toBeVisible()
+    await page.getByTestId('open-block-0-countdown').click()
+    await page.getByTestId('block-time-limit').clear()
+    await typeInto(
+      page.getByTestId('block-time-limit'),
+      String(timeLimitSeconds)
+    )
+    await page.getByTestId('close-block-countdown').click()
+    await page.getByTestId('next-or-submit').click()
+
+    await openActivitiesListForQuiz(page, quizName)
+    await page.getByTestId(`start-live-quiz-${quizName}`).click()
+    await openNextBlockFromCockpit(page)
+
+    await loginStudentWithStoredPwaState(page)
+    const frozenTime = await page.evaluate(() => Date.now())
+    await page.clock.install({ time: frozenTime })
+    await page.getByTestId(`live-quiz-${displayName}`).click()
+
+    const input = page.getByTestId('free-text-input-0')
+    const ownResponses = page.getByTestId('free-text-own-responses')
+    const submit = page.getByTestId('student-submit-answer')
+    const countdown = (activityPage: Page) =>
+      activityPage
+        .getByTestId('lq-nav-prev')
+        .locator('xpath=preceding-sibling::div[1]')
+
+    await expect(input).toBeVisible()
+    await page.clock.pauseAt(await page.evaluate(() => Date.now()))
+
+    page.on('request', (request) => {
+      if (
+        request.method() === 'POST' &&
+        new URL(request.url()).pathname === '/AddResponse'
+      ) {
+        addResponseRequests += 1
+      }
+    })
+
+    await expect(input).toBeEnabled()
+    await expect(countdown(page)).toHaveCount(1)
+    await typeInto(input, firstDraft)
+    await expect(submit).toBeEnabled()
+    await submit.click()
+    await expect(ownResponses.getByRole('listitem')).toHaveCount(1)
+    await expect.poll(() => addResponseRequests).toBe(1)
+
+    // A response below the cap keeps the question and its countdown open.
+    await expect(input).toBeEnabled()
+    await expect(countdown(page)).toHaveCount(1)
+
+    await page.getByTestId('lq-nav-next').click()
+    await expect(page.getByTestId('content-element-1')).toBeVisible()
+    const contentResponse = page.waitForResponse(
+      (response) =>
+        response.request().method() === 'POST' &&
+        new URL(response.url()).pathname === '/AddResponse'
+    )
+    await page.getByTestId('student-submit-answer').click()
+    expect((await contentResponse).status()).toBe(200)
+    await expect.poll(() => addResponseRequests).toBe(2)
+    await expect(page.getByTestId('student-continue')).toBeVisible()
+
+    // Completing the follow-up leaves the capped question reopenable while
+    // the block is still active, including after navigating back to it.
+    await page.getByTestId('lq-nav-prev').click()
+    await expect(input).toBeEnabled()
+    await expect(ownResponses.getByRole('listitem')).toHaveCount(1)
+    await expect(countdown(page)).toHaveCount(1)
+    await typeInto(input, nextDraft)
+    await expect(submit).toBeEnabled()
+    expect(addResponseRequests).toBe(2)
+
+    const autosubmitRequest = page.waitForRequest(
+      (request) =>
+        request.method() === 'POST' &&
+        new URL(request.url()).pathname === '/AddResponse'
+    )
+    const autosubmitResponse = page.waitForResponse(
+      (response) =>
+        response.request().method() === 'POST' &&
+        new URL(response.url()).pathname === '/AddResponse'
+    )
+    await page.clock.fastForward((timeLimitSeconds + 1) * 1000)
+
+    const request = await autosubmitRequest
+    const response = await autosubmitResponse
+    expect(response.status()).toBe(200)
+    expect(await request.postDataJSON()).toMatchObject({
+      response: { value: nextDraft },
+      isFirstResponse: false,
+    })
+    await expect.poll(() => addResponseRequests).toBe(3)
+    await page.clock.resume()
+
+    await expect(page.getByTestId('content-element-1')).toBeVisible()
+    await expect(countdown(page)).toHaveCount(0)
+    await page.getByTestId('lq-nav-prev').click()
+    await expect(input).toBeDisabled()
+
+    await loginLecturer(page)
+    await page.getByTestId('activities').click()
+    await page.getByTestId(`live-quiz-cockpit-${quizName}`).click()
+    const nextBlock = page.getByTestId('next-block-timeline')
+    await expect(nextBlock).toBeEnabled({ timeout: 30000 })
+    await nextBlock.click()
+    await expect(nextBlock).toBeEnabled({ timeout: 30000 })
+    await nextBlock.click()
+    await expect(
+      page.getByTestId(`activity-LIVE_QUIZ-${quizName}`)
+    ).toBeVisible({ timeout: 30000 })
+    await page.getByTestId(`actions-LIVE_QUIZ-${quizName}`).click()
+    await page.getByTestId(`delete-live-quiz-${quizName}`).click()
+    await confirmResponseDeletionIfAvailable(page)
+    await clickIfVisible(page, 'confirm-deletion-qa-feedbacks')
+    await clickIfVisible(page, 'confirm-deletion-confusion-feedbacks')
+    await page.getByTestId('confirmation-modal-confirm').click()
+  })
+
   test('Show responses and respondents in the evaluation and end the live quiz', async ({
     page: testPage,
   }, testInfo) => {

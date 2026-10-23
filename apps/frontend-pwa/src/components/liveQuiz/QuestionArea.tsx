@@ -83,7 +83,11 @@ function QuestionArea({
     isAssessmentEnabled,
   })
   const [submittedResponses, setSubmittedResponses] = useState<string[]>([])
+  const [expiredAt, setExpiredAt] = useState<number | null>(null)
+  const expiresAtTimestamp = expiresAt ? new Date(expiresAt).getTime() : null
+  const hasExpired = expiredAt !== null && expiredAt === expiresAtTimestamp
   const isOpenForMoreResponses =
+    !hasExpired &&
     responseLimit > 1 &&
     submittedResponses.length > 0 &&
     submittedResponses.length < responseLimit
@@ -187,6 +191,13 @@ function QuestionArea({
   })
 
   const onSubmit = async (): Promise<void> => {
+    if (
+      hasExpired ||
+      (expiresAtTimestamp !== null && Date.now() >= expiresAtTimestamp)
+    ) {
+      return
+    }
+
     // lock the submission button temporarily to avoid double submissions
     setSubmitting(true)
 
@@ -236,6 +247,8 @@ function QuestionArea({
   }
 
   const onExpire = async (): Promise<void> => {
+    setExpiredAt(expiresAtTimestamp)
+
     const {
       id: instanceId,
       elementType,
@@ -243,7 +256,11 @@ function QuestionArea({
     } = instances[activeInstance]
 
     // save the response, if one was given before the time expired
-    if (studentResponse.valid) {
+    if (
+      studentResponse.valid &&
+      ((remainingQuestions ?? []).includes(activeInstance) ||
+        isOpenForMoreResponses)
+    ) {
       answerQuestion({
         instanceId,
         type: elementType,
@@ -631,11 +648,23 @@ function QuestionArea({
               : instances.length - 1
           }
           isCurrentUnanswered={
-            remainingQuestions.includes(activeInstance) ||
-            (isBlockActive && isOpenForMoreResponses)
+            !hasExpired &&
+            (remainingQuestions.includes(activeInstance) ||
+              (isBlockActive && isOpenForMoreResponses))
           }
           isContent={currentInstance.elementType === ElementType.Content}
-          isBlockOver={remainingQuestions.length === 0}
+          isBlockOver={
+            !isBlockActive ||
+            hasExpired ||
+            (remainingQuestions.length === 0 &&
+              !instances.some(
+                (instance) =>
+                  getEffectiveResponseLimit({
+                    instance,
+                    isAssessmentEnabled,
+                  }) > 1
+              ))
+          }
           canSubmit={!!studentResponse.valid && !submitting}
           onPrev={() => setActiveInstance((prev) => Math.max(0, prev - 1))}
           onNext={() =>
@@ -659,6 +688,7 @@ function QuestionArea({
           hideReadButton
           disabledInput={
             !isBlockActive ||
+            hasExpired ||
             !(
               remainingQuestions.includes(activeInstance) ||
               isOpenForMoreResponses
