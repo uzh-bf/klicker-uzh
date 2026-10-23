@@ -19,6 +19,9 @@ data:
   HATCHET_WORKER_DURABLE_SLOTS: {{ .Values.hatchet.workers.general.durableSlots | quote }}
   HATCHET_WORKER_HEALTH_PORT: {{ .Values.hatchet.workers.general.healthPort | quote }}
   HATCHET_WORKER_STARTUP_TIMEOUT_MS: {{ .Values.hatchet.workers.general.startupTimeoutMs | quote }}
+  {{- with include "chart.adaptiveEngineUrl" . }}
+  ADAPTIVE_ENGINE_URL: {{ . | quote }}
+  {{- end }}
   {{- if .Values.hatchet.kbIngestion }}
   {{- if .Values.hatchet.kbIngestion.workerDisabled }}
   KB_INGESTION_WORKER_DISABLED: {{ .Values.hatchet.kbIngestion.workerDisabled | quote }}
@@ -57,6 +60,9 @@ data:
   KB_FALKORDB_QUERY_TIMEOUT_MS: {{ .Values.backendGraphql.knowledgeGraph.queryTimeoutMs | quote }}
   {{- end }}
   BLOB_STORAGE_ACCOUNT_NAME: {{ .Values.blobStorage.accountName | quote }}
+  {{- if .Values.assessmentAudit.enabled }}
+  {{- include "chart.assessmentAuditRolloutEnv" . | nindent 2 }}
+  {{- end }}
 ---
 apiVersion: v1
 kind: ConfigMap

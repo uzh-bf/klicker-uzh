@@ -2,6 +2,7 @@
 
 import type { PrismaMigrationClient } from '@klicker-uzh/graphql/src/types/app.js'
 import type { PrismaClient } from '@klicker-uzh/prisma/client'
+import { logger } from './logger.js'
 
 export interface Migration {
   id: string
@@ -117,7 +118,10 @@ async function runIdempotentMigration(
   const existing = await prisma.migration.findFirst({ where: { id } })
   if (existing !== null) return 'skipped'
 
-  console.log(`Migrating ${id} (idempotent mode without transaction)`)
+  logger.info(
+    { event: 'migration.started', migrationId: id, transactional: false },
+    'Database migration started'
+  )
 
   await runMigration(prisma)
   try {
@@ -146,7 +150,10 @@ async function runTransactionalMigration(
       const existing = await tx.migration.findFirst({ where: { id } })
       if (existing !== null) return 'skipped'
 
-      console.log(`Migrating ${id} (with transaction)`)
+      logger.info(
+        { event: 'migration.started', migrationId: id, transactional: true },
+        'Database migration started'
+      )
       await runMigration(tx)
       await tx.migration.create({ data: { id } })
 
@@ -175,9 +182,9 @@ async function runWithRetry(
     }
 
     const delay = retryBaseDelayMs * 2 ** (attempt - 1)
-    console.warn(
-      `Migration ${id} attempt ${attempt}/${MIGRATION_RETRY_ATTEMPTS} failed (transient), retrying in ${delay}ms: `,
-      error
+    logger.warn(
+      { event: 'migration.retry', migrationId: id, attempt, delayMs: delay },
+      'Transient database failure; retrying migration'
     )
     await sleep(delay)
 
@@ -203,9 +210,15 @@ export async function migrate(
     )
 
     if (outcome === 'applied') {
-      console.log(`Migrated ${migration.id}`)
+      logger.info(
+        { event: 'migration.completed', migrationId: migration.id },
+        'Database migration completed'
+      )
     } else {
-      console.log(`Migration ${migration.id} already applied, skipping`)
+      logger.info(
+        { event: 'migration.skipped', migrationId: migration.id },
+        'Database migration already applied'
+      )
     }
   }
 }
