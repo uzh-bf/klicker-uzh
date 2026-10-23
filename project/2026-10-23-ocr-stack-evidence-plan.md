@@ -115,7 +115,9 @@ remains separate. No extra paid review is needed for local acceptance.
   Biome, Prettier, diff checks, staged Gitleaks and focused Opengrep passed.
 - Simplifier: accepted removal of an unused fixture option; no behavior change.
   Risk review passed with no findings and 135 independently rerun tests.
-  Integrated final review is pending. Substantive change size at
+  Integrated final review passed with no findings through the configured
+  continuity route; the schema-validated verbatim response is retained privately.
+  Later delivery-record edits are documentation only; source evidence is reused. Substantive change size at
   the implementation commit: 605 added/deleted code/schema/test lines; one
   coherent stack evidence contract, mostly synthetic Git boundary tests.
 - Delivery: [draft PR #6684](https://github.com/uzh-bf/klicker-uzh/pull/6684).
