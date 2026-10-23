@@ -149,3 +149,26 @@ export const FileUploadSAS = FileUploadSASRef.implement({
     fileName: t.exposeString('fileName'),
   }),
 })
+
+const MediaUploadHeader = builder
+  .objectRef<{ name: string; value: string }>('MediaUploadHeader')
+  .implement({
+    fields: (t) => ({
+      name: t.exposeString('name'),
+      value: t.exposeString('value'),
+    }),
+  })
+export const MediaFileUpload = builder
+  .objectRef<import('../services/mediaStorage/types.js').SignedMediaUpload>(
+    'MediaFileUpload'
+  )
+  .implement({
+    fields: (t) => ({
+      uploadUrl: t.exposeString('uploadUrl'),
+      uploadHref: t.exposeString('uploadHref'),
+      uploadHeaders: t.field({
+        type: [MediaUploadHeader],
+        resolve: (upload) => upload.uploadHeaders,
+      }),
+    }),
+  })

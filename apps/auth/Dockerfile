@@ -35,6 +35,9 @@ COPY --from=builder /app/out/pnpm* .
 RUN pnpm i --ignore-scripts
 
 ARG NODE_ENV="production"
+# Public image allow-list inputs only; storage credentials stay on the backend.
+ARG MEDIA_STORAGE_PROVIDER=azure
+ARG MEDIA_STORAGE_PUBLIC_URL
 ARG NEXTAUTH_URL
 ARG EDUID_CLIENT_ID
 ARG EDUID_WELL_KNOWN

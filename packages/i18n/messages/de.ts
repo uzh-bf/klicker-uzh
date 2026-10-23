@@ -3576,6 +3576,8 @@ Da die KlickerUZH-App noch nicht im iOS-App-Store verfügbar ist, folgen Sie die
       cancelEditing: 'Bearbeiten abbrechen',
       mediaLibrary: 'Medienbibliothek',
       uploadImageHeader: 'Medien hinzufügen',
+      uploadImageError:
+        'Das Bild konnte nicht hochgeladen werden. Bitte versuchen Sie es erneut.',
       uploadImageDescription:
         'Ziehen Sie ein Bild auf diese Fläche oder klicken Sie darauf, um den Explorer zu öffnen.',
       updateInstances:

@@ -40,7 +40,7 @@ jobs:
         id: check
         uses: ./.github/actions/changed-paths
         with:
-          pattern: '^(apps/auth/|apps/frontend-pwa/|apps/chat/|packages/feature-flags/|packages/grading/|packages/graphql/|packages/i18n/|packages/knowledge-graph/|packages/markdown/|packages/next-config/|packages/prisma/|packages/shared-components/|packages/types/|packages/util/|\.devcontainer/disposable-test-init\.sql$|\.github/scripts/provision-disposable-postgres\.sh$|package\.json$|pnpm-lock\.yaml$|pnpm-workspace\.yaml$|turbo\.json$|tsconfig\.json$|\.github/workflows/test-unit\.yml$|\.github/scripts/ci-equivalent-run\.cjs$|\.github/actions/setup-node-pnpm/|\.github/actions/changed-paths/|\.github/scripts/required-ci-status\.cjs$)'
+          pattern: '^(apps/auth/|apps/frontend-manage/|apps/frontend-pwa/|apps/chat/|packages/feature-flags/|packages/grading/|packages/graphql/|packages/i18n/|packages/knowledge-graph/|packages/markdown/|packages/next-config/|packages/prisma/|packages/shared-components/|packages/types/|packages/util/|\.devcontainer/disposable-test-init\.sql$|\.github/scripts/provision-disposable-postgres\.sh$|package\.json$|pnpm-lock\.yaml$|pnpm-workspace\.yaml$|turbo\.json$|tsconfig\.json$|\.github/workflows/test-unit\.yml$|\.github/scripts/ci-equivalent-run\.cjs$|\.github/actions/setup-node-pnpm/|\.github/actions/changed-paths/|\.github/scripts/required-ci-status\.cjs$)'
           prior-check-name: test-unit-status
 
   test-unit:
@@ -111,6 +111,9 @@ jobs:
       - name: Install dependencies
         run: pnpm install --frozen-lockfile
 
+      - name: Test public media storage adapters and browser transport
+        run: pnpm --filter @klicker-uzh/graphql test:media-storage
+
       - name: Test Prisma disposable guard
         run: pnpm --filter @klicker-uzh/prisma test:disposable
 
@@ -118,6 +121,9 @@ jobs:
         id: build
         shell: bash
         run: pnpm exec turbo run build --filter=@klicker-uzh/prisma --filter=@klicker-uzh/types --filter=@klicker-uzh/grading --filter=@klicker-uzh/util --filter=@klicker-uzh/graphql --filter=@klicker-uzh/markdown --filter=@klicker-uzh/feature-flags --concurrency=4
+
+      - name: Test public media GraphQL authorization and persistence
+        run: pnpm --filter @klicker-uzh/graphql test:media-upload-api
 
       - name: Provision disposable PostgreSQL
         id: provision_db

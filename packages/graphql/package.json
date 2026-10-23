@@ -8,6 +8,8 @@
     "dist"
   ],
   "dependencies": {
+    "@aws-sdk/client-s3": "3.1143.0",
+    "@aws-sdk/s3-request-presigner": "3.1143.0",
     "@azure/service-bus": "7.9.5",
     "@azure/storage-blob": "12.25.0",
     "@graphql-yoga/redis-event-target": "1.0.0",
@@ -116,6 +118,8 @@
     "script:stg": "NODE_ENV=stg ../../util/_run_with_infisical.sh --env stg tsx",
     "test": "vitest run",
     "test:local": "bash ./test/run-tests-local.sh",
+    "test:media-storage": "vitest run --config vitest.media-storage.config.ts && node --test ../../apps/frontend-manage/test/media-upload.test.mjs ../../packages/next-config/test/media-storage.test.mjs",
+    "test:media-upload-api": "vitest run --config vitest.media-upload-api.config.ts",
     "test:watch": "vitest"
   },
   "engines": {

@@ -59,6 +59,18 @@ email:
 eduId:
   clientSecret: ''
 
+# Core public media only. Private KB/generation storage still uses Azure.
+mediaStorage:
+  provider: azure
+  publicUrl: '' # Also supply MEDIA_STORAGE_PUBLIC_URL when building frontend images.
+  s3:
+    bucket: ''
+    region: ''
+    endpoint: ''
+    forcePathStyle: false
+  # AWS credentials belong in the existing backend-graphql Secret or workload
+  # identity, never values files or frontend environment variables.
+
 blobStorage:
   accountName: ''
   accessKey: ''
