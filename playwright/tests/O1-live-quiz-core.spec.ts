@@ -4744,6 +4744,7 @@ test.describe.serial('Core live-quiz workflows', () => {
     await expect(page.getByTestId('set-free-text-response-limit')).toHaveValue(
       quiz.responseLimit
     )
+    await page.getByTestId('close-element-modal-button').click()
 
     await createLiveQuiz(page, {
       name: quiz.name,
