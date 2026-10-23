@@ -14,6 +14,18 @@ minimumReleaseAge: 20160
 minimumReleaseAgeStrict: true
 minimumReleaseAgeIgnoreMissingTime: false
 minimumReleaseAgeExclude:
+  # Reviewed Next.js 15 security fixes, including the matching env and SWC
+  # packages. Keep the 14-day policy for other releases.
+  - 'next@15.5.28'
+  - '@next/env@15.5.28'
+  - '@next/swc-darwin-arm64@15.5.28'
+  - '@next/swc-darwin-x64@15.5.28'
+  - '@next/swc-linux-arm64-gnu@15.5.28'
+  - '@next/swc-linux-arm64-musl@15.5.28'
+  - '@next/swc-linux-x64-gnu@15.5.28'
+  - '@next/swc-linux-x64-musl@15.5.28'
+  - '@next/swc-win32-arm64-msvc@15.5.28'
+  - '@next/swc-win32-x64-msvc@15.5.28'
   # Reviewed security fix for CVE-2026-93749 (indexed source map DoS): bounds
   # section offsets plus a CSP-safe sort fallback, same sole maintainer, no
   # install scripts. Drop once it ages past the 14-day window.
@@ -106,10 +118,10 @@ overrides:
   # azure identity, msal-node and adal-node ask for axios ^0.21.1, an island
   # below the patched 0.32.0 line.
   'axios@<=0.31.1': 0.32.0
-  # react-email 3.0.7 pins glob 10.3.4 and next 15.1.2; next 15.5.24 in turn
+  # react-email 3.0.7 pins glob 10.3.4 and next 15.1.2; next 15.5.28 in turn
   # pins postcss 8.4.31, and styled-components 6.1.19 pins postcss 8.4.49.
   'glob@>=10.2.0 <10.5.0': 10.5.0
-  'next@>=15.0.0 <15.5.24': 15.5.24
+  'next@>=15.0.0 <15.5.28': 15.5.28
   # brace-expansion carries a HIGH advisory below each line's patched release
   # in the backend and migrator images.
   'brace-expansion@>=1.0.0 <1.1.20': 1.1.20
@@ -137,10 +149,10 @@ overrides:
   # gave packages/shared-components and the frontends different translation
   # contexts. Consolidate the patch line so every importer resolves one copy.
   '@babel/core@>=7.28.0 <7.29.0': 7.28.6
-  # The mergeDeep prototype pollution advisory GHSA-7mx3-vvmw-hjmv is fixed
-  # only in 12.0.1. Older utility major lines are still requested by Yoga,
+  # The mergeDeep and mergeIncrementalResult prototype pollution advisories
+  # are fixed in 12.0.2. Older utility major lines are still requested by Yoga,
   # the executors, envelop and the codegen loaders.
-  '@graphql-tools/utils@<12.0.1': 12.0.1
+  '@graphql-tools/utils@<12.0.2': 12.0.2
   # sharp 0.35.5 fixes GHSA-wq5f-xc86-pv6w. Next.js keeps resolving the
   # vulnerable release through a range that already allows the fix, so lift
   # that line here.
