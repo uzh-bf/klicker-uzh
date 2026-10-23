@@ -128,6 +128,9 @@ jobs:
       - name: Test Git identity guard
         run: node --test ./util/check-git-identity.test.mjs
 
+      - name: Test read-only hygiene inventory
+        run: node --test ./util/test-hygiene-inventory.test.mjs
+
       - name: Set up uv
         uses: astral-sh/setup-uv@v5
         with:
