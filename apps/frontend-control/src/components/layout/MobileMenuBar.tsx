@@ -3,11 +3,7 @@ import { useTranslations } from 'next-intl'
 import { useRouter } from 'next/router'
 import MenuButton from './MenuButton'
 
-interface MobileMenuBarProps {
-  quizId?: string
-}
-
-function MobileMenuBar({ quizId: _quizId }: MobileMenuBarProps) {
+function MobileMenuBar() {
   const t = useTranslations()
   const router = useRouter()
 

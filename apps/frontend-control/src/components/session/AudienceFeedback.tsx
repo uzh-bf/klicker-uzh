@@ -115,9 +115,7 @@ function AudienceFeedback({
   const [sheetOpen, setSheetOpen] = useState(false)
   const [updatingConfusionFeedback, setUpdatingConfusionFeedback] =
     useState(false)
-  const [changeSettings, { loading: changingSettings }] = useMutation(
-    ChangeLiveQuizSettingsDocument
-  )
+  const [changeSettings] = useMutation(ChangeLiveQuizSettingsDocument)
 
   const rawCount = data?.confusionSummary?.numberOfParticipants
   const responseCount =
@@ -384,7 +382,7 @@ function AudienceFeedback({
           <div className="border-ctrl-border border-t pt-4">
             <Switch
               checked={data?.isConfusionFeedbackEnabled ?? false}
-              disabled={!data || changingSettings || updatingConfusionFeedback}
+              disabled={!data || updatingConfusionFeedback}
               onCheckedChange={(value) => void updateConfusionFeedback(value)}
               label={t('control.liveQuiz.audienceFeedbackToggle')}
               data={{ cy: 'audience-feedback-toggle' }}
