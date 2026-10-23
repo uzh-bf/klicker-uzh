@@ -495,6 +495,18 @@ test('progress classifies fatal CLI roots with fixed tokens and refuses non-root
       'OCR progress event=cli_error code=review_failed classification=unknown\n',
     ],
     [
+      'Error: review failed: load diffs: get diffs: git diff failed: OCR_PRIVATE_SENTINEL\n',
+      'OCR progress event=cli_error code=review_failed classification=git_diff\n',
+    ],
+    [
+      'Error: review failed: load diffs: get diffs: cannot find merge-base between OCR_PRIVATE_SENTINEL and OCR_PRIVATE_TOKEN\n',
+      'OCR progress event=cli_error code=review_failed classification=merge_base\n',
+    ],
+    [
+      'Error: review failed: OCR_PRIVATE_SENTINEL git diff failed: ::error::OCR_PRIVATE_TOKEN\n',
+      'OCR progress event=cli_error code=review_failed classification=unknown\n',
+    ],
+    [
       'Error: review failed without a marker: OCR_PRIVATE_SENTINEL\n',
       'OCR progress event=cli_error code=cli_failed classification=unknown\n',
     ],
@@ -507,11 +519,15 @@ test('progress classifies fatal CLI roots with fixed tokens and refuses non-root
       'OCR progress event=cli_error code=cli_failed classification=unknown\n',
     ],
     ['[ocr]   Error: review failed (timeout): OCR_PRIVATE_SENTINEL\n', ''],
+    [
+      '  Error: review failed: load diffs: get diffs: git diff failed: OCR_PRIVATE_SENTINEL\n',
+      '',
+    ],
   ]
   for (const [line, expected] of cases) {
     const records = []
     const progress = createProgressFilter((record) => records.push(record))
-    progress.write(line)
+    for (const byte of Buffer.from(line)) progress.write(Buffer.from([byte]))
     progress.end()
     assert.deepEqual(records, expected ? [expected] : [], line)
     assert.doesNotMatch(records.join(''), /SENTINEL|::/)

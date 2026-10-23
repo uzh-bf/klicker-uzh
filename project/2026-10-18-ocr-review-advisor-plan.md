@@ -326,3 +326,10 @@ GLM 5.3 max through Mistral for final review and advisor calls. The
 the shared engine and adopter changes. Existing budgets, accounting formulas
 and retries remain unchanged. The stack evidence and first adopter source
 packages were squash-merged; live tool usefulness remains ordinary-run evidence.
+
+### Git input startup repair — 2026-10-23
+
+The [startup repair plan](2026-10-23-ocr-startup-repair-plan.md) addresses partial
+clones that need authenticated blob fetches after OCR credentials are removed.
+Adopters use complete trusted-policy checkouts; shared logs classify pinned Git
+input errors without exposing raw details. Review policy remains unchanged.
