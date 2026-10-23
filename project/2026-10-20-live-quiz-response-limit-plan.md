@@ -19,9 +19,8 @@ the limit lives in element options JSON. Persisted results keep their meaning.
 
 **What could change the decision?** Anonymous participants are capped only on
 their device, as single responses are today. Server rejections stay invisible to
-students because response-api answers before the worker runs. If the worker
-process dies between admitting a response and writing it, that one response is
-lost; a failed Redis write is undone and retried. The worker edits overlap the
+students because response-api answers before the worker runs. Limited responses commit admission, results and first-response scoring in one
+Redis script; lost replies are retried by message ID without double counting. The worker edits overlap the
 idle open stack #5901 → #5902 → #5918; whichever lands second rebases. No new
 rate limiting.
 
@@ -76,33 +75,22 @@ Domain terms **Response**, **Response limit**, and **Respondent** are recorded i
 - Evaluation and cockpit expose the respondent count where present.
 - response-api forwards an optional boolean `isFirstResponse`; the worker uses it only for anonymous messages.
 
-### Admission algorithm (limit above 1)
+### Atomic response commit (limit above 1)
 
-Placement in `processor.ts`: read `responseLimit` from `:info` before the
-existing `hexists` early return (126-140) and skip that return when the limit is
-above 1. Admission runs only after the block-closed check (170-176),
-`validateStudentResponse` (206-223), and the FREE_TEXT value check and hash
-computation (389-405), so late or invalid responses use up nothing.
+The worker validates the block state and response and calculates the existing
+free-text score before calling one Redis script. The script checks message
+replay, participant/hash duplication, and the per-participant cap. It validates
+key types and integer counters before writing. In one operation it records the
+message and admission, response totals and hashes, and the respondent count.
+Only the first identified response writes the response marker, points, XP, and
+leaderboards. Eligible identified responses initialize the timing-bonus clock.
+An absent anonymous first-response flag retains legacy single-response behavior.
 
-1. One atomic Redis script checks and records, in order: stop if the
-   `messageId` is already processed (retry safety); stop if the identified
-   participant already sent this results hash (duplicate); stop if the
-   participant's count has reached the limit (over cap); otherwise record the
-   `messageId`, the `participantKey:hash` member, and the incremented count, and
-   return whether this was the participant's first response. Anonymous messages
-   record only the `messageId` and take "first" from `isFirstResponse`.
-2. The existing FREE_TEXT branch then queues results, `responseHashes`, and
-   `participants`; on a first response it also queues the respondent counter,
-   the `:responses` marker, points, and leaderboard updates. Later responses
-   queue no points.
-3. If `redisMulti.exec()` fails, or the switch's catch (`processor.ts:655-666`)
-   handles an error after a successful admission, a second script undoes
-   step 1's records; the exec path then rethrows as today, so the Hatchet retry
-   reprocesses the message cleanly. The undo runs only when step 1 admitted the
-   message. A worker crash, or a failed undo, between admission and a successful
-   `exec()` loses that one response.
-
-When the limit is absent or 1, the current code path runs unchanged.
+A lost reply can be retried with the same message ID: a committed response is
+recognized without applying any effect again. Script failures are thrown so
+Hatchet retries. There is no separate admission rollback. Limit 1 retains its
+existing pipeline behavior. This replaces the earlier split admission/undo
+algorithm after review demonstrated partial-write and first-response races.
 
 ### Stack topology
 
@@ -114,7 +102,7 @@ mode: progressive
 layers:
   - id: 01
     name: Response limit admission in the live quiz worker
-    work_package: element option, Redis seeding, atomic admission, respondent counter, block-close persistence
+    work_package: element option, Redis seeding, atomic admission and result commit, respondent counter, block-close persistence
     depends_on: v3
     reviewer: backend / live-quiz pipeline
     attention: judgment-heavy
@@ -169,7 +157,7 @@ follow_up_stacks:
 
 All slices are owned by the main session (solo mode).
 
-1. **Layer 01 — admission.** Files: `packages/types/src/index.ts`, `packages/graphql/src/schema/element.ts`, `schema/elementData.ts`, `lib/validateAndProcessElementOptions.ts` (plus its validator), `services/liveQuizzes.ts` (FREE_TEXT info seeding, standard mode only), new `packages/util/src/liveQuizResponseAdmission.ts` (admit and undo scripts with typed wrappers used by the worker), `packages/util/src/blocks.ts` (read the respondent key, write `respondents`), `apps/response-api/src/index.ts`, `apps/hatchet-worker-response-processor/src/processors/processor.ts`, new `packages/graphql/test/liveQuizResponseAdmission.test.ts`, public SDL snapshot. Acceptance: admission tests pass; builds green.
+1. **Layer 01 — admission.** Files: `packages/types/src/index.ts`, `packages/graphql/src/schema/element.ts`, `schema/elementData.ts`, `lib/validateAndProcessElementOptions.ts` (plus its validator), `services/liveQuizzes.ts` (FREE_TEXT info seeding, standard mode only), new `packages/util/src/liveQuizResponseAdmission.ts` (atomic response commit script with a typed wrapper used by the worker), `packages/util/src/blocks.ts` (read the respondent key, write `respondents`), `apps/response-api/src/index.ts`, `apps/hatchet-worker-response-processor/src/processors/processor.ts`, new `packages/graphql/test/liveQuizResponseAdmission.test.ts`, public SDL snapshot. Acceptance: admission tests pass; builds green.
 2. **Layer 02 — counts.** Files: `packages/graphql/src/schema/evaluation.ts`, `services/stacks.ts` (free-text evaluation), `services/liveQuizzes.ts` (cockpit count: the active block reads raw `:results.participants` at 1023-1043 and must read the respondent key; closed blocks use persisted `respondents`), the free-text evaluation op/fragment, `apps/frontend-manage/src/components/evaluation/EvaluationFooter.tsx`, `components/liveQuiz/cockpit/LiveQuizBlock.tsx`, `packages/i18n/messages/{de,en}.ts`. Acceptance: checks green; screenshots.
 3. **Layer 03 — authoring and student flow.** Files: `apps/frontend-manage/src/components/elements/manipulation/{options/FreeTextOptions.tsx,types.ts,useElementFormInitialValues.ts,useValidationSchema.ts,helpers.ts}`, `packages/graphql/src/graphql/ops/FElementDataWithoutSolutions.graphql` (shared with practice, microlearning, and group-activity ops), `apps/frontend-pwa/src/pages/session/[id].tsx` (passes `isAssessmentEnabled` down and sends `isFirstResponse`), `components/liveQuiz/{LiveQuizQuestionColumn.tsx,QuestionArea.tsx,storageHelpers.ts}`, `components/hooks/useRemainingInstances.ts`, `packages/shared-components/src/questions/FreeTextQuestion.tsx` (takes the effective limit as an explicit prop and never reads `options.responseLimit`, because practice, microlearning, and group activities share it). The effective limit comes from one small helper in `components/liveQuiz/` (new `responseLimit.ts` with its `responseLimit.test.ts`) and is 1 whenever the quiz is in assessment mode, i18n, `playwright/tests/O1-live-quiz-core.spec.ts` and its fixture data. Acceptance: Playwright scenario and screenshot gallery.
 
@@ -177,7 +165,7 @@ All slices are owned by the main session (solo mode).
 
 | Risk | Obligation | Seam | Existing protection | Failure it catches |
 | --- | --- | --- | --- | --- |
-| Admission over-accepts, double-counts, or loses on retry | add new | `liveQuizResponseAdmission` against the CI Redis in `packages/graphql/test` | none | cap exceeded, duplicate counted, retry counted twice, wrong first flag, undo after a failed write not letting the retry apply exactly once |
+| Admission over-accepts, double-counts, or loses on retry | add new | `liveQuizResponseAdmission` against the CI Redis in `packages/graphql/test` | none | cap exceeded, duplicate counted, retry counted twice, wrong first flag, failure before mutation or a lost reply corrupting totals or first-response scoring |
 | Assessment quiz shows the open input | add new | `tsx --test` unit test in `apps/frontend-pwa` for the effective-limit helper (assessment mode, missing option, limit above 1) | none; assessment live quizzes have no Playwright coverage | limit leaks into assessment mode |
 | Limit 1 behaviour regresses | extend existing | Playwright O1 free-text scenario | O1 free-text + word cloud steps | single-response lock or results change |
 | Student trapped or locked early | add new | Playwright O1, limit-3 scenario | none | cannot advance, input disabled before cap, reload loses open state |
@@ -204,9 +192,9 @@ The feature ships as one three-layer draft stack against `v3` (stack #6681). Lat
 
 | Item | Scope | State |
 | --- | --- | --- |
-| Layer 01, [#6678](https://github.com/uzh-bf/klicker-uzh/pull/6678) | Element option, Redis seeding, atomic admission, respondent counter, block-close persistence, worker docs | Implemented; exact-head CI green except the review gates below |
-| Layer 02, [#6679](https://github.com/uzh-bf/klicker-uzh/pull/6679) | Respondent count in the evaluation footer and cockpit | Implemented; real CI runs green; red entries come from cancelled duplicate runs |
-| Layer 03, [#6680](https://github.com/uzh-bf/klicker-uzh/pull/6680) | Editor field, PWA open-question flow, O1 Playwright scenario | Implemented; Playwright fix pushed after the first CI run, rerun pending |
+| Layer 01, [#6678](https://github.com/uzh-bf/klicker-uzh/pull/6678) | Element option, Redis seeding, atomic admission and result commit, respondent counter, block-close persistence, worker docs | Implemented; exact-head CI green except the review gates below |
+| Layer 02, [#6679](https://github.com/uzh-bf/klicker-uzh/pull/6679) | Respondent count in the evaluation footer and cockpit | Implemented; readable count-label branching verified locally; publication and CI pending |
+| Layer 03, [#6680](https://github.com/uzh-bf/klicker-uzh/pull/6680) | Editor field, PWA open-question flow, O1 Playwright scenario | Template and timer review corrections under browser verification; publication and CI pending |
 | Final AI review | `/final-review-stack` on #6680 | Blocked until every layer is open and ready; marking ready is withheld |
 | Readiness, merge, deployment | Human decisions | Withheld |
 | Follow-up: free-text case normalization | Make live and practice paths agree on case before hashing | Not started; separate package |
@@ -215,7 +203,7 @@ The feature ships as one three-layer draft stack against `v3` (stack #6681). Lat
 
 ## Progress
 
-- Status: all three slices implemented and verified; draft stack open (see Roadmap and status). Waiting on the layer 03 Playwright rerun.
+- Status: draft stack open; takeover review corrections are being verified before publication. Existing PR heads remain the recorded handoff heads.
 - Approval: executable batch approved on 2026-10-22. The branch was rebased onto `origin/v3` `4a9305739a` before slice 1 because it had not been pushed; no planned file had changed upstream.
 - Slice 1 (layer 01, admission): done. Admission tests (8) pass against the container Redis; types, util, graphql, response-api, and worker typecheck and build.
 - Slice 2 (layer 02, counts): done. Graphql and manage typecheck. Evaluation footer and cockpit verified in the browser while the block was active and after it closed.
@@ -227,3 +215,7 @@ The feature ships as one three-layer draft stack against `v3` (stack #6681). Lat
 - Substantive size: about 890 added and 28 deleted lines across 36 files, including tests and fixtures.
 - Local runtime: the devrouter runtime for this worktree runs the `full` profile. The local database holds three synthetic demo quizzes from browser checks (`Response Limit Demo`, `Response Limit Demo Course`, `Response Limit Navigation`). Stop the runtime once no further local check is needed.
 - Next action: confirm the layer 03 Playwright rerun is green on the exact head. Rerun the cancelled duplicate checks if a required status still shows red. `/final-review-stack` needs every layer open and ready, so it waits until a maintainer marks the stack ready. Marking ready, merging, and deployment stay withheld.
+
+- Takeover correction (2026-10-23): verified ordinary review findings and replaced split admission/undo with an atomic response commit. Preserved temporary leaderboard field identity and timing-bonus eligibility. Added wrong-type, integer-state, concurrent-cap and replay regression coverage in the existing Redis test file.
+- Frontend correction: template extraction preserves the limit; field errors render inline; a timed block containing repeated-response questions retains its countdown across navigation and closes every input at expiry. A valid open draft is submitted on expiry. Shared cap lives in the runtime-safe types package. A focused template extraction check passed for set, null and absent values.
+- Verification so far: 12 Redis regression tests, worker typecheck/build, GraphQL checks, both frontend typechecks, effective-limit unit tests and PWA ESLint (warnings only) passed in the container. Real-browser timer verification passed: countdown persisted after completing both questions, the next draft submitted on expiry, and returning to the question kept its input disabled. Desktop/mobile captures are retained. CI regression remains pending.

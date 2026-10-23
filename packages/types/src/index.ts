@@ -532,6 +532,8 @@ export type FreeTextRestrictions = {
   maxLength?: number | null
 }
 
+export const MAX_RESPONSE_LIMIT = 10
+
 export interface ElementOptionsFreeText extends BaseElementOptions {
   restrictions?: FreeTextRestrictions | null
   solutions?: string[] | null

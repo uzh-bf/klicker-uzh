@@ -13,12 +13,9 @@ import type {
 } from '@klicker-uzh/types'
 import {
   admitLiveQuizResponse,
-  getResponseAdmissionKeys,
   parseResponseLimit,
-  undoLiveQuizResponseAdmission,
   verifyJWT,
   type JWTPayload,
-  type ResponseAdmissionArgs,
 } from '@klicker-uzh/util'
 import { strict as assert } from 'assert'
 import { createHash } from 'crypto'
@@ -75,17 +72,9 @@ export async function processResponseMessage(
   // redisMulti = redisExec.multi() -> transaction
   redisMulti = redisExec.pipeline() // -> pipeline (not atomic)
 
-  // set once a response was admitted under a response limit above 1, so the
-  // admission can be reverted when the response is not written afterwards
-  let admission: ResponseAdmissionArgs | undefined
-  const undoAdmission = async () => {
-    if (!admission) return
-    try {
-      await undoLiveQuizResponseAdmission(admission)
-    } catch (e) {
-      ctx.logger.error(`Response admission undo failed: ${String(e)}`)
-    }
-  }
+  // The limited free-text path is committed by one Redis script. Rethrow its
+  // failures so Hatchet retries instead of returning a non-retryable status.
+  let responseAdmissionStarted = false
 
   try {
     const liveQuizKey = `lq:${message.sessionId}`
@@ -429,25 +418,54 @@ export async function processResponseMessage(
         MD5.update(cleanResponseValue)
         const responseHash = MD5.digest('hex')
 
-        // with a response limit above 1, admit each response atomically; only
-        // a participant's first response is marked as responded and earns points
-        let isFirstResponse = true
+        // with a response limit above 1, commit admission, aggregation and
+        // first-response scoring together in one Redis script
         const responseLimit = parseResponseLimit(instanceInfo.responseLimit)
         if (responseLimit > 1) {
-          const admissionArgs: ResponseAdmissionArgs = {
+          responseAdmissionStarted = true
+          const participantRole =
+            participantData?.role === 'TEMPORARY_PARTICIPANT'
+              ? 'TEMPORARY_PARTICIPANT'
+              : participantData
+                ? 'PARTICIPANT'
+                : undefined
+          const participantKey = participantData
+            ? participantRole === 'TEMPORARY_PARTICIPANT'
+              ? `temporary-${participantData.sub}`
+              : participantData.sub
+            : undefined
+          const freeTextPoints = participantData
+            ? getFreeTextQuestionPoints({
+                response,
+                instanceInfo,
+                firstResponseReceivedAt,
+                responseTimestamp,
+                basePoints,
+                pointsMultiplier,
+                parsedSolutions,
+              })
+            : { pointsAwarded: 0, xpAwarded: 0, pointsPercentage: 0 }
+          const freeTextPointsAwarded = Number(freeTextPoints.pointsAwarded)
+          const freeTextXpAwarded = Number(freeTextPoints.xpAwarded)
+
+          const result = await admitLiveQuizResponse({
             redis: redisExec,
             instanceKey,
+            liveQuizKey,
             messageId: message.messageId,
-            participantKey: participantData
-              ? participantData.role === 'TEMPORARY_PARTICIPANT'
-                ? `temporary-${participantData.sub}`
-                : participantData.sub
-              : undefined,
+            participantKey,
+            participantRole,
             responseHash,
+            responseValue: cleanResponseValue,
             responseLimit,
+            sessionBlockId: sessionBlockId!,
+            responseTimestamp,
+            pointsAwarded: freeTextPointsAwarded,
+            xpAwarded: freeTextXpAwarded,
+            setFirstResponseTimestamp:
+              !!freeTextPoints.pointsPercentage && !firstResponseReceivedAt,
             anonymousIsFirstResponse: message.isFirstResponse !== false,
-          }
-          const result = await admitLiveQuizResponse(admissionArgs)
+          })
           if (!result.admitted) {
             ctx.logger.info(`Response not admitted: ${result.reason}`, {
               messageId: message.messageId,
@@ -456,13 +474,16 @@ export async function processResponseMessage(
             })
             return { status: 200 }
           }
-          admission = admissionArgs
-          isFirstResponse = result.isFirstResponse
-          if (isFirstResponse) {
-            redisMulti.incr(getResponseAdmissionKeys(instanceKey).respondents)
-          }
+
+          ctx.logger.info("Successfully processed participant's response", {
+            messageId: message.messageId,
+            sessionId: message.sessionId,
+            instanceId: message.instanceId,
+          })
+          return { status: 200 }
         }
 
+        // response limit 1 keeps the legacy path and its pipeline behaviour
         redisMulti.hincrby(`${instanceKey}:results`, responseHash, 1)
         redisMulti.hset(
           `${instanceKey}:responseHashes`,
@@ -472,7 +493,7 @@ export async function processResponseMessage(
         redisMulti.hincrby(`${instanceKey}:results`, 'participants', 1)
 
         // if the participant was logged in, award points (and xp if regular student acount was used)
-        if (participantData && isFirstResponse) {
+        if (participantData) {
           // add the participant's response to the corresponding redis hash
           redisMulti.hset(
             `${instanceKey}:responses`,
@@ -722,7 +743,7 @@ export async function processResponseMessage(
         })
     )
     redisMulti?.discard()
-    await undoAdmission()
+    if (responseAdmissionStarted) throw e
     return { status: 500 }
   }
 
@@ -744,7 +765,6 @@ export async function processResponseMessage(
         })
     )
     redisMulti?.discard()
-    await undoAdmission()
     throw new Error(`Redis transaction failed ${String(e)}`)
   }
 }
