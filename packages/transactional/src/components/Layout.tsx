@@ -20,7 +20,7 @@ function Layout({
           <title>{title}</title>
           <Font fontFamily="Source Sans 3" fallbackFontFamily="Verdana" />
         </Head>
-        <Preview>{preview}</Preview>
+        <Preview useTitleTag={false}>{preview}</Preview>
         <Container className="max-w-3xl">
           <Header />
           {children}
