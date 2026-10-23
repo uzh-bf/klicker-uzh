@@ -51,6 +51,18 @@ still valid and must not be reused as that setting. The course-level choice is
 owned by a later layer.
 
 An analytics withdrawal request is created only on a true-to-false transition.
+The account boundary also owns the shared analytics eligibility generation:
+`AnalyticsEligibilityGeneration` holds one row (`id = 0`) whose counter
+advances whenever a participant joins or leaves the eligible cohort, and
+stored course analytics are marked invalid in the same transaction so they can
+only be reused after a recomputation under the new choice set. The counter
+advances under the learning-analytics advisory-lock key pair in
+`packages/graphql/src/lib/learningAnalytics.ts`, which every analytics writer
+must also acquire before it revalidates a generation it captured earlier. A
+first recorded decline, a renewal that keeps an ineligible choice, and a
+research-only change leave the cohort unchanged and therefore do not advance
+it. While the Python analytics writers remain contained, the counter is the
+contract they have to honour on reactivation.
 The migration initializes existing accounts with
 `learningAnalyticsConsent = false` and records no choice, so legacy analytics
 data for an account whose first recorded choice is false is not represented by
