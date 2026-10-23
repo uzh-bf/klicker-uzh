@@ -46,6 +46,12 @@ module.exports = {
       'student_tutorials/course_leaderboard',
       'student_tutorials/groups_activities',
     ],
+    'Self-hosting': [
+      'self-hosting/overview',
+      'self-hosting/evaluation',
+      'self-hosting/production',
+      'self-hosting/operations',
+    ],
     Gamification: [
       'gamification/overview',
       'gamification/grading_logic',
