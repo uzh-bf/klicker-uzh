@@ -1,7 +1,15 @@
 import { useTranslations } from 'next-intl'
 import { useParams } from 'next/navigation'
 import { useCallback, useRef } from 'react'
-import { hasAllImageAttachmentsHydrated } from '../lib/attachments/attachmentState'
+import {
+  hasAllImageAttachmentsHydrated,
+  setPendingDocumentPages,
+  takePendingDocumentPages,
+} from '../lib/attachments/attachmentState'
+import {
+  type ImageSupport,
+  withoutPageReview,
+} from '../lib/attachments/documentText'
 import { type ReasoningEffort } from '../lib/config/reasoning'
 import { readHandoffSource } from '../lib/handoff'
 import { normalizeLiveToolOutput } from '../lib/toolOutput'
@@ -11,7 +19,10 @@ import {
   type ExtendedThreadMessageLike,
   type ThreadRunOutcome,
 } from '../stores/chatStore'
-import { useSettingsStore } from '../stores/settingsStore'
+import {
+  selectModelReadsDocumentPages,
+  useSettingsStore,
+} from '../stores/settingsStore'
 
 type GenerateChatResponseOptions = {
   allowRegeneration?: boolean
@@ -41,6 +52,9 @@ export function useChatResponse(
   const t = useTranslations()
 
   const loadCredits = useSettingsStore((state) => state.loadCredits)
+  const modelReadsImages = useSettingsStore((state) =>
+    selectModelReadsDocumentPages(state, selectedModel)
+  )
 
   // AbortController to handle request cancellation
   const abortControllerRef = useRef<AbortController | null>(null)
@@ -106,6 +120,17 @@ export function useChatResponse(
       const parentId = triggerMessage?.parentId
       let resolvedTriggerMessage = triggerMessage
       let resolvedMessagesToSend = messagesToSend
+      // Taken up front so no early return can strand them; given back when
+      // the request failed for a transient reason, so "Try again" sends them.
+      // A model switched to one without image support drops them.
+      const takenDocumentPages = takePendingDocumentPages(triggerMessage?.id)
+      const documentPages = modelReadsImages ? takenDocumentPages : []
+      let requestAccepted = false
+      const restoreDocumentPages = () => {
+        if (!requestAccepted && triggerMessage?.id && documentPages.length) {
+          setPendingDocumentPages(triggerMessage.id, documentPages)
+        }
+      }
 
       // generate assistant message ID; also sent to backend for consistency
       const assistantMessageId = generateId()
@@ -140,6 +165,51 @@ export function useChatResponse(
             )
             .map((part) => part.text)
             .join('')
+        }
+
+        // Pages that will not be sent must not stay announced as reviewed.
+        const dropPageReview = (
+          supportsImages: ImageSupport = modelReadsImages
+        ) => {
+          const message = resolvedTriggerMessage
+          if (message?.role !== 'user' || !Array.isArray(message.content)) {
+            return
+          }
+          const updated: ExtendedThreadMessageLike = {
+            ...message,
+            content: message.content.map((part) =>
+              part.type === 'text'
+                ? {
+                    ...part,
+                    text: withoutPageReview(part.text, { supportsImages }),
+                  }
+                : part
+            ),
+          }
+          resolvedTriggerMessage = updated
+          resolvedMessagesToSend = [
+            ...resolvedMessagesToSend.slice(0, -1),
+            updated,
+          ]
+          // Both arrays carry the message; branch switches rebuild the
+          // visible path from allMessages.
+          useChatStore.setState((state) => ({
+            threads: state.threads.map((thread) =>
+              thread.id === threadId
+                ? {
+                    ...thread,
+                    messages: resolvedMessagesToSend,
+                    allMessages: thread.allMessages.map((existing) =>
+                      existing.id === updated.id ? updated : existing
+                    ),
+                  }
+                : thread
+            ),
+          }))
+        }
+        // Runs before image hydration, which may return early.
+        if (takenDocumentPages.length > 0 && documentPages.length === 0) {
+          dropPageReview()
         }
 
         if (
@@ -181,6 +251,7 @@ export function useChatResponse(
             console.error(
               'Image attachments for this message could not be loaded.'
             )
+            restoreDocumentPages()
             return
           }
 
@@ -231,6 +302,7 @@ export function useChatResponse(
                 } => typeof attachment.imageBase64 === 'string'
               )
               .map((attachment) => attachment.imageBase64),
+            ...(documentPages.length > 0 ? { documentPages } : {}),
           }),
         })
 
@@ -239,8 +311,11 @@ export function useChatResponse(
           // localized generic message instead (server text may be unlocalized or
           // leak implementation detail)
           let errorDetail = `HTTP error! status: ${response.status}`
+          let errorCode: string | null = null
           try {
             const errorPayload = await response.json()
+            errorCode =
+              typeof errorPayload?.code === 'string' ? errorPayload.code : null
             if (errorPayload?.error) {
               errorDetail = `${errorPayload.error}`
             } else if (errorPayload?.message) {
@@ -257,6 +332,22 @@ export function useChatResponse(
             }
           }
           console.error('Chat request failed:', errorDetail)
+
+          // Only a rejection of the pages themselves repeats on every retry:
+          // a model that cannot read them, a body that failed validation or a
+          // request that is too large. After any other error, such as missing
+          // credits or a concurrent run, "Try again" sends them again.
+          const pagesRejected =
+            errorCode === 'DOCUMENT_PAGES_NOT_SUPPORTED' ||
+            response.status === 413 ||
+            (response.status === 400 && errorDetail === 'Invalid request body')
+          if (!pagesRejected) {
+            restoreDocumentPages()
+          } else if (documentPages.length > 0) {
+            dropPageReview(
+              errorCode === 'DOCUMENT_PAGES_NOT_SUPPORTED' ? false : undefined
+            )
+          }
 
           const assistantMessage: ExtendedThreadMessageLike = {
             id: assistantMessageId,
@@ -280,6 +371,7 @@ export function useChatResponse(
         }
 
         // setup streaming response parsing
+        requestAccepted = true
         const reader = response.body?.getReader()
         const decoder = new TextDecoder()
         let buffer = ''
@@ -722,6 +814,7 @@ export function useChatResponse(
           hasStreamError || !hasFinishEvent ? 'error' : 'completed'
         )
       } catch (error) {
+        restoreDocumentPages()
         if (error instanceof Error && error.name === 'AbortError') {
           // request was cancelled by user — keep the turn: whatever streamed
           // plus a `chat-stopped` marker (mirrors what the server persists in
@@ -827,6 +920,7 @@ export function useChatResponse(
       }
     },
     [
+      modelReadsImages,
       selectedModel,
       selectedMode,
       selectedReasoningEffort,

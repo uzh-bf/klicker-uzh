@@ -113,6 +113,20 @@ export default {
       partial: 'Unvollständige Antwort',
       error: 'Fehler',
     },
+    documentNotice: {
+      title: 'Bevor du Dokumente anhängst',
+      allowed:
+        'Hänge nur Material an, das du teilen darfst: eigene Notizen und Arbeiten, Kursmaterial, das du verwenden darfst, oder frei lizenziertes Material.',
+      notAllowed:
+        'Hänge keine vollständigen urheberrechtlich geschützten Werke ohne Erlaubnis an und keine Dokumente mit persönlichen oder vertraulichen Informationen über andere, sensiblen Daten oder Passwörtern.',
+      access:
+        'Dass du Zugriff auf eine Datei hast, heisst nicht, dass du sie teilen darfst. Frag im Zweifel deine Dozierenden.',
+      dataBoundary:
+        'Der Text deiner Dokumente wird an den Anbieter des KI-Modells gesendet und mit diesem Gespräch gespeichert.',
+      once: 'Dieser Hinweis erscheint auf diesem Gerät nur einmal.',
+      remove: 'Dokumente entfernen',
+      accept: 'Verstanden',
+    },
     disclaimer: {
       mediaTitle: 'Haftungsausschluss-Medien',
       introAlt: 'Chatbot-Einführung',
@@ -142,6 +156,13 @@ export default {
       hydrationError:
         'Die Bildanhänge für diese Nachricht konnten nicht geladen werden. Bitte versuche es erneut.',
       attachedImageAlt: 'Angehängtes Bild {index}',
+    },
+    documentPreview: {
+      open: 'Vorschau von {name}',
+      extractedText: 'Text, den der Chat aus dieser Datei gelesen hat:',
+      extractedTextOnly:
+        'Die Originaldatei wird nicht gespeichert. Nach dem Neuladen wird nur der Text angezeigt, den der Chat daraus gelesen hat:',
+      openOriginal: 'Originaldatei öffnen',
     },
     imageViewer: {
       previewUnavailable: 'Vorschau nicht verfügbar',
@@ -266,6 +287,14 @@ export default {
       documentPages: '{count, plural, one {# Seite} other {# Seiten}}',
       documentTokens: '~{count} Tokens',
       documentShortened: 'Auf die ersten {max} Tokens gekürzt',
+      documentVisualReviewed:
+        '{count, plural, one {Seite visuell geprüft} other {Seiten visuell geprüft}}',
+      documentVisualTooManyPages:
+        '{count, plural, one {Seite nicht visuell geprüft} other {Seiten nicht visuell geprüft}}: höchstens {max} Seiten pro Nachricht',
+      documentVisualNoImageSupport:
+        '{count, plural, one {Seite nicht visuell geprüft} other {Seiten nicht visuell geprüft}}: Dieses Modell kann keine Bilder lesen',
+      documentVisualSkipped:
+        '{count, plural, one {Seite nicht visuell geprüft} other {Seiten nicht visuell geprüft}}',
       documentDefaultQuestion:
         'Bitte beziehe dich auf die angehängte(n) Datei(en).',
       dictation: 'Nachricht diktieren',
