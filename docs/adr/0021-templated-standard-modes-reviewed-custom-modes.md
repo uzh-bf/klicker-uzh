@@ -4,6 +4,14 @@
 
 Accepted
 
+Lecturer setup editing after publication is superseded by
+[ADR 0043](./0043-review-chatbot-revisions-before-activation.md). Its saved
+revision and approval contract leaves unrelated runtime dependencies unchanged.
+
+The required-MCP visibility rule below is superseded by
+[ADR 0050](./0050-per-mode-retrieval-scope-and-kb-attachment.md), which makes
+availability per mode and resolves retrieval scope for the selected mode.
+
 ## Context
 
 Historically a chatbot's `systemPrompts[mode].prompt` fully replaced the
@@ -54,7 +62,10 @@ replacing:
 - The server may hide any mode that cannot satisfy the chatbot's required-MCP
   policy. The same effective-mode resolver drives participant presentation,
   settings data, request validation, and request-time MCP selection, so a
-  hidden mode cannot be selected with a crafted request.
+  hidden mode cannot be selected with a crafted request. **Superseded by
+  [ADR 0050](./0050-per-mode-retrieval-scope-and-kb-attachment.md):** the
+  resolver no longer hides an unbound mode, and retrieval scope is resolved for
+  the selected mode.
 - Lecturers may later edit a small set of constrained persona fields — course
   name, subject domain, language of instruction, optional scope note — that
   the server compiles into standard prompts. No approval is needed because
@@ -66,7 +77,11 @@ replacing:
 - **Custom modes** let a lecturer author a name, description, and free persona
   text. That text is compiled as the persona section on top of the same
   scaffolding; publication of a new or edited custom mode requires team
-  review (per ADR 0020).
+  review (per ADR 0020). Participants can select only the modes the chatbot
+  carries as approved configuration; a saved but unapproved mode stays visible
+  in the owner preview. An approved custom mode inherits the required
+  `doc_query` binding of Tutor or Explainer for the same server, retagged to
+  the selected mode key (ADR 0050).
 - In both tiers the platform scaffolding is non-removable: lecturer-authored
   content is layered onto it by the compile step. The scaffolding owns course
   scope and evidence, privacy and safety, non-disclosure, epistemic integrity,

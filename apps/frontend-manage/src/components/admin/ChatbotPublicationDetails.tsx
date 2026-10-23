@@ -1,10 +1,11 @@
-import type { GetPendingChatbotPublicationsQuery } from '@klicker-uzh/graphql/dist/ops'
+import type { GetPendingChatbotRevisionReviewsQuery } from '@klicker-uzh/graphql/dist/ops'
 import { useTranslations } from 'next-intl'
 import type { ReactNode } from 'react'
+import { formatCustomModeSettings } from '../resources/chatbots/ChatbotAuthoring'
 import ChatbotDisclaimerPreview from '../resources/chatbots/ChatbotDisclaimerPreview'
 
 type Review =
-  GetPendingChatbotPublicationsQuery['getPendingChatbotPublications'][number]
+  GetPendingChatbotRevisionReviewsQuery['getPendingChatbotPublications'][number]
 
 function ReviewField({
   label,
@@ -28,10 +29,17 @@ function ChatbotPublicationDetails({
   models,
 }: {
   review: Review
-  models: GetPendingChatbotPublicationsQuery['getChatModelRegistry']
+  models: GetPendingChatbotRevisionReviewsQuery['getChatModelRegistry']
 }) {
   const t = useTranslations()
-  const { chatbot } = review
+  const revision = review.chatbot.authoringRevision
+  const chatbot = { ...review.chatbot, ...revision }
+  const disclaimerTitle = revision
+    ? revision.disclaimerTitle
+    : review.disclaimerTitle
+  const disclaimerIntroText = revision
+    ? revision.disclaimerIntroText
+    : review.disclaimerIntroText
   const config = chatbot.standardModeConfig
   const unknown = t('shared.generic.unknown')
   const modelNames = chatbot.allowedModelIds.length
@@ -98,6 +106,16 @@ function ChatbotPublicationDetails({
             ? t('manage.resources.modelSelectionEnabled')
             : t('manage.resources.modelSelectionDisabled')}
         </ReviewField>
+        <ReviewField label={t('manage.resources.knowledgeGraphVisible')}>
+          {chatbot.knowledgeGraphVisible
+            ? t('shared.generic.yes')
+            : t('shared.generic.no')}
+        </ReviewField>
+        <ReviewField label={t('manage.resources.knowledgeGraphRetrieval')}>
+          {chatbot.knowledgeGraphRetrievalEnabled
+            ? t('shared.generic.yes')
+            : t('shared.generic.no')}
+        </ReviewField>
         <ReviewField label={t('manage.resources.allowedModels')}>
           {modelNames}
         </ReviewField>
@@ -156,10 +174,50 @@ function ChatbotPublicationDetails({
           )}
         </ReviewField>
       </dl>
-      {review.disclaimerTitle ? (
+      {revision?.customModeConfig?.modes.length ? (
+        <dl className="space-y-4">
+          {revision.customModeConfig.modes.map((mode) => (
+            <ReviewField key={mode.key} label={mode.name}>
+              {mode.description && <p>{mode.description}</p>}
+              {mode.welcomeMessage && (
+                <div data-cy={`chatbot-admin-review-welcome-${mode.key}`}>
+                  <p className="font-medium">
+                    {t('manage.resources.chatbotCustomModeWelcomeMessage')}
+                  </p>
+                  <p>{mode.welcomeMessage}</p>
+                </div>
+              )}
+              {mode.starterPrompts?.length ? (
+                <div data-cy={`chatbot-admin-review-starters-${mode.key}`}>
+                  <p className="font-medium">
+                    {t('chat.suggestions.sectionLabel')}
+                  </p>
+                  <p>
+                    {mode.starterPrompts
+                      .map((prompt, index) => `${index + 1}. ${prompt}`)
+                      .join('\n')}
+                  </p>
+                </div>
+              ) : null}
+              {mode.personaText && <p>{mode.personaText}</p>}
+              <p data-cy={`chatbot-admin-review-reasoning-${mode.key}`}>
+                {t(
+                  mode.showReasoning
+                    ? 'manage.resources.chatbotCustomModeReasoningShown'
+                    : 'manage.resources.chatbotCustomModeReasoningHidden'
+                )}
+              </p>
+              <p data-cy={`chatbot-admin-review-settings-${mode.key}`}>
+                {formatCustomModeSettings(t, mode)}
+              </p>
+            </ReviewField>
+          ))}
+        </dl>
+      ) : null}
+      {disclaimerTitle ? (
         <ChatbotDisclaimerPreview
-          title={review.disclaimerTitle}
-          introText={review.disclaimerIntroText ?? ''}
+          title={disclaimerTitle}
+          introText={disclaimerIntroText ?? ''}
         />
       ) : (
         <p className="text-sm text-amber-800">

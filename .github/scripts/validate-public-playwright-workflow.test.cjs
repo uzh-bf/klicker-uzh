@@ -555,6 +555,58 @@ test('the reusable envelope owns lifecycle routing and selector shadow planning'
   assert.match(workflow, /test-playwright-status:/)
 })
 
+test('the selector shadow records the coverage deferred until readiness', (t) => {
+  const workflow = YAML.parse(
+    fs.readFileSync(
+      path.join(__dirname, '../workflows/public-pr-playwright-shards.yml'),
+      'utf8'
+    )
+  )
+  const step = workflow.jobs.prepare.steps.find(
+    (entry) => entry.name === 'Build opposite-state selector shadow plan'
+  )
+  const root = fs.mkdtempSync(path.join(os.tmpdir(), 'selector-shadow-'))
+  t.after(() => fs.rmSync(root, { recursive: true, force: true }))
+  const bin = path.join(root, 'bin')
+  fs.mkdirSync(bin)
+  fs.writeFileSync(
+    path.join(bin, 'node'),
+    `#!${process.execPath}
+const fs = require('node:fs')
+if (process.argv[2] === '-e') {
+  process.stdout.write(JSON.parse(fs.readFileSync('route.json', 'utf8')).selectorPrState)
+} else {
+  fs.writeFileSync('selector-args.json', JSON.stringify(process.argv.slice(2)))
+}
+`,
+    { mode: 0o755 }
+  )
+  for (const [ran, expected] of [
+    ['ready', 'draft'],
+    ['draft', 'ready'],
+    ['deferred', 'ready'],
+  ]) {
+    fs.writeFileSync(
+      path.join(root, 'route.json'),
+      JSON.stringify({ selectorPrState: ran })
+    )
+    const result = spawnSync('bash', ['-euo', 'pipefail', '-c', step.run], {
+      cwd: root,
+      env: {
+        PATH: `${bin}${path.delimiter}${process.env.PATH}`,
+        BASE_SHA: 'base',
+        HEAD_SHA: 'head',
+      },
+      encoding: 'utf8',
+    })
+    assert.equal(result.status, 0, result.stderr)
+    const args = JSON.parse(
+      fs.readFileSync(path.join(root, 'selector-args.json'), 'utf8')
+    )
+    assert.equal(args[args.indexOf('--pr-state') + 1], expected)
+  }
+})
+
 test('lifecycle policy rejects cancellation outside the exact closed-PR boundary and any draft gate', () => {
   const source = fs.readFileSync(
     path.join(__dirname, '../workflows/test-playwright.yml'),

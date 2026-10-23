@@ -1,4 +1,8 @@
-import { normalizeChatbotStandardModeConfig } from '@klicker-uzh/util'
+import type { ChatbotCustomMode } from '@klicker-uzh/types'
+import {
+  normalizeChatbotCustomModeConfig,
+  normalizeChatbotStandardModeConfig,
+} from '@klicker-uzh/util'
 import { DEFAULT_PROMPT } from '@/src/lib/config/prompts'
 import { withCitationContract } from '@/src/lib/server/citationInstructions'
 import { courseDataSection } from '@/src/lib/server/courseContextInstructions'
@@ -12,6 +16,12 @@ export type SystemPromptCompilationContext = {
   courseDisplayName: string
   toolNames: readonly string[]
   standardModeConfig?: unknown
+  /**
+   * The custom modes the calling surface should compile. Participant routes
+   * pass the live column; owner preview passes the saved revision so it
+   * reviews the exact configuration awaiting approval.
+   */
+  customModeConfig?: unknown
 }
 
 function promptSection(heading: string, body: string): string {
@@ -43,16 +53,72 @@ function storedModePrompt(
   return typeof prompt === 'string' && prompt.length > 0 ? prompt : null
 }
 
+/**
+ * The persona of an approved custom mode, which is stored outside
+ * `systemPrompts`. Standard-mode keys stay platform-owned, so an entry that
+ * reuses one never changes how a standard mode compiles.
+ */
+function customModePersonaText(
+  customModeConfig: unknown,
+  selectedMode: string
+): string | null {
+  return customMode(customModeConfig, selectedMode)?.personaText ?? null
+}
+
+function customMode(
+  customModeConfig: unknown,
+  selectedMode: string
+): ChatbotCustomMode | null {
+  if (isStandardModeKey(selectedMode)) return null
+
+  const modes = normalizeChatbotCustomModeConfig(customModeConfig)?.modes ?? []
+  return modes.find((candidate) => candidate.key === selectedMode) ?? null
+}
+
+function isStandardModeKey(mode: string): boolean {
+  return Object.hasOwn(DEFAULT_PROMPT, mode)
+}
+
+function lecturerModePrompt(
+  systemPrompts: unknown,
+  selectedMode: string,
+  context: SystemPromptCompilationContext
+): string | null {
+  return (
+    customModePersonaText(context.customModeConfig, selectedMode) ??
+    storedModePrompt(systemPrompts, selectedMode)
+  )
+}
+
+/**
+ * Whether the selected mode compiles as a lecturer-defined custom persona
+ * rather than a platform mode contract.
+ */
+function compilesCustomPersona(
+  systemPrompts: unknown,
+  selectedMode: string,
+  context: SystemPromptCompilationContext
+): boolean {
+  return (
+    !DEFAULT_PROMPT[selectedMode]?.prompt &&
+    lecturerModePrompt(systemPrompts, selectedMode, context) !== null
+  )
+}
+
 function modeSections(
   systemPrompts: unknown,
   selectedMode: string,
-  standardModeConfig: unknown
+  context: SystemPromptCompilationContext
 ): string[] {
   const platformMode = DEFAULT_PROMPT[selectedMode]?.prompt
-  const lecturerPrompt = storedModePrompt(systemPrompts, selectedMode)
+  const lecturerPrompt = lecturerModePrompt(
+    systemPrompts,
+    selectedMode,
+    context
+  )
   const typedContext = standardModeContextSection(
     systemPrompts,
-    standardModeConfig,
+    context.standardModeConfig,
     selectedMode
   )
 
@@ -128,7 +194,8 @@ function standardModeContextSection(
  * context, and then their non-removable platform mode contract. Custom modes
  * replace those mode sections with their lecturer-defined persona. Every mode
  * then receives the same attachment, course, output, conditional citation,
- * and final language contracts.
+ * and final language contracts; a custom persona receives their persona
+ * variants, which keep the same protections.
  */
 export function compileSystemPrompt(
   systemPrompts: unknown,
@@ -137,11 +204,23 @@ export function compileSystemPrompt(
 ): string {
   const base = [
     courseDataSection(context.courseDisplayName),
-    ...modeSections(systemPrompts, selectedMode, context.standardModeConfig),
+    ...modeSections(systemPrompts, selectedMode, context),
   ].join('\n\n')
+  const customPersona = compilesCustomPersona(
+    systemPrompts,
+    selectedMode,
+    context
+  )
   const inputContext = withInputContextContract(base)
-  const coursePolicy = withCoursePolicyContract(inputContext, context.toolNames)
-  const outputFormat = withOutputFormatContract(coursePolicy)
+  const coursePolicy = withCoursePolicyContract(
+    inputContext,
+    context.toolNames,
+    customPersona
+  )
+  const outputFormat = withOutputFormatContract(coursePolicy, customPersona)
   const citations = withCitationContract(outputFormat, context.toolNames)
-  return withLanguageStyleContract(citations)
+  return withLanguageStyleContract(
+    citations,
+    customMode(context.customModeConfig, selectedMode)?.replyLanguage ?? null
+  )
 }

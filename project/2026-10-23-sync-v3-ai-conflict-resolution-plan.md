@@ -44,7 +44,7 @@ evaluation allowances remain outside this batch.
 
 | Consequential risk | Existing protection and primary seam | Obligation |
 | --- | --- | --- |
-| Lost Chat history, graph metadata or document parts | `pnpm --filter @klicker-uzh/chat test:run` including `chat-response-hydration.test.ts`, `history-attachment-serialization.test.ts`, `message-attachment-behavior.test.ts`; Chat `check` | none; use existing suites and browser checks |
+| Lost Chat history, graph metadata or document parts | `pnpm --filter @klicker-uzh/chat test:run` including `chat-response-hydration.test.ts`, `history-attachment-serialization.test.ts`, `message-attachment-behavior.test.ts`; Chat `check` | extend existing capability tests for document-only and disabled-runtime combinations; repair route fixtures only for changed auth contracts |
 | Dropped locale keys or incompatible seed configurations | Locale key-set comparison to both parents; `apps/chat/test/local-mcp-seed.test.mjs` and `pnpm --filter @klicker-uzh/prisma-data check` | none; inspect seed clearing of overrides and retained model IDs; never assert seed prose |
 | Changed CI routing or broken development composition | `node --test .github/scripts/playwright-route.test.cjs .github/scripts/warpbuild-admission.test.cjs .github/scripts/validate-public-playwright-workflow.test.cjs`; `docker compose -f .devcontainer/docker-compose.yml config --quiet` | none; use existing contract tests |
 | Lost target ancestry or incompatible release inputs | Git ancestry, frozen lock consistency, `pnpm run check:syncpack`, `bash util/check-prisma-sync.sh` and hosted CI | none; verify producing runs |
@@ -67,6 +67,17 @@ Conflict paths: `.devcontainer/docker-compose.yml`,
 `apps/chat/src/components/thread.tsx`, `apps/chat/src/hooks/useChatResponse.ts`,
 `docs/ci-and-deployment.md`, `package.json`, `packages/i18n/messages/de.ts`,
 `packages/i18n/messages/en.ts`, `packages/prisma-data/src/data/seedChatbots.ts`.
+
+Necessary integration seam files: `apps/chat/src/lib/attachments/attachmentUi.ts`,
+`.github/scripts/validate-public-playwright-workflow.cjs`,
+`apps/chat/src/components/manage-assistant.tsx`,
+`apps/chat/src/components/owner-preview-assistant.tsx`,
+`apps/chat/test/message-attachment-behavior.test.ts`, and, if reproduced by the
+route suite, `apps/chat/test/document-pages-route.test.ts`. Manage retains
+image-only uploads and owner preview retains disabled uploads. Both supply a
+disabled dictation context required by the newly shared composer. Participant
+document and dictation behavior remains unchanged. This composes existing
+capabilities; no product primitive, public permission or model route changes.
 
 ### Sequence
 
@@ -114,5 +125,28 @@ remains with the controller throughout feedback and CI handling.
 
 Plan derived from the approved executable batch; planning challenge approved
 after correcting draft-check semantics, exact review scope and finite recovery.
-Initial dependency-free route/admission/controller checks: 48 passed. No merge
-or source resolution has started. The PR is draft and auto-merge is off.
+Initial dependency-free route/admission/controller checks: 48 passed, and the
+same integrated checks pass after resolving the CI overlap. Eleven textual
+conflicts are resolved locally. Additional caller capability seams retain
+image-only/disabled uploads and disabled dictation outside participant chat.
+Image-only surfaces retain image-specific attachment labels. The workflow
+validator retains strict trusted-step matching while accepting the existing
+deferred-draft shadow command. The document-route fixture now supplies the
+current entitlement and authenticated-course contract.
+
+Container verification: 1,658 Chat tests passed (33 skipped), all 42 workspace
+typecheck tasks passed, all seven repository lint tasks passed, Prisma-data
+checks and syncpack passed, and the frozen offline install passed. Host checks:
+48 route/admission/controller tests, 14 workflow-validator tests, 45 local-KB
+tests and 45 host-launcher tests passed. Container execution of host-specific
+tests cancelled pending promises; the host runs provide their actual evidence.
+Biome formatting succeeded; advisory lint reports existing issues outside the
+resolution. Staged secret scan passed. Browser checks confirm Manage's
+image-only input and preview's disabled attachment/dictation controls; further
+participant verification remains pending.
+
+The sync controller advanced the upstream branch to `4f11f2251d` during local
+verification. Preserve that source advancement before ordinary publication;
+it changes OCR routing and documentation, not the resolved Chat behavior.
+Immutable reviews and hosted CI remain pending. The PR is draft and auto-merge
+is off. No deployment or model-backed evaluation has run.

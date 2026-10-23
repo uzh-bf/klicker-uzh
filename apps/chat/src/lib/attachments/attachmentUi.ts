@@ -6,6 +6,18 @@ type UiImageAttachment = {
 
 type AttachmentVariant = 'history' | 'edit'
 
+export function canUseComposerAttachments({
+  maxImageAttachments,
+  supportsImages,
+  supportsDocuments = false,
+}: {
+  maxImageAttachments: number
+  supportsImages: boolean
+  supportsDocuments?: boolean
+}): boolean {
+  return supportsDocuments || (supportsImages && maxImageAttachments > 0)
+}
+
 export function getAttachmentPreviewSrc(
   attachment: UiImageAttachment,
   variant: AttachmentVariant
