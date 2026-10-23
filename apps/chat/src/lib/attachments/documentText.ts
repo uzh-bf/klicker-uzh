@@ -13,6 +13,29 @@ export const MAX_DOCUMENT_TOKENS = 20_000
 // Token counts are estimated as characters / 4, so the cap is a character cap.
 const CHARS_PER_TOKEN = 4
 const MAX_DOCUMENT_CHARS = MAX_DOCUMENT_TOKENS * CHARS_PER_TOKEN
+// PDF pages are also sent as images when the model can read them, up to this
+// many pages per message across all attached documents.
+export const MAX_VISUAL_REVIEW_PAGES = 10
+
+/**
+ * Whether the pages of a PDF went to the model as images. `skipped` covers
+ * pages the student kept while editing a message: their images are not sent
+ * again.
+ */
+export type VisualReviewStatus =
+  | 'reviewed'
+  | 'too-many-pages'
+  | 'no-image-support'
+  | 'skipped'
+
+const VISUAL_REVIEW_META: Record<VisualReviewStatus, string> = {
+  reviewed: 'pages reviewed visually',
+  // Stored wording stays independent of the limit, so changing the limit
+  // keeps older messages parseable.
+  'too-many-pages': 'pages not reviewed visually: page limit per message',
+  'no-image-support': 'pages not reviewed visually: model cannot read images',
+  skipped: 'pages not reviewed visually',
+}
 
 const HEADER_PREFIX = '--- Attached document: '
 const FOOTER = '--- End of attached document ---'
@@ -24,6 +47,7 @@ export type DocumentAttachmentInfo = {
   name: string
   pages: number | null
   shortened: boolean
+  visualReview: VisualReviewStatus | null
   tokenEstimate: number
   text: string
 }
@@ -67,15 +91,18 @@ export function buildDocumentBlock({
   text,
   pages,
   shortened,
+  visualReview,
 }: {
   name: string
   text: string
   pages?: number | null
   shortened: boolean
+  visualReview?: VisualReviewStatus | null
 }): string {
   const meta = [
     pages != null ? `${pages} ${pages === 1 ? 'page' : 'pages'}` : null,
     shortened ? `shortened to ~${MAX_DOCUMENT_TOKENS} tokens` : null,
+    visualReview ? VISUAL_REVIEW_META[visualReview] : null,
   ].filter(Boolean)
   const header = `${HEADER_PREFIX}${sanitizeName(name)}${
     meta.length > 0 ? ` (${meta.join(', ')})` : ''
@@ -102,12 +129,16 @@ function parseHeader(
 ): Omit<DocumentAttachmentInfo, 'text' | 'tokenEstimate'> | null {
   const match = HEADER_PATTERN.exec(line)
   if (!match) return null
-  const meta = match[2] ?? ''
-  const pages = /(\d+) pages?/.exec(meta)
+  const meta = (match[2] ?? '').split(', ')
+  const pages = meta.map((part) => /^(\d+) pages?$/.exec(part)).find(Boolean)
+  const visualReview = (
+    Object.entries(VISUAL_REVIEW_META) as [VisualReviewStatus, string][]
+  ).find(([, text]) => meta.includes(text))?.[0]
   return {
     name: match[1],
     pages: pages ? Number(pages[1]) : null,
-    shortened: /shortened/.test(meta),
+    shortened: meta.some((part) => part.startsWith('shortened')),
+    visualReview: visualReview ?? null,
   }
 }
 
@@ -158,4 +189,94 @@ export function getDocumentBlocks(text: string): string[] {
 /** The typed question alone, for titles, history labels and editing. */
 export function stripDocumentBlocks(text: string): string {
   return parseMessageDocuments(text).question
+}
+
+export type DocumentForSending = {
+  /** The stored text block, as built when the file was attached. */
+  block: string
+  /** JPEG data URLs of the rendered pages; empty when none were rendered. */
+  pageImages: string[]
+  /** The original file, while it is still in this browser tab. */
+  file?: Blob
+}
+
+/**
+ * Decides at send time which PDF pages go to the model as images. Pages are
+ * only sent when the selected model reads images and all pages of a document
+ * fit into the per-message budget; the block header then records what was
+ * actually sent, so the chip after a reload matches the request.
+ */
+/**
+ * Whether the model reads images: null while its model option is not loaded,
+ * so no stored header claims the model cannot read images.
+ */
+export type ImageSupport = boolean | null
+
+/**
+ * The status a document gets when it is sent without page images, such as a
+ * document kept while editing a message.
+ */
+export function visualReviewWithoutPages(
+  visualReview: VisualReviewStatus,
+  { supportsImages }: { supportsImages: ImageSupport }
+): VisualReviewStatus {
+  if (visualReview === 'reviewed') {
+    return supportsImages === false ? 'no-image-support' : 'skipped'
+  }
+  // Read for a text-only model, sent with one that reads images: the pages
+  // were never rendered, so the stored reason would be wrong.
+  // Unknown support makes no claim either.
+  if (visualReview === 'no-image-support' && supportsImages !== false) {
+    return 'skipped'
+  }
+  return visualReview
+}
+
+/**
+ * Rewrites the document headers of a message whose pages were not sent after
+ * all, so the prompt and the chip stop claiming a visual review.
+ */
+export function withoutPageReview(
+  text: string,
+  { supportsImages }: { supportsImages: ImageSupport }
+): string {
+  return getDocumentBlocks(text).reduce((result, block) => {
+    const [updated] = applyVisualReview([{ block, pageImages: [] }], {
+      supportsImages,
+    }).blocks
+    // A function replacer inserts the block literally; a string would
+    // expand `$&`, `$$` and similar patterns in the document text.
+    return updated && updated !== block
+      ? result.replace(block, () => updated)
+      : result
+  }, text)
+}
+
+export function applyVisualReview(
+  documents: DocumentForSending[],
+  { supportsImages }: { supportsImages: ImageSupport }
+): { blocks: string[]; pageImages: string[] } {
+  const pageImages: string[] = []
+  const blocks = documents.map(({ block, pageImages: pages }) => {
+    const document = parseMessageDocuments(block).documents[0]
+    if (!document || document.visualReview == null) return block
+
+    let visualReview = visualReviewWithoutPages(document.visualReview, {
+      supportsImages,
+    })
+    if (pages.length > 0) {
+      if (!supportsImages) {
+        visualReview = supportsImages === false ? 'no-image-support' : 'skipped'
+      } else if (pageImages.length + pages.length > MAX_VISUAL_REVIEW_PAGES) {
+        visualReview = 'too-many-pages'
+      } else {
+        visualReview = 'reviewed'
+        pageImages.push(...pages)
+      }
+    }
+    return visualReview === document.visualReview
+      ? block
+      : buildDocumentBlock({ ...document, visualReview })
+  })
+  return { blocks, pageImages }
 }

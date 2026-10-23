@@ -6,7 +6,10 @@ import {
   useChatStore,
   type ExtendedThreadMessageLike,
 } from '@/src/stores/chatStore'
-import { useSettingsStore } from '@/src/stores/settingsStore'
+import {
+  selectModelReadsDocumentPages,
+  useSettingsStore,
+} from '@/src/stores/settingsStore'
 import {
   AssistantRuntimeProvider,
   CompositeAttachmentAdapter,
@@ -32,7 +35,9 @@ import { ModeOptionsProvider } from '../components/mode-options-context'
 import {
   documentAttachmentAdapter,
   isReadingDocument,
+  pendingDocumentAttachmentAdapter,
   subscribeDocumentReading,
+  visualDocumentAttachmentAdapter,
 } from '../lib/attachments/documentAttachmentAdapter'
 import { parseMessageDocuments } from '../lib/attachments/documentText'
 import { imageAttachmentAdapter } from '../lib/attachments/imageAttachmentAdapter'
@@ -86,6 +91,9 @@ export function RuntimeProvider({
     (state) =>
       state.modelOptions.find((model) => model.id === selectedModel)
         ?.supportsImageAttachments !== false
+  )
+  const readsDocumentPages = useSettingsStore((state) =>
+    selectModelReadsDocumentPages(state, selectedModel)
   )
   const activeModeOptions =
     modeOptionsChatbotId === chatbotId ? loadedModeOptions : initialModeOptions
@@ -313,9 +321,8 @@ export function RuntimeProvider({
         reasoningEffort: reasoningEffort ?? null,
         creditsUsed: creditsUsed ?? null,
         imageAttachments: imageAttachments ?? [],
-        documentAttachments: documents.map(
-          ({ text: _text, ...document }) => document
-        ),
+        // The text stays with the chip for the document preview.
+        documentAttachments: documents,
       }
 
       return {
@@ -349,19 +356,29 @@ export function RuntimeProvider({
     disabled: embedded,
   })
   // Documents are read as text in the browser, so they work with every model;
-  // images only join when the selected model accepts them.
+  // images, and PDF pages rendered as images, only join when the selected
+  // model accepts them.
   const adapters = useMemo(
     () => ({
       attachments: supportsImageAttachments
         ? new CompositeAttachmentAdapter([
             imageAttachmentAdapter,
-            documentAttachmentAdapter,
+            readsDocumentPages
+              ? visualDocumentAttachmentAdapter
+              : readsDocumentPages === false
+                ? documentAttachmentAdapter
+                : pendingDocumentAttachmentAdapter,
           ])
         : documentAttachmentAdapter,
       ...(dictation.adapter ? { dictation: dictation.adapter } : {}),
       ...(speechAdapter ? { speech: speechAdapter } : {}),
     }),
-    [supportsImageAttachments, dictation.adapter, speechAdapter]
+    [
+      supportsImageAttachments,
+      readsDocumentPages,
+      dictation.adapter,
+      speechAdapter,
+    ]
   )
 
   const readingDocument = useSyncExternalStore(

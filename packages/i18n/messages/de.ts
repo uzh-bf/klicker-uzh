@@ -143,6 +143,13 @@ export default {
         'Die Bildanhänge für diese Nachricht konnten nicht geladen werden. Bitte versuche es erneut.',
       attachedImageAlt: 'Angehängtes Bild {index}',
     },
+    documentPreview: {
+      open: 'Vorschau von {name}',
+      extractedText: 'Text, den der Chat aus dieser Datei gelesen hat:',
+      extractedTextOnly:
+        'Die Originaldatei wird nicht gespeichert. Nach dem Neuladen wird nur der Text angezeigt, den der Chat daraus gelesen hat:',
+      openOriginal: 'Originaldatei öffnen',
+    },
     imageViewer: {
       previewUnavailable: 'Vorschau nicht verfügbar',
       title: 'Bildanhang',
@@ -266,6 +273,14 @@ export default {
       documentPages: '{count, plural, one {# Seite} other {# Seiten}}',
       documentTokens: '~{count} Tokens',
       documentShortened: 'Auf die ersten {max} Tokens gekürzt',
+      documentVisualReviewed:
+        '{count, plural, one {Seite visuell geprüft} other {Seiten visuell geprüft}}',
+      documentVisualTooManyPages:
+        '{count, plural, one {Seite nicht visuell geprüft} other {Seiten nicht visuell geprüft}}: höchstens {max} Seiten pro Nachricht',
+      documentVisualNoImageSupport:
+        '{count, plural, one {Seite nicht visuell geprüft} other {Seiten nicht visuell geprüft}}: Dieses Modell kann keine Bilder lesen',
+      documentVisualSkipped:
+        '{count, plural, one {Seite nicht visuell geprüft} other {Seiten nicht visuell geprüft}}',
       documentDefaultQuestion:
         'Bitte beziehe dich auf die angehängte(n) Datei(en).',
       dictation: 'Nachricht diktieren',
