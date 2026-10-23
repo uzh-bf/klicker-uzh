@@ -390,7 +390,7 @@ see **Bounded codebase check** below. Pushes always run the full suite.
 
 Shard durations differ by architecture, so `playwright/timings.json` names the architecture its weights were measured on. The timing workflow maps the run's recorded route to `x64` for hosted runs and `arm64` for the public pool, passes it to the updater as `--architecture`, and the updater leaves the table untouched when it is calibrated for a different architecture, reporting why instead of writing. An untagged table is adopted by the producing architecture on its first tagged write. Replacing a calibration with another architecture's measurements is therefore a human decision rather than an automatic side effect of a successful run.
 
-- **AI review**: While a PR is a draft, OpenCodeReview runs DeepSeek V4.1 Flash 1017 (`deepseek/deepseek-v4.1-flash-1017`) through OpenRouter at max reasoning through a runner-local adapter against the exact PR head and its immediate base. A ready transition cancels an in-flight draft run, and ready PRs do not start new automatic reviews. OpenRouter routes to external model providers, so draft review diffs cross that provider boundary and incur usage cost.
+- **AI review**: While a PR is a draft, OpenCodeReview runs GLM 5.3 Flash (`zai-glm-5-3-flash`) through Mistral at max reasoning through a runner-local adapter against the exact PR head and its immediate base. A ready transition cancels an in-flight draft run, and ready PRs do not start new automatic reviews. Draft review diffs are sent to Mistral and incur usage cost.
 - **Draft advisor and repository context**: The trusted draft runner bootstraps
   `.agents/skills/ocr-reviewer/SKILL.md` as merged review rules. Its
   `read_review_context` MCP tool reads bounded Markdown from the trusted policy
@@ -471,6 +471,20 @@ Shard durations differ by architecture, so `playwright/timings.json` names the a
   protocols, coverage requirements and retry decisions remain unchanged. The mode-0600 OCR config contains an environment-based loopback token command, never the upstream key. Each OCR attempt starts its own adapter and removes `MISTRAL_API_KEY` from OCR's child environment. The wrapper closes the listener before returning, and always-run configuration cleanup must succeed before publication. Keep these jobs on fresh GitHub-hosted runners. If no actionable findings exist, it records an evidence-bound clean success status with description `zai-glm-5-3 final review clean; evidence=<64-hex evidence digest>` and skips the PR comment. The evidence digest covers the exact PR range, review mode, root review, stack identity, dispositions, and policy. A later descendant containing only bounded, declared repairs may be attested incrementally; material scope changes, stale stack identities, missing dispositions, or exceeded bounds require another complete manual review. For a finding-bearing report, a permitted collaborator records the exact machine-readable marker `<!-- final-ai-disposition/v1 {"schema_version":"final-ai-disposition/v1","review_id":"...","root_head":"...","workflow_run_id":123,"entries":[{"finding_id":"...","state":"fixed|follow-up|rejected","reference":"public-safe reference","paths":["path/to/finding"]}]} -->`; every entry must cover exactly one root finding and include its finding path in the explicit remediation paths. Malformed or missing records force a complete review. Findings are advisory: collaborators verify them and record each blocker as fixed, follow-up, or rejected.
 - **Individual requirements context**: `/final-review` sends the normalized PR title and up to 8,000 Unicode code points of the description as untrusted context. Put the problem, intended behavior, boundaries and acceptance criteria first. Hidden HTML comments and image embeds are omitted before truncation; fenced and inline code examples remain data. The structured context marks descriptions as complete, truncated or absent; missing descriptions retain a title-only fallback. Links and images are never fetched. Description text cannot override trusted review rules, waive findings, change settings or grant authority. The effective background digest binds authorization, startup, evidence reuse, publication and finalization; an effective context edit during the run prevents stale success. The individual review also appends the pull request's changed `project/**/*-plan.md` documents, read from the head commit, as untrusted context: hidden comments and images are removed, and all plans share 16,000 code points in path order, so the earliest-dated plan comes first. At most ten plan files are read, a plan larger than 256 KiB is omitted, and only the first 65,536 code points of a plan are normalized, which bounds the cost of crafted content. The plans are context, not reviewed files; the background digest still covers only the title and description, because plan content is fixed by the bound head commit. Cumulative `/final-review-stack` retains its existing background and per-layer topology descriptions.
 - **Manual stack review**: For a verified native stack, post `/final-review-stack` on the top PR. The workflow uses `zai-glm-5-3` with max reasoning to review the cumulative change and stack topology, assigns cross-layer findings to exact layer deltas, and publishes one report on the top PR. Each cumulative OCR task has a 30-minute deadline. A full-stack range has a 20,000,000-token ceiling; each incremental layer range retains its own 750,000-token ceiling. The first eligible partial range in declared order may consume the job's single resume allowance and shares that range's ceiling. A later or ineligible partial fails immediately. The 90-minute job uses an inner code-review deadline to reserve time for cleanup, topology review, publication, and finalization. Partial coverage is never published. The topology request removes derivation-only patch operations before sending evidence and fails closed above its bounded request and output budgets. It receives bounded excerpts of prior code findings, reports only defects that depend on a cross-layer interaction, and suppresses a topology result when it restates an overlapping code finding with the same path and category. Metadata retains both generated and published topology counts for later evaluation. If neither pass produces an actionable finding, it records an evidence-bound clean success status with description `zai-glm-5-3 stack review clean; evidence=<64-hex evidence digest>` and skips the PR comment. It stores the immutable reviewed-path and rename-alias set in the trusted `Final AI stack clean evidence` check output so an unrelated default-branch advance can be revalidated without recreating a comment. The stack evidence digest covers the ordered layer identities, topology identity, exact range, dispositions, and policy. A later repair in one or more layers may use the same bounded, disposition-backed attestation contract when every changed layer descends from its reviewed head, every upper layer contains the current parent head, and each per-layer remediation range remains within the declared bounds. Topology drift, material scope changes, or missing dispositions require another cumulative review. Any layer drift resets the top `final-ai-stack-review` status, even when the top PR's SHA is unchanged. Neither final status grants merge authority; merge readiness still requires current evidence, green required CI, and terminal dispositions. The repository grants agents and the shared PR babysitter standing approval to post `/final-review` or `/final-review-stack` after exact-head CI and ordinary feedback settle; no per-run approval is required for the configured external Mistral request and its usage cost. This standing approval does not cover non-public payloads or grant merge authority. The babysitter still stops after two autonomous head-changing rounds and never guesses a tracker destination. Add `final-ai-review` or `final-ai-stack-review` to branch protection only after a controlled live run has proved its status lifecycle.
+- **Stack topology evidence**: The topology pass receives unified Git diffs for
+  every frozen layer, including unchanged lower layers during incremental repair.
+  The root diff starts at the verified merge base; upper diffs use their recorded
+  parent heads. The review job verifies commit/tree identities and reads local
+  objects after the existing immutable-range fetches, with external diff and text
+  conversion disabled. Missing objects, identity mismatches, binary changes,
+  bounded Git-read failures and requests above the existing 1 MB ceiling stop
+  topology dispatch. Source is neither truncated nor written into snapshot
+  artifacts. Metadata-only changes remain valid evidence. Complete topology
+  coverage means considering all supplied diffs; it does not establish inspection
+  of unchanged source or executed tests. Findings use the same confidence,
+  autofix and motivating-line contract as the code pass, plus exact layer and
+  incremental-range attribution. Models, reasoning, budgets, usage accounting,
+  retries and publication gates remain unchanged.
 - **Clean-check URLs**: GitHub Actions ignores a custom `details_url` on checks
   created with `GITHUB_TOKEN` and returns the check's own repository URL instead
   ([GitHub explanation](https://github.com/orgs/community/discussions/26757)).
@@ -492,10 +506,11 @@ trusted helper suites dependency-free. YAML-based workflow assertions belong in
 `ocr-self-update-guard.test.cjs`, which runs after dependency installation in
 the codebase check.
 
-The draft workflow selects `OCR_ADAPTER_PROVIDER=openrouter` for both startup
-and the separate summary process. It requires `OPENROUTER_API_KEY`, fixes the
-endpoint to `https://openrouter.ai/api/v1/chat/completions` and model to
-`deepseek/deepseek-v4.1-flash-1017`, and sends `reasoning.effort: max`.
+The draft workflow selects `OCR_ADAPTER_PROVIDER=mistral-flash` for both startup
+and the separate summary process. Drafts and the advisor require only
+`MISTRAL_API_KEY`. The draft endpoint is
+`https://api.mistral.ai/v1/chat/completions`, the model is
+`zai-glm-5-3-flash`, and `reasoning_effort` is fixed to `max`.
 Manual final reviews retain the default Mistral profile and `MISTRAL_API_KEY`:
 `https://api.mistral.ai/v1/chat/completions`, `zai-glm-5-3`, with `high` or `max`
 reasoning effort accepted and omitted effort defaulting to `max`. Unknown
@@ -540,7 +555,7 @@ and distinguish reported zero, missing and invalid cache usage.
 `cached_prompt_tokens` and `uncached_prompt_tokens` cover only responses with a
 valid cache report; consult `cache_usage_responses`, `missing_cache_usage` and
 `invalid_cache_usage` before interpreting them. Cache keys and raw provider metadata
-are never copied into those diagnostics. OpenRouter receipts include only the
+are never copied into those diagnostics. New receipts include only the
 fixed profile and model identifiers so cost reporting can reject mismatched
 receipts. OpenRouter uses the forwarded key for provider sticky routing; cache
 hits remain opportunistic across endpoints.
@@ -661,10 +676,15 @@ paths and unknown receipt fields never enter these records. The CLI form is
 `summary <receipt-path> adapter=N [preflight=N] [topology=N]`; draft reporting
 defaults to one adapter lifetime.
 
-`MISTRAL_PRICING` and `PROVIDERS.openrouter.pricing` in
+`MISTRAL_PRICING` and each profile in `PROVIDERS` in
 `ocr-mistral-adapter.cjs` hold profile-specific USD reference rates and dates,
 sourced from [Mistral's model pricing](https://docs.mistral.ai/models/zai-glm-5-3)
-and [OpenRouter's snapshot catalog](https://openrouter.ai/deepseek/deepseek-v4.1-flash-1017).
+and [OpenRouter's snapshot catalog](https://openrouter.ai/deepseek/deepseek-v4.1-flash-1017). Draft Flash uses
+[Mistral Flash pricing](https://docs.mistral.ai/models/zai-glm-5-3-flash): $0.15
+input, $0.03 cached input and $0.50 output per million tokens, checked
+2026-10-23. New receipts include exact profile/model identity; legacy receipts
+without identity are accepted only for full GLM. Draft and advisor estimates
+remain separate before combining, even when they share one Mistral key.
 OpenRouter estimates use the catalog reference rates of $0.15 input, $0.003 cached
 input and $0.60 output per million tokens, checked 2026-10-17. Actual endpoint
 prices and time-based overrides vary, so these estimates are labelled as
@@ -865,6 +885,94 @@ charges before expanding. Keep fixed capacity available during qualification.
 
 Source publication alone changes no group policy or admission variable. The
 historical trial workflow remains separate and disabled.
+
+#### Reserved burst admission
+
+An optional coordinator can reserve a validation during trusted preparation,
+after the canonical plan is validated and before runner selection. Skipped
+plans make no admission request. Configure `PUBLIC_PR_PLAYWRIGHT_WARPBUILD_ADMISSION_URL`
+only through an approved deployment packet. Its value is an HTTPS endpoint
+ending in `/admit`, with no query, credentials or fragment. An absent endpoint
+keeps the manual-ticket behavior. The client makes one bounded request, never
+retries a paid attempt, and keeps ordinary routing on denial or an unavailable
+response. Existing exact manual tickets take precedence.
+Failed requests emit only a fixed warning, without tokens, endpoints or
+coordinator reasons; a lost response still retains its reservation.
+
+The caller forwards `id-token: write` for hosted trusted preparation. Candidate
+build and shard jobs explicitly retain only `contents: read`. Preparation
+requests audience `klicker-playwright-admission`. The coordinator verifies the
+GitHub signature, issuer, audience, repository ID, public PR event, run/attempt,
+PR ref and exact trusted reusable workflow revision. It independently verifies
+the current open, ready, same-repository PR and the single active preparation
+through host `gh`. A changed source, ambiguous invocation, started workload or
+incomplete API response admits no cloud work. Legacy callers without identity
+token access keep ordinary routing.
+
+`util/warpbuild-admission-server.cjs` is a Node 24 operator program. Its database
+and configuration belong in an owner-only directory outside the repository.
+Use a local filesystem with SQLite locking and durable storage; shared network
+filesystems and multiple independent database copies are unsupported. The
+database initializes once per approved burst and cannot reset its limits. The
+source provides no deployment, daemon installation, TLS configuration or
+credential provisioning. See [ADR 0052](adr/0052-private-playwright-admission-reservations.md).
+
+The local commands are:
+
+```bash
+node util/warpbuild-admission-server.cjs init /private/operator/state.sqlite < /private/operator/policy.json
+node util/warpbuild-admission-server.cjs billing /private/operator/state.sqlite < /private/operator/billing.json
+node util/warpbuild-admission-server.cjs serve /private/operator/state.sqlite /private/operator/config.json
+node util/warpbuild-admission-server.cjs reconcile /private/operator/state.sqlite < /private/operator/receipt.json
+node util/warpbuild-admission-server.cjs disable /private/operator/state.sqlite
+node util/warpbuild-admission-server.cjs status /private/operator/state.sqlite
+```
+
+Paths above are placeholders. Keep command output and all files private. Serve
+binds loopback port 8080 and exposes only `POST /admit`; ledger administration
+is local. A later deployment must supply an approved HTTPS ingress, request
+limits, service supervision, durable storage and existing read-only forge
+authentication. Neither the PR nor the endpoint receives the forge credential.
+
+The private policy supplies `windowId`, `expiresAt`, `controlSha`,
+`maxSubmissions`, `maxConcurrent`, `budgetMicros`, `reservationMicros`,
+`accountLimitMicros`, `historicalLiabilityMicros`, `maxBillingAgeSeconds` and
+`ticketSeconds`. Amounts are nonnegative integer millionths of one currency,
+used consistently for the burst, account and receipts. The window lasts at most
+24 hours; at most two unreconciled validations may coexist. Billing observations
+are at most 15 minutes old. Issued tickets retain a one-minute clock margin
+below the client's four-hour lifetime ceiling. Start with one
+concurrent validation. All operational values require the finite operator
+packet; the source supplies no spending defaults.
+
+The configuration contains `repository`, its decimal-string `repositoryId`,
+decimal-string `groupId`, the complete approved `selectedWorkflows` list,
+`workflowRef` and `audience`. Every admission rechecks the group restrictions
+and exact repository/workflow selection; unknown or changed access denies it.
+The repository and reusable workflow are fixed to
+this public repository and its normal `v3` execution envelope. Billing input
+contains `observedAt` and `reportedMicros`; observations must be monotonic.
+The operator accounts for unrelated usage and retained historical liabilities
+before refreshing headroom. Reported spend plus all window charges and holds is
+conservative: it can count a reconciled charge twice rather than omit exposure.
+
+Reconciliation supplies the original `identity` and a `receipt` containing
+`terminal: true`, `completeBilling: true`, boolean `successful`, integer
+`actualMicros`, and `receiptSha256` binding the privately inspected evidence for
+that validation. The same receipt cannot settle a different reservation.
+These are operator attestations, not an automated billing verifier. Only after
+checking every actual producer, aggregate and job-linked charge may the operator
+release a hold. Failure or an overrun permanently disables further admission
+for that window. An expired ticket, cancelled job, lost response or coordinator
+restart alone never releases a hold or resets the submission count.
+
+Disabling admission prevents future ticket responses; it cannot retract a
+response already delivered or stop submitted jobs. Preserve those jobs and
+reconcile them. Before enabling a successor window, reconcile the predecessor
+or explicitly carry its unresolved liabilities into the approved policy.
+This is bounded operator-enabled burst admission. Queue-pressure activation,
+automated billing collection and comparative speed qualification remain later
+work; source tests do not establish them.
 
 Run the policy reconciler from a trusted administrator checkout. Both modes
 accept `GH_TOKEN` or a hidden prompt for a short-lived fine-grained token;

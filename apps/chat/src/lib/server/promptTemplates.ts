@@ -28,6 +28,7 @@ type PromptContext = {
   }
   'lecturer-standard-context': { personaContextJson: string }
   'image-description': { userContent: string }
+  'document-pages-summary': { userContent: string; pageCount: number }
 }
 
 const templates = new Map<keyof PromptContext, Handlebars.TemplateDelegate>()

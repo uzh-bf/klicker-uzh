@@ -1107,6 +1107,11 @@ OCR is not supported. A PowerPoint file gets a localized message asking for a PD
 adapter accepts `.pptx` and `.ppt` only to show that message. Documents work with every model, so
 the attach button and the dropzone stay available when the selected model cannot read images.
 
+The first document a student attaches opens a notice (`document-notice-modal.tsx`) about what
+may be shared and where the text goes. Declining removes the documents; accepting is remembered
+in `localStorage` for that browser, not in the database, so it is a reminder rather than recorded
+consent.
+
 The extracted text travels inside the user message. `useThreadManagement` appends one block per
 file after the typed question, and a file-only message gets the localized default question. Each
 block starts with `--- Attached document: <name> (<pages>, shortened …) ---` and ends with
@@ -1121,6 +1126,59 @@ Data boundary: the extracted text is stored in `ChatMessage.content`, sent to th
 and sent again with every later turn of the thread. The server does not limit message length, so
 the client cap is a UX rule, not enforcement. Uploads stay in the thread and never enter a course
 knowledge base.
+
+### Visual review of PDF pages
+
+When the selected model reads images (`supportsImageAttachments`), the adapter also renders every
+page of a PDF with at most 10 pages (`MAX_VISUAL_REVIEW_PAGES`) as a JPEG. The worker draws each
+page on an `OffscreenCanvas` at about 1,600 px on the longest side and quality 0.8 (`pdfText.ts`).
+PDF.js gets an `OffscreenCanvas` factory and draws fonts as paths, because a worker has no
+`document`. The pages are kept as `file` parts of the document attachment, so the image pipeline
+(`images`, at most 3) never sees them. A PDF with more pages is not rendered at all.
+
+The final decision happens at send time in `applyVisualReview` (`documentText.ts`), because the
+student may switch models after attaching. Pages are sent only if the model reads images and the
+whole document fits into the 10-page budget of the message, in attachment order. The block header
+records the outcome as a stored meta token: `pages reviewed visually`, or `pages not reviewed
+visually` with the reason (page limit, or model cannot read images). Without a reason it covers
+documents kept while editing, whose pages are not sent again, and pages the browser could not
+render; a render failure never blocks the text. The composer chip runs the same decision, and the
+edit composer shows kept documents with the status they get without pages
+(`visualReviewWithoutPages`), so each chip shows the status the message will have. A model counts as
+reading images for pages only once its loaded model option says so (`selectModelReadsDocumentPages`
+in `settingsStore.ts`); until then documents are read as text only and their headers say the pages were not reviewed, without claiming the model cannot read images. Page images wait in a module map in `attachmentState.ts` until
+`useChatResponse` sends them as `documentPages`; they never enter the thread state, history or
+Markdown export. Entries stay per message, and only the newest three are kept. `useChatResponse` takes them before
+any early return and gives them back after any failure except a rejection of the pages
+(`DOCUMENT_PAGES_NOT_SUPPORTED`, an invalid body, or 413), so "Try again"
+sends them again; such a rejection or a switch to a model without image support drops them. When pages are dropped, `withoutPageReview` rewrites the message's document headers, so neither
+the prompt nor the chip claims a review. A rendered page larger than the route's 2,000,000-character
+cap counts as a render failure, so the document goes through as text.
+
+The chat route accepts `documentPages` separately from `images`: at most 10 JPEG data URLs, each
+capped at 2,000,000 characters. It returns `400` with `DOCUMENT_PAGES_NOT_SUPPORTED` when the
+effective model, after any zero-credit fallback, cannot read images. On the current turn the pages
+go to the model with the user message. One extra call (`document-pages-summary.hbs`) writes a
+visual summary of all pages, and its cost counts toward the turn's credits like image
+descriptions. If the summary call fails, nothing is stored, so an earlier summary of the same
+message stays and no placeholder replaces it. The route stores only that summary, as a `ChatAttachment` row of type `IMAGE` with
+both image fields `null` and the summary in `imageDescription`. History routes load attachments
+with `IMAGE_ROW_FILTER`, so the row never shows as an image. Later turns, and a regenerated answer
+for the same message, append it as `[Visual summary of the attached document pages: …]`, a marker
+the input-context prompt (`input-context.hbs`) explains next to the image descriptions. The
+`null` image fields are the only marker of this row kind; a dedicated `ChatAttachmentType` value
+would make it explicit at the cost of a migration.
+
+Data boundary: the page images go to the model provider for the current turn and the summary call,
+but are not stored. The summary is stored with the message and sent with every later turn.
+
+Clicking a document chip, in the composer, the edit composer or a sent message, opens
+`DocumentPreviewModal`. A PDF still in this tab opens in the browser's own PDF viewer from an
+object URL; other files show the extracted text with a link to the original. Sent messages keep
+their originals in an in-memory map in `attachmentState.ts`, keyed by message ID and document
+position and bounded to the newest 20 and 50 MB in total; an edit copies the entries of kept documents. The original
+file is never uploaded or stored, so after a reload the preview shows the stored extracted text,
+which is what the model received.
 
 ## Client-state gotchas
 
