@@ -18,10 +18,10 @@ Provenance: checks 1–5 and 7–9 were executed and verified on macOS (2026-07-
 ## Check 1 — package manager
 
 ```bash
-pnpm --version   # MUST print 11.x
+pnpm --version   # MUST print 12.x
 ```
 
-Wrong major (e.g. 9.x from a stale Volta shim; `VOLTA_FEATURE_PNPM` unset) **silently rewrites `pnpm-lock.yaml`**. If `git status` shows lockfile churn you didn't intend: `git checkout pnpm-lock.yaml`, then reinstall with pnpm 11 (e.g. `/opt/homebrew/bin/pnpm` or `export VOLTA_FEATURE_PNPM=1`).
+A wrong major (e.g. 9.x from a stale Volta shim; `VOLTA_FEATURE_PNPM` unset) can **rewrite `pnpm-lock.yaml`** or reject workspace settings. If `git status` shows lockfile churn you didn't intend: `git checkout pnpm-lock.yaml`, then reinstall with pnpm 12 (e.g. `/opt/homebrew/bin/pnpm` or `export VOLTA_FEATURE_PNPM=1`).
 
 ## Check 2 — install and build state
 
