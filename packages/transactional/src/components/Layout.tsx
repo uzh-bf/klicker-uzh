@@ -1,11 +1,4 @@
-import {
-  Container,
-  Font,
-  Head,
-  Html,
-  Preview,
-  Tailwind,
-} from '@react-email/components'
+import { Container, Font, Head, Html, Preview, Tailwind } from 'react-email'
 import React from 'react'
 import Footer from './Footer.js'
 import Header from './Header.js'
