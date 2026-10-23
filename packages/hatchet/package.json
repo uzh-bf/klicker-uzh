@@ -1,6 +1,6 @@
 {
   "name": "@klicker-uzh/hatchet",
-  "version": "3.4.0-alpha.87",
+  "version": "3.4.0-alpha.88",
   "license": "AGPL-3.0",
   "main": "dist/index.js",
   "types": "dist/index.d.ts",
@@ -33,7 +33,7 @@
   "scripts": {
     "build": "run-s --npm-path pnpm build:ts",
     "build:test": "pnpm run build",
-    "build:ts": "cross-env NODE_ENV=production rollup -c",
+    "build:ts": "cross-env NODE_ENV=production rollup -c --forceExit",
     "check": "tsc --noEmit --tsBuildInfoFile dist/tsconfig.check.tsbuildinfo",
     "dev": "run-p --npm-path pnpm dev:ts",
     "dev:infisical": "../../util/_run_with_infisical.sh --env dev pnpm run dev",

@@ -8,6 +8,7 @@ export default {
       fullscreen: 'Expand graph to fullscreen',
       restore: 'Return graph to sidebar',
       ask: 'Ask about this',
+      showConcept: 'Show this concept in the knowledge graph',
       nodePrompt: 'Help me understand the concept “{topic}”.',
       edgePrompt:
         'Explain the relationship “{relationship}” between “{source}” and “{target}”.',
@@ -29,6 +30,7 @@ export default {
       quizzer: 'Quizzer',
       quizzerDescription:
         'Practise with exam-style course questions, one at a time, with formative feedback.',
+      custom: 'Custom mode',
     },
     settingsPanel: {
       title: 'Settings',
@@ -391,6 +393,11 @@ export default {
     },
     composer: {
       placeholder: 'Write a message...',
+      replyLanguageEn: 'This conversation is in English',
+      replyLanguageDe: 'This conversation is in German',
+      meetingClockNotStarted: 'The clock starts with your first message',
+      meetingClockElapsed: '{minutes} min since your first message',
+      meetingClockTime: '{time} (Zurich time)',
       modeUnavailable:
         'No chat mode is currently available. Please contact your lecturer.',
       send: 'Send message',
@@ -5007,6 +5014,34 @@ Since the KlickerUZH app is not yet available in the iOS App Store, follow these
       chatbotCustomModePersonaText: 'Persona and instructions',
       chatbotCustomModePersonaPlaceholder:
         'Describe how this mode should respond to participants.',
+      chatbotCustomModeWelcomeMessage: 'Welcome message',
+      chatbotCustomModeWelcomePlaceholder:
+        'Shown in an empty chat for this mode. Leave empty to use the standard greeting.',
+      chatbotCustomModeStarterPrompts: 'Starter prompts',
+      chatbotCustomModeStarterPromptsDescription:
+        'Shown as suggestions in an empty chat for this mode. At most {count} starters; learners decide whether to send them.',
+      chatbotCustomModeStarterPrompt: 'Starter prompt {number}',
+      chatbotCustomModeStarterPromptAdd: 'Add starter prompt',
+      chatbotCustomModeShowReasoning: 'Show model reasoning to participants',
+      chatbotCustomModeShowReasoningDescription:
+        'Off by default. The reasoning summary can paraphrase the persona and instructions of this mode, for example the hidden facts of a role-play. Owner preview always shows it.',
+      chatbotCustomModeReasoningShown:
+        'Model reasoning visible to participants',
+      chatbotCustomModeReasoningHidden:
+        'Model reasoning hidden from participants',
+      chatbotCustomModeReplyLanguage: 'Reply language',
+      chatbotCustomModeReplyLanguageDescription:
+        'By default, replies follow the language the participant writes in. Fix a language for role-plays that must stay in one language.',
+      chatbotCustomModeReplyLanguageFollow: 'Follow the participant',
+      chatbotCustomModeReplyLanguageEn: 'Always English',
+      chatbotCustomModeReplyLanguageDe: 'Always German',
+      chatbotCustomModeMeetingClock: 'Meeting clock',
+      chatbotCustomModeMeetingClockDescription:
+        "Off by default. Tells the model how many minutes have passed since the participant's first message, for timed role-plays. Keep the meeting length and phases in the persona.",
+      chatbotCustomModeMeetingClockOff: 'Off',
+      chatbotCustomModeMeetingClockElapsed: 'Elapsed minutes',
+      chatbotCustomModeMeetingClockElapsedAndTime:
+        'Elapsed minutes and time of day',
       chatbotCustomModeAdd: 'Add custom mode',
       chatbotCustomModeRemove: 'Remove',
       chatbotCustomModesLimit: 'At most {count} custom modes are supported.',
@@ -5272,8 +5307,10 @@ Since the KlickerUZH app is not yet available in the iOS App Store, follow these
       knowledgeGraphVisibleDisabledDescription:
         'Off: the concept map stays hidden from participants.',
       knowledgeGraphRetrieval: 'Use graph connections for document search',
-      knowledgeGraphRetrievalDescription:
+      knowledgeGraphRetrievalEnabledDescription:
         'On: document search may use related concepts from the published graph as additional search hints. Answers still cite document passages only.',
+      knowledgeGraphRetrievalDisabledDescription:
+        'Off: document search uses the question only, without graph hints.',
       knowledgeGraphSave: 'Save knowledge graph settings',
       knowledgeGraphSaveSuccess: 'Knowledge graph settings saved.',
       noEnabledKnowledgeBase:

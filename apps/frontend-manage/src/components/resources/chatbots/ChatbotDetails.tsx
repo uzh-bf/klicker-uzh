@@ -3,7 +3,6 @@ import { faExternalLinkAlt } from '@fortawesome/free-solid-svg-icons'
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome'
 import { useFeatureFlag } from '@klicker-uzh/feature-flags/react'
 import {
-  AiSubscriptionTier,
   ChatbotStatus,
   type ChatModelCapability,
   ChatUsageClass,
@@ -203,8 +202,8 @@ function ChatbotDetails({
   // Only the owner edits a chatbot, so the viewer's own entitlement decides
   // which models its participants can actually use.
   const { data: accountUsageData } = useQuery(GetChatAccountUsageDocument)
-  // Drafts can be prepared without AI access, so an unauthorized owner falls
-  // back to the subscription tier; saving still requires its cost center.
+  // Drafts can be prepared without AI access, while advanced models still
+  // require an advanced subscription and a cost center.
   // Delegated logins cannot read the overview; the server's save check stays
   // authoritative, so an unknown entitlement leaves every model enabled.
   const accountUsage = accountUsageData?.getChatAccountUsage
@@ -212,7 +211,7 @@ function ChatbotDetails({
     ? true
     : accountUsage.authorized
       ? accountUsage.advancedModelUsage.entitled
-      : accountUsage.subscriptionTier === AiSubscriptionTier.Advanced
+      : accountUsage.advancedModelConfigurationEntitled
   // Models in the saved revision stay selectable, as the server accepts them.
   const savedModelIds = useMemo(
     () => (chatbot ? getChatbotRevisionValues(chatbot).allowedModelIds : []),
@@ -1031,7 +1030,13 @@ function ChatbotDetails({
                     />
                   </div>
                   <div className="text-xs text-gray-500">
-                    {t('manage.resources.knowledgeGraphRetrievalDescription')}
+                    {knowledgeGraphPolicy.retrievalEnabled
+                      ? t(
+                          'manage.resources.knowledgeGraphRetrievalEnabledDescription'
+                        )
+                      : t(
+                          'manage.resources.knowledgeGraphRetrievalDisabledDescription'
+                        )}
                   </div>
                 </div>
               )}

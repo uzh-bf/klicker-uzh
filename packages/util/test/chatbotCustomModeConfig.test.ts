@@ -4,6 +4,9 @@ import {
   CHATBOT_CUSTOM_MODE_NAME_MAX_LENGTH,
   CHATBOT_CUSTOM_MODE_PERSONA_EXTENDED_MAX_LENGTH,
   CHATBOT_CUSTOM_MODE_PERSONA_MAX_LENGTH,
+  CHATBOT_CUSTOM_MODE_STARTER_PROMPT_MAX_COUNT,
+  CHATBOT_CUSTOM_MODE_STARTER_PROMPT_MAX_LENGTH,
+  CHATBOT_CUSTOM_MODE_WELCOME_MESSAGE_MAX_LENGTH,
   normalizeChatbotCustomModeConfig,
   parseChatbotCustomModeConfigInput,
 } from '../src/chatbotCustomModeConfig.js'
@@ -38,7 +41,7 @@ describe('chatbot custom mode configuration', () => {
     )
   })
 
-  it('rejects over-long names, descriptions, and persona text', () => {
+  it('rejects over-long names, descriptions, persona text, and welcomes', () => {
     expect(() =>
       parseModes(
         [{ name: 'x'.repeat(CHATBOT_CUSTOM_MODE_NAME_MAX_LENGTH + 1) }],
@@ -69,6 +72,351 @@ describe('chatbot custom mode configuration', () => {
       ])
     ).toThrow(
       `personaText must be at most ${CHATBOT_CUSTOM_MODE_PERSONA_MAX_LENGTH}`
+    )
+    expect(() =>
+      parseModes(
+        [
+          {
+            name: 'Mode',
+            welcomeMessage: 'x'.repeat(
+              CHATBOT_CUSTOM_MODE_WELCOME_MESSAGE_MAX_LENGTH + 1
+            ),
+          },
+        ],
+        null
+      )
+    ).toThrow(
+      `welcomeMessage must be at most ${CHATBOT_CUSTOM_MODE_WELCOME_MESSAGE_MAX_LENGTH}`
+    )
+  })
+
+  it('normalizes and round-trips an authored welcome message', () => {
+    const created = parseModes(
+      [
+        {
+          name: 'Interview coach',
+          welcomeMessage: '  Hello!\r\nAsk me about interviews.  ',
+        },
+      ],
+      null
+    )
+    const key = created.modes[0]?.key
+
+    expect(created.modes[0]?.welcomeMessage).toBe(
+      'Hello!\nAsk me about interviews.'
+    )
+    // Re-validating the stored configuration keeps the authored text.
+    expect(
+      parseModes(
+        [
+          {
+            key,
+            name: 'Interview coach',
+            welcomeMessage: created.modes[0]?.welcomeMessage,
+          },
+        ],
+        created
+      ).modes[0]?.welcomeMessage
+    ).toBe('Hello!\nAsk me about interviews.')
+  })
+
+  it('clears the stored welcome on an explicit null or blank write', () => {
+    const stored = parseModes(
+      [{ name: 'Interview coach', welcomeMessage: 'Hello there!' }],
+      null
+    )
+    const key = stored.modes[0]?.key
+
+    for (const cleared of [null, '   ']) {
+      expect(
+        parseModes(
+          [
+            {
+              key,
+              name: 'Interview coach',
+              welcomeMessage: cleared,
+            },
+          ],
+          stored
+        ).modes[0]?.welcomeMessage ?? null
+      ).toBeNull()
+    }
+  })
+
+  it('preserves the stored welcome when a save omits the field', () => {
+    const stored = parseModes(
+      [{ name: 'Interview coach', welcomeMessage: 'Hello there!' }],
+      null
+    )
+    const key = stored.modes[0]?.key
+
+    const resaved = parseModes(
+      [
+        { key, name: 'Interview coach', description: 'Narrowed scope' },
+        { name: 'Fresh mode' },
+      ],
+      stored
+    )
+
+    expect(resaved.modes[0]?.welcomeMessage).toBe('Hello there!')
+    // A newly authored mode never inherits another mode's welcome.
+    expect(resaved.modes[1]?.welcomeMessage ?? null).toBeNull()
+  })
+
+  it('hides participant reasoning unless a save explicitly shows it', () => {
+    const created = parseModes(
+      [{ name: 'Hidden by default' }, { name: 'Shown', showReasoning: true }],
+      null
+    )
+    expect(created.modes.map((mode) => mode.showReasoning ?? false)).toEqual([
+      false,
+      true,
+    ])
+
+    const [hiddenKey, shownKey] = created.modes.map((mode) => mode.key)
+    // Omission keeps the stored choice; false or null hides again.
+    const resaved = parseModes(
+      [
+        { key: shownKey, name: 'Shown' },
+        { key: hiddenKey, name: 'Hidden by default', showReasoning: null },
+      ],
+      created
+    )
+    expect(resaved.modes.map((mode) => mode.showReasoning ?? false)).toEqual([
+      true,
+      false,
+    ])
+    expect(
+      parseModes(
+        [{ key: shownKey, name: 'Shown', showReasoning: false }],
+        created
+      ).modes[0]?.showReasoning ?? false
+    ).toBe(false)
+
+    expect(() =>
+      parseModes([{ name: 'Invalid', showReasoning: 'yes' }], null)
+    ).toThrow('showReasoning must be a boolean or null')
+
+    // A stored value other than an explicit true never reveals reasoning.
+    expect(
+      normalizeChatbotCustomModeConfig({
+        modes: [
+          { key: 'cm_truthy', name: 'Truthy', showReasoning: 'true' },
+          { key: 'cm_true', name: 'True', showReasoning: true },
+        ],
+      })?.modes.map((mode) => mode.showReasoning ?? false)
+    ).toEqual([false, true])
+  })
+
+  it.each([
+    ['replyLanguage', 'en', 'de', 'fr'],
+    ['meetingClock', 'ELAPSED', 'ELAPSED_AND_TIME', 'ALWAYS'],
+  ] as const)('stores, keeps, clears, and validates %s', (field, first, second, invalid) => {
+    const created = parseModes(
+      [{ name: 'Unset' }, { name: 'Set', [field]: first }],
+      null
+    )
+    const [unsetKey, setKey] = created.modes.map((mode) => mode.key)
+    expect(created.modes.map((mode) => mode[field] ?? null)).toEqual([
+      null,
+      first,
+    ])
+
+    // Omission keeps the stored value; null clears it.
+    const resaved = parseModes(
+      [
+        { key: unsetKey, name: 'Unset', [field]: second },
+        { key: setKey, name: 'Set' },
+      ],
+      created
+    )
+    expect(resaved.modes.map((mode) => mode[field] ?? null)).toEqual([
+      second,
+      first,
+    ])
+    const cleared = parseModes(
+      [{ key: setKey, name: 'Set', [field]: null }],
+      resaved
+    )
+    expect(cleared.modes[0]).not.toHaveProperty(field)
+
+    expect(() =>
+      parseModes([{ name: 'Invalid', [field]: invalid }], null)
+    ).toThrow(field)
+
+    // An invalid stored value counts as unset and keeps the mode.
+    expect(
+      normalizeChatbotCustomModeConfig({
+        modes: [
+          { key: 'cm_invalid', name: 'Invalid', [field]: invalid },
+          { key: 'cm_valid', name: 'Valid', [field]: second },
+        ],
+      })?.modes.map((mode) => mode[field] ?? null)
+    ).toEqual([null, second])
+  })
+
+  it('discards only an invalid stored welcome and keeps the mode', () => {
+    const config = normalizeChatbotCustomModeConfig({
+      modes: [
+        { key: 'cm_number', name: 'Number welcome', welcomeMessage: 42 },
+        {
+          key: 'cm_long',
+          name: 'Long welcome',
+          welcomeMessage: 'x'.repeat(
+            CHATBOT_CUSTOM_MODE_WELCOME_MESSAGE_MAX_LENGTH + 1
+          ),
+        },
+        {
+          key: 'cm_valid',
+          name: 'Valid welcome',
+          welcomeMessage: '  Hi\r\nthere  ',
+        },
+      ],
+    })
+
+    expect(config?.modes.map((mode) => mode.welcomeMessage ?? null)).toEqual([
+      null,
+      null,
+      'Hi\nthere',
+    ])
+  })
+
+  it('normalizes and round-trips authored starter prompts', () => {
+    const created = parseModes(
+      [
+        {
+          name: 'Interview coach',
+          starterPrompts: [
+            '  Ask about my last project.  ',
+            'How do I prepare?\r\n',
+          ],
+        },
+      ],
+      null
+    )
+    const key = created.modes[0]?.key
+
+    expect(created.modes[0]?.starterPrompts).toEqual([
+      'Ask about my last project.',
+      'How do I prepare?',
+    ])
+    expect(
+      parseModes(
+        [
+          {
+            key,
+            name: 'Interview coach',
+            starterPrompts: created.modes[0]?.starterPrompts,
+          },
+        ],
+        created
+      ).modes[0]?.starterPrompts
+    ).toEqual(['Ask about my last project.', 'How do I prepare?'])
+  })
+
+  it('clears stored starter prompts on an explicit null or empty list', () => {
+    const stored = parseModes(
+      [{ name: 'Interview coach', starterPrompts: ['Keep me?'] }],
+      null
+    )
+    const key = stored.modes[0]?.key
+
+    for (const cleared of [null, []]) {
+      expect(
+        parseModes(
+          [{ key, name: 'Interview coach', starterPrompts: cleared }],
+          stored
+        ).modes[0]?.starterPrompts ?? null
+      ).toBeNull()
+    }
+  })
+
+  it('preserves stored starter prompts when a save omits the field', () => {
+    const stored = parseModes(
+      [{ name: 'Interview coach', starterPrompts: ['Keep me?'] }],
+      null
+    )
+    const key = stored.modes[0]?.key
+
+    const resaved = parseModes(
+      [
+        { key, name: 'Interview coach', description: 'Narrowed scope' },
+        { name: 'Fresh mode' },
+      ],
+      stored
+    )
+
+    expect(resaved.modes[0]?.starterPrompts).toEqual(['Keep me?'])
+    expect(resaved.modes[1]?.starterPrompts ?? null).toBeNull()
+  })
+
+  it('filters invalid stored starter prompts and keeps the mode', () => {
+    const config = normalizeChatbotCustomModeConfig({
+      modes: [
+        { key: 'cm_text', name: 'Not a list', starterPrompts: 'Ask me' },
+        {
+          key: 'cm_mixed',
+          name: 'Mixed list',
+          starterPrompts: [
+            '  Keep one.  ',
+            42,
+            '',
+            'x'.repeat(CHATBOT_CUSTOM_MODE_STARTER_PROMPT_MAX_LENGTH + 1),
+            'Keep two.',
+            'Keep three.',
+            'Keep four.',
+            'Dropped five.',
+          ],
+        },
+      ],
+    })
+
+    expect(config?.modes.map((mode) => mode.starterPrompts ?? null)).toEqual([
+      null,
+      ['Keep one.', 'Keep two.', 'Keep three.', 'Keep four.'],
+    ])
+  })
+
+  it('rejects malformed starter prompt writes', () => {
+    expect(() =>
+      parseModes([{ name: 'Mode', starterPrompts: 'Ask me' }], null)
+    ).toThrow('starterPrompts must be an array')
+    expect(() =>
+      parseModes(
+        [
+          {
+            name: 'Mode',
+            starterPrompts: Array.from(
+              { length: CHATBOT_CUSTOM_MODE_STARTER_PROMPT_MAX_COUNT + 1 },
+              (_entry, index) => `Starter ${index}`
+            ),
+          },
+        ],
+        null
+      )
+    ).toThrow(
+      `starterPrompts must contain at most ${CHATBOT_CUSTOM_MODE_STARTER_PROMPT_MAX_COUNT}`
+    )
+    expect(() =>
+      parseModes([{ name: 'Mode', starterPrompts: [42] }], null)
+    ).toThrow('starterPrompts entry 1 must be a string')
+    expect(() =>
+      parseModes([{ name: 'Mode', starterPrompts: ['   '] }], null)
+    ).toThrow('starterPrompts entry 1 must not be empty')
+    expect(() =>
+      parseModes(
+        [
+          {
+            name: 'Mode',
+            starterPrompts: [
+              'x'.repeat(CHATBOT_CUSTOM_MODE_STARTER_PROMPT_MAX_LENGTH + 1),
+            ],
+          },
+        ],
+        null
+      )
+    ).toThrow(
+      `starterPrompts entry 1 must be at most ${CHATBOT_CUSTOM_MODE_STARTER_PROMPT_MAX_LENGTH}`
     )
   })
 

@@ -39,6 +39,8 @@ import {
 import { buildChatTurnRequest } from '@/src/lib/server/chatTurnRequest'
 import { withModelCitationIndices } from '@/src/lib/server/citationInstructions'
 import {
+  getCustomModeTurnSettings,
+  isParticipantReasoningVisible,
   resolveEffectiveChatModeOptions,
   resolveEffectiveMCPConfigurations,
   resolveRequestedChatMode,
@@ -54,6 +56,10 @@ import {
   registerLangfuseTelemetry,
 } from '@/src/lib/server/langfuseTracing'
 import {
+  formatMeetingClock,
+  replyLanguageReminder,
+} from '@/src/lib/server/languageInstructions'
+import {
   REQUIRED_MCP_UNAVAILABLE_CODE,
   RequiredMCPUnavailableError,
 } from '@/src/lib/server/mcpRuntimePolicy'
@@ -65,6 +71,10 @@ import {
 } from '@/src/lib/server/persistedAssistantContent'
 import { buildPromptCacheRequest } from '@/src/lib/server/promptCacheIdentity'
 import { renderPromptTemplate } from '@/src/lib/server/promptTemplates'
+import {
+  providerRefusalDeflection,
+  providerRefusalTransform,
+} from '@/src/lib/server/providerRefusal'
 import {
   createResponseExampleSearchTool,
   loadResponseExampleRuntimeSkill,
@@ -740,6 +750,12 @@ export async function POST(
       { status: 400 }
     )
   }
+  // The provider still produces and the server still persists the reasoning
+  // summary; this only decides whether it leaves the server for this turn.
+  const showReasoning = isParticipantReasoningVisible(
+    chatbot.customModeConfig,
+    selectedMode
+  )
 
   const modelRegistry = getChatModelRegistry()
   const allowedIds =
@@ -1487,7 +1503,43 @@ export async function POST(
       role: msg.role,
       content: msg.content,
     }))
-    const stepReminder = trailingStepMessage(selectedMode, messages)
+    // A custom mode's locked language and meeting clock join the trailing
+    // reminder, which is rebuilt for every request and never persisted, so
+    // the instructions prefix stays stable while the clock advances. The
+    // current user message is persisted later, so a first turn starts the
+    // clock now. The participant indicator receives the same start and
+    // server time through the message metadata and reloads the start from
+    // the same completed user messages.
+    const turnSettings = getCustomModeTurnSettings(
+      chatbot.customModeConfig,
+      selectedMode
+    )
+    const turnStartedAt = new Date()
+    const meetingClockStartedAt = turnSettings.meetingClock
+      ? ((
+          await prisma.chatMessage.findFirst({
+            where: {
+              threadId: owningThread.id,
+              role: 'user',
+              lifecycleStatus: 'COMPLETED',
+            },
+            orderBy: { createdAt: 'asc' },
+            select: { createdAt: true },
+          })
+        )?.createdAt ?? turnStartedAt)
+      : null
+    const stepReminder = trailingStepMessage(
+      selectedMode,
+      messages,
+      replyLanguageReminder(
+        turnSettings.replyLanguage ?? null,
+        formatMeetingClock(
+          turnSettings.meetingClock ?? null,
+          meetingClockStartedAt,
+          turnStartedAt
+        )
+      )
+    )
 
     const maxOutputTokens = selectedModelConfig.maxOutputTokens
 
@@ -2054,6 +2106,20 @@ export async function POST(
           ],
         }),
         stopWhen: isStepCount(5),
+        // A provider's canned, unbilled refusal is replaced with a neutral
+        // platform line, so no mode shows it and a persona keeps its role.
+        experimental_transform: providerRefusalTransform(
+          providerRefusalDeflection(
+            turnSettings.replyLanguage ?? null,
+            req.cookies.get('NEXT_LOCALE')?.value
+          ),
+          (finish) =>
+            console.warn('[chat] Provider refusal replaced:', {
+              requestId,
+              chatMode: selectedMode,
+              ...finish,
+            })
+        ),
         instructions: turnRequest.instructions,
 
         abortSignal: req.signal,
@@ -2377,7 +2443,7 @@ export async function POST(
     })
 
     return result.toUIMessageStreamResponse({
-      sendReasoning: true,
+      sendReasoning: showReasoning,
       consumeSseStream: consumeStream,
       onError: (error) => {
         void closeMcpTools()
@@ -2399,6 +2465,12 @@ export async function POST(
         return 'An error occurred while processing the request.'
       },
       messageMetadata: ({ part }) => {
+        if (part.type === 'start' && meetingClockStartedAt) {
+          return {
+            meetingClockStartedAt: meetingClockStartedAt.toISOString(),
+            serverNow: new Date().toISOString(),
+          }
+        }
         if (part.type !== 'finish') {
           return undefined
         }
@@ -2420,7 +2492,7 @@ export async function POST(
           chatMode: selectedMode,
           modelId: selectedModelConfig.id,
           reasoningEffort: appliedReasoningEffort,
-          reasoningContent: assistantReasoningContent,
+          reasoningContent: showReasoning ? assistantReasoningContent : null,
           creditsUsed,
         }
       },

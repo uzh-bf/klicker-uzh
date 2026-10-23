@@ -20,6 +20,11 @@ fragment ChatbotAuthoringRevisionData on ChatbotAuthoringRevision {
       name
       description
       personaText
+      welcomeMessage
+      starterPrompts
+      showReasoning
+      replyLanguage
+      meetingClock
     }
   }
   modelSelection

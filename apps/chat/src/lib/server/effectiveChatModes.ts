@@ -1,10 +1,12 @@
 import type { ChatbotCustomMode } from '@klicker-uzh/types'
 import {
+  isChatbotCustomModeKey,
   isChatbotStandardModeKey,
   normalizeChatbotCustomModeConfig,
   normalizeChatbotStandardModeConfig,
 } from '@klicker-uzh/util'
 import { DEFAULT_MODE_DESCRIPTIONS } from '@/src/lib/config/mode-descriptions'
+import type { ChatModeOption, ChatModeOptions } from '@/src/lib/config/modes'
 import { DEFAULT_PROMPT } from '@/src/lib/config/prompts'
 
 export interface EffectiveChatModeOptions {
@@ -282,6 +284,41 @@ function getApprovedCustomModesByKey(
   return modesByKey
 }
 
+/**
+ * Whether a participant may receive the model's reasoning for a turn in
+ * `mode`, judged against the live approved config. Standard and legacy stored
+ * modes keep showing it. An approved custom mode shows it only after the
+ * lecturer opted in, and a custom key that is no longer approved stays
+ * hidden, because its stored reasoning can still echo the removed persona.
+ */
+export function isParticipantReasoningVisible(
+  customModeConfig: unknown,
+  mode: string | null | undefined
+): boolean {
+  if (!mode) return true
+
+  const customMode = getApprovedCustomModesByKey(customModeConfig).get(mode)
+  if (customMode) return customMode.showReasoning === true
+
+  return !isChatbotCustomModeKey(mode)
+}
+
+/**
+ * The per-turn settings of the custom mode `mode` in `customModeConfig`: its
+ * locked reply language and meeting clock. Standard modes and keys without a
+ * custom mode have neither.
+ */
+export function getCustomModeTurnSettings(
+  customModeConfig: unknown,
+  mode: string
+): Pick<ChatbotCustomMode, 'replyLanguage' | 'meetingClock'> {
+  const customMode = getApprovedCustomModesByKey(customModeConfig).get(mode)
+  return {
+    replyLanguage: customMode?.replyLanguage ?? null,
+    meetingClock: customMode?.meetingClock ?? null,
+  }
+}
+
 function getCustomModeDescription(mode: ChatbotCustomMode): string {
   // The switcher and the welcome card fall back to this string for a mode
   // without an i18n entry, so a mode without a description still needs label
@@ -289,13 +326,16 @@ function getCustomModeDescription(mode: ChatbotCustomMode): string {
   return mode.description ?? mode.name
 }
 
-function getCustomModeOption(mode: ChatbotCustomMode): {
-  description: string
-  name?: string
-} {
+function getCustomModeOption(mode: ChatbotCustomMode): ChatModeOption {
   return {
     description: getCustomModeDescription(mode),
     name: mode.name,
+    ...(mode.welcomeMessage ? { welcomeMessage: mode.welcomeMessage } : {}),
+    ...(mode.starterPrompts?.length
+      ? { starterPrompts: mode.starterPrompts }
+      : {}),
+    ...(mode.replyLanguage ? { replyLanguage: mode.replyLanguage } : {}),
+    ...(mode.meetingClock ? { meetingClock: mode.meetingClock } : {}),
   }
 }
 
@@ -304,7 +344,7 @@ export function resolveEffectiveChatModeOptions(
   mcpConfigurations: readonly ChatModeMCPConfiguration[],
   standardModeConfig: unknown = null,
   options: EffectiveChatModeOptions = {}
-): Record<string, { description: string; name?: string }> {
+): ChatModeOptions {
   const storedPrompts = asRecord(systemPrompts)
   const standardModes = Object.keys(DEFAULT_PROMPT)
   const customModesByKey = getApprovedCustomModesByKey(options.customModeConfig)
@@ -315,7 +355,7 @@ export function resolveEffectiveChatModeOptions(
   const candidates = Array.from(
     new Set([...standardModes, ...customModesByKey.keys(), ...storedModes])
   )
-  const modeOptions: Record<string, { description: string; name?: string }> = {}
+  const modeOptions: ChatModeOptions = {}
 
   for (const mode of candidates) {
     if (mode.trim().length === 0) continue

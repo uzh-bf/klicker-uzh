@@ -4,7 +4,7 @@
 
 A knowledge base (KB) attached to a chatbot that offers only a custom chat
 mode suppressed every mode, so participants saw "Für diesen Chatbot ist derzeit
-kein Chatmodus verfügbar" on live PRD. Two causes combine: `attachKbToChatbot`
+kein Chatmodus verfügbar". Two causes combine: `attachKbToChatbot`
 provisions the required `doc_query` retrieval binding only for `tutor` and
 `explainer`, and the effective-mode resolver hides any offered mode that has no
 required binding whenever the chatbot declares one anywhere.
@@ -48,10 +48,9 @@ withheld.
 
 ### Problem and evidence
 
-Problem: bot `1c6dec49-066b-4599-aa10-a18a89d1fe0f` ("Ethik-Rollenspiel",
-custom mode `ethik-rollenspiel`, standard modes disabled, `standardModeConfig`
-NULL, PUBLISHED) lost every available mode for participants as soon as a KB was
-attached.
+A chatbot offering only a custom mode can lose every available mode when a
+knowledge base is attached. The regression fixture disables the standard modes
+and declares one approved custom mode without an exact retrieval binding.
 
 Evidence: `attachKbToChatbot` (`packages/graphql/src/services/knowledge.ts:1181`)
 loops `KB_MCP_CHAT_MODES = ['tutor', 'explainer']` (`:76`) and creates required
@@ -61,7 +60,9 @@ rows with `parameters { required: true, toolAlias: 'doc_query', kb_id }`.
 globally (`:222`) and drops every mode whose effective configurations contain no
 required binding (`:238`). With the two standard modes disabled, the only
 offered mode is the unbound custom mode, so the resolver returns zero modes.
-Reproduction is deterministic and is recorded in the handoff.
+The effective-mode regression fixture covers this trigger by asserting that the
+approved custom mode remains available through inherited binding. It does not
+itself reproduce the zero-mode result.
 
 Second seam: `resolveMcpScope` (`apps/chat/src/services/mcpScope.ts:216`)
 requires the selected mode's effective KB configuration to be exactly one and
@@ -348,7 +349,7 @@ populated projection, changes this decision and needs its own ADR update.
 | Product primitive | Disposition | Contract delta | Affected compositions and consumers | Evidence or open ruling |
 | --- | --- | --- | --- | --- |
 | Effective mode set | extend | A mode's availability no longer depends on another mode's required binding; an unbound mode is offered | Chat bootstrap API, participant layout, owner preview, request validation | Handoff incident reproduction; slice 1 tests |
-| Knowledge-base binding ("Wissensbasis") | extend | Attachment provisions only the Tutor and Explainer rows and derives eligible custom keys from the approved `customModeConfig`; approved custom modes inherit the standard binding, disabled exact overrides stay untouched, and "Wissensbasis" stays the only lecturer-visible retrieval concept | KB attach/detach mutations, KB management bindings page, chatbot knowledge view | Slice 2 tests; live PRD incident; October 12 reconciliation |
+| Knowledge-base binding ("Wissensbasis") | extend | Attachment provisions only the Tutor and Explainer rows and derives eligible custom keys from the approved `customModeConfig`; approved custom modes inherit the standard binding, disabled exact overrides stay untouched, and "Wissensbasis" stays the only lecturer-visible retrieval concept | KB attach/detach mutations, KB management bindings page, chatbot knowledge view | Slice 2 row-provisioning and reconciliation tests; effective-mode inheritance test |
 | Standard-mode configuration | reuse | None | Unchanged | ADR 0021 invariant preserved |
 | MCP configuration (internal) | retire (lecturer projection and op selections only) | Runtime policy and stored rows keep working; the public read field is deprecated and resolves empty | Manage chat-usage view, four chatbot ops, public SDL | Slices 1-3 tests and codegen |
 
@@ -387,6 +388,17 @@ captures; `$rs-mr-description-writer` writes the pull-request body with the
 screenshot table.
 
 ## Progress
+
+### Current release preparation — 15 October 2026
+
+The original binding change merged in [#6247](https://github.com/uzh-bf/klicker-uzh/pull/6247).
+This follow-up carries only the two reviewed staging integration corrections
+into the release source: JavaScript-compatible cost-center whitespace handling
+and draft-model configuration eligibility consistent with the save policy.
+See the [production promotion plan](2026-10-15-kb-binding-production-promotion-plan.md)
+for the bounded draft-PR authority and the remaining release gates. The earlier
+progress entries below are historical evidence, not current forge status.
+
 
 ### October 13 review and simplification
 

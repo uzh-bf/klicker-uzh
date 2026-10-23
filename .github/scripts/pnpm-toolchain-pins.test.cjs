@@ -111,7 +111,7 @@ test('container lifecycle preserves fail-closed dependency verification', () => 
     )
     if (script === 'post-start') continue
     const install = source.indexOf('\npnpm install ')
-    const build = source.indexOf('\npnpm exec turbo run build')
+    const build = source.search(/^(?:if ! )?pnpm exec turbo run build\b/m)
     assert.ok(
       install >= 0 && build > install,
       `${script} installs before build`

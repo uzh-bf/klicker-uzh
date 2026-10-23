@@ -258,7 +258,7 @@ jobs:
   # v3_sonarcloud.yml keeps the named fail-closed result for both.
   sonarcloud:
     name: SonarCloud
-    needs: [filter, test-unit]
+    needs: [filter, test-unit, test-unit-status]
     if: >-
       always() && !cancelled() &&
       github.event_name == 'pull_request' &&

@@ -7,6 +7,7 @@ import type {
   ChatbotStandardModeConfig as ChatbotStandardModeConfigShape,
   SharingType as SharingTypeEnum,
 } from '@klicker-uzh/types'
+import { CHATBOT_CUSTOM_MODE_MEETING_CLOCKS } from '@klicker-uzh/util'
 import builder from '../builder.js'
 import type {
   ChatAccountUsageLane,
@@ -115,6 +116,11 @@ export const ChatUsageClass = builder.enumType('ChatUsageClass', {
   values: Object.values(DB.ChatUsageClass),
 })
 
+export const ChatbotCustomModeMeetingClock = builder.enumType(
+  'ChatbotCustomModeMeetingClock',
+  { values: CHATBOT_CUSTOM_MODE_MEETING_CLOCKS }
+)
+
 export const ChatAccountUsageLaneRef = builder.objectRef<ChatAccountUsageLane>(
   'ChatAccountUsageLane'
 )
@@ -135,6 +141,9 @@ export const ChatAccountUsageOverviewType =
   ChatAccountUsageOverviewRef.implement({
     fields: (t) => ({
       authorized: t.exposeBoolean('authorized'),
+      advancedModelConfigurationEntitled: t.exposeBoolean(
+        'advancedModelConfigurationEntitled'
+      ),
       subscriptionTier: t.expose('subscriptionTier', {
         type: AiSubscriptionTier,
       }),
@@ -226,6 +235,14 @@ export const ChatbotCustomModeInput = ChatbotCustomModeInputRef.implement({
     name: t.string({ required: true }),
     description: t.string({ required: false }),
     personaText: t.string({ required: false }),
+    welcomeMessage: t.string({ required: false }),
+    starterPrompts: t.stringList({ required: false }),
+    showReasoning: t.boolean({ required: false }),
+    replyLanguage: t.field({ type: LocaleType, required: false }),
+    meetingClock: t.field({
+      type: ChatbotCustomModeMeetingClock,
+      required: false,
+    }),
   }),
 })
 
@@ -250,6 +267,21 @@ export const ChatbotCustomMode = ChatbotCustomModeRef.implement({
     name: t.exposeString('name'),
     description: t.exposeString('description', { nullable: true }),
     personaText: t.exposeString('personaText', { nullable: true }),
+    welcomeMessage: t.exposeString('welcomeMessage', { nullable: true }),
+    starterPrompts: t.exposeStringList('starterPrompts', { nullable: true }),
+    showReasoning: t.boolean({
+      resolve: (mode) => mode.showReasoning === true,
+    }),
+    replyLanguage: t.field({
+      type: LocaleType,
+      nullable: true,
+      resolve: (mode) => mode.replyLanguage ?? null,
+    }),
+    meetingClock: t.field({
+      type: ChatbotCustomModeMeetingClock,
+      nullable: true,
+      resolve: (mode) => mode.meetingClock ?? null,
+    }),
   }),
 })
 

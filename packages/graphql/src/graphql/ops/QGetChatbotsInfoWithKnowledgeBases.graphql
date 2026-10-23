@@ -26,6 +26,11 @@ query QGetChatbotsInfoWithKnowledgeBases {
         name
         description
         personaText
+        welcomeMessage
+        starterPrompts
+        showReasoning
+        replyLanguage
+        meetingClock
       }
     }
     authoringRevision {

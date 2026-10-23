@@ -423,8 +423,12 @@ describe('POST owner preview chat', () => {
       expect.objectContaining({
         authMode: 'account',
         chatbotId: 'chatbot-id',
+        ownerPreviewUserId: 'owner-id',
         kbIds: [originalKbId],
       })
+    )
+    expect(mocks.getAggregatedMCPTools.mock.calls[0]?.[1]).not.toHaveProperty(
+      'participantId'
     )
     expect(mocks.compileSystemPrompt).toHaveBeenCalledWith(
       expect.objectContaining({ tutor: 'Tutor instructions' }),
@@ -780,6 +784,14 @@ describe('POST owner preview chat', () => {
         toolNames: ['KB_doc_query'],
         standardModeConfig: defaultStandardModeConfig,
       }
+    )
+    // The owner keeps seeing reasoning for a custom mode that hides it from
+    // participants by default.
+    const stream = mocks.streamText.mock.results[0]?.value as {
+      toUIMessageStreamResponse: ReturnType<typeof vi.fn>
+    }
+    expect(stream.toUIMessageStreamResponse).toHaveBeenCalledWith(
+      expect.objectContaining({ sendReasoning: true })
     )
   })
 

@@ -159,6 +159,54 @@ function passageKey(passage: Passage): string {
   })
 }
 
+// Graph discoveries are appended to the full original result within this
+// headroom, so graph mode never sends less evidence than ordinary chat.
+const ADDED_PASSAGE_LIMIT = 6
+const ADDED_CHARACTER_LIMIT = 8000
+
+/**
+ * Relevance order of one search. Providers group chunks by source, so the flat
+ * order lets the first document crowd out every other one. A complete numeric
+ * `global_rank` gives the provider's own order; otherwise sources are visited
+ * round-robin in provider order. `lanes` is the number of provider source
+ * groups when the order is round-robin, and 1 when it is ranked.
+ */
+function relevanceOrder(candidates: Passage[]): {
+  ordered: Passage[]
+  lanes: number
+} {
+  if (
+    candidates.every(
+      ({ chunk }) =>
+        typeof chunk.global_rank === 'number' &&
+        Number.isFinite(chunk.global_rank)
+    )
+  )
+    return {
+      ordered: candidates
+        .map((passage, index) => ({ passage, index }))
+        .sort(
+          (a, b) =>
+            (a.passage.chunk.global_rank as number) -
+              (b.passage.chunk.global_rank as number) || a.index - b.index
+        )
+        .map(({ passage }) => passage),
+      lanes: 1,
+    }
+  const lanes: Passage[][] = []
+  for (const passage of candidates) {
+    const lane = lanes.at(-1)
+    if (lane && lane[0]?.source === passage.source) lane.push(passage)
+    else lanes.push([passage])
+  }
+  const ordered: Passage[] = []
+  const deepest = Math.max(...lanes.map((lane) => lane.length))
+  for (let depth = 0; depth < deepest; depth += 1)
+    for (const lane of lanes)
+      if (depth < lane.length) ordered.push(lane[depth]!)
+  return { ordered, lanes: lanes.length }
+}
+
 /** Combine exact passages, never infer identity from a filename or similar text. */
 export function combineGraphSearchDocuments(
   original: unknown,
@@ -167,49 +215,44 @@ export function combineGraphSearchDocuments(
   const first = passages(original)
   const second = passages(expanded)
   if (!first || !second || second.length === 0) return original
-  const ranked = new Map<
-    string,
-    { passage: Passage; score: number; ranks: number[] }
-  >()
-  for (const [search, candidates] of [first, second].entries()) {
-    candidates.forEach((passage, index) => {
-      const key = passageKey(passage)
-      const candidate = ranked.get(key) ?? {
-        passage,
-        score: 0,
-        ranks: [Infinity, Infinity],
-      }
-      if (candidate.ranks[search] !== Infinity) return
-      candidate.score += 1 / (60 + index + 1)
-      candidate.ranks[search] = index
-      ranked.set(key, candidate)
-    })
-  }
-  const selected: Passage[] = []
-  const seen = new Set<string>()
+  const seen = new Set(first.map(passageKey))
+  const { ordered, lanes } = relevanceOrder(second)
+  const added: Passage[] = []
+  const sourceCharacters = new Map<RecordValue, number>()
   let characters = 0
-  function admit(passage: Passage) {
-    const key = passageKey(passage)
-    const size = String(passage.chunk.content).length
-    if (seen.has(key) || selected.length >= 12 || characters + size > 16000)
-      return
-    seen.add(key)
-    characters += size
-    selected.push(passage)
+  function admit(shareLimit: number) {
+    for (const passage of ordered) {
+      if (added.length === ADDED_PASSAGE_LIMIT) return
+      const key = passageKey(passage)
+      const size = String(passage.chunk.content).length
+      const used = sourceCharacters.get(passage.source) ?? 0
+      if (
+        seen.has(key) ||
+        characters + size > ADDED_CHARACTER_LIMIT ||
+        used + size > shareLimit
+      )
+        continue
+      seen.add(key)
+      characters += size
+      sourceCharacters.set(passage.source, used + size)
+      added.push(passage)
+    }
   }
-  // Reserve the strongest original evidence before admitting graph discoveries.
-  for (const passage of first) {
-    if (selected.length === 3) break
-    admit(passage)
-  }
-  for (const { passage } of [...ranked.values()].sort(
-    (a, b) =>
-      b.score - a.score ||
-      a.ranks[0]! - b.ranks[0]! ||
-      a.ranks[1]! - b.ranks[1]!
-  ))
-    admit(passage)
-  if (selected.length === 0) return original
+  // Without a provider rank, each source first gets an equal share of the
+  // character headroom, so one long passage cannot exclude every other
+  // source; the remaining headroom is then filled in the same order.
+  if (lanes > 1) admit(ADDED_CHARACTER_LIMIT / lanes)
+  admit(Infinity)
+  if (added.length === 0) return original
+  // Added passages from one provider source form a single group, so the
+  // citation UI shows one card per added document; original groups are kept.
+  const addedBySource = new Map<RecordValue, Passage[]>()
+  for (const passage of added)
+    addedBySource.set(passage.source, [
+      ...(addedBySource.get(passage.source) ?? []),
+      passage,
+    ])
+  const selected = [...first, ...[...addedBySource.values()].flat()]
   // Keep each provider source group: the citation UI displays its first chunk's locator.
   // Coalescing groups from two searches could hide the newly retrieved page.
   const groups: RecordValue[] = []

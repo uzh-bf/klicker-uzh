@@ -1,6 +1,6 @@
 {
   "name": "@klicker-uzh/office-addin",
-  "version": "3.4.0-alpha.87",
+  "version": "3.4.0-alpha.88",
   "license": "AGPL-3.0",
   "devDependencies": {
     "@rollup/plugin-terser": "~0.4.4",
@@ -17,10 +17,10 @@
     "typescript-eslint": "~8.63.0"
   },
   "scripts": {
-    "build": "cross-env NODE_ENV=production rollup -c",
-    "build:dev": "cross-env NODE_ENV=development rollup -c",
-    "build:docs": "cross-env NODE_ENV=production rollup -c && node scripts/sync-docs.mjs",
-    "build:test": "cross-env NODE_ENV=production rollup -c",
+    "build": "cross-env NODE_ENV=production rollup -c --forceExit",
+    "build:dev": "cross-env NODE_ENV=development rollup -c --forceExit",
+    "build:docs": "cross-env NODE_ENV=production rollup -c --forceExit && node scripts/sync-docs.mjs",
+    "build:test": "cross-env NODE_ENV=production rollup -c --forceExit",
     "check": "tsc --noEmit",
     "clean:cache": "office-addin-dev-certs uninstall && office-addin-dev-certs install",
     "dev": "cross-env NODE_ENV=development rollup -c --watch",

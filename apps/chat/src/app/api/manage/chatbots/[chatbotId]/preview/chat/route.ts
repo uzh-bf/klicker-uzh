@@ -18,11 +18,15 @@ import {
 } from '@/src/lib/server/chatModelRegistry'
 import { withModelCitationIndices } from '@/src/lib/server/citationInstructions'
 import {
+  getCustomModeTurnSettings,
   resolveEffectiveChatModeOptions,
   resolveEffectiveMCPConfigurations,
   resolveRequestedChatMode,
 } from '@/src/lib/server/effectiveChatModes'
-import { REPLY_LANGUAGE_REMINDER } from '@/src/lib/server/languageInstructions'
+import {
+  formatMeetingClock,
+  replyLanguageReminder,
+} from '@/src/lib/server/languageInstructions'
 import {
   MANAGE_CHAT_BODY_TIMEOUT_MS,
   MANAGE_CHAT_TOTAL_TIMEOUT_MS,
@@ -34,6 +38,10 @@ import { getOpenAIResponsesStore } from '@/src/lib/server/openaiResponsesOptions
 import { withOwnerPreviewAuth } from '@/src/lib/server/ownerPreviewAuth'
 import { resolveOwnerPreviewModeConfiguration } from '@/src/lib/server/previewAuthoringConfig'
 import { buildPromptCacheRequest } from '@/src/lib/server/promptCacheIdentity'
+import {
+  providerRefusalDeflection,
+  providerRefusalTransform,
+} from '@/src/lib/server/providerRefusal'
 import { compileSystemPrompt } from '@/src/lib/server/systemPromptCompiler'
 import { isDocQueryToolName } from '@/src/lib/sources/normalizeSources'
 import { chatModelUnavailableResponse } from '@/src/services/accountUsage'
@@ -300,8 +308,10 @@ export async function POST(
     mcpToolsHandle = await getAggregatedMCPTools(kbConfigurations, {
       chatbotId,
       authMode: 'account',
+      ownerPreviewUserId: auth.userId,
       kbIds,
       sessionId: randomUUID(),
+      knowledgeGraphRetrievalEnabled: chatbot.knowledgeGraphRetrievalEnabled,
     })
     tools = mcpToolsHandle.tools
   } catch (error) {
@@ -343,6 +353,16 @@ export async function POST(
         // revision's custom modes rather than the currently approved set.
         customModeConfig: resolveOwnerPreviewModeConfiguration(chatbot),
       }
+    )
+    // Preview persists no thread and its messages carry no timestamps, so a
+    // meeting clock reports zero elapsed minutes here.
+    const turnSettings = getCustomModeTurnSettings(
+      resolveOwnerPreviewModeConfiguration(chatbot),
+      selectedMode
+    )
+    const languageReminder = replyLanguageReminder(
+      turnSettings.replyLanguage ?? null,
+      formatMeetingClock(turnSettings.meetingClock ?? null, null, new Date())
     )
 
     const modelMessages = await convertToModelMessages(parsed.messages, {
@@ -394,6 +414,19 @@ export async function POST(
         },
       },
       stopWhen: isStepCount(5),
+      // Same provider-refusal replacement as the participant chat.
+      experimental_transform: providerRefusalTransform(
+        providerRefusalDeflection(
+          turnSettings.replyLanguage ?? null,
+          req.cookies.get('NEXT_LOCALE')?.value
+        ),
+        (finish) =>
+          console.warn('Owner preview provider refusal replaced:', {
+            chatbotId,
+            chatMode: selectedMode,
+            ...finish,
+          })
+      ),
       toolChoice: 'auto',
       // The reply-language reminder ends every step, after tool output, so
       // retrieved material in another language cannot set the reply language.
@@ -420,7 +453,7 @@ export async function POST(
           ...(docQueryToolName && stepNumber > 0
             ? withModelCitationIndices(responseMessages, steps)
             : responseMessages),
-          REPLY_LANGUAGE_REMINDER,
+          languageReminder,
         ],
       }),
       tools: promptCacheRequest?.tools ?? tools,

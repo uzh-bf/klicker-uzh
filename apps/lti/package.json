@@ -1,6 +1,6 @@
 {
   "name": "@klicker-uzh/lti-service",
-  "version": "3.4.0-alpha.87",
+  "version": "3.4.0-alpha.88",
   "license": "AGPL-3.0",
   "main": "dist/index.js",
   "types": "dist/index.d.ts",
@@ -27,7 +27,7 @@
   },
   "scripts": {
     "build": "cross-env NODE_ENV=production pnpm run build:ts",
-    "build:ts": "rollup -c",
+    "build:ts": "rollup -c --forceExit",
     "check": "tsc --noEmit --tsBuildInfoFile dist/tsconfig.check.tsbuildinfo",
     "dev": "npm-run-all --parallel dev:build dev:run",
     "dev:build": "rollup -c --watch",

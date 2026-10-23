@@ -8,6 +8,7 @@ export default {
       fullscreen: 'Graph im Vollbild anzeigen',
       restore: 'Graph in der Seitenleiste anzeigen',
       ask: 'Dazu eine Frage stellen',
+      showConcept: 'Begriff im Wissensgraph anzeigen',
       nodePrompt: 'Hilf mir, den Begriff «{topic}» zu verstehen.',
       edgePrompt:
         'Erkläre die Beziehung «{relationship}» zwischen «{source}» und «{target}».',
@@ -29,6 +30,7 @@ export default {
       quizzer: 'Quiz',
       quizzerDescription:
         'Übe mit prüfungsnahen Fragen aus den Kursunterlagen, jeweils eine nach der anderen, mit Rückmeldung.',
+      custom: 'Eigener Modus',
     },
     settingsPanel: {
       title: 'Einstellungen',
@@ -398,6 +400,11 @@ export default {
     },
     composer: {
       placeholder: 'Nachricht schreiben...',
+      replyLanguageEn: 'Dieses Gespräch findet auf Englisch statt',
+      replyLanguageDe: 'Dieses Gespräch findet auf Deutsch statt',
+      meetingClockNotStarted: 'Die Uhr startet mit Deiner ersten Nachricht',
+      meetingClockElapsed: '{minutes} Min. seit Deiner ersten Nachricht',
+      meetingClockTime: '{time} Uhr (Zürcher Zeit)',
       modeUnavailable:
         'Für diesen Chatbot ist derzeit kein Chatmodus verfügbar. Wende Dich bitte an Deine Dozierenden.',
       send: 'Nachricht senden',
@@ -5112,6 +5119,35 @@ Da die KlickerUZH-App noch nicht im iOS-App-Store verfügbar ist, folgen Sie die
       chatbotCustomModePersonaText: 'Persona und Anweisungen',
       chatbotCustomModePersonaPlaceholder:
         'Beschreiben Sie, wie dieser Modus auf Teilnehmende antworten soll.',
+      chatbotCustomModeWelcomeMessage: 'Begrüssungstext',
+      chatbotCustomModeWelcomePlaceholder:
+        'Wird in einem leeren Chat für diesen Modus angezeigt. Leer lassen für die Standardbegrüssung.',
+      chatbotCustomModeStarterPrompts: 'Startervorschläge',
+      chatbotCustomModeStarterPromptsDescription:
+        'Wird in einem leeren Chat für diesen Modus als Vorschläge angezeigt. Höchstens {count} Starter; Teilnehmende entscheiden, ob sie sie senden.',
+      chatbotCustomModeStarterPrompt: 'Starter {number}',
+      chatbotCustomModeStarterPromptAdd: 'Starter hinzufügen',
+      chatbotCustomModeShowReasoning:
+        'Denkprozess des Modells für Teilnehmende anzeigen',
+      chatbotCustomModeShowReasoningDescription:
+        'Standardmässig aus. Die Zusammenfassung des Denkprozesses kann Persona und Anweisungen dieses Modus wiedergeben, zum Beispiel die verborgenen Fakten eines Rollenspiels. In der Eigentümer-Vorschau ist sie immer sichtbar.',
+      chatbotCustomModeReasoningShown:
+        'Denkprozess des Modells für Teilnehmende sichtbar',
+      chatbotCustomModeReasoningHidden:
+        'Denkprozess des Modells für Teilnehmende verborgen',
+      chatbotCustomModeReplyLanguage: 'Antwortsprache',
+      chatbotCustomModeReplyLanguageDescription:
+        'Standardmässig folgen die Antworten der Sprache, in der Teilnehmende schreiben. Legen Sie eine Sprache fest für Rollenspiele, die in einer Sprache bleiben müssen.',
+      chatbotCustomModeReplyLanguageFollow: 'Sprache der Teilnehmenden folgen',
+      chatbotCustomModeReplyLanguageEn: 'Immer Englisch',
+      chatbotCustomModeReplyLanguageDe: 'Immer Deutsch',
+      chatbotCustomModeMeetingClock: 'Gesprächsuhr',
+      chatbotCustomModeMeetingClockDescription:
+        'Standardmässig aus. Teilt dem Modell mit, wie viele Minuten seit der ersten Nachricht der Teilnehmenden vergangen sind, für zeitlich begrenzte Rollenspiele. Dauer und Phasen des Gesprächs gehören in die Persona.',
+      chatbotCustomModeMeetingClockOff: 'Aus',
+      chatbotCustomModeMeetingClockElapsed: 'Vergangene Minuten',
+      chatbotCustomModeMeetingClockElapsedAndTime:
+        'Vergangene Minuten und Uhrzeit',
       chatbotCustomModeAdd: 'Eigenen Modus hinzufügen',
       chatbotCustomModeRemove: 'Entfernen',
       chatbotCustomModesLimit:
@@ -5393,8 +5429,10 @@ Da die KlickerUZH-App noch nicht im iOS-App-Store verfügbar ist, folgen Sie die
         'Aus: Die Konzeptkarte bleibt für Teilnehmende verborgen.',
       knowledgeGraphRetrieval:
         'Graphverbindungen für die Dokumentsuche verwenden',
-      knowledgeGraphRetrievalDescription:
+      knowledgeGraphRetrievalEnabledDescription:
         'Ein: Die Dokumentsuche kann verwandte Konzepte aus dem veröffentlichten Graphen als zusätzliche Suchhinweise verwenden. Antworten belegen weiterhin ausschliesslich Dokumentstellen.',
+      knowledgeGraphRetrievalDisabledDescription:
+        'Aus: Die Dokumentsuche verwendet nur die Frage, ohne Hinweise aus dem Graphen.',
       knowledgeGraphSave: 'Wissensgraph-Einstellungen speichern',
       knowledgeGraphSaveSuccess: 'Wissensgraph-Einstellungen gespeichert.',
       noEnabledKnowledgeBase:
