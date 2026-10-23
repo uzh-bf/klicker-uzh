@@ -346,6 +346,7 @@ function validatePublicRunnerRoles(workflow) {
         CONTROL_SHA: `\${{ job.workflow_sha }}`,
         ALLOW_PUSH_REUSE: `\${{ inputs.allow_push_reuse }}`,
         CI_VERIFIED_REUSE_ENABLED: `\${{ vars.CI_VERIFIED_REUSE_ENABLED }}`,
+        CURRENT_PROVIDER: `\${{ steps.metadata.outputs.provider }}`,
         PUBLIC_WORKERS: `\${{ vars.PUBLIC_PR_PLAYWRIGHT_WORKERS || '1' }}`,
       },
       with: {
@@ -356,6 +357,7 @@ function validatePublicRunnerRoles(workflow) {
           '  controlSha: process.env.CONTROL_SHA,',
           "  allowPushReuse: process.env.ALLOW_PUSH_REUSE === 'true',",
           "  enabled: process.env.CI_VERIFIED_REUSE_ENABLED === 'true',",
+          '  provider: process.env.CURRENT_PROVIDER,',
           "  workers: JSON.parse(fs.readFileSync('route.json', 'utf8')).route === 'hosted' ? '1' : process.env.PUBLIC_WORKERS,",
           "  plan: JSON.parse(fs.readFileSync('playwright-execution-plan.json', 'utf8')),",
           "  route: JSON.parse(fs.readFileSync('route.json', 'utf8')).route,",

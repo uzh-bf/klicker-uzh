@@ -65,11 +65,17 @@ function fingerprint(tree) {
     )
     .digest('hex')
 }
-function runnerMatches(receipt, route, workers) {
+function runnerMatches(
+  receipt,
+  route,
+  workers,
+  provider = route === 'hosted' ? 'github' : 'public-pool'
+) {
   const expected = RUNNERS[route]
   return (
     !!expected &&
     receipt.route === route &&
+    receipt.provider === provider &&
     receipt.runnerOs === expected[0] &&
     receipt.runnerArch === expected[1] &&
     receipt.workers === String(workers)
@@ -174,6 +180,7 @@ async function findVerifiedRun({
   plan,
   route = 'hosted',
   workers = '1',
+  provider = route === 'hosted' ? 'github' : 'public-pool',
   enabled = false,
   readArtifact = readArtifactJson,
   onSource = () => {},
@@ -343,7 +350,7 @@ async function findVerifiedRun({
     'receipt-binding-invalid'
   )
   requireProof(
-    runnerMatches(receipt, route, workers),
+    runnerMatches(receipt, route, workers, provider),
     'runner-or-environment-incompatible'
   )
   const tested = (
@@ -471,6 +478,17 @@ async function verifyPromotionReuse({
   readArtifact = readArtifactJson,
 }) {
   requireProof(enabled, 'promotion-reuse-disabled')
+  const detailed = (
+    await github.rest.actions.getWorkflowRun({
+      ...context.repo,
+      run_id: run.id,
+    })
+  ).data
+  requireProof(
+    isDeepStrictEqual(runIdentity(detailed), runIdentity(run)),
+    'push-attempt-changed'
+  )
+  run = detailed
   requireProof(
     successful(run) &&
       run.event === 'push' &&

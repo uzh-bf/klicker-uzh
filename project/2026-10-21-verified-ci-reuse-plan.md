@@ -14,7 +14,7 @@ merges, v3 and staging. A green skipped reporter is not test evidence.
 
 1. An unchanged draft becoming ready does not launch Check codebase. New commits,
    reopening and pushes retain their existing validation.
-2. Playwright preserves a same-input in-flight execution, waits within a bounded
+2. Playwright preserves a same-input in-flight execution in GitHub's concurrency
    queue, and only reuses independently verified complete successful coverage.
    Reduced plans, changed trees, failed/cancelled/stale attempts, unavailable
    provenance and incompatible architecture execute normally. Every decision
@@ -146,3 +146,42 @@ controller can execute. Local contract tests and PR CI therefore do not prove a
 real reuse hit or a live staging admission. Qualify those via the documented
 synthetic/dry-run rollout before enabling reuse. No merge, auto-merge, deployment,
 credential, runner-group or repository security change is part of this PR.
+
+## Verification evidence (2026-10-23)
+
+- Current `v3` (`4f11f2251daa36ed6f75e641ed531d5e9ff90618`) was merged into
+  this isolated branch before final verification, preserving the original
+  published plan commit `1857df0d46f3fb200060a2d7e16f60352e98a04d` without a
+  force push. Existing OIDC/WarpBuild admission permissions remain unchanged.
+- Node 24.21.0: all CI script contract files (`.github/scripts/*.test.cjs` and
+  `*.test.js`) completed with **872 passed, one intentional skip, zero failed**.
+  The focused lifecycle/route/plan/cache/promotion group passed **233/233**.
+  After final proof hardening, the verifier/promoter ZIP/provenance regression
+  file was rerun and passed **40/40**, including same-route public ARM64,
+  application squash equivalence across changed control commits, missing run
+  detail, provider mismatch and independent privileged admission.
+- The initial broader sandboxed attempt failed on prohibited synthetic localhost
+  listeners and shell/Git fixtures. Re-running outside the sandbox with the
+  shell startup hook disabled resolved those environment failures; the results
+  above are that successful run. No test was deleted or weakened to bypass them.
+- Biome check: zero errors, existing-style template-expression/style warnings and
+  informational suggestions remain. Prettier checks passed for touched workflow,
+  action and Markdown files. `bash -n` and ShellCheck passed for the locked
+  installer. AGENTS validation, removed-wiki-path guard, Prisma-sync drift and
+  current Git identity checks passed.
+- Actionlint 1.7.12 flags the existing GitHub `job.workflow_repository` and
+  `job.workflow_sha` contexts as unknown. The raw result is not a clean pass;
+  with only those two unsupported-property diagnostics filtered, all four
+  changed workflows validate. The live GitHub API confirms the trusted reusable
+  workflow path/ref/SHA metadata shape used by the verifier.
+- The locked planner installed **71 packages** with Node 24 and `npm ci`; its
+  read-only `profile resolve --profile full` returned the expected schema/apps/
+  dependency/readiness fields. No runtime was started.
+- Staged Gitleaks scans found no leaks. No full workspace dependency install,
+  root `check:all`, application build, database suite or browser E2E was run
+  locally: this worktree has no provisioned application dependency/runtime tree.
+  Final-commit hosted CI is recorded in the PR and task report separately.
+- A real new trusted-workflow reuse hit and live promotion remain **not run**:
+  `@v3` and the controller must receive this implementation first, and the
+  rollout switch must then be qualified explicitly. No rollout setting was
+  changed by this work.

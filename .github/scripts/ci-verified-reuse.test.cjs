@@ -74,6 +74,7 @@ function fixture(push = false) {
     treeSha: tree,
     controlSha: control,
     route: 'hosted',
+    provider: 'github',
     runnerOs: 'Linux',
     runnerArch: 'X64',
     workers: '1',
@@ -321,6 +322,13 @@ for (const [name, mutate, reason] of [
     'runner-or-environment-incompatible',
   ],
   [
+    'provider mismatch',
+    (s) => {
+      s.receipt.provider = 'warpbuild'
+    },
+    'runner-or-environment-incompatible',
+  ],
+  [
     'worker environment mismatch',
     (s) => {
       s.receipt.workers = '2'
@@ -542,6 +550,12 @@ test('promotion independently reconstructs hosted squash proof and rejects forge
     sourceBranch: 'v3',
   }
   assert.equal((await verifyPromotionReuse(args)).id, 123)
+  const summaryRun = { ...state.pushRun }
+  delete summaryRun.referenced_workflows
+  assert.equal(
+    (await verifyPromotionReuse({ ...args, run: summaryRun })).id,
+    123
+  )
   options.github.rest.repos.getContent = async ({ ref }) => ({
     data: {
       type: 'file',
@@ -758,5 +772,50 @@ test('readiness preserves an in-flight run and accepts it only after completion'
     contents: 'read',
     actions: 'read',
     'pull-requests': 'read',
+    'id-token': 'write', // Existing trusted WarpBuild admission capability.
   })
+})
+
+test('full public ARM64 coverage reuses only within its own provider and route', async () => {
+  const { state, options } = fixture()
+  options.route = 'public-pr'
+  state.receipt.route = 'public-pr'
+  state.receipt.provider = 'public-pool'
+  state.receipt.runnerArch = 'ARM64'
+  for (const job of state.jobs)
+    job.name = job.name.replaceAll('hosted', 'public-pr')
+  assert.equal((await findVerifiedRun(options)).id, 123)
+  state.receipt.provider = 'warpbuild'
+  await assert.rejects(
+    findVerifiedRun(options),
+    /runner-or-environment-incompatible/
+  )
+})
+
+test('application control changes outside the materialized boundary preserve proven squash equivalence', async () => {
+  const { state, options } = fixture(true)
+  const priorControl = options.controlSha
+  const currentControl = sha('6')
+  options.controlSha = currentControl
+  const getCommit = options.github.rest.repos.getCommit
+  options.github.rest.repos.getCommit = async (args) =>
+    args.ref === currentControl
+      ? { data: { sha: currentControl, commit: { tree: { sha: sha('7') } } } }
+      : getCommit(args)
+  options.github.rest.git.getTree = async ({ tree_sha }) => ({
+    data: {
+      ...state.tree,
+      tree: [
+        ...state.tree.tree,
+        {
+          path: 'apps/chat/src/application.ts',
+          type: 'blob',
+          mode: '100644',
+          sha: tree_sha === sha('7') ? sha('1') : sha('2'),
+        },
+      ],
+    },
+  })
+  assert.notEqual(priorControl, currentControl)
+  assert.equal((await findVerifiedRun(options)).id, 123)
 })

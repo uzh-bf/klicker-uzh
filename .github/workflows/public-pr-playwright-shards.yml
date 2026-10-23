@@ -210,6 +210,7 @@ jobs:
           CONTROL_SHA: ${{ job.workflow_sha }}
           ALLOW_PUSH_REUSE: ${{ inputs.allow_push_reuse }}
           CI_VERIFIED_REUSE_ENABLED: ${{ vars.CI_VERIFIED_REUSE_ENABLED }}
+          CURRENT_PROVIDER: ${{ steps.metadata.outputs.provider }}
           PUBLIC_WORKERS: ${{ vars.PUBLIC_PR_PLAYWRIGHT_WORKERS || '1' }}
         with:
           script: |
@@ -219,6 +220,7 @@ jobs:
               controlSha: process.env.CONTROL_SHA,
               allowPushReuse: process.env.ALLOW_PUSH_REUSE === 'true',
               enabled: process.env.CI_VERIFIED_REUSE_ENABLED === 'true',
+              provider: process.env.CURRENT_PROVIDER,
               workers: JSON.parse(fs.readFileSync('route.json', 'utf8')).route === 'hosted' ? '1' : process.env.PUBLIC_WORKERS,
               plan: JSON.parse(fs.readFileSync('playwright-execution-plan.json', 'utf8')),
               route: JSON.parse(fs.readFileSync('route.json', 'utf8')).route,
@@ -297,6 +299,7 @@ jobs:
           SOURCE_HEAD_SHA: ${{ github.event.pull_request.head.sha }}
           SOURCE_BASE_SHA: ${{ github.event.pull_request.base.sha }}
           CONTROL_SHA: ${{ job.workflow_sha }}
+          EXECUTION_PROVIDER: ${{ needs.prepare.outputs.provider }}
           EXECUTION_ROUTE: hosted
           EXECUTION_WORKERS: '1'
         run: |
@@ -307,6 +310,7 @@ jobs:
             schemaVersion: 2,
             repository: process.env.GITHUB_REPOSITORY,
             route: process.env.EXECUTION_ROUTE,
+            provider: process.env.EXECUTION_PROVIDER,
             runnerOs: process.env.RUNNER_OS,
             runnerArch: process.env.RUNNER_ARCH,
             workers: process.env.EXECUTION_WORKERS,
@@ -379,6 +383,7 @@ jobs:
           SOURCE_HEAD_SHA: ${{ github.event.pull_request.head.sha }}
           SOURCE_BASE_SHA: ${{ github.event.pull_request.base.sha }}
           CONTROL_SHA: ${{ job.workflow_sha }}
+          EXECUTION_PROVIDER: ${{ needs.prepare.outputs.provider }}
           EXECUTION_ROUTE: public-pr
           EXECUTION_WORKERS: ${{ needs.prepare.outputs.provider == 'warpbuild' && '1' || vars.PUBLIC_PR_PLAYWRIGHT_WORKERS || '1' }}
         run: |
@@ -389,6 +394,7 @@ jobs:
             schemaVersion: 2,
             repository: process.env.GITHUB_REPOSITORY,
             route: process.env.EXECUTION_ROUTE,
+            provider: process.env.EXECUTION_PROVIDER,
             runnerOs: process.env.RUNNER_OS,
             runnerArch: process.env.RUNNER_ARCH,
             workers: process.env.EXECUTION_WORKERS,

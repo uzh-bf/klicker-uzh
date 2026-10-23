@@ -78,7 +78,11 @@ async function readArtifactJson(
     throw new Error('missing-or-ambiguous-artifact')
   if (
     verified &&
-    (matches[0].expired !== false ||
+    (!Number.isSafeInteger(matches[0].id) ||
+      matches[0].id <= 0 ||
+      !Number.isSafeInteger(matches[0].size_in_bytes) ||
+      matches[0].size_in_bytes <= 0 ||
+      matches[0].expired !== false ||
       matches[0].workflow_run?.id !== run.id ||
       matches[0].workflow_run?.head_sha !== run.head_sha ||
       !/^sha256:[a-f0-9]{64}$/.test(matches[0].digest ?? ''))
