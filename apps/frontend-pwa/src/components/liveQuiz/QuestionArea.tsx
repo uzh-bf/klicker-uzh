@@ -225,6 +225,12 @@ function QuestionArea({
     // update the stored responses
     await updateStoredResponses(instanceId, quizId, execution)
 
+    setRemainingQuestions((remaining) =>
+      (remaining ?? []).filter(
+        (question) => !isDeepEqual(activeInstance, question)
+      )
+    )
+
     if (
       activeInstanceIdRef.current !== instanceId ||
       (expiresAtTimestamp !== null && Date.now() >= expiresAtTimestamp)
@@ -242,7 +248,6 @@ function QuestionArea({
     if (responseLimit === 1) {
       setActiveInstance(newRemaining[0] ?? instances.length - 1)
     }
-    setRemainingQuestions(newRemaining)
 
     // if this was the last question of the block and gamification is enabled, show confetti
     if (newRemaining.length === 0 && gamificationEnabled) {
