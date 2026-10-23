@@ -198,16 +198,32 @@ Solo mode: end-of-package simplification and final review by the main session or
 a delegated final reviewer, recorded in `Progress`. `/final-review-stack` on the
 top PR after exact-head CI settles (standing-authorized by `AGENTS.md`).
 
+## Roadmap and status
+
+The feature ships as one three-layer draft stack against `v3` (stack #6681). Later work is recorded as follow-up packages and is not part of this approval.
+
+| Item | Scope | State |
+| --- | --- | --- |
+| Layer 01, [#6678](https://github.com/uzh-bf/klicker-uzh/pull/6678) | Element option, Redis seeding, atomic admission, respondent counter, block-close persistence, worker docs | Implemented; exact-head CI green except the review gates below |
+| Layer 02, [#6679](https://github.com/uzh-bf/klicker-uzh/pull/6679) | Respondent count in the evaluation footer and cockpit | Implemented; real CI runs green; red entries come from cancelled duplicate runs |
+| Layer 03, [#6680](https://github.com/uzh-bf/klicker-uzh/pull/6680) | Editor field, PWA open-question flow, O1 Playwright scenario | Implemented; Playwright fix pushed after the first CI run, rerun pending |
+| Final AI review | `/final-review-stack` on #6680 | Blocked until every layer is open and ready; marking ready is withheld |
+| Readiness, merge, deployment | Human decisions | Withheld |
+| Follow-up: free-text case normalization | Make live and practice paths agree on case before hashing | Not started; separate package |
+| Follow-up: response-api rate limiting | Limit anonymous and over-cap traffic before Hatchet | Not started; separate package |
+| Follow-up candidate: server-side anonymous cap | Anonymous participants are capped only on their device | Accepted risk; revisit only with a device or session identity |
+
 ## Progress
 
-- Status: all three slices implemented and verified; draft stack [#6681](https://github.com/uzh-bf/klicker-uzh/pull/6680) open with layers [#6678](https://github.com/uzh-bf/klicker-uzh/pull/6678) (admission), [#6679](https://github.com/uzh-bf/klicker-uzh/pull/6679) (counts), and [#6680](https://github.com/uzh-bf/klicker-uzh/pull/6680) (authoring and student flow).
+- Status: all three slices implemented and verified; draft stack open (see Roadmap and status). Waiting on the layer 03 Playwright rerun.
 - Approval: executable batch approved on 2026-10-22. The branch was rebased onto `origin/v3` `4a9305739a` before slice 1 because it had not been pushed; no planned file had changed upstream.
 - Slice 1 (layer 01, admission): done. Admission tests (8) pass against the container Redis; types, util, graphql, response-api, and worker typecheck and build.
 - Slice 2 (layer 02, counts): done. Graphql and manage typecheck. Evaluation footer and cockpit verified in the browser while the block was active and after it closed.
 - Slice 3 (layer 03, authoring and student flow): done. Effective-limit unit tests (4) pass; PWA and manage typecheck; ESLint has no errors. Browser checks covered the editor field, anonymous and logged-in student flows, duplicate blocking, reload, the closed state at the limit, a two-question block, Redis admission state, and points awarded once.
 - Test delta: added `packages/graphql/test/liveQuizResponseAdmission.test.ts`, `apps/frontend-pwa/src/components/liveQuiz/responseLimit.test.ts`, and three O1 Playwright steps; changed none; removed none.
-- Playwright: not run locally (host runs disturb the container install); CI runs the O1 scenario.
+- Playwright: not run locally (host runs disturb the container install). The first CI run failed in the new O1 step because the element editor stayed open after the persistence check and covered the create-quiz button; layer 03 now closes it (`1655c85f7c` before restacking). Layers 01 and 02 passed their real runs; every workflow ran twice per head and the cancelled duplicate still shows as a failed status check.
 - Deviations: the student flow renders the response list in `QuestionArea` and leaves `FreeTextQuestion` and `useRemainingInstances` unchanged, because the open state only needs the input-disabled flag. `docs/async-and-workers.md` documents the admission contract.
 - Review: solo mode. The main session ran the end-of-package simplification and self-review; an advisor check added the two-question navigation check and the lint run. Final AI review follows on the stack after CI.
-- Substantive size: about 880 added and 28 deleted lines across 36 files, including tests and fixtures.
-- Next action: settle exact-head CI per layer. `/final-review-stack` needs every layer open and ready, so it waits until a maintainer marks the stack ready; marking ready, merging, and deployment stay withheld.
+- Substantive size: about 890 added and 28 deleted lines across 36 files, including tests and fixtures.
+- Local runtime: the devrouter runtime for this worktree runs the `full` profile. The local database holds three synthetic demo quizzes from browser checks (`Response Limit Demo`, `Response Limit Demo Course`, `Response Limit Navigation`). Stop the runtime once no further local check is needed.
+- Next action: confirm the layer 03 Playwright rerun is green on the exact head. Rerun the cancelled duplicate checks if a required status still shows red. `/final-review-stack` needs every layer open and ready, so it waits until a maintainer marks the stack ready. Marking ready, merging, and deployment stay withheld.
