@@ -9,10 +9,12 @@ const {
   createProgressReporter,
   buildCostReport,
   MISTRAL_MODEL,
+  MISTRAL_FLASH_MODEL,
 } = require('./ocr-mistral-adapter.cjs')
 const { buildOCRResultDiagnostic } = require('./final-ai-review.js')
 
-const DRAFT_MODEL = 'deepseek/deepseek-v4.1-flash-1017'
+const DRAFT_MODEL = MISTRAL_FLASH_MODEL
+const DRAFT_PROVIDER = 'mistral-flash'
 const PUBLIC_DOC_LIBRARIES = [
   '/vercel/next.js',
   '/reactjs/react.dev',
@@ -295,7 +297,7 @@ async function runDraftReview(options) {
   process.on('SIGINT', interrupt)
   try {
     adapter = await startAdapter({
-      provider: 'openrouter',
+      provider: DRAFT_PROVIDER,
       apiKey: options.apiKey,
       onClose: (record) =>
         fs.appendFileSync(diagnosticsPath, `${JSON.stringify(record)}\n`, {
@@ -576,7 +578,7 @@ async function runDraftReview(options) {
 
 function summarizeCosts(temp) {
   const file = path.join(temp, 'draft-ai-review-adapter-diagnostics.jsonl')
-  const env = { ...process.env, OCR_ADAPTER_PROVIDER: 'openrouter' }
+  const env = { ...process.env, OCR_ADAPTER_PROVIDER: DRAFT_PROVIDER }
   execFileSync(
     process.execPath,
     [path.join(__dirname, 'ocr-mistral-adapter.cjs'), 'summary', file],
@@ -596,7 +598,7 @@ function summarizeCosts(temp) {
   const draft = readReport(
     'draft-ai-review-adapter-diagnostics.jsonl',
     1,
-    'openrouter'
+    DRAFT_PROVIDER
   )
   let expected
   try {
@@ -639,7 +641,7 @@ function summarizeCosts(temp) {
     ? `OCR cost scope=draft_and_advisor status=complete estimated_with_cache_usd=${sum.withCache.toFixed(4)} estimated_without_cache_usd=${sum.withoutCache.toFixed(4)} estimated_savings_usd=${sum.savings.toFixed(4)} savings_percent=${(sum.withoutCache ? (100 * sum.savings) / sum.withoutCache : 0).toFixed(1)}`
     : 'OCR cost scope=draft_and_advisor status=unavailable'
   appendSummary(
-    `\nCombined DeepSeek draft and ${MISTRAL_MODEL} advisor reference estimate:\n\n${line}\n\nAdvisor provider usage has its own quota and does not change OCR token accounting.`,
+    `\nCombined ${DRAFT_MODEL} draft and ${MISTRAL_MODEL} advisor reference estimate:\n\n${line}\n\nAdvisor usage retains its separate application allowance and accounting. Both models use Mistral; OCR token accounting is unchanged.`,
     (text) => process.stdout.write(text)
   )
   let docs, tools
@@ -700,7 +702,7 @@ async function main() {
     from: process.env.REVIEW_FROM,
     head: process.env.HEAD_SHA,
     background: process.env.BACKGROUND,
-    apiKey: process.env.OPENROUTER_API_KEY,
+    apiKey: process.env.MISTRAL_API_KEY,
     advisorApiKey: process.env.MISTRAL_API_KEY,
     context7ApiKey: process.env.CONTEXT7_API_KEY,
     policy: execFileSync('git', ['rev-parse', 'HEAD'], {

@@ -387,7 +387,7 @@ see **Bounded codebase check** below. Pushes always run the full suite.
 
 Shard durations differ by architecture, so `playwright/timings.json` names the architecture its weights were measured on. The timing workflow maps the run's recorded route to `x64` for hosted runs and `arm64` for the public pool, passes it to the updater as `--architecture`, and the updater leaves the table untouched when it is calibrated for a different architecture, reporting why instead of writing. An untagged table is adopted by the producing architecture on its first tagged write. Replacing a calibration with another architecture's measurements is therefore a human decision rather than an automatic side effect of a successful run.
 
-- **AI review**: While a PR is a draft, OpenCodeReview runs DeepSeek V4.1 Flash 1017 (`deepseek/deepseek-v4.1-flash-1017`) through OpenRouter at max reasoning through a runner-local adapter against the exact PR head and its immediate base. A ready transition cancels an in-flight draft run, and ready PRs do not start new automatic reviews. OpenRouter routes to external model providers, so draft review diffs cross that provider boundary and incur usage cost.
+- **AI review**: While a PR is a draft, OpenCodeReview runs GLM 5.3 Flash (`zai-glm-5-3-flash`) through Mistral at max reasoning through a runner-local adapter against the exact PR head and its immediate base. A ready transition cancels an in-flight draft run, and ready PRs do not start new automatic reviews. Draft review diffs are sent to Mistral and incur usage cost.
 - **Draft advisor and repository context**: The trusted draft runner bootstraps
   `.agents/skills/ocr-reviewer/SKILL.md` as merged review rules. Its
   `read_review_context` MCP tool reads bounded Markdown from the trusted policy
@@ -503,10 +503,11 @@ trusted helper suites dependency-free. YAML-based workflow assertions belong in
 `ocr-self-update-guard.test.cjs`, which runs after dependency installation in
 the codebase check.
 
-The draft workflow selects `OCR_ADAPTER_PROVIDER=openrouter` for both startup
-and the separate summary process. It requires `OPENROUTER_API_KEY`, fixes the
-endpoint to `https://openrouter.ai/api/v1/chat/completions` and model to
-`deepseek/deepseek-v4.1-flash-1017`, and sends `reasoning.effort: max`.
+The draft workflow selects `OCR_ADAPTER_PROVIDER=mistral-flash` for both startup
+and the separate summary process. Drafts and the advisor require only
+`MISTRAL_API_KEY`. The draft endpoint is
+`https://api.mistral.ai/v1/chat/completions`, the model is
+`zai-glm-5-3-flash`, and `reasoning_effort` is fixed to `max`.
 Manual final reviews retain the default Mistral profile and `MISTRAL_API_KEY`:
 `https://api.mistral.ai/v1/chat/completions`, `zai-glm-5-3`, with `high` or `max`
 reasoning effort accepted and omitted effort defaulting to `max`. Unknown
@@ -551,7 +552,7 @@ and distinguish reported zero, missing and invalid cache usage.
 `cached_prompt_tokens` and `uncached_prompt_tokens` cover only responses with a
 valid cache report; consult `cache_usage_responses`, `missing_cache_usage` and
 `invalid_cache_usage` before interpreting them. Cache keys and raw provider metadata
-are never copied into those diagnostics. OpenRouter receipts include only the
+are never copied into those diagnostics. New receipts include only the
 fixed profile and model identifiers so cost reporting can reject mismatched
 receipts. OpenRouter uses the forwarded key for provider sticky routing; cache
 hits remain opportunistic across endpoints.
@@ -672,10 +673,15 @@ paths and unknown receipt fields never enter these records. The CLI form is
 `summary <receipt-path> adapter=N [preflight=N] [topology=N]`; draft reporting
 defaults to one adapter lifetime.
 
-`MISTRAL_PRICING` and `PROVIDERS.openrouter.pricing` in
+`MISTRAL_PRICING` and each profile in `PROVIDERS` in
 `ocr-mistral-adapter.cjs` hold profile-specific USD reference rates and dates,
 sourced from [Mistral's model pricing](https://docs.mistral.ai/models/zai-glm-5-3)
-and [OpenRouter's snapshot catalog](https://openrouter.ai/deepseek/deepseek-v4.1-flash-1017).
+and [OpenRouter's snapshot catalog](https://openrouter.ai/deepseek/deepseek-v4.1-flash-1017). Draft Flash uses
+[Mistral Flash pricing](https://docs.mistral.ai/models/zai-glm-5-3-flash): $0.15
+input, $0.03 cached input and $0.50 output per million tokens, checked
+2026-10-23. New receipts include exact profile/model identity; legacy receipts
+without identity are accepted only for full GLM. Draft and advisor estimates
+remain separate before combining, even when they share one Mistral key.
 OpenRouter estimates use the catalog reference rates of $0.15 input, $0.003 cached
 input and $0.60 output per million tokens, checked 2026-10-17. Actual endpoint
 prices and time-based overrides vary, so these estimates are labelled as
