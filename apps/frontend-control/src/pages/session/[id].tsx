@@ -105,24 +105,12 @@ function RunningLiveQuiz() {
   }, [derivedEnded, ended])
 
   // polled on both tabs so the Q&A tab can show the pending counter
-  const {
-    data: qaData,
-    startPolling: startQaPolling,
-    stopPolling: stopQaPolling,
-  } = useQuery(GetControlLiveQuizFeedbacksDocument, {
+  const { data: qaData } = useQuery(GetControlLiveQuizFeedbacksDocument, {
     variables: { id: quizId },
     pollInterval: 3000,
     skip: !quizId || !!ended,
   })
   const qa = qaData?.controlLiveQuizFeedbacks
-  // no need to poll while Q&A is off and has no questions; enabling Q&A in
-  // the panel refetches this query, which resumes polling
-  const qaPaused =
-    !!qa && !qa.isLiveQAEnabled && (qa.feedbacks?.length ?? 0) === 0
-  useEffect(() => {
-    if (qaPaused) stopQaPolling()
-    else startQaPolling(3000)
-  }, [qaPaused, startQaPolling, stopQaPolling])
   const pendingQuestions = qa?.isModerationEnabled
     ? (qa.feedbacks ?? []).filter(
         (feedback) => !feedback.isPublished && !feedback.isResolved

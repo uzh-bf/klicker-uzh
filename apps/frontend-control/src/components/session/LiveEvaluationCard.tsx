@@ -175,6 +175,8 @@ export function blockParticipants(
 }
 
 export function answerCount(instance: Instance) {
+  if (instance.__typename === 'ContentActivityEvaluationData') return 0
+
   return 'results' in instance &&
     instance.results &&
     'totalAnswers' in instance.results

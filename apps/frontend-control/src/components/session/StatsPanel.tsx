@@ -79,10 +79,13 @@ function StatsPanel({
     { votes: number; questions: number; instances: Instance[] }
   >()
   for (const stack of data?.liveQuizEvaluation?.results ?? []) {
-    const counts = stack.instances.map(answerCount)
+    const questionInstances = stack.instances.filter(
+      (instance) => instance.__typename !== 'ContentActivityEvaluationData'
+    )
+    const counts = questionInstances.map(answerCount)
     votesByOrder.set(stack.stackOrder, {
       votes: counts.reduce((sum, count) => sum + count, 0),
-      questions: stack.instances.length,
+      questions: questionInstances.length,
       instances: stack.instances,
     })
   }
