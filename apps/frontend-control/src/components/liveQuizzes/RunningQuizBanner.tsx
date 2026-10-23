@@ -74,9 +74,12 @@ function RunningQuizBanner({ quiz }: RunningQuizBannerProps) {
         (block) => block.status === ElementBlockStatus.Active
       )
       if (running) {
-        await deactivateBlock({
+        const deactivation = await deactivateBlock({
           variables: { quizId: quiz.id, blockId: running.id },
         })
+        if (deactivation.data?.deactivateLiveQuizBlock !== true) {
+          throw new Error('running block not closed')
+        }
       }
       const result = await endLiveQuiz({ variables: { id: quiz.id } })
       if (!result.data?.endLiveQuiz) throw new Error('live quiz not ended')
