@@ -586,7 +586,13 @@ test.describe.serial('Lecturer chatbot draft authoring', () => {
         answerPreferencesEnabled: false,
       })
     modelSettingsRequestGate.release()
-    await expect(page.getByText('Model settings saved.')).toBeVisible()
+    const saveSuccess = page.getByTestId('chatbot-model-settings-save-success')
+    await expect(saveSuccess).toBeVisible()
+    await answerPreferencesSwitch.click()
+    await expect(answerPreferencesSwitch).toBeChecked()
+    await expect(saveSuccess).toHaveCount(0)
+    await answerPreferencesSwitch.click()
+    await expect(answerPreferencesSwitch).not.toBeChecked()
 
     await page.getByTestId('chatbot-view-usage').click()
     await expect(page.getByText('Credits', { exact: true })).toBeVisible()

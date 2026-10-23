@@ -2016,10 +2016,19 @@ test.describe('Chatbot Settings Panel', () => {
         0
       )
 
+      const settingsResponse = page.waitForResponse(
+        (response) =>
+          new URL(response.url()).pathname === `/api/chatbots/${CHATBOT_ID}` &&
+          response.request().method() === 'GET'
+      )
       await page.goto(`${chatUrl()}/${CHATBOT_ID}?embed=true`, {
         waitUntil: 'domcontentloaded',
       })
+      const response = await settingsResponse
+      expect(response.ok()).toBe(true)
+      expect((await response.json()).answerPreferencesEnabled).toBe(false)
       await expect(page.getByTestId('chat-composer')).toBeVisible()
+      await expect(page.getByTestId('chat-embedded-credits-bar')).toBeVisible()
       await expect(
         page.getByTestId('chat-embedded-answer-style-select')
       ).toHaveCount(0)
