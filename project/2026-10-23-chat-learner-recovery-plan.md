@@ -90,5 +90,28 @@ changes; preserve the complete review contract through authorized continuity.
 - Planning challenge round 1 requested final normalization after image
   hydration and explicit worker-failure/concurrency coverage. Both were verified
   against source and accepted. The same planner approved revised round 2.
-- Implementation and verification are pending. Substantive size will be
-  recorded from the target-relative diff after implementation.
+- Both implementation slices are committed. The document regressions failed
+  before their fixes; the focused suite now passes all 52 cases. The complete
+  Chat suite passes 831 cases, with 21 opt-in or environment-dependent skips.
+  Chat typechecking, production build and ESLint pass (20 existing warnings).
+  Changed-file formatting, repository policy checks and a focused source scan
+  pass. Host-only launcher checks were rerun on the host after their container
+  boundary correctly rejected execution there.
+- Synthetic browser checks verify stalled-worker termination and send recovery,
+  first-send versus retry page payload/label consistency, retained document text,
+  dictation error supersession and subsequent errors. English desktop and German
+  compact captures were inspected. Recognition and model transport are mocked;
+  these checks do not establish real microphone, model or staging acceptance.
+  Image hydration/cache eviction is covered at the request/store test seam.
+- Simplification recommends no changes. The independent slice review passes
+  the complete six-path implementation range. Integrated final review and
+  hosted draft CI remain pending; no PR exists yet.
+- Package size: 304 substantive added/deleted lines across six source/test
+  paths, excluding this plan. One coherent recovery package; no dependency,
+  schema or evaluation changes. Keep the three consequential regressions at
+  their existing adapter/request/recognizer seams.
+- Durable lesson: normalization must run after hydration can replace a message,
+  as well as before a hydration failure can return early. The existing helper,
+  comments and regression test retain that contract without another abstraction
+  or a duplicate solution document. Next: stop the task runtime, complete the
+  final review and deliver the draft against `v3`.
