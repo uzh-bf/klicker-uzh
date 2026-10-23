@@ -121,6 +121,68 @@ recoveries for the package. Repeated infrastructure failure is a capability
 blocker; do not alter runner policy or CI architecture. Description ownership
 remains with the controller throughout feedback and CI handling.
 
+## Approved corrective pass
+
+The follow-up approval extends this executable batch with five verified source
+corrections on the same draft branch: default Explainer response-example mode
+eligibility, proxy/CA environment forwarding, cross-scope reasoning-history
+registration, topology request deadline consistency, and truthful draft-review
+coverage admission. No new capability, dependency, PR or release path is added.
+Conditional publisher hardening, export semantics, Windows support, JWKS caching
+and compression telemetry remain outside this corrective pass. The controller
+still owns the PR description. Mark-ready, merge, deployment, application startup
+and paid chatbot evaluation remain excluded.
+
+Main owns the corrective slice, mode-policy seam, proxy configuration,
+integration and final proof. One bounded executor owns the three review-tool
+corrections and their existing tests, with no external effects. These edits form one corrective
+slice and one source commit after the plan amendment. Execution remains standard.
+The previous independent review is findings evidence, not a passed gate; the
+user approved one fresh integrated final review after correction, with at most
+one focused same-reviewer correction. Reuse the proven Claude/AGY route failures
+unless relevant capability evidence changes. A new scope decision or exhausted
+correction stops the dependent work, after independent checks finish.
+
+### Corrective contracts and verification
+
+| Risk and primary seam | Required outcome | Test obligation |
+| --- | --- | --- |
+| Default-mode response-example eligibility; existing GraphQL response-example contract/service tests | List, approve and edit-and-approve use the existing standard-mode normalizer for platform Tutor/Explainer defaults, explicit settings and legacy disabled flags. Preserve other stored mode keys and rejected-example transitions. | extend existing synthetic contract/service coverage; no seed/prose assertions |
+| Proxy/CA forwarding; Turbo dry-run environment plus Compose configuration | App tasks retain the five existing proxy/CA switches and default proxy exclusions cover the documented internal services. | none; verify actual declarative/task environment without starting applications |
+| Native reasoning replay; existing adapter history-cache tests | Remembering the same native turn in two scopes permits compressed-prefix restoration in both without double-counting payload capacity; unknown scopes and ambiguity remain fail-closed. | extend existing cache contract coverage |
+| Topology request deadline; existing injected-transport tests | Restore the documented120-second topology wrapper deadline below the fetch transport limit; preserve cancellation and provider selection. | extend existing transport contract coverage only where it detects a real deadline regression |
+| Draft review publication; existing draft-runner publication tests | Reuse `validateOCRCoverage` for valid identities, unique selection, disjoint terminal partitions, matching fingerprints and exhaustive accounting. Complete results have no failed or waived work; valid partial publication stays visibly incomplete. | extend existing synthetic publication boundary coverage with realistic manifest objects |
+
+Main's implementation paths are `packages/graphql/src/lib/responseExampleContract.ts`,
+`packages/graphql/src/services/responseExamples.ts`, their existing contract/service
+tests, `turbo.json` and `.devcontainer/docker-compose.yml`. The executor's paths
+are `.github/scripts/ocr-mistral-adapter.cjs`, `.github/scripts/final-ai-stack-review.js`,
+`.github/scripts/ocr-draft-review.cjs` and their existing tests. The existing
+coverage validator in `.github/scripts/final-ai-review.js` is reused, not
+duplicated; the executor may change that file solely to export the existing
+validator. No new file or module is planned. Forward `HTTP_PROXY`, `HTTPS_PROXY`,
+`NO_PROXY`, `NODE_USE_ENV_PROXY` and `NODE_USE_SYSTEM_CA`; add `litellm`, `mailhog`
+and `oidc` to default exclusions. The existing mocked topology deadline
+regression changes from600000 to120000ms without an earlier abort or diagnostic
+change. Hard-coded Explainer permission, duplicated validation and longer
+transport deadlines are rejected approaches.
+
+Primitive impact: reuse chatbot modes and response examples. A reviewable example
+must refer to an available approved chatbot mode; fixing default-mode discovery
+does not add a mode or weaken status/source/ownership checks. CI review artifacts,
+proxy configuration and cache entries are implementation contracts, not new
+product primitives. No live records or environment observations enter this plan.
+
+Verify fastest seams first with synthetic fixtures and no provider calls. Use an
+ephemeral toolchain container for pure package tests; keep application services
+stopped. The existing `test-graphql` CI producer supplies the isolated database
+for the service suite; do not claim that local pure tests replace that result.
+Commit the complete corrective slice after hygiene checks, then run the
+armed simplification/risk pair and one fresh full-scope final review over the
+actual target-to-head delta. Push normally, inspect feedback and producing
+current-head CI evidence, and retain draft/auto-merge-off state. Source review,
+required draft CI and runtime/browser limitations remain separate conclusions.
+
 ## Progress
 
 Plan derived from the approved executable batch; planning challenge approved
