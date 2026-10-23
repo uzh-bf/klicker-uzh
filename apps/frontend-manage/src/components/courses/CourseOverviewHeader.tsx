@@ -2,6 +2,7 @@ import { useMutation, useQuery } from '@apollo/client'
 import { faCopy, faPenToSquare } from '@fortawesome/free-regular-svg-icons'
 import {
   faChartPie,
+  faDownload,
   faEllipsis,
   faFilePen,
   faLink,
@@ -34,6 +35,7 @@ import CourseDuplicationModal, {
 import CourseManipulationModal, {
   type CourseManipulationFormData,
 } from './modals/CourseManipulationModal'
+import ResearchExportModal from './modals/ResearchExportModal'
 import PointCorrectionsModal from './PointCorrectionsModal'
 import QRCodePopover from './QRCodePopover'
 
@@ -77,6 +79,7 @@ function CourseOverviewHeader({
   const [correctionsModal, setCorrectionsModal] = useState(false)
   const [isActivityLogOpen, setIsActivityLogOpen] = useState(false)
   const [duplicationModal, setDuplicationModal] = useState(false)
+  const [researchExportModal, setResearchExportModal] = useState(false)
   const courseDuplicationInProgress = isSourceCourseDuplicating(course.id)
 
   const [updateCourseSettings] = useMutation(UpdateCourseSettingsDocument)
@@ -148,6 +151,19 @@ function CourseOverviewHeader({
             ),
             onClick: () => setDuplicationModal(true),
             data: { cy: 'course-duplicate-button' },
+          },
+        ]
+      : []),
+    ...(course.isManager
+      ? [
+          {
+            id: 'course-research-export',
+            label: courseActionMenuLabel(
+              <FontAwesomeIcon icon={faDownload} className="h-4 w-4" />,
+              t('manage.researchExport.menuLabel')
+            ),
+            onClick: () => setResearchExportModal(true),
+            data: { cy: 'course-research-export' },
           },
         ]
       : []),
@@ -321,6 +337,13 @@ function CourseOverviewHeader({
           }}
         />
       )}
+      {researchExportModal && course.isManager ? (
+        <ResearchExportModal
+          courseId={course.id}
+          courseName={course.name}
+          onClose={() => setResearchExportModal(false)}
+        />
+      ) : null}
       {courseSettingsModal && (
         <CourseManipulationModal
           initialValues={course}
