@@ -192,6 +192,71 @@ actual target-to-head delta. Push normally, inspect feedback and producing
 current-head CI evidence, and retain draft/auto-merge-off state. Source review,
 required draft CI and runtime/browser limitations remain separate conclusions.
 
+## Approved local-ingestion and Quizzer follow-up
+
+The subsequent approval covers only the remaining local-host proxy exclusion
+and capability-aware Quizzer response-example eligibility. Keep the existing
+draft delivery and source-only authority. No new mode, dependency, migration,
+live setting, application startup or paid evaluation is introduced. Other
+review-tool hardening and product/platform residuals remain deferred.
+
+Reuse the existing chatbot modes, MCP bindings and lecturer-owned response
+examples. Quizzer appears in the selectable `chatModes` and either approval path
+only when its standard-mode setting enables it and effective configurations
+contain a safe course document-query binding. Existing examples stay listed for
+inspection and rejection even when their mode becomes unavailable. Preserve
+exact-server override precedence,
+disabled overrides, required aliases, concrete tool restrictions, ownership,
+evidence validation and rejected-example transitions. Tutor, Explainer and
+custom-mode behavior otherwise stay unchanged.
+
+Main owns the shared policy extraction, GraphQL wiring, proxy correction and
+integration. The proxy edit is too small to benefit from a separate executor;
+the capability decision and extraction are tightly coupled. A bounded executor
+owns only the existing database-backed response-example service tests while
+main implements the independent source paths. All data is synthetic.
+Execution remains standard; this is one full-path corrective slice on the
+existing branch, with a planner pass, simplifier/risk pair and one fresh
+integrated final review. Existing unaffected review evidence is reusable.
+
+Delegation Map: the single corrective slice depends on planner approval. Main
+owns source, pure-contract tests, integration, commits and delivery; the executor
+owns `packages/graphql/test/responseExamples.test.ts` only. Acceptance is focused
+source/contract checks, hosted isolated database proof, reviewed source push and
+explicit incomplete browser acceptance. No concurrent writer shares a path.
+
+Move the existing binding resolver and its safety predicates unchanged from
+`apps/chat/src/lib/server/effectiveChatModes.ts` into the named new module
+`packages/util/src/chatbotMCPConfiguration.ts`. Its two concrete consumers are
+participant Chat and GraphQL response-example review; do not duplicate the
+capability algorithm. Export it from the existing util index, retain the app's
+existing exports for callers, and keep non-binding mode presentation in the app.
+Extend `packages/graphql/src/lib/responseExampleContract.ts` to use that same
+Quizzer gate. In `packages/graphql/src/services/responseExamples.ts`, load the
+minimal binding fields for listing, approve and edit-and-approve, reusing one
+typed selection. Add `host.docker.internal` to the existing Compose default
+exclusions and matching README; preserve caller-supplied exclusion semantics.
+
+| Risk and primary seam | Acceptance and test obligation |
+| --- | --- |
+| Quizzer availability and exact binding precedence | Test obligation: extend existing. GraphQL contract tests use synthetic safe/unsafe, disabled and exact-override cases; existing Chat effective-mode/required-MCP suites protect the unchanged resolver. |
+| Database-to-policy wiring across review actions | Test obligation: extend existing. In `packages/graphql/test/responseExamples.test.ts`, NULL prompts plus a safe binding permit selectable Quizzer and both approvals. A disabled exact Quizzer row alongside a safe Tutor row on the same server, removed bindings, or a disabled mode exclude Quizzer from `chatModes` and deny both approvals. Existing examples remain inspectable/rejectable. Hosted isolated GraphQL tests supply database proof. |
+| Local ingestion bypasses an external proxy | Test obligation: none. Check resolved Compose default NO_PROXY includes the host endpoint and supplied overrides remain unchanged; no new source-text-pinning test. |
+
+These are the complete follow-up test obligations; new helpers or moved lines
+do not create additional slice-level test requirements.
+
+Run pure tests, relevant builds/typechecks, formatting, Compose validation and
+focused source analysis without starting an application. The app-side change is
+a behavior-preserving server-module extraction. Fresh browser proof remains
+unavailable under the source-only startup restriction; do not claim learner/UI
+acceptance. Commit the hardened addendum, then the verified corrective slice;
+push normally to the same draft and inspect actual current-head CI/feedback.
+The controller retains the complete PR title/body. One initial final review
+and at most one focused same-reviewer correction are allowed for this follow-up;
+an unresolved material cycle then stops after independent CI finishes. Preserve
+all existing merge, deployment and evaluation authority gates.
+
 ## Progress
 
 Approved correction implementation is complete and awaiting committed review
