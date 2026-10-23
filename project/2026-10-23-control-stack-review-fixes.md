@@ -66,3 +66,6 @@ The user keeps the runtime running for manual testing; retain the pin until test
 - Planner round 1: accepted keeping lower layers corrected; added exact paths, strict window/null behavior, loading/error/stale states and EXECUTE/projection acceptance. Reuse unchanged lifecycle evidence.
 - Planner round 2: APPROVED. New branch created from the corrected top; next action is implement and verify the audience-feedback/removal package. Jev advisory routing comparison skipped because no eligible configured budget is established; required reviews remain active.
 
+
+- Audience feature and controller embedding removal implemented. Two focused PostgreSQL aggregation/EXECUTE schema tests and five host Chromium controller workflows passed; controller type check passed. Existing six lifecycle cases retain prior reviewed evidence, since lifecycle production source is unchanged.
+- Browser tests now use unique owned synthetic names and serial dependency ordering, preserving the retained local database. Real phone captures show empty and populated summary/sheet; final desktop/DE evidence and reviews are in progress.

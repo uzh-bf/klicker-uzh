@@ -6044,7 +6044,6 @@ Since the KlickerUZH app is not yet available in the iOS App Store, follow these
       noPlannedLiveQuizzes: 'No planned live quizzes',
       liveQuizStartFailed:
         'Unfortunately, your live quiz could not be started due to an error. Please try again later.',
-      pptEmbedding: 'PPT-Embedding Evaluation',
       startLiveQuiz: 'Start quiz',
       confirmStartLiveQuiz:
         'Are you sure you want to start the following live quiz?',
@@ -6062,10 +6061,6 @@ Since the KlickerUZH app is not yet available in the iOS App Store, follow these
       startSheetBody: 'Start <b>{name}</b>? Participants can join afterwards.',
       assessmentStartHint:
         '<b>Exam mode:</b> no points and no leaderboard. Results are not projected on the screen.',
-      pptEmbeddingHint:
-        'Links for PowerPoint, one per question. Control how they are displayed with the screen settings.',
-      copyLink: 'Copy link',
-      linkCopied: 'Link copied',
     },
     liveQuiz: {
       liveQuizControl: 'Live Quiz Control',
@@ -6103,6 +6098,33 @@ Since the KlickerUZH app is not yet available in the iOS App Store, follow these
       endedSummary: '{name} · {blocks, plural, one {# block} other {# blocks}}',
       backToCourse: 'Back to course',
       actionFailed: 'The action failed. Please try again.',
+      audienceFeedbackTitle: 'Audience feedback',
+      audienceFeedbackOpen: 'Open audience feedback details',
+      audienceFeedbackWindow: 'Last 10 min',
+      audienceFeedbackCount:
+        '{count, plural, one {# response} other {# responses}}',
+      audienceFeedbackNoResponses: 'No responses',
+      audienceFeedbackLoading: 'Loading audience feedback…',
+      audienceFeedbackLoadError: 'Audience feedback could not be loaded.',
+      audienceFeedbackRefreshError:
+        'Refresh failed. Showing the last available audience feedback.',
+      audienceFeedbackOff: 'Off',
+      audienceFeedbackSpeed: 'Speed',
+      audienceFeedbackDifficulty: 'Difficulty',
+      audienceFeedbackSpeedLow: 'slow',
+      audienceFeedbackSpeedCenter: 'on pace',
+      audienceFeedbackSpeedHigh: 'fast',
+      audienceFeedbackDifficultyLow: 'easy',
+      audienceFeedbackDifficultyCenter: 'manageable',
+      audienceFeedbackDifficultyHigh: 'hard',
+      audienceFeedbackMeterLabel: '{dimension}: {value}, scale from -2 to 2',
+      audienceFeedbackSheetHint:
+        'Average response direction from the last 10 minutes. The scale ranges from -2 to 2.',
+      audienceFeedbackToggle: 'Collect confusion feedback',
+      audienceFeedbackToggleOnHint:
+        'Participants can rate the pace and difficulty.',
+      audienceFeedbackToggleOffHint:
+        'Participants cannot submit pace or difficulty ratings.',
       liveEvaluation: 'Live evaluation',
       resultBlockN: 'Result block {number}',
       noAnswersYet: 'No answers yet.',

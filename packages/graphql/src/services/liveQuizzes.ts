@@ -1045,13 +1045,14 @@ async function getBlockParticipants({
   return blockParticipants
 }
 
-// Q&A moderation in the controller: settings plus all feedbacks (including
-// unpublished ones), without the blocks and results the cockpit loads
+// Controller feedback: Q&A moderation and recent audience signals, without
+// the blocks and results the cockpit loads.
 export async function getControlLiveQuizFeedbacks(
   { id }: { id: string },
   ctx: ContextWithUser
 ) {
-  return await ctx.prisma.liveQuiz.findUnique({
+  const now = new Date()
+  const liveQuiz = await ctx.prisma.liveQuiz.findUnique({
     where: {
       id,
       status: DB.PublicationStatus.PUBLISHED,
@@ -1059,12 +1060,27 @@ export async function getControlLiveQuizFeedbacks(
       ...liveQuizCourseVisibilityFilter,
     },
     include: {
+      confusionFeedbacks: {
+        where: {
+          createdAt: {
+            gt: new Date(now.getTime() - 1000 * 60 * 10),
+            lt: now,
+          },
+        },
+      },
       feedbacks: {
         include: { responses: { orderBy: { createdAt: 'asc' } } },
         orderBy: { createdAt: 'desc' },
       },
     },
   })
+
+  if (!liveQuiz) return null
+
+  return {
+    ...liveQuiz,
+    confusionSummary: aggregateFeedbacks(liveQuiz.confusionFeedbacks),
+  }
 }
 
 export async function getCockpitQuiz(

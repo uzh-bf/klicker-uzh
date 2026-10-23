@@ -1,9 +1,5 @@
 import { useMutation, useQuery } from '@apollo/client'
-import {
-  faPersonChalkboard,
-  faPlay,
-  faStop,
-} from '@fortawesome/free-solid-svg-icons'
+import { faPlay, faStop } from '@fortawesome/free-solid-svg-icons'
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome'
 import {
   ActivateLiveQuizBlockDocument,
@@ -30,7 +26,6 @@ import { findLast, sort } from 'remeda'
 import ResponsiveSheet from '../../components/common/ResponsiveSheet'
 import {
   dangerButtonClass,
-  iconButtonClass,
   largeButtonClass,
   outlineButtonClass,
   primaryButtonClass,
@@ -38,7 +33,7 @@ import {
 } from '../../components/common/styles'
 import Layout from '../../components/Layout'
 import AppBar from '../../components/layout/AppBar'
-import EmbeddingModal from '../../components/liveQuizzes/EmbeddingModal'
+import AudienceFeedback from '../../components/session/AudienceFeedback'
 import BlockProgress from '../../components/session/BlockProgress'
 import BlockStatusCard from '../../components/session/BlockStatusCard'
 import LeinwandCard from '../../components/session/LeinwandCard'
@@ -54,7 +49,6 @@ function RunningLiveQuiz() {
   const t = useTranslations()
   const router = useRouter()
   const [endSheetOpen, setEndSheetOpen] = useState(false)
-  const [embedOpen, setEmbedOpen] = useState(false)
   const [tab, setTab] = useState<SessionTab>('control')
   // selected question of the evaluated block, shared by evaluation + Leinwand
   const [selectedQuestion, setSelectedQuestion] = useState<{
@@ -104,13 +98,26 @@ function RunningLiveQuiz() {
     if (derivedEnded && !ended) setEnded(derivedEnded)
   }, [derivedEnded, ended])
 
-  // polled on both tabs so the Q&A tab can show the pending counter
-  const { data: qaData } = useQuery(GetControlLiveQuizFeedbacksDocument, {
+  // polled across all tabs for the Q&A counter and audience feedback strip
+  const {
+    data: qaData,
+    previousData: previousQaData,
+    loading: qaLoading,
+    error: qaError,
+    refetch: refetchQA,
+  } = useQuery(GetControlLiveQuizFeedbacksDocument, {
     variables: { id: quizId },
     pollInterval: 3000,
+    notifyOnNetworkStatusChange: true,
     skip: !quizId || !!ended,
   })
   const qa = qaData?.controlLiveQuizFeedbacks
+  // Q&A keeps its existing data semantics. Audience feedback can use Apollo's
+  // previous result after a network error, but an explicit null is authoritative.
+  const audienceFeedbackData =
+    qaData !== undefined
+      ? qaData.controlLiveQuizFeedbacks
+      : previousQaData?.controlLiveQuizFeedbacks
   const pendingQuestions = qa?.isModerationEnabled
     ? (qa.feedbacks ?? []).filter(
         (feedback) => !feedback.isPublished && !feedback.isResolved
@@ -215,16 +222,6 @@ function RunningLiveQuiz() {
         isAssessmentEnabled ? t('control.course.assessmentBadge') : undefined
       }
       backHref={backHref}
-      actions={
-        <Button
-          onClick={() => setEmbedOpen(true)}
-          className={{ root: iconButtonClass }}
-          aria-label={t('control.course.pptEmbedding')}
-          data={{ cy: 'session-ppt-link' }}
-        >
-          <FontAwesomeIcon icon={faPersonChalkboard} className="h-4 w-4" />
-        </Button>
-      }
     />
   )
 
@@ -317,6 +314,13 @@ function RunningLiveQuiz() {
         tab={tab}
         onChange={setTab}
         pendingQuestions={pendingQuestions}
+      />
+      <AudienceFeedback
+        quizId={id}
+        data={audienceFeedbackData}
+        loading={qaLoading}
+        error={qaError}
+        refetch={refetchQA}
       />
 
       {tab === 'qa' ? (
@@ -424,10 +428,6 @@ function RunningLiveQuiz() {
       >
         {t('control.liveQuiz.endSheetBody')}
       </ResponsiveSheet>
-
-      {embedOpen && (
-        <EmbeddingModal quizId={id} onClose={() => setEmbedOpen(false)} />
-      )}
     </Layout>
   )
 }

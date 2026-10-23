@@ -6179,7 +6179,6 @@ Da die KlickerUZH-App noch nicht im iOS-App-Store verfügbar ist, folgen Sie die
       noPlannedLiveQuizzes: 'Keine geplanten Live Quizzes',
       liveQuizStartFailed:
         'Leider konnte Ihr Live Quiz aufgrund eines Fehlers nicht gestartet werden. Bitte versuchen Sie es später erneut.',
-      pptEmbedding: 'PPT-Einbettung Evaluation',
       startLiveQuiz: 'Quiz starten',
       confirmStartLiveQuiz:
         'Sind Sie sich sicher, dass sie das folgende Live Quiz starten möchten?',
@@ -6198,10 +6197,6 @@ Da die KlickerUZH-App noch nicht im iOS-App-Store verfügbar ist, folgen Sie die
         '<b>{name}</b> starten? Teilnehmende können danach beitreten.',
       assessmentStartHint:
         '<b>Prüfungsmodus:</b> keine Punkte und keine Rangliste. Ergebnisse werden nicht auf die Leinwand projiziert.',
-      pptEmbeddingHint:
-        'Links für PowerPoint, einer pro Frage. Die Darstellung steuern Sie über die Leinwand-Einstellungen.',
-      copyLink: 'Link kopieren',
-      linkCopied: 'Link kopiert',
     },
     liveQuiz: {
       liveQuizControl: 'Live Quiz-Steuerung',
@@ -6241,6 +6236,34 @@ Da die KlickerUZH-App noch nicht im iOS-App-Store verfügbar ist, folgen Sie die
       backToCourse: 'Zurück zum Kurs',
       actionFailed:
         'Die Aktion ist fehlgeschlagen. Bitte versuchen Sie es erneut.',
+      audienceFeedbackTitle: 'Publikumsfeedback',
+      audienceFeedbackOpen: 'Details zum Publikumsfeedback öffnen',
+      audienceFeedbackWindow: 'Letzte 10 Min.',
+      audienceFeedbackCount:
+        '{count, plural, one {# Rückmeldung} other {# Rückmeldungen}}',
+      audienceFeedbackNoResponses: 'Keine Rückmeldungen',
+      audienceFeedbackLoading: 'Publikumsfeedback wird geladen…',
+      audienceFeedbackLoadError:
+        'Publikumsfeedback konnte nicht geladen werden.',
+      audienceFeedbackRefreshError:
+        'Aktualisierung fehlgeschlagen. Das zuletzt verfügbare Publikumsfeedback wird angezeigt.',
+      audienceFeedbackOff: 'Aus',
+      audienceFeedbackSpeed: 'Tempo',
+      audienceFeedbackDifficulty: 'Schwierigkeit',
+      audienceFeedbackSpeedLow: 'langsam',
+      audienceFeedbackSpeedCenter: 'passend',
+      audienceFeedbackSpeedHigh: 'schnell',
+      audienceFeedbackDifficultyLow: 'einfach',
+      audienceFeedbackDifficultyCenter: 'machbar',
+      audienceFeedbackDifficultyHigh: 'schwierig',
+      audienceFeedbackMeterLabel: '{dimension}: {value}, Skala von -2 bis 2',
+      audienceFeedbackSheetHint:
+        'Durchschnittliche Rückmeldungen der letzten 10 Minuten. Die Skala reicht von -2 bis 2.',
+      audienceFeedbackToggle: 'Konfusions-Feedback erfassen',
+      audienceFeedbackToggleOnHint:
+        'Teilnehmende können Tempo und Schwierigkeit bewerten.',
+      audienceFeedbackToggleOffHint:
+        'Teilnehmende können Tempo und Schwierigkeit nicht bewerten.',
       liveEvaluation: 'Live-Auswertung',
       resultBlockN: 'Ergebnis Block {number}',
       noAnswersYet: 'Noch keine Antworten.',

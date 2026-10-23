@@ -7,11 +7,19 @@
  */
 
 import { readFileSync } from 'node:fs'
+import { randomUUID } from 'node:crypto'
 import { cleanupTest } from '../util/cleanup.js'
 import { CONTROL_DATA, LECTURER_ID, viewPorts } from '../util/constants.js'
 import { expect, test } from '../util/fixtures.js'
 import { createQuestionSC } from '../util/fixtures/elements.js'
 import { removeSoftDeletedLiveQuiz } from '../util/fixtures/manage.js'
+
+const fixtureSuffix = randomUUID().slice(0, 8)
+const CONTROL_FIXTURE = {
+  ...CONTROL_DATA,
+  questionTitle: `${CONTROL_DATA.questionTitle} ${fixtureSuffix}`,
+  quizName: `${CONTROL_DATA.quizName} ${fixtureSuffix}`,
+}
 
 const persistedOperations = JSON.parse(
   readFileSync(
@@ -57,7 +65,8 @@ function graphQLOperationName(request: {
 
 test('CLEANUP', cleanupTest)
 
-test.describe('Test functionalities of frontend-control application', () => {
+test.describe
+  .serial('Test functionalities of frontend-control application', () => {
   test('Create a live quiz with a new SC question to test execution from control app', async ({
     page,
     loginLecturer,
@@ -65,8 +74,8 @@ test.describe('Test functionalities of frontend-control application', () => {
   }) => {
     // Seed the SC question directly via DB helper
     await createQuestionSC({
-      name: CONTROL_DATA.questionTitle,
-      content: CONTROL_DATA.questionContent,
+      name: CONTROL_FIXTURE.questionTitle,
+      content: CONTROL_FIXTURE.questionContent,
       choices: [{ value: '50%' }, { value: '100%' }],
       userId: LECTURER_ID,
     })
@@ -75,9 +84,9 @@ test.describe('Test functionalities of frontend-control application', () => {
     await page.reload()
 
     await createLiveQuiz(page, {
-      name: CONTROL_DATA.quizName,
-      displayName: CONTROL_DATA.quizDisplayName,
-      questionTitle: CONTROL_DATA.questionTitle,
+      name: CONTROL_FIXTURE.quizName,
+      displayName: CONTROL_FIXTURE.quizDisplayName,
+      questionTitle: CONTROL_FIXTURE.questionTitle,
     })
   })
 
@@ -88,30 +97,39 @@ test.describe('Test functionalities of frontend-control application', () => {
   }) => {
     await loginLecturerControl()
     const controlOrigin = new URL(page.url()).origin
+    let embeddingRequests = 0
+    page.on('request', (request) => {
+      if (graphQLOperationName(request)?.includes('GetLiveQuizEmbeddingInfo')) {
+        embeddingRequests += 1
+      }
+    })
 
-    // PPT link and start quiz
+    // Start the quiz without embedding-link controls.
     await page.getByTestId('unassigned-live-quizzes').click()
     await expect(
-      page.getByTestId(`ppt-link-${CONTROL_DATA.quizName}`)
-    ).toBeVisible()
-    await page.getByTestId(`ppt-link-${CONTROL_DATA.quizName}`).click()
-    await page.getByTestId('close-embedding-modal').click()
-    await page.getByTestId(`start-live-quiz-${CONTROL_DATA.quizName}`).click()
+      page.getByTestId(`ppt-link-${CONTROL_FIXTURE.quizName}`)
+    ).toHaveCount(0)
+    await page
+      .getByTestId(`start-live-quiz-${CONTROL_FIXTURE.quizName}`)
+      .click()
     await page.getByTestId('confirm-start-live-quiz').click()
 
-    // Mobile navigation test (iphone-6: 375x667): app bar PPT and back buttons
+    // Mobile navigation test (iphone-6: 375x667): session and course navigation
     await page.setViewportSize(viewPorts.iphone6)
-    await page.getByTestId('session-ppt-link').click()
-    await page.getByTestId('close-embedding-modal').click()
+    await expect(page.getByTestId('session-ppt-link')).toHaveCount(0)
     await page.getByTestId('app-bar-back').click() // session -> quiz list
     await expect(page).toHaveURL(/\/course\/unassigned$/)
     await page.getByTestId('app-bar-back').click() // quiz list -> home
     await page.getByTestId('unassigned-live-quizzes').click()
-    await page.getByTestId(`running-live-quiz-${CONTROL_DATA.quizName}`).click()
+    await page
+      .getByTestId(`running-live-quiz-${CONTROL_FIXTURE.quizName}`)
+      .click()
     await expect(page).toHaveURL(/\/session\/[^/]+$/)
     await page.getByTestId('app-bar-back').click()
     await expect(page).toHaveURL(/\/course\/unassigned$/)
-    await page.getByTestId(`running-live-quiz-${CONTROL_DATA.quizName}`).click()
+    await page
+      .getByTestId(`running-live-quiz-${CONTROL_FIXTURE.quizName}`)
+      .click()
     await expect(page).toHaveURL(/\/session\/[^/]+$/)
     await page.setViewportSize(viewPorts.default)
 
@@ -142,7 +160,9 @@ test.describe('Test functionalities of frontend-control application', () => {
     })
 
     await page.goto(`${controlOrigin}/`)
-    await page.getByTestId(`stop-running-quiz-${CONTROL_DATA.quizName}`).click()
+    await page
+      .getByTestId(`stop-running-quiz-${CONTROL_FIXTURE.quizName}`)
+      .click()
     const confirmStop = page.getByTestId('confirm-stop-running-quiz')
     await expect(confirmStop).toBeEnabled()
     await confirmStop.click()
@@ -161,7 +181,7 @@ test.describe('Test functionalities of frontend-control application', () => {
     await page.unroute(graphQLRoute)
     await page.getByTestId('cancel-stop-running-quiz').click()
     await page
-      .getByTestId(`running-banner-link-${CONTROL_DATA.quizName}`)
+      .getByTestId(`running-banner-link-${CONTROL_FIXTURE.quizName}`)
       .click()
     await expect(page.getByTestId('deactivate-block')).toBeVisible()
 
@@ -171,6 +191,15 @@ test.describe('Test functionalities of frontend-control application', () => {
     const secondPage = await context.newPage()
     const sessionQuizId = sessionPath.split('/').at(-1) as string
     let feedbacksEnabled = false
+    let audienceEnabled = false
+    let audienceCount = 0
+    let feedbackMode: 'held' | 'ok' | 'error' = 'held'
+    let mutationRejected = true
+    let settingsRequests = 0
+    let releaseFeedback!: () => void
+    const feedbackReady = new Promise<void>((resolve) => {
+      releaseFeedback = resolve
+    })
     const feedbackPages = new Set<typeof page>()
     const remoteQuestion = {
       __typename: 'Feedback',
@@ -187,6 +216,33 @@ test.describe('Test functionalities of frontend-control application', () => {
     // Mock only the feedback feed. Both pages read the same changing state.
     await context.route(graphQLRoute, async (route) => {
       const operationName = graphQLOperationName(route.request())
+      if (operationName?.includes('ChangeLiveQuizSettings')) {
+        settingsRequests += 1
+        const { variables } = route.request().postDataJSON()
+        expect(Object.keys(variables).sort()).toEqual([
+          'id',
+          'isConfusionFeedbackEnabled',
+        ])
+        expect(variables.id).toBe(sessionQuizId)
+        if (!mutationRejected)
+          audienceEnabled = variables.isConfusionFeedbackEnabled
+        await route.fulfill({
+          json: {
+            data: {
+              changeLiveQuizSettings: mutationRejected
+                ? null
+                : {
+                    __typename: 'LiveQuiz',
+                    id: sessionQuizId,
+                    isConfusionFeedbackEnabled: audienceEnabled,
+                    isLiveQAEnabled: feedbacksEnabled,
+                    isModerationEnabled: feedbacksEnabled,
+                  },
+            },
+          },
+        })
+        return
+      }
       if (!operationName?.includes('GetControlLiveQuizFeedbacks')) {
         await route.continue()
         return
@@ -194,6 +250,11 @@ test.describe('Test functionalities of frontend-control application', () => {
 
       const requestingPage = route.request().frame().page()
       if (requestingPage) feedbackPages.add(requestingPage)
+      if (feedbackMode === 'held') await feedbackReady
+      if (feedbackMode === 'error') {
+        await route.abort('failed')
+        return
+      }
       await route.fulfill({
         json: {
           data: {
@@ -202,6 +263,13 @@ test.describe('Test functionalities of frontend-control application', () => {
               id: sessionQuizId,
               isLiveQAEnabled: feedbacksEnabled,
               isModerationEnabled: feedbacksEnabled,
+              isConfusionFeedbackEnabled: audienceEnabled,
+              confusionSummary: {
+                __typename: 'ConfusionSummary',
+                speed: 1,
+                difficulty: -1,
+                numberOfParticipants: audienceCount,
+              },
               feedbacks: feedbacksEnabled ? [remoteQuestion] : [],
             },
           },
@@ -214,6 +282,69 @@ test.describe('Test functionalities of frontend-control application', () => {
       secondPage.goto(`${controlOrigin}${sessionPath}`),
     ])
     await expect.poll(() => feedbackPages.size).toBe(2)
+    await expect(page.getByTestId('audience-feedback-summary')).toHaveAttribute(
+      'data-state',
+      'loading'
+    )
+    feedbackMode = 'ok'
+    releaseFeedback()
+    await expect(page.getByTestId('audience-feedback-summary')).toHaveAttribute(
+      'data-state',
+      'off'
+    )
+    await page.getByTestId('audience-feedback-summary').click()
+    const audienceToggle = page.getByTestId('audience-feedback-toggle')
+    await expect(audienceToggle).not.toBeChecked()
+    await expect(page.getByRole('meter')).toHaveCount(0)
+    await audienceToggle.click()
+    await expect.poll(() => settingsRequests).toBe(1)
+    await expect(audienceToggle).toBeEnabled()
+    await expect(audienceToggle).not.toBeChecked()
+    expect(audienceEnabled).toBe(false)
+
+    mutationRejected = false
+    await audienceToggle.click()
+    await expect(audienceToggle).toBeChecked()
+    await expect(page.getByTestId('audience-feedback-summary')).toHaveAttribute(
+      'data-state',
+      'empty'
+    )
+    await expect(
+      secondPage.getByTestId('audience-feedback-summary')
+    ).toHaveAttribute('data-state', 'empty', { timeout: 8000 })
+    audienceCount = 3
+    await expect(
+      page.getByTestId('audience-feedback-speed-meter')
+    ).toHaveAttribute('aria-valuenow', '1', { timeout: 8000 })
+    await expect(
+      page.getByTestId('audience-feedback-difficulty-meter')
+    ).toHaveAttribute('aria-valuenow', '-1')
+    feedbackMode = 'error'
+    await expect(page.getByTestId('audience-feedback-summary')).toHaveAttribute(
+      'data-state',
+      'stale',
+      { timeout: 8000 }
+    )
+    await expect(
+      page.getByTestId('audience-feedback-speed-meter')
+    ).toHaveAttribute('aria-valuenow', '1')
+    await secondPage.reload()
+    await expect(
+      secondPage.getByTestId('audience-feedback-summary')
+    ).toHaveAttribute('data-state', 'error')
+    feedbackMode = 'ok'
+    await expect(page.getByTestId('audience-feedback-summary')).toHaveAttribute(
+      'data-state',
+      'ready',
+      { timeout: 8000 }
+    )
+    await page.getByTestId('close-audience-feedback').click()
+    audienceEnabled = false
+    await expect(page.getByTestId('audience-feedback-summary')).toHaveAttribute(
+      'data-state',
+      'off',
+      { timeout: 8000 }
+    )
     for (const controlPage of [page, secondPage]) {
       await expect(controlPage.getByTestId('session-tab-qa')).toBeVisible()
       await expect(
@@ -233,6 +364,9 @@ test.describe('Test functionalities of frontend-control application', () => {
     )
     for (const controlPage of [page, secondPage]) {
       await controlPage.getByTestId('session-tab-qa').click()
+      await expect(
+        controlPage.getByTestId('audience-feedback-summary')
+      ).toBeVisible()
       await expect(controlPage.getByTestId('qa-toggle-enabled')).toBeChecked()
       await expect(controlPage.getByTestId('qa-question-1')).toBeVisible()
     }
@@ -306,6 +440,7 @@ test.describe('Test functionalities of frontend-control application', () => {
     })
 
     await page.getByTestId('session-tab-stats').click()
+    await expect(page.getByTestId('audience-feedback-summary')).toBeVisible()
     await expect(
       page.getByTestId('stats-votes').locator(':scope > div').nth(1)
     ).toHaveText('3')
@@ -323,6 +458,15 @@ test.describe('Test functionalities of frontend-control application', () => {
 
     // Deactivate the real block, end quiz (with confirmation)
     await page.getByTestId('session-tab-control').click()
+    const projectionToggle = page.getByTestId('leinwand-show-percentages')
+    await expect(projectionToggle).toBeVisible()
+    const percentagesBefore = await projectionToggle.isChecked()
+    await projectionToggle.click()
+    await expect(projectionToggle).toHaveAttribute(
+      'aria-checked',
+      String(!percentagesBefore)
+    )
+    expect(embeddingRequests).toBe(0)
     await page.getByTestId('deactivate-block').click()
     await page.getByTestId('end-live-quiz').click()
     await page.getByTestId('confirm-end-live-quiz').click()
@@ -330,10 +474,10 @@ test.describe('Test functionalities of frontend-control application', () => {
     await page.getByTestId('back-to-course').click()
 
     await expect(
-      page.getByTestId(`start-live-quiz-${CONTROL_DATA.quizName}`)
+      page.getByTestId(`start-live-quiz-${CONTROL_FIXTURE.quizName}`)
     ).not.toBeVisible()
     await expect(
-      page.getByTestId(`running-live-quiz-${CONTROL_DATA.quizName}`)
+      page.getByTestId(`running-live-quiz-${CONTROL_FIXTURE.quizName}`)
     ).not.toBeVisible()
   })
 
@@ -345,18 +489,22 @@ test.describe('Test functionalities of frontend-control application', () => {
     await page.getByTestId('activities').click()
 
     await expect(
-      page.getByTestId(`activity-LIVE_QUIZ-${CONTROL_DATA.quizName}`)
+      page.getByTestId(`activity-LIVE_QUIZ-${CONTROL_FIXTURE.quizName}`)
     ).toBeVisible()
-    await page.getByTestId(`actions-LIVE_QUIZ-${CONTROL_DATA.quizName}`).click()
-    await page.getByTestId(`delete-live-quiz-${CONTROL_DATA.quizName}`).click()
+    await page
+      .getByTestId(`actions-LIVE_QUIZ-${CONTROL_FIXTURE.quizName}`)
+      .click()
+    await page
+      .getByTestId(`delete-live-quiz-${CONTROL_FIXTURE.quizName}`)
+      .click()
     await page.getByTestId('confirmation-modal-confirm').click()
-    await expect(page.getByText(CONTROL_DATA.quizName)).not.toBeVisible()
+    await expect(page.getByText(CONTROL_FIXTURE.quizName)).not.toBeVisible()
   })
 
   test('Cleanup (DB): Hard delete soft-deleted live quiz directly in database', async ({
     loginLecturer,
   }) => {
-    await removeSoftDeletedLiveQuiz({ lqName: CONTROL_DATA.quizName })
+    await removeSoftDeletedLiveQuiz({ lqName: CONTROL_FIXTURE.quizName })
     await loginLecturer()
   })
 })

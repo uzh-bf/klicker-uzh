@@ -1,22 +1,15 @@
-import {
-  faArrowLeftLong,
-  faHouse,
-  faPersonChalkboard,
-} from '@fortawesome/free-solid-svg-icons'
+import { faArrowLeftLong, faHouse } from '@fortawesome/free-solid-svg-icons'
 import { useTranslations } from 'next-intl'
 import { useRouter } from 'next/router'
-import { useState } from 'react'
-import EmbeddingModal from '../liveQuizzes/EmbeddingModal'
 import MenuButton from './MenuButton'
 
 interface MobileMenuBarProps {
   quizId?: string
 }
 
-function MobileMenuBar({ quizId }: MobileMenuBarProps) {
+function MobileMenuBar({ quizId: _quizId }: MobileMenuBarProps) {
   const t = useTranslations()
   const router = useRouter()
-  const [embedModalOpen, setEmbedModalOpen] = useState<boolean>(false)
 
   return (
     <div className="fixed bottom-0 h-12 w-full bg-slate-800">
@@ -35,22 +28,7 @@ function MobileMenuBar({ quizId }: MobileMenuBarProps) {
         >
           {t('shared.generic.home')}
         </MenuButton>
-        <MenuButton
-          icon={faPersonChalkboard}
-          onClick={() => setEmbedModalOpen(true)}
-          disabled={!quizId}
-          data={{ cy: 'ppt-button' }}
-        >
-          PPT
-        </MenuButton>
       </div>
-
-      {quizId && embedModalOpen ? (
-        <EmbeddingModal
-          onClose={() => setEmbedModalOpen(false)}
-          quizId={quizId}
-        />
-      ) : null}
     </div>
   )
 }
