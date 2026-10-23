@@ -167,6 +167,15 @@ regression changes from600000 to120000ms without an earlier abort or diagnostic
 change. Hard-coded Explainer permission, duplicated validation and longer
 transport deadlines are rejected approaches.
 
+The one permitted final-review correction also covers the local Blob endpoint:
+extend `.devcontainer/post-start.sh` to append its selected Docker hostname
+before storage setup and task launch, retain supplied proxy exclusions, add
+bare/primary Blob aliases to Compose defaults, and update the existing
+`.devcontainer/README.md`. Extend the environment-delivery fixture in
+`util/test-dev-runtime.sh`; it invokes startup with inert helpers, not actual
+application services. This remains the proxy contract correction, not a new
+runtime capability. No new module or configuration option is added.
+
 Primitive impact: reuse chatbot modes and response examples. A reviewable example
 must refer to an available approved chatbot mode; fixing default-mode discovery
 does not add a mode or weaken status/source/ownership checks. CI review artifacts,
@@ -199,7 +208,15 @@ its Python toolchain in the offline verification container and remains a CI
 obligation. All27 production-build tasks now pass. The simplification pass
 removed one redundant null-count check after strict array validation; focused
 publication tests still protect the admission boundary. Slice risk review and
-the authorized fresh integrated final review remain pending. No application runtime
+the authorized fresh integrated final review covered the corrective range; the
+slice passed and the final review found one related Blob proxy exclusion gap.
+The sole focused correction adds the selected internal Blob hostname before
+storage setup and task launch, preserving caller exclusions. Compose defaults,
+existing documentation and the inert startup regression fixture are updated.
+The synthetic startup contract, shell syntax and Compose validation pass; the
+same final reviewer will verify this committed correction once. Current-head
+database-backed CI passed the default Explainer and both disablement service
+regressions. No application runtime
 or paid evaluation is needed for these source corrections. The correction adds
 no dependency or module, retains the existing draft and leaves the controller's
 description intact. Conditional hardening and other named residuals remain

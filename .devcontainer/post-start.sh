@@ -206,6 +206,19 @@ esac
 if [ "${KLICKER_LOCAL_KB_RUNTIME_ONLY:-0}" = 1 ]; then
   local_kb_restore_environment
 fi
+
+# The selected Blob endpoint can use a workspace-specific Docker hostname.
+# Keep that traffic local while retaining a caller's other proxy exclusions.
+blob_proxy_host="${BLOB_STORAGE_INTERNAL_ACCOUNT_URL:-}"
+blob_proxy_host="${blob_proxy_host#*://}"
+blob_proxy_host="${blob_proxy_host%%[:/]*}"
+if [ -n "$blob_proxy_host" ]; then
+  case ",${NO_PROXY:-}," in
+    *",${blob_proxy_host},"*) ;;
+    *) export NO_PROXY="${NO_PROXY:+${NO_PROXY},}${blob_proxy_host}" ;;
+  esac
+fi
+
 export CI=true
 export npm_config_verify_deps_before_run=false
 
