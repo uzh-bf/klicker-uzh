@@ -152,6 +152,17 @@ from public PR code. Keep the build at four concurrent Turbo tasks for the
 four-runner, 16-vCPU host layout, and keep service health polling at five
 seconds so container readiness is detected promptly.
 
+For CI result-reuse changes, run `ci-verified-reuse.test.cjs`,
+`ci-equivalent-run.test.cjs`, `ci-event-gates.test.cjs`,
+`validate-public-playwright-workflow.test.cjs` and `stg-release-promoter.test.js`.
+Keep the sparse trusted-control boundary and fingerprint synchronized. Reuse
+requires real full coverage on the same route and architecture; neither a reduced
+plan nor an ARM64 PR result can satisfy hosted staging coverage. Test the
+promoter with real ZIP/digest fixtures, including forged and missing evidence.
+The opt-in `CI_VERIFIED_REUSE_ENABLED` variable must not be changed as part of a
+code-only task. PR tests exercise the verifier, but the `@v3` reusable workflow
+and trusted staging controller execute their new code only after landing.
+
 ## Decide whether e2e is warranted locally
 
 CI runs Playwright (8-way shard) on almost every code PR — CI is the real e2e gate. Run e2e locally only when your change plausibly breaks a flow (new UI, changed selectors/`data-cy`, auth/redirect changes, activity lifecycle). If you do:
