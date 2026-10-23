@@ -179,13 +179,7 @@ function preparePublication(temp, expectedHead) {
     throw new Error('invalid_result')
   }
   const coverage = summarizeCoverage(result)
-  if (
-    coverage.observed_status === 'unknown' ||
-    ['selected', 'completed', 'failed', 'reused', 'waived'].some(
-      (key) => coverage[key] === null
-    )
-  )
-    throw new Error('invalid_result')
+  if (coverage.observed_status === 'unknown') throw new Error('invalid_result')
   if (
     coverage.observed_status === 'complete' &&
     (coverage.failed > 0 || coverage.waived > 0)

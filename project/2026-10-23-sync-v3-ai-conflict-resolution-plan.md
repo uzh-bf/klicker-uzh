@@ -196,7 +196,10 @@ same skip. Format checks, synthetic Turbo strict-environment dry-run and Compose
 validation pass. Focused static analysis reports zero findings on five changed
 executable paths. Six lint tasks pass; unchanged Analytics lint cannot download
 its Python toolchain in the offline verification container and remains a CI
-obligation. Production builds are running separately. No application runtime
+obligation. All27 production-build tasks now pass. The simplification pass
+removed one redundant null-count check after strict array validation; focused
+publication tests still protect the admission boundary. Slice risk review and
+the authorized fresh integrated final review remain pending. No application runtime
 or paid evaluation is needed for these source corrections. The correction adds
 no dependency or module, retains the existing draft and leaves the controller's
 description intact. Conditional hardening and other named residuals remain
