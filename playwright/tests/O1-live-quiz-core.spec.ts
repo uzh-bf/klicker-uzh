@@ -2,7 +2,7 @@
 /**
  * Core live-quiz management, execution, and content workflows.
  */
-import { expect, type Page } from '@playwright/test'
+import { expect, type Page, type Request } from '@playwright/test'
 import fs from 'node:fs'
 import { chooseActionByTestId } from '../util/actions.js'
 import { setSessionCookieForUrl } from '../util/authSession.js'
@@ -4929,8 +4929,12 @@ test.describe.serial('Core live-quiz workflows', () => {
     ).toBeVisible({ timeout: 30000 })
   })
 
-  for (const submitAtExpiry of [false, true]) {
-    test(`Keep a timed response-limit question open at expiry (${submitAtExpiry ? 'send in flight' : 'automatic draft'})`, async ({
+  for (const mode of [
+    'automatic draft',
+    'send in flight',
+    'pending manual send then new draft',
+  ]) {
+    test(`Keep a timed response-limit question open at expiry (${mode})`, async ({
       page: testPage,
     }, testInfo) => {
       page = testPage
@@ -4943,8 +4947,11 @@ test.describe.serial('Core live-quiz workflows', () => {
       const displayName = `Synthetic timed response limit ${suffix}`
       const contentName = `Timed response limit follow-up ${suffix}`
       const firstDraft = `First timed draft ${suffix}`
+      const pendingDraft = `Pending timed draft ${suffix}`
       const nextDraft = `Next timed draft ${suffix}`
       const timeLimitSeconds = 120
+      const submitAtExpiry = mode !== 'automatic draft'
+      const submitPendingDraft = mode === 'pending manual send then new draft'
       let addResponseRequests = 0
 
       await loginLecturer(page)
@@ -5039,24 +5046,24 @@ test.describe.serial('Core live-quiz workflows', () => {
       await expect(input).toBeEnabled()
       await expect(ownResponses.getByRole('listitem')).toHaveCount(1)
       await expect(countdown(page)).toHaveCount(1)
-      await typeInto(input, nextDraft)
+      await typeInto(input, submitPendingDraft ? pendingDraft : nextDraft)
       await expect(submit).toBeEnabled()
       expect(addResponseRequests).toBe(2)
 
       const expiryTimeout = (timeLimitSeconds + 30) * 1000
-      const autosubmitRequest = page.waitForRequest(
-        (request) =>
-          request.method() === 'POST' &&
-          new URL(request.url()).pathname === '/AddResponse',
-        { timeout: expiryTimeout }
-      )
-      const autosubmitResponse = page.waitForResponse(
-        (response) =>
-          response.request().method() === 'POST' &&
-          new URL(response.url()).pathname === '/AddResponse',
+      const isNextDraftRequest = (request: Request) =>
+        request.method() === 'POST' &&
+        new URL(request.url()).pathname === '/AddResponse' &&
+        request.postDataJSON().response?.value === nextDraft
+      const expectedRequest = page.waitForRequest(isNextDraftRequest, {
+        timeout: expiryTimeout,
+      })
+      const expectedResponse = page.waitForResponse(
+        (response) => isNextDraftRequest(response.request()),
         { timeout: expiryTimeout }
       )
       let releaseResponse: (() => void) | undefined
+      let pendingResponse: ReturnType<Page['waitForResponse']> | undefined
       if (submitAtExpiry) {
         const responseGate = new Promise<void>((resolve) => {
           releaseResponse = resolve
@@ -5069,28 +5076,54 @@ test.describe.serial('Core live-quiz workflows', () => {
           },
           { times: 1 }
         )
-        await submit.click()
-        await autosubmitRequest
+        if (submitPendingDraft) {
+          const pendingRequest = page.waitForRequest(
+            (request) =>
+              request.method() === 'POST' &&
+              new URL(request.url()).pathname === '/AddResponse',
+            { timeout: expiryTimeout }
+          )
+          pendingResponse = page.waitForResponse(
+            (response) =>
+              response.request().method() === 'POST' &&
+              new URL(response.url()).pathname === '/AddResponse',
+            { timeout: expiryTimeout }
+          )
+          await submit.click()
+          await pendingRequest
+          await input.clear()
+          await typeInto(input, nextDraft)
+        } else {
+          await submit.click()
+        }
       }
 
       // Observe the native deadline without changing authentication or router clocks.
       await expect(countdown(page)).toHaveCount(0, { timeout: expiryTimeout })
+      if (!submitPendingDraft) await expectedRequest
+      expect(addResponseRequests).toBe(3)
       releaseResponse?.()
+      if (pendingResponse) expect((await pendingResponse).status()).toBe(200)
       const [request, response] = await Promise.all([
-        autosubmitRequest,
-        autosubmitResponse,
+        expectedRequest,
+        expectedResponse,
       ])
       expect(response.status()).toBe(200)
       expect(await request.postDataJSON()).toMatchObject({
         response: { value: nextDraft },
         isFirstResponse: false,
       })
-      await expect.poll(() => addResponseRequests).toBe(3)
+      await expect
+        .poll(() => addResponseRequests)
+        .toBe(submitPendingDraft ? 4 : 3)
 
       await expect(page.getByTestId('content-element-1')).toBeVisible()
       await expect(countdown(page)).toHaveCount(0)
       await page.getByTestId('lq-nav-prev').click()
       await expect(input).toBeDisabled()
+      if (submitPendingDraft) {
+        await expect(ownResponses.getByRole('listitem')).toHaveCount(3)
+      }
     })
   }
 

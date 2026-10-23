@@ -76,7 +76,15 @@ function QuestionArea({
   const [activeInstance, setActiveInstance] = useState<number>(0)
   const currentInstance = instances[activeInstance]
   const activeInstanceIdRef = useRef(currentInstance?.id)
-  const pendingResponses = useRef(new Map<number, Promise<boolean>>())
+  const pendingResponses = useRef(
+    new Map<
+      number,
+      {
+        input: InstanceStackStudentResponseType
+        promise: Promise<boolean>
+      }
+    >()
+  )
 
   useLayoutEffect(() => {
     activeInstanceIdRef.current = currentInstance?.id
@@ -350,21 +358,40 @@ function QuestionArea({
     correlationKey?: string | null
   }): Promise<boolean> {
     const pending = pendingResponses.current.get(args.instanceId)
-    if (pending) return pending
-
-    const submission = submitAnswer(args).catch((error) => {
-      console.error(error)
-      showStatusCodeToast(500)
-      return false
-    })
-    pendingResponses.current.set(args.instanceId, submission)
-    setSubmitting(true)
-    try {
-      return await submission
-    } finally {
-      pendingResponses.current.delete(args.instanceId)
-      setSubmitting(pendingResponses.current.size > 0)
+    if (pending) {
+      if (
+        args.input.type === ElementType.FreeText &&
+        pending.input.type === ElementType.FreeText &&
+        args.input.response !== pending.input.response &&
+        getEffectiveResponseLimit({
+          instance: instances.find(
+            (instance) => instance.id === args.instanceId
+          ),
+          isAssessmentEnabled,
+        }) > 1
+      ) {
+        await pending.promise
+        return answerQuestion(args)
+      }
+      return pending.promise
     }
+
+    const submission = submitAnswer(args)
+      .catch((error) => {
+        console.error(error)
+        showStatusCodeToast(500)
+        return false
+      })
+      .finally(() => {
+        pendingResponses.current.delete(args.instanceId)
+        setSubmitting(pendingResponses.current.size > 0)
+      })
+    pendingResponses.current.set(args.instanceId, {
+      input: args.input,
+      promise: submission,
+    })
+    setSubmitting(true)
+    return submission
   }
 
   async function submitAnswer({
