@@ -236,6 +236,9 @@ Quizzer gate. In `packages/graphql/src/services/responseExamples.ts`, load the
 minimal binding fields for listing, approve and edit-and-approve, reusing one
 typed selection. Add `host.docker.internal` to the existing Compose default
 exclusions and matching README; preserve caller-supplied exclusion semantics.
+Update the existing response-example section in `docs/chat-platform.md` with
+the shared Quizzer gate and retained-record behavior; no new solution/ADR is
+needed because this restores the existing accepted mode contract.
 
 | Risk and primary seam | Acceptance and test obligation |
 | --- | --- |
@@ -258,6 +261,13 @@ an unresolved material cycle then stops after independent CI finishes. Preserve
 all existing merge, deployment and evaluation authority gates.
 
 ## Progress
+
+Required target integration became necessary when the target's reviewed Next.js/
+pnpm upgrade conflicted in Chat's dependency declaration. Preserve the document
+parsers and adopt the target's toolchain/dependency versions. Recheck the frozen
+lock and affected verification with that toolchain before claiming integrated
+acceptance; prior unchanged-source reviews remain reusable. This is a concrete
+mergeability repair, not a recurring target-freshness update.
 
 The local-ingestion/Quizzer follow-up passed its planner challenge after clarifying
 selectable modes, retained examples, exclusive service-test ownership and the

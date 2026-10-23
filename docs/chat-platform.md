@@ -92,6 +92,12 @@ Non-owners receive `null`, and no production GraphQL or chat runtime path
 creates candidates or marks evidence eligible. Local/test fixtures may seed
 synthetic candidates and evidence solely to exercise the review lifecycle.
 
+Quizzer selection and approval in response-example review use its standard-mode
+setting and the same effective document-query binding resolver as participant
+Chat. A disabled exact Quizzer binding blocks inheritance on that server.
+Existing examples remain visible for inspection and rejection when their mode
+becomes unavailable; availability does not erase the lecturer's review record.
+
 The chat route returns an AI SDK UI message stream and passes
 `consumeSseStream: consumeStream` to `toUIMessageStreamResponse`. Keep this
 explicit when changing the transport: it keeps the UI stream's abort lifecycle
