@@ -1,3 +1,4 @@
+import { MAX_RESPONSE_LIMIT } from '@klicker-uzh/types'
 import {
   Button,
   FormikNumberField,
@@ -42,7 +43,7 @@ function FreeTextOptions({ inputsDisabled, values }: FreeTextOptionsProps) {
           placeholder="1"
           precision={0}
           min={1}
-          max={10}
+          max={MAX_RESPONSE_LIMIT}
           data={{ cy: 'set-free-text-response-limit' }}
         />
       </div>

@@ -11,7 +11,7 @@ import {
   ElementBlockStatus,
   ElementType,
   GetFeedbacksDocument,
-  GetRunningLiveQuizDocument,
+  GetRunningLiveQuizWithResponseLimitDocument,
   SelfDocument,
   SetLiveQuizPinDocument,
 } from '@klicker-uzh/graphql/dist/ops'
@@ -159,7 +159,7 @@ function Index({ id }: { id: string }) {
 
   const [setLiveQuizPin] = useMutation(SetLiveQuizPinDocument)
   const { data, loading, error, subscribeToMore, refetch } = useQuery(
-    GetRunningLiveQuizDocument,
+    GetRunningLiveQuizWithResponseLimitDocument,
     { variables: { id } }
   )
   const { data: selfData } = useQuery(SelfDocument, {
@@ -549,7 +549,7 @@ export async function getServerSideProps(ctx: GetServerSidePropsContext) {
   let liveQuiz = null
   try {
     liveQuiz = await apolloClient.query({
-      query: GetRunningLiveQuizDocument,
+      query: GetRunningLiveQuizWithResponseLimitDocument,
       variables: { id: ctx.query?.id as string },
       context: {
         headers: {

@@ -75,6 +75,9 @@ function QuestionArea({
   const [submittedAt, setSubmittedAt] = useState<number | null>(null)
   const [activeInstance, setActiveInstance] = useState<number>(0)
   const currentInstance = instances[activeInstance]
+  const activeInstanceIdRef = useRef(currentInstance?.id)
+  activeInstanceIdRef.current = currentInstance?.id
+  const pendingResponses = useRef(new Map<number, Promise<boolean>>())
 
   // free-text elements in standard live quizzes may accept several responses,
   // which stay open after the first one until the limit or the block end
@@ -198,9 +201,6 @@ function QuestionArea({
       return
     }
 
-    // lock the submission button temporarily to avoid double submissions
-    setSubmitting(true)
-
     const {
       id: instanceId,
       elementType,
@@ -216,9 +216,6 @@ function QuestionArea({
       correlationKey,
     })
 
-    // relese the submission lock on the submission button
-    setSubmitting(false)
-
     // if the submission was not successful, do not block another submission attempt
     if (!success) return
 
@@ -227,6 +224,13 @@ function QuestionArea({
 
     // update the stored responses
     await updateStoredResponses(instanceId, quizId, execution)
+
+    if (
+      activeInstanceIdRef.current !== instanceId ||
+      (expiresAtTimestamp !== null && Date.now() >= expiresAtTimestamp)
+    ) {
+      return
+    }
 
     // calculate the new indices of remaining questions
     const newRemaining = (remainingQuestions ?? []).filter(
@@ -258,10 +262,9 @@ function QuestionArea({
     // save the response, if one was given before the time expired
     if (
       studentResponse.valid &&
-      ((remainingQuestions ?? []).includes(activeInstance) ||
-        isOpenForMoreResponses)
+      ((remainingQuestions ?? []).includes(activeInstance) || responseLimit > 1)
     ) {
-      answerQuestion({
+      await answerQuestion({
         instanceId,
         type: elementType,
         input: studentResponse,
@@ -332,18 +335,36 @@ function QuestionArea({
   }
 
   // use the handleNewResponse function to add a response to the question instance
-  // return value is status code: 0 = success, 1 = invalid input, 2 = submission failed, 3 = unsupported type
-  async function answerQuestion({
-    instanceId,
-    type,
-    input,
-    correlationKey,
-  }: {
+  async function answerQuestion(args: {
     instanceId: number
     type: ElementType
     input: InstanceStackStudentResponseType
     correlationKey?: string | null
   }): Promise<boolean> {
+    const pending = pendingResponses.current.get(args.instanceId)
+    if (pending) return pending
+
+    const submission = submitAnswer(args).catch((error) => {
+      console.error(error)
+      showStatusCodeToast(500)
+      return false
+    })
+    pendingResponses.current.set(args.instanceId, submission)
+    setSubmitting(true)
+    try {
+      return await submission
+    } finally {
+      pendingResponses.current.delete(args.instanceId)
+      setSubmitting(pendingResponses.current.size > 0)
+    }
+  }
+
+  async function submitAnswer({
+    instanceId,
+    type,
+    input,
+    correlationKey,
+  }: Parameters<typeof answerQuestion>[0]): Promise<boolean> {
     const storageKey = `lq-${quizId}-ex-${execution}-i-${instanceId}`
     const instance = instances.find((instance) => instance.id === instanceId)
     const instanceResponseLimit = getEffectiveResponseLimit({
@@ -407,6 +428,13 @@ function QuestionArea({
       const previousResponses = previous?.responses ?? []
       const value = input.response.trim()
 
+      if (value.length === 0) {
+        toast({
+          message: t('pwa.assessment.submissionInputsInvalid'),
+          type: 'error',
+        })
+        return false
+      }
       if (previousResponses.length >= instanceResponseLimit) return false
       if (previousResponses.includes(value)) {
         toast({
@@ -436,7 +464,7 @@ function QuestionArea({
           responseTimestamp,
         })
         await localforage.removeItem(`${storageKey}-temp`)
-        if (instanceId === currentInstance?.id) {
+        if (instanceId === activeInstanceIdRef.current) {
           setSubmittedResponses(responses)
           setSubmittedAt(responseTimestamp)
           setStudentResponse({
