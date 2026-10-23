@@ -4811,6 +4811,98 @@ test.describe.serial('Core live-quiz workflows', () => {
     await expect(input).toBeDisabled()
   })
 
+  test('Complete a delayed first response after navigating back', async ({
+    page: testPage,
+  }, testInfo) => {
+    page = testPage
+    aliases.clear()
+    testInfo.setTimeout(600_000)
+    page.setDefaultNavigationTimeout(300_000)
+    const suffix = Date.now()
+    const quizName = `Synthetic response navigation ${suffix}`
+    const before = `Before response ${suffix}`
+    const after = `After response ${suffix}`
+
+    await loginLecturer(page)
+    for (const name of [before, after]) {
+      await createContent(page, {
+        name,
+        content: `Synthetic navigation content ${name}`,
+        userId: env('LECTURER_ID'),
+      })
+    }
+    await createLiveQuiz(page, {
+      name: quizName,
+      displayName: quizName,
+      courseName: data.liveQuizResponseLimit.course,
+      blocks: [
+        {
+          elements: [before, data.liveQuizResponseLimit.question.title, after],
+        },
+      ],
+    })
+    await openActivitiesListForQuiz(page, quizName)
+    await page.getByTestId(`start-live-quiz-${quizName}`).click()
+    await openNextBlockFromCockpit(page)
+    await loginStudentWithStoredPwaState(page)
+    await page.getByTestId(`live-quiz-${quizName}`).click()
+    await expect(page.getByTestId('content-element-0')).toBeVisible()
+    await page.getByTestId('student-submit-answer').click()
+    const input = page.getByTestId('free-text-input-1')
+    await expect(input).toBeVisible()
+    await typeInto(input, `Delayed first response ${suffix}`)
+
+    let releaseResponse: () => void = () => {}
+    const responseGate = new Promise<void>((resolve) => {
+      releaseResponse = resolve
+    })
+    await page.route(
+      '**/AddResponse',
+      async (route) => {
+        await responseGate
+        await route.fallback()
+      },
+      { times: 1 }
+    )
+    const request = page.waitForRequest(
+      (request) =>
+        request.method() === 'POST' &&
+        new URL(request.url()).pathname === '/AddResponse'
+    )
+    const response = page.waitForResponse(
+      (response) =>
+        response.request().method() === 'POST' &&
+        new URL(response.url()).pathname === '/AddResponse'
+    )
+    await page.getByTestId('student-submit-answer').click()
+    await request
+    await page.getByTestId('lq-nav-prev').click()
+    await expect(page.getByTestId('content-element-0')).toBeVisible()
+    releaseResponse()
+    expect((await response).status()).toBe(200)
+    await expect(page.getByTestId('content-element-0')).toBeVisible()
+    await page.getByTestId('lq-nav-next').click()
+    await expect(input).toBeVisible()
+    await expect(
+      page.getByTestId('free-text-own-responses').getByRole('listitem')
+    ).toHaveCount(1)
+    await expect(page.getByTestId('lq-nav-next')).toBeEnabled()
+    await page.getByTestId('lq-nav-next').click()
+    await expect(page.getByTestId('content-element-2')).toBeVisible()
+
+    await loginLecturer(page)
+    await page.getByTestId('activities').click()
+    await page.getByTestId(`live-quiz-cockpit-${quizName}`).click()
+    const nextBlock = page.getByTestId('next-block-timeline')
+    await expect(nextBlock).toBeEnabled({ timeout: 30000 })
+    await nextBlock.click()
+    await expect(nextBlock).toBeEnabled({ timeout: 30000 })
+    await nextBlock.click()
+    await expect(
+      page.getByTestId(`activity-LIVE_QUIZ-${quizName}`)
+    ).toBeVisible({ timeout: 30000 })
+  })
+
   for (const submitAtExpiry of [false, true]) {
     test(`Keep a timed response-limit question open at expiry (${submitAtExpiry ? 'send in flight' : 'automatic draft'})`, async ({
       page: testPage,
