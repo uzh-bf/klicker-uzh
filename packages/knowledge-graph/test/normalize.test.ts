@@ -327,10 +327,12 @@ describe('knowledge graph normalization', () => {
         )
       ).toEqual({
         rel_contrast: ['contrasts_with', 'inferred'],
+        rel_formula: ['has_formula', 'inferred'],
         rel_legacy: ['related', 'extracted'],
         rel_part: ['part_of', 'source'],
         rel_prerequisite: ['prerequisite_of', 'inferred'],
         rel_related: ['related', 'extracted'],
+        rel_synonym: ['synonym_of', 'source'],
       })
     })
 
@@ -394,6 +396,8 @@ describe('knowledge graph normalization', () => {
       { relation_type: 'part_of', relation_status: 'instructor' },
       { relation_type: 'prerequisite_of', relation_status: 'source' },
       { relation_type: 'related', relation_status: 'source' },
+      { relation_type: 'synonym_of', relation_status: 'extracted' },
+      { relation_type: 'is_a', relation_status: 'instructor' },
     ]) {
       expect(read(properties)).toEqual(['related', 'extracted'])
     }
