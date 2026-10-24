@@ -15,14 +15,13 @@ const { buildOCRResultDiagnostic } = require('./ocr-review-shared.cjs')
 const {
   readRepositoryConfig,
   readPolicyBlob,
+  gitEnvironment,
 } = require('./ocr-runtime-config.cjs')
 
 const DRAFT_MODEL = MISTRAL_FLASH_MODEL
 const DRAFT_PROVIDER = 'mistral-flash'
 const DRAFT_PROFILE = Object.freeze({
   id: 'draft-v1',
-  model: DRAFT_MODEL,
-  provider: DRAFT_PROVIDER,
   reasoning: 'max',
   providerTimeout: '480',
   taskTimeout: '15',
@@ -218,20 +217,8 @@ function appendSummary(text, write, summary) {
   }
 }
 
-function gitEnvironment() {
-  return Object.fromEntries(
-    ['PATH', 'HOME', 'TMPDIR', 'LANG'].flatMap((name) =>
-      typeof process.env[name] === 'string' ? [[name, process.env[name]]] : []
-    )
-  )
-}
-
 function assertCompleteRange(repo, from, head) {
-  const env = {
-    ...gitEnvironment(),
-    GIT_NO_LAZY_FETCH: '1',
-    GIT_TERMINAL_PROMPT: '0',
-  }
+  const env = gitEnvironment()
   try {
     const objects = execFileSync(
       'git',

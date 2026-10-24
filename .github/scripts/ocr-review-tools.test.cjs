@@ -193,6 +193,28 @@ test('trusted root contracts and custom guides stay policy-bound and reject syml
     )
 })
 
+test('empty review context discovery returns no paths without invoking Git', async (t) => {
+  const parent = fs.mkdtempSync(path.join(os.tmpdir(), 'ocr-tools-no-repo-'))
+  t.after(() => fs.rmSync(parent, { recursive: true, force: true }))
+  const { tool } = await client(t, {
+    repo: path.join(parent, 'missing'),
+    policy: 'a'.repeat(40),
+    head: 'b'.repeat(40),
+    contextRoots: [],
+    rootFiles: [],
+    guides: [],
+  })
+  for (const input of [{}, { path: '' }]) {
+    const discovered = await tool('read_review_context', input)
+    assert.equal(discovered.result.isError, undefined)
+    assert.deepEqual(JSON.parse(discovered.result.content[0].text), {
+      paths: [],
+      truncated: false,
+      guides: [],
+    })
+  }
+})
+
 test('docs lookup validates outbound fields, returns bounded evidence and caches complete request identity', async (t) => {
   let calls = 0
   const { broker, tool, rpc } = await client(t, {

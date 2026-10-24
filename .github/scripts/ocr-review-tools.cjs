@@ -4,8 +4,10 @@ const http = require('node:http')
 const crypto = require('node:crypto')
 const { execFileSync } = require('node:child_process')
 const {
+  gitEnvironment,
   validateRepositoryConfig,
   validContextPath: validPath,
+  validLibraryId,
 } = require('./ocr-runtime-config.cjs')
 
 const RANGE_SCHEMA = {
@@ -119,17 +121,7 @@ function git(repo, args, maxBuffer = 524288) {
   try {
     return execFileSync('git', args, {
       cwd: repo,
-      env: {
-        ...Object.fromEntries(
-          ['PATH', 'HOME', 'TMPDIR', 'LANG'].flatMap((name) =>
-            typeof process.env[name] === 'string'
-              ? [[name, process.env[name]]]
-              : []
-          )
-        ),
-        GIT_NO_LAZY_FETCH: '1',
-        GIT_TERMINAL_PROMPT: '0',
-      },
+      env: gitEnvironment(),
       encoding: 'utf8',
       timeout: 2000,
       maxBuffer,
@@ -448,13 +440,7 @@ async function startReviewTools(options) {
   const publicLibraries =
     Array.isArray(options.publicLibraries) &&
     options.publicLibraries.length <= 32 &&
-    options.publicLibraries.every(
-      (id) =>
-        typeof id === 'string' &&
-        id.length <= 128 &&
-        /^\/[A-Za-z0-9_.-]+\/[A-Za-z0-9_.-]+$/.test(id) &&
-        !id.split('/').some((part) => ['.', '..'].includes(part))
-    )
+    options.publicLibraries.every(validLibraryId)
       ? [...new Set(options.publicLibraries)]
       : []
   const docsAvailable =
@@ -641,7 +627,17 @@ async function startReviewTools(options) {
       if (!keys(input, ['path', 'start_line', 'end_line']))
         throw failure('invalid_source')
       let result
-      if (input.path === undefined || !input.path.endsWith('.md')) {
+      if (
+        (input.path === undefined || input.path === '') &&
+        !context.contextRoots.length &&
+        !context.rootFiles.length
+      ) {
+        result = {
+          paths: [],
+          truncated: false,
+          guides: context.guides,
+        }
+      } else if (input.path === undefined || !input.path.endsWith('.md')) {
         const directory = input.path ?? ''
         if (
           directory &&

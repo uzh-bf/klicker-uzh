@@ -1,3 +1,5 @@
+'use strict'
+
 // OCR outcome diagnostics are bounded and content-free: fixed enums, counts
 // from array shapes only, and a source-assigned rejection code. They never
 // carry paths, session IDs, finding text, prompts, or provider errors.

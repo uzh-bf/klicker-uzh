@@ -9,6 +9,7 @@ const YAML = require('yaml')
 const {
   validateRepositoryConfig,
   readRepositoryConfig,
+  readPolicyBlob,
 } = require('./ocr-runtime-config.cjs')
 
 const { runDraftReview, summarizeCoverage } = require('./ocr-draft-review.cjs')
@@ -729,13 +730,13 @@ test('repository configuration is strict and frozen at the trusted policy rather
   fs.mkdirSync(path.join(repo, '.github/open-code-review'), { recursive: true })
   fs.mkdirSync(path.join(repo, 'guidance'))
   fs.writeFileSync(path.join(repo, 'AGENTS.md'), 'trusted contract')
-  fs.writeFileSync(path.join(repo, 'guidance/review.md'), 'trusted guide')
+  fs.writeFileSync(path.join(repo, 'guidance/[review].md'), 'trusted guide')
   const config = {
     schema: 'ocr-repository/v1',
     profile: 'draft-v1',
     contextRoots: ['guidance'],
     rootFiles: ['AGENTS.md'],
-    guides: ['guidance/review.md'],
+    guides: ['guidance/[review].md'],
     publicLibraries: ['/python/cpython'],
   }
   const file = path.join(repo, '.github/open-code-review/repository.json')
@@ -744,6 +745,30 @@ test('repository configuration is strict and frozen at the trusted policy rather
   git('commit', '-m', 'chore: synthetic policy')
   const policy = git('rev-parse', 'HEAD')
   assert.deepEqual(readRepositoryConfig(repo, policy), config)
+  assert.equal(
+    readPolicyBlob(repo, policy, 'guidance/[review].md'),
+    'trusted guide'
+  )
+  const original = git('rev-parse', `${policy}:AGENTS.md`)
+  const replacement = execFileSync('git', ['hash-object', '-w', '--stdin'], {
+    cwd: repo,
+    input: 'substituted contract',
+    encoding: 'utf8',
+  }).trim()
+  git('replace', original, replacement)
+  const previousHome = process.env.HOME
+  const home = path.join(repo, 'untrusted-home')
+  fs.mkdirSync(home)
+  fs.writeFileSync(path.join(home, '.gitconfig'), '[malformed global config')
+  process.env.HOME = home
+  try {
+    assert.equal(readPolicyBlob(repo, policy, 'AGENTS.md'), 'trusted contract')
+    assert.deepEqual(readRepositoryConfig(repo, policy), config)
+  } finally {
+    if (previousHome === undefined) delete process.env.HOME
+    else process.env.HOME = previousHome
+  }
+  git('replace', '-d', original)
   fs.writeFileSync(
     file,
     JSON.stringify({ ...config, publicLibraries: ['/private/candidate'] })

@@ -413,3 +413,22 @@ package. Shared action distribution and adopter/GitLab migrations remain outside
 this PR. Global `rs-ocr` distribution instructions will change with that later
 manifest/caller package; this PR updates the portable model-facing skill and
 current CI/solution documentation together.
+
+### Ordinary feedback correction and conditional merge
+
+The user authorized marking this PR ready after CI, the configured final review
+and squash merge into `v3` only after the required gates pass. All eight required
+CI contexts passed on `b6238275f5`; its ordinary draft review completed all nine
+selected items and supplied new feedback. A synthetic replacement-object case
+confirmed that metadata Git could substitute policy content. The correction
+shares one Git environment that disables system/global configuration and object
+replacement across the runner, config reader and broker. It also handles empty
+context discovery without Git and removes unused profile fields and duplicate
+library validation. A bracket-path suggestion was rejected after successful
+literal reads; its behavior remains covered by the configuration fixture.
+
+All 265 focused tests pass after correction, including the stock-binary fixture.
+The new Git replacement/global-config regression and empty-root regression
+protect the changed behavior. This correction requires its own source review
+and current-head CI before readiness; earlier-head green checks are historical
+evidence. No review settings, usage accounting or retry policy changed.

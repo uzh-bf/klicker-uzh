@@ -1,6 +1,7 @@
 'use strict'
 
 const { execFileSync } = require('node:child_process')
+const os = require('node:os')
 
 const CONFIG_PATH = '.github/open-code-review/repository.json'
 const DEFAULT_CONTEXT_ROOTS = ['docs', '.agents/skills']
@@ -15,6 +16,15 @@ function validContextPath(value) {
       .split('/')
       .some((part) => !part || ['.', '..', '.git'].includes(part)) &&
     !/(^|\/)\.env(?:\.|$)|\.(?:pem|key)$/i.test(value)
+  )
+}
+
+function validLibraryId(id) {
+  return (
+    typeof id === 'string' &&
+    id.length <= 128 &&
+    /^\/[A-Za-z0-9_.-]+\/[A-Za-z0-9_.-]+$/.test(id) &&
+    !id.split('/').some((part) => ['.', '..'].includes(part))
   )
 }
 
@@ -75,16 +85,7 @@ function validateRepositoryConfig(value) {
       (rootFiles.includes(file) ||
         contextRoots.some((root) => file.startsWith(`${root}/`)))
   )
-  const publicLibraries = list(
-    'publicLibraries',
-    [],
-    32,
-    (id) =>
-      typeof id === 'string' &&
-      id.length <= 128 &&
-      /^\/[A-Za-z0-9_.-]+\/[A-Za-z0-9_.-]+$/.test(id) &&
-      !id.split('/').some((part) => ['.', '..'].includes(part))
-  )
+  const publicLibraries = list('publicLibraries', [], 32, validLibraryId)
   return {
     schema: 'ocr-repository/v1',
     profile: 'draft-v1',
@@ -95,23 +96,30 @@ function validateRepositoryConfig(value) {
   }
 }
 
+function gitEnvironment() {
+  return {
+    ...Object.fromEntries(
+      ['PATH', 'TMPDIR', 'LANG'].flatMap((name) =>
+        typeof process.env[name] === 'string' ? [[name, process.env[name]]] : []
+      )
+    ),
+    GIT_NO_LAZY_FETCH: '1',
+    GIT_CONFIG_NOSYSTEM: '1',
+    GIT_CONFIG_GLOBAL: os.devNull,
+    GIT_CONFIG_SYSTEM: os.devNull,
+    GIT_NO_REPLACE_OBJECTS: '1',
+    GIT_LFS_SKIP_SMUDGE: '1',
+    GIT_TERMINAL_PROMPT: '0',
+  }
+}
+
 function policyGit(repo, args, maxBuffer = 524288) {
   return execFileSync('git', args, {
     cwd: repo,
     encoding: 'utf8',
     timeout: 5000,
     maxBuffer,
-    env: {
-      ...Object.fromEntries(
-        ['PATH', 'HOME', 'TMPDIR', 'LANG'].flatMap((name) =>
-          typeof process.env[name] === 'string'
-            ? [[name, process.env[name]]]
-            : []
-        )
-      ),
-      GIT_NO_LAZY_FETCH: '1',
-      GIT_TERMINAL_PROMPT: '0',
-    },
+    env: gitEnvironment(),
     stdio: ['ignore', 'pipe', 'pipe'],
   })
 }
@@ -165,4 +173,6 @@ module.exports = {
   readPolicyBlob,
   validateRepositoryConfig,
   validContextPath,
+  gitEnvironment,
+  validLibraryId,
 }

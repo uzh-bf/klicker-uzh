@@ -104,7 +104,9 @@ sparse.
 
 The draft runner checks object availability and a credential-free diff before
 starting either provider adapter. Metadata Git commands receive an explicit
-environment without provider or publication credentials. The CLI launcher keeps
+environment without provider or publication credentials. System/global Git
+configuration and replacement objects are disabled so a frozen policy SHA
+cannot resolve to substituted content. The CLI launcher keeps
 keys only as adapter options and removes them from its ambient environment.
 An OCR failure can still produce valid partial findings: validation and eligible
 publication run after that failure, retain the incomplete-coverage warning and
