@@ -1,6 +1,8 @@
 const assert = require('node:assert/strict')
 const fs = require('node:fs')
 const path = require('node:path')
+const os = require('node:os')
+const { spawnSync } = require('node:child_process')
 const test = require('node:test')
 const YAML = require('yaml')
 
@@ -107,12 +109,77 @@ test('routes automatic drafts through Mistral Flash without changing the final p
   )
   assert.equal(publisher.with.ref, '1672852136fc87748249d22bce0819f33419ea79')
   assert.equal(publisher.with['persist-credentials'], false)
-  assert.ok(
-    job.steps.some((step) =>
-      step.run?.includes(
-        'npm install -g @alibaba-group/open-code-review@1.13.0'
-      )
+  const install = job.steps.find((step) =>
+    step.run?.includes('@alibaba-group/open-code-review@')
+  )
+  assert.ok(install)
+  const directory = fs.mkdtempSync(
+    path.join(os.tmpdir(), 'ocr-install-contract-')
+  )
+  try {
+    const result = spawnSync(
+      '/bin/bash',
+      [
+        '-e',
+        '-c',
+        String.raw`
+npm() {
+  printf '%s\n' "$@" > "$RUNNER_TEMP/npm-arguments"
+  prefix=
+  while [ "$#" -gt 0 ]; do
+    case "$1" in
+      --prefix) prefix="$2"; shift 2 ;;
+      *) shift ;;
+    esac
+  done
+  test -n "$prefix"
+  mkdir -p "$prefix/bin"
+  cat > "$prefix/bin/ocr" <<'OCR'
+#!/bin/sh
+printf '%s\n' "$@" > "$RUNNER_TEMP/ocr-arguments"
+OCR
+  chmod 700 "$prefix/bin/ocr"
+}
+node() {
+  printf '%s\n' "$@" > "$RUNNER_TEMP/verification-arguments"
+}
+${install.run}
+`,
+      ],
+      {
+        env: { PATH: '/usr/bin:/bin', RUNNER_TEMP: directory },
+        encoding: 'utf8',
+        timeout: 5000,
+      }
     )
+    assert.ok(!result.error, result.error?.message)
+    assert.equal(result.status, 0, result.stderr)
+    const argumentsFor = (name) =>
+      fs.readFileSync(path.join(directory, name), 'utf8').trim().split('\n')
+    const installed = argumentsFor('npm-arguments')
+    assert.ok(installed.includes('-g') || installed.includes('--global'))
+    assert.ok(installed.includes('@alibaba-group/open-code-review@1.13.0'))
+    assert.equal(
+      installed[installed.indexOf('--prefix') + 1],
+      path.join(directory, 'draft-ocr')
+    )
+    assert.deepEqual(argumentsFor('ocr-arguments'), ['version'])
+    assert.deepEqual(argumentsFor('verification-arguments'), [
+      '.github/scripts/ocr-draft-review.cjs',
+      'verify-install',
+    ])
+  } finally {
+    fs.rmSync(directory, { recursive: true, force: true })
+  }
+  const check = YAML.parse(
+    fs.readFileSync(path.join(workflowDir, 'check.yml'), 'utf8')
+  )
+  const qualifier = check.jobs['check-suite'].steps.find(
+    (step) => step.id === 'ocr_engine'
+  )
+  assert.match(
+    '.github/scripts/ocr-self-update-guard.test.cjs',
+    new RegExp(qualifier.with.pattern)
   )
   const summary = job.steps.find((step) =>
     step.run?.endsWith('ocr-draft-review.cjs summary')
