@@ -432,3 +432,157 @@ The new Git replacement/global-config regression and empty-root regression
 protect the changed behavior. This correction requires its own source review
 and current-head CI before readiness; earlier-head green checks are historical
 evidence. No review settings, usage accounting or retry policy changed.
+
+## Package 2A: publish the shared GitHub action source
+
+The user's post-merge “proceed” continues the next source package. Package 1
+is merged into `v3` as `dbe911583c33c7d0ca096da1ef977e9d4da0ceb3`;
+its complete tree equals the reviewed correction head. Its final review
+completed seven selected items with zero findings. No subsequent ordinary draft
+event has yet established live acceptance of that merged policy.
+
+Build and deliver the versioned action source first, then migrate callers in
+separate dependent deliveries. This source-only delivery adds no active caller,
+private activation, provider replay, credentials, runner setting or merge.
+Existing review models, reasoning, budgets, accounting, retry behavior,
+concurrency and timeouts remain the implementation's fixed contracts.
+
+Execution mode: standard. Reuse `trees/rs/ocr-shared-runtime` on the new task
+branch `rs/ocr-shared-action`, based on the verified merged `v3` revision.
+The main session owns runtime/forge identity, credential boundaries and
+integration. A bounded read-only explorer maps existing public call contracts.
+A settled action-metadata write may be delegated after the controller contract
+is frozen; shared files remain main-owned.
+
+### Contract and smallest implementation
+
+Add only the previously named action, release manifest, controller, shared
+controller tests and `docs/ocr-runtime.md`. Reuse the existing runner's CLI
+implementation through a compatibility export. Keep final execution and its
+authorization/status lifecycle in the current controllers. The manifest binds
+the portable skill, runtime files, stock draft CLI/publisher identities and
+the separate patched-final installer/source/patch identities. SHA-256 asset
+checks detect mismatched releases before imports or provider dispatch. A source
+revision belongs in the run receipt, avoiding a manifest's self-reference.
+
+The remote composite action must be pinned by a full commit SHA. It resolves
+its controller from `github.action_path`; it never imports candidate scripts
+or discovers an engine through the caller checkout. The action uses the same
+complete trusted default-branch checkout, pinned publisher, stock CLI install,
+range fetch, review, validation/publication, sanitized artifacts and summary
+steps as the existing donor workflow. Provider credentials enter only review;
+the repository token enters checkout/fetch and publication, never the OCR child
+or metadata Git. Private authenticated fetching uses a transient Git process
+environment, with no token in arguments, persisted Git configuration or logs.
+This source support does not activate any private repository.
+
+The controller validates the GitHub event/repository/PR identities, frozen
+policy and source revisions, configured context and portable skill provenance.
+It writes a private run context and a sanitized identity receipt, then supplies
+that frozen context to existing runner commands. Publication rechecks the
+current open draft head and validates the result before loading the pinned
+publisher. Cancellation, invalid input and supersession cannot publish. Valid
+partial findings may publish while the review/action still fails. Artifact upload failures remain job failures; only summaries are
+best-effort. Preserve seven-day retention. There is no recovery retry or changed OCR resume policy.
+
+The shared caller checker consumes a parsed workflow object plus the expected
+immutable action pin. It checks trusted event admission, explicit permissions,
+self-update guard, fixed timeout/concurrency, action-only execution and the
+credential bindings. Repository-owned additional activation remains explicit
+in the caller. It validates trusted config and skill against the same release.
+YAML parsing belongs to existing offline tooling; runtime needs only Node
+built-ins and the stock OCR CLI. No application dependency install is required
+for the action.
+
+### Slices, evidence and terminal condition
+
+1. Main: expose the existing CLI, implement release verification/controller and
+   manifest, and add behavioral tests in `ocr-controller.test.cjs`. Verify
+   independent runtime/caller repositories, mismatched assets/config/skill,
+   frozen inputs, credential-free metadata and sanitized run identity.
+2. Main, or one bounded executor owning only action metadata: add the composite
+   action and complete its controller-level fixture. Exercise review failure
+   with valid partial publication, invalid results, cancellation, changed head
+   and credential scoping. Extend existing CI to execute the central contracts.
+3. Main: document runtime/bootstrap/caller usage, update this plan and the
+   existing CI guide, simplify, obtain scoped risk and integrated source review,
+   commit, push and open one draft PR against `v3`. Bind all final assets after
+   accepted source corrections. Published immutable source and producing offline
+   CI are prerequisites for subsequent caller migrations.
+
+Extend the existing portfolio: one new central controller suite covers release
+identity, forge orchestration and caller mutation rejection. Existing runner,
+provider, tools, self-update and individual/stack final tests protect unchanged
+execution. Reuse the actual stock OCR binary with synthetic providers; a missing
+fixture remains a named acceptance blocker rather than a silent skip. Inspect
+the existing patched-final identity evidence and run its unchanged installer
+contracts; no paid inference is needed. Focused formatting, secret/data review
+and the existing hook behavior apply before each commit.
+
+Terminal for this delivery is reviewed action/controller/manifest source,
+passing local focused contracts, ordinary push and an accurate draft PR.
+Producing hosted offline CI is reported separately. No caller is repinned to
+a guessed or future merge SHA. After the action source merges, migrate the
+donor and established adopters using that actual merged revision, each with
+its own review and offline policy job. Native GitLab remains package 3, pending
+a selected instance/repository and its separate trusted controller/publisher.
+
+Planning round 1 returned `REVISE`; all five findings were accepted. The
+following details complete the frozen contract for round 2.
+
+- The compatibility CLI accepts explicit `command`, `repo`, `policy`, `temp`
+  and `publisherRoot` options with existing defaults. Its own imports stay
+  relative to the verified runtime. A controller fixture runs from an unrelated
+  directory with independent runtime/caller repositories and hostile duplicate
+  script names, proving those files cannot supply runtime code.
+- The controller's bootstrap imports Node built-ins only, then verifies the
+  manifest's exact asset inventory and SHA-256 values before loading runner,
+  adapter or tools. Bind controller/action, runner, adapter, broker, neutral
+  helpers, config reader, portable skill, patched installer and patch. The
+  resolved full action ref and action repository enter the sanitized receipt
+  through `github.action_ref`/`github.action_repository` step environment.
+  Caller skill bytes at the frozen policy must match the manifest skill hash
+  before any dispatch. Reject missing, changed and symlink-substituted assets.
+- The composite fixture evaluates the actual status expressions and runs real
+  validation/publication boundaries. Assert final failure for review failure
+  despite successful partial publication, publication failure and artifact
+  failure; summary-only failure remains nonblocking. Do not soften upload.
+- Add a producing CI qualification step selected for shared-runtime changes.
+  Install stock `@alibaba-group/open-code-review@1.13.0` into a job-temporary
+  prefix, set `OCR_NO_UPDATE=1`, verify its version, and run the existing
+  native fixture with `OCR_TEST_BINARY=<prefix>/node_modules/.bin/ocr` and
+  `OCR_REQUIRE_STOCK_BINARY=1`. The shared suite fails when the required binary
+  is absent. Local qualification uses the already verified native 1.13.0
+  fixture. Stock verification remains package/version plus publisher digest,
+  separately labeled from the patched-final provenance chain.
+- Caller checking also receives the caller repository, frozen policy revision
+  and verified release root/ref. The CLI accepts a parsed workflow JSON file
+  plus those explicit identities; trusted config/skill checks use Git blobs.
+  Mutation fixtures reject changed/moving pins, additional execution, widened
+  permissions, leaked credential bindings, weakened admission/concurrency/job
+  timeout, invalid config and mismatched skill. Extra activation is a caller
+  expression explicitly supplied to the check, never an engine activation.
+
+
+Planning round 2: `APPROVED`; the same native planner accepted the completed
+contract. Execute this source package under the user’s “proceed.”
+
+### Package 2A implementation evidence
+
+The compatible runner CLI seam is committed as `1fddf77a98`. Its legacy
+command defaults remain intact; explicit caller inputs enable the shared
+controller. The action/controller/manifest are one coherent release slice
+because the manifest binds the action bytes; splitting that inventory across
+commits would leave an unverifiable intermediate release. The independent
+metadata executor wrote only the action file. Documentation and final
+integration follow the committed release slice.
+
+All 275 focused contracts passed on Node 24.21.0, including the actual stock
+OCR 1.13.0 native binary with synthetic providers and both final suites. The
+subsequent controller-only check passed 10/10 with zero skips after adding
+caller config/skill mutation checks. No paid inference or live replay was used.
+New tests: one central controller suite; existing provider/runner/final suites
+reused. Formatting and changed-source secret scans pass. Biome reports only
+nonblocking environment/style warnings; these operational scripts do not run
+through Turbo's application environment cache. Source reviews and hosted CI
+are still pending at this checkpoint. No active workflow caller was changed.
