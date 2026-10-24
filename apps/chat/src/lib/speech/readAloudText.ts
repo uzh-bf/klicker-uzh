@@ -1,3 +1,5 @@
+import { HAS_CITATION_MARKER_RE } from '../markdown/remarkCitationMarkers'
+
 // Turns an assistant message's raw Markdown into text a speech synthesizer can
 // read without vocalising syntax. Fenced code is skipped, display math becomes
 // a short spoken word, and citation markers are dropped. Inline code and
@@ -27,9 +29,12 @@ const INLINE_MATH_RES = [
 
 const INLINE_CODE_RE = /`([^`\n]+)`/g
 
-// Same marker shape as `remarkCitationMarkers` (`[1]`, `[2–4]`), including
+// Same marker shape as `remarkCitationMarkers`, including labelled page details and
 // the spacing before it, so "Mittel [1]." is read as "Mittel.".
-const CITATION_MARKER_RE = /[ \t]*\[\d{1,2}(?:[ \t]*[-–—][ \t]*\d{1,2})?\]/g
+const CITATION_MARKER_RE = new RegExp(
+  `[ \\t]*${HAS_CITATION_MARKER_RE.source}`,
+  'gi'
+)
 
 export function toSpeakableText(
   markdown: string,
