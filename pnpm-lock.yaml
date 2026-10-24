@@ -1824,8 +1824,8 @@ importers:
         specifier: workspace:*
         version: link:../../packages/types
       '@scalar/express-api-reference':
-        specifier: 0.8.7
-        version: 0.8.7
+        specifier: 0.10.28
+        version: 0.10.28
       dayjs:
         specifier: 1.11.20
         version: 1.11.20
@@ -9537,20 +9537,28 @@ packages:
   '@rushstack/ts-command-line@4.23.7':
     resolution: {integrity: sha512-Gr9cB7DGe6uz5vq2wdr89WbVDKz0UeuFEn5H2CfWDe7JvjFFaiV15gi6mqDBTbHhHCWS7w8mF1h3BnIfUndqdA==}
 
-  '@scalar/core@0.3.5':
-    resolution: {integrity: sha512-tcLLaGT/otQuEZzTtWUlnBMtcs95gcqwJSQCHqDui2v/+2ctV3FKjGJFoZLutICmQaSGLk0zNt14w39/VAsEqw==}
-    engines: {node: '>=20'}
+  '@scalar/client-side-rendering@0.4.10':
+    resolution: {integrity: sha512-kcRw4G7h50ZwpvnfZ28QYTtBqb6P3x4ccwh4xcBNqhWQxi3c9oo5lSrNOwInGfrFGmVV2xp92QnZdNasDm04Hw==}
+    engines: {node: '>=22'}
 
-  '@scalar/express-api-reference@0.8.7':
-    resolution: {integrity: sha512-bLi3bfi1J+hJPjE7t40SS0fRgkvXonwxmByuoRo+OLdU8AeRz2v4aewFK2WgvrLCmfofwtLAOW/zUYKIYe0chg==}
-    engines: {node: '>=20'}
+  '@scalar/express-api-reference@0.10.28':
+    resolution: {integrity: sha512-TdfAMEf7ZuBoKLMHtafTFNJQI9rJjxUhB1VtPz83pRPVehb8UiiZ2jjMXS8/Pw+E2LhmfIGpWvTdKBP3xaWF1A==}
+    engines: {node: '>=22'}
 
-  '@scalar/openapi-types@0.3.4':
-    resolution: {integrity: sha512-MfHRX1jqLcf6kwDDeXSYENywZXJLZx9Jn8r7DCQApw2QJW/yxb4GnCU0vygCh5KBk1GVJ4x6pyXiWNozb+fGAw==}
-    engines: {node: '>=20'}
+  '@scalar/helpers@0.16.2':
+    resolution: {integrity: sha512-jHSF4KZI/EcVI7WhhgNyw9vvuVCXmwP4rkMXwcaZJjMg1tFPHSOWqIcq123CsUwCMR34SEBAGSJR+Eskrz+7Qg==}
+    engines: {node: '>=22'}
 
-  '@scalar/types@0.2.5':
-    resolution: {integrity: sha512-kXulR6peh+zzP9DFqhncUKtvnV59e6Cf/y3N5Q8RQIa8huRB+901MbXewUEXV4MXYzMMBKJXRgc1LwwbAZUtRA==}
+  '@scalar/schemas@0.13.1':
+    resolution: {integrity: sha512-TpogfsVJGCbD9fk9v8zQO+Y5VR3AJpBReVdb5lfHHY+H0ToZygstw27grQafdqVKT8y6vrnyTFBUX3MSciDAaQ==}
+    engines: {node: '>=22'}
+
+  '@scalar/types@0.23.1':
+    resolution: {integrity: sha512-AzExo7alI8gqLduVZNBW+4u4FpLPW2AkD/2OMEmr3LgcCbDRobRBDKFZ07A8+vemonJCLKxkq88yCx0cAw28vw==}
+    engines: {node: '>=22'}
+
+  '@scalar/validation@0.6.6':
+    resolution: {integrity: sha512-ur7Oyr1vJmvX9+GTXfDXTvVOJD6JRgMtwV44hI6uUFja4IUDvSzuZ+qDpZYQ32uhV/50oT8siFE6JfiZbeJwng==}
     engines: {node: '>=20'}
 
   '@schummar/icu-type-parser@1.21.5':
@@ -16375,8 +16383,8 @@ packages:
     engines: {node: ^18 || >=20}
     hasBin: true
 
-  nanoid@5.1.5:
-    resolution: {integrity: sha512-Ir/+ZpE9fDsNH0hQ3C68uyThDXzYcim2EqcZ8zn8Chtt1iylPT9xXJB0kPCnqzgcEGikO9RxSrh63MsmVCU7Fw==}
+  nanoid@5.1.16:
+    resolution: {integrity: sha512-kVrnsrJqMR8+oLJnGEmSWw9BivK5mt7H3FZatVRjrc5wGqFYuBxX1yG7+A7Gi5AefkX6t/oCkizcQgpu0cY1dQ==}
     engines: {node: ^18 || >=20}
     hasBin: true
 
@@ -21017,9 +21025,6 @@ packages:
     engines: {node: '>=18.0.0'}
     peerDependencies:
       zod: 4.6.6
-
-  zod@3.24.1:
-    resolution: {integrity: sha512-muH7gBL9sI1nciMZV67X5fTKKBLtwpZ5VBp1vsOQzj1MhrBZ4wlVCm3gedKZWLp0Oyel8sIGfeiz54Su+OVT+A==}
 
   zod@4.6.6:
     resolution: {integrity: sha512-4UmzQUF5fxvfcYHlbjBmejU+w+hbDnWFx4aS8kBx7nPBHcO2SqPbpAG8snbdg+Xse4pRefR98hgjFgIMCI/UhA==}
@@ -29108,23 +29113,32 @@ snapshots:
     transitivePeerDependencies:
       - '@types/node'
 
-  '@scalar/core@0.3.5':
+  '@scalar/client-side-rendering@0.4.10':
     dependencies:
-      '@scalar/types': 0.2.5
+      '@scalar/helpers': 0.16.2
+      '@scalar/schemas': 0.13.1
+      '@scalar/types': 0.23.1
+      '@scalar/validation': 0.6.6
 
-  '@scalar/express-api-reference@0.8.7':
+  '@scalar/express-api-reference@0.10.28':
     dependencies:
-      '@scalar/core': 0.3.5
+      '@scalar/client-side-rendering': 0.4.10
 
-  '@scalar/openapi-types@0.3.4':
-    dependencies:
-      zod: 3.24.1
+  '@scalar/helpers@0.16.2': {}
 
-  '@scalar/types@0.2.5':
+  '@scalar/schemas@0.13.1':
     dependencies:
-      '@scalar/openapi-types': 0.3.4
-      nanoid: 5.1.5
-      zod: 3.24.1
+      '@scalar/helpers': 0.16.2
+      '@scalar/validation': 0.6.6
+
+  '@scalar/types@0.23.1':
+    dependencies:
+      '@scalar/helpers': 0.16.2
+      nanoid: 5.1.16
+      type-fest: 5.10.0
+      zod: 4.6.6
+
+  '@scalar/validation@0.6.6': {}
 
   '@schummar/icu-type-parser@1.21.5': {}
 
@@ -37504,7 +37518,7 @@ snapshots:
 
   nanoid@5.0.8: {}
 
-  nanoid@5.1.5: {}
+  nanoid@5.1.16: {}
 
   nanoid@6.0.0: {}
 
@@ -43423,8 +43437,6 @@ snapshots:
   zod-validation-error@4.0.2(zod@4.6.6):
     dependencies:
       zod: 4.6.6
-
-  zod@3.24.1: {}
 
   zod@4.6.6: {}
 
