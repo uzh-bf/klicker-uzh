@@ -1258,6 +1258,12 @@ export async function activateLiveQuizBlock(
           solutions: elementData.options.hasSampleSolution
             ? JSON.stringify(elementData.options.solutions)
             : undefined,
+          // assessment live quizzes always accept a single response
+          ...(!updatedQuiz.isAssessmentEnabled &&
+          elementData.options.responseLimit &&
+          elementData.options.responseLimit > 1
+            ? { responseLimit: elementData.options.responseLimit }
+            : {}),
         })
         redisMulti.hmset(`lq:${quiz.id}:i:${instance.id}:results`, {
           participants: 0,

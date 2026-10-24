@@ -101,6 +101,21 @@ interchangeably; a change to one is not a change to the other.
 single live quiz. Leaderboards exist only where gamification is enabled for the
 course.
 
+**Response**: What a participant sends to one element instance in one request.
+Results and response counts are built from responses; a participant's attempt
+history in a practice quiz is several responses, not one. _Avoid_: submission,
+answer (as synonyms), vote (a vote is how often one word appears in a word
+cloud), entry (reserved for a delimited item inside one response).
+
+**Response limit**: How many responses one participant may send to one
+free-text element instance in a standard live quiz. It defaults to one; only the
+first response earns points, and repeating an earlier response does not use up
+the limit.
+
+**Respondent**: A distinct participant who sent at least one response to an
+element instance. With a response limit above one, the respondent count and the
+response count differ. _Avoid_: participants (for a count of responses).
+
 ## Identity and attestation
 
 **Assessment participation identity**: The given name, surname, and

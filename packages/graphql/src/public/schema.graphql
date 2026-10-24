@@ -1631,6 +1631,7 @@ type FreeTextElementData {
 type FreeTextElementOptions {
   hasAnswerFeedbacks: Boolean
   hasSampleSolution: Boolean
+  responseLimit: Int
   restrictions: FreeTextRestrictions
   solutions: [String!]
 }
@@ -2369,6 +2370,7 @@ input OptionsFreeTextInput {
   hasAnswerFeedbacks: Boolean
   hasSampleSolution: Boolean
   placeholder: String
+  responseLimit: Int
   restrictions: FreeTextRestrictionsInput
   solutions: [String!]
 }
