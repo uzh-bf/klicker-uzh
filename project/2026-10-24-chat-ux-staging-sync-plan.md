@@ -136,7 +136,7 @@ does not prove actual on-device dictation or microphone acceptance.
 - Remaining host-only local-KB/hook contracts: all 105 pass.
 - Existing OCR feedback verified one persistence edge case: clamp stale browser
   answer format/tone during rehydration and extend the existing state test.
-  Its focused verification is pending after runtime resume.
+  Focused verification passes.
 - Host browser preparation stopped its exact runtime before installation. Cold
   pnpm policy verification stalled for thirteen minutes despite healthy registry
   reachability. One diagnostic retry uses bounded registry timeouts and ndjson
@@ -156,26 +156,48 @@ does not prove actual on-device dictation or microphone acceptance.
   Revised EN/DE phone and desktop captures pass; affected tests and type check
   pass. A synthetic text attachment parses, reaches ready state and is removable.
   No inference, real microphone acceptance or model-backed retry was performed.
-- Integration commit remains blocked by global hygiene engine false positives
-  on two synthetic custom-mode keys. Repository-configured gitleaks passes.
-  One-commit override requested; no bypass performed. Reviews/push/hosted CI
-  and protected merges remain pending.
+- Integration committed and ordinary-pushed as 571ec58b4d after the user approved
+  one global hygiene exception for two synthetic mode IDs. Repository gitleaks and
+  every Git hook passed; the pre-push production build passed all 27 tasks.
+  The exception does not extend to later commits.
+- Recovered host tooling through pnpm's unmodified verification cache, retaining
+  all supply-chain policy. Maintained Chromium passes four focused lecturer and
+  student cases. The normal Auth development login error remains separate from
+  fixture-authenticated authoring verification. Local captures include lecturer
+  revision UI and student responsive/locale states.
+- Independent simplification and slice risk reviews cover all 55 changed paths
+  without actionable findings. The configured integrated review found hidden
+  browser preferences entering owner preview and disclosed incomplete coverage.
+  Its initial result is not a cleared final gate. The accepted correction omits
+  those transport fields so existing server defaults apply, with a regression in
+  the existing owner-preview browser case. Advisory helper extraction is deferred:
+  custom-mode undefined fallback and boolean validation have distinct contracts.
+- Required hosted checks pass except the OCR installation contract, which is
+  already owned by [the separate fix](https://github.com/uzh-bf/klicker-uzh/pull/6698).
+  Its target hardening changed the invocation that the old command-text assertion
+  expects. Do not duplicate the owned fix or merge it without named authority.
+  The AI target advanced with that CI hardening; a later dependency refresh must
+  retain the verified application behavior.
 - Existing source CI is evidence for the merged feature source only. Integration
   checks, final review, merge and staging acceptance remain pending.
 
-### Checkpoint before the commit gate
+### Checkpoint during final-review correction
 
-All source is staged, with no unresolved index paths. Integration commit, review,
-ordinary push and both protected merges remain pending. The global pretool hygiene
-engine flags two synthetic custom-mode keys although the repository-configured
-scan passes; the user has been asked for its documented one-commit exception.
-No override was used. The configured Claude runtime consultation was rejected
-before execution for destination-specific egress authority; main continued local
-diagnosis. Reassess the authorized final-review route when the committed gate is
-reached rather than assuming that destination is approved.
+The first integration head is published; both protected sync merges remain
+pending. Complete the accepted preview correction and its focused browser proof,
+then commit/push normally and use the one integrated-review correction pass to
+verify it and complete the previously unread changed paths. Required CI must
+pass after its separate upstream dependency is available. Existing merge approval
+for the two sync PRs persists; no new generic go-ahead is needed.
 
-Local browser session is closed. Exact source-path-matched Devsy provider
-sync-v3-into-v3-ai-5f8257b2a1 reports Stopped and devrouter has zero matching
-routes. No runtime, branch, worktree or data was deleted. Synthetic flag restored.
+The earlier runtime consultation was rejected before execution for private-detail
+egress; local/native diagnosis continued. The integrated review subsequently ran
+on the published public diff. Keep private runtime evidence outside that scope.
+The exact disposable runtime was stopped and verified after the first browser/
+build checks, then resumed for the preview correction. Stop and source-path verify
+it again after the last dependent check. No deletion or new cluster connectivity.
+Staging fixture use is authorized, but credential access and actual deployed
+revision/migration/smoke remain separate acceptance gates.
+
 Reusable local evidence: project/_local/chat-ux-sync-gallery/index.html and
 project/_local/reviews/2026-10-24-chat-ux-sync-verification.md.

@@ -355,6 +355,14 @@ test.describe.serial('Lecturer chatbot draft authoring', () => {
     page,
   }) => {
     const chatbotId = await createChatbot(page, FIRST_CHATBOT)
+    await page.context().addInitScript(() => {
+      if (!window.location.pathname.startsWith('/preview/')) return
+      window.localStorage.setItem(
+        'settings-storage',
+        '{"state":{"answerStyle":"bullets","answerTone":"direct"},"version":0}'
+      )
+    })
+
     const previewPagePromise = page.context().waitForEvent('page')
     await page.getByTestId('chatbot-owner-preview-link').click()
     const previewPage = await previewPagePromise
@@ -367,6 +375,60 @@ test.describe.serial('Lecturer chatbot draft authoring', () => {
     await expect(previewPage.getByTestId('chat-welcome-mode')).toContainText(
       'Tutor'
     )
+
+    const previewPreferences = await previewPage.evaluate(() => {
+      const persisted = JSON.parse(
+        window.localStorage.getItem('settings-storage') ?? '{}'
+      ) as { state?: Record<string, unknown> }
+      return [persisted.state?.answerStyle, persisted.state?.answerTone]
+    })
+    expect(previewPreferences).toEqual(['bullets', 'direct'])
+
+    await previewPage.route(
+      '**/api/manage/chatbots/*/preview/chat',
+      (route) => {
+        if (route.request().method() !== 'POST') return route.fallback()
+
+        return route.fulfill({
+          body:
+            [
+              'data: {"type":"start"}',
+              'data: {"type":"start-step"}',
+              'data: {"type":"text-start","id":"preview-text"}',
+              'data: {"type":"text-delta","id":"preview-text","delta":"Mocked reply."}',
+              'data: {"type":"text-end","id":"preview-text"}',
+              'data: {"type":"finish-step"}',
+              'data: {"type":"finish"}',
+              'data: [DONE]',
+            ].join('\n\n') + '\n\n',
+          headers: {
+            'content-type': 'text/event-stream',
+            'x-vercel-ai-ui-message-stream': 'v1',
+          },
+          status: 200,
+        })
+      }
+    )
+
+    const previewRequest = previewPage.waitForRequest(
+      (request) =>
+        request.method() === 'POST' &&
+        request.url().includes(`/api/manage/chatbots/${chatbotId}/preview/chat`)
+    )
+    await previewPage.getByTestId('chat-composer-input').fill('Check prefs')
+    await previewPage.getByTestId('chat-send-button').click()
+
+    const previewRequestBody = (await previewRequest).postDataJSON() as {
+      answerStyle?: string
+      answerTone?: string
+    }
+    expect({
+      answerStyle: previewRequestBody.answerStyle ?? 'balanced',
+      answerTone: previewRequestBody.answerTone ?? 'neutral',
+    }).toEqual({
+      answerStyle: 'balanced',
+      answerTone: 'neutral',
+    })
   })
 
   test('guards the owner preview while authoring changes are unsaved', async ({

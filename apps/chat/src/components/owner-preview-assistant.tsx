@@ -371,15 +371,11 @@ function OwnerPreviewConversation({
   effectiveMode: string
   initialModeOptions: ChatModeOptions
 }) {
-  const answerStyle = useSettingsStore((state) => state.answerStyle)
-  const answerTone = useSettingsStore((state) => state.answerTone)
   const transport = useMemo(
     () =>
       new AssistantChatTransport({
         api: `/api/manage/chatbots/${encodeURIComponent(chatbot.id)}/preview/chat`,
         body: {
-          answerStyle,
-          answerTone,
           selectedMode: effectiveMode || 'tutor',
           ...(conversation.modelId
             ? { selectedModel: conversation.modelId }
@@ -388,8 +384,6 @@ function OwnerPreviewConversation({
         },
       }),
     [
-      answerStyle,
-      answerTone,
       chatbot.id,
       conversation.modelId,
       conversation.reasoningEffort,
