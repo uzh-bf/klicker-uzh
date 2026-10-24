@@ -35,14 +35,13 @@ function fixture(t) {
     path.join(repo, 'app/[id]/page.js'),
     'export default function Page() {\n  return null\n}\n'
   )
-  git('add', '.')
-  git('commit', '-m', 'chore: synthetic base')
   fs.mkdirSync(path.join(repo, 'nested'))
   for (const name of ['.env.local', 'nested/.env.production', 'private.PEM']) {
     fs.writeFileSync(path.join(repo, name), 'synthetic protected material\n')
     git('add', '--force', name)
   }
-  git('commit', '-m', 'test: synthetic protected paths')
+  git('add', '.')
+  git('commit', '-m', 'chore: synthetic base')
   const policy = git('rev-parse', 'HEAD')
   fs.writeFileSync(path.join(repo, 'docs/contract.md'), 'untrusted-candidate\n')
   fs.symlinkSync('/private', path.join(repo, 'escape.js'))

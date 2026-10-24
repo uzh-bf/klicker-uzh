@@ -22,7 +22,7 @@ A malicious executable earlier in inherited PATH must not replace the intended s
 
 ## Progress
 
-Approved draft preparation. Planner round 2 APPROVED. Baseline Git suites 12/12 and unchanged protocol suites 29/29 pass. Source changes implement fixed Git lookup, explicit pinned builder/OCR locations, path-regex grouping and rejected-response cleanup. Existing affected review tests 93 passed/1 opt-in live skipped; stack/workflow integration 84/84 pass. Independent slice and final reviews and hosted checks remain pending.
+Approved draft preparation. Planner round 2 APPROVED. Baseline Git suites 12/12 and unchanged protocol suites 29/29 pass. Source changes implement fixed Git lookup, explicit pinned builder/OCR locations, path-regex grouping and rejected-response cleanup. Existing affected review tests 93 passed/1 opt-in live skipped; stack/workflow integration 84/84 pass. Simplifier completed: merged protected-file fixture setup into the existing base commit; tools 15/15 still pass. Security slice review, integrated final review and hosted checks remain pending. Draft [#6697](https://github.com/uzh-bf/klicker-uzh/pull/6697) is open.
 
 ## Finding inventory and ownership
 
