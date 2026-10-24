@@ -5013,3 +5013,52 @@ test('patched executable provenance refuses an upstream binary or a changed patc
     /checksum mismatch/
   )
 })
+
+test('OCR installer uses the pinned tool cache instead of PATH and rejects a relative cache', (t) => {
+  const directory = fs.mkdtempSync(
+    path.join(os.tmpdir(), 'ocr-tool-selection-')
+  )
+  t.after(() => fs.rmSync(directory, { recursive: true, force: true }))
+  const cache = path.join(directory, 'cache')
+  const bin = path.join(cache, 'go', '1.26.9', process.arch, 'bin')
+  const poisoned = path.join(directory, 'poisoned')
+  const selected = path.join(directory, 'selected')
+  const substituted = path.join(directory, 'substituted')
+  fs.mkdirSync(bin, { recursive: true })
+  fs.mkdirSync(poisoned)
+  fs.writeFileSync(
+    path.join(bin, 'go'),
+    `#!/bin/sh\nprintf selected > '${selected}'\nprintf 'unqualified synthetic toolchain'\n`,
+    { mode: 0o700 }
+  )
+  fs.writeFileSync(
+    path.join(poisoned, 'go'),
+    `#!/bin/sh\nprintf substituted > '${substituted}'\nprintf 'unqualified synthetic toolchain'\n`,
+    { mode: 0o700 }
+  )
+  const installer = path.join(__dirname, 'install-patched-ocr.cjs')
+  const run = (toolCache) =>
+    spawnSync(
+      process.execPath,
+      [
+        '-e',
+        `require(${JSON.stringify(installer)}).install(${JSON.stringify(path.join(directory, 'output'))})`,
+      ],
+      {
+        encoding: 'utf8',
+        env: { PATH: poisoned, RUNNER_TOOL_CACHE: toolCache },
+        timeout: 5000,
+      }
+    )
+  const trusted = run(cache)
+  assert.equal(trusted.status, 1)
+  assert.match(trusted.stderr, /requires Go 1\.26\.9/)
+  assert.equal(fs.existsSync(selected), true)
+  assert.equal(fs.existsSync(substituted), false)
+  fs.unlinkSync(selected)
+  const relative = run('relative-cache')
+  assert.equal(relative.status, 1)
+  assert.match(relative.stderr, /tool cache must be an absolute path/)
+  assert.equal(fs.existsSync(selected), false)
+  assert.equal(fs.existsSync(substituted), false)
+})

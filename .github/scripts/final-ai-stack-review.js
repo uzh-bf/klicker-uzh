@@ -2001,7 +2001,7 @@ function runBoundedGit(repositoryPath, args) {
   }
   try {
     return execFileSync(
-      'git',
+      '/usr/bin/git',
       ['--no-pager', '--no-replace-objects', ...args],
       {
         cwd: repositoryPath,

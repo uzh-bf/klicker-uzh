@@ -208,3 +208,33 @@ revision/migration/smoke remain separate acceptance gates.
 
 Reusable local evidence: project/_local/chat-ux-sync-gallery/index.html and
 project/_local/reviews/2026-10-24-chat-ux-sync-verification.md.
+
+
+### Target prerequisite refresh after OCR merge
+
+PR [6698](https://github.com/uzh-bf/klicker-uzh/pull/6698) merged into v3-ai
+as 9d28af324d43ec6f10c03f85c795f32cb150f65f. Merge that frozen target into
+the maintained first sync to resolve its concrete CI dependency, retaining
+[6695](https://github.com/uzh-bf/klicker-uzh/pull/6695) preview corrections and
+[6697](https://github.com/uzh-bf/klicker-uzh/pull/6697) review-tool hardening.
+The merge is clean. Its application delta against the new target remains the
+previously reviewed 60-path package; unaffected source review and UI captures
+remain applicable. Main retains coupled integration and release actions.
+
+Pinned Node 24.21.0 passes the exact CI/review contract command: 741 pass,
+one opt-in live skip. An initial broad command used host Node 24.16.0 and
+cancelled nested obsolete-run cases; the isolated and exact pinned-toolchain
+runs pass. No contract assertion was relaxed.
+
+The combined owner-preview browser run exposed an initialization race in the
+imported early-Stop test. A bounded executor changed only its existing case
+to wait for the initialized welcome UI before filling the composer. Main
+inspected the one-line patch; all three owner-preview preference and early-Stop
+cases pass with intercepted responses. No application behavior or inference
+allowance changed. The worker is closed. No new simplification or full source
+review is warranted for this readiness assertion; main inspected its scope.
+
+Both sync merges and actual staging qualification remain pending. Published
+image policy also requires a separate owned dependency repair in
+[6699](https://github.com/uzh-bf/klicker-uzh/pull/6699). Keep that work with its
+owner and distinguish PR builds from post-merge scan and promotion evidence.

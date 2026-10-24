@@ -431,6 +431,85 @@ test.describe.serial('Lecturer chatbot draft authoring', () => {
     })
   })
 
+  for (const withHistory of [false, true]) {
+    test(`clears the owner-preview run announcement after an early stop (${withHistory ? 'with history' : 'empty conversation'})`, async ({
+      page,
+    }) => {
+      const chatbotId = await createChatbot(page, FIRST_CHATBOT)
+      const opened = page.context().waitForEvent('page')
+      await page.getByTestId('chatbot-owner-preview-link').click()
+      const preview = await opened
+      await expect(preview.getByTestId('chat-welcome-message')).toBeVisible()
+      const requested = createRequestGate()
+      const release = createRequestGate()
+      let requests = 0
+      await preview.route(
+        `**/api/manage/chatbots/${chatbotId}/preview/chat`,
+        async (route) => {
+          requests += 1
+          if (requests === (withHistory ? 2 : 1)) {
+            requested.release()
+            await release.wait
+            await route.abort('aborted')
+            return
+          }
+          await route.fulfill({
+            status: 200,
+            contentType: 'text/event-stream',
+            headers: { 'x-vercel-ai-ui-message-stream': 'v1' },
+            body: [
+              { type: 'start', messageId: `synthetic-${requests}` },
+              { type: 'text-start', id: 'text-1' },
+              { type: 'text-delta', id: 'text-1', delta: 'Synthetic response' },
+              { type: 'text-end', id: 'text-1' },
+              { type: 'finish', finishReason: 'stop' },
+            ]
+              .map((part) => `data: ${JSON.stringify(part)}\n\n`)
+              .join('')
+              .concat('data: [DONE]\n\n'),
+          })
+        }
+      )
+
+      const input = preview.getByTestId('chat-composer-input')
+      const send = preview.getByTestId('chat-send-button')
+      const cancel = preview.getByTestId('chat-cancel-button')
+      const status = preview.getByTestId('chat-run-status')
+      if (withHistory) {
+        await input.fill('Synthetic initial turn')
+        await send.click()
+        await expect(cancel).toHaveAttribute('aria-hidden', 'true')
+        await expect(preview.getByTestId('chat-assistant-message')).toHaveCount(
+          1
+        )
+      }
+
+      try {
+        const pendingPrompt = 'Synthetic pending turn'
+        await input.fill(pendingPrompt)
+        await send.click()
+        await requested.wait
+        await expect(status).not.toBeEmpty()
+        await cancel.click()
+        await expect(cancel).toHaveAttribute('aria-hidden', 'true')
+        await expect(input).toHaveValue(pendingPrompt)
+        await expect(status).toBeEmpty()
+      } finally {
+        release.release()
+      }
+
+      await input.fill('Synthetic recovery turn')
+      await send.click()
+      await expect(cancel).toHaveAttribute('aria-hidden', 'true')
+      await expect(preview.getByTestId('chat-assistant-message')).toHaveCount(
+        withHistory ? 2 : 1
+      )
+      await expect(status).not.toBeEmpty()
+      await expect(preview.getByTestId('chat-error')).toHaveCount(0)
+      await preview.close()
+    })
+  }
+
   test('guards the owner preview while authoring changes are unsaved', async ({
     page,
   }) => {
