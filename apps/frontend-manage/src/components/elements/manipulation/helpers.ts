@@ -212,6 +212,10 @@ export function prepareFreeTextArgs({
             : parseInt(String(values.options.restrictions.maxLength)),
       },
       solutions: values.options.solutions,
+      responseLimit:
+        !values.options.responseLimit || values.options.responseLimit === ''
+          ? undefined
+          : parseInt(String(values.options.responseLimit)),
     },
 
     tags: values.tags,

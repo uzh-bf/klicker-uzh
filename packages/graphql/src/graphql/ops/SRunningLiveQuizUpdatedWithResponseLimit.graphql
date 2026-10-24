@@ -1,0 +1,7 @@
+subscription RunningLiveQuizUpdatedWithResponseLimit($id: String!) {
+  runningLiveQuizUpdated(id: $id) {
+    id
+    beforeFirstBlock
+    ...StudentLiveQuizBlocksDataWithResponseLimit
+  }
+}
