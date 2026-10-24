@@ -45,7 +45,7 @@ jobs:
           node - <<'NODE'
           const { randomUUID } = require('node:crypto')
           const fs = require('node:fs')
-          const { buildReviewBackground } = require('./.github/scripts/final-ai-review.js')
+          const { buildReviewBackground } = require('./.github/scripts/ocr-review-shared.cjs')
           const background = buildReviewBackground(process.env.PR_TITLE, process.env.PR_BODY)
           const delimiter = randomUUID()
           fs.appendFileSync(process.env.GITHUB_OUTPUT, `background<<${delimiter}\n${background}\n${delimiter}\n`)
