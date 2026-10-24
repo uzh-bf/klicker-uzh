@@ -127,6 +127,13 @@ function git(repo, args, maxBuffer = 524288) {
   try {
     return execFileSync('git', args, {
       cwd: repo,
+      env: Object.fromEntries(
+        ['PATH', 'HOME', 'TMPDIR', 'LANG'].flatMap((name) =>
+          typeof process.env[name] === 'string'
+            ? [[name, process.env[name]]]
+            : []
+        )
+      ),
       encoding: 'utf8',
       timeout: 2000,
       maxBuffer,

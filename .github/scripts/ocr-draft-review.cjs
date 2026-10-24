@@ -212,6 +212,51 @@ function appendSummary(text, write) {
   }
 }
 
+function gitEnvironment() {
+  return Object.fromEntries(
+    ['PATH', 'HOME', 'TMPDIR', 'LANG'].flatMap((name) =>
+      typeof process.env[name] === 'string' ? [[name, process.env[name]]] : []
+    )
+  )
+}
+
+function assertCompleteRange(repo, from, head) {
+  const env = {
+    ...gitEnvironment(),
+    GIT_NO_LAZY_FETCH: '1',
+    GIT_TERMINAL_PROMPT: '0',
+  }
+  try {
+    const objects = execFileSync(
+      'git',
+      ['rev-list', '--objects', '--missing=print', from, head],
+      {
+        cwd: repo,
+        env,
+        encoding: 'utf8',
+        maxBuffer: 32 * 1024 * 1024,
+        timeout: 30000,
+        stdio: ['ignore', 'pipe', 'pipe'],
+      }
+    )
+    if (objects.split('\n').some((line) => line.startsWith('?')))
+      throw new Error('missing_blob')
+    execFileSync(
+      'git',
+      ['diff', '--no-ext-diff', '--no-textconv', '--stat', from, head, '--'],
+      {
+        cwd: repo,
+        env,
+        timeout: 30000,
+        maxBuffer: 4 * 1024 * 1024,
+        stdio: ['ignore', 'pipe', 'pipe'],
+      }
+    )
+  } catch {
+    throw new Error('review_source_unavailable')
+  }
+}
+
 async function runDraftReview(options) {
   const {
     repo,
@@ -224,6 +269,7 @@ async function runDraftReview(options) {
   for (const revision of [from, head]) {
     if (!/^[a-f0-9]{40}$/.test(revision)) throw new Error('invalid_revision')
   }
+  if (options.policy) assertCompleteRange(repo, from, head)
   const write = options.write ?? ((text) => process.stdout.write(text))
   const resultPath = path.join(temp, 'draft-ai-review-result.json')
   const stderrPath = path.join(temp, 'draft-ai-review-stderr.log')
@@ -330,6 +376,7 @@ async function runDraftReview(options) {
         ['show', `${options.policy}:.agents/skills/ocr-reviewer/SKILL.md`],
         {
           cwd: repo,
+          env: gitEnvironment(),
           encoding: 'utf8',
           timeout: 5000,
           maxBuffer: 32768,
@@ -696,17 +743,27 @@ async function main() {
     return 0
   }
   if (process.argv[2] !== 'run') return 2
+  const credentials = {
+    apiKey: process.env.MISTRAL_API_KEY,
+    advisorApiKey: process.env.MISTRAL_API_KEY,
+    context7ApiKey: process.env.CONTEXT7_API_KEY,
+  }
+  for (const name of Object.keys(process.env)) {
+    if (
+      /(?:TOKEN|API_KEY|PASSWORD|SECRET|AUTHORIZATION|CREDENTIAL)/i.test(name)
+    )
+      delete process.env[name]
+  }
   const outcome = await runDraftReview({
     repo: process.cwd(),
     temp,
     from: process.env.REVIEW_FROM,
     head: process.env.HEAD_SHA,
     background: process.env.BACKGROUND,
-    apiKey: process.env.MISTRAL_API_KEY,
-    advisorApiKey: process.env.MISTRAL_API_KEY,
-    context7ApiKey: process.env.CONTEXT7_API_KEY,
+    ...credentials,
     policy: execFileSync('git', ['rev-parse', 'HEAD'], {
       encoding: 'utf8',
+      env: gitEnvironment(),
     }).trim(),
   })
   return outcome.code

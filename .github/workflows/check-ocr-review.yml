@@ -35,11 +35,6 @@ jobs:
           ref: ${{ github.event.repository.default_branch }}
           persist-credentials: false
           fetch-depth: 0
-          sparse-checkout: |
-            .github/scripts
-            .agents/skills
-            docs
-            .opencodereview
 
       - name: Prepare bounded review context
         id: context
@@ -100,11 +95,14 @@ jobs:
         run: node .github/scripts/ocr-draft-review.cjs run
 
       - name: Validate draft result envelope
+        id: validate
+        if: ${{ !cancelled() && (steps.review.outcome == 'success' || steps.review.outcome == 'failure') }}
         env:
           HEAD_SHA: ${{ github.event.pull_request.head.sha }}
         run: node .github/scripts/ocr-draft-review.cjs validate
 
       - name: Publish draft findings
+        if: ${{ !cancelled() && steps.validate.outcome == 'success' }}
         uses: actions/github-script@3a2844b7e9c422d3c10d287c895573f7108da1b3 # v9.0.0
         with:
           script: |

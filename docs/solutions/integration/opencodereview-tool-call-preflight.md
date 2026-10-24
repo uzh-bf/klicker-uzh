@@ -92,6 +92,14 @@ objects rather than credentials to OCR. The candidate remains in Git objects
 and is never checked out or executed. Unrelated publisher checkouts can remain
 sparse.
 
+The draft runner checks object availability and a credential-free diff before
+starting either provider adapter. Metadata Git commands receive an explicit
+environment without provider or publication credentials. The CLI launcher keeps
+keys only as adapter options and removes them from its ambient environment.
+An OCR failure can still produce valid partial findings: validation and eligible
+publication run after that failure, retain the incomplete-coverage warning and
+leave the original job failed. Invalid output never reaches the publisher.
+
 A synthetic promisor clone with an unavailable remote reproduces the failure;
 a full clone of the same range loads the diff offline. File selection and model
 preflight cannot prove this input boundary. The shared progress filter emits

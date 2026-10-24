@@ -4,6 +4,8 @@ const os = require('node:os')
 const path = require('node:path')
 const test = require('node:test')
 const { spawnSync, execFileSync } = require('node:child_process')
+const vm = require('node:vm')
+const YAML = require('yaml')
 
 const { runDraftReview, summarizeCoverage } = require('./ocr-draft-review.cjs')
 const RUNNER = path.join(__dirname, 'ocr-draft-review.cjs')
@@ -515,6 +517,195 @@ process.exitCode=7
     else process.env.CONTEXT7_API_KEY = previousContext7
     fs.rmSync(directory, { recursive: true, force: true })
   }
+})
+
+test('draft workflow publishes validated partial results after OCR failure without hiding that failure', async () => {
+  const directory = fs.mkdtempSync(path.join(os.tmpdir(), 'ocr-partial-job-'))
+  const executable = path.join(directory, 'ocr.cjs')
+  const head = '2'.repeat(40)
+  const job = YAML.parse(
+    fs.readFileSync(
+      path.join(__dirname, '../workflows/check-ocr-review.yml'),
+      'utf8'
+    )
+  ).jobs['ocr-review']
+  const checkout = job.steps.find(
+    (step) => step.name === 'Checkout trusted review policy'
+  )
+  assert.equal(checkout.with['fetch-depth'], 0)
+  assert.equal(checkout.with['persist-credentials'], false)
+  assert.equal(checkout.with['sparse-checkout'], undefined)
+  assert.equal(checkout.with.filter, undefined)
+  const validation = job.steps.find((step) =>
+    step.run?.endsWith('ocr-draft-review.cjs validate')
+  )
+  const publication = job.steps.find(
+    (step) => step.name === 'Publish draft findings'
+  )
+  const steps = {
+    review: { outcome: 'failure' },
+    validate: { outcome: 'skipped' },
+  }
+  const admitted = (step, cancelled = false) =>
+    step.if === undefined
+      ? steps.review.outcome === 'success'
+      : new Function(
+          'steps',
+          'cancelled',
+          `return (${step.if.replace(/^\$\{\{\s*|\s*\}\}$/g, '')})`
+        )(steps, () => cancelled)
+  fs.writeFileSync(
+    executable,
+    `#!/usr/bin/env node
+process.stdout.write(JSON.stringify({status:'partial',comments:[],manifest:{input:{resolved_head:'${head}'},coverage:{selected:['a','b'],completed:['a'],failed:[{classification:'provider'}],reused:[],waived:[]}}}))
+process.exitCode=7
+`,
+    { mode: 0o700 }
+  )
+  try {
+    const outcome = await runDraftReview({
+      repo: directory,
+      temp: directory,
+      from: '1'.repeat(40),
+      head,
+      executable,
+      apiKey: 'synthetic',
+      write: () => {},
+    })
+    assert.equal(outcome.code, 7)
+    assert.equal(admitted(validation), true)
+    const validated = spawnSync(process.execPath, [RUNNER, 'validate'], {
+      env: { RUNNER_TEMP: directory, HEAD_SHA: head },
+      encoding: 'utf8',
+    })
+    assert.equal(validated.status, 0, validated.stderr)
+    steps.validate.outcome = 'success'
+    assert.equal(admitted(publication), true)
+    let published
+    await vm.runInNewContext(`(async () => { ${publication.with.script} })()`, {
+      require: (name) =>
+        name.includes('post-review-comments')
+          ? {
+              runPostReviewComments: async ({ resultPath }) => {
+                published = JSON.parse(fs.readFileSync(resultPath, 'utf8'))
+              },
+            }
+          : require(name),
+      process: { env: { RUNNER_TEMP: directory } },
+      github: {},
+      context: { payload: { pull_request: { number: 1 } } },
+      core: {},
+    })
+    assert.equal(published.status, 'partial')
+    assert.equal(published.warnings.at(-1).type, 'review_incomplete')
+    assert.equal(outcome.code, 7)
+    assert.equal(steps.review.outcome, 'failure')
+    fs.writeFileSync(outcome.resultPath, '{}')
+    assert.equal(
+      spawnSync(process.execPath, [RUNNER, 'validate'], {
+        env: { RUNNER_TEMP: directory, HEAD_SHA: head },
+      }).status,
+      1
+    )
+    steps.validate.outcome = 'failure'
+    assert.equal(admitted(publication), false)
+    assert.equal(admitted(validation, true), false)
+  } finally {
+    fs.rmSync(directory, { recursive: true, force: true })
+  }
+})
+
+test('draft preflight rejects missing blobs before provider dispatch and strips credentials from metadata Git', async (t) => {
+  const repo = fs.mkdtempSync(path.join(os.tmpdir(), 'ocr-source-preflight-'))
+  t.after(() => fs.rmSync(repo, { recursive: true, force: true }))
+  const git = (...args) =>
+    execFileSync('git', args, { cwd: repo, encoding: 'utf8' }).trim()
+  git('init', '-b', 'main')
+  git('config', 'user.name', 'Synthetic fixture')
+  git('config', 'user.email', 'fixture@example.invalid')
+  git('config', 'core.hooksPath', '/dev/null')
+  fs.mkdirSync(path.join(repo, '.agents/skills/ocr-reviewer'), {
+    recursive: true,
+  })
+  fs.writeFileSync(
+    path.join(repo, '.agents/skills/ocr-reviewer/SKILL.md'),
+    'synthetic rules'
+  )
+  fs.writeFileSync(path.join(repo, 'source.js'), 'export const value = 1\n')
+  git('add', '.')
+  git('commit', '-m', 'chore: synthetic input')
+  const policy = git('rev-parse', 'HEAD')
+  const blob = git('rev-parse', 'HEAD:source.js')
+  const executable = path.join(repo, 'ocr.cjs')
+  fs.writeFileSync(
+    executable,
+    '#!/usr/bin/env node\nprocess.stdout.write("{}")\n',
+    { mode: 0o700 }
+  )
+  const options = {
+    repo,
+    temp: repo,
+    from: policy,
+    head: policy,
+    policy,
+    executable,
+    apiKey: 'synthetic',
+    write: () => {},
+  }
+  const complete = await runDraftReview(options)
+  assert.equal(complete.code, 0)
+  fs.unlinkSync(
+    path.join(repo, '.git/objects', blob.slice(0, 2), blob.slice(2))
+  )
+  let dispatched = false
+  await assert.rejects(
+    runDraftReview({
+      ...options,
+      fetchImpl: async () => {
+        dispatched = true
+        throw new Error('provider must not run')
+      },
+    }),
+    /review_source_unavailable/
+  )
+  assert.equal(dispatched, false)
+
+  const wrapper = path.join(repo, 'bin')
+  fs.mkdirSync(wrapper)
+  const realGit = execFileSync('which', ['git'], { encoding: 'utf8' }).trim()
+  const receipt = path.join(repo, 'git-env.jsonl')
+  fs.writeFileSync(
+    path.join(wrapper, 'git'),
+    `#!${process.execPath}
+const fs=require('node:fs'),{spawnSync}=require('node:child_process')
+fs.appendFileSync(${JSON.stringify(receipt)},JSON.stringify({secret:process.env.MISTRAL_API_KEY,token:process.env.GITHUB_TOKEN,docs:process.env.CONTEXT7_API_KEY})+'\\n')
+const result=spawnSync(${JSON.stringify(realGit)},process.argv.slice(2),{stdio:'inherit'})
+process.exit(result.status??1)
+`,
+    { mode: 0o700 }
+  )
+  const failed = spawnSync(process.execPath, [RUNNER, 'run'], {
+    cwd: repo,
+    env: {
+      PATH: `${wrapper}:${process.env.PATH}`,
+      RUNNER_TEMP: repo,
+      REVIEW_FROM: policy,
+      HEAD_SHA: policy,
+      MISTRAL_API_KEY: 'PRIVATE_SENTINEL',
+      GITHUB_TOKEN: 'PRIVATE_SENTINEL',
+      CONTEXT7_API_KEY: 'PRIVATE_SENTINEL',
+    },
+    encoding: 'utf8',
+  })
+  assert.equal(failed.status, 1)
+  assert.doesNotMatch(failed.stderr, /PRIVATE_SENTINEL/)
+  const reads = fs
+    .readFileSync(receipt, 'utf8')
+    .trim()
+    .split('\n')
+    .map(JSON.parse)
+  assert.ok(reads.length >= 2)
+  assert.ok(reads.every((record) => Object.keys(record).length === 0))
 })
 
 test('pinned OCR registers and invokes reviewer tools with trusted rules and complete accounting', {
