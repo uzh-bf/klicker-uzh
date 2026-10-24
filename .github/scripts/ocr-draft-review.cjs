@@ -226,7 +226,7 @@ async function runDraftReview(options) {
     from,
     head,
     background = '',
-    executable = 'ocr',
+    executable = path.join(temp, 'draft-ocr', 'bin', 'ocr'),
   } = options
   for (const revision of [from, head]) {
     if (!/^[a-f0-9]{40}$/.test(revision)) throw new Error('invalid_revision')
@@ -333,7 +333,7 @@ async function runDraftReview(options) {
       if (!/^[a-f0-9]{40}$/.test(options.policy))
         throw new Error('invalid_revision')
       const skill = execFileSync(
-        'git',
+        '/usr/bin/git',
         ['show', `${options.policy}:.agents/skills/ocr-reviewer/SKILL.md`],
         {
           cwd: repo,
@@ -677,10 +677,14 @@ async function main() {
     return 0
   }
   if (process.argv[2] === 'verify-install') {
-    const version = execFileSync('ocr', ['version'], {
-      encoding: 'utf8',
-      timeout: 5000,
-    })
+    const version = execFileSync(
+      path.join(temp, 'draft-ocr', 'bin', 'ocr'),
+      ['version'],
+      {
+        encoding: 'utf8',
+        timeout: 5000,
+      }
+    )
     const publisher = fs.readFileSync(
       path.join(
         process.cwd(),
@@ -712,7 +716,7 @@ async function main() {
     apiKey: process.env.MISTRAL_API_KEY,
     advisorApiKey: process.env.MISTRAL_API_KEY,
     context7ApiKey: process.env.CONTEXT7_API_KEY,
-    policy: execFileSync('git', ['rev-parse', 'HEAD'], {
+    policy: execFileSync('/usr/bin/git', ['rev-parse', 'HEAD'], {
       encoding: 'utf8',
     }).trim(),
   })
