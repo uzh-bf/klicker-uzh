@@ -22,7 +22,7 @@ A malicious executable earlier in inherited PATH must not replace the intended s
 
 ## Progress
 
-Approved draft preparation; source assessment in progress. No implementation changes yet.
+Approved draft preparation. Planner round 2 APPROVED. Baseline Git suites 12/12 and unchanged protocol suites 29/29 pass. Source changes implement fixed Git lookup, explicit pinned builder/OCR locations, path-regex grouping and rejected-response cleanup. Existing affected review tests 93 passed/1 opt-in live skipped; stack/workflow integration 84/84 pass. Independent slice and final reviews and hosted checks remain pending.
 
 ## Finding inventory and ownership
 
@@ -32,7 +32,7 @@ All inventory rows refer to baseline `ee0d01f15fcc690edd8d1b6a454a11f7aba31c27`;
 | --- | ---: | --- |
 | `.github/scripts/sync-ancestry-guard.cjs` S4036:22,72; `sync-pr-changelog.cjs` S4036:186; `ocr-review-tools.cjs` S4036:128; `ocr-draft-review.cjs` S4036:336,680,715; `final-ai-stack-review.js` S4036:2004 | 8 | Main; fixed Git lookup with poisoned-PATH synthetic regression. OCR selection retains its trusted workflow contract and needs separately supported disposition. |
 | `.github/scripts/install-patched-ocr.cjs` S4036:58, S8705:52, S8707:66,67,84,119,125, S8701:113 | 8 | Main; trace fixed workflow arguments, source/archive checksum, pinned Go and patch. Do not claim a full local Go build from synthetic checks; current hosted CI must execute changed installer qualification if installer source changes. |
-| `.github/scripts/playwright-route.cjs` S2871:46,47; `warpbuild-admission.cjs` S2871:36,37,67 twice,335 twice; `util/warpbuild-admission-server.cjs` S2871:125,126; `ocr-mistral-adapter.cjs` S2871:462 | 11 | Mapper Pasteur source assessment, main decision; preserve key-set and multiset behavior and UTF-16 canonical identity. Explicit code-unit comparator is permitted only for canonical hashing; other intentional sorts remain documented without source churn. |
+| `.github/scripts/playwright-route.cjs` S2871:46,47; `warpbuild-admission.cjs` S2871:36,37,67 twice,335 twice; `util/warpbuild-admission-server.cjs` S2871:125,126; `ocr-mistral-adapter.cjs` S2871:462 | 11 | Mapper Pasteur source assessment, main decision; preserve key-set and multiset behavior and UTF-16 canonical identity. All eleven intentional sorts, including the canonicalizer, remain byte-identical without source churn. |
 | `.github/scripts/ocr-review-tools.cjs` S5850:123 and S9383:956 | 2 | Mapper assessment, main implementation; retain path rejection meaning and fix rejected finalizer cleanup without unhandled rejection. |
 | `util/test-dev-runtime.sh` S5332:353 | 1 | Main; synthetic local Blob endpoint fixture only, no real transport change. |
 | `packages/prisma/src/prisma/schema/migrations/20261013120000_ai_tier_from_cost_center/migration.sql` NullComparison:17 | 1 | Main; PostgreSQL empty-string predicate, preserve exact baseline blob. |
@@ -47,7 +47,7 @@ All inventory rows refer to baseline `ee0d01f15fcc690edd8d1b6a454a11f7aba31c27`;
 
 | Risk | Choice and acceptance |
 | --- | --- |
-| Git executable substitution | Extend existing `sync-ancestry-guard.test.cjs` and `sync-pr-changelog.test.cjs` with malicious PATH executable rejection; run these suites on host Node 24.21.0. Existing tools, draft-review and stack-review synthetic Git fixtures protect the other callers. Extend `final-ai-review.test.js` with a child-process poisoned-PATH Go regression and relative tool-cache rejection. Existing draft-review fixture verifies the new absolute default installer path, in addition to explicit override compatibility. The builder itself runs in hosted Check CI after push; offline source checks do not substitute for it. |
+| Git executable substitution | Extend existing `sync-ancestry-guard.test.cjs` and `sync-pr-changelog.test.cjs` with malicious PATH executable rejection; run these suites on host Node 24.21.0. Existing tools, draft-review and stack-review synthetic Git fixtures verify ordinary behavior of the other callers; these are not separate poisoned-PATH proofs. Main directly checks every affected executable literal, including the unflagged ancestry isAncestor call at baseline line31. Extend `final-ai-review.test.js` with a child-process poisoned-PATH Go regression and relative tool-cache rejection. Existing draft-review fixture verifies the new absolute default installer path, in addition to explicit override compatibility. The builder itself runs in hosted Check CI after push; offline source checks do not substitute for it. |
 | Rejected response cleanup | Extend existing `ocr-review-tools.test.cjs`; a controlled response failure must not emit unhandled rejection and must allow close. Existing cancellation/budget tests continue. |
 | Canonical identity / key sets | No new test unless source changes. Existing `ocr-mistral-adapter.test.cjs`, `playwright-route.test.cjs`, `warpbuild-admission.test.cjs`, and server tests retain acceptance. Canonical comparator remains unchanged; no new hash test is needed. |
 | Secret-path regex | No new test unless source correction is justified; existing tools rejection cases remain applicable. Any grouping-only clarification must keep all boundaries. |
@@ -59,3 +59,5 @@ Planner round 1 REVISE: accepted all five findings. Added complete inventory/own
 Pre-implementation caller evidence: official pinned actions/setup-go source caches tool name `go` by exact version and architecture and adds its bin directory. Modern Go does not receive GOROOT from this action. The draft OCR workflow already installs exactly npm package 1.13.0; the new explicit prefix fixes its location without changing the package or permissions.
 
 The companion `project/sonar-gate-remediation-findings.md` contains the per-instance source assessment. It is source-only and adds no runtime or environment observations.
+
+Optional AGY plan review validated canonical JSON and raised six points. Main accepted: include unflagged ancestry line31 in hardening without inventing another reported instance; exercise isAncestor under poisoned PATH; distinguish OCR from seven Git findings; qualify ordinary fixtures as functional rather than separate poisoning proofs; preserve canonicalizer unchanged. The nonstandard-host advisory is retained: these CI scripts support system Git on Linux/macOS and fail closed when it is absent. No PATH fallback is added.

@@ -2,7 +2,7 @@ const assert = require('node:assert/strict')
 const fs = require('node:fs')
 const os = require('node:os')
 const path = require('node:path')
-const { execFileSync } = require('node:child_process')
+const { execFileSync, spawnSync } = require('node:child_process')
 const test = require('node:test')
 const { startReviewTools } = require('./ocr-review-tools.cjs')
 
@@ -37,6 +37,12 @@ function fixture(t) {
   )
   git('add', '.')
   git('commit', '-m', 'chore: synthetic base')
+  fs.mkdirSync(path.join(repo, 'nested'))
+  for (const name of ['.env.local', 'nested/.env.production', 'private.PEM']) {
+    fs.writeFileSync(path.join(repo, name), 'synthetic protected material\n')
+    git('add', '--force', name)
+  }
+  git('commit', '-m', 'test: synthetic protected paths')
   const policy = git('rev-parse', 'HEAD')
   fs.writeFileSync(path.join(repo, 'docs/contract.md'), 'untrusted-candidate\n')
   fs.symlinkSync('/private', path.join(repo, 'escape.js'))
@@ -931,6 +937,9 @@ test('advisor source paths accept literal brackets and reject unsafe or absent p
   for (const path of [
     '../.git/config',
     '.env',
+    '.env.local',
+    'nested/.env.production',
+    'private.PEM',
     'private.key',
     'escape.js',
     'absent.js',
@@ -1086,4 +1095,40 @@ test('advisor deadline is diagnosed as timeout without changing cancellation beh
     global.setTimeout = originalSetTimeout
     global.clearTimeout = originalClearTimeout
   }
+})
+
+test('response failures clear pending work without an unhandled rejection', () => {
+  const source = `
+    const http = require('node:http')
+    const { startReviewTools } = require(${JSON.stringify(path.join(__dirname, 'ocr-review-tools.cjs'))})
+    const original = http.ServerResponse.prototype.writeHead
+    let failures = 0
+    http.ServerResponse.prototype.writeHead = function (...args) {
+      if (args[0] === 403 || args[0] === 500) {
+        failures++
+        throw new Error('synthetic transport failure')
+      }
+      return original.apply(this, args)
+    }
+    ;(async () => {
+      const broker = await startReviewTools({
+        repo: '.', head: 'a'.repeat(40), policy: 'b'.repeat(40),
+      })
+      try {
+        await fetch(broker.url, { signal: AbortSignal.timeout(100) })
+      } catch {}
+      await broker.close()
+      if (failures !== 2) throw new Error('response failures were not exercised')
+    })().catch(() => { process.exitCode = 1 })
+  `
+  const result = spawnSync(
+    process.execPath,
+    ['--unhandled-rejections=strict', '-e', source],
+    {
+      encoding: 'utf8',
+      timeout: 5000,
+      env: { PATH: process.env.PATH },
+    }
+  )
+  assert.equal(result.status, 0, result.stderr)
 })

@@ -525,7 +525,8 @@ test('publication refuses invalid, duplicated, overlapping, mismatched or incomp
 
 test('draft runner streams only bounded progress, retains private results, and isolates its child', async () => {
   const directory = fs.mkdtempSync(path.join(os.tmpdir(), 'ocr-draft-test-'))
-  const executable = path.join(directory, 'ocr.cjs')
+  const executable = path.join(directory, 'draft-ocr', 'bin', 'ocr')
+  fs.mkdirSync(path.dirname(executable), { recursive: true })
   const record = path.join(directory, 'child.json')
   fs.writeFileSync(
     executable,
@@ -551,7 +552,6 @@ process.exitCode=7
       from: '1'.repeat(40),
       head: '2'.repeat(40),
       background: 'synthetic',
-      executable,
       apiKey: 'synthetic-provider',
       context7ApiKey: 'PRIVATE_SENTINEL',
       write: (line) => logs.push(line),

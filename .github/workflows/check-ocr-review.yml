@@ -85,8 +85,8 @@ jobs:
 
       - name: Install pinned OpenCodeReview CLI
         run: |
-          npm install -g @alibaba-group/open-code-review@1.13.0
-          ocr version
+          npm install --prefix "${RUNNER_TEMP}/draft-ocr" -g @alibaba-group/open-code-review@1.13.0
+          "${RUNNER_TEMP}/draft-ocr/bin/ocr" version
           node .github/scripts/ocr-draft-review.cjs verify-install
 
       - name: Run bounded draft review
