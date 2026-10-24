@@ -282,7 +282,7 @@ export default {
       access:
         'Having access to a file does not mean you may share it. When in doubt, ask your lecturer.',
       dataBoundary:
-        'The text of your documents is sent to the AI model provider and saved with this conversation.',
+        'Document text is sent to the AI model provider. When the selected model can read images, rendered PDF pages may also be sent for visual review. KlickerUZH saves the text and any generated visual summary with this conversation, but does not save the page images.',
       once: 'This notice appears once on this device.',
       remove: 'Remove documents',
       accept: 'I understand',
