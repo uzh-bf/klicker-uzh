@@ -4,6 +4,12 @@ import { Select } from '@uzh-bf/design-system'
 import { ChevronDown, ChevronUp, Settings2 } from 'lucide-react'
 import { useTranslations } from 'next-intl'
 import { useState } from 'react'
+import {
+  ANSWER_STYLES,
+  ANSWER_TONES,
+  type AnswerStyle,
+  type AnswerTone,
+} from '../lib/config/answerStyles'
 import type { ModelID } from '../lib/config/models'
 import {
   formatReasoningEffort,
@@ -19,17 +25,23 @@ import { useSettingsStore } from '../stores/settingsStore'
  */
 const MODEL_SELECT_ID = 'chat-model-select'
 const REASONING_EFFORT_SELECT_ID = 'chat-reasoning-effort-select'
+const ANSWER_STYLE_SELECT_ID = 'chat-answer-style-select'
+const ANSWER_TONE_SELECT_ID = 'chat-answer-tone-select'
 
 export function SettingsPanel() {
   const t = useTranslations()
   const {
     selectedModel,
     selectedReasoningEffort,
+    answerStyle,
+    answerTone,
     credits,
     modelOptions,
     modelSelectionEnabled,
     setSelectedModel,
     setSelectedReasoningEffort,
+    setAnswerStyle,
+    setAnswerTone,
   } = useSettingsStore()
   const [open, setOpen] = useState(false)
 
@@ -180,6 +192,51 @@ export function SettingsPanel() {
                 </p>
               </div>
             ) : null}
+          </div>
+
+          <div data-cy="chat-answer-style-selection" className="space-y-1">
+            <label
+              htmlFor={ANSWER_STYLE_SELECT_ID}
+              className="text-sm font-bold"
+            >
+              {t('chat.settingsPanel.answerStyleLabel')}
+            </label>
+            <Select
+              id={ANSWER_STYLE_SELECT_ID}
+              data={{ cy: 'chat-answer-style-select' }}
+              items={ANSWER_STYLES.map((value) => ({
+                value,
+                label: t(`chat.settingsPanel.answerStyles.${value}`),
+              }))}
+              onChange={(newValue) => {
+                setAnswerStyle(newValue as AnswerStyle)
+              }}
+              value={answerStyle}
+            />
+            <p className="text-muted-foreground text-sm">
+              {t('chat.settingsPanel.answerStyleHint')}
+            </p>
+          </div>
+
+          <div data-cy="chat-answer-tone-selection" className="space-y-1">
+            <label
+              htmlFor={ANSWER_TONE_SELECT_ID}
+              className="text-sm font-bold"
+            >
+              {t('chat.settingsPanel.answerToneLabel')}
+            </label>
+            <Select
+              id={ANSWER_TONE_SELECT_ID}
+              data={{ cy: 'chat-answer-tone-select' }}
+              items={ANSWER_TONES.map((value) => ({
+                value,
+                label: t(`chat.settingsPanel.answerTones.${value}`),
+              }))}
+              onChange={(newValue) => {
+                setAnswerTone(newValue as AnswerTone)
+              }}
+              value={answerTone}
+            />
           </div>
         </div>
       )}

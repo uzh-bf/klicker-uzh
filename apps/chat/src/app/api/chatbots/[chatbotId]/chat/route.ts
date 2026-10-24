@@ -32,6 +32,10 @@ import {
   stripDocumentBlocks,
 } from '@/src/lib/attachments/documentText'
 import type { ReasoningEffort } from '@/src/lib/config/reasoning'
+import {
+  answerStyleSchema,
+  answerToneSchema,
+} from '@/src/lib/server/answerStyleInstructions'
 import { withChatbotAuth } from '@/src/lib/server/apiGuards'
 import { withCalculatorTool } from '@/src/lib/server/calculatorTool'
 import {
@@ -689,6 +693,8 @@ export async function POST(
     selectedModel: z.string().min(1),
     selectedMode: z.string().optional().default('tutor'),
     reasoningEffort: z.string().min(1).optional().default('none'),
+    answerStyle: answerStyleSchema,
+    answerTone: answerToneSchema,
     parentId: z.string().min(1).nullable().optional(),
     assistantMessageId: z.string().min(1),
     allowRegeneration: z.boolean().optional().default(false),
@@ -724,6 +730,8 @@ export async function POST(
     threadId,
     selectedMode: requestedMode,
     reasoningEffort: requestedReasoningEffort,
+    answerStyle,
+    answerTone,
     parentId,
     assistantMessageId,
     allowRegeneration,
@@ -1217,6 +1225,8 @@ export async function POST(
         courseDisplayName: chatbot.course.displayName,
         toolNames,
         standardModeConfig: chatbot.standardModeConfig,
+        answerStyle,
+        answerTone,
       }
     )
 
@@ -1455,6 +1465,8 @@ export async function POST(
       selectedMode,
       reasoningEffort: appliedReasoningEffort,
       allowedReasoningEfforts,
+      answerStyle,
+      answerTone,
       maxOutputTokens: maxOutputTokens ?? null,
       toolCount: toolNames.length,
       toolNames,

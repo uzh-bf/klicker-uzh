@@ -50,6 +50,19 @@ export default {
         high: 'Hoch',
         xhigh: 'Sehr hoch',
       },
+      answerStyleLabel: 'Antwortformat',
+      answerStyleHint:
+        'Ändert, wie neue Antworten gegliedert sind, nicht wie viel Unterstützung Du bekommst.',
+      answerStyles: {
+        balanced: 'Standard',
+        bullets: 'Stichpunkte',
+      },
+      answerToneLabel: 'Ton',
+      answerTones: {
+        neutral: 'Neutral',
+        friendly: 'Freundlich',
+        direct: 'Direkt',
+      },
     },
     credits: {
       title: 'Verfügbare Credits',

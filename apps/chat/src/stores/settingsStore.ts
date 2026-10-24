@@ -1,6 +1,12 @@
 'use client'
 import { create } from 'zustand'
 import { persist } from 'zustand/middleware'
+import {
+  type AnswerStyle,
+  type AnswerTone,
+  DEFAULT_ANSWER_STYLE,
+  DEFAULT_ANSWER_TONE,
+} from '../lib/config/answerStyles'
 import { DEFAULT_MODE_DESCRIPTIONS } from '../lib/config/mode-descriptions'
 import { type ModelID, type ModelOption } from '../lib/config/models'
 import { parseModeOptions, resolveSelectedMode } from '../lib/config/modes'
@@ -56,6 +62,8 @@ interface SettingsState {
   selectedModel: ModelID
   selectedMode: string
   selectedReasoningEffort: ReasoningEffort
+  answerStyle: AnswerStyle
+  answerTone: AnswerTone
   credits: {
     current: number
     total: number
@@ -77,6 +85,8 @@ interface SettingsState {
   setSelectedModel: (model: ModelID) => void
   setSelectedMode: (mode: string) => void
   setSelectedReasoningEffort: (effort: ReasoningEffort) => void
+  setAnswerStyle: (answerStyle: AnswerStyle) => void
+  setAnswerTone: (answerTone: AnswerTone) => void
   loadModeOptions: (
     chatbotId: string,
     initialModeOptions?: Record<string, string>
@@ -108,6 +118,8 @@ export const useSettingsStore = create<SettingsState>()(
       selectedModel: 'gpt-4.1',
       selectedMode: 'tutor',
       selectedReasoningEffort: 'none',
+      answerStyle: DEFAULT_ANSWER_STYLE,
+      answerTone: DEFAULT_ANSWER_TONE,
       credits: {
         current: 0.0,
         total: 0.0,
@@ -149,6 +161,8 @@ export const useSettingsStore = create<SettingsState>()(
 
           return { selectedReasoningEffort: resolvedEffort }
         }),
+      setAnswerStyle: (answerStyle: AnswerStyle) => set({ answerStyle }),
+      setAnswerTone: (answerTone: AnswerTone) => set({ answerTone }),
 
       loadModeOptions: async (
         chatbotId: string,
@@ -308,6 +322,8 @@ export const useSettingsStore = create<SettingsState>()(
         selectedModel: state.selectedModel,
         selectedMode: state.selectedMode,
         selectedReasoningEffort: state.selectedReasoningEffort,
+        answerStyle: state.answerStyle,
+        answerTone: state.answerTone,
       }),
     }
   )

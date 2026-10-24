@@ -3,50 +3,108 @@
 import { ChevronDown, Zap } from 'lucide-react'
 import { useTranslations } from 'next-intl'
 import { twMerge } from 'tailwind-merge'
+import {
+  ANSWER_STYLES,
+  ANSWER_TONES,
+  type AnswerStyle,
+  type AnswerTone,
+} from '../lib/config/answerStyles'
 import { isKnownMode } from '../lib/config/modes'
 import { useSettingsStore } from '../stores/settingsStore'
 import { useChatUi } from './chat-ui-context'
 
+const COMPACT_SELECT_CLASS =
+  'border-input bg-background bg-none text-foreground hover:border-ring focus-visible:ring-ring w-full cursor-pointer appearance-none truncate rounded-md border py-1 pl-2 pr-6 text-xs outline-none transition-colors focus-visible:ring-1'
+
 export function EmbeddedSettings() {
   const t = useTranslations()
   const { showMinimalSettings } = useChatUi()
-  const { selectedMode, modeOptions, setSelectedMode } = useSettingsStore()
+  const {
+    selectedMode,
+    modeOptions,
+    setSelectedMode,
+    answerStyle,
+    setAnswerStyle,
+    answerTone,
+    setAnswerTone,
+  } = useSettingsStore()
 
   if (!showMinimalSettings) return null
 
   const modeKeys = Object.keys(modeOptions)
-  if (modeKeys.length <= 1) return null
 
   return (
-    <div className="relative min-w-0 max-w-[12rem] shrink sm:max-w-xs">
-      <select
-        value={selectedMode}
-        onChange={(e) => setSelectedMode(e.target.value)}
-        aria-label={t('chat.modes.switcherLabel')}
-        className="border-input bg-background text-foreground hover:border-ring focus-visible:ring-ring w-full cursor-pointer appearance-none truncate rounded-md border py-1 pl-2 pr-6 text-xs outline-none transition-colors focus-visible:ring-1"
-      >
-        {/* Same localized-label source as mode-switcher.tsx (`chat.modes.*`
-            + isKnownMode, D3-pattern for unknown modes) — labels here must
-            not fall back to `modeOptions[key]`, which is the English-only
-            registry description, or the DE select leaks raw English. */}
-        {modeKeys.map((key) => {
-          const label = isKnownMode(key)
-            ? t(`chat.modes.${key}`)
-            : key.charAt(0).toUpperCase() + key.slice(1)
-          return (
-            <option key={key} value={key}>
-              {label}
+    <div className="flex min-w-0 shrink items-center gap-1.5 sm:gap-2">
+      {modeKeys.length > 1 && (
+        <div className="relative min-w-0 max-w-[12rem] shrink sm:max-w-xs">
+          <select
+            value={selectedMode}
+            onChange={(e) => setSelectedMode(e.target.value)}
+            aria-label={t('chat.modes.switcherLabel')}
+            className={COMPACT_SELECT_CLASS}
+          >
+            {/* Same localized-label source as mode-switcher.tsx (`chat.modes.*`
+                + isKnownMode, D3-pattern for unknown modes) — labels here must
+                not fall back to `modeOptions[key]`, which is the English-only
+                registry description, or the DE select leaks raw English. */}
+            {modeKeys.map((key) => {
+              const label = isKnownMode(key)
+                ? t(`chat.modes.${key}`)
+                : key.charAt(0).toUpperCase() + key.slice(1)
+              return (
+                <option key={key} value={key}>
+                  {label}
+                </option>
+              )
+            })}
+          </select>
+          {/* `appearance-none` above drops the browser-default arrow, so we draw
+              our own — purely decorative, the select itself stays keyboard/AT
+              accessible as a native control. */}
+          <ChevronDown
+            aria-hidden
+            className="text-muted-foreground pointer-events-none absolute right-2 top-1/2 size-3 -translate-y-1/2"
+          />
+        </div>
+      )}
+      <div className="relative min-w-0 max-w-[9rem] shrink sm:max-w-[12rem]">
+        <select
+          data-cy="chat-embedded-answer-style-select"
+          value={answerStyle}
+          onChange={(e) => setAnswerStyle(e.target.value as AnswerStyle)}
+          aria-label={t('chat.settingsPanel.answerStyleLabel')}
+          className={COMPACT_SELECT_CLASS}
+        >
+          {ANSWER_STYLES.map((value) => (
+            <option key={value} value={value}>
+              {t(`chat.settingsPanel.answerStyles.${value}`)}
             </option>
-          )
-        })}
-      </select>
-      {/* `appearance-none` above drops the browser-default arrow, so we draw
-          our own — purely decorative, the select itself stays keyboard/AT
-          accessible as a native control. */}
-      <ChevronDown
-        aria-hidden
-        className="text-muted-foreground pointer-events-none absolute right-2 top-1/2 size-3 -translate-y-1/2"
-      />
+          ))}
+        </select>
+        <ChevronDown
+          aria-hidden
+          className="text-muted-foreground pointer-events-none absolute right-2 top-1/2 size-3 -translate-y-1/2"
+        />
+      </div>
+      <div className="relative min-w-0 max-w-[7rem] shrink sm:max-w-[9rem]">
+        <select
+          data-cy="chat-embedded-answer-tone-select"
+          value={answerTone}
+          onChange={(e) => setAnswerTone(e.target.value as AnswerTone)}
+          aria-label={t('chat.settingsPanel.answerToneLabel')}
+          className={COMPACT_SELECT_CLASS}
+        >
+          {ANSWER_TONES.map((value) => (
+            <option key={value} value={value}>
+              {t(`chat.settingsPanel.answerTones.${value}`)}
+            </option>
+          ))}
+        </select>
+        <ChevronDown
+          aria-hidden
+          className="text-muted-foreground pointer-events-none absolute right-2 top-1/2 size-3 -translate-y-1/2"
+        />
+      </div>
     </div>
   )
 }

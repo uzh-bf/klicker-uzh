@@ -354,6 +354,9 @@ describe('required MCP chat preflight', () => {
         courseDisplayName: displayName,
         toolNames: [],
         standardModeConfig: null,
+        // The request omits both preferences, which fall back to defaults.
+        answerStyle: 'balanced',
+        answerTone: 'neutral',
       }
     )
   })

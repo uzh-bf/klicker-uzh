@@ -32,6 +32,13 @@ import { validateNumericSidecar } from './tutor-numeric-reference.mjs'
 
 export const TRAJECTORY_ARMS = ['baseline', 'candidate', 'auto']
 
+// Mirrors ANSWER_STYLES and ANSWER_TONES in
+// apps/chat/src/lib/config/answerStyles.ts. The chat route silently maps an
+// unknown value to the default, so the runner rejects it instead of quietly
+// measuring the default prompt.
+export const ANSWER_STYLES = ['balanced', 'bullets']
+export const ANSWER_TONES = ['neutral', 'friendly', 'direct']
+
 const VALUE_FLAGS = {
   '--corpus': 'corpus',
   '--output': 'output',
@@ -40,17 +47,20 @@ const VALUE_FLAGS = {
   '--budget-file': 'budgetFile',
   '--group': 'group',
   '--numeric': 'numeric',
+  '--answer-style': 'answerStyle',
+  '--answer-tone': 'answerTone',
 }
 
 const USAGE = [
-  'Usage: node evaluation/run-tutor-trajectories.mjs --corpus <file> --output <file> --arm <baseline|candidate|auto> --budget-file <file> [--repeats <n>] [--group <development|reserved|control>] [--numeric <sidecar>]',
+  'Usage: node evaluation/run-tutor-trajectories.mjs --corpus <file> --output <file> --arm <baseline|candidate|auto> --budget-file <file> [--repeats <n>] [--group <development|reserved|control>] [--numeric <sidecar>] [--answer-style <balanced|bullets>] [--answer-tone <neutral|friendly|direct>]',
   '',
   'Runs a frozen trajectory corpus against the local evaluation target and',
   'writes one sanitized JSONL receipt per verified turn. The output file is',
   'created exclusively and never overwritten. The shared budget ledger counts',
   'submitted requests and conservatively reserved provider dollars across arms.',
   'A qualified provider guard and an initialized version-2 budget are required. An optional',
-  'numerical sidecar is checked against the corpus before login.',
+  'numerical sidecar is checked against the corpus before login. The answer',
+  'style and tone are sent with every turn; omitting them sends the defaults.',
   '',
   'Credentials come from KLICKER_EVAL_API_ORIGIN, KLICKER_EVAL_CHAT_ORIGIN,',
   'KLICKER_EVAL_PARTICIPANT_USERNAME and KLICKER_EVAL_PARTICIPANT_PASSWORD;',
@@ -62,7 +72,14 @@ const USAGE = [
 export function parseArguments(argv) {
   if (argv.includes('--help') || argv.includes('-h')) return { help: true }
 
-  const options = { repeats: 2, group: null, numeric: null, help: false }
+  const options = {
+    repeats: 2,
+    group: null,
+    numeric: null,
+    answerStyle: 'balanced',
+    answerTone: 'neutral',
+    help: false,
+  }
   const seen = new Set()
   for (let index = 0; index < argv.length; index += 1) {
     const flag = argv[index]
@@ -85,6 +102,12 @@ export function parseArguments(argv) {
   }
   if (options.group !== null && !TRAJECTORY_GROUPS.includes(options.group)) {
     throw evaluationError('group_invalid')
+  }
+  if (!ANSWER_STYLES.includes(options.answerStyle)) {
+    throw evaluationError('answer_style_invalid')
+  }
+  if (!ANSWER_TONES.includes(options.answerTone)) {
+    throw evaluationError('answer_tone_invalid')
   }
   const repeats = Number(options.repeats)
   if (!Number.isInteger(repeats) || repeats < 1) {
@@ -251,6 +274,8 @@ export async function runTutorTrajectories({
     stopCode: null,
     cases: cases.length,
     repeats: options.repeats,
+    answerStyle: options.answerStyle,
+    answerTone: options.answerTone,
     runSubmittedTurns: 0,
     completedTurns: 0,
     submittedTurns: ledger.submittedTurns,
@@ -270,6 +295,8 @@ export async function runTutorTrajectories({
           await runTrajectory(target, caseDefinition, {
             arm,
             repeat,
+            answerStyle: options.answerStyle,
+            answerTone: options.answerTone,
             beforeTurn: async ({ caseId, turn }) => {
               currentCase = caseId
               currentTurn = turn

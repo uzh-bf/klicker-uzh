@@ -1891,6 +1891,112 @@ test.describe('Chatbot Settings Panel', () => {
     await expect(modelSection).not.toContainText('GPT-4.1 Mini')
   })
 
+  async function readAnswerPreferences(page: Page) {
+    return page.evaluate(() => {
+      const stored = window.localStorage.getItem('settings-storage')
+      const state = stored ? JSON.parse(stored).state : {}
+      return { answerStyle: state.answerStyle, answerTone: state.answerTone }
+    })
+  }
+
+  function waitForChatRequest(page: Page) {
+    return page.waitForRequest(
+      (request) =>
+        request.method() === 'POST' &&
+        request.url().includes(`/api/chatbots/${CHATBOT_ID}/chat`)
+    )
+  }
+
+  test('Answer style and tone are sent with each message and survive a reload', async ({
+    page,
+  }) => {
+    await mockChatStream(page)
+    await visitChat(page)
+    await openSettings(page)
+
+    const defaultRequest = waitForChatRequest(page)
+    await sendMessage(page, 'Default answer preferences check')
+    expect((await defaultRequest).postDataJSON()).toMatchObject({
+      answerStyle: 'balanced',
+      answerTone: 'neutral',
+    })
+    await expect(page.getByTestId('chat-assistant-message')).toContainText(
+      'assistant reply #1',
+      { timeout: 15_000 }
+    )
+
+    await selectOption(
+      page,
+      '[data-cy="chat-answer-style-select"]',
+      'Bullet points'
+    )
+    await selectOption(page, '[data-cy="chat-answer-tone-select"]', 'Direct')
+    await expect
+      .poll(() => readAnswerPreferences(page))
+      .toEqual({ answerStyle: 'bullets', answerTone: 'direct' })
+
+    const chosenRequest = waitForChatRequest(page)
+    await sendMessage(page, 'Chosen answer preferences check')
+    expect((await chosenRequest).postDataJSON()).toMatchObject({
+      answerStyle: 'bullets',
+      answerTone: 'direct',
+    })
+
+    await page.reload({ waitUntil: 'domcontentloaded' })
+    await expect(page.getByTestId('chat-composer')).toBeVisible()
+    expect(await readAnswerPreferences(page)).toEqual({
+      answerStyle: 'bullets',
+      answerTone: 'direct',
+    })
+
+    const reloadedRequest = waitForChatRequest(page)
+    await sendMessage(page, 'Reloaded answer preferences check')
+    expect((await reloadedRequest).postDataJSON()).toMatchObject({
+      answerStyle: 'bullets',
+      answerTone: 'direct',
+    })
+  })
+
+  test('Embedded mode shares the answer preferences through compact selects', async ({
+    page,
+  }) => {
+    await mockChatStream(page)
+    await visitChat(page)
+    await openSettings(page)
+    await selectOption(
+      page,
+      '[data-cy="chat-answer-style-select"]',
+      'Bullet points'
+    )
+    await expect
+      .poll(() => readAnswerPreferences(page))
+      .toEqual({ answerStyle: 'bullets', answerTone: 'neutral' })
+
+    await page.goto(`${chatUrl()}/${CHATBOT_ID}?embed=true`, {
+      waitUntil: 'domcontentloaded',
+    })
+
+    const styleSelect = page.getByTestId('chat-embedded-answer-style-select')
+    const toneSelect = page.getByTestId('chat-embedded-answer-tone-select')
+    await expect(styleSelect).toHaveValue('bullets')
+    await expect(toneSelect).toHaveValue('neutral')
+    await expect(page.getByTestId('chat-settings-toggle')).toHaveCount(0)
+
+    await styleSelect.selectOption('balanced')
+    await toneSelect.selectOption('friendly')
+
+    const embeddedRequest = waitForChatRequest(page)
+    await sendMessage(page, 'Embedded answer preferences check')
+    expect((await embeddedRequest).postDataJSON()).toMatchObject({
+      answerStyle: 'balanced',
+      answerTone: 'friendly',
+    })
+
+    await page.reload({ waitUntil: 'domcontentloaded' })
+    await expect(styleSelect).toHaveValue('balanced')
+    await expect(toneSelect).toHaveValue('friendly')
+  })
+
   test('Mobile keeps the credit balance and fallback notice outside the sidebar', async ({
     page,
   }) => {

@@ -622,6 +622,8 @@ export class KlickerEvaluationTarget {
     maxStreamBytes,
     history = [],
     parentId = null,
+    answerStyle,
+    answerTone,
   }) {
     const response = await fetchWithTimeout(
       urlFor(this.chatOrigin, `/api/chatbots/${this.chatbotId}/chat`),
@@ -643,6 +645,8 @@ export class KlickerEvaluationTarget {
           parentId,
           assistantMessageId,
           images: [],
+          answerStyle,
+          answerTone,
         }),
       },
       this.requestTimeoutMs
