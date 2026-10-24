@@ -885,7 +885,50 @@ charges before expanding. Keep fixed capacity available during qualification.
 Source publication alone changes no group policy or admission variable. The
 historical trial workflow remains separate and disabled.
 
-#### Reserved burst admission
+#### Actions-only bounded burst grant
+
+An operator can preauthorize one first-attempt validation without running an
+admission service. `PUBLIC_PR_PLAYWRIGHT_WARPBUILD_BURST_GRANT` is an optional
+repository variable containing one JSON object with string fields `workflowId`,
+`runNumber`, `pullRequestNumber`, `headSha`, `baseSha`, `controlSha` and `expiresAt`.
+It is empty by default. All revisions are full commit IDs; expiry must be in the
+future and no more than four hours away. Operational values belong in a private
+activation packet, not source or artifacts.
+
+The workflow ID identifies the normal `test-playwright.yml` workflow. Its run
+number identifies one invocation before GitHub assigns its run ID; reruns retain
+the number but increment the attempt. After validating a nonempty canonical plan,
+trusted preparation reads the actual run, current PR and complete attempt job
+list using its read-only GitHub token. It accepts only the nominated workflow
+and run number, attempt one, exact source/control revisions, an open ready PR,
+and one active canonical preparation with no started workload. The grant becomes
+an exact run-ID ticket in memory. No variable, Git ref or shared ledger is written.
+
+Choose the prospective number from a fresh workflow inventory before the intended
+natural event. If another event takes that number, the opportunity is missed:
+ordinary routing continues and the grant does not transfer to a later run. An
+API failure, partial job list, ambiguous preparation, changed source, expired
+grant or rerun also preserves ordinary routing. There is no approval wait,
+automatic dispatch, cancellation or retry. Legacy callers without the required
+read scopes cannot use prospective admission.
+
+Keep only one grant outstanding and wait for the whole build/shard/aggregate
+validation and complete provider billing reconciliation before replacing it.
+The single grant bounds eligibility to one validation, whose existing fixed job
+timeouts remain enforced. It does not cap aggregate money, account usage or
+overlap caused by an operator replacing a grant too early. A failed or cancelled
+run still requires reconciliation; expiry alone releases no financial exposure.
+There is no automatic queue-pressure policy or budget refresh.
+
+Existing exact-run manual tickets retain precedence. Do not combine them with a
+prospective batch or a coordinator endpoint. When a prospective grant is present,
+its denial does not fall through to the coordinator. An operator must separately
+approve runner-group access, the grant value, finite exposure and cleanup before
+live use. Source tests do not establish live API compatibility or paid workload
+acceptance. Clear only the owned grant at the approved terminal and preserve
+submitted jobs and private receipts.
+
+#### Reserved burst admission (optional coordinator)
 
 An optional coordinator can reserve a validation during trusted preparation,
 after the canonical plan is validated and before runner selection. Skipped

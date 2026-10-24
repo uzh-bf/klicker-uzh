@@ -172,6 +172,34 @@ test('public runner jobs require their exact scheduling role and reject unknown 
       ).env.WARPBUILD_ADMISSION_URL = `\${{ github.event.pull_request.title }}`
     },
     (w) => {
+      w.jobs.prepare.steps.find(
+        (s) => s.id === 'metadata'
+      ).env.WARPBUILD_BURST_GRANT = `\${{ github.event.pull_request.body }}`
+    },
+    (w) => {
+      delete w.jobs.prepare.steps.find((s) => s.id === 'metadata').env.GH_TOKEN
+    },
+    (w) => {
+      w.jobs[build].env = { GH_TOKEN: `\${{ github.token }}` }
+    },
+    (w) => {
+      w.jobs[build].env = { GH_TOKEN: `\${{ github.Token }}` }
+    },
+    (w) => {
+      w.jobs[build].env = { GH_TOKEN: `\${{ github["TOKEN"] }}` }
+    },
+    (w) => {
+      w.jobs.prepare.outputs.extra = `\${{ github.token }}`
+    },
+    (w) => {
+      w.on.workflow_call.outputs.extra = {
+        value: `\${{ jobs.prepare.outputs.extra }}`,
+      }
+    },
+    (w) => {
+      w.jobs.prepare.outputs.mode = `\${{ github.token }}`
+    },
+    (w) => {
       w.jobs.prepare.steps.find((s) => s.id === 'route').run =
         'node .candidate/.github/scripts/playwright-route.cjs --output route.json'
     },
@@ -1102,6 +1130,18 @@ test('the build artifact must keep wildcard package coverage', (t) => {
     fs.copyFileSync(path.join(repository, file), target)
   }
   assert.equal(validatePublicPlaywrightWorkflow(root).ok, true)
+
+  for (const action of ['playwright-build', 'playwright-shard']) {
+    const file = path.join(root, `.github/actions/${action}/action.yml`)
+    const original = fs.readFileSync(file, 'utf8')
+    for (const expression of ['github.Token', 'github["TOKEN"]']) {
+      const changed = YAML.parse(original)
+      changed.runs.steps[0].env = { GH_TOKEN: '${{ ' + expression + ' }}' }
+      fs.writeFileSync(file, YAML.stringify(changed))
+      assert.equal(validatePublicPlaywrightWorkflow(root).ok, false, expression)
+    }
+    fs.writeFileSync(file, original)
+  }
 
   const actionPath = path.join(
     root,

@@ -20,3 +20,19 @@ repository variable is not the private transactional ledger. A shared applicatio
 database would couple CI scheduling to application credentials and availability.
 The coordinator introduces an operational owner; automatic queue-triggered
 activation remains a later decision after bounded burst qualification.
+
+## Bounded Actions-only alternative
+
+For operator-controlled sequential bursts, a prospective grant can name one
+workflow ID and run number, immutable PR revisions and expiry. Trusted preparation
+binds that grant to the actual run ID and first attempt through read-only forge
+observations. A different event taking the number misses the grant; it does not
+receive cloud permission. This avoids a shared claim store or an approval wait
+inside normal CI. The ordinary-runner fallback remains available.
+
+This alternative intentionally provides a weaker accounting contract: operators
+must retain exposure and reconcile complete billing before issuing another grant.
+Neither a single grant nor job timeouts constitute a transactional monetary cap.
+Use the coordinator only when durable automatic reservation accounting is an
+explicitly selected requirement. Its deployment is deferred for bounded bursts;
+the existing implementation and its stronger guarantees are retained.

@@ -182,6 +182,8 @@ jobs:
           ROUTE_HINT: ${{ inputs.route_hint }}
           WARPBUILD_ADMISSIONS: ${{ vars.PUBLIC_PR_PLAYWRIGHT_WARPBUILD_ADMISSIONS }}
           WARPBUILD_ADMISSION_URL: ${{ vars.PUBLIC_PR_PLAYWRIGHT_WARPBUILD_ADMISSION_URL }}
+          WARPBUILD_BURST_GRANT: ${{ vars.PUBLIC_PR_PLAYWRIGHT_WARPBUILD_BURST_GRANT }}
+          GH_TOKEN: ${{ github.token }}
           HEAD_SHA: ${{ github.event.pull_request.head.sha }}
           BASE_SHA: ${{ github.event.pull_request.base.sha }}
           CONTROL_SHA: ${{ job.workflow_sha }}

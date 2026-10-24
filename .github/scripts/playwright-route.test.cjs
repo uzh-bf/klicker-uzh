@@ -42,6 +42,254 @@ function cloudAdmission(overrides = {}) {
   })
 }
 
+test('a prospective workflow number binds one first-attempt validation without a coordinator', async (t) => {
+  let coordinatorCalls = 0
+  const noCoordinator = async () => {
+    coordinatorCalls++
+    throw new Error('unexpected coordinator')
+  }
+  t.mock.method(globalThis, 'fetch', noCoordinator)
+  const input = cloudAdmission({ warpbuildAdmissions: '' })
+  const { runId, runAttempt, ...source } = JSON.parse(
+    cloudAdmission().warpbuildAdmissions
+  )[0]
+  const env = {
+    GITHUB_RUN_NUMBER: '42',
+    GITHUB_REF: 'refs/pull/1234/merge',
+    WARPBUILD_ADMISSION_URL: 'https://admission.example.invalid/admit',
+    ACTIONS_ID_TOKEN_REQUEST_URL:
+      'https://pipelines.actions.githubusercontent.com/token',
+    ACTIONS_ID_TOKEN_REQUEST_TOKEN: 'synthetic',
+    WARPBUILD_BURST_GRANT: JSON.stringify({
+      ...source,
+      workflowId: '900',
+      runNumber: '42',
+    }),
+  }
+  const calls = []
+  const api = async (route) => {
+    calls.push(route)
+    if (route.endsWith('/jobs?per_page=100')) {
+      return {
+        total_count: 1,
+        jobs: [
+          {
+            name: 'test-playwright-execution / prepare',
+            status: 'in_progress',
+          },
+        ],
+      }
+    }
+    if (route.includes('/pulls/')) {
+      return {
+        number: 1234,
+        state: 'open',
+        draft: false,
+        head: { sha: source.headSha, repo: { full_name: input.repository } },
+        base: { sha: source.baseSha, repo: { full_name: input.repository } },
+      }
+    }
+    return {
+      id: Number(runId),
+      run_attempt: Number(runAttempt),
+      run_number: 42,
+      workflow_id: 900,
+      event: 'pull_request',
+      status: 'in_progress',
+      head_sha: source.headSha,
+      path: '.github/workflows/test-playwright.yml',
+      repository: { full_name: input.repository, private: false },
+      pull_requests: [
+        {
+          number: 1234,
+          head: { sha: source.headSha },
+          base: { sha: source.baseSha },
+        },
+      ],
+    }
+  }
+  const result = await chooseRouteWithAdmission(input, env, noCoordinator, api)
+  assert.equal(result.provider, 'warpbuild')
+  assert.equal(result.admissionAttempt, '1')
+  assert.deepEqual(calls, [
+    '/repos/uzh-bf/klicker-uzh/actions/runs/100/attempts/1',
+    '/repos/uzh-bf/klicker-uzh/pulls/1234',
+    '/repos/uzh-bf/klicker-uzh/actions/runs/100/attempts/1/jobs?per_page=100',
+  ])
+  const ordinary = choosePlaywrightRoute(input)
+  const grant = JSON.parse(env.WARPBUILD_BURST_GRANT)
+  for (const change of [
+    { workflowId: '901' },
+    { runNumber: '43' },
+    { runNumber: 42 },
+    { pullRequestNumber: '1235' },
+    { headSha: 'd'.repeat(40) },
+    { baseSha: 'd'.repeat(40) },
+    { controlSha: 'd'.repeat(40) },
+    { expiresAt: input.now },
+    { expiresAt: '2026-10-20T12:00:00Z' },
+    { runId: '100' },
+    { runAttempt: '2' },
+  ]) {
+    calls.length = 0
+    assert.deepEqual(
+      await chooseRouteWithAdmission(
+        input,
+        {
+          ...env,
+          WARPBUILD_BURST_GRANT: JSON.stringify({ ...grant, ...change }),
+        },
+        undefined,
+        api
+      ),
+      ordinary
+    )
+    if (change.workflowId === undefined) assert.deepEqual(calls, [])
+  }
+  for (const raw of ['{', '[]', 'null', '0', 'x'.repeat(4097)]) {
+    calls.length = 0
+    assert.deepEqual(
+      await chooseRouteWithAdmission(
+        input,
+        {
+          ...env,
+          WARPBUILD_BURST_GRANT: raw,
+          WARPBUILD_ADMISSION_URL: 'https://must-not-call.invalid/admit',
+        },
+        noCoordinator,
+        api
+      ),
+      ordinary
+    )
+    assert.deepEqual(calls, [])
+  }
+  for (const change of [
+    { runAttempt: '2' },
+    { runId: '101' },
+    { prDraft: 'true' },
+    { headRepository: 'fork/repo' },
+    { publicRolloutEnabled: 'false' },
+    { prAuthor: 'automation[bot]' },
+    {
+      warpbuildAdmissions: JSON.stringify([
+        { ...source, runId: '999', runAttempt: '1' },
+      ]),
+    },
+  ]) {
+    calls.length = 0
+    const changed = { ...input, ...change }
+    assert.deepEqual(
+      await chooseRouteWithAdmission(changed, env, undefined, api),
+      choosePlaywrightRoute(changed)
+    )
+    if (change.runId === undefined) assert.deepEqual(calls, [])
+  }
+  for (const [kind, change] of [
+    ['run', { workflow_id: 901 }],
+    ['run', { run_number: 43 }],
+    ['run', { id: 101 }],
+    ['run', { run_attempt: 2 }],
+    ['run', { event: 'workflow_dispatch' }],
+    ['run', { status: 'completed' }],
+    ['run', { head_sha: 'd'.repeat(40) }],
+    ['run', { path: '.github/workflows/other.yml' }],
+    ['run', { repository: { full_name: 'other/repo', private: false } }],
+    ['run', { pull_requests: [{ number: 1235 }] }],
+    ['pr', { state: 'closed' }],
+    ['pr', { draft: true }],
+    ['pr', { head: { sha: 'd'.repeat(40) } }],
+    ['pr', { base: { sha: 'd'.repeat(40) } }],
+    ['jobs', { total_count: 101 }],
+    ...['build-and-compile-public-pr', 'future-workload'].map((name) => [
+      'jobs',
+      {
+        total_count: 2,
+        jobs: [
+          {
+            name: 'test-playwright-execution / prepare',
+            status: 'in_progress',
+          },
+          {
+            name: `test-playwright-execution / ${name}`,
+            status: 'queued',
+            steps: [{ status: 'in_progress' }],
+          },
+        ],
+      },
+    ]),
+    [
+      'jobs',
+      {
+        total_count: 2,
+        jobs: [
+          {
+            name: 'test-playwright-execution / prepare',
+            status: 'in_progress',
+          },
+          { name: 'another / prepare', status: 'queued' },
+        ],
+      },
+    ],
+    [
+      'jobs',
+      {
+        total_count: 2,
+        jobs: [
+          {
+            name: 'test-playwright-execution / prepare',
+            status: 'in_progress',
+          },
+          {
+            name: 'test-playwright-execution / build-and-compile-public-pr',
+            status: 'in_progress',
+          },
+        ],
+      },
+    ],
+  ]) {
+    const changedApi = async (route) => {
+      const result = await api(route)
+      let type = 'run'
+      if (route.includes('/pulls/')) type = 'pr'
+      else if (route.includes('/jobs?')) type = 'jobs'
+      return type === kind ? { ...result, ...change } : result
+    }
+    assert.deepEqual(
+      await chooseRouteWithAdmission(input, env, undefined, changedApi),
+      ordinary
+    )
+  }
+  assert.deepEqual(
+    await chooseRouteWithAdmission(input, env, undefined, async () => {
+      throw new Error('API unavailable')
+    }),
+    ordinary
+  )
+  assert.equal(
+    (
+      await chooseRouteWithAdmission(input, env, undefined, async (path) => {
+        const response = await api(path)
+        return response.workflow_id
+          ? { ...response, pull_requests: [] }
+          : response
+      })
+    ).provider,
+    'warpbuild'
+  )
+  for (const ref of ['', 'refs/heads/topic', 'refs/pull/1235/merge']) {
+    assert.deepEqual(
+      await chooseRouteWithAdmission(
+        input,
+        { ...env, GITHUB_REF: ref },
+        undefined,
+        api
+      ),
+      ordinary
+    )
+  }
+  assert.equal(coordinatorCalls, 0)
+})
+
 test('preparation obtains an exact ticket before selecting the paid backend', async (t) => {
   const deadlines = []
   t.mock.method(AbortSignal, 'timeout', (milliseconds) => {

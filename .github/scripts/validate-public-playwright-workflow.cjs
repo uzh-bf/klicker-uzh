@@ -174,6 +174,17 @@ function namedSteps(text) {
   return text.split(/\n(?=\s+- name: )/)
 }
 
+function hasExplicitGithubToken(value) {
+  if (typeof value === 'string') {
+    return /github\s*(?:\.\s*token|\[\s*['"]token['"]\s*\])/i.test(value)
+  }
+  return (
+    value !== null &&
+    typeof value === 'object' &&
+    Object.values(value).some(hasExplicitGithubToken)
+  )
+}
+
 function validatePublicRunnerRoles(workflow) {
   const issues = []
   const roles = {
@@ -181,6 +192,13 @@ function validatePublicRunnerRoles(workflow) {
     'test-playwright-public-pr': 'shard_runner',
   }
   const jobs = workflow?.jobs ?? {}
+  for (const [name, job] of Object.entries(jobs)) {
+    if (name !== 'prepare' && hasExplicitGithubToken(job)) {
+      issues.push(
+        'explicit GitHub token exposure must stay in trusted preparation'
+      )
+    }
+  }
   for (const [name, output] of Object.entries(roles)) {
     const runner = jobs[name]?.['runs-on']
     if (
@@ -199,6 +217,56 @@ function validatePublicRunnerRoles(workflow) {
     }
   }
   const prepareSteps = jobs.prepare?.steps ?? []
+  const metadataOutputs = [
+    'should_run',
+    'route',
+    'provider',
+    'admission_attempt',
+    'build_runner',
+    'shard_runner',
+    'job_timeout',
+    'mode',
+    'envelope_class',
+    'selector_pr_state',
+    'shard_matrix',
+    'reason_codes',
+  ]
+  const expectedPrepareOutputs = Object.fromEntries(
+    metadataOutputs.map((name) => [
+      name,
+      `\${{ steps.metadata.outputs.${name} }}`,
+    ])
+  )
+  expectedPrepareOutputs.duplicate_run_id =
+    '${{ steps.equivalent.outputs.duplicate_run_id }}'
+  const exposedOutputs = [
+    'duplicate_run_id',
+    'should_run',
+    'route',
+    'provider',
+    'admission_attempt',
+    'mode',
+    'envelope_class',
+    'shard_matrix',
+  ]
+  if (
+    !isDeepStrictEqual(jobs.prepare?.outputs, expectedPrepareOutputs) ||
+    !isDeepStrictEqual(
+      Object.keys(workflow?.on?.workflow_call?.outputs ?? {}).sort(),
+      exposedOutputs.sort()
+    ) ||
+    exposedOutputs
+      .filter((name) => name !== 'should_run')
+      .some(
+        (name) =>
+          workflow?.on?.workflow_call?.outputs?.[name]?.value !==
+          `\${{ jobs.prepare.outputs.${name} }}`
+      )
+  ) {
+    issues.push(
+      'preparation and reusable outputs must expose only trusted metadata'
+    )
+  }
   for (const output of [
     'provider',
     'admission_attempt',
@@ -329,6 +397,8 @@ function validatePublicRunnerRoles(workflow) {
       env: {
         ...expectedEnv,
         WARPBUILD_ADMISSION_URL: `\${{ vars.PUBLIC_PR_PLAYWRIGHT_WARPBUILD_ADMISSION_URL }}`,
+        WARPBUILD_BURST_GRANT: `\${{ vars.PUBLIC_PR_PLAYWRIGHT_WARPBUILD_BURST_GRANT }}`,
+        GH_TOKEN: `\${{ github.token }}`,
       },
       run: 'node .ci-control/.github/scripts/playwright-plan-metadata.cjs --plan playwright-execution-plan.json --route route.json --output "$GITHUB_OUTPUT"',
     },
@@ -490,6 +560,9 @@ function validatePublicPlaywrightWorkflow(root) {
     readAction(root, 'playwright-build', issues),
     readAction(root, 'playwright-shard', issues),
   ].join('\n')
+  if (hasExplicitGithubToken(publicActions)) {
+    issues.push('public composite actions must not expose the GitHub token')
+  }
   const publicCacheRestoreSteps = namedSteps(publicActions).filter((step) =>
     step.includes('uses: actions/cache/restore@v4')
   )

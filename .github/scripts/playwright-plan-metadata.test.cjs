@@ -116,6 +116,71 @@ test('only a validated nonempty plan can request admission before output publica
   assert.equal(fallback.admissionAttempt, undefined)
   assert.match(fs.readFileSync(output, 'utf8'), /^provider=public-pool$/m)
   assert.match(fs.readFileSync(output, 'utf8'), /^should_run=true$/m)
+  delete env.WARPBUILD_ADMISSION_URL
+  env.GITHUB_RUN_NUMBER = '42'
+  env.GITHUB_REF = 'refs/pull/1234/merge'
+  env.WARPBUILD_BURST_GRANT = JSON.stringify({
+    workflowId: '900',
+    runNumber: '42',
+    pullRequestNumber: env.PR_NUMBER,
+    headSha: env.HEAD_SHA,
+    baseSha: env.BASE_SHA,
+    controlSha: env.CONTROL_SHA,
+    expiresAt: new Date(Date.now() + 60000).toISOString(),
+  })
+  let apiCalls = 0
+  let coordinatorCalls = 0
+  const deniedApi = async () => {
+    apiCalls++
+    throw new Error('unavailable')
+  }
+  for (const candidate of [
+    plan('skip', 0, 'documentation-and-planning'),
+    plan('full', 8),
+  ]) {
+    fs.writeFileSync(planFile, JSON.stringify(candidate))
+    fs.writeFileSync(routeFile, JSON.stringify(route))
+    fs.writeFileSync(output, '')
+    await main(
+      args,
+      env,
+      async () => {
+        coordinatorCalls++
+        throw new Error('unexpected coordinator')
+      },
+      deniedApi
+    )
+    assert.equal(apiCalls, candidate.mode === 'skip' ? 0 : 1)
+    assert.equal(JSON.parse(fs.readFileSync(routeFile)).provider, undefined)
+    assert.match(fs.readFileSync(output, 'utf8'), /^provider=public-pool$/m)
+  }
+  fs.writeFileSync(planFile, JSON.stringify(plan('full', 0)))
+  await assert.rejects(
+    main(
+      args,
+      env,
+      async () => {
+        coordinatorCalls++
+        throw new Error('unexpected coordinator')
+      },
+      deniedApi
+    ),
+    /at least one shard/
+  )
+  assert.equal(apiCalls, 1)
+  env.WARPBUILD_ADMISSION_URL = 'https://admission.example.invalid/admit'
+  fs.writeFileSync(planFile, JSON.stringify(plan('full', 8)))
+  await main(
+    args,
+    env,
+    async () => {
+      coordinatorCalls++
+      throw new Error('unexpected coordinator')
+    },
+    deniedApi
+  )
+  assert.equal(coordinatorCalls, 0)
+  assert.equal(apiCalls, 2)
 })
 
 test('provider metadata selects only fixed runners and binds paid attempts', () => {
