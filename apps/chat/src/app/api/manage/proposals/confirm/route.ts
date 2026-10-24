@@ -7,6 +7,7 @@ import {
   verifyManageProposalToken,
 } from '@/src/services/manageProposals'
 import { createRateLimiter } from '@/src/services/rateLimiter'
+import { previewCookieName } from '@klicker-uzh/util'
 import { cookies } from 'next/headers'
 import { NextRequest, NextResponse } from 'next/server'
 import { z } from 'zod'
@@ -70,7 +71,9 @@ export async function POST(req: NextRequest) {
   }
 
   const cookieStore = await cookies()
-  const sessionToken = cookieStore.get('next-auth.session-token')?.value
+  const sessionToken = cookieStore.get(
+    previewCookieName('next-auth.session-token')
+  )?.value
   if (!sessionToken) {
     return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
   }

@@ -17,6 +17,7 @@ import {
   getInitialInstanceResults,
   levelFromXp,
   propagateActivityToElements,
+  previewCookieName,
   recomputeDerivedPermissions,
   signJWT,
   updateLiveQuizBlockResultsFromCache,
@@ -2774,7 +2775,7 @@ export async function setLiveQuizPinCookie(
   }
 
   // remove any previously added cookie and set the new correct one
-  const cookieName = `live-quiz-pin-${liveQuizId}`
+  const cookieName = previewCookieName(`live-quiz-pin-${liveQuizId}`)
   if (!liveQuiz.pinCode || pin !== liveQuiz.pinCode) {
     try {
       ctx.res.clearCookie(cookieName, {
@@ -2937,7 +2938,7 @@ export async function getRunningLiveQuiz({ id }: { id: string }, ctx: Context) {
 
   // if a pin code is required, verify that the user has already entered a valid one
   if (quizInfo.pinCode) {
-    const cookieName = `live-quiz-pin-${id}`
+    const cookieName = previewCookieName(`live-quiz-pin-${id}`)
     const providedPin = ctx.req.cookies?.[cookieName]
 
     if (!providedPin) {

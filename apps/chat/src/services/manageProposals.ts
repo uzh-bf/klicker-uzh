@@ -1,6 +1,7 @@
 import hashes from '@klicker-uzh/graphql/dist/client.json'
 import { prisma } from '@klicker-uzh/prisma'
 import { AuditLogType, ObjectType } from '@klicker-uzh/prisma/client'
+import { previewCookieName } from '@klicker-uzh/util'
 import { jwtVerify } from 'jose'
 import { z } from 'zod'
 import {
@@ -260,7 +261,7 @@ export async function confirmManageProposal({
     headers: {
       authorization: `Bearer ${sessionToken}`,
       'content-type': 'application/json',
-      cookie: `next-auth.session-token=${sessionToken}`,
+      cookie: `${previewCookieName('next-auth.session-token')}=${sessionToken}`,
       origin: manageOrigin,
       'x-graphql-yoga-csrf': 'true',
     },

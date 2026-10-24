@@ -1,4 +1,4 @@
-import { signJWT } from '@klicker-uzh/util'
+import { previewCookieName, signJWT } from '@klicker-uzh/util'
 import { Provider } from 'ltijs'
 // @ts-ignore
 import Database from 'ltijs-sequelize'
@@ -82,7 +82,7 @@ Provider.onConnect(async (token, req, res) => {
     )
 
     // remove lti token to avoid issues caused by this cookie
-    res.clearCookie('lti-token', {
+    res.clearCookie(previewCookieName('lti-token'), {
       secure: true,
       sameSite: 'none',
       domain: process.env.COOKIE_DOMAIN as string,
@@ -110,7 +110,7 @@ Provider.onConnect(async (token, req, res) => {
     }
   )
 
-  res.cookie('lti-token', jwt, {
+  res.cookie(previewCookieName('lti-token'), jwt, {
     maxAge: 5 * 60 * 1000,
     path: '/',
     secure: true,

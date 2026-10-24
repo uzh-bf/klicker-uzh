@@ -6,7 +6,7 @@ import type {
   ELearningSnapshotContent,
   KlickerChatContext,
 } from '@klicker-uzh/types'
-import { isChatUsageClassEntitled } from '@klicker-uzh/util'
+import { isChatUsageClassEntitled, previewCookieName } from '@klicker-uzh/util'
 import {
   type LangfuseSpan,
   propagateAttributes,
@@ -2327,7 +2327,7 @@ export async function POST(
         experimental_transform: providerRefusalTransform(
           providerRefusalDeflection(
             turnSettings.replyLanguage ?? null,
-            req.cookies.get('NEXT_LOCALE')?.value
+            req.cookies.get(previewCookieName('NEXT_LOCALE'))?.value
           ),
           (finish) =>
             console.warn('[chat] Provider refusal replaced:', {

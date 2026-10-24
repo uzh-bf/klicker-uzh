@@ -50,7 +50,9 @@ ENV NEXT_PUBLIC_GROWTHBOOK_API_HOST=${NEXT_PUBLIC_GROWTHBOOK_API_HOST}
 ENV NEXT_PUBLIC_GROWTHBOOK_CLIENT_KEY=${NEXT_PUBLIC_GROWTHBOOK_CLIENT_KEY}
 
 COPY --from=builder /app/out/full/ .
-RUN pnpm run build --filter=@klicker-uzh/auth
+COPY --from=builder /app/util/preview-build-env.mjs /app/util/preview-build-env.mjs
+ARG KLICKER_PREVIEW_BUILD_ENV_JSON
+RUN node util/preview-build-env.mjs --app auth -- pnpm run build --filter=@klicker-uzh/auth
 
 
 FROM base AS runner

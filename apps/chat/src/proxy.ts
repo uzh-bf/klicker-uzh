@@ -1,5 +1,5 @@
 import { routing } from '@klicker-uzh/i18n'
-import { extractBearerToken } from '@klicker-uzh/util/auth'
+import { extractBearerToken, previewCookieName } from '@klicker-uzh/util/auth'
 import { jwtVerify } from 'jose'
 import type { NextRequest } from 'next/server'
 import { NextResponse } from 'next/server'
@@ -126,7 +126,7 @@ function passThroughWithScopedToken(
   const response = NextResponse.next({ request: { headers: requestHeaders } })
   if (queryLocale) {
     response.cookies.set({
-      name: 'NEXT_LOCALE',
+      name: previewCookieName('NEXT_LOCALE'),
       value: queryLocale.locale,
       path: queryLocale.path,
     })
@@ -149,14 +149,14 @@ export async function proxy(request: NextRequest) {
 
   if (pathname === '/manage' && queryLocale) {
     request.cookies.set({
-      name: 'NEXT_LOCALE',
+      name: previewCookieName('NEXT_LOCALE'),
       value: queryLocale,
     })
     const response = NextResponse.next({
       request: { headers: request.headers },
     })
     response.cookies.set({
-      name: 'NEXT_LOCALE',
+      name: previewCookieName('NEXT_LOCALE'),
       value: queryLocale,
       path: '/manage',
     })
@@ -165,7 +165,7 @@ export async function proxy(request: NextRequest) {
 
   if (queryLocale) {
     request.cookies.set({
-      name: 'NEXT_LOCALE',
+      name: previewCookieName('NEXT_LOCALE'),
       value: queryLocale,
     })
   }
@@ -207,7 +207,9 @@ export async function proxy(request: NextRequest) {
   // Falls back to `?_t=` query and `Authorization: Bearer` header for the
   // CHIPS-unsupported-browser code path (sessionStorage-driven; see
   // `useChatGuestTokenBootstrap`).
-  const guestCookieToken = request.cookies.get('chat_participant_token')?.value
+  const guestCookieToken = request.cookies.get(
+    previewCookieName('chat_participant_token')
+  )?.value
   const guestQueryToken = request.nextUrl.searchParams.get('_t')
   // Each transport is validated independently and the first valid one wins.
   // A stale cookie must not shadow a valid fallback, otherwise a browser that
@@ -266,7 +268,9 @@ export async function proxy(request: NextRequest) {
   // 2. participant_token (account). Raw participant-token header fallback is
   // intentionally not supported; PWA iframe fallback uses the scoped token
   // branch above.
-  const participantToken = request.cookies.get('participant_token')?.value
+  const participantToken = request.cookies.get(
+    previewCookieName('participant_token')
+  )?.value
 
   if (!participantToken) {
     return redirectToNoLogin(request, hadGuestToken)

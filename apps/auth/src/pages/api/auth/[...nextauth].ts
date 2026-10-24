@@ -18,6 +18,7 @@ import {
   type AuthAudience,
   audienceCookieNames,
   audienceCookieOptions,
+  previewCsrfCookieOptions,
   resolveSecureCookies,
 } from '@/lib/authCookies'
 import { MANAGER_COOKIE_NAME, PARTICIPANT_COOKIE_NAME } from '@/lib/constants'
@@ -237,6 +238,7 @@ function getParticipantConfig({
       // Temporary OAuth cookies are namespaced per audience so overlapping
       // participant and lecturer attempts cannot overwrite each other.
       ...audienceCookieOptions('participant', secure),
+      ...previewCsrfCookieOptions(secure),
       sessionToken: {
         name: PARTICIPANT_COOKIE_NAME,
         options: {
@@ -486,6 +488,7 @@ function getLecturerConfig({
 
     cookies: {
       ...audienceCookieOptions('lecturer', secure),
+      ...previewCsrfCookieOptions(secure),
       sessionToken: {
         name: MANAGER_COOKIE_NAME,
         options: {

@@ -1,0 +1,48 @@
+# Reusable tooling image for synthetic Prisma migration/fixture jobs and the
+# existing Chat local MCP harness. Runtime commands and credentials belong to
+# the Native Job; this image performs no database mutation on its own.
+FROM docker.io/library/node:24.21.0-alpine
+
+# Match the repository's patched Alpine/npm baseline. Prisma's musl engines
+# also require libc6-compat and OpenSSL.
+RUN apk upgrade --no-cache \
+ && apk add --no-cache libc6-compat openssl \
+ && npm install --global --ignore-scripts npm@11.19.1
+
+WORKDIR /app
+
+# Use the exact pnpm release declared by the copied repository root. pnpm 12
+# requires its installed bootstrap because the global install ignores scripts.
+COPY package.json ./package.json
+RUN PNPM_VERSION="$(node -e 'const { packageManager = "" } = require("./package.json"); const match = /^pnpm@([0-9]+\.[0-9]+\.[0-9]+)$/.exec(packageManager); if (!match) throw new Error("package.json must pin pnpm to an exact version"); process.stdout.write(match[1]);')" \
+ && npm install --global --ignore-scripts "pnpm@${PNPM_VERSION}" \
+ && if [ "$(printf '%s' "${PNPM_VERSION}" | cut -d. -f1)" -ge 12 ]; then \
+      node "$(npm root --global)/pnpm/install.js"; \
+    fi
+
+# Keep the complete workspace so runtime jobs retain the fixture sources,
+# Prisma tooling, Chat MCP script, and their development dependencies. The root
+# .dockerignore excludes project/ account and artifact context.
+COPY . .
+
+RUN pnpm install --frozen-lockfile --ignore-scripts
+
+# Generate the Prisma client and build only the fixture package's local
+# dependency closure. The disposable URL is not contacted during generation.
+RUN DATABASE_URL="postgresql://fixtures@127.0.0.1:5432/fixtures" \
+    pnpm run build --filter="@klicker-uzh/prisma-data..."
+
+RUN addgroup --system --gid 1001 fixtures \
+ && adduser --system --uid 1001 --ingroup fixtures fixtures \
+ && mkdir -p /tmp/fixtures \
+ && chown fixtures:fixtures /tmp/fixtures
+
+ENV HOME=/tmp/fixtures \
+    TMPDIR=/tmp/fixtures
+
+WORKDIR /tmp/fixtures
+USER fixtures
+
+EXPOSE 1417
+
+CMD ["node", "--version"]

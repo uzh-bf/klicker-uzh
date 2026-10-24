@@ -5,7 +5,7 @@ import {
   UserRole,
 } from '@klicker-uzh/prisma/client'
 import { decodeJWT } from '@klicker-uzh/util'
-import { extractBearerToken } from '@klicker-uzh/util/auth'
+import { extractBearerToken, previewCookieName } from '@klicker-uzh/util/auth'
 import { jwtVerify } from 'jose'
 import { type NextRequest, NextResponse } from 'next/server'
 import { z } from 'zod'
@@ -69,8 +69,10 @@ export function extractChatTransportTokens(
   req: NextRequest
 ): ChatTransportTokens {
   return {
-    participantToken: req.cookies.get('participant_token')?.value,
-    chatGuestToken: req.cookies.get('chat_participant_token')?.value,
+    participantToken: req.cookies.get(previewCookieName('participant_token'))
+      ?.value,
+    chatGuestToken: req.cookies.get(previewCookieName('chat_participant_token'))
+      ?.value,
     pwaEmbedToken: req.cookies.get(PWA_CHAT_EMBED_SESSION_COOKIE)?.value,
     // The Authorization header carries a scoped token for the
     // CHIPS-unsupported-browser path: client-side `authedFetch` reads a

@@ -1,6 +1,6 @@
 import { randomUUID } from 'node:crypto'
 import { prisma } from '@klicker-uzh/prisma'
-import { isChatUsageClassEntitled } from '@klicker-uzh/util'
+import { isChatUsageClassEntitled, previewCookieName } from '@klicker-uzh/util'
 import {
   consumeStream,
   convertToModelMessages,
@@ -445,7 +445,7 @@ export async function POST(
       experimental_transform: providerRefusalTransform(
         providerRefusalDeflection(
           turnSettings.replyLanguage ?? null,
-          req.cookies.get('NEXT_LOCALE')?.value
+          req.cookies.get(previewCookieName('NEXT_LOCALE'))?.value
         ),
         (finish) =>
           console.warn('Owner preview provider refusal replaced:', {

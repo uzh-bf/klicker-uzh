@@ -1,5 +1,6 @@
 import {
   PARTICIPANT_DATA_USE_DISCLOSURE_VERSION,
+  previewCookieName,
   verifyJWT,
 } from '@klicker-uzh/util'
 import { toast } from '@uzh-bf/design-system'
@@ -152,8 +153,8 @@ export async function getServerSideProps(ctx: GetServerSidePropsContext) {
     const signedLtiData = { token: '', ssoId: '', email: '' }
 
     // LTI 1.3 authentication flow
-    if (cookies['lti-token'] || query.jwt) {
-      const token = cookies['lti-token'] ?? query.jwt
+    if (cookies[previewCookieName('lti-token')] || query.jwt) {
+      const token = cookies[previewCookieName('lti-token')] ?? query.jwt
 
       const parsedToken = (await verifyJWT(
         token,
@@ -208,7 +209,7 @@ export async function getServerSideProps(ctx: GetServerSidePropsContext) {
 
     // remove the lti-token, if it is defined
     try {
-      nookies.destroy(ctx, 'lti-token', {
+      nookies.destroy(ctx, previewCookieName('lti-token'), {
         domain: process.env.COOKIE_DOMAIN,
         path: '/',
       })

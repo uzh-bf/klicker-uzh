@@ -50,7 +50,9 @@ ENV NEXT_PUBLIC_ELEARNING_EMBED_ORIGINS=${NEXT_PUBLIC_ELEARNING_EMBED_ORIGINS}
 COPY --from=builder /app/out/full/ .
 
 ARG BLOB_STORAGE_ACCOUNT_URL
-RUN pnpm run build --filter=@klicker-uzh/chat
+COPY --from=builder /app/util/preview-build-env.mjs /app/util/preview-build-env.mjs
+ARG KLICKER_PREVIEW_BUILD_ENV_JSON
+RUN node util/preview-build-env.mjs --app chat -- pnpm run build --filter=@klicker-uzh/chat
 
 
 FROM base AS runner

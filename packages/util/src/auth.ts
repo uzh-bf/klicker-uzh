@@ -22,6 +22,25 @@ export function parseCookiesHeader(
   return map
 }
 
+/** Keep trusted preview sessions separate while retaining cookie prefix rules. */
+export function previewCookieName(
+  name: string,
+  previewId = process.env.NEXT_PUBLIC_PREVIEW_ID
+): string {
+  if (!previewId) return name
+  if (!/^[a-z0-9](?:[a-z0-9-]{0,30}[a-z0-9])?$/.test(previewId)) {
+    throw new Error(
+      'NEXT_PUBLIC_PREVIEW_ID must be a lowercase ID of 1-32 characters'
+    )
+  }
+  const prefix = name.startsWith('__Secure-')
+    ? '__Secure-'
+    : name.startsWith('__Host-')
+      ? '__Host-'
+      : ''
+  return `${prefix}klicker-${previewId}.${name.slice(prefix.length)}`
+}
+
 /**
  * Parse a comma-separated host list into an array, trimming whitespace and removing empties.
  */
@@ -77,7 +96,7 @@ export function extractBearerToken(headerValue: string | null): string | null {
   return token.length > 0 ? token : null
 }
 
-export const LTI_PROBE_COOKIE_NAME = 'lti-token'
+export const LTI_PROBE_COOKIE_NAME = previewCookieName('lti-token')
 
 export function cookiesAvailableViaLtiProbe(
   cookies: Record<string, string | undefined>

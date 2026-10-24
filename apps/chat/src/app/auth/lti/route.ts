@@ -3,6 +3,7 @@ import {
   cookieSecurityOptions,
   cookiesAvailableViaLtiProbe,
   LTI_PROBE_COOKIE_NAME,
+  previewCookieName,
 } from '@klicker-uzh/util/auth'
 import { type NextRequest, NextResponse } from 'next/server'
 import { z } from 'zod'
@@ -129,7 +130,9 @@ export async function GET(req: NextRequest) {
           signedLtiData: jwt,
           courseId,
           chatbotId,
-          participantToken: req.cookies.get('participant_token')?.value,
+          participantToken: req.cookies.get(
+            previewCookieName('participant_token')
+          )?.value,
         },
       }),
     })
@@ -201,7 +204,7 @@ export async function GET(req: NextRequest) {
       path: '/',
       maxAge: 0,
     })
-    response.cookies.set('chat_participant_token', '', {
+    response.cookies.set(previewCookieName('chat_participant_token'), '', {
       httpOnly: true,
       ...cookieSecurityOptions({ isProduction }),
       path: '/',
@@ -213,13 +216,17 @@ export async function GET(req: NextRequest) {
       path: '/',
       maxAge: 12 * 60 * 60,
     })
-    response.cookies.set('participant_token', decision.participantToken!, {
-      httpOnly: true,
-      ...cookieSecurityOptions({ isProduction }),
-      domain: process.env.COOKIE_DOMAIN,
-      path: '/',
-      maxAge: 14 * 24 * 60 * 60,
-    })
+    response.cookies.set(
+      previewCookieName('participant_token'),
+      decision.participantToken!,
+      {
+        httpOnly: true,
+        ...cookieSecurityOptions({ isProduction }),
+        domain: process.env.COOKIE_DOMAIN,
+        path: '/',
+        maxAge: 14 * 24 * 60 * 60,
+      }
+    )
     return response
   }
 
@@ -259,12 +266,16 @@ export async function GET(req: NextRequest) {
   // Backend GraphQL on api.<domain> never sees this token even if leaked.
   // `Partitioned` (CHIPS) lets modern browsers keep the cookie in third-party
   // iframe contexts (Chrome 114+, Edge 114+, Firefox 141+, Safari 26.2+).
-  response.cookies.set('chat_participant_token', chatGuestToken, {
-    httpOnly: true,
-    ...cookieSecurityOptions({ isProduction }),
-    path: '/',
-    maxAge: 60 * 60 * 24 * 14,
-  })
+  response.cookies.set(
+    previewCookieName('chat_participant_token'),
+    chatGuestToken,
+    {
+      httpOnly: true,
+      ...cookieSecurityOptions({ isProduction }),
+      path: '/',
+      maxAge: 60 * 60 * 24 * 14,
+    }
+  )
 
   return response
 }

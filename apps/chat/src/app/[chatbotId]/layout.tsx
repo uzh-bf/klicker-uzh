@@ -2,6 +2,7 @@ import { cookies, headers } from 'next/headers'
 import Link from 'next/link'
 import { notFound } from 'next/navigation'
 import { getTranslations } from 'next-intl/server'
+import { previewCookieName } from '@klicker-uzh/util'
 import { Assistant } from '../../components/assistant'
 import { ChatRecoveryCard } from '../../components/chat-recovery-card'
 import {
@@ -59,8 +60,11 @@ export default async function ChatLayout({
   const [cookieStore, headerStore] = await Promise.all([cookies(), headers()])
   const identityResult = await resolveParticipantIdentity(
     {
-      participantToken: cookieStore.get('participant_token')?.value,
-      chatGuestToken: cookieStore.get('chat_participant_token')?.value,
+      participantToken: cookieStore.get(previewCookieName('participant_token'))
+        ?.value,
+      chatGuestToken: cookieStore.get(
+        previewCookieName('chat_participant_token')
+      )?.value,
       pwaEmbedToken: cookieStore.get(PWA_CHAT_EMBED_SESSION_COOKIE)?.value,
       // Cookie-less transports (blocked third-party cookies) arrive in the
       // reserved header the proxy sets. The value is re-verified here by

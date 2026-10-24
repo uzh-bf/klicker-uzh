@@ -3,6 +3,7 @@ import {
   cookieSecurityOptions,
   cookiesAvailableViaLtiProbe,
   LTI_PROBE_COOKIE_NAME,
+  previewCookieName,
 } from '@klicker-uzh/util/auth'
 import {
   deriveElearningLearnerBinding,
@@ -75,7 +76,7 @@ function setLocaleCookie(
 ) {
   if (!locale) return
 
-  response.cookies.set('NEXT_LOCALE', locale, {
+  response.cookies.set(previewCookieName('NEXT_LOCALE'), locale, {
     ...cookieSecurityOptions({ isProduction }),
     path: '/',
   })
@@ -284,7 +285,7 @@ export async function GET(req: NextRequest) {
       path: '/',
       maxAge: 0,
     })
-    response.cookies.set('chat_participant_token', '', {
+    response.cookies.set(previewCookieName('chat_participant_token'), '', {
       httpOnly: true,
       ...cookieSecurityOptions({ isProduction }),
       path: '/',
@@ -296,13 +297,17 @@ export async function GET(req: NextRequest) {
       path: '/',
       maxAge: 12 * 60 * 60,
     })
-    response.cookies.set('participant_token', decision.participantToken!, {
-      httpOnly: true,
-      ...cookieSecurityOptions({ isProduction }),
-      domain: process.env.COOKIE_DOMAIN,
-      path: '/',
-      maxAge: 14 * 24 * 60 * 60,
-    })
+    response.cookies.set(
+      previewCookieName('participant_token'),
+      decision.participantToken!,
+      {
+        httpOnly: true,
+        ...cookieSecurityOptions({ isProduction }),
+        domain: process.env.COOKIE_DOMAIN,
+        path: '/',
+        maxAge: 14 * 24 * 60 * 60,
+      }
+    )
     return response
   }
 
@@ -340,12 +345,16 @@ export async function GET(req: NextRequest) {
   })
 
   // Host-only cookie: no `domain` set → cookie never leaves the chat subdomain.
-  response.cookies.set('chat_participant_token', chatGuestToken, {
-    httpOnly: true,
-    ...cookieSecurityOptions({ isProduction }),
-    path: '/',
-    maxAge: 60 * 60 * 24 * 14,
-  })
+  response.cookies.set(
+    previewCookieName('chat_participant_token'),
+    chatGuestToken,
+    {
+      httpOnly: true,
+      ...cookieSecurityOptions({ isProduction }),
+      path: '/',
+      maxAge: 60 * 60 * 24 * 14,
+    }
+  )
 
   return response
 }
