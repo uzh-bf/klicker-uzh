@@ -586,3 +586,86 @@ reused. Formatting and changed-source secret scans pass. Biome reports only
 nonblocking environment/style warnings; these operational scripts do not run
 through Turbo's application environment cache. Source reviews and hosted CI
 are still pending at this checkpoint. No active workflow caller was changed.
+
+## Package 2B: adopt the published action in the donor
+
+The user merged PR #6702 and requested continuation. Its actual `v3` merge
+revision is `0032c990d40985ce120179ded2c9d4b6e6a1d940`, with a complete
+tree equal to the final reviewed source. Use that full revision for the first
+caller. Reuse `trees/rs/ocr-shared-runtime` on `rs/ocr-donor-adoption`, based
+on the merge. The previous draft monitor is deleted because its PR merged.
+
+Replace Klicker's draft workflow's repeated steps with the published action,
+retaining its event types, job condition, guard/provider environment, explicit
+permissions, runner, 45-minute deadline and concurrency. Pass only the existing
+Mistral/Context7 bindings and GitHub token as action inputs. Preserve fixed
+models, maximum reasoning, budgets, accounting, retries, publication and artifact
+semantics; final controllers remain unchanged. No active private adopter,
+GitLab pipeline, live setting or extra paid provider replay changes here.
+
+This is a source migration delivered as one draft PR against `v3`. It becomes
+the active donor workflow only after a separately authorized merge. Its ordinary
+PR review still uses the current trusted default workflow. The first genuine
+ordinary event after merge must verify remote action identities and producing
+logs before claiming composite live acceptance or migrating other active callers.
+
+### Scope and acceptance
+
+Main owns the caller workflow and immutable release/policy seam. An executor
+may adapt only the existing self-update/diagnostics guard suite once the pin is
+frozen. Main adapts the existing partial-publication fixture to the published
+composite metadata and adds one real-caller case to the existing central
+controller suite. No adopter-local test suite or runtime module is added.
+
+The central real-caller test reads the workflow's full-SHA action reference,
+extracts only its manifest-listed runtime paths from the locally available Git
+revision into a temporary directory, verifies that release, and invokes its
+actual `checkCaller` against the caller's frozen policy. This binds proof to
+the published runtime rather than a mutable local script with the same name.
+Missing source objects fail the test; a full-history CI checkout provides them.
+The existing synthetic mutation portfolio remains the protection for changed
+pins, permissions, credentials, admission and added execution. The existing
+real stock fixture verifies engine behavior with synthetic providers.
+
+The partial-publication fixture must run the actual pinned controller's
+validation/publication path or reuse the central controller fixture at the
+release boundary. Preserve failed review status, reject invalid/head-mismatched
+results and cancellation, and retain the seven-day sanitized diagnostics path.
+Update existing guard tests to recognize the remote shared action and inspect
+its published metadata; keep manual final provider checks intact. Do not pin
+workflow prose or copy a second implementation of publication.
+
+Update `docs/ocr-runtime.md` and the existing CI guide to record donor adoption
+and its runtime pin without presenting source as live proof. Append acceptance
+evidence here. Keep all release assets, the manifest and portable skill byte
+identical in this migration; no upstream/runtime API change is needed. Keep
+operator-skill distribution guidance synchronized before subsequent repository
+transfers, after the donor's new caller is qualified.
+
+Acceptance reuses the previously qualified runtime asset hashes and the stock
+synthetic fixture, then requires current producing offline CI for this caller.
+The final pre-merge check of PR #6702 was cancelled when it merged and is not
+passing evidence. Prior qualified head `6ff4c24a10` has identical runtime assets;
+the post-merge normal codebase run is reported separately while pending.
+
+### Delivery and review
+
+Execution mode: standard. This bounded migration crosses the existing runtime/
+caller seam, so retain a read-only planning challenge, a committed migration
+simplification/risk review and an integrated Claude Opus 5.5 medium source review.
+Do not re-review unchanged release internals. One implementation slice covers
+the workflow and necessary test adaptations; documentation/plan updates follow.
+Use existing formatters, staged secret/data checks and focused Node contracts.
+No application runtime or screenshots are needed for this nonvisual change.
+
+Terminal: pinned caller, focused passing contracts, source reviews, ordinary push
+and one accurate draft PR. Producing hosted offline CI is a separate acceptance
+receipt and may be pending at draft creation. Merge, readiness, deployment,
+private activation, other-repository migrations and paid canaries remain
+outside this delivery. A blocker in source identity or actual pin qualification
+blocks only its dependent migration evidence.
+
+Planning challenge: native planner `APPROVED` this frozen Package 2B section.
+Proceed under the user’s post-merge continuation. The removed inline-workflow
+partial fixture is consolidated into the existing central controller fixture,
+which will invoke the published controller for the same consequential path.
