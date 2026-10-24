@@ -147,6 +147,20 @@ test('routes automatic drafts through Mistral Flash without changing the final p
     'context7-api-key': '${{ secrets.CONTEXT7_API_KEY }}',
     'github-token': '${{ github.token }}',
   })
+  const trustedCheckout = action.runs.steps.find(
+    (step) =>
+      step.uses?.startsWith('actions/checkout@') &&
+      step.with?.repository === '${{ github.repository }}'
+  )
+  assert.equal(trustedCheckout.with.token, '${{ inputs.github-token }}')
+  assert.equal(
+    trustedCheckout.with.ref,
+    '${{ github.event.repository.default_branch }}'
+  )
+  assert.equal(trustedCheckout.with['persist-credentials'], false)
+  assert.equal(trustedCheckout.with['fetch-depth'], 0)
+  assert.equal(trustedCheckout.with['sparse-checkout'], undefined)
+  assert.equal(trustedCheckout.with.filter, undefined)
   const run = action.runs.steps.find((step) => step.id === 'review')
   assert.equal(run.env.MISTRAL_API_KEY, '${{ inputs.mistral-api-key }}')
   assert.equal(run.env.OPENROUTER_API_KEY, undefined)
