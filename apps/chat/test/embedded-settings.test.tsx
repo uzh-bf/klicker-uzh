@@ -16,6 +16,7 @@ const mocks = vi.hoisted(() => ({
     setAnswerStyle: () => {},
     answerTone: 'neutral',
     setAnswerTone: () => {},
+    answerPreferencesEnabled: true,
   },
 }))
 
@@ -43,6 +44,7 @@ describe('EmbeddedSettings', () => {
     mocks.settings.modeOptions = { tutor: 'Tutor' }
     mocks.settings.answerStyle = 'bullets'
     mocks.settings.answerTone = 'direct'
+    mocks.settings.answerPreferencesEnabled = true
   })
 
   test('renders the answer-style select even when only one mode exists', () => {
@@ -63,6 +65,21 @@ describe('EmbeddedSettings', () => {
 
     expect(markup).toContain('aria-label="chat.modes.switcherLabel"')
     expect(markup).toContain('aria-label="chat.settingsPanel.answerStyleLabel"')
+  })
+
+  test('hides the answer selects when the chatbot turns them off', () => {
+    mocks.settings.answerPreferencesEnabled = false
+    expect(render()).toBe('')
+
+    mocks.settings.modeOptions = { tutor: 'Tutor', explainer: 'Explainer' }
+    const markup = render()
+    expect(markup).toContain('aria-label="chat.modes.switcherLabel"')
+    expect(markup).not.toContain(
+      'aria-label="chat.settingsPanel.answerStyleLabel"'
+    )
+    expect(markup).not.toContain(
+      'aria-label="chat.settingsPanel.answerToneLabel"'
+    )
   })
 
   test('renders nothing outside the minimal embedded header', () => {

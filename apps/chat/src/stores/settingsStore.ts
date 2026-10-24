@@ -75,6 +75,9 @@ interface SettingsState {
   // cannot make before the server has answered.
   creditsLoaded: boolean
   modelSelectionEnabled: boolean
+  // Whether the chatbot lets students choose an answer format and tone. Off
+  // until the chatbot's settings have loaded, so the controls never flash.
+  answerPreferencesEnabled: boolean
 
   // Available options
   modelOptions: ModelOption[]
@@ -127,6 +130,7 @@ export const useSettingsStore = create<SettingsState>()(
       },
       creditsLoaded: false,
       modelSelectionEnabled: false,
+      answerPreferencesEnabled: false,
       modeOptions: {},
       modeOptionsChatbotId: null,
 
@@ -182,11 +186,13 @@ export const useSettingsStore = create<SettingsState>()(
               state.selectedMode
             ),
             modelSelectionEnabled: false,
+            answerPreferencesEnabled: false,
           }))
         set({
           modeOptions: {},
           modeOptionsChatbotId: null,
           modelSelectionEnabled: false,
+          answerPreferencesEnabled: false,
         })
 
         try {
@@ -203,6 +209,8 @@ export const useSettingsStore = create<SettingsState>()(
           }
 
           const modelSelectionEnabled = responseData.modelSelection ?? false
+          const answerPreferencesEnabled =
+            responseData.answerPreferencesEnabled === true
 
           const resolvedModeOptions = parseModeOptions(responseData.modeOptions)
           if (!resolvedModeOptions) {
@@ -214,6 +222,7 @@ export const useSettingsStore = create<SettingsState>()(
               modeOptions: resolvedModeOptions,
               modeOptionsChatbotId: chatbotId,
               modelSelectionEnabled,
+              answerPreferencesEnabled,
               selectedMode: resolveSelectedMode(
                 resolvedModeOptions,
                 state.selectedMode

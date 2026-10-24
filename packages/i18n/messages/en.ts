@@ -4283,6 +4283,11 @@ Since the KlickerUZH app is not yet available in the iOS App Store, follow these
         'Off: the chatbot uses exactly one model selected by the lecturer.',
       modelSelectionFixedDescription:
         'Participants use this model. New chatbots start with Auto.',
+      answerPreferences: 'Let participants choose answer format and tone',
+      answerPreferencesEnabledDescription:
+        'On: participants can choose bullet points and a friendly or direct tone for new answers.',
+      answerPreferencesDisabledDescription:
+        'Off: all participants get the same answer format and tone.',
       modelSelectionParticipantDescription:
         'Participants can choose among these models. Select at least one.',
       selectedModel: 'Selected model',

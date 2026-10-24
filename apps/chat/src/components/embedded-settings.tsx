@@ -27,11 +27,13 @@ export function EmbeddedSettings() {
     setAnswerStyle,
     answerTone,
     setAnswerTone,
+    answerPreferencesEnabled,
   } = useSettingsStore()
 
   if (!showMinimalSettings) return null
 
   const modeKeys = Object.keys(modeOptions)
+  if (modeKeys.length <= 1 && !answerPreferencesEnabled) return null
 
   return (
     <div className="flex min-w-0 shrink items-center gap-1.5 sm:gap-2">
@@ -67,44 +69,48 @@ export function EmbeddedSettings() {
           />
         </div>
       )}
-      <div className="relative min-w-0 max-w-[9rem] shrink sm:max-w-[12rem]">
-        <select
-          data-cy="chat-embedded-answer-style-select"
-          value={answerStyle}
-          onChange={(e) => setAnswerStyle(e.target.value as AnswerStyle)}
-          aria-label={t('chat.settingsPanel.answerStyleLabel')}
-          className={COMPACT_SELECT_CLASS}
-        >
-          {ANSWER_STYLES.map((value) => (
-            <option key={value} value={value}>
-              {t(`chat.settingsPanel.answerStyles.${value}`)}
-            </option>
-          ))}
-        </select>
-        <ChevronDown
-          aria-hidden
-          className="text-muted-foreground pointer-events-none absolute right-2 top-1/2 size-3 -translate-y-1/2"
-        />
-      </div>
-      <div className="relative min-w-0 max-w-[7rem] shrink sm:max-w-[9rem]">
-        <select
-          data-cy="chat-embedded-answer-tone-select"
-          value={answerTone}
-          onChange={(e) => setAnswerTone(e.target.value as AnswerTone)}
-          aria-label={t('chat.settingsPanel.answerToneLabel')}
-          className={COMPACT_SELECT_CLASS}
-        >
-          {ANSWER_TONES.map((value) => (
-            <option key={value} value={value}>
-              {t(`chat.settingsPanel.answerTones.${value}`)}
-            </option>
-          ))}
-        </select>
-        <ChevronDown
-          aria-hidden
-          className="text-muted-foreground pointer-events-none absolute right-2 top-1/2 size-3 -translate-y-1/2"
-        />
-      </div>
+      {answerPreferencesEnabled ? (
+        <>
+          <div className="relative min-w-0 max-w-[9rem] shrink sm:max-w-[12rem]">
+            <select
+              data-cy="chat-embedded-answer-style-select"
+              value={answerStyle}
+              onChange={(e) => setAnswerStyle(e.target.value as AnswerStyle)}
+              aria-label={t('chat.settingsPanel.answerStyleLabel')}
+              className={COMPACT_SELECT_CLASS}
+            >
+              {ANSWER_STYLES.map((value) => (
+                <option key={value} value={value}>
+                  {t(`chat.settingsPanel.answerStyles.${value}`)}
+                </option>
+              ))}
+            </select>
+            <ChevronDown
+              aria-hidden
+              className="text-muted-foreground pointer-events-none absolute right-2 top-1/2 size-3 -translate-y-1/2"
+            />
+          </div>
+          <div className="relative min-w-0 max-w-[7rem] shrink sm:max-w-[9rem]">
+            <select
+              data-cy="chat-embedded-answer-tone-select"
+              value={answerTone}
+              onChange={(e) => setAnswerTone(e.target.value as AnswerTone)}
+              aria-label={t('chat.settingsPanel.answerToneLabel')}
+              className={COMPACT_SELECT_CLASS}
+            >
+              {ANSWER_TONES.map((value) => (
+                <option key={value} value={value}>
+                  {t(`chat.settingsPanel.answerTones.${value}`)}
+                </option>
+              ))}
+            </select>
+            <ChevronDown
+              aria-hidden
+              className="text-muted-foreground pointer-events-none absolute right-2 top-1/2 size-3 -translate-y-1/2"
+            />
+          </div>
+        </>
+      ) : null}
     </div>
   )
 }

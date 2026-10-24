@@ -10,6 +10,7 @@ query GetChatbotsInfo {
     reviewComment
     publishedAt
     modelSelection
+    answerPreferencesEnabled
     allowedModelIds
     allowedReasoningEffortsByModel {
       modelId

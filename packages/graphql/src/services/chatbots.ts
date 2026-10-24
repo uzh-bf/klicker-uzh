@@ -404,6 +404,7 @@ const chatbotOwnerSelect = {
   modelSelection: true,
   allowedModelIds: true,
   allowedReasoningEffortsByModel: true,
+  answerPreferencesEnabled: true,
   creditInitialCredits: true,
   creditResetPeriod: true,
   creditResetAmount: true,
@@ -867,7 +868,10 @@ export async function updateChatbotModelSettings(
   return shapeChatbotResponse(updated, { resolveLegacyFixedPolicy: false })
 }
 
-type UpdateChatbotModelPolicyArgs = UpdateChatbotModelSettingsArgs
+type UpdateChatbotModelPolicyArgs = UpdateChatbotModelSettingsArgs & {
+  // Optional so older clients that only save the model policy keep working.
+  answerPreferencesEnabled?: boolean | null
+}
 
 function normalizeStrictReasoningConfig(
   args: UpdateChatbotModelPolicyArgs,
@@ -1023,6 +1027,9 @@ export async function updateChatbotModelPolicy(
         status: { in: metadataAndModelEditableStatuses },
       },
       data: {
+        ...(typeof args.answerPreferencesEnabled === 'boolean'
+          ? { answerPreferencesEnabled: args.answerPreferencesEnabled }
+          : {}),
         modelSelection: args.modelSelection,
         allowedModelIds: normalizedAllowedModelIds,
         allowedReasoningEffortsByModel:

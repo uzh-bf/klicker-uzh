@@ -174,6 +174,7 @@ function ChatbotDetails({
   const [saveError, setSaveError] = useState<string | null>(null)
   const [saveSuccess, setSaveSuccess] = useState(false)
   const [modelSelectionEnabled, setModelSelectionEnabled] = useState(false)
+  const [answerPreferencesEnabled, setAnswerPreferencesEnabled] = useState(true)
   const [fixedModelId, setFixedModelId] = useState('')
   const [allowedModelIds, setAllowedModelIds] = useState<string[]>([])
   const [reasoningConfig, setReasoningConfig] = useState<ReasoningConfigState>(
@@ -208,6 +209,7 @@ function ChatbotDetails({
     if (!chatbot) return
 
     setModelSelectionEnabled(chatbot.modelSelection)
+    setAnswerPreferencesEnabled(chatbot.answerPreferencesEnabled)
     setFixedModelId(getDefaultFixedModelId(chatbot, modelRegistry))
     setAllowedModelIds(getInitialSelectedModelIds(chatbot, modelRegistry))
     setReasoningConfig(
@@ -263,11 +265,13 @@ function ChatbotDetails({
 
     return (
       modelSelectionEnabled !== chatbot.modelSelection ||
+      answerPreferencesEnabled !== chatbot.answerPreferencesEnabled ||
       !sameStringSet(currentSelectedModelIds, initialSelectedModelIds) ||
       reasoningConfigIsDirty
     )
   }, [
     allowedModelIds,
+    answerPreferencesEnabled,
     chatbot,
     modelRegistry,
     modelSelectionEnabled,
@@ -294,6 +298,7 @@ function ChatbotDetails({
   useEffect(() => {
     if (view === 'advanced' || !chatbot) return
     setModelSelectionEnabled(chatbot.modelSelection)
+    setAnswerPreferencesEnabled(chatbot.answerPreferencesEnabled)
     setFixedModelId(getDefaultFixedModelId(chatbot, modelRegistry))
     setAllowedModelIds(getInitialSelectedModelIds(chatbot, modelRegistry))
     setReasoningConfig(
@@ -390,6 +395,12 @@ function ChatbotDetails({
     setFixedModelId(modelId)
   }
 
+  const handleAnswerPreferencesChange = (checked: boolean) => {
+    setSaveError(null)
+    setSaveSuccess(false)
+    setAnswerPreferencesEnabled(checked)
+  }
+
   const handleModelSelectionChange = (checked: boolean) => {
     setSaveError(null)
     setSaveSuccess(false)
@@ -483,6 +494,7 @@ function ChatbotDetails({
           modelSelection: modelSelectionEnabled,
           allowedModelIds: normalizedAllowedModelIds,
           allowedReasoningEffortsByModel: normalizedReasoningConfig,
+          answerPreferencesEnabled,
         },
         refetchQueries: [{ query: QGetChatbotsInfoWithStandardModesDocument }],
         awaitRefetchQueries: true,
@@ -1124,6 +1136,33 @@ function ChatbotDetails({
                   </div>
                 )}
 
+                <div className="flex flex-col gap-2 border-t pt-4">
+                  <div className="flex items-center justify-between gap-3">
+                    <label
+                      htmlFor="chatbot-answer-preferences-switch"
+                      className="text-sm font-medium text-gray-700"
+                    >
+                      {t('manage.resources.answerPreferences')}
+                    </label>
+                    <Switch
+                      id="chatbot-answer-preferences-switch"
+                      checked={answerPreferencesEnabled}
+                      disabled={isSaving || !modelSettingsEditable}
+                      onCheckedChange={handleAnswerPreferencesChange}
+                      data={{ cy: 'chatbot-answer-preferences-switch' }}
+                    />
+                  </div>
+                  <div className="text-xs text-gray-500">
+                    {answerPreferencesEnabled
+                      ? t(
+                          'manage.resources.answerPreferencesEnabledDescription'
+                        )
+                      : t(
+                          'manage.resources.answerPreferencesDisabledDescription'
+                        )}
+                  </div>
+                </div>
+
                 <div className="flex items-center gap-3 border-t pt-4">
                   <Button
                     onClick={handleSaveModelSettings}
@@ -1137,7 +1176,10 @@ function ChatbotDetails({
                     </Button.Label>
                   </Button>
                   {saveSuccess && (
-                    <span className="text-xs text-green-700">
+                    <span
+                      data-cy="chatbot-model-settings-save-success"
+                      className="text-xs text-green-700"
+                    >
                       {t('manage.resources.chatbotModelSettingsSaveSuccess')}
                     </span>
                   )}

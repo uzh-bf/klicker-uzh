@@ -915,6 +915,12 @@ student. With them, no option changed the teaching move in the rerun. The prior-
 were removed afterwards. The sample was small; repeat it when the template or model changes.
 `evaluation/run-tutor-trajectories.mjs` accepts `--answer-style` and `--answer-tone` for this.
 
+A lecturer can turn both choices off for a chatbot in the manage app's advanced chatbot settings
+(`Chatbot.answerPreferencesEnabled`, default on, saved through `updateChatbotModelPolicy`). The chat
+route then compiles with the defaults whatever the request carries, and `/api/chatbots/[chatbotId]`
+returns the flag so the sidebar and embedded header hide both controls. The settings store keeps the
+flag off until the chatbot has loaded, so the controls do not flash.
+
 The preferences are per browser. Embedded iframes whose browser blocks third-party storage can lose
 them on reload, the same limit as the persisted mode selection.
 

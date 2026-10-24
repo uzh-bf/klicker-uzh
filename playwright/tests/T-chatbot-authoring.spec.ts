@@ -554,6 +554,12 @@ test.describe.serial('Lecturer chatbot draft authoring', () => {
       'aria-current',
       'page'
     )
+    const answerPreferencesSwitch = page.getByTestId(
+      'chatbot-answer-preferences-switch'
+    )
+    await expect(answerPreferencesSwitch).toBeChecked()
+    await answerPreferencesSwitch.click()
+    await expect(answerPreferencesSwitch).not.toBeChecked()
     await page.getByTestId('chatbot-model-settings-save').click()
     await expect(
       page.getByTestId('chatbot-model-selection-switch')
@@ -577,9 +583,16 @@ test.describe.serial('Lecturer chatbot draft authoring', () => {
         allowedReasoningEffortsByModel: [
           { modelId: 'gpt-6-luna', efforts: ['high'] },
         ],
+        answerPreferencesEnabled: false,
       })
     modelSettingsRequestGate.release()
-    await expect(page.getByText('Model settings saved.')).toBeVisible()
+    const saveSuccess = page.getByTestId('chatbot-model-settings-save-success')
+    await expect(saveSuccess).toBeVisible()
+    await answerPreferencesSwitch.click()
+    await expect(answerPreferencesSwitch).toBeChecked()
+    await expect(saveSuccess).toHaveCount(0)
+    await answerPreferencesSwitch.click()
+    await expect(answerPreferencesSwitch).not.toBeChecked()
 
     await page.getByTestId('chatbot-view-usage').click()
     await expect(page.getByText('Credits', { exact: true })).toBeVisible()

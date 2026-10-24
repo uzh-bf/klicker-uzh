@@ -19,6 +19,7 @@ query QGetChatbotsInfoWithStandardModes {
       scopeNote
     }
     modelSelection
+    answerPreferencesEnabled
     allowedModelIds
     allowedReasoningEffortsByModel {
       modelId
