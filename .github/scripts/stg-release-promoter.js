@@ -710,6 +710,46 @@ async function collectWorkflowEvidence({
       per_page: 100,
     }
   )
+  let validationReuse = null
+  const hostedShards = workflow.jobs.filter((job) =>
+    job.id.includes('/ test-playwright-hosted (')
+  )
+  if (
+    hostedShards.length === 8 &&
+    hostedShards.every((required) => {
+      const matches = jobs.filter((job) =>
+        jobNameMatches(job?.name, required.id)
+      )
+      return (
+        matches.length === 1 &&
+        matches[0].status === 'completed' &&
+        matches[0].conclusion === 'skipped' &&
+        matches[0].head_sha === candidateSha
+      )
+    })
+  ) {
+    try {
+      // The trusted controller reconstructs proof; no candidate receipt or green
+      // reporter can authorize promotion by itself. All other gates still run.
+      validationReuse =
+        await require('./ci-verified-reuse.cjs').verifyPromotionReuse({
+          github,
+          context,
+          run: exact,
+          candidateSha,
+          sourceBranch,
+          controlSha: process.env.TRUSTED_WORKFLOW_SHA,
+          enabled: process.env.CI_VERIFIED_REUSE_ENABLED === 'true',
+        })
+    } catch {
+      return {
+        path: workflow.path,
+        reason: 'skipped Playwright shards lack independently verified reuse',
+        run: exact,
+        status: 'wrong_evidence',
+      }
+    }
+  }
   const verifiedJobs = []
   // Every job the candidate had to complete must be present and successful, but
   // only the ARM64 publisher jobs carry an image reference for promotion.
@@ -732,7 +772,14 @@ async function collectWorkflowEvidence({
     }
     const matching = matches[0]
     const stateForJob = jobState(matching, requiredJobId, candidateSha)
-    if (stateForJob !== 'success') {
+    if (
+      stateForJob !== 'success' &&
+      !(
+        validationReuse &&
+        stateForJob === 'skipped' &&
+        hostedShards.some((job) => job.id === requiredJobId)
+      )
+    ) {
       return {
         path: workflow.path,
         reason: `${requiredJobId} is ${stateForJob.replace('_', ' ')}`,
@@ -757,6 +804,7 @@ async function collectWorkflowEvidence({
     })
   }
   return {
+    ...(validationReuse ? { validationReuse } : {}),
     jobs: verifiedJobs,
     observedJobs: jobs.map(({ id, name, status, conclusion }) => ({
       id,
