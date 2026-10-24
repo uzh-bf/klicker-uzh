@@ -1,8 +1,5 @@
 import { useQuery } from '@apollo/client'
-import {
-  GetControlCourseDocument,
-  PublicationStatus,
-} from '@klicker-uzh/graphql/dist/ops'
+import { GetControlCourseLiveQuizzesDocument } from '@klicker-uzh/graphql/dist/ops'
 import Loader from '@klicker-uzh/shared-components/src/Loader'
 import { UserNotification } from '@uzh-bf/design-system'
 import { GetStaticPropsContext } from 'next'
@@ -10,14 +7,17 @@ import { useTranslations } from 'next-intl'
 import { useRouter } from 'next/router'
 import { useEffect } from 'react'
 import Layout from '../../components/Layout'
-import LiveQuizLists from '../../components/liveQuizzes/LiveQuizLists'
+import AppBar from '../../components/layout/AppBar'
+import LiveQuizList from '../../components/liveQuizzes/LiveQuizList'
 
 function Course() {
   const t = useTranslations()
   const router = useRouter()
 
-  const { loading, error, data } = useQuery(GetControlCourseDocument, {
+  const { loading, data } = useQuery(GetControlCourseLiveQuizzesDocument, {
     variables: { courseId: router.query.id as string },
+    // quizzes are started and ended on other screens; revalidate on visit
+    fetchPolicy: 'cache-and-network',
     skip: !router.query.id,
   })
 
@@ -27,17 +27,26 @@ function Course() {
     }
   }, [data, router])
 
-  if (loading) {
+  const fallbackTitle = t('control.course.courseOverview')
+
+  if (loading && !data) {
     return (
-      <Layout title={t('control.course.courseOverview')}>
+      <Layout
+        title={fallbackTitle}
+        header={<AppBar title={fallbackTitle} backHref="/" />}
+      >
         <Loader />
       </Layout>
     )
   }
 
-  if (!data?.controlCourse || error) {
+  // a failed background refetch keeps the cached course visible
+  if (!data?.controlCourse) {
     return (
-      <Layout title={t('control.course.courseOverview')}>
+      <Layout
+        title={fallbackTitle}
+        header={<AppBar title={fallbackTitle} backHref="/" />}
+      >
         <UserNotification
           type="error"
           className={{ root: 'text-base' }}
@@ -49,25 +58,12 @@ function Course() {
 
   const { controlCourse } = data
 
-  const runningQuizzes = controlCourse.liveQuizzes?.filter(
-    (quiz) => quiz.status === PublicationStatus.Published
-  )
-  const plannedQuizzes = controlCourse.liveQuizzes?.filter(
-    (quiz) =>
-      quiz.status === PublicationStatus.Draft ||
-      quiz.status === PublicationStatus.Scheduled
-  )
-
   return (
-    <Layout title={controlCourse.name}>
-      <LiveQuizLists
-        runningLiveQuizzes={runningQuizzes || []}
-        plannedLiveQuizzes={plannedQuizzes || []}
-      />
-
-      <div className="mt-4 text-base italic">
-        {t('control.course.completedLiveQuizzesHint')}
-      </div>
+    <Layout
+      title={controlCourse.name}
+      header={<AppBar title={controlCourse.name} backHref="/" />}
+    >
+      <LiveQuizList liveQuizzes={controlCourse.liveQuizzes ?? []} />
     </Layout>
   )
 }

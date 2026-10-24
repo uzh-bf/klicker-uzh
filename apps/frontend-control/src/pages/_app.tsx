@@ -8,6 +8,7 @@ import { init } from '@socialgouv/matomo-next'
 import { Toaster } from '@uzh-bf/design-system'
 import { Locale, NextIntlClientProvider } from 'next-intl'
 import type { AppProps } from 'next/app'
+import Head from 'next/head'
 import { useRouter } from 'next/router'
 import { useEffect } from 'react'
 
@@ -40,6 +41,14 @@ function App({ Component, pageProps }: AppProps) {
       id="__app"
       className={`flex h-full min-h-full flex-col bg-white ${sourceSansPro.variable} font-sans`}
     >
+      <Head>
+        {/* viewport-fit=cover exposes env(safe-area-inset-*) so redesigned
+            headers can clear the iPhone status bar in the native app */}
+        <meta
+          name="viewport"
+          content="width=device-width, initial-scale=1, viewport-fit=cover"
+        />
+      </Head>
       <NextIntlClientProvider
         timeZone="Europe/Zurich"
         messages={pageProps.messages}
