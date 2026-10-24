@@ -57,6 +57,7 @@ runs:
           /.github/
           /playwright/
           /.devrouter.yml
+          /.gitattributes
         persist-credentials: false
 
     - name: Trust mounted workspace
@@ -66,6 +67,7 @@ runs:
     - name: Define node version
       uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020 # v4
       with:
+        # Keep this exact trusted pin aligned with package.json volta.node.
         node-version: '24.21.0'
 
     - name: Install pnpm

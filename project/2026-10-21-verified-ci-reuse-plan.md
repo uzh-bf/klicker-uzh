@@ -107,8 +107,8 @@ avoid an intermediate push-reuse contract that promotion cannot verify.
 
 The control closure was refined during implementation: hashing every application
 file in the trusted checkout would invalidate every application squash merge.
-Instead, every trusted checkout now materializes exactly `.github/`, `playwright/`
-and `.devrouter.yml`, with non-cone sparse patterns enforced by the workflow guard.
+Instead, every trusted checkout now materializes exactly `.github/`, `playwright/`, `.devrouter.yml`
+and `.gitattributes`, with non-cone sparse patterns enforced by the workflow guard.
 Every entry within that whole boundary is fingerprinted; the complete candidate
 source tree is bound separately. The planner has a dedicated lockfile, upstream
 actions are SHA-pinned, Node/pnpm are exact, and browser/service images are digest
@@ -185,3 +185,75 @@ credential, runner-group or repository security change is part of this PR.
   `@v3` and the controller must receive this implementation first, and the
   rollout switch must then be qualified explicitly. No rollout setting was
   changed by this work.
+
+
+## Merge-readiness repair record (2026-10-24)
+
+The original exact-head CI was green, but the draft review found two runtime
+blockers the initial smoke did not exercise: the locked planner exported a
+`node_modules` binary path that the host resolver rejects, and the promoter token
+lacked `pull-requests: read` for its new PR-association reads. This pass reproduces
+both original defects with failing tests, restores the fixes and reruns them.
+The installer smoke now calls `util/playwright-profile-runtime.mjs resolve`
+through the production `resolveDevrouter` wrapper, rather than only invoking the
+CLI directly. It installs 71 locked packages on Node 24 and resolves seven apps,
+nine Turbo filters and seven endpoints without starting servers.
+
+All 21 findings from draft review run `39952401506` are addressed:
+
+| Findings | Disposition |
+| --- | --- |
+| Clean planner path and missing promoter PR scope (2) | Fixed; resolver-level installer regression and explicit least-privilege permission contract. |
+| Sparse roots duplicated across verifier/workflows/tests (1) | One frozen `CONTROL_SPARSE_PATHS` definition drives predicate and validator expectations; all seven real checkout patterns are checked against it. |
+| Generic promoter rejection and repeated shard literals (2) | Sanitized cause suffix retained; inventory, coverage and admission share route/count constants. |
+| Missing action-adjacency regression, mutable checkout counting and readiness-cancellation mutations (3) | Negative mutations cover reserve/ref/repo/path/order, full SHA/persisted credentials, all seven sparse boundaries and both regressed cancellation expressions. |
+| Artifact oversize reason, repeated size budget and inline digest import (3) | Distinct rejection token, one budget constant, top-level hash import and named digest. |
+| Locale-sensitive canonicalization, mismatched edited lifecycle and ignored kind/push opt-in (3) | Deterministic ordering, live-validated edited compatibility, supported-kind and strict explicit push opt-in enforcement. |
+| New dynamic Function evaluation, stale reporter env/silent branch failure and stale rollout test comment (4) | Static exact predicate assertion; unused staging env removed; named ineligible-branch error; enabled-flag rejection regression. |
+| Seven-checkout count comment and Node version coupling on build/shard (3) | Auditable count comment and exact pins checked against root Volta version for both actions. |
+
+The independent audit also closed two provenance gaps beyond the draft findings:
+
+- Root `.gitattributes` is fingerprinted/materialized. A synthetic sparse Git
+  checkout demonstrated that omitted root attributes still change control script
+  line endings from the index. Root/nested attributes are covered; default-disabled
+  submodule and LFS behavior adds no unbound executable content.
+- API artifact digest/run/head identity is verified against actual downloaded
+  public ZIPs, and artifact creation must fall inside the independently reported
+  successful producer upload step of the exact run attempt. Artifact runtime
+  deletion/recreation does not establish producer identity; late replacements
+  fail closed. Receipt claims additionally bind PR number and target branch, so
+  a same-SHA branch retarget or another PR cannot reuse the old claim.
+
+Current `v3` was merged into the feature branch before these repairs; no force
+push, merge of the PR, rollout change or deployment occurred. Expanded reuse stays
+off until post-merge qualification. Actual source-reuse/promotion runtime under
+the new trusted `@v3` code remains a post-merge rollout check, with all other
+suite exclusions above unchanged. Fresh final CI and manual final-review status
+are recorded in the PR and task report for the repaired head.
+
+
+Fresh repair verification on Node 24.21.0: **973 tests, 971 passed, two intentional
+skips, zero failures**, covering all CI script contracts plus the production
+profile-runtime, host-launcher and Next-runtime wrappers. The verifier file
+passes 49/49, the workflow guard 16/16, and the installer 3/3. The original
+installer path and missing permission were each temporarily restored in an
+isolated regression run: both failed as expected, then passed after restoring
+the repairs. No test was weakened or removed.
+
+Native ESM wrapper tests needed the existing YAML package and installed planner
+available to the test process. A temporary link to the existing YAML dependency
+was removed after the run; the verified locked planner's clean bin path was
+added to the test PATH. Earlier attempts lacking those dependencies failed as
+environment setup errors; the complete result above includes them correctly.
+No application dependency installation or runtime/server startup was performed.
+
+The producer-time gate also requires candidate-executing build to begin strictly
+after the upload-completion timestamp second. Same-second boundaries, missing
+producer/step timing, late replacement of receipt or either plan, and ambiguous
+producer data all miss. Independent audit verified the real API ZIP digests and
+step/timestamp shape; this ordered-workflow provenance check is not presented as
+a general cryptographic signature. Actionlint passes with only its two existing
+unsupported GitHub job-context diagnostics filtered; ShellCheck, Bash syntax,
+Prettier, AGENTS/wiki/Prisma guards and diff checks pass. Biome reports warnings
+and suggestions but no errors.

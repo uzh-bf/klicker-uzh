@@ -8,6 +8,7 @@ const {
   coverageMatches,
   planMatches,
   readArtifactJson,
+  PLAYWRIGHT_SHARD_COUNT,
 } = require('./ci-equivalent-run.cjs')
 const REPOSITORY = 'uzh-bf/klicker-uzh'
 const CALLER = '.github/workflows/test-playwright.yml'
@@ -18,13 +19,20 @@ const SHA = /^[a-f0-9]{40}$/
 // transitive helpers, toolchain locks and selector data. Candidate files used by
 // builds/tests are bound independently by exact tested-tree identity. A control
 // import outside these roots cannot execute: the file is absent from checkout.
-const CONTROL_SPARSE_PATHS = ['/.github/', '/playwright/', '/.devrouter.yml']
+const CONTROL_SPARSE_PATHS = Object.freeze([
+  '/.github/',
+  '/playwright/',
+  '/.devrouter.yml',
+  // Root attributes transform checked-out bytes, including files in sparse roots.
+  '/.gitattributes',
+])
 function isControlPath(file) {
-  return (
-    file.startsWith('.github/') ||
-    file.startsWith('playwright/') ||
-    file === '.devrouter.yml'
-  )
+  return CONTROL_SPARSE_PATHS.some((root) => {
+    const relative = root.slice(1)
+    return root.endsWith('/')
+      ? file === relative.slice(0, -1) || file.startsWith(relative)
+      : file === relative
+  })
 }
 const RUNNERS = Object.freeze({
   hosted: ['Linux', 'X64'],
@@ -60,7 +68,7 @@ function fingerprint(tree) {
       JSON.stringify(
         entries
           .map(({ path, mode, type, sha }) => [path, mode, type, sha])
-          .sort((a, b) => a[0].localeCompare(b[0]))
+          .sort((a, b) => (a[0] < b[0] ? -1 : 1))
       )
     )
     .digest('hex')
@@ -182,17 +190,24 @@ async function findVerifiedRun({
   workers = '1',
   provider = route === 'hosted' ? 'github' : 'public-pool',
   enabled = false,
+  allowPushReuse = false,
+  kind = 'playwright',
   readArtifact = readArtifactJson,
   onSource = () => {},
   now = Date.now(),
 }) {
-  requireProof(enabled, 'reuse-disabled')
+  requireProof(enabled === true, 'reuse-disabled')
+  requireProof(kind === 'playwright', 'kind-not-supported')
+  requireProof(
+    context.eventName !== 'push' || allowPushReuse === true,
+    'push-reuse-not-allowed'
+  )
   requireProof(
     `${context.repo.owner}/${context.repo.repo}` === REPOSITORY,
     'repository-not-trusted'
   )
   requireProof(
-    plan?.mode === 'full' && plan.shardCount === 8,
+    plan?.mode === 'full' && plan.shardCount === PLAYWRIGHT_SHARD_COUNT,
     'coverage-not-full'
   )
   requireProof(SHA.test(controlSha ?? ''), 'trusted-control-unavailable')
@@ -241,7 +256,9 @@ async function findVerifiedRun({
   } else {
     requireProof(
       context.eventName === 'pull_request' &&
-        ['ready_for_review', 'reopened'].includes(context.payload?.action),
+        ['ready_for_review', 'edited', 'reopened'].includes(
+          context.payload?.action
+        ),
       'event-not-eligible'
     )
     const payload = context.payload.pull_request
@@ -252,7 +269,8 @@ async function findVerifiedRun({
       pull.state === 'open' &&
         !pull.draft &&
         pull.head.sha === payload.head.sha &&
-        pull.base.sha === payload.base.sha,
+        pull.base.sha === payload.base.sha &&
+        pull.base.ref === payload.base.ref,
       'pull-request-stale'
     )
     target = (
@@ -343,6 +361,8 @@ async function findVerifiedRun({
       receipt.event === 'pull_request' &&
       receipt.runId === run.id &&
       receipt.runAttempt === run.run_attempt &&
+      receipt.pullRequestNumber === pull.number &&
+      receipt.baseRef === pull.base.ref &&
       receipt.headSha === pull.head.sha &&
       receipt.controlSha === sourceControl &&
       receipt.treeSha === target.commit.tree.sha &&
@@ -436,6 +456,7 @@ async function findVerifiedRun({
   requireProof(
     freshPull.head.sha === pull.head.sha &&
       freshPull.base.sha === pull.base.sha &&
+      freshPull.base.ref === pull.base.ref &&
       freshPull.state === pull.state &&
       freshPull.merge_commit_sha === pull.merge_commit_sha,
     'pull-request-changed-during-proof'
@@ -477,7 +498,7 @@ async function verifyPromotionReuse({
   enabled,
   readArtifact = readArtifactJson,
 }) {
-  requireProof(enabled, 'promotion-reuse-disabled')
+  requireProof(enabled === true, 'promotion-reuse-disabled')
   const detailed = (
     await github.rest.actions.getWorkflowRun({
       ...context.repo,
@@ -540,6 +561,8 @@ async function verifyPromotionReuse({
     route: 'hosted',
     workers: '1',
     enabled,
+    kind: 'playwright',
+    allowPushReuse: true,
     readArtifact,
   })
   const fresh = (
@@ -575,7 +598,7 @@ async function reportVerifiedRun(options) {
   } catch (error) {
     options.core.setOutput('duplicate_run_id', '')
     // No credentials, arbitrary API bodies or artifact content in diagnostics.
-    const reason = /^[a-z0-9-]+$/.test(error.message)
+    const reason = /^[a-z0-9-]+$/.test(error?.message ?? '')
       ? error.message
       : 'evidence-unavailable'
     options.core.info(`CI reuse miss: ${reason}; executing validation.`)

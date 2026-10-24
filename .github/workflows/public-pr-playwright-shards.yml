@@ -78,6 +78,7 @@ jobs:
             /.github/
             /playwright/
             /.devrouter.yml
+            /.gitattributes
           persist-credentials: false
 
       - name: Check out candidate as data
@@ -296,7 +297,9 @@ jobs:
         if: github.event_name == 'pull_request'
         shell: bash
         env:
+          SOURCE_PR_NUMBER: ${{ github.event.pull_request.number }}
           SOURCE_HEAD_SHA: ${{ github.event.pull_request.head.sha }}
+          SOURCE_BASE_REF: ${{ github.event.pull_request.base.ref }}
           SOURCE_BASE_SHA: ${{ github.event.pull_request.base.sha }}
           CONTROL_SHA: ${{ job.workflow_sha }}
           EXECUTION_PROVIDER: ${{ needs.prepare.outputs.provider }}
@@ -309,6 +312,7 @@ jobs:
           fs.writeFileSync('ci-validation-receipt.json', JSON.stringify({
             schemaVersion: 2,
             repository: process.env.GITHUB_REPOSITORY,
+            pullRequestNumber: Number(process.env.SOURCE_PR_NUMBER),
             route: process.env.EXECUTION_ROUTE,
             provider: process.env.EXECUTION_PROVIDER,
             runnerOs: process.env.RUNNER_OS,
@@ -320,6 +324,7 @@ jobs:
             runAttempt: Number(process.env.GITHUB_RUN_ATTEMPT),
             headSha: process.env.SOURCE_HEAD_SHA,
             baseSha: process.env.SOURCE_BASE_SHA,
+            baseRef: process.env.SOURCE_BASE_REF,
             controlSha: process.env.CONTROL_SHA,
             treeSha: execFileSync('git', ['-c', `safe.directory=${process.env.GITHUB_WORKSPACE}`, 'rev-parse', 'HEAD^{tree}'], { encoding: 'utf8' }).trim(),
           }))
@@ -349,6 +354,7 @@ jobs:
             /.github/
             /playwright/
             /.devrouter.yml
+            /.gitattributes
           persist-credentials: false
 
       - name: Build shared Playwright artifact
@@ -380,7 +386,9 @@ jobs:
         if: github.event_name == 'pull_request'
         shell: bash
         env:
+          SOURCE_PR_NUMBER: ${{ github.event.pull_request.number }}
           SOURCE_HEAD_SHA: ${{ github.event.pull_request.head.sha }}
+          SOURCE_BASE_REF: ${{ github.event.pull_request.base.ref }}
           SOURCE_BASE_SHA: ${{ github.event.pull_request.base.sha }}
           CONTROL_SHA: ${{ job.workflow_sha }}
           EXECUTION_PROVIDER: ${{ needs.prepare.outputs.provider }}
@@ -393,6 +401,7 @@ jobs:
           fs.writeFileSync('ci-validation-receipt.json', JSON.stringify({
             schemaVersion: 2,
             repository: process.env.GITHUB_REPOSITORY,
+            pullRequestNumber: Number(process.env.SOURCE_PR_NUMBER),
             route: process.env.EXECUTION_ROUTE,
             provider: process.env.EXECUTION_PROVIDER,
             runnerOs: process.env.RUNNER_OS,
@@ -404,6 +413,7 @@ jobs:
             runAttempt: Number(process.env.GITHUB_RUN_ATTEMPT),
             headSha: process.env.SOURCE_HEAD_SHA,
             baseSha: process.env.SOURCE_BASE_SHA,
+            baseRef: process.env.SOURCE_BASE_REF,
             controlSha: process.env.CONTROL_SHA,
             treeSha: execFileSync('git', ['-c', `safe.directory=${process.env.GITHUB_WORKSPACE}`, 'rev-parse', 'HEAD^{tree}'], { encoding: 'utf8' }).trim(),
           }))
@@ -433,6 +443,7 @@ jobs:
             /.github/
             /playwright/
             /.devrouter.yml
+            /.gitattributes
           persist-credentials: false
 
       - name: Build shared Playwright artifact
@@ -550,6 +561,7 @@ jobs:
             /.github/
             /playwright/
             /.devrouter.yml
+            /.gitattributes
           persist-credentials: false
 
       - name: Run shared Playwright shard
@@ -667,6 +679,7 @@ jobs:
             /.github/
             /playwright/
             /.devrouter.yml
+            /.gitattributes
           persist-credentials: false
 
       - name: Run shared Playwright shard

@@ -171,6 +171,8 @@ jobs:
             .github/scripts/direct-script-invocations.test.cjs \
             .github/scripts/ci-equivalent-run.test.cjs \
             .github/scripts/ci-verified-reuse.test.cjs \
+            .github/scripts/ci-reuse-policy.test.cjs \
+            .github/scripts/install-devrouter-locked.test.cjs \
             .github/scripts/ci-duplicate-audit.test.cjs \
             .github/scripts/minimum-validation-class.test.cjs \
             .github/scripts/changed-paths.test.cjs \

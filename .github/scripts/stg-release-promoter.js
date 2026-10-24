@@ -1,4 +1,8 @@
 const crypto = require('node:crypto')
+const {
+  PLAYWRIGHT_SHARD_COUNT,
+  PLAYWRIGHT_ROUTE_JOBS,
+} = require('./ci-equivalent-run.cjs')
 const { execFileSync } = require('node:child_process')
 const fs = require('node:fs')
 const os = require('node:os')
@@ -140,8 +144,8 @@ const REQUIRED_CI_WORKFLOWS = Object.freeze(
       id === 'test-playwright-status'
         ? [
             { id },
-            ...Array.from({ length: 8 }, (_, i) => ({
-              id: `test-playwright-execution / test-playwright-hosted (${i + 1}, 8)`,
+            ...Array.from({ length: PLAYWRIGHT_SHARD_COUNT }, (_, i) => ({
+              id: `test-playwright-execution ${PLAYWRIGHT_ROUTE_JOBS.hosted.shards}${i + 1}, ${PLAYWRIGHT_SHARD_COUNT})`,
             })),
           ]
         : [{ id }, ...(CI_SUITE_JOBS[file] ?? []).map((id) => ({ id }))],
@@ -712,10 +716,10 @@ async function collectWorkflowEvidence({
   )
   let validationReuse = null
   const hostedShards = workflow.jobs.filter((job) =>
-    job.id.includes('/ test-playwright-hosted (')
+    job.id.includes(PLAYWRIGHT_ROUTE_JOBS.hosted.shards)
   )
   if (
-    hostedShards.length === 8 &&
+    hostedShards.length === PLAYWRIGHT_SHARD_COUNT &&
     hostedShards.every((required) => {
       const matches = jobs.filter((job) =>
         jobNameMatches(job?.name, required.id)
@@ -741,10 +745,13 @@ async function collectWorkflowEvidence({
           controlSha: process.env.TRUSTED_WORKFLOW_SHA,
           enabled: process.env.CI_VERIFIED_REUSE_ENABLED === 'true',
         })
-    } catch {
+    } catch (error) {
+      const cause = /^[a-z0-9-]+$/.test(error?.message ?? '')
+        ? error.message
+        : 'evidence-unavailable'
       return {
         path: workflow.path,
-        reason: 'skipped Playwright shards lack independently verified reuse',
+        reason: `skipped Playwright shards lack independently verified reuse (${cause})`,
         run: exact,
         status: 'wrong_evidence',
       }

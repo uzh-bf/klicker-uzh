@@ -9,11 +9,38 @@ const {
   findVerifiedRun,
   reportVerifiedRun,
   verifyPromotionReuse,
+  CONTROL_SPARSE_PATHS,
 } = require('./ci-verified-reuse.cjs')
-const { readArtifactJson } = require('./ci-equivalent-run.cjs')
+const {
+  readArtifactJson,
+  PLAYWRIGHT_SHARD_COUNT,
+} = require('./ci-equivalent-run.cjs')
 const sha = (digit) => digit.repeat(40)
 const repository = 'uzh-bf/klicker-uzh'
 const success = { status: 'completed', conclusion: 'success' }
+const uploadWindow = {
+  started_at: '2026-10-21T07:00:00Z',
+  completed_at: '2026-10-21T07:00:02Z',
+}
+const uploadedAt = '2026-10-21T07:00:01Z'
+const buildStartedAt = '2026-10-21T07:00:03Z'
+function buildExecution() {
+  return {
+    name: 'Build shared Playwright artifact',
+    ...success,
+    started_at: buildStartedAt,
+    completed_at: '2026-10-21T07:05:00Z',
+  }
+}
+function planProducer() {
+  return {
+    name: 'test-playwright-execution / prepare',
+    ...success,
+    steps: [
+      { name: 'Upload canonical execution plan', ...success, ...uploadWindow },
+    ],
+  }
+}
 function fixture(push = false) {
   const control = sha('c'),
     head = sha('a'),
@@ -57,8 +84,10 @@ function fixture(push = false) {
     selectedSpecs: ['one.spec.ts'],
     profileAssignments: {},
     selectedProfiles: ['full'],
-    shardCount: 8,
-    shards: Array.from({ length: 8 }, (_, i) => ({ shardIndex: i + 1 })),
+    shardCount: PLAYWRIGHT_SHARD_COUNT,
+    shards: Array.from({ length: PLAYWRIGHT_SHARD_COUNT }, (_, i) => ({
+      shardIndex: i + 1,
+    })),
     headSha: head,
     baseSha: base,
   }
@@ -68,8 +97,10 @@ function fixture(push = false) {
     event: 'pull_request',
     runId: 123,
     runAttempt: 1,
+    pullRequestNumber: pull.number,
     headSha: head,
     baseSha: base,
+    baseRef: pull.base.ref,
     testedSha: merge,
     treeSha: tree,
     controlSha: control,
@@ -83,12 +114,16 @@ function fixture(push = false) {
     {
       name: 'test-playwright-execution / build-and-compile-hosted',
       ...success,
-      steps: [{ name: 'Upload tested source receipt', ...success }],
+      steps: [
+        { name: 'Upload tested source receipt', ...success, ...uploadWindow },
+        buildExecution(),
+      ],
     },
-    ...Array.from({ length: 8 }, (_, i) => ({
-      name: `test-playwright-execution / test-playwright-hosted (${i + 1}, 8)`,
+    ...Array.from({ length: PLAYWRIGHT_SHARD_COUNT }, (_, i) => ({
+      name: `test-playwright-execution / test-playwright-hosted (${i + 1}, ${PLAYWRIGHT_SHARD_COUNT})`,
       ...success,
     })),
+    planProducer(),
   ]
   const commits = {
     [merge]: {
@@ -168,6 +203,8 @@ function fixture(push = false) {
     route: 'hosted',
     workers: '1',
     enabled: true,
+    allowPushReuse: true,
+    kind: 'playwright',
     now: Date.parse('2026-10-21T10:00:00Z'),
     readArtifact: async (_g, _r, run, name) =>
       name === 'ci-validation-receipt'
@@ -219,7 +256,7 @@ for (const [name, mutate, reason] of [
   [
     'missing shard',
     (s) => {
-      s.jobs.pop()
+      s.jobs.splice(1, 1)
     },
     'actual-full-coverage-missing',
   ],
@@ -276,6 +313,20 @@ for (const [name, mutate, reason] of [
     'forged attempt',
     (s) => {
       s.receipt.runAttempt = 2
+    },
+    'receipt-binding-invalid',
+  ],
+  [
+    'receipt for a different pull request',
+    (s) => {
+      s.receipt.pullRequestNumber += 1
+    },
+    'receipt-binding-invalid',
+  ],
+  [
+    'receipt missing pull request binding',
+    (s) => {
+      delete s.receipt.pullRequestNumber
     },
     'receipt-binding-invalid',
   ],
@@ -502,7 +553,8 @@ test('immutable artifacts reject expiry, forgery, wrong source and ambiguity bef
   for (const mode of ['expired', 'wrong-run', 'digest', 'ambiguous']) {
     const artifact = {
       id: 7,
-      name: 'proof',
+      name: 'ci-validation-receipt',
+      created_at: uploadedAt,
       size_in_bytes: 2,
       expired: mode === 'expired',
       digest: 'sha256:' + 'a'.repeat(64),
@@ -515,6 +567,25 @@ test('immutable artifacts reject expiry, forgery, wrong source and ambiguity bef
           listWorkflowRunArtifacts: async () => ({
             data: { artifacts, total_count: artifacts.length },
           }),
+          listJobsForWorkflowRunAttempt: async () => ({
+            data: {
+              jobs: [
+                {
+                  name: 'test-playwright-execution / build-and-compile-hosted',
+                  ...success,
+                  steps: [
+                    {
+                      name: 'Upload tested source receipt',
+                      ...success,
+                      ...uploadWindow,
+                    },
+                    buildExecution(),
+                  ],
+                },
+              ],
+              total_count: 1,
+            },
+          }),
           downloadArtifact: async () => ({ data: Buffer.from('{}') }),
         },
       },
@@ -523,9 +594,9 @@ test('immutable artifacts reject expiry, forgery, wrong source and ambiguity bef
       readArtifactJson(
         github,
         {},
-        { id: 9, head_sha: sha('a') },
-        'proof',
-        'proof.json',
+        { id: 9, run_attempt: 1, head_sha: sha('a') },
+        'ci-validation-receipt',
+        'ci-validation-receipt.json',
         true
       ),
       /artifact|Artifact/
@@ -596,6 +667,24 @@ test('workflow preserves readiness in-flight, pins execution inputs and defaults
     for (const step of job.steps)
       if (step.uses && !step.uses.startsWith('./'))
         assert.match(step.uses, /@[a-f0-9]{40}$/)
+    if (name.startsWith('build-and-compile-')) {
+      const producer = job.steps.find(
+        (s) => s.name === 'Record tested source tree'
+      )
+      assert.equal(
+        producer.env.SOURCE_PR_NUMBER,
+        `\${{ github.event.pull_request.number }}`
+      )
+      assert.equal(
+        producer.env.SOURCE_BASE_REF,
+        `\${{ github.event.pull_request.base.ref }}`
+      )
+      assert.match(
+        producer.run,
+        /pullRequestNumber: Number\(process\.env\.SOURCE_PR_NUMBER\)/
+      )
+      assert.match(producer.run, /baseRef: process\.env\.SOURCE_BASE_REF/)
+    }
     if (
       name.startsWith('build-and-compile-') ||
       name.startsWith('test-playwright-')
@@ -607,7 +696,7 @@ test('workflow preserves readiness in-flight, pins execution inputs and defaults
       assert.equal(checkout.with['sparse-checkout-cone-mode'], false)
       assert.equal(
         checkout.with['sparse-checkout'],
-        '/.github/\n/playwright/\n/.devrouter.yml\n'
+        `${CONTROL_SPARSE_PATHS.join('\n')}\n`
       )
     }
   }
@@ -641,6 +730,11 @@ test('promoter gate accepts only independently verified skipped shards', async (
     'missing',
     'failed',
     'architecture',
+    'replaced-receipt',
+    'replaced-source-plan',
+    'replaced-push-plan',
+    'overlapping-receipt',
+    'overlapping-source-plan',
   ]) {
     const { state, options } = fixture(true)
     state.run.updated_at = new Date().toISOString()
@@ -661,6 +755,7 @@ test('promoter gate accepts only independently verified skipped shards', async (
       ...success,
       conclusion: i === 0 ? 'success' : 'skipped',
     }))
+    pushJobs.push({ ...planProducer(), id: 999, head_sha: options.context.sha })
     const records = [
       [state.run, 'ci-validation-receipt', state.receipt],
       [state.run, 'playwright-execution-plan', state.plan],
@@ -677,6 +772,16 @@ test('promoter gate accepts only independently verified skipped shards', async (
     if (mode === 'forged') state.receipt.runId = 666
     if (mode === 'failed') state.run.conclusion = 'failure'
     if (mode === 'architecture') state.receipt.runnerArch = 'ARM64'
+    if (mode === 'overlapping-receipt') {
+      state.jobs[0].steps.find(
+        (step) => step.name === 'Upload tested source receipt'
+      ).completed_at = buildStartedAt
+    }
+    if (mode === 'overlapping-source-plan') {
+      state.jobs.find((job) =>
+        job.name.endsWith('/ prepare')
+      ).steps[0].completed_at = buildStartedAt
+    }
     const archives = new Map(),
       artifacts = new Map()
     for (const [index, [run, name, data]] of records.entries()) {
@@ -696,6 +801,12 @@ test('promoter gate accepts only independently verified skipped shards', async (
           id: index + 1,
           name,
           expired: false,
+          created_at:
+            (mode === 'replaced-receipt' && index === 0) ||
+            (mode === 'replaced-source-plan' && index === 1) ||
+            (mode === 'replaced-push-plan' && index === 2)
+              ? '2026-10-21T07:00:03Z'
+              : uploadedAt,
           size_in_bytes: archive.length,
           digest:
             'sha256:' + createHash('sha256').update(archive).digest('hex'),
@@ -743,7 +854,13 @@ test('promoter gate accepts only independently verified skipped shards', async (
     assert.equal(result.valid, mode === 'valid', `${mode}: ${result.reason}`)
     if (mode === 'valid')
       assert.equal(result.workflows[0].validationReuse.id, 123)
-    else assert.match(result.reason, /lack independently verified reuse/)
+    else {
+      assert.match(result.reason, /lack independently verified reuse/)
+      if (mode.startsWith('replaced-'))
+        assert.match(result.reason, /artifact-created-outside-producer-step/)
+      if (mode.startsWith('overlapping-'))
+        assert.match(result.reason, /artifact-execution-window-unproven/)
+    }
   }
 })
 
@@ -765,9 +882,7 @@ test('readiness preserves an in-flight run and accepts it only after completion'
   const expression = caller.jobs['test-playwright-execution'].concurrency[
     'cancel-in-progress'
   ].slice(3, -2)
-  const cancel = new Function('github', `return (${expression})`)
-  assert.equal(cancel({ event: { action: 'ready_for_review' } }), false)
-  assert.equal(cancel({ event: { action: 'synchronize' } }), true)
+  assert.equal(expression.trim(), "github.event.action != 'ready_for_review'")
   assert.deepEqual(caller.jobs['test-playwright-execution'].permissions, {
     contents: 'read',
     actions: 'read',
@@ -818,4 +933,104 @@ test('application control changes outside the materialized boundary preserve pro
   })
   assert.notEqual(priorControl, currentControl)
   assert.equal((await findVerifiedRun(options)).id, 123)
+})
+
+test('push reuse requires the caller opt-in to be the literal boolean true', async () => {
+  for (const value of [undefined, false, 'true', 1]) {
+    const { options } = fixture(true)
+    options.allowPushReuse = value
+    await assert.rejects(findVerifiedRun(options), /push-reuse-not-allowed/)
+  }
+})
+
+test('only the supported suite kind and explicit boolean rollout may reuse', async () => {
+  for (const push of [false, true]) {
+    const { options } = fixture(push)
+    options.kind = 'unit'
+    await assert.rejects(findVerifiedRun(options), /kind-not-supported/)
+  }
+  for (const value of ['true', 1]) {
+    const { options } = fixture()
+    options.enabled = value
+    await assert.rejects(findVerifiedRun(options), /reuse-disabled/)
+  }
+})
+
+test('a metadata edit may reuse only the same live PR and target', async () => {
+  const { options, state } = fixture()
+  options.context.payload.action = 'edited'
+  assert.equal((await findVerifiedRun(options)).id, state.run.id)
+  state.pull.base.ref = 'v3-ai'
+  await assert.rejects(findVerifiedRun(options), /pull-request-stale/)
+})
+
+test('a squash receipt for a different target branch at the same SHA is rejected', async () => {
+  const { options, state } = fixture(true)
+  state.receipt.baseRef = 'v3-ai'
+  await assert.rejects(findVerifiedRun(options), /receipt-binding-invalid/)
+})
+
+test('every declared sparse root and its symlink identity is fingerprinted', () => {
+  const { state } = fixture()
+  const original = fingerprint(state.tree)
+  for (const root of CONTROL_SPARSE_PATHS) {
+    const changed = structuredClone(state.tree)
+    changed.tree.push({
+      path: root.slice(1) + (root.endsWith('/') ? 'new-transitive-input' : ''),
+      type: 'blob',
+      mode: '100644',
+      sha: sha('4'),
+    })
+    assert.notEqual(fingerprint(changed), original, root)
+    if (root.endsWith('/')) {
+      const symlink = structuredClone(state.tree)
+      symlink.tree.push({
+        path: root.slice(1, -1),
+        type: 'blob',
+        mode: '120000',
+        sha: sha('4'),
+      })
+      assert.notEqual(fingerprint(symlink), original, `${root} symlink`)
+    }
+  }
+})
+
+test('fingerprints use locale-independent canonical path ordering', () => {
+  const { createHash } = require('node:crypto')
+  const entries = ['.github/ä', '.github/z', '.github/A'].map((file) => ({
+    path: file,
+    type: 'blob',
+    mode: '100644',
+    sha: sha('4'),
+  }))
+  const canonical = ['.github/A', '.github/z', '.github/ä'].map((file) => [
+    file,
+    '100644',
+    'blob',
+    sha('4'),
+  ])
+  const expected = createHash('sha256')
+    .update(JSON.stringify(canonical))
+    .digest('hex')
+  assert.equal(fingerprint({ truncated: false, tree: entries }), expected)
+  assert.equal(
+    fingerprint({ truncated: false, tree: entries.reverse() }),
+    expected
+  )
+})
+
+test('root Git attributes participate in the trusted control byte identity', () => {
+  const { state } = fixture()
+  const before = fingerprint(state.tree)
+  const attributes = {
+    path: '.gitattributes',
+    type: 'blob',
+    mode: '100644',
+    sha: sha('3'),
+  }
+  state.tree.tree.push(attributes)
+  assert.notEqual(fingerprint(state.tree), before)
+  const normal = fingerprint(state.tree)
+  attributes.sha = sha('4')
+  assert.notEqual(fingerprint(state.tree), normal)
 })

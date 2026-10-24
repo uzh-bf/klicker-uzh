@@ -2,6 +2,9 @@ const fs = require('node:fs')
 const path = require('node:path')
 const { isDeepStrictEqual } = require('node:util')
 const YAML = require('yaml')
+const { CONTROL_SPARSE_PATHS } = require('./ci-verified-reuse.cjs')
+
+const CONTROL_SPARSE_CHECKOUT = `${CONTROL_SPARSE_PATHS.join('\n')}\n`
 
 const EXECUTION_GROUP =
   '${{ github.workflow }}-playwright-${{ github.event.pull_request.number || github.ref }}'
@@ -268,7 +271,7 @@ function validatePublicRunnerRoles(workflow) {
         ref: `\${{ job.workflow_sha }}`,
         path: '.ci-control',
         'sparse-checkout-cone-mode': false,
-        'sparse-checkout': '/.github/\n/playwright/\n/.devrouter.yml\n',
+        'sparse-checkout': CONTROL_SPARSE_CHECKOUT,
         'persist-credentials': false,
       },
     },
@@ -495,10 +498,11 @@ function validatePublicPlaywrightWorkflow(root) {
     issues.push('public reusable workflow policy must be valid YAML')
   }
   const seedWorkflow = readWorkflow(root, 'playwright-cache-seed.yml', issues)
-  const publicActions = [
+  const actionSources = [
     readAction(root, 'playwright-build', issues),
     readAction(root, 'playwright-shard', issues),
-  ].join('\n')
+  ]
+  const publicActions = actionSources.join('\n')
   const publicCacheRestoreSteps = namedSteps(publicActions).filter((step) =>
     step.includes(
       'uses: actions/cache/restore@0057852bfaa89a56745cba8c7296529d2fc39830'
@@ -567,6 +571,12 @@ function validatePublicPlaywrightWorkflow(root) {
       /actions\/checkout@[a-f0-9]{40}/g
     ) ?? []
   ).length
+  const totalCheckoutCount = (
+    `${publicWorkflow}\n${publicActions}`.match(/actions\/checkout@/g) ?? []
+  ).length
+  if (checkoutCount !== totalCheckoutCount) {
+    issues.push('every public checkout must be pinned to a full commit SHA')
+  }
   const nonPersistedCheckoutCount = (
     `${publicWorkflow}\n${publicActions}`.match(
       /persist-credentials:\s+false/g
@@ -577,7 +587,8 @@ function validatePublicPlaywrightWorkflow(root) {
   }
 
   const trustedControl = `${publicWorkflow}\n${publicActions}`
-  // The fixed shape has one preparation checkout and one checkout in each trusted action.
+  // Seven trusted checkouts: one preparation checkout, one .ci-action checkout
+  // in each of four execution jobs, and one .ci-control checkout per composite.
   const trustedRepositoryCount = (
     trustedControl.match(/repository: \$\{\{ job\.workflow_repository \}\}/g) ??
     []
@@ -589,6 +600,51 @@ function validatePublicPlaywrightWorkflow(root) {
     issues.push(
       'every trusted control checkout must use the called workflow repository and commit'
     )
+  }
+
+  const checkoutStepGroups = Object.values(publicParsed?.jobs ?? {}).map(
+    (job) => job.steps ?? []
+  )
+  for (const action of actionSources) {
+    try {
+      const parsed = YAML.parse(action)
+      if (!Array.isArray(parsed?.runs?.steps)) {
+        issues.push('public composite actions must have a step list')
+        continue
+      }
+      checkoutStepGroups.push(parsed.runs.steps)
+    } catch {
+      issues.push('public composite actions must be valid YAML')
+    }
+  }
+  for (const steps of checkoutStepGroups) {
+    for (const step of steps) {
+      if (!step.uses?.startsWith('actions/checkout@')) continue
+      if (!/^actions\/checkout@[a-f0-9]{40}$/.test(step.uses)) {
+        issues.push('every public checkout must be pinned to a full commit SHA')
+      }
+      if (step.with?.['persist-credentials'] !== false) {
+        issues.push('every public checkout must set persist-credentials: false')
+      }
+      const input = step.with ?? {}
+      const isTrusted =
+        ['.ci-control', '.ci-action'].includes(input.path) ||
+        input.repository === '${{ job.workflow_repository }}' ||
+        input.ref === '${{ job.workflow_sha }}'
+      if (
+        isTrusted &&
+        (!['.ci-control', '.ci-action'].includes(input.path) ||
+          input.repository !== '${{ job.workflow_repository }}' ||
+          input.ref !== '${{ job.workflow_sha }}' ||
+          input['sparse-checkout-cone-mode'] !== false ||
+          input['sparse-checkout'] !== CONTROL_SPARSE_CHECKOUT ||
+          input.filter !== undefined)
+      ) {
+        issues.push(
+          'every trusted checkout must materialize exactly the fingerprinted control boundary'
+        )
+      }
+    }
   }
 
   issues.push(...validatePublicRunnerRoles(publicParsed))
@@ -627,7 +683,7 @@ function validatePublicPlaywrightWorkflow(root) {
           ref: '${{ job.workflow_sha }}',
           path: '.ci-action',
           'sparse-checkout-cone-mode': false,
-          'sparse-checkout': '/.github/\n/playwright/\n/.devrouter.yml\n',
+          'sparse-checkout': CONTROL_SPARSE_CHECKOUT,
           'persist-credentials': false,
         }) ||
         reserve?.run !== 'rm -rf -- "$GITHUB_WORKSPACE/.ci-action"'
