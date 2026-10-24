@@ -196,9 +196,11 @@ test('endpoint and image paths survive validation for every app', () => {
 test('each required binding must be supplied by preview config', () => {
   for (const [app, key] of [
     ['auth', 'NEXTAUTH_URL'],
+    ['auth', 'NEXT_PUBLIC_PREVIEW_ID'],
     ['chat', 'NEXT_PUBLIC_MANAGE_URL'],
     ['frontend-control', 'NEXT_PUBLIC_CONTROL_URL'],
     ['frontend-manage', 'NEXT_PUBLIC_API_URL'],
+    ['frontend-manage', 'NEXT_PUBLIC_CHAT_URL'],
     ['frontend-pwa', 'NEXT_PUBLIC_ADD_RESPONSE_URL'],
   ]) {
     const partialConfig = { ...validPreviewConfig }

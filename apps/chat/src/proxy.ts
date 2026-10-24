@@ -126,7 +126,7 @@ function passThroughWithScopedToken(
   const response = NextResponse.next({ request: { headers: requestHeaders } })
   if (queryLocale) {
     response.cookies.set({
-      name: previewCookieName('NEXT_LOCALE'),
+      name: 'NEXT_LOCALE',
       value: queryLocale.locale,
       path: queryLocale.path,
     })
@@ -149,14 +149,14 @@ export async function proxy(request: NextRequest) {
 
   if (pathname === '/manage' && queryLocale) {
     request.cookies.set({
-      name: previewCookieName('NEXT_LOCALE'),
+      name: 'NEXT_LOCALE',
       value: queryLocale,
     })
     const response = NextResponse.next({
       request: { headers: request.headers },
     })
     response.cookies.set({
-      name: previewCookieName('NEXT_LOCALE'),
+      name: 'NEXT_LOCALE',
       value: queryLocale,
       path: '/manage',
     })
@@ -165,7 +165,7 @@ export async function proxy(request: NextRequest) {
 
   if (queryLocale) {
     request.cookies.set({
-      name: previewCookieName('NEXT_LOCALE'),
+      name: 'NEXT_LOCALE',
       value: queryLocale,
     })
   }

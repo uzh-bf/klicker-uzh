@@ -110,6 +110,7 @@ const APP_REQUIRED_KEYS = Object.freeze({
     'NEXT_PUBLIC_LTI_URL',
     'NEXT_PUBLIC_MANAGE_URL',
     'NEXT_PUBLIC_PWA_URL',
+    'NEXT_PUBLIC_CHAT_URL',
   ]),
   'frontend-pwa': Object.freeze([
     'API_URL_SSR',
@@ -417,9 +418,10 @@ export function parsePreviewBuildEnv(rawValue, app) {
     config[key] = value
   }
 
-  const missingKeys = APP_REQUIRED_KEYS[normalizedApp].filter(
-    (key) => !Object.hasOwn(config, key)
-  )
+  const missingKeys = [
+    ...APP_REQUIRED_KEYS[normalizedApp],
+    'NEXT_PUBLIC_PREVIEW_ID',
+  ].filter((key) => !Object.hasOwn(config, key))
   if (missingKeys.length > 0) {
     throw new PreviewBuildEnvError(
       `Missing required preview config for ${normalizedApp}: ${missingKeys.join(
