@@ -1155,7 +1155,9 @@ adapter accepts `.pptx` and `.ppt` only to show that message. Documents work wit
 the attach button and the dropzone stay available when the selected model cannot read images.
 
 The first document a student attaches opens a notice (`document-notice-modal.tsx`) about what
-may be shared and where the text goes. Declining removes the documents; accepting is remembered
+may be shared and where document text and rendered PDF pages go. It distinguishes the text and
+visual summaries saved by KlickerUZH from page images, which KlickerUZH does not persist; it
+makes no promise about provider-side retention. Declining removes the documents; accepting is remembered
 in `localStorage` for that browser, not in the database, so it is a reminder rather than recorded
 consent.
 
@@ -1166,7 +1168,9 @@ block starts with `--- Attached document: <name> (<pages>, shortened …) ---` a
 returns the user message as one text string, and `RuntimeProvider.convertMessage` parses the
 blocks back into `metadata.custom.documentAttachments`. The bubble then shows file chips, while
 copy and the edit composer see only the question. An edit keeps the original documents unless the
-student removes them. Titles (`extractThreadTitle`) and the history rail strip the blocks.
+student removes them. Titles (`extractThreadTitle` and the sidebar fallback), the title filter,
+the history rail and exported user questions strip the blocks. Markdown export preserves
+assistant answer text, mathematics and citations; it never changes the stored conversation.
 Changing the header or footer wording breaks the chips of existing messages.
 
 Data boundary: the extracted text is stored in `ChatMessage.content`, sent to the model provider,

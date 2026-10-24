@@ -5,7 +5,7 @@ import { Button, Modal } from '@uzh-bf/design-system'
 import { LoaderCircleIcon, MicIcon, SquareIcon } from 'lucide-react'
 import { useParams } from 'next/navigation'
 import { useTranslations } from 'next-intl'
-import { useEffect, useRef } from 'react'
+import { useCallback, useEffect } from 'react'
 import { twMerge } from 'tailwind-merge'
 import type { DictationErrorCode } from '../lib/speech/onDeviceDictation'
 import { useDictationContext } from './dictation-context'
@@ -126,14 +126,11 @@ export function DictationSheet() {
     refresh,
     setInstallSheetOpen,
   } = useDictationContext()
-  // The design-system `Modal` prevents `onOpenAutoFocus` (see
-  // `DisclaimerModal`), so focus must be moved into the dialog here or it
-  // stays on the obscured composer control behind the overlay.
-  const primaryActionRef = useRef<HTMLButtonElement>(null)
-
-  useEffect(() => {
-    if (installSheetOpen) primaryActionRef.current?.focus()
-  }, [installSheetOpen, availability])
+  // The design-system `Modal` prevents `onOpenAutoFocus` and mounts its
+  // contents after the sheet's effect, so focus the action when it mounts.
+  const primaryActionRef = useCallback((node: HTMLButtonElement | null) => {
+    node?.focus()
+  }, [])
 
   if (!installSheetOpen) return null
 
@@ -199,6 +196,9 @@ export function DictationSheet() {
                 primary
                 ref={primaryActionRef}
                 data-cy="chat-dictation-start"
+                className={{
+                  root: 'bg-primary text-primary-foreground hover:bg-primary/90 hover:text-primary-foreground disabled:hover:bg-primary border-transparent font-semibold',
+                }}
                 onClick={() => {
                   close()
                   aui.composer.startDictation()
@@ -211,8 +211,12 @@ export function DictationSheet() {
         ) : (
           <div className="flex flex-col gap-2 sm:flex-row sm:justify-end">
             <Button
+              primary
               ref={primaryActionRef}
               data-cy="chat-dictation-download"
+              className={{
+                root: 'bg-primary text-primary-foreground hover:bg-primary/90 hover:text-primary-foreground disabled:hover:bg-primary border-transparent font-semibold',
+              }}
               disabled={installing}
               onClick={handlePrimaryAction}
             >
