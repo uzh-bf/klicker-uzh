@@ -238,3 +238,37 @@ Both sync merges and actual staging qualification remain pending. Published
 image policy also requires a separate owned dependency repair in
 [6699](https://github.com/uzh-bf/klicker-uzh/pull/6699). Keep that work with its
 owner and distinguish PR builds from post-merge scan and promotion evidence.
+
+
+### Verified dictation focus feedback correction
+
+The remaining low automated feedback exposed two keyboard defects in the
+imported dictation sheet: installing and starting can replace its original
+opener, and a failed installation reenables its action without restoring focus.
+A synthetic SpeechRecognition browser case reproduces both. Its initial
+assertion also caught only transient focus, so acceptance now waits for full
+dialog unmount. The installed Modal wrapper does not expose close-focus
+control. Use the already installed Radix Dialog in this same component with
+existing appearance, focus primary actions after transitions, and restore the
+connected opener or replacement dictation control from onCloseAutoFocus.
+No new dependency, module, microphone, recognition download or inference.
+
+Main owns the component correction and final proof. The bounded test executor
+changed only the existing Y-chat browser spec and is closed. Main owns the
+combined final keyboard sequence and capture review. Earlier source review
+remains applicable outside this materially changed focus seam; review the
+committed seam and regression with the explicitly selected Claude model and
+effort after verification. The timed fallback was abandoned after independent
+browser observation showed focus loss after close; no timer workaround is
+part of the final correction.
+
+
+Final focus verification passes the maintained Chromium keyboard sequence and
+independent agent-browser normal-login flow. Escape returns to setup, a failed
+install returns to retry, successful install focuses Start, and Stop retains
+focus after the dialog fully closes. The real browser captures use only a
+synthetic recognizer. Actual microphone and on-device recognition remain
+unverified. Source snapshot and inspected images are in the existing local
+gallery. The affected Chat type check passes. No session state was exported;
+a proposed export was rejected and removed, then normal synthetic login
+provided the required independent browser access.
