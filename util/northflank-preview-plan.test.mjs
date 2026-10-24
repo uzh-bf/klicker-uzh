@@ -886,11 +886,11 @@ test('contract ports and source opt-in metadata reflect the hosted boundary', ()
     'control',
     'manage',
     'pwa',
-    'olat-api',
   ]) {
     assert.equal(contract.apps[name].nativePort, 3000, name)
   }
   assert.equal(contract.apps.lti.nativePort, 4000)
+  assert.equal(contract.apps['olat-api'].nativePort, 3030)
   assert.equal(contract.apps['response-api'].nativePort, 7078)
   assert.equal(contract.apps.db.publicListener, false)
   const branchOnly = selectPreviewSource(
