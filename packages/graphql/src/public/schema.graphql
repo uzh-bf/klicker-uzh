@@ -1608,6 +1608,7 @@ enum ChatUsageClass {
 type Chatbot {
   allowedModelIds: [String!]!
   allowedReasoningEffortsByModel: [ChatbotReasoningConfig!]!
+  answerPreferencesEnabled: Boolean!
   authoringRevision: ChatbotAuthoringRevision
   avatar: String
   courses: [CourseListEntry!]!
@@ -1642,6 +1643,7 @@ type Chatbot {
 type ChatbotAuthoringRevision {
   allowedModelIds: [String!]!
   allowedReasoningEffortsByModel: [ChatbotReasoningConfig!]!
+  answerPreferencesEnabled: Boolean!
   avatar: String
   creditInitialCredits: Int!
   creditMaxCredits: Int!
@@ -1787,6 +1789,7 @@ input ChatbotRevisionMetadataInput {
 input ChatbotRevisionModelPolicyInput {
   allowedModelIds: [String!]!
   allowedReasoningEffortsByModel: [ChatbotReasoningConfigInput!]
+  answerPreferencesEnabled: Boolean
   modelSelection: Boolean!
 }
 

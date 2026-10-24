@@ -35,8 +35,16 @@ import {
   MAX_VISUAL_REVIEW_PAGES,
   stripDocumentBlocks,
 } from '@/src/lib/attachments/documentText'
+import {
+  DEFAULT_ANSWER_STYLE,
+  DEFAULT_ANSWER_TONE,
+} from '@/src/lib/config/answerStyles'
 import { DEFAULT_PROMPT } from '@/src/lib/config/prompts'
 import type { ReasoningEffort } from '@/src/lib/config/reasoning'
+import {
+  answerStyleSchema,
+  answerToneSchema,
+} from '@/src/lib/server/answerStyleInstructions'
 import { withChatbotAuth } from '@/src/lib/server/apiGuards'
 import { withCalculatorTool } from '@/src/lib/server/calculatorTool'
 import { sanitizeChatLogContext } from '@/src/lib/server/chatLogging'
@@ -564,6 +572,8 @@ async function handlePOST(
     selectedModel: z.string().min(1),
     selectedMode: z.string().optional().default('tutor'),
     reasoningEffort: z.string().min(1).optional().default('none'),
+    answerStyle: answerStyleSchema,
+    answerTone: answerToneSchema,
     chatContext: z.unknown().optional(),
     parentId: z.string().min(1).nullable().optional(),
     // Set only when the client branches an existing question (edit): the new
@@ -607,6 +617,8 @@ async function handlePOST(
     threadId,
     selectedMode: requestedMode,
     reasoningEffort: requestedReasoningEffort,
+    answerStyle,
+    answerTone,
     parentId,
     sourceMessageId,
     assistantMessageId,
@@ -793,6 +805,15 @@ async function handlePOST(
     allowedIds === null ||
     modelRegistry.some((model) => allowedIds.has(model.id))
   let automaticModelId: string | null = null
+
+  // A lecturer can turn the student choices off for this chatbot (ADR 0054).
+  // The defaults then apply, whatever a browser still sends.
+  const appliedAnswerStyle = chatbot.answerPreferencesEnabled
+    ? answerStyle
+    : DEFAULT_ANSWER_STYLE
+  const appliedAnswerTone = chatbot.answerPreferencesEnabled
+    ? answerTone
+    : DEFAULT_ANSWER_TONE
 
   if (!chatbot.modelSelection) {
     automaticModelId = getAutomaticModelId(chatbot.allowedModelIds as string[])
@@ -1535,6 +1556,8 @@ async function handlePOST(
         courseDisplayName: chatbot.course.displayName,
         toolNames,
         standardModeConfig: chatbot.standardModeConfig,
+        answerStyle: appliedAnswerStyle,
+        answerTone: appliedAnswerTone,
         customModeConfig: chatbot.customModeConfig,
       }
     )
@@ -1841,6 +1864,8 @@ async function handlePOST(
       selectedMode,
       reasoningEffort: appliedReasoningEffort,
       allowedReasoningEfforts,
+      answerStyle: appliedAnswerStyle,
+      answerTone: appliedAnswerTone,
       maxOutputTokens: maxOutputTokens ?? null,
       toolCount: toolNames.length,
       toolNames,

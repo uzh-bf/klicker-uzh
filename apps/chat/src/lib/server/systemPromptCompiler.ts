@@ -3,7 +3,9 @@ import {
   normalizeChatbotCustomModeConfig,
   normalizeChatbotStandardModeConfig,
 } from '@klicker-uzh/util'
+import type { AnswerStyle, AnswerTone } from '@/src/lib/config/answerStyles'
 import { DEFAULT_PROMPT } from '@/src/lib/config/prompts'
+import { answerStyleInstructions } from '@/src/lib/server/answerStyleInstructions'
 import { withCitationContract } from '@/src/lib/server/citationInstructions'
 import { courseDataSection } from '@/src/lib/server/courseContextInstructions'
 import { withCoursePolicyContract } from '@/src/lib/server/coursePolicyInstructions'
@@ -16,6 +18,8 @@ export type SystemPromptCompilationContext = {
   courseDisplayName: string
   toolNames: readonly string[]
   standardModeConfig?: unknown
+  answerStyle?: AnswerStyle
+  answerTone?: AnswerTone
   /**
    * The custom modes the calling surface should compile. Participant routes
    * pass the live column; owner preview passes the saved revision so it
@@ -192,7 +196,8 @@ function standardModeContextSection(
  *
  * Standard modes read course data, optional lecturer guidance, typed lecturer
  * context, and then their non-removable platform mode contract. Custom modes
- * replace those mode sections with their lecturer-defined persona. Every mode
+ * replace those mode sections with their lecturer-defined persona. A
+ * non-default student answer style or tone follows the mode sections. Every mode
  * then receives the same attachment, course, output, conditional citation,
  * and final language contracts; a custom persona receives their persona
  * variants, which keep the same protections.
@@ -202,9 +207,16 @@ export function compileSystemPrompt(
   selectedMode: string,
   context: SystemPromptCompilationContext
 ): string {
+  const answerPreferences = answerStyleInstructions(
+    context.answerStyle,
+    context.answerTone
+  )
   const base = [
     courseDataSection(context.courseDisplayName),
     ...modeSections(systemPrompts, selectedMode, context),
+    ...(answerPreferences
+      ? [promptSection('Student answer preferences', answerPreferences)]
+      : []),
   ].join('\n\n')
   const customPersona = compilesCustomPersona(
     systemPrompts,

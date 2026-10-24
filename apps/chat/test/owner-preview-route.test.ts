@@ -268,6 +268,29 @@ describe('POST owner preview chat', () => {
     })
   })
 
+  it.each([
+    [false, true, 'balanced', 'neutral'],
+    [true, false, 'bullets', 'direct'],
+    [undefined, true, 'bullets', 'direct'],
+  ])('uses the saved answer-preference flag with a live fallback', async (saved, live, style, tone) => {
+    mocks.findChatbot.mockResolvedValueOnce(
+      createChatbot({
+        answerPreferencesEnabled: live,
+        draftConfig: { answerPreferencesEnabled: saved },
+      })
+    )
+    setRequestOptions({ answerStyle: 'bullets', answerTone: 'direct' })
+    const response = await POST(request(), {
+      params: Promise.resolve({ chatbotId: 'chatbot-id' }),
+    })
+    expect(response.status).toBe(200)
+    expect(mocks.compileSystemPrompt).toHaveBeenCalledWith(
+      expect.anything(),
+      'tutor',
+      expect.objectContaining({ answerStyle: style, answerTone: tone })
+    )
+  })
+
   it('fails before body or database work when owner authorization is denied', async () => {
     mocks.withOwnerPreviewAuth.mockResolvedValue({
       response: new Response('Forbidden', { status: 403 }),
@@ -435,6 +458,8 @@ describe('POST owner preview chat', () => {
       'tutor',
       {
         courseDisplayName: 'Test Course',
+        answerStyle: 'balanced',
+        answerTone: 'neutral',
         customModeConfig: null,
         toolNames: ['KB_doc_query'],
         standardModeConfig: defaultStandardModeConfig,
@@ -740,6 +765,8 @@ describe('POST owner preview chat', () => {
       resolvedMode,
       {
         courseDisplayName: 'Test Course',
+        answerStyle: 'balanced',
+        answerTone: 'neutral',
         customModeConfig: null,
         toolNames: ['KB_doc_query'],
         standardModeConfig: defaultStandardModeConfig,
@@ -780,6 +807,8 @@ describe('POST owner preview chat', () => {
       approvedCustomMode.key,
       {
         courseDisplayName: 'Test Course',
+        answerStyle: 'balanced',
+        answerTone: 'neutral',
         customModeConfig: { modes: [approvedCustomMode] },
         toolNames: ['KB_doc_query'],
         standardModeConfig: defaultStandardModeConfig,
@@ -858,6 +887,8 @@ describe('POST owner preview chat', () => {
       approvedCustomMode.key,
       {
         courseDisplayName: 'Test Course',
+        answerStyle: 'balanced',
+        answerTone: 'neutral',
         customModeConfig: { modes: [approvedCustomMode] },
         toolNames: ['KB_doc_query'],
         standardModeConfig: defaultStandardModeConfig,
