@@ -5,7 +5,7 @@ import { Button, Modal } from '@uzh-bf/design-system'
 import { LoaderCircleIcon, MicIcon, SquareIcon } from 'lucide-react'
 import { useParams } from 'next/navigation'
 import { useTranslations } from 'next-intl'
-import { useCallback, useEffect } from 'react'
+import { useCallback, useEffect, useRef } from 'react'
 import { twMerge } from 'tailwind-merge'
 import type { DictationErrorCode } from '../lib/speech/onDeviceDictation'
 import { useDictationContext } from './dictation-context'
@@ -128,15 +128,23 @@ export function DictationSheet() {
   } = useDictationContext()
   // The design-system `Modal` prevents `onOpenAutoFocus` and mounts its
   // contents after the sheet's effect, so focus the action when it mounts.
+  const openerRef = useRef<HTMLElement | null>(null)
   const primaryActionRef = useCallback((node: HTMLButtonElement | null) => {
     if (!node) return
+    const active = document.activeElement
+    if (active instanceof HTMLElement && !active.closest('[role="dialog"]')) {
+      openerRef.current = active
+    }
     const timeout = setTimeout(() => node.focus(), 0)
     return () => clearTimeout(timeout)
   }, [])
 
   if (!installSheetOpen) return null
 
-  const close = () => setInstallSheetOpen(false)
+  const close = () => {
+    setInstallSheetOpen(false)
+    setTimeout(() => openerRef.current?.focus(), 0)
+  }
   const installing = availability === 'installing'
   const needsInstall = availability === 'needs-install'
 
