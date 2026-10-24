@@ -15,6 +15,7 @@ import {
   getActivityInstanceConnectOrCreate,
   getCachedBlockResults,
   getInitialInstanceResults,
+  getResponseAdmissionKeys,
   levelFromXp,
   propagateActivityToElements,
   recomputeDerivedPermissions,
@@ -1004,6 +1005,10 @@ export async function getCockpitQuiz(
     ? ctx.redisAssessmentExec
     : ctx.redisExec
 
+  // free-text results with a response limit above 1 count respondents separately
+  const countRespondents = (results: { total: number; respondents?: number }) =>
+    results.respondents ?? results.total
+
   // number of participants per block
   const blockParticipants = liveQuiz.blocks.reduce<Record<number, number>>(
     (acc, block) => {
@@ -1011,7 +1016,8 @@ export async function getCockpitQuiz(
         (instanceAcc, instance) =>
           min(
             instanceAcc,
-            instance.results.total + instance.anonymousResults.total
+            countRespondents(instance.results) +
+              countRespondents(instance.anonymousResults)
           ),
         100000
       )
@@ -1027,17 +1033,31 @@ export async function getCockpitQuiz(
     const redisMulti = redis.pipeline()
     activeInstanceIds?.forEach((instanceId) => {
       redisMulti.hgetall(`lq:${id}:i:${instanceId}:results`)
+      // only present for free-text elements with a response limit above 1
+      redisMulti.get(
+        getResponseAdmissionKeys(`lq:${id}:i:${instanceId}`).respondents
+      )
     })
     const cacheContent = (await redisMulti.exec()) as
       | [
           Error | null,
-          { participants: string }, // TODO: extend type with more content of cache (as needed)
+          { participants: string } | string | null, // TODO: extend type with more content of cache (as needed)
         ][]
       | null
 
     const activeBlockParticipants = cacheContent
-      ?.map(([_, result]) => parseInt(result?.participants))
-      .reduce((acc, val) => min(acc, val), 100000)
+      ? (activeInstanceIds ?? [])
+          .map((_, ix) => {
+            const results = cacheContent[2 * ix]?.[1] as
+              | { participants: string }
+              | undefined
+            const respondents = cacheContent[2 * ix + 1]?.[1]
+            return typeof respondents === 'string'
+              ? parseInt(respondents)
+              : parseInt(results?.participants as string)
+          })
+          .reduce((acc, val) => min(acc, val), 100000)
+      : undefined
     blockParticipants[liveQuiz.activeBlock.id] =
       activeBlockParticipants ?? blockParticipants[liveQuiz.activeBlock.id] ?? 0
   }

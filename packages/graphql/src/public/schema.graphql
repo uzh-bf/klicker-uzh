@@ -1572,6 +1572,7 @@ type FreeElementResult {
 type FreeElementResults {
   anonymousAnswers: Int!
   maxLength: Int
+  respondents: Int
   responses: [FreeElementResult!]!
   solutions: [String!]
   totalAnswers: Int!
