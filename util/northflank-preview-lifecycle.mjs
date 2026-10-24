@@ -212,7 +212,9 @@ function validateState(input) {
     assertInteger(environment.lastSequence, `Environment ${id} sequence`, {
       min: 1,
     })
-    if (!['active', 'paused', 'terminal'].includes(environment.phase)) {
+    if (
+      !['active', 'paused', 'pending', 'terminal'].includes(environment.phase)
+    ) {
       fail('INVALID_STATE', `Environment ${id} phase is invalid`)
     }
     if (typeof environment.deleted !== 'boolean') {
@@ -566,6 +568,29 @@ function dropResult({ state, reason, nextState = state }) {
   return { decision: 'drop', reason, action: null, nextState }
 }
 
+function terminalDrop(state, event, id, reason, terminalReason) {
+  const nextState = clone(state)
+  nextState.terminalIdentities[id] = {
+    reason: terminalReason,
+    sequence: event.sequence,
+  }
+  return dropResult({ state, reason, nextState })
+}
+
+function reserveProviderOperation(planned) {
+  const admissionState = clone(planned.nextState)
+  const action = planned.action
+  admissionState.environments[action.environmentId].phase = 'pending'
+  admissionState.trial.buildAttempts += action.buildAttemptsReserved
+  admissionState.trial.attemptRecords.push({
+    environmentId: action.environmentId,
+    revision: action.revision ?? action.previousRevision,
+    command: action.command,
+    attempts: action.buildAttemptsReserved,
+  })
+  return { ...planned, admissionState }
+}
+
 function planDelete({ state, event, id, environment, reason, terminalReason }) {
   const selected = []
   const resourceStates = effectiveResourceStates(
@@ -900,7 +925,13 @@ export function planPreviewReconciliation({
             reason: 'pull-request-merged',
             terminalReason: 'merged',
           })
-        : dropResult({ state: inputState, reason: 'pull-request-merged' })
+        : terminalDrop(
+            inputState,
+            normalizedEvent,
+            id,
+            'pull-request-merged',
+            'merged'
+          )
     }
     if (prState === 'closed') {
       return existing
@@ -912,7 +943,13 @@ export function planPreviewReconciliation({
             reason: 'pull-request-closed',
             terminalReason: 'closed',
           })
-        : dropResult({ state: inputState, reason: 'pull-request-closed' })
+        : terminalDrop(
+            inputState,
+            normalizedEvent,
+            id,
+            'pull-request-closed',
+            'closed'
+          )
     }
   }
   if (normalizedEvent.eventName === 'teardown') {
@@ -925,7 +962,19 @@ export function planPreviewReconciliation({
           reason: 'explicit-teardown',
           terminalReason: 'teardown',
         })
-      : dropResult({ state: inputState, reason: 'explicit-teardown' })
+      : terminalDrop(
+          inputState,
+          normalizedEvent,
+          id,
+          'explicit-teardown',
+          'teardown'
+        )
+  }
+  if (existing?.phase === 'pending') {
+    return dropResult({
+      state: inputState,
+      reason: 'unsettled-provider-operation',
+    })
   }
   if (
     normalizedEvent.eventName === 'pause' ||
@@ -1093,7 +1142,7 @@ export async function reconcilePreviewLifecycle({
   driver,
   now = Date.now(),
 }) {
-  const planned = planPreviewReconciliation({ state, desired, event, now })
+  let planned = planPreviewReconciliation({ state, desired, event, now })
   if (!planned.action)
     return { ...publicResult(planned), state: clone(planned.nextState) }
   if (!driver || typeof driver.applyLifecycle !== 'function') {
@@ -1101,6 +1150,9 @@ export async function reconcilePreviewLifecycle({
       'INVALID_DRIVER',
       'A provider driver with applyLifecycle(action) is required'
     )
+  }
+  if (['create', 'update'].includes(planned.action.command)) {
+    planned = reserveProviderOperation(planned)
   }
   let receiptValue
   try {
@@ -1135,7 +1187,8 @@ export async function reconcilePreviewLifecycle({
  * exact owned inventory, final states, retry policy and build allowance.
  * It returns `{settled: true, environmentId, resources: [{binding, state}],
  * buildAttempts, fixturesSeeded, retryPolicy: 'none'}` after native work has
- * settled. A missing or partial receipt leaves the paid lifecycle uncommitted.
+ * settled. A missing or partial receipt retains the build reservation and blocks
+ * further paid work until the provider operation is reconciled.
  */
 export function createSerializedPreviewLifecycle({
   state,

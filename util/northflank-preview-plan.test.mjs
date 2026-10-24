@@ -280,6 +280,159 @@ function plan(t, options = {}) {
   })
 }
 
+function nativePreviewNodes() {
+  const graph = JSON.parse(
+    readFileSync(
+      join(REPOSITORY, 'deploy/northflank/klicker-preview.json'),
+      'utf8'
+    )
+  )
+  return graph.spec.spec.steps.flatMap((workflow) => workflow.spec.steps)
+}
+
+test('native application runtimes receive the preview cookie namespace and explicit origins', () => {
+  const nodes = nativePreviewNodes()
+  const applications = nodes.filter(
+    (node) =>
+      node.kind === 'DeploymentService' &&
+      node.spec.deployment.internal &&
+      node.ref !== 'local_mcp_service'
+  )
+  for (const node of applications) {
+    assert.equal(
+      node.spec.runtimeEnvironment.NEXT_PUBLIC_PREVIEW_ID,
+      '${args.envId}',
+      node.ref
+    )
+  }
+  const runtime = nodes.find((node) => node.ref === 'runtime_config_secret')
+  assert.equal(runtime.kind, 'SecretGroup')
+  assert.equal(runtime.skipNodeExecution, '${args.skip.runtimeConfig}')
+  assert.equal(runtime.spec.restrictions.restricted, true)
+  assert.deepEqual(
+    new Set(runtime.spec.restrictions.nfObjects),
+    new Set(
+      applications.map((node) => ({ id: node.spec.name, type: 'service' }))
+    )
+  )
+  const keys = [
+    'COOKIE_DOMAIN',
+    'APP_ORIGIN_API',
+    'APP_ORIGIN_AUTH',
+    'APP_ORIGIN_MANAGE',
+    'APP_ORIGIN_PWA',
+    'APP_ORIGIN_LTI',
+    'APP_ORIGIN_ASSESSMENT_API',
+    'APP_ORIGIN_ASSESSMENT_PWA',
+    'NEXTAUTH_URL',
+  ]
+  assert.deepEqual(
+    runtime.spec.secrets.variables,
+    Object.fromEntries(
+      keys.map((key) => [key, '${args.runtimeEnvironment.' + key + '}'])
+    )
+  )
+})
+
+test('native signing secrets are supplied separately and restricted to application services', () => {
+  const nodes = nativePreviewNodes()
+  const targets = (ref) => {
+    const group = nodes.find((node) => node.ref === ref)
+    assert.equal(group.kind, 'SecretGroup')
+    assert.equal(group.spec.restrictions.restricted, true)
+    assert.ok(
+      group.spec.restrictions.nfObjects.every(
+        (object) => object.type === 'service'
+      )
+    )
+    return group.spec.restrictions.nfObjects.map((object) => object.id).sort()
+  }
+  const applications = nodes
+    .filter(
+      (node) =>
+        node.kind === 'DeploymentService' &&
+        node.spec.deployment.internal &&
+        node.ref !== 'local_mcp_service'
+    )
+    .map((node) => node.spec.name)
+    .sort()
+  assert.deepEqual(targets('app_signing_secret'), applications)
+  assert.deepEqual(
+    targets('nextauth_signing_secret'),
+    ['auth', 'chat', 'control', 'manage', 'pwa'].map(
+      (name) => '${args.envId}-' + name
+    )
+  )
+  for (const [ref, key, argument] of [
+    ['app_signing_secret', 'APP_SECRET', '${args.secrets.appSecret}'],
+    [
+      'nextauth_signing_secret',
+      'NEXTAUTH_SECRET',
+      '${args.secrets.nextauthSecret}',
+    ],
+  ]) {
+    assert.deepEqual(
+      nodes.find((node) => node.ref === ref).spec.secrets.variables,
+      { [key]: argument }
+    )
+  }
+})
+
+test('native local MCP runs the server with matching host and scoped authentication', () => {
+  const nodes = nativePreviewNodes()
+  const harness = nodes.find((node) => node.ref === 'local_mcp_service')
+  const chat = nodes.find((node) => node.ref === 'chat_service')
+  assert.deepEqual(harness.spec.deployment.docker, {
+    configType: 'customEntrypointCustomCommand',
+    customEntrypoint: 'node',
+    customCommand: '/app/apps/chat/scripts/local-mcp-server.mjs',
+  })
+  assert.equal(harness.spec.runtimeEnvironment.LOCAL_MCP_BIND_HOST, '0.0.0.0')
+  const authority = '${args.bindings.localMcp.host}:1417'
+  assert.equal(
+    harness.spec.runtimeEnvironment.LOCAL_MCP_ALLOWED_HOSTS,
+    authority
+  )
+  assert.equal(
+    chat.spec.runtimeEnvironment.LOCAL_MCP_URL,
+    `http://${authority}/mcp`
+  )
+  const auth = nodes.find((node) => node.ref === 'local_mcp_auth_secret')
+  assert.equal(auth.skipNodeExecution, harness.skipNodeExecution)
+  assert.equal(auth.spec.restrictions.restricted, true)
+  assert.deepEqual(
+    new Set(auth.spec.restrictions.nfObjects),
+    new Set([
+      { id: harness.spec.name, type: 'service' },
+      { id: chat.spec.name, type: 'service' },
+    ])
+  )
+  assert.deepEqual(auth.spec.secrets.variables, {
+    LOCAL_MCP_TRANSPORT_TOKEN: '${args.secrets.localMcpToken}',
+    LOCAL_MCP_PUBLIC_KEY: '${args.secrets.localMcpPublicKey}',
+    LOCAL_MCP_GENERATION: '${args.secrets.localMcpGeneration}',
+    DOC_QUERY_SCOPE_KID: '${args.secrets.localMcpGeneration}',
+    DOC_QUERY_SCOPE_ISSUER: '${args.bindings.localMcp.issuer}',
+    DOC_QUERY_SCOPE_AUDIENCE: '${args.bindings.localMcp.audience}',
+  })
+  const signer = nodes.find((node) => node.ref === 'local_mcp_signer_secret')
+  assert.equal(signer.skipNodeExecution, harness.skipNodeExecution)
+  assert.equal(signer.spec.restrictions.restricted, true)
+  assert.deepEqual(signer.spec.restrictions.nfObjects, [
+    { id: chat.spec.name, type: 'service' },
+  ])
+  assert.deepEqual(signer.spec.secrets.variables, {
+    DOC_QUERY_SCOPE_PRIVATE_KEY: '${args.secrets.localMcpPrivateKey}',
+  })
+  for (const node of nodes.filter((node) => node.kind === 'SecretGroup')) {
+    if (node === signer) continue
+    assert.equal(
+      node.spec.secrets?.variables?.DOC_QUERY_SCOPE_PRIVATE_KEY,
+      undefined
+    )
+  }
+})
+
 test('chat plans its app/data closure without management, live-quiz, or workers', (t) => {
   const result = plan(t, {
     changedRecords: [{ kind: 'M', paths: ['apps/chat/src/page.tsx'] }],
@@ -879,14 +1032,7 @@ test('only a controller-qualified pair of profile files can expand candidate con
 
 test('contract ports and source opt-in metadata reflect the hosted boundary', () => {
   const contract = loadRuntimeContract()
-  for (const name of [
-    'api',
-    'auth',
-    'chat',
-    'control',
-    'manage',
-    'pwa',
-  ]) {
+  for (const name of ['api', 'auth', 'chat', 'control', 'manage', 'pwa']) {
     assert.equal(contract.apps[name].nativePort, 3000, name)
   }
   assert.equal(contract.apps.lti.nativePort, 4000)

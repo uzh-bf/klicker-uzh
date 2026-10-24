@@ -544,8 +544,16 @@ test('fails closed on missing, inconsistent or unknown owned-resource receipts',
     missingController.reconcile({ desired: plan(), event: pullRequest() }),
     (error) => error.code === 'INCOMPLETE_RECEIPT'
   )
-  assert.equal(missingController.snapshot().trial.buildAttempts, 0)
-  assert.equal(Object.keys(missingController.snapshot().environments).length, 0)
+  assert.equal(missingController.snapshot().trial.buildAttempts, 2)
+  assert.equal(
+    missingController.snapshot().environments[`${REPOSITORY}#pull/1`].phase,
+    'pending'
+  )
+  const retry = await missingController.reconcile({
+    desired: plan(),
+    event: pullRequest({ sequence: 2 }),
+  })
+  assert.equal(retry.reason, 'unsettled-provider-operation')
 
   const unknownController = createSerializedPreviewLifecycle({
     state,
@@ -578,6 +586,65 @@ test('fails closed on missing, inconsistent or unknown owned-resource receipts',
     inconsistentController.reconcile({ desired: plan(), event: pullRequest() }),
     (error) => error.code === 'INCONSISTENT_RECEIPT'
   )
+})
+
+test('failed provider work retains reservations across identities and blocks replay', async () => {
+  let calls = 0
+  const controller = createSerializedPreviewLifecycle({
+    state: initialState({ maxBuildAttempts: 2 }),
+    driver: {
+      async applyLifecycle() {
+        calls++
+        throw new Error('Native partial failure')
+      },
+    },
+    now: () => STARTED_AT,
+  })
+  await assert.rejects(
+    controller.reconcile({ desired: plan(), event: pullRequest() })
+  )
+  assert.equal(controller.snapshot().trial.buildAttempts, 2)
+  assert.equal(
+    (
+      await controller.reconcile({
+        desired: plan(),
+        event: pullRequest({ sequence: 2 }),
+      })
+    ).reason,
+    'unsettled-provider-operation'
+  )
+  assert.equal(
+    (
+      await controller.reconcile({
+        desired: plan(),
+        event: pullRequest({ number: 2 }),
+      })
+    ).reason,
+    'build-attempt-limit'
+  )
+  assert.equal(calls, 1)
+})
+
+test('close, merge and teardown before creation leave terminal admission records', () => {
+  for (const event of [
+    pullRequest({ state: 'closed', sequence: 5 }),
+    pullRequest({ state: 'closed', merged: true, sequence: 5 }),
+    environmentEvent('teardown', 1, 5),
+  ]) {
+    const closed = planPreviewReconciliation({
+      state: initialState(),
+      event,
+      now: STARTED_AT,
+    })
+    const stale = planPreviewReconciliation({
+      state: closed.nextState,
+      desired: plan(),
+      event: pullRequest({ sequence: 3 }),
+      now: STARTED_AT,
+    })
+    assert.equal(stale.reason, 'terminal-identity')
+    assert.equal(stale.action, null)
+  }
 })
 
 test('CLI is side-effect free and prints only the exact planning decision', () => {
