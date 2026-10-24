@@ -6,6 +6,7 @@ import {
   mkdirSync,
   mkdtempSync,
   readFileSync,
+  realpathSync,
   rmSync,
   writeFileSync,
 } from 'node:fs'
@@ -28,9 +29,6 @@ const DIRECTORY = dirname(fileURLToPath(import.meta.url))
 const REPOSITORY = resolve(DIRECTORY, '..')
 const CONTRACT = join(REPOSITORY, 'deploy/northflank/runtime-contract.yml')
 const SCRIPT = join(DIRECTORY, 'northflank-preview-plan.mjs')
-const CONTROLLER_SHA = 'a'.repeat(40)
-const BASE_SHA = 'b'.repeat(40)
-const CANDIDATE_SHA = 'c'.repeat(40)
 const PROFILES = [
   'ai',
   'chat',
@@ -44,12 +42,67 @@ const PROFILES = [
   'playwright',
   'pwa',
 ]
-const ROUTE_APPS = {
-  manage: ['manage'],
-  pwa: ['pwa'],
-  chat: ['chat', 'pwa'],
-  'live-quiz': ['control', 'pwa', 'response-api'],
-  playwright: ['chat', 'control', 'manage', 'pwa', 'response-api'],
+const NATIVE_PROFILE_RESULTS = {
+  chat: {
+    apps: ['api', 'auth', 'chat'],
+    services: [
+      'postgres',
+      'hatchet',
+      'redis_exec',
+      'redis_assessment',
+      'redis_cache',
+    ],
+    processes: ['klicker-dev'],
+  },
+  'ai,chat,mcp': {
+    apps: ['api', 'auth', 'chat', 'pwa'],
+    services: [
+      'postgres',
+      'hatchet',
+      'redis_exec',
+      'redis_assessment',
+      'redis_cache',
+      'litellm',
+    ],
+    processes: ['klicker-dev', 'klicker-local-mcp'],
+  },
+  full: {
+    apps: [
+      'api',
+      'auth',
+      'chat',
+      'control',
+      'db',
+      'lti',
+      'manage',
+      'olat-api',
+      'oidc',
+      'pwa',
+      'response-api',
+    ],
+    services: [
+      'postgres',
+      'hatchet',
+      'redis_exec',
+      'redis_assessment',
+      'redis_cache',
+      'litellm',
+      'mailhog',
+      'oidc',
+    ],
+    processes: ['klicker-dev', 'klicker-local-mcp'],
+  },
+  pwa: {
+    apps: ['api', 'auth', 'pwa'],
+    services: [
+      'postgres',
+      'hatchet',
+      'redis_exec',
+      'redis_assessment',
+      'redis_cache',
+    ],
+    processes: ['klicker-dev'],
+  },
 }
 
 function devrouterFixture(candidateAdditions = false) {
@@ -109,7 +162,39 @@ function devrouterFixture(candidateAdditions = false) {
   })
 }
 
-function fixture(t, { candidateAdditions = false, includeMcp = false } = {}) {
+function fixtureGit(root, args) {
+  const result = spawnSync('git', ['-C', root, ...args], { encoding: 'utf8' })
+  assert.equal(result.status, 0, result.stderr)
+  return result.stdout.trim()
+}
+
+function commitFixture(root, message = 'fixture') {
+  fixtureGit(root, ['add', '-A'])
+  fixtureGit(root, [
+    '-c',
+    'user.name=Preview Fixture',
+    '-c',
+    'user.email=preview-fixture@example.invalid',
+    '-c',
+    'commit.gpgSign=false',
+    '-c',
+    'core.hooksPath=/dev/null',
+    'commit',
+    '--quiet',
+    '-m',
+    message,
+  ])
+  return headSha(root)
+}
+
+function headSha(root) {
+  return fixtureGit(root, ['rev-parse', 'HEAD'])
+}
+
+function fixture(
+  t,
+  { candidateAdditions = false, includeMcp = false, git = true } = {}
+) {
   const root = mkdtempSync(join(tmpdir(), 'northflank-plan-'))
   const contract = join(root, 'deploy/northflank/runtime-contract.yml')
   mkdirSync(dirname(contract), { recursive: true })
@@ -119,6 +204,16 @@ function fixture(t, { candidateAdditions = false, includeMcp = false } = {}) {
     join(REPOSITORY, 'util/profile-resolver.sh'),
     join(root, 'util/profile-resolver.sh')
   )
+  for (const path of [
+    '.github/scripts/minimum-validation-class.cjs',
+    '.github/scripts/staging-image-targets.cjs',
+    'util/devrouter-cli.mjs',
+    'util/northflank-preview-plan.mjs',
+  ]) {
+    const destination = join(root, path)
+    mkdirSync(dirname(destination), { recursive: true })
+    copyFileSync(join(REPOSITORY, path), destination)
+  }
   writeFileSync(
     join(root, '.devrouter.yml'),
     devrouterFixture(candidateAdditions)
@@ -130,94 +225,52 @@ function fixture(t, { candidateAdditions = false, includeMcp = false } = {}) {
     const port = target.id === 'response-api-arm' ? 7078 : 3000
     writeFileSync(dockerfile, `EXPOSE ${port}\n`)
   }
+  if (git) {
+    fixtureGit(root, ['init', '--quiet'])
+    commitFixture(root)
+  }
   t.after(() => rmSync(root, { recursive: true, force: true }))
   return root
 }
 
 function resolvedProfile(repo, profile) {
-  const names = new Set(profile.split(','))
-  const apps = new Set()
-  const services = new Set(['postgres', 'hatchet'])
-  const processes = new Set()
-  const addApplications = () => {
-    apps.add('api')
-    apps.add('auth')
-    for (const name of ['redis_exec', 'redis_assessment', 'redis_cache']) {
-      services.add(name)
-    }
-    processes.add('klicker-dev')
-  }
-  if (names.has('full')) {
-    for (const name of [
-      'api',
-      'auth',
-      'chat',
-      'control',
-      'db',
-      'lti',
-      'manage',
-      'olat-api',
-      'oidc',
-      'pwa',
-      'response-api',
-    ]) {
-      apps.add(name)
-    }
-    for (const name of [
-      'redis_exec',
-      'redis_assessment',
-      'redis_cache',
-      'litellm',
-      'mailhog',
-      'oidc',
-    ]) {
-      services.add(name)
-    }
-    processes.add('klicker-dev')
-    processes.add('klicker-local-mcp')
-  }
-  const routes = Object.entries(ROUTE_APPS).filter(([name]) => names.has(name))
-  if (routes.length > 0) {
-    addApplications()
-    for (const [, routeApps] of routes) {
-      for (const name of routeApps) apps.add(name)
-    }
-  }
-  if (names.has('ai')) services.add('litellm')
-  if (names.has('email')) services.add('mailhog')
-  if (names.has('eduid')) {
-    apps.add('oidc')
-    services.add('oidc')
-  }
-  if (names.has('db')) apps.add('db')
-  if (names.has('mcp')) processes.add('klicker-local-mcp')
+  const result = NATIVE_PROFILE_RESULTS[profile]
+  assert.ok(result, `missing native fixture for ${profile}`)
+  const baseServices = ['postgres', 'hatchet']
   return {
     schemaVersion: 1,
     repoPath: repo,
     profile,
-    apps: [...apps].sort(),
+    apps: [...result.apps].sort(),
     dependencies: [],
     readiness: [],
     managedRuntime: {
-      baseServices: ['postgres', 'hatchet'],
-      profileServices: [...services]
-        .filter((name) => !['postgres', 'hatchet'].includes(name))
+      baseServices,
+      profileServices: [...result.services]
+        .filter((name) => !baseServices.includes(name))
         .sort(),
-      services: [...services].sort(),
-      processes: [...processes].sort(),
+      services: [...result.services].sort(),
+      processes: [...result.processes].sort(),
     },
   }
 }
 
 function plan(t, options = {}) {
-  const root = options.root ?? fixture(t, options)
+  const controllerRoot =
+    options.controllerRoot ?? options.root ?? fixture(t, options)
+  const candidateRoot = options.candidateRoot ?? options.root ?? controllerRoot
   return buildPreviewPlan({
-    controllerRoot: root,
-    candidateRoot: root,
-    baseSha: BASE_SHA,
-    candidateSha: CANDIDATE_SHA,
-    controllerSha: CONTROLLER_SHA,
-    sourceSelection: { eventName: 'push', sourceBranch: 'v3-ai' },
+    controllerRoot,
+    candidateRoot,
+    baseSha: headSha(candidateRoot),
+    candidateSha: headSha(candidateRoot),
+    controllerSha: headSha(controllerRoot),
+    sourceSelection: {
+      eventName: 'push',
+      sourceBranch: 'v3-ai',
+      repository: 'example-org/klicker-uzh',
+      headRepository: 'example-org/klicker-uzh',
+    },
     profileResolver: ({ repo, profile }) => resolvedProfile(repo, profile),
     workerMarker: (profiles) =>
       profiles
@@ -377,6 +430,338 @@ test('unsafe profiles and noncanonical resolver results fail closed', (t) => {
   )
 })
 
+test('push admission requires exact repository identity or contract approval', () => {
+  const contract = loadRuntimeContract()
+  const source = {
+    eventName: 'push',
+    sourceBranch: 'v3-ai',
+    repository: 'example-org/klicker-uzh',
+    headRepository: 'example-org/klicker-uzh',
+  }
+  const branchOnly = selectPreviewSource(
+    { eventName: 'push', sourceBranch: 'v3-ai' },
+    contract
+  )
+  assert.equal(branchOnly.eligible, false)
+  assert.equal(branchOnly.reason, 'push-repository-unknown')
+
+  const exact = selectPreviewSource(source, contract)
+  assert.equal(exact.eligible, true)
+  assert.equal(exact.reason, 'allowlisted-branch')
+  assert.equal(exact.repository, source.repository)
+  assert.equal(exact.headRepository, source.headRepository)
+
+  const cases = [
+    [{ ...source, headRepository: undefined }, 'push-repository-incomplete'],
+    [
+      { ...source, headRepository: 'someone-else/klicker-uzh' },
+      'repository-mismatch',
+    ],
+    [{ ...source, sourceBranch: 'feature/test' }, 'branch-not-allowlisted'],
+  ]
+  for (const [input, reason] of cases) {
+    const result = selectPreviewSource(input, contract)
+    assert.equal(result.eligible, false, reason)
+    assert.equal(result.reason, reason)
+  }
+
+  const approvedContract = {
+    ...contract,
+    sourceSelection: {
+      ...contract.sourceSelection,
+      repository: source.repository,
+    },
+  }
+  const approvedOnly = selectPreviewSource(
+    { eventName: 'push', sourceBranch: 'v3-ai' },
+    approvedContract
+  )
+  assert.equal(approvedOnly.eligible, true)
+  assert.equal(approvedOnly.reason, 'allowlisted-contract-repository')
+  assert.equal(approvedOnly.approvedRepository, source.repository)
+
+  const unapproved = selectPreviewSource(
+    {
+      ...source,
+      repository: 'other-org/klicker-uzh',
+      headRepository: 'other-org/klicker-uzh',
+    },
+    approvedContract
+  )
+  assert.equal(unapproved.eligible, false)
+  assert.equal(unapproved.reason, 'repository-not-approved')
+})
+
+test('pull request admission accepts label or manual opt-in and fails closed on source metadata', () => {
+  const contract = loadRuntimeContract()
+  const source = {
+    eventName: 'pull_request',
+    sourceBranch: 'feature/test',
+    repository: 'example-org/klicker-uzh',
+    headRepository: 'example-org/klicker-uzh',
+    state: 'open',
+    merged: false,
+    isFork: false,
+  }
+  const labelled = selectPreviewSource(
+    { ...source, labels: ['preview'] },
+    contract
+  )
+  assert.equal(labelled.eligible, true)
+  assert.equal(labelled.reason, 'preview-label')
+  assert.equal(labelled.repository, source.repository)
+  assert.equal(labelled.headRepository, source.headRepository)
+  assert.equal(labelled.state, 'open')
+  assert.equal(labelled.merged, false)
+  assert.equal(labelled.isFork, false)
+
+  const manual = selectPreviewSource({ ...source, manualOptIn: true }, contract)
+  assert.equal(manual.eligible, true)
+  assert.equal(manual.reason, 'manual-opt-in')
+
+  const both = selectPreviewSource(
+    { ...source, labels: ['preview'], manualOptIn: true },
+    contract
+  )
+  assert.equal(both.eligible, true)
+  assert.equal(both.reason, 'preview-label-or-manual-opt-in')
+
+  const cases = [
+    [{ ...source, state: undefined }, 'pull-request-state-unknown'],
+    [{ ...source, state: 'draft' }, 'pull-request-state-unknown'],
+    [{ ...source, state: 'closed' }, 'pull-request-closed'],
+    [{ ...source, merged: true }, 'pull-request-merged'],
+    [{ ...source, isFork: true }, 'pull-request-fork'],
+    [{ ...source, isFork: undefined }, 'pull-request-fork-unknown'],
+    [{ ...source, merged: undefined }, 'pull-request-merge-state-unknown'],
+    [
+      { ...source, headRepository: 'someone-else/klicker-uzh' },
+      'repository-mismatch',
+    ],
+    [{ ...source, repository: undefined }, 'pull-request-repository-unknown'],
+    [source, 'preview-opt-in-missing'],
+  ]
+  for (const [input, reason] of cases) {
+    const result = selectPreviewSource(input, contract)
+    assert.equal(result.eligible, false, reason)
+    assert.equal(result.reason, reason)
+  }
+
+  const approvedContract = {
+    ...contract,
+    sourceSelection: {
+      ...contract.sourceSelection,
+      repository: 'example-org/klicker-uzh',
+    },
+  }
+  const approved = selectPreviewSource(
+    { ...source, labels: ['preview'] },
+    approvedContract
+  )
+  assert.equal(approved.eligible, true)
+  const unapproved = selectPreviewSource(
+    {
+      ...source,
+      labels: ['preview'],
+      repository: 'other-org/klicker-uzh',
+      headRepository: 'other-org/klicker-uzh',
+    },
+    approvedContract
+  )
+  assert.equal(unapproved.eligible, false)
+  assert.equal(unapproved.reason, 'repository-not-approved')
+})
+
+test('ineligible sources and absent source changes cannot be planning-ready', (t) => {
+  const root = fixture(t)
+  const ineligible = plan(t, {
+    root,
+    changedRecords: [{ kind: 'M', paths: ['apps/chat/src/page.tsx'] }],
+    sourceSelection: {
+      eventName: 'push',
+      sourceBranch: 'feature/test',
+      repository: 'example-org/klicker-uzh',
+      headRepository: 'example-org/klicker-uzh',
+    },
+  })
+  assert.equal(ineligible.status, 'blocked')
+  assert.equal(ineligible.sourceSelection.reason, 'branch-not-allowlisted')
+  assert.deepEqual(ineligible.reuseEligibility.reasons, ['source-not-eligible'])
+
+  const empty = plan(t, { root, changedRecords: [] })
+  assert.equal(empty.status, 'blocked')
+  assert.deepEqual(empty.reuseEligibility.reasons, ['source-changes-missing'])
+
+  const documentation = plan(t, {
+    root,
+    changedRecords: [{ kind: 'M', paths: ['docs/runtime.md'] }],
+  })
+  assert.equal(documentation.status, 'planning-ready')
+  assert.deepEqual(documentation.reuseEligibility.reasons, [])
+
+  const explicit = plan(t, { root, profile: 'pwa' })
+  assert.equal(explicit.status, 'planning-ready')
+  assert.deepEqual(explicit.reuseEligibility.reasons, [])
+})
+
+test('reported revisions require matching clean control-file provenance', (t) => {
+  const root = fixture(t)
+  const head = headSha(root)
+  const clean = plan(t, { root, profile: 'pwa' })
+  assert.equal(clean.status, 'planning-ready')
+  assert.equal(clean.sha.controller, head)
+  assert.equal(clean.sha.candidate, head)
+  assert.equal(clean.provenance.controller.status, 'verified')
+  assert.equal(clean.provenance.candidate.status, 'verified')
+
+  assert.throws(
+    () => plan(t, { root, profile: 'pwa', controllerSha: 'd'.repeat(40) }),
+    { code: 'SOURCE_PROVENANCE_MISMATCH' }
+  )
+
+  writeFileSync(
+    join(root, 'util/profile-resolver.sh'),
+    '# dirty control replacement\n'
+  )
+  assert.throws(
+    () => plan(t, { root, profile: 'pwa' }),
+    (error) => {
+      assert.equal(error.code, 'SOURCE_PROVENANCE_MISMATCH')
+      assert.equal(
+        error.details.files.includes('util/profile-resolver.sh'),
+        true
+      )
+      return true
+    }
+  )
+})
+
+test('controller provenance pins planner, helper, inventory, contract, and integration controls', (t) => {
+  const root = fixture(t)
+  const integrationControls = [
+    '.github/workflows/northflank-previews.yml',
+    'deploy/northflank/klicker-preview.json',
+    'util/northflank-preview-lifecycle.mjs',
+  ]
+  for (const path of integrationControls) {
+    const destination = join(root, path)
+    mkdirSync(dirname(destination), { recursive: true })
+    writeFileSync(destination, `# ${path}\n`)
+  }
+  const revision = commitFixture(root, 'add preview integration controls')
+  const result = plan(t, { root, profile: 'pwa' })
+  assert.equal(result.status, 'planning-ready')
+  assert.equal(result.sha.controller, revision)
+  assert.deepEqual(
+    result.provenance.controller.files,
+    [
+      '.devrouter.yml',
+      '.github/scripts/minimum-validation-class.cjs',
+      '.github/scripts/staging-image-targets.cjs',
+      ...integrationControls,
+      'deploy/northflank/runtime-contract.yml',
+      'util/devrouter-cli.mjs',
+      'util/northflank-preview-plan.mjs',
+      'util/profile-resolver.sh',
+    ].sort()
+  )
+
+  writeFileSync(
+    join(root, '.github/scripts/staging-image-targets.cjs'),
+    '# controller inventory replacement\n'
+  )
+  assert.throws(
+    () => plan(t, { root, profile: 'pwa' }),
+    (error) => {
+      assert.equal(error.code, 'SOURCE_PROVENANCE_MISMATCH')
+      assert.equal(
+        error.details.files.includes(
+          '.github/scripts/staging-image-targets.cjs'
+        ),
+        true
+      )
+      return true
+    }
+  )
+  copyFileSync(
+    join(REPOSITORY, '.github/scripts/staging-image-targets.cjs'),
+    join(root, '.github/scripts/staging-image-targets.cjs')
+  )
+
+  rmSync(join(root, '.github/workflows/northflank-previews.yml'))
+  assert.throws(
+    () => plan(t, { root, profile: 'pwa' }),
+    (error) => {
+      assert.equal(error.code, 'SOURCE_PROVENANCE_MISMATCH')
+      assert.equal(
+        error.details.files.includes(
+          '.github/workflows/northflank-previews.yml'
+        ),
+        true
+      )
+      return true
+    }
+  )
+})
+
+test('separate controller and candidate roots retain independent revisions', (t) => {
+  const controller = fixture(t)
+  const candidate = fixture(t)
+  mkdirSync(join(candidate, 'docs'), { recursive: true })
+  writeFileSync(
+    join(candidate, 'docs/candidate-only.md'),
+    '# Candidate-only note\n'
+  )
+  commitFixture(candidate, 'add candidate-only source')
+  assert.notEqual(headSha(controller), headSha(candidate))
+
+  const result = plan(t, {
+    controllerRoot: controller,
+    candidateRoot: candidate,
+    profile: 'pwa',
+  })
+  assert.equal(result.status, 'planning-ready')
+  assert.equal(result.sha.controller, headSha(controller))
+  assert.equal(result.sha.candidate, headSha(candidate))
+  assert.equal(result.provenance.controller.root, realpathSync(controller))
+  assert.equal(result.provenance.candidate.root, realpathSync(candidate))
+})
+
+test('a non-Git snapshot never claims to verify a supplied revision', (t) => {
+  const snapshot = fixture(t, { git: false })
+  assert.throws(
+    () =>
+      buildPreviewPlan({
+        controllerRoot: snapshot,
+        candidateRoot: snapshot,
+        profile: 'pwa',
+        controllerSha: 'a'.repeat(40),
+        candidateSha: 'a'.repeat(40),
+        sourceSelection: { eventName: 'push', sourceBranch: 'v3-ai' },
+      }),
+    { code: 'SOURCE_PROVENANCE_UNAVAILABLE' }
+  )
+
+  const unverified = buildPreviewPlan({
+    controllerRoot: snapshot,
+    candidateRoot: snapshot,
+    profile: 'pwa',
+    sourceSelection: { eventName: 'push', sourceBranch: 'v3-ai' },
+    profileResolver: ({ repo, profile }) => resolvedProfile(repo, profile),
+    workerMarker: () => false,
+  })
+  assert.equal(unverified.status, 'blocked')
+  assert.equal(unverified.sha.controller, null)
+  assert.equal(unverified.sha.candidate, null)
+  assert.equal(unverified.provenance.controller.status, 'unverified')
+  assert.equal(
+    unverified.reuseEligibility.reasons.includes(
+      'source-provenance-unverified'
+    ),
+    true
+  )
+})
+
 test('candidate control drift blocks and names unsupported v3-ai objects', (t) => {
   const root = fixture(t)
   const candidate = fixture(t, {
@@ -458,13 +843,15 @@ test('only a controller-qualified pair of profile files can expand candidate con
         .digest('hex'),
     ])
   )
+  const candidateRevision = headSha(candidate)
   writeFileSync(
     join(root, 'deploy/northflank/runtime-contract.yml'),
     JSON.stringify({
       ...contract,
-      qualifiedProfiles: [{ revision: CANDIDATE_SHA, files }],
+      qualifiedProfiles: [{ revision: candidateRevision, files }],
     })
   )
+  const controllerRevision = commitFixture(root, 'qualify profile controls')
   writeFileSync(join(candidate, 'deploy/northflank/runtime-contract.yml'), '{}')
   const result = plan(t, {
     controllerRoot: root,
@@ -472,11 +859,13 @@ test('only a controller-qualified pair of profile files can expand candidate con
     profile: 'chat',
   })
   assert.equal(result.controlParity.status, 'qualified')
-  assert.equal(result.controlParity.qualifiedRevision, CANDIDATE_SHA)
+  assert.equal(result.sha.controller, controllerRevision)
+  assert.equal(result.controlParity.qualifiedRevision, candidateRevision)
   writeFileSync(
     join(candidate, 'util/profile-resolver.sh'),
     '# unqualified replacement\n'
   )
+  commitFixture(candidate, 'introduce unqualified profile helper')
   assert.throws(
     () =>
       plan(t, {
@@ -504,11 +893,12 @@ test('contract ports and source opt-in metadata reflect the hosted boundary', ()
   assert.equal(contract.apps.lti.nativePort, 4000)
   assert.equal(contract.apps['response-api'].nativePort, 7078)
   assert.equal(contract.apps.db.publicListener, false)
-  assert.equal(
-    selectPreviewSource({ eventName: 'push', sourceBranch: 'v3-ai' }, contract)
-      .eligible,
-    true
+  const branchOnly = selectPreviewSource(
+    { eventName: 'push', sourceBranch: 'v3-ai' },
+    contract
   )
+  assert.equal(branchOnly.eligible, false)
+  assert.equal(branchOnly.reason, 'push-repository-unknown')
   assert.equal(
     selectPreviewSource(
       {
@@ -532,4 +922,92 @@ test('CLI help succeeds without reading the workspace', (t) => {
   assert.equal(result.status, 0, result.stderr)
   assert.equal(result.stderr, '')
   assert.match(result.stdout, /--profile <names>/)
+})
+
+test('CLI carries exact push source metadata into admission', (t) => {
+  const root = fixture(t)
+  const base = headSha(root)
+  mkdirSync(join(root, 'docs'), { recursive: true })
+  writeFileSync(join(root, 'docs/runtime-note.md'), '# Runtime note\n')
+  const head = commitFixture(root, 'add runtime documentation')
+  const result = spawnSync(
+    process.execPath,
+    [
+      SCRIPT,
+      '--base',
+      base,
+      '--head',
+      head,
+      '--controller-root',
+      root,
+      '--candidate-root',
+      root,
+      '--event',
+      'push',
+      '--source-branch',
+      'v3-ai',
+      '--source-repository',
+      'example-org/klicker-uzh',
+      '--source-head-repository',
+      'example-org/klicker-uzh',
+    ],
+    { encoding: 'utf8' }
+  )
+  assert.equal(result.status, 0, result.stderr)
+  const output = JSON.parse(result.stdout)
+  assert.equal(output.status, 'planning-ready')
+  assert.equal(output.sourceSelection.reason, 'allowlisted-branch')
+  assert.equal(output.sourceSelection.repository, 'example-org/klicker-uzh')
+  assert.equal(output.sourceSelection.headRepository, 'example-org/klicker-uzh')
+})
+
+test('CLI carries exact pull request source metadata into admission', (t) => {
+  const root = fixture(t)
+  const base = headSha(root)
+  mkdirSync(join(root, 'docs'), { recursive: true })
+  writeFileSync(join(root, 'docs/runtime-note.md'), '# Runtime note\n')
+  const head = commitFixture(root, 'add runtime documentation')
+  const result = spawnSync(
+    process.execPath,
+    [
+      SCRIPT,
+      '--base',
+      base,
+      '--head',
+      head,
+      '--controller-root',
+      root,
+      '--candidate-root',
+      root,
+      '--event',
+      'pull_request',
+      '--source-branch',
+      'feature/test',
+      '--preview-label',
+      'preview',
+      '--source-repository',
+      'example-org/klicker-uzh',
+      '--source-head-repository',
+      'someone-else/klicker-uzh',
+      '--source-state',
+      'open',
+      '--source-merged',
+      'false',
+      '--source-fork',
+      'false',
+    ],
+    { encoding: 'utf8' }
+  )
+  assert.equal(result.status, 0, result.stderr)
+  const output = JSON.parse(result.stdout)
+  assert.equal(output.sourceSelection.repository, 'example-org/klicker-uzh')
+  assert.equal(
+    output.sourceSelection.headRepository,
+    'someone-else/klicker-uzh'
+  )
+  assert.equal(output.sourceSelection.state, 'open')
+  assert.equal(output.sourceSelection.merged, false)
+  assert.equal(output.sourceSelection.isFork, false)
+  assert.equal(output.status, 'blocked')
+  assert.deepEqual(output.reuseEligibility.reasons, ['source-not-eligible'])
 })

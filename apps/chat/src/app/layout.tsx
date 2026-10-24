@@ -1,14 +1,15 @@
-import { messagesByLocale } from '@/src/types/i18n'
 import { routing } from '@klicker-uzh/i18n'
 import {
   monoSpaceFont,
   sourceSansPro,
 } from '@klicker-uzh/shared-components/src/font'
+import { previewCookieName } from '@klicker-uzh/util'
+import { messagesByLocale } from '@/src/types/i18n'
 import 'katex/dist/katex.min.css'
 import type { Metadata, Viewport } from 'next'
+import { cookies } from 'next/headers'
 import { hasLocale } from 'next-intl'
 import { getTranslations, setRequestLocale } from 'next-intl/server'
-import { cookies } from 'next/headers'
 import { RootIntlProvider } from './RootIntlProvider'
 import './globals.css'
 
@@ -35,7 +36,9 @@ export default async function RootLayout({
   // NEXT_LOCALE cookie (set by the backend on login / locale change) and fall
   // back to the default. Reading cookies() opts this layout into dynamic
   // rendering, which is acceptable — chat is auth-gated and already dynamic.
-  const requestedLocale = (await cookies()).get('NEXT_LOCALE')?.value
+  const requestedLocale = (await cookies()).get(
+    previewCookieName('NEXT_LOCALE')
+  )?.value
   const locale = hasLocale(routing.locales, requestedLocale)
     ? requestedLocale
     : routing.defaultLocale

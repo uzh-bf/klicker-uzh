@@ -8,6 +8,15 @@ const CONTROL_CHARACTERS = /\p{Cc}/u
 const ENVIRONMENT_NAME = /^[A-Z][A-Z0-9_]*$/
 
 const ORIGIN_KEYS = Object.freeze([
+  'APP_ORIGIN_API',
+  'APP_ORIGIN_ASSESSMENT_API',
+  'APP_ORIGIN_ASSESSMENT_PWA',
+  'APP_ORIGIN_AUTH',
+  'APP_ORIGIN_CHAT',
+  'APP_ORIGIN_CONTROL',
+  'APP_ORIGIN_LTI',
+  'APP_ORIGIN_MANAGE',
+  'APP_ORIGIN_PWA',
   'NEXTAUTH_URL',
   'NEXT_PUBLIC_ASSESSMENT_URL',
   'NEXT_PUBLIC_AUTH_URL',
@@ -20,10 +29,12 @@ const ORIGIN_KEYS = Object.freeze([
 
 const ENDPOINT_KEYS = Object.freeze([
   'BLOB_STORAGE_ACCOUNT_URL',
+  'EDUID_WELL_KNOWN',
   'NEXT_PUBLIC_ADD_RESPONSE_URL',
   'NEXT_PUBLIC_API_URL',
   'NEXT_PUBLIC_ASSESSMENT_API_URL',
   'NEXT_PUBLIC_AVATAR_BASE_PATH',
+  'NEXT_PUBLIC_IMAGE_BASE_PATH',
 ])
 const INTERNAL_HTTP_KEYS = Object.freeze([
   'API_URL_SSR',
@@ -38,36 +49,116 @@ const TELEMETRY_ID_KEYS = Object.freeze([
   'NEXT_PUBLIC_MATOMO_ID',
   'NEXT_PUBLIC_MATOMO_SITE_ID',
 ])
+const BOOLEAN_KEYS = Object.freeze([
+  'AUTH_SECURE_COOKIES',
+  'AUTH_TRUST_HOST',
+  'EDUID_FETCH_USERINFO',
+  'NEXT_PUBLIC_IS_ASSESSMENT',
+  'NEXT_PUBLIC_WITH_MAGIC_LINK',
+])
+const AUTH_HOST_KEYS = Object.freeze([
+  'AUTH_LECTURER_ALLOWED_HOSTS',
+  'AUTH_PWA_HOSTS',
+  'AUTH_STUDENT_ALLOWED_HOSTS',
+])
 
+// The Next apps load committed .env.production files while building. Require
+// every non-secret value they consume so preview builds cannot retain those
+// deployed-environment URLs and identities.
 const APP_REQUIRED_KEYS = Object.freeze({
   auth: Object.freeze([
+    'APP_ORIGIN_AUTH',
+    'AUTH_LECTURER_ALLOWED_HOSTS',
+    'AUTH_PWA_HOSTS',
+    'AUTH_STUDENT_ALLOWED_HOSTS',
+    'EDUID_CLIENT_ID',
+    'EDUID_WELL_KNOWN',
     'NEXTAUTH_URL',
     'NEXT_PUBLIC_ASSESSMENT_URL',
+    'NEXT_PUBLIC_EDUID_ID',
+    'NEXT_PUBLIC_ENV',
     'NEXT_PUBLIC_MANAGE_URL',
     'NEXT_PUBLIC_PWA_URL',
   ]),
-  chat: Object.freeze(['NEXT_PUBLIC_CHAT_URL', 'NEXT_PUBLIC_PWA_URL']),
+  chat: Object.freeze([
+    'BLOB_STORAGE_ACCOUNT_URL',
+    'NEXT_PUBLIC_AVATAR_BASE_PATH',
+    'NEXT_PUBLIC_CHAT_URL',
+    'NEXT_PUBLIC_ENV',
+    'NEXT_PUBLIC_PWA_URL',
+    'NEXT_PUBLIC_MANAGE_URL',
+  ]),
   'frontend-control': Object.freeze([
+    'API_URL_SSR',
+    'BLOB_STORAGE_ACCOUNT_URL',
     'NEXT_PUBLIC_API_URL',
     'NEXT_PUBLIC_API_URL_SSR',
     'NEXT_PUBLIC_AUTH_URL',
     'NEXT_PUBLIC_CONTROL_URL',
+    'NEXT_PUBLIC_ENV',
     'NEXT_PUBLIC_MANAGE_URL',
   ]),
   'frontend-manage': Object.freeze([
+    'API_URL_SSR',
+    'BLOB_STORAGE_ACCOUNT_URL',
     'NEXT_PUBLIC_API_URL',
     'NEXT_PUBLIC_API_URL_SSR',
+    'NEXT_PUBLIC_ASSESSMENT_URL',
     'NEXT_PUBLIC_AUTH_URL',
+    'NEXT_PUBLIC_AVATAR_BASE_PATH',
+    'NEXT_PUBLIC_ENV',
+    'NEXT_PUBLIC_LTI_URL',
     'NEXT_PUBLIC_MANAGE_URL',
     'NEXT_PUBLIC_PWA_URL',
   ]),
   'frontend-pwa': Object.freeze([
+    'API_URL_SSR',
+    'APP_ORIGIN_ASSESSMENT_PWA',
+    'APP_ORIGIN_PWA',
+    'BLOB_STORAGE_ACCOUNT_URL',
+    'COOKIE_DOMAIN',
     'NEXT_PUBLIC_ADD_RESPONSE_URL',
     'NEXT_PUBLIC_API_URL',
     'NEXT_PUBLIC_API_URL_SSR',
+    'NEXT_PUBLIC_ASSESSMENT_URL',
     'NEXT_PUBLIC_AUTH_URL',
+    'NEXT_PUBLIC_AVATAR_BASE_PATH',
+    'NEXT_PUBLIC_CHAT_URL',
+    'NEXT_PUBLIC_ENV',
     'NEXT_PUBLIC_PWA_URL',
+    'NEXT_PUBLIC_WEB_PUSH_PUBLIC_KEY',
   ]),
+})
+
+// Observability and optional feature flags fail closed when left unbound.
+const SHARED_HARMLESS_DEFAULTS = Object.freeze({
+  NEXT_PUBLIC_GROWTHBOOK_API_HOST: '',
+  NEXT_PUBLIC_GROWTHBOOK_CLIENT_KEY: '',
+  NEXT_TELEMETRY_DISABLED: '1',
+})
+const MATOMO_HARMLESS_DEFAULTS = Object.freeze({
+  NEXT_PUBLIC_MATOMO_ID: '',
+  NEXT_PUBLIC_MATOMO_SITE_ID: '',
+  NEXT_PUBLIC_MATOMO_URL: '',
+})
+
+const APP_HARMLESS_DEFAULTS = Object.freeze({
+  auth: SHARED_HARMLESS_DEFAULTS,
+  chat: SHARED_HARMLESS_DEFAULTS,
+  'frontend-control': Object.freeze({
+    ...SHARED_HARMLESS_DEFAULTS,
+    ...MATOMO_HARMLESS_DEFAULTS,
+  }),
+  'frontend-manage': Object.freeze({
+    ...SHARED_HARMLESS_DEFAULTS,
+    ...MATOMO_HARMLESS_DEFAULTS,
+  }),
+  'frontend-pwa': Object.freeze({
+    ...SHARED_HARMLESS_DEFAULTS,
+    ...MATOMO_HARMLESS_DEFAULTS,
+    NEXT_PUBLIC_IS_ASSESSMENT: 'false',
+    NEXT_PUBLIC_WITH_MAGIC_LINK: 'false',
+  }),
 })
 
 const PREVIEW_BUILD_ENV_KEYS = Object.freeze([
@@ -77,8 +168,14 @@ const PREVIEW_BUILD_ENV_KEYS = Object.freeze([
   ...DOMAIN_KEYS,
   ...TELEMETRY_URL_KEYS,
   ...TELEMETRY_ID_KEYS,
+  ...BOOLEAN_KEYS,
+  ...AUTH_HOST_KEYS,
+  'EDUID_CLIENT_ID',
   'NEXT_PUBLIC_ENV',
+  'NEXT_PUBLIC_PREVIEW_ID',
+  'NEXT_PUBLIC_EDUID_ID',
   'NEXT_PUBLIC_GROWTHBOOK_CLIENT_KEY',
+  'NEXT_PUBLIC_WEB_PUSH_PUBLIC_KEY',
   'NEXT_TELEMETRY_DISABLED',
 ])
 
@@ -192,6 +289,14 @@ function assertDomain(key, value) {
 }
 
 function validateValue(key, value) {
+  if (key === 'NEXT_PUBLIC_PREVIEW_ID') {
+    if (!/^[a-z0-9](?:[a-z0-9-]{0,30}[a-z0-9])?$/.test(value)) {
+      throw new PreviewBuildEnvError(
+        'NEXT_PUBLIC_PREVIEW_ID must be a lowercase ID of 1-32 characters'
+      )
+    }
+    return
+  }
   if (value.length === 0) {
     if (
       TELEMETRY_URL_KEYS.includes(key) ||
@@ -234,6 +339,13 @@ function validateValue(key, value) {
   if (TELEMETRY_ID_KEYS.includes(key)) {
     if (!/^[0-9]{1,32}$/.test(value)) {
       throw new PreviewBuildEnvError(`${key} must be a numeric identifier`)
+    }
+    return
+  }
+
+  if (BOOLEAN_KEYS.includes(key)) {
+    if (!/^(true|false)$/.test(value)) {
+      throw new PreviewBuildEnvError(`${key} must be true or false`)
     }
     return
   }
@@ -325,7 +437,11 @@ export function prepareChildEnvironment(baseEnv, app) {
   delete childEnv[INPUT_KEY]
 
   if (previewConfig) {
-    Object.assign(childEnv, previewConfig)
+    Object.assign(
+      childEnv,
+      APP_HARMLESS_DEFAULTS[normalizeApp(app)],
+      previewConfig
+    )
     // New public bindings are not all inputs to the shared Turbo cache. A
     // preview build must not reuse output compiled for another origin.
     childEnv.TURBO_FORCE = 'true'

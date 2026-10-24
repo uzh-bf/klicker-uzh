@@ -1,7 +1,7 @@
 import { spawnSync } from 'node:child_process'
 import { createHash } from 'node:crypto'
 import { existsSync, readFileSync, realpathSync, statSync } from 'node:fs'
-import { isAbsolute, join, resolve } from 'node:path'
+import { isAbsolute, join, relative, resolve } from 'node:path'
 import { fileURLToPath, pathToFileURL } from 'node:url'
 
 import { parse as parseYaml } from 'yaml'
@@ -21,6 +21,19 @@ const DEFAULT_CONTRACT_PATH = resolve(
 )
 const CONTRACT_PATH = 'deploy/northflank/runtime-contract.yml'
 const DEVROUTER_PATH = '.devrouter.yml'
+const PROFILE_CONTROL_FILES = [DEVROUTER_PATH, 'util/profile-resolver.sh']
+const CONTROLLER_SOURCE_FILES = [
+  ...PROFILE_CONTROL_FILES,
+  '.github/scripts/minimum-validation-class.cjs',
+  '.github/scripts/staging-image-targets.cjs',
+  'util/devrouter-cli.mjs',
+  'util/northflank-preview-plan.mjs',
+]
+const OPTIONAL_CONTROLLER_CONTROL_FILES = [
+  '.github/workflows/northflank-previews.yml',
+  'deploy/northflank/klicker-preview.json',
+  'util/northflank-preview-lifecycle.mjs',
+]
 const PROFILE_NAME = /^[a-z0-9-]+$/
 const GIT_SHA = /^(?:[0-9a-f]{40}|[0-9a-f]{64})$/
 const RECORD_KINDS = new Set(['A', 'M', 'D', 'R', 'C'])
@@ -45,6 +58,26 @@ function assertStrings(value, label) {
   ) {
     inputError(`${label} must be an array of unique non-empty strings`)
   }
+}
+
+function optionalBoolean(value, label) {
+  if (value === undefined || value === null) return null
+  if (typeof value !== 'boolean') {
+    inputError(`${label} must be a boolean when supplied`)
+  }
+  return value
+}
+
+function optionalRepository(value, label) {
+  if (value === undefined || value === null) return null
+  if (
+    typeof value !== 'string' ||
+    value.length > 200 ||
+    !/^[A-Za-z0-9_.-]+\/[A-Za-z0-9_.-]+$/.test(value)
+  ) {
+    inputError(`${label} must be an exact owner/repository name`)
+  }
+  return value
 }
 
 function canonicalProfile(profile, allowedProfiles) {
@@ -254,32 +287,104 @@ export function selectPreviewSource(input, contract) {
   }
   const labels = input.labels ?? []
   assertStrings(labels, 'Source selection labels')
+  const manualOptIn =
+    optionalBoolean(input.manualOptIn, 'Manual opt-in') ?? false
+  const repository = optionalRepository(input.repository, 'Source repository')
+  const headRepository = optionalRepository(
+    input.headRepository,
+    'Source head repository'
+  )
+  const state = input.state ?? null
+  if (state !== null && (typeof state !== 'string' || state.length > 32)) {
+    inputError('Source pull request state must be a short string')
+  }
+  const merged = optionalBoolean(
+    input.merged,
+    'Source pull request merged flag'
+  )
+  const isFork = optionalBoolean(input.isFork, 'Source pull request fork flag')
+  const approvedRepository = optionalRepository(
+    contract.sourceSelection.repository,
+    'Contract-approved source repository'
+  )
   const branchAllowed =
     contract.sourceSelection.branchAllowlist.includes(sourceBranch)
   const common = {
     eventName,
     sourceBranch,
+    labels: [...labels],
+    manualOptIn,
+    repository,
+    headRepository,
+    state,
+    merged,
+    isFork,
+    approvedRepository,
     branchAllowlist: [...contract.sourceSelection.branchAllowlist],
     pullRequestPolicy: { ...contract.sourceSelection.pullRequest },
   }
   if (eventName === 'push') {
+    let reason = null
+    if (repository !== null || headRepository !== null) {
+      if (repository === null || headRepository === null) {
+        reason = 'push-repository-incomplete'
+      } else if (repository !== headRepository) {
+        reason = 'repository-mismatch'
+      } else if (
+        approvedRepository !== null &&
+        repository !== approvedRepository
+      ) {
+        reason = 'repository-not-approved'
+      }
+    } else if (approvedRepository === null) {
+      reason = 'push-repository-unknown'
+    }
+    if (reason === null && isFork === true) reason = 'fork-source'
+    if (reason === null && !branchAllowed) reason = 'branch-not-allowlisted'
     return {
       ...common,
-      eligible: branchAllowed,
-      reason: branchAllowed ? 'allowlisted-branch' : 'branch-not-allowlisted',
+      eligible: reason === null,
+      reason:
+        reason ??
+        (repository === null
+          ? 'allowlisted-contract-repository'
+          : 'allowlisted-branch'),
     }
   }
   const labelled = labels.includes(contract.sourceSelection.pullRequest.label)
-  const manualOptIn = input.manualOptIn === true
+  const manualAllowed =
+    contract.sourceSelection.pullRequest.manualOptIn === true && manualOptIn
+  let reason = null
+  if (repository === null || headRepository === null) {
+    reason = 'pull-request-repository-unknown'
+  } else if (repository !== headRepository) {
+    reason = 'repository-mismatch'
+  } else if (approvedRepository !== null && repository !== approvedRepository) {
+    reason = 'repository-not-approved'
+  } else if (isFork === null) {
+    reason = 'pull-request-fork-unknown'
+  } else if (isFork) {
+    reason = 'pull-request-fork'
+  } else if (merged === null) {
+    reason = 'pull-request-merge-state-unknown'
+  } else if (merged || state === 'merged') {
+    reason = 'pull-request-merged'
+  } else if (state !== 'open') {
+    reason =
+      state === 'closed' ? 'pull-request-closed' : 'pull-request-state-unknown'
+  } else if (!labelled && !manualAllowed) {
+    reason = 'preview-opt-in-missing'
+  }
   return {
     ...common,
-    eligible: labelled && manualOptIn,
+    eligible: reason === null,
     reason:
-      labelled && manualOptIn
-        ? 'preview-label-and-manual-opt-in'
-        : !labelled
-          ? 'preview-label-missing'
-          : 'manual-opt-in-missing',
+      reason ??
+      (labelled && manualAllowed
+        ? 'preview-label-or-manual-opt-in'
+        : labelled
+          ? 'preview-label'
+          : 'manual-opt-in'),
   }
 }
 
@@ -378,34 +483,23 @@ export function profileWantsWorkers({
   profile,
   controllerRoot,
   source,
-  runner,
   env = process.env,
 }) {
   const root = resolveDirectory(controllerRoot, 'controller root')
-  const script = join(root, 'util/profile-resolver.sh')
-  if (!existsSync(script) || !statSync(script).isFile()) {
-    inputError(`Trusted profile resolver is missing: ${script}`)
+  if (!source) {
+    inputError(
+      'Trusted worker marker source is missing',
+      'WORKER_MARKER_FAILED'
+    )
   }
-  const result = (runner ?? spawnSync)(
-    '/bin/bash',
-    source
-      ? ['-c', 'source /dev/stdin; profile_wants "$1"', '--', 'klicker-workers']
-      : [
-          '-c',
-          'source "$1"; profile_wants "$2"',
-          '--',
-          script,
-          'klicker-workers',
-        ],
-    {
-      cwd: root,
-      env: { ...env, DEVROUTER_PROFILE: profile },
-      encoding: 'utf8',
-      timeout: 10000,
-      maxBuffer: 1024 * 1024,
-      ...(source ? { input: source } : {}),
-    }
-  )
+  const result = spawnSync('/bin/bash', ['-s', '--', 'klicker-workers'], {
+    cwd: root,
+    env: { ...env, DEVROUTER_PROFILE: profile },
+    encoding: 'utf8',
+    timeout: 10000,
+    maxBuffer: 1024 * 1024,
+    input: `${source}\nprofile_wants "$1"\n`,
+  })
   if (result.error || (result.status !== 0 && result.status !== 1)) {
     inputError(
       `Trusted worker marker failed: ${result.error?.message ?? result.stderr.trim()}`,
@@ -585,6 +679,120 @@ function git(root, args, label) {
   return run('git', ['-C', root, ...args], {}, label, 'GIT_READ_FAILED').trim()
 }
 
+function gitTopLevel(root) {
+  const result = spawnSync(
+    'git',
+    ['-C', root, 'rev-parse', '--show-toplevel'],
+    {
+      encoding: 'utf8',
+      timeout: 10000,
+    }
+  )
+  if (result.error || result.status !== 0) return null
+  try {
+    return realpathSync(result.stdout.trim())
+  } catch {
+    return null
+  }
+}
+
+function pinnedControlFile(root, sha, path) {
+  const result = spawnSync('git', ['-C', root, 'show', `${sha}:${path}`], {
+    timeout: 10000,
+    maxBuffer: MAX_OUTPUT,
+  })
+  if (result.error || result.status !== 0) return null
+  return Buffer.isBuffer(result.stdout)
+    ? result.stdout
+    : Buffer.from(result.stdout)
+}
+
+function controlPathFromRoot(root, path, label) {
+  const pathRelative = relative(root, resolve(path))
+  if (
+    pathRelative.length === 0 ||
+    pathRelative.startsWith('..') ||
+    isAbsolute(pathRelative)
+  ) {
+    inputError(
+      `${label} must be inside its Git root`,
+      'SOURCE_PROVENANCE_UNAVAILABLE'
+    )
+  }
+  return pathRelative
+}
+
+function verifySourceRevision({ root, sha, label, files, optionalFiles = [] }) {
+  const requested =
+    sha === undefined || sha === null ? null : assertSha(sha, label)
+  const topLevel = gitTopLevel(root)
+  if (topLevel !== root) {
+    if (requested !== null) {
+      inputError(
+        `${label} cannot be verified because its root is not the Git worktree root`,
+        'SOURCE_PROVENANCE_UNAVAILABLE',
+        { label, root, requested }
+      )
+    }
+    return {
+      sha: null,
+      status: 'unverified',
+      reason: 'not-a-git-worktree',
+      root,
+      files,
+    }
+  }
+  const head = assertSha(
+    git(root, ['rev-parse', 'HEAD'], `read ${label} HEAD`),
+    `${label} HEAD`
+  )
+  const resolved = requested ?? head
+  if (resolved !== head) {
+    inputError(
+      `${label} does not match the checked-out commit`,
+      'SOURCE_PROVENANCE_MISMATCH',
+      { label, requested: resolved, head, root }
+    )
+  }
+  const optional = new Set(optionalFiles)
+  const mismatches = []
+  const verifiedFiles = []
+  for (const path of files) {
+    const pinned = pinnedControlFile(root, resolved, path)
+    const working = readControlFile(root, path)
+    if (optional.has(path) && !pinned && !working) continue
+    if (!pinned || !working || !pinned.equals(working)) {
+      mismatches.push(path)
+    } else {
+      verifiedFiles.push(path)
+    }
+  }
+  if (mismatches.length > 0) {
+    inputError(
+      `${label} control files do not match the pinned commit`,
+      'SOURCE_PROVENANCE_MISMATCH',
+      { label, requested: resolved, root, files: mismatches }
+    )
+  }
+  return {
+    sha: resolved,
+    status: 'verified',
+    reason: requested === null ? 'checked-out-commit' : 'reported-commit',
+    root,
+    files: verifiedFiles,
+  }
+}
+
+function controllerControlFiles(contractRelativePath) {
+  return [
+    ...new Set([
+      ...CONTROLLER_SOURCE_FILES,
+      contractRelativePath,
+      ...OPTIONAL_CONTROLLER_CONTROL_FILES,
+    ]),
+  ].sort()
+}
+
 function assertSha(value, label) {
   if (typeof value !== 'string' || !GIT_SHA.test(value)) {
     inputError(`${label} must be a full lowercase commit SHA`)
@@ -663,7 +871,7 @@ function parseDevrouter(source, label) {
 }
 
 function inspectControls(controllerRoot, candidateRoot, contract) {
-  const files = [DEVROUTER_PATH, 'util/profile-resolver.sh']
+  const files = PROFILE_CONTROL_FILES
   const checked = files.map((path) => {
     const controller = readControlFile(controllerRoot, path)
     const candidate = readControlFile(candidateRoot, path)
@@ -788,9 +996,28 @@ export function buildPreviewPlan({
 }) {
   const controller = resolveDirectory(controllerRoot, 'controller root')
   const candidate = resolveDirectory(candidateRoot, 'candidate root')
-  const contract = loadRuntimeContract(
-    contractPath ?? join(controller, CONTRACT_PATH)
+  const contractFile = contractPath ?? join(controller, CONTRACT_PATH)
+  const contractRelativePath = controlPathFromRoot(
+    controller,
+    contractFile,
+    'Runtime contract'
   )
+  const provenance = {
+    controller: verifySourceRevision({
+      root: controller,
+      sha: controllerSha,
+      label: 'Controller revision',
+      files: controllerControlFiles(contractRelativePath),
+      optionalFiles: OPTIONAL_CONTROLLER_CONTROL_FILES,
+    }),
+    candidate: verifySourceRevision({
+      root: candidate,
+      sha: candidateSha,
+      label: 'Candidate revision',
+      files: PROFILE_CONTROL_FILES,
+    }),
+  }
+  const contract = loadRuntimeContract(contractFile)
   const controls = inspectControls(controller, candidate, contract)
   const parity = controls.parity
   const controllerProfiles = Object.keys(controls.controllerConfig.profiles)
@@ -853,16 +1080,23 @@ export function buildPreviewPlan({
     : selectIntent(changedRecords ?? [], contract)
 
   const sha = {
-    controller: assertSha(
-      controllerSha ??
-        git(controller, ['rev-parse', 'HEAD'], 'read controller SHA'),
-      'controller SHA'
-    ),
+    controller: provenance.controller.sha,
     base: baseSha ? assertSha(baseSha, 'base SHA') : null,
-    candidate: candidateSha ? assertSha(candidateSha, 'candidate SHA') : null,
+    candidate: provenance.candidate.sha,
   }
-  if (!sha.base) sha.base = sha.candidate ?? sha.controller
-  if (!sha.candidate) sha.candidate = sha.controller
+  if (sha.base) {
+    try {
+      resolveCommit(candidate, sha.base, 'base SHA')
+    } catch (error) {
+      if (error.code === 'INVALID_PLAN_INPUT') throw error
+      inputError(
+        'Base revision cannot be resolved in the candidate Git root',
+        'SOURCE_PROVENANCE_MISMATCH',
+        { base: sha.base, root: candidate }
+      )
+    }
+  }
+  if (!sha.base) sha.base = sha.candidate
 
   const profiles = selection.canonicalProfiles.join(',')
   const evaluateWorkers = !selection.auxJob && profiles.length > 0
@@ -917,10 +1151,10 @@ export function buildPreviewPlan({
   ) {
     const filters = run(
       '/bin/bash',
-      ['-c', 'source /dev/stdin; profile_turbo_filters'],
+      ['-s'],
       {
         cwd: controller,
-        input: controls.helperSource,
+        input: `${controls.helperSource}\nprofile_turbo_filters\n`,
         env: { ...env, DEVROUTER_PROFILE: profiles },
       },
       'Trusted process image selection'
@@ -972,6 +1206,14 @@ export function buildPreviewPlan({
       .flatMap((kind) => grouped[kind] ?? [])
       .map((resource) => resource.binding)
   const blockedReasons = [
+    ...(!selectedSource.eligible ? ['source-not-eligible'] : []),
+    ...(!profile && selection.mode === 'no-changes'
+      ? ['source-changes-missing']
+      : []),
+    ...(provenance.controller.status !== 'verified' ||
+    provenance.candidate.status !== 'verified'
+      ? ['source-provenance-unverified']
+      : []),
     ...(unsupportedResources.length > 0 ? ['unsupported-resource'] : []),
     ...(selection.recreation.required ? ['recreation-required'] : []),
   ]
@@ -979,6 +1221,7 @@ export function buildPreviewPlan({
     schemaVersion: 1,
     status: blockedReasons.length === 0 ? 'planning-ready' : 'blocked',
     sha,
+    provenance,
     sourceSelection: selectedSource,
     controlParity: {
       status: parity.status,
@@ -1040,8 +1283,21 @@ Options:
   --source-branch <name>    Source branch for preview policy
   --preview-label <name>    Pull request label to test (repeatable)
   --manual-opt-in           Record explicit pull request opt-in
+  --source-repository <id>  Base repository in owner/repository form
+  --source-head-repository <id>
+                            Source head repository in owner/repository form
+  --source-state <state>    Pull request state: open, closed, or merged
+  --source-merged <bool>    Pull request merged flag: true or false
+  --source-fork <bool>      Pull request fork flag: true or false
   --help                    Print this help without reading files
 `
+}
+
+function parseBooleanOption(name, value) {
+  if (value !== 'true' && value !== 'false') {
+    inputError(`--${name} must be true or false`)
+  }
+  return value === 'true'
 }
 
 function parseArgs(argv) {
@@ -1055,6 +1311,11 @@ function parseArgs(argv) {
     'event',
     'source-branch',
     'preview-label',
+    'source-repository',
+    'source-head-repository',
+    'source-state',
+    'source-merged',
+    'source-fork',
   ])
   for (let index = 0; index < argv.length; index += 1) {
     const argument = argv[index]
@@ -1069,7 +1330,9 @@ function parseArgs(argv) {
       }
       const value = argv[++index]
       if (name === 'preview-label') options.labels.push(value)
-      else options[name] = value
+      else if (name === 'source-merged' || name === 'source-fork') {
+        options[name] = parseBooleanOption(name, value)
+      } else options[name] = value
     }
   }
   return options
@@ -1128,6 +1391,11 @@ export function runCli(argv = process.argv.slice(2)) {
         sourceBranch: options['source-branch'] ?? sourceBranch(candidate),
         labels: options.labels,
         manualOptIn: options.manualOptIn === true,
+        repository: options['source-repository'],
+        headRepository: options['source-head-repository'],
+        state: options['source-state'],
+        merged: options['source-merged'],
+        isFork: options['source-fork'],
       },
     }),
     null,

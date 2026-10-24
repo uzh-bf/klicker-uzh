@@ -23,10 +23,25 @@ process.stdout.write(JSON.stringify(Object.fromEntries(
 `
 
 const validPreviewConfig = {
+  APP_ORIGIN_API: 'https://api.preview.test',
+  APP_ORIGIN_ASSESSMENT_API: 'https://assessment-api.preview.test',
+  APP_ORIGIN_ASSESSMENT_PWA: 'https://assessment.preview.test',
+  APP_ORIGIN_AUTH: 'https://auth.preview.test',
+  APP_ORIGIN_CHAT: 'https://chat.preview.test',
+  APP_ORIGIN_CONTROL: 'https://control.preview.test',
+  APP_ORIGIN_LTI: 'https://lti.preview.test',
+  APP_ORIGIN_MANAGE: 'https://manage.preview.test',
+  APP_ORIGIN_PWA: 'https://pwa.preview.test',
   API_DOMAIN: 'api.preview.test',
   API_URL_SSR: 'http://api:7078/api/graphql',
+  AUTH_LECTURER_ALLOWED_HOSTS: 'auth.preview.test,manage.preview.test',
+  AUTH_PWA_HOSTS: 'pwa.preview.test,assessment.preview.test',
+  AUTH_STUDENT_ALLOWED_HOSTS: 'auth.preview.test,assessment.preview.test',
   BLOB_STORAGE_ACCOUNT_URL: 'https://blob.preview.test/klickerdev',
   COOKIE_DOMAIN: '.preview.test',
+  EDUID_CLIENT_ID: 'synthetic-preview-client',
+  EDUID_WELL_KNOWN:
+    'https://eduid.preview.test/.well-known/openid-configuration',
   NEXTAUTH_URL: 'https://auth.preview.test',
   NEXT_PUBLIC_ADD_RESPONSE_URL: 'https://response.preview.test/AddResponse',
   NEXT_PUBLIC_API_URL: 'https://api.preview.test/api/graphql',
@@ -38,7 +53,9 @@ const validPreviewConfig = {
   NEXT_PUBLIC_AVATAR_BASE_PATH: 'https://blob.preview.test/klickerdev/avatars',
   NEXT_PUBLIC_CHAT_URL: 'https://chat.preview.test',
   NEXT_PUBLIC_CONTROL_URL: 'https://control.preview.test',
+  NEXT_PUBLIC_EDUID_ID: 'eduid-preview',
   NEXT_PUBLIC_ENV: 'staging',
+  NEXT_PUBLIC_PREVIEW_ID: 'preview-test',
   NEXT_PUBLIC_GROWTHBOOK_API_HOST: 'https://growthbook.preview.test',
   NEXT_PUBLIC_GROWTHBOOK_CLIENT_KEY: 'sdk-preview-test',
   NEXT_PUBLIC_LTI_URL: 'https://lti.preview.test',
@@ -47,6 +64,8 @@ const validPreviewConfig = {
   NEXT_PUBLIC_MATOMO_SITE_ID: '34',
   NEXT_PUBLIC_MATOMO_URL: 'https://analytics.preview.test/matomo',
   NEXT_PUBLIC_PWA_URL: 'https://pwa.preview.test',
+  NEXT_PUBLIC_WEB_PUSH_PUBLIC_KEY: 'synthetic-preview-web-push-key',
+  NEXT_PUBLIC_WITH_MAGIC_LINK: 'false',
   NEXT_TELEMETRY_DISABLED: '1',
 }
 
@@ -118,6 +137,26 @@ test('absent and empty input preserve the legacy build environment', (t) => {
     assert.equal(childEnv.TURBO_FORCE, null)
     assert.deepEqual(readdirSync(workspace), [])
   }
+
+  for (const input of [undefined, '', '   ']) {
+    const env = {
+      ...baseEnv,
+      NEXT_PUBLIC_GROWTHBOOK_API_HOST: 'https://production-growthbook.test',
+      NEXT_PUBLIC_MATOMO_URL: 'https://production-matomo.test',
+      NEXT_TELEMETRY_DISABLED: '0',
+    }
+    if (input === undefined) delete env.KLICKER_PREVIEW_BUILD_ENV_JSON
+    else env.KLICKER_PREVIEW_BUILD_ENV_JSON = input
+
+    assert.deepEqual(
+      prepareChildEnvironment(env, 'frontend-manage'),
+      Object.fromEntries(
+        Object.entries(env).filter(
+          ([key]) => key !== 'KLICKER_PREVIEW_BUILD_ENV_JSON'
+        )
+      )
+    )
+  }
 })
 
 test('valid preview bindings override existing values without changing files', (t) => {
@@ -178,8 +217,86 @@ test('each required binding must be supplied by preview config', () => {
   }
 })
 
+test('newly required preview bindings cannot fall back to production values', () => {
+  for (const [app, key] of [
+    ['auth', 'EDUID_CLIENT_ID'],
+    ['chat', 'NEXT_PUBLIC_AVATAR_BASE_PATH'],
+    ['frontend-control', 'API_URL_SSR'],
+    ['frontend-manage', 'NEXT_PUBLIC_LTI_URL'],
+    ['frontend-pwa', 'NEXT_PUBLIC_WEB_PUSH_PUBLIC_KEY'],
+  ]) {
+    const partialConfig = { ...validPreviewConfig }
+    delete partialConfig[key]
+
+    assert.throws(
+      () =>
+        prepareChildEnvironment(
+          {
+            ...partialConfig,
+            [key]: 'existing-production-environment-value',
+            KLICKER_PREVIEW_BUILD_ENV_JSON: JSON.stringify(partialConfig),
+          },
+          app
+        ),
+      (error) =>
+        error instanceof PreviewBuildEnvError && error.message.includes(key)
+    )
+  }
+})
+
+test('harmless preview defaults replace unbound optional configuration', () => {
+  const config = { ...validPreviewConfig }
+  for (const key of [
+    'NEXT_PUBLIC_GROWTHBOOK_API_HOST',
+    'NEXT_PUBLIC_GROWTHBOOK_CLIENT_KEY',
+    'NEXT_PUBLIC_IS_ASSESSMENT',
+    'NEXT_PUBLIC_MATOMO_ID',
+    'NEXT_PUBLIC_MATOMO_SITE_ID',
+    'NEXT_PUBLIC_MATOMO_URL',
+    'NEXT_PUBLIC_WITH_MAGIC_LINK',
+    'NEXT_TELEMETRY_DISABLED',
+  ]) {
+    delete config[key]
+  }
+
+  const childEnv = prepareChildEnvironment(
+    {
+      ...config,
+      NEXT_PUBLIC_GROWTHBOOK_API_HOST: 'https://production-growthbook.test',
+      NEXT_PUBLIC_IS_ASSESSMENT: 'true',
+      NEXT_PUBLIC_MATOMO_URL: 'https://production-matomo.test',
+      NEXT_PUBLIC_WITH_MAGIC_LINK: 'true',
+      NEXT_TELEMETRY_DISABLED: '0',
+      KLICKER_PREVIEW_BUILD_ENV_JSON: JSON.stringify(config),
+    },
+    'frontend-pwa'
+  )
+
+  for (const key of [
+    'NEXT_PUBLIC_GROWTHBOOK_API_HOST',
+    'NEXT_PUBLIC_GROWTHBOOK_CLIENT_KEY',
+    'NEXT_PUBLIC_MATOMO_ID',
+    'NEXT_PUBLIC_MATOMO_SITE_ID',
+    'NEXT_PUBLIC_MATOMO_URL',
+  ]) {
+    assert.equal(childEnv[key], '', key)
+  }
+  assert.equal(childEnv.NEXT_PUBLIC_IS_ASSESSMENT, 'false')
+  assert.equal(childEnv.NEXT_PUBLIC_WITH_MAGIC_LINK, 'false')
+  assert.equal(childEnv.NEXT_TELEMETRY_DISABLED, '1')
+})
+
 test('app URLs remain origins and only classified SSR endpoints allow HTTP', () => {
   const originKeys = [
+    'APP_ORIGIN_API',
+    'APP_ORIGIN_ASSESSMENT_API',
+    'APP_ORIGIN_ASSESSMENT_PWA',
+    'APP_ORIGIN_AUTH',
+    'APP_ORIGIN_CHAT',
+    'APP_ORIGIN_CONTROL',
+    'APP_ORIGIN_LTI',
+    'APP_ORIGIN_MANAGE',
+    'APP_ORIGIN_PWA',
     'NEXTAUTH_URL',
     'NEXT_PUBLIC_ASSESSMENT_URL',
     'NEXT_PUBLIC_AUTH_URL',
@@ -195,9 +312,11 @@ test('app URLs remain origins and only classified SSR endpoints allow HTTP', () 
     'NEXT_PUBLIC_API_URL',
     'NEXT_PUBLIC_ASSESSMENT_API_URL',
     'NEXT_PUBLIC_AVATAR_BASE_PATH',
+    'NEXT_PUBLIC_IMAGE_BASE_PATH',
     'NEXT_PUBLIC_GROWTHBOOK_API_HOST',
     'NEXT_PUBLIC_MATOMO_URL',
   ]
+  const endpointKeys = ['EDUID_WELL_KNOWN']
   const internalKeys = ['API_URL_SSR', 'NEXT_PUBLIC_API_URL_SSR']
   const parseValue = (key, value) =>
     parsePreviewBuildEnv(
@@ -211,7 +330,7 @@ test('app URLs remain origins and only classified SSR endpoints allow HTTP', () 
       PreviewBuildEnvError
     )
   }
-  for (const key of [...originKeys, ...publicEndpointKeys]) {
+  for (const key of [...originKeys, ...publicEndpointKeys, ...endpointKeys]) {
     assert.throws(
       () => parseValue(key, 'http://service.preview.test/api/graphql'),
       PreviewBuildEnvError
@@ -225,7 +344,12 @@ test('app URLs remain origins and only classified SSR endpoints allow HTTP', () 
       assert.equal(parseValue(key, value)[key], value)
     }
   }
-  for (const key of [...originKeys, ...publicEndpointKeys, ...internalKeys]) {
+  for (const key of [
+    ...originKeys,
+    ...publicEndpointKeys,
+    ...endpointKeys,
+    ...internalKeys,
+  ]) {
     for (const value of [
       'https://service.preview.test/api/graphql?token=synthetic-test',
       'https://service.preview.test/api/graphql#fragment',
@@ -274,6 +398,33 @@ test('telemetry can be explicitly disabled without falling back to existing valu
   )
 })
 
+test('public boolean settings accept only explicit boolean values', () => {
+  for (const key of [
+    'NEXT_PUBLIC_IS_ASSESSMENT',
+    'NEXT_PUBLIC_WITH_MAGIC_LINK',
+  ]) {
+    for (const value of ['true', 'false']) {
+      assert.equal(
+        parsePreviewBuildEnv(
+          JSON.stringify({ ...validPreviewConfig, [key]: value }),
+          'frontend-pwa'
+        )[key],
+        value
+      )
+    }
+    for (const value of ['', '1', 'yes']) {
+      assert.throws(
+        () =>
+          parsePreviewBuildEnv(
+            JSON.stringify({ ...validPreviewConfig, [key]: value }),
+            'frontend-pwa'
+          ),
+        PreviewBuildEnvError
+      )
+    }
+  }
+})
+
 test('invalid or partial preview config fails before the build without leaking values', (t) => {
   const workspace = createWorkspace(t)
   const secretValue = 'synthetic-value-that-must-not-leak'
@@ -287,6 +438,18 @@ test('invalid or partial preview config fails before the build without leaking v
       input: JSON.stringify({
         ...validPreviewConfig,
         OPENROUTER_API_KEY: secretValue,
+      }),
+    },
+    {
+      input: JSON.stringify({
+        ...validPreviewConfig,
+        APP_SECRET: secretValue,
+      }),
+    },
+    {
+      input: JSON.stringify({
+        ...validPreviewConfig,
+        EDUID_CLIENT_SECRET: secretValue,
       }),
     },
     {

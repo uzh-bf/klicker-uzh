@@ -1,3 +1,4 @@
+import { previewCookieName } from '@klicker-uzh/util'
 import { jwtVerify } from 'jose'
 import type { NextRequest } from 'next/server'
 import { NextResponse } from 'next/server'
@@ -32,7 +33,9 @@ export async function proxy(request: NextRequest) {
     return applyFrameAncestorsCSP(NextResponse.next())
   }
 
-  const participantToken = request.cookies.get('participant_token')?.value
+  const participantToken = request.cookies.get(
+    previewCookieName('participant_token')
+  )?.value
 
   if (!participantToken) {
     const noLoginUrl = request.nextUrl.clone()

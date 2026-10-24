@@ -1,10 +1,14 @@
+import { createHash } from 'node:crypto'
 import { hatchetClient } from '@klicker-uzh/hatchet'
 import { UserLoginScope } from '@klicker-uzh/prisma/client'
-import { verifyJWT, type JWTPayload } from '@klicker-uzh/util'
+import {
+  type JWTPayload,
+  previewCookieName,
+  verifyJWT,
+} from '@klicker-uzh/util'
 import { randomUUID } from 'crypto'
-import { createServer, IncomingMessage, ServerResponse } from 'http'
+import { createServer, type IncomingMessage, type ServerResponse } from 'http'
 import { Redis } from 'ioredis'
-import { createHash } from 'node:crypto'
 
 const redis = new Redis({
   family: 4,
@@ -241,12 +245,12 @@ async function handleAddAssessmentResponse(
   // check if the assessment cookie is present and valid
   let user: JWTPayload | null = null
   try {
-    user = parsedCookies['next-auth.participant-session-token']
-      ? await verifyJWT(
-          parsedCookies['next-auth.participant-session-token'],
-          process.env.APP_SECRET as string,
-          { issuer: process.env.APP_ORIGIN_AUTH }
-        )
+    const assessmentToken =
+      parsedCookies[previewCookieName('next-auth.participant-session-token')]
+    user = assessmentToken
+      ? await verifyJWT(assessmentToken, process.env.APP_SECRET as string, {
+          issuer: process.env.APP_ORIGIN_AUTH,
+        })
       : null
   } catch (err) {
     hatchetClient.events.push('create-audit-log-entry', {

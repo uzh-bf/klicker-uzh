@@ -42,6 +42,7 @@ import SuspendedAssessmentResults from '../../../components/insights/assessmentR
 import LeaveLeaderboardModal from '../../../components/participant/LeaveLeaderboardModal'
 import ParticipantProfileModal from '../../../components/participant/ParticipantProfileModal'
 import GroupCreationActions from '../../../components/participant/groups/GroupCreationActions'
+import { previewCookieName } from '@klicker-uzh/util'
 
 interface Props {
   courseId: string
@@ -695,7 +696,7 @@ export async function getServerSideProps(ctx: GetServerSidePropsContext) {
 
     // remove the lti-token, if it is defined
     try {
-      nookies.destroy(ctx, 'lti-token', {
+      nookies.destroy(ctx, previewCookieName('lti-token'), {
         domain: process.env.COOKIE_DOMAIN,
         path: '/',
       })

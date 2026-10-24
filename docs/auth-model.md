@@ -32,6 +32,8 @@ Both edu-ID providers set `idToken: true`, which makes NextAuth build the profil
 
 The NextAuth cookie domain is derived by stripping the first subdomain label from the auth URL, so the session cookie is shared across `*.klicker.com`-style app domains. The **Catalyst** flag is computed from Edu-ID affiliations (`packages/util/src/auth.ts:reduceCatalyst` — any `uzh.ch`/`usz.ch` affiliation).
 
+Trusted preview deployments can set `NEXT_PUBLIC_PREVIEW_ID` to a stable lowercase ID shared by every app and backend. The shared `previewCookieName()` helper prefixes their cookies, retaining the browser's `__Secure-` and `__Host-` prefixes. Next.js must receive the ID during its build; server processes receive the identical ID at runtime. With no ID, existing cookie names stay unchanged. Namespacing prevents accidental session collisions between concurrent previews sharing a wildcard parent; parent-scoped cookies still reach sibling previews, so this contract assumes trusted code, synthetic data and independent signing secrets. It does not qualify untrusted fork execution.
+
 ## Participant login (`apps/frontend-pwa`)
 
 - **Username/password** — PWA `LoginForm` → login mutation → `participant_token` cookie; the PWA Apollo client additionally sends the token as `Bearer` from sessionStorage.
