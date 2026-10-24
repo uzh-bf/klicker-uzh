@@ -563,7 +563,7 @@ test.describe('Chatbot Messaging Interface', () => {
       })
       const embeddedMode = page
         .getByTestId('chat-embedded-toolbar')
-        .getByRole('combobox')
+        .getByRole('combobox', { name: enMessages.chat.modes.switcherLabel })
       await embeddedMode.selectOption(modes[0].key)
       await expect(welcome).toHaveText(welcomeMessage)
       await expect(page.getByTestId('chat-welcome-mode')).toHaveCount(0)
