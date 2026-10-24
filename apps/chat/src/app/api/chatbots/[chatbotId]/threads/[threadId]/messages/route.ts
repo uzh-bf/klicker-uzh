@@ -1,7 +1,10 @@
 import type { AppLogger } from '@klicker-uzh/logging/node'
 import { prisma } from '@klicker-uzh/prisma'
 import { type NextRequest, NextResponse } from 'next/server'
-import { buildHistoryAttachmentDto } from '@/src/lib/attachments/attachmentState'
+import {
+  buildHistoryAttachmentDto,
+  IMAGE_ROW_FILTER,
+} from '@/src/lib/attachments/attachmentState'
 import { withChatbotAuth } from '@/src/lib/server/apiGuards'
 import { isParticipantReasoningVisible } from '@/src/lib/server/effectiveChatModes'
 import { withoutReasoningParts } from '@/src/lib/server/persistedAssistantContent'
@@ -41,6 +44,7 @@ async function handleGET(
       },
       include: {
         attachments: {
+          where: IMAGE_ROW_FILTER,
           orderBy: { position: 'asc' },
         },
       },

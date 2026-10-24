@@ -66,7 +66,7 @@ runs:
     - name: Install pnpm
       uses: pnpm/action-setup@v4
       with:
-        version: 12.11.2
+        package_json_file: package.json
         run_install: false
 
     - name: Compute cache contract
@@ -198,6 +198,7 @@ runs:
         DATABASE_URL: postgres://klicker_test:klicker@postgres:5432/klicker_test
 
     - name: Start services, wait for readiness, and run Playwright tests
+      id: tests
       shell: bash
       run: |
         set -euo pipefail
@@ -345,7 +346,7 @@ runs:
         PNPM_CACHE_MATCHED_KEY: ${{ steps.pnpm-cache.outputs.cache-matched-key }}
         PLAYWRIGHT_SHARD_INDEX: ${{ inputs.shard-index }}
         PLAYWRIGHT_SHARD_TOTAL: ${{ inputs.shard-total }}
-        PLAYWRIGHT_CONCLUSION: ${{ job.status }}
+        PLAYWRIGHT_CONCLUSION: ${{ steps.tests.outcome }}
       run: |
         started="${PLAYWRIGHT_STARTED_SECONDS:-$(date +%s)}"
         export PLAYWRIGHT_DURATION_SECONDS="$(( $(date +%s) - started ))"

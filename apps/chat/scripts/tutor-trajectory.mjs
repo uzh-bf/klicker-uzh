@@ -517,7 +517,14 @@ function verifyTrajectoryTurn({ messages, chain, mode, modelId, stream }) {
 // verification.
 export async function runTrajectory(target, definition, options = {}) {
   const plan = validateTrajectoryCase(definition)
-  const { arm = null, repeat = 0, beforeTurn, onTurn } = options ?? {}
+  const {
+    arm = null,
+    repeat = 0,
+    answerStyle,
+    answerTone,
+    beforeTurn,
+    onTurn,
+  } = options ?? {}
 
   await target.ensureSession()
   const threadId = await target.createThread()
@@ -562,6 +569,8 @@ export async function runTrajectory(target, definition, options = {}) {
       maxStreamBytes: target.maxStreamBytes,
       history,
       parentId: previousAssistantId,
+      answerStyle,
+      answerTone,
     })
     const messages = await target.pollThreadMessages(
       threadId,

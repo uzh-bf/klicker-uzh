@@ -29,6 +29,7 @@ fragment ChatbotAuthoringRevisionData on ChatbotAuthoringRevision {
   }
   modelSelection
   allowedModelIds
+  answerPreferencesEnabled
   allowedReasoningEffortsByModel {
     modelId
     efforts
