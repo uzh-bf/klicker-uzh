@@ -152,10 +152,12 @@ ${install.run}
         timeout: 5000,
       }
     )
+    assert.ok(!result.error, result.error?.message)
     assert.equal(result.status, 0, result.stderr)
     const argumentsFor = (name) =>
       fs.readFileSync(path.join(directory, name), 'utf8').trim().split('\n')
     const installed = argumentsFor('npm-arguments')
+    assert.ok(installed.includes('-g') || installed.includes('--global'))
     assert.ok(installed.includes('@alibaba-group/open-code-review@1.13.0'))
     assert.equal(
       installed[installed.indexOf('--prefix') + 1],
