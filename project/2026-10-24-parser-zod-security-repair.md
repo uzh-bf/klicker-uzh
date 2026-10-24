@@ -48,9 +48,11 @@ Acceptance commands: frozen `pnpm install --frozen-lockfile`, `pnpm exec turbo r
 ## Progress
 
 - Human authority: approved executable draft preparation; all live effects withheld except separately scoped Sonar issue states.
-- Baseline: source pinned, clean worktree created; frozen container install running.
-- Planner: pending; source mapping running.
-- Implementation, checks, reviews and draft: pending.
+- Baseline: source pinned; frozen container install, baseline package build and focused validation passed.
+- Planner: approved revised closure/test/delegation plan; source mapping completed.
+- Implementation and local checks completed. Independent final source review passed with no remaining findings after the Pothos correction.
+- [Draft PR #6699](https://github.com/uzh-bf/klicker-uzh/pull/6699) is open. Ready, merge and rollout remain excluded.
+- Current hosted CI and actual image scan receipts remain unqualified; authenticated embed browser proof remains pending.
 
 ### Source map verified before execution
 
@@ -75,3 +77,5 @@ Fresh worktree Husky bootstrap is absent; required check/build/format/lint/syncp
 Final review correction also covers Pothos UUID options in `packages/graphql/src/schema/mutation.ts` and `packages/graphql/src/schema/elementGeneration.ts`: supply equivalent GUID schemas so existing non-RFC-variant hexadecimal IDs remain accepted. The actual Pothos regression test covers acceptance and rejection. Simplifier's single-call SDK loader cache removal accepted in both MCP tests; no assertion changes.
 
 Final correction verification: Pothos validation integration now has three passing tests (including legacy ID acceptance), selected GraphQL contracts pass together, GraphQL TS and generation preserve SDL, and both simplified MCP server suites pass. Hosted check failure confirmed the inherited OCR install assertion covered by separate draft #6698; no retry or duplicate correction included here. Draft image jobs are skipped and are not image acceptance.
+
+Integrated final: source range through `aa7a3d3480ada2d3dcf6e96f4f7d471c8e3d0308` reviewed in full; no remaining findings. The final progress-only edit does not change source or invalidate that review. Substantive package size before this note: 587 added / 80 removed lines excluding lockfile and plan.
