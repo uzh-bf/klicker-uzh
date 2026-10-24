@@ -99,7 +99,9 @@ Use platform-native lifecycle mechanisms and a repository-owned application defi
 4. Demonstrate private GitHub and GitLab lifecycle using the same environment contract. Network reachability is a prerequisite for private/self-hosted VCS.
 5. Prove close/expiry cleanup and retained-data policy, and report actual resource usage with all dependency costs.
 
-No runtime, provider account, repository integration, billing method, secret, DNS or infrastructure has been changed by this research.
+The bounded pilot has since proved shared wildcard HTTPS, synthetic cross-preview participant sessions, a persisted Chat/MCP turn, Hatchet response processing, SMTP capture, OLAT authentication, assessment report verification, source update without reseeding, profile contraction and compute pause/resume. Analytics needed a 4 GiB one-shot job. These findings support continuing the managed-platform evaluation, while the [execution plan](2026-10-24-northflank-dev-environment-plan.md#pilot-qualification-checkpoint) records the unqualified integrations and automation gaps. The current source workflow plans only; no automatic PR deployment or request-triggered wake is established.
+
+The initial research pass was read-only. Subsequent approved pilot setup and its current qualification state are recorded in the execution plan.
 
 ## Public sources
 
