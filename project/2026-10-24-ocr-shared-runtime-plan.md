@@ -707,3 +707,15 @@ in the pinned action guard. Both machine-condition assertions are now present;
 all three affected guard contracts pass. Other passing verification is reused
 because release bytes and runtime behavior are unchanged. Integrated source
 review and current-head hosted CI remain separate receipts at draft delivery.
+
+
+The integrated final review identified a future-repin qualification gap: the
+stock fixture now targets the published controller, but a caller-only SHA
+update did not select that fixture. Accept the smaller proposed correction:
+include the donor workflow in the existing shared qualification selector.
+Every adopted pin therefore runs the real-publisher partial-publication fixture
+against its actual published bytes. Keep one fixture rather than a second
+local/published matrix; source publication and caller adoption remain distinct
+phases. Only the selector changes in `check.yml`; its execution limits and
+credential isolation stay intact. Recheck the selector and request the single
+focused integrated-review correction before claiming final source acceptance.
