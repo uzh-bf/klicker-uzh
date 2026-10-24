@@ -975,6 +975,44 @@ test('the bounded codebase check narrows only for a proven pull-request class', 
   )
 })
 
+test('shared OCR qualification covers callers and its orchestrator, and runs for an unproven diff', () => {
+  const steps = readWorkflow('check.yml').jobs['check-suite'].steps
+  const selector = steps.find((step) => step.id === 'ocr_shared')
+  assert.equal(selector.uses, './.github/actions/changed-paths')
+  const pattern = new RegExp(selector.with.pattern)
+  for (const file of [
+    '.github/actions/ocr-review/action.yml',
+    '.github/scripts/ocr-controller.test.cjs',
+    '.github/open-code-review/runtime-manifest.json',
+    '.agents/skills/ocr-reviewer/SKILL.md',
+    '.github/workflows/check-ocr-review.yml',
+    '.github/workflows/check.yml',
+  ])
+    assert.equal(pattern.test(file), true, file)
+  for (const file of [
+    '.github/workflows/check-ocr-final-review.yml',
+    'apps/chat/src/proxy.ts',
+    'docs/ocr-runtime.md',
+  ])
+    assert.equal(pattern.test(file), false, file)
+  const qualification = steps.find((step) =>
+    step.run?.includes('export OCR_REQUIRE_STOCK_BINARY=1')
+  )
+  for (const should_run of ['false', 'true', undefined]) {
+    assert.equal(
+      evaluateGate(
+        qualification.if,
+        {},
+        {},
+        false,
+        {},
+        { ocr_shared: { outputs: { should_run } } }
+      ),
+      should_run !== 'false'
+    )
+  }
+})
+
 test('OCR engine qualification only runs for related paths or an unproven diff', () => {
   const steps = readWorkflow('check.yml').jobs['check-suite'].steps
   const selector = steps.find((step) => step.id === 'ocr_engine')

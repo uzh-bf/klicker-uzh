@@ -203,7 +203,7 @@ jobs:
         id: ocr_shared
         uses: ./.github/actions/changed-paths
         with:
-          pattern: '^\.github/(actions/ocr-review/|workflows/check-ocr-review\.yml|scripts/ocr-(controller|draft-review|review-shared|runtime-config|review-tools|mistral-adapter)(\.test)?\.cjs|open-code-review/runtime-manifest\.json)|^\.agents/skills/ocr-reviewer/'
+          pattern: '^\.github/(actions/ocr-review/|workflows/(check|check-ocr-review)\.yml|scripts/ocr-(controller|draft-review|review-shared|runtime-config|review-tools|mistral-adapter)(\.test)?\.cjs|open-code-review/runtime-manifest\.json)|^\.agents/skills/ocr-reviewer/'
 
       - name: Qualify stock OCR runtime with synthetic providers
         if: steps.ocr_shared.outputs.should_run != 'false'
