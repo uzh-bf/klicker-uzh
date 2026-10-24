@@ -134,12 +134,12 @@ screenshots to this repository through authenticated host `gh`; verify links.
   and scoped static checks pass; browser export/filter/provider-notice DOM checked.
 - EN/DE notice DOM, synthetic export/filter and initial action focus passed.
   Screenshot compositor timed out after fonts loaded; earlier partial-animation
-  captures were rejected. Focus return after dismissal remains unqualified.
-  No completed visual or microphone/provider acceptance is claimed.
+  captures were rejected. Both "Not now" and Escape restore the focused opener after action focus.
+  No completed screenshot, mobile or microphone/provider acceptance is claimed.
 - Simplifier found no net simplification. Slice reviewer passed the eight-file
   implementation and its single focused timer correction. Integrated final
   review and hosted CI remain pending; the draft will retain visual limitations.
-- Substantive size: 140 additions/22 deletions across code, translations and tests; plan/docs
+- Substantive size: 152 additions/23 deletions across code, translations and tests; plan/docs
   excluded.
 - PR: [draft presentation fix](https://github.com/uzh-bf/klicker-uzh/pull/6696).
   Independent final review and required hosted CI remain pending. Keep draft
