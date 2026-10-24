@@ -23,6 +23,7 @@ const {
   buildCostReport,
   createProgressFilter,
   createProgressReporter,
+  summarizeProducer,
 } = require('./ocr-mistral-adapter.cjs')
 
 const ADAPTER = path.join(__dirname, 'ocr-mistral-adapter.cjs')
@@ -532,6 +533,175 @@ test('progress classifies fatal CLI roots with fixed tokens and refuses non-root
     assert.deepEqual(records, expected ? [expected] : [], line)
     assert.doesNotMatch(records.join(''), /SENTINEL|::/)
   }
+})
+
+test('producer progress consumes escaped group labels and emits only fixed reason categories', () => {
+  const records = []
+  const producer = []
+  const progress = createProgressFilter(
+    (line) => records.push(line),
+    undefined,
+    (record) => producer.push(record)
+  )
+  const raw = [
+    '[ocr] Subtask error for group "quoted \\"context deadline exceeded\\"": task failed: task_done reported FAILED',
+    'Subtask error for group "quoted \\"name\\"": context deadline exceeded',
+    'Subtask error for group "quoted \\"name\\"": OCR_PRIVATE_SENTINEL',
+    'Subtask error for group "quoted \\"name\\"": LLM completion error: OCR_PRIVATE_SENTINEL',
+    'Subtask panic for group "quoted \\"name\\"": task failed: task_done reported FAILED',
+    'Subtask error for group "task failed: task_done reported FAILED": OCR_PRIVATE_SENTINEL',
+    'Subtask error for group "unterminated: OCR_PRIVATE_SENTINEL',
+    'prefix Subtask error for group "spoof": task failed: task_done reported FAILED',
+    String.raw`[ocr] Subtask error for group "a\x5c\u0022\U00000022\101": context canceled`,
+    String.raw`[ocr] Subtask error for group "bad\q": context deadline exceeded`,
+    '[ocr] Subtask error for group "bad\u0001": context deadline exceeded',
+  ].join('\n')
+  progress.write(raw.slice(0, 73))
+  progress.write(raw.slice(73) + '\n')
+  progress.end()
+  assert.deepEqual(records, [
+    'OCR progress event=subtask_error reason=task_reported_failed\n',
+    'OCR progress event=subtask_error reason=timeout\n',
+    'OCR progress event=subtask_error reason=unknown\n',
+    'OCR progress event=subtask_error reason=llm_client_error\n',
+    'OCR progress event=subtask_error reason=panic\n',
+    'OCR progress event=subtask_error reason=unknown\n',
+    'OCR progress event=subtask_error reason=unknown\n',
+    'OCR progress event=subtask_error reason=cancelled\n',
+    'OCR progress event=subtask_error reason=unknown\n',
+    'OCR progress event=subtask_error reason=unknown\n',
+  ])
+  assert.deepEqual(producer, [
+    {
+      kind: 'subtask_error',
+      reason: 'task_reported_failed',
+      valid: true,
+    },
+    { kind: 'subtask_error', reason: 'timeout', valid: true },
+    { kind: 'subtask_error', reason: 'unknown', valid: true },
+    { kind: 'subtask_error', reason: 'llm_client_error', valid: true },
+    { kind: 'subtask_error', reason: 'panic', valid: true },
+    { kind: 'subtask_error', reason: 'unknown', valid: true },
+    null,
+    { kind: 'subtask_error', reason: 'cancelled', valid: true },
+    null,
+    null,
+  ])
+  assert.doesNotMatch(records.join(''), /SENTINEL|spoof/)
+})
+
+test('producer snapshots distinguish valid unknown errors from incomplete capture', () => {
+  const records = []
+  const reporter = createProgressReporter((line) => records.push(line), {
+    setInterval() {
+      return { unref() {} }
+    },
+    clearInterval() {},
+  })
+  reporter.write(
+    [
+      String.raw`Subtask error for group "a\"b": task failed: task_done reported FAILED`,
+      'Subtask error for group "a": context deadline exceeded',
+      'Subtask error for group "a": context canceled',
+      'Subtask error for group "a": LLM completion error: private',
+      'Subtask panic for group "a": private',
+      'Subtask error for group "a": private unknown error',
+    ].join('\n') + '\n'
+  )
+  assert.deepEqual(reporter.producer(), {
+    schema_version: 1,
+    complete: false,
+    subtask_errors: {
+      task_reported_failed: 1,
+      llm_client_error: 1,
+      timeout: 1,
+      cancelled: 1,
+      panic: 1,
+      unknown: 1,
+    },
+  })
+  reporter.finish({ code: 7, stderrComplete: true })
+  const complete = reporter.producer()
+  assert.equal(complete.complete, true)
+  assert.equal(complete.subtask_errors.unknown, 1)
+  assert.equal(
+    summarizeProducer(complete),
+    'OCR producer status=complete stage=adapter task_reported_failed=1 llm_client_error=1 timeout=1 cancelled=1 panic=1 unknown=1'
+  )
+
+  for (const [text, result] of [
+    ['Subtask error for group "a": context deadline exceeded\n', { code: 0 }],
+    [
+      'Subtask error for group "a": context deadline exceeded\n',
+      { code: 0, stderrComplete: true, failed: true },
+    ],
+    [
+      'Subtask error for group "unterminated: private\n',
+      { stderrComplete: true },
+    ],
+    [
+      'Subtask error for group "a": task failed: task_done reported FAILED',
+      { stderrComplete: true },
+    ],
+    [
+      'Subtask error for group "' + 'x'.repeat(4096) + '": timeout\n',
+      { stderrComplete: true },
+    ],
+  ]) {
+    const live = []
+    const incomplete = createProgressReporter((line) => live.push(line), {
+      setInterval() {
+        return { unref() {} }
+      },
+      clearInterval() {},
+    })
+    incomplete.write(text)
+    incomplete.finish(result)
+    assert.equal(incomplete.producer().complete, false)
+    assert.match(
+      summarizeProducer(incomplete.producer()),
+      /^OCR producer status=(?:partial|unavailable) /
+    )
+    assert.doesNotMatch(live.join(''), /private|PRIVATE_SENTINEL|Subtask error/)
+  }
+
+  const sinkFailure = createProgressReporter(
+    () => {
+      throw new Error('private sink failure')
+    },
+    {
+      setInterval() {
+        return { unref() {} }
+      },
+      clearInterval() {},
+    }
+  )
+  sinkFailure.write('Subtask error for group "a": private unknown error\n')
+  sinkFailure.finish({ code: 0, stderrComplete: true })
+  assert.equal(sinkFailure.producer().complete, true)
+  assert.equal(sinkFailure.producer().subtask_errors.unknown, 1)
+  assert.equal(
+    summarizeProducer({ ...sinkFailure.producer(), schema_version: 2 }),
+    'OCR producer status=unavailable'
+  )
+  assert.equal(
+    summarizeProducer({ ...sinkFailure.producer(), complete: 'true' }),
+    'OCR producer status=unavailable'
+  )
+  assert.equal(
+    summarizeProducer({
+      ...sinkFailure.producer(),
+      subtask_errors: {
+        ...sinkFailure.producer().subtask_errors,
+        PRIVATE_SENTINEL: 1,
+      },
+    }),
+    'OCR producer status=unavailable'
+  )
+  assert.equal(
+    summarizeProducer({ ...sinkFailure.producer(), complete: false }),
+    'OCR producer status=partial stage=adapter task_reported_failed=0 llm_client_error=0 timeout=0 cancelled=0 panic=0 unknown=1'
+  )
 })
 
 test('progress heartbeats reflect quiet time and finish clears the timer exactly once', () => {
@@ -1225,6 +1395,139 @@ test('execution summary validates new timing and history independently of legacy
     }
   } finally {
     await adapter.close()
+    fs.rmSync(directory, { recursive: true, force: true })
+  }
+})
+
+test('producer and task_done summaries are independent of cost and failure coverage', async () => {
+  const directory = fs.mkdtempSync(
+    path.join(os.tmpdir(), 'ocr-producer-summary-')
+  )
+  const receiptPath = path.join(directory, 'receipt.jsonl')
+  const summaryPath = path.join(directory, 'summary.md')
+  const snapshot = (complete = true, overrides = {}) => ({
+    schema_version: 1,
+    complete,
+    subtask_errors: {
+      task_reported_failed: 0,
+      llm_client_error: 0,
+      timeout: 0,
+      cancelled: 0,
+      panic: 0,
+      unknown: 0,
+      ...overrides,
+    },
+  })
+  try {
+    const first = costReceipt({
+      task_done_failed_responses: 1,
+      requests: 1,
+      accepted_responses: 1,
+      producer: snapshot(true, { task_reported_failed: 1, unknown: 2 }),
+    })
+    const second = costReceipt({
+      task_done_failed_responses: 1,
+      requests: 1,
+      accepted_responses: 1,
+      producer: snapshot(true, { timeout: 3 }),
+    })
+    const cases = [
+      [
+        [first, second],
+        'OCR producer status=complete stage=adapter task_reported_failed=1 llm_client_error=0 timeout=3 cancelled=0 panic=0 unknown=2',
+        'OCR task_done status=complete stage=adapter task_done_failed_responses=2',
+      ],
+      [
+        [first, { ...second, producer: snapshot(false, { timeout: 3 }) }],
+        'OCR producer status=partial stage=adapter task_reported_failed=1 llm_client_error=0 timeout=3 cancelled=0 panic=0 unknown=2',
+        'OCR task_done status=complete stage=adapter task_done_failed_responses=2',
+      ],
+      [
+        [first, { ...second, unfinished_requests: 1 }],
+        'OCR producer status=complete stage=adapter task_reported_failed=1 llm_client_error=0 timeout=3 cancelled=0 panic=0 unknown=2',
+        'OCR task_done status=partial stage=adapter task_done_failed_responses=2',
+        false,
+      ],
+      [
+        [first, { ...second, task_done_failed_responses: 2 }],
+        'OCR producer status=complete stage=adapter task_reported_failed=1 llm_client_error=0 timeout=3 cancelled=0 panic=0 unknown=2',
+        'OCR task_done status=partial stage=adapter task_done_failed_responses=3',
+      ],
+      [
+        [first, { ...second, task_done_failed_responses: undefined }],
+        'OCR producer status=complete stage=adapter task_reported_failed=1 llm_client_error=0 timeout=3 cancelled=0 panic=0 unknown=2',
+        'OCR task_done status=unavailable stage=adapter',
+      ],
+      [
+        [first, { ...second, producer: { schema_version: 2 } }],
+        'OCR producer status=partial stage=adapter task_reported_failed=1 llm_client_error=0 timeout=0 cancelled=0 panic=0 unknown=2',
+        'OCR task_done status=complete stage=adapter task_done_failed_responses=2',
+      ],
+      [
+        [first],
+        'OCR producer status=unavailable',
+        'OCR task_done status=unavailable stage=adapter',
+        false,
+      ],
+      [
+        [first, { ...second, schema_version: 2 }],
+        'OCR producer status=unavailable',
+        'OCR task_done status=unavailable stage=adapter',
+        false,
+      ],
+      [
+        [first, { ...second, stage: 'private' }],
+        'OCR producer status=unavailable',
+        'OCR task_done status=unavailable stage=adapter',
+        false,
+      ],
+      [
+        [
+          costReceipt({ stage: 'preflight' }),
+          costReceipt({ stage: 'topology' }),
+        ],
+        'OCR producer status=unavailable',
+        'OCR task_done status=unavailable stage=adapter',
+        false,
+      ],
+      [
+        [costReceipt(), costReceipt()],
+        'OCR producer status=unavailable',
+        'OCR task_done status=unavailable stage=adapter',
+      ],
+    ]
+    for (const [
+      rows,
+      producerLine,
+      taskDoneLine,
+      costComplete = true,
+    ] of cases) {
+      fs.writeFileSync(receiptPath, rows.map(JSON.stringify).join('\n'))
+      const result = await runCli(['summary', receiptPath, 'adapter=2'], {
+        GITHUB_STEP_SUMMARY: summaryPath,
+      })
+      assert.equal(result.code, 0)
+      assert.match(
+        result.stdout,
+        costComplete
+          ? /^OCR cost status=complete reasons=none$/m
+          : /^OCR cost status=unavailable reasons=/m
+      )
+      assert.equal(
+        result.stdout
+          .split('\n')
+          .find((line) => line.startsWith('OCR producer status=')),
+        producerLine
+      )
+      assert.equal(
+        result.stdout
+          .split('\n')
+          .find((line) => line.startsWith('OCR task_done status=')),
+        taskDoneLine
+      )
+      assert.doesNotMatch(result.stdout, /private|PRIVATE_SENTINEL/)
+    }
+  } finally {
     fs.rmSync(directory, { recursive: true, force: true })
   }
 })
@@ -2213,6 +2516,89 @@ test('truncated completion is refused without retaining replay history or hiding
     assert.equal(receipt.truncated_completions, 1)
     assert.equal(receipt.request_types.main.truncated_completions, 1)
     assert.equal(receipt.conversations[0].truncated_completions, 1)
+  } finally {
+    await adapter.close()
+  }
+})
+
+test('task_done FAILED counts once per accepted main response without changing response accounting', async () => {
+  const argumentsValues = [
+    ['{"state":"FAILED"}', '{"state":"FAILED"}'],
+    ['{"state":"failed"}'],
+    ['{"state":" FAILED "}'],
+    ['{'],
+    ['{"state":"DONE"}'],
+    ['{"state":"FAILED"}'],
+    ['{"state":"FAILED"}'],
+    ['{"state":"FAILED"}'],
+    ['{"state":"FAILED"}'],
+  ]
+  const fetchImpl = upstream((_record, index) => {
+    const message = {
+      role: 'assistant',
+      content: '',
+      tool_calls: argumentsValues[index - 1].map((value, call) => ({
+        id: `done-${call}`,
+        ...(index === 9 ? {} : { type: 'function' }),
+        function: { name: 'task_done', arguments: value },
+      })),
+    }
+    return jsonResponse(
+      200,
+      completion(message, index === 6 ? 'length' : 'stop')
+    )
+  })
+  const adapter = await startAdapter({ apiKey: 'synthetic-key', fetchImpl })
+  const mainBody = (prompt_cache_key) => ({
+    messages: [{ role: 'user', content: 'synthetic' }],
+    ...(prompt_cache_key ? { prompt_cache_key } : {}),
+    tools: [{ type: 'function', function: { name: 'task_done' } }],
+  })
+  try {
+    const strict = await postJson(adapter, mainBody('synthetic-failed'))
+    assert.equal(strict.status, 200)
+    assert.equal(
+      strict.json.choices[0].message.tool_calls[0].function.arguments,
+      '{"state":"FAILED"}'
+    )
+    assert.deepEqual(strict.json.usage, {
+      prompt_tokens: 3,
+      completion_tokens: 4,
+      total_tokens: 7,
+    })
+    for (const expected of [200, 200, 200, 200, 422, 200]) {
+      assert.equal((await postJson(adapter, mainBody())).status, expected)
+    }
+    assert.equal(
+      (
+        await postJson(adapter, {
+          messages: [{ role: 'user', content: 'synthetic auxiliary' }],
+        })
+      ).status,
+      200
+    )
+    const normalized = await postJson(adapter, {
+      ...mainBody(),
+      messages: [{ role: 'user', content: 'synthetic normalized response' }],
+    })
+    assert.equal(normalized.status, 200)
+    assert.equal(
+      normalized.json.choices[0].message.tool_calls[0].type,
+      'function'
+    )
+    assert.equal(
+      normalized.json.choices[0].message.tool_calls[0].function.arguments,
+      '{"state":"FAILED"}'
+    )
+    const receipt = adapter.diagnostics()
+    assert.equal(receipt.task_done_failed_responses, 3)
+    assert.equal(receipt.request_types.main.task_done_failed_responses, 3)
+    assert.equal(receipt.request_types.auxiliary.task_done_failed_responses, 0)
+    assert.equal(receipt.conversations[0].task_done_failed_responses, 1)
+    assert.equal(receipt.accepted_responses, 8)
+    assert.equal(receipt.prompt_tokens, 27)
+    assert.equal(receipt.completion_tokens, 36)
+    assert.doesNotMatch(JSON.stringify(receipt), /synthetic-failed/)
   } finally {
     await adapter.close()
   }
@@ -4229,6 +4615,7 @@ test('live progress cleanup is bounded when a descendant keeps stderr open', asy
     const { spawn } = require('node:child_process')
     const fs = require('node:fs')
     fs.writeSync(2, '[ocr] compression_telemetry version=1\\n')
+    fs.writeSync(2, 'Subtask error for group "a": context timeout')
     const descendant = spawn(process.execPath, ['-e', 'setInterval(() => {}, 1000)'], {
       detached: true, stdio: ['ignore', 'ignore', 'inherit']
     })
@@ -4289,6 +4676,8 @@ test('live progress cleanup is bounded when a descendant keeps stderr open', asy
     const diagnostics = JSON.parse(fs.readFileSync(diagnosticsPath, 'utf8'))
     assert.equal(diagnostics.compression.complete, false)
     assert.equal(diagnostics.compression.started, 0)
+    assert.equal(diagnostics.producer.complete, false)
+    assert.equal(diagnostics.producer.subtask_errors.unknown, 0)
   } finally {
     clearTimeout(timer)
   }
@@ -4300,6 +4689,8 @@ test('run retains compression telemetry arriving after direct-child exit before 
   const script = `
     const { spawn } = require('node:child_process')
     process.stderr.write('[ocr] compression_telemetry version=1\\n[ocr] compression_started before_estimated_tokens=200\\n')
+    process.stderr.write('Subtask error for group "a\\\\\\\\b": task failed: task_done reported FAILED\\n')
+    process.stderr.write('Subtask error for group "a": OCR_PRIVATE_SENTINEL\\n')
     const descendant = spawn(process.execPath, ['-e',
       "setTimeout(() => process.stderr.write('[ocr] compression_finished outcome=rebuilt before_estimated_tokens=200 after_estimated_tokens=50\\\\n'), 100)"
     ], { detached: true, stdio: ['ignore', 'ignore', 'inherit'] })
@@ -4324,9 +4715,24 @@ test('run retains compression telemetry arriving after direct-child exit before 
     assert.equal(receipt.compression.started, 1)
     assert.equal(receipt.compression.rebuilt, 1)
     assert.equal(receipt.compression.rebuilt_after_estimated_tokens, 50)
+    assert.deepEqual(receipt.producer, {
+      schema_version: 1,
+      complete: true,
+      subtask_errors: {
+        task_reported_failed: 1,
+        llm_client_error: 0,
+        timeout: 0,
+        cancelled: 0,
+        panic: 0,
+        unknown: 1,
+      },
+    })
     assert.equal(receipt.requests, 0)
     assert.match(result.live, /event=compression_finished outcome=rebuilt/)
+    assert.match(result.live, /event=subtask_error reason=task_reported_failed/)
+    assert.match(result.live, /event=subtask_error reason=unknown/)
     assert.match(result.live, /event=process_exited exit_code=7/)
+    assert.doesNotMatch(result.live, /OCR_PRIVATE_SENTINEL|\\\\b/)
   } finally {
     fs.rmSync(directory, { recursive: true, force: true })
   }

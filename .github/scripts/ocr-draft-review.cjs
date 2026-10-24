@@ -7,6 +7,7 @@ const { spawn, execFileSync } = require('node:child_process')
 const {
   startAdapter,
   createProgressReporter,
+  summarizeProducer,
   buildCostReport,
   MISTRAL_MODEL,
   MISTRAL_FLASH_MODEL,
@@ -300,9 +301,14 @@ async function runDraftReview(options) {
       provider: DRAFT_PROVIDER,
       apiKey: options.apiKey,
       onClose: (record) =>
-        fs.appendFileSync(diagnosticsPath, `${JSON.stringify(record)}\n`, {
-          mode: 0o600,
-        }),
+        fs.appendFileSync(
+          diagnosticsPath,
+          `${JSON.stringify({
+            ...record,
+            ...(progress ? { producer: progress.producer() } : {}),
+          })}\n`,
+          { mode: 0o600 }
+        ),
       ...(options.fetchImpl ? { fetchImpl: options.fetchImpl } : {}),
     })
     const config = {
@@ -502,6 +508,10 @@ async function runDraftReview(options) {
       env,
       stdio: ['ignore', resultFd, 'pipe'],
     })
+    let stderrComplete = false
+    child.stderr.once('end', () => {
+      stderrComplete = true
+    })
     const drained = new Promise((resolve) =>
       child.stderr.once('close', resolve)
     )
@@ -529,7 +539,9 @@ async function runDraftReview(options) {
       clearTimeout(drainTimer)
       child.stderr.destroy()
     }
-    progress.finish(result)
+    progress.finish({ ...result, stderrComplete })
+    const producer = progress.producer()
+    appendSummary(summarizeProducer(producer), write)
     let coverage = summarizeCoverage(null)
     try {
       coverage = summarizeCoverage(readResult(resultPath))
@@ -547,7 +559,7 @@ async function runDraftReview(options) {
     if (coverage.observed_status !== 'complete') write(`::warning::${line}\n`)
     fs.writeFileSync(
       path.join(temp, 'draft-ai-review-outcome.json'),
-      JSON.stringify(coverage),
+      JSON.stringify({ ...coverage, producer }),
       { mode: 0o600 }
     )
     return {

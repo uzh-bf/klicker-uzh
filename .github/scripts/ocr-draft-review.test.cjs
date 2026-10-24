@@ -435,6 +435,9 @@ const fs=require('node:fs')
 fs.writeFileSync(${JSON.stringify(record)},JSON.stringify({args:process.argv.slice(2),env:process.env}))
 console.error('[ocr]   ▶ file_read PRIVATE_SENTINEL')
 console.error('::error::PRIVATE_SENTINEL')
+console.error('[ocr] Subtask error for group "PRIVATE_SENTINEL": task failed: task_done reported FAILED')
+console.error('[ocr] Subtask error for group "PRIVATE_SENTINEL": LLM completion error: PRIVATE_SENTINEL')
+console.error('[ocr] Subtask error for group "PRIVATE_SENTINEL": PRIVATE_SENTINEL')
 process.stdout.write(JSON.stringify({status:'partial',manifest:{coverage:{selected:['a','b','c','d','e'],completed:[],failed:[{classification:'provider'},{classification:'budget'},{classification:'budget'},{classification:'timeout'},{classification:'PRIVATE_SENTINEL',reason:'PRIVATE_SENTINEL'}],waived:[],reused:[]}},thinking:'PRIVATE_SENTINEL'}))
 process.exitCode=7
 `,
@@ -489,6 +492,15 @@ process.exitCode=7
       'PRIVATE_SENTINEL'
     )
     assert.equal(outcome.coverage.observed_status, 'partial')
+    const diagnostic = JSON.parse(
+      fs.readFileSync(path.join(directory, 'draft-ai-review-outcome.json'))
+    )
+    assert.equal(diagnostic.producer.complete, true)
+    assert.equal(diagnostic.producer.subtask_errors.task_reported_failed, 1)
+    assert.equal(diagnostic.producer.subtask_errors.llm_client_error, 1)
+    assert.equal(diagnostic.producer.subtask_errors.unknown, 1)
+    assert.equal(JSON.stringify(diagnostic).includes('PRIVATE_SENTINEL'), false)
+    assert.match(logs.join(''), /OCR producer .*task_reported_failed=1/)
     const coverageLine = logs.find((line) => line.startsWith('OCR coverage '))
     assert.deepEqual(JSON.parse(coverageLine.split('failure_classes=')[1]), {
       provider: 1,
@@ -514,6 +526,180 @@ process.exitCode=7
     if (previousContext7 === undefined) delete process.env.CONTEXT7_API_KEY
     else process.env.CONTEXT7_API_KEY = previousContext7
     fs.rmSync(directory, { recursive: true, force: true })
+  }
+})
+
+test('draft producer observations stay incomplete on spawn failure or bounded stderr drain', async (t) => {
+  const directory = fs.mkdtempSync(path.join(os.tmpdir(), 'ocr-draft-drain-'))
+  t.after(() => fs.rmSync(directory, { recursive: true, force: true }))
+  const executable = path.join(directory, 'ocr.cjs')
+  fs.writeFileSync(
+    executable,
+    `#!/usr/bin/env node
+const { spawn } = require('node:child_process')
+const child = spawn(process.execPath, ['-e', 'setTimeout(() => process.stderr.end(), 1400)'], {stdio:['ignore','ignore',2]})
+child.unref()
+process.stdout.write('{"status":"complete"}')
+`,
+    { mode: 0o700 }
+  )
+  for (const [command, code] of [
+    [executable, 0],
+    [path.join(directory, 'absent'), 1],
+  ]) {
+    const outcome = await runDraftReview({
+      repo: directory,
+      temp: directory,
+      from: '1'.repeat(40),
+      head: '2'.repeat(40),
+      executable: command,
+      apiKey: 'synthetic-provider',
+      write: () => {},
+    })
+    assert.equal(outcome.code, code)
+    const diagnostic = JSON.parse(
+      fs.readFileSync(path.join(directory, 'draft-ai-review-outcome.json'))
+    )
+    assert.equal(diagnostic.producer.complete, false)
+    assert.equal(diagnostic.producer.subtask_errors.task_reported_failed, 0)
+  }
+})
+
+test('pinned OCR distinguishes model-reported task failure from accepted transport and coverage', {
+  skip: !process.env.OCR_TEST_BINARY,
+  timeout: 60000,
+}, async (t) => {
+  const directory = fs.mkdtempSync(
+    path.join(os.tmpdir(), 'ocr-producer-contract-')
+  )
+  t.after(() => fs.rmSync(directory, { recursive: true, force: true }))
+  const repo = path.join(directory, 'repo')
+  fs.mkdirSync(repo)
+  const git = (...args) =>
+    execFileSync('git', args, {
+      cwd: repo,
+      encoding: 'utf8',
+      stdio: ['ignore', 'pipe', 'pipe'],
+    }).trim()
+  git('init', '-b', 'main')
+  git('config', 'user.name', 'Synthetic fixture')
+  git('config', 'user.email', 'fixture@example.invalid')
+  git('config', 'core.hooksPath', '/dev/null')
+  fs.writeFileSync(path.join(repo, 'README.md'), 'Synthetic fixture\n')
+  git('add', '.')
+  git('commit', '-m', 'chore: synthetic baseline')
+  const from = git('rev-parse', 'HEAD')
+  for (let index = 0; index < 18; index++)
+    fs.writeFileSync(
+      path.join(repo, `item-${String(index).padStart(2, '0')}.js`),
+      `export const value${index} = ${index}\n`
+    )
+  git('add', '.')
+  git('commit', '-m', 'enhance: synthetic source')
+  const head = git('rev-parse', 'HEAD')
+  for (const state of ['DONE', 'FAILED']) {
+    const temp = path.join(directory, state)
+    fs.mkdirSync(temp)
+    let sequence = 0
+    const logs = []
+    const outcome = await runDraftReview({
+      repo,
+      temp,
+      from,
+      head,
+      executable: process.env.OCR_TEST_BINARY,
+      apiKey: 'synthetic-provider',
+      write: (line) => logs.push(line),
+      fetchImpl: async (_url, init) => {
+        const body = JSON.parse(init.body)
+        assert.equal(body.reasoning.effort, 'max')
+        const main = body.tools?.some(
+          (tool) => tool.function.name === 'task_done'
+        )
+        const groupState = JSON.stringify(body.messages).includes(
+          '<file path=\\"item-17.js\\"'
+        )
+          ? state
+          : 'DONE'
+        return new Response(
+          JSON.stringify({
+            id: `synthetic-${++sequence}`,
+            model: 'deepseek/deepseek-v4.1-flash-1017',
+            choices: [
+              {
+                index: 0,
+                finish_reason: main ? 'tool_calls' : 'stop',
+                message: main
+                  ? {
+                      role: 'assistant',
+                      content: '',
+                      reasoning: 'PRIVATE_SENTINEL',
+                      tool_calls: [
+                        {
+                          id: `call-${sequence}`,
+                          type: 'function',
+                          function: {
+                            name: 'task_done',
+                            arguments: JSON.stringify({ state: groupState }),
+                          },
+                        },
+                      ],
+                    }
+                  : {
+                      role: 'assistant',
+                      content: JSON.stringify([
+                        {
+                          label: 'PRIVATE_SENTINEL-good',
+                          files: Array.from({ length: 11 }, (_, i) => i),
+                        },
+                        {
+                          label: 'PRIVATE_SENTINEL-other',
+                          files: Array.from({ length: 7 }, (_, i) => i + 11),
+                        },
+                      ]),
+                    },
+              },
+            ],
+            usage: {
+              prompt_tokens: 1000,
+              completion_tokens: 20,
+              total_tokens: 1020,
+              prompt_tokens_details: { cached_tokens: 800 },
+            },
+          })
+        )
+      },
+    })
+    assert.equal(outcome.code, 0, fs.readFileSync(outcome.stderrPath, 'utf8'))
+    const failed = state === 'FAILED' ? 1 : 0
+    assert.equal(outcome.coverage.selected, 18)
+    assert.equal(outcome.coverage.completed, 18 - 7 * failed)
+    assert.equal(outcome.coverage.failed, 7 * failed)
+    assert.deepEqual(
+      outcome.coverage.failure_classes,
+      failed ? { provider: 7 } : {}
+    )
+    const diagnostic = JSON.parse(
+      fs.readFileSync(path.join(temp, 'draft-ai-review-outcome.json'))
+    )
+    assert.equal(diagnostic.producer.complete, true)
+    assert.equal(
+      diagnostic.producer.subtask_errors.task_reported_failed,
+      failed
+    )
+    const receipt = JSON.parse(
+      fs.readFileSync(
+        path.join(temp, 'draft-ai-review-adapter-diagnostics.jsonl')
+      )
+    )
+    assert.equal(receipt.task_done_failed_responses, failed)
+    assert.equal(receipt.accepted_responses, sequence)
+    assert.equal(
+      Object.values(receipt.failures).reduce((sum, value) => sum + value),
+      0
+    )
+    assert.equal(JSON.stringify(diagnostic).includes('PRIVATE_SENTINEL'), false)
+    assert.equal(logs.join('').includes('PRIVATE_SENTINEL'), false)
   }
 })
 

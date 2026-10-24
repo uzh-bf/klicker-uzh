@@ -150,6 +150,22 @@ const CLIENT_ERROR_CODES = new Set([
   'stream_unsupported',
 ])
 
+const PRODUCER_REASONS = [
+  'task_reported_failed',
+  'llm_client_error',
+  'timeout',
+  'cancelled',
+  'panic',
+  'unknown',
+]
+
+const PRODUCER_LINE_PREFIXES = [
+  '[ocr] Subtask error for group ',
+  '[ocr] Subtask panic for group ',
+  'Subtask error for group ',
+  'Subtask panic for group ',
+]
+
 class AdapterError extends Error {
   constructor(code, message) {
     super(message ?? code)
@@ -167,6 +183,24 @@ function providerConfig(name = 'mistral') {
 
 function isPlainObject(value) {
   return typeof value === 'object' && value !== null && !Array.isArray(value)
+}
+
+function hasFailedTaskDone(message) {
+  if (!Array.isArray(message?.tool_calls)) return false
+  return message.tool_calls.some((call) => {
+    if (
+      call?.type !== 'function' ||
+      call.function?.name !== 'task_done' ||
+      typeof call.function.arguments !== 'string'
+    )
+      return false
+    try {
+      const argumentsValue = JSON.parse(call.function.arguments)
+      return isPlainObject(argumentsValue) && argumentsValue.state === 'FAILED'
+    } catch {
+      return false
+    }
+  })
 }
 
 function flattenText(content) {
@@ -1042,6 +1076,7 @@ function createExecutionCounters() {
     request_duration_ms: 0,
     max_request_duration_ms: 0,
     accepted_responses: 0,
+    task_done_failed_responses: 0,
     max_accepted_response_duration_ms: 0,
     accepted_responses_over_300s: 0,
   }
@@ -1242,6 +1277,7 @@ async function startAdapter(options = {}) {
 
     let failureRecorded = false
     let accepted = false
+    let failedTaskDoneResponse = false
     const fail = (category) => {
       if (failureRecorded) return
       failureRecorded = true
@@ -1367,6 +1403,7 @@ async function startAdapter(options = {}) {
       if (normalized.usage) normalized.usage = billableUsage(normalized.usage)
       sendJson(res, 200, normalized)
       accepted = true
+      failedTaskDoneResponse = main && hasFailedTaskDone(choice.message)
     } catch (error) {
       fail(controller.signal.aborted ? 'cancelled' : responseFailure(error))
       sendAdapterError(res, error)
@@ -1385,6 +1422,7 @@ async function startAdapter(options = {}) {
           !res.destroyed
         ) {
           counter.accepted_responses += 1
+          if (failedTaskDoneResponse) counter.task_done_failed_responses += 1
           counter.max_accepted_response_duration_ms = Math.max(
             counter.max_accepted_response_duration_ms,
             duration
@@ -1989,6 +2027,114 @@ function upstreamErrorSummary(rows) {
   return `OCR upstream_error status=complete stage=adapter http_status=${rejection.http_status ?? 'unknown'} code=${rejection.code} reason=${rejection.reason ?? 'unknown'}`
 }
 
+function createProducerCounters() {
+  return Object.fromEntries(PRODUCER_REASONS.map((reason) => [reason, 0]))
+}
+
+function readProducerSnapshot(snapshot) {
+  if (
+    !isPlainObject(snapshot) ||
+    snapshot.schema_version !== 1 ||
+    typeof snapshot.complete !== 'boolean'
+  )
+    return null
+  const errors = snapshot.subtask_errors
+  if (!isPlainObject(errors)) return null
+  if (
+    Object.keys(errors).length !== PRODUCER_REASONS.length ||
+    !Object.keys(errors).every((reason) => PRODUCER_REASONS.includes(reason))
+  )
+    return null
+  const counters = createProducerCounters()
+  for (const reason of PRODUCER_REASONS) {
+    if (!Number.isSafeInteger(errors[reason]) || errors[reason] < 0) return null
+    counters[reason] = errors[reason]
+  }
+  return {
+    counters,
+    complete: snapshot.complete,
+  }
+}
+
+function producerLine(status, counters) {
+  return `OCR producer status=${status} stage=adapter ${Object.entries(counters)
+    .map(([reason, value]) => `${reason}=${value}`)
+    .join(' ')}`
+}
+
+function summarizeProducer(snapshot) {
+  const producer = readProducerSnapshot(snapshot)
+  if (!producer) return 'OCR producer status=unavailable'
+  return producerLine(
+    producer.complete ? 'complete' : 'partial',
+    producer.counters
+  )
+}
+
+function aggregateProducer(rows, rowsComplete) {
+  if (!rowsComplete) return 'OCR producer status=unavailable'
+  const counters = createProducerCounters()
+  let observed = 0
+  let complete = rows.length > 0
+  for (const row of rows) {
+    if (!Object.hasOwn(row ?? {}, 'producer'))
+      return 'OCR producer status=unavailable'
+    const producer = readProducerSnapshot(row?.producer)
+    if (!producer) {
+      complete = false
+      continue
+    }
+    observed += 1
+    if (!producer.complete) complete = false
+    for (const reason of PRODUCER_REASONS) {
+      const sum = counters[reason] + producer.counters[reason]
+      if (!Number.isSafeInteger(sum)) complete = false
+      else counters[reason] = sum
+    }
+  }
+  if (observed === 0) return 'OCR producer status=unavailable'
+  return producerLine(complete ? 'complete' : 'partial', counters)
+}
+
+function aggregateTaskDoneFailures(rows, rowsComplete) {
+  if (!rowsComplete) return 'OCR task_done status=unavailable stage=adapter'
+  let total = 0
+  let observed = 0
+  let complete = rows.length > 0
+  for (const row of rows) {
+    if (!Object.hasOwn(row ?? {}, 'task_done_failed_responses'))
+      return 'OCR task_done status=unavailable stage=adapter'
+    const value = row?.task_done_failed_responses
+    if (!Number.isSafeInteger(value) || value < 0) {
+      complete = false
+      continue
+    }
+    const sum = total + value
+    if (!Number.isSafeInteger(sum)) complete = false
+    else total = sum
+    observed += 1
+    const requests = row.requests
+    const responses = row.responses
+    const accepted = row.accepted_responses
+    if (
+      !Number.isSafeInteger(requests) ||
+      requests < 0 ||
+      !Number.isSafeInteger(responses) ||
+      responses < 0 ||
+      !Number.isSafeInteger(accepted) ||
+      accepted < 0 ||
+      !Number.isSafeInteger(row.unfinished_requests) ||
+      row.unfinished_requests !== 0 ||
+      value > accepted ||
+      accepted > responses ||
+      responses > requests
+    )
+      complete = false
+  }
+  if (observed === 0) return 'OCR task_done status=unavailable stage=adapter'
+  return `OCR task_done status=${complete ? 'complete' : 'partial'} stage=adapter task_done_failed_responses=${total}`
+}
+
 function commandSummary(args) {
   const profile = providerConfig(process.env.OCR_ADAPTER_PROVIDER)
   let expected = { adapter: 1 }
@@ -2037,14 +2183,24 @@ function commandSummary(args) {
       ? 'complete'
       : 'unavailable'
   const adapterRows = []
+  const expectedAdapterReceipts = Number.isSafeInteger(expected?.adapter)
+    ? expected.adapter
+    : 0
+  let adapterRowsComplete = expectedAdapterReceipts > 0
   try {
     for (const row of diagnosticsText
       .trim()
       .split('\n')
       .filter(Boolean)
       .map(JSON.parse)) {
-      if (row?.stage !== undefined && row.stage !== 'adapter') continue
+      const stage = row?.stage === undefined ? 'adapter' : row.stage
+      if (!COST_STAGES.includes(stage)) {
+        adapterRowsComplete = false
+        continue
+      }
+      if (stage !== 'adapter') continue
       adapterRows.push(row)
+      if (row?.schema_version !== 1) adapterRowsComplete = false
       if (row?.schema_version !== 1 || !row?.failures) {
         failureStatus = 'unavailable'
         continue
@@ -2060,8 +2216,11 @@ function commandSummary(args) {
         else failures[category] += value
       }
     }
+    if (adapterRows.length !== expectedAdapterReceipts)
+      adapterRowsComplete = false
   } catch {
     failureStatus = 'unavailable'
+    adapterRowsComplete = false
   }
   const summary = [
     '### OCR estimated cost and caching savings',
@@ -2146,6 +2305,8 @@ function commandSummary(args) {
     '',
     ...executionSummary(adapterRows, failureStatus === 'complete'),
     compressionSummary(adapterRows, failureStatus === 'complete'),
+    aggregateProducer(adapterRows, adapterRowsComplete),
+    aggregateTaskDoneFailures(adapterRows, adapterRowsComplete),
     'Compression estimates describe rebuilt snapshots, including background results that may not be applied; they are not usage or monetary savings.',
     '',
     'OCR budget counters use uncached input plus output as reported to OCR. Provider usage includes cached input; estimated USD charges it at the pinned cached-input rate. Failed calls can have provider usage without appearing in the OCR result counters.',
@@ -2220,11 +2381,51 @@ function compressionSummary(rows, complete) {
     .join(' ')}`
 }
 
-function createProgressFilter(write, onCompression = () => {}) {
+function isProducerCandidate(value) {
+  return PRODUCER_LINE_PREFIXES.some((prefix) => value.startsWith(prefix))
+}
+
+function isPossibleProducerCandidate(value) {
+  if (value.length === 0) return false
+  return PRODUCER_LINE_PREFIXES.some(
+    (prefix) => prefix.startsWith(value) || value.startsWith(prefix)
+  )
+}
+
+function parseProducerLine(line) {
+  const match =
+    /^(?:\[ocr\] )?Subtask (error|panic) for group "(?:[^"\\\x00-\x1f\x7f]|\\[abfnrtv\\"]|\\x[0-9a-fA-F]{2}|\\u[0-9a-fA-F]{4}|\\U[0-9a-fA-F]{8}|\\[0-3][0-7]{2})*": (.*)$/u.exec(
+      line
+    )
+  if (!match) return null
+  let reason
+  if (match[1] === 'panic') reason = 'panic'
+  else if (match[2] === 'task failed: task_done reported FAILED')
+    reason = 'task_reported_failed'
+  else if (match[2] === 'context deadline exceeded') reason = 'timeout'
+  else if (match[2] === 'context canceled') reason = 'cancelled'
+  else if (match[2].startsWith('LLM completion error:'))
+    reason = 'llm_client_error'
+  else reason = 'unknown'
+  return { kind: 'subtask_error', reason, valid: true }
+}
+
+function createProgressFilter(
+  write,
+  onCompression = () => {},
+  onProducer = () => {}
+) {
   const decoder = new StringDecoder('utf8')
   let pending = ''
   let dropping = false
   let fatalEmitted = false
+  function reportProducer(record) {
+    try {
+      onProducer(record)
+    } catch {
+      // Diagnostic consumers cannot change stream handling.
+    }
+  }
   function flush() {
     const line = pending.replace(/\r$/, '')
     if (!dropping) {
@@ -2249,7 +2450,12 @@ function createProgressFilter(write, onCompression = () => {}) {
         /^\[ocr\] compression_finished outcome=(rebuilt|unchanged|failed|cancelled) before_estimated_tokens=(\d{1,12}) after_estimated_tokens=(\d{1,12})$/.exec(
           line
         )
-      if (line.startsWith('[ocr] compression_')) {
+      const producerCandidate = isProducerCandidate(line)
+      const producer = producerCandidate ? parseProducerLine(line) : null
+      if (producerCandidate) {
+        reportProducer(producer)
+        event = `event=subtask_error reason=${producer?.reason ?? 'unknown'}`
+      } else if (line.startsWith('[ocr] compression_')) {
         let record = null
         if (line === '[ocr] compression_telemetry version=1') {
           record = { kind: 'ready' }
@@ -2338,13 +2544,15 @@ function createProgressFilter(write, onCompression = () => {}) {
       else if (!dropping && pending.length + part.length <= 4096)
         pending += part
       else {
-        if ((pending + part.slice(0, 30)).startsWith('[ocr] compression_')) {
+        const candidate = pending + part.slice(0, 64)
+        if (candidate.startsWith('[ocr] compression_')) {
           try {
             onCompression(null)
           } catch {
             // Diagnostic consumers cannot change stream handling.
           }
         }
+        if (isPossibleProducerCandidate(candidate)) reportProducer(null)
         pending = ''
         dropping = true
       }
@@ -2365,6 +2573,9 @@ function createProgressFilter(write, onCompression = () => {}) {
           // A truncated telemetry record remains informational.
         }
         pending = ''
+      } else if (isPossibleProducerCandidate(pending)) {
+        reportProducer(null)
+        pending = ''
       }
       flush()
     },
@@ -2382,7 +2593,11 @@ function createProgressReporter(write, options = {}) {
   let compressionReady = false
   let compressionValid = true
   let streamComplete = false
+  let producerStreamComplete = false
+  let producerFailed = false
+  let producerValid = true
   const compression = createCompressionCounters()
+  const producerCounters = createProducerCounters()
   function emit(line, time = now()) {
     lastOutput = time
     try {
@@ -2430,6 +2645,19 @@ function createProgressReporter(write, options = {}) {
         )
           compressionValid = false
       }
+    },
+    (record) => {
+      if (
+        record?.kind !== 'subtask_error' ||
+        !PRODUCER_REASONS.includes(record.reason)
+      ) {
+        producerValid = false
+        return
+      }
+      const sum = producerCounters[record.reason] + 1
+      if (Number.isSafeInteger(sum)) producerCounters[record.reason] = sum
+      else producerValid = false
+      if (record.valid !== true) producerValid = false
     }
   )
   const timer = schedule(() => {
@@ -2453,8 +2681,10 @@ function createProgressReporter(write, options = {}) {
       if (finished) return
       finished = true
       cancel(timer)
-      filter.end()
       streamComplete = result.stderrComplete !== false
+      producerStreamComplete = result.stderrComplete === true
+      producerFailed = result.failed === true
+      filter.end()
       const code =
         Number.isInteger(result.code) && result.code >= 0 && result.code <= 255
           ? result.code
@@ -2477,6 +2707,17 @@ function createProgressReporter(write, options = {}) {
               compression.failed +
               compression.cancelled,
         ...compression,
+      }
+    },
+    producer() {
+      return {
+        schema_version: 1,
+        complete:
+          finished &&
+          producerStreamComplete &&
+          !producerFailed &&
+          producerValid,
+        subtask_errors: { ...producerCounters },
       }
     },
   }
@@ -2588,7 +2829,7 @@ async function commandRun(args) {
       // OCR receives neither this descriptor nor the option selecting it.
       progress = createProgressReporter((line) => fs.writeSync(3, line))
       stderrClosed = new Promise((resolve) =>
-        child.stderr.once('close', () => {
+        child.stderr.once('end', () => {
           stderrComplete = true
           resolve()
         })
@@ -2658,7 +2899,12 @@ async function commandRun(args) {
         if (executionReceipt) {
           writeDiagnostics({
             ...executionReceipt,
-            ...(progress ? { compression: progress.compression() } : {}),
+            ...(progress
+              ? {
+                  compression: progress.compression(),
+                  producer: progress.producer(),
+                }
+              : {}),
           })
         }
       } finally {
@@ -2776,6 +3022,7 @@ module.exports = {
   buildCostReport,
   createProgressFilter,
   createProgressReporter,
+  summarizeProducer,
 }
 
 if (require.main === module) {

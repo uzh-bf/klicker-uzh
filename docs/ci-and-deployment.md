@@ -612,6 +612,24 @@ the adapter's provider-budget reasons. They do not identify an individual
 request or establish an account-spending cause. Missing coverage evidence is
 `unknown`; raw failed-item reasons, paths and arbitrary classifications stay private.
 
+Adapter diagnostics separately count `task_done_failed_responses`: accepted main
+responses containing a strict JSON `task_done` call with `state: "FAILED"`. This
+counts responses, not executed tools or failed files. Rejected and truncated
+responses are excluded; provider and token/cost accounting keep their existing
+meaning. OCR 1.13.0 can classify this semantic task failure as `provider` coverage
+even when every adapter request succeeds.
+
+Filtered logs emit `event=subtask_error reason=...` for existing producer subtask
+errors. `OCR producer` summaries and the `producer` diagnostic retain only counts
+for `task_reported_failed`, `llm_client_error`, `timeout`, `cancelled`, `panic` and
+`unknown`. Draft runs store the snapshot in their existing outcome artifact;
+manual runs store it in adapter receipts. Quoted group labels and raw error text
+remain private. These are observed group errors, independent of response and
+coverage-item counts. Capture completeness describes stderr observations only;
+spawn failures, drain timeouts and malformed or truncated records remain
+incomplete. Older receipts without these fields report unavailable observations.
+No diagnostic changes completion, acceptance, retry or publication decisions.
+
 History diagnostics retain the existing total misses and add one reason for
 each miss: the fallback lacked usable reasoning, no exact reasoned turn matched,
 or the reasoned turn was ambiguous. A valid exact-prefix hit remains preferred.
