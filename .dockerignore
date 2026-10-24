@@ -6,10 +6,12 @@ deploy/
 docs/
 legacy/
 newsletter/
+project/
 **/.next/
 **/node_modules/
 **/.turbo/
 **/.venv/
-util/
+util/**
+!util/preview-build-env.mjs
 
 Dockerfile
