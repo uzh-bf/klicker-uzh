@@ -1,26 +1,27 @@
+import { createHash, createHmac, timingSafeEqual } from 'node:crypto'
 import * as DB from '@klicker-uzh/prisma/client'
 import {
   ActivityType,
+  type ElementBlockInput,
   ElementData,
   ElementInstanceResults,
   ElementResultsCaseStudy,
-  ElementResultsOpen,
-  HatchetHandlers,
-  type ElementBlockInput,
   type ElementResultsChoices,
+  ElementResultsOpen,
   type ElementResultsSelection,
   type ElementStackInput,
+  HatchetHandlers,
 } from '@klicker-uzh/types'
 import {
   getActivityInstanceConnectOrCreate,
   getCachedBlockResults,
   getInitialInstanceResults,
   levelFromXp,
+  type PrismaTransactionClient,
   propagateActivityToElements,
   recomputeDerivedPermissions,
   signJWT,
   updateLiveQuizBlockResultsFromCache,
-  type PrismaTransactionClient,
 } from '@klicker-uzh/util'
 import dayjs from 'dayjs'
 import generatePassword from 'generate-password'
@@ -28,11 +29,11 @@ import { GraphQLError } from 'graphql'
 import type { Redis } from 'ioredis'
 import { min } from 'mathjs'
 import schedule from 'node-schedule'
-import { createHash, createHmac } from 'node:crypto'
 import { omitBy, pick, prop, sortBy } from 'remeda'
 import { v4 as uuidv4 } from 'uuid'
 import type { Context, ContextWithUser } from '../lib/context.js'
 import { computeRanks, temporaryLeaderboardEntryId } from '../lib/util.js'
+import type { IEvaluationDisplaySetting } from '../schema/liveQuiz.js'
 import {
   getPermissionBooleans,
   liveQuizCourseVisibilityFilter,
@@ -737,7 +738,20 @@ export async function getControlLiveQuiz(
     return null
   }
 
-  return quiz
+  const blockParticipants = await getBlockParticipants({
+    quizId: id,
+    blocks: quiz.blocks,
+    activeBlockId: quiz.activeBlockId,
+    redis: quiz.isAssessmentEnabled ? ctx.redisAssessmentExec : ctx.redisExec,
+  })
+
+  return {
+    ...quiz,
+    blocks: quiz.blocks.map((block) => ({
+      ...block,
+      numOfParticipants: blockParticipants[block.id],
+    })),
+  }
 }
 
 export async function getShortnameQuizzes(
@@ -973,6 +987,86 @@ export async function unpublishLiveQuiz(
   return updatedLiveQuiz
 }
 
+// Number of participants per block: closed blocks from the persisted instance
+// results, the active block from the response cache (minimum over instances).
+async function getBlockParticipants({
+  quizId,
+  blocks,
+  activeBlockId,
+  redis,
+}: {
+  quizId: string
+  blocks: (DB.ElementBlock & { elements: DB.ElementInstance[] })[]
+  activeBlockId: number | null
+  redis: Redis
+}) {
+  const blockParticipants = blocks.reduce<Record<number, number>>(
+    (acc, block) => {
+      acc[block.id] = block.elements.reduce(
+        (instanceAcc, instance) =>
+          min(
+            instanceAcc,
+            instance.results.total + instance.anonymousResults.total
+          ),
+        100000
+      )
+      return acc
+    },
+    {}
+  )
+
+  const activeBlock = blocks.find((block) => block.id === activeBlockId)
+  if (activeBlock) {
+    const redisMulti = redis.pipeline()
+    activeBlock.elements.forEach((instance) => {
+      redisMulti.hgetall(`lq:${quizId}:i:${instance.id}:results`)
+    })
+    const cacheContent = (await redisMulti.exec()) as
+      | [
+          Error | null,
+          { participants: string }, // TODO: extend type with more content of cache (as needed)
+        ][]
+      | null
+
+    // missing or expired cache entries parse to NaN; ignore them so the
+    // persisted counts apply instead of an invalid Int
+    const cachedCounts = (cacheContent ?? [])
+      .map(([_, result]) => parseInt(result?.participants, 10))
+      .filter((val) => Number.isFinite(val))
+    if (cachedCounts.length > 0) {
+      blockParticipants[activeBlock.id] = cachedCounts.reduce(
+        (acc, val) => min(acc, val),
+        100000
+      )
+    }
+    blockParticipants[activeBlock.id] ??= 0
+  }
+
+  return blockParticipants
+}
+
+// Q&A moderation in the controller: settings plus all feedbacks (including
+// unpublished ones), without the blocks and results the cockpit loads
+export async function getControlLiveQuizFeedbacks(
+  { id }: { id: string },
+  ctx: ContextWithUser
+) {
+  return await ctx.prisma.liveQuiz.findUnique({
+    where: {
+      id,
+      status: DB.PublicationStatus.PUBLISHED,
+      isDeleted: false,
+      ...liveQuizCourseVisibilityFilter,
+    },
+    include: {
+      feedbacks: {
+        include: { responses: { orderBy: { createdAt: 'asc' } } },
+        orderBy: { createdAt: 'desc' },
+      },
+    },
+  })
+}
+
 export async function getCockpitQuiz(
   { id }: { id: string },
   ctx: ContextWithUser
@@ -1004,43 +1098,13 @@ export async function getCockpitQuiz(
     ? ctx.redisAssessmentExec
     : ctx.redisExec
 
-  // number of participants per block
-  const blockParticipants = liveQuiz.blocks.reduce<Record<number, number>>(
-    (acc, block) => {
-      acc[block.id] = block.elements.reduce(
-        (instanceAcc, instance) =>
-          min(
-            instanceAcc,
-            instance.results.total + instance.anonymousResults.total
-          ),
-        100000
-      )
-      return acc
-    },
-    {}
-  )
-
-  if (liveQuiz.activeBlock && liveQuiz.activeBlock.id) {
-    const activeInstanceIds = liveQuiz.activeBlock?.elements.map(
-      (instance) => instance.id
-    )
-    const redisMulti = redis.pipeline()
-    activeInstanceIds?.forEach((instanceId) => {
-      redisMulti.hgetall(`lq:${id}:i:${instanceId}:results`)
-    })
-    const cacheContent = (await redisMulti.exec()) as
-      | [
-          Error | null,
-          { participants: string }, // TODO: extend type with more content of cache (as needed)
-        ][]
-      | null
-
-    const activeBlockParticipants = cacheContent
-      ?.map(([_, result]) => parseInt(result?.participants))
-      .reduce((acc, val) => min(acc, val), 100000)
-    blockParticipants[liveQuiz.activeBlock.id] =
-      activeBlockParticipants ?? blockParticipants[liveQuiz.activeBlock.id] ?? 0
-  }
+  // number of participants per block (live from the cache for the active block)
+  const blockParticipants = await getBlockParticipants({
+    quizId: id,
+    blocks: liveQuiz.blocks,
+    activeBlockId: liveQuiz.activeBlockId,
+    redis,
+  })
 
   // recude live quiz to only contain what is required for the lecturer cockpit
   const reducedQuiz = {
@@ -1085,7 +1149,7 @@ export async function activateLiveQuizBlock(
     include: { blocks: { orderBy: { id: 'asc' } } },
   })
 
-  if (!quiz) return null
+  if (!quiz || quiz.status !== DB.PublicationStatus.PUBLISHED) return null
 
   const newBlock = quiz.blocks.find((block) => block.id === blockId)
 
@@ -1094,7 +1158,11 @@ export async function activateLiveQuizBlock(
 
   // set the new block to active
   const updatedQuiz = await ctx.prisma.liveQuiz.update({
-    where: { id: quizId },
+    where: {
+      id: quizId,
+      status: DB.PublicationStatus.PUBLISHED,
+      activeBlockId: null,
+    },
     data: {
       activeBlock: { connect: { id: blockId } },
       blocks: {
@@ -1441,7 +1509,11 @@ async function removeCacheEntriesBlock({
 }) {
   if (isLastBlock) {
     // if the last block was closed, clean up the entire cache for this live quiz
-    const keys = await redis.keys(`lq:${liveQuizId}:*`)
+    // the projected-evaluation display settings keep their own (longer)
+    // retention, so the embed still looks the same days after the session
+    const keys = (await redis.keys(`lq:${liveQuizId}:*`)).filter(
+      (key) => key !== `lq:${liveQuizId}:display`
+    )
     if (keys.length > 0) {
       const pipe = redis.pipeline()
       for (const key of keys) {
@@ -1689,136 +1761,156 @@ export async function endLiveQuiz(
 
   // update course leaderboard and participant XP
   try {
-    const quizLB = await redis.hgetall(`lq:${id}:lb`)
-    const quizXP = await redis.hgetall(`lq:${id}:xp`)
-    const participants: Record<string, any> = {}
-
-    Object.entries(quizXP).forEach(([id, xp]) => {
-      participants[id] = {
-        xp: parseInt(xp),
+    const endedLiveQuiz = await ctx.prisma.$transaction(async (prisma) => {
+      // Claim the terminal transition before awarding rewards. Block activation
+      // guards the same row, so only one of those transitions can commit.
+      const transition = await prisma.liveQuiz.updateMany({
+        where: {
+          id,
+          status: DB.PublicationStatus.PUBLISHED,
+          activeBlockId: null,
+        },
+        data: {
+          status: DB.PublicationStatus.ENDED,
+          finishedAt: new Date(),
+        },
+      })
+      if (transition.count === 0) {
+        return prisma.liveQuiz.findFirst({
+          where: { id, status: DB.PublicationStatus.ENDED },
+        })
       }
-    })
-    Object.entries(quizLB).forEach(([id, score]) => {
-      participants[id] = {
-        ...(participants[id] ?? {}),
-        score: parseInt(score),
-      }
-    })
 
-    // quizXP should always be around as soon as there are logged-in participants (check first)
-    // quizLB only for live quizzes that are compatible with points collection (check second)
-    if (Object.keys(participants).length > 0) {
-      let existingParticipants: {
-        id: string
-        score?: number
-        xp?: number
-        hasParticipation?: boolean
-      }[] = (
-        await Promise.allSettled(
-          Object.entries(participants).map(async ([id, { score, xp }]) => {
-            const participant = await ctx.prisma.participant.findUnique({
-              where: { id },
-              include: {
-                // if the live quiz is part of a course, include the corresponding participations
-                // if the participant is not part of the relevant course, the joined array will be empty
-                participations: quiz.courseId
-                  ? { where: { courseId: quiz.courseId } }
-                  : undefined,
-              },
-            })
+      const quizLB = await redis.hgetall(`lq:${id}:lb`)
+      const quizXP = await redis.hgetall(`lq:${id}:xp`)
+      const participants: Record<string, any> = {}
 
-            if (!participant) return null
-
-            return {
-              id,
-              score,
-              xp,
-              hasParticipation: participant.participations?.[0]?.isActive,
-            }
-          })
-        )
-      ).flatMap((result) => {
-        if (result.status !== 'fulfilled' || !result.value) return []
-        return [result.value]
+      Object.entries(quizXP).forEach(([id, xp]) => {
+        participants[id] = {
+          xp: parseInt(xp),
+        }
+      })
+      Object.entries(quizLB).forEach(([id, score]) => {
+        participants[id] = {
+          ...(participants[id] ?? {}),
+          score: parseInt(score),
+        }
       })
 
-      // track the achievement ids, which should be awarded to the participants
-      let newAchievements: Record<string, number> = {}
+      // quizXP should always be around as soon as there are logged-in participants (check first)
+      // quizLB only for live quizzes that are compatible with points collection (check second)
+      if (Object.keys(participants).length > 0) {
+        let existingParticipants: {
+          id: string
+          score?: number
+          xp?: number
+          hasParticipation?: boolean
+        }[] = (
+          await Promise.allSettled(
+            Object.entries(participants).map(async ([id, { score, xp }]) => {
+              const participant = await prisma.participant.findUnique({
+                where: { id },
+                include: {
+                  // if the live quiz is part of a course, include the corresponding participations
+                  // if the participant is not part of the relevant course, the joined array will be empty
+                  participations: quiz.courseId
+                    ? { where: { courseId: quiz.courseId } }
+                    : undefined,
+                },
+              })
 
-      // only award achievements, if the live quiz did contain questions with sample
-      // solutions and at least three participants collected points
-      const awardAchievements = quiz.blocks.some(
-        (block) =>
-          block.elements.some((instance) => {
-            return instance.elementType !== DB.ElementType.CONTENT &&
-              'hasSampleSolution' in instance.elementData.options
-              ? (instance.elementData.options.hasSampleSolution ?? false)
-              : false
-          }) &&
-          existingParticipants.filter(
-            ({ score }) => typeof score !== 'undefined'
-          ).length >= 3
-      )
+              if (!participant) return null
 
-      // award achievements to the top 3 participants (and all others with equal scores)
-      if (awardAchievements) {
-        const topScores = existingParticipants
-          .filter(({ score }) => typeof score !== 'undefined')
-          .sort((a, b) => Number(b.score) - Number(a.score))
-          .slice(0, 3)
-
-        const firstRankAchievement = await ctx.prisma.achievement.findUnique({
-          where: { id: FIRST_ACHIEVEMENT_ID },
+              return {
+                id,
+                score,
+                xp,
+                hasParticipation: participant.participations?.[0]?.isActive,
+              }
+            })
+          )
+        ).flatMap((result) => {
+          if (result.status !== 'fulfilled' || !result.value) return []
+          return [result.value]
         })
-        const secondRankAchievement = await ctx.prisma.achievement.findUnique({
-          where: { id: SECOND_ACHIEVEMENT_ID },
-        })
-        const thirdRankAchievement = await ctx.prisma.achievement.findUnique({
-          where: { id: THIRD_ACHIEVEMENT_ID },
-        })
 
-        const goldScore = topScores[0]?.score
-        const silverScore = topScores[1]?.score
-        const bronzeScore = topScores[2]?.score
+        // track the achievement ids, which should be awarded to the participants
+        let newAchievements: Record<string, number> = {}
 
-        // awarding logic (including point and xp updates):
-        // award gold to every participant with gold score
-        // award silver to every participant with silver score, if silver score != gold score
-        // award bronze to every participant with bronze score, if bronze score != silver score
-        existingParticipants = existingParticipants.map((participant) => {
-          if (
-            typeof participant.score === 'undefined' ||
-            typeof participant.xp === 'undefined'
-          ) {
+        // only award achievements, if the live quiz did contain questions with sample
+        // solutions and at least three participants collected points
+        const awardAchievements = quiz.blocks.some(
+          (block) =>
+            block.elements.some((instance) => {
+              return instance.elementType !== DB.ElementType.CONTENT &&
+                'hasSampleSolution' in instance.elementData.options
+                ? (instance.elementData.options.hasSampleSolution ?? false)
+                : false
+            }) &&
+            existingParticipants.filter(
+              ({ score }) => typeof score !== 'undefined'
+            ).length >= 3
+        )
+
+        // award achievements to the top 3 participants (and all others with equal scores)
+        if (awardAchievements) {
+          const topScores = existingParticipants
+            .filter(({ score }) => typeof score !== 'undefined')
+            .sort((a, b) => Number(b.score) - Number(a.score))
+            .slice(0, 3)
+
+          const firstRankAchievement = await prisma.achievement.findUnique({
+            where: { id: FIRST_ACHIEVEMENT_ID },
+          })
+          const secondRankAchievement = await prisma.achievement.findUnique({
+            where: { id: SECOND_ACHIEVEMENT_ID },
+          })
+          const thirdRankAchievement = await prisma.achievement.findUnique({
+            where: { id: THIRD_ACHIEVEMENT_ID },
+          })
+
+          const goldScore = topScores[0]?.score
+          const silverScore = topScores[1]?.score
+          const bronzeScore = topScores[2]?.score
+
+          // awarding logic (including point and xp updates):
+          // award gold to every participant with gold score
+          // award silver to every participant with silver score, if silver score != gold score
+          // award bronze to every participant with bronze score, if bronze score != silver score
+          existingParticipants = existingParticipants.map((participant) => {
+            if (
+              typeof participant.score === 'undefined' ||
+              typeof participant.xp === 'undefined'
+            ) {
+              return participant
+            }
+
+            if (participant.score === goldScore) {
+              participant.xp += firstRankAchievement!.rewardedXP ?? 0
+              participant.score += firstRankAchievement!.rewardedPoints ?? 0
+              newAchievements[participant.id] = firstRankAchievement!.id
+            }
+            if (
+              participant.score === silverScore &&
+              silverScore !== goldScore
+            ) {
+              participant.xp += secondRankAchievement!.rewardedXP ?? 0
+              participant.score += secondRankAchievement!.rewardedPoints ?? 0
+              newAchievements[participant.id] = secondRankAchievement!.id
+            }
+            if (
+              participant.score === bronzeScore &&
+              bronzeScore !== silverScore
+            ) {
+              participant.xp += thirdRankAchievement!.rewardedXP ?? 0
+              participant.score += thirdRankAchievement!.rewardedPoints ?? 0
+              newAchievements[participant.id] = thirdRankAchievement!.id
+            }
+
             return participant
-          }
+          })
+        }
 
-          if (participant.score === goldScore) {
-            participant.xp += firstRankAchievement!.rewardedXP ?? 0
-            participant.score += firstRankAchievement!.rewardedPoints ?? 0
-            newAchievements[participant.id] = firstRankAchievement!.id
-          }
-          if (participant.score === silverScore && silverScore !== goldScore) {
-            participant.xp += secondRankAchievement!.rewardedXP ?? 0
-            participant.score += secondRankAchievement!.rewardedPoints ?? 0
-            newAchievements[participant.id] = secondRankAchievement!.id
-          }
-          if (
-            participant.score === bronzeScore &&
-            bronzeScore !== silverScore
-          ) {
-            participant.xp += thirdRankAchievement!.rewardedXP ?? 0
-            participant.score += thirdRankAchievement!.rewardedPoints ?? 0
-            newAchievements[participant.id] = thirdRankAchievement!.id
-          }
-
-          return participant
-        })
-      }
-
-      // execute XP and points in the same transaction to prevent issues when one fails
-      // the live quiz update later on should never fail, but we need the return value (keep separate)
-      await ctx.prisma.$transaction(async (prisma) => {
         // process XP updates
         for (const participant of existingParticipants) {
           if (typeof participant.xp !== 'undefined') {
@@ -1935,16 +2027,11 @@ export async function endLiveQuiz(
             }
           }
         }
-      })
-    }
+      }
 
-    const endedLiveQuiz = await ctx.prisma.liveQuiz.update({
-      where: { id },
-      data: {
-        status: DB.PublicationStatus.ENDED,
-        finishedAt: new Date(),
-      },
+      return prisma.liveQuiz.findUnique({ where: { id } })
     })
+    if (!endedLiveQuiz) return null
 
     await sendTeamsNotification({
       scope: 'graphql/endLiveQuiz',
@@ -2233,6 +2320,166 @@ export async function cancelLiveQuiz(
   }
 }
 
+// evaluate whether the hashed liveQuiz.namespace and liveQuiz.id equals the hmac
+// (public access for embedded evaluations, e.g. in PowerPoint)
+function isValidLiveQuizHmac(
+  liveQuiz: { id: string; namespace: string },
+  hmac: string
+) {
+  const hmacEncoder = createHmac('sha256', process.env.APP_SECRET as string)
+  hmacEncoder.update(liveQuiz.namespace + liveQuiz.id)
+  // constant-time comparison: the hmac grants public read access
+  const expected = Buffer.from(hmacEncoder.digest('hex'), 'utf8')
+  const provided = Buffer.from(hmac, 'utf8')
+  return (
+    expected.length === provided.length && timingSafeEqual(expected, provided)
+  )
+}
+
+// --- evaluation display settings: the controller decides per question how the
+// projected evaluation (PPT embed) is shown; the embed reads them while polling
+const EVALUATION_DISPLAY_CHART_TYPES = [
+  'barChart',
+  'histogram',
+  'wordCloud',
+  'table',
+]
+const EVALUATION_DISPLAY_TTL_SECONDS = 60 * 60 * 24 * 7
+// KEYS[1] settings hash, ARGV[1] instance id, ARGV[2] JSON patch, ARGV[3] TTL
+const MERGE_EVALUATION_DISPLAY_SCRIPT = `
+local raw = redis.call('HGET', KEYS[1], ARGV[1])
+local current = {}
+if raw then
+  local ok, decoded = pcall(cjson.decode, raw)
+  if ok and type(decoded) == 'table' then current = decoded end
+end
+for field, value in pairs(cjson.decode(ARGV[2])) do current[field] = value end
+local merged = cjson.encode(current)
+redis.call('HSET', KEYS[1], ARGV[1], merged)
+redis.call('EXPIRE', KEYS[1], tonumber(ARGV[3]))
+return merged
+`
+
+function parseEvaluationDisplaySetting(
+  instanceId: number,
+  raw?: string | null
+): IEvaluationDisplaySetting {
+  let parsed: Partial<IEvaluationDisplaySetting> = {}
+  try {
+    parsed = raw ? JSON.parse(raw) : {}
+  } catch {
+    parsed = {}
+  }
+  return {
+    instanceId,
+    chartType:
+      typeof parsed.chartType === 'string' &&
+      EVALUATION_DISPLAY_CHART_TYPES.includes(parsed.chartType)
+        ? parsed.chartType
+        : null,
+    showSolution: parsed.showSolution === true,
+    showPercentages: parsed.showPercentages === true,
+  }
+}
+
+export async function getLiveQuizEvaluationDisplay(
+  { id, hmac }: { id: string; hmac?: string | null },
+  ctx: Context
+) {
+  if ((!ctx.user?.sub && typeof hmac !== 'string') || hmac === '') {
+    return null
+  }
+
+  const liveQuiz = await ctx.prisma.liveQuiz.findUnique({
+    where: {
+      id,
+      status: {
+        in: [DB.PublicationStatus.PUBLISHED, DB.PublicationStatus.ENDED],
+      },
+      isDeleted: false,
+      ...liveQuizCourseVisibilityFilter,
+    },
+    select: { id: true, namespace: true, isAssessmentEnabled: true },
+  })
+
+  if (!liveQuiz) return null
+  if (typeof hmac === 'string' && !isValidLiveQuizHmac(liveQuiz, hmac)) {
+    return null
+  }
+  // nothing of an assessment is projected
+  if (liveQuiz.isAssessmentEnabled) return []
+
+  const entries = await ctx.redisExec.hgetall(`lq:${id}:display`)
+  return Object.entries(entries).map(([instanceId, raw]) =>
+    parseEvaluationDisplaySetting(Number(instanceId), raw)
+  )
+}
+
+export async function updateEvaluationDisplay(
+  {
+    quizId,
+    instanceId,
+    chartType,
+    showSolution,
+    showPercentages,
+  }: {
+    quizId: string
+    instanceId: number
+    chartType?: string | null
+    showSolution?: boolean | null
+    showPercentages?: boolean | null
+  },
+  ctx: ContextWithUser
+) {
+  if (
+    typeof chartType === 'string' &&
+    !EVALUATION_DISPLAY_CHART_TYPES.includes(chartType)
+  ) {
+    throw new GraphQLError('INVALID_EVALUATION_DISPLAY_CHART_TYPE', {
+      extensions: { code: 'BAD_USER_INPUT' },
+    })
+  }
+
+  const liveQuiz = await ctx.prisma.liveQuiz.findUnique({
+    where: {
+      id: quizId,
+      status: {
+        in: [DB.PublicationStatus.PUBLISHED, DB.PublicationStatus.ENDED],
+      },
+      isDeleted: false,
+    },
+    select: {
+      isAssessmentEnabled: true,
+      blocks: { select: { elements: { select: { id: true } } } },
+    },
+  })
+
+  if (!liveQuiz || liveQuiz.isAssessmentEnabled) return null
+  const belongsToQuiz = liveQuiz.blocks.some((block) =>
+    block.elements.some((element) => element.id === instanceId)
+  )
+  if (!belongsToQuiz) return null
+
+  const patch = {
+    ...(typeof chartType === 'string' ? { chartType } : {}),
+    ...(typeof showSolution === 'boolean' ? { showSolution } : {}),
+    ...(typeof showPercentages === 'boolean' ? { showPercentages } : {}),
+  }
+
+  // merge inside Redis so concurrent partial updates (e.g. chart type and
+  // solution toggled at once) cannot overwrite each other
+  const merged = (await ctx.redisExec.eval(
+    MERGE_EVALUATION_DISPLAY_SCRIPT,
+    1,
+    `lq:${quizId}:display`,
+    String(instanceId),
+    JSON.stringify(patch),
+    String(EVALUATION_DISPLAY_TTL_SECONDS)
+  )) as string
+
+  return parseEvaluationDisplaySetting(instanceId, merged)
+}
+
 export async function getLiveQuizEvaluation(
   { id, hmac }: { id: string; hmac?: string | null },
   ctx: Context
@@ -2270,15 +2517,8 @@ export async function getLiveQuizEvaluation(
     return null
   }
 
-  if (typeof hmac === 'string') {
-    const hmacEncoder = createHmac('sha256', process.env.APP_SECRET as string)
-    hmacEncoder.update(liveQuiz.namespace + liveQuiz.id)
-    const quizHmac = hmacEncoder.digest('hex')
-
-    // evaluate whether the hashed liveQuiz.namespace and liveQuiz.id equals the hmac
-    if (quizHmac !== hmac) {
-      return null
-    }
+  if (typeof hmac === 'string' && !isValidLiveQuizHmac(liveQuiz, hmac)) {
+    return null
   }
 
   // depending on the quiz assessment setting, select the corresponding redis instance

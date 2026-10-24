@@ -1,0 +1,20 @@
+mutation UpdateEvaluationDisplay(
+  $quizId: String!
+  $instanceId: Int!
+  $chartType: String
+  $showSolution: Boolean
+  $showPercentages: Boolean
+) {
+  updateEvaluationDisplay(
+    quizId: $quizId
+    instanceId: $instanceId
+    chartType: $chartType
+    showSolution: $showSolution
+    showPercentages: $showPercentages
+  ) {
+    instanceId
+    chartType
+    showSolution
+    showPercentages
+  }
+}
