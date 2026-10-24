@@ -128,3 +128,16 @@ test('the check push is the only configured hosted writer and helper edits reach
     assert.ok(unitFilter.with.pattern.includes(marker), marker)
   }
 })
+
+test('trusted Playwright setup uses the candidate manifest pin in build and shard jobs', () => {
+  for (const kind of ['build', 'shard']) {
+    const composite = readYaml(`.github/actions/playwright-${kind}/action.yml`)
+    const steps = composite.runs.steps.filter((step) =>
+      step.uses?.startsWith('pnpm/action-setup@')
+    )
+    assert.equal(steps.length, 1, kind)
+    assert.equal(steps[0].with.version, undefined, kind)
+    assert.equal(steps[0].with.package_json_file, 'package.json', kind)
+    assert.equal(steps[0].with.run_install, false, kind)
+  }
+})

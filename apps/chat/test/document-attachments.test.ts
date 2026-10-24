@@ -7,6 +7,7 @@ import {
   DOCUMENT_ERROR_CODE,
   documentAttachmentAdapter,
   getDocumentKind,
+  isReadingDocument,
 } from '../src/lib/attachments/documentAttachmentAdapter'
 import {
   applyVisualReview,
@@ -21,9 +22,36 @@ import {
   type VisualReviewStatus,
   withoutPageReview,
 } from '../src/lib/attachments/documentText'
-import { readPdf } from '../src/lib/attachments/pdfText'
+import { PDF_TEXT_MESSAGE, readPdf } from '../src/lib/attachments/pdfText'
 
 const fakePdf = vi.hoisted(() => ({ numPages: 0, renderFails: false }))
+
+function installPdfWorker(postError = false) {
+  const workers: FakeWorker[] = []
+  class FakeWorker {
+    onmessage: ((event: MessageEvent) => void) | null = null
+    onerror: ((event: { message: string }) => void) | null = null
+    postMessage = vi.fn(() => {
+      if (postError) throw new Error('synthetic failure')
+    })
+    terminate = vi.fn()
+    constructor() {
+      workers.push(this)
+    }
+    succeed() {
+      this.onmessage?.({
+        data: {
+          type: PDF_TEXT_MESSAGE,
+          ok: true,
+          pages: ['Synthetic PDF body'],
+          pageImages: null,
+        },
+      } as MessageEvent)
+    }
+  }
+  vi.stubGlobal('Worker', FakeWorker)
+  return workers
+}
 
 // PDF.js and canvas rendering need a browser; the stand-ins only report page
 // counts and record how many pages were drawn.
@@ -153,6 +181,105 @@ describe('document truncation', () => {
 })
 
 describe('documentAttachmentAdapter', () => {
+  test.each([
+    'timeout',
+    'response-error',
+    'worker-error',
+    'post-error',
+    'success',
+  ])('releases a PDF read and its worker after %s', async (outcome) => {
+    vi.useFakeTimers()
+    vi.spyOn(console, 'error').mockImplementation(() => {})
+    const workers = installPdfWorker(outcome === 'post-error')
+    const generator = documentAttachmentAdapter.add({
+      file: new File(['pdf'], 'synthetic.pdf', { type: 'application/pdf' }),
+    }) as AsyncGenerator<{ status: { type: string } }>
+    let settled: { value?: unknown; error?: { code: string } } | undefined
+    try {
+      await generator.next()
+      const pending = generator.next().then(
+        (value) => {
+          settled = { value }
+        },
+        (error) => {
+          settled = { error }
+        }
+      )
+      await vi.advanceTimersByTimeAsync(0)
+      const worker = workers[0]!
+      expect(isReadingDocument()).toBe(outcome !== 'post-error')
+      if (outcome === 'success') worker.succeed()
+      if (outcome === 'response-error') {
+        worker.onmessage?.({
+          data: {
+            type: PDF_TEXT_MESSAGE,
+            ok: false,
+            message: 'synthetic failure',
+          },
+        } as MessageEvent)
+      }
+      if (outcome === 'worker-error')
+        worker.onerror?.({ message: 'synthetic failure' })
+      await vi.advanceTimersByTimeAsync(30_000)
+      if (outcome === 'success') {
+        expect(settled?.value).toMatchObject({
+          value: { status: { type: 'requires-action' } },
+        })
+        await generator.next()
+      } else {
+        expect(settled?.error?.code).toBe(DOCUMENT_ERROR_CODE.readFailed)
+      }
+      await pending
+      expect(isReadingDocument()).toBe(false)
+      expect(worker.terminate).toHaveBeenCalledTimes(1)
+      expect(vi.getTimerCount()).toBe(0)
+    } finally {
+      workers.forEach((worker) => worker.onerror?.({ message: 'test cleanup' }))
+      await vi.advanceTimersByTimeAsync(0)
+      await generator.return(undefined)
+      vi.useRealTimers()
+    }
+  })
+
+  test('keeps another PDF read active when an earlier worker times out', async () => {
+    vi.useFakeTimers()
+    vi.spyOn(console, 'error').mockImplementation(() => {})
+    const workers = installPdfWorker()
+    const createRead = () =>
+      documentAttachmentAdapter.add({
+        file: new File(['pdf'], 'synthetic.pdf', { type: 'application/pdf' }),
+      }) as AsyncGenerator<unknown>
+    const first = createRead()
+    const second = createRead()
+    let firstError: { code: string } | undefined
+    try {
+      await first.next()
+      void first.next().catch((error) => {
+        firstError = error
+      })
+      await vi.advanceTimersByTimeAsync(10_000)
+      await second.next()
+      const next = second.next().catch((error) => ({ error }))
+      await vi.advanceTimersByTimeAsync(20_000)
+      expect(firstError?.code).toBe(DOCUMENT_ERROR_CODE.readFailed)
+      expect(isReadingDocument()).toBe(true)
+      workers[1]!.succeed()
+      await next
+      await second.next()
+      expect(isReadingDocument()).toBe(false)
+      expect(
+        workers.every((worker) => worker.terminate.mock.calls.length === 1)
+      ).toBe(true)
+      expect(vi.getTimerCount()).toBe(0)
+    } finally {
+      workers.forEach((worker) => worker.onerror?.({ message: 'test cleanup' }))
+      await vi.advanceTimersByTimeAsync(0)
+      await first.return(undefined)
+      await second.return(undefined)
+      vi.useRealTimers()
+    }
+  })
+
   test('rejects an oversized file before reading it', async () => {
     const file = new File(['x'], 'big.pdf', { type: 'application/pdf' })
     Object.defineProperty(file, 'size', { value: MAX_DOCUMENT_SIZE_BYTES + 1 })
