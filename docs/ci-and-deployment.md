@@ -827,6 +827,47 @@ Unrelated issue comments are filtered before Final AI review allocates its
 trusted-policy runner. PR lifecycle status handling and exact review commands
 retain their existing authorization and serialized status locks.
 
+## Isolated WarpBuild qualification
+
+`warpbuild-playwright-trial.yml` is a separate experiment, not ordinary PR
+validation. The prepare job is disabled with a literal `false` barrier. When
+enabled, it accepts only the `rs/warpbuild-qualification` branch and first run
+attempts. Both paid jobs independently reject later attempts, including failed-job
+reruns that reuse a successful prepare job. Workflow-file pushes provide a
+branch-only entry before a new manual workflow is registered on the default
+branch. Each enabled workflow-file push admits a new wave, so publish only
+reviewed configurations after private preflight and cost reservation.
+Restore the literal `false` condition when the finite experiment ends or admission
+is paused. Repository and organization variables cannot
+enable a disabled version.
+
+Before enabling it, verify the actual provider connection, complete runner-group
+policy and billing controls. Keep the submission count, consumed cost and
+in-flight reservations in private operator records. The workflow's wave ordinal
+and timeouts do not enforce spending or concurrent-wave caps. Operator admission
+owns those limits so deliberate burst comparisons can overlap. Stop new submissions
+when the approved budget cannot cover the next wave and existing reservations.
+Keep the existing pool and required-check routing unchanged.
+
+Each wave freezes its candidate SHA, provider, runner sizes and cache setting in
+the workflow. The same cache setting supplies shared-action restore inputs and
+the `PLAYWRIGHT_CACHE_ENABLED` telemetry environment value. Its actual workflow
+revision (`github.sha`) supplies the trusted
+selector; the shared public build and shard actions have separate literal commit
+pins. Record both identities for paired comparisons. It preserves the public
+service topology. Hetzner controls use their existing allowed workflow; the trial does
+not add a new workflow to that runner group's policy. The selector's
+same-revision plan runs the complete
+ordinary eight-shard suite; separately designated production tests retain their
+existing lane. `public-pr` in shared telemetry describes the trust lane, not the
+provider: use the trial configuration and actual job assignments for comparisons.
+Inspect all producer steps and the separate trial aggregate before accepting a
+wave. When preparation is skipped, the hosted aggregate emits an explicit
+unadmitted notice without allocating a provider build or shard. That result is
+not a completed validation. Keep actual billing, resource observations and
+forecasts out of repository and CI artifacts. See the
+[qualification plan](../project/2026-10-18-warpbuild-qualification-plan.md).
+
 ## Public ARM64 runner operations
 
 ### Opt-in WarpBuild overflow
