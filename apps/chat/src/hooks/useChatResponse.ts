@@ -208,7 +208,7 @@ export function useChatResponse(
           }))
         }
         // Runs before image hydration, which may return early.
-        if (takenDocumentPages.length > 0 && documentPages.length === 0) {
+        if (documentPages.length === 0) {
           dropPageReview()
         }
 
@@ -261,6 +261,9 @@ export function useChatResponse(
             hydratedTriggerMessage,
           ]
         }
+
+        // Hydration can restore stored headers from an earlier attempt.
+        if (documentPages.length === 0) dropPageReview()
 
         // send request to API with streaming enabled
         const handoffSource = readHandoffSource()

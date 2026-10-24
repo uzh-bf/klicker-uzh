@@ -1,7 +1,16 @@
 import { beforeEach, describe, expect, test, vi } from 'vitest'
 import { useChatResponse } from '../src/hooks/useChatResponse'
+import {
+  setPendingDocumentPages,
+  takePendingDocumentPages,
+} from '../src/lib/attachments/attachmentState'
+import {
+  buildDocumentBlock,
+  parseMessageDocuments,
+} from '../src/lib/attachments/documentText'
 
-const { mockUseChatStore } = vi.hoisted(() => ({
+const { mockUseChatStore, modelCapability } = vi.hoisted(() => ({
+  modelCapability: { readsPages: false },
   mockUseChatStore: Object.assign(vi.fn(), {
     getState: vi.fn(),
     setState: vi.fn(),
@@ -33,7 +42,7 @@ vi.mock('../src/lib/utils/chatUtils', () => ({
 }))
 
 vi.mock('../src/stores/settingsStore', () => ({
-  selectModelReadsDocumentPages: () => false,
+  selectModelReadsDocumentPages: () => modelCapability.readsPages,
   useSettingsStore: (selector?: (state: any) => unknown) => {
     const state = { loadCredits: loadCreditsMock, modelOptions: [] }
     return selector ? selector(state) : state
@@ -75,6 +84,7 @@ function createStreamingResponse(lines: string[]) {
 describe('useChatResponse attachment hydration', () => {
   beforeEach(() => {
     vi.restoreAllMocks()
+    modelCapability.readsPages = false
 
     storeState = {
       threads: [
@@ -102,6 +112,108 @@ describe('useChatResponse attachment hydration', () => {
     })
 
     loadCreditsMock.mockClear()
+  })
+
+  test.each([
+    'absent',
+    'evicted',
+    'present',
+  ])('keeps page-review claims accurate after image hydration with an %s page cache', async (cache) => {
+    modelCapability.readsPages = true
+    const id = 'document-retry'
+    const pages = ['data:image/jpeg;base64,synthetic-page']
+    const otherIds = [
+      'newer-document-1',
+      'newer-document-2',
+      'newer-document-3',
+    ]
+    if (cache !== 'absent') setPendingDocumentPages(id, pages)
+    if (cache === 'evicted')
+      otherIds.forEach((otherId) => setPendingDocumentPages(otherId, pages))
+    const message = {
+      id,
+      role: 'user',
+      parentId: null,
+      content: [
+        {
+          type: 'text',
+          text: buildDocumentBlock({
+            name: 'synthetic.pdf',
+            text: 'Synthetic document body',
+            pages: 1,
+            shortened: false,
+            visualReview: 'reviewed',
+          }),
+        },
+      ],
+      imageAttachments: [
+        {
+          id: 'image-1',
+          type: 'image',
+          position: 0,
+          imagePreviewBase64: 'preview-image',
+          hasFullImage: false,
+        },
+      ],
+    }
+    storeState.threads = [
+      { id: 'thread-1', messages: [message], allMessages: [message] },
+    ]
+    storeState.ensureFullImageAttachments.mockResolvedValue({
+      ...message,
+      imageAttachments: [
+        {
+          ...message.imageAttachments[0],
+          imageBase64: 'full-image',
+          hasFullImage: true,
+        },
+      ],
+    })
+    const fetchSpy = vi
+      .fn()
+      .mockResolvedValue(
+        createStreamingResponse([
+          'data: {"type":"text-delta","delta":"synthetic answer"}',
+          'data: {"type":"finish"}',
+          'data: [DONE]',
+        ])
+      )
+    vi.stubGlobal('fetch', fetchSpy)
+    const { generateChatResponse } = useChatResponse(
+      'model-1',
+      'chat',
+      'medium'
+    )
+    try {
+      await generateChatResponse([message] as any, 'thread-1')
+      const body = JSON.parse(fetchSpy.mock.calls[0][1].body)
+      expect(body.images).toEqual(['full-image'])
+      expect(body.documentPages).toEqual(
+        cache === 'present' ? pages : undefined
+      )
+      const expected = {
+        text: 'Synthetic document body',
+        visualReview: cache === 'present' ? 'reviewed' : 'skipped',
+      }
+      expect(
+        parseMessageDocuments(body.messages[0].content).documents[0]
+      ).toMatchObject(expected)
+      for (const messages of [
+        storeState.threads[0]!.messages,
+        storeState.threads[0]!.allMessages!,
+      ]) {
+        const stored = messages.find((item: any) => item.id === id)
+        expect(
+          parseMessageDocuments(stored.content[0].text).documents[0]
+        ).toMatchObject(expected)
+        expect(stored.imageAttachments[0]).toMatchObject({
+          imageBase64: 'full-image',
+          hasFullImage: true,
+        })
+      }
+    } finally {
+      ;[id, ...otherIds].forEach(takePendingDocumentPages)
+    }
   })
 
   test('hydrates a historical preview-only trigger message before submit', async () => {

@@ -7,7 +7,7 @@ import {
 
 type Results = Array<{ transcript: string; isFinal: boolean }>
 
-function installFakeRecognition() {
+function installFakeRecognition(onStart?: () => void) {
   const instances: FakeRecognition[] = []
   class FakeRecognition implements LocalSpeechRecognition {
     continuous = true
@@ -19,7 +19,10 @@ function installFakeRecognition() {
     onerror: ((event: Event & { error: string }) => void) | null = null
     onresult: LocalSpeechRecognition['onresult'] = null
     onstart: (() => void) | null = null
-    start = vi.fn(() => this.onstart?.())
+    start = vi.fn(() => {
+      onStart?.()
+      this.onstart?.()
+    })
     stop = vi.fn(() => this.onend?.())
     abort = vi.fn(() => {
       this.onerror?.(Object.assign(new Event('error'), { error: 'aborted' }))
@@ -45,7 +48,7 @@ function installFakeRecognition() {
 }
 
 function listen() {
-  const errors: DictationErrorCode[] = []
+  const errors: Array<DictationErrorCode | null> = []
   const adapter = new OnDeviceDictationAdapter('de-DE', (error) =>
     errors.push(error)
   )
@@ -91,15 +94,41 @@ describe('OnDeviceDictationAdapter', () => {
     instances[0]?.onerror?.(
       Object.assign(new Event('error'), { error: 'not-allowed' })
     )
-    expect(first.errors).toEqual(['not-allowed'])
+    expect(first.errors).toEqual([null, 'not-allowed'])
     expect(first.session.status).toEqual({ type: 'ended', reason: 'error' })
 
     const second = listen()
     second.session.cancel()
-    expect(second.errors).toEqual([])
+    expect(second.errors).toEqual([null])
     expect(second.session.status).toEqual({
       type: 'ended',
       reason: 'cancelled',
     })
+  })
+
+  it('a new session clears the old error but keeps its own failure', () => {
+    let error: DictationErrorCode | null = null
+    const errorsAtStart: Array<DictationErrorCode | null> = []
+    const instances = installFakeRecognition(() => errorsAtStart.push(error))
+    const adapter = new OnDeviceDictationAdapter('de-DE', (nextError) => {
+      error = nextError
+    })
+    adapter.listen()
+    instances[0]?.onerror?.(
+      Object.assign(new Event('error'), { error: 'not-allowed' })
+    )
+    expect(error).toBe('not-allowed')
+
+    const second = adapter.listen()
+    expect(error).toBeNull()
+    expect(errorsAtStart).toEqual([null, null])
+    expect(instances[1]?.processLocally).toBe(true)
+    expect(instances[1]?.start).toHaveBeenCalledTimes(1)
+
+    instances[1]?.onerror?.(
+      Object.assign(new Event('error'), { error: 'network' })
+    )
+    expect(error).toBe('network')
+    expect(second.status).toEqual({ type: 'ended', reason: 'error' })
   })
 })
