@@ -141,4 +141,6 @@ screenshots to this repository through authenticated host `gh`; verify links.
   review and hosted CI remain pending; the draft will retain visual limitations.
 - Substantive size: 140 additions/22 deletions across code, translations and tests; plan/docs
   excluded.
-- PR: none yet.
+- PR: [draft presentation fix](https://github.com/uzh-bf/klicker-uzh/pull/6696).
+  Independent final review and required hosted CI remain pending. Keep draft
+  until the visual limitations and remaining review gate are resolved.
