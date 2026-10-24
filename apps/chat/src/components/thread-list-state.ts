@@ -3,6 +3,7 @@
 // state machine and the title filter can be unit-tested without dragging in
 // `@uzh-bf/design-system` (and its CSS) through vitest's node environment.
 
+import { stripDocumentBlocks } from '../lib/attachments/documentText'
 import type { Thread } from '../stores/chatStore'
 
 export type DeleteConfirmPhase = 'idle' | 'confirming'
@@ -29,8 +30,9 @@ export function transitionDeleteConfirm(
 
 /**
  * The title a thread row shows: the stored title, else the first 30
- * characters of the first user message. Returns undefined when neither
- * exists, so the caller supplies the localized "New Chat" fallback.
+ * characters of the typed question in the first user message. Returns
+ * undefined when neither exists, so the caller supplies the localized
+ * "New Chat" fallback.
  */
 export function resolveThreadTitle(thread: Thread): string | undefined {
   if (thread.title) return thread.title
@@ -42,7 +44,9 @@ export function resolveThreadTitle(thread: Thread): string | undefined {
       )?.text
     : firstUserMessage.content
   if (!content) return undefined
-  return content.slice(0, 30) + (content.length > 30 ? '...' : '')
+  const question = stripDocumentBlocks(content)
+  if (!question) return undefined
+  return question.slice(0, 30) + (question.length > 30 ? '...' : '')
 }
 
 // Lowercases and strips combining accents, so "Übung" and "ubung" compare

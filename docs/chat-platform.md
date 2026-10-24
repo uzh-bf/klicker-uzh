@@ -822,15 +822,17 @@ this order:
    section for Quizzer, when valid and present;
 4. the platform-owned Tutor, Explainer, or Quizzer contract from `DEFAULT_PROMPT`, or instead the
    lecturer-defined persona for a custom mode;
-5. fixed image-attachment description handling from
+5. the student answer preferences, when the student chose a non-default style or tone (see
+   [Student answer style and tone](#student-answer-style-and-tone));
+6. fixed image-attachment description handling from
    `src/lib/server/inputContextInstructions.ts:withInputContextContract`;
-6. fixed course-scope, evidence, tool/conversation privacy, safety, non-disclosure, and epistemic
+7. fixed course-scope, evidence, tool/conversation privacy, safety, non-disclosure, and epistemic
    integrity policy from `src/lib/server/coursePolicyInstructions.ts:withCoursePolicyContract`;
-7. fixed Markdown, inline/display mathematics, and fenced-code rules from
+8. fixed Markdown, inline/display mathematics, and fenced-code rules from
    `src/lib/server/outputFormatInstructions.ts:withOutputFormatContract`;
-8. the conditional citation policy when a `doc_query`-style tool is available; and
-9. the fixed conversation-language and Swiss Standard German policy from
-   `src/lib/server/languageInstructions.ts:withLanguageStyleContract`.
+9. the conditional citation policy when a `doc_query`-style tool is available; and
+10. the fixed conversation-language and Swiss Standard German policy from
+    `src/lib/server/languageInstructions.ts:withLanguageStyleContract`.
 
 The course-data and typed-context sections explicitly treat their entire JSON values as data
 rather than instructions. Quotes, newlines, and instruction-like text in a display name or typed
@@ -876,6 +878,51 @@ therefore restates the rule where the model reads it last: `prepareStep` appends
 step. The reminder names no language. The model identifies the user's language itself, which works
 for any language and avoids a brittle server-side detector on short or mixed messages. The reminder
 leaves `instructions` unchanged, so the prompt-cache identity is stable, and it is never persisted.
+
+### Student answer style and tone
+
+Students choose an "Answer format" (DE "Antwortformat") and a "Tone" (DE "Ton") in the sidebar
+settings panel or in the compact embedded header ([ADR 0054](./adr/0054-student-answer-style-layer.md)).
+The format (`answerStyle`) changes layout only: `balanced` ("Standard", default) or `bullets` ("Bullet
+points"). Prior knowledge is deliberately not a student option; depth should follow mastery evidence
+in a later, separately reviewed change. The tone is `neutral`
+(default), `friendly`, or `direct`. Copy presents both as reading preferences that change how answers
+are written, not how much help the student gets. Do not present them as matching how a student
+learns or claim a learning benefit (see the ADR's evidence). Both lists live in `src/lib/config/answerStyles.ts`.
+
+The values are stored only in the browser's `settings-storage` entry and sent as `answerStyle` and
+`answerTone` with each chat request from `useChatResponse`. The route's `answerStyleSchema` and
+`answerToneSchema` (`src/lib/server/answerStyleInstructions.ts`) map a missing or unknown value to the
+default instead of rejecting the request.
+
+With both defaults nothing is added, so the default prompt, its prompt-cache key, and
+`systemPromptHash` are unchanged. Otherwise `src/prompts/student-answer-style.hbs` renders one
+`Student answer preferences` section after the mode sections. The template keeps the Tutor's
+attempt-first and hint-before-solution behavior for every option, never lets a layout or tone work
+out results the student should find, says the preferences carry no information about prior knowledge,
+keeps any comprehension check the mode contract calls for (also at the end of a bulleted answer),
+never touches Quizzer question stems, options, or structured output, yields
+voice, tone, and any lecturer-named length or format to lecturer guidance, and yields to every fixed
+contract below it. The trailing per-step message does not repeat the preferences. `request.context`
+logs the applied `answerStyle` and `answerTone` next to the reasoning effort, which explains a
+differing `systemPromptHash`.
+
+A live check through the real chat route on the developer Foundry (synthetic Tutor and Explainer
+cases, one turn each, every option against the default, judged by a second model) found that
+without the solution-scope and closing-check rules, bulleted and prior-knowledge answers could drop
+the Tutor's closing question and some options worked out corrected results the default left to the
+student. With them, no option changed the teaching move in the rerun. The prior-knowledge options
+were removed afterwards. The sample was small; repeat it when the template or model changes.
+`evaluation/run-tutor-trajectories.mjs` accepts `--answer-style` and `--answer-tone` for this.
+
+A lecturer can turn both choices off for a chatbot in the manage app's advanced chatbot settings
+(`Chatbot.answerPreferencesEnabled`, default on, saved through `updateChatbotModelPolicy`). The chat
+route then compiles with the defaults whatever the request carries, and `/api/chatbots/[chatbotId]`
+returns the flag so the sidebar and embedded header hide both controls. The settings store keeps the
+flag off until the chatbot has loaded, so the controls do not flash.
+
+The preferences are per browser. Embedded iframes whose browser blocks third-party storage can lose
+them on reload, the same limit as the persisted mode selection.
 
 ## Sources and citations
 
@@ -1108,7 +1155,9 @@ adapter accepts `.pptx` and `.ppt` only to show that message. Documents work wit
 the attach button and the dropzone stay available when the selected model cannot read images.
 
 The first document a student attaches opens a notice (`document-notice-modal.tsx`) about what
-may be shared and where the text goes. Declining removes the documents; accepting is remembered
+may be shared and where document text and rendered PDF pages go. It distinguishes the text and
+visual summaries saved by KlickerUZH from page images, which KlickerUZH does not persist; it
+makes no promise about provider-side retention. Declining removes the documents; accepting is remembered
 in `localStorage` for that browser, not in the database, so it is a reminder rather than recorded
 consent.
 
@@ -1119,7 +1168,9 @@ block starts with `--- Attached document: <name> (<pages>, shortened …) ---` a
 returns the user message as one text string, and `RuntimeProvider.convertMessage` parses the
 blocks back into `metadata.custom.documentAttachments`. The bubble then shows file chips, while
 copy and the edit composer see only the question. An edit keeps the original documents unless the
-student removes them. Titles (`extractThreadTitle`) and the history rail strip the blocks.
+student removes them. Titles (`extractThreadTitle` and the sidebar fallback), the title filter,
+the history rail and exported user questions strip the blocks. Markdown export preserves
+assistant answer text, mathematics and citations; it never changes the stored conversation.
 Changing the header or footer wording breaks the chips of existing messages.
 
 Data boundary: the extracted text is stored in `ChatMessage.content`, sent to the model provider,

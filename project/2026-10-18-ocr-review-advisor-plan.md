@@ -242,6 +242,7 @@ The implementation sequence starts with the
 | Advisor usefulness and Context7 retrieval/cache proof                            | Observe next ordinary relevant reviews; avoid forced tool calls and extra paid replay                                                                                                   | Distinguish accepted output, source-corroborated usefulness, incomplete usage and actual cache reuse                        |
 | Authorization infrastructure errors can leave pending final status               | Follow-up reliability item: identity-safe terminal handling after actor and head are known                                                                                              | Injected API failure terminates the matching status without overwriting newer evidence or changing authorization            |
 | GitLab controller and publisher                                                  | Follow the GitHub pilot; repository selection and private-data boundary remain open                                                                                                     | Trusted policy separated from MR source; exact base/head/start diff positions, deduplication and status lifecycle qualified |
+| Repeated adopter controllers, workflows and tests | [Shared runtime plan](2026-10-24-ocr-shared-runtime-plan.md): donor hardening, neutral helpers and trusted config implemented locally; shared GitHub action and separate GitLab adapter remain later packages | Shared behavioral contracts pass; small caller/config updates preserve policy; source, hosted CI and ordinary live acceptance remain distinct |
 | Exact-head CI evidence, application testing and previews                         | Future capabilities described above; no runtime/deployment activation in this batch                                                                                                     | Versioned evidence first; later isolated synthetic execution with ownership, cost, access and cleanup contracts             |
 
 Keep reviewer models, reasoning, budgets, accounting and retries unchanged
@@ -326,3 +327,10 @@ GLM 5.3 max through Mistral for final review and advisor calls. The
 the shared engine and adopter changes. Existing budgets, accounting formulas
 and retries remain unchanged. The stack evidence and first adopter source
 packages were squash-merged; live tool usefulness remains ordinary-run evidence.
+
+### Git input startup repair — 2026-10-23
+
+The [startup repair plan](2026-10-23-ocr-startup-repair-plan.md) addresses partial
+clones that need authenticated blob fetches after OCR credentials are removed.
+Adopters use complete trusted-policy checkouts; shared logs classify pinned Git
+input errors without exposing raw details. Review policy remains unchanged.

@@ -49,6 +49,19 @@ export default {
         high: 'High',
         xhigh: 'Extra high',
       },
+      answerStyleLabel: 'Answer format',
+      answerStyleHint:
+        'Changes how new answers are laid out, not how much help you get.',
+      answerStyles: {
+        balanced: 'Standard',
+        bullets: 'Bullet points',
+      },
+      answerToneLabel: 'Tone',
+      answerTones: {
+        neutral: 'Neutral',
+        friendly: 'Friendly',
+        direct: 'Direct',
+      },
     },
     credits: {
       title: 'Available credits',
@@ -121,7 +134,7 @@ export default {
       access:
         'Having access to a file does not mean you may share it. When in doubt, ask your lecturer.',
       dataBoundary:
-        'The text of your documents is sent to the AI model provider and saved with this conversation.',
+        'Document text is sent to the AI model provider. When the selected model can read images, rendered PDF pages may also be sent for visual review. KlickerUZH saves the text and any generated visual summary with this conversation, but does not save the page images.',
       once: 'This notice appears once on this device.',
       remove: 'Remove documents',
       accept: 'I understand',
@@ -4270,6 +4283,11 @@ Since the KlickerUZH app is not yet available in the iOS App Store, follow these
         'Off: the chatbot uses exactly one model selected by the lecturer.',
       modelSelectionFixedDescription:
         'Participants use this model. New chatbots start with Auto.',
+      answerPreferences: 'Let participants choose answer format and tone',
+      answerPreferencesEnabledDescription:
+        'On: participants can choose bullet points and a friendly or direct tone for new answers.',
+      answerPreferencesDisabledDescription:
+        'Off: all participants get the same answer format and tone.',
       modelSelectionParticipantDescription:
         'Participants can choose among these models. Select at least one.',
       selectedModel: 'Selected model',

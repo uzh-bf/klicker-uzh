@@ -31,7 +31,15 @@ import {
   MAX_VISUAL_REVIEW_PAGES,
   stripDocumentBlocks,
 } from '@/src/lib/attachments/documentText'
+import {
+  DEFAULT_ANSWER_STYLE,
+  DEFAULT_ANSWER_TONE,
+} from '@/src/lib/config/answerStyles'
 import type { ReasoningEffort } from '@/src/lib/config/reasoning'
+import {
+  answerStyleSchema,
+  answerToneSchema,
+} from '@/src/lib/server/answerStyleInstructions'
 import { withChatbotAuth } from '@/src/lib/server/apiGuards'
 import { withCalculatorTool } from '@/src/lib/server/calculatorTool'
 import {
@@ -689,6 +697,8 @@ export async function POST(
     selectedModel: z.string().min(1),
     selectedMode: z.string().optional().default('tutor'),
     reasoningEffort: z.string().min(1).optional().default('none'),
+    answerStyle: answerStyleSchema,
+    answerTone: answerToneSchema,
     parentId: z.string().min(1).nullable().optional(),
     assistantMessageId: z.string().min(1),
     allowRegeneration: z.boolean().optional().default(false),
@@ -724,6 +734,8 @@ export async function POST(
     threadId,
     selectedMode: requestedMode,
     reasoningEffort: requestedReasoningEffort,
+    answerStyle,
+    answerTone,
     parentId,
     assistantMessageId,
     allowRegeneration,
@@ -829,6 +841,15 @@ export async function POST(
     allowedIds === null ||
     modelRegistry.some((model) => allowedIds.has(model.id))
   let automaticModelId: string | null = null
+
+  // A lecturer can turn the student choices off for this chatbot (ADR 0054).
+  // The defaults then apply, whatever a browser still sends.
+  const appliedAnswerStyle = chatbot.answerPreferencesEnabled
+    ? answerStyle
+    : DEFAULT_ANSWER_STYLE
+  const appliedAnswerTone = chatbot.answerPreferencesEnabled
+    ? answerTone
+    : DEFAULT_ANSWER_TONE
 
   if (!chatbot.modelSelection) {
     automaticModelId = getAutomaticModelId(chatbot.allowedModelIds as string[])
@@ -1217,6 +1238,8 @@ export async function POST(
         courseDisplayName: chatbot.course.displayName,
         toolNames,
         standardModeConfig: chatbot.standardModeConfig,
+        answerStyle: appliedAnswerStyle,
+        answerTone: appliedAnswerTone,
       }
     )
 
@@ -1455,6 +1478,8 @@ export async function POST(
       selectedMode,
       reasoningEffort: appliedReasoningEffort,
       allowedReasoningEfforts,
+      answerStyle: appliedAnswerStyle,
+      answerTone: appliedAnswerTone,
       maxOutputTokens: maxOutputTokens ?? null,
       toolCount: toolNames.length,
       toolNames,

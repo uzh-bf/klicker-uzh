@@ -1,6 +1,12 @@
 'use client'
 import { create } from 'zustand'
 import { persist } from 'zustand/middleware'
+import {
+  type AnswerStyle,
+  type AnswerTone,
+  DEFAULT_ANSWER_STYLE,
+  DEFAULT_ANSWER_TONE,
+} from '../lib/config/answerStyles'
 import { DEFAULT_MODE_DESCRIPTIONS } from '../lib/config/mode-descriptions'
 import { type ModelID, type ModelOption } from '../lib/config/models'
 import { parseModeOptions, resolveSelectedMode } from '../lib/config/modes'
@@ -56,6 +62,8 @@ interface SettingsState {
   selectedModel: ModelID
   selectedMode: string
   selectedReasoningEffort: ReasoningEffort
+  answerStyle: AnswerStyle
+  answerTone: AnswerTone
   credits: {
     current: number
     total: number
@@ -67,6 +75,9 @@ interface SettingsState {
   // cannot make before the server has answered.
   creditsLoaded: boolean
   modelSelectionEnabled: boolean
+  // Whether the chatbot lets students choose an answer format and tone. Off
+  // until the chatbot's settings have loaded, so the controls never flash.
+  answerPreferencesEnabled: boolean
 
   // Available options
   modelOptions: ModelOption[]
@@ -77,6 +88,8 @@ interface SettingsState {
   setSelectedModel: (model: ModelID) => void
   setSelectedMode: (mode: string) => void
   setSelectedReasoningEffort: (effort: ReasoningEffort) => void
+  setAnswerStyle: (answerStyle: AnswerStyle) => void
+  setAnswerTone: (answerTone: AnswerTone) => void
   loadModeOptions: (
     chatbotId: string,
     initialModeOptions?: Record<string, string>
@@ -108,6 +121,8 @@ export const useSettingsStore = create<SettingsState>()(
       selectedModel: 'gpt-4.1',
       selectedMode: 'tutor',
       selectedReasoningEffort: 'none',
+      answerStyle: DEFAULT_ANSWER_STYLE,
+      answerTone: DEFAULT_ANSWER_TONE,
       credits: {
         current: 0.0,
         total: 0.0,
@@ -115,6 +130,7 @@ export const useSettingsStore = create<SettingsState>()(
       },
       creditsLoaded: false,
       modelSelectionEnabled: false,
+      answerPreferencesEnabled: false,
       modeOptions: {},
       modeOptionsChatbotId: null,
 
@@ -149,6 +165,8 @@ export const useSettingsStore = create<SettingsState>()(
 
           return { selectedReasoningEffort: resolvedEffort }
         }),
+      setAnswerStyle: (answerStyle: AnswerStyle) => set({ answerStyle }),
+      setAnswerTone: (answerTone: AnswerTone) => set({ answerTone }),
 
       loadModeOptions: async (
         chatbotId: string,
@@ -168,11 +186,13 @@ export const useSettingsStore = create<SettingsState>()(
               state.selectedMode
             ),
             modelSelectionEnabled: false,
+            answerPreferencesEnabled: false,
           }))
         set({
           modeOptions: {},
           modeOptionsChatbotId: null,
           modelSelectionEnabled: false,
+          answerPreferencesEnabled: false,
         })
 
         try {
@@ -189,6 +209,8 @@ export const useSettingsStore = create<SettingsState>()(
           }
 
           const modelSelectionEnabled = responseData.modelSelection ?? false
+          const answerPreferencesEnabled =
+            responseData.answerPreferencesEnabled === true
 
           const resolvedModeOptions = parseModeOptions(responseData.modeOptions)
           if (!resolvedModeOptions) {
@@ -200,6 +222,7 @@ export const useSettingsStore = create<SettingsState>()(
               modeOptions: resolvedModeOptions,
               modeOptionsChatbotId: chatbotId,
               modelSelectionEnabled,
+              answerPreferencesEnabled,
               selectedMode: resolveSelectedMode(
                 resolvedModeOptions,
                 state.selectedMode
@@ -308,6 +331,8 @@ export const useSettingsStore = create<SettingsState>()(
         selectedModel: state.selectedModel,
         selectedMode: state.selectedMode,
         selectedReasoningEffort: state.selectedReasoningEffort,
+        answerStyle: state.answerStyle,
+        answerTone: state.answerTone,
       }),
     }
   )

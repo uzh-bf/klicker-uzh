@@ -173,7 +173,7 @@ export class OnDeviceDictationAdapter implements DictationAdapter {
 
   constructor(
     private readonly language: string,
-    private readonly onError: (error: DictationErrorCode) => void
+    private readonly onError: (error: DictationErrorCode | null) => void
   ) {}
 
   listen(): DictationAdapter.Session {
@@ -262,6 +262,11 @@ export class OnDeviceDictationAdapter implements DictationAdapter {
       end(cancelled ? 'cancelled' : 'error')
     }
     recognition.onend = () => end(cancelled ? 'cancelled' : 'stopped')
+
+    // Each session supersedes the failure the composer reported for the last
+    // one, so listening starts with no error; a failure of this session is
+    // reported by the handlers above.
+    this.onError(null)
 
     try {
       recognition.start()
