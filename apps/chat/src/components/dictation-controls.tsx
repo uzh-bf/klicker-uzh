@@ -130,8 +130,8 @@ export function DictationSheet() {
   // contents after the sheet's effect, so focus the action when it mounts.
   const primaryActionRef = useCallback((node: HTMLButtonElement | null) => {
     if (!node) return
-    const frame = requestAnimationFrame(() => node.focus())
-    return () => cancelAnimationFrame(frame)
+    const timeout = setTimeout(() => node.focus(), 0)
+    return () => clearTimeout(timeout)
   }, [])
 
   if (!installSheetOpen) return null
