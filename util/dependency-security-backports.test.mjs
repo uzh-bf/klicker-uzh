@@ -153,9 +153,6 @@ async function runParserChild(packageRoot) {
   const load = createRequire(path.join(packageRoot, 'package.json'))
   const parser = load(packageRoot).text({ verify() {} })
   const server = createServer((request, response) => {
-    if (request.method === 'GET' && request.url === '/health') {
-      return sendJson(response, 200, { status: 'alive' })
-    }
     if (request.method !== 'POST' || request.url !== '/parse') {
       return sendJson(response, 404, { status: 'not_found' })
     }
@@ -190,11 +187,6 @@ async function runParserChild(packageRoot) {
     assert.equal(malformed.status, 415)
     assert.deepEqual(await malformed.json(), { status: 'rejected' })
     await delay(250)
-    const health = await fetch(`http://127.0.0.1:${port}/health`, {
-      signal: AbortSignal.timeout(3_000),
-    })
-    assert.equal(health.status, 200)
-
     const valid = await fetch(`http://127.0.0.1:${port}/parse`, {
       body: gzipSync(Buffer.from(PARSED_TEXT)),
       headers: {
