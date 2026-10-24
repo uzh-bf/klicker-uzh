@@ -19,6 +19,9 @@ const buildMessage = (
   }) as ExtendedThreadMessageLike
 
 const labels = { user: 'U', assistant: 'A', sources: 'S' }
+const documentBlock = `--- Attached document: notes.md ---
+Synthetic notes body
+--- End of attached document ---`
 
 describe('thread to Markdown export', () => {
   test('renders title and turns in order, keeps answer text verbatim and skips tool internals', () => {
@@ -74,5 +77,65 @@ describe('thread to Markdown export', () => {
   test('derives a safe filename and falls back to the thread id', () => {
     expect(getThreadMarkdownFilename('a/b: c?', 't1')).toBe('a b c.md')
     expect(getThreadMarkdownFilename(' */ ', 't1')).toBe('chat-t1.md')
+  })
+
+  test('omits well-formed document blocks from string and text-part user questions', () => {
+    const markdown = threadToMarkdown({
+      title: 'Thread title',
+      labels,
+      messages: [
+        buildMessage('m1', 'user', `What is on page 2?\n\n${documentBlock}`),
+        buildMessage('m2', 'user', [
+          { type: 'text', text: `Summarize this\n\n${documentBlock}` },
+        ]),
+      ],
+    })
+
+    expect(markdown).toContain('## U\n\nWhat is on page 2?')
+    expect(markdown).toContain('## U\n\nSummarize this')
+    expect(markdown).not.toContain('Synthetic notes body')
+    expect(markdown).not.toContain('Attached document:')
+  })
+
+  test('keeps assistant document-like markers, mathematics and citations verbatim', () => {
+    const answer = `--- Attached document: example.md ---
+Literal assistant text
+--- End of attached document ---
+
+The variance is $\\sigma^2$ [1].`
+    const markdown = threadToMarkdown({
+      title: 'Thread title',
+      labels,
+      messages: [buildMessage('m1', 'assistant', answer)],
+    })
+
+    expect(markdown).toContain(`## A\n\n${answer}`)
+  })
+
+  test('keeps malformed document-like user text aligned with the parser', () => {
+    const malformed = `What is on page 2?\n\n--- Attached document: notes.md ---
+Incomplete body`
+    const markdown = threadToMarkdown({
+      title: 'Thread title',
+      labels,
+      messages: [buildMessage('m1', 'user', malformed)],
+    })
+
+    expect(markdown).toContain(`## U\n\n${malformed}`)
+  })
+
+  test('does not mutate stored message content', () => {
+    const messages = [
+      buildMessage('m1', 'user', `What is on page 2?\n\n${documentBlock}`),
+      buildMessage('m2', 'user', [
+        { type: 'text', text: `Summarize this\n\n${documentBlock}` },
+      ]),
+      buildMessage('m3', 'assistant', `Literal ${documentBlock}`),
+    ]
+    const storedMessages = structuredClone(messages)
+
+    threadToMarkdown({ title: 'Thread title', labels, messages })
+
+    expect(messages).toEqual(storedMessages)
   })
 })
