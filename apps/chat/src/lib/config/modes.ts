@@ -2,15 +2,16 @@ import {
   GraduationCap,
   Lightbulb,
   ListChecks,
-  Sparkles,
   type LucideIcon,
+  Sparkles,
 } from 'lucide-react'
 import type { useTranslations } from 'next-intl'
 
-// Presentation metadata for the chatbot mode keys exposed via `systemPrompts`.
+// Presentation metadata for the chatbot mode keys exposed via `systemPrompts`
+// and `customModeConfig`.
 // Modes are configured per chatbot, so only the well-known keys get a dedicated
 // icon and localized label; any other key falls back to a neutral icon and its
-// raw name.
+// authored name, a generic label for a custom-mode key, or its raw name.
 const MODE_ICONS = {
   tutor: GraduationCap,
   explainer: Lightbulb,
@@ -23,25 +24,81 @@ export function isKnownMode(mode: string): mode is KnownMode {
   return Object.prototype.hasOwnProperty.call(MODE_ICONS, mode)
 }
 
-export function parseModeOptions(
-  value: unknown
-): Record<string, string> | null {
+export type ChatModeReplyLanguage = 'en' | 'de'
+export type ChatModeMeetingClock = 'ELAPSED' | 'ELAPSED_AND_TIME'
+
+export interface ChatModeOption {
+  description: string
+  name?: string
+  welcomeMessage?: string
+  starterPrompts?: string[]
+  // Shown to participants so they see the language and time the model uses.
+  replyLanguage?: ChatModeReplyLanguage
+  meetingClock?: ChatModeMeetingClock
+}
+
+export type ChatModeOptions = Record<string, ChatModeOption>
+
+export function parseModeOptions(value: unknown): ChatModeOptions | null {
   if (!value || typeof value !== 'object' || Array.isArray(value)) return null
 
-  const entries = Object.entries(value)
-  if (
-    entries.some(
-      ([mode, description]) =>
-        mode.trim().length === 0 || typeof description !== 'string'
-    )
-  ) {
+  const entries: [string, ChatModeOption][] = []
+  if (Object.entries(value).some(([mode]) => mode.trim().length === 0)) {
     return null
   }
-  return Object.fromEntries(entries) as Record<string, string>
+
+  for (const [mode, entry] of Object.entries(value)) {
+    if (typeof entry === 'string') {
+      // Older deployments sent the mode description directly; keep accepting
+      // that wire shape so a stale participant tab can still resolve modes.
+      entries.push([mode, { description: entry }])
+      continue
+    }
+
+    if (
+      !entry ||
+      typeof entry !== 'object' ||
+      Array.isArray(entry) ||
+      typeof (entry as Record<string, unknown>).description !== 'string' ||
+      ((entry as Record<string, unknown>).name !== undefined &&
+        typeof (entry as Record<string, unknown>).name !== 'string')
+    ) {
+      return null
+    }
+
+    const option = entry as Record<string, unknown>
+    const starterPrompts = Array.isArray(option.starterPrompts)
+      ? option.starterPrompts.filter(
+          (prompt): prompt is string =>
+            typeof prompt === 'string' && prompt.trim().length > 0
+        )
+      : []
+    entries.push([
+      mode,
+      {
+        description: option.description as string,
+        ...(typeof option.name === 'string' ? { name: option.name } : {}),
+        ...(typeof option.welcomeMessage === 'string' &&
+        option.welcomeMessage.trim()
+          ? { welcomeMessage: option.welcomeMessage }
+          : {}),
+        ...(starterPrompts.length > 0 ? { starterPrompts } : {}),
+        ...(option.replyLanguage === 'en' || option.replyLanguage === 'de'
+          ? { replyLanguage: option.replyLanguage }
+          : {}),
+        ...(option.meetingClock === 'ELAPSED' ||
+        option.meetingClock === 'ELAPSED_AND_TIME'
+          ? { meetingClock: option.meetingClock }
+          : {}),
+      },
+    ])
+  }
+
+  return Object.fromEntries(entries)
 }
 
 export function resolveSelectedMode(
-  modeOptions: Record<string, string>,
+  modeOptions: ChatModeOptions,
   selectedMode: string
 ): string {
   const firstMode = Object.keys(modeOptions)[0]
@@ -52,9 +109,7 @@ export function resolveSelectedMode(
     : firstMode
 }
 
-export function hasAvailableChatMode(
-  modeOptions: Record<string, string>
-): boolean {
+export function hasAvailableChatMode(modeOptions: ChatModeOptions): boolean {
   return Object.keys(modeOptions).length > 0
 }
 
@@ -67,11 +122,11 @@ export function getComposerSubmitMode(
 export function getModeDescription(
   t: ReturnType<typeof useTranslations<never>>,
   mode: string,
-  modeOptions: Record<string, string>
+  modeOptions: ChatModeOptions
 ): string {
   return isKnownMode(mode)
     ? t(`chat.modes.${mode}Description`)
-    : (modeOptions[mode]?.trim() ?? '')
+    : (modeOptions[mode]?.description.trim() ?? '')
 }
 
 export function getModeIcon(mode: string): LucideIcon {
@@ -90,8 +145,15 @@ export function formatModeLabel(
   // gets from a bare `useTranslations()`. Without it the generic resolves to a
   // union over every namespace and only relative keys typecheck.
   t: ReturnType<typeof useTranslations<never>>,
-  mode: string
+  mode: string,
+  modeOptions?: ChatModeOptions
 ): string {
+  const authoredName = modeOptions?.[mode]?.name?.trim()
+  if (authoredName) return authoredName
+  // A custom-mode key (`cm_` + random id) is meaningless to participants. It
+  // has no authored name here once its mode is no longer approved, e.g. on an
+  // older answer or thread, so it gets a generic label instead.
+  if (mode.startsWith('cm_')) return t('chat.modes.custom')
   return isKnownMode(mode)
     ? t(`chat.modes.${mode}`)
     : mode.charAt(0).toUpperCase() + mode.slice(1)

@@ -29,7 +29,8 @@ services:
       PNPM_HOME: '/tmp/.pnpm'
       OLAT_API_KEY: 'test-key'
     volumes:
-      # Preserve the absolute paths recorded by pnpm during the CI host install.
+      # pnpm records workspace locations during the host install. Keep that
+      # absolute location unchanged inside the Linux CI container.
       - '${OLAT_TEST_WORKSPACE:?Run apps/olat-api/run-tests.sh}:${OLAT_TEST_WORKSPACE:?Run apps/olat-api/run-tests.sh}'
     depends_on:
       postgres:

@@ -3,6 +3,7 @@ import {
   AttachmentPrimitive,
   AuiIf,
   ComposerPrimitive,
+  ErrorPrimitive,
   MessagePrimitive,
   ThreadPrimitive,
   useAui,
@@ -32,6 +33,7 @@ import Image from 'next/image'
 import { useParams } from 'next/navigation'
 import { useFormatter, useNow, useTranslations } from 'next-intl'
 import {
+  type ComponentType,
   createContext,
   type FC,
   type PropsWithChildren,
@@ -43,6 +45,8 @@ import {
   useState,
 } from 'react'
 import { twMerge } from 'tailwind-merge'
+import LearningContextCard from '@/src/components/learning-context-card'
+import { ModeSessionStatus } from '@/src/components/mode-session-status'
 import { useMessageSources } from '@/src/hooks/useMessageSources'
 import {
   type DocumentOriginal,
@@ -53,7 +57,10 @@ import {
   hasAnyImageAttachmentData,
   parentMessageHasImageAttachment,
 } from '@/src/lib/attachments/attachmentState'
-import { getAttachmentPreviewSrc } from '@/src/lib/attachments/attachmentUi'
+import {
+  canUseComposerAttachments,
+  getAttachmentPreviewSrc,
+} from '@/src/lib/attachments/attachmentUi'
 import {
   DOCUMENT_ERROR_CODE,
   documentAttachmentAdapter,
@@ -74,6 +81,8 @@ import {
   ATTACHMENT_ERROR_CODE,
   imageAttachmentAdapter,
 } from '@/src/lib/attachments/imageAttachmentAdapter'
+import type { ThreadSuggestion } from '@/src/lib/config/manageSuggestions'
+import { getAssistantRuntimeRunOutcome } from '@/src/lib/runAnnouncements'
 import {
   type ExtendedThreadMessageLike,
   useChatStore,
@@ -87,6 +96,7 @@ import {
   useSettingsStore,
 } from '@/src/stores/settingsStore'
 import {
+  type ChatModeOptions,
   formatModeLabel,
   getComposerSubmitMode,
   getModeDescription,
@@ -101,6 +111,7 @@ import {
 } from '../lib/history-rail'
 import { BranchPicker } from './branch-picker'
 import { useChatUi, useDisclaimerGateOpen } from './chat-ui-context'
+import { ChatbotAvatar } from './chatbot-avatar'
 import { useDictationContext } from './dictation-context'
 import {
   DictationButton,
@@ -108,8 +119,8 @@ import {
   useDictationErrorMessage,
 } from './dictation-controls'
 import { DocumentNoticeGate } from './document-notice-modal'
-import { HistoryRail } from './history-rail'
 import { DocumentPreviewModal } from './document-preview-modal'
+import { HistoryRail } from './history-rail'
 import { MessageAttachments } from './message-attachments'
 import { AssistantMessageParts } from './message-parts'
 import { hasChatError, isStoppedWithoutText } from './message-parts-state'
@@ -121,23 +132,45 @@ import {
 import { ModeSwitcher } from './mode-switcher'
 import { SourcesSection } from './sources-section'
 import { formatCredits } from './thread-credits-format'
+import {
+  ThreadWelcomeCapabilities,
+  type ThreadWelcomeCapability,
+} from './thread-welcome-capabilities'
 import { actionBarButtonClassName } from './ui/action-bar-button'
 import { Tooltip, TooltipContent, TooltipTrigger } from './ui/tooltip'
 
+// Re-exported for backward compatibility: callers (e.g. manage-assistant.tsx)
+// import this type from './thread' — the type itself now lives in
+// './thread-welcome-capabilities' alongside the component that uses it.
+export type { ThreadWelcomeCapability }
+
 type ThreadProps = {
   chatbotAvatar: string
+  chatbotFallbackIcon?: ComponentType<{ className?: string }>
   chatbotName: string
+  contextLabel?: string | null
+  contextualSuggestions?: boolean
+  // Fully resolved suggestion list (e.g. from `getManageSuggestions`). When
+  // provided, this takes precedence over the default student suggestions.
+  suggestions?: ThreadSuggestion[]
+  // Friendly greeting shown above the suggestions (e.g. the manage assistant).
+  // When unset, the welcome falls back to `Ask {chatbotName}`.
+  welcomeMessage?: string
+  // Short capability bullets (icon + text) shown between the greeting and the
+  // suggestions (e.g. the manage assistant explaining what it can help with).
+  // When unset/empty, nothing extra is rendered.
+  capabilities?: ThreadWelcomeCapability[]
+  // One-line note shown below the capability bullets (e.g. clarifying the
+  // assistant's limits). Ignored when `capabilities` is unset/empty.
+  limitsNote?: string
+  maxImageAttachments?: number
+  allowDocumentAttachments?: boolean
+  initialModeOptions?: ChatModeOptions
+  initialModeOptionsAreFallback?: boolean
 }
 const EMPTY_REMOVED_ATTACHMENT_KEYS: string[] = []
 const EMPTY_MESSAGES: ExtendedThreadMessageLike[] = []
 const ChatbotAvatarContext = createContext('')
-
-const formatTitleCase = (value: string) =>
-  value
-    .split(/[\s_-]+/)
-    .filter(Boolean)
-    .map((part) => part.charAt(0).toUpperCase() + part.slice(1))
-    .join(' ')
 
 type ImageAttachment = {
   id?: string
@@ -201,6 +234,7 @@ const MessageMetadata: FC<{ includeCredits?: boolean }> = ({
     createdAt: Date
   }
   const modelOptions = useSettingsStore((state) => state.modelOptions)
+  const modeOptions = useEffectiveModeOptions()
   const t = useTranslations()
   const format = useFormatter()
   // A ticking `now`, not `new Date()`: the caption is rendered once and its
@@ -231,13 +265,9 @@ const MessageMetadata: FC<{ includeCredits?: boolean }> = ({
     typeof custom.creditsUsed === 'number' ? custom.creditsUsed : null
 
   // Same label the mode switcher shows, so the caption under an answer does not
-  // read "Explainer" in German while the live pill reads "Erklärer". Unknown
-  // per-chatbot keys have no translation and keep their raw name.
-  const modeLabel = !chatMode
-    ? null
-    : isKnownMode(chatMode)
-      ? t(`chat.modes.${chatMode}`)
-      : formatTitleCase(chatMode)
+  // read "Explainer" in German while the live pill reads "Erklärer", and a
+  // custom mode shows its lecturer-given name rather than its internal key.
+  const modeLabel = chatMode ? formatModeLabel(t, chatMode, modeOptions) : null
   const modelLabel = modelId
     ? modelOptions.find((option) => option.id === modelId)?.name || modelId
     : null
@@ -308,9 +338,26 @@ const MessageMetadata: FC<{ includeCredits?: boolean }> = ({
   )
 }
 
-export const Thread: FC<ThreadProps> = ({ chatbotAvatar, chatbotName }) => {
+export const Thread: FC<ThreadProps> = ({
+  chatbotAvatar,
+  chatbotFallbackIcon,
+  chatbotName,
+  contextLabel,
+  contextualSuggestions,
+  suggestions,
+  welcomeMessage,
+  capabilities,
+  limitsNote,
+  maxImageAttachments = MAX_IMAGE_ATTACHMENTS,
+  allowDocumentAttachments = true,
+  initialModeOptions = {},
+  initialModeOptionsAreFallback = false,
+}) => {
   const t = useTranslations()
   const { embedded } = useChatUi()
+  const resolvedSuggestions =
+    suggestions ??
+    getStudentThreadSuggestions(contextualSuggestions ?? Boolean(contextLabel))
   const isRunning = useAuiState((s) => s.thread.isRunning)
   const activeThread = useChatStore((state) =>
     state.threads.find((thread) => thread.id === state.activeThreadId)
@@ -327,7 +374,9 @@ export const Thread: FC<ThreadProps> = ({ chatbotAvatar, chatbotName }) => {
       data-cy="chat-thread"
       className="bg-background relative box-border flex min-h-0 flex-1 flex-col overflow-hidden"
       style={{
-        ['--thread-max-width' as string]: embedded ? '100%' : '60rem',
+        ['--thread-max-width' as string]: embedded
+          ? 'min(100%, 48rem)'
+          : '60rem',
       }}
     >
       <ThreadRunAnnouncer />
@@ -354,7 +403,7 @@ export const Thread: FC<ThreadProps> = ({ chatbotAvatar, chatbotName }) => {
         className={twMerge(
           'focus-visible:ring-ring flex min-h-0 flex-1 flex-col items-center bg-inherit focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-inset',
           embedded
-            ? 'scrollbar-none overscroll-contain overflow-y-auto px-2 pb-24 pt-2'
+            ? 'scrollbar-none overscroll-contain overflow-y-auto px-2 pb-2 pt-2'
             : twMerge(
                 'overscroll-contain overflow-y-scroll px-2 pb-4 pt-2 sm:px-4 sm:pt-8',
                 showHistoryRail && 'pt-14 md:pl-10 md:pt-8'
@@ -363,15 +412,35 @@ export const Thread: FC<ThreadProps> = ({ chatbotAvatar, chatbotName }) => {
       >
         <ThreadWelcome
           chatbotAvatar={chatbotAvatar}
+          chatbotFallbackIcon={chatbotFallbackIcon}
           chatbotName={chatbotName}
+          contextLabel={contextLabel}
+          suggestions={resolvedSuggestions}
+          welcomeMessage={welcomeMessage}
+          capabilities={capabilities}
+          limitsNote={limitsNote}
+          initialModeOptions={initialModeOptions}
+          initialModeOptionsAreFallback={initialModeOptionsAreFallback}
         />
 
         <ChatbotAvatarContext.Provider value={chatbotAvatar}>
           <ThreadPrimitive.Messages>
             {({ message }) => {
-              if (message.composer.isEditing) return <EditComposer />
+              if (message.composer.isEditing) {
+                return (
+                  <EditComposer
+                    maxImageAttachments={maxImageAttachments}
+                    allowDocumentAttachments={allowDocumentAttachments}
+                  />
+                )
+              }
               if (message.role === 'user') return <UserMessage />
-              return <AssistantMessage />
+              return (
+                <AssistantMessage
+                  chatbotAvatar={chatbotAvatar}
+                  chatbotFallbackIcon={chatbotFallbackIcon}
+                />
+              )
             }}
           </ThreadPrimitive.Messages>
         </ChatbotAvatarContext.Provider>
@@ -381,14 +450,17 @@ export const Thread: FC<ThreadProps> = ({ chatbotAvatar, chatbotName }) => {
         className={twMerge(
           'z-10 flex w-full flex-col items-center justify-end',
           embedded
-            ? 'absolute bottom-0 left-0 right-0 px-2 pb-2'
+            ? 'relative shrink-0 px-2 pb-[max(0.25rem,env(safe-area-inset-bottom))]'
             : 'relative shrink-0 px-2 pb-[max(1rem,env(safe-area-inset-bottom))] sm:px-4'
         )}
       >
         <div className="from-background bg-linear-to-t pointer-events-none absolute inset-x-0 bottom-full h-12 to-transparent" />
         {!embedded && <ThreadScrollToBottom />}
         {hasAvailableMode ? (
-          <Composer />
+          <Composer
+            maxImageAttachments={maxImageAttachments}
+            allowDocumentAttachments={allowDocumentAttachments}
+          />
         ) : (
           <p
             role="status"
@@ -398,10 +470,8 @@ export const Thread: FC<ThreadProps> = ({ chatbotAvatar, chatbotName }) => {
             {t('chat.composer.modeUnavailable')}
           </p>
         )}
-        {/* S6: standalone-only, same as ThreadScrollToBottom above — an
-            embedded widget has little vertical room and the embedding page
-            already carries the disclaimer context. */}
-        {!embedded && hasAvailableMode && <ComposerHint />}
+        {hasAvailableMode && <ModeSessionStatus />}
+        {hasAvailableMode && <ComposerHint />}
       </div>
     </ThreadPrimitive.Root>
   )
@@ -412,12 +482,59 @@ export const Thread: FC<ThreadProps> = ({ chatbotAvatar, chatbotName }) => {
  * four state transitions are announced — never the streamed tokens, which
  * would talk over the reader for the whole answer.
  *
- * The end of a run is read from the store's `lastRunOutcome` rather than from
- * `isRunning` alone, because cancelling clears the running flag before the
- * response hook records the outcome: a running-only signal announces a
- * stopped answer as a completed one.
+ * Participant chat reads the store's `lastRunOutcome`; owner preview maps the
+ * assistant runtime's terminal message status. Both avoid treating a cleared
+ * running flag as a completed answer when the run was stopped or failed.
  */
 const ThreadRunAnnouncer: FC = () => {
+  const { variant } = useChatUi()
+  return variant === 'owner-preview' ? (
+    <AssistantRuntimeRunAnnouncer />
+  ) : (
+    <ParticipantRunAnnouncer />
+  )
+}
+
+const AssistantRuntimeRunAnnouncer: FC = () => {
+  const t = useTranslations()
+  const isRunning = useAuiState((state) => state.thread.isRunning)
+  const lastMessageStatus = useAuiState(
+    (state) => state.thread.messages.at(-1)?.status ?? null
+  )
+  const [announcement, setAnnouncement] = useState('')
+  const wasRunningRef = useRef(false)
+
+  useEffect(() => {
+    if (isRunning) {
+      if (!wasRunningRef.current) {
+        setAnnouncement(t('chat.thread.runStarted'))
+      }
+      wasRunningRef.current = true
+      return
+    }
+
+    if (!wasRunningRef.current) return
+    wasRunningRef.current = false
+
+    const outcome = getAssistantRuntimeRunOutcome(lastMessageStatus)
+    if (!outcome) return
+
+    const messageKey = {
+      completed: 'chat.thread.runCompleted',
+      error: 'chat.thread.runFailed',
+      stopped: 'chat.thread.runStopped',
+    } as const
+    setAnnouncement(t(messageKey[outcome]))
+  }, [isRunning, lastMessageStatus, t])
+
+  return (
+    <div data-cy="chat-run-status" role="status" className="sr-only">
+      {announcement}
+    </div>
+  )
+}
+
+const ParticipantRunAnnouncer: FC = () => {
   const t = useTranslations()
   const activeThreadId = useChatStore((state) => state.activeThreadId)
   const isRunning = useChatStore(
@@ -531,20 +648,50 @@ const ThinkingDots: FC = () => {
 
 const ThreadWelcome: FC<{
   chatbotAvatar: string
+  chatbotFallbackIcon?: ComponentType<{ className?: string }>
   chatbotName: string
-}> = ({ chatbotAvatar, chatbotName }) => {
+  contextLabel?: string | null
+  suggestions?: ThreadSuggestion[]
+  welcomeMessage?: string
+  capabilities?: ThreadWelcomeCapability[]
+  limitsNote?: string
+  initialModeOptions?: ChatModeOptions
+  initialModeOptionsAreFallback?: boolean
+}> = ({
+  chatbotAvatar,
+  chatbotFallbackIcon,
+  chatbotName,
+  contextLabel,
+  suggestions,
+  welcomeMessage,
+  capabilities,
+  limitsNote,
+  initialModeOptions = {},
+  initialModeOptionsAreFallback = false,
+}) => {
   const t = useTranslations()
+  const { embedded } = useChatUi()
   const selectedMode = useSettingsStore((state) => state.selectedMode)
   const modeOptions = useEffectiveModeOptions()
   const activeMode = resolveSelectedMode(modeOptions, selectedMode)
-  const modeLabel = activeMode ? formatModeLabel(t, activeMode) : null
+  const modeLabel = activeMode
+    ? formatModeLabel(t, activeMode, modeOptions)
+    : null
   const modeDescription = activeMode
     ? getModeDescription(t, activeMode, modeOptions)
     : null
-
+  const customModeWelcome =
+    !welcomeMessage && !isKnownMode(activeMode)
+      ? modeOptions[activeMode]?.welcomeMessage
+      : undefined
   return (
     <AuiIf condition={(s) => s.thread.isEmpty}>
-      <div className="aui-thread-welcome-root mx-auto my-0 flex w-full max-w-[var(--thread-max-width)] flex-grow flex-col sm:my-auto">
+      <div
+        className={twMerge(
+          'aui-thread-welcome-root mx-auto my-0 flex w-full max-w-[var(--thread-max-width)] flex-grow flex-col sm:my-auto',
+          embedded ? 'px-2' : ''
+        )}
+      >
         <div className="aui-thread-welcome-center relative flex w-full flex-none flex-col items-center justify-center py-8 sm:flex-grow sm:py-0">
           {/* Faint branded accent behind the greeting — restrained, no new assets. */}
           <div
@@ -553,31 +700,61 @@ const ThreadWelcome: FC<{
           />
           <div
             data-cy="chat-welcome-message"
-            className="aui-thread-welcome-message relative flex size-full flex-col items-center justify-center px-8 text-center"
+            className="aui-thread-welcome-message relative flex size-full flex-col items-center justify-center px-4 text-center sm:px-8"
           >
-            {chatbotAvatar && (
-              <Image
-                src={`${process.env.NEXT_PUBLIC_AVATAR_BASE_PATH}/${chatbotAvatar}.svg`}
-                alt=""
-                width={56}
-                height={56}
-                unoptimized
-                className="ring-border animate-in fade-in slide-in-from-bottom-2 mb-4 rounded-full bg-white ring-1 duration-300 motion-reduce:animate-none"
-              />
+            {/* `ChatbotAvatar` (not a bare `Image`): the manage assistant has
+                no avatar asset and renders its fallback icon instead. */}
+            <ChatbotAvatar
+              avatar={chatbotAvatar}
+              fallbackIcon={chatbotFallbackIcon}
+              className={twMerge(
+                'text-uzh-blue ring-border animate-in fade-in slide-in-from-bottom-2 mb-4 bg-white ring-1 duration-300 motion-reduce:animate-none',
+                embedded ? 'size-14' : 'size-16'
+              )}
+              iconClassName={embedded ? 'size-6' : 'size-7'}
+            />
+            {welcomeMessage && (
+              <div
+                className={twMerge(
+                  'animate-in fade-in slide-in-from-bottom-2 font-semibold duration-300 motion-reduce:animate-none',
+                  embedded ? 'text-base' : 'text-3xl sm:text-4xl'
+                )}
+              >
+                {welcomeMessage}
+              </div>
             )}
-            <h2 className="animate-in fade-in slide-in-from-bottom-2 text-3xl font-semibold text-pretty duration-300 motion-reduce:animate-none sm:text-4xl">
-              {t('chat.thread.welcomeTitle')}
-            </h2>
-            <p
-              data-cy="chat-welcome-chatbot"
-              className="text-muted-foreground animate-in fade-in slide-in-from-bottom-2 mt-2 text-lg text-pretty delay-75 duration-300 motion-reduce:animate-none"
-            >
-              {t('chat.thread.welcomeTo', { chatbot: chatbotName })}
-            </p>
-            <p className="text-muted-foreground animate-in fade-in slide-in-from-bottom-2 mt-1 text-base text-pretty delay-100 duration-300 motion-reduce:animate-none">
-              {t('chat.thread.welcomeSubtitle')}
-            </p>
-            {modeLabel && (
+            {customModeWelcome && (
+              <>
+                <h2 className="text-2xl font-semibold text-pretty sm:text-3xl">
+                  {chatbotName}
+                </h2>
+                <div
+                  data-cy="chat-custom-mode-welcome"
+                  className="mt-4 max-w-xl whitespace-pre-wrap break-words text-left text-base"
+                >
+                  {customModeWelcome}
+                </div>
+              </>
+            )}
+            {!welcomeMessage && !customModeWelcome && !embedded && (
+              <>
+                <h2 className="animate-in fade-in slide-in-from-bottom-2 text-3xl font-semibold text-pretty duration-300 motion-reduce:animate-none sm:text-4xl">
+                  {t('chat.thread.welcomeTitle')}
+                </h2>
+                <p
+                  data-cy="chat-welcome-chatbot"
+                  className="text-muted-foreground animate-in fade-in slide-in-from-bottom-2 mt-2 text-lg text-pretty delay-75 duration-300 motion-reduce:animate-none"
+                >
+                  {t('chat.thread.welcomeTo', { chatbot: chatbotName })}
+                </p>
+                {isKnownMode(activeMode) && (
+                  <p className="text-muted-foreground animate-in fade-in slide-in-from-bottom-2 mt-1 text-base text-pretty delay-100 duration-300 motion-reduce:animate-none">
+                    {t('chat.thread.welcomeSubtitle')}
+                  </p>
+                )}
+              </>
+            )}
+            {!welcomeMessage && !embedded && modeLabel && (
               <div
                 data-cy="chat-welcome-mode"
                 className="border-border bg-muted/60 text-foreground animate-in fade-in slide-in-from-bottom-2 mt-5 max-w-md rounded-xl border px-4 py-3 text-left text-sm shadow-sm delay-150 duration-300 motion-reduce:animate-none"
@@ -600,9 +777,24 @@ const ThreadWelcome: FC<{
                 ) : null}
               </div>
             )}
+            {contextLabel && (
+              <p className="text-muted-foreground mt-1 max-w-xs text-xs">
+                {contextLabel}
+              </p>
+            )}
+            {capabilities && capabilities.length > 0 && (
+              <ThreadWelcomeCapabilities
+                capabilities={capabilities}
+                limitsNote={limitsNote}
+              />
+            )}
           </div>
         </div>
-        <ThreadWelcomeSuggestions />
+        <ThreadWelcomeSuggestions
+          suggestions={suggestions}
+          initialModeOptions={initialModeOptions}
+          initialModeOptionsAreFallback={initialModeOptionsAreFallback}
+        />
       </div>
     </AuiIf>
   )
@@ -610,21 +802,43 @@ const ThreadWelcome: FC<{
 
 const SUGGESTION_DELAY_CLASSNAMES = ['delay-150', 'delay-200']
 
-const ThreadWelcomeSuggestions: FC = () => {
+const ThreadWelcomeSuggestions: FC<{
+  suggestions?: ThreadSuggestion[]
+  initialModeOptions: ChatModeOptions
+  initialModeOptionsAreFallback?: boolean
+}> = ({ suggestions: customSuggestions }) => {
   const t = useTranslations()
   const selectedMode = useSettingsStore((state) => state.selectedMode)
   const modeOptions = useEffectiveModeOptions()
 
-  if (Object.keys(modeOptions).length === 0) return null
+  if (!customSuggestions && Object.keys(modeOptions).length === 0) return null
 
   const activeMode = resolveSelectedMode(modeOptions, selectedMode)
-  const suggestions = getThreadSuggestions(activeMode)
+  const modeSuggestions = !isKnownMode(activeMode)
+    ? modeOptions[activeMode]?.starterPrompts?.map((prompt, index) => ({
+        id: `${activeMode}-starter-${index}`,
+        text: prompt,
+        prompt,
+      }))
+    : undefined
+  const items: ThreadSuggestion[] =
+    customSuggestions ??
+    modeSuggestions ??
+    getThreadSuggestions(activeMode).map((suggestion) => ({
+      id: suggestion.id,
+      text: t(`chat.suggestions.${suggestion.id}`),
+      prompt: t(`chat.suggestions.${suggestion.id}Prompt`),
+    }))
+
+  // Modes without starters render no section: a heading and editing hint
+  // above an empty grid would promise cards that are not there.
+  if (items.length === 0) return null
 
   return (
     <section
       aria-label={t('chat.suggestions.sectionLabel')}
       data-cy="chat-welcome-suggestions"
-      className="mt-4 w-full px-8"
+      className="mt-4 w-full px-4 sm:px-8"
     >
       <p
         data-cy="chat-welcome-suggestion-hint"
@@ -633,15 +847,15 @@ const ThreadWelcomeSuggestions: FC = () => {
         {t('chat.suggestions.editHint')}
       </p>
       <div className="grid w-full grid-cols-1 gap-3 sm:grid-cols-2">
-        {suggestions.map((suggestion, index) => (
+        {items.map((suggestion, index) => (
           <ThreadPrimitive.Suggestion
             key={suggestion.id}
             data-cy="chat-welcome-suggestion"
             className={twMerge(
-              'border-foreground/15 bg-background hover:border-primary/30 hover:bg-accent animate-in fade-in slide-in-from-bottom-2 min-h-11 rounded-lg border p-3 text-left text-sm shadow-sm transition-colors duration-300 motion-reduce:animate-none',
+              'border-foreground/15 bg-background hover:border-primary/30 hover:bg-accent animate-in fade-in slide-in-from-bottom-2 min-h-11 whitespace-pre-wrap break-words rounded-lg border p-3 text-left text-sm shadow-sm transition-colors duration-300 motion-reduce:animate-none',
               SUGGESTION_DELAY_CLASSNAMES[index] ?? 'delay-200'
             )}
-            prompt={t(`chat.suggestions.${suggestion.id}Prompt`)}
+            prompt={suggestion.prompt}
             send={false}
             clearComposer
             onClick={() => {
@@ -655,12 +869,45 @@ const ThreadWelcomeSuggestions: FC = () => {
                 ?.focus()
             }}
           >
-            {t(`chat.suggestions.${suggestion.id}`)}
+            {suggestion.text}
           </ThreadPrimitive.Suggestion>
         ))}
       </div>
     </section>
   )
+}
+
+// Contextual suggestions for the student/pwa assistant while a question is
+// active. The manage assistant derives its suggestions from the active manage
+// surface instead (see `getManageSuggestions` in
+// `@/src/lib/config/manageSuggestions`), and the default (non-contextual)
+// student set comes from i18n via `getThreadSuggestions` above.
+function getStudentThreadSuggestions(
+  contextual: boolean
+): ThreadSuggestion[] | undefined {
+  // `undefined` (not `[]`) so ThreadWelcomeSuggestions falls back to the
+  // default i18n student set.
+  if (!contextual) return undefined
+
+  return [
+    {
+      id: 'explain-question',
+      text: 'Explain this question',
+      prompt:
+        'Explain the current question in simpler terms without revealing the answer.',
+    },
+    {
+      id: 'small-hint',
+      text: 'Give me a hint',
+      prompt:
+        'Give me a small hint for the current question without giving away the answer.',
+    },
+    {
+      id: 'connect-concept',
+      text: 'Connect the concept',
+      prompt: 'How does the current question connect to the course material?',
+    },
+  ]
 }
 
 const AttachmentErrorBanner: FC<{
@@ -687,7 +934,10 @@ const AttachmentErrorBanner: FC<{
   )
 }
 
-const Composer: FC = () => {
+const Composer: FC<{
+  maxImageAttachments: number
+  allowDocumentAttachments: boolean
+}> = ({ maxImageAttachments, allowDocumentAttachments }) => {
   const t = useTranslations()
   const { embedded } = useChatUi()
   const disclaimerGateOpen = useDisclaimerGateOpen()
@@ -718,7 +968,12 @@ const Composer: FC = () => {
   return (
     <ComposerDropzone
       setError={setAttachmentError}
-      className="w-full max-w-3xl"
+      maxImageAttachments={maxImageAttachments}
+      allowDocumentAttachments={allowDocumentAttachments}
+      className={twMerge(
+        'w-full max-w-3xl',
+        embedded && 'max-w-[var(--thread-max-width)]'
+      )}
       roundedClass="rounded-3xl"
     >
       <ComposerPrimitive.Root
@@ -739,17 +994,19 @@ const Composer: FC = () => {
         <div className="flex w-full items-center">
           <ComposerAttachButton
             setError={setAttachmentError}
+            maxImageAttachments={maxImageAttachments}
+            allowDocumentAttachments={allowDocumentAttachments}
             dataCy="chat-composer"
           />
           <ComposerPrimitive.Input
             data-cy="chat-composer-input"
             ref={inputRef}
             rows={1}
-            autoFocus={!disclaimerGateOpen}
+            autoFocus={!embedded && !disclaimerGateOpen}
             placeholder={t('chat.composer.placeholder')}
             className={twMerge(
               'placeholder:text-muted-foreground flex-grow cursor-text resize-none border-none bg-transparent px-2 text-base outline-none focus:ring-0 disabled:cursor-not-allowed',
-              embedded ? 'max-h-20 py-2' : 'max-h-40 py-4'
+              embedded ? 'max-h-20 py-1.5 text-sm leading-6' : 'max-h-40 py-4'
             )}
           />
           <DictationButton />
@@ -772,7 +1029,7 @@ const ComposerHint: FC = () => {
   return (
     <p
       data-cy="chat-composer-hint"
-      className="text-muted-foreground mt-1.5 w-full max-w-3xl px-2 text-center text-xs"
+      className="text-muted-foreground mt-1 w-full max-w-3xl px-2 text-center text-xs"
     >
       {t('chat.composer.disclaimerHint')}
     </p>
@@ -783,10 +1040,12 @@ const useComposerAttachmentLimit = ({
   setError,
   currentCount,
   currentDocumentCount,
+  maxImageAttachments,
 }: {
   setError: (msg: string | null) => void
   currentCount?: number
   currentDocumentCount?: number
+  maxImageAttachments: number
 }) => {
   const t = useTranslations()
   const aui = useAui()
@@ -796,7 +1055,7 @@ const useComposerAttachmentLimit = ({
     currentCount == null ? 0 : Math.max(0, currentCount - composerImageCount)
   const maxComposerImageCount = Math.max(
     0,
-    MAX_IMAGE_ATTACHMENTS - existingImageCount
+    maxImageAttachments - existingImageCount
   )
   const composerDocumentCount = attachments.length - composerImageCount
   const existingDocumentCount =
@@ -829,7 +1088,7 @@ const useComposerAttachmentLimit = ({
     setError(
       overflowImageIndexes.length > 0
         ? t('chat.composer.attachmentLimitError', {
-            max: MAX_IMAGE_ATTACHMENTS,
+            max: maxImageAttachments,
           })
         : t('chat.composer.documentLimitError', {
             max: MAX_DOCUMENT_ATTACHMENTS,
@@ -851,6 +1110,7 @@ const useComposerAttachmentLimit = ({
     aui,
     maxComposerDocumentCount,
     maxComposerImageCount,
+    maxImageAttachments,
     setError,
     t,
   ])
@@ -929,6 +1189,8 @@ const ComposerDropzone: FC<
     setError: (msg: string | null) => void
     currentCount?: number
     currentDocumentCount?: number
+    maxImageAttachments: number
+    allowDocumentAttachments: boolean
     className?: string
     roundedClass: string
   }>
@@ -936,18 +1198,31 @@ const ComposerDropzone: FC<
   setError,
   currentCount,
   currentDocumentCount,
+  maxImageAttachments,
+  allowDocumentAttachments,
   className,
   roundedClass,
   children,
 }) => {
-  useComposerAttachmentLimit({ setError, currentCount, currentDocumentCount })
+  useComposerAttachmentLimit({
+    setError,
+    currentCount,
+    currentDocumentCount,
+    maxImageAttachments,
+  })
   useAttachmentErrorHandling(setError)
+  const supportsImages = useSupportsImageAttachments()
+  const attachmentsEnabled = canUseComposerAttachments({
+    supportsImages,
+    maxImageAttachments,
+    supportsDocuments: allowDocumentAttachments,
+  })
 
-  // Documents are always accepted, so the dropzone stays enabled even when
-  // the selected model cannot read images.
+  // Document-capable runtimes accept text independently of image support.
   return (
     <ComposerPrimitive.AttachmentDropzone
       data-testid="composer-dropzone"
+      disabled={!attachmentsEnabled}
       className={twMerge(
         'data-[dragging]:ring-primary/40 group relative transition-colors data-[dragging]:ring-2',
         roundedClass,
@@ -955,14 +1230,20 @@ const ComposerDropzone: FC<
       )}
     >
       {children}
-      <ComposerDropOverlay roundedClass={roundedClass} />
+      {attachmentsEnabled && (
+        <ComposerDropOverlay
+          roundedClass={roundedClass}
+          allowDocumentAttachments={allowDocumentAttachments}
+        />
+      )}
     </ComposerPrimitive.AttachmentDropzone>
   )
 }
 
-const ComposerDropOverlay: FC<{ roundedClass: string }> = ({
-  roundedClass,
-}) => {
+const ComposerDropOverlay: FC<{
+  roundedClass: string
+  allowDocumentAttachments: boolean
+}> = ({ roundedClass, allowDocumentAttachments }) => {
   const t = useTranslations()
   return (
     <div
@@ -971,7 +1252,11 @@ const ComposerDropOverlay: FC<{ roundedClass: string }> = ({
         roundedClass
       )}
     >
-      {t('chat.composer.dropFiles')}
+      {t(
+        allowDocumentAttachments
+          ? 'chat.composer.dropFiles'
+          : 'chat.composer.dropImages'
+      )}
     </div>
   )
 }
@@ -1417,8 +1702,17 @@ const ComposerAttachButton: FC<{
   setError: (msg: string | null) => void
   currentCount?: number
   currentDocumentCount?: number
+  maxImageAttachments: number
+  allowDocumentAttachments: boolean
   dataCy?: string
-}> = ({ setError, currentCount, currentDocumentCount, dataCy }) => {
+}> = ({
+  setError,
+  currentCount,
+  currentDocumentCount,
+  maxImageAttachments,
+  allowDocumentAttachments,
+  dataCy,
+}) => {
   const t = useTranslations()
   const { embedded } = useChatUi()
   const aui = useAui()
@@ -1435,8 +1729,9 @@ const ComposerAttachButton: FC<{
   const documentCount = currentDocumentCount ?? composerDocumentCount
   const inputRef = useRef<HTMLInputElement | null>(null)
   const supportsImages = useSupportsImageAttachments()
-  const canAddImages = supportsImages && imageCount < MAX_IMAGE_ATTACHMENTS
-  const canAddDocuments = documentCount < MAX_DOCUMENT_ATTACHMENTS
+  const canAddImages = supportsImages && imageCount < maxImageAttachments
+  const canAddDocuments =
+    allowDocumentAttachments && documentCount < MAX_DOCUMENT_ATTACHMENTS
 
   if (!canAddImages && !canAddDocuments) return null
 
@@ -1444,7 +1739,7 @@ const ComposerAttachButton: FC<{
     if (!files || files.length === 0) return
     // Limits are checked here, before any file is read.
     let remainingImages = canAddImages
-      ? Math.max(0, MAX_IMAGE_ATTACHMENTS - imageCount)
+      ? Math.max(0, maxImageAttachments - imageCount)
       : 0
     let remainingDocuments = Math.max(
       0,
@@ -1461,7 +1756,7 @@ const ComposerAttachButton: FC<{
         rejectedImages++
         return false
       }
-      if (remainingDocuments > 0) {
+      if (canAddDocuments && remainingDocuments > 0) {
         remainingDocuments--
         return true
       }
@@ -1480,7 +1775,7 @@ const ComposerAttachButton: FC<{
 
     if (rejectedImages > 0) {
       setError(
-        t('chat.composer.attachmentLimitError', { max: MAX_IMAGE_ATTACHMENTS })
+        t('chat.composer.attachmentLimitError', { max: maxImageAttachments })
       )
     } else if (rejectedDocuments > 0) {
       setError(
@@ -1520,7 +1815,11 @@ const ComposerAttachButton: FC<{
             ? 'size-11 fine-pointer:size-8'
             : 'size-11 fine-pointer:size-9'
         )}
-        aria-label={t('chat.composer.attachFile')}
+        aria-label={t(
+          allowDocumentAttachments
+            ? 'chat.composer.attachFile'
+            : 'chat.composer.attachImage'
+        )}
       >
         <PaperclipIcon className={embedded ? 'size-4' : 'size-5'} />
       </button>
@@ -1673,6 +1972,7 @@ function getEditTooltip(
 
 const UserMessage: FC = () => {
   const message = useAuiState((s) => s.message) as MessageWithCustomMetadata
+  const { embedded } = useChatUi()
   const attachments = getMessageAttachments(message)
   const documents = getMessageDocuments(message)
 
@@ -1681,11 +1981,19 @@ const UserMessage: FC = () => {
       data-cy="chat-user-message"
       data-history-rail-anchor={getHistoryRailMessageAnchor(message.id)}
       tabIndex={-1}
-      className="animate-in fade-in slide-in-from-bottom-2 focus-visible:ring-ring flex w-full max-w-[var(--thread-max-width)] flex-col items-end gap-y-1 py-2 duration-300 motion-reduce:animate-none focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-offset-0 sm:py-4"
+      className={twMerge(
+        'animate-in fade-in slide-in-from-bottom-2 focus-visible:ring-ring flex w-full max-w-[var(--thread-max-width)] flex-col items-end gap-y-1 py-2 duration-300 motion-reduce:animate-none focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-offset-0 sm:py-4',
+        embedded && 'py-1 sm:py-1.5'
+      )}
     >
       <div
         data-cy="chat-user-message-content"
-        className="bg-muted text-foreground max-w-[calc(var(--thread-max-width)*0.8)] break-words rounded-2xl px-5 py-2.5"
+        className={twMerge(
+          'bg-muted text-foreground break-words rounded-2xl px-5 py-2.5',
+          embedded
+            ? 'max-w-[80%] px-3.5 py-1.5 text-sm leading-6'
+            : 'max-w-[calc(var(--thread-max-width)*0.8)]'
+        )}
       >
         {attachments.length > 0 && (
           <MessageAttachments
@@ -1712,6 +2020,8 @@ const UserMessage: FC = () => {
         )}
         <MessagePrimitive.Content />
       </div>
+
+      <LearningContextCard message={message} />
 
       <div className="flex min-h-6 items-center">
         <UserActionBar />
@@ -1793,7 +2103,10 @@ const UserActionBar: FC = () => {
   )
 }
 
-const EditComposer: FC = () => {
+const EditComposer: FC<{
+  maxImageAttachments: number
+  allowDocumentAttachments: boolean
+}> = ({ maxImageAttachments, allowDocumentAttachments }) => {
   const t = useTranslations()
   const { showMessageActions } = useChatUi()
   const message = useAuiState((s) => s.message) as MessageWithCustomMetadata
@@ -1913,6 +2226,8 @@ const EditComposer: FC = () => {
       setError={setAttachmentError}
       currentCount={totalImageCount}
       currentDocumentCount={totalDocumentCount}
+      maxImageAttachments={maxImageAttachments}
+      allowDocumentAttachments={allowDocumentAttachments}
       className="my-4 w-full max-w-[var(--thread-max-width)]"
       roundedClass="rounded-2xl"
     >
@@ -1984,6 +2299,8 @@ const EditComposer: FC = () => {
             setError={setAttachmentError}
             currentCount={totalImageCount}
             currentDocumentCount={totalDocumentCount}
+            maxImageAttachments={maxImageAttachments}
+            allowDocumentAttachments={allowDocumentAttachments}
             dataCy="chat-edit-composer"
           />
           <div className="ml-auto flex items-center justify-center gap-2">
@@ -2060,8 +2377,33 @@ const ImageAnalyzedChip: FC = () => {
   )
 }
 
-const AssistantMessage: FC = () => {
-  const chatbotAvatar = useContext(ChatbotAvatarContext)
+// A failed assistant turn (mid-stream provider error, or a stream that never
+// produced any content at all) leaves the message in
+// status: {type: "incomplete", reason: "error"}. MessagePrimitive.Error only
+// renders its children for that exact state, so this note stays invisible
+// for every other message. Deliberately minimal: a muted inline note, no
+// retry button (the composer already accepts a new message) and no toast.
+// The raw SDK error text is not shown here — it can contain internal details
+// (e.g. a JSON parse error) that are not meant for end users.
+const AssistantMessageError: FC = () => (
+  <MessagePrimitive.Error>
+    <ErrorPrimitive.Root
+      data-cy="chat-assistant-message-error"
+      className="mt-1.5 inline-flex items-center rounded-md bg-red-50 px-2 py-1 text-xs text-red-600"
+    >
+      <ErrorPrimitive.Message>
+        Something went wrong. Please try again.
+      </ErrorPrimitive.Message>
+    </ErrorPrimitive.Root>
+  </MessagePrimitive.Error>
+)
+
+const AssistantMessage: FC<{
+  chatbotAvatar: string
+  chatbotFallbackIcon?: ComponentType<{ className?: string }>
+}> = ({ chatbotAvatar: explicitAvatar, chatbotFallbackIcon }) => {
+  const contextAvatar = useContext(ChatbotAvatarContext)
+  const chatbotAvatar = explicitAvatar || contextAvatar
   const { embedded } = useChatUi()
   const messageId = useAuiState((s) => s.message.id)
   // True only for the synthetic empty assistant message the runtime injects
@@ -2092,10 +2434,23 @@ const AssistantMessage: FC = () => {
       tabIndex={-1}
       className={twMerge(
         'animate-in fade-in slide-in-from-bottom-2 focus-visible:ring-ring relative grid w-full max-w-[var(--thread-max-width)] grid-rows-[auto_1fr] py-2 duration-300 motion-reduce:animate-none focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-offset-0 sm:py-4',
-        embedded ? 'grid-cols-[auto_1fr]' : 'grid-cols-[auto_auto_1fr]'
+        embedded
+          ? 'grid-cols-[auto_1fr] gap-x-2 py-1 sm:py-1.5'
+          : 'grid-cols-[auto_auto_1fr]'
       )}
     >
-      {!embedded && (
+      {embedded ? (
+        // Compact fallback-capable avatar for the embedded widget (the manage
+        // assistant has no avatar asset and renders its icon instead).
+        <div className="col-start-1 row-span-2 row-start-1 mt-2 flex items-start">
+          <ChatbotAvatar
+            avatar={chatbotAvatar}
+            fallbackIcon={chatbotFallbackIcon}
+            className="text-uzh-blue size-7 border border-gray-200 bg-white"
+            iconClassName="size-3.5"
+          />
+        </div>
+      ) : (
         <div className="col-start-1 row-span-2 row-start-1 mr-2 mt-2 flex items-start pr-1 sm:mr-3 sm:mt-3 sm:pr-2">
           <Image
             src={
@@ -2132,10 +2487,10 @@ const AssistantMessage: FC = () => {
       <div
         data-cy="chat-assistant-message-content"
         className={twMerge(
-          'text-foreground col-span-2 row-start-1 my-1.5 break-words leading-7',
+          'text-foreground row-start-1 my-1.5 break-words leading-7',
           embedded
-            ? 'col-start-1 max-w-full'
-            : 'col-start-2 max-w-[calc(var(--thread-max-width)*0.8)]'
+            ? 'col-start-2 my-0.5 max-w-full text-sm leading-6'
+            : 'col-span-2 col-start-2 max-w-[calc(var(--thread-max-width)*0.8)]'
         )}
       >
         {isPendingEmpty && <ThinkingDots />}
@@ -2148,6 +2503,7 @@ const AssistantMessage: FC = () => {
           {showSources && <SourcesSection />}
         </MessageSourcesProvider>
         <MessageMetadata includeCredits />
+        <AssistantMessageError />
       </div>
 
       <AssistantActionBar embedded={embedded} />

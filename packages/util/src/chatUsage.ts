@@ -102,3 +102,41 @@ export function getDefaultChatAccountUsage(): {
 } {
   return { budgetCredits: 0, usedCredits: 0 }
 }
+
+/**
+ * Default monthly base-class budget for an account with no configured base
+ * usage history. Cost-free base models are covered by the platform, so this is
+ * a guardrail against runaway usage rather than a purchased allowance; the
+ * operations mutation can still set a different value for a single account.
+ * It is granted once per Zurich month and only while the account has no
+ * configured base budget of its own; a configured budget is never raised,
+ * lowered, or replaced by this default.
+ */
+export const DEFAULT_BASE_CHAT_BUDGET_CREDITS = 1
+
+/**
+ * Decides whether an account is entitled to one usage class, ignoring whether
+ * it still has budget left. Cost-free classes need only the account-level AI
+ * approval, because the platform carries them. Cost-carrying classes are
+ * granted through the advanced subscription tier and billed to a cost center,
+ * so both are required: the tier is the grant, and without an address to bill
+ * the class stays closed even for an advanced account.
+ */
+export function isChatUsageClassEntitled({
+  usageClass,
+  aiFeaturesEnabled,
+  aiSubscriptionTier,
+  aiChatbotCostCenter,
+}: {
+  usageClass: 'BASE' | 'ADVANCED'
+  aiFeaturesEnabled: boolean
+  aiSubscriptionTier: 'BASE' | 'ADVANCED'
+  aiChatbotCostCenter: string | null
+}): boolean {
+  if (!aiFeaturesEnabled) return false
+  if (usageClass === 'BASE') return true
+
+  return (
+    aiSubscriptionTier === 'ADVANCED' && Boolean(aiChatbotCostCenter?.trim())
+  )
+}

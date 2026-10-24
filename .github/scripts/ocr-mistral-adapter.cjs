@@ -596,6 +596,10 @@ function createHistoryStore(options = {}) {
           'conflicting native reasoning for an identical turn'
         )
       }
+      // The same turn can be replayed under another conversation scope. That
+      // scope must be able to restore it after compression, and it shares the
+      // retained payload instead of consuming the bound a second time.
+      register(normalized, existing, scope)
       return
     }
     if (entries + 1 > maxEntries || bytes + size > maxBytes) {
@@ -608,6 +612,12 @@ function createHistoryStore(options = {}) {
     delete restorable.index
     const entry = { serialized, size, digest: hashIdentity(restorable) }
     native.set(key, entry)
+    register(normalized, entry, scope)
+    entries += 1
+    bytes += size
+  }
+
+  function register(normalized, entry, scope) {
     const turnKey = reasonedKey(normalized)
     if (turnKey) {
       // Compression rewrites the prefix. Only an exact reasoned turn with one
@@ -622,8 +632,6 @@ function createHistoryStore(options = {}) {
       if (!scopedTurns.has(scoped)) scopedTurns.set(scoped, entry)
       else if (prior?.digest !== entry.digest) scopedTurns.set(scoped, null)
     }
-    entries += 1
-    bytes += size
   }
 
   function restoreAssistant(prefixMessages, message, scope) {
@@ -1435,7 +1443,8 @@ async function startAdapter(options = {}) {
       sendAdapterError(res, new AdapterError('internal_error', 'internal'))
     })
     pendingRequests.add(request)
-    request.then(() => pendingRequests.delete(request))
+    const removeRequest = () => pendingRequests.delete(request)
+    request.then(removeRequest, removeRequest)
   })
   server.on('connection', (socket) => {
     sockets.add(socket)
@@ -2042,7 +2051,7 @@ function commandSummary(args) {
       .trim()
       .split('\n')
       .filter(Boolean)
-      .map(JSON.parse)) {
+      .map((line) => JSON.parse(line))) {
       if (row?.stage !== undefined && row.stage !== 'adapter') continue
       adapterRows.push(row)
       if (row?.schema_version !== 1 || !row?.failures) {
@@ -2486,15 +2495,23 @@ function configureAttempt(configPath, url) {
   let original
   let config
   try {
-    const info = fs.lstatSync(configPath)
-    if (
-      !info.isFile() ||
-      (info.mode & 0o777) !== 0o600 ||
-      info.size > 1024 * 1024
-    ) {
-      throw new Error('invalid file')
+    const descriptor = fs.openSync(
+      configPath,
+      fs.constants.O_RDONLY | fs.constants.O_NOFOLLOW | fs.constants.O_NONBLOCK
+    )
+    try {
+      const info = fs.fstatSync(descriptor)
+      if (
+        !info.isFile() ||
+        (info.mode & 0o777) !== 0o600 ||
+        info.size > 1024 * 1024
+      ) {
+        throw new Error('invalid file')
+      }
+      original = fs.readFileSync(descriptor)
+    } finally {
+      fs.closeSync(descriptor)
     }
-    original = fs.readFileSync(configPath)
     config = JSON.parse(original.toString('utf8'))
     if (!isPlainObject(config) || !isPlainObject(config.llm)) {
       throw new Error('invalid config')

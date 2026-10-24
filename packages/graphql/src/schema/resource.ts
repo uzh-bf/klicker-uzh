@@ -1,17 +1,22 @@
 import * as DB from '@klicker-uzh/prisma/client'
 import type {
+  ChatbotAuthoringRevisionProjection,
+  ChatbotCustomModeConfigInput as ChatbotCustomModeConfigInputShape,
+  ChatbotCustomModeConfig as ChatbotCustomModeConfigShape,
   ChatbotStandardModeConfigInput as ChatbotStandardModeConfigInputShape,
   ChatbotStandardModeConfig as ChatbotStandardModeConfigShape,
   SharingType as SharingTypeEnum,
 } from '@klicker-uzh/types'
+import { CHATBOT_CUSTOM_MODE_MEETING_CLOCKS } from '@klicker-uzh/util'
 import builder from '../builder.js'
 import type {
   ChatAccountUsageLane,
   ChatAccountUsageOverview,
 } from '../services/chatAccountUsage.js'
+import type { ChatbotRevisionSaveInput as ChatbotRevisionSaveInputShape } from '../services/chatbots.js'
 import { CourseListEntryRef, type ICourseListEntry } from './course.js'
 import { PermissionLevel, SharingType } from './sharing.js'
-import { LocaleType } from './user.js'
+import { AiSubscriptionTier, LocaleType } from './user.js'
 
 // ----- ANSWER COLLECTIONS -----
 // #region
@@ -111,12 +116,18 @@ export const ChatUsageClass = builder.enumType('ChatUsageClass', {
   values: Object.values(DB.ChatUsageClass),
 })
 
+export const ChatbotCustomModeMeetingClock = builder.enumType(
+  'ChatbotCustomModeMeetingClock',
+  { values: CHATBOT_CUSTOM_MODE_MEETING_CLOCKS }
+)
+
 export const ChatAccountUsageLaneRef = builder.objectRef<ChatAccountUsageLane>(
   'ChatAccountUsageLane'
 )
 export const ChatAccountUsageLaneType = ChatAccountUsageLaneRef.implement({
   fields: (t) => ({
     usageClass: t.expose('usageClass', { type: ChatUsageClass }),
+    entitled: t.exposeBoolean('entitled'),
     budgetCredits: t.exposeFloat('budgetCredits'),
     usedCredits: t.exposeFloat('usedCredits'),
     remainingCredits: t.exposeFloat('remainingCredits'),
@@ -130,6 +141,12 @@ export const ChatAccountUsageOverviewType =
   ChatAccountUsageOverviewRef.implement({
     fields: (t) => ({
       authorized: t.exposeBoolean('authorized'),
+      advancedModelConfigurationEntitled: t.exposeBoolean(
+        'advancedModelConfigurationEntitled'
+      ),
+      subscriptionTier: t.expose('subscriptionTier', {
+        type: AiSubscriptionTier,
+      }),
       baseModelUsage: t.expose('baseModelUsage', {
         type: ChatAccountUsageLaneRef,
       }),
@@ -209,6 +226,232 @@ export const ChatbotStandardModeConfig = ChatbotStandardModeConfigRef.implement(
   }
 )
 
+export const ChatbotCustomModeInputRef = builder.inputRef<
+  ChatbotCustomModeConfigInputShape['modes'][number]
+>('ChatbotCustomModeInput')
+export const ChatbotCustomModeInput = ChatbotCustomModeInputRef.implement({
+  fields: (t) => ({
+    key: t.string({ required: false }),
+    name: t.string({ required: true }),
+    description: t.string({ required: false }),
+    personaText: t.string({ required: false }),
+    welcomeMessage: t.string({ required: false }),
+    starterPrompts: t.stringList({ required: false }),
+    showReasoning: t.boolean({ required: false }),
+    replyLanguage: t.field({ type: LocaleType, required: false }),
+    meetingClock: t.field({
+      type: ChatbotCustomModeMeetingClock,
+      required: false,
+    }),
+  }),
+})
+
+export const ChatbotCustomModeConfigInputRef =
+  builder.inputRef<ChatbotCustomModeConfigInputShape>(
+    'ChatbotCustomModeConfigInput'
+  )
+export const ChatbotCustomModeConfigInput =
+  ChatbotCustomModeConfigInputRef.implement({
+    fields: (t) => ({
+      modes: t.field({ type: [ChatbotCustomModeInputRef], required: true }),
+    }),
+  })
+
+export const ChatbotCustomModeRef =
+  builder.objectRef<ChatbotCustomModeConfigShape['modes'][number]>(
+    'ChatbotCustomMode'
+  )
+export const ChatbotCustomMode = ChatbotCustomModeRef.implement({
+  fields: (t) => ({
+    key: t.exposeString('key'),
+    name: t.exposeString('name'),
+    description: t.exposeString('description', { nullable: true }),
+    personaText: t.exposeString('personaText', { nullable: true }),
+    welcomeMessage: t.exposeString('welcomeMessage', { nullable: true }),
+    starterPrompts: t.exposeStringList('starterPrompts', { nullable: true }),
+    showReasoning: t.boolean({
+      resolve: (mode) => mode.showReasoning === true,
+    }),
+    replyLanguage: t.field({
+      type: LocaleType,
+      nullable: true,
+      resolve: (mode) => mode.replyLanguage ?? null,
+    }),
+    meetingClock: t.field({
+      type: ChatbotCustomModeMeetingClock,
+      nullable: true,
+      resolve: (mode) => mode.meetingClock ?? null,
+    }),
+  }),
+})
+
+export const ChatbotCustomModeConfigRef =
+  builder.objectRef<ChatbotCustomModeConfigShape>('ChatbotCustomModeConfig')
+export const ChatbotCustomModeConfig = ChatbotCustomModeConfigRef.implement({
+  fields: (t) => ({
+    modes: t.field({
+      type: [ChatbotCustomModeRef],
+      resolve: (config) => config.modes,
+    }),
+  }),
+})
+
+export const ChatbotRevisionMetadataInputRef = builder.inputRef<
+  NonNullable<ChatbotRevisionSaveInputShape['metadata']>
+>('ChatbotRevisionMetadataInput')
+export const ChatbotRevisionMetadataInput =
+  ChatbotRevisionMetadataInputRef.implement({
+    fields: (t) => ({
+      name: t.string({ required: false }),
+      description: t.string({ required: false }),
+      avatar: t.string({ required: false }),
+    }),
+  })
+
+export const ChatbotRevisionModelPolicyInputRef = builder.inputRef<
+  NonNullable<ChatbotRevisionSaveInputShape['modelPolicy']>
+>('ChatbotRevisionModelPolicyInput')
+export const ChatbotRevisionModelPolicyInput =
+  ChatbotRevisionModelPolicyInputRef.implement({
+    fields: (t) => ({
+      modelSelection: t.boolean({ required: true }),
+      allowedModelIds: t.stringList({ required: true }),
+      answerPreferencesEnabled: t.boolean({ required: false }),
+      allowedReasoningEffortsByModel: t.field({
+        type: [ChatbotReasoningConfigInputRef],
+        required: false,
+      }),
+    }),
+  })
+
+export const ChatbotCreditPolicyInputRef = builder.inputRef<
+  NonNullable<ChatbotRevisionSaveInputShape['creditPolicy']>
+>('ChatbotCreditPolicyInput')
+export const ChatbotCreditPolicyInput = ChatbotCreditPolicyInputRef.implement({
+  fields: (t) => ({
+    creditInitialCredits: t.int({ required: true }),
+    creditResetPeriod: t.field({
+      type: CreditResetPeriod,
+      required: true,
+    }),
+    creditResetAmount: t.int({ required: true }),
+    creditMaxCredits: t.int({ required: true }),
+  }),
+})
+
+export const ChatbotRevisionDisclaimerInputRef = builder.inputRef<
+  NonNullable<ChatbotRevisionSaveInputShape['disclaimer']>
+>('ChatbotRevisionDisclaimerInput')
+export const ChatbotRevisionDisclaimerInput =
+  ChatbotRevisionDisclaimerInputRef.implement({
+    fields: (t) => ({
+      title: t.string({ required: true }),
+      introText: t.string({ required: true }),
+      expectedDisclaimerId: t.string({ required: false }),
+    }),
+  })
+
+export const ChatbotRevisionKnowledgeGraphPolicyInputRef = builder.inputRef<
+  NonNullable<ChatbotRevisionSaveInputShape['knowledgeGraphPolicy']>
+>('ChatbotRevisionKnowledgeGraphPolicyInput')
+export const ChatbotRevisionKnowledgeGraphPolicyInput =
+  ChatbotRevisionKnowledgeGraphPolicyInputRef.implement({
+    fields: (t) => ({
+      visible: t.boolean({ required: true }),
+      retrievalEnabled: t.boolean({ required: true }),
+    }),
+  })
+
+export const ChatbotRevisionSaveInputRef =
+  builder.inputRef<ChatbotRevisionSaveInputShape>('ChatbotRevisionSaveInput')
+export const ChatbotRevisionSaveInput = ChatbotRevisionSaveInputRef.implement({
+  fields: (t) => ({
+    metadata: t.field({
+      type: ChatbotRevisionMetadataInputRef,
+      required: false,
+    }),
+    modelPolicy: t.field({
+      type: ChatbotRevisionModelPolicyInputRef,
+      required: false,
+    }),
+    standardModeConfig: t.field({
+      type: ChatbotStandardModeConfigInputRef,
+      required: false,
+    }),
+    customModeConfig: t.field({
+      type: ChatbotCustomModeConfigInputRef,
+      required: false,
+    }),
+    creditPolicy: t.field({
+      type: ChatbotCreditPolicyInputRef,
+      required: false,
+    }),
+    disclaimer: t.field({
+      type: ChatbotRevisionDisclaimerInputRef,
+      required: false,
+    }),
+    knowledgeGraphPolicy: t.field({
+      type: ChatbotRevisionKnowledgeGraphPolicyInputRef,
+      required: false,
+    }),
+  }),
+})
+
+export const ChatbotAuthoringRevisionRef =
+  builder.objectRef<ChatbotAuthoringRevisionProjection>(
+    'ChatbotAuthoringRevision'
+  )
+export const ChatbotAuthoringRevision = ChatbotAuthoringRevisionRef.implement({
+  fields: (t) => ({
+    version: t.exposeInt('version'),
+    status: t.expose('status', { type: ChatbotStatus }),
+    reviewComment: t.exposeString('reviewComment', { nullable: true }),
+    name: t.exposeString('name'),
+    description: t.exposeString('description', { nullable: true }),
+    avatar: t.exposeString('avatar', { nullable: true }),
+    standardModeConfig: t.field({
+      type: ChatbotStandardModeConfigRef,
+      nullable: true,
+      resolve: (revision) => revision.standardModeConfig ?? null,
+    }),
+    customModeConfig: t.field({
+      type: ChatbotCustomModeConfigRef,
+      nullable: true,
+      resolve: (revision) => revision.customModeConfig ?? null,
+    }),
+    modelSelection: t.exposeBoolean('modelSelection'),
+    allowedModelIds: t.exposeStringList('allowedModelIds'),
+    answerPreferencesEnabled: t.exposeBoolean('answerPreferencesEnabled'),
+    allowedReasoningEffortsByModel: t.field({
+      type: [ChatbotReasoningConfigRef],
+      resolve: (revision) =>
+        Object.entries(revision.allowedReasoningEffortsByModel ?? {}).map(
+          ([modelId, efforts]) => ({ modelId, efforts })
+        ),
+    }),
+    creditInitialCredits: t.exposeInt('creditInitialCredits'),
+    creditResetPeriod: t.expose('creditResetPeriod', {
+      type: CreditResetPeriod,
+    }),
+    creditResetAmount: t.exposeInt('creditResetAmount'),
+    creditMaxCredits: t.exposeInt('creditMaxCredits'),
+    disclaimerTitle: t.exposeString('disclaimerTitle', { nullable: true }),
+    disclaimerIntroText: t.exposeString('disclaimerIntroText', {
+      nullable: true,
+    }),
+    publicationUseCase: t.exposeString('publicationUseCase', {
+      nullable: true,
+    }),
+    expectedStudentCount: t.exposeInt('expectedStudentCount', {
+      nullable: true,
+    }),
+    knowledgeGraphVisible: t.exposeBoolean('knowledgeGraphVisible'),
+    knowledgeGraphRetrievalEnabled: t.exposeBoolean(
+      'knowledgeGraphRetrievalEnabled'
+    ),
+  }),
+})
+
 export interface IChatModelCapability {
   id: string
   name: string
@@ -216,6 +459,7 @@ export interface IChatModelCapability {
   fallback: boolean
   supportsReasoning: boolean
   supportedReasoningEfforts: string[]
+  usageClass: DB.ChatUsageClass
 }
 
 export const ChatModelCapabilityRef = builder.objectRef<IChatModelCapability>(
@@ -229,6 +473,7 @@ export const ChatModelCapability = ChatModelCapabilityRef.implement({
     fallback: t.exposeBoolean('fallback'),
     supportsReasoning: t.exposeBoolean('supportsReasoning'),
     supportedReasoningEfforts: t.exposeStringList('supportedReasoningEfforts'),
+    usageClass: t.expose('usageClass', { type: ChatUsageClass }),
   }),
 })
 
@@ -238,10 +483,13 @@ export interface IChatbot {
   description?: string | null
   avatar?: string | null
   standardModeConfig?: ChatbotStandardModeConfigShape | null
+  customModeConfig?: ChatbotCustomModeConfigShape | null
   modelSelection: boolean
   allowedModelIds: string[]
   allowedReasoningEffortsByModel?: IChatbotReasoningConfig[]
   answerPreferencesEnabled: boolean
+  knowledgeGraphVisible: boolean
+  knowledgeGraphRetrievalEnabled: boolean
   creditInitialCredits: number
   creditResetPeriod: DB.CreditResetPeriod
   creditResetAmount: number
@@ -257,7 +505,27 @@ export interface IChatbot {
   usageSummary?: IChatbotUsageSummary | null
   disclaimerSummary?: IChatbotDisclaimerSummary | null
   mcpConfigurations?: IChatbotMcpConfigurationSummary[]
+  enabledKnowledgeBase?: IChatbotKnowledgeBaseSummary | null
+  enabledKnowledgeBases?: IChatbotKnowledgeBaseSummary[]
+  authoringRevision?: ChatbotAuthoringRevisionProjection | null
+  revisionStatus?: DB.ChatbotStatus | null
+  revisionVersion?: number
 }
+
+export interface IChatbotKnowledgeBaseSummary {
+  id: string
+  name: string
+}
+
+export const ChatbotKnowledgeBaseSummaryRef =
+  builder.objectRef<IChatbotKnowledgeBaseSummary>('ChatbotKnowledgeBaseSummary')
+export const ChatbotKnowledgeBaseSummary =
+  ChatbotKnowledgeBaseSummaryRef.implement({
+    fields: (t) => ({
+      id: t.exposeID('id'),
+      name: t.exposeString('name'),
+    }),
+  })
 
 export interface IChatbotPublic {
   id: string
@@ -373,6 +641,11 @@ export const Chatbot = ChatbotRef.implement({
       nullable: true,
       resolve: (chatbot) => chatbot.standardModeConfig ?? null,
     }),
+    customModeConfig: t.field({
+      type: ChatbotCustomModeConfigRef,
+      nullable: true,
+      resolve: (chatbot) => chatbot.customModeConfig ?? null,
+    }),
     modelSelection: t.exposeBoolean('modelSelection'),
     allowedModelIds: t.exposeStringList('allowedModelIds'),
     answerPreferencesEnabled: t.exposeBoolean('answerPreferencesEnabled'),
@@ -380,6 +653,10 @@ export const Chatbot = ChatbotRef.implement({
       type: [ChatbotReasoningConfigRef],
       resolve: (chatbot) => chatbot.allowedReasoningEffortsByModel ?? [],
     }),
+    knowledgeGraphVisible: t.exposeBoolean('knowledgeGraphVisible'),
+    knowledgeGraphRetrievalEnabled: t.exposeBoolean(
+      'knowledgeGraphRetrievalEnabled'
+    ),
     creditInitialCredits: t.exposeInt('creditInitialCredits'),
     creditResetPeriod: t.expose('creditResetPeriod', {
       type: CreditResetPeriod,
@@ -411,7 +688,32 @@ export const Chatbot = ChatbotRef.implement({
     }),
     mcpConfigurations: t.field({
       type: [ChatbotMcpConfigurationSummaryRef],
+      deprecationReason:
+        'Retrieval bindings are internal plumbing and are no longer projected; this field always resolves to an empty list.',
       resolve: (chatbot) => chatbot.mcpConfigurations ?? [],
+    }),
+    enabledKnowledgeBase: t.field({
+      type: ChatbotKnowledgeBaseSummaryRef,
+      nullable: true,
+      deprecationReason:
+        'Use enabledKnowledgeBases for all attached knowledge bases.',
+      resolve: (chatbot) => chatbot.enabledKnowledgeBase ?? null,
+    }),
+    enabledKnowledgeBases: t.field({
+      type: [ChatbotKnowledgeBaseSummaryRef],
+      resolve: (chatbot) => chatbot.enabledKnowledgeBases ?? [],
+    }),
+    authoringRevision: t.field({
+      type: ChatbotAuthoringRevisionRef,
+      nullable: true,
+      resolve: (chatbot) => chatbot.authoringRevision ?? null,
+    }),
+    revisionStatus: t.expose('revisionStatus', {
+      type: ChatbotStatus,
+      nullable: true,
+    }),
+    revisionVersion: t.int({
+      resolve: (chatbot) => chatbot.revisionVersion ?? 0,
     }),
     createdAt: t.expose('createdAt', { type: 'Date', nullable: true }),
     updatedAt: t.expose('updatedAt', { type: 'Date', nullable: true }),

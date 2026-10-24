@@ -115,6 +115,67 @@ does not prove actual on-device dictation or microphone acceptance.
   due to authentication/sandbox errors; no setup change attempted.
 - Main retains coupled integration writes because each policy change crosses
   shared revision/API/UI seams; the explorer owns independent staging mapping.
-- Source-only staging mapping is in progress. No merge started.
+- Merge resolution is staged; the target revision contract carries the flag
+  through save, projection, preview and approval. No protected merge yet.
+- Disposable runtime: sync-v3-into-v3-ai-5f8257b2a1, chat/manage profiles, Blob
+  host port 10013. Installed Volta devrouter 0.5.1 is compatible; the default
+  PATH resolves obsolete 0.1.0. No global tooling change.
+- Focused checks: 11 pnpm/cache and 24 sync/ancestry tests, 117 host CI
+  contracts and 52 host guard tests pass. Container application checks/lint/
+  syncpack pass. Chat suite: 1687 passed, 33 skipped; affected GraphQL revision/
+  authorization and management cases pass. First all-in-container root check
+  exposed host-only guards; repeated these on the host. First management test
+  found bootstrap seed residue; guarded cleanup and focused rerun passed.
+- Staging map complete: use exact candidate push evidence and checksummed
+  promoter receipt, then Argo revision/image and PreSync proof. HTTP health
+  has no revision endpoint. Staging-safe fixture and existing-access proof
+  remain pending. Synthetic/mocked checks cannot establish real inference.
+- Scope against the AI target is 55 paths and 1709 substantive added/deleted
+  lines, excluding generated SDL and project documents. A settled five-file
+  revision-policy patch was delegated to the executor and verified by main.
+- Remaining host-only local-KB/hook contracts: all 105 pass.
+- Existing OCR feedback verified one persistence edge case: clamp stale browser
+  answer format/tone during rehydration and extend the existing state test.
+  Its focused verification is pending after runtime resume.
+- Host browser preparation stopped its exact runtime before installation. Cold
+  pnpm policy verification stalled for thirteen minutes despite healthy registry
+  reachability. One diagnostic retry uses bounded registry timeouts and ndjson
+  progress, with the repository policies unchanged. Browser run remains pending.
+- Full production build passes all 27 tasks. Latest focused preference, embedded
+  and preview tests pass 40/40; Chat type check passes; dummy evaluation fixture
+  update passes 25/25.
+- Direct student browser flow passes normal synthetic login, format/tone change,
+  browser persistence and embedded phone layout in English and German. Flag-off
+  visibility passes; the original synthetic flag is restored. Captures are kept
+  in project/_local/chat-ux-sync-gallery/.
+- Auth development UI remains blocked by Footer module-factory failure even
+  after fresh browser and the repository-supported exact cache repair. Maintained
+  Playwright host install is blocked by repeated policy-verification stall.
+- Visual review caught cramped phone mode labels; reading preferences now use a
+  second row below 640px, preserving the existing mode and new-chat controls.
+  Revised EN/DE phone and desktop captures pass; affected tests and type check
+  pass. A synthetic text attachment parses, reaches ready state and is removable.
+  No inference, real microphone acceptance or model-backed retry was performed.
+- Integration commit remains blocked by global hygiene engine false positives
+  on two synthetic custom-mode keys. Repository-configured gitleaks passes.
+  One-commit override requested; no bypass performed. Reviews/push/hosted CI
+  and protected merges remain pending.
 - Existing source CI is evidence for the merged feature source only. Integration
   checks, final review, merge and staging acceptance remain pending.
+
+### Checkpoint before the commit gate
+
+All source is staged, with no unresolved index paths. Integration commit, review,
+ordinary push and both protected merges remain pending. The global pretool hygiene
+engine flags two synthetic custom-mode keys although the repository-configured
+scan passes; the user has been asked for its documented one-commit exception.
+No override was used. The configured Claude runtime consultation was rejected
+before execution for destination-specific egress authority; main continued local
+diagnosis. Reassess the authorized final-review route when the committed gate is
+reached rather than assuming that destination is approved.
+
+Local browser session is closed. Exact source-path-matched Devsy provider
+sync-v3-into-v3-ai-5f8257b2a1 reports Stopped and devrouter has zero matching
+routes. No runtime, branch, worktree or data was deleted. Synthetic flag restored.
+Reusable local evidence: project/_local/chat-ux-sync-gallery/index.html and
+project/_local/reviews/2026-10-24-chat-ux-sync-verification.md.

@@ -8,6 +8,12 @@ const { spawnSync, execFileSync } = require('node:child_process')
 const { runDraftReview, summarizeCoverage } = require('./ocr-draft-review.cjs')
 const RUNNER = path.join(__dirname, 'ocr-draft-review.cjs')
 
+const coverageItem = (index) => ({
+  item_id: index.toString(16).padStart(64, '0'),
+  path: `src/review-${index}.ts`,
+  fingerprint: (index * 17 + 5).toString(16).padStart(64, '0'),
+})
+
 test('draft coverage distinguishes selected files from completed work without exposing model fields', () => {
   const result = {
     status: 'partial',
@@ -392,8 +398,8 @@ test('publication binds coverage to the exact head and retains complete results 
       manifest: {
         input: { resolved_head: head },
         coverage: {
-          selected: ['a'],
-          completed: ['a'],
+          selected: [coverageItem(1)],
+          completed: [coverageItem(1)],
           failed: [],
           reused: [],
           waived: [],
@@ -409,8 +415,10 @@ test('publication binds coverage to the exact head and retains complete results 
     assert.equal(fs.readFileSync(stderr, 'utf8'), '')
     assert.equal(fs.statSync(stderr).mode & 0o777, 0o600)
     result.status = 'partial'
-    result.manifest.coverage.completed = []
-    result.manifest.coverage.failed = [{ classification: 'provider' }]
+    result.manifest.coverage.selected = [coverageItem(1), coverageItem(2)]
+    result.manifest.coverage.failed = [
+      { ...coverageItem(2), classification: 'provider' },
+    ]
     fs.writeFileSync(file, JSON.stringify(result))
     assert.equal(run().status, 0)
     const partial = JSON.parse(fs.readFileSync(publication))
@@ -419,6 +427,97 @@ test('publication binds coverage to the exact head and retains complete results 
     result.manifest.coverage.completed = null
     fs.writeFileSync(file, JSON.stringify(result))
     assert.equal(run().status, 1)
+  } finally {
+    fs.rmSync(directory, { recursive: true, force: true })
+  }
+})
+
+test('publication refuses invalid, duplicated, overlapping, mismatched or incomplete coverage', () => {
+  const directory = fs.mkdtempSync(
+    path.join(os.tmpdir(), 'ocr-publication-invalid-')
+  )
+  const head = '1'.repeat(40)
+  const run = () =>
+    spawnSync(process.execPath, [RUNNER, 'validate'], {
+      env: { RUNNER_TEMP: directory, HEAD_SHA: head },
+      encoding: 'utf8',
+    })
+  const file = path.join(directory, 'draft-ai-review-result.json')
+  const publication = path.join(directory, 'draft-ai-review-publication.json')
+  const empty = {
+    selected: [],
+    completed: [],
+    reused: [],
+    failed: [],
+    waived: [],
+  }
+  const write = (coverage, status = 'complete') =>
+    fs.writeFileSync(
+      file,
+      JSON.stringify({
+        status,
+        comments: [],
+        manifest: { input: { resolved_head: head }, coverage },
+      })
+    )
+  try {
+    for (const [label, coverage] of [
+      [
+        'invalid identity',
+        { ...empty, selected: [{ ...coverageItem(1), item_id: 'a' }] },
+      ],
+      [
+        'duplicate selection',
+        { ...empty, selected: [coverageItem(1), coverageItem(1)] },
+      ],
+      [
+        'overlapping partition',
+        {
+          ...empty,
+          selected: [coverageItem(1)],
+          completed: [coverageItem(1)],
+          reused: [coverageItem(1)],
+        },
+      ],
+      [
+        'mismatched fingerprint',
+        {
+          ...empty,
+          selected: [coverageItem(1)],
+          completed: [
+            { ...coverageItem(1), fingerprint: coverageItem(2).fingerprint },
+          ],
+        },
+      ],
+      [
+        'incomplete accounting',
+        {
+          ...empty,
+          selected: [coverageItem(1), coverageItem(2)],
+          completed: [coverageItem(1)],
+        },
+      ],
+      [
+        'complete with failed work',
+        {
+          ...empty,
+          selected: [coverageItem(1)],
+          failed: [{ ...coverageItem(1), classification: 'provider' }],
+        },
+      ],
+      [
+        'complete with waived work',
+        {
+          ...empty,
+          selected: [coverageItem(1)],
+          waived: [coverageItem(1)],
+        },
+      ],
+    ]) {
+      write(coverage)
+      assert.equal(run().status, 1, label)
+      assert.equal(fs.existsSync(publication), false, label)
+    }
   } finally {
     fs.rmSync(directory, { recursive: true, force: true })
   }

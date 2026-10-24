@@ -63,6 +63,30 @@ export function getCurrentPeriodStart(resetPeriod: CreditResetPeriod): Date {
 }
 
 /**
+ * Return the baseline from which the active reset schedule may advance.
+ *
+ * A schedule activation starts a new schedule at approval time. Keeping that
+ * activation in the baseline prevents the first read after approval from
+ * treating an older participant period as an immediately expired period.
+ */
+export function getEffectiveCreditPeriodBaseline(
+  periodStartedAt: Date | null | undefined,
+  createdAt: Date,
+  creditResetPeriodChangedAt: Date | null | undefined
+): Date {
+  const participantBaseline = periodStartedAt ?? createdAt
+
+  if (
+    creditResetPeriodChangedAt &&
+    creditResetPeriodChangedAt.getTime() > participantBaseline.getTime()
+  ) {
+    return creditResetPeriodChangedAt
+  }
+
+  return participantBaseline
+}
+
+/**
  * Get the next reset time for a given period, or null when it never resets
  */
 export function getNextResetTime(resetPeriod: CreditResetPeriod): Date | null {

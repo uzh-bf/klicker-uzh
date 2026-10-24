@@ -25,6 +25,12 @@ fi
 # Ensure local CA is installed (idempotent)
 mkcert -install >/dev/null 2>&1 || true
 
+CAROOT="$(mkcert -CAROOT)"
+if [ -f "$CAROOT/rootCA.pem" ]; then
+  cp "$CAROOT/rootCA.pem" "$SSL_DIR/rootCA.pem"
+  chmod 0644 "$SSL_DIR/rootCA.pem"
+fi
+
 # If a certificate for klicker.com already exists, skip.
 if ls klicker.com*.pem >/dev/null 2>&1; then
   echo "SSL certificates already exist in $SSL_DIR. Skipping creation."

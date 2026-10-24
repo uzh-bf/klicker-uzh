@@ -508,7 +508,7 @@ function visibleMarkdown(markdown) {
   // Preserve literal code while removing hidden comments and rendered images.
   return text
     .replace(
-      /(?<literal>^ {0,3}(?<fence>`{3,}(?!`)|~{3,}(?!~))[^\n]*\n[\s\S]*?(?:^ {0,3}\k<fence>[`~]*[ \t]*(?=\n|$)|(?![\s\S]))|(?<!`)(?<ticks>`+)(?!`)[^\n]*?\k<ticks>(?!`))|<!--[\s\S]*?(?:-->|(?![\s\S]))|<img\b(?:[^>"']|"[^"]*"|'[^']*')*(?:>|(?![\s\S]))|!\[(?:\\.|[^\]\\])*\](?:\((?:\\.|[^()\\]|\([^()]*\))*\)|\[[^\]]*\])?/gim,
+      /(?<literal>^ {0,3}(?<fence>`{3,}(?!`)|~{3,}(?!~))[^\n]*\n[\s\S]*?(?:^ {0,3}\k<fence>[`~]*[ \t]*(?=\n|$)|(?![\s\S]))|(?<!`)(?<ticks>`+)(?!`)[^\n]*?\k<ticks>(?!`))|<!--[\s\S]*?(?:-->|(?![\s\S]))|<img\b(?:[^>"']|"[^"]*"|'[^']*')*>|!\[(?:\\.|[^\]\\])*\](?:\((?:\\.|[^()\\]|\([^()]*\))*\)|\[[^\]]*\])?/gim,
       (...match) => match.at(-1).literal ?? ''
     )
     .trim()
@@ -3816,6 +3816,7 @@ module.exports = {
   validateDispositionRecord,
   validateOCRResult,
   validateOCRPreview,
+  validateOCRCoverage,
   validateFinding,
   verifyMistralToolAccess,
   writeOCRConfig,

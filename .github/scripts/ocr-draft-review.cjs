@@ -11,7 +11,10 @@ const {
   MISTRAL_MODEL,
   MISTRAL_FLASH_MODEL,
 } = require('./ocr-mistral-adapter.cjs')
-const { buildOCRResultDiagnostic } = require('./final-ai-review.js')
+const {
+  buildOCRResultDiagnostic,
+  validateOCRCoverage,
+} = require('./final-ai-review.js')
 
 const DRAFT_MODEL = MISTRAL_FLASH_MODEL
 const DRAFT_PROVIDER = 'mistral-flash'
@@ -170,12 +173,16 @@ function preparePublication(temp, expectedHead) {
   const result = readResult(path.join(temp, 'draft-ai-review-result.json'))
   if (result.manifest?.input?.resolved_head !== expectedHead)
     throw new Error('invalid_result')
+  try {
+    validateOCRCoverage(result.manifest, 'Draft review result')
+  } catch {
+    throw new Error('invalid_result')
+  }
   const coverage = summarizeCoverage(result)
+  if (coverage.observed_status === 'unknown') throw new Error('invalid_result')
   if (
-    coverage.observed_status === 'unknown' ||
-    ['selected', 'completed', 'failed', 'reused', 'waived'].some(
-      (key) => coverage[key] === null
-    )
+    coverage.observed_status === 'complete' &&
+    (coverage.failed > 0 || coverage.waived > 0)
   )
     throw new Error('invalid_result')
   if (coverage.observed_status !== 'complete') {

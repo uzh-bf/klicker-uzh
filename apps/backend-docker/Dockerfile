@@ -14,7 +14,9 @@ WORKDIR /app
 RUN apk add --no-cache libc6-compat
 RUN apk update
 
-RUN npm i -g --ignore-scripts pnpm@11.5.0 turbo@2.10.11
+# pnpm 12 needs native setup for direct child-process execution on Alpine.
+RUN npm i -g --ignore-scripts pnpm@12.11.2 turbo@2.10.11 \
+ && node "$(npm root -g)/pnpm/install.js"
 
 COPY . .
 
@@ -27,7 +29,8 @@ WORKDIR /app
 RUN apk add --no-cache libc6-compat
 RUN apk update
 
-RUN npm i -g --ignore-scripts pnpm@11.5.0 turbo@2.10.11
+RUN npm i -g --ignore-scripts pnpm@12.11.2 turbo@2.10.11 \
+ && node "$(npm root -g)/pnpm/install.js"
 
 COPY --from=deps /app/out/json/ .
 COPY --from=deps /app/out/pnpm* .
@@ -45,7 +48,8 @@ WORKDIR /app
 
 ARG NODE_ENV="production"
 
-RUN npm i -g --ignore-scripts pnpm@11.5.0 turbo@2.10.11
+RUN npm i -g --ignore-scripts pnpm@12.11.2 turbo@2.10.11 \
+ && node "$(npm root -g)/pnpm/install.js"
 
 COPY --from=deps /app/out/json/ .
 COPY --from=deps /app/out/pnpm* .
@@ -54,11 +58,10 @@ COPY --from=deps /app/out/pnpm* .
 # plain `node`. They are removed, together with the pnpm store, its metadata
 # cache and npm's cache, in the same RUN that installs: a separate layer would
 # keep the ~1.7 GB of build state in the image, and the tooling teardown would
-# only white it out. pnpm's vendored tar and undici carry fixable HIGH/CRITICAL
-# advisories that the scanned runtime image otherwise reports, and the toolchain
-# pin cannot move on its own: the Playwright composite actions take their pnpm
-# version from the target branch while package.json comes from the
-# pull-request head, so `pnpm/action-setup` aborts on the two declared versions.
+# only white it out. Removing build-only package managers also keeps their
+# vendored dependencies out of the scanned runtime image. Toolchain upgrades
+# need a coordinated trusted-v3 Playwright action rollout: those remote actions
+# and the candidate package.json must agree on pnpm before setup can succeed.
 # npm itself goes last: its vendored undici and brace-expansion carry fixable
 # HIGH advisories that no npm release has picked up yet, and nothing runs npm
 # after this step.
@@ -72,7 +75,10 @@ RUN adduser --system --uid 1001 nodejs
 
 COPY --from=builder /app/packages/prisma/dist/ /app/packages/prisma/dist/
 COPY --from=builder /app/packages/grading/dist/ /app/packages/grading/dist/
+COPY --from=builder /app/packages/feature-flags/dist/ /app/packages/feature-flags/dist/
 COPY --from=builder /app/packages/graphql/dist/ /app/packages/graphql/dist/
+COPY --from=builder /app/packages/doc-query-client/dist/ /app/packages/doc-query-client/dist/
+COPY --from=builder /app/packages/knowledge-graph/dist/ /app/packages/knowledge-graph/dist/
 COPY --from=builder /app/packages/types/dist/ /app/packages/types/dist/
 COPY --from=builder /app/packages/util/dist/ /app/packages/util/dist/
 COPY --from=builder /app/packages/hatchet/dist/ /app/packages/hatchet/dist/

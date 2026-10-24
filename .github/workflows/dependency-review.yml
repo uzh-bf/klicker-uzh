@@ -1,10 +1,9 @@
 # Dependency supply-chain review for pull requests. This check complements the
 # repository's existing GitHub dependency graph and Dependabot alerts.
 #
-# Compatibility note: this repository pins pnpm 11.5.0. GitHub documents
-# dependency-graph and Dependabot updater support for pnpm 7-10, so pnpm 11
-# recognition is NOT verified here. This check must therefore not yet be treated
-# as complete CVE coverage for the workspace.
+# Compatibility note: this repository pins pnpm 12.11.2. Recognition of the
+# previous pnpm 11 lockfile does not verify the upgraded graph or PR-time
+# blocking. Confirm both before treating this check as complete CVE coverage.
 #
 # Only the severity policy is set below; dependency scope and license options stay
 # at the action defaults.

@@ -72,10 +72,10 @@ function WizardNavigation({
 
   return (
     <div
-      className="grid grid-cols-[minmax(0,1fr)_auto] items-end gap-2 pt-2"
+      className="grid grid-cols-1 items-end gap-2 pt-2 sm:grid-cols-[minmax(0,1fr)_auto]"
       data-cy="activity-wizard-navigation"
     >
-      <div className="flex flex-row items-center gap-2 justify-self-start">
+      <div className="flex min-w-0 flex-row flex-wrap items-center gap-2 justify-self-start">
         {typeof onPrevStep !== 'undefined' && (
           <Button
             type="button"

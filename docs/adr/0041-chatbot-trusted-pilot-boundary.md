@@ -9,6 +9,10 @@ This ADR supersedes the budget-control and pilot-cutover portions of
 for account AI authorization, per-chatbot publication, and usage-class
 semantics where this record does not change them.
 
+Lecturer setup editing after publication is superseded by
+[ADR 0043](./0043-review-chatbot-revisions-before-activation.md). Its saved
+revision and approval contract leaves unrelated runtime dependencies unchanged.
+
 ## Context
 
 The chatbot usage foundation can observe account-level usage for base and
@@ -54,15 +58,15 @@ invariants.
   through 4096, supplied-invalid JSON is rejected rather than replaced by a
   warning fallback, and model-class/fallback invariants remain fail-closed.
 - New chatbots start with the safe pilot policy: model selection disabled and
-  exactly one allowed `auto` model. The registry must provide exactly one
-  non-reasoning, non-fallback `ADVANCED` Auto entry before creation; no
+  exactly one allowed model. Since 2026-09-28 that model is the BASE
+  `gpt-6-luna`; a registry without it, such as the local development default,
+  falls back to its single valid non-reasoning, non-fallback Auto entry. No
   reasoning configuration is stored. Existing chatbot rows are not migrated or
   normalized by this policy. They remain readable through the current
   `CHAT_PRIMARY_MODEL_ID`-aware automatic resolver, with retired-only lists
   retaining the Luna fallback. The strict owner-only
-  `updateChatbotModelPolicy` mutation canonicalizes fixed and participant-choice
-  rows, while `updateChatbotModelSettings` remains available for rolling
-  clients.
+  `saveChatbotRevision` model-policy section canonicalizes fixed and
+  participant-choice rows. Granular save mutations are removed.
 - Manage renders a localized lifecycle status for every chatbot. A participant
   link is rendered only for `PUBLISHED`; every other state explains that the
   link becomes available after publication. Published model-policy edits stay

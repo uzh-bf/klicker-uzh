@@ -319,7 +319,7 @@ function validatePublicRunnerRoles(workflow) {
       run: [
         'set -euo pipefail',
         'RAN_STATE=$(node -e \'process.stdout.write(JSON.parse(require("node:fs").readFileSync("route.json", "utf8")).selectorPrState)\')',
-        'if [ "$RAN_STATE" = \'draft\' ]; then SHADOW_STATE=ready; else SHADOW_STATE=draft; fi',
+        'if [ "$RAN_STATE" = \'draft\' ] || [ "$RAN_STATE" = \'deferred\' ]; then SHADOW_STATE=ready; else SHADOW_STATE=draft; fi',
         'node .ci-control/.github/scripts/playwright-selector.cjs --control-root .ci-control --candidate-root .candidate --base-sha "$BASE_SHA" --head-sha "$HEAD_SHA" --pr-state "$SHADOW_STATE" --output playwright-selector-shadow.json',
       ].join('\n'),
     },
