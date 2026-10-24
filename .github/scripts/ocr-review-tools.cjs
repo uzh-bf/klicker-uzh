@@ -3,7 +3,10 @@
 const http = require('node:http')
 const crypto = require('node:crypto')
 const { execFileSync } = require('node:child_process')
-const { validateRepositoryConfig } = require('./ocr-runtime-config.cjs')
+const {
+  validateRepositoryConfig,
+  validContextPath: validPath,
+} = require('./ocr-runtime-config.cjs')
 
 const RANGE_SCHEMA = {
   type: 'object',
@@ -110,18 +113,6 @@ function object(value) {
 function keys(value, allowed) {
   return (
     object(value) && Object.keys(value).every((key) => allowed.includes(key))
-  )
-}
-function validPath(value) {
-  return (
-    typeof value === 'string' &&
-    value.length <= 300 &&
-    /^[\w.@()\[\]/-]+$/.test(value) &&
-    !value.startsWith('/') &&
-    !value
-      .split('/')
-      .some((part) => !part || ['.', '..', '.git'].includes(part)) &&
-    !/(^|\/)\.env(?:\.|$)|\.(?:pem|key)$/i.test(value)
   )
 }
 function git(repo, args, maxBuffer = 524288) {
