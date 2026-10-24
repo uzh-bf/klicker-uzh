@@ -270,6 +270,7 @@ function createRequest({
   selectedMode = 'tutor',
   assistantMessageId = 'assistant-1',
   images = [],
+  documentPages = [],
   threadId = 'thread-1',
   allowRegeneration = false,
 }: {
@@ -277,6 +278,7 @@ function createRequest({
   selectedMode?: string
   assistantMessageId?: string
   images?: string[]
+  documentPages?: string[]
   threadId?: string | null
   allowRegeneration?: boolean
 } = {}) {
@@ -291,6 +293,7 @@ function createRequest({
       assistantMessageId,
       ...(allowRegeneration ? { allowRegeneration: true } : {}),
       images,
+      documentPages,
     }),
   })
 }
@@ -393,6 +396,39 @@ describe('account usage chat route', () => {
           end: mocks.langfuseObservationEnd,
           update: mocks.langfuseObservationUpdate,
         })
+    )
+  })
+
+  test.each([
+    false,
+    true,
+  ])('continues after a document summary failure without logging provider content (aborted: %s)', async (aborted) => {
+    const providerError = new Error('synthetic-private-provider-payload')
+    if (aborted) providerError.name = 'AbortError'
+    mocks.generateText.mockRejectedValueOnce(providerError)
+
+    const response = await POST(
+      createRequest({
+        documentPages: ['data:image/jpeg;base64,/9j/4AAQSkZJRgABAQ=='],
+      }),
+      { params: Promise.resolve({ chatbotId: 'chatbot-1' }) }
+    )
+
+    expect(response.status).toBe(200)
+    expect(mocks.streamText).toHaveBeenCalledOnce()
+    const summaryWarnings = mocks.log.warn.mock.calls.filter(
+      ([record]) => record.event === 'chat.document.summary_failed'
+    )
+    expect(summaryWarnings).toHaveLength(aborted ? 0 : 1)
+    if (!aborted) {
+      expect(summaryWarnings[0]?.[0]).toMatchObject({
+        outcome: 'continuing_without_summary',
+        err: expect.any(Error),
+      })
+    }
+    expect(console.error).not.toHaveBeenCalled()
+    expect(JSON.stringify(mocks.log.warn.mock.calls)).not.toContain(
+      providerError.message
     )
   })
 

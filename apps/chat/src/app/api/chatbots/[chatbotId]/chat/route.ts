@@ -1809,19 +1809,20 @@ async function handlePOST(
       } else {
         // No summary row is written, so a transient failure cannot replace a
         // stored summary or persist a placeholder; the text stays available.
-        // A cancelled request is not a failure. The provider error is reduced
-        // to name and message: it may echo the request with the page images.
+        // A cancelled request is not a failure. Provider errors may echo the
+        // request with page images, so only an application-owned error is logged.
         const aborted =
           req.signal.aborted ||
           (error instanceof Error && error.name === 'AbortError')
         if (!aborted) {
-          console.error('Failed to summarize document pages:', {
-            requestId,
-            error:
-              error instanceof Error
-                ? { name: error.name, message: error.message.slice(0, 500) }
-                : 'unknown error',
-          })
+          log.warn(
+            {
+              event: 'chat.document.summary_failed',
+              outcome: 'continuing_without_summary',
+              err: toSafeError('Failed to summarize document pages'),
+            },
+            'Failed to summarize document pages'
+          )
         }
       }
     }
