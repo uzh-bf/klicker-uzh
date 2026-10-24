@@ -8,6 +8,7 @@
     "dist"
   ],
   "dependencies": {
+    "@klicker-uzh/logging": "workspace:*",
     "@klicker-uzh/prisma": "workspace:*",
     "@klicker-uzh/types": "workspace:*",
     "@scalar/express-api-reference": "0.8.7",

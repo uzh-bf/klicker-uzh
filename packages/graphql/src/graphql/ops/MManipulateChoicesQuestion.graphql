@@ -9,6 +9,8 @@ mutation ManipulateChoicesQuestion(
   $basePoints: Boolean
   $pointsMultiplier: Int
   $tags: [String!]
+  $initialCompetenceTreeAssignment: CompetenceTreeElementAssignmentCreateInput
+  $creationRequestId: String
 ) {
   manipulateChoicesQuestion(
     id: $id
@@ -21,6 +23,8 @@ mutation ManipulateChoicesQuestion(
     basePoints: $basePoints
     pointsMultiplier: $pointsMultiplier
     tags: $tags
+    initialCompetenceTreeAssignment: $initialCompetenceTreeAssignment
+    creationRequestId: $creationRequestId
   ) {
     __typename
     ... on ChoicesElement {

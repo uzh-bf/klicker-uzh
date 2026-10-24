@@ -45,6 +45,7 @@ FROM base AS runtime
 WORKDIR /app
 
 ARG NODE_ENV="production"
+ENV NODE_ENV=${NODE_ENV}
 
 RUN npm i -g --ignore-scripts pnpm@12.11.2 turbo@2.10.11 \
  && node "$(npm root -g)/pnpm/install.js"
@@ -63,6 +64,7 @@ RUN adduser --system --uid 1001 nodejs
 
 COPY --from=builder /app/packages/prisma/dist/ /app/packages/prisma/dist/
 COPY --from=builder /app/packages/types/dist/ /app/packages/types/dist/
+COPY --from=builder /app/packages/logging/dist/ /app/packages/logging/dist/
 COPY --from=builder /app/apps/olat-api/dist/ /app/apps/olat-api/dist/
 COPY --from=builder /app/apps/olat-api/static /app/apps/olat-api/static/
 
