@@ -573,7 +573,7 @@ test('reuse wiring preserves the canonical plan and execution gates', () => {
   // tested tree must be produced on both routes.
   assert.equal(
     workflow.jobs.prepare.steps.find((step) => step.id === 'equivalent').if,
-    `(github.event_name == 'push' && github.ref != 'refs/heads/v3') || (github.event_name == 'pull_request' && contains(fromJSON('["ready_for_review","edited","reopened"]'), github.event.action))`
+    `steps.metadata.outputs.provider != 'warpbuild' && ((github.event_name == 'push' && github.ref != 'refs/heads/v3') || (github.event_name == 'pull_request' && contains(fromJSON('["ready_for_review","edited","reopened"]'), github.event.action)))`
   )
   assert.match(
     workflow.jobs.prepare.steps.find((step) => step.id === 'equivalent').with

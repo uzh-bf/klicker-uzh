@@ -1,16 +1,10 @@
 'use client'
 
-import { useChatResponse } from '@/src/hooks/useChatResponse'
-import { useThreadManagement } from '@/src/hooks/useThreadManagement'
-import {
-  useChatStore,
-  type ExtendedThreadMessageLike,
-} from '@/src/stores/chatStore'
-import { useSettingsStore } from '@/src/stores/settingsStore'
 import {
   AssistantRuntimeProvider,
-  useExternalStoreRuntime,
+  CompositeAttachmentAdapter,
   type ThreadMessageLike,
+  useExternalStoreRuntime,
 } from '@assistant-ui/react'
 import {
   useParams,
@@ -18,13 +12,49 @@ import {
   useRouter,
   useSearchParams,
 } from 'next/navigation'
-import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
+import { useLocale, useTranslations } from 'next-intl'
+import {
+  useCallback,
+  useEffect,
+  useMemo,
+  useRef,
+  useState,
+  useSyncExternalStore,
+} from 'react'
+import { useChatResponse } from '@/src/hooks/useChatResponse'
+import { useThreadManagement } from '@/src/hooks/useThreadManagement'
+import {
+  type ExtendedThreadMessageLike,
+  useChatStore,
+} from '@/src/stores/chatStore'
+import {
+  selectModelReadsDocumentPages,
+  useSettingsStore,
+} from '@/src/stores/settingsStore'
 import { useChatUi } from '../components/chat-ui-context'
+import {
+  DictationProvider,
+  useOnDeviceDictation,
+} from '../components/dictation-context'
 import { ModeOptionsProvider } from '../components/mode-options-context'
+import {
+  documentAttachmentAdapter,
+  isReadingDocument,
+  pendingDocumentAttachmentAdapter,
+  subscribeDocumentReading,
+  visualDocumentAttachmentAdapter,
+} from '../lib/attachments/documentAttachmentAdapter'
+import { parseMessageDocuments } from '../lib/attachments/documentText'
 import { imageAttachmentAdapter } from '../lib/attachments/imageAttachmentAdapter'
 import { type ChatModeOptions, resolveSelectedMode } from '../lib/config/modes'
+import { useLocalSpeechSynthesis } from '../lib/speech/localSpeechSynthesis'
 
 const EMPTY_MESSAGES: ExtendedThreadMessageLike[] = []
+
+const getPlainText = (content: ThreadMessageLike['content']): string =>
+  typeof content === 'string'
+    ? content
+    : content.map((part) => (part.type === 'text' ? part.text : '')).join('')
 
 export function RuntimeProvider({
   chatbotId,
@@ -75,6 +105,9 @@ export function RuntimeProvider({
     (state) =>
       state.modelOptions.find((model) => model.id === selectedModel)
         ?.supportsImageAttachments !== false
+  )
+  const readsDocumentPages = useSettingsStore((state) =>
+    selectModelReadsDocumentPages(state, selectedModel)
   )
   const activeModeOptions =
     modeOptionsChatbotId === chatbotId ? loadedModeOptions : initialModeOptions
@@ -298,6 +331,13 @@ export function RuntimeProvider({
         ...rest
       } = message
       delete rest.rating
+      // A user message stores attached documents as text after the question.
+      // The runtime only sees the question, so the bubble, copy and the edit
+      // composer work on what the student typed; the documents become chips.
+      const { question, documents } =
+        rest.role === 'user'
+          ? parseMessageDocuments(getPlainText(rest.content))
+          : { question: '', documents: [] }
       const custom = {
         ...(metadata?.custom ?? {}),
         chatMode: chatMode ?? null,
@@ -306,11 +346,16 @@ export function RuntimeProvider({
         creditsUsed: creditsUsed ?? null,
         learningContext: learningContext ?? null,
         imageAttachments: imageAttachments ?? [],
+        // The text stays with the chip for the document preview.
+        documentAttachments: documents,
         meetingClock: meetingClock ?? null,
       }
 
       return {
         ...rest,
+        ...(documents.length > 0
+          ? { content: [{ type: 'text' as const, text: question }] }
+          : {}),
         metadata: {
           ...metadata,
           custom,
@@ -328,16 +373,51 @@ export function RuntimeProvider({
     [setMessagesInternal]
   )
 
+  const dictation = useOnDeviceDictation({ disabled: embedded })
+  const t = useTranslations()
+  const locale = useLocale()
+  const speechAdapter = useLocalSpeechSynthesis({
+    locale,
+    formulaLabel: t('chat.message.readAloudFormula'),
+    disabled: embedded,
+  })
+  // Documents are read as text in the browser, so they work with every model;
+  // images, and PDF pages rendered as images, only join when the selected
+  // model accepts them.
   const adapters = useMemo(
-    () =>
-      supportsImageAttachments ? { attachments: imageAttachmentAdapter } : {},
-    [supportsImageAttachments]
+    () => ({
+      attachments: supportsImageAttachments
+        ? new CompositeAttachmentAdapter([
+            imageAttachmentAdapter,
+            readsDocumentPages
+              ? visualDocumentAttachmentAdapter
+              : readsDocumentPages === false
+                ? documentAttachmentAdapter
+                : pendingDocumentAttachmentAdapter,
+          ])
+        : documentAttachmentAdapter,
+      ...(dictation.adapter ? { dictation: dictation.adapter } : {}),
+      ...(speechAdapter ? { speech: speechAdapter } : {}),
+    }),
+    [
+      supportsImageAttachments,
+      readsDocumentPages,
+      dictation.adapter,
+      speechAdapter,
+    ]
+  )
+
+  const readingDocument = useSyncExternalStore(
+    subscribeDocumentReading,
+    isReadingDocument,
+    () => false
   )
 
   // runtime config for assistant UI
   const runtime = useExternalStoreRuntime({
     messages,
     isRunning,
+    isSendDisabled: readingDocument,
     setMessages,
     onNew,
     onEdit,
@@ -347,10 +427,20 @@ export function RuntimeProvider({
     adapters,
   })
 
+  // A new answer, a thread switch, or leaving the chat stops read-aloud;
+  // otherwise the voice keeps talking with no stop button in view.
+  useEffect(() => {
+    const stopSpeaking = () => {
+      if (runtime.thread.getState().speech) runtime.thread.stopSpeaking()
+    }
+    if (isRunning) stopSpeaking()
+    return stopSpeaking
+  }, [runtime, isRunning, activeThreadId])
+
   return (
     <ModeOptionsProvider modeOptions={activeModeOptions}>
       <AssistantRuntimeProvider runtime={runtime}>
-        {children}
+        <DictationProvider value={dictation}>{children}</DictationProvider>
       </AssistantRuntimeProvider>
     </ModeOptionsProvider>
   )

@@ -1,6 +1,7 @@
 const fs = require('node:fs')
 
 const { CHANGE_CLASS, isKnownClass } = require('./minimum-validation-class.cjs')
+const { chooseRouteWithAdmission, envInput } = require('./playwright-route.cjs')
 
 const PLAN_SCHEMA_VERSION = 1
 
@@ -40,6 +41,41 @@ function buildPlanMetadata(plan, routeDecision) {
       `unsupported selector pull-request state ${routeDecision.selectorPrState}`
     )
   }
+  const provider =
+    routeDecision.provider ??
+    (routeDecision.route === 'hosted' ? 'github' : 'public-pool')
+  if (
+    !['github', 'public-pool', 'warpbuild'].includes(provider) ||
+    (routeDecision.route === 'hosted'
+      ? provider !== 'github'
+      : provider === 'github')
+  ) {
+    fail('unsupported execution provider for the trust route')
+  }
+  const cloud = provider === 'warpbuild'
+  const admissionAttempt = cloud ? routeDecision.admissionAttempt : ''
+  if (
+    cloud &&
+    (routeDecision.selectorPrState !== 'ready' ||
+      typeof admissionAttempt !== 'string' ||
+      !/^[1-9]\d*$/.test(admissionAttempt))
+  ) {
+    fail('cloud provider requires a ready plan and an admitted attempt')
+  }
+  const runner = (role, size) =>
+    cloud
+      ? { group: 'Default', labels: `warp-ubuntu-2404-arm64-${size}x` }
+      : {
+          group: 'public-pr-arm64',
+          labels: [
+            'linux',
+            'arm64',
+            'docker',
+            'public-pr-arm64',
+            'playwright',
+            role,
+          ],
+        }
   if (routeDecision.selectorPrState === 'deferred' && plan.mode !== 'skip') {
     fail('deferred execution must use the skip Playwright plan')
   }
@@ -115,6 +151,11 @@ function buildPlanMetadata(plan, routeDecision) {
 
   return {
     route: routeDecision.route,
+    provider,
+    admissionAttempt,
+    buildRunner: runner('playwright-build', 8),
+    shardRunner: runner('playwright-shard', 4),
+    jobTimeout: cloud ? 45 : 120,
     mode: plan.mode,
     envelopeClass,
     selectorPrState: routeDecision.selectorPrState,
@@ -127,6 +168,11 @@ function buildPlanMetadata(plan, routeDecision) {
 function writeGithubOutputs(metadata, outputPath) {
   const lines = [
     `route=${metadata.route}`,
+    `provider=${metadata.provider}`,
+    `admission_attempt=${metadata.admissionAttempt}`,
+    `build_runner=${JSON.stringify(metadata.buildRunner)}`,
+    `shard_runner=${JSON.stringify(metadata.shardRunner)}`,
+    `job_timeout=${metadata.jobTimeout}`,
     `mode=${metadata.mode}`,
     `envelope_class=${metadata.envelopeClass}`,
     `selector_pr_state=${metadata.selectorPrState}`,
@@ -152,25 +198,33 @@ function parseArgs(argv) {
   return args
 }
 
-function main(argv = process.argv.slice(2)) {
+async function main(
+  argv = process.argv.slice(2),
+  env = process.env,
+  network = fetch
+) {
   const args = parseArgs(argv)
-  const metadata = buildPlanMetadata(
-    readJson(args.plan, 'Playwright plan'),
-    readJson(args.route, 'Playwright route decision')
-  )
+  const plan = readJson(args.plan, 'Playwright plan')
+  let route = readJson(args.route, 'Playwright route decision')
+  let metadata = buildPlanMetadata(plan, route)
+  // Validate the entire plan before a request can reserve paid capacity.
+  if (metadata.shouldRun && env.WARPBUILD_ADMISSION_URL) {
+    route = await chooseRouteWithAdmission(envInput(env), env, network)
+    metadata = buildPlanMetadata(plan, route)
+    fs.writeFileSync(args.route, `${JSON.stringify(route, null, 2)}\n`)
+  }
   writeGithubOutputs(metadata, args.output)
 }
 
 if (require.main === module) {
-  try {
-    main()
-  } catch (error) {
+  main().catch((error) => {
     console.error(`Playwright plan metadata failed: ${error.message}`)
     process.exitCode = 1
-  }
+  })
 }
 
 module.exports = {
+  main,
   PLAN_SCHEMA_VERSION,
   buildPlanMetadata,
   writeGithubOutputs,

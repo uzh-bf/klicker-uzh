@@ -1,38 +1,160 @@
-# Tutor prompt quality roadmap
+# Course-chatbot learning roadmap
 
-Status: historical Tutor candidate results retained; evaluation consolidation
-direction updated on 2026-10-17. Contract source and offline proof are prepared under the
-approved [implementation plan](2026-10-17-trajectory-contract-plan.md).
+Updated 21 October 2026. The immediate focus is delivering faithful Explainer
+answers, usable citations and access to course materials. The next milestone is
+the course chatbot's learner-facing experience. Source delivery, functional
+acceptance and improved understanding require different evidence. Historical
+Tutor experiments remain below for reference.
 
 ## Current evaluation direction
 
-The next work follows the
-[evaluator consolidation plan](2026-10-12-chatbot-evaluator-plan.md#evaluation-consolidation--2026-10-17)
-and the [course-quality plan](2026-10-12-chatbot-learning-quality-plan.md).
-Keep Klicker's native capture, persisted-history checks, citation mapper and
-provider guard stable. The app owns domain experiment definitions, corpus and
-receipt translation. The separate Python framework owns normalized-artifact
-loading, configurable metrics and reusable assessment/reporting.
-Moving JavaScript into this repository's `evaluation/` folder did not transfer
-those responsibilities to the framework.
+Help learners understand concepts, resolve misconceptions and apply concepts
+independently. The first bounded outcome is faithful explanation and revision:
+preserve meaning, state when a rule applies and make evidence limits clear.
+Revision notes are the first task form; direct explanations and worked examples
+remain appropriate in Explainer.
 
-| Next outcome                           | Acceptance and gate                                                                                                            | State                                                      |
-| -------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------ | ---------------------------------------------------------- |
-| Caller-owned corpus and receipt contract | App-owned importer preserves complete/incomplete coverage; framework accepts generic normalized artifacts | Replacement verified offline; coordinated source migration in progress |
-| Calibrated DeepEval assessment         | Existing conversational metrics assess saved captures under separately qualified judge admission; compare with manual evidence | Proposed after contract alignment and named judge approval |
-| Framework-driven unattended capture    | A demonstrated need justifies a stateful adapter without copying application semantics                                         | Deferred                                                   |
+Historical review supplies hypotheses; synthetic comparisons supply regression
+evidence. Neither establishes current course performance or learning. Keep
+judgments and real-environment evidence in approved private custody.
 
-Recent Explainer preparation uses authored trajectories, app-owned offline import
-and manual criterion review. It is calibration, not executed DeepEval regression
-coverage. Numerical claim comparison is also a manually invoked utility, not an
-automatic verdict from successful capture. The earlier Tutor rounds below are
-historical evidence and do not qualify a new judge or capture route.
+### Manual acceptance checklist v1
 
-[PR 6576](https://github.com/uzh-bf/klicker-uzh/pull/6576) merged the exact
-US$55/48-turn initializer option while preserving the US$5/120-turn default.
-Source availability does not authorize spending or establish local runtime
-readback. The subsequent roadmap execution approval covers the linked source
-package; capture, judge calls, merge and deployment retain their separate gates.
+Assess actual answers and supporting passages, accepting correct paraphrases:
+
+- Complete the requested learning task directly at the requested depth.
+- Explain the essential concepts correctly, preserving meaning when shortening.
+- Retain the conditions and exceptions that determine when a rule applies.
+- Attach citations only to claims the cited passage supports, including examples.
+- Identify missing or partial coverage and distinguish source facts from inference
+  or illustration, while still providing useful supported help.
+
+Record meets, concern, fails or not assessed with a reason; required items must
+meet for acceptance. This supplements existing criteria without rescoring past
+runs. Answer checks do not establish understanding or transfer.
+
+### Outcome milestones
+
+| Priority | Outcome | Completion condition and authority |
+| --- | --- | --- |
+| 1 | Know what students actually use | Read-only evidence connects the named chatbot to its served prompt, retrieval producer and citation/navigation handling. Compare these with the tested source revisions; keep exact versions and environment records private. |
+| 2 | Deliver only the missing corrections | After named activation approval, verify the intended revisions on the actual serving path and the scoped source-metadata readback. Skip corrections already present and retain a verified restoration path. |
+| 3 | Accept the course experience | The course owner checks representative explanation, shortening and source-navigation tasks against checklist v1. Distinguish review of saved answers from a separately authorized fresh end-to-end check. |
+| 4 | Check understanding and application | After functional acceptance and approval of any learner involvement, use a brief explain-back or independent application task. Record limitations privately; a successful answer or lecturer walkthrough alone does not establish learning gains. |
+
+The main session owns technical qualification and the minimum activation
+proposal. The course owner supplies pedagogical acceptance; learner involvement
+is a later decision. These are responsibilities, not new tracker assignments.
+
+### Immediate next action: qualify the serving path
+
+Trace the named chatbot's request path using scoped configuration and version
+evidence. Record each relevant correction as present, absent or unknown. A
+healthy development deployment does not identify the course chatbot's producer.
+Resolve that producer before selecting a release or promotion target. Use
+existing authorized access; unavailable connectivity is a blocker, not authority
+to establish a tunnel or change infrastructure.
+
+Finish this step with one minimum activation proposal: exact targets and missing
+changes, expected effects, verification, restoration and stop conditions. A
+remaining unknown blocks its dependent change, not independent preparation.
+This roadmap update authorizes no deployment or live metadata write.
+
+### Conditional delivery: explanations and course-material access
+
+Reuse the source-managed
+[Explainer revision](https://github.com/uzh-bf/klicker-uzh/pull/6607) and the generic
+[citation-identity correction](https://gitlab.uzh.ch/ai-infrastructure/mcp/mcp-doc-query/-/merge_requests/112).
+Retain the existing prompt decision; another variant requires a demonstrated,
+representative failure. Supporting diagnostic protocols remain reference material.
+
+Use the agreed OLAT course-element destination for video citations. Preserve
+distinct source identities, titles and descriptive time ranges; the destination
+opens the course element without selecting a video or playback timestamp.
+Before any approved metadata apply, qualify exact knowledge-base-owned records,
+detect drift and prove lossless restoration. Preserve vectors and unrelated
+metadata. Corpus replacement and re-embedding are outside this delivery.
+
+Verify source identity independently from navigation: different videos sharing
+one destination must retain separate citations. Metadata changes do not update
+historical answers, so old source cards cannot prove the new projection works.
+Handle content replacement as a separate decision.
+
+### Acceptance: useful answers first, then learner evidence
+
+Prepare a short lecturer walkthrough from the existing reviewed explanation,
+shortening follow-up and control artifacts. Assess checklist v1 against the
+original supporting passages. Check course-element access separately. This
+review can establish pedagogical suitability of those artifacts; it cannot
+establish fresh generation or changed metadata in the served chatbot.
+
+If fresh end-to-end evidence is still needed, propose only the smallest fixed
+task set using the existing capture and manual-assessment process. Name its
+route, full cost coverage and finite send limit before requesting execution.
+Keep the cumulative US$5 cap; remaining nominal capacity grants no new sends,
+and unqualified Auto/retrieval costs cannot be assumed to fit. Acceptance needs
+the actual answer, claim support and usable navigation, not only capture validity.
+
+Only after functional acceptance, propose a lightweight learner check of
+explanation and independent application. Keep identifying responses out of shared
+artifacts. Existing usage, assisted performance and lecturer acceptance remain
+distinct from evidence of understanding. Unrun unit-lookup and cross-source
+tasks remain unassessed; add coverage only for a concrete acceptance need.
+
+### Parked work and authority
+
+Park gateway reservation repair, new prompt variants, evaluator/framework
+expansion, automated judging, ranking changes and Tutor/Quizzer work. Per-video
+URL recovery and timestamp deep links are outside the agreed navigation outcome.
+Revisit technical work only when evidence identifies a concrete blocker to the
+next learner-facing check. A blocked paid route does not authorize an upstream
+infrastructure project. Reuse existing capture/import and assessment.
+
+The source-managed Explainer revision is delivered through PR 6607.
+The [continuation](2026-10-18-explainer-assessment-readiness-plan.md#current-learner-improvement-continuation)
+retains the original baseline and candidate preparation as history, not a pending
+instruction to restart tuning. Private assessments and real-environment records
+stay private. Further inference needs named budget, provider, source-use and
+enforceable cost authority; prior finite capture authority is consumed. Monitored
+spending is not a hard-cap substitute. Live prompt/KB changes, promotion, merge,
+deployment and learner data collection require their own named approval.
+
+## Existing foundations and deferred protocols
+
+Recorded source foundations: [citation correction PR 6483](https://github.com/uzh-bf/klicker-uzh/pull/6483),
+[app importer PR 6578](https://github.com/uzh-bf/klicker-uzh/pull/6578),
+[generic contract MR 57](https://gitlab.uzh.ch/ai-infrastructure/evaluation/-/merge_requests/57),
+[judge admission MR 61](https://gitlab.uzh.ch/ai-infrastructure/evaluation/-/merge_requests/61)
+and [gateway retry correction PR 6603](https://github.com/uzh-bf/klicker-uzh/pull/6603).
+Source delivery does not establish deployment, judge accuracy or student benefit.
+The app owns capture, experiment data and receipt translation; the Python
+framework owns generic assessment and reporting, independent of any application.
+
+The private decision index retains the completed
+[preservation](2026-10-18-explainer-assessment-readiness-plan.md#approved-preservation-execution)
+and [attribution](2026-10-18-explainer-assessment-readiness-plan.md#approved-attribution-execution)
+comparisons and [separate guidance preparation](2026-10-18-explainer-assessment-readiness-plan.md#approved-prompt-preparation).
+The [preflight](2026-10-18-explainer-assessment-readiness-plan.md#zero-spend-source-and-route-preflight)
+and [quality-decision batch](2026-10-18-explainer-assessment-readiness-plan.md#current-quality-decision-batch)
+remain conditional reference protocols, not an instruction to resume technical
+work. This direction continues the
+[course-quality plan](2026-10-12-chatbot-learning-quality-plan.md) and supersedes
+the earlier judge-first sequence in the
+[evaluation consolidation plan](2026-10-12-chatbot-evaluator-plan.md#evaluation-consolidation--2026-10-17).
+
+Reuse the [existing comparison corpus](../evaluation/data/explainer-compression/README.md).
+Inspected authored cases are regression/transfer examples, not blind holdouts.
+The existing
+[US$55/48-turn initializer option](https://github.com/uzh-bf/klicker-uzh/pull/6576)
+supported the finite protocols without another source change. The follow-up
+protocols used the same cumulative ledger, not a renewed allowance.
+Each finite protocol stops at its own planned turn count within the ledger's
+48-turn ceiling. The default US$5 cap and earlier ledgers remain unchanged.
+The [initial](2026-10-18-explainer-assessment-readiness-plan.md#approved-comparison-execution),
+[preservation](2026-10-18-explainer-assessment-readiness-plan.md#approved-preservation-execution)
+and [attribution](2026-10-18-explainer-assessment-readiness-plan.md#approved-attribution-execution)
+execution authority is consumed. Judge calls, further captures, shared prompt
+changes, merge and deployment remain separate.
 
 ## Historical Tutor iteration
 

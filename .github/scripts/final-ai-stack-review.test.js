@@ -1,10 +1,12 @@
 const assert = require('node:assert/strict')
+const { execFileSync } = require('node:child_process')
 const crypto = require('node:crypto')
 const fs = require('node:fs')
 const os = require('node:os')
 const path = require('node:path')
 const test = require('node:test')
 
+const { invalidCleanCheckChanges } = require('./final-ai-review-fixtures')
 const {
   FINAL_REVIEW_MODEL,
   mergeOCRResumeResults,
@@ -377,6 +379,173 @@ function topologyResult(comments = []) {
   }
 }
 
+function gitRun(repositoryPath, ...args) {
+  return execFileSync('git', args, {
+    cwd: repositoryPath,
+    encoding: 'utf8',
+    stdio: ['ignore', 'pipe', 'pipe'],
+  }).trim()
+}
+
+function gitCommit(repositoryPath, message) {
+  gitRun(repositoryPath, 'add', '-A')
+  gitRun(
+    repositoryPath,
+    '-c',
+    'user.name=Stack Test',
+    '-c',
+    'user.email=stack-test@example.invalid',
+    'commit',
+    '--quiet',
+    '-m',
+    message
+  )
+  return gitRun(repositoryPath, 'rev-parse', 'HEAD')
+}
+
+function githubForGitRepository(repositoryPath) {
+  return {
+    rest: {
+      git: {
+        getCommit: async ({ commit_sha }) => ({
+          data: {
+            tree: {
+              sha: gitRun(repositoryPath, 'rev-parse', `${commit_sha}^{tree}`),
+            },
+          },
+        }),
+      },
+    },
+  }
+}
+
+function makeGitStackFixture(
+  t,
+  { binary = false, emptyUpper = false, large = 0 } = {}
+) {
+  const repositoryPath = fs.mkdtempSync(
+    path.join(os.tmpdir(), 'stack-git-evidence-')
+  )
+  t.after(() => fs.rmSync(repositoryPath, { recursive: true, force: true }))
+  gitRun(repositoryPath, 'init', '--quiet')
+  gitRun(repositoryPath, 'config', 'diff.external', 'false')
+  gitRun(repositoryPath, 'config', 'diff.test.textconv', 'false')
+  fs.writeFileSync(
+    path.join(repositoryPath, '.gitattributes'),
+    '*.txt diff=test\n'
+  )
+  fs.writeFileSync(path.join(repositoryPath, 'mode.txt'), 'mode source\n')
+  fs.writeFileSync(path.join(repositoryPath, 'deleted.txt'), 'deleted source\n')
+  fs.writeFileSync(path.join(repositoryPath, 'old-name.txt'), 'rename source\n')
+  const ultimateBase = gitCommit(repositoryPath, 'ultimate base')
+
+  fs.writeFileSync(
+    path.join(repositoryPath, 'base-advance.txt'),
+    'base advance\n'
+  )
+  const rootBase = gitCommit(repositoryPath, 'root pull-request base')
+  gitRun(repositoryPath, 'checkout', '--quiet', '--detach', ultimateBase)
+
+  fs.chmodSync(path.join(repositoryPath, 'mode.txt'), 0o755)
+  fs.unlinkSync(path.join(repositoryPath, 'deleted.txt'))
+  fs.renameSync(
+    path.join(repositoryPath, 'old-name.txt'),
+    path.join(repositoryPath, 'renamed.txt')
+  )
+  fs.writeFileSync(
+    path.join(repositoryPath, 'binary-marker.txt'),
+    'Binary files a/source and b/source differ\n'
+  )
+  if (large) {
+    fs.writeFileSync(
+      path.join(repositoryPath, 'large-one.txt'),
+      `${'x'.repeat(large)}\n`
+    )
+  }
+  const rootHead = gitCommit(repositoryPath, 'root layer')
+
+  if (!emptyUpper) {
+    fs.writeFileSync(path.join(repositoryPath, 'upper.txt'), 'upper layer\n')
+    if (binary) {
+      fs.writeFileSync(
+        path.join(repositoryPath, 'binary.dat'),
+        Buffer.from([0, 1, 2, 3])
+      )
+    }
+    if (large) {
+      fs.writeFileSync(
+        path.join(repositoryPath, 'large-two.txt'),
+        `${'y'.repeat(large)}\n`
+      )
+    }
+  }
+  const upperHead = emptyUpper
+    ? rootHead
+    : gitCommit(repositoryPath, 'upper layer')
+  const rootPull = makePull(
+    11,
+    'v3',
+    rootBase,
+    'rs/git-layer-1',
+    rootHead,
+    'Git layer one'
+  )
+  const upperPull = makePull(
+    12,
+    'rs/git-layer-1',
+    rootHead,
+    'rs/git-layer-2',
+    upperHead,
+    'Git layer two'
+  )
+  const membership = {
+    id: 'git-stack',
+    identityDigest: '1'.repeat(64),
+    members: [
+      { number: 11, pull: rootPull },
+      { number: 12, pull: upperPull },
+    ],
+    numbers: [11, 12],
+    orderDigest: '2'.repeat(64),
+    ranges: [
+      {
+        response: {
+          data: {
+            files: [],
+            merge_base_commit: { sha: ultimateBase },
+            status: 'behind',
+          },
+        },
+      },
+      { response: { data: { files: [], status: 'ahead' } } },
+    ],
+    top: upperPull,
+    valid: true,
+  }
+  const gitContext = context()
+  return {
+    gitContext,
+    github: githubForGitRepository(repositoryPath),
+    membership,
+    repositoryPath,
+    rootBase,
+    rootHead,
+    ultimateBase,
+    upperHead,
+  }
+}
+
+function syntheticDiffEvidence(manifest) {
+  const result = structuredClone(manifest)
+  for (const [index, layer] of result.layers.entries()) {
+    layer.diff = ''
+    layer.diff_base_sha =
+      index === 0 ? manifest.ultimate_base.sha : layer.base_sha
+    layer.diff_head_sha = layer.head_sha
+  }
+  return result
+}
+
 function prepareDiagnosticsReceipt(t) {
   const directory = fs.mkdtempSync(
     path.join(os.tmpdir(), 'final-stack-diagnostics-')
@@ -475,6 +644,98 @@ test('accepts a trusted clean stack status without requiring a review body', asy
   github.rest.actions = {
     getWorkflowRun: async () => ({ data: state.workflowRun }),
   }
+
+  const originalCheck = { ...state.checkRuns[0], id: 901 }
+  for (const details_url of [
+    'https://github.com/uzh-bf/klicker-uzh/actions/runs/700',
+    'https://github.com/uzh-bf/klicker-uzh/runs/901',
+  ]) {
+    state.checkRuns[0] = { ...originalCheck, details_url }
+    assert.deepEqual(
+      await getVerifiedStackCleanEvidence({
+        github,
+        context: stackContext,
+        headSha: plan.headSha,
+        evidenceDigest,
+      }),
+      cleanEvidence
+    )
+  }
+  const trustedCheck = state.checkRuns[0]
+  for (const change of invalidCleanCheckChanges(901, 700)) {
+    state.checkRuns[0] = { ...trustedCheck, ...change }
+    assert.equal(
+      await getVerifiedStackCleanEvidence({
+        github,
+        context: stackContext,
+        headSha: plan.headSha,
+        evidenceDigest,
+      }),
+      null,
+      JSON.stringify(change)
+    )
+  }
+  state.checkRuns[0] = trustedCheck
+  const trustedWorkflow = state.workflowRun
+  for (const change of [
+    { id: 901 },
+    { event: 'pull_request_target' },
+    { path: '.github/workflows/other.yml' },
+    { head_branch: 'other' },
+    { head_sha: 'e'.repeat(40) },
+    { conclusion: 'failure' },
+    { repository: { full_name: 'other/repo' } },
+  ]) {
+    state.workflowRun = { ...trustedWorkflow, ...change }
+    assert.equal(
+      await getVerifiedStackCleanEvidence({
+        github,
+        context: stackContext,
+        headSha: plan.headSha,
+        evidenceDigest,
+      }),
+      null,
+      JSON.stringify(change)
+    )
+  }
+  state.workflowRun = trustedWorkflow
+  const trustedStatus = state.statuses[0]
+  state.statuses[0] = { ...trustedStatus, target_url: trustedCheck.details_url }
+  assert.equal(
+    await getVerifiedStackCleanEvidence({
+      github,
+      context: stackContext,
+      headSha: plan.headSha,
+      evidenceDigest,
+    }),
+    null
+  )
+  state.statuses[0] = trustedStatus
+  for (const change of [
+    { workflow_url: trustedCheck.details_url },
+    { workflow_run_id: 901 },
+    { evidence_digest: 'e'.repeat(64) },
+    { policy_digest: 'e'.repeat(64) },
+    { background_digest: 'e'.repeat(64) },
+  ]) {
+    state.checkRuns[0] = {
+      ...trustedCheck,
+      output: {
+        text: `<!-- final-ai-stack-clean-evidence/v1 ${encodeMetadata({ ...cleanEvidence, ...change })} -->`,
+      },
+    }
+    assert.equal(
+      await getVerifiedStackCleanEvidence({
+        github,
+        context: stackContext,
+        headSha: plan.headSha,
+        evidenceDigest,
+      }),
+      null,
+      JSON.stringify(change)
+    )
+  }
+  state.checkRuns[0] = trustedCheck
 
   assert.deepEqual(
     await getVerifiedStackCleanEvidence({
@@ -3005,7 +3266,8 @@ test('rejects duplicate code and topology finding IDs before publication', async
 
   const topologyFinding = {
     category: 'bug',
-    content: 'The stack topology can fail after merge.',
+    content:
+      'Confidence: 90/100\nAutofix: manual\nMotivating line: `stack contract`\nThe stack topology can fail after merge.',
     end_line: 4,
     layer_numbers: [1],
     path: 'src/one.ts',
@@ -3041,7 +3303,7 @@ test('suppresses topology findings that restate an overlapping code finding', as
     membership,
   })
   const duplicateContent =
-    'The topology pass repeated the same failure on the same changed line.'
+    'Confidence: 90/100\nAutofix: manual\nMotivating line: `stack contract`\nThe topology pass repeated the same failure on the same changed line.'
   const report = renderStackReview({
     codeResult: completeOCRResult([codeFinding()]),
     headSha: membership.top.head.sha,
@@ -3105,7 +3367,7 @@ test('renders consolidated code and topology findings with one stack marker', as
           category: 'architecture',
           severity: 'medium',
           content:
-            'The shared file changes in non-adjacent layers without a compatible boundary.',
+            'Confidence: 90/100\nAutofix: manual\nMotivating line: `shared boundary`\nThe shared file changes in non-adjacent layers without a compatible boundary.',
         },
       ].map((finding) => ({ ...finding, category: 'maintainability' }))
     ),
@@ -3198,6 +3460,139 @@ test('skips the stack pull-request comment when code and topology have no findin
   assert.equal(createdReviews.length, 0)
 })
 
+test('sends frozen layer source from the merge base in full and incremental review', async (t) => {
+  for (const emptyUpper of [false, true]) {
+    const fixture = makeGitStackFixture(t, { emptyUpper })
+    const manifestBundle = await buildStackSnapshot({
+      github: fixture.github,
+      context: fixture.gitContext,
+      membership: fixture.membership,
+    })
+    const requests = []
+    const fetchImpl = async (_url, options) => {
+      requests.push(JSON.parse(options.body))
+      return new Response(
+        JSON.stringify({
+          model: FINAL_STACK_REVIEW_MODEL,
+          choices: [
+            {
+              finish_reason: 'stop',
+              message: {
+                content: JSON.stringify({
+                  summary: { coverage: 'complete', comments: 0 },
+                  comments: [],
+                }),
+              },
+            },
+          ],
+          usage: { total_tokens: 50, prompt_tokens: 35, completion_tokens: 15 },
+        })
+      )
+    }
+    const ranges = [
+      {
+        layer_number: 2,
+        base_sha: fixture.rootHead,
+        head_sha: fixture.upperHead,
+        files: [],
+      },
+    ]
+    fs.writeFileSync(
+      path.join(fixture.repositoryPath, 'upper.txt'),
+      'UNCOMMITTED_SENTINEL'
+    )
+    for (const mode of ['full', 'incremental']) {
+      await callTopologyModel({
+        apiKey: 'dummy-token',
+        repositoryPath: fixture.repositoryPath,
+        codeResult:
+          mode === 'full'
+            ? completeOCRResult()
+            : combineOCRResults([completeOCRResult()], [2]),
+        manifestBundle,
+        fetchImpl,
+        mode,
+        reviewRanges: mode === 'full' ? [] : ranges,
+        rulesText: 'test rules',
+      })
+    }
+    for (const [index, request] of requests.entries()) {
+      const evidence = JSON.parse(
+        request.messages[1].content.slice(
+          request.messages[1].content.lastIndexOf(
+            'Stack manifest and code coverage: '
+          ) + 'Stack manifest and code coverage: '.length
+        )
+      )
+      assert.deepEqual(evidence.evidence_scope, {
+        mode: index === 0 ? 'full' : 'incremental',
+        review_ranges: index === 0 ? [] : ranges,
+      })
+      const [root, upper] = evidence.manifest.layers
+      assert.equal(root.diff_base_sha, fixture.ultimateBase)
+      assert.equal(root.base_sha, fixture.rootBase)
+      assert.equal(root.diff_head_sha, fixture.rootHead)
+      assert.doesNotMatch(root.diff, /base-advance\.txt/)
+      assert.match(root.diff, /rename from old-name\.txt/)
+      assert.match(root.diff, /deleted file mode/)
+      assert.match(root.diff, /old mode 100644/)
+      assert.match(root.diff, /Binary files a\/source and b\/source differ/)
+      assert.doesNotMatch(upper.diff, /UNCOMMITTED_SENTINEL/)
+      if (emptyUpper) assert.equal(upper.diff, '')
+      else assert.match(upper.diff, /upper layer/)
+    }
+    assert.equal(
+      Object.hasOwn(manifestBundle.manifest.layers[0], 'diff'),
+      false
+    )
+  }
+})
+
+test('rejects unavailable, mismatched, binary and oversized evidence before dispatch', async (t) => {
+  for (const kind of [
+    'tree',
+    'missing',
+    'binary',
+    'git-size',
+    'request-size',
+  ]) {
+    await t.test(kind, async (t) => {
+      const fixture = makeGitStackFixture(t, {
+        binary: kind === 'binary',
+        large:
+          kind === 'git-size'
+            ? 1_100_000
+            : kind === 'request-size'
+              ? 550_000
+              : 0,
+      })
+      const bundle = await buildStackSnapshot({
+        github: fixture.github,
+        context: fixture.gitContext,
+        membership: fixture.membership,
+      })
+      if (kind === 'tree') bundle.manifest.root_base.tree_sha = '0'.repeat(40)
+      if (kind === 'missing')
+        bundle.manifest.layers[0].head_sha = '9'.repeat(40)
+      let calls = 0
+      await assert.rejects(
+        callTopologyModel({
+          apiKey: 'dummy-token',
+          repositoryPath: fixture.repositoryPath,
+          codeResult: completeOCRResult(),
+          manifestBundle: bundle,
+          fetchImpl: async () => {
+            calls += 1
+            throw new Error('must not dispatch')
+          },
+        }),
+        /tree identity|Git evidence|binary source|bounded payload limit/
+      )
+      assert.equal(calls, 0)
+    })
+  }
+})
+
 test('sends strict max-reasoning topology requests and rejects invalid owners', async (t) => {
   const { github } = stackFixture()
   const membership = await resolveStackMembership({
@@ -3216,11 +3611,13 @@ test('sends strict max-reasoning topology requests and rejects invalid owners', 
   let fetchCalls = 0
   const response = await callTopologyModel({
     apiKey: 'dummy-token',
+    readDiffEvidence: syntheticDiffEvidence,
     codeResult,
     manifestBundle,
     rulesText: 'test rules',
-    schema: { type: 'object' },
     fetchImpl: async (_url, options) => {
+      assert.equal(_url, 'https://api.mistral.ai/v1/chat/completions')
+      assert.equal(options.redirect, 'error')
       fetchCalls += 1
       request = JSON.parse(options.body)
       return new Response(
@@ -3245,8 +3642,16 @@ test('sends strict max-reasoning topology requests and rejects invalid owners', 
   assert.equal(response.status, 'complete')
   assert.equal(Object.hasOwn(request, 'provider'), false)
   assert.equal(request.reasoning_effort, 'max')
-  assert.equal(request.max_tokens, 4096)
+  assert.equal(request.max_tokens, 65536)
   assert.equal(request.response_format.json_schema.strict, true)
+  assert.equal(
+    Object.hasOwn(
+      request.response_format.json_schema.schema.properties.comments.items
+        .properties.layer_numbers,
+      'uniqueItems'
+    ),
+    false
+  )
   assert.equal(request.messages[0].content.includes('dummy-token'), false)
   assert.doesNotMatch(request.messages[1].content, /patch_hunks|operations/)
   assert.match(
@@ -3254,6 +3659,111 @@ test('sends strict max-reasoning topology requests and rejects invalid owners', 
     /The cumulative change can fail after merge\./
   )
   assert.match(request.messages[1].content, /"start_line":4/)
+  const finding = {
+    path: 'src/one.ts',
+    layer_numbers: [1, 3],
+    start_line: 1,
+    end_line: 1,
+    category: 'bug',
+    severity: 'high',
+    content:
+      'Confidence: 90/100\nAutofix: manual\nMotivating line: `stack contract`\nSynthetic cross-layer contract failure.',
+  }
+  assert.equal(
+    validateTopologyResult(topologyResult([finding]), manifestBundle.manifest)
+      .comments.length,
+    1
+  )
+  assert.equal(
+    validateTopologyResult(
+      topologyResult([
+        {
+          ...finding,
+          severity: 'critical',
+          content:
+            'Confidence: 50/100\nAutofix: manual\nMotivating line: `stack contract`\nCritical threshold is accepted.',
+        },
+      ]),
+      manifestBundle.manifest
+    ).comments.length,
+    1
+  )
+  assert.throws(
+    () =>
+      validateTopologyResult(
+        topologyResult([
+          { ...finding, content: 'Missing the required evidence prefix.' },
+        ]),
+        manifestBundle.manifest
+      ),
+    /invalid confidence score/
+  )
+  assert.throws(
+    () =>
+      validateTopologyResult(
+        topologyResult([
+          {
+            ...finding,
+            content: finding.content.replace('90/100', '74/100'),
+          },
+        ]),
+        manifestBundle.manifest
+      ),
+    /invalid confidence score/
+  )
+  assert.throws(
+    () =>
+      validateTopologyResult(
+        topologyResult([
+          {
+            ...finding,
+            content: finding.content.replace('90/100', '101/100'),
+          },
+        ]),
+        manifestBundle.manifest
+      ),
+    /invalid confidence score/
+  )
+  const incrementalRanges = [
+    {
+      base_sha: 'b'.repeat(40),
+      files: [
+        {
+          changed_line_ranges: [{ end_line: 1, start_line: 1 }],
+          filename: 'src/one.ts',
+        },
+      ],
+      head_sha: 'c'.repeat(40),
+      layer_number: 1,
+    },
+  ]
+  assert.equal(
+    validateTopologyResult(
+      topologyResult([finding]),
+      manifestBundle.manifest,
+      'incremental',
+      incrementalRanges
+    ).comments.length,
+    1
+  )
+  assert.throws(
+    () =>
+      validateTopologyResult(
+        topologyResult([{ ...finding, start_line: 2, end_line: 2 }]),
+        manifestBundle.manifest,
+        'incremental',
+        incrementalRanges
+      ),
+    /invalid/
+  )
+  assert.throws(
+    () =>
+      validateTopologyResult(
+        topologyResult([{ ...finding, layer_numbers: [1, 3, 1] }]),
+        manifestBundle.manifest
+      ),
+    /invalid/
+  )
   assert.throws(
     () =>
       validateTopologyResult(
@@ -3265,7 +3775,8 @@ test('sends strict max-reasoning topology requests and rejects invalid owners', 
             end_line: 1,
             category: 'bug',
             severity: 'high',
-            content: 'Invalid owner',
+            content:
+              'Confidence: 90/100\nAutofix: manual\nMotivating line: `stack contract`\nInvalid owner',
           },
         ]),
         manifestBundle.manifest
@@ -3332,6 +3843,14 @@ test('retains topology usage when caller validation rejects the answer', async (
     ['{not valid json', /Topology model returned invalid structured output/],
     [
       JSON.stringify({
+        summary: { coverage: 'complete', comments: 0 },
+        comments: [],
+      }),
+      /Topology model exhausted its completion token limit/,
+      'length',
+    ],
+    [
+      JSON.stringify({
         summary: { coverage: 'complete', comments: 1 },
         comments: [
           {
@@ -3341,7 +3860,8 @@ test('retains topology usage when caller validation rejects the answer', async (
             end_line: 1,
             category: 'bug',
             severity: 'high',
-            content: 'Invalid owner',
+            content:
+              'Confidence: 90/100\nAutofix: manual\nMotivating line: `stack contract`\nInvalid owner',
           },
         ],
       }),
@@ -3349,10 +3869,11 @@ test('retains topology usage when caller validation rejects the answer', async (
     ],
   ]
   let fetchCalls = 0
-  for (const [content, errorPattern] of cases) {
+  for (const [content, errorPattern, finishReason = 'stop'] of cases) {
     await assert.rejects(
       callTopologyModel({
         apiKey: 'dummy-token',
+        readDiffEvidence: syntheticDiffEvidence,
         codeResult,
         manifestBundle,
         rulesText: 'test rules',
@@ -3362,7 +3883,7 @@ test('retains topology usage when caller validation rejects the answer', async (
           return new Response(
             JSON.stringify({
               model: FINAL_STACK_REVIEW_MODEL,
-              choices: [{ finish_reason: 'stop', message: { content } }],
+              choices: [{ finish_reason: finishReason, message: { content } }],
               usage: {
                 total_tokens: 50,
                 prompt_tokens: 35,
@@ -3375,9 +3896,9 @@ test('retains topology usage when caller validation rejects the answer', async (
       errorPattern
     )
   }
-  assert.equal(fetchCalls, 2)
+  assert.equal(fetchCalls, cases.length)
   const receipts = readDiagnosticsReceipts(diagnosticsPath)
-  assert.equal(receipts.length, 2)
+  assert.equal(receipts.length, cases.length)
   for (const receipt of receipts) {
     assert.deepEqual(receipt, {
       schema_version: 1,
@@ -3414,8 +3935,10 @@ test('keeps the topology deadline and records the aborted request', async (t) =>
   const diagnosticsPath = prepareDiagnosticsReceipt(t)
   t.mock.timers.enable({ apis: ['setTimeout'] })
   let fetchCalls = 0
+  let aborted = false
   const pending = callTopologyModel({
     apiKey: 'dummy-token',
+    readDiffEvidence: syntheticDiffEvidence,
     codeResult,
     manifestBundle,
     rulesText: 'test rules',
@@ -3423,14 +3946,19 @@ test('keeps the topology deadline and records the aborted request', async (t) =>
     fetchImpl: (_url, options) => {
       fetchCalls += 1
       return new Promise((_resolve, reject) => {
-        options.signal.addEventListener('abort', () =>
+        options.signal.addEventListener('abort', () => {
+          aborted = true
           reject(new Error('synthetic abort'))
-        )
+        })
       })
     },
   })
   assert.equal(fetchCalls, 1)
-  t.mock.timers.tick(120_000)
+  t.mock.timers.tick(119_999)
+  await Promise.resolve()
+  assert.equal(aborted, false)
+  t.mock.timers.tick(1)
+  assert.equal(aborted, true)
   await assert.rejects(pending, /upstream request failed/)
   const receipts = readDiagnosticsReceipts(diagnosticsPath)
   assert.equal(receipts.length, 1)
