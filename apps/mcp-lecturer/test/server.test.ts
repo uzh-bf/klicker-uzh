@@ -42,30 +42,24 @@ type McpSdk = {
   }
 }
 
-let mcpSdk: Promise<McpSdk> | undefined
+async function loadMcpSdk(): Promise<McpSdk> {
+  const appRequire = createRequire(import.meta.url)
+  const fastmcpRequire = createRequire(appRequire.resolve('fastmcp'))
+  const load = (specifier: string) =>
+    import(
+      /* @vite-ignore */ pathToFileURL(fastmcpRequire.resolve(specifier)).href
+    )
 
-function loadMcpSdk(): Promise<McpSdk> {
-  mcpSdk ??= (async () => {
-    const appRequire = createRequire(import.meta.url)
-    const fastmcpRequire = createRequire(appRequire.resolve('fastmcp'))
-    const load = (specifier: string) =>
-      import(
-        /* @vite-ignore */ pathToFileURL(fastmcpRequire.resolve(specifier)).href
-      )
+  const [clientModule, transportModule] = await Promise.all([
+    load('@modelcontextprotocol/sdk/client/index.js'),
+    load('@modelcontextprotocol/sdk/inMemory.js'),
+  ])
 
-    const [clientModule, transportModule] = await Promise.all([
-      load('@modelcontextprotocol/sdk/client/index.js'),
-      load('@modelcontextprotocol/sdk/inMemory.js'),
-    ])
-
-    return {
-      Client: clientModule.Client as McpSdk['Client'],
-      InMemoryTransport:
-        transportModule.InMemoryTransport as McpSdk['InMemoryTransport'],
-    }
-  })()
-
-  return mcpSdk
+  return {
+    Client: clientModule.Client as McpSdk['Client'],
+    InMemoryTransport:
+      transportModule.InMemoryTransport as McpSdk['InMemoryTransport'],
+  }
 }
 
 async function connectClient(
