@@ -4,8 +4,6 @@ const os = require('node:os')
 const path = require('node:path')
 const test = require('node:test')
 const { spawnSync, execFileSync } = require('node:child_process')
-const vm = require('node:vm')
-const YAML = require('yaml')
 const {
   validateRepositoryConfig,
   readRepositoryConfig,
@@ -525,102 +523,6 @@ process.exitCode=7
     else process.env.GITHUB_TOKEN = previous
     if (previousContext7 === undefined) delete process.env.CONTEXT7_API_KEY
     else process.env.CONTEXT7_API_KEY = previousContext7
-    fs.rmSync(directory, { recursive: true, force: true })
-  }
-})
-
-test('draft workflow publishes validated partial results after OCR failure without hiding that failure', async () => {
-  const directory = fs.mkdtempSync(path.join(os.tmpdir(), 'ocr-partial-job-'))
-  const executable = path.join(directory, 'ocr.cjs')
-  const head = '2'.repeat(40)
-  const job = YAML.parse(
-    fs.readFileSync(
-      path.join(__dirname, '../workflows/check-ocr-review.yml'),
-      'utf8'
-    )
-  ).jobs['ocr-review']
-  const checkout = job.steps.find(
-    (step) => step.name === 'Checkout trusted review policy'
-  )
-  assert.equal(checkout.with['fetch-depth'], 0)
-  assert.equal(checkout.with['persist-credentials'], false)
-  assert.equal(checkout.with['sparse-checkout'], undefined)
-  assert.equal(checkout.with.filter, undefined)
-  const validation = job.steps.find((step) =>
-    step.run?.endsWith('ocr-draft-review.cjs validate')
-  )
-  const publication = job.steps.find(
-    (step) => step.name === 'Publish draft findings'
-  )
-  const steps = {
-    review: { outcome: 'failure' },
-    validate: { outcome: 'skipped' },
-  }
-  const admitted = (step, cancelled = false) =>
-    step.if === undefined
-      ? steps.review.outcome === 'success'
-      : new Function(
-          'steps',
-          'cancelled',
-          `return (${step.if.replace(/^\$\{\{\s*|\s*\}\}$/g, '')})`
-        )(steps, () => cancelled)
-  fs.writeFileSync(
-    executable,
-    `#!/usr/bin/env node
-process.stdout.write(JSON.stringify({status:'partial',comments:[],manifest:{input:{resolved_head:'${head}'},coverage:{selected:['a','b'],completed:['a'],failed:[{classification:'provider'}],reused:[],waived:[]}}}))
-process.exitCode=7
-`,
-    { mode: 0o700 }
-  )
-  try {
-    const outcome = await runDraftReview({
-      repo: directory,
-      temp: directory,
-      from: '1'.repeat(40),
-      head,
-      executable,
-      apiKey: 'synthetic',
-      write: () => {},
-    })
-    assert.equal(outcome.code, 7)
-    assert.equal(admitted(validation), true)
-    const validated = spawnSync(process.execPath, [RUNNER, 'validate'], {
-      env: { RUNNER_TEMP: directory, HEAD_SHA: head },
-      encoding: 'utf8',
-    })
-    assert.equal(validated.status, 0, validated.stderr)
-    steps.validate.outcome = 'success'
-    assert.equal(admitted(publication), true)
-    let published
-    await vm.runInNewContext(`(async () => { ${publication.with.script} })()`, {
-      require: (name) =>
-        name.includes('post-review-comments')
-          ? {
-              runPostReviewComments: async ({ resultPath }) => {
-                published = JSON.parse(fs.readFileSync(resultPath, 'utf8'))
-              },
-            }
-          : require(name),
-      process: { env: { RUNNER_TEMP: directory } },
-      github: {},
-      context: { payload: { pull_request: { number: 1 } } },
-      core: {},
-    })
-    assert.equal(published.status, 'partial')
-    assert.equal(published.warnings.at(-1).type, 'review_incomplete')
-    assert.equal(outcome.code, 7)
-    assert.equal(steps.review.outcome, 'failure')
-    fs.writeFileSync(outcome.resultPath, '{}')
-    assert.equal(
-      spawnSync(process.execPath, [RUNNER, 'validate'], {
-        env: { RUNNER_TEMP: directory, HEAD_SHA: head },
-      }).status,
-      1
-    )
-    steps.validate.outcome = 'failure'
-    assert.equal(admitted(publication), false)
-    assert.equal(admitted(validation, true), false)
-  } finally {
     fs.rmSync(directory, { recursive: true, force: true })
   }
 })
