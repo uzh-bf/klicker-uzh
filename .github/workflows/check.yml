@@ -207,15 +207,18 @@ jobs:
 
       - name: Qualify stock OCR runtime with synthetic providers
         if: steps.ocr_shared.outputs.should_run != 'false'
+        timeout-minutes: 25
         env:
           OCR_NO_UPDATE: '1'
         run: |
           set -euo pipefail
-          npm install --prefix "${RUNNER_TEMP}/ocr-stock-qualification" @alibaba-group/open-code-review@1.13.0
+          ocr_package="$(node -p "require('./.github/scripts/ocr-controller.cjs').verifyRelease().manifest.draft.package")"
+          ocr_revision="$(node -p "require('./.github/scripts/ocr-controller.cjs').verifyRelease().manifest.draft.publisher.revision")"
+          npm install --prefix "${RUNNER_TEMP}/ocr-stock-qualification" "${ocr_package}"
           export OCR_TEST_BINARY="${RUNNER_TEMP}/ocr-stock-qualification/node_modules/.bin/ocr"
           publisher_root="${RUNNER_TEMP}/ocr-stock-publisher"
           git init "${publisher_root}"
-          git -C "${publisher_root}" fetch --depth=1 https://github.com/alibaba/open-code-review.git 1672852136fc87748249d22bce0819f33419ea79
+          git -C "${publisher_root}" fetch --depth=1 https://github.com/alibaba/open-code-review.git "${ocr_revision}"
           git -C "${publisher_root}" checkout --detach FETCH_HEAD
           export OCR_TEST_PUBLISHER="${publisher_root}/scripts/github-actions/post-review-comments.js"
           export OCR_REQUIRE_STOCK_BINARY=1
