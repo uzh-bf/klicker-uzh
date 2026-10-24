@@ -566,3 +566,23 @@ following details complete the frozen contract for round 2.
 
 Planning round 2: `APPROVED`; the same native planner accepted the completed
 contract. Execute this source package under the user’s “proceed.”
+
+### Package 2A implementation evidence
+
+The compatible runner CLI seam is committed as `1fddf77a98`. Its legacy
+command defaults remain intact; explicit caller inputs enable the shared
+controller. The action/controller/manifest are one coherent release slice
+because the manifest binds the action bytes; splitting that inventory across
+commits would leave an unverifiable intermediate release. The independent
+metadata executor wrote only the action file. Documentation and final
+integration follow the committed release slice.
+
+All 275 focused contracts passed on Node 24.21.0, including the actual stock
+OCR 1.13.0 native binary with synthetic providers and both final suites. The
+subsequent controller-only check passed 10/10 with zero skips after adding
+caller config/skill mutation checks. No paid inference or live replay was used.
+New tests: one central controller suite; existing provider/runner/final suites
+reused. Formatting and changed-source secret scans pass. Biome reports only
+nonblocking environment/style warnings; these operational scripts do not run
+through Turbo's application environment cache. Source reviews and hosted CI
+are still pending at this checkpoint. No active workflow caller was changed.

@@ -439,6 +439,9 @@ Shard durations differ by architecture, so `playwright/timings.json` names the a
   Pure background/result helpers are shared with the final controller, whose
   policy digest includes their source. Final admission and its individual/stack
   execution contracts stay in the existing GitHub controller.
+  The [shared runtime](ocr-runtime.md) packages these contracts as a pinned
+  composite action and release manifest. Publishing that source does not migrate
+  the current caller; consumer updates follow verified source qualification.
 - **Public library documentation**: `lookup_library_docs` uses Context7's
   [Search API](https://context7.com/docs/search-api) through the same trusted
   broker. `CONTEXT7_API_KEY` stays in the parent; OCR receives only its existing
