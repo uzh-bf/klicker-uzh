@@ -100,9 +100,21 @@ test('every OpenCodeReview job disables the CLI self-update', () => {
   assert.ok(guarded.includes('check-ocr-review.yml:ocr-review'))
 })
 
-test('attempts draft diagnostics upload even after startup failure', () => {
+test('preserves draft cancellation, publication and diagnostics policy', () => {
   const { action } = loadPinnedDraftPolicy()
   assert.equal(action.runs.using, 'composite')
+  const validation = action.runs.steps.find((step) => step.id === 'validate')
+  const publication = action.runs.steps.find((step) =>
+    step.with?.script?.includes('publishReview')
+  )
+  assert.equal(
+    validation.if,
+    "${{ !cancelled() && (steps.review.outcome == 'success' || steps.review.outcome == 'failure') }}"
+  )
+  assert.equal(
+    publication.if,
+    "${{ !cancelled() && steps.validate.outcome == 'success' }}"
+  )
   const runIndex = action.runs.steps.findIndex((step) => step.id === 'review')
   const uploadIndex = action.runs.steps.findIndex((step) =>
     step.uses?.startsWith('actions/upload-artifact@')

@@ -698,3 +698,12 @@ All 277 focused OCR contracts pass on Node 24.21.0 with zero skips, including
 the real stock 1.13.0 binary and synthetic providers/tools. The published
 revision's producing CI logs also verify stock-binary execution and the patched
 engine build. These checks do not establish live execution of the new caller.
+
+
+The committed migration's simplification pass found no useful reductions.
+The risk review verified the runtime/caller seam and identified one retained
+coverage requirement: assert cancellation and publication admission directly
+in the pinned action guard. Both machine-condition assertions are now present;
+all three affected guard contracts pass. Other passing verification is reused
+because release bytes and runtime behavior are unchanged. Integrated source
+review and current-head hosted CI remain separate receipts at draft delivery.
