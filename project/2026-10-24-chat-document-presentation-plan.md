@@ -128,6 +128,17 @@ screenshots to this repository through authenticated host `gh`; verify links.
 - Fresh remote state and existing owners checked; task worktree clean at baseline.
 - Planner Leibniz approved round2 after precise retention and desktop/mobile
   distinctions were accepted. Implementation starts under existing user approval.
-- New tests: none yet; only existing regression files are planned.
-- Substantive size: not yet changed.
+- Existing regression files extended with six synthetic cases; no new test file.
+- Implemented parser-based titles/filter/export, EN/DE disclosure and dictation
+  mounted-action focus/theme. Full Chat853pass/21skip, types/lint/production build
+  and scoped static checks pass; browser export/filter/provider-notice DOM checked.
+- EN/DE notice DOM, synthetic export/filter and initial action focus passed.
+  Screenshot compositor timed out after fonts loaded; earlier partial-animation
+  captures were rejected. Focus return after dismissal remains unqualified.
+  No completed visual or microphone/provider acceptance is claimed.
+- Simplifier found no net simplification. Slice reviewer passed the eight-file
+  implementation and its single focused timer correction. Integrated final
+  review and hosted CI remain pending; the draft will retain visual limitations.
+- Substantive size: 140 additions/22 deletions across code, translations and tests; plan/docs
+  excluded.
 - PR: none yet.
