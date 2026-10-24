@@ -352,8 +352,9 @@ create another approval checkpoint.
 
 ## Progress
 
-Package 1 implementation complete; integrated review and draft delivery are
-next under the native goal. Packages 2 and 3 remain proposed. Slice A is committed
+Package 1 source delivery complete through draft
+[PR #6700](https://github.com/uzh-bf/klicker-uzh/pull/6700), against `v3`.
+Packages 2 and 3 remain proposed. Slice A is committed
 as `af8c53d7d8`; slice B as `a6c988cb8d`. Slice C adds strict trusted config,
 root-context access, explicit library selection and an injected summary sink.
 The runtime now records its policy SHA and fixed profile in sanitized outcomes.
@@ -378,11 +379,37 @@ All 264 focused tests passed on Node 24.21.0, including both final-review paths
 and the actual stock OCR 1.13.0 binary with synthetic providers/tools. The
 runtime scan found no issues in the four changed runtime modules. Source/live
 acceptance remains separate; no live replay ran. Simplification of slices A and
-B found no useful reductions. Required risk review, integrated final review and
-hosted CI remain pending. Next: finish slice C and reviewed draft delivery
-against `v3`. Claude CLI reviews use the
+B found no useful reductions. Slice C removed an identical path-validator copy
+by reusing the configuration validator; all 15 affected tool tests passed.
+Committed-policy broker reads reached both root contracts, the guide and the
+portable skill without provider calls. The input risk review passed. Claude's
+integrated final review passed through `031540a164` after local schema validation;
+the initial malformed response was corrected within the same review contract.
+The remaining helper/config risk review also passed, including the validator
+simplification. All required local source reviews are complete. Hosted CI is
+reported separately and remains pending at this draft delivery; skipped draft
+final-review jobs do not qualify ready-stage review. The next implementation
+package remains proposed, and merged-policy acceptance awaits an authorized
+ordinary event after merge.
+Claude CLI reviews use the
 user's standing explicit `claude-opus-5-5` selection at medium effort. PR #6698
 is merged into `v3-ai`; its prefixed-install guard fix stays owned there and is
 not copied into this branch. Package 2 depends on a verified published
 runtime revision; native GitLab work depends on pilot selection and its trust
 and authority decisions.
+
+The host's standard hooks explicitly defer monorepo checks/builds because this
+checkout has no dependency installation; their hosted CI has not been claimed
+passed. Focused scripts ran directly with the pinned Node version and existing
+formatter binaries. No application or container runtime was started. The local
+data-hygiene hook flagged synthetic credential assignments in tests; these
+verified false positives used its documented override after staged inspection
+and passing gitleaks. No real credentials or environment data entered the diff.
+
+Scope size before the final documentation update: 1,107 changed substantive
+lines, including moved helper bodies and consequential regression tests; plan
+and roadmap artifacts excluded. This is one cohesive runtime preparation
+package. Shared action distribution and adopter/GitLab migrations remain outside
+this PR. Global `rs-ocr` distribution instructions will change with that later
+manifest/caller package; this PR updates the portable model-facing skill and
+current CI/solution documentation together.
