@@ -2938,7 +2938,7 @@ export async function getRunningLiveQuiz({ id }: { id: string }, ctx: Context) {
 
   // if a pin code is required, verify that the user has already entered a valid one
   if (quizInfo.pinCode) {
-    const cookieName = `live-quiz-pin-${id}`
+    const cookieName = previewCookieName(`live-quiz-pin-${id}`)
     const providedPin = ctx.req.cookies?.[cookieName]
 
     if (!providedPin) {

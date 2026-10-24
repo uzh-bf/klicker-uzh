@@ -96,11 +96,7 @@ async function doParticipantLogin(
     ...COOKIE_SETTINGS,
     maxAge: 0,
   })
-  ctx.res.cookie(
-    previewCookieName('NEXT_LOCALE'),
-    participantLocale,
-    COOKIE_SETTINGS
-  )
+  ctx.res.cookie('NEXT_LOCALE', participantLocale, COOKIE_SETTINGS)
 
   return jwt
 }
@@ -467,7 +463,7 @@ export async function changeUserLocale(
 
   if (!user) return null
 
-  ctx.res.cookie(previewCookieName('NEXT_LOCALE'), locale, COOKIE_SETTINGS)
+  ctx.res.cookie('NEXT_LOCALE', locale, COOKIE_SETTINGS)
 
   return user
 }
@@ -535,7 +531,7 @@ export async function changeParticipantLocale(
   { locale }: { locale: DB.Locale },
   ctx: Context
 ) {
-  ctx.res.cookie(previewCookieName('NEXT_LOCALE'), locale, COOKIE_SETTINGS)
+  ctx.res.cookie('NEXT_LOCALE', locale, COOKIE_SETTINGS)
 
   if (!ctx.user) return null
 

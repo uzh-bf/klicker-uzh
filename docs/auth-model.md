@@ -128,3 +128,5 @@ Auth telemetry (`apps/auth/src/lib/telemetry.ts`) emits one JSON line per auth e
 ## Where authorization happens
 
 Authentication (this page) only puts a verified `user` on the GraphQL context. All authorization — role gates, scope ladder, object-level permissions, sharing grants — is enforced per-field in the API layer; see [GraphQL API Layer](./graphql-api-layer.md).
+
+Preview sessions use distinct cookie names selected by `NEXT_PUBLIC_PREVIEW_ID` on every application. Locale preference retains Next.js’s `NEXT_LOCALE` name, so trusted previews share that display preference. Session signing secrets and redirect allowlists remain separate per preview.

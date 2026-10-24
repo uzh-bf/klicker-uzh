@@ -193,41 +193,24 @@ test('endpoint and image paths survive validation for every app', () => {
   }
 })
 
-test('each required binding must be supplied by preview config', () => {
+test('required preview bindings cannot fall back to ambient values', () => {
   for (const [app, key] of [
     ['auth', 'NEXTAUTH_URL'],
-    ['chat', 'NEXT_PUBLIC_PWA_URL'],
-    ['frontend-control', 'NEXT_PUBLIC_CONTROL_URL'],
-    ['frontend-manage', 'NEXT_PUBLIC_API_URL'],
-    ['frontend-pwa', 'NEXT_PUBLIC_ADD_RESPONSE_URL'],
-  ]) {
-    const partialConfig = { ...validPreviewConfig }
-    delete partialConfig[key]
-    assert.throws(
-      () =>
-        prepareChildEnvironment(
-          {
-            ...validPreviewConfig,
-            KLICKER_PREVIEW_BUILD_ENV_JSON: JSON.stringify(partialConfig),
-          },
-          app
-        ),
-      PreviewBuildEnvError
-    )
-  }
-})
-
-test('newly required preview bindings cannot fall back to production values', () => {
-  for (const [app, key] of [
+    ['auth', 'NEXT_PUBLIC_PREVIEW_ID'],
     ['auth', 'EDUID_CLIENT_ID'],
+    ['chat', 'NEXT_PUBLIC_PWA_URL'],
+    ['chat', 'NEXT_PUBLIC_MANAGE_URL'],
     ['chat', 'NEXT_PUBLIC_AVATAR_BASE_PATH'],
+    ['frontend-control', 'NEXT_PUBLIC_CONTROL_URL'],
     ['frontend-control', 'API_URL_SSR'],
+    ['frontend-manage', 'NEXT_PUBLIC_API_URL'],
+    ['frontend-manage', 'NEXT_PUBLIC_CHAT_URL'],
     ['frontend-manage', 'NEXT_PUBLIC_LTI_URL'],
+    ['frontend-pwa', 'NEXT_PUBLIC_ADD_RESPONSE_URL'],
     ['frontend-pwa', 'NEXT_PUBLIC_WEB_PUSH_PUBLIC_KEY'],
   ]) {
     const partialConfig = { ...validPreviewConfig }
     delete partialConfig[key]
-
     assert.throws(
       () =>
         prepareChildEnvironment(

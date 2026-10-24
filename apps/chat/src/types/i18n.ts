@@ -1,7 +1,6 @@
 import { getMessageFallback, onError, routing } from '@klicker-uzh/i18n'
 import de from '@klicker-uzh/i18n/messages/de'
 import en from '@klicker-uzh/i18n/messages/en'
-import { previewCookieName } from '@klicker-uzh/util'
 import { cookies } from 'next/headers'
 import { hasLocale } from 'next-intl'
 import { getRequestConfig } from 'next-intl/server'
@@ -23,9 +22,7 @@ export default getRequestConfig(async () => {
   // Read it directly here so server-side `getTranslations`/`getMessages` agree
   // with the layout instead of relying on a `setRequestLocale` back-fill, which
   // does not propagate to this config in a cookie-based (non-segment) setup.
-  const requested = (await cookies()).get(
-    previewCookieName('NEXT_LOCALE')
-  )?.value
+  const requested = (await cookies()).get('NEXT_LOCALE')?.value
   const locale = hasLocale(routing.locales, requested)
     ? requested
     : routing.defaultLocale

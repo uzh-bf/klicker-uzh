@@ -121,10 +121,10 @@ async function handleAddResponse(req: IncomingMessage, res: ServerResponse) {
     const raw = req.headers['cookie']
     const parts = raw.split(';').map((s) => s.trim())
     const participantPair = parts.find((p) =>
-      p.startsWith('participant_token=')
+      p.startsWith(`${previewCookieName('participant_token')}=`)
     )
     const temporaryPair = parts.find((p) =>
-      p.startsWith('temporary_participant_token=')
+      p.startsWith(`${previewCookieName('temporary_participant_token')}=`)
     )
     const forwarded: string[] = []
     if (participantPair) forwarded.push(participantPair)
@@ -145,10 +145,7 @@ async function handleAddResponse(req: IncomingMessage, res: ServerResponse) {
   }
 
   // determine if the participant is logged in with a valid student cookie (temporary or standard)
-  const isAuthenticatedParticipant =
-    cookie &&
-    (cookie.includes('participant_token=') ||
-      cookie.includes('temporary_participant_token='))
+  const isAuthenticatedParticipant = Boolean(cookie)
 
   // depending on the authentication state, add the response to the correct hatchet event queue
   const eventName = isAuthenticatedParticipant
