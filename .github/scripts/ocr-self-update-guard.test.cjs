@@ -171,6 +171,16 @@ ${install.run}
   } finally {
     fs.rmSync(directory, { recursive: true, force: true })
   }
+  const check = YAML.parse(
+    fs.readFileSync(path.join(workflowDir, 'check.yml'), 'utf8')
+  )
+  const qualifier = check.jobs['check-suite'].steps.find(
+    (step) => step.id === 'ocr_engine'
+  )
+  assert.match(
+    '.github/scripts/ocr-self-update-guard.test.cjs',
+    new RegExp(qualifier.with.pattern)
+  )
   const summary = job.steps.find((step) =>
     step.run?.endsWith('ocr-draft-review.cjs summary')
   )
