@@ -183,6 +183,13 @@ does not prove actual on-device dictation or microphone acceptance.
 
 ### Checkpoint during final-review correction
 
+The maintained sync branch advanced while the preview correction was verified:
+it imported the subsequently merged document-presentation and dictation-focus fix
+from source 6dad21cc7a. The ordinary push correctly stopped on divergence. Preserve
+that controller head through a normal local merge, retaining the preview fix;
+verify the added chat paths and include them in the final complete review scope.
+This refresh resolves task-upstream divergence and does not bypass a sync hop.
+
 The first integration head is published; both protected sync merges remain
 pending. Complete the accepted preview correction and its focused browser proof,
 then commit/push normally and use the one integrated-review correction pass to

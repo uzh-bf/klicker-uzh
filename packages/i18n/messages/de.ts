@@ -288,7 +288,7 @@ export default {
       access:
         'Dass du Zugriff auf eine Datei hast, heisst nicht, dass du sie teilen darfst. Frag im Zweifel deine Dozierenden.',
       dataBoundary:
-        'Der Text deiner Dokumente wird an den Anbieter des KI-Modells gesendet und mit diesem Gespräch gespeichert.',
+        'Der Dokumenttext wird an den Anbieter des KI-Modells gesendet. Wenn das gewählte Modell Bilder lesen kann, können auch gerenderte PDF-Seiten zur visuellen Prüfung gesendet werden. KlickerUZH speichert den Text und eine allfällige Zusammenfassung der visuellen Prüfung mit diesem Gespräch, aber nicht die Seitenbilder.',
       once: 'Dieser Hinweis erscheint auf diesem Gerät nur einmal.',
       remove: 'Dokumente entfernen',
       accept: 'Verstanden',

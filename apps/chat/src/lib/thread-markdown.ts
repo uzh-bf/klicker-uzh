@@ -1,6 +1,7 @@
+import type { ExtendedThreadMessageLike } from '../stores/chatStore'
+import { stripDocumentBlocks } from './attachments/documentText'
 import { normalizeSourcesFromParts } from './sources/normalizeSources'
 import { getSourceNavigationUrl } from './sources/sourceUrl'
-import type { ExtendedThreadMessageLike } from '../stores/chatStore'
 
 export interface ThreadMarkdownLabels {
   user: string
@@ -9,13 +10,19 @@ export interface ThreadMarkdownLabels {
 }
 
 const getMessageText = (message: ExtendedThreadMessageLike): string => {
-  if (typeof message.content === 'string') return message.content.trim()
   // Only answer text is exported. Tool calls, reasoning and data markers are
   // internals of how the answer was produced, not part of the study note.
-  return message.content
-    .flatMap((part) => (part.type === 'text' ? [part.text] : []))
-    .join('\n\n')
-    .trim()
+  const textParts =
+    typeof message.content === 'string'
+      ? [message.content]
+      : message.content.flatMap((part) =>
+          part.type === 'text' ? [part.text] : []
+        )
+  const presentedParts =
+    message.role === 'user'
+      ? textParts.map((text) => stripDocumentBlocks(text))
+      : textParts
+  return presentedParts.join('\n\n').trim()
 }
 
 const getSourceLines = (message: ExtendedThreadMessageLike): string[] => {
