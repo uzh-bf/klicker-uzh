@@ -129,7 +129,9 @@ export function DictationSheet() {
   // The design-system `Modal` prevents `onOpenAutoFocus` and mounts its
   // contents after the sheet's effect, so focus the action when it mounts.
   const primaryActionRef = useCallback((node: HTMLButtonElement | null) => {
-    node?.focus()
+    if (!node) return
+    const frame = requestAnimationFrame(() => node.focus())
+    return () => cancelAnimationFrame(frame)
   }, [])
 
   if (!installSheetOpen) return null
