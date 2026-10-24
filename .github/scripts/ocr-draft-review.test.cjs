@@ -6,6 +6,10 @@ const test = require('node:test')
 const { spawnSync, execFileSync } = require('node:child_process')
 const vm = require('node:vm')
 const YAML = require('yaml')
+const {
+  validateRepositoryConfig,
+  readRepositoryConfig,
+} = require('./ocr-runtime-config.cjs')
 
 const { runDraftReview, summarizeCoverage } = require('./ocr-draft-review.cjs')
 const RUNNER = path.join(__dirname, 'ocr-draft-review.cjs')
@@ -447,6 +451,7 @@ process.exitCode=7
   process.env.GITHUB_TOKEN = 'PRIVATE_SENTINEL'
   process.env.CONTEXT7_API_KEY = 'PRIVATE_SENTINEL'
   const logs = []
+  const summary = []
   try {
     const outcome = await runDraftReview({
       repo: directory,
@@ -458,6 +463,7 @@ process.exitCode=7
       apiKey: 'synthetic-provider',
       context7ApiKey: 'PRIVATE_SENTINEL',
       write: (line) => logs.push(line),
+      summary: (line) => summary.push(line),
     })
     assert.equal(outcome.code, 7)
     assert.equal(JSON.stringify(logs).includes('PRIVATE_SENTINEL'), false)
@@ -471,6 +477,7 @@ process.exitCode=7
     assert.equal(child.env.MISTRAL_API_KEY, undefined)
     assert.equal(child.env.CONTEXT7_API_KEY, undefined)
     assert.equal(child.env.OCR_NO_UPDATE, '1')
+    assert.equal(child.env.OCR_LLM_TIMEOUT, '480')
     assert.equal(child.env.OCR_LLM_MODEL, 'zai-glm-5-3-flash')
     assert.deepEqual(child.args.slice(0, 9), [
       'review',
@@ -484,6 +491,8 @@ process.exitCode=7
       '15',
     ])
     assert.equal(child.args.includes('--effort'), false)
+    assert.deepEqual(child.args.slice(9, 11), ['--concurrency', '4'])
+    assert.ok(summary.some((line) => line.startsWith('OCR coverage ')))
     assert.equal(child.args.includes('--max-tokens-budget'), false)
     assert.equal(fs.statSync(outcome.resultPath).mode & 0o777, 0o600)
     assert.equal(
@@ -708,6 +717,71 @@ process.exit(result.status??1)
   assert.ok(reads.every((record) => Object.keys(record).length === 0))
 })
 
+test('repository configuration is strict and frozen at the trusted policy rather than the candidate or moving branch', (t) => {
+  const repo = fs.mkdtempSync(path.join(os.tmpdir(), 'ocr-config-'))
+  t.after(() => fs.rmSync(repo, { recursive: true, force: true }))
+  const git = (...args) =>
+    execFileSync('git', args, { cwd: repo, encoding: 'utf8' }).trim()
+  git('init', '-b', 'main')
+  git('config', 'user.name', 'Synthetic fixture')
+  git('config', 'user.email', 'fixture@example.invalid')
+  git('config', 'core.hooksPath', '/dev/null')
+  fs.mkdirSync(path.join(repo, '.github/open-code-review'), { recursive: true })
+  fs.mkdirSync(path.join(repo, 'guidance'))
+  fs.writeFileSync(path.join(repo, 'AGENTS.md'), 'trusted contract')
+  fs.writeFileSync(path.join(repo, 'guidance/review.md'), 'trusted guide')
+  const config = {
+    schema: 'ocr-repository/v1',
+    profile: 'draft-v1',
+    contextRoots: ['guidance'],
+    rootFiles: ['AGENTS.md'],
+    guides: ['guidance/review.md'],
+    publicLibraries: ['/python/cpython'],
+  }
+  const file = path.join(repo, '.github/open-code-review/repository.json')
+  fs.writeFileSync(file, JSON.stringify(config))
+  git('add', '.')
+  git('commit', '-m', 'chore: synthetic policy')
+  const policy = git('rev-parse', 'HEAD')
+  assert.deepEqual(readRepositoryConfig(repo, policy), config)
+  fs.writeFileSync(
+    file,
+    JSON.stringify({ ...config, publicLibraries: ['/private/candidate'] })
+  )
+  git('add', '.')
+  git('commit', '-m', 'enhance: synthetic candidate')
+  assert.deepEqual(readRepositoryConfig(repo, policy), config)
+  for (const invalid of [
+    { ...config, model: 'unapproved' },
+    { ...config, profile: 'final-v1' },
+    { ...config, contextRoots: ['../escape'] },
+    { ...config, contextRoots: ['.git'] },
+    { ...config, rootFiles: ['.env'] },
+    { ...config, publicLibraries: ['/../escape'] },
+    { ...config, guides: ['unreachable/review.md'] },
+    { ...config, publicLibraries: null },
+    { ...config, contextRoots: null },
+  ])
+    assert.throws(
+      () => validateRepositoryConfig(invalid),
+      /invalid_repository_config/
+    )
+  fs.writeFileSync(
+    file,
+    JSON.stringify({ ...config, rootFiles: ['MISSING.md'] })
+  )
+  git('add', '.')
+  git('commit', '-m', 'test: unavailable root')
+  assert.throws(
+    () => readRepositoryConfig(repo, git('rev-parse', 'HEAD')),
+    /invalid_repository_config/
+  )
+  assert.deepEqual(
+    validateRepositoryConfig({ schema: 'ocr-repository/v1' }).publicLibraries,
+    []
+  )
+})
+
 test('pinned OCR registers and invokes reviewer tools with trusted rules and complete accounting', {
   skip: !process.env.OCR_TEST_BINARY,
   timeout: 60000,
@@ -737,6 +811,14 @@ test('pinned OCR registers and invokes reviewer tools with trusted rules and com
     'REVIEW_POLICY_SYNTHETIC_MARKER'
   )
   fs.writeFileSync(path.join(repo, 'docs/contract.md'), 'Synthetic contract')
+  fs.mkdirSync(path.join(repo, '.github/open-code-review'), { recursive: true })
+  fs.writeFileSync(
+    path.join(repo, '.github/open-code-review/repository.json'),
+    JSON.stringify({
+      schema: 'ocr-repository/v1',
+      publicLibraries: ['/vercel/next.js'],
+    })
+  )
   git('add', '.')
   git('commit', '-m', 'chore: synthetic policy')
   const policy = git('rev-parse', 'HEAD')

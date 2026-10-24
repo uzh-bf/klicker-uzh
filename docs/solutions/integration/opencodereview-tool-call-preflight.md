@@ -79,6 +79,16 @@ providers. A successful MCP initialization proves discovery; actual tool
 invocation, bounded source reads and separate usage receipts prove the
 [draft runner contract](../../../.github/scripts/ocr-draft-review.test.cjs).
 
+Trusted repository context is declared in
+[repository.json](../../../.github/open-code-review/repository.json) at the
+frozen policy revision. The runner validates its limited schema and declared
+entry points before adapters start. Root Markdown contracts use the same bounded
+Git-blob reads as nested docs and skills. Public-library IDs are explicit;
+omitting them leaves lookup unavailable instead of importing donor assumptions.
+Model choices and operational limits remain fixed in the runtime. The exported
+runner accepts a summary sink; only the GitHub CLI wrapper selects the Actions
+summary file.
+
 ### Credential-free reviews need complete Git objects
 
 A sparse `actions/checkout` implicitly requests `blob:none`, even when

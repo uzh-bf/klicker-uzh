@@ -352,9 +352,12 @@ create another approval checkpoint.
 
 ## Progress
 
-Package 1 approved; execution starting under the native goal. Packages 2 and 3
-remain proposed. No runtime, workflow, credential, activation or review policy
-has changed yet. Claude Opus 5.5 completed the
+Package 1 implementation complete; integrated review and draft delivery are
+next under the native goal. Packages 2 and 3 remain proposed. Slice A is committed
+as `af8c53d7d8`; slice B as `a6c988cb8d`. Slice C adds strict trusted config,
+root-context access, explicit library selection and an injected summary sink.
+The runtime now records its policy SHA and fixed profile in sanitized outcomes.
+Claude Opus 5.5 completed the
 public-source consultation. Accepted advice: source distribution first, a
 GitHub composite action, fixed execution profiles, explicit context/library
 settings and distinct stock-draft/patched-final binary identities. Private
@@ -371,9 +374,13 @@ claims received an advisory citation check: one supported, three deferred and
 resolved by direct primary-source inspection. The GitLab trust-boundary
 conclusion is an inference from the documented pipeline behavior.
 
-Local plan references, formatting and secret scan passed. There are no
-implementation tests or live-run results yet. Next: execute package 1's A/B/C
-slices through reviewed draft delivery against `v3`. Claude CLI reviews use the
+All 264 focused tests passed on Node 24.21.0, including both final-review paths
+and the actual stock OCR 1.13.0 binary with synthetic providers/tools. The
+runtime scan found no issues in the four changed runtime modules. Source/live
+acceptance remains separate; no live replay ran. Simplification of slices A and
+B found no useful reductions. Required risk review, integrated final review and
+hosted CI remain pending. Next: finish slice C and reviewed draft delivery
+against `v3`. Claude CLI reviews use the
 user's standing explicit `claude-opus-5-5` selection at medium effort. PR #6698
 is merged into `v3-ai`; its prefixed-install guard fix stays owned there and is
 not copied into this branch. Package 2 depends on a verified published

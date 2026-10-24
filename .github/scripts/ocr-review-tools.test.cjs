@@ -146,6 +146,53 @@ const docsQuestion = {
   language: 'TypeScript',
 }
 
+test('trusted root contracts and custom guides stay policy-bound and reject symlinks and oversized blobs', async (t) => {
+  const source = fixture(t)
+  const git = (...args) =>
+    execFileSync('git', args, { cwd: source.repo, encoding: 'utf8' }).trim()
+  fs.mkdirSync(path.join(source.repo, 'guidance'))
+  fs.writeFileSync(path.join(source.repo, 'AGENTS.md'), 'TRUSTED_ROOT')
+  fs.writeFileSync(
+    path.join(source.repo, 'guidance/review.md'),
+    'TRUSTED_GUIDE'
+  )
+  fs.symlinkSync('AGENTS.md', path.join(source.repo, 'LINK.md'))
+  fs.writeFileSync(path.join(source.repo, 'BIG.md'), 'x'.repeat(262145))
+  git('add', '.')
+  git('commit', '-m', 'test: synthetic trusted roots')
+  const policy = git('rev-parse', 'HEAD')
+  fs.writeFileSync(path.join(source.repo, 'AGENTS.md'), 'CANDIDATE_ROOT')
+  git('add', '.')
+  git('commit', '-m', 'test: synthetic candidate roots')
+  const { tool } = await client(t, {
+    ...source,
+    policy,
+    head: git('rev-parse', 'HEAD'),
+    contextRoots: ['guidance'],
+    rootFiles: ['AGENTS.md', 'LINK.md', 'BIG.md'],
+    guides: ['guidance/review.md'],
+  })
+  const discovered = JSON.parse(
+    (await tool('read_review_context', {})).result.content[0].text
+  )
+  assert.ok(discovered.paths.includes('AGENTS.md'))
+  assert.deepEqual(discovered.guides, ['guidance/review.md'])
+  const read = await tool('read_review_context', { path: 'AGENTS.md' })
+  assert.notEqual(read.result.isError, true)
+  assert.match(read.result.content[0].text, /TRUSTED_ROOT/)
+  assert.doesNotMatch(read.result.content[0].text, /CANDIDATE_ROOT/)
+  assert.notEqual(
+    (await tool('read_review_context', { path: 'guidance/review.md' })).result
+      .isError,
+    true
+  )
+  for (const path of ['LINK.md', 'BIG.md', 'docs/contract.md', '../AGENTS.md'])
+    assert.equal(
+      (await tool('read_review_context', { path })).result.isError,
+      true
+    )
+})
+
 test('docs lookup validates outbound fields, returns bounded evidence and caches complete request identity', async (t) => {
   let calls = 0
   const { broker, tool, rpc } = await client(t, {

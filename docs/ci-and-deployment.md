@@ -426,11 +426,26 @@ Shard durations differ by architecture, so `playwright/timings.json` names the a
   combined estimate is unavailable when either expected usage receipt is incomplete. Advisor usage has its own quota and does
   not change OCR's existing token accounting. This adds Mistral provider usage
   to draft review; source configuration becomes active only after merge.
+- **Trusted review configuration**: `.github/open-code-review/repository.json`
+  is read from the frozen trusted policy commit. The `ocr-repository/v1` schema
+  selects only the fixed `draft-v1` profile, context roots, exact root Markdown
+  contracts, guide pointers and public-library IDs. Unknown fields, invalid
+  paths and missing declared entry points fail before provider dispatch. The
+  donor explicitly exposes `AGENTS.md`, `CONTEXT.md`, `docs/` and
+  `.agents/skills/`; reads retain the existing blob, symlink, line and byte
+  bounds. Candidate configuration never replaces policy. Missing configuration
+  retains the two directory roots and disables docs lookup through an empty
+  library list. The schema grants no activation or execution-setting authority.
+  Pure background/result helpers are shared with the final controller, whose
+  policy digest includes their source. Final admission and its individual/stack
+  execution contracts stay in the existing GitHub controller.
 - **Public library documentation**: `lookup_library_docs` uses Context7's
   [Search API](https://context7.com/docs/search-api) through the same trusted
   broker. `CONTEXT7_API_KEY` stays in the parent; OCR receives only its existing
   loopback capability. The trusted runner currently permits the public Next.js,
-  React, Prisma and TypeScript documentation IDs. Four attempted uncached
+  React, Prisma and TypeScript documentation IDs through that explicit trusted
+  configuration. Adopters select their own public-library IDs instead of
+  inheriting this stack. Four attempted uncached
   lookups are shared across the run, independently of the two advisor attempts.
   Each lookup has a 15-second deadline, no retry, a bounded upstream body and an
   8 KiB returned JSON envelope. Completed results are cached by library, query,

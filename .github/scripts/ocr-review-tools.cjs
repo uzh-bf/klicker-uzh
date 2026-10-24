@@ -3,6 +3,7 @@
 const http = require('node:http')
 const crypto = require('node:crypto')
 const { execFileSync } = require('node:child_process')
+const { validateRepositoryConfig } = require('./ocr-runtime-config.cjs')
 
 const RANGE_SCHEMA = {
   type: 'object',
@@ -127,13 +128,17 @@ function git(repo, args, maxBuffer = 524288) {
   try {
     return execFileSync('git', args, {
       cwd: repo,
-      env: Object.fromEntries(
-        ['PATH', 'HOME', 'TMPDIR', 'LANG'].flatMap((name) =>
-          typeof process.env[name] === 'string'
-            ? [[name, process.env[name]]]
-            : []
-        )
-      ),
+      env: {
+        ...Object.fromEntries(
+          ['PATH', 'HOME', 'TMPDIR', 'LANG'].flatMap((name) =>
+            typeof process.env[name] === 'string'
+              ? [[name, process.env[name]]]
+              : []
+          )
+        ),
+        GIT_NO_LAZY_FETCH: '1',
+        GIT_TERMINAL_PROMPT: '0',
+      },
       encoding: 'utf8',
       timeout: 2000,
       maxBuffer,
@@ -152,8 +157,9 @@ function readRange(repo, revision, input, trusted) {
   if (
     trusted &&
     !(
-      /^docs\/.+\.md$/.test(input.path) ||
-      /^\.agents\/skills\/[\w-]+\/.+\.md$/.test(input.path)
+      input.path.endsWith('.md') &&
+      (trusted.rootFiles.includes(input.path) ||
+        trusted.contextRoots.some((root) => input.path.startsWith(`${root}/`)))
     )
   )
     throw failure('invalid_source')
@@ -417,6 +423,12 @@ function normalizeDocs(payload, input) {
 
 async function startReviewTools(options) {
   const { repo, head, policy, advisorUrl, advisorToken } = options
+  const context = validateRepositoryConfig({
+    schema: 'ocr-repository/v1',
+    contextRoots: options.contextRoots,
+    rootFiles: options.rootFiles,
+    guides: options.guides,
+  })
   if (
     ![head, policy].every(
       (value) => typeof value === 'string' && /^[a-f0-9]{40}$/.test(value)
@@ -643,7 +655,9 @@ async function startReviewTools(options) {
         if (
           directory &&
           (!validPath(directory) ||
-            !/^(?:docs|\.agents\/skills)(?:\/|$)/.test(directory))
+            !context.contextRoots.some(
+              (root) => directory === root || directory.startsWith(`${root}/`)
+            ))
         )
           throw failure('invalid_source')
         const paths = git(repo, [
@@ -652,13 +666,18 @@ async function startReviewTools(options) {
           '--name-only',
           policy,
           '--',
-          'docs',
-          '.agents/skills',
+          ...context.contextRoots,
+          ...context.rootFiles,
         ])
           .trim()
           .split('\n')
-          .filter((value) =>
-            /^docs\/.+\.md$|^\.agents\/skills\/.+\.md$/.test(value)
+          .filter(
+            (value) =>
+              value.endsWith('.md') &&
+              (context.rootFiles.includes(value) ||
+                context.contextRoots.some((root) =>
+                  value.startsWith(`${root}/`)
+                ))
           )
         const entries = [
           ...new Set(
@@ -667,10 +686,13 @@ async function startReviewTools(options) {
                 (value) => !directory || value.startsWith(`${directory}/`)
               )
               .map((value) => {
-                if (!directory)
-                  return value.startsWith('docs/')
-                    ? `docs/${value.slice(5).split('/')[0]}`
-                    : `.agents/skills/${value.slice(15).split('/')[0]}`
+                if (!directory) {
+                  if (context.rootFiles.includes(value)) return value
+                  const root = context.contextRoots.find((root) =>
+                    value.startsWith(`${root}/`)
+                  )
+                  return `${root}/${value.slice(root.length + 1).split('/')[0]}`
+                }
                 const remainder = value.slice(directory.length + 1)
                 return remainder.includes('/')
                   ? `${directory}/${remainder.split('/')[0]}`
@@ -678,8 +700,12 @@ async function startReviewTools(options) {
               })
           ),
         ]
-        result = { paths: entries.slice(0, 80), truncated: entries.length > 80 }
-      } else result = readRange(repo, policy, input, true)
+        result = {
+          paths: entries.slice(0, 80),
+          truncated: entries.length > 80,
+          ...(directory ? {} : { guides: context.guides }),
+        }
+      } else result = readRange(repo, policy, input, context)
       state.context_reads += 1
       emit()
       return result

@@ -11,16 +11,23 @@ const {
   MISTRAL_MODEL,
   MISTRAL_FLASH_MODEL,
 } = require('./ocr-mistral-adapter.cjs')
-const { buildOCRResultDiagnostic } = require('./final-ai-review.js')
+const { buildOCRResultDiagnostic } = require('./ocr-review-shared.cjs')
+const {
+  readRepositoryConfig,
+  readPolicyBlob,
+} = require('./ocr-runtime-config.cjs')
 
 const DRAFT_MODEL = MISTRAL_FLASH_MODEL
 const DRAFT_PROVIDER = 'mistral-flash'
-const PUBLIC_DOC_LIBRARIES = [
-  '/vercel/next.js',
-  '/reactjs/react.dev',
-  '/prisma/web',
-  '/microsoft/typescript',
-]
+const DRAFT_PROFILE = Object.freeze({
+  id: 'draft-v1',
+  model: DRAFT_MODEL,
+  provider: DRAFT_PROVIDER,
+  reasoning: 'max',
+  providerTimeout: '480',
+  taskTimeout: '15',
+  concurrency: '4',
+})
 const PUBLISHER_SHA256 =
   '1d5decf90627353f1e7a2cad291d4ee4ec0a661d9724b93b2d7d5246f33462e2'
 
@@ -198,15 +205,14 @@ function preparePublication(temp, expectedHead) {
   )
 }
 
-function appendSummary(text, write) {
+function appendSummary(text, write, summary) {
   try {
     write(`${text}\n`)
   } catch {
     /* Logs are best-effort. */
   }
   try {
-    if (process.env.GITHUB_STEP_SUMMARY)
-      fs.appendFileSync(process.env.GITHUB_STEP_SUMMARY, `${text}\n`)
+    summary?.(`${text}\n`)
   } catch {
     /* Summary failure cannot prevent cleanup. */
   }
@@ -229,7 +235,7 @@ function assertCompleteRange(repo, from, head) {
   try {
     const objects = execFileSync(
       'git',
-      ['rev-list', '--objects', '--missing=print', from, head],
+      ['rev-list', '--objects', '--no-walk', '--missing=print', from, head],
       {
         cwd: repo,
         env,
@@ -270,6 +276,9 @@ async function runDraftReview(options) {
     if (!/^[a-f0-9]{40}$/.test(revision)) throw new Error('invalid_revision')
   }
   if (options.policy) assertCompleteRange(repo, from, head)
+  const repositoryConfig = options.policy
+    ? readRepositoryConfig(repo, options.policy)
+    : null
   const write = options.write ?? ((text) => process.stdout.write(text))
   const resultPath = path.join(temp, 'draft-ai-review-result.json')
   const stderrPath = path.join(temp, 'draft-ai-review-stderr.log')
@@ -362,7 +371,7 @@ async function runDraftReview(options) {
         auth_token: '',
         auth_token_cmd: 'printf "%s" "$OCR_LLM_TOKEN"',
         extra_body: {
-          reasoning_effort: 'max',
+          reasoning_effort: DRAFT_PROFILE.reasoning,
           prompt_cache_key: '{ocr_session_key}',
         },
       },
@@ -371,17 +380,11 @@ async function runDraftReview(options) {
     if (options.policy) {
       if (!/^[a-f0-9]{40}$/.test(options.policy))
         throw new Error('invalid_revision')
-      const skill = execFileSync(
-        'git',
-        ['show', `${options.policy}:.agents/skills/ocr-reviewer/SKILL.md`],
-        {
-          cwd: repo,
-          env: gitEnvironment(),
-          encoding: 'utf8',
-          timeout: 5000,
-          maxBuffer: 32768,
-          stdio: ['ignore', 'pipe', 'pipe'],
-        }
+      const skill = readPolicyBlob(
+        repo,
+        options.policy,
+        '.agents/skills/ocr-reviewer/SKILL.md',
+        32768
       )
       rulePath = path.join(home, 'review-rules.json')
       fs.writeFileSync(
@@ -422,7 +425,10 @@ async function runDraftReview(options) {
             : undefined,
           advisorToken: advisor?.token,
           context7ApiKey: options.context7ApiKey,
-          publicLibraries: PUBLIC_DOC_LIBRARIES,
+          publicLibraries: repositoryConfig.publicLibraries,
+          contextRoots: repositoryConfig.contextRoots,
+          rootFiles: repositoryConfig.rootFiles,
+          guides: repositoryConfig.guides,
           ...(options.context7FetchImpl
             ? { context7FetchImpl: options.context7FetchImpl }
             : {}),
@@ -503,7 +509,7 @@ async function runDraftReview(options) {
       TMPDIR: temp,
       LANG: 'C.UTF-8',
       OCR_NO_UPDATE: '1',
-      OCR_LLM_TIMEOUT: '480',
+      OCR_LLM_TIMEOUT: DRAFT_PROFILE.providerTimeout,
       OCR_LLM_URL: config.llm.url,
       OCR_LLM_TOKEN: adapter.token,
       OCR_LLM_MODEL: DRAFT_MODEL,
@@ -520,9 +526,9 @@ async function runDraftReview(options) {
       '--format',
       'json',
       '--timeout',
-      '15',
+      DRAFT_PROFILE.taskTimeout,
       '--concurrency',
-      '4',
+      DRAFT_PROFILE.concurrency,
     ]
     if (background) args.push('--background', background)
     if (rulePath) args.push('--rule', rulePath)
@@ -590,11 +596,19 @@ async function runDraftReview(options) {
       ? JSON.stringify(coverage.failure_classes)
       : 'unknown'
     const line = `OCR coverage status=${coverage.observed_status} ${counts} failure_classes=${failures}`
-    appendSummary(line, write)
+    appendSummary(line, write, options.summary)
     if (coverage.observed_status !== 'complete') write(`::warning::${line}\n`)
     fs.writeFileSync(
       path.join(temp, 'draft-ai-review-outcome.json'),
-      JSON.stringify(coverage),
+      JSON.stringify({
+        ...coverage,
+        ...(options.policy
+          ? {
+              policy_sha: options.policy,
+              profile: DRAFT_PROFILE.id,
+            }
+          : {}),
+      }),
       { mode: 0o600 }
     )
     return {
@@ -613,8 +627,8 @@ async function runDraftReview(options) {
       toolsState = tools.diagnostics()
       toolReceipt(toolsState)
     }
-    appendSummary(summarizeAdvisor(toolsState), write)
-    appendSummary(summarizeDocs(toolsState.docs), write)
+    appendSummary(summarizeAdvisor(toolsState), write, options.summary)
+    appendSummary(summarizeDocs(toolsState.docs), write, options.summary)
     await advisor?.close()
     await adapter?.close()
     if (resultFd !== undefined) fs.closeSync(resultFd)
@@ -623,7 +637,7 @@ async function runDraftReview(options) {
   }
 }
 
-function summarizeCosts(temp) {
+function summarizeCosts(temp, summary) {
   const file = path.join(temp, 'draft-ai-review-adapter-diagnostics.jsonl')
   const env = { ...process.env, OCR_ADAPTER_PROVIDER: DRAFT_PROVIDER }
   execFileSync(
@@ -689,7 +703,8 @@ function summarizeCosts(temp) {
     : 'OCR cost scope=draft_and_advisor status=unavailable'
   appendSummary(
     `\nCombined ${DRAFT_MODEL} draft and ${MISTRAL_MODEL} advisor reference estimate:\n\n${line}\n\nAdvisor usage retains its separate application allowance and accounting. Both models use Mistral; OCR token accounting is unchanged.`,
-    (text) => process.stdout.write(text)
+    (text) => process.stdout.write(text),
+    summary
   )
   let docs, tools
   try {
@@ -703,17 +718,25 @@ function summarizeCosts(temp) {
   } catch {
     /* Missing service usage is unknown, not zero. */
   }
-  appendSummary(summarizeAdvisor(tools), (text) => process.stdout.write(text))
+  appendSummary(
+    summarizeAdvisor(tools),
+    (text) => process.stdout.write(text),
+    summary
+  )
   appendSummary(
     `${summarizeDocs(docs)}\nContext7 reference pricing excludes subscriptions, included allowances and model tokens. Actual service billing is unknown; the draft_and_advisor model total excludes this service.`,
-    (text) => process.stdout.write(text)
+    (text) => process.stdout.write(text),
+    summary
   )
 }
 
 async function main() {
   const temp = process.env.RUNNER_TEMP ?? os.tmpdir()
+  const summary = process.env.GITHUB_STEP_SUMMARY
+    ? (text) => fs.appendFileSync(process.env.GITHUB_STEP_SUMMARY, text)
+    : undefined
   if (process.argv[2] === 'summary') {
-    summarizeCosts(temp)
+    summarizeCosts(temp, summary)
     return 0
   }
   if (process.argv[2] === 'verify-install') {
@@ -761,6 +784,7 @@ async function main() {
     head: process.env.HEAD_SHA,
     background: process.env.BACKGROUND,
     ...credentials,
+    summary,
     policy: execFileSync('git', ['rev-parse', 'HEAD'], {
       encoding: 'utf8',
       env: gitEnvironment(),
