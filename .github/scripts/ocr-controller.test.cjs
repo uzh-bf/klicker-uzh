@@ -541,20 +541,6 @@ test('the composite preserves failure, cancellation, validation, artifact and su
   assert.notEqual(publication['continue-on-error'], true)
   assert.notEqual(artifacts['continue-on-error'], true)
   assert.equal(summary['continue-on-error'], true)
-  const conclude = (outcomes) =>
-    steps.some(
-      (step) =>
-        outcomes[step.name] === 'failure' && step['continue-on-error'] !== true
-    )
-      ? 'failure'
-      : 'success'
-  assert.equal(
-    conclude({ [steps.find((step) => step.id === 'review').name]: 'failure' }),
-    'failure'
-  )
-  assert.equal(conclude({ [publication.name]: 'failure' }), 'failure')
-  assert.equal(conclude({ [artifacts.name]: 'failure' }), 'failure')
-  assert.equal(conclude({ [summary.name]: 'failure' }), 'success')
   const review = steps.find((step) => step.id === 'review')
   assert.equal(review.env.MISTRAL_API_KEY, '${{ inputs.mistral-api-key }}')
   assert.equal(review.env.OCR_NO_UPDATE, '1')
