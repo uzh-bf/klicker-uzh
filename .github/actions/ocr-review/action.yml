@@ -1,0 +1,142 @@
+name: OCR shared runtime
+description: Run a bounded draft OpenCodeReview review from trusted policy.
+
+inputs:
+  mistral-api-key:
+    description: Mistral API key used by the OCR adapter.
+    required: true
+  context7-api-key:
+    description: Optional Context7 API key used by the OCR review tools.
+    required: false
+  github-token:
+    description: GitHub token used to check out trusted policy and publish the draft review.
+    required: true
+
+runs:
+  using: composite
+  steps:
+    - name: Verify OCR runtime release
+      id: release
+      shell: bash
+      env:
+        OCR_ACTION_PATH: ${{ github.action_path }}
+        OCR_ACTION_REF: ${{ github.action_ref }}
+        OCR_ACTION_REPOSITORY: ${{ github.action_repository }}
+        OCR_NO_UPDATE: '1'
+        OCR_ADAPTER_PROVIDER: mistral-flash
+      run: node "${OCR_ACTION_PATH}/../../scripts/ocr-controller.cjs" verify-release
+
+    - name: Checkout trusted review policy
+      uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+      with:
+        repository: ${{ github.repository }}
+        ref: ${{ github.event.repository.default_branch }}
+        token: ${{ inputs.github-token }}
+        persist-credentials: false
+        fetch-depth: 0
+
+    - name: Checkout pinned review publisher
+      uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+      with:
+        repository: alibaba/open-code-review
+        ref: ${{ steps.release.outputs.publisher-revision }}
+        path: .ocr-upstream
+        persist-credentials: false
+        sparse-checkout: scripts/github-actions
+
+    - name: Prepare bounded review context
+      shell: bash
+      env:
+        OCR_ACTION_PATH: ${{ github.action_path }}
+        OCR_ACTION_REF: ${{ github.action_ref }}
+        OCR_ACTION_REPOSITORY: ${{ github.action_repository }}
+        OCR_NO_UPDATE: '1'
+        OCR_ADAPTER_PROVIDER: mistral-flash
+        GITHUB_TOKEN: ${{ inputs.github-token }}
+      run: node "${OCR_ACTION_PATH}/../../scripts/ocr-controller.cjs" prepare
+
+    - name: Install pinned OpenCodeReview CLI
+      shell: bash
+      env:
+        OCR_ACTION_PATH: ${{ github.action_path }}
+        OCR_ACTION_REF: ${{ github.action_ref }}
+        OCR_ACTION_REPOSITORY: ${{ github.action_repository }}
+        OCR_NO_UPDATE: '1'
+        OCR_PACKAGE: ${{ steps.release.outputs.package }}
+      run: |
+        set -euo pipefail
+        npm install -g "${OCR_PACKAGE}"
+        ocr version
+        node "${OCR_ACTION_PATH}/../../scripts/ocr-controller.cjs" verify-install
+
+    - name: Run bounded draft review
+      id: review
+      shell: bash
+      env:
+        MISTRAL_API_KEY: ${{ inputs.mistral-api-key }}
+        CONTEXT7_API_KEY: ${{ inputs.context7-api-key }}
+        OCR_ACTION_PATH: ${{ github.action_path }}
+        OCR_ACTION_REF: ${{ github.action_ref }}
+        OCR_ACTION_REPOSITORY: ${{ github.action_repository }}
+        OCR_NO_UPDATE: '1'
+        OCR_ADAPTER_PROVIDER: mistral-flash
+      run: node "${OCR_ACTION_PATH}/../../scripts/ocr-controller.cjs" run
+
+    - name: Validate draft result envelope
+      id: validate
+      if: ${{ !cancelled() && (steps.review.outcome == 'success' || steps.review.outcome == 'failure') }}
+      shell: bash
+      env:
+        OCR_ACTION_PATH: ${{ github.action_path }}
+        OCR_ACTION_REF: ${{ github.action_ref }}
+        OCR_ACTION_REPOSITORY: ${{ github.action_repository }}
+        OCR_NO_UPDATE: '1'
+        OCR_ADAPTER_PROVIDER: mistral-flash
+      run: node "${OCR_ACTION_PATH}/../../scripts/ocr-controller.cjs" validate
+
+    - name: Publish draft findings
+      if: ${{ !cancelled() && steps.validate.outcome == 'success' }}
+      uses: actions/github-script@3a2844b7e9c422d3c10d287c895573f7108da1b3 # v9.0.0
+      env:
+        OCR_ACTION_PATH: ${{ github.action_path }}
+        OCR_ACTION_REF: ${{ github.action_ref }}
+        OCR_ACTION_REPOSITORY: ${{ github.action_repository }}
+      with:
+        github-token: ${{ inputs.github-token }}
+        script: |
+          const path = require('node:path')
+          const { publishReview } = require(path.resolve(
+            process.env.OCR_ACTION_PATH,
+            '../../scripts/ocr-controller.cjs'
+          ))
+          await publishReview(
+            { github, context, core },
+            { repo: process.env.GITHUB_WORKSPACE, temp: process.env.RUNNER_TEMP }
+          )
+
+    - name: Upload sanitized draft adapter diagnostics
+      if: always()
+      uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4
+      with:
+        name: draft-ai-review-adapter-diagnostics-${{ github.run_id }}-${{ github.run_attempt }}
+        path: |
+          ${{ runner.temp }}/draft-ai-review-adapter-diagnostics.jsonl
+          ${{ runner.temp }}/draft-ai-review-outcome.json
+          ${{ runner.temp }}/draft-ai-review-tools.json
+          ${{ runner.temp }}/draft-ai-review-advisor-expectations.json
+          ${{ runner.temp }}/draft-ai-review-advisor-diagnostics.jsonl
+          ${{ runner.temp }}/ocr-runtime-identity.json
+        if-no-files-found: warn
+        retention-days: 7
+
+    - name: Summarize OCR estimated cost and caching savings
+      if: always()
+      continue-on-error: true
+      shell: bash
+      env:
+        OCR_ACTION_PATH: ${{ github.action_path }}
+        OCR_ACTION_REF: ${{ github.action_ref }}
+        OCR_ACTION_REPOSITORY: ${{ github.action_repository }}
+        OCR_NO_UPDATE: '1'
+        OCR_ADAPTER_PROVIDER: mistral-flash
+      run: node "${OCR_ACTION_PATH}/../../scripts/ocr-controller.cjs" summary
