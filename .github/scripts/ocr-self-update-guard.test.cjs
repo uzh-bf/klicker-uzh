@@ -109,8 +109,8 @@ test('routes automatic drafts through Mistral Flash without changing the final p
   assert.equal(publisher.with['persist-credentials'], false)
   assert.ok(
     job.steps.some((step) =>
-      step.run?.includes(
-        'npm install -g @alibaba-group/open-code-review@1.13.0'
+      /\bnpm install(?: --prefix "[^"\n]+")? -g @alibaba-group\/open-code-review@1\.13\.0(?:\s|$)/.test(
+        step.run ?? ''
       )
     )
   )
