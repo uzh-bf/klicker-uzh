@@ -669,3 +669,32 @@ Planning challenge: native planner `APPROVED` this frozen Package 2B section.
 Proceed under the user’s post-merge continuation. The removed inline-workflow
 partial fixture is consolidated into the existing central controller fixture,
 which will invoke the published controller for the same consequential path.
+
+### Package 2B implementation evidence
+
+The donor caller selects the actual merged action revision `0032c990d4`.
+All ten release assets, the manifest and the portable skill are unchanged.
+The post-merge codebase run [40126047394](https://github.com/uzh-bf/klicker-uzh/actions/runs/40126047394)
+passed on that published revision; its producing stock and patched qualification
+receipt is checked separately from action execution on an ordinary event.
+
+Test delta: remove the legacy inline partial-publication fixture and execute
+that consequential path through the actual published controller in the central
+suite. Add a real-donor caller contract against that same extracted revision.
+Move the old multiline `GITHUB_OUTPUT` regression to the actual published
+preparation path: the new action passes bounded PR metadata in private JSON,
+so the test preserves hostile multiline metadata as data without shell execution.
+Adapt the existing guard suite to inspect pinned composite metadata, including
+self-update protection, provider bindings, always-upload diagnostics and retention.
+No adopter-local suite, dependency, runtime module or application environment is added.
+
+Before subsequent repository transfers, synchronize the global `rs-ocr` operator
+guidance with the qualified donor caller. Include release upgrade choreography:
+when runtime/portable-skill hashes change, coordinate the new immutable release
+with each caller's trusted skill policy rather than advancing one independently.
+That follow-on operator update and other caller migrations remain separate.
+
+All 277 focused OCR contracts pass on Node 24.21.0 with zero skips, including
+the real stock 1.13.0 binary and synthetic providers/tools. The published
+revision's producing CI logs also verify stock-binary execution and the patched
+engine build. These checks do not establish live execution of the new caller.
