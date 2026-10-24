@@ -74,7 +74,7 @@ export type ResponseExampleRuntimeSkill = {
 export const RESPONSE_EXAMPLE_SEARCH_TOOL_NAME = 'search_response_examples'
 const RESPONSE_EXAMPLE_SEARCH_CANDIDATE_LIMIT = 12
 
-const responseExampleIdSchema = z.string().uuid()
+const responseExampleIdSchema = z.string().guid()
 
 function assertRuntimeSetWithinLimit(set: ResponseExampleRuntimeSet) {
   if (set.examples.length > RESPONSE_EXAMPLE_RUNTIME_MAX_EXAMPLES) {

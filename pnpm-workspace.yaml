@@ -18,6 +18,11 @@ minimumReleaseAge: 20160
 minimumReleaseAgeStrict: true
 minimumReleaseAgeIgnoreMissingTime: false
 minimumReleaseAgeExclude:
+  # Exact reviewed parser and validator security fixes; retain the age policy
+  # for every other package/version.
+  - 'body-parser@1.20.9||2.4.0'
+  - 'zod@4.6.6'
+  - 'qs@6.16.1'
   # Reviewed React Email 6 migration and its matching preview dependencies.
   - 'react-email@6.11.3'
   - '@react-email/ui@6.11.3'
@@ -96,6 +101,18 @@ minimumReleaseAgeExclude:
   - '@ai-sdk/provider@4.0.5'
 
 overrides:
+  # Keep each body-parser major on its first patched release.
+  'body-parser@>=1.0.0 <1.20.9': 1.20.9
+  'body-parser@>=2.0.0 <2.4.0': 2.4.0
+  # Converge only consumers whose declared range accepts Zod 4; never force
+  # a Zod 3-only dependency onto a different schema implementation.
+  'zod@': 4.6.6
+  # This exact design-system archive has no Zod import in its shipped source
+  # or distribution; remove the unused dependency instead of crossing its pin.
+  '@uzh-bf/design-system@4.1.8>zod': '-'
+  # These optional agent integrations are not used by the workflow client.
+  '@hatchet-dev/typescript-sdk@1.22.0>@openai/agents': '-'
+  '@hatchet-dev/typescript-sdk@1.22.0>@anthropic-ai/claude-agent-sdk': '-'
   # Every entry left here still changes the resolution of the locked graph: a
   # dependency range resolves below the patched release, or the entry pins a
   # line for lockstep/consolidation reasons. The 2026-09-14/15 image-scan batch

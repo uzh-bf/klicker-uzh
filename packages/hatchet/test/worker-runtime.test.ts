@@ -1,4 +1,8 @@
 import { strict as assert } from 'node:assert'
+import {
+  ConcurrencyLimitStrategy,
+  TaskWorkflowDeclaration,
+} from '@hatchet-dev/typescript-sdk'
 import { test } from 'vitest'
 import type { HatchetWorker } from '../src/worker-runtime.js'
 import {
@@ -317,4 +321,25 @@ test('runtime preserves workflows and drops readiness before SDK intake stops', 
   assert.equal(capturedOptions?.slots, 4)
   assert.equal(capturedOptions?.durableSlots, 4)
   assert.equal(runtime.lifecycle.state, 'stopped')
+})
+
+test('constructs SDK task declarations without binding or dispatching a client', async () => {
+  const declaration = new TaskWorkflowDeclaration({
+    name: 'synthetic-declaration',
+    concurrency: {
+      expression: '"synthetic-declaration"',
+      maxRuns: 1,
+      limitStrategy: ConcurrencyLimitStrategy.CANCEL_NEWEST,
+    },
+    retries: 3,
+    fn: async () => ({ success: true }),
+  })
+  assert.equal(declaration.definition._tasks[0]?.name, 'synthetic-declaration')
+  assert.equal(declaration.definition._tasks[0]?.retries, 3)
+  assert.deepEqual(declaration.definition.concurrency, {
+    expression: '"synthetic-declaration"',
+    maxRuns: 1,
+    limitStrategy: ConcurrencyLimitStrategy.CANCEL_NEWEST,
+  })
+  await assert.rejects(declaration.runNoWait({}))
 })

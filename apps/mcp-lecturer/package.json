@@ -10,7 +10,7 @@
     "@klicker-uzh/util": "workspace:*",
     "fastmcp": "4.13.1",
     "jose": "5.9.4",
-    "zod": "3.25.76"
+    "zod": "4.6.6"
   },
   "devDependencies": {
     "@types/node": "^24.10.1",

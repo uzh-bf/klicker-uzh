@@ -104,7 +104,7 @@ async function findResponseExampleSet(
   })
 }
 
-const responseExampleIdSchema = z.string().uuid()
+const responseExampleIdSchema = z.string().guid()
 
 async function refreshResponseExampleSetDigestInTransaction(
   prisma: ResponseExamplePrisma,

@@ -1,14 +1,14 @@
 import hashes from '@klicker-uzh/graphql/dist/client.json'
 import {
-  cookieSecurityOptions,
-  cookiesAvailableViaLtiProbe,
-  LTI_PROBE_COOKIE_NAME,
-} from '@klicker-uzh/util/auth'
-import {
   deriveElearningLearnerBinding,
   getElearningChatHandoffSecret,
   verifyElearningChatGrant,
 } from '@klicker-uzh/util'
+import {
+  cookieSecurityOptions,
+  cookiesAvailableViaLtiProbe,
+  LTI_PROBE_COOKIE_NAME,
+} from '@klicker-uzh/util/auth'
 import { type NextRequest, NextResponse } from 'next/server'
 import { z } from 'zod'
 import {
@@ -25,15 +25,15 @@ const LOG_PREFIX = '[chat:auth/elearning]'
 
 const querySchema = z.object({
   grant: z.string().min(1),
-  courseId: z.string().uuid(),
-  chatbotId: z.string().uuid(),
+  courseId: z.string().guid(),
+  chatbotId: z.string().guid(),
   // The eLearning UI locale is carried through the auth redirect so Chat's
   // root layout renders the embedded conversation in the host language.
   locale: z.enum(['en', 'de']).optional(),
   embed: z.enum(['0', '1']).optional(),
   // Optional deep link to the conversation the host remembers for this
   // learner, chatbot and course; ownership is enforced by the chat UI.
-  threadId: z.string().uuid().optional(),
+  threadId: z.string().guid().optional(),
 })
 
 function noLoginRedirect(chatbotId: string | null) {
@@ -200,7 +200,7 @@ export async function GET(req: NextRequest) {
     const parsed = z
       .object({
         status: z.enum(['ACCOUNT', 'GUEST', 'DENIED']),
-        participantId: z.string().uuid().nullable(),
+        participantId: z.string().guid().nullable(),
         participantToken: z.string().nullable(),
       })
       .parse(body.data?.loginParticipantForElearningChatbot)

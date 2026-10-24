@@ -25,7 +25,7 @@ export default async function OwnerPreviewPage({
   params,
 }: OwnerPreviewPageProps) {
   const { chatbotId } = await params
-  if (!z.string().uuid().safeParse(chatbotId).success) notFound()
+  if (!z.string().guid().safeParse(chatbotId).success) notFound()
 
   const access = await getOwnerPreviewAccess(chatbotId)
   if ('error' in access) {
