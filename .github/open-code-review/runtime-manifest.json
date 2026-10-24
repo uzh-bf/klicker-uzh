@@ -26,13 +26,13 @@
   },
   "assets": {
     ".github/actions/ocr-review/action.yml": "2c11a239c244691ced6a82aa0c582e34aed1b6868cfbea59b8cc23f7a56d101e",
-    ".github/scripts/ocr-controller.cjs": "b552ac956bd21999c551586d5c2ce3a497f37076da713f446120316661def69e",
+    ".github/scripts/ocr-controller.cjs": "abb50f3c2a6b5522afe3e46a035e40bbb82ecd85896ed882a2547a2b72d1d8cd",
     ".github/scripts/ocr-draft-review.cjs": "3973be4572d4ffc162170d62342fca160faaa03378321aa4e703e73578e3ddbf",
     ".github/scripts/ocr-mistral-adapter.cjs": "45942246aa50a37bbc0fc2fe5851b856c2897a08dd4ad9f06380b5a900595025",
     ".github/scripts/ocr-review-tools.cjs": "cdf00c5076c5bff660544ce9bd5dd56fd3cf99e20ec4c1baf515e31492b6f2e0",
     ".github/scripts/ocr-review-shared.cjs": "c12e084ae9bd5459791e8cd78e7c11b60eb494e8c6bb5804e7d223e5228c9676",
     ".github/scripts/ocr-runtime-config.cjs": "dfa184aff7e6ad048696086637223437adeee79ced4bcfa90139468c122f16b9",
-    ".github/scripts/install-patched-ocr.cjs": "050271081facde6a4856d4985c1d9b0a545d810e66b6a0067b43042d15ee7cb6",
+    ".github/scripts/install-patched-ocr.cjs": "eb849471bae8dee321c26a29bcdca883ddd98be953a855ded6c79111eda11e55",
     ".github/open-code-review/ocr-compression.patch": "670d1782a56548f4a4571b6e6bbeb33c92ebcbe99247469ad1aa73329fc5e7c0",
     ".agents/skills/ocr-reviewer/SKILL.md": "20db8b6c714a3d442913a3ece313697193bab5b8c35ec32110f8013e38ee84a3"
   }

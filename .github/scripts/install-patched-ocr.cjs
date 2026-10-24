@@ -9,6 +9,7 @@ const path = require('node:path')
 const SOURCE_COMMIT = '1672852136fc87748249d22bce0819f33419ea79'
 const SOURCE_SHA256 =
   'a1378ddc336bb874349ad47ad370fdf725e8db1dd03753d7df73347342ae093f'
+const GO_VERSION = '1.26.9'
 const PATCH_PATH = path.resolve(
   __dirname,
   '../open-code-review/ocr-compression.patch'
@@ -60,7 +61,7 @@ function install(directory, archive) {
     encoding: 'utf8',
     timeout: 30000,
   })
-  if (!goVersion.startsWith('go version go1.26.9 ')) {
+  if (!goVersion.startsWith(`go version go${GO_VERSION} `)) {
     throw new Error('OCR source build requires Go 1.26.9')
   }
   fs.mkdirSync(directory, { recursive: true })
@@ -130,7 +131,15 @@ function install(directory, archive) {
   return binary
 }
 
-module.exports = { expectedVersion, verifyVersion, verifyArchive, install }
+module.exports = {
+  expectedVersion,
+  verifyVersion,
+  verifyArchive,
+  install,
+  SOURCE_COMMIT,
+  SOURCE_SHA256,
+  GO_VERSION,
+}
 
 if (require.main === module) {
   if (process.argv[2] === 'verify-version') verifyVersion(process.argv[3])

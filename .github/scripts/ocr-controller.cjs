@@ -66,6 +66,9 @@ function verifyRelease(root = ROOT) {
   const adapter = require(
     path.join(root, '.github/scripts/ocr-mistral-adapter.cjs')
   )
+  const installer = require(
+    path.join(root, '.github/scripts/install-patched-ocr.cjs')
+  )
   if (
     !isDeepStrictEqual(manifest.draft.profile, runner.DRAFT_PROFILE) ||
     manifest.draft.model !== adapter.MISTRAL_FLASH_MODEL ||
@@ -75,10 +78,9 @@ function verifyRelease(root = ROOT) {
     manifest.draft.publisher.revision !==
       '1672852136fc87748249d22bce0819f33419ea79' ||
     manifest.draft.publisher.sha256 !== runner.PUBLISHER_SHA256 ||
-    manifest.final.source !== '1672852136fc87748249d22bce0819f33419ea79' ||
-    manifest.final.archive_sha256 !==
-      'a1378ddc336bb874349ad47ad370fdf725e8db1dd03753d7df73347342ae093f' ||
-    manifest.final.go !== '1.26.9' ||
+    manifest.final.source !== installer.SOURCE_COMMIT ||
+    manifest.final.archive_sha256 !== installer.SOURCE_SHA256 ||
+    manifest.final.go !== installer.GO_VERSION ||
     manifest.final.patch_sha256 !==
       manifest.assets['.github/open-code-review/ocr-compression.patch']
   )
@@ -101,11 +103,13 @@ function checkPolicy(root, release, repo, policy) {
     path.join(root, '.github/scripts/ocr-runtime-config.cjs')
   )
   const config = readRepositoryConfig(repo, policy)
-  if (
-    digest(readPolicyBlob(repo, policy, SKILL, 32768)) !==
-    release.manifest.assets[SKILL]
-  )
+  let skill
+  try {
+    skill = readPolicyBlob(repo, policy, SKILL, 32768)
+  } catch {
     fail('skill_mismatch')
+  }
+  if (digest(skill) !== release.manifest.assets[SKILL]) fail('skill_mismatch')
   return config
 }
 
@@ -165,18 +169,17 @@ function prepareReview(options) {
     fetchEnv.GIT_CONFIG_VALUE_0 = `AUTHORIZATION: basic ${Buffer.from(`x-access-token:${token}`).toString('base64')}`
   }
   const remote = `${url.origin}/${repository}.git`
-  try {
-    git(
-      repo,
-      ['fetch', '--no-tags', remote, `pull/${pull.number}/head`],
-      fetchEnv
-    )
-    if (git(repo, ['rev-parse', 'FETCH_HEAD'], env) !== pull.head.sha)
-      fail('source_changed')
-    git(repo, ['fetch', '--no-tags', remote, pull.base.sha], fetchEnv)
-  } catch {
-    fail('source_unavailable')
+  const fetch = (ref) => {
+    try {
+      git(repo, ['fetch', '--no-tags', remote, ref], fetchEnv)
+    } catch {
+      fail('source_unavailable')
+    }
   }
+  fetch(`pull/${pull.number}/head`)
+  if (git(repo, ['rev-parse', 'FETCH_HEAD'], env) !== pull.head.sha)
+    fail('source_changed')
+  fetch(pull.base.sha)
   const from = git(repo, ['merge-base', pull.base.sha, pull.head.sha], env)
   if (!SHA.test(from)) fail('invalid_review_identity')
   const { buildReviewBackground } = require(
@@ -516,6 +519,7 @@ if (require.main === module)
         'skill_mismatch',
         'invalid_review_identity',
         'source_unavailable',
+        'source_changed',
         'policy_changed',
         'invalid_command',
         'invalid_publisher',

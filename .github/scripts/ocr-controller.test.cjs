@@ -202,6 +202,20 @@ test('release bootstrap rejects missing, changed and symlink-substituted assets 
   assert.equal(require.cache[file], undefined)
 })
 
+test('release metadata must match the actual patched installer identity', (t) => {
+  const f = fixture(t)
+  const file = '.github/scripts/install-patched-ocr.cjs'
+  fs.appendFileSync(
+    path.join(f.root, file),
+    "\nmodule.exports.SOURCE_COMMIT = 'b'.repeat(40)\n"
+  )
+  const manifestPath = path.join(f.root, MANIFEST)
+  const manifest = JSON.parse(fs.readFileSync(manifestPath))
+  manifest.assets[file] = digest(fs.readFileSync(path.join(f.root, file)))
+  fs.writeFileSync(manifestPath, JSON.stringify(manifest))
+  assert.throws(() => verifyRelease(f.root), /invalid_runtime/)
+})
+
 test('preparation freezes caller objects and release identity; fetch credentials never enter metadata reads', (t) => {
   const f = fixture(t)
   const context = prepareReview(f.options)
@@ -252,6 +266,20 @@ test('invalid event and mismatched policy skill fail before source fetch or prov
     f.calls.some(({ args }) => args[0] === 'fetch'),
     false
   )
+  fs.unlinkSync(path.join(f.repo, SKILL))
+  f.git('add', '.')
+  f.git('commit', '-m', 'test: missing policy skill')
+  assert.throws(() => prepareReview(f.options), /skill_mismatch/)
+})
+
+test('a moved fetched head has a fixed diagnostic distinct from fetch failure', (t) => {
+  const f = fixture(t)
+  const git = (repo, args, env) =>
+    args.join(' ') === 'rev-parse FETCH_HEAD'
+      ? 'f'.repeat(40)
+      : f.options.git(repo, args, env)
+  assert.throws(() => prepareReview({ ...f.options, git }), /source_changed/)
+  assert.equal(f.calls.filter(({ args }) => args[0] === 'fetch').length, 1)
 })
 
 test('an unrelated working directory and hostile caller scripts cannot supply runtime code', async (t) => {
