@@ -120,12 +120,12 @@ function validPath(value) {
     !value
       .split('/')
       .some((part) => !part || ['.', '..', '.git'].includes(part)) &&
-    !/(^|\/)\.env(?:\.|$)|\.(?:pem|key)$/i.test(value)
+    !/(?:(^|\/)\.env(?:\.|$))|(?:\.(?:pem|key)$)/i.test(value)
   )
 }
 function git(repo, args, maxBuffer = 524288) {
   try {
-    return execFileSync('git', args, {
+    return execFileSync('/usr/bin/git', args, {
       cwd: repo,
       encoding: 'utf8',
       timeout: 2000,
@@ -953,7 +953,10 @@ async function startReviewTools(options) {
       send(response, 500, { error: 'tool_failed' })
     )
     pending.add(work)
-    work.finally(() => pending.delete(work))
+    work.then(
+      () => pending.delete(work),
+      () => pending.delete(work)
+    )
   })
   server.on('connection', (socket) => {
     sockets.add(socket)
