@@ -17,7 +17,7 @@ apps:
   manage: { inventoryId: manage, nativePort: 3000 }
   pwa: { inventoryId: pwa, nativePort: 3000 }
   lti: { inventoryId: lti, nativePort: 4000 }
-  olat-api: { inventoryId: olat-api, nativePort: 3000 }
+  olat-api: { inventoryId: olat-api, nativePort: 3030 }
   response-api: { inventoryId: response-api, nativePort: 7078 }
   db: { inventoryId: private-postgres, nativePort: 5432, publicListener: false }
   blob: { inventoryId: azurite, nativePort: 10000 }
