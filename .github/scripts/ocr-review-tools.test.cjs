@@ -146,6 +146,75 @@ const docsQuestion = {
   language: 'TypeScript',
 }
 
+test('trusted root contracts and custom guides stay policy-bound and reject symlinks and oversized blobs', async (t) => {
+  const source = fixture(t)
+  const git = (...args) =>
+    execFileSync('git', args, { cwd: source.repo, encoding: 'utf8' }).trim()
+  fs.mkdirSync(path.join(source.repo, 'guidance'))
+  fs.writeFileSync(path.join(source.repo, 'AGENTS.md'), 'TRUSTED_ROOT')
+  fs.writeFileSync(
+    path.join(source.repo, 'guidance/review.md'),
+    'TRUSTED_GUIDE'
+  )
+  fs.symlinkSync('AGENTS.md', path.join(source.repo, 'LINK.md'))
+  fs.writeFileSync(path.join(source.repo, 'BIG.md'), 'x'.repeat(262145))
+  git('add', '.')
+  git('commit', '-m', 'test: synthetic trusted roots')
+  const policy = git('rev-parse', 'HEAD')
+  fs.writeFileSync(path.join(source.repo, 'AGENTS.md'), 'CANDIDATE_ROOT')
+  git('add', '.')
+  git('commit', '-m', 'test: synthetic candidate roots')
+  const { tool } = await client(t, {
+    ...source,
+    policy,
+    head: git('rev-parse', 'HEAD'),
+    contextRoots: ['guidance'],
+    rootFiles: ['AGENTS.md', 'LINK.md', 'BIG.md'],
+    guides: ['guidance/review.md'],
+  })
+  const discovered = JSON.parse(
+    (await tool('read_review_context', {})).result.content[0].text
+  )
+  assert.ok(discovered.paths.includes('AGENTS.md'))
+  assert.deepEqual(discovered.guides, ['guidance/review.md'])
+  const read = await tool('read_review_context', { path: 'AGENTS.md' })
+  assert.notEqual(read.result.isError, true)
+  assert.match(read.result.content[0].text, /TRUSTED_ROOT/)
+  assert.doesNotMatch(read.result.content[0].text, /CANDIDATE_ROOT/)
+  assert.notEqual(
+    (await tool('read_review_context', { path: 'guidance/review.md' })).result
+      .isError,
+    true
+  )
+  for (const path of ['LINK.md', 'BIG.md', 'docs/contract.md', '../AGENTS.md'])
+    assert.equal(
+      (await tool('read_review_context', { path })).result.isError,
+      true
+    )
+})
+
+test('empty review context discovery returns no paths without invoking Git', async (t) => {
+  const parent = fs.mkdtempSync(path.join(os.tmpdir(), 'ocr-tools-no-repo-'))
+  t.after(() => fs.rmSync(parent, { recursive: true, force: true }))
+  const { tool } = await client(t, {
+    repo: path.join(parent, 'missing'),
+    policy: 'a'.repeat(40),
+    head: 'b'.repeat(40),
+    contextRoots: [],
+    rootFiles: [],
+    guides: [],
+  })
+  for (const input of [{}, { path: '' }]) {
+    const discovered = await tool('read_review_context', input)
+    assert.equal(discovered.result.isError, undefined)
+    assert.deepEqual(JSON.parse(discovered.result.content[0].text), {
+      paths: [],
+      truncated: false,
+      guides: [],
+    })
+  }
+})
+
 test('docs lookup validates outbound fields, returns bounded evidence and caches complete request identity', async (t) => {
   let calls = 0
   const { broker, tool, rpc } = await client(t, {
