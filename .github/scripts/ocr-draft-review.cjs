@@ -717,24 +717,26 @@ function summarizeCosts(temp, summary) {
   )
 }
 
-async function main() {
-  const temp = process.env.RUNNER_TEMP ?? os.tmpdir()
+async function main(options = {}) {
+  const command = options.command ?? process.argv[2]
+  const repo = options.repo ?? process.cwd()
+  const temp = options.temp ?? process.env.RUNNER_TEMP ?? os.tmpdir()
   const summary = process.env.GITHUB_STEP_SUMMARY
     ? (text) => fs.appendFileSync(process.env.GITHUB_STEP_SUMMARY, text)
     : undefined
-  if (process.argv[2] === 'summary') {
+  if (command === 'summary') {
     summarizeCosts(temp, summary)
     return 0
   }
-  if (process.argv[2] === 'verify-install') {
+  if (command === 'verify-install') {
     const version = execFileSync('ocr', ['version'], {
       encoding: 'utf8',
       timeout: 5000,
     })
     const publisher = fs.readFileSync(
       path.join(
-        process.cwd(),
-        '.ocr-upstream/scripts/github-actions/post-review-comments.js'
+        options.publisherRoot ?? path.join(repo, '.ocr-upstream'),
+        'scripts/github-actions/post-review-comments.js'
       )
     )
     if (
@@ -748,12 +750,12 @@ async function main() {
     process.stdout.write('OCR pinned CLI and publisher verified\n')
     return 0
   }
-  if (process.argv[2] === 'validate') {
-    preparePublication(temp, process.env.HEAD_SHA)
+  if (command === 'validate') {
+    preparePublication(temp, options.head ?? process.env.HEAD_SHA)
     return 0
   }
-  if (process.argv[2] !== 'run') return 2
-  const credentials = {
+  if (command !== 'run') return 2
+  const credentials = options.credentials ?? {
     apiKey: process.env.MISTRAL_API_KEY,
     advisorApiKey: process.env.MISTRAL_API_KEY,
     context7ApiKey: process.env.CONTEXT7_API_KEY,
@@ -765,22 +767,31 @@ async function main() {
       delete process.env[name]
   }
   const outcome = await runDraftReview({
-    repo: process.cwd(),
+    repo,
     temp,
-    from: process.env.REVIEW_FROM,
-    head: process.env.HEAD_SHA,
-    background: process.env.BACKGROUND,
+    from: options.from ?? process.env.REVIEW_FROM,
+    head: options.head ?? process.env.HEAD_SHA,
+    background: options.background ?? process.env.BACKGROUND,
     ...credentials,
     summary,
-    policy: execFileSync('git', ['rev-parse', 'HEAD'], {
-      encoding: 'utf8',
-      env: gitEnvironment(),
-    }).trim(),
+    policy:
+      options.policy ??
+      execFileSync('git', ['rev-parse', 'HEAD'], {
+        cwd: repo,
+        encoding: 'utf8',
+        env: gitEnvironment(),
+      }).trim(),
   })
   return outcome.code
 }
 
-module.exports = { runDraftReview, summarizeCoverage }
+module.exports = {
+  main,
+  runDraftReview,
+  summarizeCoverage,
+  DRAFT_PROFILE,
+  PUBLISHER_SHA256,
+}
 if (require.main === module)
   main()
     .then((code) => {
