@@ -1,4 +1,5 @@
 import { randomUUID } from 'node:crypto'
+import { createRequire } from 'node:module'
 import {
   createDisposableTestPrismaClient,
   requireDisposableDatabase,
@@ -20,6 +21,7 @@ import type { ContextWithUser } from '../src/lib/context.js'
 import {
   activateLiveQuizBlock,
   endLiveQuiz,
+  getControlLiveQuizFeedbacks,
 } from '../src/services/liveQuizzes.js'
 
 vi.mock('node-schedule', () => ({
@@ -28,9 +30,14 @@ vi.mock('node-schedule', () => ({
 
 vi.mock('../src/services/notifications.js', () => ({
   sendTeamsNotification: vi.fn(async () => undefined),
+  handleSendPushNotifications: vi.fn(),
+  handleSendTeamsNotification: vi.fn(),
 }))
 
 let prisma: DB.PrismaClient
+const { graphql } = createRequire(import.meta.url)(
+  'graphql'
+) as typeof import('graphql')
 
 const fixtureIds = {
   users: [] as string[],
@@ -350,6 +357,7 @@ beforeEach(() => {
 })
 
 afterEach(async () => {
+  vi.useRealTimers()
   await requireDisposableDatabase(prisma)
 
   if (fixtureIds.quizzes.length > 0) {
@@ -384,6 +392,128 @@ afterEach(async () => {
 
 afterAll(async () => {
   await prisma?.$disconnect()
+})
+
+describe('controller audience feedback', () => {
+  it('aggregates only responses strictly inside the recent window and preserves empty and missing results', async () => {
+    const fixture = await createFixture()
+    const { redis } = createRedisStub({ quizId: fixture.quizId })
+    const { context } = createContext({
+      ownerId: fixture.ownerId,
+      client: prisma,
+      redis,
+    })
+    const now = new Date('2026-10-23T12:00:00.000Z')
+    vi.useFakeTimers({ toFake: ['Date'] })
+    vi.setSystemTime(now)
+    const timestamps = [-60_000, -540_000, -600_000, -660_000, 0, 60_000]
+    await prisma.confusionTimestep.createMany({
+      data: timestamps.map((offset, index) => ({
+        liveQuizId: fixture.quizId,
+        createdAt: new Date(now.getTime() + offset),
+        speed: index < 2 ? index * 2 : -2,
+        difficulty: index < 2 ? index * -2 : 2,
+      })),
+    })
+
+    const result = await getControlLiveQuizFeedbacks(
+      { id: fixture.quizId },
+      context
+    )
+    expect(result?.confusionSummary).toEqual({
+      speed: 1,
+      difficulty: -1,
+      numberOfParticipants: 2,
+    })
+    expect(result?.confusionFeedbacks).toHaveLength(2)
+
+    vi.setSystemTime(new Date(now.getTime() + 20 * 60_000))
+    expect(
+      (await getControlLiveQuizFeedbacks({ id: fixture.quizId }, context))
+        ?.confusionSummary
+    ).toEqual({ speed: 0, difficulty: 0, numberOfParticipants: 0 })
+    expect(
+      await getControlLiveQuizFeedbacks({ id: randomUUID() }, context)
+    ).toBeNull()
+    await prisma.liveQuiz.update({
+      where: { id: fixture.quizId },
+      data: { status: DB.PublicationStatus.ENDED },
+    })
+    expect(
+      await getControlLiveQuizFeedbacks({ id: fixture.quizId }, context)
+    ).toBeNull()
+  })
+
+  it('requires EXECUTE access to read audience feedback and change its flag independently of Q&A', async () => {
+    const { schema } = await import('../src/index.js')
+    const fixture = await createFixture()
+    const { redis } = createRedisStub({ quizId: fixture.quizId })
+    const { context } = createContext({
+      ownerId: fixture.ownerId,
+      client: prisma,
+      redis,
+    })
+    await prisma.derivedPermission.create({
+      data: {
+        userId: fixture.ownerId,
+        liveQuizId: fixture.quizId,
+        permissionLevel: DB.PermissionLevel.EXECUTE,
+      },
+    })
+    const query = `query Audience($id: String!) {
+      controlLiveQuizFeedbacks(id: $id) {
+        isConfusionFeedbackEnabled
+        confusionSummary { speed difficulty numberOfParticipants }
+      }
+    }`
+    const mutation = `mutation Audience($id: String!, $enabled: Boolean!) {
+      changeLiveQuizSettings(id: $id, isConfusionFeedbackEnabled: $enabled) {
+        isConfusionFeedbackEnabled
+      }
+    }`
+    const execute = (source: string, enabled = true) =>
+      graphql({
+        schema,
+        source,
+        variableValues: { id: fixture.quizId, enabled },
+        contextValue: context,
+      })
+    const prior = await prisma.liveQuiz.findUniqueOrThrow({
+      where: { id: fixture.quizId },
+    })
+    const allowed = await execute(query)
+    expect(allowed.errors).toBeUndefined()
+    expect(allowed.data?.controlLiveQuizFeedbacks).toBeTruthy()
+    expect((await execute(mutation)).data?.changeLiveQuizSettings).toEqual({
+      isConfusionFeedbackEnabled: true,
+    })
+    const updated = await prisma.liveQuiz.findUniqueOrThrow({
+      where: { id: fixture.quizId },
+    })
+    expect(updated.isLiveQAEnabled).toBe(prior.isLiveQAEnabled)
+    expect(updated.isModerationEnabled).toBe(prior.isModerationEnabled)
+
+    await prisma.derivedPermission.update({
+      where: {
+        liveQuizId_userId: {
+          liveQuizId: fixture.quizId,
+          userId: fixture.ownerId,
+        },
+      },
+      data: { permissionLevel: DB.PermissionLevel.READ },
+    })
+    expect((await execute(query)).data?.controlLiveQuizFeedbacks).toBeNull()
+    expect(
+      (await execute(mutation, false)).data?.changeLiveQuizSettings
+    ).toBeNull()
+    expect(
+      (
+        await prisma.liveQuiz.findUniqueOrThrow({
+          where: { id: fixture.quizId },
+        })
+      ).isConfusionFeedbackEnabled
+    ).toBe(true)
+  })
 })
 
 describe('live quiz lifecycle concurrency', () => {
