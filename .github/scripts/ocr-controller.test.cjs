@@ -195,11 +195,13 @@ test('release bootstrap rejects missing, changed and symlink-substituted assets 
   assert.throws(() => verifyRelease(f.root), /invalid_runtime/)
   assert.equal(require.cache[file], undefined)
   fs.unlinkSync(file)
-  assert.throws(() => verifyRelease(f.root))
+  assert.throws(() => verifyRelease(f.root), /invalid_runtime/)
   fs.writeFileSync(path.join(f.temp, 'replacement.cjs'), original)
   fs.symlinkSync(path.join(f.temp, 'replacement.cjs'), file)
   assert.throws(() => verifyRelease(f.root), /invalid_runtime/)
   assert.equal(require.cache[file], undefined)
+  fs.writeFileSync(path.join(f.root, MANIFEST), '{invalid JSON')
+  assert.throws(() => verifyRelease(f.root), /invalid_runtime/)
 })
 
 test('release metadata must match the actual patched installer identity', (t) => {
@@ -299,6 +301,7 @@ test('an unrelated working directory and hostile caller scripts cannot supply ru
         HEAD_SHA: 'f'.repeat(40),
       },
       encoding: 'utf8',
+      timeout: 30000,
     }
   )
   assert.equal(validated.status, 0, validated.stderr)

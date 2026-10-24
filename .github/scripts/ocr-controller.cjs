@@ -44,21 +44,26 @@ function readFile(root, file, limit = 4 * 1024 * 1024) {
 // Only built-ins run until the complete release has been checked. The caller
 // repository supplies policy blobs; it never supplies executable runtime files.
 function verifyRelease(root = ROOT) {
-  const bytes = readFile(root, MANIFEST, 32768)
-  const manifest = JSON.parse(bytes)
-  if (
-    manifest.schema !== 'ocr-runtime/v1' ||
-    !manifest.assets ||
-    Object.keys(manifest.assets).sort().join('\n') !==
-      [...ASSETS].sort().join('\n')
-  )
-    fail('invalid_runtime')
-  for (const file of ASSETS) {
+  let bytes, manifest
+  try {
+    bytes = readFile(root, MANIFEST, 32768)
+    manifest = JSON.parse(bytes)
     if (
-      !/^[a-f0-9]{64}$/.test(manifest.assets[file]) ||
-      digest(readFile(root, file)) !== manifest.assets[file]
+      manifest.schema !== 'ocr-runtime/v1' ||
+      !manifest.assets ||
+      Object.keys(manifest.assets).sort().join('\n') !==
+        [...ASSETS].sort().join('\n')
     )
       fail('invalid_runtime')
+    for (const file of ASSETS) {
+      if (
+        !/^[a-f0-9]{64}$/.test(manifest.assets[file]) ||
+        digest(readFile(root, file)) !== manifest.assets[file]
+      )
+        fail('invalid_runtime')
+    }
+  } catch {
+    fail('invalid_runtime')
   }
   const runner = require(
     path.join(root, '.github/scripts/ocr-draft-review.cjs')

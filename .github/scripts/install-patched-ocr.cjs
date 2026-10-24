@@ -62,7 +62,7 @@ function install(directory, archive) {
     timeout: 30000,
   })
   if (!goVersion.startsWith(`go version go${GO_VERSION} `)) {
-    throw new Error('OCR source build requires Go 1.26.9')
+    throw new Error(`OCR source build requires Go ${GO_VERSION}`)
   }
   fs.mkdirSync(directory, { recursive: true })
   const source = fs.mkdtempSync(path.join(directory, 'source-'))
