@@ -35,8 +35,10 @@ query SelfWithAchievements {
         id
         achievedAt
         achievedCount
+        receiptAcknowledgedAt
         achievement {
           id
+          isDiscoverable
           nameDE
           nameEN
           descriptionDE
@@ -48,6 +50,7 @@ query SelfWithAchievements {
     }
     achievements {
       id
+      isDiscoverable
       nameDE
       nameEN
       descriptionDE

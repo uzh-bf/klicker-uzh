@@ -6,6 +6,7 @@ import {
   FlashcardCorrectness,
   FlashcardCorrectnessType,
   GetPreviousStackEvaluationDocument,
+  QGetStudyStreakParticipationDocument,
   RespondToElementStackDocument,
   type StackFeedbackStatus,
 } from '@klicker-uzh/graphql/dist/ops'
@@ -29,6 +30,7 @@ import {
 } from 'react'
 import useComponentVisibleCounter from '../hooks/useComponentVisibleCounter'
 import useStackElementFeedbacks from '../hooks/useStackElementFeedbacks'
+import StudyStreakProgress from '../participant/StudyStreakProgress'
 import Bookmark from './Bookmark'
 import type { EmbedQuizNavigationState } from './embed'
 import InstanceHeader from './InstanceHeader'
@@ -108,6 +110,15 @@ function ElementStack({
 
   const [respondToElementStack, { loading: submittingResponse }] = useMutation(
     RespondToElementStackDocument
+  )
+  // keeps submit disabled between the response commit and the streak refresh
+  const [refreshingStudyStreak, setRefreshingStudyStreak] = useState(false)
+  const { data: studyStreakData, refetch: refetchStudyStreak } = useQuery(
+    QGetStudyStreakParticipationDocument,
+    {
+      variables: { courseId },
+      skip: previewOnly || !withParticipant || focusedPresentation,
+    }
   )
   const elementFeedbacks = useStackElementFeedbacks({
     instanceIds: stack.elements?.map((element) => element.id) ?? [],
@@ -362,6 +373,8 @@ function ElementStack({
     previewOnly,
   ])
 
+  const studyStreakParticipation = studyStreakData?.getParticipation
+
   const handleContinue = useCallback(() => {
     setStudentResponse({})
 
@@ -509,6 +522,19 @@ function ElementStack({
       return
     }
 
+    if (!previewOnly && withParticipant && !focusedPresentation) {
+      setRefreshingStudyStreak(true)
+      try {
+        await refetchStudyStreak()
+      } catch (error) {
+        console.error('Study streak progress refresh failed', {
+          error,
+        })
+      } finally {
+        setRefreshingStudyStreak(false)
+      }
+    }
+
     setStackStorage(
       Object.entries(studentResponse).reduce<StackStudentResponseType>(
         (acc, [key, value]) => {
@@ -554,15 +580,18 @@ function ElementStack({
   }, [
     courseId,
     currentStep,
+    focusedPresentation,
     handleNextElement,
     onAllStacksCompletion,
     previewOnly,
+    refetchStudyStreak,
     respondToElementStack,
     setStackStorage,
     setStepStatus,
     stack.id,
     studentResponse,
     totalSteps,
+    withParticipant,
   ])
 
   useEffect(() => {
@@ -611,6 +640,23 @@ function ElementStack({
 
         {!focusedPresentation && (
           <>
+            {studyStreakParticipation?.isActive &&
+              typeof studyStreakParticipation.studyStreakResponsesRemainingToday ===
+                'number' && (
+                <div className="mb-4">
+                  <StudyStreakProgress
+                    current={studyStreakParticipation.studyStreakCurrent ?? 0}
+                    remaining={
+                      studyStreakParticipation.studyStreakResponsesRemainingToday
+                    }
+                    qualifiedToday={
+                      studyStreakParticipation.studyStreakQualifiedToday ??
+                      false
+                    }
+                  />
+                </div>
+              )}
+
             {!previewOnly && !hideBookmark && !embedded ? (
               <div className="flex flex-row items-center justify-between">
                 <div>{stack.displayName && <H2>{stack.displayName}</H2>}</div>
@@ -738,8 +784,12 @@ function ElementStack({
         wrapEmbedded(
           <Button
             primary
-            loading={submittingResponse}
-            disabled={!responsesInitialized || responseSubmissionDisabled}
+            loading={submittingResponse || refreshingStudyStreak}
+            disabled={
+              !responsesInitialized ||
+              responseSubmissionDisabled ||
+              refreshingStudyStreak
+            }
             className={{
               root: embeddedButtonClass,
             }}
