@@ -114,6 +114,28 @@ test('default container routing survives a partial host tooling install', async 
   )
 })
 
+test('dependency behavior checks use the container installation', async (t) => {
+  const f = fixture(t)
+  fs.writeFileSync(
+    path.join(f.root, 'package.json'),
+    JSON.stringify({
+      scripts: {
+        'check:all': 'run-p --npm-path pnpm check:dependency-security',
+        'check:dependency-security':
+          'node --test ./util/dependency-security-backports.test.mjs',
+      },
+    })
+  )
+  await runHook('check', f.root, f.env)
+  assert.deepEqual(f.calls(), [
+    {
+      command: 'devrouter',
+      args: ['exec', f.root, '--', 'pnpm', 'run', 'check:dependency-security'],
+      git: [],
+    },
+  ])
+})
+
 test('host dependencies reject ancestor resolution and accept checkout-local installation', (t) => {
   const f = fixture(t)
   const child = path.join(f.root, 'checkout')

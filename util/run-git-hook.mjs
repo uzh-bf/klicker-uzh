@@ -71,8 +71,10 @@ export async function runHook(mode, root, environment = process.env) {
     readFileSync(path.join(root, 'package.json'), 'utf8')
   )
   if (
-    checkTasks(scripts['check:all']).some((task) =>
-      /^(node|bash) [\w./* -]+$/.test(scripts[task] ?? '')
+    checkTasks(scripts['check:all']).some(
+      (task) =>
+        task !== 'check:dependency-security' &&
+        /^(node|bash) [\w./* -]+$/.test(scripts[task] ?? '')
     )
   )
     assertHostDependencies(root)
@@ -126,7 +128,10 @@ export async function runHook(mode, root, environment = process.env) {
           container(['exec', ...prefix, `./${file}`])
         }
       }
-    } else if (/^(node|bash) [\w./* -]+$/.test(scripts[task] ?? '')) {
+    } else if (
+      task !== 'check:dependency-security' &&
+      /^(node|bash) [\w./* -]+$/.test(scripts[task] ?? '')
+    ) {
       // Host contract tests may create Git fixtures or invoke host devrouter.
       run('sh', ['-c', scripts[task]], options)
     } else {

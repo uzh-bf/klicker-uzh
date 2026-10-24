@@ -9,7 +9,6 @@ import test from 'node:test'
 import { setTimeout as delay } from 'node:timers/promises'
 import { fileURLToPath, pathToFileURL } from 'node:url'
 import { gzipSync } from 'node:zlib'
-import { parseAllDocuments } from 'yaml'
 
 const CHILD_FLAG = '--parser-child'
 const TEST_FILE = fileURLToPath(import.meta.url)
@@ -22,21 +21,26 @@ if (process.argv[2] === CHILD_FLAG) {
   test('installed body-parser majors handle decoder failures', () => {
     const roots = installedRoots('body-parser')
     for (const major of [1, 2]) {
-      const installed = roots.find((root) => majorOf(root.version) === major)
-      assert.ok(installed, `missing installed body-parser major ${major}`)
-      const result = spawnSync(
-        process.execPath,
-        [TEST_FILE, CHILD_FLAG, installed.root],
-        {
-          cwd: process.cwd(),
-          encoding: 'utf8',
-          env: { NODE_ENV: 'test' },
-          killSignal: 'SIGKILL',
-          timeout: 15_000,
-        }
+      const installed = roots.filter((root) => majorOf(root.version) === major)
+      assert.ok(
+        installed.length,
+        `missing installed body-parser major ${major}`
       )
-      const reason = result.error?.message || result.stderr || result.stdout
-      assert.equal(result.status, 0, `body-parser ${major}: ${reason}`)
+      for (const { root, version } of installed) {
+        const result = spawnSync(
+          process.execPath,
+          [TEST_FILE, CHILD_FLAG, root],
+          {
+            cwd: process.cwd(),
+            encoding: 'utf8',
+            env: { NODE_ENV: 'test' },
+            killSignal: 'SIGKILL',
+            timeout: 15_000,
+          }
+        )
+        const reason = result.error?.message || result.stderr || result.stdout
+        assert.equal(result.status, 0, `body-parser ${version}: ${reason}`)
+      }
     }
   })
 
@@ -64,11 +68,13 @@ function probeRoot() {
 function installedRoots(name) {
   const root = probeRoot()
   const prefix = `${name}@`
-  const lockfile = Object.assign(
-    {},
-    ...parseAllDocuments(
-      readFileSync(path.join(root, 'lock.yaml'), 'utf8')
-    ).map((document) => document.toJS())
+  const lockfile = readFileSync(path.join(root, 'lock.yaml'), 'utf8')
+  const lockedVersions = new Set(
+    [
+      ...lockfile.matchAll(
+        new RegExp(`^  ${name}@(\\d+\\.\\d+\\.\\d+):`, 'gm')
+      ),
+    ].map((match) => match[1])
   )
   const found = new Map()
   for (const entry of readdirSync(root, { withFileTypes: true })) {
@@ -78,7 +84,7 @@ function installedRoots(name) {
       readFileSync(path.join(packageRoot, 'package.json'), 'utf8')
     )
     if (manifest.name !== name) continue
-    if (!lockfile.packages?.[`${name}@${manifest.version}`]) continue
+    if (!lockedVersions.has(manifest.version)) continue
     const realRoot = realpathSync(packageRoot)
     found.set(realRoot, { root: realRoot, version: manifest.version })
   }
@@ -103,14 +109,11 @@ async function assertZod4Behavior(zod, label) {
     ['array exact', oversized, (element) => zod.array(element).length(2)],
     ['set max', new Set(oversized), (element) => zod.set(element).max(2)],
   ]
-  const map = zod.map?.(zod.string(), zod.string())
-  if (typeof map?.max === 'function') {
-    cases.push([
-      'map max',
-      new Map(oversized.map((value, index) => [String(index), value])),
-      (element) => zod.map(zod.string(), element).max(2),
-    ])
-  }
+  cases.push([
+    'map max',
+    new Map(oversized.map((value, index) => [String(index), value])),
+    (element) => zod.map(zod.string(), element).check(zod.maxSize(2)),
+  ])
   for (const [name, input, build] of cases) {
     for (const asyncMode of [false, true]) {
       let elementRuns = 0

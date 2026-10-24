@@ -298,6 +298,9 @@ jobs:
       - name: Check local KB lifecycle contracts
         run: pnpm run check:local-kb
 
+      - name: Check installed parser and validator security behavior
+        run: pnpm run check:dependency-security
+
       - name: Check Next.js development configuration and readiness
         run: |
           node --test ./util/next-pages-development-config.test.mjs
