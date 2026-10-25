@@ -801,7 +801,7 @@ and CI may be observed without extra paid replays; scheduling remains separate.
 Planner approved the diagnostics contract. The shared journal, broker counters,
 conversation observations, component costs and existing artifact wiring are
 implemented without changing the portable skill, caller pin or execution profile.
-The complete affected set passes 172 Node24.21 checks with zero skips, including
+The complete affected set passes 307 Node24.21 checks with zero skips, including
 the actual stock OCR1.13.0 binary and verified pinned publisher under synthetic
 provider/tools responses. A response survives a later SIGKILL; its subsequent
 dispatch retains unknown usage. Privacy, byte/row limits, unwritable/symlink
@@ -810,5 +810,18 @@ The first kill fixture returned an unsupported response body shape; replacing
 it with the existing Response fixture fixed the test and did not require a
 provider/production change. No paid replay or application environment was used.
 One cohesive package owns the new evidence from capture through artifact
-retention; central runtime fixtures remain central. Source reviews and hosted
-CI remain pending until their producing results are recorded.
+retention; central runtime fixtures remain central. Planner, simplification,
+focused risk review and integrated final source review passed. The simplification
+pass removed redundant assertions on a test's expected literal; the affected
+behavior check passed again. Existing cost values and summary lines match the
+baseline, and parsed workflow fields match except the explicit artifact paths.
+
+[Draft PR #6711](https://github.com/uzh-bf/klicker-uzh/pull/6711) contains the
+diagnostics package. On runtime head `36aa29f7943a0cd9f78dae0aa594bbfeb49ca7d4`,
+[codebase CI](https://github.com/uzh-bf/klicker-uzh/actions/runs/40209744432)
+passed both stock runtime and patched engine qualification, and
+[selected Playwright CI](https://github.com/uzh-bf/klicker-uzh/actions/runs/40209744503)
+passed. Later documentation-only receipt updates reuse the source review and
+synthetic evidence; the PR description records their current CI separately.
+The draft caller's immutable pin remains unchanged. Live acceptance of the new
+draft diagnostics requires a later pin update and a genuine ordinary review.
