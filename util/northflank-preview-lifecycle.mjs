@@ -772,15 +772,6 @@ function enabledPreviewArgumentPaths(skip) {
 }
 
 function validatePreviewArguments(args, source, runtime) {
-  const placeholders = new Set([
-    'change-me',
-    'changeme',
-    'default',
-    'null',
-    'password',
-    'secret',
-    'undefined',
-  ])
   for (const path of enabledPreviewArgumentPaths(args.skip)) {
     let value = args
     for (const segment of path.split('.')) {
@@ -791,18 +782,6 @@ function validatePreviewArguments(args, source, runtime) {
     }
     if (value === undefined || value === null || value === '') {
       fail('MISSING_PREVIEW_ARGUMENT', `${path} is required`)
-    }
-    if (path.startsWith('secrets.')) {
-      const normalized =
-        typeof value === 'string' ? value.trim().toLowerCase() : ''
-      if (
-        !normalized ||
-        placeholders.has(normalized) ||
-        normalized.includes('${') ||
-        /^<[^>]+>$/.test(normalized)
-      ) {
-        fail('UNSAFE_PREVIEW_SECRET', `${path} is not a trusted value`)
-      }
     }
     if (/^images\.[^.]+\.branch$/.test(path) && value !== source.ref) {
       fail('SOURCE_PROVENANCE_MISMATCH', `${path} does not match source ref`)
@@ -840,8 +819,9 @@ function validatePreviewArguments(args, source, runtime) {
 }
 
 /**
- * Assembles graph arguments only. Addon bootstrap, job orchestration, mounted
- * configuration and runtime qualification remain caller-owned stages.
+ * Assembles inactive graph arguments. Private values must travel through the
+ * project secret API; only deferred runtime references may enter run history.
+ * Bootstrap, credential attachment and ordered startup remain caller-owned.
  */
 export function assemblePreviewArguments({
   plan: planInput,
@@ -869,9 +849,25 @@ export function assemblePreviewArguments({
   const credentials = active
     ? assertRecord(credentialsInput ?? {}, 'Preview credentials')
     : {}
+  const secrets = active
+    ? assertRecord(credentials.secrets ?? {}, 'Preview secret references')
+    : {}
+  for (const [key, value] of Object.entries(secrets)) {
+    if (
+      typeof value !== 'string' ||
+      !/^\$\{\{secrets\.[A-Za-z0-9_-]+\.values\.[A-Za-z0-9_-]+(?:\.[A-Za-z0-9_-]+)*\}\}$/.test(
+        value
+      )
+    ) {
+      fail(
+        'PRIVATE_TEMPLATE_ARGUMENT',
+        `secrets.${key} must be a deferred runtime reference`
+      )
+    }
+  }
   const args = {
     ...config,
-    startInstances: admitted && active ? 1 : 0,
+    startInstances: 0,
     projectId: runtime.projectId,
     envId: runtime.envId,
     domain: runtime.domain,
@@ -880,7 +876,7 @@ export function assemblePreviewArguments({
     source,
     skip,
     images: active ? (imagesInput ?? {}) : {},
-    secrets: active ? credentials.secrets : {},
+    secrets,
     bindings: active ? credentials.bindings : {},
   }
   validatePreviewArguments(args, source, runtime)

@@ -410,7 +410,7 @@ function argumentInputs(
       'redisAssessmentPass',
       'redisCachePass',
       'redisExecPass',
-    ].map((key) => [key, `synthetic-${key}`])
+    ].map((key) => [key, `\${{secrets.synthetic-preview.values.${key}}}`])
   )
   return {
     plan,
@@ -492,6 +492,7 @@ test('assembler fails before provider use when a referenced image field is absen
 
 test('Chat assembly selects its closure and excludes management and workers', () => {
   const args = assemblePreviewArguments(argumentInputs(argumentPlan()))
+  assert.equal(args.startInstances, 0)
   for (const selected of [
     'api',
     'auth',
@@ -521,6 +522,28 @@ test('Chat assembly selects its closure and excludes management and workers', ()
     'runFixtures',
   ]) {
     assert.equal(paused.skip[key], 'true', key)
+  }
+})
+
+test('graph arguments reject private values before they can enter run history', () => {
+  for (const key of ['appSecret', 'unusedSecret']) {
+    for (const value of [
+      'synthetic-private-value',
+      `\${secrets.synthetic-preview.values.appSecret}`,
+      `\${{secrets.synthetic-preview.values.appSecret}}suffix`,
+      { nested: 'synthetic-private-value' },
+    ]) {
+      const input = argumentInputs(argumentPlan())
+      input.credentials.secrets[key] = value
+      assert.throws(
+        () => assemblePreviewArguments(input),
+        (error) => {
+          assert.equal(error.code, 'PRIVATE_TEMPLATE_ARGUMENT')
+          assert.doesNotMatch(error.message, /synthetic-private-value/)
+          return true
+        }
+      )
+    }
   }
 })
 
@@ -560,7 +583,8 @@ test('full assembly carries workers and keeps lifecycle graphs idle', () => {
     created.images.oidc.image.startsWith('registry.example/oidc@'),
     true
   )
-  assert.equal(updated.startInstances, 1)
+  assert.equal(created.startInstances, 0)
+  assert.equal(updated.startInstances, 0)
   assert.equal(updated.skip.postgres, 'true')
   assert.equal(updated.skip.hatchet, 'true')
   assert.equal(updated.skip.fixtures, 'true')
