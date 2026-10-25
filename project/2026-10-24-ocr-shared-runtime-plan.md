@@ -866,3 +866,23 @@ then one integrated final review. No application runtime or screenshot applies.
 Terminal: verified source, reviewed complete range, ordinary task-branch push
 and one accurately described draft PR against `v3`. Live evidence awaits
 separate caller adoption and the next ordinary review.
+
+### Source verification progress
+
+The adapter now emits the five numeric observations at both parsed-response
+journal seams. The complete affected suite passes 284 Node24 contracts with
+zero skips, including the actual stock OCR binary with synthetic providers.
+Formatting, release-manifest verification, staged Gitleaks and diff checks pass.
+The forced-advisor boundary test preserves the named tool choice, maximum
+reasoning and output ceiling; malformed responses retain their existing rejection
+behavior. Synthetic sentinels verify that journals contain no response content.
+
+The simplification review found no justified reduction: one helper serves two
+callers and reuses the existing normalizer. Privacy/correctness slice review and
+integrated final review remain pending. This cohesive package has 246 substantive
+changed lines excluding project-artifact documentation; no active draft exists
+to absorb it. The diagnostic gap follows the prior evidence package, so the
+runtime guide records the observation contract alongside its existing journal
+contract. Live failure hypotheses remain in private investigation notes until
+new evidence can distinguish them. No provider repair or live acceptance is
+claimed, and the caller's immutable runtime pin is unchanged.
