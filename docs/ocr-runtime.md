@@ -93,6 +93,16 @@ response and terminal outcome are distinct events. Response usage is written
 before response validation, so a rejected completion can retain observed usage
 without changing aggregate accounting. Missing or invalid usage stays null.
 
+Response events also record `reasoning_bytes`, `content_bytes`, `tool_calls`
+and `tool_arguments_bytes` from the normalized first assistant choice, including
+length-limited responses and partial argument strings. These UTF-8 byte counts
+contain no response content and do not estimate tokens. Unsupported message
+shapes produce null shape counters; a supported empty message produces zeros.
+`reasoning_tokens` retains an optional provider-reported count only when it is
+a safe nonnegative integer no larger than valid completion usage. Missing or
+invalid counts stay null. These fields explain response shape independently of
+validation and never affect review budgets, cost accounting or retries.
+
 The journal contains only fixed provider/model/stage labels, opaque conversation
 IDs, numeric counters and bounded outcome codes. It excludes prompts, source,
 arguments, reasoning, raw errors and provider-generated IDs. Synchronous writes
