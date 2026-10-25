@@ -1246,6 +1246,10 @@ pull requests whose base is `v3`. It compares the candidate revision with
 `origin/v3-ai` and names every path under `deploy/` that differs. A push to `v3`
 is an authoritative check of the branch itself and must match.
 
+`deploy/northflank/` is excluded because its isolated preview resources are
+deployed independently of the production chart and environment values. This
+exception does not cover other paths under `deploy/`.
+
 A pull request is responsible only for the `deploy/` paths it edits: it passes
 its base revision, so a change that leaves `deploy/` untouched reports an
 already divergent pair of branches as a warning instead of failing work that
