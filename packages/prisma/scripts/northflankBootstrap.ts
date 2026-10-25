@@ -103,6 +103,7 @@ function readConfig(env: Environment) {
   }
 }
 
+// PostgreSQL hides backend_type for sessions owned by unrelated roles.
 const statusQuery = [
   '/* northflank-bootstrap-status-v1 */',
   'SELECT current_database() AS database, session_user AS admin_role,',
@@ -125,7 +126,8 @@ const statusQuery = [
   '        AND NOT EXISTS (SELECT 1 FROM pg_stat_activity',
   '                        WHERE datname = current_database()',
   '                          AND pid <> pg_backend_pid()',
-  "                          AND backend_type = 'client backend')) AS fresh",
+  "                          AND COALESCE(backend_type, 'client backend')",
+  "                              = 'client backend')) AS fresh",
   '  FROM pg_roles r',
   '  JOIN pg_database d ON d.datname = current_database()',
   ' WHERE r.rolname = session_user',
