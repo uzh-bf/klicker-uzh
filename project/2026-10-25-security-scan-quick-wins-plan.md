@@ -40,4 +40,15 @@
 
 ## Progress
 
-- Status: in progress
+- Status: implementation complete; draft PR pending.
+- Slices: grading, auth tokens and logs, GraphQL guards. Each is committed separately.
+- Evidence:
+  - `packages/grading` vitest: 10/10 passed.
+  - `apps/auth` unit and integration vitest: 52/52 passed. The salt-free session token now asserts a `maxAge` lifetime.
+  - `biome format` and `prettier --check` are clean on all changed files.
+  - `tsc --noEmit` for `packages/graphql` reports no errors in the changed code.
+  - Local runs used the primary checkout's dependency install. Required CI repeats them against this branch's lockfile.
+- Test delta: 2 tests changed, none added or removed.
+- Final simplification and review: self-review by the main session over the full range. No findings remain.
+- Folded in: `changePermissionLevel` also refuses to edit the owner's own permission row. Otherwise an admin could demote the owner.
+- Not applicable: browser screenshots. The analytics change alters only the URL reported to Matomo; no rendered UI changes.
