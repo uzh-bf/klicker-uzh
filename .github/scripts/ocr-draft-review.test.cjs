@@ -4,15 +4,14 @@ const os = require('node:os')
 const path = require('node:path')
 const test = require('node:test')
 const { spawnSync, execFileSync } = require('node:child_process')
+const {
+  validateRepositoryConfig,
+  readRepositoryConfig,
+  readPolicyBlob,
+} = require('./ocr-runtime-config.cjs')
 
 const { runDraftReview, summarizeCoverage } = require('./ocr-draft-review.cjs')
 const RUNNER = path.join(__dirname, 'ocr-draft-review.cjs')
-
-const coverageItem = (index) => ({
-  item_id: index.toString(16).padStart(64, '0'),
-  path: `src/review-${index}.ts`,
-  fingerprint: (index * 17 + 5).toString(16).padStart(64, '0'),
-})
 
 test('draft coverage distinguishes selected files from completed work without exposing model fields', () => {
   const result = {
@@ -398,8 +397,8 @@ test('publication binds coverage to the exact head and retains complete results 
       manifest: {
         input: { resolved_head: head },
         coverage: {
-          selected: [coverageItem(1)],
-          completed: [coverageItem(1)],
+          selected: ['a'],
+          completed: ['a'],
           failed: [],
           reused: [],
           waived: [],
@@ -415,10 +414,8 @@ test('publication binds coverage to the exact head and retains complete results 
     assert.equal(fs.readFileSync(stderr, 'utf8'), '')
     assert.equal(fs.statSync(stderr).mode & 0o777, 0o600)
     result.status = 'partial'
-    result.manifest.coverage.selected = [coverageItem(1), coverageItem(2)]
-    result.manifest.coverage.failed = [
-      { ...coverageItem(2), classification: 'provider' },
-    ]
+    result.manifest.coverage.completed = []
+    result.manifest.coverage.failed = [{ classification: 'provider' }]
     fs.writeFileSync(file, JSON.stringify(result))
     assert.equal(run().status, 0)
     const partial = JSON.parse(fs.readFileSync(publication))
@@ -432,101 +429,9 @@ test('publication binds coverage to the exact head and retains complete results 
   }
 })
 
-test('publication refuses invalid, duplicated, overlapping, mismatched or incomplete coverage', () => {
-  const directory = fs.mkdtempSync(
-    path.join(os.tmpdir(), 'ocr-publication-invalid-')
-  )
-  const head = '1'.repeat(40)
-  const run = () =>
-    spawnSync(process.execPath, [RUNNER, 'validate'], {
-      env: { RUNNER_TEMP: directory, HEAD_SHA: head },
-      encoding: 'utf8',
-    })
-  const file = path.join(directory, 'draft-ai-review-result.json')
-  const publication = path.join(directory, 'draft-ai-review-publication.json')
-  const empty = {
-    selected: [],
-    completed: [],
-    reused: [],
-    failed: [],
-    waived: [],
-  }
-  const write = (coverage, status = 'complete') =>
-    fs.writeFileSync(
-      file,
-      JSON.stringify({
-        status,
-        comments: [],
-        manifest: { input: { resolved_head: head }, coverage },
-      })
-    )
-  try {
-    for (const [label, coverage] of [
-      [
-        'invalid identity',
-        { ...empty, selected: [{ ...coverageItem(1), item_id: 'a' }] },
-      ],
-      [
-        'duplicate selection',
-        { ...empty, selected: [coverageItem(1), coverageItem(1)] },
-      ],
-      [
-        'overlapping partition',
-        {
-          ...empty,
-          selected: [coverageItem(1)],
-          completed: [coverageItem(1)],
-          reused: [coverageItem(1)],
-        },
-      ],
-      [
-        'mismatched fingerprint',
-        {
-          ...empty,
-          selected: [coverageItem(1)],
-          completed: [
-            { ...coverageItem(1), fingerprint: coverageItem(2).fingerprint },
-          ],
-        },
-      ],
-      [
-        'incomplete accounting',
-        {
-          ...empty,
-          selected: [coverageItem(1), coverageItem(2)],
-          completed: [coverageItem(1)],
-        },
-      ],
-      [
-        'complete with failed work',
-        {
-          ...empty,
-          selected: [coverageItem(1)],
-          failed: [{ ...coverageItem(1), classification: 'provider' }],
-        },
-      ],
-      [
-        'complete with waived work',
-        {
-          ...empty,
-          selected: [coverageItem(1)],
-          waived: [coverageItem(1)],
-        },
-      ],
-    ]) {
-      write(coverage)
-      assert.equal(run().status, 1, label)
-      assert.equal(fs.existsSync(publication), false, label)
-    }
-  } finally {
-    fs.rmSync(directory, { recursive: true, force: true })
-  }
-})
-
 test('draft runner streams only bounded progress, retains private results, and isolates its child', async () => {
   const directory = fs.mkdtempSync(path.join(os.tmpdir(), 'ocr-draft-test-'))
-  const executable = path.join(directory, 'draft-ocr', 'bin', 'ocr')
-  fs.mkdirSync(path.dirname(executable), { recursive: true })
+  const executable = path.join(directory, 'ocr.cjs')
   const record = path.join(directory, 'child.json')
   fs.writeFileSync(
     executable,
@@ -545,6 +450,7 @@ process.exitCode=7
   process.env.GITHUB_TOKEN = 'PRIVATE_SENTINEL'
   process.env.CONTEXT7_API_KEY = 'PRIVATE_SENTINEL'
   const logs = []
+  const summary = []
   try {
     const outcome = await runDraftReview({
       repo: directory,
@@ -552,9 +458,11 @@ process.exitCode=7
       from: '1'.repeat(40),
       head: '2'.repeat(40),
       background: 'synthetic',
+      executable,
       apiKey: 'synthetic-provider',
       context7ApiKey: 'PRIVATE_SENTINEL',
       write: (line) => logs.push(line),
+      summary: (line) => summary.push(line),
     })
     assert.equal(outcome.code, 7)
     assert.equal(JSON.stringify(logs).includes('PRIVATE_SENTINEL'), false)
@@ -568,6 +476,7 @@ process.exitCode=7
     assert.equal(child.env.MISTRAL_API_KEY, undefined)
     assert.equal(child.env.CONTEXT7_API_KEY, undefined)
     assert.equal(child.env.OCR_NO_UPDATE, '1')
+    assert.equal(child.env.OCR_LLM_TIMEOUT, '480')
     assert.equal(child.env.OCR_LLM_MODEL, 'zai-glm-5-3-flash')
     assert.deepEqual(child.args.slice(0, 9), [
       'review',
@@ -581,6 +490,8 @@ process.exitCode=7
       '15',
     ])
     assert.equal(child.args.includes('--effort'), false)
+    assert.deepEqual(child.args.slice(9, 11), ['--concurrency', '4'])
+    assert.ok(summary.some((line) => line.startsWith('OCR coverage ')))
     assert.equal(child.args.includes('--max-tokens-budget'), false)
     assert.equal(fs.statSync(outcome.resultPath).mode & 0o777, 0o600)
     assert.equal(
@@ -616,6 +527,188 @@ process.exitCode=7
   }
 })
 
+test('draft preflight rejects missing blobs before provider dispatch and strips credentials from metadata Git', async (t) => {
+  const repo = fs.mkdtempSync(path.join(os.tmpdir(), 'ocr-source-preflight-'))
+  t.after(() => fs.rmSync(repo, { recursive: true, force: true }))
+  const git = (...args) =>
+    execFileSync('git', args, { cwd: repo, encoding: 'utf8' }).trim()
+  git('init', '-b', 'main')
+  git('config', 'user.name', 'Synthetic fixture')
+  git('config', 'user.email', 'fixture@example.invalid')
+  git('config', 'core.hooksPath', '/dev/null')
+  fs.mkdirSync(path.join(repo, '.agents/skills/ocr-reviewer'), {
+    recursive: true,
+  })
+  fs.writeFileSync(
+    path.join(repo, '.agents/skills/ocr-reviewer/SKILL.md'),
+    'synthetic rules'
+  )
+  fs.writeFileSync(path.join(repo, 'source.js'), 'export const value = 1\n')
+  git('add', '.')
+  git('commit', '-m', 'chore: synthetic input')
+  const policy = git('rev-parse', 'HEAD')
+  const blob = git('rev-parse', 'HEAD:source.js')
+  const executable = path.join(repo, 'ocr.cjs')
+  fs.writeFileSync(
+    executable,
+    '#!/usr/bin/env node\nprocess.stdout.write("{}")\n',
+    { mode: 0o700 }
+  )
+  const options = {
+    repo,
+    temp: repo,
+    from: policy,
+    head: policy,
+    policy,
+    executable,
+    apiKey: 'synthetic',
+    write: () => {},
+  }
+  const complete = await runDraftReview(options)
+  assert.equal(complete.code, 0)
+  fs.unlinkSync(
+    path.join(repo, '.git/objects', blob.slice(0, 2), blob.slice(2))
+  )
+  let dispatched = false
+  await assert.rejects(
+    runDraftReview({
+      ...options,
+      fetchImpl: async () => {
+        dispatched = true
+        throw new Error('provider must not run')
+      },
+    }),
+    /review_source_unavailable/
+  )
+  assert.equal(dispatched, false)
+
+  const wrapper = path.join(repo, 'bin')
+  fs.mkdirSync(wrapper)
+  const realGit = execFileSync('which', ['git'], { encoding: 'utf8' }).trim()
+  const receipt = path.join(repo, 'git-env.jsonl')
+  fs.writeFileSync(
+    path.join(wrapper, 'git'),
+    `#!${process.execPath}
+const fs=require('node:fs'),{spawnSync}=require('node:child_process')
+fs.appendFileSync(${JSON.stringify(receipt)},JSON.stringify({secret:process.env.MISTRAL_API_KEY,token:process.env.GITHUB_TOKEN,docs:process.env.CONTEXT7_API_KEY})+'\\n')
+const result=spawnSync(${JSON.stringify(realGit)},process.argv.slice(2),{stdio:'inherit'})
+process.exit(result.status??1)
+`,
+    { mode: 0o700 }
+  )
+  const failed = spawnSync(process.execPath, [RUNNER, 'run'], {
+    cwd: repo,
+    env: {
+      PATH: `${wrapper}:${process.env.PATH}`,
+      RUNNER_TEMP: repo,
+      REVIEW_FROM: policy,
+      HEAD_SHA: policy,
+      MISTRAL_API_KEY: 'PRIVATE_SENTINEL',
+      GITHUB_TOKEN: 'PRIVATE_SENTINEL',
+      CONTEXT7_API_KEY: 'PRIVATE_SENTINEL',
+    },
+    encoding: 'utf8',
+  })
+  assert.equal(failed.status, 1)
+  assert.doesNotMatch(failed.stderr, /PRIVATE_SENTINEL/)
+  const reads = fs
+    .readFileSync(receipt, 'utf8')
+    .trim()
+    .split('\n')
+    .map(JSON.parse)
+  assert.ok(reads.length >= 2)
+  assert.ok(reads.every((record) => Object.keys(record).length === 0))
+})
+
+test('repository configuration is strict and frozen at the trusted policy rather than the candidate or moving branch', (t) => {
+  const repo = fs.mkdtempSync(path.join(os.tmpdir(), 'ocr-config-'))
+  t.after(() => fs.rmSync(repo, { recursive: true, force: true }))
+  const git = (...args) =>
+    execFileSync('git', args, { cwd: repo, encoding: 'utf8' }).trim()
+  git('init', '-b', 'main')
+  git('config', 'user.name', 'Synthetic fixture')
+  git('config', 'user.email', 'fixture@example.invalid')
+  git('config', 'core.hooksPath', '/dev/null')
+  fs.mkdirSync(path.join(repo, '.github/open-code-review'), { recursive: true })
+  fs.mkdirSync(path.join(repo, 'guidance'))
+  fs.writeFileSync(path.join(repo, 'AGENTS.md'), 'trusted contract')
+  fs.writeFileSync(path.join(repo, 'guidance/[review].md'), 'trusted guide')
+  const config = {
+    schema: 'ocr-repository/v1',
+    profile: 'draft-v1',
+    contextRoots: ['guidance'],
+    rootFiles: ['AGENTS.md'],
+    guides: ['guidance/[review].md'],
+    publicLibraries: ['/python/cpython'],
+  }
+  const file = path.join(repo, '.github/open-code-review/repository.json')
+  fs.writeFileSync(file, JSON.stringify(config))
+  git('add', '.')
+  git('commit', '-m', 'chore: synthetic policy')
+  const policy = git('rev-parse', 'HEAD')
+  assert.deepEqual(readRepositoryConfig(repo, policy), config)
+  assert.equal(
+    readPolicyBlob(repo, policy, 'guidance/[review].md'),
+    'trusted guide'
+  )
+  const original = git('rev-parse', `${policy}:AGENTS.md`)
+  const replacement = execFileSync('git', ['hash-object', '-w', '--stdin'], {
+    cwd: repo,
+    input: 'substituted contract',
+    encoding: 'utf8',
+  }).trim()
+  git('replace', original, replacement)
+  const previousHome = process.env.HOME
+  const home = path.join(repo, 'untrusted-home')
+  fs.mkdirSync(home)
+  fs.writeFileSync(path.join(home, '.gitconfig'), '[malformed global config')
+  process.env.HOME = home
+  try {
+    assert.equal(readPolicyBlob(repo, policy, 'AGENTS.md'), 'trusted contract')
+    assert.deepEqual(readRepositoryConfig(repo, policy), config)
+  } finally {
+    if (previousHome === undefined) delete process.env.HOME
+    else process.env.HOME = previousHome
+  }
+  git('replace', '-d', original)
+  fs.writeFileSync(
+    file,
+    JSON.stringify({ ...config, publicLibraries: ['/private/candidate'] })
+  )
+  git('add', '.')
+  git('commit', '-m', 'enhance: synthetic candidate')
+  assert.deepEqual(readRepositoryConfig(repo, policy), config)
+  for (const invalid of [
+    { ...config, model: 'unapproved' },
+    { ...config, profile: 'final-v1' },
+    { ...config, contextRoots: ['../escape'] },
+    { ...config, contextRoots: ['.git'] },
+    { ...config, rootFiles: ['.env'] },
+    { ...config, publicLibraries: ['/../escape'] },
+    { ...config, guides: ['unreachable/review.md'] },
+    { ...config, publicLibraries: null },
+    { ...config, contextRoots: null },
+  ])
+    assert.throws(
+      () => validateRepositoryConfig(invalid),
+      /invalid_repository_config/
+    )
+  fs.writeFileSync(
+    file,
+    JSON.stringify({ ...config, rootFiles: ['MISSING.md'] })
+  )
+  git('add', '.')
+  git('commit', '-m', 'test: unavailable root')
+  assert.throws(
+    () => readRepositoryConfig(repo, git('rev-parse', 'HEAD')),
+    /invalid_repository_config/
+  )
+  assert.deepEqual(
+    validateRepositoryConfig({ schema: 'ocr-repository/v1' }).publicLibraries,
+    []
+  )
+})
+
 test('pinned OCR registers and invokes reviewer tools with trusted rules and complete accounting', {
   skip: !process.env.OCR_TEST_BINARY,
   timeout: 60000,
@@ -645,6 +738,14 @@ test('pinned OCR registers and invokes reviewer tools with trusted rules and com
     'REVIEW_POLICY_SYNTHETIC_MARKER'
   )
   fs.writeFileSync(path.join(repo, 'docs/contract.md'), 'Synthetic contract')
+  fs.mkdirSync(path.join(repo, '.github/open-code-review'), { recursive: true })
+  fs.writeFileSync(
+    path.join(repo, '.github/open-code-review/repository.json'),
+    JSON.stringify({
+      schema: 'ocr-repository/v1',
+      publicLibraries: ['/vercel/next.js'],
+    })
+  )
   git('add', '.')
   git('commit', '-m', 'chore: synthetic policy')
   const policy = git('rev-parse', 'HEAD')

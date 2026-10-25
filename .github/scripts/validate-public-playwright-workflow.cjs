@@ -2,6 +2,9 @@ const fs = require('node:fs')
 const path = require('node:path')
 const { isDeepStrictEqual } = require('node:util')
 const YAML = require('yaml')
+const { CONTROL_SPARSE_PATHS } = require('./ci-verified-reuse.cjs')
+
+const CONTROL_SPARSE_CHECKOUT = `${CONTROL_SPARSE_PATHS.join('\n')}\n`
 
 const EXECUTION_GROUP =
   '${{ github.workflow }}-playwright-${{ github.event.pull_request.number || github.ref }}'
@@ -46,7 +49,10 @@ function validateCallerLifecycle(caller) {
     if (['test-playwright-execution', 'cancel-closed-pr'].includes(name)) {
       if (
         job.concurrency?.group !== EXECUTION_GROUP ||
-        job.concurrency?.['cancel-in-progress'] !== true
+        job.concurrency?.['cancel-in-progress'] !==
+          (name === 'test-playwright-execution'
+            ? "${{ github.event.action != 'ready_for_review' }}"
+            : true)
       ) {
         issues.push(`${name} must use the exact PR execution concurrency group`)
       }
@@ -137,9 +143,9 @@ function validateCallerLifecycle(caller) {
 const EXPECTED_CALL =
   'uses: uzh-bf/klicker-uzh/.github/workflows/public-pr-playwright-shards.yml@v3'
 const EXPECTED_BUILD_ACTION =
-  'uses: uzh-bf/klicker-uzh/.github/actions/playwright-build@refs/heads/v3'
+  'uses: ./.ci-action/.github/actions/playwright-build'
 const EXPECTED_SHARD_ACTION =
-  'uses: uzh-bf/klicker-uzh/.github/actions/playwright-shard@refs/heads/v3'
+  'uses: ./.ci-action/.github/actions/playwright-shard'
 // The build artifact must cover every workspace package, not a hand-maintained
 // list that silently drops a package with its own build output (for example
 // packages/audit/dist). The wildcard keeps full coverage as packages are added.
@@ -259,16 +265,18 @@ function validatePublicRunnerRoles(workflow) {
   // expressions, action inputs and step order are part of the trusted boundary.
   const expectedSteps = [
     {
-      uses: 'actions/checkout@v4',
+      uses: 'actions/checkout@11d5960a326750d5838078e36cf38b85af677262',
       with: {
         repository: `\${{ job.workflow_repository }}`,
         ref: `\${{ job.workflow_sha }}`,
         path: '.ci-control',
+        'sparse-checkout-cone-mode': false,
+        'sparse-checkout': CONTROL_SPARSE_CHECKOUT,
         'persist-credentials': false,
       },
     },
     {
-      uses: 'actions/checkout@v4',
+      uses: 'actions/checkout@11d5960a326750d5838078e36cf38b85af677262',
       with: {
         repository: `\${{ github.event_name == 'pull_request' && github.event.pull_request.head.repo.full_name || github.repository }}`,
         ref: headSha,
@@ -334,22 +342,26 @@ function validatePublicRunnerRoles(workflow) {
     },
     {
       id: 'equivalent',
-      if: `steps.metadata.outputs.provider != 'warpbuild' && ((github.event_name == 'push' && github.ref != 'refs/heads/v3') || (github.event_name == 'pull_request' && contains(fromJSON('["ready_for_review","edited","reopened"]'), github.event.action)))`,
+      if: `steps.metadata.outputs.provider != 'warpbuild' && ((github.event_name == 'push' && inputs.allow_push_reuse) || (github.event_name == 'pull_request' && contains(fromJSON('["ready_for_review","edited","reopened"]'), github.event.action)))`,
       'continue-on-error': true,
       uses: 'actions/github-script@3a2844b7e9c422d3c10d287c895573f7108da1b3',
       env: {
         CONTROL_SHA: `\${{ job.workflow_sha }}`,
         ALLOW_PUSH_REUSE: `\${{ inputs.allow_push_reuse }}`,
-        STG_SOURCE_BRANCH: `\${{ vars.STG_SOURCE_BRANCH }}`,
+        CI_VERIFIED_REUSE_ENABLED: `\${{ vars.CI_VERIFIED_REUSE_ENABLED }}`,
+        CURRENT_PROVIDER: `\${{ steps.metadata.outputs.provider }}`,
+        PUBLIC_WORKERS: `\${{ vars.PUBLIC_PR_PLAYWRIGHT_WORKERS || '1' }}`,
       },
       with: {
         script: [
           "const fs = require('node:fs')",
-          "await require('./.ci-control/.github/scripts/ci-equivalent-run.cjs').reportEquivalentRun({",
+          "await require('./.ci-control/.github/scripts/ci-verified-reuse.cjs').reportVerifiedRun({",
           "  github, context, core, kind: 'playwright',",
           '  controlSha: process.env.CONTROL_SHA,',
           "  allowPushReuse: process.env.ALLOW_PUSH_REUSE === 'true',",
-          '  stagingSourceBranch: process.env.STG_SOURCE_BRANCH,',
+          "  enabled: process.env.CI_VERIFIED_REUSE_ENABLED === 'true',",
+          '  provider: process.env.CURRENT_PROVIDER,',
+          "  workers: JSON.parse(fs.readFileSync('route.json', 'utf8')).route === 'hosted' ? '1' : process.env.PUBLIC_WORKERS,",
           "  plan: JSON.parse(fs.readFileSync('playwright-execution-plan.json', 'utf8')),",
           "  route: JSON.parse(fs.readFileSync('route.json', 'utf8')).route,",
           '})',
@@ -394,7 +406,7 @@ function validatePublicRunnerRoles(workflow) {
             if: "github.event_name == 'pull_request' && github.event.pull_request.draft == true",
           }
         : {}),
-      uses: 'actions/upload-artifact@v4',
+      uses: 'actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02',
       with: {
         name,
         path: artifactPath,
@@ -486,12 +498,15 @@ function validatePublicPlaywrightWorkflow(root) {
     issues.push('public reusable workflow policy must be valid YAML')
   }
   const seedWorkflow = readWorkflow(root, 'playwright-cache-seed.yml', issues)
-  const publicActions = [
+  const actionSources = [
     readAction(root, 'playwright-build', issues),
     readAction(root, 'playwright-shard', issues),
-  ].join('\n')
+  ]
+  const publicActions = actionSources.join('\n')
   const publicCacheRestoreSteps = namedSteps(publicActions).filter((step) =>
-    step.includes('uses: actions/cache/restore@v4')
+    step.includes(
+      'uses: actions/cache/restore@0057852bfaa89a56745cba8c7296529d2fc39830'
+    )
   )
   const publicCacheContractSteps = namedSteps(publicActions).filter((step) =>
     step.includes('id: cache-contract')
@@ -552,8 +567,16 @@ function validatePublicPlaywrightWorkflow(root) {
   }
 
   const checkoutCount = (
-    `${publicWorkflow}\n${publicActions}`.match(/actions\/checkout@v4/g) ?? []
+    `${publicWorkflow}\n${publicActions}`.match(
+      /actions\/checkout@[a-f0-9]{40}/g
+    ) ?? []
   ).length
+  const totalCheckoutCount = (
+    `${publicWorkflow}\n${publicActions}`.match(/actions\/checkout@/g) ?? []
+  ).length
+  if (checkoutCount !== totalCheckoutCount) {
+    issues.push('every public checkout must be pinned to a full commit SHA')
+  }
   const nonPersistedCheckoutCount = (
     `${publicWorkflow}\n${publicActions}`.match(
       /persist-credentials:\s+false/g
@@ -564,7 +587,8 @@ function validatePublicPlaywrightWorkflow(root) {
   }
 
   const trustedControl = `${publicWorkflow}\n${publicActions}`
-  // The fixed shape has one preparation checkout and one checkout in each trusted action.
+  // Seven trusted checkouts: one preparation checkout, one .ci-action checkout
+  // in each of four execution jobs, and one .ci-control checkout per composite.
   const trustedRepositoryCount = (
     trustedControl.match(/repository: \$\{\{ job\.workflow_repository \}\}/g) ??
     []
@@ -572,22 +596,67 @@ function validatePublicPlaywrightWorkflow(root) {
   const trustedRefCount = (
     trustedControl.match(/ref: \$\{\{ job\.workflow_sha \}\}/g) ?? []
   ).length
-  if (trustedRepositoryCount !== 3 || trustedRefCount !== 3) {
+  if (trustedRepositoryCount !== 7 || trustedRefCount !== 7) {
     issues.push(
       'every trusted control checkout must use the called workflow repository and commit'
     )
+  }
+
+  const checkoutStepGroups = Object.values(publicParsed?.jobs ?? {}).map(
+    (job) => job.steps ?? []
+  )
+  for (const action of actionSources) {
+    try {
+      const parsed = YAML.parse(action)
+      if (!Array.isArray(parsed?.runs?.steps)) {
+        issues.push('public composite actions must have a step list')
+        continue
+      }
+      checkoutStepGroups.push(parsed.runs.steps)
+    } catch {
+      issues.push('public composite actions must be valid YAML')
+    }
+  }
+  for (const steps of checkoutStepGroups) {
+    for (const step of steps) {
+      if (!step.uses?.startsWith('actions/checkout@')) continue
+      if (!/^actions\/checkout@[a-f0-9]{40}$/.test(step.uses)) {
+        issues.push('every public checkout must be pinned to a full commit SHA')
+      }
+      if (step.with?.['persist-credentials'] !== false) {
+        issues.push('every public checkout must set persist-credentials: false')
+      }
+      const input = step.with ?? {}
+      const isTrusted =
+        ['.ci-control', '.ci-action'].includes(input.path) ||
+        input.repository === '${{ job.workflow_repository }}' ||
+        input.ref === '${{ job.workflow_sha }}'
+      if (
+        isTrusted &&
+        (!['.ci-control', '.ci-action'].includes(input.path) ||
+          input.repository !== '${{ job.workflow_repository }}' ||
+          input.ref !== '${{ job.workflow_sha }}' ||
+          input['sparse-checkout-cone-mode'] !== false ||
+          input['sparse-checkout'] !== CONTROL_SPARSE_CHECKOUT ||
+          input.filter !== undefined)
+      ) {
+        issues.push(
+          'every trusted checkout must materialize exactly the fingerprinted control boundary'
+        )
+      }
+    }
   }
 
   issues.push(...validatePublicRunnerRoles(publicParsed))
 
   const buildActionCount = (
     publicWorkflow.match(
-      /uses: uzh-bf\/klicker-uzh\/.github\/actions\/playwright-build@refs\/heads\/v3/g
+      /uses: \.\/\.ci-action\/\.github\/actions\/playwright-build/g
     ) ?? []
   ).length
   const shardActionCount = (
     publicWorkflow.match(
-      /uses: uzh-bf\/klicker-uzh\/.github\/actions\/playwright-shard@refs\/heads\/v3/g
+      /uses: \.\/\.ci-action\/\.github\/actions\/playwright-shard/g
     ) ?? []
   ).length
   if (
@@ -599,6 +668,31 @@ function validatePublicPlaywrightWorkflow(root) {
     issues.push(
       'execution jobs must use the trusted v3 composite actions, not candidate-local actions'
     )
+  }
+
+  for (const job of Object.values(publicParsed?.jobs ?? {})) {
+    for (const [index, step] of (job.steps ?? []).entries()) {
+      if (!step.uses?.startsWith('./.ci-action/')) continue
+      const checkout = job.steps[index - 1]
+      const reserve = job.steps[index - 2]
+      if (
+        checkout?.uses !==
+          'actions/checkout@11d5960a326750d5838078e36cf38b85af677262' ||
+        !isDeepStrictEqual(checkout.with, {
+          repository: '${{ job.workflow_repository }}',
+          ref: '${{ job.workflow_sha }}',
+          path: '.ci-action',
+          'sparse-checkout-cone-mode': false,
+          'sparse-checkout': CONTROL_SPARSE_CHECKOUT,
+          'persist-credentials': false,
+        }) ||
+        reserve?.run !== 'rm -rf -- "$GITHUB_WORKSPACE/.ci-action"'
+      ) {
+        issues.push(
+          'local execution action must immediately follow reserved immutable trusted checkout'
+        )
+      }
+    }
   }
 
   if ((publicWorkflow.match(/concurrency:/g) ?? []).length !== 0) {
