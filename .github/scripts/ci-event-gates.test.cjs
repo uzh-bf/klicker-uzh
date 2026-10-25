@@ -38,6 +38,7 @@ function evaluateGate(
     'vars',
     'steps',
     'format',
+    'startsWith',
     `return (${normalized})`
   )(
     github,
@@ -49,7 +50,9 @@ function evaluateGate(
     (pattern, value) => {
       assert.equal(pattern, '{0}')
       return String(value)
-    }
+    },
+    (value, prefix) =>
+      String(value).toLowerCase().startsWith(String(prefix).toLowerCase())
   )
 }
 
@@ -93,6 +96,56 @@ test('paid jobs and legacy required coverage reject stale preparation on rerun',
     )
     assert.equal(returned, String(expected))
   }
+})
+
+test('draft OCR skips same-repository sync updates and preserves other admission', () => {
+  const gate = readWorkflow('check-ocr-review.yml').jobs['ocr-review'].if
+  const repository = 'synthetic/project'
+  const context = (action, ref, overrides = {}) => ({
+    repository,
+    event: {
+      action,
+      pull_request: {
+        draft: true,
+        user: { login: 'synthetic-bot' },
+        head: { ref, repo: { full_name: repository } },
+        ...overrides,
+      },
+    },
+  })
+
+  for (const ref of [
+    'sync/v3-into-v3-ai-0123456789',
+    'sync/v3-ai-into-v3-audit-0123456789',
+    'sync/v3-ai-into-v3-adaptive-learning-0123456789',
+  ]) {
+    assert.equal(evaluateGate(gate, context('synchronize', ref)), false)
+    for (const action of ['opened', 'reopened', 'converted_to_draft']) {
+      assert.equal(evaluateGate(gate, context(action, ref)), true)
+    }
+    assert.equal(
+      evaluateGate(
+        gate,
+        context('synchronize', ref, {
+          head: { ref, repo: { full_name: 'synthetic/fork' } },
+        })
+      ),
+      true
+    )
+  }
+  const ordinary = 'rs/synthetic-change'
+  assert.equal(evaluateGate(gate, context('synchronize', ordinary)), true)
+  assert.equal(
+    evaluateGate(gate, context('opened', ordinary, { draft: false })),
+    false
+  )
+  assert.equal(
+    evaluateGate(
+      gate,
+      context('opened', ordinary, { user: { login: 'dependabot[bot]' } })
+    ),
+    false
+  )
 })
 
 test('trusted review policy admits only lifecycle events and exact PR commands', () => {
