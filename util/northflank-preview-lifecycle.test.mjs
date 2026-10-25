@@ -1309,9 +1309,7 @@ test('native identity accepts absent stageId while writes require settlement pro
     Object.hasOwn(nativeRead(resources[0]).body.data, 'stageId'),
     false
   )
-  const acceptedHarness = nativeHarness(resources, {
-    write: () => ({ status: 202 }),
-  })
+  const acceptedHarness = nativeHarness(resources)
   const unsettled = []
   const acceptedDriver = createNorthflankPreviewLifecycleDriver({
     ownership: nativeOwnership(resources),
@@ -1331,9 +1329,7 @@ test('native identity accepts absent stageId while writes require settlement pro
   )
   assert.equal(unsettled.length, 1)
 
-  const settledHarness = nativeHarness(resources, {
-    write: () => ({ status: 202 }),
-  })
+  const settledHarness = nativeHarness(resources)
   const settlements = []
   const settledDriver = createNorthflankPreviewLifecycleDriver({
     ownership: nativeOwnership(resources),

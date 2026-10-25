@@ -993,7 +993,6 @@ function normalizeNorthflankAction(action, ownership) {
   if (!Array.isArray(input.resources))
     fail('INVALID_ACTION', 'Northflank lifecycle inventory is missing')
   const owned = new Map(ownership.resources.map((r) => [r.binding, r]))
-  const seen = new Set()
   const actions = new Map()
   for (const candidate of input.resources) {
     const resource = assertRecord(candidate, 'Northflank lifecycle resource')
@@ -1006,16 +1005,15 @@ function normalizeNorthflankAction(action, ownership) {
     const expectedType = resource.data === true ? 'addon' : 'service'
     if (
       !entry ||
-      seen.has(binding) ||
+      actions.has(binding) ||
       typeof resource.data !== 'boolean' ||
       entry.nativeType !== expectedType
     ) {
       fail('OWNERSHIP_MISMATCH', `Lifecycle resource ${binding} is not owned`)
     }
-    seen.add(binding)
     actions.set(binding, resource)
   }
-  if (seen.size !== owned.size)
+  if (actions.size !== owned.size)
     fail('OWNERSHIP_MISMATCH', 'Northflank ownership inventory is incomplete')
   const resources = ownership.resources.map((entry) => ({
     ...entry,
