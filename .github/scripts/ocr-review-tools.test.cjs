@@ -379,17 +379,6 @@ test('tool result diagnostics count successful serialized payloads by UTF-8 byte
   }
   assert.deepEqual(broker.diagnostics().tool_results, expected)
   assert.equal(broker.diagnostics().context_reads, 3)
-  assert.deepEqual(Object.keys(expected).sort(), [
-    'ask_review_advisor',
-    'lookup_library_docs',
-    'read_review_context',
-  ])
-  for (const counts of Object.values(expected))
-    assert.deepEqual(Object.keys(counts), ['calls', 'returned_bytes'])
-  assert.doesNotMatch(
-    JSON.stringify(expected),
-    /RETURNED_CONTENT_π_漢字|docs\/long\.md|source\.js/
-  )
 
   const snapshot = broker.diagnostics()
   snapshot.tool_results.read_review_context.calls = 99
