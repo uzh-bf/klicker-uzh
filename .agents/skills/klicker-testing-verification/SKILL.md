@@ -153,6 +153,7 @@ four-runner, 16-vCPU host layout, and keep service health polling at five
 seconds so container readiness is detected promptly.
 
 For CI result-reuse changes, run `ci-verified-reuse.test.cjs`,
+`ci-reuse-policy.test.cjs`,
 `ci-equivalent-run.test.cjs`, `ci-event-gates.test.cjs`,
 `validate-public-playwright-workflow.test.cjs` and `stg-release-promoter.test.js`.
 Keep the sparse trusted-control boundary and fingerprint synchronized. Reuse

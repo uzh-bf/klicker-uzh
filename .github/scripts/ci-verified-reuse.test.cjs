@@ -702,7 +702,7 @@ test('workflow preserves readiness in-flight, pins execution inputs and defaults
   }
 })
 
-test('promoter gate accepts only independently verified skipped shards', async (t) => {
+test('promoter gate admits exact skipped matrix shapes only with independent full coverage proof', async (t) => {
   const { execFileSync } = require('node:child_process')
   const { createHash } = require('node:crypto')
   const os = require('node:os')
@@ -725,16 +725,44 @@ test('promoter gate accepts only independently verified skipped shards', async (
   })
   for (const mode of [
     'valid',
+    'valid-expanded',
     'disabled',
     'forged',
     'missing',
+    'expired',
     'failed',
+    'cancelled-source',
+    'stale-source',
+    'incomplete-source',
+    'partial-plan',
     'architecture',
     'replaced-receipt',
     'replaced-source-plan',
     'replaced-push-plan',
     'overlapping-receipt',
     'overlapping-source-plan',
+    'duplicate-placeholder',
+    'descendant-placeholder',
+    'wrong-head-placeholder',
+    'wrong-run-placeholder',
+    'wrong-attempt-placeholder',
+    'unstable-id-placeholder',
+    'duplicate-id-placeholder',
+    'running-placeholder',
+    'failed-placeholder',
+    'cancelled-placeholder',
+    'neutral-placeholder',
+    'successful-placeholder',
+    'partial-expanded',
+    'mixed-shapes',
+    'duplicate-expanded',
+    'failed-expanded',
+    'wrong-attempt-expanded',
+    'duplicate-id-expanded',
+    'partial-inventory',
+    'duplicate-inventory',
+    'overridden-inventory',
+    'terminal-failed',
   ]) {
     const { state, options } = fixture(true)
     state.run.updated_at = new Date().toISOString()
@@ -745,16 +773,73 @@ test('promoter gate accepts only independently verified skipped shards', async (
       head_sha: options.context.sha,
       head_branch: 'v3',
     }
-    const policy = REQUIRED_CI_WORKFLOWS.find((w) =>
-      w.path.endsWith('/test-playwright.yml')
+    const policy = structuredClone(
+      REQUIRED_CI_WORKFLOWS.find((w) => w.path.endsWith('/test-playwright.yml'))
     )
-    const pushJobs = policy.jobs.map((j, i) => ({
-      id: 800 + i,
+    const matrixName = policy.jobs[1].id.slice(
+      0,
+      policy.jobs[1].id.lastIndexOf(' (')
+    )
+    const expandedJobs = policy.jobs.slice(1).map((j, i) => ({
+      id: 801 + i,
       name: j.id,
       head_sha: options.context.sha,
-      ...success,
-      conclusion: i === 0 ? 'success' : 'skipped',
+      run_id: state.pushRun.id,
+      run_attempt: state.pushRun.run_attempt,
+      status: 'completed',
+      conclusion: 'skipped',
     }))
+    // Actual GitHub skipped-matrix shape: one unsuffixed row, no runner or
+    // steps, and timestamps that are not execution evidence (even inverted).
+    const placeholder = {
+      ...expandedJobs[0],
+      name: matrixName,
+      steps: [],
+      runner_id: null,
+      runner_name: null,
+      labels: ['ubuntu-24.04'],
+      started_at: '2026-10-25T12:02:38Z',
+      completed_at: '2026-10-25T12:02:37Z',
+    }
+    const pushJobs = [
+      {
+        id: 800,
+        name: policy.jobs[0].id,
+        head_sha: options.context.sha,
+        ...success,
+      },
+      ...(mode === 'valid-expanded' || mode.endsWith('-expanded')
+        ? expandedJobs
+        : [placeholder]),
+    ]
+    if (mode === 'duplicate-placeholder')
+      pushJobs.push({ ...placeholder, id: 900 })
+    if (mode === 'descendant-placeholder') placeholder.name += ' / unrelated'
+    if (mode === 'wrong-head-placeholder') placeholder.head_sha = sha('9')
+    if (mode === 'wrong-run-placeholder') placeholder.run_id += 1
+    if (mode === 'wrong-attempt-placeholder') placeholder.run_attempt += 1
+    if (mode === 'unstable-id-placeholder') placeholder.id = 0
+    if (mode === 'duplicate-id-placeholder') placeholder.id = pushJobs[0].id
+    if (mode === 'running-placeholder') placeholder.status = 'in_progress'
+    if (mode === 'failed-placeholder') placeholder.conclusion = 'failure'
+    if (mode === 'cancelled-placeholder') placeholder.conclusion = 'cancelled'
+    if (mode === 'neutral-placeholder') placeholder.conclusion = 'neutral'
+    if (mode === 'successful-placeholder') placeholder.conclusion = 'success'
+    if (mode === 'partial-expanded') pushJobs.splice(2, 1)
+    if (mode === 'mixed-shapes') pushJobs.push(...expandedJobs)
+    if (mode === 'duplicate-expanded')
+      expandedJobs[1].name = expandedJobs[0].name
+    if (mode === 'failed-expanded') expandedJobs[1].conclusion = 'failure'
+    if (mode === 'wrong-attempt-expanded') expandedJobs[1].run_attempt += 1
+    if (mode === 'duplicate-id-expanded')
+      expandedJobs[1].id = expandedJobs[0].id
+    if (mode === 'partial-inventory') policy.jobs.pop()
+    if (mode === 'duplicate-inventory') policy.jobs[2].id = policy.jobs[1].id
+    if (mode === 'overridden-inventory') {
+      policy.requiredJobIds = policy.jobs.map(({ id }) => id)
+      policy.jobs.pop()
+    }
+    if (mode === 'terminal-failed') pushJobs[0].conclusion = 'failure'
     pushJobs.push({ ...planProducer(), id: 999, head_sha: options.context.sha })
     const records = [
       [state.run, 'ci-validation-receipt', state.receipt],
@@ -771,6 +856,10 @@ test('promoter gate accepts only independently verified skipped shards', async (
     ]
     if (mode === 'forged') state.receipt.runId = 666
     if (mode === 'failed') state.run.conclusion = 'failure'
+    if (mode === 'cancelled-source') state.run.conclusion = 'cancelled'
+    if (mode === 'stale-source') state.run.updated_at = '2020-01-01T00:00:00Z'
+    if (mode === 'incomplete-source') state.jobs.splice(1, 1)
+    if (mode === 'partial-plan') state.plan.shardCount = 1
     if (mode === 'architecture') state.receipt.runnerArch = 'ARM64'
     if (mode === 'overlapping-receipt') {
       state.jobs[0].steps.find(
@@ -800,7 +889,7 @@ test('promoter gate accepts only independently verified skipped shards', async (
         entries.push({
           id: index + 1,
           name,
-          expired: false,
+          expired: mode === 'expired',
           created_at:
             (mode === 'replaced-receipt' && index === 0) ||
             (mode === 'replaced-source-plan' && index === 1) ||
@@ -821,9 +910,12 @@ test('promoter gate accepts only independently verified skipped shards', async (
       const runs = event === 'push' ? [state.pushRun] : [state.run]
       return { data: { workflow_runs: runs, total_count: runs.length } }
     }
+    const jobReads = []
     options.github.rest.actions.listJobsForWorkflowRunAttempt = async ({
       run_id,
+      attempt_number,
     }) => {
+      jobReads.push({ run_id, attempt_number })
       const jobs = run_id === state.pushRun.id ? pushJobs : state.jobs
       return { data: { jobs, total_count: jobs.length } }
     }
@@ -851,11 +943,55 @@ test('promoter gate accepts only independently verified skipped shards', async (
       sourceBranch: 'v3',
       maxAttempts: 1,
     })
-    assert.equal(result.valid, mode === 'valid', `${mode}: ${result.reason}`)
-    if (mode === 'valid')
+    const valid = mode === 'valid' || mode === 'valid-expanded'
+    assert.equal(result.valid, valid, `${mode}: ${result.reason}`)
+    if (valid) {
       assert.equal(result.workflows[0].validationReuse.id, 123)
-    else {
+      const evidence = result.workflows[0]
+      assert.equal(
+        evidence.validationReuseCoverage.shape,
+        mode === 'valid' ? 'collapsed' : 'expanded'
+      )
+      assert.deepEqual(
+        evidence.validationReuseCoverage.requiredJobIds,
+        policy.jobs.slice(1).map(({ id }) => id)
+      )
+      assert.deepEqual(
+        evidence.validationReuseCoverage.jobs,
+        pushJobs.slice(1, -1).map(({ id, name }) => ({ id, name }))
+      )
+      assert.deepEqual(
+        evidence.observedJobs,
+        pushJobs.map(({ id, name, status, conclusion }) => ({
+          id,
+          name,
+          status,
+          conclusion,
+        }))
+      )
+      assert.equal(evidence.jobs.length, mode === 'valid' ? 2 : 9)
+      assert.equal(
+        evidence.jobs.filter((job) => job.conclusion === 'skipped').length,
+        mode === 'valid' ? 1 : PLAYWRIGHT_SHARD_COUNT
+      )
+      assert.ok(
+        jobReads.some(
+          (read) => read.run_id === state.run.id && read.attempt_number === 1
+        ),
+        'actual full source execution must be independently loaded'
+      )
+    } else if (mode === 'terminal-failed') {
+      assert.match(result.reason, /test-playwright-status is failed/)
+    } else {
       assert.match(result.reason, /lack independently verified reuse/)
+      if (
+        mode.endsWith('-placeholder') ||
+        mode.endsWith('-expanded') ||
+        mode === 'mixed-shapes'
+      )
+        assert.match(result.reason, /hosted-shard-skip-shape-invalid/)
+      if (mode.endsWith('-inventory'))
+        assert.match(result.reason, /hosted-shard-inventory-invalid/)
       if (mode.startsWith('replaced-'))
         assert.match(result.reason, /artifact-created-outside-producer-step/)
       if (mode.startsWith('overlapping-'))

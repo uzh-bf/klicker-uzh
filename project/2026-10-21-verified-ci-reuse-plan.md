@@ -1,7 +1,8 @@
 # Verified CI result reuse
 
 Status: plan published before implementation in draft PR #6664; implementation
-and verification are recorded below. Keep this PR draft. Base inspected:
+and verification are recorded below. The user authorized marking the PR ready
+for final review on 2026-10-25. Base inspected:
 `8ab99bd5fe2ec651856d9087b79a3126f6b8d49e` (`v3`). No deployment, merge,
 auto-merge, repository setting, credential or runner-policy changes are authorized.
 
@@ -257,3 +258,34 @@ a general cryptographic signature. Actionlint passes with only its two existing
 unsupported GitHub job-context diagnostics filtered; ShellCheck, Bash syntax,
 Prettier, AGENTS/wiki/Prisma guards and diff checks pass. Biome reports warnings
 and suggestions but no errors.
+
+## Ready-state review repair (2026-10-25)
+
+The unchanged `a3e11584d0` head passed a real full ready-state run
+[`40191348426`](https://github.com/uzh-bf/klicker-uzh/actions/runs/40191348426):
+all 38 candidate specs across eight public ARM64 shards, plus the build and
+required reporter. Codebase validation did not rerun solely on readiness.
+All three CodeQL analysis jobs completed successfully; its advisory aggregate
+reports four audited false positives on immutable `job.workflow_sha` checkouts.
+The alerts remain visible and no security setting or alert state was changed.
+
+The ready-state CodeRabbit review found one functional consumer gap: GitHub
+represents a wholly skipped matrix with a single unsuffixed job, whereas the
+promoter's fixture assumed eight separately named skipped shards. Real reused
+pushes would therefore be rejected as missing jobs. The repair accepts the
+exact collapsed representation only after independent full source verification;
+the placeholder itself never establishes coverage. Exact candidate/run/attempt
+binding, stable job identity, the complete trusted eight-shard inventory and
+the original observed job list are preserved. Mixed, duplicate, partial or
+otherwise inconsistent job shapes remain rejected. Regression coverage uses
+the real API shape and retains the expanded eight-job case.
+
+The verification skill now lists the dedicated reuse-policy regression suite.
+The correction passes 100 focused tests and the complete Node 24.21.0 contract
+run: 973 tests, 971 passed, two intentional skips and zero failures. The
+promoter integration covers 39 matrix/provenance modes with real ZIP fixtures.
+A restricted launch failed because hermetic loopback sockets were denied;
+rerunning with fixture permissions passed without changing tests or code.
+The repaired head still requires fresh exact-commit CI and manual final review;
+those results are recorded in the PR and task report. Expanded reuse remains
+off, with the existing post-merge qualification and suite exclusions unchanged.
