@@ -64,6 +64,19 @@ export default {
         high: 'Hoch',
         xhigh: 'Sehr hoch',
       },
+      answerStyleLabel: 'Antwortformat',
+      answerStyleHint:
+        'Ändert, wie neue Antworten gegliedert sind, nicht wie viel Unterstützung Du bekommst.',
+      answerStyles: {
+        balanced: 'Standard',
+        bullets: 'Stichpunkte',
+      },
+      answerToneLabel: 'Ton',
+      answerTones: {
+        neutral: 'Neutral',
+        friendly: 'Freundlich',
+        direct: 'Direkt',
+      },
     },
     credits: {
       title: 'Verfügbare Credits',
@@ -275,7 +288,7 @@ export default {
       access:
         'Dass du Zugriff auf eine Datei hast, heisst nicht, dass du sie teilen darfst. Frag im Zweifel deine Dozierenden.',
       dataBoundary:
-        'Der Text deiner Dokumente wird an den Anbieter des KI-Modells gesendet und mit diesem Gespräch gespeichert.',
+        'Der Dokumenttext wird an den Anbieter des KI-Modells gesendet. Wenn das gewählte Modell Bilder lesen kann, können auch gerenderte PDF-Seiten zur visuellen Prüfung gesendet werden. KlickerUZH speichert den Text und eine allfällige Zusammenfassung der visuellen Prüfung mit diesem Gespräch, aber nicht die Seitenbilder.',
       once: 'Dieser Hinweis erscheint auf diesem Gerät nur einmal.',
       remove: 'Dokumente entfernen',
       accept: 'Verstanden',
@@ -5473,6 +5486,11 @@ Da die KlickerUZH-App noch nicht im iOS-App-Store verfügbar ist, folgen Sie die
         'Inaktiv: Der Chatbot verwendet genau ein von der Lehrperson ausgewähltes Modell.',
       modelSelectionFixedDescription:
         'Teilnehmende verwenden dieses Modell. Neue Chatbots starten mit Auto.',
+      answerPreferences: 'Antwortformat und Ton durch Teilnehmende',
+      answerPreferencesEnabledDescription:
+        'Aktiv: Teilnehmende können für neue Antworten Stichpunkte und einen freundlichen oder direkten Ton wählen.',
+      answerPreferencesDisabledDescription:
+        'Inaktiv: Alle Teilnehmenden erhalten dasselbe Antwortformat und denselben Ton.',
       modelSelectionParticipantDescription:
         'Teilnehmende können zwischen diesen Modellen wählen. Wählen Sie mindestens eines.',
       selectedModel: 'Ausgewähltes Modell',

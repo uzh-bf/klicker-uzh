@@ -1,7 +1,8 @@
 'use client'
 
 import { ComposerPrimitive, useAui, useAuiState } from '@assistant-ui/react'
-import { Button, Modal } from '@uzh-bf/design-system'
+import * as Dialog from '@radix-ui/react-dialog'
+import { Button } from '@uzh-bf/design-system'
 import { LoaderCircleIcon, MicIcon, SquareIcon } from 'lucide-react'
 import { useParams } from 'next/navigation'
 import { useTranslations } from 'next-intl'
@@ -126,18 +127,30 @@ export function DictationSheet() {
     refresh,
     setInstallSheetOpen,
   } = useDictationContext()
-  // The design-system `Modal` prevents `onOpenAutoFocus` (see
-  // `DisclaimerModal`), so focus must be moved into the dialog here or it
-  // stays on the obscured composer control behind the overlay.
-  const primaryActionRef = useRef<HTMLButtonElement>(null)
-
+  const openerRef = useRef<HTMLElement | null>(null)
+  const primaryNode = useRef<HTMLButtonElement | null>(null)
   useEffect(() => {
-    if (installSheetOpen) primaryActionRef.current?.focus()
+    if (!installSheetOpen || availability === 'installing') return
+    primaryNode.current?.focus()
   }, [installSheetOpen, availability])
 
   if (!installSheetOpen) return null
 
   const close = () => setInstallSheetOpen(false)
+  const restoreFocus = (event: Event) => {
+    event.preventDefault()
+    // Installation and dictation can replace the original setup control.
+    const target =
+      openerRef.current?.isConnected && !openerRef.current.matches(':disabled')
+        ? openerRef.current
+        : (document.querySelector<HTMLElement>(
+            '[data-cy="chat-dictation-stop"], [data-cy="chat-dictation"]'
+          ) ??
+          document.querySelector<HTMLTextAreaElement>(
+            '[data-cy="chat-composer-input"]'
+          ))
+    target?.focus()
+  }
   const installing = availability === 'installing'
   const needsInstall = availability === 'needs-install'
 
@@ -157,73 +170,99 @@ export function DictationSheet() {
   }
 
   return (
-    <Modal
-      dataContent={{ cy: 'chat-dictation-sheet' }}
-      title={t('chat.composer.dictationSheetTitle')}
-      open
-      onClose={close}
-      hideCloseButton
-    >
-      <div className="space-y-4">
-        <p className="text-sm">{t('chat.composer.dictationSheetBody')}</p>
-        <p className="text-muted-foreground text-xs">
-          {t('chat.composer.dictationLanguageHint')}
-        </p>
-
-        {installing ? (
-          <div
-            className="text-muted-foreground flex items-center gap-2 text-sm"
-            aria-live="polite"
-            data-cy="chat-dictation-installing"
+    <Dialog.Root open onOpenChange={(open) => !open && close()}>
+      <Dialog.Portal>
+        <Dialog.Overlay className="data-[state=open]:animate-in data-[state=closed]:animate-out data-[state=closed]:fade-out-0 data-[state=open]:fade-in-0 fixed inset-0 z-50 flex items-center justify-center bg-black/70">
+          <Dialog.Content
+            data-cy="chat-dictation-sheet"
+            aria-describedby={undefined}
+            onOpenAutoFocus={(event) => {
+              const active = document.activeElement
+              openerRef.current =
+                active instanceof HTMLElement && active !== document.body
+                  ? active
+                  : null
+              event.preventDefault()
+              primaryNode.current?.focus()
+            }}
+            onCloseAutoFocus={restoreFocus}
+            className="bg-background data-[state=open]:animate-in data-[state=closed]:animate-out data-[state=closed]:fade-out-0 data-[state=open]:fade-in-0 data-[state=closed]:zoom-out-95 data-[state=open]:zoom-in-95 relative z-50 h-max max-h-[calc(100%-2rem)] w-108 max-w-7xl overflow-y-auto rounded-lg border p-5 pb-8 shadow-lg duration-200 md:w-160 lg:w-220 xl:w-280"
           >
-            <LoaderCircleIcon className="size-4 animate-spin motion-reduce:animate-none" />
-            <span>{t('chat.composer.dictationSheetInstalling')}</span>
-          </div>
-        ) : null}
+            <Dialog.Title className="text-lg leading-none font-semibold">
+              {t('chat.composer.dictationSheetTitle')}
+            </Dialog.Title>
+            <div className="space-y-4">
+              <p className="text-sm">{t('chat.composer.dictationSheetBody')}</p>
+              <p className="text-muted-foreground text-xs">
+                {t('chat.composer.dictationLanguageHint')}
+              </p>
 
-        {error === 'install-failed' ? (
-          <p
-            className="text-destructive text-sm"
-            role="alert"
-            data-cy="chat-dictation-install-error"
-          >
-            {t('chat.composer.dictationSheetFailed')}
-          </p>
-        ) : null}
+              {installing ? (
+                <div
+                  className="text-muted-foreground flex items-center gap-2 text-sm"
+                  aria-live="polite"
+                  data-cy="chat-dictation-installing"
+                >
+                  <LoaderCircleIcon className="size-4 animate-spin motion-reduce:animate-none" />
+                  <span>{t('chat.composer.dictationSheetInstalling')}</span>
+                </div>
+              ) : null}
 
-        {availability === 'ready' ? (
-          <>
-            <p className="text-sm">{t('chat.composer.dictationSheetReady')}</p>
-            <div className="flex justify-end">
-              <Button
-                primary
-                ref={primaryActionRef}
-                data-cy="chat-dictation-start"
-                onClick={() => {
-                  close()
-                  aui.composer.startDictation()
-                }}
-              >
-                {t('chat.composer.dictationSheetStart')}
-              </Button>
+              {error === 'install-failed' ? (
+                <p
+                  className="text-destructive text-sm"
+                  role="alert"
+                  data-cy="chat-dictation-install-error"
+                >
+                  {t('chat.composer.dictationSheetFailed')}
+                </p>
+              ) : null}
+
+              {availability === 'ready' ? (
+                <>
+                  <p className="text-sm">
+                    {t('chat.composer.dictationSheetReady')}
+                  </p>
+                  <div className="flex justify-end">
+                    <Button
+                      primary
+                      ref={primaryNode}
+                      data-cy="chat-dictation-start"
+                      className={{
+                        root: 'bg-primary text-primary-foreground hover:bg-primary/90 hover:text-primary-foreground disabled:hover:bg-primary border-transparent font-semibold',
+                      }}
+                      onClick={() => {
+                        close()
+                        aui.composer.startDictation()
+                      }}
+                    >
+                      {t('chat.composer.dictationSheetStart')}
+                    </Button>
+                  </div>
+                </>
+              ) : (
+                <div className="flex flex-col gap-2 sm:flex-row sm:justify-end">
+                  <Button
+                    primary
+                    ref={primaryNode}
+                    data-cy="chat-dictation-download"
+                    className={{
+                      root: 'bg-primary text-primary-foreground hover:bg-primary/90 hover:text-primary-foreground disabled:hover:bg-primary border-transparent font-semibold',
+                    }}
+                    disabled={installing}
+                    onClick={handlePrimaryAction}
+                  >
+                    {primaryActionLabel}
+                  </Button>
+                  <Button data-cy="chat-dictation-not-now" onClick={close}>
+                    {t('chat.composer.dictationSheetNotNow')}
+                  </Button>
+                </div>
+              )}
             </div>
-          </>
-        ) : (
-          <div className="flex flex-col gap-2 sm:flex-row sm:justify-end">
-            <Button
-              ref={primaryActionRef}
-              data-cy="chat-dictation-download"
-              disabled={installing}
-              onClick={handlePrimaryAction}
-            >
-              {primaryActionLabel}
-            </Button>
-            <Button data-cy="chat-dictation-not-now" onClick={close}>
-              {t('chat.composer.dictationSheetNotNow')}
-            </Button>
-          </div>
-        )}
-      </div>
-    </Modal>
+          </Dialog.Content>
+        </Dialog.Overlay>
+      </Dialog.Portal>
+    </Dialog.Root>
   )
 }

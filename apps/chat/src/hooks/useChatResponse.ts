@@ -57,6 +57,8 @@ export function useChatResponse(
   const t = useTranslations()
 
   const loadCredits = useSettingsStore((state) => state.loadCredits)
+  const answerStyle = useSettingsStore((state) => state.answerStyle)
+  const answerTone = useSettingsStore((state) => state.answerTone)
   const modelReadsImages = useSettingsStore((state) =>
     selectModelReadsDocumentPages(state, selectedModel)
   )
@@ -213,7 +215,7 @@ export function useChatResponse(
           }))
         }
         // Runs before image hydration, which may return early.
-        if (takenDocumentPages.length > 0 && documentPages.length === 0) {
+        if (documentPages.length === 0) {
           dropPageReview()
         }
 
@@ -267,6 +269,8 @@ export function useChatResponse(
           ]
         }
 
+        // Hydration can restore stored headers from an earlier attempt.
+        if (documentPages.length === 0) dropPageReview()
         // A new embedded eLearning question re-requests the page snapshot from
         // the host: the launch snapshot can expire or describe a page the
         // student has left, and a completion change arrives without navigation.
@@ -307,6 +311,8 @@ export function useChatResponse(
             selectedModel,
             selectedMode,
             reasoningEffort: selectedReasoningEffort,
+            answerStyle,
+            answerTone,
             chatContext: requestChatContext ?? undefined,
             parentId: parentId || undefined,
             // A branch (edit) keeps the original question's learning context
@@ -962,6 +968,8 @@ export function useChatResponse(
       selectedModel,
       selectedMode,
       selectedReasoningEffort,
+      answerStyle,
+      answerTone,
       chatbotId,
       chatContext,
       loadCredits,

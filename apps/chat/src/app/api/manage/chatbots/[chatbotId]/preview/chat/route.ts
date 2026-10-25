@@ -10,6 +10,14 @@ import {
 } from 'ai'
 import { type NextRequest, NextResponse } from 'next/server'
 import { z } from 'zod'
+import {
+  DEFAULT_ANSWER_STYLE,
+  DEFAULT_ANSWER_TONE,
+} from '@/src/lib/config/answerStyles'
+import {
+  answerStyleSchema,
+  answerToneSchema,
+} from '@/src/lib/server/answerStyleInstructions'
 import { resolveOwnerPreviewModel } from '@/src/lib/ownerPreviewPolicy'
 import { getChatModel } from '@/src/lib/server/chatModelProvider'
 import {
@@ -63,6 +71,8 @@ const PREVIEW_MAX_BODY_BYTES = 512 * 1024
 const previewRateLimiter = createRateLimiter(20, 5 * 60 * 1000)
 
 const previewOptionsSchema = z.object({
+  answerStyle: answerStyleSchema,
+  answerTone: answerToneSchema,
   selectedMode: z.string().trim().min(1).max(100).default('tutor'),
   selectedModel: z.string().trim().min(1).max(100).optional(),
   reasoningEffort: z.string().trim().min(1).max(100).nullable().optional(),
@@ -342,12 +352,29 @@ export async function POST(
         { status: 503 }
       )
     }
+    const draftConfig = chatbot.draftConfig
+    const savedAnswerPreferencesEnabled =
+      draftConfig &&
+      typeof draftConfig === 'object' &&
+      !Array.isArray(draftConfig)
+        ? (draftConfig as Record<string, unknown>).answerPreferencesEnabled
+        : undefined
+    const answerPreferencesEnabled =
+      typeof savedAnswerPreferencesEnabled === 'boolean'
+        ? savedAnswerPreferencesEnabled
+        : chatbot.answerPreferencesEnabled
     const systemPrompt = compileSystemPrompt(
       chatbot.systemPrompts,
       selectedMode,
       {
         courseDisplayName: chatbot.course.displayName,
         toolNames,
+        answerStyle: answerPreferencesEnabled
+          ? options.data.answerStyle
+          : DEFAULT_ANSWER_STYLE,
+        answerTone: answerPreferencesEnabled
+          ? options.data.answerTone
+          : DEFAULT_ANSWER_TONE,
         standardModeConfig: chatbot.standardModeConfig,
         // Owner preview is an authoring surface, so it compiles the saved
         // revision's custom modes rather than the currently approved set.

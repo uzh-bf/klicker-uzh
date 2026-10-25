@@ -563,7 +563,7 @@ test.describe('Chatbot Messaging Interface', () => {
       })
       const embeddedMode = page
         .getByTestId('chat-embedded-toolbar')
-        .getByRole('combobox')
+        .getByRole('combobox', { name: enMessages.chat.modes.switcherLabel })
       await embeddedMode.selectOption(modes[0].key)
       await expect(welcome).toHaveText(welcomeMessage)
       await expect(page.getByTestId('chat-welcome-mode')).toHaveCount(0)
@@ -617,6 +617,106 @@ test.describe('Chatbot Messaging Interface', () => {
 
     await typeMessage(page, 'Hello, chatbot!')
     await expect(input).toHaveValue('Hello, chatbot!')
+  })
+
+  test('Dictation install keeps keyboard focus through Start', async ({
+    page,
+  }) => {
+    await page.addInitScript(() => {
+      let availability: 'downloadable' | 'available' = 'downloadable'
+      let resolveInstall: ((installed: boolean) => void) | null = null
+
+      class FakeSpeechRecognition {
+        continuous = false
+        interimResults = false
+        lang = ''
+        maxAlternatives = 1
+        processLocally = true
+        onend: (() => void) | null = null
+        onerror: ((event: Event) => void) | null = null
+        onresult: ((event: Event) => void) | null = null
+        onstart: (() => void) | null = null
+
+        static available() {
+          return Promise.resolve(availability)
+        }
+
+        static install() {
+          return new Promise<boolean>((resolve) => {
+            resolveInstall = (installed) => {
+              availability = installed ? 'available' : 'downloadable'
+              resolve(installed)
+            }
+          })
+        }
+
+        start() {
+          this.onstart?.()
+        }
+
+        stop() {
+          this.onend?.()
+        }
+
+        abort() {
+          this.onend?.()
+        }
+      }
+
+      const fakeWindow = window as typeof window & {
+        SpeechRecognition: typeof FakeSpeechRecognition
+        __dictationFake: boolean
+        __resolveDictationInstall?: (installed: boolean) => void
+      }
+      fakeWindow.SpeechRecognition = FakeSpeechRecognition
+      fakeWindow.__dictationFake = true
+      fakeWindow.__resolveDictationInstall = (installed) => {
+        resolveInstall?.(installed)
+      }
+    })
+
+    await visitChat(page)
+    const setup = page.getByTestId('chat-dictation')
+    await setup.focus()
+    await page.keyboard.press('Enter')
+
+    const install = page.getByTestId('chat-dictation-download')
+    await expect(install).toBeFocused()
+    await page.keyboard.press('Escape')
+    await expect(page.getByTestId('chat-dictation-sheet')).toHaveCount(0)
+    await expect(setup).toBeFocused()
+    await page.keyboard.press('Enter')
+    await expect(install).toBeFocused()
+    await page.keyboard.press('Enter')
+    await expect(page.getByTestId('chat-dictation-installing')).toBeVisible()
+
+    await page.evaluate(() => {
+      const fakeWindow = window as typeof window & {
+        __resolveDictationInstall?: (installed: boolean) => void
+      }
+      fakeWindow.__resolveDictationInstall?.(false)
+    })
+    await expect(install).toBeEnabled()
+    await expect(install).toBeFocused()
+    await page.keyboard.press('Enter')
+    await expect(page.getByTestId('chat-dictation-installing')).toBeVisible()
+
+    await page.evaluate(() => {
+      const fakeWindow = window as typeof window & {
+        __resolveDictationInstall?: (installed: boolean) => void
+      }
+      fakeWindow.__resolveDictationInstall?.(true)
+    })
+
+    const start = page.getByTestId('chat-dictation-start')
+    await expect(start).toBeFocused()
+    await page.keyboard.press('Enter')
+
+    await expect(page.getByTestId('chat-dictation-sheet')).toHaveCount(0)
+
+    const stop = page.getByTestId('chat-dictation-stop')
+    await expect(stop).toBeEnabled()
+    await expect(stop).toBeFocused()
   })
 
   test('Send button is present and clickable', async ({ page }) => {
@@ -2029,6 +2129,158 @@ test.describe('Chatbot Settings Panel', () => {
     const chatRequest = await chatRequestPromise
     const payload = chatRequest.postDataJSON() as { selectedModel?: string }
     expect(payload.selectedModel).toBe('auto')
+  })
+
+  async function readAnswerPreferences(page: Page) {
+    return page.evaluate(() => {
+      const stored = window.localStorage.getItem('settings-storage')
+      const state = stored ? JSON.parse(stored).state : {}
+      return { answerStyle: state.answerStyle, answerTone: state.answerTone }
+    })
+  }
+
+  function waitForChatRequest(page: Page) {
+    return page.waitForRequest(
+      (request) =>
+        request.method() === 'POST' &&
+        request.url().includes(`/api/chatbots/${CHATBOT_ID}/chat`)
+    )
+  }
+
+  test('Answer style and tone are sent with each message and survive a reload', async ({
+    page,
+  }) => {
+    await mockChatStream(page)
+    await visitChat(page)
+    await openSettings(page)
+
+    const defaultRequest = waitForChatRequest(page)
+    await sendMessage(page, 'Default answer preferences check')
+    expect((await defaultRequest).postDataJSON()).toMatchObject({
+      answerStyle: 'balanced',
+      answerTone: 'neutral',
+    })
+    await expect(page.getByTestId('chat-assistant-message')).toContainText(
+      'assistant reply #1',
+      { timeout: 15_000 }
+    )
+
+    await selectOption(
+      page,
+      '[data-cy="chat-answer-style-select"]',
+      'Bullet points'
+    )
+    await selectOption(page, '[data-cy="chat-answer-tone-select"]', 'Direct')
+    await expect
+      .poll(() => readAnswerPreferences(page))
+      .toEqual({ answerStyle: 'bullets', answerTone: 'direct' })
+
+    const chosenRequest = waitForChatRequest(page)
+    await sendMessage(page, 'Chosen answer preferences check')
+    expect((await chosenRequest).postDataJSON()).toMatchObject({
+      answerStyle: 'bullets',
+      answerTone: 'direct',
+    })
+
+    await page.reload({ waitUntil: 'domcontentloaded' })
+    await expect(page.getByTestId('chat-composer')).toBeVisible()
+    expect(await readAnswerPreferences(page)).toEqual({
+      answerStyle: 'bullets',
+      answerTone: 'direct',
+    })
+
+    const reloadedRequest = waitForChatRequest(page)
+    await sendMessage(page, 'Reloaded answer preferences check')
+    expect((await reloadedRequest).postDataJSON()).toMatchObject({
+      answerStyle: 'bullets',
+      answerTone: 'direct',
+    })
+  })
+
+  test('Embedded mode shares the answer preferences through compact selects', async ({
+    page,
+  }) => {
+    await mockChatStream(page)
+    await visitChat(page)
+    await openSettings(page)
+    await selectOption(
+      page,
+      '[data-cy="chat-answer-style-select"]',
+      'Bullet points'
+    )
+    await expect
+      .poll(() => readAnswerPreferences(page))
+      .toEqual({ answerStyle: 'bullets', answerTone: 'neutral' })
+
+    await page.goto(`${chatUrl()}/${CHATBOT_ID}?embed=true`, {
+      waitUntil: 'domcontentloaded',
+    })
+
+    const styleSelect = page.getByTestId('chat-embedded-answer-style-select')
+    const toneSelect = page.getByTestId('chat-embedded-answer-tone-select')
+    await expect(styleSelect).toHaveValue('bullets')
+    await expect(toneSelect).toHaveValue('neutral')
+    await expect(page.getByTestId('chat-settings-toggle')).toHaveCount(0)
+
+    await styleSelect.selectOption('balanced')
+    await toneSelect.selectOption('friendly')
+
+    const embeddedRequest = waitForChatRequest(page)
+    await sendMessage(page, 'Embedded answer preferences check')
+    expect((await embeddedRequest).postDataJSON()).toMatchObject({
+      answerStyle: 'balanced',
+      answerTone: 'friendly',
+    })
+
+    await page.reload({ waitUntil: 'domcontentloaded' })
+    await expect(styleSelect).toHaveValue('balanced')
+    await expect(toneSelect).toHaveValue('friendly')
+  })
+
+  test('A lecturer can turn the answer preferences off for a chatbot', async ({
+    page,
+  }) => {
+    const prisma = await getPrisma()
+    await prisma.chatbot.update({
+      where: { id: CHATBOT_ID },
+      data: { answerPreferencesEnabled: false },
+    })
+    try {
+      await visitChat(page)
+      await openSettings(page)
+      await expect(page.getByTestId('chat-model-selection')).toBeVisible()
+      await expect(page.getByTestId('chat-answer-style-selection')).toHaveCount(
+        0
+      )
+      await expect(page.getByTestId('chat-answer-tone-selection')).toHaveCount(
+        0
+      )
+
+      const settingsResponse = page.waitForResponse(
+        (response) =>
+          new URL(response.url()).pathname === `/api/chatbots/${CHATBOT_ID}` &&
+          response.request().method() === 'GET'
+      )
+      await page.goto(`${chatUrl()}/${CHATBOT_ID}?embed=true`, {
+        waitUntil: 'domcontentloaded',
+      })
+      const response = await settingsResponse
+      expect(response.ok()).toBe(true)
+      expect((await response.json()).answerPreferencesEnabled).toBe(false)
+      await expect(page.getByTestId('chat-composer')).toBeVisible()
+      await expect(page.getByTestId('chat-embedded-credits-bar')).toBeVisible()
+      await expect(
+        page.getByTestId('chat-embedded-answer-style-select')
+      ).toHaveCount(0)
+      await expect(
+        page.getByTestId('chat-embedded-answer-tone-select')
+      ).toHaveCount(0)
+    } finally {
+      await prisma.chatbot.update({
+        where: { id: CHATBOT_ID },
+        data: { answerPreferencesEnabled: true },
+      })
+    }
   })
 
   test('Mobile keeps the credit balance and fallback notice outside the sidebar', async ({

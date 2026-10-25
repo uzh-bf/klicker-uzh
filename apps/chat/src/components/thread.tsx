@@ -307,7 +307,10 @@ const MessageMetadata: FC<{ includeCredits?: boolean }> = ({
   })
   const timestamp = (
     <time dateTime={message.createdAt.toISOString()} title={absoluteTimestamp}>
-      {format.relativeTime(message.createdAt, now)}
+      {format.relativeTime(
+        message.createdAt,
+        now < message.createdAt ? message.createdAt : now
+      )}
     </time>
   )
 
@@ -517,7 +520,10 @@ const AssistantRuntimeRunAnnouncer: FC = () => {
     wasRunningRef.current = false
 
     const outcome = getAssistantRuntimeRunOutcome(lastMessageStatus)
-    if (!outcome) return
+    if (!outcome) {
+      setAnnouncement('')
+      return
+    }
 
     const messageKey = {
       completed: 'chat.thread.runCompleted',
