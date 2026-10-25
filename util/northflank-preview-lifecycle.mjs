@@ -1001,6 +1001,13 @@ function normalizeNorthflankAction(action, ownership) {
       'Northflank lifecycle binding'
     )
     assertString(resource.kind, 'Northflank lifecycle kind')
+    if (
+      input.command === 'delete'
+        ? resource.state !== 'deleted'
+        : !['active', 'paused'].includes(resource.state)
+    ) {
+      fail('INVALID_ACTION', `Lifecycle resource ${binding} state is invalid`)
+    }
     const entry = owned.get(binding)
     const expectedType = resource.data === true ? 'addon' : 'service'
     if (
@@ -1059,13 +1066,34 @@ function northflankWriteAccepted(response, allowNotFound = false) {
   )
 }
 
-function orderedNorthflankWrites(resources, command) {
-  if (command === 'delete') return resources
-  const apps = resources.filter((resource) => resource.action.kind === 'app')
-  const dependencies = resources.filter(
+function orderedNorthflankWrites(resources, action) {
+  if (action.command === 'delete') return resources
+  const target = action.command === 'pause' ? 'paused' : 'active'
+  const requested = action[`${action.command}Resources`]
+  if (
+    requested !== undefined &&
+    (!Array.isArray(requested) ||
+      new Set(requested).size !== requested.length ||
+      requested.some(
+        (binding) =>
+          !resources.some(
+            (resource) =>
+              resource.binding === binding && resource.action.state === target
+          )
+      ))
+  ) {
+    fail('INVALID_ACTION', 'Lifecycle write selection is inconsistent')
+  }
+  const selected = resources.filter(
+    (resource) =>
+      resource.action.state === target &&
+      (requested === undefined || requested.includes(resource.binding))
+  )
+  const apps = selected.filter((resource) => resource.action.kind === 'app')
+  const dependencies = selected.filter(
     (resource) => resource.action.kind !== 'app'
   )
-  return command === 'resume'
+  return action.command === 'resume'
     ? [...dependencies, ...apps]
     : [...apps, ...dependencies]
 }
@@ -1102,10 +1130,7 @@ export function createNorthflankPreviewLifecycleDriver({
       if (action.command !== 'delete' && missing) {
         fail('OWNED_RESOURCE_MISSING', `Owned ${missing.binding} is missing`)
       }
-      for (const resource of orderedNorthflankWrites(
-        resources,
-        action.command
-      )) {
+      for (const resource of orderedNorthflankWrites(resources, action)) {
         if (action.command === 'delete' && !resource.present) continue
         const response = await request({
           method: action.command === 'delete' ? 'DELETE' : 'POST',
@@ -1817,6 +1842,10 @@ export async function reconcilePreviewLifecycle({
   }
   if (['create', 'update'].includes(planned.action.command)) {
     planned = reserveProviderOperation(planned)
+  } else if (['pause', 'resume'].includes(planned.action.command)) {
+    const admissionState = clone(planned.nextState)
+    admissionState.environments[planned.action.environmentId].phase = 'pending'
+    planned = { ...planned, admissionState }
   }
   let receiptValue
   try {

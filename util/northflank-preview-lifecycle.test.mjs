@@ -1364,12 +1364,12 @@ test('native identity accepts absent stageId while writes require settlement pro
 test('native partial failure stops later writes and settlement', async () => {
   const resources = [
     nativeResource('chat'),
+    nativeResource('auth'),
     nativeResource('postgres', 'addon'),
-    nativeResource('redis', 'addon'),
   ]
   const harness = nativeHarness(resources, {
     write(call) {
-      if (call.endpoint.includes('/addons/addon-postgres/pause')) {
+      if (call.endpoint.includes('/services/service-auth/pause')) {
         throw new Error('synthetic native write failure')
       }
       return { status: 202 }
@@ -1418,7 +1418,12 @@ test('native ordering preserves dependency-first receipt order', async () => {
       request: harness.request,
       settle: async () => ({ settled: true }),
     })
-    await driver.applyLifecycle(nativeAction(command, [...resources].reverse()))
+    const action = nativeAction(command, [...resources].reverse())
+    if (command === 'resume') {
+      action.resources.find((r) => r.binding === 'app-a').state = 'paused'
+      action.resumeResources = ['hatchet', 'litellm', 'app-b']
+    }
+    await driver.applyLifecycle(action)
     return harness.calls
   }
 
@@ -1438,8 +1443,6 @@ test('native ordering preserves dependency-first receipt order', async () => {
       `${resources[5].endpoint}/pause`,
       `${resources[0].endpoint}/pause`,
       `${resources[1].endpoint}/pause`,
-      `${resources[2].endpoint}/pause`,
-      `${resources[3].endpoint}/pause`,
     ]
   )
 
@@ -1451,10 +1454,7 @@ test('native ordering preserves dependency-first receipt order', async () => {
     [
       `${resources[0].endpoint}/resume`,
       `${resources[1].endpoint}/resume`,
-      `${resources[2].endpoint}/resume`,
-      `${resources[3].endpoint}/resume`,
       `${resources[4].endpoint}/resume`,
-      `${resources[5].endpoint}/resume`,
     ]
   )
   assert.deepEqual(
@@ -1464,10 +1464,10 @@ test('native ordering preserves dependency-first receipt order', async () => {
     {}
   )
   assert.equal(
-    resumeCalls.find(
-      ({ endpoint }) => endpoint === `${resources[2].endpoint}/resume`
-    ).body,
-    undefined
+    resumeCalls.some(({ endpoint }) =>
+      endpoint.endsWith('/addons/addon-postgres/resume')
+    ),
+    false
   )
 })
 
@@ -1514,4 +1514,31 @@ test('native delete is exact, idempotent on 404 and settles absence', async () =
     receipt.resources.map(({ state }) => state),
     ['deleted', 'deleted', 'deleted']
   )
+})
+
+test('partial pause retains pending state and blocks conflicting resume', async () => {
+  const controller = createSerializedPreviewLifecycle({
+    state: initialState(),
+    now: () => STARTED_AT,
+    driver: {
+      async applyLifecycle(action) {
+        if (action.command === 'pause') throw new Error('partial native pause')
+        return receiptFor(action)
+      },
+    },
+  })
+  await controller.reconcile({ desired: plan(), event: pullRequest() })
+  const before = controller.snapshot().trial.buildAttempts
+  await assert.rejects(
+    controller.reconcile({ event: environmentEvent('pause') }),
+    /partial native pause/
+  )
+  const state = controller.snapshot()
+  assert.equal(Object.values(state.environments)[0].phase, 'pending')
+  assert.equal(state.trial.buildAttempts, before)
+  const resume = await controller.reconcile({
+    event: environmentEvent('resume', 1, 3),
+  })
+  assert.equal(resume.decision, 'drop')
+  assert.equal(resume.reason, 'unsettled-provider-operation')
 })
