@@ -466,6 +466,14 @@ test('draft sync pull requests defer Playwright to the ready transition', () => 
     reasonCodes: ['draft-sync-deferred', 'smart-draft-enabled'],
   })
 
+  const forced = choosePlaywrightRoute({
+    ...syncDraft,
+    forceHostedCanaryPr: '1234',
+  })
+  assert.equal(forced.route, 'hosted')
+  assert.equal(forced.selectorPrState, 'ready')
+  assert.ok(!forced.reasonCodes.includes('draft-sync-deferred'))
+
   // Readiness, a fork head, or a branch outside the maintained sync pairs
   // keeps the ordinary route decision.
   for (const overrides of [

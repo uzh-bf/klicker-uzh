@@ -3,6 +3,10 @@ packages:
   - packages/*
   - playwright
 
+# pnpm 12 reads workspace settings here; .npmrc is for registry/auth settings.
+publicHoistPattern:
+  - '@klicker-uzh*'
+
 # Do not let pnpm repair stale links before the host launcher can control the
 # exact stop, install, and runtime-reconciliation order.
 verifyDepsBeforeRun: error
@@ -14,12 +18,16 @@ minimumReleaseAge: 20160
 minimumReleaseAgeStrict: true
 minimumReleaseAgeIgnoreMissingTime: false
 minimumReleaseAgeExclude:
+  # Reviewed React Email 6 migration and its matching preview dependencies.
+  - 'react-email@6.11.3'
+  - '@react-email/ui@6.11.3'
+  - '@react-email/render@2.1.1'
   # Reviewed security fix for CVE-2026-93749 (indexed source map DoS): bounds
   # section offsets plus a CSP-safe sort fallback, same sole maintainer, no
   # install scripts. Drop once it ages past the 14-day window.
   - 'source-map-js@1.2.2'
-  # Reviewed security fix for the 2026-10-06 backend image scan: sharp 0.35.5
-  # (GHSA-wq5f-xc86-pv6w). Drop once it ages past the 14-day window.
+  # Reviewed security fix for the 2026-10-06 backend image scan: sharp
+  # 0.35.5 (GHSA-wq5f-xc86-pv6w). Drop once it ages past the 14-day window.
   - 'sharp@0.35.5'
   # Platform binaries published with that sharp release.
   - '@img/sharp-darwin-arm64@0.35.5'
@@ -48,19 +56,20 @@ minimumReleaseAgeExclude:
   - '@img/sharp-win32-arm64@0.35.5'
   - '@img/sharp-win32-ia32@0.35.5'
   - '@img/sharp-win32-x64@0.35.5'
-  # Reviewed Next.js 16.3.4 release train; keep the 14-day policy for other releases.
-  - 'next@16.3.4'
-  - 'eslint-config-next@16.3.4'
-  - '@next/env@16.3.4'
-  - '@next/eslint-plugin-next@16.3.4'
-  - '@next/swc-darwin-x64@16.3.4'
-  - '@next/swc-darwin-arm64@16.3.4'
-  - '@next/swc-linux-x64-gnu@16.3.4'
-  - '@next/swc-linux-x64-musl@16.3.4'
-  - '@next/swc-win32-x64-msvc@16.3.4'
-  - '@next/swc-linux-arm64-gnu@16.3.4'
-  - '@next/swc-linux-arm64-musl@16.3.4'
-  - '@next/swc-win32-arm64-msvc@16.3.4'
+  # Reviewed application and React Email preview Next.js 16.4.1;
+  # keep the 14-day policy for other releases.
+  - 'next@16.4.1'
+  - 'eslint-config-next@16.4.1'
+  - '@next/env@16.4.1'
+  - '@next/eslint-plugin-next@16.4.1'
+  - '@next/swc-darwin-x64@16.4.1'
+  - '@next/swc-darwin-arm64@16.4.1'
+  - '@next/swc-linux-x64-gnu@16.4.1'
+  - '@next/swc-linux-x64-musl@16.4.1'
+  - '@next/swc-win32-x64-msvc@16.4.1'
+  - '@next/swc-linux-arm64-gnu@16.4.1'
+  - '@next/swc-linux-arm64-musl@16.4.1'
+  - '@next/swc-win32-arm64-msvc@16.4.1'
   # Internal UZH design-system release: the exact 4.1.8 consumer bump is
   # reviewed and verified in this PR.
   - '@uzh-bf/design-system@4.1.8'
@@ -77,8 +86,8 @@ minimumReleaseAgeExclude:
   # U2 (student-chat-v3-production-readiness-plan): reviewed Vercel AI SDK 7
   # bump, apps/chat/package.json (ai, @ai-sdk/openai, @ai-sdk/mcp). Transitive
   # @ai-sdk deps pulled in below.
-  # U3 (vorkurs-chatbot-sdk-fix): the exact reviewed patch train is unioned
-  # with the prior U2 versions because the first package-name rule wins.
+  # U3 (vorkurs-chatbot-sdk-fix): keep one exact union per package for the
+  # reviewed U2/U3 versions; pnpm 12 also merges matching exact-version rules.
   - 'ai@7.0.37||7.0.52'
   - '@ai-sdk/openai@4.0.20||4.0.30'
   - '@ai-sdk/mcp@2.0.16||2.0.25'
@@ -87,47 +96,63 @@ minimumReleaseAgeExclude:
   - '@ai-sdk/provider@4.0.5'
 
 overrides:
+  # Every entry left here still changes the resolution of the locked graph: a
+  # dependency range resolves below the patched release, or the entry pins a
+  # line for lockstep/consolidation reasons. The 2026-09-14/15 image-scan batch
+  # was re-audited on 2026-09-19 against the locked graph and the registry: the
+  # lifts for axios 1.x, brace-expansion, browserslist, fast-uri,
+  # fast-xml-parser, form-data, @grpc/grpc-js, ip-address, nanoid, protobufjs,
+  # sharp, systeminformation, tmp, validator and ws now resolve at or above
+  # their patched release without the pin, so they were dropped rather than
+  # kept as stale drift. Re-audit with the klicker-dependency-overrides skill
+  # before adding or removing an entry.
+  #
   # The coverage provider is loaded by the workspace's vitest 3.2.4 and refuses
   # to run against a different version, so both are pinned to that same
   # release in lockstep instead of floating to the newest matching 3.2.x.
   '@vitest/coverage-v8': 3.2.4
   'vitest': 3.2.4
+  # azure identity, msal-node and adal-node ask for axios ^0.21.1, an island
+  # below the patched 0.32.0 line.
   'axios@<=0.31.1': 0.32.0
-  'fast-xml-parser@>=5.0.0 <5.7.0': 5.7.0
+  # The retained glob 10 line requires its security patch.
+  # styled-components 6.1.19 pins postcss 8.4.49.
   'glob@>=10.2.0 <10.5.0': 10.5.0
-  'mysql2@<3.22.0': 3.22.0
-  'next@>=15.0.0 <15.5.24': 15.5.24
-  'systeminformation@>=4.17.0 <=5.31.5': 5.31.6
-  # Image-scan remediation (2026-09-14): the backend and migrator images carried
-  # fixable HIGH/CRITICAL advisories in transitive dependencies. Each entry lifts
-  # only versions below their published fix and stays inside one major line,
-  # unless the advisory has no fix in the older line.
-  'axios@>=1.0.0 <1.20.0': 1.20.0
+  # brace-expansion carries a HIGH advisory below each line's patched release
+  # in the backend and migrator images.
   'brace-expansion@>=1.0.0 <1.1.20': 1.1.20
   'brace-expansion@>=2.0.0 <2.1.6': 2.1.6
   'brace-expansion@>=5.0.0 <5.0.11': 5.0.11
-  'browserslist@>=4.0.0 <4.28.7': 4.28.7
-  'fast-uri@>=3.0.0 <3.1.8': 3.1.8
-  'form-data@>=4.0.0 <4.0.6': 4.0.6
-  'nanoid@>=3.0.0 <3.3.18': 3.3.18
-  'path-to-regexp@>=0.1.0 <0.1.13': 0.1.13
   'postcss@>=8.0.0 <8.5.18': 8.5.18
-  'protobufjs@>=7.0.0 <7.6.1': 7.6.1
-  'sharp@>=0.34.0 <0.35.5': 0.35.5
-  'validator@>=13.0.0 <13.15.22': 13.15.22
-  'ws@>=8.18.0 <8.21.0': 8.21.0
-  '@grpc/grpc-js@>=1.13.0 <1.14.5': 1.14.5
+  # prisma 7.8.0 pins mysql2 3.15.3 and ltijs-sequelize asks for ^2.2.5.
+  'mysql2@<3.22.0': 3.22.0
+  # express 4.21.2 pins path-to-regexp 0.1.12.
+  'path-to-regexp@>=0.1.0 <0.1.13': 0.1.13
+  # @graphql-codegen/plugin-helpers asks for lodash ~4.17.0, below 4.18.1.
+  'lodash@>=4.17.0 <4.18.1': 4.18.1
+  # ajv 8.20.0 asks for fast-uri ^3.0.1, which resolves to 3.1.6 below the
+  # patched 3.1.8 (CVE-2026-84292, CVE-2026-84394).
+  'fast-uri@>=3.0.0 <3.1.8': 3.1.8
   # These advisories have no fix inside the older major line, so the pin has to
-  # cross it: deepmerge-ts is consumed by Prisma config loading, nodemailer by
-  # the transactional email transport, and propagator-jaeger only by the
-  # OpenTelemetry tracing setup of the Hatchet SDK.
+  # cross it: deepmerge-ts is consumed by Prisma config loading (exact 7.1.5),
+  # nodemailer by the transactional email transport while @auth/core and
+  # next-auth peer at ^7.0.7, and propagator-jaeger only by the OpenTelemetry
+  # tracing setup of the Hatchet SDK (sdk-trace-node 1.26.0).
   'deepmerge-ts@>=7.0.0 <8.0.0': 8.0.0
   'nodemailer@>=6.0.0 <10.0.6': 10.0.10
   '@opentelemetry/propagator-jaeger@>=1.0.0 <2.9.0': 2.9.0
-  # The mergeDeep prototype pollution advisory GHSA-7mx3-vvmw-hjmv is fixed
-  # only in 12.0.1. Older utility major lines are still requested by Yoga,
+  # The next-intl peer-context hash includes @babel/core; a 7.28.3/7.28.6 split
+  # gave packages/shared-components and the frontends different translation
+  # contexts. Consolidate the patch line so every importer resolves one copy.
+  '@babel/core@>=7.28.0 <7.29.0': 7.28.6
+  # The mergeDeep and mergeIncrementalResult prototype pollution advisories
+  # are fixed in 12.0.2. Older utility major lines are still requested by Yoga,
   # the executors, envelop and the codegen loaders.
-  '@graphql-tools/utils@<12.0.1': 12.0.1
+  '@graphql-tools/utils@<12.0.2': 12.0.2
+  # sharp 0.35.5 fixes GHSA-wq5f-xc86-pv6w. Next.js keeps resolving the
+  # vulnerable release through a range that already allows the fix, so lift
+  # that line here.
+  'sharp@>=0.35.0 <0.35.5': 0.35.5
 
 packageExtensions:
   # The published stylesheet imports this plugin, but 4.1.8 lists it only as a devDependency.
@@ -138,29 +163,7 @@ packageExtensions:
     peerDependencies:
       '@types/react': '*'
 
-ignoredBuiltDependencies:
-  - '@microsoft/teamsapp-cli'
-  # Devrouter's Docker transport can use these optional native SSH helpers, but
-  # profile planning has no Docker or SSH path and must not build them in CI.
-  - cpu-features
-  - keytar
-  - ssh2
-
-onlyBuiltDependencies:
-  - '@apollo/protobufjs'
-  - '@hatchet-dev/typescript-sdk'
-  - '@prisma/client'
-  - '@prisma/engines'
-  - '@swc/core'
-  - '@tailwindcss/oxide'
-  - azure-functions-core-tools
-  - core-js
-  - core-js-pure
-  - esbuild
-  - prisma
-  - protobufjs
-  - sharp
-  - unrs-resolver
+# Explicit build permissions for pnpm 12; false entries retain prior denials.
 
 allowBuilds:
   '@apollo/protobufjs': true
@@ -173,6 +176,7 @@ allowBuilds:
   azure-functions-core-tools: true
   core-js: true
   core-js-pure: true
+  # Optional native SSH helpers are not needed for devrouter profile planning.
   cpu-features: false
   esbuild: true
   keytar: false
@@ -180,4 +184,6 @@ allowBuilds:
   protobufjs: true
   sharp: true
   ssh2: false
+  # pipenet's public-suffix refresh is unused by both MCP services.
+  tldjs: false
   unrs-resolver: true

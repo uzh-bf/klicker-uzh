@@ -1,0 +1,8 @@
+query GetKbChatbotBindings($kbId: ID!) {
+  getKbChatbotBindings(kbId: $kbId) {
+    chatbotId
+    chatbotName
+    enabledKbId
+    enabledKbName
+  }
+}

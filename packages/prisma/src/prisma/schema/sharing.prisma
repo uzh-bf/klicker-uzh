@@ -366,6 +366,7 @@ enum AuditLogType {
     USER_GROUP_USER_ADDED // added user to user group
     USER_GROUP_USER_REMOVED // removed user from user group
     USER_GROUP_USER_MODIFIED // modified user in user group (promotion / demotion)
+    ASSISTANT_PROPOSAL_CONFIRMED // Manage-assistant signed proposal confirmed and persisted
 }
 
 enum ObjectType {

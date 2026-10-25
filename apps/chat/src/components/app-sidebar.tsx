@@ -11,12 +11,13 @@ import {
   useSidebar,
 } from '@uzh-bf/design-system'
 import { Plus } from 'lucide-react'
-import { useTranslations } from 'next-intl'
 import Image from 'next/image'
 import Link from 'next/link'
 import { useParams, useRouter } from 'next/navigation'
-import * as React from 'react'
-import { useChatStore } from '../stores/chatStore'
+import { useTranslations } from 'next-intl'
+import type * as React from 'react'
+import { useChatStore } from '@/src/stores/chatStore'
+import { useSettingsStore } from '@/src/stores/settingsStore'
 import { CreditsFooter } from './credits-footer'
 import { SettingsPanel } from './settings-panel'
 import { ThreadList } from './thread-list'
@@ -27,6 +28,7 @@ export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
   const { chatbotId } = useParams<{ chatbotId: string }>()
   const router = useRouter()
   const { createThread, participationRequired } = useChatStore()
+  const authMode = useSettingsStore((s) => s.authMode)
   const { setOpenMobile } = useSidebar()
 
   const handleNewThread = async () => {
@@ -49,9 +51,22 @@ export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
               {/* Name lives in the persistent top header now (assistant.tsx
                   SidebarMain) — showing it again here while the sidebar is
                   open would just duplicate it. */}
+              {authMode === 'anonymous' && (
+                <Tooltip>
+                  <TooltipTrigger asChild>
+                    <span className="ml-2 inline-flex shrink-0 items-center rounded-full bg-blue-100 px-1.5 py-0.5 text-[10px] font-medium text-blue-700">
+                      Guest
+                    </span>
+                  </TooltipTrigger>
+                  <TooltipContent>
+                    Signed in via LTI. Chats stay separate from any account.
+                  </TooltipContent>
+                </Tooltip>
+              )}
               <Tooltip>
                 <TooltipTrigger asChild>
                   <button
+                    type="button"
                     data-cy="chat-new-thread-button"
                     onClick={handleNewThread}
                     disabled={participationRequired}

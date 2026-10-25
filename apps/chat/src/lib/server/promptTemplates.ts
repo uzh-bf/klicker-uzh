@@ -6,10 +6,15 @@ type PromptContext = {
   'citation-contract': { maxSources: number }
   'course-data': { courseData: string }
   'course-grounding': Record<string, never>
-  'course-policy': Record<string, never>
+  'course-policy': { customPersona: boolean }
   'input-context': Record<string, never>
-  'language-style': Record<string, never>
-  'reply-language-reminder': Record<string, never>
+  'language-style': { lockedLanguage: string | null }
+  'reply-language-reminder': { lockedLanguage: string | null }
+  'meeting-clock': {
+    elapsedMinutes: number
+    currentTime: string | null
+    timeZone: string
+  }
   'numeric-precision': Record<string, never>
   'feedback-check': Record<string, never>
   'quiz-feedback-check': Record<string, never>
@@ -17,7 +22,7 @@ type PromptContext = {
     reusedSharePercent: number
     reusedNumbers: string
   }
-  'output-format': Record<string, never>
+  'output-format': { customPersona: boolean }
   'mode-tutor': Record<string, never>
   'mode-explainer': Record<string, never>
   'mode-quizzer': Record<string, never>

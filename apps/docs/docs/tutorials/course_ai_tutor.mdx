@@ -1,0 +1,47 @@
+---
+title: Course AI Tutor
+---
+
+## What is the course AI tutor?
+
+![Course AI tutor in the student app](/img/ai_assistant/course_ai_tutor_response.png)
+
+The course AI tutor is a course-specific chatbot that your students can use inside the KlickerUZH student app. Students open it with the **AI tutor** button on the course overview and while working on practice quizzes and microlearnings. The chat opens as a panel over the current page, so students can ask questions without losing their place in an activity, and it can also be opened in a separate browser tab.
+
+The tutor is aware of the page a student is currently on (for example the question they are working on) and answers within the subject scope that you defined for the chatbot. Depending on its configuration, students can switch between different chat modes (such as a tutoring mode and an explaining mode) and, if you allow it, between different AI models.
+
+Students need a KlickerUZH account and access to the course to use the tutor. If a course has no chatbot configured, the **AI tutor** button does not appear at all.
+
+## How do I get a chatbot for my course?
+
+Course chatbots are **not self-service**: they are set up for you by the KlickerUZH team, since each chatbot needs a subject-specific configuration (its instructions, the course materials it draws on, the disclaimer text, and its credit budget). If you would like a tutor for your course, please get in touch with us through the [community platform](https://community.klicker.uzh.ch) or your usual support contact.
+
+Once a chatbot exists, you find it in the lecturer interface under **Resources** → **Chatbots**. This overview shows you:
+
+- the courses the chatbot is linked to, with a direct link to open it as a student would see it,
+- its credit configuration and a usage summary (conversations, messages, participating students, credits used, last activity),
+- how many students have accepted, declined, or not yet seen the disclaimer,
+- the model settings, which you can change yourself: whether students may choose the AI model, which models are available to them, and which reasoning levels are allowed.
+
+## What do students have to accept before using the tutor?
+
+Before a student can send a first message, a **disclaimer** has to be accepted. It combines a course-specific introduction (which you can have adjusted for your chatbot) with two fixed sections:
+
+- **Student responsibility:** chatbot answers are not exam relevant on their own — only the underlying course material is — and important information has to be verified against the official course materials.
+- **Data protection:** students must not share personal information with the chatbot, prompts are processed exclusively via Azure OpenAI instances hosted in the EU or Switzerland, and conversations may be reviewed in anonymised form by the KlickerUZH team or the lecturers to improve chatbot quality and course content.
+
+Students choose between **Accept and continue** and **Decline**. Declining keeps the chatbot blocked and no messages can be sent. The acceptance status of your course is summarized in the chatbot overview described above.
+
+## How is usage limited (credits)?
+
+Each chatbot has a credit budget per student, so that usage stays predictable and fair across a course. The budget consists of an initial amount of credits, a reset period (for example weekly), the amount added at each reset, and a maximum balance. Every answer consumes credits depending on how much processing it required; students see the amount used underneath each answer, together with the chat mode and model.
+
+Running out of credits does not lock a student out of the tutor: once the balance is empty, further conversations continue with a more economical fallback model instead of the standard one. The current and total credit usage of your course is visible in the usage summary of the chatbot overview.
+
+## What should I tell my students?
+
+- The tutor supports learning, but its answers can be wrong or incomplete. The course materials remain the authoritative source, as also stated in the disclaimer.
+- No personal information should be entered into the chat.
+- Questions should stay within the subject scope of the course; off-topic questions consume credits without helping.
+
+If you are looking for the AI assistant that supports you as a lecturer while preparing content, see the [AI assistant](/tutorials/ai_assistant/).

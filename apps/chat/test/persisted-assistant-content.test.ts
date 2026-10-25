@@ -145,6 +145,44 @@ describe('persisted assistant content', () => {
     ])
   })
 
+  test('persists only the opaque response-example tool status', () => {
+    const content = mapAssistantStepContent([
+      {
+        content: [
+          {
+            type: 'tool-call',
+            toolCallId: 'call-response-example',
+            toolName: 'search_response_examples',
+            input: { query: 'current question' },
+          },
+          {
+            type: 'tool-result',
+            toolCallId: 'call-response-example',
+            toolName: 'search_response_examples',
+            output: {
+              kind: 'response-example-search',
+              status: 'completed',
+            },
+          },
+        ],
+      },
+    ])
+
+    expect(content).toEqual([
+      {
+        type: 'tool-call',
+        toolCallId: 'call-response-example',
+        toolName: 'search_response_examples',
+        args: { query: 'current question' },
+        result: {
+          kind: 'response-example-search',
+          status: 'completed',
+        },
+      },
+    ])
+    expect(JSON.stringify(content)).not.toContain('referenceAnswer')
+  })
+
   test('preserves finished steps and appends only unfinished text and reasoning', () => {
     expect(
       buildAbortedAssistantContent(

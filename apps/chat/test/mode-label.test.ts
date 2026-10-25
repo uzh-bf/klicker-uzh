@@ -12,6 +12,7 @@ const t = ((key: string) => {
   if (key === 'chat.modes.tutor') return 'Tutor'
   if (key === 'chat.modes.explainer') return 'Explainer'
   if (key === 'chat.modes.quizzer') return 'Quizzer'
+  if (key === 'chat.modes.custom') return 'Custom mode'
   return key
 }) as unknown as Parameters<typeof formatModeLabel>[0]
 
@@ -30,6 +31,30 @@ describe('formatModeLabel', () => {
     expect(formatModeLabel(t, 'examPrep')).toBe('ExamPrep')
   })
 
+  test('prefers an authored name for a custom mode', () => {
+    expect(
+      formatModeLabel(t, 'cm_custom', {
+        cm_custom: { description: 'Practises debates.', name: 'Debate coach' },
+      })
+    ).toBe('Debate coach')
+  })
+
+  test('falls back to a generic label when an authored name is blank', () => {
+    expect(
+      formatModeLabel(t, 'cm_custom', {
+        cm_custom: { description: 'Practises debates.', name: '   ' },
+      })
+    ).toBe('Custom mode')
+  })
+
+  test('falls back to a generic label for a custom mode that is no longer approved', () => {
+    expect(
+      formatModeLabel(t, 'cm_88c7e708', {
+        tutor: { description: 'Guides step by step.' },
+      })
+    ).toBe('Custom mode')
+  })
+
   test('does not treat inherited object keys as known modes', () => {
     expect(isKnownMode('toString')).toBe(false)
     expect(formatModeLabel(t, 'toString')).toBe('ToString')
@@ -37,7 +62,7 @@ describe('formatModeLabel', () => {
 
   test('gates generation actions when no chat mode is available', () => {
     expect(hasAvailableChatMode({})).toBe(false)
-    expect(hasAvailableChatMode({ tutor: '' })).toBe(true)
+    expect(hasAvailableChatMode({ tutor: { description: '' } })).toBe(true)
     expect(getComposerSubmitMode(false)).toBe('none')
     expect(getComposerSubmitMode(true)).toBe('enter')
   })

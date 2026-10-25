@@ -2,6 +2,11 @@ import { readFileSync } from 'node:fs'
 import { resolve } from 'node:path'
 import { LOCAL_CHATBOT_ID, LOCAL_KB_ID } from './local-mcp-auth.mjs'
 
+/**
+ * The optional additional local identity.  Its owner and course are the
+ * synthetic local ones this seed creates, so the file names only the identity
+ * that receives its own retrieval corpus.
+ */
 export function loadLocalMcpFixture(env = {}, root = process.cwd()) {
   const path = resolve(
     root,
@@ -17,14 +22,7 @@ export function loadLocalMcpFixture(env = {}, root = process.cwd()) {
   try {
     if (raw.length > 8192) throw new Error()
     const value = JSON.parse(raw)
-    const keys = [
-      'chatbotId',
-      'ownerId',
-      'courseId',
-      'kbId',
-      'chatMode',
-      'documentsFile',
-    ]
+    const keys = ['chatbotId', 'kbId', 'chatMode', 'documentsFile']
     if (
       !value ||
       Array.isArray(value) ||
@@ -36,7 +34,7 @@ export function loadLocalMcpFixture(env = {}, root = process.cwd()) {
           value[key].length > 2048
       ) ||
       keys
-        .slice(0, 4)
+        .slice(0, 2)
         .some(
           (key) =>
             !/^[a-f0-9]{8}-[a-f0-9]{4}-[a-f0-9]{4}-[a-f0-9]{4}-[a-f0-9]{12}$/i.test(
@@ -48,7 +46,7 @@ export function loadLocalMcpFixture(env = {}, root = process.cwd()) {
       value.kbId.toLowerCase() === LOCAL_KB_ID
     )
       throw new Error()
-    for (const key of keys.slice(0, 4)) value[key] = value[key].toLowerCase()
+    for (const key of keys.slice(0, 2)) value[key] = value[key].toLowerCase()
     return { ...value, documentsFile: resolve(root, value.documentsFile) }
   } catch {
     throw new Error('Invalid local MCP fixture configuration')

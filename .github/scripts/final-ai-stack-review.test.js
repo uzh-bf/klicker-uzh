@@ -3935,6 +3935,7 @@ test('keeps the topology deadline and records the aborted request', async (t) =>
   const diagnosticsPath = prepareDiagnosticsReceipt(t)
   t.mock.timers.enable({ apis: ['setTimeout'] })
   let fetchCalls = 0
+  let aborted = false
   const pending = callTopologyModel({
     apiKey: 'dummy-token',
     readDiffEvidence: syntheticDiffEvidence,
@@ -3945,14 +3946,19 @@ test('keeps the topology deadline and records the aborted request', async (t) =>
     fetchImpl: (_url, options) => {
       fetchCalls += 1
       return new Promise((_resolve, reject) => {
-        options.signal.addEventListener('abort', () =>
+        options.signal.addEventListener('abort', () => {
+          aborted = true
           reject(new Error('synthetic abort'))
-        )
+        })
       })
     },
   })
   assert.equal(fetchCalls, 1)
-  t.mock.timers.tick(600_000)
+  t.mock.timers.tick(119_999)
+  await Promise.resolve()
+  assert.equal(aborted, false)
+  t.mock.timers.tick(1)
+  assert.equal(aborted, true)
   await assert.rejects(pending, /upstream request failed/)
   const receipts = readDiagnosticsReceipts(diagnosticsPath)
   assert.equal(receipts.length, 1)

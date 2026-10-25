@@ -1,6 +1,10 @@
 import { describe, expect, it } from 'vitest'
 import {
+  LTI_PROBE_COOKIE_NAME,
+  cookieSecurityOptions,
+  cookiesAvailableViaLtiProbe,
   deriveCookieDomainFromURL,
+  extractBearerToken,
   extractProviderFromAffiliationId,
   generateRandomString,
   parseCookiesHeader,
@@ -90,6 +94,50 @@ describe('Auth helpers', () => {
       expect(deriveCookieDomainFromURL('http://localhost:3000')).toBeUndefined()
       expect(deriveCookieDomainFromURL('http://127.0.0.1')).toBeUndefined()
       expect(deriveCookieDomainFromURL('https://example.com')).toBeUndefined()
+    })
+  })
+
+  describe('extractBearerToken', () => {
+    it('extracts bearer tokens case-insensitively and trims whitespace', () => {
+      expect(extractBearerToken('Bearer abc.def')).toBe('abc.def')
+      expect(extractBearerToken('  bearer   token-value  ')).toBe('token-value')
+    })
+
+    it('returns null for empty or non-bearer authorization headers', () => {
+      expect(extractBearerToken(null)).toBeNull()
+      expect(extractBearerToken('')).toBeNull()
+      expect(extractBearerToken('Basic abc')).toBeNull()
+      expect(extractBearerToken('Bearer')).toBeNull()
+    })
+  })
+
+  describe('cookiesAvailableViaLtiProbe', () => {
+    it('detects the shared LTI probe cookie', () => {
+      expect(
+        cookiesAvailableViaLtiProbe({ [LTI_PROBE_COOKIE_NAME]: '1' })
+      ).toBe(true)
+      expect(cookiesAvailableViaLtiProbe({ other: '1' })).toBe(false)
+      expect(
+        cookiesAvailableViaLtiProbe({ [LTI_PROBE_COOKIE_NAME]: undefined })
+      ).toBe(false)
+    })
+  })
+
+  describe('cookieSecurityOptions', () => {
+    it('returns iframe-safe cookie options in production', () => {
+      expect(cookieSecurityOptions({ isProduction: true })).toEqual({
+        secure: true,
+        sameSite: 'none',
+        partitioned: true,
+      })
+    })
+
+    it('returns local-development cookie options outside production', () => {
+      expect(cookieSecurityOptions({ isProduction: false })).toEqual({
+        secure: false,
+        sameSite: 'lax',
+        partitioned: false,
+      })
     })
   })
 })

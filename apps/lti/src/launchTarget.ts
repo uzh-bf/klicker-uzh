@@ -170,3 +170,18 @@ function isAllowedHost(host: string, allowedDomains: string[]): boolean {
 function isRecord(value: unknown): value is Record<string, unknown> {
   return typeof value === 'object' && value !== null
 }
+
+// Bind chatbot handoffs to the activity selected by the verified LMS launch.
+export function getChatbotLaunchBinding(
+  target: URL
+): { courseId: string; chatbotId: string } | undefined {
+  const legacy = target.pathname.match(
+    /^\/(?:[a-z]{2}\/)?course\/([0-9a-f-]{36})\/chatbot\/([0-9a-f-]{36})\/?$/i
+  )
+  if (legacy) return { courseId: legacy[1]!, chatbotId: legacy[2]! }
+  if (target.pathname !== '/auth/lti') return undefined
+  const courseId = target.searchParams.get('courseId')
+  const chatbotId = target.searchParams.get('chatbotId')
+  if (!courseId || !chatbotId) return undefined
+  return { courseId, chatbotId }
+}

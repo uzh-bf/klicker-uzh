@@ -1,11 +1,11 @@
 {
   "name": "@klicker-uzh/next-config",
-  "version": "3.4.0-alpha.75",
+  "version": "3.4.0-alpha.88",
   "files": [
     "index.js"
   ],
   "peerDependencies": {
-    "next": "^16.3.4"
+    "next": "^16.4.1"
   },
   "engines": {
     "node": "=24"

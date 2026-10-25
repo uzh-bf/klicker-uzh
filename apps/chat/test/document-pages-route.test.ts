@@ -128,7 +128,11 @@ const post = (request: NextRequest) =>
 describe('chat route document pages', () => {
   beforeEach(() => {
     vi.clearAllMocks()
-    mocks.withChatbotAuth.mockResolvedValue({ participantId: 'participant-1' })
+    mocks.withChatbotAuth.mockResolvedValue({
+      participantId: 'participant-1',
+      authMode: 'account',
+      chatbot: { courseId: 'course-1' },
+    })
     mocks.checkDisclaimerStatus.mockResolvedValue({
       required: false,
       accepted: true,
@@ -140,7 +144,11 @@ describe('chat route document pages', () => {
     mocks.findUnique.mockResolvedValue({
       id: 'chatbot-1',
       ownerId: 'owner-1',
-      owner: { aiFeaturesEnabled: true },
+      owner: {
+        aiFeaturesEnabled: true,
+        aiSubscriptionTier: 'ADVANCED',
+        aiChatbotCostCenter: 'cost-center-1',
+      },
       allowedModelIds: ['gpt-4.1', 'text-only'],
       modelSelection: true,
       systemPrompts: { tutor: { prompt: 'Use course material.' } },

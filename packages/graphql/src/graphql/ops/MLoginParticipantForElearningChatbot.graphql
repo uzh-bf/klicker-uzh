@@ -1,0 +1,15 @@
+mutation LoginParticipantForElearningChatbot(
+  $grant: String!
+  $courseId: String!
+  $chatbotId: String!
+) {
+  loginParticipantForElearningChatbot(
+    grant: $grant
+    courseId: $courseId
+    chatbotId: $chatbotId
+  ) {
+    status
+    participantId
+    participantToken
+  }
+}
