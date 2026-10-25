@@ -887,6 +887,278 @@ export function assemblePreviewArguments({
   return args
 }
 
+const NORTHFLANK_OWNED_TYPES = new Set(['service', 'addon'])
+const NORTHFLANK_PATH_SEGMENT = /^[A-Za-z0-9][A-Za-z0-9_-]*$/
+
+function northflankPathSegment(value, label) {
+  const segment = assertString(value, label)
+  if (!NORTHFLANK_PATH_SEGMENT.test(segment)) {
+    fail('UNSAFE_OWNERSHIP_PATH', `${label} must be a single safe path segment`)
+  }
+  return segment
+}
+
+function normalizeNorthflankOwnership(input) {
+  const ownership = assertRecord(input, 'Northflank ownership receipt')
+  if (ownership.schemaVersion !== 1) {
+    fail('INVALID_OWNERSHIP', 'Ownership receipt requires schemaVersion 1')
+  }
+  const projectId = northflankPathSegment(
+    ownership.projectId,
+    'Northflank ownership project ID'
+  )
+  const environmentId = assertString(
+    ownership.environmentId,
+    'Northflank ownership environment ID'
+  )
+  const lifecycleEnvironmentId = assertString(
+    ownership.lifecycleEnvironmentId,
+    'Northflank ownership lifecycle environment ID'
+  )
+  if (!Array.isArray(ownership.resources) || ownership.resources.length === 0) {
+    fail('INVALID_OWNERSHIP', 'Ownership receipt must list exact resources')
+  }
+  const bindings = new Set()
+  const identities = new Set()
+  const resources = ownership.resources.map((input) => {
+    const entry = assertRecord(input, 'Northflank owned resource')
+    const binding = assertString(entry.binding, 'Northflank owned binding')
+    const nativeType = assertString(
+      entry.nativeType,
+      `Northflank owned ${binding} type`
+    )
+    const id = northflankPathSegment(entry.id, `Northflank owned ${binding} ID`)
+    const endpoint = assertString(
+      entry.endpoint,
+      `Northflank owned ${binding} endpoint`
+    )
+    if (!NORTHFLANK_OWNED_TYPES.has(nativeType)) {
+      fail('INVALID_OWNERSHIP', `Owned ${binding} type is unsupported`)
+    }
+    if (entry.uid === undefined && entry.createdAt === undefined) {
+      fail('INVALID_OWNERSHIP', `Owned ${binding} has no immutable identity`)
+    }
+    const uid =
+      entry.uid === undefined
+        ? undefined
+        : assertString(entry.uid, `Northflank owned ${binding} UID`)
+    const createdAt =
+      entry.createdAt === undefined
+        ? undefined
+        : assertString(
+            entry.createdAt,
+            `Northflank owned ${binding} creation time`
+          )
+    const segment = nativeType === 'service' ? 'services' : 'addons'
+    const expectedEndpoint = `/v1/projects/${projectId}/${segment}/${id}`
+    if (endpoint !== expectedEndpoint) {
+      fail('OWNERSHIP_MISMATCH', `Owned ${binding} endpoint is inconsistent`)
+    }
+    const identity = `${nativeType}:${id}`
+    if (bindings.has(binding) || identities.has(identity)) {
+      fail('INVALID_OWNERSHIP', 'Northflank ownership contains duplicates')
+    }
+    bindings.add(binding)
+    identities.add(identity)
+    return Object.freeze({ binding, nativeType, id, endpoint, uid, createdAt })
+  })
+  return Object.freeze({
+    projectId,
+    environmentId,
+    lifecycleEnvironmentId,
+    resources: Object.freeze(resources),
+  })
+}
+
+function normalizeNorthflankAction(action, ownership) {
+  const input = assertRecord(action, 'Northflank lifecycle action')
+  if (input.command === 'create' || input.command === 'update') {
+    fail(
+      'STAGED_PROVISIONER_REQUIRED',
+      'Create and update require the staged provisioner'
+    )
+  }
+  if (!['pause', 'resume', 'delete'].includes(input.command)) {
+    fail('INVALID_ACTION', 'Northflank lifecycle action is unsupported')
+  }
+  if (input.environmentId !== ownership.lifecycleEnvironmentId) {
+    fail('OWNERSHIP_MISMATCH', 'Lifecycle environment is not owned')
+  }
+  if (input.retryPolicy !== 'none' || input.providerDefaults !== false) {
+    fail(
+      'PROVIDER_DEFAULTS_DISALLOWED',
+      'Provider defaults and retries must be disabled'
+    )
+  }
+  if (!Array.isArray(input.resources))
+    fail('INVALID_ACTION', 'Northflank lifecycle inventory is missing')
+  const owned = new Map(ownership.resources.map((r) => [r.binding, r]))
+  const seen = new Set()
+  const actions = new Map()
+  for (const candidate of input.resources) {
+    const resource = assertRecord(candidate, 'Northflank lifecycle resource')
+    const binding = assertString(
+      resource.binding,
+      'Northflank lifecycle binding'
+    )
+    assertString(resource.kind, 'Northflank lifecycle kind')
+    const entry = owned.get(binding)
+    const expectedType = resource.data === true ? 'addon' : 'service'
+    if (
+      !entry ||
+      seen.has(binding) ||
+      typeof resource.data !== 'boolean' ||
+      entry.nativeType !== expectedType
+    ) {
+      fail('OWNERSHIP_MISMATCH', `Lifecycle resource ${binding} is not owned`)
+    }
+    seen.add(binding)
+    actions.set(binding, resource)
+  }
+  if (seen.size !== owned.size)
+    fail('OWNERSHIP_MISMATCH', 'Northflank ownership inventory is incomplete')
+  const resources = ownership.resources.map((entry) => ({
+    ...entry,
+    action: actions.get(entry.binding),
+  }))
+  return { ...input, resources }
+}
+
+async function readNorthflankResource(resource, ownership, request) {
+  const response = assertRecord(
+    await request({ method: 'GET', endpoint: resource.endpoint }),
+    'Northflank read response'
+  )
+  if (response.status === 404) return null
+  if (response.status !== 200) {
+    fail(
+      'PROVIDER_READ_FAILED',
+      `Northflank read failed for ${resource.binding}`
+    )
+  }
+  const data = assertRecord(
+    assertRecord(response.body, 'Northflank read body').data,
+    `Northflank observed ${resource.binding}`
+  )
+  if (
+    data.id !== resource.id ||
+    (data.stageId !== undefined && data.stageId !== ownership.environmentId) ||
+    (resource.uid !== undefined && data.uid !== resource.uid) ||
+    (resource.createdAt !== undefined &&
+      data.createdAt !== resource.createdAt) ||
+    (data.projectId !== undefined && data.projectId !== ownership.projectId)
+  ) {
+    fail('OWNERSHIP_MISMATCH', `Observed ${resource.binding} is inconsistent`)
+  }
+  return data
+}
+
+function northflankWriteAccepted(response, allowNotFound = false) {
+  const status = assertRecord(response, 'Northflank write response').status
+  return (
+    (allowNotFound && status === 404) ||
+    (Number.isInteger(status) && status >= 200 && status < 300)
+  )
+}
+
+function orderedNorthflankWrites(resources, command) {
+  if (command === 'delete') return resources
+  const apps = resources.filter((resource) => resource.action.kind === 'app')
+  const dependencies = resources.filter(
+    (resource) => resource.action.kind !== 'app'
+  )
+  return command === 'resume'
+    ? [...dependencies, ...apps]
+    : [...apps, ...dependencies]
+}
+
+/**
+ * Builds the native driver for an already-provisioned preview. The controller
+ * owns the immutable receipt. Each exact GET or write is requested once; only
+ * a bounded `{ settled: true }` proof yields the lifecycle receipt. Receipt
+ * resources must list non-app dependencies before apps for resume; their order
+ * is preserved within each group, and pause writes apps before dependencies.
+ */
+export function createNorthflankPreviewLifecycleDriver({
+  ownership: ownershipInput,
+  request,
+  settle,
+} = {}) {
+  if (typeof request !== 'function' || typeof settle !== 'function') {
+    fail('INVALID_DRIVER', 'Northflank driver requires request and settle')
+  }
+  const ownership = normalizeNorthflankOwnership(ownershipInput)
+  return {
+    async applyLifecycle(actionInput) {
+      const action = normalizeNorthflankAction(actionInput, ownership)
+      const resources = []
+      for (const resource of action.resources) {
+        resources.push({
+          ...resource,
+          present:
+            (await readNorthflankResource(resource, ownership, request)) !==
+            null,
+        })
+      }
+      const missing = resources.find((resource) => !resource.present)
+      if (action.command !== 'delete' && missing) {
+        fail('OWNED_RESOURCE_MISSING', `Owned ${missing.binding} is missing`)
+      }
+      for (const resource of orderedNorthflankWrites(
+        resources,
+        action.command
+      )) {
+        if (action.command === 'delete' && !resource.present) continue
+        const response = await request({
+          method: action.command === 'delete' ? 'DELETE' : 'POST',
+          endpoint:
+            action.command === 'delete'
+              ? resource.endpoint
+              : `${resource.endpoint}/${action.command}`,
+          ...(action.command === 'resume' && resource.nativeType === 'service'
+            ? { body: {} }
+            : {}),
+        })
+        if (!northflankWriteAccepted(response, action.command === 'delete')) {
+          fail(
+            'PROVIDER_WRITE_FAILED',
+            `${action.command} was not accepted for ${resource.binding}`
+          )
+        }
+      }
+      const settlement = await settle({
+        command: action.command,
+        projectId: ownership.projectId,
+        environmentId: ownership.environmentId,
+        resources: resources.map((resource) => ({
+          binding: resource.binding,
+          nativeType: resource.nativeType,
+          endpoint: resource.endpoint,
+          id: resource.id,
+          expectedState:
+            action.command === 'delete' ? 'absent' : resource.action.state,
+        })),
+      })
+      if (settlement?.settled !== true) {
+        fail('UNSETTLED_PROVIDER', `${action.command} did not settle`)
+      }
+      const receipt = {
+        settled: true,
+        environmentId: action.environmentId,
+        resources: action.resources.map(({ action: resource }) => ({
+          binding: resource.binding,
+          state: resource.state,
+        })),
+        buildAttempts: action.buildAttemptsReserved,
+        fixturesSeeded: action.fixturesSeeded,
+        retryPolicy: 'none',
+      }
+      assertReceipt(receipt, actionInput)
+      return receipt
+    },
+  }
+}
+
 function liveEnvironmentCount(state) {
   return Object.values(state.environments).filter(
     (environment) => !environment.deleted

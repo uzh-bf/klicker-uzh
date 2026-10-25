@@ -3,6 +3,7 @@ import test from 'node:test'
 
 import {
   assemblePreviewArguments,
+  createNorthflankPreviewLifecycleDriver,
   createPreviewLifecycleState,
   createSerializedPreviewLifecycle,
   DEFAULT_PREVIEW_LIFECYCLE_LIMITS,
@@ -174,6 +175,97 @@ function expectCode(fn, code) {
     assert.equal(error.code, code)
     return true
   })
+}
+
+const NATIVE_PROJECT = 'preview-project'
+const NATIVE_ENVIRONMENT = 'pr-42'
+const NATIVE_LIFECYCLE_ENVIRONMENT = `${REPOSITORY}#pull/1`
+
+function nativeResource(
+  binding,
+  nativeType = 'service',
+  kind = nativeType === 'addon' ? 'data-service' : 'app'
+) {
+  const id = `${nativeType}-${binding}`
+  const segment = nativeType === 'service' ? 'services' : 'addons'
+  return {
+    binding,
+    nativeType,
+    kind,
+    id,
+    endpoint: `/v1/projects/${NATIVE_PROJECT}/${segment}/${id}`,
+    ...(nativeType === 'service'
+      ? { uid: `${nativeType}-${binding}`.padEnd(24, '0') }
+      : { createdAt: `2026-01-01T00:00:00.${binding.length}Z` }),
+  }
+}
+
+function nativeOwnership(resources) {
+  return {
+    schemaVersion: 1,
+    projectId: NATIVE_PROJECT,
+    environmentId: NATIVE_ENVIRONMENT,
+    lifecycleEnvironmentId: NATIVE_LIFECYCLE_ENVIRONMENT,
+    resources,
+  }
+}
+
+function nativeAction(command, resources, overrides = {}) {
+  return {
+    schemaVersion: 1,
+    command,
+    environmentId: NATIVE_LIFECYCLE_ENVIRONMENT,
+    resources: resources.map((resource) => ({
+      binding: resource.binding,
+      kind: resource.kind,
+      data: resource.nativeType === 'addon',
+      state:
+        command === 'delete'
+          ? 'deleted'
+          : command === 'pause' && resource.nativeType === 'addon'
+            ? 'active'
+            : command === 'pause'
+              ? 'paused'
+              : 'active',
+    })),
+    buildAttemptsReserved: 0,
+    fixturesSeeded: false,
+    retryPolicy: 'none',
+    providerDefaults: false,
+    ...overrides,
+  }
+}
+
+function nativeRead(resource, overrides = {}) {
+  return {
+    status: 200,
+    body: {
+      data: {
+        id: resource.id,
+        uid: resource.uid,
+        createdAt: resource.createdAt,
+        ...overrides,
+      },
+    },
+  }
+}
+
+function nativeHarness(resources, { write, read } = {}) {
+  const byEndpoint = new Map(
+    resources.map((resource) => [resource.endpoint, resource])
+  )
+  const calls = []
+  return {
+    calls,
+    async request(call) {
+      calls.push(structuredClone(call))
+      if (call.method === 'GET') {
+        const resource = byEndpoint.get(call.endpoint)
+        return read?.(call, resource) ?? nativeRead(resource)
+      }
+      return write?.(call, calls) ?? { status: 202 }
+    },
+  }
 }
 
 const CHAT_RESOURCES = [
@@ -1051,5 +1143,379 @@ test('defaults cannot be widened beyond the approved trial ceilings', () => {
           STARTED_AT + DEFAULT_PREVIEW_LIFECYCLE_LIMITS.maxLifetimeMs + 1,
       }),
     'INVALID_DEADLINE'
+  )
+})
+
+test('native driver refuses create and update without provider calls', async () => {
+  const resources = [nativeResource('chat')]
+  const harness = nativeHarness(resources)
+  const driver = createNorthflankPreviewLifecycleDriver({
+    ownership: nativeOwnership(resources),
+    request: harness.request,
+    settle: async () => ({ settled: true }),
+  })
+
+  for (const command of ['create', 'update']) {
+    await assert.rejects(
+      driver.applyLifecycle(nativeAction(command, resources)),
+      (error) => error.code === 'STAGED_PROVISIONER_REQUIRED'
+    )
+  }
+  assert.deepEqual(harness.calls, [])
+})
+
+test('native ownership rejects unsafe project and resource path segments', () => {
+  const harness = nativeHarness([nativeResource('chat')])
+  const unsafe = [
+    '.',
+    '..',
+    'nested/id',
+    'nested\\id',
+    'encoded%2Fid',
+    'id?query=1',
+    'id#fragment',
+  ]
+  for (const value of unsafe) {
+    const ownership = nativeOwnership([nativeResource('chat')])
+    ownership.projectId = value
+    expectCode(
+      () =>
+        createNorthflankPreviewLifecycleDriver({
+          ownership,
+          request: harness.request,
+          settle: async () => ({ settled: true }),
+        }),
+      'UNSAFE_OWNERSHIP_PATH'
+    )
+
+    const resourceOwnership = nativeOwnership([nativeResource('chat')])
+    resourceOwnership.resources[0].id = value
+    expectCode(
+      () =>
+        createNorthflankPreviewLifecycleDriver({
+          ownership: resourceOwnership,
+          request: harness.request,
+          settle: async () => ({ settled: true }),
+        }),
+      'UNSAFE_OWNERSHIP_PATH'
+    )
+  }
+  assert.deepEqual(harness.calls, [])
+})
+
+test('native ownership mismatches refuse every write', async () => {
+  const resources = [
+    nativeResource('chat'),
+    nativeResource('postgres', 'addon'),
+  ]
+  const harness = nativeHarness(resources, {
+    read(call, resource) {
+      return call.endpoint === resources[0].endpoint
+        ? nativeRead(resource, { uid: 'different-permanent-uid' })
+        : nativeRead(resource)
+    },
+    write() {
+      assert.fail('ownership mismatch must not write')
+    },
+  })
+  const settlements = []
+  const driver = createNorthflankPreviewLifecycleDriver({
+    ownership: nativeOwnership(resources),
+    request: harness.request,
+    settle: async (value) => {
+      settlements.push(value)
+      return { settled: true }
+    },
+  })
+
+  await assert.rejects(
+    driver.applyLifecycle(nativeAction('pause', resources)),
+    (error) => error.code === 'OWNERSHIP_MISMATCH'
+  )
+  assert.equal(harness.calls.length, 1)
+  assert.equal(harness.calls[0].method, 'GET')
+  assert.equal(settlements.length, 0)
+
+  const wrongProject = structuredClone(resources[0])
+  wrongProject.endpoint = wrongProject.endpoint.replace(
+    NATIVE_PROJECT,
+    'another-project'
+  )
+  expectCode(
+    () =>
+      createNorthflankPreviewLifecycleDriver({
+        ownership: nativeOwnership([wrongProject]),
+        request: harness.request,
+        settle: async () => ({ settled: true }),
+      }),
+    'OWNERSHIP_MISMATCH'
+  )
+
+  const wrongEnvironmentHarness = nativeHarness(resources, {
+    read: (_call, resource) =>
+      nativeRead(resource, { stageId: 'another-environment' }),
+  })
+  const wrongEnvironmentDriver = createNorthflankPreviewLifecycleDriver({
+    ownership: nativeOwnership(resources),
+    request: wrongEnvironmentHarness.request,
+    settle: async () => ({ settled: true }),
+  })
+  await assert.rejects(
+    wrongEnvironmentDriver.applyLifecycle(nativeAction('pause', resources)),
+    (error) => error.code === 'OWNERSHIP_MISMATCH'
+  )
+  assert.equal(wrongEnvironmentHarness.calls[0].method, 'GET')
+})
+
+test('native pause refuses missing ownership before settlement or writes', async () => {
+  const resources = [
+    nativeResource('chat'),
+    nativeResource('postgres', 'addon'),
+  ]
+  const harness = nativeHarness(resources, {
+    read(_call, resource) {
+      return resource.id === 'addon-postgres'
+        ? { status: 404 }
+        : nativeRead(resource)
+    },
+    write() {
+      assert.fail('missing owner must not write')
+    },
+  })
+  let settleCalls = 0
+  const driver = createNorthflankPreviewLifecycleDriver({
+    ownership: nativeOwnership(resources),
+    request: harness.request,
+    settle: async () => {
+      settleCalls++
+      return { settled: true }
+    },
+  })
+
+  await assert.rejects(
+    driver.applyLifecycle(nativeAction('pause', resources)),
+    (error) => error.code === 'OWNED_RESOURCE_MISSING'
+  )
+  assert.deepEqual(
+    harness.calls.map(({ method }) => method),
+    ['GET', 'GET']
+  )
+  assert.equal(settleCalls, 0)
+})
+
+test('native identity accepts absent stageId while writes require settlement proof', async () => {
+  const resources = [nativeResource('chat')]
+  assert.equal(
+    Object.hasOwn(nativeRead(resources[0]).body.data, 'stageId'),
+    false
+  )
+  const acceptedHarness = nativeHarness(resources, {
+    write: () => ({ status: 202 }),
+  })
+  const unsettled = []
+  const acceptedDriver = createNorthflankPreviewLifecycleDriver({
+    ownership: nativeOwnership(resources),
+    request: acceptedHarness.request,
+    settle: async (value) => {
+      unsettled.push(value)
+      return { settled: false }
+    },
+  })
+  await assert.rejects(
+    acceptedDriver.applyLifecycle(nativeAction('pause', resources)),
+    (error) => error.code === 'UNSETTLED_PROVIDER'
+  )
+  assert.deepEqual(
+    acceptedHarness.calls.map(({ method }) => method),
+    ['GET', 'POST']
+  )
+  assert.equal(unsettled.length, 1)
+
+  const settledHarness = nativeHarness(resources, {
+    write: () => ({ status: 202 }),
+  })
+  const settlements = []
+  const settledDriver = createNorthflankPreviewLifecycleDriver({
+    ownership: nativeOwnership(resources),
+    request: settledHarness.request,
+    settle: async (value) => {
+      settlements.push(value)
+      return { settled: true }
+    },
+  })
+  const receipt = await settledDriver.applyLifecycle(
+    nativeAction('pause', resources)
+  )
+  assert.deepEqual(receipt, {
+    settled: true,
+    environmentId: NATIVE_LIFECYCLE_ENVIRONMENT,
+    resources: [{ binding: 'chat', state: 'paused' }],
+    buildAttempts: 0,
+    fixturesSeeded: false,
+    retryPolicy: 'none',
+  })
+  assert.deepEqual(settlements[0].resources, [
+    {
+      binding: 'chat',
+      nativeType: 'service',
+      endpoint: resources[0].endpoint,
+      id: resources[0].id,
+      expectedState: 'paused',
+    },
+  ])
+})
+
+test('native partial failure stops later writes and settlement', async () => {
+  const resources = [
+    nativeResource('chat'),
+    nativeResource('postgres', 'addon'),
+    nativeResource('redis', 'addon'),
+  ]
+  const harness = nativeHarness(resources, {
+    write(call) {
+      if (call.endpoint.includes('/addons/addon-postgres/pause')) {
+        throw new Error('synthetic native write failure')
+      }
+      return { status: 202 }
+    },
+  })
+  let settleCalls = 0
+  const driver = createNorthflankPreviewLifecycleDriver({
+    ownership: nativeOwnership(resources),
+    request: harness.request,
+    settle: async () => {
+      settleCalls++
+      return { settled: true }
+    },
+  })
+
+  await assert.rejects(
+    driver.applyLifecycle(nativeAction('pause', resources)),
+    /synthetic native write failure/
+  )
+  assert.deepEqual(
+    harness.calls.map(({ method, endpoint }) => [method, endpoint]),
+    [
+      ['GET', resources[0].endpoint],
+      ['GET', resources[1].endpoint],
+      ['GET', resources[2].endpoint],
+      ['POST', `${resources[0].endpoint}/pause`],
+      ['POST', `${resources[1].endpoint}/pause`],
+    ]
+  )
+  assert.equal(settleCalls, 0)
+})
+
+test('native ordering preserves dependency-first receipt order', async () => {
+  const resources = [
+    nativeResource('hatchet', 'service', 'process'),
+    nativeResource('litellm', 'service', 'service'),
+    nativeResource('postgres', 'addon'),
+    nativeResource('redis', 'addon'),
+    nativeResource('app-b'),
+    nativeResource('app-a'),
+  ]
+  async function run(command) {
+    const harness = nativeHarness(resources)
+    const driver = createNorthflankPreviewLifecycleDriver({
+      ownership: nativeOwnership(resources),
+      request: harness.request,
+      settle: async () => ({ settled: true }),
+    })
+    await driver.applyLifecycle(nativeAction(command, [...resources].reverse()))
+    return harness.calls
+  }
+
+  const pauseCalls = await run('pause')
+  assert.deepEqual(
+    pauseCalls
+      .filter(({ method }) => method === 'GET')
+      .map(({ endpoint }) => endpoint),
+    resources.map(({ endpoint }) => endpoint)
+  )
+  assert.deepEqual(
+    pauseCalls
+      .filter(({ method }) => method === 'POST')
+      .map(({ endpoint }) => endpoint),
+    [
+      `${resources[4].endpoint}/pause`,
+      `${resources[5].endpoint}/pause`,
+      `${resources[0].endpoint}/pause`,
+      `${resources[1].endpoint}/pause`,
+      `${resources[2].endpoint}/pause`,
+      `${resources[3].endpoint}/pause`,
+    ]
+  )
+
+  const resumeCalls = await run('resume')
+  assert.deepEqual(
+    resumeCalls
+      .filter(({ method }) => method === 'POST')
+      .map(({ endpoint }) => endpoint),
+    [
+      `${resources[0].endpoint}/resume`,
+      `${resources[1].endpoint}/resume`,
+      `${resources[2].endpoint}/resume`,
+      `${resources[3].endpoint}/resume`,
+      `${resources[4].endpoint}/resume`,
+      `${resources[5].endpoint}/resume`,
+    ]
+  )
+  assert.deepEqual(
+    resumeCalls.find(
+      ({ endpoint }) => endpoint === `${resources[4].endpoint}/resume`
+    ).body,
+    {}
+  )
+  assert.equal(
+    resumeCalls.find(
+      ({ endpoint }) => endpoint === `${resources[2].endpoint}/resume`
+    ).body,
+    undefined
+  )
+})
+
+test('native delete is exact, idempotent on 404 and settles absence', async () => {
+  const resources = [
+    nativeResource('chat'),
+    nativeResource('postgres', 'addon'),
+    nativeResource('redis', 'addon'),
+  ]
+  const harness = nativeHarness(resources, {
+    read(call, resource) {
+      if (call.endpoint === resources[1].endpoint) return { status: 404 }
+      return nativeRead(resource)
+    },
+    write(call) {
+      return call.endpoint === resources[2].endpoint
+        ? { status: 404 }
+        : { status: 200 }
+    },
+  })
+  const settlements = []
+  const driver = createNorthflankPreviewLifecycleDriver({
+    ownership: nativeOwnership(resources),
+    request: harness.request,
+    settle: async (value) => {
+      settlements.push(value)
+      return { settled: true }
+    },
+  })
+
+  const receipt = await driver.applyLifecycle(nativeAction('delete', resources))
+  assert.deepEqual(harness.calls, [
+    { method: 'GET', endpoint: resources[0].endpoint },
+    { method: 'GET', endpoint: resources[1].endpoint },
+    { method: 'GET', endpoint: resources[2].endpoint },
+    { method: 'DELETE', endpoint: resources[0].endpoint },
+    { method: 'DELETE', endpoint: resources[2].endpoint },
+  ])
+  assert.deepEqual(
+    settlements[0].resources.map(({ expectedState }) => expectedState),
+    ['absent', 'absent', 'absent']
+  )
+  assert.deepEqual(
+    receipt.resources.map(({ state }) => state),
+    ['deleted', 'deleted', 'deleted']
   )
 })
