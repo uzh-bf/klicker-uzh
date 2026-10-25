@@ -956,4 +956,22 @@ test('pinned OCR registers and invokes reviewer tools with trusted rules and com
   )
   assert.equal(usage.responses, calls)
   assert.equal(usage.upstream_attempts, calls)
+  for (const name of ['draft-ai-review-adapter', 'draft-ai-review-advisor']) {
+    const events = fs
+      .readFileSync(
+        path.join(directory, name + '-diagnostics.jsonl.events.jsonl'),
+        'utf8'
+      )
+      .trim()
+      .split('\n')
+      .map(JSON.parse)
+    assert.ok(events.some((row) => row.event === 'response'))
+    assert.equal(
+      events.filter((row) => row.event === 'dispatch').length,
+      events.filter((row) => row.event === 'response').length
+    )
+    assert.equal(JSON.stringify(events).includes('PRIVATE_SENTINEL'), false)
+  }
+  assert.ok(tools.tool_results.read_review_context.calls > 0)
+  assert.ok(tools.tool_results.read_review_context.returned_bytes > 0)
 })

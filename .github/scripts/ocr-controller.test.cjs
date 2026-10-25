@@ -692,6 +692,18 @@ test('the composite preserves failure, cancellation, validation, artifact and su
     }
   }
   assert.equal(artifacts.with['retention-days'], 7)
+  const artifactPaths = artifacts.with.path
+    .trim()
+    .split('\n')
+    .map((line) => line.trim())
+  for (const name of ['draft-ai-review-adapter', 'draft-ai-review-advisor']) {
+    assert.ok(
+      artifactPaths.includes(
+        '${{ runner.temp }}/' + name + '-diagnostics.jsonl.events.jsonl'
+      )
+    )
+  }
+  assert.equal(artifactPaths.length, 8)
   const checkout = steps.find(
     (step) => step.name === 'Checkout trusted review policy'
   )

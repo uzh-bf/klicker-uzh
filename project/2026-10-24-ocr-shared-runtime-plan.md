@@ -719,3 +719,96 @@ local/published matrix; source publication and caller adoption remain distinct
 phases. Only the selector changes in `check.yml`; its execution limits and
 credential isolation stay intact. Recheck the selector and request the single
 focused integrated-review correction before claiming final source acceptance.
+
+
+## Additive usage and context diagnostics
+
+### Approved outcome and boundary
+
+The user approved the next shared diagnostics package: persist sanitized usage
+as responses finish, measure trusted-context activity, and expose cached,
+uncached and output cost components. Execution mode remains standard. Reuse
+`trees/rs/ocr-shared-runtime` on `rs/ocr-usage-diagnostics`, based on merged
+`v3` revision `51e8e7259f2f31d220cc78ff64e54d205837fb76`. This authorizes
+source changes, synthetic verification, commits, ordinary push and one draft
+PR against `v3`. Models, maximum reasoning, budgets, aggregate accounting,
+retry/resume policy, concurrency, deadlines and publication remain unchanged.
+No provider replay, private activation, live setting or merge is included.
+No product primitive changes; this adds diagnostic evidence only.
+
+### Diagnostic contract
+
+Extend the existing adapter with a separate bounded JSONL usage journal next to
+its aggregate diagnostics. Record dispatch, observed response and terminal
+outcome using a random invocation ID, attempt ordinal, existing opaque
+conversation identity, fixed provider/model/stage/kind, validated numeric usage
+and fixed finish/failure codes. Write a response receipt synchronously once
+its JSON is parsed, before downstream validation or another await. Preserve
+usage returned by rejected completions. Missing or invalid counters stay null;
+an uncompleted dispatch stays unknown. A closed or killed process must leave
+previously written responses readable; a hard runner loss may still prevent
+artifact upload. Bound journal bytes/rows and report truncation/write failure
+without changing provider execution. Retain no source, prompts, tool arguments,
+reasoning, provider IDs, raw errors, URLs or credential values. Existing
+aggregate receipts stay one row per invocation and retain their formulas.
+
+The shared broker reports successful calls and serialized result bytes by the
+three fixed tool names. It has no reliable worker identity. The adapter reports
+observed trusted-context tool results and UTF-8 content bytes per existing
+opaque conversation, deduplicating replayed call IDs within bounded memory.
+Label this as observed input evidence, not authoritative broker activity;
+compression, missing keys and diagnostic caps must remain explicit. No new
+MCP field, header, tool schema or model-visible text is introduced.
+
+Add component cost lines per stage only when that stage has a complete estimate:
+uncached input, cached input, output and cached share of estimated charge.
+Use the existing pinned rates and counters without changing existing estimate
+lines or budget units. Unavailable stages retain unavailable components.
+
+### Ownership, files and verification
+
+Main owns adapter code/tests, draft wiring, action/final artifact paths, release
+manifest and documentation. A bounded executor owns only
+`.github/scripts/ocr-review-tools.cjs` and its existing test file for aggregate
+tool/result-byte diagnostics. No overlapping writers. Main owns adapter-side
+conversation observations because they share the usage-journal identity seam.
+Use existing files; the separate generated journal is the only new artifact.
+Update `ocr-draft-review.cjs`, the composite action and both existing final
+workflow artifact lists; the existing diagnostics-path convention derives the
+sidecar path. Refresh manifest hashes for changed release assets. The portable
+skill and caller pin remain unchanged: publishing new release source does not
+automatically migrate a caller pinned to an older revision.
+
+Acceptance uses synthetic providers and the actual stock binary where existing
+fixtures require it. Verify response durability after a later SIGKILL, unknown
+in-flight usage, rejected/malformed responses, journal saturation/I/O failure,
+replay deduplication and conversation isolation, broker byte counts, and
+complete/unavailable cost components. Existing cost reports and OCR-facing
+usage must match prior fixtures; release verification and pinned caller checks
+remain valid. Use Node24 in an isolated test container and existing formatters,
+with no application environment or screenshots. Required source gates are one
+planner challenge, simplification plus privacy/correctness slice review, and
+one integrated Claude final review on the complete committed package. Reuse
+the completed Opus consultation for design advice; no additional broad audit.
+
+Terminal: focused checks and source reviews pass, bounded diagnostic artifacts
+are wired into existing retention, and a clean ordinary push/draft PR accurately
+distinguishes source/CI proof from post-merge live acceptance. Review feedback
+and CI may be observed without extra paid replays; scheduling remains separate.
+
+### Implementation evidence
+
+Planner approved the diagnostics contract. The shared journal, broker counters,
+conversation observations, component costs and existing artifact wiring are
+implemented without changing the portable skill, caller pin or execution profile.
+The complete affected set passes 172 Node24.21 checks with zero skips, including
+the actual stock OCR1.13.0 binary and verified pinned publisher under synthetic
+provider/tools responses. A response survives a later SIGKILL; its subsequent
+dispatch retains unknown usage. Privacy, byte/row limits, unwritable/symlink
+sinks, rejected usage, replay deduplication and cost components are covered.
+The first kill fixture returned an unsupported response body shape; replacing
+it with the existing Response fixture fixed the test and did not require a
+provider/production change. No paid replay or application environment was used.
+One cohesive package owns the new evidence from capture through artifact
+retention; central runtime fixtures remain central. Source reviews and hosted
+CI remain pending until their producing results are recorded.

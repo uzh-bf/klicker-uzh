@@ -17,6 +17,7 @@ const {
   normalizeMistralResponse,
   translateMistralRequest,
   createHistoryStore,
+  createUsageJournal,
   startAdapter,
   callMistral,
   estimateCost,
@@ -28,6 +29,289 @@ const {
 const ADAPTER = path.join(__dirname, 'ocr-mistral-adapter.cjs')
 const CHAT_PATH = '/v1/chat/completions'
 const SHUTDOWN_PATH = '/shutdown'
+
+test('usage journals bound output, reject symlinks and do not retain payload fields', (t) => {
+  const directory = fs.mkdtempSync(path.join(os.tmpdir(), 'ocr-usage-journal-'))
+  t.after(() => fs.rmSync(directory, { recursive: true, force: true }))
+  const file = path.join(directory, 'events.jsonl')
+  const journal = createUsageJournal(file, { maxRecords: 3, maxBytes: 2048 })
+  for (let attempt = 1; attempt <= 5; attempt++)
+    journal.write({ event: 'dispatch', attempt, content: 'PRIVATE_SENTINEL' })
+  const rows = fs.readFileSync(file, 'utf8').trim().split('\n').map(JSON.parse)
+  assert.deepEqual(
+    rows.map((row) => row.event),
+    ['dispatch', 'dispatch', 'truncated']
+  )
+  assert.equal(
+    fs.readFileSync(file, 'utf8').includes('PRIVATE_SENTINEL'),
+    false
+  )
+  assert.equal(journal.snapshot().status, 'truncated')
+  assert.equal(journal.snapshot().dropped, 3)
+  assert.equal(fs.statSync(file).mode & 0o777, 0o600)
+  const byteFile = path.join(directory, 'bytes.jsonl')
+  const byteBounded = createUsageJournal(byteFile, { maxBytes: 400 })
+  for (let attempt = 1; attempt <= 6; attempt++)
+    byteBounded.write({ event: 'dispatch', attempt })
+  assert.equal(byteBounded.snapshot().status, 'truncated')
+  assert.ok(fs.statSync(byteFile).size <= 400)
+  const link = path.join(directory, 'link')
+  fs.symlinkSync(file, link)
+  const unsafe = createUsageJournal(link)
+  const before = fs.readFileSync(file, 'utf8')
+  unsafe.write({ event: 'dispatch' })
+  assert.equal(unsafe.snapshot().status, 'unavailable')
+  assert.equal(fs.readFileSync(file, 'utf8'), before)
+})
+
+test('response journal retains rejected usage without changing aggregate accounting', async (t) => {
+  const directory = fs.mkdtempSync(
+    path.join(os.tmpdir(), 'ocr-rejected-usage-')
+  )
+  t.after(() => fs.rmSync(directory, { recursive: true, force: true }))
+  const file = path.join(directory, 'events.jsonl')
+  const payload = completion({ role: 'assistant', content: 'PRIVATE_SENTINEL' })
+  payload.model = 'PRIVATE_SENTINEL'
+  payload.choices[0].finish_reason = 'PRIVATE_SENTINEL'
+  payload.usage.prompt_tokens_details = { cached_tokens: 2 }
+  const adapter = await startAdapter({
+    apiKey: 'PRIVATE_SENTINEL',
+    usageJournalPath: file,
+    fetchImpl: upstream(() => jsonResponse(200, payload)),
+  })
+  t.after(() => adapter.close())
+  const response = await postJson(adapter, {
+    model: MISTRAL_MODEL,
+    prompt_cache_key: 'PRIVATE_SENTINEL',
+    messages: [{ role: 'user', content: 'PRIVATE_SENTINEL' }],
+  })
+  assert.notEqual(response.status, 200)
+  const raw = fs.readFileSync(file, 'utf8')
+  assert.equal(raw.includes('PRIVATE_SENTINEL'), false)
+  const rows = raw.trim().split('\n').map(JSON.parse)
+  assert.deepEqual(
+    rows.map((row) => row.event),
+    ['dispatch', 'response', 'finished']
+  )
+  assert.equal(rows[1].prompt_tokens, 3)
+  assert.equal(rows[1].cached_prompt_tokens, 2)
+  assert.equal(rows[1].uncached_prompt_tokens, 1)
+  assert.equal(rows[1].finish_reason, 'unknown')
+  assert.equal(rows[2].outcome, 'rejected')
+  assert.equal(adapter.diagnostics().responses, 0)
+  assert.equal(adapter.diagnostics().usage_events.written, 3)
+})
+
+test('unwritable journals preserve provider results and incomplete usage stays null', async (t) => {
+  const directory = fs.mkdtempSync(
+    path.join(os.tmpdir(), 'ocr-journal-failure-')
+  )
+  t.after(() => fs.rmSync(directory, { recursive: true, force: true }))
+  const payload = completion({ role: 'assistant', content: 'synthetic' })
+  payload.usage = {
+    prompt_tokens: -1,
+    completion_tokens: 2,
+    prompt_tokens_details: { cached_tokens: 99 },
+  }
+  const file = path.join(directory, 'events.jsonl')
+  for (const usageJournalPath of [
+    path.join(directory, 'absent', 'events.jsonl'),
+    file,
+  ]) {
+    const adapter = await startAdapter({
+      apiKey: 'synthetic',
+      usageJournalPath,
+      fetchImpl: upstream(() => jsonResponse(200, payload)),
+    })
+    try {
+      assert.equal(
+        (
+          await postJson(adapter, {
+            model: MISTRAL_MODEL,
+            messages: [{ role: 'user', content: 'synthetic' }],
+          })
+        ).status,
+        200
+      )
+      assert.equal(adapter.diagnostics().responses, 1)
+      if (usageJournalPath !== file)
+        assert.equal(adapter.diagnostics().usage_events.status, 'unavailable')
+    } finally {
+      await adapter.close()
+    }
+  }
+  const response = fs
+    .readFileSync(file, 'utf8')
+    .trim()
+    .split('\n')
+    .map(JSON.parse)
+    .find((row) => row.event === 'response')
+  assert.equal(response.prompt_tokens, null)
+  assert.equal(response.cached_prompt_tokens, null)
+  assert.equal(response.uncached_prompt_tokens, null)
+  assert.equal(response.completion_tokens, 2)
+})
+
+test('direct preflight journals preserve stage identity and record response before validation', async (t) => {
+  const directory = fs.mkdtempSync(
+    path.join(os.tmpdir(), 'ocr-preflight-events-')
+  )
+  t.after(() => fs.rmSync(directory, { recursive: true, force: true }))
+  const file = path.join(directory, 'events.jsonl')
+  const payload = completion({ role: 'assistant', content: 'synthetic' })
+  payload.model = 'unrecognized'
+  await assert.rejects(
+    callMistral({
+      apiKey: 'synthetic',
+      diagnosticsStage: 'preflight',
+      usageJournalPath: file,
+      body: {
+        model: MISTRAL_MODEL,
+        messages: [{ role: 'user', content: 'synthetic' }],
+      },
+      fetchImpl: upstream(() => jsonResponse(200, payload)),
+    }),
+    { code: 'response_model_mismatch' }
+  )
+  const rows = fs.readFileSync(file, 'utf8').trim().split('\n').map(JSON.parse)
+  assert.deepEqual(
+    rows.map((row) => row.event),
+    ['dispatch', 'response', 'finished']
+  )
+  assert.ok(rows.every((row) => row.stage === 'preflight'))
+  assert.equal(rows[1].completion_tokens, 4)
+  assert.equal(rows[2].outcome, 'rejected')
+  assert.equal(rows[2].failure, 'adapter_error')
+})
+
+test('response evidence survives SIGKILL while a later dispatch stays unknown', {
+  timeout: 10000,
+}, async (t) => {
+  const directory = fs.mkdtempSync(path.join(os.tmpdir(), 'ocr-killed-usage-'))
+  t.after(() => fs.rmSync(directory, { recursive: true, force: true }))
+  const file = path.join(directory, 'events.jsonl')
+  const script = `
+const { startAdapter, MISTRAL_MODEL } = require(process.argv[1])
+let calls = 0
+;(async () => {
+ const adapter = await startAdapter({ apiKey: 'synthetic', usageJournalPath: process.argv[2], fetchImpl: async () => {
+  if (++calls === 2) { process.stdout.write('pending\\n'); return new Promise(() => {}) }
+  return new Response(JSON.stringify({ model: MISTRAL_MODEL, choices: [{ finish_reason: 'stop', message: { role: 'assistant', content: 'synthetic' } }], usage: { prompt_tokens: 10, completion_tokens: 2, prompt_tokens_details: { cached_tokens: 4 } } }), { status: 200 })
+ } })
+ const request = () => fetch(adapter.url + '/v1/chat/completions', { method: 'POST', headers: { authorization: 'Bearer ' + adapter.token, 'content-type': 'application/json' }, body: JSON.stringify({ model: MISTRAL_MODEL, messages: [{ role: 'user', content: 'synthetic' }] }) })
+ await (await request()).text()
+ await request()
+})().catch(() => process.exit(1))
+`
+  const child = spawn(process.execPath, ['-e', script, ADAPTER, file], {
+    stdio: ['ignore', 'pipe', 'pipe'],
+  })
+  t.after(() => child.kill('SIGKILL'))
+  let output = ''
+  await new Promise((resolve, reject) => {
+    const timer = setTimeout(
+      () => reject(new Error('fixture dispatch timeout')),
+      5000
+    )
+    child.once('error', reject)
+    child.stdout.on('data', (chunk) => {
+      output += chunk
+      if (output.includes('pending')) {
+        clearTimeout(timer)
+        resolve()
+      }
+    })
+  })
+  await new Promise((resolve) => {
+    child.once('exit', resolve)
+    child.kill('SIGKILL')
+  })
+  const rows = fs.readFileSync(file, 'utf8').trim().split('\n').map(JSON.parse)
+  assert.deepEqual(
+    rows.map((row) => row.event),
+    ['dispatch', 'response', 'finished', 'dispatch']
+  )
+  assert.equal(rows[1].prompt_tokens, 10)
+  assert.equal(rows[3].attempt, 2)
+  assert.equal(
+    rows.some((row) => row.attempt === 2 && row.event === 'response'),
+    false
+  )
+})
+
+test('observed context results are isolated by conversation and deduplicate history replay', async (t) => {
+  const native = {
+    role: 'assistant',
+    content: '',
+    tool_calls: [
+      {
+        id: 'private-call',
+        type: 'function',
+        function: {
+          name: 'klicker_review_read_review_context',
+          arguments: '{}',
+        },
+      },
+    ],
+  }
+  const adapter = await startAdapter({
+    apiKey: 'synthetic',
+    fetchImpl: upstream(() =>
+      jsonResponse(200, completion(native, 'tool_calls'))
+    ),
+  })
+  t.after(() => adapter.close())
+  const initial = {
+    model: MISTRAL_MODEL,
+    prompt_cache_key: 'private-session',
+    messages: [{ role: 'user', content: 'synthetic' }],
+  }
+  const first = await postJson(adapter, initial)
+  const next = {
+    ...initial,
+    messages: [
+      ...initial.messages,
+      first.json.choices[0].message,
+      { role: 'tool', tool_call_id: 'private-call', content: 'é' },
+    ],
+  }
+  assert.equal((await postJson(adapter, next)).status, 200)
+  assert.equal((await postJson(adapter, next)).status, 200)
+  assert.equal(
+    (
+      await postJson(adapter, {
+        ...initial,
+        prompt_cache_key: 'other-private-session',
+      })
+    ).status,
+    200
+  )
+  const rows = adapter.diagnostics().conversations
+  const observed = rows.find(
+    (row) => row.observed_tool_results.read_review_context.calls
+  )
+  assert.equal(observed.observed_tool_results.read_review_context.calls, 1)
+  assert.equal(
+    observed.observed_tool_results.read_review_context.returned_bytes,
+    2
+  )
+  assert.equal(
+    rows.filter(
+      (row) => row.observed_tool_results.read_review_context.calls === 0
+    ).length,
+    1
+  )
+  observed.observed_tool_results.read_review_context.calls = 99
+  assert.equal(
+    adapter.diagnostics().conversations[0].observed_tool_results
+      .read_review_context.calls,
+    1
+  )
+  assert.equal(
+    JSON.stringify(adapter.diagnostics()).includes('private-'),
+    false
+  )
+})
 
 test('Mistral Flash fixes the draft model and max effort while preserving native tool requests', () => {
   const body = {
@@ -722,6 +1006,53 @@ function costReceipt(overrides = {}) {
     ...overrides,
   }
 }
+
+test('cost components reconcile complete stages and withhold incomplete stages', async (t) => {
+  const directory = fs.mkdtempSync(
+    path.join(os.tmpdir(), 'ocr-cost-components-')
+  )
+  t.after(() => fs.rmSync(directory, { recursive: true, force: true }))
+  const receipt = path.join(directory, 'receipt.jsonl')
+  fs.writeFileSync(receipt, JSON.stringify(costReceipt()))
+  const complete = await runCli(['summary', receipt], {
+    GITHUB_STEP_SUMMARY: path.join(directory, 'summary.md'),
+  })
+  assert.equal(complete.code, 0)
+  const line = complete.stdout
+    .split('\n')
+    .find((line) => line.startsWith('OCR cost_components '))
+  const fields = Object.fromEntries(
+    [...line.matchAll(/([a-z_]+)=([^ ]+)/g)].map(([, key, value]) => [
+      key,
+      value,
+    ])
+  )
+  assert.equal(fields.status, 'complete')
+  assert.equal(Number(fields.uncached_input_usd), 0.35)
+  assert.equal(Number(fields.cached_input_usd), 0.105)
+  assert.equal(Number(fields.output_usd), 0.44)
+  assert.ok(Math.abs(Number(fields.cached_share_percent) - 11.7) < 0.01)
+  assert.ok(
+    Math.abs(
+      Number(fields.uncached_input_usd) +
+        Number(fields.cached_input_usd) +
+        Number(fields.output_usd) -
+        estimateCost(JSON.stringify(costReceipt())).withCache
+    ) < 0.0001
+  )
+  fs.writeFileSync(
+    receipt,
+    JSON.stringify(costReceipt({ upstream_attempts: 2 }))
+  )
+  const partial = await runCli(['summary', receipt], {
+    GITHUB_STEP_SUMMARY: path.join(directory, 'summary.md'),
+  })
+  assert.equal(partial.code, 0)
+  assert.match(
+    partial.stdout,
+    /^OCR cost_components stage=adapter status=unavailable$/m
+  )
+})
 
 test('cost estimates aggregate lifetimes once and keep output cost in the no-cache baseline', () => {
   const row = costReceipt({

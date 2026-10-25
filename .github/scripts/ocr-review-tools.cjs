@@ -459,6 +459,11 @@ async function startReviewTools(options) {
     rejected: 0,
     cancelled: 0,
     context_reads: 0,
+    tool_results: {
+      read_review_context: { calls: 0, returned_bytes: 0 },
+      ask_review_advisor: { calls: 0, returned_bytes: 0 },
+      lookup_library_docs: { calls: 0, returned_bytes: 0 },
+    },
     docs: {
       attempted: 0,
       upstream_attempts: 0,
@@ -492,6 +497,11 @@ async function startReviewTools(options) {
               : state.docs.attempted
                 ? 'unavailable'
                 : 'unused',
+      },
+      tool_results: {
+        read_review_context: { ...state.tool_results.read_review_context },
+        ask_review_advisor: { ...state.tool_results.ask_review_advisor },
+        lookup_library_docs: { ...state.tool_results.lookup_library_docs },
       },
       status:
         !advisorAvailable || !state.registered
@@ -955,7 +965,18 @@ async function startReviewTools(options) {
           rpc.id,
           response
         )
-        result = { content: [{ type: 'text', text: JSON.stringify(value) }] }
+        const text = JSON.stringify(value)
+        const toolResults = state.tool_results[rpc.params?.name]
+        toolResults.calls = Math.min(
+          toolResults.calls + 1,
+          Number.MAX_SAFE_INTEGER
+        )
+        toolResults.returned_bytes = Math.min(
+          toolResults.returned_bytes + Buffer.byteLength(text),
+          Number.MAX_SAFE_INTEGER
+        )
+        emit()
+        result = { content: [{ type: 'text', text }] }
       } catch (error) {
         const code = safeCodes.has(error.code) ? error.code : 'tool_failed'
         result = { isError: true, content: [{ type: 'text', text: code }] }

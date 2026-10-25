@@ -341,6 +341,7 @@ async function runDraftReview(options) {
     adapter = await startAdapter({
       provider: DRAFT_PROVIDER,
       apiKey: options.apiKey,
+      usageJournalPath: `${diagnosticsPath}.events.jsonl`,
       onClose: (record) =>
         fs.appendFileSync(diagnosticsPath, `${JSON.stringify(record)}\n`, {
           mode: 0o600,
@@ -386,6 +387,7 @@ async function runDraftReview(options) {
           advisor = await startAdapter({
             provider: 'mistral',
             apiKey: options.advisorApiKey,
+            usageJournalPath: `${advisorDiagnosticsPath}.events.jsonl`,
             ...(options.advisorFetchImpl
               ? { fetchImpl: options.advisorFetchImpl }
               : {}),
