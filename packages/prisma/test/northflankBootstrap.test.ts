@@ -48,7 +48,6 @@ const access = (database: string) => ({
 type HarnessOptions = {
   status?: Record<string, unknown>[]
   writeFailure?: string
-  identity?: (database: string) => Record<string, unknown>[]
   access?: (database: string) => Record<string, unknown>[]
 }
 function harness(options: HarnessOptions = {}) {
@@ -91,8 +90,7 @@ function harness(options: HarnessOptions = {}) {
       async query(query) {
         if (query === disposableDatabaseIdentityQuery) {
           apps.push(database)
-          const rows = options.identity?.(database) ?? [identity(database)]
-          return { rows }
+          return { rows: [identity(database)] }
         }
         if (query.includes('northflank-bootstrap-access-v1')) {
           const rows = options.access?.(database) ?? [access(database)]
