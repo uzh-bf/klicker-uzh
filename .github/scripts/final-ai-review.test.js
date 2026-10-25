@@ -1485,69 +1485,6 @@ test('uses one qualified canary and OCR release in both manual jobs', () => {
   }
 })
 
-test('draft context preserves the complete multiline workflow output', () => {
-  const workflow = fs.readFileSync(
-    path.join(__dirname, '../workflows/check-ocr-review.yml'),
-    'utf8'
-  )
-  const script = extractWorkflowStepScript(
-    workflow,
-    'Prepare bounded review context'
-  )
-  const directory = fs.mkdtempSync(
-    path.join(os.tmpdir(), 'ocr-context-output-')
-  )
-  const markerPath = path.join(directory, 'shell-executed-marker')
-  const title = 'Synthetic context with "quotes", EOF and $(exit 1)'
-  const body = [
-    'Literal body with "double" and \'single\' quotes.',
-    'Backtick `touch ' + markerPath + '` and $(touch ' + markerPath + ')',
-    '; touch ' + markerPath,
-    '$(exit 1)',
-    'A trailing backslash \\ and $NOT_A_VARIABLE and * glob.',
-    `<!-- ${'x'.repeat(9_000)} -->`,
-    'Visible boundaries.',
-    '![gallery](https://example.test/image_(1).png)',
-    '\u202e',
-    '🙂'.repeat(8_001),
-  ].join('\n')
-
-  try {
-    assert.match(script, /randomUUID\(\)/)
-    for (const [index, caseBody] of [undefined, body].entries()) {
-      const outputPath = path.join(directory, `github-output-${index}`)
-      const env = {
-        PATH: process.env.PATH,
-        PR_TITLE: title,
-        GITHUB_OUTPUT: outputPath,
-      }
-      if (caseBody !== undefined) env.PR_BODY = caseBody
-      const result = spawnSync('bash', ['-e', '-c', script], {
-        cwd: path.join(__dirname, '../..'),
-        env,
-        encoding: 'utf8',
-      })
-      assert.equal(result.status, 0, result.stderr)
-      const lines = fs.readFileSync(outputPath, 'utf8').split('\n')
-      const header = /^background<<(.+)$/.exec(lines[0])
-      assert.ok(header, 'background must use multiline output framing')
-      const endIndex = lines.indexOf(header[1], 1)
-      assert.equal(endIndex, lines.length - 2, 'exactly one complete output')
-      assert.equal(lines.at(-1), '')
-      const background = lines.slice(1, endIndex).join('\n')
-      assert.ok(background.includes('\n'), 'exercise a multiline value')
-      assert.equal(background, buildReviewBackground(title, caseBody))
-      assert.equal(
-        fs.existsSync(markerPath),
-        false,
-        'the workflow must not execute PR metadata'
-      )
-    }
-  } finally {
-    fs.rmSync(directory, { recursive: true, force: true })
-  }
-})
-
 test('uses the OCR runtime config path for both preflight and review', () => {
   const workflow = fs.readFileSync(
     path.join(__dirname, '../workflows/check-ocr-final-review.yml'),

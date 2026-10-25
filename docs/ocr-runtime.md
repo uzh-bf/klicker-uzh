@@ -12,10 +12,14 @@ The action owns the repeated draft execution and publication steps. The
 The operator procedure remains `rs-ocr`; the model-facing procedure remains
 `.agents/skills/ocr-reviewer/SKILL.md`.
 
-This source introduces the action without migrating an active caller. Existing
-draft workflows and individual/stack final controllers retain their behavior.
-Native GitLab still needs a qualified trusted controller and publisher for its
-selected instance; the Node runtime alone does not establish that support.
+Klicker's draft workflow selects the published action at
+`0032c990d40985ce120179ded2c9d4b6e6a1d940`. It retains one repository-owned
+job with the existing admission and execution policy; repeated draft steps live
+in that pinned release. Individual/stack final controllers retain their existing
+execution and admission. Other callers migrate independently after donor
+qualification. Native GitLab still needs a qualified trusted controller and
+publisher for its selected instance; the Node runtime alone does not establish
+that support.
 
 ## Release identity
 
@@ -106,7 +110,12 @@ context configuration, then removes obsolete controller copies only after shared
 behavioral contracts replace them.
 
 For an offline check, parse YAML with the repository's installed parser and pass
-the resulting JSON to `check-caller`. Set `OCR_ACTION_REF` to the complete pinned
+the resulting JSON to `check-caller`. The donor's central contract test extracts
+the declared runtime assets from that exact Git revision and calls its actual
+checker against the frozen caller policy. Its CI checkout therefore retains full
+history; a missing release object is an error, not a skipped check. The existing
+config and portable skill already match this first donor release.
+Set `OCR_ACTION_REF` to the complete pinned
 source revision, `OCR_ACTION_REPOSITORY` to its owner/repository, `GITHUB_WORKSPACE`
 to the trusted caller checkout and `RUNNER_TEMP` to the task's temporary directory.
 When activation is present, set `OCR_CALLER_ACTIVATION` to that exact additional

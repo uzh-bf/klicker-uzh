@@ -23,6 +23,62 @@ const REVISION = 'a'.repeat(40)
 const digest = (bytes) =>
   crypto.createHash('sha256').update(bytes).digest('hex')
 
+function publishedRuntime(t) {
+  const workflow = YAML.parse(
+    fs.readFileSync(
+      path.join(ROOT, '.github/workflows/check-ocr-review.yml'),
+      'utf8'
+    )
+  )
+  const reference = workflow.jobs['ocr-review'].steps[0].uses
+  const match =
+    /^(uzh-bf\/klicker-uzh)\/\.github\/actions\/ocr-review@([a-f0-9]{40})$/.exec(
+      reference
+    )
+  assert.ok(
+    match,
+    'the donor must select a full revision of its published action'
+  )
+  const [, repository, revision] = match
+  const manifest = JSON.parse(
+    execFileSync('git', ['show', `${revision}:${MANIFEST}`], {
+      cwd: ROOT,
+      encoding: 'utf8',
+    })
+  )
+  const root = fs.mkdtempSync(path.join(os.tmpdir(), 'ocr-published-runtime-'))
+  t.after(() => fs.rmSync(root, { recursive: true, force: true }))
+  const archive = execFileSync(
+    'git',
+    ['archive', revision, '--', MANIFEST, ...Object.keys(manifest.assets)],
+    { cwd: ROOT, maxBuffer: 16 * 1024 * 1024 }
+  )
+  execFileSync('tar', ['-xf', '-', '-C', root], { input: archive })
+  const controller = require(
+    path.join(root, '.github/scripts/ocr-controller.cjs')
+  )
+  controller.verifyRelease(root)
+  return { root, controller, workflow, repository, revision }
+}
+
+test('the donor caller passes the actual published release contract and frozen policy checks', (t) => {
+  const release = publishedRuntime(t)
+  const policy = execFileSync('git', ['rev-parse', 'HEAD'], {
+    cwd: ROOT,
+    encoding: 'utf8',
+  }).trim()
+  assert.deepEqual(
+    release.controller.checkCaller(release.workflow, {
+      root: release.root,
+      repo: ROOT,
+      policy,
+      revision: release.revision,
+      runtimeRepository: release.repository,
+    }),
+    { profile: 'draft-v1', revision: release.revision }
+  )
+})
+
 function fixture(t) {
   const temp = fs.mkdtempSync(path.join(os.tmpdir(), 'ocr-shared-contract-'))
   t.after(() => fs.rmSync(temp, { recursive: true, force: true }))
@@ -247,6 +303,49 @@ test('preparation freezes caller objects and release identity; fetch credentials
   )
 })
 
+test('published preparation preserves bounded multiline metadata as JSON data', (t) => {
+  const release = publishedRuntime(t)
+  const f = fixture(t)
+  const markerPath = path.join(f.temp, 'shell-executed-marker')
+  const title = 'Synthetic context with "quotes", EOF and $(exit 1)'
+  const body = [
+    'Literal body with "double" and \'single\' quotes.',
+    'Backtick `touch ' + markerPath + '` and $(touch ' + markerPath + ')',
+    '; touch ' + markerPath,
+    '$(exit 1)',
+    'A trailing backslash \\ and $NOT_A_VARIABLE and * glob.',
+    `<!-- ${'x'.repeat(9_000)} -->`,
+    'Visible boundaries.',
+    '![gallery](https://example.test/image_(1).png)',
+    '\u202e',
+    '🙂'.repeat(8_001),
+  ].join('\n')
+
+  const { buildReviewBackground } = require(
+    path.join(release.root, '.github/scripts/ocr-review-shared.cjs')
+  )
+  for (const caseBody of [undefined, body]) {
+    const event = {
+      ...f.options.event,
+      pull_request: { ...f.options.event.pull_request, title, body: caseBody },
+    }
+    const context = release.controller.prepareReview({
+      ...f.options,
+      event,
+      root: release.root,
+      revision: release.revision,
+      runtimeRepository: release.repository,
+    })
+    const persisted = JSON.parse(
+      fs.readFileSync(path.join(f.temp, 'ocr-action-context.json'), 'utf8')
+    )
+    assert.equal(context.background, buildReviewBackground(title, caseBody))
+    assert.equal(persisted.background, context.background)
+    assert.ok(persisted.background.includes('\n'))
+    assert.equal(fs.existsSync(markerPath), false)
+  }
+})
+
 test('invalid event and mismatched policy skill fail before source fetch or provider execution', (t) => {
   const f = fixture(t)
   for (const patch of [
@@ -397,8 +496,14 @@ test('publication rejects superseded heads and malformed results before loading 
 test('valid partial findings reach only the verified publisher and preserve its publication policy', {
   skip: !process.env.OCR_TEST_PUBLISHER,
 }, async (t) => {
+  const release = publishedRuntime(t)
   const f = fixture(t)
-  prepareReview(f.options)
+  release.controller.prepareReview({
+    ...f.options,
+    root: release.root,
+    revision: release.revision,
+    runtimeRepository: release.repository,
+  })
   fs.writeFileSync(
     path.join(f.temp, 'draft-ai-review-result.json'),
     JSON.stringify(result(f.head))
@@ -412,6 +517,7 @@ test('valid partial findings reach only the verified publisher and preserve its 
   let published
   const options = {
     ...f,
+    root: release.root,
     loadPublisher: (value) => {
       assert.equal(value, file)
       return {
@@ -434,7 +540,7 @@ test('valid partial findings reach only the verified publisher and preserve its 
     repo: { owner: 'synthetic', repo: 'caller' },
     payload: { pull_request: { number: 1 } },
   }
-  await publishReview({ github, context, core: {} }, options)
+  await release.controller.publishReview({ github, context, core: {} }, options)
   const sent = JSON.parse(fs.readFileSync(published.resultPath))
   assert.equal(sent.status, 'partial')
   assert.equal(sent.warnings.at(-1).type, 'review_incomplete')
@@ -444,7 +550,7 @@ test('valid partial findings reach only the verified publisher and preserve its 
   assert.equal(published.resolveOutdated, 'false')
   fs.writeFileSync(file, 'UNVERIFIED_PUBLISHER')
   await assert.rejects(
-    publishReview({ github, context, core: {} }, options),
+    release.controller.publishReview({ github, context, core: {} }, options),
     /invalid_publisher/
   )
 })

@@ -440,8 +440,10 @@ Shard durations differ by architecture, so `playwright/timings.json` names the a
   policy digest includes their source. Final admission and its individual/stack
   execution contracts stay in the existing GitHub controller.
   The [shared runtime](ocr-runtime.md) packages these contracts as a pinned
-  composite action and release manifest. Publishing that source does not migrate
-  the current caller; consumer updates follow verified source qualification.
+  composite action and release manifest. Klicker's draft caller selects release
+  `0032c990d40985ce120179ded2c9d4b6e6a1d940`; CI checks the caller against that
+  published controller and verifies its trusted configuration and portable skill.
+  Actual remote-action execution remains a separate ordinary post-merge receipt.
 - **Public library documentation**: `lookup_library_docs` uses Context7's
   [Search API](https://context7.com/docs/search-api) through the same trusted
   broker. `CONTEXT7_API_KEY` stays in the parent; OCR receives only its existing
