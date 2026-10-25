@@ -825,3 +825,44 @@ passed. Later documentation-only receipt updates reuse the source review and
 synthetic evidence; the PR description records their current CI separately.
 The draft caller's immutable pin remains unchanged. Live acceptance of the new
 draft diagnostics requires a later pin update and a genuine ordinary review.
+
+## Advisor completion diagnostics
+
+The approved follow-up investigates advisor completions that reach their output
+limit. Source inspection establishes that the named `review_advice` tool choice
+is forwarded. Existing evidence cannot distinguish reasoning, answer content
+and tool arguments, so this package adds measurements before proposing a change
+to the completion contract. It makes no claim to repair provider behavior.
+
+Execution mode is standard. Main owns one implementation slice in the existing
+adapter, adapter tests, runtime manifest and runtime guide. The package starts
+from `v3` revision `256e461610e5055251863239d770ad0089e69713` on
+`rs/ocr-advisor-completion`. The read-only planner approved this contract.
+Source publication through an ordinary push and draft PR is authorized;
+activation, caller-pin adoption, settings, paid replays and merge are separate.
+
+Add numeric `reasoning_bytes`, `content_bytes`, `tool_calls` and
+`tool_arguments_bytes` to parsed response journal events. Reuse the adapter's
+message normalization inside a diagnostic-only failure boundary. Unsupported
+message shapes produce null shape counters. Count UTF-8 bytes, not characters
+or tokens. Record `reasoning_tokens` only when the provider reports a safe,
+nonnegative value no larger than a valid completion-token count; otherwise
+retain null. Emit these fields before ordinary response validation in both
+adapter entry points. Retain no response content or new free-form labels.
+
+Acceptance uses synthetic responses to exercise forced advisor tool selection,
+maximum reasoning and the existing output ceiling across the real adapter
+boundary. Cover length finishes, partial tool arguments, Unicode bytes,
+missing/invalid usage and unsupported shapes. Verify privacy with synthetic
+sentinels and preserve rejected-response usage and existing aggregate costs.
+Update the adapter's release hash and document unknown values and the
+source-versus-live boundary. Preserve models, reasoning, budgets, accounting,
+attempts, retry/resume, concurrency, deadlines and existing publication behavior.
+
+Run focused adapter, broker and runtime contracts with Node24 in an isolated
+test container; use existing formatting and staged data-hygiene checks. Run
+slice simplification and privacy/correctness review on the committed change,
+then one integrated final review. No application runtime or screenshot applies.
+Terminal: verified source, reviewed complete range, ordinary task-branch push
+and one accurately described draft PR against `v3`. Live evidence awaits
+separate caller adoption and the next ordinary review.
