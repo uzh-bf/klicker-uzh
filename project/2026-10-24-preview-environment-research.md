@@ -1,6 +1,6 @@
 # Full-stack development and preview environments
 
-Research captured 2026-10-24. Status: source-backed investigation; no platform deployment has been performed.
+Research captured 2026-10-24; pilot evidence updated 2026-10-25. Status: restricted synthetic pilot deployed; automatic preview adoption remains incomplete.
 Repository baseline: `origin/v3`, `6dad21cc7a6da46eb4931b1195e99f9c9d0d2216`.
 Related proposal: [Northflank development environment](2026-10-24-northflank-dev-environment-plan.md).
 
@@ -169,7 +169,7 @@ Qualified advice: a flat shared cookie parent is safe only in an exclusively res
 
 ## Progress
 
-Research was persisted first; authenticated inspection and the original Opus discussion are complete. The full-profile proposal below supersedes the earlier core-only pilot. Runtime, billing, private-forge, DNS and lifecycle adoption proofs remain prospective. No account/resource setting, payment method, repository permission, secret or infrastructure was changed by the agent.
+Research was persisted first; authenticated inspection and the original Opus discussion are complete. The full-profile proposal below supersedes the earlier core-only pilot. This is the historical research checkpoint. The approved pilot has since created isolated trial resources and qualified shared wildcard TLS, hosted application paths and manual pause/resume. See the execution plan for current evidence and unresolved automatic lifecycle adoption.
 
 ## Expanded full-profile trial
 

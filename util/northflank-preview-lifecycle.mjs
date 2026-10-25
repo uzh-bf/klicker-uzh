@@ -7,6 +7,34 @@ export const DEFAULT_PREVIEW_LIFECYCLE_LIMITS = Object.freeze({
   maxLifetimeMs: 48 * 60 * 60 * 1000,
 })
 
+const PREVIEW_GRAPH = JSON.parse(
+  readFileSync(
+    new URL('../deploy/northflank/klicker-preview.json', import.meta.url),
+    'utf8'
+  )
+)
+const PREVIEW_ARGUMENT_REFERENCE = /\$\{args\.([A-Za-z0-9_.]+)\}/g
+const PREVIEW_SKIP_KEYS = Object.keys(PREVIEW_GRAPH.arguments.skip)
+const PREVIEW_SKIP_BY_NORMALIZED_BINDING = new Map(
+  PREVIEW_SKIP_KEYS.map((key) => [key.replace(/[-_]/g, '').toLowerCase(), key])
+)
+const PREVIEW_SKIP_ALIASES = Object.freeze({ 'klicker-local-mcp': 'localMcp' })
+const PREVIEW_ORIGIN_APPS = Object.freeze({
+  APP_ORIGIN_API: 'api',
+  APP_ORIGIN_AUTH: 'auth',
+  APP_ORIGIN_MANAGE: 'manage',
+  APP_ORIGIN_PWA: 'pwa',
+  APP_ORIGIN_LTI: 'lti',
+  APP_ORIGIN_ASSESSMENT_API: 'api',
+  APP_ORIGIN_ASSESSMENT_PWA: 'pwa',
+  NEXTAUTH_URL: 'auth',
+})
+const PREVIEW_PRODUCTION_DOMAIN_SUFFIXES = [
+  'klicker.com',
+  'klicker.stg.df-app.ch',
+  'klicker.uzh.ch',
+]
+
 const GIT_SHA = /^(?:[0-9a-f]{40}|[0-9a-f]{64})$/
 const REPOSITORY = /^[A-Za-z0-9_.-]+\/[A-Za-z0-9_.-]+$/
 const NON_PROVIDER_RESOURCE_KINDS = new Set(['fixture-job', 'image'])
@@ -491,6 +519,372 @@ function normalizeDesiredPlan(input, event) {
     buildAttempts: builds.length,
     fixturesRequired: plan.postgresFixturesRequired,
   }
+}
+
+function previewSkipKey(node) {
+  const match = /^\$\{args\.skip\.([A-Za-z0-9]+)\}$/.exec(
+    node.skipNodeExecution
+  )
+  if (!match)
+    fail('INVALID_PREVIEW_GRAPH', 'Graph skip expressions must be exact')
+  return match[1]
+}
+
+function collectPreviewNodes(value, nodes = []) {
+  if (Array.isArray(value)) {
+    for (const entry of value) collectPreviewNodes(entry, nodes)
+  } else if (isRecord(value)) {
+    if (value.skipNodeExecution !== undefined) nodes.push(value)
+    for (const entry of Object.values(value)) collectPreviewNodes(entry, nodes)
+  }
+  return nodes
+}
+
+const PREVIEW_NODES = collectPreviewNodes(PREVIEW_GRAPH.spec)
+const PREVIEW_INSERT_ONLY_SKIPS = new Set(
+  PREVIEW_NODES.filter((node) => node.updateMode === 'create').map(
+    previewSkipKey
+  )
+)
+const PREVIEW_SUPPORT_SKIPS = new Set(
+  [
+    ...new Set(
+      PREVIEW_NODES.filter((node) => node.kind === 'SecretGroup').map(
+        previewSkipKey
+      )
+    ),
+  ].filter((key) =>
+    PREVIEW_NODES.every(
+      (node) => node.kind === 'SecretGroup' || previewSkipKey(node) !== key
+    )
+  )
+)
+
+function normalizePreviewPlan(input) {
+  const plan = assertRecord(input, 'Desired preview plan')
+  const candidateSha = assertSha(plan.sha?.candidate, 'Candidate revision')
+  const controllerSha = assertSha(plan.sha?.controller, 'Controller revision')
+  if (
+    plan.status !== 'planning-ready' ||
+    plan.reuseEligibility?.eligible !== true ||
+    plan.recreationRequired === true ||
+    plan.effects?.providerCredentialsRead !== false ||
+    plan.effects?.runtimeStarted !== false ||
+    plan.provenance?.candidate?.sha !== candidateSha ||
+    plan.provenance.candidate.status !== 'verified' ||
+    plan.provenance?.controller?.sha !== controllerSha ||
+    plan.provenance.controller.status !== 'verified'
+  ) {
+    fail('INVALID_PLAN', 'Preview plan is not verified and inactive')
+  }
+  const sourceSelection = assertRecord(
+    plan.sourceSelection,
+    'Planned source selection'
+  )
+  if (
+    sourceSelection.eligible !== true ||
+    !Array.isArray(plan.resources?.bindings)
+  ) {
+    fail('INVALID_PLAN', 'Plan source and resources are not eligible')
+  }
+  const bindings = new Map()
+  for (const entry of plan.resources.bindings) {
+    const resource = assertRecord(entry, 'Planned resource')
+    const name = assertString(resource.binding, 'Resource binding')
+    assertString(resource.kind, `Resource ${name} kind`)
+    if (bindings.has(name)) fail('INVALID_PLAN', `Duplicate resource ${name}`)
+    bindings.set(name, resource)
+  }
+  return { candidateSha, controllerSha, bindings, sourceSelection }
+}
+
+function normalizePreviewSource(input, plan) {
+  const source = assertRecord(input, 'Preview source binding')
+  const repository = assertRepository(source.repository, 'Source repository')
+  const ref = assertString(source.ref, 'Source ref')
+  const headSha = assertSha(source.headSha, 'Source head SHA')
+  const controllerSha = assertSha(source.controllerSha, 'Source controller SHA')
+  if (
+    (plan.sourceSelection.repository != null &&
+      plan.sourceSelection.repository !== repository) ||
+    plan.sourceSelection.sourceBranch !== ref
+  ) {
+    fail('SOURCE_PROVENANCE_MISMATCH', 'Source does not match the plan')
+  }
+  if (headSha !== plan.candidateSha || controllerSha !== plan.controllerSha) {
+    fail('SOURCE_REVISION_MISMATCH', 'Source revisions do not match the plan')
+  }
+  if (ref.startsWith('-') || ref.includes('..') || /[\s\p{Cc}]/u.test(ref)) {
+    fail('INVALID_INPUT', 'Source ref is unsafe')
+  }
+  return { repository, ref, headSha, controllerSha }
+}
+
+function normalizePreviewRuntime(input) {
+  const runtime = assertRecord(input, 'Preview runtime binding')
+  const envId = assertString(runtime.envId, 'Preview environment ID')
+  const projectId = assertString(runtime.projectId, 'Preview project ID')
+  const domain = assertString(runtime.domain, 'Preview domain').toLowerCase()
+  const allowedIp = assertString(runtime.allowedIp, 'Preview allowed IP')
+  const lifetimeSeconds = assertInteger(
+    runtime.lifetimeSeconds,
+    'Preview lifetime',
+    { min: 1, max: DEFAULT_PREVIEW_LIFECYCLE_LIMITS.maxLifetimeMs / 1000 }
+  )
+  if (envId.length > 32 || !/^[a-z0-9](?:[a-z0-9-]*[a-z0-9])?$/.test(envId)) {
+    fail('INVALID_INPUT', 'Preview environment ID must be 1-32 characters')
+  }
+  if (
+    !domain.includes('.') ||
+    PREVIEW_PRODUCTION_DOMAIN_SUFFIXES.some(
+      (suffix) => domain === suffix || domain.endsWith(`.${suffix}`)
+    )
+  ) {
+    fail('UNSAFE_PREVIEW_DOMAIN', 'Preview namespace is unsafe')
+  }
+  return { envId, projectId, domain, allowedIp, lifetimeSeconds }
+}
+
+function normalizePreviewAction(input, plan, admitted) {
+  const action = assertRecord(input, 'Preview lifecycle action')
+  if (
+    !['create', 'update', 'pause', 'resume'].includes(action.command) ||
+    typeof admitted !== 'boolean'
+  ) {
+    fail('INVALID_ACTION', 'Preview action is unsupported')
+  }
+  if (assertSha(action.revision, 'Action revision') !== plan.candidateSha) {
+    fail('SOURCE_REVISION_MISMATCH', 'Action does not match the plan')
+  }
+  if (
+    ['migrate', 'seedFixtures'].some(
+      (key) => action[key] !== undefined && typeof action[key] !== 'boolean'
+    )
+  ) {
+    fail('INVALID_ACTION', 'Job flags must be boolean')
+  }
+  return action
+}
+
+function selectedPreviewResources(plan, action) {
+  if (action.command === 'pause' || action.command === 'resume') {
+    return new Set()
+  }
+  return new Set(plan.bindings.keys())
+}
+
+function buildPreviewSkipArguments(plan, action, selected) {
+  const skip = Object.fromEntries(PREVIEW_SKIP_KEYS.map((key) => [key, 'true']))
+  const mutable = action.command === 'create' || action.command === 'update'
+  if (!mutable) return skip
+  const selectedKeys = new Set()
+  for (const name of selected) {
+    const key =
+      PREVIEW_SKIP_ALIASES[name] ??
+      PREVIEW_SKIP_BY_NORMALIZED_BINDING.get(
+        name.replace(/[-_]/g, '').toLowerCase()
+      )
+    const kind = plan.bindings.get(name)?.kind
+    if (!key) {
+      if (['app', 'data-service', 'process', 'service'].includes(kind)) {
+        fail('UNSUPPORTED_PLAN_BINDING', `No graph node exists for ${name}`)
+      }
+      continue
+    }
+    selectedKeys.add(key)
+    if (action.command === 'create' || !PREVIEW_INSERT_ONLY_SKIPS.has(key)) {
+      skip[key] = 'false'
+    }
+  }
+
+  const serviceIds = new Set(
+    PREVIEW_NODES.filter(
+      (node) =>
+        node.kind === 'DeploymentService' &&
+        selectedKeys.has(previewSkipKey(node))
+    ).map((node) => node.spec?.name)
+  )
+  for (const node of PREVIEW_NODES) {
+    const key = previewSkipKey(node)
+    const ids = node.spec?.restrictions?.nfObjects
+    if (
+      PREVIEW_SUPPORT_SKIPS.has(key) &&
+      Array.isArray(ids) &&
+      ids.some(({ id }) => serviceIds.has(id))
+    ) {
+      skip[key] = 'false'
+    }
+  }
+
+  const enableJob = (enabled, planned, ...keys) => {
+    if (!enabled) return
+    if (!planned.some((name) => plan.bindings.has(name))) {
+      fail('RESOURCE_SELECTION_MISMATCH', 'Job image is not planned')
+    }
+    for (const key of keys) skip[key] = 'false'
+  }
+  if (mutable) {
+    enableJob(
+      action.migrate === true,
+      ['migrator'],
+      'schemaMigration',
+      'runMigration'
+    )
+  }
+  if (action.seedFixtures === true) {
+    if (action.command !== 'create') {
+      fail('INVALID_ACTION', 'Fixtures are create-only')
+    }
+    enableJob(
+      true,
+      ['postgres-fixtures', 'fixtures'],
+      'fixtures',
+      'runFixtures'
+    )
+  }
+  return skip
+}
+
+function enabledPreviewArgumentPaths(skip) {
+  const paths = new Set()
+  function walk(value) {
+    if (typeof value === 'string') {
+      for (const match of value.matchAll(PREVIEW_ARGUMENT_REFERENCE)) {
+        paths.add(match[1])
+      }
+    } else if (Array.isArray(value)) {
+      for (const entry of value) walk(entry)
+    } else if (isRecord(value)) {
+      if (value.skipNodeExecution !== undefined) {
+        const key = previewSkipKey(value)
+        if (skip[key] !== 'true' && skip[key] !== 'false') {
+          fail('INVALID_PREVIEW_ARGUMENT', `skip.${key} must be true or false`)
+        }
+        if (skip[key] === 'true') return
+      }
+      for (const [key, entry] of Object.entries(value)) {
+        if (key !== 'skipNodeExecution') walk(entry)
+      }
+    }
+  }
+  walk(PREVIEW_GRAPH.spec)
+  return paths
+}
+
+function validatePreviewArguments(args, source, runtime) {
+  const placeholders = new Set([
+    'change-me',
+    'changeme',
+    'default',
+    'null',
+    'password',
+    'secret',
+    'undefined',
+  ])
+  for (const path of enabledPreviewArgumentPaths(args.skip)) {
+    let value = args
+    for (const segment of path.split('.')) {
+      if (!isRecord(value) || !Object.hasOwn(value, segment)) {
+        fail('MISSING_PREVIEW_ARGUMENT', `${path} is required`)
+      }
+      value = value[segment]
+    }
+    if (value === undefined || value === null || value === '') {
+      fail('MISSING_PREVIEW_ARGUMENT', `${path} is required`)
+    }
+    if (path.startsWith('secrets.')) {
+      const normalized =
+        typeof value === 'string' ? value.trim().toLowerCase() : ''
+      if (
+        !normalized ||
+        placeholders.has(normalized) ||
+        normalized.includes('${') ||
+        /^<[^>]+>$/.test(normalized)
+      ) {
+        fail('UNSAFE_PREVIEW_SECRET', `${path} is not a trusted value`)
+      }
+    }
+    if (/^images\.[^.]+\.branch$/.test(path) && value !== source.ref) {
+      fail('SOURCE_PROVENANCE_MISMATCH', `${path} does not match source ref`)
+    }
+    if (path.startsWith('runtimeEnvironment.')) {
+      const key = path.slice('runtimeEnvironment.'.length)
+      let valid = typeof value === 'string'
+      if (valid && key === 'COOKIE_DOMAIN') {
+        valid = value === runtime.domain || value === `.${runtime.domain}`
+      } else if (valid) {
+        const app = PREVIEW_ORIGIN_APPS[key]
+        try {
+          const origin = new URL(value)
+          valid =
+            app !== undefined &&
+            origin.protocol === 'https:' &&
+            origin.username === '' &&
+            origin.password === '' &&
+            !value.includes('?') &&
+            !value.includes('#') &&
+            origin.pathname === '/' &&
+            origin.hostname === `${runtime.envId}--${app}.${runtime.domain}`
+        } catch {
+          valid = false
+        }
+      }
+      if (!valid) {
+        fail(
+          'UNSAFE_PREVIEW_ORIGIN',
+          `${path} is outside the preview namespace`
+        )
+      }
+    }
+  }
+}
+
+/**
+ * Assembles graph arguments only. Addon bootstrap, job orchestration, mounted
+ * configuration and runtime qualification remain caller-owned stages.
+ */
+export function assemblePreviewArguments({
+  plan: planInput,
+  action: actionInput,
+  admitted = false,
+  runtime: runtimeInput,
+  source: sourceInput,
+  config: configInput,
+  images: imagesInput,
+  credentials: credentialsInput,
+} = {}) {
+  const plan = normalizePreviewPlan(planInput)
+  const action = normalizePreviewAction(actionInput, plan, admitted)
+  const runtime = normalizePreviewRuntime(runtimeInput)
+  const source = normalizePreviewSource(sourceInput, plan)
+  const skip = buildPreviewSkipArguments(
+    plan,
+    action,
+    selectedPreviewResources(plan, action)
+  )
+  const active = action.command === 'create' || action.command === 'update'
+  const config = active
+    ? assertRecord(configInput ?? {}, 'Preview configuration')
+    : {}
+  const credentials = active
+    ? assertRecord(credentialsInput ?? {}, 'Preview credentials')
+    : {}
+  const args = {
+    ...config,
+    startInstances: admitted && active ? 1 : 0,
+    projectId: runtime.projectId,
+    envId: runtime.envId,
+    domain: runtime.domain,
+    allowedIp: runtime.allowedIp,
+    lifetimeSeconds: runtime.lifetimeSeconds,
+    source,
+    skip,
+    images: active ? (imagesInput ?? {}) : {},
+    secrets: active ? credentials.secrets : {},
+    bindings: active ? credentials.bindings : {},
+  }
+  validatePreviewArguments(args, source, runtime)
+  return args
 }
 
 function liveEnvironmentCount(state) {
@@ -1234,7 +1628,7 @@ export function createSerializedPreviewLifecycle({
 function parseJsonArgument(value, label, readFile) {
   const raw = assertString(value, label)
   try {
-    if (/^[\s\[{]/.test(raw)) return JSON.parse(raw)
+    if (/^[\s[{]/.test(raw)) return JSON.parse(raw)
     return JSON.parse(readFile(raw, 'utf8'))
   } catch (error) {
     if (error instanceof PreviewLifecycleError) throw error

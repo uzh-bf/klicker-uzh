@@ -70,7 +70,10 @@
                   },
                   "tlsEnabled": true,
                   "externalAccessEnabled": false,
-                  "vpcAccessible": false
+                  "vpcAccessible": false,
+                  "customCredentials": {
+                    "dbName": "klicker_test"
+                  }
                 }
               },
               {
@@ -339,12 +342,17 @@
                   "name": "${args.envId}-litellm",
                   "stageId": "${args.envId}",
                   "billing": {
-                    "deploymentPlan": "nf-compute-20"
+                    "deploymentPlan": "nf-compute-200-4"
                   },
                   "deployment": {
                     "instances": "${args.startInstances}",
                     "external": {
                       "imagePath": "${args.images.litellm.image}"
+                    },
+                    "docker": {
+                      "configType": "customEntrypointCustomCommand",
+                      "customEntrypoint": "litellm",
+                      "customCommand": "--config=/app/config.yaml --port=4000"
                     }
                   },
                   "ports": [
@@ -366,6 +374,9 @@
                   },
                   "createOptions": {
                     "expiryTime": "${args.lifetimeSeconds}"
+                  },
+                  "runtimeFiles": {
+                    "/app/config.yaml": "${args.files.litellmConfig}"
                   }
                 }
               },
@@ -378,7 +389,7 @@
                   "name": "${args.envId}-oidc",
                   "stageId": "${args.envId}",
                   "billing": {
-                    "deploymentPlan": "nf-compute-20"
+                    "deploymentPlan": "nf-compute-100-2"
                   },
                   "deployment": {
                     "instances": "${args.startInstances}",
@@ -411,7 +422,8 @@
                     "PREVIEW_SOURCE_SHA": "${args.source.headSha}",
                     "PREVIEW_CONTROLLER_SHA": "${args.source.controllerSha}",
                     "NODE_ENV": "development",
-                    "PORT": "8080"
+                    "SERVER_PORT": "8080",
+                    "JSON_CONFIG": "${args.configuration.oidcJson}"
                   },
                   "createOptions": {
                     "expiryTime": "${args.lifetimeSeconds}"
@@ -487,6 +499,11 @@
                     "instances": "${args.startInstances}",
                     "external": {
                       "imagePath": "${args.images.azurite.image}"
+                    },
+                    "docker": {
+                      "configType": "customEntrypointCustomCommand",
+                      "customEntrypoint": "azurite-blob",
+                      "customCommand": "--blobHost 0.0.0.0 --blobPort 10000 --location /tmp/azurite"
                     }
                   },
                   "ports": [
@@ -581,7 +598,7 @@
                   "name": "${args.envId}-chat",
                   "stageId": "${args.envId}",
                   "billing": {
-                    "deploymentPlan": "nf-compute-20"
+                    "deploymentPlan": "nf-compute-50"
                   },
                   "deployment": {
                     "instances": "${args.startInstances}",
@@ -693,7 +710,7 @@
                   "name": "${args.envId}-manage",
                   "stageId": "${args.envId}",
                   "billing": {
-                    "deploymentPlan": "nf-compute-20"
+                    "deploymentPlan": "nf-compute-50"
                   },
                   "deployment": {
                     "instances": "${args.startInstances}",
@@ -746,7 +763,7 @@
                   "name": "${args.envId}-pwa",
                   "stageId": "${args.envId}",
                   "billing": {
-                    "deploymentPlan": "nf-compute-20"
+                    "deploymentPlan": "nf-compute-50"
                   },
                   "deployment": {
                     "instances": "${args.startInstances}",
@@ -800,7 +817,7 @@
                   "name": "${args.envId}-api",
                   "stageId": "${args.envId}",
                   "billing": {
-                    "deploymentPlan": "nf-compute-20"
+                    "deploymentPlan": "nf-compute-50"
                   },
                   "deployment": {
                     "instances": "${args.startInstances}",
@@ -1120,10 +1137,15 @@
                     "PORT": "1417",
                     "NEXT_PUBLIC_PREVIEW_ID": "${args.envId}",
                     "LOCAL_MCP_BIND_HOST": "0.0.0.0",
-                    "LOCAL_MCP_ALLOWED_HOSTS": "${args.bindings.localMcp.host}:1417"
+                    "LOCAL_MCP_ALLOWED_HOSTS": "${args.bindings.localMcp.host}:1417",
+                    "LOCAL_MCP_FIXTURE_FILE": "/fixture/mcp.json"
                   },
                   "createOptions": {
                     "expiryTime": "${args.lifetimeSeconds}"
+                  },
+                  "runtimeFiles": {
+                    "/fixture/mcp.json": "${args.files.localMcpFixture}",
+                    "/fixture/docs.json": "${args.files.localMcpDocuments}"
                   }
                 }
               },
@@ -1276,7 +1298,8 @@
                     "PREVIEW_SOURCE_REF": "${args.source.ref}",
                     "PREVIEW_SOURCE_SHA": "${args.source.headSha}",
                     "PREVIEW_CONTROLLER_SHA": "${args.source.controllerSha}",
-                    "NODE_ENV": "development"
+                    "NODE_ENV": "development",
+                    "ENV": "development"
                   },
                   "backoffLimit": 0,
                   "runOnSourceChange": "never",

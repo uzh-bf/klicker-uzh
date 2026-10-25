@@ -2,10 +2,11 @@ import assert from 'node:assert/strict'
 import test from 'node:test'
 
 import {
-  DEFAULT_PREVIEW_LIFECYCLE_LIMITS,
-  PreviewLifecycleError,
+  assemblePreviewArguments,
   createPreviewLifecycleState,
   createSerializedPreviewLifecycle,
+  DEFAULT_PREVIEW_LIFECYCLE_LIMITS,
+  PreviewLifecycleError,
   planPreviewReconciliation,
   runCli,
 } from './northflank-preview-lifecycle.mjs'
@@ -174,6 +175,374 @@ function expectCode(fn, code) {
     return true
   })
 }
+
+const CHAT_RESOURCES = [
+  'auth',
+  'chat',
+  'pwa',
+  'api',
+  'postgres',
+  'redis_cache',
+  'redis_exec',
+  'redis_assessment',
+  'hatchet',
+  'litellm',
+  'klicker-local-mcp',
+  'migrator',
+]
+
+function argumentPlan({
+  resources = CHAT_RESOURCES,
+  revision = REVISION_A,
+  fixturesRequired = false,
+} = {}) {
+  const data = new Set([
+    'postgres',
+    'redis_cache',
+    'redis_exec',
+    'redis_assessment',
+  ])
+  const images = new Set(['migrator', 'worker-general', 'worker-response'])
+  const services = new Set(['litellm', 'oidc', 'mailhog', 'azurite'])
+  return {
+    schemaVersion: 1,
+    status: 'planning-ready',
+    sha: { controller: REVISION_D, candidate: revision },
+    provenance: {
+      controller: { sha: REVISION_D, status: 'verified' },
+      candidate: { sha: revision, status: 'verified' },
+    },
+    sourceSelection: {
+      sourceBranch: 'feature/test',
+      repository: REPOSITORY,
+      eligible: true,
+    },
+    resources: {
+      bindings: resources.map((binding) => ({
+        binding,
+        kind: data.has(binding)
+          ? 'data-service'
+          : images.has(binding)
+            ? 'image'
+            : binding === 'postgres-fixtures'
+              ? 'fixture-job'
+              : binding === 'klicker-local-mcp'
+                ? 'process'
+                : services.has(binding)
+                  ? 'service'
+                  : 'app',
+      })),
+    },
+    postgresFixturesRequired: fixturesRequired,
+    recreationRequired: false,
+    reuseEligibility: { eligible: true },
+    effects: { providerCredentialsRead: false, runtimeStarted: false },
+  }
+}
+
+function argumentAction(
+  plan,
+  { command = 'create', migrate = true, seedFixtures = false } = {}
+) {
+  const resources = plan.resources.bindings.map(({ binding }) => binding)
+  return {
+    command,
+    revision: plan.sha.candidate,
+    migrate,
+    seedFixtures,
+    pauseResources: command === 'pause' ? resources : [],
+    resumeResources: command === 'resume' ? resources : [],
+  }
+}
+
+function previewEnvironment(envId, domain = 'preview.example.test') {
+  const origin = (app) => `https://${envId}--${app}.${domain}`
+  return {
+    COOKIE_DOMAIN: `.${domain}`,
+    APP_ORIGIN_API: origin('api'),
+    APP_ORIGIN_AUTH: origin('auth'),
+    APP_ORIGIN_MANAGE: origin('manage'),
+    APP_ORIGIN_PWA: origin('pwa'),
+    APP_ORIGIN_LTI: origin('lti'),
+    APP_ORIGIN_ASSESSMENT_API: origin('api'),
+    APP_ORIGIN_ASSESSMENT_PWA: origin('pwa'),
+    NEXTAUTH_URL: origin('auth'),
+  }
+}
+
+function argumentInputs(
+  plan,
+  { envId = 'pr-42', command = 'create', admitted = true } = {}
+) {
+  const image = (binding) => ({
+    serviceId: `service-${binding}`,
+    buildId: `build-${binding}`,
+    branch: 'feature/test',
+  })
+  const images = Object.fromEntries(
+    [
+      'api',
+      'auth',
+      'chat',
+      'control',
+      'fixtures',
+      'localMcp',
+      'lti',
+      'manage',
+      'mcpLecturer',
+      'mcpStudent',
+      'migrator',
+      'olatApi',
+      'pwa',
+      'responseApi',
+      'workerGeneral',
+      'workerResponse',
+    ].map((binding) => [binding, image(binding)])
+  )
+  for (const binding of ['azurite', 'litellm', 'mailhog', 'oidc']) {
+    images[binding] = { image: `registry.example/${binding}@sha256:111` }
+  }
+  const secrets = Object.fromEntries(
+    [
+      'appDatabaseUrl',
+      'appSecret',
+      'fixtureDatabaseUrl',
+      'hatchetClientToken',
+      'hatchetDatabaseUrl',
+      'localMcpGeneration',
+      'localMcpPrivateKey',
+      'localMcpPublicKey',
+      'localMcpToken',
+      'migrationDatabaseUrl',
+      'nextauthSecret',
+      'redisAssessmentPass',
+      'redisCachePass',
+      'redisExecPass',
+    ].map((key) => [key, `synthetic-${key}`])
+  )
+  return {
+    plan,
+    action: argumentAction(plan, {
+      command,
+      seedFixtures: command === 'create' && plan.postgresFixturesRequired,
+    }),
+    admitted,
+    runtime: {
+      envId,
+      projectId: 'preview-project',
+      domain: 'preview.example.test',
+      allowedIp: '203.0.113.10',
+      lifetimeSeconds: 3600,
+    },
+    source: {
+      repository: REPOSITORY,
+      ref: 'feature/test',
+      headSha: plan.sha.candidate,
+      controllerSha: plan.sha.controller,
+    },
+    config: {
+      runtimeEnvironment: previewEnvironment(envId),
+      jobs: {
+        schemaMigration: { entrypoint: 'node', command: 'migrate.js' },
+        fixtures: { entrypoint: 'node', command: 'fixtures.js' },
+      },
+      files: {
+        litellmConfig: {
+          data: 'synthetic-litellm-config',
+          encoding: 'utf-8',
+        },
+        localMcpFixture: {
+          data: 'synthetic-local-mcp-fixture',
+          encoding: 'utf-8',
+        },
+        localMcpDocuments: {
+          data: 'synthetic-local-mcp-documents',
+          encoding: 'utf-8',
+        },
+      },
+      configuration: {
+        oidcJson: 'synthetic-oidc-json',
+      },
+    },
+    images,
+    credentials: {
+      secrets,
+      bindings: {
+        localMcp: {
+          host: `${envId}-local-mcp`,
+          issuer: 'synthetic-issuer',
+          audience: 'synthetic-audience',
+        },
+        redisAssessment: { host: `${envId}-assessment`, port: 6379 },
+        redisCache: { host: `${envId}-cache`, port: 6379 },
+        redisExec: { host: `${envId}-exec`, port: 6379 },
+      },
+    },
+  }
+}
+
+test('assembler fails before provider use when a referenced image field is absent', () => {
+  const input = argumentInputs(argumentPlan())
+  input.images.chat.buildId = undefined
+  assert.throws(
+    () => assemblePreviewArguments(input),
+    (error) => {
+      assert.equal(error.code, 'MISSING_PREVIEW_ARGUMENT')
+      assert.match(error.message, /images\.chat\.buildId/)
+      assert.doesNotMatch(
+        `${error.message}${error.details ?? ''}`,
+        /synthetic-/
+      )
+      return true
+    }
+  )
+})
+
+test('Chat assembly selects its closure and excludes management and workers', () => {
+  const args = assemblePreviewArguments(argumentInputs(argumentPlan()))
+  for (const selected of [
+    'api',
+    'auth',
+    'chat',
+    'localMcp',
+    'pwa',
+    'litellm',
+  ]) {
+    assert.equal(args.skip[selected], 'false', selected)
+  }
+  for (const excluded of [
+    'manage',
+    'responseApi',
+    'workerGeneral',
+    'workerResponse',
+  ]) {
+    assert.equal(args.skip[excluded], 'true', excluded)
+  }
+  const paused = assemblePreviewArguments(
+    argumentInputs(argumentPlan(), { command: 'pause' })
+  )
+  assert.equal(paused.startInstances, 0)
+  for (const key of [
+    'schemaMigration',
+    'fixtures',
+    'runMigration',
+    'runFixtures',
+  ]) {
+    assert.equal(paused.skip[key], 'true', key)
+  }
+})
+
+test('full assembly carries workers and keeps lifecycle graphs idle', () => {
+  const plan = argumentPlan({
+    resources: [
+      ...CHAT_RESOURCES,
+      'control',
+      'manage',
+      'response-api',
+      'worker-general',
+      'worker-response',
+      'lti',
+      'olat-api',
+      'mcp-lecturer',
+      'mcp-student',
+      'oidc',
+      'mailhog',
+      'azurite',
+      'postgres-fixtures',
+    ],
+    fixturesRequired: true,
+  })
+  const created = assemblePreviewArguments(argumentInputs(plan))
+  const updated = assemblePreviewArguments(
+    argumentInputs(plan, { command: 'update' })
+  )
+  assert.equal(created.skip.postgres, 'false')
+  assert.equal(created.skip.fixtures, 'false')
+  assert.equal(created.skip.runFixtures, 'false')
+  assert.deepEqual(created.images.workerGeneral, {
+    serviceId: 'service-workerGeneral',
+    buildId: 'build-workerGeneral',
+    branch: 'feature/test',
+  })
+  assert.equal(
+    created.images.oidc.image.startsWith('registry.example/oidc@'),
+    true
+  )
+  assert.equal(updated.startInstances, 1)
+  assert.equal(updated.skip.postgres, 'true')
+  assert.equal(updated.skip.hatchet, 'true')
+  assert.equal(updated.skip.fixtures, 'true')
+
+  for (const command of ['pause', 'resume']) {
+    const idle = assemblePreviewArguments(argumentInputs(plan, { command }))
+    assert.equal(idle.startInstances, 0)
+    assert.equal(
+      Object.values(idle.skip).every((value) => value === 'true'),
+      true
+    )
+    assert.equal(idle.runtimeEnvironment, undefined)
+    assert.equal(idle.jobs, undefined)
+    assert.deepEqual(idle.images, {})
+    assert.deepEqual(idle.secrets, {})
+    assert.deepEqual(idle.bindings, {})
+  }
+})
+
+test('assembler constrains preview environment namespaces', () => {
+  const plan = argumentPlan()
+  const maxEnvId = 'a'.repeat(32)
+  const max = assemblePreviewArguments(
+    argumentInputs(plan, { envId: maxEnvId })
+  )
+  assert.equal(max.envId, maxEnvId)
+  expectCode(
+    () =>
+      assemblePreviewArguments(argumentInputs(plan, { envId: 'a'.repeat(33) })),
+    'INVALID_INPUT'
+  )
+
+  const first = assemblePreviewArguments(
+    argumentInputs(plan, { envId: 'pr-42' })
+  )
+  const second = assemblePreviewArguments(
+    argumentInputs(plan, { envId: 'pr-43' })
+  )
+  assert.notEqual(
+    first.runtimeEnvironment.APP_ORIGIN_PWA,
+    second.runtimeEnvironment.APP_ORIGIN_PWA
+  )
+  assert.equal(
+    first.runtimeEnvironment.APP_ORIGIN_PWA,
+    'https://pr-42--pwa.preview.example.test'
+  )
+
+  const dotless = argumentInputs(plan)
+  dotless.config.runtimeEnvironment.COOKIE_DOMAIN = 'preview.example.test'
+  assert.equal(
+    assemblePreviewArguments(dotless).runtimeEnvironment.COOKIE_DOMAIN,
+    'preview.example.test'
+  )
+  const badCookie = argumentInputs(plan)
+  badCookie.config.runtimeEnvironment.COOKIE_DOMAIN = 'example.test'
+  expectCode(() => assemblePreviewArguments(badCookie), 'UNSAFE_PREVIEW_ORIGIN')
+
+  for (const origin of [
+    'http://pr-42--pwa.preview.example.test',
+    'https://user@pr-42--pwa.preview.example.test',
+    'https://user:pass@pr-42--pwa.preview.example.test',
+    'https://pr-42--pwa.preview.example.test/?query=1',
+    'https://pr-42--pwa.preview.example.test/#fragment',
+    'https://pr-42--pwa.preview.example.test/path',
+    'https://pr-42--evil.example/path/.preview.example.test',
+    'https://pr-42--evil.preview.example.test',
+    'https://pr-43--pwa.preview.example.test',
+    'https://pr-42--manage.preview.example.test',
+  ]) {
+    const input = argumentInputs(plan)
+    input.config.runtimeEnvironment.APP_ORIGIN_PWA = origin
+    expectCode(() => assemblePreviewArguments(input), 'UNSAFE_PREVIEW_ORIGIN')
+  }
+})
 
 test('serializes every environment through one admission queue and driver seam', async () => {
   let release
