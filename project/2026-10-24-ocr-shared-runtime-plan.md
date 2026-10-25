@@ -879,10 +879,23 @@ behavior. Synthetic sentinels verify that journals contain no response content.
 
 The simplification review found no justified reduction: one helper serves two
 callers and reuses the existing normalizer. Privacy/correctness slice review and
-integrated final review remain pending. This cohesive package has 246 substantive
+integrated final review passed without findings. This cohesive package has 248 substantive
 changed lines excluding project-artifact documentation; no active draft exists
 to absorb it. The diagnostic gap follows the prior evidence package, so the
 runtime guide records the observation contract alongside its existing journal
 contract. Live failure hypotheses remain in private investigation notes until
 new evidence can distinguish them. No provider repair or live acceptance is
 claimed, and the caller's immutable runtime pin is unchanged.
+
+[Draft PR #6715](https://github.com/uzh-bf/klicker-uzh/pull/6715) contains this
+package. Its initial codebase check exposed an unchanged artifact guard that
+still expected the list from before the event sidecars were added. The failure
+was reproduced locally; the guard now requires both existing journal sidecars.
+This corrects the upload-contract expectation without changing runtime source,
+caller selection or workflow behavior. The new test-only correction receives
+focused verification and a final review addendum; prior runtime checks and
+source reviews remain applicable to the identical runtime files. Ordinary
+review suggestions about shared mutable state, missing usage and array content
+were checked against the per-call object, optional chaining and normalized
+message contract and require no runtime change. Current-head hosted CI remains
+separate from the completed local source proof.
