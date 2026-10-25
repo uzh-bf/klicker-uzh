@@ -74,6 +74,8 @@ test('the donor caller passes the actual published release contract and frozen p
       policy,
       revision: release.revision,
       runtimeRepository: release.repository,
+      activation:
+        "github.event.action != 'synchronize' || github.event.pull_request.head.repo.full_name != github.repository || !startsWith(github.event.pull_request.head.ref, 'sync/')",
     }),
     { profile: 'draft-v1', revision: release.revision }
   )

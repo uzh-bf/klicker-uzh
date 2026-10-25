@@ -24,8 +24,11 @@ jobs:
       OCR_NO_UPDATE: '1'
       OCR_ADAPTER_PROVIDER: mistral-flash
     if: >-
-      github.event.pull_request.user.login != 'dependabot[bot]' &&
-      github.event.pull_request.draft == true
+      (github.event.pull_request.user.login != 'dependabot[bot]' &&
+      github.event.pull_request.draft == true) &&
+      (github.event.action != 'synchronize' ||
+      github.event.pull_request.head.repo.full_name != github.repository ||
+      !startsWith(github.event.pull_request.head.ref, 'sync/'))
     runs-on: ubuntu-latest
     timeout-minutes: 45
     steps:
