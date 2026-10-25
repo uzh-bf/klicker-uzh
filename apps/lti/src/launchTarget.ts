@@ -72,7 +72,13 @@ export function validateLaunchTarget(
     }
   }
 
-  if (target.protocol !== 'http:' && target.protocol !== 'https:') {
+  // launch targets receive a bearer token in the URL, so plain HTTP is only
+  // accepted for local development
+  const allowsHttp = process.env.LTI_DEV_MODE === 'true'
+  if (
+    target.protocol !== 'https:' &&
+    !(allowsHttp && target.protocol === 'http:')
+  ) {
     return {
       ok: false,
       source,
