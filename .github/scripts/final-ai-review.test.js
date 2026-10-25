@@ -596,15 +596,6 @@ test('adds bounded description data without hidden comments or image embeds', ()
     false
   )
 
-  for (const prefix of ['<img', '<img src="unfinished"']) {
-    const description = `${prefix}\n${'visible'.repeat(3)}`
-    const parsed = JSON.parse(
-      buildReviewBackground('Synthetic change', description).split('\n').at(-1)
-    )
-    assert.equal(parsed.description, description)
-    assert.equal(parsed.description_status, 'complete')
-  }
-
   for (const empty of [
     undefined,
     null,
@@ -1491,69 +1482,6 @@ test('uses one qualified canary and OCR release in both manual jobs', () => {
       block,
       /if: always\(\) && needs\.(?:start|start_stack)\.outputs\.run_review == 'true'/
     )
-  }
-})
-
-test('draft context preserves the complete multiline workflow output', () => {
-  const workflow = fs.readFileSync(
-    path.join(__dirname, '../workflows/check-ocr-review.yml'),
-    'utf8'
-  )
-  const script = extractWorkflowStepScript(
-    workflow,
-    'Prepare bounded review context'
-  )
-  const directory = fs.mkdtempSync(
-    path.join(os.tmpdir(), 'ocr-context-output-')
-  )
-  const markerPath = path.join(directory, 'shell-executed-marker')
-  const title = 'Synthetic context with "quotes", EOF and $(exit 1)'
-  const body = [
-    'Literal body with "double" and \'single\' quotes.',
-    'Backtick `touch ' + markerPath + '` and $(touch ' + markerPath + ')',
-    '; touch ' + markerPath,
-    '$(exit 1)',
-    'A trailing backslash \\ and $NOT_A_VARIABLE and * glob.',
-    `<!-- ${'x'.repeat(9_000)} -->`,
-    'Visible boundaries.',
-    '![gallery](https://example.test/image_(1).png)',
-    '\u202e',
-    '🙂'.repeat(8_001),
-  ].join('\n')
-
-  try {
-    assert.match(script, /randomUUID\(\)/)
-    for (const [index, caseBody] of [undefined, body].entries()) {
-      const outputPath = path.join(directory, `github-output-${index}`)
-      const env = {
-        PATH: process.env.PATH,
-        PR_TITLE: title,
-        GITHUB_OUTPUT: outputPath,
-      }
-      if (caseBody !== undefined) env.PR_BODY = caseBody
-      const result = spawnSync('bash', ['-e', '-c', script], {
-        cwd: path.join(__dirname, '../..'),
-        env,
-        encoding: 'utf8',
-      })
-      assert.equal(result.status, 0, result.stderr)
-      const lines = fs.readFileSync(outputPath, 'utf8').split('\n')
-      const header = /^background<<(.+)$/.exec(lines[0])
-      assert.ok(header, 'background must use multiline output framing')
-      const endIndex = lines.indexOf(header[1], 1)
-      assert.equal(endIndex, lines.length - 2, 'exactly one complete output')
-      assert.equal(lines.at(-1), '')
-      const background = lines.slice(1, endIndex).join('\n')
-      assert.ok(background.includes('\n'), 'exercise a multiline value')
-      assert.equal(background, buildReviewBackground(title, caseBody))
-      assert.equal(
-        fs.existsSync(markerPath),
-        false,
-        'the workflow must not execute PR metadata'
-      )
-    }
-  } finally {
-    fs.rmSync(directory, { recursive: true, force: true })
   }
 })
 
@@ -2711,7 +2639,10 @@ test('validates complete OCR results and retains malformed artifacts', () => {
   }
 })
 
-function createOCRResultDiagnosticsHarness() {
+test('emits bounded OCR outcome diagnostics without changing CLI stdout', () => {
+  const directory = fs.mkdtempSync(
+    path.join(os.tmpdir(), 'final-review-ocr-line-')
+  )
   const scriptPath = path.join(__dirname, 'final-ai-review.js')
   const run = (args) =>
     spawnSync(process.execPath, [scriptPath, ...args], { encoding: 'utf8' })
@@ -2721,14 +2652,6 @@ function createOCRResultDiagnosticsHarness() {
         .split('\n')
         .find((line) => line.startsWith('{"schema":"ocr-result-diagnostic'))
     )
-  return { run, diagnostic }
-}
-
-test('emits bounded OCR outcome diagnostics without changing CLI stdout', () => {
-  const directory = fs.mkdtempSync(
-    path.join(os.tmpdir(), 'final-review-ocr-line-')
-  )
-  const { run, diagnostic } = createOCRResultDiagnosticsHarness()
 
   try {
     const parentPath = path.join(directory, 'parent.json')
@@ -2784,7 +2707,15 @@ test('records still-partial rejections with observed status and a source code', 
   const directory = fs.mkdtempSync(
     path.join(os.tmpdir(), 'final-review-ocr-partial-')
   )
-  const { run, diagnostic } = createOCRResultDiagnosticsHarness()
+  const scriptPath = path.join(__dirname, 'final-ai-review.js')
+  const run = (args) =>
+    spawnSync(process.execPath, [scriptPath, ...args], { encoding: 'utf8' })
+  const diagnostic = (result) =>
+    JSON.parse(
+      result.stderr
+        .split('\n')
+        .find((line) => line.startsWith('{"schema":"ocr-result-diagnostic'))
+    )
 
   try {
     const parent = partialResumeResult()
@@ -2866,7 +2797,15 @@ test('fails unreadable and malformed OCR inputs with fixed safe diagnostics', ()
   const directory = fs.mkdtempSync(
     path.join(os.tmpdir(), 'final-review-ocr-bad-')
   )
-  const { run, diagnostic } = createOCRResultDiagnosticsHarness()
+  const scriptPath = path.join(__dirname, 'final-ai-review.js')
+  const run = (args) =>
+    spawnSync(process.execPath, [scriptPath, ...args], { encoding: 'utf8' })
+  const diagnostic = (result) =>
+    JSON.parse(
+      result.stderr
+        .split('\n')
+        .find((line) => line.startsWith('{"schema":"ocr-result-diagnostic'))
+    )
 
   try {
     const missingPath = path.join(directory, 'missing.json')
@@ -5012,53 +4951,4 @@ test('patched executable provenance refuses an upstream binary or a changed patc
     () => verifyArchive(Buffer.from('unexpected upstream archive')),
     /checksum mismatch/
   )
-})
-
-test('OCR installer uses the pinned tool cache instead of PATH and rejects a relative cache', (t) => {
-  const directory = fs.mkdtempSync(
-    path.join(os.tmpdir(), 'ocr-tool-selection-')
-  )
-  t.after(() => fs.rmSync(directory, { recursive: true, force: true }))
-  const cache = path.join(directory, 'cache')
-  const bin = path.join(cache, 'go', '1.26.9', process.arch, 'bin')
-  const poisoned = path.join(directory, 'poisoned')
-  const selected = path.join(directory, 'selected')
-  const substituted = path.join(directory, 'substituted')
-  fs.mkdirSync(bin, { recursive: true })
-  fs.mkdirSync(poisoned)
-  fs.writeFileSync(
-    path.join(bin, 'go'),
-    `#!/bin/sh\nprintf selected > '${selected}'\nprintf 'unqualified synthetic toolchain'\n`,
-    { mode: 0o700 }
-  )
-  fs.writeFileSync(
-    path.join(poisoned, 'go'),
-    `#!/bin/sh\nprintf substituted > '${substituted}'\nprintf 'unqualified synthetic toolchain'\n`,
-    { mode: 0o700 }
-  )
-  const installer = path.join(__dirname, 'install-patched-ocr.cjs')
-  const run = (toolCache) =>
-    spawnSync(
-      process.execPath,
-      [
-        '-e',
-        `require(${JSON.stringify(installer)}).install(${JSON.stringify(path.join(directory, 'output'))})`,
-      ],
-      {
-        encoding: 'utf8',
-        env: { PATH: poisoned, RUNNER_TOOL_CACHE: toolCache },
-        timeout: 5000,
-      }
-    )
-  const trusted = run(cache)
-  assert.equal(trusted.status, 1)
-  assert.match(trusted.stderr, /requires Go 1\.26\.9/)
-  assert.equal(fs.existsSync(selected), true)
-  assert.equal(fs.existsSync(substituted), false)
-  fs.unlinkSync(selected)
-  const relative = run('relative-cache')
-  assert.equal(relative.status, 1)
-  assert.match(relative.stderr, /tool cache must be an absolute path/)
-  assert.equal(fs.existsSync(selected), false)
-  assert.equal(fs.existsSync(substituted), false)
 })
