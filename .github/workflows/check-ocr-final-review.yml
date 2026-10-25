@@ -691,7 +691,9 @@ jobs:
         uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4
         with:
           name: final-ai-individual-execution-${{ github.run_id }}-${{ github.run_attempt }}
-          path: ${{ runner.temp }}/final-ai-review-adapter-diagnostics.jsonl
+          path: |
+            ${{ runner.temp }}/final-ai-review-adapter-diagnostics.jsonl
+            ${{ runner.temp }}/final-ai-review-adapter-diagnostics.jsonl.events.jsonl
           if-no-files-found: warn
           retention-days: 7
 
@@ -1379,7 +1381,9 @@ jobs:
         uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4
         with:
           name: final-ai-stack-execution-${{ github.run_id }}-${{ github.run_attempt }}
-          path: ${{ runner.temp }}/final-ai-stack-adapter-diagnostics.jsonl
+          path: |
+            ${{ runner.temp }}/final-ai-stack-adapter-diagnostics.jsonl
+            ${{ runner.temp }}/final-ai-stack-adapter-diagnostics.jsonl.events.jsonl
           if-no-files-found: warn
           retention-days: 7
 

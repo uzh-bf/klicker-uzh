@@ -83,6 +83,48 @@ Invalid results, cancellation and superseded heads cannot publish. Publisher
 and artifact failures fail the action. Summary failure remains best-effort. No
 retry, resume, accounting or budget policy is added by this controller.
 
+## Incremental usage and context evidence
+
+The current source adds a separate `.events.jsonl` sidecar beside each adapter
+usage receipt. The draft and advisor have separate sidecars; individual and
+stack final sidecars also include their preflight or topology calls. Attempt events
+have a random invocation identifier and attempt ordinal. Dispatch, parsed
+response and terminal outcome are distinct events. Response usage is written
+before response validation, so a rejected completion can retain observed usage
+without changing aggregate accounting. Missing or invalid usage stays null.
+
+The journal contains only fixed provider/model/stage labels, opaque conversation
+IDs, numeric counters and bounded outcome codes. It excludes prompts, source,
+arguments, reasoning, raw errors and provider-generated IDs. Synchronous writes
+preserve completed rows across process termination; an unfinished dispatch
+still has unknown usage. A hard runner loss can prevent artifact upload. Each
+sidecar is limited to 8 MiB and each invocation to 16,384 rows, including a
+truncation marker where space permits. I/O failure emits a fixed warning; the
+long-lived adapter also retains journal status in its aggregate diagnostic
+snapshot. These diagnostic failures never change review execution or retries.
+Sidecars have seven-day retention alongside existing sanitized artifacts.
+
+Broker `tool_results` count successful serialized results and their UTF-8 bytes
+for the three fixed tools, including discovery, pagination and cached lookups.
+They exclude transport envelopes and unsuccessful calls. The shared broker
+cannot attribute these counts to individual workers. Adapter conversation
+`observed_tool_results` instead count tool-result content replayed in model
+input, once per call ID within that adapter lifetime. These observations can
+include errors and omit results removed by compression or never sent back to
+the model. Missing conversation keys, the 256-conversation limit and the
+2,048-result deduplication limit remain explicit diagnostic gaps; observed
+input bytes are not authoritative broker-read bytes or billable tokens.
+
+Cost summaries add `OCR cost_components` per stage: uncached input, cached input,
+output and cached share of estimated charge, using existing pinned prices.
+Incomplete stages have unavailable components. Existing total/savings lines,
+budget units and aggregate receipt formulas remain unchanged. Event rows are
+never summed into those totals or treated as complete billing evidence.
+
+This source does not advance the donor's immutable action pin. Draft callers
+need a separately published and reviewed pin update before these diagnostics
+become active; final workflows use the merged repository-owned adapter source.
+
 ## Prepare a caller upgrade
 
 First publish the action source and verify its producing offline qualification.

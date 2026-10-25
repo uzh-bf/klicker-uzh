@@ -121,10 +121,12 @@ runs:
         name: draft-ai-review-adapter-diagnostics-${{ github.run_id }}-${{ github.run_attempt }}
         path: |
           ${{ runner.temp }}/draft-ai-review-adapter-diagnostics.jsonl
+          ${{ runner.temp }}/draft-ai-review-adapter-diagnostics.jsonl.events.jsonl
           ${{ runner.temp }}/draft-ai-review-outcome.json
           ${{ runner.temp }}/draft-ai-review-tools.json
           ${{ runner.temp }}/draft-ai-review-advisor-expectations.json
           ${{ runner.temp }}/draft-ai-review-advisor-diagnostics.jsonl
+          ${{ runner.temp }}/draft-ai-review-advisor-diagnostics.jsonl.events.jsonl
           ${{ runner.temp }}/ocr-runtime-identity.json
         if-no-files-found: warn
         retention-days: 7
