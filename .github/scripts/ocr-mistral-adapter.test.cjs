@@ -152,6 +152,191 @@ test('unwritable journals preserve provider results and incomplete usage stays n
   assert.equal(response.completion_tokens, 2)
 })
 
+test('advisor boundary preserves forced tool choice and journals truncated response sizes without content', async (t) => {
+  const directory = fs.mkdtempSync(path.join(os.tmpdir(), 'ocr-advisor-shape-'))
+  t.after(() => fs.rmSync(directory, { recursive: true, force: true }))
+  const file = path.join(directory, 'events.jsonl')
+  const thinking = 'PRIVATE_SENTINEL é'
+  const text = 'PRIVATE_SENTINEL 🧪'
+  const argumentsText = '{"answer":"PRIVATE_SENTINEL é'
+  const payload = completion(
+    {
+      role: 'assistant',
+      content: [
+        { type: 'thinking', thinking },
+        { type: 'text', text },
+      ],
+      reasoning_content: 'PRIVATE_SENTINEL',
+      tool_calls: [
+        {
+          id: 'PRIVATE_SENTINEL',
+          type: 'function',
+          function: { name: 'review_advice', arguments: argumentsText },
+        },
+      ],
+    },
+    'length'
+  )
+  payload.usage = {
+    prompt_tokens: 100,
+    completion_tokens: 16384,
+    total_tokens: 16484,
+    completion_tokens_details: { reasoning_tokens: 16000 },
+  }
+  const fetchImpl = upstream(() => jsonResponse(200, payload))
+  const adapter = await startAdapter({
+    apiKey: 'PRIVATE_SENTINEL',
+    usageJournalPath: file,
+    fetchImpl,
+  })
+  t.after(() => adapter.close())
+  const toolChoice = { type: 'function', function: { name: 'review_advice' } }
+  const result = await postJson(adapter, {
+    model: MISTRAL_MODEL,
+    messages: [{ role: 'user', content: 'synthetic advisor question' }],
+    reasoning_effort: 'max',
+    max_tokens: 16384,
+    tools: [{ type: 'function', function: { name: 'review_advice' } }],
+    tool_choice: toolChoice,
+  })
+  assert.equal(result.status, 200)
+  assert.equal(fetchImpl.calls.length, 1)
+  assert.deepEqual(fetchImpl.calls[0].body.tool_choice, toolChoice)
+  assert.equal(fetchImpl.calls[0].body.reasoning_effort, 'max')
+  assert.equal(fetchImpl.calls[0].body.max_tokens, 16384)
+  assert.equal(
+    result.json.choices[0].message.tool_calls[0].function.arguments,
+    argumentsText
+  )
+  const raw = fs.readFileSync(file, 'utf8')
+  assert.doesNotMatch(raw, /PRIVATE_SENTINEL/)
+  const row = raw
+    .trim()
+    .split('\n')
+    .map(JSON.parse)
+    .find((r) => r.event === 'response')
+  assert.equal(row.reasoning_tokens, 16000)
+  assert.equal(
+    row.reasoning_bytes,
+    Buffer.byteLength(thinking + 'PRIVATE_SENTINEL')
+  )
+  assert.equal(row.content_bytes, Buffer.byteLength(text))
+  assert.equal(row.tool_calls, 1)
+  assert.equal(row.tool_arguments_bytes, Buffer.byteLength(argumentsText))
+  assert.equal(row.finish_reason, 'length')
+  assert.equal(row.completion_tokens, 16384)
+  assert.equal(adapter.diagnostics().completion_tokens, 16384)
+  assert.equal(adapter.diagnostics().auxiliary_requests, 1)
+})
+
+test('response shape journals distinguish empty, missing and malformed evidence without changing rejection', async (t) => {
+  const directory = fs.mkdtempSync(path.join(os.tmpdir(), 'ocr-shape-unknown-'))
+  t.after(() => fs.rmSync(directory, { recursive: true, force: true }))
+  const valid = { role: 'assistant', content: null }
+  const cases = [
+    {
+      message: valid,
+      reasoning: undefined,
+      tokens: null,
+      shape: 0,
+      status: 200,
+    },
+    { message: valid, reasoning: 0, tokens: 0, shape: 0, status: 200 },
+    { message: valid, reasoning: -1, tokens: null, shape: 0, status: 200 },
+    { message: valid, reasoning: 5, tokens: null, shape: 0, status: 200 },
+    { message: valid, reasoning: 1.5, tokens: null, shape: 0, status: 200 },
+    { message: valid, reasoning: '2', tokens: null, shape: 0, status: 200 },
+    {
+      message: valid,
+      reasoning: Number.MAX_SAFE_INTEGER + 1,
+      tokens: null,
+      shape: 0,
+      status: 200,
+    },
+    {
+      message: valid,
+      reasoning: 2,
+      completion: -1,
+      tokens: null,
+      shape: 0,
+      status: 200,
+    },
+    {
+      message: valid,
+      reasoning: 2,
+      completion: undefined,
+      tokens: null,
+      shape: 0,
+      status: 200,
+    },
+    { message: undefined, reasoning: 2, tokens: 2, shape: null, status: 502 },
+    {
+      message: {
+        role: 'assistant',
+        content: [{ type: 'unsupported', text: 'PRIVATE_SENTINEL' }],
+      },
+      reasoning: 2,
+      tokens: 2,
+      shape: null,
+      status: 502,
+    },
+    {
+      message: { ...valid, tool_calls: 'PRIVATE_SENTINEL' },
+      reasoning: 2,
+      tokens: 2,
+      shape: null,
+      status: 502,
+    },
+  ]
+  for (const [index, fixture] of cases.entries()) {
+    const file = path.join(directory, `${index}.jsonl`)
+    const payload = completion(fixture.message)
+    if (Object.hasOwn(fixture, 'completion'))
+      payload.usage.completion_tokens = fixture.completion
+    payload.usage.completion_tokens_details = {
+      reasoning_tokens: fixture.reasoning,
+    }
+    const adapter = await startAdapter({
+      apiKey: 'synthetic',
+      usageJournalPath: file,
+      fetchImpl: upstream(() => jsonResponse(200, payload)),
+    })
+    try {
+      assert.equal(
+        (
+          await postJson(adapter, {
+            model: MISTRAL_MODEL,
+            messages: [{ role: 'user', content: 'synthetic' }],
+          })
+        ).status,
+        fixture.status
+      )
+      const raw = fs.readFileSync(file, 'utf8')
+      assert.doesNotMatch(raw, /PRIVATE_SENTINEL/)
+      const rows = raw.trim().split('\n').map(JSON.parse)
+      const row = rows.find((r) => r.event === 'response')
+      assert.equal(row.reasoning_tokens, fixture.tokens)
+      for (const field of [
+        'reasoning_bytes',
+        'content_bytes',
+        'tool_calls',
+        'tool_arguments_bytes',
+      ])
+        assert.equal(row[field], fixture.shape)
+      assert.equal(
+        rows.at(-1).outcome,
+        fixture.status === 200 ? 'accepted' : 'rejected'
+      )
+      assert.equal(
+        adapter.diagnostics().responses,
+        fixture.status === 200 ? 1 : 0
+      )
+    } finally {
+      await adapter.close()
+    }
+  }
+})
+
 test('direct preflight journals preserve stage identity and record response before validation', async (t) => {
   const directory = fs.mkdtempSync(
     path.join(os.tmpdir(), 'ocr-preflight-events-')
@@ -160,6 +345,7 @@ test('direct preflight journals preserve stage identity and record response befo
   const file = path.join(directory, 'events.jsonl')
   const payload = completion({ role: 'assistant', content: 'synthetic' })
   payload.model = 'unrecognized'
+  payload.usage.completion_tokens_details = { reasoning_tokens: 2 }
   await assert.rejects(
     callMistral({
       apiKey: 'synthetic',
@@ -180,6 +366,11 @@ test('direct preflight journals preserve stage identity and record response befo
   )
   assert.ok(rows.every((row) => row.stage === 'preflight'))
   assert.equal(rows[1].completion_tokens, 4)
+  assert.equal(rows[1].reasoning_tokens, 2)
+  assert.equal(rows[1].reasoning_bytes, 0)
+  assert.equal(rows[1].content_bytes, Buffer.byteLength('synthetic'))
+  assert.equal(rows[1].tool_calls, 0)
+  assert.equal(rows[1].tool_arguments_bytes, 0)
   assert.equal(rows[2].outcome, 'rejected')
   assert.equal(rows[2].failure, 'adapter_error')
 })
