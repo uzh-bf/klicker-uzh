@@ -989,29 +989,35 @@ const messages = {
             legend:
               'Fragen pro Niveau: grün = in diesem Testlauf verwendet, grau = nie verwendet, rot = keine Frage auf diesem Niveau. Abgedeckt = Minimum an Antworten erreicht; nicht ausgewählt = in diesem Durchlauf übersprungen; ausser Reichweite = weit vom Niveau der Person entfernt, nicht nötig.',
           },
-          withinReach: {
-            title: 'Nächstes Niveau in Reichweite',
-            hint: 'Ein Hinweis zusätzlich zum ausgegebenen Niveau: Liegt die Schätzung im oberen Teil ihres Unterniveaus (ab der Schwelle), wird das nächste Unterniveau vorgeschlagen, z. B. «B1.2 · B1.3 in Reichweite». Das ausgegebene Niveau ändert sich nicht. Die Kacheln vergleichen die beiden Lesarten eines Ergebnisses.',
-            threshold: 'Schwelle: {threshold}% des Unterniveaus',
+          mastery: {
+            title: 'Gemeistert (Lesart der Kundin)',
+            hint: 'Ein Niveau gilt als gemeistert, wenn die Fähigkeit am oder über dem Meisterungspunkt seines Bereichs liegt, z. B. bei 70 % von B1.3. Die Meisterungswahrscheinlichkeit sagt, wie wahrscheinlich das ist, aus der Schätzung und ihrer Unsicherheit; ab der nötigen Wahrscheinlichkeit wird das Niveau als gemeistert angezeigt. Gemessen an den simulierten Personen, die ihr wahres Niveau gemeistert haben, das nächste aber noch nicht.',
+            masteryPoint: 'Gemeistert ab {value} % des Niveaus',
+            probability:
+              'Als gemeistert angezeigt ab {value} % Wahrscheinlichkeit',
             loading: 'Studierende werden geladen…',
             tiles: {
-              hint: 'Hinweis angezeigt',
-              reached: 'Ausgegeben = wahres Niveau',
-              nextLevel: 'Vorschlag = wahres Niveau + 1',
-              covered: 'Wahres Niveau ausgegeben oder vorgeschlagen',
+              mastered: 'Als gemeistert angezeigt',
+              masteredRight: 'Richtig, wenn als gemeistert angezeigt',
+              highestExact: 'Höchstes gemeistertes Niveau richtig',
+              highestWithinOne: '… innerhalb ±1 Niveau',
             },
             tileHints: {
-              hint: 'Ergebnisse im oberen Teil ihres Unterniveaus',
-              reached: 'Lesart «Niveau erreicht»',
-              nextLevel:
-                'Lesart «nächstes Niveau» (Vorschlag, sonst ausgegeben)',
-              covered:
-                'der Hinweis ergänzt das wahre Niveau, wenn das Ergebnis eins zu tief ist',
+              mastered: 'Ergebnisse mit genügend Wahrscheinlichkeit',
+              masteredRight: 'das wahre Niveau ist mindestens das ausgegebene',
+              highestExact:
+                'gemeistert: das ausgegebene Niveau, sonst das darunter',
+              highestWithinOne:
+                'höchstes gemeistertes Niveau höchstens eins daneben',
             },
           },
           students: {
-            position: 'Bei {position}% von {level}.',
-            withinReach: '{level} in Reichweite',
+            mastery:
+              'Bei {position} % von {level} · mit {probability} % Wahrscheinlichkeit gemeistert.',
+            mastered: '{level} gemeistert',
+            notMastered: '{level} noch nicht gemeistert',
+            rowHint:
+              'Wahrscheinlichkeit, dass das Niveau gemeistert ist (✓ = als gemeistert angezeigt)',
             hint: 'Öffne eine Person, um zu sehen, wie jedes Ergebnis zustande kam: welche Fragen gestellt wurden, welche Antworten das wahre Niveau erwarten lässt und wie sich das Niveau nach jeder Antwort verändert hat.',
             student: 'Person',
             competences: 'Wahres → ausgegebenes Niveau',

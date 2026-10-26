@@ -5,7 +5,11 @@ import {
   type DryRunCompetenceTrace,
   traceDryRunCompetence,
 } from './adaptiveDryRunExplain'
-import { type DryRunHint, dryRunHint } from './adaptiveDryRunHints'
+import {
+  type DryRunMastery,
+  type DryRunMasterySettings,
+  dryRunMastery,
+} from './adaptiveDryRunHints'
 import {
   type DryRunStudent,
   type DryRunWorkspace,
@@ -34,7 +38,7 @@ function CompetenceTrace({
 }: {
   name: string
   trace: DryRunCompetenceTrace
-  hint: DryRunHint
+  hint: DryRunMastery
   workspace: DryRunWorkspace
 }) {
   const t = useTranslations()
@@ -81,19 +85,29 @@ function CompetenceTrace({
                 })}
         </span>
       </p>
-      {hint.position !== null ? (
+      {hint.position !== null && hint.probability !== null ? (
         <p className="mt-1 text-sm" data-cy="adaptive-dry-run-trace-hint">
           <span className="text-gray-600">
-            {t(`${KEY}.position`, {
+            {t(`${KEY}.mastery`, {
               position: Math.round(hint.position * 100),
               level: label(trace.reportedLevelId),
+              probability: Math.round(hint.probability * 100),
             })}
           </span>
-          {hint.nextLevelId !== null ? (
-            <span className="ml-2 rounded bg-blue-100 px-1.5 py-0.5 font-medium text-blue-900">
-              {t(`${KEY}.withinReach`, { level: label(hint.nextLevelId) })}
-            </span>
-          ) : null}
+          <span
+            className={twMerge(
+              'ml-2 rounded px-1.5 py-0.5 font-medium',
+              hint.mastered
+                ? 'bg-green-100 text-green-900'
+                : 'bg-gray-100 text-gray-700'
+            )}
+          >
+            {hint.mastered
+              ? t(`${KEY}.mastered`, { level: label(trace.reportedLevelId) })
+              : t(`${KEY}.notMastered`, {
+                  level: label(trace.reportedLevelId),
+                })}
+          </span>
         </p>
       ) : null}
       <p className="mt-1 text-sm text-gray-700">
@@ -201,12 +215,12 @@ function CompetenceTrace({
 function AdaptiveDryRunStudents({
   students,
   workspace,
-  threshold,
+  mastery,
 }: {
   students: DryRunStudent[]
   workspace: DryRunWorkspace
-  /** "Next level within reach" from this position in the band (0-1). */
-  threshold: number
+  /** When a level counts as mastered (client reading). */
+  mastery: DryRunMasterySettings
 }) {
   const t = useTranslations()
   const [open, setOpen] = useState<number | null>(null)
@@ -220,12 +234,12 @@ function AdaptiveDryRunStudents({
   const traces = (student: DryRunStudent) =>
     workspace.competences.map((competence) => ({
       name: competence.name,
-      hint: dryRunHint(
+      hint: dryRunMastery(
         student.competences.find(
           ({ nodeId }) => nodeId === competence.nodeId
-        ) ?? { theta: null, levelId: null },
+        ) ?? { theta: null, standardError: null, levelId: null },
         workspace,
-        threshold
+        mastery
       ),
       trace: traceDryRunCompetence({
         student,
@@ -279,14 +293,17 @@ function AdaptiveDryRunStudents({
                           <span className={differenceTone(trace.difference)}>
                             {label(trace.reportedLevelId)}
                           </span>
-                          {hint.position !== null ? (
-                            <span className="ml-1 text-gray-500">
-                              {`(${Math.round(hint.position * 100)}%)`}
-                            </span>
-                          ) : null}
-                          {hint.nextLevelId !== null ? (
-                            <span className="ml-1 rounded bg-blue-100 px-1 text-blue-900">
-                              {`→ ${label(hint.nextLevelId)}`}
+                          {hint.probability !== null ? (
+                            <span
+                              className={twMerge(
+                                'ml-1 rounded px-1',
+                                hint.mastered
+                                  ? 'bg-green-100 text-green-900'
+                                  : 'text-gray-500'
+                              )}
+                              title={t(`${KEY}.rowHint`)}
+                            >
+                              {`${hint.mastered ? '✓ ' : ''}${Math.round(hint.probability * 100)}%`}
                             </span>
                           ) : null}
                           {trace.difference !== 0 &&

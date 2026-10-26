@@ -4,6 +4,10 @@ import {
   faRotateRight,
   faUsers,
 } from '@fortawesome/free-solid-svg-icons'
+import {
+  DEFAULT_MASTERY_POINT,
+  DEFAULT_MASTERY_PROBABILITY,
+} from '@klicker-uzh/adaptive-contract'
 import { QAdaptivePracticeQuizDryRunDocument } from '@klicker-uzh/graphql/dist/ops'
 import { Button } from '@uzh-bf/design-system'
 import { useFormatter, useTranslations } from 'next-intl'
@@ -18,6 +22,7 @@ import {
   buildDryRunAnswersCsv,
   buildDryRunStudentsCsv,
 } from './adaptiveDryRunCsv'
+import type { DryRunMasterySettings } from './adaptiveDryRunHints'
 import {
   confidencePercent,
   type DryRun,
@@ -56,7 +61,10 @@ function AdaptiveDryRunResult({
   const formatter = useFormatter()
   const settingsText = useDryRunSettingsText()
   const [showStudents, setShowStudents] = useState(false)
-  const [threshold, setThreshold] = useState(70)
+  const [mastery, setMastery] = useState<DryRunMasterySettings>({
+    masteryPoint: DEFAULT_MASTERY_POINT,
+    probability: DEFAULT_MASTERY_PROBABILITY,
+  })
   const [loadRun, detail] = useLazyQuery(QAdaptivePracticeQuizDryRunDocument, {
     fetchPolicy: 'cache-first',
   })
@@ -188,8 +196,8 @@ function AdaptiveDryRunResult({
       <AdaptiveDryRunWithinReach
         students={students}
         workspace={workspace}
-        threshold={threshold}
-        onThresholdChange={setThreshold}
+        settings={mastery}
+        onSettingsChange={setMastery}
       />
 
       {summary.competences.length > 1 ? (
@@ -311,7 +319,7 @@ function AdaptiveDryRunResult({
         <AdaptiveDryRunStudents
           students={students}
           workspace={workspace}
-          threshold={threshold / 100}
+          mastery={mastery}
         />
       ) : null}
     </div>

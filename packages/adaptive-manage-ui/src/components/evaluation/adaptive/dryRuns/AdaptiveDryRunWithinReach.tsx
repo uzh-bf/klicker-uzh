@@ -1,63 +1,81 @@
 import { useTranslations } from 'next-intl'
-import { summarizeDryRunHints } from './adaptiveDryRunHints'
+import {
+  type DryRunMasterySettings,
+  summarizeDryRunMastery,
+} from './adaptiveDryRunHints'
 import type { DryRunStudent, DryRunWorkspace } from './adaptiveDryRunTypes'
 import { percent } from './adaptiveDryRunTypes'
 
-const KEY = 'manage.evaluation.adaptive.dryRuns.withinReach'
+const KEY = 'manage.evaluation.adaptive.dryRuns.mastery'
 
-// "Next level within reach": a hint shown on top of the reported level when
-// the estimate lies in the upper part of its band. The two readings of a
-// result are measured side by side: "level reached" (reported = true level)
-// and "next level" (suggested = true level + 1).
+// Mastery statement on top of the reported level (client reading): a level
+// counts as mastered when the ability is likely (`probability`) at or beyond
+// `masteryPoint` of its band. Measured against the simulated true level,
+// which a student has mastered while the next level is not yet mastered.
 function AdaptiveDryRunWithinReach({
   students,
   workspace,
-  threshold,
-  onThresholdChange,
+  settings,
+  onSettingsChange,
 }: {
   students: DryRunStudent[] | null
   workspace: DryRunWorkspace
-  threshold: number
-  onThresholdChange: (threshold: number) => void
+  settings: DryRunMasterySettings
+  onSettingsChange: (settings: DryRunMasterySettings) => void
 }) {
   const t = useTranslations()
   const summary = students
-    ? summarizeDryRunHints(students, workspace, threshold / 100)
+    ? summarizeDryRunMastery(students, workspace, settings)
     : null
   const tiles = summary
     ? ([
-        ['hint', summary.hintShare],
-        ['reached', summary.reachedShare],
-        ['nextLevel', summary.nextLevelShare],
-        ['covered', summary.coveredShare],
+        ['mastered', summary.masteredShare],
+        ['masteredRight', summary.masteredRightShare],
+        ['highestExact', summary.highestExactShare],
+        ['highestWithinOne', summary.highestWithinOneShare],
       ] as const)
     : []
+  const slider = (
+    key: keyof DryRunMasterySettings,
+    min: number,
+    max: number
+  ) => (
+    <label className="flex items-center gap-2 text-sm">
+      <span className="w-56 font-semibold text-gray-700">
+        {t(`${KEY}.${key}`, { value: Math.round(settings[key] * 100) })}
+      </span>
+      <input
+        type="range"
+        min={min}
+        max={max}
+        step={5}
+        value={Math.round(settings[key] * 100)}
+        onChange={(event) =>
+          onSettingsChange({
+            ...settings,
+            [key]: Number(event.target.value) / 100,
+          })
+        }
+        className="w-40"
+        data-cy={`adaptive-dry-run-mastery-${key}`}
+      />
+    </label>
+  )
 
   return (
     <div
       className="rounded border border-gray-200 p-3"
-      data-cy="adaptive-dry-run-within-reach"
+      data-cy="adaptive-dry-run-mastery"
     >
-      <div className="flex flex-wrap items-center justify-between gap-3">
+      <div className="flex flex-wrap items-start justify-between gap-3">
         <div>
           <h5 className="text-sm font-semibold">{t(`${KEY}.title`)}</h5>
           <p className="max-w-3xl text-xs text-gray-600">{t(`${KEY}.hint`)}</p>
         </div>
-        <label className="flex items-center gap-2 text-sm">
-          <span className="font-semibold text-gray-700">
-            {t(`${KEY}.threshold`, { threshold })}
-          </span>
-          <input
-            type="range"
-            min={50}
-            max={95}
-            step={5}
-            value={threshold}
-            onChange={(event) => onThresholdChange(Number(event.target.value))}
-            className="w-40"
-            data-cy="adaptive-dry-run-within-reach-threshold"
-          />
-        </label>
+        <div className="space-y-1">
+          {slider('masteryPoint', 50, 95)}
+          {slider('probability', 50, 95)}
+        </div>
       </div>
       {summary ? (
         <div className="mt-2 grid grid-cols-[repeat(auto-fit,minmax(10rem,1fr))] gap-2">
@@ -65,13 +83,13 @@ function AdaptiveDryRunWithinReach({
             <div
               key={key}
               className="rounded border border-gray-200 px-3 py-2"
-              data-cy={`adaptive-dry-run-within-reach-${key}`}
+              data-cy={`adaptive-dry-run-mastery-${key}-tile`}
             >
               <div className="text-xs text-gray-600">
                 {t(`${KEY}.tiles.${key}`)}
               </div>
               <div className="text-xl font-semibold tabular-nums">
-                {percent(value)}
+                {value === null ? '–' : percent(value)}
               </div>
               <div className="text-xs text-gray-500">
                 {t(`${KEY}.tileHints.${key}`)}
