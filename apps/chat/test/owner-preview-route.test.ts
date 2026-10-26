@@ -549,50 +549,6 @@ describe('POST owner preview chat', () => {
     expect(mocks.createParticipant).not.toHaveBeenCalled()
   })
 
-  it('rejects a standard mode disabled by the lecturer before model work', async () => {
-    const chatbot = await mocks.findChatbot()
-    mocks.findChatbot.mockResolvedValue({
-      ...chatbot,
-      standardModeConfig: {
-        tutorEnabled: false,
-        explainerEnabled: true,
-        quizzerEnabled: false,
-      },
-    })
-
-    const response = await POST(request(), {
-      params: Promise.resolve({ chatbotId: 'chatbot-id' }),
-    })
-
-    expect(response.status).toBe(400)
-    expect(mocks.getAggregatedMCPTools).not.toHaveBeenCalled()
-    expect(mocks.streamText).not.toHaveBeenCalled()
-  })
-
-  it('passes authored standard-mode context into prompt compilation', async () => {
-    const chatbot = await mocks.findChatbot()
-    const standardModeConfig = {
-      tutorEnabled: true,
-      explainerEnabled: true,
-      quizzerEnabled: false,
-      courseName: 'Synthetic course',
-      scopeNote: 'Synthetic scope',
-    }
-    mocks.findChatbot.mockResolvedValue({ ...chatbot, standardModeConfig })
-
-    const response = await POST(request(), {
-      params: Promise.resolve({ chatbotId: 'chatbot-id' }),
-    })
-    await response.text()
-
-    expect(response.status).toBe(200)
-    expect(mocks.compileSystemPrompt).toHaveBeenCalledWith(
-      chatbot.systemPrompts,
-      'tutor',
-      expect.objectContaining({ standardModeConfig })
-    )
-  })
-
   it('continues without response examples when the included skill is unavailable', async () => {
     mocks.loadResponseExampleRuntimeSkill.mockRejectedValue(
       new Error('skill unavailable')

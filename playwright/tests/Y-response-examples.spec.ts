@@ -149,6 +149,7 @@ test.describe('Chatbot response-example review', () => {
 
     await expect(candidate).toBeVisible()
     await expect(candidate).toHaveAttribute('data-focused', 'true')
+    await expect(candidate).toBeFocused()
     await expect(needsReview).toBeVisible()
     await expect(approved).toBeVisible()
     await expect(rejected).toBeVisible()
@@ -286,5 +287,6 @@ test.describe('Chatbot response-example review', () => {
         `response-example-edit-approve-${NEEDS_REVIEW_ID}`
       )
     ).toHaveCount(0)
+    await expect(candidate).not.toBeFocused()
   })
 })

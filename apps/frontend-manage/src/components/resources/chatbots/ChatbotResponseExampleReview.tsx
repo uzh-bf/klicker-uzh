@@ -128,6 +128,7 @@ function ChatbotResponseExampleReview({
 }: Readonly<{ chatbotId: string; focusedExampleId?: string }>) {
   const t = useTranslations()
   const focusedExampleRef = useRef<HTMLElement | null>(null)
+  const lastFocusedExampleId = useRef<string | null>(null)
   const [editValues, setEditValues] = useState<EditState | null>(null)
   const [activeActionId, setActiveActionId] = useState<string | null>(null)
   const [reviewError, setReviewError] = useState<string | null>(null)
@@ -161,6 +162,8 @@ function ChatbotResponseExampleReview({
     if (
       loading ||
       !focusedExampleId ||
+      lastFocusedExampleId.current === focusedExampleId ||
+      !focusedExampleRef.current ||
       !examples.some((example) => example.id === focusedExampleId)
     ) {
       return
@@ -171,6 +174,7 @@ function ChatbotResponseExampleReview({
       block: 'center',
     })
     focusedExampleRef.current?.focus({ preventScroll: true })
+    lastFocusedExampleId.current = focusedExampleId
   }, [examples, focusedExampleId, loading])
 
   const chatModeLabel = (mode: string) => {
