@@ -58,8 +58,15 @@ async function saveNumericalElement(page: Page) {
       return false
     }
   })
+  const responsePromise = page.waitForResponse(async (response) => {
+    return response.request() === (await requestPromise)
+  })
 
   await saveElement(page)
+  const response = await responsePromise
+  expect(response.ok()).toBe(true)
+  const result = (await response.json()) as { errors?: unknown[] }
+  expect(result.errors).toBeUndefined()
   const body = (await requestPromise).postDataJSON() as {
     variables?: { options?: NumericalOptionsPayload }
   }
