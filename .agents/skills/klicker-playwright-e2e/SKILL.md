@@ -29,7 +29,7 @@ Use this skill for Klicker-specific Playwright work. Combine it with `playwright
 Useful check:
 
 ```bash
-pnpm playwright:host -- --list --project=chromium
+node util/run-playwright-host.mjs --list --project=chromium
 rg -n "test\\(" playwright/tests
 ```
 
@@ -43,16 +43,16 @@ workers, and data services remain inside the devcontainer.
 
 ```bash
 # list active Chromium tests without executing them
-pnpm playwright:host -- --list --project=chromium
+node util/run-playwright-host.mjs --list --project=chromium
 
 # focused specs
-pnpm playwright:host -- --project=chromium tests/O-live-quiz.spec.ts
+node util/run-playwright-host.mjs --project=chromium tests/O-live-quiz.spec.ts
 
 # full active Chromium suite
-pnpm playwright:host -- --project=chromium
+node util/run-playwright-host.mjs --project=chromium
 
 # inspect the resolved workspace without exposing credentials
-pnpm playwright:host -- --print-env
+node util/run-playwright-host.mjs --print-env
 ```
 
 Do not run `playwright test`, package-local raw scripts, browser installation,
@@ -66,7 +66,7 @@ taking the union of their `playwright/profiles.json` entries; broad runs,
 unresolved filters, and unrecognized options use the maximal `playwright`
 profile, and an explicit `--runtime-profile` always wins. Focused activity
 runs may explicitly request
-`pnpm playwright:host -- --runtime-profile manage,live-quiz --project=chromium tests/MA-elements-operations.spec.ts`.
+`node util/run-playwright-host.mjs --runtime-profile manage,live-quiz --project=chromium tests/MA-elements-operations.spec.ts`.
 The caller still owns profile sufficiency for deliberately narrowed
 selections. Put launcher options before Playwright arguments; an explicit
 `--` ends their prefix.
@@ -109,7 +109,7 @@ render of the starter grid.
 ## Fast Failure Triage
 
 - Nested development routes returning 404 despite existing source files can indicate overlapping Next.js route scans. Compare the live development pages manifest with dynamic source routes and verify the Pages-only development configuration; see `docs/solutions/runtime-error/next-development-route-scans-overlap.md`. Do not mask missing routes with longer test timeouts or treat an incomplete inventory as cache damage.
-- `net::ERR_CONNECTION_REFUSED`: the routed app is down, not a selector issue. Run `pnpm playwright:host -- --print-env` and inspect `devrouter exec . -- tail -f /tmp/dev.log` first.
+- `net::ERR_CONNECTION_REFUSED`: the routed app is down, not a selector issue. Run `node util/run-playwright-host.mjs --print-env` and inspect `devrouter exec . -- tail -f /tmp/dev.log` first.
 - `ECONNREFUSED 127.0.0.1:7078`: `response-api` is not running.
 - Hatchet `workflow not found`: the relevant Hatchet worker is not registered/running, often `hatchet-worker-general` for scheduled tasks.
 - Sudden Firefox/WebKit execution: Playwright is running all configured projects. Pass `--project=chromium` or keep non-Chromium projects commented in config if Chromium-only is desired.
@@ -119,7 +119,7 @@ render of the starter grid.
 Before blaming a test, probe the apps:
 
 ```bash
-pnpm playwright:host -- --print-env
+node util/run-playwright-host.mjs --print-env
 devrouter exec . -- tail -n 100 /tmp/dev.log
 ```
 
@@ -201,7 +201,7 @@ For refactors, run:
 ```bash
 volta run pnpm exec prettier --check playwright/util/actions.ts playwright/tests/<changed-spec>.spec.ts
 volta run pnpm --filter @klicker-uzh/playwright exec tsc --noEmit --project tsconfig.json
-pnpm playwright:host -- --list --project=chromium
+node util/run-playwright-host.mjs --list --project=chromium
 ```
 
 The type and format checks can run in the devcontainer; the Playwright command
