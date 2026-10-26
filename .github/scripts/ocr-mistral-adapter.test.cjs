@@ -3690,7 +3690,7 @@ test('provider pause parsing is strict and paused adapters never dispatch', asyn
   }
 })
 
-test('confirmed upstream 402 latches one adapter for repeated main and advisor requests', async (t) => {
+test('confirmed upstream 402 stops repeated requests and a separate shared advisor adapter', async (t) => {
   const directory = fs.mkdtempSync(path.join(os.tmpdir(), 'ocr-402-latch-'))
   t.after(() => fs.rmSync(directory, { recursive: true, force: true }))
   const file = path.join(directory, 'events.jsonl')
@@ -3701,9 +3701,16 @@ test('confirmed upstream 402 latches one adapter for repeated main and advisor r
       echo: secret,
     })
   )
+  const availability = createProviderAvailability()
   const adapter = await startAdapter({
+    availability,
     apiKey: 'synthetic',
     usageJournalPath: file,
+    fetchImpl,
+  })
+  const advisor = await startAdapter({
+    apiKey: 'synthetic',
+    availability,
     fetchImpl,
   })
   const mainBody = {
@@ -3728,6 +3735,8 @@ test('confirmed upstream 402 latches one adapter for repeated main and advisor r
       assert.equal(response.json.error.code, 'provider_payment_required')
       assert.doesNotMatch(response.text, /PRIVATE_PROVIDER_SENTINEL/)
     }
+    assert.equal((await postJson(advisor, advisorBody)).status, 402)
+    assert.equal(advisor.diagnostics().upstream_attempts, 0)
     assert.equal(fetchImpl.calls.length, 1)
     const diagnostics = adapter.diagnostics()
     assert.equal(diagnostics.upstream_attempts, 1)
@@ -3754,6 +3763,7 @@ test('confirmed upstream 402 latches one adapter for repeated main and advisor r
       [402, null, null, null, null]
     )
   } finally {
+    await advisor.close()
     await adapter.close()
   }
 })

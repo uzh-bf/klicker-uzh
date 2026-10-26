@@ -1045,6 +1045,10 @@ test('stock OCR stops upstream dispatch after 402 and preserves its incomplete r
   })
   assert.equal(calls, 1)
   assert.equal(outcome.code, 0)
+  assert.equal(fs.existsSync(outcome.resultPath), true)
+  assert.equal(outcome.coverage.selected, 1)
+  assert.equal(outcome.coverage.failed, 1)
+  assert.equal(outcome.coverage.completed, 0)
   const receipt = JSON.parse(
     fs.readFileSync(path.join(temp, 'draft-ai-review-outcome.json'))
   )
