@@ -61,9 +61,9 @@ minimumReleaseAgeExclude:
   - '@next/swc-linux-arm64-gnu@16.3.4'
   - '@next/swc-linux-arm64-musl@16.3.4'
   - '@next/swc-win32-arm64-msvc@16.3.4'
-  # Internal UZH design-system release: the exact 4.1.8 consumer bump is
+  # Internal UZH design-system release: the exact 5.0.0-alpha.5 consumer bump is
   # reviewed and verified in this PR.
-  - '@uzh-bf/design-system@4.1.8'
+  - '@uzh-bf/design-system@5.0.0-alpha.5'
   # U1 (student-chat-v3-production-readiness-plan): reviewed assistant-ui 0.14
   # bump, apps/chat/package.json. Transitive assistant-ui deps pulled in below.
   - '@assistant-ui/react@0.14.27'
@@ -130,8 +130,12 @@ overrides:
   '@graphql-tools/utils@<12.0.1': 12.0.1
 
 packageExtensions:
-  # The published stylesheet imports this plugin, but 4.1.8 lists it only as a devDependency.
-  '@uzh-bf/design-system@4.1.8':
+  # The plugin imports this parser but does not declare it in its package.
+  'eslint-plugin-office-addins@4.0.10':
+    dependencies:
+      '@typescript-eslint/parser': 8.63.0
+  # Retain the legacy aspect-ratio plugin until consumer verification supports removing it.
+  '@uzh-bf/design-system@5.0.0-alpha.5':
     dependencies:
       '@tailwindcss/aspect-ratio': 0.4.2
   'recharts@2.15.3':

@@ -82,14 +82,13 @@ function CatalystRequestForm({ onSuccess }: { onSuccess: () => void }) {
 
           <div className="flex flex-row justify-end gap-2">
             <Button
-              variant="default"
               onClick={() => onSuccess()}
               data={{ cy: 'catalyst-request-cancel' }}
             >
               {t('shared.generic.cancel')}
             </Button>
             <Button
-              variant="primary"
+              primary
               type="submit"
               disabled={isSubmitting || !isValid}
               loading={isSubmitting}

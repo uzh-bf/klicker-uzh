@@ -1,14 +1,17 @@
 import { faSquare } from '@fortawesome/free-regular-svg-icons'
 import { faPlus } from '@fortawesome/free-solid-svg-icons'
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome'
-import { Element, ElementType } from '@klicker-uzh/graphql/dist/ops'
+import type { Element, ElementType } from '@klicker-uzh/graphql/dist/ops'
 import { Button } from '@uzh-bf/design-system'
 import { useTranslations } from 'next-intl'
 import { useDrop } from 'react-dnd'
 import { isEmpty } from 'remeda'
 import { twMerge } from 'tailwind-merge'
-import { ElementDragDropTypes } from '../../elements/Element'
-import { ElementBlockFormValues, ElementStackFormValues } from './WizardLayout'
+import type { ElementDragDropTypes } from '../../elements/Element'
+import type {
+  ElementBlockFormValues,
+  ElementStackFormValues,
+} from './WizardLayout'
 
 interface AddStackButtonProps {
   type: 'stack'
@@ -106,7 +109,11 @@ function AddStackButton({
               resetSelection?.()
             }}
             data={{ cy: `add-selection-to-one-${type}` }}
-            ref={drop}
+            // react-dnd's connector returns the rendered element, which a
+            // callback ref may not do; discard the return value.
+            ref={(node) => {
+              drop(node)
+            }}
           >
             <Button.Icon icon={faSquare} />
             <Button.Label className={{ root: 'max-w-full whitespace-normal' }}>
@@ -156,7 +163,11 @@ function AddStackButton({
               resetSelection?.()
             }}
             data={{ cy: `create-one-${type}-per-selected-element` }}
-            ref={drop}
+            // react-dnd's connector returns the rendered element, which a
+            // callback ref may not do; discard the return value.
+            ref={(node) => {
+              drop(node)
+            }}
           >
             <div className="flex flex-row gap-1">
               <FontAwesomeIcon icon={faSquare} />

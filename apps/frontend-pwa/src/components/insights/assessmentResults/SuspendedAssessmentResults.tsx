@@ -438,7 +438,7 @@ function SuspendedAssessmentResults({ courseId }: { courseId: string }) {
           {t('pwa.assessment.exportReportExplanation')}
         </p>
         {exportError ? (
-          <div className="mb-4" role="alert">
+          <div className="mb-4">
             <UserNotification type="error" message={exportError} />
           </div>
         ) : null}

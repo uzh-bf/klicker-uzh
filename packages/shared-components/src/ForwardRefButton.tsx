@@ -2,7 +2,14 @@ import { Button } from '@uzh-bf/design-system'
 import React from 'react'
 import { twMerge } from 'tailwind-merge'
 
-interface ForwardRefButtonProps extends React.ComponentProps<typeof Button> {
+// The design system's ButtonProps is a union discriminated on `asChild`, whose
+// `asChild: true` branch types `ref` as `never`. This wrapper always renders a
+// real button and supplies its own forwarded ref, so both keys are dropped to
+// leave the shared base props.
+type ForwardRefButtonProps = Omit<
+  React.ComponentProps<typeof Button>,
+  'ref' | 'asChild'
+> & {
   overrideClassName?: string
 }
 

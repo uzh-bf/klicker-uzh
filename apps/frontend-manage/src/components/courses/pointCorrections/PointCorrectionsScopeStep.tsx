@@ -121,7 +121,7 @@ function PointCorrectionsScopeStep({
                 root: twMerge(
                   'flex h-full flex-col gap-2 rounded-lg border-2 p-4 text-left focus:outline-none',
                   scopeField.value === option.value &&
-                    'border-primary-100 bg-primary-50',
+                    'border-primary-100 bg-primary-20',
                   option.className
                 ),
               }}
@@ -130,7 +130,7 @@ function PointCorrectionsScopeStep({
             >
               <FontAwesomeIcon
                 icon={option.icon}
-                className="text-primary-200 text-2xl"
+                className="text-primary-40 text-2xl"
               />
               <div className="text-base font-semibold text-gray-900">
                 {option.title}

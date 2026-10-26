@@ -1,9 +1,5 @@
 import { messagesByLocale } from '@/src/types/i18n'
 import { routing } from '@klicker-uzh/i18n'
-import {
-  monoSpaceFont,
-  sourceSansPro,
-} from '@klicker-uzh/shared-components/src/font'
 import 'katex/dist/katex.min.css'
 import type { Metadata, Viewport } from 'next'
 import { hasLocale } from 'next-intl'
@@ -47,19 +43,9 @@ export default async function RootLayout({
   const t = await getTranslations()
 
   return (
-    <html lang={locale}>
-      <head>
-        <style>{`
-          :root {
-            --source-sans-pro: ${sourceSansPro.variable};
-            --theme-font-primary: ${sourceSansPro.variable};
-            --mono-space-font: ${monoSpaceFont.variable};
-          }
-        `}</style>
-      </head>
-      <body
-        className={`${sourceSansPro.variable} ${monoSpaceFont.variable} font-sans antialiased`}
-      >
+    <html lang={locale} data-theme="uzh">
+      <head></head>
+      <body className={`font-sans antialiased`}>
         {/* First focusable element on every page: jumps keyboard/screen-reader
             users past the sidebar/header chrome straight to the `<main
             id="main-content">` each rendered chat state provides. */}

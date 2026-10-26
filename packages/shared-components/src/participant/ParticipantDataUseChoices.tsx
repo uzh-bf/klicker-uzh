@@ -8,16 +8,13 @@ import {
 } from '@fortawesome/free-solid-svg-icons'
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome'
 import { Markdown } from '@klicker-uzh/markdown'
+import { Badge, H4, RadioGroup, RadioGroupItem } from '@uzh-bf/design-system'
 import {
-  Badge,
-  H4,
-  RadioGroup,
-  RadioGroupItem,
-  ShadcnCollapsible,
-  ShadcnCollapsibleContent,
-  ShadcnCollapsibleTrigger,
-  ShadcnLabel,
-} from '@uzh-bf/design-system'
+  Collapsible,
+  CollapsibleContent,
+  CollapsibleTrigger,
+  Label,
+} from '@uzh-bf/design-system/primitives'
 import { useTranslations } from 'next-intl'
 import { useState } from 'react'
 import { twMerge } from 'tailwind-merge'
@@ -116,12 +113,12 @@ function ParticipantDataUseChoices({
 
   return (
     <div>
-      <ShadcnCollapsible
+      <Collapsible
         className="border-b border-slate-200"
         open={researchOpen}
         onOpenChange={() => setResearchOpen((current) => !current)}
       >
-        <ShadcnCollapsibleTrigger
+        <CollapsibleTrigger
           className="flex w-full flex-row items-center justify-between gap-3 py-3 text-left"
           data-cy={dataCy.researchToggle}
         >
@@ -137,8 +134,8 @@ function ParticipantDataUseChoices({
             icon={researchOpen ? faChevronUp : faChevronDown}
             size="sm"
           />
-        </ShadcnCollapsibleTrigger>
-        <ShadcnCollapsibleContent className="pb-3">
+        </CollapsibleTrigger>
+        <CollapsibleContent className="pb-3">
           <div className="pb-2">
             <Markdown
               withProse
@@ -166,7 +163,7 @@ function ParticipantDataUseChoices({
               }}
             >
               {researchOptions.map((option) => (
-                <ShadcnLabel
+                <Label
                   key={option.value}
                   htmlFor={option.id}
                   className={twMerge(
@@ -183,19 +180,19 @@ function ParticipantDataUseChoices({
                   />
                   <FontAwesomeIcon icon={option.icon} size="sm" />
                   <span>{option.label}</span>
-                </ShadcnLabel>
+                </Label>
               ))}
             </RadioGroup>
           </div>
-        </ShadcnCollapsibleContent>
-      </ShadcnCollapsible>
+        </CollapsibleContent>
+      </Collapsible>
 
-      <ShadcnCollapsible
+      <Collapsible
         className="border-b border-slate-200"
         open={learningAnalyticsOpen}
         onOpenChange={() => setLearningAnalyticsOpen((current) => !current)}
       >
-        <ShadcnCollapsibleTrigger
+        <CollapsibleTrigger
           className="flex w-full flex-row items-center justify-between gap-3 py-3 text-left"
           data-cy={dataCy.learningAnalyticsToggle}
         >
@@ -217,8 +214,8 @@ function ParticipantDataUseChoices({
             icon={learningAnalyticsOpen ? faChevronUp : faChevronDown}
             size="sm"
           />
-        </ShadcnCollapsibleTrigger>
-        <ShadcnCollapsibleContent className="pb-3">
+        </CollapsibleTrigger>
+        <CollapsibleContent className="pb-3">
           <div className="pb-2">
             <Markdown
               withProse
@@ -244,7 +241,7 @@ function ParticipantDataUseChoices({
               }}
             >
               {learningAnalyticsOptions.map((option) => (
-                <ShadcnLabel
+                <Label
                   key={option.value}
                   htmlFor={option.id}
                   className={twMerge(
@@ -266,12 +263,12 @@ function ParticipantDataUseChoices({
                       {option.description}
                     </span>
                   </span>
-                </ShadcnLabel>
+                </Label>
               ))}
             </RadioGroup>
           </div>
-        </ShadcnCollapsibleContent>
-      </ShadcnCollapsible>
+        </CollapsibleContent>
+      </Collapsible>
     </div>
   )
 }

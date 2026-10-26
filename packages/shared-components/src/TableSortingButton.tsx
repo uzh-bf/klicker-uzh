@@ -14,7 +14,7 @@ function TableSortingButton({
 }) {
   return (
     <Button
-      variant="ghost"
+      basic
       onClick={() => column.toggleSorting(column.getIsSorted() === 'asc')}
       className={{
         root: twMerge(

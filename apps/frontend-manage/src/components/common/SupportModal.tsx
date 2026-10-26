@@ -121,7 +121,6 @@ function SupportModal({
               <div className="flex flex-col gap-2">
                 {!showRequestPanel ? (
                   <Button
-                    variant="default"
                     onClick={() => setShowRequestPanel(true)}
                     data={{ cy: 'support-catalyst-request' }}
                   >

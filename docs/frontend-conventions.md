@@ -55,7 +55,7 @@ unchanged.
 
 ## Next.js tooling
 
-- All five Next.js 16 apps use Turbopack for development and `build:test`. Auth exposes `dev:webpack` as a fallback if its Pages Router login page stalls during a cold Turbopack compile in the monorepo. Auth and chat use Turbopack for production. Control, manage, and PWA keep Webpack only for production while `@ducanh2912/next-pwa` generates their service workers. Each script selects exactly one bundler; never combine `--webpack` with `--turbopack`.
+- All five Next.js 16 apps use Turbopack for `build:test`. Control, manage, PWA, and chat also use it for development. Auth uses Webpack for `dev`, `dev:offline`, and `dev:test` so its Pages Router catch-all works in local development; `dev:webpack` remains available as an explicit alias. Auth and chat use Turbopack for production. Control, manage, and PWA keep Webpack for production while `@ducanh2912/next-pwa` generates service workers. Each script selects exactly one bundler; never combine `--webpack` with `--turbopack`.
 - The shared Next config derives the active checkout root from its own module URL and passes it to both `turbopack.root` and `outputFileTracingRoot`. This keeps standalone output correct in nested Git worktrees.
 - Run lint through each app's `eslint .` script. Next.js 16 removed `next lint` and the `eslint` block from `next.config`.
 - Each app's `check` script runs `next typegen` before `tsc --noEmit`. Keep generated `next-env.d.ts` ignored but included in `tsconfig.json`, together with `.next/types/**/*.ts` and `.next/dev/types/**/*.ts`; Next owns and rewrites these files. Control, Manage, and PWA use `tsconfig.check.json` only for raw package checks so stale `.next/dev/types` cannot duplicate fresh Pages Router validators. Next builds use the canonical `tsconfig.json`; Next 16 filters development validators on its production typecheck path. Auth and Chat use their main config for both checks and builds.
@@ -65,20 +65,36 @@ unchanged.
 
 ## Components and styling
 
-- **Local fonts**: all five Next.js apps load Source Sans 3 through
-  `packages/shared-components/src/font.ts`; Chat and Manage also use JetBrains
-  Mono. Both families use package-local WOFF2 assets. Keep the existing exports
-  and CSS variables when changing typography, and keep production builds
-  independent of external font services. Upstream versions, licenses, and asset
-  hashes live beside the files in
-  `packages/shared-components/src/fonts/PROVENANCE.md`.
+- **Local fonts**: the design system's compiled CSS supplies the self-hosted
+  Source Sans 3 and JetBrains Mono faces. The five Next.js roots select
+  `data-theme="uzh"`; the shared token bridge maps `font-sans` and `font-mono`
+  to those runtime theme values. Keep production builds independent of external
+  font services and avoid adding duplicate `next/font` declarations. Historical
+  package-local assets and provenance remain under
+  `packages/shared-components/src/fonts/` but are no longer imported.
 - **Design system first**: `@uzh-bf/design-system` provides `Button`, `Modal`, `FormikTextField`, `H1–H4`, `toast`, etc. Design-system components take the test hook as a prop: `data={{ cy: 'save-button' }}`; raw elements use a plain `data-cy` attribute.
-- **Tailwind v4, CSS-first**: no `tailwind.config.js` — theme tokens live in each app's `globals.css` (`@theme` block, `--color-uzh-blue`, shadcn-style tokens) and the design system is scanned via `@source "../node_modules/@uzh-bf/design-system/src"`. Conditional classes via `twMerge`.
+- When a root `Switch` or `Select` uses an external native label, pass the translated visible label through `ariaLabel` (or use `Select`'s `ariaLabelledBy`). The fallback `aria-label` can override `htmlFor` alone.
+- **Tailwind v4, CSS-first**: no `tailwind.config.js`. Each stylesheet imports
+  `@uzh-bf/design-system/css` unlayered, followed by Tailwind theme/utilities
+  without a second preflight. `packages/shared-components/src/theme.css`
+  registers shared token names and Klicker-specific colour families; runtime
+  design-system values remain authoritative. It also scans the published
+  design-system `dist` so library responsive variants sort with each app's
+  generated utilities, after conflicting base utilities. The four Pages Router apps and
+  docs also import `theme-app.css` for focus-ring and animation tokens; Chat
+  keeps the design-system ring defaults. Docusaurus owns its root `data-theme`,
+  so docs selects UZH colours through explicit theme-variable assignments.
+  Its `configurePostCss` hook disables only Preset Env's cascade-layer
+  transform: transforming files separately gives preflight artificial
+  specificity above Infima. Preserve native layers so Infima's unlayered
+  layout rules keep their intended priority.
+  Conditional classes use `twMerge`.
 - **Shared components** (`packages/shared-components`): Loader, DataTable, question renderers, Leaderboard, charts, evaluation. **Deep-import** them (`@klicker-uzh/shared-components/src/Loader`) — there is no barrel index.
-- **Animations**: `motion` (declared as a dependency of `packages/shared-components`) powers the shared Leaderboard — podium rise-in, FLIP rank reordering on score changes, and staggered row entry. Gate every motion animation on `useReducedMotion()` from `motion/react`; keep durations at or below 0.5s. For app-local animation needs, prefer the Tailwind v4 `--animate-*` tokens already defined in each app's `globals.css` (e.g. `animate-fade-in`) or the installed `tw-animate-css` utilities over adding another JS animation dependency.
+- **Animations**: `motion` (declared as a dependency of `packages/shared-components`) powers the shared Leaderboard — podium rise-in, FLIP rank reordering on score changes, and staggered row entry. Gate every motion animation on `useReducedMotion()` from `motion/react`; keep durations at or below 0.5s. For app-local animation needs, prefer the Tailwind v4 `--animate-*` tokens defined in the shared `theme-app.css` (e.g. `animate-fade-in`) or the installed `tw-animate-css` utilities over adding another JS animation dependency.
 - Function components with hooks only; PascalCase files; app-local components under `src/components/` with relative imports.
 - Clickable rows must ignore events from marked interactive subtrees so opening a dropdown or modal cannot also trigger the row navigation.
 - Async Formik submit handlers must return or await their mutation promise so `isSubmitting` remains active and users cannot navigate away before the save completes.
+- The element editor disables scroll anchoring on its modal content so a rich-text toolbar closing on blur cannot move a switch during a click; see [lost editor clicks](solutions/runtime-error/element-editor-clicks-lost-to-scroll-anchoring.md).
 - **Pinned list controls**: pagination / entries-per-page controls must never scroll away with their list. On a page, make the container `flex flex-col`, give the scrolling list its own `min-h-0 flex-1 overflow-y-auto` child, and keep the pager a `flex-none` sibling below it (`pages/index.tsx`, `pages/activities.tsx`). When the list itself scrolls, the same result-range summary the pager shows must also render above the scroll boundary, derived from the same calculation and values (`pages/index.tsx`, `apps/frontend-manage/src/lib/resultRange.ts:computeResultRange`). Inside the design-system `Modal` — whose content is itself `overflow-y-auto` — neutralize that with `className.content: 'overflow-visible'` and cap the list with `max-h-[...] overflow-y-auto` so it is the single scroll boundary (`ExistingElementSelectionModal.tsx`, `courses/CourseVerifiableCredentialsModal.tsx`).
 
 ### Domain-specific creation actions

@@ -23,7 +23,7 @@ import {
 import { Badge, Checkbox, Tooltip } from '@uzh-bf/design-system'
 import dayjs from 'dayjs'
 import { useTranslations } from 'next-intl'
-import { useState } from 'react'
+import { useEffect, useRef, useState } from 'react'
 import { twMerge } from 'tailwind-merge'
 import ActivityLogDialog from '../../sharing/ActivityLogDialog'
 import ObjectPermissionLevel from '../../sharing/ObjectPermissionLevel'
@@ -59,6 +59,29 @@ function ActivityListEntry({
   const [changeName, setChangeName] = useState<boolean>(false)
   const [sharingModal, setSharingModal] = useState<boolean>(false)
   const [isActivityLogOpen, setActivityLogOpen] = useState<boolean>(false)
+  const actionsRef = useRef<HTMLDivElement>(null)
+  const detailsTriggerRef = useRef<HTMLButtonElement | null>(null)
+
+  // The menu item disappears when it opens the modal. Return focus to the
+  // persistent menu trigger after the dialog unmounts.
+  useEffect(() => {
+    if (showDetails) {
+      detailsTriggerRef.current =
+        actionsRef.current?.querySelector<HTMLButtonElement>(
+          'button[aria-haspopup="menu"]'
+        ) ?? null
+      return
+    }
+
+    const trigger = detailsTriggerRef.current
+    if (!trigger) return
+    detailsTriggerRef.current = null
+
+    const frame = requestAnimationFrame(() => {
+      if (trigger.isConnected) trigger.focus({ preventScroll: true })
+    })
+    return () => cancelAnimationFrame(frame)
+  }, [showDetails])
 
   const disabled =
     activity.status !== PublicationStatus.Draft &&
@@ -247,7 +270,7 @@ function ActivityListEntry({
               />
             </div>
           </div>
-          <div className="gap-4.5 flex flex-col items-end">
+          <div ref={actionsRef} className="gap-4.5 flex flex-col items-end">
             <div className="-mt-1 flex flex-row items-center">
               <ActivityReviewStatus reviewStatus={activity.reviewStatus} />
 

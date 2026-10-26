@@ -1,5 +1,5 @@
 import type * as Preset from '@docusaurus/preset-classic'
-import type { Config } from '@docusaurus/types'
+import type { Config, Plugin } from '@docusaurus/types'
 import rehypeKatex from 'rehype-katex'
 import remarkMath from 'remark-math'
 import 'katex/contrib/mhchem'
@@ -65,6 +65,28 @@ const config: Config = {
     ],
   ],
   plugins: [
+    (): Plugin => ({
+      name: 'preserve-native-css-layers',
+      configurePostCss(options) {
+        const presetEnv = options.plugins.find(
+          (plugin) =>
+            Array.isArray(plugin) &&
+            typeof plugin[0] === 'string' &&
+            plugin[0].includes('postcss-preset-env')
+        )
+        if (!Array.isArray(presetEnv)) {
+          throw new Error('Docusaurus PostCSS preset is missing')
+        }
+
+        // Per-file layer transforms raise preflight above Infima's unlayered CSS.
+        // Keep native layers so the design-system reset retains its lower priority.
+        presetEnv[1] = {
+          ...presetEnv[1],
+          features: { ...presetEnv[1]?.features, 'cascade-layers': false },
+        }
+        return options
+      },
+    }),
     'docusaurus-plugin-matomo',
     [
       '@docusaurus/plugin-ideal-image',

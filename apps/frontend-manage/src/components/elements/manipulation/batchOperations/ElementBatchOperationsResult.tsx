@@ -12,13 +12,13 @@ import {
   ElementBatchSharingTargetError,
 } from '@klicker-uzh/graphql/dist/ops'
 import {
-  ShadcnTable,
-  ShadcnTableBody,
-  ShadcnTableCell,
-  ShadcnTableHead,
-  ShadcnTableHeader,
-  ShadcnTableRow,
-} from '@uzh-bf/design-system'
+  Table,
+  TableBody,
+  TableCell,
+  TableHead,
+  TableHeader,
+  TableRow,
+} from '@uzh-bf/design-system/primitives'
 import { useTranslations } from 'next-intl'
 import { twMerge } from 'tailwind-merge'
 import type { ElementBatchExecutionResult } from './types'
@@ -86,9 +86,9 @@ function SharingOutcomeRow({
           : t('manage.questionPool.batchSharingResultNotProcessed')
 
   return (
-    <ShadcnTableRow data-cy={`element-batch-sharing-result-${elementName}`}>
-      <ShadcnTableCell>{elementName}</ShadcnTableCell>
-      <ShadcnTableCell
+    <TableRow data-cy={`element-batch-sharing-result-${elementName}`}>
+      <TableCell>{elementName}</TableCell>
+      <TableCell
         className={twMerge(
           'text-right',
           shared ? 'text-green-700' : 'text-red-700'
@@ -96,8 +96,8 @@ function SharingOutcomeRow({
       >
         <FontAwesomeIcon icon={shared ? faCheck : faX} className="mr-2" />
         {label}
-      </ShadcnTableCell>
-    </ShadcnTableRow>
+      </TableCell>
+    </TableRow>
   )
 }
 
@@ -157,18 +157,18 @@ function ElementBatchOperationsResult({
             </div>
           ) : null}
           {sharingOutcomes.length > 0 ? (
-            <ShadcnTable>
-              <ShadcnTableHeader>
-                <ShadcnTableRow>
-                  <ShadcnTableHead>
+            <Table>
+              <TableHeader>
+                <TableRow>
+                  <TableHead>
                     {t('manage.questionPool.batchElementName')}
-                  </ShadcnTableHead>
-                  <ShadcnTableHead>
+                  </TableHead>
+                  <TableHead>
                     {t('manage.questionPool.batchSharingResult')}
-                  </ShadcnTableHead>
-                </ShadcnTableRow>
-              </ShadcnTableHeader>
-              <ShadcnTableBody>
+                  </TableHead>
+                </TableRow>
+              </TableHeader>
+              <TableBody>
                 {sharingOutcomes.map((outcome) => {
                   const element = selectedElements.get(outcome.elementId)
                   const elementName = element?.name ?? String(outcome.elementId)
@@ -180,8 +180,8 @@ function ElementBatchOperationsResult({
                     />
                   )
                 })}
-              </ShadcnTableBody>
-            </ShadcnTable>
+              </TableBody>
+            </Table>
           ) : null}
         </div>
       ) : null}
