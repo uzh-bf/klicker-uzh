@@ -1110,6 +1110,11 @@ function createUsageJournal(file, options = {}) {
             'completion_tokens',
             'cached_prompt_tokens',
             'uncached_prompt_tokens',
+            'reasoning_tokens',
+            'reasoning_bytes',
+            'content_bytes',
+            'tool_calls',
+            'tool_arguments_bytes',
             'outcome',
             'failure',
             'finish_reason',
@@ -1174,6 +1179,42 @@ function observedUsage(payload) {
         ? prompt - cached
         : null,
   }
+}
+
+function observedResponseShape(payload, provider) {
+  const completion = payload?.usage?.completion_tokens
+  const reasoning = payload?.usage?.completion_tokens_details?.reasoning_tokens
+  const observed = {
+    reasoning_tokens:
+      Number.isSafeInteger(completion) &&
+      completion >= 0 &&
+      Number.isSafeInteger(reasoning) &&
+      reasoning >= 0 &&
+      reasoning <= completion
+        ? reasoning
+        : null,
+    reasoning_bytes: null,
+    content_bytes: null,
+    tool_calls: null,
+    tool_arguments_bytes: null,
+  }
+  // Shape evidence is independent of response acceptance and budget accounting.
+  try {
+    const message = normalizeAssistantMessage(
+      payload?.choices?.[0]?.message,
+      provider
+    )
+    observed.reasoning_bytes = Buffer.byteLength(
+      message.reasoning_content ?? ''
+    )
+    observed.content_bytes = Buffer.byteLength(message.content)
+    observed.tool_calls = message.tool_calls?.length ?? 0
+    observed.tool_arguments_bytes = (message.tool_calls ?? []).reduce(
+      (bytes, call) => bytes + Buffer.byteLength(call.function.arguments),
+      0
+    )
+  } catch {}
+  return observed
 }
 
 const OBSERVED_TOOLS = [
@@ -1526,6 +1567,7 @@ async function startAdapter(options = {}) {
         ...receipt,
         event: 'response',
         ...observedUsage(payload),
+        ...observedResponseShape(payload, profile.name),
         finish_reason: finishReason,
         http_status: httpStatus,
       })
@@ -1817,6 +1859,7 @@ async function callMistral(options = {}) {
       ...receipt,
       event: 'response',
       ...observedUsage(payload),
+      ...observedResponseShape(payload, 'mistral'),
       finish_reason: [
         'stop',
         'length',

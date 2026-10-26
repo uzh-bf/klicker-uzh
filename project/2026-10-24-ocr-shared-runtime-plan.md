@@ -825,3 +825,77 @@ passed. Later documentation-only receipt updates reuse the source review and
 synthetic evidence; the PR description records their current CI separately.
 The draft caller's immutable pin remains unchanged. Live acceptance of the new
 draft diagnostics requires a later pin update and a genuine ordinary review.
+
+## Advisor completion diagnostics
+
+The approved follow-up investigates advisor completions that reach their output
+limit. Source inspection establishes that the named `review_advice` tool choice
+is forwarded. Existing evidence cannot distinguish reasoning, answer content
+and tool arguments, so this package adds measurements before proposing a change
+to the completion contract. It makes no claim to repair provider behavior.
+
+Execution mode is standard. Main owns one implementation slice in the existing
+adapter, adapter tests, runtime manifest and runtime guide. The package starts
+from `v3` revision `256e461610e5055251863239d770ad0089e69713` on
+`rs/ocr-advisor-completion`. The read-only planner approved this contract.
+Source publication through an ordinary push and draft PR is authorized;
+activation, caller-pin adoption, settings, paid replays and merge are separate.
+
+Add numeric `reasoning_bytes`, `content_bytes`, `tool_calls` and
+`tool_arguments_bytes` to parsed response journal events. Reuse the adapter's
+message normalization inside a diagnostic-only failure boundary. Unsupported
+message shapes produce null shape counters. Count UTF-8 bytes, not characters
+or tokens. Record `reasoning_tokens` only when the provider reports a safe,
+nonnegative value no larger than a valid completion-token count; otherwise
+retain null. Emit these fields before ordinary response validation in both
+adapter entry points. Retain no response content or new free-form labels.
+
+Acceptance uses synthetic responses to exercise forced advisor tool selection,
+maximum reasoning and the existing output ceiling across the real adapter
+boundary. Cover length finishes, partial tool arguments, Unicode bytes,
+missing/invalid usage and unsupported shapes. Verify privacy with synthetic
+sentinels and preserve rejected-response usage and existing aggregate costs.
+Update the adapter's release hash and document unknown values and the
+source-versus-live boundary. Preserve models, reasoning, budgets, accounting,
+attempts, retry/resume, concurrency, deadlines and existing publication behavior.
+
+Run focused adapter, broker and runtime contracts with Node24 in an isolated
+test container; use existing formatting and staged data-hygiene checks. Run
+slice simplification and privacy/correctness review on the committed change,
+then one integrated final review. No application runtime or screenshot applies.
+Terminal: verified source, reviewed complete range, ordinary task-branch push
+and one accurately described draft PR against `v3`. Live evidence awaits
+separate caller adoption and the next ordinary review.
+
+### Source verification progress
+
+The adapter now emits the five numeric observations at both parsed-response
+journal seams. The complete affected suite passes 284 Node24 contracts with
+zero skips, including the actual stock OCR binary with synthetic providers.
+Formatting, release-manifest verification, staged Gitleaks and diff checks pass.
+The forced-advisor boundary test preserves the named tool choice, maximum
+reasoning and output ceiling; malformed responses retain their existing rejection
+behavior. Synthetic sentinels verify that journals contain no response content.
+
+The simplification review found no justified reduction: one helper serves two
+callers and reuses the existing normalizer. Privacy/correctness slice review and
+integrated final review passed without findings. This cohesive package has 248 substantive
+changed lines excluding project-artifact documentation; no active draft exists
+to absorb it. The diagnostic gap follows the prior evidence package, so the
+runtime guide records the observation contract alongside its existing journal
+contract. Live failure hypotheses remain in private investigation notes until
+new evidence can distinguish them. No provider repair or live acceptance is
+claimed, and the caller's immutable runtime pin is unchanged.
+
+[Draft PR #6715](https://github.com/uzh-bf/klicker-uzh/pull/6715) contains this
+package. Its initial codebase check exposed an unchanged artifact guard that
+still expected the list from before the event sidecars were added. The failure
+was reproduced locally; the guard now requires both existing journal sidecars.
+This corrects the upload-contract expectation without changing runtime source,
+caller selection or workflow behavior. The new test-only correction receives
+focused verification and a final review addendum; prior runtime checks and
+source reviews remain applicable to the identical runtime files. Ordinary
+review suggestions about shared mutable state, missing usage and array content
+were checked against the per-call object, optional chaining and normalized
+message contract and require no runtime change. Current-head hosted CI remains
+separate from the completed local source proof.

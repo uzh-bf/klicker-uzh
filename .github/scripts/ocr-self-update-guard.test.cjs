@@ -124,10 +124,12 @@ test('preserves draft cancellation, publication and diagnostics policy', () => {
   const paths = upload.with.path.trim().split('\n')
   assert.deepEqual(paths, [
     '${{ runner.temp }}/draft-ai-review-adapter-diagnostics.jsonl',
+    '${{ runner.temp }}/draft-ai-review-adapter-diagnostics.jsonl.events.jsonl',
     '${{ runner.temp }}/draft-ai-review-outcome.json',
     '${{ runner.temp }}/draft-ai-review-tools.json',
     '${{ runner.temp }}/draft-ai-review-advisor-expectations.json',
     '${{ runner.temp }}/draft-ai-review-advisor-diagnostics.jsonl',
+    '${{ runner.temp }}/draft-ai-review-advisor-diagnostics.jsonl.events.jsonl',
     '${{ runner.temp }}/ocr-runtime-identity.json',
   ])
   assert.equal(upload.if, 'always()')
