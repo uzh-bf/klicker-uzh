@@ -65,7 +65,7 @@ The prototype is commit `6c12698c0f`, after the cherry-picked harness commits fr
 ### Slices
 
 1. Service on ltijs 7: dependencies, PostgreSQL adapter, handoff route, registration. Prototype commit, then cleanup: the advisory lock, a startup log with the real port instead of ltijs's banner (which reports its default port), and a comment on the handoff order.
-2. Harness: ltijs 7 reporting, WebKit calibration, replay checks, README without the dev-mode switch. The mock platform asserts the exact `redirect_uri` and can render its iframe with a `sandbox` attribute, so a staging finding can be reproduced locally. `restart-lti.sh` stays for other environment overrides.
+2. Harness: ltijs 7 reporting, WebKit calibration, replay checks, README without the dev-mode switch. The mock platform asserts the exact `redirect_uri` and can render its iframe with a `sandbox` attribute, so a staging finding can be reproduced locally. `restart-lti.sh` is removed: it existed to switch dev mode.
 3. Configuration: remove `LTI_DEV_MODE` and `LTI_AAS_MODE` from both charts, `.devcontainer/devcontainer.env` and `turbo.json`. Update `docs/auth-model.md`. Re-audit the `pnpm-workspace.yaml` overrides whose consumers left with ltijs-sequelize (`axios@<=0.31.1` for adal-node, the `mysql2` comment) with the `klicker-dependency-overrides` skill.
 
 ### Verification
@@ -86,3 +86,4 @@ The prototype is commit `6c12698c0f`, after the cherry-picked harness commits fr
 - 2026-10-26: plan approved by the user ("first we should care about the upgrade and verification and finalizing these PRs"). Deep Linking, one-time launch codes, asymmetric token signing and Dynamic Registration are tracked in the KlickerUZH Someday Backlog in ClickUp.
 - 2026-10-26: approach discussed with the advisor, prototype implemented and verified locally (see Evidence), then this plan reviewed with the advisor and its findings folded in.
 - Substantive size so far, outside the lockfile: the ltijs 7 commit adds 402 and removes 154 lines; with the harness from #6719, the branch adds 1004 and removes 105 lines against `v3-ai`.
+- 2026-10-26: slice 1 cleanup (`6faae94010`), slice 2 harness (`df13a0ac0b`) and slice 3 configuration done. The harness passes in Chromium, Firefox and WebKit, including both replay checks. The override audit marks only `axios@<=0.31.1` as made obsolete by this change; it is dropped with a one-line lockfile change. The audit reports six further overrides as no-ops on the base branch already (`glob`, three `brace-expansion` lines, `fast-uri`, `sharp`); they are left for a separate change. The `klicker-uzh-v2` chart directory keeps its LTI keys, because this package does not deploy through it.
