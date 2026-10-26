@@ -136,12 +136,6 @@ separate from local proof. Preserve actual failed/skipped producers honestly.
 Terminal: coherent reviewed draft source plus exact evidence and any concrete
 remaining activation decision; do not claim working live priority or deployment.
 
-## Progress
-
-2026-10-26: source baseline and consumers inspected; primary checkout clean.
-Task worktree created. No live setting, runner, trigger, subscription or budget mutation. No native
-goal is active. Independent planner review APPROVED after two focused corrections. Implementation next; no runtime services started.
-
 ### Event table and exact admission interface
 
 Workflow `run-name` uses only github/vars contexts. Eligible-looking ready
@@ -196,7 +190,7 @@ the new `@v3` helper.
 | Playwright and image validators | Main | Shared contract | Exact paid attempt, coverage, publication/cache negative regressions |
 | Integrated source delivery | Main; dedicated simplifier and risk reviewer, then Claude CLI final reviewer | Committed source and focused checks | Reviewed draft or concrete review/capability decision |
 
-Existing tests specifically extended: `ci-event-gates.test.cjs`,
+Existing tests specifically extended (plus the exact image status namespace and promotion mutation fixtures): `ci-event-gates.test.cjs`,
 `staging-image-plan.test.cjs`, `playwright-route.test.cjs`,
 `playwright-plan-metadata.test.cjs`, and
 `validate-public-playwright-workflow.test.cjs`. Workflow consumers run the new
@@ -234,3 +228,52 @@ contract. A requested priority event with nonempty legacy controls is denied
 priority before any legacy API request; a natural event retains ordinary hosted
 or pool execution without consuming those conflicting admissions. Test both
 ordinary-legacy compatibility and requested-priority conflict denial.
+
+### Final execution packaging
+
+The accepted implementation keeps ordinary jobs direct and emits seven acyclic priority-only
+`*-execution.yml` reusable workflows from canonical source using
+`.github/scripts/priority-ci-workflows.cjs`. CI enforces exact generated parity;
+these are not separately maintained copies. Each original workflow delegates
+priority work to its exact corresponding `@v3` executor. The priority caller
+retains serialization, while executor files have no concurrency or trigger loop.
+All jobs in each executor come from the canonical workflow with only its precise
+ordinary-delegation gate stripped. The caller forwards read scopes, existing
+Turbo secrets where applicable and existing image package-write scope. It never
+forwards new credentials. A hosted parent reporter requires called-workflow
+success and the actual terminal job's final status output. Missing or failed
+output fails; inactive or denied label events use non-required check names.
+
+Image status accepts only the exact `priority-execution / ` namespace supplied
+by generated trusted control before doing its existing exact producer-name
+matching. Ordinary push producer names, publication and promotion are unchanged.
+Tests extend `staging-image-status.test.cjs` and `stg-release-promoter.test.js`
+for new names, exact original validators and rejection cases. Plan critique of
+this acyclic generated variant is APPROVED. No live access or budget change.
+
+New files explicitly approved by this source design: seven execution workflows,
+`priority-ci-workflows.cjs` generation/parity helper, and the shared action's three
+files already named above. Existing check contract invocation owns parity;
+formatting of generated YAML is normalized by the existing Prettier version.
+
+## Progress
+
+2026-10-26: source implementation in progress in the task worktree. Primary
+checkout remains clean. One bounded explorer mapped consumers. Original planner
+completed three rounds with APPROVED. Trusted-execution amendment received one
+independent critique and one focused correction, ending APPROVED for the acyclic
+execution design. No paid admission, access write, trigger, budget, account or
+runner mutation. No native goal or scheduled wakeup is active. Disposable Node
+containers run focused source checks without application services.
+
+Integrated focused portfolio: 206 PASS in disposable Node 24, including real
+Git/zip fixtures, event predicates, generated parity, route/metadata, namespace
+evidence and promotion policy. Formatting and actionlint context checks pass
+with the existing job.workflow_sha/repository support gap explicitly excluded.
+Scoped Opengrep: 200 rules across seven files, two pre-existing nonliteral
+regex advisories in the existing image validator, no new finding. Staged secret
+scan and committed-range review remain pending. Required hosted and actual paid qualification are distinct gates.
+New generated workflows are part of this coherent routing package; substantive
+size excludes these derived artifacts and plan text. Normal single-draft topology
+remains appropriate because every caller implements one shared admission contract
+and independent partial rollout cannot complete its verification.

@@ -547,6 +547,7 @@ test('the reusable envelope owns lifecycle routing and selector shadow planning'
   const parsed = YAML.parse(workflow)
   assert.deepEqual(parsed.on.push.branches, ['v3', 'v3*'])
   assert.deepEqual(parsed.on.pull_request.types, [
+    'labeled',
     'opened',
     'synchronize',
     'reopened',

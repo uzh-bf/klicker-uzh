@@ -22,7 +22,14 @@ function evaluateGate(
   steps = {}
 ) {
   const normalized = expression
+    .trim()
+    .replace(/^\$\{\{([\s\S]*)\}\}$/, '$1')
+    .replace(
+      /github\.event\.pull_request\.labels\.\*\.name/g,
+      'github.event.pull_request.labels.map(label => label.name)'
+    )
     .replace(/needs\.([a-z][a-z0-9-]*)/g, 'needs["$1"]')
+    .replace(/\.outputs\.([a-z][a-z0-9_-]*)/g, '.outputs["$1"]')
     .replace(
       /steps\.([a-z][a-z0-9-]*)\.outputs\.([a-z_]+)/g,
       'steps["$1"].outputs["$2"]'
@@ -39,6 +46,8 @@ function evaluateGate(
     'steps',
     'format',
     'startsWith',
+    'endsWith',
+    'contains',
     `return (${normalized})`
   )(
     github,
@@ -47,14 +56,247 @@ function evaluateGate(
     () => cancelled,
     vars,
     steps,
-    (pattern, value) => {
-      assert.equal(pattern, '{0}')
-      return String(value)
-    },
+    (pattern, ...values) =>
+      pattern.replace(/\{(\d+)\}/g, (_, i) => String(values[Number(i)])),
     (value, prefix) =>
-      String(value).toLowerCase().startsWith(String(prefix).toLowerCase())
+      String(value).toLowerCase().startsWith(String(prefix).toLowerCase()),
+    (value, suffix) =>
+      String(value).toLowerCase().endsWith(String(suffix).toLowerCase()),
+    (values, value) => values.includes(value)
   )
 }
+
+function assertReporter(job, required) {
+  for (const cancelled of [false, true]) {
+    assert.equal(
+      evaluateGate(job.if, { event: { action: 'synchronize' } }, {}, cancelled),
+      true
+    )
+  }
+  for (const admitted of ['false', 'true']) {
+    const context = { event: { action: 'labeled' } }
+    const needs = {
+      'priority-route': { outputs: { run_label_event: admitted } },
+    }
+    assert.equal(evaluateGate(job.if, context, needs), admitted === 'true')
+    assert.equal(
+      evaluateGate(job.name, context, needs) === required,
+      admitted === 'true'
+    )
+  }
+}
+
+const PRIORITY_CONSUMERS = {
+  'check.yml': ['check-suite'],
+  'check-gitleaks.yml': ['check-gitleaks'],
+  'test-unit.yml': ['test-unit'],
+  'test-graphql.yml': ['test-graphql'],
+  'test-olat-api.yml': ['test-olat-api'],
+  'test-intl-production.yml': ['intl-production-smoke'],
+  'v3_images-stg.yml': [
+    'build',
+    'build-migrator',
+    'build-after-migrator',
+    'build-amd',
+  ],
+}
+
+function priorityContext(action = 'labeled') {
+  return {
+    workflow: 'synthetic workflow',
+    run_id: 200,
+    run_attempt: 1,
+    event_name: 'pull_request',
+    event: {
+      action,
+      label: { name: 'ci:priority' },
+      repository: { private: false },
+      pull_request: {
+        number: 42,
+        state: 'open',
+        draft: false,
+        user: { login: 'synthetic-contributor', type: 'User' },
+        labels: [{ name: 'ci:priority' }],
+        head: { sha: 'a'.repeat(40), repo: { full_name: 'synthetic/project' } },
+        base: { sha: 'b'.repeat(40) },
+      },
+    },
+    repository: 'synthetic/project',
+  }
+}
+
+test('every label-only event is noncancelling and isolated from ordinary validation', () => {
+  for (const file of Object.keys(PRIORITY_CONSUMERS)) {
+    const workflow = readWorkflow(file)
+    const vars = { PRIORITY_CI_ENABLED: 'true' }
+    const context = priorityContext()
+    const ordinary = priorityContext('synchronize')
+    ordinary.event.pull_request.labels = []
+    const ordinaryGroup = evaluateGate(
+      workflow.concurrency.group,
+      ordinary,
+      {},
+      false,
+      vars
+    )
+    for (const [change, settings] of [
+      [() => {}, vars],
+      [() => {}, { PRIORITY_CI_ENABLED: 'false' }],
+      [
+        (c) => {
+          c.event.pull_request.draft = true
+        },
+        vars,
+      ],
+      [
+        (c) => {
+          c.event.pull_request.head.repo.full_name = 'synthetic/fork'
+        },
+        vars,
+      ],
+      [
+        (c) => {
+          c.event.pull_request.user.type = 'Bot'
+        },
+        vars,
+      ],
+      [
+        (c) => {
+          c.event.label.name = 'unrelated'
+        },
+        vars,
+      ],
+    ]) {
+      const candidate = structuredClone(context)
+      change(candidate)
+      assert.equal(
+        evaluateGate(
+          workflow.concurrency['cancel-in-progress'],
+          candidate,
+          {},
+          false,
+          settings
+        ),
+        false,
+        file
+      )
+      assert.notEqual(
+        evaluateGate(
+          workflow.concurrency.group,
+          candidate,
+          {},
+          false,
+          settings
+        ),
+        ordinaryGroup,
+        file
+      )
+    }
+    const labeled = evaluateGate(
+      workflow.concurrency.group,
+      context,
+      {},
+      false,
+      vars
+    )
+    assert.equal(
+      labeled,
+      evaluateGate(
+        workflow.concurrency.group,
+        priorityContext('synchronize'),
+        {},
+        false,
+        vars
+      ),
+      file
+    )
+    assert.equal(
+      evaluateGate(
+        workflow.concurrency['cancel-in-progress'],
+        ordinary,
+        {},
+        false,
+        vars
+      ),
+      true,
+      file
+    )
+  }
+})
+
+test('priority consumers reject stale paid attempts and preserve ordinary hosted routing', () => {
+  for (const [file, consumers] of Object.entries(PRIORITY_CONSUMERS)) {
+    const workflow = readWorkflow(file)
+    for (const id of consumers) {
+      const job = readWorkflow(file.replace('.yml', '-execution.yml')).jobs[id]
+      const context = priorityContext('synchronize')
+      const outputs = {
+        admitted: 'true',
+        run_attempt: '1',
+        run_label_event: 'true',
+      }
+      const needs = {
+        'priority-route': { outputs },
+        select: { outputs: { should_run: 'true' } },
+        filter: { outputs: { should_run: 'true' } },
+        plan: {
+          outputs: {
+            build: 'true',
+            'migrator-build': 'true',
+            'after-migrator-build': 'true',
+            'amd-build': 'true',
+          },
+        },
+        'build-migrator': { result: 'success' },
+      }
+      if (id === 'check-gitleaks') {
+        outputs.runner_x64 = 'warp-ubuntu-2404-x64-4x'
+        context.run_attempt = 2
+        assert.equal(
+          evaluateGate(job['runs-on'], context, needs),
+          'ubuntu-latest'
+        )
+        assert.equal(evaluateGate(job.steps[0].if, context, needs), true)
+      } else {
+        assert.equal(
+          evaluateGate(job.if, context, needs),
+          true,
+          `${file}/${id}`
+        )
+        context.run_attempt = 2
+        assert.equal(
+          evaluateGate(job.if, context, needs),
+          false,
+          `${file}/${id} stale attempt`
+        )
+        outputs.admitted = 'false'
+        assert.equal(
+          evaluateGate(job.if, context, needs),
+          true,
+          `${file}/${id} hosted fallback`
+        )
+      }
+      assert.equal(job.strategy?.['max-parallel'], undefined)
+      assert.ok(
+        Array.isArray(job.needs)
+          ? job.needs.includes('priority-route')
+          : job.needs === 'priority-route'
+      )
+    }
+    const route = workflow.jobs['priority-route']
+    assert.equal(
+      evaluateGate(route.if, priorityContext(), {}, false, {}),
+      false,
+      'disabled skips unpublished action'
+    )
+    assert.equal(route.steps[0].with.ref, 'v3')
+    assert.equal(route.steps[0].with['persist-credentials'], false)
+    assert.equal(
+      route.steps[1].uses,
+      './.ci-priority/.github/actions/priority-ci-route'
+    )
+  }
+})
 
 test('paid jobs and legacy required coverage reject stale preparation on rerun', () => {
   const workflow = readWorkflow('public-pr-playwright-shards.yml')
@@ -255,7 +497,7 @@ test('terminal reporters run unconditionally so a skip cannot read as acceptable
   // GitHub can count a skipped required check as acceptable, so these jobs must
   // run even when a dependency failed or was cancelled and let the reporter body
   // decide: the shared helper fails on a cancelled dependency.
-  assert.equal(graphql.jobs['test-graphql-status'].if, 'always()')
+  assertReporter(graphql.jobs['test-graphql-status'], 'test-graphql-status')
   assert.doesNotMatch(graphql.jobs['test-graphql-status'].if, /!cancelled\(\)/)
   assert.doesNotMatch(
     graphql.jobs['test-graphql-status'].if,
@@ -415,6 +657,7 @@ test('graphql validation re-runs neither on edits nor at the ready boundary', ()
     'opened',
     'synchronize',
     'reopened',
+    'labeled',
   ])
 })
 
@@ -525,7 +768,11 @@ test('the producer-hosted analysis runs for a same-repository pull request only'
     assert.ok(job, name + ' must analyze the coverage it just produced')
     assert.equal(job.uses, './.github/workflows/sonar-analysis.yml', name)
     const reporter = suite + '-status'
-    assert.deepEqual(job.needs, ['filter', suite, reporter], name)
+    assert.deepEqual(
+      job.needs,
+      ['filter', suite, reporter, 'priority-route'],
+      name
+    )
     assert.ok(!workflow.jobs[reporter].needs.includes('sonarcloud'))
 
     // A draft is admitted here and deferred inside the analysis, because the
@@ -664,8 +911,11 @@ test('no workflow holds a runner while it waits for a coverage producer', () => 
 // requests are untrusted, so it restores a read-only Actions cache instead and
 // no public run may hold a credential that can write the shared cache.
 const TURBO_REMOTE_CACHE_CONSUMERS = [
+  'check-execution.yml',
   'check.yml',
+  'test-graphql-execution.yml',
   'test-graphql.yml',
+  'test-unit-execution.yml',
   'test-unit.yml',
 ]
 
@@ -762,9 +1012,17 @@ test('closed-pr sweeper covers every per-PR workflow concurrency group', () => {
     }
 
     const name = workflow.name ?? entry
-    const prefix = group.startsWith('${{ github.workflow }}-')
-      ? name
-      : group.slice(0, group.indexOf('-${{'))
+    const context = {
+      workflow: name,
+      run_id: 101,
+      event_name: 'pull_request',
+      event: { action: 'synchronize', pull_request: { number: 42 } },
+    }
+    const resolved = group.replace(/\$\{\{([\s\S]*?)\}\}/g, (_, expression) =>
+      evaluateGate(expression, context, {}, false, {})
+    )
+    if (!resolved.endsWith('-42')) continue
+    const prefix = resolved.replace(/-42$/, '')
     targets.set(entry, { name, prefix })
   }
 
@@ -811,11 +1069,13 @@ const REQUIRED_STATUS_REPORTERS = new Map([
 test('summary reporters always report and never suppress a required check', () => {
   for (const [name, [status, filter, suite]] of REQUIRED_STATUS_REPORTERS) {
     const workflow = readWorkflow(name)
-    const job = workflow.jobs[status]
+    const job = readWorkflow(name.replace('.yml', '-execution.yml')).jobs[
+      status
+    ]
     assert.ok(job, name + ' must define ' + status)
     // Unconditional: a skipped required context can count as acceptable, so the
     // job must run and let the reporter fail cancellation itself.
-    assert.equal(job.if, 'always()', name)
+    assertReporter(job, status)
     assert.doesNotMatch(job.if, /cancelled/, name)
     assert.ok(job.needs.includes(filter), name)
     assert.ok(job.needs.includes(suite), name)
@@ -832,7 +1092,10 @@ test('summary reporters always report and never suppress a required check', () =
       name + ' must not re-run on the ready transition'
     )
     assert.doesNotMatch(
-      String(workflow.jobs[suite].if ?? ''),
+      String(
+        readWorkflow(name.replace('.yml', '-execution.yml')).jobs[suite].if ??
+          ''
+      ),
       /pull_request\.draft/,
       name + ' suite must not gate on the draft state'
     )
@@ -860,8 +1123,8 @@ test('the codebase check reuses prior validation without suppressing its context
   const workflow = readWorkflow('check.yml')
   const terminal = workflow.jobs.check
   assert.ok(terminal, 'check.yml must define the required check job')
-  assert.equal(terminal.if, 'always()')
-  assert.deepEqual(terminal.needs, ['select', 'check-suite'])
+  assertReporter(terminal, 'check')
+  assert.deepEqual(terminal.needs, ['select', 'check-suite', 'priority-route'])
   assert.ok(
     terminal.steps.some(
       (step) =>
@@ -1106,5 +1369,44 @@ test('OCR engine qualification only runs for related paths or an unproven diff',
         true
       )
     }
+  }
+})
+
+test('trusted priority envelopes are exact acyclic derivatives and required wrappers reject missing results', () => {
+  const { generate, TERMINALS } = require('./priority-ci-workflows.cjs')
+  generate(root)
+  for (const [file, terminal] of Object.entries(TERMINALS)) {
+    const caller = readWorkflow(file)
+    const child = readWorkflow(file.replace('.yml', '-execution.yml'))
+    assert.deepEqual(Object.keys(child.on), ['workflow_call'])
+    assert.equal(child.concurrency, undefined)
+    assert.equal(child.jobs['priority-execution'], undefined)
+    assert.equal(child.jobs['priority-status'], undefined)
+    assert.equal(
+      caller.jobs['priority-execution'].uses,
+      `uzh-bf/klicker-uzh/.github/workflows/${file.replace('.yml', '-execution.yml')}@v3`
+    )
+    const report = caller.jobs['priority-status']
+    assert.match(report.if, /always\(\)/)
+    const step = report.steps[0]
+    assert.equal(
+      step.env.EXECUTION_RESULT,
+      '${{ needs.priority-execution.result }}'
+    )
+    assert.equal(
+      step.env.REQUIRED_RESULT,
+      '${{ needs.priority-execution.outputs.required_result }}'
+    )
+    assert.equal(
+      step.run,
+      'test "$EXECUTION_RESULT" = success && test "$REQUIRED_RESULT" = success'
+    )
+    const producer = child.jobs[terminal]
+    assert.equal(producer.steps.at(-1).if, 'always()')
+    assert.equal(producer.steps.at(-1).env.TERMINAL_RESULT, '${{ job.status }}')
+    assert.equal(
+      child.on.workflow_call.outputs.required_result.value,
+      '${{ jobs.' + terminal + '.outputs.required_result }}'
+    )
   }
 })

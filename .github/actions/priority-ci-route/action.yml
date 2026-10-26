@@ -1,0 +1,36 @@
+name: Priority CI routing
+description: Select fixed paid runners only after trusted current-head admission
+outputs:
+  admitted:
+    value: ${{ steps.route.outputs.admitted }}
+    description: Whether this exact first attempt owns the priority request
+  run_label_event:
+    value: ${{ steps.route.outputs.run_label_event }}
+    description: Whether a label-only invocation may publish required checks
+  run_attempt:
+    value: ${{ steps.route.outputs.run_attempt }}
+    description: The admitted attempt, checked again by every paid consumer
+  runner_x64:
+    value: ${{ steps.route.outputs.runner_x64 }}
+    description: Fixed x64 suite runner or ordinary hosted fallback
+  runner_build:
+    value: ${{ steps.route.outputs.runner_build }}
+    description: Fixed x64 build runner or ordinary hosted fallback
+  runner_arm:
+    value: ${{ steps.route.outputs.runner_arm }}
+    description: Fixed ARM image runner or ordinary hosted fallback
+runs:
+  using: composite
+  steps:
+    - id: route
+      shell: bash
+      env:
+        PRIORITY_ACTION_PATH: ${{ github.action_path }}
+        PRIORITY_ENABLED: ${{ vars.PRIORITY_CI_ENABLED }}
+        PRIORITY_CANARY_PR: ${{ vars.PRIORITY_CI_CANARY_PR }}
+        LEGACY_ADMISSIONS: ${{ vars.PUBLIC_PR_PLAYWRIGHT_WARPBUILD_ADMISSIONS }}
+        LEGACY_ADMISSION_URL: ${{ vars.PUBLIC_PR_PLAYWRIGHT_WARPBUILD_ADMISSION_URL }}
+        LEGACY_BURST_GRANT: ${{ vars.PUBLIC_PR_PLAYWRIGHT_WARPBUILD_BURST_GRANT }}
+        FORCE_HOSTED_PR: ${{ vars.PUBLIC_PR_ARM64_PLAYWRIGHT_FORCE_HOSTED_CANARY_PR }}
+        GITHUB_TOKEN: ${{ github.token }}
+      run: node "$PRIORITY_ACTION_PATH/route.cjs"

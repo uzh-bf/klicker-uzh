@@ -1,11 +1,18 @@
 name: Klicker automated testing with playwright
 
+run-name: ${{ vars.PRIORITY_CI_ENABLED == 'true' && github.event_name == 'pull_request' && github.event.pull_request.state == 'open' && github.event.pull_request.draft == false && github.event.repository.private == false && github.event.pull_request.head.repo.full_name == github.repository && !endsWith(github.event.pull_request.user.login, '[bot]') && contains(github.event.pull_request.labels.*.name, 'ci:priority') && (github.event.action != 'labeled' || github.event.label.name == 'ci:priority') && format('priority:{0}:{1}:{2}', github.event.pull_request.number, github.event.pull_request.head.sha, github.event.pull_request.base.sha) || format('ordinary:{0}', github.run_id) }}
+
+concurrency:
+  group: ${{ github.workflow }}-${{ vars.PRIORITY_CI_ENABLED == 'true' && github.event_name == 'pull_request' && github.event.pull_request.state == 'open' && github.event.pull_request.draft == false && github.event.repository.private == false && github.event.pull_request.head.repo.full_name == github.repository && !endsWith(github.event.pull_request.user.login, '[bot]') && contains(github.event.pull_request.labels.*.name, 'ci:priority') && (github.event.action != 'labeled' || github.event.label.name == 'ci:priority') && format('priority:{0}:{1}:{2}', github.event.pull_request.number, github.event.pull_request.head.sha, github.event.pull_request.base.sha) || format('ordinary:{0}', github.run_id) }}
+  cancel-in-progress: false
+
 on:
   push:
     branches: ['v3', 'v3*']
   pull_request:
     branches: ['v3', 'v3*']
     types: [
+        labeled,
         opened,
         synchronize,
         reopened,
@@ -24,7 +31,7 @@ jobs:
   cancel-closed-pr:
     if: github.event_name == 'pull_request' && github.event.action == 'closed'
     concurrency:
-      group: ${{ github.workflow }}-playwright-${{ github.event.pull_request.number || github.ref }}
+      group: ${{ github.event.action == 'labeled' && format('ignored:{0}', github.run_id) || (vars.PRIORITY_CI_ENABLED == 'true' && github.event_name == 'pull_request' && github.event.pull_request.state == 'open' && github.event.pull_request.draft == false && github.event.repository.private == false && github.event.pull_request.head.repo.full_name == github.repository && !endsWith(github.event.pull_request.user.login, '[bot]') && contains(github.event.pull_request.labels.*.name, 'ci:priority') && (github.event.action != 'labeled' || github.event.label.name == 'ci:priority')) && format('priority:{0}:{1}:{2}', github.event.pull_request.number, github.event.pull_request.head.sha, github.event.pull_request.base.sha) || format('{0}-playwright-{1}', github.workflow, github.event.pull_request.number || github.ref) }}
       cancel-in-progress: true
     runs-on: ubuntu-latest
     timeout-minutes: 5
@@ -45,13 +52,14 @@ jobs:
       github.event_name != 'pull_request' ||
       github.event.pull_request.state == 'open'
     concurrency:
-      group: ${{ github.workflow }}-playwright-${{ github.event.pull_request.number || github.ref }}
+      group: ${{ github.event.action == 'labeled' && format('ignored:{0}', github.run_id) || (vars.PRIORITY_CI_ENABLED == 'true' && github.event_name == 'pull_request' && github.event.pull_request.state == 'open' && github.event.pull_request.draft == false && github.event.repository.private == false && github.event.pull_request.head.repo.full_name == github.repository && !endsWith(github.event.pull_request.user.login, '[bot]') && contains(github.event.pull_request.labels.*.name, 'ci:priority') && (github.event.action != 'labeled' || github.event.label.name == 'ci:priority')) && format('priority:{0}:{1}:{2}', github.event.pull_request.number, github.event.pull_request.head.sha, github.event.pull_request.base.sha) || format('{0}-playwright-{1}', github.workflow, github.event.pull_request.number || github.ref) }}
       # A readiness event waits for the existing execution; new code still cancels.
-      cancel-in-progress: ${{ github.event.action != 'ready_for_review' }}
+      cancel-in-progress: ${{ github.event.action != 'ready_for_review' && github.event.action != 'labeled' && !(vars.PRIORITY_CI_ENABLED == 'true' && github.event_name == 'pull_request' && github.event.pull_request.state == 'open' && github.event.pull_request.draft == false && github.event.repository.private == false && github.event.pull_request.head.repo.full_name == github.repository && !endsWith(github.event.pull_request.user.login, '[bot]') && contains(github.event.pull_request.labels.*.name, 'ci:priority') && (github.event.action != 'labeled' || github.event.label.name == 'ci:priority')) }}
     permissions:
       contents: read
       actions: read
       pull-requests: read
+      issues: read
       id-token: write
     uses: uzh-bf/klicker-uzh/.github/workflows/public-pr-playwright-shards.yml@v3
     with:
@@ -64,6 +72,7 @@ jobs:
   # requests report nothing: their gate no longer exists, and reporting could
   # only launch reporting work for a merged branch.
   test-playwright-status:
+    name: ${{ (github.event.action != 'labeled' || needs.test-playwright-execution.outputs.priority_label_event == 'true') && 'test-playwright-status' || 'test-playwright-status (priority not admitted)' }}
     needs: test-playwright-execution
     # Unconditional for open events: a skipped required context can count as
     # acceptable, so cancellation must fail inside the job instead.

@@ -485,7 +485,7 @@ test('rejects unsafe workflow publication changes', () => {
   reject(
     'reduced pull-request types',
     mutate(
-      'types: [opened, synchronize, reopened, ready_for_review]',
+      'types: [opened, synchronize, reopened, ready_for_review, labeled]',
       'types: [opened]'
     ),
     /approved pull-request triggers/
@@ -493,8 +493,8 @@ test('rejects unsafe workflow publication changes', () => {
   reject(
     'workflow-level path filter',
     mutate(
-      '    types: [opened, synchronize, reopened, ready_for_review]',
-      '    paths:\n      - apps/auth/**\n    types: [opened, synchronize, reopened, ready_for_review]'
+      '    types: [opened, synchronize, reopened, ready_for_review, labeled]',
+      '    paths:\n      - apps/auth/**\n    types: [opened, synchronize, reopened, ready_for_review, labeled]'
     ),
     /must not filter pull-request paths/
   )
@@ -586,7 +586,10 @@ test('rejects unsafe workflow publication changes', () => {
   )
   reject(
     'ARM build no longer defers drafts',
-    mutate('github.event.pull_request.draft == false', 'true'),
+    mutate(
+      "(github.event_name != 'pull_request' || github.event.pull_request.draft == false)",
+      'true'
+    ),
     /does not defer draft builds/
   )
   reject(
@@ -621,8 +624,8 @@ test('rejects unsafe workflow publication changes', () => {
   reject(
     'status job no longer reports',
     mutate(
-      '    if: always()\n    runs-on: ubuntu-latest\n    timeout-minutes: 10',
-      '    if: success()\n    runs-on: ubuntu-latest\n    timeout-minutes: 10'
+      "(always() && (github.event.action != 'labeled' || needs.priority-route.outputs.run_label_event == 'true'))",
+      'success()'
     ),
     /must report for every outcome/
   )
