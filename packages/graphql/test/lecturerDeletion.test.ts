@@ -358,6 +358,14 @@ describe('cooperative lecturer deletion on marked disposable PostgreSQL', () => 
     const target = await user()
     const foreign = await user()
     const element = await question(target)
+    const log = await prisma.activityLogEntry.create({
+      data: {
+        userId: target.id,
+        elementId: element.id,
+        objectType: 'ELEMENT',
+        type: 'CREATION',
+      },
+    })
     const session = await prisma.session.create({
       data: {
         userId: target.id,
@@ -396,6 +404,9 @@ describe('cooperative lecturer deletion on marked disposable PostgreSQL', () => 
         .isDeleted
     ).toBe(true)
     await purgePrivateElement(prisma, target, element.id)
+    expect(
+      await prisma.activityLogEntry.findUnique({ where: { id: log.id } })
+    ).toBeNull()
     await finalizeLecturerDeletion(prisma, target, { mediaIds: [] })
     expect(
       await prisma.user.findUnique({ where: { id: target.id } })
@@ -456,6 +467,60 @@ describe('cooperative lecturer deletion on marked disposable PostgreSQL', () => 
         id: nonempty.id,
       })
     ).rejects.toThrow()
+  })
+
+  it('preserves historic disclaimer acceptances without a foreign key', async () => {
+    const target = await user()
+    const foreign = await user()
+    const date = new Date()
+    const course = await prisma.course.create({
+      data: {
+        ownerId: foreign.id,
+        authType: 'SSO',
+        name: '',
+        displayName: '',
+        startDate: date,
+        endDate: date,
+        groupDeadlineDate: date,
+      },
+    })
+    const bot = await prisma.chatbot.create({
+      data: { ownerId: foreign.id, courseId: course.id, name: '' },
+    })
+    const disclaimer = await prisma.chatbotDisclaimer.create({
+      data: { ownerId: target.id, name: '', title: '' },
+    })
+    const participant = await prisma.participant.create({
+      data: { username: randomUUID(), password: randomUUID() },
+    })
+    try {
+      await prisma.chatUsageCredits.create({
+        data: {
+          participantId: participant.id,
+          chatbotId: bot.id,
+          acceptedDisclaimerId: disclaimer.id,
+        },
+      })
+      const report = await previewLecturerDeletion(prisma, target)
+      expect(
+        report.blockers.some(
+          (b) => b.reason === 'historical-disclaimer-acceptance'
+        )
+      ).toBe(true)
+      await expect(
+        deleteUnusedLecturerLeaf(prisma, target, {
+          kind: 'chatbotDisclaimer',
+          id: disclaimer.id,
+        })
+      ).rejects.toThrow()
+      expect(
+        await prisma.chatbotDisclaimer.findUnique({
+          where: { id: disclaimer.id },
+        })
+      ).not.toBeNull()
+    } finally {
+      await prisma.participant.delete({ where: { id: participant.id } })
+    }
   })
 
   it('refuses wrong target identity and unexpected media at finalization', async () => {

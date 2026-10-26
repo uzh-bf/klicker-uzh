@@ -755,12 +755,6 @@ async function inspectDirectUserRelations(
   rowHashes: Set<string>,
   blockers: DeletionBlocker[]
 ) {
-  const deferredActivityLogs: Array<{
-    key: string
-    table: string
-    id: string
-  }> = []
-
   for (const edge of catalog.userEdges) {
     const classification = USER_FK_CLASSIFIER.get(
       `${edge.table}.${edge.column}`
@@ -822,11 +816,11 @@ async function inspectDirectUserRelations(
           )
         }
       } else if (edge.table === 'ActivityLogEntry') {
-        deferredActivityLogs.push({
-          key: rowKey(edge.table, id),
-          table: edge.table,
-          id,
-        })
+        if (!privateRows.has(rowKey(edge.table, id))) {
+          blockers.push(
+            blocker(edge.table, id, 'attribution', 'foreign-object')
+          )
+        }
       } else if (
         edge.table === 'AccessRequest' &&
         edge.column === 'objectAdminOrOwnerId'
@@ -846,12 +840,14 @@ async function inspectDirectUserRelations(
       }
     }
   }
+}
 
-  for (const log of deferredActivityLogs) {
-    if (!privateRows.has(log.key)) {
-      blockers.push(blocker(log.table, log.id, 'attribution', 'foreign-object'))
-    }
-  }
+async function hasDisclaimerAcceptance(tx: Tx, id: string) {
+  const rows = await tx.$queryRaw<Array<{ exists: number }>>`
+    SELECT 1 AS "exists" FROM "ChatUsageCredits"
+    WHERE "acceptedDisclaimerId" = ${id}::uuid LIMIT 1
+  `
+  return rows.length > 0
 }
 
 async function inventory(
@@ -978,6 +974,19 @@ async function inventory(
       if (!row.pk) {
         addIncomplete(blockers, leaf.table, 'missing-id')
         continue
+      }
+      if (
+        leaf.table === 'ChatbotDisclaimer' &&
+        (await hasDisclaimerAcceptance(tx, row.pk))
+      ) {
+        blockers.push(
+          blocker(
+            leaf.table,
+            row.pk,
+            'retainedData',
+            'historical-disclaimer-acceptance'
+          )
+        )
       }
       rowHashes.add(`${leaf.table}:${row.hash}`)
       privateRows.add(rowKey(leaf.table, row.pk))
@@ -1142,6 +1151,7 @@ async function inventory(
                 (ref) => ref.table === 'User' && ref.value !== target.id
               )
               if (
+                hasForeignRootRef(row, rootIds) ||
                 foreignGrant ||
                 row.userGroupId !== null ||
                 !hasTargetRootRef(row, rootIds)
@@ -1193,16 +1203,6 @@ async function inventory(
               )
               continue
             }
-            if (
-              edge.table === 'ActivityLogEntry' &&
-              !userRefsAreTargetPrivate(row, target)
-            ) {
-              blockers.push(
-                blocker(edge.table, id, 'attribution', 'foreign-user')
-              )
-              continue
-            }
-
             privateRows.add(key)
             parentChecks.push({ table: edge.table, id, refs: row.refs })
             const node = nodeFromRow(catalog, edge.table, row)
@@ -1619,6 +1619,11 @@ export async function deleteUnusedLecturerLeaf(
       await lockExactUser(tx, target)
       const catalog = await loadCatalog(tx)
       const table = quote(definition.table)
+      if (
+        definition.table === 'ChatbotDisclaimer' &&
+        (await hasDisclaimerAcceptance(tx, String(action.id)))
+      )
+        fail('RESIDUAL_DEPENDENCIES')
       const rows = await tx.$queryRawUnsafe<Array<{ ownerId: string }>>(
         `SELECT "ownerId"::text AS "ownerId" FROM ${table} WHERE "id" = $1 FOR UPDATE`,
         action.id
