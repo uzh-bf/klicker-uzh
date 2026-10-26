@@ -266,7 +266,7 @@ export function ParticipantDataUseSettings({
   const t = useTranslations()
   const [open, setOpen] = useState(false)
   const [state, setState] = useState<ChatDataUseState | null>(null)
-  const [loading, setLoading] = useState(false)
+  const [loading, setLoading] = useState(true)
   const [saving, setSaving] = useState(false)
   const [failed, setFailed] = useState(false)
   const [conflict, setConflict] = useState(false)
