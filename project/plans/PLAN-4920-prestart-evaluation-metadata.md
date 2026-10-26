@@ -103,11 +103,24 @@ closure, restart, mobile interactions and deletion without skips. Evaluation
 application code is unchanged. Two additional EN/DE captures at 390px supplement
 the 15 earlier synthetic captures in the PR gallery.
 
-The completion correction and this evidence update await publication. Exact-head
-CI and the current final AI review remain outstanding. Reuse the prior complete
-independent review for unchanged evaluation contracts and review this new test
-correction after committing it. Stop and verify the exact fresh runtime after
-the final runtime-dependent check; preserve its checkout and data.
+The completion correction is published as `0299cc5ca3` through a normal push.
+The independent integrated final review passes on that head, reusing unchanged
+application evidence and directly reviewing the test and plan corrections.
+The simplifier found no warranted reduction. The host hook rejected stale
+dependency settings; equivalent container checks/build, focused formatting,
+identity and staged secret scans passed before the documented hook bypass.
+
+The exact fresh runtime `trees/pr4920-readiness-20261026` is stopped. Source-path
+resolution identifies `volumes-home-git-klicke-200644bd`; its provider reports
+`Stopped`, its app container is exited, and zero routes remain. Its checkout and
+synthetic data are retained. The manual runtime and historical work remain
+untouched.
+
+Exact-head CI and the repository final AI review remain outstanding at this
+checkpoint. This documentation-only update preserves all tested code and review
+coverage. Continue on its published head, record producing CI and platform review
+outcomes in the ignored verification receipt and PR evidence, then hold that head.
+Human review clearance and later release qualification remain separate gates.
 
 ## Historical roadmap — 2026-10-07
 
