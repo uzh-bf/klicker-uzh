@@ -951,6 +951,23 @@ const messages = {
             export: 'CSV',
             sameStudents: 'Same students, new settings',
           },
+          subcompetences: {
+            title: 'Subcompetences',
+            hint: 'How often each subcompetence was asked and counted, and which levels its questions cover. The deviation is only a rough indicator: a simulated student has the same true level in all subcompetences of a competence, and a subcompetence gets only a few answers.',
+            subcompetence: 'Subcompetence',
+            answers: 'Answers per attempt',
+            min: 'min. {min}',
+            covered: 'Covered',
+            notSampled: 'Not sampled',
+            outOfRange: 'Out of range',
+            pool: 'Questions per level',
+            poolCell: '{level}: {count} questions, {used} used',
+            gaps: 'No questions for {levels}',
+            deviation: 'Rough deviation',
+            estimated: '{count} with a level',
+            legend:
+              "Questions per level: green = used in this run, grey = never used, red = no question at this level. Covered = got its minimum answers; not sampled = skipped this attempt; out of range = far from the student's level, not required.",
+          },
           students: {
             student: 'Student',
             competences: 'True → reported level',

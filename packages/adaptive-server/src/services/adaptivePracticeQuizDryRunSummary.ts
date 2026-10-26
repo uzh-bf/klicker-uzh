@@ -38,6 +38,102 @@ function metricsOf(pairs: Pair[]): DryRunMetrics {
   }
 }
 
+type DryRunSubcompetenceSummary = NonNullable<
+  PrismaJson.PrismaAdaptiveDryRunSummary['subcompetences']
+>[number]
+
+type DryRunPoolItem = {
+  id: number
+  leafNodeId: number
+  additionalLeafNodeIds?: readonly number[]
+  levelId: number
+}
+
+/**
+ * Per subcompetence: answers, coverage and question-pool gaps. A simulated
+ * student has one true level per competence, so the leaf deviation is only a
+ * rough indicator from the few answers a leaf gets.
+ */
+export function summarizeAdaptiveDryRunSubcompetences({
+  students,
+  levels,
+  leaves,
+  pool,
+}: {
+  students: PrismaJson.PrismaAdaptiveDryRunStudents
+  levels: ReadonlyArray<{ id: number; order: number }>
+  leaves: ReadonlyArray<{ nodeId: number; rootId: number }>
+  pool: ReadonlyArray<DryRunPoolItem>
+}): DryRunSubcompetenceSummary[] {
+  const orderById = new Map(levels.map(({ id, order }) => [id, order]))
+  const used = new Set(
+    students.flatMap(({ answers }) =>
+      answers.map(({ poolItemId }) => poolItemId)
+    )
+  )
+  return leaves.map(({ nodeId, rootId }) => {
+    const rows = students.flatMap((student) => {
+      const row = student.subcompetences?.find((leaf) => leaf.nodeId === nodeId)
+      if (!row) return []
+      const trueLevelId = student.trueLevels.find(
+        (level) => level.nodeId === rootId
+      )?.levelId
+      return [{ ...row, trueLevelId }]
+    })
+    const coverage: DryRunSubcompetenceSummary['coverage'] = {
+      COVERED: 0,
+      SAMPLED_PENDING: 0,
+      NOT_SAMPLED: 0,
+      OUT_OF_RANGE: 0,
+      NONE: 0,
+    }
+    for (const { coverageStatus } of rows) {
+      const key =
+        coverageStatus !== null && coverageStatus in coverage
+          ? (coverageStatus as keyof typeof coverage)
+          : 'NONE'
+      coverage[key]++
+    }
+    const deviations = rows.flatMap(({ levelId, trueLevelId }) =>
+      levelId === null || trueLevelId === undefined
+        ? []
+        : [orderById.get(levelId)! - orderById.get(trueLevelId)!]
+    )
+    const counts = rows.map(({ responseCount }) => responseCount)
+    const items = pool.filter(
+      (item) =>
+        item.leafNodeId === nodeId ||
+        (item.additionalLeafNodeIds ?? []).includes(nodeId)
+    )
+    return {
+      nodeId,
+      rootId,
+      meanAnswers:
+        counts.length === 0
+          ? 0
+          : counts.reduce((sum, value) => sum + value, 0) / counts.length,
+      minAnswers: counts.length === 0 ? 0 : Math.min(...counts),
+      coverage,
+      estimatedCount: deviations.length,
+      meanDeviation:
+        deviations.length === 0
+          ? null
+          : deviations.reduce((sum, value) => sum + value, 0) /
+            deviations.length,
+      pool: [...levels]
+        .sort((a, b) => a.order - b.order)
+        .map(({ id }) => {
+          const atLevel = items.filter(({ levelId }) => levelId === id)
+          return {
+            levelId: id,
+            count: atLevel.length,
+            used: atLevel.filter((item) => used.has(item.id)).length,
+          }
+        }),
+    }
+  })
+}
+
 export function summarizeAdaptiveDryRun({
   students,
   levels,
@@ -163,6 +259,8 @@ export function toAdaptiveDryRunStudent(student: {
       standardError: number | null
       levelId: number | null
       stopReason: string | null
+      responseCount: number
+      coverageStatus?: string | null
     }>
   }
 }): DryRunStudent {
@@ -191,6 +289,17 @@ export function toAdaptiveDryRunStudent(student: {
         standardError: node.standardError,
         levelId: node.levelId,
         classified: node.stopReason === 'CLASSIFIED',
+      })),
+    subcompetences: student.estimates.nodes
+      .filter(
+        (node): node is typeof node & { nodeId: number } =>
+          node.nodeKind === 'SUBCOMPETENCE' && node.nodeId !== null
+      )
+      .map((node) => ({
+        nodeId: node.nodeId,
+        responseCount: node.responseCount,
+        levelId: node.levelId,
+        coverageStatus: node.coverageStatus ?? null,
       })),
   }
 }

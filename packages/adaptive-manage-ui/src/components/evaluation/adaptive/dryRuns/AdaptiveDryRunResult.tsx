@@ -12,6 +12,7 @@ import { downloadCsv } from '../attemptDiagnostics/adaptiveAttemptCsv'
 import AdaptiveDryRunConfusion from './AdaptiveDryRunConfusion'
 import AdaptiveDryRunMetrics, { formatBias } from './AdaptiveDryRunMetrics'
 import AdaptiveDryRunStudents from './AdaptiveDryRunStudents'
+import AdaptiveDryRunSubcompetences from './AdaptiveDryRunSubcompetences'
 import {
   buildDryRunAnswersCsv,
   buildDryRunStudentsCsv,
@@ -210,6 +211,13 @@ function AdaptiveDryRunResult({
             ))}
           </tbody>
         </table>
+      ) : null}
+
+      {summary.subcompetences && summary.subcompetences.length > 0 ? (
+        <AdaptiveDryRunSubcompetences
+          rows={summary.subcompetences}
+          workspace={workspace}
+        />
       ) : null}
 
       <div className="grid gap-4 lg:grid-cols-[3fr_2fr]">

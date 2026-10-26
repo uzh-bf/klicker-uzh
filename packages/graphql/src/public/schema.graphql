@@ -442,6 +442,12 @@ type AdaptiveDryRunLevel {
   order: Int!
 }
 
+type AdaptiveDryRunSubcompetence {
+  name: String!
+  nodeId: Int!
+  rootId: Int!
+}
+
 type AdaptiveDryRunWorkspace {
   available: Boolean!
   competences: [AdaptiveDryRunCompetence!]!
@@ -452,6 +458,7 @@ type AdaptiveDryRunWorkspace {
   maxStudents: Int!
   publicationId: String
   runs: [AdaptiveDryRun!]!
+  subcompetences: [AdaptiveDryRunSubcompetence!]!
   unavailableReason: String
 }
 

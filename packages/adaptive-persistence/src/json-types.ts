@@ -300,6 +300,26 @@ declare global {
         usedCount: number
         top: Array<{ poolItemId: number; count: number }>
       }
+      /** Absent in runs stored before the subcompetence breakdown. */
+      subcompetences?: Array<{
+        nodeId: number
+        rootId: number
+        meanAnswers: number
+        minAnswers: number
+        /** Attempts per leaf coverage status; NONE = no status reported. */
+        coverage: {
+          COVERED: number
+          SAMPLED_PENDING: number
+          NOT_SAMPLED: number
+          OUT_OF_RANGE: number
+          NONE: number
+        }
+        /** Attempts with a leaf level, and their mean signed error in levels. */
+        estimatedCount: number
+        meanDeviation: number | null
+        /** Pool items mapped to the leaf, per level, and how many were used. */
+        pool: Array<{ levelId: number; count: number; used: number }>
+      }>
     }
 
     type PrismaAdaptiveDryRunStudents = Array<{
@@ -324,6 +344,13 @@ declare global {
         standardError: number | null
         levelId: number | null
         classified: boolean
+      }>
+      /** Absent in runs stored before the subcompetence breakdown. */
+      subcompetences?: Array<{
+        nodeId: number
+        responseCount: number
+        levelId: number | null
+        coverageStatus: string | null
       }>
     }>
   }

@@ -969,6 +969,23 @@ const messages = {
             export: 'CSV',
             sameStudents: 'Gleiche Studierende, neue Einstellungen',
           },
+          subcompetences: {
+            title: 'Teilkompetenzen',
+            hint: 'Wie oft jede Teilkompetenz gefragt und gezählt wurde und welche Niveaus ihre Fragen abdecken. Die Abweichung ist nur ein grober Hinweis: Eine simulierte Person hat in allen Teilkompetenzen einer Kompetenz dasselbe wahre Niveau, und eine Teilkompetenz erhält nur wenige Antworten.',
+            subcompetence: 'Teilkompetenz',
+            answers: 'Antworten pro Durchlauf',
+            min: 'min. {min}',
+            covered: 'Abgedeckt',
+            notSampled: 'Nicht ausgewählt',
+            outOfRange: 'Ausser Reichweite',
+            pool: 'Fragen pro Niveau',
+            poolCell: '{level}: {count} Fragen, {used} verwendet',
+            gaps: 'Keine Fragen für {levels}',
+            deviation: 'Grobe Abweichung',
+            estimated: '{count} mit Niveau',
+            legend:
+              'Fragen pro Niveau: grün = in diesem Testlauf verwendet, grau = nie verwendet, rot = keine Frage auf diesem Niveau. Abgedeckt = Minimum an Antworten erreicht; nicht ausgewählt = in diesem Durchlauf übersprungen; ausser Reichweite = weit vom Niveau der Person entfernt, nicht nötig.',
+          },
           students: {
             student: 'Person',
             competences: 'Wahres → ausgegebenes Niveau',

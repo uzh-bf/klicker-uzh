@@ -51,6 +51,25 @@ export type DryRunSummary = {
     usedCount: number
     top: Array<{ poolItemId: number; count: number }>
   }
+  /** Absent in runs stored before the subcompetence breakdown. */
+  subcompetences?: DryRunSubcompetenceSummary[]
+}
+
+export type DryRunSubcompetenceSummary = {
+  nodeId: number
+  rootId: number
+  meanAnswers: number
+  minAnswers: number
+  coverage: {
+    COVERED: number
+    SAMPLED_PENDING: number
+    NOT_SAMPLED: number
+    OUT_OF_RANGE: number
+    NONE: number
+  }
+  estimatedCount: number
+  meanDeviation: number | null
+  pool: Array<{ levelId: number; count: number; used: number }>
 }
 
 export type DryRunStudent = {
@@ -75,6 +94,12 @@ export type DryRunStudent = {
     standardError: number | null
     levelId: number | null
     classified: boolean
+  }>
+  subcompetences?: Array<{
+    nodeId: number
+    responseCount: number
+    levelId: number | null
+    coverageStatus: string | null
   }>
 }
 

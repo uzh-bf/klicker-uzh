@@ -12,6 +12,11 @@ query QAdaptivePracticeQuizDryRuns($practiceQuizId: String!) {
       nodeId
       name
     }
+    subcompetences {
+      nodeId
+      rootId
+      name
+    }
     items {
       poolItemId
       elementName

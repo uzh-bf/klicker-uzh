@@ -11,6 +11,7 @@ import type { ContextWithUser } from '@klicker-uzh/graphql/adaptive-context-type
 import * as DB from '@klicker-uzh/prisma/client'
 import {
   summarizeAdaptiveDryRun,
+  summarizeAdaptiveDryRunSubcompetences,
   toAdaptiveDryRunStudent,
 } from './adaptivePracticeQuizDryRunSummary.js'
 import { adaptivePracticeQuizError } from './adaptivePracticeQuizErrors.js'
@@ -66,6 +67,7 @@ export type AdaptiveDryRunWorkspace = {
   publicationId: string | null
   levels: Array<{ id: number; label: string; order: number }>
   competences: Array<{ nodeId: number; name: string }>
+  subcompetences: Array<{ nodeId: number; rootId: number; name: string }>
   items: Array<{
     poolItemId: number
     elementName: string
@@ -163,6 +165,13 @@ export async function getAdaptivePracticeQuizDryRuns(
           nodeId: id,
           name: nodeNames.get(id) ?? `#${id}`,
         })) ?? [],
+    subcompetences: runtime
+      ? dryRunLeaves(runtime).map(({ nodeId, rootId }) => ({
+          nodeId,
+          rootId,
+          name: nodeNames.get(nodeId) ?? `#${nodeId}`,
+        }))
+      : [],
     items:
       runtime?.publishedPool.map((item) => ({
         poolItemId: item.id,
@@ -199,6 +208,29 @@ export async function deleteAdaptivePracticeQuizDryRun(
     where: { id, practiceQuizId },
   })
   return count > 0
+}
+
+/** Enabled leaves (subcompetences) with their root competence. */
+function dryRunLeaves(runtime: LoadedAdaptiveRuntime) {
+  const nodes = runtime.algorithm.nodes
+  const byId = new Map(nodes.map((node) => [node.id, node]))
+  const parents = new Set(nodes.map(({ parentId }) => parentId))
+  const rootOf = (id: number): number => {
+    const parentId = byId.get(id)?.parentId ?? null
+    return parentId === null ? id : rootOf(parentId)
+  }
+  const enabledPath = (id: number): boolean => {
+    const node = byId.get(id)
+    if (!node?.enabled) return false
+    return node.parentId === null || enabledPath(node.parentId)
+  }
+  return nodes
+    .filter(
+      ({ id, parentId }) =>
+        parentId !== null && !parents.has(id) && enabledPath(id)
+    )
+    .sort((a, b) => a.depth - b.depth || a.order - b.order)
+    .map(({ id }) => ({ nodeId: id, rootId: rootOf(id) }))
 }
 
 function invalidInput(message: string) {
@@ -349,11 +381,19 @@ export async function runAdaptivePracticeQuizDryRun(
   const response = await runEngine(request)
   const durationMs = Math.max(0, Math.round(now() - startedAt))
   const students = response.students.map(toAdaptiveDryRunStudent)
-  const summary = summarizeAdaptiveDryRun({
-    students,
-    levels: runtime.algorithm.levels,
-    poolSize: runtime.algorithm.pool.length,
-  })
+  const summary = {
+    ...summarizeAdaptiveDryRun({
+      students,
+      levels: runtime.algorithm.levels,
+      poolSize: runtime.algorithm.pool.length,
+    }),
+    subcompetences: summarizeAdaptiveDryRunSubcompetences({
+      students,
+      levels: runtime.algorithm.levels,
+      leaves: dryRunLeaves(runtime),
+      pool: runtime.algorithm.pool,
+    }),
+  }
 
   // Run numbers count up per quiz; the unique key settles concurrent runs.
   const latest = await ctx.prisma.adaptivePracticeQuizDryRun.findFirst({

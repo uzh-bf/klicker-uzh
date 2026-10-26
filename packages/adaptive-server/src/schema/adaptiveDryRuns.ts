@@ -59,6 +59,18 @@ export function createAdaptiveDryRunSchema(builder: AdaptiveSchemaBuilder) {
       }),
     })
 
+  const SubcompetenceType = builder
+    .objectRef<AdaptiveDryRunWorkspace['subcompetences'][number]>(
+      'AdaptiveDryRunSubcompetence'
+    )
+    .implement({
+      fields: (t) => ({
+        nodeId: t.exposeInt('nodeId'),
+        rootId: t.exposeInt('rootId'),
+        name: t.exposeString('name'),
+      }),
+    })
+
   const ItemType = builder
     .objectRef<AdaptiveDryRunWorkspace['items'][number]>('AdaptiveDryRunItem')
     .implement({
@@ -81,6 +93,9 @@ export function createAdaptiveDryRunSchema(builder: AdaptiveSchemaBuilder) {
         publicationId: t.exposeString('publicationId', { nullable: true }),
         levels: t.expose('levels', { type: [LevelType] }),
         competences: t.expose('competences', { type: [CompetenceType] }),
+        subcompetences: t.expose('subcompetences', {
+          type: [SubcompetenceType],
+        }),
         items: t.expose('items', { type: [ItemType] }),
         defaults: t.expose('defaults', { type: 'Json', nullable: true }),
         maxStudents: t.exposeInt('maxStudents'),
