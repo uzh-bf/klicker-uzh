@@ -473,7 +473,7 @@ async function main() {
     if (child && !forcedExit)
       forcedExit = setTimeout(() => signalChild('SIGKILL'), 5000)
   }
-  for (const signal of ['SIGINT', 'SIGTERM']) process.once(signal, stop)
+  for (const signal of ['SIGINT', 'SIGTERM']) process.on(signal, stop)
   try {
     const mode = await fixtureMode()
     stopped.signal.throwIfAborted()

@@ -359,7 +359,7 @@ describe('bounded CodeAPI browser fixture', () => {
     const childReceipt = path.join(directory, 'child.json')
     await writeFile(
       path.join(next, 'next'),
-      `const fs = require('node:fs'); const server = require('node:net').createServer(); server.listen(0, '127.0.0.1', () => { fs.writeFileSync(process.env.FIXTURE_CHILD_RECEIPT, JSON.stringify({ pid: process.pid, port: server.address().port, ca: process.env.NODE_EXTRA_CA_CERTS, origin: new URL(process.env.OPENAI_BASE_URL).origin, guarded: process.env.KLICKER_EVAL_GUARD_ORIGIN === new URL(process.env.OPENAI_BASE_URL).origin, signed: !!process.env.CHAT_CODEAPI_JWT_PRIVATE_KEY, telemetry: !!process.env.LANGFUSE_SECRET_KEY })); });`
+      `process.on('SIGTERM', () => setTimeout(() => process.exit(0), 80)); const fs = require('node:fs'); const server = require('node:net').createServer(); server.listen(0, '127.0.0.1', () => { fs.writeFileSync(process.env.FIXTURE_CHILD_RECEIPT, JSON.stringify({ pid: process.pid, port: server.address().port, ca: process.env.NODE_EXTRA_CA_CERTS, origin: new URL(process.env.OPENAI_BASE_URL).origin, guarded: process.env.KLICKER_EVAL_GUARD_ORIGIN === new URL(process.env.OPENAI_BASE_URL).origin, signed: !!process.env.CHAT_CODEAPI_JWT_PRIVATE_KEY, telemetry: !!process.env.LANGFUSE_SECRET_KEY })); });`
     )
     const child = spawn(
       process.execPath,
@@ -419,8 +419,11 @@ describe('bounded CodeAPI browser fixture', () => {
       expect(JSON.parse(await readFile(status, 'utf8')).ready).toBe(true)
     )
     const trust = await readFile(receipt!.ca)
-    if (termination === 'SIGTERM') child.kill('SIGTERM')
-    else process.kill(-child.pid!, 'SIGKILL')
+    if (termination === 'SIGTERM') {
+      child.kill('SIGTERM')
+      await new Promise((resolve) => setTimeout(resolve, 10))
+      child.kill('SIGTERM')
+    } else process.kill(-child.pid!, 'SIGKILL')
     await exit
     const listenerOpen = () =>
       new Promise<boolean>((resolve) => {
