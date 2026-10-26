@@ -1,4 +1,4 @@
-export const CHAT_BASE_MODEL_ID = 'gpt-5.6-luna'
+export const CHAT_BASE_MODEL_ID = 'gpt-6-luna'
 
 export type ChatModelBasePolicyModel = {
   id: string

@@ -12,6 +12,7 @@ const t = ((key: string) => {
   if (key === 'chat.modes.tutor') return 'Tutor'
   if (key === 'chat.modes.explainer') return 'Explainer'
   if (key === 'chat.modes.quizzer') return 'Quizzer'
+  if (key === 'chat.modes.custom') return 'Custom mode'
   return key
 }) as unknown as Parameters<typeof formatModeLabel>[0]
 
@@ -38,12 +39,20 @@ describe('formatModeLabel', () => {
     ).toBe('Debate coach')
   })
 
-  test('falls back to the capitalized key when an authored name is blank', () => {
+  test('falls back to a generic label when an authored name is blank', () => {
     expect(
       formatModeLabel(t, 'cm_custom', {
         cm_custom: { description: 'Practises debates.', name: '   ' },
       })
-    ).toBe('Cm_custom')
+    ).toBe('Custom mode')
+  })
+
+  test('falls back to a generic label for a custom mode that is no longer approved', () => {
+    expect(
+      formatModeLabel(t, 'cm_88c7e708', {
+        tutor: { description: 'Guides step by step.' },
+      })
+    ).toBe('Custom mode')
   })
 
   test('does not treat inherited object keys as known modes', () => {

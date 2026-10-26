@@ -1,7 +1,6 @@
 import type { ParsedUrlQuery } from 'node:querystring'
 import { useQuery } from '@apollo/client'
 import {
-  type Chatbot,
   type ChatModelCapability,
   GetChatbotPublishingCapabilityDocument,
   GetChatModelRegistryDocument,
@@ -194,7 +193,7 @@ function Chatbots() {
     }
   }
 
-  const handleSelect = (chatbot: Chatbot) => selectChatbot(chatbot.id)
+  const handleSelect = (chatbot: { id: string }) => selectChatbot(chatbot.id)
 
   const selectCreatedChatbot = (chatbotId: string) => {
     runInternalNavigation(() => {

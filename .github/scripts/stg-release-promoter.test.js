@@ -2302,7 +2302,12 @@ test('uses only trusted controller checkout and has no commit or PR commands', (
       .match(/\npermissions:\n((?: {2}[a-z-]+: (?:read|write)\n)+)/)[1]
       .matchAll(/^ {2}([a-z-]+): (read|write)$/gm),
   ].map((match) => match[1])
-  assert.deepEqual([...new Set(permissions)].sort(), ['actions', 'contents'])
+  assert.deepEqual([...new Set(permissions)].sort(), [
+    'actions',
+    'contents',
+    'pull-requests',
+  ])
+  assert.match(workflow, /^ {2}pull-requests: read$/m)
 
   const promoter = fs.readFileSync(
     `${__dirname}/stg-release-promoter.js`,

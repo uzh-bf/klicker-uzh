@@ -19,6 +19,9 @@ describe('chatbot authoring revision transitions', () => {
 
   beforeAll(async () => {
     dependencies = await initializePrisma()
+    // Own the initial state: leftovers from a previous local run or browser
+    // seed would otherwise break the first test's fixture setup.
+    await testCleanup(dependencies.prisma)
   })
   beforeEach(async () => {
     const contexts = await testInitialization(
@@ -42,7 +45,12 @@ describe('chatbot authoring revision transitions', () => {
     }
     await dependencies.prisma.user.update({
       where: { id: owner.user.sub },
-      data: { aiFeaturesEnabled: true },
+      // The built-in model registry classifies Auto as advanced.
+      data: {
+        aiFeaturesEnabled: true,
+        aiSubscriptionTier: 'ADVANCED',
+        aiChatbotCostCenter: 'KST-1',
+      },
     })
   })
   afterEach(async () => {
@@ -406,6 +414,78 @@ describe('chatbot authoring revision transitions', () => {
       creditMaxCredits: 50,
       creditResetPeriod: CreditResetPeriod.DAILY,
       publishedAt: bot.publishedAt,
+      draftConfig: null,
+    })
+  })
+
+  it('stages answer preferences until approval and preserves a disabled value', async () => {
+    const bot = await seed()
+    expect(bot.answerPreferencesEnabled).toBe(true)
+
+    const staged = await service.saveChatbotRevision(
+      {
+        chatbotId: bot.id,
+        expectedRevisionVersion: 0,
+        input: {
+          modelPolicy: {
+            modelSelection: false,
+            allowedModelIds: ['auto'],
+            answerPreferencesEnabled: false,
+          },
+        },
+      },
+      owner
+    )
+    expect(staged?.answerPreferencesEnabled).toBe(true)
+    expect(staged?.authoringRevision).toMatchObject({
+      answerPreferencesEnabled: false,
+      modelSelection: false,
+    })
+    expect(await read(bot.id)).toMatchObject({
+      answerPreferencesEnabled: true,
+      draftConfig: {
+        answerPreferencesEnabled: false,
+        modelSelection: false,
+      },
+    })
+
+    await service.saveChatbotRevision(
+      {
+        chatbotId: bot.id,
+        expectedRevisionVersion: 1,
+        input: { metadata: { description: 'Unrelated revision change' } },
+      },
+      owner
+    )
+    const resaved = await service.saveChatbotRevision(
+      {
+        chatbotId: bot.id,
+        expectedRevisionVersion: 2,
+        input: {
+          modelPolicy: { modelSelection: false, allowedModelIds: ['auto'] },
+        },
+      },
+      owner
+    )
+    expect(resaved?.authoringRevision).toMatchObject({
+      description: 'Unrelated revision change',
+      answerPreferencesEnabled: false,
+    })
+    expect(await read(bot.id)).toMatchObject({
+      answerPreferencesEnabled: true,
+      draftConfig: {
+        description: 'Unrelated revision change',
+        answerPreferencesEnabled: false,
+      },
+    })
+
+    await submit(bot.id, 3)
+    await service.approveChatbotRevision(
+      { id: bot.id, expectedRevisionVersion: 4 },
+      admin
+    )
+    expect(await read(bot.id)).toMatchObject({
+      answerPreferencesEnabled: false,
       draftConfig: null,
     })
   })
@@ -804,11 +884,12 @@ describe('chatbot authoring revision transitions', () => {
     })
   })
 
-  it('inherits the live knowledge-graph flags for a revision that predates them', async () => {
+  it('inherits live flags for a revision that predates them', async () => {
     const bot = await seed()
     await dependencies.prisma.chatbot.update({
       where: { id: bot.id },
       data: {
+        answerPreferencesEnabled: false,
         knowledgeGraphVisible: true,
         knowledgeGraphRetrievalEnabled: true,
         revisionStatus: ChatbotStatus.DRAFT,
@@ -843,12 +924,15 @@ describe('chatbot authoring revision transitions', () => {
       owner
     )
     expect(saved?.authoringRevision).toMatchObject({
+      answerPreferencesEnabled: false,
       knowledgeGraphVisible: true,
       knowledgeGraphRetrievalEnabled: true,
     })
     const inherited = (await read(bot.id)).draftConfig as {
+      answerPreferencesEnabled: boolean
       knowledgeGraphRetrievalEnabled: boolean
     }
+    expect(inherited.answerPreferencesEnabled).toBe(false)
     expect(inherited.knowledgeGraphRetrievalEnabled).toBe(true)
   })
 
@@ -872,7 +956,7 @@ describe('chatbot authoring revision transitions', () => {
     expect((await read(bot.id)).revisionVersion).toBe(0)
   })
 
-  it('rejects a stored revision whose knowledge-graph flag is not a boolean', async () => {
+  it('rejects malformed stored revision flags', async () => {
     const bot = await seed()
     await service.saveChatbotRevision(
       {
@@ -903,10 +987,32 @@ describe('chatbot authoring revision transitions', () => {
         owner
       )
     ).rejects.toMatchObject({ extensions: { code: 'BAD_USER_INPUT' } })
+
+    await dependencies.prisma.chatbot.update({
+      where: { id: bot.id },
+      data: {
+        draftConfig: {
+          ...(staged.draftConfig as object),
+          // @ts-expect-error Persist malformed data to exercise runtime validation.
+          answerPreferencesEnabled: 'yes',
+        },
+      },
+    })
+    await expect(
+      service.saveChatbotRevision(
+        {
+          chatbotId: bot.id,
+          expectedRevisionVersion: staged.revisionVersion,
+          input: { metadata: { description: 'Next' } },
+        },
+        owner
+      )
+    ).rejects.toMatchObject({ extensions: { code: 'BAD_USER_INPUT' } })
   })
 
   it('materializes an approved custom mode into the live column', async () => {
     const bot = await seed()
+    const approvedWelcome = 'First synthetic welcome.\nAsk about interviews.'
     const saved = await service.saveChatbotRevision(
       {
         chatbotId: bot.id,
@@ -918,6 +1024,7 @@ describe('chatbot authoring revision transitions', () => {
                 name: 'Interview coach',
                 description: 'Practices interview questions',
                 personaText: 'You are an interview coach.',
+                welcomeMessage: approvedWelcome,
               },
             ],
           },
@@ -927,6 +1034,9 @@ describe('chatbot authoring revision transitions', () => {
     )
     const key = saved?.authoringRevision?.customModeConfig?.modes[0]?.key
     expect(key).toMatch(/^cm_/)
+    expect(
+      saved?.authoringRevision?.customModeConfig?.modes[0]?.welcomeMessage
+    ).toBe(approvedWelcome)
     // A published chatbot keeps serving its live configuration until approval.
     expect((await read(bot.id)).customModeConfig).toBeNull()
 
@@ -941,6 +1051,7 @@ describe('chatbot authoring revision transitions', () => {
             name: 'Interview coach',
             description: 'Practices interview questions',
             personaText: 'You are an interview coach.',
+            welcomeMessage: approvedWelcome,
           },
         ],
       },
@@ -959,8 +1070,130 @@ describe('chatbot authoring revision transitions', () => {
           name: 'Interview coach',
           description: 'Practices interview questions',
           personaText: 'You are an interview coach.',
+          welcomeMessage: approvedWelcome,
         },
       ],
+    })
+  })
+
+  it('keeps draft presentation changes away from the live configuration', async () => {
+    const bot = await seed()
+    const approvedWelcome = 'First synthetic welcome.'
+    const draftWelcome = 'Draft synthetic welcome.'
+    const approvedStarters = ['Approved starter one.', 'Approved starter two.']
+    const draftStarters = ['Draft starter one.']
+    const readMode = (config: unknown) =>
+      (
+        config as {
+          modes: {
+            welcomeMessage?: string | null
+            starterPrompts?: string[] | null
+          }[]
+        } | null
+      )?.modes[0] ?? null
+    // The draft column holds a full revision snapshot, so its configuration is
+    // nested one level deeper than the live column.
+    const readDraftMode = (chatbot: { draftConfig: unknown }) =>
+      readMode(
+        (chatbot.draftConfig as { customModeConfig: unknown }).customModeConfig
+      )
+
+    const saved = await service.saveChatbotRevision(
+      {
+        chatbotId: bot.id,
+        expectedRevisionVersion: 0,
+        input: {
+          customModeConfig: {
+            modes: [
+              {
+                name: 'Interview coach',
+                personaText: 'You are an interview coach.',
+                welcomeMessage: approvedWelcome,
+                starterPrompts: approvedStarters,
+              },
+            ],
+          },
+        },
+      },
+      owner
+    )
+    const key = saved?.authoringRevision?.customModeConfig?.modes[0]?.key
+
+    await submit(bot.id, 1)
+    await service.approveChatbotRevision(
+      { id: bot.id, expectedRevisionVersion: 2 },
+      admin
+    )
+    expect(readMode((await read(bot.id)).customModeConfig)).toMatchObject({
+      welcomeMessage: approvedWelcome,
+      starterPrompts: approvedStarters,
+    })
+
+    await service.saveChatbotRevision(
+      {
+        chatbotId: bot.id,
+        expectedRevisionVersion: 3,
+        input: {
+          customModeConfig: {
+            modes: [
+              {
+                key,
+                name: 'Interview coach',
+                personaText: 'You are an interview coach.',
+                welcomeMessage: draftWelcome,
+                starterPrompts: draftStarters,
+              },
+            ],
+          },
+        },
+      },
+      owner
+    )
+    const staged = await read(bot.id)
+    expect(readDraftMode(staged)).toMatchObject({
+      welcomeMessage: draftWelcome,
+      starterPrompts: draftStarters,
+    })
+    expect(readMode(staged.customModeConfig)).toMatchObject({
+      welcomeMessage: approvedWelcome,
+      starterPrompts: approvedStarters,
+    })
+
+    // A save that omits the presentation fields keeps the staged values.
+    await service.saveChatbotRevision(
+      {
+        chatbotId: bot.id,
+        expectedRevisionVersion: 4,
+        input: {
+          customModeConfig: {
+            modes: [
+              {
+                key,
+                name: 'Hiring panel',
+                personaText: 'You are an interview coach.',
+              },
+            ],
+          },
+        },
+      },
+      owner
+    )
+    const afterOmitted = await read(bot.id)
+    expect(
+      (afterOmitted.draftConfig as { customModeConfig: unknown })
+        .customModeConfig
+    ).toMatchObject({
+      modes: [
+        {
+          key,
+          welcomeMessage: draftWelcome,
+          starterPrompts: draftStarters,
+        },
+      ],
+    })
+    expect(readMode(afterOmitted.customModeConfig)).toMatchObject({
+      welcomeMessage: approvedWelcome,
+      starterPrompts: approvedStarters,
     })
   })
 

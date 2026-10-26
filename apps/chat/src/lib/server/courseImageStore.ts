@@ -83,7 +83,16 @@ export async function readCourseImage(
         throw new Error('Course image storage unavailable')
       const client = BlobServiceClient.fromConnectionString(connectionString)
         .getContainerClient(container)
-        .getBlobClient(projectionObjectPath(kind, hash, extension))
+        .getBlobClient(
+          [
+            (
+              process.env.COURSE_IMAGE_PROJECTION_STORAGE_PREFIX ?? 'projection'
+            ).replace(/^\/+|\/+$/g, ''),
+            projectionObjectPath(kind, hash, extension),
+          ]
+            .filter(Boolean)
+            .join('/')
+        )
       const { contentLength, etag } = await client.getProperties()
       if (
         typeof contentLength !== 'number' ||

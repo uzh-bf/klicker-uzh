@@ -10,6 +10,7 @@ query GetChatbotsInfo {
     reviewComment
     publishedAt
     modelSelection
+    answerPreferencesEnabled
     allowedModelIds
     allowedReasoningEffortsByModel {
       modelId
@@ -41,16 +42,6 @@ query GetChatbotsInfo {
       acceptedCount
       declinedCount
       pendingCount
-    }
-    mcpConfigurations {
-      serverId
-      serverName
-      serverDescription
-      serverIsActive
-      chatMode
-      isEnabled
-      priority
-      allowedToolsCount
     }
     enabledKnowledgeBase {
       id
