@@ -194,7 +194,7 @@ describe('lecturer deletion operator orchestration', () => {
                 callback: (
                   client: Prisma.TransactionClient
                 ) => Promise<unknown>,
-                options?: Parameters<PrismaClient['$transaction']>[1]
+                transactionOptions?: Parameters<PrismaClient['$transaction']>[1]
               ) =>
                 target.$transaction(async (tx) => {
                   const client = new Proxy(tx, {
@@ -224,7 +224,7 @@ describe('lecturer deletion operator orchestration', () => {
                     },
                   })
                   return callback(client)
-                }, options)
+                }, transactionOptions)
             }
             return typeof value === 'function' ? value.bind(target) : value
           },
