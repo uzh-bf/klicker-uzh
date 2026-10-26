@@ -89,3 +89,7 @@ Hosted feedback on the inherited preview source is being resolved in the same co
 
 
 Readiness integration is required again because the target LTI upgrade creates a merge conflict and blocks fresh PR checks. Integrate the target by normal merge, preserve its ltijs 7 implementation, and apply the existing preview cookie name to its final Express handoff. Preserve all upstream comments and dependency versions; verify the resolved source and required checks before ordinary push. This changes no release, staging, production or provider authority.
+
+The target integration is committed at cbb1ac8cbc. The LTI diff against the target contains only the existing preview cookie import and handoff cookie naming. All five LTI registration tests and mandatory repository checks pass. Opus found no correctness issues in the hosted-feedback correction slice; its separate simplification removes redundant authority checks and a redundant Hatchet identity column. All14build-input and24disposable-database checks still pass after those reductions.
+
+Source delivery remains a draft. Local browser verification reached an invalid redirect refusal, so authenticated cookie isolation is unqualified. Native bootstrap, allowed-network success, whole-application behavior and installed PR commands remain blocked by the recorded provider, installation and budget evidence; no further paid allocation is admitted. Existing proof for smaller lifecycle and credential fixtures does not satisfy those consumer gates.

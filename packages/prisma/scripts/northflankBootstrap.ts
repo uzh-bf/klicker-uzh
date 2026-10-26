@@ -149,7 +149,6 @@ const accessQuery = [
 const restrictedRoleIdentityQuery = [
   '/* northflank-bootstrap-role-identity-v1 */',
   'SELECT session_user AS login, current_user AS role,',
-  '       session_user = current_user AS same_identity,',
   '       r.rolsuper AS elevated_superuser,',
   '       r.rolcreatedb AS elevated_createdb,',
   '       r.rolcreaterole AS elevated_createrole,',
@@ -291,7 +290,6 @@ export async function bootstrapNorthflankPostgres(
         if (
           identityRow?.login !== HATCHET ||
           identityRow.role !== HATCHET ||
-          identityRow.same_identity !== true ||
           identityRow.elevated_superuser !== false ||
           identityRow.elevated_createdb !== false ||
           identityRow.elevated_createrole !== false ||

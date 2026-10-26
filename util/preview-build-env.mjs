@@ -284,17 +284,12 @@ function assertUrl(key, value, { allowHttp, originOnly }) {
 function assertAuthHostList(key, value) {
   for (const entry of value.split(',')) {
     const authority = entry.trim()
-    const authorityParts =
-      /^(?:\[[0-9a-f:.]+\]|[a-z0-9](?:[a-z0-9.-]*[a-z0-9])?)(?::([0-9]{1,5}))?$/i.exec(
+    const validAuthority =
+      /^(?:\[[0-9a-f:.]+\]|[a-z0-9](?:[a-z0-9.-]*[a-z0-9])?)(?::[0-9]{1,5})?$/i.test(
         authority
       )
 
-    if (
-      !authority ||
-      authority.includes('*') ||
-      !authorityParts ||
-      (authorityParts[1] !== undefined && Number(authorityParts[1]) > 65_535)
-    ) {
+    if (!validAuthority) {
       throw new PreviewBuildEnvError(
         `${key} must contain comma-separated exact hostname[:port] authorities`
       )

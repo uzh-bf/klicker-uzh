@@ -50,7 +50,6 @@ const access = (database: string) => ({
 const hatchetIdentity = (overrides: Record<string, unknown> = {}) => ({
   login: 'hatchet',
   role: 'hatchet',
-  same_identity: true,
   elevated_superuser: false,
   elevated_createdb: false,
   elevated_createrole: false,
