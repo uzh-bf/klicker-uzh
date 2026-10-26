@@ -54,6 +54,12 @@ these two operations and bounds the complete operation to eight minutes. It
 reports phases while suppressing raw child output that could contain runtime
 credentials. The existing database identity and dry-run guards still apply.
 
+Bootstrap CLI failures use exit codes `2` (input refusal), `3` (inspection
+refusal before writes), `4` (write failure) and `5` (verification failure).
+The wrapper emits `KLICKER_BOOTSTRAP_FAILURE_<code>` for these failures while
+keeping raw child output suppressed. Every failed initialization still requires
+a new generation.
+
 The trusted installation runs initialization jobs only on creation, using the
 provider's `runNodeOnce` fence and zero automatic retries. Refresh and extension
 do not rerun successful jobs. Any initialization failure requires teardown and a

@@ -37,6 +37,12 @@ for (const [phase, args] of operations[operation]) {
     stdio: 'ignore',
   })
   if (result.error || result.status !== 0) {
+    if (
+      phase === 'database-bootstrap' &&
+      [2, 3, 4, 5].includes(result.status)
+    ) {
+      console.error(`KLICKER_BOOTSTRAP_FAILURE_${result.status}`)
+    }
     console.error(`Preview initialization failed at ${phase}`)
     process.exit(1)
   }

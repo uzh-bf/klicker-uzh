@@ -332,7 +332,13 @@ if (process.argv[1] === fileURLToPath(import.meta.url)) {
     },
     (error: Error) => {
       console.error(error.message)
-      process.exitCode = 1
+      const failureExitCodes = new Map([
+        [INPUT_ERROR, 2],
+        [INSPECT_ERROR, 3],
+        [WRITE_ERROR, 4],
+        [VERIFY_ERROR, 5],
+      ])
+      process.exitCode = failureExitCodes.get(error.message) ?? 1
     }
   )
 }

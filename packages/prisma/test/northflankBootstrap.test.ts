@@ -1,5 +1,10 @@
 import assert from 'node:assert/strict'
+import { spawnSync } from 'node:child_process'
+import { mkdtempSync, rmSync, writeFileSync } from 'node:fs'
+import { tmpdir } from 'node:os'
+import path from 'node:path'
 import test from 'node:test'
+import { fileURLToPath } from 'node:url'
 import {
   type BootstrapClientConnector,
   bootstrapNorthflankPostgres,
@@ -26,6 +31,60 @@ const ENV = {
   [DISPOSABLE_ENV]: '1',
   [APP_PASSWORD_ENV]: 'synthetic-app-password',
 }
+
+test('reports bootstrap refusal through the CLI without disclosing credentials', () => {
+  const result = spawnSync(
+    process.execPath,
+    [
+      fileURLToPath(
+        new URL('../node_modules/tsx/dist/cli.mjs', import.meta.url)
+      ),
+      fileURLToPath(
+        new URL('../scripts/northflankBootstrap.ts', import.meta.url)
+      ),
+    ],
+    {
+      encoding: 'utf8',
+      timeout: 10_000,
+      env: { ...process.env, ...ENV, DATABASE_URL: ADMIN_URL },
+    }
+  )
+  assert.equal(result.status, 2)
+  assert.doesNotMatch(result.stderr + result.stdout, /synthetic-admin/)
+})
+
+test('forwards only recognized bootstrap failure codes and suppresses raw tool output', () => {
+  const folder = mkdtempSync(path.join(tmpdir(), 'preview-bootstrap-'))
+  try {
+    writeFileSync(
+      path.join(folder, 'pnpm'),
+      `#!${process.execPath}\nconsole.log('synthetic-secret'); console.error('synthetic-secret'); process.exit(Number(process.env.KLICKER_TEST_BOOTSTRAP_EXIT))\n`,
+      { mode: 0o700 }
+    )
+    const runner = fileURLToPath(
+      new URL('../../../deploy/northflank/bootstrap.mjs', import.meta.url)
+    )
+    for (const code of [2, 3, 4, 5, 19]) {
+      const result = spawnSync(process.execPath, [runner, 'bootstrap'], {
+        encoding: 'utf8',
+        timeout: 10_000,
+        env: {
+          ...process.env,
+          PATH: `${folder}${path.delimiter}${process.env.PATH}`,
+          KLICKER_TEST_BOOTSTRAP_EXIT: String(code),
+        },
+      })
+      assert.equal(result.status, 1)
+      assert.doesNotMatch(result.stderr + result.stdout, /synthetic-secret/)
+      assert.equal(
+        result.stderr.includes(`KLICKER_BOOTSTRAP_FAILURE_${code}`),
+        code !== 19
+      )
+    }
+  } finally {
+    rmSync(folder, { recursive: true, force: true })
+  }
+})
 const fresh = (overrides: Record<string, unknown> = {}) => ({
   database: 'klicker_test',
   admin_role: 'provider_admin',
