@@ -228,8 +228,9 @@ function AdaptiveDryRunResult({
         />
       ) : null}
 
-      <div className="grid gap-4 lg:grid-cols-[3fr_2fr]">
-        <AdaptiveDryRunConfusion summary={summary} levels={workspace.levels} />
+      <AdaptiveDryRunConfusion summary={summary} levels={workspace.levels} />
+
+      <div className="grid gap-4 lg:grid-cols-2">
         <div className="space-y-4">
           <div data-cy="adaptive-dry-run-stop-reasons">
             <h5 className="mb-2 text-sm font-semibold">
@@ -254,6 +255,8 @@ function AdaptiveDryRunResult({
               ))}
             </div>
           </div>
+        </div>
+        <div>
           <div data-cy="adaptive-dry-run-item-use">
             <h5 className="mb-1 text-sm font-semibold">
               {t('manage.evaluation.adaptive.dryRuns.result.itemUse')}

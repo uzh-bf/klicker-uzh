@@ -957,7 +957,7 @@ const messages = {
             competence: 'Kompetenz',
             confusion: 'Wahre und ausgegebene Niveaus',
             confusionHint:
-              'Zeilen: wahres Niveau, Spalten: ausgegebenes Niveau. Grün = richtig, gelb = ein Niveau daneben. Öffne eine Zeile für die Unterniveaus.',
+              'Zeilen: wahres Niveau, Spalten: ausgegebenes Niveau, auf Unterniveau genau. Grün = exakt, gelb = ein Unterniveau daneben, rot = weiter daneben. Die letzte Spalte zeigt den Anteil exakter Ergebnisse pro wahrem Niveau.',
             trueReported: 'Wahr ↓ / ausgegeben →',
             notReported: 'keines',
             trueLevel: 'wahr {level}',
@@ -971,6 +971,8 @@ const messages = {
             sameStudents: 'Gleiche Studierende, neue Einstellungen',
           },
           subcompetences: {
+            summary:
+              '{count} Teilkompetenzen · {gaps, plural, =0 {alle Niveaus abgedeckt} one {# mit fehlenden Niveaus} other {# mit fehlenden Niveaus}}',
             title: 'Teilkompetenzen',
             hint: 'Wie oft jede Teilkompetenz gefragt und gezählt wurde und welche Niveaus ihre Fragen abdecken. Die Abweichung ist nur ein grober Hinweis: Eine simulierte Person hat in allen Teilkompetenzen einer Kompetenz dasselbe wahre Niveau, und eine Teilkompetenz erhält nur wenige Antworten.',
             subcompetence: 'Teilkompetenz',

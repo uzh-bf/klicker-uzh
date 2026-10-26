@@ -1,10 +1,10 @@
 import { useTranslations } from 'next-intl'
-import { Fragment, useState } from 'react'
 import { twMerge } from 'tailwind-merge'
 import {
   type DryRunLevel,
   type DryRunSummary,
   mainLevelOf,
+  percent,
 } from './adaptiveDryRunTypes'
 
 const cellTone = (difference: number | null) =>
@@ -16,8 +16,9 @@ const cellTone = (difference: number | null) =>
         ? 'bg-amber-100 text-amber-900'
         : 'bg-red-100 text-red-900'
 
-// True × reported levels, grouped by main level (B1, B2, …). A row opens the
-// sublevels of that main level with their reported sublevels.
+// True × reported level at full sublevel resolution: one row per true level
+// of the run, one column per level of the scale. Thicker lines separate main
+// levels (A2, B1, …) only for orientation; nothing is grouped.
 function AdaptiveDryRunConfusion({
   summary,
   levels,
@@ -26,30 +27,22 @@ function AdaptiveDryRunConfusion({
   levels: DryRunLevel[]
 }) {
   const t = useTranslations()
-  const [open, setOpen] = useState<string | null>(null)
-  const byId = new Map(levels.map((level) => [level.id, level]))
-  const groups = [...new Set(levels.map(({ label }) => mainLevelOf(label)))]
-  const groupIndex = new Map(groups.map((group, index) => [group, index]))
-  const groupOf = (levelId: number | null) =>
-    levelId === null ? null : mainLevelOf(byId.get(levelId)?.label ?? '')
-
-  const counts = new Map<string, Map<string | null, number>>()
-  for (const row of summary.confusion) {
-    const trueGroup = groupOf(row.trueLevelId)!
-    const cells = counts.get(trueGroup) ?? new Map()
-    for (const { levelId, count } of row.reported) {
-      const group = groupOf(levelId)
-      cells.set(group, (cells.get(group) ?? 0) + count)
-    }
-    counts.set(trueGroup, cells)
-  }
+  const ordered = levels.slice().sort((a, b) => a.order - b.order)
+  const byId = new Map(ordered.map((level) => [level.id, level]))
+  const startsGroup = (index: number) =>
+    index > 0 &&
+    mainLevelOf(ordered[index]!.label) !==
+      mainLevelOf(ordered[index - 1]!.label)
   const hasUnreported = summary.confusion.some(({ reported }) =>
     reported.some(({ levelId }) => levelId === null)
   )
-  const columns: Array<string | null> = [
-    ...groups,
-    ...(hasUnreported ? [null] : []),
-  ]
+  const rows = summary.confusion
+    .slice()
+    .sort(
+      (a, b) =>
+        (byId.get(a.trueLevelId)?.order ?? 0) -
+        (byId.get(b.trueLevelId)?.order ?? 0)
+    )
 
   return (
     <div data-cy="adaptive-dry-run-confusion">
@@ -60,114 +53,98 @@ function AdaptiveDryRunConfusion({
         {t('manage.evaluation.adaptive.dryRuns.result.confusionHint')}
       </p>
       <div className="overflow-x-auto rounded border border-gray-200">
-        <table className="w-full text-center text-sm tabular-nums">
-          <thead className="bg-gray-50 text-xs text-gray-700">
+        <table className="w-full text-center text-xs tabular-nums">
+          <thead className="bg-gray-50 text-gray-700">
             <tr>
-              <th className="px-2 py-2 text-left">
+              <th className="px-2 py-1.5 text-left whitespace-nowrap">
                 {t('manage.evaluation.adaptive.dryRuns.result.trueReported')}
               </th>
-              {columns.map((group) => (
-                <th key={group ?? 'none'} className="px-2 py-2">
-                  {group ??
-                    t('manage.evaluation.adaptive.dryRuns.result.notReported')}
+              {ordered.map((level, index) => (
+                <th
+                  key={level.id}
+                  className={twMerge(
+                    'px-0.5 py-1.5 font-medium whitespace-nowrap',
+                    startsGroup(index) && 'border-l border-gray-300'
+                  )}
+                >
+                  {level.label}
                 </th>
               ))}
+              {hasUnreported ? (
+                <th className="border-l border-gray-300 px-1 py-1.5">
+                  {t('manage.evaluation.adaptive.dryRuns.result.notReported')}
+                </th>
+              ) : null}
+              <th className="border-l border-gray-300 px-2 py-1.5">
+                {t('manage.evaluation.adaptive.dryRuns.result.exact')}
+              </th>
             </tr>
           </thead>
           <tbody>
-            {groups
-              .filter((group) => counts.has(group))
-              .map((group) => {
-                const cells = counts.get(group)!
-                const isOpen = open === group
-                const sublevels = summary.confusion.filter(
-                  ({ trueLevelId }) => groupOf(trueLevelId) === group
-                )
-                return (
-                  <Fragment key={group}>
-                    <tr
-                      className="cursor-pointer border-t border-gray-100 hover:bg-gray-50"
-                      onClick={() => setOpen(isOpen ? null : group)}
-                      aria-expanded={isOpen}
-                      data-cy={`adaptive-dry-run-confusion-row-${group}`}
-                    >
-                      <th className="px-2 py-1.5 text-left font-medium">
-                        {isOpen ? '▾ ' : '▸ '}
-                        {group}
-                      </th>
-                      {columns.map((column) => {
-                        const count = cells.get(column) ?? 0
-                        return (
-                          <td key={column ?? 'none'} className="px-1 py-1">
-                            {count > 0 ? (
-                              <span
-                                className={twMerge(
-                                  'block rounded px-1 py-0.5',
-                                  cellTone(
-                                    column === null
-                                      ? null
-                                      : groupIndex.get(column)! -
-                                          groupIndex.get(group)!
-                                  )
-                                )}
-                              >
-                                {count}
-                              </span>
-                            ) : (
-                              <span className="text-gray-300">·</span>
-                            )}
-                          </td>
-                        )
-                      })}
-                    </tr>
-                    {isOpen ? (
-                      <tr className="bg-gray-50">
-                        <td colSpan={columns.length + 1} className="px-3 py-2">
-                          <div className="space-y-1 text-left text-xs">
-                            {sublevels.map(({ trueLevelId, reported }) => {
-                              const trueLevel = byId.get(trueLevelId)!
-                              return (
-                                <div
-                                  key={trueLevelId}
-                                  className="flex flex-wrap items-center gap-1"
-                                >
-                                  <span className="w-28 font-medium">
-                                    {t(
-                                      'manage.evaluation.adaptive.dryRuns.result.trueLevel',
-                                      { level: trueLevel.label }
-                                    )}
-                                  </span>
-                                  {reported.map(({ levelId, count }) => {
-                                    const level =
-                                      levelId === null
-                                        ? null
-                                        : byId.get(levelId)
-                                    return (
-                                      <span
-                                        key={levelId ?? 'none'}
-                                        className={twMerge(
-                                          'rounded px-1.5 py-0.5',
-                                          cellTone(
-                                            level
-                                              ? level.order - trueLevel.order
-                                              : null
-                                          )
-                                        )}
-                                      >
-                                        {`${level?.label ?? t('manage.evaluation.adaptive.dryRuns.result.notReported')}: ${count}`}
-                                      </span>
-                                    )
-                                  })}
-                                </div>
+            {rows.map(({ trueLevelId, reported }) => {
+              const trueLevel = byId.get(trueLevelId)
+              const counts = new Map(
+                reported.map(({ levelId, count }) => [levelId, count])
+              )
+              const total = reported.reduce((sum, { count }) => sum + count, 0)
+              return (
+                <tr
+                  key={trueLevelId}
+                  className="border-t border-gray-100"
+                  data-cy={`adaptive-dry-run-confusion-row-${trueLevel?.label ?? trueLevelId}`}
+                >
+                  <th className="px-2 py-1 text-left font-medium whitespace-nowrap">
+                    {trueLevel?.label ?? `#${trueLevelId}`}
+                  </th>
+                  {ordered.map((level, index) => {
+                    const count = counts.get(level.id) ?? 0
+                    return (
+                      <td
+                        key={level.id}
+                        className={twMerge(
+                          'px-0.5 py-0.5',
+                          startsGroup(index) && 'border-l border-gray-300'
+                        )}
+                        title={`${trueLevel?.label} → ${level.label}: ${count}`}
+                      >
+                        {count > 0 ? (
+                          <span
+                            className={twMerge(
+                              'block min-w-6 rounded px-0.5 py-0.5',
+                              cellTone(
+                                trueLevel ? level.order - trueLevel.order : null
                               )
-                            })}
-                          </div>
-                        </td>
-                      </tr>
-                    ) : null}
-                  </Fragment>
-                )
-              })}
+                            )}
+                          >
+                            {count}
+                          </span>
+                        ) : (
+                          <span className="text-gray-300">·</span>
+                        )}
+                      </td>
+                    )
+                  })}
+                  {hasUnreported ? (
+                    <td className="border-l border-gray-300 px-0.5 py-0.5">
+                      {counts.get(null) ? (
+                        <span
+                          className={twMerge('block rounded', cellTone(null))}
+                        >
+                          {counts.get(null)}
+                        </span>
+                      ) : (
+                        <span className="text-gray-300">·</span>
+                      )}
+                    </td>
+                  ) : null}
+                  <td className="border-l border-gray-300 px-2 py-0.5 font-medium">
+                    {total === 0
+                      ? '–'
+                      : percent((counts.get(trueLevelId) ?? 0) / total)}
+                  </td>
+                </tr>
+              )
+            })}
           </tbody>
         </table>
       </div>

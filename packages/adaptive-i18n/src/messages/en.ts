@@ -939,7 +939,7 @@ const messages = {
             competence: 'Competence',
             confusion: 'True and reported levels',
             confusionHint:
-              'Rows: true level, columns: reported level. Green = correct, amber = one level off. Open a row for the sublevels.',
+              'Rows: true level, columns: reported level, at sublevel precision. Green = exact, amber = one sublevel off, red = further off. The last column is the share of exact results per true level.',
             trueReported: 'True ↓ / reported →',
             notReported: 'none',
             trueLevel: 'true {level}',
@@ -953,6 +953,8 @@ const messages = {
             sameStudents: 'Same students, new settings',
           },
           subcompetences: {
+            summary:
+              '{count} subcompetences · {gaps, plural, =0 {all levels covered} one {# with missing levels} other {# with missing levels}}',
             title: 'Subcompetences',
             hint: 'How often each subcompetence was asked and counted, and which levels its questions cover. The deviation is only a rough indicator: a simulated student has the same true level in all subcompetences of a competence, and a subcompetence gets only a few answers.',
             subcompetence: 'Subcompetence',
