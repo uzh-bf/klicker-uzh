@@ -1,5 +1,7 @@
 import { normalizeChatbotStandardModeConfig } from '@klicker-uzh/util'
+import type { AnswerStyle, AnswerTone } from '@/src/lib/config/answerStyles'
 import { DEFAULT_PROMPT } from '@/src/lib/config/prompts'
+import { answerStyleInstructions } from '@/src/lib/server/answerStyleInstructions'
 import { withCitationContract } from '@/src/lib/server/citationInstructions'
 import { courseDataSection } from '@/src/lib/server/courseContextInstructions'
 import { withCoursePolicyContract } from '@/src/lib/server/coursePolicyInstructions'
@@ -12,6 +14,8 @@ export type SystemPromptCompilationContext = {
   courseDisplayName: string
   toolNames: readonly string[]
   standardModeConfig?: unknown
+  answerStyle?: AnswerStyle
+  answerTone?: AnswerTone
 }
 
 function promptSection(heading: string, body: string): string {
@@ -126,18 +130,27 @@ function standardModeContextSection(
  *
  * Standard modes read course data, optional lecturer guidance, typed lecturer
  * context, and then their non-removable platform mode contract. Custom modes
- * replace those mode sections with their lecturer-defined persona. Every mode
- * then receives the same attachment, course, output, conditional citation,
- * and final language contracts.
+ * replace those mode sections with their lecturer-defined persona. A
+ * non-default student answer style or tone follows the mode sections as one
+ * section. Every mode then
+ * receives the same attachment, course, output, conditional citation, and
+ * final language contracts.
  */
 export function compileSystemPrompt(
   systemPrompts: unknown,
   selectedMode: string,
   context: SystemPromptCompilationContext
 ): string {
+  const answerPreferences = answerStyleInstructions(
+    context.answerStyle,
+    context.answerTone
+  )
   const base = [
     courseDataSection(context.courseDisplayName),
     ...modeSections(systemPrompts, selectedMode, context.standardModeConfig),
+    ...(answerPreferences
+      ? [promptSection('Student answer preferences', answerPreferences)]
+      : []),
   ].join('\n\n')
   const inputContext = withInputContextContract(base)
   const coursePolicy = withCoursePolicyContract(inputContext, context.toolNames)
