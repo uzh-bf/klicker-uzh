@@ -1,5 +1,6 @@
 import { NextRequest } from 'next/server'
 import { beforeEach, describe, expect, test, vi } from 'vitest'
+import { acknowledgedParticipantDataUse } from './participant-data-use-support'
 
 const mocks = vi.hoisted(() => ({
   withChatbotAuth: vi.fn(),
@@ -140,15 +141,14 @@ describe('chat participant data-use route', () => {
   })
 
   test('passes the displayed version and both choices to the canonical writer', async () => {
-    mocks.completeParticipantDataUse.mockResolvedValue({ id: participantId })
-    mocks.loadChatDataUseState.mockResolvedValue({
-      ...incompleteState,
-      complete: true,
-      dataUseRevision: 1,
+    mocks.completeParticipantDataUse.mockResolvedValue({
+      id: participantId,
+      ...acknowledgedParticipantDataUse,
       researchConsent: true,
-      researchChoiceRecorded: true,
-      learningAnalyticsChoiceRecorded: true,
     })
+    mocks.loadChatDataUseState.mockRejectedValue(
+      new Error('Synthetic read failure')
+    )
 
     const response = await POST(
       request('POST', {
@@ -175,6 +175,7 @@ describe('chat participant data-use route', () => {
       role: 'PARTICIPANT',
     })
     expect((await response.json()).state.complete).toBe(true)
+    expect(mocks.loadChatDataUseState).not.toHaveBeenCalled()
   })
 
   test('reports a conflicting revision instead of overwriting it', async () => {
@@ -201,7 +202,12 @@ describe('chat participant data-use route', () => {
   test('updates a single purpose and rejects an unknown purpose', async () => {
     mocks.updateParticipantDataUseChoice.mockResolvedValue({
       id: participantId,
+      ...acknowledgedParticipantDataUse,
+      learningAnalyticsConsent: true,
     })
+    mocks.loadChatDataUseState.mockRejectedValue(
+      new Error('Synthetic read failure')
+    )
 
     const accepted = await PATCH(
       request('PATCH', {
@@ -213,6 +219,12 @@ describe('chat participant data-use route', () => {
       { params: params() }
     )
     expect(accepted.status).toBe(200)
+    expect((await accepted.json()).state).toMatchObject({
+      complete: true,
+      learningAnalyticsConsent: true,
+      dataUseRevision: acknowledgedParticipantDataUse.dataUseRevision,
+    })
+    expect(mocks.loadChatDataUseState).not.toHaveBeenCalled()
     expect(mocks.updateParticipantDataUseChoice).toHaveBeenCalledWith(
       'analytics',
       expect.objectContaining({

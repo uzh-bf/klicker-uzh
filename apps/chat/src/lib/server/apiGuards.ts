@@ -4,11 +4,7 @@ import {
   type Prisma,
   UserRole,
 } from '@klicker-uzh/prisma/client'
-import {
-  decodeJWT,
-  isParticipantDataUseComplete,
-  participantAccountDataUseSelect,
-} from '@klicker-uzh/util'
+import { decodeJWT, participantAccountDataUseSelect } from '@klicker-uzh/util'
 import { extractBearerToken } from '@klicker-uzh/util/auth'
 import { jwtVerify } from 'jose'
 import { type NextRequest, NextResponse } from 'next/server'
@@ -16,6 +12,7 @@ import { z } from 'zod'
 import {
   type ChatDataUseState,
   PARTICIPANT_DATA_USE_COMPLETION_REQUIRED,
+  toChatDataUseState,
 } from '@/src/lib/dataUse'
 import {
   PWA_CHAT_EMBED_SESSION_COOKIE,
@@ -54,15 +51,7 @@ export async function loadChatDataUseState(
   })
   if (!participant) return null
 
-  return {
-    complete: isParticipantDataUseComplete(participant),
-    dataUseRevision: participant.dataUseRevision,
-    researchConsent: participant.researchConsent,
-    researchChoiceRecorded: participant.researchConsentChoiceAt !== null,
-    learningAnalyticsConsent: participant.learningAnalyticsConsent,
-    learningAnalyticsChoiceRecorded:
-      participant.learningAnalyticsChoiceAt !== null,
-  }
+  return toChatDataUseState(participant)
 }
 
 /**

@@ -6,6 +6,7 @@ import { prisma } from '@klicker-uzh/prisma'
 import { UserRole } from '@klicker-uzh/prisma/client'
 import { PARTICIPANT_DATA_USE_DISCLOSURE_VERSION } from '@klicker-uzh/util'
 import { type NextRequest, NextResponse } from 'next/server'
+import { toChatDataUseState } from '@/src/lib/dataUse'
 import {
   loadChatDataUseState,
   withChatbotAuth,
@@ -146,7 +147,7 @@ export async function POST(
     )
 
     return NextResponse.json({
-      state: await loadChatDataUseState(saved.id),
+      state: toChatDataUseState(saved),
     })
   } catch (error) {
     return dataUseWriteErrorResponse(
@@ -197,7 +198,7 @@ export async function PATCH(
     )
 
     return NextResponse.json({
-      state: await loadChatDataUseState(saved.id),
+      state: toChatDataUseState(saved),
     })
   } catch (error) {
     return dataUseWriteErrorResponse(
