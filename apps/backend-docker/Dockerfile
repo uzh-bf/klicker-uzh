@@ -59,9 +59,13 @@ COPY --from=deps /app/out/pnpm* .
 # pin cannot move on its own: the Playwright composite actions take their pnpm
 # version from the target branch while package.json comes from the
 # pull-request head, so `pnpm/action-setup` aborts on the two declared versions.
+# npm itself goes last: its vendored undici and brace-expansion carry fixable
+# HIGH advisories that no npm release has picked up yet, and nothing runs npm
+# after this step.
 RUN pnpm i --prod --ignore-scripts \
  && npm rm -g --ignore-scripts pnpm turbo \
- && rm -rf /root/.cache/pnpm /root/.local/share/pnpm /root/.npm
+ && rm -rf /root/.cache/pnpm /root/.local/share/pnpm /root/.npm \
+ && rm -rf /usr/local/lib/node_modules/npm /usr/local/bin/npm /usr/local/bin/npx
 
 RUN addgroup --system --gid 1001 nodejs
 RUN adduser --system --uid 1001 nodejs

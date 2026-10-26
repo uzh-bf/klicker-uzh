@@ -30,10 +30,11 @@ on:
     branches:
       - 'v3'
       - 'v3*'
-    # "edited" re-evaluates the selection when a pull request is retargeted;
+    # No "edited": a title or body edit never changes the tested tree, and a
+    # base retarget is revalidated by the restack push or a close and reopen.
     # ready_for_review recomputes the required context against the builds that
     # the ready boundary restores.
-    types: [opened, synchronize, reopened, edited, ready_for_review]
+    types: [opened, synchronize, reopened, ready_for_review]
 
 concurrency:
   group: ${{ github.workflow }}-${{ github.event.pull_request.number || github.ref_name }}

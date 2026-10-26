@@ -1,13 +1,22 @@
 #!/usr/bin/env node
 
 import { randomUUID, timingSafeEqual } from 'node:crypto'
-import { readFile, readdir } from 'node:fs/promises'
+import { readdir, readFile } from 'node:fs/promises'
 import { createServer } from 'node:http'
 import { basename, resolve } from 'node:path'
 import { fileURLToPath } from 'node:url'
+import {
+  acquireBudgetLock,
+  assertBudgetCanStart,
+  beginBudgetTurn,
+  finishBudgetTurn,
+  readBudgetLedger,
+} from '../../../evaluation/evaluation-budget.mjs'
+import { verifyGuardQualification } from '../../../evaluation/evaluation-spend-guard.mjs'
 
 export const DEFAULT_CHATBOT_ID = '8f9c2e1d-4b7a-4c3e-9f5d-1a2b3c4d5e6f'
-export const DEFAULT_MODEL_ID = 'gpt-5.6-luna'
+// Keep the local launcher fallback in util/_run_klicker_eval.sh aligned.
+export const DEFAULT_MODEL_ID = 'gpt-6-luna'
 export const DEFAULT_MAX_STREAM_BYTES = 8 * 1024 * 1024
 export const DEFAULT_POLL_INTERVAL_MS = 250
 export const DEFAULT_POLL_TIMEOUT_MS = 60_000
@@ -24,7 +33,7 @@ const LOGIN_MUTATION = `
 
 const RESPONSE_TIMEOUT_CLEANUP = Symbol('responseTimeoutCleanup')
 
-function evaluationError(code) {
+export function evaluationError(code) {
   const error = new Error(code)
   error.code = code
   return error
@@ -267,12 +276,26 @@ function requestHeaders(cookie) {
   }
 }
 
+export function finiteCredits(value) {
+  return typeof value === 'number' && Number.isFinite(value) && value >= 0
+    ? value
+    : null
+}
+
 async function drainResponse(response, maxBytes) {
   try {
     if (!response.body) throw evaluationError('chat_stream_missing')
     const reader = response.body.getReader()
     const decoder = new TextDecoder()
     const streamState = { done: false, events: 0, finished: false }
+    const visible = {
+      text: '',
+      toolCalls: [],
+      creditsUsed: null,
+      chatMode: null,
+      modelId: null,
+      finishReason: null,
+    }
     let bytes = 0
     let buffer = ''
     let completed = false
@@ -306,6 +329,40 @@ async function drainResponse(response, maxBytes) {
       if (['abort', 'error', 'tool-output-error'].includes(event.type)) {
         throw evaluationError('chat_stream_error')
       }
+      if (event.type === 'text-delta' && typeof event.delta === 'string') {
+        visible.text += event.delta
+      } else if (
+        event.type === 'tool-input-start' &&
+        typeof event.toolName === 'string'
+      ) {
+        visible.toolCalls.push({
+          toolCallId:
+            typeof event.toolCallId === 'string' ? event.toolCallId : null,
+          toolName: event.toolName,
+          output: false,
+        })
+      } else if (event.type === 'tool-output-available') {
+        const toolCall = visible.toolCalls.find(
+          (call) =>
+            call.toolCallId !== null && call.toolCallId === event.toolCallId
+        )
+        if (toolCall) toolCall.output = true
+      } else if (
+        event.type === 'finish' &&
+        event.messageMetadata &&
+        typeof event.messageMetadata === 'object'
+      ) {
+        const metadata = event.messageMetadata
+        visible.creditsUsed = finiteCredits(metadata.creditsUsed)
+        visible.chatMode =
+          typeof metadata.chatMode === 'string' ? metadata.chatMode : null
+        visible.modelId =
+          typeof metadata.modelId === 'string' ? metadata.modelId : null
+        visible.finishReason =
+          typeof metadata.finishReason === 'string'
+            ? metadata.finishReason
+            : null
+      }
       streamState.events += 1
     }
 
@@ -323,7 +380,7 @@ async function drainResponse(response, maxBytes) {
             throw evaluationError('chat_stream_incomplete')
           }
           completed = true
-          return bytes
+          return { ...visible, bytes }
         }
         bytes += value?.byteLength || 0
         if (bytes > maxBytes) {
@@ -416,6 +473,8 @@ export class KlickerEvaluationTarget {
     pollIntervalMs = DEFAULT_POLL_INTERVAL_MS,
     pollTimeoutMs = DEFAULT_POLL_TIMEOUT_MS,
     requestTimeoutMs = DEFAULT_REQUEST_TIMEOUT_MS,
+    budgetFile = null,
+    qualification = null,
   }) {
     if (!apiKey) throw evaluationError('target_key_missing')
     if (!participantUsername || !participantPassword) {
@@ -433,6 +492,8 @@ export class KlickerEvaluationTarget {
     this.pollIntervalMs = pollIntervalMs
     this.pollTimeoutMs = pollTimeoutMs
     this.requestTimeoutMs = requestTimeoutMs
+    this.budgetFile = budgetFile
+    this.qualification = qualification
     this.cookie = null
     this.groundTruthIndex = null
     this.canary = null
@@ -559,6 +620,10 @@ export class KlickerEvaluationTarget {
     userMessageId,
     assistantMessageId,
     maxStreamBytes,
+    history = [],
+    parentId = null,
+    answerStyle,
+    answerTone,
   }) {
     const response = await fetchWithTimeout(
       urlFor(this.chatOrigin, `/api/chatbots/${this.chatbotId}/chat`),
@@ -569,14 +634,19 @@ export class KlickerEvaluationTarget {
           Accept: 'text/event-stream',
         },
         body: JSON.stringify({
-          messages: [{ id: userMessageId, role: 'user', content: question }],
+          messages: [
+            ...history,
+            { id: userMessageId, role: 'user', content: question },
+          ],
           threadId,
           selectedModel: this.modelId,
           selectedMode: mode,
           reasoningEffort: 'low',
-          parentId: null,
+          parentId,
           assistantMessageId,
           images: [],
+          answerStyle,
+          answerTone,
         }),
       },
       this.requestTimeoutMs
@@ -585,10 +655,10 @@ export class KlickerEvaluationTarget {
       response[RESPONSE_TIMEOUT_CLEANUP]?.()
       throw safeStatusError('chat_submit', response)
     }
-    await drainResponse(response, maxStreamBytes)
+    return drainResponse(response, maxStreamBytes)
   }
 
-  async readCompletedMessage(threadId, assistantMessageId, mode) {
+  async pollThreadMessages(threadId, messageId) {
     const deadline = Date.now() + this.pollTimeoutMs
     while (Date.now() < deadline) {
       const response = await fetchWithTimeout(
@@ -604,16 +674,11 @@ export class KlickerEvaluationTarget {
         )
       )
       const body = await readJsonResponse(response, 'message_read')
-      const message = Array.isArray(body)
-        ? body.find((candidate) => candidate?.id === assistantMessageId)
-        : null
-      if (message) {
-        if (message.chatMode !== mode)
-          throw evaluationError('chat_mode_mismatch')
-        if (message.modelId !== this.modelId) {
-          throw evaluationError('chat_model_mismatch')
-        }
-        return message
+      if (
+        Array.isArray(body) &&
+        body.some((candidate) => candidate?.id === messageId)
+      ) {
+        return body
       }
       await new Promise((resolvePromise) =>
         setTimeout(resolvePromise, this.pollIntervalMs)
@@ -622,33 +687,72 @@ export class KlickerEvaluationTarget {
     throw evaluationError('assistant_message_timeout')
   }
 
+  async readCompletedMessage(threadId, assistantMessageId, mode) {
+    const messages = await this.pollThreadMessages(threadId, assistantMessageId)
+    const message = messages.find(
+      (candidate) => candidate?.id === assistantMessageId
+    )
+    if (!message) throw evaluationError('assistant_message_timeout')
+    if (message.chatMode !== mode) throw evaluationError('chat_mode_mismatch')
+    if (message.modelId !== this.modelId) {
+      throw evaluationError('chat_model_mismatch')
+    }
+    return message
+  }
+
   async runQuestion(question) {
     const metadata = await this.resolveQuestion(question)
-    await this.ensureSession()
-    const threadId = await this.createThread()
-    const userMessageId = randomUUID()
-    const assistantMessageId = randomUUID()
-    await this.submitTurn({
-      question: metadata.question,
-      mode: metadata.mode,
-      threadId,
-      userMessageId,
-      assistantMessageId,
-      maxStreamBytes: metadata.maxStreamBytes || this.maxStreamBytes,
-    })
-    const message = await this.readCompletedMessage(
-      threadId,
-      assistantMessageId,
-      metadata.mode
-    )
-    const result = extractAssistantMessage(message)
-    if (
-      metadata.source === 'canary' &&
-      !result.toolCalls.some((call) => call.name === metadata.expectedTool)
-    ) {
-      throw evaluationError('canary_tool_missing')
+    if (this.budgetFile) {
+      assertBudgetCanStart(await readBudgetLedger(this.budgetFile))
+      await verifyGuardQualification({
+        ...this.qualification,
+        budgetFile: this.budgetFile,
+        chatOrigin: this.chatOrigin,
+        chatbotId: this.chatbotId,
+        modelId: this.modelId,
+      })
     }
-    return { metadata, ...result }
+    const release = this.budgetFile
+      ? await acquireBudgetLock(this.budgetFile, '.run')
+      : null
+    try {
+      await this.ensureSession()
+      const threadId = await this.createThread()
+      const userMessageId = randomUUID()
+      const assistantMessageId = randomUUID()
+      const turnToken = this.budgetFile
+        ? await beginBudgetTurn(this.budgetFile)
+        : null
+      await this.submitTurn({
+        question: metadata.question,
+        mode: metadata.mode,
+        threadId,
+        userMessageId,
+        assistantMessageId,
+        maxStreamBytes: metadata.maxStreamBytes || this.maxStreamBytes,
+      })
+      const message = await this.readCompletedMessage(
+        threadId,
+        assistantMessageId,
+        metadata.mode
+      )
+      if (turnToken)
+        await finishBudgetTurn(
+          this.budgetFile,
+          turnToken,
+          finiteCredits(message.creditsUsed)
+        )
+      const result = extractAssistantMessage(message)
+      if (
+        metadata.source === 'canary' &&
+        !result.toolCalls.some((call) => call.name === metadata.expectedTool)
+      ) {
+        throw evaluationError('canary_tool_missing')
+      }
+      return { metadata, ...result }
+    } finally {
+      await release?.()
+    }
   }
 
   async complete(body) {
@@ -764,6 +868,12 @@ export async function createTargetFromEnvironment(env = process.env) {
     modelId: env.KLICKER_EVAL_MODEL_ID || DEFAULT_MODEL_ID,
     groundTruthDirectory: env.KLICKER_EVAL_GT_DIR,
     canaryFixture: env.KLICKER_EVAL_CANARY_FILE,
+    budgetFile: env.KLICKER_EVAL_BUDGET_FILE,
+    qualification: {
+      filePath: env.KLICKER_EVAL_QUALIFICATION_FILE,
+      origin: env.KLICKER_EVAL_GUARD_ORIGIN,
+      key: env.KLICKER_EVAL_GUARD_KEY,
+    },
     maxStreamBytes:
       Number(env.KLICKER_EVAL_MAX_STREAM_BYTES) || DEFAULT_MAX_STREAM_BYTES,
     pollIntervalMs:
@@ -776,6 +886,16 @@ export async function createTargetFromEnvironment(env = process.env) {
   if (!target.groundTruthDirectory || !target.canaryFixture) {
     throw evaluationError('target_fixture_paths_missing')
   }
+  if (!target.budgetFile) throw evaluationError('budget_missing')
+  if (target.modelId === 'auto')
+    throw evaluationError('provider_model_unqualified')
+  await verifyGuardQualification({
+    ...target.qualification,
+    budgetFile: target.budgetFile,
+    chatOrigin: target.chatOrigin,
+    chatbotId: target.chatbotId,
+    modelId: target.modelId,
+  })
   await target.initialize()
   return target
 }

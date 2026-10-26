@@ -108,6 +108,7 @@ import {
   ChatAccountUsageOverviewRef,
   Chatbot,
   ChatbotPublic,
+  ChatbotPublicationReview,
   ChatModelCapability,
 } from './resource.js'
 import {
@@ -1487,6 +1488,12 @@ export const Query = builder.queryType({
         resolve: async (_, __, ctx) => {
           return await ResourcesService.getAnswerCollectionsInfo(ctx)
         },
+      }),
+
+      getPendingChatbotPublications: t.withAuth(asAdmin).field({
+        type: [ChatbotPublicationReview],
+        resolve: (_, _args, ctx) =>
+          ChatbotsService.getPendingChatbotPublications(ctx),
       }),
 
       getChatbotsInfo: t.withAuth(asUser).field({

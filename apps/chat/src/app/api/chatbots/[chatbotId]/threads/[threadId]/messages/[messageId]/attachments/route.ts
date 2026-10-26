@@ -1,3 +1,4 @@
+import { IMAGE_ROW_FILTER } from '@/src/lib/attachments/attachmentState'
 import { withChatbotAuth } from '@/src/lib/server/apiGuards'
 import { prisma } from '@klicker-uzh/prisma'
 import { NextRequest, NextResponse } from 'next/server'
@@ -33,6 +34,7 @@ export async function GET(
       },
       include: {
         attachments: {
+          where: IMAGE_ROW_FILTER,
           orderBy: { position: 'asc' },
         },
       },

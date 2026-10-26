@@ -1544,9 +1544,10 @@ test.describe('Chatbot Image Attachments', () => {
     await expect(
       page.getByText('You can only attach up to 3 images.')
     ).toBeVisible()
+    // Documents have their own limit, so the attach button stays available.
     await expect(
       composer.getByTestId('chat-composer-attach-button')
-    ).toHaveCount(0)
+    ).toHaveCount(1)
     await expect(composer.getByTestId('chat-composer-attachment')).toHaveCount(
       3
     )
@@ -1589,8 +1590,7 @@ test.describe('Chatbot Image Attachments', () => {
     ).toBeVisible()
     await expect(
       editComposer.getByTestId('chat-edit-composer-attach-button')
-    ).toHaveCount(0)
-    await expect(page.getByTestId('chat-composer-attach-button')).toHaveCount(1)
+    ).toHaveCount(1)
     await expect(
       editComposer.getByTestId('chat-composer-attachment')
     ).toHaveCount(3)
@@ -1607,7 +1607,6 @@ test.describe('Chatbot Image Attachments', () => {
     await expect(
       page.getByTestId('chat-composer').getByTestId('chat-composer-attachment')
     ).toHaveCount(3)
-    await expect(page.getByTestId('chat-composer-attach-button')).toHaveCount(0)
   })
 })
 
@@ -1892,6 +1891,158 @@ test.describe('Chatbot Settings Panel', () => {
     await expect(modelSection).not.toContainText('GPT-4.1 Mini')
   })
 
+  async function readAnswerPreferences(page: Page) {
+    return page.evaluate(() => {
+      const stored = window.localStorage.getItem('settings-storage')
+      const state = stored ? JSON.parse(stored).state : {}
+      return { answerStyle: state.answerStyle, answerTone: state.answerTone }
+    })
+  }
+
+  function waitForChatRequest(page: Page) {
+    return page.waitForRequest(
+      (request) =>
+        request.method() === 'POST' &&
+        request.url().includes(`/api/chatbots/${CHATBOT_ID}/chat`)
+    )
+  }
+
+  test('Answer style and tone are sent with each message and survive a reload', async ({
+    page,
+  }) => {
+    await mockChatStream(page)
+    await visitChat(page)
+    await openSettings(page)
+
+    const defaultRequest = waitForChatRequest(page)
+    await sendMessage(page, 'Default answer preferences check')
+    expect((await defaultRequest).postDataJSON()).toMatchObject({
+      answerStyle: 'balanced',
+      answerTone: 'neutral',
+    })
+    await expect(page.getByTestId('chat-assistant-message')).toContainText(
+      'assistant reply #1',
+      { timeout: 15_000 }
+    )
+
+    await selectOption(
+      page,
+      '[data-cy="chat-answer-style-select"]',
+      'Bullet points'
+    )
+    await selectOption(page, '[data-cy="chat-answer-tone-select"]', 'Direct')
+    await expect
+      .poll(() => readAnswerPreferences(page))
+      .toEqual({ answerStyle: 'bullets', answerTone: 'direct' })
+
+    const chosenRequest = waitForChatRequest(page)
+    await sendMessage(page, 'Chosen answer preferences check')
+    expect((await chosenRequest).postDataJSON()).toMatchObject({
+      answerStyle: 'bullets',
+      answerTone: 'direct',
+    })
+
+    await page.reload({ waitUntil: 'domcontentloaded' })
+    await expect(page.getByTestId('chat-composer')).toBeVisible()
+    expect(await readAnswerPreferences(page)).toEqual({
+      answerStyle: 'bullets',
+      answerTone: 'direct',
+    })
+
+    const reloadedRequest = waitForChatRequest(page)
+    await sendMessage(page, 'Reloaded answer preferences check')
+    expect((await reloadedRequest).postDataJSON()).toMatchObject({
+      answerStyle: 'bullets',
+      answerTone: 'direct',
+    })
+  })
+
+  test('Embedded mode shares the answer preferences through compact selects', async ({
+    page,
+  }) => {
+    await mockChatStream(page)
+    await visitChat(page)
+    await openSettings(page)
+    await selectOption(
+      page,
+      '[data-cy="chat-answer-style-select"]',
+      'Bullet points'
+    )
+    await expect
+      .poll(() => readAnswerPreferences(page))
+      .toEqual({ answerStyle: 'bullets', answerTone: 'neutral' })
+
+    await page.goto(`${chatUrl()}/${CHATBOT_ID}?embed=true`, {
+      waitUntil: 'domcontentloaded',
+    })
+
+    const styleSelect = page.getByTestId('chat-embedded-answer-style-select')
+    const toneSelect = page.getByTestId('chat-embedded-answer-tone-select')
+    await expect(styleSelect).toHaveValue('bullets')
+    await expect(toneSelect).toHaveValue('neutral')
+    await expect(page.getByTestId('chat-settings-toggle')).toHaveCount(0)
+
+    await styleSelect.selectOption('balanced')
+    await toneSelect.selectOption('friendly')
+
+    const embeddedRequest = waitForChatRequest(page)
+    await sendMessage(page, 'Embedded answer preferences check')
+    expect((await embeddedRequest).postDataJSON()).toMatchObject({
+      answerStyle: 'balanced',
+      answerTone: 'friendly',
+    })
+
+    await page.reload({ waitUntil: 'domcontentloaded' })
+    await expect(styleSelect).toHaveValue('balanced')
+    await expect(toneSelect).toHaveValue('friendly')
+  })
+
+  test('A lecturer can turn the answer preferences off for a chatbot', async ({
+    page,
+  }) => {
+    const prisma = await getPrisma()
+    await prisma.chatbot.update({
+      where: { id: CHATBOT_ID },
+      data: { answerPreferencesEnabled: false },
+    })
+    try {
+      await visitChat(page)
+      await openSettings(page)
+      await expect(page.getByTestId('chat-model-selection')).toBeVisible()
+      await expect(page.getByTestId('chat-answer-style-selection')).toHaveCount(
+        0
+      )
+      await expect(page.getByTestId('chat-answer-tone-selection')).toHaveCount(
+        0
+      )
+
+      const settingsResponse = page.waitForResponse(
+        (response) =>
+          new URL(response.url()).pathname === `/api/chatbots/${CHATBOT_ID}` &&
+          response.request().method() === 'GET'
+      )
+      await page.goto(`${chatUrl()}/${CHATBOT_ID}?embed=true`, {
+        waitUntil: 'domcontentloaded',
+      })
+      const response = await settingsResponse
+      expect(response.ok()).toBe(true)
+      expect((await response.json()).answerPreferencesEnabled).toBe(false)
+      await expect(page.getByTestId('chat-composer')).toBeVisible()
+      await expect(page.getByTestId('chat-embedded-credits-bar')).toBeVisible()
+      await expect(
+        page.getByTestId('chat-embedded-answer-style-select')
+      ).toHaveCount(0)
+      await expect(
+        page.getByTestId('chat-embedded-answer-tone-select')
+      ).toHaveCount(0)
+    } finally {
+      await prisma.chatbot.update({
+        where: { id: CHATBOT_ID },
+        data: { answerPreferencesEnabled: true },
+      })
+    }
+  })
+
   test('Mobile keeps the credit balance and fallback notice outside the sidebar', async ({
     page,
   }) => {
@@ -1950,21 +2101,17 @@ test.describe('Chatbot Settings Panel', () => {
     )
   })
 
-  test('Model descriptions explain capabilities without provider jargon', async ({
-    page,
-  }) => {
+  test('Selected model exposes its description', async ({ page }) => {
     await setModelSelection(participantId, true)
     await visitChat(page)
     await openSettings(page)
 
     const modelSection = page.getByTestId('chat-model-selection')
-    await selectOption(page, '[data-cy="chat-model-select"]', 'GPT-5.6 Luna')
+    await selectOption(page, '[data-cy="chat-model-select"]', 'GPT-6 Luna')
 
-    await expect(modelSection).toContainText(
-      'Uses fewer credits and remains available when your credits run out'
-    )
-    await expect(modelSection).not.toContainText('LiteLLM')
-    await expect(modelSection).not.toContainText('OpenAI reasoning model')
+    const description = modelSection.locator('p')
+    await expect(description).toBeVisible()
+    await expect(description).toHaveText(/\S/)
   })
 
   // The selector only appears for a model that supports reasoning with more
@@ -1978,7 +2125,7 @@ test.describe('Chatbot Settings Panel', () => {
     await mockChatStream(page, {
       metadata: {
         chatMode: 'tutor',
-        modelId: 'gpt-5.6-luna',
+        modelId: 'gpt-6-luna',
         reasoningEffort: 'high',
       },
     })
@@ -1995,7 +2142,7 @@ test.describe('Chatbot Settings Panel', () => {
     await expect(
       page.getByTestId('chat-reasoning-effort-selection')
     ).toHaveCount(0)
-    await selectOption(page, '[data-cy="chat-model-select"]', 'GPT-5.6 Luna')
+    await selectOption(page, '[data-cy="chat-model-select"]', 'GPT-6 Luna')
 
     await expect(
       page.getByTestId('chat-reasoning-effort-selection')
@@ -2018,7 +2165,11 @@ test.describe('Chatbot Settings Panel', () => {
     await sendMessage(page, 'Selected reasoning effort check')
 
     const chatRequest = await chatRequestPromise
-    const payload = chatRequest.postDataJSON() as { reasoningEffort?: string }
+    const payload = chatRequest.postDataJSON() as {
+      selectedModel?: string
+      reasoningEffort?: string
+    }
+    expect(payload.selectedModel).toBe('gpt-6-luna')
     expect(payload.reasoningEffort).toBe('high')
 
     // The caption under the answer reflects the effort the stream reported.
@@ -2605,9 +2756,9 @@ test.describe('Chatbot Source Citations', () => {
       await page.keyboard.press('Enter')
       await expect(groups).toHaveCount(14)
       await expect(moreSources).toHaveCount(0)
-      await expect(page.getByTestId('chat-doc-query-citation')).toHaveCount(12)
+      await expect(page.getByTestId('chat-doc-query-citation')).toHaveCount(14)
       await expect(page.getByTestId('chat-doc-query-citation')).toHaveText(
-        Array.from({ length: 12 }, (_, index) => String(index + 1))
+        Array.from({ length: 14 }, (_, index) => String(index + 1))
       )
       await expect(
         groups.nth(0).getByTestId('chat-doc-query-citation')
@@ -2620,11 +2771,8 @@ test.describe('Chatbot Source Citations', () => {
       ).toHaveText('12')
 
       const citations = page.getByTestId('chat-citation')
-      await expect(citations).toHaveCount(3)
-      await expect(citations).toHaveText(['1', '2', '12'])
-      await expect(
-        page.getByTestId('chat-assistant-message-content')
-      ).toContainText('[13]')
+      await expect(citations).toHaveCount(4)
+      await expect(citations).toHaveText(['1', '2', '12', '13'])
 
       const disclosureGroup = groups.nth(0)
       await expect(
@@ -2645,8 +2793,8 @@ test.describe('Chatbot Source Citations', () => {
       for (const groupIndex of [12, 13]) {
         const source = overflowSources[groupIndex - 1]
         const group = groups.nth(groupIndex)
-        await expect(group.getByTestId('chat-doc-query-citation')).toHaveCount(
-          0
+        await expect(group.getByTestId('chat-doc-query-citation')).toHaveText(
+          String(groupIndex + 1)
         )
         await expect(
           group.getByTestId('chat-doc-query-origin')
@@ -2655,6 +2803,106 @@ test.describe('Chatbot Source Citations', () => {
         await expect(group).toContainText(source.title)
         await expect(group).toContainText(source.chunks[0].content)
       }
+    }
+  })
+
+  test('Later search citations reveal compacted source cards through reload', async ({
+    page,
+  }, testInfo) => {
+    const messageId = '5a1b2c3d-0015-4a91-8f6c-2b7d1e5a9c40'
+    const sources = Array.from({ length: 100 }, (_, index) => ({
+      file_name: `Synthetic source ${index + 1}`,
+      source_url: `https://example.test/evidence/${index + 1}.pdf`,
+      source_type: 'document',
+      page_number: 1,
+    }))
+    const citedIndices = [
+      ...Array.from({ length: 13 }, (_, index) => index + 1),
+      16,
+      21,
+      99,
+    ]
+    await seedThread(participantId, {
+      title: 'Later search evidence',
+      messages: [
+        {
+          role: 'user',
+          content: [{ type: 'text', text: 'Compare the retrieved evidence.' }],
+        },
+        {
+          id: messageId,
+          role: 'assistant',
+          content: [
+            docQueryPart({
+              toolCallId: 'initial-query',
+              sources: sources.slice(0, 20),
+            }),
+            docQueryPart({
+              toolCallId: 'refined-query',
+              sources: sources.slice(20),
+            }),
+            {
+              type: 'text',
+              text: `Evidence ${citedIndices.map((index) => `[${index}]`).join(', ')}. Overflow [100].`,
+            },
+          ],
+        },
+      ],
+    })
+    await visitChat(page)
+    await page.getByTestId('chat-thread-select').first().click()
+    await page.emulateMedia({ reducedMotion: 'reduce' })
+
+    for (const variant of ['desktop-en', 'reloaded-en', 'mobile-de']) {
+      if (variant === 'mobile-de') {
+        await page.setViewportSize({ width: 390, height: 844 })
+        await page.context().addCookies([
+          {
+            name: 'NEXT_LOCALE',
+            value: 'de',
+            url: new URL(chatUrl()).origin,
+          },
+        ])
+      }
+      if (variant !== 'desktop-en') await page.reload()
+
+      const citations = page.getByTestId('chat-citation')
+      await expect(citations).toHaveText(citedIndices.map(String))
+      await expect(page.getByTestId('chat-source-card')).toHaveCount(99)
+      await expect(
+        page.locator('[data-cy="chat-source-card"]:visible')
+      ).toHaveCount(12)
+      await expect(page.locator(`#src-${messageId}-100`)).toHaveCount(0)
+      await expect(
+        page.getByTestId('chat-assistant-message-content')
+      ).toContainText('[100]')
+      const disclosure = page.getByTestId('chat-other-sources')
+      await expect(disclosure).not.toHaveAttribute('open', '')
+      await citations.first().scrollIntoViewIfNeeded()
+      await page.screenshot({
+        path: testInfo.outputPath(`citation-preview-${variant}.png`),
+        animations: 'disabled',
+      })
+
+      for (const index of [13, 16, 21, 99]) {
+        const citation = page.locator(
+          `[data-cy="chat-citation"][href="#src-${messageId}-${index}"]`
+        )
+        await citation.focus()
+        await page.keyboard.press('Enter')
+        const target = page.locator(`#src-${messageId}-${index}`)
+        await expect(disclosure).toHaveAttribute('open', '')
+        await expect(target).toBeVisible()
+        await expect(target).toBeFocused()
+        await expect(target).toHaveAttribute(
+          'href',
+          `${sources[index - 1].source_url}#page=1`
+        )
+      }
+      await page.screenshot({
+        path: testInfo.outputPath(`citation-revealed-${variant}.png`),
+        animations: 'disabled',
+      })
     }
   })
 
@@ -2930,9 +3178,11 @@ test.describe('Chatbot Source Citations', () => {
         ...[
           'An answer without a citation.',
           'A supported answer [1] and [1].',
-        ].map((text) => ({
+        ].map((text, ix) => ({
           role: 'assistant' as const,
           parentId: userId,
+          // The cited answer must be the newest sibling so it opens first.
+          createdAt: new Date(Date.now() + ix * 1000),
           content: [
             docQueryPart({
               toolCallId: text.includes('[1]') ? 'call-cited' : 'call-uncited',

@@ -90,7 +90,7 @@ errors, which can contain credentials. For retained volumes, follow the
 | Auth adapter against shared Prisma client                                         | disposable local PostgreSQL through the guarded Auth round-trip                                         | `pnpm --filter @klicker-uzh/auth test:prisma-adapter`                                                               |
 | Auth routing, cookies and API handlers                                            | Vitest unit and handler integration projects; no database or real identity provider                     | `pnpm --filter @klicker-uzh/auth test:run`                                                                          |
 | Compiled auth proxy and server-rendered recovery                                  | Vitest built-app integration project; requires an auth production build                                 | `pnpm --filter @klicker-uzh/auth test:built`                                                                        |
-| UI / user flows                                                                   | Playwright e2e                                                                                          | `pnpm playwright:host -- <args>` from the host; see routing below                                                   |
+| UI / user flows                                                                   | Playwright e2e                                                                                          | `node util/run-playwright-host.mjs <args>` from the host; see routing below                                         |
 | Office Add-in URL validation                                                      | Node's built-in test runner — safe without services                                                     | `pnpm --filter @klicker-uzh/office-addin test`                                                                      |
 
 For server-paginated manage lists, browser coverage must exercise finite page
@@ -189,10 +189,16 @@ The Office Add-in has a separate host boundary. Its pure URL contract runs under
 **Playwright is the sole e2e test suite.** All e2e specs live under `playwright/`.
 
 Local Playwright has a strict host/container boundary. The canonical command is
-`pnpm playwright:host -- <args>` from a host shell. It reconciles the exact
+`node util/run-playwright-host.mjs <args>` from a host shell. It reconciles the exact
 devrouter workspace, maps every browser origin, discovers the workspace's
 random loopback PostgreSQL port, and runs Playwright with host dependencies and
-browser binaries. Package scripts route to the same launcher, while
+browser binaries. The `pnpm playwright:host` package script calls the same
+launcher, but pnpm's `verifyDepsBeforeRun: error` check stops it before the
+launcher runs whenever the host install is missing or stale. That is the normal
+state of a devcontainer checkout. The launcher prints the stack mode before the
+browser phase: Next dev servers locally (CI tests production builds), the
+runtime profile, and the database port. `--print-env` prints the workspace,
+app URLs, and database host without running tests. Package scripts route to the same launcher, while
 `playwright.config.ts` rejects direct local commands and every local container
 before global setup can reset data. The devcontainer also sets a non-directory
 browser path so browser installation fails there. GitHub Actions is explicitly
@@ -219,7 +225,7 @@ Specs click `data-cy` attributes ([Frontend Conventions](./frontend-conventions.
 
 |               | Playwright (`playwright/`)                            |
 | ------------- | ----------------------------------------------------- |
-| Local command | `pnpm playwright:host -- <args>`                      |
+| Local command | `node util/run-playwright-host.mjs <args>`            |
 | Infisical env | `dev-playwright`                                      |
 | Seed          | own `seedDatabase()` in `global-setup.ts`             |
 | CI            | official Playwright container, 8-way shard, ready PRs |
@@ -331,7 +337,7 @@ trusted planner assigns candidate-only specs to `full`. The runtime adapter
 resolves a union containing `full` through the explicit `playwright` Devrouter
 profile, which includes every CI-supported application but excludes local-only
 MCP, LiteLLM, and MailHog resources.
-CI installs `@devrouter/cli` version `0.1.2` through
+CI installs `@devrouter/cli` version `0.5.1` through
 `.github/scripts/install-devrouter.sh` in a job-local tool prefix, with install
 scripts disabled. The shard action uses the trusted control checkout's installer
 and passes its absolute executable path to the runtime adapter, including for
@@ -388,7 +394,26 @@ Root typecheck includes the Playwright compiler surface through its package `che
 
 Check-only configs must state their no-output role with `noEmit`. When they extend a declaration-emitting config, `noEmit` alone does not disable declaration portability analysis: GraphQL and Prisma therefore also set `declaration: false` and `declarationMap: false`. Incremental checks use `tsconfig.check.tsbuildinfo` rather than overwriting the emitting compiler's state. The full compiler-role matrix lives in [Getting Started](./getting-started.md#toolchain-verified-2026-07-07).
 
-For framework upgrades, run both bundler paths: `pnpm run build:test` must exercise Turbopack in all five Next apps, while `pnpm run build` must exercise production Turbopack for auth/chat and production Webpack for control/manage/PWA. All five Next builds use their canonical `tsconfig.json`; the three PWA apps reserve `tsconfig.check.json` for raw package checks that must exclude stale development validators. Inspect `.next/standalone` for all five apps and the service worker, Workbox, and custom worker outputs for control/manage/PWA. Treat configuration inspection as **config-derived**; call the artifacts verified only when the command, date, and tested SHA are recorded.
+For framework upgrades, `pnpm run build:test` delegates to each Next app's canonical production build with `NODE_ENV=production`: Turbopack for auth/chat and Webpack for control/manage/PWA. `start:test` serves the resulting standalone server, not a development server or a test-mode Next build. All five Next builds use their canonical `tsconfig.json`; the three PWA apps reserve `tsconfig.check.json` for raw package checks that must exclude stale development validators. Inspect `.next/standalone` for all five apps and the service worker, Workbox, and custom worker outputs for control/manage/PWA. Treat configuration inspection as **config-derived**; call the artifacts verified only when the command, date, and tested SHA are recorded.
+
+### Playwright production frontend artifacts
+
+`util/playwright-next-runtime.mjs` packages each standalone server, `.next/static`,
+and generated public assets into `.next/playwright-runtime.tar`. The existing
+trusted CI archive carries this file even though it excludes `.next/standalone`.
+Each shard extracts it into a fresh temporary directory, verifies its app, build
+command and build ID, and starts `server.js` with `NODE_ENV=production`. Missing
+or inconsistent artifacts fail startup; there is no development fallback. The
+receipt in the build and startup logs identifies the artifact actually served.
+
+The scoped `KLICKER_PLAYWRIGHT_FIXTURES=1` setting enables only local image
+optimization and the existing synthetic GrowthBook proxy. It does not disable
+PWA plugins, service workers, production optimizations, or standalone output.
+Backend test mode still owns synthetic feature flags, coverage instrumentation,
+and arbitrary GraphQL operations used by the harness. CI frontend parity does
+not imply that these backend fixtures or the deployed image digest are identical
+to production. Local `playwright:host` uses the development runtime for fast
+iteration; required CI and explicit production browser checks provide acceptance.
 
 ## Local recovery regression checks
 

@@ -1545,6 +1545,7 @@ export const Mutation = builder.mutationType({
             type: [ChatbotReasoningConfigInput],
             required: false,
           }),
+          answerPreferencesEnabled: t.arg.boolean({ required: false }),
         },
         resolve: async (_, args, ctx) => {
           return await ChatbotsService.updateChatbotModelPolicy(args, ctx)
