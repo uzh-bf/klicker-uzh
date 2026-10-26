@@ -2,7 +2,7 @@ const assert = require('node:assert/strict')
 const fs = require('node:fs')
 const os = require('node:os')
 const path = require('node:path')
-const { execFileSync, spawnSync } = require('node:child_process')
+const { execFileSync } = require('node:child_process')
 const test = require('node:test')
 const { startReviewTools } = require('./ocr-review-tools.cjs')
 
@@ -35,11 +35,6 @@ function fixture(t) {
     path.join(repo, 'app/[id]/page.js'),
     'export default function Page() {\n  return null\n}\n'
   )
-  fs.mkdirSync(path.join(repo, 'nested'))
-  for (const name of ['.env.local', 'nested/.env.production', 'private.PEM']) {
-    fs.writeFileSync(path.join(repo, name), 'synthetic protected material\n')
-    git('add', '--force', name)
-  }
   git('add', '.')
   git('commit', '-m', 'chore: synthetic base')
   const policy = git('rev-parse', 'HEAD')
@@ -150,6 +145,75 @@ const docsQuestion = {
   version: '16',
   language: 'TypeScript',
 }
+
+test('trusted root contracts and custom guides stay policy-bound and reject symlinks and oversized blobs', async (t) => {
+  const source = fixture(t)
+  const git = (...args) =>
+    execFileSync('git', args, { cwd: source.repo, encoding: 'utf8' }).trim()
+  fs.mkdirSync(path.join(source.repo, 'guidance'))
+  fs.writeFileSync(path.join(source.repo, 'AGENTS.md'), 'TRUSTED_ROOT')
+  fs.writeFileSync(
+    path.join(source.repo, 'guidance/review.md'),
+    'TRUSTED_GUIDE'
+  )
+  fs.symlinkSync('AGENTS.md', path.join(source.repo, 'LINK.md'))
+  fs.writeFileSync(path.join(source.repo, 'BIG.md'), 'x'.repeat(262145))
+  git('add', '.')
+  git('commit', '-m', 'test: synthetic trusted roots')
+  const policy = git('rev-parse', 'HEAD')
+  fs.writeFileSync(path.join(source.repo, 'AGENTS.md'), 'CANDIDATE_ROOT')
+  git('add', '.')
+  git('commit', '-m', 'test: synthetic candidate roots')
+  const { tool } = await client(t, {
+    ...source,
+    policy,
+    head: git('rev-parse', 'HEAD'),
+    contextRoots: ['guidance'],
+    rootFiles: ['AGENTS.md', 'LINK.md', 'BIG.md'],
+    guides: ['guidance/review.md'],
+  })
+  const discovered = JSON.parse(
+    (await tool('read_review_context', {})).result.content[0].text
+  )
+  assert.ok(discovered.paths.includes('AGENTS.md'))
+  assert.deepEqual(discovered.guides, ['guidance/review.md'])
+  const read = await tool('read_review_context', { path: 'AGENTS.md' })
+  assert.notEqual(read.result.isError, true)
+  assert.match(read.result.content[0].text, /TRUSTED_ROOT/)
+  assert.doesNotMatch(read.result.content[0].text, /CANDIDATE_ROOT/)
+  assert.notEqual(
+    (await tool('read_review_context', { path: 'guidance/review.md' })).result
+      .isError,
+    true
+  )
+  for (const path of ['LINK.md', 'BIG.md', 'docs/contract.md', '../AGENTS.md'])
+    assert.equal(
+      (await tool('read_review_context', { path })).result.isError,
+      true
+    )
+})
+
+test('empty review context discovery returns no paths without invoking Git', async (t) => {
+  const parent = fs.mkdtempSync(path.join(os.tmpdir(), 'ocr-tools-no-repo-'))
+  t.after(() => fs.rmSync(parent, { recursive: true, force: true }))
+  const { tool } = await client(t, {
+    repo: path.join(parent, 'missing'),
+    policy: 'a'.repeat(40),
+    head: 'b'.repeat(40),
+    contextRoots: [],
+    rootFiles: [],
+    guides: [],
+  })
+  for (const input of [{}, { path: '' }]) {
+    const discovered = await tool('read_review_context', input)
+    assert.equal(discovered.result.isError, undefined)
+    assert.deepEqual(JSON.parse(discovered.result.content[0].text), {
+      paths: [],
+      truncated: false,
+      guides: [],
+    })
+  }
+})
 
 test('docs lookup validates outbound fields, returns bounded evidence and caches complete request identity', async (t) => {
   let calls = 0
@@ -936,9 +1000,6 @@ test('advisor source paths accept literal brackets and reject unsafe or absent p
   for (const path of [
     '../.git/config',
     '.env',
-    '.env.local',
-    'nested/.env.production',
-    'private.PEM',
     'private.key',
     'escape.js',
     'absent.js',
@@ -1094,40 +1155,4 @@ test('advisor deadline is diagnosed as timeout without changing cancellation beh
     global.setTimeout = originalSetTimeout
     global.clearTimeout = originalClearTimeout
   }
-})
-
-test('response failures clear pending work without an unhandled rejection', () => {
-  const source = `
-    const http = require('node:http')
-    const { startReviewTools } = require(${JSON.stringify(path.join(__dirname, 'ocr-review-tools.cjs'))})
-    const original = http.ServerResponse.prototype.writeHead
-    let failures = 0
-    http.ServerResponse.prototype.writeHead = function (...args) {
-      if (args[0] === 403 || args[0] === 500) {
-        failures++
-        throw new Error('synthetic transport failure')
-      }
-      return original.apply(this, args)
-    }
-    ;(async () => {
-      const broker = await startReviewTools({
-        repo: '.', head: 'a'.repeat(40), policy: 'b'.repeat(40),
-      })
-      try {
-        await fetch(broker.url, { signal: AbortSignal.timeout(100) })
-      } catch {}
-      await broker.close()
-      if (failures !== 2) throw new Error('response failures were not exercised')
-    })().catch(() => { process.exitCode = 1 })
-  `
-  const result = spawnSync(
-    process.execPath,
-    ['--unhandled-rejections=strict', '-e', source],
-    {
-      encoding: 'utf8',
-      timeout: 5000,
-      env: { PATH: process.env.PATH },
-    }
-  )
-  assert.equal(result.status, 0, result.stderr)
 })

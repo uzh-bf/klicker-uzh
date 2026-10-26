@@ -57,7 +57,8 @@ COPY --from=deps /app/out/pnpm* .
 # the cache removal share one RUN so no build state lands in a committed layer.
 RUN pnpm i --prod --ignore-scripts \
  && npm rm -g --ignore-scripts pnpm turbo \
- && rm -rf /root/.cache/pnpm /root/.local/share/pnpm /root/.npm
+ && rm -rf /root/.cache/pnpm /root/.local/share/pnpm /root/.npm \
+ && rm -rf /usr/local/lib/node_modules/npm /usr/local/bin/npm /usr/local/bin/npx
 
 RUN addgroup --system --gid 1001 nodejs
 RUN adduser --system --uid 1001 nodejs

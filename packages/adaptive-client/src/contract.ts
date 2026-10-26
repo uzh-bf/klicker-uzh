@@ -117,7 +117,7 @@ const scale = z
 const common = {
   contractVersion: z.literal(ADAPTIVE_ENGINE_CONTRACT_VERSION),
   // Existing attempts use UUIDs; retaining that seed preserves tie breaking.
-  routingSeed: z.union([z.string().uuid(), z.string().regex(/^[a-f0-9]{64}$/)]),
+  routingSeed: z.union([z.string().guid(), z.string().regex(/^[a-f0-9]{64}$/)]),
   nodes: z.array(node).min(1).max(500),
   responses: z
     .array(

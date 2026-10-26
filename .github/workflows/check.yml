@@ -24,9 +24,8 @@ on:
   pull_request:
     # No "edited": a title or body edit never changes the tested tree, and a
     # base retarget is revalidated by the restack push or a close and reopen.
-    # "ready_for_review" recomputes the required context at the ready boundary
-    # so a draft-era success cannot stand in for the ready state.
-    types: [opened, synchronize, reopened, ready_for_review]
+    # Readiness does not change this suite or its tested inputs.
+    types: [opened, synchronize, reopened]
 
 concurrency:
   group: ${{ github.workflow }}-${{ github.event.pull_request.number || github.ref_name }}
@@ -179,6 +178,9 @@ jobs:
           node --test \
             .github/scripts/direct-script-invocations.test.cjs \
             .github/scripts/ci-equivalent-run.test.cjs \
+            .github/scripts/ci-verified-reuse.test.cjs \
+            .github/scripts/ci-reuse-policy.test.cjs \
+            .github/scripts/install-devrouter-locked.test.cjs \
             .github/scripts/ci-duplicate-audit.test.cjs \
             .github/scripts/minimum-validation-class.test.cjs \
             .github/scripts/changed-paths.test.cjs \
@@ -191,6 +193,7 @@ jobs:
             .github/scripts/ocr-self-update-guard.test.cjs \
             .github/scripts/ocr-mistral-adapter.test.cjs \
             .github/scripts/ocr-draft-review.test.cjs \
+            .github/scripts/ocr-controller.test.cjs \
             .github/scripts/ocr-review-tools.test.cjs \
             .github/scripts/final-ai-review.test.js \
             .github/scripts/final-ai-stack-review.test.js \
@@ -207,6 +210,33 @@ jobs:
             .github/scripts/release-image-manifest.test.cjs \
             .github/scripts/deploy-parity.test.cjs \
             .github/scripts/doc-query-token-ownership.test.cjs
+
+      - name: Select shared OCR runtime qualification
+        id: ocr_shared
+        uses: ./.github/actions/changed-paths
+        with:
+          pattern: '^\.github/(actions/ocr-review/|workflows/(check|check-ocr-review)\.yml|scripts/ocr-(controller|draft-review|review-shared|runtime-config|review-tools|mistral-adapter)(\.test)?\.cjs|open-code-review/runtime-manifest\.json)|^\.agents/skills/ocr-reviewer/'
+
+      - name: Qualify stock OCR runtime with synthetic providers
+        if: steps.ocr_shared.outputs.should_run != 'false'
+        timeout-minutes: 25
+        env:
+          OCR_NO_UPDATE: '1'
+          TURBO_TOKEN: ''
+          TURBO_TEAM: ''
+        run: |
+          set -euo pipefail
+          ocr_package="$(node -p "require('./.github/scripts/ocr-controller.cjs').verifyRelease().manifest.draft.package")"
+          ocr_revision="$(node -p "require('./.github/scripts/ocr-controller.cjs').verifyRelease().manifest.draft.publisher.revision")"
+          npm install --prefix "${RUNNER_TEMP}/ocr-stock-qualification" "${ocr_package}"
+          export OCR_TEST_BINARY="${RUNNER_TEMP}/ocr-stock-qualification/node_modules/.bin/ocr"
+          publisher_root="${RUNNER_TEMP}/ocr-stock-publisher"
+          git init "${publisher_root}"
+          git -C "${publisher_root}" fetch --depth=1 https://github.com/alibaba/open-code-review.git "${ocr_revision}"
+          git -C "${publisher_root}" checkout --detach FETCH_HEAD
+          export OCR_TEST_PUBLISHER="${publisher_root}/scripts/github-actions/post-review-comments.js"
+          export OCR_REQUIRE_STOCK_BINARY=1
+          node --test .github/scripts/ocr-controller.test.cjs .github/scripts/ocr-draft-review.test.cjs
 
       - name: Select OCR engine qualification
         id: ocr_engine

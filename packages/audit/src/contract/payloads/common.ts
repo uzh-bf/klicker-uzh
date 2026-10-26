@@ -9,7 +9,7 @@ export type JsonValue =
   | JsonValue[]
   | { [key: string]: JsonValue }
 
-export const uuidSchema = z.string().uuid()
+export const uuidSchema = z.string().guid()
 export const sha256Schema = z.string().regex(/^[0-9a-f]{64}$/)
 export const stableCodeSchema = z.string().regex(/^[A-Z][A-Z0-9_]{1,127}$/)
 export const utcIsoMillisecondsSchema = z
@@ -23,7 +23,7 @@ export const jsonValueSchema: z.ZodType<JsonValue> = z.lazy(() =>
     z.number().finite(),
     z.string(),
     z.array(jsonValueSchema),
-    z.record(jsonValueSchema),
+    z.record(z.string(), jsonValueSchema),
   ])
 )
 

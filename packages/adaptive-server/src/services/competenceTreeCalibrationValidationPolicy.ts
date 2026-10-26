@@ -32,7 +32,7 @@ const criterionSubjectSchema = z
 export const adaptiveValidationCriterionSchema = z
   .object({
     schemaVersion: z.literal(1),
-    exportRequestId: z.string().uuid(),
+    exportRequestId: z.string().guid(),
     holdoutArtifactChecksum: sha256Schema,
     criterionVersion: z.string().trim().min(1).max(160),
     generatedAt: z.string().datetime({ offset: true }),
@@ -70,7 +70,7 @@ export const adaptiveValidationHoldoutRowSchema = z
     elementId: z.number().int().positive(),
     elementVersion: z.number().int().positive(),
     elementType: z.nativeEnum(DB.ElementType),
-    calibrationId: z.string().uuid(),
+    calibrationId: z.string().guid(),
     calibrationVersion: z.number().int().positive(),
     calibrationStatus: z.nativeEnum(DB.AdaptiveItemCalibrationStatus),
     itemModel: z.nativeEnum(DB.AdaptiveItemModel),

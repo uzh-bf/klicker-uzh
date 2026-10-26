@@ -8,7 +8,7 @@
   },
   "peerDependencies": {
     "@azure/storage-blob": "^12.25.0",
-    "@hatchet-dev/typescript-sdk": "^1.9.4",
+    "@hatchet-dev/typescript-sdk": "^1.22.0",
     "@klicker-uzh/adaptive-client": "workspace:*",
     "@klicker-uzh/adaptive-contract": "workspace:*",
     "@klicker-uzh/grading": "workspace:*",
@@ -18,7 +18,7 @@
     "@klicker-uzh/util": "workspace:*",
     "@prisma/adapter-pg": "^7.8.0",
     "graphql": "^16.11.0",
-    "zod": "^3.25.76"
+    "zod": "^4.6.6"
   },
   "scripts": {
     "test:standalone": "vitest run test/adaptivePracticeQuizPrivacy.test.ts"
