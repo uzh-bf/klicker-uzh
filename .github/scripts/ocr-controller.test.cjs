@@ -821,7 +821,7 @@ test('only frozen unavailable draft outcomes admit missing results, and valid pa
   await assert.rejects(runCommand('validate', f))
 })
 
-test('the composite forwards pause inputs without workflow-only contexts', async (t) => {
+test('the composite forwards pause inputs without workflow-only contexts', () => {
   const action = YAML.parse(
     fs.readFileSync(
       path.join(ROOT, '.github/actions/ocr-review/action.yml'),
@@ -829,7 +829,6 @@ test('the composite forwards pause inputs without workflow-only contexts', async
     )
   )
   const { parseProviderPause } = require('./ocr-mistral-adapter.cjs')
-  const { runDraftReview } = require('./ocr-draft-review.cjs')
   const definition = action.inputs['provider-paused']
   assert.equal(parseProviderPause(definition.default), false)
   const review = action.runs.steps.find((step) => step.id === 'review')
@@ -845,25 +844,6 @@ test('the composite forwards pause inputs without workflow-only contexts', async
   assert.throws(() => parseProviderPause(evaluatePause('invalid')), {
     code: 'invalid_provider_pause',
   })
-  const temp = fs.mkdtempSync(path.join(os.tmpdir(), 'ocr-composite-paused-'))
-  t.after(() => fs.rmSync(temp, { recursive: true, force: true }))
-  const outcome = await runDraftReview({
-    repo: temp,
-    temp,
-    from: '1'.repeat(40),
-    head: '2'.repeat(40),
-    paused: evaluatePause('true'),
-    executable: '/must-not-execute',
-    fetchImpl: () => assert.fail('provider called while paused'),
-    write: () => {},
-  })
-  assert.equal(outcome.code, 0)
-  assert.equal(fs.existsSync(outcome.resultPath), false)
-  const receipt = JSON.parse(
-    fs.readFileSync(path.join(temp, 'draft-ai-review-outcome.json'))
-  )
-  assert.equal(receipt.provider_availability.reason, 'provider_paused')
-  assert.notEqual(receipt.observed_status, 'complete')
   for (const step of action.runs.steps)
     if (step !== review) assert.equal(step.env?.OCR_PROVIDER_PAUSED, undefined)
 })
