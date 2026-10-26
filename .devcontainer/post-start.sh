@@ -221,6 +221,15 @@ if [ "$PROFILE_WANTS_DEV" = yes ]; then
   fi
 fi
 READINESS_APPS="$(profile_readiness_apps)"
+if [ "$DEV_TURBO_TASK" = start:test ]; then
+  # CI's runtime plan, not the dev profile, decides which apps start, so only
+  # probe the apps whose package the plan's Turbo filters select.
+  READINESS_APPS="$(node -e '
+    const plan = JSON.parse(require("node:fs").readFileSync(process.argv[1], "utf8"))
+    const filters = new Set(plan.bindings.turboFilters)
+    console.log(process.argv.slice(2).filter((app) => filters.has(`--filter=@klicker-uzh/${app}`)).join(" "))
+  ' "$PLAYWRIGHT_RUNTIME_PLAN" ${READINESS_APPS})"
+fi
 export READINESS_APPS
 if profile_wants klicker-workers; then
   PROFILE_WANTS_WORKERS=yes
