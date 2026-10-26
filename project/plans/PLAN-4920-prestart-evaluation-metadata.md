@@ -8,7 +8,7 @@ review, runtime or delivery authority.
 
 ### Approved completion batch
 
-Merge target `28a3ffe3e025707d1c136e95b339ed7fde0eb000` normally into the
+Merge target `712cb42d0d` normally into the
 delivery tree, run fresh affected checks and browser proof, commit this plan and
 the integrated state, update PR evidence, and make an ordinary non-force push to
 `origin/activity-info-on-eval`. Then run the repository's current `/final-review`
@@ -84,10 +84,14 @@ Syncpack, AGENTS.md, retired-path and Prisma-sync checks pass. Focused formattin
 task-relative whitespace and staged secret scans pass; no production data was
 queried or added. Container/host checks are split, not one `check:all` run.
 
-The full serial Chromium O1 launcher is waiting behind the managed provider
-operation. Browser proof, commit/publication, exact-head CI and final AI review
-remain outstanding. The prior independent review remains applicable to unchanged
-evaluation contracts; this integration introduces no new application behavior.
+The normal integration is committed as `a176268345`. Before publication, strict
+target freshness required including the newly landed `712cb42d0d`, which changes
+only the automatic OCR workflow. It does not invalidate the application, service
+or production-build proof. The full serial Chromium O1 launcher is waiting
+behind the managed provider operation. Browser proof, publication, exact-head CI
+and final AI review remain outstanding. The prior independent review remains
+applicable to unchanged evaluation contracts; this integration introduces no new
+application behavior.
 
 ## Historical roadmap — 2026-10-07
 
