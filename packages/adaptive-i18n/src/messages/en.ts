@@ -969,16 +969,49 @@ const messages = {
               "Questions per level: green = used in this run, grey = never used, red = no question at this level. Covered = got its minimum answers; not sampled = skipped this attempt; out of range = far from the student's level, not required.",
           },
           students: {
+            hint: 'Open a student to see why each result came out the way it did: which questions were asked, which answers the true level predicts, and how the level moved after each answer.',
             student: 'Student',
             competences: 'True → reported level',
             overall: 'Overall',
             questions: 'Questions',
-            flipped: 'Flipped',
+            unexpectedAnswers: 'Unexpected answers',
             stop: 'Stop',
-            notDetermined: 'not determined',
+            determined: 'Level determined',
+            notDetermined: 'Not determined',
+            result:
+              'True level <strong>{trueLevel}</strong> → result <strong>{result}</strong>.',
+            matches: 'Correct.',
+            tooHigh:
+              '{count, plural, one {# level too high.} other {# levels too high.}}',
+            tooLow:
+              '{count, plural, one {# level too low.} other {# levels too low.}}',
+            patterns: {
+              NONE: 'No question was asked for this competence.',
+              ALL_CORRECT:
+                'All {count} answers were correct, the hardest at {highest}. Without a wrong answer nothing limits the estimate from above, so it moves up to {result}.',
+              ALL_WRONG:
+                'All {count} answers were wrong, the easiest at {lowest}. Without a correct answer nothing limits the estimate from below, so it moves down to {result}.',
+              CLEAR_BOUNDARY:
+                'Correct up to {highest}, wrong from {lowest}. The result lies at this boundary: {result}.',
+              MIXED:
+                'Mixed answers: correct up to {highest}, but already wrong at {lowest}. The result balances both: {result}.',
+            },
+            unexpectedNote:
+              '{count, plural, one {# answer} other {# answers}} went against the true level (noise).',
+            questionLevel: 'Question level',
+            expected: 'Expected',
+            answer: 'Answer',
+            notYet: 'not yet',
+            notYetHint: 'Too few answers for a level yet.',
+            levelAfter: 'Level after',
+            question: 'Question',
             correct: 'correct',
             incorrect: 'incorrect',
-            flippedAnswer: 'flipped',
+            unexpected: 'unexpected',
+            tags: {
+              ALL_CORRECT: 'only correct answers',
+              ALL_WRONG: 'only wrong answers',
+            },
           },
           runs: {
             title: 'Saved dry runs',

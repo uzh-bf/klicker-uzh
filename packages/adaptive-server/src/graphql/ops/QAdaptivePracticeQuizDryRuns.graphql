@@ -21,6 +21,7 @@ query QAdaptivePracticeQuizDryRuns($practiceQuizId: String!) {
       poolItemId
       elementName
       levelId
+      rootId
       nodeNames
     }
     defaults

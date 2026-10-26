@@ -77,8 +77,9 @@ export function buildDryRunAnswersCsv(
   workspace: DryRunWorkspace
 ) {
   const items = new Map(workspace.items.map((item) => [item.poolItemId, item]))
-  const label = (id: number) =>
-    workspace.levels.find((level) => level.id === id)?.label ?? null
+  const levels = new Map(workspace.levels.map((level) => [level.id, level]))
+  const label = (id: number | null | undefined) =>
+    id == null ? null : (levels.get(id)?.label ?? null)
   return toCsv([
     [
       'run',
@@ -87,12 +88,19 @@ export function buildDryRunAnswersCsv(
       'question',
       'competence_path',
       'question_level',
+      'true_level',
+      'expected_correct',
       'correct',
       'flipped',
+      'level_after',
+      'theta_after',
     ],
     ...students.flatMap((student) =>
       student.answers.map((answer, index) => {
         const item = items.get(answer.poolItemId)
+        const trueLevelId =
+          student.trueLevels.find(({ nodeId }) => nodeId === item?.rootId)
+            ?.levelId ?? null
         return [
           run.number,
           student.index,
@@ -100,8 +108,15 @@ export function buildDryRunAnswersCsv(
           item?.elementName ?? `#${answer.poolItemId}`,
           item?.nodeNames.join(' > ') ?? null,
           label(answer.levelId),
+          label(trueLevelId),
+          trueLevelId === null
+            ? null
+            : levels.get(answer.levelId)!.order <=
+              levels.get(trueLevelId)!.order,
           answer.correct,
           answer.flipped,
+          label(answer.after?.levelId),
+          round(answer.after?.theta ?? null),
         ]
       })
     ),

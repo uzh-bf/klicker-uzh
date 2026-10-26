@@ -82,6 +82,11 @@ export type DryRunStudent = {
     levelId: number
     correct: boolean
     flipped: boolean
+    after?: {
+      theta: number | null
+      standardError: number | null
+      levelId: number | null
+    }
   }>
   overall: {
     theta: number | null

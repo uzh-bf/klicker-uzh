@@ -987,16 +987,49 @@ const messages = {
               'Fragen pro Niveau: grün = in diesem Testlauf verwendet, grau = nie verwendet, rot = keine Frage auf diesem Niveau. Abgedeckt = Minimum an Antworten erreicht; nicht ausgewählt = in diesem Durchlauf übersprungen; ausser Reichweite = weit vom Niveau der Person entfernt, nicht nötig.',
           },
           students: {
+            hint: 'Öffne eine Person, um zu sehen, wie jedes Ergebnis zustande kam: welche Fragen gestellt wurden, welche Antworten das wahre Niveau erwarten lässt und wie sich das Niveau nach jeder Antwort verändert hat.',
             student: 'Person',
             competences: 'Wahres → ausgegebenes Niveau',
             overall: 'Gesamt',
             questions: 'Fragen',
-            flipped: 'Umgekehrt',
+            unexpectedAnswers: 'Unerwartete Antworten',
             stop: 'Ende',
-            notDetermined: 'nicht bestimmt',
+            determined: 'Niveau bestimmt',
+            notDetermined: 'Nicht bestimmt',
+            result:
+              'Wahres Niveau <strong>{trueLevel}</strong> → Ergebnis <strong>{result}</strong>.',
+            matches: 'Richtig.',
+            tooHigh:
+              '{count, plural, one {# Niveau zu hoch.} other {# Niveaus zu hoch.}}',
+            tooLow:
+              '{count, plural, one {# Niveau zu tief.} other {# Niveaus zu tief.}}',
+            patterns: {
+              NONE: 'Zu dieser Kompetenz wurde keine Frage gestellt.',
+              ALL_CORRECT:
+                'Alle {count} Antworten waren richtig, die schwierigste auf {highest}. Ohne falsche Antwort begrenzt nichts die Schätzung nach oben, deshalb steigt sie bis {result}.',
+              ALL_WRONG:
+                'Alle {count} Antworten waren falsch, die leichteste auf {lowest}. Ohne richtige Antwort begrenzt nichts die Schätzung nach unten, deshalb sinkt sie bis {result}.',
+              CLEAR_BOUNDARY:
+                'Richtig bis {highest}, falsch ab {lowest}. Das Ergebnis liegt an dieser Grenze: {result}.',
+              MIXED:
+                'Gemischte Antworten: richtig bis {highest}, aber schon falsch auf {lowest}. Das Ergebnis gleicht beides aus: {result}.',
+            },
+            unexpectedNote:
+              '{count, plural, one {# Antwort widersprach} other {# Antworten widersprachen}} dem wahren Niveau (Rauschen).',
+            questionLevel: 'Fragenniveau',
+            expected: 'Erwartet',
+            answer: 'Antwort',
+            notYet: 'noch nicht',
+            notYetHint: 'Noch zu wenige Antworten für ein Niveau.',
+            levelAfter: 'Niveau danach',
+            question: 'Frage',
             correct: 'richtig',
             incorrect: 'falsch',
-            flippedAnswer: 'umgekehrt',
+            unexpected: 'unerwartet',
+            tags: {
+              ALL_CORRECT: 'nur richtige Antworten',
+              ALL_WRONG: 'nur falsche Antworten',
+            },
           },
           runs: {
             title: 'Gespeicherte Testläufe',

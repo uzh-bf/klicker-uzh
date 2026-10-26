@@ -434,6 +434,7 @@ type AdaptiveDryRunItem {
   levelId: Int!
   nodeNames: [String!]!
   poolItemId: Int!
+  rootId: Int!
 }
 
 type AdaptiveDryRunLevel {

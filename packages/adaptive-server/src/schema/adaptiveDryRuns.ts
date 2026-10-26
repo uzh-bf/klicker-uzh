@@ -78,6 +78,7 @@ export function createAdaptiveDryRunSchema(builder: AdaptiveSchemaBuilder) {
         poolItemId: t.exposeInt('poolItemId'),
         elementName: t.exposeString('elementName'),
         levelId: t.exposeInt('levelId'),
+        rootId: t.exposeInt('rootId'),
         nodeNames: t.exposeStringList('nodeNames'),
       }),
     })

@@ -72,6 +72,7 @@ export type AdaptiveDryRunWorkspace = {
     poolItemId: number
     elementName: string
     levelId: number
+    rootId: number
     nodeNames: string[]
   }>
   defaults: PrismaJson.PrismaAdaptiveDryRunSettings | null
@@ -177,6 +178,7 @@ export async function getAdaptivePracticeQuizDryRuns(
         poolItemId: item.id,
         elementName: item.elementName,
         levelId: item.levelId,
+        rootId: item.nodePath[0]!,
         nodeNames: [...item.nodeNamePath],
       })) ?? [],
     defaults: runtime ? settingsOf(runtime) : null,

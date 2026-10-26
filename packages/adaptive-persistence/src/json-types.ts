@@ -332,6 +332,12 @@ declare global {
         levelId: number
         correct: boolean
         flipped: boolean
+        /** The item's competence after this answer; absent in older runs. */
+        after?: {
+          theta: number | null
+          standardError: number | null
+          levelId: number | null
+        }
       }>
       overall: {
         theta: number | null
