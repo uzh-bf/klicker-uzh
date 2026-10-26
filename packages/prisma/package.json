@@ -1,6 +1,6 @@
 {
   "name": "@klicker-uzh/prisma",
-  "version": "3.4.0-alpha.87",
+  "version": "3.4.0-alpha.88",
   "license": "AGPL-3.0",
   "main": "dist/index.js",
   "types": "dist/index.d.ts",
@@ -31,7 +31,7 @@
   "scripts": {
     "build": "run-s --npm-path pnpm generate build:ts",
     "build:test": "pnpm run build",
-    "build:ts": "cross-env NODE_ENV=production rollup -c",
+    "build:ts": "cross-env NODE_ENV=production rollup -c --forceExit",
     "check": "run-s --npm-path pnpm generate check:ts",
     "check:ts": "tsc --noEmit -p tsconfig.check.json",
     "generate": "prisma generate",

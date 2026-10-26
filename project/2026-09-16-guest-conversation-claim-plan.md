@@ -92,6 +92,32 @@ serializer before patching. Preserve signature, issuer, audience, nonce and
 state validation, and use real browser cookie handling throughout the experiment.
 Chromium improvement is expected but unproven; WebKit results must be measured.
 
+Opus consultation on 2026-10-26 added three acceptance refinements, checked
+against the named branch sources:
+
+- The harness's cookie calibration must use an independent cross-site probe
+  with an allowed-cookie positive control. A session cookie absent because the
+  LTI launch failed before creating it does not prove blocking. Report ordinary
+  and partitioned cookies separately, and measure Firefox/WebKit restrictions
+  without implying Chromium's CDP settings apply to those browsers.
+- After participant-session recovery reaches `v3-ai`, its owner must exercise
+  the Chat LTI/eLearning paths as well as PWA recovery. Chat issues partitioned
+  account cookies, while #6414 replaces shared account cookies and rotates a
+  session revision. Verify duplicate cookie precedence and revision behavior;
+  `v3`-only CI cannot cover Chat's `v3-ai` launch path. Verify the intercepted
+  `/login` request does not manufacture evidence of browser cookie acceptance.
+- The partitioned-cookie experiment must cover state-cookie issuance and
+  clearing, session-cookie validation, replay rejection, concurrent launches,
+  and rejection across separate browser contexts or top-level partitions.
+  Reaching a PWA URL with a signed handoff is an upstream launch result;
+  downstream iframe account/guest session establishment needs its own check.
+
+The guest-transfer deployment gate remains values-free confirmation that Chat
+and the backend receive the same `CHAT_GUEST_SEED`. The backend manifest consumes
+its own Secret, so Chat's secret projection alone does not establish this.
+Verify the projection before enabling transfer; sanitized failure logging and
+successful account login must not be mistaken for completed history transfer.
+
 This roadmap update records sequencing and acceptance only. Starting the new
 experiment, merging any PR, changing deployment settings or disabling dev mode
 requires the corresponding explicit approval. The immediate source follow-up
@@ -476,3 +502,37 @@ updated LTI browser spec passed 9 tests in 41.4 seconds. Synthetic placeholder
 hashes are now explicitly labeled as dummy values so the hygiene gate recognizes
 their fixture status. No runtime, deployment or merge acceptance is inferred from
 these local results.
+
+### Readiness refresh and Opus consultation — 2026-10-26
+
+The user approved refreshing this PR against current `v3-ai`, checking the
+affected behavior, and completing CI and review. Integration target is
+`c86162dd786960e3ec3fbf0ab3f70a3d0b4c013a`; reason: 168 target commits since the
+previous refresh, including changed Chat history and local verification tooling.
+The merge is conflict-free and retains the nine-path guest-transfer package.
+No behavior change or schema migration is planned. Execution mode remains
+standard; main owns the integration and verification because they share the
+candidate and disposable database. Existing design and simplification reviews
+are reused unless inspection or verification finds a material change.
+
+The user also requested discussion with Opus. A separate, read-only Claude Opus
+5.5 consultation examines cookie-blocking calibration, the proposed ltijs
+partitioned-cookie experiment, and dependencies between the harness, participant
+session recovery and guest transfer. Its findings are advice to verify; source
+readiness still requires the integrated review and applicable checks.
+
+Verification is in progress. The exact task runtime uses the supported
+`KB_GRAPH_BLOB_HOST_PORT=10013` override to avoid a port owned by another
+workspace. No other workspace is stopped or changed. The existing hook exception
+was for the preceding documentation-only commit and does not waive application
+verification for this integration. Merge and deployment remain withheld.
+
+Opus returned `DONE_WITH_CONCERNS` after inspecting the frozen branch sources.
+It found no refresh-specific source defect and confirmed that the transfer
+guard remains independent of which cookie the browser supplies. Accepted
+roadmap refinements are recorded above. Speculative lookup batching and another
+fixture for first-email linking are deferred: existing account-linking and
+transfer tests cover the separate contracts, and neither is a reproduced
+refresh regression. Local focused checks passed: 30 account/claim tests, 37
+guest/access tests, and the GraphQL type check. Browser verification and full
+repository checks remain in progress.

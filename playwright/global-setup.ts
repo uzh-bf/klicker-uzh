@@ -11,6 +11,7 @@
 
 import {
   AchievementType,
+  AiSubscriptionTier,
   ObjectAccess,
   PermissionLevel,
   UserLoginScope,
@@ -151,7 +152,11 @@ export async function seedDatabase() {
           catalystInstitutional: true,
           publicPreview: true,
           privatePreview: true,
+          // The built-in model registry classifies Auto as advanced, so the
+          // authoring specs need the advanced tier and a cost center to add it.
           aiFeaturesEnabled: true,
+          aiSubscriptionTier: AiSubscriptionTier.ADVANCED,
+          aiChatbotCostCenter: 'LOCAL-SEED',
           role: UserRole.ADMIN,
           firstLogin: false,
           logins: {
@@ -232,7 +237,11 @@ export async function seedDatabase() {
         prisma.user.upsert({
           where: { id: userData.id },
           create: userData,
-          update: {},
+          update: {
+            aiFeaturesEnabled: userData.aiFeaturesEnabled,
+            aiSubscriptionTier: userData.aiSubscriptionTier,
+            aiChatbotCostCenter: userData.aiChatbotCostCenter,
+          },
         })
       )
     )

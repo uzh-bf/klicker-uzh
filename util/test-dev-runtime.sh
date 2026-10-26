@@ -1,6 +1,10 @@
 #!/usr/bin/env bash
 set -euo pipefail
 
+# pnpm run disables repeat verification in its children. Isolate the synthetic
+# fixture so it checks lifecycle-script overrides, not the outer test runner.
+unset pnpm_config_verify_deps_before_run
+
 REPO_ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
 RUNTIME_SCRIPT="$REPO_ROOT/util/dev-runtime.sh"
 TEST_ROOT="$(mktemp -d)"
@@ -45,9 +49,10 @@ NEXT_APPS=(auth chat frontend-control frontend-manage frontend-pwa)
 VOLUME_NAME='klicker-uzh-pnpm-store-v1'
 mkdir -p "$ROOT/node_modules" "$FAKE_BIN"
 
-write_file "$ROOT/package.json" '{"packageManager":"pnpm@11.5.0"}'
+write_file "$ROOT/package.json" '{"packageManager":"pnpm@12.11.2"}'
 write_file "$ROOT/pnpm-lock.yaml" 'lockfileVersion: 9'
-write_file "$ROOT/pnpm-workspace.yaml" 'packages: [apps/*, packages/*]'
+write_file "$ROOT/pnpm-workspace.yaml" 'packages: [apps/*, packages/*]
+verifyDepsBeforeRun: error'
 write_file "$ROOT/packages/example/package.json" '{"name":"example"}'
 
 for app in "${NEXT_APPS[@]}"; do
@@ -61,8 +66,10 @@ write_file "$ROOT/apps/chat/src/app/api/example/route.ts" 'export const GET = tr
 write_file "$ROOT/apps/auth/src/pages/index.tsx" 'export default true'
 
 write_file "$FAKE_BIN/pnpm" '#!/usr/bin/env bash
+[ "${npm_config_verify_deps_before_run:-error}" = error ] || exit 71
+[ "${pnpm_config_verify_deps_before_run:-error}" = error ] || exit 72
 if [ "${1:-}" = "--version" ]; then
-  echo "11.5.0"
+  echo "12.11.2"
   exit 0
 fi
 if [ -n "${KLICKER_TEST_PNPM_FAIL_MATCH:-}" ] && [[ "$*" == *"$KLICKER_TEST_PNPM_FAIL_MATCH"* ]]; then
@@ -297,6 +304,7 @@ if [ "${2:-}" = --help ]; then
 fi
 [ "$1" = ensure ] || exit 0
 printf "%s\n%s\n" "$DATABASE_URL" "$SHADOW_DATABASE_URL" >"$KLICKER_TEST_PROCESS_ENV"
+printf "%s\n%s\n" "$BLOB_STORAGE_INTERNAL_ACCOUNT_URL" "$NO_PROXY" >>"$KLICKER_TEST_PROCESS_ENV"
 exit 23'
 chmod +x "$FAKE_BIN/process-helper"
 export KLICKER_TEST_PROCESS_ENV="$TEST_ROOT/process-env"
@@ -305,6 +313,7 @@ for profile in mcp chat; do
   KLICKER_DEVCONTAINER_ROOT="$ROOT" \
     DEVROUTER_PROFILE="$profile" \
     DEVROUTER_PROCESS_HELPER="$FAKE_BIN/process-helper" \
+    NO_PROXY=external.invalid \
     LOCAL_MCP_BOOTSTRAPPED="$([ "$profile" = mcp ] && echo 1 || echo 0)" \
     LOCAL_MCP_GENERATION=synthetic-generation \
     DATABASE_URL=postgresql://klicker_test:synthetic@mcp_postgres:5432/klicker_test \
@@ -318,6 +327,32 @@ for profile in mcp chat; do
     "postgresql://klicker_test:synthetic@${expected_host}:5432/klicker_test"
   assert_equal "$(sed -n '2p' "$KLICKER_TEST_PROCESS_ENV")" \
     "postgresql://klicker_test:synthetic@${expected_host}:5432/klicker_test_shadow"
+  blob_host="$(sed -n '3p' "$KLICKER_TEST_PROCESS_ENV")"
+  blob_host="${blob_host#http://}"
+  blob_host="${blob_host%%:*}"
+  assert_equal "$(sed -n '4p' "$KLICKER_TEST_PROCESS_ENV")" "external.invalid,$blob_host"
+done
+
+# Isolated startup preserves the supplied endpoint, so all local Blob naming
+# forms can be verified without a certificate mount or a real storage service.
+for blob_host in azurite klicker-uzh-azurite synthetic-workspace-azurite; do
+  (
+    . "$ROOT/util/local-kb/runtime-environment.sh"
+    local_kb_capture_environment >/dev/null 2>&1 || true
+    for key in "${LOCAL_KB_ENV_KEYS[@]}"; do
+      export "$key=synthetic-isolated-value"
+    done
+    status=0
+    KLICKER_DEVCONTAINER_ROOT="$ROOT" KLICKER_LOCAL_KB_RUNTIME_ONLY=1 LOCAL_MCP_BOOTSTRAPPED=0 \
+      BLOB_STORAGE_INTERNAL_ACCOUNT_URL="http://$blob_host:10000/klickerdev" \
+      DEVROUTER_PROFILE=chat DEVROUTER_PROCESS_HELPER="$FAKE_BIN/process-helper" \
+      NO_PROXY=external.invalid \
+      bash "$REPO_ROOT/.devcontainer/post-start.sh" >"$TEST_ROOT/blob-start.log" 2>&1 || status=$?
+    [ "$status" = 23 ] || cat "$TEST_ROOT/blob-start.log" >&2
+    assert_equal "$status" 23
+    assert_equal "$(sed -n '3p' "$KLICKER_TEST_PROCESS_ENV")" "http://$blob_host:10000/klickerdev"
+    assert_equal "$(sed -n '4p' "$KLICKER_TEST_PROCESS_ENV")" "external.invalid,$blob_host"
+  )
 done
 write_file "$ROOT/.devcontainer/devcontainer.env" ''
 : > "$INSTALL_LOG"
@@ -623,7 +658,7 @@ if DEVROUTER_PROFILE=unsupported bash "$RUNTIME_SCRIPT" preparation-filters >/de
   fail 'preparation accepted an unknown profile'
 fi
 
-write_file "$ROOT/package.json" '{"packageManager":"pnpm@11.5.0","scripts":{"dev:container":"turbo run dev --filter=@klicker-uzh/example --concurrency 30"}}'
+write_file "$ROOT/package.json" '{"packageManager":"pnpm@12.11.2","scripts":{"dev:container":"turbo run dev --filter=@klicker-uzh/example --concurrency 30"}}'
 assert_equal "$(DEVROUTER_PROFILE=full bash "$RUNTIME_SCRIPT" preparation-filters)" '--filter=@klicker-uzh/example^...'
 for command in \
   'turbo run dev --concurrency 30' \
@@ -714,6 +749,31 @@ if [ "${2:-}" = --help ]; then
 fi
 printf "%s\n" "$*" >>"$KLICKER_TEST_HELPER_LOG"
 [ "$1" = ensure ] || exit 0
+if [ -n "${KLICKER_TEST_EVALUATION_GENERATION:-}" ]; then
+  [ "${KLICKER_EVAL_GUARD_ORIGIN:-}" = "http://127.0.0.1:1418" ] || exit 31
+  [ "${OPENAI_BASE_URL:-}" = "http://127.0.0.1:1418/v1" ] || exit 32
+  [ "${OPENAI_API_KEY:-}" = "synthetic-evaluation-key" ] || exit 33
+  [ "${CHAT_MODEL_REGISTRY_JSON:-}" = "[]" ] || exit 34
+  [ "${KLICKER_EVAL_GUARD_GENERATION:-}" = "$KLICKER_TEST_EVALUATION_GENERATION" ] || exit 35
+  for name in KLICKER_EVAL_GUARD_ORIGIN OPENAI_BASE_URL CHAT_MODEL_REGISTRY_JSON KLICKER_EVAL_GUARD_GENERATION; do
+    case ",$DEVROUTER_PROCESS_FINGERPRINT_ENV," in
+      *",$name,"*) ;;
+      *) exit 36 ;;
+    esac
+  done
+  case ",$DEVROUTER_PROCESS_FINGERPRINT_ENV," in
+    *",OPENAI_API_KEY,"*) exit 37 ;;
+  esac
+  echo "evaluation-generation:$KLICKER_EVAL_GUARD_GENERATION" >>"$KLICKER_TEST_HELPER_LOG"
+fi
+if [ -n "${KLICKER_TEST_EXPECT_CANONICAL:-}" ]; then
+  [ "${OPENAI_BASE_URL:-}" = "http://litellm:4000" ] || exit 41
+  [ "${OPENAI_API_KEY:-}" = "synthetic-default-key" ] || exit 42
+  [ "${CHAT_MODEL_REGISTRY_JSON:-}" = "default-registry" ] || exit 43
+  [ "${KLICKER_EVAL_GUARD_ORIGIN+x}" != x ] || exit 44
+  [ "${KLICKER_EVAL_GUARD_GENERATION+x}" != x ] || exit 45
+  echo "canonical-openai-base-url:${OPENAI_BASE_URL}" >>"$KLICKER_TEST_HELPER_LOG"
+fi
 shift
 while [ "$#" -gt 0 ]; do
   if [ "$1" = --prepare-command ]; then
@@ -743,6 +803,52 @@ if grep -Fx launched "$HELPER_LOG" >/dev/null; then
 fi
 [ ! -s "$CURL_LOG" ] || fail 'failed preparation reached readiness'
 
+# Canonical development defaults cannot displace explicit guarded settings.
+write_file "$ROOT/.devcontainer/devcontainer.env" 'OPENAI_BASE_URL=http://litellm:4000'
+: >"$HELPER_LOG"
+KLICKER_DEVCONTAINER_ROOT="$ROOT" DEVROUTER_PROCESS_HELPER="$FAKE_BIN/process-helper" \
+  KLICKER_EVAL_GUARD_ORIGIN=http://127.0.0.1:1418 \
+  OPENAI_BASE_URL=http://127.0.0.1:1418/v1 OPENAI_API_KEY=synthetic-evaluation-key \
+  CHAT_MODEL_REGISTRY_JSON='[]' KLICKER_EVAL_GUARD_GENERATION=synthetic-generation \
+  KLICKER_TEST_EVALUATION_GENERATION=synthetic-generation \
+  KLICKER_TEST_TURBO_FAIL=true \
+  bash "$REPO_ROOT/.devcontainer/post-start.sh" >/dev/null 2>&1 && \
+  fail 'synthetic preparation failure unexpectedly succeeded'
+grep -Fx 'evaluation-generation:synthetic-generation' "$HELPER_LOG" >/dev/null || \
+  fail 'managed helper did not receive restored guarded configuration'
+
+# Complementary ordinary path: compose's canonical OPENAI_* values arrive via
+# env_file without the guard markers. Post-start must pass them through and
+# fail only on the simulated dependency preparation, never on the guarded gate.
+: >"$HELPER_LOG"
+canonical_status=0
+KLICKER_DEVCONTAINER_ROOT="$ROOT" DEVROUTER_PROCESS_HELPER="$FAKE_BIN/process-helper" \
+  OPENAI_BASE_URL=http://litellm:4000 OPENAI_API_KEY=synthetic-default-key \
+  CHAT_MODEL_REGISTRY_JSON=default-registry \
+  KLICKER_TEST_EXPECT_CANONICAL=1 \
+  KLICKER_TEST_TURBO_FAIL=true \
+  bash "$REPO_ROOT/.devcontainer/post-start.sh" >/dev/null 2>&1 || canonical_status=$?
+assert_equal "$canonical_status" 17
+grep -Fx 'canonical-openai-base-url:http://litellm:4000' "$HELPER_LOG" >/dev/null || \
+  fail 'helper did not receive canonical configuration without guard markers'
+: >"$HELPER_LOG"
+incomplete_status=0
+KLICKER_DEVCONTAINER_ROOT="$ROOT" DEVROUTER_PROCESS_HELPER="$FAKE_BIN/process-helper" \
+  KLICKER_EVAL_GUARD_ORIGIN=http://127.0.0.1:1418 OPENAI_BASE_URL=http://127.0.0.1:1418/v1 \
+  OPENAI_API_KEY=synthetic-evaluation-key CHAT_MODEL_REGISTRY_JSON='[]' \
+  KLICKER_EVAL_GUARD_GENERATION='' \
+  bash "$REPO_ROOT/.devcontainer/post-start.sh" >/dev/null 2>&1 || incomplete_status=$?
+[ "$incomplete_status" -eq 2 ] || fail 'incomplete guarded configuration did not use its failure status'
+[ ! -s "$HELPER_LOG" ] || fail 'incomplete guarded configuration reached the helper'
+
+incomplete_status=0
+KLICKER_DEVCONTAINER_ROOT="$ROOT" DEVROUTER_PROCESS_HELPER="$FAKE_BIN/process-helper" \
+  KLICKER_EVAL_GUARD_ORIGIN='' OPENAI_BASE_URL=http://127.0.0.1:1418/v1 \
+  OPENAI_API_KEY=synthetic-evaluation-key CHAT_MODEL_REGISTRY_JSON='[]' \
+  KLICKER_EVAL_GUARD_GENERATION=synthetic-generation \
+  bash "$REPO_ROOT/.devcontainer/post-start.sh" >/dev/null 2>&1 || incomplete_status=$?
+[ "$incomplete_status" -eq 2 ] || fail 'empty guarded origin did not fail closed'
+[ ! -s "$HELPER_LOG" ] || fail 'empty guarded origin reached the helper'
 # A managed process that is not live once ensure returns must fail the start in
 # seconds with its log instead of stalling the readiness pass.
 write_file "$FAKE_BIN/process-helper-accepted" '#!/usr/bin/env bash

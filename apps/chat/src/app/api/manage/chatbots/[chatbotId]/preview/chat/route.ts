@@ -10,6 +10,14 @@ import {
 } from 'ai'
 import { type NextRequest, NextResponse } from 'next/server'
 import { z } from 'zod'
+import {
+  DEFAULT_ANSWER_STYLE,
+  DEFAULT_ANSWER_TONE,
+} from '@/src/lib/config/answerStyles'
+import {
+  answerStyleSchema,
+  answerToneSchema,
+} from '@/src/lib/server/answerStyleInstructions'
 import { resolveOwnerPreviewModel } from '@/src/lib/ownerPreviewPolicy'
 import { getChatModel } from '@/src/lib/server/chatModelProvider'
 import {
@@ -18,11 +26,15 @@ import {
 } from '@/src/lib/server/chatModelRegistry'
 import { withModelCitationIndices } from '@/src/lib/server/citationInstructions'
 import {
+  getCustomModeTurnSettings,
   resolveEffectiveChatModeOptions,
   resolveEffectiveMCPConfigurations,
   resolveRequestedChatMode,
 } from '@/src/lib/server/effectiveChatModes'
-import { REPLY_LANGUAGE_REMINDER } from '@/src/lib/server/languageInstructions'
+import {
+  formatMeetingClock,
+  replyLanguageReminder,
+} from '@/src/lib/server/languageInstructions'
 import {
   MANAGE_CHAT_BODY_TIMEOUT_MS,
   MANAGE_CHAT_TOTAL_TIMEOUT_MS,
@@ -34,6 +46,10 @@ import { getOpenAIResponsesStore } from '@/src/lib/server/openaiResponsesOptions
 import { withOwnerPreviewAuth } from '@/src/lib/server/ownerPreviewAuth'
 import { resolveOwnerPreviewModeConfiguration } from '@/src/lib/server/previewAuthoringConfig'
 import { buildPromptCacheRequest } from '@/src/lib/server/promptCacheIdentity'
+import {
+  providerRefusalDeflection,
+  providerRefusalTransform,
+} from '@/src/lib/server/providerRefusal'
 import { compileSystemPrompt } from '@/src/lib/server/systemPromptCompiler'
 import { isDocQueryToolName } from '@/src/lib/sources/normalizeSources'
 import { chatModelUnavailableResponse } from '@/src/services/accountUsage'
@@ -55,6 +71,8 @@ const PREVIEW_MAX_BODY_BYTES = 512 * 1024
 const previewRateLimiter = createRateLimiter(20, 5 * 60 * 1000)
 
 const previewOptionsSchema = z.object({
+  answerStyle: answerStyleSchema,
+  answerTone: answerToneSchema,
   selectedMode: z.string().trim().min(1).max(100).default('tutor'),
   selectedModel: z.string().trim().min(1).max(100).optional(),
   reasoningEffort: z.string().trim().min(1).max(100).nullable().optional(),
@@ -140,7 +158,11 @@ export async function POST(
     where: { id: chatbotId, ownerId: auth.userId },
     include: {
       owner: {
-        select: { aiFeaturesEnabled: true, aiChatbotCostCenter: true },
+        select: {
+          aiFeaturesEnabled: true,
+          aiSubscriptionTier: true,
+          aiChatbotCostCenter: true,
+        },
       },
       course: {
         select: { displayName: true },
@@ -241,12 +263,14 @@ export async function POST(
   const { model: selectedModel, reasoningEffort } = modelResolution
 
   // Preview is owner-funded and writes no usage row, so it skips the budget
-  // pre-check. Class admission still applies: an account without a cost center
-  // cannot start an advanced preview turn, exactly as in the participant route.
+  // pre-check. Class admission still applies: an account without the advanced
+  // tier and a cost center cannot start an advanced preview turn, exactly as in
+  // the participant route.
   if (
     !isChatUsageClassEntitled({
       usageClass: selectedModel.usageClass,
       aiFeaturesEnabled: chatbot.owner.aiFeaturesEnabled,
+      aiSubscriptionTier: chatbot.owner.aiSubscriptionTier,
       aiChatbotCostCenter: chatbot.owner.aiChatbotCostCenter,
     })
   ) {
@@ -294,8 +318,10 @@ export async function POST(
     mcpToolsHandle = await getAggregatedMCPTools(kbConfigurations, {
       chatbotId,
       authMode: 'account',
+      ownerPreviewUserId: auth.userId,
       kbIds,
       sessionId: randomUUID(),
+      knowledgeGraphRetrievalEnabled: chatbot.knowledgeGraphRetrievalEnabled,
     })
     tools = mcpToolsHandle.tools
   } catch (error) {
@@ -326,17 +352,44 @@ export async function POST(
         { status: 503 }
       )
     }
+    const draftConfig = chatbot.draftConfig
+    const savedAnswerPreferencesEnabled =
+      draftConfig &&
+      typeof draftConfig === 'object' &&
+      !Array.isArray(draftConfig)
+        ? (draftConfig as Record<string, unknown>).answerPreferencesEnabled
+        : undefined
+    const answerPreferencesEnabled =
+      typeof savedAnswerPreferencesEnabled === 'boolean'
+        ? savedAnswerPreferencesEnabled
+        : chatbot.answerPreferencesEnabled
     const systemPrompt = compileSystemPrompt(
       chatbot.systemPrompts,
       selectedMode,
       {
         courseDisplayName: chatbot.course.displayName,
         toolNames,
+        answerStyle: answerPreferencesEnabled
+          ? options.data.answerStyle
+          : DEFAULT_ANSWER_STYLE,
+        answerTone: answerPreferencesEnabled
+          ? options.data.answerTone
+          : DEFAULT_ANSWER_TONE,
         standardModeConfig: chatbot.standardModeConfig,
         // Owner preview is an authoring surface, so it compiles the saved
         // revision's custom modes rather than the currently approved set.
         customModeConfig: resolveOwnerPreviewModeConfiguration(chatbot),
       }
+    )
+    // Preview persists no thread and its messages carry no timestamps, so a
+    // meeting clock reports zero elapsed minutes here.
+    const turnSettings = getCustomModeTurnSettings(
+      resolveOwnerPreviewModeConfiguration(chatbot),
+      selectedMode
+    )
+    const languageReminder = replyLanguageReminder(
+      turnSettings.replyLanguage ?? null,
+      formatMeetingClock(turnSettings.meetingClock ?? null, null, new Date())
     )
 
     const modelMessages = await convertToModelMessages(parsed.messages, {
@@ -388,6 +441,19 @@ export async function POST(
         },
       },
       stopWhen: isStepCount(5),
+      // Same provider-refusal replacement as the participant chat.
+      experimental_transform: providerRefusalTransform(
+        providerRefusalDeflection(
+          turnSettings.replyLanguage ?? null,
+          req.cookies.get('NEXT_LOCALE')?.value
+        ),
+        (finish) =>
+          console.warn('Owner preview provider refusal replaced:', {
+            chatbotId,
+            chatMode: selectedMode,
+            ...finish,
+          })
+      ),
       toolChoice: 'auto',
       // The reply-language reminder ends every step, after tool output, so
       // retrieved material in another language cannot set the reply language.
@@ -414,7 +480,7 @@ export async function POST(
           ...(docQueryToolName && stepNumber > 0
             ? withModelCitationIndices(responseMessages, steps)
             : responseMessages),
-          REPLY_LANGUAGE_REMINDER,
+          languageReminder,
         ],
       }),
       tools: promptCacheRequest?.tools ?? tools,

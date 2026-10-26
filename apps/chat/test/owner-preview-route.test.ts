@@ -155,7 +155,11 @@ function createChatbot(
       },
     ],
     modelSelection: false,
-    owner: { aiFeaturesEnabled: true, aiChatbotCostCenter: 'KST-1' },
+    owner: {
+      aiFeaturesEnabled: true,
+      aiSubscriptionTier: 'ADVANCED',
+      aiChatbotCostCenter: 'KST-1',
+    },
     ownerId: 'owner-id',
     standardModeConfig: defaultStandardModeConfig,
     customModeConfig: null,
@@ -264,6 +268,29 @@ describe('POST owner preview chat', () => {
     })
   })
 
+  it.each([
+    [false, true, 'balanced', 'neutral'],
+    [true, false, 'bullets', 'direct'],
+    [undefined, true, 'bullets', 'direct'],
+  ])('uses the saved answer-preference flag with a live fallback', async (saved, live, style, tone) => {
+    mocks.findChatbot.mockResolvedValueOnce(
+      createChatbot({
+        answerPreferencesEnabled: live,
+        draftConfig: { answerPreferencesEnabled: saved },
+      })
+    )
+    setRequestOptions({ answerStyle: 'bullets', answerTone: 'direct' })
+    const response = await POST(request(), {
+      params: Promise.resolve({ chatbotId: 'chatbot-id' }),
+    })
+    expect(response.status).toBe(200)
+    expect(mocks.compileSystemPrompt).toHaveBeenCalledWith(
+      expect.anything(),
+      'tutor',
+      expect.objectContaining({ answerStyle: style, answerTone: tone })
+    )
+  })
+
   it('fails before body or database work when owner authorization is denied', async () => {
     mocks.withOwnerPreviewAuth.mockResolvedValue({
       response: new Response('Forbidden', { status: 403 }),
@@ -294,11 +321,18 @@ describe('POST owner preview chat', () => {
     expect(mocks.streamText).not.toHaveBeenCalled()
   })
 
-  it('refuses an advanced model for an account without a cost center', async () => {
+  it.each([
+    ['without a cost center', 'ADVANCED', null],
+    ['on the base tier', 'BASE', 'KST-1'],
+  ] as const)('refuses an advanced model for an account %s', async (_case, aiSubscriptionTier, aiChatbotCostCenter) => {
     mocks.findChatbot.mockResolvedValue(
       createChatbot({
         modelSelection: true,
-        owner: { aiFeaturesEnabled: true, aiChatbotCostCenter: null },
+        owner: {
+          aiFeaturesEnabled: true,
+          aiSubscriptionTier,
+          aiChatbotCostCenter,
+        },
       })
     )
     setRequestOptions({
@@ -322,7 +356,11 @@ describe('POST owner preview chat', () => {
   it('still previews a base model without a cost center', async () => {
     mocks.findChatbot.mockResolvedValue(
       createChatbot({
-        owner: { aiFeaturesEnabled: true, aiChatbotCostCenter: null },
+        owner: {
+          aiFeaturesEnabled: true,
+          aiSubscriptionTier: 'BASE',
+          aiChatbotCostCenter: null,
+        },
       })
     )
 
@@ -337,7 +375,11 @@ describe('POST owner preview chat', () => {
   it('refuses a base model for an account without AI approval', async () => {
     mocks.findChatbot.mockResolvedValue(
       createChatbot({
-        owner: { aiFeaturesEnabled: false, aiChatbotCostCenter: 'KST-1' },
+        owner: {
+          aiFeaturesEnabled: false,
+          aiSubscriptionTier: 'ADVANCED',
+          aiChatbotCostCenter: 'KST-1',
+        },
       })
     )
 
@@ -404,14 +446,20 @@ describe('POST owner preview chat', () => {
       expect.objectContaining({
         authMode: 'account',
         chatbotId: 'chatbot-id',
+        ownerPreviewUserId: 'owner-id',
         kbIds: [originalKbId],
       })
+    )
+    expect(mocks.getAggregatedMCPTools.mock.calls[0]?.[1]).not.toHaveProperty(
+      'participantId'
     )
     expect(mocks.compileSystemPrompt).toHaveBeenCalledWith(
       expect.objectContaining({ tutor: 'Tutor instructions' }),
       'tutor',
       {
         courseDisplayName: 'Test Course',
+        answerStyle: 'balanced',
+        answerTone: 'neutral',
         customModeConfig: null,
         toolNames: ['KB_doc_query'],
         standardModeConfig: defaultStandardModeConfig,
@@ -717,6 +765,8 @@ describe('POST owner preview chat', () => {
       resolvedMode,
       {
         courseDisplayName: 'Test Course',
+        answerStyle: 'balanced',
+        answerTone: 'neutral',
         customModeConfig: null,
         toolNames: ['KB_doc_query'],
         standardModeConfig: defaultStandardModeConfig,
@@ -757,10 +807,20 @@ describe('POST owner preview chat', () => {
       approvedCustomMode.key,
       {
         courseDisplayName: 'Test Course',
+        answerStyle: 'balanced',
+        answerTone: 'neutral',
         customModeConfig: { modes: [approvedCustomMode] },
         toolNames: ['KB_doc_query'],
         standardModeConfig: defaultStandardModeConfig,
       }
+    )
+    // The owner keeps seeing reasoning for a custom mode that hides it from
+    // participants by default.
+    const stream = mocks.streamText.mock.results[0]?.value as {
+      toUIMessageStreamResponse: ReturnType<typeof vi.fn>
+    }
+    expect(stream.toUIMessageStreamResponse).toHaveBeenCalledWith(
+      expect.objectContaining({ sendReasoning: true })
     )
   })
 
@@ -827,6 +887,8 @@ describe('POST owner preview chat', () => {
       approvedCustomMode.key,
       {
         courseDisplayName: 'Test Course',
+        answerStyle: 'balanced',
+        answerTone: 'neutral',
         customModeConfig: { modes: [approvedCustomMode] },
         toolNames: ['KB_doc_query'],
         standardModeConfig: defaultStandardModeConfig,
