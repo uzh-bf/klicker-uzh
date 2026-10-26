@@ -796,19 +796,19 @@ async function main(options = {}) {
     if (fs.existsSync(outcomePath)) {
       const outcome = readResult(outcomePath)
       const state = outcome.provider_availability
-      if (state?.status === 'unavailable') {
-        if (
-          !['provider_paused', 'provider_payment_required'].includes(
-            state.reason
-          ) ||
-          outcome.head_sha !== head ||
-          !options.policy ||
-          outcome.policy_sha !== options.policy ||
-          outcome.profile !== DRAFT_PROFILE.id
-        )
-          throw new Error('invalid_result')
-        unavailable = state.reason
-      }
+      const available = state?.status === 'available' && state.reason === null
+      const rejected =
+        state?.status === 'unavailable' &&
+        ['provider_paused', 'provider_payment_required'].includes(state.reason)
+      if (
+        (!available && !rejected) ||
+        outcome.head_sha !== head ||
+        !options.policy ||
+        outcome.policy_sha !== options.policy ||
+        outcome.profile !== DRAFT_PROFILE.id
+      )
+        throw new Error('invalid_result')
+      if (rejected) unavailable = state.reason
     }
     const hasResult = fs.existsSync(
       path.join(temp, 'draft-ai-review-result.json')

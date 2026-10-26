@@ -753,9 +753,20 @@ test('only frozen unavailable draft outcomes admit missing results, and valid pa
     false
   )
   const file = path.join(f.temp, 'draft-ai-review-result.json')
+  fs.writeFileSync(file, JSON.stringify(result(f.head)))
   for (const invalid of [
     { ...outcome, head_sha: 'f'.repeat(40) },
     { ...outcome, policy_sha: 'f'.repeat(40) },
+    { ...outcome, provider_availability: undefined },
+    {
+      ...outcome,
+      provider_availability: {
+        status: 'available',
+        reason: 'provider_payment_required',
+      },
+    },
+    { ...outcome, provider_availability: { status: 'available' } },
+    { ...outcome, provider_availability: { status: 'unknown', reason: null } },
     {
       ...outcome,
       provider_availability: {
@@ -780,6 +791,20 @@ test('only frozen unavailable draft outcomes admit missing results, and valid pa
   assert.deepEqual(publication.comments, partial.comments)
   assert.deepEqual(publication.manifest.coverage, partial.manifest.coverage)
   assert.equal(publication.warnings.at(-1).type, 'provider_unavailable')
+  fs.writeFileSync(
+    outcomePath,
+    JSON.stringify({
+      ...outcome,
+      provider_availability: { status: 'available', reason: null },
+    })
+  )
+  await runCommand('validate', f)
+  assert.equal(
+    JSON.parse(
+      fs.readFileSync(path.join(f.temp, 'draft-ai-review-publication.json'))
+    ).warnings.at(-1).type,
+    'review_incomplete'
+  )
   fs.unlinkSync(file)
   fs.unlinkSync(outcomePath)
   await assert.rejects(runCommand('validate', f))
