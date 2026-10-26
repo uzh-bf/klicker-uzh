@@ -207,10 +207,10 @@ background-task classification and removal of dead group-delete wording. Retaine
 the complete capped media scan after inspecting unstructured copy paths; a fixed
 list could silently miss foreign content. Focused correction Opus pass completed REVISE. Accepted delegated-login blocker, media-ID drift checks, and an audit assertion. Rejected its proposed locked per-mutation global concurrency guarantee because it reintroduces the superseded freeze contract; fresh checks cannot promise atomicity across service commits. Production-scale scan feasibility remains an explicit operational limitation; no production copy is available or authorized for this source task. Earlier freezing plan/source is archived only in ignored local reviews.
 
-Twenty synthetic tests and the script checker passed. Latest delegated-login/media-drift guards require the final focused run. Real resolver execution, whole-command sharing stop,
+Twenty-two synthetic tests, the script checker, GraphQL package checker, 35 container check tasks, 162 host policy tests, and all 23 build tasks pass. Focused Opengrep scan reports zero findings and no parse errors. The complete activity/course orchestration fixture passes. The final combined suite has 24 synthetic tests including historical disclaimer acceptance and media drift. Real resolver execution, whole-command sharing stop,
 lost mutation-response recovery and stuck course no-resubmit are covered. Offline
 help and existing operation validation pass. Script typecheck exposed inherited
 declaration portability checks from the emitting config; the existing noEmit
 script config now explicitly disables declarations like tsconfig.check.json.
 No test evidence is a real-deletion authorization. Final verification, reviews,
-commits and draft stack delivery remain outstanding.
+source reviews and draft stack delivery remain outstanding. The approved plan and lower implementation are committed; no real effects were performed.
