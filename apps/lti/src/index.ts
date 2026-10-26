@@ -85,7 +85,8 @@ httpHandler.app.get('/handoff', async (req, res) => {
   try {
     context = await provider.getLaunchContext(String(req.query.ltik))
   } catch {
-    console.error('event=lti_handoff_rejected reason=invalid_ltik')
+    // also the path of a reused handoff URL, whose launch is already deleted
+    console.error('event=lti_handoff_rejected reason=unknown_or_used_launch')
     return res.status(401).json({ error: 'invalid_launch' })
   }
 
@@ -102,7 +103,7 @@ httpHandler.app.get('/handoff', async (req, res) => {
     return res.status(500).json({ error: 'handoff_failed' })
   }
   if (!consumed) {
-    console.error('event=lti_handoff_rejected reason=launch_used_or_expired')
+    console.error('event=lti_handoff_rejected reason=used_or_expired_launch')
     return res.status(401).json({ error: 'invalid_launch' })
   }
 
