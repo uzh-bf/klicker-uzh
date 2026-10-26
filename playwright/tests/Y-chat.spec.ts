@@ -4348,6 +4348,7 @@ type CodeApiFixtureStatus = {
 
 type CodeApiPersistedPart = {
   type?: unknown
+  text?: unknown
   name?: unknown
   toolName?: unknown
   toolCallId?: unknown
@@ -4458,6 +4459,7 @@ function readPersistedParts(content: unknown): CodeApiPersistedPart[] {
   if (!Array.isArray(content)) return []
   return content.filter(isRecord).map((part) => ({
     type: part.type,
+    text: part.text,
     name: part.name,
     toolName: part.toolName,
     toolCallId: part.toolCallId,
@@ -4536,7 +4538,7 @@ test.describe('CodeAPI real-route fixture', () => {
   function expectCodeApiAnswer(page: Page, marker: string) {
     return expect(
       page.getByTestId('chat-assistant-message-content').last()
-    ).toContainText(marker)
+    ).toContainText(marker, { timeout: 30_000 })
   }
 
   async function readAssistantTurns(participantId: string, chatbotId: string) {

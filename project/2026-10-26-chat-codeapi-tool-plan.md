@@ -144,3 +144,6 @@ Browser seed contract correction: the preserve-database local harness must bind 
 
 
 Target integration: `v3` at `7ec31d79a69f25c883abc8eeb93826e26c003f41` introduces the ordinary Playwright dev-test marker and conflicts with the opt-in fixture startup block. Integrate that target once to restore source readiness. Preserve both marker flows, the existing CI-runtime incompatibility guard and both fingerprint fields. The CodeAPI fixture remains the chat process selected only by its own marker. Source checks cover launcher behavior and marker combinations; browser acceptance still needs the separately approved replacement sequence.
+
+
+Browser observation correction: retain text parts in the fixture-only persistence reader so zero-dispatch responses remain correlated to their synthetic nonce. Give only the CodeAPI visible-answer observer thirty seconds to include development compilation; keep the sixty-second case deadline, per-nonce dispatch/persistence assertions, one-call limit, transport and guest budgets, zero retries, launcher bound and fixture lifetime unchanged. This is a functional browser contract, not a service latency target. Source correction and review do not authorize another consumed acceptance attempt; disabled mode remains dependent on full enabled acceptance.
