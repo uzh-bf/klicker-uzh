@@ -467,6 +467,18 @@ test.describe('LTI chatbot launch identity resolution', () => {
                 .locator('[data-cy="chat-header"] button')
                 .first()
                 .click()
+            if (identity === 'guest') {
+              await page.getByTestId('chat-guest-account').focus()
+              await expect(page.getByRole('tooltip')).toBeVisible()
+              await page.screenshot({
+                animations: 'disabled',
+                path: join(
+                  galleryDir,
+                  `guest-${locale}-${width}-account-hint.png`
+                ),
+                fullPage: true,
+              })
+            }
             await settingsToggle.click()
             await expect(settingsResearch).toHaveAttribute(
               'aria-expanded',

@@ -55,12 +55,16 @@ export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
               {authMode === 'anonymous' && (
                 <Tooltip>
                   <TooltipTrigger asChild>
-                    <span className="ml-2 inline-flex shrink-0 items-center rounded-full bg-blue-100 px-1.5 py-0.5 text-[10px] font-medium text-blue-700">
-                      Guest
+                    <span
+                      tabIndex={0}
+                      data-cy="chat-guest-account"
+                      className="ml-2 inline-flex shrink-0 items-center rounded-full bg-blue-100 px-1.5 py-0.5 text-[10px] font-medium text-blue-700"
+                    >
+                      {t('chat.sidebar.guestLabel')}
                     </span>
                   </TooltipTrigger>
                   <TooltipContent>
-                    Signed in via LTI. Chats stay separate from any account.
+                    {t('chat.sidebar.guestAccountHint')}
                   </TooltipContent>
                 </Tooltip>
               )}

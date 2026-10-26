@@ -105,6 +105,9 @@ export default {
         'Your credits are used up. Some models may no longer be available.',
     },
     sidebar: {
+      guestLabel: 'Guest',
+      guestAccountHint:
+        'Your chats are saved in a guest account, separate from your registered KlickerUZH account.',
       newChat: 'New Chat',
       closeSidebar: 'Close sidebar',
       openSidebar: 'Open sidebar',
