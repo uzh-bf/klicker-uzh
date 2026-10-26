@@ -12,6 +12,7 @@ const {
   MISTRAL_FLASH_MODEL,
   createProviderAvailability,
   parseProviderPause,
+  summarizePlanGuidance,
 } = require('./ocr-mistral-adapter.cjs')
 const { buildOCRResultDiagnostic } = require('./ocr-review-shared.cjs')
 const {
@@ -382,6 +383,7 @@ async function runDraftReview(options) {
   try {
     adapter = await startAdapter({
       availability,
+      finalPlanGuidance: true,
       provider: DRAFT_PROVIDER,
       apiKey: options.apiKey,
       usageJournalPath: `${diagnosticsPath}.events.jsonl`,
@@ -657,6 +659,12 @@ async function runDraftReview(options) {
     appendSummary(summarizeDocs(toolsState.docs), write, options.summary)
     await advisor?.close()
     await adapter?.close()
+    if (adapter)
+      appendSummary(
+        summarizePlanGuidance(adapter.diagnostics()),
+        write,
+        options.summary
+      )
     if (resultFd !== undefined) fs.closeSync(resultFd)
     if (stderrFd !== undefined) fs.closeSync(stderrFd)
     fs.rmSync(home, { recursive: true, force: true })
