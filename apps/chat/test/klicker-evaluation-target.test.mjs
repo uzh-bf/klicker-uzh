@@ -237,6 +237,9 @@ test('target uses participant gates and reads back one persisted turn', async ()
         }
       )
     }
+    if (requestUrl.endsWith('/data-use') && method === 'GET') {
+      return Response.json({ state: { complete: true } })
+    }
     if (requestUrl.endsWith('/disclaimer') && method === 'GET') {
       return Response.json({
         disclaimer: { id: 'disclaimer-1' },
@@ -359,6 +362,70 @@ test('target uses participant gates and reads back one persisted turn', async ()
   }
 })
 
+test('incomplete data use blocks evaluation without recording choices and can be retried after onboarding', async () => {
+  const target = new KlickerEvaluationTarget({
+    apiOrigin: 'https://api.klicker.localhost',
+    chatOrigin: 'https://chat.klicker.localhost',
+    apiKey: 'target-key',
+    participantUsername: 'synthetic-participant',
+    participantPassword: 'synthetic-password',
+    groundTruthDirectory: '/tmp/unused-ground-truth',
+    canaryFixture: '/tmp/unused-canary.json',
+  })
+  const originalFetch = globalThis.fetch
+  let complete = false
+  const requests = []
+  globalThis.fetch = async (url, options = {}) => {
+    const requestUrl = String(url)
+    const method = options.method || 'GET'
+    requests.push({ requestUrl, method })
+    if (requestUrl.endsWith('/api/graphql')) {
+      return Response.json(
+        { data: { loginParticipant: 'participant-jwt' } },
+        {
+          headers: {
+            'Set-Cookie': 'participant_token=participant-jwt; Path=/',
+          },
+        }
+      )
+    }
+    if (requestUrl.endsWith('/data-use') && method === 'GET') {
+      return Response.json({ state: { complete } })
+    }
+    if (requestUrl.endsWith('/disclaimer') && method === 'GET') {
+      return Response.json({ status: { required: false, accepted: true } })
+    }
+    throw new Error(`Unexpected mock request: ${method} ${requestUrl}`)
+  }
+  try {
+    await assert.rejects(target.ensureSession(), {
+      code: 'participant_data_use_required',
+    })
+    assert.equal(target.cookie, null)
+    assert.equal(
+      requests.some(({ requestUrl }) => requestUrl.endsWith('/disclaimer')),
+      false
+    )
+    assert.equal(requests.filter(({ method }) => method !== 'GET').length, 1)
+    complete = true
+    await target.ensureSession()
+    assert.equal(target.cookie, 'participant_token=participant-jwt')
+    assert.equal(
+      requests.some(({ requestUrl }) => requestUrl.endsWith('/disclaimer')),
+      true
+    )
+    assert.equal(
+      requests.some(
+        ({ requestUrl, method }) =>
+          requestUrl.endsWith('/data-use') && method !== 'GET'
+      ),
+      false
+    )
+  } finally {
+    globalThis.fetch = originalFetch
+  }
+})
+
 test('failed disclaimer setup does not poison a later session retry', async () => {
   const target = new KlickerEvaluationTarget({
     apiOrigin: 'https://api.klicker.localhost',
@@ -388,6 +455,9 @@ test('failed disclaimer setup does not poison a later session retry', async () =
           },
         }
       )
+    }
+    if (requestUrl.endsWith('/data-use') && method === 'GET') {
+      return Response.json({ state: { complete: true } })
     }
     if (requestUrl.endsWith('/disclaimer') && method === 'GET') {
       disclaimerReads += 1
@@ -657,6 +727,9 @@ test('guarded runQuestion accounts completed failures and refuses an over-budget
           },
         }
       )
+    }
+    if (requestUrl.endsWith('/data-use') && method === 'GET') {
+      return Response.json({ state: { complete: true } })
     }
     if (requestUrl.endsWith('/disclaimer') && method === 'GET') {
       return Response.json({ status: { required: false, accepted: true } })
@@ -1381,6 +1454,7 @@ never projected
   const requests = []
   let assistantMessageId
   let disclaimerReads = 0
+  let dataUseComplete = false
   globalThis.fetch = async (url, options = {}) => {
     const requestUrl = String(url)
     const method = options.method || 'GET'
@@ -1430,6 +1504,9 @@ never projected
           ],
         },
       })
+    }
+    if (requestUrl.endsWith('/data-use') && method === 'GET') {
+      return Response.json({ state: { complete: dataUseComplete } })
     }
     if (requestUrl.endsWith('/disclaimer') && method === 'GET') {
       disclaimerReads += 1
@@ -1496,6 +1573,15 @@ never projected
       requestTimeoutMs: 1000,
     })
     await target.initialize()
+    const metadata = await target.resolveQuestion(
+      'Which animation shows the efficient frontier?'
+    )
+    await assert.rejects(target.ensureElearningSession(metadata), {
+      code: 'participant_data_use_required',
+    })
+    assert.equal(target.elearningCookie, null)
+    assert.equal(disclaimerReads, 0)
+    dataUseComplete = true
     const result = await target.complete({
       model: 'gpt-6-luna',
       stream: false,
@@ -1517,7 +1603,7 @@ never projected
       requests.filter(({ requestUrl }) =>
         requestUrl.includes('/auth/elearning')
       ).length,
-      1
+      2
     )
     assert.equal(
       requests.every(({ body }) => !body.includes('never projected')),

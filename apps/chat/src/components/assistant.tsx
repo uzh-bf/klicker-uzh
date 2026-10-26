@@ -39,7 +39,7 @@ import { ModeSwitcher } from './mode-switcher'
 import {
   ParticipantDataUseGate,
   ParticipantDataUseSettings,
-} from './participant-data-use'
+} from './ParticipantDataUse'
 import { Thread } from './thread'
 import { Tooltip, TooltipContent, TooltipTrigger } from './ui/tooltip'
 

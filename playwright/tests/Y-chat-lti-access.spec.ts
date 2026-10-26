@@ -76,7 +76,16 @@ async function expectChatbotReached(page: Page) {
       await page.getByTestId('chat-data-use-acknowledged').check()
       await dataUseSubmit.click()
     }
-    if (await accept.isVisible()) await accept.click()
+    const disclaimerResponse = await page.request.get(
+      `${chatUrl()}/api/chatbots/${CHATBOT_ID}/disclaimer`
+    )
+    expect(disclaimerResponse.ok()).toBe(true)
+    const { status } = await disclaimerResponse.json()
+    if (status.required && !status.accepted) {
+      await expect(accept).toBeVisible()
+      await accept.click()
+      await expect(accept).toBeHidden()
+    }
     await expect(composer).toBeVisible({ timeout: 5_000 })
   }).toPass({ timeout: 30_000 })
 }
