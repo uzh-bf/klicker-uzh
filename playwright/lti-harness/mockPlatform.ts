@@ -130,7 +130,9 @@ export async function startMockPlatform({
         iss: origin,
         aud: MOCK_PLATFORM_CLIENT_ID,
         sub: 'lti-harness-learner',
-        email: 'lti-harness-learner@example.invalid',
+        // A seeded participant: the first launch links this LTI identity to
+        // it by email, so the PWA can sign the learner in.
+        email: 'testuser50@test.uzh.ch',
         name: 'LTI Harness Learner',
         nonce: params.get('nonce'),
         iat: now,
@@ -230,8 +232,11 @@ function escapeHtml(value: string) {
 if (import.meta.url === pathToFileURL(process.argv[1] ?? '').href) {
   const toolOrigin =
     process.env.LTI_HARNESS_TOOL_ORIGIN ?? 'https://lti.klicker.localhost'
+  // The seeded Testkurs (COURSE_ID_TEST in prisma-data). Plain node cannot
+  // load that constants module, so the manual run repeats its id.
   const redirectTarget =
-    process.env.LTI_HARNESS_REDIRECT_TARGET ?? 'https://pwa.klicker.localhost/'
+    process.env.LTI_HARNESS_REDIRECT_TARGET ??
+    'https://pwa.klicker.localhost/course/7c12e44e-d083-4acf-845e-4c34aaff6b49'
   const platform = await startMockPlatform({
     toolOrigin,
     redirectTarget,

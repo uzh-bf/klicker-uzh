@@ -79,3 +79,10 @@ Each launch test prints one `[lti-launch]` line with the project, the embedding,
 whether the launch reached the PWA, the LTI service's error message if it
 rejected the launch, and whether the browser stored the tool's cookie, either
 as an ordinary cookie or as a partitioned (CHIPS) cookie.
+
+Launches open the seeded Testkurs course page as `testuser50`: the mock learner's
+email links its LTI identity to that participant on the first launch. The test
+then requires a signed-in participant, by the PWA's session cookie or, when the
+browser blocks cookies in the iframe, by its `sessionStorage` token. Chromium and
+Firefox iframes skip this check, because the development PWA sets its session
+cookie with `SameSite=Lax`, which a cross-site iframe cannot store.

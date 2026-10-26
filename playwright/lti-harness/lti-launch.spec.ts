@@ -1,4 +1,5 @@
 import { expect, type Page, test } from '@playwright/test'
+import { COURSE_ID_TEST } from '../../packages/prisma-data/src/data/constants.js'
 import {
   type LaunchEmbedding,
   type MockPlatform,
@@ -27,7 +28,9 @@ let platform: MockPlatform
 test.beforeAll(async () => {
   platform = await startMockPlatform({
     toolOrigin,
-    redirectTarget: `${pwaOrigin.origin}/`,
+    // LMS course elements open a course page, which signs the participant in
+    // from ?jwt= even when the browser blocks the PWA's cookies.
+    redirectTarget: `${pwaOrigin.origin}/course/${COURSE_ID_TEST}`,
   })
 })
 
@@ -80,6 +83,23 @@ async function launch(
   }
 }
 
+// The PWA keeps the participant token in a cookie, or in sessionStorage when
+// the browser blocks its cookies in the iframe.
+async function participantSignedIn(page: Page) {
+  const cookies = await page.context().cookies(pwaOrigin.origin)
+  if (cookies.some((cookie) => cookie.name === 'participant_token')) {
+    return true
+  }
+  const pwaFrame = page
+    .frames()
+    .find((frame) => frame.url().startsWith(pwaOrigin.origin))
+  return (
+    (await pwaFrame
+      ?.evaluate(() => !!sessionStorage.getItem('participant_token'))
+      .catch(() => false)) ?? false
+  )
+}
+
 for (const embedding of ['top-level', 'iframe'] as const) {
   test(`${embedding} launch reaches the PWA`, async ({ page }, testInfo) => {
     const outcome = await launch(page, embedding)
@@ -106,6 +126,18 @@ for (const embedding of ['top-level', 'iframe'] as const) {
 
     expect(outcome.toolError, 'LTI service rejected the launch').toBeUndefined()
     expect(outcome.reachedPwa).toBe(true)
+
+    // In development the PWA sets its session cookie with SameSite=Lax, which
+    // a cross-site iframe cannot store, while production uses SameSite=None.
+    // Iframes that allow third-party cookies therefore cannot sign in locally.
+    if (
+      embedding === 'top-level' ||
+      testInfo.project.metadata.blocksThirdPartyCookies === true
+    ) {
+      await expect
+        .poll(() => participantSignedIn(page), { timeout: 30_000 })
+        .toBe(true)
+    }
   })
 }
 
