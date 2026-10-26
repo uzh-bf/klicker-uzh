@@ -22,6 +22,7 @@ export type SystemPromptCompilationContext = {
   standardModeConfig?: unknown
   answerStyle?: AnswerStyle
   answerTone?: AnswerTone
+  courseImageVision?: boolean
   /**
    * The custom modes the calling surface should compile. Participant routes
    * pass the live column; owner preview passes the saved revision so it
@@ -238,6 +239,9 @@ export function compileSystemPrompt(
     context.toolNames.some(isDocQueryToolName)
       ? `${citations}\n\n${renderPromptTemplate('course-images', {
           courseImageTool: COURSE_IMAGE_TOOL,
+          visualEvidence: context.courseImageVision
+            ? renderPromptTemplate('course-image-vision', {})
+            : '',
         })}`
       : citations
   return withLanguageStyleContract(

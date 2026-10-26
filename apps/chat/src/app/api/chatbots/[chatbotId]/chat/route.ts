@@ -57,6 +57,7 @@ import {
 } from '@/src/lib/server/chatModelRegistry'
 import { buildChatTurnRequest } from '@/src/lib/server/chatTurnRequest'
 import { withModelCitationIndices } from '@/src/lib/server/citationInstructions'
+import { readCourseImagePreview } from '@/src/lib/server/courseImagePreviewStore'
 import {
   courseImageStoreConfigured,
   readCourseImage,
@@ -65,6 +66,10 @@ import {
   canRegisterCourseImageTool,
   withCourseImageTool,
 } from '@/src/lib/server/courseImageTools'
+import {
+  courseImageVisionEnabled,
+  createCourseImageVision,
+} from '@/src/lib/server/courseImageVision'
 import {
   getCustomModeTurnSettings,
   isParticipantReasoningVisible,
@@ -1497,14 +1502,25 @@ export async function POST(
       ...responseExampleTools,
       ...studentPracticeTools,
     }
-    if (
+    const imageDecisionEnabled =
       courseImageStoreConfigured() &&
       canRegisterCourseImageTool(chatTools, scopedKbIds ?? [])
-    ) {
+    const imageVisionEnabled =
+      imageDecisionEnabled &&
+      courseImageVisionEnabled(selectedModelConfig.supportsImageAttachments)
+    const prepareCourseImagePreviews = imageVisionEnabled
+      ? createCourseImageVision({
+          kbIds: scopedKbIds ?? [],
+          readImage: (image) =>
+            readCourseImagePreview(image, scopedKbIds ?? []),
+        })
+      : undefined
+    if (imageDecisionEnabled) {
       chatTools = withCourseImageTool(
         chatTools,
         scopedKbIds ?? [],
-        readCourseImage
+        readCourseImage,
+        imageVisionEnabled
       )
     }
     const toolNames = Object.keys(chatTools)
@@ -1547,6 +1563,7 @@ export async function POST(
         answerStyle: appliedAnswerStyle,
         answerTone: appliedAnswerTone,
         customModeConfig: chatbot.customModeConfig,
+        ...(imageVisionEnabled ? { courseImageVision: true } : {}),
       }
     )
     const chatContextPrompt = formatKlickerChatContextForPrompt(chatContext)
@@ -1858,6 +1875,7 @@ export async function POST(
       answerTone: appliedAnswerTone,
       maxOutputTokens: maxOutputTokens ?? null,
       toolCount: toolNames.length,
+      courseImageVisionEnabled: imageVisionEnabled,
       toolNames,
       practiceCandidateCount,
       hasResponseExampleSkill: Boolean(
@@ -2316,29 +2334,38 @@ export async function POST(
           steps,
           initialMessages,
           responseMessages,
-        }) => ({
-          // Standard platform modes retrieve first, so the answer is grounded
-          // before it is written. Custom modes keep the retrieval tool offered
-          // but choose for themselves, so attaching a knowledge base never
-          // forces a retrieval call ahead of the persona's own answer.
-          ...(docQueryToolName &&
-          Object.hasOwn(DEFAULT_PROMPT, selectedMode) &&
-          stepNumber === 0
-            ? {
-                toolChoice: {
-                  type: 'tool' as const,
-                  toolName: docQueryToolName,
-                },
-              }
-            : {}),
-          messages: [
-            ...initialMessages,
-            ...(docQueryToolName && stepNumber > 0
-              ? withModelCitationIndices(responseMessages, steps)
-              : responseMessages),
-            stepReminder,
-          ],
-        }),
+        }) => {
+          const prepared = {
+            // Standard platform modes retrieve first, so the answer is grounded
+            // before it is written. Custom modes keep the retrieval tool offered
+            // but choose for themselves, so attaching a knowledge base never
+            // forces a retrieval call ahead of the persona's own answer.
+            ...(docQueryToolName &&
+            Object.hasOwn(DEFAULT_PROMPT, selectedMode) &&
+            stepNumber === 0
+              ? {
+                  toolChoice: {
+                    type: 'tool' as const,
+                    toolName: docQueryToolName,
+                  },
+                }
+              : {}),
+            messages: [
+              ...initialMessages,
+              ...(docQueryToolName && stepNumber > 0
+                ? withModelCitationIndices(responseMessages, steps)
+                : responseMessages),
+              stepReminder,
+            ],
+          }
+          // Keep the off path synchronous and unchanged. Preview bytes exist
+          // only in model input, never in persisted steps or streamed tool data.
+          return prepareCourseImagePreviews
+            ? prepareCourseImagePreviews(prepared.messages, steps).then(
+                ({ messages }) => ({ ...prepared, messages })
+              )
+            : prepared
+        },
         stopWhen: isStepCount(5),
         // A provider's canned, unbilled refusal is replaced with a neutral
         // platform line, so no mode shows it and a persona keeps its role.
