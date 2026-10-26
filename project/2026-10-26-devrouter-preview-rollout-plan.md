@@ -86,3 +86,6 @@ Manifest review corrections preserve the fresh-target refusal and report each fa
 
 
 Hosted feedback on the inherited preview source is being resolved in the same consumer package. Verified corrections keep the existing locale cookie contract consistent, preserve the seeded MCP localhost authority when extra hosts are declared, validate public authentication host lists, use the existing lightweight auth export, and verify the optional restricted Hatchet bootstrap login. The existing disposable-command validator also rejects inherited object keys explicitly. Pure Node evidence disproved the reported custom-scheme URL parser failure; other unproven or unrelated suggestions remain deferred. These source fixes do not change admission, spend, infrastructure permissions or the native acceptance boundary.
+
+
+Readiness integration is required again because the target LTI upgrade creates a merge conflict and blocks fresh PR checks. Integrate the target by normal merge, preserve its ltijs 7 implementation, and apply the existing preview cookie name to its final Express handoff. Preserve all upstream comments and dependency versions; verify the resolved source and required checks before ordinary push. This changes no release, staging, production or provider authority.
