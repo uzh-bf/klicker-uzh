@@ -54,12 +54,16 @@ these two operations and bounds the complete operation to eight minutes. It
 reports phases while suppressing raw child output that could contain runtime
 credentials. The existing database identity and dry-run guards still apply.
 
+The trusted installation runs initialization jobs only on creation, using the
+provider's `runNodeOnce` fence and zero automatic retries. Refresh and extension
+do not rerun successful jobs. Any initialization failure requires teardown and a
+new generation, including failure of the verification after ownership changes.
+
 ## Remaining qualification
 
 Live proof of native bootstrap, worker startup and task processing, network
 access policy, controller expiry, extension and stop behavior, and complete
 resource cleanup remains pending. This source slice prepares the manifest and
-plan and does not prove native runtime behavior. Admission stays disabled and no
-default workflow is installed. See the
+plan and does not prove native runtime behavior. See the
 [approved rollout plan](../../project/2026-10-26-devrouter-preview-rollout-plan.md)
 for the remaining acceptance checks.

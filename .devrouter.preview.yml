@@ -109,9 +109,7 @@ resources:
         set -eu
         if [ "$PGDATABASE" != hatchet ]; then printf '%s\n' HATCHET_INIT_DBNAME_MISMATCH; exit 1; fi
         if diagnostic=$(timeout 30 psql --no-psqlrc --quiet --set ON_ERROR_STOP=1 --set VERBOSITY=sqlstate 2>&1 <<'SQL'
-        \getenv runtime_role RUNTIME_USER
         \getenv runtime_password RUNTIME_PASSWORD
-        \getenv target_database PGDATABASE
         SET statement_timeout = '5s';
         BEGIN;
         \echo HATCHET_INIT_LOCK
@@ -121,22 +119,50 @@ resources:
           DO $$BEGIN RAISE EXCEPTION 'Hatchet initialization refused'; END$$;
         \endif
         \echo HATCHET_INIT_FRESH
-        SELECT current_database() = 'hatchet'
-          AND current_user = session_user
-          AND EXISTS (SELECT 1 FROM pg_roles r JOIN pg_database d ON d.datname=current_database() WHERE r.rolname=current_user AND r.rolcreaterole AND r.rolcreatedb AND pg_has_role(r.oid,d.datdba,'MEMBER'))
-          AND NOT EXISTS (SELECT 1 FROM pg_class c JOIN pg_namespace n ON n.oid = c.relnamespace WHERE n.nspname = 'public' AND c.relkind IN ('r','p','v','m','S','f'))
-          AND NOT EXISTS (SELECT 1 FROM pg_roles WHERE rolname = :'runtime_role') AS fresh \gset
+        WITH flags AS (
+          SELECT current_database() = 'hatchet' AS database_name,
+            current_user = session_user AS session_identity,
+            EXISTS (SELECT 1 FROM pg_roles WHERE rolname=current_user AND rolcreaterole AND rolcreatedb) AS admin_capabilities,
+            EXISTS (SELECT 1 FROM pg_roles r JOIN pg_database d ON d.datname=current_database() WHERE r.rolname=current_user AND pg_has_role(r.oid,d.datdba,'MEMBER')) AS database_owner,
+            NOT EXISTS (SELECT 1 FROM pg_class c JOIN pg_namespace n ON n.oid = c.relnamespace WHERE n.nspname = 'public' AND c.relkind IN ('r','p','v','m','S','f')) AS empty_public,
+            NOT EXISTS (SELECT 1 FROM pg_roles WHERE rolname = 'hatchet_runtime') AS runtime_role_absent
+        )
+        SELECT *, database_name AND session_identity AND admin_capabilities AND database_owner AND empty_public AND runtime_role_absent AS fresh FROM flags \gset
+        \if :database_name
+        \else
+          \echo HATCHET_INIT_FRESH_FAIL_DATABASE_NAME
+        \endif
+        \if :session_identity
+        \else
+          \echo HATCHET_INIT_FRESH_FAIL_SESSION_IDENTITY
+        \endif
+        \if :admin_capabilities
+        \else
+          \echo HATCHET_INIT_FRESH_FAIL_ADMIN_CAPABILITIES
+        \endif
+        \if :database_owner
+        \else
+          \echo HATCHET_INIT_FRESH_FAIL_DATABASE_OWNER
+        \endif
+        \if :empty_public
+        \else
+          \echo HATCHET_INIT_FRESH_FAIL_EMPTY_PUBLIC
+        \endif
+        \if :runtime_role_absent
+        \else
+          \echo HATCHET_INIT_FRESH_FAIL_RUNTIME_ROLE_ABSENT
+        \endif
         \if :fresh
         \else
           DO $$BEGIN RAISE EXCEPTION 'Hatchet initialization refused'; END$$;
         \endif
         \echo HATCHET_INIT_ROLE
-        CREATE ROLE :"runtime_role" LOGIN PASSWORD :'runtime_password' NOSUPERUSER NOCREATEDB NOCREATEROLE NOREPLICATION NOBYPASSRLS;
-        GRANT :"runtime_role" TO CURRENT_USER WITH INHERIT TRUE, SET TRUE;
+        CREATE ROLE hatchet_runtime LOGIN PASSWORD :'runtime_password' NOSUPERUSER NOCREATEDB NOCREATEROLE NOREPLICATION NOBYPASSRLS;
+        GRANT hatchet_runtime TO CURRENT_USER WITH INHERIT TRUE, SET TRUE;
         \echo HATCHET_INIT_OWNER
-        ALTER DATABASE :"target_database" OWNER TO :"runtime_role";
+        ALTER DATABASE hatchet OWNER TO hatchet_runtime;
         \echo HATCHET_INIT_SCHEMA
-        ALTER SCHEMA public OWNER TO :"runtime_role";
+        ALTER SCHEMA public OWNER TO hatchet_runtime;
         COMMIT;
         SQL
         ); then
@@ -149,12 +175,15 @@ resources:
           for stage in LOCK FRESH ROLE OWNER SCHEMA; do
             if printf %s "$diagnostic" | grep -q "HATCHET_INIT_$stage"; then printf 'HATCHET_INIT_REACHED_%s\n' "$stage"; fi
           done
+          for predicate in DATABASE_NAME SESSION_IDENTITY ADMIN_CAPABILITIES DATABASE_OWNER EMPTY_PUBLIC RUNTIME_ROLE_ABSENT; do
+            if printf %s "$diagnostic" | grep -q "HATCHET_INIT_FRESH_FAIL_$predicate"; then printf 'HATCHET_INIT_FRESH_FAIL_%s\n' "$predicate"; fi
+          done
           for state in 42501 42710 42P01 28P01 3D000 57014 P0001; do
             if printf %s "$diagnostic" | grep -q "$state"; then printf 'HATCHET_INIT_SQLSTATE_%s\n' "$state"; fi
           done
           exit 1
         fi
-        if result=$(PGUSER="$RUNTIME_USER" PGPASSWORD="$RUNTIME_PASSWORD" timeout 5 psql --no-psqlrc -At --set ON_ERROR_STOP=1 --command "SELECT current_database()='hatchet' AND d.datdba=r.oid AND has_database_privilege(current_user,current_database(),'CREATE') AND has_schema_privilege(current_user,'public','CREATE') AND NOT (r.rolsuper OR r.rolcreatedb OR r.rolcreaterole OR r.rolreplication OR r.rolbypassrls) FROM pg_roles r JOIN pg_database d ON d.datname=current_database() WHERE r.rolname=current_user" 2>/dev/null); then
+        if result=$(PGUSER=hatchet_runtime PGPASSWORD="$RUNTIME_PASSWORD" timeout 5 psql --no-psqlrc -At --set ON_ERROR_STOP=1 --command "SELECT current_database()='hatchet' AND d.datdba=r.oid AND has_database_privilege(current_user,current_database(),'CREATE') AND has_schema_privilege(current_user,'public','CREATE') AND NOT (r.rolsuper OR r.rolcreatedb OR r.rolcreaterole OR r.rolreplication OR r.rolbypassrls) FROM pg_roles r JOIN pg_database d ON d.datname=current_database() WHERE r.rolname=current_user" 2>/dev/null); then
           if [ "$result" != t ]; then printf '%s\n' HATCHET_VERIFY_PREDICATE_FAILED; exit 1; fi
         else
           verify_exit=$?
@@ -172,7 +201,7 @@ resources:
     command:
       - /bin/bash
       - -c
-      - 'set -eu; [ "$(printf %s "$PASSWORD" | wc -c)" -eq 64 ]; case "$PASSWORD" in *[!0-9a-f]*) exit 1;; esac; export DATABASE_URL="postgresql://hatchet_runtime:$PASSWORD@$DB_HOST:$DB_PORT/hatchet?sslmode=require"; set -eu; echo HATCHET_STAGE_MIGRATE; if migrate_diagnostic=$(./hatchet-migrate 2>&1); then :; else echo HATCHET_MIGRATE_FAILED; for term in authentication permission certificate connection extension schema timeout database role; do if printf %s "$migrate_diagnostic" | grep -qi "$term"; then echo "HATCHET_MIGRATE_CATEGORY_$term"; fi; done; exit 1; fi; echo HATCHET_STAGE_CONFIG; ./hatchet-admin quickstart --skip certs --generated-config-dir ./config --overwrite=false >/dev/null 2>&1; echo HATCHET_STAGE_TOKEN; if [ ! -s ./config/authdisabled-token ]; then ./hatchet-admin token create --config ./config --name authdisabled-default > ./config/authdisabled-token 2>/dev/null; fi; echo HATCHET_STAGE_SERVER; exec ./hatchet-lite --config ./config'
+      - 'set -eu; [[ $PASSWORD =~ ^[0-9a-f]{64}$ ]] || exit 1; export DATABASE_URL="postgresql://hatchet_runtime:$PASSWORD@$DB_HOST:$DB_PORT/hatchet?sslmode=require"; echo HATCHET_STAGE_MIGRATE; if migrate_diagnostic=$(./hatchet-migrate 2>&1); then :; else echo HATCHET_MIGRATE_FAILED; for term in authentication permission certificate connection extension schema timeout database role; do if printf %s "$migrate_diagnostic" | grep -qi "$term"; then echo "HATCHET_MIGRATE_CATEGORY_$term"; fi; done; exit 1; fi; echo HATCHET_STAGE_CONFIG; ./hatchet-admin quickstart --skip certs --generated-config-dir ./config --overwrite=false >/dev/null 2>&1; echo HATCHET_STAGE_TOKEN; if [ ! -s ./config/authdisabled-token ]; then ./hatchet-admin token create --config ./config --name authdisabled-default > ./config/authdisabled-token 2>/dev/null; fi; echo HATCHET_STAGE_SERVER; exec ./hatchet-lite --config ./config'
     ports:
       - name: http
         port: 8888
@@ -387,7 +416,7 @@ selection:
         - packages/**
         - apps/backend-docker/**
         - apps/response-api/**
-        - apps/hatchet-worker-*/*
+        - apps/hatchet-worker-*/**
       aliases:
         - full
   ignorePaths:
