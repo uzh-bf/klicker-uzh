@@ -28,9 +28,11 @@ describe('assessment submission dispatch', () => {
   it('is unconfirmed when the enqueue rejects', async () => {
     const queueError = new Error('synthetic enqueue failure')
     const auditErrors: unknown[] = []
+    let enqueueCalls = 0
 
     const outcome = await dispatchAssessmentSubmission({
       enqueue: async () => {
+        enqueueCalls++
         throw queueError
       },
       auditFailure: async (error) => {
@@ -40,25 +42,8 @@ describe('assessment submission dispatch', () => {
     await new Promise<void>((resolve) => setImmediate(resolve))
 
     assert.equal(outcome, 'unconfirmed')
-    assert.deepEqual(auditErrors, [queueError])
-  })
-
-  it('remains unconfirmed when acceptance and ack rejection overlap', async () => {
-    let queueAccepted = false
-    let enqueueCalls = 0
-
-    const outcome = await dispatchAssessmentSubmission({
-      enqueue: async () => {
-        enqueueCalls += 1
-        queueAccepted = true
-        throw new Error('synthetic lost acknowledgement')
-      },
-      auditFailure: async () => undefined,
-    })
-
-    assert.equal(queueAccepted, true)
     assert.equal(enqueueCalls, 1)
-    assert.equal(outcome, 'unconfirmed')
+    assert.deepEqual(auditErrors, [queueError])
   })
 
   it('stays unconfirmed when failure audit rejects', async () => {
