@@ -25,8 +25,8 @@
     "patch_sha256": "670d1782a56548f4a4571b6e6bbeb33c92ebcbe99247469ad1aa73329fc5e7c0"
   },
   "assets": {
-    ".github/actions/ocr-review/action.yml": "c04c0cd38e184415791dfdf733b71deacabf2dd5a91ead3396774f1f17241524",
-    ".github/scripts/ocr-controller.cjs": "ac8c2b75bc7715a5e6c31b0ce8ccb204f523ab9a81db71235928a92915786c7b",
+    ".github/actions/ocr-review/action.yml": "79b34d4003bdbc57e7076c1f5f9004376f77b32b7f81e22cb1e3da500be1d45a",
+    ".github/scripts/ocr-controller.cjs": "a8fe80e67094ab5c1f819cd8812ceb7e7c95948321138dcc41a9aa5aaedca69b",
     ".github/scripts/ocr-draft-review.cjs": "c24f2da190585f18a470e7357e8ef86e48eebf8efb7c374b07c67ad608322756",
     ".github/scripts/ocr-mistral-adapter.cjs": "325e7e358b2c3a0ec8460c4011e2cefe117840ea91bd2264459324079694531d",
     ".github/scripts/ocr-review-tools.cjs": "ca441302e5c1ae4a9b3765ba725e858f92e8bf32ce8e9375e9e8534fa5e873dd",
