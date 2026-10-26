@@ -87,7 +87,9 @@ function QuestionArea({
           if (!cancelled)
             setAllSubmitted(
               responses.every(
-                (response) => typeof response?.responseTimestamp === 'number'
+                (response) =>
+                  typeof response?.responseTimestamp === 'number' ||
+                  response?.previouslySubmitted === true
               )
             )
         })
@@ -296,6 +298,7 @@ function QuestionArea({
   }
 
   function showStatusCodeToast(statusCode: number) {
+    if (statusCode >= 400 && statusCode < 500) setSubmissionUnconfirmed(false)
     // status code 200 (regular and assessment responses) -> successful submission
     if (statusCode === 200) {
       setSubmissionUnconfirmed(false)

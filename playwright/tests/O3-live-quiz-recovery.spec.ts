@@ -689,7 +689,7 @@ test.describe.serial('Assessment live-quiz recovery', () => {
       await expect(page.getByTestId('live-quiz-previous-answer')).toBeVisible({
         timeout: 30_000,
       })
-      await expect(page.getByTestId('live-quiz-block-submitted')).toHaveCount(0)
+      await expect(page.getByTestId('live-quiz-block-submitted')).toBeVisible()
       await expect(
         page.getByTestId('live-quiz-submission-unconfirmed')
       ).toHaveCount(0)

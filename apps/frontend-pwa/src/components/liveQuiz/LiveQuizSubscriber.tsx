@@ -153,7 +153,7 @@ function LiveQuizSubscriber({ id }: { id: string }) {
         authorizationFailed = false
         connection.client?.terminate()
       }
-      if (operationFailed) startSubscriptions()
+      if (manual || operationFailed) startSubscriptions()
       void recovery.refresh()
     }
     reconnect.current = () => recover(true)
