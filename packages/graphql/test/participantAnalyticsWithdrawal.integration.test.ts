@@ -686,6 +686,92 @@ describe('participant analytics withdrawal PostgreSQL integration', () => {
     })
   })
 
+  it('processes later withdrawals when an earlier participant fails and retries safely', async () => {
+    const failedFixture = await createFixture('sweep-failed')
+    const healthyFixture = await createFixture('sweep-healthy')
+    await createWithdrawal(failedFixture, {
+      requestedAt: new Date(Date.now() - 120_000),
+    })
+    await createWithdrawal(healthyFixture, {
+      requestedAt: new Date(Date.now() - 60_000),
+    })
+    await createAnalyticsData(failedFixture)
+    await createAnalyticsData(healthyFixture)
+    let pageReads = 0
+    const failingPrisma = prisma.$extends({
+      query: {
+        participantCourseAnalytics: {
+          async deleteMany({ args, query }) {
+            if (args.where?.participantId === failedFixture.participantId) {
+              throw new Error('Synthetic analytics cleanup failure')
+            }
+            return query(args)
+          },
+        },
+        participantAnalyticsWithdrawal: {
+          async findMany({ args, query }) {
+            if (args.take && ++pageReads > 3) {
+              throw new Error('SYNTHETIC_SWEEP_DID_NOT_ADVANCE')
+            }
+            return query(args)
+          },
+        },
+      },
+    })
+
+    await expect(
+      handleParticipantAnalyticsWithdrawals(
+        {},
+        { prisma: failingPrisma } as unknown as Parameters<
+          typeof handleParticipantAnalyticsWithdrawals
+        >[1],
+        {} as Parameters<typeof handleParticipantAnalyticsWithdrawals>[2]
+      )
+    ).rejects.toThrow('PARTICIPANT_ANALYTICS_WITHDRAWAL_PARTIAL_FAILURE')
+    expect(await readWithdrawal(failedFixture)).toMatchObject({
+      completedAt: null,
+    })
+    expect(await readAnalyticsCounts(failedFixture.participantId)).toEqual({
+      participant: 1,
+      competency: 1,
+      course: 1,
+      performance: 1,
+      activity: 1,
+    })
+    const healthyCompleted = await readWithdrawal(healthyFixture)
+    expect(healthyCompleted).toMatchObject({ completedAt: expect.any(Date) })
+    expect(await readAnalyticsCounts(healthyFixture.participantId)).toEqual({
+      participant: 0,
+      competency: 0,
+      course: 0,
+      performance: 0,
+      activity: 0,
+    })
+
+    await expect(
+      handleParticipantAnalyticsWithdrawals(
+        {},
+        { prisma } as Parameters<
+          typeof handleParticipantAnalyticsWithdrawals
+        >[1],
+        {} as Parameters<typeof handleParticipantAnalyticsWithdrawals>[2]
+      )
+    ).resolves.toBe(true)
+    expect(await readWithdrawal(failedFixture)).toMatchObject({
+      completedAt: expect.any(Date),
+    })
+    expect(await readAnalyticsCounts(failedFixture.participantId)).toEqual({
+      participant: 0,
+      competency: 0,
+      course: 0,
+      performance: 0,
+      activity: 0,
+    })
+    expect(await readWithdrawal(healthyFixture)).toMatchObject({
+      completedAt: healthyCompleted!.completedAt,
+    })
+  })
+
   it('keeps a pending withdrawal after analytics is re-enabled', async () => {
     const fixture = await createFixture('reenable')
     await createWithdrawal(fixture)

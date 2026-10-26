@@ -66,25 +66,47 @@ export const handleParticipantAnalyticsWithdrawals: HatchetHandlers['handleParti
     if (!(cutoff instanceof Date) || Number.isNaN(cutoff.getTime())) {
       throw new Error('PARTICIPANT_ANALYTICS_WITHDRAWAL_CLOCK_FAILURE')
     }
-    // Freeze the request horizon so continuous new requests cannot extend a
-    // sweep indefinitely. Failed pages stay pending for the next scheduled run.
+    // Freeze the request horizon and advance past failed participants so one
+    // failure cannot prevent later withdrawals from being processed.
+    let cursor: { requestedAt: Date; participantId: string } | undefined
+    let failed = false
     while (true) {
       const requests =
         await globalCtx.prisma.participantAnalyticsWithdrawal.findMany({
-          where: { completedAt: null, requestedAt: { lte: cutoff } },
+          where: {
+            completedAt: null,
+            requestedAt: { lte: cutoff },
+            ...(cursor && {
+              OR: [
+                { requestedAt: { gt: cursor.requestedAt } },
+                {
+                  requestedAt: cursor.requestedAt,
+                  participantId: { gt: cursor.participantId },
+                },
+              ],
+            }),
+          },
           orderBy: [{ requestedAt: 'asc' }, { participantId: 'asc' }],
           take: 100,
-          select: { participantId: true },
+          select: { participantId: true, requestedAt: true },
         })
       if (requests.length === 0) break
+      cursor = requests[requests.length - 1]
       for (const participantId of new Set(
         requests.map((row) => row.participantId)
       )) {
-        await processParticipantAnalyticsWithdrawal(
-          participantId,
-          globalCtx.prisma
-        )
+        try {
+          await processParticipantAnalyticsWithdrawal(
+            participantId,
+            globalCtx.prisma
+          )
+        } catch {
+          failed = true
+        }
       }
+    }
+    if (failed) {
+      throw new Error('PARTICIPANT_ANALYTICS_WITHDRAWAL_PARTIAL_FAILURE')
     }
     return true
   }
