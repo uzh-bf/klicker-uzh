@@ -4,6 +4,7 @@ import {
 } from '@klicker-uzh/knowledge-graph'
 import type * as DB from '@klicker-uzh/prisma/client'
 import type {
+  ElementGenerationLanguage,
   KBGraphSourceSnapshot,
   QuestionGenerationArtifactRef,
 } from '@klicker-uzh/types'
@@ -37,6 +38,7 @@ export type QuestionGenerationGraph = {
   graphManifest: QuestionGenerationArtifactRef
   graphSha256: string
   manifestSchemaVersion: number
+  language: ElementGenerationLanguage
   sourceSnapshot: KBGraphSourceSnapshot
   storageName: string
   indexedAt: Date
@@ -44,6 +46,7 @@ export type QuestionGenerationGraph = {
 }
 
 export type QuestionGenerationSource = {
+  language: ElementGenerationLanguage
   graphBuildId: string
   kbId: string
   kbName: string
@@ -103,6 +106,7 @@ const nativeBuildSelect = {
   kbId: true,
   status: true,
   graphName: true,
+  domainPolicyLanguage: true,
   graphBundleContainerName: true,
   graphBundleBlobPrefix: true,
   graphBundleStorageName: true,
@@ -139,6 +143,20 @@ function asGenerationGraph(
     )
   }
 
+  const language =
+    build.domainPolicyLanguage === null ||
+    build.domainPolicyLanguage === 'German'
+      ? 'de'
+      : build.domainPolicyLanguage === 'English'
+        ? 'en'
+        : null
+  if (language === null) {
+    throw graphError(
+      'KB_GRAPH_VERSION_NOT_ELIGIBLE',
+      'Published knowledge graph has an unsupported generation language'
+    )
+  }
+
   return {
     id: build.id,
     kbId: build.kbId,
@@ -147,6 +165,7 @@ function asGenerationGraph(
     graphManifest: build.graphManifestArtifact,
     graphSha256: build.graphSha256,
     manifestSchemaVersion: build.graphManifestSchemaVersion,
+    language,
     sourceSnapshot: questionGenerationSourceSnapshot(build.sources),
     storageName: build.graphBundleStorageName,
     indexedAt: build.finishedAt ?? build.createdAt,
@@ -224,6 +243,7 @@ export async function getQuestionGenerationSources(
         )
         return {
           graphBuildId: graph.id,
+          language: graph.language,
           kbId: kb.id,
           kbName: kb.name,
           indexedAt: graph.indexedAt,

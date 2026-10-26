@@ -15,6 +15,7 @@ import {
 } from 'node:fs/promises'
 import { dirname, resolve } from 'node:path'
 import { fileURLToPath } from 'node:url'
+import { isDeepStrictEqual as deepEqual } from 'node:util'
 import { createDisposableTestPrismaClient } from '@klicker-uzh/prisma'
 
 import {
@@ -76,17 +77,6 @@ function safeCode(error) {
 
 function isObject(value) {
   return value !== null && typeof value === 'object' && !Array.isArray(value)
-}
-
-function deepEqual(left, right) {
-  if (Object.is(left, right)) return true
-  if (!isObject(left) || !isObject(right)) return false
-  const leftKeys = Object.keys(left)
-  const rightKeys = Object.keys(right)
-  if (leftKeys.length !== rightKeys.length) return false
-  return leftKeys.every(
-    (key) => Object.hasOwn(right, key) && deepEqual(left[key], right[key])
-  )
 }
 
 function parseArgs(argv) {
@@ -316,15 +306,28 @@ export function validateBundle(bundle) {
   return { casesById, cases: bundle.cases }
 }
 
-async function loadBundle() {
+async function loadBundle(env) {
   let bundle
   try {
     bundle = JSON.parse(await readFile(casesPath, 'utf8'))
   } catch {
     fail('cases_read_failed')
   }
+  if (env.KLICKER_EVAL_MODEL_ID) {
+    bundle.defaults = {
+      ...bundle.defaults,
+      requestedModel: env.KLICKER_EVAL_MODEL_ID,
+      expectedSelectedModel: env.KLICKER_EVAL_MODEL_ID,
+    }
+  }
+  if (env.KLICKER_EVAL_ANSWER_STYLE) {
+    bundle.defaults.answerStyle = env.KLICKER_EVAL_ANSWER_STYLE
+  }
+  if (env.KLICKER_EVAL_ANSWER_TONE) {
+    bundle.defaults.answerTone = env.KLICKER_EVAL_ANSWER_TONE
+  }
   // A receipt is only honoured on resume when it was produced from the same
-  // bundle revision, so persisted evidence stays tied to the exact cases.
+  // effective bundle, including explicit model and answer preferences.
   const fingerprint = createHash('sha256')
     .update(JSON.stringify(bundle))
     .digest('hex')
@@ -442,7 +445,9 @@ function validateExecutionBoundary(env) {
       fail('database_url_protocol')
     }
     if (
-      !['postgres', 'localhost', '127.0.0.1'].includes(databaseUrl.hostname)
+      !['postgres', 'mcp_postgres', 'localhost', '127.0.0.1'].includes(
+        databaseUrl.hostname
+      )
     ) {
       fail('database_url_non_local')
     }
@@ -1146,7 +1151,11 @@ async function executeCases({
           history,
           parentId: parent?.assistantMessageId ?? null,
           expectedSelectedModelId,
+          answerStyle: bundle.defaults.answerStyle,
+          answerTone: bundle.defaults.answerTone,
         })
+        receipt.answerStyle = bundle.defaults.answerStyle ?? null
+        receipt.answerTone = bundle.defaults.answerTone ?? null
         receipt.status = 'completed'
         receipt.submissionNumber = submissionNumber
         receipt.threadId = result.threadId
@@ -1245,6 +1254,8 @@ async function dryRun({
   }
   return {
     status: 'dry-run-valid',
+    bundleFingerprint: fingerprint,
+    requestedModelId: bundle.defaults.requestedModel || DEFAULT_MODEL_ID,
     caseIds: selected.map((item) => item.id),
     modes: selected.map((item) => item.mode),
     requestedSubmissions,
@@ -1270,7 +1281,7 @@ export async function main(argv = process.argv.slice(2), env = process.env) {
       printHelp()
       return
     }
-    const { bundle, fingerprint, cases, casesById } = await loadBundle()
+    const { bundle, fingerprint, cases, casesById } = await loadBundle(env)
     const selected = selectCases(cases, casesById, arguments_.caseIds)
     const receipts = await readAttemptReceipts()
     validateSelectionDependencies(selected, receipts, fingerprint)

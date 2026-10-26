@@ -1,4 +1,7 @@
-import { prisma as prismaClient } from '@klicker-uzh/prisma'
+import {
+  prisma as prismaClient,
+  requireDisposableDatabase,
+} from '@klicker-uzh/prisma'
 import {
   KBIngestionOperation,
   KBIngestionStatus,
@@ -124,6 +127,7 @@ describe('KB ingestion webhook contract', () => {
 
   beforeAll(async () => {
     prisma = prismaClient
+    await requireDisposableDatabase(prisma)
   })
 
   beforeEach(async () => {
@@ -732,6 +736,51 @@ describe('KB ingestion webhook contract', () => {
     })
     await expect(getResource()).resolves.toMatchObject({
       status: KBResourceStatus.QUEUED,
+    })
+  })
+  it.each([
+    'resource.processing_progress',
+    'resource.processing_failed',
+  ] as const)('preserves replacement blob metadata when prior content serves on %s', async (eventType) => {
+    await prisma.kBResource.update({
+      where: { id: resourceId },
+      data: {
+        type: KBResourceType.BLOB,
+        blobName: 'replacement.pdf',
+        sizeBytes: 4096,
+        mimeType: 'application/pdf',
+        activeResourceVersion: RESOURCE_VERSION - 1,
+        activeContentSha256: REFRESH_CONTENT_SHA256,
+      },
+    })
+    const request = createRequest(
+      event(eventType, {
+        serving: {
+          active_resource_version: RESOURCE_VERSION - 1,
+          active_sha256: REFRESH_CONTENT_SHA256,
+        },
+      })
+    )
+    await expect(
+      handleKBIngestionWebhook({
+        prisma,
+        ...request,
+        env: { KB_WEBHOOK_SECRET: SECRET },
+      })
+    ).resolves.toMatchObject({ statusCode: 200 })
+    expect(await getResource()).toMatchObject({
+      blobName: 'replacement.pdf',
+      sizeBytes: 4096,
+      mimeType: 'application/pdf',
+      contentSha256: CONTENT_SHA256,
+      activeResourceVersion: RESOURCE_VERSION - 1,
+      activeContentSha256: REFRESH_CONTENT_SHA256,
+    })
+    expect(await getRun()).toMatchObject({
+      status:
+        eventType === 'resource.processing_failed'
+          ? KBIngestionStatus.FAILED
+          : KBIngestionStatus.PROCESSING,
     })
   })
 })

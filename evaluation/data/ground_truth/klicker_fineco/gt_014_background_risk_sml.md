@@ -7,13 +7,24 @@ expected_tools_by_profile:
 
 ## CAPM with Background Risk
 
-Background risk is risk that affects an investor's total wealth or consumption but cannot be traded directly, such as labor-income risk. Investors therefore care not only about an asset's covariance with the market portfolio, but also about its covariance with their background risk.
+Background risk is non-tradable risk, such as labor-income risk. In the course model, expected excess return is determined by a modified beta:
 
-An asset that pays off when background income is low provides a hedge and can offer a lower expected return. An asset that performs poorly at the same time as the background risk requires additional compensation. The resulting pricing relation therefore contains a background-risk covariance term in addition to the usual market-beta term.
+$$
+\mu_k-R_f=
+\frac{\operatorname{Cov}(R_k,R^M)+\operatorname{Cov}(R_k,R_y)}
+{\operatorname{Var}(R^M)+\operatorname{Cov}(R^M,R_y)}
+(\mu^M-R_f).
+$$
 
-The ordinary CAPM is recovered when the relevant asset and market covariances with background risk are zero. A precise statement about whether the SML becomes steeper or flatter requires those covariance signs; background risk does not shift every asset's expected return in the same direction.
+Assuming the relevant denominators and the market risk premium are positive, asset $k$ lies at or above the classical SML when
+
+$$
+\operatorname{Cov}(R_k,R_y)
+\geq \beta_k\operatorname{Cov}(R^M,R_y).
+$$
+
+The sign of $\operatorname{Cov}(R_k,R_y)$ alone is not sufficient because background risk also changes the denominator through its covariance with the market. The classical CAPM is recovered when both background-risk covariance terms are zero. Correlation and covariance must not be treated as interchangeable: covariance also depends on the relevant volatilities.
 
 ## Sources
 
-- Financial Economics script FS26, Chapters 6.1–6.3, CAPM with background risks, pp. 69–72
-- FinEco FS26 Guide, Chapter 6, background-risk covariance and the Security Market Line, pp. 69–72
+- Financial Economics script FS26, Chapter 6, Security Market Line with non-tradable background risk, Equation 6.15

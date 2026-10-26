@@ -58,8 +58,9 @@ invariants.
   through 4096, supplied-invalid JSON is rejected rather than replaced by a
   warning fallback, and model-class/fallback invariants remain fail-closed.
 - New chatbots start with the safe pilot policy: model selection disabled and
-  exactly one allowed `auto` model. The registry must provide exactly one
-  non-reasoning, non-fallback `ADVANCED` Auto entry before creation; no
+  exactly one allowed model. Since 2026-09-28 that model is the BASE
+  `gpt-6-luna`; a registry without it, such as the local development default,
+  falls back to its single valid non-reasoning, non-fallback Auto entry. No
   reasoning configuration is stored. Existing chatbot rows are not migrated or
   normalized by this policy. They remain readable through the current
   `CHAT_PRIMARY_MODEL_ID`-aware automatic resolver, with retired-only lists

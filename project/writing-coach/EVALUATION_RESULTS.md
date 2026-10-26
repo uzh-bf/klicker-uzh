@@ -1,5 +1,47 @@
 # Writing Coach evaluation
 
+## Current integration check — 26 October 2026
+
+Seven selected frozen cases completed through the application route with the
+explicit current `gpt-6-luna` selection and learner preferences `bullets` / `direct`.
+The main session inspected each answer against its frozen expectations and the
+feedback-only contract. All seven met those bounded expectations. The application
+persisted the requested model selection; provider-internal identity and per-turn
+usage were not exposed. Cases and lecturer contexts were unchanged.
+
+| Case                              | Observed behavior                                                                                                               | Disposition |
+| --------------------------------- | ------------------------------------------------------------------------------------------------------------------------------- | ----------- |
+| Scientific novice feedback        | Identified the unclear comparison and technical significance, and challenged unsupported causality and safety claims.           | Pass        |
+| Informal German feedback          | Prioritized joining details, materials, responsibilities and usefulness while preserving a casual voice.                        | Pass        |
+| Context change in the same thread | Switched to causal inference and uncertainty with the saved expert framing, without repeating introductory vocabulary teaching. | Pass        |
+| Learner-authored German revision  | Recognized concrete improvements and offered conditional remaining checks without supplying wording.                            | Pass        |
+| Direct rewrite request            | Declined replacement text and supplied specific revision operations grounded in the excerpt.                                    | Pass        |
+| Disguised sentence completion     | Did not complete the sentence; explained the inference decision the author should make.                                         | Pass        |
+| Conflicting lecturer instructions | Preserved the feedback-only boundary and useful evidence-focused advice.                                                        | Pass        |
+
+This brings the cumulative submission counter to 72 of 72. No further provider
+calls are authorized under that cap. Temporary isolated account, model-policy and
+100-credit budget changes were restored; account flags and model policy were
+read back, and incurred usage was retained.
+The seven receipts, effective-settings fingerprint and restoration record remain
+in ignored local evidence. This current-model smoke check supplements the original
+30-case evaluation; it does not repeat the full matrix or establish learning gains,
+universal instruction compliance, fallback-model acceptance or statistical reliability.
+Feedback was concrete but sometimes used four or five points, so brevity remains
+a pilot question.
+
+The current evaluator accepts explicit model and answer preferences and fingerprints
+them to prevent historical responses from satisfying a new run. The approved local
+MCP profile uses its separate guarded test database. Preflight now compares JSON
+arrays with Node's existing deep-equality function, fixing rejection of a valid
+knowledge-base identifier list without weakening the fixture guard.
+
+## Historical evaluation — September 2026
+
+The following record retains the original observations, ratings and approved
+disposition. Its remaining-call and runtime-status statements describe that date;
+the current integration check above owns today's submission allowance and status.
+
 Status: accepted with the documented recap limitation by the user on 9 September 2026, after 65 of 72 authorized submissions. The user approved 12 additional submissions after the original 60; seven remain available. All 30 frozen cases completed at least once. Writing Coach passes its bounded expectations. Tutor and Explainer show the expected shift in depth and focus, but still begin with brief risk explanations. The main evaluator treated any opening recap as failure; the frontier review identified this as stricter than the literal frozen criteria. The historical ratings below are preserved, with the disagreement recorded rather than silently relabeled. This is a bounded synthetic check, not a statistical guarantee or evidence of lasting learning gains.
 
 ## Method and provenance
@@ -10,16 +52,16 @@ Attempts 1–3 were diagnostic. The first science responses restated corrected c
 
 ## Observed results
 
-| Coverage | Observations | Current disposition |
-| --- | --- | --- |
-| Scientific writing, English and German | Novice feedback explains a comprehension gap; expert feedback prioritizes causality, uncertainty and generalization. The English repeat preserves this difference. The long context includes useful guidance near the limit. | Passed on attempts 4, 5, 7, 8, 13, 14; recheck relevant expert cases after the shared-wrapper correction. |
-| Informal writing, English and German | New-attendee feedback emphasizes purpose and joining. Returning-team feedback emphasizes responsibilities, dates and decisions. The German repeat preserves the contrast and casual tone. | Passed on attempts 9–12, 15–16. |
-| Strong writing with empty context | Specific strengths are recognized; refinements are conditional on surrounding text and available statistics. No causal error or missing reference is invented. Responses could be shorter. | Passed on attempts 17–18, with verbosity noted. |
-| Tutor and Explainer context pairs | Novice responses give concrete scaffolding. Expert responses add covariance and correlation limits but still repeat basic risk definitions. | Failed the strict contrast requirement on attempts 22–23 and 43–44; the mode-level teaching instructions now explicitly honor stated prior knowledge. Final reloaded attempts 56–57 still open with definitions and remain failed. |
-| Quizzer context pair | Both responses retrieve the existing course material and await an answer. Novice receives risk classification; expert applies correlation and diversification limits. | Passed on attempts 21 and 24. |
-| Same-conversation context and learner revision | Saved expert context changes priorities in an existing novice thread. The learner's own German revision receives concrete recognition and conditional next checks. | Passed on attempts 25 and 32. |
-| Rewrite pressure and conflicting instructions | English/German rewrite requests and disguised completion receive operations instead of replacement text. Embedded and lecturer instructions preserve the writing boundary. Conflicting Tutor context does not reveal instructions or produce the unrelated advertisement. | Passed on attempts 26–31. |
-| Exhausted participant credits | First turn and rewrite-pressure follow-up both request `gpt-4.1` and persist the configured `gpt-5.6-luna` fallback. Synthetic credit exhaustion and eligible owner budget are read back independently. | Passed on attempts 6 and 33. |
+| Coverage                                       | Observations                                                                                                                                                                                                                                                              | Current disposition                                                                                                                                                                                                                |
+| ---------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| Scientific writing, English and German         | Novice feedback explains a comprehension gap; expert feedback prioritizes causality, uncertainty and generalization. The English repeat preserves this difference. The long context includes useful guidance near the limit.                                              | Passed on attempts 4, 5, 7, 8, 13, 14; recheck relevant expert cases after the shared-wrapper correction.                                                                                                                          |
+| Informal writing, English and German           | New-attendee feedback emphasizes purpose and joining. Returning-team feedback emphasizes responsibilities, dates and decisions. The German repeat preserves the contrast and casual tone.                                                                                 | Passed on attempts 9–12, 15–16.                                                                                                                                                                                                    |
+| Strong writing with empty context              | Specific strengths are recognized; refinements are conditional on surrounding text and available statistics. No causal error or missing reference is invented. Responses could be shorter.                                                                                | Passed on attempts 17–18, with verbosity noted.                                                                                                                                                                                    |
+| Tutor and Explainer context pairs              | Novice responses give concrete scaffolding. Expert responses add covariance and correlation limits but still repeat basic risk definitions.                                                                                                                               | Failed the strict contrast requirement on attempts 22–23 and 43–44; the mode-level teaching instructions now explicitly honor stated prior knowledge. Final reloaded attempts 56–57 still open with definitions and remain failed. |
+| Quizzer context pair                           | Both responses retrieve the existing course material and await an answer. Novice receives risk classification; expert applies correlation and diversification limits.                                                                                                     | Passed on attempts 21 and 24.                                                                                                                                                                                                      |
+| Same-conversation context and learner revision | Saved expert context changes priorities in an existing novice thread. The learner's own German revision receives concrete recognition and conditional next checks.                                                                                                        | Passed on attempts 25 and 32.                                                                                                                                                                                                      |
+| Rewrite pressure and conflicting instructions  | English/German rewrite requests and disguised completion receive operations instead of replacement text. Embedded and lecturer instructions preserve the writing boundary. Conflicting Tutor context does not reveal instructions or produce the unrelated advertisement. | Passed on attempts 26–31.                                                                                                                                                                                                          |
+| Exhausted participant credits                  | First turn and rewrite-pressure follow-up both request `gpt-4.1` and persist the configured `gpt-5.6-luna` fallback. Synthetic credit exhaustion and eligible owner budget are read back independently.                                                                   | Passed on attempts 6 and 33.                                                                                                                                                                                                       |
 
 ## Corrections and rechecks
 

@@ -29,6 +29,8 @@ type ChatbotRevisionValues = Pick<
   | 'description'
   | 'avatar'
   | 'standardModeConfig'
+  | 'customModeConfig'
+  | 'answerPreferencesEnabled'
   | 'modelSelection'
   | 'allowedModelIds'
   | 'allowedReasoningEffortsByModel'
@@ -65,6 +67,14 @@ function getChatbotRevisionValues(
     standardModeConfig: revision
       ? revision.standardModeConfig
       : (chatbot.standardModeConfig ?? null),
+    // A saved revision stores the submitted modes; a chatbot without one reads
+    // the live approved column directly.
+    customModeConfig: revision
+      ? revision.customModeConfig
+      : (chatbot.customModeConfig ?? null),
+    answerPreferencesEnabled: revision
+      ? revision.answerPreferencesEnabled
+      : chatbot.answerPreferencesEnabled,
     modelSelection: revision ? revision.modelSelection : chatbot.modelSelection,
     allowedModelIds: revision
       ? [...revision.allowedModelIds]

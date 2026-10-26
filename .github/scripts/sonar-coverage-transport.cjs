@@ -213,11 +213,40 @@ function createTransport(options) {
       return result.workflow_runs || []
     },
 
+    async listJobs(runId, attempt) {
+      const jobs = []
+      for (let page = 1; ; page += 1) {
+        const result = await requestJson(
+          API +
+            '/repos/' +
+            repository +
+            '/actions/runs/' +
+            runId +
+            '/attempts/' +
+            attempt +
+            '/jobs?per_page=100&page=' +
+            page
+        )
+        if (!Array.isArray(result.jobs))
+          throw new Error('invalid workflow jobs response')
+        jobs.push(...result.jobs)
+        if (result.jobs.length < 100) return jobs
+      }
+    },
+
     async listArtifacts(runId) {
       const result = await requestJson(
         API + '/repos/' + repository + '/actions/runs/' + runId + '/artifacts'
       )
       return result.artifacts || []
+    },
+
+    // The analysis reads the live pull-request state rather than the event
+    // payload: a producer's job is evaluated minutes after its event, and a
+    // draft that became ready in between must be analyzed while one that is
+    // still a draft must not.
+    async getPullRequest(number) {
+      return requestJson(API + '/repos/' + repository + '/pulls/' + number)
     },
 
     async readJsonArtifact(artifacts, name) {

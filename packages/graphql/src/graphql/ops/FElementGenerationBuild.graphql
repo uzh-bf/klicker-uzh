@@ -12,6 +12,18 @@ fragment ElementGenerationBuildData on ElementGenerationBuild {
   errorCode
   errorMessage
   errorRetryable
+  slotFailures {
+    slotId
+    moduleId
+    objective
+    objectiveSource
+    requestedLevel
+    evidenceTarget
+    reasonCode
+    failureClass
+    detail
+    suggestions
+  }
   startedAt
   completedAt
   incompletePublishedAt
@@ -38,6 +50,7 @@ fragment ElementGenerationBuildData on ElementGenerationBuild {
       id
       text
       bloomLevel
+      objectiveSource
     }
     bloomLevels
   }
@@ -48,6 +61,7 @@ fragment ElementGenerationBuildData on ElementGenerationBuild {
       id
       text
       bloomLevel
+      objectiveSource
     }
     modules {
       moduleId
@@ -58,6 +72,14 @@ fragment ElementGenerationBuildData on ElementGenerationBuild {
       sourceFile
       pageFrom
       pageTo
+    }
+    slots {
+      sourceElementId
+      moduleId
+      objectiveId
+      bloomLevel
+      targetDifficulty
+      evidenceEntityIds
     }
     warnings {
       code

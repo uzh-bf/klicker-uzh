@@ -1,18 +1,32 @@
 import { useMutation } from '@apollo/client'
+import { useFeatureFlag } from '@klicker-uzh/feature-flags/react'
 import {
+  type ChatbotCustomModeInput,
+  ChatbotCustomModeMeetingClock,
   ChatbotStatus,
-  type LocaleType,
+  LocaleType,
   MSaveChatbotRevisionDocument,
   QGetChatbotsInfoWithKnowledgeBasesDocument,
 } from '@klicker-uzh/graphql/dist/ops'
 import { Markdown } from '@klicker-uzh/markdown'
 import { CHATBOT_STANDARD_MODE_SCOPE_NOTE_MAX_LENGTH } from '@klicker-uzh/types'
 import {
+  CHATBOT_CUSTOM_MODE_DESCRIPTION_MAX_LENGTH,
+  CHATBOT_CUSTOM_MODE_MAX_COUNT,
+  CHATBOT_CUSTOM_MODE_NAME_MAX_LENGTH,
+  CHATBOT_CUSTOM_MODE_PERSONA_EXTENDED_MAX_LENGTH,
+  CHATBOT_CUSTOM_MODE_PERSONA_MAX_LENGTH,
+  CHATBOT_CUSTOM_MODE_STARTER_PROMPT_MAX_COUNT,
+  CHATBOT_CUSTOM_MODE_STARTER_PROMPT_MAX_LENGTH,
+  CHATBOT_CUSTOM_MODE_WELCOME_MESSAGE_MAX_LENGTH,
+} from '@klicker-uzh/util/chatbot-custom-mode-limits'
+import {
   Accordion,
   AccordionContent,
   AccordionItem,
   AccordionTrigger,
   Button,
+  FormikSelectField,
   FormikTextareaField,
   FormikTextField,
   H4,
@@ -20,7 +34,7 @@ import {
   Switch,
   UserNotification,
 } from '@uzh-bf/design-system'
-import { Form, Formik, useField, useFormikContext } from 'formik'
+import { FieldArray, Form, Formik, useField, useFormikContext } from 'formik'
 import { useTranslations } from 'next-intl'
 import { useCallback, useEffect, useRef, useState } from 'react'
 import * as Yup from 'yup'
@@ -31,6 +45,7 @@ import ChatbotCreditPolicy, {
 import ChatbotDisclaimerPreview from './ChatbotDisclaimerPreview'
 import ChatbotPublicationRequest from './ChatbotPublicationRequest'
 import {
+  getChatbotGraphQLErrorMessage,
   getChatbotMutationErrorKey,
   isChatbotRevisionConflict,
 } from './chatbotErrorMessages'
@@ -92,6 +107,134 @@ function getStandardModeFormValues(
     languageOfInstruction: config?.languageOfInstruction ?? null,
     scopeNote: config?.scopeNote ?? '',
   }
+}
+
+type CustomModeFormValues = {
+  modes: {
+    key: string
+    name: string
+    description: string
+    welcomeMessage: string
+    starterPrompts: string[]
+    personaText: string
+    showReasoning: boolean
+    replyLanguage: ReplyLanguageOption
+    meetingClock: MeetingClockOption
+  }[]
+}
+
+// Select values for the two optional per-mode settings; the unset choice needs
+// a non-empty value of its own and is sent as null.
+type ReplyLanguageOption = LocaleType | 'FOLLOW'
+type MeetingClockOption = ChatbotCustomModeMeetingClock | 'OFF'
+
+const REPLY_LANGUAGE_LABELS = {
+  FOLLOW: 'manage.resources.chatbotCustomModeReplyLanguageFollow',
+  [LocaleType.En]: 'manage.resources.chatbotCustomModeReplyLanguageEn',
+  [LocaleType.De]: 'manage.resources.chatbotCustomModeReplyLanguageDe',
+} as const satisfies Record<ReplyLanguageOption, string>
+
+const MEETING_CLOCK_LABELS = {
+  OFF: 'manage.resources.chatbotCustomModeMeetingClockOff',
+  [ChatbotCustomModeMeetingClock.Elapsed]:
+    'manage.resources.chatbotCustomModeMeetingClockElapsed',
+  [ChatbotCustomModeMeetingClock.ElapsedAndTime]:
+    'manage.resources.chatbotCustomModeMeetingClockElapsedAndTime',
+} as const satisfies Record<MeetingClockOption, string>
+
+/**
+ * One-line summary of a custom mode's reply language and meeting clock, for
+ * the authoring and publication review summaries.
+ */
+export function formatCustomModeSettings(
+  t: ReturnType<typeof useTranslations<never>>,
+  mode: {
+    replyLanguage?: ReplyLanguageOption | null
+    meetingClock?: MeetingClockOption | null
+  }
+): string {
+  const replyLanguage = t(REPLY_LANGUAGE_LABELS[mode.replyLanguage ?? 'FOLLOW'])
+  const meetingClock = t(MEETING_CLOCK_LABELS[mode.meetingClock ?? 'OFF'])
+  return `${t('manage.resources.chatbotCustomModeReplyLanguage')}: ${replyLanguage} · ${t('manage.resources.chatbotCustomModeMeetingClock')}: ${meetingClock}`
+}
+
+function getCustomModeFormValues(
+  chatbot: RevisionChatbot
+): CustomModeFormValues {
+  const config = getChatbotRevisionValues(chatbot).customModeConfig
+
+  return {
+    modes: (config?.modes ?? []).map((mode) => ({
+      // A mode that was not submitted yet carries a client-only placeholder
+      // key; the server mints its real key when it is saved for the first time.
+      key: mode.key,
+      name: mode.name,
+      description: mode.description ?? '',
+      welcomeMessage: mode.welcomeMessage ?? '',
+      starterPrompts: [...(mode.starterPrompts ?? [])],
+      personaText: mode.personaText ?? '',
+      showReasoning: mode.showReasoning,
+      replyLanguage: mode.replyLanguage ?? 'FOLLOW',
+      meetingClock: mode.meetingClock ?? 'OFF',
+    })),
+  }
+}
+
+function getCustomModeInputs(
+  values: CustomModeFormValues
+): ChatbotCustomModeInput[] {
+  return values.modes.map((mode) => ({
+    key: mode.key.startsWith('custom-mode-') ? null : mode.key,
+    name: mode.name,
+    description: mode.description || null,
+    welcomeMessage: mode.welcomeMessage || null,
+    // Unfilled rows stay out of the payload; an empty list clears the stored
+    // starters of an existing mode.
+    starterPrompts: mode.starterPrompts
+      .map((prompt) => prompt.trim())
+      .filter((prompt) => prompt.length > 0),
+    personaText: mode.personaText || null,
+    showReasoning: mode.showReasoning,
+    replyLanguage: mode.replyLanguage === 'FOLLOW' ? null : mode.replyLanguage,
+    meetingClock: mode.meetingClock === 'OFF' ? null : mode.meetingClock,
+  }))
+}
+
+type CustomModeTranslate = (
+  key:
+    | 'manage.resources.chatbotCustomModesLimit'
+    | 'manage.resources.chatbotCustomModesDuplicate'
+    | 'manage.resources.chatbotCustomModeNameRequired',
+  options: { count: number }
+) => string
+
+function getCustomModeValidationError(
+  values: CustomModeFormValues,
+  translate: CustomModeTranslate
+): string | null {
+  if (values.modes.length > CHATBOT_CUSTOM_MODE_MAX_COUNT) {
+    return translate('manage.resources.chatbotCustomModesLimit', {
+      count: CHATBOT_CUSTOM_MODE_MAX_COUNT,
+    })
+  }
+
+  const names = new Set<string>()
+  for (const mode of values.modes) {
+    const name = mode.name.trim().toLowerCase()
+    if (name.length === 0) {
+      return translate('manage.resources.chatbotCustomModeNameRequired', {
+        count: CHATBOT_CUSTOM_MODE_MAX_COUNT,
+      })
+    }
+    if (names.has(name)) {
+      return translate('manage.resources.chatbotCustomModesDuplicate', {
+        count: CHATBOT_CUSTOM_MODE_MAX_COUNT,
+      })
+    }
+    names.add(name)
+  }
+
+  return null
 }
 
 function StandardModeCard({
@@ -325,6 +468,456 @@ function SetupStepFooter({
   )
 }
 
+function CustomModesEditor({
+  chatbot,
+  disabled,
+  initialValues,
+  onSaved,
+  onNavigationStateChange,
+  onRevisionConflict,
+}: {
+  chatbot: RevisionChatbot
+  disabled: boolean
+  initialValues: CustomModeFormValues
+  onSaved?: () => void
+  onNavigationStateChange: (state: ChatbotNavigationState) => void
+  onRevisionConflict: () => void
+}) {
+  const t = useTranslations()
+  const longPromptsEnabled = useFeatureFlag('chatbot-long-custom-prompts')
+  const personaMaxLength = longPromptsEnabled
+    ? CHATBOT_CUSTOM_MODE_PERSONA_EXTENDED_MAX_LENGTH
+    : CHATBOT_CUSTOM_MODE_PERSONA_MAX_LENGTH
+  const starterPromptMax = CHATBOT_CUSTOM_MODE_STARTER_PROMPT_MAX_COUNT
+  const starterPromptMaxLength = CHATBOT_CUSTOM_MODE_STARTER_PROMPT_MAX_LENGTH
+  const [saveRevision] = useMutation(MSaveChatbotRevisionDocument)
+  const [saveError, setSaveError] = useState<string | null>(null)
+  const [saveSuccess, setSaveSuccess] = useState(false)
+  const nextClientKey = useRef(0)
+  const clearSaveSuccess = useCallback(() => setSaveSuccess(false), [])
+
+  return (
+    <div className="space-y-3 border-t border-gray-200 pt-4">
+      <div>
+        <h5 className="font-semibold text-gray-900">
+          {t('manage.resources.chatbotCustomModesTitle')}
+        </h5>
+        <p className="mt-1 text-sm text-gray-600">
+          {t('manage.resources.chatbotCustomModesDescription', {
+            count: CHATBOT_CUSTOM_MODE_MAX_COUNT,
+          })}
+        </p>
+      </div>
+      {disabled ? (
+        <UserNotification>
+          {t('manage.resources.chatbotCustomModesReadonly')}
+        </UserNotification>
+      ) : (
+        <Formik<CustomModeFormValues>
+          validateOnMount
+          initialValues={initialValues}
+          validate={(values) => {
+            const validationError = getCustomModeValidationError(
+              values,
+              (key, options) => t(key, options)
+            )
+            return validationError ? { modes: validationError } : {}
+          }}
+          onSubmit={async (values, { resetForm }) => {
+            setSaveError(null)
+            setSaveSuccess(false)
+            try {
+              await saveRevision({
+                variables: {
+                  chatbotId: chatbot.id,
+                  expectedRevisionVersion: getChatbotRevisionVersion(chatbot),
+                  input: {
+                    customModeConfig: { modes: getCustomModeInputs(values) },
+                  },
+                },
+                refetchQueries: [
+                  { query: QGetChatbotsInfoWithKnowledgeBasesDocument },
+                ],
+                awaitRefetchQueries: true,
+              })
+              resetForm({ values })
+              setSaveSuccess(true)
+              onSaved?.()
+            } catch (error) {
+              if (isChatbotRevisionConflict(error)) onRevisionConflict()
+              setSaveError(
+                getChatbotGraphQLErrorMessage(error) ??
+                  t(getChatbotMutationErrorKey(error, 'customMode'))
+              )
+            }
+          }}
+        >
+          {({
+            dirty,
+            errors,
+            isSubmitting,
+            isValid,
+            values,
+            setFieldValue,
+          }) => {
+            const controlsDisabled = disabled || isSubmitting
+            const formError =
+              saveError ??
+              (typeof errors.modes === 'string' ? errors.modes : null)
+
+            return (
+              <Form className="space-y-4" data-cy="chatbot-custom-modes-form">
+                <FormikInitialValuesSynchronizer
+                  initialValues={initialValues}
+                />
+                {dirty || isSubmitting ? (
+                  <NavigationStateReporter
+                    dirty={dirty}
+                    pending={isSubmitting}
+                    onChange={onNavigationStateChange}
+                  />
+                ) : null}
+                <FormikInteractionEffects onDirty={clearSaveSuccess} />
+                {values.modes.length === 0 ? (
+                  <p
+                    className="text-sm text-gray-600"
+                    data-cy="chatbot-custom-modes-empty"
+                  >
+                    {t('manage.resources.chatbotCustomModesEmpty')}
+                  </p>
+                ) : (
+                  <div className="space-y-3">
+                    {values.modes.map((mode, index) => (
+                      <div
+                        key={mode.key}
+                        className="space-y-3 rounded-md border border-gray-200 bg-gray-50 p-4"
+                        data-cy={`chatbot-custom-mode-${index}`}
+                      >
+                        <div className="flex items-center justify-between gap-3">
+                          <h5 className="font-semibold text-gray-900">
+                            {t('manage.resources.chatbotCustomMode', {
+                              number: index + 1,
+                            })}
+                          </h5>
+                          <Button
+                            type="button"
+                            destructive
+                            disabled={controlsDisabled}
+                            onClick={() => {
+                              setSaveError(null)
+                              void setFieldValue(
+                                'modes',
+                                values.modes.filter(
+                                  (_entry, entryIndex) => entryIndex !== index
+                                )
+                              )
+                            }}
+                            data={{ cy: `remove-chatbot-custom-mode-${index}` }}
+                          >
+                            <Button.Label>
+                              {t('manage.resources.chatbotCustomModeRemove')}
+                            </Button.Label>
+                          </Button>
+                        </div>
+                        <FormikTextField
+                          required
+                          disabled={controlsDisabled}
+                          name={`modes[${index}].name`}
+                          label={t('manage.resources.chatbotCustomModeName')}
+                          maxLength={CHATBOT_CUSTOM_MODE_NAME_MAX_LENGTH}
+                          maxLengthUnit={t('shared.generic.characters')}
+                          data={{ cy: `chatbot-custom-mode-name-${index}` }}
+                        />
+                        <FormikTextField
+                          disabled={controlsDisabled}
+                          name={`modes[${index}].description`}
+                          label={t(
+                            'manage.resources.chatbotCustomModeDescription'
+                          )}
+                          maxLength={CHATBOT_CUSTOM_MODE_DESCRIPTION_MAX_LENGTH}
+                          maxLengthUnit={t('shared.generic.characters')}
+                          data={{
+                            cy: `chatbot-custom-mode-description-${index}`,
+                          }}
+                        />
+                        <FormikTextareaField
+                          disabled={controlsDisabled}
+                          name={`modes[${index}].welcomeMessage`}
+                          label={t(
+                            'manage.resources.chatbotCustomModeWelcomeMessage'
+                          )}
+                          placeholder={t(
+                            'manage.resources.chatbotCustomModeWelcomePlaceholder'
+                          )}
+                          maxLength={
+                            CHATBOT_CUSTOM_MODE_WELCOME_MESSAGE_MAX_LENGTH
+                          }
+                          maxLengthUnit={t('shared.generic.characters')}
+                          data={{
+                            cy: `chatbot-custom-mode-welcome-${index}`,
+                          }}
+                        />
+                        <div className="space-y-2">
+                          <div>
+                            <p className="text-sm font-medium text-gray-900">
+                              {t(
+                                'manage.resources.chatbotCustomModeStarterPrompts'
+                              )}
+                            </p>
+                            <p className="text-sm text-gray-600">
+                              {t(
+                                'manage.resources.chatbotCustomModeStarterPromptsDescription',
+                                { count: starterPromptMax }
+                              )}
+                            </p>
+                          </div>
+                          <FieldArray name={`modes[${index}].starterPrompts`}>
+                            {({ push, remove }) => (
+                              <>
+                                {mode.starterPrompts.map(
+                                  (_prompt, starterIndex) => (
+                                    // biome-ignore lint/suspicious/noArrayIndexKey: starter rows are positional Formik path segments and carry no persistent identity.
+                                    <div
+                                      key={starterIndex}
+                                      className="flex items-end gap-2"
+                                    >
+                                      <FormikTextField
+                                        disabled={controlsDisabled}
+                                        name={`modes[${index}].starterPrompts[${starterIndex}]`}
+                                        label={t(
+                                          'manage.resources.chatbotCustomModeStarterPrompt',
+                                          { number: starterIndex + 1 }
+                                        )}
+                                        maxLength={starterPromptMaxLength}
+                                        maxLengthUnit={t(
+                                          'shared.generic.characters'
+                                        )}
+                                        className={{ root: 'min-w-0 flex-1' }}
+                                        data={{
+                                          cy: `chatbot-custom-mode-starter-${index}-${starterIndex}`,
+                                        }}
+                                      />
+                                      <Button
+                                        type="button"
+                                        destructive
+                                        disabled={controlsDisabled}
+                                        onClick={() => remove(starterIndex)}
+                                        data={{
+                                          cy: `remove-chatbot-custom-mode-starter-${index}-${starterIndex}`,
+                                        }}
+                                      >
+                                        <Button.Label>
+                                          {t(
+                                            'manage.resources.chatbotCustomModeRemove'
+                                          )}
+                                        </Button.Label>
+                                      </Button>
+                                    </div>
+                                  )
+                                )}
+                                <Button
+                                  type="button"
+                                  disabled={
+                                    controlsDisabled ||
+                                    mode.starterPrompts.length >=
+                                      starterPromptMax
+                                  }
+                                  onClick={() => push('')}
+                                  data={{
+                                    cy: `add-chatbot-custom-mode-starter-${index}`,
+                                  }}
+                                >
+                                  <Button.Label>
+                                    {t(
+                                      'manage.resources.chatbotCustomModeStarterPromptAdd'
+                                    )}
+                                  </Button.Label>
+                                </Button>
+                              </>
+                            )}
+                          </FieldArray>
+                        </div>
+                        <FormikTextareaField
+                          disabled={controlsDisabled}
+                          name={`modes[${index}].personaText`}
+                          label={t(
+                            'manage.resources.chatbotCustomModePersonaText'
+                          )}
+                          placeholder={t(
+                            'manage.resources.chatbotCustomModePersonaPlaceholder'
+                          )}
+                          maxLength={personaMaxLength}
+                          maxLengthUnit={t('shared.generic.characters')}
+                          rows="16"
+                          className={{
+                            input: 'field-sizing-fixed min-h-80 resize-y',
+                          }}
+                          data={{
+                            cy: `chatbot-custom-mode-persona-${index}`,
+                          }}
+                        />
+                        <div className="flex items-start justify-between gap-4">
+                          <div>
+                            <label
+                              htmlFor={`chatbot-custom-mode-show-reasoning-${index}`}
+                              className="text-sm font-medium text-gray-900"
+                            >
+                              {t(
+                                'manage.resources.chatbotCustomModeShowReasoning'
+                              )}
+                            </label>
+                            <p className="text-sm text-gray-600">
+                              {t(
+                                'manage.resources.chatbotCustomModeShowReasoningDescription'
+                              )}
+                            </p>
+                          </div>
+                          <Switch
+                            id={`chatbot-custom-mode-show-reasoning-${index}`}
+                            checked={mode.showReasoning}
+                            disabled={controlsDisabled}
+                            onCheckedChange={(checked) =>
+                              void setFieldValue(
+                                `modes[${index}].showReasoning`,
+                                checked
+                              )
+                            }
+                            data={{
+                              cy: `chatbot-custom-mode-show-reasoning-${index}`,
+                            }}
+                          />
+                        </div>
+                        <div className="grid gap-4 md:grid-cols-2">
+                          <div>
+                            <FormikSelectField
+                              name={`modes[${index}].replyLanguage`}
+                              className={{ select: { trigger: 'w-full' } }}
+                              label={t(
+                                'manage.resources.chatbotCustomModeReplyLanguage'
+                              )}
+                              labelType="small"
+                              disabled={controlsDisabled}
+                              items={(
+                                Object.keys(
+                                  REPLY_LANGUAGE_LABELS
+                                ) as ReplyLanguageOption[]
+                              ).map((value) => ({
+                                value,
+                                label: t(REPLY_LANGUAGE_LABELS[value]),
+                                data: {
+                                  cy: `chatbot-custom-mode-reply-language-${index}-${value}`,
+                                },
+                              }))}
+                              data={{
+                                cy: `chatbot-custom-mode-reply-language-${index}`,
+                              }}
+                            />
+                            <p className="mt-1 text-sm text-gray-600">
+                              {t(
+                                'manage.resources.chatbotCustomModeReplyLanguageDescription'
+                              )}
+                            </p>
+                          </div>
+                          <div>
+                            <FormikSelectField
+                              name={`modes[${index}].meetingClock`}
+                              className={{ select: { trigger: 'w-full' } }}
+                              label={t(
+                                'manage.resources.chatbotCustomModeMeetingClock'
+                              )}
+                              labelType="small"
+                              disabled={controlsDisabled}
+                              items={(
+                                Object.keys(
+                                  MEETING_CLOCK_LABELS
+                                ) as MeetingClockOption[]
+                              ).map((value) => ({
+                                value,
+                                label: t(MEETING_CLOCK_LABELS[value]),
+                                data: {
+                                  cy: `chatbot-custom-mode-meeting-clock-${index}-${value}`,
+                                },
+                              }))}
+                              data={{
+                                cy: `chatbot-custom-mode-meeting-clock-${index}`,
+                              }}
+                            />
+                            <p className="mt-1 text-sm text-gray-600">
+                              {t(
+                                'manage.resources.chatbotCustomModeMeetingClockDescription'
+                              )}
+                            </p>
+                          </div>
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                )}
+                <div className="flex items-center justify-between gap-3">
+                  <Button
+                    type="button"
+                    disabled={
+                      controlsDisabled ||
+                      values.modes.length >= CHATBOT_CUSTOM_MODE_MAX_COUNT
+                    }
+                    onClick={() => {
+                      setSaveError(null)
+                      nextClientKey.current += 1
+                      void setFieldValue('modes', [
+                        ...values.modes,
+                        {
+                          key: `custom-mode-${nextClientKey.current}`,
+                          name: '',
+                          description: '',
+                          welcomeMessage: '',
+                          starterPrompts: [],
+                          personaText: '',
+                          showReasoning: false,
+                          replyLanguage: 'FOLLOW',
+                          meetingClock: 'OFF',
+                        },
+                      ])
+                    }}
+                    data={{ cy: 'add-chatbot-custom-mode' }}
+                  >
+                    <Button.Label>
+                      {t('manage.resources.chatbotCustomModeAdd')}
+                    </Button.Label>
+                  </Button>
+                  <span className="text-sm text-gray-600">
+                    {t('manage.resources.chatbotCustomModesCount', {
+                      count: values.modes.length,
+                      max: CHATBOT_CUSTOM_MODE_MAX_COUNT,
+                    })}
+                  </span>
+                </div>
+                {formError ? (
+                  <div role="alert">
+                    <UserNotification type="error">
+                      {formError}
+                    </UserNotification>
+                  </div>
+                ) : null}
+                <SetupStepFooter
+                  action={t('manage.resources.chatbotCustomModesSave')}
+                  disabled={controlsDisabled || !isValid}
+                  loading={isSubmitting}
+                  savingLabel={t('manage.resources.chatbotCustomModesSaving')}
+                  success={saveSuccess}
+                  successMessage={t(
+                    'manage.resources.chatbotCustomModesSaveSuccess'
+                  )}
+                  testId="save-chatbot-custom-modes"
+                />
+              </Form>
+            )
+          }}
+        </Formik>
+      )}
+    </div>
+  )
+}
+
 function ChatbotAuthoring({
   chatbot,
   step,
@@ -359,6 +952,8 @@ function ChatbotAuthoring({
     useState<ChatbotNavigationState>({ dirty: false, pending: false })
   const [modeNavigationState, setModeNavigationState] =
     useState<ChatbotNavigationState>({ dirty: false, pending: false })
+  const [customModeNavigationState, setCustomModeNavigationState] =
+    useState<ChatbotNavigationState>({ dirty: false, pending: false })
   const [disclaimerNavigationState, setDisclaimerNavigationState] =
     useState<ChatbotNavigationState>({ dirty: false, pending: false })
   const [creditNavigationState, setCreditNavigationState] =
@@ -379,6 +974,7 @@ function ChatbotAuthoring({
   const disclaimer = chatbot.disclaimerSummary
   const standardModeConfig = getStandardModeFormValues(chatbot)
   const writingCoachUnavailableReason = chatbot.writingCoachUnavailableReason
+  const customModeConfig = getCustomModeFormValues(chatbot)
   const disclaimerInitialValues = {
     title:
       revisionValues.disclaimerTitle ??
@@ -417,11 +1013,13 @@ function ChatbotAuthoring({
   const setupDirty =
     metadataNavigationState.dirty ||
     modeNavigationState.dirty ||
+    customModeNavigationState.dirty ||
     disclaimerNavigationState.dirty ||
     creditNavigationState.dirty
   const setupPending =
     metadataNavigationState.pending ||
     modeNavigationState.pending ||
+    customModeNavigationState.pending ||
     disclaimerNavigationState.pending ||
     creditNavigationState.pending
   const publicationPending = publicationNavigationState.pending
@@ -449,17 +1047,20 @@ function ChatbotAuthoring({
       dirty:
         metadataNavigationState.dirty ||
         modeNavigationState.dirty ||
+        customModeNavigationState.dirty ||
         disclaimerNavigationState.dirty ||
         creditNavigationState.dirty ||
         publicationNavigationState.dirty,
       pending:
         metadataNavigationState.pending ||
         modeNavigationState.pending ||
+        customModeNavigationState.pending ||
         disclaimerNavigationState.pending ||
         creditNavigationState.pending ||
         publicationNavigationState.pending,
     })
   }, [
+    customModeNavigationState,
     disclaimerNavigationState,
     creditNavigationState,
     metadataNavigationState,
@@ -474,6 +1075,7 @@ function ChatbotAuthoring({
     }
     if (!modeEditable) {
       setModeNavigationState({ dirty: false, pending: false })
+      setCustomModeNavigationState({ dirty: false, pending: false })
     }
     if (!disclaimerEditable) {
       setDisclaimerNavigationState({ dirty: false, pending: false })
@@ -1116,6 +1718,15 @@ function ChatbotAuthoring({
                     </UserNotification>
                   </>
                 )}
+                <CustomModesEditor
+                  chatbot={chatbot}
+                  disabled={
+                    !modeEditable || revisionPending || publicationPending
+                  }
+                  initialValues={customModeConfig}
+                  onNavigationStateChange={setCustomModeNavigationState}
+                  onRevisionConflict={() => setRevisionConflict(true)}
+                />
               </section>
             </AccordionContent>
           </AccordionItem>
@@ -1233,11 +1844,7 @@ function ChatbotAuthoring({
                           />
                           <FormikInteractionEffects />
                           <NavigationStateReporter
-                            dirty={
-                              dirty ||
-                              (!disclaimer?.id &&
-                                !getChatbotAuthoringRevision(chatbot))
-                            }
+                            dirty={dirty}
                             pending={isSubmitting}
                             onChange={setDisclaimerNavigationState}
                           />
@@ -1511,6 +2118,103 @@ function ChatbotAuthoring({
                     {standardModeConfig.scopeNote ||
                       t('shared.generic.unknown')}
                   </p>
+                </div>
+
+                <div
+                  className="rounded-md border border-gray-200 bg-gray-50 p-4"
+                  data-cy="chatbot-review-custom-modes"
+                >
+                  <div className="mb-3 flex items-center justify-between gap-3">
+                    <h5 className="font-semibold text-gray-900">
+                      {t('manage.resources.chatbotCustomModesTitle')}
+                    </h5>
+                    <Button
+                      type="button"
+                      onClick={() => openSection('modes')}
+                      data={{ cy: 'chatbot-setup-edit-custom-modes' }}
+                    >
+                      <Button.Label>
+                        {t('manage.resources.chatbotSetupEdit')}
+                      </Button.Label>
+                    </Button>
+                  </div>
+                  {customModeConfig.modes.length === 0 ? (
+                    <p
+                      className="text-sm text-gray-900"
+                      data-cy="chatbot-review-custom-modes-empty"
+                    >
+                      {t('manage.resources.chatbotCustomModesNone')}
+                    </p>
+                  ) : (
+                    <ul className="space-y-3">
+                      {customModeConfig.modes.map((mode, index) => (
+                        <li
+                          key={mode.key}
+                          className="text-sm"
+                          data-cy={`chatbot-review-custom-mode-${index}`}
+                        >
+                          <div className="font-medium text-gray-900">
+                            {mode.name}
+                          </div>
+                          {mode.description ? (
+                            <div className="mt-1 text-gray-700">
+                              {mode.description}
+                            </div>
+                          ) : null}
+                          {mode.welcomeMessage ? (
+                            <div className="mt-1 text-gray-700">
+                              <span className="font-medium text-gray-600">
+                                {t(
+                                  'manage.resources.chatbotCustomModeWelcomeMessage'
+                                )}
+                              </span>
+                              <div className="whitespace-pre-wrap">
+                                {mode.welcomeMessage}
+                              </div>
+                            </div>
+                          ) : null}
+                          {mode.starterPrompts.length > 0 ? (
+                            <div className="mt-1 text-gray-700">
+                              <span className="font-medium text-gray-600">
+                                {t(
+                                  'manage.resources.chatbotCustomModeStarterPrompts'
+                                )}
+                              </span>
+                              <div className="whitespace-pre-wrap">
+                                {mode.starterPrompts
+                                  .map(
+                                    (prompt, promptIndex) =>
+                                      `${promptIndex + 1}. ${prompt}`
+                                  )
+                                  .join('\n')}
+                              </div>
+                            </div>
+                          ) : null}
+                          {mode.personaText ? (
+                            <div className="mt-1 whitespace-pre-wrap text-gray-600">
+                              {mode.personaText}
+                            </div>
+                          ) : null}
+                          <div
+                            className="mt-1 text-gray-700"
+                            data-cy={`chatbot-review-custom-mode-reasoning-${index}`}
+                          >
+                            {t(
+                              mode.showReasoning
+                                ? 'manage.resources.chatbotCustomModeReasoningShown'
+                                : 'manage.resources.chatbotCustomModeReasoningHidden'
+                            )}
+                          </div>
+                          <div
+                            className="mt-1 text-gray-700"
+                            data-cy={`chatbot-review-custom-mode-settings-${index}`}
+                          >
+                            {formatCustomModeSettings(t, mode)}
+                          </div>
+                        </li>
+                      ))}
+                    </ul>
+                  )}
                 </div>
 
                 <div className="rounded-md border border-gray-200 bg-gray-50 p-4">

@@ -1,9 +1,11 @@
 import * as DB from '@klicker-uzh/prisma/client'
 import { DisplayMode } from '@klicker-uzh/types'
 import {
+  DEFAULT_BASE_CHAT_BUDGET_CREDITS,
   getElearningChatHandoffSecret,
   getInitialInstanceResults,
   getInitialInstanceStatistics,
+  getZurichMonthStart,
   normalizeEmail,
   processElementData,
   recomputeDerivedPermissions,
@@ -22,6 +24,10 @@ import type {
 import * as EmailService from '../services/email.js'
 import { seedDemoSelectionAndCaseStudyElements } from './demoQuestions.js'
 import { sendTeamsNotification } from './notifications.js'
+import {
+  initialParticipantDataUseData,
+  validateInitialParticipantDataUse,
+} from './participantAccountDataUse.js'
 
 const COOKIE_SETTINGS: CookieOptions = {
   domain: process.env.COOKIE_DOMAIN,
@@ -533,9 +539,22 @@ export async function getUsersAiFeatures(ctx: ContextWithUser) {
 // Unlike the private preview grant above, this one can also be withdrawn: it
 // records that an account has a cost center to bill AI usage to, and that
 // arrangement can end. Returns 0 when the setting changed, 1 when no account
-// carries the address, and 2 when it already had the requested value.
+// carries the address, and 2 when it already had the requested value. The
+// optional tier and cost center carry the entitlement for cost-carrying model
+// classes. Passing a cost center derives the tier unless an explicit tier is
+// supplied; omitting both leaves the recorded tier and cost center untouched.
 export async function setAiFeatures(
-  { email, enabled }: { email: string; enabled: boolean },
+  {
+    email,
+    enabled,
+    tier,
+    costCenter,
+  }: {
+    email: string
+    enabled: boolean
+    tier?: DB.AiSubscriptionTier | null
+    costCenter?: string | null
+  },
   ctx: ContextWithUser
 ) {
   // verify that the user has ADMIN permissions (can change AI access)
@@ -553,13 +572,83 @@ export async function setAiFeatures(
     return 1
   }
 
-  if (targetUser.aiFeaturesEnabled === enabled) {
+  // An empty cost center is the explicit withdrawal of the billing address.
+  // The tier column is never null, so an explicit null is treated as omitted.
+  const requestedCostCenter =
+    costCenter === undefined ? undefined : costCenter?.trim() || null
+  // Setting a cost center grants the advanced tier and withdrawing it returns
+  // the account to base, because advanced usage is billed to the cost center.
+  // A tier passed in the same call still takes precedence.
+  const requestedTier =
+    tier ??
+    (requestedCostCenter === undefined
+      ? undefined
+      : requestedCostCenter
+        ? DB.AiSubscriptionTier.ADVANCED
+        : DB.AiSubscriptionTier.BASE)
+  const tierUnchanged =
+    requestedTier === undefined ||
+    targetUser.aiSubscriptionTier === requestedTier
+  const costCenterUnchanged =
+    requestedCostCenter === undefined ||
+    (targetUser.aiChatbotCostCenter ?? null) === requestedCostCenter
+
+  if (
+    targetUser.aiFeaturesEnabled === enabled &&
+    tierUnchanged &&
+    costCenterUnchanged
+  ) {
     return 2
   }
 
-  await ctx.prisma.user.update({
-    where: { id: targetUser.id },
-    data: { aiFeaturesEnabled: enabled },
+  const now = new Date()
+  const monthStart = getZurichMonthStart(now)
+
+  await ctx.prisma.$transaction(async (prisma) => {
+    await prisma.user.update({
+      where: { id: targetUser.id },
+      data: {
+        aiFeaturesEnabled: enabled,
+        ...(requestedTier === undefined
+          ? {}
+          : { aiSubscriptionTier: requestedTier }),
+        ...(requestedCostCenter === undefined
+          ? {}
+          : { aiChatbotCostCenter: requestedCostCenter }),
+      },
+    })
+
+    // Enabling an account seeds the base-class budget for the current Zurich
+    // month, so a newly entitled account can chat without an administrator
+    // setting a budget first. A budget that was already set for this month or
+    // an earlier one is left untouched, because the effective usage carries
+    // the most recent earlier row forward.
+    if (!enabled) return
+
+    const existingBudget = await prisma.chatAccountUsage.findFirst({
+      where: {
+        ownerId: targetUser.id,
+        usageClass: DB.ChatUsageClass.BASE,
+        monthStart: { lte: monthStart },
+      },
+      select: { ownerId: true },
+    })
+    if (existingBudget) return
+
+    // The write is duplicate-tolerant because a concurrent enable for the same
+    // owner passes the check above too. Without it the composite key turns the
+    // second insert into a P2002 that would roll back the entitlement update.
+    await prisma.chatAccountUsage.createMany({
+      data: [
+        {
+          ownerId: targetUser.id,
+          usageClass: DB.ChatUsageClass.BASE,
+          monthStart,
+          budgetCredits: DEFAULT_BASE_CHAT_BUDGET_CREDITS,
+        },
+      ],
+      skipDuplicates: true,
+    })
   })
   await sendTeamsNotification({
     scope: 'graphql/setAiFeatures',
@@ -590,6 +679,9 @@ export async function changeParticipantLocale(
 }
 
 export async function deleteParticipantAccount(ctx: ContextWithUser) {
+  // Assessment records must remain available for grading and retention duties.
+  if (process.env.ASSESSMENT_MODE === 'true') return false
+
   const participant = await ctx.prisma.participant.findUnique({
     where: { id: ctx.user.sub },
     include: {
@@ -657,6 +749,7 @@ interface ResolveOrCreateParticipantForLtiArgs {
   password?: string
   isProfilePublic?: boolean
   courseId?: string
+  dataUse?: ReturnType<typeof validateInitialParticipantDataUse>
 }
 
 async function resolveOrCreateParticipantForLti(
@@ -668,6 +761,7 @@ async function resolveOrCreateParticipantForLti(
     password,
     isProfilePublic,
     courseId,
+    dataUse,
   }: ResolveOrCreateParticipantForLtiArgs,
   ctx: Context
 ): Promise<ResolveOrCreateParticipantForLtiResult> {
@@ -827,6 +921,7 @@ async function resolveOrCreateParticipantForLti(
     if (!username || !password || typeof isProfilePublic !== 'boolean') {
       return { type: 'invalid_create_input' }
     }
+    if (!dataUse) return { type: 'invalid_create_input' }
 
     const trimmedUsername = username.trim()
     const existingUsername = await prisma.participant.findUnique({
@@ -847,6 +942,7 @@ async function resolveOrCreateParticipantForLti(
         isProfilePublic,
         isSSOAccount: true,
         lastLoginAt: new Date(),
+        ...(await initialParticipantDataUseData(dataUse, prisma)),
       },
     })
 
@@ -885,6 +981,7 @@ interface CreateParticipantAccountArgs {
   isProfilePublic: boolean
   courseId?: string | null
   signedLtiData?: string | null
+  dataUse?: unknown
 }
 
 export async function createParticipantAccount(
@@ -895,9 +992,11 @@ export async function createParticipantAccount(
     password,
     courseId,
     signedLtiData,
+    dataUse,
   }: CreateParticipantAccountArgs,
   ctx: Context
 ) {
+  const initialDataUse = validateInitialParticipantDataUse(dataUse)
   // verify that the course that should be joined is not an assessment course
   if (courseId) {
     const course = await ctx.prisma.course.findUnique({
@@ -918,6 +1017,7 @@ export async function createParticipantAccount(
         password,
         isProfilePublic,
         courseId: courseId ?? undefined,
+        dataUse: initialDataUse,
       },
       ctx
     )
@@ -972,6 +1072,7 @@ export async function createParticipantAccount(
           isProfilePublic,
           isSSOAccount: false,
           lastLoginAt: new Date(),
+          ...(await initialParticipantDataUseData(initialDataUse, prisma)),
         },
       })
 

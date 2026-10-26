@@ -18,10 +18,10 @@ Provenance: checks 1–5 and 7–9 were executed and verified on macOS (2026-07-
 ## Check 1 — package manager
 
 ```bash
-pnpm --version   # MUST print 11.x
+pnpm --version   # MUST print 12.x
 ```
 
-Wrong major (e.g. 9.x from a stale Volta shim; `VOLTA_FEATURE_PNPM` unset) **silently rewrites `pnpm-lock.yaml`**. If `git status` shows lockfile churn you didn't intend: `git checkout pnpm-lock.yaml`, then reinstall with pnpm 11 (e.g. `/opt/homebrew/bin/pnpm` or `export VOLTA_FEATURE_PNPM=1`).
+A wrong major (e.g. 9.x from a stale Volta shim; `VOLTA_FEATURE_PNPM` unset) can **rewrite `pnpm-lock.yaml`** or reject workspace settings. If `git status` shows lockfile churn you didn't intend: `git checkout pnpm-lock.yaml`, then reinstall with pnpm 12 (e.g. `/opt/homebrew/bin/pnpm` or `export VOLTA_FEATURE_PNPM=1`).
 
 ## Check 2 — install and build state
 
@@ -85,7 +85,7 @@ devrouter exec . -- cat /tmp/devrouter-process-klicker-dev.state
 devrouter exec . -- tail -n 50 /tmp/dev.log
 ```
 
-This repository pins devrouter 0.0.72; managed profiles require 0.0.40 or
+This repository pins devrouter 0.5.1; managed profiles require 0.0.40 or
 newer. `devrouter ensure`
 delivers its matching process helper to the exact validated container and
 fingerprints the workspace, selection, command, adapter bytes, and declared

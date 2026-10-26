@@ -12,6 +12,7 @@ import {
   MAX_KB_TOTAL_SIZE_BYTES,
 } from '@klicker-uzh/types'
 import { describe, expect, it, vi } from 'vitest'
+import { getKBGraphTimeoutSeconds } from '../src/kbGraphIngestionApi.js'
 import {
   dispatchKBDeletion,
   dispatchKBIngestion,
@@ -25,6 +26,7 @@ import type {
   KBIngestionSource,
   KBOperationStatusResponse,
 } from '../src/kbIngestionApi.js'
+import { getKBIngestionTimeoutSeconds } from '../src/kbIngestionApi.js'
 
 const RESOURCE_ID = '7f3e2a10-9c4b-4d8e-b1a6-5e0f9d2c7b3a'
 const KB_ID = 'c2a91f74-6e0b-4c3d-8f5a-1b9e7d4a2c60'
@@ -551,6 +553,7 @@ describe('KB ingestion dispatch', () => {
       kBIngestionRun: {
         updateMany: vi.fn().mockResolvedValue({ count: 1 }),
       },
+      $queryRaw: vi.fn().mockResolvedValue([{ id: KB_ID }]),
       $transaction: vi.fn(),
     }
     prisma.$transaction.mockImplementation(async (callback) => callback(prisma))
@@ -765,6 +768,7 @@ describe('KB ingestion reconciliation', () => {
       kBIngestionRun: {
         updateMany: vi.fn().mockResolvedValue({ count: 1 }),
       },
+      $queryRaw: vi.fn().mockResolvedValue([{ id: KB_ID }]),
       $transaction: vi.fn(),
     }
     prisma.$transaction.mockImplementation(async (callback) => callback(prisma))
@@ -780,6 +784,40 @@ describe('KB ingestion reconciliation', () => {
     externalOperationId: OPERATION_ID,
     externalOperationStartedAt: new Date('2026-07-26T11:50:00.000Z'),
   }
+
+  it.each([
+    'running',
+    'failed',
+  ] as const)('preserves replacement blob metadata while prior content serves after %s', async (status) => {
+    const replacement = {
+      ...activeResource,
+      type: 'BLOB',
+      blobName: 'replacement.pdf',
+      sizeBytes: 4096,
+      mimeType: 'application/pdf',
+    }
+    const prisma = monitorPrisma([replacement])
+    prisma.kBResource.updateMany.mockImplementation(async ({ data }) => {
+      Object.assign(replacement, data)
+      return { count: 1 }
+    })
+    await monitorActiveKBIngestions({
+      prisma: prisma as never,
+      client: client({
+        getOperation: vi.fn().mockResolvedValue(operation({ status })),
+      }),
+      now: () => NOW,
+    })
+    expect(prisma.kBResource.updateMany).toHaveBeenCalled()
+    expect(replacement).toMatchObject({
+      blobName: 'replacement.pdf',
+      sizeBytes: 4096,
+      mimeType: 'application/pdf',
+      contentSha256: CONTENT_SHA256,
+      activeResourceVersion: 2,
+      activeContentSha256: 'a'.repeat(64),
+    })
+  })
 
   it('leaves fresh operations to the signed callback path', async () => {
     const prisma = monitorPrisma([
@@ -951,6 +989,7 @@ describe('KB ingestion reconciliation', () => {
           .fn()
           .mockResolvedValue(operation({ status: externalStatus })),
       }),
+      now: () => NOW,
     })
 
     expect(prisma.kBResource.updateMany).toHaveBeenCalledWith({
@@ -1210,6 +1249,7 @@ describe('KB ingestion reconciliation', () => {
       kBIngestionRun: {
         updateMany: vi.fn().mockResolvedValue({ count: 1 }),
       },
+      $queryRaw: vi.fn().mockResolvedValue([{ id: KB_ID }]),
       $transaction: vi.fn(),
     }
     prisma.$transaction.mockImplementation(async (callback) => callback(prisma))
@@ -1236,5 +1276,133 @@ describe('KB ingestion reconciliation', () => {
       expect.objectContaining({ take: 15 })
     )
     expect(getOperation).toHaveBeenCalledTimes(32)
+  })
+
+  it('fails an operation that stays non-terminal past the ingestion bound', async () => {
+    const prisma = monitorPrisma([activeResource])
+    const logger = { info: vi.fn() }
+
+    await monitorActiveKBIngestions({
+      prisma: prisma as never,
+      client: client(),
+      env: { KB_INGESTION_TIMEOUT_SECONDS: '300' },
+      now: () => NOW,
+      logger,
+    })
+
+    expect(prisma.kBResource.updateMany).toHaveBeenCalledWith({
+      where: {
+        id: RESOURCE_ID,
+        ingestionAttemptId: ATTEMPT_ID,
+        resourceVersion: 3,
+        contentSha256: CONTENT_SHA256,
+        externalOperationId: OPERATION_ID,
+        ingestionOperation: KBIngestionOperation.UPSERT,
+        status: {
+          in: [KBResourceStatus.QUEUED, KBResourceStatus.PROCESSING],
+        },
+      },
+      data: {
+        status: KBResourceStatus.FAILED,
+        statusMessage: expect.any(String),
+        errorCode: 'KB_INGESTION_TIMEOUT',
+      },
+    })
+    expect(prisma.kBIngestionRun.updateMany).toHaveBeenCalledWith({
+      where: {
+        id: ATTEMPT_ID,
+        resourceId: RESOURCE_ID,
+        operation: KBIngestionOperation.UPSERT,
+        resourceVersion: 3,
+        status: {
+          in: [KBIngestionStatus.QUEUED, KBIngestionStatus.PROCESSING],
+        },
+      },
+      data: {
+        status: KBIngestionStatus.FAILED,
+        statusMessage: expect.any(String),
+        errorCode: 'KB_INGESTION_TIMEOUT',
+        finishedAt: NOW,
+      },
+    })
+    expect(logger.info).toHaveBeenCalledWith(
+      'KB ingestion operation timed out',
+      {
+        resourceId: RESOURCE_ID,
+        kbId: KB_ID,
+        ingestionAttemptId: ATTEMPT_ID,
+      }
+    )
+  })
+
+  it('keeps a succeeded serving cutover outside the ingestion bound', async () => {
+    const prisma = monitorPrisma([activeResource])
+    const logger = { info: vi.fn() }
+
+    await monitorActiveKBIngestions({
+      prisma: prisma as never,
+      client: client({
+        getOperation: vi.fn().mockResolvedValue(
+          operation({
+            status: 'succeeded',
+            observedSha256: CONTENT_SHA256,
+            serving: {
+              activeResourceVersion: 2,
+              activeSha256: 'a'.repeat(64),
+            },
+          })
+        ),
+      }),
+      env: { KB_INGESTION_TIMEOUT_SECONDS: '300' },
+      now: () => NOW,
+      logger,
+    })
+
+    expect(prisma.kBResource.updateMany).toHaveBeenCalledWith(
+      expect.objectContaining({
+        data: expect.objectContaining({
+          status: KBResourceStatus.PROCESSING,
+          errorCode: null,
+        }),
+      })
+    )
+    expect(logger.info).not.toHaveBeenCalledWith(
+      'KB ingestion operation timed out',
+      expect.anything()
+    )
+  })
+})
+
+describe('KB environment bounds', () => {
+  it('reads the ingestion bound and keeps the default when unset', () => {
+    expect(getKBIngestionTimeoutSeconds({})).toBe(6 * 60 * 60)
+    expect(
+      getKBIngestionTimeoutSeconds({ KB_INGESTION_TIMEOUT_SECONDS: '3600' })
+    ).toBe(3600)
+  })
+
+  it('refuses a value that is not a run of digits, naming the variable', () => {
+    for (const invalid of ['0', '-1', '1e3', ' 300', '300s', '']) {
+      expect(() =>
+        getKBIngestionTimeoutSeconds({ KB_INGESTION_TIMEOUT_SECONDS: invalid })
+      ).toThrow('KB_INGESTION_TIMEOUT_SECONDS must be a positive integer')
+    }
+  })
+
+  it('refuses a digit run that exceeds the safe integer range', () => {
+    const tooLarge = '9'.repeat(400)
+    expect(() =>
+      getKBIngestionTimeoutSeconds({ KB_INGESTION_TIMEOUT_SECONDS: tooLarge })
+    ).toThrow('KB_INGESTION_TIMEOUT_SECONDS must be a positive integer')
+  })
+
+  it('applies the same contract to the graph bound', () => {
+    expect(getKBGraphTimeoutSeconds({})).toBe(6 * 60 * 60)
+    expect(getKBGraphTimeoutSeconds({ KB_GRAPH_TIMEOUT_SECONDS: '7200' })).toBe(
+      7200
+    )
+    expect(() =>
+      getKBGraphTimeoutSeconds({ KB_GRAPH_TIMEOUT_SECONDS: '0' })
+    ).toThrow('KB_GRAPH_TIMEOUT_SECONDS must be a positive integer')
   })
 })

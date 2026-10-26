@@ -10,7 +10,10 @@ import { FlaskConicalIcon, PlusIcon } from 'lucide-react'
 import { useTranslations } from 'next-intl'
 import { useEffect, useMemo, useRef, useState } from 'react'
 import type { ModelOption } from '@/src/lib/config/models'
-import { resolveSelectedMode } from '@/src/lib/config/modes'
+import {
+  type ChatModeOptions,
+  resolveSelectedMode,
+} from '@/src/lib/config/modes'
 import {
   formatReasoningEffort,
   type ReasoningEffort,
@@ -18,6 +21,7 @@ import {
 import { getDefaultReasoningEffort } from '@/src/lib/ownerPreviewPolicy'
 import { useSettingsStore } from '@/src/stores/settingsStore'
 import { ChatUiProvider } from './chat-ui-context'
+import { DictationProvider, useOnDeviceDictation } from './dictation-context'
 import { ModeOptionsProvider } from './mode-options-context'
 import { Thread } from './thread'
 
@@ -27,7 +31,7 @@ type OwnerPreviewAssistantProps = {
     id: string
     name: string
   }
-  initialModeOptions: Record<string, string>
+  initialModeOptions: ChatModeOptions
   manageUrl: string
   modelSelection: boolean
   modelOptions: ModelOption[]
@@ -365,7 +369,7 @@ function OwnerPreviewConversation({
   chatbot: OwnerPreviewAssistantProps['chatbot']
   conversation: PreviewConversation
   effectiveMode: string
-  initialModeOptions: Record<string, string>
+  initialModeOptions: ChatModeOptions
 }) {
   const transport = useMemo(
     () =>
@@ -387,6 +391,7 @@ function OwnerPreviewConversation({
     ]
   )
   const runtime = useChatRuntime({ transport })
+  const dictation = useOnDeviceDictation({ disabled: true })
 
   return (
     <div
@@ -396,12 +401,15 @@ function OwnerPreviewConversation({
     >
       <ModeOptionsProvider modeOptions={initialModeOptions}>
         <AssistantRuntimeProvider runtime={runtime}>
-          <Thread
-            chatbotAvatar={chatbot.avatar ?? ''}
-            chatbotName={chatbot.name}
-            initialModeOptions={initialModeOptions}
-            maxImageAttachments={0}
-          />
+          <DictationProvider value={dictation}>
+            <Thread
+              chatbotAvatar={chatbot.avatar ?? ''}
+              chatbotName={chatbot.name}
+              initialModeOptions={initialModeOptions}
+              maxImageAttachments={0}
+              allowDocumentAttachments={false}
+            />
+          </DictationProvider>
         </AssistantRuntimeProvider>
       </ModeOptionsProvider>
     </div>

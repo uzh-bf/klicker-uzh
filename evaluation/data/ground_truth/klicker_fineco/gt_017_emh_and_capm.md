@@ -7,13 +7,13 @@ expected_tools_by_profile:
 
 ## Efficient Markets and CAPM
 
-The Efficient Market Hypothesis says that prices reflect the information covered by the relevant form of market efficiency, so that investors cannot systematically earn abnormal returns from that information. The CAPM addresses a different but related question: which expected return compensates investors for systematic market risk.
+The Efficient Market Hypothesis concerns information: prices reflect the information set covered by the relevant form of efficiency, so investors cannot systematically earn abnormal returns using that information. Weak-form efficiency concerns past market data, while semi-strong efficiency concerns all public information.
 
-The EMH is about information already being reflected in prices; the CAPM is an equilibrium model connecting expected return to beta. Neither statement alone proves the other.
+The CAPM concerns risk pricing: in equilibrium it connects an asset's expected return to its systematic risk measured by beta. EMH does not by itself derive the CAPM equation, and CAPM does not by itself prove that all information is correctly reflected in prices.
 
 To start, what do you think it means in practice for public information to be "already reflected" in a share price?
 
 ## Sources
 
-- Financial Economics script FS26, Chapter 1.2, Efficient Market Hypothesis, pp. 9–12
-- Financial Economics script FS26, Chapters 3.1–3.4, Capital Asset Pricing Model, pp. 40–47
+- Financial Economics script FS26, Chapter 1.2, Efficient Market Hypothesis and its information sets
+- Financial Economics script FS26, Sections 3.4–3.5, CAPM Security Market Line, Equation 3.17

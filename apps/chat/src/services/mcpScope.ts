@@ -5,8 +5,11 @@ export const DOC_QUERY_TOOL_NAME = `${DOC_QUERY_MCP_SERVER_NAME}_doc_query`
 // The shared doc-query client owns the transport-security allowlist and the
 // scope-token header so the chat and graphql workloads cannot drift apart.
 export {
-  DOC_QUERY_SCOPE_TOKEN_HEADER,
   assertDocQueryTransportSecurity,
+  createDocQueryScopedFetch,
+  DOC_QUERY_SCOPE_TOKEN_HEADER,
+  type DocQueryScopedFetch,
+  resolveDocQueryScopedRoute,
 } from '@klicker-uzh/doc-query-client'
 
 const UUID_PATTERN =
@@ -208,7 +211,8 @@ function assertEffectiveConfigurationMatchesScope(
 /**
  * Resolves the knowledge-base scope shared by the enabled configuration
  * snapshot. A chatbot becomes scoped as soon as an enabled KB configuration
- * is present, and every KB mode must then have one consistent binding.
+ * is present, and every KB binding must then resolve one consistent scope. A
+ * selected mode that carries no enabled KB binding serves without a scope.
  */
 export function resolveMcpScope(
   configurations: readonly MCPScopedConfiguration[],
@@ -241,6 +245,10 @@ export function resolveMcpScope(
       (configuration): configuration is ResolvedMcpScope =>
         configuration !== undefined
     )
+  // A mode with no knowledge-base binding serves without retrieval instead of
+  // failing the request. The chatbot-wide scope checks above still constrain
+  // every mode that does bind one.
+  if (effectiveKbConfigurations.length === 0) return undefined
   assertEffectiveConfigurationMatchesScope(
     effectiveKbConfigurations,
     selectedMode,

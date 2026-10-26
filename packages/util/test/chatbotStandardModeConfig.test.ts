@@ -3,6 +3,7 @@ import { describe, expect, it } from 'vitest'
 import {
   CHATBOT_STANDARD_MODE_SCOPE_NOTE_MAX_LENGTH,
   getWritingCoachUnavailableReason,
+  isChatbotStandardModeKey,
   normalizeChatbotStandardModeConfig,
   parseChatbotStandardModeConfigInput,
 } from '../src/chatbotStandardModeConfig.js'
@@ -201,5 +202,11 @@ describe('chatbot standard mode configuration', () => {
         { ...requiredTutor, chatMode: 'writing-coach' },
       ])
     ).toBeNull()
+  })
+
+  it('recognizes the standard modes case-sensitively', () => {
+    expect(isChatbotStandardModeKey('quizzer')).toBe(true)
+    expect(isChatbotStandardModeKey('Quizzer')).toBe(false)
+    expect(isChatbotStandardModeKey('case-interview')).toBe(false)
   })
 })

@@ -74,6 +74,10 @@ spec:
       affinity:
         {{- toYaml . | nindent 8 }}
       {{- end }}
+      {{- with .Values.assessment.frontendPWA.topologySpreadConstraints }}
+      topologySpreadConstraints:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
       {{- with .Values.assessment.frontendPWA.tolerations }}
       tolerations:
         {{- toYaml . | nindent 8 }}
@@ -158,6 +162,10 @@ spec:
       {{- end }}
       {{- with .Values.assessment.backendGraphql.affinity }}
       affinity:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
+      {{- with .Values.assessment.backendGraphql.topologySpreadConstraints }}
+      topologySpreadConstraints:
         {{- toYaml . | nindent 8 }}
       {{- end }}
       {{- with .Values.assessment.backendGraphql.tolerations }}

@@ -54,38 +54,14 @@ jobs:
             group: Test OLAT-API functionalities
           - workflow: Production translation context
             group: intl-production
-          - workflow: Build Fallback
-            group: Build Fallback
+          - workflow: Build staging images
+            group: Build staging images
           - workflow: Perform sonarcloud analysis
             group: Perform sonarcloud analysis
           - workflow: AI code review (OpenCodeReview)
             group: AI code review (OpenCodeReview)
-          - workflow: Build Docker image for analytics (stg)
-            group: Build Docker image for analytics (stg)
-          - workflow: Build Docker image for auth (stg)
-            group: Build Docker image for auth (stg)
-          - workflow: Build Docker image for backend-docker (stg)
-            group: Build Docker image for backend-docker (stg)
-          - workflow: Build Docker image for chat (stg)
-            group: Build Docker image for chat (stg)
-          - workflow: Build Docker image for frontend-assessment (stg)
-            group: Build Docker image for frontend-assessment (stg)
-          - workflow: Build Docker image for frontend-control (stg)
-            group: Build Docker image for frontend-control (stg)
-          - workflow: Build Docker image for frontend-manage (stg)
-            group: Build Docker image for frontend-manage (stg)
-          - workflow: Build Docker image for frontend-pwa (stg)
-            group: Build Docker image for frontend-pwa (stg)
-          - workflow: Build Docker image for hatchet-worker-general (stg)
-            group: Build Docker image for hatchet-worker-general (stg)
-          - workflow: Build Docker image for hatchet-worker-response-processor (stg)
-            group: Build Docker image for hatchet-worker-response-processor (stg)
-          - workflow: Build Docker image for lti (stg)
-            group: Build Docker image for lti (stg)
-          - workflow: Build Docker image for olat-api (stg)
-            group: Build Docker image for olat-api (stg)
-          - workflow: Build Docker image for response-api (stg)
-            group: Build Docker image for response-api (stg)
+          - workflow: Dependency Review
+            group: Dependency Review
           # The MCP entries cover workflows that exist only on the v3-ai and
           # v3-audit integration branches. On v3 itself no run ever occupies
           # those groups, so the legs finish as harmless no-ops while the

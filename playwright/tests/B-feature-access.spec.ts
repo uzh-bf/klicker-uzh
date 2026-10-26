@@ -18,7 +18,6 @@ import {
 import {
   COURSE_ID_TEST,
   LECTURER_EMAIL,
-  SEEDED_COURSE,
   URL_AUTH,
   URL_MANAGE,
   USER_ID_TEST,
@@ -109,9 +108,10 @@ async function loadActivityAnalytics(
   }
 }
 
-async function waitForBackendGrowthBookLearningAnalytics(
-  page: Page,
-  enabled: boolean
+// The first data-use release pins the learning-analytics release gate closed,
+// so the analytics reads answer with neither data nor an entitlement error.
+async function waitForContainedAnalyticsRead(
+  page: Page
 ): Promise<AnalyticsGraphqlResult> {
   let result: AnalyticsGraphqlResult | undefined
 
@@ -119,18 +119,19 @@ async function waitForBackendGrowthBookLearningAnalytics(
     .poll(
       async () => {
         result = await loadActivityAnalytics(page)
-        return enabled ? result.allowed : result.forbidden
+        return !result.allowed && !result.forbidden
       },
       {
         intervals: [100, 250, 500],
-        message: `Wait for backend learning analytics entitlement to become ${enabled ? 'enabled' : 'disabled'}`,
+        message:
+          'Wait for the analytics read to answer without data or an entitlement error',
         timeout: 15_000,
       }
     )
     .toBe(true)
 
   if (!result) {
-    throw new Error('Backend learning analytics decision was not observed')
+    throw new Error('Analytics read result was not observed')
   }
 
   return result
@@ -470,7 +471,7 @@ test.describe('Tests the availability of standard activity creation formats', ()
     expect(activityAnalyticsRequests).toBe(0)
   })
 
-  test('Allows direct analytics navigation with feature access', async ({
+  test('Allows direct analytics navigation while the release gate contains analytics data', async ({
     page,
     loginLecturer,
     request,
@@ -480,27 +481,20 @@ test.describe('Tests the availability of standard activity creation formats', ()
     await loginLecturer()
     try {
       await backendLearningAnalyticsState(request, true)
-      const analyticsResult = await waitForBackendGrowthBookLearningAnalytics(
-        page,
-        true
-      )
+      const analyticsResult = await waitForContainedAnalyticsRead(page)
       expect(analyticsResult.response.ok()).toBe(true)
-      await expect(
-        page.getByRole('heading', {
-          name: `Activity Dashboard: ${SEEDED_COURSE}`,
-        })
-      ).toBeVisible()
+      expect(analyticsResult.allowed).toBe(false)
+      expect(analyticsResult.forbidden).toBe(false)
 
       await expect(
         page.getByTestId('learning-analytics-access-denied')
       ).not.toBeAttached()
     } finally {
       await backendLearningAnalyticsState(request, previousState)
-      await waitForBackendGrowthBookLearningAnalytics(page, previousState)
     }
   })
 
-  test('Denies analytics data when the backend entitlement is false', async ({
+  test('Keeps analytics data contained when the backend entitlement is false', async ({
     page,
     loginLecturer,
     request,
@@ -511,15 +505,12 @@ test.describe('Tests the availability of standard activity creation formats', ()
 
     try {
       await backendLearningAnalyticsState(request, false)
-      const analyticsResult = await waitForBackendGrowthBookLearningAnalytics(
-        page,
-        false
-      )
+      const analyticsResult = await waitForContainedAnalyticsRead(page)
       expect(analyticsResult.response.ok()).toBe(true)
-      expect(analyticsResult.forbidden).toBe(true)
+      expect(analyticsResult.allowed).toBe(false)
+      expect(analyticsResult.forbidden).toBe(false)
     } finally {
       await backendLearningAnalyticsState(request, previousState)
-      await waitForBackendGrowthBookLearningAnalytics(page, previousState)
     }
   })
 

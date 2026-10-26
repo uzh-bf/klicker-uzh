@@ -8,6 +8,7 @@ export default {
       fullscreen: 'Expand graph to fullscreen',
       restore: 'Return graph to sidebar',
       ask: 'Ask about this',
+      showConcept: 'Show this concept in the knowledge graph',
       nodePrompt: 'Help me understand the concept “{topic}”.',
       edgePrompt:
         'Explain the relationship “{relationship}” between “{source}” and “{target}”.',
@@ -32,6 +33,7 @@ export default {
       quizzer: 'Quizzer',
       quizzerDescription:
         'Practise with exam-style course questions, one at a time, with formative feedback.',
+      custom: 'Custom mode',
     },
     settingsPanel: {
       title: 'Settings',
@@ -51,7 +53,7 @@ export default {
       usingPrimaryModel:
         'The automatic choice is used while credits are available.',
       usingFallbackModel:
-        'No credits remain. GPT-5.6 Luna may be used as the credit fallback.',
+        'No credits remain. The base model may be used as the credit fallback.',
       reasoningEffortLabel: 'Reasoning Effort',
       selectReasoningEffort: 'Select reasoning effort',
       reasoningEffortHint:
@@ -64,9 +66,23 @@ export default {
         high: 'High',
         xhigh: 'Extra high',
       },
+      answerStyleLabel: 'Answer format',
+      answerStyleHint:
+        'Changes how new answers are laid out, not how much help you get.',
+      answerStyles: {
+        balanced: 'Standard',
+        bullets: 'Bullet points',
+      },
+      answerToneLabel: 'Tone',
+      answerTones: {
+        neutral: 'Neutral',
+        friendly: 'Friendly',
+        direct: 'Direct',
+      },
     },
     credits: {
       title: 'Available credits',
+      embeddedLabel: 'Credits: {percent}%',
       costHint:
         'Every message uses credits — how many depends on the model and the length of the exchange.',
       resetAt: 'Refills on {date}.',
@@ -85,6 +101,9 @@ export default {
       logoAlt: 'Klicker Logo',
       copyright:
         '©{year} DF Teaching Center, Department of Finance, University of Zurich. All rights reserved.',
+    },
+    embedded: {
+      close: 'Close chat',
     },
     assistant: {
       participationRequiredTitle: 'Course Access Required',
@@ -231,6 +250,9 @@ export default {
       errorTitle: 'Chatbot unavailable',
       errorMessage:
         'We could not load this chatbot. Try again or return to KlickerUZH.',
+      accessDeniedTitle: 'No access to this chatbot',
+      accessDeniedMessage:
+        'Your account cannot open this chatbot. Return to KlickerUZH and open the chatbot from its course.',
       retry: 'Try again',
       openKlickerUzh: 'Open KlickerUZH',
     },
@@ -253,6 +275,20 @@ export default {
       inProgress: 'In progress',
       partial: 'Partial response',
       error: 'Error',
+    },
+    documentNotice: {
+      title: 'Before you attach documents',
+      allowed:
+        'Attach only material you may share: your own notes and work, course material you have permission to use, or openly licensed material.',
+      notAllowed:
+        'Do not attach complete copyrighted works without permission, or documents with personal or confidential information about others, sensitive data or passwords.',
+      access:
+        'Having access to a file does not mean you may share it. When in doubt, ask your lecturer.',
+      dataBoundary:
+        'Document text is sent to the AI model provider. When the selected model can read images, rendered PDF pages may also be sent for visual review. KlickerUZH saves the text and any generated visual summary with this conversation, but does not save the page images.',
+      once: 'This notice appears once on this device.',
+      remove: 'Remove documents',
+      accept: 'I understand',
     },
     disclaimer: {
       mediaTitle: 'Disclaimer media',
@@ -283,6 +319,13 @@ export default {
         'Image attachments for this message could not be loaded. Please try again.',
       attachedImageAlt: 'Attached image {index}',
     },
+    documentPreview: {
+      open: 'Preview {name}',
+      extractedText: 'Text the chat read from this file:',
+      extractedTextOnly:
+        'The original file is not stored, so after a reload only the text the chat read from it is shown:',
+      openOriginal: 'Open original file',
+    },
     imageViewer: {
       previewUnavailable: 'Preview unavailable',
       title: 'Image attachment',
@@ -307,6 +350,14 @@ export default {
       loadError: 'Your chats could not be loaded.',
       retry: 'Retry',
       loading: 'Loading conversations...',
+      filterLabel: 'Filter conversations by title',
+      filterPlaceholder: 'Filter by title',
+      filterClear: 'Clear filter',
+      filterNoMatch: 'No conversations match this filter.',
+      exportMarkdown: 'Export as Markdown',
+      exportUserLabel: 'You',
+      exportAssistantLabel: 'Assistant',
+      exportSourcesLabel: 'Sources',
       elearningTag: 'eLearning',
     },
     thread: {
@@ -383,6 +434,9 @@ export default {
       editDisabledTooltip:
         'Cannot edit: selected model does not support images',
       copy: 'Copy',
+      readAloud: 'Read aloud',
+      stopReadAloud: 'Stop reading aloud',
+      readAloudFormula: 'formula',
       refresh: 'Refresh',
       retry: 'Try again',
       rateUp: 'Helpful answer',
@@ -394,6 +448,11 @@ export default {
     },
     composer: {
       placeholder: 'Write a message...',
+      replyLanguageEn: 'This conversation is in English',
+      replyLanguageDe: 'This conversation is in German',
+      meetingClockNotStarted: 'The clock starts with your first message',
+      meetingClockElapsed: '{minutes} min since your first message',
+      meetingClockTime: '{time} (Zurich time)',
       modeUnavailable:
         'No chat mode is currently available. Please contact your lecturer.',
       send: 'Send message',
@@ -404,10 +463,69 @@ export default {
       attachmentReadError:
         'The image could not be read. Please try a different file.',
       dismissError: 'Dismiss error',
+      dropFiles: 'Drop files to attach',
       dropImages: 'Drop images to attach',
       attachmentPreviewAlt: 'Attachment preview',
       removeAttachment: 'Remove attachment',
+      attachFile: 'Attach an image or document',
       attachImage: 'Attach image',
+      attachmentTypeError:
+        'This file type cannot be attached. Use an image, PDF, Word (.docx), text, Markdown or CSV file.',
+      documentOnlyTypeError:
+        'The selected model cannot read images. Use a PDF, Word (.docx), text, Markdown or CSV file.',
+      documentLimitError: 'You can only attach up to {max} documents.',
+      documentTooLarge: 'Documents must be smaller than {max} MB.',
+      documentNoText: 'This file contains no readable text.',
+      documentPdfNoText:
+        'This PDF contains no selectable text. Scanned PDFs cannot be read yet.',
+      documentPresentation:
+        'PowerPoint files cannot be read. Save the presentation as a PDF and attach the PDF.',
+      documentReadError:
+        'The document could not be read. Please try a different file.',
+      documentReading: 'Reading document…',
+      documentPages: '{count, plural, one {# page} other {# pages}}',
+      documentTokens: '~{count} tokens',
+      documentShortened: 'Shortened to the first {max} tokens',
+      documentVisualReviewed:
+        '{count, plural, one {Page reviewed visually} other {Pages reviewed visually}}',
+      documentVisualTooManyPages:
+        '{count, plural, one {Page not reviewed visually} other {Pages not reviewed visually}}: up to {max} pages per message',
+      documentVisualNoImageSupport:
+        '{count, plural, one {Page not reviewed visually} other {Pages not reviewed visually}}: this model cannot read images',
+      documentVisualSkipped:
+        '{count, plural, one {Page not reviewed visually} other {Pages not reviewed visually}}',
+      documentDefaultQuestion: 'Please refer to the attached file(s).',
+      dictation: 'Dictate message',
+      dictationSetup: 'Set up dictation',
+      dictationStop: 'Stop dictation',
+      dictationListening: 'Listening...',
+      dictationLanguageHint: 'English dictation uses US English.',
+      dictationSheetTitle: 'Enable on-device dictation',
+      dictationSheetBody:
+        'Recognition runs on this device, and no audio is sent to the chat service. Your browser will ask for microphone access when you start dictation.',
+      dictationSheetDownload: 'Download',
+      dictationSheetNotNow: 'Not now',
+      dictationSheetInstalling: 'Downloading the language pack...',
+      dictationSheetFailed:
+        'The language pack could not be installed. Try again or continue typing.',
+      dictationSheetRetry: 'Try download again',
+      dictationSheetCheckAgain: 'Check availability again',
+      dictationSheetReady: 'The language pack is ready on this device.',
+      dictationSheetStart: 'Start dictation',
+      dictationErrorAborted: 'Dictation was cancelled.',
+      dictationErrorAudioCapture:
+        'The microphone could not be opened. Check your browser permissions.',
+      dictationErrorInstall: 'The local language pack could not be installed.',
+      dictationErrorLanguageNotSupported:
+        'This language is not supported for on-device dictation.',
+      dictationErrorNetwork:
+        'The browser reported a network error for dictation.',
+      dictationErrorNoSpeech: 'No speech was detected. Try again.',
+      dictationErrorNotAllowed:
+        'Microphone access was denied. Allow it in your browser settings.',
+      dictationErrorServiceNotAllowed:
+        'The browser did not allow the dictation service.',
+      dictationErrorUnknown: 'Dictation could not be started. Try again.',
       attachmentFallbackLabel: 'Attachment',
       editCancel: 'Cancel',
       editSend: 'Send',
@@ -972,6 +1090,9 @@ export default {
       rank: 'Rank',
       username: 'Username',
       email: 'Email',
+      entryAriaLabel: 'Rank {rank}: {name}, {points} points',
+      selfPositionDivider: 'your position',
+      podiumEmpty: 'No entries on the podium yet',
     },
     error: {
       '404': '404 Page not found',
@@ -997,6 +1118,17 @@ export default {
     privacyUrl: 'https://www.klicker.uzh.ch/privacy_policy',
     loginInfo:
       'You do not need a management account to participate in activities or a course, only to create your own activities and courses.',
+    sessionCheckFailed:
+      'Your login could not be verified because the service is temporarily unavailable. Please try again in a moment.',
+    sessionCheckRetry: 'Try again',
+    restart: {
+      title: 'Login',
+      info: 'Your login attempt could not be continued. Please choose how you would like to log in again.',
+      errorInfo:
+        'The login provider reported an error. Please choose how you would like to log in again.',
+      studentLogin: 'Student login (assessment)',
+      lecturerLogin: 'Lecturer login',
+    },
   },
   pwa: {
     general: {
@@ -1115,6 +1247,65 @@ Your data will never be shared with other parties beside the above and will neve
         'Your account data, such as profile information, achievements, and experience points, as well as responses you give to questions in KlickerUZH, will be stored for the lifetime of your account. Your points and ranking on course activities and leaderboards will be stored for as long as you participate on the respective course leaderboard. You can request deletion of your data and account at any time.',
       confirmationMessage:
         'I agree to the KlickerUZH [privacy policy](https://www.klicker.uzh.ch/privacy_policy) and [terms of service](https://www.klicker.uzh.ch/terms_of_service) and consent to the processing of my data as described therein. I am aware that I can participate in learning activities anonymously and without an account if I do not agree to these conditions.',
+      signup: {
+        accountTitle: 'Your account',
+        emailLabel: 'E-mail',
+        usernameHint:
+          'Your username is shown when you join a course leaderboard.',
+        assessmentTitle: 'Enable assessment access',
+        assessmentSubmit: 'Enable access',
+        assessmentDataCollectionNotice:
+          'We store your account data and the identity information provided by Switch edu-ID as well as data from courses and activities: such as answers and inputs in activities, assessments, points, and feedback.\n\nIn an assessment, identity information such as your matriculation number as well as detailed logs of your answer attempts and interactions (audit logs) are added.',
+        assessmentDataSharingNotice:
+          'Lecturers and other authorised people see the information they need to run and evaluate the course. If you join a leaderboard, other participants see your username and leaderboard details. Learning Analytics shows lecturers only aggregated group values.\n\nIn an assessment, authorised lecturers and assessment staff additionally receive your identity, answer details, and results for grading and follow-up. Other participants cannot see this assessment data.',
+        assessmentDataUsageNotice:
+          'Lecturers use the data collected from you to make teaching more interactive. We use your data to operate your account and to run and evaluate course activities. In an assessment, they additionally support grading and traceability. Your choice in the account settings applies to research and Learning Analytics. It does not affect points, grades, or assessment access.',
+        assessmentDataStorageNotice:
+          'Account data and answers are stored for the lifetime of your account. You cannot delete your assessment account and its data yourself: they remain available for traceability and during the applicable appeal and retention periods. Afterwards, they are deleted or anonymised. [Details in the privacy policy](https://www.klicker.uzh.ch/privacy_policy)',
+        assessmentAcknowledgement:
+          'I have read the [KlickerUZH privacy policy](https://www.klicker.uzh.ch/privacy_policy), accept the [terms of use](https://www.klicker.uzh.ch/terms_of_service), and confirm my choices. I have acknowledged the additional information about assessment data, inspection, and retention.',
+        accessTitle: 'Your access',
+        accessNoPassword: 'You do not need a password or any further input.',
+        dataUseTitle: 'Data use and settings',
+        dataCollectionTitle: 'What data do you collect about me?',
+        dataCollectionNotice:
+          'We store your account data and data from your courses and activities, such as answers and inputs in activities, their assessment, points, and feedback.',
+        dataSharingTitle: 'Who can see my data?',
+        dataSharingNotice:
+          'Lecturers and other authorised people see the information they need to run and evaluate the course. If you join a leaderboard, other participants see your username and leaderboard details. Learning Analytics shows lecturers only aggregated group values.',
+        dataUsageTitle: 'How is my data used?',
+        dataUsageNotice:
+          'Lecturers use the data collected from you to make teaching more interactive. We use your data to operate your account and to run and evaluate course activities. Your choice in the account settings applies to research and Learning Analytics.',
+        dataStorageTitle: 'How long is my data stored?',
+        dataStorageNotice:
+          'Your account data and answers are stored while your account exists. Data may be retained until legal or contractual retention periods expire. Afterwards, they are deleted or changed so that they can no longer be linked to any person. You can request deletion of your account and your data.',
+        acknowledgement:
+          'I have read the KlickerUZH [privacy policy](https://www.klicker.uzh.ch/privacy_policy), accept the [terms of service](https://www.klicker.uzh.ch/terms_of_service), and confirm my choices. Research and Learning Analytics are voluntary.',
+        researchConsentTitle: 'Data for research',
+        researchConsentDescription:
+          'Your usage and learning data may be used without personal identifiers for UZH research and teaching projects. You can object at any time in your settings. Your data is then excluded from future research exports. [More about privacy](https://www.klicker.uzh.ch/privacy_policy)',
+        researchConsentDescriptionAssessment:
+          'Your usage and learning data may be used without direct identifiers for UZH research and teaching projects. You can object at any time in your settings. Your data is then excluded from future research exports. [More about privacy](https://www.klicker.uzh.ch/privacy_policy)',
+        researchConsentBadgeAllowed: 'Allowed',
+        researchConsentBadgeRefused: 'Refused',
+        researchConsentBadgeUnanswered: 'Not answered',
+        researchConsentYes: 'Allow',
+        researchConsentNo: 'Object',
+        researchConsentControlLabel: 'Use for research:',
+        learningAnalyticsConsentTitle: 'Learning Analytics',
+        learningAnalyticsConsentDescription:
+          'Get personal insights into your learning. Lecturers see de-identified group reports. Participation is voluntary and can be changed at any time.\n\nLA records data only when it is active for your account and the course. When you turn it off, the affected LA data is deleted automatically. [More about Learning Analytics](https://www.klicker.uzh.ch/learning_analytics)',
+        learningAnalyticsDecisionRequired: 'Decision required',
+        learningAnalyticsConsentYes: 'Yes, participate',
+        learningAnalyticsConsentYesDescription:
+          'Private insights and protected group reports.',
+        learningAnalyticsConsentNo: 'No, do not participate',
+        learningAnalyticsConsentNoDescription:
+          'Courses, points, and chat work as usual.',
+        submit: 'Create account',
+        acknowledgementRequired: 'Please confirm your choices.',
+        dataUseChoiceRequired: 'Please choose yes or no.',
+      },
     },
     studentDocs: {
       assessmentInstanceWarning:
@@ -1454,6 +1645,33 @@ Since the KlickerUZH app is not yet available in the iOS App Store, follow these
       createProfileFailed:
         'Unfortunately, your account could not be created or linked. Please check your entries and try again.',
       editProfileSuccess: 'Your profile has been updated successfully.',
+      dataUseTitle: 'Research and learning analytics',
+      dataUseDescription:
+        'These choices apply to your entire KlickerUZH account. You can change them at any time.',
+      dataUseLoadFailed:
+        'Your data-use choices could not be loaded. Please try again.',
+      researchConsentTitle: 'Research',
+      researchConsentDescription:
+        'Your usage and learning data may be used without direct identifiers for UZH research and teaching projects. You can opt out at any time in your settings. Your data will then be excluded from future research exports.',
+      researchConsentSaved: 'Your research choice has been saved.',
+      researchConsentFailed:
+        'Your research choice could not be saved. Please reload the page before trying again.',
+      dataUseConflict:
+        'This page is out of date. Reload it before trying again.',
+      learningAnalyticsConsentTitle: 'Learning analytics',
+      learningAnalyticsConsentDescription:
+        'Get personal insights into your learning. Only you see your personal insights; lecturers see de-identified group reports. Participation is voluntary and can be changed at any time; course access and points remain unchanged. Learning Analytics collects data only while it is active for both your account and the course. When you turn it off, the relevant Learning Analytics data is automatically deleted.',
+      learningAnalyticsConsentSaved:
+        'Your learning-analytics choice has been saved.',
+      learningAnalyticsConsentFailed:
+        'Your learning-analytics choice could not be saved. Please reload the page before trying again.',
+      learningAnalyticsWithdrawalTitle:
+        'Stop participating in Learning Analytics?',
+      learningAnalyticsWithdrawalConfirmation:
+        'Turn off Learning Analytics? Your personal LA data and insights will be deleted automatically. Your responses and points needed to run the course will remain.',
+      dataUseCanonicalDataNotice:
+        'These choices do not delete your account, course participation, activity submissions, or responses.',
+      dataUsePrivacyPolicy: 'Read the privacy policy.',
       achievements: 'Achievements',
       myProfile: 'My Profile',
       createProfile: 'Create Profile',
@@ -1661,7 +1879,7 @@ Since the KlickerUZH app is not yet available in the iOS App Store, follow these
         'The chart shows the aggregated distribution of total scores for active participants. Your score range is highlighted.',
       histogramUserRange: 'Your score range: {range}.',
       notEnoughDataForComparison:
-        'No peer comparison is available. It is only included for at least 10 active participants and a non-zero available score range.',
+        'This report contains no peer comparison. It is included in reports issued after the course has ended, for at least 10 active participants and a non-zero available score range. Reports issued during the course contain your points only.',
       exportReportButton: 'Export Performance Report',
       exportReportExplanation:
         'Issue a report from the current assessment record. Once it is ready, you can view it in your browser or use the browser print dialog to save a single-page A4 PDF. The report includes a link for checking its current status and claims.',
@@ -1687,7 +1905,7 @@ Since the KlickerUZH app is not yet available in the iOS App Store, follow these
       exportReportPrintError:
         'The report could not be opened for printing. Allow pop-ups for this page and try again.',
       privacyAndTransparencyNotice:
-        'Peer comparison is released only for at least 10 active participants. Ten initial score ranges are merged until every displayed range represents at least 3 participants. The report contains no peer scores or identifiers.',
+        'Peer comparison is included only in reports issued after the course has ended, and only for at least 10 active participants. Ten initial score ranges are merged until every displayed range represents at least 3 participants. The report contains no peer scores or identifiers.',
       courseNameLabel: 'Course',
       studentNameLabel: 'Student name',
       studentEmailAddressLabel: 'Email address',
@@ -1832,23 +2050,24 @@ Since the KlickerUZH app is not yet available in the iOS App Store, follow these
     selectAllPage: 'Select up to 50 available resources',
     selectResource: 'Select “{title}”',
     loadMoreResources: 'Load more resources',
-    importedSourcesTitle: 'Imported sources',
+    importedSourcesTitle: 'Indexed sources',
     importedSourceColumn: 'Source',
     importedSourcesNotice:
-      'Imported metadata for content that is already indexed in this knowledge base. Imported sources are excluded from knowledge graph builds and do not count toward the resource or storage limits.',
+      'Everything indexed in this knowledge base, whether you added it through the app or the course team imported it. App-managed resources count toward the resource and storage limits and are included in knowledge graph builds; manually imported sources are not.',
     importedSourcesIncomplete:
       'The list covers the most recently scanned sources. Older sources may not be listed yet.',
-    importedSourcesEmpty:
-      'No imported sources have been found for this knowledge base yet.',
-    importedSourcesLoadError: 'The imported sources could not be loaded.',
-    loadMoreImportedSources: 'Load more imported sources',
+    importedSourcesEmpty: 'No sources are indexed in this knowledge base yet.',
+    importedSourcesLoadError: 'The indexed sources could not be loaded.',
+    loadMoreImportedSources: 'Load more sources',
     importedSourcesLoadMoreError:
-      'The additional imported sources could not be loaded. Try again.',
+      'The additional sources could not be loaded. Try again.',
     importedObservedAt: 'Observed {date}',
     importedIngestedColumn: 'Ingested',
     importedObservedColumn: 'Observed',
     importedIngestionUnknown: 'Ingestion time not recorded',
     importedSourceGeneric: 'Source',
+    importedSourceManagedBadge: 'App-managed',
+    importedSourceImportedBadge: 'Manually imported',
     importedVideoNoFileHint:
       'Video content is indexed without storing the original file.',
     noResources: 'No resources have been added yet.',
@@ -1926,6 +2145,14 @@ Since the KlickerUZH app is not yet available in the iOS App Store, follow these
       'The uploaded file no longer matches its upload reservation. Please upload it again.',
     ingestionFailed: 'The ingestion operation failed.',
     ingestionSuperseded: 'The ingestion operation was superseded.',
+    ingestionFailureSourceVersionMismatch:
+      'The source no longer matches the version recorded when it was added.',
+    ingestionFailureSourceFetch: 'The source could not be retrieved.',
+    ingestionFailureSourceProcessing:
+      'The source content could not be processed.',
+    ingestionFailureSourceSizeLimit:
+      'The source is larger than the supported size limit.',
+    ingestionFailureActivation: 'The imported content could not be activated.',
     inspectResource: 'Inspect',
     inspectorTitle: 'Resource details',
     sourceType: 'Source type',
@@ -2007,6 +2234,34 @@ Since the KlickerUZH app is not yet available in the iOS App Store, follow these
       'This published graph does not include an element-generation bundle yet. Rebuild it to generate Klicker elements.',
     graphPreviewUnavailable:
       'Build and publish a graph before opening the lecturer viewer.',
+    graphDomainLabel: 'Domain',
+    graphDomainSelectPlaceholder: 'Select a domain',
+    graphFocusTopicLabel: 'Focus topic (optional)',
+    graphFocusTopicPlaceholder: 'e.g. Capital budgeting',
+    graphFocusTopicNote:
+      'Steers which material the extraction emphasizes. The focus is not a source: it cannot add facts, and the rest of the material keeps its coverage.',
+    graphDomainFinance: 'Finance',
+    graphDomainEconomics: 'Economics',
+    graphDomainBusiness: 'Business Administration',
+    graphDomainMathematics: 'Mathematics',
+    graphDomainInformatics: 'Informatics',
+    graphDomainGeneralAcademic: 'General / Mixed',
+    graphDomainCategoriesLabel: 'Generated categories',
+    graphDomainLanguageNote:
+      'The graph is generated in the selected language. The interface language does not change the categories.',
+    graphDomainLanguageLabel: 'Generation language',
+    graphDomainLanguageSelectPlaceholder: 'Select a language',
+    graphDomainCurrentUnavailable:
+      'The selected domain {domain} (version {version}) is not available in this deployment. Choose a supported domain to build again.',
+    graphDomainLanguageUnavailable:
+      'The selected domain {domain} does not serve {language} in this deployment. Choose a supported generation language to build again.',
+    graphDomainRebuildBlocked:
+      'This knowledge base uses an explicit domain ({domain}, version {version}, {language}) that this deployment cannot reapply. Rebuilding is blocked until an explicit domain selection is available again.',
+    graphDomainVersionUnknown: 'unknown',
+    graphDomainPublished:
+      'Served graph: {domain} (version {version}, {language})',
+    graphDomainLanguageGerman: 'German',
+    graphDomainLanguageEnglish: 'English',
     ingestionDisabledError:
       'Adding new content to knowledge bases is temporarily disabled.',
   },
@@ -2096,6 +2351,38 @@ Since the KlickerUZH app is not yet available in the iOS App Store, follow these
       nextPage: 'Next',
     },
     admin: {
+      chatbotRejectionReason: 'Reason for rejection',
+      chatbotRejectConsequence:
+        'The owner will see this reason and can revise the chatbot before requesting approval again.',
+      chatbotReject: 'Reject request',
+      chatbotRejected:
+        '“{name}” was rejected. The owner can revise and resubmit it.',
+      chatbotRejectionError:
+        'Rejection could not be confirmed. Refresh the list and check the current status before trying again.',
+      chatbotAllTools: 'All tools',
+      chatbotDefaultReasoning: 'All reasoning levels supported by the model',
+      adminOnly: 'This page is available to administrators only.',
+      chatbotApprovals: 'Chatbot approvals',
+      chatbotApprovalsDescription:
+        'Review pending publication requests. Open a chatbot to check its configuration before approving participant access.',
+      chatbotOwner: 'Owner',
+      chatbotAccountApproval: 'Account publishing permission',
+      chatbotAccountApproved: 'Approved',
+      chatbotAccountNotApproved: 'Not approved',
+      chatbotConnectedTools: 'Connected tools',
+      chatbotNoConnectedTools: 'No connected tools.',
+      chatbotRefresh: 'Refresh requests',
+      chatbotQueueEmpty: 'No chatbots are awaiting approval.',
+      chatbotQueueError:
+        'Could not load publication requests. Refresh to try again.',
+      chatbotOwnerBlocked:
+        'The owner is not currently approved for chatbot publishing. Account approval is required before this chatbot can be published.',
+      chatbotApproveConsequence:
+        'Approving publishes this chatbot immediately for participants in its course. Account usage budgets remain unchanged.',
+      chatbotApprove: 'Approve and publish',
+      chatbotPublished: '“{name}” has been published.',
+      chatbotApprovalError:
+        'Publication could not be confirmed. The request list has been refreshed; check the current status before trying again.',
       pageName: 'Admin Panel',
       privatePreviewAvailability: 'Availability: Private Features',
       privatePreviewDescription:
@@ -2503,6 +2790,13 @@ Since the KlickerUZH app is not yet available in the iOS App Store, follow these
       chatAccountUsageTitle: 'Chatbot usage',
       chatAccountUsageUnauthorized:
         'Chatbot usage is not authorized for this account.',
+      chatAccountUsageSubscriptionLabel: 'Plan',
+      chatAccountUsageTierBase: 'Base models',
+      chatAccountUsageTierAdvanced: 'Base and advanced models',
+      chatAccountUsageClassUnavailable:
+        'This usage class is not enabled for your account.',
+      chatAccountUsageAdvancedCostCenter:
+        'Advanced models require the advanced AI subscription and a cost center that AI usage can be billed to.',
       chatAccountUsageRefreshing: 'Refreshing usage…',
       chatAccountUsageStale:
         'The latest usage could not be loaded. The values below may be out of date.',
@@ -2620,7 +2914,7 @@ Since the KlickerUZH app is not yet available in the iOS App Store, follow these
           'All types are generated as Klicker elements. Choose the format that best matches your learning goal.',
         bloomTitle: "Bloom's taxonomy",
         bloomHelp:
-          'Select one or more cognitive levels. The steps progress from recalling knowledge to making evidence-based judgments.',
+          'Select one or more cognitive levels. The steps progress from recalling knowledge to making evidence-based judgments. Higher levels need more detailed source material, so a level can still fail for thin material.',
         bloomLevel: 'Level {level}',
         bloomSelected: 'Selected',
         bloomSelect: 'Select level',
@@ -2630,6 +2924,10 @@ Since the KlickerUZH app is not yet available in the iOS App Store, follow these
         difficulty: 'Difficulty level',
         difficultyHelp:
           'Choose the reasoning demand for all generated elements. Difficulty comes from the task, not from confusing wording.',
+        focusTopic: 'Focus topic',
+        focusTopicHelp:
+          'Optional. Narrows this batch to one topic while the knowledge graph stays complete.',
+        focusTopicPlaceholder: 'E.g. Portfolio diversification',
         objectives: 'Learning objectives',
         objectivesHelp: 'Optional guidance for the generated elements.',
         objectiveHint: 'Write observable, specific learning objectives.',
@@ -2740,6 +3038,33 @@ Since the KlickerUZH app is not yet available in the iOS App Store, follow these
         FAILED: 'Failed',
         REJECTED: 'Rejected',
       },
+      failureClasses: {
+        user_input:
+          'This element could not be grounded in the selected material. Adjust the source scope or the learning objective and generate again.',
+        self_repairable:
+          'The workflow retried this element with alternative material but exhausted the usable evidence without grounding it.',
+        system:
+          'The generation service could not process this element, which is not caused by your input. Retry the generation; if the problem persists, contact support.',
+      },
+      failureClassLabels: {
+        user_input: 'Source material',
+        self_repairable: 'No alternative evidence',
+        system: 'System error',
+      },
+      reasons: {
+        NO_SUPPORTING_DOCUMENTS:
+          'The selected sources contain no matching documents for this element.',
+        TOPIC_NOT_IN_MATERIAL:
+          'The requested topic does not appear in the selected material.',
+        LEVEL_NOT_GROUNDABLE:
+          'The selected material does not support the requested cognitive level for this element.',
+        NO_DISTINCT_EVIDENCE:
+          'Several elements would rely on the same evidence, so this element was left out.',
+        GROUNDING_EXHAUSTED:
+          'The workflow used all usable evidence without producing a grounded element.',
+        SYSTEM_FAILURE:
+          'The generation service reported an internal failure for this element.',
+      },
       build: {
         title: '{type} generation',
         stage: 'Current stage: {stage}',
@@ -2762,6 +3087,20 @@ Since the KlickerUZH app is not yet available in the iOS App Store, follow these
           'I understand that the resulting set contains fewer elements than requested.',
         rejected: 'This generation was rejected during review.',
         noDrafts: 'The generation completed without reviewable elements.',
+        legacyFailure:
+          'This run failed before the workflow reported per-element reasons.',
+        failureReasonsTitle:
+          '{count, plural, one {# element is missing from this generation} other {# elements are missing from this generation}}',
+        failureReasonsHelp:
+          'The workflow reported why these elements could not be generated. The delivered elements are unaffected and stay in review.',
+        failureModule: 'Module',
+        failureObjective: 'Learning objective',
+        failureLevel: 'Bloom level',
+        failureEvidence: 'Required evidence',
+        failureSuggestions: 'Topics covered by your material',
+        failureRetryGuidance:
+          'This is a system-side problem. Retry the generation; if it persists, contact support.',
+        failureDiagnostics: 'Technical diagnostics',
       },
       gate: {
         eyebrow: 'Review gate',
@@ -2775,6 +3114,12 @@ Since the KlickerUZH app is not yet available in the iOS App Store, follow these
         elementNumber: 'Element {number}',
         objectives: 'Learning objectives',
         noObjectives: 'No explicit learning objectives.',
+        generatedDefaultObjective: 'Generated default',
+        slotEvidence: 'Evidence per element',
+        noSlotEvidence: 'No evidence resolved',
+        concentrationTitle: 'Concentrated evidence',
+        concentrationNotice:
+          '{count, plural, one {# element} other {# elements}} in this module share the same evidence entities: {entities}.',
         difficulty: 'Difficulty {difficulty}',
         warnings: '{count, plural, one {# warning} other {# warnings}}',
         acknowledgeWarnings: 'I reviewed and acknowledge these warnings.',
@@ -4744,9 +5089,6 @@ Since the KlickerUZH app is not yet available in the iOS App Store, follow these
       chatbotTechnicalDetails: 'Technical details',
       chatbotTechnicalId: 'ID',
       chatbotTechnicalAvatar: 'Avatar',
-      chatbotUsageTechnicalIntegrations: 'Technical integrations',
-      chatbotUsageTechnicalIntegrationsDescription:
-        'Inspect configured MCP integrations and their current status.',
       chatbotSetupTitle: 'Set up your chatbot',
       chatbotSetupDescription:
         'Use the sections below to complete and save your chatbot setup before requesting publication.',
@@ -4777,9 +5119,62 @@ Since the KlickerUZH app is not yet available in the iOS App Store, follow these
         'Quizzer may still be hidden when its course-material capability is unavailable.',
       chatbotModeEnabled: 'Enabled',
       chatbotModeDisabled: 'Disabled',
+      chatbotCustomModesTitle: 'Custom modes',
+      chatbotCustomModesDescription:
+        'Add up to {count} custom modes with their own name, description, and persona text. Custom modes are reviewed together with the chatbot revision.',
+      chatbotCustomModesEmpty:
+        'No custom modes yet. Add one to offer participants an additional mode.',
+      chatbotCustomModesNone: 'No custom modes are configured.',
+      chatbotCustomModesCount: '{count} of {max} custom modes used',
+      chatbotCustomMode: 'Custom mode {number}',
+      chatbotCustomModeName: 'Mode name',
+      chatbotCustomModeNameRequired: 'Each custom mode needs a name.',
+      chatbotCustomModeDescription: 'Short description',
+      chatbotCustomModePersonaText: 'Persona and instructions',
+      chatbotCustomModePersonaPlaceholder:
+        'Describe how this mode should respond to participants.',
+      chatbotCustomModeWelcomeMessage: 'Welcome message',
+      chatbotCustomModeWelcomePlaceholder:
+        'Shown in an empty chat for this mode. Leave empty to use the standard greeting.',
+      chatbotCustomModeStarterPrompts: 'Starter prompts',
+      chatbotCustomModeStarterPromptsDescription:
+        'Shown as suggestions in an empty chat for this mode. At most {count} starters; learners decide whether to send them.',
+      chatbotCustomModeStarterPrompt: 'Starter prompt {number}',
+      chatbotCustomModeStarterPromptAdd: 'Add starter prompt',
+      chatbotCustomModeShowReasoning: 'Show model reasoning to participants',
+      chatbotCustomModeShowReasoningDescription:
+        'Off by default. The reasoning summary can paraphrase the persona and instructions of this mode, for example the hidden facts of a role-play. Owner preview always shows it.',
+      chatbotCustomModeReasoningShown:
+        'Model reasoning visible to participants',
+      chatbotCustomModeReasoningHidden:
+        'Model reasoning hidden from participants',
+      chatbotCustomModeReplyLanguage: 'Reply language',
+      chatbotCustomModeReplyLanguageDescription:
+        'By default, replies follow the language the participant writes in. Fix a language for role-plays that must stay in one language.',
+      chatbotCustomModeReplyLanguageFollow: 'Follow the participant',
+      chatbotCustomModeReplyLanguageEn: 'Always English',
+      chatbotCustomModeReplyLanguageDe: 'Always German',
+      chatbotCustomModeMeetingClock: 'Meeting clock',
+      chatbotCustomModeMeetingClockDescription:
+        "Off by default. Tells the model how many minutes have passed since the participant's first message, for timed role-plays. Keep the meeting length and phases in the persona.",
+      chatbotCustomModeMeetingClockOff: 'Off',
+      chatbotCustomModeMeetingClockElapsed: 'Elapsed minutes',
+      chatbotCustomModeMeetingClockElapsedAndTime:
+        'Elapsed minutes and time of day',
+      chatbotCustomModeAdd: 'Add custom mode',
+      chatbotCustomModeRemove: 'Remove',
+      chatbotCustomModesLimit: 'At most {count} custom modes are supported.',
+      chatbotCustomModesDuplicate: 'Each custom mode needs a unique name.',
+      chatbotCustomModesReadonly:
+        'Custom modes cannot be edited in this chatbot status.',
+      chatbotCustomModesSave: 'Save custom modes',
+      chatbotCustomModesSaving: 'Saving…',
+      chatbotCustomModesSaveSuccess: 'Custom modes saved.',
+      chatbotCustomModesSaveError:
+        'Could not save the custom modes. Please try again.',
       chatbotFraming: 'Chatbot framing',
       chatbotFramingDescription:
-        'Describe the course, audience, prior knowledge, typical tasks and learning priorities. Saved context guides the next response in standard learning modes, including Writing Coach.',
+        'Describe the course, audience, prior knowledge, typical tasks and learning priorities. This context guides responses in standard learning modes, including Writing Coach. For published chatbots, saved changes apply after approval.',
       chatbotFramingExamples: 'Context examples',
       chatbotFramingScientific: 'Scientific writing',
       chatbotFramingScientificExample:
@@ -4989,10 +5384,19 @@ Since the KlickerUZH app is not yet available in the iOS App Store, follow these
         'Off: the chatbot uses exactly one model selected by the lecturer.',
       modelSelectionFixedDescription:
         'Participants use this model. New chatbots start with Auto.',
+      answerPreferences: 'Let participants choose answer format and tone',
+      answerPreferencesEnabledDescription:
+        'On: participants can choose bullet points and a friendly or direct tone for new answers.',
+      answerPreferencesDisabledDescription:
+        'Off: all participants get the same answer format and tone.',
       modelSelectionParticipantDescription:
         'Participants can choose among these models. Select at least one.',
       selectedModel: 'Selected model',
       allowedModels: 'Allowed models',
+      modelUnavailableHint:
+        'Advanced models need the advanced AI subscription with a cost center.',
+      modelUnavailableSelected:
+        'Your account cannot use this advanced model, so participants cannot chat with it. Choose another model.',
       allowedModelsAll: 'All',
       chatbotModelSettings: 'Model & Reasoning Settings',
       reasoningEffortsByModel: 'Reasoning efforts by model',
@@ -5024,7 +5428,6 @@ Since the KlickerUZH app is not yet available in the iOS App Store, follow these
       disclaimerAccepted: 'Accepted',
       disclaimerDeclined: 'Declined',
       disclaimerPending: 'Pending',
-      mcpConfigurations: 'MCP Configurations',
       knowledgeBase: 'Knowledge base',
       knowledgeGraphPolicy: 'Knowledge graph',
       knowledgeGraphPolicyDescription:
@@ -5035,21 +5438,14 @@ Since the KlickerUZH app is not yet available in the iOS App Store, follow these
       knowledgeGraphVisibleDisabledDescription:
         'Off: the concept map stays hidden from participants.',
       knowledgeGraphRetrieval: 'Use graph connections for document search',
-      knowledgeGraphRetrievalDescription:
+      knowledgeGraphRetrievalEnabledDescription:
         'On: document search may use related concepts from the published graph as additional search hints. Answers still cite document passages only.',
+      knowledgeGraphRetrievalDisabledDescription:
+        'Off: document search uses the question only, without graph hints.',
       knowledgeGraphSave: 'Save knowledge graph settings',
       knowledgeGraphSaveSuccess: 'Knowledge graph settings saved.',
       noEnabledKnowledgeBase:
         'No knowledge base is connected. This chatbot cannot search course material.',
-      noMcpConfigurations: 'No MCP configurations.',
-      mcpServerActive: 'Server active',
-      mcpServerInactive: 'Server inactive',
-      mcpChatMode: 'Chat mode',
-      mcpStatus: 'Status',
-      mcpStatusEnabled: 'Enabled',
-      mcpStatusDisabled: 'Disabled',
-      mcpPriority: 'Priority',
-      mcpAllowedTools: 'Allowed tools',
       openChatbot: 'Open Chatbot',
       openOwnerPreview: 'Open owner preview',
       chatbotOwnerPreviewLive: 'Live configuration',

@@ -4300,13 +4300,30 @@ test.describe('Part 5: Course Sharing - Individual permissions', () => {
       practiceQuizzes: 0,
       microLearnings: 0,
       groupActivities: 0,
-      directPermissions: 5,
+      directPermissions: 6,
     })
     expectPermissionDetail({
       summary,
       detailsKey: 'directPermissionDetails',
       objectType: 'COURSE',
       objectId: summary.courseId,
+      userShortname: LECTURER_SHORTNAME,
+      permissionLevel: 'ADMIN',
+      propagation: false,
+    })
+
+    // the source activity owner (lecturer) also keeps ADMIN access on the copy
+    const copiedLiveQuiz = getActivityReference({
+      summary,
+      collection: 'liveQuizzes',
+      activityName: SHARING.liveQuiz,
+    })
+    expect(copiedLiveQuiz).toBeTruthy()
+    expectPermissionDetail({
+      summary,
+      detailsKey: 'directPermissionDetails',
+      objectType: 'LIVE_QUIZ',
+      objectId: copiedLiveQuiz!.id,
       userShortname: LECTURER_SHORTNAME,
       permissionLevel: 'ADMIN',
       propagation: false,

@@ -229,6 +229,7 @@ async function seedDraft(targetDraftId: string, sourceElementId: string) {
         objectives: [],
         sourceScopes: [],
         bloomLevels: ['remember'],
+        focusTopic: null,
         difficultyPreset: 'D1',
         difficultyCounts: { d1: 1, d2: 0, d3: 0, d4: 0, d5: 0 },
       },

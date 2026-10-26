@@ -18,6 +18,10 @@ import * as KnowledgeService from '../services/knowledge.js'
 import * as LiveQuizService from '../services/liveQuizzes.js'
 import * as MicroLearningService from '../services/microLearning.js'
 import * as NotificationService from '../services/notifications.js'
+import {
+  completeParticipantDataUse,
+  updateParticipantDataUseChoice,
+} from '../services/participantAccountDataUse.js'
 import * as ParticipantInvitationService from '../services/participantInvitations.js'
 import * as ParticipantService from '../services/participants.js'
 import * as PracticeQuizService from '../services/practiceQuizzes.js'
@@ -96,7 +100,10 @@ import {
   LeaveCourseParticipation,
   LtiChatbotLogin,
   Participant,
+  ParticipantAccountDataUse,
+  ParticipantDataUse,
   ParticipantGroup,
+  ParticipantInitialDataUseInput,
   ParticipantLearningData,
   ParticipantTokenData,
   Participation,
@@ -137,6 +144,7 @@ import {
   UserGroupMembersInput,
 } from './sharing.js'
 import {
+  AiSubscriptionTier,
   BetaEnrollmentCapability,
   FileUploadSAS,
   LocaleType,
@@ -364,6 +372,10 @@ export const Mutation = builder.mutationType({
           isProfilePublic: t.arg.boolean({ required: true }),
           courseId: t.arg.string({ required: false }),
           signedLtiData: t.arg.string({ required: false }),
+          dataUse: t.arg({
+            type: ParticipantInitialDataUseInput,
+            required: true,
+          }),
         },
         resolve: async (_, args, ctx) => {
           return await AccountService.createParticipantAccount(args, ctx)
@@ -515,6 +527,44 @@ export const Mutation = builder.mutationType({
         },
         resolve: async (_, args, ctx) => {
           return await ParticipantService.updateParticipantAvatar(args, ctx)
+        },
+      }),
+
+      completeParticipantDataUse: t.withAuth(asParticipant).field({
+        type: ParticipantAccountDataUse,
+        args: {
+          expectedRevision: t.arg.int({ required: true }),
+          disclosureVersion: t.arg.string({ required: true }),
+          researchConsent: t.arg.boolean({ required: true }),
+          learningAnalyticsConsent: t.arg.boolean({ required: true }),
+          acknowledged: t.arg.boolean({ required: true }),
+        },
+        resolve: (_, args, ctx) => completeParticipantDataUse(args, ctx),
+      }),
+
+      setResearchConsent: t.withAuth(asParticipant).field({
+        nullable: true,
+        type: ParticipantDataUse,
+        args: {
+          consent: t.arg.boolean({ required: true }),
+          expectedRevision: t.arg.int({ required: true }),
+          disclosureVersion: t.arg.string({ required: true }),
+        },
+        resolve: async (_, args, ctx) => {
+          return await updateParticipantDataUseChoice('research', args, ctx)
+        },
+      }),
+
+      setLearningAnalyticsConsent: t.withAuth(asParticipant).field({
+        nullable: true,
+        type: ParticipantDataUse,
+        args: {
+          consent: t.arg.boolean({ required: true }),
+          expectedRevision: t.arg.int({ required: true }),
+          disclosureVersion: t.arg.string({ required: true }),
+        },
+        resolve: async (_, args, ctx) => {
+          return await updateParticipantDataUseChoice('analytics', args, ctx)
         },
       }),
 
@@ -2169,6 +2219,24 @@ export const Mutation = builder.mutationType({
         },
       }),
 
+      rebuildKbKnowledgeGraphWithDomain: t.withAuth(asUserFullAccess).field({
+        nullable: false,
+        type: KBKnowledgeGraphConfigType,
+        args: {
+          kbId: t.arg.id({ required: true }),
+          qualityTier: t.arg({ type: KBGraphQualityTier, required: false }),
+          // An omitted triple is the legacy path, so one mutation can serve a
+          // deployment whose capability gate is closed.
+          domainPolicyId: t.arg.id({ required: false }),
+          domainPolicyVersion: t.arg.int({ required: false }),
+          domainPolicyLanguage: t.arg.string({ required: false }),
+          focusTopic: t.arg.string({ required: false }),
+        },
+        resolve: async (_, args, ctx) => {
+          return await KnowledgeService.rebuildKbKnowledgeGraph(args, ctx)
+        },
+      }),
+
       setKbKnowledgeGraphEnabled: t.withAuth(asUserFullAccess).field({
         nullable: false,
         type: KBKnowledgeGraphConfigType,
@@ -2378,6 +2446,8 @@ export const Mutation = builder.mutationType({
         args: {
           email: t.arg.string({ required: true }),
           enabled: t.arg.boolean({ required: true }),
+          tier: t.arg({ type: AiSubscriptionTier }),
+          costCenter: t.arg.string(),
         },
         resolve: async (_, args, ctx) => {
           return await AccountService.setAiFeatures(args, ctx)

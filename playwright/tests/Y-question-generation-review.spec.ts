@@ -1,3 +1,4 @@
+import { mkdirSync, readFileSync } from 'node:fs'
 import { expect, test } from '../util/fixtures.js'
 import { getPrisma } from '../global-setup.js'
 import { URL_MANAGE, USER_ID_TEST } from '../util/constants.js'
@@ -822,5 +823,271 @@ test.describe('Background generation notifications', () => {
         })
       }
     }
+  })
+})
+
+test('generation configuration follows graph language and scopes focus to questions', async ({
+  loginLecturer,
+  page,
+}) => {
+  const submitted: Array<Record<string, unknown>> = []
+  const persisted = JSON.parse(
+    readFileSync(
+      new URL('../../packages/graphql/src/public/client.json', import.meta.url),
+      'utf8'
+    )
+  ) as Record<string, string>
+  const operationNames = new Map(
+    Object.entries(persisted).map(([name, hash]) => [hash, name])
+  )
+  const sources = ['en', 'de'].map((language, index) => ({
+    graphBuildId: `b1000000-0000-4000-8000-00000000000${index}`,
+    kbId: `b2000000-0000-4000-8000-00000000000${index}`,
+    kbName: `Synthetic ${language} course`,
+    language,
+    indexedAt: '2026-09-01T00:00:00Z',
+    isStale: false,
+    sourceCount: 1,
+    sources: [
+      {
+        resourceId: `b3000000-0000-4000-8000-00000000000${index}`,
+        title: 'Synthetic course evidence',
+        sourceFile: `course-${index}.md`,
+        pageCount: null,
+      },
+    ],
+  }))
+  await page.route('**/graphql*', async (route) => {
+    const request = route.request()
+    const url = new URL(request.url())
+    const body = request.method() === 'POST' ? request.postDataJSON() : null
+    const extensions =
+      body?.extensions ?? JSON.parse(url.searchParams.get('extensions') ?? '{}')
+    const operation =
+      body?.operationName ??
+      url.searchParams.get('operationName') ??
+      operationNames.get(extensions.persistedQuery?.sha256Hash)
+    let data: unknown
+    if (operation === 'ElementGenerationSourcesWithLanguage') {
+      data = { elementGenerationSources: sources }
+    } else if (operation === 'ElementGenerationCapabilities') {
+      data = {
+        elementGenerationCapabilities: {
+          configured: true,
+          elementTypes: ['SC', 'FLASHCARD'],
+          languages: ['de', 'en'],
+          bloomLevels: [
+            'remember',
+            'understand',
+            'apply',
+            'analyze',
+            'evaluate',
+          ],
+          difficultyLevels: [1, 2, 3, 4, 5],
+          supportsIndividualRegeneration: false,
+          typeCapabilities: ['SC', 'FLASHCARD'].map((elementType) => ({
+            elementType,
+            reviewGates: elementType === 'SC' ? ['DESIGN', 'PLAN'] : [],
+            supportsSourceScopes: elementType === 'SC',
+            supportsDifficulty: elementType === 'SC',
+            supportsBloomLevels: elementType === 'SC',
+            supportsFocusTopic: elementType === 'SC',
+            supportsRetry: elementType === 'FLASHCARD',
+            supportsIncompletePublication: elementType === 'FLASHCARD',
+          })),
+        },
+      }
+    } else if (operation === 'StartElementGeneration') {
+      submitted.push(body.variables.input)
+      await route.fulfill({
+        json: { errors: [{ message: 'Synthetic dispatch intercepted' }] },
+      })
+      return
+    } else {
+      await route.continue()
+      return
+    }
+    await route.fulfill({ json: { data } })
+  })
+  await loginLecturer()
+  const manageUrl = process.env.URL_MANAGE ?? URL_MANAGE
+  const gallery = new URL(
+    '../../project/_local/gallery/kg-generation-simplification/',
+    import.meta.url
+  )
+  mkdirSync(gallery, { recursive: true })
+  for (const locale of ['en', 'de']) {
+    await gotoCommit(
+      page,
+      `${manageUrl}${locale === 'de' ? '/de' : ''}/elements/generate?kbId=${sources[0].kbId}`
+    )
+    const language = page.getByTestId('element-generation-language')
+    await expect(language).toHaveValue('en')
+    await expect(language).toBeDisabled()
+    await page
+      .getByTestId(`element-generation-source-${sources[1].kbId}`)
+      .check()
+    await expect(language).toHaveValue('de')
+    await page
+      .getByTestId(`element-generation-source-${sources[0].kbId}`)
+      .check()
+    await page
+      .getByTestId('element-generation-focus-topic')
+      .fill('Synthetic topic')
+    for (const [width, height, size] of [
+      [1440, 1000, 'desktop'],
+      [390, 844, 'mobile'],
+    ] as const) {
+      await page.setViewportSize({ width, height })
+      await language.locator('xpath=ancestor::section').screenshot({
+        path: new URL(`questions-${locale}-${size}.png`, gallery).pathname,
+      })
+    }
+    await page.getByTestId('element-generation-start').click()
+    await expect.poll(() => submitted.length).toBe(locale === 'en' ? 1 : 3)
+    expect(submitted.at(-1)).toMatchObject({
+      graphBuildId: sources[0].graphBuildId,
+      language: 'en',
+      focusTopic: 'Synthetic topic',
+      elementType: 'SC',
+    })
+    await page
+      .getByTestId('element-generation-type-flashcard')
+      .locator('..')
+      .click()
+    await expect(
+      page.getByTestId('element-generation-type-flashcard')
+    ).toBeChecked()
+    await expect(
+      page.getByTestId('element-generation-focus-topic')
+    ).toHaveCount(0)
+    await page.getByTestId('element-generation-start').click()
+    await expect.poll(() => submitted.length).toBe(locale === 'en' ? 2 : 4)
+    expect(submitted.at(-1)).not.toHaveProperty('focusTopic')
+    await page.reload()
+    await expect(language).toHaveValue('en')
+  }
+})
+
+test('refreshes the generation capabilities after a rejected submission', async ({
+  loginLecturer,
+  page,
+}) => {
+  const submitted: Array<Record<string, unknown>> = []
+  const persisted = JSON.parse(
+    readFileSync(
+      new URL('../../packages/graphql/src/public/client.json', import.meta.url),
+      'utf8'
+    )
+  ) as Record<string, string>
+  const operationNames = new Map(
+    Object.entries(persisted).map(([name, hash]) => [hash, name])
+  )
+  const source = {
+    graphBuildId: 'b1000000-0000-4000-8000-00000000000a',
+    kbId: 'b2000000-0000-4000-8000-00000000000a',
+    kbName: 'Synthetic focus course',
+    language: 'en',
+    indexedAt: '2026-09-01T00:00:00Z',
+    isStale: false,
+    sourceCount: 1,
+    sources: [
+      {
+        resourceId: 'b3000000-0000-4000-8000-00000000000a',
+        title: 'Synthetic course evidence',
+        sourceFile: 'course.md',
+        pageCount: null,
+      },
+    ],
+  }
+  // The first capability answer still offers focus; every answer after the
+  // rejection reflects the actor's current rollout.
+  let capabilityCalls = 0
+  let focusAdmitted = true
+  await page.route('**/graphql*', async (route) => {
+    const request = route.request()
+    const url = new URL(request.url())
+    const body = request.method() === 'POST' ? request.postDataJSON() : null
+    const extensions =
+      body?.extensions ?? JSON.parse(url.searchParams.get('extensions') ?? '{}')
+    const operation =
+      body?.operationName ??
+      url.searchParams.get('operationName') ??
+      operationNames.get(extensions.persistedQuery?.sha256Hash)
+    if (operation === 'ElementGenerationSourcesWithLanguage') {
+      await route.fulfill({
+        json: { data: { elementGenerationSources: [source] } },
+      })
+      return
+    }
+    if (operation === 'ElementGenerationCapabilities') {
+      capabilityCalls += 1
+      await route.fulfill({
+        json: {
+          data: {
+            elementGenerationCapabilities: {
+              configured: true,
+              elementTypes: ['SC'],
+              languages: ['en'],
+              bloomLevels: ['remember'],
+              difficultyLevels: [1, 2, 3, 4, 5],
+              supportsIndividualRegeneration: false,
+              typeCapabilities: [
+                {
+                  elementType: 'SC',
+                  reviewGates: ['DESIGN', 'PLAN'],
+                  supportsSourceScopes: true,
+                  supportsDifficulty: true,
+                  supportsBloomLevels: true,
+                  supportsFocusTopic: focusAdmitted,
+                  supportsRetry: false,
+                  supportsIncompletePublication: false,
+                },
+              ],
+            },
+          },
+        },
+      })
+      return
+    }
+    if (operation === 'StartElementGeneration') {
+      submitted.push(body.variables.input)
+      focusAdmitted = false
+      await route.fulfill({
+        json: {
+          errors: [
+            {
+              message: 'This deployment does not support question focus topics',
+              extensions: { code: 'CONFIGURATION_INVALID' },
+            },
+          ],
+        },
+      })
+      return
+    }
+    await route.continue()
+  })
+  await loginLecturer()
+  const manageUrl = process.env.URL_MANAGE ?? URL_MANAGE
+  await gotoCommit(page, `${manageUrl}/elements/generate?kbId=${source.kbId}`)
+
+  const focus = page.getByTestId('element-generation-focus-topic')
+  await expect(focus).toBeVisible()
+  await focus.fill('Synthetic topic')
+  await page.getByTestId('element-generation-start').click()
+
+  // The rejection is surfaced, and the form re-reads the capabilities it acted
+  // on instead of keeping a control the deployment would refuse again.
+  // Next.js renders its own route announcer with role="alert", so match the
+  // submission error by its text.
+  await expect(
+    page.getByRole('alert').filter({ hasText: 'CONFIGURATION_INVALID' })
+  ).toBeVisible()
+  await expect(focus).toHaveCount(0)
+  await expect.poll(() => capabilityCalls).toBeGreaterThan(1)
+  expect(submitted).toHaveLength(1)
+  expect(submitted[0]).toMatchObject({
+    graphBuildId: source.graphBuildId,
+    focusTopic: 'Synthetic topic',
   })
 })

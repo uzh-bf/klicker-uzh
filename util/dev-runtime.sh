@@ -575,6 +575,12 @@ start_runtime() {
   [ "$expected_generation" = "$(read_generation)" ] ||
     die "Runtime generation changed before process start; rerun devrouter ensure."
 
+  # The managed helper redirects this shell's stderr into the process log, so
+  # the marker proves the start path was reached even when the runtime command
+  # dies before printing anything.
+  printf '[dev-runtime] start requested (generation %s, fingerprint %s): %s\n' \
+    "$expected_generation" "${expected_fingerprint:0:12}" "$*" >&2
+
   ensure_dependencies
   apply_cache_policy
   exec "$@"

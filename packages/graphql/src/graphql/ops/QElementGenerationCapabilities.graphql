@@ -12,6 +12,7 @@ query ElementGenerationCapabilities {
       supportsSourceScopes
       supportsDifficulty
       supportsBloomLevels
+      supportsFocusTopic
       supportsRetry
       supportsIncompletePublication
     }

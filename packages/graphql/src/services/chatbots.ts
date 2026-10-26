@@ -3,14 +3,20 @@ import { Prisma, type PrismaClient } from '@klicker-uzh/prisma/client'
 import type {
   ChatbotAuthoringRevision,
   ChatbotAuthoringRevisionProjection,
+  ChatbotCustomModeConfigInput,
   ChatbotStandardModeConfigInput,
 } from '@klicker-uzh/types'
 import {
   CHAT_BASE_MODEL_ID,
+  CHATBOT_CUSTOM_MODE_PERSONA_EXTENDED_MAX_LENGTH,
+  CHATBOT_CUSTOM_MODE_PERSONA_MAX_LENGTH,
   getChatModelAutoPolicyIssues,
   getChatModelBasePolicyIssues,
   getWritingCoachUnavailableReason,
+  isChatUsageClassEntitled,
+  normalizeChatbotCustomModeConfig,
   normalizeChatbotStandardModeConfig,
+  parseChatbotCustomModeConfigInput,
   parseChatbotStandardModeConfigInput,
 } from '@klicker-uzh/util'
 import { GraphQLError } from 'graphql'
@@ -117,7 +123,7 @@ export function parseChatModelRegistry(value: unknown): ChatModelCapability[] {
 const DEFAULT_CHAT_MODEL_REGISTRY_INPUT = [
   {
     id: 'auto',
-    deploymentId: 'auto-router',
+    deploymentId: 'auto-router-v2',
     name: 'Auto Mode',
     description: 'Automatic model selection through the LiteLLM auto router',
     fallback: false,
@@ -130,9 +136,9 @@ const DEFAULT_CHAT_MODEL_REGISTRY_INPUT = [
     cost: { input: 1.0, output: 5.0 },
   },
   {
-    id: 'gpt-5.6-luna',
-    deploymentId: 'gpt-5.6-luna',
-    name: 'GPT-5.6 Luna',
+    id: 'gpt-6-luna',
+    deploymentId: 'gpt-6-luna',
+    name: 'GPT-6 Luna',
     description: 'OpenAI reasoning model',
     fallback: true,
     supportsReasoning: true,
@@ -141,7 +147,35 @@ const DEFAULT_CHAT_MODEL_REGISTRY_INPUT = [
     maxOutputTokens: 4096,
     usageClass: 'BASE',
     apiVersion: 'preview',
-    cost: { input: 0.2, output: 1.2 },
+    cost: { input: 0.1, output: 0.5 },
+  },
+  {
+    id: 'gpt-6-sol',
+    deploymentId: 'gpt-6-sol',
+    name: 'GPT-6 Sol',
+    description: 'OpenAI reasoning model',
+    fallback: false,
+    supportsReasoning: true,
+    usesResponsesApi: true,
+    supportedReasoningEfforts: ['low', 'medium', 'high'],
+    maxOutputTokens: 4096,
+    usageClass: 'ADVANCED',
+    apiVersion: 'preview',
+    cost: { input: 2.0, output: 10.0 },
+  },
+  {
+    id: 'gpt-6.1-sol',
+    deploymentId: 'gpt-6.1-sol',
+    name: 'GPT-6.1 Sol',
+    description: 'OpenAI reasoning model',
+    fallback: false,
+    supportsReasoning: true,
+    usesResponsesApi: true,
+    supportedReasoningEfforts: ['low', 'medium', 'high'],
+    maxOutputTokens: 4096,
+    usageClass: 'ADVANCED',
+    apiVersion: 'preview',
+    cost: { input: 2.0, output: 10.0 },
   },
   {
     id: 'gpt-5.4',
@@ -155,19 +189,6 @@ const DEFAULT_CHAT_MODEL_REGISTRY_INPUT = [
     maxOutputTokens: 4096,
     apiVersion: 'preview',
     cost: { input: 2.5, output: 15.0 },
-  },
-  {
-    id: 'gpt-5.1',
-    deploymentId: 'gpt-5.1',
-    name: 'GPT-5.1',
-    description: 'OpenAI reasoning model',
-    fallback: false,
-    supportsReasoning: true,
-    usesResponsesApi: true,
-    supportedReasoningEfforts: ['none', 'minimal', 'low', 'medium', 'high'],
-    maxOutputTokens: 4096,
-    apiVersion: 'preview',
-    cost: { input: 1.25, output: 10.0 },
   },
   {
     id: 'gpt-4.1',
@@ -419,10 +440,12 @@ const chatbotOwnerSelect = {
   mcpConfigurations: {
     select: { chatMode: true, isEnabled: true, parameters: true },
   },
+  customModeConfig: true,
   draftConfig: true,
   modelSelection: true,
   allowedModelIds: true,
   allowedReasoningEffortsByModel: true,
+  answerPreferencesEnabled: true,
   knowledgeGraphVisible: true,
   knowledgeGraphRetrievalEnabled: true,
   creditInitialCredits: true,
@@ -459,9 +482,11 @@ type ChatbotWithOwnerCourse = {
     isEnabled: boolean
     parameters: unknown
   }[]
+  customModeConfig: unknown
   modelSelection: boolean
   allowedModelIds: string[]
   allowedReasoningEffortsByModel: unknown
+  answerPreferencesEnabled: boolean
   knowledgeGraphVisible: boolean
   knowledgeGraphRetrievalEnabled: boolean
   creditInitialCredits: number
@@ -550,6 +575,9 @@ function shapeChatbotResponse<T extends ChatbotWithOwnerCourse>(
       chatbot.standardModeConfig,
       systemPrompts
     ),
+    customModeConfig: normalizeChatbotCustomModeConfig(
+      chatbot.customModeConfig
+    ),
     allowedModelIds: normalizeAllowedModelIds(
       chatbot.allowedModelIds,
       chatbot.modelSelection,
@@ -618,15 +646,17 @@ function cloneJson(value: unknown): unknown {
   )
 }
 
-type ChatbotKnowledgeGraphPolicy = Pick<
+type ChatbotRevisionLiveFlags = Pick<
   DB.Chatbot,
-  'knowledgeGraphVisible' | 'knowledgeGraphRetrievalEnabled'
+  | 'answerPreferencesEnabled'
+  | 'knowledgeGraphVisible'
+  | 'knowledgeGraphRetrievalEnabled'
 >
 
 // Live columns are the fallback for revisions saved before these fields existed.
 function parseStoredRevision(
   value: unknown,
-  live: ChatbotKnowledgeGraphPolicy
+  live: ChatbotRevisionLiveFlags
 ): ChatbotAuthoringRevision | null {
   if (!isRecord(value)) return null
 
@@ -728,6 +758,12 @@ function parseStoredRevision(
     return null
   }
   if (
+    value.answerPreferencesEnabled !== undefined &&
+    typeof value.answerPreferencesEnabled !== 'boolean'
+  ) {
+    return null
+  }
+  if (
     value.knowledgeGraphRetrievalEnabled !== undefined &&
     typeof value.knowledgeGraphRetrievalEnabled !== 'boolean'
   ) {
@@ -745,9 +781,16 @@ function parseStoredRevision(
         : (cloneJson(
             value.standardModeConfig
           ) as ChatbotAuthoringRevision['standardModeConfig']),
+    // Read-tolerant: a malformed stored value normalizes to no custom modes
+    // instead of invalidating the whole revision.
+    customModeConfig: normalizeChatbotCustomModeConfig(value.customModeConfig),
     modelSelection: value.modelSelection,
     allowedModelIds: [...value.allowedModelIds] as string[],
     allowedReasoningEffortsByModel,
+    answerPreferencesEnabled:
+      value.answerPreferencesEnabled === undefined
+        ? live.answerPreferencesEnabled
+        : value.answerPreferencesEnabled,
     creditInitialCredits: value.creditInitialCredits as number,
     creditResetPeriod: value.creditResetPeriod as DB.CreditResetPeriod,
     creditResetAmount: value.creditResetAmount as number,
@@ -786,11 +829,15 @@ function buildRevisionFromLive(
     standardModeConfig: cloneJson(
       chatbot.standardModeConfig
     ) as ChatbotAuthoringRevision['standardModeConfig'],
+    customModeConfig: normalizeChatbotCustomModeConfig(
+      chatbot.customModeConfig
+    ),
     modelSelection: chatbot.modelSelection,
     allowedModelIds: [...chatbot.allowedModelIds],
     allowedReasoningEffortsByModel: cloneJson(
       chatbot.allowedReasoningEffortsByModel
     ) as ChatbotAuthoringRevision['allowedReasoningEffortsByModel'],
+    answerPreferencesEnabled: chatbot.answerPreferencesEnabled,
     creditInitialCredits: chatbot.creditInitialCredits,
     creditResetPeriod: chatbot.creditResetPeriod,
     creditResetAmount: chatbot.creditResetAmount,
@@ -822,6 +869,9 @@ function revisionProjection(
     standardModeConfig: normalizeChatbotStandardModeConfig(
       revision.standardModeConfig,
       chatbot.systemPrompts
+    ),
+    customModeConfig: normalizeChatbotCustomModeConfig(
+      revision.customModeConfig
     ),
     allowedReasoningEffortsByModel:
       reasoningEntries.length > 0
@@ -958,12 +1008,17 @@ function revisionLiveData(
       revision.standardModeConfig === null
         ? Prisma.JsonNull
         : (revision.standardModeConfig as PrismaJson.PrismaChatbotStandardModeConfig),
+    customModeConfig:
+      revision.customModeConfig === null
+        ? Prisma.JsonNull
+        : (revision.customModeConfig as PrismaJson.PrismaChatbotCustomModeConfig),
     modelSelection: revision.modelSelection,
     allowedModelIds: revision.allowedModelIds,
     allowedReasoningEffortsByModel:
       revision.allowedReasoningEffortsByModel === null
         ? Prisma.JsonNull
         : (revision.allowedReasoningEffortsByModel as Prisma.InputJsonValue),
+    answerPreferencesEnabled: revision.answerPreferencesEnabled,
     knowledgeGraphVisible: revision.knowledgeGraphVisible,
     knowledgeGraphRetrievalEnabled: revision.knowledgeGraphRetrievalEnabled,
     creditInitialCredits: revision.creditInitialCredits,
@@ -1082,6 +1137,24 @@ function validateCompleteRevision(
     }
   }
 
+  if (revision.customModeConfig !== null) {
+    try {
+      // The stored keys are the identity the runtime matches; passing the
+      // config as its own existing set preserves them through validation.
+      parseChatbotCustomModeConfigInput(
+        revision.customModeConfig,
+        revision.customModeConfig
+      )
+    } catch (error) {
+      throw chatbotError(
+        error instanceof Error
+          ? error.message
+          : 'Invalid custom mode configuration',
+        'BAD_USER_INPUT'
+      )
+    }
+  }
+
   validateRevisionModelConfig(revision)
   const normalizedPolicy = normalizeAndValidateCreditPolicy({
     creditInitialCredits: revision.creditInitialCredits,
@@ -1151,6 +1224,7 @@ function validateCompleteRevision(
 type RevisionModelPolicyInput = {
   modelSelection: boolean
   allowedModelIds: string[]
+  answerPreferencesEnabled?: boolean | null
   allowedReasoningEffortsByModel?: Array<{
     modelId: string
     efforts: string[]
@@ -1178,6 +1252,7 @@ export type ChatbotRevisionSaveInput = {
   } | null
   modelPolicy?: RevisionModelPolicyInput | null
   standardModeConfig?: ChatbotStandardModeConfigInput | null
+  customModeConfig?: ChatbotCustomModeConfigInput | null
   creditPolicy?: ChatbotCreditPolicy | null
   disclaimer?: RevisionDisclaimerInput | null
   knowledgeGraphPolicy?: RevisionKnowledgeGraphPolicyInput | null
@@ -1217,6 +1292,50 @@ async function assertGraphRetrievalTransition(
     throw chatbotError('Graph retrieval is not available', 'FORBIDDEN')
 }
 
+// Rejects a model policy that adds a model the owner's account cannot use, so
+// an owner cannot configure a chatbot whose turns are refused. Models the
+// current policy already allows stay saveable: an owner whose entitlement was
+// withdrawn must still be able to edit the chatbot and remove them.
+async function assertModelPolicyEntitled(
+  tx: Prisma.TransactionClient,
+  ownerId: string,
+  currentModelIds: readonly string[],
+  nextModelIds: readonly string[]
+): Promise<void> {
+  const addedModelIds = nextModelIds.filter(
+    (modelId) => !currentModelIds.includes(modelId)
+  )
+  if (addedModelIds.length === 0) return
+
+  const owner = await tx.user.findUnique({
+    where: { id: ownerId },
+    select: { aiSubscriptionTier: true, aiChatbotCostCenter: true },
+  })
+  const modelById = new Map(
+    getChatModelRegistry().map((model) => [model.id, model])
+  )
+  const unavailableModelIds = addedModelIds.filter((modelId) => {
+    const model = modelById.get(modelId)
+    return (
+      !owner ||
+      !model ||
+      // Owners without AI access may still prepare drafts; publication
+      // checks that access, so only the subscription is checked here.
+      !isChatUsageClassEntitled({
+        usageClass: model.usageClass,
+        aiFeaturesEnabled: true,
+        ...owner,
+      })
+    )
+  })
+  if (unavailableModelIds.length > 0) {
+    throw chatbotError(
+      `Model(s) not available for this account: ${unavailableModelIds.join(', ')}`,
+      'BAD_USER_INPUT'
+    )
+  }
+}
+
 export async function saveChatbotRevision(
   args: {
     chatbotId: string
@@ -1236,6 +1355,7 @@ export async function saveChatbotRevision(
     'metadata',
     'modelPolicy',
     'standardModeConfig',
+    'customModeConfig',
     'creditPolicy',
     'disclaimer',
     'knowledgeGraphPolicy',
@@ -1276,6 +1396,11 @@ export async function saveChatbotRevision(
   }
   const disclaimer = input.disclaimer
   await requireFeatureFlagAccess(ctx, 'ai-beta')
+  const personaMaxLength =
+    input.customModeConfig &&
+    (await isFeatureFlagEnabled(ctx, 'chatbot-long-custom-prompts'))
+      ? CHATBOT_CUSTOM_MODE_PERSONA_EXTENDED_MAX_LENGTH
+      : CHATBOT_CUSTOM_MODE_PERSONA_MAX_LENGTH
   return await ctx.prisma.$transaction(async (tx) => {
     await lockChatbotRevision(tx, args.chatbotId)
     const chatbot = await readChatbotRevision(tx, args.chatbotId, ctx.user.sub)
@@ -1305,11 +1430,29 @@ export async function saveChatbotRevision(
         }),
       }
     }
+    // Custom-mode keys are minted here so a stale version throws before any key
+    // is generated, and an existing mode keeps the key stored on messages.
+    if (input.customModeConfig) {
+      next = {
+        ...next,
+        customModeConfig: parseRevisionCustomModeConfig(
+          input.customModeConfig,
+          current.customModeConfig,
+          personaMaxLength
+        ),
+      }
+    }
     await assertGraphRetrievalTransition(
       ctx,
       chatbot.ownerId,
       current.knowledgeGraphRetrievalEnabled,
       next.knowledgeGraphRetrievalEnabled
+    )
+    await assertModelPolicyEntitled(
+      tx,
+      chatbot.ownerId,
+      current.allowedModelIds,
+      next.allowedModelIds
     )
     if (disclaimer) {
       const title = normalizeDisclaimerText(disclaimer.title)
@@ -1478,6 +1621,9 @@ function normalizeRevisionModelPolicy(args: RevisionModelPolicyInput) {
   }
 
   return {
+    ...(typeof args.answerPreferencesEnabled === 'boolean'
+      ? { answerPreferencesEnabled: args.answerPreferencesEnabled }
+      : {}),
     modelSelection: args.modelSelection,
     allowedModelIds,
     allowedReasoningEffortsByModel:
@@ -1502,6 +1648,23 @@ function parseRevisionStandardModeConfig(
       error instanceof Error
         ? error.message
         : 'Invalid standard mode configuration',
+      'BAD_USER_INPUT'
+    )
+  }
+}
+
+function parseRevisionCustomModeConfig(
+  input: ChatbotCustomModeConfigInput,
+  existing: ChatbotAuthoringRevision['customModeConfig'],
+  personaMaxLength: number
+) {
+  try {
+    return parseChatbotCustomModeConfigInput(input, existing, personaMaxLength)
+  } catch (error) {
+    throw chatbotError(
+      error instanceof Error
+        ? error.message
+        : 'Invalid custom mode configuration',
       'BAD_USER_INPUT'
     )
   }
@@ -1742,6 +1905,73 @@ export async function getChatbotPublishingCapability(ctx: ContextWithUser) {
   return user.aiFeaturesEnabled
 }
 
+export async function getPendingChatbotPublications(ctx: ContextWithUser) {
+  if (ctx.user.role !== DB.UserRole.ADMIN) {
+    throw new GraphQLError('Not authorized')
+  }
+
+  const chatbots = await ctx.prisma.chatbot.findMany({
+    where: {
+      status: { not: DB.ChatbotStatus.PAUSED },
+      OR: [
+        { revisionStatus: DB.ChatbotStatus.PENDING_APPROVAL },
+        {
+          status: DB.ChatbotStatus.PENDING_APPROVAL,
+          revisionStatus: null,
+          revisionVersion: 0,
+          draftConfig: { equals: Prisma.AnyNull },
+        },
+      ],
+    },
+    orderBy: [{ updatedAt: 'asc' }, { id: 'asc' }],
+    select: {
+      ...chatbotOwnerSelect,
+      owner: {
+        select: { shortname: true, email: true, aiFeaturesEnabled: true },
+      },
+      course: { select: { id: true, name: true } },
+      disclaimer: { select: { title: true, introText: true } },
+      mcpConfigurations: {
+        select: {
+          chatMode: true,
+          isEnabled: true,
+          priority: true,
+          allowedTools: true,
+          parameters: true,
+          mcpServer: {
+            select: { id: true, name: true, isActive: true },
+          },
+        },
+      },
+    },
+  })
+
+  return chatbots.map(
+    ({ owner, disclaimer, mcpConfigurations, ...chatbot }) => ({
+      ownerShortname: owner.shortname,
+      ownerEmail: owner.email,
+      ownerPublishingEnabled: owner.aiFeaturesEnabled,
+      disclaimerTitle: disclaimer?.title ?? null,
+      disclaimerIntroText: disclaimer?.introText ?? null,
+      chatbot: shapeChatbotResponse({ ...chatbot, mcpConfigurations }),
+      tools: mcpConfigurations.map((config) => ({
+        serverName: config.mcpServer.name,
+        chatMode: config.chatMode,
+        enabled: config.isEnabled && config.mcpServer.isActive,
+        // Empty/null allow-lists allow all tools in the existing MCP client.
+        // Unknown shapes stay null so review never mislabels them as unrestricted.
+        allowedTools:
+          config.allowedTools == null
+            ? []
+            : Array.isArray(config.allowedTools) &&
+                config.allowedTools.every((tool) => typeof tool === 'string')
+              ? (config.allowedTools as string[])
+              : null,
+      })),
+    })
+  )
+}
+
 export async function getChatbotsInfo(ctx: ContextWithUser) {
   if (!(await isFeatureFlagEnabled(ctx, 'ai-beta'))) return null
 
@@ -1752,23 +1982,6 @@ export async function getChatbotsInfo(ctx: ContextWithUser) {
       course: { select: { id: true, name: true } },
       disclaimer: {
         select: { id: true, name: true, title: true, introText: true },
-      },
-      mcpConfigurations: {
-        select: {
-          chatMode: true,
-          isEnabled: true,
-          priority: true,
-          allowedTools: true,
-          parameters: true,
-          mcpServer: {
-            select: {
-              id: true,
-              name: true,
-              description: true,
-              isActive: true,
-            },
-          },
-        },
       },
       knowledgeBases: {
         where: { isEnabled: true, kb: { deletedAt: null } },
@@ -1888,26 +2101,10 @@ export async function getChatbotsInfo(ctx: ContextWithUser) {
         }
       : null
 
-    const mcpConfigurations = chatbot.mcpConfigurations.map((config) => ({
-      serverId: config.mcpServer.id,
-      serverName: config.mcpServer.name,
-      serverDescription: config.mcpServer.description,
-      serverIsActive: config.mcpServer.isActive,
-      chatMode: config.chatMode,
-      isEnabled: config.isEnabled,
-      priority: config.priority,
-      allowedToolsCount: Array.isArray(config.allowedTools)
-        ? config.allowedTools.length
-        : config.allowedTools
-          ? 1
-          : 0,
-    }))
-
     return {
       ...shapeChatbotResponse(chatbot),
       usageSummary,
       disclaimerSummary,
-      mcpConfigurations,
       enabledKnowledgeBases: chatbot.knowledgeBases.map(({ kb }) => kb),
       enabledKnowledgeBase:
         chatbot.knowledgeBases.length === 1
@@ -2003,6 +2200,24 @@ type CreateChatbotArgs = {
   courseId: string
 }
 
+// New chatbots start on GPT-6 Luna, the BASE default model, which is also the
+// participant-credit fallback. A registry without it keeps the single-Auto
+// default.
+const NEW_CHATBOT_MODEL_ID = 'gpt-6-luna'
+
+export function getNewChatbotModelId(
+  registry: readonly ChatModelCapability[]
+): string | null {
+  const preferred = registry.find((model) => model.id === NEW_CHATBOT_MODEL_ID)
+  if (preferred?.usageClass === 'BASE') {
+    return preferred.id
+  }
+  const auto = registry.find((model) => model.id === 'auto')
+  return auto && getChatModelAutoPolicyIssues(registry).length === 0
+    ? auto.id
+    : null
+}
+
 export async function createChatbot(
   args: CreateChatbotArgs,
   ctx: ContextWithUser
@@ -2021,12 +2236,10 @@ export async function createChatbot(
     throw chatbotError('Chatbot name must not be empty', 'BAD_USER_INPUT')
   }
 
-  const modelRegistry = getChatModelRegistry()
-  const autoPolicyIssues = getChatModelAutoPolicyIssues(modelRegistry)
-  const auto = modelRegistry.find((model) => model.id === 'auto')
-  if (autoPolicyIssues.length > 0 || !auto) {
+  const defaultModelId = getNewChatbotModelId(getChatModelRegistry())
+  if (!defaultModelId) {
     throw new GraphQLError(
-      'Chatbot defaults require exactly one valid non-reasoning ADVANCED Auto model'
+      'Chatbot defaults require a BASE GPT-6 Luna model or exactly one valid Auto model'
     )
   }
 
@@ -2037,7 +2250,7 @@ export async function createChatbot(
       avatar: args.avatar ?? null,
       status: DB.ChatbotStatus.DRAFT,
       modelSelection: false,
-      allowedModelIds: [auto.id],
+      allowedModelIds: [defaultModelId],
       allowedReasoningEffortsByModel: Prisma.DbNull,
       // New chatbots start with the participant map off (lecturer opts in).
       knowledgeGraphVisible: false,
