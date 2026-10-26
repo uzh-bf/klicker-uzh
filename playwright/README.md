@@ -41,6 +41,9 @@ node util/run-playwright-host.mjs --project=chromium
 # run one spec
 node util/run-playwright-host.mjs --project=chromium tests/A-login.spec.ts
 
+# match CI: production test builds instead of the dev servers
+node util/run-playwright-host.mjs --ci-runtime --project=chromium
+
 # inspect the resolved workspace without printing credentials
 node util/run-playwright-host.mjs --print-env
 ```
