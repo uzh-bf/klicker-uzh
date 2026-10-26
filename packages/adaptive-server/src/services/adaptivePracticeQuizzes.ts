@@ -31,6 +31,15 @@ export {
   startAdaptivePracticeQuizAttempt,
   submitAdaptivePracticeQuizResponse,
 } from './adaptivePracticeQuizCommands.js'
+export {
+  type AdaptiveDryRunInput,
+  type AdaptiveDryRunRecord,
+  type AdaptiveDryRunWorkspace,
+  deleteAdaptivePracticeQuizDryRun,
+  getAdaptivePracticeQuizDryRun,
+  getAdaptivePracticeQuizDryRuns,
+  runAdaptivePracticeQuizDryRun,
+} from './adaptivePracticeQuizDryRuns.js'
 export { getAdaptivePracticeQuizItemPreview } from './adaptivePracticeQuizItemPreview.js'
 export type { AdaptiveCohortResultsView as AdaptiveCohortResults } from './adaptivePracticeQuizParticipantQueries.js'
 export {

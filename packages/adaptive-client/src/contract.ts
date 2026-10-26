@@ -461,3 +461,67 @@ export const validationRequestSchema = z
       })
   })
 export type ValidationRequest = z.infer<typeof validationRequestSchema>
+
+// Dry runs (Catalyst `/adaptive/v1/dry-run`, IRT_V1): simulated students
+// answer the ideal pattern for their true level, each answer flipping with
+// `noiseProbability`. Mirrors the engine bounds.
+export const ADAPTIVE_DRY_RUN_MAX_STUDENTS = 200
+export const ADAPTIVE_DRY_RUN_MAX_DECISIONS = 10000
+export const dryRunSpecSchema = z
+  .object({
+    students: z.number().int().min(1).max(ADAPTIVE_DRY_RUN_MAX_STUDENTS),
+    seed: z.string().regex(/^[a-f0-9]{64}$/),
+    noiseProbability: finite.min(0).max(0.5),
+    trueLevels: z.discriminatedUnion('kind', [
+      z.object({ kind: z.literal('FIXED'), levelId: id }).strict(),
+      z
+        .object({ kind: z.literal('EVEN'), fromLevelId: id, toLevelId: id })
+        .strict(),
+    ]),
+    competences: z.enum(['SAME_LEVEL', 'INDEPENDENT']),
+  })
+  .strict()
+export type DryRunSpec = z.infer<typeof dryRunSpecSchema>
+export const dryRunRequestSchema = z
+  .object({
+    contractVersion: z.literal(ADAPTIVE_ENGINE_CONTRACT_VERSION),
+    measurementVersion: z.literal('IRT_V1'),
+    nodes: z.array(node).min(1).max(500),
+    levels: z.array(level).min(2).max(50),
+    pool: z.array(poolItem).min(1).max(10000),
+    settings: v1Settings,
+    dryRun: dryRunSpecSchema,
+  })
+  .strict()
+  .superRefine((request, ctx) => {
+    const reject = (message: string) =>
+      ctx.addIssue({ code: 'custom', message })
+    const { dryRun, ...snapshot } = request
+    if (
+      !decisionRequestSchema.safeParse({
+        ...snapshot,
+        routingSeed: dryRun.seed,
+        responses: [],
+      }).success
+    )
+      reject('Invalid adaptive runtime snapshot')
+    const levelIds = new Set(request.levels.map((level) => level.id))
+    const order = new Map(
+      request.levels.map((level) => [level.id, level.order])
+    )
+    const spec = dryRun.trueLevels
+    if (
+      spec.kind === 'FIXED'
+        ? !levelIds.has(spec.levelId)
+        : !levelIds.has(spec.fromLevelId) ||
+          !levelIds.has(spec.toLevelId) ||
+          order.get(spec.fromLevelId)! > order.get(spec.toLevelId)!
+    )
+      reject('Invalid dry-run levels')
+    if (
+      dryRun.students * request.settings.totalQuestionCap >
+      ADAPTIVE_DRY_RUN_MAX_DECISIONS
+    )
+      reject('Dry run is too large')
+  })
+export type DryRunRequest = z.infer<typeof dryRunRequestSchema>

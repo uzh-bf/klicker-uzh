@@ -1,0 +1,6 @@
+query QAdaptivePracticeQuizDryRun($practiceQuizId: String!, $id: String!) {
+  adaptivePracticeQuizDryRun(practiceQuizId: $practiceQuizId, id: $id) {
+    ...AdaptiveDryRunData
+    students
+  }
+}

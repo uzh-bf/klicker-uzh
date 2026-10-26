@@ -626,3 +626,32 @@ model AdaptivePracticeQuizAttemptReview {
   @@unique([attemptId, reviewerId], map: "apqar_attempt_reviewer_key")
   @@index([reviewerId], map: "apqar_reviewer_idx")
 }
+
+/// Testing environments only: simulated students run through the engine
+/// (`/adaptive/v1/dry-run`) against the current publication of a quiz. Not
+/// part of any results, exposure counts or calibration data.
+model AdaptivePracticeQuizDryRun {
+  id String @id @default(uuid()) @db.Uuid
+
+  practiceQuiz   PracticeQuiz @relation(fields: [practiceQuizId], references: [id], onDelete: Cascade, onUpdate: Cascade)
+  practiceQuizId String       @db.Uuid
+
+  publicationId  String  @db.Uuid
+  createdById    String  @db.Uuid
+  number         Int
+  engineRevision String?
+  durationMs     Int
+
+  /// [PrismaAdaptiveDryRunSpec]
+  spec              Json
+  /// [PrismaAdaptiveDryRunSettings]
+  effectiveSettings Json
+  /// [PrismaAdaptiveDryRunSummary]
+  summary           Json
+  /// [PrismaAdaptiveDryRunStudents]
+  students          Json
+
+  createdAt DateTime @default(now())
+
+  @@unique([practiceQuizId, number], map: "apqdr_quiz_number_key")
+}

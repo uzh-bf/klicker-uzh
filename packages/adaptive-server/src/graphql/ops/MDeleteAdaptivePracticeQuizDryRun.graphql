@@ -1,0 +1,3 @@
+mutation MDeleteAdaptivePracticeQuizDryRun($practiceQuizId: String!, $id: String!) {
+  deleteAdaptivePracticeQuizDryRun(practiceQuizId: $practiceQuizId, id: $id)
+}

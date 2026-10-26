@@ -1,0 +1,11 @@
+fragment AdaptiveDryRunData on AdaptiveDryRun {
+  id
+  number
+  publicationId
+  engineRevision
+  durationMs
+  createdAt
+  spec
+  effectiveSettings
+  summary
+}

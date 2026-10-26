@@ -411,6 +411,50 @@ type AdaptiveCalibrationImportReceipt {
   importedCount: Int!
 }
 
+type AdaptiveDryRun {
+  createdAt: Date!
+  durationMs: Int!
+  effectiveSettings: Json!
+  engineRevision: String
+  id: String!
+  number: Int!
+  publicationId: String!
+  spec: Json!
+  students: Json
+  summary: Json!
+}
+
+type AdaptiveDryRunCompetence {
+  name: String!
+  nodeId: Int!
+}
+
+type AdaptiveDryRunItem {
+  elementName: String!
+  levelId: Int!
+  nodeNames: [String!]!
+  poolItemId: Int!
+}
+
+type AdaptiveDryRunLevel {
+  id: Int!
+  label: String!
+  order: Int!
+}
+
+type AdaptiveDryRunWorkspace {
+  available: Boolean!
+  competences: [AdaptiveDryRunCompetence!]!
+  defaults: Json
+  items: [AdaptiveDryRunItem!]!
+  levels: [AdaptiveDryRunLevel!]!
+  maxDecisions: Int!
+  maxStudents: Int!
+  publicationId: String
+  runs: [AdaptiveDryRun!]!
+  unavailableReason: String
+}
+
 type AdaptiveEmpiricalValidation {
   aggregateMetrics: Json!
   approvedProbabilityThreshold: Float!
@@ -4043,6 +4087,7 @@ type Mutation {
   declineObjectSharingRequest(requestId: Int!, userId: String!): Boolean!
   deleteActivityMessage(id: Int!): Boolean!
   deleteActivityTemplate(activityId: String!, activityType: ActivityType!): String
+  deleteAdaptivePracticeQuizDryRun(id: String!, practiceQuizId: String!): Boolean
   deleteAnswerCollection(collectionId: Int!): Int
   deleteAnswerCollectionEntry(collectionId: Int!, id: Int!): Int
   deleteCatalogCollection(catalogCollectionId: String!): String
@@ -4162,6 +4207,7 @@ type Mutation {
   reviewElementGeneration(input: ReviewElementGenerationInput!): ElementGenerationBuild!
   revokeAssessmentReport(id: String!): CourseAssessmentReportRecord!
   revokeObjectAccess(objectId: String!, objectType: ObjectType!, permissionId: Int!): Int
+  runAdaptivePracticeQuizDryRun(classificationToleranceBands: Int!, classificationZ: Float!, competences: String!, fromLevelId: Int!, minQuestionsPerLeaf: Int!, noiseProbability: Float!, practiceQuizId: String!, seed: String, students: Int!, toLevelId: Int!, totalQuestionCap: Int!): AdaptiveDryRun
   saveAdaptivePracticeQuizAttemptReview(attemptCode: String!, comment: String, expectedCompetenceLevels: [AdaptiveAttemptExpectedLevelInput!], expectedOverallLevelLabel: String, practiceQuizId: String!, verdict: String!): AdaptiveAttemptReview
   saveChatbotRevision(chatbotId: String!, expectedRevisionVersion: Int!, input: ChatbotRevisionSaveInput!): Chatbot
   saveGeneratedElements(input: ElementGenerationBuildInput!): ElementGenerationSaveResult!
@@ -4706,6 +4752,8 @@ type Query {
   adaptivePracticeQuizAttemptDiagnostics(practiceQuizId: String!): AdaptiveAttemptDiagnostics
   adaptivePracticeQuizAttemptState(practiceQuizId: String!): AdaptivePracticeQuizAttemptState
   adaptivePracticeQuizCohortResults(practiceQuizId: String!): AdaptivePracticeQuizCohortResults
+  adaptivePracticeQuizDryRun(id: String!, practiceQuizId: String!): AdaptiveDryRun
+  adaptivePracticeQuizDryRuns(practiceQuizId: String!): AdaptiveDryRunWorkspace
   adaptivePracticeQuizItemPreview(poolItemId: Int!, practiceQuizId: String!): AdaptivePracticeQuizServedItem
   adaptivePracticeQuizPreview(id: String!): AdaptivePracticeQuizPreview
   adaptivePracticeQuizResult(attemptId: String!): AdaptivePracticeQuizResult!

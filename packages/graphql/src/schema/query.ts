@@ -1,3 +1,4 @@
+import { adaptiveDryRunQueryFields } from '@klicker-uzh/adaptive-server/schema/adaptiveDryRuns'
 import { adaptiveQueryFields } from '@klicker-uzh/adaptive-server/schema/adaptiveQueryFields'
 import * as DB from '@klicker-uzh/prisma/client'
 import { ActivityType as ActivityTypeEnum } from '@klicker-uzh/types'
@@ -38,6 +39,10 @@ import {
   AdaptiveAttemptDiagnosticRef,
   AdaptiveAttemptDiagnosticsRef,
 } from './adaptiveAttemptDiagnostics.js'
+import {
+  AdaptiveDryRunRef,
+  AdaptiveDryRunWorkspaceRef,
+} from './adaptiveDryRuns.js'
 import {
   AdaptivePracticeQuizConfigInput,
   AdaptivePracticeQuizPreviewType,
@@ -242,6 +247,11 @@ export const Query = builder.queryType({
         resolve: async (_, args, ctx) => {
           return await ParticipantService.getPublicParticipantProfile(args, ctx)
         },
+      }),
+      ...adaptiveDryRunQueryFields(t, {
+        withPermission,
+        AdaptiveDryRunRef,
+        AdaptiveDryRunWorkspaceRef,
       }),
       ...adaptiveQueryFields(t, {
         AdaptivePracticeQuizConfigInput,
