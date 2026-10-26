@@ -27,8 +27,8 @@
   "assets": {
     ".github/actions/ocr-review/action.yml": "79b34d4003bdbc57e7076c1f5f9004376f77b32b7f81e22cb1e3da500be1d45a",
     ".github/scripts/ocr-controller.cjs": "a8fe80e67094ab5c1f819cd8812ceb7e7c95948321138dcc41a9aa5aaedca69b",
-    ".github/scripts/ocr-draft-review.cjs": "c24f2da190585f18a470e7357e8ef86e48eebf8efb7c374b07c67ad608322756",
-    ".github/scripts/ocr-mistral-adapter.cjs": "325e7e358b2c3a0ec8460c4011e2cefe117840ea91bd2264459324079694531d",
+    ".github/scripts/ocr-draft-review.cjs": "85ca88a616f6c72c193103f7bc83d52c286c741b7207f26ad1562162fe53f046",
+    ".github/scripts/ocr-mistral-adapter.cjs": "f764953744a958fe4b8f28993544a50be02f261b5c7a70278fba8922701d22b9",
     ".github/scripts/ocr-review-tools.cjs": "ca441302e5c1ae4a9b3765ba725e858f92e8bf32ce8e9375e9e8534fa5e873dd",
     ".github/scripts/ocr-review-shared.cjs": "c12e084ae9bd5459791e8cd78e7c11b60eb494e8c6bb5804e7d223e5228c9676",
     ".github/scripts/ocr-runtime-config.cjs": "dfa184aff7e6ad048696086637223437adeee79ced4bcfa90139468c122f16b9",

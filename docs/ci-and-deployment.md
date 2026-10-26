@@ -14,6 +14,12 @@ tags:
 
 ## Automated review context and portability
 
+Runtime changes and Klicker's caller-pin update normally share one PR. Commit
+the runtime first, then pin its full SHA in a later caller commit. Ordinary CI
+fetches that exact source commit and verifies that the final candidate ships the
+same runtime manifest and assets. Read [the shared runtime guide](ocr-runtime.md#prepare-a-caller-upgrade)
+for source, squash-merge and post-merge verification boundaries.
+
 The [ocr-reviewer skill](../.agents/skills/ocr-reviewer/SKILL.md) is portable
 across repositories and forges. Copy it unchanged when adopting this OCR
 approach; keep repository-specific contracts and skill pointers in local docs.
@@ -763,6 +769,23 @@ The sanitized outcome artifact and logs distinguish selected, completed, failed,
 reused and waived coverage; a partial result remains advisory and emits a warning.
 Sticky summaries, incremental comment deduplication, low-severity routing and
 existing OCR reasoning, budgets, timeouts and retry behavior are preserved.
+
+The draft adapter recognizes the pinned CLI's planning task affinity shape and
+supplies guidance only from a `stop` response with nonempty final text. Truncated
+or empty plans reach the stock CLI as an empty answer without reasoning, using
+its existing continue-without-plan path. HTTP success, original finish reason,
+returned usage and private native history remain intact; this adds no provider
+request or retry. Main-review reasoning and unrecognized task identities retain
+their existing handling. The separate final-review adapter is unchanged.
+
+`OCR planning` logs and summaries count recognized responses as `usable`,
+`length`, `empty` or `invalid_finish`. `status=complete` means those diagnostic
+counters are available; `usable` identifies completed final plans. Missing or
+unfinished diagnostics report `status=unavailable`. Counters contain no affinity
+keys or response content. The CLI's `phase_completed phase=planning` progress
+event records that its planning request returned; it alone does not prove usable
+guidance. Raw usage journals retain the original response sizes and finish reason
+before the compatibility projection, and aggregate accounting remains unchanged.
 
 Manual individual and stack code reviews use human-audience progress through the
 adapter's `OCR_ADAPTER_PROGRESS_FD=3` opt-in. Their shell functions bind descriptor

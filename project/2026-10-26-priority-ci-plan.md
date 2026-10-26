@@ -397,3 +397,14 @@ correction restricts the approved non-bot contract without changing executor
 pins, workflows, access, paid activation or any live setting. The review budget
 remains consumed; verification is main-session evidence. New-head source CI and
 natural feedback remain required before draft completion.
+
+### Canonical workflow target integration
+
+Required CI at the human-author correction found generated-check parity stale
+after the target added its OCR runtime pin verification step. The tested merge
+contains that new canonical step and correctly rejects the older executor.
+Integrate target `1c2dbe5317` for this concrete blocker, preserve its content,
+regenerate only the affected check executor, publish that immutable source,
+then update only the check caller pin and verify the actual published parity.
+This uses the existing executor publication contract. No admission, access or
+live setting changes; original review and monitoring bounds remain in force.

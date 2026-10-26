@@ -1358,6 +1358,10 @@ async function startAdapter(options = {}) {
   const conversationSalt = crypto.randomBytes(32)
   const conversations = new Map()
   const observedToolIds = new Map()
+  const planGuidance =
+    options.finalPlanGuidance === true
+      ? { responses: 0, usable: 0, length: 0, empty: 0, invalid_finish: 0 }
+      : null
   const pendingRequests = new Set()
   const active = new Set()
   const sockets = new Set()
@@ -1713,6 +1717,27 @@ async function startAdapter(options = {}) {
       }
       const message = payload.choices[0].message
       history.remember(body.messages, message, body.prompt_cache_key)
+      if (
+        planGuidance &&
+        /^[0-9a-f]{8}-plan_task-[0-9a-f]{16}$/.test(body.prompt_cache_key) &&
+        (!body.tools || (Array.isArray(body.tools) && body.tools.length === 0))
+      ) {
+        const outcome =
+          choice.finish_reason === 'length'
+            ? 'length'
+            : choice.finish_reason !== 'stop'
+              ? 'invalid_finish'
+              : choice.message.content.trim()
+                ? 'usable'
+                : 'empty'
+        planGuidance.responses += 1
+        planGuidance[outcome] += 1
+        // Stock planning uses Content(), which falls back to reasoning when
+        // final text is empty. An empty projection keeps its no-plan path
+        // without turning this response into a retried HTTP error.
+        if (outcome !== 'usable')
+          choice.message = { role: 'assistant', content: '' }
+      }
       if (normalized.usage) normalized.usage = billableUsage(normalized.usage)
       sendJson(res, 200, normalized)
       accepted = true
@@ -1850,6 +1875,7 @@ async function startAdapter(options = {}) {
       })),
       history: history.diagnostics(),
       usage_events: journal.snapshot(),
+      plan_guidance: planGuidance ? { ...planGuidance } : null,
     }
   }
 
@@ -1860,6 +1886,24 @@ async function startAdapter(options = {}) {
     closed,
     diagnostics: snapshot,
   }
+}
+
+function summarizePlanGuidance(record) {
+  const counters = record?.plan_guidance
+  const fields = ['responses', 'usable', 'length', 'empty', 'invalid_finish']
+  if (
+    record?.unfinished_requests !== 0 ||
+    !fields.every(
+      (field) => Number.isSafeInteger(counters?.[field]) && counters[field] >= 0
+    ) ||
+    counters.responses !==
+      counters.usable +
+        counters.length +
+        counters.empty +
+        counters.invalid_finish
+  )
+    return 'OCR planning status=unavailable'
+  return `OCR planning status=complete ${fields.map((field) => `${field}=${counters[field]}`).join(' ')}`
 }
 
 async function callMistral(options = {}) {
@@ -3253,6 +3297,7 @@ module.exports = {
   buildCostReport,
   createProgressFilter,
   createProgressReporter,
+  summarizePlanGuidance,
 }
 
 if (require.main === module) {

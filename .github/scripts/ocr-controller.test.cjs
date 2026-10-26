@@ -57,7 +57,12 @@ function publishedRuntime(t) {
   const controller = require(
     path.join(root, '.github/scripts/ocr-controller.cjs')
   )
-  controller.verifyRelease(root)
+  const selectedRelease = controller.verifyRelease(root)
+  assert.equal(
+    selectedRelease.manifestDigest,
+    verifyRelease(ROOT).manifestDigest,
+    'the donor caller pins a stale OCR runtime'
+  )
   return { root, controller, workflow, repository, revision }
 }
 
@@ -78,6 +83,130 @@ test('the donor caller passes the actual published release contract and frozen p
         "github.event.action != 'synchronize' || github.event.pull_request.head.repo.full_name != github.repository || !startsWith(github.event.pull_request.head.ref, 'sync/')",
     }),
     { profile: 'draft-v1', revision: release.revision }
+  )
+})
+
+test('the OCR runtime pin is fetched and qualified before contract tests', () => {
+  const callerPath = '.github/workflows/check-ocr-review.yml'
+  let callerText = fs.readFileSync(path.join(ROOT, callerPath), 'utf8')
+  const workflow = YAML.parse(
+    fs.readFileSync(path.join(ROOT, '.github/workflows/check.yml'), 'utf8')
+  )
+  const steps = workflow.jobs['check-suite'].steps
+  const pinIndex = steps.findIndex((step) => step.id === 'ocr_runtime_pin')
+  const contractIndex = steps.findIndex(
+    (step) =>
+      typeof step.run === 'string' &&
+      step.run.includes('.github/scripts/ocr-controller.test.cjs')
+  )
+  assert.ok(pinIndex >= 0, 'the runtime pin qualification step is missing')
+  assert.ok(
+    contractIndex > pinIndex,
+    'the runtime pin qualification must precede review contract tests'
+  )
+  assert.equal(steps[pinIndex]['timeout-minutes'], 3)
+
+  const scriptLines = steps[pinIndex].run.trimEnd().split('\n')
+  assert.equal(scriptLines.shift().trim(), "node <<'NODE'")
+  assert.equal(scriptLines.pop().trim(), 'NODE')
+  const script = scriptLines.join('\n')
+  let calls = []
+  const runStep = (input, objectType = 'commit\n') => {
+    callerText = input
+    calls = []
+    const gitEnvironment = () => ({
+      PATH: '/synthetic/bin',
+      GIT_CONFIG_GLOBAL: os.devNull,
+      GIT_CONFIG_NOSYSTEM: '1',
+      GIT_CONFIG_SYSTEM: os.devNull,
+      GIT_NO_REPLACE_OBJECTS: '1',
+      GIT_TERMINAL_PROMPT: '0',
+    })
+    const execFileSync = (command, args, options) => {
+      calls.push({ command, args, options })
+      return args[0] === 'cat-file' ? objectType : ''
+    }
+    const sandbox = {
+      process: {
+        cwd: () => '/synthetic/repo',
+        env: { GITHUB_TOKEN: 'synthetic-credential' },
+      },
+      require: (request) => {
+        if (request === 'node:fs') {
+          return {
+            readFileSync: (file, encoding) => {
+              assert.equal(file, callerPath)
+              assert.equal(encoding, 'utf8')
+              return callerText
+            },
+          }
+        }
+        if (request === 'node:child_process') return { execFileSync }
+        if (request === 'yaml') return YAML
+        if (request === './.github/scripts/ocr-runtime-config.cjs') {
+          return { gitEnvironment }
+        }
+        throw new Error(`unexpected require: ${request}`)
+      },
+    }
+    vm.runInNewContext(script, sandbox, { filename: 'ocr-runtime-pin.cjs' })
+    return calls
+  }
+
+  const caller = YAML.parse(callerText)
+  const callerStep = caller.jobs['ocr-review'].steps[0]
+  for (const pin of [
+    'uzh-bf/klicker-uzh/.github/actions/ocr-review@main',
+    `other/klicker-uzh/.github/actions/ocr-review@${REVISION}`,
+    'uzh-bf/klicker-uzh/.github/actions/ocr-review@abc123',
+    `uzh-bf/klicker-uzh/.github/actions/ocr-review@${REVISION.toUpperCase()}`,
+  ]) {
+    callerStep.uses = pin
+    assert.throws(
+      () => runStep(YAML.stringify(caller)),
+      /invalid_ocr_runtime_pin/
+    )
+    assert.equal(calls.length, 0)
+  }
+
+  callerStep.uses = `uzh-bf/klicker-uzh/.github/actions/ocr-review@${REVISION}`
+  calls = runStep(YAML.stringify(caller))
+  assert.equal(calls.length, 2)
+  assert.equal(calls[0].command, 'git')
+  assert.deepEqual(Array.from(calls[0].args), [
+    'fetch',
+    '--no-tags',
+    '--no-recurse-submodules',
+    '--no-write-fetch-head',
+    'https://github.com/uzh-bf/klicker-uzh.git',
+    REVISION,
+  ])
+  assert.deepEqual(Array.from(calls[1].args), ['cat-file', '-t', REVISION])
+  for (const call of calls) {
+    assert.equal(call.command, 'git')
+    assert.equal(call.options.cwd, '/synthetic/repo')
+    assert.equal(call.options.encoding, 'utf8')
+    assert.equal(call.options.timeout, 120000)
+    assert.ok(
+      Number.isSafeInteger(call.options.maxBuffer) &&
+        call.options.maxBuffer > 0 &&
+        call.options.maxBuffer <= 16 * 1024 * 1024
+    )
+    assert.deepEqual(Array.from(call.options.stdio), ['ignore', 'pipe', 'pipe'])
+    assert.equal(
+      call.options.env.GIT_CONFIG_KEY_0,
+      'http.https://github.com/.extraheader'
+    )
+    assert.equal(call.options.env.GIT_CONFIG_VALUE_0, '')
+    assert.equal(call.options.env.GIT_CONFIG_KEY_1, 'credential.helper')
+    assert.equal(call.options.env.GIT_CONFIG_VALUE_1, '')
+    assert.equal(call.options.env.GITHUB_TOKEN, undefined)
+    assert.equal(call.options.env.MISTRAL_API_KEY, undefined)
+    assert.equal(call.options.env.CONTEXT7_API_KEY, undefined)
+  }
+  assert.throws(
+    () => runStep(YAML.stringify(caller), 'blob\n'),
+    /invalid_ocr_runtime_pin_object/
   )
 })
 
