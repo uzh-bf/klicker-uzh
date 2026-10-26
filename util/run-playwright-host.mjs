@@ -1,8 +1,10 @@
 #!/usr/bin/env node
 
 import { spawnSync } from 'node:child_process'
+import { randomUUID } from 'node:crypto'
 import {
   existsSync,
+  mkdirSync,
   readdirSync,
   readFileSync,
   rmSync,
@@ -26,6 +28,7 @@ import {
   HOST_RUNNER_ENV,
   preserveLocalDatabase,
 } from './playwright-host-policy.mjs'
+import { resolveRuntimePlan } from './playwright-profile-runtime.mjs'
 
 const require = createRequire(import.meta.url)
 const {
@@ -41,6 +44,29 @@ export const FILTERED_INSTALL_MARKER = join(
   'node_modules',
   '.playwright-host-filtered-install'
 )
+// .devcontainer/post-start.sh switches the managed app process to CI's
+// production test runtime while this plan exists.
+export const CI_RUNTIME_PLAN = join(
+  '.devcontainer',
+  '.runtime',
+  'playwright-ci-plan.json'
+)
+export const CI_RUNTIME_BUILD_ID = join(
+  '.devcontainer',
+  '.runtime',
+  'playwright-ci-build-id'
+)
+// While this marker exists, .devcontainer/post-start.sh runs the dev servers
+// through their dev:test scripts, which load the backend's Playwright feature
+// flag fixture under NODE_ENV=test.
+export const DEV_TEST_RUNTIME = join(
+  '.devcontainer',
+  '.runtime',
+  'playwright-dev-test'
+)
+// The CI-parity production builds bake in this GrowthBook host, which the
+// Playwright fixtures intercept; the dev servers proxy through manage instead.
+const CI_GROWTHBOOK_API_HOST = 'https://growthbook.test'
 
 const PLAYWRIGHT_OPTIONS_WITH_VALUES = new Set([
   '--browser',
@@ -281,6 +307,9 @@ function createRuntime({
   pathExists = existsSync,
   readFile = readFileSync,
   writeFile = writeFileSync,
+  removeFile = (path) => rmSync(path, { force: true }),
+  makeDirectory = (path) => mkdirSync(path, { recursive: true }),
+  resolveRuntimePlanFn = resolveRuntimePlan,
   readDirectory = readdirSync,
   parseProfileManifestFn = parseProfileManifest,
   clock = defaultClock,
@@ -299,6 +328,9 @@ function createRuntime({
     pathExists,
     readFile,
     writeFile,
+    removeFile,
+    makeDirectory,
+    resolveRuntimePlanFn,
     readDirectory,
     parseProfileManifestFn,
     clock,
@@ -441,6 +473,7 @@ export function parseLocalOptions(argv) {
   let profile
   let mode
   let preserveDatabase = false
+  let ciRuntime = false
   while (args.length) {
     const option = args[0]
     if (option === '--') {
@@ -465,6 +498,9 @@ export function parseLocalOptions(argv) {
     } else if (option === '--preserve-database') {
       args.shift()
       preserveDatabase = true
+    } else if (option === '--ci-runtime') {
+      args.shift()
+      ciRuntime = true
     } else if (option === '--print-env' || option === '--show-report') {
       if (mode) fail('Specify only one launcher mode')
       mode = args.shift()
@@ -475,21 +511,25 @@ export function parseLocalOptions(argv) {
   if (mode === '--show-report' && profile !== undefined) {
     fail('--show-report cannot select a runtime profile')
   }
+  if (mode === '--show-report' && ciRuntime) {
+    fail('--show-report cannot select the CI runtime')
+  }
   for (const option of args) {
     if (option.startsWith('--preserve-database=')) {
       fail(
         '--preserve-database does not accept a value; use space syntax before Playwright arguments'
       )
     }
-    if (option === '--preserve-database') {
+    if (option === '--preserve-database' || option === '--ci-runtime') {
       fail(`${option} must appear before Playwright arguments`)
     }
   }
-  return { args, profile, mode, preserveDatabase }
+  return { args, profile, mode, preserveDatabase, ciRuntime }
 }
 
 export function resolvePlaywrightEnvironment({
   appSecret,
+  ciRuntime = false,
   databaseTemplate,
   databaseHost = '127.0.0.1',
   databasePort,
@@ -513,7 +553,9 @@ export function resolvePlaywrightEnvironment({
     KLICKER_PLAYWRIGHT_POSTGRES_CONTAINER: postgresContainer,
     [HOST_RUNNER_ENV]: '1',
     PLAYWRIGHT_BASE_URL: studentUrl,
-    NEXT_PUBLIC_GROWTHBOOK_API_HOST: `${appUrl('manage')}/__growthbook__`,
+    NEXT_PUBLIC_GROWTHBOOK_API_HOST: ciRuntime
+      ? CI_GROWTHBOOK_API_HOST
+      : `${appUrl('manage')}/__growthbook__`,
     NEXT_PUBLIC_GROWTHBOOK_CLIENT_KEY: 'sdk-test',
     URL_AUTH: appUrl('auth'),
     URL_CHAT: appUrl('chat'),
@@ -657,13 +699,44 @@ function ensureHostDependencies(runtime, playwrightArgs) {
   ])
 }
 
+// Writes CI's resolved runtime plan for --ci-runtime. Otherwise it removes the
+// plan and selects the dev servers' test mode, so the next ensure runs dev:test.
+// --print-env inspects the current runtime and keeps its selection unless
+// --ci-runtime is given.
+function selectRuntimeMode(runtime, { ciRuntime, keepSelection, profile }) {
+  const planPath = join(runtime.repoRoot, CI_RUNTIME_PLAN)
+  const buildIdPath = join(runtime.repoRoot, CI_RUNTIME_BUILD_ID)
+  const devTestPath = join(runtime.repoRoot, DEV_TEST_RUNTIME)
+  if (!ciRuntime) {
+    if (keepSelection) return
+    runtime.removeFile(planPath)
+    runtime.removeFile(buildIdPath)
+    runtime.makeDirectory(dirname(devTestPath))
+    runtime.writeFile(devTestPath, '')
+    return
+  }
+  runtime.log(
+    `[playwright:host] Selecting the CI production runtime for profile ${profile}`
+  )
+  runtime.removeFile(devTestPath)
+  runtime.makeDirectory(dirname(planPath))
+  runtime.resolveRuntimePlanFn({
+    profile,
+    output: planPath,
+    repo: runtime.repoRoot,
+    devrouterBin: runtime.devrouter(),
+  })
+  runtime.writeFile(buildIdPath, `${randomUUID()}\n`)
+}
+
 export function main(argv = process.argv.slice(2), dependencies = {}) {
   const runtime = createRuntime(dependencies)
   const timer = createPhaseTimer(runtime.clock)
   let queueWaitSeconds = 0
 
   try {
-    const { args, profile, mode, preserveDatabase } = parseLocalOptions(argv)
+    const { args, profile, mode, preserveDatabase, ciRuntime } =
+      parseLocalOptions(argv)
     const hostEnvironment = {
       ...runtime.environment,
       [HOST_RUNNER_ENV]: '1',
@@ -711,6 +784,11 @@ export function main(argv = process.argv.slice(2), dependencies = {}) {
       })
 
     timer.begin('runtime')
+    selectRuntimeMode(runtime, {
+      ciRuntime,
+      keepSelection: printEnvironment,
+      profile: runtimeProfile,
+    })
     runtime.log('[playwright:host] Reconciling the devcontainer runtime')
     const ensureTelemetry = runRuntimeEnsure(runtime, [
       'ensure',
@@ -738,6 +816,7 @@ export function main(argv = process.argv.slice(2), dependencies = {}) {
 
     const resolvedEnvironment = resolvePlaywrightEnvironment({
       appSecret,
+      ciRuntime,
       databaseTemplate,
       databaseHost,
       databasePort,
@@ -766,8 +845,11 @@ export function main(argv = process.argv.slice(2), dependencies = {}) {
     runtime.log(
       `[playwright:host] Running on the host against ${resolvedEnvironment.URL_MANAGE}`
     )
+    const stack = ciRuntime
+      ? 'CI production test builds'
+      : 'Next dev servers (CI tests production builds; use --ci-runtime to match)'
     runtime.log(
-      `[playwright:host] Stack: Next dev servers (CI tests production builds), profile=${runtimeProfile}, database=${databaseHost}:${databasePort}`
+      `[playwright:host] Stack: ${stack}, profile=${runtimeProfile}, database=${databaseHost}:${databasePort}`
     )
     runtime.runPnpm(
       [

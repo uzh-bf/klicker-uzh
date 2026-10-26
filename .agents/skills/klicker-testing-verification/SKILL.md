@@ -170,6 +170,7 @@ CI runs Playwright (8-way shard) on almost every code PR — CI is the real e2e 
 
 - Run `node util/run-playwright-host.mjs <args>` from the host. Never invoke Playwright or install browsers through `devrouter exec`, a DevPod shell, or another local container.
 - You are **authorized to start the required servers for this purpose** through the host launcher. By default it reconciles the full devrouter profile, including the Hatchet workers, response-api, and response processor. For focused tests with an existing synthetic baseline, explicit local options `--runtime-profile chat --preserve-database` before Playwright arguments select Chat dependencies and skip global reset/seed. Inspect the selected spec's own fixture writes and cleanup first; those remain active. CI and default setup are unchanged.
+- A local failure that CI does not show usually comes from the dev servers. Rerun with `--ci-runtime` before the Playwright arguments to serve CI's production test builds; a later run without the flag returns to the dev servers.
 - If the launcher started a runtime for your task, tear it down afterwards with `devrouter stop .`; leave the machine as you found it.
 - On environment failure, switch to `klicker-environment-doctor` before blaming the test.
 

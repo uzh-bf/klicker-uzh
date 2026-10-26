@@ -33,7 +33,7 @@ jobs:
     timeout-minutes: 45
     steps:
       - name: Run pinned OCR draft review
-        uses: uzh-bf/klicker-uzh/.github/actions/ocr-review@686e99940dd914aba2dabf2ed1b36d27d833b3e7
+        uses: uzh-bf/klicker-uzh/.github/actions/ocr-review@28a3ffe3e025707d1c136e95b339ed7fde0eb000
         with:
           mistral-api-key: ${{ secrets.MISTRAL_API_KEY }}
           context7-api-key: ${{ secrets.CONTEXT7_API_KEY }}

@@ -91,7 +91,9 @@ next_configuration_files() {
 
   for app in "${NEXT_APPS[@]}"; do
     app_root="$ROOT/apps/$app"
-    find "$app_root" -maxdepth 2 -type f \
+    # A production build writes .next/package.json; generated output is not
+    # configuration and must not change the fingerprint it was built under.
+    find "$app_root" -maxdepth 2 -path "$app_root/.next" -prune -o -type f \
       \( -name 'next.config.*' -o -name 'package.json' -o \
       -name 'tsconfig*.json' -o -name 'proxy.*' -o -name 'middleware.*' \) \
       -print
@@ -306,6 +308,27 @@ prepare_runtime() {
   ensure_dependencies
   echo '[dev-runtime] Building selected application dependencies before startup.'
   (cd "$ROOT" && pnpm exec turbo run build "$@")
+  wait_for_preparation_children
+}
+
+# The CI-parity Playwright runtime builds the plan's production test apps
+# instead of dev dependencies; the plan path comes from PLAYWRIGHT_RUNTIME_PLAN.
+prepare_playwright_ci_runtime() {
+  local app
+
+  ensure_dependencies
+  # A production build type-checks .next/dev/types as well, and the dev
+  # servers' generated validator there duplicates the build's own. CI builds
+  # from a clean checkout, so drop the dev output first.
+  for app in "${NEXT_APPS[@]}"; do
+    rm -rf "$ROOT/apps/$app/.next/dev"
+  done
+  # Put the installed binaries on PATH directly to avoid pnpm wrapper children.
+  (cd "$ROOT" && PATH="$ROOT/node_modules/.bin:$PATH" node ./util/playwright-profile-runtime.mjs build)
+  wait_for_preparation_children
+}
+
+wait_for_preparation_children() {
   # Turbo can return before its Git subprocess exits. Preparation must leave
   # no live children for the managed process lifecycle to accept it.
   local preparation_pgid preparation_deadline preparation_processes
@@ -584,6 +607,7 @@ Usage:
   util/dev-runtime.sh ensure-dependencies
   util/dev-runtime.sh preparation-filters
   util/dev-runtime.sh prepare <dependency-filter> [dependency-filter...]
+  util/dev-runtime.sh prepare-playwright-ci
   util/dev-runtime.sh request-repair <next-app>
   util/dev-runtime.sh start <fingerprint> <generation> -- <command> [args...]
   util/dev-runtime.sh classify-response <auth-json|auth-providers-json|html-shell|health-json> <status> <content-type>
@@ -635,6 +659,10 @@ main() {
     prepare)
       shift
       prepare_runtime "$@"
+      ;;
+    prepare-playwright-ci)
+      [ "$#" -eq 1 ] || die 'prepare-playwright-ci takes no arguments.'
+      prepare_playwright_ci_runtime
       ;;
     request-repair)
       [ "$#" -eq 2 ] || die "request-repair requires one app name."

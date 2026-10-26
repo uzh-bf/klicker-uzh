@@ -6,6 +6,7 @@ import test from 'node:test'
 import YAML from 'yaml'
 
 import {
+  buildBuildCommand,
   buildStartCommand,
   resolveRuntimePlan,
   validateRuntimePlan,
@@ -231,6 +232,16 @@ test('the start command passes validated filters as distinct argv entries', () =
       '--filter=@klicker-uzh/frontend-manage',
       '--filter=@klicker-uzh/frontend-pwa',
     ],
+  })
+})
+
+test('the local CI-runtime build covers exactly the apps the start command serves', () => {
+  const runtime = validateRuntimePlan(profilePlan())
+  const start = buildStartCommand(runtime)
+
+  assert.deepEqual(buildBuildCommand(runtime), {
+    ...start,
+    args: start.args.map((arg) => (arg === 'start:test' ? 'build:test' : arg)),
   })
 })
 

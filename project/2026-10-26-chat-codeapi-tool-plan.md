@@ -141,3 +141,6 @@ Approved qualification continuation: the user accepted the separate disposable-w
 
 
 Browser seed contract correction: the preserve-database local harness must bind its fixture-owned bots to the existing devcontainer seed course. Ordinary Playwright helpers retain their separate global-setup seed contract. Import the development course constant only for CodeAPI fixture setup, ownership checks and cleanup; retain the existing owner/enrollment and collision guards. This adds no seed, enrollment or retained-data mutation. The failed local acceptance remains recorded privately and the dependent disabled run remains held. A replacement acceptance requires an explicit decision under the existing amendment.
+
+
+Target integration: `v3` at `7ec31d79a69f25c883abc8eeb93826e26c003f41` introduces the ordinary Playwright dev-test marker and conflicts with the opt-in fixture startup block. Integrate that target once to restore source readiness. Preserve both marker flows, the existing CI-runtime incompatibility guard and both fingerprint fields. The CodeAPI fixture remains the chat process selected only by its own marker. Source checks cover launcher behavior and marker combinations; browser acceptance still needs the separately approved replacement sequence.
