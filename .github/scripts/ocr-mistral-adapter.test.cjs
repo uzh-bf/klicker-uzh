@@ -26,11 +26,140 @@ const {
   buildCostReport,
   createProgressFilter,
   createProgressReporter,
+  summarizePlanGuidance,
 } = require('./ocr-mistral-adapter.cjs')
 
 const ADAPTER = path.join(__dirname, 'ocr-mistral-adapter.cjs')
 const CHAT_PATH = '/v1/chat/completions'
 const SHUTDOWN_PATH = '/shutdown'
+
+test('draft plan compatibility supplies only completed final text without retries or lost usage', async () => {
+  const key = '1234abcd-plan_task-0123456789abcdef'
+  const cases = [
+    { finish: 'stop', content: 'synthetic final plan', outcome: 'usable' },
+    { finish: 'length', content: '', outcome: 'length' },
+    { finish: 'length', content: 'partial final plan', outcome: 'length' },
+    { finish: 'stop', content: '', outcome: 'empty' },
+    { finish: 'stop', content: ' \n ', outcome: 'empty' },
+    { finish: 'content_filter', content: 'partial', outcome: 'invalid_finish' },
+    { finish: 'stop', content: '', outcome: null, enabled: false },
+    { finish: 'length', content: '', outcome: null, key: '1234abcd-plan_task' },
+    { finish: 'length', content: '', outcome: null, key: `x${key}` },
+    { finish: 'length', content: '', outcome: null, key: `${key}x` },
+    {
+      finish: 'length',
+      content: '',
+      outcome: null,
+      key: key.replace('plan_task', 'grouping_task'),
+    },
+    {
+      finish: 'length',
+      content: '',
+      outcome: null,
+      key: key.replace('0123456789abcdef', 'not-a-scope-hash'),
+    },
+    {
+      finish: 'length',
+      content: '',
+      outcome: null,
+      tools: [{ type: 'function', function: { name: 'synthetic_tool' } }],
+    },
+    {
+      finish: 'length',
+      content: '',
+      outcome: null,
+      tools: [{ type: 'function', function: { name: 'task_done' } }],
+    },
+  ]
+  for (const item of cases) {
+    const message = {
+      role: 'assistant',
+      content: item.content,
+      reasoning_content: 'SYNTHETIC_REASONING_ONLY',
+    }
+    const payload = completion(message, item.finish)
+    payload.usage = {
+      prompt_tokens: 100,
+      completion_tokens: 16384,
+      total_tokens: 16484,
+      prompt_tokens_details: { cached_tokens: 80 },
+    }
+    const fetchImpl = upstream(() => jsonResponse(200, payload))
+    const adapter = await startAdapter({
+      apiKey: 'synthetic',
+      finalPlanGuidance: item.enabled !== false,
+      fetchImpl,
+    })
+    try {
+      const result = await postJson(adapter, {
+        prompt_cache_key: item.key ?? key,
+        messages: [{ role: 'user', content: 'synthetic plan request' }],
+        max_tokens: 16384,
+        reasoning_effort: 'max',
+        ...(item.tools ? { tools: item.tools } : {}),
+      })
+      assert.equal(result.status, 200)
+      assert.equal(fetchImpl.calls.length, 1)
+      assert.equal(fetchImpl.calls[0].body.max_tokens, 16384)
+      assert.equal(fetchImpl.calls[0].body.reasoning_effort, 'max')
+      assert.equal(result.json.choices[0].finish_reason, item.finish)
+      assert.deepEqual(result.json.usage, {
+        prompt_tokens: 20,
+        completion_tokens: 16384,
+        total_tokens: 16404,
+      })
+      assert.deepEqual(
+        result.json.choices[0].message,
+        item.outcome && item.outcome !== 'usable'
+          ? { role: 'assistant', content: '' }
+          : message
+      )
+      assert.deepEqual(payload.choices[0].message, message)
+      const diagnostic = adapter.diagnostics()
+      assert.equal(diagnostic.completion_tokens, 16384)
+      assert.equal(diagnostic.prompt_tokens, 100)
+      assert.equal(diagnostic.cached_prompt_tokens, 80)
+      assert.equal(diagnostic.accepted_responses, 1)
+      assert.equal(diagnostic.length_finishes, item.finish === 'length' ? 1 : 0)
+      if (item.enabled === false) assert.equal(diagnostic.plan_guidance, null)
+      else {
+        assert.equal(diagnostic.plan_guidance.responses, item.outcome ? 1 : 0)
+        if (item.outcome)
+          assert.equal(diagnostic.plan_guidance[item.outcome], 1)
+      }
+    } finally {
+      await adapter.close()
+    }
+  }
+})
+
+test('planning summary rejects missing, unfinished or inconsistent counters and reflects only fixed fields', () => {
+  const plan = {
+    responses: 4,
+    usable: 1,
+    length: 1,
+    empty: 1,
+    invalid_finish: 1,
+    PRIVATE_SENTINEL: 7,
+  }
+  assert.equal(
+    summarizePlanGuidance({ unfinished_requests: 0, plan_guidance: plan }),
+    'OCR planning status=complete responses=4 usable=1 length=1 empty=1 invalid_finish=1'
+  )
+  for (const record of [
+    null,
+    {},
+    { unfinished_requests: 0 },
+    { unfinished_requests: 1, plan_guidance: plan },
+    { unfinished_requests: 0, plan_guidance: { ...plan, responses: 5 } },
+    { unfinished_requests: 0, plan_guidance: { ...plan, length: -1 } },
+    { unfinished_requests: 0, plan_guidance: { ...plan, usable: null } },
+  ])
+    assert.equal(
+      summarizePlanGuidance(record),
+      'OCR planning status=unavailable'
+    )
+})
 
 test('usage journals bound output, reject symlinks and do not retain payload fields', (t) => {
   const directory = fs.mkdtempSync(path.join(os.tmpdir(), 'ocr-usage-journal-'))
