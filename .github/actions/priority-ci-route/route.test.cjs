@@ -136,6 +136,10 @@ test('reruns, conflicting controls, canary mismatch and force-hosted never admit
     ['GITHUB_RUN_ATTEMPT', '2'],
     ['GITHUB_RUN_ID', 'invalid'],
     ['PRIORITY_CANARY_PR', '43'],
+    ['PRIORITY_CANARY_HEAD_SHA', 'c'.repeat(40)],
+    ['PRIORITY_CANARY_BASE_SHA', 'c'.repeat(40)],
+    ['PRIORITY_EXPIRES_AT', 'invalid'],
+    ['PRIORITY_EXPIRES_AT', '2000-01-01T00:00:00Z'],
     ['LEGACY_ADMISSIONS', '[]'],
     ['LEGACY_ADMISSION_URL', 'https://example.invalid/admit'],
     ['LEGACY_BURST_GRANT', '{}'],
@@ -151,6 +155,9 @@ test('reruns, conflicting controls, canary mismatch and force-hosted never admit
 test('canary limits admission without changing trusted runner selection', async () => {
   const f = fixture()
   f.env.PRIORITY_CANARY_PR = '42'
+  f.env.PRIORITY_CANARY_HEAD_SHA = f.event.pull_request.head.sha
+  f.env.PRIORITY_CANARY_BASE_SHA = f.event.pull_request.base.sha
+  f.env.PRIORITY_EXPIRES_AT = new Date(Date.now() + 60000).toISOString()
   assert.equal((await route(f.event, f.env, f.api)).admitted, 'true')
 })
 

@@ -219,6 +219,7 @@ jobs:
     permissions: {}
     steps:
       - name: Require the actual trusted terminal result
+        if: github.event.action != 'labeled' || needs.priority-execution.outputs.run_label_event == 'true'
         env:
           EXECUTION_RESULT: ${{ needs.priority-execution.result }}
           REQUIRED_RESULT: ${{ needs.priority-execution.outputs.required_result }}

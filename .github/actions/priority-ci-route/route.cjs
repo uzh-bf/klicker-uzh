@@ -87,6 +87,12 @@ async function route(event, env, api) {
     !SHA.test(pr.head?.sha ?? '') ||
     !SHA.test(pr.base?.sha ?? '') ||
     (env.PRIORITY_CANARY_PR && env.PRIORITY_CANARY_PR !== String(pr.number)) ||
+    (env.PRIORITY_CANARY_HEAD_SHA &&
+      env.PRIORITY_CANARY_HEAD_SHA !== pr.head.sha) ||
+    (env.PRIORITY_CANARY_BASE_SHA &&
+      env.PRIORITY_CANARY_BASE_SHA !== pr.base.sha) ||
+    (env.PRIORITY_EXPIRES_AT &&
+      !(Date.parse(env.PRIORITY_EXPIRES_AT) > Date.now())) ||
     env.LEGACY_ADMISSIONS ||
     env.LEGACY_ADMISSION_URL ||
     env.LEGACY_BURST_GRANT ||

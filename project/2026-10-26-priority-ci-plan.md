@@ -294,3 +294,21 @@ Source workflow validation and actual paid qualification remain separate.
 Main accepted simplifier's one reduction: closed-PR Playwright cancellation
 uses its original ordinary group; open/label priority branches are unreachable
 there. Source-review comments never grant operational authority.
+
+### Integrated review correction
+
+Claude CLI completed the original full committed range with three verified
+findings. The envelope reports Opus 5.5 and Fable 5.1 usage, so it is not
+Opus-only proof. Main verified and corrected exact nested Sonar terminal lookup,
+newer all-skipped/denied label runs displacing actual coverage, and noisy red
+non-required denied-label checks. Added two behavioral fixtures to existing
+`sonar-coverage-inputs.test.cjs`; actual failed terminal producers remain visible.
+All seven parent wrappers skip the terminal assertion only for denied label-only
+requests, with non-required names; ordinary/admitted requests still fail on
+missing evidence. Existing generated executor source is unchanged.
+
+Finite qualification can additionally freeze exact head/base and deadline via
+optional `PRIORITY_CI_CANARY_HEAD_SHA`, `PRIORITY_CI_CANARY_BASE_SHA`,
+`PRIORITY_CI_EXPIRES_AT`; no operational values are supplied by source. Tests
+cover mismatch/expiry and current identity. Focused correction portfolio95PASS.
+No livechanges. Same logical integrated review receives one correction pass.

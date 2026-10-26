@@ -1390,6 +1390,18 @@ test('trusted priority envelopes are exact acyclic derivatives and required wrap
     assert.match(report.if, /always\(\)/)
     const step = report.steps[0]
     assert.equal(
+      evaluateGate(
+        step.if,
+        { event: { action: 'labeled' } },
+        { 'priority-execution': { outputs: { run_label_event: 'false' } } }
+      ),
+      false
+    )
+    assert.equal(
+      evaluateGate(step.if, { event: { action: 'synchronize' } }, {}),
+      true
+    )
+    assert.equal(
       step.env.EXECUTION_RESULT,
       '${{ needs.priority-execution.result }}'
     )

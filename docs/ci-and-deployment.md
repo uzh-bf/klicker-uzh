@@ -890,7 +890,10 @@ retain their existing authorization and serialized status locks.
 
 A maintainer can request the paid validation lane with the `ci:priority` label.
 The lane is disabled unless `PRIORITY_CI_ENABLED` is exactly `true`.
-`PRIORITY_CI_CANARY_PR`, when present, limits admission to one exact PR number.
+`PRIORITY_CI_CANARY_PR`, when present, limits admission to one exact PR number. Optional
+`PRIORITY_CI_CANARY_HEAD_SHA` and `PRIORITY_CI_CANARY_BASE_SHA` freeze its
+source inputs; `PRIORITY_CI_EXPIRES_AT` denies admission after an absolute
+deadline. Set all four in a finite qualification packet before enabling it.
 Apply the label to an open ready public same-repository PR. Subsequent pushes
 remain eligible while labeled. Removing the label changes future selection;
 already submitted jobs retain their assignment and continue.
