@@ -36,14 +36,16 @@ export function fixtureRegistry() {
   }))
 }
 
-export function certificate() {
+export function certificate(hostname = 'localhost') {
+  if (!['localhost', 'host.docker.internal'].includes(hostname))
+    throw new Error('fixture_certificate_host_invalid')
   const { privateKey } = generateKeyPairSync('rsa', { modulusLength: 2048 })
   const key = privateKey.export({ type: 'pkcs8', format: 'pem' })
   const result = spawnSync(
     'sh',
     [
       '-c',
-      'cat | openssl req -new -x509 -key /dev/stdin -subj /CN=localhost -addext subjectAltName=IP:127.0.0.1,DNS:localhost -days 1',
+      `cat | openssl req -new -x509 -key /dev/stdin -subj /CN=${hostname} -addext subjectAltName=IP:127.0.0.1,DNS:localhost,DNS:${hostname} -days 1`,
     ],
     { input: key, maxBuffer: 32 * 1024, timeout: 10_000 }
   )
@@ -79,7 +81,7 @@ function textContent(content) {
   throw new Error('fixture_content_invalid')
 }
 
-/** Local protocol double: it never evaluates code or contacts a model provider. */
+/** Deterministic model fixture; real execution requires an explicit qualification transport. */
 export async function startFixture({
   mode,
   statusPath,
@@ -87,6 +89,7 @@ export async function startFixture({
   blockedMs = 20_000,
   lifetimeMs = 20 * 60_000,
   deferReady = false,
+  qualification,
 }) {
   if (
     !['enabled', 'disabled'].includes(mode) ||
@@ -96,11 +99,20 @@ export async function startFixture({
     lifetimeMs < 1
   )
     throw new Error('fixture_configuration_invalid')
+  if (
+    qualification &&
+    (mode !== 'enabled' ||
+      typeof qualification.program !== 'function' ||
+      new URL(qualification.origin).protocol !== 'https:' ||
+      new URL(qualification.origin).hostname !== 'host.docker.internal')
+  )
+    throw new Error('fixture_qualification_invalid')
   const { privateKey, publicKey } = generateKeyPairSync('ed25519')
   const state = {
     schemaVersion: 1,
     generation: randomUUID(),
     mode,
+    ...(qualification ? { transport: 'stg' } : {}),
     ready: false,
     scenarios:
       /** @type {Record<string, {scenario: string, modelCalls: number, dispatches: number, completed: number, disconnected: number, toolResults: number}>} */ ({}),
@@ -251,7 +263,9 @@ export async function startFixture({
             function: {
               name: 'run_python',
               arguments: JSON.stringify({
-                code: `# CODEAPI_E2E:${selected.scenario}:${selected.nonce}`,
+                code: qualification
+                  ? qualification.program(selected.scenario, selected.nonce)
+                  : `# CODEAPI_E2E:${selected.scenario}:${selected.nonce}`,
               }),
             },
           })
@@ -263,6 +277,8 @@ export async function startFixture({
           'tool_calls'
         )
       }
+      if (qualification)
+        return json(res, 404, { error: 'fixture_exec_disabled' })
       if (
         mode !== 'enabled' ||
         req.headers['x-codeapi-expected-profile'] !== 'default' ||
@@ -417,10 +433,14 @@ export async function startFixture({
       CHAT_CODEAPI_PILOT_CHATBOT_IDS: JSON.stringify([
         CODEAPI_BROWSER_CHATBOT_ID,
       ]),
-      CHAT_CODEAPI_BASE_URL: origin,
-      CHAT_CODEAPI_JWT_ISSUER: issuer,
-      CHAT_CODEAPI_JWT_AUDIENCE: audience,
-      CHAT_CODEAPI_JWT_KEY_ID: keyId,
+      CHAT_CODEAPI_BASE_URL: qualification?.origin ?? origin,
+      CHAT_CODEAPI_JWT_ISSUER: qualification
+        ? 'klicker-stg-qualification'
+        : issuer,
+      CHAT_CODEAPI_JWT_AUDIENCE: qualification
+        ? 'klicker-stg-qualification'
+        : audience,
+      CHAT_CODEAPI_JWT_KEY_ID: qualification?.keyId ?? keyId,
       CHAT_CODEAPI_TENANT_ID: 'synthetic',
       CHAT_CODEAPI_JWT_PRIVATE_KEY: privateKey.export({
         type: 'pkcs8',

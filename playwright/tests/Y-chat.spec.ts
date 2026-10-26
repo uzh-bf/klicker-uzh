@@ -5,6 +5,7 @@ import {
   CODEAPI_BROWSER_CHATBOT_ID,
   CODEAPI_BROWSER_DENIED_CHATBOT_ID,
 } from '../../apps/chat/scripts/codeapi-browser-fixture.mjs'
+import { qualificationProgram } from '../../apps/chat/scripts/codeapi-stg-qualification.mjs'
 import { getPrisma } from '../global-setup.js'
 import {
   CHATBOT_ID,
@@ -4316,11 +4317,21 @@ test.describe('Chatbot Streamed Answer Metadata & Failure States', () => {
 // touch only the two fixture-owned chatbots and their own participant state.
 
 const CODEAPI_FIXTURE_ENABLED = process.env.KLICKER_CODEAPI_BROWSER_E2E === '1'
+const CODEAPI_STG_ENABLED = process.env.KLICKER_CODEAPI_STG_E2E === '1'
 const CODEAPI_FIXTURE_STATUS_URL = new URL(
   '../../.devcontainer/.runtime/codeapi-browser-fixture-status.json',
   import.meta.url
 )
+const CODEAPI_RELAY_STATUS_URL = new URL(
+  '../../.devcontainer/.runtime/codeapi-stg-relay-status.json',
+  import.meta.url
+)
 const CODEAPI_UUID_PATTERN = /^[a-f0-9]{8}-(?:[a-f0-9]{4}-){3}[a-f0-9]{12}$/i
+// Live qualification bounds: four execution cases plus recoveries and one
+// call-limit case share the relay's ten-attempt, fifty-second reservation.
+const CODEAPI_MAX_RELAY_ATTEMPTS = 10
+const CODEAPI_MAX_REQUESTED_GUEST_MS = 50_000
+const CODEAPI_GUEST_DEADLINE_MS = 5_000
 
 type CodeApiFixtureMode = 'enabled' | 'disabled'
 
@@ -4342,8 +4353,29 @@ type CodeApiFixtureStatus = {
   schemaVersion: 1
   generation: string
   mode: CodeApiFixtureMode
+  transport?: 'stg'
   ready: boolean
   scenarios: Record<string, CodeApiScenarioCounters>
+}
+
+type CodeApiRelayObservation = {
+  nonce: string
+  scenario: string
+  attempt: number
+  requestedGuestMs: number
+  startedMs: number
+  outcome: string | null
+  httpStatus?: number
+  elapsedMs?: number
+  abortAfterMs?: number
+}
+
+type CodeApiRelayStatus = {
+  generation: string
+  attempts: number
+  requestedGuestMs: number
+  healthChecks: number
+  observations: CodeApiRelayObservation[]
 }
 
 type CodeApiPersistedPart = {
@@ -4416,6 +4448,11 @@ function parseCodeApiFixtureStatus(
   if (parsed.mode !== 'enabled' && parsed.mode !== 'disabled') {
     throw new Error('CodeAPI fixture receipt mode must be enabled or disabled')
   }
+  if (parsed.transport !== undefined && parsed.transport !== 'stg') {
+    throw new Error(
+      'CodeAPI fixture receipt transport must be stg when present'
+    )
+  }
   if (parsed.ready !== true) {
     throw new Error('CodeAPI fixture is not ready')
   }
@@ -4445,6 +4482,7 @@ function parseCodeApiFixtureStatus(
     schemaVersion: 1,
     generation: parsed.generation,
     mode: parsed.mode,
+    ...(parsed.transport === 'stg' ? { transport: 'stg' as const } : {}),
     ready: true,
     scenarios,
   }
@@ -4453,6 +4491,130 @@ function parseCodeApiFixtureStatus(
 async function readCodeApiFixtureStatus(expectedGeneration?: string) {
   const raw = await readFile(CODEAPI_FIXTURE_STATUS_URL, 'utf8')
   return parseCodeApiFixtureStatus(raw, expectedGeneration)
+}
+
+function readRelayCount(
+  entry: Record<string, unknown>,
+  key: string,
+  nonce: string
+): number {
+  const value = entry[key]
+  if (!isCounter(value)) {
+    throw new Error(`CodeAPI relay count ${key} is malformed for ${nonce}`)
+  }
+  return value
+}
+
+function readRelayObservation(
+  entry: unknown,
+  index: number
+): CodeApiRelayObservation {
+  if (!isRecord(entry)) {
+    throw new Error(`CodeAPI relay observation ${index} must be an object`)
+  }
+  const nonce = entry.nonce
+  if (typeof nonce !== 'string' || !CODEAPI_UUID_PATTERN.test(nonce)) {
+    throw new Error(`CodeAPI relay observation ${index} nonce is malformed`)
+  }
+  if (typeof entry.scenario !== 'string' || entry.scenario.length === 0) {
+    throw new Error(`CodeAPI relay observation ${index} scenario is malformed`)
+  }
+  if (entry.outcome !== null && typeof entry.outcome !== 'string') {
+    throw new Error(`CodeAPI relay observation ${index} outcome is malformed`)
+  }
+  if (
+    typeof entry.startedMs !== 'number' ||
+    !Number.isFinite(entry.startedMs)
+  ) {
+    throw new Error(`CodeAPI relay observation ${index} startedMs is malformed`)
+  }
+  return {
+    nonce,
+    scenario: entry.scenario,
+    attempt: readRelayCount(entry, 'attempt', nonce),
+    requestedGuestMs: readRelayCount(entry, 'requestedGuestMs', nonce),
+    startedMs: entry.startedMs,
+    outcome: entry.outcome,
+    ...(entry.httpStatus === undefined
+      ? {}
+      : { httpStatus: readRelayCount(entry, 'httpStatus', nonce) }),
+    ...(entry.elapsedMs === undefined
+      ? {}
+      : { elapsedMs: readRelayCount(entry, 'elapsedMs', nonce) }),
+    ...(entry.abortAfterMs === undefined
+      ? {}
+      : { abortAfterMs: readRelayCount(entry, 'abortAfterMs', nonce) }),
+  }
+}
+
+function parseCodeApiRelayStatus(
+  raw: string,
+  expectedGeneration: string
+): CodeApiRelayStatus {
+  let parsed: unknown
+  try {
+    parsed = JSON.parse(raw)
+  } catch {
+    throw new Error('CodeAPI relay receipt is not valid JSON')
+  }
+  if (!isRecord(parsed)) {
+    throw new Error('CodeAPI relay receipt must be an object')
+  }
+  if (
+    typeof parsed.generation !== 'string' ||
+    parsed.generation !== expectedGeneration
+  ) {
+    throw new Error(
+      'CodeAPI relay receipt generation does not match the loaded fixture'
+    )
+  }
+  const attempts = readRelayCount(parsed, 'attempts', parsed.generation)
+  const requestedGuestMs = readRelayCount(
+    parsed,
+    'requestedGuestMs',
+    parsed.generation
+  )
+  if (
+    attempts > CODEAPI_MAX_RELAY_ATTEMPTS ||
+    requestedGuestMs > CODEAPI_MAX_REQUESTED_GUEST_MS
+  ) {
+    throw new Error('CodeAPI relay receipt exceeds the qualification bounds')
+  }
+  if (!Array.isArray(parsed.observations)) {
+    throw new Error('CodeAPI relay receipt observations must be an array')
+  }
+  const observations = parsed.observations.map(readRelayObservation)
+  if (observations.length > attempts) {
+    throw new Error('CodeAPI relay receipt has more observations than attempts')
+  }
+  for (const observation of observations) {
+    if (
+      observation.requestedGuestMs !== CODEAPI_GUEST_DEADLINE_MS ||
+      observation.attempt < 1 ||
+      observation.attempt > attempts
+    ) {
+      throw new Error('CodeAPI relay observation reservation is malformed')
+    }
+  }
+  return {
+    generation: parsed.generation,
+    attempts,
+    requestedGuestMs,
+    healthChecks: readRelayCount(parsed, 'healthChecks', parsed.generation),
+    observations,
+  }
+}
+
+async function readCodeApiRelayStatus(expectedGeneration: string) {
+  let raw: string
+  try {
+    raw = await readFile(CODEAPI_RELAY_STATUS_URL, 'utf8')
+  } catch {
+    throw new Error(
+      'CodeAPI STG qualification requires the relay receipt for the loaded fixture'
+    )
+  }
+  return parseCodeApiRelayStatus(raw, expectedGeneration)
 }
 
 function readPersistedParts(content: unknown): CodeApiPersistedPart[] {
@@ -4497,6 +4659,7 @@ test.describe('CodeAPI real-route fixture', () => {
 
   let fixtureGeneration = ''
   let fixtureMode: CodeApiFixtureMode = 'enabled'
+  let fixtureTransport: 'stg' | null = null
   let botsEnsured = false
 
   const allowedChatbotId = CODEAPI_BROWSER_CHATBOT_ID
@@ -4509,7 +4672,31 @@ test.describe('CodeAPI real-route fixture', () => {
 
   async function readCounter(nonce: string, key: CodeApiScenarioCounterKey) {
     const scenario = await readScenario(nonce)
-    return scenario?.[key] ?? 0
+    if (!scenario) return 0
+    if (key === 'modelCalls' || key === 'toolResults') return scenario[key]
+    // The loaded fixture only models the provider locally. Dispatch, completion
+    // and disconnect evidence for a real transport comes from the host relay.
+    if (fixtureTransport !== 'stg') return scenario[key]
+    const relay = await readCodeApiRelayStatus(fixtureGeneration)
+    const observations = relay.observations.filter(
+      (observation) => observation.nonce === nonce
+    )
+    if (key === 'dispatches') return observations.length
+    if (key === 'disconnected')
+      return observations.filter(
+        (observation) => observation.outcome === 'transport_aborted'
+      ).length
+    return observations.filter(
+      (observation) =>
+        observation.outcome === 'response_received' &&
+        observation.httpStatus === 200
+    ).length
+  }
+
+  function expectedProgram(scenario: string, nonce: string) {
+    return fixtureTransport === 'stg'
+      ? qualificationProgram(scenario, nonce)
+      : `# CODEAPI_E2E:${scenario}:${nonce}`
   }
 
   async function waitForScenarioRecorded(nonce: string) {
@@ -4620,7 +4807,7 @@ test.describe('CodeAPI real-route fixture', () => {
       throw new Error('Persisted success turn has no run_python call')
     }
     expect(toolCall.args).toEqual({
-      code: `# CODEAPI_E2E:success:${nonce}`,
+      code: expectedProgram('success', nonce),
     })
     const result = readResultObject(toolCall)
     expect(result.kind).toBe('execution')
@@ -4651,6 +4838,27 @@ test.describe('CodeAPI real-route fixture', () => {
     const status = await readCodeApiFixtureStatus()
     fixtureGeneration = status.generation
     fixtureMode = status.mode
+    fixtureTransport = status.transport ?? null
+    if (CODEAPI_STG_ENABLED && fixtureTransport !== 'stg') {
+      throw new Error(
+        'CodeAPI STG qualification requires a ready fixture receipt with transport stg'
+      )
+    }
+    if (CODEAPI_STG_ENABLED && fixtureMode !== 'enabled') {
+      throw new Error(
+        'CodeAPI STG qualification requires an enabled fixture receipt'
+      )
+    }
+    if (!CODEAPI_STG_ENABLED && fixtureTransport === 'stg') {
+      throw new Error(
+        'CodeAPI fixture reports transport stg; run it through the host launcher --codeapi-stg-qualification'
+      )
+    }
+    if (CODEAPI_STG_ENABLED) {
+      // Fail before any browser case when the relay belongs to another fixture
+      // generation or has already spent the live-attempt reservation.
+      await readCodeApiRelayStatus(fixtureGeneration)
+    }
 
     // getPrisma also enforces the marked disposable database before any
     // fixture row is written.
@@ -4690,6 +4898,14 @@ test.describe('CodeAPI real-route fixture', () => {
   })
 
   test.beforeEach(async ({ page }) => {
+    if (CODEAPI_STG_ENABLED) {
+      const info = test.info()
+      if (info.config.workers !== 1 || info.project.retries !== 0) {
+        throw new Error(
+          'CodeAPI STG qualification requires --workers=1 and --retries=0'
+        )
+      }
+    }
     const participantId = await getEnrolledParticipantId()
     await resetCodeApiBrowserState(
       participantId,
@@ -4722,12 +4938,22 @@ test.describe('CodeAPI real-route fixture', () => {
     expect(turn.chatMode).toBe('tutor')
 
     const beforeReload = await readScenario(nonce)
+    const beforeReloadAttempts = CODEAPI_STG_ENABLED
+      ? (await readCodeApiRelayStatus(fixtureGeneration)).attempts
+      : null
     await page.reload({ waitUntil: 'domcontentloaded' })
     await expectCodeApiAnswer(
       page,
       `CODEAPI_RESULT:${nonce}:execution:succeeded`
     )
     expect(await readScenario(nonce)).toEqual(beforeReload)
+    if (beforeReloadAttempts !== null) {
+      const relay = await readCodeApiRelayStatus(fixtureGeneration)
+      expect(relay.attempts).toBe(beforeReloadAttempts)
+      expect(
+        relay.observations.filter((observation) => observation.nonce === nonce)
+      ).toHaveLength(1)
+    }
   })
 
   for (const failure of [
@@ -4755,6 +4981,10 @@ test.describe('CodeAPI real-route fixture', () => {
   ]) {
     test(failure.title, async ({ page }) => {
       test.skip(fixtureMode !== 'enabled', 'Fixture receipt mode is disabled')
+      test.skip(
+        CODEAPI_STG_ENABLED && failure.scenario === 'http-error',
+        'STG qualification does not fabricate an upstream outage; HTTP failure coverage stays in the local fixture suite'
+      )
       const participantId = await getEnrolledParticipantId()
       await visitCodeApiChat(page, allowedChatbotId)
       const failureNonce = await sendCodeApiPrompt(page, failure.scenario)
@@ -4780,7 +5010,7 @@ test.describe('CodeAPI real-route fixture', () => {
       if (!failureCall)
         throw new Error('Persisted failure has no run_python call')
       expect(failureCall.args).toEqual({
-        code: `# CODEAPI_E2E:${failure.scenario}:${failureNonce}`,
+        code: expectedProgram(failure.scenario, failureNonce),
       })
       const result = readResultObject(failureCall)
       if (failure.scenario === 'http-error') {
@@ -4793,6 +5023,16 @@ test.describe('CodeAPI real-route fixture', () => {
         expect(readStdout(result)).not.toContain(
           `CODEAPI_VALUE:${failureNonce}`
         )
+        if (CODEAPI_STG_ENABLED) {
+          // A native guest timeout is a completed HTTP exchange with exit 137;
+          // a transport deadline would mean the relay never saw the response.
+          const relay = await readCodeApiRelayStatus(fixtureGeneration)
+          const [observation] = relay.observations.filter(
+            (entry) => entry.nonce === failureNonce
+          )
+          expect(observation?.outcome).toBe('response_received')
+          expect(observation?.httpStatus).toBe(200)
+        }
       }
       const recoveryNonce = await sendCodeApiPrompt(page, 'success')
       const recoveryTurn = await expectSuccessTurn(
@@ -4822,6 +5062,22 @@ test.describe('CodeAPI real-route fixture', () => {
       .poll(() => readCounter(nonce, 'disconnected'), { timeout: 10_000 })
       .toBe(1)
     expect(await readCounter(nonce, 'completed')).toBe(0)
+
+    if (CODEAPI_STG_ENABLED) {
+      const relay = await readCodeApiRelayStatus(fixtureGeneration)
+      const [observation] = relay.observations.filter(
+        (entry) => entry.nonce === nonce
+      )
+      if (
+        observation?.outcome !== 'transport_aborted' ||
+        observation.abortAfterMs === undefined ||
+        observation.abortAfterMs >= CODEAPI_GUEST_DEADLINE_MS
+      ) {
+        throw new Error(
+          'CodeAPI STG Stop case is inconclusive: cancellation was not observed as a transport abort before the guest deadline'
+        )
+      }
+    }
 
     const hasStoppedMarker = async () =>
       (await readAssistantTurns(participantId, allowedChatbotId)).some((turn) =>
@@ -4853,10 +5109,10 @@ test.describe('CodeAPI real-route fixture', () => {
 
     const nonce = await sendCodeApiPrompt(page, 'success')
     await expectCodeApiAnswer(page, `CODEAPI_UNAVAILABLE:${nonce}`)
-    const scenario = await waitForScenarioRecorded(nonce)
-    expect(scenario.dispatches).toBe(0)
-    expect(scenario.completed).toBe(0)
-    expect(scenario.toolResults).toBe(0)
+    await waitForScenarioRecorded(nonce)
+    expect(await readCounter(nonce, 'dispatches')).toBe(0)
+    expect(await readCounter(nonce, 'completed')).toBe(0)
+    expect(await readCounter(nonce, 'toolResults')).toBe(0)
 
     const turn = await waitForAssistantTurnByNonce(
       participantId,
@@ -4876,10 +5132,10 @@ test.describe('CodeAPI real-route fixture', () => {
 
     const nonce = await sendCodeApiPrompt(page, 'success')
     await expectCodeApiAnswer(page, `CODEAPI_UNAVAILABLE:${nonce}`)
-    const scenario = await waitForScenarioRecorded(nonce)
-    expect(scenario.dispatches).toBe(0)
-    expect(scenario.completed).toBe(0)
-    expect(scenario.toolResults).toBe(0)
+    await waitForScenarioRecorded(nonce)
+    expect(await readCounter(nonce, 'dispatches')).toBe(0)
+    expect(await readCounter(nonce, 'completed')).toBe(0)
+    expect(await readCounter(nonce, 'toolResults')).toBe(0)
 
     const turn = await waitForAssistantTurnByNonce(
       participantId,
@@ -4895,6 +5151,10 @@ test.describe('CodeAPI real-route fixture', () => {
     browser,
   }) => {
     test.skip(fixtureMode !== 'enabled', 'Fixture receipt mode is disabled')
+    test.skip(
+      CODEAPI_STG_ENABLED,
+      'Participant isolation stays in the local fixture suite; STG qualification is bounded to the execution cases'
+    )
     const participantId = await getEnrolledParticipantId()
     await visitCodeApiChat(page, allowedChatbotId)
 
@@ -4970,7 +5230,7 @@ test.describe('CodeAPI real-route fixture', () => {
     expect(calls).toHaveLength(2)
     for (const call of calls) {
       expect(call.args).toEqual({
-        code: `# CODEAPI_E2E:double:${nonce}`,
+        code: expectedProgram('double', nonce),
       })
     }
 
@@ -4990,10 +5250,10 @@ test.describe('CodeAPI real-route fixture', () => {
 
     const nonce = await sendCodeApiPrompt(page, 'success')
     await expectCodeApiAnswer(page, `CODEAPI_UNAVAILABLE:${nonce}`)
-    const scenario = await waitForScenarioRecorded(nonce)
-    expect(scenario.dispatches).toBe(0)
-    expect(scenario.completed).toBe(0)
-    expect(scenario.toolResults).toBe(0)
+    await waitForScenarioRecorded(nonce)
+    expect(await readCounter(nonce, 'dispatches')).toBe(0)
+    expect(await readCounter(nonce, 'completed')).toBe(0)
+    expect(await readCounter(nonce, 'toolResults')).toBe(0)
 
     const turn = await waitForAssistantTurnByNonce(
       participantId,

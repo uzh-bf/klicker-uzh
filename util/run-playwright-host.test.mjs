@@ -25,6 +25,8 @@ import {
   preserveLocalDatabase,
 } from './playwright-host-policy.mjs'
 import {
+  assertCodeApiStgQualificationReceipt,
+  CODEAPI_STG_FIXTURE_STATUS,
   FILTERED_INSTALL_MARKER,
   inferPlaywrightProfile,
   PLAYWRIGHT_PROFILE_FALLBACK,
@@ -110,6 +112,167 @@ test('local runner options preserve defaults and forward test selectors', () => 
     () => parseLocalOptions(['tests/example.spec.ts', '--preserve-database']),
     /before Playwright arguments/
   )
+})
+
+const codeapiFixtureReceipt = (overrides = {}) =>
+  JSON.stringify({
+    schemaVersion: 1,
+    generation: '7c9e6679-7425-40de-944b-e07fc1f90ae7',
+    mode: 'enabled',
+    transport: 'stg',
+    ready: true,
+    scenarios: {},
+    ...overrides,
+  })
+
+test('the CodeAPI STG option defaults off and is a launcher-only argument', () => {
+  assert.equal('codeapiStgQualification' in parseLocalOptions([]), false)
+  assert.deepEqual(parseLocalOptions(['--codeapi-stg-qualification']), {
+    args: [],
+    profile: undefined,
+    mode: undefined,
+    preserveDatabase: false,
+    ciRuntime: false,
+    codeapiStgQualification: true,
+  })
+
+  for (const args of [
+    ['--codeapi-stg-qualification=1'],
+    ['--project=chromium', '--codeapi-stg-qualification'],
+    ['--codeapi-stg-qualification', '--codeapi-stg-qualification'],
+    ['--codeapi-stg-qualification', '--print-env'],
+    ['--codeapi-stg-qualification', '--show-report'],
+  ]) {
+    assert.throws(
+      () => parseLocalOptions(args),
+      undefined,
+      JSON.stringify(args)
+    )
+  }
+})
+
+test('CodeAPI STG qualification only accepts a ready enabled STG fixture receipt', () => {
+  assert.equal(
+    assertCodeApiStgQualificationReceipt(codeapiFixtureReceipt()).transport,
+    'stg'
+  )
+  for (const receipt of [
+    'not a receipt',
+    '[]',
+    codeapiFixtureReceipt({ schemaVersion: 2 }),
+    codeapiFixtureReceipt({ ready: false }),
+    codeapiFixtureReceipt({ mode: 'disabled' }),
+    codeapiFixtureReceipt({ transport: undefined }),
+    codeapiFixtureReceipt({ transport: 'local' }),
+    codeapiFixtureReceipt({ generation: 'not-a-uuid' }),
+  ]) {
+    assert.throws(() => assertCodeApiStgQualificationReceipt(receipt))
+  }
+})
+
+test('the CodeAPI STG option validates the loaded receipt and forwards both opt-ins to Playwright only', () => {
+  const { calls, dependencies } = createLauncherHarness({
+    fixtureReceipt: codeapiFixtureReceipt(),
+  })
+  runPlaywrightHost(
+    [
+      '--runtime-profile',
+      'chat',
+      '--preserve-database',
+      '--codeapi-stg-qualification',
+      '--project=chromium',
+    ],
+    dependencies
+  )
+
+  const playwrightCall = pnpmCalls(calls).at(-1)
+  assert.deepEqual(playwrightCall.args, [
+    '--filter',
+    '@klicker-uzh/playwright',
+    'exec',
+    'playwright',
+    'test',
+    '--project=chromium',
+  ])
+  assert.equal(playwrightCall.options.env.KLICKER_CODEAPI_BROWSER_E2E, '1')
+  assert.equal(playwrightCall.options.env.KLICKER_CODEAPI_STG_E2E, '1')
+  assert.equal(
+    calls.some((call) => call.command === 'sh'),
+    false
+  )
+  for (const call of pnpmCalls(calls).slice(0, -1)) {
+    assert.equal(call.options.env?.KLICKER_CODEAPI_STG_E2E, undefined)
+  }
+})
+
+test('CodeAPI STG qualification fails closed before Playwright on guards and receipt mismatches', () => {
+  const qualified = [
+    '--runtime-profile',
+    'chat',
+    '--preserve-database',
+    '--codeapi-stg-qualification',
+    '--project=chromium',
+  ]
+  const mismatches = [
+    {
+      args: [
+        '--runtime-profile',
+        'chat',
+        '--codeapi-stg-qualification',
+        '--project=chromium',
+      ],
+    },
+    {
+      args: [
+        '--runtime-profile',
+        'manage',
+        '--preserve-database',
+        '--codeapi-stg-qualification',
+        '--project=chromium',
+      ],
+    },
+    {
+      args: [
+        '--ci-runtime',
+        '--runtime-profile',
+        'chat',
+        '--preserve-database',
+        '--codeapi-stg-qualification',
+        '--project=chromium',
+      ],
+    },
+    { args: qualified, environment: { PATH: '/synthetic/bin', CI: 'true' } },
+    {
+      args: qualified,
+      environment: { PATH: '/synthetic/bin', GITHUB_ACTIONS: 'true' },
+    },
+    {
+      args: qualified,
+      receipt: codeapiFixtureReceipt({ transport: undefined }),
+    },
+    {
+      args: qualified,
+      receipt: codeapiFixtureReceipt({ generation: 'other' }),
+    },
+    { args: qualified, receipt: undefined },
+  ]
+
+  for (const mismatch of mismatches) {
+    const { calls, dependencies } = createLauncherHarness({
+      environment: mismatch.environment,
+      fixtureReceipt: mismatch.receipt,
+    })
+    assert.throws(
+      () => runPlaywrightHost(mismatch.args, dependencies),
+      undefined,
+      JSON.stringify(mismatch)
+    )
+    assert.equal(
+      pnpmCalls(calls).some(({ args }) => args.includes('test')),
+      false,
+      JSON.stringify(mismatch)
+    )
+  }
 })
 
 const syntheticProfileManifest = {
@@ -249,6 +412,7 @@ function createLauncherHarness({
   environment = { PATH: '/synthetic/bin' },
   specFiles = syntheticSpecFiles,
   profileManifest = syntheticProfileManifest,
+  fixtureReceipt,
 } = {}) {
   const calls = []
   const logs = []
@@ -309,6 +473,12 @@ function createLauncherHarness({
         'DATABASE_URL=postgres://user:password@postgres:5432/database',
         'APP_SECRET=synthetic-app-secret',
       ].join('\n')
+    }
+    if (path === `${root}/${CODEAPI_STG_FIXTURE_STATUS}`) {
+      if (fixtureReceipt === undefined) {
+        throw new Error(`unexpected synthetic file: ${path}`)
+      }
+      return fixtureReceipt
     }
     throw new Error(`unexpected synthetic file: ${path}`)
   }

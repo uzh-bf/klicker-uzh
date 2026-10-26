@@ -38,6 +38,15 @@ const {
 const repoRoot = resolve(dirname(fileURLToPath(import.meta.url)), '..')
 export const PNPM_VERIFY_DEPS_ENV = 'pnpm_config_verify_deps_before_run'
 export const PLAYWRIGHT_PROFILE_FALLBACK = 'playwright'
+// The real-route qualification fixture writes its receipt beside the local
+// fixture receipt; the launcher reads it before enabling STG expectations.
+export const CODEAPI_STG_FIXTURE_STATUS = join(
+  '.devcontainer',
+  '.runtime',
+  'codeapi-browser-fixture-status.json'
+)
+const CODEAPI_RECEIPT_GENERATION =
+  /^[a-f0-9]{8}-(?:[a-f0-9]{4}-){3}[a-f0-9]{12}$/i
 // Marks the root install as the launcher's Playwright-only filtered install so
 // util/run-hook-pnpm.sh does not mistake it for a full host install.
 export const FILTERED_INSTALL_MARKER = join(
@@ -474,6 +483,7 @@ export function parseLocalOptions(argv) {
   let mode
   let preserveDatabase = false
   let ciRuntime = false
+  let codeapiStgQualification = false
   while (args.length) {
     const option = args[0]
     if (option === '--') {
@@ -501,6 +511,11 @@ export function parseLocalOptions(argv) {
     } else if (option === '--ci-runtime') {
       args.shift()
       ciRuntime = true
+    } else if (option === '--codeapi-stg-qualification') {
+      if (codeapiStgQualification)
+        fail('Specify --codeapi-stg-qualification only once')
+      args.shift()
+      codeapiStgQualification = true
     } else if (option === '--print-env' || option === '--show-report') {
       if (mode) fail('Specify only one launcher mode')
       mode = args.shift()
@@ -514,17 +529,100 @@ export function parseLocalOptions(argv) {
   if (mode === '--show-report' && ciRuntime) {
     fail('--show-report cannot select the CI runtime')
   }
+  if (mode && codeapiStgQualification) {
+    fail('--codeapi-stg-qualification requires a Playwright test run')
+  }
   for (const option of args) {
     if (option.startsWith('--preserve-database=')) {
       fail(
         '--preserve-database does not accept a value; use space syntax before Playwright arguments'
       )
     }
-    if (option === '--preserve-database' || option === '--ci-runtime') {
+    if (
+      option === '--preserve-database' ||
+      option === '--ci-runtime' ||
+      option === '--codeapi-stg-qualification'
+    ) {
       fail(`${option} must appear before Playwright arguments`)
     }
+    if (option.startsWith('--codeapi-stg-qualification=')) {
+      fail(
+        '--codeapi-stg-qualification does not accept a value; use space syntax before Playwright arguments'
+      )
+    }
   }
-  return { args, profile, mode, preserveDatabase, ciRuntime }
+  return {
+    args,
+    profile,
+    mode,
+    preserveDatabase,
+    ciRuntime,
+    ...(codeapiStgQualification ? { codeapiStgQualification: true } : {}),
+  }
+}
+
+// The STG expectations are only meaningful against a fixture the operator
+// already started with the qualification contract. Check the loaded receipt
+// before handing the opt-in environment to Playwright.
+export function assertCodeApiStgQualificationReceipt(
+  contents,
+  { generationPattern = CODEAPI_RECEIPT_GENERATION } = {}
+) {
+  let receipt
+  try {
+    receipt = JSON.parse(contents)
+  } catch {
+    fail('CodeAPI STG qualification fixture receipt is not valid JSON')
+  }
+  if (!receipt || typeof receipt !== 'object' || Array.isArray(receipt)) {
+    fail('CodeAPI STG qualification fixture receipt must be an object')
+  }
+  if (receipt.schemaVersion !== 1) {
+    fail('CodeAPI STG qualification fixture receipt schemaVersion must be 1')
+  }
+  if (receipt.ready !== true) {
+    fail(
+      'CodeAPI STG qualification fixture is not ready; start the qualification fixture and retry'
+    )
+  }
+  if (receipt.mode !== 'enabled') {
+    fail('CodeAPI STG qualification requires an enabled fixture receipt')
+  }
+  if (
+    typeof receipt.generation !== 'string' ||
+    !generationPattern.test(receipt.generation)
+  ) {
+    fail('CodeAPI STG qualification fixture receipt generation must be a UUID')
+  }
+  if (receipt.transport !== 'stg') {
+    fail(
+      'CodeAPI STG qualification requires a loaded fixture receipt with transport stg; the local fixture is not STG'
+    )
+  }
+  return receipt
+}
+
+export function assertCodeApiStgQualificationOptions({
+  codeapiStgQualification = false,
+  profile,
+  preserveDatabase = false,
+  ciRuntime = false,
+  environment = process.env,
+} = {}) {
+  if (!codeapiStgQualification) return false
+  if (ciRuntime) {
+    fail('--codeapi-stg-qualification cannot select the CI runtime')
+  }
+  if (environment.CI || environment.GITHUB_ACTIONS) {
+    fail('CodeAPI STG qualification is rejected in CI or GitHub Actions')
+  }
+  if (!preserveDatabase) {
+    fail('--codeapi-stg-qualification requires --preserve-database')
+  }
+  if (profile !== 'chat') {
+    fail('--codeapi-stg-qualification requires --runtime-profile chat')
+  }
+  return true
 }
 
 export function resolvePlaywrightEnvironment({
@@ -735,12 +833,25 @@ export function main(argv = process.argv.slice(2), dependencies = {}) {
   let queueWaitSeconds = 0
 
   try {
-    const { args, profile, mode, preserveDatabase, ciRuntime } =
-      parseLocalOptions(argv)
+    const {
+      args,
+      profile,
+      mode,
+      preserveDatabase,
+      ciRuntime,
+      codeapiStgQualification,
+    } = parseLocalOptions(argv)
     const hostEnvironment = {
       ...runtime.environment,
       [HOST_RUNNER_ENV]: '1',
     }
+    assertCodeApiStgQualificationOptions({
+      codeapiStgQualification,
+      profile,
+      preserveDatabase,
+      ciRuntime,
+      environment: runtime.environment,
+    })
     preserveLocalDatabase({
       ...hostEnvironment,
       KLICKER_PLAYWRIGHT_PRESERVE_DATABASE: preserveDatabase ? '1' : '0',
@@ -770,7 +881,21 @@ export function main(argv = process.argv.slice(2), dependencies = {}) {
 
     const printEnvironment = mode === '--print-env'
 
-    if (!printEnvironment) ensureHostDependencies(runtime, args)
+    if (codeapiStgQualification) {
+      if (
+        !runtime.pathExists(
+          join(
+            runtime.repoRoot,
+            'playwright',
+            'node_modules',
+            '@playwright',
+            'test',
+            'cli.js'
+          )
+        )
+      )
+        fail('CodeAPI qualification requires preinstalled host dependencies')
+    } else if (!printEnvironment) ensureHostDependencies(runtime, args)
 
     const runtimeProfile =
       profile ??
@@ -784,19 +909,24 @@ export function main(argv = process.argv.slice(2), dependencies = {}) {
       })
 
     timer.begin('runtime')
-    selectRuntimeMode(runtime, {
-      ciRuntime,
-      keepSelection: printEnvironment,
-      profile: runtimeProfile,
-    })
-    runtime.log('[playwright:host] Reconciling the devcontainer runtime')
-    const ensureTelemetry = runRuntimeEnsure(runtime, [
-      'ensure',
-      runtime.repoRoot,
-      '--profile',
-      runtimeProfile,
-    ])
-    queueWaitSeconds = queueWaitSecondsFrom(runtime.readFile, ensureTelemetry)
+    // An armed qualification supervisor owns its child; reconciliation would replace it.
+    if (!codeapiStgQualification)
+      selectRuntimeMode(runtime, {
+        ciRuntime,
+        keepSelection: printEnvironment,
+        profile: runtimeProfile,
+      })
+    const ensureTelemetry = codeapiStgQualification
+      ? undefined
+      : runRuntimeEnsure(runtime, [
+          'ensure',
+          runtime.repoRoot,
+          '--profile',
+          runtimeProfile,
+        ])
+    queueWaitSeconds = ensureTelemetry
+      ? queueWaitSecondsFrom(runtime.readFile, ensureTelemetry)
+      : 0
 
     const { workspace, databaseHost, databasePort } =
       resolveHostEnvironment(runtime)
@@ -823,6 +953,24 @@ export function main(argv = process.argv.slice(2), dependencies = {}) {
       postgresContainer,
       workspace,
     })
+
+    if (codeapiStgQualification) {
+      let receipt
+      try {
+        receipt = runtime.readFile(
+          join(runtime.repoRoot, CODEAPI_STG_FIXTURE_STATUS),
+          'utf8'
+        )
+      } catch {
+        fail(
+          'CodeAPI STG qualification requires a ready fixture receipt with transport stg; the local fixture is not STG'
+        )
+      }
+      assertCodeApiStgQualificationReceipt(receipt)
+      runtime.log(
+        '[playwright:host] CodeAPI STG qualification transport validated from the loaded fixture receipt'
+      )
+    }
 
     if (printEnvironment) {
       runtime.log(
@@ -864,6 +1012,12 @@ export function main(argv = process.argv.slice(2), dependencies = {}) {
         ...runtime.environment,
         ...resolvedEnvironment,
         KLICKER_PLAYWRIGHT_PRESERVE_DATABASE: preserveDatabase ? '1' : '0',
+        ...(codeapiStgQualification
+          ? {
+              KLICKER_CODEAPI_BROWSER_E2E: '1',
+              KLICKER_CODEAPI_STG_E2E: '1',
+            }
+          : {}),
       }
     )
   } finally {
