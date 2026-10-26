@@ -226,12 +226,24 @@ function dryRunLeaves(runtime: LoadedAdaptiveRuntime) {
     if (!node?.enabled) return false
     return node.parentId === null || enabledPath(node.parentId)
   }
-  return nodes
+  // Tree order (depth first, siblings by order), as in the tree editor.
+  const children = (parentId: number | null) =>
+    nodes
+      .filter((node) => node.parentId === parentId)
+      .sort((a, b) => a.order - b.order)
+  const ordered: typeof nodes = []
+  const visit = (parentId: number | null) => {
+    for (const node of children(parentId)) {
+      ordered.push(node)
+      visit(node.id)
+    }
+  }
+  visit(null)
+  return ordered
     .filter(
       ({ id, parentId }) =>
         parentId !== null && !parents.has(id) && enabledPath(id)
     )
-    .sort((a, b) => a.depth - b.depth || a.order - b.order)
     .map(({ id }) => ({ nodeId: id, rootId: rootOf(id) }))
 }
 
