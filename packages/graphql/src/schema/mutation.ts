@@ -423,7 +423,7 @@ export const Mutation = builder.mutationType({
         },
       }),
 
-      manualRandomGroupAssignments: t.withAuth(asUser).field({
+      manualRandomGroupAssignments: t.withAuth(asUserFullAccess).field({
         type: [ParticipantGroup],
         nullable: true,
         args: { courseId: t.arg.string({ required: true }) },
@@ -727,7 +727,7 @@ export const Mutation = builder.mutationType({
         ),
       }),
 
-      requestCourseDeletion: t.withAuth(asUser).field({
+      requestCourseDeletion: t.withAuth(asUserFullAccess).field({
         nullable: true,
         type: CourseDeletionRequestPayload,
         args: {
@@ -1697,7 +1697,7 @@ export const Mutation = builder.mutationType({
         ),
       }),
 
-      toggleArchiveCourse: t.withAuth(asUser).field({
+      toggleArchiveCourse: t.withAuth(asUserFullAccess).field({
         nullable: true,
         type: Course,
         args: {
@@ -2742,6 +2742,11 @@ export const Mutation = builder.mutationType({
           propagation: t.arg.boolean({ required: true }),
         },
         resolve: async (_, args, ctx) => {
+          // ownership is only moved through transferObjectOwnership
+          if (args.permissionLevel === DB.PermissionLevel.OWNER) {
+            return null
+          }
+
           // >= ADMIN permissions on the object required
           const validAccess = await checkAccess(
             [
@@ -2992,6 +2997,11 @@ export const Mutation = builder.mutationType({
           propagation: t.arg.boolean({ required: true }),
         },
         resolve: async (_, args, ctx) => {
+          // ownership is only moved through transferObjectOwnership
+          if (args.permissionLevel === DB.PermissionLevel.OWNER) {
+            return false
+          }
+
           // >= ADMIN permissions on the object required
           const validAccess = await checkAccess(
             [
@@ -3362,6 +3372,11 @@ export const Mutation = builder.mutationType({
           propagation: t.arg.boolean({ required: true }),
         },
         resolve: async (_, args, ctx) => {
+          // ownership is only moved through transferObjectOwnership
+          if (args.permissionLevel === DB.PermissionLevel.OWNER) {
+            return false
+          }
+
           return await SharingService.resolveObjectSharingRequest(
             { ...args, approved: true },
             ctx
