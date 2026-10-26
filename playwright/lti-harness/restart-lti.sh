@@ -1,23 +1,25 @@
 #!/usr/bin/env bash
-# Restarts the local LTI service with LTI_DEV_MODE=<true|false>.
+# Restarts the local LTI service with environment overrides, or restores it.
 # Run inside the devcontainer:
-#   devrouter exec . -- bash playwright/lti-harness/set-lti-dev-mode.sh false
+#   devrouter exec . -- bash playwright/lti-harness/restart-lti.sh LTI_DEV_MODE=false
+#   devrouter exec . -- bash playwright/lti-harness/restart-lti.sh
 #
 # The dev stack runs the service under nodemon with the container environment.
-# For `false`, this stops that process and starts the same command with the
-# same environment except LTI_DEV_MODE. nodemon then waits for a file change.
-# For `true`, it stops the override and touches the build output, so nodemon
-# restarts the original process.
+# With NAME=value arguments, this stops that process and starts the same
+# command with the same environment plus the overrides; nodemon then waits for
+# a file change. Without arguments, it stops any override and touches the
+# build output, so nodemon restarts the original process.
 set -euo pipefail
 
-mode="${1:-}"
-if [[ "$mode" != "true" && "$mode" != "false" ]]; then
-  echo "usage: $0 <true|false>" >&2
-  exit 2
-fi
+for override in "$@"; do
+  if [[ ! "$override" =~ ^[A-Z][A-Z0-9_]*=.*$ ]]; then
+    echo "usage: $0 [NAME=value ...]" >&2
+    exit 2
+  fi
+done
 
 lti_dir="$(cd "$(dirname "$0")/../.." && pwd)/apps/lti"
-override_log=/tmp/lti-dev-mode-override.log
+override_log=/tmp/lti-override.log
 
 lti_pids() {
   local pid
@@ -44,16 +46,15 @@ if [[ -z "$pids" ]]; then
 fi
 source_pid="$(echo "$pids" | head -n 1)"
 
-if [[ "$mode" == "false" ]]; then
-  environ="$(mktemp)"
-  cp "/proc/$source_pid/environ" "$environ"
+if [[ $# -gt 0 ]]; then
+  mapfile -d '' -t environment <"/proc/$source_pid/environ"
   # shellcheck disable=SC2086 # one pid per word
   kill $pids
   while [[ -n "$(lti_pids)" ]]; do sleep 0.2; done
   cd "$lti_dir"
-  # setsid detaches the override from this shell, so it outlives the exec
-  setsid xargs -0 -a "$environ" sh -c \
-    'exec env -i "$@" LTI_DEV_MODE=false node ./dist/index.js' _ \
+  # setsid detaches the override from this shell, so it outlives the exec;
+  # env applies the overrides after the copied environment
+  setsid env -i "${environment[@]}" "$@" node ./dist/index.js \
     >"$override_log" 2>&1 </dev/null &
 else
   # shellcheck disable=SC2086 # one pid per word
@@ -63,6 +64,6 @@ else
 fi
 
 wait_for_port
-rm -f "${environ:-}"
 pid="$(lti_pids | head -n 1)"
-echo "LTI service pid $pid runs with $(tr '\0' '\n' <"/proc/$pid/environ" | grep '^LTI_DEV_MODE=' | tail -n 1)"
+echo "LTI service pid $pid runs with:"
+tr '\0' '\n' <"/proc/$pid/environ" | grep -E '^LTI_' | grep -vE 'PASS|KEY=' | sort
