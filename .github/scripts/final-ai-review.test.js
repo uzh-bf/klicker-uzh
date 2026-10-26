@@ -1327,6 +1327,7 @@ test('verifies the exact public Mistral tool contract', async (t) => {
     missing_cache_usage: 0,
     invalid_cache_usage: 0,
     unfinished_requests: 0,
+    provider_availability: { status: 'available', reason: null },
   })
 })
 
@@ -1394,6 +1395,7 @@ test('retains preflight usage when a successful canary answer is rejected', asyn
       missing_cache_usage: 0,
       invalid_cache_usage: 0,
       unfinished_requests: 0,
+      provider_availability: { status: 'available', reason: null },
     })
   }
 })
@@ -3374,6 +3376,18 @@ test('publishes clean individual evidence as a check without a pull-request comm
     assert.equal(state.createdStatuses.at(-1).state, 'error')
   }
   pull.body = publishedBody
+  for (const providerUnavailable of [
+    'provider_paused',
+    'provider_payment_required',
+  ]) {
+    await finalizeFinalReview({ ...inputs, providerUnavailable })
+    assert.equal(state.createdCheckRuns.length, 0)
+    assert.equal(state.createdStatuses.at(-1).state, 'failure')
+    assert.equal(
+      state.createdStatuses.at(-1).description.includes(providerUnavailable),
+      true
+    )
+  }
   await finalizeFinalReview(inputs)
 
   assert.equal(state.createdCheckRuns.length, 1)
@@ -4951,4 +4965,28 @@ test('patched executable provenance refuses an upstream binary or a changed patc
     () => verifyArchive(Buffer.from('unexpected upstream archive')),
     /checksum mismatch/
   )
+})
+
+test('provider unavailability blocks final status even with successful stage envelopes', () => {
+  for (const providerUnavailable of [
+    'provider_paused',
+    'provider_payment_required',
+  ]) {
+    const status = decideFinalStatus({
+      reviewedHead: 'a',
+      currentHead: 'a',
+      reviewedBase: 'b',
+      currentBase: 'b',
+      eligible: true,
+      reviewOutcome: 'success',
+      cleanupOutcome: 'success',
+      publishOutcome: 'success',
+      cleanReview: 'true',
+      cleanEvidenceDigest: 'a'.repeat(64),
+      providerUnavailable,
+    })
+    assert.equal(status.state, 'failure')
+    assert.equal(status.description.includes(providerUnavailable), true)
+    assert.equal(status.description.includes('evidence='), false)
+  }
 })

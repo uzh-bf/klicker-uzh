@@ -332,7 +332,10 @@ async function publishReview(
     repo,
     temp,
     head: context.head,
+    policy: context.policy,
   })
+  if (!fs.existsSync(path.join(temp, 'draft-ai-review-result.json')))
+    fail('invalid_result')
   const file = 'scripts/github-actions/post-review-comments.js'
   if (
     digest(readFile(publisherRoot, file)) !==
