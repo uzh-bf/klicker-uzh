@@ -63,7 +63,7 @@ export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
                       {t('chat.sidebar.guestLabel')}
                     </span>
                   </TooltipTrigger>
-                  <TooltipContent>
+                  <TooltipContent className="max-w-xs">
                     {t('chat.sidebar.guestAccountHint')}
                   </TooltipContent>
                 </Tooltip>

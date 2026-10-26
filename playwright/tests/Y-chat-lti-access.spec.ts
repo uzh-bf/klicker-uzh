@@ -468,8 +468,15 @@ test.describe('LTI chatbot launch identity resolution', () => {
                 .first()
                 .click()
             if (identity === 'guest') {
-              await page.getByTestId('chat-guest-account').focus()
-              await expect(page.getByRole('tooltip')).toBeVisible()
+              const guestAccount = page.getByTestId('chat-guest-account')
+              await guestAccount.hover()
+              await guestAccount.focus()
+              await expect(guestAccount).toHaveAttribute(
+                'aria-describedby',
+                /.+/
+              )
+              const hintId = await guestAccount.getAttribute('aria-describedby')
+              await expect(page.locator(`[id="${hintId}"]`)).toBeVisible()
               await page.screenshot({
                 animations: 'disabled',
                 path: join(
