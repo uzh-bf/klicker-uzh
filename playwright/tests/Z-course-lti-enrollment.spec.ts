@@ -1,7 +1,7 @@
 import { createHmac, randomUUID } from 'node:crypto'
 import { PublicationStatus, UserRole } from '@klicker-uzh/prisma/client'
 import { expect, test } from '@playwright/test'
-import { getPrisma } from '../global-setup.js'
+import { acknowledgedParticipantDataUse, getPrisma } from '../global-setup.js'
 
 // Host-side Playwright cannot resolve the workspace util package, so sign the
 // synthetic handoffs directly with the shared HS256 secret.
@@ -62,6 +62,7 @@ test.describe('LTI course enrollment', () => {
     })
     await prisma.participant.create({
       data: {
+        ...acknowledgedParticipantDataUse,
         id: participantId,
         username: participantId,
         email,
@@ -225,6 +226,7 @@ test.describe('LTI course enrollment', () => {
         participantIds.push(otherId)
         await prisma.participant.create({
           data: {
+            ...acknowledgedParticipantDataUse,
             id: otherId,
             username: otherId,
             password: 'unused-synthetic-password',
@@ -286,6 +288,7 @@ test.describe('LTI course enrollment', () => {
     participantIds.push(otherId)
     await prisma.participant.create({
       data: {
+        ...acknowledgedParticipantDataUse,
         id: otherId,
         username: otherId,
         password: 'unused-synthetic-password',
@@ -332,6 +335,7 @@ test.describe('LTI course enrollment', () => {
     await page
       .locator('input[name="passwordRepetition"]')
       .fill('synthetic-password')
+    await page.locator('[data-cy="learning-analytics-consent-no"]').click()
     await page.locator('[data-cy="tos-checkbox"]').click()
     await page.locator('[data-cy="create-profile-button"]').click()
     await page.waitForURL(/\/login/)
@@ -401,6 +405,7 @@ test.describe('LTI course enrollment', () => {
     participantIds.push(otherId)
     await prisma.participant.create({
       data: {
+        ...acknowledgedParticipantDataUse,
         id: otherId,
         username: otherId,
         password: 'unused-synthetic-password',
@@ -476,6 +481,7 @@ test.describe('LTI course enrollment', () => {
     await page
       .locator('input[name="passwordRepetition"]')
       .fill('synthetic-password')
+    await page.locator('[data-cy="learning-analytics-consent-no"]').click()
     await page.locator('[data-cy="tos-checkbox"]').click()
     await page.locator('[data-cy="create-profile-button"]').click()
     await page.waitForURL(/\/login/)
@@ -499,6 +505,28 @@ test.describe('LTI course enrollment', () => {
     ).toBe(0)
   })
 
+  for (const redirectTo of [
+    'https://evil.example/phish',
+    '/\t/evil.example/phish',
+    '//evil.example/phish',
+  ]) {
+    test(`magic-link login rejects external return target ${JSON.stringify(redirectTo)}`, async ({
+      page,
+    }) => {
+      await page.route('https://evil.example/**', (route) => route.abort())
+      const otp = signJwt({
+        sub: participantId,
+        role: UserRole.PARTICIPANT,
+        scope: 'OTP',
+      })
+      await page.goto(
+        `/magicLogin?token=${encodeURIComponent(otp)}&redirect_to=${encodeURIComponent(redirectTo)}`
+      )
+      const origin = new URL(page.url()).origin
+      await expect(page).toHaveURL(`${origin}/`)
+    })
+  }
+
   test('magic-link login preserves the join intent and completes enrollment', async ({
     page,
   }) => {
@@ -515,6 +543,7 @@ test.describe('LTI course enrollment', () => {
     await page
       .locator('input[name="passwordRepetition"]')
       .fill('synthetic-password')
+    await page.locator('[data-cy="learning-analytics-consent-no"]').click()
     await page.locator('[data-cy="tos-checkbox"]').click()
     await page.locator('[data-cy="create-profile-button"]').click()
     await page.waitForURL(/\/login/)

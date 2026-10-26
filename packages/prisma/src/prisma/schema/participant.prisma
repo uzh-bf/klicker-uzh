@@ -65,6 +65,19 @@ model Participant {
   isProfilePublic Boolean @default(true)
   isSSOAccount    Boolean @default(false)
 
+  researchConsent                  Boolean   @default(false)
+  researchConsentChoiceAt          DateTime?
+  researchConsentDisclosureVersion String?
+
+  learningAnalyticsConsent           Boolean   @default(false)
+  learningAnalyticsChoiceAt          DateTime?
+  learningAnalyticsDisclosureVersion String?
+
+  dataUseAcknowledgedAt      DateTime?
+  dataUseAcknowledgedVersion String?
+  dataUseRevision            Int                       @default(0)
+  dataUseEvents              ParticipantDataUseEvent[]
+
   lastLoginAt DateTime?
 
   locale Locale @default(en)
@@ -100,6 +113,35 @@ model Participant {
   updatedAt DateTime @updatedAt
 
   @@unique([email, isSSOAccount])
+  @@index([researchConsent, id])
+  @@index([learningAnalyticsConsent, id])
+}
+
+model ParticipantDataUseEvent {
+  id                       String      @id @default(uuid()) @db.Uuid
+  participantId            String      @db.Uuid
+  participant              Participant @relation(fields: [participantId], references: [id], onDelete: Cascade)
+  revision                 Int
+  disclosureVersion        String
+  researchConsent          Boolean
+  learningAnalyticsConsent Boolean
+  acknowledged             Boolean
+  createdAt                DateTime    @default(now())
+
+  analyticsWithdrawal ParticipantAnalyticsWithdrawal?
+
+  @@unique([participantId, revision])
+}
+
+model ParticipantAnalyticsWithdrawal {
+  participantId      String                  @db.Uuid
+  withdrawalRevision Int
+  choiceEvent        ParticipantDataUseEvent @relation(fields: [participantId, withdrawalRevision], references: [participantId, revision], onDelete: Cascade)
+  requestedAt        DateTime                @default(now())
+  completedAt        DateTime?
+
+  @@id([participantId, withdrawalRevision])
+  @@index([completedAt, requestedAt, participantId])
 }
 
 model ParticipantGroup {

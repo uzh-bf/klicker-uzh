@@ -29,7 +29,7 @@ Use this skill for Klicker-specific Playwright work. Combine it with `playwright
 Useful check:
 
 ```bash
-pnpm playwright:host -- --list --project=chromium
+node util/run-playwright-host.mjs --list --project=chromium
 rg -n "test\\(" playwright/tests
 ```
 
@@ -43,16 +43,16 @@ workers, and data services remain inside the devcontainer.
 
 ```bash
 # list active Chromium tests without executing them
-pnpm playwright:host -- --list --project=chromium
+node util/run-playwright-host.mjs --list --project=chromium
 
 # focused specs
-pnpm playwright:host -- --project=chromium tests/O-live-quiz.spec.ts
+node util/run-playwright-host.mjs --project=chromium tests/O-live-quiz.spec.ts
 
 # full active Chromium suite
-pnpm playwright:host -- --project=chromium
+node util/run-playwright-host.mjs --project=chromium
 
 # inspect the resolved workspace without exposing credentials
-pnpm playwright:host -- --print-env
+node util/run-playwright-host.mjs --print-env
 ```
 
 Do not run `playwright test`, package-local raw scripts, browser installation,
@@ -66,7 +66,7 @@ taking the union of their `playwright/profiles.json` entries; broad runs,
 unresolved filters, and unrecognized options use the maximal `playwright`
 profile, and an explicit `--runtime-profile` always wins. Focused activity
 runs may explicitly request
-`pnpm playwright:host -- --runtime-profile manage,live-quiz --project=chromium tests/MA-elements-operations.spec.ts`.
+`node util/run-playwright-host.mjs --runtime-profile manage,live-quiz --project=chromium tests/MA-elements-operations.spec.ts`.
 The caller still owns profile sufficiency for deliberately narrowed
 selections. Put launcher options before Playwright arguments; an explicit
 `--` ends their prefix.
@@ -109,7 +109,7 @@ render of the starter grid.
 ## Fast Failure Triage
 
 - Nested development routes returning 404 despite existing source files can indicate overlapping Next.js route scans. Compare the live development pages manifest with dynamic source routes and verify the Pages-only development configuration; see `docs/solutions/runtime-error/next-development-route-scans-overlap.md`. Do not mask missing routes with longer test timeouts or treat an incomplete inventory as cache damage.
-- `net::ERR_CONNECTION_REFUSED`: the routed app is down, not a selector issue. Run `pnpm playwright:host -- --print-env` and inspect `devrouter exec . -- tail -f /tmp/dev.log` first.
+- `net::ERR_CONNECTION_REFUSED`: the routed app is down, not a selector issue. Run `node util/run-playwright-host.mjs --print-env` and inspect `devrouter exec . -- tail -f /tmp/dev.log` first.
 - `ECONNREFUSED 127.0.0.1:7078`: `response-api` is not running.
 - Hatchet `workflow not found`: the relevant Hatchet worker is not registered/running, often `hatchet-worker-general` for scheduled tasks.
 - Sudden Firefox/WebKit execution: Playwright is running all configured projects. Pass `--project=chromium` or keep non-Chromium projects commented in config if Chromium-only is desired.
@@ -119,7 +119,7 @@ render of the starter grid.
 Before blaming a test, probe the apps:
 
 ```bash
-pnpm playwright:host -- --print-env
+node util/run-playwright-host.mjs --print-env
 devrouter exec . -- tail -n 100 /tmp/dev.log
 ```
 
@@ -170,6 +170,8 @@ Cleanup dialogs:
 
 ## CI Notes
 
+- Frontend `build:test` delegates to the canonical production build and `start:test` runs its relocated standalone server, both with `NODE_ENV=production`. Keep `.next/playwright-runtime.tar` inside the trusted artifact transfer: it preserves dependencies and generated public/service-worker assets. Startup rejects missing or inconsistent artifacts. `KLICKER_PLAYWRIGHT_FIXTURES` enables only the local image and synthetic feature-flag proxy settings; backend fixtures retain their separate test mode. Local host runs remain a development loop and do not substitute for this production CI proof.
+
 - For Chromium-only CI, run with `--project=chromium`.
 - Assign every active spec to the smallest sufficient profile in `playwright/profiles.json`. Each spec must appear exactly once; missing, stale, or duplicate entries fail `pnpm check:playwright-ci`. Both Playwright workflows pass each shard's canonical profile union through `devrouter profile plan`, the repository-owned `playwright/runtime-contract.yml`, and `util/playwright-profile-runtime.mjs`. The trusted planner may assign a candidate-only spec to `full`; the adapter resolves a trusted `full` union through the explicit `playwright` Devrouter profile, which contains every CI-supported app but none of the local-only optional services or processes. Keep that path fail closed, keep app-to-Turbo and endpoint mappings in the contract, and retain the adapter's exact binding-key and safe-literal checks. A caller checkout where all three profile-runtime files are absent may use the explicit legacy full-stack startup so open PRs created before the migration remain runnable; a partially present profile runtime must fail closed. Job service containers remain static because GitHub creates them before workflow steps.
 - The Playwright CI cache contract is versioned and architecture-specific. It includes the lockfile, workspace and Turbo configuration, tracked package manifests, Node/pnpm versions, the synthetic build-environment schema, and the digest-pinned Playwright image. The trusted `v3` seed workflow is the only cache writer; hosted and public-PR jobs restore pnpm and `.turbo` state without saving it. Public PR restore remains disabled until an explicit global or exact-canary control is enabled, and any miss or unavailable cache must leave the normal build path valid. Read `playwright-build-telemetry`, shard telemetry, and the hosted `playwright-queue-telemetry` artifact before attributing a speed change to caching; these artifacts contain only route, cache, timing, task-count, runner, and status metadata.
@@ -195,7 +197,7 @@ For refactors, run:
 ```bash
 volta run pnpm exec prettier --check playwright/util/actions.ts playwright/tests/<changed-spec>.spec.ts
 volta run pnpm --filter @klicker-uzh/playwright exec tsc --noEmit --project tsconfig.json
-pnpm playwright:host -- --list --project=chromium
+node util/run-playwright-host.mjs --list --project=chromium
 ```
 
 The type and format checks can run in the devcontainer; the Playwright command

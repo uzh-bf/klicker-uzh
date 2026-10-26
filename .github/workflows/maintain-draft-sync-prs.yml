@@ -1,0 +1,94 @@
+name: Maintain draft sync PRs
+
+on:
+  # Run from v3 even before the controller has propagated to v3-ai.
+  workflow_run:
+    workflows: ['Check codebase']
+    types: [completed]
+    branches:
+      - v3
+      - v3-ai
+      - v3-audit
+      - v3-adaptive-learning
+      - 'sync/v3-into-v3-ai-*'
+      - 'sync/v3-ai-into-v3-audit-*'
+      - 'sync/v3-ai-into-v3-adaptive-learning-*'
+  workflow_dispatch:
+    inputs:
+      dry_run:
+        description: 'Preview sync changelogs without writing branches or PRs'
+        type: boolean
+        default: true
+        required: true
+
+concurrency:
+  group: maintain-draft-sync-prs
+  cancel-in-progress: false
+
+permissions:
+  contents: read
+
+jobs:
+  maintain:
+    if: >-
+      github.repository == 'uzh-bf/klicker-uzh' &&
+      github.ref == 'refs/heads/v3' &&
+      (github.event_name == 'workflow_dispatch' ||
+       ((github.event.workflow_run.event == 'push' ||
+         github.event.workflow_run.event == 'pull_request') &&
+        github.event.workflow_run.head_repository.full_name == github.repository))
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    permissions:
+      contents: read
+      pull-requests: write
+    steps:
+      - name: Checkout trusted controller
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          ref: ${{ github.workflow_sha }}
+          persist-credentials: false
+          sparse-checkout-cone-mode: false
+          sparse-checkout: |
+            /.github/scripts/
+            /.versionrc.js
+
+      # Sync-branch updates use a separate identity so the sync PR's CI starts
+      # without manual approval: GITHUB_TOKEN updates start no push workflows,
+      # and the pull request workflows they trigger wait for approval.
+      - name: Maintain draft sync PRs
+        uses: actions/github-script@3a2844b7e9c422d3c10d287c895573f7108da1b3 # v9.0.0
+        env:
+          DRY_RUN: ${{ github.event_name == 'workflow_dispatch' && inputs.dry_run }}
+          HAS_SYNC_TOKEN: ${{ secrets.SYNC_PR_BOT_TOKEN != '' }}
+          SYNC_HISTORY_TOKEN: ${{ github.token }}
+        with:
+          github-token: ${{ secrets.SYNC_PR_BOT_TOKEN || github.token }}
+          script: |
+            const { maintainDraftSyncPrs } = require('./.github/scripts/draft-sync-prs.cjs')
+            const dryRun = process.env.DRY_RUN !== 'false'
+            if (!dryRun && process.env.HAS_SYNC_TOKEN !== 'true') {
+              core.setFailed('secrets.SYNC_PR_BOT_TOKEN is not set')
+              return
+            }
+            const results = await maintainDraftSyncPrs({
+              github, context, dryRun, historyToken: process.env.SYNC_HISTORY_TOKEN,
+            })
+            const rows = [['Sync branch', 'Target', 'Result', 'Description', 'Reason', 'PR']]
+            for (const { branch, base, action, number, description, reason } of results) {
+              core.info(JSON.stringify({ branch, base, action, number, description, reason }))
+              rows.push([branch, base, action, description || '', reason || '', number ? `#${number}` : ''])
+              if (description === 'error') {
+                core.setFailed(`Changelog analysis failed for ${branch} -> ${base}; no description was written.`)
+              }
+              if (action === 'conflict' || action === 'stale-branch') {
+                core.warning(`${branch} -> ${base}: ${action}${number ? ` on #${number}` : ''}; see docs/ci-and-deployment.md.`)
+              }
+            }
+            core.summary.addHeading('Draft sync PRs').addTable(rows)
+            if (dryRun) {
+              for (const { base, body } of results) {
+                if (body) core.summary.addHeading(`Changelog into ${base}`, 2).addRaw(body).addEOL()
+              }
+            }
+            await core.summary.write()

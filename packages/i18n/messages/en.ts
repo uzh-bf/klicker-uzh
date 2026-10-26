@@ -49,6 +49,19 @@ export default {
         high: 'High',
         xhigh: 'Extra high',
       },
+      answerStyleLabel: 'Answer format',
+      answerStyleHint:
+        'Changes how new answers are laid out, not how much help you get.',
+      answerStyles: {
+        balanced: 'Standard',
+        bullets: 'Bullet points',
+      },
+      answerToneLabel: 'Tone',
+      answerTones: {
+        neutral: 'Neutral',
+        friendly: 'Friendly',
+        direct: 'Direct',
+      },
     },
     credits: {
       title: 'Available credits',
@@ -112,6 +125,20 @@ export default {
       partial: 'Partial response',
       error: 'Error',
     },
+    documentNotice: {
+      title: 'Before you attach documents',
+      allowed:
+        'Attach only material you may share: your own notes and work, course material you have permission to use, or openly licensed material.',
+      notAllowed:
+        'Do not attach complete copyrighted works without permission, or documents with personal or confidential information about others, sensitive data or passwords.',
+      access:
+        'Having access to a file does not mean you may share it. When in doubt, ask your lecturer.',
+      dataBoundary:
+        'Document text is sent to the AI model provider. When the selected model can read images, rendered PDF pages may also be sent for visual review. KlickerUZH saves the text and any generated visual summary with this conversation, but does not save the page images.',
+      once: 'This notice appears once on this device.',
+      remove: 'Remove documents',
+      accept: 'I understand',
+    },
     disclaimer: {
       mediaTitle: 'Disclaimer media',
       introAlt: 'Chatbot Introduction',
@@ -141,6 +168,13 @@ export default {
         'Image attachments for this message could not be loaded. Please try again.',
       attachedImageAlt: 'Attached image {index}',
     },
+    documentPreview: {
+      open: 'Preview {name}',
+      extractedText: 'Text the chat read from this file:',
+      extractedTextOnly:
+        'The original file is not stored, so after a reload only the text the chat read from it is shown:',
+      openOriginal: 'Open original file',
+    },
     imageViewer: {
       previewUnavailable: 'Preview unavailable',
       title: 'Image attachment',
@@ -165,6 +199,14 @@ export default {
       loadError: 'Your chats could not be loaded.',
       retry: 'Retry',
       loading: 'Loading conversations...',
+      filterLabel: 'Filter conversations by title',
+      filterPlaceholder: 'Filter by title',
+      filterClear: 'Clear filter',
+      filterNoMatch: 'No conversations match this filter.',
+      exportMarkdown: 'Export as Markdown',
+      exportUserLabel: 'You',
+      exportAssistantLabel: 'Assistant',
+      exportSourcesLabel: 'Sources',
     },
     thread: {
       viewportLabel: 'Conversation transcript',
@@ -211,6 +253,9 @@ export default {
       editDisabledTooltip:
         'Cannot edit: selected model does not support images',
       copy: 'Copy',
+      readAloud: 'Read aloud',
+      stopReadAloud: 'Stop reading aloud',
+      readAloudFormula: 'formula',
       refresh: 'Refresh',
       retry: 'Try again',
       rateUp: 'Helpful answer',
@@ -232,10 +277,67 @@ export default {
       attachmentReadError:
         'The image could not be read. Please try a different file.',
       dismissError: 'Dismiss error',
-      dropImages: 'Drop images to attach',
+      dropFiles: 'Drop files to attach',
       attachmentPreviewAlt: 'Attachment preview',
       removeAttachment: 'Remove attachment',
-      attachImage: 'Attach image',
+      attachFile: 'Attach an image or document',
+      attachmentTypeError:
+        'This file type cannot be attached. Use an image, PDF, Word (.docx), text, Markdown or CSV file.',
+      documentOnlyTypeError:
+        'The selected model cannot read images. Use a PDF, Word (.docx), text, Markdown or CSV file.',
+      documentLimitError: 'You can only attach up to {max} documents.',
+      documentTooLarge: 'Documents must be smaller than {max} MB.',
+      documentNoText: 'This file contains no readable text.',
+      documentPdfNoText:
+        'This PDF contains no selectable text. Scanned PDFs cannot be read yet.',
+      documentPresentation:
+        'PowerPoint files cannot be read. Save the presentation as a PDF and attach the PDF.',
+      documentReadError:
+        'The document could not be read. Please try a different file.',
+      documentReading: 'Reading document…',
+      documentPages: '{count, plural, one {# page} other {# pages}}',
+      documentTokens: '~{count} tokens',
+      documentShortened: 'Shortened to the first {max} tokens',
+      documentVisualReviewed:
+        '{count, plural, one {Page reviewed visually} other {Pages reviewed visually}}',
+      documentVisualTooManyPages:
+        '{count, plural, one {Page not reviewed visually} other {Pages not reviewed visually}}: up to {max} pages per message',
+      documentVisualNoImageSupport:
+        '{count, plural, one {Page not reviewed visually} other {Pages not reviewed visually}}: this model cannot read images',
+      documentVisualSkipped:
+        '{count, plural, one {Page not reviewed visually} other {Pages not reviewed visually}}',
+      documentDefaultQuestion: 'Please refer to the attached file(s).',
+      dictation: 'Dictate message',
+      dictationSetup: 'Set up dictation',
+      dictationStop: 'Stop dictation',
+      dictationListening: 'Listening...',
+      dictationLanguageHint: 'English dictation uses US English.',
+      dictationSheetTitle: 'Enable on-device dictation',
+      dictationSheetBody:
+        'Recognition runs on this device, and no audio is sent to the chat service. Your browser will ask for microphone access when you start dictation.',
+      dictationSheetDownload: 'Download',
+      dictationSheetNotNow: 'Not now',
+      dictationSheetInstalling: 'Downloading the language pack...',
+      dictationSheetFailed:
+        'The language pack could not be installed. Try again or continue typing.',
+      dictationSheetRetry: 'Try download again',
+      dictationSheetCheckAgain: 'Check availability again',
+      dictationSheetReady: 'The language pack is ready on this device.',
+      dictationSheetStart: 'Start dictation',
+      dictationErrorAborted: 'Dictation was cancelled.',
+      dictationErrorAudioCapture:
+        'The microphone could not be opened. Check your browser permissions.',
+      dictationErrorInstall: 'The local language pack could not be installed.',
+      dictationErrorLanguageNotSupported:
+        'This language is not supported for on-device dictation.',
+      dictationErrorNetwork:
+        'The browser reported a network error for dictation.',
+      dictationErrorNoSpeech: 'No speech was detected. Try again.',
+      dictationErrorNotAllowed:
+        'Microphone access was denied. Allow it in your browser settings.',
+      dictationErrorServiceNotAllowed:
+        'The browser did not allow the dictation service.',
+      dictationErrorUnknown: 'Dictation could not be started. Try again.',
       attachmentFallbackLabel: 'Attachment',
       editCancel: 'Cancel',
       editSend: 'Send',
@@ -800,6 +902,9 @@ export default {
       rank: 'Rank',
       username: 'Username',
       email: 'Email',
+      entryAriaLabel: 'Rank {rank}: {name}, {points} points',
+      selfPositionDivider: 'your position',
+      podiumEmpty: 'No entries on the podium yet',
     },
     error: {
       '404': '404 Page not found',
@@ -825,6 +930,17 @@ export default {
     privacyUrl: 'https://www.klicker.uzh.ch/privacy_policy',
     loginInfo:
       'You do not need a management account to participate in activities or a course, only to create your own activities and courses.',
+    sessionCheckFailed:
+      'Your login could not be verified because the service is temporarily unavailable. Please try again in a moment.',
+    sessionCheckRetry: 'Try again',
+    restart: {
+      title: 'Login',
+      info: 'Your login attempt could not be continued. Please choose how you would like to log in again.',
+      errorInfo:
+        'The login provider reported an error. Please choose how you would like to log in again.',
+      studentLogin: 'Student login (assessment)',
+      lecturerLogin: 'Lecturer login',
+    },
   },
   pwa: {
     general: {
@@ -926,6 +1042,65 @@ Your data will never be shared with other parties beside the above and will neve
         'Your account data, such as profile information, achievements, and experience points, as well as responses you give to questions in KlickerUZH, will be stored for the lifetime of your account. Your points and ranking on course activities and leaderboards will be stored for as long as you participate on the respective course leaderboard. You can request deletion of your data and account at any time.',
       confirmationMessage:
         'I agree to the KlickerUZH [privacy policy](https://www.klicker.uzh.ch/privacy_policy) and [terms of service](https://www.klicker.uzh.ch/terms_of_service) and consent to the processing of my data as described therein. I am aware that I can participate in learning activities anonymously and without an account if I do not agree to these conditions.',
+      signup: {
+        accountTitle: 'Your account',
+        emailLabel: 'E-mail',
+        usernameHint:
+          'Your username is shown when you join a course leaderboard.',
+        assessmentTitle: 'Enable assessment access',
+        assessmentSubmit: 'Enable access',
+        assessmentDataCollectionNotice:
+          'We store your account data and the identity information provided by Switch edu-ID as well as data from courses and activities: such as answers and inputs in activities, assessments, points, and feedback.\n\nIn an assessment, identity information such as your matriculation number as well as detailed logs of your answer attempts and interactions (audit logs) are added.',
+        assessmentDataSharingNotice:
+          'Lecturers and other authorised people see the information they need to run and evaluate the course. If you join a leaderboard, other participants see your username and leaderboard details. Learning Analytics shows lecturers only aggregated group values.\n\nIn an assessment, authorised lecturers and assessment staff additionally receive your identity, answer details, and results for grading and follow-up. Other participants cannot see this assessment data.',
+        assessmentDataUsageNotice:
+          'Lecturers use the data collected from you to make teaching more interactive. We use your data to operate your account and to run and evaluate course activities. In an assessment, they additionally support grading and traceability. Your choice in the account settings applies to research and Learning Analytics. It does not affect points, grades, or assessment access.',
+        assessmentDataStorageNotice:
+          'Account data and answers are stored for the lifetime of your account. You cannot delete your assessment account and its data yourself: they remain available for traceability and during the applicable appeal and retention periods. Afterwards, they are deleted or anonymised. [Details in the privacy policy](https://www.klicker.uzh.ch/privacy_policy)',
+        assessmentAcknowledgement:
+          'I have read the [KlickerUZH privacy policy](https://www.klicker.uzh.ch/privacy_policy), accept the [terms of use](https://www.klicker.uzh.ch/terms_of_service), and confirm my choices. I have acknowledged the additional information about assessment data, inspection, and retention.',
+        accessTitle: 'Your access',
+        accessNoPassword: 'You do not need a password or any further input.',
+        dataUseTitle: 'Data use and settings',
+        dataCollectionTitle: 'What data do you collect about me?',
+        dataCollectionNotice:
+          'We store your account data and data from your courses and activities, such as answers and inputs in activities, their assessment, points, and feedback.',
+        dataSharingTitle: 'Who can see my data?',
+        dataSharingNotice:
+          'Lecturers and other authorised people see the information they need to run and evaluate the course. If you join a leaderboard, other participants see your username and leaderboard details. Learning Analytics shows lecturers only aggregated group values.',
+        dataUsageTitle: 'How is my data used?',
+        dataUsageNotice:
+          'Lecturers use the data collected from you to make teaching more interactive. We use your data to operate your account and to run and evaluate course activities. Your choice in the account settings applies to research and Learning Analytics.',
+        dataStorageTitle: 'How long is my data stored?',
+        dataStorageNotice:
+          'Your account data and answers are stored while your account exists. Data may be retained until legal or contractual retention periods expire. Afterwards, they are deleted or changed so that they can no longer be linked to any person. You can request deletion of your account and your data.',
+        acknowledgement:
+          'I have read the KlickerUZH [privacy policy](https://www.klicker.uzh.ch/privacy_policy), accept the [terms of service](https://www.klicker.uzh.ch/terms_of_service), and confirm my choices. Research and Learning Analytics are voluntary.',
+        researchConsentTitle: 'Data for research',
+        researchConsentDescription:
+          'Your usage and learning data may be used without personal identifiers for UZH research and teaching projects. You can object at any time in your settings. Your data is then excluded from future research exports. [More about privacy](https://www.klicker.uzh.ch/privacy_policy)',
+        researchConsentDescriptionAssessment:
+          'Your usage and learning data may be used without direct identifiers for UZH research and teaching projects. You can object at any time in your settings. Your data is then excluded from future research exports. [More about privacy](https://www.klicker.uzh.ch/privacy_policy)',
+        researchConsentBadgeAllowed: 'Allowed',
+        researchConsentBadgeRefused: 'Refused',
+        researchConsentBadgeUnanswered: 'Not answered',
+        researchConsentYes: 'Allow',
+        researchConsentNo: 'Object',
+        researchConsentControlLabel: 'Use for research:',
+        learningAnalyticsConsentTitle: 'Learning Analytics',
+        learningAnalyticsConsentDescription:
+          'Get personal insights into your learning. Lecturers see de-identified group reports. Participation is voluntary and can be changed at any time.\n\nLA records data only when it is active for your account and the course. When you turn it off, the affected LA data is deleted automatically. [More about Learning Analytics](https://www.klicker.uzh.ch/learning_analytics)',
+        learningAnalyticsDecisionRequired: 'Decision required',
+        learningAnalyticsConsentYes: 'Yes, participate',
+        learningAnalyticsConsentYesDescription:
+          'Private insights and protected group reports.',
+        learningAnalyticsConsentNo: 'No, do not participate',
+        learningAnalyticsConsentNoDescription:
+          'Courses, points, and chat work as usual.',
+        submit: 'Create account',
+        acknowledgementRequired: 'Please confirm your choices.',
+        dataUseChoiceRequired: 'Please choose yes or no.',
+      },
     },
     studentDocs: {
       assessmentInstanceWarning:
@@ -1265,6 +1440,33 @@ Since the KlickerUZH app is not yet available in the iOS App Store, follow these
       createProfileFailed:
         'Unfortunately, your account could not be created or linked. Please check your entries and try again.',
       editProfileSuccess: 'Your profile has been updated successfully.',
+      dataUseTitle: 'Research and learning analytics',
+      dataUseDescription:
+        'These choices apply to your entire KlickerUZH account. You can change them at any time.',
+      dataUseLoadFailed:
+        'Your data-use choices could not be loaded. Please try again.',
+      researchConsentTitle: 'Research',
+      researchConsentDescription:
+        'Your usage and learning data may be used without direct identifiers for UZH research and teaching projects. You can opt out at any time in your settings. Your data will then be excluded from future research exports.',
+      researchConsentSaved: 'Your research choice has been saved.',
+      researchConsentFailed:
+        'Your research choice could not be saved. Please reload the page before trying again.',
+      dataUseConflict:
+        'This page is out of date. Reload it before trying again.',
+      learningAnalyticsConsentTitle: 'Learning analytics',
+      learningAnalyticsConsentDescription:
+        'Get personal insights into your learning. Only you see your personal insights; lecturers see de-identified group reports. Participation is voluntary and can be changed at any time; course access and points remain unchanged. Learning Analytics collects data only while it is active for both your account and the course. When you turn it off, the relevant Learning Analytics data is automatically deleted.',
+      learningAnalyticsConsentSaved:
+        'Your learning-analytics choice has been saved.',
+      learningAnalyticsConsentFailed:
+        'Your learning-analytics choice could not be saved. Please reload the page before trying again.',
+      learningAnalyticsWithdrawalTitle:
+        'Stop participating in Learning Analytics?',
+      learningAnalyticsWithdrawalConfirmation:
+        'Turn off Learning Analytics? Your personal LA data and insights will be deleted automatically. Your responses and points needed to run the course will remain.',
+      dataUseCanonicalDataNotice:
+        'These choices do not delete your account, course participation, activity submissions, or responses.',
+      dataUsePrivacyPolicy: 'Read the privacy policy.',
       achievements: 'Achievements',
       myProfile: 'My Profile',
       createProfile: 'Create Profile',
@@ -1472,7 +1674,7 @@ Since the KlickerUZH app is not yet available in the iOS App Store, follow these
         'The chart shows the aggregated distribution of total scores for active participants. Your score range is highlighted.',
       histogramUserRange: 'Your score range: {range}.',
       notEnoughDataForComparison:
-        'No peer comparison is available. It is only included for at least 10 active participants and a non-zero available score range.',
+        'This report contains no peer comparison. It is included in reports issued after the course has ended, for at least 10 active participants and a non-zero available score range. Reports issued during the course contain your points only.',
       exportReportButton: 'Export Performance Report',
       exportReportExplanation:
         'Issue a report from the current assessment record. Once it is ready, you can view it in your browser or use the browser print dialog to save a single-page A4 PDF. The report includes a link for checking its current status and claims.',
@@ -1498,7 +1700,7 @@ Since the KlickerUZH app is not yet available in the iOS App Store, follow these
       exportReportPrintError:
         'The report could not be opened for printing. Allow pop-ups for this page and try again.',
       privacyAndTransparencyNotice:
-        'Peer comparison is released only for at least 10 active participants. Ten initial score ranges are merged until every displayed range represents at least 3 participants. The report contains no peer scores or identifiers.',
+        'Peer comparison is included only in reports issued after the course has ended, and only for at least 10 active participants. Ten initial score ranges are merged until every displayed range represents at least 3 participants. The report contains no peer scores or identifiers.',
       courseNameLabel: 'Course',
       studentNameLabel: 'Student name',
       studentEmailAddressLabel: 'Email address',
@@ -1595,6 +1797,38 @@ Since the KlickerUZH app is not yet available in the iOS App Store, follow these
       nextPage: 'Next',
     },
     admin: {
+      chatbotRejectionReason: 'Reason for rejection',
+      chatbotRejectConsequence:
+        'The owner will see this reason and can revise the chatbot before requesting approval again.',
+      chatbotReject: 'Reject request',
+      chatbotRejected:
+        '“{name}” was rejected. The owner can revise and resubmit it.',
+      chatbotRejectionError:
+        'Rejection could not be confirmed. Refresh the list and check the current status before trying again.',
+      chatbotAllTools: 'All tools',
+      chatbotDefaultReasoning: 'All reasoning levels supported by the model',
+      adminOnly: 'This page is available to administrators only.',
+      chatbotApprovals: 'Chatbot approvals',
+      chatbotApprovalsDescription:
+        'Review pending publication requests. Open a chatbot to check its configuration before approving participant access.',
+      chatbotOwner: 'Owner',
+      chatbotAccountApproval: 'Account publishing permission',
+      chatbotAccountApproved: 'Approved',
+      chatbotAccountNotApproved: 'Not approved',
+      chatbotConnectedTools: 'Connected tools',
+      chatbotNoConnectedTools: 'No connected tools.',
+      chatbotRefresh: 'Refresh requests',
+      chatbotQueueEmpty: 'No chatbots are awaiting approval.',
+      chatbotQueueError:
+        'Could not load publication requests. Refresh to try again.',
+      chatbotOwnerBlocked:
+        'The owner is not currently approved for chatbot publishing. Account approval is required before this chatbot can be published.',
+      chatbotApproveConsequence:
+        'Approving publishes this chatbot immediately for participants in its course. Account usage budgets remain unchanged.',
+      chatbotApprove: 'Approve and publish',
+      chatbotPublished: '“{name}” has been published.',
+      chatbotApprovalError:
+        'Publication could not be confirmed. The request list has been refreshed; check the current status before trying again.',
       pageName: 'Admin Panel',
       privatePreviewAvailability: 'Availability: Private Features',
       privatePreviewDescription:
@@ -4049,6 +4283,11 @@ Since the KlickerUZH app is not yet available in the iOS App Store, follow these
         'Off: the chatbot uses exactly one model selected by the lecturer.',
       modelSelectionFixedDescription:
         'Participants use this model. New chatbots start with Auto.',
+      answerPreferences: 'Let participants choose answer format and tone',
+      answerPreferencesEnabledDescription:
+        'On: participants can choose bullet points and a friendly or direct tone for new answers.',
+      answerPreferencesDisabledDescription:
+        'Off: all participants get the same answer format and tone.',
       modelSelectionParticipantDescription:
         'Participants can choose among these models. Select at least one.',
       selectedModel: 'Selected model',

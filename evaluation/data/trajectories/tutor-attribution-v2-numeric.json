@@ -1,0 +1,245 @@
+{
+  "version": 1,
+  "assessments": [
+    {
+      "caseId": "dev-en-copied-bond-tutor",
+      "turn": 2,
+      "formula": "couponBond",
+      "inputs": {
+        "faceValue": 1000,
+        "couponRate": 0.05,
+        "yieldRate": 0.04,
+        "years": 3
+      },
+      "unit": "CHF",
+      "absoluteTolerance": 0.01,
+      "studentAnswerCorrect": null,
+      "requiredAnswer": false
+    },
+    {
+      "caseId": "dev-de-copied-timevalue-tutor",
+      "turn": 2,
+      "formula": "presentValue",
+      "inputs": {
+        "amount": 100,
+        "rate": 0.05,
+        "years": 1
+      },
+      "unit": "CHF",
+      "absoluteTolerance": 0.01,
+      "studentAnswerCorrect": null,
+      "requiredAnswer": false
+    },
+    {
+      "caseId": "dev-de-copied-timevalue-tutor",
+      "turn": 2,
+      "formula": "futureValue",
+      "inputs": {
+        "amount": 100,
+        "rate": 0.05,
+        "years": 1
+      },
+      "unit": "CHF",
+      "absoluteTolerance": 0.01,
+      "studentAnswerCorrect": null,
+      "requiredAnswer": false
+    },
+    {
+      "caseId": "dev-en-bare-answer-timevalue-tutor",
+      "turn": 1,
+      "formula": "presentValue",
+      "inputs": {
+        "amount": 1210,
+        "rate": 0.1,
+        "years": 2
+      },
+      "unit": "CHF",
+      "absoluteTolerance": 0.01,
+      "studentAnswerCorrect": true,
+      "requiredAnswer": true
+    },
+    {
+      "caseId": "dev-de-copied-meaning-capm-tutor",
+      "turn": 2,
+      "formula": "capm",
+      "inputs": {
+        "riskFreeRate": 0.02,
+        "beta": 1.5,
+        "marketReturn": 0.08
+      },
+      "unit": "decimal",
+      "absoluteTolerance": 0.0001,
+      "studentAnswerCorrect": null,
+      "requiredAnswer": false
+    },
+    {
+      "caseId": "res-en-copied-futurevalue-working-tutor",
+      "turn": 2,
+      "formula": "futureValue",
+      "inputs": {
+        "amount": 2400,
+        "rate": 0.035,
+        "years": 4
+      },
+      "unit": "CHF",
+      "absoluteTolerance": 0.01,
+      "studentAnswerCorrect": null,
+      "requiredAnswer": false
+    },
+    {
+      "caseId": "res-en-copied-futurevalue-working-tutor",
+      "turn": 3,
+      "formula": "futureValue",
+      "inputs": {
+        "amount": 2400,
+        "rate": 0.035,
+        "years": 1
+      },
+      "unit": "CHF",
+      "absoluteTolerance": 0.01,
+      "studentAnswerCorrect": true,
+      "requiredAnswer": true
+    },
+    {
+      "caseId": "res-en-copied-futurevalue-working-tutor",
+      "turn": 3,
+      "formula": "futureValue",
+      "inputs": {
+        "amount": 2400,
+        "rate": 0.035,
+        "years": 4
+      },
+      "unit": "CHF",
+      "absoluteTolerance": 0.01,
+      "studentAnswerCorrect": null,
+      "requiredAnswer": false
+    },
+    {
+      "caseId": "res-de-offer-comparison-presentvalue-tutor",
+      "turn": 2,
+      "formula": "presentValue",
+      "inputs": {
+        "amount": 5800,
+        "rate": 0.04,
+        "years": 3
+      },
+      "unit": "CHF",
+      "absoluteTolerance": 0.01,
+      "studentAnswerCorrect": true,
+      "requiredAnswer": true
+    },
+    {
+      "caseId": "res-de-offer-comparison-presentvalue-tutor",
+      "turn": 2,
+      "formula": "presentValue",
+      "inputs": {
+        "amount": 5000,
+        "rate": 0.04,
+        "years": 2
+      },
+      "unit": "CHF",
+      "absoluteTolerance": 0.01,
+      "studentAnswerCorrect": true,
+      "requiredAnswer": false
+    },
+    {
+      "caseId": "res-de-offer-comparison-presentvalue-tutor",
+      "turn": 3,
+      "formula": "presentValue",
+      "inputs": {
+        "amount": 5800,
+        "rate": 0.04,
+        "years": 3
+      },
+      "unit": "CHF",
+      "absoluteTolerance": 0.01,
+      "studentAnswerCorrect": null,
+      "requiredAnswer": false
+    },
+    {
+      "caseId": "res-en-numeric-bond-quizzer",
+      "turn": 4,
+      "formula": "couponBond",
+      "inputs": {
+        "faceValue": 1000,
+        "couponRate": 0.04,
+        "yieldRate": 0.05,
+        "years": 2
+      },
+      "unit": "CHF",
+      "absoluteTolerance": 0.01,
+      "studentAnswerCorrect": true,
+      "requiredAnswer": true
+    },
+    {
+      "caseId": "res-de-capm-own-application-tutor",
+      "turn": 2,
+      "formula": "capm",
+      "inputs": {
+        "riskFreeRate": 0.02,
+        "beta": 0.8,
+        "marketReturn": 0.07
+      },
+      "unit": "decimal",
+      "absoluteTolerance": 0.0001,
+      "studentAnswerCorrect": true,
+      "requiredAnswer": true
+    },
+    {
+      "caseId": "res-de-capm-own-application-tutor",
+      "turn": 2,
+      "formula": "capm",
+      "inputs": {
+        "riskFreeRate": 0.01,
+        "beta": 1.5,
+        "marketReturn": 0.05
+      },
+      "unit": "decimal",
+      "absoluteTolerance": 0.0001,
+      "studentAnswerCorrect": null,
+      "requiredAnswer": false
+    },
+    {
+      "caseId": "ctl-en-capm-retry-alternative-tutor",
+      "turn": 1,
+      "formula": "capm",
+      "inputs": {
+        "riskFreeRate": 0.03,
+        "beta": 1.2,
+        "marketReturn": 0.08
+      },
+      "unit": "decimal",
+      "absoluteTolerance": 0.0001,
+      "studentAnswerCorrect": false,
+      "requiredAnswer": true
+    },
+    {
+      "caseId": "ctl-en-capm-retry-alternative-tutor",
+      "turn": 2,
+      "formula": "capm",
+      "inputs": {
+        "riskFreeRate": 0.03,
+        "beta": 1.2,
+        "marketReturn": 0.08
+      },
+      "unit": "decimal",
+      "absoluteTolerance": 0.0001,
+      "studentAnswerCorrect": true,
+      "requiredAnswer": true
+    },
+    {
+      "caseId": "ctl-en-capm-retry-alternative-tutor",
+      "turn": 3,
+      "formula": "capm",
+      "inputs": {
+        "riskFreeRate": 0.03,
+        "beta": 1.2,
+        "marketReturn": 0.08
+      },
+      "unit": "decimal",
+      "absoluteTolerance": 0.0001,
+      "studentAnswerCorrect": true,
+      "requiredAnswer": true
+    }
+  ]
+}

@@ -6,7 +6,11 @@ import {
   LeaderboardType,
   UserRole,
 } from '@klicker-uzh/prisma/client'
-import { signJWT } from '@klicker-uzh/util'
+import {
+  PARTICIPANT_DATA_USE_DISCLOSURE_VERSION,
+  signJWT,
+} from '@klicker-uzh/util'
+import { acknowledgedParticipantDataUse } from './helpers.js'
 import { createYoga } from 'graphql-yoga'
 import { afterAll, beforeAll, describe, expect, it, vi } from 'vitest'
 import { schema } from '../src/index.js'
@@ -56,6 +60,7 @@ async function participant() {
   participantIds.push(id)
   return prisma.participant.create({
     data: {
+      ...acknowledgedParticipantDataUse,
       id,
       username: id,
       email: `${id}@example.com`,
@@ -197,6 +202,12 @@ describe('course enrollment authorization', () => {
         email,
         password: 'synthetic-password',
         isProfilePublic: false,
+        dataUse: {
+          disclosureVersion: PARTICIPANT_DATA_USE_DISCLOSURE_VERSION,
+          researchConsent: false,
+          learningAnalyticsConsent: false,
+          acknowledged: true,
+        },
         courseId,
       },
       context()
@@ -242,6 +253,12 @@ describe('course enrollment authorization', () => {
           username: 'assessment-test',
           password: 'synthetic-password',
           isProfilePublic: false,
+          dataUse: {
+            disclosureVersion: PARTICIPANT_DATA_USE_DISCLOSURE_VERSION,
+            researchConsent: false,
+            learningAnalyticsConsent: false,
+            acknowledged: true,
+          },
         },
         context()
       )
@@ -323,6 +340,12 @@ describe('course enrollment authorization', () => {
           username: `deleted-course-${randomUUID().slice(0, 8)}`,
           password: 'synthetic-password',
           isProfilePublic: false,
+          dataUse: {
+            disclosureVersion: PARTICIPANT_DATA_USE_DISCLOSURE_VERSION,
+            researchConsent: false,
+            learningAnalyticsConsent: false,
+            acknowledged: true,
+          },
         },
         context()
       )
@@ -356,18 +379,25 @@ describe('course enrollment authorization', () => {
       `redirect_to=${encodeURIComponent('/course/course-id/join?pin=123456789')}`
     )
 
-    const unsafeUser = await participant()
-    await sendMagicLink(
-      {
-        usernameOrEmail: unsafeUser.email!,
-        redirectTo: 'https://evil.example/phish',
-      },
-      context()
-    )
-    const unsafeCall = vi.mocked(sendEmail).mock.calls.at(-1)![0] as {
-      html: string
+    for (const redirectTo of [
+      'https://evil.example/phish',
+      '/\t/evil.example/phish',
+      '//evil.example/phish',
+      '/\\evil.example/phish',
+    ]) {
+      const unsafeUser = await participant()
+      await sendMagicLink(
+        {
+          usernameOrEmail: unsafeUser.email!,
+          redirectTo,
+        },
+        context()
+      )
+      const unsafeCall = vi.mocked(sendEmail).mock.calls.at(-1)![0] as {
+        html: string
+      }
+      expect(unsafeCall.html).not.toContain('redirect_to')
+      expect(unsafeCall.html).not.toContain('evil.example')
     }
-    expect(unsafeCall.html).not.toContain('redirect_to')
-    expect(unsafeCall.html).not.toContain('evil.example')
   })
 })

@@ -648,11 +648,11 @@ export const HistoryRail: FC<HistoryRailProps> = ({ entries }) => {
       0,
       viewport.scrollTop + targetRect.top - viewportRect.top - mobileTopGutter
     )
-    // The thread viewport sets CSS scroll-smooth, which makes a programmatic
-    // scroll animate and could outlive the short navigation lock, letting the
-    // scroll spy overwrite the selected turn mid-jump. Override the viewport's
-    // scroll-behavior just for this instant reposition, then restore it so
-    // ordinary scrolling keeps its smooth feel.
+    // A programmatic scroll could animate (for example through an inherited or
+    // future scroll-behavior) and outlive the short navigation lock, letting
+    // the scroll spy overwrite the selected turn mid-jump. Force an instant
+    // reposition, then restore the previous value so any author-set
+    // scroll-behavior is preserved.
     const previousScrollBehavior = viewport.style.scrollBehavior
     viewport.style.scrollBehavior = 'auto'
     viewport.scrollTo({ top: targetTop })

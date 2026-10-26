@@ -1,4 +1,5 @@
 import type { GetServerSidePropsContext } from 'next'
+import type getParticipantToken from './getParticipantToken'
 import type { ParticipantTokenSource } from './getParticipantToken'
 
 export function preserveLtiQuery(
@@ -38,4 +39,19 @@ export async function participantRedirect({
   }
 
   return { redirect: { destination, permanent: false } }
+}
+
+// Empty activity lists and populated course pages must carry the same resolved
+// identity, including its provenance, through Next.js serialization.
+export async function participantPageProps(
+  auth: Awaited<ReturnType<typeof getParticipantToken>>,
+  locale?: string
+) {
+  return {
+    participantToken: auth.participantToken ?? null,
+    cookiesAvailable: auth.cookiesAvailable,
+    ...(auth.tokenSource ? { tokenSource: auth.tokenSource } : {}),
+    messages: (await import(`@klicker-uzh/i18n/messages/${locale ?? 'en'}`))
+      .default,
+  }
 }

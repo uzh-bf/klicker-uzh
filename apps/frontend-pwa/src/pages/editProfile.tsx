@@ -13,6 +13,7 @@ import AccountDeletionForm from '../components/forms/AccountDeletionForm'
 import AvatarUpdateForm from '../components/forms/AvatarUpdateForm'
 import UpdateAccountInfoForm from '../components/forms/UpdateAccountInfoForm'
 import Layout from '../components/Layout'
+import DataUseSettings from '../components/participant/DataUseSettings'
 
 function EditProfile({
   participantToken,
@@ -79,6 +80,7 @@ function EditProfile({
             />
           </div>
         </div>
+        <DataUseSettings />
         <div className="flex flex-col gap-4 md:flex-row">
           <AccountDeletionForm />
         </div>

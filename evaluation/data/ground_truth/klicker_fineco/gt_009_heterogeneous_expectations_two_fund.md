@@ -11,7 +11,9 @@ Under homogeneous expectations, all investors agree on expected returns, varianc
 
 Under heterogeneous expectations, investors disagree about expected returns and may therefore identify different optimal risky portfolios. Their risky holdings are no longer generally proportional to one common tangency or market portfolio, so the classical two-fund-separation result fails.
 
+The continued existence of a risk-free asset and an aggregate market portfolio is not sufficient for two-fund separation. The result requires investors to choose the same risky tangency portfolio, which heterogeneous beliefs generally prevent.
+
 ## Sources
 
-- Financial Economics script FS26, Chapter 2.5, two-fund separation under homogeneous expectations, p. 38
-- Financial Economics script FS26, Chapter 4.1, CAPM with heterogeneous expectations, pp. 55–57
+- Financial Economics script FS26, Chapters 2–3, common tangency portfolio and two-fund separation under homogeneous expectations
+- Financial Economics script FS26, Chapter 4, CAPM without homogeneous expectations or two-fund separation

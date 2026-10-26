@@ -50,6 +50,19 @@ export default {
         high: 'Hoch',
         xhigh: 'Sehr hoch',
       },
+      answerStyleLabel: 'Antwortformat',
+      answerStyleHint:
+        'Ändert, wie neue Antworten gegliedert sind, nicht wie viel Unterstützung Du bekommst.',
+      answerStyles: {
+        balanced: 'Standard',
+        bullets: 'Stichpunkte',
+      },
+      answerToneLabel: 'Ton',
+      answerTones: {
+        neutral: 'Neutral',
+        friendly: 'Freundlich',
+        direct: 'Direkt',
+      },
     },
     credits: {
       title: 'Verfügbare Credits',
@@ -113,6 +126,20 @@ export default {
       partial: 'Unvollständige Antwort',
       error: 'Fehler',
     },
+    documentNotice: {
+      title: 'Bevor du Dokumente anhängst',
+      allowed:
+        'Hänge nur Material an, das du teilen darfst: eigene Notizen und Arbeiten, Kursmaterial, das du verwenden darfst, oder frei lizenziertes Material.',
+      notAllowed:
+        'Hänge keine vollständigen urheberrechtlich geschützten Werke ohne Erlaubnis an und keine Dokumente mit persönlichen oder vertraulichen Informationen über andere, sensiblen Daten oder Passwörtern.',
+      access:
+        'Dass du Zugriff auf eine Datei hast, heisst nicht, dass du sie teilen darfst. Frag im Zweifel deine Dozierenden.',
+      dataBoundary:
+        'Der Dokumenttext wird an den Anbieter des KI-Modells gesendet. Wenn das gewählte Modell Bilder lesen kann, können auch gerenderte PDF-Seiten zur visuellen Prüfung gesendet werden. KlickerUZH speichert den Text und eine allfällige Zusammenfassung der visuellen Prüfung mit diesem Gespräch, aber nicht die Seitenbilder.',
+      once: 'Dieser Hinweis erscheint auf diesem Gerät nur einmal.',
+      remove: 'Dokumente entfernen',
+      accept: 'Verstanden',
+    },
     disclaimer: {
       mediaTitle: 'Haftungsausschluss-Medien',
       introAlt: 'Chatbot-Einführung',
@@ -143,6 +170,13 @@ export default {
         'Die Bildanhänge für diese Nachricht konnten nicht geladen werden. Bitte versuche es erneut.',
       attachedImageAlt: 'Angehängtes Bild {index}',
     },
+    documentPreview: {
+      open: 'Vorschau von {name}',
+      extractedText: 'Text, den der Chat aus dieser Datei gelesen hat:',
+      extractedTextOnly:
+        'Die Originaldatei wird nicht gespeichert. Nach dem Neuladen wird nur der Text angezeigt, den der Chat daraus gelesen hat:',
+      openOriginal: 'Originaldatei öffnen',
+    },
     imageViewer: {
       previewUnavailable: 'Vorschau nicht verfügbar',
       title: 'Bildanhang',
@@ -167,6 +201,14 @@ export default {
       loadError: 'Deine Chats konnten nicht geladen werden.',
       retry: 'Erneut versuchen',
       loading: 'Deine Chats werden geladen...',
+      filterLabel: 'Chats nach Titel filtern',
+      filterPlaceholder: 'Nach Titel filtern',
+      filterClear: 'Filter löschen',
+      filterNoMatch: 'Kein Chat passt zu diesem Filter.',
+      exportMarkdown: 'Als Markdown exportieren',
+      exportUserLabel: 'Du',
+      exportAssistantLabel: 'Assistent',
+      exportSourcesLabel: 'Quellen',
     },
     thread: {
       viewportLabel: 'Gesprächsverlauf',
@@ -213,6 +255,9 @@ export default {
       editDisabledTooltip:
         'Bearbeiten nicht möglich: Das ausgewählte Modell unterstützt keine Bilder',
       copy: 'Kopieren',
+      readAloud: 'Vorlesen',
+      stopReadAloud: 'Vorlesen stoppen',
+      readAloudFormula: 'Formel',
       refresh: 'Aktualisieren',
       retry: 'Erneut versuchen',
       rateUp: 'Hilfreiche Antwort',
@@ -234,10 +279,70 @@ export default {
       attachmentReadError:
         'Das Bild konnte nicht gelesen werden. Bitte versuche es mit einer anderen Datei.',
       dismissError: 'Fehler schliessen',
-      dropImages: 'Bilder zum Anhängen hier ablegen',
+      dropFiles: 'Dateien zum Anhängen hier ablegen',
       attachmentPreviewAlt: 'Anhang-Vorschau',
       removeAttachment: 'Anhang entfernen',
-      attachImage: 'Bild anhängen',
+      attachFile: 'Bild oder Dokument anhängen',
+      attachmentTypeError:
+        'Dieser Dateityp kann nicht angehängt werden. Verwende ein Bild, ein PDF, eine Word-Datei (.docx) oder eine Text-, Markdown- oder CSV-Datei.',
+      documentOnlyTypeError:
+        'Das ausgewählte Modell kann keine Bilder lesen. Verwende ein PDF, eine Word-Datei (.docx) oder eine Text-, Markdown- oder CSV-Datei.',
+      documentLimitError: 'Du kannst höchstens {max} Dokumente anhängen.',
+      documentTooLarge: 'Dokumente müssen kleiner als {max} MB sein.',
+      documentNoText: 'Diese Datei enthält keinen lesbaren Text.',
+      documentPdfNoText:
+        'Dieses PDF enthält keinen markierbaren Text. Gescannte PDFs können noch nicht gelesen werden.',
+      documentPresentation:
+        'PowerPoint-Dateien können nicht gelesen werden. Speichere die Präsentation als PDF und hänge das PDF an.',
+      documentReadError:
+        'Das Dokument konnte nicht gelesen werden. Bitte versuche es mit einer anderen Datei.',
+      documentReading: 'Dokument wird gelesen…',
+      documentPages: '{count, plural, one {# Seite} other {# Seiten}}',
+      documentTokens: '~{count} Tokens',
+      documentShortened: 'Auf die ersten {max} Tokens gekürzt',
+      documentVisualReviewed:
+        '{count, plural, one {Seite visuell geprüft} other {Seiten visuell geprüft}}',
+      documentVisualTooManyPages:
+        '{count, plural, one {Seite nicht visuell geprüft} other {Seiten nicht visuell geprüft}}: höchstens {max} Seiten pro Nachricht',
+      documentVisualNoImageSupport:
+        '{count, plural, one {Seite nicht visuell geprüft} other {Seiten nicht visuell geprüft}}: Dieses Modell kann keine Bilder lesen',
+      documentVisualSkipped:
+        '{count, plural, one {Seite nicht visuell geprüft} other {Seiten nicht visuell geprüft}}',
+      documentDefaultQuestion:
+        'Bitte beziehe dich auf die angehängte(n) Datei(en).',
+      dictation: 'Nachricht diktieren',
+      dictationSetup: 'Diktieren einrichten',
+      dictationStop: 'Diktieren beenden',
+      dictationListening: 'Hört zu...',
+      dictationLanguageHint: 'Das deutsche Diktat verwendet Standarddeutsch.',
+      dictationSheetTitle: 'Lokales Diktieren aktivieren',
+      dictationSheetBody:
+        'Die Erkennung läuft auf diesem Gerät, und es wird kein Audio an den Chatdienst gesendet. Dein Browser fragt beim Start nach Mikrofonzugriff.',
+      dictationSheetDownload: 'Herunterladen',
+      dictationSheetNotNow: 'Jetzt nicht',
+      dictationSheetInstalling: 'Sprachpaket wird heruntergeladen...',
+      dictationSheetFailed:
+        'Das Sprachpaket konnte nicht installiert werden. Versuche es erneut oder schreibe weiter.',
+      dictationSheetRetry: 'Erneut herunterladen',
+      dictationSheetCheckAgain: 'Verfügbarkeit erneut prüfen',
+      dictationSheetReady: 'Das Sprachpaket ist auf diesem Gerät bereit.',
+      dictationSheetStart: 'Diktieren starten',
+      dictationErrorAborted: 'Das Diktieren wurde abgebrochen.',
+      dictationErrorAudioCapture:
+        'Das Mikrofon konnte nicht geöffnet werden. Überprüfe die Browserberechtigungen.',
+      dictationErrorInstall:
+        'Das lokale Sprachpaket konnte nicht installiert werden.',
+      dictationErrorLanguageNotSupported:
+        'Diese Sprache wird für lokales Diktieren nicht unterstützt.',
+      dictationErrorNetwork:
+        'Der Browser meldete einen Netzwerkfehler beim Diktieren.',
+      dictationErrorNoSpeech: 'Keine Sprache erkannt. Versuche es erneut.',
+      dictationErrorNotAllowed:
+        'Der Mikrofonzugriff wurde verweigert. Erlaube ihn in den Browsereinstellungen.',
+      dictationErrorServiceNotAllowed:
+        'Der Browser hat den Diktierdienst nicht zugelassen.',
+      dictationErrorUnknown:
+        'Das Diktieren konnte nicht gestartet werden. Versuche es erneut.',
       attachmentFallbackLabel: 'Anhang',
       editCancel: 'Abbrechen',
       editSend: 'Senden',
@@ -807,6 +912,9 @@ export default {
       rank: 'Rang',
       username: 'Nutzername',
       email: 'E-Mail',
+      entryAriaLabel: 'Rang {rank}: {name}, {points} Punkte',
+      selfPositionDivider: 'deine Position',
+      podiumEmpty: 'Noch keine Einträge auf dem Podest',
     },
     error: {
       '404': '404 Seite nicht gefunden',
@@ -832,6 +940,17 @@ export default {
     privacyUrl: 'https://www.klicker.uzh.ch/datenschutz',
     loginInfo:
       'Sie müssen sich nur hier einloggen, wenn Sie eigene Aktivitäten und Kurse erstellen möchten, nicht um an solchen teilzunehmen.',
+    sessionCheckFailed:
+      'Ihr Login konnte nicht überprüft werden, da der Dienst vorübergehend nicht verfügbar ist. Bitte versuchen Sie es in einem Moment erneut.',
+    sessionCheckRetry: 'Erneut versuchen',
+    restart: {
+      title: 'Login',
+      info: 'Der Login-Vorgang konnte nicht fortgesetzt werden. Bitte wählen Sie, wie Sie sich erneut anmelden möchten.',
+      errorInfo:
+        'Der Login-Anbieter hat einen Fehler gemeldet. Bitte wählen Sie, wie Sie sich erneut anmelden möchten.',
+      studentLogin: 'Studenten-Login (Assessment)',
+      lecturerLogin: 'Dozenten-Login',
+    },
   },
   pwa: {
     general: {
@@ -933,6 +1052,66 @@ Deine Daten werden niemals an weitere Parteien weitergegeben und nicht für komm
         'Deine Kontodaten, wie z.B. Profilinformationen, Erfolge und Erfahrungspunkte sowie Antworten, die du auf Fragen im KlickerUZH gibst, werden für die Lebenszeit Deines Kontos gespeichert. Deine Punkte und Platzierungen bei Kursaktivitäten und Bestenlisten werden so lange gespeichert, wie Du an der jeweiligen Kursrangliste teilnimmst. Du kannst jederzeit die Löschung Deiner Daten und Deines Kontos beantragen.',
       confirmationMessage:
         'Ich stimme den KlickerUZH [Datenschutzbestimmungen](https://www.klicker.uzh.ch/privacy_policy) und [Nutzungsbedingungen](https://www.klicker.uzh.ch/terms_of_service) zu und erkläre mich mit der darin beschriebenen Verarbeitung meiner Daten einverstanden. Mir ist bewusst, dass ich anonym und ohne Konto an den Lernaktivitäten teilnehmen kann, wenn ich diesen Bedingungen nicht zustimme.',
+      signup: {
+        accountTitle: 'Dein Konto',
+        emailLabel: 'E-Mail',
+        usernameHint:
+          'Dein Benutzername wird angezeigt, wenn Du einer Kursrangliste beitrittst.',
+        assessmentTitle: 'Zugang zum Assessment freischalten',
+        assessmentSubmit: 'Zugang freischalten',
+        assessmentDataCollectionNotice:
+          'Wir speichern deine Kontodaten und die von Switch edu-ID übermittelten Identitätsangaben sowie Daten aus Kursen und Aktivitäten: etwa Antworten und Eingaben in Aktivitäten, Bewertungen, Punkte und Rückmeldungen.\n\nIm Assessment kommen Identitätsangaben wie deine Matrikelnummer sowie detaillierte Protokolle deiner Antwortversuche und Interaktionen (Audit Logs) hinzu.',
+        assessmentDataSharingNotice:
+          'Dozierende und weitere berechtigte Personen sehen die Angaben, die sie für Durchführung und Auswertung des Kurses benötigen. Bei einem Ranglistenbeitritt sehen andere Teilnehmende deinen Benutzernamen und deine Ranglistenangaben. Learning Analytics zeigt ihnen nur zusammengefasste Gruppenwerte.\n\nIm Assessment erhalten berechtigte Dozierende und Assessment-Mitarbeitende zusätzlich deine Identität, Antwortdetails und Ergebnisse zur Bewertung und Nachbearbeitung. Andere Teilnehmende sehen diese Assessment-Daten nicht.',
+        assessmentDataUsageNotice:
+          'Dozierende nutzen deine erhobenen Daten, um die Lehre interaktiver zu gestalten. Wir verwenden deine Daten, um dein Konto zu betreiben und Kursaktivitäten durchzuführen und auszuwerten. Im Assessment dienen sie zusätzlich der Bewertung und Nachvollziehbarkeit. Für Forschung und Learning Analytics gilt deine Auswahl in den Kontoeinstellungen. Sie hat keinen Einfluss auf Punkte, Noten oder den Zugang zum Assessment.',
+        assessmentDataStorageNotice:
+          'Kontodaten und Antworten werden während der Lebensdauer deines Kontos gespeichert. Dein Assessment-Konto und die zugehörigen Daten kannst du nicht selbst löschen: Sie bleiben für die Nachvollziehbarkeit und während der geltenden Einsprache- und Aufbewahrungsfristen erhalten. Danach werden sie gelöscht oder anonymisiert. [Details in den Datenschutzbestimmungen](https://www.klicker.uzh.ch/datenschutz)',
+        assessmentAcknowledgement:
+          'Ich habe die [KlickerUZH Datenschutzbestimmungen](https://www.klicker.uzh.ch/datenschutz) gelesen, akzeptiere die [Nutzungsbedingungen](https://www.klicker.uzh.ch/terms_of_service) und bestätige meine Auswahl. Die zusätzlichen Hinweise zu Assessment-Daten, Einsicht und Aufbewahrung habe ich zur Kenntnis genommen.',
+        accessTitle: 'Dein Zugang',
+        accessNoPassword:
+          'Du brauchst kein Passwort und keine weiteren Eingaben.',
+        dataUseTitle: 'Datennutzung und Einstellungen',
+        dataCollectionTitle: 'Welche Daten werden über mich gesammelt?',
+        dataCollectionNotice:
+          'Wir speichern deine Kontodaten sowie Daten aus deinen Kursen und Aktivitäten, etwa Antworten und Eingaben in Aktivitäten, deren Bewertung, Punkte und Rückmeldungen.',
+        dataSharingTitle: 'Wer sieht meine Daten?',
+        dataSharingNotice:
+          'Dozierende und weitere berechtigte Personen sehen die Angaben, die sie für die Durchführung und Auswertung des Kurses benötigen. Bei einem Ranglistenbeitritt sehen andere Teilnehmende deinen Benutzernamen und deine Ranglistenangaben. Learning Analytics zeigt Dozierenden nur zusammengefasste Gruppenwerte.',
+        dataUsageTitle: 'Wofür werden meine Daten genutzt?',
+        dataUsageNotice:
+          'Dozierende nutzen deine erhobenen Daten, um die Lehre interaktiver zu gestalten. Wir verwenden deine Daten, um dein Konto zu betreiben und Kursaktivitäten durchzuführen und auszuwerten. Für Forschung und Learning Analytics gilt deine Auswahl in den Kontoeinstellungen.',
+        dataStorageTitle: 'Wie lange werden meine Daten gespeichert?',
+        dataStorageNotice:
+          'Deine Kontodaten und Antworten werden gespeichert, solange dein Konto besteht. Daten können bis zum Ablauf rechtlicher oder vertraglicher Aufbewahrungsfristen gespeichert bleiben. Danach werden sie gelöscht oder so verändert, dass sie keiner Person mehr zugeordnet werden können. Du kannst die Löschung deines Kontos und deiner Daten beantragen.',
+        acknowledgement:
+          'Ich habe die KlickerUZH [Datenschutzbestimmungen](https://www.klicker.uzh.ch/datenschutz) gelesen, akzeptiere die [Nutzungsbedingungen](https://www.klicker.uzh.ch/terms_of_service) und bestätige meine Auswahl. Forschung und Learning Analytics sind freiwillig.',
+        researchConsentTitle: 'Daten für Forschung',
+        researchConsentDescription:
+          'Deine Nutzungs- und Lerndaten dürfen ohne personenbezogene Identifikatoren für Forschungs- und Lehrprojekte der UZH verwendet werden. Du kannst jederzeit in den Einstellungen widersprechen. Deine Daten werden dann aus künftigen Forschungsexporten ausgeschlossen. [Mehr zum Datenschutz](https://www.klicker.uzh.ch/datenschutz)',
+        researchConsentDescriptionAssessment:
+          'Deine Nutzungs- und Lerndaten dürfen ohne direkte Identifikatoren für Forschungs- und Lehrprojekte der UZH verwendet werden. Du kannst jederzeit in den Einstellungen widersprechen. Deine Daten werden dann aus künftigen Forschungsexporten ausgeschlossen. [Mehr zum Datenschutz](https://www.klicker.uzh.ch/datenschutz)',
+        researchConsentBadgeAllowed: 'Zugelassen',
+        researchConsentBadgeRefused: 'Widersprochen',
+        researchConsentBadgeUnanswered: 'Nicht beantwortet',
+        researchConsentYes: 'Zulassen',
+        researchConsentNo: 'Widersprechen',
+        researchConsentControlLabel: 'Nutzung für Forschung:',
+        learningAnalyticsConsentTitle: 'Learning Analytics',
+        learningAnalyticsConsentDescription:
+          'Erhalte persönliche Einblicke in dein Lernen. Dozierende sehen de-identifizierte Gruppenberichte. Die Teilnahme ist freiwillig und jederzeit änderbar.\n\nLA erfasst Daten nur, wenn es für dein Konto und den Kurs aktiv ist. Beim Ausschalten werden die betreffenden LA-Daten automatisch gelöscht. [Mehr zu Learning Analytics](https://www.klicker.uzh.ch/lernanalyse)',
+        learningAnalyticsDecisionRequired: 'Entscheidung erforderlich',
+        learningAnalyticsConsentYes: 'Ja, teilnehmen',
+        learningAnalyticsConsentYesDescription:
+          'Private Einblicke und geschützte Gruppenberichte.',
+        learningAnalyticsConsentNo: 'Nein, nicht teilnehmen',
+        learningAnalyticsConsentNoDescription:
+          'Kurse, Punkte und Chat funktionieren wie gewohnt.',
+        submit: 'Konto erstellen',
+        acknowledgementRequired: 'Bitte bestätige Deine Auswahl.',
+        dataUseChoiceRequired: 'Bitte wähle Ja oder Nein.',
+      },
     },
     studentDocs: {
       assessmentInstanceWarning:
@@ -1272,6 +1451,33 @@ Da die KlickerUZH-App noch nicht im iOS-App-Store verfügbar ist, folgen Sie die
       createProfileFailed:
         'Leider konnte Ihr Konto nicht erstellt oder verknüpft werden. Bitte überprüfen Sie Ihre Eingaben und versuchen Sie es erneut.',
       editProfileSuccess: 'Ihr Profil wurde erfolgreich aktualisiert.',
+      dataUseTitle: 'Forschung und Learning Analytics',
+      dataUseDescription:
+        'Diese Einstellungen gelten für Dein gesamtes KlickerUZH-Konto. Du kannst sie jederzeit ändern.',
+      dataUseLoadFailed:
+        'Deine Einstellungen zur Datennutzung konnten nicht geladen werden. Bitte versuche es erneut.',
+      researchConsentTitle: 'Forschung',
+      researchConsentDescription:
+        'Deine Nutzungs- und Lerndaten dürfen ohne direkte Identifikatoren für Forschungs- und Lehrprojekte der UZH verwendet werden. Du kannst jederzeit in den Einstellungen widersprechen. Deine Daten werden dann aus künftigen Forschungsexporten ausgeschlossen.',
+      researchConsentSaved: 'Deine Forschungseinstellung wurde gespeichert.',
+      researchConsentFailed:
+        'Deine Forschungseinstellung konnte nicht gespeichert werden. Bitte lade die Seite neu, bevor Du es erneut versuchst.',
+      dataUseConflict:
+        'Diese Seite ist nicht mehr aktuell. Lade sie neu, bevor Du es erneut versuchst.',
+      learningAnalyticsConsentTitle: 'Learning Analytics',
+      learningAnalyticsConsentDescription:
+        'Erhalte persönliche Einblicke in Dein Lernen. Nur Du siehst Deine persönlichen Einblicke; Dozierende sehen de-identifizierte Gruppenberichte. Die Teilnahme ist freiwillig und jederzeit änderbar; Kurszugang und Punkte bleiben unverändert. Learning Analytics erfasst Daten nur, wenn es für Dein Konto und den Kurs aktiv ist. Beim Ausschalten werden die betreffenden Learning-Analytics-Daten automatisch gelöscht.',
+      learningAnalyticsConsentSaved:
+        'Deine Learning-Analytics-Einstellung wurde gespeichert.',
+      learningAnalyticsConsentFailed:
+        'Deine Learning-Analytics-Einstellung konnte nicht gespeichert werden. Bitte lade die Seite neu, bevor Du es erneut versuchst.',
+      learningAnalyticsWithdrawalTitle:
+        'Teilnahme an Learning Analytics beenden?',
+      learningAnalyticsWithdrawalConfirmation:
+        'Learning Analytics ausschalten? Deine persönlichen LA-Daten und Einblicke werden automatisch gelöscht. Deine Antworten und Punkte für den Kursbetrieb bleiben erhalten.',
+      dataUseCanonicalDataNotice:
+        'Diese Einstellungen löschen weder Dein Konto noch Kursteilnahmen, Eingaben oder Antworten.',
+      dataUsePrivacyPolicy: 'Datenschutzerklärung lesen.',
       achievements: 'Errungenschaften',
       myProfile: 'Mein Profil',
       createProfile: 'Profil erstellen',
@@ -1478,7 +1684,7 @@ Da die KlickerUZH-App noch nicht im iOS-App-Store verfügbar ist, folgen Sie die
         'Das Diagramm zeigt die aggregierte Verteilung der Gesamtpunktzahlen aktiver Teilnehmender. Dein Punktebereich ist hervorgehoben.',
       histogramUserRange: 'Dein Punktebereich: {range}.',
       notEnoughDataForComparison:
-        'Es ist kein Peer-Vergleich verfügbar. Er wird nur bei mindestens 10 aktiven Teilnehmenden und einem verfügbaren Punktebereich grösser als null ausgegeben.',
+        'Dieser Bericht enthält keinen Peer-Vergleich. Er ist in Berichten nach Kursende enthalten, bei mindestens 10 aktiven Teilnehmenden und einem verfügbaren Punktebereich grösser als null. Berichte während des Kurses enthalten nur deine Punkte.',
       exportReportButton: 'Performance-Bericht exportieren',
       exportReportExplanation:
         'Stelle einen Bericht aus dem aktuellen Assessment-Datensatz aus. Sobald er bereit ist, kannst du ihn im Browser ansehen oder über den Druckdialog des Browsers als einseitige A4-PDF speichern. Der Bericht enthält einen Link zur Prüfung seines aktuellen Status und seiner Angaben.',
@@ -1504,7 +1710,7 @@ Da die KlickerUZH-App noch nicht im iOS-App-Store verfügbar ist, folgen Sie die
       exportReportPrintError:
         'Der Bericht konnte nicht zum Drucken geöffnet werden. Erlaube Pop-ups für diese Seite und versuche es erneut.',
       privacyAndTransparencyNotice:
-        'Ein Peer-Vergleich wird erst ab 10 aktiven Teilnehmenden ausgegeben. Zehn initiale Punktebereiche werden zusammengeführt, bis jeder angezeigte Bereich mindestens 3 Teilnehmende repräsentiert. Der Bericht enthält keine einzelnen Peer-Punktzahlen oder Identifikatoren.',
+        'Ein Peer-Vergleich ist nur in Berichten nach Kursende enthalten, und nur ab 10 aktiven Teilnehmenden. Zehn initiale Punktebereiche werden zusammengeführt, bis jeder angezeigte Bereich mindestens 3 Teilnehmende repräsentiert. Der Bericht enthält keine einzelnen Peer-Punktzahlen oder Identifikatoren.',
       courseNameLabel: 'Kurs',
       studentNameLabel: 'Name der studierenden Person',
       studentEmailAddressLabel: 'E-Mail-Adresse',
@@ -1602,6 +1808,38 @@ Da die KlickerUZH-App noch nicht im iOS-App-Store verfügbar ist, folgen Sie die
       nextPage: 'Nächste',
     },
     admin: {
+      chatbotRejectionReason: 'Grund für die Ablehnung',
+      chatbotRejectConsequence:
+        'Der Besitzer sieht diesen Grund und kann den Chatbot überarbeiten und erneut zur Freigabe einreichen.',
+      chatbotReject: 'Antrag ablehnen',
+      chatbotRejected:
+        '«{name}» wurde abgelehnt. Der Besitzer kann ihn überarbeiten und erneut einreichen.',
+      chatbotRejectionError:
+        'Die Ablehnung konnte nicht bestätigt werden. Aktualisieren Sie die Liste und prüfen Sie den aktuellen Status vor einem erneuten Versuch.',
+      chatbotAllTools: 'Alle Werkzeuge',
+      chatbotDefaultReasoning: 'Alle vom Modell unterstützten Reasoning-Stufen',
+      adminOnly: 'Diese Seite ist nur für Administratoren verfügbar.',
+      chatbotApprovals: 'Chatbot-Freigaben',
+      chatbotApprovalsDescription:
+        'Prüfen Sie ausstehende Veröffentlichungsanträge. Öffnen Sie einen Chatbot, um seine Konfiguration vor der Freigabe für Teilnehmende zu prüfen.',
+      chatbotOwner: 'Besitzer',
+      chatbotAccountApproval: 'Veröffentlichungsberechtigung des Kontos',
+      chatbotAccountApproved: 'Freigegeben',
+      chatbotAccountNotApproved: 'Nicht freigegeben',
+      chatbotConnectedTools: 'Verbundene Werkzeuge',
+      chatbotNoConnectedTools: 'Keine verbundenen Werkzeuge.',
+      chatbotRefresh: 'Anträge aktualisieren',
+      chatbotQueueEmpty: 'Keine Chatbots warten auf eine Freigabe.',
+      chatbotQueueError:
+        'Veröffentlichungsanträge konnten nicht geladen werden. Aktualisieren Sie die Liste, um es erneut zu versuchen.',
+      chatbotOwnerBlocked:
+        'Der Besitzer ist derzeit nicht zur Veröffentlichung von Chatbots berechtigt. Das Konto muss zuerst freigegeben werden.',
+      chatbotApproveConsequence:
+        'Die Freigabe veröffentlicht diesen Chatbot sofort für Teilnehmende seines Kurses. Die Nutzungsbudgets des Kontos bleiben unverändert.',
+      chatbotApprove: 'Freigeben und veröffentlichen',
+      chatbotPublished: '«{name}» wurde veröffentlicht.',
+      chatbotApprovalError:
+        'Die Veröffentlichung konnte nicht bestätigt werden. Die Antragsliste wurde aktualisiert; prüfen Sie den aktuellen Status vor einem erneuten Versuch.',
       pageName: 'Admin-Panel',
       privatePreviewAvailability: 'Verfügbarkeit: Private Features',
       privatePreviewDescription:
@@ -4126,6 +4364,11 @@ Da die KlickerUZH-App noch nicht im iOS-App-Store verfügbar ist, folgen Sie die
         'Inaktiv: Der Chatbot verwendet genau ein von der Lehrperson ausgewähltes Modell.',
       modelSelectionFixedDescription:
         'Teilnehmende verwenden dieses Modell. Neue Chatbots starten mit Auto.',
+      answerPreferences: 'Antwortformat und Ton durch Teilnehmende',
+      answerPreferencesEnabledDescription:
+        'Aktiv: Teilnehmende können für neue Antworten Stichpunkte und einen freundlichen oder direkten Ton wählen.',
+      answerPreferencesDisabledDescription:
+        'Inaktiv: Alle Teilnehmenden erhalten dasselbe Antwortformat und denselben Ton.',
       modelSelectionParticipantDescription:
         'Teilnehmende können zwischen diesen Modellen wählen. Wählen Sie mindestens eines.',
       selectedModel: 'Ausgewähltes Modell',

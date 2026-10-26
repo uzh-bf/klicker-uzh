@@ -8,7 +8,11 @@ import {
   seedActivities,
   seedDatabase,
 } from '../global-setup.js'
-import { disableAnimations, setSessionCookieForUrl } from './authSession.js'
+import {
+  disableAnimations,
+  setSessionCookieForUrl,
+  waitForClientHydration,
+} from './authSession.js'
 import {
   APP_SECRET,
   LECTURER_EMAIL,
@@ -370,6 +374,11 @@ export async function loginStudentPassword(
     } catch {}
   })
   await disableAnimations(page)
+  // The login form is already in the server-rendered HTML, so it is visible and
+  // editable before the client bundle runs. Filling it that early loses the
+  // values when React hydrates, and the submit then fails client-side
+  // validation without sending a request.
+  await waitForClientHydration(page)
   await page.getByTestId('username-field').fill(username)
   await page.getByTestId('password-field').fill(env('STUDENT_PASSWORD'))
   await page.getByTestId('submit-login').click()
@@ -391,7 +400,12 @@ export async function acceptGamifiedLiveQuizAccountPrompt(
       .then(() => true)
       .catch(() => false)
 
-    if (!promptAppeared) return
+    // Break rather than return: the block activation propagates to the
+    // participant client asynchronously, so the answer form can still be
+    // arriving when the prompt no longer appears. Returning here skipped the
+    // visibility wait below and left the caller asserting against a locator
+    // that did not exist yet.
+    if (!promptAppeared) break
 
     await page.getByTestId('participate-anonymously').click()
     await expect(dialog).toBeHidden()

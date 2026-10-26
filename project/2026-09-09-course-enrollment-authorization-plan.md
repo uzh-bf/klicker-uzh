@@ -157,3 +157,49 @@ Verification evidence: 15/15 focused GraphQL tests (courseEnrollment, accountLti
 Reviews: slice-reviewer (GLM 5.3 Flash max, native route) completed DONE_WITH_CONCERNS with no blocking findings and two P3 advisories: a pre-existing stale lti-token cookie on failed LTI logins in getParticipantToken.ts, and the LTI-JWT course-binding limitation already documented in docs/auth-model.md pending the user decision. The simplifier gate is unavailable: the native gpt-6-astra route and both continuity fallback children (gpt-6-astra low, then gpt-5.6-luna max, agent_type default, generic-continuity provenance) failed terminally with HTTP 429 before producing work; per routing policy the simplifier is advisory and never a readiness gate, and the substitution failures are recorded here. The integrated final review runs through the configured Claude CLI final-reviewer route with structured output validation; the repository's own final-ai-review pipeline was triggered with a /final-review PR comment. Strict course-binding migration remains outside the core correction pending the compatibility answer.
 
 Final review (Claude CLI Opus 5, structured output) returned FINDINGS with two high items, both dispositioned. First, the new-user join flow lost the enrollment once account creation no longer enrolled: the join page now carries the PIN through the login detour via the validated same-origin redirect_to, and the logged-in join form reads the PIN directly from the router query because Formik does not re-apply initialValues updated after mount; the spec's PIN fixtures moved to the 9-digit format the join form validates, and a new browser test covers the full create-account, login, and join loop including the strengthened assertion that the login redirect preserves the PIN query. Full spec result: 27/27 green. Second, the useParticipantToken raw query overwrite was dispositioned as a documented pre-existing trust boundary: docs/auth-model.md now names signature-verified handoffs and server-set cookies as trusted sources and records the raw query relay as accepted as-is; the proper fix (threading a trusted or resolved flag through the handoff readers) is an accepted follow-up requiring a separate compatibility decision. PR body updated with the review outcomes; the devrouter task runtime is shut down after this push as the closing environmental step.
+
+
+### Readiness refresh (2026-10-26)
+
+The user authorized review of subsequent commits, diagnosis and correction of
+failing analysis checks, and compatibility verification against current `v3`.
+[PR #5869](https://github.com/uzh-bf/klicker-uzh/pull/5869) is already non-draft;
+merge and deployment remain excluded. Main owns integration and verification;
+a read-only reviewer checks the frozen September implementation against the
+specification while main diagnoses CI. Full-path package; independent final
+review remains required by this plan. The package contains approximately 1,850
+substantive changed lines including behavioral tests and remains one cohesive
+enrollment correction.
+
+The September head is `e91060629c6b77c539c340d1e0bdfb7f1b9a7274`.
+Target integration uses `712cb42d0d061564577be4852880b8714c88989e` because
+four conflicts and new participant data-use requirements block compatibility.
+Conflict resolutions preserve both enrollment provenance and current account
+completion. Existing test fixtures and signup interactions are updated to satisfy
+the same persisted data-use gate as current upstream tests.
+
+The prior Progress statement that raw-token replacement remained deferred is
+superseded: subsequent September commits gate replacement on verified LTI
+provenance. The final-ai-review status was successful but its report had findings;
+it was not a no-findings result. Its reported double-navigation race does not
+match ParticipantRedirect, which calls the hook without a redirect target.
+Strict course binding remains outside scope.
+
+SonarCloud reported 7.6 percent duplication on new code (limit 3 percent).
+Its old per-file analysis is no longer available from the public API. Repeated
+activity-overview session props are consolidated in the existing redirect helper;
+a fresh hosted analysis must confirm the result. CodeQL flagged magic-login URL
+redirection. A control-character path can bypass the former string checks;
+client navigation now checks parsed URL origins, and emailed return targets
+reject whitespace/control characters. Regression tests cover hostile return
+targets and the valid PIN-join journey. These are nonvisual auth-flow changes.
+
+Integrated PWA/GraphQL/Playwright typechecks passed (12 tasks), as did all
+17 focused enrollment/LTI service tests and all 34 Chromium enrollment tests,
+including hostile magic-link return targets. The bounded Opengrep scan and
+staged gitleaks scan passed. Browser login-mode interaction and screenshots were
+checked in an isolated agent-browser session. The root check suite requires a
+host/container split: its host-launcher tests deliberately reject container
+execution; run those on the host and remaining checks in the container. Final
+integrated review and hosted analysis remain pending. Stop the task runtime
+after the final local checks.

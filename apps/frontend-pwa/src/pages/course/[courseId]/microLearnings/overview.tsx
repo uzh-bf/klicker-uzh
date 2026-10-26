@@ -5,7 +5,10 @@ import Loader from '@klicker-uzh/shared-components/src/Loader'
 import { addApolloState, initializeApollo } from '@lib/apollo'
 import type { ParticipantTokenSource } from '@lib/getParticipantToken'
 import getParticipantToken from '@lib/getParticipantToken'
-import { participantRedirect } from '@lib/participantRedirect'
+import {
+  participantPageProps,
+  participantRedirect,
+} from '@lib/participantRedirect'
 import useParticipantToken from '@lib/useParticipantToken'
 import { H2, UserNotification } from '@uzh-bf/design-system'
 import dayjs from 'dayjs'
@@ -129,12 +132,15 @@ export async function getServerSideProps(ctx: GetServerSidePropsContext) {
     }
 
     const apolloClient = initializeApollo()
-    const { participantToken, cookiesAvailable, tokenSource } =
-      await getParticipantToken({
-        apolloClient,
-        courseId: ctx.params.courseId,
-        ctx,
-      })
+    const auth = await getParticipantToken({
+      apolloClient,
+      courseId: ctx.params.courseId,
+      ctx,
+    })
+    const props = {
+      courseId: ctx.params.courseId,
+      ...(await participantPageProps(auth, ctx.locale)),
+    }
     const result = await apolloClient.query({
       query: GetCoursePublishedMicroLearningsDocument,
       variables: {
@@ -145,17 +151,7 @@ export async function getServerSideProps(ctx: GetServerSidePropsContext) {
     // if there is no result (e.g., the shortname is not valid)
     const course = result.data.getCoursePublishedMicroLearnings?.[0]?.course
     if (!result?.data?.getCoursePublishedMicroLearnings || !course) {
-      return {
-        props: {
-          isInactive: true,
-          courseId: ctx.params.courseId,
-          participantToken: participantToken ?? null,
-          cookiesAvailable,
-          tokenSource,
-          messages: (await import(`@klicker-uzh/i18n/messages/${ctx.locale}`))
-            .default,
-        },
-      }
+      return { props: { ...props, isInactive: true } }
     }
 
     // if only a single live quiz is running, redirect directly to the corresponding quiz page
@@ -163,33 +159,14 @@ export async function getServerSideProps(ctx: GetServerSidePropsContext) {
     if (result.data.getCoursePublishedMicroLearnings.length === 1) {
       return participantRedirect({
         destination: `${ctx.locale ? `/${ctx.locale}` : ''}/course/${course.id}/microLearnings/${result.data.getCoursePublishedMicroLearnings[0].id}`,
-        participantToken,
-        cookiesAvailable,
-        tokenSource,
+        ...auth,
         locale: ctx.locale,
       })
     }
 
-    if (participantToken) {
-      return {
-        props: {
-          participantToken,
-          cookiesAvailable,
-          tokenSource,
-          courseId: ctx.params.courseId,
-          messages: (await import(`@klicker-uzh/i18n/messages/${ctx.locale}`))
-            .default,
-        },
-      }
-    }
-
-    return addApolloState(apolloClient, {
-      props: {
-        courseId: ctx.params.courseId,
-        messages: (await import(`@klicker-uzh/i18n/messages/${ctx.locale}`))
-          .default,
-      },
-    })
+    return auth.participantToken
+      ? { props }
+      : addApolloState(apolloClient, { props })
   } catch (error) {
     console.error(
       'Error in getServerSideProps on microlearnings overview page:',

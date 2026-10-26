@@ -22,6 +22,10 @@ import Router from 'next/router'
 import { useMemo } from 'react'
 import { isDeepEqual } from 'remeda'
 import util from 'util'
+import {
+  participantDataUseReturn,
+  storeDataUseReturnTarget,
+} from './participantDataUseReturn'
 
 interface PageProps {
   __APOLLO_STATE__: NormalizedCacheObject
@@ -56,7 +60,16 @@ function createIsomorphLink(ctx?: GetServerSidePropsContext) {
 
   const authLink = setContext((_, { headers }) => {
     if (isBrowser) {
-      const token = sessionStorage.getItem('participant_token')
+      // A partitioned or privacy-restricted browser context denies session
+      // storage, and reading it throws. The cookie-authenticated participant
+      // path has to keep working, so the bearer header is skipped instead of
+      // failing the request before it reaches the API.
+      let token: string | null = null
+      try {
+        token = sessionStorage.getItem('participant_token')
+      } catch {
+        token = null
+      }
 
       return {
         headers: {
@@ -91,6 +104,21 @@ function createIsomorphLink(ctx?: GetServerSidePropsContext) {
             true
           )}`
         )
+
+        if (
+          isBrowser &&
+          extensions?.code === 'PARTICIPANT_DATA_USE_COMPLETION_REQUIRED' &&
+          Router.pathname !== '/account/data-use'
+        ) {
+          storeDataUseReturnTarget(
+            participantDataUseReturn(
+              window.location.href,
+              window.location.origin
+            )
+          )
+          void Router.replace('/account/data-use')
+          return
+        }
 
         // redirect the user to the login page on errors
         if (isBrowser && message === 'Unauthorized') {

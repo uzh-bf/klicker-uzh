@@ -18,12 +18,15 @@ function evaluateGate(
   github,
   needs = {},
   cancelled = false,
-  vars = {}
+  vars = {},
+  steps = {}
 ) {
-  const normalized = expression.replace(
-    /needs\.([a-z][a-z0-9-]*)/g,
-    'needs["$1"]'
-  )
+  const normalized = expression
+    .replace(/needs\.([a-z][a-z0-9-]*)/g, 'needs["$1"]')
+    .replace(
+      /steps\.([a-z][a-z0-9-]*)\.outputs\.([a-z_]+)/g,
+      'steps["$1"].outputs["$2"]'
+    )
   // Repository-controlled input only: the expression must originate from a
   // parsed file under .github/workflows/. Do not route external or untrusted
   // text here.
@@ -33,15 +36,117 @@ function evaluateGate(
     'always',
     'cancelled',
     'vars',
+    'steps',
+    'format',
+    'startsWith',
     `return (${normalized})`
   )(
     github,
     needs,
     () => true,
     () => cancelled,
-    vars
+    vars,
+    steps,
+    (pattern, value) => {
+      assert.equal(pattern, '{0}')
+      return String(value)
+    },
+    (value, prefix) =>
+      String(value).toLowerCase().startsWith(String(prefix).toLowerCase())
   )
 }
+
+test('paid jobs and legacy required coverage reject stale preparation on rerun', () => {
+  const workflow = readWorkflow('public-pr-playwright-shards.yml')
+  for (const [provider, admitted, current, expected] of [
+    ['warpbuild', '1', 1, true],
+    ['warpbuild', '1', 2, false],
+    ['warpbuild', '2', 2, true],
+    ['warpbuild', '', 1, false],
+    ['public-pool', '', 2, true],
+  ]) {
+    const needs = {
+      prepare: {
+        outputs: {
+          provider,
+          admission_attempt: admitted,
+          duplicate_run_id: '',
+          should_run: 'true',
+          route: 'public-pr',
+        },
+      },
+    }
+    for (const name of [
+      'build-and-compile-public-pr',
+      'test-playwright-public-pr',
+    ]) {
+      assert.equal(
+        evaluateGate(workflow.jobs[name].if, { run_attempt: current }, needs),
+        expected
+      )
+    }
+    const output = workflow.on.workflow_call.outputs.should_run.value
+      .slice(3, -2)
+      .trim()
+    const jobs = { prepare: needs.prepare }
+    const returned = evaluateGate(
+      output.replaceAll('jobs.', 'needs.'),
+      { run_attempt: current },
+      jobs
+    )
+    assert.equal(returned, String(expected))
+  }
+})
+
+test('draft OCR skips same-repository sync updates and preserves other admission', () => {
+  const gate = readWorkflow('check-ocr-review.yml').jobs['ocr-review'].if
+  const repository = 'synthetic/project'
+  const context = (action, ref, overrides = {}) => ({
+    repository,
+    event: {
+      action,
+      pull_request: {
+        draft: true,
+        user: { login: 'synthetic-bot' },
+        head: { ref, repo: { full_name: repository } },
+        ...overrides,
+      },
+    },
+  })
+
+  for (const ref of [
+    'sync/v3-into-v3-ai-0123456789',
+    'sync/v3-ai-into-v3-audit-0123456789',
+    'sync/v3-ai-into-v3-adaptive-learning-0123456789',
+  ]) {
+    assert.equal(evaluateGate(gate, context('synchronize', ref)), false)
+    for (const action of ['opened', 'reopened', 'converted_to_draft']) {
+      assert.equal(evaluateGate(gate, context(action, ref)), true)
+    }
+    assert.equal(
+      evaluateGate(
+        gate,
+        context('synchronize', ref, {
+          head: { ref, repo: { full_name: 'synthetic/fork' } },
+        })
+      ),
+      true
+    )
+  }
+  const ordinary = 'rs/synthetic-change'
+  assert.equal(evaluateGate(gate, context('synchronize', ordinary)), true)
+  assert.equal(
+    evaluateGate(gate, context('opened', ordinary, { draft: false })),
+    false
+  )
+  assert.equal(
+    evaluateGate(
+      gate,
+      context('opened', ordinary, { user: { login: 'dependabot[bot]' } })
+    ),
+    false
+  )
+})
 
 test('trusted review policy admits only lifecycle events and exact PR commands', () => {
   const workflow = readWorkflow('check-ocr-final-review.yml')
@@ -224,10 +329,12 @@ test('playwright execution and reporting run only for open pull requests', () =>
 })
 
 // The envelope emits a duplicate run id only for a fully validated equivalent
-// pull-request run; push validation must always execute independently. The
-// reporter therefore has to tie reuse acceptance to the event family instead of
-// rejecting every duplicate.
-test('the playwright reporter reuses only pull-request validation', () => {
+// pull-request run. A v3-* integration push other than the staging source may
+// reuse the run that validated the merged pull request; v3 and the staging
+// source must always validate their pushes independently. The reporter
+// therefore has to tie reuse acceptance to the event family and push ref
+// instead of rejecting every duplicate.
+test('the playwright reporter requires rollout opt-in for verified push reuse', () => {
   const playwright = readWorkflow('test-playwright.yml')
   const report = playwright.jobs['test-playwright-status'].steps.find(
     (step) => step.name === 'Check result'
@@ -237,7 +344,7 @@ test('the playwright reporter reuses only pull-request validation', () => {
     report,
     /\[ -n "\$\{DUPLICATE_RUN_ID:-\}" \] && \[ "\$IS_PULL_REQUEST" != 'true' \]/
   )
-  assert.match(report, /Push validation cannot be reused/)
+  assert.match(report, /Verified push reuse is disabled/)
   assert.doesNotMatch(report, /Playwright validation cannot be reused/)
 })
 
@@ -253,10 +360,6 @@ const READY_FOR_REVIEW_LIFECYCLE_WORKFLOWS = new Map([
     'the ready boundary runs the envelope so it can validate the existing full proof of an unchanged head instead of rebuilding and retesting it',
   ],
   [
-    'check.yml',
-    'the required check owns the ready boundary and must be recomputed there',
-  ],
-  [
     'check-ocr-final-review.yml',
     'final review ownership transfers from the draft review at the ready boundary',
   ],
@@ -266,27 +369,9 @@ const READY_FOR_REVIEW_LIFECYCLE_WORKFLOWS = new Map([
     'v3_sonarcloud.yml',
     'owned stable quality gate re-runs at the ready boundary',
   ],
-  ...[
-    'v3_analytics-stg.yml',
-    'v3_auth-stg.yml',
-    'v3_backend-docker-stg.yml',
-    'v3_chat-stg.yml',
-    'v3_frontend-control-docker-stg.yml',
-    'v3_frontend-manage-docker-stg.yml',
-    'v3_frontend-pwa-docker-assessment-stg.yml',
-    'v3_frontend-pwa-docker-stg.yml',
-    'v3_hatchet-worker-general-stg.yml',
-    'v3_hatchet-worker-response-processor-stg.yml',
-    'v3_lti-stg.yml',
-    'v3_olat-api-stg.yml',
-    'v3_response-api-stg.yml',
-  ].map((name) => [
-    name,
-    'draft pull requests defer their staging image builds to relieve the constrained ARM64 build pool; ready_for_review restores the deferred builds on the unchanged head',
-  ]),
   [
-    'v3_build-fallback.yml',
-    'the required image-build context recomputes at the ready boundary and validates the builds that the boundary restores',
+    'v3_images-stg.yml',
+    'draft pull requests defer the selected staging image builds to relieve the constrained ARM64 build pool; ready_for_review restores the deferred builds on the unchanged head, and the same run owns the required build-images-status context',
   ],
 ])
 
@@ -321,17 +406,294 @@ test('ready_for_review lists only workflows with a documented lifecycle role', (
   )
 })
 
-test('graphql validation re-runs on a base retarget but not the ready boundary', () => {
+test('graphql validation re-runs neither on edits nor at the ready boundary', () => {
   const workflow = readWorkflow('test-graphql.yml')
-  // "edited" re-evaluates the internal selector on a base retarget. The suite
-  // runs identically for drafts and ready PRs, so the ready transition re-runs
-  // nothing.
+  // The suite runs identically for drafts and ready PRs, so the ready
+  // transition re-runs nothing, and a title or body edit never changes the
+  // tested tree.
   assert.deepEqual(workflow.on.pull_request.types, [
     'opened',
     'synchronize',
     'reopened',
-    'edited',
   ])
+})
+
+test('no pull-request workflow re-runs on a title or body edit', () => {
+  // GitHub cannot filter "edited" to base retargets at the trigger, so every
+  // description edit would start (and cancel in-progress) validation of an
+  // unchanged tree. A retarget is revalidated by the restack push or by
+  // closing and reopening the pull request.
+  const offenders = fs
+    .readdirSync(path.join(root, '.github/workflows'))
+    .filter((file) => /\.ya?ml$/.test(file))
+    .filter((file) => {
+      const on = readWorkflow(file).on ?? {}
+      return ['pull_request', 'pull_request_target'].some((event) =>
+        (on[event]?.types ?? []).includes('edited')
+      )
+    })
+  assert.deepEqual(offenders, [])
+})
+
+// The two static-analysis lanes carry no required status context, so they may
+// skip a class that cannot change analyzed source. Each still has to analyze a
+// push, a scheduled run, and every class it cannot prove.
+const STATIC_ANALYSIS_LANES = new Map([
+  ['codeql-analysis.yml', 'analyze'],
+  ['v3_sonarcloud.yml', 'sonarcloud'],
+])
+
+test('static analysis narrows only for a proven pull-request class', () => {
+  for (const [name, jobName] of STATIC_ANALYSIS_LANES) {
+    const workflow = readWorkflow(name)
+    const classify = workflow.jobs.classify
+    assert.ok(
+      classify,
+      name + ' must classify the change before deciding to analyze it'
+    )
+    assert.equal(
+      classify.steps.find((step) => step.id === 'classify').uses,
+      './.github/actions/change-envelope',
+      name
+    )
+
+    const gate = workflow.jobs[jobName].if
+    assert.match(
+      String(gate),
+      /needs\.classify\.outputs\.static_analysis/,
+      name
+    )
+
+    const draftPr = {
+      event_name: 'pull_request',
+      event: { pull_request: { draft: false } },
+    }
+    const push = { event_name: 'push', ref_name: 'v3' }
+    const schedule = { event_name: 'schedule' }
+    const output = (value) => ({
+      classify: { outputs: { static_analysis: value } },
+    })
+    // A job that failed or produced nothing reports empty outputs, which must
+    // read as "analyze" rather than as a proven skip.
+    const unproven = { classify: { outputs: {} } }
+
+    for (const [context, needs, expected, label] of [
+      [draftPr, output('skip'), false, 'a skipped pull-request class'],
+      [draftPr, output('run'), true, 'a run class'],
+      [draftPr, output(''), true, 'an empty class'],
+      [draftPr, unproven, true, 'an unproven classification'],
+      [push, output('skip'), true, 'a push'],
+      [schedule, output('skip'), true, 'the scheduled run'],
+    ]) {
+      assert.equal(
+        evaluateGate(gate, context, needs),
+        expected,
+        name + ' with ' + label
+      )
+    }
+  }
+})
+
+// The pull-request analysis used to be one runner-held job that polled the
+// coverage producers, so an analysis runner waited while a queued test run
+// finished. The producer run that observes every producer terminal now owns the
+// analysis, so the workflow that runs too early releases its runner instead.
+const PRODUCER_HOSTED_ANALYSIS = new Map([
+  ['test-unit.yml', 'test-unit'],
+  ['test-graphql.yml', 'test-graphql'],
+])
+
+function sameRepositoryPullRequest(overrides) {
+  return {
+    event_name: 'pull_request',
+    actor: 'rschlaefli',
+    repository: 'uzh-bf/klicker-uzh',
+    event: {
+      pull_request: {
+        draft: true,
+        head: { repo: { full_name: 'uzh-bf/klicker-uzh' } },
+      },
+    },
+    ...overrides,
+  }
+}
+
+test('the producer-hosted analysis runs for a same-repository pull request only', () => {
+  for (const [name, suite] of PRODUCER_HOSTED_ANALYSIS) {
+    const workflow = readWorkflow(name)
+    const job = workflow.jobs.sonarcloud
+    assert.ok(job, name + ' must analyze the coverage it just produced')
+    assert.equal(job.uses, './.github/workflows/sonar-analysis.yml', name)
+    const reporter = suite + '-status'
+    assert.deepEqual(job.needs, ['filter', suite, reporter], name)
+    assert.ok(!workflow.jobs[reporter].needs.includes('sonarcloud'))
+
+    // A draft is admitted here and deferred inside the analysis, because the
+    // job is evaluated minutes after its event, when the pull request may
+    // already be ready for review.
+    const gate = String(job.if)
+    assert.equal(
+      evaluateGate(gate, sameRepositoryPullRequest()),
+      true,
+      name + ' for a same-repository draft pull request'
+    )
+    assert.equal(
+      evaluateGate(
+        gate,
+        sameRepositoryPullRequest({
+          event: {
+            pull_request: {
+              draft: false,
+              head: { repo: { full_name: 'fork/x' } },
+            },
+          },
+        })
+      ),
+      false,
+      name + ' for a fork pull request, which receives no secrets'
+    )
+    assert.equal(
+      evaluateGate(
+        gate,
+        sameRepositoryPullRequest({ actor: 'dependabot[bot]' })
+      ),
+      false,
+      name + ' for a Dependabot pull request'
+    )
+    assert.equal(
+      evaluateGate(gate, sameRepositoryPullRequest({ event_name: 'push' })),
+      false,
+      name + ' for a push, which the branch boundary analyzes'
+    )
+  }
+})
+
+test('one reusable workflow owns the analysis decision', () => {
+  const analysis = readWorkflow('sonar-analysis.yml')
+  assert.ok(
+    analysis.on && analysis.on.workflow_call !== undefined,
+    'sonar-analysis.yml must stay reusable so every host shares one definition'
+  )
+
+  const steps = analysis.jobs.sonarcloud.steps
+  const decide = steps.find((step) => step.id === 'coverage')
+  assert.ok(decide, 'the analysis must decide before it scans')
+  assert.deepEqual(
+    String(decide.env.COVERAGE_PRODUCER_WORKFLOWS)
+      .split(',')
+      .map((entry) => entry.trim())
+      .sort(),
+    ['.github/workflows/test-graphql.yml', '.github/workflows/test-unit.yml'],
+    'the decision must know every coverage producer'
+  )
+  assert.deepEqual(
+    String(decide.env.ANALYSIS_WORKFLOW_FILES)
+      .split(',')
+      .map((entry) => entry.trim())
+      .sort(),
+    [
+      '.github/workflows/test-graphql.yml',
+      '.github/workflows/test-unit.yml',
+      '.github/workflows/v3_sonarcloud.yml',
+    ],
+    'every host of the analysis must be listed, or a receipt stays invisible to the others'
+  )
+
+  const scan = steps.find((step) => step.id === 'scan')
+  assert.equal(scan.if, "steps.coverage.outputs.decision == 'scan'")
+  assert.match(String(scan.with.args), /steps\.coverage\.outputs\.scanner_args/)
+
+  // The receipt is published only after a scan that succeeded, because only a
+  // published analysis may suppress the analysis of another producer.
+  const receipt = steps.find(
+    (step) => step.uses === 'actions/upload-artifact@v4'
+  )
+  assert.match(
+    String(receipt.if),
+    /steps\.coverage\.outputs\.decision == 'scan'/
+  )
+  assert.match(String(receipt.if), /steps\.scan\.outcome == 'success'/)
+  assert.match(
+    String(receipt.with.name),
+    /steps\.coverage\.outputs\.receipt_name/
+  )
+})
+
+test('the branch and ready boundary keeps the analysis without a producer', () => {
+  const workflow = readWorkflow('v3_sonarcloud.yml')
+  assert.deepEqual(workflow.on.push.branches, ['v3', 'v3*'])
+  assert.deepEqual(
+    workflow.on.pull_request.types,
+    ['ready_for_review'],
+    'a synchronize and a reopen re-run both producers, so the boundary must not duplicate them'
+  )
+  const job = workflow.jobs.sonarcloud
+  assert.equal(job.needs, 'classify')
+  assert.equal(job.uses, './.github/workflows/sonar-analysis.yml')
+})
+
+test('no workflow holds a runner while it waits for a coverage producer', () => {
+  const directory = path.join(root, '.github')
+  const offenders = []
+  const walk = (current) => {
+    for (const entry of fs.readdirSync(current, { withFileTypes: true })) {
+      const candidate = path.join(current, entry.name)
+      if (entry.isDirectory()) {
+        walk(candidate)
+        continue
+      }
+      if (!entry.name.endsWith('.yml') && !entry.name.endsWith('.cjs')) return
+      if (
+        /COVERAGE_(WAIT|POLL)_SECONDS/.test(fs.readFileSync(candidate, 'utf8'))
+      ) {
+        offenders.push(path.relative(directory, candidate))
+      }
+    }
+  }
+  walk(directory)
+  assert.deepEqual(
+    offenders,
+    [],
+    'a coverage wait window holds a runner while a queued test run finishes'
+  )
+})
+
+// A filtered build restores the artifacts another workflow already published for
+// the same commit, which is what turns a dependency rebuild into a download. The
+// public Playwright route is deliberately absent from this inventory: its pull
+// requests are untrusted, so it restores a read-only Actions cache instead and
+// no public run may hold a credential that can write the shared cache.
+const TURBO_REMOTE_CACHE_CONSUMERS = [
+  'check.yml',
+  'test-graphql.yml',
+  'test-unit.yml',
+]
+
+test('every Turbo consumer uses the shared remote cache', () => {
+  const directory = path.join(root, '.github/workflows')
+  const runsTurbo = []
+  const holdsCredential = []
+  for (const entry of fs.readdirSync(directory).sort()) {
+    if (!entry.endsWith('.yml')) continue
+    const content = fs.readFileSync(path.join(directory, entry), 'utf8')
+    if (/turbo run /.test(content)) runsTurbo.push(entry)
+    if (/TURBO_TOKEN:/.test(content)) holdsCredential.push(entry)
+  }
+
+  assert.deepEqual(
+    holdsCredential,
+    TURBO_REMOTE_CACHE_CONSUMERS,
+    'the remote cache credential must belong to exactly the trusted build consumers'
+  )
+  for (const entry of runsTurbo) {
+    assert.ok(
+      TURBO_REMOTE_CACHE_CONSUMERS.includes(entry),
+      entry + ' runs Turbo without the shared remote cache'
+    )
+    const content = fs.readFileSync(path.join(directory, entry), 'utf8')
+    assert.match(content, /TURBO_TEAM:/, entry)
+    assert.match(content, /TURBO_REMOTE_ONLY: true/, entry)
+  }
 })
 
 // Closing a pull request must reclaim every per-PR workflow concurrency group,
@@ -461,8 +823,8 @@ test('summary reporters always report and never suppress a required check', () =
     // selector must live in a job instead.
     assert.equal(workflow.on?.pull_request?.paths, undefined, name)
     assert.equal(workflow.on?.push?.paths, undefined, name)
-    // A retarget re-evaluates the internal selector.
-    assert.ok(workflow.on.pull_request.types.includes('edited'), name)
+    // A title or body edit never changes the tested tree.
+    assert.ok(!workflow.on.pull_request.types.includes('edited'), name)
     // Drafts run the same suite as ready PRs, so the workflow must not gate on
     // the draft state or re-run the suite at the ready transition.
     assert.ok(
@@ -487,5 +849,262 @@ test('summary reporters always report and never suppress a required check', () =
     )
     assert.equal(upload.with.name, 'required-ci-evidence', name)
     assert.equal(upload.with['if-no-files-found'], 'error', name)
+  }
+})
+
+// The codebase check reuses its own completed validation only for a
+// metadata-only edit on an unchanged tree, and reports the required context
+// from a job that always runs. The suite job must never carry that context,
+// because GitHub can treat a skipped required check as acceptable.
+test('the codebase check reuses prior validation without suppressing its context', () => {
+  const workflow = readWorkflow('check.yml')
+  const terminal = workflow.jobs.check
+  assert.ok(terminal, 'check.yml must define the required check job')
+  assert.equal(terminal.if, 'always()')
+  assert.deepEqual(terminal.needs, ['select', 'check-suite'])
+  assert.ok(
+    terminal.steps.some(
+      (step) =>
+        step.run === 'node .github/scripts/required-ci-status.cjs report'
+    )
+  )
+  const upload = terminal.steps.find(
+    (step) => step.uses === 'actions/upload-artifact@v4'
+  )
+  assert.equal(upload.with.name, 'required-ci-evidence')
+  assert.equal(upload.with['if-no-files-found'], 'error')
+
+  const selector = workflow.jobs.select.steps.find(
+    (step) => step.uses === './.github/actions/changed-paths'
+  )
+  // The lookup names the stable terminal context, never a suite job.
+  assert.equal(selector.with['prior-check-name'], 'check')
+  assert.match(
+    String(workflow.jobs['check-suite'].if),
+    /needs\.select\.outputs\.should_run == 'true'/
+  )
+  assert.equal(workflow.permissions.checks, 'read')
+  // Readiness cannot invalidate identical codebase inputs.
+  assert.ok(!workflow.on.pull_request.types.includes('ready_for_review'))
+})
+
+// The application-wide steps of the codebase check run in full unless the
+// classifier proved a bounded class for a pull request. The gate is written so
+// that an absent, unknown, or failed classification leaves the full suite: the
+// envelope is an efficiency input, and its failure mode must be the validation
+// that ran before the envelope existed.
+const BOUNDED_CODEBASE_STEPS = [
+  'Build packages for typecheck (turbo)',
+  'Check Prisma schema sync drift',
+  'Check linting',
+  'Check linting (Biome, advisory)',
+  'Check typescript types',
+  'Check unused code and dependencies (knip, advisory)',
+]
+
+// GitHub resolves a missing step or output to an empty string. Modelling that
+// lets the test prove the gate fails open even when the classification step no
+// longer exists.
+const MISSING_STEP_OUTPUTS = new Proxy(
+  {},
+  { get: () => ({ outputs: new Proxy({}, { get: () => '' }) }) }
+)
+
+test('the bounded codebase check narrows only for a proven pull-request class', () => {
+  const workflow = readWorkflow('check.yml')
+  const suite = workflow.jobs['check-suite']
+  // The narrowing gates run unless the class is the bounded decision; the
+  // announcement step names the same decision from the other side.
+  const gated = suite.steps.filter((step) =>
+    /steps\.classify\.outputs\.codebase_check != 'bounded'/.test(
+      String(step.if ?? '')
+    )
+  )
+
+  assert.deepEqual(
+    gated.map((step) => step.name).sort(),
+    [...BOUNDED_CODEBASE_STEPS].sort(),
+    'every application-wide step of the codebase check must carry the class gate'
+  )
+
+  const pullRequest = { event_name: 'pull_request' }
+  const push = { event_name: 'push' }
+  const classOutput = (value) => ({
+    classify: { outputs: { codebase_check: value } },
+  })
+
+  for (const step of gated) {
+    for (const [context, steps, expected] of [
+      ['a missing classification step', MISSING_STEP_OUTPUTS, true],
+      ['an empty class output', classOutput(''), true],
+      ['the full decision', classOutput('full'), true],
+      ['the bounded decision', classOutput('bounded'), false],
+    ]) {
+      assert.equal(
+        evaluateGate(step.if, pullRequest, {}, false, {}, steps),
+        expected,
+        step.name + ' with ' + context
+      )
+    }
+    // A push validates a deployment candidate, so the class never narrows it.
+    assert.equal(
+      evaluateGate(step.if, push, {}, false, {}, classOutput('bounded')),
+      true,
+      step.name + ' on a push'
+    )
+  }
+
+  const classify = suite.steps.find((step) => step.id === 'classify')
+  assert.ok(classify, 'the suite must classify the changed paths')
+  assert.equal(classify.uses, './.github/actions/change-envelope')
+  assert.equal(
+    classify.with['receipt-path'],
+    'minimum-validation-classification.json'
+  )
+
+  // The envelope adapter owns the records and the fail-open policy, so a lane
+  // cannot classify a different diff or turn a helper error into a blocked
+  // required context.
+  const envelope = YAML.parse(
+    fs.readFileSync(
+      path.join(root, '.github/actions/change-envelope/action.yml'),
+      'utf8'
+    )
+  )
+  const records = envelope.runs.steps.find((step) => step.id === 'records')
+  assert.equal(records.uses, './.github/actions/changed-paths')
+  assert.equal(records.with.pattern, '.')
+  const classifyScript = envelope.runs.steps.find(
+    (step) => step.id === 'classify'
+  ).run
+  assert.match(classifyScript, /minimum-validation-class\.cjs/)
+  assert.match(classifyScript, /name-status-z/)
+  assert.match(classifyScript, /::warning::/)
+  assert.doesNotMatch(classifyScript, /exit 1/)
+  // Every decision a lane reads has to be declared as an action output.
+  assert.deepEqual(Object.keys(envelope.outputs).sort(), [
+    'change_class',
+    'change_class_reason',
+    'changed_path_count',
+    'codebase_check',
+    'playwright',
+    'static_analysis',
+  ])
+
+  const receipt = suite.steps.find(
+    (step) => step.uses === 'actions/upload-artifact@v4'
+  )
+  assert.equal(receipt.with.name, 'minimum-validation-classification')
+
+  const announcement = suite.steps.find(
+    (step) => step.name === 'Report the bounded codebase check'
+  )
+  assert.equal(
+    evaluateGate(
+      announcement.if,
+      pullRequest,
+      {},
+      false,
+      {},
+      classOutput('bounded')
+    ),
+    true
+  )
+  assert.equal(
+    evaluateGate(
+      announcement.if,
+      pullRequest,
+      {},
+      false,
+      {},
+      MISSING_STEP_OUTPUTS
+    ),
+    false,
+    'the bounded announcement must never claim a class that was not proven'
+  )
+})
+
+test('shared OCR qualification covers callers and its orchestrator, and runs for an unproven diff', () => {
+  const steps = readWorkflow('check.yml').jobs['check-suite'].steps
+  const selector = steps.find((step) => step.id === 'ocr_shared')
+  assert.equal(selector.uses, './.github/actions/changed-paths')
+  const pattern = new RegExp(selector.with.pattern)
+  for (const file of [
+    '.github/actions/ocr-review/action.yml',
+    '.github/scripts/ocr-controller.test.cjs',
+    '.github/open-code-review/runtime-manifest.json',
+    '.agents/skills/ocr-reviewer/SKILL.md',
+    '.github/workflows/check-ocr-review.yml',
+    '.github/workflows/check.yml',
+  ])
+    assert.equal(pattern.test(file), true, file)
+  for (const file of [
+    '.github/workflows/check-ocr-final-review.yml',
+    'apps/chat/src/proxy.ts',
+    'docs/ocr-runtime.md',
+  ])
+    assert.equal(pattern.test(file), false, file)
+  const qualification = steps.find((step) =>
+    step.run?.includes('export OCR_REQUIRE_STOCK_BINARY=1')
+  )
+  for (const should_run of ['false', 'true', undefined]) {
+    assert.equal(
+      evaluateGate(
+        qualification.if,
+        {},
+        {},
+        false,
+        {},
+        { ocr_shared: { outputs: { should_run } } }
+      ),
+      should_run !== 'false'
+    )
+  }
+})
+
+test('OCR engine qualification only runs for related paths or an unproven diff', () => {
+  const steps = readWorkflow('check.yml').jobs['check-suite'].steps
+  const selector = steps.find((step) => step.id === 'ocr_engine')
+  assert.equal(selector.uses, './.github/actions/changed-paths')
+  const pattern = new RegExp(selector.with.pattern)
+  for (const file of [
+    '.github/scripts/install-patched-ocr.cjs',
+    '.github/open-code-review/ocr-compression.patch',
+    '.github/workflows/check.yml',
+    '.github/workflows/check-ocr-final-review.yml',
+  ])
+    assert.equal(pattern.test(file), true, file)
+  for (const file of ['apps/chat/src/proxy.ts', 'docs/ci-and-deployment.md']) {
+    assert.equal(pattern.test(file), false, file)
+  }
+  for (const name of [
+    'Set up pinned OCR build toolchain',
+    'Qualify the pinned OCR compression engine',
+  ]) {
+    const gate = steps.find((step) => step.name === name).if
+    assert.equal(
+      evaluateGate(
+        gate,
+        {},
+        {},
+        false,
+        {},
+        { ocr_engine: { outputs: { should_run: 'false' } } }
+      ),
+      false
+    )
+    for (const should_run of ['true', undefined]) {
+      assert.equal(
+        evaluateGate(
+          gate,
+          {},
+          {},
+          false,
+          {},
+          { ocr_engine: { outputs: { should_run } } }
+        ),
+        true
+      )
+    }
   }
 })

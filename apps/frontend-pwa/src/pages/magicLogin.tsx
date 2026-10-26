@@ -18,20 +18,6 @@ function MagicLogin() {
   const redirectionTimeout = useRef<any>(null)
   const { token } = router.query
 
-  // Same-origin return target (e.g. a course join page) preserved through the
-  // magic link. Anything that is not a relative app path falls back to '/'.
-  const rawRedirectTo = Array.isArray(router.query.redirect_to)
-    ? router.query.redirect_to[0]
-    : router.query.redirect_to
-  const redirectTo =
-    rawRedirectTo &&
-    rawRedirectTo.startsWith('/') &&
-    !rawRedirectTo.startsWith('//') &&
-    !rawRedirectTo.includes('\\') &&
-    !rawRedirectTo.includes('://')
-      ? rawRedirectTo
-      : '/'
-
   const [loginWithMagicLink] = useMutation(LoginParticipantMagicLinkDocument)
   const [fetchSelf] = useLazyQuery(SelfDocument, {
     fetchPolicy: 'network-only',
@@ -53,7 +39,24 @@ function MagicLogin() {
           clearTimeout(loginTimeout.current)
           clearTimeout(redirectionTimeout.current)
           await fetchSelf()
-          router.push(redirectTo)
+          // Resolve with the browser URL parser before comparing origins:
+          // control characters can turn a seemingly local path into a host.
+          const rawRedirectTo = Array.isArray(router.query.redirect_to)
+            ? router.query.redirect_to[0]
+            : router.query.redirect_to
+          let destination = new URL('/', window.location.origin)
+          try {
+            const candidate = new URL(
+              rawRedirectTo ?? '/',
+              window.location.origin
+            )
+            if (candidate.origin === window.location.origin) {
+              destination = candidate
+            }
+          } catch {
+            // Malformed return targets fall back to the home page.
+          }
+          router.push(destination.href)
         } else {
           toast({
             type: 'error',

@@ -14,6 +14,11 @@ metadata:
 data:
   HATCHET_CLIENT_TLS_STRATEGY: {{ .Values.hatchet.client.tlsStrategy | quote }}
   HATCHET_API_URL: {{ .Values.hatchet.client.apiUrl | quote }}
+  HATCHET_WORKER_NAME: {{ .Values.hatchet.workers.general.workerName | quote }}
+  HATCHET_WORKER_SLOTS: {{ .Values.hatchet.workers.general.nonDurableSlots | quote }}
+  HATCHET_WORKER_DURABLE_SLOTS: {{ .Values.hatchet.workers.general.durableSlots | quote }}
+  HATCHET_WORKER_HEALTH_PORT: {{ .Values.hatchet.workers.general.healthPort | quote }}
+  HATCHET_WORKER_STARTUP_TIMEOUT_MS: {{ .Values.hatchet.workers.general.startupTimeoutMs | quote }}
   {{- if .Values.hatchet.kbIngestion }}
   {{- if .Values.hatchet.kbIngestion.workerDisabled }}
   KB_INGESTION_WORKER_DISABLED: {{ .Values.hatchet.kbIngestion.workerDisabled | quote }}
@@ -21,6 +26,9 @@ data:
   KB_INGESTION_API_URL: {{ .Values.hatchet.kbIngestion.apiUrl | quote }}
   KB_INGESTION_PROJECT_ID: {{ .Values.hatchet.kbIngestion.projectId | quote }}
   KB_SOURCE_GATEWAY_URL: {{ .Values.hatchet.kbIngestion.sourceGatewayUrl | quote }}
+  {{- if .Values.hatchet.kbIngestion.timeoutSeconds }}
+  KB_INGESTION_TIMEOUT_SECONDS: {{ .Values.hatchet.kbIngestion.timeoutSeconds | quote }}
+  {{- end }}
   {{- end }}
   {{- if .Values.hatchet.kbGraph }}
   {{- if .Values.hatchet.kbGraph.disabled }}
@@ -37,6 +45,9 @@ data:
   KB_GRAPH_HIGH_GENERATION_MODEL: {{ .Values.hatchet.kbGraph.highGenerationModel | quote }}
   KB_GRAPH_HIGH_CLEANING_MODEL: {{ .Values.hatchet.kbGraph.highCleaningModel | quote }}
   KB_GRAPH_UPLOAD_GENERATION_ARTIFACTS: {{ .Values.backendGraphql.elementGeneration.enabled | quote }}
+  {{- if .Values.backendGraphql.knowledgeGraph.domainCatalogRevision }}
+  KB_GRAPH_DOMAIN_CATALOG_REVISION: {{ .Values.backendGraphql.knowledgeGraph.domainCatalogRevision | quote }}
+  {{- end }}
   {{- end }}
   {{- end }}
   {{- if .Values.backendGraphql.knowledgeGraph.host }}
@@ -45,6 +56,7 @@ data:
   KB_FALKORDB_TLS: {{ .Values.backendGraphql.knowledgeGraph.tls | quote }}
   KB_FALKORDB_QUERY_TIMEOUT_MS: {{ .Values.backendGraphql.knowledgeGraph.queryTimeoutMs | quote }}
   {{- end }}
+  BLOB_STORAGE_ACCOUNT_NAME: {{ .Values.blobStorage.accountName | quote }}
 ---
 apiVersion: v1
 kind: ConfigMap
@@ -55,6 +67,11 @@ metadata:
 data:
   HATCHET_CLIENT_TLS_STRATEGY: {{ .Values.hatchet.client.tlsStrategy | quote }}
   HATCHET_API_URL: {{ .Values.hatchet.client.apiUrl | quote }}
+  HATCHET_WORKER_NAME: {{ .Values.hatchet.workers.responseProcessor.workerName | quote }}
+  HATCHET_WORKER_SLOTS: {{ .Values.hatchet.workers.responseProcessor.nonDurableSlots | quote }}
+  HATCHET_WORKER_DURABLE_SLOTS: {{ .Values.hatchet.workers.responseProcessor.durableSlots | quote }}
+  HATCHET_WORKER_HEALTH_PORT: {{ .Values.hatchet.workers.responseProcessor.healthPort | quote }}
+  HATCHET_WORKER_STARTUP_TIMEOUT_MS: {{ .Values.hatchet.workers.responseProcessor.startupTimeoutMs | quote }}
 ---
 apiVersion: v1
 kind: ConfigMap
@@ -65,4 +82,9 @@ metadata:
 data:
   HATCHET_CLIENT_TLS_STRATEGY: {{ .Values.hatchet.client.tlsStrategy | quote }}
   HATCHET_API_URL: {{ .Values.hatchet.client.apiUrl | quote }}
+  HATCHET_WORKER_NAME: {{ .Values.hatchet.workers.responseProcessorAssessment.workerName | quote }}
+  HATCHET_WORKER_SLOTS: {{ .Values.hatchet.workers.responseProcessorAssessment.nonDurableSlots | quote }}
+  HATCHET_WORKER_DURABLE_SLOTS: {{ .Values.hatchet.workers.responseProcessorAssessment.durableSlots | quote }}
+  HATCHET_WORKER_HEALTH_PORT: {{ .Values.hatchet.workers.responseProcessorAssessment.healthPort | quote }}
+  HATCHET_WORKER_STARTUP_TIMEOUT_MS: {{ .Values.hatchet.workers.responseProcessorAssessment.startupTimeoutMs | quote }}
   ASSESSMENT_MODE: 'true'

@@ -15,22 +15,28 @@
 // a network, or an Actions run.
 
 const { RECEIPT_SCHEMA_VERSION } = require('./image-scan-receipt.cjs')
+const {
+  CONSOLIDATED_WORKFLOW_PATH,
+  STAGING_IMAGE_TARGETS,
+  buildJobName,
+  scanJobName,
+} = require('./staging-image-targets.cjs')
 
 const DIGEST_PATTERN = /^sha256:[0-9a-f]{64}$/
 const FAIL_SEVERITIES = ['HIGH', 'CRITICAL']
 
-const SCAN_ADMISSION_INVENTORY = Object.freeze([
-  {
-    buildJob: 'build-arm',
-    scanJob: 'scan-arm',
-    workflowPath: '.github/workflows/v3_backend-docker-stg.yml',
-  },
-  {
-    buildJob: 'build-migrator-arm',
-    scanJob: 'scan-migrator-arm',
-    workflowPath: '.github/workflows/v3_backend-docker-stg.yml',
-  },
-])
+// The scanned images and their jobs are derived from the shared target inventory
+// so the admitted set can never drift from the built set. The job names are the
+// deterministic matrix names of the consolidated staging workflow.
+const SCAN_ADMISSION_INVENTORY = Object.freeze(
+  STAGING_IMAGE_TARGETS.filter((target) => target.scan === true).map(
+    (target) => ({
+      buildJob: buildJobName(target),
+      scanJob: scanJobName(target),
+      workflowPath: CONSOLIDATED_WORKFLOW_PATH,
+    })
+  )
+)
 
 // The scan job is the job whose success proves the policy step passed; the
 // receipt it uploads alone does not, because that upload also runs when the

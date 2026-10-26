@@ -12,7 +12,9 @@ function getNextBaseConfig({
 }) {
   const isStaging = NEXT_PUBLIC_ENV === 'staging'
   const allowLocalImageOptimization =
-    NODE_ENV === 'development' || NODE_ENV === 'test'
+    NODE_ENV === 'development' ||
+    NODE_ENV === 'test' ||
+    process.env.KLICKER_PLAYWRIGHT_FIXTURES === '1'
   const blobStorageHostname = getHostname(BLOB_STORAGE_ACCOUNT_URL)
 
   return {

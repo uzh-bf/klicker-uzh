@@ -10,7 +10,11 @@ const {
 } = require('./image-scan-admission.cjs')
 const { collectScanAdmission } = require('./stg-release-promoter')
 
-const WORKFLOW_PATH = '.github/workflows/v3_backend-docker-stg.yml'
+const WORKFLOW_PATH = '.github/workflows/v3_images-stg.yml'
+const APP_BUILD_JOB = 'build-arm-backend-docker'
+const MIGRATOR_BUILD_JOB = 'build-arm-backend-docker-migrator'
+const APP_SCAN_JOB = 'scan-arm-backend-docker'
+const MIGRATOR_SCAN_JOB = 'scan-arm-backend-docker-migrator'
 const CANDIDATE_SHA = 'a'.repeat(40)
 const RUN = {
   id: 700,
@@ -24,17 +28,23 @@ const MIGRATOR_DIGEST = 'sha256:' + '2'.repeat(64)
 
 const WORKFLOW = {
   jobs: [
-    { id: 'build-arm', image: APP_IMAGE },
-    { id: 'build-migrator-arm', image: MIGRATOR_IMAGE },
+    { id: APP_BUILD_JOB, image: APP_IMAGE },
+    { id: MIGRATOR_BUILD_JOB, image: MIGRATOR_IMAGE },
   ],
   path: WORKFLOW_PATH,
+  requiredJobIds: [
+    APP_BUILD_JOB,
+    MIGRATOR_BUILD_JOB,
+    APP_SCAN_JOB,
+    MIGRATOR_SCAN_JOB,
+  ].sort(),
 }
 
 const IMAGES = [
   {
     digest: APP_DIGEST,
     job_id: 1,
-    job_name: 'build-arm',
+    job_name: APP_BUILD_JOB,
     repository: APP_IMAGE,
     run_id: RUN.id,
     workflow_path: WORKFLOW_PATH,
@@ -42,7 +52,7 @@ const IMAGES = [
   {
     digest: MIGRATOR_DIGEST,
     job_id: 2,
-    job_name: 'build-migrator-arm',
+    job_name: MIGRATOR_BUILD_JOB,
     repository: MIGRATOR_IMAGE,
     run_id: RUN.id,
     workflow_path: WORKFLOW_PATH,
@@ -81,22 +91,22 @@ function jobsFor({ scan = {} } = {}) {
   const build = (name) => ({
     conclusion: 'success',
     head_sha: CANDIDATE_SHA,
-    id: name === 'build-arm' ? 1 : 2,
+    id: name === APP_BUILD_JOB ? 1 : 2,
     name,
     status: 'completed',
   })
   const scanJob = (name) => ({
     conclusion: scan[name]?.conclusion ?? 'success',
     head_sha: CANDIDATE_SHA,
-    id: name === 'scan-arm' ? 3 : 4,
+    id: name === APP_SCAN_JOB ? 3 : 4,
     name,
     status: scan[name]?.status ?? 'completed',
   })
   return [
-    build('build-arm'),
-    build('build-migrator-arm'),
-    scanJob('scan-arm'),
-    scanJob('scan-migrator-arm'),
+    build(APP_BUILD_JOB),
+    build(MIGRATOR_BUILD_JOB),
+    scanJob(APP_SCAN_JOB),
+    scanJob(MIGRATOR_SCAN_JOB),
   ]
 }
 
@@ -155,34 +165,38 @@ function admissionArgs(jobRounds, receipts) {
 
 describe('evaluateScanJobStatus', () => {
   it('accepts one successful scan job', () => {
-    assert.deepEqual(evaluateScanJobStatus(jobsFor({}), 'scan-arm'), {
+    assert.deepEqual(evaluateScanJobStatus(jobsFor({}), APP_SCAN_JOB), {
       status: 'success',
     })
   })
 
   it('reports a scan job that has not finished', () => {
-    const jobs = jobsFor({ scan: { 'scan-arm': { status: 'in_progress' } } })
-    assert.deepEqual(evaluateScanJobStatus(jobs, 'scan-arm'), {
+    const jobs = jobsFor({
+      scan: { [APP_SCAN_JOB]: { status: 'in_progress' } },
+    })
+    assert.deepEqual(evaluateScanJobStatus(jobs, APP_SCAN_JOB), {
       status: 'running',
     })
   })
 
   it('reports a failed scan job', () => {
-    const jobs = jobsFor({ scan: { 'scan-arm': { conclusion: 'failure' } } })
-    assert.deepEqual(evaluateScanJobStatus(jobs, 'scan-arm'), {
+    const jobs = jobsFor({
+      scan: { [APP_SCAN_JOB]: { conclusion: 'failure' } },
+    })
+    assert.deepEqual(evaluateScanJobStatus(jobs, APP_SCAN_JOB), {
       status: 'failed',
     })
   })
 
   it('rejects a missing or duplicated scan job', () => {
-    assert.deepEqual(evaluateScanJobStatus([], 'scan-arm'), {
+    assert.deepEqual(evaluateScanJobStatus([], APP_SCAN_JOB), {
       status: 'missing',
     })
     const duplicated = [
       ...jobsFor({}),
-      { conclusion: 'success', name: 'scan-arm', status: 'completed' },
+      { conclusion: 'success', name: APP_SCAN_JOB, status: 'completed' },
     ]
-    assert.deepEqual(evaluateScanJobStatus(duplicated, 'scan-arm'), {
+    assert.deepEqual(evaluateScanJobStatus(duplicated, APP_SCAN_JOB), {
       status: 'wrong_evidence',
     })
   })
@@ -353,7 +367,7 @@ describe('collectScanAdmission', () => {
     const result = await collectScanAdmission(
       admissionArgs(
         [
-          jobsFor({ scan: { 'scan-arm': { status: 'in_progress' } } }),
+          jobsFor({ scan: { [APP_SCAN_JOB]: { status: 'in_progress' } } }),
           jobsFor({}),
         ],
         receipts
@@ -367,13 +381,13 @@ describe('collectScanAdmission', () => {
   it('blocks without retrying when a scan job failed', async () => {
     const result = await collectScanAdmission(
       admissionArgs(
-        [jobsFor({ scan: { 'scan-arm': { conclusion: 'failure' } } })],
+        [jobsFor({ scan: { [APP_SCAN_JOB]: { conclusion: 'failure' } } })],
         receipts
       )
     )
     assert.equal(result.valid, false)
     assert.equal(result.attempts.length, 1)
-    assert.match(result.reason, /scan-arm is failed/)
+    assert.match(result.reason, /scan-arm-backend-docker is failed/)
   })
 
   it('blocks when the receipt does not cover the promoted digest', async () => {

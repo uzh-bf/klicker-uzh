@@ -50,4 +50,4 @@ unknown, because a coverage condition cannot be satisfied by absent data.
 
 The scanner, the quality-gate wait, and the coverage import are only meaningful
 together with a live Sonar project configuration, so their effective settings
-remain a separate, authorized activation step rather than part of this record.
+remain a separate, authorized activation step rather than part of this record. The quality gate is awaited on a pull request only, where new code is the diff against the base; a branch analysis is published without awaiting it because a short-lived branch measures its new code against the merge base and cannot satisfy a branch gate, and a branch-type correction remains an operator action on the project.
