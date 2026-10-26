@@ -4,6 +4,8 @@ import { test } from 'node:test'
 import { fileURLToPath } from 'node:url'
 import { guardedPrismaCommand } from '../scripts/disposable-prisma.js'
 
+const operations = ['reset', 'push', 'migrate', 'deploy', 'seed', 'diff']
+
 test('allows only the supported operation flags', () => {
   assert.deepEqual(guardedPrismaCommand('reset', ['--force']), [
     'migrate',
@@ -32,14 +34,7 @@ test('allows only the supported operation flags', () => {
 })
 
 test('rejects alternate destinations, schemas, configuration and positional arguments', () => {
-  for (const operation of [
-    'reset',
-    'push',
-    'migrate',
-    'deploy',
-    'seed',
-    'diff',
-  ]) {
+  for (const operation of operations) {
     for (const args of [
       ['--config', 'other.ts'],
       ['--schema', 'other.prisma'],
@@ -53,6 +48,8 @@ test('rejects alternate destinations, schemas, configuration and positional argu
       assert.throws(() => guardedPrismaCommand(operation, args))
     }
   }
+  assert.throws(() => guardedPrismaCommand('resolve', []))
+  assert.throws(() => guardedPrismaCommand('', []))
   assert.throws(() => guardedPrismaCommand('migrate', ['--name']))
   assert.throws(() => guardedPrismaCommand('migrate', ['--name', '--config']))
 })
@@ -64,14 +61,7 @@ test('refuses every destructive entrypoint with a retained destination without e
   const tsx = fileURLToPath(
     new URL('../node_modules/tsx/dist/cli.mjs', import.meta.url)
   )
-  for (const operation of [
-    'reset',
-    'push',
-    'migrate',
-    'deploy',
-    'seed',
-    'diff',
-  ]) {
+  for (const operation of operations) {
     const result = spawnSync(process.execPath, [tsx, runner, operation], {
       encoding: 'utf8',
       timeout: 10_000,

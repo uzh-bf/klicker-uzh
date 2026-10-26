@@ -15,6 +15,7 @@ deploy/*
 !deploy/northflank/
 deploy/northflank/*
 !deploy/northflank/Dockerfile.fixtures
+!deploy/northflank/bootstrap.mjs
 docs/
 legacy/
 newsletter/

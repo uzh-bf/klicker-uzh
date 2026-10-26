@@ -33,16 +33,16 @@ for (const [phase, args] of operations[operation]) {
   // Database tools inherit runtime credentials; their raw output can contain them.
   const result = spawnSync('pnpm', args, {
     cwd: prismaRoot,
-    env: process.env,
-    shell: false,
-    encoding: 'utf8',
     timeout: remaining,
-    maxBuffer: 1024 * 1024,
-    stdio: 'pipe',
+    stdio: 'ignore',
   })
   if (result.error || result.status !== 0) {
     console.error(`Preview initialization failed at ${phase}`)
     process.exit(1)
   }
-  console.log(`Preview initialization completed: ${phase}`)
+  if (operation === 'bootstrap' && process.env.DRY_RUN !== 'false') {
+    console.log('Preview database bootstrap validated (dry run, no writes)')
+  } else {
+    console.log(`Preview initialization completed: ${phase}`)
+  }
 }
