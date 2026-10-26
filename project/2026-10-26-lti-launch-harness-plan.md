@@ -10,7 +10,7 @@
 
 **What stays unchanged?** LTI service code, the chart defaults, cookie options, and the CI Playwright manifests. The default Playwright suite and its global database setup are untouched; the harness uses its own configuration.
 
-**What could change the decision?** The harness result decides a later change to `LTI_DEV_MODE` or the cookie strategy; this package makes no such change. Running the dev-mode-off case needs a restart of the local LTI process with a different environment value, documented in the harness README.
+**What could change the decision?** The harness result decides a later change to `LTI_DEV_MODE` or the cookie strategy; this package makes no such change. Running the dev-mode-off case needs a restart of the local LTI process with a different environment value; `restart-lti.sh` does that and is documented in the harness README.
 
 **How will we know it is done?** Both dev-mode cases have been run locally across the four browser projects, with results recorded in this plan's Progress section. The harness detects a browser project that silently allows third-party cookies when it should block them.
 
@@ -51,4 +51,5 @@
 - The calibration check caught the ineffective launch flag on the first run, before the switch to the DevTools protocol.
 - After switching dev mode back on, nodemon restarted the original LTI process. The confirmation run that followed could not start because `devrouter ensure` failed to reconcile the `oidc` service (`Managed Compose configuration changed for service 'oidc'`), which shares the app container's network. The runtime was stopped.
 - Checks: `shellcheck` clean on the helper; Prettier applied to the new files; `tsc` for the Playwright package reports no errors in the harness files (one pre-existing error from the host's ungenerated Prisma client).
+- Follow-up on 2026-10-26: the dev-mode helper became `restart-lti.sh`, which takes any `NAME=value` overrides, and the spec reports partitioned (CHIPS) tool cookies separately, so the calibration check counts only ordinary third-party cookies.
 - Execution: main session. Final simplification and review: self-review over the full diff.

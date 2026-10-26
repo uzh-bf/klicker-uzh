@@ -51,7 +51,7 @@ not reset or seed the database.
      --runtime-profile full -- --config lti-harness.config.ts
    ```
 
-3. Switch the LTI service to `LTI_DEV_MODE=false` and run again with
+3. Restart the LTI service with `LTI_DEV_MODE=false` and run again with
    `LTI_HARNESS_DEV_MODE=false`. See [Switching dev mode](#switching-dev-mode).
 
 `LTI_HARNESS_DEV_MODE` only labels the run. It must match the value the running
@@ -70,25 +70,26 @@ The spec derives both from the PWA URL the host runner provides.
 ## Switching dev mode
 
 The dev stack runs the LTI service under nodemon with the container
-environment. `set-lti-dev-mode.sh` restarts only that process with a different
-`LTI_DEV_MODE` and keeps every other variable, including the per-workspace
-origins:
+environment. `restart-lti.sh` restarts only that process with `NAME=value`
+overrides and keeps every other variable, including the per-workspace origins.
+Without arguments it restores the original process:
 
 ```bash
-devrouter exec . -- bash playwright/lti-harness/set-lti-dev-mode.sh false
-devrouter exec . -- bash playwright/lti-harness/set-lti-dev-mode.sh true
+devrouter exec . -- bash playwright/lti-harness/restart-lti.sh LTI_DEV_MODE=false
+devrouter exec . -- bash playwright/lti-harness/restart-lti.sh
 ```
 
-`false` stops the nodemon child and starts the same command in the background
-with `LTI_DEV_MODE=false`. Its output goes to `/tmp/lti-dev-mode-override.log`
-in the container. `true` stops that override and touches the build output, so
+With overrides, the helper stops the nodemon child and starts the same command
+in the background. Its output goes to `/tmp/lti-override.log` in the container.
+Without arguments, it stops that override and touches the build output, so
 nodemon starts the original process again. Restarting the runtime also restores
-the original value.
+the original environment.
 
 ## Reading the result
 
 Each test prints one `[lti-launch]` line with the project, dev mode, embedding,
 whether the launch reached the PWA, the LTI service's error message if it
-rejected the launch, and whether the browser stored the tool's session cookie.
+rejected the launch, and whether the browser stored the tool's session cookie,
+either as an ordinary cookie or as a partitioned (CHIPS) cookie.
 With dev mode off, ltijs rejects a launch whose state cookie the browser did not
 send with `MISSING_VALIDATION_COOKIE`.
