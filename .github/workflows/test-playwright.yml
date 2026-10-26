@@ -31,7 +31,7 @@ jobs:
   cancel-closed-pr:
     if: github.event_name == 'pull_request' && github.event.action == 'closed'
     concurrency:
-      group: ${{ github.event.action == 'labeled' && format('ignored:{0}', github.run_id) || (vars.PRIORITY_CI_ENABLED == 'true' && github.event_name == 'pull_request' && github.event.pull_request.state == 'open' && github.event.pull_request.draft == false && github.event.repository.private == false && github.event.pull_request.head.repo.full_name == github.repository && !endsWith(github.event.pull_request.user.login, '[bot]') && contains(github.event.pull_request.labels.*.name, 'ci:priority') && (github.event.action != 'labeled' || github.event.label.name == 'ci:priority')) && format('priority:{0}:{1}:{2}', github.event.pull_request.number, github.event.pull_request.head.sha, github.event.pull_request.base.sha) || format('{0}-playwright-{1}', github.workflow, github.event.pull_request.number || github.ref) }}
+      group: ${{ github.workflow }}-playwright-${{ github.event.pull_request.number || github.ref }}
       cancel-in-progress: true
     runs-on: ubuntu-latest
     timeout-minutes: 5

@@ -1384,7 +1384,7 @@ test('trusted priority envelopes are exact acyclic derivatives and required wrap
     assert.equal(child.jobs['priority-status'], undefined)
     assert.equal(
       caller.jobs['priority-execution'].uses,
-      `uzh-bf/klicker-uzh/.github/workflows/${file.replace('.yml', '-execution.yml')}@v3`
+      `uzh-bf/klicker-uzh/.github/workflows/${file.replace('.yml', '-execution.yml')}@aaf8d41393f9c5e51e0076827c80953afacb8c4a`
     )
     const report = caller.jobs['priority-status']
     assert.match(report.if, /always\(\)/)

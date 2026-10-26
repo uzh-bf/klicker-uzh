@@ -68,7 +68,10 @@ function validateCallerLifecycle(caller) {
   for (const [name, job] of Object.entries(jobs)) {
     if (['test-playwright-execution', 'cancel-closed-pr'].includes(name)) {
       if (
-        job.concurrency?.group !== EXECUTION_GROUP ||
+        job.concurrency?.group !==
+          (name === 'cancel-closed-pr'
+            ? '${{ github.workflow }}-playwright-${{ github.event.pull_request.number || github.ref }}'
+            : EXECUTION_GROUP) ||
         job.concurrency?.['cancel-in-progress'] !==
           (name === 'test-playwright-execution' ? EXECUTION_CANCEL : true)
       ) {

@@ -277,3 +277,20 @@ New generated workflows are part of this coherent routing package; substantive
 size excludes these derived artifacts and plan text. Normal single-draft topology
 remains appropriate because every caller implements one shared admission contract
 and independent partial rollout cannot complete its verification.
+
+### Immutable executor bootstrap correction
+
+Actual GitHub draft validation rejects disabled calls to executor files absent
+from `v3`. Pin all seven calls to the already-published reviewed executor commit
+`aaf8d41393f9c5e51e0076827c80953afacb8c4a`; this is a resolvable immutable
+source ref, not permission to run paid work. Runner-group selected workflows
+can pin reusable workflows to a full SHA. All seven executor trees are compared
+against generated canonical parity; if their content changes, publish that
+executor commit first and then update its callers' pins in a follow-up ordinary
+commit. Activation's eventual exact allowlist must use those verified pins.
+Priority router bootstrap still requires trusted `v3` publication before enable.
+Source workflow validation and actual paid qualification remain separate.
+
+Main accepted simplifier's one reduction: closed-PR Playwright cancellation
+uses its original ordinary group; open/label priority branches are unreachable
+there. Source-review comments never grant operational authority.

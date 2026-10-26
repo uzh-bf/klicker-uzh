@@ -357,7 +357,7 @@ jobs:
       contents: read
       issues: read
       pull-requests: read
-    uses: uzh-bf/klicker-uzh/.github/workflows/test-unit-execution.yml@v3
+    uses: uzh-bf/klicker-uzh/.github/workflows/test-unit-execution.yml@aaf8d41393f9c5e51e0076827c80953afacb8c4a
     secrets: inherit
 
   priority-status:

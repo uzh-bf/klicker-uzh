@@ -919,8 +919,9 @@ The canonical workflows generate their priority-only execution envelopes with
 `node .github/scripts/priority-ci-workflows.cjs --write`. Edit the canonical
 workflow, regenerate and format the envelopes; CI checks parsed semantic parity using
 `node .github/scripts/priority-ci-workflows.cjs`. Priority callers execute the
-published envelopes at `v3`, which allows runner-group access to be restricted
-to those exact trusted workflow refs. Before publication, draft CI exercises
+published envelopes at an exact reviewed commit, which allows runner-group access
+to be restricted to those immutable workflow refs. Publish an executor commit
+before updating caller pins; GitHub resolves even disabled reusable calls. Before publication, draft CI exercises
 ordinary jobs and synthetic new-source contracts only. Source validation is
 separate from actual paid job, artifact, aggregate and billing acceptance.
 
