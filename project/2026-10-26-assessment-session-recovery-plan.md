@@ -54,7 +54,11 @@ Before public delivery scan staged files, source plan, diagnostics and PR text f
 
 ## Progress
 
-Approved batch active; source target reconciled, no product code changed yet. Planner challenge pending; disposable runtime reconciliation pending; frontend and response tests not run. Current next action is plan challenge, then implement the first reviewed slice. Terminal: verified draft PR, runtime stopped, with no deployment.
+Source implementation and maintained regression tests are committed on the task branch. Draft PR: https://github.com/uzh-bf/klicker-uzh/pull/6743. Isolated Node 24 checks passed for six recovery-controller and four dispatch tests; source syntax, formatting, secrets and Playwright routing checks passed. These are preliminary evidence. Container-native package checks, production application builds, actual Chromium/WebKit acceptance, German/English responsive captures, and integrated final review remain incomplete. Local managed runtime startup is unavailable; cleanup is not yet verified. No deployment or grading change occurred.
+
+The native planning challenge findings were dispositioned below. The simplifier's redundant-test finding was accepted. Source slice review accepted explicit operation recreation on manual reconnect and counting an earlier recorded answer without inventing its timestamp/replacement. The expiry claim that an unconfirmed response reaches success storage was rejected after source inspection: storage runs only for2xx; broader timer admission remains deferred. Hosted PWA build found an unknown close-event type; a guard was added. No passing build or browser claim is made until the corrected candidate is verified.
+
+Substantive size exceeds the initial estimate, mostly because the browser regression owns a real synthetic fixture and cross-browser fault injection. One cohesive draft is retained under the approved package topology; this is a size/review concern, not a completed-readiness claim. No future roadmap package was implemented. Next action: restore the existing managed runtime capability, run the queued package checks, then execute the two production-runtime browser commands, resolve failures, capture UI evidence and finish integrated review. Terminal remains verified draft PR and verified stopped runtime.
 
 ### Plan review round 1 dispositions
 
