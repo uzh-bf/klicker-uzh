@@ -30,11 +30,11 @@ function evaluateGate(
       'github.event.pull_request.labels.map(label => label.name)'
     )
     .replace(/needs\.([a-z][a-z0-9-]*)/g, 'needs["$1"]')
-    .replace(/\.outputs\.([a-z][a-z0-9_-]*)/g, '.outputs["$1"]')
     .replace(
-      /steps\.([a-z][a-z0-9-]*)\.outputs\.([a-z_]+)/g,
+      /steps\.([a-z][a-z0-9-]*)\.outputs\.([a-z][a-z0-9_-]*)/g,
       'steps["$1"].outputs["$2"]'
     )
+    .replace(/\.outputs\.([a-z][a-z0-9_-]*)/g, '.outputs["$1"]')
   // Repository-controlled input only: the expression must originate from a
   // parsed file under .github/workflows/. Do not route external or untrusted
   // text here.
@@ -66,6 +66,22 @@ function evaluateGate(
     (values, value) => values.includes(value)
   )
 }
+
+test('gate evaluation supports hyphenated step identities and output names', () => {
+  for (const value of ['true', 'false']) {
+    assert.equal(
+      evaluateGate(
+        "${{ steps.cache-epoch.outputs.cache-hit == 'true' }}",
+        {},
+        {},
+        false,
+        {},
+        { 'cache-epoch': { outputs: { 'cache-hit': value } } }
+      ),
+      value === 'true'
+    )
+  }
+})
 
 function assertReporter(job, required) {
   for (const cancelled of [false, true]) {
@@ -1437,6 +1453,31 @@ test('trusted priority envelopes are exact acyclic derivatives and required wrap
       child.on.workflow_call.outputs.required_result.value,
       '${{ jobs.' + terminal + '.outputs.required_result }}'
     )
+  }
+})
+
+test('executor generation rejects missing or remapped admission outputs', () => {
+  const { execution } = require('./priority-ci-workflows.cjs')
+  const source = readWorkflow('check.yml')
+  assert.doesNotThrow(() => execution(YAML.stringify(source), 'check'))
+  for (const output of [
+    'admitted',
+    'run_label_event',
+    'run_attempt',
+    'runner_x64',
+    'runner_build',
+    'runner_arm',
+  ]) {
+    for (const value of [undefined, '${{ steps.other.outputs.result }}']) {
+      const changed = structuredClone(source)
+      if (value === undefined)
+        delete changed.jobs['priority-route'].outputs[output]
+      else changed.jobs['priority-route'].outputs[output] = value
+      assert.throws(
+        () => execution(YAML.stringify(changed), 'check'),
+        /canonical priority-route must map its .* output/
+      )
+    }
   }
 })
 

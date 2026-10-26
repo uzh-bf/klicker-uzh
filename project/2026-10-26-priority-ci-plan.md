@@ -408,3 +408,24 @@ regenerate only the affected check executor, publish that immutable source,
 then update only the check caller pin and verify the actual published parity.
 This uses the existing executor publication contract. No admission, access or
 live setting changes; original review and monitoring bounds remain in force.
+
+### Admission output and expression contracts
+
+Interactive navigation resumes the approved unfinished source verification; the
+expired scheduled follow-up remains closed. Exact-head required CI and bounded
+hosted producer/artifact proof passed at `5be0f8c5c2`. Its natural review completed
+all 34 selected files and published findings, so it is not a clean final review.
+
+Main reproduced two contract defects: the test evaluator failed on hyphenated
+step/output names, and executor generation accepted absent or remapped admission
+outputs. The evaluator now quotes step identities before generic outputs; the
+generator requires each referenced output to map to the route step. Existing
+synthetic regressions fail before the fixes and all 94 affected contracts pass
+after them, including actual pinned executor parity. Generated workflow content
+and pins stay unchanged. Close-event comments now describe ordinary cancellation
+and preservation of submitted priority work. No new cancellation is introduced.
+
+This bounded correction enforces the existing contract in the existing seams.
+It has main-session verification, with original independent-review budgets
+retained. Current-head CI and natural feedback follow the ordinary source push.
+Readiness, merge and finite live qualification remain separate delivery layers.

@@ -19,15 +19,15 @@ on:
         # The ready boundary runs the envelope so it can validate the draft-era
         # full proof instead of rebuilding and retesting an unchanged head.
         ready_for_review,
-        # A closed pull request cancels its in-flight execution.
+        # A closed pull request cancels its ordinary in-flight execution.
         closed,
       ]
 
 jobs:
-  # A closed pull request cancels its in-flight execution through the shared
-  # group without an API token. A draft conversion must not cancel: the running
-  # plan stays valid evidence, and the next event selects the plan its own pull
-  # request state requires.
+  # A closed pull request cancels ordinary execution through the shared group
+  # without an API token. Submitted priority work runs to completion. A draft
+  # conversion must not cancel: the running plan stays valid evidence, and the
+  # next event selects the plan its own pull request state requires.
   cancel-closed-pr:
     if: github.event_name == 'pull_request' && github.event.action == 'closed'
     concurrency:

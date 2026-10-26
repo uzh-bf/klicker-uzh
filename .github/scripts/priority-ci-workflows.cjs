@@ -19,6 +19,22 @@ function execution(source, terminal) {
   const jobs = workflow.jobs
   delete jobs['priority-execution']
   delete jobs['priority-status']
+  for (const output of [
+    'admitted',
+    'run_label_event',
+    'run_attempt',
+    'runner_x64',
+    'runner_build',
+    'runner_arm',
+  ]) {
+    if (
+      jobs['priority-route']?.outputs?.[output] !==
+      '${{ steps.route.outputs.' + output + ' }}'
+    )
+      throw new Error(
+        'canonical priority-route must map its ' + output + ' output'
+      )
+  }
   for (const [id, job] of Object.entries(jobs)) {
     const prefix = `!(${REQUEST}) && (`
     if (!job.if?.startsWith(prefix) || !job.if.endsWith(')'))
