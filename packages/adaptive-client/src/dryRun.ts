@@ -66,7 +66,7 @@ export function parseDryRunResponse(input: unknown, request: DryRunRequest) {
     ...result,
     students: result.students.map((student, index) => {
       if (
-        student.index !== index + 1 ||
+        student.index !== (request.dryRun.firstStudent ?? 0) + index + 1 ||
         student.questionCount !== student.answers.length ||
         student.trueLevels.some(
           ({ nodeId, levelId }) =>

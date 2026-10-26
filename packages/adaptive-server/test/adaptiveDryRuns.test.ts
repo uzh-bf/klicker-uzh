@@ -7,6 +7,7 @@ import {
   buildAdaptiveDryRunSpec,
   getAdaptivePracticeQuizDryRuns,
   runAdaptivePracticeQuizDryRun,
+  splitAdaptiveDryRunRequest,
 } from '../src/services/adaptivePracticeQuizDryRuns.js'
 
 // Synthetic scale: three levels, two competences (nodes 1 and 10).
@@ -270,6 +271,25 @@ describe('dry-run spec', () => {
           extensions: { code: 'ADAPTIVE_DRY_RUN_INVALID' },
         })
       )
+  })
+})
+
+describe('dry-run parts', () => {
+  it('splits a run into parts of at most 2,500 decisions', () => {
+    const request = {
+      settings: { totalQuestionCap: 100 },
+      dryRun: { students: 60, seed: 'a'.repeat(64) },
+    } as never
+    expect(
+      splitAdaptiveDryRunRequest(request).map(({ dryRun }) => [
+        dryRun.firstStudent,
+        dryRun.students,
+      ])
+    ).toEqual([
+      [0, 25],
+      [25, 25],
+      [50, 10],
+    ])
   })
 })
 

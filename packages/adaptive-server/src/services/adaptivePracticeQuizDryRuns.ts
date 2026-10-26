@@ -380,9 +380,19 @@ export async function runAdaptivePracticeQuizDryRun(
   )
   const request = buildAdaptiveDryRunRequest(runtime, spec, settings)
   const startedAt = now()
-  const response = await runEngine(request)
+  const parts = splitAdaptiveDryRunRequest(request)
+  const responses: DryRunResponse[] = []
+  // Two parts at a time leave engine workers free for real attempts.
+  for (let i = 0; i < parts.length; i += DRY_RUN_PARALLEL_PARTS)
+    responses.push(
+      ...(await Promise.all(
+        parts.slice(i, i + DRY_RUN_PARALLEL_PARTS).map(runEngine)
+      ))
+    )
   const durationMs = Math.max(0, Math.round(now() - startedAt))
-  const students = response.students.map(toAdaptiveDryRunStudent)
+  const students = responses
+    .flatMap((response) => response.students)
+    .map(toAdaptiveDryRunStudent)
   const summary = {
     ...summarizeAdaptiveDryRun({
       students,
@@ -418,6 +428,33 @@ export async function runAdaptivePracticeQuizDryRun(
     },
     select: { ...runSelect, students: true },
   })
+}
+
+// Decision cost grows with the tree and pool (200 x 100 on a 1,200-item,
+// 60-subcompetence tree takes ~17 s), so a run is sent in parts that stay well
+// inside the engine's 10 s worker deadline. Parts number their students from
+// `firstStudent`, so the result equals one unsplit run.
+const DRY_RUN_DECISIONS_PER_PART = 2500
+const DRY_RUN_PARALLEL_PARTS = 2
+
+export function splitAdaptiveDryRunRequest(
+  request: DryRunRequest
+): DryRunRequest[] {
+  const perPart = Math.max(
+    1,
+    Math.floor(DRY_RUN_DECISIONS_PER_PART / request.settings.totalQuestionCap)
+  )
+  const parts: DryRunRequest[] = []
+  for (let first = 0; first < request.dryRun.students; first += perPart)
+    parts.push({
+      ...request,
+      dryRun: {
+        ...request.dryRun,
+        firstStudent: first,
+        students: Math.min(perPart, request.dryRun.students - first),
+      },
+    })
+  return parts
 }
 
 async function defaultEngineRunner(request: DryRunRequest) {
