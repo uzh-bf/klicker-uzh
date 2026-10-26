@@ -20,6 +20,9 @@ import pg from 'pg'
 const ACCESS_TOKEN_TTL = '1 hour'
 const NONCE_TTL = '10 minutes'
 const ID_TOKEN_TTL = '24 hours'
+// The browser follows the handoff redirect at once, so an unused handoff URL
+// stops working well before ltijs's 24-hour launch lifetime.
+const HANDOFF_TTL = '5 minutes'
 
 // The ltijs 7 tables use their own names, so the tables ltijs-sequelize
 // created for ltijs 5 are left untouched.
@@ -234,11 +237,12 @@ export class PostgresDatabaseManager implements DatabaseManager {
   }
 
   // Removes a launch's id_token so its ltik cannot start another session.
-  // Returns false when the record was already consumed or has expired.
+  // Returns false when the record was already consumed or is older than the
+  // handoff window.
   async consumeIdToken(id: string) {
     const { rowCount } = await this.pool.query(
       `DELETE FROM ltijs_id_token
-       WHERE id = $1 AND created_at > now() - interval '${ID_TOKEN_TTL}'`,
+       WHERE id = $1 AND created_at > now() - interval '${HANDOFF_TTL}'`,
       [id]
     )
     return rowCount === 1
@@ -266,10 +270,18 @@ export class PostgresDatabaseManager implements DatabaseManager {
 
   private toPlatformRecord(row: PlatformRow): PlatformRecord {
     const { publicKey, ...attributes } = row.attributes
+    let privateKey: string
+    try {
+      privateKey = this.decrypt(row.private_key)
+    } catch {
+      throw new Error(
+        `Cannot decrypt the stored private key of LTI platform ${row.id}: the row is corrupted or LTI_ENCRYPTION_KEY differs from the key it was stored with. Changing the key requires clearing ltijs_platform.`
+      )
+    }
     return {
       ...attributes,
       id: row.id,
-      keys: { public: publicKey, private: this.decrypt(row.private_key) },
+      keys: { public: publicKey, private: privateKey },
     }
   }
 
