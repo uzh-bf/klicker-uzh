@@ -114,6 +114,7 @@ export type DryRun = {
   id: string
   number: number
   publicationId: string
+  engineRevision?: string | null
   durationMs: number
   createdAt: string
   spec: DryRunSpec

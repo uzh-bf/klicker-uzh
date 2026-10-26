@@ -940,6 +940,7 @@ const messages = {
             start: 'Testlauf starten',
           },
           result: {
+            engine: 'Engine: {revision}',
             title: 'Testlauf #{number}',
             meta: '{students} Studierende · wahre Niveaus {levels} · {noise}% Rauschen · {competences} · {date} · {seconds} s',
             settings:

@@ -922,6 +922,7 @@ const messages = {
             start: 'Start dry run',
           },
           result: {
+            engine: 'Engine: {revision}',
             title: 'Dry run #{number}',
             meta: '{students} students · true levels {levels} · {noise}% noise · {competences} · {date} · {seconds} s',
             settings:

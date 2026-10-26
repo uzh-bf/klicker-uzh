@@ -112,6 +112,14 @@ function AdaptiveDryRunResult({
             })}
           </p>
           <p className="text-xs text-gray-600">{settingsText(run)}</p>
+          <p
+            className="font-mono text-xs text-gray-500"
+            title={run.engineRevision ?? undefined}
+          >
+            {t('manage.evaluation.adaptive.dryRuns.result.engine', {
+              revision: run.engineRevision ?? '–',
+            })}
+          </p>
           {run.publicationId !== workspace.publicationId ? (
             <p className="text-xs text-amber-700">
               {t('manage.evaluation.adaptive.dryRuns.result.olderPublication')}
