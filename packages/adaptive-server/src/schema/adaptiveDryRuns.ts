@@ -83,6 +83,18 @@ export function createAdaptiveDryRunSchema(builder: AdaptiveSchemaBuilder) {
       }),
     })
 
+  const ScaleType = builder
+    .objectRef<NonNullable<AdaptiveDryRunWorkspace['scale']>>(
+      'AdaptiveDryRunScale'
+    )
+    .implement({
+      fields: (t) => ({
+        thetaMin: t.exposeFloat('thetaMin'),
+        thetaMax: t.exposeFloat('thetaMax'),
+        levelMappingRule: t.exposeString('levelMappingRule'),
+      }),
+    })
+
   const AdaptiveDryRunWorkspaceRef = builder
     .objectRef<AdaptiveDryRunWorkspace>('AdaptiveDryRunWorkspace')
     .implement({
@@ -99,6 +111,7 @@ export function createAdaptiveDryRunSchema(builder: AdaptiveSchemaBuilder) {
         }),
         items: t.expose('items', { type: [ItemType] }),
         defaults: t.expose('defaults', { type: 'Json', nullable: true }),
+        scale: t.expose('scale', { type: ScaleType, nullable: true }),
         maxStudents: t.exposeInt('maxStudents'),
         maxDecisions: t.exposeInt('maxDecisions'),
         runs: t.expose('runs', { type: [AdaptiveDryRunRef] }),

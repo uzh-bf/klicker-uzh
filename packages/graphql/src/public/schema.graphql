@@ -443,6 +443,12 @@ type AdaptiveDryRunLevel {
   order: Int!
 }
 
+type AdaptiveDryRunScale {
+  levelMappingRule: String!
+  thetaMax: Float!
+  thetaMin: Float!
+}
+
 type AdaptiveDryRunSubcompetence {
   name: String!
   nodeId: Int!
@@ -459,6 +465,7 @@ type AdaptiveDryRunWorkspace {
   maxStudents: Int!
   publicationId: String
   runs: [AdaptiveDryRun!]!
+  scale: AdaptiveDryRunScale
   subcompetences: [AdaptiveDryRunSubcompetence!]!
   unavailableReason: String
 }

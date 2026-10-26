@@ -25,6 +25,11 @@ query QAdaptivePracticeQuizDryRuns($practiceQuizId: String!) {
       nodeNames
     }
     defaults
+    scale {
+      thetaMin
+      thetaMax
+      levelMappingRule
+    }
     maxStudents
     maxDecisions
     runs {

@@ -76,6 +76,12 @@ export type AdaptiveDryRunWorkspace = {
     nodeNames: string[]
   }>
   defaults: PrismaJson.PrismaAdaptiveDryRunSettings | null
+  /** Level bands of the publication, for presentation (positions, hints). */
+  scale: {
+    thetaMin: number
+    thetaMax: number
+    levelMappingRule: string
+  } | null
   maxStudents: number
   maxDecisions: number
   runs: AdaptiveDryRunRecord[]
@@ -182,6 +188,13 @@ export async function getAdaptivePracticeQuizDryRuns(
         nodeNames: [...item.nodeNamePath],
       })) ?? [],
     defaults: runtime ? settingsOf(runtime) : null,
+    scale: runtime
+      ? {
+          thetaMin: runtime.algorithm.settings.thetaRange.min,
+          thetaMax: runtime.algorithm.settings.thetaRange.max,
+          levelMappingRule: runtime.algorithm.settings.levelMappingRule,
+        }
+      : null,
     maxStudents: ADAPTIVE_DRY_RUN_MAX_STUDENTS,
     maxDecisions: ADAPTIVE_DRY_RUN_MAX_DECISIONS,
     runs: runs.map((run) => ({ ...run, students: null })),

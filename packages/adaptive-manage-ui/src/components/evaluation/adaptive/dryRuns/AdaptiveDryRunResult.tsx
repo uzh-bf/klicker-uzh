@@ -7,12 +7,13 @@ import {
 import { QAdaptivePracticeQuizDryRunDocument } from '@klicker-uzh/graphql/dist/ops'
 import { Button } from '@uzh-bf/design-system'
 import { useFormatter, useTranslations } from 'next-intl'
-import { useState } from 'react'
+import { useEffect, useState } from 'react'
 import { downloadCsv } from '../attemptDiagnostics/adaptiveAttemptCsv'
 import AdaptiveDryRunConfusion from './AdaptiveDryRunConfusion'
 import AdaptiveDryRunMetrics, { formatBias } from './AdaptiveDryRunMetrics'
 import AdaptiveDryRunStudents from './AdaptiveDryRunStudents'
 import AdaptiveDryRunSubcompetences from './AdaptiveDryRunSubcompetences'
+import AdaptiveDryRunWithinReach from './AdaptiveDryRunWithinReach'
 import {
   buildDryRunAnswersCsv,
   buildDryRunStudentsCsv,
@@ -55,6 +56,7 @@ function AdaptiveDryRunResult({
   const formatter = useFormatter()
   const settingsText = useDryRunSettingsText()
   const [showStudents, setShowStudents] = useState(false)
+  const [threshold, setThreshold] = useState(70)
   const [loadRun, detail] = useLazyQuery(QAdaptivePracticeQuizDryRunDocument, {
     fetchPolicy: 'cache-first',
   })
@@ -70,6 +72,13 @@ function AdaptiveDryRunResult({
       | DryRunStudent[]
       | null
   }
+
+  // The hint numbers need the students; saved runs load them on open.
+  const hasStudents = students !== null
+  useEffect(() => {
+    if (!hasStudents)
+      void loadRun({ variables: { practiceQuizId, id: run.id } })
+  }, [hasStudents, loadRun, practiceQuizId, run.id])
 
   const { summary } = run
   const levelLabel = (id: number) =>
@@ -175,6 +184,13 @@ function AdaptiveDryRunResult({
       </div>
 
       <AdaptiveDryRunMetrics summary={summary} />
+
+      <AdaptiveDryRunWithinReach
+        students={students}
+        workspace={workspace}
+        threshold={threshold}
+        onThresholdChange={setThreshold}
+      />
 
       {summary.competences.length > 1 ? (
         <table className="w-full text-left text-sm tabular-nums">
@@ -292,7 +308,11 @@ function AdaptiveDryRunResult({
       </div>
 
       {showStudents && students ? (
-        <AdaptiveDryRunStudents students={students} workspace={workspace} />
+        <AdaptiveDryRunStudents
+          students={students}
+          workspace={workspace}
+          threshold={threshold / 100}
+        />
       ) : null}
     </div>
   )

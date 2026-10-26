@@ -971,7 +971,28 @@ const messages = {
             legend:
               "Questions per level: green = used in this run, grey = never used, red = no question at this level. Covered = got its minimum answers; not sampled = skipped this attempt; out of range = far from the student's level, not required.",
           },
+          withinReach: {
+            title: 'Next level within reach',
+            hint: 'A hint on top of the reported level: when the estimate lies in the upper part of its sublevel (from the threshold on), the next sublevel is suggested, e.g. "B1.2 · B1.3 within reach". The reported level does not change. The tiles compare the two readings of a result.',
+            threshold: 'Threshold: {threshold}% of the sublevel',
+            loading: 'Loading the students…',
+            tiles: {
+              hint: 'Hint shown',
+              reached: 'Reported = true level',
+              nextLevel: 'Suggested = true level + 1',
+              covered: 'True level reported or hinted',
+            },
+            tileHints: {
+              hint: 'results in the upper part of their sublevel',
+              reached: 'reading "level reached"',
+              nextLevel: 'reading "next level" (hinted level, else reported)',
+              covered:
+                'the hint adds the true level when the result is one too low',
+            },
+          },
           students: {
+            position: 'At {position}% of {level}.',
+            withinReach: '{level} within reach',
             hint: 'Open a student to see why each result came out the way it did: which questions were asked, which answers the true level predicts, and how the level moved after each answer.',
             student: 'Student',
             competences: 'True → reported level',

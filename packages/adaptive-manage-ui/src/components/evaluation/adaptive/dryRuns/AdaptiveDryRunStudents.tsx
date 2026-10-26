@@ -5,6 +5,7 @@ import {
   type DryRunCompetenceTrace,
   traceDryRunCompetence,
 } from './adaptiveDryRunExplain'
+import { type DryRunHint, dryRunHint } from './adaptiveDryRunHints'
 import {
   type DryRunStudent,
   type DryRunWorkspace,
@@ -28,10 +29,12 @@ const differenceTone = (difference: number | null) =>
 function CompetenceTrace({
   name,
   trace,
+  hint,
   workspace,
 }: {
   name: string
   trace: DryRunCompetenceTrace
+  hint: DryRunHint
   workspace: DryRunWorkspace
 }) {
   const t = useTranslations()
@@ -78,6 +81,21 @@ function CompetenceTrace({
                 })}
         </span>
       </p>
+      {hint.position !== null ? (
+        <p className="mt-1 text-sm" data-cy="adaptive-dry-run-trace-hint">
+          <span className="text-gray-600">
+            {t(`${KEY}.position`, {
+              position: Math.round(hint.position * 100),
+              level: label(trace.reportedLevelId),
+            })}
+          </span>
+          {hint.nextLevelId !== null ? (
+            <span className="ml-2 rounded bg-blue-100 px-1.5 py-0.5 font-medium text-blue-900">
+              {t(`${KEY}.withinReach`, { level: label(hint.nextLevelId) })}
+            </span>
+          ) : null}
+        </p>
+      ) : null}
       <p className="mt-1 text-sm text-gray-700">
         {t(`${KEY}.patterns.${trace.pattern}`, values)}
         {trace.unexpectedCount > 0
@@ -183,9 +201,12 @@ function CompetenceTrace({
 function AdaptiveDryRunStudents({
   students,
   workspace,
+  threshold,
 }: {
   students: DryRunStudent[]
   workspace: DryRunWorkspace
+  /** "Next level within reach" from this position in the band (0-1). */
+  threshold: number
 }) {
   const t = useTranslations()
   const [open, setOpen] = useState<number | null>(null)
@@ -199,6 +220,13 @@ function AdaptiveDryRunStudents({
   const traces = (student: DryRunStudent) =>
     workspace.competences.map((competence) => ({
       name: competence.name,
+      hint: dryRunHint(
+        student.competences.find(
+          ({ nodeId }) => nodeId === competence.nodeId
+        ) ?? { theta: null, levelId: null },
+        workspace,
+        threshold
+      ),
       trace: traceDryRunCompetence({
         student,
         nodeId: competence.nodeId,
@@ -244,13 +272,23 @@ function AdaptiveDryRunStudents({
                       {`#${student.index}`}
                     </td>
                     <td className="px-3 py-2 text-xs">
-                      {rows.map(({ name, trace }) => (
+                      {rows.map(({ name, trace, hint }) => (
                         <div key={trace.nodeId}>
                           <span className="font-medium">{name}</span>
                           {`: ${label(trace.trueLevelId)} → `}
                           <span className={differenceTone(trace.difference)}>
                             {label(trace.reportedLevelId)}
                           </span>
+                          {hint.position !== null ? (
+                            <span className="ml-1 text-gray-500">
+                              {`(${Math.round(hint.position * 100)}%)`}
+                            </span>
+                          ) : null}
+                          {hint.nextLevelId !== null ? (
+                            <span className="ml-1 rounded bg-blue-100 px-1 text-blue-900">
+                              {`→ ${label(hint.nextLevelId)}`}
+                            </span>
+                          ) : null}
                           {trace.difference !== 0 &&
                           (trace.pattern === 'ALL_CORRECT' ||
                             trace.pattern === 'ALL_WRONG') ? (
@@ -280,11 +318,12 @@ function AdaptiveDryRunStudents({
                     <tr>
                       <td colSpan={6} className="bg-gray-50 px-3 py-3">
                         <div className="grid gap-3 lg:grid-cols-2">
-                          {rows.map(({ name, trace }) => (
+                          {rows.map(({ name, trace, hint }) => (
                             <CompetenceTrace
                               key={trace.nodeId}
                               name={name}
                               trace={trace}
+                              hint={hint}
                               workspace={workspace}
                             />
                           ))}
