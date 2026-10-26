@@ -654,7 +654,7 @@ describe('run_python in a model turn', () => {
           toolName: CODEAPI_TOOL_NAME,
           output: { type: 'json', value: expectedOutput },
         })
-        if (!toolResult || toolResult.output.type !== 'json') {
+        if (toolResult?.output.type !== 'json') {
           throw new Error('Expected a JSON tool result')
         }
         const observed = toolResult.output.value as typeof expectedOutput
