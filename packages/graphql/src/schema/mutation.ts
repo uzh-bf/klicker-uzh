@@ -1,6 +1,7 @@
 import * as DB from '@klicker-uzh/prisma/client'
 import { ActivityType as ActivityTypeEnum } from '@klicker-uzh/types'
 import { MISSING_CATALOG_COLLECTION_ID } from '@klicker-uzh/util'
+import { z } from 'zod'
 import builder from '../builder.js'
 import * as AccountService from '../services/accounts.js'
 import * as ActivitiesService from '../services/activities.js'
@@ -386,8 +387,14 @@ export const Mutation = builder.mutationType({
         type: LtiChatbotLogin,
         args: {
           signedLtiData: t.arg.string({ required: true }),
-          courseId: t.arg.string({ required: true, validate: { uuid: true } }),
-          chatbotId: t.arg.string({ required: true, validate: { uuid: true } }),
+          courseId: t.arg.string({
+            required: true,
+            validate: { schema: z.string().guid() },
+          }),
+          chatbotId: t.arg.string({
+            required: true,
+            validate: { schema: z.string().guid() },
+          }),
           participantToken: t.arg.string(),
         },
         resolve: (_, args, ctx) =>
@@ -398,8 +405,14 @@ export const Mutation = builder.mutationType({
         type: LtiChatbotLogin,
         args: {
           grant: t.arg.string({ required: true }),
-          courseId: t.arg.string({ required: true, validate: { uuid: true } }),
-          chatbotId: t.arg.string({ required: true, validate: { uuid: true } }),
+          courseId: t.arg.string({
+            required: true,
+            validate: { schema: z.string().guid() },
+          }),
+          chatbotId: t.arg.string({
+            required: true,
+            validate: { schema: z.string().guid() },
+          }),
         },
         resolve: (_, args, ctx) =>
           AccountService.loginParticipantForElearningChatbot(args, ctx),
@@ -2344,7 +2357,10 @@ export const Mutation = builder.mutationType({
         nullable: false,
         type: GeneratedElementDraftRef,
         args: {
-          draftId: t.arg.id({ required: true, validate: { uuid: true } }),
+          draftId: t.arg.id({
+            required: true,
+            validate: { schema: z.string().guid() },
+          }),
           expectedRevision: t.arg.int({
             required: true,
             validate: { min: 0 },
