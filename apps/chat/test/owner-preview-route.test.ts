@@ -616,6 +616,30 @@ describe('POST owner preview chat', () => {
     expect(mocks.createParticipant).not.toHaveBeenCalled()
   })
 
+  it('preserves a configured tool when its name conflicts with the example skill', async () => {
+    const configuredTool = { execute: vi.fn() }
+    mocks.getAggregatedMCPTools.mockResolvedValue({
+      close: mocks.closeMcpTools,
+      tools: { KB_doc_query: {}, search_response_examples: configuredTool },
+    })
+
+    const response = await POST(request(), {
+      params: Promise.resolve({ chatbotId: 'chatbot-id' }),
+    })
+    await response.text()
+
+    expect(response.status).toBe(200)
+    expect(mocks.streamText).toHaveBeenCalledWith(
+      expect.objectContaining({
+        instructions: 'Compiled prompt',
+        tools: expect.objectContaining({
+          search_response_examples: configuredTool,
+        }),
+      })
+    )
+    expect(mocks.createResponseExampleSearchTool).not.toHaveBeenCalled()
+  })
+
   it('appends an eligible receipt before the stream finishes', async () => {
     mocks.issuePreviewResponseExampleReceipt.mockResolvedValue({
       token: 'signed-receipt',
@@ -1041,6 +1065,13 @@ describe('POST owner preview chat', () => {
     }
     expect(stream.toUIMessageStream).toHaveBeenCalledWith(
       expect.objectContaining({ sendReasoning: true })
+    )
+    await response.text()
+    expect(mocks.issuePreviewResponseExampleReceipt).toHaveBeenCalledWith(
+      expect.objectContaining({
+        chatMode: approvedCustomMode.key,
+        kbId: undefined,
+      })
     )
   })
 

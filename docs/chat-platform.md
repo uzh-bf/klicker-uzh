@@ -101,6 +101,9 @@ one matching live knowledge-base attachment and explicit source/chunk/hash/ancho
 lineage from the retrieval result. Missing lineage or a plural retrieval scope
 leaves capture unavailable; display titles, excerpts and page numbers never
 substitute for canonical evidence.
+Custom modes defined only in the authored preview configuration remain
+previewable, but capture is unavailable until the review mode contract supports
+them. Legacy prompt-key modes retain their existing review support.
 
 Quizzer selection and approval in response-example review use its standard-mode
 setting and the same effective document-query binding resolver as participant

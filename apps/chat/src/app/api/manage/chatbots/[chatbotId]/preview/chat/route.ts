@@ -335,7 +335,16 @@ export async function POST(
       selectedMode,
       modeConfigurations
     )
+    // Review accepts standard modes and legacy prompt keys, but not newly
+    // authored custom modes that exist only in the preview configuration.
+    const captureModeSupported =
+      ['tutor', 'explainer', 'quizzer'].includes(selectedMode) ||
+      (chatbot.systemPrompts !== null &&
+        typeof chatbot.systemPrompts === 'object' &&
+        !Array.isArray(chatbot.systemPrompts) &&
+        Object.hasOwn(chatbot.systemPrompts, selectedMode))
     captureKbId =
+      captureModeSupported &&
       kbIds?.length === 1 &&
       chatbot.knowledgeBases.length === 1 &&
       chatbot.knowledgeBases[0]?.kbId === kbIds[0]
@@ -371,12 +380,19 @@ export async function POST(
         chatMode: selectedMode,
         role: 'included',
       })
-      tools = {
-        ...tools,
-        [RESPONSE_EXAMPLE_SEARCH_TOOL_NAME]:
-          createResponseExampleSearchTool(responseExampleSkill),
+      if (Object.hasOwn(tools, RESPONSE_EXAMPLE_SEARCH_TOOL_NAME)) {
+        console.warn(
+          'Response-example skill name conflicts with an existing tool; continuing without response examples',
+          { chatbotId }
+        )
+      } else {
+        tools = {
+          ...tools,
+          [RESPONSE_EXAMPLE_SEARCH_TOOL_NAME]:
+            createResponseExampleSearchTool(responseExampleSkill),
+        }
+        responseExampleSummary = responseExampleSkill.summary
       }
-      responseExampleSummary = responseExampleSkill.summary
     } catch (error) {
       console.warn(
         'Response-example skill loading failed; continuing without response examples',
