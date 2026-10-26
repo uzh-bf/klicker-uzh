@@ -12,11 +12,15 @@ import {
   getChatbotLaunchBinding,
   resolveLaunchTarget,
 } from './launchTarget.js'
+import { logger } from './logger.js'
 import { resolvePlatforms } from './platforms.js'
 
 // Validate required environment variables
 if (!process.env.APP_ORIGIN_LTI) {
-  console.error('APP_ORIGIN_LTI is required but not defined')
+  logger.fatal(
+    { event: 'service.configuration_invalid', variable: 'APP_ORIGIN_LTI' },
+    'APP_ORIGIN_LTI is required but not defined'
+  )
   process.exit(1)
 }
 
@@ -60,9 +64,12 @@ provider.onConnect(async (context, request, response) => {
   })
 
   if (!launchTarget.ok) {
-    console.error(
-      `event=lti_launch_rejected targetSource=${launchTarget.source ?? 'null'} reason=${launchTarget.reason} rawType=${getRawType(launchTarget.rawValue)}`
-    )
+    logger.warn({
+      event: 'lti.launch.rejected',
+      targetSource: launchTarget.source ?? null,
+      reason: launchTarget.reason,
+      rawType: getRawType(launchTarget.rawValue),
+    })
     return response.status(400).json({
       error: 'invalid_launch_target',
       reason: launchTarget.reason,
@@ -86,7 +93,10 @@ httpHandler.app.get('/handoff', async (req, res) => {
     context = await provider.getLaunchContext(String(req.query.ltik))
   } catch {
     // also the path of a reused handoff URL, whose launch is already deleted
-    console.error('event=lti_handoff_rejected reason=unknown_or_used_launch')
+    logger.warn({
+      event: 'lti.handoff.rejected',
+      reason: 'unknown_or_used_launch',
+    })
     return res.status(401).json({ error: 'invalid_launch' })
   }
 
@@ -97,13 +107,14 @@ httpHandler.app.get('/handoff', async (req, res) => {
   try {
     consumed = await database.consumeIdToken(context.rawIdToken.id)
   } catch (error) {
-    console.error(
-      `event=lti_handoff_failed message=${error instanceof Error ? error.message : String(error)}`
-    )
+    logger.error({ event: 'lti.handoff.failed', err: error })
     return res.status(500).json({ error: 'handoff_failed' })
   }
   if (!consumed) {
-    console.error('event=lti_handoff_rejected reason=used_or_expired_launch')
+    logger.warn({
+      event: 'lti.handoff.rejected',
+      reason: 'used_or_expired_launch',
+    })
     return res.status(401).json({ error: 'invalid_launch' })
   }
 
@@ -111,9 +122,11 @@ httpHandler.app.get('/handoff', async (req, res) => {
     query: req.query as Record<string, unknown>,
   })
   if (!launchTarget.ok) {
-    console.error(
-      `event=lti_handoff_rejected reason=${launchTarget.reason} targetSource=${launchTarget.source ?? 'null'}`
-    )
+    logger.warn({
+      event: 'lti.handoff.rejected',
+      reason: launchTarget.reason,
+      targetSource: launchTarget.source ?? null,
+    })
     return res.status(400).json({
       error: 'invalid_launch_target',
       reason: launchTarget.reason,
@@ -145,9 +158,11 @@ httpHandler.app.get('/handoff', async (req, res) => {
   })
 
   const redirectUrl = appendJwt(launchTarget.target, jwt)
-  console.log(
-    `event=lti_launch_redirect targetSource=${launchTarget.source} targetHost=${launchTarget.target.hostname}`
-  )
+  logger.info({
+    event: 'lti.launch.redirect',
+    targetSource: launchTarget.source,
+    targetHost: launchTarget.target.hostname,
+  })
 
   return res.redirect(redirectUrl)
 })
@@ -157,7 +172,7 @@ httpHandler.app.get('/handoff', async (req, res) => {
 const setup = async () => {
   // ltijs's startup banner reports its default port, not the handler's
   await provider.listen({ silent: true })
-  console.log(`LTI service listening on port ${port}`)
+  logger.info({ event: 'service.listening', port }, 'LTI service listening')
 
   for (const registration of platforms) {
     const fields = {
@@ -194,12 +209,16 @@ const setup = async () => {
       await provider.platformManager.updatePlatform(registered, fields)
     }
   }
-  console.log(`Registered ${platforms.length} LTI platforms`)
+  logger.info(
+    { event: 'lti.platforms.registered', count: platforms.length },
+    'LTI platforms registered'
+  )
 }
 
 setup().catch((error: unknown) => {
-  console.error(
-    `LTI platform initialization failed: ${error instanceof Error ? error.message : String(error)}`
+  logger.fatal(
+    { event: 'service.start_failed', err: error },
+    'LTI platform initialization failed'
   )
   process.exit(1)
 })

@@ -921,14 +921,24 @@ test('the devrouter env report resolves the workspace and loopback database', ()
     databaseHost: '127.0.0.1',
     databasePort: 49153,
   })
-  assert.deepEqual(
-    parseHostEnvironment(
-      syntheticHostEnvironment({
-        workspace: null,
-        loopback: { host: '::1', port: 49154 },
-      })
-    ),
-    { workspace: '', databaseHost: '[::1]', databasePort: 49154 }
+  const ipv6Host = parseHostEnvironment(
+    syntheticHostEnvironment({
+      workspace: null,
+      loopback: { host: '::1', port: 49154 },
+    })
+  )
+  assert.deepEqual(ipv6Host, {
+    workspace: '',
+    databaseHost: '[::1]',
+    databasePort: 49154,
+  })
+  assert.equal(
+    resolvePlaywrightEnvironment({
+      appSecret: 'synthetic-test-value',
+      databaseTemplate: 'postgres://user:password@postgres:5432/database',
+      ...ipv6Host,
+    }).DATABASE_URL,
+    'postgres://user:password@[::1]:49154/database'
   )
   assert.throws(
     () =>

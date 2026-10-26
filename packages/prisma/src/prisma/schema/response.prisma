@@ -111,6 +111,7 @@ model QuestionResponseDetail {
 model LiveQuizResponse {
   id          Int      @id @default(autoincrement())
   submittedAt DateTime
+  submissionId String? @unique @db.Uuid
 
   /// [PrismaSingleQuestionResponseLiveQuiz]
   response Json?

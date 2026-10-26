@@ -20,7 +20,10 @@ import builder from './builder.js'
 
 import './schema/achievement.js'
 import './schema/activities.js'
+import './schema/adaptivePracticeQuiz.js'
 import './schema/assessment.js'
+import './schema/competenceTree.js'
+import './schema/competenceTreeCalibration.js'
 import './schema/course.js'
 import './schema/element.js'
 import './schema/elementData.js'
@@ -46,10 +49,8 @@ import './schema/subscription.js'
 // TEMPLATE for future directives
 // function upperDirectiveTransformer(schema: any) {
 //   throw new Error('Not implemented')
-//   console.error(schema)
 //   return mapSchema(schema, {
 //     [MapperKind.INPUT_OBJECT_TYPE]: (fieldConfig) => {
-//       console.log(fieldConfig)
 //       // Check whether this field has the specified directive
 
 //       return fieldConfig
@@ -57,6 +58,16 @@ import './schema/subscription.js'
 //   })
 // }
 
+import {
+  handleAdaptiveCalibrationExport,
+  handleAdaptiveCalibrationExportCleanup,
+} from '@klicker-uzh/adaptive-server/services/competenceTreeCalibrationExport'
+import { handleAdaptiveEmpiricalValidation } from '@klicker-uzh/adaptive-server/services/competenceTreeCalibrationValidationWorker'
+import {
+  handleDispatchAssessmentAuditOutbox,
+  handleMonitorAssessmentAudit,
+  handleSealAssessmentAudit,
+} from './services/assessmentAudit.js'
 import { handleProcessCourseDeletion } from './services/courseDeletion.js'
 import {
   handleProcessCourseDuplication,
@@ -92,6 +103,12 @@ export const schema = builder.toSchema({
 })
 
 export const handlers: HatchetHandlers = {
+  handleAdaptiveEmpiricalValidation,
+  handleAdaptiveCalibrationExport,
+  handleAdaptiveCalibrationExportCleanup,
+  handleDispatchAssessmentAuditOutbox,
+  handleMonitorAssessmentAudit,
+  handleSealAssessmentAudit,
   handleFinalRandomGroupAssignments,
   handleRunningRandomGroupAssignments,
   handleUpdateGroupAverageScores,

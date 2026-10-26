@@ -1,13 +1,16 @@
+import { emitAdaptiveOperationalEvent } from '@klicker-uzh/adaptive-server/services/adaptivePracticeQuizEvents'
+import { lockAdaptiveElementPermissionRevocation } from '@klicker-uzh/adaptive-server/services/adaptivePracticeQuizPublicationAuthorization'
+import { runInAuditTransaction } from '@klicker-uzh/audit'
 import * as DB from '@klicker-uzh/prisma/client'
 import {
-  ActivityLogModificationFieldType,
+  type ActivityLogModificationFieldType,
   ActivityType,
-  CatalogObject,
-  ObjectSharingRequest,
+  type CatalogObject,
+  type ObjectSharingRequest,
 } from '@klicker-uzh/types'
 import {
   MISSING_CATALOG_COLLECTION_ID,
-  PrismaTransactionClient,
+  type PrismaTransactionClient,
   recomputeDerivedPermissions,
   updateAccessRequestInstances,
 } from '@klicker-uzh/util'
@@ -16,6 +19,13 @@ import type {
   ContextWithUser,
   PrismaTransactionContextWithUser,
 } from '../lib/context.js'
+import {
+  assessmentAuditUserOperation,
+  emitAssessmentLecturerPermissionChanges,
+  loadAssessmentLecturerPermissionState,
+  permissionTargetIds,
+  recordCoveredAssessmentActionRejected,
+} from './assessmentAuditProducers.js'
 
 // ! Helper functions
 // #region
@@ -764,9 +774,9 @@ export async function requestCatalogCollection(
 
   // if there is no admin or owner on the object anymore, do not allow requesting access to it (nobody could approve such requests)
   if (adminOwnerPermissions.length === 0) {
-    console.log(
-      'No admin or owner could be found on the catalog collection ',
-      catalogCollectionId
+    ctx.log.warn(
+      { event: 'access-request.rejected', reason: 'no_approver' },
+      'Access request rejected'
     )
     return null
   }
@@ -1014,7 +1024,7 @@ export async function requestCatalogObject(
         existingPermission: boolean
         existingRequest: boolean
       }
-    | undefined = undefined
+    | undefined
 
   if (typeof answerCollectionId !== 'undefined') {
     // fetch the answer collection including potential pending permission requests
@@ -1147,9 +1157,9 @@ export async function requestCatalogObject(
 
   // if there is no admin or owner on the object anymore, do not allow requesting access to it (nobody could approve such requests)
   if (adminOwnerPermissions.length === 0) {
-    console.log(
-      'No admin or owner could be found on the catalog collection ',
-      catalogCollectionId
+    ctx.log.warn(
+      { event: 'access-request.rejected', reason: 'no_approver' },
+      'Access request rejected'
     )
     return false
   }
@@ -1920,6 +1930,10 @@ export async function changeObjectPermissionLevel(
   },
   ctx: ContextWithUser
 ) {
+  const auditOperation = assessmentAuditUserOperation({
+    userId: ctx.user.sub,
+    requiredPermission: 'ADMIN',
+  })
   const previousPermission = await ctx.prisma.permission.findUnique({
     where: {
       id: permissionId,
@@ -1948,8 +1962,25 @@ export async function changeObjectPermissionLevel(
       : null
 
   // execute the update and recomputation in a single transaction
-  const permission = await ctx.prisma.$transaction(
-    async (prisma) => {
+  const permission = await runInAuditTransaction(
+    ctx.prisma,
+    async (prisma, auditTx) => {
+      const affectedUserIds = previousPermission.userId
+        ? [previousPermission.userId]
+        : userGroup
+          ? [
+              userGroup.ownerId,
+              ...userGroup.admins.map((admin) => admin.id),
+              ...userGroup.members.map((member) => member.id),
+            ]
+          : []
+      const effectivePermissionsBefore =
+        await loadAssessmentLecturerPermissionState({
+          tx: prisma,
+          liveQuizId,
+          courseId,
+          subjectUserIds: affectedUserIds,
+        })
       // update the access level of the permission
       const updatedPermission = await prisma.permission.update({
         where: {
@@ -1975,16 +2006,6 @@ export async function changeObjectPermissionLevel(
       }
 
       // if the permission exists, trigger recomputation of derived permissions, potentially update the access requests and log the change
-      const affectedUserIds = updatedPermission.userId
-        ? [updatedPermission.userId]
-        : userGroup
-          ? [
-              userGroup.ownerId,
-              ...userGroup.admins.map((admin) => admin.id),
-              ...userGroup.members.map((member) => member.id),
-            ]
-          : []
-
       // if an admin permission was granted or revoked, update the access request instances
       const updateAccessRequests =
         (previousPermission.permissionLevel !== DB.PermissionLevel.ADMIN &&
@@ -2055,6 +2076,22 @@ export async function changeObjectPermissionLevel(
           )
         }
       }
+
+      const effectivePermissionsAfter =
+        await loadAssessmentLecturerPermissionState({
+          tx: prisma,
+          liveQuizId,
+          courseId,
+          subjectUserIds: affectedUserIds,
+        })
+      await emitAssessmentLecturerPermissionChanges({
+        tx: prisma,
+        auditTx,
+        operation: auditOperation,
+        before: effectivePermissionsBefore,
+        after: effectivePermissionsAfter,
+        operationSuffix: 'level-changed',
+      })
 
       // create an audit log entry for the updated permission
       const { objectType, objectId } = getAuditLogObjectType({
@@ -2139,6 +2176,10 @@ export async function revokeObjectAccess(
   },
   ctx: ContextWithUser
 ) {
+  const auditOperation = assessmentAuditUserOperation({
+    userId: ctx.user.sub,
+    requiredPermission: 'ADMIN',
+  })
   // verify that the direct permission belongs to the specified object
   const permission = await ctx.prisma.permission.findUnique({
     where: {
@@ -2173,10 +2214,34 @@ export async function revokeObjectAccess(
   if (!permission || permission.id !== permissionId) {
     return null
   }
+  const affectedUserIds = permission.userId
+    ? [permission.userId]
+    : userGroup
+      ? [
+          userGroup.ownerId,
+          ...userGroup.admins.map((admin) => admin.id),
+          ...userGroup.members.map((member) => member.id),
+        ]
+      : []
+  const permissionElementId = permission.elementId ?? elementId
 
   // delete the direct permission and recompute derived permissions
-  const deletedPermission = await ctx.prisma.$transaction(
-    async (prisma) => {
+  const revocation = await runInAuditTransaction(
+    ctx.prisma,
+    async (prisma, auditTx) => {
+      if (typeof permissionElementId === 'number') {
+        await lockAdaptiveElementPermissionRevocation(
+          permissionElementId,
+          prisma
+        )
+      }
+      const effectivePermissionsBefore =
+        await loadAssessmentLecturerPermissionState({
+          tx: prisma,
+          liveQuizId,
+          courseId,
+          subjectUserIds: affectedUserIds,
+        })
       const deleted = await prisma.permission.delete({
         where: { id: permissionId },
       })
@@ -2222,16 +2287,6 @@ export async function revokeObjectAccess(
       }
 
       // compute the users affected by this permission revocation
-      const affectedUserIds = permission.userId
-        ? [permission.userId]
-        : userGroup
-          ? [
-              userGroup.ownerId,
-              ...userGroup.admins.map((admin) => admin.id),
-              ...userGroup.members.map((member) => member.id),
-            ]
-          : []
-
       for (const affectedUserId of affectedUserIds) {
         // update the derived permissions of all affected users
         if (typeof catalogCollectionId !== 'undefined') {
@@ -2297,6 +2352,22 @@ export async function revokeObjectAccess(
         }
       }
 
+      const effectivePermissionsAfter =
+        await loadAssessmentLecturerPermissionState({
+          tx: prisma,
+          liveQuizId,
+          courseId,
+          subjectUserIds: affectedUserIds,
+        })
+      await emitAssessmentLecturerPermissionChanges({
+        tx: prisma,
+        auditTx,
+        operation: auditOperation,
+        before: effectivePermissionsBefore,
+        after: effectivePermissionsAfter,
+        operationSuffix: 'access-revoked',
+      })
+
       // if an admin permission was revoked, update the access request instances
       if (permission.permissionLevel === DB.PermissionLevel.ADMIN) {
         if (typeof catalogCollectionId !== 'undefined') {
@@ -2342,18 +2413,49 @@ export async function revokeObjectAccess(
         }
       }
 
-      return deleted
+      const adaptiveAffectedObjectCount =
+        typeof permissionElementId === 'number' && affectedUserIds.length > 0
+          ? await prisma.practiceQuizAdaptiveConfig.count({
+              where: {
+                competenceTree: {
+                  ownerId: { in: affectedUserIds },
+                  elementAssignments: {
+                    some: { elementId: permissionElementId },
+                  },
+                },
+              },
+            })
+          : typeof practiceQuizId === 'string'
+            ? await prisma.practiceQuizAdaptiveConfig.count({
+                where: { practiceQuizId },
+              })
+            : typeof courseId === 'string'
+              ? await prisma.practiceQuizAdaptiveConfig.count({
+                  where: { practiceQuiz: { courseId } },
+                })
+              : 0
+
+      return { deleted, adaptiveAffectedObjectCount }
     },
     { timeout: 60000 }
   )
 
+  if (revocation.adaptiveAffectedObjectCount > 0) {
+    emitAdaptiveOperationalEvent({
+      name: 'adaptive_sharing_revoked',
+      practiceQuizId,
+      courseId,
+      affectedObjectCount: revocation.adaptiveAffectedObjectCount,
+    })
+  }
+
   // invalidate permission
   ctx.emitter.emit('invalidate', {
     typename: 'Permission',
-    id: deletedPermission.id,
+    id: revocation.deleted.id,
   })
 
-  return deletedPermission.id
+  return revocation.deleted.id
 }
 // #endregion
 
@@ -3260,8 +3362,14 @@ export async function transferCourseOwnership(
     return null
   }
 
-  const updatedCourse = await ctx.prisma.$transaction(
-    async (prisma) => {
+  const updatedCourse = await runInAuditTransaction(
+    ctx.prisma,
+    async (prisma, auditTx) => {
+      const beforePermissions = await loadAssessmentLecturerPermissionState({
+        tx: prisma,
+        courseId: id,
+        subjectUserIds: [course.ownerId, newOwner.id, ctx.user.sub],
+      })
       // update the owner of the course and grant admin permissions to the current user
       const updated = await prisma.course.update({
         where: { id },
@@ -3327,6 +3435,23 @@ export async function transferCourseOwnership(
         prisma
       )
 
+      const afterPermissions = await loadAssessmentLecturerPermissionState({
+        tx: prisma,
+        courseId: id,
+        subjectUserIds: [course.ownerId, newOwner.id, ctx.user.sub],
+      })
+      await emitAssessmentLecturerPermissionChanges({
+        tx: prisma,
+        auditTx,
+        operation: assessmentAuditUserOperation({
+          userId: ctx.user.sub,
+          requiredPermission: 'OWNER',
+        }),
+        before: beforePermissions,
+        after: afterPermissions,
+        operationSuffix: 'course-owner-transfer',
+      })
+
       return updated
     },
     { timeout: 60000 }
@@ -3370,8 +3495,14 @@ export async function transferLiveQuizOwnership(
     return null
   }
 
-  const updatedLiveQuiz = await ctx.prisma.$transaction(
-    async (prisma) => {
+  const updatedLiveQuiz = await runInAuditTransaction(
+    ctx.prisma,
+    async (prisma, auditTx) => {
+      const beforePermissions = await loadAssessmentLecturerPermissionState({
+        tx: prisma,
+        liveQuizId: id,
+        subjectUserIds: [liveQuiz.ownerId, newOwner.id, ctx.user.sub],
+      })
       // update the owner of the live quiz and grant admin permissions to the current user
       const updated = await prisma.liveQuiz.update({
         where: { id },
@@ -3436,6 +3567,23 @@ export async function transferLiveQuizOwnership(
         { liveQuizId: id, userId: ctx.user.sub, updateAccessRequests: false },
         prisma
       )
+
+      const afterPermissions = await loadAssessmentLecturerPermissionState({
+        tx: prisma,
+        liveQuizId: id,
+        subjectUserIds: [liveQuiz.ownerId, newOwner.id, ctx.user.sub],
+      })
+      await emitAssessmentLecturerPermissionChanges({
+        tx: prisma,
+        auditTx,
+        operation: assessmentAuditUserOperation({
+          userId: ctx.user.sub,
+          requiredPermission: 'OWNER',
+        }),
+        before: beforePermissions,
+        after: afterPermissions,
+        operationSuffix: 'live-quiz-owner-transfer',
+      })
 
       return updated
     },
@@ -4061,6 +4209,9 @@ type ResolvedSharingTarget =
       kind: 'USER_GROUP'
       id: number
       name: string
+      ownerId: string
+      admins: { id: string }[]
+      members: { id: string }[]
     }
 
 function isPrismaSerializationConflict(error: unknown) {
@@ -4134,7 +4285,13 @@ async function resolveSharingTarget(
           { members: { some: { id: ctx.user.sub } } },
         ],
       },
-      select: { id: true, name: true },
+      select: {
+        id: true,
+        name: true,
+        ownerId: true,
+        admins: { select: { id: true } },
+        members: { select: { id: true } },
+      },
     })
 
     if (!userGroup) {
@@ -4145,7 +4302,14 @@ async function resolveSharingTarget(
     }
 
     return {
-      target: { kind: 'USER_GROUP', id: userGroup.id, name: userGroup.name },
+      target: {
+        kind: 'USER_GROUP',
+        id: userGroup.id,
+        name: userGroup.name,
+        ownerId: userGroup.ownerId,
+        admins: userGroup.admins,
+        members: userGroup.members,
+      },
       error: null,
     }
   }
@@ -4262,17 +4426,18 @@ function emitElementPermissionInvalidation(
 }
 
 function invalidateElementPermission(
-  { elementId, permissionId }: { elementId: number; permissionId: number },
+  { permissionId }: { elementId: number; permissionId: number },
   ctx: ContextWithUser
 ) {
   try {
     emitElementPermissionInvalidation({ permissionId }, ctx)
-  } catch (error) {
-    console.error(
-      'Failed to invalidate permission %s after sharing element %s',
-      permissionId,
-      elementId,
-      error
+  } catch {
+    ctx.log.warn(
+      {
+        event: 'sharing.permission.invalidation_failed',
+        outcome: 'continuing',
+      },
+      'Failed to invalidate shared element permission'
     )
   }
 }
@@ -4534,7 +4699,13 @@ async function shareElementForBatch(
         continue
       }
 
-      console.error('Failed to share element %s', elementId, error)
+      ctx.log.error(
+        {
+          event: 'sharing.element.failed',
+          outcome: 'transaction_failed',
+        },
+        'Failed to share element'
+      )
       return {
         elementId,
         status: 'FAILED',
@@ -4580,6 +4751,10 @@ export async function shareObject(
   },
   ctx: ContextWithUser
 ) {
+  const auditOperation = assessmentAuditUserOperation({
+    userId: ctx.user.sub,
+    requiredPermission: 'ADMIN',
+  })
   const resolvedTarget = await resolveSharingTarget(
     { shortnameOrEmail, userGroupId: requestedUserGroupId },
     ctx,
@@ -4618,8 +4793,16 @@ export async function shareObject(
       }
     }
 
-    const permission = await ctx.prisma.$transaction(
-      async (prisma) => {
+    const permission = await runInAuditTransaction(
+      ctx.prisma,
+      async (prisma, auditTx) => {
+        const effectivePermissionsBefore =
+          await loadAssessmentLecturerPermissionState({
+            tx: prisma,
+            liveQuizId,
+            courseId,
+            subjectUserIds: [userId],
+          })
         // upsert new permission for the answer collection under consideration
         const newPermission = await prisma.permission.upsert({
           where: {
@@ -4798,6 +4981,22 @@ export async function shareObject(
           )
         }
 
+        const effectivePermissionsAfter =
+          await loadAssessmentLecturerPermissionState({
+            tx: prisma,
+            liveQuizId,
+            courseId,
+            subjectUserIds: [userId],
+          })
+        await emitAssessmentLecturerPermissionChanges({
+          tx: prisma,
+          auditTx,
+          operation: auditOperation,
+          before: effectivePermissionsBefore,
+          after: effectivePermissionsAfter,
+          operationSuffix: 'direct-access-changed',
+        })
+
         // create an audit log entry for the newly created permission
         const { objectType, objectId } = getAuditLogObjectType({
           catalogCollectionId,
@@ -4885,8 +5084,21 @@ export async function shareObject(
       }
     }
 
-    const permission = await ctx.prisma.$transaction(
-      async (prisma) => {
+    const permission = await runInAuditTransaction(
+      ctx.prisma,
+      async (prisma, auditTx) => {
+        const affectedUserIds = [
+          userGroup.ownerId,
+          ...userGroup.admins.map((user) => user.id),
+          ...userGroup.members.map((user) => user.id),
+        ]
+        const effectivePermissionsBefore =
+          await loadAssessmentLecturerPermissionState({
+            tx: prisma,
+            liveQuizId,
+            courseId,
+            subjectUserIds: affectedUserIds,
+          })
         // upsert new permission for the answer collection under consideration
         const newPermission = await prisma.permission.upsert({
           where: {
@@ -5052,6 +5264,22 @@ export async function shareObject(
             prisma
           )
         }
+
+        const effectivePermissionsAfter =
+          await loadAssessmentLecturerPermissionState({
+            tx: prisma,
+            liveQuizId,
+            courseId,
+            subjectUserIds: affectedUserIds,
+          })
+        await emitAssessmentLecturerPermissionChanges({
+          tx: prisma,
+          auditTx,
+          operation: auditOperation,
+          before: effectivePermissionsBefore,
+          after: effectivePermissionsAfter,
+          operationSuffix: 'group-access-changed',
+        })
 
         // create an audit log entry for the newly created permission
         const { objectType, objectId } = getAuditLogObjectType({
@@ -6472,8 +6700,8 @@ export async function checkCatalogAssignment(
   return assignment !== null
 }
 
-export type ObjectSelectorFunction = (
-  args: any
+export type ObjectSelectorFunction<TArgs = unknown> = (
+  args: TArgs
 ) =>
   | { catalogCollectionId: string }
   | { answerCollectionId: number }
@@ -6484,28 +6712,88 @@ export type ObjectSelectorFunction = (
   | { microLearningId: string }
   | { groupActivityId: string }
 
+export type AssessmentAuditPermissionFailure<TArgs = unknown> = Readonly<{
+  actionType: string
+  targetType?: string
+  targetId?: (args: TArgs) => string | undefined
+}>
+
 // higher-level interface function that returns a wrapped resolver
 // (simplified notation for calls in mutation.ts and query.ts)
 export function withPermission<TSource, TArgs, TReturn>(
-  selector: ObjectSelectorFunction,
+  selector: ObjectSelectorFunction<TArgs>,
   level: DB.PermissionLevel,
   resolver: (
     root: TSource,
     args: TArgs,
     ctx: ContextWithUser
-  ) => Promise<TReturn>
+  ) => Promise<TReturn>,
+  assessmentAudit?: AssessmentAuditPermissionFailure<TArgs>
 ) {
   return async (
     root: TSource,
     args: TArgs,
     ctx: ContextWithUser
   ): Promise<TReturn | null> => {
+    const selectedObject = selector(args)
     const access = await checkAccess(
-      [{ ...selector(args), minimumPermissionLevel: level }],
+      [{ ...selectedObject, minimumPermissionLevel: level }],
       ctx
     )
 
-    if (!access) return null
+    if (!access) {
+      // Permission checks are intentionally fail-closed. Recording a denied
+      // assessment action is best-effort and must never change that behavior
+      // or make the protected mutation available when the audit store is down.
+      if (
+        assessmentAudit !== undefined &&
+        ('liveQuizId' in selectedObject || 'courseId' in selectedObject)
+      ) {
+        try {
+          const liveQuizIds =
+            'liveQuizId' in selectedObject
+              ? [selectedObject.liveQuizId]
+              : (
+                  await ctx.prisma.liveQuiz.findMany({
+                    where: {
+                      courseId: selectedObject.courseId,
+                      isAssessmentEnabled: true,
+                    },
+                    select: { id: true },
+                  })
+                ).map((liveQuiz) => liveQuiz.id)
+          await Promise.all(
+            liveQuizIds.map((liveQuizId) =>
+              recordCoveredAssessmentActionRejected({
+                client: ctx.prisma,
+                liveQuizId,
+                operation: assessmentAuditUserOperation({
+                  userId: ctx.user.sub,
+                  requiredPermission: level,
+                }),
+                actionType: assessmentAudit.actionType,
+                reasonCode: 'INSUFFICIENT_PERMISSION',
+                ...(assessmentAudit.targetType === undefined
+                  ? {}
+                  : { targetType: assessmentAudit.targetType }),
+                ...(assessmentAudit.targetId === undefined
+                  ? {}
+                  : { targetId: assessmentAudit.targetId(args) }),
+              })
+            )
+          )
+        } catch (error) {
+          ctx.log.error(
+            {
+              actionType: assessmentAudit.actionType,
+              errorType: error instanceof Error ? error.name : 'unknown',
+            },
+            'Failed to record rejected assessment action'
+          )
+        }
+      }
+      return null
+    }
     return resolver(root, args, ctx)
   }
 }
@@ -6805,6 +7093,7 @@ export async function leaveUserGroup(
     include: {
       members: { where: { id: ctx.user.sub } },
       admins: { where: { id: ctx.user.sub } },
+      permissions: true,
     },
   })
 
@@ -6815,8 +7104,15 @@ export async function leaveUserGroup(
     return false
   }
 
-  await ctx.prisma.$transaction(
-    async (prisma) => {
+  const targets = permissionTargetIds(userGroup.permissions)
+  await runInAuditTransaction(
+    ctx.prisma,
+    async (prisma, auditTx) => {
+      const beforePermissions = await loadAssessmentLecturerPermissionState({
+        tx: prisma,
+        ...targets,
+        subjectUserIds: [ctx.user.sub],
+      })
       const updated = await prisma.userGroup.update({
         where: { id: groupId },
         data: {
@@ -6852,6 +7148,23 @@ export async function leaveUserGroup(
         prisma
       )
 
+      const afterPermissions = await loadAssessmentLecturerPermissionState({
+        tx: prisma,
+        ...targets,
+        subjectUserIds: [ctx.user.sub],
+      })
+      await emitAssessmentLecturerPermissionChanges({
+        tx: prisma,
+        auditTx,
+        operation: assessmentAuditUserOperation({
+          userId: ctx.user.sub,
+          requiredPermission: 'WRITE',
+        }),
+        before: beforePermissions,
+        after: afterPermissions,
+        operationSuffix: 'group-leave',
+      })
+
       return updated
     },
     { timeout: 60000 }
@@ -6867,15 +7180,27 @@ export async function deleteUserGroup(
   // check if the user is the owner of the group
   const userGroup = await ctx.prisma.userGroup.findUnique({
     where: { id: groupId, ownerId: ctx.user.sub },
-    include: { permissions: true },
+    include: { permissions: true, members: true, admins: true, owner: true },
   })
 
   if (!userGroup) {
     return false
   }
 
-  await ctx.prisma.$transaction(
-    async (prisma) => {
+  const targets = permissionTargetIds(userGroup.permissions)
+  const affectedUserIds = [
+    userGroup.ownerId,
+    ...userGroup.admins.map((user) => user.id),
+    ...userGroup.members.map((user) => user.id),
+  ]
+  await runInAuditTransaction(
+    ctx.prisma,
+    async (prisma, auditTx) => {
+      const beforePermissions = await loadAssessmentLecturerPermissionState({
+        tx: prisma,
+        ...targets,
+        subjectUserIds: affectedUserIds,
+      })
       // delete the user group
       await prisma.userGroup.delete({
         where: { id: groupId },
@@ -6936,6 +7261,23 @@ export async function deleteUserGroup(
           )
         }
       }
+
+      const afterPermissions = await loadAssessmentLecturerPermissionState({
+        tx: prisma,
+        ...targets,
+        subjectUserIds: affectedUserIds,
+      })
+      await emitAssessmentLecturerPermissionChanges({
+        tx: prisma,
+        auditTx,
+        operation: assessmentAuditUserOperation({
+          userId: ctx.user.sub,
+          requiredPermission: 'OWNER',
+        }),
+        before: beforePermissions,
+        after: afterPermissions,
+        operationSuffix: 'group-delete',
+      })
     },
     { timeout: 60000 }
   )
@@ -6952,6 +7294,7 @@ export async function promoteGroupMemberToAdmin(
     include: {
       members: { where: { id: memberId } },
       admins: { where: { id: ctx.user.sub } },
+      permissions: true,
     },
   })
 
@@ -6964,28 +7307,62 @@ export async function promoteGroupMemberToAdmin(
     return false
   }
 
-  await ctx.prisma.$transaction(async (prisma) => {
-    // disconnect the member from the members and add them to the admins
-    await prisma.userGroup.update({
-      where: { id: groupId },
-      data: {
-        members: { disconnect: { id: memberId } },
-        admins: { connect: { id: memberId } },
-      },
-    })
+  const targets = permissionTargetIds(group.permissions)
+  await runInAuditTransaction(
+    ctx.prisma,
+    async (prisma, auditTx) => {
+      const beforePermissions = await loadAssessmentLecturerPermissionState({
+        tx: prisma,
+        ...targets,
+        subjectUserIds: [memberId],
+      })
+      // disconnect the member from the members and add them to the admins
+      const updatedGroup = await prisma.userGroup.update({
+        where: { id: groupId },
+        data: {
+          members: { disconnect: { id: memberId } },
+          admins: { connect: { id: memberId } },
+        },
+        include: { permissions: true },
+      })
 
-    // create an audit log entry
-    await prisma.auditLogEntry.create({
-      data: {
-        type: DB.AuditLogType.USER_GROUP_USER_MODIFIED,
-        objectType: DB.ObjectType.USER_GROUP,
-        objectId: String(group.id),
-        sourceUserId: ctx.user.sub,
-        targetUserId: memberId,
-        message: `User promoted from member to admin.`,
-      },
-    })
-  })
+      // Recompute derived access before taking the after snapshot.
+      await recomputePermissionsUserGroupMember(
+        { permissions: updatedGroup.permissions, userId: memberId },
+        prisma
+      )
+
+      // create an audit log entry
+      await prisma.auditLogEntry.create({
+        data: {
+          type: DB.AuditLogType.USER_GROUP_USER_MODIFIED,
+          objectType: DB.ObjectType.USER_GROUP,
+          objectId: String(group.id),
+          sourceUserId: ctx.user.sub,
+          targetUserId: memberId,
+          message: `User promoted from member to admin.`,
+        },
+      })
+
+      const afterPermissions = await loadAssessmentLecturerPermissionState({
+        tx: prisma,
+        ...targets,
+        subjectUserIds: [memberId],
+      })
+      await emitAssessmentLecturerPermissionChanges({
+        tx: prisma,
+        auditTx,
+        operation: assessmentAuditUserOperation({
+          userId: ctx.user.sub,
+          requiredPermission: 'ADMIN',
+        }),
+        before: beforePermissions,
+        after: afterPermissions,
+        operationSuffix: 'group-member-promoted',
+      })
+    },
+    { timeout: 60000 }
+  )
 
   return true
 }
@@ -6998,6 +7375,7 @@ export async function demoteGroupAdminToMember(
     where: { id: groupId },
     include: {
       admins: true,
+      permissions: true,
     },
   })
 
@@ -7011,28 +7389,62 @@ export async function demoteGroupAdminToMember(
     return false
   }
 
-  await ctx.prisma.$transaction(async (prisma) => {
-    // disconnect the admin from the admins and add them to the members
-    await prisma.userGroup.update({
-      where: { id: groupId },
-      data: {
-        admins: { disconnect: { id: adminId } },
-        members: { connect: { id: adminId } },
-      },
-    })
+  const targets = permissionTargetIds(group.permissions)
+  await runInAuditTransaction(
+    ctx.prisma,
+    async (prisma, auditTx) => {
+      const beforePermissions = await loadAssessmentLecturerPermissionState({
+        tx: prisma,
+        ...targets,
+        subjectUserIds: [adminId],
+      })
+      // disconnect the admin from the admins and add them to the members
+      const updatedGroup = await prisma.userGroup.update({
+        where: { id: groupId },
+        data: {
+          admins: { disconnect: { id: adminId } },
+          members: { connect: { id: adminId } },
+        },
+        include: { permissions: true },
+      })
 
-    // create an audit log entry
-    await prisma.auditLogEntry.create({
-      data: {
-        type: DB.AuditLogType.USER_GROUP_USER_MODIFIED,
-        objectType: DB.ObjectType.USER_GROUP,
-        objectId: String(group.id),
-        sourceUserId: ctx.user.sub,
-        targetUserId: adminId,
-        message: `User demoted from admin to member.`,
-      },
-    })
-  })
+      // Recompute derived access before taking the after snapshot.
+      await recomputePermissionsUserGroupMember(
+        { permissions: updatedGroup.permissions, userId: adminId },
+        prisma
+      )
+
+      // create an audit log entry
+      await prisma.auditLogEntry.create({
+        data: {
+          type: DB.AuditLogType.USER_GROUP_USER_MODIFIED,
+          objectType: DB.ObjectType.USER_GROUP,
+          objectId: String(group.id),
+          sourceUserId: ctx.user.sub,
+          targetUserId: adminId,
+          message: `User demoted from admin to member.`,
+        },
+      })
+
+      const afterPermissions = await loadAssessmentLecturerPermissionState({
+        tx: prisma,
+        ...targets,
+        subjectUserIds: [adminId],
+      })
+      await emitAssessmentLecturerPermissionChanges({
+        tx: prisma,
+        auditTx,
+        operation: assessmentAuditUserOperation({
+          userId: ctx.user.sub,
+          requiredPermission: 'ADMIN',
+        }),
+        before: beforePermissions,
+        after: afterPermissions,
+        operationSuffix: 'group-admin-demoted',
+      })
+    },
+    { timeout: 60000 }
+  )
 
   return true
 }
@@ -7051,6 +7463,7 @@ export async function removeUserFromGroup(
     include: {
       members: { where: { id: userId } },
       admins: true,
+      permissions: true,
     },
   })
 
@@ -7067,8 +7480,15 @@ export async function removeUserFromGroup(
     return false
   }
 
-  await ctx.prisma.$transaction(
-    async (prisma) => {
+  const targets = permissionTargetIds(group.permissions)
+  await runInAuditTransaction(
+    ctx.prisma,
+    async (prisma, auditTx) => {
+      const beforePermissions = await loadAssessmentLecturerPermissionState({
+        tx: prisma,
+        ...targets,
+        subjectUserIds: [userId],
+      })
       // disconnect the member from the members and admins
       const updatedUserGroup = await prisma.userGroup.update({
         where: { id: groupId },
@@ -7098,6 +7518,23 @@ export async function removeUserFromGroup(
         { permissions: updatedUserGroup.permissions, userId },
         prisma
       )
+
+      const afterPermissions = await loadAssessmentLecturerPermissionState({
+        tx: prisma,
+        ...targets,
+        subjectUserIds: [userId],
+      })
+      await emitAssessmentLecturerPermissionChanges({
+        tx: prisma,
+        auditTx,
+        operation: assessmentAuditUserOperation({
+          userId: ctx.user.sub,
+          requiredPermission: 'ADMIN',
+        }),
+        before: beforePermissions,
+        after: afterPermissions,
+        operationSuffix: 'group-member-removed',
+      })
     },
     { timeout: 60000 }
   )
@@ -7152,6 +7589,8 @@ export async function transferGroupOwnership(
     where: { id },
     include: {
       admins: { where: { id: newOwnerId } },
+      permissions: true,
+      members: true,
     },
   })
 
@@ -7164,7 +7603,19 @@ export async function transferGroupOwnership(
     return false
   }
 
-  await ctx.prisma.$transaction(async (prisma) => {
+  const targets = permissionTargetIds(userGroup.permissions)
+  const affectedUserIds = [
+    userGroup.ownerId,
+    newOwnerId,
+    ctx.user.sub,
+    ...userGroup.members.map((member) => member.id),
+  ]
+  await runInAuditTransaction(ctx.prisma, async (prisma, auditTx) => {
+    const beforePermissions = await loadAssessmentLecturerPermissionState({
+      tx: prisma,
+      ...targets,
+      subjectUserIds: affectedUserIds,
+    })
     // check if the owner already has an user group with the same name -> potential issues with uniqueness
     let groupName = userGroup.name
     let counter = 0
@@ -7218,6 +7669,23 @@ export async function transferGroupOwnership(
         message: `User group ownership transferred to group admin.`,
       },
     })
+
+    const afterPermissions = await loadAssessmentLecturerPermissionState({
+      tx: prisma,
+      ...targets,
+      subjectUserIds: affectedUserIds,
+    })
+    await emitAssessmentLecturerPermissionChanges({
+      tx: prisma,
+      auditTx,
+      operation: assessmentAuditUserOperation({
+        userId: ctx.user.sub,
+        requiredPermission: 'OWNER',
+      }),
+      before: beforePermissions,
+      after: afterPermissions,
+      operationSuffix: 'group-owner-transfer',
+    })
   })
 
   return true
@@ -7247,6 +7715,7 @@ export async function addUserToUserGroup(
     include: {
       members: true,
       admins: true,
+      permissions: true,
     },
   })
 
@@ -7266,8 +7735,15 @@ export async function addUserToUserGroup(
     return null
   }
 
-  await ctx.prisma.$transaction(
-    async (prisma) => {
+  const targets = permissionTargetIds(userGroup.permissions)
+  await runInAuditTransaction(
+    ctx.prisma,
+    async (prisma, auditTx) => {
+      const beforePermissions = await loadAssessmentLecturerPermissionState({
+        tx: prisma,
+        ...targets,
+        subjectUserIds: [userId],
+      })
       // add the user to the group
       const updatedUserGroup = await prisma.userGroup.update({
         where: { id: groupId },
@@ -7297,6 +7773,23 @@ export async function addUserToUserGroup(
         { permissions: updatedUserGroup.permissions, userId },
         prisma
       )
+
+      const afterPermissions = await loadAssessmentLecturerPermissionState({
+        tx: prisma,
+        ...targets,
+        subjectUserIds: [userId],
+      })
+      await emitAssessmentLecturerPermissionChanges({
+        tx: prisma,
+        auditTx,
+        operation: assessmentAuditUserOperation({
+          userId: ctx.user.sub,
+          requiredPermission: 'ADMIN',
+        }),
+        before: beforePermissions,
+        after: afterPermissions,
+        operationSuffix: 'group-member-added',
+      })
     },
     { timeout: 60000 }
   )

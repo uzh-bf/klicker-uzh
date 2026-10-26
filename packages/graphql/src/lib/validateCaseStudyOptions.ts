@@ -7,9 +7,6 @@ function validateCaseStudyOptions(options?: ElementOptionsInput | null) {
     typeof options.hasSampleSolution !== 'boolean' ||
     options.hasSampleSolution === null
   ) {
-    console.error(
-      'Options and sample solution flag are required for case study questions'
-    )
     return false
   }
 
@@ -18,21 +15,16 @@ function validateCaseStudyOptions(options?: ElementOptionsInput | null) {
     typeof options.answerCollection !== 'number' ||
     options.answerCollection === null
   ) {
-    console.error(
-      'Answer collection needs to be specified for case study questions'
-    )
     return false
   }
 
   // items for case study need to be defined
   if (!options.collectionItemIds || options.collectionItemIds.length === 0) {
-    console.error('Items for case study need to be defined')
     return false
   }
 
   // criteria need to be defined with all requried fields
   if (!options.criteria || options.criteria.length === 0) {
-    console.error('Criteria for case study need to be defined')
     return false
   }
 
@@ -53,7 +45,6 @@ function validateCaseStudyOptions(options?: ElementOptionsInput | null) {
       typeof criterion.step !== 'number' ||
       criterion.step === null
     ) {
-      console.error('Criteria need to have a id, title, min, max and step size')
       return false
     }
 
@@ -67,14 +58,12 @@ function validateCaseStudyOptions(options?: ElementOptionsInput | null) {
         criterion.labels.max === null ||
         typeof criterion.labels.max === 'undefined')
     ) {
-      console.error('Criteria labels need to have a min and max value')
       return false
     }
   }
 
   // cases need to be defined with all required fields
   if (!options.cases || options.cases.length === 0) {
-    console.error('Cases for case study need to be defined')
     return false
   }
 
@@ -89,7 +78,6 @@ function validateCaseStudyOptions(options?: ElementOptionsInput | null) {
       typeof caseItem.order !== 'number' ||
       caseItem.order === null
     ) {
-      console.error('Cases need to have a title and description')
       return false
     }
   }
@@ -108,9 +96,6 @@ function validateCaseStudyOptions(options?: ElementOptionsInput | null) {
             Object.keys(solutions.criteriaSolutions).length !== criteria.length
         )
       ) {
-        console.error(
-          'All items and criteria need to have well-defined solutions'
-        )
         return false
       }
 
@@ -118,14 +103,12 @@ function validateCaseStudyOptions(options?: ElementOptionsInput | null) {
       for (const solution of caseItem.solutions) {
         // itemId in solution needs to be valid
         if (!items.includes(solution.itemId)) {
-          console.error('Item id in solution is not valid')
           return false
         }
 
         // check if the solutions are defined for valid criteria only and the values are valid
         for (const criterionSolution of solution.criteriaSolutions) {
           if (!criterionIds.includes(criterionSolution.criterionId)) {
-            console.error('Criterion id in solution is not valid')
             return false
           }
 
@@ -136,7 +119,6 @@ function validateCaseStudyOptions(options?: ElementOptionsInput | null) {
             criterionSolution.max === null ||
             criterionSolution.min > criterionSolution.max
           ) {
-            console.error('Solution needs to have a min and max value')
             return false
           }
         }

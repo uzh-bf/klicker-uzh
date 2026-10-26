@@ -15,9 +15,10 @@ import {
   signChatGuestToken,
   verifyLtiToken,
 } from '@/src/lib/server/ltiGuest'
+import { createLoggedRoute } from '@/src/lib/server/requestLogging'
 import { signPwaEmbedSessionToken } from '@/src/lib/server/pwaEmbed'
-
-const LOG_PREFIX = '[chat:auth/lti]'
+import type { AppLogger } from '@klicker-uzh/logging/node'
+import { toSafeError } from '@klicker-uzh/logging/node'
 
 const querySchema = z.object({
   jwt: z.string().min(1),
@@ -57,7 +58,11 @@ function launchResponse(destination: URL) {
   )
 }
 
-export async function GET(req: NextRequest) {
+export async function handleGET(
+  req: NextRequest,
+  _context: unknown,
+  log: AppLogger
+) {
   const { searchParams } = req.nextUrl
 
   const queryResult = querySchema.safeParse({
@@ -67,10 +72,9 @@ export async function GET(req: NextRequest) {
   })
 
   if (!queryResult.success) {
-    console.error(
-      LOG_PREFIX,
-      'Invalid query params:',
-      queryResult.error.flatten()
+    log.warn(
+      { event: 'auth.lti.query.rejected' },
+      'Missing or invalid LTI auth query parameters'
     )
     return NextResponse.json(
       {
@@ -85,8 +89,14 @@ export async function GET(req: NextRequest) {
   let ltiPayload: Awaited<ReturnType<typeof verifyLtiToken>>
   try {
     ltiPayload = await verifyLtiToken(jwt)
-  } catch (error) {
-    console.error(LOG_PREFIX, 'LTI JWT verification failed:', error)
+  } catch {
+    log.warn(
+      {
+        event: 'auth.lti.token.rejected',
+        err: toSafeError('LTI JWT verification failed'),
+      },
+      'LTI JWT verification failed'
+    )
     return noLoginRedirect(chatbotId)
   }
 
@@ -227,8 +237,14 @@ export async function GET(req: NextRequest) {
   let chatGuestToken: string
   try {
     chatGuestToken = await signChatGuestToken(decision.participantId!)
-  } catch (error) {
-    console.error(LOG_PREFIX, 'Failed to sign chat guest token:', error)
+  } catch {
+    log.error(
+      {
+        event: 'auth.lti.token.sign_failed',
+        err: toSafeError('Failed to sign chat guest token'),
+      },
+      'Failed to sign chat guest token'
+    )
     return NextResponse.json(
       { error: 'Failed to create guest session' },
       { status: 500 }
@@ -268,3 +284,5 @@ export async function GET(req: NextRequest) {
 
   return response
 }
+
+export const GET = createLoggedRoute('/auth/lti', handleGET)

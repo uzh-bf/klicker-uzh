@@ -1,3 +1,10 @@
+import {
+  createCipheriv,
+  createDecipheriv,
+  createHash,
+  randomBytes,
+  randomUUID,
+} from 'node:crypto'
 import type {
   AccessTokenRecord,
   DatabaseManager,
@@ -7,14 +14,8 @@ import type {
   PlatformFilter,
   PlatformRecord,
 } from 'ltijs'
-import {
-  createCipheriv,
-  createDecipheriv,
-  createHash,
-  randomBytes,
-  randomUUID,
-} from 'node:crypto'
 import pg from 'pg'
+import { logger } from './logger.js'
 
 // Lifetimes of the short-lived records, matching ltijs's MongoDB adapter.
 const ACCESS_TOKEN_TTL = '1 hour'
@@ -73,7 +74,7 @@ export class PostgresDatabaseManager implements DatabaseManager {
     // a listener that would exit the process. pg discards the client and the
     // next query reconnects.
     this.pool.on('error', (error) => {
-      console.error(`LTI database idle client error: ${error.message}`)
+      logger.error({ event: 'lti.database.idle_client_error', err: error })
     })
     this.key = createHash('sha256').update(encryptionKey).digest()
   }

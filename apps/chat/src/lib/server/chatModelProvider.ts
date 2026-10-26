@@ -5,6 +5,7 @@ import {
   assertEvaluationRouting,
   createOpenAIFetch,
 } from '@/src/lib/server/openaiCachePolicy'
+import { getRouteLogger } from '@/src/lib/server/requestLogging'
 import type { ChatModelConfig } from './chatModelRegistry'
 
 export type ChatModelRouting = {
@@ -37,10 +38,10 @@ export function getChatModel(chatbot: Chatbot, modelConfig: ChatModelConfig) {
     try {
       apiKey = safeDecrypt(chatbot.openaiApiKey!)
     } catch (error) {
-      console.error('Failed to decrypt API key for chatbot:', {
-        chatbotId: chatbot.id,
-        error,
-      })
+      getRouteLogger().error(
+        { event: 'chat.provider.key_decryption.failed' },
+        'Failed to decrypt API key for chatbot'
+      )
       throw new Error(`Failed to decrypt API key for chatbot ${chatbot.id}`)
     }
   }
