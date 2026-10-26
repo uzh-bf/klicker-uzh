@@ -231,3 +231,97 @@ describe('persisted assistant content', () => {
     ])
   })
 })
+
+describe('Python argument retention', () => {
+  test('bounds rejected multibyte arguments without changing other tools', () => {
+    const oversized = { code: 'é'.repeat(8193) }
+    const content = mapAssistantStepContent([
+      {
+        content: [
+          {
+            type: 'tool-call',
+            toolCallId: 'python',
+            toolName: 'run_python',
+            input: oversized,
+          },
+          {
+            type: 'tool-result',
+            toolCallId: 'python',
+            toolName: 'run_python',
+            output: { kind: 'invalid_input' },
+          },
+          {
+            type: 'tool-call',
+            toolCallId: 'other',
+            toolName: 'existing_tool',
+            input: oversized,
+          },
+        ],
+      },
+    ])
+    expect(content[0]).toMatchObject({
+      args: { rejected: 'invalid_input' },
+      result: { kind: 'invalid_input' },
+    })
+    expect(content[1]).toMatchObject({ args: oversized })
+  })
+
+  test('preserves bounded executed code and typed Python failure on reload', () => {
+    const input = { code: 'raise ValueError()' }
+    const output = {
+      kind: 'execution',
+      status: 'failed',
+      exitCode: 1,
+      stdout: { text: '', truncated: false },
+      stderr: { text: 'ValueError', truncated: false },
+      filesOmitted: false,
+    }
+    const content = mapAssistantStepContent([
+      {
+        content: [
+          {
+            type: 'tool-call',
+            toolCallId: 'python',
+            toolName: 'run_python',
+            input,
+          },
+          {
+            type: 'tool-result',
+            toolCallId: 'python',
+            toolName: 'run_python',
+            output,
+          },
+        ],
+      },
+    ])
+    expect(content).toEqual([
+      {
+        type: 'tool-call',
+        toolCallId: 'python',
+        toolName: 'run_python',
+        args: input,
+        result: output,
+      },
+    ])
+    const rejected = mapAssistantStepContent([
+      {
+        content: [
+          {
+            type: 'tool-error',
+            toolCallId: 'invalid',
+            toolName: 'run_python',
+            input: {
+              code: 'a'.repeat(16385),
+              credential: 'synthetic-forbidden-field',
+            },
+          },
+        ],
+      },
+    ])
+    expect(rejected[0]).toMatchObject({
+      args: { rejected: 'invalid_input' },
+      result: 'Tool execution failed',
+      isError: true,
+    })
+  })
+})

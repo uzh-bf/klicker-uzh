@@ -1,4 +1,5 @@
 import { SAFE_TOOL_ERROR } from '../toolOutput'
+import { persistedCodeApiInput } from './codeapiTool'
 
 export type PersistedAssistantContentPart =
   | { type: 'text'; text: string }
@@ -60,7 +61,7 @@ export function mapAssistantStepContent(
           type: 'tool-call' as const,
           toolCallId: part.toolCallId,
           toolName: part.toolName,
-          args: part.input,
+          args: persistedCodeApiInput(part.toolName, part.input),
         }
         content.push(nextToolCall)
         toolCallIndexById.set(nextToolCall.toolCallId, content.length - 1)
@@ -95,7 +96,10 @@ export function mapAssistantStepContent(
           type: 'tool-call' as const,
           toolCallId: part.toolCallId,
           toolName: part.toolName,
-          args: part.type === 'tool-error' ? (part.input ?? {}) : {},
+          args: persistedCodeApiInput(
+            part.toolName,
+            part.type === 'tool-error' ? (part.input ?? {}) : {}
+          ),
           result,
           ...(isError ? { isError: true } : {}),
         }

@@ -17,6 +17,7 @@ const mocks = vi.hoisted(() => ({
   threadUpdate: vi.fn(),
   transaction: vi.fn(),
   getAggregatedMCPTools: vi.fn(),
+  withCodeApiTool: vi.fn(),
   createThread: vi.fn(),
   findFailedTurnThreadId: vi.fn(),
   deleteThread: vi.fn(),
@@ -79,6 +80,12 @@ vi.mock('@klicker-uzh/prisma', () => ({
 vi.mock('@/src/services/mcpClients', () => ({
   getAggregatedMCPTools: mocks.getAggregatedMCPTools,
 }))
+
+vi.mock('@/src/lib/server/codeapiTool', async (importOriginal) => {
+  const actual =
+    await importOriginal<typeof import('../src/lib/server/codeapiTool')>()
+  return { ...actual, withCodeApiTool: mocks.withCodeApiTool }
+})
 
 vi.mock('@/src/services/threads', () => ({
   ThreadService: {
@@ -311,6 +318,7 @@ describe('account usage chat route', () => {
     })
     mocks.chatbotFindUnique.mockResolvedValue(chatbot())
     mocks.getAggregatedMCPTools.mockResolvedValue({})
+    mocks.withCodeApiTool.mockImplementation((_context, tools) => tools)
     mocks.claimChatTurn.mockResolvedValue({
       outcome: 'claimed',
       lifecycleAttemptId: '00000000-0000-4000-8000-000000000001',
@@ -515,7 +523,22 @@ describe('account usage chat route', () => {
     })
     expect(mocks.streamText).not.toHaveBeenCalled()
     expect(mocks.getAggregatedMCPTools).not.toHaveBeenCalled()
+    expect(mocks.withCodeApiTool).not.toHaveBeenCalled()
     expect(mocks.getUserCredits).not.toHaveBeenCalled()
+  })
+
+  test('does not create code tools when chatbot access is denied', async () => {
+    mocks.withChatbotAuth.mockResolvedValueOnce({
+      response: Response.json({ error: 'forbidden' }, { status: 403 }),
+    })
+
+    const response = await POST(createRequest(), {
+      params: Promise.resolve({ chatbotId: 'chatbot-1' }),
+    })
+
+    expect(response.status).toBe(403)
+    expect(mocks.withCodeApiTool).not.toHaveBeenCalled()
+    expect(mocks.claimChatTurn).not.toHaveBeenCalled()
   })
 
   test('allows participant model use when an approved owner opts out of beta', async () => {
@@ -529,6 +552,34 @@ describe('account usage chat route', () => {
 
     expect(response.status).toBe(200)
     expect(mocks.streamText).toHaveBeenCalledOnce()
+  })
+
+  test('adds code tools after access and turn admission with request context', async () => {
+    const request = createRequest({ selectedMode: 'Tutor' })
+
+    const response = await POST(request, {
+      params: Promise.resolve({ chatbotId: 'chatbot-1' }),
+    })
+
+    expect(response.status).toBe(200)
+    expect(mocks.withCodeApiTool).toHaveBeenCalledWith(
+      {
+        chatMode: 'tutor',
+        chatbotId: 'chatbot-1',
+        participantId: 'participant-1',
+        abortSignal: request.signal,
+      },
+      expect.objectContaining({ calculate: expect.anything() })
+    )
+    expect(mocks.withChatbotAuth.mock.invocationCallOrder[0]).toBeLessThan(
+      mocks.withCodeApiTool.mock.invocationCallOrder[0]
+    )
+    expect(mocks.claimChatTurn.mock.invocationCallOrder[0]).toBeLessThan(
+      mocks.withCodeApiTool.mock.invocationCallOrder[0]
+    )
+    expect(mocks.streamConfig?.tools).toBe(
+      mocks.withCodeApiTool.mock.results[0]?.value
+    )
   })
 
   test('rejects a completed assistant key before MCP or provider work', async () => {
@@ -548,6 +599,7 @@ describe('account usage chat route', () => {
     })
     expect(mocks.getAggregatedMCPTools).not.toHaveBeenCalled()
     expect(mocks.isChatAccountUsageAvailable).toHaveBeenCalledOnce()
+    expect(mocks.withCodeApiTool).not.toHaveBeenCalled()
     expect(mocks.streamText).not.toHaveBeenCalled()
   })
 
@@ -568,6 +620,7 @@ describe('account usage chat route', () => {
     })
     expect(mocks.getAggregatedMCPTools).not.toHaveBeenCalled()
     expect(mocks.ensureImagePreviewBase64).not.toHaveBeenCalled()
+    expect(mocks.withCodeApiTool).not.toHaveBeenCalled()
     expect(mocks.streamText).not.toHaveBeenCalled()
   })
 
@@ -650,6 +703,7 @@ describe('account usage chat route', () => {
       'chatbot-1'
     )
     expect(mocks.getAggregatedMCPTools).not.toHaveBeenCalled()
+    expect(mocks.withCodeApiTool).not.toHaveBeenCalled()
     expect(mocks.streamText).not.toHaveBeenCalled()
   })
 
@@ -671,6 +725,7 @@ describe('account usage chat route', () => {
     })
     expect(mocks.ensureImagePreviewBase64).not.toHaveBeenCalled()
     expect(mocks.getAggregatedMCPTools).not.toHaveBeenCalled()
+    expect(mocks.withCodeApiTool).not.toHaveBeenCalled()
     expect(mocks.threadFindFirst).not.toHaveBeenCalled()
     expect(mocks.streamText).not.toHaveBeenCalled()
   })

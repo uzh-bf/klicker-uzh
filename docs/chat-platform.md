@@ -1310,3 +1310,48 @@ grading, and util once before the four suites because
 import ([Testing](./testing.md)).
 
 > **Do not run `pnpm --filter @klicker-uzh/chat check` while the devcontainer dev stack is up.** `check` is `next typegen && tsc --noEmit`, and typegen rewrites the same `.next/` the running dev server owns: from the next `✓ Compiled` line onward every chat route returns a bare Next 404 with nothing in `/tmp/dev.log`, including routes that just served 200. It is not a code bug — restart with `devrouter ensure .` from the host. Typecheck before the browser pass, not during it.
+
+## Tutor Python pilot
+
+`run_python` extends the participant Tutor tool set beside `calculate` for short
+procedures, statistics and small simulations. It is disabled by default. The
+server adds it only after the normal access and turn admission checks and only
+for an explicitly allowlisted chatbot. Preview and manage routes do not add it.
+The model supplies Python code only; identity, signing and execution policy stay
+on the server. Existing course tools, usage accounting and the five-step turn
+budget still apply.
+
+Set `CHAT_CODEAPI_ENABLED=true` and provide `CHAT_CODEAPI_PILOT_CHATBOT_IDS` as a
+JSON array of chatbot IDs to opt in. The remaining server-only settings are
+`CHAT_CODEAPI_BASE_URL`, `CHAT_CODEAPI_JWT_ISSUER`,
+`CHAT_CODEAPI_JWT_AUDIENCE`, `CHAT_CODEAPI_JWT_KEY_ID`,
+`CHAT_CODEAPI_JWT_PRIVATE_KEY` (a dedicated Ed25519 PKCS8 PEM), and
+`CHAT_CODEAPI_TENANT_ID`. Invalid or incomplete settings omit the tool. The base
+URL must be an HTTPS origin or an internal Kubernetes service HTTP origin;
+credentials, paths, queries and fragments are rejected. The configuration is
+rechecked at execution. Provision the dedicated issuer/key trust entry and
+network policy through the service owners before activating a pilot. Never
+reuse a participant token, MCP credential or `APP_SECRET` as the signing key.
+
+One admitted turn can dispatch one Python request, with no automatic retry.
+Requests use the default execution profile, no input files and a five-second
+guest runtime cap. A separate thirty-second transport deadline propagates Stop
+and caller cancellation, but does not prove remote guest termination. A newly
+admitted regeneration is a new turn attempt; the adapter makes no durable
+exactly-once guarantee after a crash or failed finalization.
+
+Code input is limited to 16 KiB UTF-8; response reading to 128 KiB; stdout and
+stderr to 16 KiB each with explicit truncation flags. The existing generic tool
+display and conversation persistence carry code and bounded typed results.
+Rejected or oversized Python arguments persist only a rejection marker; raw
+model argument deltas in the live stream retain the existing model-output
+budget. Python failure is a domain result rather than a generic tool error.
+Missing exit status is reported as unknown, never inferred as success. Session
+and file references and raw transport error bodies are not returned to the
+model or stored as results. Generated files are not displayed. No logs or trace
+fields are added for code, outputs, credentials or participant identity.
+
+Local callback, route and deterministic SDK tests use generated signing keys
+and synthetic fake responses. They establish source-level integration only.
+Deployed trust, real Python, provider tool selection and browser Stop/reload
+require separate pilot acceptance before production activation.

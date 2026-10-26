@@ -50,6 +50,7 @@ import {
   getParticipantFallbackModelId,
 } from '@/src/lib/server/chatModelRegistry'
 import { withModelCitationIndices } from '@/src/lib/server/citationInstructions'
+import { withCodeApiTool } from '@/src/lib/server/codeapiTool'
 import {
   resolveEffectiveChatModeOptions,
   resolveEffectiveMCPConfigurations,
@@ -1210,7 +1211,15 @@ export async function POST(
     const toolNames = Object.keys(mcpTools || {})
     // The calculator is added after the system prompt inputs are fixed, so
     // course grounding and citation rules still see only course tools.
-    const chatTools = withCalculatorTool(selectedMode, mcpTools)
+    const chatTools = withCodeApiTool(
+      {
+        chatMode: selectedMode,
+        chatbotId,
+        participantId,
+        abortSignal: req.signal,
+      },
+      withCalculatorTool(selectedMode, mcpTools)
+    )
     const docQueryToolName = toolNames.find(isDocQueryToolName)
     const quizzerDocQueryToolName =
       selectedMode === 'quizzer' ? docQueryToolName : undefined
