@@ -1,0 +1,403 @@
+# Source preparation only: native admission stays disabled until qualification passes.
+version: 1
+aliases:
+  chat:
+    profiles:
+      - chat
+      - ai
+      - mcp
+  full:
+    profiles:
+      - full
+bindings:
+  apps:
+    api:
+      - api
+    auth:
+      - auth
+    pwa:
+      - pwa
+    chat:
+      - chat
+    manage:
+      - manage
+    control:
+      - control
+    response-api:
+      - response-api
+    lti:
+      - lti
+    olat-api:
+      - olat-api
+    blob:
+      - azurite
+    db:
+      - postgres
+    oidc:
+      - oidc
+  dependencies: {}
+  services:
+    postgres:
+      - postgres
+    hatchet:
+      - hatchet
+      - hatchet-config
+    azurite:
+      - azurite
+    redis_exec:
+      - redis-exec
+    redis_assessment:
+      - redis-assessment
+    redis_cache:
+      - redis-cache
+    litellm:
+      - litellm
+    mailhog:
+      - mailhog
+    mcp_postgres:
+      - mcp-db
+    oidc:
+      - oidc
+  processes:
+    klicker-dev: []
+    klicker-local-mcp:
+      - local-mcp
+resources:
+  postgres:
+    kind: postgres
+  hatchet-db:
+    kind: postgres
+  redis-exec:
+    kind: redis
+  redis-assessment:
+    kind: redis
+  redis-cache:
+    kind: redis
+  mcp-db:
+    kind: postgres
+  db-bootstrap:
+    kind: job
+    build:
+      context: .
+      dockerfile: deploy/northflank/Dockerfile.fixtures
+    dependsOn:
+      - postgres
+    command:
+      - node
+      - /app/deploy/northflank/bootstrap.mjs
+      - bootstrap
+  fixtures:
+    kind: job
+    build:
+      context: .
+      dockerfile: deploy/northflank/Dockerfile.fixtures
+    dependsOn:
+      - db-bootstrap
+    command:
+      - node
+      - /app/deploy/northflank/bootstrap.mjs
+      - fixtures
+  hatchet-init:
+    kind: job
+    image: postgres@sha256:b8faeff7712663c2773a190181e1246e37e364b887611c04658c28b44e2408fe
+    dependsOn:
+      - hatchet-db
+    command:
+      - /bin/sh
+      - -c
+      - |
+        set -eu
+        if [ "$PGDATABASE" != hatchet ]; then printf '%s\n' HATCHET_INIT_DBNAME_MISMATCH; exit 1; fi
+        if diagnostic=$(timeout 30 psql --no-psqlrc --quiet --set ON_ERROR_STOP=1 --set VERBOSITY=sqlstate 2>&1 <<'SQL'
+        \getenv runtime_role RUNTIME_USER
+        \getenv runtime_password RUNTIME_PASSWORD
+        \getenv target_database PGDATABASE
+        SET statement_timeout = '5s';
+        BEGIN;
+        \echo HATCHET_INIT_LOCK
+        SELECT pg_try_advisory_xact_lock(1885973302, 1) AS locked \gset
+        \if :locked
+        \else
+          DO $$BEGIN RAISE EXCEPTION 'Hatchet initialization refused'; END$$;
+        \endif
+        \echo HATCHET_INIT_FRESH
+        SELECT current_database() = 'hatchet'
+          AND current_user = session_user
+          AND EXISTS (SELECT 1 FROM pg_roles r JOIN pg_database d ON d.datname=current_database() WHERE r.rolname=current_user AND r.rolcreaterole AND r.rolcreatedb AND pg_has_role(r.oid,d.datdba,'MEMBER'))
+          AND NOT EXISTS (SELECT 1 FROM pg_class c JOIN pg_namespace n ON n.oid = c.relnamespace WHERE n.nspname = 'public' AND c.relkind IN ('r','p','v','m','S','f'))
+          AND NOT EXISTS (SELECT 1 FROM pg_roles WHERE rolname = :'runtime_role') AS fresh \gset
+        \if :fresh
+        \else
+          DO $$BEGIN RAISE EXCEPTION 'Hatchet initialization refused'; END$$;
+        \endif
+        \echo HATCHET_INIT_ROLE
+        CREATE ROLE :"runtime_role" LOGIN PASSWORD :'runtime_password' NOSUPERUSER NOCREATEDB NOCREATEROLE NOREPLICATION NOBYPASSRLS;
+        GRANT :"runtime_role" TO CURRENT_USER WITH INHERIT TRUE, SET TRUE;
+        \echo HATCHET_INIT_OWNER
+        ALTER DATABASE :"target_database" OWNER TO :"runtime_role";
+        \echo HATCHET_INIT_SCHEMA
+        ALTER SCHEMA public OWNER TO :"runtime_role";
+        COMMIT;
+        SQL
+        ); then
+          :
+        else
+          init_exit=$?
+          printf '%s\n' HATCHET_INIT_FAILED
+          printf 'HATCHET_INIT_EXIT_%s\n' "$init_exit"
+          if ! printf %s "$diagnostic" | grep -q HATCHET_INIT_LOCK; then printf '%s\n' HATCHET_INIT_CONNECT_OR_TIMEOUT; fi
+          for stage in LOCK FRESH ROLE OWNER SCHEMA; do
+            if printf %s "$diagnostic" | grep -q "HATCHET_INIT_$stage"; then printf 'HATCHET_INIT_REACHED_%s\n' "$stage"; fi
+          done
+          for state in 42501 42710 42P01 28P01 3D000 57014 P0001; do
+            if printf %s "$diagnostic" | grep -q "$state"; then printf 'HATCHET_INIT_SQLSTATE_%s\n' "$state"; fi
+          done
+          exit 1
+        fi
+        if result=$(PGUSER="$RUNTIME_USER" PGPASSWORD="$RUNTIME_PASSWORD" timeout 5 psql --no-psqlrc -At --set ON_ERROR_STOP=1 --command "SELECT current_database()='hatchet' AND d.datdba=r.oid AND has_database_privilege(current_user,current_database(),'CREATE') AND has_schema_privilege(current_user,'public','CREATE') AND NOT (r.rolsuper OR r.rolcreatedb OR r.rolcreaterole OR r.rolreplication OR r.rolbypassrls) FROM pg_roles r JOIN pg_database d ON d.datname=current_database() WHERE r.rolname=current_user" 2>/dev/null); then
+          if [ "$result" != t ]; then printf '%s\n' HATCHET_VERIFY_PREDICATE_FAILED; exit 1; fi
+        else
+          verify_exit=$?
+          printf '%s\n' HATCHET_VERIFY_FAILED
+          printf 'HATCHET_VERIFY_EXIT_%s\n' "$verify_exit"
+          exit 1
+        fi
+        printf '%s\n' HATCHET_DB_OWNER_READY
+  hatchet:
+    kind: service
+    image: ghcr.io/hatchet-dev/hatchet/hatchet-lite-dev@sha256:7dfc696a6f2e45f510002ac395f110f404e2207fb867b4e8d4412ae31ceb1ee5
+    dependsOn:
+      - hatchet-db
+      - hatchet-init
+    command:
+      - /bin/bash
+      - -c
+      - 'set -eu; [ "$(printf %s "$PASSWORD" | wc -c)" -eq 64 ]; case "$PASSWORD" in *[!0-9a-f]*) exit 1;; esac; export DATABASE_URL="postgresql://hatchet_runtime:$PASSWORD@$DB_HOST:$DB_PORT/hatchet?sslmode=require"; set -eu; echo HATCHET_STAGE_MIGRATE; if migrate_diagnostic=$(./hatchet-migrate 2>&1); then :; else echo HATCHET_MIGRATE_FAILED; for term in authentication permission certificate connection extension schema timeout database role; do if printf %s "$migrate_diagnostic" | grep -qi "$term"; then echo "HATCHET_MIGRATE_CATEGORY_$term"; fi; done; exit 1; fi; echo HATCHET_STAGE_CONFIG; ./hatchet-admin quickstart --skip certs --generated-config-dir ./config --overwrite=false >/dev/null 2>&1; echo HATCHET_STAGE_TOKEN; if [ ! -s ./config/authdisabled-token ]; then ./hatchet-admin token create --config ./config --name authdisabled-default > ./config/authdisabled-token 2>/dev/null; fi; echo HATCHET_STAGE_SERVER; exec ./hatchet-lite --config ./config'
+    ports:
+      - name: http
+        port: 8888
+        public: false
+      - name: grpc
+        port: 7077
+        public: false
+  hatchet-config:
+    kind: volume
+    dependsOn:
+      - hatchet
+  azurite:
+    kind: service
+    image: mcr.microsoft.com/azure-storage/azurite@sha256:76b8127d608fab8287a14a4bfeb9a5502cdcffb4bf1e86f09f324ebb0e70edba
+    ports:
+      - name: blob
+        port: 10000
+        public: true
+  litellm:
+    kind: service
+    image: ghcr.io/berriai/litellm-database@sha256:80e5e92bdcca246cd4153d451e5f75b65e19c7e39c46cc88a38bed4b65cc5836
+    ports:
+      - name: http
+        port: 4000
+        public: false
+  mailhog:
+    kind: service
+    image: mailhog/mailhog@sha256:8d76a3d4ffa32a3661311944007a415332c4bb855657f4f6c57996405c009bea
+    ports:
+      - name: smtp
+        port: 1025
+        public: false
+      - name: http
+        port: 8025
+        public: false
+  oidc:
+    kind: service
+    image: ghcr.io/navikt/mock-oauth2-server@sha256:d1ab58574b6fd50e27575bb1626db4d1bc5cb91d797d6efc61951d79789e969d
+    ports:
+      - name: http
+        port: 8080
+        public: true
+  api:
+    kind: service
+    build:
+      context: .
+      dockerfile: apps/backend-docker/Dockerfile
+    dependsOn:
+      - fixtures
+      - hatchet
+      - redis-exec
+      - redis-assessment
+      - redis-cache
+      - azurite
+    ports:
+      - name: http
+        port: 3000
+        public: true
+  auth:
+    kind: service
+    build:
+      context: .
+      dockerfile: apps/auth/Dockerfile
+    dependsOn:
+      - api
+    ports:
+      - name: http
+        port: 3000
+        public: true
+  pwa:
+    kind: service
+    build:
+      context: .
+      dockerfile: apps/frontend-pwa/Dockerfile
+    dependsOn:
+      - api
+    ports:
+      - name: http
+        port: 3000
+        public: true
+  chat:
+    kind: service
+    build:
+      context: .
+      dockerfile: apps/chat/Dockerfile
+    dependsOn:
+      - api
+      - mcp-student
+    ports:
+      - name: http
+        port: 3000
+        public: true
+  manage:
+    kind: service
+    build:
+      context: .
+      dockerfile: apps/frontend-manage/Dockerfile
+    dependsOn:
+      - api
+      - mcp-lecturer
+    ports:
+      - name: http
+        port: 3000
+        public: true
+  control:
+    kind: service
+    build:
+      context: .
+      dockerfile: apps/frontend-control/Dockerfile
+    dependsOn:
+      - api
+      - worker-general
+      - worker-response
+    ports:
+      - name: http
+        port: 3000
+        public: true
+  response-api:
+    kind: service
+    build:
+      context: .
+      dockerfile: apps/response-api/Dockerfile
+    dependsOn:
+      - api
+    ports:
+      - name: http
+        port: 7078
+        public: true
+  lti:
+    kind: service
+    build:
+      context: .
+      dockerfile: apps/lti/Dockerfile
+    dependsOn:
+      - api
+    ports:
+      - name: http
+        port: 4000
+        public: true
+  olat-api:
+    kind: service
+    build:
+      context: .
+      dockerfile: apps/olat-api/Dockerfile
+    dependsOn:
+      - api
+    ports:
+      - name: http
+        port: 3000
+        public: true
+  mcp-lecturer:
+    kind: service
+    build:
+      context: .
+      dockerfile: apps/mcp-lecturer/Dockerfile
+    dependsOn:
+      - api
+      - mcp-db
+    ports:
+      - name: http
+        port: 7081
+        public: false
+  mcp-student:
+    kind: service
+    build:
+      context: .
+      dockerfile: apps/mcp-student/Dockerfile
+    dependsOn:
+      - api
+      - mcp-db
+    ports:
+      - name: http
+        port: 7080
+        public: false
+  local-mcp:
+    kind: service
+    build:
+      context: .
+      dockerfile: deploy/northflank/Dockerfile.fixtures
+    dependsOn:
+      - fixtures
+    command:
+      - node
+      - /app/apps/chat/scripts/local-mcp-server.mjs
+    ports:
+      - name: http
+        port: 1417
+        public: false
+  worker-general:
+    kind: service
+    build:
+      context: .
+      dockerfile: apps/hatchet-worker-general/Dockerfile
+    dependsOn:
+      - api
+      - hatchet
+  worker-response:
+    kind: service
+    build:
+      context: .
+      dockerfile: apps/hatchet-worker-response-processor/Dockerfile
+    dependsOn:
+      - api
+      - hatchet
+selection:
+  rules:
+    - paths:
+        - apps/chat/**
+      aliases:
+        - chat
+    - paths:
+        - packages/**
+        - apps/backend-docker/**
+        - apps/response-api/**
+        - apps/hatchet-worker-*/*
+      aliases:
+        - full
+  ignorePaths:
+    - docs/**
+    - project/**
+    - '**/*.md'
+  controlPaths:
+    - deploy/northflank/**
+    - util/preview-build-env.mjs
+    - util/profile-resolver.sh
+  fallback: full
+  dominating: full
+  allowedUnions: []

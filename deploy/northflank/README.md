@@ -2,8 +2,10 @@
 
 The generic Devrouter controller owns preview admission, deadlines and teardown.
 Klicker owns its build inputs, database initialization and synthetic fixtures.
-The current consumer recipe is under qualification; no committed installation
-policy enables automatic PR previews yet.
+The root preview manifest and rollout plan are prepared. No default workflow is
+installed, and live admission remains disabled until qualification completes.
+Provider-specific allocation, volume mounts and service environment bindings
+stay in the private installation layer.
 
 ## Disposable PostgreSQL
 
@@ -54,8 +56,10 @@ credentials. The existing database identity and dry-run guards still apply.
 
 ## Remaining qualification
 
-Fresh native execution must prove database initialization, generation-scoped
-credential persistence, Hatchet token delivery and cleanup. Admission remains
-disabled until the native expiry, access and deletion checks also pass. See the
+Live proof of native bootstrap, worker startup and task processing, network
+access policy, controller expiry, extension and stop behavior, and complete
+resource cleanup remains pending. This source slice prepares the manifest and
+plan and does not prove native runtime behavior. Admission stays disabled and no
+default workflow is installed. See the
 [approved rollout plan](../../project/2026-10-26-devrouter-preview-rollout-plan.md)
 for the remaining acceptance checks.
