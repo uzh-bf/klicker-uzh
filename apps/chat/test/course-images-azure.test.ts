@@ -35,12 +35,14 @@ describe('Azure course image storage through the real SDK', () => {
   }[]
   let changed: boolean
   let missingEtag: boolean
+  let prefix: string
 
   beforeEach(async () => {
     blobs = new Map()
     requests = []
     changed = false
     missingEtag = false
+    prefix = 'projection'
     server = createServer((req, res) => {
       const key = decodeURIComponent(
         new URL(req.url!, 'http://localhost').pathname
@@ -87,6 +89,7 @@ describe('Azure course image storage through the real SDK', () => {
     if (!address || typeof address === 'string')
       throw new Error('Missing test server address')
     vi.stubEnv('CHAT_COURSE_IMAGE_STORE_PATH', '')
+    vi.stubEnv('COURSE_IMAGE_PROJECTION_STORAGE_PREFIX', undefined)
     vi.stubEnv('COURSE_IMAGE_PROJECTION_STORAGE_CONTAINER', 'course-images')
     vi.stubEnv(
       'COURSE_IMAGE_PROJECTION_STORAGE_CONNECTION_STRING',
@@ -153,13 +156,15 @@ describe('Azure course image storage through the real SDK', () => {
       image_sha256: imageHash,
       manifest_sha256: digest(manifestBytes),
     }
-    blobs.set(objectPath('images', imageHash, 'png'), png)
+    const storedPath = (kind: string, hash: string, extension: string) =>
+      [prefix, objectPath(kind, hash, extension)].filter(Boolean).join('/')
+    blobs.set(storedPath('images', imageHash, 'png'), png)
     blobs.set(
-      objectPath('payloads', manifest.payload_sha256, 'json'),
+      storedPath('payloads', manifest.payload_sha256, 'json'),
       payloadBytes
     )
     blobs.set(
-      objectPath('manifests', candidate.manifest_sha256, 'json'),
+      storedPath('manifests', candidate.manifest_sha256, 'json'),
       manifestBytes
     )
     return { candidate, png }
@@ -174,6 +179,18 @@ describe('Azure course image storage through the real SDK', () => {
         `bytes=0-${blobs.get(request.key)!.length - 1}`
       )
     }
+  })
+
+  it.each([
+    'tenant/projection',
+    '/tenant/projection/',
+    '',
+  ])('reads the configured object prefix %j', async (value) => {
+    prefix = value.replace(/^\/+|\/+$/g, '')
+    vi.stubEnv('COURSE_IMAGE_PROJECTION_STORAGE_PREFIX', value)
+    const { candidate, png } = await seed()
+    expect((await readCourseImage(candidate)).equals(png)).toBe(true)
+    expect(requests.every((request) => blobs.has(request.key))).toBe(true)
   })
 
   for (const kind of Object.keys(limits) as Kind[]) {
@@ -212,7 +229,9 @@ describe('Azure course image storage through the real SDK', () => {
 
   it('still rejects corrupt bytes with a mismatched digest', async () => {
     const { candidate } = await seed()
-    blobs.get(objectPath('images', candidate.image_sha256, 'png'))![8] ^= 1
+    blobs.get(
+      `projection/${objectPath('images', candidate.image_sha256, 'png')}`
+    )![8] ^= 1
     await expect(readCourseImage(candidate)).rejects.toThrow('integrity')
   })
 })
