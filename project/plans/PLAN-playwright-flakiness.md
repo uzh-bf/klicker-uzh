@@ -17,8 +17,8 @@ passes on retry stays green and is never reported.
 
 | Test | Retries | Hard fails | Failure point |
 | --- | ---: | ---: | --- |
-| `Y-chat.spec.ts` "Source grouping resets when switching answer branches" | 25 | 0 | last `cited ... toHaveCount(1)` after `chat-branch-next` |
-| `L-elements-case-study.spec.ts:713` validation logic | 6 | 1 | `save-new-question` still enabled after clearing the title |
+| `Y-chat.spec.ts` "Source grouping resets when switching answer branches" | 25 | 0 | first `cited ... toHaveCount(1)` after page load |
+| `L-elements-case-study.spec.ts:713` validation logic | 6 | 1 | `save-new-question` still enabled after clearing the question text |
 | `U-catalog.spec.ts:1656` object permissions | 4 | 1 | `close-share-object` still visible after a forced click |
 | `Y-chat.spec.ts` settings "Auto and fixed models" (en/de) | 0 | 2 each | `modelSection` lacks `copy.fallback` |
 | 9 other tests | 1-2 each | 0 | single occurrences |
@@ -64,6 +64,21 @@ of scope.
 
 Slices 2-4 are independent and touch only their spec files. Slice 1 touches
 the trusted shard action, so it takes effect only after it merges to `v3`.
+
+## Correction after #6373
+
+The retry summary from slice 1 showed that slices 2 and 3 fixed the wrong
+step. Only slice 4 addressed the real failure.
+
+- **Y-chat.** The failing assertion is the first one after page load. The test
+  seeds two sibling answers back to back, so they can share a millisecond
+  `createdAt`. The chat opens the sibling with the latest `createdAt`, so a tie
+  sometimes opens the uncited answer. Forcing equal timestamps fails 20 of 20
+  runs with the CI error. The fix seeds explicit, increasing timestamps and
+  removes the branch-click retry.
+- **Case study.** The failure is the Slate question-text clear, not the title.
+  A single select-all and Backspace can leave text behind. The fix uses the
+  existing `clearEditorField` helper and removes the title wait.
 
 ## Out of scope
 

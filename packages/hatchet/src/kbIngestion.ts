@@ -941,6 +941,7 @@ async function reconcileResource({
           : [KBIngestionStatus.QUEUED, KBIngestionStatus.PROCESSING]
     const operationUpdatedAt = new Date(operation.updatedAt)
     await prisma.$transaction(async (tx) => {
+      await tx.$queryRaw`SELECT "id" FROM "public"."KB" WHERE "id" = CAST(${resource.kbId} AS UUID) FOR UPDATE`
       const resourceUpdate = await tx.kBResource.updateMany({
         where: {
           id: resource.id,

@@ -209,6 +209,9 @@ model Chatbot {
   allowedModelIds                String[] @default([]) // Restrict to these registry model IDs (empty = all models)
   allowedReasoningEffortsByModel Json? // { [modelId: string]: ReasoningEffort[] } where missing key = all supported efforts
 
+  // Whether students may choose an answer format and tone (ADR 0054). When
+  // false, every student gets the default format and tone.
+  answerPreferencesEnabled Boolean @default(true)
   // Independent lecturer controls for the participant concept map and for
   // graph-assisted document search; not the KB's own graph-generation flag.
   // The default keeps existing chatbots on the map they already had.

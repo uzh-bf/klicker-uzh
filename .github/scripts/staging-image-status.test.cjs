@@ -244,7 +244,7 @@ test('the evaluator writes evidence and fails the job on a block', async () => {
         env: { ...planEnv(), BUILD_STATUS_EVIDENCE_PATH: evidencePath },
         evidencePath,
         github,
-        maxAttempts: 1,
+        maxAttempts: 3,
       }),
     /blocked/
   )
@@ -254,7 +254,7 @@ test('the evaluator writes evidence and fails the job on a block', async () => {
   assert.equal(calls[0].run_id, 42)
 })
 
-test('the evaluator polls a running leg to completion', async () => {
+test('the evaluator recovers transient and pending observations only with producer proof', async () => {
   const directory = fs.mkdtempSync(path.join(os.tmpdir(), 'staging-status-'))
   const evidencePath = path.join(directory, 'required-ci-evidence.json')
   let call = 0
@@ -263,10 +263,15 @@ test('the evaluator polls a running leg to completion', async () => {
       actions: {
         listJobsForWorkflowRunAttempt: async () => {
           call += 1
+          if (call === 1) {
+            throw Object.assign(new Error('synthetic gateway failure'), {
+              status: 502,
+            })
+          }
           return {
             data: {
               jobs: [
-                call === 1
+                call === 2
                   ? job('build-arm-auth', {
                       conclusion: null,
                       status: 'in_progress',
@@ -289,5 +294,77 @@ test('the evaluator polls a running leg to completion', async () => {
     sleep: async () => {},
   })
   assert.equal(decision.ok, true)
-  assert.equal(call, 2)
+  assert.equal(call, 3)
+  const evidence = JSON.parse(fs.readFileSync(evidencePath, 'utf8'))
+  assert.equal(evidence.decision.outcome, 'pass')
+  assert.equal(evidence.run.id, 42)
+  assert.equal(evidence.run.attempt, 1)
+})
+
+test('unavailable job evidence stays blocked and publishes a failure receipt', async (t) => {
+  for (const scenario of [
+    { name: 'exhausted server errors', status: 502, calls: 3 },
+    { name: 'existing observation bound', status: 503, attempts: 2, calls: 2 },
+    { name: 'authorization failure', status: 403, calls: 1 },
+    { name: 'unknown failure', calls: 1 },
+    { name: 'malformed response', malformed: true, calls: 1 },
+    {
+      name: 'later pagination page fails',
+      status: 502,
+      partial: true,
+      calls: 6,
+    },
+  ]) {
+    await t.test(scenario.name, async () => {
+      const directory = fs.mkdtempSync(
+        path.join(os.tmpdir(), 'staging-status-')
+      )
+      const evidencePath = path.join(directory, 'required-ci-evidence.json')
+      let calls = 0
+      const github = {
+        rest: {
+          actions: {
+            listJobsForWorkflowRunAttempt: async ({ page }) => {
+              calls += 1
+              if (scenario.malformed) return { data: { jobs: {} } }
+              if (scenario.partial && page === 1) {
+                return {
+                  data: {
+                    jobs: [
+                      job('build-arm-auth'),
+                      ...Array.from({ length: 99 }, (_, index) =>
+                        job(`synthetic-unselected-${index}`)
+                      ),
+                    ],
+                  },
+                }
+              }
+              throw Object.assign(new Error('synthetic external detail'), {
+                status: scenario.status,
+              })
+            },
+          },
+        },
+      }
+      await assert.rejects(() =>
+        evaluateStagingImageStatus({
+          context: pushContext(),
+          env: planEnv(),
+          evidencePath,
+          github,
+          maxAttempts: scenario.attempts ?? 5,
+          retryDelayMs: 0,
+          sleep: async () => {},
+        })
+      )
+      assert.equal(calls, scenario.calls)
+      const evidence = JSON.parse(fs.readFileSync(evidencePath, 'utf8'))
+      assert.equal(evidence.decision.outcome, 'fail')
+      assert.equal(evidence.selection.state, 'unavailable')
+      assert.equal(evidence.builds[0].result, 'failure')
+      assert.equal(evidence.event.sha, SHA)
+      assert.equal(evidence.run.id, 42)
+      assert.equal(evidence.run.attempt, 1)
+    })
+  }
 })

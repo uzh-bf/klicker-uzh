@@ -36,7 +36,16 @@ const boundedCleanString = (max: number) =>
     )
 const courseImageDescriptionSchema = z.object({
   version: z.literal(1),
-  text: boundedCleanString(4000),
+  text: z
+    .string()
+    .min(1)
+    .max(4000)
+    .refine(
+      (value) =>
+        value === value.trim() &&
+        !/\p{C}/u.test(value.replace(/[\n\r\t]/g, '')),
+      'expected trimmed text without non-whitespace control characters'
+    ),
   provenance: z.object({
     kind: z.literal('generated'),
     provider: boundedCleanString(200),

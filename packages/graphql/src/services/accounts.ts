@@ -540,8 +540,9 @@ export async function getUsersAiFeatures(ctx: ContextWithUser) {
 // records that an account has a cost center to bill AI usage to, and that
 // arrangement can end. Returns 0 when the setting changed, 1 when no account
 // carries the address, and 2 when it already had the requested value. The
-// optional tier and cost center carry the separate entitlement for
-// cost-carrying model classes; omitting either leaves it untouched.
+// optional tier and cost center carry the entitlement for cost-carrying model
+// classes. Passing a cost center derives the tier unless an explicit tier is
+// supplied; omitting both leaves the recorded tier and cost center untouched.
 export async function setAiFeatures(
   {
     email,
@@ -573,9 +574,18 @@ export async function setAiFeatures(
 
   // An empty cost center is the explicit withdrawal of the billing address.
   // The tier column is never null, so an explicit null is treated as omitted.
-  const requestedTier = tier ?? undefined
   const requestedCostCenter =
     costCenter === undefined ? undefined : costCenter?.trim() || null
+  // Setting a cost center grants the advanced tier and withdrawing it returns
+  // the account to base, because advanced usage is billed to the cost center.
+  // A tier passed in the same call still takes precedence.
+  const requestedTier =
+    tier ??
+    (requestedCostCenter === undefined
+      ? undefined
+      : requestedCostCenter
+        ? DB.AiSubscriptionTier.ADVANCED
+        : DB.AiSubscriptionTier.BASE)
   const tierUnchanged =
     requestedTier === undefined ||
     targetUser.aiSubscriptionTier === requestedTier

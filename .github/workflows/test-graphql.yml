@@ -175,7 +175,7 @@ jobs:
       - name: Set up pnpm
         uses: pnpm/action-setup@v4
         with:
-          version: 11.5.0
+          version: 12.11.2
 
       - name: Set up Node.js with pnpm cache
         uses: ./.github/actions/setup-node-pnpm
@@ -369,7 +369,7 @@ jobs:
   # v3_sonarcloud.yml keeps the named fail-closed result for both.
   sonarcloud:
     name: SonarCloud
-    needs: [filter, test-graphql]
+    needs: [filter, test-graphql, test-graphql-status]
     if: >-
       always() && !cancelled() &&
       github.event_name == 'pull_request' &&

@@ -94,24 +94,9 @@ describe('course image selection', () => {
   it('preserves exact figure page instead of the chunk starting page', () => {
     expect(candidate.physical_page_number).toBe(2)
     expect(candidate.logical_page_number).toBeUndefined()
-    expect(candidate.captions).toEqual([
-      {
-        ref: '#/texts/12',
-        text: 'Figure 1. Original synthetic diagram for the course-material retrieval test.',
-      },
-    ])
-    expect(candidate.description).toEqual({
-      version: 1,
-      text: expect.stringContaining('PRACTISE to EXPLORE to REFLECT'),
-      provenance: {
-        kind: 'generated',
-        provider: 'synthetic-test',
-        model: 'fixture-model',
-        prompt_version: 1,
-        image_sha256: 'a'.repeat(64),
-        asset_image_sha256: candidate.image_sha256,
-      },
-    })
+    const asset = fixture.sources[0].chunks[0].visual_assets.assets[0]
+    expect(candidate.captions).toEqual(asset.captions)
+    expect(candidate.description).toEqual(asset.description)
     expect(
       courseImageCandidates({
         content: [{ type: 'text', text: JSON.stringify(fixture) }],
@@ -122,6 +107,27 @@ describe('course image selection', () => {
     const legacy = structuredClone(fixture)
     delete legacy.sources[0].chunks[0].visual_assets.assets[0].captions
     expect(courseImageCandidates(legacy)[0]?.captions).toBeUndefined()
+  })
+  it('preserves multiline generated descriptions through selection persistence', () => {
+    const result = structuredClone(fixture)
+    const description = {
+      ...candidate.description!,
+      text: 'First paragraph.\n\nSecond paragraph.\r\n\tIndented detail.',
+    }
+    result.sources[0].chunks[0].visual_assets.assets[0].description =
+      description
+    const image = courseImageCandidates(result)[0]!
+    expect(image.description).toEqual(description)
+    const persisted = JSON.parse(
+      JSON.stringify([
+        {
+          type: 'tool-call',
+          toolName: 'show_course_image',
+          result: { status: 'selected', image },
+        },
+      ])
+    )
+    expect(selectedCourseImages(persisted)[0]?.description).toEqual(description)
   })
   it('omits malformed or mismatched optional descriptions without dropping the asset', () => {
     for (const description of [

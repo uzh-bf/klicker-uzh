@@ -59,6 +59,17 @@ describe('student MCP tool errors', () => {
         new Error('Authentication failed: invalid participant token')
       )
     ).toBe('UNAUTHENTICATED')
+    // The backend's data-use gate is a participant state, not an outage.
+    expect(
+      toStudentToolError(
+        new Error(
+          'GraphQL GetCoursePracticeQuizWithoutSolutions failed: Account data-use completion required'
+        )
+      ).error
+    ).toEqual({
+      code: 'DATA_USE_REQUIRED',
+      message: 'Data-use acknowledgement required for student practice',
+    })
     expect(
       toStudentToolError(new Error('GraphQL Query failed: FORBIDDEN')).error
     ).toEqual({
