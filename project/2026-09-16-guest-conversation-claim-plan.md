@@ -42,7 +42,61 @@ This is an approved executable batch. The user approved implementation and draft
 delivery on 2026-09-16, then authorized updating the existing PR against current
 v3-ai and completing its remaining reviews on 2026-10-14. Ordinary task-branch
 commits, non-force pushes, verification and review corrections are authorized.
-Merge, marking ready, deployment and production data changes remain withheld.
+The user subsequently authorized marking PR #6097 ready and completing final
+review on 2026-10-14; both are complete. Merge, deployment and production data
+changes remain withheld. The related LTI roadmap below records follow-up work,
+not additional implementation or release authority.
+
+## Related LTI roadmap — updated 2026-10-26
+
+Outcome: validate the browser-to-LTI launch separately from participant-session
+recovery and guest-conversation transfer. Passing a downstream session test
+does not establish that ltijs accepts real iframe cookies with dev mode off.
+
+| Workstream and owner | Sequence and current evidence | Next action and acceptance |
+| --- | --- | --- |
+| [Local LTI launch harness (#6719)](https://github.com/uzh-bf/klicker-uzh/pull/6719), harness session | Independent draft PR into `v3`; preferred first landing after its own checks and merge approval. It exercises ltijs through a real mock platform and browser redirects. | Complete the harness's own delivery gates. Keep it separate from session recovery; no stacked PR dependency. Use its calibrated cookie restriction for later launch experiments. |
+| [Participant-session recovery (#6414)](https://github.com/uzh-bf/klicker-uzh/pull/6414), session-recovery session | Independent PR into `v3`. Its current blocked-Chromium project relies on a launch flag and branches on observed shared-cookie access instead of requiring blocking. | Adopt CDP cookie restriction and explicit blocked-project metadata. Require a cross-site ordinary-cookie probe to fail when restriction is ineffective, then rerun recovery scenarios. Classify partitioned cookies separately. |
+| Partitioned ltijs cookies, experiment owner to be assigned | Proposed local experiment in a fresh `v3-ai` worktree, using a pinned copy of the harness until normal integration makes it available. Existing PWA cookie serialization provides a reference. | Verify ltijs 5.9.9 serialization, then test adding `Partitioned` to state/session cookies with secure cookie attributes. Run real top-level and iframe launches with dev mode on/off across allowed Chromium, calibrated blocked Chromium, Firefox and WebKit. Record each outcome; browser support remains a hypothesis. |
+| [Guest-conversation transfer (#6097)](https://github.com/uzh-bf/klicker-uzh/pull/6097), this session | Ready PR into `v3-ai`; final review and required CI passed at `1a5d63409be706de021667f3c027c5c12f756f74`. This operates after verified identity resolution. | Refresh readiness against current `v3-ai` before a merge decision. Retain subject binding, atomic ownership transfer and history-ordering checks. Neither harness success nor session-recovery success replaces these checks. |
+
+### Evidence boundaries and coordination
+
+The [cookie-blocking review comment](https://github.com/uzh-bf/klicker-uzh/pull/6414#issuecomment-6410720487)
+was posted on 2026-10-26. Inspection of #6414 confirms the launch flag,
+conditional cookie assertions, intercepted `/login` request using `route.fetch`,
+and the registration script's `LTI_DEV_MODE=true` requirement. Its existing
+blocked-Chromium result therefore does not prove cookie blocking. Its launch
+test covers participant-session recovery rather than ltijs validation with dev
+mode off. Correct that evidence before claiming blocked-browser acceptance.
+
+The harness PR reports local browser measurements: top-level launches pass with
+dev mode off, while blocked Chromium and WebKit iframe launches fail with
+`MISSING_VALIDATION_COOKIE`. These are the harness author's results, not a new
+run by this session. Its restriction calibration distinguishes ordinary from
+partitioned cookies; successful partitioned storage must not fail an assertion
+intended to reject shared third-party cookies.
+
+Keep the two PRs independent. The advisor reported no overlapping changed files
+and no benefit from stacking; the reported `useChatResponse.ts` conflict already
+exists between #6414 and `v3`. Recheck conflicts when integrating. Their mock
+platform registrations use separate identities. Reusing the harness's mock
+platform in #6414 is a later simplification, not a prerequisite for correcting
+its cookie-blocking test.
+
+The proposed experiment must first establish a working local runtime. The
+harness owner reported an `oidc` reconciliation failure; a fresh isolated
+worktree is the proposed recovery path, not proof the failure is resolved.
+The claimed ltijs omission of `partitioned` must be checked against its installed
+serializer before patching. Preserve signature, issuer, audience, nonce and
+state validation, and use real browser cookie handling throughout the experiment.
+Chromium improvement is expected but unproven; WebKit results must be measured.
+
+This roadmap update records sequencing and acceptance only. Starting the new
+experiment, merging any PR, changing deployment settings or disabling dev mode
+requires the corresponding explicit approval. The immediate source follow-up
+belongs to #6414's owner: correct and rerun the blocked-browser test. This
+session retains ownership of #6097 and its separate readiness refresh.
 
 ## Execution details
 
@@ -260,8 +314,9 @@ split; record the split honestly if the hook cannot run whole.
 Authority: the approved batch covers implementation, ordinary task-branch commits
 and non-force pushes, draft PR updates, verification and review corrections.
 Repository policy also authorizes the final AI review command after CI and
-ordinary feedback are settled. Merge, marking ready, deployment and production
-data changes require separate authority.
+ordinary feedback are settled. Marking ready was separately approved and
+completed on 2026-10-14. Merge, deployment and production data changes require
+separate authority.
 
 Terminal (post-implementation approval): verified, reviewed draft PR into
 v3-ai; deployment and production data changes withheld.
