@@ -237,7 +237,7 @@ Catalyst `POST /adaptive/v1/dry-run` (IRT_V1) runs up to 200 simulated
 students through the normal decisions in one request. Each student has a true
 level per root competence and answers an item correctly exactly when the item's
 level is at or below that level; every answer flips with `noiseProbability`
-(0–0.5). `students × totalQuestionCap` is bounded to 10,000 decisions, and the
+(0–0.5). `students × totalQuestionCap` is bounded to 20,000 decisions, and the
 seed makes a run reproducible on the same engine revision.
 
 - **Scope.** Testing environments only (`ADAPTIVE_QUIZ_SHOW_SOLUTIONS=true`),

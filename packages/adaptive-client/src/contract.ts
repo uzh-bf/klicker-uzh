@@ -466,7 +466,7 @@ export type ValidationRequest = z.infer<typeof validationRequestSchema>
 // answer the ideal pattern for their true level, each answer flipping with
 // `noiseProbability`. Mirrors the engine bounds.
 export const ADAPTIVE_DRY_RUN_MAX_STUDENTS = 200
-export const ADAPTIVE_DRY_RUN_MAX_DECISIONS = 10000
+export const ADAPTIVE_DRY_RUN_MAX_DECISIONS = 20000
 export const dryRunSpecSchema = z
   .object({
     students: z.number().int().min(1).max(ADAPTIVE_DRY_RUN_MAX_STUDENTS),

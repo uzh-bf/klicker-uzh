@@ -387,7 +387,7 @@ async function defaultEngineRunner(request: DryRunRequest) {
       'ADAPTIVE_ENGINE_UNAVAILABLE'
     )
   try {
-    // A run is up to 10,000 decisions in one engine call (about a second).
+    // A run is up to 20,000 decisions in one engine call (about 3 s at most).
     return await createAdaptiveClient({
       baseUrl,
       token,
