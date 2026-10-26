@@ -264,7 +264,7 @@ test('applies the guarded writes and verifies app databases plus optional Hatche
   assert.deepEqual(result, { mode: 'applied' })
   const expected = [
     /^CREATE ROLE "klicker_test" LOGIN PASSWORD '/,
-    /^GRANT "klicker_test" TO "provider_admin"$/,
+    /^GRANT "klicker_test" TO "provider_admin" WITH INHERIT TRUE, SET TRUE$/,
     /^ALTER DATABASE "klicker_test" OWNER TO "klicker_test"$/,
     /^ALTER SCHEMA "public" OWNER TO "klicker_test"$/,
     /^GRANT USAGE, CREATE ON SCHEMA "public" TO "klicker_test"$/,
@@ -272,7 +272,7 @@ test('applies the guarded writes and verifies app databases plus optional Hatche
     /^CREATE DATABASE "klicker_test_shadow" OWNER "klicker_test"$/,
     /^COMMENT ON DATABASE "klicker_test_shadow" IS /,
     /^CREATE ROLE "hatchet" LOGIN PASSWORD '/,
-    /^GRANT "hatchet" TO "provider_admin"$/,
+    /^GRANT "hatchet" TO "provider_admin" WITH INHERIT TRUE, SET TRUE$/,
     /^CREATE DATABASE "hatchet" OWNER "hatchet"$/,
   ]
   assert.equal(fake.writes.length, expected.length)

@@ -52,7 +52,11 @@ const HOST = parseHostAuthority(
   process.env.LOCAL_MCP_BIND_HOST ?? DEFAULT_HOST,
   'LOCAL_MCP_BIND_HOST'
 )
-const DEFAULT_ALLOWED_HOSTS = [`${HOST}:${PORT}`, `localhost:${PORT}`]
+const DEFAULT_ALLOWED_HOSTS = [
+  `${HOST}:${PORT}`,
+  `localhost:${PORT}`,
+  `${DEFAULT_HOST}:${PORT}`,
+]
 const ALLOWED_HOSTS = [
   ...new Set([
     ...DEFAULT_ALLOWED_HOSTS,

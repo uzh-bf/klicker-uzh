@@ -108,7 +108,7 @@ resources:
       - |
         set -eu
         if [ "$PGDATABASE" != hatchet ]; then printf '%s\n' HATCHET_INIT_DBNAME_MISMATCH; exit 1; fi
-        if diagnostic=$(timeout 30 psql --no-psqlrc --quiet --set ON_ERROR_STOP=1 --set VERBOSITY=sqlstate 2>&1 <<'SQL'
+        if ! diagnostic=$(timeout 30 psql -Xq -v ON_ERROR_STOP=1 -v VERBOSITY=sqlstate 2>&1 <<'SQL'
         \getenv runtime_password RUNTIME_PASSWORD
         SET statement_timeout = '5s';
         BEGIN;
@@ -121,22 +121,32 @@ resources:
         \echo HATCHET_INIT_FRESH
         WITH flags AS (
           SELECT current_database() = 'hatchet' AS database_name,
-            current_user = session_user AS session_identity,
-            EXISTS (SELECT 1 FROM pg_roles WHERE rolname=current_user AND rolcreaterole AND rolcreatedb) AS admin_capabilities,
-            EXISTS (SELECT 1 FROM pg_roles r JOIN pg_database d ON d.datname=current_database() WHERE r.rolname=current_user AND pg_has_role(r.oid,d.datdba,'MEMBER')) AS database_owner,
-            NOT EXISTS (SELECT 1 FROM pg_class c JOIN pg_namespace n ON n.oid = c.relnamespace WHERE n.nspname = 'public' AND c.relkind IN ('r','p','v','m','S','f')) AS empty_public,
+            current_user = session_user AS identity,
+            current_setting('server_version_num')::integer >= 170000 AND EXISTS (SELECT 1 FROM pg_roles WHERE rolname=current_user AND rolcreaterole AND rolcreatedb) AS capable,
+            pg_has_role((SELECT datdba FROM pg_database WHERE datname=current_database()),'MEMBER') AS database_owner,
+            NOT EXISTS (
+            SELECT 1 FROM pg_class c
+            WHERE c.relnamespace = 'public'::regnamespace AND c.relkind IN ('r','p','v','m','S','f')
+            AND NOT (c.relkind = 'v' AND EXISTS (
+              SELECT 1 FROM pg_depend dep JOIN pg_extension ext ON ext.oid = dep.refobjid
+              WHERE dep.classid = 'pg_class'::regclass AND dep.objid = c.oid
+                AND dep.refclassid = 'pg_extension'::regclass AND dep.deptype = 'e'
+                AND ((ext.extname = 'pg_stat_statements' AND c.relname IN ('pg_stat_statements', 'pg_stat_statements_info'))
+                  OR (ext.extname = 'pg_stat_kcache' AND c.relname IN ('pg_stat_kcache', 'pg_stat_kcache_detail')))
+            ))
+            ) AS empty_public,
             NOT EXISTS (SELECT 1 FROM pg_roles WHERE rolname = 'hatchet_runtime') AS runtime_role_absent
         )
-        SELECT *, database_name AND session_identity AND admin_capabilities AND database_owner AND empty_public AND runtime_role_absent AS fresh FROM flags \gset
+        SELECT *, database_name AND identity AND capable AND database_owner AND empty_public AND runtime_role_absent AS fresh FROM flags \gset
         \if :database_name
         \else
           \echo HATCHET_INIT_FRESH_FAIL_DATABASE_NAME
         \endif
-        \if :session_identity
+        \if :identity
         \else
           \echo HATCHET_INIT_FRESH_FAIL_SESSION_IDENTITY
         \endif
-        \if :admin_capabilities
+        \if :capable
         \else
           \echo HATCHET_INIT_FRESH_FAIL_ADMIN_CAPABILITIES
         \endif
@@ -166,29 +176,21 @@ resources:
         COMMIT;
         SQL
         ); then
-          :
-        else
-          init_exit=$?
           printf '%s\n' HATCHET_INIT_FAILED
-          printf 'HATCHET_INIT_EXIT_%s\n' "$init_exit"
           if ! printf %s "$diagnostic" | grep -q HATCHET_INIT_LOCK; then printf '%s\n' HATCHET_INIT_CONNECT_OR_TIMEOUT; fi
           for stage in LOCK FRESH ROLE OWNER SCHEMA; do
             if printf %s "$diagnostic" | grep -q "HATCHET_INIT_$stage"; then printf 'HATCHET_INIT_REACHED_%s\n' "$stage"; fi
           done
-          for predicate in DATABASE_NAME SESSION_IDENTITY ADMIN_CAPABILITIES DATABASE_OWNER EMPTY_PUBLIC RUNTIME_ROLE_ABSENT; do
-            if printf %s "$diagnostic" | grep -q "HATCHET_INIT_FRESH_FAIL_$predicate"; then printf 'HATCHET_INIT_FRESH_FAIL_%s\n' "$predicate"; fi
-          done
+          printf '%s\n' "$diagnostic" | grep -Ex 'HATCHET_INIT_FRESH_FAIL_(DATABASE_NAME|SESSION_IDENTITY|ADMIN_CAPABILITIES|DATABASE_OWNER|EMPTY_PUBLIC|RUNTIME_ROLE_ABSENT)' || :
           for state in 42501 42710 42P01 28P01 3D000 57014 P0001; do
             if printf %s "$diagnostic" | grep -q "$state"; then printf 'HATCHET_INIT_SQLSTATE_%s\n' "$state"; fi
           done
           exit 1
         fi
-        if result=$(PGUSER=hatchet_runtime PGPASSWORD="$RUNTIME_PASSWORD" timeout 5 psql --no-psqlrc -At --set ON_ERROR_STOP=1 --command "SELECT current_database()='hatchet' AND d.datdba=r.oid AND has_database_privilege(current_user,current_database(),'CREATE') AND has_schema_privilege(current_user,'public','CREATE') AND NOT (r.rolsuper OR r.rolcreatedb OR r.rolcreaterole OR r.rolreplication OR r.rolbypassrls) FROM pg_roles r JOIN pg_database d ON d.datname=current_database() WHERE r.rolname=current_user" 2>/dev/null); then
+        if result=$(PGUSER=hatchet_runtime PGPASSWORD="$RUNTIME_PASSWORD" timeout 5 psql -XAt -v ON_ERROR_STOP=1 -c "SELECT current_database()='hatchet' AND d.datdba=r.oid AND has_database_privilege(current_database(),'CREATE') AND has_schema_privilege(current_user,'public','CREATE') AND NOT (r.rolsuper OR r.rolcreatedb OR r.rolcreaterole OR r.rolreplication OR r.rolbypassrls) FROM pg_roles r JOIN pg_database d ON d.datname=current_database() WHERE r.rolname=current_user" 2>/dev/null); then
           if [ "$result" != t ]; then printf '%s\n' HATCHET_VERIFY_PREDICATE_FAILED; exit 1; fi
         else
-          verify_exit=$?
           printf '%s\n' HATCHET_VERIFY_FAILED
-          printf 'HATCHET_VERIFY_EXIT_%s\n' "$verify_exit"
           exit 1
         fi
         printf '%s\n' HATCHET_DB_OWNER_READY

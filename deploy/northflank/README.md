@@ -14,6 +14,12 @@ empty preview database. It defaults to dry-run and repeats target validation
 under an advisory lock before writing. It refuses retained or partially
 initialized targets. A partial failure requires a new environment.
 
+The initial database may contain provider statistics views from
+`pg_stat_statements` and `pg_stat_kcache`. Only their exact extension-owned view
+names are exempt from the empty-schema check. Ordinary views, lookalike names,
+other extension-owned relations and data-bearing relations still refuse initialization.
+PostgreSQL 17 or later is required before any role is created.
+
 The trusted runtime job injects these environment variables directly:
 
 | Variable                                    | Purpose                                                              |
