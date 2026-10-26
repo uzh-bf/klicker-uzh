@@ -108,3 +108,81 @@ for (const embedding of ['top-level', 'iframe'] as const) {
     expect(outcome.reachedPwa).toBe(true)
   })
 }
+
+// The launch state is bound to the browser that started the login, so a
+// launch replayed from another browser and a reused handoff URL are rejected.
+// These are server checks; one browser is enough.
+test.describe('launch replay', () => {
+  test.skip(
+    ({ browserName }) => browserName !== 'chromium',
+    'server-side checks run in one browser'
+  )
+
+  test('a launch posted from another browser is rejected', async ({
+    browser,
+  }) => {
+    const origin = await browser.newContext()
+    const originPage = await origin.newPage()
+    let launch: URLSearchParams | undefined
+    await originPage.route(`${toolOrigin}/`, async (route) => {
+      const body = new URLSearchParams(route.request().postData() ?? '')
+      if (body.has('ltijs_recovered_state')) return route.continue()
+      // keep the id_token and state, and stop before this browser uses them
+      launch = body
+      return route.abort()
+    })
+    await originPage.goto(platform.launchUrl('top-level'))
+    await expect.poll(() => launch, { timeout: 30_000 }).toBeDefined()
+    await origin.close()
+
+    const other = await browser.newContext()
+    const otherPage = await other.newPage()
+    const rejection = otherPage.waitForResponse(
+      (response) =>
+        response.url() === `${toolOrigin}/` &&
+        response.request().method() === 'POST' &&
+        response.status() >= 400
+    )
+    let reachedPwa = false
+    otherPage.on('request', (request) => {
+      const url = new URL(request.url())
+      if (url.origin === pwaOrigin.origin && url.searchParams.has('jwt')) {
+        reachedPwa = true
+      }
+    })
+    await otherPage.setContent(
+      `<form method="post" action="${toolOrigin}/">
+        <input name="id_token"><input name="state">
+      </form>`
+    )
+    await otherPage.locator('[name=id_token]').fill(launch!.get('id_token')!)
+    await otherPage.locator('[name=state]').fill(launch!.get('state')!)
+    await otherPage
+      .locator('form')
+      .evaluate((form: HTMLFormElement) => form.submit())
+
+    const response = await rejection
+    expect(await response.json()).toMatchObject({ message: 'INVALID_STATE' })
+    expect(reachedPwa).toBe(false)
+    await other.close()
+  })
+
+  test('a handoff URL works only once', async ({ page, request }) => {
+    let handoffUrl: string | undefined
+    let reachedPwa = false
+    page.on('request', (launchRequest) => {
+      const url = new URL(launchRequest.url())
+      if (url.origin === toolOrigin && url.pathname === '/handoff') {
+        handoffUrl = launchRequest.url()
+      }
+      if (url.origin === pwaOrigin.origin && url.searchParams.has('jwt')) {
+        reachedPwa = true
+      }
+    })
+    await page.goto(platform.launchUrl('top-level'))
+    await expect.poll(() => reachedPwa, { timeout: 30_000 }).toBe(true)
+
+    const replay = await request.get(handoffUrl!, { maxRedirects: 0 })
+    expect(replay.status()).toBe(401)
+  })
+})

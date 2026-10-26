@@ -37,6 +37,8 @@ export type MockPlatformOptions = {
   // Absolute HTTPS URL the tool redirects to after a successful launch
   redirectTarget: string
   port?: number
+  // sandbox attribute for the iframe launch, to reproduce an LMS that sets one
+  iframeSandbox?: string
 }
 
 export type MockPlatform = {
@@ -49,6 +51,7 @@ export async function startMockPlatform({
   toolOrigin,
   redirectTarget,
   port = MOCK_PLATFORM_PORT,
+  iframeSandbox,
 }: MockPlatformOptions): Promise<MockPlatform> {
   // The issuer must equal LTI_URL in the tool's platform registration.
   const origin = `http://127.0.0.1:${port}`
@@ -57,6 +60,7 @@ export async function startMockPlatform({
     modulusLength: 2048,
   })
   const tool = new URL(toolOrigin)
+  const targetLinkUri = new URL('/', tool).toString()
 
   const server = createServer((req, res) => {
     handle(req, res).catch((error: unknown) => {
@@ -91,7 +95,9 @@ export async function startMockPlatform({
         'text/html; charset=utf-8',
         `<!doctype html><title>Mock LMS</title>
 <iframe name="tool" src="/start" style="width:100%;height:90vh;border:0"
-  allow="clipboard-write; fullscreen"></iframe>`
+  allow="clipboard-write; fullscreen"${
+    iframeSandbox === undefined ? '' : ` sandbox="${escapeHtml(iframeSandbox)}"`
+  }></iframe>`
       )
     }
 
@@ -100,7 +106,7 @@ export async function startMockPlatform({
       return sendAutoPost(res, new URL('/login', tool).toString(), {
         iss: origin,
         login_hint: 'lti-harness-learner',
-        target_link_uri: new URL('/', tool).toString(),
+        target_link_uri: targetLinkUri,
         client_id: MOCK_PLATFORM_CLIENT_ID,
         lti_deployment_id: MOCK_PLATFORM_DEPLOYMENT_ID,
       })
@@ -109,10 +115,12 @@ export async function startMockPlatform({
     // OIDC authorization endpoint: answers with a signed id_token.
     if (url.pathname === '/auth') {
       const params = url.searchParams
+      // Platforms accept only the registered redirect URI: the target link
+      // URI without its query.
       const redirectUri = params.get('redirect_uri') ?? ''
       if (
         params.get('client_id') !== MOCK_PLATFORM_CLIENT_ID ||
-        new URL(redirectUri, origin).origin !== tool.origin
+        redirectUri !== targetLinkUri
       ) {
         return send(res, 400, 'text/plain', 'invalid authorization request')
       }
@@ -224,7 +232,11 @@ if (import.meta.url === pathToFileURL(process.argv[1] ?? '').href) {
     process.env.LTI_HARNESS_TOOL_ORIGIN ?? 'https://lti.klicker.localhost'
   const redirectTarget =
     process.env.LTI_HARNESS_REDIRECT_TARGET ?? 'https://pwa.klicker.localhost/'
-  const platform = await startMockPlatform({ toolOrigin, redirectTarget })
+  const platform = await startMockPlatform({
+    toolOrigin,
+    redirectTarget,
+    iframeSandbox: process.env.LTI_HARNESS_IFRAME_SANDBOX,
+  })
   console.log(`[lti-mock-platform] tool: ${toolOrigin}`)
   console.log(
     `[lti-mock-platform] iframe launch: ${platform.launchUrl('iframe')}`

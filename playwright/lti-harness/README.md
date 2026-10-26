@@ -1,9 +1,9 @@
 # LTI launch harness
 
 Runs real LTI 1.3 launches against the local LTI service (`apps/lti`, built on
-ltijs) without an external LMS. It shows whether a launch reaches the PWA in a
-top-level window and inside a cross-site iframe, for each browser and for both
-values of `LTI_DEV_MODE`.
+ltijs 7) without an external LMS. It shows whether a launch reaches the PWA in a
+top-level window and inside a cross-site iframe, for each browser, and checks
+that a launch cannot be replayed.
 
 ## How it works
 
@@ -13,24 +13,33 @@ values of `LTI_DEV_MODE`.
 an LMS. The platform:
 
 - starts the launch with a form POST to the tool's `/login`,
-- answers ltijs's authorization request with a signed `id_token`, and
+- answers ltijs's authorization request with a signed `id_token`, after
+  checking that the `redirect_uri` is exactly the target link URI without its
+  query, as a platform does, and
 - serves its key set at `/jwks`.
 
 The LTI service registers this platform on startup from the `LTI_*` values in
 `.devcontainer/devcontainer.env`. ltijs fetches the key set from inside the
 devcontainer through `host.docker.internal:4311`.
 
+ltijs 7 keeps the launch state in the browser's `localStorage`, not in cookies.
 A launch counts as successful when the browser requests the PWA with the `jwt`
 parameter that the LTI service appends. The test also records whether the
-browser stored ltijs's session cookie on the tool host. That shows whether the
-browser kept third-party cookies in the iframe.
+browser stored the `lti-token` cookie the LTI service sets, which shows whether
+the browser kept third-party cookies in the iframe.
 
-The `chromium-third-party-cookies-blocked` project turns on Chromium's
-third-party cookie restriction through the DevTools protocol
-(`Network.setCookieControls`). The `--test-third-party-cookie-phaseout` launch
-flag does not block them in Playwright's Chromium. The project's iframe test
-fails if Chromium still stores the tool's cookies, so a restriction that stops
-working is noticed.
+WebKit blocks all third-party cookies, like Safari, so it is the blocking
+browser here: its iframe test fails if the tool's cookie was stored anyway.
+Chromium's DevTools cookie restriction (`Network.setCookieControls`) cannot
+stand in for a blocking browser, because it misses navigations that a
+cross-site iframe starts itself. Firefox runs with its release default, Total
+Cookie Protection, which Playwright's Firefox build turns off.
+
+Two further tests, run in Chromium only, check the server side:
+
+- an `id_token` and `state` captured in one browser and posted from another are
+  rejected with `INVALID_STATE`, and
+- the handoff URL that issues the KlickerUZH token works only once.
 
 ## Run it
 
@@ -43,19 +52,12 @@ not reset or seed the database.
    pnpm --filter @klicker-uzh/playwright exec playwright install firefox webkit
    ```
 
-2. Run the harness against the LTI service's current mode (`LTI_DEV_MODE=true`
-   by default):
+2. Run the harness:
 
    ```bash
-   LTI_HARNESS_DEV_MODE=true node util/run-playwright-host.mjs \
-     --runtime-profile full -- --config lti-harness.config.ts
+   node util/run-playwright-host.mjs --runtime-profile standard -- \
+     --config lti-harness.config.ts
    ```
-
-3. Restart the LTI service with `LTI_DEV_MODE=false` and run again with
-   `LTI_HARNESS_DEV_MODE=false`. See [Switching dev mode](#switching-dev-mode).
-
-`LTI_HARNESS_DEV_MODE` only labels the run. It must match the value the running
-LTI service uses.
 
 For a manual launch, run the platform alone and open the printed URL:
 
@@ -67,29 +69,13 @@ For a linked worktree, whose hosts include the workspace name, set
 `LTI_HARNESS_TOOL_ORIGIN` and `LTI_HARNESS_REDIRECT_TARGET` for this manual run.
 The spec derives both from the PWA URL the host runner provides.
 
-## Switching dev mode
-
-The dev stack runs the LTI service under nodemon with the container
-environment. `restart-lti.sh` restarts only that process with `NAME=value`
-overrides and keeps every other variable, including the per-workspace origins.
-Without arguments it restores the original process:
-
-```bash
-devrouter exec . -- bash playwright/lti-harness/restart-lti.sh LTI_DEV_MODE=false
-devrouter exec . -- bash playwright/lti-harness/restart-lti.sh
-```
-
-With overrides, the helper stops the nodemon child and starts the same command
-in the background. Its output goes to `/tmp/lti-override.log` in the container.
-Without arguments, it stops that override and touches the build output, so
-nodemon starts the original process again. Restarting the runtime also restores
-the original environment.
+To reproduce an LMS that renders its iframe with a `sandbox` attribute, set
+`LTI_HARNESS_IFRAME_SANDBOX` to the attribute value for a manual run. Without
+`allow-same-origin`, the tool cannot use `localStorage` and the launch fails.
 
 ## Reading the result
 
-Each test prints one `[lti-launch]` line with the project, dev mode, embedding,
+Each launch test prints one `[lti-launch]` line with the project, the embedding,
 whether the launch reached the PWA, the LTI service's error message if it
-rejected the launch, and whether the browser stored the tool's session cookie,
-either as an ordinary cookie or as a partitioned (CHIPS) cookie.
-With dev mode off, ltijs rejects a launch whose state cookie the browser did not
-send with `MISSING_VALIDATION_COOKIE`.
+rejected the launch, and whether the browser stored the tool's cookie, either
+as an ordinary cookie or as a partitioned (CHIPS) cookie.
