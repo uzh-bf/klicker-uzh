@@ -31,8 +31,9 @@ questions are not rewritten.
 No unresolved product choice remains beyond approval of this contract. Local
 verification adds no model/API requests; existing review and CI usage apply.
 
-The current request authorizes planning. Approval of the proposed executable batch
-authorizes implementation, disposable local verification, configured reviews,
+The user approved this executable batch with "execute with a goal", then required
+that existing questions remain compatible. This authorizes implementation,
+disposable local verification, configured reviews,
 commits, ordinary task-branch pushes, and draft PR delivery. It ends at a verified
 draft PR; merge, readiness, deployment, data repair, and human notifications remain
 outside this batch.
@@ -41,12 +42,13 @@ outside this batch.
 
 ### Contract and evidence
 
-| Precision | Exact solution supplied as string or number | Saved result |
+| Precision | New or changed exact solution, supplied as string or number | Saved result |
 | --- | --- | --- |
 | Empty, null, or absent | `-0.02` | `-0.02`; precision remains unset |
 | Explicit `0` | `-0.02` | `0`; precision remains explicitly `0` |
 | `2` | `-0.024` | `-0.02`; precision remains `2` |
 | Cleared after previously being `2` | `-0.024` | `-0.024`; precision becomes unset |
+| Unchanged persisted `2` | Unchanged persisted `-0.024` | `-0.024`; unrelated edits preserve the answer |
 
 Equivalent positive decimals follow the same rules. Preserve the existing
 rounding mechanism for valid explicit precision; do not introduce a new tolerance
@@ -126,7 +128,9 @@ Make the smallest correction in `prepareNumericalArgs` and the existing numerica
 input components. Distinguish absent precision from zero and normalize exact
 solution values consistently. Prevent absent precision from becoming `NaN` at
 the input boundary. Preserve decimals when unset and round strings and numbers
-equally when explicitly configured. Do not add a module or dependency.
+equally when explicitly configured and the answer or Precision changes. Preserve
+unchanged persisted answers under unchanged precision, including when a sibling
+answer is edited. Do not add a module or dependency.
 
 Required source scope is `helpers.ts`, `options/NumericalOptions.tsx`, and
 `options/NumericalExactSolutionsInput.tsx` under element manipulation. Inspect
@@ -177,7 +181,7 @@ the plan belong to this same implementation PR.
 | Consequential behavior | Existing evidence and obligation | Primary seam / distinct failure | Slice |
 | --- | --- | --- | --- |
 | An unset precision preserves positive and negative decimal exact answers through create, edit, save, and reopen | Extend existing numerical Playwright spec | Real form and mutation persistence; catches silent truncation | 1 |
-| Explicit `0` persists, and configured rounding is the same for loaded and typed answers | Extend the same focused regression with equivalent cases | Real form and mutation variables; catches omitted zero and type-dependent rounding | 1 |
+| Explicit `0` persists; changed answers or changed Precision round consistently, while unchanged persisted answers retain their value | Extend the same focused regression with equivalent cases and synthetic legacy answers | Real form and mutation variables; catches omitted zero, type-dependent rounding, and accidental legacy rewrites | 1 |
 | Clearing precision removes the restriction; an unrelated edit preserves the answer | Extend the same synthetic workflow | Reopen and edit transitions; catches stale precision or normalization on a later save | 1 |
 | Unsupported explicit precision cannot throw during save | Extend the focused workflow for precision `101`, and probe loaded/template input rejection; verify `100` remains accepted | Validation and handled submission boundary; catches the new crash risk from rounding loaded answers | 1 |
 | Existing ranges, numerical restrictions, and exact-answer workflows still work | No new tests; run existing numerical suite | Existing behavior coverage; catches accidental widening of the patch | 2 |
@@ -249,16 +253,32 @@ First useful acceptance: a real create/edit/save/reopen regression preserves
 API pass-through and grading consumers inspected. Browser/widget behavior is
 still unverified and belongs to execution acceptance.
 
-Completed: source diagnosis, fresh target inspection, task worktree creation,
-and independently approved plan. Native goal active. A test-only executor owns
-`playwright/tests/I-elements-numerical.spec.ts` (child
-`01a179ec-2ffb-77a2-9812-45d7ec2744b8`); main owns source compatibility and runtime
-proof. Required delivery: verified draft PR. Browser/runtime checks are blocked by
-Docker reporting that all predefined address pools are fully subnetted. Runtime
-startup uses the installed
-Volta devrouter; the older `.local/bin` binary rejects current config and must
-not be used. Main resolves this by selecting the already-installed compatible
-binary, without modifying client configuration.
+Completed: source diagnosis, task worktree, approved plan, implementation,
+synthetic serializer/schema checks, secret and focused Opengrep scans,
+simplification, and independent data-integrity/integrated source reviews.
+The test executor and both native review children are closed. Source candidate
+`8d9d272bdd4ed469fb9939ee64906ddb660e6553` includes the verified correction that
+awaits mutation completion before database assertions. Substantive package size:
+401 added and 23 removed lines, excluding this plan. One cohesive isolated bug
+fix remains the package boundary.
+
+Draft PR: [#6741](https://github.com/uzh-bf/klicker-uzh/pull/6741), target `v3`.
+Required delivery: verified draft PR; achieved delivery: source and tests pushed,
+verification incomplete. One CI observer owns the candidate watch; its local
+session and evidence are recorded under `project/_local/reviews/`.
+Browser/runtime checks remain blocked by Docker reporting that all predefined
+address pools are fully subnetted. The failed task's provider state is
+`NotFound`, and zero exact routes exist. Canonical stop is refused because the
+failed runtime has no complete selected population; no task containers exist.
+No unrelated network, container, volume, or client configuration was modified.
+Startup selected the already-installed compatible Volta devrouter instead of
+the older `.local/bin` binary.
+
+Required remaining proof: terminal candidate CI, actual browser save/reopen,
+locale and narrow-viewport checks, and screenshot publication. No data repair,
+readiness, merge, or deployment is authorized. Next action: resolve candidate CI
+findings; browser proof requires restored local Docker capacity and a usable
+managed lifecycle. No failed runtime startup is a passing acceptance check.
 
 Compatibility refinement from the user's latest instruction supersedes the
 blanket normalization of existing numeric answers: unchanged saved exact answers
@@ -277,7 +297,12 @@ use the canonical host launcher to avoid pnpm host-dependency preflight; bound
 explicit precision to prevent new rounding exceptions; limit preview acceptance
 to response entry. Round 2 returned `APPROVED`; reviewer child closed. Full
 transcript: `project/_local/reviews/2026-10-26-numerical-exact-precision-plan-hardening.md`.
-Planning terminal reached; implementation approved by the user.
+Planning terminal reached; implementation approved by the user. Native slice
+review found one test race, corrected in `8d9d272bdd` and verified by the same
+reviewer. Integrated Claude review of `1c2dbe5317..8d9d272bdd` found no source
+defect; its one stale-plan-wording finding is corrected in this update and
+verified by the main session. Source review remains reusable; missing browser
+and CI evidence is not waived.
 The optional opposing-provider
 check is unavailable: `agy models` reported missing Antigravity authentication
 and sandbox-denied cache/log writes. Do not change agent configuration or retry
