@@ -377,6 +377,7 @@ export async function buildAssessmentReportSnapshotV1({
       id: true,
       name: true,
       displayName: true,
+      endDate: true,
       participantInvitations: {
         where: {
           participantId,
@@ -441,11 +442,16 @@ export async function buildAssessmentReportSnapshotV1({
       totalPoints,
       availableTotalPoints,
     },
-    comparison: buildAssessmentReportComparison({
-      scores,
-      studentScore: totalPoints,
-      availableTotalPoints,
-    }),
+    // Interim reports during the course carry no peer comparison; every
+    // report issued after the course end date includes it.
+    comparison:
+      course.endDate <= new Date()
+        ? buildAssessmentReportComparison({
+            scores,
+            studentScore: totalPoints,
+            availableTotalPoints,
+          })
+        : null,
   } satisfies AssessmentReportSnapshotV1)
 
   if (!parsed.success) {
@@ -556,13 +562,13 @@ async function issueAssessmentReportInTransaction({
     courseId,
     type: DB.CredentialType.COURSE_ASSESSMENT_INSIGHTS,
   }
-  const [activeRecord, historyRecord] = await Promise.all([
+  const [activeRecord, course] = await Promise.all([
     prisma.verifiableCredential.findFirst({
       where: { ...recordKey, status: DB.CredentialStatus.ACTIVE },
     }),
-    prisma.verifiableCredential.findFirst({
-      where: recordKey,
-      select: { id: true },
+    prisma.course.findUnique({
+      where: { id: courseId },
+      select: { endDate: true },
     }),
   ])
   const fullSnapshot = await buildAssessmentReportSnapshot({
@@ -571,11 +577,6 @@ async function issueAssessmentReportInTransaction({
     prisma,
   })
   const fullSnapshotHash = hashAssessmentReportSnapshot(fullSnapshot)
-  const privateReplacementSnapshot =
-    withoutAssessmentReportComparison(fullSnapshot)
-  const privateReplacementHash = hashAssessmentReportSnapshot(
-    privateReplacementSnapshot
-  )
 
   if (activeRecord) {
     const activeSnapshot = parseAssessmentReportSnapshot(activeRecord)
@@ -585,18 +586,23 @@ async function issueAssessmentReportInTransaction({
     ) {
       throw assessmentReportError('ASSESSMENT_REPORT_INVALID_DATA')
     }
+    // While the student's own claims are unchanged, a report issued after the
+    // course end keeps its comparison. Reissuing only because peer scores
+    // changed would let two reports be differenced to infer a peer's change.
+    // A comparison issued before the course end is replaced by a current one.
+    const keepsComparison =
+      fullSnapshot.comparison === null ||
+      (activeSnapshot.comparison !== null &&
+        course !== null &&
+        activeRecord.issuedAt >= course.endDate)
     if (
       activeRecord.snapshotHash === fullSnapshotHash ||
-      assessmentReportClaimsMatch(activeSnapshot, fullSnapshot)
+      (keepsComparison &&
+        assessmentReportClaimsMatch(activeSnapshot, fullSnapshot))
     ) {
       return toIssuedAssessmentReport(activeRecord)
     }
   }
-
-  // Comparisons are released only once. Replacements omit them so two
-  // downloadable reports cannot be differenced after a cohort change.
-  const snapshot = historyRecord ? privateReplacementSnapshot : fullSnapshot
-  const snapshotHash = historyRecord ? privateReplacementHash : fullSnapshotHash
 
   const revokedRecords = await prisma.verifiableCredential.findMany({
     where: {
@@ -620,7 +626,6 @@ async function issueAssessmentReportInTransaction({
 
     return (
       record.snapshotHash === fullSnapshotHash ||
-      record.snapshotHash === privateReplacementHash ||
       assessmentReportClaimsMatch(revokedSnapshot, fullSnapshot)
     )
   })
@@ -647,10 +652,10 @@ async function issueAssessmentReportInTransaction({
       type: recordKey.type,
       participantId,
       courseId,
-      subjectEmail: snapshot.subject.email,
-      snapshot,
-      snapshotVersion: snapshot.version,
-      snapshotHash,
+      subjectEmail: fullSnapshot.subject.email,
+      snapshot: fullSnapshot,
+      snapshotVersion: fullSnapshot.version,
+      snapshotHash: fullSnapshotHash,
     },
   })
   return toIssuedAssessmentReport(created)

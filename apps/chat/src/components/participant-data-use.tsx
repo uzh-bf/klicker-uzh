@@ -2,6 +2,7 @@
 
 import DynamicMarkdown from '@klicker-uzh/shared-components/src/evaluation/DynamicMarkdown'
 import ParticipantDataUseChoices from '@klicker-uzh/shared-components/src/participant/ParticipantDataUseChoices'
+import { PARTICIPANT_DATA_USE_DISCLOSURE_VERSION } from '@klicker-uzh/util/participant-account-data-use'
 import {
   Button,
   Checkbox,
@@ -63,9 +64,9 @@ interface ParticipantDataUseGateProps {
  * Blocking onboarding step for a participant account that has not completed the
  * current data-use disclosure. Chat answers on the participant's behalf and
  * stores the exchange on the account, so the acknowledgement and both purpose
- * choices have to exist before the first turn. Anonymous chat is a persisted
- * guest account without personal data, which is why the same step explains the
- * guest account instead of skipping it.
+ * choices have to exist before the first turn. Guest chat uses a persisted
+ * account without requiring contact details, so the same step explains the
+ * guest account and its stored messages instead of skipping it.
  */
 export function ParticipantDataUseGate({
   chatbotId,
@@ -105,6 +106,7 @@ export function ParticipantDataUseGate({
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
           expectedRevision: currentState.dataUseRevision,
+          disclosureVersion: PARTICIPANT_DATA_USE_DISCLOSURE_VERSION,
           researchConsent,
           learningAnalyticsConsent,
           acknowledged: true,
@@ -193,29 +195,54 @@ export function ParticipantDataUseGate({
         )}
         <div className="flex flex-col items-start justify-between gap-2 rounded bg-slate-100 p-4 md:flex-row md:items-center md:gap-4">
           <Checkbox
+            id="chat-data-use-acknowledgement"
             checked={acknowledged}
             onCheck={() => setAcknowledged(!acknowledged)}
             data={{ cy: 'chat-data-use-acknowledged' }}
             label={
-              <DynamicMarkdown
-                withProse
-                withLinkButtons={false}
-                content={t('pwa.createAccount.signup.acknowledgement')}
-              />
+              <label htmlFor="chat-data-use-acknowledgement">
+                <DynamicMarkdown
+                  withProse
+                  withLinkButtons={false}
+                  content={t(
+                    isGuest
+                      ? 'chat.dataUse.guestAcknowledgement'
+                      : 'pwa.createAccount.signup.acknowledgement'
+                  )}
+                />
+              </label>
             }
           />
-          <Button
-            primary
-            type="submit"
-            loading={saving}
-            disabled={
-              !acknowledged || learningAnalyticsConsent === undefined || saving
-            }
-            className={{ root: 'w-full flex-none md:w-max' }}
-            data={{ cy: 'chat-data-use-submit' }}
-          >
-            {t('shared.generic.continue')}
-          </Button>
+          <div className="flex w-full flex-none flex-col gap-2 md:w-max md:flex-row">
+            <Button
+              type="button"
+              disabled={saving}
+              onClick={() =>
+                window.location.assign(
+                  process.env.NEXT_PUBLIC_PWA_URL ||
+                    'https://pwa.klicker.uzh.ch'
+                )
+              }
+              data={{ cy: 'chat-data-use-cancel' }}
+            >
+              {t('shared.generic.cancel')}
+            </Button>
+            <Button
+              primary
+              type="submit"
+              loading={saving}
+              disabled={
+                !acknowledged ||
+                learningAnalyticsConsent === undefined ||
+                saving
+              }
+              data={{ cy: 'chat-data-use-submit' }}
+            >
+              {t(
+                isGuest ? 'chat.dataUse.guestStart' : 'shared.generic.continue'
+              )}
+            </Button>
+          </div>
         </div>
       </form>
     </div>
@@ -224,6 +251,7 @@ export function ParticipantDataUseGate({
 
 interface ParticipantDataUseSettingsProps {
   chatbotId: string
+  compact?: boolean
 }
 
 /**
@@ -233,6 +261,7 @@ interface ParticipantDataUseSettingsProps {
  */
 export function ParticipantDataUseSettings({
   chatbotId,
+  compact = false,
 }: ParticipantDataUseSettingsProps) {
   const t = useTranslations()
   const [open, setOpen] = useState(false)
@@ -287,6 +316,7 @@ export function ParticipantDataUseSettings({
           purpose,
           consent,
           expectedRevision: state.dataUseRevision,
+          disclosureVersion: PARTICIPANT_DATA_USE_DISCLOSURE_VERSION,
         }),
       })
       if (!response.ok) {
@@ -319,17 +349,22 @@ export function ParticipantDataUseSettings({
 
   return (
     <>
-      <button
+      <Button
         type="button"
-        data-cy="chat-data-use-settings-toggle"
-        className="hover:bg-accent focus-visible:ring-ring flex w-full items-center gap-2 border-t px-3 py-2 text-start transition-colors focus-visible:outline-none focus-visible:ring-1"
+        data={{ cy: 'chat-data-use-settings-toggle' }}
+        title={t('chat.dataUse.settingsTitle')}
+        className={{
+          root: compact
+            ? 'size-11 shrink-0 justify-center px-0'
+            : 'w-full justify-start gap-2 border-t px-3 py-2 text-start',
+        }}
         onClick={() => setOpen(true)}
       >
-        <Settings2 className="h-4 w-4" />
-        <span className="text-base font-medium">
+        <Settings2 className="h-4 w-4" aria-hidden />
+        <span className={compact ? 'sr-only' : 'text-base font-medium'}>
           {t('chat.dataUse.settingsTitle')}
         </span>
-      </button>
+      </Button>
       <Modal
         open={open}
         onClose={() => setOpen(false)}

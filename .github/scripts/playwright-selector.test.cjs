@@ -173,6 +173,18 @@ test('selects a directly changed spec and assigns its trusted profile', () => {
   assert.deepEqual(plan.shards[0].files, ['tests/A-login.spec.ts'])
 })
 
+test('a deferred draft skips whatever the diff touches', () => {
+  const deferred = selectFromChanges({
+    candidateSpecs: ['A-login.spec.ts', 'Y-chat.spec.ts'],
+    manifest: fixtureManifest(),
+    changes: [change('M', 'playwright/tests/A-login.spec.ts')],
+    prState: 'deferred',
+  })
+  assert.equal(deferred.mode, 'skip')
+  assert.deepEqual(deferred.selectedSpecs, [])
+  assert.deepEqual(deferred.reasonCodes, ['draft-sync-deferred'])
+})
+
 test('maps known feature paths, skips documentation, and fails unknown paths closed', () => {
   const manifest = fixtureManifest()
   const base = {
@@ -438,6 +450,17 @@ test('uses the exact merge-base and diff range, with history failures falling ba
     })
     assert.equal(fallback.mode, 'full')
     assert.deepEqual(fallback.reasonCodes, ['history-unavailable'])
+
+    const deferred = selectPlaywrightPlan({
+      controlRoot: repositoryRoot,
+      candidateRoot: root,
+      baseSha: '0000000000000000000000000000000000000000',
+      headSha,
+      prState: 'deferred',
+    })
+    assert.equal(deferred.mode, 'skip')
+    assert.equal(deferred.shardCount, 0)
+    assert.deepEqual(deferred.selectedSpecs, [])
   } finally {
     fs.rmSync(root, { recursive: true, force: true })
   }

@@ -12,6 +12,7 @@ const WORKFLOW_PATH = '.github/workflows/v3_images-stg.yml'
 const RETRYABLE_STATUSES = Object.freeze(['in_progress', 'queued'])
 const DEFAULT_MAX_ATTEMPTS = 40
 const DEFAULT_RETRY_DELAY_MS = 15000
+const MAX_API_FAILURES = 3
 
 // The plan job publishes its selection through step outputs, so every value
 // arrives as a string. A list that cannot be parsed is a broken handoff, not an
@@ -309,10 +310,24 @@ async function evaluateStagingImageStatus({
 
   let decision = null
   let attemptCount = 0
+  let apiFailureCount = 0
   for (let attempt = 1; attempt <= Math.max(1, maxAttempts); attempt += 1) {
     attemptCount = attempt
-    const jobs = await listRunJobs({ github, context, binding })
-    decision = determineStagingDecision({ binding, observedJobs: jobs, plan })
+    try {
+      const jobs = await listRunJobs({ github, context, binding })
+      decision = determineStagingDecision({ binding, observedJobs: jobs, plan })
+    } catch (error) {
+      apiFailureCount += 1
+      const status = error?.status
+      decision = {
+        ok: false,
+        reason: 'workflow job evidence is unavailable',
+        state: 'unavailable',
+        retryable:
+          [500, 502, 503, 504].includes(status) &&
+          apiFailureCount < MAX_API_FAILURES,
+      }
+    }
     if (decision.ok || !decision.retryable) break
     if (attempt < maxAttempts) await sleep(retryDelayMs)
   }

@@ -139,7 +139,7 @@ describe('chat participant data-use route', () => {
     }
   })
 
-  test('records the acknowledgement with both choices and the server-owned version', async () => {
+  test('passes the displayed version and both choices to the canonical writer', async () => {
     mocks.completeParticipantDataUse.mockResolvedValue({ id: participantId })
     mocks.loadChatDataUseState.mockResolvedValue({
       ...incompleteState,
@@ -153,7 +153,6 @@ describe('chat participant data-use route', () => {
     const response = await POST(
       request('POST', {
         expectedRevision: 0,
-        // A client-supplied version must never reach the writer.
         disclosureVersion: '1999-01-01',
         researchConsent: true,
         learningAnalyticsConsent: false,
@@ -170,7 +169,7 @@ describe('chat participant data-use route', () => {
       learningAnalyticsConsent: false,
       acknowledged: true,
     })
-    expect(input.disclosureVersion).not.toBe('1999-01-01')
+    expect(input.disclosureVersion).toBe('1999-01-01')
     expect(context.user).toEqual({
       sub: participantId,
       role: 'PARTICIPANT',
@@ -209,13 +208,18 @@ describe('chat participant data-use route', () => {
         purpose: 'analytics',
         consent: true,
         expectedRevision: 1,
+        disclosureVersion: '1999-01-01',
       }),
       { params: params() }
     )
     expect(accepted.status).toBe(200)
     expect(mocks.updateParticipantDataUseChoice).toHaveBeenCalledWith(
       'analytics',
-      expect.objectContaining({ consent: true, expectedRevision: 1 }),
+      expect.objectContaining({
+        consent: true,
+        expectedRevision: 1,
+        disclosureVersion: '1999-01-01',
+      }),
       expect.objectContaining({
         user: { sub: participantId, role: 'PARTICIPANT' },
       })

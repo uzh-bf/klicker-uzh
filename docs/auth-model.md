@@ -141,6 +141,20 @@ writer is available through the server-only GraphQL package entry
 participant identity/role, so chat can reuse the same transactions without
 constructing a GraphQL request context.
 
+Chat applies the same completion check after resolving identity and authorizing
+the chatbot/course. Registered accounts and persisted guest personas must record
+the current acknowledgement and both purpose choices before attributed chat
+operations. The layout and `/api/chatbots/[chatbotId]/data-use` stay reachable
+for completion; the route derives the participant from the verified session and
+never accepts a participant ID. Both completion and settings submit the page's
+bundled disclosure version to the canonical writer, which rejects stale pages.
+Later settings remain accessible through the sidebar and embedded toolbar.
+The account notice precedes the separate chatbot disclaimer; accepting either
+does not accept the other. Cancelling the account notice returns to the PWA
+without changing choices or submitting a message. A guest persona persists chat
+messages and operational usage data without asking for a name or email; its
+choices apply to that persona, not every course or a separate registered account.
+
 Assessment completion uses the same four disclosure sections with additional
 identity, answer, audit-log, access and retention information. In the assessment
 backend (`ASSESSMENT_MODE=true`), `deleteParticipantAccount` rejects self-deletion

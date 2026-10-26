@@ -50,7 +50,7 @@ The primary checkout keeps fixed localhost application ports, publishes the data
 
 Use this to mirror production domain behaviors, test cookie-sharing over HTTPS, and enable parallel workspaces:
 
-1. **Host prerequisite**: Install [devrouter](https://github.com/rschlaefli/devrouter) ≥ 0.2.0 and set it up:
+1. **Host prerequisite**: Install [devrouter](https://github.com/rschlaefli/devrouter) ≥ 0.5.1 and set it up:
    ```bash
    devrouter setup --yes   # Traefik + the shared `devnet` + mkcert CA
    ```
@@ -63,6 +63,32 @@ Use this to mirror production domain behaviors, test cookie-sharing over HTTPS, 
 
 Do not use bare `devpod up`, manual `WORKSPACE`, or per-app `--workspace` route loops for this managed devcontainer. Those paths bypass the identity and runtime proof.
 
+## HTTPS proxy environments
+
+The app image can trust an additional public CA for a managed HTTPS proxy.
+Export `KLICKER_EXTRA_CA_PEM` with the PEM certificate contents before running
+`devrouter ensure .`; Compose passes it as an optional build argument and the
+image installs it in the system trust store before downloading pnpm. Node uses
+the system CA store as well. Leave the argument unset for ordinary local setup.
+The certificate becomes part of the image: supply only a public trust root,
+never a private key or credential. TLS verification remains enabled.
+
+The app forwards the host's `HTTP_PROXY`, `HTTPS_PROXY`, and `NO_PROXY`, and
+Node enables environment-proxy support. Docker builds use Docker's standard
+proxy configuration. Proxy hostnames must resolve from Docker's network.
+When supplying `NO_PROXY`, retain loopback and `.localhost` plus the internal
+host endpoint `host.docker.internal` and service names (`postgres`, `hatchet`, `redis_exec`, `redis_assessment`,
+`redis_cache`, `litellm`, `mailhog`, `oidc`, `azurite`, and `klicker-uzh-azurite`).
+Managed startup also appends the selected internal Blob hostname (including
+`${WORKSPACE}-azurite`) before storage setup and application tasks, preserving
+entries in a supplied `NO_PROXY`. An override used outside managed startup must
+include the internal Blob hostname selected by `BLOB_STORAGE_INTERNAL_ACCOUNT_URL`.
+If Docker injects proxy settings
+into the shared Traefik router, its exclusions must also cover the app's
+Docker alias (`klicker-uzh-app` for the primary checkout, or the exact linked
+checkout alias). Otherwise the local route can return the egress proxy's error
+while the application's direct port remains healthy.
+
 ## Checkout lifecycle
 
 ```bash
@@ -72,6 +98,13 @@ devrouter ensure . --profile chat,ai,mcp   # additive merged selection
 devrouter exec . -- <command...>
 devrouter stop .
 ```
+
+Machines that opted in with `devrouter setup --yes --idle-stop 30m` stop a
+checkout's stack once its routed apps, `devrouter exec` and lifecycle commands
+have been quiet for that long; `devrouter ensure .` resumes it. Database-only
+work, such as a `psql` session through `db.klicker.localhost`, does not count
+as activity, so pin the checkout first with `devrouter workspace pin .` and
+remove the pin with `devrouter workspace pin . --off` afterwards.
 
 Open the Manage URL printed by `ensure` and log in as **`lecturer` / `abcd`**
 (accept the terms checkbox). The dev servers run in the background; inspect
@@ -106,7 +139,7 @@ marker creation to work around a refusal.
 
 ## Profiles
 
-This repository pins devrouter 0.2.0. Managed profiles, introduced in 0.0.40,
+This repository pins devrouter 0.5.1. Managed profiles, introduced in 0.0.40,
 select three independent dimensions: routed
 apps, optional Compose services, and managed processes. Merged selections are
 additive and order-insensitive; omitting `--profile` selects `standard`, which
@@ -127,6 +160,7 @@ It does not apply changed mounts to retained containers.
 | --------------------------------------- | ------------------------------------------------------------------------------------- |
 | `manage` / `pwa` / `chat` / `live-quiz` | That app set + API/Auth (+ PWA for chat; workers for live-quiz), the 3x Redis         |
 | `eduid`                                 | The local Edu-ID OIDC mock only - combine it with an application profile              |
+| `db`                                    | The routed Postgres endpoint only - combine it with an application profile            |
 | `ai`                                    | LiteLLM only - no routes, no app process                                              |
 | `mcp`                                   | Deterministic MCP fixture and its separate disposable database                        |
 | `email`                                 | MailHog only                                                                          |
@@ -162,10 +196,10 @@ starting the backend or workers.
 
 ## Playwright runs on the host
 
-Run `pnpm playwright:host -- <args>` from a host shell. The launcher reconciles
-this exact checkout, uses its namespaced HTTPS routes, and discovers the
-workspace Postgres container's random loopback port for test cleanup and
-seeding. The Playwright process, Node dependencies, and browser binaries stay
+Run `node util/run-playwright-host.mjs <args>` from a host shell. The launcher reconciles
+this exact checkout, uses its namespaced HTTPS routes, and reads the
+workspace Postgres container's random loopback port from `devrouter env --json`
+for test cleanup and seeding. The Playwright process, Node dependencies, and browser binaries stay
 on the host; applications and services stay in this devcontainer.
 
 The launcher infers profiles from the selected specs and falls back to
@@ -173,7 +207,7 @@ The launcher infers profiles from the selected specs and falls back to
 the required profile union explicitly before the Playwright arguments:
 
 ```bash
-pnpm playwright:host -- --runtime-profile manage,live-quiz --project=chromium tests/MA-elements-operations.spec.ts
+node util/run-playwright-host.mjs --runtime-profile manage,live-quiz --project=chromium tests/MA-elements-operations.spec.ts
 ```
 
 The caller must include every profile the selected tests need; the launcher
@@ -198,9 +232,10 @@ pinned host Node (`volta run node ./util/run-playwright-host.mjs ...`) so it
 can stop the exact checkout before installing. If the CLI exists but dependency
 links are stale, stop that exact checkout first and run the existing filtered
 frozen install explicitly; the launcher does not repair a warm dependency tree.
-The outer `pnpm playwright:host` entrypoint is still the normal warm-run
-command, but pnpm's fail-closed policy intentionally stops it before the
-launcher when its own dependency validation detects a stale workspace.
+The `pnpm playwright:host` package script runs the same launcher, but pnpm's
+fail-closed policy intentionally stops it before the launcher whenever its own
+dependency validation finds a missing or stale host install. That is the normal
+state of a devcontainer checkout, so the direct `node` form is canonical.
 
 Direct local Playwright commands fail before global setup, and this container
 sets its Playwright browser path to a non-directory target. Do not run Playwright
@@ -260,7 +295,10 @@ back to `APP_SECRET`; student tokens use `APP_SECRET`.
 
 Infra (the 3× Redis, MailHog, Hatchet) is **not** routed — the apps reach it by
 compose DNS (`redis_exec`, `redis_cache`, `redis_assessment`, `mailhog`,
-`hatchet:7077`). Connect to the DB from the host with direct-SSL:
+`hatchet:7077`). A selective profile publishes the routed DB endpoint only
+when it includes `db` (for example `--profile manage,db`); `standard` and `full`
+always do. Otherwise use the loopback port from `devrouter env . --json`.
+Connect to the routed endpoint from the host with direct-SSL:
 
 ```bash
 psql "host=db.klicker.<workspace>.localhost port=5432 user=klicker_test \
@@ -329,7 +367,7 @@ boot because its `HatchetClient.init` runs at module load (not lazy).
 
 | Service                             | Image                                            | Purpose                                                                              |
 | ----------------------------------- | ------------------------------------------------ | ------------------------------------------------------------------------------------ |
-| `app`                               | local `Dockerfile` (Node 24 + pnpm 11.5.0)       | runs every routed app plus the two Hatchet workers and both MCP servers              |
+| `app`                               | local `Dockerfile` (Node 24 + pnpm 12.11.2)      | runs every routed app plus the two Hatchet workers and both MCP servers              |
 | `postgres`                          | `postgres:15`                                    | Marked `klicker_test` + `klicker_test_shadow`; separate legacy/LTI/Hatchet databases |
 | `redis_exec`/`_assessment`/`_cache` | `redis:7`                                        | live-quiz exec / assessment / cache + pub/sub                                        |
 | `mailhog`                           | `mailhog/mailhog`                                | dev SMTP sink                                                                        |
@@ -491,12 +529,11 @@ disabled and the rest of the DevPod still starts normally.
   volume `klicker-uzh-pnpm-store-v1` is created idempotently before Compose and
   survives individual DevPod deletion. `node_modules`, `.next`, and PostgreSQL
   data remain worktree-scoped.
-- The same store volume is also mounted at `<workspace>/.pnpm-store`. The
-  workspace bind and the store volume are different devices inside the
-  container, so pnpm can fall back from the configured store to a workspace
-  store during installs; the second mount makes that fallback land in the
-  shared volume instead of writing a per-worktree store onto the host bind
-  mount.
+- The same store volume remains mounted at `<workspace>/.pnpm-store` for the
+  legacy fallback location. The image explicitly configures
+  `/pnpm/.pnpm-store`; keep that setting when upgrading the toolchain. Without
+  an explicit store directory, pnpm 12's sandbox fallback is instead
+  `<project>/node_modules/.pnpm-store`, inside the worktree's dependency volume.
 - Removing `klicker-uzh-pnpm-store-v1` is destructive cache cleanup. Stop every
   Klicker DevPod that uses it first, then remove that exact volume manually with
   `docker volume rm klicker-uzh-pnpm-store-v1`; never use broad Docker pruning.

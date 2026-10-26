@@ -48,9 +48,12 @@ if [ -n "${KLICKER_TEST_HELPER_LOG:-}" ]; then
   else
     helper="OTHER"
   fi
-  for name in AZURE_OPENAI_API_KEY AZURE_OPENAI_BASE_URL UPSTREAM_OPENAI_API_KEY UPSTREAM_OPENAI_BASE_URL OPENAI_API_KEY LITELLM_API_KEY KLICKER_EVAL_PARTICIPANT_USERNAME KLICKER_EVAL_PARTICIPANT_PASSWORD KLICKER_EVAL_TARGET_KEY KLICKER_EVAL_ELEARNING_HANDOFF_SECRET; do
+  for name in AZURE_OPENAI_API_KEY AZURE_OPENAI_BASE_URL UPSTREAM_OPENAI_API_KEY UPSTREAM_OPENAI_BASE_URL OPENAI_API_KEY LITELLM_API_KEY KLICKER_EVAL_PARTICIPANT_USERNAME KLICKER_EVAL_PARTICIPANT_PASSWORD KLICKER_EVAL_TARGET_KEY KLICKER_EVAL_GUARD_KEY KLICKER_EVAL_UPSTREAM_KEY KLICKER_EVAL_ELEARNING_HANDOFF_SECRET; do
     printf "%s_%s_PRESENT=%s\n" "$helper" "$name" "${!name:+yes}" >>"$KLICKER_TEST_HELPER_LOG"
   done
+  if [ "$helper" = ADAPTER ]; then
+    printf "ADAPTER_MODEL_ID=%s\n" "$KLICKER_EVAL_MODEL_ID" >>"$KLICKER_TEST_HELPER_LOG"
+  fi
 fi
 if [ "${1:-}" = "-e" ]; then
   printf "%s" "synthetic-target-key"
@@ -67,7 +70,7 @@ write_file "$FAKE_BIN/uv" '#!/usr/bin/env bash
 for name in LITELLM_API_BASE EVAL_MODEL EVAL_MODEL_CAPABILITY_MODEL EVAL_REASONING_EFFORT EVAL_JUDGE_SINGLE_ATTEMPT EVAL_METRICS_PATH EVAL_TOOLS_PATH GT_ROOT_DIR DEFAULT_GT_DIR TOOL_PROFILE KLICKER_EVAL_EVIDENCE_DIR KLICKER_EVAL_RUN_ID EVAL_API_MODE EVAL_ENDPOINT_URL EVAL_MODELS_URL EVAL_STREAM AGENT_ID; do
   printf "%s=%s\n" "$name" "${!name-}" >>"$KLICKER_TEST_CHILD_LOG"
 done
-for name in AZURE_OPENAI_API_KEY AZURE_OPENAI_BASE_URL UPSTREAM_OPENAI_API_KEY UPSTREAM_OPENAI_BASE_URL OPENAI_API_KEY LITELLM_API_KEY JUDGE_KEY JUDGE_URL PIPELINES_LITELLM_API_KEY INFISICAL_TOKEN; do
+for name in AZURE_OPENAI_API_KEY AZURE_OPENAI_BASE_URL UPSTREAM_OPENAI_API_KEY UPSTREAM_OPENAI_BASE_URL OPENAI_API_KEY LITELLM_API_KEY JUDGE_KEY JUDGE_URL PIPELINES_LITELLM_API_KEY INFISICAL_TOKEN KLICKER_EVAL_GUARD_KEY KLICKER_EVAL_UPSTREAM_KEY; do
   printf "%s_PRESENT=%s\n" "$name" "${!name:+yes}" >>"$KLICKER_TEST_CHILD_LOG"
 done
 printf "EVAL_API_KEY_PRESENT=%s\n" "${EVAL_API_KEY:+yes}" >>"$KLICKER_TEST_CHILD_LOG"
@@ -592,6 +595,22 @@ run_judge_case KLICKER_EVAL_CONFIG=canonical.json
 assert_line 'LITELLM_API_KEY_PRESENT=yes' "$CHILD_LOG"
 
 LOCAL_STOP_MARKER="$TEST_ROOT/local-adapter-stopped"
+write_file "$TEST_ROOT/budget.json" '{}'
+write_file "$TEST_ROOT/qualification.json" '{}'
+: >"$CHILD_LOG"
+: >"$TEST_ROOT/helper.log"
+status=0
+env -i PATH="$TEST_PATH" \
+  KLICKER_EVAL_API_ORIGIN='https://api.klicker.localhost' \
+  KLICKER_EVAL_CHAT_ORIGIN='https://chat.klicker.localhost' \
+  KLICKER_EVAL_PARTICIPANT_USERNAME='synthetic-participant' \
+  KLICKER_EVAL_PARTICIPANT_PASSWORD='synthetic-password' \
+  KLICKER_TEST_CHILD_LOG="$CHILD_LOG" \
+  KLICKER_TEST_HELPER_LOG="$TEST_ROOT/helper.log" \
+  "$WRAPPER" --local-target --mode query >"$TEST_ROOT/guard-missing.out" 2>&1 || status=$?
+[ "$status" -ne 0 ] || fail 'local target without guard inputs must fail preflight'
+[ ! -s "$CHILD_LOG" ] || fail 'guard preflight failure must not invoke evaluator'
+[ ! -s "$TEST_ROOT/helper.log" ] || fail 'guard preflight failure must not invoke target helpers'
 PATH="$TEST_PATH" git init --bare "$TEST_ROOT/bare.git" >/dev/null 2>&1
 : >"$CHILD_LOG"
 env -i \
@@ -605,6 +624,12 @@ env -i \
   KLICKER_EVAL_CHAT_ORIGIN='https://chat.klicker.localhost' \
   KLICKER_EVAL_PARTICIPANT_USERNAME='synthetic-participant' \
   KLICKER_EVAL_PARTICIPANT_PASSWORD='synthetic-password' \
+  KLICKER_EVAL_GUARD_ORIGIN='http://127.0.0.1:41235' \
+  KLICKER_EVAL_GUARD_KEY='synthetic-guard-key' \
+  KLICKER_EVAL_UPSTREAM_KEY='synthetic-upstream-key' \
+  KLICKER_EVAL_BUDGET_FILE="$TEST_ROOT/budget.json" \
+  KLICKER_EVAL_QUALIFICATION_FILE="$TEST_ROOT/qualification.json" \
+  KLICKER_EVAL_MODEL_ID='synthetic-selected-model' \
   KLICKER_EVAL_ELEARNING_HANDOFF_SECRET='synthetic-elearning-secret' \
   AZURE_OPENAI_API_KEY='synthetic-azure-key' \
   AZURE_OPENAI_BASE_URL='https://azure.example.test' \
@@ -625,9 +650,15 @@ assert_line 'EVAL_API_MODE=chat-completions' "$CHILD_LOG"
 assert_line 'EVAL_ENDPOINT_URL=http://127.0.0.1:41234/v1/chat/completions' "$CHILD_LOG"
 assert_line 'EVAL_MODELS_URL=http://127.0.0.1:41234/v1/models' "$CHILD_LOG"
 assert_line 'EVAL_STREAM=false' "$CHILD_LOG"
+assert_line 'AGENT_ID=synthetic-selected-model' "$CHILD_LOG"
+assert_line 'ADAPTER_MODEL_ID=synthetic-selected-model' "$TEST_ROOT/helper.log"
+assert_line 'KLICKER_EVAL_GUARD_KEY_PRESENT=' "$CHILD_LOG"
+assert_line 'KLICKER_EVAL_UPSTREAM_KEY_PRESENT=' "$CHILD_LOG"
+assert_line 'KEYGEN_KLICKER_EVAL_GUARD_KEY_PRESENT=' "$TEST_ROOT/helper.log"
+assert_line 'ADAPTER_KLICKER_EVAL_GUARD_KEY_PRESENT=yes' "$TEST_ROOT/helper.log"
+assert_line 'ADAPTER_KLICKER_EVAL_UPSTREAM_KEY_PRESENT=' "$TEST_ROOT/helper.log"
 assert_line 'KLICKER_EVAL_EVIDENCE_DIR=' "$CHILD_LOG"
 assert_line 'KLICKER_EVAL_RUN_ID=' "$CHILD_LOG"
-assert_line 'AGENT_ID=gpt-6-luna' "$CHILD_LOG"
 assert_line "EVAL_METRICS_PATH=$FAKE_REPO/evaluation/data/metrics/klicker_fineco_semantic_similarity.yaml" "$CHILD_LOG"
 assert_line "ARG=$FAKE_REPO/evaluation/data/ground_truth/klicker_fineco" "$CHILD_LOG"
 assert_line 'EVAL_API_KEY_PRESENT=yes' "$CHILD_LOG"
@@ -661,11 +692,14 @@ env -i \
   KLICKER_EVAL_CHAT_ORIGIN='https://chat.klicker.localhost' \
   KLICKER_EVAL_PARTICIPANT_USERNAME='synthetic-participant' \
   KLICKER_EVAL_PARTICIPANT_PASSWORD='synthetic-password' \
+  KLICKER_EVAL_GUARD_ORIGIN='http://127.0.0.1:41235' \
+  KLICKER_EVAL_GUARD_KEY='synthetic-guard-key' \
+  KLICKER_EVAL_BUDGET_FILE="$TEST_ROOT/budget.json" \
+  KLICKER_EVAL_QUALIFICATION_FILE="$TEST_ROOT/qualification.json" \
   KLICKER_TEST_ADAPTER_SCRIPT="$FAKE_REPO/apps/chat/scripts/klicker-evaluation-target.mjs" \
   KLICKER_TEST_ADAPTER_STOP_MARKER="$LOCAL_STOP_MARKER" \
   KLICKER_TEST_EXEC_RUNNER='true' \
   KLICKER_TEST_RUNNER_STATUS='74' \
-  KLICKER_EVAL_MODEL_ID='auto' \
   PATH="$TEST_PATH" \
   KLICKER_TEST_REPO_ROOT="$FAKE_REPO" \
   KLICKER_TEST_CHILD_LOG="$CHILD_LOG" \
@@ -674,7 +708,7 @@ env -i \
   2>"$TEST_ROOT/local-failure.stderr" || status=$?
 
 [ "$status" -eq 74 ] || fail "local child failure returned $status instead of 74"
-assert_line 'AGENT_ID=auto' "$CHILD_LOG"
+assert_line 'AGENT_ID=gpt-6-luna' "$CHILD_LOG"
 [ -s "$LOCAL_STOP_MARKER" ] || fail 'local adapter must stop after a failed child run'
 
 # An unconfigured judge uses the standalone loopback gateway only.

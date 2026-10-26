@@ -98,7 +98,7 @@ function main() {
   const primaryTargets = {
     node_modules: path.join(repoRoot, 'node_modules'),
     '.turbo (turbo cache)': path.join(repoRoot, '.turbo'),
-    '.pnpm-store (fallback store)': path.join(repoRoot, '.pnpm-store'),
+    '.pnpm-store (legacy fallback)': path.join(repoRoot, '.pnpm-store'),
     '.git': path.join(repoRoot, '.git'),
   }
   const nextDirs = []
@@ -141,7 +141,11 @@ function main() {
     ['active content store', path.join(home, 'Library/pnpm/store/v11')],
     ['older store (pnpm <= 10)', path.join(home, 'Library/pnpm/store/v10')],
     ['older store (pnpm <= 9)', path.join(home, 'Library/pnpm/store/v3')],
-    ['workspace fallback store', path.join(repoRoot, '.pnpm-store')],
+    [
+      'workspace fallback store',
+      path.join(repoRoot, 'node_modules/.pnpm-store'),
+    ],
+    ['legacy workspace store', path.join(repoRoot, '.pnpm-store')],
   ]
   const storeSizes = duAll(storeDirs.map(([, p]) => p))
   for (const [label, p] of storeDirs) {

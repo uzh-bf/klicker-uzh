@@ -1,5 +1,8 @@
-import { createOpenAI } from '@ai-sdk/openai'
-import { isStepCount, streamText, tool } from 'ai'
+import {
+  createOpenAI,
+  type OpenAILanguageModelResponsesOptions,
+} from '@ai-sdk/openai'
+import { generateText, isStepCount, streamText, tool } from 'ai'
 import { describe, expect, test, vi } from 'vitest'
 import { z } from 'zod'
 import { getOpenAIProviderOptions } from '../src/lib/server/openaiProviderOptions'
@@ -125,5 +128,60 @@ describe('OpenAI provider routing options', () => {
     })
 
     expect(options).toEqual({})
+  })
+
+  describe('reasoning options for gateway deployment ids', () => {
+    async function requestBodyFor(openai: OpenAILanguageModelResponsesOptions) {
+      let body: Record<string, any> = {}
+      const fetch = vi.fn(async (_input: unknown, init?: RequestInit) => {
+        body = JSON.parse(String(init?.body))
+        return new Response(
+          JSON.stringify({
+            id: 'resp-1',
+            created_at: 1,
+            model: 'klickeruzh/azure/gpt-6-luna',
+            output: [
+              {
+                type: 'message',
+                id: 'msg-1',
+                role: 'assistant',
+                content: [{ type: 'output_text', text: 'ok', annotations: [] }],
+              },
+            ],
+            usage: { input_tokens: 1, output_tokens: 1 },
+          }),
+          { status: 200, headers: { 'content-type': 'application/json' } }
+        )
+      })
+      const provider = createOpenAI({
+        apiKey: 'dummy-key',
+        baseURL: 'https://example.test/v1',
+        fetch,
+      })
+
+      await generateText({
+        model: provider.responses('klickeruzh/azure/gpt-6-luna'),
+        prompt: 'Synthetic question.',
+        providerOptions: { openai },
+      })
+
+      return body
+    }
+
+    test('sends reasoning effort when reasoning is forced', async () => {
+      const body = await requestBodyFor({
+        forceReasoning: true,
+        reasoningEffort: 'medium',
+        reasoningSummary: 'auto',
+      })
+
+      expect(body.reasoning).toMatchObject({ effort: 'medium' })
+    })
+
+    test('sends no reasoning block without a configured effort', async () => {
+      const body = await requestBodyFor({})
+
+      expect(body.reasoning).toBeUndefined()
+    })
   })
 })

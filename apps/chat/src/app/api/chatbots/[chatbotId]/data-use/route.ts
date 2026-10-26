@@ -14,8 +14,8 @@ import {
 export const maxDuration = 60
 
 /**
- * The disclosure version is server-owned: a client states which decisions it
- * wants recorded, never which revision of the text it is acknowledging.
+ * The shared writer checks the page's bundled disclosure version against the
+ * current required version before recording either acknowledgement or choices.
  */
 function dataUseErrorCode(error: unknown) {
   return error && typeof error === 'object'
@@ -134,7 +134,7 @@ export async function POST(
     const saved = await completeParticipantDataUse(
       {
         expectedRevision: body.expectedRevision,
-        disclosureVersion: PARTICIPANT_DATA_USE_DISCLOSURE_VERSION,
+        disclosureVersion: body.disclosureVersion,
         researchConsent: body.researchConsent,
         learningAnalyticsConsent: body.learningAnalyticsConsent,
         acknowledged: body.acknowledged,
@@ -187,7 +187,7 @@ export async function PATCH(
       purpose,
       {
         expectedRevision: body?.expectedRevision,
-        disclosureVersion: PARTICIPANT_DATA_USE_DISCLOSURE_VERSION,
+        disclosureVersion: body?.disclosureVersion,
         consent: body?.consent,
       },
       {

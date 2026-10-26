@@ -153,7 +153,10 @@ vi.mock('@langfuse/tracing', () => ({
   startActiveObservation: mocks.startActiveObservation,
 }))
 
-vi.mock('@/src/lib/server/openaiCachePolicy', () => ({
+vi.mock('@/src/lib/server/openaiCachePolicy', async (importOriginal) => ({
+  ...(await importOriginal<
+    typeof import('../src/lib/server/openaiCachePolicy')
+  >()),
   createOpenAIFetch: vi.fn(),
 }))
 
@@ -229,7 +232,11 @@ function chatbot(overrides: Record<string, unknown> = {}) {
   return {
     id: 'chatbot-1',
     ownerId: 'owner-1',
-    owner: { aiFeaturesEnabled: true, aiChatbotCostCenter: 'cost-center-1' },
+    owner: {
+      aiFeaturesEnabled: true,
+      aiSubscriptionTier: 'ADVANCED',
+      aiChatbotCostCenter: 'cost-center-1',
+    },
     course: { displayName: 'Test Course' },
     systemPrompts: { tutor: { prompt: 'Use course material.' } },
     mcpConfigurations: [],
@@ -701,6 +708,7 @@ describe('account usage chat route', () => {
         owner: {
           aiFeaturesEnabled: true,
           betaEnabled: false,
+          aiSubscriptionTier: 'ADVANCED',
           aiChatbotCostCenter: 'cost-center-1',
         },
       })
@@ -881,7 +889,11 @@ describe('account usage chat route', () => {
     mocks.isChatAccountUsageEnforcementEnabled.mockReturnValue(false)
     mocks.chatbotFindUnique.mockResolvedValue(
       chatbot({
-        owner: { aiFeaturesEnabled: true, aiChatbotCostCenter: null },
+        owner: {
+          aiFeaturesEnabled: true,
+          aiSubscriptionTier: 'BASE',
+          aiChatbotCostCenter: null,
+        },
       })
     )
 
@@ -900,6 +912,30 @@ describe('account usage chat route', () => {
     expect(mocks.streamText).not.toHaveBeenCalled()
   })
 
+  test('refuses an advanced model for a base-tier owner with a cost center', async () => {
+    mocks.isChatAccountUsageEnforcementEnabled.mockReturnValue(false)
+    mocks.chatbotFindUnique.mockResolvedValue(
+      chatbot({
+        owner: {
+          aiFeaturesEnabled: true,
+          aiSubscriptionTier: 'BASE',
+          aiChatbotCostCenter: 'cost-center-1',
+        },
+      })
+    )
+
+    const response = await POST(createRequest({ selectedModel: 'gpt-4.1' }), {
+      params: Promise.resolve({ chatbotId: 'chatbot-1' }),
+    })
+
+    expect(response.status).toBe(403)
+    await expect(response.json()).resolves.toEqual({
+      error: 'Chat model usage is unavailable',
+      code: 'CHAT_MODEL_UNAVAILABLE_ADVANCED',
+    })
+    expect(mocks.streamText).not.toHaveBeenCalled()
+  })
+
   test('refuses the automatic default without a cost center while enforcement is off', async () => {
     vi.stubEnv('CHAT_PRIMARY_MODEL_ID', 'auto')
     mocks.isChatAccountUsageEnforcementEnabled.mockReturnValue(false)
@@ -907,7 +943,11 @@ describe('account usage chat route', () => {
       chatbot({
         modelSelection: false,
         allowedModelIds: ['auto', 'gpt-6-luna'],
-        owner: { aiFeaturesEnabled: true, aiChatbotCostCenter: null },
+        owner: {
+          aiFeaturesEnabled: true,
+          aiSubscriptionTier: 'BASE',
+          aiChatbotCostCenter: null,
+        },
       })
     )
 
@@ -927,7 +967,11 @@ describe('account usage chat route', () => {
     mocks.isChatAccountUsageEnforcementEnabled.mockReturnValue(false)
     mocks.chatbotFindUnique.mockResolvedValue(
       chatbot({
-        owner: { aiFeaturesEnabled: true, aiChatbotCostCenter: null },
+        owner: {
+          aiFeaturesEnabled: true,
+          aiSubscriptionTier: 'BASE',
+          aiChatbotCostCenter: null,
+        },
       })
     )
 
@@ -941,14 +985,35 @@ describe('account usage chat route', () => {
   })
 
   test.each([
-    'tutor',
-    'quizzer',
-  ] as const)('forces %s course retrieval only on the first model step', async (selectedMode) => {
+    ['tutor', null, true],
+    ['explainer', null, true],
+    ['quizzer', null, true],
+    ['cm_roleplay', null, false],
+    [
+      'cm_roleplay',
+      {
+        required: true,
+        toolAlias: 'doc_query',
+        kb_id: '7016810d-31e9-4b39-9529-cd46feb2bf63',
+      },
+      false,
+    ],
+  ] as const)('selects %s retrieval on the first step with binding %j', async (selectedMode, parameters, forceRetrieval) => {
     mocks.chatbotFindUnique.mockResolvedValueOnce(
       chatbot({
         systemPrompts: {
           tutor: { prompt: 'Use course material.' },
           quizzer: { prompt: 'Ask course questions.' },
+        },
+        customModeConfig: {
+          modes: [
+            {
+              key: 'cm_roleplay',
+              name: 'Synthetic Roleplay',
+              description: 'Synthetic roleplay with retrieval.',
+              personaText: null,
+            },
+          ],
         },
         mcpConfigurations: [
           {
@@ -956,8 +1021,8 @@ describe('account usage chat route', () => {
             isEnabled: true,
             priority: 0,
             allowedTools: ['doc_query'],
-            parameters: null,
-            mcpServer: { id: 'server-1' },
+            parameters,
+            mcpServer: { id: 'server-1', name: parameters ? 'KB' : 'IW' },
           },
         ],
       })
@@ -972,6 +1037,8 @@ describe('account usage chat route', () => {
     })
 
     expect(response.status).toBe(200)
+    expect(mocks.streamConfig?.toolChoice).toBe('auto')
+    expect(mocks.streamConfig?.tools).toHaveProperty('KB_doc_query')
     const prepareStep = mocks.streamConfig?.prepareStep as (input: {
       stepNumber: number
       steps?: Array<{ content: unknown[] }>
@@ -979,11 +1046,14 @@ describe('account usage chat route', () => {
       responseMessages?: unknown[]
     }) => unknown
     const initialMessages = [{ role: 'user', content: 'Question' }]
+    const stepMessage = { role: 'system', content: expect.any(String) }
     expect(
       prepareStep({ stepNumber: 0, initialMessages, responseMessages: [] })
     ).toEqual({
-      toolChoice: { type: 'tool', toolName: 'KB_doc_query' },
-      messages: [initialMessages[0], STEP_REMINDER],
+      ...(forceRetrieval
+        ? { toolChoice: { type: 'tool', toolName: 'KB_doc_query' } }
+        : {}),
+      messages: [initialMessages[0], stepMessage],
     })
     const raw = {
       mode: 'documents',
@@ -1044,7 +1114,7 @@ describe('account usage chat route', () => {
             },
           ],
         },
-        STEP_REMINDER,
+        stepMessage,
       ],
     })
   })
@@ -1239,6 +1309,64 @@ describe('account usage chat route', () => {
     ).toMatchObject({
       modelId: 'gpt-6-luna',
       creditsUsed: 0.000003,
+    })
+  })
+
+  test.each([
+    { label: 'a standard mode', mode: 'tutor', showReasoning: undefined },
+    {
+      label: 'a custom mode by default',
+      mode: 'cm_case',
+      showReasoning: undefined,
+    },
+    { label: 'an opted-in custom mode', mode: 'cm_case', showReasoning: true },
+  ])('sends reasoning to the participant only for $label', async ({
+    mode,
+    showReasoning,
+  }) => {
+    mocks.chatbotFindUnique.mockResolvedValue(
+      chatbot({
+        customModeConfig: {
+          modes: [
+            {
+              key: 'cm_case',
+              name: 'Case interview',
+              description: null,
+              personaText: 'Keep the case facts private.',
+              ...(showReasoning ? { showReasoning } : {}),
+            },
+          ],
+        },
+      })
+    )
+    const visible = mode === 'tutor' || showReasoning === true
+
+    const response = await POST(createRequest({ selectedMode: mode }), {
+      params: Promise.resolve({ chatbotId: 'chatbot-1' }),
+    })
+    expect(response.status).toBe(200)
+    expect(mocks.responseOptions).toMatchObject({ sendReasoning: visible })
+
+    await streamCallbacks().onEnd({
+      usage: { inputTokens: 10, outputTokens: 5, totalTokens: 15 },
+      steps: [
+        {
+          content: [
+            { type: 'reasoning', text: 'Private case fact.' },
+            { type: 'text', text: 'Answer.' },
+          ],
+        },
+      ],
+      reasoningText: 'Private case fact.',
+      providerMetadata: null,
+    })
+
+    expect(
+      responseOptions().messageMetadata({
+        part: { type: 'finish', finishReason: 'stop' },
+      })
+    ).toMatchObject({
+      reasoningContent: visible ? 'Private case fact.' : null,
     })
   })
 

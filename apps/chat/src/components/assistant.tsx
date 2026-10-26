@@ -36,7 +36,10 @@ import {
   useChatGraphPanel,
 } from './knowledge-graph/ChatKnowledgeGraphPanel'
 import { ModeSwitcher } from './mode-switcher'
-import { ParticipantDataUseGate } from './participant-data-use'
+import {
+  ParticipantDataUseGate,
+  ParticipantDataUseSettings,
+} from './participant-data-use'
 import { Thread } from './thread'
 import { Tooltip, TooltipContent, TooltipTrigger } from './ui/tooltip'
 
@@ -638,6 +641,8 @@ function SidebarMain({
             chatbotId={chatbot.id}
             open={graphPanel.open}
             onClose={graphPanel.close}
+            focusRequest={graphPanel.focusRequest}
+            onFocusConcept={graphPanel.focusConcept}
           >
             <Thread
               chatbotAvatar={chatbot.avatar ?? ''}
@@ -693,8 +698,9 @@ function AssistantLayout({
 
   return (
     <div className="flex h-dvh w-full flex-col overflow-hidden">
-      <div className="bg-muted/50 flex shrink-0 items-center border-b px-3 py-2">
+      <div className="bg-muted/50 flex shrink-0 items-center gap-2 border-b px-3 py-2">
         <EmbeddedToolbar />
+        <ParticipantDataUseSettings chatbotId={chatbot.id} compact />
       </div>
       <main
         id="main-content"
@@ -721,6 +727,8 @@ function AssistantLayout({
             chatbotId={chatbot.id}
             open={graphPanel.open}
             onClose={graphPanel.close}
+            focusRequest={graphPanel.focusRequest}
+            onFocusConcept={graphPanel.focusConcept}
           >
             <Thread
               chatbotAvatar={chatbot.avatar ?? ''}
