@@ -13,7 +13,6 @@ WORKDIR /app
 
 # Match the repository's pinned pnpm version. Script-disabled installation
 # requires the native pnpm bootstrap before direct child-process execution.
-COPY package.json ./package.json
 RUN npm install --global --ignore-scripts pnpm@12.11.2 \
  && node "$(npm root -g)/pnpm/install.js"
 
