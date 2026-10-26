@@ -93,9 +93,11 @@ illustrative rather than real student records or measured learning outcomes.
 
 ## Open Decisions
 
-The redesigned guide is wired into production `/docs`; live verification remains
-pending. Course Learning Analytics remains hidden until its capability and
-processing contracts are released. Existing account-wide choices are reachable
-through account settings. A formal
+The redesigned guide is wired into production `/docs` in the draft branch.
+The October 26 revision passed the five local student-guide browser cases and
+English/German responsive checks. External OLAT acceptance remains separate.
+Course Learning Analytics remains hidden until its capability and processing
+contracts are released.
+Existing account-wide choices are reachable through account settings. A formal
 product-specific accessibility conformance target has not been established in
 this discussion.

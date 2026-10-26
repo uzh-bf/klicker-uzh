@@ -1223,12 +1223,12 @@ Your data will never be shared with other parties beside the above and will neve
         flashcardsTitle: 'Flashcards.',
         flashcardsBody:
           'Recall an answer, reveal it, then assess how well you knew it.',
-        coursePoolTitle: 'Course pool.',
+        coursePoolTitle: 'Practice Pool.',
         coursePoolBody:
-          'Questions you answered incorrectly can return in your course pool for spaced repetition.',
+          'Practise questions from your course’s practice quizzes in one pool. Earlier answers help determine what appears next.',
         bookmarksTitle: 'Bookmarks.',
         bookmarksBody:
-          'Logged-in participants can save questions for a private study pool.',
+          'When signed in, you can bookmark questions to build your own collection.',
         microlearningTitle: 'Microlearnings.',
         microlearningBody:
           'Complete short activities within their availability window. Each is intended for one attempt.',
@@ -1258,7 +1258,7 @@ Your data will never be shared with other parties beside the above and will neve
         label: 'AI study support',
         title: 'AI tutor',
         intro:
-          'Open the course chatbot when it is available. You need a KlickerUZH account and Participation in the course; joining a leaderboard is not required.',
+          'Open the course chatbot when your course offers one. You need a KlickerUZH account and course access. Joining a leaderboard is optional.',
         tutorTitle: 'Tutor',
         tutorBody: 'guides you with questions, hints, and feedback.',
         explainerTitle: 'Explainer',
@@ -1266,9 +1266,9 @@ Your data will never be shared with other parties beside the above and will neve
         quizzerTitle: 'Quizzer',
         quizzerBody: 'asks practice questions to check your understanding.',
         guidance:
-          'Modes vary by course. Include your own attempt when asking for help, and check answers against course material because AI can be wrong or incomplete.',
+          'Available modes depend on the course. Include your own attempt when asking for help. AI can be wrong or incomplete, so check answers against the course material.',
         conditions:
-          'Your existing account, credits, and privacy arrangements apply. The balance shows allowance and refill information; cost depends on the configured model and conversation length. Avoid sensitive personal information.',
+          'Your account, credits and the chatbot disclaimer also apply here. Cost depends on the model and conversation length; check your balance and refill information in the chat. Share only material you may share, and leave out personal data.',
         tutorialLink: 'Chatbot guide',
         selectLabel: 'Course chatbot',
         tryPrompt:

@@ -1240,12 +1240,12 @@ Deine Daten werden niemals an weitere Parteien weitergegeben und nicht für komm
         flashcardsTitle: 'Flashcards.',
         flashcardsBody:
           'Überlege dir eine Antwort, decke sie auf und schätze ein, wie gut du sie wusstest.',
-        coursePoolTitle: 'Kurspool.',
+        coursePoolTitle: 'Übungspool.',
         coursePoolBody:
-          'Fragen, die du falsch beantwortet hast, können für die verteilte Wiederholung in deinen Kurspool zurückkehren.',
+          'Übe Fragen aus den Übungsquizzes deines Kurses in einem Pool. Deine bisherigen Antworten beeinflussen, was als Nächstes erscheint.',
         bookmarksTitle: 'Lesezeichen.',
         bookmarksBody:
-          'Angemeldete Teilnehmende können Fragen in einem privaten Übungspool speichern.',
+          'Angemeldet kannst du Fragen mit einem Lesezeichen markieren und so deine eigene Sammlung aufbauen.',
         microlearningTitle: 'Microlearnings.',
         microlearningBody:
           'Erledige kurze Aktivitäten innerhalb ihres Verfügbarkeitsfensters. Jede ist für einen Versuch gedacht.',
@@ -1276,7 +1276,7 @@ Deine Daten werden niemals an weitere Parteien weitergegeben und nicht für komm
         label: 'KI-Lernunterstützung',
         title: 'KI-Tutor',
         intro:
-          'Öffne den Kurs-Chatbot, wenn er verfügbar ist. Du brauchst ein KlickerUZH-Konto und die Teilnahme am Kurs; ein Beitritt zur Rangliste ist nicht nötig.',
+          'Öffne den Kurs-Chatbot, wenn dein Kurs einen anbietet. Du brauchst ein KlickerUZH-Konto und Zugang zum Kurs. Der Beitritt zur Rangliste ist freiwillig.',
         tutorTitle: 'Tutor',
         tutorBody: 'begleitet dich mit Fragen, Hinweisen und Feedback.',
         explainerTitle: 'Erklärer',
@@ -1284,9 +1284,9 @@ Deine Daten werden niemals an weitere Parteien weitergegeben und nicht für komm
         quizzerTitle: 'Quiz',
         quizzerBody: 'stellt Übungsfragen, um dein Verständnis zu prüfen.',
         guidance:
-          'Die Modi unterscheiden sich je nach Kurs. Gib beim Fragen nach Hilfe deinen eigenen Versuch an und prüfe Antworten anhand des Kursmaterials, denn KI kann falsch oder unvollständig sein.',
+          'Welche Modi verfügbar sind, hängt vom Kurs ab. Gib deinen eigenen Versuch an, wenn du um Hilfe bittest. KI kann falsch oder unvollständig sein. Prüfe Antworten deshalb anhand des Kursmaterials.',
         conditions:
-          'Dein bestehendes Konto, deine Credits und deine Datenschutzeinstellungen gelten weiter. Das Guthaben zeigt Freibetrag und Aufladeinformationen; die Kosten hängen vom konfigurierten Modell und der Gesprächslänge ab. Vermeide sensible persönliche Informationen.',
+          'Auch hier gelten dein Konto, deine Credits und der Disclaimer des Chatbots. Die Kosten hängen vom Modell und von der Gesprächslänge ab. Guthaben und Aufladeinformationen findest du im Chat. Teile nur Material, das du teilen darfst, und lass persönliche Daten weg.',
         tutorialLink: 'Guide zum Chatbot',
         selectLabel: 'Kurs-Chatbot',
         tryPrompt:
