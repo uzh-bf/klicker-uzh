@@ -14,7 +14,8 @@ a deterministic per-course HMAC over the verified LTI subject and course, and
 the backend re-derives it from every verified launch. The claim finds that
 persona's threads and reassigns them to the resolved account participant in its
 own transaction. It is idempotent, covers the person's guest threads across
-their enrolled courses, and needs no schema migration.
+their enrolled courses. The approved review correction adds two participant
+indexes through concurrent migrations; no fields or tables change.
 
 Unchanged: guest-only access, token separation, model fallback policy, credits
 and disclaimer semantics (guest credits/consent are persona-scoped and are not
@@ -130,7 +131,8 @@ session retains ownership of #6097 and its separate readiness refresh.
 
 Goal: one person's guest conversations follow them into their real account.
 
-Non-goals: no manual "import" button; no UI change; no migration or new tables;
+Non-goals: no manual "import" button; no UI change; no migrations beyond the
+two approved participant indexes and no new tables;
 no merge of credits, disclaimer acceptance, ratings metadata changes, or other
 persona-scoped state; no cross-person data movement; no new token trust domain;
 no change to how guests are created, authorized, or limited to the fallback
@@ -264,6 +266,7 @@ model; no change to eLearning learner binding or origin tagging.
 | --- | --- | --- | --- | --- |
 | Guest persona | Extend | Persona identity is stable and now claimable: verified account launches can move the persona's chat threads into the account | LTI/eLearning launches, thread sidebar, history APIs | ltiGuest.ts derivation comment; auth-model doc reversal; user ruled import-into-account is wanted |
 | Chat thread ownership | Reuse | Identity is (participantId, chatbotId); ownership transfer is a participantId update with no message/attachment mutation | Thread list, history load, message rating, origin tags | ChatThread schema + threads route |
+| Participant storage access | Extend | Non-unique participant indexes support the existing transfer predicates without changing ownership or enrollment | ChatThread transfer, Participation lookup | Approved 2026-10-26 index amendment |
 | Participant session / LTI identity | Reuse | No change; claim is keyed to verified launch subject, never cookie | establishLtiChatIdentity | accounts.ts session-precedence branch |
 | Credits / disclaimer | Reuse | Deliberately persona-scoped, not merged | Credit checks, disclaimer gate | ChatUsageCredits schema |
 
@@ -335,6 +338,11 @@ guest→account transition scenario (guest chat → create/link account → rela
 docs review. The full root check:all may need the documented host/container
 split; record the split honestly if the hook cannot run whole.
 
+The approved index correction additionally requires generated SQL provenance,
+Analytics schema synchronization, local migration application, index validity
+and usability checks, and equivalence of the amended schema to the generated
+index changes. Preserve unrelated retained database drift.
+
 ### Authority and pause conditions
 
 Authority: the approved batch covers implementation, ordinary task-branch commits
@@ -349,7 +357,8 @@ v3-ai; deployment and production data changes withheld.
 
 Pause triggers (material, not generic): a discovered need to mutate
 persona-owned state beyond threads; any requirement to make the claim
-user-visible or reversible; any schema migration; CHAT_GUEST_SEED rotation
+user-visible or reversible; migrations beyond the two approved participant
+indexes; CHAT_GUEST_SEED rotation
 becoming entangled; conflict with the deployed release train (v3.4.0-alpha.77
 is not an ancestor of origin/v3 — flagged in the prior session; verify before
 delivery).
@@ -536,3 +545,80 @@ transfer tests cover the separate contracts, and neither is a reproduced
 refresh regression. Local focused checks passed: 30 account/claim tests, 37
 guest/access tests, and the GraphQL type check. Browser verification and full
 repository checks remain in progress.
+
+### Approved participant-index amendment — 2026-10-26
+
+The hosted final review on `6a25fae37884d47df8d4184810c745aecc373268`
+identified participant-filtered database work without a participant-leading
+index. Source inspection confirms that `ChatThread` has no such index and
+`Participation` only has the `(courseId, participantId)` unique index. The
+participation lookup runs on verified ACCOUNT launches; the thread update runs
+when the account has an eligible guest persona, including later launches after
+the transfer. Production query plans, table sizes and latency are unmeasured.
+
+Recommendation: amend this PR with a non-unique `participantId` index on each
+table. A single-column index addresses the claim predicates with the smallest
+index. The existing sidebar filters participant and chatbot and sorts by
+activity time; optimizing its full ordering with a larger composite index is
+outside this correction. The user chose to amend #6097 after the alternative
+of a separate index PR was presented.
+
+The user directly approved the amendment with "Amend #6097 (recommended)" in
+response to the explicit two-index, two-migration approval card. That instruction
+authorizes this source-only sequence:
+
+1. Record the user's explicit decision before any schema edit. This approval
+   extends the original no-migration package only to the two participant indexes.
+2. Add `@@index([participantId])` to `ChatThread` and `Participation`. Generate
+   the base SQL with Prisma in the guarded disposable runtime, then follow the
+   existing concurrent-index convention: one statement per migration, preserving
+   Prisma's names `ChatThread_participantId_idx` and
+   `Participation_participantId_idx`. Two small ordered migration files are
+   required because multi-statement concurrent builds cannot use the same
+   transaction. Preserve the generated base and document the minimal addition
+   of `CONCURRENTLY`. Check ordering against the current migration history.
+3. Apply only in the guarded local environment, synchronize the Analytics
+   schema mirror and run the schema-equivalence check. Never reset retained
+   data to generate a migration; if retained history or drift prevents the
+   normal create-only path, use a safe source-schema comparison or stop before
+   changing existing schema or data. Verify both indexes are ready and valid.
+   Use selective synthetic data or `enable_seqscan=off` with `EXPLAIN` to
+   establish that the exact predicates can use the indexes; this proves
+   usability, not production performance. Run the focused account/claim and
+   browser transfer checks plus mandatory checks/build.
+4. Update the no-migration passages and the primitive/verification sections.
+   Ordinary task-branch delivery
+   and review completion continue under the existing implementation approval.
+   Hold the resulting candidate for its required CI and final review; no merge
+   or real-environment migration/deployment is included.
+
+Concurrent builds avoid the write-blocking build lock of ordinary index
+creation, but can wait for older transactions and can leave an invalid index
+if interrupted. A later deployment preflight must verify the two named indexes
+and migration status alongside the matching-seed gate. Real-environment recovery
+requires separate authority: inspect first, drop only an invalid newly added
+index with `DROP INDEX CONCURRENTLY`, resolve that failed migration as rolled
+back, then redeploy through the normal hook. Any local recovery is confined to
+these newly created indexes in the marked disposable database. Source revert
+is sufficient only before a shared database has received the migrations;
+additive indexes remain compatible with an application rollback.
+
+The user-requested Opus follow-up reviewed the frozen proposal independently.
+Its requested corrections are reflected here: explicit approval first, no
+unmeasured slowdown claim, a separate-PR alternative, the established two-file
+concurrent convention, concrete index-usability checks, deployment recovery,
+and plan updates after approval. Main retains ownership.
+
+The index amendment is source-complete, with final verification pending.
+Prisma 7.8 generated exactly the two index statements by comparing the previous
+and amended source schemas after the normal create-only path reported unrelated
+retained drift. The generated SQL was split into
+`20261026122014_chat_thread_participant_index` and
+`20261026122015_participation_participant_index`, adding only `CONCURRENTLY`
+and the existing single-statement explanation. The Analytics mirror is synced.
+Both migrations applied successfully through the guarded local migration path;
+both indexes are ready, valid, non-unique and usable by the exact predicates.
+The post-apply comparison removed only the two index gaps and retained the
+unrelated drift. All 30 focused account/claim tests and all 9 browser cases pass
+with the indexes. Mandatory checks/build, review of the correction, integrated
+final review and hosted CI on the new candidate remain pending.

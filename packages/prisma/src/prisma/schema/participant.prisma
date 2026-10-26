@@ -219,6 +219,7 @@ model Participation {
   updatedAt DateTime @updatedAt
 
   @@unique([courseId, participantId])
+  @@index([participantId])
 }
 
 model GroupAssignmentPoolEntry {
