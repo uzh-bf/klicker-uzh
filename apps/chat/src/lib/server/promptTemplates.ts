@@ -6,7 +6,8 @@ type PromptContext = {
   'citation-contract': { maxSources: number }
   'course-data': { courseData: string }
   'course-grounding': Record<string, never>
-  'course-images': { courseImageTool: string }
+  'course-images': { courseImageTool: string; visualEvidence: string }
+  'course-image-vision': Record<string, never>
   'course-policy': { customPersona: boolean }
   'input-context': Record<string, never>
   'language-style': { lockedLanguage: string | null }

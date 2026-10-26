@@ -591,7 +591,10 @@ describe('compileSystemPrompt', () => {
     const result = compilePrompt(null, 'explainer', toolNames)
     const rendered = JSON.stringify({
       template: 'course-images',
-      context: { courseImageTool: COURSE_IMAGE_TOOL },
+      context: {
+        courseImageTool: COURSE_IMAGE_TOOL,
+        visualEvidence: '',
+      },
     })
     expect(result.includes(rendered)).toBe(enabled)
   })
