@@ -380,3 +380,20 @@ no findings. Earlier unaffected evidence is reused. No new module, executor pin,
 admission policy, credential or live setting changes; no extra reviewer or retry.
 The source correction is prepared for ordinary task-branch delivery and new-head
 hosted verification. Main-session verification is not independent final review.
+
+### Human author eligibility correction
+
+The next natural review retained partial coverage and repeated several previously
+dispositioned allegations. Main verified one eligibility gap: the Playwright
+caller and shared router used only a bot-name suffix, so a Bot-type author
+without that suffix could reach admission. The shared router now requires the
+explicit human User type as well as its existing suffix check. Missing author
+type fails closed before API requests.
+
+The existing synthetic mutation test reproduced the admission before the fix
+and denies Bot or missing type afterward. All 48 affected admission, route and
+metadata contracts pass, formatting and scoped static scanning pass. This narrow
+correction restricts the approved non-bot contract without changing executor
+pins, workflows, access, paid activation or any live setting. The review budget
+remains consumed; verification is main-session evidence. New-head source CI and
+natural feedback remain required before draft completion.

@@ -9,7 +9,7 @@ function fixture() {
     draft: false,
     head: { sha: 'a'.repeat(40), repo: { full_name: 'uzh-bf/klicker-uzh' } },
     base: { sha: 'b'.repeat(40), repo: { full_name: 'uzh-bf/klicker-uzh' } },
-    user: { login: 'synthetic-contributor' },
+    user: { login: 'synthetic-contributor', type: 'User' },
     labels: [{ name: 'ci:priority' }],
   }
   const event = {
@@ -113,6 +113,12 @@ test('disabled, fork, bot, draft, unrelated label and missing priority make no A
     },
     (f) => {
       f.event.pull_request.user.login = 'synthetic[bot]'
+    },
+    (f) => {
+      f.event.pull_request.user.type = 'Bot'
+    },
+    (f) => {
+      delete f.event.pull_request.user.type
     },
     (f) => {
       f.event.label.name = 'unrelated'

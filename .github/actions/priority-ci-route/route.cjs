@@ -34,6 +34,7 @@ function requested(event, env) {
     pr?.state === 'open' &&
     pr.draft === false &&
     pr.head?.repo?.full_name === REPOSITORY &&
+    pr.user?.type === 'User' &&
     typeof pr.user?.login === 'string' &&
     !pr.user.login.toLowerCase().endsWith('[bot]') &&
     Array.isArray(pr.labels) &&
