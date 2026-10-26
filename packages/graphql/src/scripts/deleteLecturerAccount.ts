@@ -815,6 +815,7 @@ export async function main(args = process.argv.slice(2)) {
     let lease: Promise<void> | undefined
     let releaseLease: (() => void) | undefined
     let leaseFailure: unknown
+    let verifyLease: (() => Promise<void>) | undefined
     try {
       if (values.apply) {
         let acquired!: () => void
@@ -836,6 +837,9 @@ export async function main(args = process.argv.slice(2)) {
                 throw new LecturerDeletionCommandError(
                   'Another deletion command owns this account'
                 )
+              verifyLease = async () => {
+                await transaction.$queryRaw`SELECT 1`
+              }
               acquired()
               await held
             },
@@ -847,11 +851,15 @@ export async function main(args = process.argv.slice(2)) {
           })
         await ready
       }
-      function assertLease() {
-        if (leaseFailure)
+      async function assertLease() {
+        try {
+          if (leaseFailure || !verifyLease) throw new Error('lease unavailable')
+          await verifyLease()
+        } catch {
           throw new LecturerDeletionCommandError(
             'Operator exclusion was lost; reconcile before continuing'
           )
+        }
       }
       let redisConnected = false
       async function hasCourseDuplicationLock(actions: DeletionAction[]) {
@@ -1012,24 +1020,27 @@ export async function main(args = process.argv.slice(2)) {
         throw new LecturerDeletionCommandError(
           `Deletion is blocked. ${BLOCKED_NEXT_STEP}`
         )
-      assertLease()
+      await assertLease()
       await assertCourseDuplicationClear(run.originalActions)
       const { signJWT } = await import('@klicker-uzh/util')
-      const token = await signJWT(
-        {
-          sub: target.id,
-          role: 'USER',
-          scope: 'ACCOUNT_OWNER',
-          catalystInstitutional: false,
-          catalystIndividual: false,
-        },
-        process.env.APP_SECRET!,
-        { algorithm: 'HS256', expiresIn: '30m', issuer: endpoint.origin }
-      )
+      const signDeletionToken = () =>
+        signJWT(
+          {
+            sub: target.id,
+            role: 'USER',
+            scope: 'ACCOUNT_OWNER',
+            catalystInstitutional: false,
+            catalystIndividual: false,
+          },
+          process.env.APP_SECRET!,
+          { algorithm: 'HS256', expiresIn: '30m', issuer: endpoint.origin }
+        )
       const request: GraphQLRequest = async <T>(
         query: string,
         variables: Record<string, unknown>
       ) => {
+        await assertLease()
+        const token = await signDeletionToken()
         try {
           const response = await fetch(endpoint, {
             method: 'POST',
@@ -1095,7 +1106,7 @@ export async function main(args = process.argv.slice(2)) {
         (a, b) => order.indexOf(a.kind) - order.indexOf(b.kind)
       )
       for (const action of actions) {
-        assertLease()
+        await assertLease()
         const key = actionKey(action)
         if (run.completed.includes(key)) {
           if ((await observeAction(prisma, action)) !== 'absent')
@@ -1148,6 +1159,7 @@ export async function main(args = process.argv.slice(2)) {
               action.kind === 'chatbotDisclaimer' ||
               action.kind === 'competencyTree'
             ) {
+              await assertLease()
               await service.deleteUnusedLecturerLeaf(prisma, target, action)
             } else if (action.kind === 'course') {
               try {
@@ -1159,7 +1171,7 @@ export async function main(args = process.argv.slice(2)) {
                 ).catch(() => undefined)
                 throw courseRecoveryError(action, observation)
               }
-            } else {
+            } else if (action.kind !== 'element' || state !== 'soft-deleted') {
               await performDeletionAction(action, request)
             }
           }
@@ -1181,6 +1193,7 @@ export async function main(args = process.argv.slice(2)) {
         } else if (action.kind === 'element') {
           if ((await observeAction(prisma, action)) !== 'absent') {
             await assertCourseDuplicationClear(run.originalActions)
+            await assertLease()
             await service.purgePrivateElement(prisma, target, Number(action.id))
           }
         }
@@ -1214,10 +1227,11 @@ export async function main(args = process.argv.slice(2)) {
       )
       const container = blob.getContainerClient(target.id)
       if (!run.storageComplete) {
-        assertLease()
+        await assertLease()
         run.storageIntended = true
         await save(receiptPath, run)
         await assertCourseDuplicationClear(run.originalActions)
+        await assertLease()
         await container.deleteIfExists()
         const acceptedAt = Date.now()
         const deadline = acceptedAt + 60_000
@@ -1242,7 +1256,7 @@ export async function main(args = process.argv.slice(2)) {
       }
       run.accountIntended = true
       await save(receiptPath, run)
-      assertLease()
+      await assertLease()
       await assertCourseDuplicationClear(run.originalActions)
       // The finalizer checks every remaining relation and only then removes
       // verified unused media metadata and authentication/grantee records.

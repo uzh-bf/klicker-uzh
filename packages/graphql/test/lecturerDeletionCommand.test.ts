@@ -7,7 +7,7 @@ import { createRequire } from 'node:module'
 import { tmpdir } from 'node:os'
 import { join } from 'node:path'
 import { createDisposableTestPrismaClient } from '@klicker-uzh/prisma'
-import type { PrismaClient } from '@klicker-uzh/prisma/client'
+import type { Prisma, PrismaClient } from '@klicker-uzh/prisma/client'
 import { buildSchema, parse, validate } from 'graphql'
 import { afterAll, beforeAll, describe, expect, it, vi } from 'vitest'
 import { schema } from '../src/index.js'
@@ -18,6 +18,7 @@ import {
   performDeletionAction,
 } from '../src/scripts/deleteLecturerAccount.js'
 import { deleteCourse } from '../src/services/courses.js'
+import { deleteElement } from '../src/services/elements.js'
 import type {
   DeletionAction,
   DeletionTarget,
@@ -129,6 +130,7 @@ describe('lecturer deletion operator orchestration', () => {
       loseElementResponse?: boolean
       holdCourse?: boolean
       addMediaAfterElement?: boolean
+      expireLeaseAfterIdentity?: boolean
     } = {}
   ) {
     const dir = await mkdtemp(join(tmpdir(), 'lecturer-deletion-'))
@@ -155,6 +157,7 @@ describe('lecturer deletion operator orchestration', () => {
       }
       return {} as never
     })
+    let leaseExpired = false
     const now = Date.now.bind(Date)
     let offset = 0
     let ticking = false
@@ -184,6 +187,35 @@ describe('lecturer deletion operator orchestration', () => {
           get(target, property) {
             if (property === '$disconnect') return async () => {}
             const value = Reflect.get(target, property)
+            if (property === '$transaction') {
+              return (
+                callback: (
+                  client: Prisma.TransactionClient
+                ) => Promise<unknown>,
+                options?: Parameters<PrismaClient['$transaction']>[1]
+              ) =>
+                target.$transaction(async (tx) => {
+                  const client = new Proxy(tx, {
+                    get(transaction, key) {
+                      const method = Reflect.get(transaction, key)
+                      if (key === '$queryRaw') {
+                        return (...args: unknown[]) => {
+                          if (
+                            leaseExpired &&
+                            String(args[0]).trim() === 'SELECT 1'
+                          )
+                            throw new Error('synthetic lease expired')
+                          return Reflect.apply(method, transaction, args)
+                        }
+                      }
+                      return typeof method === 'function'
+                        ? method.bind(transaction)
+                        : method
+                    },
+                  })
+                  return callback(client)
+                }, options)
+            }
             return typeof value === 'function' ? value.bind(target) : value
           },
         })
@@ -226,6 +258,8 @@ describe('lecturer deletion operator orchestration', () => {
         const query = registered[body.extensions.persistedQuery.sha256Hash]!
         expect(query).toBeDefined()
         operations.push(query)
+        if (options.expireLeaseAfterIdentity && query.startsWith('query'))
+          leaseExpired = true
         const result = await graphql({
           schema,
           source: query,
@@ -377,6 +411,51 @@ describe('lecturer deletion operator orchestration', () => {
           },
         })
       ).toBe(0)
+    } finally {
+      await harness.close()
+    }
+  })
+
+  it('purges questions deleted before preview without repeating the refused mutation', async () => {
+    const target = await user()
+    const element = await question(target)
+    await deleteElement({ id: element.id }, {
+      prisma,
+      emitter: new EventEmitter(),
+      user: { sub: target.id, role: 'USER', scope: 'ACCOUNT_OWNER' },
+    } as ContextWithUser)
+    const harness = await commandHarness(target)
+    try {
+      await harness.preview()
+      await harness.apply()
+      expect(
+        await prisma.user.findUnique({ where: { id: target.id } })
+      ).toBeNull()
+      expect(
+        harness.operations.filter((query) => query.startsWith('mutation'))
+      ).toHaveLength(0)
+    } finally {
+      await harness.close()
+    }
+  })
+
+  it('stops before mutations if the held transaction expires after identity verification', async () => {
+    const target = await user()
+    const element = await question(target)
+    const harness = await commandHarness(target, {
+      expireLeaseAfterIdentity: true,
+    })
+    try {
+      await harness.preview()
+      await expect(harness.apply()).rejects.toThrow('Operator exclusion')
+      expect(
+        harness.operations.filter((query) => query.startsWith('mutation'))
+      ).toHaveLength(0)
+      expect(harness.storage.deleteIfExists).not.toHaveBeenCalled()
+      expect(
+        (await prisma.element.findUniqueOrThrow({ where: { id: element.id } }))
+          .isDeleted
+      ).toBe(false)
     } finally {
       await harness.close()
     }
