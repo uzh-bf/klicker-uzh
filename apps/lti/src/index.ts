@@ -26,6 +26,25 @@ const PROVIDER_OPTIONS = {
   },
   devMode: process.env.LTI_DEV_MODE === 'true',
   ltiaas: process.env.LTI_AAS_MODE === 'true',
+  // ltijs only forwards secure, sameSite and domain from its cookie options,
+  // so the Partitioned (CHIPS) attribute is added to ltijs's own launch state
+  // and session cookies. Browsers that block third-party cookies keep
+  // partitioned cookies in an LMS iframe, so the launch keeps its state. The
+  // lti-token handoff cookie for the PWA keeps its unpartitioned scope.
+  serverAddon:
+    process.env.LTI_PARTITIONED_COOKIES === 'true'
+      ? (app: typeof Provider.app) => {
+          app.use((_req, res, next) => {
+            const setCookie = res.cookie.bind(res)
+            res.cookie = (name: string, value: unknown, options: object = {}) =>
+              setCookie(name, value, {
+                ...options,
+                partitioned: name !== 'lti-token',
+              })
+            next()
+          })
+        }
+      : undefined,
 }
 
 // Initialize database connection
