@@ -8,7 +8,7 @@
 - Login and activation links stay out of Teams notifications.
 - Response-API logs carry identifiers instead of cookies and answers.
 - Analytics page views record the path without its query string.
-- LTI launch redirects require HTTPS outside dev mode.
+- LTI launch redirects require HTTPS.
 - Three state-changing lecturer mutations require full-access logins.
 - Sharing mutations never grant OWNER; ownership moves only through transfer.
 - Correction history, the object activity log and live quiz scheduling check permissions and status like their siblings.
@@ -51,4 +51,5 @@
 - Test delta: 2 tests changed, none added or removed.
 - Final simplification and review: self-review by the main session over the full range. No findings remain.
 - Folded in: `changePermissionLevel` also refuses to edit the owner's own permission row. Otherwise an admin could demote the owner.
+- Folded in from automated review: the LTI HTTPS rule no longer depends on `LTI_DEV_MODE`, because that flag also controls ltijs cookie validation. The `scheduleLiveQuiz` update repeats the status condition, so a quiz started concurrently is not reset to SCHEDULED.
 - Not applicable: browser screenshots. The analytics change alters only the URL reported to Matomo; no rendered UI changes.

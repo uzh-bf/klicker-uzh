@@ -930,7 +930,13 @@ export async function scheduleLiveQuiz(
 
       // change the status of the live quiz to scheduled
       const updatedQuiz = await ctx.prisma.liveQuiz.update({
-        where: { id, isDeleted: false },
+        where: {
+          id,
+          isDeleted: false,
+          status: {
+            in: [DB.PublicationStatus.DRAFT, DB.PublicationStatus.SCHEDULED],
+          },
+        },
         data: {
           availableFrom,
           status: DB.PublicationStatus.SCHEDULED,

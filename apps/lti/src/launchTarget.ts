@@ -72,13 +72,10 @@ export function validateLaunchTarget(
     }
   }
 
-  // launch targets receive a bearer token in the URL, so plain HTTP is only
-  // accepted for local development
-  const allowsHttp = process.env.LTI_DEV_MODE === 'true'
-  if (
-    target.protocol !== 'https:' &&
-    !(allowsHttp && target.protocol === 'http:')
-  ) {
+  // launch targets receive a bearer token in the URL, so only HTTPS is
+  // accepted, independent of LTI_DEV_MODE (which controls ltijs cookie
+  // validation, not the redirect target)
+  if (target.protocol !== 'https:') {
     return {
       ok: false,
       source,
