@@ -89,7 +89,8 @@ export async function startFixture({
   blockedMs = 20_000,
   lifetimeMs = 20 * 60_000,
   deferReady = false,
-  qualification,
+  qualification = undefined,
+  generation = undefined,
 }) {
   if (
     !['enabled', 'disabled'].includes(mode) ||
@@ -107,10 +108,16 @@ export async function startFixture({
       new URL(qualification.origin).hostname !== 'host.docker.internal')
   )
     throw new Error('fixture_qualification_invalid')
+  if (
+    generation !== undefined &&
+    (!qualification ||
+      !/^[a-f0-9]{8}-(?:[a-f0-9]{4}-){3}[a-f0-9]{12}$/.test(generation))
+  )
+    throw new Error('fixture_qualification_generation_invalid')
   const { privateKey, publicKey } = generateKeyPairSync('ed25519')
   const state = {
     schemaVersion: 1,
-    generation: randomUUID(),
+    generation: generation ?? randomUUID(),
     mode,
     ...(qualification ? { transport: 'stg' } : {}),
     ready: false,

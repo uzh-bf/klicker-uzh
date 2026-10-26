@@ -1,9 +1,10 @@
 import { request as httpRequest } from 'node:http'
 import { spawn } from 'node:child_process'
+import { writeSync } from 'node:fs'
 import { createPublicKey, randomUUID } from 'node:crypto'
 import { mkdtemp, readFile, rename, rm, writeFile } from 'node:fs/promises'
 import { tmpdir } from 'node:os'
-import { createServer, request as httpsRequest } from 'node:https'
+import { createServer } from 'node:https'
 import { performance } from 'node:perf_hooks'
 import { fileURLToPath } from 'node:url'
 import path from 'node:path'
@@ -126,10 +127,14 @@ async function boundedBody(stream) {
   return Buffer.concat(parts)
 }
 
-/** A closed-route transport observer; attempted forwarding never implies guest admission. */
+/**
+ * A closed-route transport observer; attempted forwarding never implies guest admission.
+ * @param {{upstreamOrigin: string, tls?: ReturnType<typeof certificate>,
+ * onObservation?: (record: Record<string, unknown>) => void, lifetimeMs?: number,
+ * statusPath?: string, generation?: string}} options
+ */
 export async function startQualificationRelay({
   upstreamOrigin,
-  upstreamCA = undefined,
   tls = certificate('host.docker.internal'),
   onObservation = () => {},
   lifetimeMs = 20 * 60_000,
@@ -143,8 +148,8 @@ export async function startQualificationRelay({
     upstream.search ||
     upstream.hash ||
     upstream.pathname !== '/' ||
-    !['http:', 'https:'].includes(upstream.protocol) ||
-    (upstream.protocol === 'http:' && upstream.hostname !== '127.0.0.1') ||
+    upstream.protocol !== 'http:' ||
+    upstream.hostname !== '127.0.0.1' ||
     lifetimeMs <= 0 ||
     lifetimeMs > 20 * 60_000
   )
@@ -261,12 +266,11 @@ export async function startQualificationRelay({
       active = record
       records.set(record.nonce, record)
       emit(record)
-      const request = upstream.protocol === 'http:' ? httpRequest : httpsRequest
+      const request = httpRequest
       forwarded = request(
         new URL('/v1/exec', upstream),
         {
           method: 'POST',
-          ca: upstreamCA,
           headers: {
             authorization: req.headers.authorization,
             'content-type': 'application/json',
@@ -287,8 +291,10 @@ export async function startQualificationRelay({
             })
             res.end(bytes)
           } catch {
-            record.outcome = 'invalid_or_oversized_response'
-            emit(record)
+            if (!record.outcome) {
+              record.outcome = 'invalid_or_oversized_response'
+              emit(record)
+            }
             forwarded.destroy()
             reply(res, 502, 'qualification_response')
           } finally {
@@ -324,6 +330,8 @@ export async function startQualificationRelay({
         record.outcome = 'request_failure'
         emit(record)
       }
+      forwarded?.destroy()
+      if (active === record) active = null
       reply(res, 400, 'qualification_contract')
     }
   })
@@ -376,6 +384,7 @@ export async function startQualificationFixture({
   relayOrigin,
   relayCA,
   statusPath,
+  generation,
 }) {
   const origin = new URL(relayOrigin)
   if (
@@ -390,10 +399,13 @@ export async function startQualificationFixture({
     !relayCA.startsWith('-----BEGIN CERTIFICATE-----')
   )
     throw new Error('qualification_fixture_config_invalid')
+  if (!NONCE.test(generation ?? ''))
+    throw new Error('qualification_generation_invalid')
   const fixture = await startFixture({
     mode: 'enabled',
     statusPath,
     deferReady: true,
+    generation,
     qualification: {
       origin: origin.origin,
       keyId: `qualification-${randomUUID()}`,
@@ -422,7 +434,7 @@ async function supervise() {
     throw new Error('qualification_requires_explicit_local_supervisor')
   const config = JSON.parse((await boundedBody(process.stdin)).toString('utf8'))
   const root = fileURLToPath(new URL('../../../', import.meta.url))
-  let fixture, directory, child, forceTimer, lifetime
+  let fixture, directory, child, forceTimer, lifetime, exit
   const stopped = new AbortController()
   const stop = () => {
     stopped.abort()
@@ -470,14 +482,22 @@ async function supervise() {
       [next, 'dev', '--turbopack', '--port', '3004'],
       { env, stdio: 'inherit' }
     )
+    exit = new Promise((resolve, reject) => {
+      child.once('exit', (code) => resolve(code ?? 1))
+      child.once('error', reject)
+    })
+    void exit.catch(() => {})
     // The coordinator supplies an explicit public-only channel; the signer remains child-only.
-    const { writeSync } = await import('node:fs')
     await new Promise((resolve, reject) => {
       child.once('spawn', resolve)
       child.once('error', reject)
     })
     stopped.signal.throwIfAborted()
+    if (child.exitCode !== null || child.signalCode !== null)
+      throw new Error('qualification_child_exited')
     await fixture.ready()
+    if (child.exitCode !== null || child.signalCode !== null)
+      throw new Error('qualification_child_exited')
     writeSync(
       3,
       JSON.stringify({
@@ -486,17 +506,14 @@ async function supervise() {
       }) + '\n'
     )
     lifetime = setTimeout(stop, 20 * 60_000)
-    const code = await new Promise((resolve, reject) => {
-      child.once('exit', (code) => resolve(code ?? 1))
-      child.once('error', reject)
-    })
+    const code = await exit
     process.exitCode = Number(code)
   } finally {
     clearTimeout(lifetime)
     clearTimeout(forceTimer)
     if (child?.pid && child.exitCode === null && child.signalCode === null) {
       child.kill('SIGKILL')
-      await new Promise((resolve) => child.once('exit', resolve))
+      await exit?.catch(() => {})
     }
     await fixture?.close()
     if (directory) await rm(directory, { recursive: true, force: true })

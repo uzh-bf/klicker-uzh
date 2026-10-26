@@ -1,5 +1,13 @@
+import { spawn } from 'node:child_process'
 import { createServer, type RequestListener } from 'node:http'
-import { mkdtemp, readFile, rm } from 'node:fs/promises'
+import {
+  copyFile,
+  mkdir,
+  mkdtemp,
+  readFile,
+  rm,
+  writeFile,
+} from 'node:fs/promises'
 import path from 'node:path'
 import { tmpdir } from 'node:os'
 import { request } from 'node:https'
@@ -161,10 +169,12 @@ describe('bounded real-transport qualification', () => {
     )
     cleanups.push(() => rm(directory, { recursive: true, force: true }))
     const statusPath = path.join(directory, 'status.json')
+    const generation = randomUUID()
     const fixture = await startQualificationFixture({
       relayOrigin: 'https://host.docker.internal:12345',
       relayCA: tls.cert.toString(),
       statusPath,
+      generation,
     })
     cleanups.push(fixture.close)
     const result = await post(fixture.origin, body(), { ca: fixture.cert })
@@ -173,12 +183,110 @@ describe('bounded real-transport qualification', () => {
     expect(fixture.childEnv.CHAT_CODEAPI_BASE_URL).toBe(
       'https://host.docker.internal:12345'
     )
+    expect(fixture.state.generation).toBe(generation)
     expect(fixture.publicJwk).not.toHaveProperty('d')
     expect(fixture.childEnv.CHAT_CODEAPI_JWT_PRIVATE_KEY).toContain(
       'BEGIN PRIVATE KEY'
     )
     expect(JSON.stringify(fixture.state)).not.toContain('BEGIN PRIVATE KEY')
     expect(qualificationProgram('success', randomUUID())).toContain('print(')
+  })
+  test('persists the same generation with safe attempt evidence and rejects other upstreams', async () => {
+    const directory = await mkdtemp(
+      path.join(tmpdir(), 'qualification-receipt-test-')
+    )
+    cleanups.push(() => rm(directory, { recursive: true, force: true }))
+    const receiptDir = path.join(directory, '.devcontainer', '.runtime')
+    await mkdir(receiptDir, { recursive: true })
+    const statusPath = path.join(receiptDir, 'codeapi-stg-relay-status.json')
+    const generation = randomUUID()
+    const relay = await startQualificationRelay({
+      upstreamOrigin: 'http://127.0.0.1:1',
+      tls,
+      statusPath,
+      generation,
+    })
+    cleanups.push(relay.close)
+    expect(JSON.parse(await readFile(statusPath, 'utf8'))).toMatchObject({
+      generation,
+      attempts: 0,
+      observations: [],
+    })
+    expect((await post(relay.origin, body())).status).toBe(502)
+    await relay.close()
+    const saved = JSON.parse(await readFile(statusPath, 'utf8'))
+    expect(saved).toMatchObject({
+      generation,
+      attempts: 1,
+      requestedGuestMs: 5000,
+    })
+    expect(saved.observations[0].outcome).toBe('transport_failure')
+    expect(JSON.stringify(saved)).not.toContain('synthetic.jwt.value')
+    await expect(
+      startQualificationRelay({ upstreamOrigin: 'https://example.test', tls })
+    ).rejects.toThrow('qualification_upstream_invalid')
+  })
+  test('supervisor reaps an immediately exiting child and clears readiness', async () => {
+    const directory = await mkdtemp(
+      path.join(tmpdir(), 'qualification-supervisor-test-')
+    )
+    cleanups.push(() => rm(directory, { recursive: true, force: true }))
+    const scripts = path.join(directory, 'apps/chat/scripts')
+    const fakeNext = path.join(
+      directory,
+      'apps/chat/node_modules/next/dist/bin'
+    )
+    await mkdir(scripts, { recursive: true })
+    await mkdir(fakeNext, { recursive: true })
+    await mkdir(path.join(directory, '.devcontainer/.runtime'), {
+      recursive: true,
+    })
+    for (const name of [
+      'codeapi-browser-fixture.mjs',
+      'codeapi-stg-qualification.mjs',
+    ])
+      await copyFile(
+        path.join(process.cwd(), 'scripts', name),
+        path.join(scripts, name)
+      )
+    await writeFile(path.join(fakeNext, 'next'), 'process.exit(7)')
+    const child = spawn(
+      process.execPath,
+      [
+        path.join(scripts, 'codeapi-stg-qualification.mjs'),
+        '--container-fixture',
+      ],
+      {
+        env: { PATH: process.env.PATH, NODE_ENV: 'test' },
+        stdio: ['pipe', 'pipe', 'pipe', 'pipe'],
+      }
+    )
+    child.stdin!.end(
+      JSON.stringify({
+        relayOrigin: 'https://host.docker.internal:12345',
+        relayCA: tls.cert.toString(),
+        generation: randomUUID(),
+      })
+    )
+    let output = ''
+    child.stdout!.on('data', (x) => (output += x))
+    child.stderr!.resume()
+    child.stdio[3]!.on('data', () => {})
+    const timer = setTimeout(() => child.kill('SIGKILL'), 5000)
+    const code = await new Promise((resolve) => child.once('exit', resolve))
+    clearTimeout(timer)
+    expect([2, 7]).toContain(code)
+    const state = JSON.parse(
+      await readFile(
+        path.join(
+          directory,
+          '.devcontainer/.runtime/codeapi-browser-fixture-status.json'
+        ),
+        'utf8'
+      )
+    )
+    expect(state.ready).toBe(false)
+    expect(output).not.toContain('PRIVATE KEY')
   })
   test('preserves legacy effective policy and rejects private or duplicate key material', () => {
     const makeKey = (kid: string) => ({

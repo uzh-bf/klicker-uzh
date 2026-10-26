@@ -4857,7 +4857,15 @@ test.describe('CodeAPI real-route fixture', () => {
     if (CODEAPI_STG_ENABLED) {
       // Fail before any browser case when the relay belongs to another fixture
       // generation or has already spent the live-attempt reservation.
-      await readCodeApiRelayStatus(fixtureGeneration)
+      const initialRelay = await readCodeApiRelayStatus(fixtureGeneration)
+      if (
+        initialRelay.attempts !== 0 ||
+        initialRelay.requestedGuestMs !== 0 ||
+        initialRelay.observations.length !== 0
+      )
+        throw new Error(
+          'CodeAPI STG qualification requires a fresh unspent relay'
+        )
     }
 
     // getPrisma also enforces the marked disposable database before any
