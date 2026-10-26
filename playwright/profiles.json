@@ -5,6 +5,7 @@
       "profile": "manage",
       "specs": [
         "Y-ai-beta-availability.spec.ts",
+        "Y-question-generation-failure-gallery.spec.ts",
         "Y-question-generation-review.spec.ts"
       ]
     },
@@ -44,6 +45,8 @@
         "T-chatbot-authoring.spec.ts",
         "Y-ai-beta-management-gate.spec.ts",
         "Y-chat.spec.ts",
+        "Y-chat-knowledge-graph.spec.ts",
+        "Y-kb-domain-selection.spec.ts",
         "Y-kb-management-ux.spec.ts",
         "Y-manage-assistant.spec.ts",
         "Y-response-examples.spec.ts"
@@ -51,7 +54,7 @@
     },
     {
       "profile": "pwa,chat",
-      "specs": ["Y-course-chat-drawer.spec.ts"]
+      "specs": ["Y-chat-lti-access.spec.ts", "Y-course-chat-drawer.spec.ts"]
     },
     {
       "profile": "manage,live-quiz",
@@ -68,6 +71,21 @@
         "V-template.spec.ts",
         "W4-activity-wizard-safety.spec.ts"
       ]
+    },
+    {
+      "profile": "manage,pwa",
+      "runtime": "production-webpack",
+      "specs": ["A-account-production.spec.ts"]
+    },
+    {
+      "profile": "email,pwa",
+      "runtime": "production-webpack",
+      "specs": ["A-account-registration.spec.ts"]
+    },
+    {
+      "profile": "pwa",
+      "runtime": "production-webpack",
+      "specs": ["A-account-lti.spec.ts"]
     }
   ]
 }

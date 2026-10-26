@@ -5,6 +5,7 @@ import type { NextRequest } from 'next/server'
 import { NextResponse } from 'next/server'
 import { hasLocale } from 'next-intl'
 import {
+  CHAT_SCOPED_TOKEN_HEADER,
   PWA_CHAT_EMBED_QUERY_KEY,
   PWA_CHAT_EMBED_SESSION_COOKIE,
   PWA_CHAT_EMBED_SESSION_SCOPE,
@@ -110,30 +111,63 @@ function redirectToNoLogin(request: NextRequest, ltiContext: boolean) {
   return applyFrameAncestorsCSP(NextResponse.redirect(noLoginUrl))
 }
 
+// Allow a verified scoped token to reach the server render when the cookie
+// transport is unavailable. The token is handed over in a reserved request
+// header, so the page render can re-verify signature, scope and binding; a
+// client-supplied value for that header is always replaced (blanked when this
+// request carries no verified token) and can therefore never authorize.
+function passThroughWithScopedToken(
+  request: NextRequest,
+  scopedToken: string | null,
+  queryLocale: { locale: string; path: string } | null = null
+) {
+  const requestHeaders = new Headers(request.headers)
+  requestHeaders.set(CHAT_SCOPED_TOKEN_HEADER, scopedToken ?? '')
+  const response = NextResponse.next({ request: { headers: requestHeaders } })
+  if (queryLocale) {
+    response.cookies.set({
+      name: 'NEXT_LOCALE',
+      value: queryLocale.locale,
+      path: queryLocale.path,
+    })
+  }
+  return applyFrameAncestorsCSP(response)
+}
+
 export async function proxy(request: NextRequest) {
   const { pathname } = request.nextUrl
 
-  // The embedded Manage assistant receives its locale as a query parameter,
-  // but Chat's root layout resolves the active locale from the
-  // NEXT_LOCALE cookie. Promote only a narrowly validated locale so iframe
-  // requests render in the same language without broadening the cookie scope.
-  if (pathname === '/manage') {
-    const requestedLocale = request.nextUrl.searchParams.get('locale')
-    if (hasLocale(routing.locales, requestedLocale)) {
-      request.cookies.set({
-        name: 'NEXT_LOCALE',
-        value: requestedLocale,
-      })
-      const response = NextResponse.next({
-        request: { headers: request.headers },
-      })
-      response.cookies.set({
-        name: 'NEXT_LOCALE',
-        value: requestedLocale,
-        path: '/manage',
-      })
-      return applyFrameAncestorsCSP(response)
-    }
+  // The embedded Manage assistant and the eLearning handoff receive their locale
+  // as a query parameter, but Chat's root layout resolves the active locale from
+  // the NEXT_LOCALE cookie. That cookie cannot be stored in a cookie-blocked
+  // iframe, so promote a narrowly validated query locale onto the request
+  // itself; the effective language then does not depend on cookie acceptance.
+  const requestedLocale = request.nextUrl.searchParams.get('locale')
+  const queryLocale = hasLocale(routing.locales, requestedLocale)
+    ? requestedLocale
+    : null
+
+  if (pathname === '/manage' && queryLocale) {
+    request.cookies.set({
+      name: 'NEXT_LOCALE',
+      value: queryLocale,
+    })
+    const response = NextResponse.next({
+      request: { headers: request.headers },
+    })
+    response.cookies.set({
+      name: 'NEXT_LOCALE',
+      value: queryLocale,
+      path: '/manage',
+    })
+    return applyFrameAncestorsCSP(response)
+  }
+
+  if (queryLocale) {
+    request.cookies.set({
+      name: 'NEXT_LOCALE',
+      value: queryLocale,
+    })
   }
 
   if (
@@ -148,7 +182,11 @@ export async function proxy(request: NextRequest) {
     pathname.startsWith('/api') ||
     pathname.startsWith('/favicon') ||
     pathname.startsWith('/auth/lti') ||
-    pathname.startsWith('/auth/pwa-embed')
+    pathname.startsWith('/auth/pwa-embed') ||
+    // The eLearning handoff is an unauthenticated entrypoint: the route
+    // verifies its own signed grant, and the arriving iframe carries no chat
+    // session yet, so the identity gate must not divert it to /noLogin.
+    pathname.startsWith('/auth/elearning')
   ) {
     return applyFrameAncestorsCSP(NextResponse.next())
   }
@@ -158,36 +196,70 @@ export async function proxy(request: NextRequest) {
     return applyFrameAncestorsCSP(NextResponse.next())
   }
 
+  // Persist the promoted language for this conversation's own path so later
+  // navigations inside the embedded chat keep it even without the query.
+  const promotedLocale = queryLocale
+    ? { locale: queryLocale, path: `/${pathSegments[0]}` }
+    : null
+
   // 1. chat_participant_token (anonymous LTI guest) — checked first so a
   // future "switch to anonymous" flow only needs to set this cookie.
   // Falls back to `?_t=` query and `Authorization: Bearer` header for the
   // CHIPS-unsupported-browser code path (sessionStorage-driven; see
   // `useChatGuestTokenBootstrap`).
-  const chatGuestToken =
-    request.cookies.get('chat_participant_token')?.value ||
-    request.nextUrl.searchParams.get('_t') ||
-    extractBearerToken(request.headers.get('authorization'))
+  const guestCookieToken = request.cookies.get('chat_participant_token')?.value
+  const guestQueryToken = request.nextUrl.searchParams.get('_t')
+  // Each transport is validated independently and the first valid one wins.
+  // A stale cookie must not shadow a valid fallback, otherwise a browser that
+  // still carries an expired guest cookie is refused even though it holds a
+  // usable `_t` handoff, and the no-login self-heal turns that into a reload
+  // loop.
+  const guestCandidates = [
+    guestCookieToken,
+    guestQueryToken,
+    extractBearerToken(request.headers.get('authorization')),
+  ].filter((token): token is string => Boolean(token))
   let hadGuestToken = false
-  if (chatGuestToken) {
+  for (const chatGuestToken of guestCandidates) {
     hadGuestToken = true
     if (await verifyChatGuestTokenInProxy(chatGuestToken)) {
-      return applyFrameAncestorsCSP(NextResponse.next())
+      // Only the query token needs the server-side handoff; the cookie and the
+      // sessionStorage-driven bearer header reach the server on their own.
+      // A stale cookie can still be present while the query token is the
+      // transport that verified, so the handoff follows the verified value
+      // rather than the presence of a cookie.
+      return passThroughWithScopedToken(
+        request,
+        chatGuestToken === guestQueryToken ? guestQueryToken : null,
+        promotedLocale
+      )
     }
-    // Invalid guest token → fall through to participant_token.
+    // Invalid transport → try the next candidate.
   }
 
-  const pwaEmbedToken =
-    request.cookies.get(PWA_CHAT_EMBED_SESSION_COOKIE)?.value ||
-    request.nextUrl.searchParams.get(PWA_CHAT_EMBED_QUERY_KEY) ||
-    extractBearerToken(request.headers.get('authorization'))
-  if (pwaEmbedToken) {
+  const pwaEmbedCookieToken = request.cookies.get(
+    PWA_CHAT_EMBED_SESSION_COOKIE
+  )?.value
+  const pwaEmbedQueryToken = request.nextUrl.searchParams.get(
+    PWA_CHAT_EMBED_QUERY_KEY
+  )
+  const pwaEmbedCandidates = [
+    pwaEmbedCookieToken,
+    pwaEmbedQueryToken,
+    extractBearerToken(request.headers.get('authorization')),
+  ].filter((token): token is string => Boolean(token))
+  for (const pwaEmbedToken of pwaEmbedCandidates) {
     if (
       await verifyPwaEmbedTokenInProxy({
         chatbotId: pathSegments[0],
         token: pwaEmbedToken,
       })
     ) {
-      return applyFrameAncestorsCSP(NextResponse.next())
+      return passThroughWithScopedToken(
+        request,
+        pwaEmbedToken === pwaEmbedQueryToken ? pwaEmbedQueryToken : null,
+        promotedLocale
+      )
     }
   }
 
@@ -214,7 +286,7 @@ export async function proxy(request: NextRequest) {
     return redirectToNoLogin(request, hadGuestToken)
   }
 
-  return applyFrameAncestorsCSP(NextResponse.next())
+  return passThroughWithScopedToken(request, null, promotedLocale)
 }
 
 export const config = {

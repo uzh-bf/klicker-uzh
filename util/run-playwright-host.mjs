@@ -1,8 +1,24 @@
 #!/usr/bin/env node
 
 import { spawnSync } from 'node:child_process'
-import { existsSync, readFileSync } from 'node:fs'
-import { delimiter, dirname, join, resolve } from 'node:path'
+import {
+  existsSync,
+  readdirSync,
+  readFileSync,
+  rmSync,
+  writeFileSync,
+} from 'node:fs'
+import { createRequire } from 'node:module'
+import { tmpdir } from 'node:os'
+import {
+  delimiter,
+  dirname,
+  isAbsolute,
+  join,
+  relative,
+  resolve,
+  sep,
+} from 'node:path'
 import { fileURLToPath, pathToFileURL } from 'node:url'
 import { resolveDevrouter } from './devrouter-cli.mjs'
 import {
@@ -11,8 +27,75 @@ import {
   preserveLocalDatabase,
 } from './playwright-host-policy.mjs'
 
+const require = createRequire(import.meta.url)
+const {
+  parseProfileManifest,
+} = require('../.github/scripts/get-shard-files.js')
+
 const repoRoot = resolve(dirname(fileURLToPath(import.meta.url)), '..')
+const retainedCitationsConfig = resolve(
+  repoRoot,
+  'playwright',
+  'retained-citations.config.ts'
+)
+const retainedCitationsSpec = 'retained-citations.spec.ts'
+const uuidPattern =
+  /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i
 export const PNPM_VERIFY_DEPS_ENV = 'pnpm_config_verify_deps_before_run'
+export const PLAYWRIGHT_PROFILE_FALLBACK = 'playwright'
+// Marks the root install as the launcher's Playwright-only filtered install so
+// util/run-hook-pnpm.sh does not mistake it for a full host install.
+export const FILTERED_INSTALL_MARKER = join(
+  'node_modules',
+  '.playwright-host-filtered-install'
+)
+
+const PLAYWRIGHT_OPTIONS_WITH_VALUES = new Set([
+  '--browser',
+  '--config',
+  '--grep',
+  '--grep-invert',
+  '--global-timeout',
+  '--max-failures',
+  '--output',
+  '--project',
+  '--repeat-each',
+  '--reporter',
+  '--retries',
+  '--shard',
+  '--timeout',
+  '--trace',
+  '--ui-host',
+  '--ui-port',
+  '--update-source-method',
+  '--websocket',
+  '--workers',
+  '-c',
+  '-g',
+  '-p',
+])
+
+const PLAYWRIGHT_BOOLEAN_OPTIONS = new Set([
+  '--debug',
+  '--fail-on-flaky-tests',
+  '--forbid-only',
+  '--fully-parallel',
+  '--headed',
+  '--ignore-snapshots',
+  '--last-failed',
+  '--list',
+  '--no-deps',
+  '--pass-with-no-tests',
+  '--quiet',
+  '--ui',
+  '--update-snapshots',
+  '--version',
+  '--help',
+])
+
+function defaultClock() {
+  return Number(process.hrtime.bigint()) / 1_000_000
+}
 
 function fail(message) {
   throw new Error(`[playwright:host] ${message}`)
@@ -40,6 +123,135 @@ function run(command, args, { capture = false, env = process.env } = {}) {
 function commandExists(command) {
   const result = spawnSync(command, ['--version'], { stdio: 'ignore' })
   return result.status === 0
+}
+
+function optionName(option) {
+  return option.split('=', 1)[0]
+}
+
+function isWithinDirectory(directory, candidate) {
+  const relativePath = relative(directory, candidate)
+  return (
+    relativePath !== '' &&
+    !relativePath.startsWith(`..${sep}`) &&
+    relativePath !== '..' &&
+    !isAbsolute(relativePath)
+  )
+}
+
+function resolveExistingSpecFile(
+  argument,
+  { root, pathExists = existsSync } = {}
+) {
+  if (
+    typeof argument !== 'string' ||
+    !argument.endsWith('.spec.ts') ||
+    /[*?[\]]/.test(argument)
+  ) {
+    return undefined
+  }
+
+  const repositoryRoot = resolve(root)
+  const packageRoot = join(repositoryRoot, 'playwright')
+  const testsRoot = join(packageRoot, 'tests')
+  const candidates = isAbsolute(argument)
+    ? [resolve(argument)]
+    : [
+        resolve(repositoryRoot, argument),
+        resolve(packageRoot, argument),
+        ...(argument.includes('/') ? [] : [resolve(testsRoot, argument)]),
+      ]
+
+  for (const candidate of candidates) {
+    if (isWithinDirectory(testsRoot, candidate) && pathExists(candidate)) {
+      return candidate.slice(testsRoot.length + 1)
+    }
+  }
+
+  return null
+}
+
+function selectedSpecFiles(args, { root, pathExists = existsSync } = {}) {
+  const selected = []
+
+  const addFilter = (argument) => {
+    const file = resolveExistingSpecFile(argument, { root, pathExists })
+    if (!file) return false
+    selected.push(file)
+    return true
+  }
+
+  for (let index = 0; index < args.length; index++) {
+    const argument = args[index]
+
+    if (argument === '--') {
+      for (const filter of args.slice(index + 1)) {
+        if (!addFilter(filter)) return null
+      }
+      break
+    }
+
+    if (!argument.startsWith('-')) {
+      if (!addFilter(argument)) return null
+      continue
+    }
+
+    const name = optionName(argument)
+    if (argument.includes('=')) {
+      if (
+        !PLAYWRIGHT_OPTIONS_WITH_VALUES.has(name) &&
+        !PLAYWRIGHT_BOOLEAN_OPTIONS.has(name)
+      ) {
+        return null
+      }
+      continue
+    }
+
+    if (PLAYWRIGHT_OPTIONS_WITH_VALUES.has(name)) {
+      index++
+      continue
+    }
+
+    if (PLAYWRIGHT_BOOLEAN_OPTIONS.has(name)) continue
+
+    return null
+  }
+
+  return [...new Set(selected)]
+}
+
+export function inferPlaywrightProfile({
+  args,
+  root = repoRoot,
+  pathExists = existsSync,
+  readDirectory = readdirSync,
+  readFile = readFileSync,
+  parseProfileManifestFn = parseProfileManifest,
+} = {}) {
+  const selected = selectedSpecFiles(args, { root, pathExists })
+  if (!selected?.length) return PLAYWRIGHT_PROFILE_FALLBACK
+
+  try {
+    const testsRoot = join(root, 'playwright', 'tests')
+    const allFiles = readDirectory(testsRoot)
+      .filter((file) => typeof file === 'string' && file.endsWith('.spec.ts'))
+      .sort()
+    const manifest = JSON.parse(
+      readFile(join(root, 'playwright', 'profiles.json'), 'utf8')
+    )
+    const profiles = parseProfileManifestFn(manifest, allFiles)
+    const apps = new Set()
+
+    for (const file of selected) {
+      const profile = profiles.get(file)
+      if (!profile) return PLAYWRIGHT_PROFILE_FALLBACK
+      for (const app of profile.split(',')) apps.add(app)
+    }
+
+    return [...apps].sort().join(',') || PLAYWRIGHT_PROFILE_FALLBACK
+  } catch {
+    return PLAYWRIGHT_PROFILE_FALLBACK
+  }
 }
 
 function runPnpm(
@@ -76,6 +288,10 @@ function createRuntime({
   commandExistsFn = (command) => commandExists(command),
   pathExists = existsSync,
   readFile = readFileSync,
+  writeFile = writeFileSync,
+  readDirectory = readdirSync,
+  parseProfileManifestFn = parseProfileManifest,
+  clock = defaultClock,
   root = repoRoot,
   environment = process.env,
   log = console.log,
@@ -90,9 +306,188 @@ function createRuntime({
     log,
     pathExists,
     readFile,
+    writeFile,
+    readDirectory,
+    parseProfileManifestFn,
+    clock,
     repoRoot: root,
     runPnpm: (args, env = environment) =>
       runPnpm(args, env, { runCommand: commandRunner, commandExistsFn }),
+  }
+}
+
+function createPhaseTimer(clock) {
+  const elapsed = {
+    preparation: 0,
+    runtime: 0,
+    browser: 0,
+  }
+  let active = 'preparation'
+  let started = clock()
+
+  const finish = () => {
+    if (!active) return
+    elapsed[active] += Math.max(0, clock() - started)
+    active = undefined
+  }
+
+  return {
+    begin(phase) {
+      finish()
+      active = phase
+      started = clock()
+    },
+    finish,
+    values: () => elapsed,
+  }
+}
+
+function logPhaseTimings(runtime, timer, queueWaitSeconds = 0) {
+  const elapsed = timer.values()
+  const queueSuffix =
+    queueWaitSeconds >= 1 ? ` queue-wait≈${queueWaitSeconds}s` : ''
+  runtime.log(
+    `[playwright:host] elapsed preparation=${elapsed.preparation.toFixed(1)}ms runtime=${elapsed.runtime.toFixed(1)}ms browser=${elapsed.browser.toFixed(1)}ms${queueSuffix}`
+  )
+}
+
+function isLocalhostUrl(value) {
+  let parsed
+  try {
+    parsed = new URL(value)
+  } catch {
+    return false
+  }
+
+  const hostname = parsed.hostname.toLowerCase()
+  return (
+    (parsed.protocol === 'http:' || parsed.protocol === 'https:') &&
+    !parsed.username &&
+    !parsed.password &&
+    !parsed.search &&
+    !parsed.hash &&
+    parsed.pathname === '/' &&
+    (hostname === 'localhost' ||
+      hostname.endsWith('.localhost') ||
+      hostname === '127.0.0.1' ||
+      hostname === '::1' ||
+      hostname === '[::1]')
+  )
+}
+
+export function validateRetainedCitationEnvironment(env = process.env) {
+  const required = [
+    'PLAYWRIGHT_BASE_URL',
+    'APP_SECRET',
+    'PARTICIPANT_ID',
+    'CHATBOT_ID',
+    'THREAD_ID',
+  ]
+  const missing = required.filter((name) => !env[name])
+  if (missing.length > 0) {
+    fail(
+      `--retained-citations requires ${missing.join(', ')} in the process environment`
+    )
+  }
+
+  if (!isLocalhostUrl(env.PLAYWRIGHT_BASE_URL)) {
+    fail(
+      '--retained-citations requires PLAYWRIGHT_BASE_URL to be a local origin without credentials, query or fragment'
+    )
+  }
+
+  for (const name of ['PARTICIPANT_ID', 'CHATBOT_ID', 'THREAD_ID']) {
+    if (!uuidPattern.test(env[name])) {
+      fail(`--retained-citations requires ${name} to be a UUID`)
+    }
+  }
+}
+
+function assertRetainedCitationDependencies(runtime = createRuntime()) {
+  const playwrightCli = join(
+    runtime.repoRoot,
+    'playwright',
+    'node_modules',
+    '@playwright',
+    'test',
+    'cli.js'
+  )
+
+  if (!runtime.pathExists(playwrightCli)) {
+    fail(
+      '--retained-citations requires existing host Playwright dependencies; refusing to install them'
+    )
+  }
+}
+
+function runRetainedCitations(runtime = createRuntime()) {
+  const retainedEnvironment = {
+    ...runtime.environment,
+    [HOST_RUNNER_ENV]: '1',
+  }
+
+  validateRetainedCitationEnvironment(retainedEnvironment)
+  assertRetainedCitationDependencies(runtime)
+
+  runtime.log('[playwright:host] Running retained citation test only')
+  runtime.runPnpm(
+    [
+      '--filter',
+      '@klicker-uzh/playwright',
+      'exec',
+      'playwright',
+      'test',
+      `--config=${retainedCitationsConfig}`,
+      retainedCitationsSpec,
+      '--project=chromium',
+    ],
+    retainedEnvironment
+  )
+}
+
+const ENSURE_TELEMETRY_ENV = 'KLICKER_ENSURE_TELEMETRY'
+
+function runRuntimeEnsure(runtime, args) {
+  // The runtime reconciliation must keep streaming its progress live, so it
+  // runs through a tee instead of a captured pipe; the devrouter helper
+  // reports provider-queue contention on that output and the wait belongs in
+  // the phase summary separately from real work.
+  const telemetryFile = join(
+    tmpdir(),
+    `playwright-host-ensure-${process.pid}.log`
+  )
+  runtime.commandRunner(
+    'sh',
+    [
+      '-c',
+      'set -o pipefail; ensure_bin="$1"; shift; "$ensure_bin" "$@" 2>&1 | tee "$' +
+        ENSURE_TELEMETRY_ENV +
+        '"',
+      'playwright-host-ensure',
+      runtime.devrouter(),
+      ...args,
+    ],
+    {
+      env: {
+        ...runtime.environment,
+        [ENSURE_TELEMETRY_ENV]: telemetryFile,
+      },
+    }
+  )
+  return telemetryFile
+}
+
+function queueWaitSecondsFrom(readFile, telemetryFile) {
+  try {
+    const contents = readFile(telemetryFile, 'utf8')
+    const waits = [...contents.matchAll(/waited (\d+)s so far/g)].map((match) =>
+      Number(match[1])
+    )
+    return waits.length > 0 ? Math.max(...waits) : 0
+  } catch {
+    return 0
+  } finally {
+    rmSync(telemetryFile, { force: true })
   }
 }
 
@@ -107,69 +502,113 @@ export function readCommittedEnvironment(contents) {
   return values
 }
 
-export function parsePublishedPort(output) {
-  for (const line of output.split(/\r?\n/)) {
-    const match = line.trim().match(/:(\d+)$/)
-    if (match) return Number(match[1])
+// `devrouter env --json` (report version 1) attributes the loopback port to
+// this checkout's own devcontainer and names the reason when it cannot.
+export function parseHostEnvironment(output) {
+  let report
+  try {
+    report = JSON.parse(output)
+  } catch {
+    fail('devrouter env did not return a JSON report')
   }
-
-  fail('the workspace Postgres container has no loopback host port')
+  if (report?.version !== 1) {
+    fail(`unsupported devrouter env report version ${report?.version}`)
+  }
+  const databases = (report.apps ?? []).filter(
+    (app) => app.protocol === 'tcp' && app.tcpProtocol === 'postgres'
+  )
+  if (databases.length !== 1) {
+    fail(
+      `expected one Postgres app in devrouter env, found ${databases.length}`
+    )
+  }
+  const [{ loopback, loopbackReason }] = databases
+  if (!loopback) {
+    fail(`the workspace Postgres has no loopback host port (${loopbackReason})`)
+  }
+  if (
+    typeof loopback.host !== 'string' ||
+    loopback.host === '' ||
+    !Number.isInteger(loopback.port) ||
+    loopback.port < 1 ||
+    loopback.port > 65535
+  ) {
+    fail('the workspace Postgres loopback endpoint lacks a host or port')
+  }
+  return {
+    workspace: report.workspace ?? '',
+    databaseHost: loopback.host.includes(':')
+      ? `[${loopback.host}]`
+      : loopback.host,
+    databasePort: loopback.port,
+  }
 }
 
 export function parseLocalOptions(argv) {
-  const args = [...argv]
+  const args = argv[0] === '--' ? argv.slice(1) : [...argv]
   let profile
+  let mode
   let preserveDatabase = false
   while (args.length) {
-    if (args[0] === '--runtime-profile') {
+    const option = args[0]
+    if (option === '--') {
       args.shift()
-      profile = args.shift()
-      if (!profile || profile.startsWith('-')) {
-        fail(
-          '--runtime-profile requires a separate profile name before Playwright arguments'
-        )
+      break
+    }
+    if (
+      option === '--runtime-profile' ||
+      option.startsWith('--runtime-profile=')
+    ) {
+      if (profile !== undefined) fail('Specify --runtime-profile only once')
+      args.shift()
+      profile = option === '--runtime-profile' ? args.shift() : option.slice(18)
+      const names = profile?.split(',') ?? []
+      if (
+        !names.length ||
+        names.some((name) => !/^[a-z][a-z0-9-]*$/.test(name)) ||
+        new Set(names).size !== names.length
+      ) {
+        fail('Invalid runtime profile list')
       }
-      if (!/^[a-z0-9][a-z0-9-]*(,[a-z0-9][a-z0-9-]*)*$/.test(profile)) {
-        fail(
-          '--runtime-profile requires a profile name or comma-separated names'
-        )
-      }
-    } else if (args[0] === '--preserve-database') {
+    } else if (option === '--preserve-database') {
       args.shift()
       preserveDatabase = true
-    } else break
-  }
-
-  for (const option of args) {
-    if (option.startsWith('--runtime-profile=')) {
-      fail(
-        '--runtime-profile requires a separate profile name; use space syntax before Playwright arguments'
-      )
+    } else if (option === '--print-env' || option === '--show-report') {
+      if (mode) fail('Specify only one launcher mode')
+      mode = args.shift()
+    } else {
+      break
     }
+  }
+  if (mode === '--show-report' && profile !== undefined) {
+    fail('--show-report cannot select a runtime profile')
+  }
+  for (const option of args) {
     if (option.startsWith('--preserve-database=')) {
       fail(
         '--preserve-database does not accept a value; use space syntax before Playwright arguments'
       )
     }
-    if (option === '--runtime-profile' || option === '--preserve-database') {
+    if (option === '--preserve-database') {
       fail(`${option} must appear before Playwright arguments`)
     }
   }
-
-  return { args, profile, preserveDatabase }
+  return { args, profile, mode, preserveDatabase }
 }
 
 export function resolvePlaywrightEnvironment({
   appSecret,
   databaseTemplate,
+  databaseHost = '127.0.0.1',
   databasePort,
+  postgresContainer,
   workspace,
 }) {
   const namespace = workspace ? `.${workspace}` : ''
   const appUrl = (app) => `https://${app}.klicker${namespace}.localhost`
   const databaseUrl = new URL(databaseTemplate)
 
-  databaseUrl.hostname = '127.0.0.1'
+  databaseUrl.hostname = databaseHost
   databaseUrl.port = String(databasePort)
 
   const studentUrl = appUrl('pwa')
@@ -179,6 +618,7 @@ export function resolvePlaywrightEnvironment({
     APP_SECRET: appSecret,
     COOKIE_DOMAIN: `klicker${namespace}.localhost`,
     DATABASE_URL: databaseUrl.toString(),
+    KLICKER_PLAYWRIGHT_POSTGRES_CONTAINER: postgresContainer,
     [HOST_RUNNER_ENV]: '1',
     PLAYWRIGHT_BASE_URL: studentUrl,
     NEXT_PUBLIC_GROWTHBOOK_API_HOST: `${appUrl('manage')}/__growthbook__`,
@@ -192,7 +632,7 @@ export function resolvePlaywrightEnvironment({
   }
 }
 
-function resolveWorkspace(runtime) {
+function resolveGitDirectories(runtime) {
   const gitDir = runtime.commandRunner(
     'git',
     [
@@ -215,18 +655,20 @@ function resolveWorkspace(runtime) {
     ],
     { capture: true }
   )
-
-  if (gitDir === commonDir) return ''
-
-  const workspaceFile = join(gitDir, 'devrouter-workspace')
-  if (!runtime.pathExists(workspaceFile)) {
-    fail('devrouter did not persist a workspace token for this worktree')
-  }
-
-  return runtime.readFile(workspaceFile, 'utf8').trim()
+  return { gitDir, commonDir }
 }
 
-function resolveDatabasePort(runtime) {
+// A linked worktree gets its devrouter workspace identity on its first ensure.
+// Before that no devcontainer can exist, so there is nothing to stop.
+function hasLinkedWorkspaceIdentity(runtime) {
+  const { gitDir, commonDir } = resolveGitDirectories(runtime)
+  return (
+    gitDir === commonDir ||
+    runtime.pathExists(join(gitDir, 'devrouter-workspace'))
+  )
+}
+
+export function resolvePostgresContainer(runtime) {
   const workingDirectory = join(runtime.repoRoot, '.devcontainer')
   const containerIds = runtime
     .commandRunner(
@@ -250,14 +692,31 @@ function resolveDatabasePort(runtime) {
       `expected one Postgres container for ${workingDirectory}, found ${containerIds.length}`
     )
   }
+  return containerIds[0]
+}
 
-  const publishedPort = runtime.commandRunner(
-    'docker',
-    ['port', containerIds[0], '5432/tcp'],
-    { capture: true }
+function resolveHostEnvironment(runtime) {
+  return parseHostEnvironment(
+    runtime.commandRunner(
+      runtime.devrouter(),
+      ['env', runtime.repoRoot, '--json'],
+      { capture: true }
+    )
   )
+}
 
-  return parsePublishedPort(publishedPort)
+// A linked worktree's devrouter env must report its own workspace name: that
+// name namespaces every host URL and the database the suite reads and seeds,
+// so a missing value would silently run the suite against the primary
+// checkout's namespace instead.
+function assertLinkedWorkspaceName(runtime, workspace) {
+  const { gitDir, commonDir } = resolveGitDirectories(runtime)
+  if (gitDir === commonDir) return
+  if (typeof workspace !== 'string' || workspace.length === 0) {
+    fail(
+      `devrouter env did not report a workspace name for linked worktree ${runtime.repoRoot}; refusing to run against the primary checkout's URLs and database`
+    )
+  }
 }
 
 function ensureHostDependencies(runtime, playwrightArgs) {
@@ -271,8 +730,10 @@ function ensureHostDependencies(runtime, playwrightArgs) {
   )
 
   if (!runtime.pathExists(playwrightCli)) {
-    runtime.log('[playwright:host] Stopping the devcontainer before install')
-    runtime.commandRunner(runtime.devrouter(), ['stop', runtime.repoRoot])
+    if (hasLinkedWorkspaceIdentity(runtime)) {
+      runtime.log('[playwright:host] Stopping the devcontainer before install')
+      runtime.commandRunner(runtime.devrouter(), ['stop', runtime.repoRoot])
+    }
     runtime.log('[playwright:host] Installing host Playwright dependencies')
     runtime.runPnpm([
       'install',
@@ -280,6 +741,7 @@ function ensureHostDependencies(runtime, playwrightArgs) {
       '@klicker-uzh/playwright...',
       '--frozen-lockfile',
     ])
+    runtime.writeFile(join(runtime.repoRoot, FILTERED_INSTALL_MARKER), '')
   }
 
   if (
@@ -319,108 +781,159 @@ function ensureHostDependencies(runtime, playwrightArgs) {
 
 export function main(argv = process.argv.slice(2), dependencies = {}) {
   const localArgs = argv[0] === '--' ? argv.slice(1) : argv
-  const { args, profile, preserveDatabase } = parseLocalOptions(localArgs)
   const runtime = createRuntime(dependencies)
-  const hostEnvironment = {
-    ...runtime.environment,
-    [HOST_RUNNER_ENV]: '1',
-  }
-  preserveLocalDatabase({
-    ...hostEnvironment,
-    KLICKER_PLAYWRIGHT_PRESERVE_DATABASE: preserveDatabase ? '1' : '0',
-  })
-  assertPlaywrightHostBoundary({
-    cwd: dependencies.cwd,
-    env: hostEnvironment,
-    pathExists: runtime.pathExists,
-  })
-  const showReport = args[0] === '--show-report'
-  if (showReport) args.shift()
+  const timer = createPhaseTimer(runtime.clock)
+  let queueWaitSeconds = 0
 
-  if (showReport) {
-    ensureHostDependencies(runtime, ['--list'])
+  if (localArgs.includes('--retained-citations')) {
+    const remainingArgs = localArgs.filter(
+      (arg) => arg !== '--retained-citations'
+    )
+    if (remainingArgs.length > 0) {
+      fail(
+        '--retained-citations does not accept additional Playwright arguments'
+      )
+    }
+    const hostEnvironment = {
+      ...runtime.environment,
+      [HOST_RUNNER_ENV]: '1',
+    }
+    assertPlaywrightHostBoundary({
+      cwd: dependencies.cwd,
+      env: hostEnvironment,
+      pathExists: runtime.pathExists,
+    })
+    runRetainedCitations(runtime)
+    return
+  }
+
+  try {
+    const { args, profile, mode, preserveDatabase } = parseLocalOptions(argv)
+    const hostEnvironment = {
+      ...runtime.environment,
+      [HOST_RUNNER_ENV]: '1',
+    }
+    preserveLocalDatabase({
+      ...hostEnvironment,
+      KLICKER_PLAYWRIGHT_PRESERVE_DATABASE: preserveDatabase ? '1' : '0',
+    })
+    assertPlaywrightHostBoundary({
+      cwd: dependencies.cwd,
+      env: hostEnvironment,
+      pathExists: runtime.pathExists,
+    })
+
+    if (mode === '--show-report') {
+      ensureHostDependencies(runtime, ['--list'])
+      timer.begin('browser')
+      runtime.runPnpm(
+        [
+          '--filter',
+          '@klicker-uzh/playwright',
+          'exec',
+          'playwright',
+          'show-report',
+          ...args,
+        ],
+        hostEnvironment
+      )
+      return
+    }
+
+    const printEnvironment = mode === '--print-env'
+
+    if (!printEnvironment) ensureHostDependencies(runtime, args)
+
+    const runtimeProfile =
+      profile ??
+      inferPlaywrightProfile({
+        args,
+        root: runtime.repoRoot,
+        pathExists: runtime.pathExists,
+        readDirectory: runtime.readDirectory,
+        readFile: runtime.readFile,
+        parseProfileManifestFn: runtime.parseProfileManifestFn,
+      })
+
+    timer.begin('runtime')
+    runtime.log('[playwright:host] Reconciling the devcontainer runtime')
+    const ensureTelemetry = runRuntimeEnsure(runtime, [
+      'ensure',
+      runtime.repoRoot,
+      '--profile',
+      runtimeProfile,
+    ])
+    queueWaitSeconds = queueWaitSecondsFrom(runtime.readFile, ensureTelemetry)
+
+    const { workspace, databaseHost, databasePort } =
+      resolveHostEnvironment(runtime)
+    assertLinkedWorkspaceName(runtime, workspace)
+    const postgresContainer = resolvePostgresContainer(runtime)
+    const committedEnvironment = readCommittedEnvironment(
+      runtime.readFile(
+        join(runtime.repoRoot, '.devcontainer', 'devcontainer.env'),
+        'utf8'
+      )
+    )
+    const databaseTemplate = committedEnvironment.get('DATABASE_URL')
+    const appSecret = committedEnvironment.get('APP_SECRET')
+
+    if (!databaseTemplate || !appSecret) {
+      fail('devcontainer.env must define DATABASE_URL and APP_SECRET')
+    }
+
+    const resolvedEnvironment = resolvePlaywrightEnvironment({
+      appSecret,
+      databaseTemplate,
+      databaseHost,
+      databasePort,
+      postgresContainer,
+      workspace,
+    })
+
+    if (printEnvironment) {
+      runtime.log(
+        JSON.stringify(
+          {
+            databaseHost: `${databaseHost}:${databasePort}`,
+            postgresContainer,
+            manageUrl: resolvedEnvironment.URL_MANAGE,
+            studentUrl: resolvedEnvironment.URL_STUDENT,
+            workspace: workspace || null,
+          },
+          null,
+          2
+        )
+      )
+      return
+    }
+
+    timer.begin('browser')
+    runtime.log(
+      `[playwright:host] Running on the host against ${resolvedEnvironment.URL_MANAGE}`
+    )
+    runtime.log(
+      `[playwright:host] Stack: Next dev servers (CI tests production builds), profile=${runtimeProfile}, database=${databaseHost}:${databasePort}`
+    )
     runtime.runPnpm(
       [
         '--filter',
         '@klicker-uzh/playwright',
         'exec',
         'playwright',
-        'show-report',
+        'test',
         ...args,
       ],
-      hostEnvironment
+      {
+        ...runtime.environment,
+        ...resolvedEnvironment,
+        KLICKER_PLAYWRIGHT_PRESERVE_DATABASE: preserveDatabase ? '1' : '0',
+      }
     )
-    return
+  } finally {
+    timer.finish()
+    logPhaseTimings(runtime, timer, queueWaitSeconds)
   }
-
-  const printEnvironment = args[0] === '--print-env'
-  if (printEnvironment) args.shift()
-
-  if (!printEnvironment) ensureHostDependencies(runtime, args)
-
-  runtime.log('[playwright:host] Reconciling the devcontainer runtime')
-  runtime.commandRunner(runtime.devrouter(), [
-    'ensure',
-    runtime.repoRoot,
-    ...(profile ? ['--profile', profile] : []),
-  ])
-
-  const workspace = resolveWorkspace(runtime)
-  const databasePort = resolveDatabasePort(runtime)
-  const committedEnvironment = readCommittedEnvironment(
-    runtime.readFile(
-      join(runtime.repoRoot, '.devcontainer', 'devcontainer.env'),
-      'utf8'
-    )
-  )
-  const databaseTemplate = committedEnvironment.get('DATABASE_URL')
-  const appSecret = committedEnvironment.get('APP_SECRET')
-
-  if (!databaseTemplate || !appSecret) {
-    fail('devcontainer.env must define DATABASE_URL and APP_SECRET')
-  }
-
-  const resolvedEnvironment = resolvePlaywrightEnvironment({
-    appSecret,
-    databaseTemplate,
-    databasePort,
-    workspace,
-  })
-
-  if (printEnvironment) {
-    runtime.log(
-      JSON.stringify(
-        {
-          databaseHost: `127.0.0.1:${databasePort}`,
-          manageUrl: resolvedEnvironment.URL_MANAGE,
-          studentUrl: resolvedEnvironment.URL_STUDENT,
-          workspace: workspace || null,
-        },
-        null,
-        2
-      )
-    )
-    return
-  }
-
-  runtime.log(
-    `[playwright:host] Running on the host against ${resolvedEnvironment.URL_MANAGE}`
-  )
-  runtime.runPnpm(
-    [
-      '--filter',
-      '@klicker-uzh/playwright',
-      'exec',
-      'playwright',
-      'test',
-      ...args,
-    ],
-    {
-      ...runtime.environment,
-      ...resolvedEnvironment,
-      KLICKER_PLAYWRIGHT_PRESERVE_DATABASE: preserveDatabase ? '1' : '0',
-    }
-  )
 }
 
 if (import.meta.url === pathToFileURL(process.argv[1]).href) {

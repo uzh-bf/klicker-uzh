@@ -1,9 +1,10 @@
 import { EnsureParticipationDocument } from '@klicker-uzh/graphql/dist/ops'
+import { buildChatbotRedirectParams } from '@klicker-uzh/shared-components/src/utils/handoff'
 import { parseEmbedParam } from '@klicker-uzh/shared-components/src/utils/parseEmbedParam'
 import { UserNotification } from '@uzh-bf/design-system'
 import { GetServerSidePropsContext } from 'next'
-import { useTranslations } from 'next-intl'
 import Link from 'next/link'
+import { useTranslations } from 'next-intl'
 import Layout from '../../../../components/Layout'
 import { initializeApollo } from '../../../../lib/apollo'
 import { mintPwaChatEmbedExchangeToken } from '../../../../lib/chatbot/embedAuth'
@@ -41,10 +42,31 @@ export async function getServerSideProps(ctx: GetServerSidePropsContext) {
       }
     }
 
+    // Verified LTI chatbot launches use Chat's account-or-guest entry.
+    // Chat verifies the signed target before resolving identity or participation.
+    if (
+      typeof ctx.query.jwt === 'string' &&
+      process.env.ASSESSMENT_MODE !== 'true'
+    ) {
+      const chatBase = getChatBaseUrl()
+      if (chatBase) {
+        const target = new URL('/auth/lti', chatBase)
+        target.searchParams.set('courseId', ctx.params.courseId)
+        target.searchParams.set('chatbotId', ctx.params.chatbotId)
+        target.searchParams.set('jwt', ctx.query.jwt)
+        ctx.res.setHeader('Cache-Control', 'no-store')
+        ctx.res.setHeader('Referrer-Policy', 'no-referrer')
+        return {
+          redirect: { destination: target.toString(), permanent: false },
+        }
+      }
+    }
+
     const apolloClient = initializeApollo(undefined, ctx)
     const courseId = ctx.params.courseId as string
     const chatbotId = ctx.params.chatbotId as string
     const embedded = parseEmbedParam(ctx.query.embed)
+    const handoffParameters = buildChatbotRedirectParams(ctx.query, embedded)
 
     const { participantToken, cookiesAvailable } = await getParticipantToken({
       apolloClient,
@@ -54,7 +76,8 @@ export async function getServerSideProps(ctx: GetServerSidePropsContext) {
 
     const localePrefix = ctx.locale ? `/${ctx.locale}` : ''
     const coursePath = `${localePrefix}/course/${courseId}`
-    const currentPath = `${coursePath}/chatbot/${chatbotId}${embedded ? '?embed=true' : ''}`
+    const handoffQuery = handoffParameters.toString()
+    const currentPath = `${coursePath}/chatbot/${chatbotId}${handoffQuery ? `?${handoffQuery}` : ''}`
     const loginUrl = `${localePrefix}/login?redirect_to=${encodeURIComponent(currentPath)}`
 
     if (!participantToken || typeof participantToken !== 'string') {
@@ -139,6 +162,10 @@ export async function getServerSideProps(ctx: GetServerSidePropsContext) {
 
       chatDestination.searchParams.set('embed', 'true')
       chatDestination.searchParams.set('token', exchangeToken)
+    }
+
+    for (const [key, value] of handoffParameters) {
+      chatDestination.searchParams.set(key, value)
     }
 
     return {

@@ -1,5 +1,22 @@
-import { describe, expect, test } from 'vitest'
+import { describe, expect, test, vi } from 'vitest'
+
+vi.mock('@/src/lib/server/promptTemplates', async (importOriginal) => {
+  const actual =
+    await importOriginal<typeof import('../src/lib/server/promptTemplates')>()
+
+  return {
+    ...actual,
+    renderPromptTemplate: (name: string, context: unknown) =>
+      name === 'citation-contract'
+        ? '<SYNTHETIC-CITATION-CONTRACT>'
+        : actual.renderPromptTemplate(name as never, context as never),
+  }
+})
+
 import { DEFAULT_PROMPT } from '../src/lib/config/prompts'
+import { withCitationContract } from '../src/lib/server/citationInstructions'
+import { withLanguageStyleContract } from '../src/lib/server/languageInstructions'
+import { renderPromptTemplate } from '../src/lib/server/promptTemplates'
 import { compileSystemPrompt } from '../src/lib/server/systemPromptCompiler'
 
 const COURSE_DATA_MARK = '## Course data'
@@ -14,8 +31,10 @@ const COURSE_POLICY_MARK = 'Course scope:'
 const GROUNDING_MARK = 'Course grounding:'
 const PARTIAL_RETRIEVAL_MARK = 'Retrieved results are a partial'
 const OUTPUT_FORMAT_MARK = 'Output format:'
-const CITATION_MARK = 'Citation format:'
+const CHEMISTRY_NOTATION_MARK = 'Chemistry and biology:'
+const CITATION_MARK = '<SYNTHETIC-CITATION-CONTRACT>'
 const LANGUAGE_MARK = 'Swiss Standard German orthography'
+const ANSWER_STYLE_MARK = '## Student answer preferences'
 
 const DOC_TOOL = 'KB_doc_query'
 const NON_DOC_TOOL = 'get_weather'
@@ -25,12 +44,14 @@ function compilePrompt(
   systemPrompts: unknown,
   selectedMode: string,
   toolNames: readonly string[] = [],
-  standardModeConfig?: unknown
+  standardModeConfig?: unknown,
+  customModeConfig?: unknown
 ): string {
   return compileSystemPrompt(systemPrompts, selectedMode, {
     courseDisplayName: COURSE_DISPLAY_NAME,
     toolNames,
     standardModeConfig,
+    customModeConfig,
   })
 }
 
@@ -51,6 +72,8 @@ describe('compileSystemPrompt', () => {
     expect(result).toContain(INPUT_CONTEXT_MARK)
     expect(result).toContain(COURSE_POLICY_MARK)
     expect(result).toContain(OUTPUT_FORMAT_MARK)
+    expect(result).toContain(CHEMISTRY_NOTATION_MARK)
+    expect(result).toContain('\\ce{')
     expect(result).not.toContain(GROUNDING_MARK)
     expect(result).toContain(LANGUAGE_MARK)
     expect(result).not.toContain(CITATION_MARK)
@@ -198,21 +221,21 @@ describe('compileSystemPrompt', () => {
     )
   })
 
-  test('citation markers override conflicting legacy formula instructions', () => {
-    const legacyPrompt =
-      'Never use square brackets. Use only dollar signs for formulas.'
-    const result = compilePrompt({ tutor: { prompt: legacyPrompt } }, 'tutor', [
-      DOC_TOOL,
-    ])
-
-    expect(result).toContain(legacyPrompt)
-    expect(result).toContain(CITATION_MARK)
-    expect(result).toContain(
-      'This citation format overrides conflicting bracket or formula instructions in lecturer-provided guidance or a custom persona.'
+  test.each([
+    'tutor',
+    'explainer',
+    'quizzer',
+    'custom',
+  ])('composes the same citation contract after stored guidance for %s', (mode) => {
+    const stored = { [mode]: { prompt: 'SYNTHETIC-GUIDANCE' } }
+    const contract = withCitationContract('', [DOC_TOOL])
+    const withTool = compilePrompt(stored, mode, [DOC_TOOL])
+    const withoutTool = compilePrompt(stored, mode, [NON_DOC_TOOL])
+    expect(withTool.includes(contract)).toBe(true)
+    expect(withTool.indexOf(contract)).toBeGreaterThan(
+      withTool.indexOf(stored[mode].prompt)
     )
-    expect(result.indexOf(CITATION_MARK)).toBeGreaterThan(
-      result.indexOf(legacyPrompt)
-    )
+    expect(withoutTool.includes(contract)).toBe(false)
   })
 
   test('does not add grounding or citations for a non-document tool', () => {
@@ -274,91 +297,12 @@ describe('compileSystemPrompt', () => {
     expect(quizzer).not.toContain(DEFAULT_EXPLAINER_MARK)
   })
 
-  test('encodes the adaptive Tutor loop without interrogating simple requests', () => {
-    const prompt = DEFAULT_PROMPT.tutor.prompt
-
-    expect(prompt).toContain('Answer a simple course lookup')
-    expect(prompt).toContain('Do not turn every request into a question')
-    expect(prompt).toContain('ask one diagnostic question')
-    expect(prompt).toContain('one high-value, focused, open question')
-    expect(prompt).toContain('Avoid making the student guess')
-    expect(prompt).toContain('Begin with the least support likely to help')
-    expect(prompt).toContain('Do not follow a rigid number of failed attempts')
-    expect(prompt).toContain('Diagnose misconceptions')
-    expect(prompt).toContain('Fade support after progress')
-    expect(prompt).toContain('Avoid generic praise')
-    expect(prompt).toContain('remains stuck after adaptive support')
-    expect(prompt).toContain('formative snapshot')
-    expect(prompt).toContain('Do not assign a grade or claim mastery')
-    expect(prompt).toContain('at most one optional transfer check')
-  })
-
-  test('keeps Explainer direct and free of mandatory Socratic friction', () => {
-    const prompt = DEFAULT_PROMPT.explainer.prompt
-
-    expect(prompt).toContain('Lead with the core answer')
-    expect(prompt).toContain('do not infer ability from spelling')
-    expect(prompt).toContain('worked example')
-    expect(prompt).toContain('State uncertainty or missing course evidence')
-    expect(prompt).toContain('Do not impose a Socratic exchange')
-    expect(prompt).toContain('at most one optional comprehension')
-  })
-
-  test('defines Quizzer topic selection, feedback, and bounded checkpoints', () => {
-    const prompt = DEFAULT_PROMPT.quizzer.prompt
-
-    const requiredFragments = [
-      'Establish the practice topic',
-      'one specific recommended course topic',
-      'ask for simple confirmation',
-      'Do not respond with only a menu',
-      'If the student agrees',
-      'Treat retrieved topic suggestions as examples',
-      'never imply that topics missing from the retrieved results are absent',
-      'Continue automatically after each assessed attempt',
-      'Make the session feel like a mock exam',
-      'without a provenance label',
-      'After every completed practice attempt',
-      'When the visible attempt supports it',
-      'instead of inventing a strength',
-      'one actionable next step',
-      'student explicitly asks how they are doing',
-      'too little evidence for a reliable pattern',
-      'ask whether the student wants another practice question',
-      'at least three completed question-answer-assessment cycles',
-      'at least two distinct course-grounded criteria',
-      'with no hint or retry pending',
-      'practice checkpoint',
-      'Based on the questions practised in this chat',
-      'snapshot of this short practice round',
-      'up to two evidence-supported strengths',
-      'if none is supported yet, say that neutrally',
-      'Do not use grades, percentages, proficiency labels, mastery, completion',
-      'Reset checkpoint evidence',
-      'Never infer that a topic is complete from retrieval exhaustion',
-      'change topics or explore the current topic in more depth',
-      'suggest a better-supported course topic',
-    ]
-    const forbiddenFragments = [
-      'AI-generated',
-      'topic is sufficiently covered',
-      'After the explanation, ask whether to continue',
-    ]
-
-    for (const fragment of requiredFragments) {
-      expect(prompt).toContain(fragment)
-    }
-    for (const fragment of forbiddenFragments) {
-      expect(prompt).not.toContain(fragment)
-    }
-  })
-
   test('keeps fixed platform contracts out of the mode contract text', () => {
     for (const { prompt } of Object.values(DEFAULT_PROMPT)) {
       expect(prompt).not.toContain('## Course data')
       expect(prompt).not.toContain('Platform course policy:')
       expect(prompt).not.toContain('Output format:')
-      expect(prompt).not.toContain('Citation format:')
+      expect(prompt).not.toContain(CITATION_MARK)
       expect(prompt).not.toContain('Language policy:')
       expect(prompt).not.toContain('[Attached image description:')
     }
@@ -417,6 +361,178 @@ describe('compileSystemPrompt', () => {
     expect(result).toContain(COURSE_POLICY_MARK)
     expect(result).toContain(OUTPUT_FORMAT_MARK)
     expect(result).toContain(LANGUAGE_MARK)
+  })
+
+  test('compiles the approved custom-mode persona with the platform sections last', () => {
+    const approved = {
+      modes: [
+        {
+          key: 'cm_0d1f2c3b-4a59-4e6f-8b7a-9c8d7e6f5a4b',
+          name: 'Ethik-Rollenspiel',
+          description: 'Practises ethical reasoning in a role play.',
+          personaText: 'APPROVED-CUSTOM-PERSONA',
+        },
+      ],
+    }
+    const result = compilePrompt(
+      null,
+      'cm_0d1f2c3b-4a59-4e6f-8b7a-9c8d7e6f5a4b',
+      [DOC_TOOL],
+      null,
+      approved
+    )
+
+    expect(result.startsWith(COURSE_DATA_MARK)).toBe(true)
+    expect(result).toContain(CUSTOM_PERSONA_MARK)
+    expect(result).toContain('APPROVED-CUSTOM-PERSONA')
+    expect(result).not.toContain(PLATFORM_MODE_MARK)
+    expect(result.indexOf('APPROVED-CUSTOM-PERSONA')).toBeLessThan(
+      result.indexOf(INPUT_CONTEXT_MARK)
+    )
+    expect(result.indexOf(INPUT_CONTEXT_MARK)).toBeLessThan(
+      result.indexOf(COURSE_POLICY_MARK)
+    )
+    expect(result.indexOf(COURSE_POLICY_MARK)).toBeLessThan(
+      result.indexOf(GROUNDING_MARK)
+    )
+    expect(result.indexOf(GROUNDING_MARK)).toBeLessThan(
+      result.indexOf(OUTPUT_FORMAT_MARK)
+    )
+    expect(result.indexOf(OUTPUT_FORMAT_MARK)).toBeLessThan(
+      result.indexOf(CITATION_MARK)
+    )
+    expect(result.indexOf(CITATION_MARK)).toBeLessThan(
+      result.indexOf(LANGUAGE_MARK)
+    )
+  })
+
+  test('uses the approved custom-mode persona over a legacy stored prompt', () => {
+    const result = compilePrompt(
+      { cm_0d1f2c3b: { prompt: 'LEGACY-STORED-PROMPT' } },
+      'cm_0d1f2c3b',
+      [],
+      null,
+      {
+        modes: [
+          {
+            key: 'cm_0d1f2c3b',
+            name: 'Ethik-Rollenspiel',
+            description: null,
+            personaText: 'APPROVED-CUSTOM-PERSONA',
+          },
+        ],
+      }
+    )
+
+    expect(result).toContain('APPROVED-CUSTOM-PERSONA')
+    expect(result).not.toContain('LEGACY-STORED-PROMPT')
+    expect(result).toContain(CUSTOM_PERSONA_MARK)
+  })
+
+  describe('custom persona contracts', () => {
+    const modeKey = 'cm_client-role-play'
+    const personaConfig = (settings: Record<string, unknown> = {}) => ({
+      modes: [
+        {
+          key: modeKey,
+          name: 'Client role play',
+          description: null,
+          personaText: 'SYNTHETIC-ROLE-PLAY-PERSONA',
+          ...settings,
+        },
+      ],
+    })
+    const contracts = (customPersona: boolean) => ({
+      coursePolicy: renderPromptTemplate('course-policy', { customPersona }),
+      outputFormat: renderPromptTemplate('output-format', { customPersona }),
+    })
+
+    test('gives a custom persona the persona variants of the shared contracts', () => {
+      const persona = contracts(true)
+      const standard = contracts(false)
+      const custom = compilePrompt(null, modeKey, [], null, personaConfig())
+
+      expect(custom).toContain(persona.coursePolicy)
+      expect(custom).toContain(persona.outputFormat)
+      expect(custom).not.toContain(standard.coursePolicy)
+      expect(custom).not.toContain(standard.outputFormat)
+
+      for (const mode of ['tutor', 'explainer', 'quizzer', 'custom']) {
+        const result = compilePrompt(null, mode, [], null, personaConfig())
+        expect(result).toContain(standard.coursePolicy)
+        expect(result).toContain(standard.outputFormat)
+        expect(result).not.toContain(persona.coursePolicy)
+        expect(result).not.toContain(persona.outputFormat)
+      }
+    })
+
+    test('changes exactly one paragraph of each shared contract', () => {
+      const persona = contracts(true)
+      const standard = contracts(false)
+
+      for (const key of ['coursePolicy', 'outputFormat'] as const) {
+        const personaParagraphs = persona[key].split('\n\n')
+        const standardParagraphs = standard[key].split('\n\n')
+        expect(personaParagraphs).toHaveLength(standardParagraphs.length)
+        expect(
+          personaParagraphs.filter(
+            (paragraph, index) => paragraph !== standardParagraphs[index]
+          )
+        ).toHaveLength(1)
+      }
+    })
+
+    test('locks the reply language only for the mode that sets it', () => {
+      const locked = compilePrompt(
+        null,
+        modeKey,
+        [],
+        null,
+        personaConfig({ replyLanguage: 'en' })
+      )
+      const unlocked = compilePrompt(null, modeKey, [], null, personaConfig())
+
+      expect(locked.endsWith(withLanguageStyleContract('', 'en'))).toBe(true)
+      expect(unlocked.endsWith(withLanguageStyleContract(''))).toBe(true)
+      expect(
+        compilePrompt(
+          null,
+          'tutor',
+          [],
+          null,
+          personaConfig({ replyLanguage: 'en' })
+        )
+      ).toBe(compilePrompt(null, 'tutor'))
+    })
+
+    test('never puts the meeting clock into the system prompt', () => {
+      expect(
+        compilePrompt(
+          null,
+          modeKey,
+          [],
+          null,
+          personaConfig({ meetingClock: 'ELAPSED_AND_TIME' })
+        )
+      ).toBe(compilePrompt(null, modeKey, [], null, personaConfig()))
+    })
+  })
+
+  test('leaves a standard mode unchanged when the custom modes reuse its key', () => {
+    const withCustomConfig = compilePrompt(null, 'tutor', [], null, {
+      modes: [
+        {
+          key: 'tutor',
+          name: 'Tutor replacement',
+          description: 'Replacement persona',
+          personaText: 'REPLACEMENT-PERSONA',
+        },
+      ],
+    })
+
+    expect(withCustomConfig).toContain(DEFAULT_TUTOR_MARK)
+    expect(withCustomConfig).not.toContain('REPLACEMENT-PERSONA')
+    expect(withCustomConfig).not.toContain(CUSTOM_PERSONA_MARK)
   })
 
   test('yields fixed platform contracts for an unknown mode without a persona', () => {
@@ -493,5 +609,99 @@ describe('compileSystemPrompt', () => {
     expect(result).toContain('do not fill the gap from general knowledge')
     expect(result).toContain('locked conversation language')
     expect(result).toContain('exact non-personal course and source labels')
+  })
+})
+
+describe('compileSystemPrompt student answer preferences', () => {
+  const cases = [
+    { name: 'tutor', systemPrompts: { tutor: { prompt: 'STORED' } } },
+    { name: 'quizzer', systemPrompts: null },
+    { name: 'custom', systemPrompts: { custom: { prompt: 'PERSONA' } } },
+  ] as const
+  const styles = ['balanced', 'bullets'] as const
+  const tones = ['neutral', 'friendly', 'direct'] as const
+  const nonDefaultCombinations = styles
+    .flatMap((answerStyle) =>
+      tones.map((answerTone) => ({ answerStyle, answerTone }))
+    )
+    .filter(
+      ({ answerStyle, answerTone }) =>
+        answerStyle !== 'balanced' || answerTone !== 'neutral'
+    )
+
+  function compileWithPreferences(
+    systemPrompts: unknown,
+    selectedMode: string,
+    preferences: {
+      answerStyle?: (typeof styles)[number]
+      answerTone?: (typeof tones)[number]
+    } = {}
+  ): string {
+    return compileSystemPrompt(systemPrompts, selectedMode, {
+      courseDisplayName: COURSE_DISPLAY_NAME,
+      toolNames: [DOC_TOOL],
+      ...preferences,
+    })
+  }
+
+  test.each(
+    cases
+  )('keeps the $name prompt byte-identical for the default style and tone', ({
+    name,
+    systemPrompts,
+  }) => {
+    const withoutPreferences = compileWithPreferences(systemPrompts, name)
+
+    expect(
+      compileWithPreferences(systemPrompts, name, {
+        answerStyle: 'balanced',
+        answerTone: 'neutral',
+      })
+    ).toBe(withoutPreferences)
+    expect(withoutPreferences).not.toContain(ANSWER_STYLE_MARK)
+  })
+
+  test.each(
+    cases
+  )('adds exactly one section after the $name mode sections for every other combination', ({
+    name,
+    systemPrompts,
+  }) => {
+    const baseline = compileWithPreferences(systemPrompts, name)
+    const sections = new Set<string>()
+
+    for (const preferences of nonDefaultCombinations) {
+      const result = compileWithPreferences(systemPrompts, name, preferences)
+      const sectionIdx = result.indexOf(ANSWER_STYLE_MARK)
+      const inputContextIdx = result.indexOf(INPUT_CONTEXT_MARK)
+
+      expect(result.split(ANSWER_STYLE_MARK)).toHaveLength(2)
+      expect(result.match(/^## /gm)).toHaveLength(
+        (baseline.match(/^## /gm) ?? []).length + 1
+      )
+      expect(sectionIdx).toBeGreaterThan(
+        name === 'custom'
+          ? result.indexOf(CUSTOM_PERSONA_MARK)
+          : result.indexOf(PLATFORM_MODE_MARK)
+      )
+      expect(inputContextIdx).toBeGreaterThan(sectionIdx)
+      expect(result.indexOf(OUTPUT_FORMAT_MARK)).toBeGreaterThan(sectionIdx)
+      // Removing the inserted section restores the default prompt exactly,
+      // so the mode contract and every fixed contract stay untouched.
+      expect(result.slice(0, sectionIdx) + result.slice(inputContextIdx)).toBe(
+        baseline
+      )
+      sections.add(result.slice(sectionIdx, inputContextIdx))
+    }
+
+    expect(sections.size).toBe(nonDefaultCombinations.length)
+  })
+
+  test('emits the section for a non-default tone alone', () => {
+    const result = compileWithPreferences(null, 'tutor', {
+      answerTone: 'direct',
+    })
+
+    expect(result.split(ANSWER_STYLE_MARK)).toHaveLength(2)
   })
 })

@@ -4,6 +4,42 @@ import {
   getPublicSourceUrl,
 } from '../src/lib/sources/docQueryResult'
 import { normalizeSourcesFromParts } from '../src/lib/sources/normalizeSources'
+import { getSourceNavigationUrl } from '../src/lib/sources/sourceUrl'
+import { sanitizeDocQueryResult } from '../src/services/docQueryResult'
+
+test.each([
+  'https://api.example.test/api/ingestion/resources/fixture?sig=test',
+  'http://synthetic.namespace.svc/source.pdf',
+  'http://synthetic.namespace.svc.cluster.local/source.pdf',
+])('removes gateway destinations from both MCP representations without losing chunks: %s', (reference) => {
+  const payload = {
+    sources: [
+      { reference, chunks: [{ content: 'Synthetic excerpt', page_number: 2 }] },
+    ],
+  }
+  const result = sanitizeDocQueryResult({
+    structuredContent: { result: JSON.stringify(payload) },
+    content: [{ type: 'text', text: JSON.stringify(payload) }],
+  }) as {
+    structuredContent: { result: string }
+    content: Array<{ type: string; text: string }>
+  }
+  const structured = JSON.parse(result.structuredContent.result)
+  expect(JSON.parse(result.content[0].text)).toEqual(structured)
+  expect(structured.sources[0].chunks).toEqual(payload.sources[0].chunks)
+  expect(structured.sources[0].reference).toMatch(/^document-[a-f0-9]{16}$/)
+  expect(JSON.stringify(result)).not.toContain(reference)
+  expect(payload.sources[0].reference).toBe(reference)
+})
+
+test('preserves public citation URLs and ordinary values', () => {
+  const result = {
+    url: 'https://example.test/source.pdf',
+    count: 1,
+    empty: null,
+  }
+  expect(sanitizeDocQueryResult(result)).toEqual(result)
+})
 
 describe('retrieval display independent of citation eligibility', () => {
   const unnamed = {
@@ -14,6 +50,7 @@ describe('retrieval display independent of citation eligibility', () => {
       { content: 'Second synthetic passage', page_number: 8 },
     ],
   }
+
   test('retains every unnamed chunk without shifting existing citation identity', () => {
     const named = {
       reference: 'https://example.org/lecture.pdf',
@@ -22,16 +59,22 @@ describe('retrieval display independent of citation eligibility', () => {
     }
     const payload = { mode: 'documents', sources: [unnamed, named] }
     const displayed = getDocQueryResult(payload)
-    expect(displayed.state).toBe('success')
-    expect(displayed.groups[0].chunks.map((c) => c.page)).toEqual([3, 8])
-    expect(displayed.groups[0].citationId).toBeUndefined()
     const citations = normalizeSourcesFromParts([
       { type: 'tool-call', toolName: 'KB_doc_query', result: payload },
     ])
+
+    expect(displayed.state).toBe('success')
+    expect(displayed.groups[0].chunks.map((c) => c.page)).toEqual([3, 8])
+    expect(displayed.groups[0].url).toBeUndefined()
+    expect(
+      displayed.groups[0].chunks.every((chunk) => chunk.url === undefined)
+    ).toBe(true)
+    expect(displayed.groups[0].citationId).toBeUndefined()
     expect(citations).toHaveLength(1)
     expect(displayed.groups[1].citationId).toBe(citations[0].id)
     expect(citations[0].index).toBe(1)
   })
+
   test('preserves supplied origin independently of internal reference and identity', () => {
     const source_url = 'https://example.org/lecture.pdf?edition=2#page=3'
     const result = getDocQueryResult({
@@ -39,9 +82,12 @@ describe('retrieval display independent of citation eligibility', () => {
       sources: [{ ...unnamed, source_url }],
     })
     expect(result.groups[0].url).toBe(source_url)
-    expect(result.groups[0].chunks[1].url).toBe(source_url)
+    expect(result.groups[0].chunks[1].url).toBe(
+      'https://example.org/lecture.pdf?edition=2#page=8'
+    )
     expect(result.groups[0].citationId).toBeUndefined()
   })
+
   test.each([
     [{ sources: [] }, 'empty'],
     [{ sources: [null, 4] }, 'unknown'],
@@ -71,6 +117,7 @@ describe('retrieval display independent of citation eligibility', () => {
   ])('classifies envelope state without treating missing metadata as empty', (input, state) => {
     expect(getDocQueryResult(input).state).toBe(state)
   })
+
   test.each([
     'javascript:alert(1)',
     'https://user:password@example.org/file.pdf',
@@ -83,6 +130,7 @@ describe('retrieval display independent of citation eligibility', () => {
   ])('does not expose unsafe transport targets', (value) => {
     expect(getPublicSourceUrl(value)).toBeUndefined()
   })
+
   test('uses each video chunk timestamp without overwriting an origin fragment', () => {
     const result = (source_url: string) =>
       getDocQueryResult({
@@ -107,5 +155,68 @@ describe('retrieval display independent of citation eligibility', () => {
     expect(result(`${origin}#section`).groups[0].chunks[0].url).toBe(
       `${origin}#section`
     )
+  })
+})
+
+describe('physical PDF navigation', () => {
+  test('preserves opaque fragment bytes', () => {
+    expect(
+      getSourceNavigationUrl(
+        'https://example.org/file.pdf#chapter#part&zoom=100',
+        13
+      )
+    ).toBe('https://example.org/file.pdf#chapter#part&zoom=100&page=13')
+  })
+  test.each([
+    [
+      'https://example.org/file.pdf',
+      13,
+      'https://example.org/file.pdf#page=13',
+    ],
+    [
+      'https://example.org/FILE.PDF?edition=2#page=1&zoom=100',
+      13,
+      'https://example.org/FILE.PDF?edition=2#zoom=100&page=13',
+    ],
+    [
+      'https://example.org/file.pdf#chapter%202',
+      13,
+      'https://example.org/file.pdf#chapter%202&page=13',
+    ],
+    [
+      'https://example.org/file.html#chapter',
+      13,
+      'https://example.org/file.html#chapter',
+    ],
+    ['https://example.org/file.pdf', 0, 'https://example.org/file.pdf'],
+    ['https://example.org/file.pdf', 1.5, 'https://example.org/file.pdf'],
+    ['https://example.org/file.pdf', undefined, 'https://example.org/file.pdf'],
+    ['http://127.0.0.1/file.pdf', 13, undefined],
+    [undefined, 13, undefined],
+  ])('builds only a safe PDF target', (url, page, expected) => {
+    expect(getSourceNavigationUrl(url, page)).toBe(expected)
+  })
+  test('retains labels and identity while navigating each physical chunk', () => {
+    const url = 'https://example.org/file.pdf'
+    const result = getDocQueryResult({
+      mode: 'documents',
+      sources: [
+        {
+          title: 'Synthetic',
+          reference: url,
+          chunks: [
+            { content: 'A', page_number: 13, labeled_page_number: '9' },
+            { content: 'B', page_number: 4, labeled_page_number: 'IV' },
+          ],
+        },
+      ],
+    })
+    expect(result.groups[0].url).toBe(url)
+    expect(
+      result.groups[0].chunks.map(({ labeledPage, url }) => [labeledPage, url])
+    ).toEqual([
+      ['9', `${url}#page=13`],
+      ['IV', `${url}#page=4`],
+    ])
   })
 })

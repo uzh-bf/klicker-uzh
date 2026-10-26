@@ -38,6 +38,8 @@ const runRatingRequest = createRatingRequestCoordinator<MessageRating | null>()
 /**
  * Extended thread message type that includes parentId for conversation branching
  */
+export type MeetingClockAnchor = { startedAt: string; skewMs: number }
+
 export type ExtendedThreadMessageLike = ThreadMessageLike & {
   parentId?: string | null
   attachmentSourceMessageId?: string | null
@@ -47,6 +49,11 @@ export type ExtendedThreadMessageLike = ThreadMessageLike & {
   reasoningContent?: string | null
   creditsUsed?: number | null
   rating?: MessageRating | null
+  // Server start of a custom mode's meeting clock, received with a streamed
+  // answer, and the offset of the server clock from this browser's clock.
+  meetingClock?: MeetingClockAnchor | null
+  // Verified learning-context snapshot on eLearning-origin user messages.
+  learningContext?: unknown
   imageAttachments?: {
     id?: string
     type: 'image'
@@ -75,6 +82,7 @@ export interface Thread {
   createdAt: Date
   updatedAt: Date
   lastChatMode?: string | null // mode of the thread's most recent message (D6)
+  origin?: string | null // where the conversation began ('elearning' | 'pwa')
   lastRunOutcome?: ThreadRunOutcome | null // reset when a new run starts
 }
 
@@ -105,7 +113,10 @@ interface ChatState {
   ratingErrors: Record<string, boolean>
 
   // thread management actions
-  createThread: (chatbotId: string) => Promise<string>
+  createThread: (
+    chatbotId: string,
+    options?: { background?: boolean }
+  ) => Promise<string>
   loadThreads: (chatbotId: string) => Promise<void>
   switchToThread: (chatbotId: string, threadId: string) => Promise<boolean>
   /**
@@ -292,9 +303,12 @@ export const useChatStore = create<ChatState>((set, get) => {
      * @param chatbotId - The ID of the chatbot to create the thread for
      * @returns Promise<string> The ID of the created thread
      */
-    createThread: async (chatbotId: string) => {
+    createThread: async (
+      chatbotId: string,
+      options?: { background?: boolean }
+    ) => {
       try {
-        set({ isLoading: true })
+        if (!options?.background) set({ isLoading: true })
         const apiThread = await apiCall<ApiThread>(
           `/chatbots/${chatbotId}/threads`,
           {

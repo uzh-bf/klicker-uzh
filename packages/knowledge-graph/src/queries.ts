@@ -34,7 +34,10 @@ export class KnowledgeGraphInputError extends Error {
 }
 
 function validateNodeId(nodeId: string): void {
-  if (!/^\d+$/.test(nodeId)) {
+  if (
+    !/^\d{1,19}$/.test(nodeId) ||
+    BigInt(nodeId) > BigInt('9223372036854775807')
+  ) {
     throw new KnowledgeGraphInputError('Node ID must be a decimal integer')
   }
 }
@@ -43,12 +46,9 @@ export function getOverviewNodesQuery(): FixedQuery {
   return {
     cypher: `
       MATCH (n)
-      OPTIONAL MATCH (n)--(adjacent)
-      WITH n, count(adjacent) AS degree
+      WITH n LIMIT ${KNOWLEDGE_GRAPH_OVERVIEW_NODE_LIMIT + 1}
       RETURN id(n) AS id, labels(n) AS labels, properties(n) AS properties,
-        degree AS degree
-      ORDER BY degree DESC, id(n) ASC
-      LIMIT ${KNOWLEDGE_GRAPH_OVERVIEW_NODE_LIMIT + 1}
+        indegree(n) + outdegree(n) AS degree
     `,
     params: {},
   }
@@ -68,14 +68,29 @@ export function getSearchNodesQuery(searchText: string): FixedQuery {
       WHERE any(candidate IN [n.name, n.title, n.entity]
         WHERE candidate IS NOT NULL
           AND toLower(toString(candidate)) CONTAINS toLower($searchText))
-      OPTIONAL MATCH (n)--(adjacent)
-      WITH n, count(adjacent) AS degree
+      WITH n LIMIT ${KNOWLEDGE_GRAPH_SEARCH_NODE_LIMIT + 1}
       RETURN id(n) AS id, labels(n) AS labels, properties(n) AS properties,
-        degree AS degree
-      ORDER BY degree DESC, id(n) ASC
-      LIMIT ${KNOWLEDGE_GRAPH_SEARCH_NODE_LIMIT + 1}
+        indegree(n) + outdegree(n) AS degree
     `,
     params: { searchText: normalizedSearchText },
+  }
+}
+
+/** Full rows for a bounded set of already selected concepts. */
+export function getNodesByIdQuery(nodeIds: string[]): FixedQuery {
+  if (nodeIds.length > KNOWLEDGE_GRAPH_SEARCH_NODE_LIMIT) {
+    throw new KnowledgeGraphInputError('Too many node IDs')
+  }
+  nodeIds.forEach(validateNodeId)
+
+  return {
+    cypher: `
+      MATCH (n)
+      WHERE id(n) IN [nodeId IN $nodeIds | toInteger(nodeId)]
+      RETURN id(n) AS id, labels(n) AS labels, properties(n) AS properties,
+        indegree(n) + outdegree(n) AS degree
+    `,
+    params: { nodeIds },
   }
 }
 
@@ -86,13 +101,10 @@ export function getNeighborhoodNodesQuery(nodeId: string): FixedQuery {
     cypher: `
       MATCH (center)--(neighbor)
       WHERE id(center) = toInteger($nodeId)
-      WITH DISTINCT neighbor
-      OPTIONAL MATCH (neighbor)--(adjacent)
-      WITH neighbor, count(adjacent) AS degree
+      WITH DISTINCT neighbor LIMIT ${KNOWLEDGE_GRAPH_NEIGHBOR_NODE_LIMIT + 1}
       RETURN id(neighbor) AS id, labels(neighbor) AS labels,
-        properties(neighbor) AS properties, degree AS degree
-      ORDER BY degree DESC, id(neighbor) ASC
-      LIMIT ${KNOWLEDGE_GRAPH_NEIGHBOR_NODE_LIMIT + 1}
+        properties(neighbor) AS properties,
+        indegree(neighbor) + outdegree(neighbor) AS degree
     `,
     params: { nodeId },
   }
@@ -117,7 +129,6 @@ export function getEdgesForNodeIdsQuery(
       RETURN id(relationship) AS id, id(source) AS source,
         id(target) AS target, type(relationship) AS type,
         properties(relationship) AS properties
-      ORDER BY id(relationship) ASC
       LIMIT ${resultLimit}
     `,
     params: { nodeIds },

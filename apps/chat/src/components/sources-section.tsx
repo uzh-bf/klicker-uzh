@@ -15,10 +15,15 @@ import {
   useRef,
 } from 'react'
 import { twMerge } from 'tailwind-merge'
-
 import { getSourceSecondaryLine } from '@/src/lib/sources/sourceDisplay'
+import { getSourceNavigationUrl } from '@/src/lib/sources/sourceUrl'
 import type { ChatSource, ChatSourceType } from '@/src/lib/sources/types'
-import { useMessageSourcesContext } from './message-sources-context'
+import { useChatUi } from './chat-ui-context'
+import {
+  partitionSources,
+  useMessageSourcesContext,
+} from './message-sources-context'
+import { SourceRow } from './source-row'
 import { SourcePreviewContent } from './source-preview-content'
 import { Tooltip, TooltipContent, TooltipTrigger } from './ui/tooltip'
 
@@ -35,16 +40,24 @@ const SOURCE_TYPE_ICONS: Record<
   document: FileTextIcon,
 }
 
+// Cited cards are previewed inline up to this count. The remaining cited cards
+// move into the "Other retrieved material" disclosure together with the
+// uncited sources; every card still renders and keeps its `src-...` DOM id, so
+// a citation chip can open the disclosure and focus its card.
+const CITED_SOURCES_PREVIEW_LIMIT = 12
+
 function SourceCard({
   source,
   messageId,
+  citedPageRange,
 }: {
   source: ChatSource
   messageId: string
+  citedPageRange?: string
 }) {
   const t = useTranslations()
   const Icon = SOURCE_TYPE_ICONS[source.type]
-  const secondaryLine = getSourceSecondaryLine(source, t)
+  const secondaryLine = getSourceSecondaryLine(source, t, citedPageRange)
 
   const inner = (
     <>
@@ -113,7 +126,7 @@ function SourceCard({
   const card = source.url ? (
     <a
       {...sharedProps}
-      href={source.url}
+      href={getSourceNavigationUrl(source.url, source.page)}
       target="_blank"
       rel="noopener noreferrer"
     >
@@ -142,12 +155,20 @@ function SourceCard({
 
 export function SourcesSection() {
   const t = useTranslations()
+  const { embedded } = useChatUi()
   // Computed once in `AssistantMessage` (see `useMessageSources`) and shared
   // via context with the inline citation chips, instead of re-parsing the
   // tool JSON here again.
-  const { messageId, sources } = useMessageSourcesContext()
+  const {
+    citationCounts,
+    citationsReady,
+    citedPageRanges,
+    messageId,
+    sources,
+  } = useMessageSourcesContext()
   const threadViewportStore = useThreadViewportStore()
   const revealOnMountRef = useRef(threadViewportStore.getState().isAtBottom)
+  const didRevealRef = useRef(false)
   const headingRef = useRef<HTMLHeadingElement>(null)
 
   // Auto-scroll follows the answer while it streams but deliberately switches
@@ -156,13 +177,86 @@ export function SourcesSection() {
   // possible scroll instead of jumping to the final card. If they had scrolled
   // up, preserve their position entirely.
   useLayoutEffect(() => {
-    if (!revealOnMountRef.current) return
-    headingRef.current?.scrollIntoView({ block: 'nearest', inline: 'nearest' })
-  }, [])
+    if (!citationsReady || didRevealRef.current || !revealOnMountRef.current) {
+      return
+    }
 
-  if (sources.length === 0) return null
+    if (!headingRef.current) return
+    headingRef.current?.scrollIntoView({ block: 'nearest', inline: 'nearest' })
+    didRevealRef.current = true
+  }, [citationsReady])
+
+  if (sources.length === 0 || !citationsReady) return null
+
+  const { citedSources, uncitedSources } = partitionSources(
+    sources,
+    citationCounts
+  )
+
+  const previewSources = citedSources.slice(0, CITED_SOURCES_PREVIEW_LIMIT)
+  const otherSources = [
+    ...citedSources.slice(CITED_SOURCES_PREVIEW_LIMIT),
+    ...uncitedSources,
+  ]
 
   const headingId = `chat-sources-heading-${messageId}`
+
+  // Embedded (and other narrow) layouts render the same normalized list as
+  // one compact line per source. No heading block and no border: the heading
+  // carries the count, and every row keeps its tooltip detail, so the compact
+  // form stays an accessibility-equivalent view, not a different feature.
+  if (embedded) {
+    return (
+      <section
+        aria-labelledby={headingId}
+        data-cy="chat-sources-section"
+        className="animate-in fade-in mt-2 min-w-0 duration-300 motion-reduce:animate-none"
+      >
+        <h3
+          ref={headingRef}
+          id={headingId}
+          className="text-muted-foreground mb-1 flex items-center gap-1.5 text-[11px] font-semibold uppercase tracking-wide"
+        >
+          <BookOpenIcon aria-hidden="true" className="size-3" />
+          {t('chat.sources.title')} · {sources.length}
+        </h3>
+        <ul data-cy="chat-cited-sources" className="flex min-w-0 flex-col">
+          {citedSources.map((source) => (
+            <li key={source.id} className="min-w-0">
+              <SourceRow
+                source={source}
+                citedPageRange={citedPageRanges.get(source.index)}
+              />
+            </li>
+          ))}
+          {uncitedSources.length > 0 && (
+            <li>
+              <details data-cy="chat-other-sources" className="mt-0.5">
+                <summary
+                  data-cy="chat-other-sources-toggle"
+                  className="text-muted-foreground cursor-pointer list-none select-none text-[11px] font-semibold uppercase tracking-wide outline-none focus-visible:ring-1 focus-visible:ring-ring"
+                >
+                  {t('chat.sources.otherRetrieved', {
+                    count: uncitedSources.length,
+                  })}
+                </summary>
+                <ul className="mt-0.5 flex flex-col">
+                  {uncitedSources.map((source) => (
+                    <li key={source.id}>
+                      <SourceRow
+                        source={source}
+                        citedPageRange={citedPageRanges.get(source.index)}
+                      />
+                    </li>
+                  ))}
+                </ul>
+              </details>
+            </li>
+          )}
+        </ul>
+      </section>
+    )
+  }
 
   return (
     <section
@@ -179,14 +273,55 @@ export function SourcesSection() {
         {t('chat.sources.title')} · {sources.length}
       </h3>
 
-      {/* All source types share one responsive grid. Equal-width tracks keep
-          mixed document/media results aligned, while min(230px, 100%) prevents
-          horizontal overflow in mobile and embedded containers. */}
-      <div className="grid grid-cols-[repeat(auto-fit,minmax(min(230px,100%),1fr))] items-stretch gap-2">
-        {sources.map((source) => (
-          <SourceCard key={source.id} source={source} messageId={messageId} />
-        ))}
-      </div>
+      {previewSources.length > 0 && (
+        <>
+          <h4 className="text-muted-foreground mb-2 text-xs font-semibold uppercase tracking-wide">
+            {t('chat.sources.cited')}
+          </h4>
+          {/* All source types share one responsive grid. Equal-width tracks keep
+              mixed document/media results aligned, while min(230px, 100%) prevents
+              horizontal overflow in mobile and embedded containers. */}
+          <div
+            data-cy="chat-cited-sources"
+            className="grid grid-cols-[repeat(auto-fit,minmax(min(230px,100%),1fr))] items-stretch gap-2"
+          >
+            {previewSources.map((source) => (
+              <SourceCard
+                key={source.id}
+                source={source}
+                citedPageRange={citedPageRanges.get(source.index)}
+                messageId={messageId}
+              />
+            ))}
+          </div>
+        </>
+      )}
+
+      {otherSources.length > 0 && (
+        <details
+          data-cy="chat-other-sources"
+          className="mt-3 rounded-md border border-dashed px-3 py-2"
+        >
+          <summary
+            data-cy="chat-other-sources-toggle"
+            className="text-muted-foreground cursor-pointer text-xs font-semibold uppercase tracking-wide outline-none focus-visible:ring-1"
+          >
+            {t('chat.sources.otherRetrieved', {
+              count: otherSources.length,
+            })}
+          </summary>
+          <div className="mt-2 grid grid-cols-[repeat(auto-fit,minmax(min(230px,100%),1fr))] items-stretch gap-2">
+            {otherSources.map((source) => (
+              <SourceCard
+                key={source.id}
+                source={source}
+                citedPageRange={citedPageRanges.get(source.index)}
+                messageId={messageId}
+              />
+            ))}
+          </div>
+        </details>
+      )}
     </section>
   )
 }

@@ -14,5 +14,6 @@ than persisted rows we would have to backfill.
 
 The consequences to accept: sources cannot be queried or aggregated without re-parsing message
 content, the normalizer must stay tolerant of malformed and partial payloads rather than trusting
-a validated write path, and citation numbering is a render-time convention that the server-side
-prompt contract has to mirror by hand instead of sharing a stored numbering.
+a validated write path, and citation numbering remains derived rather than stored.
+The server uses the same normalizer to project explicit indices into current-turn
+model requests; original tool results remain unchanged for streaming and persistence.

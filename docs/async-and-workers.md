@@ -26,6 +26,76 @@ Task definitions are centralized in `packages/hatchet/src/index.ts:prepareHatche
 
 Hatchet clients use two distinct endpoints (`packages/hatchet/src/client.ts:setupClient`): `HATCHET_CLIENT_HOST_PORT` for gRPC worker and event traffic, and `HATCHET_API_URL` for HTTP API operations such as programmatic scheduled runs. Both must target the same Hatchet installation. A healthy worker proves only the gRPC path; publication and delayed aggregation can still fail if the HTTP URL points to a retired service.
 
+## Worker runtime contract
+
+Each worker pod owns a separate Hatchet identity and slot budget. The slot
+values are per pod, not deployment-wide totals. The base chart defines the
+shared runtime defaults; the STG/PRD overlays only override values that differ
+by environment. The merged values render into the worker-specific ConfigMaps.
+
+| Mode             | Worker name                                    | Non-durable slots | Durable slots | Workflow collection                                             |
+| ---------------- | ---------------------------------------------- | ----------------: | ------------: | --------------------------------------------------------------- |
+| General          | `hatchet-worker-general`                       |               100 |          1000 | `HATCHET_WORKFLOWS` selection, defaulting to all prepared tasks |
+| Regular response | `hatchet-worker-response-processor`            |               100 |          1000 | Authenticated and anonymous response processing                 |
+| Assessment       | `hatchet-worker-response-processor-assessment` |               100 |          1000 | Assessment response processing and aggregation                  |
+
+These explicit values preserve the effective defaults of the pinned Hatchet
+TypeScript SDK 1.9.4: 100 non-durable slots and 1000 durable slots per pod.
+W2 therefore makes no capacity reduction or throughput claim. W3 must measure
+queue depth, task duration, retries, and resource consumption before changing
+these values or deriving KEDA targets.
+
+The response processor selects regular versus assessment mode from
+`ASSESSMENT_MODE === 'true'`. `HATCHET_WORKER_NAME` is a per-deployment
+override: never provide one shared value to both response processor
+Deployments, because the mode-specific identities preserve their distinct
+capacity contracts. The other runtime settings are `HATCHET_WORKER_SLOTS`,
+`HATCHET_WORKER_DURABLE_SLOTS`, `HATCHET_WORKER_HEALTH_PORT`, and
+`HATCHET_WORKER_STARTUP_TIMEOUT_MS`.
+
+During a rolling replacement, queued work routed to the former shared
+assessment identity may need the normal Hatchet retry or replay path. W2 does
+not migrate live assignments between worker identities.
+
+The general worker keeps its existing `HATCHET_WORKFLOWS` selection. Unknown
+keys are warned about and filtered; an unset or empty value selects all
+prepared tasks. The response processor keeps the exact regular and assessment
+workflow collections declared in
+`apps/hatchet-worker-response-processor/src/index.ts`.
+
+## Health and termination
+
+The shared runtime in `packages/hatchet/src/worker-runtime.ts` serves two local
+HTTP endpoints. General workers use port 8001, regular-response workers use
+8002, and assessment workers use 8003 by default:
+
+- `/healthz` is the liveness endpoint. It returns 200 while the process is
+  starting, ready, or draining, and 503 after a fault or stop.
+- `/readyz` is the intake-readiness endpoint. It returns 200 only in the ready
+  state and 503 while starting, draining, faulted, or stopped.
+
+On `SIGTERM` or `SIGINT`, the runtime first enters `draining`, which makes the
+pod unready before the SDK termination path runs. `/readyz` is a rollout and
+observability signal; it is not an independent Hatchet intake control. The
+actual intake boundary is the pinned SDK's listener-unregister path while it
+finishes its stop sequence. Kubernetes gives each worker 90 seconds through
+`terminationGracePeriodSeconds`; if the SDK does not finish within that
+window, the platform may terminate the process and the workflow system's retry
+behavior must make the work safe to retry. W2 makes no exactly-once claim.
+
+The Helm chart maps `/healthz` to liveness and `/readyz` to readiness for all
+three worker Deployments. A startup failure can close the health server in the
+same turn that it marks the process faulted, so a probe is not guaranteed to
+observe the transient fault response before the process exits.
+
+Worker PodDisruptionBudgets are explicit per environment. Staging sets
+`minAvailable: 0` for all three single-replica workers, so a voluntary node
+drain can evict them without a PDB deadlock; this provides no worker
+availability guarantee during that disruption. Production keeps one general
+worker and two regular-response and assessment workers available. The base
+chart defaults all three worker budgets to one. These values do not change
+replica ownership or replica counts.
+
 ## Response ingest (`apps/response-api`)
 
 Bare `http.createServer`, two routes: `GET /healthz` and `POST /AddResponse`. Non-assessment responses (`handleAddResponse`) emit `response-received:authenticated|anonymous`. The assessment path (`handleAddAssessmentResponse`) verifies a JWT correlation key, dedupes via `hget` on the assessment Redis, then emits `response-received:assessment`; audit-log events (`create-audit-log-entry`) are emitted throughout. Live-quiz vs assessment behavior switches on the `ASSESSMENT_MODE` env var.
@@ -58,9 +128,9 @@ registered:
 `packages/hatchet/src/index.ts:prepareHatchetTasks` registers six local workflows:
 
 - `ingest-kb-resource` accepts the selected resource, version, and attempt identifiers, prepares the exact source bytes, then calls `packages/hatchet/src/kbIngestion.ts:dispatchKBIngestion`. Dispatch awaits `POST /v1/resources`, stores the returned operation identifier, and reuses the same version, digest, source URL, and idempotency key when an attempt is retried. Source identity and accepted-operation correlation update `KBResource` and its `KBIngestionRun` in one transaction.
-- `monitor-kb-ingestions` is an overdue-delivery fallback for the signed webhook path. Every five minutes, `packages/hatchet/src/kbIngestion.ts:monitorActiveKBIngestions` selects timestamped operations accepted at least five minutes earlier. A legacy or interrupted row that has an external operation id but no recorded start timestamp is eligible immediately so it cannot remain unmonitored. The task rotates through at most 32 eligible operations, polls `GET /v1/operations/{operation_id}` eight at a time, and applies only responses matching the local operation, resource version, and content digest. Operation state, safe error details, and active serving identity update atomically. A succeeded replacement remains `PROCESSING` with a `SUCCEEDED` run while an older version is serving; it becomes `READY` only when the observed digest and actively serving version/digest match.
+- `monitor-kb-ingestions` is an overdue-delivery fallback for the signed webhook path. Every five minutes, `packages/hatchet/src/kbIngestion.ts:monitorActiveKBIngestions` selects timestamped operations accepted at least five minutes earlier. A legacy or interrupted row that has an external operation id but no recorded start timestamp is eligible immediately so it cannot remain unmonitored. The task rotates through at most 32 eligible operations, polls `GET /v1/operations/{operation_id}` eight at a time, and applies only responses matching the local operation, resource version, and content digest. Operation state, safe error details, and active serving identity update atomically. A succeeded replacement remains `PROCESSING` with a `SUCCEEDED` run while an older version is serving; it becomes `READY` only when the observed digest and actively serving version/digest match. The sweep is also the product-side bound on a stuck operation: one the provider still reports as `accepted` or `running` past `KB_INGESTION_TIMEOUT_SECONDS` (six hours by default) settles as `KB_INGESTION_TIMEOUT` on both the resource and its run, so an operation the ingestion service never terminalizes becomes a visible failure instead of a resource that stays in `PROCESSING`. A succeeded replacement waiting for its serving cutover is deliberately exempt, and the reconciliation guards make the first writer win, so a late signed callback cannot produce a second terminal state.
 - `delete-kb-resource` sends the exact canonical `DELETE /v1/resources/{external_resource_id}` request with the delete-run UUID as its stable idempotency key. Polling and webhooks fence that attempt as `DELETE`, require `expected_sha256=null`, and consider the tombstone served only when both active serving fields are null.
-- `maintain-kb-resources` runs every 15 minutes with one active run. Each pass handles at most 32 items per class and at most eight concurrently: re-dispatching a live `QUEUED` UPSERT that is at least one maintenance interval old and still has no external operation id; re-enqueuing a `QUEUED` graph build that is equally stale and carries neither an external operation id nor a dispatch claim; retrying undispatched tombstones with their stable attempt; starting a freshly fenced attempt after a terminal external delete failure; removing expired unconfirmed uploads after the 24-hour grace; retiring the FalkorDB graph of a build that is neither active nor published after the 24-hour graph grace, keeping the GraphML export of any build that produced one; purging every remaining GraphML export and graph of a knowledge base 30 days after it was deleted; deleting confirmed blob storage only after the current external delete succeeded; hard-deleting those resource rows; and finally removing empty pending KBs that never built a graph. UPSERT recovery reuses the stored `ingestionAttemptId`, so the external Idempotency-Key stays stable whether the earlier process crashed before or after acceptance. The bounded windows rotate on each schedule slot so retained failures cannot starve later rows, and dispatch setup failures do not stop independent storage or row cleanup. Storage or API failures retain the exact ticket or tombstone for another pass (`packages/hatchet/src/kbMaintenance.ts:maintainKBResources`).
+- `maintain-kb-resources` runs every 15 minutes with one active run. Each pass handles at most 32 items per class and at most eight concurrently: re-dispatching a live `QUEUED` UPSERT that is at least one maintenance interval old and still has no external operation id; re-enqueuing a `QUEUED` graph build that is equally stale and carries neither an external operation id nor a dispatch claim; retrying undispatched tombstones with their stable attempt; starting a freshly fenced attempt after a terminal external delete failure; removing expired unconfirmed uploads after the 24-hour grace; retiring the FalkorDB graph of a build that is neither active nor published after the 24-hour graph grace, treating a name that FalkorDB no longer holds as already retired and keeping the GraphML export of any build that produced one; purging every remaining GraphML export and graph of a knowledge base 30 days after it was deleted; deleting confirmed blob storage only after the current external delete succeeded; hard-deleting those resource rows; and finally removing empty pending KBs that never built a graph. UPSERT recovery reuses the stored `ingestionAttemptId`, so the external Idempotency-Key stays stable whether the earlier process crashed before or after acceptance. The bounded windows rotate on each schedule slot so retained failures cannot starve later rows, and dispatch setup failures do not stop independent storage or row cleanup. Storage or API failures retain the exact ticket or tombstone for another pass (`packages/hatchet/src/kbMaintenance.ts:maintainKBResources`).
 - `build-kb-knowledge-graph` rechecks the global graph kill switch, the persisted per-KB opt-in, and a complete cost reservation at the worker effect boundary before dispatching the active KB's immutable source manifest to the external graph workflow. It first records a conditional durable dispatch claim. A queued build that fails those gates is failed closed, releases an ordinary reservation, or holds an incomplete legacy reservation for human review; if the provider accepts a run but its id cannot be correlated and persisted, the claim keeps the reservation and active KB build slot in `NEEDS_HUMAN_REVIEW` and prevents a duplicate external start. A later retry of the same build asks the provider before parking it again, but only once the dispatch claim is older than a 15-minute in-flight grace: inside that window a duplicate task run leaves the build untouched, because a sibling attempt may still be inside the provider call and "no run yet" is not evidence that no run will start. Past the grace, a recovered run is correlated, a definitive "no run for this build id" is released as an ordinary `KB_GRAPH_DISPATCH_FAILED` that frees the quota and the slot, and only an unanswered lookup keeps the hold. The worker correlates the returned run id and never publishes an unverified graph or artifact path.
 - `monitor-kb-graph-builds` runs every minute, rotates through at most 32 active builds per tick, and polls at most eight concurrently. Every provider status, result, cancellation, and ambiguity-recovery call has a ten-second deadline, so one stalled provider call cannot overrun the sweep or block independent builds; a call timeout aborts its underlying request before the concurrency slot is reused and leaves the correlated build fenced for the next tick. The monitor cancels build-timeout runs and requires a versioned terminal-result callback before settlement or publication. Provider `COMPLETED` is not sufficient. A missing callback or malformed result clears the active slot without moving the published pointer and holds the reservation as `NEEDS_HUMAN_REVIEW`; a valid non-success result with metering settles actual usage without publishing, while a non-success result without metering releases only an ordinary `RESERVED` build. A late success after a timeout is reconciled under KB and serving-resource locks: it can reclaim the slot and publish only when no newer build exists and the pinned source digest still matches; stale or superseded late results settle metered usage without publication. A malformed or late failure result remains held and every callback still passes the same identity, artifact, currency, counter, and metering checks.
 
@@ -76,15 +146,17 @@ URL resources are registered only with public HTTP(S) destinations using ports 8
 
 Source preparation also verifies that the task's KB id matches the resource's persisted live parent. It records the exact fetched byte size. Under a parent-KB row lock, URL replacement accounting applies `current usage - previous resource size + observed size`; an over-limit candidate becomes `FAILED` with `KB_STORAGE_LIMIT_REACHED` before any external API call. Lecturer Markdown uploads are deliberately stored as `text/plain`.
 
-The interim backend kill switch `KB_INGESTION_DISABLED=true` is checked by `packages/graphql/src/services/knowledge.ts:assertKbIngestionEnabled`. It refuses new upload tickets, URL resources, and ingestion attempts while leaving reads, deletion, cleanup, and already-queued worker reconciliation live. `KB_INGESTION_WORKER_DISABLED=true` is the separate rollout gate for the general worker: it skips ingestion configuration validation and excludes ingestion dispatch, deletion, and polling workflows while unrelated work remains registered. Resource maintenance stays registered when graph work is enabled, but suppresses external ingestion retries while preserving graph crash-window recovery and independent cleanup. When both ingestion and graph work are disabled, resource maintenance is also omitted. Close the backend gate first and let active operations drain before closing the worker gate. When the worker gate is explicitly open, partial ingestion configuration fails startup.
+The backend admits new ingestion work through the per-actor GrowthBook flag `kb-ingestion`, checked by `packages/graphql/src/services/knowledge.ts:assertKbIngestionEnabled`. An absent, unregistered, or unusable evaluation refuses new upload tickets, URL resources, replacement confirmations, and ingestion attempts while leaving reads, deletion, cleanup, and already-queued worker reconciliation live. `KB_INGESTION_WORKER_DISABLED=true` is the separate rollout gate for the general worker: it skips ingestion configuration validation and excludes ingestion dispatch, deletion, and polling workflows while unrelated work remains registered. Resource maintenance stays registered when graph work is enabled, but suppresses external ingestion retries while preserving graph crash-window recovery and independent cleanup. When both ingestion and graph work are disabled, resource maintenance is also omitted. Close the backend gate first and let active operations drain before closing the worker gate. When the worker gate is explicitly open, partial ingestion configuration fails startup.
 
-The separate `KB_GRAPH_DISABLED=true` switch refuses graph opt-in and rebuild mutations. The general worker skips graph configuration validation, graph dispatch and monitoring registration, and graph re-enqueue from resource maintenance while this gate is closed. Resource ingestion maintenance remains registered when basic ingestion is enabled, including cleanup of retained graph artifacts. The dispatch effect also checks the graph gate before an external start, fails an unstarted queued build closed, and continues reconciling a run already accepted externally. The switch does not revoke an already published graph. Graph settings must be injected into both the GraphQL backend and the general worker.
+New graph work is admitted by the per-actor `kb-graph-builds` GrowthBook flag, evaluated before graph opt-in and rebuild mutations. The general worker keeps its own deployment-wide `KB_GRAPH_DISABLED=true` switch: while it is closed the worker skips graph configuration validation, graph dispatch and monitoring registration, and graph re-enqueue from resource maintenance. Resource ingestion maintenance remains registered when basic ingestion is enabled, including cleanup of retained graph artifacts. The dispatch effect also checks the graph gate before an external start, fails an unstarted queued build closed, and continues reconciling a run already accepted externally. The switch does not revoke an already published graph. Graph settings must be injected into both the GraphQL backend and the general worker.
 
 With `KB_INGESTION_WORKER_DISABLED=false`, or with any of the three required ingestion connection settings present while the gate is unset, the general worker requires `KB_INGESTION_API_URL`, `KB_INGESTION_API_KEY`, and `KB_SOURCE_GATEWAY_URL`; `KB_INGESTION_PROJECT_ID` defaults to `klicker-course-materials`. A legacy environment with the gate and all three required settings absent is treated as disabled instead of registering unusable workflows. The backend requires `KB_SOURCE_GATEWAY_KEY` and `KB_WEBHOOK_SECRET`, with optional `KB_WEBHOOK_PREVIOUS_SECRET` during webhook-key rotation. The API key, gateway key, and webhook keys are secrets and must stay outside chart ConfigMaps.
 
 KB graph builds use the separate `KB_GRAPH_HATCHET_*` connection and workflow settings plus `KB_GRAPH_TIMEOUT_SECONDS` and the named standard/high model pairs. The worker validates a partially configured graph integration at startup, then dispatches only a pinned build manifest and reconciles its external run. The GraphQL backend owns quota reservation and exposes `settleKbKnowledgeGraphResult` for the W1 terminal-result handoff; `prepareHatchetTasks` accepts the result-fetch and settlement callbacks so the worker never treats provider status as a publication contract. The production backend and general worker explicitly pass `getKBGraphTerminalResult` (the external Hatchet run output) and `settleKbKnowledgeGraphResult` into `prepareHatchetTasks`; omitting either adapter is not a supported runtime composition. `KB_GRAPH_HATCHET_CLIENT_TOKEN` remains in the general-worker secret; the non-secret settings belong under `hatchet.kbGraph` in the chart values. The startup gate is armed only by the ConfigMap-owned `KB_GRAPH_*` names, deliberately excluding that token: a secret rollout on its own must never fail the general worker's startup and stop every unrelated job. Once the gate is armed the token is still required, so the secret must carry it before `hatchet.kbGraph.workflowName` is set. Graph build input URLs and generated Blob SAS values must never be logged or placed in ConfigMaps.
 
 Native graph builds canonicalize every source artifact to `${resourceId}.md`, regardless of whether the original resource was an uploaded document or a URL. `packages/graphql/src/services/questionGenerationGraph.ts:questionGenerationSourceSnapshot` must preserve that filename when preparing question-generation evidence. Artifact validation remains extension-aware and rejects the original upload or URL basename when it does not identify the graph artifact.
+
+Explicit domain selection is capability-gated by `KB_GRAPH_DOMAIN_CATALOG_REVISION`, which must match the revision of the catalog shipped with the deployment before the backend advertises or accepts explicit options, and admitted per actor by the `kb-graph-domain-selection` GrowthBook flag; the rollout narrows that contract and never widens it. With either gate closed the only supported route is the legacy provider default policy, and `rebuildKbKnowledgeGraph` writes no domain fields. `rebuildKbKnowledgeGraphWithDomain` accepts a policy id, version, and language only as a complete, supported triple and rejects anything else before a cost reservation exists. A persisted selection is frozen on the build row, re-resolved by the worker immediately before the provider call, and included in the provider manifest as `domain_policy` and `language`; a selection that a later catalog or gate change no longer supports fails the build before it spends. A legacy all-null build adds neither key, so its manifest is unchanged, and a retry of an explicit build reuses its frozen selection rather than the current request.
 
 Question and flashcard synchronization share the acquisition and token-fenced
 release functions in [elementGenerationLease.ts](../packages/graphql/src/services/elementGenerationLease.ts).
@@ -100,6 +172,10 @@ Provider-specific content conversion, accepted source states and draft-count
 rules remain distinct compatibility constraints within this shared Element
 operation. Completion creates drafts, not ordinary Elements, and does not
 settle usage or dispatch another generation run.
+
+Element generation reads the published build's frozen `domainPolicyLanguage`: `German` becomes `de`, `English` becomes `en`, and only a legacy null defaults to German. Unknown explicit languages make that build ineligible. `ElementGenerationSourcesWithLanguage` adds this metadata without changing the older persisted operation. The configure form derives output language from the selected graph; question and flashcard validation still reject cross-language output.
+
+Question focus is a per-batch setting, admitted per actor by the `question-focus-topic` GrowthBook flag, which both the capability query and the request validation consult; enable the flag for a cohort only once the question worker supports the blueprint field. Flashcards reject focus. The graph panel shows retained graph-focus history but omits focus from new requests. The compatibility mutation and retry paths retain their existing frozen-focus semantics.
 
 ## Course duplication operations
 

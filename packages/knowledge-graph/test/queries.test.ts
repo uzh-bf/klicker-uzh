@@ -37,17 +37,19 @@ describe('fixed knowledge graph queries', () => {
   })
 
   it('keeps decimal neighborhood IDs parameterized and bounded', () => {
-    const query = getNeighborhoodNodesQuery('12345678901234567890')
+    const query = getNeighborhoodNodesQuery('9223372036854775807')
 
     expect(query.cypher).toContain('LIMIT 101')
-    expect(query.cypher).not.toContain('12345678901234567890')
-    expect(query.params).toEqual({ nodeId: '12345678901234567890' })
+    expect(query.cypher).not.toContain('9223372036854775807')
+    expect(query.params).toEqual({ nodeId: '9223372036854775807' })
 
     const edges = getEdgesForNodeIdsQuery(['1', '2'], 'neighbors')
     expect(edges.cypher).toContain('LIMIT 201')
   })
 
   it.each([
+    '9223372036854775808',
+    '99999999999999999999',
     '-1',
     '1.2',
     '1 OR 1=1',

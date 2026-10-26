@@ -1,12 +1,18 @@
 # Primary-checkout overlay selected by `devrouter ensure`.
-# Fixed host ports remain bound to 127.0.0.1, while stable devnet aliases let
-# devrouter prove and route the same container. Only one primary checkout can
-# run per machine; linked worktrees use docker-compose.devrouter.yml instead.
+# Application host ports stay fixed on 127.0.0.1, while stable devnet aliases let
+# devrouter prove and route the same container. The shared router owns
+# 127.0.0.1:5432 for the `db.klicker.localhost` entrypoint, so Postgres publishes
+# an ephemeral loopback port instead. Only one primary checkout can run per
+# machine; linked worktrees use docker-compose.devrouter.yml instead.
 
 services:
   postgres:
+    # Ephemeral loopback port: a fixed 5432 publish collides with the router
+    # entrypoint. Host tooling reads the assigned port from
+    # `docker port <container> 5432/tcp` (util/run-playwright-host.mjs) and the
+    # router still serves `db.klicker.localhost:5432` over direct-SSL SNI.
     ports:
-      - '127.0.0.1:5432:5432'
+      - '127.0.0.1::5432'
     networks:
       devnet:
         aliases:
@@ -48,6 +54,10 @@ services:
       - '127.0.0.1:3010:3010' # auth
       - '127.0.0.1:3030:3030' # olat-api
       - '127.0.0.1:7078:7078' # response-api
+      # The OIDC mock shares this container's network namespace, so its port is
+      # published here. Browsers reach the issuer on this port only in the
+      # plain-localhost fallback; routed checkouts use the HTTPS route.
+      - '127.0.0.1:8090:8090' # local Edu-ID OIDC mock
 
   litellm:
     ports:

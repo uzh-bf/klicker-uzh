@@ -102,9 +102,24 @@ export function validateRuntimePlan(plan) {
   if (!plan.bindings || typeof plan.bindings !== 'object') {
     fail('bindings must be an object')
   }
+  const expectedBindingKeys = [...PROFILE_PLAN_BINDINGS]
+  if (apps.includes('blob')) {
+    expectedBindingKeys.push('managedServices')
+    requireExactArray(
+      requireStringArray(
+        plan.bindings.managedServices,
+        'bindings.managedServices'
+      ),
+      ['azurite'],
+      'bindings.managedServices'
+    )
+    if (!managedServices.includes('azurite')) {
+      fail('the Blob route requires the managed azurite service')
+    }
+  }
   requireExactArray(
     Object.keys(plan.bindings).sort(),
-    PROFILE_PLAN_BINDINGS,
+    expectedBindingKeys.sort(),
     'binding keys'
   )
 

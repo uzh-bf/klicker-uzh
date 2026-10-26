@@ -11,12 +11,13 @@ import type {
 } from '@klicker-uzh/types'
 import {
   MAX_KB_SOURCE_SIZE_BYTES,
-  MAX_KB_TOTAL_SIZE_BYTES,
+  resolveKBStorageLimitBytes,
 } from '@klicker-uzh/types'
 import {
   buildKBIngestionSource,
   createKBIngestionApiClient,
   getKBIngestionProjectId,
+  getKBIngestionTimeoutSeconds,
   getKBSourceGatewayOrigin,
   type KBIngestionApiClient,
   type KBIngestionSource,
@@ -26,6 +27,9 @@ import {
 const KB_INGESTION_POLL_CONCURRENCY = 8
 const KB_INGESTION_POLL_LIMIT = 32
 const KB_INGESTION_CALLBACK_GRACE_MS = 5 * 60_000
+const KB_INGESTION_TIMEOUT_ERROR_CODE = 'KB_INGESTION_TIMEOUT'
+const KB_INGESTION_TIMEOUT_MESSAGE =
+  'The ingestion operation did not finish in time.'
 
 export type KBIngestionLogger = {
   info?: (
@@ -124,7 +128,7 @@ export function validateKBIngestionWorkerConfig(
   }
 }
 
-async function persistPreparedSource({
+async function admitIngestionSource({
   input,
   prisma,
   source,
@@ -134,10 +138,10 @@ async function persistPreparedSource({
   prisma: KBIngestionPrisma
   source: KBIngestionSource
   env: NodeJS.ProcessEnv
-}): Promise<KBIngestionSource | undefined> {
-  const persisted = await prisma.$transaction(async (tx) => {
+}): Promise<KBIngestionSource | string | undefined> {
+  return prisma.$transaction(async (tx) => {
     if (!(await lockPersistedKbScope(tx, input))) {
-      return false
+      return undefined
     }
     const currentResource = await tx.kBResource.findFirst({
       where: {
@@ -146,11 +150,42 @@ async function persistPreparedSource({
         deletedAt: null,
         kb: { deletedAt: null },
       },
-      select: { sizeBytes: true },
+      select: {
+        sizeBytes: true,
+        contentSha256: true,
+        mimeType: true,
+        ingestionAttemptId: true,
+        resourceVersion: true,
+        status: true,
+        externalOperationId: true,
+        kb: { select: { storageLimitMiB: true } },
+      },
     })
-    if (!currentResource) {
-      return false
+    if (
+      !currentResource ||
+      currentResource.ingestionAttemptId !== input.ingestionAttemptId ||
+      currentResource.resourceVersion !== input.resourceVersion ||
+      (currentResource.status !== KBResourceStatus.QUEUED &&
+        currentResource.status !== KBResourceStatus.PROCESSING)
+    ) {
+      return undefined
     }
+    if (currentResource.externalOperationId) {
+      return currentResource.externalOperationId
+    }
+    const cachedSource =
+      currentResource.contentSha256 &&
+      currentResource.mimeType &&
+      currentResource.sizeBytes !== null
+        ? buildKBIngestionSource(
+            input,
+            currentResource.mimeType,
+            currentResource.contentSha256,
+            currentResource.sizeBytes,
+            env
+          )
+        : undefined
+    source = cachedSource ?? source
     const [resources, unknownSizeResources, uploadTickets] = await Promise.all([
       tx.kBResource.aggregate({
         where: { kbId: input.kbId },
@@ -172,7 +207,10 @@ async function persistPreparedSource({
       (uploadTickets._sum.sizeBytes ?? 0) -
       (currentResource.sizeBytes ?? MAX_KB_SOURCE_SIZE_BYTES) +
       source.sizeBytes
-    if (projectedSizeBytes > MAX_KB_TOTAL_SIZE_BYTES) {
+    if (
+      projectedSizeBytes >
+      resolveKBStorageLimitBytes(currentResource.kb.storageLimitMiB)
+    ) {
       const finishedAt = new Date()
       const resourceUpdate = await tx.kBResource.updateMany({
         where: {
@@ -214,7 +252,11 @@ async function persistPreparedSource({
           throw new Error('KB ingestion source could not be correlated')
         }
       }
-      return false
+      return undefined
+    }
+
+    if (cachedSource) {
+      return cachedSource
     }
 
     const resourceUpdate = await tx.kBResource.updateMany({
@@ -238,7 +280,7 @@ async function persistPreparedSource({
       },
     })
     if (resourceUpdate.count !== 1) {
-      return false
+      return undefined
     }
     const runUpdate = await tx.kBIngestionRun.updateMany({
       where: {
@@ -255,44 +297,8 @@ async function persistPreparedSource({
     if (runUpdate.count !== 1) {
       throw new Error('KB ingestion source could not be correlated')
     }
-    return true
-  })
-  if (persisted) {
     return source
-  }
-
-  const current = await prisma.kBResource.findUnique({
-    where: { id: input.resourceId },
-    select: {
-      ingestionAttemptId: true,
-      resourceVersion: true,
-      contentSha256: true,
-      mimeType: true,
-      sizeBytes: true,
-      kbId: true,
-      deletedAt: true,
-      kb: { select: { deletedAt: true } },
-    },
   })
-  if (
-    current?.ingestionAttemptId !== input.ingestionAttemptId ||
-    current.resourceVersion !== input.resourceVersion ||
-    current.kbId !== input.kbId ||
-    current.deletedAt !== null ||
-    current.kb.deletedAt !== null ||
-    !current.contentSha256 ||
-    !current.mimeType ||
-    current.sizeBytes === null
-  ) {
-    return undefined
-  }
-  return buildKBIngestionSource(
-    input,
-    current.mimeType,
-    current.contentSha256,
-    current.sizeBytes,
-    env
-  )
 }
 
 export async function dispatchKBIngestion(
@@ -340,7 +346,7 @@ export async function dispatchKBIngestion(
     }
 
     let source =
-      resource.contentSha256 && resource.mimeType && resource.sizeBytes
+      resource.contentSha256 && resource.mimeType && resource.sizeBytes !== null
         ? buildKBIngestionSource(
             input,
             resource.mimeType,
@@ -354,17 +360,18 @@ export async function dispatchKBIngestion(
         dependencies.prepareSource ??
         ((sourceInput, sourceEnv) =>
           prepareKBIngestionSource(sourceInput, sourceEnv))
-      const preparedSource = await prepareSource(input, env)
-      source = await persistPreparedSource({
-        input,
-        prisma: dependencies.prisma,
-        source: preparedSource,
-        env,
-      })
-      if (!source) {
-        return undefined
-      }
+      source = await prepareSource(input, env)
     }
+    const admitted = await admitIngestionSource({
+      input,
+      prisma: dependencies.prisma,
+      source,
+      env,
+    })
+    if (typeof admitted === 'string' || !admitted) {
+      return admitted
+    }
+    source = admitted
 
     const client = dependencies.client ?? createKBIngestionApiClient({ env })
     const operationId = await client.acceptResource({
@@ -717,11 +724,80 @@ function mapOperationStatus(
   }
 }
 
+// A signed callback or the ingestion service's own reclaim settles an
+// operation normally. This is the product-side fallback for an operation the
+// provider never reports as terminal: the resource is shown as failed instead
+// of staying in "Processing" forever. The correlation guards match the
+// reconciliation update, so the first writer wins and a late callback cannot
+// produce a second terminal state.
+async function failTimedOutIngestion({
+  resource,
+  prisma,
+  now,
+}: {
+  resource: {
+    id: string
+    ingestionAttemptId: string
+    resourceVersion: number
+    contentSha256: string | null
+    externalOperationId: string
+    ingestionOperation: KBIngestionOperation
+  }
+  prisma: KBIngestionPrisma
+  now: Date
+}): Promise<void> {
+  await prisma.$transaction(async (tx) => {
+    const resourceUpdate = await tx.kBResource.updateMany({
+      where: {
+        id: resource.id,
+        ingestionAttemptId: resource.ingestionAttemptId,
+        resourceVersion: resource.resourceVersion,
+        contentSha256: resource.contentSha256,
+        externalOperationId: resource.externalOperationId,
+        ingestionOperation: resource.ingestionOperation,
+        status: {
+          in: [KBResourceStatus.QUEUED, KBResourceStatus.PROCESSING],
+        },
+      },
+      data: {
+        status: KBResourceStatus.FAILED,
+        statusMessage: KB_INGESTION_TIMEOUT_MESSAGE,
+        errorCode: KB_INGESTION_TIMEOUT_ERROR_CODE,
+      },
+    })
+    if (resourceUpdate.count !== 1) {
+      return
+    }
+    const runUpdate = await tx.kBIngestionRun.updateMany({
+      where: {
+        id: resource.ingestionAttemptId,
+        resourceId: resource.id,
+        operation: resource.ingestionOperation,
+        resourceVersion: resource.resourceVersion,
+        status: {
+          in: [KBIngestionStatus.QUEUED, KBIngestionStatus.PROCESSING],
+        },
+      },
+      data: {
+        status: KBIngestionStatus.FAILED,
+        statusMessage: KB_INGESTION_TIMEOUT_MESSAGE,
+        errorCode: KB_INGESTION_TIMEOUT_ERROR_CODE,
+        finishedAt: now,
+      },
+    })
+    if (runUpdate.count !== 1) {
+      throw new Error('KB ingestion operation state could not be correlated')
+    }
+  })
+}
+
 async function reconcileResource({
   resource,
   client,
   prisma,
   env,
+  now,
+  timeoutMilliseconds,
   logger,
 }: {
   resource: {
@@ -731,14 +807,22 @@ async function reconcileResource({
     resourceVersion: number
     contentSha256: string | null
     externalOperationId: string | null
+    externalOperationStartedAt: Date | null
     ingestionOperation: KBIngestionOperation
   }
   client: KBIngestionApiClient
   prisma: KBIngestionPrisma
   env: NodeJS.ProcessEnv
+  now: Date
+  timeoutMilliseconds: number
   logger?: KBIngestionLogger
 }) {
-  const { ingestionAttemptId, contentSha256, externalOperationId } = resource
+  const {
+    ingestionAttemptId,
+    contentSha256,
+    externalOperationId,
+    externalOperationStartedAt,
+  } = resource
   const ingestionOperation =
     resource.ingestionOperation ?? KBIngestionOperation.UPSERT
   if (
@@ -791,6 +875,37 @@ async function reconcileResource({
       return
     }
 
+    // Only the two non-terminal provider states can time out. A succeeded
+    // replacement whose serving cutover is still pending is deliberately left
+    // to the next reconciliation.
+    if (
+      (operation.status === 'accepted' || operation.status === 'running') &&
+      externalOperationStartedAt !== null &&
+      now.getTime() - externalOperationStartedAt.getTime() > timeoutMilliseconds
+    ) {
+      await failTimedOutIngestion({
+        resource: {
+          id: resource.id,
+          ingestionAttemptId,
+          resourceVersion: resource.resourceVersion,
+          contentSha256:
+            ingestionOperation === KBIngestionOperation.DELETE
+              ? null
+              : contentSha256,
+          externalOperationId,
+          ingestionOperation,
+        },
+        prisma,
+        now,
+      })
+      await logInfoBestEffort(
+        logger,
+        'KB ingestion operation timed out',
+        identifiers
+      )
+      return
+    }
+
     const transition = mapOperationStatus(operation.status)
     const servingMatchesCurrent =
       ingestionOperation === KBIngestionOperation.DELETE
@@ -826,6 +941,7 @@ async function reconcileResource({
           : [KBIngestionStatus.QUEUED, KBIngestionStatus.PROCESSING]
     const operationUpdatedAt = new Date(operation.updatedAt)
     await prisma.$transaction(async (tx) => {
+      await tx.$queryRaw`SELECT "id" FROM "public"."KB" WHERE "id" = CAST(${resource.kbId} AS UUID) FOR UPDATE`
       const resourceUpdate = await tx.kBResource.updateMany({
         where: {
           id: resource.id,
@@ -888,6 +1004,7 @@ export async function monitorActiveKBIngestions(
 ): Promise<void> {
   const env = dependencies.env ?? process.env
   const now = dependencies.now?.() ?? new Date()
+  const timeoutMilliseconds = getKBIngestionTimeoutSeconds(env) * 1000
   const activeWhere = {
     status: {
       in: [KBResourceStatus.QUEUED, KBResourceStatus.PROCESSING],
@@ -940,6 +1057,7 @@ export async function monitorActiveKBIngestions(
       resourceVersion: true,
       contentSha256: true,
       externalOperationId: true,
+      externalOperationStartedAt: true,
       ingestionOperation: true,
     },
   }
@@ -972,6 +1090,8 @@ export async function monitorActiveKBIngestions(
             client,
             prisma: dependencies.prisma,
             env,
+            now,
+            timeoutMilliseconds,
             logger: dependencies.logger,
           })
         )

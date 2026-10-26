@@ -23,7 +23,6 @@ import {
 import { isDocQueryToolName } from '../src/lib/sources/normalizeSources'
 import {
   getAggregatedMCPTools as getAggregatedMCPToolsHandle,
-  getMCPTools,
   type MCPServerWithConfig,
 } from '../src/services/mcpClients'
 
@@ -83,15 +82,6 @@ describe('MCP runtime policy', () => {
     })
   })
 
-  test('returns an empty cleanup handle when legacy MCP is not configured', async () => {
-    vi.stubEnv('MCP_URL', '')
-
-    const handle = await getMCPTools('chatbot-1', 'participant-1', 'account')
-
-    expect(handle.tools).toEqual({})
-    await expect(handle.close()).resolves.toBeUndefined()
-  })
-
   test('uses the AI SDK HTTP transport configuration', async () => {
     setTools({ search_docs: { description: 'search' } })
 
@@ -110,6 +100,23 @@ describe('MCP runtime policy', () => {
       },
       initializationOptions: { timeout: 1_000 },
     })
+  })
+
+  test('sanitizes doc_query execution results without changing other tools', async () => {
+    const reference = 'https://api.example.test/api/ingestion/resources/test'
+    const output = { sources: [{ reference, chunks: [{ page_number: 1 }] }] }
+    const execute = vi.fn().mockResolvedValue(output)
+    setTools({ doc_query: { execute }, search_docs: { execute } })
+    const tools = await getAggregatedMCPTools([createServer()], {
+      chatbotId: 'chatbot-1',
+      authMode: 'account',
+    })
+    const input = { query: 'synthetic' }
+    const result = await tools.IW_doc_query.execute(input, {})
+    expect(execute).toHaveBeenCalledWith(input, {})
+    expect(JSON.stringify(result)).not.toContain(reference)
+    expect(result.sources[0].chunks).toEqual(output.sources[0].chunks)
+    expect(await tools.IW_search_docs.execute(input, {})).toBe(output)
   })
 
   test('passes authentication headers through the AI SDK transport', async () => {
@@ -145,12 +152,12 @@ describe('MCP runtime policy', () => {
             authSecret: 'transport-token',
           },
           {
-            allowedTools: ['doc_query'],
             parameters: {
               required: true,
               toolAlias: 'doc_query',
               kb_id: '7016810d-31e9-4b39-9529-cd46feb2bf63',
             },
+            allowedTools: ['doc_query'],
           }
         ),
       ],
@@ -287,6 +294,66 @@ describe('MCP runtime policy', () => {
       )
     ).rejects.toMatchObject({ code: REQUIRED_MCP_UNAVAILABLE_CODE })
     expect(createSDKMCPClientMock).toHaveBeenCalledTimes(1)
+  })
+
+  test.each([
+    [
+      'UnauthorizedError',
+      Object.assign(new Error('unauthorized'), { name: 'UnauthorizedError' }),
+    ],
+    [
+      'a streamable HTTP code',
+      Object.assign(new Error('streamable'), { code: 401 }),
+    ],
+    [
+      'a client statusCode',
+      Object.assign(new Error('forbidden'), { statusCode: 403 }),
+    ],
+  ])('keeps a required tool failure from %s fail-closed', async (_label, failure) => {
+    createSDKMCPClientMock.mockResolvedValue({
+      close: closeSDKMCPClientMock,
+      tools: vi.fn().mockRejectedValue(failure),
+    })
+
+    await expect(
+      getAggregatedMCPTools(
+        [
+          createServer(
+            {},
+            {
+              allowedTools: ['doc_query'],
+              parameters: { required: true, toolAlias: 'doc_query' },
+            }
+          ),
+        ],
+        { chatbotId: 'chatbot-1', authMode: 'account' }
+      )
+    ).rejects.toMatchObject({
+      code: REQUIRED_MCP_UNAVAILABLE_CODE,
+      reason: 'scope_violation',
+    })
+  })
+
+  test('keeps a plain required-tool outage degradable', async () => {
+    createSDKMCPClientMock.mockRejectedValue(new Error('connect ECONNREFUSED'))
+
+    await expect(
+      getAggregatedMCPTools(
+        [
+          createServer(
+            {},
+            {
+              allowedTools: ['doc_query'],
+              parameters: { required: true, toolAlias: 'doc_query' },
+            }
+          ),
+        ],
+        { chatbotId: 'chatbot-1', authMode: 'account' }
+      )
+    ).rejects.toMatchObject({
+      code: REQUIRED_MCP_UNAVAILABLE_CODE,
+      reason: 'unavailable',
+    })
   })
 
   test('retains optional wildcard filtering and optional failure behavior', async () => {

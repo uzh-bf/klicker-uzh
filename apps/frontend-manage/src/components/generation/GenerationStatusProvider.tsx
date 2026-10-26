@@ -47,6 +47,12 @@ type ElementGenerationJob = {
 
 export type GenerationJob = GraphGenerationJob | ElementGenerationJob
 
+export type GenerationTerminalOutcome =
+  | 'complete'
+  | 'incomplete'
+  | 'review'
+  | 'failed'
+
 type GenerationJobProgress = {
   label: string
   status: string
@@ -56,6 +62,15 @@ const STORAGE_KEY = 'klicker-background-generation-jobs-v1'
 const POLL_INTERVAL_MS = 5000
 const UNMATCHED_GRAPH_JOB_TIMEOUT_MS = 120_000
 const MAX_PERSISTED_JOB_AGE_MS = 24 * 60 * 60 * 1000
+const TERMINAL_TOAST_TYPE: Record<
+  GenerationTerminalOutcome,
+  'success' | 'warning' | 'error'
+> = {
+  complete: 'success',
+  incomplete: 'warning',
+  review: 'warning',
+  failed: 'error',
+}
 const TERMINAL_QUERY_ERROR_CODES = new Set([
   'AI_BETA_ACCESS_REQUIRED',
   'FORBIDDEN',
@@ -134,7 +149,7 @@ function GraphJobTracker({
 }: Readonly<{
   job: GraphGenerationJob
   onProgress: (job: GenerationJob, progress: GenerationJobProgress) => void
-  onTerminal: (job: GenerationJob, succeeded: boolean) => void
+  onTerminal: (job: GenerationJob, outcome: GenerationTerminalOutcome) => void
 }>) {
   const t = useTranslations('manage.generationStatus')
   const { data, error, loading } = useQuery(GetKbKnowledgeGraphConfigDocument, {
@@ -156,11 +171,11 @@ function GraphJobTracker({
 
   useEffect(() => {
     if (isTerminalGenerationQueryError(error)) {
-      onTerminal(job, false)
+      onTerminal(job, 'failed')
       return
     }
     if (config?.publishedBuildId === job.id) {
-      onTerminal(job, true)
+      onTerminal(job, 'complete')
       return
     }
     const matchesBuild =
@@ -168,19 +183,19 @@ function GraphJobTracker({
     if (!config || !matchesBuild) {
       if (loading || error) return
       if (checkedAt - job.startedAt >= UNMATCHED_GRAPH_JOB_TIMEOUT_MS) {
-        onTerminal(job, false)
+        onTerminal(job, 'failed')
       }
       return
     }
     if (config.status === KbGraphBuildStatus.Succeeded) {
-      onTerminal(job, true)
+      onTerminal(job, 'complete')
       return
     }
     if (
       config.status === KbGraphBuildStatus.Failed ||
       config.status === KbGraphBuildStatus.Superseded
     ) {
-      onTerminal(job, false)
+      onTerminal(job, 'failed')
       return
     }
     onProgress(job, {
@@ -202,7 +217,7 @@ function ElementJobTracker({
 }: Readonly<{
   job: ElementGenerationJob
   onProgress: (job: GenerationJob, progress: GenerationJobProgress) => void
-  onTerminal: (job: GenerationJob, succeeded: boolean) => void
+  onTerminal: (job: GenerationJob, outcome: GenerationTerminalOutcome) => void
 }>) {
   const t = useTranslations('manage.generationStatus')
   const query = useQuery(ElementGenerationBuildDocument, {
@@ -214,26 +229,32 @@ function ElementJobTracker({
 
   useEffect(() => {
     if (isTerminalGenerationQueryError(query.error)) {
-      onTerminal(job, false)
+      onTerminal(job, 'failed')
       return
     }
     if (!build) return
+    if (build.status === ElementGenerationBuildStatus.Completed) {
+      onTerminal(job, 'complete')
+      return
+    }
     if (
-      build.status === ElementGenerationBuildStatus.Completed ||
-      build.status === ElementGenerationBuildStatus.Incomplete ||
       build.status === ElementGenerationBuildStatus.WaitingForDesignReview ||
       build.status === ElementGenerationBuildStatus.WaitingForPlanReview ||
       build.status ===
         ElementGenerationBuildStatus.AwaitingIncompletePublication
     ) {
-      onTerminal(job, true)
+      onTerminal(job, 'review')
+      return
+    }
+    if (build.status === ElementGenerationBuildStatus.Incomplete) {
+      onTerminal(job, 'incomplete')
       return
     }
     if (
       build.status === ElementGenerationBuildStatus.Failed ||
       build.status === ElementGenerationBuildStatus.Rejected
     ) {
-      onTerminal(job, false)
+      onTerminal(job, 'failed')
       return
     }
     onProgress(job, {
@@ -304,7 +325,7 @@ export function GenerationStatusProvider({
   )
 
   const onTerminal = useCallback(
-    (job: GenerationJob, succeeded: boolean) => {
+    (job: GenerationJob, outcome: GenerationTerminalOutcome) => {
       const key = jobKey(job)
       if (handledRef.current.has(key)) return
       handledRef.current.add(key)
@@ -320,15 +341,29 @@ export function GenerationStatusProvider({
         job.kind === 'graph'
           ? `/resources/knowledgeBases/${job.kbId}#knowledge-graph`
           : `/elements/generate?buildId=${job.id}`
+      const messageByOutcome: Record<GenerationTerminalOutcome, string> = {
+        complete: t('succeeded', { label: job.label }),
+        incomplete: t('incomplete', { label: job.label }),
+        review: t('reviewRequired', { label: job.label }),
+        failed: t('failed'),
+      }
+      const actionLabelByOutcome: Partial<
+        Record<GenerationTerminalOutcome, string>
+      > = {
+        complete: t('open'),
+        incomplete: t('open'),
+        review: t('review'),
+      }
+      const actionLabel = actionLabelByOutcome[outcome]
       toast({
-        type: succeeded ? 'success' : 'error',
-        message: succeeded ? t('succeeded', { label: job.label }) : t('failed'),
+        type: TERMINAL_TOAST_TYPE[outcome],
+        message: messageByOutcome[outcome],
         options: {
-          duration: succeeded ? 30_000 : 8000,
-          ...(succeeded
+          duration: outcome === 'failed' ? 8000 : 30_000,
+          ...(actionLabel
             ? {
                 action: {
-                  label: t('open'),
+                  label: actionLabel,
                   onClick: () => void router.push(href),
                 },
               }

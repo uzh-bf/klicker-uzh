@@ -1,15 +1,25 @@
-const OUTPUT_FORMAT_CONTRACT = `Output format: use valid Markdown when structure improves readability, while keeping the format proportionate to the answer.
+import { renderPromptTemplate } from '@/src/lib/server/promptTemplates'
 
-Mathematics: write inline mathematics as $...$ and display mathematics as $$...$$ so the chat renderer can typeset it. Do not use square brackets as formula delimiters.
-
-Code: put multi-line code in fenced code blocks and include the appropriate language identifier when known. Do not default every coding answer to one language. Never claim that code was executed or invent runtime output; clearly label illustrative or expected output.`
+const OUTPUT_FORMAT_CONTRACT = renderPromptTemplate('output-format', {
+  customPersona: false,
+})
+const CUSTOM_PERSONA_OUTPUT_FORMAT_CONTRACT = renderPromptTemplate(
+  'output-format',
+  { customPersona: true }
+)
 
 /**
  * Appends renderer-compatible output rules for every mode and stored persona.
+ * A lecturer-defined persona may set its own format, such as plain spoken
+ * prose; the notation rules the renderer depends on still apply.
  */
-export function withOutputFormatContract(systemPrompt: string): string {
-  const trimmedBase = systemPrompt.trimEnd()
-  return trimmedBase.length > 0
-    ? `${trimmedBase}\n\n${OUTPUT_FORMAT_CONTRACT}`
+export function withOutputFormatContract(
+  systemPrompt: string,
+  customPersona = false
+): string {
+  const contract = customPersona
+    ? CUSTOM_PERSONA_OUTPUT_FORMAT_CONTRACT
     : OUTPUT_FORMAT_CONTRACT
+  const trimmedBase = systemPrompt.trimEnd()
+  return trimmedBase.length > 0 ? `${trimmedBase}\n\n${contract}` : contract
 }

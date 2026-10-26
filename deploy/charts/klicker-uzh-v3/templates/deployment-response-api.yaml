@@ -13,7 +13,7 @@ spec:
   strategy:
     {{- toYaml . | nindent 4 }}
   {{- end }}
-  {{- if not .Values.responseApi.autoscaling.enabled }}
+  {{- if hasKey .Values.responseApi "replicaCount" }}
   replicas: {{ .Values.responseApi.replicaCount }}
   {{- end }}
   selector:
@@ -100,7 +100,7 @@ spec:
   strategy:
     {{- toYaml . | nindent 4 }}
   {{- end }}
-  {{- if not .Values.assessment.responseApi.autoscaling.enabled }}
+  {{- if hasKey .Values.assessment.responseApi "replicaCount" }}
   replicas: {{ .Values.assessment.responseApi.replicaCount }}
   {{- end }}
   selector:

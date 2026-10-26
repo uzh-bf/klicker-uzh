@@ -1,16 +1,28 @@
 import { verifyJWT } from '@klicker-uzh/util'
 import { afterEach, beforeEach, describe, expect, test, vi } from 'vitest'
-import {
+
+let {
   LECTURER_MCP_SCOPE_FULL,
   STUDENT_MCP_SCOPE_FULL,
   LECTURER_MCP_SCOPE_READ_ONLY,
   McpAuthMintError,
-  __resetLecturerMcpJwtCacheForTests,
-  __resetParticipantMcpJwtCacheForTests,
   mintLecturerMcpJwt,
   mintParticipantMcpJwt,
   resolveLecturerMcpScope,
-} from '../src/lib/server/mcpAuthMint'
+} = await import('../src/lib/server/mcpAuthMint')
+
+beforeEach(async () => {
+  vi.resetModules()
+  ;({
+    LECTURER_MCP_SCOPE_FULL,
+    STUDENT_MCP_SCOPE_FULL,
+    LECTURER_MCP_SCOPE_READ_ONLY,
+    McpAuthMintError,
+    mintLecturerMcpJwt,
+    mintParticipantMcpJwt,
+    resolveLecturerMcpScope,
+  } = await import('../src/lib/server/mcpAuthMint'))
+})
 
 const TEST_SECRET = 'unit-test-app-secret-abcd'
 const TEST_ISSUER = 'https://auth.klicker.test'
@@ -19,14 +31,10 @@ describe('mintParticipantMcpJwt', () => {
   beforeEach(() => {
     vi.stubEnv('APP_SECRET', TEST_SECRET)
     vi.stubEnv('APP_ORIGIN_AUTH', TEST_ISSUER)
-    __resetLecturerMcpJwtCacheForTests()
-    __resetParticipantMcpJwtCacheForTests()
   })
 
   afterEach(() => {
     vi.unstubAllEnvs()
-    __resetLecturerMcpJwtCacheForTests()
-    __resetParticipantMcpJwtCacheForTests()
   })
 
   test('minted token verifies with same secret + issuer and carries participant sub', async () => {
@@ -145,12 +153,10 @@ describe('mintLecturerMcpJwt', () => {
   beforeEach(() => {
     vi.stubEnv('APP_SECRET', TEST_SECRET)
     vi.stubEnv('APP_ORIGIN_AUTH', TEST_ISSUER)
-    __resetLecturerMcpJwtCacheForTests()
   })
 
   afterEach(() => {
     vi.unstubAllEnvs()
-    __resetLecturerMcpJwtCacheForTests()
   })
 
   test('minted token verifies and is scoped to lecturer MCP for a full-access session', async () => {

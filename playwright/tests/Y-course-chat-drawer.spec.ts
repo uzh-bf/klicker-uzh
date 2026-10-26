@@ -72,9 +72,13 @@ test.describe('Course chatbot drawer', () => {
       )
       .toBe(true)
 
-    const firstControl = page.getByTestId('course-chatbot-selector')
+    // The tabbable resize separators are the first controls in the dialog
+    // (keyboard resizing via role="separator"), so the trap wraps between
+    // them and the chat frame.
+    const firstControl = dialog.locator('[data-resize-axis="height"]')
     const lastControl = page.getByTestId('course-chatbot-frame')
 
+    await expect(firstControl).toBeVisible()
     await firstControl.focus()
     await page.keyboard.press('Shift+Tab')
     await expect(lastControl).toBeFocused()
@@ -188,23 +192,20 @@ test.describe('Course chatbot drawer', () => {
       .toEqual({ ariaHidden: null, inert: false })
   })
 
-  test('keeps the close action visible in an embedded mobile viewport', async ({
+  test('omits the launcher in embedded mode while keeping it in the app', async ({
     page,
   }) => {
     await page.setViewportSize({ width: 390, height: 844 })
     await expect(page.getByTestId('homepage')).toBeVisible()
+
+    // The embedding host frames the page and renders its own chatbot beside
+    // it, so the in-frame launcher would duplicate that entry point.
     await page.goto(`${courseUrl}?embed=true`)
-    await page.getByTestId('course-chatbot-open').click()
+    await expect(page.getByTestId('course-chatbot-open')).toHaveCount(0)
 
-    const close = page.getByTestId('course-chatbot-close')
-    await expect(close).toBeVisible()
-    const box = await close.boundingBox()
-
-    expect(box).not.toBeNull()
-    expect(box!.x).toBeGreaterThanOrEqual(0)
-    expect(box!.y).toBeGreaterThanOrEqual(0)
-    expect(box!.x + box!.width).toBeLessThanOrEqual(390)
-    expect(box!.y + box!.height).toBeLessThanOrEqual(844)
+    // The same course page outside an embed still offers the drawer.
+    await page.goto(courseUrl)
+    await expect(page.getByTestId('course-chatbot-open')).toBeVisible()
   })
 })
 

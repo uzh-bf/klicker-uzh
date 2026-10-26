@@ -1,6 +1,7 @@
 import * as DB from '@klicker-uzh/prisma/client'
 import type {
   GeneratedQuestionEditable,
+  GeneratedQuestionTagSelection,
   QuestionGenerationItemType,
 } from '@klicker-uzh/types'
 import type { ContextWithUser } from '../lib/context.js'
@@ -13,25 +14,51 @@ const MAX_OPTION_LENGTH = 10_000
 const MAX_OPTION_COUNT = 10
 const MC_OPTION_COUNT = 5
 const KPRIM_OPTION_COUNT = 4
+const MAX_TAG_COUNT = 20
+const MAX_TAG_LENGTH = 200
+
+// A partial question run settles as INCOMPLETE with only the grounded drafts,
+// and those drafts stay fully reviewable; a strict run settles as COMPLETED.
+// This mirrors the flashcard incomplete-publication flow.
+const REVIEWABLE_BUILD_STATUSES: DB.ElementGenerationBuildStatus[] = [
+  DB.ElementGenerationBuildStatus.COMPLETED,
+  DB.ElementGenerationBuildStatus.INCOMPLETE,
+]
 
 export type UpdateGeneratedQuestionDraftInput = {
   draftId: string
   expectedRevision: number
   current: GeneratedQuestionEditableInputValue
+  // Omitted preserves the stored selection; an explicit selection replaces it.
+  tagSelection?: GeneratedQuestionTagSelection
 }
 
 export type GeneratedQuestionEditableInputValue = Omit<
   GeneratedQuestionEditable,
-  'itemType' | 'context' | 'explanation' | 'choices'
+  'itemType' | 'context' | 'explanation' | 'choices' | 'tags' | 'tagSelection'
 > & {
   itemType?: QuestionGenerationItemType | null
   context?: string | null
   explanation?: string | null
+  tags?: string[] | null
   choices: Array<
     Omit<GeneratedQuestionEditable['choices'][number], 'feedback'> & {
       feedback?: string | null
     }
   >
+}
+
+function normalizeTags(value: string[] | null | undefined): string[] {
+  const tags = [...new Set((value ?? []).map((tag) => tag.trim()))].filter(
+    (tag) => tag.length > 0
+  )
+  if (
+    tags.length > MAX_TAG_COUNT ||
+    tags.some((tag) => tag.length > MAX_TAG_LENGTH)
+  ) {
+    return draftError('Generated question tags are invalid')
+  }
+  return tags
 }
 
 export type GeneratedQuestionDecisionInput = 'OPEN' | 'ACCEPTED' | 'REJECTED'
@@ -100,6 +127,7 @@ export function normalizeGeneratedQuestionEditable(
       MAX_OPTION_LENGTH
     ),
   }))
+  const tags = normalizeTags(value.tags)
   if (
     choices.some((choice) => typeof choice.correct !== 'boolean') ||
     (itemType === 'SC' &&
@@ -133,6 +161,7 @@ export function normalizeGeneratedQuestionEditable(
       'Draft explanation',
       MAX_STEM_LENGTH
     ),
+    tags,
     choices,
   }
 }
@@ -160,7 +189,7 @@ async function findOwnedDraft(draftId: string, ctx: ContextWithUser) {
 function assertDraftCanChange(
   draft: Awaited<ReturnType<typeof findOwnedDraft>>
 ) {
-  if (draft.build.status !== DB.ElementGenerationBuildStatus.COMPLETED) {
+  if (!REVIEWABLE_BUILD_STATUSES.includes(draft.build.status)) {
     throw questionGenerationServiceError(
       'INVALID_STAGE',
       'Generated question drafts can only change after build completion'
@@ -214,6 +243,10 @@ export async function updateGeneratedQuestionDraft(
       input.current,
       storedCurrent.itemType ?? 'SC'
     )
+    const tagSelection = input.tagSelection ?? storedCurrent.tagSelection
+    const nextCurrent: GeneratedQuestionEditable = tagSelection
+      ? { ...current, tagSelection }
+      : current
 
     const updated = await transaction.generatedElementDraft.updateMany({
       where: {
@@ -221,7 +254,7 @@ export async function updateGeneratedQuestionDraft(
         revision: input.expectedRevision,
         savedElementId: null,
       },
-      data: { current, revision: { increment: 1 } },
+      data: { current: nextCurrent, revision: { increment: 1 } },
     })
     if (updated.count !== 1) {
       throw questionGenerationServiceError(
@@ -252,7 +285,7 @@ export async function duplicateGeneratedQuestionDraft(
         build: {
           is: {
             ownerId: ctx.user.sub,
-            status: DB.ElementGenerationBuildStatus.COMPLETED,
+            status: { in: REVIEWABLE_BUILD_STATUSES },
           },
         },
       },
@@ -300,7 +333,7 @@ export async function setGeneratedQuestionDecision(
   if (draft.savedElementId !== null && draft.decision !== input.decision) {
     return draftError('A saved generated question decision is immutable')
   }
-  if (draft.build.status !== DB.ElementGenerationBuildStatus.COMPLETED) {
+  if (!REVIEWABLE_BUILD_STATUSES.includes(draft.build.status)) {
     throw questionGenerationServiceError(
       'INVALID_STAGE',
       'Generated question decisions require a completed build'
@@ -313,7 +346,7 @@ export async function setGeneratedQuestionDecision(
       id: draft.id,
       savedElementId: null,
       build: {
-        is: { status: DB.ElementGenerationBuildStatus.COMPLETED },
+        is: { status: { in: REVIEWABLE_BUILD_STATUSES } },
       },
     },
     data: { decision: input.decision },

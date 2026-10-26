@@ -13,13 +13,23 @@ import {
   isPublicIPv4Address,
   normalizePublicHttpUrl,
 } from '@klicker-uzh/util/public-url'
+import { parsePositiveIntegerEnv } from './env.js'
 
 const KB_INGESTION_PROJECT_ID = 'klicker-course-materials'
 const KB_INGESTION_PRODUCER = 'klicker'
 const KB_INGESTION_REQUEST_TIMEOUT_MS = 10_000
+// The ingestion service reclaims and retries an abandoned upsert on its own,
+// so this bound only has to catch an operation the provider never reports as
+// terminal at all. It matches the external graph-build bound.
+const DEFAULT_KB_INGESTION_TIMEOUT_SECONDS = 6 * 60 * 60
 const KB_SOURCE_FETCH_TIMEOUT_MS = 30_000
 const MAX_KB_SOURCE_BYTES = 25 * 1024 * 1024
 const MAX_KB_SOURCE_REDIRECTS = 3
+// Public sites reject anonymous source fetches: Wikimedia answers 403 to
+// requests without a descriptive User-Agent, which surfaces as an ingestion
+// that cannot be started.
+const KB_SOURCE_USER_AGENT =
+  'KlickerUZH-KB-Ingestion/1.0 (+https://klicker.uzh.ch)'
 const SUPPORTED_BLOB_INGESTION_MIME_TYPES = new Set([
   'application/pdf',
   'text/plain',
@@ -96,6 +106,16 @@ export function getKBIngestionProjectId(
   env: NodeJS.ProcessEnv = process.env
 ): string {
   return env.KB_INGESTION_PROJECT_ID?.trim() || KB_INGESTION_PROJECT_ID
+}
+
+export function getKBIngestionTimeoutSeconds(
+  env: NodeJS.ProcessEnv = process.env
+): number {
+  return parsePositiveIntegerEnv(
+    'KB_INGESTION_TIMEOUT_SECONDS',
+    env.KB_INGESTION_TIMEOUT_SECONDS,
+    DEFAULT_KB_INGESTION_TIMEOUT_SECONDS
+  )
 }
 
 type KBIngestionFetch = (
@@ -470,6 +490,7 @@ function requestPinnedUrl(url: URL, address: string): Promise<IncomingMessage> {
       {
         headers: {
           Accept: [...SUPPORTED_URL_INGESTION_MIME_TYPES].join(', '),
+          'User-Agent': KB_SOURCE_USER_AGENT,
           Connection: 'close',
         },
         lookup: pinnedLookup,

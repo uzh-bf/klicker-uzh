@@ -2,8 +2,8 @@ import { useMutation, useQuery } from '@apollo/client'
 import {
   AttachKbToChatbotDocument,
   DetachKbFromChatbotDocument,
-  GetChatbotsInfoDocument,
-  GetKbChatbotBindingsDocument,
+  QGetKbChatbotBindingsWithKnowledgeBasesDocument,
+  QGetChatbotsInfoWithKnowledgeBasesDocument,
 } from '@klicker-uzh/graphql/dist/ops'
 import {
   Button,
@@ -27,9 +27,12 @@ function KnowledgeBaseChatbotBindings({
   const [selectedChatbotId, setSelectedChatbotId] = useState<
     string | undefined
   >()
-  const { data, loading, error } = useQuery(GetKbChatbotBindingsDocument, {
-    variables: { kbId },
-  })
+  const { data, loading, error } = useQuery(
+    QGetKbChatbotBindingsWithKnowledgeBasesDocument,
+    {
+      variables: { kbId },
+    }
+  )
   const [attachKb, { loading: attaching }] = useMutation(
     AttachKbToChatbotDocument
   )
@@ -40,11 +43,13 @@ function KnowledgeBaseChatbotBindings({
   const selectedBinding = bindings.find(
     ({ chatbotId }) => chatbotId === selectedChatbotId
   )
-  const linkedBindings = bindings.filter(
-    ({ enabledKbId }) => enabledKbId === kbId
+  const linkedBindings = bindings.filter(({ enabledKbs }) =>
+    enabledKbs.some(({ id }) => id === kbId)
   )
-  const replacing =
-    selectedBinding?.enabledKbId != null && selectedBinding.enabledKbId !== kbId
+  const replacementKb = selectedBinding?.enabledKbs.find(
+    ({ id }) => id !== kbId
+  )
+  const replacing = replacementKb != null
   const mutating = attaching || detaching
   const summary = loading
     ? t('shared.generic.loading')
@@ -56,10 +61,10 @@ function KnowledgeBaseChatbotBindings({
 
   const refetchQueries = [
     {
-      query: GetKbChatbotBindingsDocument,
+      query: QGetKbChatbotBindingsWithKnowledgeBasesDocument,
       variables: { kbId },
     },
-    { query: GetChatbotsInfoDocument },
+    { query: QGetChatbotsInfoWithKnowledgeBasesDocument },
   ]
 
   const handleAttach = async () => {
@@ -173,7 +178,7 @@ function KnowledgeBaseChatbotBindings({
                 type="warning"
                 className={{ root: 'mt-3' }}
                 message={t('kb.chatbotReplacementWarning', {
-                  kbName: selectedBinding?.enabledKbName ?? '',
+                  kbName: replacementKb?.name ?? '',
                 })}
                 data={{ cy: 'kb-chatbot-replacement-warning' }}
               />

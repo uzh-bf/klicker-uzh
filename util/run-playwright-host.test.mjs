@@ -7,6 +7,7 @@ import {
   readFileSync,
   rmSync,
   symlinkSync,
+  utimesSync,
   writeFileSync,
 } from 'node:fs'
 import { tmpdir } from 'node:os'
@@ -25,17 +26,58 @@ import {
   preserveLocalDatabase,
 } from './playwright-host-policy.mjs'
 import {
+  FILTERED_INSTALL_MARKER,
+  inferPlaywrightProfile,
+  PLAYWRIGHT_PROFILE_FALLBACK,
   PNPM_VERIFY_DEPS_ENV,
   parseLocalOptions,
-  parsePublishedPort,
+  parseHostEnvironment,
   resolvePlaywrightEnvironment,
   main as runPlaywrightHost,
+  validateRetainedCitationEnvironment,
 } from './run-playwright-host.mjs'
 
 const repoRoot = resolve(dirname(fileURLToPath(import.meta.url)), '..')
 const simulatedHostCwd = '/Users/test/klicker-uzh'
 
 const noContainerPaths = () => false
+
+test('retained citation checks require local targets and explicit fixture identities', () => {
+  const env = {
+    PLAYWRIGHT_BASE_URL: 'https://chat.klicker.test.localhost',
+    APP_SECRET: 'synthetic-test-only',
+    PARTICIPANT_ID: '11111111-1111-4111-8111-111111111111',
+    CHATBOT_ID: '22222222-2222-4222-8222-222222222222',
+    THREAD_ID: '33333333-3333-4333-8333-333333333333',
+  }
+  assert.doesNotThrow(() => validateRetainedCitationEnvironment(env))
+  for (const target of [
+    'https://chat.example.org',
+    'https://localhost.example.org',
+    'file:///tmp/test',
+    'https://test:synthetic@chat.klicker.test.localhost',
+    'https://chat.klicker.test.localhost/?token=synthetic',
+    'https://chat.klicker.test.localhost/#synthetic',
+    'https://chat.klicker.test.localhost/another/path',
+  ]) {
+    assert.throws(() =>
+      validateRetainedCitationEnvironment({
+        ...env,
+        PLAYWRIGHT_BASE_URL: target,
+      })
+    )
+  }
+  for (const key of Object.keys(env)) {
+    assert.throws(() =>
+      validateRetainedCitationEnvironment({ ...env, [key]: '' })
+    )
+  }
+  for (const key of ['PARTICIPANT_ID', 'CHATBOT_ID', 'THREAD_ID']) {
+    assert.throws(() =>
+      validateRetainedCitationEnvironment({ ...env, [key]: 'not-a-uuid' })
+    )
+  }
+})
 
 test('database preservation is explicit, host-only, and excluded from CI', () => {
   const selected = {
@@ -68,6 +110,7 @@ test('local runner options preserve defaults and forward test selectors', () => 
   assert.deepEqual(parseLocalOptions(['--project=chromium']), {
     args: ['--project=chromium'],
     profile: undefined,
+    mode: undefined,
     preserveDatabase: false,
   })
   assert.deepEqual(
@@ -80,15 +123,13 @@ test('local runner options preserve defaults and forward test selectors', () => 
     {
       args: ['tests/Y-chat.spec.ts'],
       profile: 'chat',
+      mode: undefined,
       preserveDatabase: true,
     }
   )
   assert.throws(() => parseLocalOptions(['--runtime-profile', '--help']))
   assert.throws(() => parseLocalOptions(['--runtime-profile']))
-  assert.throws(
-    () => parseLocalOptions(['--runtime-profile=chat']),
-    /space syntax/
-  )
+  assert.equal(parseLocalOptions(['--runtime-profile=chat']).profile, 'chat')
   assert.throws(
     () => parseLocalOptions(['--preserve-database=1']),
     /space syntax/
@@ -97,24 +138,155 @@ test('local runner options preserve defaults and forward test selectors', () => 
     () => parseLocalOptions(['tests/example.spec.ts', '--preserve-database']),
     /before Playwright arguments/
   )
-  assert.throws(
-    () =>
-      parseLocalOptions(['--project=chromium', '--runtime-profile', 'chat']),
-    /before Playwright arguments/
+})
+
+const syntheticProfileManifest = {
+  version: 1,
+  groups: [
+    { profile: 'manage', specs: ['T-chatbot-authoring.spec.ts'] },
+    { profile: 'manage,chat', specs: ['A-login.spec.ts', 'Y-chat.spec.ts'] },
+    { profile: 'manage,live-quiz', specs: ['C-control.spec.ts'] },
+    { profile: 'manage,pwa', specs: ['D-elements-content.spec.ts'] },
+  ],
+}
+
+const syntheticSpecFiles = syntheticProfileManifest.groups.flatMap(
+  ({ specs }) => specs
+)
+
+function createInferenceHarness({
+  specFiles = syntheticSpecFiles,
+  manifest = syntheticProfileManifest,
+  pathExists = () => true,
+  readFile,
+} = {}) {
+  return {
+    pathExists,
+    readDirectory: () => [...specFiles].sort(),
+    readFile:
+      readFile ??
+      ((path) => {
+        if (path.endsWith('/playwright/profiles.json')) {
+          return JSON.stringify(manifest)
+        }
+        throw new Error(`unexpected synthetic file: ${path}`)
+      }),
+  }
+}
+
+test('profile inference maps spec-file selections onto runtime profiles', () => {
+  const harness = createInferenceHarness()
+
+  assert.equal(
+    inferPlaywrightProfile({ args: ['A-login.spec.ts'], ...harness }),
+    'chat,manage'
+  )
+  assert.equal(
+    inferPlaywrightProfile({
+      args: ['--project=chromium', 'tests/Y-chat.spec.ts'],
+      ...harness,
+    }),
+    'chat,manage'
+  )
+  assert.equal(
+    inferPlaywrightProfile({
+      args: ['--', 'playwright/tests/C-control.spec.ts'],
+      ...harness,
+    }),
+    'live-quiz,manage'
   )
 })
+
+test('profile inference merges the apps required by multiple spec files', () => {
+  assert.equal(
+    inferPlaywrightProfile({
+      args: ['A-login.spec.ts', 'C-control.spec.ts', 'A-login.spec.ts'],
+      ...createInferenceHarness(),
+    }),
+    'chat,live-quiz,manage'
+  )
+})
+
+test('profile inference falls back when the selection is not understood', () => {
+  const harness = createInferenceHarness({
+    pathExists: (path) => !path.endsWith('A-absent.spec.ts'),
+    readFile: (path) => {
+      if (path.endsWith('profiles.json')) {
+        return JSON.stringify(syntheticProfileManifest)
+      }
+      throw new Error(`unexpected synthetic file: ${path}`)
+    },
+  })
+
+  for (const args of [
+    ['--unknown-option', 'A-login.spec.ts'],
+    ['--headed', 'tests/'],
+    ['tests/*.spec.ts'],
+    ['tests/A-absent.spec.ts'],
+    ['tests/unlisted.spec.ts'],
+    ['--list'],
+  ]) {
+    assert.equal(
+      inferPlaywrightProfile({ args, ...harness }),
+      PLAYWRIGHT_PROFILE_FALLBACK
+    )
+  }
+})
+
+test('profile inference falls back when the manifest cannot be read', () => {
+  assert.equal(
+    inferPlaywrightProfile({
+      args: ['A-login.spec.ts'],
+      ...createInferenceHarness({
+        readFile: () => {
+          throw new Error('synthetic manifest failure')
+        },
+      }),
+    }),
+    PLAYWRIGHT_PROFILE_FALLBACK
+  )
+})
+
+function syntheticHostEnvironment({
+  workspace = 'synthetic-launcher',
+  loopback = { host: '127.0.0.1', port: 49153 },
+  loopbackReason,
+} = {}) {
+  return JSON.stringify({
+    version: 1,
+    workspace,
+    apps: [
+      { name: 'manage', protocol: 'http' },
+      {
+        name: 'db',
+        protocol: 'tcp',
+        tcpProtocol: 'postgres',
+        loopback,
+        ...(loopbackReason ? { loopbackReason } : {}),
+      },
+    ],
+  })
+}
 
 function createLauncherHarness({
   playwrightCli = true,
   prismaDist = true,
   typesDist = true,
+  workspaceIdentity = true,
+  linkedWorktree = true,
+  workspace,
   failWhen,
   environment = { PATH: '/synthetic/bin' },
+  specFiles = syntheticSpecFiles,
+  profileManifest = syntheticProfileManifest,
 } = {}) {
   const calls = []
   const logs = []
+  const writes = []
   const root = '/synthetic/klicker-uzh'
   const workspaceGitDir = '/synthetic/git/worktrees/launcher'
+  const testsRoot = `${root}/playwright/tests`
+  let clockValue = 0
 
   const commandRunner = (command, args, options = {}) => {
     calls.push({ command, args: [...args], options })
@@ -123,14 +295,14 @@ function createLauncherHarness({
     }
 
     if (command === 'git' && args.at(-1) === '--git-dir') {
-      return workspaceGitDir
+      return linkedWorktree ? workspaceGitDir : '/synthetic/git'
     }
     if (command === 'git' && args.at(-1) === '--git-common-dir') {
       return '/synthetic/git'
     }
     if (command === 'docker' && args[0] === 'ps') return 'container-id'
-    if (command === 'docker' && args[0] === 'port') {
-      return '127.0.0.1:49153'
+    if (command === '/synthetic/bin/devrouter' && args[0] === 'env') {
+      return syntheticHostEnvironment({ workspace })
     }
 
     return ''
@@ -145,12 +317,21 @@ function createLauncherHarness({
     }
     if (path.endsWith('/packages/prisma/dist/index.js')) return prismaDist
     if (path.endsWith('/packages/types/dist/index.js')) return typesDist
-    if (path.endsWith('/devrouter-workspace')) return true
+    if (path.endsWith('/devrouter-workspace')) return workspaceIdentity
+    if (
+      path.startsWith(`${testsRoot}/`) &&
+      specFiles.includes(path.slice(testsRoot.length + 1))
+    ) {
+      return true
+    }
     return false
   }
 
   const readFile = (path) => {
     if (path.endsWith('/devrouter-workspace')) return 'synthetic-launcher\n'
+    if (path === `${root}/playwright/profiles.json`) {
+      return JSON.stringify(profileManifest)
+    }
     if (path.endsWith('/devcontainer.env')) {
       return [
         'DATABASE_URL=postgres://user:password@postgres:5432/database',
@@ -163,6 +344,7 @@ function createLauncherHarness({
   return {
     calls,
     logs,
+    writes,
     dependencies: {
       resolveDevrouterFn: () => '/synthetic/bin/devrouter',
       commandExistsFn: () => false,
@@ -171,10 +353,197 @@ function createLauncherHarness({
       log: (message) => logs.push(message),
       pathExists,
       readFile,
+      writeFile: (path) => writes.push(path),
+      readDirectory: (path) => {
+        if (path === testsRoot) return [...specFiles].sort()
+        throw new Error(`unexpected synthetic directory: ${path}`)
+      },
+      clock: () => (clockValue += 100),
       root,
     },
   }
 }
+
+test('launcher falls back to the maximal playwright profile and forwards Playwright arguments verbatim', () => {
+  const { calls, dependencies } = createLauncherHarness()
+  const args = [
+    '--project=chromium',
+    '--grep',
+    'a phrase',
+    '--runtime-profile=literal',
+  ]
+  runPlaywrightHost(['--', ...args], dependencies)
+  assert.deepEqual(ensureArgs(ensureCall(calls)), [
+    'ensure',
+    dependencies.root,
+    '--profile',
+    'playwright',
+  ])
+  assert.deepEqual(pnpmCalls(calls).at(-1).args, [
+    '--filter',
+    '@klicker-uzh/playwright',
+    'exec',
+    'playwright',
+    'test',
+    ...args,
+  ])
+  const environment = pnpmCalls(calls).at(-1).options.env
+  assert.equal(
+    environment.DATABASE_URL,
+    'postgres://user:password@127.0.0.1:49153/database'
+  )
+  assert.equal(
+    environment.KLICKER_PLAYWRIGHT_POSTGRES_CONTAINER,
+    'container-id'
+  )
+  assert.equal(environment.APP_SECRET, 'synthetic-app-secret')
+  assert.equal(environment.KLICKER_PLAYWRIGHT_PRESERVE_DATABASE, '0')
+  assert.equal(
+    environment.URL_MANAGE,
+    'https://manage.klicker.synthetic-launcher.localhost'
+  )
+})
+
+test('a linked worktree without a reported workspace fails before host URLs and test execution', () => {
+  for (const workspace of [null, '', 42]) {
+    const harness = createLauncherHarness({ workspace })
+
+    assert.throws(
+      () => runPlaywrightHost(['--project=chromium'], harness.dependencies),
+      /did not report a workspace name for linked worktree/
+    )
+    assert.ok(
+      ensureCall(harness.calls),
+      'runtime reconciliation must run before the workspace check'
+    )
+    assert.equal(
+      harness.calls.some(({ command }) => command === 'docker'),
+      false,
+      'the database container must not be resolved'
+    )
+    assert.equal(
+      pnpmCalls(harness.calls).some(({ args }) => args.includes('test')),
+      false,
+      'no Playwright test run may start'
+    )
+    assert.equal(
+      harness.logs.some((line) => line.includes('Running on the host')),
+      false,
+      'no host URLs may be applied'
+    )
+  }
+})
+
+test('a reported linked workspace stays namespaced and the primary checkout stays valid', () => {
+  const linked = createLauncherHarness()
+  runPlaywrightHost(['--project=chromium'], linked.dependencies)
+  const linkedRun = pnpmCalls(linked.calls).find(({ args }) =>
+    args.includes('test')
+  )
+  assert.equal(
+    linkedRun.options.env.URL_MANAGE,
+    'https://manage.klicker.synthetic-launcher.localhost'
+  )
+
+  const primary = createLauncherHarness({
+    linkedWorktree: false,
+    workspace: null,
+  })
+  runPlaywrightHost(['--project=chromium'], primary.dependencies)
+  const primaryRun = pnpmCalls(primary.calls).find(({ args }) =>
+    args.includes('test')
+  )
+  assert.equal(
+    primaryRun.options.env.URL_MANAGE,
+    'https://manage.klicker.localhost'
+  )
+})
+
+test('explicit profiles reach runtime reconciliation for testing and print-env', () => {
+  for (const prefix of [
+    ['--runtime-profile', 'manage,live-quiz'],
+    ['--runtime-profile=manage,live-quiz'],
+  ]) {
+    for (const mode of [[], ['--print-env']]) {
+      const { calls, dependencies, logs } = createLauncherHarness()
+      runPlaywrightHost(
+        [...prefix, ...mode, '--', '--project=chromium'],
+        dependencies
+      )
+      assert.deepEqual(ensureArgs(ensureCall(calls)), [
+        'ensure',
+        dependencies.root,
+        '--profile',
+        'manage,live-quiz',
+      ])
+      assert.equal(pnpmCalls(calls).length > 0, mode.length === 0)
+      if (mode.length > 0) {
+        assert.deepEqual(
+          JSON.parse(logs.find((line) => line.startsWith('{'))),
+          {
+            databaseHost: '127.0.0.1:49153',
+            postgresContainer: 'container-id',
+            manageUrl: 'https://manage.klicker.synthetic-launcher.localhost',
+            studentUrl: 'https://pwa.klicker.synthetic-launcher.localhost',
+            workspace: 'synthetic-launcher',
+          }
+        )
+      }
+    }
+  }
+})
+
+test('invalid launcher options have no external effects', () => {
+  const invalid = [
+    ['--runtime-profile'],
+    ['--runtime-profile='],
+    ...[
+      'manage,',
+      ',manage',
+      'manage,,pwa',
+      'manage,manage',
+      'manage, pwa',
+      'Manage',
+      '../manage',
+    ].map((value) => ['--runtime-profile', value]),
+    ['--runtime-profile=manage', '--runtime-profile=pwa'],
+    ['--print-env', '--print-env'],
+    ['--show-report', '--show-report'],
+    ['--print-env', '--show-report'],
+    ['--show-report', '--print-env'],
+    ['--runtime-profile=manage', '--show-report'],
+    ['--show-report', '--runtime-profile=manage'],
+  ]
+  for (const args of invalid) {
+    const { calls, dependencies } = createLauncherHarness()
+    assert.throws(
+      () => runPlaywrightHost(args, dependencies),
+      undefined,
+      JSON.stringify(args)
+    )
+    assert.deepEqual(calls, [])
+  }
+})
+
+test('report mode never reconciles a runtime and respects the prefix terminator', () => {
+  const { calls, dependencies } = createLauncherHarness()
+  runPlaywrightHost(
+    ['--show-report', '--', '--runtime-profile=literal'],
+    dependencies
+  )
+  assert.equal(
+    calls.some(({ command }) => command === 'sh'),
+    false
+  )
+  assert.deepEqual(pnpmCalls(calls).at(-1).args, [
+    '--filter',
+    '@klicker-uzh/playwright',
+    'exec',
+    'playwright',
+    'show-report',
+    '--runtime-profile=literal',
+  ])
+})
 
 test('invalid preservation and local options fail before launcher effects', () => {
   for (const { args, environment, error } of [
@@ -184,14 +553,14 @@ test('invalid preservation and local options fail before launcher effects', () =
       error: /incompatible with CI or GitHub Actions/,
     },
     {
-      args: ['--runtime-profile=chat', '--list'],
+      args: ['--preserve-database=1', '--list'],
       environment: { PATH: '/synthetic/bin' },
       error: /space syntax/,
     },
     {
       args: ['--runtime-profile'],
       environment: { PATH: '/synthetic/bin' },
-      error: /separate profile name/,
+      error: undefined,
     },
     {
       args: ['--list', '--preserve-database'],
@@ -212,6 +581,22 @@ function commandIndex(calls, command, firstArg) {
       actualCommand === command &&
       (firstArg === undefined || args[0] === firstArg)
   )
+}
+
+// The runtime reconciliation runs through a POSIX tee wrapper:
+// ['sh', '-c', script, 'playwright-host-ensure', <devrouter>, 'ensure', ...]
+function ensureCall(calls) {
+  const call = calls.find(({ command }) => command === 'sh')
+  assert.ok(call, 'ensure invocation missing')
+  return call
+}
+
+function ensureIndex(calls) {
+  return calls.indexOf(ensureCall(calls))
+}
+
+function ensureArgs(call) {
+  return call.args.slice(4)
 }
 
 function pnpmCalls(calls) {
@@ -359,6 +744,7 @@ function createOriginalMountFixture(compose) {
 
   return original
 }
+
 function cliFixture(t) {
   const root = mkdtempSync(join(tmpdir(), 'klicker-host-cli-'))
   t.after(() => rmSync(root, { recursive: true, force: true }))
@@ -529,9 +915,158 @@ test('workspace URLs and the loopback database port resolve together', () => {
   )
 })
 
-test('Docker port output resolves IPv4 and IPv6 bindings', () => {
-  assert.equal(parsePublishedPort('127.0.0.1:49153'), 49153)
-  assert.equal(parsePublishedPort('[::1]:49154'), 49154)
+test('the devrouter env report resolves the workspace and loopback database', () => {
+  assert.deepEqual(parseHostEnvironment(syntheticHostEnvironment()), {
+    workspace: 'synthetic-launcher',
+    databaseHost: '127.0.0.1',
+    databasePort: 49153,
+  })
+  assert.deepEqual(
+    parseHostEnvironment(
+      syntheticHostEnvironment({
+        workspace: null,
+        loopback: { host: '::1', port: 49154 },
+      })
+    ),
+    { workspace: '', databaseHost: '[::1]', databasePort: 49154 }
+  )
+  assert.throws(
+    () =>
+      parseHostEnvironment(
+        syntheticHostEnvironment({
+          loopback: null,
+          loopbackReason: 'not-running',
+        })
+      ),
+    /not-running/
+  )
+  assert.throws(
+    () =>
+      parseHostEnvironment(
+        syntheticHostEnvironment({ loopback: { host: '127.0.0.1' } })
+      ),
+    /lacks a host or port/
+  )
+  for (const loopback of [
+    { host: '', port: 49153 },
+    { host: '127.0.0.1', port: 0 },
+    { host: '127.0.0.1', port: 65536 },
+  ]) {
+    assert.throws(
+      () => parseHostEnvironment(syntheticHostEnvironment({ loopback })),
+      /lacks a host or port/
+    )
+  }
+  assert.deepEqual(
+    parseHostEnvironment(
+      syntheticHostEnvironment({
+        loopback: { host: '127.0.0.1', port: 65535 },
+      })
+    ),
+    {
+      workspace: 'synthetic-launcher',
+      databaseHost: '127.0.0.1',
+      databasePort: 65535,
+    }
+  )
+  assert.throws(
+    () => parseHostEnvironment(JSON.stringify({ version: 2, apps: [] })),
+    /unsupported devrouter env report version/
+  )
+})
+
+test('the Git hook checks the marker the launcher writes', () => {
+  const hook = readFileSync(join(repoRoot, 'util', 'run-hook-pnpm.sh'), 'utf8')
+  assert.match(
+    hook,
+    new RegExp(`^filtered_marker=${FILTERED_INSTALL_MARKER}$`, 'm')
+  )
+})
+
+test('the Git hook skips unmarked filtered installs and keeps checking full installs', (t) => {
+  const root = mkdtempSync(join(tmpdir(), 'hook-pnpm-'))
+  t.after(() => rmSync(root, { recursive: true, force: true }))
+  const bin = join(root, 'bin')
+  mkdirSync(bin)
+  const log = join(root, 'calls.log')
+  const newline = String.fromCharCode(10)
+  writeFileSync(
+    join(bin, 'pnpm'),
+    '#!' +
+      process.execPath +
+      newline +
+      "require('node:fs').appendFileSync(" +
+      JSON.stringify(log) +
+      ", process.argv.slice(2).join(' ') + String.fromCharCode(10))",
+    { mode: 0o755 }
+  )
+
+  const hook = join(repoRoot, 'util', 'run-hook-pnpm.sh')
+  const runHook = () =>
+    spawnSync('bash', [hook, 'check'], {
+      cwd: root,
+      encoding: 'utf8',
+      env: { ...process.env, PATH: bin + delimiter + (process.env.PATH ?? '') },
+    })
+  const calls = () =>
+    existsSync(log) ? readFileSync(log, 'utf8').trim().split(newline) : []
+  const age = (path, secondsAgo) => {
+    const time = new Date(Date.now() - secondsAgo * 1000)
+    utimesSync(path, time, time)
+  }
+
+  mkdirSync(join(root, 'node_modules'))
+  const manifest = join(root, 'node_modules', '.modules.yaml')
+  const workspaceState = join(
+    root,
+    'node_modules',
+    '.pnpm-workspace-state-v1.json'
+  )
+  const marker = join(root, 'node_modules', '.playwright-host-filtered-install')
+  const stateFile = (filtered) =>
+    writeFileSync(
+      workspaceState,
+      '{' +
+        newline +
+        '  "filteredInstall": ' +
+        filtered +
+        newline +
+        '}' +
+        newline
+    )
+
+  // A checkout without any dependency install keeps its existing skip.
+  let result = runHook()
+  assert.equal(result.status, 0)
+  assert.deepEqual(calls(), [])
+
+  // A markerless filtered install is still a partial tree and skips.
+  writeFileSync(manifest, 'layoutVersion: 5' + newline)
+  stateFile('true')
+  result = runHook()
+  assert.equal(result.status, 0)
+  assert.deepEqual(calls(), [])
+
+  // A full install keeps running the root script.
+  stateFile('false')
+  result = runHook()
+  assert.equal(result.status, 0)
+  assert.deepEqual(calls(), ['run check'])
+
+  // The launcher's fresh marker skips on its own.
+  writeFileSync(marker, '')
+  age(manifest, 120)
+  age(marker, 60)
+  result = runHook()
+  assert.equal(result.status, 0)
+  assert.deepEqual(calls(), ['run check'])
+
+  // A newer install supersedes an old marker.
+  age(marker, 120)
+  age(manifest, 60)
+  result = runHook()
+  assert.equal(result.status, 0)
+  assert.deepEqual(calls(), ['run check', 'run check'])
 })
 
 test('every local Playwright package script routes through the host launcher', () => {
@@ -631,14 +1166,13 @@ test('cold runs stop before host preparation and reconcile afterward', () => {
 
   const stop = commandIndex(harness.calls, '/synthetic/bin/devrouter', 'stop')
   const install = commandIndex(harness.calls, 'pnpm', 'install')
-  const ensure = commandIndex(
-    harness.calls,
-    '/synthetic/bin/devrouter',
-    'ensure'
-  )
+  const ensure = ensureIndex(harness.calls)
   assert.ok(stop >= 0)
   assert.ok(install > stop)
   assert.ok(ensure > install)
+  assert.deepEqual(harness.writes, [
+    '/synthetic/klicker-uzh/node_modules/.playwright-host-filtered-install',
+  ])
   assert.equal(
     harness.calls.filter(
       ({ command, args }) => command === 'pnpm' && args.includes('playwright')
@@ -653,17 +1187,32 @@ test('cold runs stop before host preparation and reconcile afterward', () => {
   )
 })
 
+test('a fresh worktree installs without stopping a runtime that does not exist yet', () => {
+  const harness = createLauncherHarness({
+    playwrightCli: false,
+    workspaceIdentity: false,
+  })
+
+  runPlaywrightHost(['--list'], harness.dependencies)
+
+  assert.equal(
+    commandIndex(harness.calls, '/synthetic/bin/devrouter', 'stop'),
+    -1
+  )
+  assert.ok(commandIndex(harness.calls, 'pnpm', 'install') >= 0)
+  assert.ok(
+    ensureIndex(harness.calls) > commandIndex(harness.calls, 'pnpm', 'install')
+  )
+})
+
 test('host preparation preserves explicit runtime profile and database selection', () => {
   const harness = createLauncherHarness({ playwrightCli: false })
   runPlaywrightHost(
     ['--runtime-profile', 'chat', '--preserve-database', '--list'],
     harness.dependencies
   )
-  const ensure = harness.calls.find(
-    ({ command, args }) =>
-      command === '/synthetic/bin/devrouter' && args[0] === 'ensure'
-  )
-  assert.deepEqual(ensure.args, [
+  const ensure = ensureCall(harness.calls)
+  assert.deepEqual(ensureArgs(ensure), [
     'ensure',
     '/synthetic/klicker-uzh',
     '--profile',
@@ -673,8 +1222,7 @@ test('host preparation preserves explicit runtime profile and database selection
     args.includes('test')
   )
   assert.ok(
-    commandIndex(harness.calls, '/synthetic/bin/devrouter', 'ensure') <
-      harness.calls.indexOf(testRun),
+    ensureIndex(harness.calls) < harness.calls.indexOf(testRun),
     'runtime must be reconciled before Playwright test execution'
   )
   assert.equal(testRun.options.env.KLICKER_PLAYWRIGHT_PRESERVE_DATABASE, '1')
@@ -687,6 +1235,111 @@ test('host preparation preserves explicit runtime profile and database selection
     'test',
     '--list',
   ])
+})
+
+test('inferred profiles reach runtime reconciliation for spec selections', () => {
+  const harness = createLauncherHarness()
+
+  runPlaywrightHost(['A-login.spec.ts'], harness.dependencies)
+
+  const ensure = ensureCall(harness.calls)
+  assert.deepEqual(ensureArgs(ensure), [
+    'ensure',
+    harness.dependencies.root,
+    '--profile',
+    'chat,manage',
+  ])
+  const testRun = pnpmCalls(harness.calls).find(({ args }) =>
+    args.includes('test')
+  )
+  assert.deepEqual(testRun.args.at(-1), 'A-login.spec.ts')
+})
+
+test('explicit runtime profiles win over spec-file inference', () => {
+  const harness = createLauncherHarness()
+
+  runPlaywrightHost(
+    ['--runtime-profile', 'manage', 'A-login.spec.ts'],
+    harness.dependencies
+  )
+
+  const ensure = ensureCall(harness.calls)
+  assert.deepEqual(ensureArgs(ensure), [
+    'ensure',
+    harness.dependencies.root,
+    '--profile',
+    'manage',
+  ])
+})
+
+function readPhaseTimings(logs) {
+  const line = logs.find((entry) => entry.includes('elapsed preparation='))
+  assert.ok(line, 'phase timing line missing')
+  return Object.fromEntries(
+    [...line.matchAll(/(preparation|runtime|browser)=([\d.]+)ms/g)].map(
+      ([, phase, value]) => [phase, Number(value)]
+    )
+  )
+}
+
+test('phase timings are reported for successful and failed runs', () => {
+  const success = createLauncherHarness()
+  runPlaywrightHost(['A-login.spec.ts'], success.dependencies)
+  const completed = readPhaseTimings(success.logs)
+  assert.deepEqual(Object.keys(completed).sort(), [
+    'browser',
+    'preparation',
+    'runtime',
+  ])
+  assert.ok(completed.preparation > 0)
+  assert.ok(completed.runtime > 0)
+  assert.ok(completed.browser > 0)
+
+  const failure = createLauncherHarness({
+    failWhen: ({ command }) => command === 'sh',
+  })
+  assert.throws(
+    () => runPlaywrightHost(['A-login.spec.ts'], failure.dependencies),
+    /synthetic launcher failure/
+  )
+  const aborted = readPhaseTimings(failure.logs)
+  assert.ok(aborted.preparation > 0)
+  assert.ok(aborted.runtime > 0)
+  assert.equal(aborted.browser, 0)
+})
+
+test('phase timings separate the devrouter provider-queue wait', () => {
+  const harness = createLauncherHarness()
+  const baseReadFile = harness.dependencies.readFile
+  harness.dependencies.readFile = (path, encoding) => {
+    if (path.includes('playwright-host-ensure-')) {
+      return [
+        '[devrouter] Workspace is ready.',
+        'waiting in provider queue position 2 led by PID 1; waited 7s so far',
+        'waiting in provider queue position 2 led by PID 1; waited 42s so far',
+      ].join('\n')
+    }
+    return baseReadFile(path, encoding)
+  }
+
+  runPlaywrightHost(['A-login.spec.ts'], harness.dependencies)
+
+  const ensure = ensureCall(harness.calls)
+  assert.ok(
+    ensure.options.env.KLICKER_ENSURE_TELEMETRY.includes(
+      'playwright-host-ensure-'
+    )
+  )
+  assert.deepEqual(ensureArgs(ensure), [
+    'ensure',
+    harness.dependencies.root,
+    '--profile',
+    'chat,manage',
+  ])
+  const line = harness.logs.find((entry) =>
+    entry.includes('elapsed preparation=')
+  )
+  assert.match(line, /queue-wait≈42s/)
 })
 
 test('cold runs complete builds and browser preparation before reconciliation', () => {
@@ -718,11 +1371,7 @@ test('cold runs complete builds and browser preparation before reconciliation', 
       args.includes('playwright') &&
       args.includes('install')
   )
-  const ensure = commandIndex(
-    harness.calls,
-    '/synthetic/bin/devrouter',
-    'ensure'
-  )
+  const ensure = ensureIndex(harness.calls)
 
   assert.ok(stop >= 0)
   assert.ok(stop < install)
@@ -745,8 +1394,8 @@ test('cold preparation aborts before reconciliation when stopping fails', () => 
   )
   assert.equal(commandIndex(harness.calls, 'pnpm', 'install'), -1)
   assert.equal(
-    commandIndex(harness.calls, '/synthetic/bin/devrouter', 'ensure'),
-    -1
+    harness.calls.some(({ command }) => command === 'sh'),
+    false
   )
 })
 
@@ -765,8 +1414,8 @@ test('cold preparation aborts before reconciliation when install fails', () => {
     commandIndex(harness.calls, '/synthetic/bin/devrouter', 'stop') >= 0
   )
   assert.equal(
-    commandIndex(harness.calls, '/synthetic/bin/devrouter', 'ensure'),
-    -1
+    harness.calls.some(({ command }) => command === 'sh'),
+    false
   )
 })
 
@@ -788,8 +1437,8 @@ test('warm preparation aborts before reconciliation when a host build fails', ()
     -1
   )
   assert.equal(
-    commandIndex(harness.calls, '/synthetic/bin/devrouter', 'ensure'),
-    -1
+    harness.calls.some(({ command }) => command === 'sh'),
+    false
   )
 })
 
@@ -830,10 +1479,7 @@ test('print-env reconciles without dependency preparation', () => {
     commandIndex(harness.calls, '/synthetic/bin/devrouter', 'stop'),
     -1
   )
-  assert.equal(
-    commandIndex(harness.calls, '/synthetic/bin/devrouter', 'ensure') >= 0,
-    true
-  )
+  assert.ok(ensureCall(harness.calls))
   assert.equal(pnpmCalls(harness.calls).length, 0)
 })
 
@@ -847,8 +1493,8 @@ test('show-report does not reconcile the runtime', () => {
   runPlaywrightHost(['--show-report'], harness.dependencies)
 
   assert.equal(
-    commandIndex(harness.calls, '/synthetic/bin/devrouter', 'ensure'),
-    -1
+    harness.calls.some(({ command }) => command === 'sh'),
+    false
   )
   assert.ok(
     commandIndex(harness.calls, '/synthetic/bin/devrouter', 'stop') >= 0

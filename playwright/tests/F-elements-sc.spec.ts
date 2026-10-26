@@ -11,7 +11,6 @@ import { SC_DATA as SC } from '../util/constants.js'
 import { expect, test } from '../util/fixtures.js'
 import {
   clearEditorField,
-  clearRichTextField,
   fillAnswerField,
   fillEditorField,
   fillFeedbackField,
@@ -60,7 +59,7 @@ test.describe('Test creation and editing functionalities for Single Choice eleme
     await expect(page.getByTestId('save-new-question')).not.toBeDisabled()
 
     // Clearing answer option 1 should re-disable save
-    await clearRichTextField(page.getByTestId('insert-answer-field-1'))
+    await clearEditorField(page, 'insert-answer-field-1')
     await expect(page.getByTestId('save-new-question')).toBeDisabled()
 
     await fillAnswerField(page, 1, SC.choices[1])

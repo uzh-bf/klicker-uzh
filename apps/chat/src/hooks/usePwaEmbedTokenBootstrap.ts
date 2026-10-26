@@ -1,7 +1,7 @@
 'use client'
 
 import { bootstrapTokenFromUrl } from '@klicker-uzh/util/client-auth'
-import { usePathname, useRouter, useSearchParams } from 'next/navigation'
+import { usePathname, useSearchParams } from 'next/navigation'
 import { useEffect } from 'react'
 import {
   PWA_CHAT_EMBED_QUERY_KEY,
@@ -10,7 +10,6 @@ import {
 import { CHAT_GUEST_SESSION_STORAGE_KEY } from './useChatGuestTokenBootstrap'
 
 export function usePwaEmbedTokenBootstrap(): void {
-  const router = useRouter()
   const pathname = usePathname()
   const searchParams = useSearchParams()
 
@@ -31,6 +30,8 @@ export function usePwaEmbedTokenBootstrap(): void {
     } catch {}
 
     const qs = next.toString()
-    router.replace(qs ? `${pathname}?${qs}` : pathname)
-  }, [searchParams, pathname, router])
+    // URL cleanup must not trigger an unauthenticated server navigation when
+    // the embed relies on sessionStorage because cookies are unavailable.
+    window.history.replaceState(null, '', qs ? `${pathname}?${qs}` : pathname)
+  }, [searchParams, pathname])
 }

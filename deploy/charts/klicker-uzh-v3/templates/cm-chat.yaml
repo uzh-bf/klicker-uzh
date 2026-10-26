@@ -1,8 +1,14 @@
 {{- $fullName := include "chart.fullname" . -}}
-{{- $chatTelemetryEnabled := true -}}
-{{- if and .Values.chat.telemetry (hasKey .Values.chat.telemetry "enabled") -}}
-{{- $chatTelemetryEnabled = .Values.chat.telemetry.enabled -}}
+{{- $chatTelemetry := .Values.chat.telemetry | default dict -}}
+{{- if and $chatTelemetry.baseUrl (not (hasPrefix "https://" $chatTelemetry.baseUrl)) -}}
+{{- fail "chat.telemetry.baseUrl must use https://" -}}
 {{- end -}}
+{{- $chatTelemetryEnabled := false -}}
+{{- if and $chatTelemetry (hasKey $chatTelemetry "enabled") -}}
+{{- $chatTelemetryEnabled = $chatTelemetry.enabled -}}
+{{- end -}}
+{{- $langfuseRelease := .Values.global.imageTag | default .Values.chat.image.tag | default .Chart.AppVersion -}}
+{{- $scopedMcpEnv := include "chart.docQueryScopedMcpEnv" . -}}
 apiVersion: v1
 kind: ConfigMap
 metadata:
@@ -10,9 +16,21 @@ metadata:
   labels:
     {{- include "chart.labels" . | nindent 4 }}
 data:
+  COOKIE_DOMAIN: {{ .Values.backendGraphql.cookieDomain | quote }}
+  KB_FALKORDB_HOST: {{ .Values.backendGraphql.knowledgeGraph.host | quote }}
+  KB_FALKORDB_PORT: {{ .Values.backendGraphql.knowledgeGraph.port | quote }}
+  KB_FALKORDB_TLS: {{ .Values.backendGraphql.knowledgeGraph.tls | quote }}
+  KB_FALKORDB_QUERY_TIMEOUT_MS: {{ .Values.backendGraphql.knowledgeGraph.queryTimeoutMs | quote }}
   OPENAI_BASE_URL: {{ .Values.chat.openai.baseUrl | quote }}
   CHAT_OPENAI_STORE_RESPONSES: {{ .Values.chat.openai.storeResponses | default false | quote }}
   CHAT_ENABLE_AI_TELEMETRY: {{ $chatTelemetryEnabled | quote }}
+  LANGFUSE_RELEASE: {{ $langfuseRelease | quote }}
+  {{- if $chatTelemetry.environment }}
+  LANGFUSE_TRACING_ENVIRONMENT: {{ $chatTelemetry.environment | quote }}
+  {{- end }}
+  {{- if $chatTelemetry.baseUrl }}
+  LANGFUSE_BASE_URL: {{ $chatTelemetry.baseUrl | quote }}
+  {{- end }}
   CHAT_ACCOUNT_USAGE_ENFORCEMENT_ENABLED: {{ .Values.chat.accountUsageEnforcementEnabled | default false | quote }}
   DOC_QUERY_SCOPE_ISSUER: {{ .Values.chat.docQueryScope.issuer | quote }}
   DOC_QUERY_SCOPE_AUDIENCE: {{ .Values.chat.docQueryScope.audience | quote }}
@@ -20,6 +38,9 @@ data:
   RESPONSE_EXAMPLE_RECEIPT_ISSUER: {{ .Values.chat.responseExampleReceipt.issuer | quote }}
   RESPONSE_EXAMPLE_RECEIPT_AUDIENCE: {{ .Values.chat.responseExampleReceipt.audience | quote }}
   RESPONSE_EXAMPLE_RECEIPT_KID: {{ .Values.chat.responseExampleReceipt.keyId | quote }}
+  {{- if $scopedMcpEnv }}
+  {{- $scopedMcpEnv | nindent 2 }}
+  {{- end }}
   {{- if .Values.chat.lifecycleWritersEnabled }}
   CHAT_TURN_LIFECYCLE_WRITES_ENABLED: "true"
   {{- end }}

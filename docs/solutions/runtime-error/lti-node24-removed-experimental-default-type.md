@@ -8,7 +8,7 @@ symptoms:
   - 'The container exited immediately with: node: bad option: --experimental-default-type=module'
   - 'https://lti.klicker.stg.df-app.ch returned a 503 with the HAProxy body "No server is available to handle this request."'
   - 'ArgoCD reported app-klicker as Synced but Progressing rather than Healthy.'
-root_cause: 'The lti Dockerfile CMD passed --experimental-default-type=module, a flag Node removed before the base image was bumped to node:24.16.0-alpine. The flag was already redundant because apps/lti/package.json declares "type": "module" and turbo prune copies it into the runner image.'
+root_cause: 'The lti Dockerfile CMD passed --experimental-default-type=module, a flag Node removed before the base image was bumped to a Node 24 Alpine tag. The flag was already redundant because apps/lti/package.json declares "type": "module" and turbo prune copies it into the runner image.'
 tags:
   - node24
   - docker

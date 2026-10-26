@@ -175,7 +175,7 @@ valid_next_app() {
 
 probe_url() {
   case "$1" in
-    auth) echo 'http://localhost:3010/' ;;
+    auth) echo 'http://localhost:3010/api/auth/providers' ;;
     chat) echo "$CHAT_PROBE_URL" ;;
     frontend-control) echo 'http://localhost:3003/login' ;;
     frontend-manage) echo 'http://localhost:3002/login' ;;
@@ -186,14 +186,15 @@ probe_url() {
   esac
 }
 
-# Chat proves its nested dynamic API route graph through the authentication
-# contract above. The other apps prove their static route table through a
-# committed shell page that renders HTML without database content, so a 404
-# there can never be a legitimate data-driven miss.
+# Auth and Chat prove their dynamic API route graphs through authentication
+# endpoints. Pages apps first prove their dynamic development inventory,
+# then a committed shell page without database content. A shell 404 cannot be
+# a legitimate data-driven miss, but an incomplete inventory is not cache damage.
 probe_mode() {
   case "$1" in
+    auth) echo 'auth-providers-json' ;;
     chat) echo 'auth-json' ;;
-    auth | frontend-control | frontend-manage | frontend-pwa)
+    frontend-control | frontend-manage | frontend-pwa)
       echo 'html-shell'
       ;;
     mcp-lecturer) echo 'health-text' ;;
@@ -306,7 +307,8 @@ prepare_runtime() {
   done
   ensure_dependencies
   echo '[dev-runtime] Building selected application dependencies before startup.'
-  (cd "$ROOT" && pnpm exec turbo run build "$@")
+  # Invoke the installed binary directly to avoid pnpm wrapper children.
+  (cd "$ROOT" && ./node_modules/.bin/turbo run build "$@")
   # Turbo can return before its Git subprocess exits. Preparation must leave
   # no live children for the managed process lifecycle to accept it.
   local preparation_pgid preparation_deadline preparation_processes
@@ -380,7 +382,7 @@ classify_response() {
       echo "ready: HTTP $status redirect"
       return 0
     fi
-  elif [ "$mode" = 'health-json' ]; then
+  elif [ "$mode" = 'health-json' ] || [ "$mode" = 'auth-providers-json' ]; then
     if [ "$status" = '200' ] && [[ "$content_type" == application/json* ]]; then
       echo "ready: HTTP $status $content_type"
       return 0
@@ -406,10 +408,38 @@ classify_response() {
 
 probe_app() {
   local app="$1" timeout="${2:-15}" mode url response status content_type curl_status=0
+  local deadline=$((SECONDS + timeout)) inventory inventory_status=0
 
   mode="$(probe_mode "$app")" || die "No probe contract is defined for: $app"
   url="$(probe_url "$app")" || die "No probe URL is defined for: $app"
   require_tool curl
+  if [ "$mode" = 'html-shell' ] && [ "${DEV_TURBO_TASK:-dev}" = dev ]; then
+    require_tool node
+    response="$(curl --silent --show-error --output - \
+      --write-out $'\n%{http_code}\t%{content_type}' \
+      --connect-timeout 2 --max-time "$timeout" --noproxy '*' \
+      "${url%/*}/_next/static/development/_devPagesManifest.json" 2>/dev/null)" || curl_status=$?
+    if [ "$curl_status" -ne 0 ]; then
+      echo "waiting: $app development inventory transport failed (curl $curl_status)"
+      return "$WAITING_STATUS"
+    fi
+    inventory="${response%$'\n'*}"
+    response="${response##*$'\n'}"
+    status="${response%%$'\t'*}"
+    content_type="${response#*$'\t'}"
+    if [ "$status" != 200 ] || [[ "${content_type,,}" != application/json* ]]; then
+      echo "unexpected: $app development inventory HTTP $status ${content_type:-unknown-content-type}"
+      return "$UNEXPECTED_STATUS"
+    fi
+    node "$(dirname "$SCRIPT_PATH")/check-dev-pages-manifest.mjs" \
+      "$ROOT/apps/$app/src/pages" <<<"$inventory" || inventory_status=$?
+    [ "$inventory_status" -eq 0 ] || return "$inventory_status"
+    timeout=$((deadline - SECONDS))
+    if [ "$timeout" -le 0 ]; then
+      echo "waiting: $app readiness request budget exhausted"
+      return "$WAITING_STATUS"
+    fi
+  fi
   response="$(curl --silent --show-error --output /dev/null \
     --write-out $'%{http_code}\t%{content_type}' \
     --connect-timeout 2 --max-time "$timeout" --noproxy '*' \
@@ -545,6 +575,12 @@ start_runtime() {
   [ "$expected_generation" = "$(read_generation)" ] ||
     die "Runtime generation changed before process start; rerun devrouter ensure."
 
+  # The managed helper redirects this shell's stderr into the process log, so
+  # the marker proves the start path was reached even when the runtime command
+  # dies before printing anything.
+  printf '[dev-runtime] start requested (generation %s, fingerprint %s): %s\n' \
+    "$expected_generation" "${expected_fingerprint:0:12}" "$*" >&2
+
   ensure_dependencies
   apply_cache_policy
   exec "$@"
@@ -565,7 +601,7 @@ Usage:
   util/dev-runtime.sh prepare <dependency-filter> [dependency-filter...]
   util/dev-runtime.sh request-repair <next-app>
   util/dev-runtime.sh start <fingerprint> <generation> -- <command> [args...]
-  util/dev-runtime.sh classify-response <auth-json|html-shell|health-json|health-text> <status> <content-type>
+  util/dev-runtime.sh classify-response <auth-json|auth-providers-json|html-shell|health-json|health-text> <status> <content-type>
   util/dev-runtime.sh probe-app <runtime-app>
   util/dev-runtime.sh wait-app <runtime-app>
   util/dev-runtime.sh doctor

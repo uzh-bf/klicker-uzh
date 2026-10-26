@@ -18,6 +18,7 @@ import * as GroupService from '../services/groups.js'
 import * as KnowledgeService from '../services/knowledge.js'
 import * as LiveQuizService from '../services/liveQuizzes.js'
 import * as MicroLearningService from '../services/microLearning.js'
+import { getParticipantAccountDataUse } from '../services/participantAccountDataUse.js'
 import * as ParticipantInvitationService from '../services/participantInvitations.js'
 import * as ParticipantService from '../services/participants.js'
 import * as PracticeQuizService from '../services/practiceQuizzes.js'
@@ -87,12 +88,14 @@ import {
 } from './groupActivity.js'
 import {
   KBKnowledgeGraphConfigType,
+  KBKnowledgeGraphDomainConfigType,
   KnowledgeGraphResponseType,
 } from './kbKnowledgeGraph.js'
 import {
   KB,
   KBChatbotBinding,
   KBConnection,
+  KBImportedSourceConnection,
   KBIngestionRun,
   KBIngestionStatus,
   KBResourceConnection,
@@ -110,6 +113,7 @@ import { MicroLearning } from './microLearning.js'
 import { ManageAiCapabilityState } from './manageAi.js'
 import {
   Participant,
+  ParticipantAccountDataUse,
   ParticipantGroup,
   ParticipantLearningData,
   ParticipantWithAchievements,
@@ -128,9 +132,11 @@ import {
 import {
   AnswerCollection,
   AnswerCollectionPreviewEntry,
+  ChatbotAuthoringRevision,
   ChatAccountUsageOverviewRef,
   Chatbot,
   ChatbotPublic,
+  ChatbotPublicationReview,
   ChatModelCapability,
 } from './resource.js'
 import { ResponseExampleSet } from './responseExample.js'
@@ -181,6 +187,12 @@ export const Query = builder.queryType({
         type: Participant,
         args: { liveQuizId: t.arg.string({ required: false }) },
         resolve: async (_, args, ctx) => ParticipantService.getSelf(args, ctx),
+      }),
+
+      selfAccountDataUse: t.withAuth(asParticipant).field({
+        nullable: true,
+        type: ParticipantAccountDataUse,
+        resolve: (_, _args, ctx) => getParticipantAccountDataUse(ctx),
       }),
 
       selfWithAchievements: t.withAuth(asParticipant).field({
@@ -1560,6 +1572,22 @@ export const Query = builder.queryType({
         },
       }),
 
+      getKbImportedSources: t.withAuth(asUser).field({
+        nullable: false,
+        type: KBImportedSourceConnection,
+        args: {
+          kbId: t.arg.id({ required: true }),
+          first: t.arg.int({ required: false }),
+          after: t.arg.string({ required: false }),
+        },
+        resolve: async (_, args, ctx) => {
+          return await KnowledgeService.getKbImportedSourcesConnection(
+            args,
+            ctx
+          )
+        },
+      }),
+
       getKbChatbotBindings: t.withAuth(asUser).field({
         nullable: false,
         type: [KBChatbotBinding],
@@ -1584,6 +1612,18 @@ export const Query = builder.queryType({
         args: { kbId: t.arg.id({ required: true }) },
         resolve: async (_, args, ctx) => {
           return await KnowledgeService.getKbKnowledgeGraphConfig(args, ctx)
+        },
+      }),
+
+      getKbKnowledgeGraphDomainConfig: t.withAuth(asUserFullAccess).field({
+        nullable: false,
+        type: KBKnowledgeGraphDomainConfigType,
+        args: { kbId: t.arg.id({ required: true }) },
+        resolve: async (_, args, ctx) => {
+          return await KnowledgeService.getKbKnowledgeGraphDomainConfig(
+            args,
+            ctx
+          )
         },
       }),
 
@@ -1670,11 +1710,32 @@ export const Query = builder.queryType({
         },
       }),
 
+      getPendingChatbotPublications: t.withAuth(asAdmin).field({
+        type: [ChatbotPublicationReview],
+        resolve: (_, _args, ctx) =>
+          ChatbotsService.getPendingChatbotPublications(ctx),
+      }),
+
       getChatbotsInfo: t.withAuth(asUser).field({
         nullable: true,
         type: [Chatbot],
         resolve: async (_, __, ctx) => {
           return await ChatbotsService.getChatbotsInfo(ctx)
+        },
+      }),
+
+      getChatbotPendingRevision: t.withAuth(asAdmin).field({
+        nullable: true,
+        type: ChatbotAuthoringRevision,
+        args: {
+          id: t.arg.string({ required: true }),
+          expectedRevisionVersion: t.arg.int({
+            required: false,
+            validate: { min: 0 },
+          }),
+        },
+        resolve: async (_, args, ctx) => {
+          return await ChatbotsService.getChatbotPendingRevision(args, ctx)
         },
       }),
 

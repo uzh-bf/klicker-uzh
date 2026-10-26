@@ -1,5 +1,5 @@
 import { randomUUID } from 'node:crypto'
-import { prisma } from '@klicker-uzh/prisma'
+import { prisma, requireDisposableDatabase } from '@klicker-uzh/prisma'
 import * as DB from '@klicker-uzh/prisma/client'
 import type {
   GeneratedFlashcard,
@@ -31,11 +31,13 @@ function question(
 ): GeneratedQuestionWithProvenance {
   return {
     sourceQuestionId: 'question-1',
+    suggestedTags: ['synthetic-topic'],
     itemType,
     name: 'Synthetic question',
     stem: 'Choose the correct answer',
     context: null,
     explanation: 'Explanation',
+    tags: ['synthetic-question'],
     choices: Array.from(
       { length: itemType === 'MC' ? 5 : itemType === 'KPRIM' ? 4 : 2 },
       (_, index) => ({
@@ -105,6 +107,7 @@ function complete(
           buildId,
           leaseOwner,
           questions: [{ ...question(), provenance: null }],
+          resultStatus: 'completed',
           resultManifestArtifact: artifact,
           finalBankArtifact: artifact,
           questionProvenanceIndexArtifact: null,
@@ -231,6 +234,7 @@ async function bounded<T>(promise: Promise<T>): Promise<T> {
 
 describe('initial Element completion', () => {
   beforeEach(async () => {
+    await requireDisposableDatabase(prisma)
     ownerId = randomUUID()
     const kbId = randomUUID()
     graphBuildId = randomUUID()
@@ -255,6 +259,7 @@ describe('initial Element completion', () => {
     })
   })
   afterEach(async () => {
+    await requireDisposableDatabase(prisma)
     await prisma.user.delete({ where: { id: ownerId } })
   })
   afterAll(async () => {
@@ -276,6 +281,7 @@ describe('initial Element completion', () => {
       predictedDifficulty,
       qualityFlags,
       citations,
+      suggestedTags,
       ...current
     } = generated
     const { provenance: _provenance, ...original } = generated
@@ -285,6 +291,7 @@ describe('initial Element completion', () => {
         buildId: build.id,
         leaseOwner: build.syncLeaseOwner!,
         questions: [generated],
+        resultStatus: 'completed',
         resultManifestArtifact: artifact,
         finalBankArtifact: artifact,
         questionProvenanceIndexArtifact: artifact,
@@ -320,7 +327,124 @@ describe('initial Element completion', () => {
       lastSynchronizedAt: expect.any(Date),
     })
     expect(after.spends).toEqual([])
+    expect(after.drafts[0]?.original).toMatchObject({ suggestedTags })
+    expect(after.drafts[0]?.current).not.toHaveProperty('suggestedTags')
     expect(await prisma.element.count({ where: { ownerId } })).toBe(0)
+  })
+
+  it('settles a partial question build as incomplete and persists its attention cards', async () => {
+    const build = await createBuild('question', { requestedElementCount: 2 })
+    await completeElementGeneration(
+      {
+        kind: 'questions',
+        buildId: build.id,
+        leaseOwner: build.syncLeaseOwner!,
+        questions: [{ ...question(), provenance: null }],
+        resultStatus: 'incomplete',
+        unresolvedElementCount: 1,
+        slotFailures: [
+          {
+            slotId: 'q02',
+            moduleId: 'M1',
+            objective: 'Explain malolactic fermentation.',
+            objectiveSource: 'provided',
+            requestedLevel: 'remember',
+            evidenceTarget: 'wine-chemistry.pdf#page=3',
+            reasonCode: 'NO_SUPPORTING_DOCUMENTS',
+            failureClass: 'user_input',
+            detail: null,
+            suggestions: ['Malolactic fermentation'],
+          },
+        ],
+        resultManifestArtifact: artifact,
+        finalBankArtifact: artifact,
+        questionProvenanceIndexArtifact: null,
+      },
+      context()
+    )
+    const after = await snapshot(build.id)
+    expect(after.build).toMatchObject({
+      status: 'INCOMPLETE',
+      stage: 'incomplete',
+      generatedElementCount: 1,
+      unresolvedElementCount: 1,
+      planSummary: {
+        slotFailures: [
+          expect.objectContaining({
+            slotId: 'q02',
+            reasonCode: 'NO_SUPPORTING_DOCUMENTS',
+            failureClass: 'user_input',
+          }),
+        ],
+      },
+    })
+    // The passing question is delivered for review; nothing is published.
+    expect(after.drafts).toHaveLength(1)
+    expect(after.drafts[0]).toMatchObject({ decision: 'OPEN' })
+    expect(await prisma.element.count({ where: { ownerId } })).toBe(0)
+  })
+
+  it('keeps a strict question build free of attention cards', async () => {
+    const build = await createBuild('question')
+    await completeElementGeneration(
+      {
+        kind: 'questions',
+        buildId: build.id,
+        leaseOwner: build.syncLeaseOwner!,
+        questions: [{ ...question(), provenance: null }],
+        resultStatus: 'completed',
+        unresolvedElementCount: 0,
+        slotFailures: [],
+        resultManifestArtifact: artifact,
+        finalBankArtifact: artifact,
+        questionProvenanceIndexArtifact: null,
+      },
+      context()
+    )
+    const after = await snapshot(build.id)
+    expect(after.build).toMatchObject({
+      status: 'COMPLETED',
+      stage: 'completed',
+      unresolvedElementCount: 0,
+    })
+    expect(after.build.planSummary).toBeNull()
+  })
+
+  it('rolls back a partial publication that lost its lease without attention cards', async () => {
+    const build = await createBuild('question', { requestedElementCount: 2 })
+    const before = await snapshot(build.id)
+    await expect(
+      completeElementGeneration(
+        {
+          kind: 'questions',
+          buildId: build.id,
+          leaseOwner: randomUUID(),
+          questions: [{ ...question(), provenance: null }],
+          resultStatus: 'incomplete',
+          unresolvedElementCount: 1,
+          slotFailures: [
+            {
+              slotId: 'q02',
+              moduleId: 'M1',
+              objective: 'Explain malolactic fermentation.',
+              objectiveSource: 'provided',
+              requestedLevel: 'remember',
+              evidenceTarget: 'wine-chemistry.pdf#page=3',
+              reasonCode: 'NO_SUPPORTING_DOCUMENTS',
+              failureClass: 'user_input',
+              detail: null,
+              suggestions: ['Malolactic fermentation'],
+            },
+          ],
+          resultManifestArtifact: artifact,
+          finalBankArtifact: artifact,
+          questionProvenanceIndexArtifact: null,
+        },
+        context()
+      )
+    ).rejects.toMatchObject(leaseError('question'))
+    // A failed publication leaves neither drafts nor persisted attention cards.
+    expect(await snapshot(build.id)).toEqual(before)
   })
 
   it.each(

@@ -34,6 +34,7 @@ const build: Parameters<typeof getKBGraphBuildConfig>[1] = {
   actualRequestCount: 2,
   costCurrency: 'CHF',
   costStatus: null,
+  focusTopic: null,
   quotaId: '22222222-2222-4222-8222-222222222222',
   quota: {
     currency: 'CHF',
@@ -73,5 +74,153 @@ describe('KB knowledge graph config', () => {
     expect(result.quotaCurrency).toBe('USD')
     expect(result.remainingSemesterQuotaMinorUnits).toBe(750)
     expect(result.elementGenerationReady).toBe(true)
+  })
+
+  it.each([
+    { direction: 'raised', grantedLimit: 900, effectiveLimit: 1000 },
+    { direction: 'equal', grantedLimit: 1000, effectiveLimit: 1000 },
+    { direction: 'lowered', grantedLimit: 1200, effectiveLimit: 1200 },
+  ])('stays ready and reports the effective limit when the configured quota is $direction', ({
+    grantedLimit,
+    effectiveLimit,
+  }) => {
+    const costConfiguration = getKBGraphCostConfiguration(costEnv)
+    const result = getKBGraphBuildConfig(
+      {
+        id: '33333333-3333-4333-8333-333333333333',
+        knowledgeGraphEnabled: true,
+        activeGraphBuildId: null,
+        publishedGraphBuildId: build.id,
+      },
+      build,
+      false,
+      {
+        currency: 'CHF',
+        limitMinorUnits: grantedLimit,
+        reservedMinorUnits: 100,
+        settledMinorUnits: 50,
+      },
+      costConfiguration,
+      true
+    )
+
+    expect(result.costConfigurationReady).toBe(true)
+    expect(result.semesterQuotaMinorUnits).toBe(effectiveLimit)
+    expect(result.remainingSemesterQuotaMinorUnits).toBe(effectiveLimit - 150)
+  })
+
+  it('reports a legacy all-null build without any domain selection', () => {
+    const costConfiguration = getKBGraphCostConfiguration(costEnv)
+    const result = getKBGraphBuildConfig(
+      {
+        id: '33333333-3333-4333-8333-333333333333',
+        knowledgeGraphEnabled: true,
+        activeGraphBuildId: null,
+        publishedGraphBuildId: null,
+      },
+      {
+        ...build,
+        domainPolicyId: null,
+        domainPolicyVersion: null,
+        domainPolicyLanguage: null,
+      },
+      false,
+      null,
+      costConfiguration,
+      false
+    )
+
+    expect(result).toMatchObject({
+      domainPolicyId: null,
+      domainPolicyVersion: null,
+      domainPolicyLanguage: null,
+      publishedDomainPolicyId: null,
+      publishedDomainPolicyVersion: null,
+      publishedDomainPolicyLanguage: null,
+      domainCategories: null,
+      focusTopic: null,
+    })
+  })
+
+  it('reports the selected and published domain metadata separately', () => {
+    const costConfiguration = getKBGraphCostConfiguration(costEnv)
+    const result = getKBGraphBuildConfig(
+      {
+        id: '33333333-3333-4333-8333-333333333333',
+        knowledgeGraphEnabled: true,
+        activeGraphBuildId: null,
+        publishedGraphBuildId: '44444444-4444-4444-8444-444444444444',
+      },
+      {
+        ...build,
+        domainPolicyId: 'mathematics',
+        domainPolicyVersion: 1,
+        domainPolicyLanguage: 'German',
+      },
+      false,
+      null,
+      costConfiguration,
+      false,
+      {
+        domainPolicyId: 'informatics',
+        domainPolicyVersion: 1,
+        domainPolicyLanguage: 'English',
+      }
+    )
+
+    // The reported build and the published build may carry different frozen
+    // selections; neither may overwrite the other.
+    expect(result.domainPolicyId).toBe('mathematics')
+    expect(result.domainPolicyVersion).toBe(1)
+    expect(result.domainPolicyLanguage).toBe('German')
+    expect(result.publishedDomainPolicyId).toBe('informatics')
+    expect(result.publishedDomainPolicyVersion).toBe(1)
+    expect(result.publishedDomainPolicyLanguage).toBe('English')
+    expect(result.domainCategories).not.toBeNull()
+    expect(result.domainCategories!.length).toBeGreaterThan(0)
+  })
+
+  it('does not describe categories for a persisted selection the catalog dropped', () => {
+    const costConfiguration = getKBGraphCostConfiguration(costEnv)
+    const result = getKBGraphBuildConfig(
+      {
+        id: '33333333-3333-4333-8333-333333333333',
+        knowledgeGraphEnabled: true,
+        activeGraphBuildId: null,
+        publishedGraphBuildId: null,
+      },
+      {
+        ...build,
+        domainPolicyId: 'retired-policy',
+        domainPolicyVersion: 1,
+        domainPolicyLanguage: 'German',
+      },
+      false,
+      null,
+      costConfiguration,
+      false
+    )
+
+    expect(result.domainPolicyId).toBe('retired-policy')
+    expect(result.domainCategories).toBeNull()
+  })
+
+  it('reports the focus recorded on the build', () => {
+    const costConfiguration = getKBGraphCostConfiguration(costEnv)
+    const result = getKBGraphBuildConfig(
+      {
+        id: '33333333-3333-4333-8333-333333333333',
+        knowledgeGraphEnabled: true,
+        activeGraphBuildId: null,
+        publishedGraphBuildId: null,
+      },
+      { ...build, focusTopic: 'Capital budgeting' },
+      false,
+      null,
+      costConfiguration,
+      false
+    )
+
+    expect(result.focusTopic).toBe('Capital budgeting')
   })
 })

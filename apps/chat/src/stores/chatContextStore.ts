@@ -1,16 +1,20 @@
-import type { KlickerChatContext } from '@klicker-uzh/types'
+import type { KlickerChatContextV2 } from '@klicker-uzh/types'
 import { create } from 'zustand'
 
 type ChatContextState = {
-  context: KlickerChatContext | null
+  context: KlickerChatContextV2 | null
   parentOrigin: string | null
-  setContext: (context: KlickerChatContext, parentOrigin: string) => void
-  clearContext: () => void
+  contextUnavailable: boolean
+  setContext: (context: KlickerChatContextV2, parentOrigin: string) => void
+  clearContext: (unavailable?: boolean) => void
 }
 
 export const useChatContextStore = create<ChatContextState>((set) => ({
   context: null,
   parentOrigin: null,
-  setContext: (context, parentOrigin) => set({ context, parentOrigin }),
-  clearContext: () => set({ context: null, parentOrigin: null }),
+  contextUnavailable: false,
+  setContext: (context, parentOrigin) =>
+    set({ context, parentOrigin, contextUnavailable: false }),
+  clearContext: (unavailable = false) =>
+    set({ context: null, parentOrigin: null, contextUnavailable: unavailable }),
 }))

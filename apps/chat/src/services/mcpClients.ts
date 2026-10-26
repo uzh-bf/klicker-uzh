@@ -15,11 +15,18 @@ import {
   RequiredMCPUnavailableError,
 } from '@/src/lib/server/mcpRuntimePolicy'
 import {
+  sanitizeDocQueryResult,
+  serializeDocQueryExecution,
+} from './docQueryResult'
+import {
   assertDocQueryRequestScope,
   assertDocQueryTransportSecurity,
+  createDocQueryScopedFetch,
   DOC_QUERY_MCP_SERVER_NAME,
   DOC_QUERY_SCOPE_TOKEN_HEADER,
+  type DocQueryScopedFetch,
   normalizeDocQueryKbIds,
+  resolveDocQueryScopedRoute,
 } from './mcpScope'
 
 // Type definitions for MCP server configuration
@@ -49,9 +56,13 @@ export interface MCPServerWithConfig {
 export interface MCPRequestContext {
   chatbotId: string
   participantId?: string
+  /** Manage user running an owner preview; never combined with participantId. */
+  ownerPreviewUserId?: string
+  courseId?: string
   authMode: AuthMode
   kbIds?: readonly string[]
   sessionId?: string
+  knowledgeGraphRetrievalEnabled?: boolean
 }
 
 export interface MCPRequestOptions {
@@ -63,6 +74,31 @@ export interface MCPRequestOptions {
 export interface MCPToolsHandle {
   tools: Record<string, any>
   close: () => Promise<void>
+}
+
+const MCP_AUTHORIZATION_STATUS_CODES = new Set([401, 403])
+
+/**
+ * The MCP SDK surfaces an HTTP credentials rejection as an `UnauthorizedError`,
+ * a streamable-HTTP error carrying a numeric `code`, or a client error with
+ * `statusCode`. Those are identity or tenant boundaries rather than transient
+ * outages, so a required-tool caller must keep them fail-closed.
+ */
+function isMcpAuthorizationError(error: unknown): boolean {
+  if (!error || typeof error !== 'object') return false
+  if ((error as { name?: unknown }).name === 'UnauthorizedError') return true
+
+  for (const key of ['statusCode', 'code'] as const) {
+    const value = (error as Record<string, unknown>)[key]
+    if (
+      typeof value === 'number' &&
+      MCP_AUTHORIZATION_STATUS_CODES.has(value)
+    ) {
+      return true
+    }
+  }
+
+  return false
 }
 
 const HTTP_HEADER_NAME_PATTERN = /^[!#$%&'*+\-.^_`|~0-9A-Za-z]+$/
@@ -131,6 +167,12 @@ function toSafeToolName(
   return candidate
 }
 
+function createBaseHeaders(): Record<string, string> {
+  return Object.assign(Object.create(null), {
+    'Content-Type': 'application/json',
+  }) as Record<string, string>
+}
+
 async function applyDocQueryAuthHeaders(
   headers: Record<string, string>,
   server: MCPServerConfig,
@@ -165,6 +207,53 @@ async function applyDocQueryAuthHeaders(
   return true
 }
 
+interface MCPTransportRequest {
+  url: string
+  headers: Record<string, string>
+  fetch?: DocQueryScopedFetch
+}
+
+/**
+ * Binds the modern KB server to the deployment-controlled scoped route. The
+ * stored bearer and its auth type are ignored in this mode: destination and
+ * credential both come from configuration, so a database URL edit or an
+ * expired stored credential can neither redirect nor weaken the request.
+ * Absent configuration keeps the legacy transport bearer; a partial or
+ * inconsistent configuration throws before any credential is handed out.
+ */
+function createScopedDocQueryTransport(
+  server: MCPServerConfig,
+  context: MCPRequestContext
+): MCPTransportRequest | undefined {
+  if (server.name !== DOC_QUERY_MCP_SERVER_NAME) return undefined
+
+  const target = resolveDocQueryScopedRoute(server)
+  if (!target) return undefined
+
+  if (
+    !context.kbIds ||
+    !context.sessionId ||
+    typeof context.sessionId !== 'string' ||
+    context.sessionId.trim().length === 0
+  ) {
+    throw new Error('Scoped knowledge retrieval is not available')
+  }
+
+  const kbIds = normalizeDocQueryKbIds(context.kbIds)
+
+  return {
+    url: target.href,
+    headers: createBaseHeaders(),
+    fetch: createDocQueryScopedFetch({
+      target,
+      kbIds,
+      chatbotId: context.chatbotId,
+      sessionId: context.sessionId,
+      signToken: signDocQueryScopeToken,
+    }),
+  }
+}
+
 /**
  * Creates authentication headers based on server auth type
  */
@@ -172,9 +261,7 @@ export async function createAuthHeaders(
   server: MCPServerConfig,
   context: MCPRequestContext
 ): Promise<Record<string, string>> {
-  const baseHeaders = Object.assign(Object.create(null), {
-    'Content-Type': 'application/json',
-  }) as Record<string, string>
+  const baseHeaders = createBaseHeaders()
   const authType = server.authType.toLowerCase()
 
   if (await applyDocQueryAuthHeaders(baseHeaders, server, context, authType)) {
@@ -317,14 +404,18 @@ export async function createMCPClient(
   )
 
   try {
-    const headers = await createAuthHeaders(server, context)
+    const scopedTransport = createScopedDocQueryTransport(server, context)
+    const headers = scopedTransport
+      ? scopedTransport.headers
+      : await createAuthHeaders(server, context)
 
     const client = await createSDKMCPClient({
       transport: {
         type: 'http',
-        url: server.url,
+        url: scopedTransport ? scopedTransport.url : server.url,
         headers,
         redirect: 'error',
+        ...(scopedTransport?.fetch ? { fetch: scopedTransport.fetch } : {}),
       },
       ...(options.requestTimeoutMs !== undefined
         ? { initializationOptions: { timeout: options.requestTimeoutMs } }
@@ -418,6 +509,51 @@ async function loadServerTools(
     }
     client = await createMCPClient(server, context, options)
     const rawTools = await client.tools()
+    // Serialize the raw client calls, including graph-expanded searches. An
+    // augmentation timeout must not release an unfinished provider operation.
+    for (const [name, tool] of Object.entries(rawTools)) {
+      if (
+        (name === 'doc_query' ||
+          (name === requiredRawToolName &&
+            runtimePolicy.required &&
+            runtimePolicy.toolAlias === 'doc_query')) &&
+        typeof tool.execute === 'function'
+      ) {
+        const execute = tool.execute.bind(tool)
+        rawTools[name] = {
+          ...tool,
+          execute: serializeDocQueryExecution(execute) as typeof execute,
+        }
+      }
+    }
+    if (
+      server.name === DOC_QUERY_MCP_SERVER_NAME &&
+      context.knowledgeGraphRetrievalEnabled === true
+    ) {
+      const rawName = requiredRawToolName ?? 'doc_query'
+      const tool = rawTools[rawName]
+      if (tool && typeof tool.execute === 'function') {
+        const [{ graphAssistedDocumentQuery }, { graphQueryDependencies }] =
+          await Promise.all([
+            import('./graphAssistedDocQuery'),
+            import('./graphQueryScope'),
+          ])
+        const execute = tool.execute.bind(tool)
+        const dependencies = graphQueryDependencies(context)
+        dependencies.observe = (diagnostic) => {
+          console.info('[chat.graph_retrieval]', diagnostic)
+        }
+        rawTools[rawName] = {
+          ...tool,
+          // MCP callTool resolves one response. The SDK's generic tool type
+          // also permits streaming implementations, which this client does not use.
+          execute: graphAssistedDocumentQuery(
+            execute,
+            dependencies
+          ) as typeof execute,
+        }
+      }
+    }
 
     if (runtimePolicy.required && requiredRawToolName) {
       const rawToolName = requiredRawToolName
@@ -449,7 +585,19 @@ async function loadServerTools(
           modelToolName,
           usedNames
         )
-        filteredTools[namespacedName] = toolDefinition
+        filteredTools[namespacedName] =
+          (toolName === 'doc_query' || modelToolName === 'doc_query') &&
+          typeof toolDefinition.execute === 'function'
+            ? {
+                ...toolDefinition,
+                execute: async (
+                  ...args: Parameters<
+                    NonNullable<typeof toolDefinition.execute>
+                  >
+                ) =>
+                  sanitizeDocQueryResult(await toolDefinition.execute(...args)),
+              }
+            : toolDefinition
         usedNames.add(namespacedName)
       }
     })
@@ -460,12 +608,20 @@ async function loadServerTools(
     return { tools: filteredTools, close }
   } catch (error) {
     await close()
-    if (
-      error instanceof RequiredMCPUnavailableError ||
-      runtimePolicy.required
-    ) {
+    if (error instanceof RequiredMCPUnavailableError) {
       console.error('Required MCP tools unavailable', { server: server.name })
-      throw new RequiredMCPUnavailableError()
+      // Preserve a scope violation raised while resolving the request so the
+      // caller cannot degrade an isolation failure into an answer.
+      throw error
+    }
+    if (runtimePolicy.required) {
+      console.error('Required MCP tools unavailable', { server: server.name })
+      // A credentials rejection from the endpoint is an identity or tenant
+      // boundary, so it stays fail-closed like a scope violation; only a
+      // genuine outage may fall through to a degraded answer.
+      throw new RequiredMCPUnavailableError(
+        isMcpAuthorizationError(error) ? 'scope_violation' : 'unavailable'
+      )
     }
 
     console.error('Optional MCP tools unavailable', { server: server.name })
@@ -549,50 +705,4 @@ export async function getAggregatedMCPTools(
   console.log('Available tools:', Object.keys(aggregatedTools))
 
   return { tools: aggregatedTools, close }
-}
-
-/**
- * Legacy function for backward compatibility with environment variables
- * @deprecated Use getAggregatedMCPTools with database configuration instead
- */
-export async function getMCPTools(
-  chatbotId: string,
-  participantId: string,
-  authMode: AuthMode
-): Promise<MCPToolsHandle> {
-  console.log(' Using legacy MCP configuration from environment variables')
-
-  const mcpKey = process.env.MCP_KEY
-  const mcpUrl = process.env.MCP_URL
-
-  if (!mcpUrl) {
-    console.log('No MCP_URL environment variable found, returning empty tools')
-    return { tools: {}, close: async () => {} }
-  }
-
-  // Create a legacy server configuration
-  const legacyServer: MCPServerConfig = {
-    id: 'legacy-env-server',
-    name: 'Legacy_MCP',
-    url: mcpUrl,
-    authType: mcpKey ? 'bearer' : 'none',
-    authSecret: mcpKey,
-  }
-
-  const legacyConfig: MCPConfigSettings = {
-    allowedTools: undefined, // No filtering for legacy mode
-    priority: 0,
-  }
-
-  try {
-    const serverHandle = await loadServerTools(
-      { server: legacyServer, config: legacyConfig },
-      { chatbotId, participantId, authMode },
-      {}
-    )
-    return serverHandle
-  } catch (error) {
-    console.error('Failed to load legacy MCP Tools:', error)
-    return { tools: {}, close: async () => {} }
-  }
 }

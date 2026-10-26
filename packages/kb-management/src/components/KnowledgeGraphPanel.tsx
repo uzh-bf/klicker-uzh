@@ -1,29 +1,29 @@
 'use client'
 
-import {
-  ApolloError,
-  useApolloClient,
-  useMutation,
-  useQuery,
-} from '@apollo/client'
+import { useApolloClient, useMutation, useQuery } from '@apollo/client'
 import type {
-  GetKbKnowledgeGraphNeighborsQuery,
-  GetKbKnowledgeGraphOverviewQuery,
+  GetKbKnowledgeGraphNeighborsWithRelationsQuery,
+  GetKbKnowledgeGraphOverviewWithRelationsQuery,
 } from '@klicker-uzh/graphql/dist/ops'
 import {
-  GetKbKnowledgeGraphConfigDocument,
-  GetKbKnowledgeGraphNeighborsDocument,
-  GetKbKnowledgeGraphOverviewDocument,
+  GetKbKnowledgeGraphDomainConfigDocument,
+  GetKbKnowledgeGraphNeighborsWithRelationsDocument,
+  GetKbKnowledgeGraphOverviewWithRelationsDocument,
   KbGraphBuildStatus,
   KbGraphCostStatus,
   KbGraphQualityTier,
-  RebuildKbKnowledgeGraphDocument,
-  SearchKbKnowledgeGraphDocument,
+  RebuildKbKnowledgeGraphWithDomainDocument,
+  SearchKbKnowledgeGraphWithRelationsDocument,
   SetKbKnowledgeGraphEnabledDocument,
 } from '@klicker-uzh/graphql/dist/ops'
 import type { KnowledgeGraphDataSource } from '@klicker-uzh/shared-components/src/knowledgeGraph/knowledgeGraphState'
 import { KnowledgeGraphUnavailableError } from '@klicker-uzh/shared-components/src/knowledgeGraph/knowledgeGraphState'
-import type { KnowledgeGraphResponse } from '@klicker-uzh/types'
+import type {
+  KnowledgeGraphRelationStatus,
+  KnowledgeGraphRelationType,
+  KnowledgeGraphResponse,
+  KnowledgeGraphSourceReference,
+} from '@klicker-uzh/types'
 import { Badge, Button, SelectField, Switch } from '@uzh-bf/design-system'
 import dynamic from 'next/dynamic'
 import { useRouter } from 'next/router'
@@ -39,9 +39,44 @@ const KnowledgeGraphViewer = dynamic(
   { ssr: false }
 )
 
+const DEFAULT_DOMAIN_POLICY_ID = 'finance'
+const DEFAULT_DOMAIN_POLICY_VERSION = 1
+// The generation language is an explicit part of the domain selection, so it is
+// never derived from the interface locale. German stays the default for builds
+// that predate an explicit language.
+const DEFAULT_DOMAIN_GENERATION_LANGUAGE = 'German'
+const DOMAIN_GENERATION_LANGUAGES = ['German', 'English'] as const
+type DomainGenerationLanguage = (typeof DOMAIN_GENERATION_LANGUAGES)[number]
+
+type KnowledgeGraphDomainSelection = {
+  id: string
+  version: number | null
+  language: DomainGenerationLanguage
+}
+
+function isDomainGenerationLanguage(
+  language: string | null | undefined
+): language is DomainGenerationLanguage {
+  return (
+    language != null &&
+    (DOMAIN_GENERATION_LANGUAGES as readonly string[]).includes(language)
+  )
+}
+
 type GraphResponse =
-  | GetKbKnowledgeGraphOverviewQuery['getKbKnowledgeGraphOverview']
-  | GetKbKnowledgeGraphNeighborsQuery['getKbKnowledgeGraphNeighbors']
+  | GetKbKnowledgeGraphOverviewWithRelationsQuery['getKbKnowledgeGraphOverview']
+  | GetKbKnowledgeGraphNeighborsWithRelationsQuery['getKbKnowledgeGraphNeighbors']
+
+function toSourceReference(
+  source: GraphResponse['nodes'][number]['sourceReferences'][number]
+): KnowledgeGraphSourceReference {
+  return {
+    resourceId: source.resourceId,
+    title: source.title,
+    ...(source.reference == null ? {} : { reference: source.reference }),
+    ...(source.pages == null ? {} : { pages: source.pages }),
+  }
+}
 
 function toKnowledgeGraphResponse(
   response: GraphResponse
@@ -59,11 +94,7 @@ function toKnowledgeGraphResponse(
       ...(node.summary == null ? {} : { summary: node.summary }),
       ...(node.content == null ? {} : { content: node.content }),
       degree: node.degree,
-      sourceReferences: node.sourceReferences.map((source) => ({
-        resourceId: source.resourceId,
-        title: source.title,
-        ...(source.reference == null ? {} : { reference: source.reference }),
-      })),
+      sourceReferences: node.sourceReferences.map(toSourceReference),
     })),
     edges: response.edges.map((edge) => ({
       id: edge.id,
@@ -71,18 +102,51 @@ function toKnowledgeGraphResponse(
       target: edge.target,
       type: edge.type,
       label: edge.label,
+      relationType: edge.relationType as KnowledgeGraphRelationType,
+      relationStatus: edge.relationStatus as KnowledgeGraphRelationStatus,
+      sourceReferences: edge.sourceReferences.map(toSourceReference),
       properties: edge.properties as Record<string, string | number | boolean>,
     })),
   }
 }
 
+type GraphErrorDetails = {
+  code?: string
+  remainingMinorUnits?: number
+}
+
+function getGraphErrorDetails(error: unknown): GraphErrorDetails | null {
+  if (!error || typeof error !== 'object') return null
+
+  const extensions = (error as { extensions?: Record<string, unknown> })
+    .extensions
+  if (extensions) {
+    const code =
+      typeof extensions.code === 'string' ? extensions.code : undefined
+    const remainingMinorUnits =
+      typeof extensions.remainingMinorUnits === 'number'
+        ? extensions.remainingMinorUnits
+        : undefined
+    if (code || remainingMinorUnits !== undefined) {
+      return { code, remainingMinorUnits }
+    }
+  }
+
+  for (const key of ['graphQLErrors', 'errors'] as const) {
+    const nestedErrors = (error as Record<string, unknown>)[key]
+    if (!Array.isArray(nestedErrors)) continue
+
+    for (const nestedError of nestedErrors) {
+      const details = getGraphErrorDetails(nestedError)
+      if (details?.code) return details
+    }
+  }
+
+  return null
+}
+
 function normalizeGraphError(error: unknown): never {
-  if (
-    error instanceof ApolloError &&
-    error.graphQLErrors.some((graphQLError) =>
-      String(graphQLError.extensions?.code ?? '').startsWith('KB_GRAPH_')
-    )
-  ) {
+  if (getGraphErrorDetails(error)?.code?.startsWith('KB_GRAPH_')) {
     throw new KnowledgeGraphUnavailableError()
   }
 
@@ -152,7 +216,13 @@ function formatMinorUnits(
   })
 }
 
-function KnowledgeGraphPreview({ kbId }: { kbId: string }) {
+function KnowledgeGraphPreview({
+  kbId,
+  servedBuildId,
+}: {
+  kbId: string
+  servedBuildId: string | null
+}) {
   const t = useTranslations()
   const apolloClient = useApolloClient()
   const dataSource = useMemo<KnowledgeGraphDataSource>(
@@ -160,7 +230,7 @@ function KnowledgeGraphPreview({ kbId }: { kbId: string }) {
       overview: async () => {
         try {
           const { data } = await apolloClient.query({
-            query: GetKbKnowledgeGraphOverviewDocument,
+            query: GetKbKnowledgeGraphOverviewWithRelationsDocument,
             variables: { kbId },
             fetchPolicy: 'network-only',
           })
@@ -172,7 +242,7 @@ function KnowledgeGraphPreview({ kbId }: { kbId: string }) {
       search: async (query) => {
         try {
           const { data } = await apolloClient.query({
-            query: SearchKbKnowledgeGraphDocument,
+            query: SearchKbKnowledgeGraphWithRelationsDocument,
             variables: { kbId, query },
             fetchPolicy: 'network-only',
           })
@@ -184,7 +254,7 @@ function KnowledgeGraphPreview({ kbId }: { kbId: string }) {
       neighbors: async (nodeId) => {
         try {
           const { data } = await apolloClient.query({
-            query: GetKbKnowledgeGraphNeighborsDocument,
+            query: GetKbKnowledgeGraphNeighborsWithRelationsDocument,
             variables: { kbId, nodeId },
             fetchPolicy: 'network-only',
           })
@@ -194,7 +264,11 @@ function KnowledgeGraphPreview({ kbId }: { kbId: string }) {
         }
       },
     }),
-    [apolloClient, kbId]
+    // The viewer reloads its graph when the data source identity changes, so the
+    // served build has to participate: otherwise a rebuild that publishes a new
+    // graph leaves the previous graph, legend and concept count on screen until
+    // the page is reloaded.
+    [apolloClient, kbId, servedBuildId]
   )
 
   return (
@@ -215,10 +289,13 @@ function KnowledgeGraphPanel({ kbId }: { kbId: string }) {
   const [selectedTier, setSelectedTier] = useState<KbGraphQualityTier>(
     KbGraphQualityTier.Standard
   )
+  const [userDomainSelection, setUserDomainSelection] = useState<
+    (KnowledgeGraphDomainSelection & { kbId: string }) | null
+  >(null)
   const [operationError, setOperationError] = useState<string | null>(null)
   const [detailsOpen, setDetailsOpen] = useState(false)
   const { data, loading, error, refetch, startPolling, stopPolling } = useQuery(
-    GetKbKnowledgeGraphConfigDocument,
+    GetKbKnowledgeGraphDomainConfigDocument,
     {
       variables: { kbId },
       fetchPolicy: 'network-only',
@@ -226,12 +303,13 @@ function KnowledgeGraphPanel({ kbId }: { kbId: string }) {
     }
   )
   const [rebuildGraph, { loading: isRebuilding }] = useMutation(
-    RebuildKbKnowledgeGraphDocument
+    RebuildKbKnowledgeGraphWithDomainDocument
   )
   const [setGraphEnabled, { loading: isTogglingEnabled }] = useMutation(
     SetKbKnowledgeGraphEnabledDocument
   )
   const config = data?.getKbKnowledgeGraphConfig
+  const domainConfig = data?.getKbKnowledgeGraphDomainConfig
 
   useEffect(() => {
     if (router.asPath.endsWith('#knowledge-graph')) {
@@ -257,6 +335,216 @@ function KnowledgeGraphPanel({ kbId }: { kbId: string }) {
     selectedEstimate,
     config?.quotaCurrency
   )
+  const formattedRemainingQuota = formatMinorUnits(
+    format,
+    config?.remainingSemesterQuotaMinorUnits,
+    config?.quotaCurrency
+  )
+  const insufficientQuota =
+    selectedEstimate != null &&
+    config?.remainingSemesterQuotaMinorUnits != null &&
+    selectedEstimate > config.remainingSemesterQuotaMinorUnits
+
+  const domainCapabilityEnabled = domainConfig?.capabilityEnabled ?? false
+  const domainOptions = domainConfig?.options ?? []
+  const domainOptionValue = (option: { id: string; version: number }) =>
+    `${option.id}@${option.version}`
+  // An explicit selection is only ever restored, never upgraded or substituted:
+  // the persisted build metadata wins until the lecturer changes the control,
+  // and a retired id/version pair stays selected instead of moving to another
+  // version the catalog happens to keep.
+  const hasPersistedDomainSelection =
+    config?.domainPolicyId != null ||
+    config?.domainPolicyVersion != null ||
+    config?.domainPolicyLanguage != null
+  const persistedDomainSelection =
+    config?.domainPolicyId != null
+      ? {
+          id: config.domainPolicyId,
+          version: config.domainPolicyVersion ?? null,
+          // A persisted triple always records its language; the default only
+          // covers rows a legacy deployment wrote before explicit languages.
+          language: isDomainGenerationLanguage(config.domainPolicyLanguage)
+            ? config.domainPolicyLanguage
+            : DEFAULT_DOMAIN_GENERATION_LANGUAGE,
+        }
+      : null
+  const currentUserDomainSelection =
+    userDomainSelection?.kbId === kbId ? userDomainSelection : null
+  const domainSelection: KnowledgeGraphDomainSelection =
+    currentUserDomainSelection ??
+      persistedDomainSelection ?? {
+        id: DEFAULT_DOMAIN_POLICY_ID,
+        version: DEFAULT_DOMAIN_POLICY_VERSION,
+        language: DEFAULT_DOMAIN_GENERATION_LANGUAGE,
+      }
+  const domainSelectedOption = domainOptions.find(
+    (option) =>
+      option.id === domainSelection.id &&
+      option.version === domainSelection.version
+  )
+  const domainSelectionSupported =
+    // A catalog option that keeps no categories in the selected generation
+    // language cannot produce this build and stays blocked.
+    domainCapabilityEnabled &&
+    (domainSelectedOption?.languages.some(
+      (option) => option.language === domainSelection.language
+    ) ??
+      false)
+  // A retired pair is reported from the persisted build metadata and must not
+  // borrow another option's categories, so only the untouched persisted
+  // selection falls back to the categories the build itself recorded.
+  const showingPersistedDomain =
+    currentUserDomainSelection == null && persistedDomainSelection != null
+  const domainCategoryNames =
+    domainSelectedOption?.languages
+      .find((option) => option.language === domainSelection.language)
+      ?.categories.map((category) => category.name) ??
+    (showingPersistedDomain
+      ? (config?.domainCategories ?? []).map((category) => category.name)
+      : [])
+  // A closed capability gate may not silently fall back to the provider default
+  // domain, so a stored explicit selection blocks the rebuild until the gate
+  // accepts an explicit replacement again.
+  const domainSubmitBlocked = domainCapabilityEnabled
+    ? !domainSelectionSupported
+    : hasPersistedDomainSelection
+  const showDomainDetails =
+    domainCapabilityEnabled ||
+    domainSubmitBlocked ||
+    domainCategoryNames.length > 0
+
+  const translateDomainLabelKey = (labelKey: string): string | null => {
+    switch (labelKey) {
+      case 'finance':
+        return t('kb.graphDomainFinance')
+      case 'economics':
+        return t('kb.graphDomainEconomics')
+      case 'business':
+        return t('kb.graphDomainBusiness')
+      case 'mathematics':
+        return t('kb.graphDomainMathematics')
+      case 'informatics':
+        return t('kb.graphDomainInformatics')
+      case 'general-academic':
+        return t('kb.graphDomainGeneralAcademic')
+      default:
+        return null
+    }
+  }
+  const domainOptionLabel = (option: { id: string; labelKey: string }) =>
+    translateDomainLabelKey(option.labelKey) ?? option.id
+  const domainLabelForId = (id: string) => {
+    const option = domainOptions.find((candidate) => candidate.id === id)
+    // A stored contract domain keeps its label even when the catalog no longer
+    // offers the pair, so a closed gate or a retired version still reads as a
+    // domain instead of an internal id.
+    return option ? domainOptionLabel(option) : translateDomainLabelKey(id)
+  }
+  const formatDomainVersion = (version: number | null) =>
+    version == null ? t('kb.graphDomainVersionUnknown') : String(version)
+  const translateDomainLanguage = (language: string | null) => {
+    switch (language) {
+      case 'German':
+        return t('kb.graphDomainLanguageGerman')
+      case 'English':
+        return t('kb.graphDomainLanguageEnglish')
+      default:
+        return '—'
+    }
+  }
+  const domainItems = domainOptions.map((option) => ({
+    value: domainOptionValue(option),
+    label: domainOptions.some(
+      (candidate) =>
+        candidate.id === option.id && candidate.version !== option.version
+    )
+      ? `${domainOptionLabel(option)} (v${option.version})`
+      : domainOptionLabel(option),
+  }))
+  const domainLanguageItems = DOMAIN_GENERATION_LANGUAGES.map((language) => ({
+    value: language,
+    label: translateDomainLanguage(language),
+  }))
+  // The language control keeps showing the stored choice even when the catalog
+  // cannot serve it. The submit gate and the status message carry the block, so
+  // the lecturer sees what is stored and replaces it explicitly.
+  const domainLanguageSelectValue = domainSelection.language
+  const domainSelectValue = domainSelectedOption
+    ? domainOptionValue(domainSelectedOption)
+    : ''
+
+  // A failed or superseded attempt must not relabel the graph that is actually
+  // served, so the published build's own domain is reported separately. A
+  // legacy published build records no triple, and by contract that served graph
+  // was generated with the default Finance v1 in German; applying that default
+  // only here leaves the stored null values meaning "no explicit domain".
+  const legacyDomain = {
+    id: DEFAULT_DOMAIN_POLICY_ID,
+    version: DEFAULT_DOMAIN_POLICY_VERSION,
+    language: DEFAULT_DOMAIN_GENERATION_LANGUAGE,
+  }
+  const reportedDomain = {
+    id: config?.domainPolicyId ?? null,
+    version: config?.domainPolicyVersion ?? null,
+    language: config?.domainPolicyLanguage ?? null,
+  }
+  const publishedDomain = {
+    id:
+      config?.publishedDomainPolicyId ??
+      (hasPublishedGraph ? legacyDomain.id : null),
+    version:
+      config?.publishedDomainPolicyVersion ??
+      (hasPublishedGraph ? legacyDomain.version : null),
+    language:
+      config?.publishedDomainPolicyLanguage ??
+      (hasPublishedGraph ? legacyDomain.language : null),
+  }
+  // Both sides take the effective legacy default, so two legacy builds that
+  // serve the same domain are not reported as different.
+  const effectiveDomain = (domain: {
+    id: string | null
+    version: number | null
+    language: string | null
+  }) => ({
+    id: domain.id ?? legacyDomain.id,
+    version: domain.version ?? legacyDomain.version,
+    language: domain.language ?? legacyDomain.language,
+  })
+  const effectivePublishedDomain = effectiveDomain(publishedDomain)
+  const effectiveReportedDomain = effectiveDomain(reportedDomain)
+  const showPublishedDomain =
+    hasPublishedGraph &&
+    publishedDomain.id != null &&
+    (effectivePublishedDomain.id !== effectiveReportedDomain.id ||
+      effectivePublishedDomain.version !== effectiveReportedDomain.version ||
+      effectivePublishedDomain.language !== effectiveReportedDomain.language)
+  const publishedDomainLabel =
+    publishedDomain.id != null
+      ? (domainLabelForId(publishedDomain.id) ?? publishedDomain.id)
+      : null
+  // The blocked-domain message names the stored selection and each branch
+  // carries only the fields the lecturer needs to replace it.
+  const domainBlockedMessage = () => {
+    const domain = domainLabelForId(domainSelection.id) ?? domainSelection.id
+    if (domainCapabilityEnabled) {
+      if (domainSelectedOption !== undefined) {
+        return t('kb.graphDomainLanguageUnavailable', {
+          domain,
+          language: translateDomainLanguage(domainSelection.language),
+        })
+      }
+      return t('kb.graphDomainCurrentUnavailable', {
+        domain,
+        version: formatDomainVersion(domainSelection.version),
+      })
+    }
+    return t('kb.graphDomainRebuildBlocked', {
+      domain,
+      version: formatDomainVersion(persistedDomainSelection?.version ?? null),
+      language: translateDomainLanguage(reportedDomain.language),
+    })
+  }
 
   useEffect(() => {
     if (config?.qualityTier != null && !isActive) {
@@ -314,14 +602,36 @@ function KnowledgeGraphPanel({ kbId }: { kbId: string }) {
   }
 
   const handleRebuild = async () => {
-    if (isRebuilding || isActive || !config?.isEnabled) return
+    if (
+      isRebuilding ||
+      isActive ||
+      !config?.isEnabled ||
+      insufficientQuota ||
+      domainSubmitBlocked
+    ) {
+      return
+    }
 
     setOperationError(null)
+    // An omitted triple is the legacy path for a deployment whose capability
+    // gate is closed; only an enabled, supported selection is sent explicitly.
+    const domainVariables =
+      domainCapabilityEnabled && domainSelectedOption !== undefined
+        ? {
+            domainPolicyId: domainSelectedOption.id,
+            domainPolicyVersion: domainSelectedOption.version,
+            domainPolicyLanguage: domainSelection.language,
+          }
+        : {}
     try {
       const result = await rebuildGraph({
-        variables: { kbId, qualityTier: selectedTier },
+        variables: {
+          kbId,
+          qualityTier: selectedTier,
+          ...domainVariables,
+        },
       })
-      const buildId = result.data?.rebuildKbKnowledgeGraph.buildId
+      const buildId = result.data?.rebuildKbKnowledgeGraphWithDomain.buildId
       if (buildId) {
         window.dispatchEvent(
           new CustomEvent('klicker:generation-started', {
@@ -336,9 +646,33 @@ function KnowledgeGraphPanel({ kbId }: { kbId: string }) {
         )
       }
       await refetch()
-    } catch {
+    } catch (error) {
       console.error('Failed to rebuild KB knowledge graph', { kbId })
-      setOperationError(t('kb.graphBuildError'))
+      const details = getGraphErrorDetails(error)
+      if (details?.code === 'KB_GRAPH_QUOTA_EXCEEDED') {
+        setOperationError(
+          t('kb.graphQuotaInsufficient', {
+            estimate: formattedSelectedEstimate,
+            remaining: formatMinorUnits(
+              format,
+              details.remainingMinorUnits ??
+                config.remainingSemesterQuotaMinorUnits,
+              config.quotaCurrency
+            ),
+          })
+        )
+        try {
+          await refetch()
+        } catch {
+          console.warn('Failed to refresh KB graph quota after rejection', {
+            kbId,
+          })
+        }
+      } else if (details?.code === 'KB_GRAPH_NO_COURSE_CONTENT') {
+        setOperationError(t('kb.graphNoCourseContent'))
+      } else {
+        setOperationError(t('kb.graphBuildError'))
+      }
     }
   }
 
@@ -425,14 +759,95 @@ function KnowledgeGraphPanel({ kbId }: { kbId: string }) {
                   {t('kb.graphCostUnavailable')}
                 </p>
               ) : null}
-              <div className="grid gap-3 sm:grid-cols-[minmax(0,1fr)_auto] sm:items-end">
+              <div className="grid gap-3 lg:grid-cols-[minmax(0,1fr)_minmax(0,1fr)_minmax(0,1fr)_auto] sm:items-end">
+                {domainCapabilityEnabled ? (
+                  <>
+                    <SelectField
+                      label={t('kb.graphDomainLabel')}
+                      items={domainItems}
+                      value={domainSelectValue}
+                      placeholder={t('kb.graphDomainSelectPlaceholder')}
+                      onChange={(value) => {
+                        setOperationError(null)
+                        const option = domainOptions.find(
+                          (candidate) => domainOptionValue(candidate) === value
+                        )
+                        if (!option) return
+                        setUserDomainSelection({
+                          kbId,
+                          id: option.id,
+                          version: option.version,
+                          // The language is carried over unchanged. A domain
+                          // that cannot serve it leaves the rebuild blocked
+                          // until the lecturer picks a supported language,
+                          // instead of silently rewriting the stored choice.
+                          language: domainSelection.language,
+                        })
+                      }}
+                      disabled={
+                        isActive ||
+                        isRebuilding ||
+                        !config.isEnabled ||
+                        !config.costConfigurationReady
+                      }
+                      data={{ cy: 'kb-knowledge-graph-domain' }}
+                      className={{
+                        root: 'w-full',
+                        select: { trigger: 'w-full' },
+                      }}
+                    />
+                    <SelectField
+                      label={t('kb.graphDomainLanguageLabel')}
+                      items={domainLanguageItems}
+                      value={domainLanguageSelectValue}
+                      placeholder={t('kb.graphDomainLanguageSelectPlaceholder')}
+                      onChange={(value) => {
+                        setOperationError(null)
+                        if (!isDomainGenerationLanguage(value)) return
+                        setUserDomainSelection({
+                          kbId,
+                          id: domainSelection.id,
+                          version: domainSelection.version,
+                          language: value,
+                        })
+                      }}
+                      disabled={
+                        isActive ||
+                        isRebuilding ||
+                        !config.isEnabled ||
+                        !config.costConfigurationReady
+                      }
+                      data={{ cy: 'kb-knowledge-graph-domain-language' }}
+                      className={{
+                        root: 'w-full',
+                        select: { trigger: 'w-full' },
+                      }}
+                    />
+                  </>
+                ) : (
+                  <div
+                    className="space-y-1"
+                    data-cy="kb-knowledge-graph-domain"
+                  >
+                    <span className="text-sm font-medium text-slate-900">
+                      {t('kb.graphDomainLabel')}
+                    </span>
+                    <p className="text-sm text-slate-600">
+                      {persistedDomainSelection
+                        ? (domainLabelForId(persistedDomainSelection.id) ??
+                          persistedDomainSelection.id)
+                        : t('kb.graphDomainFinance')}
+                    </p>
+                  </div>
+                )}
                 <SelectField
                   label={t('kb.graphQualityTierLabel')}
                   items={tierItems}
                   value={selectedTier}
-                  onChange={(value) =>
+                  onChange={(value) => {
+                    setOperationError(null)
                     setSelectedTier(value as KbGraphQualityTier)
-                  }
+                  }}
                   disabled={
                     isActive ||
                     isRebuilding ||
@@ -440,6 +855,10 @@ function KnowledgeGraphPanel({ kbId }: { kbId: string }) {
                     !config.costConfigurationReady
                   }
                   data={{ cy: 'kb-knowledge-graph-quality-tier' }}
+                  className={{
+                    root: 'w-full',
+                    select: { trigger: 'w-full' },
+                  }}
                 />
                 <Button
                   primary
@@ -447,7 +866,9 @@ function KnowledgeGraphPanel({ kbId }: { kbId: string }) {
                   disabled={
                     isActive ||
                     !config.isEnabled ||
-                    !config.costConfigurationReady
+                    !config.costConfigurationReady ||
+                    insufficientQuota ||
+                    domainSubmitBlocked
                   }
                   onClick={() => void handleRebuild()}
                   data={{ cy: 'kb-knowledge-graph-rebuild' }}
@@ -459,9 +880,77 @@ function KnowledgeGraphPanel({ kbId }: { kbId: string }) {
                   </Button.Label>
                 </Button>
               </div>
+              {config?.focusTopic != null ? (
+                <div
+                  className="mt-3 space-y-1"
+                  data-cy="kb-knowledge-graph-focus-topic"
+                >
+                  <span className="text-sm font-medium text-slate-900">
+                    {t('kb.graphFocusTopicLabel')}
+                  </span>
+                  <p className="text-sm text-slate-600">{config.focusTopic}</p>
+                </div>
+              ) : null}
               <p className="mt-3 text-xs text-slate-500">
                 {t('kb.graphBuildCost', { amount: formattedSelectedEstimate })}
               </p>
+              {showDomainDetails ? (
+                <div className="mt-3 space-y-2">
+                  {domainCapabilityEnabled ? (
+                    <p className="text-xs text-slate-500">
+                      {t('kb.graphDomainLanguageNote')}
+                    </p>
+                  ) : null}
+                  {domainSubmitBlocked ? (
+                    <p
+                      className="rounded-md border border-amber-200 bg-amber-50 p-3 text-xs text-amber-950"
+                      role="status"
+                      data-cy="kb-knowledge-graph-domain-unsupported"
+                    >
+                      {domainBlockedMessage()}
+                    </p>
+                  ) : null}
+                  {domainCategoryNames.length > 0 ? (
+                    <div
+                      className="flex flex-wrap items-center gap-2"
+                      data-cy="kb-knowledge-graph-domain-categories"
+                    >
+                      <span className="text-xs font-semibold text-slate-600">
+                        {t('kb.graphDomainCategoriesLabel')}:
+                      </span>
+                      {domainCategoryNames.map((name) => (
+                        <Badge key={name} variant="outline">
+                          {name}
+                        </Badge>
+                      ))}
+                    </div>
+                  ) : null}
+                </div>
+              ) : null}
+              {showPublishedDomain && publishedDomainLabel != null ? (
+                <p
+                  className="mt-2 text-xs text-slate-500"
+                  data-cy="kb-knowledge-graph-published-domain"
+                >
+                  {t('kb.graphDomainPublished', {
+                    domain: publishedDomainLabel,
+                    version: formatDomainVersion(publishedDomain.version),
+                    language: translateDomainLanguage(publishedDomain.language),
+                  })}
+                </p>
+              ) : null}
+              {insufficientQuota ? (
+                <p
+                  className="mt-3 rounded-md border border-amber-200 bg-amber-50 p-3 text-sm text-amber-950"
+                  role="status"
+                  data-cy="kb-knowledge-graph-quota-insufficient"
+                >
+                  {t('kb.graphQuotaInsufficient', {
+                    estimate: formattedSelectedEstimate,
+                    remaining: formattedRemainingQuota,
+                  })}
+                </p>
+              ) : null}
               <div
                 className="mt-3 grid gap-2 border-t border-slate-200 pt-3 text-sm text-slate-700 sm:grid-cols-2"
                 data-cy="kb-knowledge-graph-cost"
@@ -600,7 +1089,10 @@ function KnowledgeGraphPanel({ kbId }: { kbId: string }) {
                   </p>
                 ) : null}
                 {hasPublishedGraph ? (
-                  <KnowledgeGraphPreview kbId={kbId} />
+                  <KnowledgeGraphPreview
+                    kbId={kbId}
+                    servedBuildId={config.publishedBuildId ?? null}
+                  />
                 ) : (
                   <div
                     className="rounded-lg border border-dashed border-slate-400 bg-slate-50 p-6 text-center text-sm text-slate-600"

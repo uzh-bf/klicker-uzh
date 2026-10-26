@@ -111,6 +111,8 @@ model KB {
   publishedGraphBuildId String? @db.Uuid
   // graph generation is opt-in per KB; the lecturer-level preview flag is a separate gate
   knowledgeGraphEnabled Boolean @default(false)
+  // Optional per-KB storage capacity in MiB; null uses the shared default.
+  storageLimitMiB Int?
 
   resources     KBResource[]
   uploadTickets KBUploadTicket[]
@@ -203,6 +205,19 @@ model KBGraphBuild {
 
   status      KBGraphBuildStatus @default(QUEUED)
   qualityTier KBGraphQualityTier @default(STANDARD)
+
+  // Frozen domain selection for this build: the provider catalog policy id and
+  // version plus the requested language. All-null rows predate domain selection
+  // and retain the provider's legacy default policy, so historical builds are
+  // never retroactively described as an explicit choice.
+  domainPolicyId       String?
+  domainPolicyVersion  Int?
+  domainPolicyLanguage String?
+
+  // Optional lecturer focus that steered extraction emphasis for this build.
+  // Null rows predate the field or ran without a focus. The focus is prompt
+  // guidance only: it is never a graph source and adds no fact.
+  focusTopic String?
 
   // digest over the KB's active serving set at request time; pins what this build represents
   sourceContentDigest String

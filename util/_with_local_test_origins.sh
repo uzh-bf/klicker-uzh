@@ -9,6 +9,13 @@ fi
 export COOKIE_DOMAIN='127.0.0.1'
 export API_DOMAIN="$COOKIE_DOMAIN"
 
+# Chat's anonymous-guest path derives persona ids and signs guest tokens from
+# these two values. `next build` bakes NODE_ENV=production into the bundle, so
+# a built Chat app refuses the APP_SECRET-derived fallback regardless of the
+# runtime NODE_ENV. Fixed dev fixtures, not credentials.
+export CHAT_GUEST_SEED='playwright-chat-guest-seed'
+export APP_CHAT_GUEST_SECRET='playwright-chat-guest-secret'
+
 export APP_ORIGIN_API='http://127.0.0.1:3000'
 export APP_ORIGIN_PWA='http://127.0.0.1:3001'
 export APP_ORIGIN_MANAGE='http://127.0.0.1:3002'
@@ -21,6 +28,7 @@ export APP_ORIGIN_ASSESSMENT_PWA="$APP_ORIGIN_PWA"
 
 export NEXT_PUBLIC_API_URL="$APP_ORIGIN_API/api/graphql"
 export NEXT_PUBLIC_API_URL_SSR="$NEXT_PUBLIC_API_URL"
+export NEXT_PUBLIC_ADD_RESPONSE_URL='http://127.0.0.1:7078/AddResponse'
 export NEXT_PUBLIC_PWA_URL="$APP_ORIGIN_PWA"
 export NEXT_PUBLIC_MANAGE_URL="$APP_ORIGIN_MANAGE"
 export NEXT_PUBLIC_CONTROL_URL="$APP_ORIGIN_CONTROL"

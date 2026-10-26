@@ -1,28 +1,75 @@
 name: Perform sonarcloud analysis
+
 on:
   push:
-    branches:
-      - v3
-      - 'v3*'
+    branches: ['v3', 'v3*']
+  # The pull-request analysis is owned by the test workflows that publish its
+  # coverage: the producer that observes every producer terminal for the
+  # revision analyzes, and one that still sees a pending producer defers to it
+  # instead of holding a runner while it waits. A synchronize, a reopen, and an
+  # edit need no run here, because both producers re-run for them.
+  # Marking a draft ready re-runs no producer, so this workflow keeps the ready
+  # boundary and owns it: the analysis runs here, with the coverage the draft
+  # already produced.
   pull_request:
     branches: ['v3', 'v3*']
-    types: [opened, synchronize, reopened, ready_for_review]
+    types: [ready_for_review]
 
 concurrency:
   group: ${{ github.workflow }}-${{ github.event.pull_request.number || github.ref_name }}
   cancel-in-progress: true
 
+# Reading the analyzed revision and the artifacts of the test workflows is the
+# whole job. The analysis upload itself is authorized by the Sonar credential,
+# never by the workflow token.
+permissions:
+  contents: read
+  actions: read
+
 jobs:
-  sonarcloud:
-    if: github.event.pull_request.draft == false
-    name: SonarCloud
+  # A documentation-and-planning pull request changes no analyzed source, so its
+  # analysis would re-report an unchanged tree. One classification decides that,
+  # and it narrows pull requests only.
+  #
+  # The analysis is not a required status check, so a skip cannot leave a
+  # required context unreported; branch pushes and the CI class still analyze.
+  classify:
+    name: Classify
     runs-on: ubuntu-latest
+    # Shares the workflow-level contents/actions read permissions, and neither the
+    # classification nor a skip needs the analysis credential.
+    timeout-minutes: 10
+    outputs:
+      change_class: ${{ steps.classify.outputs.change_class }}
+      static_analysis: ${{ steps.classify.outputs.static_analysis }}
     steps:
-      - uses: actions/checkout@v4
+      - name: Checkout repository
+        uses: actions/checkout@v4
         with:
-          fetch-depth: 0 # Shallow clones should be disabled for a better relevancy of analysis
-      - name: SonarCloud Scan
-        uses: SonarSource/sonarcloud-github-action@master
-        env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }} # Needed to get PR information, if any
-          SONAR_TOKEN: ${{ secrets.SONAR_TOKEN }}
+          # The classification reads changed-path records, not sources.
+          sparse-checkout: .github
+
+      - name: Classify the change
+        id: classify
+        uses: ./.github/actions/change-envelope
+
+  # The job still runs the analysis itself for a branch push and for the ready
+  # boundary; the reusable workflow owns the decision and the steps, so the
+  # analysis has one definition instead of one per host.
+  sonarcloud:
+    # Draft pull requests keep their previous behaviour: they are analyzed when
+    # they become ready for review. The condition is written against the event
+    # so a push run can never be skipped by an absent draft field.
+    # A class that cannot be computed leaves the analysis in place, so the
+    # envelope can only ever remove analysis it proved unnecessary.
+    needs: classify
+    if: >-
+      !cancelled() &&
+      (github.event_name != 'pull_request' || github.event.pull_request.draft == false) &&
+      (github.event_name != 'pull_request' || needs.classify.outputs.static_analysis != 'skip')
+    name: SonarCloud
+    permissions:
+      contents: read
+      actions: read
+    uses: ./.github/workflows/sonar-analysis.yml
+    secrets: inherit

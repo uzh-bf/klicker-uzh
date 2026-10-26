@@ -3,15 +3,26 @@ import type {
   KnowledgeGraphSourceReference,
 } from '@klicker-uzh/types'
 import { NextRequest, NextResponse } from 'next/server'
-import { beforeEach, describe, expect, it, vi } from 'vitest'
+import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 
 const boundaries = vi.hoisted(() => ({
+  getPublishedKnowledgeGraph: vi.fn(),
   getPublishedKnowledgeGraphForChatbot: vi.fn(),
   isKnowledgeGraphNotPublishedError: vi.fn(),
+  readKnowledgeGraphMentions: vi.fn(),
   readKnowledgeGraphNeighbors: vi.fn(),
   readKnowledgeGraphOverview: vi.fn(),
   searchKnowledgeGraph: vi.fn(),
   withChatbotAuth: vi.fn(),
+}))
+
+vi.mock('@klicker-uzh/knowledge-graph', () => ({
+  getPublishedKnowledgeGraph: boundaries.getPublishedKnowledgeGraph,
+  KnowledgeGraphNotPublishedError: class extends Error {
+    constructor(readonly code: string) {
+      super(code)
+    }
+  },
 }))
 
 vi.mock('@/src/lib/server/apiGuards', () => ({
@@ -24,17 +35,27 @@ vi.mock('@klicker-uzh/prisma', () => ({
 
 vi.mock('@/src/lib/server/knowledgeGraphRuntime', () => {
   return {
+    KnowledgeGraphSelectionRequiredError: class extends Error {
+      constructor(readonly choices: { id: string; name: string }[]) {
+        super('Select a graph')
+      }
+    },
     getPublishedKnowledgeGraphForChatbot:
       boundaries.getPublishedKnowledgeGraphForChatbot,
     isKnowledgeGraphNotPublishedError:
       boundaries.isKnowledgeGraphNotPublishedError,
+    readKnowledgeGraphMentions: boundaries.readKnowledgeGraphMentions,
     readKnowledgeGraphNeighbors: boundaries.readKnowledgeGraphNeighbors,
     readKnowledgeGraphOverview: boundaries.readKnowledgeGraphOverview,
     searchKnowledgeGraph: boundaries.searchKnowledgeGraph,
   }
 })
 
-import { GET } from '../src/app/api/chatbots/[chatbotId]/knowledge-graph/route'
+import {
+  GET,
+  POST,
+} from '../src/app/api/chatbots/[chatbotId]/knowledge-graph/route'
+import { KnowledgeGraphSelectionRequiredError } from '../src/lib/server/knowledgeGraphRuntime'
 
 const chatbotId = '11111111-1111-4111-8111-111111111111'
 const kbId = '22222222-2222-4222-8222-222222222222'
@@ -68,6 +89,7 @@ const response: KnowledgeGraphResponse = {
           resourceId: publication.sources[0]!.resourceId,
           title: publication.sources[0]!.title,
           reference: 'p. 4',
+          pages: [4],
         },
       ],
     },
@@ -79,6 +101,15 @@ const response: KnowledgeGraphResponse = {
       target: '13',
       type: 'RELATED_TO',
       label: 'related to',
+      relationType: 'part_of',
+      relationStatus: 'source',
+      sourceReferences: [
+        {
+          resourceId: publication.sources[0]!.resourceId,
+          title: publication.sources[0]!.title,
+          pages: [1, 2],
+        },
+      ],
       properties: { confidence: 0.8 },
     },
   ],
@@ -98,13 +129,15 @@ async function callRoute(search: string) {
 }
 
 beforeEach(() => {
+  vi.stubEnv('NODE_ENV', 'test')
   vi.resetAllMocks()
   boundaries.withChatbotAuth.mockResolvedValue({
     participantId: 'participant-id',
     authMode: 'account',
-    chatbot: { courseId: 'course-id' },
+    chatbot: { courseId: 'course-id', knowledgeGraphVisible: true },
   })
   boundaries.getPublishedKnowledgeGraphForChatbot.mockResolvedValue(publication)
+  boundaries.getPublishedKnowledgeGraph.mockResolvedValue(publication)
   boundaries.isKnowledgeGraphNotPublishedError.mockImplementation(
     (error) =>
       error instanceof Error && error.name === 'KnowledgeGraphNotPublishedError'
@@ -112,6 +145,109 @@ beforeEach(() => {
   boundaries.readKnowledgeGraphOverview.mockResolvedValue(response)
   boundaries.searchKnowledgeGraph.mockResolvedValue(response)
   boundaries.readKnowledgeGraphNeighbors.mockResolvedValue(response)
+})
+
+afterEach(() => vi.unstubAllEnvs())
+
+describe('chatbot graph binding selection', () => {
+  const secondKbId = '44444444-4444-4444-8444-444444444444'
+  const bindings = [
+    { kbId, kb: { name: 'First synthetic graph' } },
+    { kbId: secondKbId, kb: { name: 'Second synthetic graph' } },
+  ]
+
+  async function reader() {
+    return vi.importActual<
+      typeof import('../src/lib/server/knowledgeGraphRuntime')
+    >('../src/lib/server/knowledgeGraphRuntime')
+  }
+
+  it('requires an explicit choice for multiple attached graphs', async () => {
+    const runtime = await reader()
+    const findMany = vi.fn().mockResolvedValue(bindings)
+    await expect(
+      runtime.getPublishedKnowledgeGraphForChatbot(
+        { kBChatbot: { findMany } } as never,
+        chatbotId
+      )
+    ).rejects.toMatchObject({
+      choices: bindings.map(({ kbId: id, kb }) => ({ id, name: kb.name })),
+    })
+    expect(findMany).toHaveBeenCalledWith(
+      expect.objectContaining({
+        where: {
+          chatbotId,
+          isEnabled: true,
+          kb: { deletedAt: null, knowledgeGraphEnabled: true },
+        },
+      })
+    )
+    expect(boundaries.getPublishedKnowledgeGraph).not.toHaveBeenCalled()
+  })
+
+  it.each([
+    kbId,
+    undefined,
+  ])('reads an eligible single graph with choice %s', async (choice) => {
+    const runtime = await reader()
+    const client = {
+      kBChatbot: { findMany: vi.fn().mockResolvedValue([bindings[0]]) },
+    }
+    await runtime.getPublishedKnowledgeGraphForChatbot(
+      client as never,
+      chatbotId,
+      choice
+    )
+    expect(boundaries.getPublishedKnowledgeGraph).toHaveBeenCalledWith(
+      client,
+      kbId
+    )
+  })
+
+  it('reads the explicitly chosen graph rather than the first binding', async () => {
+    const runtime = await reader()
+    const client = {
+      kBChatbot: { findMany: vi.fn().mockResolvedValue(bindings) },
+    }
+    await runtime.getPublishedKnowledgeGraphForChatbot(
+      client as never,
+      chatbotId,
+      secondKbId
+    )
+    expect(boundaries.getPublishedKnowledgeGraph).toHaveBeenCalledWith(
+      client,
+      secondKbId
+    )
+  })
+
+  it.each(
+    [[], [bindings[0]]].map((available) => ({ available }))
+  )('rejects a foreign or detached graph before publication lookup', async ({
+    available,
+  }) => {
+    const runtime = await reader()
+    await expect(
+      runtime.getPublishedKnowledgeGraphForChatbot(
+        {
+          kBChatbot: { findMany: vi.fn().mockResolvedValue(available) },
+        } as never,
+        chatbotId,
+        secondKbId
+      )
+    ).rejects.toBeInstanceOf(runtime.KnowledgeGraphSelectionRequiredError)
+    expect(boundaries.getPublishedKnowledgeGraph).not.toHaveBeenCalled()
+  })
+
+  it('preserves unavailable state when no graph is attached', async () => {
+    const runtime = await reader()
+    await expect(
+      runtime.getPublishedKnowledgeGraphForChatbot(
+        { kBChatbot: { findMany: vi.fn().mockResolvedValue([]) } } as never,
+        chatbotId
+      )
+    ).rejects.toMatchObject({ code: 'EMPTY' })
+    expect(boundaries.getPublishedKnowledgeGraph).not.toHaveBeenCalled()
+  })
 })
 
 describe('participant knowledge graph route', () => {
@@ -135,6 +271,29 @@ describe('participant knowledge graph route', () => {
     expect(boundaries.readKnowledgeGraphOverview).not.toHaveBeenCalled()
   })
 
+  it('rejects stale graphs before returning student content', async () => {
+    boundaries.getPublishedKnowledgeGraphForChatbot.mockResolvedValue({
+      ...publication,
+      isStale: true,
+    })
+    const result = await GET(graphRequest('operation=overview'), {
+      params: Promise.resolve({ chatbotId }),
+    })
+    expect(result.status).toBe(409)
+    expect(boundaries.readKnowledgeGraphOverview).not.toHaveBeenCalled()
+  })
+
+  it('suppresses a graph that becomes stale during the read', async () => {
+    boundaries.getPublishedKnowledgeGraphForChatbot
+      .mockResolvedValueOnce(publication)
+      .mockResolvedValueOnce({ ...publication, isStale: true })
+    const result = await GET(graphRequest('operation=overview'), {
+      params: Promise.resolve({ chatbotId }),
+    })
+    expect(result.status).toBe(409)
+    expect(await result.json()).not.toHaveProperty('nodes')
+  })
+
   it('does not expose graph publication or data to a non-participant', async () => {
     boundaries.withChatbotAuth.mockResolvedValue({
       response: NextResponse.json(
@@ -146,6 +305,26 @@ describe('participant knowledge graph route', () => {
     const result = await callRoute('operation=overview')
 
     expect(result.status).toBe(403)
+    expect(
+      boundaries.getPublishedKnowledgeGraphForChatbot
+    ).not.toHaveBeenCalled()
+    expect(boundaries.readKnowledgeGraphOverview).not.toHaveBeenCalled()
+  })
+
+  it('refuses the graph with a dedicated code when the map is disabled', async () => {
+    boundaries.withChatbotAuth.mockResolvedValue({
+      participantId: 'participant-id',
+      authMode: 'account',
+      chatbot: { courseId: 'course-id', knowledgeGraphVisible: false },
+    })
+
+    const result = await callRoute('operation=overview')
+
+    expect(result.status).toBe(403)
+    await expect(result.json()).resolves.toEqual({
+      code: 'KNOWLEDGE_GRAPH_DISABLED',
+      error: 'Knowledge graph is disabled for this chatbot',
+    })
     expect(
       boundaries.getPublishedKnowledgeGraphForChatbot
     ).not.toHaveBeenCalled()
@@ -182,7 +361,7 @@ describe('participant knowledge graph route', () => {
     await expect(result.json()).resolves.toEqual(response)
     expect(
       boundaries.getPublishedKnowledgeGraphForChatbot
-    ).toHaveBeenCalledWith(expect.anything(), chatbotId)
+    ).toHaveBeenCalledWith(expect.anything(), chatbotId, undefined)
     expect(boundaries.readKnowledgeGraphOverview).toHaveBeenCalledWith(
       publication
     )
@@ -203,11 +382,34 @@ describe('participant knowledge graph route', () => {
     expect(boundaries.readKnowledgeGraphOverview).not.toHaveBeenCalled()
   })
 
+  it('passes an explicit graph choice through the authorized reader', async () => {
+    const result = await callRoute(`operation=overview&kbId=${kbId}`)
+    expect(result.status).toBe(200)
+    expect(
+      boundaries.getPublishedKnowledgeGraphForChatbot
+    ).toHaveBeenCalledWith(expect.anything(), chatbotId, kbId)
+  })
+
+  it('returns eligible choices without reading graph data when selection is required', async () => {
+    const choices = [{ id: kbId, name: 'Synthetic graph' }]
+    boundaries.getPublishedKnowledgeGraphForChatbot.mockRejectedValue(
+      new KnowledgeGraphSelectionRequiredError(choices)
+    )
+    const result = await callRoute('operation=overview')
+    expect(result.status).toBe(409)
+    await expect(result.json()).resolves.toEqual({
+      code: 'KNOWLEDGE_GRAPH_SELECTION_REQUIRED',
+      choices,
+    })
+    expect(boundaries.readKnowledgeGraphOverview).not.toHaveBeenCalled()
+  })
+
   it.each([
     'operation=search',
     'operation=search&q=%20%20',
     `operation=search&q=${'a'.repeat(101)}`,
     'operation=delete',
+    'operation=overview&kbId=invalid',
   ])('rejects an invalid operation or search input: %s', async (search) => {
     const result = await callRoute(search)
 
@@ -223,7 +425,9 @@ describe('participant knowledge graph route', () => {
   })
 
   it('passes a numeric node ID only to the fixed neighborhood reader', async () => {
-    const result = await callRoute('operation=neighbors&nodeId=12004')
+    const result = await callRoute(
+      `operation=neighbors&nodeId=12004&kbId=${kbId}&buildId=${publication.buildId}`
+    )
 
     expect(result.status).toBe(200)
     expect(boundaries.readKnowledgeGraphNeighbors).toHaveBeenCalledWith(
@@ -233,8 +437,49 @@ describe('participant knowledge graph route', () => {
     expect(boundaries.readKnowledgeGraphOverview).not.toHaveBeenCalled()
   })
 
+  it('rejects an old build before interpreting its node ID', async () => {
+    const result = await callRoute(
+      `operation=neighbors&nodeId=12&kbId=${kbId}&buildId=99999999-9999-4999-8999-999999999999`
+    )
+    expect(result.status).toBe(409)
+    expect((await result.json()).code).toBe('KNOWLEDGE_GRAPH_BUILD_CHANGED')
+    expect(boundaries.readKnowledgeGraphNeighbors).not.toHaveBeenCalled()
+  })
+
+  it('holds admission until a graph read settles and releases on failure', async () => {
+    let reject!: (reason: Error) => void
+    const pending = new Promise((_, fail) => {
+      reject = fail
+    })
+    boundaries.readKnowledgeGraphOverview.mockReturnValue(pending)
+    const errorLog = vi
+      .spyOn(console, 'error')
+      .mockImplementation(() => undefined)
+    const first = callRoute('operation=overview')
+    const second = callRoute('operation=overview')
+    try {
+      const busy = await callRoute('operation=overview')
+      expect(busy.status).toBe(429)
+      expect(busy.headers.get('Retry-After')).toBe('1')
+      expect(boundaries.readKnowledgeGraphOverview).toHaveBeenCalledTimes(2)
+      reject(new Error('synthetic timeout'))
+      expect((await first).status).toBe(503)
+      expect((await second).status).toBe(503)
+      boundaries.readKnowledgeGraphOverview.mockResolvedValue(response)
+      expect((await callRoute('operation=overview')).status).toBe(200)
+    } finally {
+      reject(new Error('cleanup'))
+      await Promise.allSettled([first, second])
+      errorLog.mockRestore()
+    }
+  })
+
   it.each([
     'operation=neighbors',
+    'operation=neighbors&nodeId=12',
+    `operation=neighbors&nodeId=9223372036854775808&kbId=${kbId}&buildId=${publication.buildId}`,
+    `operation=neighbors&nodeId=99999999999999999999&kbId=${kbId}&buildId=${publication.buildId}`,
+    `operation=neighbors&nodeId=${'1'.repeat(21)}&kbId=${kbId}&buildId=${publication.buildId}`,
     'operation=neighbors&nodeId=',
     'operation=neighbors&nodeId=-1',
     'operation=neighbors&nodeId=12.4',
@@ -295,7 +540,19 @@ describe('participant knowledge graph route', () => {
           sourceReferences: [unsafeSource],
         },
       ],
-      edges: [{ ...response.edges[0]!, cypher: 'MATCH (n) RETURN n' }],
+      edges: [
+        {
+          ...response.edges[0]!,
+          cypher: 'MATCH (n) RETURN n',
+          internal_evidence_refs: 'resource|1',
+          sourceReferences: [
+            {
+              ...response.edges[0]!.sourceReferences[0]!,
+              sourceUrl: 'https://blob.example/private.pdf?sig=secret',
+            } as KnowledgeGraphSourceReference,
+          ],
+        },
+      ],
     })
 
     const result = await callRoute('operation=overview')
@@ -303,7 +560,61 @@ describe('participant knowledge graph route', () => {
 
     expect(body).toEqual(response)
     expect(JSON.stringify(body)).not.toMatch(
-      /connectionString|embedding|graphName|sourceUrl|cypher|secret/
+      /connectionString|embedding|graphName|sourceUrl|cypher|secret|internal/
     )
+  })
+})
+
+describe('answer concept mentions', () => {
+  function mentionsRequest(body: unknown, operation = 'mentions') {
+    return POST(
+      new NextRequest(
+        `http://localhost/api/chatbots/${chatbotId}/knowledge-graph?operation=${operation}`,
+        { method: 'POST', body: JSON.stringify(body) }
+      ),
+      { params: Promise.resolve({ chatbotId }) }
+    )
+  }
+
+  it('returns the matched concepts with their answer text', async () => {
+    boundaries.readKnowledgeGraphMentions.mockResolvedValue([
+      { node: response.nodes[0], text: 'access control' },
+    ])
+
+    const result = await mentionsRequest({
+      text: '  Explain access control.  ',
+    })
+
+    expect(result.status).toBe(200)
+    const body = await result.json()
+    expect(body.mentions).toEqual([{ nodeId: '12', text: 'access control' }])
+    expect(body.nodes.map((node: { id: string }) => node.id)).toEqual(['12'])
+    expect(boundaries.readKnowledgeGraphMentions).toHaveBeenCalledWith(
+      publication,
+      'Explain access control.'
+    )
+  })
+
+  it('applies the concept-map gate before reading the graph', async () => {
+    boundaries.withChatbotAuth.mockResolvedValue({
+      participantId: 'participant-id',
+      authMode: 'account',
+      chatbot: { courseId: 'course-id', knowledgeGraphVisible: false },
+    })
+
+    const result = await mentionsRequest({ text: 'access control' })
+
+    expect(result.status).toBe(403)
+    expect(boundaries.readKnowledgeGraphMentions).not.toHaveBeenCalled()
+  })
+
+  it.each([
+    [{ text: '' }, 'mentions'],
+    [{ text: 'x'.repeat(8001) }, 'mentions'],
+    [{ text: 'access control' }, 'overview'],
+  ])('rejects an invalid mentions request', async (body, operation) => {
+    const result = await mentionsRequest(body, operation)
+    expect(result.status).toBe(400)
+    expect(boundaries.readKnowledgeGraphMentions).not.toHaveBeenCalled()
   })
 })

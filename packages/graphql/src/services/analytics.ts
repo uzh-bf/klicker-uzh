@@ -12,10 +12,13 @@ import dayjs from 'dayjs'
 import type { ContextWithUser } from '@/lib/context.js'
 import { requireFeatureFlagAccess } from '../lib/featureFlags.js'
 
+import { isLearningAnalyticsEnabled } from '../lib/learningAnalytics.js'
+
 export async function getCourseActivityAnalytics(
   { courseId }: { courseId: string },
   ctx: ContextWithUser
 ) {
+  if (!isLearningAnalyticsEnabled()) return null
   await requireFeatureFlagAccess(ctx, 'learning-analytics')
 
   const course = await ctx.prisma.course.findUnique({
@@ -80,6 +83,7 @@ export async function getCourseWeeklyActivity(
   { courseId }: { courseId: string },
   ctx: ContextWithUser
 ) {
+  if (!isLearningAnalyticsEnabled()) return null
   await requireFeatureFlagAccess(ctx, 'learning-analytics')
 
   const course = await ctx.prisma.course.findUnique({
@@ -479,6 +483,7 @@ export async function getCoursePerformanceAnalytics(
   { courseId }: { courseId: string },
   ctx: ContextWithUser
 ) {
+  if (!isLearningAnalyticsEnabled()) return null
   await requireFeatureFlagAccess(ctx, 'learning-analytics')
 
   const course = await ctx.prisma.course.findUnique({
@@ -570,6 +575,7 @@ export async function getActivityAnalytics(
   { activityId }: { activityId: string },
   ctx: ContextWithUser
 ) {
+  if (!isLearningAnalyticsEnabled()) return null
   await requireFeatureFlagAccess(ctx, 'learning-analytics')
 
   const activityIncludes = {

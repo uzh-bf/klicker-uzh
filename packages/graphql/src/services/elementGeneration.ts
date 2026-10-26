@@ -4,9 +4,11 @@ import type {
   ElementManipulationInput,
   GeneratedFlashcardEditable,
   GeneratedQuestionEditable,
+  GeneratedQuestionTagSelectionInput,
 } from '@klicker-uzh/types'
 import { ELEMENT_GENERATION_CAPABILITIES } from '@klicker-uzh/types'
 import type { ContextWithUser } from '../lib/context.js'
+import { isFeatureFlagEnabled } from '../lib/featureFlags.js'
 import validateAndProcessElementOptions from '../lib/validateAndProcessElementOptions.js'
 import { isElementGenerationCostConfigured } from './elementGenerationAccounting.js'
 import { manipulateElement } from './elements.js'
@@ -23,7 +25,13 @@ import {
   updateGeneratedFlashcardDraft,
 } from './flashcardGenerationDrafts.js'
 import {
+  questionTagSelectionWrite,
+  resolveQuestionTagSelection,
+  withQuestionTagConflictRetry,
+} from './generatedQuestionTags.js'
+import {
   getQuestionGenerationBuild,
+  retryQuestionGeneration,
   reviewQuestionGenerationDesign,
   reviewQuestionGenerationPlan,
   saveGeneratedQuestions,
@@ -50,10 +58,34 @@ function isQuestionElementType(
 ): elementType is 'SC' | 'MC' | 'KPRIM' {
   return QUESTION_TYPES.has(elementType)
 }
-const TERMINAL_EDITABLE_STATUSES = [
+const TERMINAL_EDITABLE_STATUSES: DB.ElementGenerationBuildStatus[] = [
   DB.ElementGenerationBuildStatus.COMPLETED,
   DB.ElementGenerationBuildStatus.INCOMPLETE,
 ]
+
+/**
+ * Normalizes a lecturer-supplied generation focus. The focus narrows exactly
+ * one generation batch to a topic; a blank value is the same as no focus. A
+ * deployment or actor whose rollout does not admit the capability refuses a
+ * focus it cannot honor instead of recording guidance that the provider would
+ * drop.
+ */
+async function resolveRequestedQuestionFocusTopic(
+  focusTopic: string | null | undefined,
+  ctx: ContextWithUser
+): Promise<string | null> {
+  const normalized = focusTopic?.trim()
+  if (!normalized) {
+    return null
+  }
+  if (!(await isFeatureFlagEnabled(ctx, 'question-focus-topic'))) {
+    throw questionGenerationServiceError(
+      'CONFIGURATION_INVALID',
+      'This deployment does not support question focus topics'
+    )
+  }
+  return normalized
+}
 
 export type StartElementGenerationInput = {
   graphBuildId: string
@@ -71,6 +103,7 @@ export type StartElementGenerationInput = {
     bloomLevel?: string | null
   }> | null
   bloomLevels?: string[] | null
+  focusTopic?: string | null
   idempotencyKey: string
 }
 
@@ -88,6 +121,7 @@ export type GeneratedElementEditableInput = {
   }> | null
   cardType?: 'definition' | 'formula' | 'calculation' | null
   tags?: string[] | null
+  tagSelection?: GeneratedQuestionTagSelectionInput | null
 }
 
 export type KeepGeneratedElementDraftInput = {
@@ -101,6 +135,7 @@ export type KeepGeneratedElementDraftInput = {
   basePoints: boolean
   pointsMultiplier: number
   tags?: string[] | null
+  tagSelection?: GeneratedQuestionTagSelectionInput | null
   choiceIds?: string[] | null
   options?: ElementManipulationInput['options']
 }
@@ -146,16 +181,21 @@ export async function startElementGeneration(
   input: StartElementGenerationInput,
   ctx: ContextWithUser
 ) {
+  const focusTopic = await resolveRequestedQuestionFocusTopic(
+    input.focusTopic,
+    ctx
+  )
   if (input.elementType === 'FLASHCARD') {
     if (
       input.difficultyPreset != null ||
       (input.sourceScopes?.length ?? 0) > 0 ||
       (input.bloomLevels?.length ?? 0) > 0 ||
-      input.objectives?.some((objective) => objective.bloomLevel != null)
+      input.objectives?.some((objective) => objective.bloomLevel != null) ||
+      focusTopic !== null
     ) {
       throw questionGenerationServiceError(
         'CONFIGURATION_INVALID',
-        'Flashcard generation does not support difficulty, Bloom, or source scoping'
+        'Flashcard generation does not support difficulty, Bloom, source scoping, or a focus topic'
       )
     }
     return startFlashcardGeneration(
@@ -180,6 +220,7 @@ export async function startElementGeneration(
       sourceScopes: input.sourceScopes,
       objectives: input.objectives,
       bloomLevels: input.bloomLevels,
+      focusTopic,
     },
     ctx
   )
@@ -218,10 +259,13 @@ export async function retryElementGeneration(
   ctx: ContextWithUser
 ) {
   const elementType = await ownedBuildType(buildId, ctx)
-  if (elementType !== DB.ElementType.FLASHCARD) {
-    return serviceError('This element-generation workflow is not retryable')
+  if (elementType === DB.ElementType.FLASHCARD) {
+    return retryFlashcardGeneration(buildId, ctx)
   }
-  return retryFlashcardGeneration(buildId, ctx)
+  if (QUESTION_TYPES.has(elementType)) {
+    return retryQuestionGeneration(buildId, ctx)
+  }
+  return serviceError('This element-generation workflow is not retryable')
 }
 
 export async function publishIncompleteElementGeneration(
@@ -260,6 +304,12 @@ function normalizedKeepPayload(
         'Generated element type cannot be changed'
       )
     }
+    if (input.tagSelection != null) {
+      throw questionGenerationServiceError(
+        'DRAFT_INVALID',
+        'Flashcard generation does not use tag selections'
+      )
+    }
     const storedCurrent = draft.current as GeneratedFlashcardEditable
     const current = normalizeGeneratedFlashcardEditable({
       name: input.name,
@@ -279,7 +329,7 @@ function normalizedKeepPayload(
       pointsMultiplier: 1,
       tags: current.tags,
     }
-    return { current, elementInput }
+    return { current, elementInput, tagWrite: { mode: 'none' } as const }
   }
 
   if (!isQuestionElementType(input.type) || draft.elementType !== input.type) {
@@ -317,13 +367,21 @@ function normalizedKeepPayload(
       feedback: choice.feedback ?? null,
     }))
   const questionType = input.type
+  const storedCurrent = draft.current as GeneratedQuestionEditable
+  const tagWrite = questionTagSelectionWrite(
+    { tagSelection: input.tagSelection, tags: input.tags },
+    storedCurrent.tagSelection
+  )
+  const tagSelection = tagWrite.mode === 'none' ? undefined : tagWrite.selection
   const current: GeneratedQuestionEditable = {
     itemType: questionType,
     name: input.name,
     stem: input.content,
     context: null,
     explanation: input.explanation ?? null,
+    tags: input.tags ?? [],
     choices,
+    ...(tagSelection ? { tagSelection } : {}),
   }
   const elementInput: ElementManipulationInput = {
     status: input.status,
@@ -345,9 +403,11 @@ function normalizedKeepPayload(
     },
     basePoints: input.basePoints,
     pointsMultiplier: input.pointsMultiplier,
-    tags: input.tags ?? [],
+    // Structured selections are applied by id after manipulation; only the
+    // legacy name input still travels as element tag names.
+    tags: tagWrite.mode === 'legacy' ? tagWrite.selection.newTagNames : [],
   }
-  return { current, elementInput }
+  return { current, elementInput, tagWrite }
 }
 
 type SavedElementForRetry = {
@@ -361,17 +421,22 @@ type SavedElementForRetry = {
   pointsMultiplier: number
   difficultyLevel: number | null
   options: unknown
-  tags: Array<{ name: string }>
+  tags: Array<{ id: number; name: string }>
 }
 
 function normalizedTagNames(tags: string[] | null | undefined) {
   return [...new Set(tags ?? [])].sort((a, b) => a.localeCompare(b))
 }
 
+type KeepTagExpectation =
+  | { kind: 'names' }
+  | { kind: 'ids'; tagIds: number[] | null }
+
 function savedElementMatchesKeepRequest(
   savedElement: SavedElementForRetry,
   elementInput: ElementManipulationInput,
-  ownerId: string
+  ownerId: string,
+  tagExpectation: KeepTagExpectation = { kind: 'names' }
 ) {
   // manipulateElement persists this validator result for every Element type;
   // optionless types therefore intentionally compare against an empty object.
@@ -393,12 +458,30 @@ function savedElementMatchesKeepRequest(
     savedElement.pointsMultiplier === elementInput.pointsMultiplier &&
     savedElement.difficultyLevel === (elementInput.difficultyLevel ?? null) &&
     isDeepStrictEqual(savedElement.options, persistedOptions) &&
-    isDeepStrictEqual(
+    savedElementTagsMatch(savedElement, elementInput, tagExpectation)
+  )
+}
+
+function savedElementTagsMatch(
+  savedElement: SavedElementForRetry,
+  elementInput: ElementManipulationInput,
+  tagExpectation: KeepTagExpectation
+) {
+  if (tagExpectation.kind === 'names') {
+    return isDeepStrictEqual(
       savedElement.tags
         .map((tag) => tag.name)
         .sort((a, b) => a.localeCompare(b)),
       normalizedTagNames(elementInput.tags)
     )
+  }
+  // A `resolve-only` miss means the request cannot reproduce the saved element,
+  // so a proposal that was never created does not count as an exact retry.
+  if (tagExpectation.tagIds === null) return false
+
+  return isDeepStrictEqual(
+    [...new Set(tagExpectation.tagIds)].sort((a, b) => a - b),
+    savedElement.tags.map((tag) => tag.id).sort((a, b) => a - b)
   )
 }
 
@@ -414,7 +497,7 @@ export async function keepGeneratedElementDraft(
     )
   }
 
-  return ctx.prisma.$transaction(async (transaction) => {
+  const run = async (transaction: DB.Prisma.TransactionClient) => {
     const owned = await transaction.generatedElementDraft.findFirst({
       where: {
         id: input.draftId,
@@ -453,7 +536,7 @@ export async function keepGeneratedElementDraft(
             pointsMultiplier: true,
             difficultyLevel: true,
             options: true,
-            tags: { select: { name: true } },
+            tags: { select: { id: true, name: true } },
           },
         },
       },
@@ -464,19 +547,30 @@ export async function keepGeneratedElementDraft(
         'Generated element draft not found'
       )
     }
-    const validStatuses: DB.ElementGenerationBuildStatus[] =
-      draft.elementType === DB.ElementType.FLASHCARD
-        ? TERMINAL_EDITABLE_STATUSES
-        : [DB.ElementGenerationBuildStatus.COMPLETED]
-    if (!validStatuses.includes(draft.build.status)) {
+    if (!TERMINAL_EDITABLE_STATUSES.includes(draft.build.status)) {
       throw questionGenerationServiceError(
         'INVALID_STAGE',
         'Generated elements can only be kept after terminal publication'
       )
     }
 
-    const { current, elementInput } = normalizedKeepPayload(draft, input)
+    const { current, elementInput, tagWrite } = normalizedKeepPayload(
+      draft,
+      input
+    )
     if (draft.savedElementId !== null) {
+      const tagExpectation: KeepTagExpectation =
+        tagWrite.mode === 'selection'
+          ? {
+              kind: 'ids',
+              tagIds: await resolveQuestionTagSelection(
+                transaction,
+                ctx.user.sub,
+                tagWrite.selection,
+                'resolve-only'
+              ),
+            }
+          : { kind: 'names' }
       if (
         draft.decision === DB.GeneratedElementDecision.ACCEPTED &&
         draft.revision === input.expectedRevision + 1 &&
@@ -484,7 +578,8 @@ export async function keepGeneratedElementDraft(
         savedElementMatchesKeepRequest(
           draft.savedElement,
           elementInput,
-          ctx.user.sub
+          ctx.user.sub,
+          tagExpectation
         )
       ) {
         return draft
@@ -516,6 +611,15 @@ export async function keepGeneratedElementDraft(
       )
     }
 
+    const resolvedTagIds =
+      tagWrite.mode === 'selection'
+        ? await resolveQuestionTagSelection(
+            transaction,
+            ctx.user.sub,
+            tagWrite.selection,
+            'resolve-or-create'
+          )
+        : null
     const element = await manipulateElement(elementInput, {
       ...ctx,
       prisma: transaction,
@@ -525,6 +629,18 @@ export async function keepGeneratedElementDraft(
         'SAVE_VALIDATION_FAILED',
         'Generated element is not a valid element'
       )
+    }
+    if (tagWrite.mode === 'selection') {
+      // Connect by validated owner tag id instead of re-creating a tag by name,
+      // so a renamed tag keeps its identity and a deleted one is never revived.
+      await transaction.element.update({
+        where: { id: element.id },
+        data: {
+          tags: {
+            set: [...new Set(resolvedTagIds ?? [])].map((id) => ({ id })),
+          },
+        },
+      })
     }
     const savedAt = new Date()
     const linked = await transaction.generatedElementDraft.updateMany({
@@ -551,7 +667,9 @@ export async function keepGeneratedElementDraft(
     return transaction.generatedElementDraft.findUniqueOrThrow({
       where: { id: draft.id },
     })
-  })
+  }
+
+  return withQuestionTagConflictRetry(() => ctx.prisma.$transaction(run))
 }
 
 export async function updateGeneratedElementDraft(
@@ -568,6 +686,7 @@ export async function updateGeneratedElementDraft(
       !input.current.explanation ||
       !input.current.cardType ||
       input.current.context != null ||
+      input.current.tagSelection != null ||
       (input.current.choices?.length ?? 0) > 0
     ) {
       throw questionGenerationServiceError(
@@ -594,20 +713,27 @@ export async function updateGeneratedElementDraft(
   if (
     !isQuestionElementType(elementType) ||
     !input.current.choices ||
-    input.current.cardType != null ||
-    (input.current.tags?.length ?? 0) > 0
+    input.current.cardType != null
   ) {
     throw questionGenerationServiceError(
       'DRAFT_INVALID',
       'An assessment element requires answer choices'
     )
   }
+  const tagWrite = questionTagSelectionWrite(
+    {
+      tagSelection: input.current.tagSelection,
+      tags: input.current.tags,
+    },
+    undefined
+  )
   const current: GeneratedQuestionEditable = {
     itemType: elementType,
     name: input.current.name,
     stem: input.current.prompt,
     context: input.current.context ?? null,
     explanation: input.current.explanation ?? null,
+    tags: input.current.tags ?? [],
     choices: input.current.choices.map((choice) => ({
       ...choice,
       feedback: choice.feedback ?? null,
@@ -618,6 +744,7 @@ export async function updateGeneratedElementDraft(
       draftId: input.draftId,
       expectedRevision: input.expectedRevision,
       current,
+      ...(tagWrite.mode === 'none' ? {} : { tagSelection: tagWrite.selection }),
     },
     ctx
   )
@@ -698,6 +825,10 @@ export async function getElementGenerationSources(ctx: ContextWithUser) {
 
 export async function getElementGenerationCapabilities(ctx: ContextWithUser) {
   await assertQuestionGenerationPreviewAccess(ctx)
+  const focusTopicEnabled = await isFeatureFlagEnabled(
+    ctx,
+    'question-focus-topic'
+  )
   return {
     elementTypes: [...ELEMENT_GENERATION_CAPABILITIES.elementTypes],
     languages: [...ELEMENT_GENERATION_CAPABILITIES.languages],
@@ -712,7 +843,10 @@ export async function getElementGenerationCapabilities(ctx: ContextWithUser) {
         supportsSourceScopes: elementType !== 'FLASHCARD',
         supportsDifficulty: elementType !== 'FLASHCARD',
         supportsBloomLevels: elementType !== 'FLASHCARD',
-        supportsRetry: elementType === 'FLASHCARD',
+        supportsFocusTopic: elementType !== 'FLASHCARD' && focusTopicEnabled,
+        // Questions retry a failed build whose reasons the system can resolve;
+        // errorRetryable decides whether the retry is offered for one build.
+        supportsRetry: true,
         supportsIncompletePublication: elementType === 'FLASHCARD',
       })
     ),

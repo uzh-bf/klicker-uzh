@@ -1,17 +1,21 @@
+import hashes from '@klicker-uzh/graphql/dist/client.json'
 import {
-  resolveLtiAuthDecision,
+  cookieSecurityOptions,
+  cookiesAvailableViaLtiProbe,
+  LTI_PROBE_COOKIE_NAME,
+} from '@klicker-uzh/util/auth'
+import { type NextRequest, NextResponse } from 'next/server'
+import { z } from 'zod'
+import {
+  PWA_CHAT_EMBED_QUERY_KEY,
+  PWA_CHAT_EMBED_SESSION_COOKIE,
+} from '@/src/lib/pwaEmbedAuth'
+import {
+  findOrCreateGuestPersona,
   signChatGuestToken,
   verifyLtiToken,
 } from '@/src/lib/server/ltiGuest'
-import { prisma } from '@klicker-uzh/prisma'
-import {
-  LTI_PROBE_COOKIE_NAME,
-  cookieSecurityOptions,
-  cookiesAvailableViaLtiProbe,
-} from '@klicker-uzh/util/auth'
-import { jwtVerify } from 'jose'
-import { NextRequest, NextResponse } from 'next/server'
-import { z } from 'zod'
+import { signPwaEmbedSessionToken } from '@/src/lib/server/pwaEmbed'
 
 const LOG_PREFIX = '[chat:auth/lti]'
 
@@ -21,33 +25,36 @@ const querySchema = z.object({
   chatbotId: z.string().uuid(),
 })
 
-async function getParticipantTokenSub(
-  req: NextRequest
-): Promise<string | null> {
-  const token = req.cookies.get('participant_token')?.value
-  if (!token) return null
-  const appSecret = process.env.APP_SECRET
-  if (!appSecret) return null
-  try {
-    const result = await jwtVerify(token, new TextEncoder().encode(appSecret))
-    return typeof result.payload.sub === 'string' &&
-      result.payload.sub.length > 0
-      ? result.payload.sub
-      : null
-  } catch {
-    return null
-  }
+function noLoginRedirect(chatbotId: string | null) {
+  // A route handler resolves `req.nextUrl` against the origin the server is
+  // bound to, which behind the ingress is an in-cluster service address. An
+  // absolute redirect built from it is unreachable from the browser, so the
+  // refusal is issued as a path-relative `Location` that the browser resolves
+  // against the origin it actually requested.
+  const search = new URLSearchParams({ lti: '1' })
+  if (chatbotId) search.set('redirectTo', `/${chatbotId}`)
+  const response = new NextResponse(null, {
+    status: 307,
+    headers: { location: `/noLogin?${search.toString()}` },
+  })
+  response.headers.set('Cache-Control', 'no-store')
+  response.headers.set('Referrer-Policy', 'no-referrer')
+  return response
 }
 
-function noLoginRedirect(req: NextRequest, chatbotId: string | null) {
-  const noLoginUrl = req.nextUrl.clone()
-  noLoginUrl.pathname = '/noLogin'
-  noLoginUrl.search = ''
-  noLoginUrl.searchParams.set('lti', '1')
-  if (chatbotId) {
-    noLoginUrl.searchParams.set('redirectTo', `/${chatbotId}`)
-  }
-  return NextResponse.redirect(noLoginUrl)
+// Clear previous Chat transport state before choosing this launch's identity.
+function launchResponse(destination: URL) {
+  const path = `${destination.pathname}${destination.search}`
+  return new NextResponse(
+    `<!doctype html><meta charset="utf-8"><script>try { sessionStorage.removeItem('chat_participant_token'); sessionStorage.removeItem('chat_pwa_embed_token') } catch {} window.location.replace(${JSON.stringify(path).replaceAll('<', '\\u003c')})</script>`,
+    {
+      headers: {
+        'Content-Type': 'text/html; charset=utf-8',
+        'Cache-Control': 'no-store',
+        'Referrer-Policy': 'no-referrer',
+      },
+    }
+  )
 }
 
 export async function GET(req: NextRequest) {
@@ -75,63 +82,92 @@ export async function GET(req: NextRequest) {
 
   const { jwt, courseId, chatbotId } = queryResult.data
 
-  let ltiPayload
+  let ltiPayload: Awaited<ReturnType<typeof verifyLtiToken>>
   try {
     ltiPayload = await verifyLtiToken(jwt)
   } catch (error) {
     console.error(LOG_PREFIX, 'LTI JWT verification failed:', error)
-    return noLoginRedirect(req, chatbotId)
+    return noLoginRedirect(chatbotId)
   }
 
-  const [course, chatbot] = await Promise.all([
-    prisma.course.findUnique({ where: { id: courseId }, select: { id: true } }),
-    prisma.chatbot.findUnique({
-      where: { id: chatbotId },
-      select: { id: true, courseId: true },
-    }),
-  ])
-
-  if (!course) {
-    return NextResponse.json({ error: 'Course not found' }, { status: 404 })
-  }
-  if (!chatbot) {
-    return NextResponse.json({ error: 'Chatbot not found' }, { status: 404 })
-  }
-  if (chatbot.courseId !== courseId) {
-    console.error(LOG_PREFIX, 'Cross-course access blocked', {
-      chatbotCourseId: chatbot.courseId,
-      requestedCourseId: courseId,
-      chatbotId,
-    })
+  if (
+    ltiPayload.chatbotLaunch?.courseId !== courseId ||
+    ltiPayload.chatbotLaunch?.chatbotId !== chatbotId
+  ) {
     return NextResponse.json(
-      { error: 'Chatbot not found in this course' },
+      { error: 'Invalid launch target' },
       { status: 403 }
     )
   }
-
-  const participantTokenSub = await getParticipantTokenSub(req)
-
-  let decision
+  const apiOrigin = process.env.APP_ORIGIN_API
+  if (!apiOrigin)
+    return NextResponse.json({ error: 'Login unavailable' }, { status: 503 })
+  let decision: {
+    status: 'ACCOUNT' | 'GUEST'
+    participantId?: string
+    participantToken?: string
+  }
   try {
-    decision = await resolveLtiAuthDecision({
-      ltiSub: ltiPayload.sub,
-      ltiScope: ltiPayload.scope,
-      courseId,
-      participantTokenSub,
+    const result = await fetch(`${apiOrigin.replace(/\/$/, '')}/api/graphql`, {
+      method: 'POST',
+      signal: AbortSignal.timeout(15000),
+      redirect: 'error',
+      cache: 'no-store',
+      headers: {
+        'Content-Type': 'application/json',
+        'x-graphql-yoga-csrf': '1',
+      },
+      body: JSON.stringify({
+        operationName: 'LoginParticipantForLtiChatbot',
+        extensions: {
+          persistedQuery: {
+            version: 1,
+            sha256Hash: hashes.LoginParticipantForLtiChatbot,
+          },
+        },
+        variables: {
+          signedLtiData: jwt,
+          courseId,
+          chatbotId,
+          participantToken: req.cookies.get('participant_token')?.value,
+        },
+      }),
     })
-  } catch (error) {
-    console.error(LOG_PREFIX, 'resolveLtiAuthDecision failed:', error)
+    if (!result.ok) throw new Error('Login unavailable')
+    const body = await result.json()
+    const parsed = z
+      .object({
+        status: z.enum(['ACCOUNT', 'GUEST', 'DENIED']),
+        participantId: z.string().uuid().nullable(),
+        participantToken: z.string().nullable(),
+      })
+      .parse(body.data?.loginParticipantForLtiChatbot)
+    if (body.errors) throw new Error('Login unavailable')
+    if (parsed.status === 'DENIED') return noLoginRedirect(chatbotId)
+    if (
+      parsed.status === 'ACCOUNT' &&
+      (!parsed.participantId || !parsed.participantToken)
+    )
+      throw new Error('Login unavailable')
+    decision = {
+      status: parsed.status,
+      participantId: parsed.participantId ?? undefined,
+      participantToken: parsed.participantToken ?? undefined,
+    }
+    if (decision.status === 'GUEST') {
+      const guest = await findOrCreateGuestPersona(
+        ltiPayload.sub,
+        ltiPayload.scope,
+        courseId
+      )
+      decision.participantId = guest.participantId
+    }
+  } catch {
     return NextResponse.json(
-      { error: 'Failed to resolve auth decision' },
-      { status: 500 }
+      { error: 'Unable to establish chatbot session' },
+      { status: 503 }
     )
   }
-
-  console.info(LOG_PREFIX, 'auth resolved', {
-    mode: decision.mode,
-    chatbotId,
-    courseId,
-  })
 
   // Probe whether third-party cookies survived the LMS iframe context.
   // `apps/lti` sets `lti-token` with `secure; sameSite=none; domain=COOKIE_DOMAIN`;
@@ -150,24 +186,47 @@ export async function GET(req: NextRequest) {
     process.env.NODE_ENV === 'production' &&
     process.env.COOKIE_DOMAIN !== '127.0.0.1'
 
-  if (decision.mode === 'account') {
-    // Account branch: clear any stale `chat_participant_token` so the
-    // guest-first middleware order (verify chat-guest before participant) does
-    // not keep forcing `authMode='anonymous'` after this redirect.
-    const accountResponse = NextResponse.redirect(chatbotUrl)
-    accountResponse.cookies.set('chat_participant_token', '', {
+  if (decision.status === 'ACCOUNT') {
+    const scopedToken = await signPwaEmbedSessionToken({
+      chatbotId,
+      courseId,
+      participantId: decision.participantId!,
+    })
+    if (!cookiesAvailable)
+      chatbotUrl.searchParams.set(PWA_CHAT_EMBED_QUERY_KEY, scopedToken)
+    const response = launchResponse(chatbotUrl)
+    response.cookies.set(LTI_PROBE_COOKIE_NAME, '', {
+      ...cookieSecurityOptions({ isProduction }),
+      domain: process.env.COOKIE_DOMAIN,
+      path: '/',
+      maxAge: 0,
+    })
+    response.cookies.set('chat_participant_token', '', {
       httpOnly: true,
       ...cookieSecurityOptions({ isProduction }),
       path: '/',
       maxAge: 0,
     })
-    return accountResponse
+    response.cookies.set(PWA_CHAT_EMBED_SESSION_COOKIE, scopedToken, {
+      httpOnly: true,
+      ...cookieSecurityOptions({ isProduction }),
+      path: '/',
+      maxAge: 12 * 60 * 60,
+    })
+    response.cookies.set('participant_token', decision.participantToken!, {
+      httpOnly: true,
+      ...cookieSecurityOptions({ isProduction }),
+      domain: process.env.COOKIE_DOMAIN,
+      path: '/',
+      maxAge: 14 * 24 * 60 * 60,
+    })
+    return response
   }
 
   // Guest path. Issue chat_participant_token; never override participant_token.
-  let chatGuestToken
+  let chatGuestToken: string
   try {
-    chatGuestToken = await signChatGuestToken(decision.participantId)
+    chatGuestToken = await signChatGuestToken(decision.participantId!)
   } catch (error) {
     console.error(LOG_PREFIX, 'Failed to sign chat guest token:', error)
     return NextResponse.json(
@@ -180,11 +239,21 @@ export async function GET(req: NextRequest) {
   // (pre-Safari 26.2, Firefox <141). Hand the token off via `?_t=` query so
   // the client bootstrap (`useChatGuestTokenBootstrap`) can stuff it into
   // sessionStorage and strip the URL parameter via `router.replace`.
-  if (!cookiesAvailable) {
-    chatbotUrl.searchParams.set('_t', chatGuestToken)
-  }
+  if (!cookiesAvailable) chatbotUrl.searchParams.set('_t', chatGuestToken)
 
-  const response = NextResponse.redirect(chatbotUrl)
+  const response = launchResponse(chatbotUrl)
+  response.cookies.set(LTI_PROBE_COOKIE_NAME, '', {
+    ...cookieSecurityOptions({ isProduction }),
+    domain: process.env.COOKIE_DOMAIN,
+    path: '/',
+    maxAge: 0,
+  })
+  response.cookies.set(PWA_CHAT_EMBED_SESSION_COOKIE, '', {
+    httpOnly: true,
+    ...cookieSecurityOptions({ isProduction }),
+    path: '/',
+    maxAge: 0,
+  })
 
   // Host-only cookie: no `domain` set → cookie never leaves the chat subdomain.
   // Backend GraphQL on api.<domain> never sees this token even if leaked.

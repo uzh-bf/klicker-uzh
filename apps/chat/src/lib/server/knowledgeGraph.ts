@@ -7,17 +7,37 @@ import type {
 } from '@klicker-uzh/types'
 import {
   getPublishedKnowledgeGraphForChatbot,
+  readKnowledgeGraphMentions,
   readKnowledgeGraphNeighbors,
   readKnowledgeGraphOverview,
   searchKnowledgeGraph,
 } from './knowledgeGraphRuntime'
 
-export { isKnowledgeGraphNotPublishedError } from './knowledgeGraphRuntime'
+export {
+  isKnowledgeGraphNotPublishedError,
+  KnowledgeGraphSelectionRequiredError,
+} from './knowledgeGraphRuntime'
 
-export type ChatbotKnowledgeGraphReadRequest =
+export type ChatbotKnowledgeGraphReadRequest = { kbId?: string } & (
   | { operation: 'overview' }
+  | { operation: 'mentions'; text: string }
   | { operation: 'search'; query: string }
-  | { operation: 'neighbors'; nodeId: string }
+  | { operation: 'neighbors'; nodeId: string; kbId: string; buildId: string }
+)
+
+/** A concept named verbatim in an answer, located by its text there. */
+export type ChatbotKnowledgeGraphMention = { nodeId: string; text: string }
+
+export type ChatbotKnowledgeGraphReadResponse = KnowledgeGraphResponse & {
+  mentions?: ChatbotKnowledgeGraphMention[]
+}
+
+export class KnowledgeGraphBuildChangedError extends Error {
+  constructor() {
+    super('Knowledge graph build changed')
+    this.name = 'KnowledgeGraphBuildChangedError'
+  }
+}
 
 function browserSafeSourceReference(
   source: KnowledgeGraphSourceReference
@@ -26,6 +46,7 @@ function browserSafeSourceReference(
     resourceId: source.resourceId,
     title: source.title,
     ...(source.reference === undefined ? {} : { reference: source.reference }),
+    ...(source.pages === undefined ? {} : { pages: source.pages }),
   }
 }
 
@@ -49,6 +70,9 @@ function browserSafeEdge(edge: KnowledgeGraphEdge): KnowledgeGraphEdge {
     target: edge.target,
     type: edge.type,
     label: edge.label,
+    relationType: edge.relationType,
+    relationStatus: edge.relationStatus,
+    sourceReferences: edge.sourceReferences.map(browserSafeSourceReference),
     properties: edge.properties,
   }
 }
@@ -69,18 +93,53 @@ function browserSafeResponse(
 export async function readPublishedChatbotKnowledgeGraph(
   chatbotId: string,
   request: ChatbotKnowledgeGraphReadRequest
-): Promise<KnowledgeGraphResponse> {
+): Promise<ChatbotKnowledgeGraphReadResponse> {
   const publication = await getPublishedKnowledgeGraphForChatbot(
     prisma,
-    chatbotId
+    chatbotId,
+    request.kbId
   )
 
-  const response =
-    request.operation === 'overview'
-      ? await readKnowledgeGraphOverview(publication)
-      : request.operation === 'search'
-        ? await searchKnowledgeGraph(publication, request.query)
-        : await readKnowledgeGraphNeighbors(publication, request.nodeId)
+  if (publication.isStale) throw new KnowledgeGraphBuildChangedError()
 
-  return browserSafeResponse(response)
+  if (
+    request.operation === 'neighbors' &&
+    (publication.kbId !== request.kbId ||
+      publication.buildId !== request.buildId)
+  ) {
+    throw new KnowledgeGraphBuildChangedError()
+  }
+
+  let mentions: ChatbotKnowledgeGraphMention[] | undefined
+  let response: KnowledgeGraphResponse
+  if (request.operation === 'mentions') {
+    const found = await readKnowledgeGraphMentions(publication, request.text)
+    mentions = found.map(({ node, text }) => ({ nodeId: node.id, text }))
+    response = {
+      kbId: publication.kbId,
+      buildId: publication.buildId,
+      isStale: publication.isStale,
+      nodes: found.map(({ node }) => node),
+      edges: [],
+      truncated: false,
+    }
+  } else {
+    response =
+      request.operation === 'overview'
+        ? await readKnowledgeGraphOverview(publication)
+        : request.operation === 'search'
+          ? await searchKnowledgeGraph(publication, request.query)
+          : await readKnowledgeGraphNeighbors(publication, request.nodeId)
+  }
+
+  const current = await getPublishedKnowledgeGraphForChatbot(
+    prisma,
+    chatbotId,
+    publication.kbId
+  )
+  if (current.isStale || current.buildId !== publication.buildId) {
+    throw new KnowledgeGraphBuildChangedError()
+  }
+  const safe = browserSafeResponse(response)
+  return mentions === undefined ? safe : { ...safe, mentions }
 }

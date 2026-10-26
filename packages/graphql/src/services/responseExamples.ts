@@ -38,6 +38,21 @@ type ResponseExamplePrisma = Pick<
   | 'responseExampleSet'
 >
 
+const responseExampleChatbotSelect = {
+  systemPrompts: true,
+  standardModeConfig: true,
+  mcpConfigurations: {
+    select: {
+      allowedTools: true,
+      chatMode: true,
+      isEnabled: true,
+      mcpServerId: true,
+      parameters: true,
+      priority: true,
+    },
+  },
+} satisfies Prisma.ChatbotSelect
+
 const responseExampleSetInclude = {
   examples: {
     orderBy: [{ chatMode: 'asc' }, { studentMessage: 'asc' }, { id: 'asc' }],
@@ -55,7 +70,7 @@ const responseExampleSetInclude = {
     },
   },
   chatbot: {
-    select: { systemPrompts: true, standardModeConfig: true },
+    select: responseExampleChatbotSelect,
   },
 } satisfies Prisma.ResponseExampleSetInclude
 
@@ -78,7 +93,8 @@ function withChatbotModes(
     ...set,
     chatModes: extractChatbotModes(
       set.chatbot.systemPrompts,
-      set.chatbot.standardModeConfig
+      set.chatbot.standardModeConfig,
+      set.chatbot.mcpConfigurations
     ),
   }
 }
@@ -433,6 +449,8 @@ export async function captureResponseExample(
       select: {
         systemPrompts: true,
         standardModeConfig: true,
+        mcpConfigurations: responseExampleChatbotSelect.mcpConfigurations,
+        owner: { select: { aiFeaturesEnabled: true } },
         knowledgeBases: {
           where: { isEnabled: true, kb: { deletedAt: null } },
           orderBy: { id: 'asc' },
@@ -442,13 +460,20 @@ export async function captureResponseExample(
       },
     })
     if (!chatbot) return null
+    if (!chatbot.owner.aiFeaturesEnabled) {
+      throw captureError(
+        'Account AI approval is required for response-example capture.',
+        RESPONSE_EXAMPLE_CAPTURE_UNAVAILABLE
+      )
+    }
 
     if (
       chatbot.knowledgeBases.length !== 1 ||
       chatbot.knowledgeBases[0]?.kbId !== claims.kbId ||
       !extractChatbotModes(
         chatbot.systemPrompts,
-        chatbot.standardModeConfig
+        chatbot.standardModeConfig,
+        chatbot.mcpConfigurations
       ).includes(claims.chatMode)
     ) {
       throw captureError(
@@ -569,7 +594,7 @@ async function reviewResponseExample(
         set: {
           select: {
             chatbot: {
-              select: { systemPrompts: true, standardModeConfig: true },
+              select: responseExampleChatbotSelect,
             },
           },
         },
@@ -598,7 +623,8 @@ async function reviewResponseExample(
       status === DB.ResponseExampleStatus.APPROVED &&
       !extractChatbotModes(
         example.set.chatbot.systemPrompts,
-        example.set.chatbot.standardModeConfig
+        example.set.chatbot.standardModeConfig,
+        example.set.chatbot.mcpConfigurations
       ).includes(example.chatMode)
     ) {
       throw new GraphQLError(
@@ -726,7 +752,7 @@ export async function editAndApproveResponseExample(
         set: {
           select: {
             chatbot: {
-              select: { systemPrompts: true, standardModeConfig: true },
+              select: responseExampleChatbotSelect,
             },
           },
         },
@@ -761,7 +787,8 @@ export async function editAndApproveResponseExample(
     if (
       !extractChatbotModes(
         example.set.chatbot.systemPrompts,
-        example.set.chatbot.standardModeConfig
+        example.set.chatbot.standardModeConfig,
+        example.set.chatbot.mcpConfigurations
       ).includes(input.chatMode)
     ) {
       throw new GraphQLError(

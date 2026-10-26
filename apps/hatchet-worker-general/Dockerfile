@@ -1,4 +1,9 @@
-FROM docker.io/library/node:24.16.0-alpine AS base
+FROM docker.io/library/node:24.21.0-alpine AS base
+
+# See apps/backend-docker/Dockerfile: patched Alpine packages and npm for every
+# stage, including any scanned runtime image.
+RUN apk upgrade --no-cache \
+ && npm i -g --ignore-scripts npm@11.19.1
 
 
 FROM base AS deps
@@ -7,7 +12,9 @@ WORKDIR /app
 RUN apk add --no-cache libc6-compat
 RUN apk update
 
-RUN npm i -g --ignore-scripts pnpm@11.5.0 turbo@2.10.11
+# pnpm 12 needs native setup for direct child-process execution on Alpine.
+RUN npm i -g --ignore-scripts pnpm@12.11.2 turbo@2.10.11 \
+ && node "$(npm root -g)/pnpm/install.js"
 
 COPY . .
 
@@ -20,7 +27,8 @@ WORKDIR /app
 RUN apk add --no-cache libc6-compat
 RUN apk update
 
-RUN npm i -g --ignore-scripts pnpm@11.5.0 turbo@2.10.11
+RUN npm i -g --ignore-scripts pnpm@12.11.2 turbo@2.10.11 \
+ && node "$(npm root -g)/pnpm/install.js"
 
 COPY --from=deps /app/out/json/ .
 COPY --from=deps /app/out/pnpm* .
@@ -38,12 +46,17 @@ WORKDIR /app
 
 ARG NODE_ENV="production"
 
-RUN npm i -g --ignore-scripts pnpm@11.5.0 turbo@2.10.11
+RUN npm i -g --ignore-scripts pnpm@12.11.2 turbo@2.10.11 \
+ && node "$(npm root -g)/pnpm/install.js"
 
 COPY --from=deps /app/out/json/ .
 COPY --from=deps /app/out/pnpm* .
 
-RUN pnpm i --prod --ignore-scripts
+# See apps/backend-docker/Dockerfile: the install, the toolchain teardown and
+# the cache removal share one RUN so no build state lands in a committed layer.
+RUN pnpm i --prod --ignore-scripts \
+ && npm rm -g --ignore-scripts pnpm turbo \
+ && rm -rf /root/.cache/pnpm /root/.local/share/pnpm /root/.npm
 
 RUN addgroup --system --gid 1001 nodejs
 RUN adduser --system --uid 1001 nodejs
@@ -51,6 +64,7 @@ RUN adduser --system --uid 1001 nodejs
 COPY --from=builder /app/packages/hatchet/dist/ /app/packages/hatchet/dist/
 COPY --from=builder /app/packages/feature-flags/dist/ /app/packages/feature-flags/dist/
 COPY --from=builder /app/packages/graphql/dist/ /app/packages/graphql/dist/
+COPY --from=builder /app/packages/doc-query-client/dist/ /app/packages/doc-query-client/dist/
 COPY --from=builder /app/packages/knowledge-graph/dist/ /app/packages/knowledge-graph/dist/
 COPY --from=builder /app/packages/prisma/dist/ /app/packages/prisma/dist/
 COPY --from=builder /app/packages/types/dist/ /app/packages/types/dist/
@@ -62,4 +76,4 @@ USER nodejs
 
 EXPOSE 3000
 
-CMD node /app/apps/hatchet-worker-general/dist/index.js
+CMD ["node", "/app/apps/hatchet-worker-general/dist/index.js"]

@@ -1,13 +1,15 @@
-import { useMutation } from '@apollo/client'
+import { useMutation, useQuery } from '@apollo/client'
 import {
   ElementDisplayMode,
   ElementStatus,
   ElementType,
   GeneratableElementType,
   GeneratedElementDecision,
+  GetUserTagsDocument,
   KeepGeneratedElementDraftDocument,
   SaveGeneratedElementsDocument,
   SetGeneratedElementDecisionDocument,
+  type Tag,
 } from '@klicker-uzh/graphql/dist/ops'
 import { Button, toast, UserNotification } from '@uzh-bf/design-system'
 import { useFormatter, useTranslations } from 'next-intl'
@@ -23,6 +25,14 @@ import type {
   ElementGenerationBuildData,
   GeneratedElementDraftData,
 } from './elementGenerationTypes'
+import GeneratedTagSelector from './GeneratedTagSelector'
+import {
+  draftSuggestedTags,
+  groupTagSuggestions,
+  persistedTagSelection,
+  selectedTagNames,
+} from './generatedTagSelection'
+import useGeneratedTagSelection from './useGeneratedTagSelection'
 
 type ReviewFilter = 'all' | 'open' | 'attention' | 'kept' | 'discarded'
 
@@ -48,6 +58,49 @@ function draftNeedsAttention(draft: GeneratedElementDraftData) {
       (draft.decision === GeneratedElementDecision.Open &&
         draft.qualityFlags.length > 0))
   )
+}
+
+type QualityReasonKey =
+  | 'review.qualityReasons.difficultyReviewRequired'
+  | 'review.qualityReasons.difficultyValidationFailed'
+  | 'review.qualityReasons.manualReviewRequired'
+  | 'review.qualityReasons.other'
+  | 'review.qualityReasons.acceptedUnsaved'
+
+const QUALITY_FLAG_REASON_KEYS = new Map<string, QualityReasonKey>([
+  [
+    'difficulty_review_required',
+    'review.qualityReasons.difficultyReviewRequired',
+  ],
+  [
+    'difficulty_validation_failed',
+    'review.qualityReasons.difficultyValidationFailed',
+  ],
+  ['manual_review_required', 'review.qualityReasons.manualReviewRequired'],
+])
+
+// Quality flags are bounded but open-ended strings from the generation worker.
+// Known flags receive a dedicated reason; all unknown flags collapse into a
+// single generic reason, so raw upstream values never reach the interface.
+function draftQualityReasonKeys(draft: GeneratedElementDraftData) {
+  const reasonKeys = [
+    ...new Set(
+      draft.qualityFlags.flatMap((flag) => {
+        const reasonKey = QUALITY_FLAG_REASON_KEYS.get(flag)
+        return reasonKey ? [reasonKey] : []
+      })
+    ),
+  ]
+  if (draft.qualityFlags.some((flag) => !QUALITY_FLAG_REASON_KEYS.has(flag))) {
+    reasonKeys.push('review.qualityReasons.other')
+  }
+  if (
+    draft.decision === GeneratedElementDecision.Accepted &&
+    draft.savedElementId === null
+  ) {
+    reasonKeys.push('review.qualityReasons.acceptedUnsaved')
+  }
+  return reasonKeys
 }
 
 function draftMatchesFilter(
@@ -287,12 +340,64 @@ function GeneratedDraftEditor({
   const initialValues = useMemo(() => draftToFormValues(draft), [draft])
   const [keepDraft] = useMutation(KeepGeneratedElementDraftDocument)
   const [setDecision] = useMutation(SetGeneratedElementDecisionDocument)
+  const isQuestion = draft.elementType !== GeneratableElementType.Flashcard
+  const {
+    data: tagData,
+    loading: tagsLoading,
+    error: tagsError,
+    refetch: refreshTags,
+  } = useQuery(GetUserTagsDocument, {
+    skip: !isQuestion,
+    fetchPolicy: 'network-only',
+  })
+  const ownerTags = useMemo(
+    () => (tagData?.userTags ?? []).filter((tag): tag is Tag => tag !== null),
+    [tagData]
+  )
+  const persistedSelection = useMemo(
+    () => persistedTagSelection(draft.current),
+    [draft.current]
+  )
+  const selection = useGeneratedTagSelection({
+    persistedSelection,
+    selectableExisting: ownerTags,
+  })
+  const [revision, setRevision] = useState(draft.revision)
+  const [savingDraft, setSavingDraft] = useState(false)
+  const [hasUnsavedChanges, setHasUnsavedChanges] = useState(false)
+  const groups = useMemo(
+    () => groupTagSuggestions(draftSuggestedTags(draft), ownerTags),
+    [draft, ownerTags]
+  )
+  const readyValues = useMemo(
+    () => ({
+      ...initialValues,
+      tags: isQuestion
+        ? selectedTagNames(persistedSelection, ownerTags)
+        : initialValues.tags,
+    }),
+    [initialValues, isQuestion, persistedSelection, ownerTags]
+  )
+  if (isQuestion && !tagData) {
+    return (
+      <div role="status" className="mt-4">
+        <UserNotification type={tagsError ? 'error' : 'info'}>
+          {tagsError ? tShared('systemError') : tShared('loading')}
+        </UserNotification>
+        {!tagsLoading ? (
+          <Button onClick={onClose}>{tShared('close')}</Button>
+        ) : null}
+      </div>
+    )
+  }
 
   return (
     <ElementEditForm
       mode={ElementEditMode.EDIT}
       loading={false}
-      initialValues={initialValues}
+      inputsDisabled={savingDraft}
+      hasUnsavedChanges={hasUnsavedChanges}
+      initialValues={readyValues}
       titleOverride={t('review.editTitle')}
       submitLabel={t('review.keep')}
       submitErrorMessage={t('review.actionError')}
@@ -332,6 +437,22 @@ function GeneratedDraftEditor({
       }}
       supplementaryContent={
         <GeneratedDraftSources build={build} draft={draft} />
+      }
+      tagInput={
+        isQuestion ? (
+          <GeneratedTagSelector
+            draftId={draft.id}
+            revision={revision}
+            selection={selection}
+            selectableExisting={ownerTags}
+            suggestedExisting={groups.suggestedExisting}
+            newProposals={groups.newProposals}
+            onDraftSaved={setRevision}
+            onSaved={onChanged}
+            onSaving={setSavingDraft}
+            onDirtyChange={setHasUnsavedChanges}
+          />
+        ) : null
       }
       discardChangesPrompt={{
         title: t('review.discardChangesTitle'),
@@ -373,7 +494,7 @@ function GeneratedDraftEditor({
           const result = await keepDraft({
             variables: {
               draftId: draft.id,
-              expectedRevision: draft.revision,
+              expectedRevision: revision,
               status: values.status,
               type,
               name: variables.name,
@@ -382,7 +503,9 @@ function GeneratedDraftEditor({
               options: 'options' in variables ? variables.options : undefined,
               basePoints: variables.basePoints,
               pointsMultiplier: variables.pointsMultiplier,
-              tags: variables.tags,
+              ...(isQuestion
+                ? { tagSelection: selection.selection }
+                : { tags: variables.tags }),
               choiceIds:
                 values.type === ElementType.Sc ||
                 values.type === ElementType.Mc ||
@@ -398,6 +521,7 @@ function GeneratedDraftEditor({
         }
 
         try {
+          if (isQuestion) await refreshTags()
           await onChanged()
         } catch {
           toast({ type: 'error', message: tShared('systemError') })
@@ -549,6 +673,7 @@ export default function GeneratedElementReview({
           <tbody className="divide-y divide-slate-100">
             {drafts.map((draft) => {
               const needsAttention = draftNeedsAttention(draft)
+              const reasonKeys = draftQualityReasonKeys(draft)
               const difficultyKey = difficultyLabelKey(draft.targetDifficulty)
               const editable =
                 draft.decision === GeneratedElementDecision.Open ||
@@ -607,10 +732,19 @@ export default function GeneratedElementReview({
                           })
                         : t('review.notApplicable')}
                     </div>
-                    {draft.qualityFlags.length > 0 ? (
-                      <div className="mt-1 text-xs font-medium text-amber-800">
-                        {t('review.qualityAttention')}
-                      </div>
+                    {reasonKeys.length > 0 ? (
+                      <ul
+                        className="mt-1 space-y-1 text-xs font-medium text-amber-800"
+                        aria-label={
+                          draft.qualityFlags.length > 0
+                            ? t('review.qualityAttention')
+                            : undefined
+                        }
+                      >
+                        {reasonKeys.map((reasonKey) => (
+                          <li key={reasonKey}>{t(reasonKey)}</li>
+                        ))}
+                      </ul>
                     ) : null}
                   </td>
                   <td className="px-4 py-3">
@@ -702,6 +836,9 @@ export default function GeneratedElementReview({
       </div>
       {selectedDraft ? (
         <GeneratedDraftEditor
+          // Remount per draft so a local tag override, the revision fence and
+          // the form values never leak from the previously opened draft.
+          key={selectedDraft.id}
           build={build}
           draft={selectedDraft}
           onClose={() => setSelectedDraft(undefined)}

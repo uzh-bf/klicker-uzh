@@ -32,16 +32,27 @@ def write_shard(
     (artifact_directory / "junit.xml").write_text(xml, encoding="utf-8")
 
 
-def run_script(root: Path) -> subprocess.CompletedProcess[str]:
+def run_script(
+    root: Path, architecture: str = "arm64"
+) -> subprocess.CompletedProcess[str]:
     return subprocess.run(
-        [sys.executable, str(SCRIPT), str(root / "artifacts"), str(root / "timings.json")],
+        [
+            sys.executable,
+            str(SCRIPT),
+            str(root / "artifacts"),
+            str(root / "timings.json"),
+            "--architecture",
+            architecture,
+        ],
         capture_output=True,
         text=True,
         check=False,
     )
 
 
-def write_prior(root: Path, durations: dict[str, float]) -> bytes:
+def write_prior(
+    root: Path, durations: dict[str, float], architecture: str | None = None
+) -> bytes:
     payload = {
         "version": 1,
         "durations": [
@@ -49,6 +60,8 @@ def write_prior(root: Path, durations: dict[str, float]) -> bytes:
             for spec_name, duration in durations.items()
         ],
     }
+    if architecture is not None:
+        payload["architecture"] = architecture
     serialized = json.dumps(payload, indent=2) + "\n"
     (root / "timings.json").write_text(serialized, encoding="utf-8")
     return serialized.encode("utf-8")
@@ -81,7 +94,14 @@ class UpdatePlaywrightTimingsTests(unittest.TestCase):
             output_path = root / "timings.json"
 
             result = subprocess.run(
-                [sys.executable, str(SCRIPT), str(root / "artifacts"), str(output_path)],
+                [
+                    sys.executable,
+                    str(SCRIPT),
+                    str(root / "artifacts"),
+                    str(output_path),
+                    "--architecture",
+                    "arm64",
+                ],
                 capture_output=True,
                 text=True,
                 check=False,
@@ -92,6 +112,7 @@ class UpdatePlaywrightTimingsTests(unittest.TestCase):
                 json.loads(output_path.read_text(encoding="utf-8")),
                 {
                     "version": 1,
+                    "architecture": "arm64",
                     "durations": [
                         {"spec": "tests/alpha.spec.ts", "duration": 1.25},
                         {"spec": "tests/beta.spec.ts", "duration": 2.5},
@@ -125,6 +146,7 @@ class UpdatePlaywrightTimingsTests(unittest.TestCase):
                 json.loads((root / "timings.json").read_text(encoding="utf-8")),
                 {
                     "version": 1,
+                    "architecture": "arm64",
                     "durations": [
                         {"spec": "tests/alpha.spec.ts", "duration": 9.75},
                         {"spec": "tests/beta.spec.ts", "duration": 2.5},
@@ -270,6 +292,78 @@ class UpdatePlaywrightTimingsTests(unittest.TestCase):
                 [{"spec": "tests/alpha.spec.ts", "duration": 1.25}],
             )
             self.assertEqual(list(root.glob(".timings.json.*.tmp")), [])
+
+    def test_written_table_records_the_measured_architecture(self):
+        with tempfile.TemporaryDirectory() as temporary_directory:
+            root = Path(temporary_directory)
+            create_tests_directory(root, "alpha.spec.ts")
+            write_shard(
+                root,
+                """<testsuites tests="1" failures="0" errors="0" skipped="0">
+  <testsuite name="alpha.spec.ts" tests="1" failures="0" errors="0" skipped="0">
+    <testcase name="measured" time="4.5" />
+  </testsuite>
+</testsuites>
+""",
+            )
+
+            result = run_script(root, architecture="x64")
+
+            self.assertEqual(result.returncode, 0, result.stderr)
+            self.assertEqual(
+                json.loads((root / "timings.json").read_text(encoding="utf-8"))[
+                    "architecture"
+                ],
+                "x64",
+            )
+
+    def test_other_architecture_cannot_replace_a_calibrated_table(self):
+        with tempfile.TemporaryDirectory() as temporary_directory:
+            root = Path(temporary_directory)
+            create_tests_directory(root, "alpha.spec.ts")
+            prior_bytes = write_prior(
+                root, {"alpha.spec.ts": 9.75}, architecture="arm64"
+            )
+            write_shard(
+                root,
+                """<testsuites tests="1" failures="0" errors="0" skipped="0">
+  <testsuite name="alpha.spec.ts" tests="1" failures="0" errors="0" skipped="0">
+    <testcase name="measured" time="1.25" />
+  </testsuite>
+</testsuites>
+""",
+            )
+
+            result = run_script(root, architecture="x64")
+
+            self.assertEqual(result.returncode, 0, result.stderr)
+            self.assertIn("calibrated for arm64", result.stderr)
+            self.assertEqual((root / "timings.json").read_bytes(), prior_bytes)
+
+    def test_untagged_table_is_adopted_by_the_producing_architecture(self):
+        with tempfile.TemporaryDirectory() as temporary_directory:
+            root = Path(temporary_directory)
+            create_tests_directory(root, "alpha.spec.ts")
+            write_prior(root, {"alpha.spec.ts": 9.75})
+            write_shard(
+                root,
+                """<testsuites tests="1" failures="0" errors="0" skipped="0">
+  <testsuite name="alpha.spec.ts" tests="1" failures="0" errors="0" skipped="0">
+    <testcase name="measured" time="2.5" />
+  </testsuite>
+</testsuites>
+""",
+            )
+
+            result = run_script(root, architecture="x64")
+
+            self.assertEqual(result.returncode, 0, result.stderr)
+            written = json.loads((root / "timings.json").read_text(encoding="utf-8"))
+            self.assertEqual(written["architecture"], "x64")
+            self.assertEqual(
+                written["durations"],
+                [{"spec": "tests/alpha.spec.ts", "duration": 2.5}],
+            )
 
     def test_failures_and_errors_are_rejected_even_when_counters_lie(self):
         reports = {

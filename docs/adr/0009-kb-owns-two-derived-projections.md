@@ -42,7 +42,10 @@ and never scheduled. A graph build failure never blocks or regresses Milvus.
 
 Consistency between them is a content digest over the active serving set, not a
 timestamp. A published graph that no longer matches the current digest keeps
-serving and is labelled stale on lecturer-facing views.
+serving and is labelled stale on lecturer-facing views. Student chatbot map
+reads are an exception: they reject stale builds and revalidate publication after
+reading to avoid serving withdrawn material. Graph-assisted retrieval likewise
+declines stale builds. This does not recall content already rendered in a browser.
 
 ## Consequences
 

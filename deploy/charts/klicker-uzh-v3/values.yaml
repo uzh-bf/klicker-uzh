@@ -94,6 +94,10 @@ hatchet:
     projectId: "klicker-course-materials"
     sourceGatewayUrl: ""
     workerDisabled: false
+    # Bound on a KB ingestion operation that the provider never reports as
+    # terminal, applied by monitor-kb-ingestions. Empty keeps the worker
+    # default of six hours.
+    timeoutSeconds: ""
   kbGraph:
     disabled: false
     hostPort: ""
@@ -108,7 +112,15 @@ hatchet:
   workers:
     general:
       replicaCount: 1
+      podDisruptionBudget:
+        minAvailable: 1
       priorityClassName: production-workload
+      workerName: hatchet-worker-general
+      nonDurableSlots: 100
+      durableSlots: 1000
+      healthPort: 8001
+      startupTimeoutMs: 30000
+      terminationGracePeriodSeconds: 90
       image:
         repository: ghcr.io/uzh-bf/klicker-uzh/hatchet-worker-general
         pullPolicy: Always
@@ -118,19 +130,22 @@ hatchet:
           memory: 64Mi
         limits:
           memory: 256Mi
-      autoscaling:
-        enabled: false
-        minReplicas: 1
-        maxReplicas: 3
-        targetCPUUtilizationPercentage: 80
-        targetMemoryUtilizationPercentage: 80
       nodeSelector: {}
       tolerations: []
       affinity: {}
+      topologySpreadConstraints: []
 
     responseProcessor:
       replicaCount: 1
+      podDisruptionBudget:
+        minAvailable: 1
       priorityClassName: production-workload
+      workerName: hatchet-worker-response-processor
+      nonDurableSlots: 100
+      durableSlots: 1000
+      healthPort: 8002
+      startupTimeoutMs: 30000
+      terminationGracePeriodSeconds: 90
       image:
         repository: ghcr.io/uzh-bf/klicker-uzh/hatchet-worker-response-processor
         pullPolicy: Always
@@ -140,19 +155,22 @@ hatchet:
           memory: 64Mi
         limits:
           memory: 256Mi
-      autoscaling:
-        enabled: false
-        minReplicas: 1
-        maxReplicas: 3
-        targetCPUUtilizationPercentage: 80
-        targetMemoryUtilizationPercentage: 80
       nodeSelector: {}
       tolerations: []
       affinity: {}
+      topologySpreadConstraints: []
 
     responseProcessorAssessment:
       replicaCount: 1
+      podDisruptionBudget:
+        minAvailable: 1
       priorityClassName: production-workload
+      workerName: hatchet-worker-response-processor-assessment
+      nonDurableSlots: 100
+      durableSlots: 1000
+      healthPort: 8003
+      startupTimeoutMs: 30000
+      terminationGracePeriodSeconds: 90
       image:
         repository: ghcr.io/uzh-bf/klicker-uzh/hatchet-worker-response-processor
         pullPolicy: Always
@@ -162,15 +180,10 @@ hatchet:
           memory: 64Mi
         limits:
           memory: 256Mi
-      autoscaling:
-        enabled: false
-        minReplicas: 1
-        maxReplicas: 3
-        targetCPUUtilizationPercentage: 80
-        targetMemoryUtilizationPercentage: 80
       nodeSelector: {}
       tolerations: []
       affinity: {}
+      topologySpreadConstraints: []
 
 auth:
   priorityClassName: production-workload
@@ -198,12 +211,6 @@ auth:
     limits:
       memory: 400Mi
 
-  autoscaling:
-    enabled: false
-    minReplicas: 3
-    maxReplicas: 10
-    targetCPUUtilizationPercentage: 70
-    targetMemoryUtilizationPercentage: 80
 
   nodeSelector: {}
 
@@ -215,6 +222,8 @@ chat:
   priorityClassName: production-workload
   accountUsageEnforcementEnabled: false
   lifecycleWritersEnabled: false
+  # Allows active requests and pending trace exports time to drain on shutdown.
+  terminationGracePeriodSeconds: 90
 
   replicaCount: 1
 
@@ -223,7 +232,9 @@ chat:
     storeResponses: false
 
   telemetry:
-    enabled: true
+    enabled: false
+    baseUrl: ''
+    environment: ''
 
   mcp:
     key: ''
@@ -259,18 +270,23 @@ chat:
     limits:
       memory: 400Mi
 
-  autoscaling:
-    enabled: false
-    minReplicas: 3
-    maxReplicas: 10
-    targetCPUUtilizationPercentage: 70
-    targetMemoryUtilizationPercentage: 80
 
   nodeSelector: {}
 
   tolerations: []
 
   affinity: {}
+
+# Deployment-controlled binding for the scoped KB route of Doc Query. All three
+# values together switch Chat and the GraphQL backend to scope-token transport
+# authentication for the modern KB server, which then ignores the stored
+# bearer. Leaving them empty keeps the legacy transport bearer. Partial
+# configuration fails chart rendering.
+docQuery:
+  scopedMcp:
+    serverId: ''
+    legacyUrl: ''
+    url: ''
 
 mcpStudent:
   enabled: true
@@ -410,7 +426,6 @@ frontendPWA:
     minReplicas: 3
     maxReplicas: 10
     targetCPUUtilizationPercentage: 70
-    targetMemoryUtilizationPercentage: 80
 
   nodeSelector: {}
 
@@ -446,10 +461,9 @@ frontendManage:
 
   autoscaling:
     enabled: false
-    minReplicas: 1
+    minReplicas: 2
     maxReplicas: 4
     targetCPUUtilizationPercentage: 70
-    targetMemoryUtilizationPercentage: 80
 
   nodeSelector: {}
 
@@ -483,13 +497,6 @@ frontendControl:
     limits:
       memory: 1000Mi
 
-  autoscaling:
-    enabled: false
-    minReplicas: 1
-    maxReplicas: 4
-    targetCPUUtilizationPercentage: 70
-    targetMemoryUtilizationPercentage: 80
-
   nodeSelector: {}
 
   tolerations: []
@@ -499,14 +506,17 @@ frontendControl:
 backendGraphql:
   priorityClassName: production-workload
 
-  kbIngestionDisabled: false
-  kbGraphDisabled: false
-
   knowledgeGraph:
     host: ''
     port: '6379'
     tls: 'false'
     queryTimeoutMs: '5000'
+    # Non-secret capability gate for explicit domain selection. Leaving this
+    # empty keeps the legacy provider default policy as the only offered route.
+    # Setting it to the revision of the catalog shipped by the deployment
+    # enables the explicit domain options in the backend and the dispatch
+    # re-validation in the worker; both must agree.
+    domainCatalogRevision: ''
     # One shared semester ledger covers graph builds and element-generation
     # dispatches. These values are non-secret and must be explicit before either
     # producer is enabled.
@@ -564,10 +574,9 @@ backendGraphql:
 
   autoscaling:
     enabled: false
-    minReplicas: 1
+    minReplicas: 2
     maxReplicas: 4
     targetCPUUtilizationPercentage: 70
-    targetMemoryUtilizationPercentage: 80
 
   nodeSelector: {}
 
@@ -626,12 +635,6 @@ lti:
     limits:
       memory: 500Mi
 
-  autoscaling:
-    enabled: true
-    minReplicas: 1
-    maxReplicas: 4
-    targetCPUUtilizationPercentage: 70
-    targetMemoryUtilizationPercentage: 80
 
   nodeSelector: {}
 
@@ -666,12 +669,6 @@ olatApi:
     limits:
       memory: 1000Mi
 
-  autoscaling:
-    enabled: false
-    minReplicas: 1
-    maxReplicas: 4
-    targetCPUUtilizationPercentage: 70
-    targetMemoryUtilizationPercentage: 80
 
   nodeSelector: {}
 
@@ -707,12 +704,6 @@ responseApi:
     limits:
       memory: 256Mi
 
-  autoscaling:
-    enabled: false
-    minReplicas: 1
-    maxReplicas: 4
-    targetCPUUtilizationPercentage: 70
-    targetMemoryUtilizationPercentage: 80
 
   nodeSelector: {}
 
@@ -750,18 +741,14 @@ assessment:
       limits:
         memory: 1000Mi
 
-    autoscaling:
-      enabled: false
-      minReplicas: 3
-      maxReplicas: 10
-      targetCPUUtilizationPercentage: 70
-      targetMemoryUtilizationPercentage: 80
 
     nodeSelector: {}
 
     tolerations: []
 
     affinity: {}
+
+    topologySpreadConstraints: []
 
   backendGraphql:
     priorityClassName: production-workload
@@ -789,18 +776,14 @@ assessment:
       limits:
         memory: 1000Mi
 
-    autoscaling:
-      enabled: false
-      minReplicas: 1
-      maxReplicas: 4
-      targetCPUUtilizationPercentage: 70
-      targetMemoryUtilizationPercentage: 80
 
     nodeSelector: {}
 
     tolerations: []
 
     affinity: {}
+
+    topologySpreadConstraints: []
 
   responseApi:
     corsAllowedOrigins: ''
@@ -830,12 +813,6 @@ assessment:
       limits:
         memory: 256Mi
 
-    autoscaling:
-      enabled: false
-      minReplicas: 1
-      maxReplicas: 4
-      targetCPUUtilizationPercentage: 70
-      targetMemoryUtilizationPercentage: 80
 
     nodeSelector: {}
 

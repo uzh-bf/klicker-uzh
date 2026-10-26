@@ -1,4 +1,13 @@
-import { isDocQueryToolName } from '@/src/lib/sources/normalizeSources'
+import type { ModelMessage } from 'ai'
+import { mapAssistantStepContent } from '@/src/lib/server/persistedAssistantContent'
+import { renderPromptTemplate } from '@/src/lib/server/promptTemplates'
+import {
+  isDocQueryToolName,
+  MAX_SOURCES,
+  normalizeSourcesFromParts,
+  parseDocQueryPayload,
+  sourceCitationIndices,
+} from '@/src/lib/sources/normalizeSources'
 
 /**
  * Appended to a chatbot's system prompt only when a doc_query-style RAG tool
@@ -13,32 +22,16 @@ import { isDocQueryToolName } from '@/src/lib/sources/normalizeSources'
  * Each number in a marker or range only resolves for `1 <= n <= N`
  * (`resolveCitationSource`).
  *
- * The reuse sentence is load-bearing for that match. A source returned again
- * by a later search is skipped by the dedupe and keeps its original number —
- * no new one is minted — so a model that kept counting upward for the repeat
- * would emit a marker beyond N, which renders as literal text instead of a
- * chip.
+ * The model-facing projection below supplies those indices directly. Repeated
+ * sources retain their number; invalid model markers still remain literal text.
  *
  * Legacy lecturer guidance or custom personas may still forbid square
  * brackets for formulas. The closing precedence sentence keeps those
  * instructions from suppressing citation markers.
  */
-const CITATION_CONTRACT =
-  'Citation format: when a statement is grounded in retrieved course material, ' +
-  'mark it with a bracketed source number such as [1] or [2]. Citation ' +
-  'numbering is local to this assistant message: start at [1] in every new ' +
-  'assistant message and never continue numbering from an earlier message. ' +
-  'Within this message, number unique sources in first-appearance order ' +
-  'across all doc_query calls. If a later search returns a source you have ' +
-  'already cited in this message, reuse the ' +
-  'number you gave it the first time instead of assigning a new one. Only ' +
-  'use numbers returned for this message - never invent or carry over a ' +
-  'citation. For multiple consecutive sources, a compact range such as ' +
-  '[2–4] is allowed only when every number in the range was returned. ' +
-  'Do not add a citation when you are not drawing on retrieved ' +
-  'material. These bracketed numbers are citation markers, not formula ' +
-  'delimiters. This citation format overrides conflicting bracket or formula ' +
-  'instructions in lecturer-provided guidance or a custom persona.'
+const CITATION_CONTRACT = renderPromptTemplate('citation-contract', {
+  maxSources: MAX_SOURCES,
+})
 
 /**
  * Appends the citation contract to `systemPrompt` when `toolNames` includes
@@ -54,4 +47,68 @@ export function withCitationContract(
   return trimmedBase.length > 0
     ? `${trimmedBase}\n\n${CITATION_CONTRACT}`
     : CITATION_CONTRACT
+}
+
+/**
+ * Projects current-generation tool results for the model only. Call positions,
+ * rather than completion timing, determine the same indices used after reload.
+ * Callers supply responseMessages only, so historical turns cannot be rewritten.
+ */
+export function withModelCitationIndices(
+  messages: ModelMessage[],
+  steps: Array<{ content?: unknown[] }>
+): ModelMessage[] {
+  const parts = mapAssistantStepContent(steps)
+  const sources = normalizeSourcesFromParts(parts)
+  const projections = new Map<string, string>()
+
+  for (const part of parts) {
+    if (part.type !== 'tool-call' || !isDocQueryToolName(part.toolName)) {
+      continue
+    }
+    const payload = parseDocQueryPayload(part.result)
+    if (part.isError || !payload || 'error' in payload) continue
+    if (!Array.isArray(payload.sources)) continue
+    const indices = sourceCitationIndices(payload, sources)
+    projections.set(
+      part.toolCallId,
+      JSON.stringify({
+        ...payload,
+        sources: payload.sources.map((source, index) =>
+          source && typeof source === 'object' && !Array.isArray(source)
+            ? { ...source, citation_index: indices[index] }
+            : source
+        ),
+      })
+    )
+  }
+
+  return messages.map((message) => {
+    if (message.role !== 'tool') return message
+    return {
+      ...message,
+      content: message.content.map((part) => {
+        if (part.type !== 'tool-result') return part
+        const projection = projections.get(part.toolCallId)
+        if (projection === undefined) return part
+        // Keep supplementary and multimodal blocks, replacing the source JSON
+        // even when MCP's text and structured representations disagree.
+        const output =
+          part.output.type === 'content'
+            ? {
+                ...part.output,
+                value: [
+                  { type: 'text' as const, text: projection },
+                  ...part.output.value.filter((block) => {
+                    if (block.type !== 'text') return true
+                    const payload = parseDocQueryPayload(block.text)
+                    return !payload || !('sources' in payload)
+                  }),
+                ],
+              }
+            : { type: 'text' as const, value: projection }
+        return { ...part, output }
+      }),
+    }
+  })
 }

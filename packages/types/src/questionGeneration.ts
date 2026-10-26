@@ -16,6 +16,13 @@ export type KBGraphSourceSnapshotItem = {
 export type KBGraphSourceSnapshot = KBGraphSourceSnapshotItem[]
 
 export type QuestionGenerationLanguage = 'de' | 'en'
+export type QuestionGenerationObjectiveSource = 'provided' | 'neutral'
+export const NEUTRAL_OBJECTIVE_SOURCE: QuestionGenerationObjectiveSource =
+  'neutral'
+export type QuestionGenerationFailureClass =
+  | 'user_input'
+  | 'self_repairable'
+  | 'system'
 export type QuestionGenerationItemType = 'SC' | 'MC' | 'KPRIM'
 export type QuestionGenerationBloomLevel =
   | 'remember'
@@ -110,8 +117,10 @@ export type QuestionGenerationConfiguration = {
     id: string
     text: string
     bloomLevel: QuestionGenerationBloomLevel | null
+    objectiveSource?: QuestionGenerationObjectiveSource
   }>
   bloomLevels: QuestionGenerationBloomLevel[]
+  focusTopic: string | null
 }
 
 export type GeneratedQuestionCitation = {
@@ -164,6 +173,7 @@ export type GeneratedQuestionEditable = {
   stem: string
   context: string | null
   explanation: string | null
+  tags?: string[]
   choices: Array<{
     id: string
     label: string
@@ -171,9 +181,29 @@ export type GeneratedQuestionEditable = {
     correct: boolean
     feedback: string | null
   }>
+  tagSelection?: GeneratedQuestionTagSelection
+}
+
+// Requested tag selection for a generated question draft. `existingTagIds`
+// references tags of the reviewing owner by id; `newTagNames` are proposals
+// that are only created with a successful save. This is the requested intent,
+// not the resolved tag set, so an identical retry stays an exact retry after a
+// proposal has become an existing tag.
+export type GeneratedQuestionTagSelection = {
+  existingTagIds: number[]
+  newTagNames: string[]
+}
+
+// Input form of a selection as it arrives over GraphQL. Either list may be
+// omitted or null and is then treated as empty; normalization validates and
+// deduplicates the arrived values.
+export type GeneratedQuestionTagSelectionInput = {
+  existingTagIds?: number[] | null
+  newTagNames?: string[] | null
 }
 
 export type GeneratedQuestionOriginal = GeneratedQuestionEditable & {
+  suggestedTags?: string[]
   sourceQuestionId: string
   bloomLevel: QuestionGenerationBloomLevel
   targetDifficulty: number
@@ -209,6 +239,27 @@ export type QuestionGenerationDesignSlotSummary = {
   objectiveId: string | null
   bloomLevel: QuestionGenerationBloomLevel | null
   targetDifficulty: number
+  // Entity ids extracted from the worker's resolved_slots[].graph_resolution
+  // evidence candidates. Only these ids leave the parser; the surrounding
+  // resolution remains server-internal. Empty when the artifact carries none.
+  evidenceEntityIds: string[]
+}
+
+// Structured per-slot failure reason reported by the question-generation
+// worker. Reason codes are an open, append-only set and stay plain strings, so
+// an unknown code never rejects an artifact; the failure class carries the
+// stable rendering contract of the reviewing client.
+export type QuestionGenerationSlotFailure = {
+  slotId: string
+  moduleId: string | null
+  objective: string | null
+  objectiveSource: QuestionGenerationObjectiveSource | null
+  requestedLevel: QuestionGenerationBloomLevel | null
+  evidenceTarget: string | null
+  reasonCode: string
+  failureClass: QuestionGenerationFailureClass
+  detail: string | null
+  suggestions: string[]
 }
 
 export type QuestionGenerationDesignSummary = {
@@ -218,6 +269,7 @@ export type QuestionGenerationDesignSummary = {
     id: string
     text: string
     bloomLevel: QuestionGenerationBloomLevel | null
+    objectiveSource?: QuestionGenerationObjectiveSource
   }>
   modules: QuestionGenerationDesignModuleSummary[]
   sources: QuestionGenerationReviewSourceSummary[]
@@ -248,3 +300,138 @@ export const QUESTION_GENERATION_CAPABILITIES = {
   requiresPlanReview: true,
   supportsIndividualRegeneration: false,
 } as const
+
+export type GeneratedQuestionTagCandidate = {
+  id: number
+  name: string
+}
+
+export type GeneratedQuestionTagMatch = {
+  existingTagIds: number[]
+  newTagNames: string[]
+}
+
+const MAX_GENERATED_QUESTION_TAG_MATCHES = 5
+const TOKEN_OVERLAP_THRESHOLD = 0.5
+const MIN_SHARED_TOKEN_LENGTH = 3
+
+export function normalizeGeneratedQuestionTagLabel(value: string): string {
+  return value.trim().replace(/\s+/gu, ' ')
+}
+
+function generatedQuestionTagKey(value: string): string {
+  // An explicit locale keeps the key stable across server, browser and ICU
+  // versions; an unpinned locale lowercases differently under e.g. Turkish.
+  return normalizeGeneratedQuestionTagLabel(value).toLocaleLowerCase('en')
+}
+
+function generatedQuestionTagTokens(value: string): string[] {
+  return generatedQuestionTagKey(value)
+    .split(/[^\p{L}\p{N}]+/u)
+    .filter(Boolean)
+}
+
+// Conservative token overlap: at least one shared token of three or more
+// characters and strictly more than half of the union's tokens shared, counting
+// every token once no matter how often it repeats. Weak matches are dropped
+// instead of filling a suggestion quota.
+function conservativeTokenOverlap(
+  left: string[],
+  right: string[]
+): number | null {
+  if (left.length === 0 || right.length === 0) return null
+  const leftTokens = new Set(left)
+  const rightTokens = new Set(right)
+  const shared = [...leftTokens].filter((token) => rightTokens.has(token))
+  if (
+    shared.length === 0 ||
+    !shared.some((token) => token.length >= MIN_SHARED_TOKEN_LENGTH)
+  ) {
+    return null
+  }
+  const union = new Set([...leftTokens, ...rightTokens]).size
+  const score = shared.length / union
+  return score > TOKEN_OVERLAP_THRESHOLD ? score : null
+}
+
+// Ranks advisory generation labels against the reviewing owner's tags: exact
+// name first, then case/whitespace-normalized, then conservative token overlap.
+// Returns at most five existing recommendations and five new proposals and
+// never preselects them. Matching is advisory only and never merges tags.
+export function suggestGeneratedQuestionTags(
+  suggestedTags: readonly string[],
+  existingTags: readonly GeneratedQuestionTagCandidate[]
+): GeneratedQuestionTagMatch {
+  const exactMatches = new Map<string, GeneratedQuestionTagCandidate>()
+  for (const tag of existingTags) {
+    const label = normalizeGeneratedQuestionTagLabel(tag.name)
+    if (label && !exactMatches.has(label)) exactMatches.set(label, tag)
+  }
+
+  const ranked: Array<{
+    rank: number
+    index: number
+    tag: GeneratedQuestionTagCandidate
+  }> = []
+  const proposals: string[] = []
+
+  suggestedTags.forEach((suggestion, index) => {
+    if (typeof suggestion !== 'string') return
+    const label = normalizeGeneratedQuestionTagLabel(suggestion)
+    if (!label) return
+
+    const exact = exactMatches.get(label)
+    if (exact) {
+      ranked.push({ rank: 0, index, tag: exact })
+      return
+    }
+
+    const key = generatedQuestionTagKey(label)
+    const normalized = existingTags.find(
+      (tag) => generatedQuestionTagKey(tag.name) === key
+    )
+    if (normalized) {
+      ranked.push({ rank: 1, index, tag: normalized })
+      return
+    }
+
+    const tokens = generatedQuestionTagTokens(label)
+    let best: { score: number; tag: GeneratedQuestionTagCandidate } | null =
+      null
+    for (const tag of existingTags) {
+      const score = conservativeTokenOverlap(
+        tokens,
+        generatedQuestionTagTokens(tag.name)
+      )
+      if (score === null) continue
+      if (!best || score > best.score) best = { score, tag }
+    }
+    if (best) {
+      ranked.push({ rank: 2, index, tag: best.tag })
+      return
+    }
+
+    proposals.push(label)
+  })
+
+  const existingTagIds: number[] = []
+  for (const entry of ranked.sort(
+    (left, right) => left.rank - right.rank || left.index - right.index
+  )) {
+    if (existingTagIds.length === MAX_GENERATED_QUESTION_TAG_MATCHES) break
+    if (existingTagIds.includes(entry.tag.id)) continue
+    existingTagIds.push(entry.tag.id)
+  }
+
+  const newTagNames: string[] = []
+  const proposedKeys = new Set<string>()
+  for (const proposal of proposals) {
+    if (newTagNames.length === MAX_GENERATED_QUESTION_TAG_MATCHES) break
+    const key = generatedQuestionTagKey(proposal)
+    if (proposedKeys.has(key)) continue
+    proposedKeys.add(key)
+    newTagNames.push(proposal)
+  }
+
+  return { existingTagIds, newTagNames }
+}

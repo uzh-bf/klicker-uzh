@@ -34,4 +34,8 @@ const nextConfig: NextConfig = {
   },
 }
 
+nextConfig.outputFileTracingIncludes = {
+  '/*': ['./src/prompts/*.hbs'],
+}
+
 export default withNextIntl(nextConfig)

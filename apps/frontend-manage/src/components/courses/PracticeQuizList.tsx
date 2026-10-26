@@ -1,11 +1,12 @@
 import { faCalendar } from '@fortawesome/free-regular-svg-icons'
 import { faLink } from '@fortawesome/free-solid-svg-icons'
 import {
-  ActivityInfo,
+  type ActivityInfo,
   ActivityType,
-  LocaleType,
+  type LocaleType,
 } from '@klicker-uzh/graphql/dist/ops'
 import { Button, toast, UserNotification } from '@uzh-bf/design-system'
+import Link from 'next/link'
 import { useTranslations } from 'next-intl'
 import ActivityList from '../activities/overview/ActivityList'
 import ActivityListLegend from '../activities/overview/ActivityListLegend'
@@ -86,11 +87,15 @@ function PracticeQuizList({
           />
         </div>
       ) : (
-        <UserNotification
-          type="warning"
-          className={{ root: 'w-full text-left' }}
-        >
+        <UserNotification className={{ root: 'w-full text-left' }}>
           {t('manage.course.noPracticeQuizzes')}
+          <Link
+            href="/"
+            className="mt-2 block w-fit text-primary-100 underline"
+            data-cy="course-empty-practice-quiz-library"
+          >
+            {t('manage.course.openLibrary')}
+          </Link>
         </UserNotification>
       )}
     </div>

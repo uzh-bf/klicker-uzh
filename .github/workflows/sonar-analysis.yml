@@ -1,0 +1,181 @@
+name: SonarCloud analysis
+
+# One reusable analysis job, called by the two test workflows that publish its
+# coverage and by the branch and ready-for-review boundary in
+# v3_sonarcloud.yml.
+#
+# The analysis used to be a single runner-held job that polled the coverage
+# producers for up to its whole window, so a queued test run occupied an
+# analysis runner. It is now owned by the producer run that observes every
+# producer terminal for the revision: that run imports the coverage and
+# analyzes, and a run that still sees a pending producer defers instead of
+# waiting. At most one analysis is published per pull request, head, and base.
+#
+# Coverage identity is unchanged. Only a report whose producing run belongs to
+# this exact head and recorded the same base and tested source tree is imported,
+# and an unverified report leaves coverage "not computed" instead of counting as
+# a satisfied metric. What changed is that no runner waits for one.
+#
+# The caller owns the lifecycle gate. This workflow analyzes branches, ready
+# pull requests, and the producer run that finishes last. The decision below
+# defers for a draft or closed pull request, a change class that cannot alter
+# analyzed source, a pending producer, and a revision whose analysis already
+# exists, unless the run is an explicit re-run.
+
+on:
+  workflow_call:
+
+# Reading the analyzed revision and the artifacts of the test workflows is the
+# whole job. The analysis upload itself is authorized by the Sonar credential,
+# never by the workflow token.
+permissions:
+  contents: read
+  actions: read
+
+jobs:
+  sonarcloud:
+    name: SonarCloud
+    runs-on: ubuntu-latest
+    # The ceiling must fit the quality gate and the scan itself. It no longer has
+    # to cover a coverage window, because no run waits for a producer.
+    timeout-minutes: 45
+    # One analysis per revision. Both producer jobs can become runnable once both
+    # suites finished; serializing them lets the later one observe the receipt
+    # the earlier one published and defer instead of analyzing the same revision
+    # twice. A push has no pull request, so its group falls back to the branch and
+    # the pushed commit, which no other run can duplicate.
+    concurrency:
+      group: >-
+        sonar-analysis-${{ github.event.pull_request.number || github.ref_name }}-${{ github.event.pull_request.head.sha || github.sha }}-${{ github.event.pull_request.base.sha || 'none' }}
+      cancel-in-progress: false
+    steps:
+      - name: Check out the analyzed revision
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0 # Shallow clones should be disabled for a better relevancy of analysis
+
+      # Fork and Dependabot pull requests never receive repository secrets, so a
+      # trusted analysis path for untrusted contributors is still pending. Until
+      # it exists this fails with a named reason instead of an opaque
+      # authorization error, and the check stays non-green rather than pretending
+      # that an unavailable analysis succeeded. It runs before any script from
+      # the analyzed tree executes.
+      - name: Require the analysis credential
+        env:
+          SONAR_TOKEN: ${{ secrets.SONAR_TOKEN }}
+        run: |
+          if [ -n "\${SONAR_TOKEN}" ]; then
+            exit 0
+          fi
+          {
+            echo '### SonarCloud analysis unavailable'
+            echo
+            echo 'No SONAR_TOKEN is available for this event. Fork and Dependabot'
+            echo 'pull requests do not receive repository secrets, so the analysis'
+            echo 'cannot run. See docs/ci-and-deployment.md.'
+          } >> "$GITHUB_STEP_SUMMARY"
+          echo "::error::SONAR_TOKEN is not available for this event; SonarCloud analysis cannot run."
+          exit 1
+
+      # A documentation-and-planning pull request changes no analyzed source, so
+      # its analysis would re-report an unchanged tree. The classification fails
+      # open and is bound to pull requests, so a push and an unproven class still
+      # analyze.
+      - name: Classify the change
+        id: envelope
+        if: github.event_name == 'pull_request'
+        uses: ./.github/actions/change-envelope
+        with:
+          receipt-path: minimum-validation-classification.json
+
+      # Coverage is imported only from test runs bound to this exact revision,
+      # and only when the producing run recorded the tested source tree. Every
+      # producer is reported in the step summary, so a missing report is visible
+      # as absent coverage instead of a silently green metric. A producer that
+      # has not finished defers this run to the producer that finishes last.
+      - name: Collect verified coverage inputs and decide
+        id: coverage
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          GITHUB_REPOSITORY: ${{ github.repository }}
+          PR_NUMBER: ${{ github.event.pull_request.number }}
+          HEAD_SHA: ${{ github.event.pull_request.head.sha }}
+          BASE_SHA: ${{ github.event.pull_request.base.sha }}
+          RUN_ATTEMPT: ${{ github.run_attempt }}
+          # A class narrows pull requests only, so a push of the same commits
+          # still publishes its branch analysis.
+          CHANGE_STATIC_ANALYSIS: ${{ github.event_name == 'pull_request' && steps.envelope.outputs.static_analysis || '' }}
+          ANALYSIS_RECEIPT_PATH: sonar-analysis-receipt.json
+          ANALYSIS_RECEIPT_PREFIX: sonar-analysis-receipt
+          # Every workflow that can host the analysis, so a receipt published by
+          # one of them is visible to the others.
+          ANALYSIS_WORKFLOW_FILES: >-
+            .github/workflows/test-unit.yml,.github/workflows/test-graphql.yml,.github/workflows/v3_sonarcloud.yml
+          COVERAGE_PRODUCER_WORKFLOWS: .github/workflows/test-unit.yml,.github/workflows/test-graphql.yml
+        run: node .github/scripts/sonar-coverage-inputs.cjs
+
+      - name: Resolve the project version
+        id: version
+        if: steps.coverage.outputs.decision == 'scan'
+        run: |
+          version="$(node -p "require('./package.json').version")"
+          echo "value=\${version}" >> "$GITHUB_OUTPUT"
+
+      - name: SonarCloud Scan
+        id: scan
+        if: steps.coverage.outputs.decision == 'scan'
+        uses: SonarSource/sonarqube-scan-action@22918119ff8e1ca75a623e15c8296b6ea4fbe28f # v8.2.1
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }} # Needed to get PR information, if any
+          SONAR_TOKEN: ${{ secrets.SONAR_TOKEN }}
+        with:
+          # The quality gate is awaited on a pull request, where new code is the
+          # diff against the base and the gate is meaningful, so a failing gate
+          # fails this workflow instead of leaving a green run next to a red
+          # one. Merge enforcement stays a separate, separately authorized
+          # change.
+          # A branch analysis is published without awaiting the gate: SonarCloud
+          # fixes a branch's type at its first analysis, so on this project's
+          # short-lived integration branches nearly the whole repository is new
+          # code and the gate fails on historical findings. The boundary step
+          # below names that condition instead of turning every branch analysis
+          # into a failure.
+          args: >-
+            -Dsonar.projectVersion=${{ steps.version.outputs.value }}
+            ${{ github.event_name == 'pull_request' && '-Dsonar.qualitygate.wait=true -Dsonar.qualitygate.timeout=600' || '' }}
+            ${{ steps.coverage.outputs.scanner_args }}
+
+      # The receipt is what lets another producer's job recognize that this
+      # revision is already analyzed. Its name carries the analyzed head and
+      # base, so the lookup never has to download it, and it is uploaded only
+      # after a scan that succeeded.
+      - name: Upload the analysis receipt
+        if: >-
+          always() && steps.coverage.outputs.decision == 'scan' &&
+          steps.scan.outcome == 'success'
+        uses: actions/upload-artifact@v4
+        with:
+          name: ${{ steps.coverage.outputs.receipt_name }}
+          path: sonar-analysis-receipt.json
+          if-no-files-found: error
+          retention-days: 7
+
+      # SonarCloud fixes a branch's type at its first analysis, and the type
+      # decides what new code means. This project keeps the former default
+      # branch dev as its main branch, so v3 is a short-lived branch whose new
+      # code is everything that differs from dev; nearly the whole repository
+      # enters new code and the branch gate fails on historical findings while
+      # the pull-request analysis of the same code is healthy. This diagnostic
+      # names that cause.
+      # It runs after the scan so the analysis is always published, and carries
+      # always() because the awaited pull-request gate can already have failed
+      # this job. Only the pull-request analysis is gated here, so only there
+      # may this check fail the workflow; on a branch it reports the signal
+      # without failing a run that the promotion controller requires to be
+      # green.
+      - name: Check the new-code boundary
+        if: always()
+        env:
+          BRANCH: ${{ github.ref_name }}
+          PR_NUMBER: ${{ github.event.pull_request.number }}
+        run: node .github/scripts/sonar-new-code-boundary.cjs

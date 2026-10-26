@@ -1,6 +1,7 @@
 import { describe, expect, test } from 'vitest'
 import {
   citationHrefFor,
+  extractCitedPages,
   type MarkdownAstNode,
   parseCitationHref,
   splitCitationMarkers,
@@ -29,6 +30,7 @@ describe('citationHrefFor / parseCitationHref', () => {
   test('round-trips an index through the #cite-n href format', () => {
     expect(citationHrefFor(3)).toBe('#cite-3')
     expect(parseCitationHref(citationHrefFor(12))).toBe(12)
+    expect(parseCitationHref(citationHrefFor(99))).toBe(99)
   })
 
   test('rejects hrefs that are not the #cite-n shape', () => {
@@ -39,6 +41,8 @@ describe('citationHrefFor / parseCitationHref', () => {
     expect(parseCitationHref('#cite-abc')).toBeNull()
     expect(parseCitationHref('https://example.com')).toBeNull()
     expect(parseCitationHref('#section-1')).toBeNull()
+    // Three digits overrun the two-digit bound the registry cap matches.
+    expect(parseCitationHref('#cite-100')).toBeNull()
   })
 })
 
@@ -72,6 +76,7 @@ describe('splitCitationMarkers', () => {
 
   test('two-digit marker', () => {
     expect(splitCitationMarkers('[12]')).toEqual([citationLinkNode(12)])
+    expect(splitCitationMarkers('[99]')).toEqual([citationLinkNode(99)])
   })
 
   test('expands an en-dash citation range into adjacent linked source numbers', () => {
@@ -98,15 +103,84 @@ describe('splitCitationMarkers', () => {
     expect(splitCitationMarkers('[2 -\n4]')).toEqual([textNode('[2 -\n4]')])
   })
 
-  test('keeps over-wide ranges literal to bound citation chip expansion', () => {
-    expect(splitCitationMarkers('[1-12]')).toEqual(
-      Array.from({ length: 12 }, (_, index) => citationLinkNode(index + 1))
+  test('expands a range up to the 99-index cap and keeps wider bounds literal', () => {
+    expect(splitCitationMarkers('[1-99]')).toEqual(
+      Array.from({ length: 99 }, (_, index) => citationLinkNode(index + 1))
     )
-    expect(splitCitationMarkers('Wide [1-13], valid [2].')).toEqual([
-      textNode('Wide [1-13], valid'),
+    expect(splitCitationMarkers('Wide [1-100], valid [2].')).toEqual([
+      textNode('Wide [1-100], valid'),
       citationLinkNode(2),
       textNode('.'),
     ])
+  })
+
+  // Models that were told to always include page numbers append the page
+  // inside the marker. The chip must still render the number alone; the page
+  // belongs to the source card. See the staging Financial Economics chatbot.
+  test.each([
+    ['[1, p. 6–7]', 1],
+    ['[1, p. 6-7]', 1],
+    ['[1, pp. 10–12]', 1],
+    ['[1, S. 8—18]', 1],
+    ['[1, s. 8]', 1],
+    ['[1, S 8]', 1],
+    ['[1, s 8-9]', 1],
+    ['[1, Seite 8]', 1],
+    ['[1, pages 4-6]', 1],
+    ['[1, Kapitel 7]', 1],
+    ['[3 , p. 2]', 3],
+    ['[2–4, S. 10–12]', 2],
+    ['[1, S. 02:34]', 1],
+    ['[1, p. 1:02:03]', 1],
+    ['[1, S. 02:34–03:10]', 1],
+  ])('renders only the number for a labelled detail (%s)', (input, index) => {
+    const nodes = splitCitationMarkers(input)
+    expect(nodes[0]).toEqual(citationLinkNode(index))
+    expect(nodes.every((node) => node.type === 'link')).toBe(true)
+  })
+
+  test('expands a range that carries a page detail into its sources', () => {
+    expect(splitCitationMarkers('[2–4, S. 10–12]')).toEqual([
+      citationLinkNode(2),
+      citationLinkNode(3),
+      citationLinkNode(4),
+    ])
+  })
+
+  // The staging corpus is dominated by math coordinates in this shape
+  // (`[0, 1]` alone appears over a thousand times), so an unlabelled detail
+  // must never become a citation. These cases are the regression guard.
+  test.each([
+    '[0, 1]',
+    '[1, 2]',
+    '[2, 3]',
+    '[1, 2, 3]',
+    '[8, 12]',
+    '[0, 60]',
+    '[0, \\pi]',
+    '[10, 20, 30, 40, 50]',
+    '[1, 6–7]',
+    '[1, Kapitel IV]',
+    // A page detail needs its label: a bare comma must not swallow the comma
+    // and turn a trailing marker into a chip.
+    '[1,]',
+    '[1, ]',
+    '[2, ]',
+    '[1, 02:34]',
+    '[1, S. 00:60]',
+    '[1, S. 1:60:00]',
+  ])('leaves an unlabelled or non-numeric bracket list literal (%s)', (input) => {
+    expect(splitCitationMarkers(input)).toEqual([textNode(input)])
+  })
+
+  test('a marker with a page detail still resolves to its source index', () => {
+    const nodes = splitCitationMarkers('Wie in [1, p. 6–7] beschrieben.')
+    expect(nodes).toEqual([
+      textNode('Wie in'),
+      citationLinkNode(1),
+      textNode(' beschrieben.'),
+    ])
+    expect(resolveCitationSource(1, [SOURCE_A])).toEqual(SOURCE_A)
   })
 
   test('adjacent markers [1][2] produce no spurious empty text node between them', () => {
@@ -124,10 +198,66 @@ describe('splitCitationMarkers', () => {
     ])
   })
 
-  test('three-digit bracket is not treated as a marker', () => {
+  test('a three-digit bracket is not treated as a marker', () => {
     expect(splitCitationMarkers('See [123] here')).toEqual([
       textNode('See [123] here'),
     ])
+    expect(splitCitationMarkers('See [100] here')).toEqual([
+      textNode('See [100] here'),
+    ])
+  })
+})
+
+describe('extractCitedPages', () => {
+  test('reads the labelled page detail of a marker', () => {
+    expect([...extractCitedPages('See [1, p. 6] and [1, S. 8–10].')]).toEqual([
+      [1, [6, 8, 9, 10]],
+    ])
+  })
+
+  test('keeps pages per source index and ignores markers without a detail', () => {
+    const cited = extractCitedPages('A [1, p. 6–7]. B [2]. C [2, S. 7].')
+    expect(cited.get(1)).toEqual([6, 7])
+    expect(cited.get(2)).toEqual([7])
+  })
+
+  // A group marker names one detail for several sources, so no single card
+  // can claim it; the same holds for a detail that is not a forward range.
+  test('attributes no page to a multi-source marker or an invalid range', () => {
+    expect(extractCitedPages('Grouped [2–4, S. 10–12].')).toEqual(new Map())
+    expect(extractCitedPages('Descending [1, p. 12–6].')).toEqual(new Map())
+  })
+
+  test('ignores bracket lists the grammar does not read as a page detail', () => {
+    expect(extractCitedPages('Math [0, 1] and [1, 2, 3] and [1, 7].')).toEqual(
+      new Map()
+    )
+  })
+
+  test('ignores markers inside code fences and code spans', () => {
+    expect(extractCitedPages('```\nSee [1, p. 6].\n```')).toEqual(new Map())
+    expect(extractCitedPages('Use `[1, p. 6]` literally.')).toEqual(new Map())
+  })
+
+  test('masks an unterminated fence to the end of a streamed answer', () => {
+    expect(extractCitedPages('Text [1, p. 6].\n```\n[2, p. 9]')).toEqual(
+      new Map([[1, [6]]])
+    )
+  })
+
+  test('deduplicates pages that several markers repeat', () => {
+    expect(extractCitedPages('[1, p. 6] and [1, p. 6–7].')).toEqual(
+      new Map([[1, [6, 7]]])
+    )
+  })
+
+  test('keeps video times out of cited page metadata', () => {
+    expect(extractCitedPages('[1, S. 02:34] [1, p. 1:02:03]')).toEqual(
+      new Map()
+    )
+    expect(extractCitedPages('[1, S. 02:34] [2, p. 6]')).toEqual(
+      new Map([[2, [6]]])
+    )
   })
 })
 
@@ -283,5 +413,43 @@ describe('resolveCitationSource', () => {
 
   test('a message with no sources resolves any marker to undefined', () => {
     expect(resolveCitationSource(1, [])).toBeUndefined()
+  })
+
+  test('resolves the highest two-digit index 99 and rejects 100', () => {
+    const sources: ChatSource[] = Array.from({ length: 99 }, (_, i) => ({
+      id: `id-${i}`,
+      index: i + 1,
+      type: 'document',
+      title: `Source ${i + 1}`,
+    }))
+
+    expect(resolveCitationSource(99, sources)?.index).toBe(99)
+    expect(resolveCitationSource(100, sources)).toBeUndefined()
+  })
+})
+
+describe('citation protocol across streaming boundaries', () => {
+  test.each([
+    ['[1]', [1]],
+    ['[12]', [12]],
+    ['[99]', [99]],
+    ['[1][2]', [1, 2]],
+    ['[1] [2]', [1, 2]],
+    ['[2–4]', [2, 3, 4]],
+    ['[2-4]', [2, 3, 4]],
+    ['[2—4]', [2, 3, 4]],
+    ['[1, S. 02:34]', [1]],
+  ] as const)('emits only completed markers while %s arrives character by character', (input, expected) => {
+    for (let length = 0; length <= input.length; length += 1) {
+      const prefix = input.slice(0, length)
+      const lastComplete = prefix.lastIndexOf(']')
+      const indices = splitCitationMarkers(prefix)
+        .filter((node) => node.type === 'link')
+        .map((node) => parseCitationHref(node.url))
+      if (lastComplete < 0) expect(indices).toEqual([])
+      else if (lastComplete === input.length - 1)
+        expect(indices).toEqual(expected)
+      else expect(indices).toEqual([expected[0]])
+    }
   })
 })

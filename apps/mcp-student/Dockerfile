@@ -5,7 +5,9 @@ FROM base AS deps
 WORKDIR /app
 
 RUN apk add --no-cache libc6-compat
-RUN npm i -g --ignore-scripts pnpm@11.5.0 turbo@2.10.11
+# pnpm 12 needs native setup for direct child-process execution on Alpine.
+RUN npm i -g --ignore-scripts pnpm@12.11.2 turbo@2.10.11 \
+ && node "$(npm root -g)/pnpm/install.js"
 
 COPY . .
 
@@ -16,7 +18,8 @@ FROM base AS builder
 WORKDIR /app
 
 RUN apk add --no-cache libc6-compat
-RUN npm i -g --ignore-scripts pnpm@11.5.0 turbo@2.10.11
+RUN npm i -g --ignore-scripts pnpm@12.11.2 turbo@2.10.11 \
+ && node "$(npm root -g)/pnpm/install.js"
 
 COPY --from=deps /app/out/json/ .
 COPY --from=deps /app/out/pnpm* .
@@ -30,7 +33,8 @@ RUN pnpm run build --filter=@klicker-uzh/mcp-student
 FROM base AS runtime
 WORKDIR /app
 
-RUN npm i -g --ignore-scripts pnpm@11.5.0
+RUN npm i -g --ignore-scripts pnpm@12.11.2 \
+ && node "$(npm root -g)/pnpm/install.js"
 
 COPY --from=deps /app/out/json/ .
 COPY --from=deps /app/out/pnpm* .
@@ -43,6 +47,7 @@ RUN adduser --system --uid 1001 nodejs
 COPY --from=builder /app/packages/grading/dist/ /app/packages/grading/dist/
 COPY --from=builder /app/packages/feature-flags/dist/ /app/packages/feature-flags/dist/
 COPY --from=builder /app/packages/graphql/dist/ /app/packages/graphql/dist/
+COPY --from=builder /app/packages/doc-query-client/dist/ /app/packages/doc-query-client/dist/
 COPY --from=builder /app/packages/prisma/dist/ /app/packages/prisma/dist/
 COPY --from=builder /app/packages/types/dist/ /app/packages/types/dist/
 COPY --from=builder /app/packages/util/dist/ /app/packages/util/dist/

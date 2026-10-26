@@ -28,7 +28,9 @@ test.describe('AI beta availability recovery', () => {
       })
       await loginLecturer()
       await page.goto(`${process.env.URL_MANAGE ?? URL_MANAGE}/user/settings`)
-      await expect(page.getByTestId('ai')).toBeVisible()
+      await page.getByTestId('resources').click()
+      await expect(page.getByTestId('knowledge-bases')).toBeVisible()
+      await page.keyboard.press('Escape')
       const toggle = page.getByTestId('beta-enrollment-switch')
       await expect(toggle).toBeChecked()
 
@@ -72,7 +74,9 @@ test.describe('AI beta availability recovery', () => {
       try {
         await toggle.click()
         await expect(toggle).not.toBeChecked()
-        await expect(page.getByTestId('ai')).not.toBeAttached()
+        await page.getByTestId('resources').click()
+        await expect(page.getByTestId('knowledge-bases')).not.toBeAttached()
+        await page.keyboard.press('Escape')
         release?.()
         await fulfilled
         await page.evaluate(
@@ -88,23 +92,25 @@ test.describe('AI beta availability recovery', () => {
             page.getByTestId('beta-enrollment-refresh-failure')
           ).toBeVisible()
         }
-        await expect(page.getByTestId('ai')).not.toBeAttached()
+        await page.getByTestId('resources').click()
+        await expect(page.getByTestId('knowledge-bases')).not.toBeAttached()
+        await page.keyboard.press('Escape')
       } finally {
         release?.()
       }
     })
   }
 
-  test('keeps the AI entry visible while unavailable and recovers without a reload', async ({
+  test('keeps AI resource and generation actions visible while unavailable and recovers without a reload', async ({
     loginLecturer,
     page,
   }, testInfo) => {
     const capability = await mockManageAiCapability(page, 'ENABLED')
     await loginLecturer()
 
-    const aiMenu = page.getByTestId('ai')
-    await expect(aiMenu).toBeVisible()
-    await expect(aiMenu).toBeEnabled()
+    const generateElements = page.getByTestId('generate-elements')
+    await expect(generateElements).toBeVisible()
+    await expect(generateElements).toBeEnabled()
     await testInfo.attach('ai-navigation-enabled', {
       body: await page.screenshot(),
       contentType: 'image/png',
@@ -113,10 +119,11 @@ test.describe('AI beta availability recovery', () => {
     capability.setState('TEMPORARILY_UNAVAILABLE')
     await page.evaluate(() => window.dispatchEvent(new Event('focus')))
 
-    await expect(aiMenu).toBeVisible()
-    await expect(aiMenu).toBeDisabled()
-    await aiMenu.hover()
-    await expect(page.getByTestId('ai-disabled-reason')).toBeVisible()
+    await expect(generateElements).toBeVisible()
+    await expect(generateElements).toBeDisabled()
+    await page.getByTestId('resources').click()
+    await expect(page.getByTestId('knowledge-bases')).toBeVisible()
+    await expect(page.getByTestId('knowledge-bases')).toBeDisabled()
     await testInfo.attach('ai-navigation-unavailable', {
       body: await page.screenshot(),
       contentType: 'image/png',
@@ -125,7 +132,9 @@ test.describe('AI beta availability recovery', () => {
 
     capability.setState('ENABLED')
     await page.evaluate(() => window.dispatchEvent(new Event('focus')))
-    await expect(aiMenu).toBeEnabled()
+    await expect(generateElements).toBeEnabled()
+    await page.getByTestId('resources').click()
+    await expect(page.getByTestId('knowledge-bases')).toBeEnabled()
     expect(capability.requestCount).toBeGreaterThanOrEqual(3)
   })
 
@@ -160,7 +169,9 @@ test.describe('AI beta availability recovery', () => {
     const capability = await mockManageAiCapability(page, 'DISABLED')
     await loginLecturer()
 
-    await expect(page.getByTestId('ai')).not.toBeAttached()
+    await page.getByTestId('resources').click()
+    await expect(page.getByTestId('knowledge-bases')).not.toBeAttached()
+    await page.keyboard.press('Escape')
 
     const manageUrl = process.env.URL_MANAGE ?? URL_MANAGE
     await page.goto(`${manageUrl}/elements/generate`)
@@ -174,7 +185,7 @@ test.describe('AI beta availability recovery', () => {
   }) => {
     await mockManageAiCapability(page, 'ENABLED')
     await loginLecturer()
-    await expect(page.getByTestId('ai')).toBeEnabled()
+    await expect(page.getByTestId('generate-elements')).toBeEnabled()
     await page.clock.install()
     let requests = 0
     await page.route('**/api/graphql*', async (route) => {
@@ -223,7 +234,11 @@ test.describe('AI beta availability recovery', () => {
       await isolatedPage.goto(manageUrl)
       await profile.fulfilled
       await expect(isolatedPage.getByRole('menubar').first()).toBeVisible()
-      await expect(isolatedPage.getByTestId('ai')).not.toBeAttached()
+      await isolatedPage.getByTestId('resources').click()
+      await expect(
+        isolatedPage.getByTestId('knowledge-bases')
+      ).not.toBeAttached()
+      await expect(isolatedPage.getByTestId('chatbots')).not.toBeAttached()
       expect(capability.requestCount).toBe(0)
     } finally {
       await isolatedPage.close()

@@ -1,17 +1,33 @@
 #!/usr/bin/env node
 
-import { randomUUID, timingSafeEqual } from 'node:crypto'
-import { readFile, readdir } from 'node:fs/promises'
+import { createHmac, randomUUID, timingSafeEqual } from 'node:crypto'
+import { readdir, readFile } from 'node:fs/promises'
 import { createServer } from 'node:http'
 import { basename, resolve } from 'node:path'
 import { fileURLToPath } from 'node:url'
+import {
+  acquireBudgetLock,
+  assertBudgetCanStart,
+  beginBudgetTurn,
+  finishBudgetTurn,
+  readBudgetLedger,
+} from '../../../evaluation/evaluation-budget.mjs'
+import { verifyGuardQualification } from '../../../evaluation/evaluation-spend-guard.mjs'
+
+import {
+  evaluatePersistedEvidence,
+  evidenceError,
+  writeEvidenceCapture,
+} from './klicker-evaluation-evidence.mjs'
 
 export const DEFAULT_CHATBOT_ID = '8f9c2e1d-4b7a-4c3e-9f5d-1a2b3c4d5e6f'
-export const DEFAULT_MODEL_ID = 'gpt-5.6-luna'
+// Keep the local launcher fallback in util/_run_klicker_eval.sh aligned.
+export const DEFAULT_MODEL_ID = 'gpt-6-luna'
 export const DEFAULT_MAX_STREAM_BYTES = 8 * 1024 * 1024
 export const DEFAULT_POLL_INTERVAL_MS = 250
 export const DEFAULT_POLL_TIMEOUT_MS = 60_000
 export const DEFAULT_REQUEST_TIMEOUT_MS = 75_000
+export const ELEARNING_GRANT_TTL_SECONDS = 120
 
 const LOGIN_MUTATION = `
   mutation LoginParticipant($usernameOrEmail: String!, $password: String!) {
@@ -24,7 +40,7 @@ const LOGIN_MUTATION = `
 
 const RESPONSE_TIMEOUT_CLEANUP = Symbol('responseTimeoutCleanup')
 
-function evaluationError(code) {
+export function evaluationError(code) {
   const error = new Error(code)
   error.code = code
   return error
@@ -38,7 +54,39 @@ function isLocalHostname(hostname) {
   )
 }
 
-export function validateLocalOrigin(value, name) {
+/**
+ * Parses KLICKER_EVAL_ALLOWED_ORIGINS, a comma-separated list of exact https
+ * origins (no path, query or fragment) that may be targeted in addition to
+ * loopback hosts.
+ */
+export function parseAllowedOrigins(value) {
+  if (!value) return []
+  return value
+    .split(',')
+    .map((entry) => entry.trim())
+    .filter(Boolean)
+    .map((entry) => {
+      let url
+      try {
+        url = new URL(entry)
+      } catch {
+        throw evaluationError('allowed_origins_invalid')
+      }
+      if (
+        url.protocol !== 'https:' ||
+        url.username ||
+        url.password ||
+        url.pathname !== '/' ||
+        url.search ||
+        url.hash
+      ) {
+        throw evaluationError('allowed_origins_invalid')
+      }
+      return url.origin
+    })
+}
+
+export function validateLocalOrigin(value, name, allowedOrigins = []) {
   let url
   try {
     url = new URL(value)
@@ -49,7 +97,10 @@ export function validateLocalOrigin(value, name) {
   if (!['http:', 'https:'].includes(url.protocol)) {
     throw evaluationError(`${name}_protocol`)
   }
-  if (!isLocalHostname(url.hostname)) {
+  if (
+    !isLocalHostname(url.hostname) &&
+    !(url.protocol === 'https:' && allowedOrigins.includes(url.origin))
+  ) {
     throw evaluationError(`${name}_non_local`)
   }
 
@@ -99,7 +150,10 @@ export function parseGroundTruthFrontmatter(text, filePath = 'unknown') {
 
   const values = new Map()
   for (const line of normalized.slice(4, end).split('\n')) {
-    const match = /^(question|mode):\s*(.*)$/.exec(line)
+    const match =
+      /^(question|mode|source|learner_id|klicker_course_id|elearning_course_id):\s*(.*)$/.exec(
+        line
+      )
     if (!match) continue
     if (values.has(match[1])) {
       throw evaluationError(
@@ -118,7 +172,84 @@ export function parseGroundTruthFrontmatter(text, filePath = 'unknown') {
     throw evaluationError(`ground_truth_mode_invalid:${basename(filePath)}`)
   }
 
-  return { question, mode, source: 'fineco', filePath }
+  const source = (values.get('source') || 'fineco').toLowerCase()
+  if (!['fineco', 'elearning'].includes(source)) {
+    throw evaluationError(`ground_truth_source_invalid:${basename(filePath)}`)
+  }
+  if (source === 'fineco') {
+    return { question, mode, source, filePath }
+  }
+
+  const learnerId = values.get('learner_id')
+  const klickerCourseId = values.get('klicker_course_id')
+  const elearningCourseId = values.get('elearning_course_id')
+  if (!learnerId || !klickerCourseId || !elearningCourseId) {
+    throw evaluationError(`ground_truth_fields_missing:${basename(filePath)}`)
+  }
+  return {
+    question,
+    mode,
+    source,
+    learnerId,
+    klickerCourseId,
+    elearningCourseId,
+    filePath,
+  }
+}
+
+// Signs the same short-lived purpose-scoped login grant the eLearning server
+// issues, so a local evaluation stack can exercise the /auth/elearning
+// handoff without the eLearning app running.
+function signElearningGrant({
+  secret,
+  learnerId,
+  chatbotId,
+  klickerCourseId,
+  elearningCourseId,
+}) {
+  const encoder = (value) => Buffer.from(JSON.stringify(value), 'utf8')
+  const encode = (value) => encoder(value).toString('base64url')
+  const header = encode({ alg: 'HS256', typ: 'JWT' })
+  const issuedAt = Math.floor(Date.now() / 1000)
+  const payload = encode({
+    purpose: 'chat-handoff',
+    scope: 'ELEARNING_CHAT',
+    chatbotId,
+    klickerCourseId,
+    elearningCourseId,
+    iss: 'elearning',
+    aud: 'klicker-chat',
+    sub: learnerId,
+    iat: issuedAt,
+    exp: issuedAt + ELEARNING_GRANT_TTL_SECONDS,
+    jti: randomUUID(),
+  })
+  const signature = createHmac('sha256', secret)
+    .update(`${header}.${payload}`)
+    .digest('base64url')
+  return `${header}.${payload}.${signature}`
+}
+
+// Collects every named cookie the launch response sets; clear-on-launch
+// cookies carry empty values and must not be forwarded.
+function collectCookies(headers) {
+  const values =
+    typeof headers.getSetCookie === 'function'
+      ? headers.getSetCookie()
+      : [headers.get('set-cookie') || '']
+  const cookies = []
+  // Header values may arrive comma-joined, so pairs are matched anywhere a
+  // new pair can start; attribute pairs always follow a semicolon instead.
+  const pairPattern = /(?:^|,\s*)([^=;,\s]+)=([^;,]*)/g
+  for (const value of values) {
+    let match
+    while ((match = pairPattern.exec(value)) !== null) {
+      const name = match[1]
+      const cookieValue = match[2].trim()
+      if (name && cookieValue) cookies.push(`${name}=${cookieValue}`)
+    }
+  }
+  return cookies
 }
 
 export async function buildGroundTruthIndex(directory) {
@@ -267,12 +398,26 @@ function requestHeaders(cookie) {
   }
 }
 
+export function finiteCredits(value) {
+  return typeof value === 'number' && Number.isFinite(value) && value >= 0
+    ? value
+    : null
+}
+
 async function drainResponse(response, maxBytes) {
   try {
     if (!response.body) throw evaluationError('chat_stream_missing')
     const reader = response.body.getReader()
     const decoder = new TextDecoder()
     const streamState = { done: false, events: 0, finished: false }
+    const visible = {
+      text: '',
+      toolCalls: [],
+      creditsUsed: null,
+      chatMode: null,
+      modelId: null,
+      finishReason: null,
+    }
     let bytes = 0
     let buffer = ''
     let completed = false
@@ -306,6 +451,40 @@ async function drainResponse(response, maxBytes) {
       if (['abort', 'error', 'tool-output-error'].includes(event.type)) {
         throw evaluationError('chat_stream_error')
       }
+      if (event.type === 'text-delta' && typeof event.delta === 'string') {
+        visible.text += event.delta
+      } else if (
+        event.type === 'tool-input-start' &&
+        typeof event.toolName === 'string'
+      ) {
+        visible.toolCalls.push({
+          toolCallId:
+            typeof event.toolCallId === 'string' ? event.toolCallId : null,
+          toolName: event.toolName,
+          output: false,
+        })
+      } else if (event.type === 'tool-output-available') {
+        const toolCall = visible.toolCalls.find(
+          (call) =>
+            call.toolCallId !== null && call.toolCallId === event.toolCallId
+        )
+        if (toolCall) toolCall.output = true
+      } else if (
+        event.type === 'finish' &&
+        event.messageMetadata &&
+        typeof event.messageMetadata === 'object'
+      ) {
+        const metadata = event.messageMetadata
+        visible.creditsUsed = finiteCredits(metadata.creditsUsed)
+        visible.chatMode =
+          typeof metadata.chatMode === 'string' ? metadata.chatMode : null
+        visible.modelId =
+          typeof metadata.modelId === 'string' ? metadata.modelId : null
+        visible.finishReason =
+          typeof metadata.finishReason === 'string'
+            ? metadata.finishReason
+            : null
+      }
       streamState.events += 1
     }
 
@@ -323,7 +502,7 @@ async function drainResponse(response, maxBytes) {
             throw evaluationError('chat_stream_incomplete')
           }
           completed = true
-          return bytes
+          return { ...visible, bytes }
         }
         bytes += value?.byteLength || 0
         if (bytes > maxBytes) {
@@ -412,31 +591,58 @@ export class KlickerEvaluationTarget {
     modelId = DEFAULT_MODEL_ID,
     groundTruthDirectory,
     canaryFixture,
+    elearningHandoffSecret = null,
+    evidenceDirectory = null,
+    evidenceRunId = null,
     maxStreamBytes = DEFAULT_MAX_STREAM_BYTES,
     pollIntervalMs = DEFAULT_POLL_INTERVAL_MS,
     pollTimeoutMs = DEFAULT_POLL_TIMEOUT_MS,
     requestTimeoutMs = DEFAULT_REQUEST_TIMEOUT_MS,
+    budgetFile = null,
+    qualification = null,
+    allowedOrigins = [],
   }) {
     if (!apiKey) throw evaluationError('target_key_missing')
     if (!participantUsername || !participantPassword) {
       throw evaluationError('participant_credentials_missing')
     }
-    this.apiOrigin = validateLocalOrigin(apiOrigin, 'api_origin')
-    this.chatOrigin = validateLocalOrigin(chatOrigin, 'chat_origin')
+    if (evidenceDirectory && !evidenceRunId) {
+      throw evidenceError('evidence_run_id_missing')
+    }
+    if (!evidenceDirectory && evidenceRunId) {
+      throw evidenceError('evidence_directory_missing')
+    }
+    this.apiOrigin = validateLocalOrigin(
+      apiOrigin,
+      'api_origin',
+      allowedOrigins
+    )
+    this.chatOrigin = validateLocalOrigin(
+      chatOrigin,
+      'chat_origin',
+      allowedOrigins
+    )
     this.participantUsername = participantUsername
     this.participantPassword = participantPassword
     this.chatbotId = chatbotId
     this.modelId = modelId
     this.groundTruthDirectory = groundTruthDirectory
     this.canaryFixture = canaryFixture
+    this.evidenceDirectory = evidenceDirectory
+    this.evidenceRunId = evidenceRunId
     this.maxStreamBytes = maxStreamBytes
     this.pollIntervalMs = pollIntervalMs
     this.pollTimeoutMs = pollTimeoutMs
     this.requestTimeoutMs = requestTimeoutMs
+    this.budgetFile = budgetFile
+    this.qualification = qualification
+    this.elearningHandoffSecret = elearningHandoffSecret
     this.cookie = null
+    this.elearningCookie = null
     this.groundTruthIndex = null
     this.canary = null
     this.sessionPromise = null
+    this.elearningSessionPromise = null
   }
 
   async initialize() {
@@ -444,6 +650,12 @@ export class KlickerEvaluationTarget {
       this.groundTruthDirectory
     )
     this.canary = await loadCanaryFixture(this.canaryFixture)
+    const hasElearningCases = [...this.groundTruthIndex.values()].some(
+      (metadata) => metadata.source === 'elearning'
+    )
+    if (hasElearningCases && !this.elearningHandoffSecret) {
+      throw evaluationError('elearning_secret_missing')
+    }
   }
 
   async resolveQuestion(question) {
@@ -467,6 +679,12 @@ export class KlickerEvaluationTarget {
   }
 
   async loginAndAcceptDisclaimer() {
+    const cookie = await this.loginParticipant()
+    await this.acceptDisclaimer(cookie)
+    this.cookie = cookie
+  }
+
+  async loginParticipant() {
     const loginResponse = await fetchWithTimeout(
       urlFor(this.apiOrigin, '/api/graphql'),
       {
@@ -494,8 +712,10 @@ export class KlickerEvaluationTarget {
     if (!loginBody?.data?.loginParticipant) {
       throw evaluationError('participant_login_rejected')
     }
-    const cookie = participantCookie(loginResponse.headers)
+    return participantCookie(loginResponse.headers)
+  }
 
+  async acceptDisclaimer(cookie) {
     const disclaimerResponse = await fetchWithTimeout(
       urlFor(this.chatOrigin, `/api/chatbots/${this.chatbotId}/disclaimer`),
       { headers: requestHeaders(cookie) },
@@ -532,16 +752,76 @@ export class KlickerEvaluationTarget {
         throw evaluationError('disclaimer_accept_rejected')
       }
     }
-    this.cookie = cookie
   }
 
-  async createThread() {
+  async ensureElearningSession(metadata) {
+    if (this.elearningCookie) return
+    if (this.elearningSessionPromise) return this.elearningSessionPromise
+    this.elearningSessionPromise = this.elearningLaunch(metadata).finally(
+      () => {
+        this.elearningSessionPromise = null
+      }
+    )
+    await this.elearningSessionPromise
+  }
+
+  async elearningLaunch(metadata) {
+    if (!this.elearningHandoffSecret) {
+      throw evaluationError('elearning_secret_missing')
+    }
+    let grant
+    try {
+      grant = signElearningGrant({
+        secret: this.elearningHandoffSecret,
+        learnerId: metadata.learnerId,
+        chatbotId: this.chatbotId,
+        klickerCourseId: metadata.klickerCourseId,
+        elearningCourseId: metadata.elearningCourseId,
+      })
+    } catch {
+      throw evaluationError('elearning_grant_sign_failed')
+    }
+    const launchQuery = new URLSearchParams({
+      grant,
+      courseId: metadata.klickerCourseId,
+      chatbotId: this.chatbotId,
+    })
+    let launchResponse
+    try {
+      launchResponse = await fetchWithTimeout(
+        urlFor(this.chatOrigin, `/auth/elearning?${launchQuery}`),
+        { headers: { Accept: 'text/html' } },
+        this.requestTimeoutMs
+      )
+    } catch (error) {
+      if (error?.code === 'request_failed') {
+        throw evaluationError('elearning_launch_rejected')
+      }
+      throw error
+    }
+    if (!launchResponse.ok) {
+      launchResponse[RESPONSE_TIMEOUT_CLEANUP]?.()
+      throw safeStatusError('elearning_launch', launchResponse)
+    }
+    const cookies = collectCookies(launchResponse.headers)
+    launchResponse[RESPONSE_TIMEOUT_CLEANUP]?.()
+    if (cookies.length === 0) {
+      throw evaluationError('elearning_cookies_missing')
+    }
+    this.elearningCookie = cookies.join('; ')
+    await this.acceptDisclaimer(this.elearningCookie)
+  }
+
+  async createThread(cookie = this.cookie, isElearning = false) {
     const response = await fetchWithTimeout(
       urlFor(this.chatOrigin, `/api/chatbots/${this.chatbotId}/threads`),
       {
         method: 'POST',
-        headers: requestHeaders(this.cookie),
-        body: JSON.stringify({ title: null }),
+        headers: requestHeaders(cookie),
+        body: JSON.stringify({
+          title: null,
+          ...(isElearning ? { origin: 'elearning' } : {}),
+        }),
       },
       this.requestTimeoutMs
     )
@@ -559,24 +839,34 @@ export class KlickerEvaluationTarget {
     userMessageId,
     assistantMessageId,
     maxStreamBytes,
+    cookie = this.cookie,
+    history = [],
+    parentId = null,
+    answerStyle,
+    answerTone,
   }) {
     const response = await fetchWithTimeout(
       urlFor(this.chatOrigin, `/api/chatbots/${this.chatbotId}/chat`),
       {
         method: 'POST',
         headers: {
-          ...requestHeaders(this.cookie),
+          ...requestHeaders(cookie),
           Accept: 'text/event-stream',
         },
         body: JSON.stringify({
-          messages: [{ id: userMessageId, role: 'user', content: question }],
+          messages: [
+            ...history,
+            { id: userMessageId, role: 'user', content: question },
+          ],
           threadId,
           selectedModel: this.modelId,
           selectedMode: mode,
           reasoningEffort: 'low',
-          parentId: null,
+          parentId,
           assistantMessageId,
           images: [],
+          answerStyle,
+          answerTone,
         }),
       },
       this.requestTimeoutMs
@@ -585,10 +875,10 @@ export class KlickerEvaluationTarget {
       response[RESPONSE_TIMEOUT_CLEANUP]?.()
       throw safeStatusError('chat_submit', response)
     }
-    await drainResponse(response, maxStreamBytes)
+    return drainResponse(response, maxStreamBytes)
   }
 
-  async readCompletedMessage(threadId, assistantMessageId, mode) {
+  async pollThreadMessages(threadId, messageId, cookie = this.cookie) {
     const deadline = Date.now() + this.pollTimeoutMs
     while (Date.now() < deadline) {
       const response = await fetchWithTimeout(
@@ -596,7 +886,7 @@ export class KlickerEvaluationTarget {
           this.chatOrigin,
           `/api/chatbots/${this.chatbotId}/threads/${threadId}/messages`
         ),
-        { headers: requestHeaders(this.cookie) },
+        { headers: requestHeaders(cookie) },
         Math.min(
           this.requestTimeoutMs,
           10_000,
@@ -604,16 +894,11 @@ export class KlickerEvaluationTarget {
         )
       )
       const body = await readJsonResponse(response, 'message_read')
-      const message = Array.isArray(body)
-        ? body.find((candidate) => candidate?.id === assistantMessageId)
-        : null
-      if (message) {
-        if (message.chatMode !== mode)
-          throw evaluationError('chat_mode_mismatch')
-        if (message.modelId !== this.modelId) {
-          throw evaluationError('chat_model_mismatch')
-        }
-        return message
+      if (
+        Array.isArray(body) &&
+        body.some((candidate) => candidate?.id === messageId)
+      ) {
+        return body
       }
       await new Promise((resolvePromise) =>
         setTimeout(resolvePromise, this.pollIntervalMs)
@@ -622,33 +907,84 @@ export class KlickerEvaluationTarget {
     throw evaluationError('assistant_message_timeout')
   }
 
+  async readCompletedMessage(threadId, assistantMessageId, mode, cookie) {
+    const messages = await this.pollThreadMessages(
+      threadId,
+      assistantMessageId,
+      cookie
+    )
+    const message = messages.find(
+      (candidate) => candidate?.id === assistantMessageId
+    )
+    if (!message) throw evaluationError('assistant_message_timeout')
+    if (message.chatMode !== mode) throw evaluationError('chat_mode_mismatch')
+    if (message.modelId !== this.modelId) {
+      throw evaluationError('chat_model_mismatch')
+    }
+    return message
+  }
+
   async runQuestion(question) {
     const metadata = await this.resolveQuestion(question)
-    await this.ensureSession()
-    const threadId = await this.createThread()
-    const userMessageId = randomUUID()
-    const assistantMessageId = randomUUID()
-    await this.submitTurn({
-      question: metadata.question,
-      mode: metadata.mode,
-      threadId,
-      userMessageId,
-      assistantMessageId,
-      maxStreamBytes: metadata.maxStreamBytes || this.maxStreamBytes,
-    })
-    const message = await this.readCompletedMessage(
-      threadId,
-      assistantMessageId,
-      metadata.mode
-    )
-    const result = extractAssistantMessage(message)
-    if (
-      metadata.source === 'canary' &&
-      !result.toolCalls.some((call) => call.name === metadata.expectedTool)
-    ) {
-      throw evaluationError('canary_tool_missing')
+    const isElearning = metadata.source === 'elearning'
+    if (this.budgetFile) {
+      assertBudgetCanStart(await readBudgetLedger(this.budgetFile))
+      await verifyGuardQualification({
+        ...this.qualification,
+        budgetFile: this.budgetFile,
+        chatOrigin: this.chatOrigin,
+        chatbotId: this.chatbotId,
+        modelId: this.modelId,
+      })
     }
-    return { metadata, ...result }
+    const release = this.budgetFile
+      ? await acquireBudgetLock(this.budgetFile, '.run')
+      : null
+    try {
+      if (isElearning) {
+        await this.ensureElearningSession(metadata)
+      } else {
+        await this.ensureSession()
+      }
+      const cookie = isElearning ? this.elearningCookie : this.cookie
+      const threadId = await this.createThread(cookie, isElearning)
+      const userMessageId = randomUUID()
+      const assistantMessageId = randomUUID()
+      const turnToken = this.budgetFile
+        ? await beginBudgetTurn(this.budgetFile)
+        : null
+      await this.submitTurn({
+        question: metadata.question,
+        mode: metadata.mode,
+        threadId,
+        userMessageId,
+        assistantMessageId,
+        maxStreamBytes: metadata.maxStreamBytes || this.maxStreamBytes,
+        cookie,
+      })
+      const message = await this.readCompletedMessage(
+        threadId,
+        assistantMessageId,
+        metadata.mode,
+        cookie
+      )
+      if (turnToken)
+        await finishBudgetTurn(
+          this.budgetFile,
+          turnToken,
+          finiteCredits(message.creditsUsed)
+        )
+      const result = extractAssistantMessage(message)
+      if (
+        metadata.source === 'canary' &&
+        !result.toolCalls.some((call) => call.name === metadata.expectedTool)
+      ) {
+        throw evaluationError('canary_tool_missing')
+      }
+      return { metadata, ...result, message }
+    } finally {
+      await release?.()
+    }
   }
 
   async complete(body) {
@@ -666,8 +1002,22 @@ export class KlickerEvaluationTarget {
     const question = message.content.trim()
     if (!question) throw evaluationError('question_empty')
     const result = await this.runQuestion(question)
+    const payload = completionPayload(this.modelId, result)
+    if (this.evidenceDirectory) {
+      const capture = evaluatePersistedEvidence({
+        responseId: payload.id,
+        runId: this.evidenceRunId,
+        question,
+        answer: result.answer,
+        mode: result.message.chatMode,
+        requestedModel: this.modelId,
+        persistedModel: result.message.modelId,
+        content: result.message.content,
+      })
+      await writeEvidenceCapture({ directory: this.evidenceDirectory, capture })
+    }
     return {
-      payload: completionPayload(this.modelId, result),
+      payload,
       source: result.metadata.source,
     }
   }
@@ -761,9 +1111,19 @@ export async function createTargetFromEnvironment(env = process.env) {
     participantUsername: env.KLICKER_EVAL_PARTICIPANT_USERNAME,
     participantPassword: env.KLICKER_EVAL_PARTICIPANT_PASSWORD,
     chatbotId: env.KLICKER_EVAL_CHATBOT_ID || DEFAULT_CHATBOT_ID,
+    allowedOrigins: parseAllowedOrigins(env.KLICKER_EVAL_ALLOWED_ORIGINS),
     modelId: env.KLICKER_EVAL_MODEL_ID || DEFAULT_MODEL_ID,
+    elearningHandoffSecret: env.KLICKER_EVAL_ELEARNING_HANDOFF_SECRET || null,
     groundTruthDirectory: env.KLICKER_EVAL_GT_DIR,
     canaryFixture: env.KLICKER_EVAL_CANARY_FILE,
+    budgetFile: env.KLICKER_EVAL_BUDGET_FILE,
+    qualification: {
+      filePath: env.KLICKER_EVAL_QUALIFICATION_FILE,
+      origin: env.KLICKER_EVAL_GUARD_ORIGIN,
+      key: env.KLICKER_EVAL_GUARD_KEY,
+    },
+    evidenceDirectory: env.KLICKER_EVAL_EVIDENCE_DIR || null,
+    evidenceRunId: env.KLICKER_EVAL_RUN_ID || null,
     maxStreamBytes:
       Number(env.KLICKER_EVAL_MAX_STREAM_BYTES) || DEFAULT_MAX_STREAM_BYTES,
     pollIntervalMs:
@@ -776,6 +1136,16 @@ export async function createTargetFromEnvironment(env = process.env) {
   if (!target.groundTruthDirectory || !target.canaryFixture) {
     throw evaluationError('target_fixture_paths_missing')
   }
+  if (!target.budgetFile) throw evaluationError('budget_missing')
+  if (target.modelId === 'auto')
+    throw evaluationError('provider_model_unqualified')
+  await verifyGuardQualification({
+    ...target.qualification,
+    budgetFile: target.budgetFile,
+    chatOrigin: target.chatOrigin,
+    chatbotId: target.chatbotId,
+    modelId: target.modelId,
+  })
   await target.initialize()
   return target
 }
