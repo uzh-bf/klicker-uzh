@@ -28,6 +28,7 @@ type LaunchOutcome = {
   reachedPwa: boolean
   toolError?: string
   toolSessionCookieStored: boolean
+  toolSessionCookiePartitioned: boolean
 }
 
 let platform: MockPlatform
@@ -88,12 +89,19 @@ async function launch(
     .toBe(true)
 
   // ltijs keeps a platform session cookie named lti<base64> on the tool host.
-  const toolCookies = await page.context().cookies(toolOrigin)
+  // A partitioned (CHIPS) cookie is kept only for this top-level site, so it
+  // is reported separately from an ordinary third-party cookie.
+  const sessionCookies = (await page.context().cookies(toolOrigin)).filter(
+    (cookie) => cookie.name.startsWith('lti') && cookie.name !== 'lti-token'
+  )
   return {
     reachedPwa,
     toolError,
-    toolSessionCookieStored: toolCookies.some(
-      (cookie) => cookie.name.startsWith('lti') && cookie.name !== 'lti-token'
+    toolSessionCookieStored: sessionCookies.some(
+      (cookie) => !cookie.partitionKey
+    ),
+    toolSessionCookiePartitioned: sessionCookies.some(
+      (cookie) => !!cookie.partitionKey
     ),
   }
 }
