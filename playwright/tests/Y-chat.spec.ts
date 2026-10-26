@@ -4651,7 +4651,10 @@ function readStdout(result: Record<string, unknown>) {
 }
 
 test.describe('CodeAPI real-route fixture', () => {
-  test.describe.configure({ retries: 0 })
+  test.describe.configure({
+    retries: 0,
+    ...(CODEAPI_STG_ENABLED ? { mode: 'serial' as const } : {}),
+  })
   test.skip(
     !CODEAPI_FIXTURE_ENABLED,
     'Set KLICKER_CODEAPI_BROWSER_E2E=1 and start the local CodeAPI fixture runtime'
