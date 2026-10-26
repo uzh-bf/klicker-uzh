@@ -465,7 +465,10 @@ test('dev runs replace the CI runtime with the dev test servers while print-env 
   const inspect = createLauncherHarness()
   runPlaywrightHost(['--print-env'], inspect.dependencies)
   assert.deepEqual(inspect.removals, [])
-  assert.deepEqual(inspect.writes.filter((path) => path.includes('/.runtime/')), [])
+  assert.deepEqual(
+    inspect.writes.filter((path) => path.includes('/.runtime/')),
+    []
+  )
   assert.deepEqual(inspect.plans, [])
 })
 
