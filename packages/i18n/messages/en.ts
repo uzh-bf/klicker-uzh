@@ -1376,6 +1376,13 @@ Since the KlickerUZH app is not yet available in the iOS App Store, follow these
         'This microlearning has expired and no new answers can be submitted anymore.',
     },
     liveQuiz: {
+      blockClosed:
+        'This question block is closed. This does not confirm which answers were saved.',
+      allQuestionsSubmitted: 'You have submitted all questions in this block.',
+      synchronizing: 'Updating quiz state…',
+      connectionLost:
+        'Live updates are interrupted. The questions shown may be out of date.',
+      reconnect: 'Reconnect',
       noActiveQuestion:
         'Currently, no question is active... Once a new question is activated, it will be shown automatically. Alternatively, you may also <reload>refresh</reload> the page to enforce an update.',
       allQuestionsAnswered:
@@ -1620,12 +1627,13 @@ Since the KlickerUZH app is not yet available in the iOS App Store, follow these
       eduIdRequired: 'Edu-ID authentication is required for assessments',
       submissionInputsInvalid:
         'An error occurred while submitting your answer. Please check your inputs for error messages.',
-      submissionSuccessful:
-        'Your answer has been successfully submitted and saved.',
+      submissionUnconfirmed:
+        'We could not confirm submission. Your draft is retained. Check your connection and try again while the block is open.',
+      submissionSuccessful: 'Your answer has been submitted for processing.',
       submissionGeneralError:
         'An error occurred while submitting your answer. Please try again.',
       submissionAlreadyRecorded:
-        'You have already answered this question. Your previous response has been saved.',
+        'An earlier answer to this question is already recorded. That answer counts; this attempt does not replace it.',
       submissionUnauthorizedError:
         'Your login could not be verified correctly. Please log in again and answer the question again.',
       submissionServerError:
@@ -1634,7 +1642,7 @@ Since the KlickerUZH app is not yet available in the iOS App Store, follow these
         'You are not part of the assessment course to which this quiz belongs. Please contact your lecturers.',
       accountDeletionMessage:
         'Since you are currently using your KlickerUZH account to participate in an assessment course, you cannot delete your account yourself. For more information on how to delete your account and leave the course, please contact your course instructors.',
-      respondedAt: 'Responded at {date}',
+      respondedAt: 'Submitted at {date}',
       failedToLoadActivityResults:
         'An error occurred while loading the results for the activities in this assessment course. Please try again or contact your lecturers if the problem persists.',
       activityResultsDescription:

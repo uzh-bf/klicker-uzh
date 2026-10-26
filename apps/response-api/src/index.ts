@@ -5,6 +5,7 @@ import { randomUUID } from 'crypto'
 import { createServer, IncomingMessage, ServerResponse } from 'http'
 import { Redis } from 'ioredis'
 import { createHash } from 'node:crypto'
+import { dispatchAssessmentSubmission } from './assessmentSubmission.js'
 
 const redis = new Redis({
   family: 4,
@@ -316,28 +317,20 @@ async function handleAddAssessmentResponse(
     responseTimestamp,
   }
 
-  // start the processing of an assessment response
-  console.log(`Pushing event ${'response-received:assessment'}`, {
-    correlationId,
-    liveQuizId: message.liveQuizId,
-    instanceId: message.instanceId,
-  })
-
-  try {
-    await hatchetClient.events.push('response-received:assessment', message)
-  } catch (error) {
-    try {
-      await hatchetClient.events.push('create-audit-log-entry', {
+  const outcome = await dispatchAssessmentSubmission({
+    enqueue: () =>
+      hatchetClient.events.push('response-received:assessment', message),
+    auditFailure: (error) =>
+      hatchetClient.events.push('create-audit-log-entry', {
         correlationId,
         info: `[ERROR] [AddResponse Assessment] Failed to push response-received:assessment event for correlationId ${correlationId}: ${error}`,
-      })
-    } catch (loggingError) {
-      // TODO: send error directly to audit-logging service through network request
-      console.error('Failed to push create-audit-log-entry event', {
-        originalError: error,
-        loggingError,
-      })
-    }
+      }),
+  })
+
+  console.log('assessment_submission_dispatch', { outcome })
+
+  if (outcome === 'unconfirmed') {
+    return sendJson(req, res, 503, { error: 'submission_unconfirmed' })
   }
 
   return sendJson(req, res, 200, {
