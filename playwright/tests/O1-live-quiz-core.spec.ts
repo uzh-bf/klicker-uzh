@@ -3011,15 +3011,63 @@ test.describe.serial('Core live-quiz workflows', () => {
     await page
       .getByTestId(`start-live-quiz-${data.course1.quiz.nameNew}`)
       .click()
-    await page.getByTestId('next-block-timeline').click()
-    await page.waitForTimeout(500)
-    await page.getByTestId('next-block-timeline').click()
-    await page.waitForTimeout(500)
-    await page.getByTestId('next-block-timeline').click()
-    await page.waitForTimeout(500)
-    await page.getByTestId('next-block-timeline').click()
-    await page.waitForTimeout(500)
-    await page.getByTestId('next-block-timeline').click()
+
+    const nextBlock = page.getByTestId('next-block-timeline')
+    async function runNextBlockStep({
+      icon,
+      operationName,
+      responseField,
+    }: {
+      icon: string
+      operationName: string
+      responseField: string
+    }) {
+      await expect(nextBlock.locator(`svg[data-icon="${icon}"]`)).toBeVisible()
+      await expect(nextBlock).toBeEnabled()
+      const responsePromise = page.waitForResponse((response) => {
+        if (!response.url().includes('/graphql')) return false
+        return (
+          response.request().method() === 'POST' &&
+          response.request().postDataJSON()?.operationName === operationName
+        )
+      })
+
+      await nextBlock.click()
+      const response = await responsePromise
+      const body = await response.json()
+      expect(body.errors).toBeUndefined()
+      const result = body.data?.[responseField]
+      expect(result).toBeDefined()
+      expect(result).not.toBeNull()
+      return result
+    }
+
+    await runNextBlockStep({
+      icon: 'play',
+      operationName: 'ActivateLiveQuizBlock',
+      responseField: 'activateLiveQuizBlock',
+    })
+    await runNextBlockStep({
+      icon: 'stop',
+      operationName: 'DeactivateLiveQuizBlock',
+      responseField: 'deactivateLiveQuizBlock',
+    })
+    await runNextBlockStep({
+      icon: 'play',
+      operationName: 'ActivateLiveQuizBlock',
+      responseField: 'activateLiveQuizBlock',
+    })
+    await runNextBlockStep({
+      icon: 'stop',
+      operationName: 'DeactivateLiveQuizBlock',
+      responseField: 'deactivateLiveQuizBlock',
+    })
+    const endedQuiz = await runNextBlockStep({
+      icon: 'flag-checkered',
+      operationName: 'EndLiveQuiz',
+      responseField: 'endLiveQuiz',
+    })
+    expect(endedQuiz).toMatchObject({ status: 'ENDED' })
   })
 
   test('Cleanup: Delete the created and completed live quiz', async ({

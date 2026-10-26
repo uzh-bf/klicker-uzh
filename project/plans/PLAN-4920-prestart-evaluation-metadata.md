@@ -8,6 +8,11 @@ review, runtime or delivery authority.
 
 ### Approved completion batch
 
+Authority is the user's 2026-10-26 reply, "agreed, then lets do that", to the
+four-step completion proposal in this conversation. Human review clearance
+remains a reported requirement; that reply does not authorize contacting people.
+Execution mode is `standard` because the runtime model identity is unresolved.
+
 Merge target `712cb42d0d` normally into the
 delivery tree, run fresh affected checks and browser proof, commit this plan and
 the integrated state, update PR evidence, and make an ordinary non-force push to
@@ -84,14 +89,25 @@ Syncpack, AGENTS.md, retired-path and Prisma-sync checks pass. Focused formattin
 task-relative whitespace and staged secret scans pass; no production data was
 queried or added. Container/host checks are split, not one `check:all` run.
 
-The normal integration is committed as `a176268345`. Before publication, strict
-target freshness required including the newly landed `712cb42d0d`, which changes
-only the automatic OCR workflow. It does not invalidate the application, service
-or production-build proof. The full serial Chromium O1 launcher is waiting
-behind the managed provider operation. Browser proof, publication, exact-head CI
-and final AI review remain outstanding. The prior independent review remains
-applicable to unchanged evaluation contracts; this integration introduces no new
-application behavior.
+The normal integrations `a176268345` and `ed7b666f2b` are published to the existing
+PR branch. Strict target freshness required including `712cb42d0d`, which changes
+only the automatic OCR workflow. Application, service and production-build proof
+remain applicable.
+
+Fresh serial Chromium O1 passes all 40 scenarios in 5.7 minutes through the host
+launcher. The first run exposed a test race before evaluation: five timed
+timeline clicks left the quiz published, so deletion was correctly unavailable.
+The test now waits for each expected control and successful lifecycle mutation,
+then asserts `ENDED`. The complete rerun covers submissions, evaluation results,
+closure, restart, mobile interactions and deletion without skips. Evaluation
+application code is unchanged. Two additional EN/DE captures at 390px supplement
+the 15 earlier synthetic captures in the PR gallery.
+
+The completion correction and this evidence update await publication. Exact-head
+CI and the current final AI review remain outstanding. Reuse the prior complete
+independent review for unchanged evaluation contracts and review this new test
+correction after committing it. Stop and verify the exact fresh runtime after
+the final runtime-dependent check; preserve its checkout and data.
 
 ## Historical roadmap — 2026-10-07
 
