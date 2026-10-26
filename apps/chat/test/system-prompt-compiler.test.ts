@@ -13,6 +13,7 @@ vi.mock('@/src/lib/server/promptTemplates', async (importOriginal) => {
   }
 })
 
+import { CHAT_MODE_KEYS } from '../scripts/chat-mode-keys.mjs'
 import { DEFAULT_PROMPT } from '../src/lib/config/prompts'
 import { withCitationContract } from '../src/lib/server/citationInstructions'
 import { withLanguageStyleContract } from '../src/lib/server/languageInstructions'
@@ -56,6 +57,12 @@ function compilePrompt(
 }
 
 describe('compileSystemPrompt', () => {
+  test('the synthetic mode list matches the product mode registry', () => {
+    expect([...CHAT_MODE_KEYS].sort()).toEqual(
+      Object.keys(DEFAULT_PROMPT).sort()
+    )
+  })
+
   test('layers stored standard-mode guidance without removing the platform contract', () => {
     const stored = { tutor: { prompt: 'STORED-TUTOR-PROMPT' } }
 

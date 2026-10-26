@@ -744,6 +744,7 @@ test('writing feedback follow-ups preserve history and distinguish requested fro
         second.threadId,
         second.assistantMessageId,
         'writing-coach',
+        target.cookie,
         'gpt-5.6-luna'
       ),
       { code: 'chat_model_mismatch' }
@@ -754,6 +755,7 @@ test('writing feedback follow-ups preserve history and distinguish requested fro
         second.threadId,
         second.assistantMessageId,
         'writing-coach',
+        target.cookie,
         'gpt-5.6-luna'
       ),
       { code: 'chat_model_mismatch' }
