@@ -176,7 +176,8 @@ apps:
     runtime: proxy
     upstream: ${WORKSPACE}-db:5432
 
-  # lti-service: pre-built, runs on 4000. Full LTI launch requires external LMS.
+  # lti-service: pre-built, runs on 4000. playwright/lti-harness provides a
+  # mock LTI platform for local launches; real LMS launches need an LMS.
   - name: lti
     host: lti.klicker.localhost
     protocol: http
