@@ -36,19 +36,21 @@ stay bounded per worktree and shared where the tooling supports it.
 ## pnpm store
 
 - The one true content store is pnpm's default machine store
-  (`~/Library/pnpm/store/v11` for pnpm 11). Repository `.npmrc` sets no
+  (`~/Library/pnpm/store/v11` on macOS for pnpm 12.11.2; the store schema
+  remains v11). Use `pnpm store path --silent` for the effective path on your
+  platform. Repository `.npmrc` sets no
   `store-dir`.
 - In the devcontainer, the store volume `klicker-uzh-pnpm-store-v1` is mounted
   both at `/pnpm/.pnpm-store` (the configured store) and at
-  `<workspace>/.pnpm-store`. The workspace bind mount and the volume are
-  different devices inside the container, so pnpm may fall back to a workspace
-  store during installs; the second mount makes that fallback land in the
-  shared volume instead of on the host bind mount. See
+  `<workspace>/.pnpm-store` (the legacy fallback location). The explicit store
+  configuration and existing mounts stay stable across the upgrade. See
   [.devcontainer/README.md](../.devcontainer/README.md).
-- A `.pnpm-store/` directory inside any worktree is a **fallback store** (for
-  example created by a sandboxed agent whose home is read-only). It is
-  regenerable: deleting it never breaks existing `node_modules` (hardlinks
-  keep the content alive); the worst case is re-downloading packages.
+- With no explicit store directory, pnpm 12 uses
+  `<project>/node_modules/.pnpm-store` when no writable parent directory can
+  share hardlinks, such as a sandbox or isolated volume. Older installs may
+  leave a worktree-root `.pnpm-store/`. These content stores are regenerable;
+  the worktree cleanup already covers both via `node_modules` and
+  `.pnpm-store`. See the [pnpm 12 release notes](https://github.com/pnpm/pnpm/releases/tag/v12.0.0).
 
 ## Cleanup commands
 

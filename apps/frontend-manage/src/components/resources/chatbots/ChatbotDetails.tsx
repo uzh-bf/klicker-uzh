@@ -5,7 +5,9 @@ import { useFeatureFlag } from '@klicker-uzh/feature-flags/react'
 import {
   ChatbotStatus,
   type ChatModelCapability,
+  ChatUsageClass,
   CreditResetPeriod,
+  GetChatAccountUsageDocument,
   MSaveChatbotRevisionDocument,
   QGetCatalystRequestAccessDocument,
   QGetChatbotsInfoWithKnowledgeBasesDocument,
@@ -197,6 +199,28 @@ function ChatbotDetails({
   const graphRetrievalAvailable = useFeatureFlag('chatbot-graphrag')
   const { locale } = useRouter()
   const { data: scopeData } = useQuery(QGetCatalystRequestAccessDocument)
+  // Only the owner edits a chatbot, so the viewer's own entitlement decides
+  // which models its participants can actually use.
+  const { data: accountUsageData } = useQuery(GetChatAccountUsageDocument)
+  // Drafts can be prepared without AI access, while advanced models still
+  // require an advanced subscription and a cost center.
+  // Delegated logins cannot read the overview; the server's save check stays
+  // authoritative, so an unknown entitlement leaves every model enabled.
+  const accountUsage = accountUsageData?.getChatAccountUsage
+  const advancedModelsEntitled = !accountUsage
+    ? true
+    : accountUsage.authorized
+      ? accountUsage.advancedModelUsage.entitled
+      : accountUsage.advancedModelConfigurationEntitled
+  // Models in the saved revision stay selectable, as the server accepts them.
+  const savedModelIds = useMemo(
+    () => (chatbot ? getChatbotRevisionValues(chatbot).allowedModelIds : []),
+    [chatbot]
+  )
+  const isModelUnavailable = (model: ChatModelCapability) =>
+    model.usageClass === ChatUsageClass.Advanced && !advancedModelsEntitled
+  const isModelLocked = (model: ChatModelCapability) =>
+    isModelUnavailable(model) && !savedModelIds.includes(model.id)
   const [saveRevision, { loading: isSaving }] = useMutation(
     MSaveChatbotRevisionDocument
   )
@@ -209,6 +233,7 @@ function ChatbotDetails({
   const { loading: revisionReloading, reload: reloadRevision } =
     useChatbotRevisionReload()
   const [modelSelectionEnabled, setModelSelectionEnabled] = useState(false)
+  const [answerPreferencesEnabled, setAnswerPreferencesEnabled] = useState(true)
   const [fixedModelId, setFixedModelId] = useState('')
   const [allowedModelIds, setAllowedModelIds] = useState<string[]>([])
   const [reasoningConfig, setReasoningConfig] = useState<ReasoningConfigState>(
@@ -305,6 +330,7 @@ function ChatbotDetails({
 
     const revisionValues = getChatbotRevisionValues(chatbot)
     setModelSelectionEnabled(revisionValues.modelSelection)
+    setAnswerPreferencesEnabled(revisionValues.answerPreferencesEnabled)
     setFixedModelId(getDefaultFixedModelId(revisionValues, modelRegistry))
     setAllowedModelIds(
       getInitialSelectedModelIds(revisionValues, modelRegistry)
@@ -363,11 +389,13 @@ function ChatbotDetails({
 
     return (
       modelSelectionEnabled !== revisionValues.modelSelection ||
+      answerPreferencesEnabled !== revisionValues.answerPreferencesEnabled ||
       !sameStringSet(currentSelectedModelIds, initialSelectedModelIds) ||
       reasoningConfigIsDirty
     )
   }, [
     allowedModelIds,
+    answerPreferencesEnabled,
     chatbot,
     modelRegistry,
     modelSelectionEnabled,
@@ -517,6 +545,13 @@ function ChatbotDetails({
     setFixedModelId(modelId)
   }
 
+  const handleAnswerPreferencesChange = (checked: boolean) => {
+    setSaveError(null)
+    setSaveSuccess(false)
+    clearRevisionConflict()
+    setAnswerPreferencesEnabled(checked)
+  }
+
   const handleModelSelectionChange = (checked: boolean) => {
     setSaveError(null)
     setSaveSuccess(false)
@@ -615,6 +650,7 @@ function ChatbotDetails({
           input: {
             modelPolicy: {
               modelSelection: modelSelectionEnabled,
+              answerPreferencesEnabled,
               allowedModelIds: normalizedAllowedModelIds,
               allowedReasoningEffortsByModel: normalizedReasoningConfig,
             },
@@ -1006,7 +1042,13 @@ function ChatbotDetails({
                     />
                   </div>
                   <div className="text-xs text-gray-500">
-                    {t('manage.resources.knowledgeGraphRetrievalDescription')}
+                    {knowledgeGraphPolicy.retrievalEnabled
+                      ? t(
+                          'manage.resources.knowledgeGraphRetrievalEnabledDescription'
+                        )
+                      : t(
+                          'manage.resources.knowledgeGraphRetrievalDisabledDescription'
+                        )}
                   </div>
                 </div>
               )}
@@ -1319,105 +1361,6 @@ function ChatbotDetails({
                 </div>
               </div>
             )}
-
-            {chatbot.mcpConfigurations &&
-              chatbot.mcpConfigurations.length > 0 && (
-                <Accordion
-                  type="single"
-                  collapsible
-                  className="border-t border-gray-200 pt-4"
-                  data-cy="chatbot-usage-technical-integrations"
-                >
-                  <AccordionItem
-                    value="technical-integrations"
-                    className="rounded-lg border border-gray-200 px-4"
-                  >
-                    <AccordionTrigger
-                      className="py-3 hover:no-underline"
-                      data-cy="chatbot-usage-technical-integrations-trigger"
-                    >
-                      <span className="flex flex-col gap-1 text-left">
-                        <span>
-                          {t(
-                            'manage.resources.chatbotUsageTechnicalIntegrations'
-                          )}
-                        </span>
-                        <span className="text-sm font-normal text-gray-600">
-                          {t(
-                            'manage.resources.chatbotUsageTechnicalIntegrationsDescription'
-                          )}
-                        </span>
-                      </span>
-                    </AccordionTrigger>
-                    <AccordionContent forceMount>
-                      <div className="overflow-hidden rounded-lg border shadow-sm">
-                        <table className="w-full text-sm">
-                          <thead>
-                            <tr className="bg-gray-50 text-left text-xs font-semibold uppercase tracking-wider text-gray-500">
-                              <th className="px-4 py-2">
-                                {t('shared.generic.server')}
-                              </th>
-                              <th className="px-4 py-2">
-                                {t('manage.resources.mcpChatMode')}
-                              </th>
-                              <th className="px-4 py-2">
-                                {t('manage.resources.mcpStatus')}
-                              </th>
-                              <th className="px-4 py-2">
-                                {t('manage.resources.mcpPriority')}
-                              </th>
-                              <th className="px-4 py-2">
-                                {t('manage.resources.mcpAllowedTools')}
-                              </th>
-                            </tr>
-                          </thead>
-                          <tbody className="divide-y divide-gray-200 bg-white">
-                            {chatbot.mcpConfigurations.map((config) => (
-                              <tr
-                                key={`${chatbot.id}-${config.serverId}-${config.chatMode}`}
-                              >
-                                <td className="px-4 py-2">
-                                  <div className="font-medium text-gray-900">
-                                    {config.serverName}
-                                  </div>
-                                  <div className="text-xs text-gray-500">
-                                    {config.serverIsActive
-                                      ? t('manage.resources.mcpServerActive')
-                                      : t('manage.resources.mcpServerInactive')}
-                                  </div>
-                                </td>
-                                <td className="px-4 py-2 text-gray-500">
-                                  {config.chatMode}
-                                </td>
-                                <td className="px-4 py-2">
-                                  <span
-                                    className={twMerge(
-                                      'inline-flex items-center rounded-full px-2 py-0.5 text-xs font-medium',
-                                      config.isEnabled
-                                        ? 'bg-green-100 text-green-800'
-                                        : 'bg-gray-100 text-gray-800'
-                                    )}
-                                  >
-                                    {config.isEnabled
-                                      ? t('manage.resources.mcpStatusEnabled')
-                                      : t('manage.resources.mcpStatusDisabled')}
-                                  </span>
-                                </td>
-                                <td className="px-4 py-2 text-gray-500">
-                                  {config.priority}
-                                </td>
-                                <td className="px-4 py-2 text-gray-500">
-                                  {config.allowedToolsCount ?? 0}
-                                </td>
-                              </tr>
-                            ))}
-                          </tbody>
-                        </table>
-                      </div>
-                    </AccordionContent>
-                  </AccordionItem>
-                </Accordion>
-              )}
           </div>
         ) : null}
 
@@ -1475,9 +1418,26 @@ function ChatbotDetails({
                         value: model.id,
                         label: model.name,
                         tooltip: model.description,
+                        disabled:
+                          isModelLocked(model) && model.id !== fixedModelId,
                       }))}
                       onChange={handleFixedModelChange}
                     />
+                    {modelRegistry.some(
+                      (model) =>
+                        model.id === fixedModelId && isModelUnavailable(model)
+                    ) ? (
+                      <p
+                        className="text-xs text-amber-700"
+                        data-cy="chatbot-fixed-model-unavailable"
+                      >
+                        {t('manage.resources.modelUnavailableSelected')}
+                      </p>
+                    ) : modelRegistry.some(isModelUnavailable) ? (
+                      <p className="text-xs text-gray-500">
+                        {t('manage.resources.modelUnavailableHint')}
+                      </p>
+                    ) : null}
                   </div>
                 ) : (
                   <div className="space-y-2 border-t pt-4">
@@ -1494,6 +1454,7 @@ function ChatbotDetails({
                         const checked = allowedModelIds.includes(model.id)
                         const isLastSelected =
                           checked && allowedModelIds.length === 1
+                        const unavailable = isModelUnavailable(model)
                         return (
                           <div
                             key={`allowed-model-${model.id}`}
@@ -1511,7 +1472,8 @@ function ChatbotDetails({
                                 isSaving ||
                                 !modelSettingsEditable ||
                                 revisionPending ||
-                                isLastSelected
+                                isLastSelected ||
+                                (isModelLocked(model) && !checked)
                               }
                               aria-label={model.name}
                               data={{ cy: `chatbot-model-${model.id}` }}
@@ -1526,6 +1488,23 @@ function ChatbotDetails({
                                   <span className="text-xs text-gray-500">
                                     {model.description}
                                   </span>
+                                  {unavailable ? (
+                                    <span
+                                      className={twMerge(
+                                        'text-xs',
+                                        checked
+                                          ? 'text-amber-700'
+                                          : 'text-gray-500'
+                                      )}
+                                      data-cy={`chatbot-model-unavailable-${model.id}`}
+                                    >
+                                      {t(
+                                        checked
+                                          ? 'manage.resources.modelUnavailableSelected'
+                                          : 'manage.resources.modelUnavailableHint'
+                                      )}
+                                    </span>
+                                  ) : null}
                                 </span>
                               }
                             />
@@ -1648,6 +1627,35 @@ function ChatbotDetails({
                   </div>
                 )}
 
+                <div className="flex flex-col gap-2 border-t pt-4">
+                  <div className="flex items-center justify-between gap-3">
+                    <label
+                      htmlFor="chatbot-answer-preferences-switch"
+                      className="text-sm font-medium text-gray-700"
+                    >
+                      {t('manage.resources.answerPreferences')}
+                    </label>
+                    <Switch
+                      id="chatbot-answer-preferences-switch"
+                      checked={answerPreferencesEnabled}
+                      disabled={
+                        isSaving || !modelSettingsEditable || revisionPending
+                      }
+                      onCheckedChange={handleAnswerPreferencesChange}
+                      data={{ cy: 'chatbot-answer-preferences-switch' }}
+                    />
+                  </div>
+                  <div className="text-xs text-gray-500">
+                    {answerPreferencesEnabled
+                      ? t(
+                          'manage.resources.answerPreferencesEnabledDescription'
+                        )
+                      : t(
+                          'manage.resources.answerPreferencesDisabledDescription'
+                        )}
+                  </div>
+                </div>
+
                 <div className="flex items-center gap-3 border-t pt-4">
                   <Button
                     onClick={handleSaveModelSettings}
@@ -1663,7 +1671,10 @@ function ChatbotDetails({
                     </Button.Label>
                   </Button>
                   {saveSuccess && (
-                    <span className="text-xs text-green-700">
+                    <span
+                      data-cy="chatbot-model-settings-save-success"
+                      className="text-xs text-green-700"
+                    >
                       {t('manage.resources.chatbotModelSettingsSaveSuccess')}
                     </span>
                   )}

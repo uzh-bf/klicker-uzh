@@ -1,4 +1,5 @@
-# Syncs between the integration branches (v3 -> v3-ai -> v3-audit) must be
+# Syncs between the integration branches (v3 -> v3-ai -> v3-audit and
+# v3-ai -> v3-adaptive-learning) must be
 # merged with a merge commit. GitHub sets merge methods per target branch, so a
 # squash of a sync cannot be prevented; this guard detects one right after the
 # push, opens a pull request that merges the lost original head back, and fails
@@ -8,9 +9,9 @@ name: Guard sync ancestry
 
 on:
   push:
-    branches: [v3-ai, v3-audit]
+    branches: [v3-ai, v3-audit, v3-adaptive-learning]
   pull_request:
-    branches: [v3-ai, v3-audit]
+    branches: [v3-ai, v3-audit, v3-adaptive-learning]
 
 concurrency:
   group: sync-ancestry-${{ github.ref }}

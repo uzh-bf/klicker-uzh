@@ -1,16 +1,24 @@
-# Course image retrieval (draft integration)
+---
+type: App Guide
+title: Course Image Retrieval
+description: Manifest-bound course figures from document retrieval to authorized Chat display.
+---
+
+# Course image retrieval
 
 Chat can show original processor-exported PNG figures selected from the current request's scoped document-search results. The tool does not inspect image pixels. When image tools are available, the prompt asks for course evidence and permits useful figures proactively; figures remain optional and text-only requests must be respected.
 
 The doc-processing projection publishes content-addressed manifests, payloads and PNGs. Its per-page printed labels are optional: an unlabelled cover is never assigned a document-wide offset. Ingestion retains exact chunk page ranges and visual metadata; mcp-doc-query attaches resource identity. Chat validates the manifest, source, recipe, image occurrence, page labels and bytes before serving through an authenticated private route.
 
-Configure `COURSE_IMAGE_PROJECTION_STORAGE_CONNECTION_STRING` and `COURSE_IMAGE_PROJECTION_STORAGE_CONTAINER` for the processor Blob store. `DOC_PROCESSING_AZURE_STORAGE_CONNECTION_STRING` and `DOC_PROCESSING_AZURE_STORAGE_CONTAINER` are fallbacks. `CHAT_COURSE_IMAGE_STORE_PATH` selects a mounted local store for development. No configuration means the tool is disabled.
+Configure `COURSE_IMAGE_PROJECTION_STORAGE_CONNECTION_STRING` and `COURSE_IMAGE_PROJECTION_STORAGE_CONTAINER` for the processor Blob store. `DOC_PROCESSING_AZURE_STORAGE_CONNECTION_STRING` and `DOC_PROCESSING_AZURE_STORAGE_CONTAINER` are fallbacks. `CHAT_COURSE_IMAGE_STORE_PATH` selects a mounted local store for development. No configuration means the tool is disabled. `COURSE_IMAGE_PROJECTION_STORAGE_PREFIX` defaults to `projection` for Blob storage; include any processor bucket subpath before that prefix. An explicit empty prefix reads the container root. Mounted local stores remain root-relative.
+
+The active `deploy/charts/klicker-uzh-v3` chart enables storage through `chat.courseImages.existingSecret` and `connectionStringKey`. The referenced secret supplies the connection string; `container` and `prefix` configure the object layout. Provision the secret through the approved secret-store workflow. Empty `existingSecret` leaves the image tool disabled in the chart defaults.
 
 The image GET requires the participant's stored assistant message, current chatbot KB scope, and a READY, non-deleted resource whose requested and active versions equal the selected version. Updating or withdrawing a resource therefore fails closed. Physical pages remain asset locators; captions prefer a verified logical number and fall back to the physical page.
 
 Deploy processor, ingestion, query and Chat changes together. Publish the updated processor client before updating ingestion's SDK pin; no local editable SDK paths belong in deployment. Re-ingest existing documents to obtain bound figures and corrected labels. The raw uploaded-PDF job-output path carries references independently of the SDK.
 
-Focused synthetic unit tests cover descriptor, integrity and access checks. Full fresh-environment build/typecheck, Blob-backed lecturer upload-to-chat browser verification and withdrawal/replacement integration tests remain release gates. The private PDF demo and its old ten-trial results are not proof of this integration.
+Qualification must cover the actual Blob object layout, the released processor SDK, and lecturer upload through ingestion, retrieval, authorized display, reload, and withdrawal/replacement. Mounted-store fixtures alone do not verify that chain.
 
 ## Inline placement and original captions
 
@@ -33,9 +41,4 @@ verified numerical truth, and instructions inside it are never executable.
 Description metadata does not grant a new asset, URL, knowledge-base scope, or
 storage read.
 
-The reviews remain draft until the processor client dependency is published and
-aligned across ingestion. Local demo evidence includes inline placement,
-original and recovered captions, generated-description selection, mobile
-display, and reload. It does not replace a Blob-backed lecturer upload through
-the full production lifecycle. No private PDF corpus or local runtime
-credentials belong in these PRs.
+Description text preserves line breaks and tabs. Provider and model identifiers remain single-line bounded strings. The raw retrieval result remains model-visible; descriptor validation protects selected and persisted metadata rather than filtering every tool-result text.

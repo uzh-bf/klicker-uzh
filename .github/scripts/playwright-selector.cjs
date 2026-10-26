@@ -420,7 +420,7 @@ function selectFromChanges({
   prState,
   productionSet = new Set(),
 }) {
-  if (prState !== 'draft' && prState !== 'ready') {
+  if (prState !== 'draft' && prState !== 'ready' && prState !== 'deferred') {
     fail(`unsupported pull request state ${prState}`)
   }
 
@@ -429,6 +429,16 @@ function selectFromChanges({
   // empty, unresolvable, renamed, or application-touching diff classifies as
   // the application envelope and keeps the full plan.
   const envelope = classifyRecords(changes)
+  // A deferred draft runs nothing; its ready transition selects the plan.
+  if (prState === 'deferred') {
+    return {
+      envelopeClass: envelope.changeClass,
+      mode: 'skip',
+      reasonCodes: ['draft-sync-deferred'],
+      selectedSpecs: [],
+      selectedGroupIds: [],
+    }
+  }
   const boundedEnvelope = BOUNDED_ENVELOPE_CLASSES.has(envelope.changeClass)
   // The bounded smoke surface serves a draft the smart-draft control admitted
   // and any diff the minimum validation envelope classified as bounded.
@@ -716,7 +726,7 @@ function selectPlaywrightPlan({
     prState,
   })
 
-  if (fallbackReason) {
+  if (fallbackReason && prState !== 'deferred') {
     plan.mode = 'full'
     // A diff the selector could not resolve never stays bounded.
     plan.envelopeClass = CHANGE_CLASS.application

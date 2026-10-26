@@ -1,9 +1,76 @@
 import { createOpenAI } from '@ai-sdk/openai'
 import { generateText } from 'ai'
 import { describe, expect, test, vi } from 'vitest'
-import { createOpenAIFetch } from '../src/lib/server/openaiCachePolicy'
+import {
+  assertEvaluationRouting,
+  createOpenAIFetch,
+} from '../src/lib/server/openaiCachePolicy'
 
 type JsonObject = Record<string, unknown>
+
+describe('evaluation provider boundary', () => {
+  const origin = 'http://127.0.0.1:1418'
+  const env = {
+    KLICKER_EVAL_GUARD_ORIGIN: origin,
+    OPENAI_BASE_URL: `${origin}/v1`,
+  }
+
+  test('permits only the bound default provider when evaluation is enabled', () => {
+    expect(() => assertEvaluationRouting({}, env)).not.toThrow()
+    const ipv6Origin = 'http://[::1]:1418'
+    expect(() =>
+      assertEvaluationRouting(
+        {},
+        {
+          KLICKER_EVAL_GUARD_ORIGIN: ipv6Origin,
+          OPENAI_BASE_URL: `${ipv6Origin}/v1`,
+        }
+      )
+    ).not.toThrow()
+    for (const override of [
+      { openaiApiKey: 'synthetic-override' },
+      { openaiBaseUrl: 'http://localhost:4000/v1' },
+    ]) {
+      expect(() => assertEvaluationRouting(override, env)).toThrow(
+        'evaluation_guard_chatbot_override'
+      )
+    }
+    for (const base of [undefined, origin, 'https://example.test/v1']) {
+      expect(() =>
+        assertEvaluationRouting({}, { ...env, OPENAI_BASE_URL: base })
+      ).toThrow('evaluation_guard_endpoint_mismatch')
+    }
+  })
+
+  test('rejects nonlocal or ambiguous guard origins', () => {
+    for (const invalid of [
+      'https://example.test',
+      `${origin}/`,
+      `${origin}?query=1`,
+      'http://user:password@localhost:1418',
+      'invalid',
+    ]) {
+      expect(() =>
+        assertEvaluationRouting(
+          {},
+          { ...env, KLICKER_EVAL_GUARD_ORIGIN: invalid }
+        )
+      ).toThrow('evaluation_guard_origin_invalid')
+    }
+  })
+
+  test('preserves ordinary custom provider routing without the opt-in', () => {
+    expect(() =>
+      assertEvaluationRouting(
+        {
+          openaiApiKey: 'synthetic-key',
+          openaiBaseUrl: 'https://example.test',
+        },
+        {}
+      )
+    ).not.toThrow()
+  })
+})
 
 function chatResponse() {
   return {
@@ -73,6 +140,30 @@ function captureFetch(responseBody: unknown, captures: JsonObject[]) {
 }
 
 describe('OpenAI exact-response cache policy', () => {
+  test('preserves bounded reasoning settings for a prefixed evaluation deployment', async () => {
+    const captures: JsonObject[] = []
+    const provider = createOpenAI({
+      apiKey: 'synthetic-key',
+      baseURL: 'http://localhost:1418/v1',
+      fetch: createOpenAIFetch(
+        'default',
+        captureFetch(responsesResponse(), captures)
+      ),
+    })
+    await generateText({
+      model: provider.responses('openai/gpt-6-luna'),
+      prompt: 'Synthetic routing check.',
+      maxRetries: 0,
+      maxOutputTokens: 4096,
+      providerOptions: {
+        openai: { forceReasoning: true, reasoningEffort: 'low' },
+      },
+    })
+    expect(captures[0]?.model).toBe('openai/gpt-6-luna')
+    expect(captures[0]?.max_output_tokens).toBe(4096)
+    expect(captures[0]?.reasoning).toMatchObject({ effort: 'low' })
+  })
+
   test('adds the bypass to default Chat Completions requests', async () => {
     const captures: JsonObject[] = []
     const provider = createOpenAI({
@@ -154,7 +245,7 @@ describe('OpenAI exact-response cache policy', () => {
     })
 
     await generateText({
-      model: provider.responses('gpt-5.6-luna'),
+      model: provider.responses('gpt-6-luna'),
       prompt: 'Synthetic prompt.',
       providerOptions: {
         openai: {

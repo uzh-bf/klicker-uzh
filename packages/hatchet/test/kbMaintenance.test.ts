@@ -104,6 +104,8 @@ function maintenancePrisma({
         .mockResolvedValueOnce(pendingUpsertRetries)
         .mockResolvedValueOnce(deletedResources),
       findUnique: vi.fn().mockResolvedValue(currentResource),
+      findFirst: vi.fn().mockResolvedValue(currentResource),
+      aggregate: vi.fn().mockResolvedValue({ _sum: { sizeBytes: 1024 } }),
       updateMany: vi.fn().mockResolvedValue({ count: 1 }),
       deleteMany: vi.fn().mockResolvedValue({ count: 1 }),
     },
@@ -112,6 +114,7 @@ function maintenancePrisma({
       updateMany: vi.fn().mockResolvedValue({ count: 1 }),
     },
     kBUploadTicket: {
+      aggregate: vi.fn().mockResolvedValue({ _sum: { sizeBytes: 0 } }),
       count: vi.fn().mockResolvedValue(expiredTicketCount),
       findMany: vi.fn().mockResolvedValue(expiredTickets),
       deleteMany: vi.fn().mockResolvedValue({ count: 1 }),
@@ -127,6 +130,7 @@ function maintenancePrisma({
       updateMany: vi.fn().mockResolvedValue({ count: 1 }),
     },
     $transaction: vi.fn(),
+    $queryRaw: vi.fn().mockResolvedValue([{ id: KB_ID }]),
   }
   prisma.$transaction.mockImplementation(async (callback) => callback(prisma))
   return prisma

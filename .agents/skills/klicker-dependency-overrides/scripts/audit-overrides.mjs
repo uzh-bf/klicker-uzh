@@ -75,9 +75,51 @@ const semver = (
   await import(pathToFileURL(resolveModule('semver', 'index.js')).href)
 ).default
 
-const lock = yaml.parse(
-  fs.readFileSync(path.join(root, 'pnpm-lock.yaml'), 'utf8')
-)
+// pnpm 12 may prepend the package-manager/config-dependency environment.
+// The project graph is always last; reject missing or ambiguous graphs instead
+// of accidentally reporting a clean audit of pnpm's own dependencies.
+// https://github.com/pnpm/pnpm/blob/main/pnpm/docs/lockfile.md
+const lockDocuments = yaml
+  .parseAllDocuments(fs.readFileSync(path.join(root, 'pnpm-lock.yaml'), 'utf8'))
+  .map((document) => {
+    if (document.errors.length) throw document.errors[0]
+    return document.toJSON()
+  })
+const isMap = (value) =>
+  value !== null && typeof value === 'object' && !Array.isArray(value)
+const isLockfile = (document) =>
+  isMap(document) &&
+  document.lockfileVersion !== undefined &&
+  isMap(document.importers) &&
+  Object.keys(document.importers).length > 0 &&
+  Object.values(document.importers).every(isMap)
+const isEnvironment = (document) =>
+  Object.values(document.importers).some(
+    (importer) =>
+      'configDependencies' in importer ||
+      'packageManagerDependencies' in importer
+  )
+const hasProjectDependencies = (document) =>
+  Object.values(document.importers).some((importer) =>
+    ['dependencies', 'devDependencies', 'optionalDependencies'].some(
+      (field) => field in importer
+    )
+  )
+if (
+  lockDocuments.length < 1 ||
+  lockDocuments.length > 2 ||
+  !lockDocuments.every(isLockfile) ||
+  isEnvironment(lockDocuments.at(-1)) ||
+  (lockDocuments.length === 2 &&
+    (!isEnvironment(lockDocuments[0]) ||
+      hasProjectDependencies(lockDocuments[0])))
+) {
+  throw new Error(
+    'pnpm-lock.yaml must contain one project dependency graph, optionally ' +
+      'preceded by one package-manager/config-dependency environment document'
+  )
+}
+const lock = lockDocuments.at(-1)
 const workspace = yaml
   .parseDocument(
     fs.readFileSync(path.join(root, 'pnpm-workspace.yaml'), 'utf8')
@@ -85,7 +127,33 @@ const workspace = yaml
   .toJSON()
 const overrides = workspace.overrides ?? {}
 const cutoffMs = Date.now() - Number(workspace.minimumReleaseAge ?? 0) * 60_000
-const ageExclude = new Set(workspace.minimumReleaseAgeExclude ?? [])
+// pnpm 12 merges matching exact-version rules, including || unions. Keep
+// the exceptions exact: interpreting a union as a semver range would widen it.
+// https://github.com/pnpm/pnpm/blob/v12.11.2/pnpm/crates/config/src/version_policy.rs
+const ageExclude = new Set()
+for (const entry of workspace.minimumReleaseAgeExclude ?? []) {
+  const at = entry.lastIndexOf('@')
+  const name = at > 0 ? entry.slice(0, at) : entry
+  if (name.includes('*')) {
+    throw new Error(
+      'audit-overrides supports exact package names in minimumReleaseAgeExclude: ' +
+        entry
+    )
+  }
+  if (at <= 0) {
+    ageExclude.add(name)
+    continue
+  }
+  for (const member of entry.slice(at + 1).split('||')) {
+    const version = semver.valid(member.trim())
+    if (!version) {
+      throw new Error(
+        'Invalid exact minimumReleaseAgeExclude version: ' + entry
+      )
+    }
+    ageExclude.add(name + '@' + version)
+  }
+}
 
 // ---------- locked versions per package ----------
 const lockedVersions = new Map()
@@ -160,7 +228,8 @@ function packument(name) {
 function allowedVersions(name) {
   const doc = packument(name)
   return Object.keys(doc.versions ?? {}).filter((version) => {
-    if (ageExclude.has(name + '@' + version)) return true
+    if (ageExclude.has(name) || ageExclude.has(name + '@' + version))
+      return true
     const published = doc.time?.[version] ? Date.parse(doc.time[version]) : null
     return published !== null && published <= cutoffMs
   })

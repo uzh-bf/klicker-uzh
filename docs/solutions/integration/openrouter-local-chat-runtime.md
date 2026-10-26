@@ -30,6 +30,48 @@ must use seeded or synthetic content only.
 
 ## Guidance
 
+### Zero-spend evaluator wiring
+
+When qualifying evaluator wiring without paid generation, select `chat,mcp`
+and replace the model upstream with a fake loopback Responses server behind
+the spend guard. Keep this synthetic transport proof separate from provider
+capability and tariff qualification. Do not use Auto for this diagnostic.
+
+Keep the application selection ID and provider deployment ID distinct. An
+evaluation-only registry can map `gpt-6-luna` to `openai/gpt-6-luna`, while the
+guard prices the latter. A registry still needs its required Auto and fallback
+entries even when the diagnostic never selects Auto. A minimal single-model
+registry fails startup before any provider request.
+The SDK also infers reasoning support from the deployment ID. Prefixed aliases
+need its supported `forceReasoning` override to retain the requested effort;
+guarded evaluation takes that capability from the application registry.
+
+The actual application emits a proxy-only exact-response cache bypass and a
+native prompt cache key. Direct provider forwarding must validate and consume
+only the exact bypass shape, preserving the bounded native key. An upstream
+HTTP failure after reservation is still charged conservatively, including each
+automatic SDK retry. Read the producing ledger and upstream arrival counters;
+a failed fixture assertion can otherwise resemble a routing failure.
+
+The standalone evaluation judge has a separate retry boundary. LiteLLM's Router
+can inherit the OpenAI SDK retry default even when the evaluator admits one
+attempt. Set both `num_retries` and `max_fallbacks` to zero in
+[the judge configuration](../../../evaluation/litellm.yaml). Qualify the actual
+proxy config loader and HTTP completion endpoint, counting provider transport
+sends on synthetic success and failure. A Router-only probe misses config-loader
+behavior; [the existing judge tests](../../../util/test-klicker-eval-judge.py)
+exercise that seam inside the launcher's pinned image with networking disabled.
+
+Managed startup re-sources canonical development settings. Explicit guarded
+settings must survive that sourcing, and configuration changes must replace
+the owned process. Use a nonsecret generation for credential changes rather
+than hashing keys into a process fingerprint. The application must reject
+per-chatbot routing overrides before decryption or provider construction.
+See [evaluation routing setup](../../../evaluation/README.md#trajectories-and-provider-admission)
+and [the evaluator correction PR](https://github.com/uzh-bf/klicker-uzh/pull/6489).
+
+### Paid upstream smoke
+
 1. Run Infisical authentication and injection from a host shell outside the
    Codex sandbox. Do not run Infisical inside `devrouter exec`, the DevPod, or
    a container. Resolve the exact checkout path and use the restricted
