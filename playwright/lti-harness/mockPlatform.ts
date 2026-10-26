@@ -31,6 +31,10 @@ const LEARNER_ROLE = 'http://purl.imsglobal.org/vocab/lis/v2/membership#Learner'
 
 export type LaunchEmbedding = 'top-level' | 'iframe'
 
+// How the launch names its target: the klicker_redirect_to custom claim, or a
+// redirectTo query parameter on the tool's target link URI.
+export type LaunchTargetRoute = 'custom' | 'query'
+
 export type MockPlatformOptions = {
   // Tool origin, e.g. https://lti.klicker.localhost
   toolOrigin: string
@@ -43,7 +47,7 @@ export type MockPlatformOptions = {
 
 export type MockPlatform = {
   origin: string
-  launchUrl: (embedding: LaunchEmbedding) => string
+  launchUrl: (embedding: LaunchEmbedding, route?: LaunchTargetRoute) => string
   close: () => Promise<void>
 }
 
@@ -60,7 +64,12 @@ export async function startMockPlatform({
     modulusLength: 2048,
   })
   const tool = new URL(toolOrigin)
-  const targetLinkUri = new URL('/', tool).toString()
+  // The launch URI platforms register; a target link URI may add a query.
+  const launchUri = new URL('/', tool).toString()
+  const targetLinkUri = (route: LaunchTargetRoute) =>
+    route === 'query'
+      ? `${launchUri}?${new URLSearchParams({ redirectTo: redirectTarget })}`
+      : launchUri
 
   const server = createServer((req, res) => {
     handle(req, res).catch((error: unknown) => {
@@ -85,8 +94,11 @@ export async function startMockPlatform({
     // Parent page standing in for the LMS course page.
     if (url.pathname === '/launch') {
       const embedding = url.searchParams.get('embedding')
+      const start = `/start?${new URLSearchParams({
+        route: url.searchParams.get('route') ?? 'custom',
+      })}`
       if (embedding === 'top-level') {
-        res.writeHead(302, { Location: '/start' })
+        res.writeHead(302, { Location: start })
         return res.end()
       }
       return send(
@@ -94,7 +106,7 @@ export async function startMockPlatform({
         200,
         'text/html; charset=utf-8',
         `<!doctype html><title>Mock LMS</title>
-<iframe name="tool" src="/start" style="width:100%;height:90vh;border:0"
+<iframe name="tool" src="${escapeHtml(start)}" style="width:100%;height:90vh;border:0"
   allow="clipboard-write; fullscreen"${
     iframeSandbox === undefined ? '' : ` sandbox="${escapeHtml(iframeSandbox)}"`
   }></iframe>`
@@ -103,10 +115,14 @@ export async function startMockPlatform({
 
     // Third-party initiated login, sent as a form POST like common LMSs do.
     if (url.pathname === '/start') {
+      const route =
+        url.searchParams.get('route') === 'query' ? 'query' : 'custom'
       return sendAutoPost(res, new URL('/login', tool).toString(), {
         iss: origin,
         login_hint: 'lti-harness-learner',
-        target_link_uri: targetLinkUri,
+        // the tool passes this hint back unchanged to /auth
+        lti_message_hint: route,
+        target_link_uri: targetLinkUri(route),
         client_id: MOCK_PLATFORM_CLIENT_ID,
         lti_deployment_id: MOCK_PLATFORM_DEPLOYMENT_ID,
       })
@@ -120,11 +136,13 @@ export async function startMockPlatform({
       const redirectUri = params.get('redirect_uri') ?? ''
       if (
         params.get('client_id') !== MOCK_PLATFORM_CLIENT_ID ||
-        redirectUri !== targetLinkUri
+        redirectUri !== launchUri
       ) {
         return send(res, 400, 'text/plain', 'invalid authorization request')
       }
 
+      const route =
+        params.get('lti_message_hint') === 'query' ? 'query' : 'custom'
       const now = Math.floor(Date.now() / 1000)
       const idToken = signJwt(privateKey, kid, {
         iss: origin,
@@ -140,11 +158,13 @@ export async function startMockPlatform({
         [`${LTI_CLAIM}/message_type`]: 'LtiResourceLinkRequest',
         [`${LTI_CLAIM}/version`]: '1.3.0',
         [`${LTI_CLAIM}/deployment_id`]: MOCK_PLATFORM_DEPLOYMENT_ID,
-        [`${LTI_CLAIM}/target_link_uri`]: redirectUri,
+        [`${LTI_CLAIM}/target_link_uri`]: targetLinkUri(route),
         [`${LTI_CLAIM}/resource_link`]: { id: 'lti-harness-resource' },
         [`${LTI_CLAIM}/context`]: { id: 'lti-harness-context' },
         [`${LTI_CLAIM}/roles`]: [LEARNER_ROLE],
-        [`${LTI_CLAIM}/custom`]: { klicker_redirect_to: redirectTarget },
+        ...(route === 'custom' && {
+          [`${LTI_CLAIM}/custom`]: { klicker_redirect_to: redirectTarget },
+        }),
       })
 
       return sendAutoPost(res, redirectUri, {
@@ -163,8 +183,8 @@ export async function startMockPlatform({
 
   return {
     origin,
-    launchUrl: (embedding) =>
-      `${origin}/launch?embedding=${encodeURIComponent(embedding)}`,
+    launchUrl: (embedding, route = 'custom') =>
+      `${origin}/launch?${new URLSearchParams({ embedding, route })}`,
     close: () =>
       new Promise<void>((resolve, reject) =>
         server.close((error) => (error ? reject(error) : resolve()))

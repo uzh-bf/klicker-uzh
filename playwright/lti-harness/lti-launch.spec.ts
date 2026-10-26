@@ -2,6 +2,7 @@ import { expect, type Page, test } from '@playwright/test'
 import { COURSE_ID_TEST } from '../../packages/prisma-data/src/data/constants.js'
 import {
   type LaunchEmbedding,
+  type LaunchTargetRoute,
   type MockPlatform,
   startMockPlatform,
 } from './mockPlatform.js'
@@ -19,8 +20,7 @@ const toolOrigin =
 type LaunchOutcome = {
   reachedPwa: boolean
   toolError?: string
-  toolCookieStored: boolean
-  toolCookiePartitioned: boolean
+  toolCookieSent: boolean
 }
 
 let platform: MockPlatform
@@ -40,15 +40,18 @@ test.afterAll(async () => {
 
 async function launch(
   page: Page,
-  embedding: LaunchEmbedding
+  embedding: LaunchEmbedding,
+  route: LaunchTargetRoute = 'custom'
 ): Promise<LaunchOutcome> {
   let reachedPwa = false
   let toolError: string | undefined
+  let pwaCookieHeader: Promise<string | null> | undefined
 
   page.on('request', (request) => {
     const url = new URL(request.url())
     if (url.origin === pwaOrigin.origin && url.searchParams.has('jwt')) {
       reachedPwa = true
+      pwaCookieHeader ??= request.headerValue('cookie')
     }
   })
   page.on('response', async (response) => {
@@ -64,22 +67,19 @@ async function launch(
     toolError ??= message
   })
 
-  await page.goto(platform.launchUrl(embedding))
+  await page.goto(platform.launchUrl(embedding, route))
   await expect
     .poll(() => reachedPwa || toolError !== undefined, { timeout: 30_000 })
     .toBe(true)
 
   // The LTI service sets the lti-token cookie for the PWA during the launch.
-  // A partitioned (CHIPS) cookie is kept only for this top-level site, so it
-  // is reported separately from an ordinary third-party cookie.
-  const toolCookies = (await page.context().cookies(toolOrigin)).filter(
-    (cookie) => cookie.name.startsWith('lti')
-  )
+  // The PWA deletes it after signing in, so whether the browser kept it is
+  // read from the PWA's first request rather than from the cookie jar.
+  const cookieHeader = (await pwaCookieHeader) ?? ''
   return {
     reachedPwa,
     toolError,
-    toolCookieStored: toolCookies.some((cookie) => !cookie.partitionKey),
-    toolCookiePartitioned: toolCookies.some((cookie) => !!cookie.partitionKey),
+    toolCookieSent: /(^|;\s*)lti-token=/.test(cookieHeader),
   }
 }
 
@@ -119,7 +119,7 @@ for (const embedding of ['top-level', 'iframe'] as const) {
       testInfo.project.metadata.blocksThirdPartyCookies === true
     ) {
       expect(
-        outcome.toolCookieStored,
+        outcome.toolCookieSent,
         'this project should block third-party cookies'
       ).toBe(false)
     }
@@ -144,6 +144,26 @@ for (const embedding of ['top-level', 'iframe'] as const) {
 // The launch state is bound to the browser that started the login, so a
 // launch replayed from another browser and a reused handoff URL are rejected.
 // These are server checks; one browser is enough.
+// Access links name the target with a redirectTo query on the target link URI
+// instead of the custom claim. The query travels in the launch state, so this
+// is a server check; one browser is enough.
+test.describe('launch target', () => {
+  test.skip(
+    ({ browserName }) => browserName !== 'chromium',
+    'server-side checks run in one browser'
+  )
+
+  test('a redirectTo launch reaches the PWA', async ({ page }) => {
+    const outcome = await launch(page, 'top-level', 'query')
+
+    expect(outcome.toolError, 'LTI service rejected the launch').toBeUndefined()
+    expect(outcome.reachedPwa).toBe(true)
+    await expect
+      .poll(() => participantSignedIn(page), { timeout: 30_000 })
+      .toBe(true)
+  })
+})
+
 test.describe('launch replay', () => {
   test.skip(
     ({ browserName }) => browserName !== 'chromium',

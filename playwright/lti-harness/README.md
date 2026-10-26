@@ -77,8 +77,13 @@ To reproduce an LMS that renders its iframe with a `sandbox` attribute, set
 
 Each launch test prints one `[lti-launch]` line with the project, the embedding,
 whether the launch reached the PWA, the LTI service's error message if it
-rejected the launch, and whether the browser stored the tool's cookie, either
-as an ordinary cookie or as a partitioned (CHIPS) cookie.
+rejected the launch, and whether the PWA's first request carried the
+`lti-token` cookie the LTI service set. The PWA deletes that cookie after
+signing in, so the cookie jar no longer shows whether the browser kept it.
+
+A Chromium launch also names its target through a `redirectTo` query on the
+target link URI instead of the `klicker_redirect_to` custom claim, as access
+links do.
 
 Launches open the seeded Testkurs course page as `testuser50`: the mock learner's
 email links its LTI identity to that participant on the first launch. The test
