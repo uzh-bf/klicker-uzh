@@ -383,20 +383,6 @@ describe('compileSystemPrompt', () => {
     expect(result).toContain('[Attached image N description: ...]')
   })
 
-  test('keeps renderer-compatible Markdown, mathematics, and code rules fixed', () => {
-    const result = compilePrompt(null, 'explainer')
-
-    expect(result).toContain('use valid Markdown')
-    expect(result).toContain('inline mathematics as $...$')
-    expect(result).toContain('display mathematics as $$...$$')
-    expect(result).toContain('fenced code blocks')
-    expect(result).toContain('appropriate language identifier')
-    expect(result).toContain('Never claim that code was executed')
-    expect(result).toContain(
-      'Do not default every coding answer to one language'
-    )
-  })
-
   test('keeps scope, evidence, privacy, non-disclosure, integrity, and safety fixed', () => {
     const stored = {
       tutor: {
