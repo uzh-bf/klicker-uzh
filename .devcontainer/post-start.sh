@@ -159,6 +159,14 @@ if [ -f "$ROOT/.devcontainer/.runtime/beta-enrollment-fixture" ]; then
   DEV_TURBO_TASK=dev:test
   export NEXT_PUBLIC_GROWTHBOOK_CLIENT_KEY=sdk-test
 fi
+# The host Playwright launcher writes this marker for runs against the dev
+# servers. Their dev:test scripts load the same synthetic feature flag fixture
+# and test controller as CI's start:test processes.
+if [ -f "$ROOT/.devcontainer/.runtime/playwright-dev-test" ]; then
+  DEV_TURBO_TASK=dev:test
+  export NEXT_PUBLIC_GROWTHBOOK_CLIENT_KEY=sdk-test
+  echo '[post-start] Playwright dev test mode: dev servers run their dev:test scripts.'
+fi
 # The host Playwright launcher's --ci-runtime mode writes CI's resolved runtime
 # plan here. Its presence replaces the dev servers with the production test
 # builds and start:test processes that CI runs, served on the routed origins;
@@ -167,17 +175,12 @@ PLAYWRIGHT_CI_PLAN="$ROOT/.devcontainer/.runtime/playwright-ci-plan.json"
 PLAYWRIGHT_CI_BUILD_FILE="$ROOT/.devcontainer/.runtime/playwright-ci-build-id"
 if [ -f "$PLAYWRIGHT_CI_PLAN" ]; then
   if [ "$DEV_TURBO_TASK" != dev ]; then
-    echo '[post-start] ERROR: the CI-parity Playwright runtime cannot combine with the beta enrollment fixture.' >&2
+    echo '[post-start] ERROR: the CI-parity Playwright runtime cannot combine with a dev:test fixture marker.' >&2
     exit 1
   fi
   DEV_TURBO_TASK=start:test
   export PLAYWRIGHT_RUNTIME_PLAN="$PLAYWRIGHT_CI_PLAN"
   export KLICKER_TEST_ROUTED_DOMAIN="klicker${WORKSPACE:+.$WORKSPACE}.localhost"
-  # .env.production enables Matomo, whose script host is not reachable from
-  # every developer network; a pending analytics script blocks the browser's
-  # load event and times out navigations. Set-but-empty values take precedence
-  # over Next's .env files and disable the tracker in these local builds.
-  export NEXT_PUBLIC_MATOMO_URL='' NEXT_PUBLIC_MATOMO_SITE_ID=''
   # Each launcher run writes a new build id, so a changed id replaces the
   # process group and rebuilds; Turbo's cache keeps an unchanged build cheap.
   PLAYWRIGHT_CI_BUILD_ID="$(cat "$PLAYWRIGHT_CI_PLAN" "$PLAYWRIGHT_CI_BUILD_FILE" 2>/dev/null | sha256sum)"

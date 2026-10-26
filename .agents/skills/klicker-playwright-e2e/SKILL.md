@@ -74,7 +74,8 @@ selections. Put launcher options before Playwright arguments; an explicit
 `--show-report` cannot be combined with a runtime profile.
 `--ci-runtime` serves CI's production test builds instead of the dev servers;
 use it when a local failure does not appear in CI. A later launcher run
-without it returns to the dev servers.
+without it returns to the dev servers in their `dev:test` mode, which loads
+the same synthetic feature flag fixture as CI.
 Ensure the response processor is not running with
 `ASSESSMENT_MODE=true` when validating live quiz mode.
 

@@ -227,12 +227,18 @@ and writes it to `.devcontainer/.runtime/playwright-ci-plan.json`. While that
 file exists, the devcontainer runs the plan's `build:test` and then CI's
 `start:playwright:ci` instead of the dev servers. The apps keep the
 workspace's routed HTTPS origins through `KLICKER_TEST_ROUTED_DOMAIN` in
-`util/_with_local_test_origins.sh`. Unlike CI, these local builds leave the
-Matomo tracker from `.env.production` disabled, because a pending analytics
-script on a network without access blocks page loads. Each `--ci-runtime` run rebuilds through
-Turbo's cache, so an unchanged tree restarts quickly. The next launcher run
-without the flag removes the plan and returns to the dev servers. A plain
-`devrouter ensure .` keeps whichever mode the plan file selects.
+`util/_with_local_test_origins.sh`. That script also blanks the Matomo
+variables, so no test build, in CI or locally, reports synthetic page views to
+the production analytics sites in `.env.production`. Each `--ci-runtime` run
+rebuilds through Turbo's cache, so an unchanged tree restarts quickly.
+
+Without the flag, the launcher removes the plan and writes
+`.devcontainer/.runtime/playwright-dev-test`. The devcontainer then runs the
+dev servers through their `dev:test` scripts, which load the backend's
+synthetic feature flag fixture and test controller as CI's `start:test` does.
+The remaining difference from CI is the dev server build. A plain
+`devrouter ensure .` keeps whichever mode the last launcher run selected;
+delete both marker files to return to ordinary development.
 
 Specs click `data-cy` attributes ([Frontend Conventions](./frontend-conventions.md)). Specs are letter-prefixed for run order (`A-login-workflow` … `Z-credential-verification`).
 

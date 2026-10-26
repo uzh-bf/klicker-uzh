@@ -192,7 +192,9 @@ node util/run-playwright-host.mjs --runtime-profile manage,live-quiz --project=c
 The caller must include every profile the selected tests need; the launcher
 does not infer them from spec names or reuse a previous narrow selection.
 `--ci-runtime` replaces the dev servers with CI's production test builds for
-the selected profile and keeps them until a launcher run without the flag; see
+the selected profile and keeps them until a launcher run without the flag.
+Without the flag, the launcher selects the dev servers' `dev:test` scripts. A
+plain `devrouter ensure .` keeps the last selection; see
 [Testing](../docs/testing.md).
 Place `--runtime-profile`, `--ci-runtime` and `--print-env` before other
 arguments, or use `--` to end the launcher-option prefix. `--print-env` still reconciles the runtime

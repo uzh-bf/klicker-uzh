@@ -439,20 +439,23 @@ test('the CI runtime writes its plan before reconciliation and targets the baked
       calls.indexOf(ensureCall(calls))
   )
   assert.ok(writes.some((path) => path.endsWith('/playwright-ci-build-id')))
-  assert.deepEqual(removals, [])
+  assert.deepEqual(removals, [
+    `${dependencies.root}/.devcontainer/.runtime/playwright-dev-test`,
+  ])
   assert.equal(
     pnpmCalls(calls).at(-1).options.env.NEXT_PUBLIC_GROWTHBOOK_API_HOST,
     'https://growthbook.test'
   )
 })
 
-test('dev runs clear the CI runtime selection while print-env keeps it', () => {
+test('dev runs replace the CI runtime with the dev test servers while print-env keeps the selection', () => {
   const dev = createLauncherHarness()
   runPlaywrightHost(['--project=chromium'], dev.dependencies)
   assert.deepEqual(dev.removals, [
     `${dev.dependencies.root}/.devcontainer/.runtime/playwright-ci-plan.json`,
     `${dev.dependencies.root}/.devcontainer/.runtime/playwright-ci-build-id`,
   ])
+  assert.ok(dev.writes.some((path) => path.endsWith('/playwright-dev-test')))
   assert.deepEqual(dev.plans, [])
   assert.equal(
     pnpmCalls(dev.calls).at(-1).options.env.NEXT_PUBLIC_GROWTHBOOK_API_HOST,
@@ -462,6 +465,7 @@ test('dev runs clear the CI runtime selection while print-env keeps it', () => {
   const inspect = createLauncherHarness()
   runPlaywrightHost(['--print-env'], inspect.dependencies)
   assert.deepEqual(inspect.removals, [])
+  assert.deepEqual(inspect.writes.filter((path) => path.includes('/.runtime/')), [])
   assert.deepEqual(inspect.plans, [])
 })
 
@@ -1035,6 +1039,7 @@ test('cold runs stop before host preparation and reconcile afterward', () => {
   assert.ok(ensure > install)
   assert.deepEqual(harness.writes, [
     '/synthetic/klicker-uzh/node_modules/.playwright-host-filtered-install',
+    '/synthetic/klicker-uzh/.devcontainer/.runtime/playwright-dev-test',
   ])
   assert.equal(
     harness.calls.filter(

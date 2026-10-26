@@ -32,6 +32,11 @@ export NEXT_PUBLIC_ASSESSMENT_URL="$APP_ORIGIN_ASSESSMENT_PWA"
 export NEXT_PUBLIC_ASSESSMENT_API_URL="$APP_ORIGIN_ASSESSMENT_API"
 export NEXT_PUBLIC_GROWTHBOOK_API_HOST='https://growthbook.test'
 export NEXT_PUBLIC_GROWTHBOOK_CLIENT_KEY='sdk-test'
+# Test builds load .env.production, which enables the production Matomo sites.
+# Set-but-empty values take precedence over Next's .env files and keep test
+# runs from reporting synthetic page views as real visits.
+export NEXT_PUBLIC_MATOMO_URL=''
+export NEXT_PUBLIC_MATOMO_SITE_ID=''
 
 export NEXTAUTH_URL="$APP_ORIGIN_AUTH"
 export AUTH_STUDENT_ALLOWED_HOSTS='127.0.0.1:3001'

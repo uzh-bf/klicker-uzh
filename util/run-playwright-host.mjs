@@ -56,6 +56,14 @@ export const CI_RUNTIME_BUILD_ID = join(
   '.runtime',
   'playwright-ci-build-id'
 )
+// While this marker exists, .devcontainer/post-start.sh runs the dev servers
+// through their dev:test scripts, which load the backend's Playwright feature
+// flag fixture under NODE_ENV=test.
+export const DEV_TEST_RUNTIME = join(
+  '.devcontainer',
+  '.runtime',
+  'playwright-dev-test'
+)
 // The CI-parity production builds bake in this GrowthBook host, which the
 // Playwright fixtures intercept; the dev servers proxy through manage instead.
 const CI_GROWTHBOOK_API_HOST = 'https://growthbook.test'
@@ -691,21 +699,26 @@ function ensureHostDependencies(runtime, playwrightArgs) {
   ])
 }
 
-// Writes CI's resolved runtime plan for --ci-runtime, or removes it so the
-// next ensure returns to the dev servers. --print-env inspects the current
-// runtime and keeps its selection unless --ci-runtime is given.
-function selectCiRuntime(runtime, { ciRuntime, keepSelection, profile }) {
+// Writes CI's resolved runtime plan for --ci-runtime. Otherwise it removes the
+// plan and selects the dev servers' test mode, so the next ensure runs dev:test.
+// --print-env inspects the current runtime and keeps its selection unless
+// --ci-runtime is given.
+function selectRuntimeMode(runtime, { ciRuntime, keepSelection, profile }) {
   const planPath = join(runtime.repoRoot, CI_RUNTIME_PLAN)
   const buildIdPath = join(runtime.repoRoot, CI_RUNTIME_BUILD_ID)
+  const devTestPath = join(runtime.repoRoot, DEV_TEST_RUNTIME)
   if (!ciRuntime) {
     if (keepSelection) return
     runtime.removeFile(planPath)
     runtime.removeFile(buildIdPath)
+    runtime.makeDirectory(dirname(devTestPath))
+    runtime.writeFile(devTestPath, '')
     return
   }
   runtime.log(
     `[playwright:host] Selecting the CI production runtime for profile ${profile}`
   )
+  runtime.removeFile(devTestPath)
   runtime.makeDirectory(dirname(planPath))
   runtime.resolveRuntimePlanFn({
     profile,
@@ -771,7 +784,7 @@ export function main(argv = process.argv.slice(2), dependencies = {}) {
       })
 
     timer.begin('runtime')
-    selectCiRuntime(runtime, {
+    selectRuntimeMode(runtime, {
       ciRuntime,
       keepSelection: printEnvironment,
       profile: runtimeProfile,
