@@ -131,7 +131,7 @@ only allowed pending job after apply starts and is reconciled by exact read-back
 
 Partial recovery: private receipt records immutable bindings, original action IDs,
 and intent/completion around each effect. Fresh preview checks remaining roots.
-Absent hard-deleted roots count as complete only for prior intended actions;
+A distinct pre-send lease error clears only the new intent checkpoint because no request was sent; unknown network outcomes retain intent. Absent hard-deleted roots count as complete only for prior intended actions;
 Element tombstones require normal-deletion evidence and unused checks before
 purge. Pending course marker means observe, not resubmit. Unknown GraphQL outcome
 is read back before any further action; null/false stops. Already-absent exact
@@ -195,7 +195,7 @@ outstanding source blockers constitute terminal source delivery.
 
 ## Progress
 
-Source implementation complete; integrated final review and hosted CI pending.
+Source candidate prepared; final recovery corrections, their verification and hosted CI remain pending.
 Full path, standard execution, existing two-layer draft stack retained. Lower:
 https://github.com/uzh-bf/klicker-uzh/pull/6736. Upper:
 https://github.com/uzh-bf/klicker-uzh/pull/6737. No real account, cloud or deployment
@@ -209,7 +209,7 @@ cooperative contract. Complete capped media discovery remains conservative;
 production-size latency and real Azure behavior are documented operational gaps.
 
 Independent lower risk review passed after explicit ADR0042 historic disclaimer
-acceptance guards. Upper risk review passed. Both simplifiers completed; applied
+acceptance guards. Upper risk review passed. Integrated final review found old soft-deleted question replay; its correction review accepted the tombstone and token fixes and identified a pre-send receipt edge. The current candidate distinguishes a proven no-send lease loss from an unknown mutation outcome. New regression tests await execution; no final pass is claimed. Both simplifiers completed; applied
 local redundancy removal, public-schema signature reduction and intended-course
 map. Reports in ignored project/_local/reviews. All source paths were covered.
 

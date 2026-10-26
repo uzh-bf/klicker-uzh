@@ -57,6 +57,8 @@ type Receipt = {
 
 export class LecturerDeletionCommandError extends Error {}
 
+class OperatorLeaseLostError extends LecturerDeletionCommandError {}
+
 const MAX_STATE_BYTES = 4 * 1024 * 1024
 const MAX_ACTIONS = 10_000
 const MAX_SCAN_RESULTS = 100_000
@@ -856,7 +858,7 @@ export async function main(args = process.argv.slice(2)) {
           if (leaseFailure || !verifyLease) throw new Error('lease unavailable')
           await verifyLease()
         } catch {
-          throw new LecturerDeletionCommandError(
+          throw new OperatorLeaseLostError(
             'Operator exclusion was lost; reconcile before continuing'
           )
         }
@@ -1153,26 +1155,36 @@ export async function main(args = process.argv.slice(2)) {
               )
           } else {
             await assertCourseDuplicationClear(run.originalActions)
+            await assertLease()
             run.intended.push(key)
             await save(receiptPath, run)
-            if (
-              action.kind === 'chatbotDisclaimer' ||
-              action.kind === 'competencyTree'
-            ) {
-              await assertLease()
-              await service.deleteUnusedLecturerLeaf(prisma, target, action)
-            } else if (action.kind === 'course') {
-              try {
+            try {
+              if (
+                action.kind === 'chatbotDisclaimer' ||
+                action.kind === 'competencyTree'
+              ) {
+                await assertLease()
+                await service.deleteUnusedLecturerLeaf(prisma, target, action)
+              } else if (
+                action.kind !== 'element' ||
+                state !== 'soft-deleted'
+              ) {
                 await performDeletionAction(action, request)
-              } catch {
+              }
+            } catch (error) {
+              if (error instanceof OperatorLeaseLostError) {
+                run.intended = run.intended.filter((item) => item !== key)
+                await save(receiptPath, run)
+                throw error
+              }
+              if (action.kind === 'course') {
                 const observation = await observeCourse(
                   prisma,
                   String(action.id)
                 ).catch(() => undefined)
                 throw courseRecoveryError(action, observation)
               }
-            } else if (action.kind !== 'element' || state !== 'soft-deleted') {
-              await performDeletionAction(action, request)
+              throw error
             }
           }
         }

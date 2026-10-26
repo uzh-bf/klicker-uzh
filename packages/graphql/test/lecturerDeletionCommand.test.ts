@@ -131,6 +131,7 @@ describe('lecturer deletion operator orchestration', () => {
       holdCourse?: boolean
       addMediaAfterElement?: boolean
       expireLeaseAfterIdentity?: boolean
+      expireLeaseAfterIntent?: boolean
     } = {}
   ) {
     const dir = await mkdtemp(join(tmpdir(), 'lecturer-deletion-'))
@@ -158,6 +159,7 @@ describe('lecturer deletion operator orchestration', () => {
       return {} as never
     })
     let leaseExpired = false
+    let leaseChecks = 0
     const now = Date.now.bind(Date)
     let offset = 0
     let ticking = false
@@ -200,6 +202,14 @@ describe('lecturer deletion operator orchestration', () => {
                       const method = Reflect.get(transaction, key)
                       if (key === '$queryRaw') {
                         return (...args: unknown[]) => {
+                          if (String(args[0]).trim() === 'SELECT 1') {
+                            leaseChecks++
+                            if (
+                              options.expireLeaseAfterIntent &&
+                              leaseChecks === 5
+                            )
+                              throw new Error('synthetic pre-send lease expiry')
+                          }
                           if (
                             leaseExpired &&
                             String(args[0]).trim() === 'SELECT 1'
@@ -456,6 +466,34 @@ describe('lecturer deletion operator orchestration', () => {
         (await prisma.element.findUniqueOrThrow({ where: { id: element.id } }))
           .isDeleted
       ).toBe(false)
+    } finally {
+      await harness.close()
+    }
+  })
+
+  it('clears intent on proven pre-send lease loss so resume can submit once', async () => {
+    const target = await user()
+    await question(target)
+    const harness = await commandHarness(target, {
+      expireLeaseAfterIntent: true,
+    })
+    try {
+      await harness.preview()
+      await expect(harness.apply()).rejects.toThrow('Operator exclusion')
+      const receipt = JSON.parse(
+        await readFile(join(harness.dir, 'receipt.json'), 'utf8')
+      )
+      expect(receipt.intended).toEqual([])
+      expect(
+        harness.operations.filter((query) => query.startsWith('mutation'))
+      ).toHaveLength(0)
+      await harness.apply(true)
+      expect(
+        harness.operations.filter((query) => query.startsWith('mutation'))
+      ).toHaveLength(1)
+      expect(
+        await prisma.user.findUnique({ where: { id: target.id } })
+      ).toBeNull()
     } finally {
       await harness.close()
     }
