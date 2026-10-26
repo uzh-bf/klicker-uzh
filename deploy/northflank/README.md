@@ -44,6 +44,14 @@ execution are later jobs using restricted credentials.
 cases alongside the existing disposable-database checks. These tests use
 synthetic query clients and perform no database mutation.
 
+Native jobs use `node /app/deploy/northflank/bootstrap.mjs bootstrap` for the
+one-time database initialization and `node /app/deploy/northflank/bootstrap.mjs
+fixtures` for guarded migration deployment followed by synthetic seed data.
+The wrapper resolves the package directory from its own location, accepts only
+these two operations and bounds the complete operation to eight minutes. It
+reports phases while suppressing raw child output that could contain runtime
+credentials. The existing database identity and dry-run guards still apply.
+
 ## Remaining qualification
 
 Fresh native execution must prove database initialization, generation-scoped
