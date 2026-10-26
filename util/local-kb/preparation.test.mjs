@@ -1473,13 +1473,7 @@ test('Hatchet token delivery is private, one-shot and rejects injectable output'
 })
 
 test('provider setup invokes supported launchers once and retains partial failure', async () => {
-  for (const failure of [
-    false,
-    'docProcessing',
-    'azurite',
-    'malformed',
-    'context',
-  ]) {
+  for (const failure of [false, 'docProcessing', 'malformed', 'context']) {
     const config = await fixture()
     await claimPreparation(config, revision)
     await prepareLocalConfiguration(config, revision)
@@ -1495,10 +1489,7 @@ test('provider setup invokes supported launchers once and retains partial failur
       assert.equal(env.DOCKER_CONTEXT, 'synthetic-local')
       const provider = command.cwd.split('/').at(-1)
       calls.push({ provider, args: command.args, env })
-      if (
-        provider === failure ||
-        (failure === 'azurite' && provider === 'docProcessing')
-      )
+      if (provider === failure)
         throw new Error('synthetic selected Blob service unavailable')
       if (failure === 'malformed') return '{}'
       const instance = config.project.identity
@@ -1551,7 +1542,7 @@ test('provider setup invokes supported launchers once and retains partial failur
       await assert.rejects(execute(), { code: 'EEXIST' })
       assert.equal(calls.length, count)
     }
-    if (failure === 'docProcessing' || failure === 'azurite') {
+    if (failure === 'docProcessing') {
       assert.deepEqual(
         calls.map(({ provider }) => provider),
         ['scraping', 'ingestion', 'docProcessing']
