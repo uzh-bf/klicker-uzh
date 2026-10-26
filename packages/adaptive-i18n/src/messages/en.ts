@@ -887,6 +887,8 @@ const messages = {
             CHECK: 'Quality: check',
             GOOD: 'Quality: good',
           },
+          engineRevision: 'Engine: {revision}',
+          engineShort: 'engine {revision}',
           exportAll: 'Export answers (CSV)',
           exportAttempt: 'Export this attempt (CSV)',
           accuracy: {
