@@ -1,6 +1,95 @@
 # PR 4920: evaluation metadata and active-block reveal controls
 
-## Current roadmap — 2026-10-07
+## Current continuation — 2026-10-26
+
+This section is authoritative for the current pass. Dated sections below are
+historical evidence and rationale; they do not define current source, checks,
+review, runtime or delivery authority.
+
+### Approved completion batch
+
+Merge target `28a3ffe3e025707d1c136e95b339ed7fde0eb000` normally into the
+delivery tree, run fresh affected checks and browser proof, commit this plan and
+the integrated state, update PR evidence, and make an ordinary non-force push to
+`origin/activity-info-on-eval`. Then run the repository's current `/final-review`
+and disposition every real finding. This is existing executable approval, not a
+new product, schema or dependency decision.
+
+Complete through verified publication and accurate review reporting. PR approval
+and merge into `v3`, force-push, human notifications or replies, deployment,
+data or worktree deletion, global configuration changes, and release work retain
+separate authority.
+
+### Entry baseline
+
+- Delivery HEAD is `0bf647af168b6a9aa780a71c67fe4114309a6c3b` on the existing
+  task branch. Target `v3` is `28a3ffe3e025707d1c136e95b339ed7fde0eb000`;
+  delivery is 104 commits behind it.
+- The delivery checkout and fresh synthetic checkout
+  `trees/pr4920-readiness-20261026` both hold clean automatic pending merges of
+  that target with no conflicts. Main completes the normal merge.
+- Historical synthetic checkout `trees/pr4920-devsy-browser` has a dirty,
+  unfinished merge. Preserve it as historical work.
+- The new synthetic runtime startup is running under installed devrouter 0.5.1
+  and is not yet successful. The current launcher is
+  `node util/run-playwright-host.mjs`; the manual runtime and data remain outside
+  this pass.
+- HEAD `0bf647af` now has all eight required contexts, including all eight
+  Playwright shards, under strict freshness. Those results cover only that old
+  head and precede the pending target integration.
+
+### Evidence to reuse and renew
+
+- Reuse the old independent full 38-path review, Chromium 40/40, evaluation 5/5,
+  aggregation 22/22 and 15 synthetic captures only for contracts unchanged by
+  the current integration. The integrated source still needs affected checks
+  and browser proof.
+- The historical OpenRouter failure does not describe current review execution.
+  The Mistral-based workflow produced run `40278375430` on 2026-10-26, which
+  executed a full review successfully; it does not establish this PR's review.
+- After verification and commit, push the new exact head without force. Require
+  all eight required contexts, including eight Playwright shards, then run
+  `/final-review` through the current repository workflow and disposition every
+  real finding. Main appends the producing results here.
+
+### Ownership and terminal condition
+
+- Main owns integration, runtime/browser verification, producing CI and review
+  evidence, delivery and subsequent evidence updates. This documentation pass
+  owns only this plan file and does not reproduce runtime work.
+- Terminal state: the integrated source is published, exact-head CI is complete,
+  the current final AI review is complete, and real findings are dispositioned.
+  All 31 threads remain resolved, but the historical human
+  changes-requested reviews still block merge readiness until cleared.
+- The native goal remains blocked and user-controlled. Do not replace or resume
+  it from this pass.
+- Queue draining, producer/worker rollout and rollback qualification remain
+  separate release work.
+
+### Progress
+
+The target integration applied without conflicts and preserves all evaluation
+application and regression-test bytes. GraphQL generation adds no unstaged SDL
+change. Fresh evaluation and aggregation tests pass 5/5 and 22/22 after the
+new disposable database's existing guarded cleanup removed bootstrap fixtures.
+The first attempt's fixture-count failure is not an application regression.
+
+Root typecheck passes 35/35 tasks, lint 7/7, and the isolated production build
+23/23. The first build found duplicate generated development validators; they
+were preserved outside `.next` before the successful build. The managed command
+returned unknown completion, but its producing build log records all tasks
+successful. Host launcher tests pass 41/41, identity tests 5/5, and CI/runtime
+contract checks pass with the installed devrouter 0.5.1 explicitly selected.
+Syncpack, AGENTS.md, retired-path and Prisma-sync checks pass. Focused formatting,
+task-relative whitespace and staged secret scans pass; no production data was
+queried or added. Container/host checks are split, not one `check:all` run.
+
+The full serial Chromium O1 launcher is waiting behind the managed provider
+operation. Browser proof, commit/publication, exact-head CI and final AI review
+remain outstanding. The prior independent review remains applicable to unchanged
+evaluation contracts; this integration introduces no new application behavior.
+
+## Historical roadmap — 2026-10-07
 
 ### Outcome and authority
 

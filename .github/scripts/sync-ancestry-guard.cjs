@@ -4,10 +4,26 @@ const { PAIRS } = require('./draft-sync-prs.cjs')
 const REPOSITORY = 'uzh-bf/klicker-uzh'
 // Integration branch -> the branch whose history it must keep as ancestry.
 const SOURCES = Object.fromEntries(PAIRS.map(({ head, base }) => [base, head]))
+// Sync target -> the branches it feeds, which must never flow back into it,
+// pinned to their oldest own first-parent commit. Every later downstream commit
+// descends from the root, so any back-merge carries it, even after an earlier
+// bypass already contaminated the target. v3-adaptive-learning was branched
+// from v3-audit, so one root covers both. v3 has no entry: ADR 0007 plans to
+// fold v3-ai back into v3, and this guard does not run there.
+const DOWNSTREAM_ROOTS = {
+  'v3-ai': {
+    downstreams: ['v3-audit', 'v3-adaptive-learning'],
+    root: 'f9c8fa7c72f201bec66e99c0b886b1f6a9e87ef1',
+  },
+}
 const STATUS_CONTEXT = 'sync-ancestry'
 
 function git(cwd, args) {
-  return execFileSync('git', args, { cwd, encoding: 'utf8' }).trim()
+  return execFileSync('git', args, {
+    cwd,
+    encoding: 'utf8',
+    maxBuffer: 256 * 1024 * 1024,
+  }).trim()
 }
 
 function isAncestor(cwd, ancestor, descendant) {
@@ -33,6 +49,34 @@ function bringsSourceCommits(cwd, { parent, head, sourceSha }) {
     return false
   }
   return !isAncestor(cwd, mergeBase, parent)
+}
+
+// Reports whether `head` contains downstream history, for example after
+// "Update branch" on a pull request whose head was the upstream branch.
+// `existing` means `parent` already contained it, so the target needs recovery
+// rather than a rejected change. A pin that left the downstream branch's
+// first-parent line fails closed instead of passing every change.
+function findBackflow(cwd, { parent, head, downstreamSha, root }) {
+  const line = git(cwd, ['rev-list', '--first-parent', downstreamSha])
+  if (!line.split('\n').includes(root)) {
+    throw new Error(
+      `Pinned root ${root} is not on the downstream first-parent line; update DOWNSTREAM_ROOTS.`
+    )
+  }
+  if (!isAncestor(cwd, root, head)) return null
+  return { existing: Boolean(parent) && isAncestor(cwd, root, parent) }
+}
+
+function hasCommit(cwd, sha) {
+  try {
+    execFileSync('git', ['cat-file', '-e', `${sha}^{commit}`], {
+      cwd,
+      stdio: 'ignore',
+    })
+    return true
+  } catch {
+    return false
+  }
 }
 
 // A squash merge records a sync as a single-parent commit, so the source
@@ -143,6 +187,30 @@ async function guardSyncAncestry({ github, context, core, cwd }) {
     : context.sha
   const sourceSha = git(cwd, ['rev-parse', `origin/${source}`])
 
+  const edge = DOWNSTREAM_ROOTS[base]
+  const downstream = edge?.downstreams.join(' and ')
+  const before = pullRequest ? baseSha : context.payload.before
+  const head = pullRequest ? pullRequest.head.sha : baseSha
+  // A branch creation or a force push may leave no comparable parent.
+  // Every downstream line must still carry the root; the results agree.
+  const backflow = edge
+    ? edge.downstreams
+        .map((branch) =>
+          findBackflow(cwd, {
+            parent: before && hasCommit(cwd, before) ? before : null,
+            head,
+            downstreamSha: git(cwd, ['rev-parse', `origin/${branch}`]),
+            root: edge.root,
+          })
+        )
+        .find(Boolean)
+    : null
+  const leakMessage = !backflow
+    ? null
+    : backflow.existing
+      ? `${base} already contains ${downstream} history (root ${edge.root.slice(0, 10)}). Nothing can merge into ${base} until it is recovered; see "Sync direction guard" in docs/ci-and-deployment.md.`
+      : `This change merges ${downstream} history (root ${edge.root.slice(0, 10)}) back into ${base}. Changes move ${source} -> ${base} -> ${downstream} only.`
+
   const finding = await findUnrepairedSquashedSync({
     cwd,
     baseSha,
@@ -172,6 +240,10 @@ async function guardSyncAncestry({ github, context, core, cwd }) {
   })
 
   if (pullRequest) {
+    if (leakMessage) {
+      core.setFailed(leakMessage)
+      return
+    }
     // Merging any sync with a merge commit, including a repair pull request,
     // restores the ancestry, so syncs stay mergeable while the branch is blocked.
     const isSync = bringsSourceCommits(cwd, {
@@ -198,12 +270,15 @@ async function guardSyncAncestry({ github, context, core, cwd }) {
   await github.rest.repos.createCommitStatus({
     ...repo,
     sha: baseSha,
-    state: finding ? 'failure' : 'success',
+    state: finding || leakMessage ? 'failure' : 'success',
     context: STATUS_CONTEXT,
-    description: finding
-      ? `Squashed sync #${finding.number}; merge #${repair} with a merge commit`
-      : `${source} ancestry intact`,
+    description: leakMessage
+      ? `${downstream} history flowed back into ${base}`
+      : finding
+        ? `Squashed sync #${finding.number}; merge #${repair} with a merge commit`
+        : `${source} ancestry intact`,
   })
+  if (leakMessage) core.setFailed(leakMessage)
   if (finding) {
     core.setFailed(
       `#${finding.number} squash-merged a sync into ${base}; merge repair #${repair} with a merge commit.`
@@ -212,8 +287,10 @@ async function guardSyncAncestry({ github, context, core, cwd }) {
 }
 
 module.exports = {
+  DOWNSTREAM_ROOTS,
   SOURCES,
   bringsSourceCommits,
+  findBackflow,
   findUnrepairedSquashedSync,
   guardSyncAncestry,
 }

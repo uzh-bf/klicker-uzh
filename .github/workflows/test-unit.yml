@@ -117,7 +117,7 @@ jobs:
       - name: Build unit-test dependencies
         id: build
         shell: bash
-        run: pnpm exec turbo run build --filter=@klicker-uzh/prisma --filter=@klicker-uzh/types --filter=@klicker-uzh/grading --filter=@klicker-uzh/util --concurrency=4
+        run: pnpm exec turbo run build --filter=@klicker-uzh/prisma --filter=@klicker-uzh/types --filter=@klicker-uzh/grading --filter=@klicker-uzh/util --filter=@klicker-uzh/markdown --concurrency=4
 
       - name: Provision disposable PostgreSQL
         id: provision_db
@@ -258,7 +258,7 @@ jobs:
   # v3_sonarcloud.yml keeps the named fail-closed result for both.
   sonarcloud:
     name: SonarCloud
-    needs: [filter, test-unit]
+    needs: [filter, test-unit, test-unit-status]
     if: >-
       always() && !cancelled() &&
       github.event_name == 'pull_request' &&

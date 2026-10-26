@@ -37,6 +37,8 @@ function evaluateGate(
     'cancelled',
     'vars',
     'steps',
+    'format',
+    'startsWith',
     `return (${normalized})`
   )(
     github,
@@ -44,9 +46,107 @@ function evaluateGate(
     () => true,
     () => cancelled,
     vars,
-    steps
+    steps,
+    (pattern, value) => {
+      assert.equal(pattern, '{0}')
+      return String(value)
+    },
+    (value, prefix) =>
+      String(value).toLowerCase().startsWith(String(prefix).toLowerCase())
   )
 }
+
+test('paid jobs and legacy required coverage reject stale preparation on rerun', () => {
+  const workflow = readWorkflow('public-pr-playwright-shards.yml')
+  for (const [provider, admitted, current, expected] of [
+    ['warpbuild', '1', 1, true],
+    ['warpbuild', '1', 2, false],
+    ['warpbuild', '2', 2, true],
+    ['warpbuild', '', 1, false],
+    ['public-pool', '', 2, true],
+  ]) {
+    const needs = {
+      prepare: {
+        outputs: {
+          provider,
+          admission_attempt: admitted,
+          duplicate_run_id: '',
+          should_run: 'true',
+          route: 'public-pr',
+        },
+      },
+    }
+    for (const name of [
+      'build-and-compile-public-pr',
+      'test-playwright-public-pr',
+    ]) {
+      assert.equal(
+        evaluateGate(workflow.jobs[name].if, { run_attempt: current }, needs),
+        expected
+      )
+    }
+    const output = workflow.on.workflow_call.outputs.should_run.value
+      .slice(3, -2)
+      .trim()
+    const jobs = { prepare: needs.prepare }
+    const returned = evaluateGate(
+      output.replaceAll('jobs.', 'needs.'),
+      { run_attempt: current },
+      jobs
+    )
+    assert.equal(returned, String(expected))
+  }
+})
+
+test('draft OCR skips same-repository sync updates and preserves other admission', () => {
+  const gate = readWorkflow('check-ocr-review.yml').jobs['ocr-review'].if
+  const repository = 'synthetic/project'
+  const context = (action, ref, overrides = {}) => ({
+    repository,
+    event: {
+      action,
+      pull_request: {
+        draft: true,
+        user: { login: 'synthetic-bot' },
+        head: { ref, repo: { full_name: repository } },
+        ...overrides,
+      },
+    },
+  })
+
+  for (const ref of [
+    'sync/v3-into-v3-ai-0123456789',
+    'sync/v3-ai-into-v3-audit-0123456789',
+    'sync/v3-ai-into-v3-adaptive-learning-0123456789',
+  ]) {
+    assert.equal(evaluateGate(gate, context('synchronize', ref)), false)
+    for (const action of ['opened', 'reopened', 'converted_to_draft']) {
+      assert.equal(evaluateGate(gate, context(action, ref)), true)
+    }
+    assert.equal(
+      evaluateGate(
+        gate,
+        context('synchronize', ref, {
+          head: { ref, repo: { full_name: 'synthetic/fork' } },
+        })
+      ),
+      true
+    )
+  }
+  const ordinary = 'rs/synthetic-change'
+  assert.equal(evaluateGate(gate, context('synchronize', ordinary)), true)
+  assert.equal(
+    evaluateGate(gate, context('opened', ordinary, { draft: false })),
+    false
+  )
+  assert.equal(
+    evaluateGate(
+      gate,
+      context('opened', ordinary, { user: { login: 'dependabot[bot]' } })
+    ),
+    false
+  )
+})
 
 test('trusted review policy admits only lifecycle events and exact PR commands', () => {
   const workflow = readWorkflow('check-ocr-final-review.yml')
@@ -229,10 +329,12 @@ test('playwright execution and reporting run only for open pull requests', () =>
 })
 
 // The envelope emits a duplicate run id only for a fully validated equivalent
-// pull-request run; push validation must always execute independently. The
-// reporter therefore has to tie reuse acceptance to the event family instead of
-// rejecting every duplicate.
-test('the playwright reporter reuses only pull-request validation', () => {
+// pull-request run. A v3-* integration push other than the staging source may
+// reuse the run that validated the merged pull request; v3 and the staging
+// source must always validate their pushes independently. The reporter
+// therefore has to tie reuse acceptance to the event family and push ref
+// instead of rejecting every duplicate.
+test('the playwright reporter requires rollout opt-in for verified push reuse', () => {
   const playwright = readWorkflow('test-playwright.yml')
   const report = playwright.jobs['test-playwright-status'].steps.find(
     (step) => step.name === 'Check result'
@@ -242,7 +344,7 @@ test('the playwright reporter reuses only pull-request validation', () => {
     report,
     /\[ -n "\$\{DUPLICATE_RUN_ID:-\}" \] && \[ "\$IS_PULL_REQUEST" != 'true' \]/
   )
-  assert.match(report, /Push validation cannot be reused/)
+  assert.match(report, /Verified push reuse is disabled/)
   assert.doesNotMatch(report, /Playwright validation cannot be reused/)
 })
 
@@ -256,10 +358,6 @@ const READY_FOR_REVIEW_LIFECYCLE_WORKFLOWS = new Map([
   [
     'test-playwright.yml',
     'the ready boundary runs the envelope so it can validate the existing full proof of an unchanged head instead of rebuilding and retesting it',
-  ],
-  [
-    'check.yml',
-    'the required check owns the ready boundary and must be recomputed there',
   ],
   [
     'check-ocr-final-review.yml',
@@ -426,7 +524,9 @@ test('the producer-hosted analysis runs for a same-repository pull request only'
     const job = workflow.jobs.sonarcloud
     assert.ok(job, name + ' must analyze the coverage it just produced')
     assert.equal(job.uses, './.github/workflows/sonar-analysis.yml', name)
-    assert.deepEqual(job.needs, ['filter', suite], name)
+    const reporter = suite + '-status'
+    assert.deepEqual(job.needs, ['filter', suite, reporter], name)
+    assert.ok(!workflow.jobs[reporter].needs.includes('sonarcloud'))
 
     // A draft is admitted here and deferred inside the analysis, because the
     // job is evaluated minutes after its event, when the pull request may
@@ -784,8 +884,8 @@ test('the codebase check reuses prior validation without suppressing its context
     /needs\.select\.outputs\.should_run == 'true'/
   )
   assert.equal(workflow.permissions.checks, 'read')
-  // The ready boundary still recomputes.
-  assert.ok(workflow.on.pull_request.types.includes('ready_for_review'))
+  // Readiness cannot invalidate identical codebase inputs.
+  assert.ok(!workflow.on.pull_request.types.includes('ready_for_review'))
 })
 
 // The application-wide steps of the codebase check run in full unless the
@@ -922,4 +1022,89 @@ test('the bounded codebase check narrows only for a proven pull-request class', 
     false,
     'the bounded announcement must never claim a class that was not proven'
   )
+})
+
+test('shared OCR qualification covers callers and its orchestrator, and runs for an unproven diff', () => {
+  const steps = readWorkflow('check.yml').jobs['check-suite'].steps
+  const selector = steps.find((step) => step.id === 'ocr_shared')
+  assert.equal(selector.uses, './.github/actions/changed-paths')
+  const pattern = new RegExp(selector.with.pattern)
+  for (const file of [
+    '.github/actions/ocr-review/action.yml',
+    '.github/scripts/ocr-controller.test.cjs',
+    '.github/open-code-review/runtime-manifest.json',
+    '.agents/skills/ocr-reviewer/SKILL.md',
+    '.github/workflows/check-ocr-review.yml',
+    '.github/workflows/check.yml',
+  ])
+    assert.equal(pattern.test(file), true, file)
+  for (const file of [
+    '.github/workflows/check-ocr-final-review.yml',
+    'apps/chat/src/proxy.ts',
+    'docs/ocr-runtime.md',
+  ])
+    assert.equal(pattern.test(file), false, file)
+  const qualification = steps.find((step) =>
+    step.run?.includes('export OCR_REQUIRE_STOCK_BINARY=1')
+  )
+  for (const should_run of ['false', 'true', undefined]) {
+    assert.equal(
+      evaluateGate(
+        qualification.if,
+        {},
+        {},
+        false,
+        {},
+        { ocr_shared: { outputs: { should_run } } }
+      ),
+      should_run !== 'false'
+    )
+  }
+})
+
+test('OCR engine qualification only runs for related paths or an unproven diff', () => {
+  const steps = readWorkflow('check.yml').jobs['check-suite'].steps
+  const selector = steps.find((step) => step.id === 'ocr_engine')
+  assert.equal(selector.uses, './.github/actions/changed-paths')
+  const pattern = new RegExp(selector.with.pattern)
+  for (const file of [
+    '.github/scripts/install-patched-ocr.cjs',
+    '.github/open-code-review/ocr-compression.patch',
+    '.github/workflows/check.yml',
+    '.github/workflows/check-ocr-final-review.yml',
+  ])
+    assert.equal(pattern.test(file), true, file)
+  for (const file of ['apps/chat/src/proxy.ts', 'docs/ci-and-deployment.md']) {
+    assert.equal(pattern.test(file), false, file)
+  }
+  for (const name of [
+    'Set up pinned OCR build toolchain',
+    'Qualify the pinned OCR compression engine',
+  ]) {
+    const gate = steps.find((step) => step.name === name).if
+    assert.equal(
+      evaluateGate(
+        gate,
+        {},
+        {},
+        false,
+        {},
+        { ocr_engine: { outputs: { should_run: 'false' } } }
+      ),
+      false
+    )
+    for (const should_run of ['true', undefined]) {
+      assert.equal(
+        evaluateGate(
+          gate,
+          {},
+          {},
+          false,
+          {},
+          { ocr_engine: { outputs: { should_run } } }
+        ),
+        true
+      )
+    }
+  }
 })

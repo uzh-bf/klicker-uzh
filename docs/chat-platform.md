@@ -41,7 +41,7 @@ Chatbot route recovery is intentionally split by cause. `src/app/[chatbotId]/lay
 - `src/lib/markdown/remarkCitationMarkers.ts` — the remark plugin that rewrites `[n]` and contiguous
   `[n–m]` markers into citation links.
 - `src/lib/toolOutput.ts` — live-SSE tool-result normalization (the streaming half of the provider-error redaction boundary).
-- `src/lib/attachments/` — image attachment adapter plus attachment state and UI helpers.
+- `src/lib/attachments/` — image and document attachment adapters plus attachment state and UI helpers.
 - Local model proxy: the `litellm` compose service (port 4000).
 - Local MCP fixture: `scripts/local-mcp-server.mjs` exposes a deterministic,
   read-only `doc_query` tool on port 1417 for the seeded Benibot. It returns
@@ -283,7 +283,7 @@ the target process. The committed KB_doc_query canary proves synthetic
 transport and persistence only; it must not be reported as FineCo quality or
 replace an authorized EXPERT_df_fineco_expert binding.
 
-For assistance-attribution checks, `apps/chat/scripts/run-tutor-trajectories.mjs`
+For assistance-attribution checks, `evaluation/run-tutor-trajectories.mjs`
 uses the same local target directly, without extending its single-message HTTP
 API. The corpus schema, per-turn verification and trajectory driver live in
 `apps/chat/scripts/tutor-trajectory.mjs`; the target module keeps transport. It follows actual persisted replies and parent IDs across a trajectory,
@@ -301,7 +301,7 @@ obligations to case IDs and one-based assessment turns without changing the
 strict trajectory schema. Pass it with `--numeric` so the runner rejects an
 obligation without a matching assessment turn before login. Annotate claims from visible responses, convert their
 units, then call `compareTutorNumericClaim` from
-`apps/chat/scripts/tutor-numeric-reference.mjs` with the formula, explicit
+`evaluation/tutor-numeric-reference.mjs` with the formula, explicit
 inputs, numeric claim and the sidecar's absolute tolerance. Rates are decimal
 fractions and cash flows use annual periods. Missing claims remain unassessed;
 a numerical match alone does not establish correct assistance attribution.
@@ -319,11 +319,11 @@ Run the script on the host against the exact routed synthetic runtime. Supply
 `KLICKER_EVAL_PARTICIPANT_USERNAME`, and `KLICKER_EVAL_PARTICIPANT_PASSWORD` through
 the existing local evaluation environment. Trust the local CA through
 `NODE_EXTRA_CA_CERTS` when using HTTPS; do not disable certificate verification.
-The default model is the fixed `gpt-5.6-luna` selection. Test `auto` separately
-through `KLICKER_EVAL_MODEL_ID`; it is not a controlled fixed-model comparison.
+The default model is the fixed `gpt-6-luna` selection. Auto routing remains
+unqualified for paid evaluation; an `auto` arm label does not select that route.
 
 ```sh
-node apps/chat/scripts/run-tutor-trajectories.mjs \
+node evaluation/run-tutor-trajectories.mjs \
   --corpus evaluation/data/trajectories/tutor-attribution-v2.json \
   --numeric evaluation/data/trajectories/tutor-attribution-v2-numeric.json \
   --output project/_local/tutor-baseline.jsonl --arm baseline --repeats 2 \
@@ -557,10 +557,14 @@ aborted, and tool-only turns still show valid completed sources instead of
 losing them on reload. The source component suppresses the section when
 normalization produces no sources.
 Within that section, sources with a valid rendered citation appear under
-“Cited in this answer”. Other eligible sources remain available behind a
-collapsed “Other retrieved material” disclosure. With no citations, including
-tool-only turns, all source cards start collapsed. Grouping preserves original
-source indices and does not claim to identify every source the model used.
+“Cited in this answer”, previewed as the first 12 cited cards. The remaining
+cited cards and the uncited sources stay available behind a collapsed “Other
+retrieved material” disclosure, whose count covers everything it holds. With no
+citations, including tool-only turns, all source cards start collapsed.
+Grouping preserves original source indices and does not claim to identify every
+source the model used. Every cited card keeps its DOM target: a citation chip
+whose card sits in the collapsed disclosure opens it before scrolling to and
+focusing the card.
 The runtime render boundary is deliberately narrow: `RuntimeProvider` selects only the active
 thread's messages/running state and the actions it calls, while `Thread` renders its message rows
 through the assistant-ui 0.15 children renderer and passes the chatbot avatar through context. Runtime
@@ -818,15 +822,17 @@ this order:
    section for Quizzer, when valid and present;
 4. the platform-owned Tutor, Explainer, or Quizzer contract from `DEFAULT_PROMPT`, or instead the
    lecturer-defined persona for a custom mode;
-5. fixed image-attachment description handling from
+5. the student answer preferences, when the student chose a non-default style or tone (see
+   [Student answer style and tone](#student-answer-style-and-tone));
+6. fixed image-attachment description handling from
    `src/lib/server/inputContextInstructions.ts:withInputContextContract`;
-6. fixed course-scope, evidence, tool/conversation privacy, safety, non-disclosure, and epistemic
+7. fixed course-scope, evidence, tool/conversation privacy, safety, non-disclosure, and epistemic
    integrity policy from `src/lib/server/coursePolicyInstructions.ts:withCoursePolicyContract`;
-7. fixed Markdown, inline/display mathematics, and fenced-code rules from
+8. fixed Markdown, inline/display mathematics, and fenced-code rules from
    `src/lib/server/outputFormatInstructions.ts:withOutputFormatContract`;
-8. the conditional citation policy when a `doc_query`-style tool is available; and
-9. the fixed conversation-language and Swiss Standard German policy from
-   `src/lib/server/languageInstructions.ts:withLanguageStyleContract`.
+9. the conditional citation policy when a `doc_query`-style tool is available; and
+10. the fixed conversation-language and Swiss Standard German policy from
+    `src/lib/server/languageInstructions.ts:withLanguageStyleContract`.
 
 The course-data and typed-context sections explicitly treat their entire JSON values as data
 rather than instructions. Quotes, newlines, and instruction-like text in a display name or typed
@@ -873,6 +879,51 @@ step. The reminder names no language. The model identifies the user's language i
 for any language and avoids a brittle server-side detector on short or mixed messages. The reminder
 leaves `instructions` unchanged, so the prompt-cache identity is stable, and it is never persisted.
 
+### Student answer style and tone
+
+Students choose an "Answer format" (DE "Antwortformat") and a "Tone" (DE "Ton") in the sidebar
+settings panel or in the compact embedded header ([ADR 0054](./adr/0054-student-answer-style-layer.md)).
+The format (`answerStyle`) changes layout only: `balanced` ("Standard", default) or `bullets` ("Bullet
+points"). Prior knowledge is deliberately not a student option; depth should follow mastery evidence
+in a later, separately reviewed change. The tone is `neutral`
+(default), `friendly`, or `direct`. Copy presents both as reading preferences that change how answers
+are written, not how much help the student gets. Do not present them as matching how a student
+learns or claim a learning benefit (see the ADR's evidence). Both lists live in `src/lib/config/answerStyles.ts`.
+
+The values are stored only in the browser's `settings-storage` entry and sent as `answerStyle` and
+`answerTone` with each chat request from `useChatResponse`. The route's `answerStyleSchema` and
+`answerToneSchema` (`src/lib/server/answerStyleInstructions.ts`) map a missing or unknown value to the
+default instead of rejecting the request.
+
+With both defaults nothing is added, so the default prompt, its prompt-cache key, and
+`systemPromptHash` are unchanged. Otherwise `src/prompts/student-answer-style.hbs` renders one
+`Student answer preferences` section after the mode sections. The template keeps the Tutor's
+attempt-first and hint-before-solution behavior for every option, never lets a layout or tone work
+out results the student should find, says the preferences carry no information about prior knowledge,
+keeps any comprehension check the mode contract calls for (also at the end of a bulleted answer),
+never touches Quizzer question stems, options, or structured output, yields
+voice, tone, and any lecturer-named length or format to lecturer guidance, and yields to every fixed
+contract below it. The trailing per-step message does not repeat the preferences. `request.context`
+logs the applied `answerStyle` and `answerTone` next to the reasoning effort, which explains a
+differing `systemPromptHash`.
+
+A live check through the real chat route on the developer Foundry (synthetic Tutor and Explainer
+cases, one turn each, every option against the default, judged by a second model) found that
+without the solution-scope and closing-check rules, bulleted and prior-knowledge answers could drop
+the Tutor's closing question and some options worked out corrected results the default left to the
+student. With them, no option changed the teaching move in the rerun. The prior-knowledge options
+were removed afterwards. The sample was small; repeat it when the template or model changes.
+`evaluation/run-tutor-trajectories.mjs` accepts `--answer-style` and `--answer-tone` for this.
+
+A lecturer can turn both choices off for a chatbot in the manage app's advanced chatbot settings
+(`Chatbot.answerPreferencesEnabled`, default on, saved through `updateChatbotModelPolicy`). The chat
+route then compiles with the defaults whatever the request carries, and `/api/chatbots/[chatbotId]`
+returns the flag so the sidebar and embedded header hide both controls. The settings store keeps the
+flag off until the chatbot has loaded, so the controls do not flash.
+
+The preferences are per browser. Embedded iframes whose browser blocks third-party storage can lose
+them on reload, the same limit as the persisted mode selection.
+
 ## Sources and citations
 
 An answer's sources are **derived from the message's own tool-call parts**, not carried in a
@@ -902,7 +953,11 @@ the normalizer unwraps that compatibility layer before applying the same rules. 
 pipeline's literal `"N/A"` as absent; it dedupes by file/page/url and normalized video range
 (`startSec`/`endSec`), so citations for different video ranges remain separate, then numbers what
 survives **1..N in first-appearance order across every doc_query call in one message**, capped at
-`MAX_SOURCES`. Two rules follow from that numbering and are easy to break independently:
+`MAX_SOURCES` (99, the largest two-digit marker the chip parser and `parseCitationHref` accept).
+Sources beyond the cap are not dropped: they stay in the model-facing projection with a null
+`citation_index`, so the model still reads their text but cannot cite them, and the prompt contract
+tells the model not to infer absence from a null index. Two rules follow from that numbering and
+are easy to break independently:
 
 Chatbot MCP configs are optional unless their existing `parameters` JSON contains the reserved
 runtime policy `{ "required": true, "toolAlias": "<name>" }`. A strict config must allow exactly
@@ -1043,6 +1098,20 @@ streaming regression in `playwright/tests/Y-chat.spec.ts` pauses before a closin
 observes the DOM for raw delimiters, partial formulas, and KaTeX errors, then asserts the final
 formula, surrounding Markdown, and assistant-row identity.
 
+## Read-aloud
+
+Assistant answers can be read aloud with assistant-ui's `ActionBarPrimitive.Speak` and `StopSpeaking` next to Copy in `src/components/thread.tsx`. The runtime's speech adapter is `LocalSpeechSynthesisAdapter` in `src/lib/speech/localSpeechSynthesis.ts`. It mirrors assistant-ui's `WebSpeechSynthesisAdapter` because that class queues its utterance before a voice can be set. Before speaking, `toSpeakableText` (`src/lib/speech/readAloudText.ts`) skips fenced code, replaces display math with a localized word, strips citation markers, and keeps inline code and inline math without their delimiters.
+
+The privacy contract is on-device voices only. Chrome also lists network voices that send the text to Google, so `useLocalSpeechSynthesis` picks a `localService` voice for the chat locale and passes no adapter when none exists; the button is then hidden. Embedded chats never show it. Starting a new answer, switching threads, or leaving the chat stops playback.
+
+## Voice input (on-device dictation)
+
+Dictation uses assistant-ui's composer dictation: `ComposerPrimitive.Dictate` and `StopDictation` in `src/components/dictation-controls.tsx`, backed by `OnDeviceDictationAdapter` in `src/lib/speech/onDeviceDictation.ts`. The composer runtime merges the transcript into the existing draft, shows interim text in the input, and cancels the session on send; the adapter only translates recognizer events.
+
+The privacy contract is on-device only. The availability probe passes `{ langs, processLocally: true, quality: 'dictation' }`, every recognition session sets `processLocally = true`, and there is no cloud fallback. No audio or transcript provenance is stored. `useOnDeviceDictation` (`src/components/dictation-context.tsx`) passes the adapter to the runtime only once the probe reports a local language pack; a downloadable pack opens an explicit install sheet first. Mobile browsers and embedded chats never probe or show the control. German chats dictate in `de-DE` (Standard German), all others in `en-US`.
+
+Headless Chromium terminates the renderer when the availability probe runs without the media service, so under `navigator.webdriver` the probe runs only when a test polyfill sets `window.__dictationFake`. Positive support on a real browser remains a manual check.
+
 ## Localization
 
 Chat has no locale switcher: the locale comes from the `NEXT_LOCALE` cookie and falls back to `en` ([ADR 0001](./adr/0001-chat-locale-from-cookie.md)). It is resolved **directly in the chat-local `getRequestConfig`** (`src/types/i18n.ts`). Relying on `setRequestLocale`/`requestLocale` alone produces a split brain — `<html lang>` follows the cookie while server-side `getTranslations()` stays on the default locale. Messages come from the static `messagesByLocale` map exported there, which the root layout reuses: Turbopack cannot build a dynamic-import context for a bare package subpath (`import('@klicker-uzh/i18n/messages/' + locale)`), so the dynamic form silently resolves nothing in this app. Strings live in `packages/i18n/messages/{en,de}.ts`; `apps/chat/src/types/app.d.ts` enforces en/de key parity through a `DeepIntersection`, so a missing key fails `pnpm --filter @klicker-uzh/chat check` rather than at runtime. German addressed to students is informal (`Du`/`Dein`/`Dir`), instructors are "Dozierende", and Swiss `ss` is used instead of `ß`.
@@ -1072,6 +1141,95 @@ Tracing is a strict opt-in. It starts only when `CHAT_ENABLE_AI_TELEMETRY=true` 
 The Helm chart requires an HTTPS URL when `chat.telemetry.baseUrl` is configured.
 
 The trace contract is metadata-only: AI SDK input/output recording and media upload are disabled, image-description calls are explicitly untraced, and no participant `userId`, raw thread/message/chatbot ID, prompt, answer, tool argument/result, or image payload is exported. A deterministic pseudonymous session groups turns from one thread; the trace includes allowlisted model, routing, mode, reasoning, tool/attachment counts, lifecycle status, and response lengths. Export masking redacts Langfuse keys, bearer credentials, and data URLs as defense in depth. A privacy-preserving processor also replaces span status messages and removes exception-event attributes before Langfuse receives them; if that sanitization fails, the span is dropped. Export failures are fail-open and must never change the chat response. The batched processor owns delivery in the long-running chat process. Each traced route registers a [Next.js `after()` callback](https://nextjs.org/docs/app/api-reference/functions/after) that flushes the completed batch after the streamed response closes. The Chat image uses exec-form `CMD` so Next receives Kubernetes termination signals, and the pod allows a 90-second grace period for active requests and pending `after()` work. This does not guarantee that unbounded active requests finish before forced termination; live rollout must verify shutdown delivery.
+
+## Document attachments
+
+Students can attach up to three documents per message: PDF, Word (`.docx`), and `.txt`,
+`.md` or `.csv` files. Parsing runs in the browser (`documentAttachmentAdapter.ts`); the file
+itself is never uploaded. PDF text comes from `unpdf` in a Web Worker (`pdfText.worker.ts`) and
+Word text from `mammoth`. Both load with `import()` only when a document is picked. The adapter
+checks the 15 MB size cap before reading. It then cuts each file to about 20,000 tokens, estimated
+as characters ÷ 4. A PDF without selectable text, such as a scan, gets a localized error, because
+OCR is not supported. A PowerPoint file gets a localized message asking for a PDF export; the
+adapter accepts `.pptx` and `.ppt` only to show that message. Documents work with every model, so
+the attach button and the dropzone stay available when the selected model cannot read images.
+
+The first document a student attaches opens a notice (`document-notice-modal.tsx`) about what
+may be shared and where document text and rendered PDF pages go. It distinguishes the text and
+visual summaries saved by KlickerUZH from page images, which KlickerUZH does not persist; it
+makes no promise about provider-side retention. Declining removes the documents; accepting is remembered
+in `localStorage` for that browser, not in the database, so it is a reminder rather than recorded
+consent.
+
+The extracted text travels inside the user message. `useThreadManagement` appends one block per
+file after the typed question, and a file-only message gets the localized default question. Each
+block starts with `--- Attached document: <name> (<pages>, shortened …) ---` and ends with
+`--- End of attached document ---` (`documentText.ts`). This header is a stored format: history
+returns the user message as one text string, and `RuntimeProvider.convertMessage` parses the
+blocks back into `metadata.custom.documentAttachments`. The bubble then shows file chips, while
+copy and the edit composer see only the question. An edit keeps the original documents unless the
+student removes them. Titles (`extractThreadTitle` and the sidebar fallback), the title filter,
+the history rail and exported user questions strip the blocks. Markdown export preserves
+assistant answer text, mathematics and citations; it never changes the stored conversation.
+Changing the header or footer wording breaks the chips of existing messages.
+
+Data boundary: the extracted text is stored in `ChatMessage.content`, sent to the model provider,
+and sent again with every later turn of the thread. The server does not limit message length, so
+the client cap is a UX rule, not enforcement. Uploads stay in the thread and never enter a course
+knowledge base.
+
+### Visual review of PDF pages
+
+When the selected model reads images (`supportsImageAttachments`), the adapter also renders every
+page of a PDF with at most 10 pages (`MAX_VISUAL_REVIEW_PAGES`) as a JPEG. The worker draws each
+page on an `OffscreenCanvas` at about 1,600 px on the longest side and quality 0.8 (`pdfText.ts`).
+PDF.js gets an `OffscreenCanvas` factory and draws fonts as paths, because a worker has no
+`document`. The pages are kept as `file` parts of the document attachment, so the image pipeline
+(`images`, at most 3) never sees them. A PDF with more pages is not rendered at all.
+
+The final decision happens at send time in `applyVisualReview` (`documentText.ts`), because the
+student may switch models after attaching. Pages are sent only if the model reads images and the
+whole document fits into the 10-page budget of the message, in attachment order. The block header
+records the outcome as a stored meta token: `pages reviewed visually`, or `pages not reviewed
+visually` with the reason (page limit, or model cannot read images). Without a reason it covers
+documents kept while editing, whose pages are not sent again, and pages the browser could not
+render; a render failure never blocks the text. The composer chip runs the same decision, and the
+edit composer shows kept documents with the status they get without pages
+(`visualReviewWithoutPages`), so each chip shows the status the message will have. A model counts as
+reading images for pages only once its loaded model option says so (`selectModelReadsDocumentPages`
+in `settingsStore.ts`); until then documents are read as text only and their headers say the pages were not reviewed, without claiming the model cannot read images. Page images wait in a module map in `attachmentState.ts` until
+`useChatResponse` sends them as `documentPages`; they never enter the thread state, history or
+Markdown export. Entries stay per message, and only the newest three are kept. `useChatResponse` takes them before
+any early return and gives them back after any failure except a rejection of the pages
+(`DOCUMENT_PAGES_NOT_SUPPORTED`, an invalid body, or 413), so "Try again"
+sends them again; such a rejection or a switch to a model without image support drops them. When pages are dropped, `withoutPageReview` rewrites the message's document headers, so neither
+the prompt nor the chip claims a review. A rendered page larger than the route's 2,000,000-character
+cap counts as a render failure, so the document goes through as text.
+
+The chat route accepts `documentPages` separately from `images`: at most 10 JPEG data URLs, each
+capped at 2,000,000 characters. It returns `400` with `DOCUMENT_PAGES_NOT_SUPPORTED` when the
+effective model, after any zero-credit fallback, cannot read images. On the current turn the pages
+go to the model with the user message. One extra call (`document-pages-summary.hbs`) writes a
+visual summary of all pages, and its cost counts toward the turn's credits like image
+descriptions. If the summary call fails, nothing is stored, so an earlier summary of the same
+message stays and no placeholder replaces it. The route stores only that summary, as a `ChatAttachment` row of type `IMAGE` with
+both image fields `null` and the summary in `imageDescription`. History routes load attachments
+with `IMAGE_ROW_FILTER`, so the row never shows as an image. Later turns, and a regenerated answer
+for the same message, append it as `[Visual summary of the attached document pages: …]`, a marker
+the input-context prompt (`input-context.hbs`) explains next to the image descriptions. The
+`null` image fields are the only marker of this row kind; a dedicated `ChatAttachmentType` value
+would make it explicit at the cost of a migration.
+
+Data boundary: the page images go to the model provider for the current turn and the summary call,
+but are not stored. The summary is stored with the message and sent with every later turn.
+
+Clicking a document chip, in the composer, the edit composer or a sent message, opens
+`DocumentPreviewModal`. A PDF still in this tab opens in the browser's own PDF viewer from an
+object URL; other files show the extracted text with a link to the original. Sent messages keep
+their originals in an in-memory map in `attachmentState.ts`, keyed by message ID and document
+position and bounded to the newest 20 and 50 MB in total; an edit copies the entries of kept documents. The original
+file is never uploaded or stored, so after a reload the preview shows the stored extracted text,
+which is what the model received.
 
 ## Client-state gotchas
 

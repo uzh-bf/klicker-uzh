@@ -46,8 +46,12 @@ surfaces, highlight the group containing the student's score, and retain the
 exact range/count table for accessible detail. Show percentile as a 0–100
 ruler with a marker at the student's inclusive percentile rank; do not imply
 that the score groups form a normal or continuous distribution. The comparison
-remains omitted below the existing cohort threshold, and the stored V1 report
-contract is unchanged.
+remains omitted below the existing cohort threshold and in interim reports
+issued before the course end date. Every report issued after the course end
+includes a comparison. While the student's own claims are unchanged, the active
+post-end report is reused even if peer scores change, so two reports cannot be
+differenced to infer a single peer's change. The stored V1 report contract is
+unchanged.
 
 ## Next.js tooling
 

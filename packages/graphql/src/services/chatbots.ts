@@ -117,9 +117,9 @@ const DEFAULT_CHAT_MODEL_REGISTRY_INPUT = [
     cost: { input: 1.0, output: 5.0 },
   },
   {
-    id: 'gpt-5.6-luna',
-    deploymentId: 'gpt-5.6-luna',
-    name: 'GPT-5.6 Luna',
+    id: 'gpt-6-luna',
+    deploymentId: 'gpt-6-luna',
+    name: 'GPT-6 Luna',
     description: 'OpenAI reasoning model',
     fallback: true,
     supportsReasoning: true,
@@ -128,7 +128,7 @@ const DEFAULT_CHAT_MODEL_REGISTRY_INPUT = [
     maxOutputTokens: 4096,
     usageClass: 'BASE',
     apiVersion: 'preview',
-    cost: { input: 0.2, output: 1.2 },
+    cost: { input: 0.1, output: 0.5 },
   },
   {
     id: 'gpt-4.1',
@@ -404,6 +404,7 @@ const chatbotOwnerSelect = {
   modelSelection: true,
   allowedModelIds: true,
   allowedReasoningEffortsByModel: true,
+  answerPreferencesEnabled: true,
   creditInitialCredits: true,
   creditResetPeriod: true,
   creditResetAmount: true,
@@ -867,7 +868,10 @@ export async function updateChatbotModelSettings(
   return shapeChatbotResponse(updated, { resolveLegacyFixedPolicy: false })
 }
 
-type UpdateChatbotModelPolicyArgs = UpdateChatbotModelSettingsArgs
+type UpdateChatbotModelPolicyArgs = UpdateChatbotModelSettingsArgs & {
+  // Optional so older clients that only save the model policy keep working.
+  answerPreferencesEnabled?: boolean | null
+}
 
 function normalizeStrictReasoningConfig(
   args: UpdateChatbotModelPolicyArgs,
@@ -1023,6 +1027,9 @@ export async function updateChatbotModelPolicy(
         status: { in: metadataAndModelEditableStatuses },
       },
       data: {
+        ...(typeof args.answerPreferencesEnabled === 'boolean'
+          ? { answerPreferencesEnabled: args.answerPreferencesEnabled }
+          : {}),
         modelSelection: args.modelSelection,
         allowedModelIds: normalizedAllowedModelIds,
         allowedReasoningEffortsByModel:
@@ -1086,7 +1093,7 @@ export async function createChatbot(
   const auto = modelRegistry.find((model) => model.id === 'auto')
   if (autoPolicyIssues.length > 0 || !auto) {
     throw new GraphQLError(
-      'Chatbot defaults require exactly one valid non-reasoning ADVANCED Auto model'
+      'Chatbot defaults require exactly one valid non-reasoning Auto model'
     )
   }
 

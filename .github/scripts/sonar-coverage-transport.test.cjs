@@ -276,3 +276,30 @@ describe('resolvePackageRoot', () => {
     )
   })
 })
+
+it('lists every job page for the exact producer attempt', async (t) => {
+  const createTransport = require('./sonar-coverage-transport.cjs')
+  const requests = []
+  t.mock.method(globalThis, 'fetch', async (url) => {
+    requests.push(url)
+    return {
+      ok: true,
+      json: async () => ({
+        jobs:
+          requests.length === 1
+            ? Array(100).fill({ name: 'other' })
+            : [{ name: 'test-unit-status' }],
+      }),
+    }
+  })
+  const transport = createTransport({
+    token: 'dummy-test-token',
+    repository: 'example/test-repository',
+  })
+  const jobs = await transport.listJobs(11, 2)
+  assert.equal(jobs.length, 101)
+  assert.deepEqual(requests, [
+    'https://api.github.com/repos/example/test-repository/actions/runs/11/attempts/2/jobs?per_page=100&page=1',
+    'https://api.github.com/repos/example/test-repository/actions/runs/11/attempts/2/jobs?per_page=100&page=2',
+  ])
+})
