@@ -1,3 +1,4 @@
+import { resolveRequestContext } from '@klicker-uzh/logging/request'
 import { type NextRequest, NextResponse } from 'next/server'
 import { resolveSecureCookies } from './lib/authCookies'
 import {
@@ -5,6 +6,7 @@ import {
   DEFAULT_PWA_HOSTS,
   DEFAULT_STUDENT_HOSTS,
 } from './lib/constants'
+import { edgeLogger } from './lib/edgeLogger'
 import { hostFromUrl, validateRedirectTarget } from './lib/redirectTarget'
 
 function parseCsvHosts(value: string | undefined): string[] {
@@ -24,6 +26,26 @@ const PWA_HOSTS = _PWA.length ? _PWA : DEFAULT_PWA_HOSTS
 
 export async function proxy(request: NextRequest) {
   const pathname = request.nextUrl.pathname
+  const requestContext = resolveRequestContext({
+    requestId: request.headers.get('x-request-id'),
+    correlationId: request.headers.get('x-correlation-id'),
+  })
+  const log = edgeLogger.child(requestContext)
+  const withRequestId = (response: NextResponse) => {
+    response.headers.set('x-request-id', requestContext.requestId)
+    response.headers.set('x-correlation-id', requestContext.correlationId)
+    return response
+  }
+  const nextResponse = () => {
+    const headers = new Headers(request.headers)
+    headers.set('x-request-id', requestContext.requestId)
+    headers.set('x-correlation-id', requestContext.correlationId)
+    // The pass-through overrides the request headers the Node handler sees, so
+    // the handler resolves the same correlation IDs the edge did. The response
+    // echoes them too, which keeps the diagnostics of a pass-through request
+    // observable to the caller and to the client-side correlation checks.
+    return withRequestId(NextResponse.next({ request: { headers } }))
+  }
   const secure = resolveSecureCookies(
     process.env.NEXTAUTH_URL,
     process.env.AUTH_SECURE_COOKIES
@@ -44,7 +66,11 @@ export async function proxy(request: NextRequest) {
       const pwaLoginUrl = process.env.NEXT_PUBLIC_PWA_URL
         ? `${process.env.NEXT_PUBLIC_PWA_URL.replace(/\/$/, '')}/login`
         : 'https://pwa.klicker.uzh.ch/login'
-      return NextResponse.redirect(pwaLoginUrl)
+      log.info(
+        { event: 'auth.redirect.selected', audience: 'participant' },
+        'Selected PWA login redirect'
+      )
+      return withRequestId(NextResponse.redirect(pwaLoginUrl))
     }
   }
 
@@ -59,10 +85,16 @@ export async function proxy(request: NextRequest) {
         secure,
       })
       if (!validation.ok) {
-        return new NextResponse('Invalid redirect URL', { status: 400 })
+        log.warn(
+          { event: 'auth.redirect.rejected', audience: 'lecturer' },
+          'Rejected auth redirect'
+        )
+        return withRequestId(
+          new NextResponse('Invalid redirect URL', { status: 400 })
+        )
       }
     }
-    return NextResponse.next()
+    return nextResponse()
   }
 
   if (pathname === '/lecturer') {
@@ -75,13 +107,19 @@ export async function proxy(request: NextRequest) {
       secure,
     })
     if (!validation.ok) {
-      return new NextResponse('Invalid redirect URL', { status: 400 })
+      log.warn(
+        { event: 'auth.redirect.rejected', audience: 'lecturer' },
+        'Rejected auth redirect'
+      )
+      return withRequestId(
+        new NextResponse('Invalid redirect URL', { status: 400 })
+      )
     }
 
     // Show the lecturer login page (UI offers EduID or delegated)
     const dest = new URL('/', request.url)
     dest.searchParams.set('redirectTo', redirectTo)
-    return NextResponse.redirect(dest)
+    return withRequestId(NextResponse.redirect(dest))
   }
 
   if (pathname === '/student') {
@@ -94,15 +132,21 @@ export async function proxy(request: NextRequest) {
       secure,
     })
     if (!validation.ok) {
-      return new NextResponse('Invalid redirect URL', { status: 400 })
+      log.warn(
+        { event: 'auth.redirect.rejected', audience: 'participant' },
+        'Rejected auth redirect'
+      )
+      return withRequestId(
+        new NextResponse('Invalid redirect URL', { status: 400 })
+      )
     }
 
-    return NextResponse.next()
+    return nextResponse()
   }
 
   // Auth protocol endpoints are handled entirely by the NextAuth route
   // with strict per-request audience dispatch (see lib/dispatch.ts).
-  return NextResponse.next()
+  return nextResponse()
 }
 
 export const config = {

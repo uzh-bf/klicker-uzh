@@ -23,45 +23,74 @@ import {
   TIME_TO_ZERO_BONUS,
 } from '../constants.js'
 
-export function updateLeaderboards({
-  redisMulti,
-  participantId,
-  participantRole,
-  liveQuizKey,
-  sessionBlockId,
-  pointsAwarded,
-  xpAwarded,
-}: {
-  redisMulti: ChainableCommander
+type LeaderboardUpdate = {
+  key: string
+  field: string
+  increment: number
+}
+
+type LeaderboardInput = {
   participantId: string
   participantRole: string
   liveQuizKey: string
   sessionBlockId: string
   pointsAwarded: number
   xpAwarded: number
-}) {
+}
+
+export function getLeaderboardUpdates({
+  participantId,
+  participantRole,
+  liveQuizKey,
+  sessionBlockId,
+  pointsAwarded,
+  xpAwarded,
+}: LeaderboardInput): LeaderboardUpdate[] {
   // depending on the participant account type (permanent student account or
   // temporary pseudonym), set the correct points / experience points
   if (participantRole === 'PARTICIPANT') {
-    redisMulti.hincrby(
-      `${liveQuizKey}:b:${sessionBlockId}:lb`,
-      participantId,
-      pointsAwarded
-    )
-    redisMulti.hincrby(`${liveQuizKey}:lb`, participantId, pointsAwarded)
-    redisMulti.hincrby(`${liveQuizKey}:xp`, participantId, xpAwarded)
-  } else if (participantRole === 'TEMPORARY_PARTICIPANT') {
+    return [
+      {
+        key: `${liveQuizKey}:b:${sessionBlockId}:lb`,
+        field: participantId,
+        increment: pointsAwarded,
+      },
+      {
+        key: `${liveQuizKey}:lb`,
+        field: participantId,
+        increment: pointsAwarded,
+      },
+      {
+        key: `${liveQuizKey}:xp`,
+        field: participantId,
+        increment: xpAwarded,
+      },
+    ]
+  }
+  if (participantRole === 'TEMPORARY_PARTICIPANT') {
     // temporary participants are only granted points, xp cannot be collected
-    redisMulti.hincrby(
-      `${liveQuizKey}:b:${sessionBlockId}:lbTemporary`,
-      participantId,
-      pointsAwarded
-    )
-    redisMulti.hincrby(
-      `${liveQuizKey}:lbTemporary`,
-      participantId,
-      pointsAwarded
-    )
+    return [
+      {
+        key: `${liveQuizKey}:b:${sessionBlockId}:lbTemporary`,
+        field: participantId,
+        increment: pointsAwarded,
+      },
+      {
+        key: `${liveQuizKey}:lbTemporary`,
+        field: participantId,
+        increment: pointsAwarded,
+      },
+    ]
+  }
+  return []
+}
+
+export function updateLeaderboards({
+  redisMulti,
+  ...input
+}: { redisMulti: ChainableCommander } & LeaderboardInput) {
+  for (const update of getLeaderboardUpdates(input)) {
+    redisMulti.hincrby(update.key, update.field, update.increment)
   }
 }
 
@@ -103,7 +132,11 @@ export function validateStudentResponse({
   type,
   response,
   restrictions,
+  choiceCount,
 }: {
+  // Number of answer options of a choices question; when known, every
+  // submitted index must address one of them.
+  choiceCount?: number
   type:
     | 'SC'
     | 'MC'
@@ -115,7 +148,9 @@ export function validateStudentResponse({
     | 'CONTENT'
   response: LiveQuizResponseInput
   restrictions?: NumericalRestrictions | FreeTextRestrictions
-}): { valid: boolean; message?: string } {
+}):
+  | { valid: true; reasonCode?: never; message?: never }
+  | { valid: false; reasonCode: string; message: string } {
   if (type === 'SC' || type === 'MC' || type === 'KPRIM') {
     // response should be of format { ix: number, selected: boolean | undefined }[]
     if (
@@ -129,7 +164,31 @@ export function validateStudentResponse({
     ) {
       return {
         valid: false,
-        message: `Invalid response submitted for choices question ${JSON.stringify(response)}`,
+        reasonCode: 'CHOICES_FORMAT_INVALID',
+        message: 'Invalid response submitted for choices question',
+      }
+    }
+
+    // indices must be distinct integers addressing an existing option, so a
+    // crafted payload cannot add phantom options to the live result counts
+    const indices = response.choices.map((r) => r.ix)
+    const hasOptionCount =
+      typeof choiceCount === 'number' &&
+      Number.isSafeInteger(choiceCount) &&
+      choiceCount > 0
+    if (
+      new Set(indices).size !== indices.length ||
+      indices.some(
+        (ix) =>
+          !Number.isSafeInteger(ix) ||
+          ix < 0 ||
+          (hasOptionCount && ix >= choiceCount)
+      )
+    ) {
+      return {
+        valid: false,
+        reasonCode: 'CHOICES_INDEX_INVALID',
+        message: 'Invalid answer option submitted for choices question',
       }
     }
 
@@ -140,7 +199,8 @@ export function validateStudentResponse({
     ) {
       return {
         valid: false,
-        message: `Invalid response submitted for single choice question ${JSON.stringify(response)}`,
+        reasonCode: 'SINGLE_CHOICE_SELECTION_INVALID',
+        message: 'Invalid response submitted for single choice question',
       }
     }
 
@@ -151,7 +211,8 @@ export function validateStudentResponse({
     ) {
       return {
         valid: false,
-        message: `Invalid response submitted for multiple choice question ${JSON.stringify(response)}`,
+        reasonCode: 'MULTIPLE_CHOICE_SELECTION_INVALID',
+        message: 'Invalid response submitted for multiple choice question',
       }
     }
 
@@ -159,7 +220,8 @@ export function validateStudentResponse({
     if (type === 'KPRIM' && response.choices.length !== 4) {
       return {
         valid: false,
-        message: `Invalid response submitted for KPRIM question ${JSON.stringify(response)}`,
+        reasonCode: 'KPRIM_CHOICE_COUNT_INVALID',
+        message: 'Invalid response submitted for KPRIM question',
       }
     }
 
@@ -174,7 +236,8 @@ export function validateStudentResponse({
     ) {
       return {
         valid: false,
-        message: `Invalid response submitted for numerical question ${JSON.stringify(response)}`,
+        reasonCode: 'NUMERICAL_FORMAT_INVALID',
+        message: 'Invalid response submitted for numerical question',
       }
     }
 
@@ -191,7 +254,8 @@ export function validateStudentResponse({
     ) {
       return {
         valid: false,
-        message: `Numerical response ${parsedResponse} out of bounds for numerical question with restrictions ${JSON.stringify(restrictions)}`,
+        reasonCode: 'NUMERICAL_OUT_OF_BOUNDS',
+        message: 'Numerical response is outside the allowed bounds',
       }
     }
 
@@ -201,7 +265,8 @@ export function validateStudentResponse({
     if (!response.value || typeof response.value !== 'string') {
       return {
         valid: false,
-        message: `Invalid response submitted for free text question ${JSON.stringify(response)}`,
+        reasonCode: 'FREE_TEXT_FORMAT_INVALID',
+        message: 'Invalid response submitted for free text question',
       }
     }
 
@@ -215,6 +280,7 @@ export function validateStudentResponse({
     ) {
       return {
         valid: false,
+        reasonCode: 'FREE_TEXT_TOO_LONG',
         message: `Free text response exceeds maximum length of ${restrictions.maxLength} characters for free text question`,
       }
     }
@@ -233,7 +299,8 @@ export function validateStudentResponse({
     ) {
       return {
         valid: false,
-        message: `Invalid response submitted for selection question ${JSON.stringify(response)}`,
+        reasonCode: 'SELECTION_FORMAT_INVALID',
+        message: 'Invalid response submitted for selection question',
       }
     }
 
@@ -261,7 +328,8 @@ export function validateStudentResponse({
     ) {
       return {
         valid: false,
-        message: `Invalid response submitted for case study question ${JSON.stringify(response)}`,
+        reasonCode: 'CASE_STUDY_FORMAT_INVALID',
+        message: 'Invalid response submitted for case study question',
       }
     }
 
@@ -271,7 +339,8 @@ export function validateStudentResponse({
     if (!response.viewed) {
       return {
         valid: false,
-        message: `Invalid response submitted for content question ${JSON.stringify(response)}`,
+        reasonCode: 'CONTENT_RESPONSE_INVALID',
+        message: 'Invalid response submitted for content question',
       }
     }
 
@@ -280,7 +349,8 @@ export function validateStudentResponse({
 
   return {
     valid: false,
-    message: `Provided invalid question type in answer submission: ${type}`,
+    reasonCode: 'ELEMENT_TYPE_UNSUPPORTED',
+    message: 'Provided invalid question type in answer submission',
   }
 }
 

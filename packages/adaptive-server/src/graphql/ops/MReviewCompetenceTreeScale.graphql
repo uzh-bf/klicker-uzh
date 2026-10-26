@@ -1,0 +1,12 @@
+mutation ReviewCompetenceTreeScale(
+  $scaleVersionId: String!
+  $decision: AdaptiveReviewDecision!
+) {
+  reviewCompetenceTreeScale(
+    scaleVersionId: $scaleVersionId
+    decision: $decision
+  ) {
+    id
+    status
+  }
+}

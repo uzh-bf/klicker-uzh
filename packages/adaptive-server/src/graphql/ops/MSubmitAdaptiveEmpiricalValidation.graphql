@@ -1,0 +1,6 @@
+mutation SubmitAdaptiveEmpiricalValidation($artifact: Json!) {
+  submitAdaptiveEmpiricalValidation(artifact: $artifact) {
+    id
+    status
+  }
+}

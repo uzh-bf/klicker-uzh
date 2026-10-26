@@ -56,6 +56,18 @@ describe('@klicker-uzh/grading', () => {
     })
 
     expect(points3).toEqual(0.5)
+
+    const nonContiguousPoints = gradeQuestionMC({
+      responseCount: 3,
+      response: [
+        { ix: 10, selected: true },
+        { ix: 20, selected: false },
+        { ix: 30, selected: true },
+      ],
+      solution: [10, 30],
+    })
+
+    expect(nonContiguousPoints).toEqual(1)
   })
 
   it('should grade SC questions correctly', () => {
@@ -172,6 +184,19 @@ describe('@klicker-uzh/grading', () => {
       solution: [],
     })
     expect(points7).toEqual(0.5)
+
+    const nonContiguousPoints = gradeQuestionKPRIM({
+      responseCount: 4,
+      response: [
+        { ix: 10, selected: true },
+        { ix: 20, selected: false },
+        { ix: 30, selected: true },
+        { ix: 40, selected: false },
+      ],
+      solution: [10, 30],
+    })
+
+    expect(nonContiguousPoints).toEqual(1)
   })
 
   it('should grade NUMERICAL questions correctly', () => {
@@ -311,6 +336,43 @@ describe('@klicker-uzh/grading', () => {
       response: 0.1,
     })
     expect(points17).toEqual(null)
+
+    expect(
+      gradeQuestionNumerical({
+        solutionRanges: [{ max: 0 }],
+        response: 1,
+      })
+    ).toEqual(0)
+    expect(
+      gradeQuestionNumerical({
+        solutionRanges: [{ min: 0 }],
+        response: -1,
+      })
+    ).toEqual(0)
+    expect(
+      gradeQuestionNumerical({
+        solutionRanges: [{ min: 0, max: 0 }],
+        response: 0,
+      })
+    ).toEqual(1)
+    for (const response of [
+      Number.NaN,
+      Number.POSITIVE_INFINITY,
+      Number.NEGATIVE_INFINITY,
+    ]) {
+      expect(
+        gradeQuestionNumerical({
+          solutionRanges: [{ max: 10 }],
+          response,
+        })
+      ).toBe(0)
+    }
+    expect(
+      gradeQuestionNumerical({
+        solutionRanges: [{ min: Number.NaN, max: Number.POSITIVE_INFINITY }],
+        response: 5,
+      })
+    ).toBeNull()
   })
 
   it('should grade FREE_TEXT questions correctly', () => {

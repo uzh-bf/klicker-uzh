@@ -3,6 +3,7 @@ import type { Choice, QuestionFeedback } from '@klicker-uzh/graphql/dist/ops'
 import { ElementDisplayMode, ElementType } from '@klicker-uzh/graphql/dist/ops'
 import { Markdown } from '@klicker-uzh/markdown'
 import { Button } from '@uzh-bf/design-system'
+import { useTranslations } from 'next-intl'
 import React from 'react'
 import { twMerge } from 'tailwind-merge'
 import ChoiceFeedback from '../evaluation/ChoiceFeedback'
@@ -31,6 +32,8 @@ export function KPAnswerOptions({
   disabled,
   hideFeedbacks = false,
 }: KPAnswerOptionsProps): React.ReactElement {
+  const t = useTranslations()
+
   return (
     <div
       className={twMerge(
@@ -52,7 +55,7 @@ export function KPAnswerOptions({
             )}
             data-cy="kp-answer-options"
           >
-            <div>
+            <div id={`kp-choice-${elementIx}-${choice.ix}-label`}>
               <Markdown
                 withProse
                 content={choice.value}
@@ -78,6 +81,9 @@ export function KPAnswerOptions({
                 data={{
                   cy: `toggle-kp-${elementIx}-answer-${choice.ix}-correct`,
                 }}
+                aria-label={t('shared.generic.correct')}
+                aria-describedby={`kp-choice-${elementIx}-${choice.ix}-label`}
+                aria-pressed={value?.[choice.ix] === true}
                 disabled={disabled}
               >
                 <Button.Icon
@@ -102,6 +108,9 @@ export function KPAnswerOptions({
                 data={{
                   cy: `toggle-kp-${elementIx}-answer-${choice.ix}-incorrect`,
                 }}
+                aria-label={t('shared.generic.incorrect')}
+                aria-describedby={`kp-choice-${elementIx}-${choice.ix}-label`}
+                aria-pressed={value?.[choice.ix] === false}
                 disabled={disabled}
               >
                 <Button.Icon

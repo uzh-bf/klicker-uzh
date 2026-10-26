@@ -8,6 +8,7 @@
     "dist"
   ],
   "dependencies": {
+    "@klicker-uzh/logging": "workspace:*",
     "@klicker-uzh/types": "workspace:*",
     "@klicker-uzh/util": "workspace:*",
     "cross-env": "7.0.3",

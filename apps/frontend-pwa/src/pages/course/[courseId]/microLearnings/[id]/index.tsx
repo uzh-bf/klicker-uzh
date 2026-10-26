@@ -10,8 +10,8 @@ import {
   SelfDocument,
   UserRole,
 } from '@klicker-uzh/graphql/dist/ops'
-import Loader from '@klicker-uzh/shared-components/src/Loader'
 import DynamicMarkdown from '@klicker-uzh/shared-components/src/evaluation/DynamicMarkdown'
+import Loader from '@klicker-uzh/shared-components/src/Loader'
 import { parseEmbedParam } from '@klicker-uzh/shared-components/src/utils/parseEmbedParam'
 import { addApolloState, initializeApollo } from '@lib/apollo'
 import getParticipantToken from '@lib/getParticipantToken'
@@ -19,14 +19,14 @@ import useParticipantToken from '@lib/useParticipantToken'
 import { Button, H3, Prose, UserNotification } from '@uzh-bf/design-system'
 import dayjs from 'dayjs'
 import { GetServerSidePropsContext } from 'next'
-import { useTranslations } from 'next-intl'
 import Link from 'next/link'
 import { useRouter } from 'next/router'
+import { useTranslations } from 'next-intl'
 import nookies from 'nookies'
 import { useMemo } from 'react'
-import Layout from '../../../../../components/Layout'
 import { CourseChatDrawer } from '../../../../../components/chatbot/CourseChatDrawer'
 import PreviewMessage from '../../../../../components/common/PreviewMessage'
+import Layout from '../../../../../components/Layout'
 import MicroLearningSubscriber from '../../../../../components/microLearning/MicroLearningSubscriber'
 import { buildMicroLearningChatContext } from '../../../../../lib/chatbot/chatContext'
 
@@ -237,6 +237,12 @@ function MicrolearningIntroduction({
 }
 
 export async function getServerSideProps(ctx: GetServerSidePropsContext) {
+  const { createSsrRequestLogging } = await import('@lib/server/logger')
+  const { logFailure, requestContext } = createSsrRequestLogging(
+    ctx.req.headers,
+    '/course/:courseId/microLearnings/:id'
+  )
+
   try {
     if (
       typeof ctx.params?.courseId !== 'string' ||
@@ -250,7 +256,7 @@ export async function getServerSideProps(ctx: GetServerSidePropsContext) {
       }
     }
 
-    const apolloClient = initializeApollo()
+    const apolloClient = initializeApollo(undefined, ctx, requestContext)
     const embedded = parseEmbedParam(ctx.query.embed)
 
     const { participantToken, cookiesAvailable } = await getParticipantToken({
@@ -282,8 +288,8 @@ export async function getServerSideProps(ctx: GetServerSidePropsContext) {
           .default,
       },
     })
-  } catch (error) {
-    console.error('Error in getServerSideProps on microlearning:', error)
+  } catch {
+    logFailure('data_load_failed')
 
     // remove the lti-token, if it is defined
     try {
@@ -291,8 +297,8 @@ export async function getServerSideProps(ctx: GetServerSidePropsContext) {
         domain: process.env.COOKIE_DOMAIN,
         path: '/',
       })
-    } catch (nookiesError) {
-      console.error(nookiesError)
+    } catch {
+      logFailure('cookie_cleanup_failed')
     }
 
     // redirect to lti error page with redirect back to this page
