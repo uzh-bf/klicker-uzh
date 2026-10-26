@@ -627,6 +627,7 @@ export async function mockChatStream(page: Page, options: StreamOptions = {}) {
   })
 }
 
+// The real-route fixture preserves the devcontainer seed database.
 const codeApiBrowserBotIds = [
   CODEAPI_BROWSER_CHATBOT_ID,
   CODEAPI_BROWSER_DENIED_CHATBOT_ID,
