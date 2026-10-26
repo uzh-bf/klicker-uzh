@@ -24,7 +24,17 @@ export default defineConfig({
       // the spec enables Chromium's third-party cookie restriction over CDP
       metadata: { blocksThirdPartyCookies: true },
     },
-    { name: 'firefox', use: { ...devices['Desktop Firefox'] } },
+    {
+      name: 'firefox',
+      use: {
+        ...devices['Desktop Firefox'],
+        // Playwright's Firefox turns off Total Cookie Protection; restore the
+        // release default, which partitions all third-party cookies
+        launchOptions: {
+          firefoxUserPrefs: { 'network.cookie.cookieBehavior': 5 },
+        },
+      },
+    },
     { name: 'webkit', use: { ...devices['Desktop Safari'] } },
   ],
 })
