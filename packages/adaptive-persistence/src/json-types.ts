@@ -337,6 +337,8 @@ declare global {
           theta: number | null
           standardError: number | null
           levelId: number | null
+          /** Level the estimate maps to before a level is reported. */
+          roughLevelId?: number | null
         }
       }>
       overall: {

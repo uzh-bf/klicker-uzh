@@ -25,6 +25,7 @@ const dryRunStudentSchema = z
                 theta: z.number().finite().nullable(),
                 standardError: z.number().finite().nonnegative().nullable(),
                 levelId: id.nullable(),
+                roughLevelId: id.nullable().optional(),
               })
               .strict()
               .optional(),
@@ -74,7 +75,8 @@ export function parseDryRunResponse(input: unknown, request: DryRunRequest) {
         student.answers.some(
           ({ poolItemId, levelId, after }) =>
             poolById.get(poolItemId)?.levelId !== levelId ||
-            (after?.levelId != null && !levelIds.has(after.levelId))
+            (after?.levelId != null && !levelIds.has(after.levelId)) ||
+            (after?.roughLevelId != null && !levelIds.has(after.roughLevelId))
         )
       )
         fail()

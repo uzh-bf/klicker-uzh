@@ -13,6 +13,9 @@ import {
 
 const KEY = 'manage.evaluation.adaptive.dryRuns.students'
 
+const arrow = (change: string) =>
+  change === 'UP' ? '↑ ' : change === 'DOWN' ? '↓ ' : ''
+
 const differenceTone = (difference: number | null) =>
   difference === 0
     ? 'text-green-700'
@@ -91,6 +94,7 @@ function CompetenceTrace({
               <th className="py-1 pr-2">{t(`${KEY}.expected`)}</th>
               <th className="py-1 pr-2">{t(`${KEY}.answer`)}</th>
               <th className="py-1 pr-2">{t(`${KEY}.levelAfter`)}</th>
+              <th className="py-1 pr-2">{t(`${KEY}.subcompetence`)}</th>
               <th className="py-1">{t(`${KEY}.question`)}</th>
             </tr>
           </thead>
@@ -140,24 +144,26 @@ function CompetenceTrace({
                             : 'text-gray-700'
                         )}
                       >
-                        {step.levelChange === 'UP'
-                          ? '↑ '
-                          : step.levelChange === 'DOWN'
-                            ? '↓ '
-                            : ''}
+                        {arrow(step.levelChange)}
                         {label(step.after.levelId)}
                       </span>
-                    ) : (
+                    ) : step.after?.roughLevelId != null ? (
                       <span
-                        className="text-gray-500"
-                        title={t(`${KEY}.notYetHint`)}
+                        className="text-gray-500 italic"
+                        title={t(`${KEY}.roughHint`)}
                       >
-                        {t(`${KEY}.notYet`)}
+                        {arrow(step.levelChange)}≈{' '}
+                        {label(step.after.roughLevelId)}
                       </span>
+                    ) : (
+                      <span className="text-gray-500">–</span>
                     )}
                   </td>
+                  <td className="py-1 pr-2 text-gray-700">
+                    {item?.nodeNames.at(-1) ?? '–'}
+                  </td>
                   <td
-                    className="max-w-[16rem] truncate py-1 text-gray-600"
+                    className="max-w-[14rem] truncate py-1 text-gray-600"
                     title={item?.elementName}
                   >
                     {item?.elementName ?? `#${step.poolItemId}`}

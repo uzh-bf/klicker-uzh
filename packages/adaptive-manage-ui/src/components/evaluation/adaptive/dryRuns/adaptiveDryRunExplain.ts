@@ -56,7 +56,7 @@ export function traceDryRunCompetence({
   let previous: number | null | undefined
   const steps = student.answers.flatMap((answer, index) => {
     if (rootOfItem(answer.poolItemId) !== nodeId) return []
-    const after = answer.after?.levelId ?? null
+    const after = answer.after?.levelId ?? answer.after?.roughLevelId ?? null
     const step: DryRunAnswerStep = {
       ...answer,
       order: index + 1,

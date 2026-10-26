@@ -1019,8 +1019,9 @@ const messages = {
             questionLevel: 'Fragenniveau',
             expected: 'Erwartet',
             answer: 'Antwort',
-            notYet: 'noch nicht',
-            notYetHint: 'Noch zu wenige Antworten für ein Niveau.',
+            roughHint:
+              'Grob: bisher weniger als 4 Antworten in dieser Kompetenz, deshalb noch kein ausgegebenes Niveau.',
+            subcompetence: 'Teilkompetenz',
             levelAfter: 'Niveau danach',
             question: 'Frage',
             correct: 'richtig',

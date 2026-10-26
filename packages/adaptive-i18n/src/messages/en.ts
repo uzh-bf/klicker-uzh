@@ -1001,8 +1001,9 @@ const messages = {
             questionLevel: 'Question level',
             expected: 'Expected',
             answer: 'Answer',
-            notYet: 'not yet',
-            notYetHint: 'Too few answers for a level yet.',
+            roughHint:
+              'Rough: fewer than 4 answers in this competence so far, so no level is reported yet.',
+            subcompetence: 'Subcompetence',
             levelAfter: 'Level after',
             question: 'Question',
             correct: 'correct',
