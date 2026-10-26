@@ -32,11 +32,54 @@ export NEXT_PUBLIC_ASSESSMENT_URL="$APP_ORIGIN_ASSESSMENT_PWA"
 export NEXT_PUBLIC_ASSESSMENT_API_URL="$APP_ORIGIN_ASSESSMENT_API"
 export NEXT_PUBLIC_GROWTHBOOK_API_HOST='https://growthbook.test'
 export NEXT_PUBLIC_GROWTHBOOK_CLIENT_KEY='sdk-test'
+# Test builds load .env.production, which enables the production Matomo sites.
+# Set-but-empty values take precedence over Next's .env files and keep test
+# runs from reporting synthetic page views as real visits.
+export NEXT_PUBLIC_MATOMO_URL=''
+export NEXT_PUBLIC_MATOMO_SITE_ID=''
 
 export NEXTAUTH_URL="$APP_ORIGIN_AUTH"
 export AUTH_STUDENT_ALLOWED_HOSTS='127.0.0.1:3001'
 export AUTH_LECTURER_ALLOWED_HOSTS='127.0.0.1:3002'
 export AUTH_PWA_HOSTS='127.0.0.1:3000'
+
+# The devcontainer's CI-parity Playwright runtime serves the same production
+# builds behind devrouter's routed hostnames (https://<app>.<domain>), so the
+# host browser reaches each app the way it does in development. CI leaves this
+# unset and keeps the loopback origins above.
+if [ -n "${KLICKER_TEST_ROUTED_DOMAIN:-}" ]; then
+	routed_host() { echo "$1.${KLICKER_TEST_ROUTED_DOMAIN}"; }
+	export COOKIE_DOMAIN="$KLICKER_TEST_ROUTED_DOMAIN"
+	export API_DOMAIN="$COOKIE_DOMAIN"
+
+	export APP_ORIGIN_API="https://$(routed_host api)"
+	export APP_ORIGIN_PWA="https://$(routed_host pwa)"
+	export APP_ORIGIN_MANAGE="https://$(routed_host manage)"
+	export APP_ORIGIN_CONTROL="https://$(routed_host control)"
+	export APP_ORIGIN_LTI="https://$(routed_host lti)"
+	export APP_ORIGIN_AUTH="https://$(routed_host auth)"
+	export APP_ORIGIN_CHAT="https://$(routed_host chat)"
+	export APP_ORIGIN_ASSESSMENT_API="$APP_ORIGIN_API"
+	export APP_ORIGIN_ASSESSMENT_PWA="$APP_ORIGIN_PWA"
+
+	export NEXT_PUBLIC_API_URL="$APP_ORIGIN_API/api/graphql"
+	export NEXT_PUBLIC_API_URL_SSR="$NEXT_PUBLIC_API_URL"
+	export NEXT_PUBLIC_ADD_RESPONSE_URL="https://$(routed_host response-api)/AddResponse"
+	export NEXT_PUBLIC_PWA_URL="$APP_ORIGIN_PWA"
+	export NEXT_PUBLIC_MANAGE_URL="$APP_ORIGIN_MANAGE"
+	export NEXT_PUBLIC_CONTROL_URL="$APP_ORIGIN_CONTROL"
+	export NEXT_PUBLIC_AUTH_URL="$APP_ORIGIN_AUTH"
+	export NEXT_PUBLIC_LTI_URL="$APP_ORIGIN_LTI"
+	export NEXT_PUBLIC_CHAT_URL="$APP_ORIGIN_CHAT"
+	export NEXT_PUBLIC_ASSESSMENT_URL="$APP_ORIGIN_ASSESSMENT_PWA"
+	export NEXT_PUBLIC_ASSESSMENT_API_URL="$APP_ORIGIN_ASSESSMENT_API"
+
+	export NEXTAUTH_URL="$APP_ORIGIN_AUTH"
+	export CORS_ALLOWED_ORIGINS="$APP_ORIGIN_PWA"
+	export AUTH_STUDENT_ALLOWED_HOSTS="$(routed_host pwa)"
+	export AUTH_LECTURER_ALLOWED_HOSTS="$(routed_host manage)"
+	export AUTH_PWA_HOSTS="$(routed_host api)"
+fi
 
 unset EDUID_CLIENT_SECRET
 
