@@ -46,9 +46,9 @@ Use host Git/gh. Run Node 24 tests and installed formatting tools in an isolated
 ## Progress
 
 - Approved scope recovered and target fetched; planner resolved design approved.
-- Implementation committed at `75e9ec85107da61e11e510a3dbdd9e63092b1137`; regression assertions at `8599bda17a3d1e488d797ceb93f78a1ceeabe180`.
-- 298 focused Node 24.21 tests passed with zero skips, including stock OCR and synthetic providers. Two strengthened existing shared-advisor/stock-result checks passed separately; runtime source did not change.
+- Implementation and corrections committed through `757537b8c7970bc21dc05f941010573b6ed2c896`.
+- All 299 focused Node 24.21 tests passed with zero skips on the corrected source, including stock OCR, synthetic main/advisor providers, paused execution, partial results and unavailable final-status evidence.
 - Formatting, manifest integrity, diff inspection and staged Gitleaks passed. Focused Opengrep reported zero findings with one partially analyzed file; two original Biome lint errors outside changed lines remain.
-- Substantive package: 987 changed lines excluding project artifacts. One coherent provider-availability change; no new module or dependency.
-- Planner approved; simplifier found no useful reduction. Independent risk/final source reviews and current-head hosted CI remain pending.
+- Substantive package: approximately 1,000 changed lines excluding project artifacts. One coherent provider-availability change; no new module or dependency.
+- Planner approved; simplifier found no useful reduction. Claude final review found pause-variable leakage into helper self-tests; the step-scoped correction and regression passed 152 affected checks, and the focused correction review passed with no findings. The risk review's availability-state validation finding was corrected and its focused verification passed. The final-review addendum passed with no findings. Hosted CI remains pending.
 - Draft PR #6721 against `v3` is open. No provider, credential, account or live variable changes performed. Caller adoption remains separate after merge.
