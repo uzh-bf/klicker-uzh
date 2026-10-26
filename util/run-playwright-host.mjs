@@ -564,10 +564,7 @@ export function parseLocalOptions(argv) {
 // The STG expectations are only meaningful against a fixture the operator
 // already started with the qualification contract. Check the loaded receipt
 // before handing the opt-in environment to Playwright.
-export function assertCodeApiStgQualificationReceipt(
-  contents,
-  { generationPattern = CODEAPI_RECEIPT_GENERATION } = {}
-) {
+export function assertCodeApiStgQualificationReceipt(contents) {
   let receipt
   try {
     receipt = JSON.parse(contents)
@@ -590,7 +587,7 @@ export function assertCodeApiStgQualificationReceipt(
   }
   if (
     typeof receipt.generation !== 'string' ||
-    !generationPattern.test(receipt.generation)
+    !CODEAPI_RECEIPT_GENERATION.test(receipt.generation)
   ) {
     fail('CodeAPI STG qualification fixture receipt generation must be a UUID')
   }
@@ -910,23 +907,20 @@ export function main(argv = process.argv.slice(2), dependencies = {}) {
 
     timer.begin('runtime')
     // An armed qualification supervisor owns its child; reconciliation would replace it.
-    if (!codeapiStgQualification)
+    if (!codeapiStgQualification) {
       selectRuntimeMode(runtime, {
         ciRuntime,
         keepSelection: printEnvironment,
         profile: runtimeProfile,
       })
-    const ensureTelemetry = codeapiStgQualification
-      ? undefined
-      : runRuntimeEnsure(runtime, [
-          'ensure',
-          runtime.repoRoot,
-          '--profile',
-          runtimeProfile,
-        ])
-    queueWaitSeconds = ensureTelemetry
-      ? queueWaitSecondsFrom(runtime.readFile, ensureTelemetry)
-      : 0
+      const ensureTelemetry = runRuntimeEnsure(runtime, [
+        'ensure',
+        runtime.repoRoot,
+        '--profile',
+        runtimeProfile,
+      ])
+      queueWaitSeconds = queueWaitSecondsFrom(runtime.readFile, ensureTelemetry)
+    }
 
     const { workspace, databaseHost, databasePort } =
       resolveHostEnvironment(runtime)
