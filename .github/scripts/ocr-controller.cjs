@@ -455,6 +455,7 @@ function checkCaller(workflow, options) {
       'mistral-api-key': '${{ secrets.MISTRAL_API_KEY }}',
       'context7-api-key': '${{ secrets.CONTEXT7_API_KEY }}',
       'github-token': '${{ github.token }}',
+      'provider-paused': '${{ vars.OCR_PROVIDER_PAUSED }}',
     })
   )
     fail('invalid_caller')

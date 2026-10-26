@@ -8,6 +8,10 @@ inputs:
   context7-api-key:
     description: Optional Context7 API key used by the OCR review tools.
     required: false
+  provider-paused:
+    description: Pause new provider requests when the trusted caller supplies true.
+    required: false
+    default: 'false'
   github-token:
     description: GitHub token used to check out trusted policy and publish the draft review.
     required: true
@@ -80,7 +84,7 @@ runs:
         OCR_ACTION_REPOSITORY: ${{ github.action_repository }}
         OCR_NO_UPDATE: '1'
         OCR_ADAPTER_PROVIDER: mistral-flash
-        OCR_PROVIDER_PAUSED: ${{ vars.OCR_PROVIDER_PAUSED }}
+        OCR_PROVIDER_PAUSED: ${{ inputs['provider-paused'] }}
       run: node "${OCR_ACTION_PATH}/../../scripts/ocr-controller.cjs" run
 
     - name: Validate draft result envelope
