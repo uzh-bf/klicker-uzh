@@ -1,6 +1,7 @@
 import { type Page } from '@playwright/test'
 import * as jose from 'jose'
 import { randomUUID } from 'node:crypto'
+import { COURSE_ID_TEST as LOCAL_COURSE_ID_TEST } from '../../packages/prisma-data/src/data/constants.js'
 import { getPrisma } from '../global-setup.js'
 import {
   CODEAPI_BROWSER_CHATBOT_ID,
@@ -646,12 +647,12 @@ export async function ensureCodeApiBrowserBots(generation: string) {
       select: { id: true },
     })
     const course = await tx.course.findUnique({
-      where: { id: COURSE_ID_TEST },
+      where: { id: LOCAL_COURSE_ID_TEST },
       select: { ownerId: true },
     })
     const enrolled = await tx.participation.findMany({
       where: {
-        courseId: COURSE_ID_TEST,
+        courseId: LOCAL_COURSE_ID_TEST,
         participantId: { in: [PARTICIPANT_ID, OTHER_PARTICIPANT_ID] },
       },
       select: { participantId: true },
@@ -667,7 +668,7 @@ export async function ensureCodeApiBrowserBots(generation: string) {
           description,
           name: 'Synthetic Python tool browser test',
           ownerId: USER_ID_TEST,
-          courseId: COURSE_ID_TEST,
+          courseId: LOCAL_COURSE_ID_TEST,
           status: 'PUBLISHED',
           modelSelection: false,
           allowedModelIds: ['auto', 'gpt-6-luna'],
@@ -698,7 +699,7 @@ export async function cleanupCodeApiBrowserBots(generation: string) {
       id: { in: codeApiBrowserBotIds },
       description: codeApiBrowserOwner(generation),
       ownerId: USER_ID_TEST,
-      courseId: COURSE_ID_TEST,
+      courseId: LOCAL_COURSE_ID_TEST,
     },
   })
 }
@@ -721,7 +722,7 @@ export async function resetCodeApiBrowserState(
   if (
     bot?.description !== codeApiBrowserOwner(generation) ||
     bot.ownerId !== USER_ID_TEST ||
-    bot.courseId !== COURSE_ID_TEST
+    bot.courseId !== LOCAL_COURSE_ID_TEST
   )
     throw new Error('Missing fixture-owned bot')
   await prisma.chatThread.deleteMany({ where: { participantId, chatbotId } })
