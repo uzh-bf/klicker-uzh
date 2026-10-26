@@ -171,7 +171,17 @@ function LiveQuizSubscriber({ id }: { id: string }) {
           }),
           connection.client.on('closed', (event) => {
             if (!active) return
-            if ([4400, 4401, 4403, 4406, 4409, 4429, 4005].includes(event.code))
+            const code =
+              event &&
+              typeof event === 'object' &&
+              'code' in event &&
+              typeof event.code === 'number'
+                ? event.code
+                : undefined
+            if (
+              code &&
+              [4400, 4401, 4403, 4406, 4409, 4429, 4005].includes(code)
+            )
               authorizationFailed = true
             recovery.invalidate()
             setStatus('failed')
