@@ -811,7 +811,7 @@ test('publishes clean stack evidence as a check without a pull-request comment',
     membership,
   })
 
-  await finalizeStackReview({
+  const inputs = {
     github,
     context: stackContext,
     prNumber: 14,
@@ -833,7 +833,20 @@ test('publishes clean stack evidence as a check without a pull-request comment',
     cleanupOutcome: 'success',
     publishOutcome: 'success',
     cleanReview: 'true',
-  })
+  }
+  for (const providerUnavailable of [
+    'provider_paused',
+    'provider_payment_required',
+  ]) {
+    await finalizeStackReview({ ...inputs, providerUnavailable })
+    assert.equal(state.createdCheckRuns.length, 0)
+    assert.equal(state.createdStatuses.at(-1).state, 'failure')
+    assert.equal(
+      state.createdStatuses.at(-1).description.includes(providerUnavailable),
+      true
+    )
+  }
+  await finalizeStackReview(inputs)
 
   assert.equal(state.createdCheckRuns.length, 1)
   assert.equal(state.createdCheckRuns[0].name, STACK_CLEAN_EVIDENCE_CHECK_NAME)
@@ -1501,10 +1514,10 @@ test('retains only the rejected stack publisher inputs for one day', () => {
     'utf8'
   )
   const stageStep = workflow.match(
-    /      - name: Stage rejected stack publisher inputs\n[\s\S]*?(?=\n      - name:)/
+    / {6}- name: Stage rejected stack publisher inputs\n[\s\S]*?(?=\n {6}- name:)/
   )?.[0]
   const uploadStep = workflow.match(
-    /      - name: Upload rejected stack publisher inputs\n[\s\S]*?(?=\n      - name:|\n  finalize_stack:)/
+    / {6}- name: Upload rejected stack publisher inputs\n[\s\S]*?(?=\n {6}- name:|\n {2}finalize_stack:)/
   )?.[0]
 
   assert.ok(stageStep)
@@ -3822,6 +3835,7 @@ test('sends strict max-reasoning topology requests and rejects invalid owners', 
     missing_cache_usage: 1,
     invalid_cache_usage: 0,
     unfinished_requests: 0,
+    provider_availability: { status: 'available', reason: null },
   })
 })
 
@@ -3915,6 +3929,7 @@ test('retains topology usage when caller validation rejects the answer', async (
       missing_cache_usage: 1,
       invalid_cache_usage: 0,
       unfinished_requests: 0,
+      provider_availability: { status: 'available', reason: null },
     })
   }
 })
@@ -3974,4 +3989,27 @@ test('latest stack drift becomes an error even when the top SHA is unchanged', (
   assert.equal(status.state, 'error')
   assert.equal(isStackReviewCommand('/final-review-stack'), true)
   assert.equal(isStackReviewCommand('/final-review-stack now'), false)
+})
+
+test('provider unavailability blocks stack clean status after either model stage', () => {
+  for (const providerUnavailable of [
+    'provider_paused',
+    'provider_payment_required',
+  ]) {
+    const status = decideStackStatus({
+      reviewedHead: 'a',
+      currentHead: 'a',
+      eligible: true,
+      codeOutcome: 'success',
+      topologyOutcome: 'success',
+      cleanupOutcome: 'success',
+      publishOutcome: 'success',
+      cleanReview: 'true',
+      cleanEvidenceDigest: 'a'.repeat(64),
+      providerUnavailable,
+    })
+    assert.equal(status.state, 'failure')
+    assert.equal(status.description.includes(providerUnavailable), true)
+    assert.equal(status.description.includes('evidence='), false)
+  }
 })

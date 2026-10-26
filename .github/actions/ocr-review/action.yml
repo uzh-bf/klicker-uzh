@@ -80,6 +80,7 @@ runs:
         OCR_ACTION_REPOSITORY: ${{ github.action_repository }}
         OCR_NO_UPDATE: '1'
         OCR_ADAPTER_PROVIDER: mistral-flash
+        OCR_PROVIDER_PAUSED: ${{ vars.OCR_PROVIDER_PAUSED }}
       run: node "${OCR_ACTION_PATH}/../../scripts/ocr-controller.cjs" run
 
     - name: Validate draft result envelope
@@ -95,7 +96,7 @@ runs:
       run: node "${OCR_ACTION_PATH}/../../scripts/ocr-controller.cjs" validate
 
     - name: Publish draft findings
-      if: ${{ !cancelled() && steps.validate.outcome == 'success' }}
+      if: ${{ !cancelled() && steps.validate.outcome == 'success' && steps.validate.outputs.publishable == 'true' }}
       uses: actions/github-script@3a2844b7e9c422d3c10d287c895573f7108da1b3 # v9.0.0
       env:
         OCR_ACTION_PATH: ${{ github.action_path }}

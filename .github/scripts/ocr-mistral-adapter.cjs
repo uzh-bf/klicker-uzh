@@ -158,6 +158,86 @@ class AdapterError extends Error {
   }
 }
 
+const PROVIDER_AVAILABILITY_REASONS = new Set([
+  'provider_paused',
+  'provider_payment_required',
+])
+
+function invalidProviderPause() {
+  return new AdapterError(
+    'invalid_provider_pause',
+    'provider pause must be true or false'
+  )
+}
+
+function parseProviderPause(value) {
+  if (
+    value === undefined ||
+    value === '' ||
+    value === 'false' ||
+    value === false
+  )
+    return false
+  if (value === 'true' || value === true) return true
+  throw invalidProviderPause()
+}
+
+function createProviderAvailability(paused = false) {
+  if (typeof paused !== 'boolean') throw invalidProviderPause()
+  let reason = paused ? 'provider_paused' : null
+  return {
+    get reason() {
+      return reason
+    },
+    markPaymentRequired() {
+      if (reason === null) reason = 'provider_payment_required'
+    },
+    snapshot() {
+      return {
+        status: reason === null ? 'available' : 'unavailable',
+        reason,
+      }
+    },
+  }
+}
+
+function providerAvailabilityError(reason) {
+  if (!PROVIDER_AVAILABILITY_REASONS.has(reason)) return null
+  const error = new AdapterError(reason, 'provider unavailable')
+  error.status = reason === 'provider_payment_required' ? 402 : 403
+  error.retryable = false
+  return error
+}
+
+function reportProviderAvailability(availability) {
+  let reason
+  try {
+    reason = availability?.reason
+  } catch {
+    return
+  }
+  if (!PROVIDER_AVAILABILITY_REASONS.has(reason)) return
+  const line = `OCR provider availability status=unavailable reason=${reason}\n`
+  try {
+    if (process.env.OCR_ADAPTER_PROGRESS_FD === '3') fs.writeSync(3, line)
+    else process.stderr.write(line)
+  } catch {
+    // Availability reporting must not replace the adapter result.
+  }
+  for (const [name, contents] of [
+    ['GITHUB_STEP_SUMMARY', line],
+    ['GITHUB_OUTPUT', `provider_unavailable=${reason}\n`],
+  ]) {
+    const file = process.env[name]
+    if (typeof file !== 'string' || file.length === 0) continue
+    try {
+      fs.appendFileSync(file, contents)
+    } catch {
+      // Output sinks are best effort and cannot change the adapter outcome.
+    }
+  }
+}
+
 function providerConfig(name = 'mistral') {
   if (!Object.hasOwn(PROVIDERS, name)) {
     throw new AdapterError('invalid_provider', 'unknown adapter provider')
@@ -803,6 +883,8 @@ function sendJson(res, status, payload) {
 }
 
 function statusForErrorCode(code) {
+  if (code === 'provider_paused') return 403
+  if (code === 'provider_payment_required') return 402
   if (
     code === 'required_tool_call_missing' ||
     code === 'truncated_completion'
@@ -1227,6 +1309,11 @@ async function startAdapter(options = {}) {
   const profile = providerConfig(options.provider)
   const apiKey = options.apiKey
   const fetchImpl = options.fetchImpl ?? requestMistral
+  const availability =
+    options.availability ??
+    createProviderAvailability(
+      parseProviderPause(options.paused ?? process.env.OCR_PROVIDER_PAUSED)
+    )
   const timeoutMs = options.timeoutMs ?? DEFAULT_TIMEOUT_MS
   const maxLifetimeMs = options.maxLifetimeMs ?? DEFAULT_MAX_LIFETIME_MS
   const now = options.now ?? (() => performance.now())
@@ -1501,6 +1588,8 @@ async function startAdapter(options = {}) {
     }, timeoutMs)
 
     try {
+      const unavailable = providerAvailabilityError(availability.reason)
+      if (unavailable) throw unavailable
       for (const counter of counters) counter.upstream_attempts += 1
       journal.write({ ...receipt, event: 'dispatch' })
       const upstream = await fetchImpl(profile.url, {
@@ -1535,6 +1624,7 @@ async function startAdapter(options = {}) {
           reason: 'unknown',
         }
         diagnostics.last_upstream_error = rejection
+        if (upstream.status === 402) availability.markPaymentRequired()
         const details = upstreamErrorDetails(
           await drain(upstream, maxResponseBytes),
           profile.name,
@@ -1542,7 +1632,12 @@ async function startAdapter(options = {}) {
         )
         rejection.code = details.code
         rejection.reason = details.reason
-        sendAdapterError(res, new AdapterError('upstream_error', 'status'))
+        sendAdapterError(
+          res,
+          upstream.status === 402
+            ? providerAvailabilityError('provider_payment_required')
+            : new AdapterError('upstream_error', 'status')
+        )
         return
       }
       const text = await readBoundedBody(upstream, maxResponseBytes)
@@ -1727,6 +1822,7 @@ async function startAdapter(options = {}) {
       schema_version: 1,
       provider: profile.name,
       model: profile.model,
+      provider_availability: availability.snapshot(),
       ...diagnostics,
       last_upstream_error: diagnostics.last_upstream_error
         ? { ...diagnostics.last_upstream_error }
@@ -1769,8 +1865,19 @@ async function startAdapter(options = {}) {
 async function callMistral(options = {}) {
   const apiKey = options.apiKey
   const fetchImpl = options.fetchImpl ?? requestMistral
+  const availability =
+    options.availability ??
+    createProviderAvailability(
+      parseProviderPause(options.paused ?? process.env.OCR_PROVIDER_PAUSED)
+    )
   const timeoutMs = options.timeoutMs ?? DEFAULT_TIMEOUT_MS
   const maxResponseBytes = options.maxResponseBytes ?? MAX_RESPONSE_BYTES
+
+  const unavailable = providerAvailabilityError(availability.reason)
+  if (unavailable) {
+    reportProviderAvailability(availability)
+    throw unavailable
+  }
 
   if (typeof apiKey !== 'string' || apiKey.length === 0) {
     throw new AdapterError('missing_api_key', 'an upstream API key is required')
@@ -1838,7 +1945,11 @@ async function callMistral(options = {}) {
         : null
     if (!response.ok) {
       failureCategory = upstreamFailure(response.status)
+      if (response.status === 402) availability.markPaymentRequired()
       await drain(response, maxResponseBytes)
+      if (response.status === 402) {
+        throw providerAvailabilityError('provider_payment_required')
+      }
       // Only the numeric status is surfaced; the upstream body is discarded.
       const failure = new AdapterError(
         'upstream_error',
@@ -1883,6 +1994,7 @@ async function callMistral(options = {}) {
     // A raw fetch error is never surfaced; a bounded status error is enough.
     throw new AdapterError('upstream_error', 'upstream request failed')
   } finally {
+    reportProviderAvailability(availability)
     journal.write({
       ...receipt,
       event: 'finished',
@@ -1895,6 +2007,7 @@ async function callMistral(options = {}) {
       writeDiagnostics({
         schema_version: 1,
         stage: options.diagnosticsStage,
+        provider_availability: availability.snapshot(),
         requests: diagnostics.requests,
         ...Object.fromEntries(
           COST_USAGE_FIELDS.map((field) => [field, diagnostics[field]])
@@ -2897,12 +3010,21 @@ async function commandRun(args) {
     throw new AdapterError('missing_command', 'run requires an executable')
   }
   const profile = providerConfig(process.env.OCR_ADAPTER_PROVIDER)
+  const availability = createProviderAvailability(
+    parseProviderPause(process.env.OCR_PROVIDER_PAUSED)
+  )
+  const unavailable = providerAvailabilityError(availability.reason)
+  if (unavailable) {
+    reportProviderAvailability(availability)
+    throw unavailable
+  }
   const apiKey = requireEnv(profile.secret)
   let executionReceipt
   let progress
   const adapter = await startAdapter({
     apiKey,
     provider: profile.name,
+    availability,
     onClose: (snapshot) => {
       executionReceipt = snapshot
     },
@@ -2994,12 +3116,18 @@ async function commandRun(args) {
       )
     }
     if (result.signal) return 1
+    if (availability.reason === 'provider_payment_required') {
+      return typeof result.code === 'number' && result.code !== 0
+        ? result.code
+        : 1
+    }
     return typeof result.code === 'number' ? result.code : 1
   } finally {
     try {
       await adapter.close()
     } finally {
       try {
+        reportProviderAvailability(availability)
         if (executionReceipt) {
           writeDiagnostics({
             ...executionReceipt,
@@ -3116,6 +3244,9 @@ module.exports = {
   translateMistralRequest,
   createHistoryStore,
   createUsageJournal,
+  createProviderAvailability,
+  parseProviderPause,
+  reportProviderAvailability,
   startAdapter,
   callMistral,
   estimateCost,

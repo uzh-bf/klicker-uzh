@@ -3305,12 +3305,23 @@ function decideStackStatus({
   publishOutcome,
   cleanReview = 'false',
   cleanEvidenceDigest = '',
+  providerUnavailable = '',
 }) {
   if (!eligible || currentHead !== reviewedHead) {
     return {
       description:
         'Stack changed; run /final-review-stack for the current snapshot',
       state: 'error',
+    }
+  }
+  if (
+    ['provider_paused', 'provider_payment_required'].includes(
+      providerUnavailable
+    )
+  ) {
+    return {
+      state: 'failure',
+      description: `Stack review unavailable: ${providerUnavailable}; review incomplete`,
     }
   }
   if (
@@ -3396,6 +3407,7 @@ async function finalizeStackReview({
   cleanupOutcome,
   publishOutcome,
   cleanReview,
+  providerUnavailable = '',
 }) {
   const ownsLatestStatus = async () => {
     const latestStatus = await latestStackStatus(github, context, headSha)
@@ -3463,6 +3475,7 @@ async function finalizeStackReview({
     reviewedHead: headSha,
     reviewMode: plan.mode,
     codeOutcome,
+    providerUnavailable,
     topologyOutcome,
     cleanupOutcome,
     publishOutcome,

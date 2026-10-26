@@ -714,6 +714,40 @@ Refresh the rates and date together when provider pricing changes.
 Summaries label the pricing date and exclude account discounts, taxes, and runner
 costs; these are estimates, not billing receipts.
 
+### Provider unavailable or paused
+
+Set the repository variable `OCR_PROVIDER_PAUSED` to `true` to pause model calls
+in new eligible OCR runs. Unset it or set it to `false` to resume on the next
+normal event. Invalid values fail closed. Changing the variable requires
+maintainer authority; neither pause nor resume triggers replay or backfill.
+Existing admission, activation and final-review authorization still apply.
+Already-running jobs use the value resolved when they started.
+
+A confirmed numeric upstream HTTP 402 latches provider unavailability for that
+review invocation. Subsequent main and advisor requests are refused locally;
+already-dispatched requests may finish and retain their usage. The adapter
+returns a fixed payment error instead of translating it into a transient 502.
+Rate limits and server errors retain their existing retry behavior. The payment
+status does not identify whether an allowance, credit balance or billing setting
+caused the rejection.
+
+Draft runs emit `OCR availability status=unavailable` and preserve valid partial
+findings. An early rejection can leave no OCR result; coverage and cost remain
+unknown where receipts are missing. Successful handling of this advisory does
+not establish a passed review. Publication still requires a validated result for
+the frozen head and an open draft PR. Malformed results and unrelated execution
+failures remain failures.
+
+Individual and stack final reviews remain blocking while unavailable. Their
+fixed reason appears in logs, summaries and the authoritative final status.
+Payment rejection prevents later resume attempts, stack ranges and topology
+calls through the existing failed-stage dependencies. No clean evidence is
+published. Models, maximum reasoning, token budgets and accounting are unchanged.
+
+The shared action supplies the draft pause interface. Existing callers need an
+immutable pin to a release containing this behavior after it merges; source
+publication alone does not activate it in pinned adopters.
+
 To investigate scheduling delays, read the existing workflow `created_at` and
 `run_started_at`, then each job's `created_at`, `started_at` and `completed_at`
 through `gh api`. Job-created-to-start time is pending time; the timestamps alone
