@@ -314,7 +314,15 @@ prepare_runtime() {
 # The CI-parity Playwright runtime builds the plan's production test apps
 # instead of dev dependencies; the plan path comes from PLAYWRIGHT_RUNTIME_PLAN.
 prepare_playwright_ci_runtime() {
+  local app
+
   ensure_dependencies
+  # A production build type-checks .next/dev/types as well, and the dev
+  # servers' generated validator there duplicates the build's own. CI builds
+  # from a clean checkout, so drop the dev output first.
+  for app in "${NEXT_APPS[@]}"; do
+    rm -rf "$ROOT/apps/$app/.next/dev"
+  done
   # Put the installed binaries on PATH directly to avoid pnpm wrapper children.
   (cd "$ROOT" && PATH="$ROOT/node_modules/.bin:$PATH" node ./util/playwright-profile-runtime.mjs build)
   wait_for_preparation_children

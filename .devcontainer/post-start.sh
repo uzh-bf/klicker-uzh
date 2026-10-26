@@ -232,6 +232,13 @@ if [ "$DEV_TURBO_TASK" = start:test ]; then
     const filters = new Set(plan.bindings.turboFilters)
     console.log(process.argv.slice(2).filter((app) => filters.has(`--filter=@klicker-uzh/${app}`)).join(" "))
   ' "$PLAYWRIGHT_RUNTIME_PLAN" ${READINESS_APPS})"
+elif [ "$DEV_TURBO_TASK" = dev:test ]; then
+  # Turbo skips packages without a dev:test script, so only probe the apps
+  # that define one.
+  READINESS_APPS="$(node -e '
+    const { readFileSync } = require("node:fs")
+    console.log(process.argv.slice(1).filter((app) => JSON.parse(readFileSync(`apps/${app}/package.json`, "utf8")).scripts?.["dev:test"]).join(" "))
+  ' ${READINESS_APPS})"
 fi
 export READINESS_APPS
 if profile_wants klicker-workers; then
