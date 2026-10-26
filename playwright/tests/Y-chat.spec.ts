@@ -4911,7 +4911,7 @@ test.describe('CodeAPI real-route fixture', () => {
     expect(Array.isArray(ownerBody)).toBe(true)
     expect((ownerBody as unknown[]).length).toBeGreaterThan(0)
 
-    const otherContext = await browser.newContext()
+    const otherContext = await browser.newContext({ ignoreHTTPSErrors: true })
     try {
       const otherPage = await otherContext.newPage()
       await setParticipantToken(otherPage, OTHER_PARTICIPANT_ID)
