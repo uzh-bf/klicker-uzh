@@ -883,6 +883,16 @@ const messages = {
           unavailable:
             'Publish the quiz (IRT v1) to start a dry run. Dry runs use the current publication.',
           form: {
+            sameStudents:
+              'Same simulated students as run #{number}. Only the stop settings can change, so the runs compare fairly.',
+            newStudents: 'Use new students',
+            EVENHint:
+              'Students are spread evenly over these levels: an overview of the whole scale.',
+            FIXEDHint:
+              'All students have this level: a close look at one spot of the scale.',
+            SAME_LEVELHint: 'Each student is equally good in every competence.',
+            INDEPENDENTHint:
+              'Each competence gets its own random level, like an uneven real profile.',
             title: 'New dry run',
             students: 'Students',
             studentsHint: 'Up to {max} simulated students per run.',
@@ -909,10 +919,6 @@ const messages = {
             confidence: 'Confidence',
             minQuestionsPerLeaf: 'Minimum per subcompetence',
             minInvalid: 'Choose a number between 0 and the maximum questions.',
-            seed: 'Seed (optional)',
-            seedHint:
-              'Empty: new random students. Paste a seed to repeat a run.',
-            seedInvalid: 'A seed has 64 characters 0-9 and a-f.',
             start: 'Start dry run',
           },
           result: {
@@ -943,7 +949,7 @@ const messages = {
             showStudents: 'Students',
             hideStudents: 'Hide students',
             export: 'CSV',
-            runAgain: 'Run again (same students)',
+            sameStudents: 'Same students, new settings',
           },
           students: {
             student: 'Student',

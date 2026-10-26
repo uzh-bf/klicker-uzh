@@ -899,6 +899,16 @@ const messages = {
           unavailable:
             'Veröffentliche das Quiz (IRT v1), um einen Testlauf zu starten. Testläufe verwenden die aktuelle Veröffentlichung.',
           form: {
+            sameStudents:
+              'Gleiche simulierte Studierende wie Testlauf #{number}. Nur die Stoppeinstellungen sind änderbar, damit der Vergleich fair ist.',
+            newStudents: 'Neue Studierende',
+            EVENHint:
+              'Die Studierenden verteilen sich gleichmässig auf diese Niveaus: Überblick über die ganze Skala.',
+            FIXEDHint:
+              'Alle Studierenden haben dieses Niveau: genauer Blick auf eine Stelle der Skala.',
+            SAME_LEVELHint: 'Jede Person ist in allen Kompetenzen gleich gut.',
+            INDEPENDENTHint:
+              'Jede Kompetenz erhält ein eigenes zufälliges Niveau, wie ein ungleiches echtes Profil.',
             title: 'Neuer Testlauf',
             students: 'Studierende',
             studentsHint: 'Bis zu {max} simulierte Studierende pro Testlauf.',
@@ -927,10 +937,6 @@ const messages = {
             confidence: 'Konfidenz',
             minQuestionsPerLeaf: 'Minimum pro Teilkompetenz',
             minInvalid: 'Wähle eine Zahl zwischen 0 und den maximalen Fragen.',
-            seed: 'Seed (optional)',
-            seedHint:
-              'Leer: neue zufällige Studierende. Seed einfügen, um einen Testlauf zu wiederholen.',
-            seedInvalid: 'Ein Seed hat 64 Zeichen 0-9 und a-f.',
             start: 'Testlauf starten',
           },
           result: {
@@ -961,7 +967,7 @@ const messages = {
             showStudents: 'Studierende',
             hideStudents: 'Studierende ausblenden',
             export: 'CSV',
-            runAgain: 'Erneut ausführen (gleiche Studierende)',
+            sameStudents: 'Gleiche Studierende, neue Einstellungen',
           },
           students: {
             student: 'Person',

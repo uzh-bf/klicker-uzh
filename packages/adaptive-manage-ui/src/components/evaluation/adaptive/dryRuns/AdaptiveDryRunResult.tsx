@@ -43,14 +43,12 @@ function AdaptiveDryRunResult({
   practiceQuizId,
   run,
   workspace,
-  onRunAgain,
-  rerunning,
+  onSameStudents,
 }: {
   practiceQuizId: string
   run: DryRun
   workspace: DryRunWorkspace
-  onRunAgain: (run: DryRun) => void
-  rerunning: boolean
+  onSameStudents: (run: DryRun) => void
 }) {
   const t = useTranslations()
   const formatter = useFormatter()
@@ -156,13 +154,12 @@ function AdaptiveDryRunResult({
             </Button.Label>
           </Button>
           <Button
-            onClick={() => onRunAgain(run)}
-            loading={rerunning}
-            data={{ cy: 'adaptive-dry-run-run-again' }}
+            onClick={() => onSameStudents(run)}
+            data={{ cy: 'adaptive-dry-run-same-students' }}
           >
             <Button.Icon icon={faRotateRight} />
             <Button.Label>
-              {t('manage.evaluation.adaptive.dryRuns.result.runAgain')}
+              {t('manage.evaluation.adaptive.dryRuns.result.sameStudents')}
             </Button.Label>
           </Button>
         </div>

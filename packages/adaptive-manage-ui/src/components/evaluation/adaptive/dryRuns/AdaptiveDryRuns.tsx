@@ -34,6 +34,7 @@ function AdaptiveDryRuns({ practiceQuizId }: { practiceQuizId: string }) {
   const settingsText = useDryRunSettingsText()
   const [selectedId, setSelectedId] = useState<string | null>(null)
   const [latest, setLatest] = useState<DryRun | null>(null)
+  const [sameStudentsAs, setSameStudentsAs] = useState<DryRun | null>(null)
   const [compareIds, setCompareIds] = useState<string[]>([])
   const [comparing, setComparing] = useState(false)
   const { data, loading, error, refetch } = useQuery(
@@ -72,22 +73,6 @@ function AdaptiveDryRuns({ practiceQuizId }: { practiceQuizId: string }) {
     }
     await refetch()
   }
-  const runAgain = (run: DryRun) =>
-    start({
-      students: run.spec.students,
-      noiseProbability: run.spec.noiseProbability,
-      fromLevelId:
-        run.spec.trueLevels.kind === 'FIXED'
-          ? run.spec.trueLevels.levelId
-          : run.spec.trueLevels.fromLevelId,
-      toLevelId:
-        run.spec.trueLevels.kind === 'FIXED'
-          ? run.spec.trueLevels.levelId
-          : run.spec.trueLevels.toLevelId,
-      competences: run.spec.competences,
-      seed: run.spec.seed,
-      ...run.effectiveSettings,
-    })
   const compared = compareIds
     .map((id) => runs.find((run) => run.id === id))
     .filter((run): run is DryRun => Boolean(run))
@@ -112,11 +97,17 @@ function AdaptiveDryRuns({ practiceQuizId }: { practiceQuizId: string }) {
       </div>
 
       {workspace.available ? (
-        <AdaptiveDryRunForm
-          workspace={workspace}
-          loading={runState.loading}
-          onRun={start}
-        />
+        <div id="adaptive-dry-run-form-anchor" className="scroll-mt-20">
+          <AdaptiveDryRunForm
+            // Remount so the fields start from the chosen run (or the quiz).
+            key={sameStudentsAs?.id ?? 'new'}
+            workspace={workspace}
+            loading={runState.loading}
+            onRun={start}
+            sameStudentsAs={sameStudentsAs}
+            onNewStudents={() => setSameStudentsAs(null)}
+          />
+        </div>
       ) : (
         <UserNotification
           type="info"
@@ -133,8 +124,12 @@ function AdaptiveDryRuns({ practiceQuizId }: { practiceQuizId: string }) {
           practiceQuizId={practiceQuizId}
           run={selected}
           workspace={workspace}
-          onRunAgain={runAgain}
-          rerunning={runState.loading}
+          onSameStudents={(run) => {
+            setSameStudentsAs(run)
+            document
+              .getElementById('adaptive-dry-run-form-anchor')
+              ?.scrollIntoView({ behavior: 'smooth', block: 'start' })
+          }}
         />
       ) : null}
 
