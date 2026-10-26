@@ -1,5 +1,6 @@
 const assert = require('node:assert/strict')
 const fs = require('node:fs')
+const os = require('node:os')
 const path = require('node:path')
 const test = require('node:test')
 const YAML = require('yaml')
@@ -1382,9 +1383,11 @@ test('trusted priority envelopes are exact acyclic derivatives and required wrap
     assert.equal(child.concurrency, undefined)
     assert.equal(child.jobs['priority-execution'], undefined)
     assert.equal(child.jobs['priority-status'], undefined)
-    assert.equal(
+    assert.match(
       caller.jobs['priority-execution'].uses,
-      `uzh-bf/klicker-uzh/.github/workflows/${file.replace('.yml', '-execution.yml')}@aaf8d41393f9c5e51e0076827c80953afacb8c4a`
+      new RegExp(
+        `^uzh-bf/klicker-uzh/\\.github/workflows/${file.replace('.yml', '-execution\\.yml')}@[a-f0-9]{40}$`
+      )
     )
     const report = caller.jobs['priority-status']
     assert.match(report.if, /always\(\)/)
@@ -1421,4 +1424,44 @@ test('trusted priority envelopes are exact acyclic derivatives and required wrap
       '${{ jobs.' + terminal + '.outputs.required_result }}'
     )
   }
+})
+
+test('regenerated executors cannot hide stale or mutable published execution refs', (t) => {
+  const { generate, TERMINALS } = require('./priority-ci-workflows.cjs')
+  const fixture = fs.mkdtempSync(path.join(os.tmpdir(), 'priority-parity-'))
+  t.after(() => fs.rmSync(fixture, { recursive: true, force: true }))
+  const directory = path.join(fixture, '.github/workflows')
+  fs.mkdirSync(directory, { recursive: true })
+  const pinned = new Map()
+  for (const file of Object.keys(TERMINALS)) {
+    for (const name of [file, file.replace('.yml', '-execution.yml')]) {
+      const source = fs.readFileSync(
+        path.join(root, '.github/workflows', name),
+        'utf8'
+      )
+      fs.writeFileSync(path.join(directory, name), source)
+      if (name.endsWith('-execution.yml')) pinned.set(name, source)
+    }
+  }
+  const readPinned = (_root, _ref, file) => pinned.get(file)
+  assert.doesNotThrow(() => generate(fixture, false, readPinned))
+
+  const file = path.join(directory, 'test-unit.yml')
+  const workflow = YAML.parse(fs.readFileSync(file, 'utf8'))
+  workflow.jobs['test-unit-status'].steps.push({ run: 'exit 1' })
+  fs.writeFileSync(file, YAML.stringify(workflow))
+  generate(fixture, true)
+  assert.throws(
+    () => generate(fixture, false, readPinned),
+    /pinned priority workflow differs: test-unit.yml/
+  )
+
+  workflow.jobs['priority-execution'].uses =
+    'uzh-bf/klicker-uzh/.github/workflows/test-unit-execution.yml@v3'
+  fs.writeFileSync(file, YAML.stringify(workflow))
+  generate(fixture, true)
+  assert.throws(
+    () => generate(fixture, false, readPinned),
+    /priority workflow requires an exact executor SHA: test-unit.yml/
+  )
 })

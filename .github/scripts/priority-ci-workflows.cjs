@@ -2,6 +2,7 @@ const fs = require('node:fs')
 const path = require('node:path')
 const YAML = require('yaml')
 const { isDeepStrictEqual } = require('node:util')
+const { execFileSync } = require('node:child_process')
 const REQUEST =
   "vars.PRIORITY_CI_ENABLED == 'true' && github.event_name == 'pull_request' && github.event.pull_request.state == 'open' && github.event.pull_request.draft == false && github.event.repository.private == false && github.event.pull_request.head.repo.full_name == github.repository && github.event.pull_request.user.type != 'Bot' && contains(github.event.pull_request.labels.*.name, 'ci:priority') && (github.event.action != 'labeled' || github.event.label.name == 'ci:priority')"
 const TERMINALS = {
@@ -71,7 +72,37 @@ function execution(source, terminal) {
     )
   )
 }
-function generate(root, write = false) {
+function readPinnedWorkflow(root, ref, file) {
+  const options = {
+    cwd: root,
+    encoding: 'utf8',
+    env: { ...process.env, GODEBUG: 'netdns=go' },
+    stdio: ['ignore', 'pipe', 'ignore'],
+    timeout: 60_000,
+    maxBuffer: 1024 * 1024,
+  }
+  try {
+    try {
+      execFileSync('git', ['cat-file', '-e', `${ref}^{commit}`], options)
+    } catch {
+      // A published executor can sit outside the current squash history.
+      // Fetch its exact object without making a complete checkout shallow.
+      execFileSync(
+        'git',
+        ['fetch', '--no-tags', '--no-write-fetch-head', 'origin', ref],
+        options
+      )
+    }
+    return execFileSync(
+      'git',
+      ['show', `${ref}:.github/workflows/${file}`],
+      options
+    )
+  } catch {
+    throw new Error('pinned priority workflow is unavailable: ' + file)
+  }
+}
+function generate(root, write = false, readPinned = readPinnedWorkflow) {
   for (const [file, terminal] of Object.entries(TERMINALS)) {
     const source = fs.readFileSync(
       path.join(root, '.github/workflows', file),
@@ -84,13 +115,28 @@ function generate(root, write = false) {
     )
     const expected = execution(source, terminal)
     if (write) fs.writeFileSync(target, expected)
-    else if (
-      !isDeepStrictEqual(
-        YAML.parse(fs.readFileSync(target, 'utf8')),
-        YAML.parse(expected)
+    else {
+      const parsed = YAML.parse(expected)
+      if (
+        !isDeepStrictEqual(YAML.parse(fs.readFileSync(target, 'utf8')), parsed)
       )
-    )
-      throw new Error('priority workflow parity is stale: ' + file)
+        throw new Error('priority workflow parity is stale: ' + file)
+      const uses = YAML.parse(source).jobs['priority-execution']?.uses
+      const executor = file.replace('.yml', '-execution.yml')
+      const prefix = `uzh-bf/klicker-uzh/.github/workflows/${executor}@`
+      const ref =
+        typeof uses === 'string' && uses.startsWith(prefix)
+          ? uses.slice(prefix.length)
+          : ''
+      if (!/^[a-f0-9]{40}$/.test(ref))
+        throw new Error(
+          'priority workflow requires an exact executor SHA: ' + file
+        )
+      if (
+        !isDeepStrictEqual(YAML.parse(readPinned(root, ref, executor)), parsed)
+      )
+        throw new Error('pinned priority workflow differs: ' + file)
+    }
   }
 }
 if (require.main === module)

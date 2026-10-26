@@ -312,3 +312,38 @@ optional `PRIORITY_CI_CANARY_HEAD_SHA`, `PRIORITY_CI_CANARY_BASE_SHA`,
 `PRIORITY_CI_EXPIRES_AT`; no operational values are supplied by source. Tests
 cover mismatch/expiry and current identity. Focused correction portfolio95PASS.
 No livechanges. Same logical integrated review receives one correction pass.
+
+### Pinned executor correction reassessment
+
+The correction review confirmed all three original fixes and found a remaining
+invariant: regenerating an in-tree executor must not hide a stale caller pin.
+Main reproduced that failure and added the check at the existing parity seam.
+Every caller must name its exact corresponding executor and a full commit SHA;
+the published Git blob must parse equal to the generated expected workflow.
+Unavailable commits are fetched by exact SHA from the existing origin without
+shallowing the checkout; unavailable content and mismatches fail closed.
+The existing contract suite now tests a regenerated local definition with stale
+published content and rejects a mutable ref, instead of duplicating a pin literal.
+
+Scope/risk reassessment: this correction enforces the approved parity contract
+without changing execution jobs, runner selection, credentials or live settings.
+It adds only bounded Git-object retrieval on the existing remote when necessary.
+The main session owns the narrow correction and its affected verification; the
+one integrated correction review is consumed, with no automatic extra reviewer
+or claim that the new correction has independent acceptance. Current-head hosted
+CI and ordinary feedback remain pending. No paid qualification follows.
+
+### Current source verification
+
+The published candidate's hosted check exposed three stale workflow assertions.
+The affected tests now evaluate readiness, label and ordinary-push cancellation
+behavior, retain the unit selector dependency, and include the label-reading
+permission. All 131 affected contracts pass in disposable Node 24 containers,
+including the real Git and artifact fixtures; the initial artifact-fixture run
+lacked zip, and the same fixture passed with the existing tool mounted.
+Scoped Opengrep over the four correction files reports no findings or errors.
+Formatting and diff inspection pass. Earlier unaffected verification is reused.
+The correction is ready for its ordinary task-branch commit and push; exact-head
+hosted CI and ordinary feedback remain pending. The integrated correction review
+is consumed, and the new pin-invariant correction has main-session verification
+without independent re-review. No live routing or paid validation is enabled.
