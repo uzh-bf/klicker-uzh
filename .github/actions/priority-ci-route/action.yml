@@ -12,13 +12,13 @@ outputs:
     description: The admitted attempt, checked again by every paid consumer
   runner_x64:
     value: ${{ steps.route.outputs.runner_x64 }}
-    description: Fixed x64 suite runner or ordinary hosted fallback
+    description: Fixed x64 suite runner, or empty to retain the consumer's hosted selector
   runner_build:
     value: ${{ steps.route.outputs.runner_build }}
-    description: Fixed x64 build runner or ordinary hosted fallback
+    description: Fixed x64 build runner, or empty to retain the consumer's hosted selector
   runner_arm:
     value: ${{ steps.route.outputs.runner_arm }}
-    description: Fixed ARM image runner or ordinary hosted fallback
+    description: Fixed ARM image runner, or empty to retain the consumer's hosted selector
 runs:
   using: composite
   steps:

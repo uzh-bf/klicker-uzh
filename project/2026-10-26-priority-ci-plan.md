@@ -160,7 +160,8 @@ submission after their terminality; an earlier nonterminal match denies too.
 The workflow-level serialized marker group makes this election sequential.
 Router returns `admitted`, `run_label_event`, `run_attempt`, exact head/base/run/
 workflow IDs, fixed x64 runner selectors and ARM image selector; disabled/denied
-returns hosted selectors and label-only `run_label_event=false`. Normal events
+returns empty selectors for each consumer's canonical hosted fallback and
+label-only `run_label_event=false`. Normal events
 still execute ordinary validation on denial. API errors never print details.
 
 Every new paid consumer requires `provider != warpbuild || admittedAttempt ==
@@ -347,3 +348,16 @@ The correction is ready for its ordinary task-branch commit and push; exact-head
 hosted CI and ordinary feedback remain pending. The integrated correction review
 is consumed, and the new pin-invariant correction has main-session verification
 without independent re-review. No live routing or paid validation is enabled.
+
+### Denied selector compatibility correction
+
+The natural ordinary review completed with partial file coverage. Main verified
+one compatibility defect: a denied priority result supplied `ubuntu-latest` and
+overrode the translation workflow's existing `ubuntu-24.04` fallback. The bounded
+reassessment limits this correction to empty denied runner outputs, preserving
+each consumer's own hosted selector, and its existing parsed-workflow regression.
+No job definition, admission rule, runner access or paid timeout changes.
+The regression failed on the actual translation expression before the fix; all
+39 affected admission and event contracts pass after it. Other findings receive
+source-based dispositions, with optional refactors deferred. No extra reviewer
+or review retry is started; partial coverage remains an explicit limitation.

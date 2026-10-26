@@ -17,9 +17,10 @@ function ordinary() {
     admitted: 'false',
     run_label_event: 'false',
     run_attempt: '',
-    runner_x64: 'ubuntu-latest',
-    runner_build: 'ubuntu-latest',
-    runner_arm: 'ubuntu-24.04-arm',
+    // Each consumer owns its pinned hosted selector when admission is denied.
+    runner_x64: '',
+    runner_build: '',
+    runner_arm: '',
   }
 }
 

@@ -226,6 +226,7 @@ test('every label-only event is noncancelling and isolated from ordinary validat
 })
 
 test('priority consumers reject stale paid attempts and preserve ordinary hosted routing', () => {
+  const { ordinary } = require('../actions/priority-ci-route/route.cjs')
   for (const [file, consumers] of Object.entries(PRIORITY_CONSUMERS)) {
     const workflow = readWorkflow(file)
     for (const id of consumers) {
@@ -277,6 +278,19 @@ test('priority consumers reject stale paid attempts and preserve ordinary hosted
           `${file}/${id} hosted fallback`
         )
       }
+      Object.assign(outputs, ordinary())
+      context.run_attempt = 1
+      const hosted =
+        id === 'intl-production-smoke'
+          ? 'ubuntu-24.04'
+          : file === 'v3_images-stg.yml' && id !== 'build-amd'
+            ? 'ubuntu-24.04-arm'
+            : 'ubuntu-latest'
+      assert.equal(
+        evaluateGate(job['runs-on'], context, needs),
+        hosted,
+        `${file}/${id} preserves its hosted selector after denial`
+      )
       assert.equal(job.strategy?.['max-parallel'], undefined)
       assert.ok(
         Array.isArray(job.needs)
