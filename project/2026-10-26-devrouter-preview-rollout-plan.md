@@ -65,3 +65,6 @@ Consumer source packaging preserves the already approved pilot branch:51paths an
 
 
 Source candidate is available as [draft PR6720](https://github.com/uzh-bf/klicker-uzh/pull/6720), targeting v3-ai. Hosted validation reproduced a toolchain contract failure in the fixture Dockerfile's dynamic pnpm expression. Aligning it with the application's existing exact pnpm pin and native bootstrap changes the focused pin suite from4/5to5/5passing. The existing check continues to guard repository-wide version agreement; no test waiver or new dependency is added. Native admission remains disabled.
+
+
+Local fixture image verification built the corrected source as ARM64, then reproduced a non-root dependency check failure: pnpm's workspace-state file was root-owned and unreadable. An ephemeral, network-disabled experiment changed ownership of only that state file and all7bootstrap regressions then passed as the fixture user. Keep verifyDepsBeforeRun:error unchanged; assign this existing file to the fixture user in the image and rebuild before claiming runnable tooling. This proves local image behavior only, not Northflank architecture/TLS/database privileges.

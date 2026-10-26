@@ -31,7 +31,8 @@ RUN DATABASE_URL="postgresql://fixtures@127.0.0.1:5432/fixtures" \
 RUN addgroup --system --gid 1001 fixtures \
  && adduser --system --uid 1001 --ingroup fixtures fixtures \
  && mkdir -p /tmp/fixtures \
- && chown fixtures:fixtures /tmp/fixtures
+ && chown fixtures:fixtures /tmp/fixtures \
+      /app/node_modules/.pnpm-workspace-state-v1.json
 
 ENV HOME=/tmp/fixtures \
     TMPDIR=/tmp/fixtures
