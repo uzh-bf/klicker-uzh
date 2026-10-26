@@ -87,7 +87,11 @@ function fixture(t, native = false, options = {}) {
     '.prettierignore',
     'project/\nnode_modules/\nbin/\ntmp/\n'
   )
-  writeFixtureFile(root, '.gitattributes', '* text=auto\n')
+  writeFixtureFile(
+    root,
+    '.gitattributes',
+    '* text=auto\n*.md whitespace=-blank-at-eol\n'
+  )
   writeFixtureFile(root, '.gitleaks.toml', '')
   writeFixtureFile(root, 'pnpm-lock.yaml', '')
   writeFixtureFile(
@@ -371,10 +375,26 @@ test('staged markdown validates exact index content without the runtime', async 
 
 test('staged markdown checks the index instead of a clean working copy', async (t) => {
   const f = fixture(t)
-  stageFixtureFile(f, 'docs/diverged.md', '# Diverged\n\ntrailing  \n')
+  stageFixtureFile(f, 'docs/diverged.md', '# Diverged\n\n\n')
   writeFixtureFile(f.root, 'docs/diverged.md', '# Clean worktree\n')
 
-  await assert.rejects(runHook('check', f.root, f.env), /trailing whitespace/)
+  await assert.rejects(runHook('check', f.root, f.env), /blank line at EOF/)
+  assert.deepEqual(f.calls(), [])
+})
+
+test('Markdown hard breaks pass staged and outgoing validation', async (t) => {
+  const f = fixture(t)
+  const source = '# Guide\n\nline one  \nline two\n'
+  const oldSha = f.git('rev-parse', 'HEAD').trim()
+  stageFixtureFile(f, 'docs/hard-break.md', source)
+  await runHook('check', f.root, f.env)
+  f.git('commit', '-q', '-m', 'docs: add hard break')
+  const newSha = f.git('rev-parse', 'HEAD').trim()
+  const refsFile = writeRefs(
+    f,
+    pushRecord('refs/heads/docs/hard-break', newSha, oldSha)
+  )
+  await runHook('push', f.root, f.env, [refsFile, 'origin'])
   assert.deepEqual(f.calls(), [])
 })
 
@@ -559,6 +579,35 @@ test('unsafe staged modes and policy drift retain full validation', async (t) =>
     await runHook('check', f.root, f.env)
     assert.equal(f.calls().length, 1)
   })
+})
+
+test('removing executable mode retains full staged and outgoing validation', async (t) => {
+  for (const mode of ['check', 'push']) {
+    await t.test(mode, async (t) => {
+      const f = fixture(t)
+      stageFixtureFile(f, 'docs/mode.md', '# Mode change\n')
+      fs.chmodSync(path.join(f.root, 'docs/mode.md'), 0o755)
+      f.git('add', '--', 'docs/mode.md')
+      f.git('commit', '-q', '-m', 'docs: add executable source')
+      const oldSha = f.git('rev-parse', 'HEAD').trim()
+      fs.chmodSync(path.join(f.root, 'docs/mode.md'), 0o644)
+      f.git('add', '--', 'docs/mode.md')
+      const args = []
+      if (mode === 'push') {
+        f.git('commit', '-q', '-m', 'docs: remove executable mode')
+        const newSha = f.git('rev-parse', 'HEAD').trim()
+        args.push(
+          writeRefs(
+            f,
+            pushRecord('refs/heads/docs/mode-change', newSha, oldSha)
+          ),
+          'origin'
+        )
+      }
+      await runHook(mode, f.root, f.env, args)
+      assert.equal(f.calls().length, 1)
+    })
+  }
 })
 
 test('outgoing markdown validates every commit without the runtime', async (t) => {

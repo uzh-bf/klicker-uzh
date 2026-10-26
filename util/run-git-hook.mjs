@@ -314,6 +314,11 @@ function exactIndexDocVersions(root, environment, records) {
     const entry = indexEntry(root, environment, record.paths[0])
     if (!entry) throw new Error('Missing staged Git object')
     assertRegularBlob(entry, record.paths[0])
+    if (record.kind === 'M') {
+      const previous = treeEntry(root, environment, 'HEAD', record.paths[0])
+      if (!previous) throw new Error('Missing previous Git object')
+      assertRegularBlob(previous, record.paths[0])
+    }
     return {
       path: record.paths[0],
       label: 'index:' + record.paths[0],
@@ -498,6 +503,16 @@ function outgoingDocVersions(root, environment, transitions) {
       if (!entry) return null
       try {
         assertRegularBlob(entry, record.paths[0])
+        if (record.kind === 'M') {
+          const previous = treeEntry(
+            root,
+            environment,
+            transition.parent,
+            record.paths[0]
+          )
+          if (!previous) return null
+          assertRegularBlob(previous, record.paths[0])
+        }
       } catch {
         return null
       }

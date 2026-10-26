@@ -76,8 +76,16 @@ runtime command; they do not prove the full application check/build path.
 
 The user approved the exact local `db` runtime and dotfiles default-branch push
 after the initial automatic-review rejection. The shared package is published.
-Runtime bootstrap, mandatory full validation, committed-source reviews and draft
-delivery of this package are pending. No mandatory hook is waived.
+The first candidates passed full pre-commit and pre-push gates and are published
+in the task draft. The runtime was stopped and verified, and a real alternate-index
+documentation edit passed without it. No mandatory hook is waived.
+
+The final correction preserves Markdown hard breaks through the existing
+`.gitattributes` policy, clarifies qualifying documentation pushes in the setup
+guide, and checks previous as well as resulting file modes. A reproduced mode-bit
+removal now retains full staged and outgoing validation. The focused suite passes
+78 checks. Mandatory checks and the same final reviewer's correction pass remain
+pending for this corrected candidate.
 
 Execution mode is standard. Main owns runtime verification, integration and
 publication. The planned simplifier and risk reviewer inspect the committed
