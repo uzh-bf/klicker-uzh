@@ -13,6 +13,7 @@ import {
   assertElementGenerationCostAccounted,
   createElementGenerationBuildWithSpend,
   releaseUnclaimedElementGenerationSpend,
+  reserveElementGenerationRetrySpend,
 } from './elementGenerationAccounting.js'
 import { completeElementGeneration } from './elementGenerationCompletion.js'
 import { dispatchCostAccountedElementGeneration } from './elementGenerationDispatch.js'
@@ -78,7 +79,18 @@ const REVIEW_DISPATCH_RECOVERY_MILLISECONDS = 15_000
 // accepts it is live. Raise this constant once that release is deployed and
 // verified in the target environment; lower it again if the worker is rolled
 // back to a build without the field.
-export const QUESTION_PARTIAL_RESULTS_ENABLED = false
+//
+// Raised on 2026-09-22 after verifying the deployed staging question worker
+// (kg-content-generation ea3fa3fa, which contains the structured-slot-failure
+// release 59aad81): it accepts the field and reports the partial bank together
+// with one reason per unsupplied slot. Production is unaffected, because the
+// element-generation services are not part of v3; verify the production worker
+// release before the feature is promoted there.
+//
+// The flag is part of a build's canonical start-manifest hash, so raise it
+// while no build sits between dispatch and plan synchronization; such a build
+// would recompute a hash its worker never saw.
+export const QUESTION_PARTIAL_RESULTS_ENABLED = true
 
 const TERMINAL_STATUSES = new Set<DB.ElementGenerationBuildStatus>([
   DB.ElementGenerationBuildStatus.COMPLETED,
@@ -419,6 +431,12 @@ async function dispatchPreparingQuestionBuild(
         ),
     })
 
+  // A question retry reserves under the shared QUESTION_GENERATION spend
+  // class, which cannot identify a retry on its own. The reservation therefore
+  // marks the build in its stage until this dispatch consumes the mark and
+  // counts the retry.
+  const retryDispatch = build.stage === 'retry_dispatching'
+
   const updated = await ctx.prisma.elementGenerationBuild.updateMany({
     where: {
       id: build.id,
@@ -433,6 +451,7 @@ async function dispatchPreparingQuestionBuild(
       status: DB.ElementGenerationBuildStatus.DESIGNING,
       stage: 'design',
       startedAt: new Date(),
+      ...(retryDispatch ? { retryCount: { increment: 1 } } : {}),
     },
   })
   if (updated.count !== 1) {
@@ -540,6 +559,46 @@ export async function startQuestionGeneration(
   )
 }
 
+export async function retryQuestionGeneration(
+  buildId: string,
+  ctx: ContextWithUser
+) {
+  await assertQuestionGenerationPreviewAccess(ctx)
+  const runtime = requireRuntime(ctx)
+  const build = await findOwnedBuild(buildId, ctx)
+  assertElementGenerationCostAccounted(build)
+  if (
+    build.status !== DB.ElementGenerationBuildStatus.FAILED ||
+    build.errorRetryable !== true
+  ) {
+    return serviceError(
+      'INVALID_STAGE',
+      'Only a retryable failed question build can be retried'
+    )
+  }
+  const dispatchAttemptId = randomUUID()
+  const claimed = await reserveElementGenerationRetrySpend(ctx.prisma, {
+    buildId: build.id,
+    ownerId: ctx.user.sub,
+    dispatchAttemptId,
+    spendClass: DB.KBGraphQuotaSpendClass.QUESTION_GENERATION,
+    elementTypes: QUESTION_ELEMENT_TYPES,
+    expectedStatus: DB.ElementGenerationBuildStatus.FAILED,
+    clearCompletedAt: true,
+  })
+  if (!claimed) {
+    return serviceError(
+      'CONCURRENT_MODIFICATION',
+      'Question build was changed by another request'
+    )
+  }
+  return resumePreparingQuestionBuild(
+    await findOwnedBuild(build.id, ctx),
+    runtime,
+    ctx
+  )
+}
+
 async function synchronizeLeasedBuild(
   build: Awaited<ReturnType<typeof findOwnedBuild>>,
   runtime: QuestionGenerationRuntime,
@@ -613,7 +672,9 @@ async function synchronizeLeasedBuild(
             stage: 'failed',
             errorCode: `WORKFLOW_${run.status}`,
             errorMessage: 'Question-generation workflow did not complete',
-            errorRetryable: false,
+            errorRetryable: failedReasons
+              ? slotFailuresAreRetryable(failedReasons.slotFailures)
+              : false,
             completedAt: new Date(),
             ...(failedReasons
               ? {
@@ -747,7 +808,7 @@ async function synchronizeLeasedBuild(
             stage: 'failed',
             errorCode: 'WORKFLOW_FAILED',
             errorMessage: 'Question-generation workflow reported a failure',
-            errorRetryable: false,
+            errorRetryable: slotFailuresAreRetryable(result.slotFailures),
             completedAt: new Date(),
             lastSynchronizedAt: new Date(),
             // A partial run whose slots all failed arrives as a failed result
@@ -941,6 +1002,18 @@ async function synchronizeLeasedBuild(
       },
     })
   }
+}
+
+// A build whose slots all failed is only worth re-dispatching when the reasons
+// are the system's to fix. A user_input reason would repeat until the lecturer
+// changes the request, so it keeps the build terminal with no retry offered.
+function slotFailuresAreRetryable(
+  failures: ElementGenerationSlotFailure[]
+): boolean {
+  return (
+    failures.length > 0 &&
+    failures.every((failure) => failure.failureClass !== 'user_input')
+  )
 }
 
 // A run that the provider reports as failed or cancelled may still have

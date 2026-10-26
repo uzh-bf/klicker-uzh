@@ -1,5 +1,6 @@
 import { useQuery, useSuspenseQuery } from '@apollo/client'
 import {
+  AiSubscriptionTier,
   type ChatAccountUsageLane,
   GetChatAccountUsageDocument,
   GetUserLoginsDocument,
@@ -111,15 +112,35 @@ function ChatAccountUsageSettingsContent() {
               </div>
             )}
 
+            <p
+              className="text-sm text-gray-700"
+              data-cy="chat-account-usage-subscription"
+            >
+              {t('manage.settings.chatAccountUsageSubscriptionLabel')}:{' '}
+              <span className="font-semibold">
+                {t(
+                  overview.subscriptionTier === AiSubscriptionTier.Advanced
+                    ? 'manage.settings.chatAccountUsageTierAdvanced'
+                    : 'manage.settings.chatAccountUsageTierBase'
+                )}
+              </span>
+            </p>
+
             <div className="grid gap-3 md:grid-cols-2">
               <UsageLaneCard
                 label={t('manage.settings.baseModelUsage')}
                 lane={overview.baseModelUsage}
+                entitlementHint={t(
+                  'manage.settings.chatAccountUsageClassUnavailable'
+                )}
                 testId="chat-account-usage-base"
               />
               <UsageLaneCard
                 label={t('manage.settings.advancedModelUsage')}
                 lane={overview.advancedModelUsage}
+                entitlementHint={t(
+                  'manage.settings.chatAccountUsageAdvancedCostCenter'
+                )}
                 testId="chat-account-usage-advanced"
               />
             </div>
@@ -133,10 +154,12 @@ function ChatAccountUsageSettingsContent() {
 function UsageLaneCard({
   label,
   lane,
+  entitlementHint,
   testId,
 }: {
   label: string
   lane: ChatAccountUsageLane
+  entitlementHint: string
   testId: string
 }) {
   const t = useTranslations()
@@ -155,6 +178,14 @@ function UsageLaneCard({
       data-cy={testId}
     >
       <H3 className={{ root: 'mb-2' }}>{label}</H3>
+      {!lane.entitled && (
+        <p
+          className="mb-2 text-sm font-medium text-amber-800"
+          data-cy={`${testId}-unavailable`}
+        >
+          {entitlementHint}
+        </p>
+      )}
       <dl className="grid grid-cols-2 gap-x-4 gap-y-2">
         <Metric
           label={t('manage.settings.usageBudget')}

@@ -110,7 +110,7 @@ describe('settingsStore credits loading', () => {
       'fetch',
       vi.fn().mockResolvedValueOnce(
         creditsResponse(0, {
-          automaticModelId: 'gpt-5.6-luna',
+          automaticModelId: 'gpt-6-luna',
           availableModels: [
             {
               id: 'gpt-4.1',
@@ -122,8 +122,8 @@ describe('settingsStore credits loading', () => {
               supportsImageAttachments: true,
             },
             {
-              id: 'gpt-5.6-luna',
-              name: 'GPT-5.6 Luna',
+              id: 'gpt-6-luna',
+              name: 'GPT-6 Luna',
               description: 'base fallback',
               fallback: true,
               supportsReasoning: true,
@@ -143,7 +143,7 @@ describe('settingsStore credits loading', () => {
 
   test.each([
     ['gpt-5.5', 'auto'],
-    ['gpt-5.6-luna', 'gpt-5.6-luna'],
+    ['gpt-6-luna', 'gpt-6-luna'],
   ])('reconciles saved selection %s to %s', async (saved, expected) => {
     useSettingsStore.setState({
       modelSelectionEnabled: true,
@@ -154,7 +154,7 @@ describe('settingsStore credits loading', () => {
       vi.fn().mockResolvedValueOnce(
         creditsResponse(20, {
           automaticModelId: 'auto',
-          availableModels: ['gpt-5.6-luna', 'auto'].map((id) => ({
+          availableModels: ['gpt-6-luna', 'auto'].map((id) => ({
             id,
             supportsReasoning: false,
             allowedReasoningEfforts: [],

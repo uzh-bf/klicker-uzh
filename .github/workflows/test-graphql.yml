@@ -4,8 +4,9 @@ on:
   push:
     branches: ['v3', 'v3*']
   pull_request:
-    # "edited" re-evaluates the internal selector on a base retarget.
-    types: [opened, synchronize, reopened, edited]
+    # No "edited": a title or body edit never changes the tested tree, and a
+    # base retarget is revalidated by the restack push or a close and reopen.
+    types: [opened, synchronize, reopened]
 
 concurrency:
   group: ${{ github.workflow }}-${{ github.event.pull_request.number || github.ref_name }}
@@ -174,7 +175,7 @@ jobs:
       - name: Set up pnpm
         uses: pnpm/action-setup@v4
         with:
-          version: 11.5.0
+          version: 12.11.2
 
       - name: Set up Node.js with pnpm cache
         uses: ./.github/actions/setup-node-pnpm
@@ -368,7 +369,7 @@ jobs:
   # v3_sonarcloud.yml keeps the named fail-closed result for both.
   sonarcloud:
     name: SonarCloud
-    needs: [filter, test-graphql]
+    needs: [filter, test-graphql, test-graphql-status]
     if: >-
       always() && !cancelled() &&
       github.event_name == 'pull_request' &&

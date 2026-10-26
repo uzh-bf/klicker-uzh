@@ -38,6 +38,7 @@ export default defineConfig({
         ['list'],
         ['html', { outputFolder: 'playwright-report', open: 'never' }],
         ['junit', { outputFile: 'test-results/junit.xml' }],
+        ['json', { outputFile: 'test-results/results.json' }],
       ]
     : [
         ['list'],

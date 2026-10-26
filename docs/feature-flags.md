@@ -41,14 +41,15 @@ and worker-only KB settlement are unaffected.
 
 ## Active flags
 
-| Key                         | Consumer                                                | Fallback | Disabled behavior                                                                                               |
-| --------------------------- | ------------------------------------------------------- | -------- | --------------------------------------------------------------------------------------------------------------- |
-| `learning-analytics`        | Lecturer UI/Manage                                      | `false`  | Analytics controls remain visible but are not usable                                                            |
-| `ai-beta`                   | Server-side chatbot authoring and account-usage rollout | `false`  | Authoring UI is not mounted; authoring API calls are denied and protected reads return no data                  |
-| `kb-ingestion`              | Lecturer KB ingestion admission                         | `false`  | New upload, URL, replacement and ingest requests are refused; reads, deletion, cleanup and queued work continue |
-| `kb-graph-builds`           | Lecturer graph opt-in and rebuilds                      | `false`  | New opt-ins and rebuilds are refused before any cost reservation; published graphs and accepted builds continue |
-| `kb-graph-domain-selection` | Explicit graph-domain and graph-focus requests          | `false`  | The capability handshake advertises no options and a complete selection is refused                              |
-| `question-focus-topic`      | Per-batch question-generation focus                     | `false`  | `supportsFocusTopic` is false and a requested focus is refused                                                  |
+| Key                           | Consumer                                                | Fallback | Disabled behavior                                                                                                 |
+| ----------------------------- | ------------------------------------------------------- | -------- | ----------------------------------------------------------------------------------------------------------------- |
+| `learning-analytics`          | Lecturer UI/Manage                                      | `false`  | Analytics controls remain visible but are not usable                                                              |
+| `ai-beta`                     | Server-side chatbot authoring and account-usage rollout | `false`  | Authoring UI is not mounted; authoring API calls are denied and protected reads return no data                    |
+| `kb-ingestion`                | Lecturer KB ingestion admission                         | `false`  | New upload, URL, replacement and ingest requests are refused; reads, deletion, cleanup and queued work continue   |
+| `kb-graph-builds`             | Lecturer graph opt-in and rebuilds                      | `false`  | New opt-ins and rebuilds are refused before any cost reservation; published graphs and accepted builds continue   |
+| `kb-graph-domain-selection`   | Explicit graph-domain and graph-focus requests          | `false`  | The capability handshake advertises no options and a complete selection is refused                                |
+| `question-focus-topic`        | Per-batch question-generation focus                     | `false`  | `supportsFocusTopic` is false and a requested focus is refused                                                    |
+| `chatbot-long-custom-prompts` | Custom chat mode persona length in Manage and on save   | `false`  | New or edited persona text is capped at 10,000 characters; stored longer text keeps compiling and saves unchanged |
 
 Beta Features is discoverable in account settings and the first-login dialog
 regardless of Catalyst, login scope, or rollout availability. The information

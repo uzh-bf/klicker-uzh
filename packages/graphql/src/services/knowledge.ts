@@ -35,7 +35,12 @@ import {
   MAX_KB_TOTAL_SIZE_BYTES,
   resolveKBStorageLimitBytes,
 } from '@klicker-uzh/types'
-import { getBlobStorageAccountUrl } from '@klicker-uzh/util'
+import {
+  CHATBOT_KB_RETRIEVAL_MODE_KEYS,
+  getBlobStorageAccountUrl,
+  isChatbotStandardModeKey,
+  normalizeChatbotCustomModeConfig,
+} from '@klicker-uzh/util'
 import { normalizePublicHttpUrl } from '@klicker-uzh/util/public-url'
 import { createHash, randomUUID } from 'crypto'
 import { GraphQLError } from 'graphql'
@@ -49,6 +54,7 @@ import {
 } from './docQuerySources.js'
 import { isElementGenerationGraphBundleReady } from './elementGenerationGraphReadiness.js'
 import { getKBGraphBundleCoordinates } from './kbGraphBundleCoordinates.js'
+import { lockKBGraphQuota, resolveKBGraphQuotaLimit } from './kbGraphQuota.js'
 import {
   getKBGraphRemainingQuota,
   releaseKBGraphCostReservation,
@@ -73,7 +79,6 @@ const KB_CURSOR_VERSION = 1
 // rather than failing after dispatch.
 const KB_GRAPH_FOCUS_TOPIC_MAX_LENGTH = 300
 const KB_MCP_SERVER_NAME = 'KB'
-const KB_MCP_CHAT_MODES = ['tutor', 'explainer'] as const
 const KB_FILE_TYPES: Record<string, readonly string[]> = {
   pdf: ['application/pdf'],
   txt: ['text/plain'],
@@ -1187,6 +1192,10 @@ export async function attachKbToChatbot(
     await lockOwnedKbOrThrow(prisma, kbId, ctx.user.sub)
     await lockOwnedChatbotOrThrow(prisma, chatbotId, ctx.user.sub)
     const mcpServer = await getKbMcpServerOrThrow(prisma)
+    const { customModeConfig } = await prisma.chatbot.findUniqueOrThrow({
+      where: { id: chatbotId },
+      select: { customModeConfig: true },
+    })
 
     await prisma.kBChatbot.updateMany({
       where: {
@@ -1202,7 +1211,36 @@ export async function attachKbToChatbot(
       update: { isEnabled: true },
     })
 
-    for (const chatMode of KB_MCP_CHAT_MODES) {
+    // Approved custom modes inherit the required standard retrieval binding.
+    // Existing exact rows stay eligible only while their approved keys remain.
+    const exactModeKeys = [
+      ...(normalizeChatbotCustomModeConfig(customModeConfig)?.modes ?? [])
+        .map(({ key }) => key)
+        .filter((mode) => !isChatbotStandardModeKey(mode)),
+      'quizzer',
+    ]
+
+    // A binding for a mode the chatbot no longer declares would keep grounding
+    // retrieval that the owner removed. An exact Quizzer row is exempt, because
+    // it overrides Tutor inheritance whether or not it is enabled.
+    await prisma.chatbotMCPConfig.updateMany({
+      where: {
+        chatbotId,
+        mcpServerId: mcpServer.id,
+        isEnabled: true,
+        chatMode: {
+          notIn: [...CHATBOT_KB_RETRIEVAL_MODE_KEYS, ...exactModeKeys],
+        },
+      },
+      data: { isEnabled: false },
+    })
+
+    const retrievalBinding = {
+      allowedTools: ['doc_query'],
+      parameters: { required: true, toolAlias: 'doc_query', kb_id: kbId },
+      priority: 0,
+    }
+    for (const chatMode of CHATBOT_KB_RETRIEVAL_MODE_KEYS) {
       await prisma.chatbotMCPConfig.upsert({
         where: {
           chatbotId_mcpServerId_chatMode: {
@@ -1215,19 +1253,27 @@ export async function attachKbToChatbot(
           chatbotId,
           mcpServerId: mcpServer.id,
           chatMode,
-          allowedTools: ['doc_query'],
-          parameters: { required: true, toolAlias: 'doc_query', kb_id: kbId },
-          priority: 0,
+          ...retrievalBinding,
           isEnabled: true,
         },
         update: {
-          allowedTools: ['doc_query'],
-          parameters: { required: true, toolAlias: 'doc_query', kb_id: kbId },
-          priority: 0,
+          ...retrievalBinding,
           isEnabled: true,
         },
       })
     }
+
+    // Enabled exact custom and Quizzer bindings follow the replacement KB, so
+    // none retain an old scope. Disabled overrides stay untouched.
+    await prisma.chatbotMCPConfig.updateMany({
+      where: {
+        chatbotId,
+        mcpServerId: mcpServer.id,
+        chatMode: { in: exactModeKeys },
+        isEnabled: true,
+      },
+      data: retrievalBinding,
+    })
 
     const [chatbot, kb] = await Promise.all([
       prisma.chatbot.findUniqueOrThrow({
@@ -2918,14 +2964,23 @@ export function getKBGraphBuildConfig(
     domainPolicyLanguage: string | null
   } | null
 ): KBKnowledgeGraphConfig {
-  const quotaConfigurationMatches =
-    quota === null ||
-    (quota.currency === costConfiguration.currency &&
-      quota.limitMinorUnits === costConfiguration.semesterQuotaMinorUnits)
-  const costConfigurationReady =
-    costConfiguration.ready && quotaConfigurationMatches
+  const quotaCurrencyMatches =
+    quota === null || quota.currency === costConfiguration.currency
+  const costConfigurationReady = costConfiguration.ready && quotaCurrencyMatches
+  // Report the limit the next admission will apply, so a configured raise is
+  // visible before any build writes it to the ledger row.
+  const effectiveQuota =
+    quota !== null && quotaCurrencyMatches
+      ? {
+          ...quota,
+          limitMinorUnits: resolveKBGraphQuotaLimit(
+            quota.limitMinorUnits,
+            costConfiguration.semesterQuotaMinorUnits
+          ).limitMinorUnits,
+        }
+      : quota
   const remainingSemesterQuotaMinorUnits = getKBGraphRemainingQuota(
-    quota,
+    effectiveQuota,
     costConfiguration
   )
   const worstCaseRemainingMinorUnits =
@@ -2976,7 +3031,8 @@ export function getKBGraphBuildConfig(
     costStatus: build?.costStatus ?? null,
     semesterKey: costConfiguration.semesterKey,
     semesterQuotaMinorUnits:
-      quota?.limitMinorUnits ?? costConfiguration.semesterQuotaMinorUnits,
+      effectiveQuota?.limitMinorUnits ??
+      costConfiguration.semesterQuotaMinorUnits,
     semesterReservedMinorUnits: quota?.reservedMinorUnits ?? 0,
     semesterSettledMinorUnits: quota?.settledMinorUnits ?? 0,
     remainingSemesterQuotaMinorUnits,
@@ -3342,6 +3398,14 @@ export async function rebuildKbKnowledgeGraph(
     } catch {
       const finishedAt = new Date()
       await ctx.prisma.$transaction(async (prisma) => {
+        await prisma.$queryRaw`SELECT "id" FROM "public"."KB" WHERE "id" = CAST(${kbId} AS UUID) FOR UPDATE`
+        const reservation = await prisma.kBGraphBuild.findUnique({
+          where: { id: result.queueBuildId! },
+          select: { quotaId: true },
+        })
+        if (reservation?.quotaId) {
+          await lockKBGraphQuota(prisma, reservation.quotaId)
+        }
         const failed = await prisma.kBGraphBuild.updateMany({
           where: {
             id: result.queueBuildId!,

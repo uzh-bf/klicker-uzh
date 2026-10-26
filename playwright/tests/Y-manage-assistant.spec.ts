@@ -23,6 +23,21 @@ import {
   trackProposalConfirmRequests,
 } from '../util/manageAssistant.js'
 
+// Seed the stored dock size before any app script runs on the next load. A
+// plain localStorage write can lose to the already-open page, which persists
+// the default size once its first size effect settles.
+async function seedStoredPanelSize(
+  page: Page,
+  size: { height: number; width: number }
+) {
+  await page.addInitScript((storedSize) => {
+    window.localStorage.setItem(
+      'klicker-manage-assistant-panel-size-v1',
+      JSON.stringify(storedSize)
+    )
+  }, size)
+}
+
 async function expectLauncherClearOfListEnd(
   page: Page,
   pageRootTestId: string
@@ -742,12 +757,7 @@ test.describe('Manage Assistant — Messaging', () => {
     page,
   }) => {
     await mockManageChatStream(page)
-    await page.evaluate(() => {
-      window.localStorage.setItem(
-        'klicker-manage-assistant-panel-size-v1',
-        JSON.stringify({ height: 560, width: 440 })
-      )
-    })
+    await seedStoredPanelSize(page, { height: 560, width: 440 })
     await page.reload()
     await openManageAssistantWidget(page)
 
@@ -793,6 +803,36 @@ test.describe('Manage Assistant — Messaging', () => {
     const reopened = await panel.boundingBox()
     expect(reopened?.width).toBe(resized?.width)
     expect(reopened?.height).toBe(resized?.height)
+  })
+
+  test('Back-to-back keyboard resize steps on both axes all apply', async ({
+    page,
+  }) => {
+    await mockManageChatStream(page)
+    await openManageAssistantWidget(page)
+
+    const panel = page.getByTestId('manage-assistant-drawer')
+    const initial = await panel.boundingBox()
+    expect(initial).not.toBeNull()
+
+    // Dispatch both steps in one task, before the panel can be re-measured, so
+    // the second step must build on the first instead of the stale measurement.
+    await page.evaluate(() => {
+      for (const [axis, key] of [
+        ['width', 'ArrowRight'],
+        ['height', 'ArrowDown'],
+      ]) {
+        document
+          .querySelector(`[data-resize-axis="${axis}"]`)
+          ?.dispatchEvent(new KeyboardEvent('keydown', { bubbles: true, key }))
+      }
+    })
+
+    await expect(async () => {
+      const box = await panel.boundingBox()
+      expect(box?.width).toBe((initial?.width ?? 0) - 16)
+      expect(box?.height).toBe((initial?.height ?? 0) - 16)
+    }).toPass()
   })
 
   test('Short desktop viewports keep the default dock controls reachable', async ({
@@ -854,12 +894,7 @@ test.describe('Manage Assistant — Messaging', () => {
   }) => {
     await mockManageChatStream(page)
     const desktopSize = { height: 700, width: 600 }
-    await page.evaluate((size) => {
-      window.localStorage.setItem(
-        'klicker-manage-assistant-panel-size-v1',
-        JSON.stringify(size)
-      )
-    }, desktopSize)
+    await seedStoredPanelSize(page, desktopSize)
     await page.setViewportSize({ height: 390, width: 390 })
     await page.reload()
 

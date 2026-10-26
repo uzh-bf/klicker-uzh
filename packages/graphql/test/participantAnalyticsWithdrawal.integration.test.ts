@@ -73,7 +73,7 @@ async function createFixture(
   const participant = await prisma.participant.create({
     data: {
       username: `${TEST_PREFIX}-${label}`,
-      password: 'synthetic-integration-password',
+      password: 'placeholder',
       researchConsent: false,
       researchConsentChoiceAt: choiceAt,
       researchConsentDisclosureVersion: PARTICIPANT_DATA_USE_DISCLOSURE_VERSION,
@@ -480,6 +480,38 @@ describe('participant analytics withdrawal PostgreSQL integration', () => {
     )
   })
 
+  it('stamps a pending withdrawal when no analytics derivatives match', async () => {
+    const fixture = await createFixture('empty-withdrawal')
+    const request = await createWithdrawal(fixture)
+
+    expect(await readAnalyticsCounts(fixture.participantId)).toEqual({
+      participant: 0,
+      competency: 0,
+      course: 0,
+      performance: 0,
+      activity: 0,
+    })
+
+    await expect(
+      processParticipantAnalyticsWithdrawal(fixture.participantId, prisma)
+    ).resolves.toBe(1)
+
+    const completed = await readWithdrawal(fixture)
+    expect(completed).toMatchObject({
+      participantId: fixture.participantId,
+      withdrawalRevision: WITHDRAWAL_REVISION,
+      requestedAt: request.requestedAt,
+      completedAt: expect.any(Date),
+      choiceEvent: {
+        participantId: fixture.participantId,
+        revision: WITHDRAWAL_REVISION,
+      },
+    })
+    expect(completed!.completedAt!.getTime()).toBeGreaterThanOrEqual(
+      request.requestedAt.getTime()
+    )
+  })
+
   it('records a revisioned withdrawal through the choice writer before deleting analytics', async () => {
     const fixture = await createFixture('revisioned-withdrawal', {
       learningAnalyticsConsent: true,
@@ -565,10 +597,30 @@ describe('participant analytics withdrawal PostgreSQL integration', () => {
     }
   })
 
-  it('does not delete analytics published after a completed duplicate request', async () => {
+  it('does not delete permitted analytics published after the first processing', async () => {
     const fixture = await createFixture('duplicate')
-    await createWithdrawal(fixture, {
-      completedAt: new Date('2026-09-02T00:00:00.000Z'),
+    await createWithdrawal(fixture)
+    await createAnalyticsData(fixture)
+
+    await expect(
+      processParticipantAnalyticsWithdrawal(fixture.participantId, prisma)
+    ).resolves.toBe(1)
+    const initiallyCompleted = await readWithdrawal(fixture)
+    expect(initiallyCompleted).toMatchObject({ completedAt: expect.any(Date) })
+
+    await expect(
+      updateParticipantDataUseChoice(
+        'analytics',
+        {
+          consent: true,
+          expectedRevision: WITHDRAWAL_REVISION,
+          disclosureVersion: PARTICIPANT_DATA_USE_DISCLOSURE_VERSION,
+        },
+        participantContext(fixture.participantId)
+      )
+    ).resolves.toMatchObject({
+      learningAnalyticsConsent: true,
+      dataUseRevision: WITHDRAWAL_REVISION + 1,
     })
     await createAnalyticsData(fixture, new Date('2026-09-03T00:00:00.000Z'))
 
@@ -581,6 +633,9 @@ describe('participant analytics withdrawal PostgreSQL integration', () => {
       course: 1,
       performance: 1,
       activity: 1,
+    })
+    expect(await readWithdrawal(fixture)).toMatchObject({
+      completedAt: initiallyCompleted!.completedAt,
     })
   })
 

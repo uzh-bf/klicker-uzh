@@ -1,3 +1,4 @@
+import { CHAT_BASE_MODEL_ID } from '@klicker-uzh/util'
 import type { ChatModelConfig } from '@/src/lib/server/chatModelRegistry'
 import { getOpenAIResponsesStore } from '@/src/lib/server/openaiResponsesOptions'
 import { buildManageAssistantSkillsPrompt } from './manageAssistantSkills'
@@ -73,12 +74,17 @@ export function buildManageAssistantSystemPrompt(
 export function selectManageAssistantModel(
   registry: ChatModelConfig[]
 ): ChatModelConfig {
-  const primary = registry.find((model) => !model.fallback)
+  // The Manage assistant records no usage at all, so it must stream on the
+  // registry's base class rather than the first non-fallback entry: both
+  // deployed registries lead with the ADVANCED "auto" entry.
+  const baseModel = registry.find(
+    (model) => model.id === CHAT_BASE_MODEL_ID && model.usageClass === 'BASE'
+  )
   const fallback = registry[0]
   if (!fallback) {
     throw new Error('Manage assistant requires at least one chat model')
   }
-  return primary ?? fallback
+  return baseModel ?? fallback
 }
 
 export function getManageAssistantOpenAIProviderOptions() {

@@ -54,6 +54,10 @@ services:
       - '127.0.0.1:3010:3010' # auth
       - '127.0.0.1:3030:3030' # olat-api
       - '127.0.0.1:7078:7078' # response-api
+      # The OIDC mock shares this container's network namespace, so its port is
+      # published here. Browsers reach the issuer on this port only in the
+      # plain-localhost fallback; routed checkouts use the HTTPS route.
+      - '127.0.0.1:8090:8090' # local Edu-ID OIDC mock
 
   litellm:
     ports:
