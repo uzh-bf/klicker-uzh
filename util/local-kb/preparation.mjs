@@ -699,7 +699,9 @@ export async function continuePreparation(
     }
     if (
       commands.lifecycleOrder.some(
-        (name, index) => classifications[index] !== expected[name]
+        (name, index) =>
+          classifications[index] !== expected[name] &&
+          !(name === 'docProcessing' && classifications[index] === 'untouched')
       )
     )
       throw new Error('Retained provider prefix has changed.')
@@ -727,7 +729,9 @@ export async function continuePreparation(
     }
     if (
       commands.lifecycleOrder.some(
-        (name, index) => classifications[index] !== expected[name]
+        (name, index) =>
+          classifications[index] !== expected[name] &&
+          !(name === 'docProcessing' && classifications[index] === 'untouched')
       )
     )
       throw new Error('Retained provider prefix has changed.')

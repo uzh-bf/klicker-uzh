@@ -180,10 +180,10 @@ pending, only the manifest, `compose-project`, and `project-configs` entries in
 its state directory, no credential files, no ingestion Compose containers,
 networks or volumes, no occupied bound ingestion port, and exited bootstrap
 containers. Scraping must already have a completed receipt; document processing
-must remain prepared and stopped awaiting reconciliation. The interrupted child
+may remain untouched or prepared and stopped awaiting reconciliation. The interrupted child
 contains its claim, bootstrap intent and ingestion intent, without a processor
 reconciliation receipt. The command retains predecessor evidence and creates an
-exclusive sibling attempt before invoking ingestion setup once, then reconciles
+exclusive sibling attempt before invoking ingestion setup once, then prepares or reconciles
 the processor before continuing to retrieval.
 Any failure prevents downstream work and another invocation. This option is
 mutually exclusive with `--resume-executor`; it does not authorize token rotation.

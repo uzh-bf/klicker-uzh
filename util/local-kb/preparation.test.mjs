@@ -1794,8 +1794,11 @@ const continuationContext = 'synthetic-local'
 const priorExecutor = 'e'.repeat(40)
 const nextExecutor = 'f'.repeat(40)
 
-async function pendingIngestionFixture() {
-  const retained = await retainedContinuationPrefix({ profileAttempt: true })
+async function pendingIngestionFixture(processorPrepared = true) {
+  const retained = await retainedContinuationPrefix({
+    profileAttempt: true,
+    processorPrepared,
+  })
   const { config, root } = retained
   const failed = continuationRunner(config, root, { setupFailure: true })
   await assert.rejects(
@@ -1889,21 +1892,30 @@ async function pendingIngestionFixture() {
 }
 
 test('pending ingestion recovery preserves predecessors and runs unfinished providers once', async () => {
-  const f = await pendingIngestionFixture()
-  const before = await readFile(join(f.child, 'claim.json'), 'utf8')
-  const result = await continuePreparation(
-    f.config,
-    revision,
-    '9'.repeat(40),
-    f.options
-  )
-  assert.equal(result.prepared, true)
-  assert.deepEqual(f.calls, ['ingestion', 'retrieval'])
-  assert.equal(await readFile(join(f.child, 'claim.json'), 'utf8'), before)
-  await assert.rejects(
-    continuePreparation(f.config, revision, '9'.repeat(40), f.options)
-  )
-  assert.deepEqual(f.calls, ['ingestion', 'retrieval'])
+  for (const processorPrepared of [true, false]) {
+    const f = await pendingIngestionFixture(processorPrepared)
+    if (!processorPrepared)
+      await assert.rejects(stat(join(f.root, 'state/docProcessing')), {
+        code: 'ENOENT',
+      })
+    const before = await readFile(join(f.child, 'claim.json'), 'utf8')
+    const result = await continuePreparation(
+      f.config,
+      revision,
+      '9'.repeat(40),
+      f.options
+    )
+    const expected = processorPrepared
+      ? ['ingestion', 'retrieval']
+      : ['ingestion', 'docProcessing', 'retrieval']
+    assert.equal(result.prepared, true)
+    assert.deepEqual(f.calls, expected)
+    assert.equal(await readFile(join(f.child, 'claim.json'), 'utf8'), before)
+    await assert.rejects(
+      continuePreparation(f.config, revision, '9'.repeat(40), f.options)
+    )
+    assert.deepEqual(f.calls, expected)
+  }
 })
 
 test('pending ingestion recovery rejects credential residue, occupied ports and foreign lineage', async () => {
@@ -1980,8 +1992,11 @@ test('continuation rejects combined recovery modes before runtime effects', asyn
 
 // Rebuild the retained prefix the profile-repair executor left behind: one
 // private attempt holding its claim and profile intent, with scraping complete,
-// document processing reconcilable and ingestion/retrieval untouched.
-async function retainedContinuationPrefix({ profileAttempt = false } = {}) {
+// document processing optionally reconcilable and ingestion/retrieval untouched.
+async function retainedContinuationPrefix({
+  profileAttempt = false,
+  processorPrepared = true,
+} = {}) {
   const config = await fixture()
   const claim = await claimPreparation(config, revision)
   await prepareLocalConfiguration(config, revision)
@@ -2004,7 +2019,9 @@ async function retainedContinuationPrefix({ profileAttempt = false } = {}) {
     JSON.stringify({ setupCompleted: true }),
     { mode: 0o600 }
   )
-  for (const name of ['scraping', 'docProcessing'])
+  for (const name of processorPrepared
+    ? ['scraping', 'docProcessing']
+    : ['scraping'])
     await mkdir(join(root, 'state', name), { recursive: true, mode: 0o700 })
   const parent = join(root, 'setup-continuation')
   const child = join(parent, 'resume-after-profile')
