@@ -15,6 +15,8 @@
     "retained-citations.config.ts",
     "retained/**/*.ts",
     "global-setup.ts",
+    "lti-harness.config.ts",
+    "lti-harness/**/*.ts",
     "tests/**/*.ts",
     "util/**/*.ts",
     "util/fixtures/**/*.ts"
