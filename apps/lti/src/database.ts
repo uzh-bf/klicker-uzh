@@ -69,8 +69,23 @@ export class PostgresDatabaseManager implements DatabaseManager {
     this.key = createHash('sha256').update(encryptionKey).digest()
   }
 
+  // Replicas start together, and concurrent CREATE TABLE IF NOT EXISTS can
+  // still collide in Postgres, so schema creation is serialized by a lock.
   async listen() {
-    await this.pool.query(SCHEMA)
+    const client = await this.pool.connect()
+    try {
+      await client.query('BEGIN')
+      await client.query(
+        "SELECT pg_advisory_xact_lock(hashtext('ltijs_schema'))"
+      )
+      await client.query(SCHEMA)
+      await client.query('COMMIT')
+    } catch (error) {
+      await client.query('ROLLBACK')
+      throw error
+    } finally {
+      client.release()
+    }
   }
 
   async close() {

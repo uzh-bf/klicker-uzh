@@ -34,9 +34,11 @@ const database = new PostgresDatabaseManager(
   process.env.LTI_ENCRYPTION_KEY as string
 )
 
+const port = Number(process.env.LTI_PORT ?? 4000)
+
 // No browser calls the LTI service cross-origin, so CORS stays off.
 const httpHandler = new ExpressHttpHandler(new DefaultLogger(), {
-  port: Number(process.env.LTI_PORT ?? 4000),
+  port,
   cors: false,
 })
 
@@ -87,6 +89,8 @@ httpHandler.app.get('/handoff', async (req, res) => {
   }
 
   // A launch issues one KlickerUZH token; a replayed handoff URL is rejected.
+  // The launch is used up before its target is checked again, so a tampered
+  // redirectTo cannot be retried with another target.
   if (!(await database.consumeIdToken(context.rawIdToken.id))) {
     return res.status(401).json({ error: 'invalid_launch' })
   }
@@ -136,7 +140,9 @@ httpHandler.app.get('/handoff', async (req, res) => {
 // Registers each configured platform once and keeps its stored keys, so the
 // public keyset the platform knows stays valid across restarts.
 const setup = async () => {
-  await provider.listen()
+  // ltijs's startup banner reports its default port, not the handler's
+  await provider.listen({ silent: true })
+  console.log(`LTI service listening on port ${port}`)
 
   for (const registration of platforms) {
     const fields = {
