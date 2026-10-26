@@ -165,7 +165,7 @@ describe('dry-run spec', () => {
       { students: 0 },
       { students: 201 },
       { noiseProbability: 0.6 },
-      { students: 200, totalQuestionCap: 51 },
+      { students: 200, totalQuestionCap: 101 },
       { minQuestionsPerLeaf: 21 },
       { fromLevelId: 3, toLevelId: 1 },
       { fromLevelId: 99 },
