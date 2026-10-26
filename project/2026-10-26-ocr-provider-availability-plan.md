@@ -10,6 +10,13 @@ Source delivery ends with a reviewed draft PR. Merge, immutable caller-pin adopt
 
 ## Execution details
 
+### Primitive impact
+
+| Product primitive | Disposition | Contract delta | Consumers and evidence |
+| --- | --- | --- | --- |
+| Review outcome | Extend | Explicit unavailable advisory distinct from successful coverage; final review remains blocking | Draft runner/controller and final status tests |
+| Review execution policy | Extend | Trusted pause/resume gates new provider calls without changing admission or activation | Shared action and final workflow; strict parser and no-dispatch tests |
+
 ### Contract and ownership
 
 The review outcome extends its existing unavailable semantics. Provider availability is shared within one draft invocation, distinct from coverage and cost evidence. The trusted pause interface composes with existing admission and activation rules. It grants no new review authority. GitHub's existing draft path cannot publish a literal neutral check; advisory handling uses warnings, job summaries and sanitized outcome receipts with existing permissions.
@@ -39,4 +46,9 @@ Use host Git/gh. Run Node 24 tests and installed formatting tools in an isolated
 ## Progress
 
 - Approved scope recovered and target fetched; planner resolved design approved.
-- Implementation and verification pending. No provider or account changes performed.
+- Implementation committed at `75e9ec85107da61e11e510a3dbdd9e63092b1137`; regression assertions at `8599bda17a3d1e488d797ceb93f78a1ceeabe180`.
+- 298 focused Node 24.21 tests passed with zero skips, including stock OCR and synthetic providers. Two strengthened existing shared-advisor/stock-result checks passed separately; runtime source did not change.
+- Formatting, manifest integrity, diff inspection and staged Gitleaks passed. Focused Opengrep reported zero findings with one partially analyzed file; two original Biome lint errors outside changed lines remain.
+- Substantive package: 987 changed lines excluding project artifacts. One coherent provider-availability change; no new module or dependency.
+- Planner approved; simplifier found no useful reduction. Independent risk/final source reviews and current-head hosted CI remain pending.
+- Draft PR #6721 against `v3` is open. No provider, credential, account or live variable changes performed. Caller adoption remains separate after merge.

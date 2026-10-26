@@ -784,3 +784,31 @@ test('only frozen unavailable draft outcomes admit missing results, and valid pa
   fs.unlinkSync(outcomePath)
   await assert.rejects(runCommand('validate', f))
 })
+
+test('manual provider pause reaches model steps without contaminating trusted helper self-tests', () => {
+  const workflow = YAML.parse(
+    fs.readFileSync(
+      path.join(__dirname, '../workflows/check-ocr-final-review.yml'),
+      'utf8'
+    )
+  )
+  for (const jobName of ['review', 'review_stack']) {
+    const job = workflow.jobs[jobName]
+    const expected =
+      jobName === 'review'
+        ? ['preflight', 'run_review']
+        : ['preflight', 'code_review', 'topology_review']
+    assert.equal(job.env.OCR_PROVIDER_PAUSED, undefined)
+    assert.deepEqual(
+      job.steps
+        .filter((step) => step.env?.OCR_PROVIDER_PAUSED !== undefined)
+        .map((step) => step.id),
+      expected
+    )
+    for (const step of job.steps.filter((step) => expected.includes(step.id)))
+      assert.equal(
+        step.env.OCR_PROVIDER_PAUSED,
+        '${{ vars.OCR_PROVIDER_PAUSED }}'
+      )
+  }
+})

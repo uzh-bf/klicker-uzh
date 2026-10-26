@@ -315,7 +315,6 @@ jobs:
     env:
       OCR_NO_UPDATE: '1'
       OCR_LLM_TIMEOUT: '2700'
-      OCR_PROVIDER_PAUSED: ${{ vars.OCR_PROVIDER_PAUSED }}
     if: >-
       needs.authorize.outputs.authorized == 'true' &&
       needs.start.outputs.run_review == 'true'
@@ -424,6 +423,7 @@ jobs:
         id: preflight
         if: needs.start.outputs.run_review == 'true'
         env:
+          OCR_PROVIDER_PAUSED: ${{ vars.OCR_PROVIDER_PAUSED }}
           MISTRAL_API_KEY: ${{ secrets.MISTRAL_API_KEY }}
           OCR_ADAPTER_DIAGNOSTICS_PATH: ${{ runner.temp }}/final-ai-review-adapter-diagnostics.jsonl
         run: |
@@ -434,6 +434,7 @@ jobs:
         id: run_review
         if: needs.start.outputs.run_review == 'true'
         env:
+          OCR_PROVIDER_PAUSED: ${{ vars.OCR_PROVIDER_PAUSED }}
           MISTRAL_API_KEY: ${{ secrets.MISTRAL_API_KEY }}
           BACKGROUND: ${{ needs.start.outputs.background }}
           HEAD_SHA: ${{ needs.authorize.outputs.head_sha }}
@@ -948,7 +949,6 @@ jobs:
     env:
       OCR_NO_UPDATE: '1'
       OCR_LLM_TIMEOUT: '1800'
-      OCR_PROVIDER_PAUSED: ${{ vars.OCR_PROVIDER_PAUSED }}
     needs: [authorize_stack, start_stack]
     if: >-
       needs.authorize_stack.outputs.authorized == 'true' &&
@@ -1072,6 +1072,7 @@ jobs:
         id: preflight
         if: needs.start_stack.outputs.run_review == 'true'
         env:
+          OCR_PROVIDER_PAUSED: ${{ vars.OCR_PROVIDER_PAUSED }}
           MISTRAL_API_KEY: ${{ secrets.MISTRAL_API_KEY }}
           OCR_ADAPTER_DIAGNOSTICS_PATH: ${{ runner.temp }}/final-ai-stack-adapter-diagnostics.jsonl
         run: |
@@ -1082,6 +1083,7 @@ jobs:
         id: code_review
         if: needs.start_stack.outputs.run_review == 'true'
         env:
+          OCR_PROVIDER_PAUSED: ${{ vars.OCR_PROVIDER_PAUSED }}
           MISTRAL_API_KEY: ${{ secrets.MISTRAL_API_KEY }}
           BACKGROUND: ${{ needs.start_stack.outputs.background }}
           HEAD_SHA: ${{ needs.authorize_stack.outputs.head_sha }}
@@ -1269,6 +1271,7 @@ jobs:
         id: topology_review
         if: steps.code_review.outcome == 'success' && steps.cleanup.outcome == 'success'
         env:
+          OCR_PROVIDER_PAUSED: ${{ vars.OCR_PROVIDER_PAUSED }}
           MISTRAL_API_KEY: ${{ secrets.MISTRAL_API_KEY }}
           OCR_ADAPTER_DIAGNOSTICS_PATH: ${{ runner.temp }}/final-ai-stack-adapter-diagnostics.jsonl
           MANIFEST_DIGEST: ${{ needs.start_stack.outputs.manifest_digest }}
