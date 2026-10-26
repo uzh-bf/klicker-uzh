@@ -7,7 +7,8 @@
 # The dev stack runs the service under nodemon with the container environment.
 # With NAME=value arguments, this stops that process and starts the same
 # command with the same environment plus the overrides; nodemon then waits for
-# a file change. Without arguments, it stops any override and touches the
+# a file change. Overrides always apply to the original environment, not to
+# an earlier override. Without arguments, it stops any override and touches the
 # build output, so nodemon restarts the original process.
 set -euo pipefail
 
@@ -39,15 +40,20 @@ wait_for_port() {
   return 1
 }
 
+# nodemon keeps the original container environment, also while an override
+# runs, so overrides always start from that environment
+nodemon_pid=""
+for pid in $(pgrep -f 'nodemon.js -w dist/ --exec node ./dist/index.js' || true); do
+  if [[ "$(readlink "/proc/$pid/cwd")" == "$lti_dir" ]]; then nodemon_pid="$pid"; fi
+done
 pids="$(lti_pids)"
-if [[ -z "$pids" ]]; then
+if [[ -z "$nodemon_pid" || -z "$pids" ]]; then
   echo "no running LTI service found in $lti_dir" >&2
   exit 1
 fi
-source_pid="$(echo "$pids" | head -n 1)"
 
 if [[ $# -gt 0 ]]; then
-  mapfile -d '' -t environment <"/proc/$source_pid/environ"
+  mapfile -d '' -t environment <"/proc/$nodemon_pid/environ"
   # shellcheck disable=SC2086 # one pid per word
   kill $pids
   while [[ -n "$(lti_pids)" ]]; do sleep 0.2; done
