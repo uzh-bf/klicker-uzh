@@ -3,6 +3,10 @@ import * as jose from 'jose'
 import { randomUUID } from 'node:crypto'
 import { getPrisma } from '../global-setup.js'
 import {
+  CODEAPI_BROWSER_CHATBOT_ID,
+  CODEAPI_BROWSER_DENIED_CHATBOT_ID,
+} from '../../apps/chat/scripts/codeapi-browser-fixture.mjs'
+import {
   APP_SECRET,
   COURSE_ID_TEST,
   PARTICIPANT_IDS,
@@ -619,5 +623,117 @@ export async function mockChatStream(page: Page, options: StreamOptions = {}) {
         options
       ),
     })
+  })
+}
+
+const codeApiBrowserBotIds = [
+  CODEAPI_BROWSER_CHATBOT_ID,
+  CODEAPI_BROWSER_DENIED_CHATBOT_ID,
+]
+function codeApiBrowserOwner(generation: string) {
+  if (!/^[a-f0-9]{8}-(?:[a-f0-9]{4}-){3}[a-f0-9]{12}$/.test(generation))
+    throw new Error('Invalid browser fixture generation')
+  return `codeapi-browser-fixture:${generation}`
+}
+
+/** Create only fixture-owned bots after validating existing disposable seeds. */
+export async function ensureCodeApiBrowserBots(generation: string) {
+  const description = codeApiBrowserOwner(generation)
+  const prisma = await getPrisma()
+  await prisma.$transaction(async (tx) => {
+    const user = await tx.user.findUnique({
+      where: { id: USER_ID_TEST },
+      select: { id: true },
+    })
+    const course = await tx.course.findUnique({
+      where: { id: COURSE_ID_TEST },
+      select: { ownerId: true },
+    })
+    const enrolled = await tx.participation.findMany({
+      where: {
+        courseId: COURSE_ID_TEST,
+        participantId: { in: [PARTICIPANT_ID, OTHER_PARTICIPANT_ID] },
+      },
+      select: { participantId: true },
+    })
+    if (!user || course?.ownerId !== USER_ID_TEST || enrolled.length !== 2)
+      throw new Error('Required disposable chat seeds are missing')
+    if (await tx.chatbot.count({ where: { id: { in: codeApiBrowserBotIds } } }))
+      throw new Error('Browser fixture bot collision; preserve existing state')
+    for (const id of codeApiBrowserBotIds) {
+      await tx.chatbot.create({
+        data: {
+          id,
+          description,
+          name: 'Synthetic Python tool browser test',
+          ownerId: USER_ID_TEST,
+          courseId: COURSE_ID_TEST,
+          status: 'PUBLISHED',
+          modelSelection: false,
+          allowedModelIds: ['auto', 'gpt-6-luna'],
+          systemPrompts: {
+            tutor: {
+              prompt: 'Follow the synthetic test protocol.',
+              description: 'Tutor',
+            },
+            explainer: {
+              prompt: 'Follow the synthetic test protocol.',
+              description: 'Explainer',
+            },
+          },
+          creditInitialCredits: 100,
+          creditResetAmount: 100,
+          creditMaxCredits: 100,
+        },
+      })
+    }
+  })
+}
+
+/** Delete only bot records created by the current fixture generation. */
+export async function cleanupCodeApiBrowserBots(generation: string) {
+  const prisma = await getPrisma()
+  await prisma.chatbot.deleteMany({
+    where: {
+      id: { in: codeApiBrowserBotIds },
+      description: codeApiBrowserOwner(generation),
+      ownerId: USER_ID_TEST,
+      courseId: COURSE_ID_TEST,
+    },
+  })
+}
+
+export async function resetCodeApiBrowserState(
+  participantId: string,
+  chatbotId: string,
+  generation: string
+) {
+  if (
+    ![PARTICIPANT_ID, OTHER_PARTICIPANT_ID].includes(participantId) ||
+    !codeApiBrowserBotIds.includes(chatbotId)
+  )
+    throw new Error('Invalid browser fixture scope')
+  const prisma = await getPrisma()
+  const bot = await prisma.chatbot.findUnique({
+    where: { id: chatbotId },
+    select: { description: true, ownerId: true, courseId: true },
+  })
+  if (
+    bot?.description !== codeApiBrowserOwner(generation) ||
+    bot.ownerId !== USER_ID_TEST ||
+    bot.courseId !== COURSE_ID_TEST
+  )
+    throw new Error('Missing fixture-owned bot')
+  await prisma.chatThread.deleteMany({ where: { participantId, chatbotId } })
+  await prisma.chatUsageCredits.upsert({
+    where: { participantId_chatbotId: { participantId, chatbotId } },
+    create: {
+      participantId,
+      chatbotId,
+      current: 100,
+      total: 100,
+      periodStartedAt: new Date(),
+    },
+    update: { current: 100, total: 100, periodStartedAt: new Date() },
   })
 }

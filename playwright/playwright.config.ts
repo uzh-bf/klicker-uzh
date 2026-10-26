@@ -1,7 +1,18 @@
 import { defineConfig, devices } from '@playwright/test'
-import { assertPlaywrightHostBoundary } from '../util/playwright-host-policy.mjs'
+import {
+  assertPlaywrightHostBoundary,
+  preserveLocalDatabase,
+} from '../util/playwright-host-policy.mjs'
 
 assertPlaywrightHostBoundary()
+if (
+  process.env.KLICKER_CODEAPI_BROWSER_E2E === '1' &&
+  !preserveLocalDatabase()
+) {
+  throw new Error(
+    'CodeAPI browser E2E requires --preserve-database before global setup.'
+  )
+}
 
 const isCI = !!process.env.CI
 

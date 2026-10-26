@@ -1,14 +1,23 @@
 import { expect, test, type Page } from '@playwright/test'
+import { randomUUID } from 'node:crypto'
+import { readFile } from 'node:fs/promises'
+import {
+  CODEAPI_BROWSER_CHATBOT_ID,
+  CODEAPI_BROWSER_DENIED_CHATBOT_ID,
+} from '../../apps/chat/scripts/codeapi-browser-fixture.mjs'
 import { getPrisma } from '../global-setup.js'
 import {
   CHATBOT_ID,
   chatUrl,
+  cleanupCodeApiBrowserBots,
   clearChatCookies,
+  ensureCodeApiBrowserBots,
   getEnrolledParticipantId,
   getMessageRating,
   mockChatStream,
   OTHER_PARTICIPANT_ID,
   resetChatState,
+  resetCodeApiBrowserState,
   seedThread,
   setCredits,
   setDisclaimerRequired,
@@ -4293,5 +4302,780 @@ test.describe('Chatbot Streamed Answer Metadata & Failure States', () => {
     })
     await expect(content).toContainText('Response truncated')
     await expect(page.getByTestId('chat-message-error')).toHaveCount(0)
+  })
+})
+
+// ===========================================================================
+// CodeAPI real-route fixture
+// ===========================================================================
+//
+// Opt-in through KLICKER_CODEAPI_BROWSER_E2E=1. These cases use the real chat
+// route, participant admission, persistence, streaming and native run_python
+// tool without the POST /chat mock. They run only against the local fixture
+// runtime, a .localhost origin and the marked disposable database, and they
+// touch only the two fixture-owned chatbots and their own participant state.
+
+const CODEAPI_FIXTURE_ENABLED = process.env.KLICKER_CODEAPI_BROWSER_E2E === '1'
+const CODEAPI_FIXTURE_STATUS_URL = new URL(
+  '../../.devcontainer/.runtime/codeapi-browser-fixture-status.json',
+  import.meta.url
+)
+const CODEAPI_UUID_PATTERN = /^[a-f0-9]{8}-(?:[a-f0-9]{4}-){3}[a-f0-9]{12}$/i
+
+type CodeApiFixtureMode = 'enabled' | 'disabled'
+
+type CodeApiScenarioCounters = {
+  scenario: string
+  modelCalls: number
+  dispatches: number
+  completed: number
+  disconnected: number
+  toolResults: number
+}
+
+type CodeApiScenarioCounterKey = Exclude<
+  keyof CodeApiScenarioCounters,
+  'scenario'
+>
+
+type CodeApiFixtureStatus = {
+  schemaVersion: 1
+  generation: string
+  mode: CodeApiFixtureMode
+  ready: boolean
+  scenarios: Record<string, CodeApiScenarioCounters>
+}
+
+type CodeApiPersistedPart = {
+  type?: unknown
+  name?: unknown
+  toolName?: unknown
+  toolCallId?: unknown
+  args?: unknown
+  result?: unknown
+  isError?: unknown
+}
+
+type CodeApiPersistedTurn = {
+  threadId: string
+  chatMode: string | null
+  parts: CodeApiPersistedPart[]
+}
+
+function isRecord(value: unknown): value is Record<string, unknown> {
+  return typeof value === 'object' && value !== null && !Array.isArray(value)
+}
+
+function isCounter(value: unknown): value is number {
+  return typeof value === 'number' && Number.isInteger(value) && value >= 0
+}
+
+function readCounterField(
+  entry: Record<string, unknown>,
+  key: string,
+  nonce: string
+): number {
+  const value = entry[key]
+  if (!isCounter(value)) {
+    throw new Error(`CodeAPI fixture counter ${key} is malformed for ${nonce}`)
+  }
+  return value
+}
+
+function parseCodeApiFixtureStatus(
+  raw: string,
+  expectedGeneration?: string
+): CodeApiFixtureStatus {
+  let parsed: unknown
+  try {
+    parsed = JSON.parse(raw)
+  } catch {
+    throw new Error('CodeAPI fixture receipt is not valid JSON')
+  }
+  if (!isRecord(parsed)) {
+    throw new Error('CodeAPI fixture receipt must be an object')
+  }
+  if (parsed.schemaVersion !== 1) {
+    throw new Error('CodeAPI fixture receipt schemaVersion must be 1')
+  }
+  if (
+    typeof parsed.generation !== 'string' ||
+    !CODEAPI_UUID_PATTERN.test(parsed.generation)
+  ) {
+    throw new Error('CodeAPI fixture receipt generation must be a UUID')
+  }
+  if (
+    expectedGeneration !== undefined &&
+    parsed.generation !== expectedGeneration
+  ) {
+    throw new Error(
+      'CodeAPI fixture restarted: receipt generation changed during the run'
+    )
+  }
+  if (parsed.mode !== 'enabled' && parsed.mode !== 'disabled') {
+    throw new Error('CodeAPI fixture receipt mode must be enabled or disabled')
+  }
+  if (parsed.ready !== true) {
+    throw new Error('CodeAPI fixture is not ready')
+  }
+  if (!isRecord(parsed.scenarios)) {
+    throw new Error('CodeAPI fixture receipt scenarios must be an object')
+  }
+
+  const scenarios: Record<string, CodeApiScenarioCounters> = {}
+  for (const [nonce, entry] of Object.entries(parsed.scenarios)) {
+    if (!CODEAPI_UUID_PATTERN.test(nonce) || !isRecord(entry)) {
+      throw new Error(`CodeAPI fixture scenario entry is malformed: ${nonce}`)
+    }
+    if (typeof entry.scenario !== 'string' || entry.scenario.length === 0) {
+      throw new Error(`CodeAPI fixture scenario name is malformed: ${nonce}`)
+    }
+    scenarios[nonce] = {
+      scenario: entry.scenario,
+      modelCalls: readCounterField(entry, 'modelCalls', nonce),
+      dispatches: readCounterField(entry, 'dispatches', nonce),
+      completed: readCounterField(entry, 'completed', nonce),
+      disconnected: readCounterField(entry, 'disconnected', nonce),
+      toolResults: readCounterField(entry, 'toolResults', nonce),
+    }
+  }
+
+  return {
+    schemaVersion: 1,
+    generation: parsed.generation,
+    mode: parsed.mode,
+    ready: true,
+    scenarios,
+  }
+}
+
+async function readCodeApiFixtureStatus(expectedGeneration?: string) {
+  const raw = await readFile(CODEAPI_FIXTURE_STATUS_URL, 'utf8')
+  return parseCodeApiFixtureStatus(raw, expectedGeneration)
+}
+
+function readPersistedParts(content: unknown): CodeApiPersistedPart[] {
+  if (!Array.isArray(content)) return []
+  return content.filter(isRecord).map((part) => ({
+    type: part.type,
+    name: part.name,
+    toolName: part.toolName,
+    toolCallId: part.toolCallId,
+    args: part.args,
+    result: part.result,
+    isError: part.isError,
+  }))
+}
+
+function readRunPythonCalls(parts: CodeApiPersistedPart[]) {
+  return parts.filter(
+    (part) => part.type === 'tool-call' && part.toolName === 'run_python'
+  )
+}
+
+function readResultObject(part: CodeApiPersistedPart) {
+  if (!isRecord(part.result)) {
+    throw new Error('Persisted run_python result is not an object')
+  }
+  return part.result
+}
+
+function readStdout(result: Record<string, unknown>) {
+  return isRecord(result.stdout) && typeof result.stdout.text === 'string'
+    ? result.stdout.text
+    : ''
+}
+
+test.describe('CodeAPI real-route fixture', () => {
+  test.describe.configure({ retries: 0 })
+  test.skip(
+    !CODEAPI_FIXTURE_ENABLED,
+    'Set KLICKER_CODEAPI_BROWSER_E2E=1 and start the local CodeAPI fixture runtime'
+  )
+
+  let fixtureGeneration = ''
+  let fixtureMode: CodeApiFixtureMode = 'enabled'
+  let botsEnsured = false
+
+  const allowedChatbotId = CODEAPI_BROWSER_CHATBOT_ID
+  const deniedChatbotId = CODEAPI_BROWSER_DENIED_CHATBOT_ID
+
+  async function readScenario(nonce: string) {
+    const status = await readCodeApiFixtureStatus(fixtureGeneration)
+    return status.scenarios[nonce] ?? null
+  }
+
+  async function readCounter(nonce: string, key: CodeApiScenarioCounterKey) {
+    const scenario = await readScenario(nonce)
+    return scenario?.[key] ?? 0
+  }
+
+  async function waitForScenarioRecorded(nonce: string) {
+    await expect
+      .poll(async () => (await readScenario(nonce)) !== null, {
+        timeout: 10_000,
+      })
+      .toBe(true)
+    const scenario = await readScenario(nonce)
+    if (!scenario) throw new Error(`No fixture scenario for nonce ${nonce}`)
+    return scenario
+  }
+
+  async function visitCodeApiChat(page: Page, chatbotId: string) {
+    await page.goto(`${chatUrl()}/${chatbotId}`, {
+      waitUntil: 'domcontentloaded',
+    })
+  }
+
+  async function sendCodeApiPrompt(page: Page, scenario: string) {
+    const nonce = randomUUID()
+    await sendMessage(page, `CODEAPI_E2E:${scenario}:${nonce}`)
+    return nonce
+  }
+
+  function expectCodeApiAnswer(page: Page, marker: string) {
+    return expect(
+      page.getByTestId('chat-assistant-message-content').last()
+    ).toContainText(marker)
+  }
+
+  async function readAssistantTurns(participantId: string, chatbotId: string) {
+    const prisma = await getPrisma()
+    const threads = await prisma.chatThread.findMany({
+      where: { participantId, chatbotId },
+      orderBy: { createdAt: 'desc' },
+      select: { id: true },
+    })
+    const turns: CodeApiPersistedTurn[] = []
+    for (const thread of threads) {
+      const messages = await prisma.chatMessage.findMany({
+        where: { threadId: thread.id, role: 'assistant' },
+        orderBy: { createdAt: 'desc' },
+        select: { content: true, chatMode: true },
+      })
+      for (const message of messages) {
+        turns.push({
+          threadId: thread.id,
+          chatMode: message.chatMode,
+          parts: readPersistedParts(message.content),
+        })
+      }
+    }
+    return turns
+  }
+
+  async function waitForAssistantTurnByNonce(
+    participantId: string,
+    chatbotId: string,
+    nonce: string
+  ) {
+    const find = async () =>
+      (await readAssistantTurns(participantId, chatbotId)).find((turn) =>
+        turn.parts.some((part) => JSON.stringify(part).includes(nonce))
+      )
+
+    await expect
+      .poll(async () => (await find()) !== undefined, { timeout: 10_000 })
+      .toBe(true)
+    const turn = await find()
+    if (!turn) throw new Error(`No persisted assistant turn for nonce ${nonce}`)
+    return turn
+  }
+
+  async function expectSuccessTurn(
+    page: Page,
+    participantId: string,
+    chatbotId: string,
+    nonce: string
+  ) {
+    await expectCodeApiAnswer(
+      page,
+      `CODEAPI_RESULT:${nonce}:execution:succeeded`
+    )
+    await expect
+      .poll(() => readCounter(nonce, 'dispatches'), { timeout: 10_000 })
+      .toBe(1)
+    await expect
+      .poll(() => readCounter(nonce, 'completed'), { timeout: 10_000 })
+      .toBe(1)
+    await expect
+      .poll(() => readCounter(nonce, 'toolResults'), { timeout: 10_000 })
+      .toBe(1)
+    await expect
+      .poll(() => readCounter(nonce, 'modelCalls'), { timeout: 10_000 })
+      .toBe(2)
+
+    const scenario = await readScenario(nonce)
+    expect(scenario?.scenario).toBe('success')
+
+    const turn = await waitForAssistantTurnByNonce(
+      participantId,
+      chatbotId,
+      nonce
+    )
+    const [toolCall] = readRunPythonCalls(turn.parts)
+    if (!toolCall) {
+      throw new Error('Persisted success turn has no run_python call')
+    }
+    expect(toolCall.args).toEqual({
+      code: `# CODEAPI_E2E:success:${nonce}`,
+    })
+    const result = readResultObject(toolCall)
+    expect(result.kind).toBe('execution')
+    expect(result.status).toBe('succeeded')
+    expect(result.exitCode).toBe(0)
+    expect(result.filesOmitted).toBe(false)
+    expect(readStdout(result)).toBe(`CODEAPI_VALUE:${nonce}`)
+    return turn
+  }
+
+  test.beforeAll(async ({ request }) => {
+    if (process.env.KLICKER_PLAYWRIGHT_PRESERVE_DATABASE !== '1') {
+      throw new Error(
+        'CodeAPI browser fixture requires the host launcher --preserve-database option'
+      )
+    }
+    const appUrl = new URL(chatUrl())
+    if (!appUrl.hostname.endsWith('.localhost')) {
+      throw new Error(
+        `CodeAPI browser fixture requires a local .localhost chat origin, received ${appUrl.origin}`
+      )
+    }
+
+    const health = await request.get(`${appUrl.origin}/api/health`, {
+      timeout: 15_000,
+    })
+    expect(health.status()).toBe(200)
+    const status = await readCodeApiFixtureStatus()
+    fixtureGeneration = status.generation
+    fixtureMode = status.mode
+
+    // getPrisma also enforces the marked disposable database before any
+    // fixture row is written.
+    await getPrisma()
+    await ensureCodeApiBrowserBots(fixtureGeneration)
+    botsEnsured = true
+
+    const prisma = await getPrisma()
+    const bots = await prisma.chatbot.findMany({
+      where: { id: { in: [allowedChatbotId, deniedChatbotId] } },
+      select: {
+        id: true,
+        disclaimerId: true,
+        modelSelection: true,
+        status: true,
+      },
+    })
+    if (bots.length !== 2) {
+      throw new Error('CodeAPI fixture bots were not created')
+    }
+    for (const bot of bots) {
+      if (
+        bot.disclaimerId !== null ||
+        bot.modelSelection !== false ||
+        bot.status !== 'PUBLISHED'
+      ) {
+        throw new Error(
+          'CodeAPI fixture bots must be published without a disclaimer or model selection'
+        )
+      }
+    }
+  })
+
+  test.afterAll(async () => {
+    if (!botsEnsured) return
+    await cleanupCodeApiBrowserBots(fixtureGeneration)
+  })
+
+  test.beforeEach(async ({ page }) => {
+    const participantId = await getEnrolledParticipantId()
+    await resetCodeApiBrowserState(
+      participantId,
+      allowedChatbotId,
+      fixtureGeneration
+    )
+    await resetCodeApiBrowserState(
+      participantId,
+      deniedChatbotId,
+      fixtureGeneration
+    )
+    await clearChatCookies(page)
+    await setParticipantToken(page, participantId)
+  })
+
+  test('A successful turn dispatches once, persists typed arguments and result, and reloads without dispatch', async ({
+    page,
+  }) => {
+    test.skip(fixtureMode !== 'enabled', 'Fixture receipt mode is disabled')
+    const participantId = await getEnrolledParticipantId()
+    await visitCodeApiChat(page, allowedChatbotId)
+
+    const nonce = await sendCodeApiPrompt(page, 'success')
+    const turn = await expectSuccessTurn(
+      page,
+      participantId,
+      allowedChatbotId,
+      nonce
+    )
+    expect(turn.chatMode).toBe('tutor')
+
+    const beforeReload = await readScenario(nonce)
+    await page.reload({ waitUntil: 'domcontentloaded' })
+    await expectCodeApiAnswer(
+      page,
+      `CODEAPI_RESULT:${nonce}:execution:succeeded`
+    )
+    expect(await readScenario(nonce)).toEqual(beforeReload)
+  })
+
+  test('A Python failure persists a safe typed result and the next turn succeeds in the same thread', async ({
+    page,
+  }) => {
+    test.skip(fixtureMode !== 'enabled', 'Fixture receipt mode is disabled')
+    const participantId = await getEnrolledParticipantId()
+    await visitCodeApiChat(page, allowedChatbotId)
+
+    const failureNonce = await sendCodeApiPrompt(page, 'python-error')
+    await expectCodeApiAnswer(
+      page,
+      `CODEAPI_RESULT:${failureNonce}:execution:failed`
+    )
+    await expect
+      .poll(() => readCounter(failureNonce, 'dispatches'), { timeout: 10_000 })
+      .toBe(1)
+    await expect
+      .poll(() => readCounter(failureNonce, 'completed'), { timeout: 10_000 })
+      .toBe(1)
+    await expect
+      .poll(() => readCounter(failureNonce, 'toolResults'), { timeout: 10_000 })
+      .toBe(1)
+
+    const failureTurn = await waitForAssistantTurnByNonce(
+      participantId,
+      allowedChatbotId,
+      failureNonce
+    )
+    const [failureCall] = readRunPythonCalls(failureTurn.parts)
+    if (!failureCall) {
+      throw new Error('Persisted Python failure has no run_python call')
+    }
+    expect(failureCall.args).toEqual({
+      code: `# CODEAPI_E2E:python-error:${failureNonce}`,
+    })
+    const failureResult = readResultObject(failureCall)
+    expect(failureResult.kind).toBe('execution')
+    expect(failureResult.status).toBe('failed')
+    expect(failureResult.exitCode).toBe(1)
+    expect(readStdout(failureResult)).not.toContain(
+      `CODEAPI_VALUE:${failureNonce}`
+    )
+
+    const recoveryNonce = await sendCodeApiPrompt(page, 'success')
+    const recoveryTurn = await expectSuccessTurn(
+      page,
+      participantId,
+      allowedChatbotId,
+      recoveryNonce
+    )
+    expect(recoveryTurn.threadId).toBe(failureTurn.threadId)
+  })
+
+  test('An HTTP failure persists a safe typed result and the next turn succeeds in the same thread', async ({
+    page,
+  }) => {
+    test.skip(fixtureMode !== 'enabled', 'Fixture receipt mode is disabled')
+    const participantId = await getEnrolledParticipantId()
+    await visitCodeApiChat(page, allowedChatbotId)
+
+    const failureNonce = await sendCodeApiPrompt(page, 'http-error')
+    await expectCodeApiAnswer(
+      page,
+      `CODEAPI_RESULT:${failureNonce}:service_error:503`
+    )
+    await expect
+      .poll(() => readCounter(failureNonce, 'dispatches'), { timeout: 10_000 })
+      .toBe(1)
+    await expect
+      .poll(() => readCounter(failureNonce, 'completed'), { timeout: 10_000 })
+      .toBe(1)
+    await expect
+      .poll(() => readCounter(failureNonce, 'toolResults'), { timeout: 10_000 })
+      .toBe(1)
+
+    const failureTurn = await waitForAssistantTurnByNonce(
+      participantId,
+      allowedChatbotId,
+      failureNonce
+    )
+    const [failureCall] = readRunPythonCalls(failureTurn.parts)
+    if (!failureCall) {
+      throw new Error('Persisted HTTP failure has no run_python call')
+    }
+    expect(failureCall.args).toEqual({
+      code: `# CODEAPI_E2E:http-error:${failureNonce}`,
+    })
+    const failureResult = readResultObject(failureCall)
+    expect(failureResult.kind).toBe('service_error')
+    expect(failureResult.status).toBe(503)
+
+    const recoveryNonce = await sendCodeApiPrompt(page, 'success')
+    const recoveryTurn = await expectSuccessTurn(
+      page,
+      participantId,
+      allowedChatbotId,
+      recoveryNonce
+    )
+    expect(recoveryTurn.threadId).toBe(failureTurn.threadId)
+  })
+
+  test('A guest timeout persists a safe typed result and the next turn succeeds in the same thread', async ({
+    page,
+  }) => {
+    test.skip(fixtureMode !== 'enabled', 'Fixture receipt mode is disabled')
+    const participantId = await getEnrolledParticipantId()
+    await visitCodeApiChat(page, allowedChatbotId)
+
+    const failureNonce = await sendCodeApiPrompt(page, 'timeout')
+    await expectCodeApiAnswer(
+      page,
+      `CODEAPI_RESULT:${failureNonce}:execution:failed`
+    )
+    await expect
+      .poll(() => readCounter(failureNonce, 'dispatches'), { timeout: 10_000 })
+      .toBe(1)
+    await expect
+      .poll(() => readCounter(failureNonce, 'completed'), { timeout: 10_000 })
+      .toBe(1)
+    await expect
+      .poll(() => readCounter(failureNonce, 'toolResults'), { timeout: 10_000 })
+      .toBe(1)
+
+    const failureTurn = await waitForAssistantTurnByNonce(
+      participantId,
+      allowedChatbotId,
+      failureNonce
+    )
+    const [failureCall] = readRunPythonCalls(failureTurn.parts)
+    if (!failureCall) {
+      throw new Error('Persisted guest timeout has no run_python call')
+    }
+    expect(failureCall.args).toEqual({
+      code: `# CODEAPI_E2E:timeout:${failureNonce}`,
+    })
+    const failureResult = readResultObject(failureCall)
+    expect(failureResult.kind).toBe('execution')
+    expect(failureResult.status).toBe('failed')
+    expect(failureResult.exitCode).toBe(137)
+    expect(readStdout(failureResult)).not.toContain(
+      `CODEAPI_VALUE:${failureNonce}`
+    )
+
+    const recoveryNonce = await sendCodeApiPrompt(page, 'success')
+    const recoveryTurn = await expectSuccessTurn(
+      page,
+      participantId,
+      allowedChatbotId,
+      recoveryNonce
+    )
+    expect(recoveryTurn.threadId).toBe(failureTurn.threadId)
+  })
+
+  test('Stopping after dispatch disconnects once, persists the stopped turn and recovers', async ({
+    page,
+  }) => {
+    test.skip(fixtureMode !== 'enabled', 'Fixture receipt mode is disabled')
+    const participantId = await getEnrolledParticipantId()
+    await visitCodeApiChat(page, allowedChatbotId)
+
+    const nonce = await sendCodeApiPrompt(page, 'stop')
+    await expect
+      .poll(() => readCounter(nonce, 'dispatches'), { timeout: 10_000 })
+      .toBe(1)
+
+    await page.getByTestId('chat-cancel-button').click()
+    await expect
+      .poll(() => readCounter(nonce, 'disconnected'), { timeout: 10_000 })
+      .toBe(1)
+    expect(await readCounter(nonce, 'completed')).toBe(0)
+
+    const hasStoppedMarker = async () =>
+      (await readAssistantTurns(participantId, allowedChatbotId)).some((turn) =>
+        turn.parts.some(
+          (part) => part.type === 'data' && part.name === 'chat-stopped'
+        )
+      )
+    await expect.poll(hasStoppedMarker, { timeout: 10_000 }).toBe(true)
+
+    await page.reload({ waitUntil: 'domcontentloaded' })
+    await expect(page.getByTestId('chat-message-stopped')).toBeVisible()
+
+    const recoveryNonce = await sendCodeApiPrompt(page, 'success')
+    await expectSuccessTurn(
+      page,
+      participantId,
+      allowedChatbotId,
+      recoveryNonce
+    )
+  })
+
+  test('Explainer mode answers unavailable without dispatch', async ({
+    page,
+  }) => {
+    test.skip(fixtureMode !== 'enabled', 'Fixture receipt mode is disabled')
+    const participantId = await getEnrolledParticipantId()
+    await visitCodeApiChat(page, allowedChatbotId)
+    await selectChatMode(page, 'explainer', 'Explainer')
+
+    const nonce = await sendCodeApiPrompt(page, 'success')
+    await expectCodeApiAnswer(page, `CODEAPI_UNAVAILABLE:${nonce}`)
+    const scenario = await waitForScenarioRecorded(nonce)
+    expect(scenario.dispatches).toBe(0)
+    expect(scenario.completed).toBe(0)
+    expect(scenario.toolResults).toBe(0)
+
+    const turn = await waitForAssistantTurnByNonce(
+      participantId,
+      allowedChatbotId,
+      nonce
+    )
+    expect(turn.chatMode).toBe('explainer')
+    expect(readRunPythonCalls(turn.parts)).toHaveLength(0)
+  })
+
+  test('An unallowlisted chatbot answers unavailable without dispatch', async ({
+    page,
+  }) => {
+    test.skip(fixtureMode !== 'enabled', 'Fixture receipt mode is disabled')
+    const participantId = await getEnrolledParticipantId()
+    await visitCodeApiChat(page, deniedChatbotId)
+
+    const nonce = await sendCodeApiPrompt(page, 'success')
+    await expectCodeApiAnswer(page, `CODEAPI_UNAVAILABLE:${nonce}`)
+    const scenario = await waitForScenarioRecorded(nonce)
+    expect(scenario.dispatches).toBe(0)
+    expect(scenario.completed).toBe(0)
+    expect(scenario.toolResults).toBe(0)
+
+    const turn = await waitForAssistantTurnByNonce(
+      participantId,
+      deniedChatbotId,
+      nonce
+    )
+    expect(turn.chatMode).toBe('tutor')
+    expect(readRunPythonCalls(turn.parts)).toHaveLength(0)
+  })
+
+  test('A second participant cannot read or delete another participant thread through the real API', async ({
+    page,
+    browser,
+  }) => {
+    test.skip(fixtureMode !== 'enabled', 'Fixture receipt mode is disabled')
+    const participantId = await getEnrolledParticipantId()
+    await visitCodeApiChat(page, allowedChatbotId)
+
+    const nonce = await sendCodeApiPrompt(page, 'success')
+    const turn = await expectSuccessTurn(
+      page,
+      participantId,
+      allowedChatbotId,
+      nonce
+    )
+    const threadUrl = `${chatUrl()}/api/chatbots/${allowedChatbotId}/threads/${turn.threadId}`
+
+    const ownerMessages = await page.request.get(`${threadUrl}/messages`)
+    expect(ownerMessages.status()).toBe(200)
+    const ownerBody: unknown = await ownerMessages.json()
+    expect(Array.isArray(ownerBody)).toBe(true)
+    expect((ownerBody as unknown[]).length).toBeGreaterThan(0)
+
+    const otherContext = await browser.newContext()
+    try {
+      const otherPage = await otherContext.newPage()
+      await setParticipantToken(otherPage, OTHER_PARTICIPANT_ID)
+
+      const deniedDelete = await otherContext.request.delete(threadUrl)
+      expect(deniedDelete.status()).toBe(404)
+
+      const scopedMessages = await otherContext.request.get(
+        `${threadUrl}/messages`
+      )
+      expect(scopedMessages.status()).toBe(200)
+      expect(await scopedMessages.json()).toEqual([])
+    } finally {
+      await otherContext.close()
+    }
+
+    const prisma = await getPrisma()
+    expect(
+      await prisma.chatThread.findUnique({
+        where: { id: turn.threadId },
+        select: { id: true },
+      })
+    ).not.toBeNull()
+  })
+
+  test('Two model tool calls dispatch once and the second call is persisted as call_limit', async ({
+    page,
+  }) => {
+    test.skip(fixtureMode !== 'enabled', 'Fixture receipt mode is disabled')
+    const participantId = await getEnrolledParticipantId()
+    await visitCodeApiChat(page, allowedChatbotId)
+
+    const nonce = await sendCodeApiPrompt(page, 'double')
+    await expectCodeApiAnswer(
+      page,
+      `CODEAPI_RESULT:${nonce}:execution:succeeded`
+    )
+    await expect
+      .poll(() => readCounter(nonce, 'dispatches'), { timeout: 10_000 })
+      .toBe(1)
+    await expect
+      .poll(() => readCounter(nonce, 'completed'), { timeout: 10_000 })
+      .toBe(1)
+    await expect
+      .poll(() => readCounter(nonce, 'toolResults'), { timeout: 10_000 })
+      .toBe(2)
+
+    const turn = await waitForAssistantTurnByNonce(
+      participantId,
+      allowedChatbotId,
+      nonce
+    )
+    const calls = readRunPythonCalls(turn.parts)
+    expect(calls).toHaveLength(2)
+    for (const call of calls) {
+      expect(call.args).toEqual({
+        code: `# CODEAPI_E2E:double:${nonce}`,
+      })
+    }
+
+    const firstResult = readResultObject(calls[0])
+    expect(firstResult.kind).toBe('execution')
+    expect(firstResult.status).toBe('succeeded')
+    expect(readStdout(firstResult)).toBe(`CODEAPI_VALUE:${nonce}`)
+    expect(readResultObject(calls[1])).toEqual({ kind: 'call_limit' })
+  })
+
+  test('Disabled fixture mode answers unavailable without dispatch', async ({
+    page,
+  }) => {
+    test.skip(fixtureMode !== 'disabled', 'Fixture receipt mode is enabled')
+    const participantId = await getEnrolledParticipantId()
+    await visitCodeApiChat(page, allowedChatbotId)
+
+    const nonce = await sendCodeApiPrompt(page, 'success')
+    await expectCodeApiAnswer(page, `CODEAPI_UNAVAILABLE:${nonce}`)
+    const scenario = await waitForScenarioRecorded(nonce)
+    expect(scenario.dispatches).toBe(0)
+    expect(scenario.completed).toBe(0)
+    expect(scenario.toolResults).toBe(0)
+
+    const turn = await waitForAssistantTurnByNonce(
+      participantId,
+      allowedChatbotId,
+      nonce
+    )
+    expect(turn.chatMode).toBe('tutor')
+    expect(readRunPythonCalls(turn.parts)).toHaveLength(0)
   })
 })

@@ -1355,3 +1355,41 @@ Local callback, route and deterministic SDK tests use generated signing keys
 and synthetic fake responses. They establish source-level integration only.
 Deployed trust, real Python, provider tool selection and browser Stop/reload
 require separate pilot acceptance before production activation.
+
+### Local real-route Python browser harness
+
+The opt-in harness uses the real participant chat route, database, native tool,
+streaming, Stop and persistence. A bounded loopback HTTPS fixture substitutes
+only the model and CodeAPI. It checks signed requests and derives its final model
+answer from the actual tool result. It evaluates no Python. Both mandatory model
+registry entries use Chat Completions; this does not qualify Responses or Auto
+provider routing, deployed trust or guest termination.
+
+After normal bootstrap has completed, create the ignored marker
+`.devcontainer/.runtime/codeapi-browser-fixture` containing `enabled`. Start the
+exact checkout with the `chat` profile through devrouter. The wrapper generates
+short-lived local TLS and JWT material in memory, combines the public local CA
+for its child, and injects synthetic credentials only into that child. The marker
+is rejected outside test mode or with another fixture. Switching enabled/disabled
+changes the managed process fingerprint. Ordinary development retains its normal
+Next command. The fixture has a twenty-minute lifetime and bounded requests,
+sockets and blocked responses; process exit closes its resources.
+
+Run from the host:
+
+```sh
+KLICKER_CODEAPI_BROWSER_E2E=1 node util/run-playwright-host.mjs \
+  --runtime-profile chat --preserve-database \
+  --project=chromium tests/Y-chat.spec.ts --grep 'CodeAPI real-route fixture'
+```
+
+Database preservation is mandatory before global setup. The suite requires the
+existing disposable synthetic seeds, refuses chatbot-ID collisions, and cleans
+only its two generation-owned bots and their conversation state. It uses fresh
+scenario nonces and a generation-bound ignored status file to check results,
+failure recovery, saved history, no reload redispatch, Stop transport disconnect,
+denied tool policies and participant isolation. A second explicit launch with the
+marker set to `disabled` covers default-off behavior. Both launches use zero
+retries. Remove only the marker you created and stop the exact task runtime after
+verification. Missing bootstrap recovery blocks browser qualification; offline
+fixture checks and a draft PR do not substitute for it.
