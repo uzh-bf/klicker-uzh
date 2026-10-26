@@ -113,7 +113,7 @@ test('preserves draft cancellation, publication and diagnostics policy', () => {
   )
   assert.equal(
     publication.if,
-    "${{ !cancelled() && steps.validate.outcome == 'success' }}"
+    "${{ !cancelled() && steps.validate.outcome == 'success' && steps.validate.outputs.publishable == 'true' }}"
   )
   const runIndex = action.runs.steps.findIndex((step) => step.id === 'review')
   const uploadIndex = action.runs.steps.findIndex((step) =>
