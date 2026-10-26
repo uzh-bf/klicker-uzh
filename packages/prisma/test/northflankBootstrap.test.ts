@@ -46,6 +46,7 @@ const access = (database: string) => ({
   can_create_schema: true,
 })
 type HarnessOptions = {
+  password?: string
   status?: Record<string, unknown>[]
   writeFailure?: string
   access?: (database: string) => Record<string, unknown>[]
@@ -81,7 +82,8 @@ function harness(options: HarnessOptions = {}) {
     const url = new URL(connectionString)
     if (
       url.username !== 'klicker_test' ||
-      decodeURIComponent(url.password) !== ENV[APP_PASSWORD_ENV]
+      decodeURIComponent(url.password) !==
+        (options.password ?? ENV[APP_PASSWORD_ENV])
     ) {
       throw new Error('synthetic-provider-secret')
     }
@@ -191,6 +193,17 @@ test('applies the guarded writes in order and verifies both app databases', asyn
   expected.forEach((pattern, index) => {
     assert.match(fake.writes[index] ?? '', pattern)
   })
+  assert.deepEqual(fake.apps, ['klicker_test', 'klicker_test_shadow'])
+})
+
+test('preserves reserved characters when verifying the restricted password', async () => {
+  const password = 'synthetic%41@/#:%zz'
+  const fake = harness({ password })
+  const result = await bootstrapNorthflankPostgres({
+    env: { ...ENV, DRY_RUN: 'false', [APP_PASSWORD_ENV]: password },
+    connect: fake.connect,
+  })
+  assert.deepEqual(result, { mode: 'applied' })
   assert.deepEqual(fake.apps, ['klicker_test', 'klicker_test_shadow'])
 })
 

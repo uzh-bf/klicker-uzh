@@ -247,7 +247,7 @@ export async function bootstrapNorthflankPostgres(
       try {
         const url = new URL(config.adminUrl)
         url.username = APP
-        url.password = config.appPassword
+        url.password = encodeURIComponent(config.appPassword)
         url.pathname = `/${database}`
         appClient = await connect(url.toString())
         const identity = await appClient.query(disposableDatabaseIdentityQuery)
@@ -284,10 +284,8 @@ if (process.argv[1] === fileURLToPath(import.meta.url)) {
           : 'Northflank PostgreSQL bootstrap completed and verified'
       )
     },
-    () => {
-      console.error(
-        'Northflank PostgreSQL bootstrap failed; recreate the disposable environment'
-      )
+    (error: Error) => {
+      console.error(error.message)
       process.exitCode = 1
     }
   )
