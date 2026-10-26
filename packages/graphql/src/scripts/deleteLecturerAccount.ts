@@ -426,14 +426,6 @@ async function save(path: string, value: unknown) {
   }
 }
 
-function quoteSchema(schema: string) {
-  if (!/^[a-z_][a-z0-9_]*$/i.test(schema))
-    throw new LecturerDeletionCommandError(
-      'DATABASE_URL must name one plain PostgreSQL schema'
-    )
-  return `"${schema}"`
-}
-
 async function prepareStateDirectory(dir: string, root: string) {
   await mkdir(dir, { recursive: true, mode: 0o700 })
   const [realDir, realRoot] = await Promise.all([realpath(dir), realpath(root)])
@@ -541,11 +533,7 @@ export async function performDeletionAction(
     )
 }
 
-async function observeAction(
-  prisma: PrismaClient,
-  schema: string,
-  action: DeletionAction
-) {
+async function observeAction(prisma: PrismaClient, action: DeletionAction) {
   const tables = {
     element: 'Element',
     tag: 'Tag',
@@ -559,9 +547,8 @@ async function observeAction(
     chatbotDisclaimer: 'ChatbotDisclaimer',
     competencyTree: 'CompetencyTree',
   }
-  const qualifiedSchema = quoteSchema(schema)
   const rows = await prisma.$queryRawUnsafe<{ deleted: boolean }[]>(
-    `SELECT coalesce((to_jsonb(t)->>'isDeleted')::boolean, false) AS deleted FROM ${qualifiedSchema}."${tables[action.kind]}" t WHERE id::text = $1`,
+    `SELECT coalesce((to_jsonb(t)->>'isDeleted')::boolean, false) AS deleted FROM "public"."${tables[action.kind]}" t WHERE id::text = $1`,
     String(action.id)
   )
   return rows.length === 0
@@ -578,13 +565,12 @@ type CourseObservation = {
 
 async function observeCourse(
   prisma: PrismaClient,
-  schema: string,
   id: string
 ): Promise<CourseObservation> {
   const rows = await prisma.$queryRawUnsafe<
     Array<{ pending: boolean; deletionRequestedAt: Date | string | null }>
   >(
-    `SELECT ("deletionRequestedAt" IS NOT NULL) AS pending, "deletionRequestedAt" FROM ${quoteSchema(schema)}."Course" WHERE id::text = $1 LIMIT 1`,
+    `SELECT ("deletionRequestedAt" IS NOT NULL) AS pending, "deletionRequestedAt" FROM "public"."Course" WHERE id::text = $1 LIMIT 1`,
     id
   )
   const row = rows[0]
@@ -616,13 +602,12 @@ function courseRecoveryError(
 
 async function observeExactUser(
   prisma: PrismaClient,
-  schema: string,
   target: DeletionTarget
 ): Promise<'absent' | 'present'> {
   const rows = await prisma.$queryRawUnsafe<
     Array<{ id: string; email: string }>
   >(
-    `SELECT "id"::text AS "id", "email" FROM ${quoteSchema(schema)}."User" WHERE "id" = $1::uuid OR "email" = $2 LIMIT 2`,
+    `SELECT "id"::text AS "id", "email" FROM "public"."User" WHERE "id" = $1::uuid OR "email" = $2 LIMIT 2`,
     target.id,
     target.email
   )
@@ -765,7 +750,6 @@ export async function main(args = process.argv.slice(2)) {
       'DATABASE_URL has an ambiguous schema configuration'
     )
   const databaseSchema = schemas[0] ?? 'public'
-  quoteSchema(databaseSchema)
   if (databaseSchema !== 'public')
     throw new LecturerDeletionCommandError(
       'This command supports the repository public schema only'
@@ -890,7 +874,7 @@ export async function main(args = process.argv.slice(2)) {
           )
         }
       }
-      const userState = await observeExactUser(prisma, databaseSchema, target)
+      const userState = await observeExactUser(prisma, target)
       if (receipt?.accountComplete) {
         if (userState === 'absent') {
           console.log('The recorded deletion is complete.')
@@ -994,38 +978,30 @@ export async function main(args = process.argv.slice(2)) {
         throw new LecturerDeletionCommandError(
           'New content appeared; stop and inspect the partial run'
         )
-      const intendedCourseIds = new Set(
+      const intendedCourses = new Map(
         run.originalActions
           .filter(
             (action) =>
               action.kind === 'course' &&
               run.intended.includes(actionKey(action))
           )
-          .map((action) => String(action.id))
+          .map((action) => [String(action.id), action] as const)
       )
       for (const blocker of preview.blockers) {
-        const isIntendedCourseMarker =
-          blocker.kind === 'activeWork' &&
-          blocker.table === 'Course' &&
-          blocker.reason === 'deletion-marker' &&
-          intendedCourseIds.has(blocker.id)
-        if (!isIntendedCourseMarker)
+        const courseAction = intendedCourses.get(blocker.id)
+        if (
+          !(
+            blocker.kind === 'activeWork' &&
+            blocker.table === 'Course' &&
+            blocker.reason === 'deletion-marker'
+          ) ||
+          !courseAction
+        ) {
           throw new LecturerDeletionCommandError(
             `Deletion is blocked. ${BLOCKED_NEXT_STEP}`
           )
-        const courseAction = run.originalActions.find(
-          (action) =>
-            action.kind === 'course' && String(action.id) === blocker.id
-        )
-        if (!courseAction)
-          throw new LecturerDeletionCommandError(
-            'The pending course blocker has no matching receipt action'
-          )
-        const courseObservation = await observeCourse(
-          prisma,
-          databaseSchema,
-          blocker.id
-        )
+        }
+        const courseObservation = await observeCourse(prisma, blocker.id)
         if (
           courseObservation.state !== 'pending' &&
           courseObservation.state !== 'absent'
@@ -1122,9 +1098,7 @@ export async function main(args = process.argv.slice(2)) {
         assertLease()
         const key = actionKey(action)
         if (run.completed.includes(key)) {
-          if (
-            (await observeAction(prisma, databaseSchema, action)) !== 'absent'
-          )
+          if ((await observeAction(prisma, action)) !== 'absent')
             throw new LecturerDeletionCommandError(
               'A recorded completed action is not absent; inspect before resuming'
             )
@@ -1137,7 +1111,7 @@ export async function main(args = process.argv.slice(2)) {
               !(
                 b.table === 'Course' &&
                 b.reason === 'deletion-marker' &&
-                intendedCourseIds.has(b.id)
+                intendedCourses.has(b.id)
               )
           ) ||
           !mediaUnchanged(fresh) ||
@@ -1147,12 +1121,11 @@ export async function main(args = process.argv.slice(2)) {
             `Dependencies changed; stop the partial run. ${BLOCKED_NEXT_STEP}`
           )
         }
-        const state = await observeAction(prisma, databaseSchema, action)
+        const state = await observeAction(prisma, action)
         if (run.intended.includes(key)) {
           if (action.kind === 'course') {
             const courseObservation = await observeCourse(
               prisma,
-              databaseSchema,
               String(action.id)
             )
             if (courseObservation.state === 'present')
@@ -1182,7 +1155,6 @@ export async function main(args = process.argv.slice(2)) {
               } catch {
                 const observation = await observeCourse(
                   prisma,
-                  databaseSchema,
                   String(action.id)
                 ).catch(() => undefined)
                 throw courseRecoveryError(action, observation)
@@ -1198,7 +1170,6 @@ export async function main(args = process.argv.slice(2)) {
           while (pending) {
             const courseObservation = await observeCourse(
               prisma,
-              databaseSchema,
               String(action.id)
             )
             pending = courseObservation.state !== 'absent'
@@ -1208,14 +1179,12 @@ export async function main(args = process.argv.slice(2)) {
             await new Promise((resolve) => setTimeout(resolve, 1000))
           }
         } else if (action.kind === 'element') {
-          if (
-            (await observeAction(prisma, databaseSchema, action)) !== 'absent'
-          ) {
+          if ((await observeAction(prisma, action)) !== 'absent') {
             await assertCourseDuplicationClear(run.originalActions)
             await service.purgePrivateElement(prisma, target, Number(action.id))
           }
         }
-        if ((await observeAction(prisma, databaseSchema, action)) !== 'absent')
+        if ((await observeAction(prisma, action)) !== 'absent')
           throw new LecturerDeletionCommandError(
             'Deletion retained a database row; stop before finalization'
           )
@@ -1280,7 +1249,7 @@ export async function main(args = process.argv.slice(2)) {
       await service.finalizeLecturerDeletion(prisma, target, {
         mediaIds: remaining.mediaIds,
       })
-      if ((await observeExactUser(prisma, databaseSchema, target)) !== 'absent')
+      if ((await observeExactUser(prisma, target)) !== 'absent')
         throw new LecturerDeletionCommandError(
           'Account finalization did not establish exact User absence'
         )
