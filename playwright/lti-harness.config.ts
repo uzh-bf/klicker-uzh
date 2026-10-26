@@ -18,12 +18,9 @@ export default defineConfig({
   },
   projects: [
     { name: 'chromium', use: { ...devices['Desktop Chrome'] } },
-    {
-      name: 'chromium-third-party-cookies-blocked',
-      use: { ...devices['Desktop Chrome'] },
-      // the spec enables Chromium's third-party cookie restriction over CDP
-      metadata: { blocksThirdPartyCookies: true },
-    },
+    // WebKit blocks all third-party cookies, like Safari. Chromium's DevTools
+    // cookie restriction misses navigations a cross-site iframe starts itself,
+    // so it cannot stand in for a blocking browser.
     {
       name: 'firefox',
       use: {
@@ -35,6 +32,10 @@ export default defineConfig({
         },
       },
     },
-    { name: 'webkit', use: { ...devices['Desktop Safari'] } },
+    {
+      name: 'webkit',
+      use: { ...devices['Desktop Safari'] },
+      metadata: { blocksThirdPartyCookies: true },
+    },
   ],
 })
