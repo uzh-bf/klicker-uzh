@@ -85,13 +85,24 @@ httpHandler.app.get('/handoff', async (req, res) => {
   try {
     context = await provider.getLaunchContext(String(req.query.ltik))
   } catch {
+    console.error('event=lti_handoff_rejected reason=invalid_ltik')
     return res.status(401).json({ error: 'invalid_launch' })
   }
 
   // A launch issues one KlickerUZH token; a replayed handoff URL is rejected.
   // The launch is used up before its target is checked again, so a tampered
   // redirectTo cannot be retried with another target.
-  if (!(await database.consumeIdToken(context.rawIdToken.id))) {
+  let consumed: boolean
+  try {
+    consumed = await database.consumeIdToken(context.rawIdToken.id)
+  } catch (error) {
+    console.error(
+      `event=lti_handoff_failed message=${error instanceof Error ? error.message : String(error)}`
+    )
+    return res.status(500).json({ error: 'handoff_failed' })
+  }
+  if (!consumed) {
+    console.error('event=lti_handoff_rejected reason=launch_used_or_expired')
     return res.status(401).json({ error: 'invalid_launch' })
   }
 
@@ -99,6 +110,9 @@ httpHandler.app.get('/handoff', async (req, res) => {
     query: req.query as Record<string, unknown>,
   })
   if (!launchTarget.ok) {
+    console.error(
+      `event=lti_handoff_rejected reason=${launchTarget.reason} targetSource=${launchTarget.source ?? 'null'}`
+    )
     return res.status(400).json({
       error: 'invalid_launch_target',
       reason: launchTarget.reason,

@@ -90,7 +90,8 @@ export class PostgresDatabaseManager implements DatabaseManager {
       await client.query(SCHEMA)
       await client.query('COMMIT')
     } catch (error) {
-      await client.query('ROLLBACK')
+      // a dropped connection also fails the rollback; report the cause
+      await client.query('ROLLBACK').catch(() => {})
       throw error
     } finally {
       client.release()
