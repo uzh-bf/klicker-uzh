@@ -160,19 +160,32 @@ const setup = async () => {
     )
     if (existing) {
       await provider.platformManager.updatePlatform(existing, fields)
-    } else {
+      continue
+    }
+    try {
       await provider.platformManager.registerPlatform({
         url: registration.url,
         clientId: registration.clientId,
         ...fields,
       })
+    } catch (error) {
+      // another replica registered the platform since the lookup above
+      const registered =
+        await provider.platformManager.getPlatformByUrlAndClientId(
+          registration.url,
+          registration.clientId
+        )
+      if (!registered) throw error
+      await provider.platformManager.updatePlatform(registered, fields)
     }
   }
   console.log(`Registered ${platforms.length} LTI platforms`)
 }
 
-setup().catch(() => {
-  console.error('LTI platform initialization failed')
+setup().catch((error: unknown) => {
+  console.error(
+    `LTI platform initialization failed: ${error instanceof Error ? error.message : String(error)}`
+  )
   process.exit(1)
 })
 

@@ -66,6 +66,12 @@ export class PostgresDatabaseManager implements DatabaseManager {
 
   constructor(config: pg.PoolConfig, encryptionKey: string) {
     this.pool = new pg.Pool(config)
+    // An idle client whose connection drops emits 'error' on the pool; without
+    // a listener that would exit the process. pg discards the client and the
+    // next query reconnects.
+    this.pool.on('error', (error) => {
+      console.error(`LTI database idle client error: ${error.message}`)
+    })
     this.key = createHash('sha256').update(encryptionKey).digest()
   }
 
