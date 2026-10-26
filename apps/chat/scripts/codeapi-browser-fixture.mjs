@@ -459,9 +459,9 @@ async function main() {
   let fixture, directory, child, forcedExit, lifetime
   const stopped = new AbortController()
   const signalChild = (signal) => {
-    if (child?.pid) {
+    if (child?.pid && child.exitCode === null && child.signalCode === null) {
       try {
-        process.kill(-child.pid, signal)
+        child.kill(signal)
       } catch (error) {
         if (error.code !== 'ESRCH') throw error
       }
@@ -506,7 +506,7 @@ async function main() {
     child = spawn(
       process.execPath,
       [next, 'dev', '--turbopack', '--port', '3004'],
-      { env, stdio: 'inherit', detached: true }
+      { env, stdio: 'inherit' }
     )
     const exit = new Promise((resolve, reject) => {
       child.once('exit', (code) => resolve(code ?? 1))
@@ -530,7 +530,7 @@ async function main() {
   } finally {
     clearTimeout(lifetime)
     clearTimeout(forcedExit)
-    // Include descendants even if the Next parent has already exited.
+    // Keep Next in the managed group so forced replacement contains it too.
     signalChild('SIGKILL')
     await fixture?.close()
     if (directory) await rm(directory, { recursive: true, force: true })

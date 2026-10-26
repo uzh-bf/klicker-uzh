@@ -9,6 +9,7 @@ import {
   writeFile,
 } from 'node:fs/promises'
 import https from 'node:https'
+import net from 'node:net'
 import { tmpdir } from 'node:os'
 import path from 'node:path'
 import { createOpenAI } from '@ai-sdk/openai'
@@ -330,7 +331,10 @@ describe('bounded CodeAPI browser fixture', () => {
     ).rejects.toThrow()
   })
 
-  test('owns child credentials and removes its listener and public CA on termination', async () => {
+  test.each([
+    'SIGTERM',
+    'SIGKILL',
+  ] as const)('contains the child listener when its owned group receives %s', async (termination) => {
     const directory = await mkdtemp(
       path.join(tmpdir(), 'codeapi-wrapper-test-')
     )
@@ -355,7 +359,7 @@ describe('bounded CodeAPI browser fixture', () => {
     const childReceipt = path.join(directory, 'child.json')
     await writeFile(
       path.join(next, 'next'),
-      `const fs = require('node:fs'); fs.writeFileSync(process.env.FIXTURE_CHILD_RECEIPT, JSON.stringify({ pid: process.pid, ca: process.env.NODE_EXTRA_CA_CERTS, origin: new URL(process.env.OPENAI_BASE_URL).origin, guarded: process.env.KLICKER_EVAL_GUARD_ORIGIN === new URL(process.env.OPENAI_BASE_URL).origin, signed: !!process.env.CHAT_CODEAPI_JWT_PRIVATE_KEY, telemetry: !!process.env.LANGFUSE_SECRET_KEY })); setInterval(() => {}, 1000);`
+      `const fs = require('node:fs'); const server = require('node:net').createServer(); server.listen(0, '127.0.0.1', () => { fs.writeFileSync(process.env.FIXTURE_CHILD_RECEIPT, JSON.stringify({ pid: process.pid, port: server.address().port, ca: process.env.NODE_EXTRA_CA_CERTS, origin: new URL(process.env.OPENAI_BASE_URL).origin, guarded: process.env.KLICKER_EVAL_GUARD_ORIGIN === new URL(process.env.OPENAI_BASE_URL).origin, signed: !!process.env.CHAT_CODEAPI_JWT_PRIVATE_KEY, telemetry: !!process.env.LANGFUSE_SECRET_KEY })); });`
     )
     const child = spawn(
       process.execPath,
@@ -370,15 +374,27 @@ describe('bounded CodeAPI browser fixture', () => {
           LANGFUSE_SECRET_KEY: randomUUID(),
         },
         stdio: 'ignore',
+        detached: true,
       }
     )
     const exit = new Promise((resolve) => child.once('exit', resolve))
     cleanups.push(async () => {
-      child.kill('SIGTERM')
+      try {
+        process.kill(-child.pid!, 'SIGKILL')
+      } catch {}
+      if (receipt?.pid) {
+        try {
+          process.kill(receipt.pid, 'SIGKILL')
+        } catch {}
+        try {
+          await rm(path.dirname(receipt.ca), { recursive: true, force: true })
+        } catch {}
+      }
       await exit
     })
     let receipt: {
       pid: number
+      port: number
       ca: string
       origin: string
       guarded: boolean
@@ -403,13 +419,31 @@ describe('bounded CodeAPI browser fixture', () => {
       expect(JSON.parse(await readFile(status, 'utf8')).ready).toBe(true)
     )
     const trust = await readFile(receipt!.ca)
-    child.kill('SIGTERM')
+    if (termination === 'SIGTERM') child.kill('SIGTERM')
+    else process.kill(-child.pid!, 'SIGKILL')
     await exit
-    expect(() => process.kill(receipt!.pid, 0)).toThrow()
-    await expect(readFile(receipt!.ca)).rejects.toMatchObject({
-      code: 'ENOENT',
+    const listenerOpen = () =>
+      new Promise<boolean>((resolve) => {
+        const socket = net.connect({ host: '127.0.0.1', port: receipt!.port })
+        socket.once('connect', () => {
+          socket.destroy()
+          resolve(true)
+        })
+        socket.once('error', () => resolve(false))
+        socket.setTimeout(1000, () => {
+          socket.destroy()
+          resolve(false)
+        })
+      })
+    await vi.waitFor(async () => expect(await listenerOpen()).toBe(false), {
+      timeout: 2000,
     })
-    expect(JSON.parse(await readFile(status, 'utf8')).ready).toBe(false)
+    if (termination === 'SIGTERM') {
+      await expect(readFile(receipt!.ca)).rejects.toMatchObject({
+        code: 'ENOENT',
+      })
+      expect(JSON.parse(await readFile(status, 'utf8')).ready).toBe(false)
+    }
     await expect(
       new Promise((resolve, reject) => {
         const req = https.get(receipt!.origin, { ca: trust }, resolve)
