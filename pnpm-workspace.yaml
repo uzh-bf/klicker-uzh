@@ -56,12 +56,9 @@ minimumReleaseAgeExclude:
   - '@img/sharp-win32-arm64@0.35.5'
   - '@img/sharp-win32-ia32@0.35.5'
   - '@img/sharp-win32-x64@0.35.5'
-  # Reviewed application and React Email preview Next.js 16.4.1;
-  # keep the 14-day policy for other releases.
+  # Reviewed React Email preview Next.js 16.4.1.
   - 'next@16.4.1'
-  - 'eslint-config-next@16.4.1'
   - '@next/env@16.4.1'
-  - '@next/eslint-plugin-next@16.4.1'
   - '@next/swc-darwin-x64@16.4.1'
   - '@next/swc-darwin-arm64@16.4.1'
   - '@next/swc-linux-x64-gnu@16.4.1'
@@ -70,6 +67,22 @@ minimumReleaseAgeExclude:
   - '@next/swc-linux-arm64-gnu@16.4.1'
   - '@next/swc-linux-arm64-musl@16.4.1'
   - '@next/swc-win32-arm64-msvc@16.4.1'
+  # Reviewed application Next.js 16.4.3, which fixes Turbopack dev missing
+  # Pages Router modules from client chunks (vercel/next.js#99789). React
+  # Email preview pins next 16.4.1 exactly and keeps the reviewed 16.4.1 set.
+  # Keep the 14-day policy for other releases.
+  - 'next@16.4.3'
+  - 'eslint-config-next@16.4.3'
+  - '@next/env@16.4.3'
+  - '@next/eslint-plugin-next@16.4.3'
+  - '@next/swc-darwin-x64@16.4.3'
+  - '@next/swc-darwin-arm64@16.4.3'
+  - '@next/swc-linux-x64-gnu@16.4.3'
+  - '@next/swc-linux-x64-musl@16.4.3'
+  - '@next/swc-win32-x64-msvc@16.4.3'
+  - '@next/swc-linux-arm64-gnu@16.4.3'
+  - '@next/swc-linux-arm64-musl@16.4.3'
+  - '@next/swc-win32-arm64-msvc@16.4.3'
   # Internal UZH design-system release: the exact 4.1.8 consumer bump is
   # reviewed and verified in this PR.
   - '@uzh-bf/design-system@4.1.8'
