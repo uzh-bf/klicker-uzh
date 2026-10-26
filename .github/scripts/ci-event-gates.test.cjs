@@ -281,7 +281,7 @@ test('playwright execution and reporting run only for open pull requests', () =>
 // source must always validate their pushes independently. The reporter
 // therefore has to tie reuse acceptance to the event family and push ref
 // instead of rejecting every duplicate.
-test('the playwright reporter reuses only pull-request validation', () => {
+test('the playwright reporter requires rollout opt-in for verified push reuse', () => {
   const playwright = readWorkflow('test-playwright.yml')
   const report = playwright.jobs['test-playwright-status'].steps.find(
     (step) => step.name === 'Check result'
@@ -291,7 +291,7 @@ test('the playwright reporter reuses only pull-request validation', () => {
     report,
     /\[ -n "\$\{DUPLICATE_RUN_ID:-\}" \] && \[ "\$IS_PULL_REQUEST" != 'true' \]/
   )
-  assert.match(report, /Push validation cannot be reused/)
+  assert.match(report, /Verified push reuse is disabled/)
   assert.doesNotMatch(report, /Playwright validation cannot be reused/)
 })
 
@@ -305,10 +305,6 @@ const READY_FOR_REVIEW_LIFECYCLE_WORKFLOWS = new Map([
   [
     'test-playwright.yml',
     'the ready boundary runs the envelope so it can validate the existing full proof of an unchanged head instead of rebuilding and retesting it',
-  ],
-  [
-    'check.yml',
-    'the required check owns the ready boundary and must be recomputed there',
   ],
   [
     'check-ocr-final-review.yml',
@@ -835,8 +831,8 @@ test('the codebase check reuses prior validation without suppressing its context
     /needs\.select\.outputs\.should_run == 'true'/
   )
   assert.equal(workflow.permissions.checks, 'read')
-  // The ready boundary still recomputes.
-  assert.ok(workflow.on.pull_request.types.includes('ready_for_review'))
+  // Readiness cannot invalidate identical codebase inputs.
+  assert.ok(!workflow.on.pull_request.types.includes('ready_for_review'))
 })
 
 // The application-wide steps of the codebase check run in full unless the
@@ -973,6 +969,44 @@ test('the bounded codebase check narrows only for a proven pull-request class', 
     false,
     'the bounded announcement must never claim a class that was not proven'
   )
+})
+
+test('shared OCR qualification covers callers and its orchestrator, and runs for an unproven diff', () => {
+  const steps = readWorkflow('check.yml').jobs['check-suite'].steps
+  const selector = steps.find((step) => step.id === 'ocr_shared')
+  assert.equal(selector.uses, './.github/actions/changed-paths')
+  const pattern = new RegExp(selector.with.pattern)
+  for (const file of [
+    '.github/actions/ocr-review/action.yml',
+    '.github/scripts/ocr-controller.test.cjs',
+    '.github/open-code-review/runtime-manifest.json',
+    '.agents/skills/ocr-reviewer/SKILL.md',
+    '.github/workflows/check-ocr-review.yml',
+    '.github/workflows/check.yml',
+  ])
+    assert.equal(pattern.test(file), true, file)
+  for (const file of [
+    '.github/workflows/check-ocr-final-review.yml',
+    'apps/chat/src/proxy.ts',
+    'docs/ocr-runtime.md',
+  ])
+    assert.equal(pattern.test(file), false, file)
+  const qualification = steps.find((step) =>
+    step.run?.includes('export OCR_REQUIRE_STOCK_BINARY=1')
+  )
+  for (const should_run of ['false', 'true', undefined]) {
+    assert.equal(
+      evaluateGate(
+        qualification.if,
+        {},
+        {},
+        false,
+        {},
+        { ocr_shared: { outputs: { should_run } } }
+      ),
+      should_run !== 'false'
+    )
+  }
 })
 
 test('OCR engine qualification only runs for related paths or an unproven diff', () => {

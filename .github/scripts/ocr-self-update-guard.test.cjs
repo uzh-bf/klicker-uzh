@@ -1,13 +1,47 @@
 const assert = require('node:assert/strict')
+const { execFileSync } = require('node:child_process')
 const fs = require('node:fs')
 const path = require('node:path')
-const os = require('node:os')
-const { spawnSync } = require('node:child_process')
 const test = require('node:test')
 const YAML = require('yaml')
 
 const root = path.join(__dirname, '../..')
 const workflowDir = path.join(root, '.github/workflows')
+
+function loadPinnedDraftPolicy() {
+  const workflow = YAML.parse(
+    fs.readFileSync(path.join(workflowDir, 'check-ocr-review.yml'), 'utf8')
+  )
+  const job = workflow.jobs['ocr-review']
+  const actionStep = (job.steps ?? []).find(
+    (step) =>
+      typeof step.uses === 'string' &&
+      step.uses.startsWith('uzh-bf/klicker-uzh/.github/actions/ocr-review@')
+  )
+  assert.ok(actionStep, 'expected the pinned OCR composite action')
+
+  const match =
+    /^uzh-bf\/klicker-uzh\/\.github\/actions\/ocr-review@([0-9a-f]{40})$/.exec(
+      actionStep.uses
+    )
+  assert.ok(
+    match,
+    'expected the OCR action in the fixed namespace at a full SHA'
+  )
+
+  const revision = match[1]
+  const readPinned = (file) =>
+    execFileSync('git', ['show', `${revision}:${file}`], {
+      cwd: root,
+      encoding: 'utf8',
+    })
+  const action = YAML.parse(readPinned('.github/actions/ocr-review/action.yml'))
+  const manifest = YAML.parse(
+    readPinned('.github/open-code-review/runtime-manifest.json')
+  )
+
+  return { job, actionStep, action, manifest }
+}
 
 // The OpenCodeReview CLI starts a detached `npm i -g <latest>` on its first
 // invocation unless OCR_NO_UPDATE is set. That global reinstall deletes and
@@ -31,7 +65,10 @@ test('every OpenCodeReview job disables the CLI self-update', () => {
       const ocrSteps = (job.steps ?? []).filter(
         (step) =>
           (typeof step.uses === 'string' &&
-            step.uses.startsWith('alibaba/open-code-review@')) ||
+            (step.uses.startsWith('alibaba/open-code-review@') ||
+              step.uses.startsWith(
+                'uzh-bf/klicker-uzh/.github/actions/ocr-review@'
+              ))) ||
           /ocr-draft-review\.cjs run/.test(step.run ?? '')
       )
       if (ocrSteps.length === 0) continue
@@ -60,21 +97,30 @@ test('every OpenCodeReview job disables the CLI self-update', () => {
     guarded.length > 0,
     'expected at least one job to run the OpenCodeReview action'
   )
+  assert.ok(guarded.includes('check-ocr-review.yml:ocr-review'))
 })
 
-test('attempts draft diagnostics upload even after startup failure', () => {
-  const job = YAML.parse(
-    fs.readFileSync(
-      path.join(__dirname, '../workflows/check-ocr-review.yml'),
-      'utf8'
-    )
-  ).jobs['ocr-review']
-  const runIndex = job.steps.findIndex((step) => step.id === 'review')
-  const uploadIndex = job.steps.findIndex((step) =>
+test('preserves draft cancellation, publication and diagnostics policy', () => {
+  const { action } = loadPinnedDraftPolicy()
+  assert.equal(action.runs.using, 'composite')
+  const validation = action.runs.steps.find((step) => step.id === 'validate')
+  const publication = action.runs.steps.find((step) =>
+    step.with?.script?.includes('publishReview')
+  )
+  assert.equal(
+    validation.if,
+    "${{ !cancelled() && (steps.review.outcome == 'success' || steps.review.outcome == 'failure') }}"
+  )
+  assert.equal(
+    publication.if,
+    "${{ !cancelled() && steps.validate.outcome == 'success' }}"
+  )
+  const runIndex = action.runs.steps.findIndex((step) => step.id === 'review')
+  const uploadIndex = action.runs.steps.findIndex((step) =>
     step.uses?.startsWith('actions/upload-artifact@')
   )
   assert.ok(runIndex >= 0 && uploadIndex > runIndex)
-  const upload = job.steps[uploadIndex]
+  const upload = action.runs.steps[uploadIndex]
   const paths = upload.with.path.trim().split('\n')
   assert.deepEqual(paths, [
     '${{ runner.temp }}/draft-ai-review-adapter-diagnostics.jsonl',
@@ -82,6 +128,7 @@ test('attempts draft diagnostics upload even after startup failure', () => {
     '${{ runner.temp }}/draft-ai-review-tools.json',
     '${{ runner.temp }}/draft-ai-review-advisor-expectations.json',
     '${{ runner.temp }}/draft-ai-review-advisor-diagnostics.jsonl',
+    '${{ runner.temp }}/ocr-runtime-identity.json',
   ])
   assert.equal(upload.if, 'always()')
   assert.equal(
@@ -93,98 +140,55 @@ test('attempts draft diagnostics upload even after startup failure', () => {
 })
 
 test('routes automatic drafts through Mistral Flash without changing the final provider', () => {
-  const job = YAML.parse(
-    fs.readFileSync(
-      path.join(__dirname, '../workflows/check-ocr-review.yml'),
-      'utf8'
-    )
-  ).jobs['ocr-review']
+  const { job, actionStep, action, manifest } = loadPinnedDraftPolicy()
   assert.equal(job.env.OCR_ADAPTER_PROVIDER, 'mistral-flash')
-  const run = job.steps.find((step) => step.id === 'review')
-  assert.equal(run.env.MISTRAL_API_KEY, '${{ secrets.MISTRAL_API_KEY }}')
+  assert.deepEqual(actionStep.with, {
+    'mistral-api-key': '${{ secrets.MISTRAL_API_KEY }}',
+    'context7-api-key': '${{ secrets.CONTEXT7_API_KEY }}',
+    'github-token': '${{ github.token }}',
+  })
+  const trustedCheckout = action.runs.steps.find(
+    (step) =>
+      step.uses?.startsWith('actions/checkout@') &&
+      step.with?.repository === '${{ github.repository }}'
+  )
+  assert.equal(trustedCheckout.with.token, '${{ inputs.github-token }}')
+  assert.equal(
+    trustedCheckout.with.ref,
+    '${{ github.event.repository.default_branch }}'
+  )
+  assert.equal(trustedCheckout.with['persist-credentials'], false)
+  assert.equal(trustedCheckout.with['fetch-depth'], 0)
+  assert.equal(trustedCheckout.with['sparse-checkout'], undefined)
+  assert.equal(trustedCheckout.with.filter, undefined)
+  const run = action.runs.steps.find((step) => step.id === 'review')
+  assert.equal(run.env.MISTRAL_API_KEY, '${{ inputs.mistral-api-key }}')
   assert.equal(run.env.OPENROUTER_API_KEY, undefined)
-  assert.equal(run.env.CONTEXT7_API_KEY, '${{ secrets.CONTEXT7_API_KEY }}')
-  const publisher = job.steps.find(
+  assert.equal(run.env.CONTEXT7_API_KEY, '${{ inputs.context7-api-key }}')
+  assert.equal(run.env.OCR_ADAPTER_PROVIDER, 'mistral-flash')
+  const publisher = action.runs.steps.find(
     (step) => step.with?.repository === 'alibaba/open-code-review'
   )
-  assert.equal(publisher.with.ref, '1672852136fc87748249d22bce0819f33419ea79')
+  assert.equal(
+    publisher.with.ref,
+    '${{ steps.release.outputs.publisher-revision }}'
+  )
   assert.equal(publisher.with['persist-credentials'], false)
-  const install = job.steps.find((step) =>
-    step.run?.includes('@alibaba-group/open-code-review@')
+  const install = action.runs.steps.find((step) =>
+    step.run?.includes('npm install -g')
   )
-  assert.ok(install)
-  const directory = fs.mkdtempSync(
-    path.join(os.tmpdir(), 'ocr-install-contract-')
-  )
-  try {
-    const result = spawnSync(
-      '/bin/bash',
-      [
-        '-e',
-        '-c',
-        String.raw`
-npm() {
-  printf '%s\n' "$@" > "$RUNNER_TEMP/npm-arguments"
-  prefix=
-  while [ "$#" -gt 0 ]; do
-    case "$1" in
-      --prefix) prefix="$2"; shift 2 ;;
-      *) shift ;;
-    esac
-  done
-  test -n "$prefix"
-  mkdir -p "$prefix/bin"
-  cat > "$prefix/bin/ocr" <<'OCR'
-#!/bin/sh
-printf '%s\n' "$@" > "$RUNNER_TEMP/ocr-arguments"
-OCR
-  chmod 700 "$prefix/bin/ocr"
-}
-node() {
-  printf '%s\n' "$@" > "$RUNNER_TEMP/verification-arguments"
-}
-${install.run}
-`,
-      ],
-      {
-        env: { PATH: '/usr/bin:/bin', RUNNER_TEMP: directory },
-        encoding: 'utf8',
-        timeout: 5000,
-      }
-    )
-    assert.ok(!result.error, result.error?.message)
-    assert.equal(result.status, 0, result.stderr)
-    const argumentsFor = (name) =>
-      fs.readFileSync(path.join(directory, name), 'utf8').trim().split('\n')
-    const installed = argumentsFor('npm-arguments')
-    assert.ok(installed.includes('-g') || installed.includes('--global'))
-    assert.ok(installed.includes('@alibaba-group/open-code-review@1.13.0'))
-    assert.equal(
-      installed[installed.indexOf('--prefix') + 1],
-      path.join(directory, 'draft-ocr')
-    )
-    assert.deepEqual(argumentsFor('ocr-arguments'), ['version'])
-    assert.deepEqual(argumentsFor('verification-arguments'), [
-      '.github/scripts/ocr-draft-review.cjs',
-      'verify-install',
-    ])
-  } finally {
-    fs.rmSync(directory, { recursive: true, force: true })
-  }
-  const check = YAML.parse(
-    fs.readFileSync(path.join(workflowDir, 'check.yml'), 'utf8')
-  )
-  const qualifier = check.jobs['check-suite'].steps.find(
-    (step) => step.id === 'ocr_engine'
-  )
-  assert.match(
-    '.github/scripts/ocr-self-update-guard.test.cjs',
-    new RegExp(qualifier.with.pattern)
-  )
-  const summary = job.steps.find((step) =>
+  assert.equal(install.env.OCR_PACKAGE, '${{ steps.release.outputs.package }}')
+  assert.ok(install.run.includes('npm install -g "${OCR_PACKAGE}"'))
+  assert.equal(install.env.OCR_NO_UPDATE, '1')
+  assert.equal(manifest.draft.package, '@alibaba-group/open-code-review@1.13.0')
+  const summary = action.runs.steps.find((step) =>
     step.run?.endsWith('ocr-draft-review.cjs summary')
   )
-  assert.equal(summary.if, 'always()')
+  assert.equal(summary, undefined)
+  const controllerSummary = action.runs.steps.find((step) =>
+    step.run?.endsWith('ocr-controller.cjs" summary')
+  )
+  assert.equal(controllerSummary.if, 'always()')
   const manual = YAML.parse(
     fs.readFileSync(
       path.join(__dirname, '../workflows/check-ocr-final-review.yml'),
