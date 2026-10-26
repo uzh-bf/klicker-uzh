@@ -16,7 +16,7 @@ Models, maximum reasoning, completion and aggregate budgets, cache affinity, agg
 
 Execution mode: standard. Full path applies because the correction crosses the adapter/stock-consumer seam. No new product primitive, provider, dependency or engine delivery path is introduced.
 
-Main owns this coupled adapter, unit/stock tests, draft opt-in, documentation, manifest and integration. Execution-tier skip reason: unhealthy route; the configured worker proxy is unreachable, and no service repair is authorized. The planner challenges the design read-only. The simplifier and risk reviewer inspect the same committed scope; Claude performs the integrated final source review.
+Main owns this coupled adapter, unit/stock tests, draft opt-in, documentation, manifest and integration. Execution-tier retention reason: critical-path coupling between response handling and the stock consumer acceptance fixture. The planner challenges the design read-only. The simplifier and risk reviewer inspect the same committed scope; Claude performs the integrated final source review.
 
 1. Qualify the narrow planning-request identity against the pinned `SessionTaskKey` contract: exactly eight hexadecimal session-prefix characters, `-plan_task-`, and a sixteen-character hexadecimal scope digest, without advertised tools. Unknown forms retain existing behavior. A recognized planning response requires `stop` and nonempty final text. For unusable results clear partial text and reasoning in the OCR-facing message. Preserve the original native response in existing private replay storage and record returned usage before applying the projection. Do not introduce an HTTP error or a stock-client retry.
 2. Enable the compatibility behavior only in `runDraftReview`. Expose fixed planning counters through the existing diagnostics and log/summary path, distinguishing response handling from useful plan availability. Existing CLI phase-completion progress remains a transport-phase event, not evidence of usable guidance.
@@ -42,3 +42,5 @@ Use host Git/gh. Run Node 24 checks and installed formatters in the existing iso
 
 - Scope approved by the user's agreement to the preceding narrow-fix proposal. Branch and target refreshed; planner approved after the anchored key matcher and partial-visible length response were made explicit.
 - The existing offline fixture reproduces the stock consumer defect. It is evidence for the correction, not live qualification of changed source.
+- Implementation is complete. All 303 focused OCR contracts pass on Node 24 with zero skips, including the real stock binary and pinned publisher. Five stock planning cases each preserve two synthetic provider dispatches and full returned usage.
+- Draft-only opt-in, fixed planning diagnostics, documentation and affected runtime hashes are updated. No workflow, caller pin, model, budget, retry or engine-delivery change is included. Source review and hosted CI remain pending.
