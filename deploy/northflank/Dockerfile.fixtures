@@ -11,14 +11,11 @@ RUN apk upgrade --no-cache \
 
 WORKDIR /app
 
-# Use the exact pnpm release declared by the copied repository root. pnpm 12
-# requires its installed bootstrap because the global install ignores scripts.
+# Match the repository's pinned pnpm version. Script-disabled installation
+# requires the native pnpm bootstrap before direct child-process execution.
 COPY package.json ./package.json
-RUN PNPM_VERSION="$(node -e 'const { packageManager = "" } = require("./package.json"); const match = /^pnpm@([0-9]+\.[0-9]+\.[0-9]+)$/.exec(packageManager); if (!match) throw new Error("package.json must pin pnpm to an exact version"); process.stdout.write(match[1]);')" \
- && npm install --global --ignore-scripts "pnpm@${PNPM_VERSION}" \
- && if [ "$(printf '%s' "${PNPM_VERSION}" | cut -d. -f1)" -ge 12 ]; then \
-      node "$(npm root --global)/pnpm/install.js"; \
-    fi
+RUN npm install --global --ignore-scripts pnpm@12.11.2 \
+ && node "$(npm root -g)/pnpm/install.js"
 
 # Keep the complete workspace so runtime jobs retain the fixture sources,
 # Prisma tooling, Chat MCP script, and their development dependencies. The root
