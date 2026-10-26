@@ -93,6 +93,8 @@ jobs:
           PROVIDER: ${{ needs.test-playwright-execution.outputs.provider }}
           ADMISSION_ATTEMPT: ${{ needs.test-playwright-execution.outputs.admission_attempt }}
           CURRENT_ATTEMPT: ${{ github.run_attempt }}
+          IS_LABEL_EVENT: ${{ github.event.action == 'labeled' }}
+          PRIORITY_LABEL_EVENT: ${{ needs.test-playwright-execution.outputs.priority_label_event }}
           MODE: ${{ needs.test-playwright-execution.outputs.mode }}
           ENVELOPE_CLASS: ${{ needs.test-playwright-execution.outputs.envelope_class }}
           SHOULD_RUN: ${{ needs.test-playwright-execution.outputs.should_run }}
@@ -127,6 +129,11 @@ jobs:
               echo "- Reused validated run: \`${DUPLICATE_RUN_ID}\`"
             fi
           } >> "$GITHUB_STEP_SUMMARY"
+
+          # Denied label-only reports use a non-required name and attest no work.
+          if [ "${IS_LABEL_EVENT:-}" = 'true' ] && [ "${PRIORITY_LABEL_EVENT:-}" != 'true' ]; then
+            exit 0
+          fi
 
           # A cancelled invocation may be obsolete, but this job has no proof
           # that a newer invocation survived. Keep the required status failed.

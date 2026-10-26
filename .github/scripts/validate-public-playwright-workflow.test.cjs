@@ -569,6 +569,22 @@ test('lifecycle policy rejects cancellation outside the exact closed-PR boundary
     'utf8'
   )
   const mutations = {
+    'missing priority run marker': (w) => {
+      w['run-name'] = 'ordinary'
+    },
+    'denied label uses the required name': (w) => {
+      w.jobs['test-playwright-status'].name = 'test-playwright-status'
+    },
+    'reporter loses its label-event input': (w) => {
+      delete w.jobs['test-playwright-status'].steps.find(
+        (step) => step.name === 'Check result'
+      ).env.IS_LABEL_EVENT
+    },
+    'reporter substitutes label admission': (w) => {
+      w.jobs['test-playwright-status'].steps.find(
+        (step) => step.name === 'Check result'
+      ).env.PRIORITY_LABEL_EVENT = 'true'
+    },
     'wrong close key': (w) => {
       w.jobs['cancel-closed-pr'].concurrency.group = 'other'
     },
@@ -663,6 +679,25 @@ test('lifecycle policy rejects cancellation outside the exact closed-PR boundary
   }
 })
 
+test('the reusable reporter output preserves the priority label admission result', () => {
+  const source = fs.readFileSync(
+    path.join(__dirname, '../workflows/public-pr-playwright-shards.yml'),
+    'utf8'
+  )
+  for (const mutate of [
+    (w) => {
+      w.jobs.prepare.outputs.priority_label_event = 'true'
+    },
+    (w) => {
+      w.on.workflow_call.outputs.priority_label_event.value = 'true'
+    },
+  ]) {
+    const workflow = YAML.parse(source)
+    mutate(workflow)
+    assert.notDeepEqual(validatePublicRunnerRoles(workflow), [])
+  }
+})
+
 function readStatusScript() {
   const root = path.join(__dirname, '../..')
   const workflow = YAML.parse(
@@ -734,6 +769,36 @@ function runStatusReporter(t, overrides = {}) {
       : {},
   }
 }
+
+test('denied label reports are neutral while ordinary and admitted reports retain validation', (t) => {
+  const skipped = {
+    MODE: 'skip',
+    ENVELOPE_CLASS: 'application',
+    SHOULD_RUN: 'false',
+    SHARD_MATRIX: JSON.stringify({ include: [] }),
+  }
+  for (const admitted of ['', 'false']) {
+    const denied = runStatusReporter(t, {
+      ...skipped,
+      IS_LABEL_EVENT: 'true',
+      PRIORITY_LABEL_EVENT: admitted,
+    })
+    assert.equal(denied.status, 0, denied.output)
+  }
+  for (const label of [false, true]) {
+    const invalid = runStatusReporter(t, {
+      ...skipped,
+      IS_LABEL_EVENT: String(label),
+      PRIORITY_LABEL_EVENT: 'true',
+    })
+    assert.equal(invalid.status, 1, invalid.output)
+    const valid = runStatusReporter(t, {
+      IS_LABEL_EVENT: String(label),
+      PRIORITY_LABEL_EVENT: 'true',
+    })
+    assert.equal(valid.status, 0, valid.output)
+  }
+})
 
 test('status reporter accepts the trusted plan for drafts and a full plan for ready', (t) => {
   const cloud = runStatusReporter(t, {

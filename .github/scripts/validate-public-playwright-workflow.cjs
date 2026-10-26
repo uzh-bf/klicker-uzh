@@ -10,6 +10,14 @@ const PRIORITY_REQUEST =
   "vars.PRIORITY_CI_ENABLED == 'true' && github.event_name == 'pull_request' && github.event.pull_request.state == 'open' && github.event.pull_request.draft == false && github.event.repository.private == false && github.event.pull_request.head.repo.full_name == github.repository && !endsWith(github.event.pull_request.user.login, '[bot]') && contains(github.event.pull_request.labels.*.name, 'ci:priority') && (github.event.action != 'labeled' || github.event.label.name == 'ci:priority')"
 const PRIORITY_MARKER =
   "format('priority:{0}:{1}:{2}', github.event.pull_request.number, github.event.pull_request.head.sha, github.event.pull_request.base.sha)"
+const PRIORITY_RUN_NAME =
+  '${{ ' +
+  PRIORITY_REQUEST +
+  ' && ' +
+  PRIORITY_MARKER +
+  " || format('ordinary:{0}', github.run_id) }}"
+const PRIORITY_STATUS_NAME =
+  "${{ (github.event.action != 'labeled' || needs.test-playwright-execution.outputs.priority_label_event == 'true') && 'test-playwright-status' || 'test-playwright-status (priority not admitted)' }}"
 const PRIORITY_OUTER_GROUP =
   '${{ github.workflow }}-${{ ' +
   PRIORITY_REQUEST +
@@ -56,6 +64,7 @@ function validateCallerLifecycle(caller) {
   const close = jobs['cancel-closed-pr']
   if (
     caller?.name !== 'Klicker automated testing with playwright' ||
+    caller?.['run-name'] !== PRIORITY_RUN_NAME ||
     !caller?.on?.pull_request?.types?.includes('closed') ||
     caller.on.pull_request.types.includes('converted_to_draft') ||
     caller.concurrency?.group !== PRIORITY_OUTER_GROUP ||
@@ -88,6 +97,16 @@ function validateCallerLifecycle(caller) {
   const statusEnv = status?.steps?.find(
     (step) => step.name === 'Check result'
   )?.env
+  if (
+    status?.name !== PRIORITY_STATUS_NAME ||
+    statusEnv?.IS_LABEL_EVENT !== "${{ github.event.action == 'labeled' }}" ||
+    statusEnv?.PRIORITY_LABEL_EVENT !==
+      '${{ needs.test-playwright-execution.outputs.priority_label_event }}'
+  ) {
+    issues.push(
+      'status must preserve the denied label-only name and admission inputs'
+    )
+  }
   if (
     statusEnv?.PROVIDER !==
       `\${{ needs.test-playwright-execution.outputs.provider }}` ||
@@ -247,6 +266,16 @@ function validatePublicRunnerRoles(workflow) {
     ) {
       issues.push(`reusable workflow must expose ${output} to its reporter`)
     }
+  }
+  if (
+    jobs.prepare?.outputs?.priority_label_event !==
+      '${{ steps.priority.outputs.run_label_event }}' ||
+    workflow?.on?.workflow_call?.outputs?.priority_label_event?.value !==
+      '${{ jobs.prepare.outputs.priority_label_event }}'
+  ) {
+    issues.push(
+      'reusable workflow must expose exact priority label admission to its reporter'
+    )
   }
   if (
     Object.keys(workflow?.env ?? {}).length !== 1 ||

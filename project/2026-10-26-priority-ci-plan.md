@@ -361,3 +361,22 @@ The regression failed on the actual translation expression before the fix; all
 39 affected admission and event contracts pass after it. Other findings receive
 source-based dispositions, with optional refactors deferred. No extra reviewer
 or review retry is started; partial coverage remains an explicit limitation.
+
+### Denied Playwright label reporting
+
+The current-head ordinary review completed all 34 selected files and published
+a second-round timeout warning. Main verified a remaining reporter defect:
+denied label-only events on ready application PRs failed the normal full-plan
+assertion despite using a non-required check name. The reporter now records its
+summary and exits neutrally for that exact denied-label condition. Ordinary and
+admitted requests retain every existing validation assertion.
+
+The existing lifecycle validator now enforces the exact caller run-name marker,
+denied-label reporter name, label-event inputs and reusable admission output
+wiring. Mutation and actual shell-script regressions failed before the fix and
+pass afterward. The affected event, route, metadata and lifecycle portfolio has
+79 passing tests with no skips. Formatting and the scoped static scan pass with
+no findings. Earlier unaffected evidence is reused. No new module, executor pin,
+admission policy, credential or live setting changes; no extra reviewer or retry.
+The source correction is prepared for ordinary task-branch delivery and new-head
+hosted verification. Main-session verification is not independent final review.
