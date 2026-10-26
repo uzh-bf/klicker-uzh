@@ -34,5 +34,6 @@ Execution mode: standard; full path covers the CI/source-distribution seam. Main
 Repository `uzh-bf/klicker-uzh`, target `v3` at `6df4a47f68c3070e0b35b50befb0e6d16e5a817d`; existing worktree `trees/rs/ocr-shared-runtime`, branch `enhance/ocr-single-pr-delivery`. Shared skill source is `~/.agents/skills/rs-ocr`, projected into canonical dotfiles; unrelated dotfiles changes remain untouched.
 
 - User approval recovered from the current one-PR delivery request. Source branch created cleanly from `v3`.
-- Planner approved the exact-pin fetch, manifest comparison, pre-merge transition pin and documentation scope. Implementation is next.
+- Planner approved the exact-pin fetch, manifest comparison, pre-merge transition pin and documentation scope. Implementation is complete; 71 affected contracts pass with zero skips, including the stock binary. The old pin fails specifically on verified manifest mismatch.
+- The shared `rs-ocr` procedure is validated, its generated Claude view is current, and the two-file change is committed locally in canonical dotfiles. It is not pushed. Repository source review and hosted CI are next.
 - First useful acceptance is a fresh checkout resolving the pre-merge pin and passing manifest parity. This package ends at reviewed draft delivery; it does not claim runtime deployment or GitLab live support.

@@ -14,6 +14,12 @@ tags:
 
 ## Automated review context and portability
 
+Runtime changes and Klicker's caller-pin update normally share one PR. Commit
+the runtime first, then pin its full SHA in a later caller commit. Ordinary CI
+fetches that exact source commit and verifies that the final candidate ships the
+same runtime manifest and assets. Read [the shared runtime guide](ocr-runtime.md#prepare-a-caller-upgrade)
+for source, squash-merge and post-merge verification boundaries.
+
 The [ocr-reviewer skill](../.agents/skills/ocr-reviewer/SKILL.md) is portable
 across repositories and forges. Copy it unchanged when adopting this OCR
 approach; keep repository-specific contracts and skill pointers in local docs.

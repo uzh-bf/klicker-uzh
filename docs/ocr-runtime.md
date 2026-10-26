@@ -12,8 +12,8 @@ The action owns the repeated draft execution and publication steps. The
 The operator procedure remains `rs-ocr`; the model-facing procedure remains
 `.agents/skills/ocr-reviewer/SKILL.md`.
 
-Klicker's draft workflow selects the published action at
-`0032c990d40985ce120179ded2c9d4b6e6a1d940`. It retains one repository-owned
+Klicker's draft workflow selects the action through the full commit SHA in
+`.github/workflows/check-ocr-review.yml`. It retains one repository-owned
 job with the existing admission and execution policy; repeated draft steps live
 in that pinned release. Individual/stack final controllers retain their existing
 execution and admission. Other callers migrate independently after donor
@@ -131,16 +131,40 @@ Incomplete stages have unavailable components. Existing total/savings lines,
 budget units and aggregate receipt formulas remain unchanged. Event rows are
 never summed into those totals or treated as complete billing evidence.
 
-This source does not advance the donor's immutable action pin. Draft callers
-need a separately published and reviewed pin update before these diagnostics
-become active; final workflows use the merged repository-owned adapter source.
+Draft callers use the diagnostics shipped by their selected immutable runtime;
+final workflows use the merged repository-owned adapter source. A runtime source
+change alone does not establish which draft implementation is active.
 
 ## Prepare a caller upgrade
 
-First publish the action source and verify its producing offline qualification.
-After merge, resolve the actual merged source revision with host `gh` and Git.
-Pin `OWNER/REPOSITORY/.github/actions/ocr-review@FULL_COMMIT_SHA` in the caller;
-do not use a guessed squash hash or a local action path as distribution proof.
+For donor changes, include the runtime and caller adoption in one PR:
+
+1. Commit the complete runtime and updated asset manifest. Record that commit's
+   full SHA before changing the caller.
+2. In a later commit on the same branch, pin
+   `OWNER/REPOSITORY/.github/actions/ocr-review@FULL_COMMIT_SHA` to that runtime
+   commit. Push both commits to the action's existing repository.
+3. Qualify the selected release and compare its verified manifest with the final
+   candidate's verified manifest. Equal manifests bind equal runtime assets;
+   later runtime changes require another runtime commit and refreshed pin.
+4. After merge, read back the caller, verify the merged runtime still matches
+   the selected release and confirm that the exact pin remains retrievable.
+
+The source SHA remains immutable across a squash merge. Ordinary codebase CI
+explicitly fetches that exact commit from the fixed public donor origin before
+its local `git show` and `git archive` checks. It clears credential helpers and
+GitHub authorization headers, changes no refs or checkout, and never executes
+the fetched candidate. A fresh checkout can otherwise omit a pre-merge commit
+after its branch is deleted. Present fetchability is evidence for the selected
+commit, not a promise of indefinite forge retention; an unavailable pin blocks
+qualification and needs an ordinary source correction.
+
+Keep independent adopter upgrades in their own release cadence. A later
+adopter can select an already merged release; a second donor PR is not required
+merely to replace a qualified source pin with its squash-merge SHA. Neither a
+guessed squash hash nor a mutable action ref is distribution proof. GitLab needs
+equivalent exact-revision retrieval and runtime-parity checks through its own
+qualified adapter before using the same one-MR procedure.
 
 The caller keeps one `ocr-review` job with `pull_request_target` draft admission,
 read-only contents and review-write permissions, its existing concurrency group,
