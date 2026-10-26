@@ -315,6 +315,7 @@ jobs:
     env:
       OCR_NO_UPDATE: '1'
       OCR_LLM_TIMEOUT: '2700'
+      OCR_PROVIDER_PAUSED: ${{ vars.OCR_PROVIDER_PAUSED }}
     if: >-
       needs.authorize.outputs.authorized == 'true' &&
       needs.start.outputs.run_review == 'true'
@@ -330,6 +331,7 @@ jobs:
       actions: read
     outputs:
       review_outcome: ${{ steps.run_review.outcome }}
+      provider_unavailable: ${{ steps.run_review.outputs.provider_unavailable || steps.preflight.outputs.provider_unavailable }}
       cleanup_outcome: ${{ steps.cleanup.outcome }}
       publish_outcome: ${{ steps.publish.outcome }}
       clean_review: ${{ steps.publish.outputs.clean_review }}
@@ -751,6 +753,7 @@ jobs:
           DISPOSITION_DIGEST: ${{ needs.authorize.outputs.disposition_digest }}
           DISPOSITION_IDS: ${{ needs.authorize.outputs.disposition_ids }}
           REVIEW_OUTCOME: ${{ needs.review.outputs.review_outcome || needs.review.result }}
+          PROVIDER_UNAVAILABLE: ${{ needs.review.outputs.provider_unavailable }}
           CLEANUP_OUTCOME: ${{ needs.review.outputs.cleanup_outcome || needs.review.result }}
           PUBLISH_OUTCOME: ${{ needs.review.outputs.publish_outcome || needs.review.result }}
           CLEAN_REVIEW: ${{ needs.review.outputs.clean_review || 'false' }}
@@ -777,6 +780,7 @@ jobs:
               dispositionDigest: process.env.DISPOSITION_DIGEST,
               dispositionIds: JSON.parse(process.env.DISPOSITION_IDS || '[]'),
               reviewOutcome: process.env.REVIEW_OUTCOME,
+              providerUnavailable: process.env.PROVIDER_UNAVAILABLE,
               cleanupOutcome: process.env.CLEANUP_OUTCOME,
               publishOutcome: process.env.PUBLISH_OUTCOME,
               cleanReview: process.env.CLEAN_REVIEW,
@@ -944,6 +948,7 @@ jobs:
     env:
       OCR_NO_UPDATE: '1'
       OCR_LLM_TIMEOUT: '1800'
+      OCR_PROVIDER_PAUSED: ${{ vars.OCR_PROVIDER_PAUSED }}
     needs: [authorize_stack, start_stack]
     if: >-
       needs.authorize_stack.outputs.authorized == 'true' &&
@@ -961,6 +966,7 @@ jobs:
     outputs:
       code_outcome: ${{ steps.code_review.outcome }}
       topology_outcome: ${{ steps.topology_review.outcome }}
+      provider_unavailable: ${{ steps.topology_review.outputs.provider_unavailable || steps.code_review.outputs.provider_unavailable || steps.preflight.outputs.provider_unavailable }}
       cleanup_outcome: ${{ steps.cleanup.outcome }}
       publish_outcome: ${{ steps.publish.outcome }}
       clean_review: ${{ steps.publish.outputs.clean_review }}
@@ -1445,6 +1451,7 @@ jobs:
           REVIEW_RANGES: ${{ needs.authorize_stack.outputs.review_ranges }}
           TRUSTED_SHA: ${{ needs.authorize_stack.outputs.trusted_sha }}
           CODE_OUTCOME: ${{ needs.review_stack.outputs.code_outcome || needs.review_stack.result }}
+          PROVIDER_UNAVAILABLE: ${{ needs.review_stack.outputs.provider_unavailable }}
           TOPOLOGY_OUTCOME: ${{ needs.review_stack.outputs.topology_outcome || needs.review_stack.result }}
           CLEANUP_OUTCOME: ${{ needs.review_stack.outputs.cleanup_outcome || needs.review_stack.result }}
           PUBLISH_OUTCOME: ${{ needs.review_stack.outputs.publish_outcome || needs.review_stack.result }}
@@ -1472,6 +1479,7 @@ jobs:
               reviewRanges: JSON.parse(process.env.REVIEW_RANGES || '[]'),
               trustedSha: process.env.TRUSTED_SHA,
               codeOutcome: process.env.CODE_OUTCOME,
+              providerUnavailable: process.env.PROVIDER_UNAVAILABLE,
               topologyOutcome: process.env.TOPOLOGY_OUTCOME,
               cleanupOutcome: process.env.CLEANUP_OUTCOME,
               publishOutcome: process.env.PUBLISH_OUTCOME,

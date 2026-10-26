@@ -975,3 +975,90 @@ test('pinned OCR registers and invokes reviewer tools with trusted rules and com
   assert.ok(tools.tool_results.read_review_context.calls > 0)
   assert.ok(tools.tool_results.read_review_context.returned_bytes > 0)
 })
+
+test('paused drafts create an explicit unavailable outcome without credentials, provider calls or a child', async (t) => {
+  const temp = fs.mkdtempSync(path.join(os.tmpdir(), 'ocr-paused-draft-'))
+  t.after(() => fs.rmSync(temp, { recursive: true, force: true }))
+  const logs = []
+  const outcome = await runDraftReview({
+    repo: temp,
+    temp,
+    from: '1'.repeat(40),
+    head: '2'.repeat(40),
+    paused: true,
+    executable: '/must-not-execute',
+    fetchImpl: () => assert.fail('provider called while paused'),
+    write: (text) => logs.push(text),
+  })
+  assert.equal(outcome.code, 0)
+  assert.equal(fs.existsSync(outcome.resultPath), false)
+  const receipt = JSON.parse(
+    fs.readFileSync(path.join(temp, 'draft-ai-review-outcome.json'))
+  )
+  assert.equal(receipt.provider_availability.reason, 'provider_paused')
+  assert.notEqual(receipt.observed_status, 'complete')
+  assert.equal(receipt.completed, null)
+  assert.equal(
+    logs.some((text) => text.includes('status=unavailable')),
+    true
+  )
+})
+
+test('stock OCR stops upstream dispatch after 402 and preserves its incomplete result', {
+  skip: !process.env.OCR_TEST_BINARY,
+  timeout: 60000,
+}, async (t) => {
+  const temp = fs.mkdtempSync(path.join(os.tmpdir(), 'ocr-stock-payment-'))
+  t.after(() => fs.rmSync(temp, { recursive: true, force: true }))
+  const git = (...args) =>
+    execFileSync('git', args, {
+      cwd: temp,
+      encoding: 'utf8',
+      stdio: ['ignore', 'pipe', 'pipe'],
+    }).trim()
+  git('init', '-b', 'main')
+  git('config', 'user.name', 'Synthetic fixture')
+  git('config', 'user.email', 'fixture@example.invalid')
+  git('config', 'core.hooksPath', '/dev/null')
+  fs.writeFileSync(path.join(temp, 'source.js'), 'export const value = 1\n')
+  git('add', '.')
+  git('commit', '-m', 'test: synthetic base')
+  const from = git('rev-parse', 'HEAD')
+  fs.writeFileSync(path.join(temp, 'source.js'), 'export const value = 2\n')
+  git('add', '.')
+  git('commit', '-m', 'test: synthetic candidate')
+  const head = git('rev-parse', 'HEAD')
+  let calls = 0
+  const logs = []
+  const outcome = await runDraftReview({
+    repo: temp,
+    temp,
+    from,
+    head,
+    executable: process.env.OCR_TEST_BINARY,
+    apiKey: 'synthetic-provider',
+    fetchImpl: async () => {
+      calls++
+      return new Response('PRIVATE_PROVIDER_SENTINEL', { status: 402 })
+    },
+    write: (text) => logs.push(text),
+  })
+  assert.equal(calls, 1)
+  assert.equal(outcome.code, 0)
+  const receipt = JSON.parse(
+    fs.readFileSync(path.join(temp, 'draft-ai-review-outcome.json'))
+  )
+  assert.equal(
+    receipt.provider_availability.reason,
+    'provider_payment_required'
+  )
+  assert.notEqual(receipt.observed_status, 'complete')
+  assert.doesNotMatch(logs.join(''), /PRIVATE_PROVIDER_SENTINEL/)
+  const adapter = JSON.parse(
+    fs.readFileSync(
+      path.join(temp, 'draft-ai-review-adapter-diagnostics.jsonl')
+    )
+  )
+  assert.equal(adapter.upstream_attempts, 1)
+  assert.equal(adapter.responses, 0)
+})

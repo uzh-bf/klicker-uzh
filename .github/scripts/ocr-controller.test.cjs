@@ -662,15 +662,35 @@ test('the composite preserves failure, cancellation, validation, artifact and su
     true
   )
   assert.equal(
-    admitted(publication, { validate: { outcome: 'success' } }, false),
+    admitted(
+      publication,
+      { validate: { outcome: 'success', outputs: { publishable: 'true' } } },
+      false
+    ),
     true
   )
   assert.equal(
-    admitted(publication, { validate: { outcome: 'failure' } }, false),
+    admitted(
+      publication,
+      { validate: { outcome: 'failure', outputs: { publishable: 'true' } } },
+      false
+    ),
     false
   )
   assert.equal(
-    admitted(publication, { validate: { outcome: 'success' } }, true),
+    admitted(
+      publication,
+      { validate: { outcome: 'success', outputs: { publishable: 'true' } } },
+      true
+    ),
+    false
+  )
+  assert.equal(
+    admitted(
+      publication,
+      { validate: { outcome: 'success', outputs: { publishable: 'false' } } },
+      false
+    ),
     false
   )
   assert.notEqual(
@@ -711,4 +731,56 @@ test('the composite preserves failure, cancellation, validation, artifact and su
   assert.equal(checkout.with['persist-credentials'], false)
   assert.equal(checkout.with.filter, undefined)
   assert.equal(checkout.with['sparse-checkout'], undefined)
+})
+
+test('only frozen unavailable draft outcomes admit missing results, and valid partial findings keep the warning', async (t) => {
+  const f = fixture(t)
+  prepareReview(f.options)
+  const outcomePath = path.join(f.temp, 'draft-ai-review-outcome.json')
+  const outcome = {
+    head_sha: f.head,
+    policy_sha: f.policy,
+    profile: 'draft-v1',
+    provider_availability: {
+      status: 'unavailable',
+      reason: 'provider_payment_required',
+    },
+  }
+  fs.writeFileSync(outcomePath, JSON.stringify(outcome))
+  await runCommand('validate', f)
+  assert.equal(
+    fs.existsSync(path.join(f.temp, 'draft-ai-review-publication.json')),
+    false
+  )
+  const file = path.join(f.temp, 'draft-ai-review-result.json')
+  for (const invalid of [
+    { ...outcome, head_sha: 'f'.repeat(40) },
+    { ...outcome, policy_sha: 'f'.repeat(40) },
+    {
+      ...outcome,
+      provider_availability: {
+        status: 'unavailable',
+        reason: 'PRIVATE_SENTINEL',
+      },
+    },
+  ]) {
+    fs.writeFileSync(outcomePath, JSON.stringify(invalid))
+    await assert.rejects(runCommand('validate', f), /invalid_result/)
+  }
+  fs.writeFileSync(outcomePath, JSON.stringify(outcome))
+  fs.writeFileSync(file, '{}')
+  await assert.rejects(runCommand('validate', f), /invalid_result/)
+  const partial = result(f.head)
+  partial.comments = [{ path: 'source.js', content: 'Synthetic finding' }]
+  fs.writeFileSync(file, JSON.stringify(partial))
+  await runCommand('validate', f)
+  const publication = JSON.parse(
+    fs.readFileSync(path.join(f.temp, 'draft-ai-review-publication.json'))
+  )
+  assert.deepEqual(publication.comments, partial.comments)
+  assert.deepEqual(publication.manifest.coverage, partial.manifest.coverage)
+  assert.equal(publication.warnings.at(-1).type, 'provider_unavailable')
+  fs.unlinkSync(file)
+  fs.unlinkSync(outcomePath)
+  await assert.rejects(runCommand('validate', f))
 })

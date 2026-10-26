@@ -18,6 +18,8 @@ const {
   translateMistralRequest,
   createHistoryStore,
   createUsageJournal,
+  createProviderAvailability,
+  parseProviderPause,
   startAdapter,
   callMistral,
   estimateCost,
@@ -2041,7 +2043,10 @@ async function loadLoopbackTransport(t, handler) {
       return Promise.reject(new Error('OCR_TRANSPORT_PRIVATE_SENTINEL'))
     },
   })
-  vm.runInContext(fs.readFileSync(ADAPTER, 'utf8'), context)
+  vm.runInContext(
+    `${fs.readFileSync(ADAPTER, 'utf8')}\nmodule.exports.__commandRun = commandRun\n`,
+    context
+  )
   return {
     ...sandboxModule.exports,
     attempts: () => attempts,
@@ -3638,6 +3643,328 @@ test('upstream failures are redacted to a fixed safe error', async () => {
   }
 })
 
+test('provider pause parsing is strict and paused adapters never dispatch', async () => {
+  for (const value of [undefined, '', 'false', false])
+    assert.equal(parseProviderPause(value), false)
+  for (const value of ['true', true])
+    assert.equal(parseProviderPause(value), true)
+  for (const value of ['FALSE', '0', 0, null])
+    assert.throws(
+      () => parseProviderPause(value),
+      { code: 'invalid_provider_pause' },
+      String(value)
+    )
+
+  const availability = createProviderAvailability()
+  assert.deepEqual(availability.snapshot(), {
+    status: 'available',
+    reason: null,
+  })
+  availability.markPaymentRequired()
+  assert.deepEqual(availability.snapshot(), {
+    status: 'unavailable',
+    reason: 'provider_payment_required',
+  })
+
+  const fetchImpl = upstream(() =>
+    jsonResponse(200, completion({ role: 'assistant', content: 'synthetic' }))
+  )
+  const adapter = await startAdapter({
+    apiKey: 'synthetic',
+    paused: true,
+    fetchImpl,
+  })
+  try {
+    const response = await postJson(adapter, {
+      messages: [{ role: 'user', content: 'synthetic' }],
+    })
+    assert.equal(response.status, 403)
+    assert.equal(response.json.error.code, 'provider_paused')
+    assert.equal(fetchImpl.calls.length, 0)
+    assert.deepEqual(adapter.diagnostics().provider_availability, {
+      status: 'unavailable',
+      reason: 'provider_paused',
+    })
+  } finally {
+    await adapter.close()
+  }
+})
+
+test('confirmed upstream 402 latches one adapter for repeated main and advisor requests', async (t) => {
+  const directory = fs.mkdtempSync(path.join(os.tmpdir(), 'ocr-402-latch-'))
+  t.after(() => fs.rmSync(directory, { recursive: true, force: true }))
+  const file = path.join(directory, 'events.jsonl')
+  const secret = 'PRIVATE_PROVIDER_SENTINEL'
+  const fetchImpl = upstream(() =>
+    jsonResponse(402, {
+      error: { code: 402, message: secret },
+      echo: secret,
+    })
+  )
+  const adapter = await startAdapter({
+    apiKey: 'synthetic',
+    usageJournalPath: file,
+    fetchImpl,
+  })
+  const mainBody = {
+    model: MISTRAL_MODEL,
+    messages: [{ role: 'user', content: 'synthetic main' }],
+    tools: [
+      { type: 'function', function: { name: 'task_done', parameters: {} } },
+    ],
+  }
+  const advisorBody = {
+    model: MISTRAL_MODEL,
+    messages: [{ role: 'user', content: 'synthetic advisor' }],
+  }
+  try {
+    const first = await postJson(adapter, mainBody)
+    assert.equal(first.status, 402)
+    assert.equal(first.json.error.code, 'provider_payment_required')
+    assert.doesNotMatch(first.text, /PRIVATE_PROVIDER_SENTINEL/)
+    for (const body of [mainBody, advisorBody, mainBody, advisorBody]) {
+      const response = await postJson(adapter, body)
+      assert.equal(response.status, 402)
+      assert.equal(response.json.error.code, 'provider_payment_required')
+      assert.doesNotMatch(response.text, /PRIVATE_PROVIDER_SENTINEL/)
+    }
+    assert.equal(fetchImpl.calls.length, 1)
+    const diagnostics = adapter.diagnostics()
+    assert.equal(diagnostics.upstream_attempts, 1)
+    assert.equal(diagnostics.responses, 0)
+    assert.deepEqual(diagnostics.last_upstream_error, {
+      http_status: 402,
+      code: 402,
+      reason: 'unknown',
+    })
+    assert.deepEqual(diagnostics.provider_availability, {
+      status: 'unavailable',
+      reason: 'provider_payment_required',
+    })
+    const rows = fs
+      .readFileSync(file, 'utf8')
+      .trim()
+      .split('\n')
+      .map(JSON.parse)
+    assert.equal(rows.filter((row) => row.event === 'dispatch').length, 1)
+    assert.deepEqual(
+      rows
+        .filter((row) => row.event === 'finished')
+        .map((row) => row.http_status),
+      [402, null, null, null, null]
+    )
+  } finally {
+    await adapter.close()
+  }
+})
+
+test('a 402 latch does not abort already dispatched work or lose its usage', async () => {
+  const firstHeaders = Promise.withResolvers()
+  const secondHeaders = Promise.withResolvers()
+  const draining = Promise.withResolvers()
+  const releaseDrain = Promise.withResolvers()
+  const fetchImpl = upstream((_record, index) => {
+    if (index === 1) return firstHeaders.promise
+    if (index === 2) return secondHeaders.promise
+    return jsonResponse(500, { error: { message: 'unexpected dispatch' } })
+  })
+  const availability = createProviderAvailability()
+  const adapter = await startAdapter({
+    apiKey: 'synthetic',
+    availability,
+    fetchImpl,
+  })
+  const body = {
+    model: MISTRAL_MODEL,
+    messages: [{ role: 'user', content: 'synthetic' }],
+  }
+  let first
+  let second
+  let third
+  try {
+    first = postJson(adapter, body)
+    await waitFor(() => fetchImpl.calls.length === 1)
+    second = postJson(adapter, body)
+    await waitFor(() => fetchImpl.calls.length === 2)
+
+    let read = false
+    firstHeaders.resolve({
+      status: 402,
+      ok: false,
+      body: {
+        getReader: () => ({
+          read: async () => {
+            if (read) return { done: true }
+            read = true
+            draining.resolve()
+            await releaseDrain.promise
+            return {
+              done: false,
+              value: Buffer.from(
+                JSON.stringify({ error: { code: 402, message: 'synthetic' } })
+              ),
+            }
+          },
+        }),
+      },
+    })
+    await draining.promise
+    assert.equal(availability.reason, 'provider_payment_required')
+
+    third = postJson(adapter, body)
+    secondHeaders.resolve(
+      jsonResponse(
+        200,
+        completion({ role: 'assistant', content: 'already dispatched' })
+      )
+    )
+    const secondResult = await second
+    assert.equal(secondResult.status, 200)
+    assert.equal((await third).status, 402)
+    releaseDrain.resolve()
+    assert.equal((await first).status, 402)
+
+    const diagnostics = adapter.diagnostics()
+    assert.equal(fetchImpl.calls.length, 2)
+    assert.equal(diagnostics.upstream_attempts, 2)
+    assert.equal(diagnostics.responses, 1)
+    assert.equal(diagnostics.accepted_responses, 1)
+    assert.equal(diagnostics.prompt_tokens, 3)
+    assert.deepEqual(diagnostics.provider_availability, {
+      status: 'unavailable',
+      reason: 'provider_payment_required',
+    })
+  } finally {
+    firstHeaders.resolve(jsonResponse(402, { error: { code: 402 } }))
+    secondHeaders.resolve(
+      jsonResponse(200, completion({ role: 'assistant', content: 'synthetic' }))
+    )
+    releaseDrain.resolve()
+    await Promise.allSettled([first, second, third].filter(Boolean))
+    await adapter.close()
+  }
+})
+
+test('other rejected and transient upstream responses do not latch availability', async () => {
+  for (const status of [401, 403, 429, 502, 503]) {
+    const fetchImpl = upstream(() =>
+      jsonResponse(status, { error: { message: 'synthetic' } })
+    )
+    const adapter = await startAdapter({ apiKey: 'synthetic', fetchImpl })
+    try {
+      const response = await postJson(adapter, {
+        messages: [{ role: 'user', content: 'synthetic' }],
+      })
+      assert.equal(response.status, 502)
+      assert.equal(fetchImpl.calls.length, 1)
+      assert.deepEqual(adapter.diagnostics().provider_availability, {
+        status: 'available',
+        reason: null,
+      })
+    } finally {
+      await adapter.close()
+    }
+  }
+})
+
+test('direct provider 402 is fixed and nonretryable, and pause blocks dispatch', async (t) => {
+  const directory = fs.mkdtempSync(path.join(os.tmpdir(), 'ocr-direct-402-'))
+  t.after(() => fs.rmSync(directory, { recursive: true, force: true }))
+  const file = path.join(directory, 'events.jsonl')
+  const secret = 'PRIVATE_PROVIDER_SENTINEL'
+  const availability = createProviderAvailability()
+  const fetchImpl = upstream(
+    () =>
+      new Response(secret, {
+        status: 402,
+        headers: { 'content-type': 'text/plain' },
+      })
+  )
+  const options = {
+    apiKey: 'synthetic',
+    availability,
+    usageJournalPath: file,
+    fetchImpl,
+    body: {
+      model: MISTRAL_MODEL,
+      messages: [{ role: 'user', content: 'synthetic' }],
+    },
+  }
+  await assert.rejects(
+    () => callMistral(options),
+    (error) => {
+      assert.equal(error.code, 'provider_payment_required')
+      assert.equal(error.status, 402)
+      assert.equal(error.retryable, false)
+      assert.doesNotMatch(error.message, /PRIVATE_PROVIDER_SENTINEL/)
+      return true
+    }
+  )
+  assert.equal(availability.reason, 'provider_payment_required')
+  await assert.rejects(
+    () => callMistral(options),
+    (error) => {
+      assert.equal(error.code, 'provider_payment_required')
+      assert.equal(error.status, 402)
+      assert.equal(error.retryable, false)
+      return true
+    }
+  )
+  assert.equal(fetchImpl.calls.length, 1)
+  const rows = fs.readFileSync(file, 'utf8').trim().split('\n').map(JSON.parse)
+  assert.equal(rows.filter((row) => row.event === 'dispatch').length, 1)
+  assert.deepEqual(
+    rows
+      .filter((row) => row.event === 'finished')
+      .map((row) => row.http_status),
+    [402]
+  )
+
+  const pausedFetch = upstream(() =>
+    jsonResponse(200, completion({ role: 'assistant', content: 'synthetic' }))
+  )
+  const summaryPath = path.join(directory, 'summary.md')
+  const outputPath = path.join(directory, 'output.txt')
+  fs.writeFileSync(summaryPath, '')
+  fs.writeFileSync(outputPath, '')
+  const previousSummary = process.env.GITHUB_STEP_SUMMARY
+  const previousOutput = process.env.GITHUB_OUTPUT
+  process.env.GITHUB_STEP_SUMMARY = summaryPath
+  process.env.GITHUB_OUTPUT = outputPath
+  try {
+    await assert.rejects(
+      () =>
+        callMistral({
+          ...options,
+          apiKey: undefined,
+          availability: undefined,
+          paused: true,
+          fetchImpl: pausedFetch,
+        }),
+      (error) => {
+        assert.equal(error.code, 'provider_paused')
+        assert.equal(error.status, 403)
+        assert.equal(error.retryable, false)
+        return true
+      }
+    )
+  } finally {
+    if (previousSummary === undefined) delete process.env.GITHUB_STEP_SUMMARY
+    else process.env.GITHUB_STEP_SUMMARY = previousSummary
+    if (previousOutput === undefined) delete process.env.GITHUB_OUTPUT
+    else process.env.GITHUB_OUTPUT = previousOutput
+  }
+  assert.equal(pausedFetch.calls.length, 0)
+  assert.equal(
+    fs.readFileSync(summaryPath, 'utf8'),
+    'OCR provider availability status=unavailable reason=provider_paused\n'
+  )
+  assert.equal(
+    fs.readFileSync(outputPath, 'utf8'),
+    'provider_unavailable=provider_paused\n'
+  )
+})
+
 test('rejection diagnostics keep only HTTP status and allowlisted numeric codes', async () => {
   const secret = 'PRIVATE_PROVIDER_SENTINEL'
   const cases = [
@@ -3796,8 +4123,11 @@ test('OpenRouter budget reasons are content-free, bounded and provider-scoped', 
         const response = await postJson(adapter, {
           messages: [{ role: 'user', content: 'synthetic' }],
         })
-        assert.equal(response.status, 502)
-        assert.equal(response.json.error.code, 'upstream_error')
+        assert.equal(response.status, status === 402 ? 402 : 502)
+        assert.equal(
+          response.json.error.code,
+          status === 402 ? 'provider_payment_required' : 'upstream_error'
+        )
         const receipt = adapter.diagnostics()
         assert.deepEqual(receipt.last_upstream_error, {
           http_status: status,
@@ -3859,7 +4189,7 @@ test('late rejection bodies cannot overwrite a newer observed error or an earlie
   try {
     await draining.promise
     const snapshot = adapter.diagnostics()
-    assert.equal((await postJson(adapter, body)).status, 502)
+    assert.equal((await postJson(adapter, body)).status, 402)
     release.resolve('{"error":{"code":403,"message":"Key limit exceeded"}}')
     assert.equal((await first).status, 502)
     assert.deepEqual(adapter.diagnostics().last_upstream_error, {
@@ -4186,6 +4516,71 @@ test('default upstream transport completes delayed headers and streamed bodies a
   assert.equal(receipt.responses, 1)
   assert.equal(receipt.prompt_tokens, 3)
   assert.equal(receipt.completion_tokens, 4)
+})
+
+test('run exits nonzero after a confirmed 402 even when the child succeeds', {
+  timeout: 6000,
+}, async (t) => {
+  const requests = []
+  const transport = await loadLoopbackTransport(t, async (req, res) => {
+    let body = ''
+    for await (const chunk of req) body += chunk
+    requests.push(JSON.parse(body))
+    res.writeHead(402, { 'content-type': 'application/json' })
+    res.end(JSON.stringify({ error: { code: 402, message: 'synthetic' } }))
+  })
+  const names = [
+    'GITHUB_OUTPUT',
+    'GITHUB_STEP_SUMMARY',
+    'MISTRAL_API_KEY',
+    'OCR_ADAPTER_DIAGNOSTICS_PATH',
+    'OCR_ADAPTER_PROVIDER',
+    'OCR_PROVIDER_PAUSED',
+  ]
+  const previous = Object.fromEntries(
+    names.map((name) => [name, process.env[name]])
+  )
+  delete process.env.GITHUB_OUTPUT
+  delete process.env.GITHUB_STEP_SUMMARY
+  process.env.MISTRAL_API_KEY = 'synthetic-key'
+  delete process.env.OCR_ADAPTER_DIAGNOSTICS_PATH
+  process.env.OCR_ADAPTER_PROVIDER = 'mistral'
+  process.env.OCR_PROVIDER_PAUSED = 'false'
+  try {
+    const child = `
+      ;(async () => {
+        const response = await fetch(process.env.OCR_LLM_URL, {
+          method: 'POST',
+          headers: {
+            authorization: \`Bearer \${process.env.OCR_LLM_TOKEN}\`,
+            'content-type': 'application/json',
+          },
+          body: JSON.stringify({
+            model: process.env.OCR_LLM_MODEL,
+            messages: [{ role: 'user', content: 'synthetic' }],
+          }),
+        })
+        await response.arrayBuffer()
+        process.exitCode = response.status === 402 ? 0 : 7
+      })().catch(() => { process.exitCode = 7 })
+    `
+    const code = await transport.__commandRun([
+      '--',
+      process.execPath,
+      '-e',
+      child,
+    ])
+    assert.equal(code, 1)
+    assert.equal(transport.attempts(), 1)
+    assert.deepEqual(requests[0].messages, [
+      { role: 'user', content: 'synthetic' },
+    ])
+  } finally {
+    for (const name of names) {
+      if (previous[name] === undefined) delete process.env[name]
+      else process.env[name] = previous[name]
+    }
+  }
 })
 
 test('default upstream transport bounds stalled headers, bodies, size and redirects at both callers', {
