@@ -27,7 +27,8 @@ The script rejects ambient `PG*` variables and other database URL overrides.
 Controller credentials never belong in this job. Do not put injected values in
 command arguments, files or logs.
 
-Run inside the fixture image or the provisioned development container:
+Run from the repository root inside the provisioned development container, or
+from `/app` inside the fixture image:
 
 ```sh
 pnpm --filter @klicker-uzh/prisma exec tsx scripts/northflankBootstrap.ts
