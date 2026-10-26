@@ -148,6 +148,7 @@ test('routes automatic drafts through Mistral Flash without changing the final p
     'mistral-api-key': '${{ secrets.MISTRAL_API_KEY }}',
     'context7-api-key': '${{ secrets.CONTEXT7_API_KEY }}',
     'github-token': '${{ github.token }}',
+    'provider-paused': '${{ vars.OCR_PROVIDER_PAUSED }}',
   })
   const trustedCheckout = action.runs.steps.find(
     (step) =>

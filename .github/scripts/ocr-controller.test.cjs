@@ -216,6 +216,7 @@ function caller() {
               'mistral-api-key': '${{ secrets.MISTRAL_API_KEY }}',
               'context7-api-key': '${{ secrets.CONTEXT7_API_KEY }}',
               'github-token': '${{ github.token }}',
+              'provider-paused': '${{ vars.OCR_PROVIDER_PAUSED }}',
             },
           },
         ],
@@ -583,6 +584,16 @@ test('the shared caller check rejects mutated pins, execution, credentials, poli
       w.jobs['ocr-review'].steps[0].env = { MISTRAL_API_KEY: 'synthetic-leak' }
     },
     (w) => {
+      delete w.jobs['ocr-review'].steps[0].with['provider-paused']
+    },
+    (w) => {
+      w.jobs['ocr-review'].steps[0].with['provider-paused'] = 'false'
+    },
+    (w) => {
+      w.jobs['ocr-review'].steps[0].with['provider-paused'] =
+        '${{ github.event.pull_request.body }}'
+    },
+    (w) => {
       w.jobs['ocr-review'].if = 'true'
     },
     (w) => {
@@ -808,6 +819,33 @@ test('only frozen unavailable draft outcomes admit missing results, and valid pa
   fs.unlinkSync(file)
   fs.unlinkSync(outcomePath)
   await assert.rejects(runCommand('validate', f))
+})
+
+test('the composite forwards pause inputs without workflow-only contexts', () => {
+  const action = YAML.parse(
+    fs.readFileSync(
+      path.join(ROOT, '.github/actions/ocr-review/action.yml'),
+      'utf8'
+    )
+  )
+  const { parseProviderPause } = require('./ocr-mistral-adapter.cjs')
+  const definition = action.inputs['provider-paused']
+  assert.equal(parseProviderPause(definition.default), false)
+  const review = action.runs.steps.find((step) => step.id === 'review')
+  const evaluatePause = (value = definition.default) =>
+    vm.runInNewContext(
+      review.env.OCR_PROVIDER_PAUSED.replace(/^\$\{\{\s*|\s*\}\}$/g, ''),
+      { inputs: { 'provider-paused': value } },
+      { timeout: 100 }
+    )
+  for (const value of [undefined, '', 'false'])
+    assert.equal(parseProviderPause(evaluatePause(value)), false)
+  assert.equal(parseProviderPause(evaluatePause('true')), true)
+  assert.throws(() => parseProviderPause(evaluatePause('invalid')), {
+    code: 'invalid_provider_pause',
+  })
+  for (const step of action.runs.steps)
+    if (step !== review) assert.equal(step.env?.OCR_PROVIDER_PAUSED, undefined)
 })
 
 test('manual provider pause reaches model steps without contaminating trusted helper self-tests', () => {

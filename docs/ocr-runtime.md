@@ -152,7 +152,14 @@ with:
   mistral-api-key: ${{ secrets.MISTRAL_API_KEY }}
   context7-api-key: ${{ secrets.CONTEXT7_API_KEY }}
   github-token: ${{ github.token }}
+  provider-paused: ${{ vars.OCR_PROVIDER_PAUSED }}
 ```
+
+The workflow resolves the trusted repository pause variable and passes it as an
+action input. The composite reads the input only in the review step; the `vars`
+context is unavailable inside composite action metadata. Omitted
+or empty input keeps provider calls enabled, `true` pauses them, and invalid
+values fail closed.
 
 Do not expose these credentials through job-level environment variables.
 Repository-specific activation can narrow the normal draft expression and must
