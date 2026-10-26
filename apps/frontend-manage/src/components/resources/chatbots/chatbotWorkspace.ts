@@ -1,5 +1,12 @@
 import { type Chatbot, ChatbotStatus } from '@klicker-uzh/graphql/dist/ops'
 
+// The workspace helpers only read these fields, so a chatbot projection does
+// not have to select the whole entity for them.
+type ChatbotWorkspaceFacts = Pick<
+  Chatbot,
+  'courses' | 'disclaimerSummary' | 'name' | 'status'
+>
+
 type ChatbotWorkspaceView =
   | 'overview'
   | 'knowledge'
@@ -40,24 +47,26 @@ function includesValue<T extends string>(
   return typeof value === 'string' && values.includes(value as T)
 }
 
-function hasCompleteBasics(chatbot: Chatbot) {
+function hasCompleteBasics(chatbot: ChatbotWorkspaceFacts) {
   return Boolean(chatbot.name.trim() && (chatbot.courses?.length ?? 0) > 0)
 }
 
-function hasCompleteDisclaimer(chatbot: Chatbot) {
+function hasCompleteDisclaimer(chatbot: ChatbotWorkspaceFacts) {
   return Boolean(
     chatbot.disclaimerSummary?.title?.trim() &&
       chatbot.disclaimerSummary.introText?.trim()
   )
 }
 
-function getDefaultSetupStep(chatbot: Chatbot): ChatbotSetupStep {
+function getDefaultSetupStep(chatbot: ChatbotWorkspaceFacts): ChatbotSetupStep {
   if (!hasCompleteBasics(chatbot)) return 'basics'
   if (!hasCompleteDisclaimer(chatbot)) return 'disclaimer'
   return 'review'
 }
 
-function getDefaultWorkspaceState(chatbot: Chatbot): ChatbotWorkspaceState {
+function getDefaultWorkspaceState(
+  chatbot: ChatbotWorkspaceFacts
+): ChatbotWorkspaceState {
   if (
     chatbot.status === ChatbotStatus.Draft ||
     chatbot.status === ChatbotStatus.Rejected
@@ -72,7 +81,7 @@ function getDefaultWorkspaceState(chatbot: Chatbot): ChatbotWorkspaceState {
 }
 
 function normalizeLegacyWorkspaceState(
-  chatbot: Chatbot,
+  chatbot: ChatbotWorkspaceFacts,
   requestedView: string,
   requestedStep: string | undefined
 ): ChatbotWorkspaceState {
@@ -101,7 +110,7 @@ function normalizeLegacyWorkspaceState(
 }
 
 function normalizeWorkspaceState(
-  chatbot: Chatbot,
+  chatbot: ChatbotWorkspaceFacts,
   requestedView: string | undefined,
   requestedStep: string | undefined
 ): ChatbotWorkspaceState {

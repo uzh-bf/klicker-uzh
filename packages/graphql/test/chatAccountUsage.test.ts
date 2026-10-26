@@ -243,6 +243,7 @@ describe('ChatAccountUsage service and GraphQL API', () => {
     await expect(getChatAccountUsage({ now: NOW }, ownerCtx)).resolves.toEqual({
       authorized: true,
       subscriptionTier: 'BASE',
+      advancedModelConfigurationEntitled: false,
       baseModelUsage: {
         usageClass: 'BASE',
         entitled: true,
@@ -285,7 +286,7 @@ describe('ChatAccountUsage service and GraphQL API', () => {
     })
   })
 
-  it('opens the advanced class only for an account with a cost center', async () => {
+  it('opens the advanced class only for an advanced account with a cost center', async () => {
     await prisma.user.update({
       where: { id: ownerId },
       data: {
@@ -298,8 +299,27 @@ describe('ChatAccountUsage service and GraphQL API', () => {
     expect(overview).toMatchObject({
       authorized: true,
       subscriptionTier: 'ADVANCED',
+      advancedModelConfigurationEntitled: true,
       baseModelUsage: { entitled: true },
       advancedModelUsage: { entitled: true },
+    })
+
+    // A cost center alone never admits a cost-carrying class either: the
+    // advanced tier is the grant.
+    await prisma.user.update({
+      where: { id: ownerId },
+      data: { aiSubscriptionTier: 'BASE' },
+    })
+    const baseTier = await getChatAccountUsage({ now: NOW }, ownerCtx)
+    expect(baseTier).toMatchObject({
+      subscriptionTier: 'BASE',
+      advancedModelConfigurationEntitled: false,
+      baseModelUsage: { entitled: true },
+      advancedModelUsage: { entitled: false },
+    })
+    await prisma.user.update({
+      where: { id: ownerId },
+      data: { aiSubscriptionTier: 'ADVANCED' },
     })
 
     // A recorded tier alone never admits a cost-carrying class: without an
@@ -311,6 +331,7 @@ describe('ChatAccountUsage service and GraphQL API', () => {
     const withoutCostCenter = await getChatAccountUsage({ now: NOW }, ownerCtx)
     expect(withoutCostCenter).toMatchObject({
       subscriptionTier: 'ADVANCED',
+      advancedModelConfigurationEntitled: false,
       baseModelUsage: { entitled: true },
       advancedModelUsage: { entitled: false },
     })
@@ -320,6 +341,7 @@ describe('ChatAccountUsage service and GraphQL API', () => {
       where: { id: otherOwnerId },
       data: {
         aiFeaturesEnabled: false,
+        aiSubscriptionTier: 'ADVANCED',
         aiChatbotCostCenter: 'KST-5678',
       },
     })
@@ -331,7 +353,22 @@ describe('ChatAccountUsage service and GraphQL API', () => {
     const withdrawn = await getChatAccountUsage({ now: NOW }, otherCtx)
     expect(withdrawn).toMatchObject({
       authorized: false,
+      advancedModelConfigurationEntitled: true,
       baseModelUsage: { entitled: false },
+      advancedModelUsage: { entitled: false },
+    })
+
+    await prisma.user.update({
+      where: { id: otherOwnerId },
+      data: { aiChatbotCostCenter: ' \t\n' },
+    })
+    const withdrawnWithoutCostCenter = await getChatAccountUsage(
+      { now: NOW },
+      otherCtx
+    )
+    expect(withdrawnWithoutCostCenter).toMatchObject({
+      authorized: false,
+      advancedModelConfigurationEntitled: false,
       advancedModelUsage: { entitled: false },
     })
   })
@@ -850,6 +887,50 @@ describe('ChatAccountUsage service and GraphQL API', () => {
     expect(disabledResult.data).toEqual({
       getChatbotPublishingCapability: false,
     })
+  })
+
+  it('derives the tier from a cost center unless the call names a tier', async () => {
+    const targetId = randomUUID()
+    await prisma.user.create({
+      data: syntheticUser(targetId, 'tier-target', true),
+    })
+    const target = await prisma.user.findUniqueOrThrow({
+      where: { id: targetId },
+    })
+    const tierOf = async () =>
+      (
+        await prisma.user.findUniqueOrThrow({
+          where: { id: targetId },
+          select: { aiSubscriptionTier: true },
+        })
+      ).aiSubscriptionTier
+
+    try {
+      await setAiFeatures(
+        { email: target.email, enabled: true, costCenter: 'KST-1' },
+        adminCtx
+      )
+      await expect(tierOf()).resolves.toBe('ADVANCED')
+
+      await setAiFeatures(
+        { email: target.email, enabled: true, costCenter: '' },
+        adminCtx
+      )
+      await expect(tierOf()).resolves.toBe('BASE')
+
+      await setAiFeatures(
+        {
+          email: target.email,
+          enabled: true,
+          costCenter: 'KST-2',
+          tier: 'BASE',
+        },
+        adminCtx
+      )
+      await expect(tierOf()).resolves.toBe('BASE')
+    } finally {
+      await prisma.user.deleteMany({ where: { id: targetId } })
+    }
   })
 
   it('grants the monthly base budget when an admin enables an account', async () => {

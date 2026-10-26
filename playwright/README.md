@@ -36,13 +36,13 @@ starting Devrouter infrastructure.
 
 ```bash
 # run all Chromium tests
-pnpm playwright:host -- --project=chromium
+node util/run-playwright-host.mjs --project=chromium
 
 # run one spec
-pnpm playwright:host -- --project=chromium tests/A-login.spec.ts
+node util/run-playwright-host.mjs --project=chromium tests/A-login.spec.ts
 
 # inspect the resolved workspace without printing credentials
-pnpm playwright:host -- --print-env
+node util/run-playwright-host.mjs --print-env
 ```
 
 Direct local `playwright test` calls fail before database cleanup. Never run
@@ -78,10 +78,10 @@ for debugging an existing baseline; it is not clean-run acceptance evidence.
 
 ```bash
 # UI / interactive mode
-pnpm playwright:host -- --ui
+node util/run-playwright-host.mjs --ui
 
 # Headed Chromium only
-pnpm playwright:host -- --headed --project=chromium
+node util/run-playwright-host.mjs --headed --project=chromium
 
 # Show last HTML report
 pnpm --filter @klicker-uzh/playwright show-report

@@ -116,11 +116,16 @@ async function lockChatTurnParent(
 async function loadChatUsageEntitlement(ownerId: string) {
   const owner = await prisma.user.findUnique({
     where: { id: ownerId },
-    select: { aiFeaturesEnabled: true, aiChatbotCostCenter: true },
+    select: {
+      aiFeaturesEnabled: true,
+      aiSubscriptionTier: true,
+      aiChatbotCostCenter: true,
+    },
   })
 
   return {
     aiFeaturesEnabled: owner?.aiFeaturesEnabled ?? false,
+    aiSubscriptionTier: owner?.aiSubscriptionTier ?? 'BASE',
     aiChatbotCostCenter: owner?.aiChatbotCostCenter ?? null,
   }
 }

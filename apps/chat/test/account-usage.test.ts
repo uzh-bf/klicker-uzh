@@ -46,11 +46,12 @@ function budgetedUsage() {
 }
 
 describe('account usage class admission', () => {
-  test('admits a base class on the flag alone and a cost-carrying class only with a cost center', async () => {
+  test('admits a base class on the flag alone and a cost-carrying class only with the advanced tier and a cost center', async () => {
     mocks.getEffectiveChatAccountUsage.mockResolvedValue(budgetedUsage())
     mocks.prisma.user.findUnique.mockResolvedValue({
       aiChatbotCostCenter: null,
       aiFeaturesEnabled: true,
+      aiSubscriptionTier: 'ADVANCED',
     })
 
     await expect(
@@ -69,6 +70,19 @@ describe('account usage class admission', () => {
     mocks.prisma.user.findUnique.mockResolvedValue({
       aiChatbotCostCenter: 'KST-1',
       aiFeaturesEnabled: true,
+      aiSubscriptionTier: 'BASE',
+    })
+    await expect(
+      isChatAccountUsageAvailable({
+        ownerId: 'owner-1',
+        usageClass: 'ADVANCED',
+      })
+    ).resolves.toBe(false)
+
+    mocks.prisma.user.findUnique.mockResolvedValue({
+      aiChatbotCostCenter: 'KST-1',
+      aiFeaturesEnabled: true,
+      aiSubscriptionTier: 'ADVANCED',
     })
     await expect(
       isChatAccountUsageAvailable({
@@ -83,6 +97,7 @@ describe('account usage class admission', () => {
     mocks.prisma.user.findUnique.mockResolvedValue({
       aiChatbotCostCenter: 'KST-1',
       aiFeaturesEnabled: false,
+      aiSubscriptionTier: 'ADVANCED',
     })
 
     await expect(
