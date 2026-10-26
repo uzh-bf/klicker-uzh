@@ -128,7 +128,8 @@ describe('bounded CodeAPI browser fixture', () => {
       ['auto', false],
       ['gpt-6-luna', false],
     ])
-    const { directory } = await setup()
+    const directory = await mkdtemp(path.join(tmpdir(), 'codeapi-marker-test-'))
+    cleanups.push(() => rm(directory, { recursive: true, force: true }))
     await mkdir(path.join(directory, '.devcontainer/.runtime'), {
       recursive: true,
     })

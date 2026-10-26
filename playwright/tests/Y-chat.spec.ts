@@ -4728,157 +4728,80 @@ test.describe('CodeAPI real-route fixture', () => {
     expect(await readScenario(nonce)).toEqual(beforeReload)
   })
 
-  test('A Python failure persists a safe typed result and the next turn succeeds in the same thread', async ({
-    page,
-  }) => {
-    test.skip(fixtureMode !== 'enabled', 'Fixture receipt mode is disabled')
-    const participantId = await getEnrolledParticipantId()
-    await visitCodeApiChat(page, allowedChatbotId)
-
-    const failureNonce = await sendCodeApiPrompt(page, 'python-error')
-    await expectCodeApiAnswer(
-      page,
-      `CODEAPI_RESULT:${failureNonce}:execution:failed`
-    )
-    await expect
-      .poll(() => readCounter(failureNonce, 'dispatches'), { timeout: 10_000 })
-      .toBe(1)
-    await expect
-      .poll(() => readCounter(failureNonce, 'completed'), { timeout: 10_000 })
-      .toBe(1)
-    await expect
-      .poll(() => readCounter(failureNonce, 'toolResults'), { timeout: 10_000 })
-      .toBe(1)
-
-    const failureTurn = await waitForAssistantTurnByNonce(
-      participantId,
-      allowedChatbotId,
-      failureNonce
-    )
-    const [failureCall] = readRunPythonCalls(failureTurn.parts)
-    if (!failureCall) {
-      throw new Error('Persisted Python failure has no run_python call')
-    }
-    expect(failureCall.args).toEqual({
-      code: `# CODEAPI_E2E:python-error:${failureNonce}`,
+  for (const failure of [
+    {
+      title:
+        'A Python failure persists a safe typed result and the next turn succeeds in the same thread',
+      scenario: 'python-error',
+      marker: 'execution:failed',
+      exitCode: 1,
+    },
+    {
+      title:
+        'An HTTP failure persists a safe typed result and the next turn succeeds in the same thread',
+      scenario: 'http-error',
+      marker: 'service_error:503',
+      exitCode: null,
+    },
+    {
+      title:
+        'A guest timeout persists a safe typed result and the next turn succeeds in the same thread',
+      scenario: 'timeout',
+      marker: 'execution:failed',
+      exitCode: 137,
+    },
+  ]) {
+    test(failure.title, async ({ page }) => {
+      test.skip(fixtureMode !== 'enabled', 'Fixture receipt mode is disabled')
+      const participantId = await getEnrolledParticipantId()
+      await visitCodeApiChat(page, allowedChatbotId)
+      const failureNonce = await sendCodeApiPrompt(page, failure.scenario)
+      await expectCodeApiAnswer(
+        page,
+        `CODEAPI_RESULT:${failureNonce}:${failure.marker}`
+      )
+      for (const counter of [
+        'dispatches',
+        'completed',
+        'toolResults',
+      ] as const) {
+        await expect
+          .poll(() => readCounter(failureNonce, counter), { timeout: 10_000 })
+          .toBe(1)
+      }
+      const failureTurn = await waitForAssistantTurnByNonce(
+        participantId,
+        allowedChatbotId,
+        failureNonce
+      )
+      const [failureCall] = readRunPythonCalls(failureTurn.parts)
+      if (!failureCall)
+        throw new Error('Persisted failure has no run_python call')
+      expect(failureCall.args).toEqual({
+        code: `# CODEAPI_E2E:${failure.scenario}:${failureNonce}`,
+      })
+      const result = readResultObject(failureCall)
+      if (failure.scenario === 'http-error') {
+        expect(result.kind).toBe('service_error')
+        expect(result.status).toBe(503)
+      } else {
+        expect(result.kind).toBe('execution')
+        expect(result.status).toBe('failed')
+        expect(result.exitCode).toBe(failure.exitCode)
+        expect(readStdout(result)).not.toContain(
+          `CODEAPI_VALUE:${failureNonce}`
+        )
+      }
+      const recoveryNonce = await sendCodeApiPrompt(page, 'success')
+      const recoveryTurn = await expectSuccessTurn(
+        page,
+        participantId,
+        allowedChatbotId,
+        recoveryNonce
+      )
+      expect(recoveryTurn.threadId).toBe(failureTurn.threadId)
     })
-    const failureResult = readResultObject(failureCall)
-    expect(failureResult.kind).toBe('execution')
-    expect(failureResult.status).toBe('failed')
-    expect(failureResult.exitCode).toBe(1)
-    expect(readStdout(failureResult)).not.toContain(
-      `CODEAPI_VALUE:${failureNonce}`
-    )
-
-    const recoveryNonce = await sendCodeApiPrompt(page, 'success')
-    const recoveryTurn = await expectSuccessTurn(
-      page,
-      participantId,
-      allowedChatbotId,
-      recoveryNonce
-    )
-    expect(recoveryTurn.threadId).toBe(failureTurn.threadId)
-  })
-
-  test('An HTTP failure persists a safe typed result and the next turn succeeds in the same thread', async ({
-    page,
-  }) => {
-    test.skip(fixtureMode !== 'enabled', 'Fixture receipt mode is disabled')
-    const participantId = await getEnrolledParticipantId()
-    await visitCodeApiChat(page, allowedChatbotId)
-
-    const failureNonce = await sendCodeApiPrompt(page, 'http-error')
-    await expectCodeApiAnswer(
-      page,
-      `CODEAPI_RESULT:${failureNonce}:service_error:503`
-    )
-    await expect
-      .poll(() => readCounter(failureNonce, 'dispatches'), { timeout: 10_000 })
-      .toBe(1)
-    await expect
-      .poll(() => readCounter(failureNonce, 'completed'), { timeout: 10_000 })
-      .toBe(1)
-    await expect
-      .poll(() => readCounter(failureNonce, 'toolResults'), { timeout: 10_000 })
-      .toBe(1)
-
-    const failureTurn = await waitForAssistantTurnByNonce(
-      participantId,
-      allowedChatbotId,
-      failureNonce
-    )
-    const [failureCall] = readRunPythonCalls(failureTurn.parts)
-    if (!failureCall) {
-      throw new Error('Persisted HTTP failure has no run_python call')
-    }
-    expect(failureCall.args).toEqual({
-      code: `# CODEAPI_E2E:http-error:${failureNonce}`,
-    })
-    const failureResult = readResultObject(failureCall)
-    expect(failureResult.kind).toBe('service_error')
-    expect(failureResult.status).toBe(503)
-
-    const recoveryNonce = await sendCodeApiPrompt(page, 'success')
-    const recoveryTurn = await expectSuccessTurn(
-      page,
-      participantId,
-      allowedChatbotId,
-      recoveryNonce
-    )
-    expect(recoveryTurn.threadId).toBe(failureTurn.threadId)
-  })
-
-  test('A guest timeout persists a safe typed result and the next turn succeeds in the same thread', async ({
-    page,
-  }) => {
-    test.skip(fixtureMode !== 'enabled', 'Fixture receipt mode is disabled')
-    const participantId = await getEnrolledParticipantId()
-    await visitCodeApiChat(page, allowedChatbotId)
-
-    const failureNonce = await sendCodeApiPrompt(page, 'timeout')
-    await expectCodeApiAnswer(
-      page,
-      `CODEAPI_RESULT:${failureNonce}:execution:failed`
-    )
-    await expect
-      .poll(() => readCounter(failureNonce, 'dispatches'), { timeout: 10_000 })
-      .toBe(1)
-    await expect
-      .poll(() => readCounter(failureNonce, 'completed'), { timeout: 10_000 })
-      .toBe(1)
-    await expect
-      .poll(() => readCounter(failureNonce, 'toolResults'), { timeout: 10_000 })
-      .toBe(1)
-
-    const failureTurn = await waitForAssistantTurnByNonce(
-      participantId,
-      allowedChatbotId,
-      failureNonce
-    )
-    const [failureCall] = readRunPythonCalls(failureTurn.parts)
-    if (!failureCall) {
-      throw new Error('Persisted guest timeout has no run_python call')
-    }
-    expect(failureCall.args).toEqual({
-      code: `# CODEAPI_E2E:timeout:${failureNonce}`,
-    })
-    const failureResult = readResultObject(failureCall)
-    expect(failureResult.kind).toBe('execution')
-    expect(failureResult.status).toBe('failed')
-    expect(failureResult.exitCode).toBe(137)
-    expect(readStdout(failureResult)).not.toContain(
-      `CODEAPI_VALUE:${failureNonce}`
-    )
-
-    const recoveryNonce = await sendCodeApiPrompt(page, 'success')
-    const recoveryTurn = await expectSuccessTurn(
-      page,
-      participantId,
-      allowedChatbotId,
-      recoveryNonce
-    )
-    expect(recoveryTurn.threadId).toBe(failureTurn.threadId)
-  })
+  }
 
   test('Stopping after dispatch disconnects once, persists the stopped turn and recovers', async ({
     page,
