@@ -281,6 +281,32 @@ function assertUrl(key, value, { allowHttp, originOnly }) {
   }
 }
 
+function assertAuthHostList(key, value) {
+  for (const entry of value.split(',')) {
+    const authority = entry.trim()
+    const authorityParts =
+      /^(?:\[[0-9a-f:.]+\]|[a-z0-9](?:[a-z0-9.-]*[a-z0-9])?)(?::([0-9]{1,5}))?$/i.exec(
+        authority
+      )
+
+    if (
+      !authority ||
+      authority.includes('*') ||
+      !authorityParts ||
+      (authorityParts[1] !== undefined && Number(authorityParts[1]) > 65_535)
+    ) {
+      throw new PreviewBuildEnvError(
+        `${key} must contain comma-separated exact hostname[:port] authorities`
+      )
+    }
+
+    assertUrl(key, `https://${authority}`, {
+      allowHttp: true,
+      originOnly: true,
+    })
+  }
+}
+
 function assertDomain(key, value) {
   const domain = value.startsWith('.') ? value.slice(1) : value
 
@@ -319,6 +345,11 @@ function validateValue(key, value) {
 
   if (ORIGIN_KEYS.includes(key)) {
     assertUrl(key, value, { allowHttp: false, originOnly: true })
+    return
+  }
+
+  if (AUTH_HOST_KEYS.includes(key)) {
+    assertAuthHostList(key, value)
     return
   }
 

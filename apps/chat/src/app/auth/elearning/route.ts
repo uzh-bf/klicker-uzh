@@ -76,7 +76,7 @@ function setLocaleCookie(
 ) {
   if (!locale) return
 
-  response.cookies.set(previewCookieName('NEXT_LOCALE'), locale, {
+  response.cookies.set('NEXT_LOCALE', locale, {
     ...cookieSecurityOptions({ isProduction }),
     path: '/',
   })

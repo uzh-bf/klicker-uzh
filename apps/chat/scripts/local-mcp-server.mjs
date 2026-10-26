@@ -52,12 +52,17 @@ const HOST = parseHostAuthority(
   process.env.LOCAL_MCP_BIND_HOST ?? DEFAULT_HOST,
   'LOCAL_MCP_BIND_HOST'
 )
-const ALLOWED_HOSTS =
-  process.env.LOCAL_MCP_ALLOWED_HOSTS === undefined
-    ? [`${HOST}:${PORT}`, `localhost:${PORT}`]
-    : process.env.LOCAL_MCP_ALLOWED_HOSTS.split(',').map((entry) =>
-        parseHostAuthority(entry, 'LOCAL_MCP_ALLOWED_HOSTS', true)
-      )
+const DEFAULT_ALLOWED_HOSTS = [`${HOST}:${PORT}`, `localhost:${PORT}`]
+const ALLOWED_HOSTS = [
+  ...new Set([
+    ...DEFAULT_ALLOWED_HOSTS,
+    ...(process.env.LOCAL_MCP_ALLOWED_HOSTS === undefined
+      ? []
+      : process.env.LOCAL_MCP_ALLOWED_HOSTS.split(',').map((entry) =>
+          parseHostAuthority(entry, 'LOCAL_MCP_ALLOWED_HOSTS', true)
+        )),
+  ]),
+]
 const fixture = loadLocalMcpFixture(process.env)
 const authenticate = await createLocalAuthenticator(process.env, fixture, {
   returnIdentity: true,

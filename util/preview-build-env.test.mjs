@@ -367,6 +367,53 @@ test('app URLs remain origins and only classified SSR endpoints allow HTTP', () 
   }
 })
 
+test('auth host lists accept trimmed host and host-port authorities', () => {
+  const authHosts = {
+    AUTH_LECTURER_ALLOWED_HOSTS:
+      ' auth.preview.test , manage.preview.test:8443 ',
+    AUTH_PWA_HOSTS: '127.0.0.1:3001, pwa.preview.test',
+    AUTH_STUDENT_ALLOWED_HOSTS: 'assessment.preview.test,127.0.0.1:3001',
+  }
+
+  const result = parsePreviewBuildEnv(
+    JSON.stringify({ ...validPreviewConfig, ...authHosts }),
+    'auth'
+  )
+
+  for (const [key, value] of Object.entries(authHosts)) {
+    assert.equal(result[key], value)
+  }
+})
+
+test('auth host lists reject malformed authorities', () => {
+  for (const key of [
+    'AUTH_LECTURER_ALLOWED_HOSTS',
+    'AUTH_PWA_HOSTS',
+    'AUTH_STUDENT_ALLOWED_HOSTS',
+  ]) {
+    for (const value of [
+      'auth.preview.test,,manage.preview.test',
+      'https://auth.preview.test',
+      '*.preview.test',
+      'auth.preview.test:65536',
+      'auth.preview.test:invalid',
+      'auth.preview.test:',
+      'auth.preview.test/path',
+      'auth.preview.test?query=synthetic',
+      'user@auth.preview.test',
+    ]) {
+      assert.throws(
+        () =>
+          parsePreviewBuildEnv(
+            JSON.stringify({ ...validPreviewConfig, [key]: value }),
+            'auth'
+          ),
+        PreviewBuildEnvError
+      )
+    }
+  }
+})
+
 test('telemetry can be explicitly disabled without falling back to existing values', () => {
   const disabled = {
     NEXT_PUBLIC_GROWTHBOOK_API_HOST: '',

@@ -1,6 +1,6 @@
 import { randomUUID } from 'node:crypto'
 import { prisma } from '@klicker-uzh/prisma'
-import { isChatUsageClassEntitled, previewCookieName } from '@klicker-uzh/util'
+import { isChatUsageClassEntitled } from '@klicker-uzh/util'
 import {
   consumeStream,
   convertToModelMessages,
@@ -14,11 +14,11 @@ import {
   DEFAULT_ANSWER_STYLE,
   DEFAULT_ANSWER_TONE,
 } from '@/src/lib/config/answerStyles'
+import { resolveOwnerPreviewModel } from '@/src/lib/ownerPreviewPolicy'
 import {
   answerStyleSchema,
   answerToneSchema,
 } from '@/src/lib/server/answerStyleInstructions'
-import { resolveOwnerPreviewModel } from '@/src/lib/ownerPreviewPolicy'
 import { getChatModel } from '@/src/lib/server/chatModelProvider'
 import {
   getAutomaticModelId,
@@ -445,7 +445,7 @@ export async function POST(
       experimental_transform: providerRefusalTransform(
         providerRefusalDeflection(
           turnSettings.replyLanguage ?? null,
-          req.cookies.get(previewCookieName('NEXT_LOCALE'))?.value
+          req.cookies.get('NEXT_LOCALE')?.value
         ),
         (finish) =>
           console.warn('Owner preview provider refusal replaced:', {

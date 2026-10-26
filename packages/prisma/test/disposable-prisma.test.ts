@@ -48,8 +48,15 @@ test('rejects alternate destinations, schemas, configuration and positional argu
       assert.throws(() => guardedPrismaCommand(operation, args))
     }
   }
-  assert.throws(() => guardedPrismaCommand('resolve', []))
-  assert.throws(() => guardedPrismaCommand('', []))
+  for (const operation of [
+    'resolve',
+    '',
+    'constructor',
+    'toString',
+    '__proto__',
+  ]) {
+    assert.throws(() => guardedPrismaCommand(operation, []))
+  }
   assert.throws(() => guardedPrismaCommand('migrate', ['--name']))
   assert.throws(() => guardedPrismaCommand('migrate', ['--name', '--config']))
 })

@@ -10,7 +10,7 @@
 // The persistent session cookies are intentionally NOT touched here; their
 // names are the backend delivery contract (see constants.ts).
 
-import { previewCookieName } from '@klicker-uzh/util'
+import { previewCookieName } from '@klicker-uzh/util/auth'
 
 export type AuthAudience = 'participant' | 'lecturer'
 

@@ -146,6 +146,19 @@ const accessQuery = [
   ' WHERE d.datname = current_database()',
 ].join('\n')
 
+const restrictedRoleIdentityQuery = [
+  '/* northflank-bootstrap-role-identity-v1 */',
+  'SELECT session_user AS login, current_user AS role,',
+  '       session_user = current_user AS same_identity,',
+  '       r.rolsuper AS elevated_superuser,',
+  '       r.rolcreatedb AS elevated_createdb,',
+  '       r.rolcreaterole AS elevated_createrole,',
+  '       r.rolreplication AS elevated_replication,',
+  '       r.rolbypassrls AS elevated_bypassrls',
+  '  FROM pg_roles r',
+  ' WHERE r.rolname = session_user',
+].join('\n')
+
 async function connectPostgres(
   connectionString: string
 ): Promise<BootstrapQueryClient> {
@@ -263,6 +276,41 @@ export async function bootstrapNorthflankPostgres(
         }
       } finally {
         if (appClient) await appClient.end().catch(() => undefined)
+      }
+    }
+    if (config.hatchetPassword !== undefined) {
+      let hatchetClient: BootstrapQueryClient | undefined
+      try {
+        const url = new URL(config.adminUrl)
+        url.username = HATCHET
+        url.password = encodeURIComponent(config.hatchetPassword)
+        url.pathname = `/${HATCHET}`
+        hatchetClient = await connect(url.toString())
+        const identity = await hatchetClient.query(restrictedRoleIdentityQuery)
+        const identityRow = identity.rows[0]
+        if (
+          identityRow?.login !== HATCHET ||
+          identityRow.role !== HATCHET ||
+          identityRow.same_identity !== true ||
+          identityRow.elevated_superuser !== false ||
+          identityRow.elevated_createdb !== false ||
+          identityRow.elevated_createrole !== false ||
+          identityRow.elevated_replication !== false ||
+          identityRow.elevated_bypassrls !== false
+        ) {
+          throw new Error(VERIFY_ERROR)
+        }
+        const access = await hatchetClient.query(accessQuery)
+        const accessRow = access.rows[0]
+        if (
+          accessRow?.database !== HATCHET ||
+          accessRow.owns_database !== true ||
+          accessRow.can_create_schema !== true
+        ) {
+          throw new Error(VERIFY_ERROR)
+        }
+      } finally {
+        if (hatchetClient) await hatchetClient.end().catch(() => undefined)
       }
     }
     return { mode: 'applied' }
