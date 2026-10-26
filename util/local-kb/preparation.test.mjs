@@ -255,6 +255,7 @@ test('missing AI injection rejects setup, start and resume before any state or p
 })
 
 function lifecycleRunner(config) {
+  const running = new Set()
   return async (command, environment) => {
     const name = Object.keys(config.providers).find(
       (key) => config.providers[key].sourcePath === command.cwd
@@ -271,6 +272,8 @@ function lifecycleRunner(config) {
     }
     if (!command.args.includes('status')) {
       assert.ok(command.args.includes('start') || command.args.includes('stop'))
+      if (command.args.includes('start')) running.add(name)
+      else running.delete(name)
       return '{}'
     }
     const common = {
@@ -294,8 +297,9 @@ function lifecycleRunner(config) {
         instance_id: common.instance,
         ownership: 'verified',
         setup: 'ready',
-        ready: false,
-        api: 'stopped',
+        ready: running.has(name),
+        api: running.has(name) ? 'running' : 'stopped',
+        worker_registration: running.has(name) ? 'ready' : 'unknown',
       })
     if (name === 'scraping')
       return JSON.stringify({
@@ -563,6 +567,7 @@ test('explicit startup orders provider activation without repeating setup and re
       phases.push('applications-and-model')
       return JSON.stringify({ ...identity, profile: LOCAL_KB_MANAGED_PROFILE })
     }
+    const providerRunner = lifecycleRunner(config)
     const provider = async (command, environment) => {
       assert.equal(environment.DOCKER_CONTEXT, 'synthetic-local')
       if (command.args.includes('start')) {
@@ -573,7 +578,7 @@ test('explicit startup orders provider activation without repeating setup and re
         if (name === 'retrieval')
           assert.ok(environment.KLICKER_LOCAL_RETRIEVAL_OPENAI_BASE_URL)
       }
-      return lifecycleRunner(config)(command, environment)
+      return providerRunner(command, environment)
     }
     const run = () =>
       startInfrastructure(config, revision, managed, docker, provider)
@@ -592,9 +597,9 @@ test('explicit startup orders provider activation without repeating setup and re
       assert.equal(calls.length, 4)
       assert.deepEqual(phases, [
         'scraping',
-        'docProcessing',
         'applications-and-model',
         'ingestion',
+        'docProcessing',
         'retrieval',
       ])
       assert.deepEqual(calls[3], [
@@ -639,13 +644,13 @@ test('explicit startup orders provider activation without repeating setup and re
                 (key) => config.providers[key].sourcePath === command.cwd
               )
             )
-          return lifecycleRunner(config)(command, environment)
+          return providerRunner(command, environment)
         }
       )
       assert.deepEqual(shutdown, [
         'retrieval',
-        'ingestion',
         'docProcessing',
+        'ingestion',
         'scraping',
         'applications-and-model',
       ])
@@ -843,6 +848,7 @@ test('resume reconciles the inconsistent provider before starting it', async () 
         setup: 'ready',
         phase: docPhase,
         ready: docPhase === 'running',
+        worker_registration: docPhase === 'running' ? 'ready' : 'unknown',
         api:
           docPhase === 'running'
             ? 'running'
@@ -901,8 +907,8 @@ test('resume reconciles the inconsistent provider before starting it', async () 
   assert.deepEqual(lifecycle, [
     'docProcessing:stop',
     'scraping:start',
-    'docProcessing:start',
     'ingestion:start',
+    'docProcessing:start',
     'retrieval:start',
   ])
   await stopInfrastructure(config, revision, managed, docker, provider)
@@ -1024,7 +1030,7 @@ test('stop is idempotent for a prepared provider that was never started', async 
   const stoppedProviders = lifecycle.filter(
     (name, index) => lifecycle.indexOf(name) === index
   )
-  assert.deepEqual(stoppedProviders, ['ingestion', 'docProcessing', 'scraping'])
+  assert.deepEqual(stoppedProviders, ['docProcessing', 'ingestion', 'scraping'])
 })
 
 test('status is read-only and stop refuses foreign provider ownership', async () => {
@@ -1430,6 +1436,12 @@ test('candidate or configuration changes invalidate prepared state without chang
     requirePreparation({ ...config, aiUpstream: 'openrouter' }, revision),
     /identity/
   )
+  const rebound = structuredClone(config)
+  rebound.bindings.ports.ingestion.azurite += 100
+  await assert.rejects(
+    requirePreparation(rebound, revision),
+    /identity|configuration/
+  )
   assert.equal(await readFile(path, 'utf8'), before)
 })
 
@@ -1461,7 +1473,13 @@ test('Hatchet token delivery is private, one-shot and rejects injectable output'
 })
 
 test('provider setup invokes supported launchers once and retains partial failure', async () => {
-  for (const failure of [false, 'docProcessing', 'malformed', 'context']) {
+  for (const failure of [
+    false,
+    'docProcessing',
+    'azurite',
+    'malformed',
+    'context',
+  ]) {
     const config = await fixture()
     await claimPreparation(config, revision)
     await prepareLocalConfiguration(config, revision)
@@ -1477,7 +1495,11 @@ test('provider setup invokes supported launchers once and retains partial failur
       assert.equal(env.DOCKER_CONTEXT, 'synthetic-local')
       const provider = command.cwd.split('/').at(-1)
       calls.push({ provider, args: command.args, env })
-      if (provider === failure) throw new Error('synthetic private diagnostic')
+      if (
+        provider === failure ||
+        (failure === 'azurite' && provider === 'docProcessing')
+      )
+        throw new Error('synthetic selected Blob service unavailable')
       if (failure === 'malformed') return '{}'
       const instance = config.project.identity
       const source_revision = config.providers[provider].revision
@@ -1511,7 +1533,7 @@ test('provider setup invokes supported launchers once and retains partial failur
       assert.deepEqual(await execute(), { providersInitialized: true })
       assert.deepEqual(
         calls.map(({ provider }) => provider),
-        ['scraping', 'docProcessing', 'ingestion', 'retrieval']
+        ['scraping', 'ingestion', 'docProcessing', 'retrieval']
       )
       assert.equal(
         calls.at(-1).env.KLICKER_LOCAL_RETRIEVAL_MILVUS_URI,
@@ -1529,10 +1551,10 @@ test('provider setup invokes supported launchers once and retains partial failur
       await assert.rejects(execute(), { code: 'EEXIST' })
       assert.equal(calls.length, count)
     }
-    if (failure === 'docProcessing') {
+    if (failure === 'docProcessing' || failure === 'azurite') {
       assert.deepEqual(
         calls.map(({ provider }) => provider),
-        ['scraping', 'docProcessing']
+        ['scraping', 'ingestion', 'docProcessing']
       )
       const path = join(
         config.project.runtimeCheckoutPath,
@@ -1746,6 +1768,25 @@ test('configuration setup writes private local material once without completing 
     )
   )
   const verification = reader.token_scope.verification
+  const processor = JSON.parse(
+    await readFile(join(directory, 'doc-processing.json'), 'utf8')
+  )
+  assert.equal(
+    new URL(processor.blob.endpoint).port,
+    String(config.bindings.ports.ingestion.azurite)
+  )
+  assert.equal(processor.env.DOC_PROCESSING_DEFAULT_PIPELINE_MODE, 'staged')
+  assert.equal(
+    chat.COURSE_IMAGE_PROJECTION_STORAGE_CONTAINER,
+    processor.blob.container
+  )
+  assert.equal(chat.COURSE_IMAGE_PROJECTION_STORAGE_PREFIX, 'projection')
+  assert.equal(
+    chat.COURSE_IMAGE_PROJECTION_STORAGE_CONNECTION_STRING.includes(
+      `BlobEndpoint=http://host.docker.internal:${config.bindings.ports.ingestion.azurite}/devstoreaccount1;`
+    ),
+    true
+  )
   assert.equal(verification.issuer, chat.DOC_QUERY_SCOPE_ISSUER)
   assert.equal(verification.audience, chat.DOC_QUERY_SCOPE_AUDIENCE)
   assert.equal(verification.keys[0].kid, chat.DOC_QUERY_SCOPE_KID)
@@ -2375,11 +2416,79 @@ test('profile resume requires the exact retained attempt and creates one exclusi
   assert.deepEqual((await readdir(failed.child)).sort(), [
     'bootstrap-intent.json',
     'claim.json',
-    'docProcessing-reconciliation.json',
     'ingestion-intent.json',
   ])
   await assert.rejects(
     continuePreparation(failed.config, revision, nextExecutor, failureOptions)
   )
   assert.deepEqual(failure.calls, ['ingestion'])
+})
+
+test('unavailable Azurite blocks initial and retained staged startup despite healthy MinIO', async () => {
+  for (const retained of [false, true]) {
+    const { config, checkout, read } = await installationFixture()
+    await prepareLocalConfiguration(config, revision)
+    await installManagedConfiguration(config, revision, read)
+    const identity = {
+      kind: 'linked',
+      repoPath: checkout,
+      workspace: 'synthetic-runtime',
+      profile: 'local-kb-setup',
+    }
+    await installProviderRouting(config, revision, identity)
+    await setupReceipts(config)
+    await completePreparation(config, revision)
+    const base = lifecycleRunner(config)
+    const starts = []
+    let unavailable = false
+    let ingestionRunning = false
+    const provider = async (command, environment) => {
+      const name = Object.keys(config.providers).find(
+        (key) => config.providers[key].sourcePath === command.cwd
+      )
+      if (command.args.includes('start')) starts.push(name)
+      if (name === 'ingestion' && !command.args.includes('status'))
+        ingestionRunning = command.args.includes('start')
+      const status = JSON.parse(await base(command, environment))
+      if (command.args.includes('status') && name === 'ingestion') {
+        status.process.infrastructure = [
+          {
+            service: 'minio',
+            state: ingestionRunning ? 'running' : 'exited',
+            health: ingestionRunning ? 'healthy' : '',
+          },
+        ]
+      }
+      if (
+        command.args.includes('status') &&
+        name === 'docProcessing' &&
+        unavailable
+      ) {
+        status.ready = false
+        status.worker_registration = 'unavailable'
+      }
+      return JSON.stringify(status)
+    }
+    const docker = async (args) =>
+      args[0] === 'context' ? 'unix:///synthetic/docker.sock' : ''
+    const managed = async (args) =>
+      JSON.stringify({
+        ...identity,
+        profile: LOCAL_KB_MANAGED_PROFILE,
+        stopped: args[0] === 'stop',
+      })
+    if (retained) {
+      await startInfrastructure(config, revision, managed, docker, provider)
+      await stopInfrastructure(config, revision, managed, docker, provider)
+    }
+    starts.length = 0
+    unavailable = true
+    await assert.rejects(
+      retained
+        ? resumeInfrastructure(config, revision, managed, docker, provider)
+        : startInfrastructure(config, revision, managed, docker, provider),
+      /storage or staged worker registration is unavailable/
+    )
+    assert.deepEqual(starts, ['scraping', 'ingestion', 'docProcessing'])
+  }
 })

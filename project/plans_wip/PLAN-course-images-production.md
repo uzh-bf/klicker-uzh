@@ -16,6 +16,8 @@ Preserve the five existing Chat layers on `v3-ai`, integrating parents upward wi
 
 Blob storage uses the full configured object prefix, defaulting to `projection`. Mounted filesystem fixtures remain root-relative. Every object for one selection comes from the generation resolved by its verified manifest. Retain digest, exact-length and ETag checks.
 
+Local qualification selects staged CPU processing with descriptions off. Ingestion owns the local Azurite service and development account; the processor owns its dedicated `doc-processing` container. The host processor and containerized Chat reader use their respective endpoints for that same account, container and `projection` prefix. Klicker's upload storage and MinIO remain separate. Setup and startup order ingestion before document processing; shutdown reverses that dependency. Processor readiness requires its actual CPU workflow registration and selected Blob-store observation.
+
 Run package tests, type checking, lint and builds after affected integration. Render the enabled and disabled chart with synthetic values. These checks establish source compatibility; browser and pipeline qualification remain separate.
 
 ## Dependency-ordered release gates
@@ -48,3 +50,5 @@ The existing Chat browser suite mocks its response stream. It can verify present
 ## Current preparation evidence
 
 Source preparation repairs the Blob prefix and chart wiring, preserves multiline description metadata, and reconciles the stack with current Chat behavior. Local deterministic tests and builds are recorded in the PR descriptions. Browser qualification is pending because the task's managed Docker runtime could not allocate a network. No deployment, publication, backfill or full pipeline E2E is claimed.
+
+Consumer configuration and simulated lifecycle coverage protect staged selection, shared artifact storage, registration semantics and dependency ordering. They do not establish real Azurite authentication or publication. Exact candidate image/SDK smoke, lecturer upload through persisted Chat images, and any optional image-vision path remain separate acceptance gates.
