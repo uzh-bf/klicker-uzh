@@ -235,30 +235,47 @@ describe('persisted assistant content', () => {
 describe('Python argument retention', () => {
   test('bounds rejected multibyte arguments without changing other tools', () => {
     const oversized = { code: 'é'.repeat(8193) }
-    const content = mapAssistantStepContent([
-      {
-        content: [
-          {
-            type: 'tool-call',
-            toolCallId: 'python',
-            toolName: 'run_python',
-            input: oversized,
-          },
-          {
-            type: 'tool-result',
-            toolCallId: 'python',
-            toolName: 'run_python',
-            output: { kind: 'invalid_input' },
-          },
-          {
-            type: 'tool-call',
-            toolCallId: 'other',
-            toolName: 'existing_tool',
-            input: oversized,
-          },
-        ],
-      },
-    ])
+    const content = mapAssistantStepContent(
+      [
+        {
+          content: [
+            {
+              type: 'tool-call',
+              toolCallId: 'python',
+              toolName: 'run_python',
+              input: oversized,
+            },
+            {
+              type: 'tool-result',
+              toolCallId: 'python',
+              toolName: 'run_python',
+              output: { kind: 'invalid_input' },
+            },
+            {
+              type: 'tool-call',
+              toolCallId: 'other',
+              toolName: 'existing_tool',
+              input: oversized,
+            },
+          ],
+        },
+      ],
+      true
+    )
+    expect(
+      mapAssistantStepContent([
+        {
+          content: [
+            {
+              type: 'tool-call',
+              toolCallId: 'third-party',
+              toolName: 'run_python',
+              input: oversized,
+            },
+          ],
+        },
+      ])[0]
+    ).toMatchObject({ args: oversized })
     expect(content[0]).toMatchObject({
       args: { rejected: 'invalid_input' },
       result: { kind: 'invalid_input' },
@@ -276,24 +293,27 @@ describe('Python argument retention', () => {
       stderr: { text: 'ValueError', truncated: false },
       filesOmitted: false,
     }
-    const content = mapAssistantStepContent([
-      {
-        content: [
-          {
-            type: 'tool-call',
-            toolCallId: 'python',
-            toolName: 'run_python',
-            input,
-          },
-          {
-            type: 'tool-result',
-            toolCallId: 'python',
-            toolName: 'run_python',
-            output,
-          },
-        ],
-      },
-    ])
+    const content = mapAssistantStepContent(
+      [
+        {
+          content: [
+            {
+              type: 'tool-call',
+              toolCallId: 'python',
+              toolName: 'run_python',
+              input,
+            },
+            {
+              type: 'tool-result',
+              toolCallId: 'python',
+              toolName: 'run_python',
+              output,
+            },
+          ],
+        },
+      ],
+      true
+    )
     expect(content).toEqual([
       {
         type: 'tool-call',
@@ -303,21 +323,24 @@ describe('Python argument retention', () => {
         result: output,
       },
     ])
-    const rejected = mapAssistantStepContent([
-      {
-        content: [
-          {
-            type: 'tool-error',
-            toolCallId: 'invalid',
-            toolName: 'run_python',
-            input: {
-              code: 'a'.repeat(16385),
-              credential: 'synthetic-forbidden-field',
+    const rejected = mapAssistantStepContent(
+      [
+        {
+          content: [
+            {
+              type: 'tool-error',
+              toolCallId: 'invalid',
+              toolName: 'run_python',
+              input: {
+                code: 'a'.repeat(16385),
+                credential: 'synthetic-forbidden-field',
+              },
             },
-          },
-        ],
-      },
-    ])
+          ],
+        },
+      ],
+      true
+    )
     expect(rejected[0]).toMatchObject({
       args: { rejected: 'invalid_input' },
       result: 'Tool execution failed',

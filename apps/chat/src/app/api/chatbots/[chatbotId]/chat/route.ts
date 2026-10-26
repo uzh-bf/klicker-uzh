@@ -50,7 +50,10 @@ import {
   getParticipantFallbackModelId,
 } from '@/src/lib/server/chatModelRegistry'
 import { withModelCitationIndices } from '@/src/lib/server/citationInstructions'
-import { withCodeApiTool } from '@/src/lib/server/codeapiTool'
+import {
+  CODEAPI_TOOL_NAME,
+  withCodeApiTool,
+} from '@/src/lib/server/codeapiTool'
 import {
   resolveEffectiveChatModeOptions,
   resolveEffectiveMCPConfigurations,
@@ -1220,6 +1223,9 @@ export async function POST(
       },
       withCalculatorTool(selectedMode, mcpTools)
     )
+    const nativePythonTool =
+      !Object.hasOwn(mcpTools, CODEAPI_TOOL_NAME) &&
+      Object.hasOwn(chatTools, CODEAPI_TOOL_NAME)
     const docQueryToolName = toolNames.find(isDocQueryToolName)
     const quizzerDocQueryToolName =
       selectedMode === 'quizzer' ? docQueryToolName : undefined
@@ -2021,7 +2027,7 @@ export async function POST(
           })
 
           await finalizeAssistantLifecycle({
-            content: mapAssistantStepContent(result.steps),
+            content: mapAssistantStepContent(result.steps, nativePythonTool),
             reasoningContent: finishedReasoningContent,
             rawCreditsUsed,
             phase: 'complete',
@@ -2075,7 +2081,8 @@ export async function POST(
 
           const abortedAssistantContent = buildAbortedAssistantContent(
             Array.isArray(steps?.steps) ? steps.steps : undefined,
-            currentStepContent
+            currentStepContent,
+            nativePythonTool
           )
           const abortedReasoningContent = normalizeReasoningContent(
             abortedAssistantContent

@@ -22,7 +22,8 @@ type UnfinishedAssistantContentPart =
   | { type: 'reasoning'; text: string }
 
 export function mapAssistantStepContent(
-  steps: Array<{ content?: unknown[] }> | undefined
+  steps: Array<{ content?: unknown[] }> | undefined,
+  nativePythonTool = false
 ): PersistedAssistantContentPart[] {
   const content: PersistedAssistantContentPart[] = []
   const toolCallIndexById = new Map<string, number>()
@@ -61,7 +62,9 @@ export function mapAssistantStepContent(
           type: 'tool-call' as const,
           toolCallId: part.toolCallId,
           toolName: part.toolName,
-          args: persistedCodeApiInput(part.toolName, part.input),
+          args: nativePythonTool
+            ? persistedCodeApiInput(part.toolName, part.input)
+            : part.input,
         }
         content.push(nextToolCall)
         toolCallIndexById.set(nextToolCall.toolCallId, content.length - 1)
@@ -96,10 +99,14 @@ export function mapAssistantStepContent(
           type: 'tool-call' as const,
           toolCallId: part.toolCallId,
           toolName: part.toolName,
-          args: persistedCodeApiInput(
-            part.toolName,
-            part.type === 'tool-error' ? (part.input ?? {}) : {}
-          ),
+          args: nativePythonTool
+            ? persistedCodeApiInput(
+                part.toolName,
+                part.type === 'tool-error' ? (part.input ?? {}) : {}
+              )
+            : part.type === 'tool-error'
+              ? (part.input ?? {})
+              : {},
           result,
           ...(isError ? { isError: true } : {}),
         }
@@ -114,9 +121,10 @@ export function mapAssistantStepContent(
 
 export function buildAbortedAssistantContent(
   steps: Array<{ content?: unknown[] }> | undefined,
-  unfinishedContent: readonly UnfinishedAssistantContentPart[]
+  unfinishedContent: readonly UnfinishedAssistantContentPart[],
+  nativePythonTool = false
 ): PersistedAssistantContentPart[] {
-  const content = mapAssistantStepContent(steps)
+  const content = mapAssistantStepContent(steps, nativePythonTool)
 
   for (const part of unfinishedContent) {
     if (part.text.trim()) {
