@@ -43,8 +43,8 @@ The upper bound cannot increase any existing paid job timeout.
 Canonical workflows and generated executors consume the duration for checks,
 secret scanning, unit, GraphQL, OLAT, both translation legs and every selected
 image build. Playwright passes the same validated output through its existing
-route and metadata into its build and every selected shard. Carry an explicit priority-origin marker and reject malformed or
-non-priority timeout metadata. Preserve hosted limits and existing paid defaults
+route and metadata into its build and every selected shard. Carry an explicit
+priority-origin marker and reject malformed or non-priority timeout metadata. Preserve hosted limits and existing paid defaults
 when the override is absent. Preserve required names, matrix selection, artifact
 checks, attempt guards and non-cancelling concurrency.
 
@@ -57,20 +57,22 @@ is substituted for the requested acceptance.
 
 ## Verification and delivery
 
-| Consequential risk | Evidence seam |
-| --- | --- |
-| Unpinned or malformed control permits paid admission | Synthetic router API tests; denial before any API call, plus expiry during evidence collection |
-| One paid consumer retains its longer default | Discover all jobs using priority runner outputs and evaluate their actual canonical and generated timeout expressions against baseline limits |
-| Playwright drops or broadens the duration | Priority route to plan metadata to actual build/shard expressions; invalid and hosted metadata rejected |
-| Existing execution changes when unset | Router and consumer compatibility cases, existing affected CI contracts |
-| Pinned executor differs from canonical source | Existing generator and actual published immutable executor parity checks |
+| Consequential risk                                   | Evidence seam                                                                                                                                 |
+| ---------------------------------------------------- | --------------------------------------------------------------------------------------------------------------------------------------------- |
+| Unpinned or malformed control permits paid admission | Synthetic router API tests; denial before any API call, plus expiry during evidence collection                                                |
+| One paid consumer retains its longer default         | Discover all jobs using priority runner outputs and evaluate their actual canonical and generated timeout expressions against baseline limits |
+| Playwright drops or broadens the duration            | Priority route to plan metadata to actual build/shard expressions; invalid and hosted metadata rejected                                       |
+| Existing execution changes when unset                | Router and consumer compatibility cases, existing affected CI contracts                                                                       |
+| Pinned executor differs from canonical source        | Existing generator and actual published immutable executor parity checks                                                                      |
 
 First useful proof is a failing synthetic canary regression followed by a passing
 route-to-consumer duration check. Run focused Node 24 contracts, installed
 formatters, diff and staged secret scans. Compare scoped static-scan findings
 with baseline. Workflow-only source changes need no application runtime or
 browser captures. No full application build or live paid acceptance is claimed.
-Update the priority section of `docs/ci-and-deployment.md` with the optional
+Extend the strict public-workflow validator with the exact trusted timeout-output
+mapping and its existing mutation tests. Update the priority section of
+`docs/ci-and-deployment.md` with the optional
 contract and version prerequisite. No agent skill changes are required.
 
 One cohesive implementation slice follows this plan commit. Publish canonical
@@ -103,9 +105,18 @@ packet remain authoritative. Rechecking expiry at admission completion is added.
 
 ## Progress
 
-Approved source batch; implementation pending. Root acceptance is one bounded
+Approved source batch; implementation and focused checks complete, publication
+and integrated review pending. Root acceptance is one bounded
 priority-canary qualification, which remains blocked on source acceptance and a
 separate exact activation packet. This source batch proves the missing duration
-control only. Independent plan critique is dispositioned above. New synthetic regressions
-fail on the baseline as expected. Next: commit this plan and implement the checks at the shared router and actual consumer seams. Draft CI and source
-review remain required; no live action follows automatically.
+control only. Independent plan critique is dispositioned above. Five new
+regressions failed on the baseline and passed after implementation; parsed
+consumer checks also pass. The strict workflow mapping was extended alongside
+its new trusted output. The existing build-shell sampler fixture failure also
+reproduces on the untouched baseline and remains an explicit limitation.
+
+Next: publish immutable executor content, update caller pins, verify actual
+parity and finish integrated review and draft CI. Main-session simplification
+keeps the existing output path and defaults; no new module or dependency was
+introduced. Static scan: no findings or errors in the five changed source files.
+Draft CI and source review remain required; no live action follows automatically.

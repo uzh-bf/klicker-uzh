@@ -49,6 +49,7 @@ function evaluateGate(
     'startsWith',
     'endsWith',
     'contains',
+    'fromJSON',
     `return (${normalized})`
   )(
     github,
@@ -63,7 +64,8 @@ function evaluateGate(
       String(value).toLowerCase().startsWith(String(prefix).toLowerCase()),
     (value, suffix) =>
       String(value).toLowerCase().endsWith(String(suffix).toLowerCase()),
-    (values, value) => values.includes(value)
+    (values, value) => values.includes(value),
+    JSON.parse
   )
 }
 
@@ -1464,6 +1466,7 @@ test('executor generation rejects missing or remapped admission outputs', () => 
     'admitted',
     'run_label_event',
     'run_attempt',
+    'job_timeout',
     'runner_x64',
     'runner_build',
     'runner_arm',
@@ -1519,4 +1522,103 @@ test('regenerated executors cannot hide stale or mutable published execution ref
     () => generate(fixture, false, readPinned),
     /priority workflow requires an exact executor SHA: test-unit.yml/
   )
+})
+
+test('every discovered priority compute consumer honors the canary duration and existing defaults', () => {
+  const files = Object.keys(PRIORITY_CONSUMERS)
+  for (const file of files) {
+    for (const name of [file, file.replace('.yml', '-execution.yml')]) {
+      const workflow = readWorkflow(name)
+      const consumers = Object.entries(workflow.jobs).filter(([, job]) =>
+        JSON.stringify(job['runs-on'] ?? '').includes(
+          'priority-route.outputs.runner'
+        )
+      )
+      assert.ok(consumers.length > 0, name)
+      for (const [id, job] of consumers) {
+        const paidDefault =
+          file === 'check-gitleaks.yml'
+            ? 15
+            : file === 'test-intl-production.yml'
+              ? 30
+              : 60
+        const hostedDefault = file === 'test-intl-production.yml' ? 30 : 360
+        for (const job_timeout of ['', '1', '7', '15']) {
+          for (const admitted of ['true', 'false']) {
+            const actual = evaluateGate(
+              job['timeout-minutes'],
+              priorityContext(),
+              {
+                'priority-route': { outputs: { admitted, job_timeout } },
+              }
+            )
+            const expected =
+              admitted === 'true'
+                ? job_timeout
+                  ? Number(job_timeout)
+                  : paidDefault
+                : hostedDefault
+            assert.equal(actual, expected, name + '/' + id)
+            assert.ok(
+              actual <= (admitted === 'true' ? paidDefault : hostedDefault)
+            )
+          }
+        }
+      }
+      assert.equal(
+        workflow.jobs['priority-route'].outputs.job_timeout,
+        '${{ steps.route.outputs.job_timeout }}'
+      )
+    }
+  }
+  const action = YAML.parse(
+    fs.readFileSync(
+      path.join(root, '.github/actions/priority-ci-route/action.yml'),
+      'utf8'
+    )
+  )
+  assert.equal(
+    action.runs.steps[0].env.PRIORITY_CANARY_JOB_TIMEOUT_MINUTES,
+    '${{ vars.PRIORITY_CI_CANARY_JOB_TIMEOUT_MINUTES }}'
+  )
+  assert.equal(
+    action.outputs.job_timeout.value,
+    '${{ steps.route.outputs.job_timeout }}'
+  )
+})
+
+test('Playwright carries the validated duration through both routing steps into every paid build and shard', () => {
+  const workflow = readWorkflow('public-pr-playwright-shards.yml')
+  const prepare = workflow.jobs.prepare
+  const routeSteps = prepare.steps.filter((step) => step.env?.PRIORITY_ADMITTED)
+  assert.equal(routeSteps.length, 2)
+  for (const step of routeSteps) {
+    assert.equal(
+      step.env.PRIORITY_JOB_TIMEOUT,
+      '${{ steps.priority.outputs.job_timeout }}'
+    )
+  }
+  assert.equal(
+    prepare.outputs.job_timeout,
+    '${{ steps.metadata.outputs.job_timeout }}'
+  )
+  const paid = Object.entries(workflow.jobs).filter(([, job]) =>
+    JSON.stringify(job['runs-on'] ?? '').includes('needs.prepare.outputs.')
+  )
+  assert.ok(paid.length >= 2)
+  for (const [id, job] of paid) {
+    for (const value of ['1', '7', '15', '45', '120']) {
+      assert.equal(
+        evaluateGate(
+          job['timeout-minutes'],
+          {},
+          {
+            prepare: { outputs: { job_timeout: value } },
+          }
+        ),
+        Number(value),
+        id
+      )
+    }
+  }
 })

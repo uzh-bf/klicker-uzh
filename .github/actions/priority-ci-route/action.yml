@@ -10,6 +10,9 @@ outputs:
   run_attempt:
     value: ${{ steps.route.outputs.run_attempt }}
     description: The admitted attempt, checked again by every paid consumer
+  job_timeout:
+    value: ${{ steps.route.outputs.job_timeout }}
+    description: Validated finite-canary job duration, or empty for existing limits
   runner_x64:
     value: ${{ steps.route.outputs.runner_x64 }}
     description: Fixed x64 suite runner, or empty to retain the consumer's hosted selector
@@ -31,6 +34,7 @@ runs:
         PRIORITY_CANARY_HEAD_SHA: ${{ vars.PRIORITY_CI_CANARY_HEAD_SHA }}
         PRIORITY_CANARY_BASE_SHA: ${{ vars.PRIORITY_CI_CANARY_BASE_SHA }}
         PRIORITY_EXPIRES_AT: ${{ vars.PRIORITY_CI_EXPIRES_AT }}
+        PRIORITY_CANARY_JOB_TIMEOUT_MINUTES: ${{ vars.PRIORITY_CI_CANARY_JOB_TIMEOUT_MINUTES }}
         LEGACY_ADMISSIONS: ${{ vars.PUBLIC_PR_PLAYWRIGHT_WARPBUILD_ADMISSIONS }}
         LEGACY_ADMISSION_URL: ${{ vars.PUBLIC_PR_PLAYWRIGHT_WARPBUILD_ADMISSION_URL }}
         LEGACY_BURST_GRANT: ${{ vars.PUBLIC_PR_PLAYWRIGHT_WARPBUILD_BURST_GRANT }}

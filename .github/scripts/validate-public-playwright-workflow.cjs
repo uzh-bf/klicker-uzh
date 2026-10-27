@@ -310,6 +310,7 @@ function validatePublicRunnerRoles(workflow) {
     PRIORITY_ADMITTED: '${{ steps.priority.outputs.admitted }}',
     PRIORITY_ATTEMPT: '${{ steps.priority.outputs.run_attempt }}',
     PRIORITY_LABEL_EVENT: '${{ steps.priority.outputs.run_label_event }}',
+    PRIORITY_JOB_TIMEOUT: '${{ steps.priority.outputs.job_timeout }}',
     HEAD_SHA: `\${{ github.event.pull_request.head.sha }}`,
     BASE_SHA: `\${{ github.event.pull_request.base.sha }}`,
     CONTROL_SHA: `\${{ job.workflow_sha }}`,

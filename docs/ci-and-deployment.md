@@ -917,6 +917,23 @@ The lane is disabled unless `PRIORITY_CI_ENABLED` is exactly `true`.
 `PRIORITY_CI_CANARY_HEAD_SHA` and `PRIORITY_CI_CANARY_BASE_SHA` freeze its
 source inputs; `PRIORITY_CI_EXPIRES_AT` denies admission after an absolute
 deadline. Set all four in a finite qualification packet before enabling it.
+For a fully pinned finite canary, optional
+`PRIORITY_CI_CANARY_JOB_TIMEOUT_MINUTES` sets each paid compute job to an integer
+from 1 through 15 minutes. It requires all four matching canary controls above.
+Invalid or incomplete values deny priority, and expiry is checked again after
+admission evidence is collected. An unset value preserves existing job limits;
+ordinary hosted execution retains its own limits. The duration covers checks,
+secret scanning, suites, both translation legs, selected image builds, and the
+Playwright build and every selected shard. A short duration can cause genuine
+validation failure without reducing the selected coverage.
+
+Before enabling this control, verify that the frozen candidate workflows, their
+immutable executor pins and the trusted router all contain its implementation.
+Older definitions cannot acquire it retroactively. Reserve the exact selected
+matrix against runner rates, billing rounding and margin; per-job timeouts do
+not enforce an account spending limit. Admission expiry prevents new selection,
+while submitted jobs retain their timeouts and continue.
+
 Apply the label to an open ready public same-repository PR. Subsequent pushes
 remain eligible while labeled. Removing the label changes future selection;
 already submitted jobs retain their assignment and continue.
