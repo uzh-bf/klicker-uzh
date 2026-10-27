@@ -1,6 +1,7 @@
 # W5 S5: Klicker consumer for typed, evidence-linked graph relations
 
-Status: draft for approval. Approval mode: `executable batch`.
+Status: delivered. Merged into `v3-ai` through #6616; #6672 extends it to the
+seven added `kg-relations/v1` types. Approval mode: `executable batch`.
 Contract: Catalyst ADR knowledge-graph/0001 and the Catalyst W5 plan
 (`docs/project/knowledge-graph/2026-10-19-w5-typed-evidence-linked-relations-plan.md`,
 slice S5). Roadmap: [KG quality roadmap](./2026-09-12-kg-quality-roadmap.md), W5.
@@ -261,6 +262,11 @@ instead of a test.
 
 ## Progress
 
+- Delivered: #6616 merged into `v3-ai` as `d865e1dde3` on 2026-10-19. Its
+  last CI run was cancelled by the merge; later Playwright runs on `v3-ai`
+  pass. #6672 (`7e2b765666`, 2026-10-22) parses `is_a`, `has_formula`,
+  `has_variable`, `decision_rule`, `advantage_of`, `disadvantage_of` and
+  `synonym_of`, and draws `synonym_of` without an arrow.
 - Status: S1 and S2 done, with screenshots, seeder extension and review
   fixes. The PR is ready for review (not draft); merging stays withheld.
 - Worktree: `trees/rs/w5-kg-relation-consumer` on `rs/w5-kg-relation-consumer`
@@ -291,7 +297,9 @@ instead of a test.
   findings (nested ternary, repeated symmetric type), both fixed and
   dispositioned; the inline bot findings (persisted ops, guard membership,
   label fallback, symmetric accessible name) are fixed.
-- Next action: `/final-review` once hosted CI is green on the head.
+- Next action: none in this plan. Typed relations reach Klicker only from
+  builds with the generator's typing setting on, which stays off until the
+  Catalyst W5 calibration passes its review.
 
 ## Planning review
 
