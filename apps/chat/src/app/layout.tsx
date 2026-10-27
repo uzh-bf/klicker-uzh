@@ -47,19 +47,18 @@ export default async function RootLayout({
   const t = await getTranslations()
 
   return (
-    <html lang={locale}>
+    <html
+      lang={locale}
+      className={`${sourceSansPro.variable} ${monoSpaceFont.variable}`}
+    >
       <head>
         <style>{`
           :root {
-            --source-sans-pro: ${sourceSansPro.variable};
-            --theme-font-primary: ${sourceSansPro.variable};
-            --mono-space-font: ${monoSpaceFont.variable};
+            --theme-font-primary: var(--source-sans-pro);
           }
         `}</style>
       </head>
-      <body
-        className={`${sourceSansPro.variable} ${monoSpaceFont.variable} font-sans antialiased`}
-      >
+      <body className="font-sans antialiased">
         {/* First focusable element on every page: jumps keyboard/screen-reader
             users past the sidebar/header chrome straight to the `<main
             id="main-content">` each rendered chat state provides. */}

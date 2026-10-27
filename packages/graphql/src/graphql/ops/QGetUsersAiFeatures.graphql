@@ -1,0 +1,6 @@
+query GetUsersAiFeatures {
+  getUsersAiFeatures {
+    shortname
+    email
+  }
+}

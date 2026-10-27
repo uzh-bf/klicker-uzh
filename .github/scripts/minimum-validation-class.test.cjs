@@ -14,6 +14,7 @@ const {
   decisionsFor,
   emit,
   isKnownClass,
+  isLocalHookDocumentationPath,
   isSafeRepoPath,
   main,
   parsePathList,
@@ -48,6 +49,25 @@ test('agent-guidance markdown stays inside the documentation class', () => {
 test('a non-markdown asset in a documentation tree stays documentation', () => {
   const result = classifyPaths(['docs/assets/diagram.png'])
   assert.equal(result.changeClass, CHANGE_CLASS.documentationAndPlanning)
+})
+
+test('local hooks only narrow regular markdown paths in documentation trees', () => {
+  for (const changedPath of [
+    'docs/guide.md',
+    'project/2026-10-26-plan.md',
+    '.agents/skills/example/SKILL.md',
+  ]) {
+    assert.equal(isLocalHookDocumentationPath(changedPath), true, changedPath)
+  }
+  for (const changedPath of [
+    'README.md',
+    'docs/guide.mdx',
+    'docs/assets/diagram.png',
+    'docs/scripts/generate.md.py',
+    '../docs/guide.md',
+  ]) {
+    assert.equal(isLocalHookDocumentationPath(changedPath), false, changedPath)
+  }
 })
 
 test('an executable file inside a documentation tree expands the envelope', () => {

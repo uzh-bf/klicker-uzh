@@ -5,35 +5,28 @@ import { exportSPKI, generateKeyPair, SignJWT } from 'jose'
 import { afterEach, describe, expect, test } from 'vitest'
 
 import {
-  assertLocalSeedOwnership,
+  assertLocalFixtureConfiguration,
   createLocalAuthenticator,
   LOCAL_CHATBOT_ID,
-  LOCAL_FIXTURE_MARKER,
   LOCAL_KB_ID,
   LOCAL_SCOPE,
+  LOCAL_SERVER_ID,
+  localFixtureScope,
 } from '../scripts/local-mcp-auth.mjs'
 import { loadLocalMcpFixture } from '../scripts/local-mcp-fixture.mjs'
 
 const SYNTHETIC_FIXTURE = {
   chatbotId: '11111111-1111-4111-8111-111111111111',
-  ownerId: '22222222-2222-4222-8222-222222222222',
-  courseId: '33333333-3333-4333-8333-333333333333',
   kbId: '44444444-4444-4444-8444-444444444444',
   chatMode: 'synthetic-help',
   documentsFile: 'synthetic-documents.json',
 }
 
-const ORIGINAL_OWNER_ID = '76047345-3801-4628-ae7b-adbebcfe8821'
-const ORIGINAL_COURSE_ID = '7c12e44e-d083-4acf-845e-4c34aaff6b49'
 const SYNTHETIC_TRANSPORT_TOKEN = 'synthetic-transport-token'
 const SYNTHETIC_GENERATION = 'synthetic-generation'
 const SYNTHETIC_ISSUER = 'synthetic-local-chat'
 const SYNTHETIC_AUDIENCE = 'synthetic-doc-query'
-const SYNTHETIC_AUTH_SECRET = [
-  'a'.repeat(32),
-  'b'.repeat(32),
-  'c'.repeat(16),
-].join(':')
+const OTHER_KB_ID = '55555555-5555-4555-8555-555555555555'
 
 const temporaryDirectories = []
 
@@ -92,10 +85,8 @@ describe('local MCP fixture loading', () => {
     expect(Object.keys(fixture).sort()).toEqual([
       'chatMode',
       'chatbotId',
-      'courseId',
       'documentsFile',
       'kbId',
-      'ownerId',
     ])
   })
 
@@ -127,8 +118,6 @@ describe('local MCP fixture loading', () => {
   test('rejects malformed JSON and invalid fixture configurations', async () => {
     const invalidFixtures = [
       fixtureWith({ chatbotId: 'synthetic-chatbot' }),
-      fixtureWith({ ownerId: 'synthetic-owner' }),
-      fixtureWith({ courseId: 'synthetic-course' }),
       fixtureWith({ kbId: 'synthetic-kb' }),
       fixtureWith({ chatbotId: LOCAL_CHATBOT_ID }),
       fixtureWith({ kbId: LOCAL_KB_ID }),
@@ -138,10 +127,9 @@ describe('local MCP fixture loading', () => {
       fixtureWith({ documentsFile: '' }),
       fixtureWith({ documentsFile: '   ' }),
       fixtureWith({ extra: 'unexpected' }),
-      (() => {
-        const { ownerId: _ownerId, ...withoutOwner } = SYNTHETIC_FIXTURE
-        return withoutOwner
-      })(),
+      Object.fromEntries(
+        Object.entries(SYNTHETIC_FIXTURE).filter(([key]) => key !== 'kbId')
+      ),
     ]
 
     for (const [index, value] of invalidFixtures.entries()) {
@@ -241,11 +229,7 @@ describe('local MCP scope isolation', () => {
       ],
       [LOCAL_CHATBOT_ID, SYNTHETIC_FIXTURE.kbId, false],
       [SYNTHETIC_FIXTURE.chatbotId, LOCAL_KB_ID, false],
-      [
-        SYNTHETIC_FIXTURE.chatbotId,
-        '55555555-5555-4555-8555-555555555555',
-        false,
-      ],
+      [SYNTHETIC_FIXTURE.chatbotId, OTHER_KB_ID, false],
     ]
 
     for (const [chatbotId, kbId, expected] of cases) {
@@ -255,100 +239,78 @@ describe('local MCP scope isolation', () => {
       )
     }
   })
+
+  test('ignores a configured identity unless it is the accepted pair', async () => {
+    const state = await createAuthState(SYNTHETIC_FIXTURE, {
+      returnIdentity: true,
+    })
+    const token = await signScopeToken(
+      state,
+      SYNTHETIC_FIXTURE.chatbotId,
+      OTHER_KB_ID
+    )
+
+    await expect(state.authenticate(headersFor(state, token))).resolves.toBe(
+      false
+    )
+  })
 })
 
-function authenticatedServer(overrides = {}) {
+function fixtureBinding(overrides = {}) {
   return {
-    name: 'KB',
-    url: 'http://localhost:1417/mcp',
-    isActive: true,
-    passChatbotId: true,
-    chatbotIdHeader: null,
-    authType: 'bearer',
-    authSecret: SYNTHETIC_AUTH_SECRET,
-    parameters: { ...LOCAL_FIXTURE_MARKER },
-    ...overrides,
-  }
-}
-
-function originalConfig(chatMode, overrides = {}) {
-  return {
-    chatbotId: LOCAL_CHATBOT_ID,
-    ownerId: ORIGINAL_OWNER_ID,
-    courseId: ORIGINAL_COURSE_ID,
-    chatMode,
-    isEnabled: true,
-    priority: 0,
-    allowedTools: ['doc_query'],
-    parameters: { ...LOCAL_SCOPE },
-    ...overrides,
-  }
-}
-
-function originalConfigs() {
-  return [originalConfig('tutor'), originalConfig('explainer')]
-}
-
-function configuredConfig(overrides = {}) {
-  return {
+    mcpServerId: LOCAL_SERVER_ID,
     chatbotId: SYNTHETIC_FIXTURE.chatbotId,
-    ownerId: SYNTHETIC_FIXTURE.ownerId,
-    courseId: SYNTHETIC_FIXTURE.courseId,
     chatMode: SYNTHETIC_FIXTURE.chatMode,
     isEnabled: true,
     priority: 0,
     allowedTools: ['doc_query'],
-    parameters: {
-      required: true,
-      toolAlias: 'doc_query',
-      kb_id: SYNTHETIC_FIXTURE.kbId,
-    },
+    parameters: localFixtureScope(SYNTHETIC_FIXTURE.kbId),
     ...overrides,
   }
 }
 
-describe('local MCP seed ownership', () => {
-  test('accepts the original finance bindings plus one exact configured binding', () => {
+describe('local MCP fixture configuration', () => {
+  test('accepts only the exact binding of the configured identity', () => {
     expect(() =>
-      assertLocalSeedOwnership(
-        authenticatedServer(),
-        [...originalConfigs(), configuredConfig()],
-        SYNTHETIC_FIXTURE
-      )
+      assertLocalFixtureConfiguration(fixtureBinding(), SYNTHETIC_FIXTURE)
     ).not.toThrow()
+    expect(localFixtureScope(SYNTHETIC_FIXTURE.kbId)).toEqual({
+      required: true,
+      toolAlias: 'doc_query',
+      kb_ids: [SYNTHETIC_FIXTURE.kbId],
+    })
   })
 
   test('rejects an additional binding when no fixture is configured', () => {
     expect(() =>
-      assertLocalSeedOwnership(authenticatedServer(), [
-        ...originalConfigs(),
-        configuredConfig(),
-      ])
-    ).toThrow()
+      assertLocalFixtureConfiguration(fixtureBinding(), null)
+    ).toThrow('Local MCP fixture configuration conflict')
   })
 
   test.each([
-    ['owner', { ownerId: '55555555-5555-4555-8555-555555555555' }],
-    ['course', { courseId: '66666666-6666-4666-8666-666666666666' }],
-    ['mode', { chatMode: 'synthetic-other-mode' }],
+    ['server relation', { mcpServerId: 'synthetic-other-server' }],
+    ['chatbot', { chatbotId: LOCAL_CHATBOT_ID }],
+    ['chat mode', { chatMode: 'synthetic-other-mode' }],
+    ['enabled state', { isEnabled: false }],
+    ['priority', { priority: 1 }],
     ['tool set', { allowedTools: ['doc_query', 'other_tool'] }],
+    ['dedicated scope', { parameters: { ...LOCAL_SCOPE } }],
+    ['knowledge-base scope', { parameters: localFixtureScope(OTHER_KB_ID) }],
     [
-      'knowledge-base scope',
+      'ambiguous scope',
       {
         parameters: {
-          required: true,
-          toolAlias: 'doc_query',
-          kb_id: '77777777-7777-4777-8777-777777777777',
+          ...localFixtureScope(SYNTHETIC_FIXTURE.kbId),
+          kb_id: SYNTHETIC_FIXTURE.kbId,
         },
       },
     ],
-  ])('rejects a configured binding with a mutated %s', (_label, mutation) => {
+  ])('rejects a binding with a mutated %s', (_label, mutation) => {
     expect(() =>
-      assertLocalSeedOwnership(
-        authenticatedServer(),
-        [...originalConfigs(), configuredConfig(mutation)],
+      assertLocalFixtureConfiguration(
+        fixtureBinding(mutation),
         SYNTHETIC_FIXTURE
       )
-    ).toThrow()
+    ).toThrow('Local MCP fixture configuration conflict')
   })
 })

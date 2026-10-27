@@ -182,6 +182,47 @@ describe('chat model registry provider protocol', () => {
     expect(getParticipantFallbackModelId()).toBe('gpt-6-luna')
   })
 
+  test('rejects a registry whose fallback Luna is not BASE', async () => {
+    const { parseChatModelRegistry } = await import(
+      '../src/lib/server/chatModelRegistry'
+    )
+
+    expect(() =>
+      parseChatModelRegistry([
+        {
+          id: 'gpt-6-luna',
+          deploymentId: 'gpt-6-luna',
+          name: 'GPT-6 Luna',
+          fallback: true,
+          usageClass: 'ADVANCED',
+          maxOutputTokens: 4096,
+          cost: { input: 0.2, output: 1.2 },
+        },
+        {
+          id: 'other-base',
+          deploymentId: 'other-base',
+          name: 'Other Base',
+          usageClass: 'BASE',
+          maxOutputTokens: 4096,
+          cost: { input: 1, output: 1 },
+        },
+      ])
+    ).toThrow(/gpt-6-luna.*BASE model/)
+
+    expect(() =>
+      parseChatModelRegistry([
+        {
+          id: 'gpt-6-luna',
+          deploymentId: 'gpt-6-luna',
+          name: 'GPT-6 Luna',
+          usageClass: 'BASE',
+          maxOutputTokens: 4096,
+          cost: { input: 0.2, output: 1.2 },
+        },
+      ])
+    ).toThrow(/participant-credit fallback/)
+  })
+
   test('fails closed when supplied registry JSON is invalid', async () => {
     vi.stubEnv('CHAT_MODEL_REGISTRY_JSON', '{')
 

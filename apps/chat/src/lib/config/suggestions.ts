@@ -25,7 +25,7 @@ const THREAD_SUGGESTIONS_BY_MODE: Record<KnownMode, ThreadSuggestion[]> = {
 }
 
 export function getThreadSuggestions(mode: string): ThreadSuggestion[] {
-  return isKnownMode(mode)
-    ? THREAD_SUGGESTIONS_BY_MODE[mode]
-    : THREAD_SUGGESTIONS_BY_MODE.tutor
+  // Platform starter IDs are translated by the caller. Custom-mode starters
+  // come from that mode's approved configuration instead of these defaults.
+  return isKnownMode(mode) ? THREAD_SUGGESTIONS_BY_MODE[mode] : []
 }

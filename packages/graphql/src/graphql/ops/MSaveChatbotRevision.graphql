@@ -1,0 +1,22 @@
+mutation MSaveChatbotRevision(
+  $chatbotId: String!
+  $expectedRevisionVersion: Int!
+  $input: ChatbotRevisionSaveInput!
+) {
+  saveChatbotRevision(
+    chatbotId: $chatbotId
+    expectedRevisionVersion: $expectedRevisionVersion
+    input: $input
+  ) {
+    id
+    name
+    description
+    avatar
+    status
+    revisionStatus
+    revisionVersion
+    authoringRevision {
+      ...ChatbotAuthoringRevisionData
+    }
+  }
+}

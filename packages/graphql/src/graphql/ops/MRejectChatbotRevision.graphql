@@ -1,0 +1,20 @@
+mutation MRejectChatbotRevision(
+  $id: String!
+  $expectedRevisionVersion: Int!
+  $comment: String!
+) {
+  rejectChatbotRevision(
+    id: $id
+    expectedRevisionVersion: $expectedRevisionVersion
+    comment: $comment
+  ) {
+    id
+    status
+    revisionStatus
+    revisionVersion
+    reviewComment
+    authoringRevision {
+      ...ChatbotAuthoringRevisionData
+    }
+  }
+}

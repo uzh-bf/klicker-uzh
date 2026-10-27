@@ -1,4 +1,5 @@
 import { stepReminder } from '@/src/lib/server/calculatorTool'
+import type { ReplyLanguageReminder } from '@/src/lib/server/languageInstructions'
 import { renderPromptTemplate } from '@/src/lib/server/promptTemplates'
 
 type ConversationMessage = {
@@ -134,9 +135,10 @@ export function measureReusedContent(messages: ConversationMessage[]): {
  */
 export function trailingStepMessage(
   chatMode: string,
-  messages: ConversationMessage[]
+  messages: ConversationMessage[],
+  languageReminder?: ReplyLanguageReminder
 ): SystemStepMessage {
-  const reminder = stepReminder(chatMode)
+  const reminder = stepReminder(chatMode, languageReminder)
   const feedbackCheck = FEEDBACK_CHECKS[chatMode]
   if (!feedbackCheck) return reminder
   const parts: string[] = []

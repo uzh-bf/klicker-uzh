@@ -752,6 +752,27 @@ test('an integration push reuses the merged pull request run that tested its tre
   assert.equal((await findEquivalentRun(options)).id, 12)
 })
 
+test('an integration push requires explicit route evidence', async () => {
+  for (const route of [null, {}, { route: 'unknown' }]) {
+    const { state, options } = mergedFixture()
+    state.jobs[12] = state.jobs[12]
+      .filter((job) => !job.name.includes('build-and-compile-hosted'))
+      .map((job) => ({ ...job, name: job.name.replace('public-pr', 'hosted') }))
+    options.readRoute = async () => route
+    assert.equal(await findEquivalentRun(options), null)
+  }
+})
+
+test('an integration push rejects a newer run appearing during proof', async () => {
+  const { state, options } = mergedFixture()
+  const readPlan = options.readPlan
+  options.readPlan = async (...args) => {
+    state.runs[30] = { ...state.runs[12], id: 30, status: 'in_progress' }
+    return readPlan(...args)
+  }
+  assert.equal(await findEquivalentRun(options), null)
+})
+
 test('an integration push validates independently without a complete merge proof', async () => {
   const rejections = {
     'caller does not accept push reuse': ({ options }) => {

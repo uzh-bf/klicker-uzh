@@ -1,5 +1,6 @@
 import { GrowthBook } from '@growthbook/growthbook'
 import {
+  forcedFeatureFlagPayload,
   normalizeFeatureFlagEnvironment,
   sanitizeFeatureFlagAttributes,
 } from './contracts.js'
@@ -8,6 +9,9 @@ export type BrowserFeatureFlagConfig = {
   apiHost?: string
   clientKey?: string
   environment: string | undefined
+  // Comma-separated flag keys to force on where no SDK connection exists.
+  // See `forcedFeatureFlagPayload` for the environments that honor it.
+  forcedOn?: string
   timeoutMs?: number
 }
 
@@ -53,8 +57,19 @@ export function createBrowserFeatureFlagClient<
             return false
           })
       } else {
-        growthbook.initSync({ payload: { features: {} } })
-        if (environment !== 'unknown') {
+        const forcedFeatures = forcedFeatureFlagPayload(
+          config.forcedOn,
+          environment
+        )
+        growthbook.initSync({
+          payload: {
+            features: forcedFeatures,
+          },
+        })
+        if (
+          environment !== 'unknown' &&
+          Object.keys(forcedFeatures).length === 0
+        ) {
           console.warn(
             '[feature-flags] Browser configuration is incomplete; using false fallbacks'
           )

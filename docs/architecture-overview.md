@@ -2,7 +2,7 @@
 type: Architecture Overview
 title: Architecture Overview
 description: System map of apps and packages, the request path from browser to resolver, the async response pipeline, and where business logic lives.
-timestamp: '2026-08-06'
+timestamp: '2026-08-24'
 tags:
   - architecture
 ---
@@ -25,13 +25,18 @@ Apps (dev ports in [Getting Started](./getting-started.md)):
 | `apps/frontend-control`                               | Mobile live-quiz controller (pages router)                                          |
 | `apps/auth`                                           | Identity provider — Edu-ID OIDC + delegated login (Auth.js, `@auth/prisma-adapter`) |
 | `apps/chat`                                           | AI chat (Next.js **app** router — the only one; own conventions)                    |
+| `apps/mcp-lecturer`                                   | Internal FastMCP server (port 7081) backing the Manage lecturer assistant           |
+| `apps/mcp-student`                                    | FastMCP server (port 7080) serving participant practice tools to `apps/chat`        |
 | `apps/response-api`                                   | Bare-`http` ingest endpoint for student responses                                   |
 | `apps/hatchet-worker-general` / `-response-processor` | Async workers (Hatchet)                                                             |
 | `apps/analytics`                                      | Python analytics service (own Prisma client)                                        |
 | `apps/olat-api`, `apps/lti`, `apps/office-addin`      | LMS/Office integrations                                                             |
 | `apps/docs`                                           | User-facing Docusaurus site (not this wiki)                                         |
 
-Packages: `graphql` (schema + services + ops — the heart), `prisma` (schema + migrations), `prisma-data` (seeds), `grading` (pure scoring math), `hatchet` (task definitions), `feature-flags` (typed GrowthBook contracts and browser/Node adapters), `types`, `util` (JWT/cookie helpers), `i18n`, `shared-components`, `markdown`, `export`, `word-cloud`, `next-config`, `transactional` (react-email).
+Packages: `graphql` (schema + services + ops — the heart), `prisma` (schema + migrations), `prisma-data` (seeds), `grading` (pure scoring math), `hatchet` (task definitions), `types`, `util` (JWT/cookie helpers), `i18n`, `shared-components`, `markdown`, `export`, `word-cloud`, `next-config`, `transactional` (react-email), `knowledge-graph` (FalkorDB client, graph naming, content digests), `kb-management` (lecturer knowledge-base UI).
+
+FalkorDB is the serving projection for published knowledge graphs, not their durable record: each build writes its own named graph and the archived GraphML export is the recovery source ([ADR 0009](./adr/0009-kb-owns-two-derived-projections.md), [ADR 0011](./adr/0011-catalyst-owns-knowledge-graph-runtime.md)).
+The `feature-flags` package provides typed GrowthBook contracts and browser/Node adapters for behavior that has migrated to that platform; existing KB preview access remains persisted per user until its consumers migrate.
 
 ## Request flow (query/mutation)
 
@@ -60,7 +65,7 @@ Student answers do not hit the GraphQL API. The path is:
 2. `apps/hatchet-worker-response-processor` consumes them (`processAnonymousResponseTask`, `processAuthenticatedResponseTask`, `processAssessmentResponseWorkflow`) and re-emits aggregation events.
 3. `apps/hatchet-worker-general` runs aggregation plus scheduled work (publish/end scheduled activities, daily crons for group scores and random group assignments) — task definitions in `packages/hatchet/src/index.ts:prepareHatchetTasks`, handlers from `@klicker-uzh/graphql`.
 
-Consequence: **publication, scheduling, and live-response features silently do nothing without a running Hatchet + workers** — mutations may even fail with `workflow not found`. The general worker selects its workflows via the `HATCHET_WORKFLOWS` env var (default: all).
+Consequence: **publication, scheduling, and live-response features silently do nothing without a running Hatchet + workers** — mutations may even fail with `workflow not found`. The general worker selects its workflows via the `HATCHET_WORKFLOWS` env var (default: all), then applies the independent KB ingestion-worker and graph rollout gates before registration.
 
 The backend also runs a homegrown boot-time data-migration runner (`apps/backend-docker/src/migration.ts:migrate`, currently an empty list) tracked in its own `Migration` table — distinct from Prisma migrations.
 

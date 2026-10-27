@@ -1,4 +1,4 @@
-import { expect, Page } from '@playwright/test'
+import { expect, type Page } from '@playwright/test'
 import { getPrisma } from '../../global-setup.js'
 
 export type ElementOptions = {
