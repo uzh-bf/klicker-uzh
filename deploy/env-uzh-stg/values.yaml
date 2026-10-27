@@ -463,7 +463,7 @@ adaptiveEngine:
     tag: 9f9afd457709fb089092cd7b31975c78b4130036-arm
   resources:
     requests:
-      cpu: 100m
+      cpu: 25m
       memory: 128Mi
     limits:
       cpu: 1000m
