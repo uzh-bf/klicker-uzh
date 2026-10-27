@@ -18,7 +18,45 @@ Automatic parser-only freshness remains deferred. Earlier canonical checks do
 not qualify the revised source. Merge, deployment, live refresh/build, activation
 and paid evaluation remain separate gates; OpenRouter review remains waived.
 
-## Current delivery checkpoint — 2026-10-23
+## Current delivery checkpoint — 2026-10-27
+
+The image-scan blocker from October 23 is resolved. Two dependency lifts
+merged into `v3-ai`:
+[#6683](https://github.com/uzh-bf/klicker-uzh/pull/6683) removes legacy
+Next dependencies, and
+[#6699](https://github.com/uzh-bf/klicker-uzh/pull/6699) patches request
+parsers and migrates Zod validation. The staging image builds and scans
+then passed, so #6672 and the W5 consumer reached staging.
+[#6695](https://github.com/uzh-bf/klicker-uzh/pull/6695) also merged; it
+clears a stale chat status when Stop is pressed before the first answer
+text, and keeps timestamps from pointing into the future.
+
+The automatic staging promotion for this release was rejected by the
+promoter's workflow validation. It was promoted by manual dispatch instead.
+The validation failure and a failing SonarCloud quality gate on the same
+release are open with the rollout owner.
+
+Staging checks on a test chatbot passed:
+
+- Pressing Stop before the first answer text restores the draft and clears
+  the live status, both in an empty conversation and with history.
+- A follow-up answer completes with citations, and its timestamp is not in
+  the future.
+- A participant's cited answer keeps its sources and citation links after a
+  reload, and a citation link moves focus to its source card.
+
+One finding is recorded and deliberately not fixed yet: earlier messages'
+timestamps are not stable in the client. In the owner preview, an earlier
+answer takes the newest answer's time. In participant chat, the live time
+differs from the stored time until the page reloads.
+
+Still open from October 23: graph-assisted search in the owner preview is
+unconfirmed, the #6645 manage-setting screenshots are not captured, and W5
+waits for the human review of its calibration sample and the three
+decisions in the Catalyst W5 plan. The three open findings below are
+unchanged.
+
+### Previous delivery checkpoint — 2026-10-23
 
 The Klicker side of the October 19 directions is merged into `v3-ai`:
 
