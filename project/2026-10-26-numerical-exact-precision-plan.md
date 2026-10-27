@@ -198,11 +198,13 @@ Implementation uses `klicker-frontend-ui`, `klicker-testing-verification`, and
 `klicker-playwright-e2e`; consult `rs-find-docs` before relying on version-sensitive
 library behavior. No external research is needed to choose the contract.
 
-Documentation disposition: add a short explanation of empty precision versus
-explicit zero to the numerical-response paragraph in
-`apps/docs/docs/tutorials/supported_element_types.mdx`. This documents the user
-contract; no new wiki page, skill update, or ADR is required. Validate the MDX
-change with the existing formatter without starting the docs application.
+Documentation disposition, revised after the user's correction and Opus
+consultation: restore the numerical-response tutorial to its upstream text.
+The fix restores expected behavior; save mechanics and legacy preservation
+belong in engineering and change artifacts. Encode the documentation decision
+policy in `docs/developing-a-feature.md` with a discovery link in `AGENTS.md`.
+No user-facing docs change remains against the target. Validate formatting,
+policy links, and the restored tutorial without starting an application runtime.
 
 ### Working context, authority, and recovery
 
@@ -243,6 +245,15 @@ field. Reopen only if evidence establishes an intentional integer default
 across existing consumers. A larger precision-policy refactor is out of scope.
 
 ## Progress
+
+2026-10-27 documentation follow-up: the user requested an Opus consultation
+and a durable policy for deciding when user docs need updates. Opus recommended
+restoring the tutorial; the policy now lives in the existing feature guide,
+with root and lifecycle discovery links. Formatting, frontmatter, and policy
+links pass; the tutorial matches upstream. No application source or tests
+changed, so existing behavior checks remain reusable. Main reviewed this
+documentation-only correction. The earlier readiness attempt did not complete
+final review; this correction does not establish merge readiness.
 
 2026-10-27: the user authorized the next readiness sequence for
 [PR #6741](https://github.com/uzh-bf/klicker-uzh/pull/6741): integrate current

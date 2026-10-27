@@ -330,6 +330,8 @@ Traefik reverse proxy serves the apps on `*.klicker.com` domains (needs `/etc/ho
 
 Read the relevant pages before working in an unfamiliar area. Update `docs/` and the relevant skills in `.agents/skills/` in the same PR when a change makes existing guidance inaccurate or introduces a durable contract that the code does not explain. A behavior change does not require a ceremonial documentation edit. The former `project/CODEBASE_NOTES.md` is a retired pointer stub.
 
+Before editing `apps/docs` or shipping a change to user-visible behavior, apply [User documentation](docs/developing-a-feature.md#user-documentation).
+
 ## AI Assistance (Skills)
 
 Skills live in `.agents/skills/` (the canonical location); `.claude/skills` and `.github/skills` symlink to it, so Claude Code and GitHub stay in sync. Task-shaped `klicker-*` skills cover the feature lifecycle — environment diagnosis (`klicker-environment-doctor`), design (`klicker-feature-design`), API (`klicker-graphql-api`), schema/data (`klicker-data-model`), UI (`klicker-frontend-ui`), testing/verification (`klicker-testing-verification`), e2e (`klicker-playwright-e2e`), and wiki upkeep (`klicker-wiki-maintenance`).
