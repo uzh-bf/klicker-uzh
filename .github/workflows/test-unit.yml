@@ -85,6 +85,7 @@ jobs:
       admitted: ${{ steps.route.outputs.admitted }}
       run_label_event: ${{ steps.route.outputs.run_label_event }}
       run_attempt: ${{ steps.route.outputs.run_attempt }}
+      job_timeout: ${{ steps.route.outputs.job_timeout }}
       runner_x64: ${{ steps.route.outputs.runner_x64 }}
       runner_build: ${{ steps.route.outputs.runner_build }}
       runner_arm: ${{ steps.route.outputs.runner_arm }}
@@ -125,7 +126,7 @@ jobs:
       !(vars.PRIORITY_CI_ENABLED == 'true' && github.event_name == 'pull_request' && github.event.pull_request.state == 'open' && github.event.pull_request.draft == false && github.event.repository.private == false && github.event.pull_request.head.repo.full_name == github.repository && github.event.pull_request.user.type != 'Bot' && contains(github.event.pull_request.labels.*.name, 'ci:priority') && (github.event.action != 'labeled' || github.event.label.name == 'ci:priority')) &&
       (!cancelled() && (github.event.action != 'labeled' || needs.priority-route.outputs.run_label_event == 'true') && (needs.priority-route.outputs.admitted != 'true' || needs.priority-route.outputs.run_attempt == format('{0}', github.run_attempt)) && needs.filter.outputs.should_run == 'true')
     runs-on: ${{ needs.priority-route.outputs.runner_x64 || 'ubuntu-latest' }}
-    timeout-minutes: ${{ needs.priority-route.outputs.admitted == 'true' && 60 || 360 }}
+    timeout-minutes: ${{ needs.priority-route.outputs.admitted == 'true' && fromJSON(needs.priority-route.outputs.job_timeout || '60') || 360 }}
     services:
       postgres:
         image: postgres:15
@@ -357,7 +358,7 @@ jobs:
       contents: read
       issues: read
       pull-requests: read
-    uses: uzh-bf/klicker-uzh/.github/workflows/test-unit-execution.yml@aaf8d41393f9c5e51e0076827c80953afacb8c4a
+    uses: uzh-bf/klicker-uzh/.github/workflows/test-unit-execution.yml@f16e7854e7efd8740295ae59cb488f8a0f62ba34
     secrets: inherit
 
   priority-status:

@@ -101,6 +101,7 @@ jobs:
       admitted: ${{ steps.route.outputs.admitted }}
       run_label_event: ${{ steps.route.outputs.run_label_event }}
       run_attempt: ${{ steps.route.outputs.run_attempt }}
+      job_timeout: ${{ steps.route.outputs.job_timeout }}
       runner_x64: ${{ steps.route.outputs.runner_x64 }}
       runner_build: ${{ steps.route.outputs.runner_build }}
       runner_arm: ${{ steps.route.outputs.runner_arm }}
@@ -208,7 +209,7 @@ jobs:
       (!cancelled() && (github.event.action != 'labeled' || needs.priority-route.outputs.run_label_event == 'true') && (needs.priority-route.outputs.admitted != 'true' || needs.priority-route.outputs.run_attempt == format('{0}', github.run_attempt)) && needs.plan.outputs.migrator-build == 'true' && (github.event_name != 'pull_request' || github.event.pull_request.draft == false))
     name: ${{ matrix.jobName }}
     runs-on: ${{ needs.priority-route.outputs.runner_arm || 'ubuntu-24.04-arm' }}
-    timeout-minutes: ${{ needs.priority-route.outputs.admitted == 'true' && 60 || 360 }}
+    timeout-minutes: ${{ needs.priority-route.outputs.admitted == 'true' && fromJSON(needs.priority-route.outputs.job_timeout || '60') || 360 }}
     permissions:
       contents: read
       packages: write
@@ -339,7 +340,7 @@ jobs:
       (!cancelled() && (github.event.action != 'labeled' || needs.priority-route.outputs.run_label_event == 'true') && (needs.priority-route.outputs.admitted != 'true' || needs.priority-route.outputs.run_attempt == format('{0}', github.run_attempt)) && needs.plan.outputs.build == 'true' && (github.event_name != 'pull_request' || github.event.pull_request.draft == false))
     name: ${{ matrix.jobName }}
     runs-on: ${{ needs.priority-route.outputs.runner_arm || 'ubuntu-24.04-arm' }}
-    timeout-minutes: ${{ needs.priority-route.outputs.admitted == 'true' && 60 || 360 }}
+    timeout-minutes: ${{ needs.priority-route.outputs.admitted == 'true' && fromJSON(needs.priority-route.outputs.job_timeout || '60') || 360 }}
     permissions:
       contents: read
       packages: write
@@ -470,7 +471,7 @@ jobs:
       (!cancelled() && (github.event.action != 'labeled' || needs.priority-route.outputs.run_label_event == 'true') && (needs.priority-route.outputs.admitted != 'true' || needs.priority-route.outputs.run_attempt == format('{0}', github.run_attempt)) && needs.plan.outputs.after-migrator-build == 'true' && (github.event_name != 'pull_request' || github.event.pull_request.draft == false))
     name: ${{ matrix.jobName }}
     runs-on: ${{ needs.priority-route.outputs.runner_arm || 'ubuntu-24.04-arm' }}
-    timeout-minutes: ${{ needs.priority-route.outputs.admitted == 'true' && 60 || 360 }}
+    timeout-minutes: ${{ needs.priority-route.outputs.admitted == 'true' && fromJSON(needs.priority-route.outputs.job_timeout || '60') || 360 }}
     permissions:
       contents: read
       packages: write
@@ -604,7 +605,7 @@ jobs:
       (!cancelled() && (github.event.action != 'labeled' || needs.priority-route.outputs.run_label_event == 'true') && (needs.priority-route.outputs.admitted != 'true' || needs.priority-route.outputs.run_attempt == format('{0}', github.run_attempt)) && needs.plan.outputs.amd-build == 'true' && (github.event_name != 'pull_request' || github.event.pull_request.draft == false))
     name: ${{ matrix.jobName }}
     runs-on: ${{ needs.priority-route.outputs.runner_build || 'ubuntu-latest' }}
-    timeout-minutes: ${{ needs.priority-route.outputs.admitted == 'true' && 60 || 360 }}
+    timeout-minutes: ${{ needs.priority-route.outputs.admitted == 'true' && fromJSON(needs.priority-route.outputs.job_timeout || '60') || 360 }}
     permissions:
       contents: read
       packages: write
@@ -839,7 +840,7 @@ jobs:
       issues: read
       pull-requests: read
       packages: write
-    uses: uzh-bf/klicker-uzh/.github/workflows/v3_images-stg-execution.yml@aaf8d41393f9c5e51e0076827c80953afacb8c4a
+    uses: uzh-bf/klicker-uzh/.github/workflows/v3_images-stg-execution.yml@f16e7854e7efd8740295ae59cb488f8a0f62ba34
 
   priority-status:
     name: ${{ (vars.PRIORITY_CI_ENABLED == 'true' && github.event_name == 'pull_request' && github.event.pull_request.state == 'open' && github.event.pull_request.draft == false && github.event.repository.private == false && github.event.pull_request.head.repo.full_name == github.repository && github.event.pull_request.user.type != 'Bot' && contains(github.event.pull_request.labels.*.name, 'ci:priority') && (github.event.action != 'labeled' || github.event.label.name == 'ci:priority')) && (github.event.action != 'labeled' || needs.priority-execution.outputs.run_label_event == 'true') && 'build-images-status' || 'build-images-status (priority not admitted)' }}

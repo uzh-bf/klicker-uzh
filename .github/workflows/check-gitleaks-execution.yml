@@ -24,6 +24,7 @@ jobs:
       admitted: ${{ steps.route.outputs.admitted }}
       run_label_event: ${{ steps.route.outputs.run_label_event }}
       run_attempt: ${{ steps.route.outputs.run_attempt }}
+      job_timeout: ${{ steps.route.outputs.job_timeout }}
       runner_x64: ${{ steps.route.outputs.runner_x64 }}
       runner_build: ${{ steps.route.outputs.runner_build }}
       runner_arm: ${{ steps.route.outputs.runner_arm }}
@@ -44,7 +45,7 @@ jobs:
     needs: priority-route
     if: "!cancelled() && (github.event.action != 'labeled' || needs.priority-route.outputs.run_label_event == 'true')"
     runs-on: ${{ needs.priority-route.outputs.run_attempt == format('{0}', github.run_attempt) && needs.priority-route.outputs.runner_x64 || 'ubuntu-latest' }}
-    timeout-minutes: ${{ needs.priority-route.outputs.admitted == 'true' && 15 || 360 }}
+    timeout-minutes: ${{ needs.priority-route.outputs.admitted == 'true' && fromJSON(needs.priority-route.outputs.job_timeout || '15') || 360 }}
     steps:
       - name: Reject a stale paid preparation
         if: needs.priority-route.outputs.admitted == 'true' && needs.priority-route.outputs.run_attempt != format('{0}', github.run_attempt)

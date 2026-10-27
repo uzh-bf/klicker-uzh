@@ -280,3 +280,79 @@ test('request identity is immutable PR, head and base', () => {
     `priority:42:${'a'.repeat(40)}:${'b'.repeat(40)}`
   )
 })
+
+function finiteCanary(f, timeout = '7') {
+  Object.assign(f.env, {
+    PRIORITY_CANARY_PR: String(f.event.pull_request.number),
+    PRIORITY_CANARY_HEAD_SHA: f.event.pull_request.head.sha,
+    PRIORITY_CANARY_BASE_SHA: f.event.pull_request.base.sha,
+    PRIORITY_EXPIRES_AT: new Date(Date.now() + 60000).toISOString(),
+    PRIORITY_CANARY_JOB_TIMEOUT_MINUTES: timeout,
+  })
+  return f
+}
+
+test('finite canary admission carries its validated job duration and unset keeps defaults', async () => {
+  const plain = fixture()
+  assert.equal((await route(plain.event, plain.env, plain.api)).job_timeout, '')
+  for (const duration of ['1', '7', '15']) {
+    const f = finiteCanary(fixture(), duration)
+    const result = await route(f.event, f.env, f.api)
+    assert.equal(result.admitted, 'true')
+    assert.equal(result.job_timeout, duration)
+  }
+})
+
+test('invalid or incompletely pinned canary durations deny priority before API reads', async () => {
+  const mutations = [
+    ...['0', '16', '-1', '1.5', '01', ' 7', '7 ', 'true', '1e1'].map(
+      (value) => (f) => {
+        f.env.PRIORITY_CANARY_JOB_TIMEOUT_MINUTES = value
+      }
+    ),
+    ...[
+      'PRIORITY_CANARY_PR',
+      'PRIORITY_CANARY_HEAD_SHA',
+      'PRIORITY_CANARY_BASE_SHA',
+      'PRIORITY_EXPIRES_AT',
+    ].map((key) => (f) => {
+      delete f.env[key]
+    }),
+    (f) => {
+      f.env.PRIORITY_CANARY_PR = '43'
+    },
+    (f) => {
+      f.env.PRIORITY_CANARY_HEAD_SHA = 'c'.repeat(40)
+    },
+    (f) => {
+      f.env.PRIORITY_CANARY_BASE_SHA = 'c'.repeat(40)
+    },
+    (f) => {
+      f.env.PRIORITY_EXPIRES_AT = 'invalid'
+    },
+    (f) => {
+      f.env.PRIORITY_EXPIRES_AT = '2000-01-01T00:00:00Z'
+    },
+  ]
+  for (const mutate of mutations) {
+    const f = finiteCanary(fixture())
+    mutate(f)
+    const result = await route(f.event, f.env, f.api)
+    assert.equal(result.admitted, 'false')
+    assert.equal(result.job_timeout, '')
+    assert.equal(f.state.calls.length, 0)
+  }
+})
+
+test('canary expiry during evidence collection denies the duration and admission', async (t) => {
+  const f = finiteCanary(fixture())
+  const before = Date.now()
+  let now = before
+  t.mock.method(Date, 'now', () => now)
+  const result = await route(f.event, f.env, async (...args) => {
+    now = before + 120000
+    return f.api(...args)
+  })
+  assert.equal(result.admitted, 'false')
+  assert.equal(result.job_timeout, '')
+})
