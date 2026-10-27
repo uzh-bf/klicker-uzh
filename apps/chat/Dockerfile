@@ -52,6 +52,7 @@ COPY --from=builder /app/apps/chat/.env.production /app/apps/chat/.env.productio
 
 ARG BLOB_STORAGE_ACCOUNT_URL
 COPY --from=builder /app/util/deployment-build-env.mjs /app/util/deployment-build-env.mjs
+COPY --from=builder /app/deploy/preview/runtime.mjs /app/deploy/preview/runtime.mjs
 ARG KLICKER_PREVIEW_BUILD_ENV_JSON
 ARG KLICKER_DEPLOYMENT_BUILD_ENV_JSON
 RUN node util/deployment-build-env.mjs --app chat -- pnpm run build --filter=@klicker-uzh/chat
