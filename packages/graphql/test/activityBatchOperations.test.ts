@@ -10,14 +10,18 @@ import {
   ReviewStatus,
 } from '@klicker-uzh/prisma/client'
 import {
+  DisplayMode,
   ElementData,
   ElementInstanceResults,
   ElementOptions,
 } from '@klicker-uzh/types'
-import { recomputeDerivedPermissions } from '@klicker-uzh/util'
+import {
+  processElementData,
+  recomputeDerivedPermissions,
+} from '@klicker-uzh/util'
 import { EventEmitter } from 'events'
-import { vi } from 'vitest'
 import { v4 as uuid } from 'uuid'
+import { vi } from 'vitest'
 import type { ContextWithUser } from '../src/lib/context.js'
 import { applyActivityBatchOperations } from '../src/services/activities.js'
 import { deleteGroupActivity } from '../src/services/groups.js'
@@ -133,11 +137,22 @@ describe('Integration tests for batch operations on activities', () => {
     prisma: PrismaClient
   ) {
     const elementId = await seedElement(
-      args.ownerId ? { ownerId: args.ownerId } : {},
+      {
+        ...(args.ownerId ? { ownerId: args.ownerId } : {}),
+        options: {
+          displayMode: DisplayMode.LIST,
+          choices: [{ ix: 0, value: 'Synthetic choice', correct: true }],
+          hasSampleSolution: true,
+          hasAnswerFeedbacks: false,
+        },
+      },
       prisma,
       0
     )
 
+    const element = await prisma.element.findUniqueOrThrow({
+      where: { id: elementId },
+    })
     const liveQuiz = await prisma.liveQuiz.create({
       data: {
         name: uuid(),
@@ -160,7 +175,10 @@ describe('Integration tests for batch operations on activities', () => {
                     type: ElementInstanceType.LIVE_QUIZ,
                     elementType: ElementType.SC,
                     options: { pointsMultiplier: 1 },
-                    elementData: { pointsMultiplier: 1 } as ElementData,
+                    elementData: {
+                      ...processElementData(element),
+                      pointsMultiplier: 1,
+                    },
                     results: {} as ElementInstanceResults,
                     anonymousResults: {} as ElementInstanceResults,
                     elementId: elementId,
@@ -389,18 +407,32 @@ describe('Integration tests for batch operations on activities', () => {
   })
 
   it('uses the publication status as an atomic batch-deletion predicate', async () => {
-    const practiceQuizDelete = vi.fn().mockRejectedValue({ code: 'P2025' })
+    const practiceQuizDelete = vi.fn()
+    const lockedPracticeQuiz = {
+      id: 'practice-quiz-id',
+      courseId: 'course-id',
+      mode: 'STANDARD',
+      status: PublicationStatus.PUBLISHED,
+    }
+    const practiceQuizTransaction = {
+      $queryRaw: vi
+        .fn<
+          (
+            query: TemplateStringsArray,
+            ...values: unknown[]
+          ) => Promise<unknown[]>
+        >()
+        .mockResolvedValue([lockedPracticeQuiz]),
+      practiceQuiz: {
+        findUnique: vi.fn().mockResolvedValue({ courseId: 'course-id' }),
+        findUniqueOrThrow: vi.fn().mockResolvedValue(lockedPracticeQuiz),
+        delete: practiceQuizDelete,
+      },
+    }
     const practiceQuizCtx = {
+      user: { sub: 'user-id' },
       prisma: {
-        practiceQuiz: {
-          findUnique: vi.fn().mockResolvedValue({
-            id: 'practice-quiz-id',
-            status: PublicationStatus.SCHEDULED,
-            responses: [],
-            stacks: [],
-          }),
-          delete: practiceQuizDelete,
-        },
+        $transaction: vi.fn((callback) => callback(practiceQuizTransaction)),
       },
     } as unknown as ContextWithUser
 
@@ -456,9 +488,20 @@ describe('Integration tests for batch operations on activities', () => {
     const unpublishedStatuses = {
       in: [PublicationStatus.DRAFT, PublicationStatus.SCHEDULED],
     }
-    expect(practiceQuizDelete).toHaveBeenCalledWith({
-      where: { id: 'practice-quiz-id', status: unpublishedStatuses },
-    })
+    expect(practiceQuizDelete).not.toHaveBeenCalled()
+    const quizLockCall = practiceQuizTransaction.$queryRaw.mock.calls.findIndex(
+      ([query]) => String(query).includes('FROM "PracticeQuiz"')
+    )
+    expect(quizLockCall).toBeGreaterThanOrEqual(0)
+    expect(
+      String(practiceQuizTransaction.$queryRaw.mock.calls[quizLockCall]![0])
+    ).toContain('FOR UPDATE')
+    expect(
+      practiceQuizTransaction.$queryRaw.mock.invocationCallOrder[quizLockCall]
+    ).toBeLessThan(
+      practiceQuizTransaction.practiceQuiz.findUniqueOrThrow.mock
+        .invocationCallOrder[0]!
+    )
     expect(microLearningDelete).toHaveBeenCalledWith({
       where: { id: 'micro-learning-id', status: unpublishedStatuses },
     })

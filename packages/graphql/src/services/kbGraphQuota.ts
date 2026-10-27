@@ -1,6 +1,9 @@
 import { randomUUID } from 'node:crypto'
+import { createLogger } from '@klicker-uzh/logging/node'
 import * as DB from '@klicker-uzh/prisma/client'
 import { GraphQLError } from 'graphql'
+
+const logger = createLogger({ service: 'graphql' })
 
 export type KBGraphQuotaTransaction = DB.Prisma.TransactionClient
 
@@ -131,23 +134,26 @@ export async function ensureLockedKBGraphQuota(
     if (raised.count !== 1) {
       throw new Error('KB graph quota limit could not be raised')
     }
-    console.info('KB graph quota limit raised to the configured value', {
-      event: 'kb_graph_quota_limit_raised',
-      quotaId: locked.id,
-      semesterKey: locked.semesterKey,
-      previousLimitMinorUnits: locked.limitMinorUnits,
-      limitMinorUnits: resolution.limitMinorUnits,
-    })
+    logger.info(
+      {
+        event: 'kb_graph_quota_limit_raised',
+        quotaId: locked.id,
+        semesterKey: locked.semesterKey,
+        previousLimitMinorUnits: locked.limitMinorUnits,
+        limitMinorUnits: resolution.limitMinorUnits,
+      },
+      'KB graph quota limit raised to the configured value'
+    )
   } else if (resolution.configuredBelowGranted) {
-    console.warn(
-      'KB graph quota configuration is below the granted limit; keeping the granted limit',
+    logger.warn(
       {
         event: 'kb_graph_quota_limit_lowering_ignored',
         quotaId: locked.id,
         semesterKey: locked.semesterKey,
         grantedLimitMinorUnits: locked.limitMinorUnits,
         configuredLimitMinorUnits: config.semesterQuotaMinorUnits,
-      }
+      },
+      'KB graph quota configuration is below the granted limit; keeping the granted limit'
     )
   }
   return { ...locked, limitMinorUnits: resolution.limitMinorUnits }

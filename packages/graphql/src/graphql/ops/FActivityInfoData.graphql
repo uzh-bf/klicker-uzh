@@ -3,6 +3,7 @@ fragment ActivityInfoData on ActivityInfo {
   templateId
   type
   status
+  mode
   courseId
   courseName
   courseStartDate

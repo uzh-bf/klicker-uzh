@@ -432,8 +432,21 @@ test('all first-party chart images prefer the optional global tag', () => {
   assert.equal(values.global.imageTag, '')
 
   const imageSources = templateImageSources()
-  assert.equal(imageSources.length, 18)
+  for (const template of ['deployment-audit-workers.yaml']) {
+    assert.ok(
+      imageSources.some(({ name }) => name === template),
+      `${template} image must be checked`
+    )
+  }
+  // The adaptive engine is built by the private Catalyst repository and is
+  // pinned to its own <commit>-arm tag; the Klicker release tag must never
+  // replace it.
+  const externalImageTemplates = new Set(['deployment-adaptive-engine.yaml'])
   for (const { name, line } of imageSources) {
+    if (externalImageTemplates.has(name)) {
+      assert.doesNotMatch(line, /global\.imageTag/u, `${name}: ${line}`)
+      continue
+    }
     assert.match(
       line,
       /:\{\{ \.Values\.global\.imageTag \| default /u,

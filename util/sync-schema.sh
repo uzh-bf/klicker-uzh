@@ -11,3 +11,6 @@ for file in "$SOURCE_DIR"/*.prisma; do
     cp "$file" "$DEST_DIR/$filename"
   fi
 done
+if [ "$DEST_DIR" = "./apps/analytics/prisma/schema" ]; then
+  node ./util/compose-analytics-adaptive-schema.mjs
+fi

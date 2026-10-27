@@ -1,0 +1,5 @@
+query CourseCompetenceTrees($courseId: String!) {
+  courseCompetenceTrees(courseId: $courseId) {
+    ...CompetenceTreeSummaryData
+  }
+}

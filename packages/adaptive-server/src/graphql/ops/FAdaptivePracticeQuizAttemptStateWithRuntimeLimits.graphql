@@ -1,0 +1,5 @@
+fragment FAdaptivePracticeQuizAttemptStateWithRuntimeLimits on AdaptivePracticeQuizAttemptState {
+  ...FAdaptivePracticeQuizAttemptState
+  timeLimitSeconds
+  deadlineAt
+}

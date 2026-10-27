@@ -11,9 +11,6 @@ function validateSCOptions(options?: ElementOptionsInput | null) {
       (choice) => choice.correct === true
     )
     if (correctAnswers.length !== 1) {
-      console.error(
-        'Exactly one correct answer is required for SC questions with sample solution'
-      )
       return false
     }
   }

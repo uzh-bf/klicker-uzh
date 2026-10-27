@@ -29,6 +29,7 @@ model PracticeQuiz {
   pointsMultiplier Int               @default(1)
   resetTimeDays    Int               @default(6)
   orderType        ElementOrderType  @default(SPACED_REPETITION)
+  mode             PracticeQuizMode  @default(STANDARD)
   status           PublicationStatus @default(DRAFT)
 
   availableFrom              DateTime?
@@ -41,6 +42,9 @@ model PracticeQuiz {
   isDeleted             Boolean @default(false)
 
   stacks ElementStack[]
+
+  adaptiveConfig   PracticeQuizAdaptiveConfig?
+  adaptiveAttempts AdaptivePracticeQuizAttempt[]
 
   responses               QuestionResponse[]
   responseDetails         QuestionResponseDetail[]
@@ -68,6 +72,8 @@ model PracticeQuiz {
 
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
+
+  @@unique([id, courseId], map: "practice_quiz_id_course_key")
 }
 
 // #endregion

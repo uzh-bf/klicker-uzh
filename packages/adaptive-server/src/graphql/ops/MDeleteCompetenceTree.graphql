@@ -1,0 +1,3 @@
+mutation DeleteCompetenceTree($id: String!) {
+  deleteCompetenceTree(id: $id)
+}
