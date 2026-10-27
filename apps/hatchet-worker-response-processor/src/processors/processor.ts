@@ -67,6 +67,11 @@ export async function processResponseMessage(
     return { status: 200 }
   }
 
+  const participantTokenCookieName = cookieName(COOKIE_NAMES.PARTICIPANT_TOKEN)
+  const temporaryTokenCookieName = cookieName(
+    COOKIE_NAMES.TEMPORARY_PARTICIPANT_TOKEN
+  )
+
   let redisMulti: ChainableCommander
   // redisMulti = redisExec.multi() -> transaction
   redisMulti = redisExec.pipeline() // -> pipeline (not atomic)
@@ -101,10 +106,8 @@ export async function processResponseMessage(
             return acc
           }, {})
 
-        const participantToken =
-          parsedCookies[cookieName(COOKIE_NAMES.PARTICIPANT_TOKEN)]
-        const temporaryToken =
-          parsedCookies[cookieName(COOKIE_NAMES.TEMPORARY_PARTICIPANT_TOKEN)]
+        const participantToken = parsedCookies[participantTokenCookieName]
+        const temporaryToken = parsedCookies[temporaryTokenCookieName]
         if (participantToken !== undefined) {
           participantData = await verifyJWT(
             participantToken,

@@ -142,8 +142,6 @@ export class DeploymentBuildEnvError extends Error {
   }
 }
 
-export { DEPLOYMENT_BUILD_ENV_KEYS }
-
 function normalizeApp(app) {
   const candidate = String(app ?? '')
     .replaceAll('\\', '/')
