@@ -29,6 +29,7 @@ import {
   remarkCitationMarkers,
 } from '../lib/markdown/remarkCitationMarkers'
 import {
+  escapeNonMathDollars,
   hideIncompleteMath,
   inspectStreamingMath,
 } from '../lib/markdown/streamingMath'
@@ -301,7 +302,7 @@ const defaultComponents = memoizeMarkdownComponents({
 })
 
 export function normalizeCustomMathTags(input: string): string {
-  return (
+  return escapeNonMathDollars(
     input
       // Keep display-math fences on their own lines so multiline formulas
       // cannot consume the Markdown that follows them.
