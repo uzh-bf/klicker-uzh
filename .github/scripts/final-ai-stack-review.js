@@ -3392,6 +3392,9 @@ async function callTopologyModel({
           controller.signal,
           deadlineMs
         )
+        if (controller.signal.aborted || Date.now() >= deadlineMs) {
+          throw new Error('Topology review deadline exceeded')
+        }
         if (
           !Array.isArray(advice?.content) ||
           advice.content.length !== 1 ||
@@ -3414,6 +3417,8 @@ async function callTopologyModel({
             'invalid_advice',
             'response_too_large',
             'broker_unavailable',
+            'cancelled',
+            'tool_failed',
           ].includes(advice.content[0].text)
         ) {
           throw new Error('Topology advisor returned invalid advice')

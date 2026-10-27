@@ -46,6 +46,9 @@ Final execution keeps its separate pinned upstream source, compression patch,
 Go toolchain and executable provenance. The shared action does not run final
 review or grant its approval. Final code review attaches the same bounded
 advisor and trusted-context tools through its ephemeral OCR configuration.
+Final rules use first-match resolution, so the wrapper combines the portable
+procedure with every existing rule before supplying it to OCR; a later matching
+rule alone would leave the procedure inactive.
 Stack topology can consult the advisor within its existing aggregate output
 allowance and deadline, then returns the existing strict final result.
 

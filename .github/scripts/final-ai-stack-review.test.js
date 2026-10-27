@@ -4357,6 +4357,8 @@ test('topology continues past bounded advisor errors and honors the remaining sh
     'advisor_unavailable',
     'source_unavailable',
     'cancelled',
+    'tool_failed',
+    'diagnostics_unavailable',
     'UNTRUSTED_ERROR',
     null,
   ]) {
@@ -4407,7 +4409,7 @@ test('topology continues past bounded advisor errors and honors the remaining sh
         readDiffEvidence: syntheticDiffEvidence,
         rulesText: 'test rules',
       })
-      if (error === 'cancelled' || error === 'UNTRUSTED_ERROR') {
+      if (error === 'diagnostics_unavailable' || error === 'UNTRUSTED_ERROR') {
         await assert.rejects(pending, /invalid advice/)
         assert.equal(requests.length, 1)
         return

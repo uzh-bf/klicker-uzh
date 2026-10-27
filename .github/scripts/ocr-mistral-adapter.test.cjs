@@ -5843,7 +5843,13 @@ test('final wrapper attaches focused tools and trusted guidance while hiding ups
   fs.writeFileSync(
     path.join(directory, rule),
     JSON.stringify({
-      rules: [{ path: '**/*', rule: 'synthetic final policy' }],
+      rules: [
+        {
+          path: '**/*',
+          rule: 'synthetic final policy',
+          merge_system_rule: true,
+        },
+      ],
       exclude: ['**/*.md'],
     })
   )
@@ -5931,6 +5937,11 @@ test('final wrapper attaches focused tools and trusted guidance while hiding ups
       'read_review_context',
     ])
     assert.equal(seen.rules.rules.length, 2)
+    assert.deepEqual(seen.rules.rules[0], {
+      path: '**/*',
+      rule: 'synthetic final policy\n\nsynthetic trusted procedure',
+      merge_system_rule: true,
+    })
     assert.deepEqual(seen.rules.exclude, ['**/*.md'])
     assert.equal(fs.readFileSync(config, 'utf8'), original)
     assert.ok(closed > 0)

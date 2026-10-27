@@ -3213,6 +3213,10 @@ async function commandRun(args, options = {}) {
         '.agents/skills/ocr-reviewer/SKILL.md',
         32768
       )
+      rules.rules = rules.rules.map((rule) => ({
+        ...rule,
+        rule: `${rule.rule}\n\n${skill}`,
+      }))
       rules.rules.push({ path: '**/*', rule: skill, merge_system_rule: true })
       rulesPath = path.join(
         process.env.RUNNER_TEMP,
