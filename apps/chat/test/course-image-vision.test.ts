@@ -8,6 +8,7 @@ import { afterEach, describe, expect, it, vi } from 'vitest'
 import { z } from 'zod'
 import { withModelCitationIndices } from '../src/lib/server/citationInstructions'
 import { readCourseImage } from '../src/lib/server/courseImageStore'
+import { withCourseImageTool } from '../src/lib/server/courseImageTools'
 import {
   courseImageVisionEnabled,
   createCourseImageVision,
@@ -87,7 +88,7 @@ describe('request-local course figure vision', () => {
       { role: 'user', content: question },
       ...messages.slice(1),
     ]
-    const prepare = createCourseImageVision({
+    const { prepareMessages: prepare } = createCourseImageVision({
       kbIds: [image.kb_id],
       readImage: (value) => readCourseImage(value, root),
     })
@@ -115,7 +116,7 @@ describe('request-local course figure vision', () => {
 
   it('never reads images from history, failed tools or another KB', async () => {
     const read = vi.fn().mockResolvedValue(original)
-    const prepare = createCourseImageVision({
+    const { prepareMessages: prepare } = createCourseImageVision({
       kbIds: [image.kb_id],
       readImage: read,
     })
@@ -127,14 +128,17 @@ describe('request-local course figure vision', () => {
       (await prepare(messages, steps({ ...fixture, isError: true })))
         .previewCount
     ).toBe(0)
-    const denied = createCourseImageVision({ kbIds: [], readImage: read })
+    const { prepareMessages: denied } = createCourseImageVision({
+      kbIds: [],
+      readImage: read,
+    })
     expect((await denied(messages, steps())).previewCount).toBe(0)
     expect(read).not.toHaveBeenCalled()
   })
 
   it('uses retrieval order and bounds reads to three distinct occurrences across concurrent preparation', async () => {
     const read = vi.fn().mockResolvedValue(original)
-    const prepare = createCourseImageVision({
+    const { prepareMessages: prepare } = createCourseImageVision({
       kbIds: [image.kb_id],
       readImage: read,
     })
@@ -158,7 +162,7 @@ describe('request-local course figure vision', () => {
   it('keeps the current search result and persisted tool output free of image bytes', async () => {
     const input = steps()
     const before = JSON.stringify({ messages, input })
-    const prepare = createCourseImageVision({
+    const { prepareMessages: prepare } = createCourseImageVision({
       kbIds: [image.kb_id],
       readImage: (value) => readCourseImage(value, root),
     })
@@ -185,7 +189,7 @@ describe('request-local course figure vision', () => {
       vi.fn().mockRejectedValue(new Error('/private/secret')),
       vi.fn().mockResolvedValue(Buffer.from('not PNG')),
     ]) {
-      const prepare = createCourseImageVision({
+      const { prepareMessages: prepare } = createCourseImageVision({
         kbIds: [image.kb_id],
         readImage: read,
       })
@@ -206,14 +210,14 @@ describe('request-local course figure vision', () => {
       .toBuffer()
     const payload = structuredClone(fixture)
     const asset = payload.sources[0].chunks[0].visual_assets.assets[0]
-    const prepareBad = createCourseImageVision({
+    const { prepareMessages: prepareBad } = createCourseImageVision({
       kbIds: [image.kb_id],
       readImage: async () => large,
     })
     expect((await prepareBad(messages, steps(payload))).previewCount).toBe(0)
     asset.width_px = 3000
     asset.height_px = 2000
-    const prepare = createCourseImageVision({
+    const { prepareMessages: prepare } = createCourseImageVision({
       kbIds: [image.kb_id],
       readImage: async () => large,
     })
@@ -262,7 +266,7 @@ describe('request-local course figure vision', () => {
         },
       ],
     })
-    const prepare = createCourseImageVision({
+    const { prepareMessages: prepare } = createCourseImageVision({
       kbIds: [image.kb_id],
       readImage: (value) => readCourseImage(value, root),
     })
@@ -312,8 +316,138 @@ describe('request-local course figure vision', () => {
     ).toMatchObject({ result: fixture })
   })
 
+  it('counts only attached previews and matches the complete figure occurrence', async () => {
+    const vision = createCourseImageVision({
+      kbIds: [image.kb_id],
+      readImage: async () => original,
+    })
+    expect(vision.hasPixelInput(image)).toBe(false)
+    // Decoding a candidate without its tool result in model input is not proof.
+    expect(
+      (await vision.prepareMessages([messages[0]!], steps())).previewCount
+    ).toBe(0)
+    expect(vision.hasPixelInput(image)).toBe(false)
+    await vision.prepareMessages(messages, steps())
+    expect(vision.hasPixelInput(image)).toBe(true)
+    for (const changed of [
+      { kb_id: '00000000-0000-0000-0000-000000000000' },
+      { external_resource_id: '00000000-0000-0000-0000-000000000000' },
+      { resource_version: image.resource_version + 1 },
+      { asset_id: 'f'.repeat(64) },
+      { manifest_sha256: 'f'.repeat(64) },
+      { image_sha256: 'f'.repeat(64) },
+    ]) {
+      expect(vision.hasPixelInput({ ...image, ...changed })).toBe(false)
+    }
+    // A later step without the matching tool result must not reuse stale proof.
+    await vision.prepareMessages([messages[0]!], steps())
+    expect(vision.hasPixelInput(image)).toBe(false)
+  })
+
+  it.each([
+    true,
+    false,
+  ])('persists evidence matching the SDK input before selection (pixels: %s)', async (pixels) => {
+    const usage = {
+      inputTokens: { total: 1, noCache: 1, cacheRead: 0, cacheWrite: 0 },
+      outputTokens: { total: 1, text: 1, reasoning: 0 },
+    }
+    const model = new MockLanguageModelV4({
+      doGenerate: [
+        {
+          content: [
+            {
+              type: 'tool-call',
+              toolCallId: 'search',
+              toolName: 'KB_doc_query',
+              input: '{}',
+            },
+          ],
+          finishReason: { unified: 'tool-calls', raw: 'tool_calls' },
+          usage,
+          warnings: [],
+        },
+        {
+          content: [
+            {
+              type: 'tool-call',
+              toolCallId: 'choose',
+              toolName: 'show_course_image',
+              input: JSON.stringify({
+                asset_id: image.asset_id,
+                reason: 'The flow helps explain the stages.',
+              }),
+            },
+          ],
+          finishReason: { unified: 'tool-calls', raw: 'tool_calls' },
+          usage,
+          warnings: [],
+        },
+        {
+          content: [{ type: 'text', text: 'The stages connect.' }],
+          finishReason: { unified: 'stop', raw: 'stop' },
+          usage,
+          warnings: [],
+        },
+      ],
+    })
+    const vision = createCourseImageVision({
+      kbIds: [image.kb_id],
+      readImage: async () =>
+        pixels ? original : Buffer.from('invalid preview'),
+    })
+    const response = await generateText({
+      model,
+      messages: [messages[0]!],
+      tools: withCourseImageTool(
+        {
+          KB_doc_query: tool({
+            inputSchema: z.object({}),
+            execute: async () => fixture,
+          }),
+        },
+        [image.kb_id],
+        async () => original,
+        true,
+        vision.hasPixelInput
+      ),
+      stopWhen: isStepCount(3),
+      prepareStep: async ({ initialMessages, responseMessages, steps }) => ({
+        messages: (
+          await vision.prepareMessages(
+            [...initialMessages, ...responseMessages],
+            steps
+          )
+        ).messages,
+      }),
+    })
+    const request = model.doGenerateCalls[1]!.prompt
+    const suppliedFiles = request.flatMap((message) =>
+      message.role === 'tool'
+        ? message.content.flatMap((part) =>
+            part.type === 'tool-result' && part.output.type === 'content'
+              ? part.output.value.filter((value) => value.type === 'file')
+              : []
+          )
+        : []
+    )
+    expect(suppliedFiles).toHaveLength(pixels ? 1 : 0)
+    const persisted = JSON.parse(
+      JSON.stringify(mapAssistantStepContent(response.steps))
+    )
+    const selection = persisted.find(
+      (part: { toolName?: string }) => part.toolName === 'show_course_image'
+    )
+    expect(selection.result).toMatchObject({
+      status: 'selected',
+      model_input: pixels ? 'pixels' : 'description_only',
+      image,
+    })
+    expect(JSON.stringify(persisted)).not.toContain(original.toString('base64'))
+  })
+
   it('serializes the preview into an OpenAI Responses image input', async () => {
-    const prepare = createCourseImageVision({
+    const { prepareMessages: prepare } = createCourseImageVision({
       kbIds: [image.kb_id],
       readImage: (value) => readCourseImage(value, root),
     })

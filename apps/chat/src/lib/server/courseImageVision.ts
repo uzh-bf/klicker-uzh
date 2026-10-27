@@ -30,6 +30,16 @@ export function createCourseImageVision({
   readImage: (image: CourseImage) => Promise<Buffer>
 }) {
   const pending = new Map<string, Promise<Preview | null>>()
+  let modelInputKeys = new Set<string>()
+  const occurrenceKey = (image: CourseImage) =>
+    JSON.stringify([
+      image.kb_id,
+      image.external_resource_id,
+      image.resource_version,
+      image.asset_id,
+      image.manifest_sha256,
+      image.image_sha256,
+    ])
 
   async function preview(
     image: CourseImage,
@@ -65,7 +75,7 @@ export function createCourseImageVision({
     }
   }
 
-  return async function prepareMessages(
+  async function prepareMessages(
     messages: ModelMessage[],
     steps: Array<{ content?: unknown[] }>
   ): Promise<{ messages: ModelMessage[]; previewCount: number }> {
@@ -79,13 +89,7 @@ export function createCourseImageVision({
       for (const image of courseImageCandidates(part.result)) {
         if (!kbIds.includes(image.kb_id)) continue
         // Bind cache identity to the resource occurrence, not merely its pixels.
-        const key = JSON.stringify([
-          image.kb_id,
-          image.external_resource_id,
-          image.resource_version,
-          image.asset_id,
-          image.manifest_sha256,
-        ])
+        const key = occurrenceKey(image)
         if (pending.has(key) || pending.size >= MAX_PREVIEWS) continue
         // Reserve before awaiting: repeated/concurrent preparation shares work.
         pending.set(key, preview(image, part.toolCallId))
@@ -94,7 +98,12 @@ export function createCourseImageVision({
     const previews = (await Promise.all(pending.values())).filter(
       (item): item is Preview => item !== null
     )
-    if (!previews.length) return { messages, previewCount: 0 }
+    // Evidence describes this model step, not every image decoded this turn.
+    const attachedKeys = new Set<string>()
+    if (!previews.length) {
+      modelInputKeys = attachedKeys
+      return { messages, previewCount: 0 }
+    }
     // Keep previews inside their retrieval result. Appending a new user message
     // can replace the student's latest intent (notably "text only") for the model.
     const projected = messages.map((message): ModelMessage => {
@@ -131,6 +140,7 @@ export function createCourseImageVision({
                   },
                 ]
           for (const { image, bytes } of matching) {
+            attachedKeys.add(occurrenceKey(image))
             content.push(
               {
                 type: 'text',
@@ -150,9 +160,16 @@ export function createCourseImageVision({
         }),
       }
     })
+    modelInputKeys = attachedKeys
     return {
       messages: projected,
-      previewCount: previews.length,
+      previewCount: attachedKeys.size,
     }
+  }
+
+  return {
+    prepareMessages,
+    hasPixelInput: (image: CourseImage) =>
+      modelInputKeys.has(occurrenceKey(image)),
   }
 }

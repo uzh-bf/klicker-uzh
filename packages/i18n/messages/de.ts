@@ -1,6 +1,12 @@
 export default {
   chat: {
     courseImages: {
+      pixelsProvided: 'Bildpixel an das Modell übermittelt',
+      descriptionOnly: 'Nur Beschreibung',
+      pixelsProvidedExplanation:
+        'Die Pixel dieser Abbildung waren vor der Auswahl in der Modelleingabe enthalten. Das belegt nicht, auf welche Eingaben sich das Modell gestützt hat.',
+      descriptionOnlyExplanation:
+        'Die Pixel dieser Abbildung waren vor der Auswahl nicht in der Modelleingabe enthalten. Dem Modell standen der abgerufene Text und gegebenenfalls die Bildunterschrift oder Beschreibung zur Verfügung.',
       expandLabel: 'Bild vergrößern: {label}',
       closeViewer: 'Bildansicht schließen',
       zoomIn: 'Vergrößern',

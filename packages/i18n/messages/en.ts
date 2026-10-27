@@ -1,6 +1,12 @@
 export default {
   chat: {
     courseImages: {
+      pixelsProvided: 'Pixels provided to model',
+      descriptionOnly: 'Description only',
+      pixelsProvidedExplanation:
+        'This figure’s pixels were included in the model input before selection. This does not prove which input the model relied on.',
+      descriptionOnlyExplanation:
+        'This figure’s pixels were not included in the model input before selection. The model had the retrieved text and any available caption or description.',
       expandLabel: 'Expand image: {label}',
       closeViewer: 'Close image viewer',
       zoomIn: 'Zoom in',

@@ -12,6 +12,7 @@ import {
 import {
   COURSE_IMAGE_TOOL,
   courseImageCandidates,
+  courseImageModelInput,
   selectedCourseImages,
 } from '../src/lib/sources/courseImages'
 
@@ -210,6 +211,7 @@ describe('course image selection', () => {
       await call(tools, 'show_course_image', { asset_id: candidate.asset_id })
     ).toEqual({
       status: 'selected',
+      model_input: 'description_only',
       image: candidate,
       placement_marker: `[course-image:${candidate.asset_id}]`,
       reason: 'The retrieved passage identifies the requested figure.',
@@ -219,6 +221,7 @@ describe('course image selection', () => {
       await call(tools, 'show_course_image', { asset_id: candidate.asset_id })
     ).toEqual({
       status: 'selected',
+      model_input: 'description_only',
       image: candidate,
       reason: 'The retrieved passage identifies the requested figure.',
     })
@@ -230,6 +233,86 @@ describe('course image selection', () => {
     ).toEqual({ status: 'unavailable' })
     expect(read).toHaveBeenCalledTimes(1)
   })
+  it('records supplied input, ignoring a model or retrieval claim of pixels', async () => {
+    const forged = structuredClone(fixture)
+    forged.sources[0].chunks[0].visual_assets.assets[0].model_input = 'pixels'
+    const tools = withCourseImageTool(
+      searchTools(forged),
+      [candidate.kb_id],
+      async () => {},
+      true
+    )
+    await call(tools, 'KB_doc_query', {})
+    const result = await call(tools, 'show_course_image', {
+      asset_id: candidate.asset_id,
+      model_input: 'pixels',
+    })
+    expect(courseImageModelInput(result)).toBe('description_only')
+    expect(
+      courseImageModelInput({ status: 'selected', image: candidate })
+    ).toBeUndefined()
+    expect(
+      courseImageModelInput({
+        status: 'selected',
+        image: candidate,
+        model_input: 'seen',
+      })
+    ).toBeUndefined()
+    expect(
+      courseImageModelInput({
+        status: 'skipped',
+        image: candidate,
+        model_input: 'pixels',
+      })
+    ).toBeUndefined()
+    expect(
+      courseImageModelInput({
+        status: 'selected',
+        image: {},
+        model_input: 'pixels',
+      })
+    ).toBeUndefined()
+  })
+
+  it('snapshots evidence before validation and shares it across concurrent duplicates', async () => {
+    let finish!: () => void
+    let suppliedPixels = false
+    const read = vi.fn(
+      () =>
+        new Promise<void>((resolve) => {
+          finish = resolve
+        })
+    )
+    const tools = withCourseImageTool(
+      searchTools(),
+      [candidate.kb_id],
+      read,
+      true,
+      () => suppliedPixels
+    )
+    await call(tools, 'KB_doc_query', {})
+    const first = call(tools, 'show_course_image', {
+      asset_id: candidate.asset_id,
+    })
+    await Promise.resolve()
+    suppliedPixels = true
+    const duplicate = call(tools, 'show_course_image', {
+      asset_id: candidate.asset_id,
+    })
+    finish()
+    for (const result of await Promise.all([first, duplicate])) {
+      expect(courseImageModelInput(JSON.parse(JSON.stringify(result)))).toBe(
+        'description_only'
+      )
+    }
+    expect(
+      courseImageModelInput(
+        await call(tools, 'show_course_image', { asset_id: candidate.asset_id })
+      )
+    ).toBe('description_only')
+    expect(read).toHaveBeenCalledTimes(1)
+  })
+
   it('keeps later targeted search results selectable when the registry is full', async () => {
     const broad = structuredClone(fixture)
     const asset = broad.sources[0].chunks[0].visual_assets.assets[0]
