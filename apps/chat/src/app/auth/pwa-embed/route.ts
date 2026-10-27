@@ -1,15 +1,16 @@
+import { prisma } from '@klicker-uzh/prisma'
 import {
-  PWA_CHAT_EMBED_QUERY_KEY,
-  PWA_CHAT_EMBED_SESSION_COOKIE,
-} from '@/src/lib/pwaEmbedAuth'
+  COOKIE_NAMES,
+  cookieName,
+  cookieSecurityOptions,
+} from '@klicker-uzh/util/auth'
+import { type NextRequest, NextResponse } from 'next/server'
+import { z } from 'zod'
+import { PWA_CHAT_EMBED_QUERY_KEY } from '@/src/lib/pwaEmbedAuth'
 import {
   signPwaEmbedSessionToken,
   verifyPwaEmbedExchangeToken,
 } from '@/src/lib/server/pwaEmbed'
-import { prisma } from '@klicker-uzh/prisma'
-import { cookieSecurityOptions } from '@klicker-uzh/util/auth'
-import { NextRequest, NextResponse } from 'next/server'
-import { z } from 'zod'
 
 const LOG_PREFIX = '[chat:auth/pwa-embed]'
 const EMBED_SESSION_MAX_AGE_SECONDS = 60 * 60 * 12
@@ -145,12 +146,16 @@ export async function GET(req: NextRequest) {
     process.env.NODE_ENV === 'production' &&
     process.env.COOKIE_DOMAIN !== '127.0.0.1'
 
-  response.cookies.set(PWA_CHAT_EMBED_SESSION_COOKIE, sessionToken, {
-    httpOnly: true,
-    ...cookieSecurityOptions({ isProduction }),
-    path: '/',
-    maxAge: EMBED_SESSION_MAX_AGE_SECONDS,
-  })
+  response.cookies.set(
+    cookieName(COOKIE_NAMES.PWA_CHAT_EMBED_SESSION),
+    sessionToken,
+    {
+      httpOnly: true,
+      ...cookieSecurityOptions({ isProduction }),
+      path: '/',
+      maxAge: EMBED_SESSION_MAX_AGE_SECONDS,
+    }
+  )
 
   return response
 }

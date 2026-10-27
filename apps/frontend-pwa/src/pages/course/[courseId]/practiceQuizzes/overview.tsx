@@ -7,6 +7,7 @@ import {
   UserRole,
 } from '@klicker-uzh/graphql/dist/ops'
 import Loader from '@klicker-uzh/shared-components/src/Loader'
+import { COOKIE_NAMES, cookieName } from '@klicker-uzh/util'
 import { addApolloState, initializeApollo } from '@lib/apollo'
 import getParticipantToken from '@lib/getParticipantToken'
 import useParticipantToken from '@lib/useParticipantToken'
@@ -17,7 +18,6 @@ import { useTranslations } from 'next-intl'
 import nookies from 'nookies'
 import LinkButton from '../../../../components/common/LinkButton'
 import Layout from '../../../../components/Layout'
-import { previewCookieName } from '@klicker-uzh/util'
 
 function PracticeQuizOverview({
   isInactive,
@@ -200,7 +200,7 @@ export async function getServerSideProps(ctx: GetServerSidePropsContext) {
 
     // remove the lti-token, if it is defined
     try {
-      nookies.destroy(ctx, previewCookieName('lti-token'), {
+      nookies.destroy(ctx, cookieName(COOKIE_NAMES.LTI_TOKEN), {
         domain: process.env.COOKIE_DOMAIN,
         path: '/',
       })

@@ -48,11 +48,13 @@ ENV NEXT_PUBLIC_GROWTHBOOK_CLIENT_KEY=${NEXT_PUBLIC_GROWTHBOOK_CLIENT_KEY}
 ENV NEXT_PUBLIC_ELEARNING_EMBED_ORIGINS=${NEXT_PUBLIC_ELEARNING_EMBED_ORIGINS}
 
 COPY --from=builder /app/out/full/ .
+COPY --from=builder /app/apps/chat/.env.production /app/apps/chat/.env.production
 
 ARG BLOB_STORAGE_ACCOUNT_URL
-COPY --from=builder /app/util/preview-build-env.mjs /app/util/preview-build-env.mjs
+COPY --from=builder /app/util/deployment-build-env.mjs /app/util/deployment-build-env.mjs
 ARG KLICKER_PREVIEW_BUILD_ENV_JSON
-RUN node util/preview-build-env.mjs --app chat -- pnpm run build --filter=@klicker-uzh/chat
+ARG KLICKER_DEPLOYMENT_BUILD_ENV_JSON
+RUN node util/deployment-build-env.mjs --app chat -- pnpm run build --filter=@klicker-uzh/chat
 
 
 FROM base AS runner

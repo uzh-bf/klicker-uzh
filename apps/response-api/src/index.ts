@@ -1,14 +1,15 @@
+import { createHash } from 'node:crypto'
 import { hatchetClient } from '@klicker-uzh/hatchet'
 import { UserLoginScope } from '@klicker-uzh/prisma/client'
 import {
+  COOKIE_NAMES,
+  cookieName,
   type JWTPayload,
-  previewCookieName,
   verifyJWT,
 } from '@klicker-uzh/util'
 import { randomUUID } from 'crypto'
-import { createServer, IncomingMessage, ServerResponse } from 'http'
+import { createServer, type IncomingMessage, type ServerResponse } from 'http'
 import { Redis } from 'ioredis'
-import { createHash } from 'node:crypto'
 
 const redis = new Redis({
   family: 4,
@@ -120,9 +121,9 @@ async function handleAddResponse(req: IncomingMessage, res: ServerResponse) {
   if (typeof req.headers['cookie'] === 'string') {
     const raw = req.headers['cookie']
     const parts = raw.split(';').map((s) => s.trim())
-    const participantCookieName = previewCookieName('participant_token')
-    const temporaryParticipantCookieName = previewCookieName(
-      'temporary_participant_token'
+    const participantCookieName = cookieName(COOKIE_NAMES.PARTICIPANT_TOKEN)
+    const temporaryParticipantCookieName = cookieName(
+      COOKIE_NAMES.TEMPORARY_PARTICIPANT_TOKEN
     )
     const participantPair = parts.find((p) =>
       p.startsWith(`${participantCookieName}=`)
@@ -247,7 +248,7 @@ async function handleAddAssessmentResponse(
   let user: JWTPayload | null = null
   try {
     const assessmentToken =
-      parsedCookies[previewCookieName('next-auth.participant-session-token')]
+      parsedCookies[cookieName(COOKIE_NAMES.NEXT_AUTH_PARTICIPANT_SESSION)]
     user = assessmentToken
       ? await verifyJWT(assessmentToken, process.env.APP_SECRET as string, {
           issuer: process.env.APP_ORIGIN_AUTH,

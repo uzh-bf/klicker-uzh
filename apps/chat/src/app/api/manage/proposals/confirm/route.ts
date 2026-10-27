@@ -1,3 +1,7 @@
+import { COOKIE_NAMES, cookieName } from '@klicker-uzh/util'
+import { cookies } from 'next/headers'
+import { type NextRequest, NextResponse } from 'next/server'
+import { z } from 'zod'
 import { getManageAiCapability } from '@/src/lib/server/featureFlags'
 import { getAuthenticatedManageUser } from '@/src/lib/server/manageAuth'
 import {
@@ -7,10 +11,6 @@ import {
   verifyManageProposalToken,
 } from '@/src/services/manageProposals'
 import { createRateLimiter } from '@/src/services/rateLimiter'
-import { previewCookieName } from '@klicker-uzh/util'
-import { cookies } from 'next/headers'
-import { NextRequest, NextResponse } from 'next/server'
-import { z } from 'zod'
 
 export const runtime = 'nodejs'
 
@@ -72,7 +72,7 @@ export async function POST(req: NextRequest) {
 
   const cookieStore = await cookies()
   const sessionToken = cookieStore.get(
-    previewCookieName('next-auth.session-token')
+    cookieName(COOKIE_NAMES.NEXT_AUTH_MANAGER_SESSION)
   )?.value
   if (!sessionToken) {
     return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })

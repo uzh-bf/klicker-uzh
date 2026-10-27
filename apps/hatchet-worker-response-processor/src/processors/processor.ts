@@ -12,9 +12,10 @@ import type {
   NumericalRestrictions,
 } from '@klicker-uzh/types'
 import {
-  previewCookieName,
-  verifyJWT,
+  COOKIE_NAMES,
+  cookieName,
   type JWTPayload,
+  verifyJWT,
 } from '@klicker-uzh/util'
 import { strict as assert } from 'assert'
 import { createHash } from 'crypto'
@@ -101,9 +102,9 @@ export async function processResponseMessage(
           }, {})
 
         const participantToken =
-          parsedCookies[previewCookieName('participant_token')]
+          parsedCookies[cookieName(COOKIE_NAMES.PARTICIPANT_TOKEN)]
         const temporaryToken =
-          parsedCookies[previewCookieName('temporary_participant_token')]
+          parsedCookies[cookieName(COOKIE_NAMES.TEMPORARY_PARTICIPANT_TOKEN)]
         if (participantToken !== undefined) {
           participantData = await verifyJWT(
             participantToken,

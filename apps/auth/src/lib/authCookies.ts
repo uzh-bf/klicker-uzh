@@ -10,7 +10,7 @@
 // The persistent session cookies are intentionally NOT touched here; their
 // names are the backend delivery contract (see constants.ts).
 
-import { previewCookieName } from '@klicker-uzh/util/auth'
+import { COOKIE_NAMES, cookieName } from '@klicker-uzh/util/auth'
 
 export type AuthAudience = 'participant' | 'lecturer'
 
@@ -32,8 +32,8 @@ export function cookieNamePrefix(secure: boolean): string {
 }
 
 export function audienceCookieNames(audience: AuthAudience, secure: boolean) {
-  const prefix = previewCookieName(
-    `${cookieNamePrefix(secure)}next-auth.${audience}`
+  const prefix = cookieName(
+    `${cookieNamePrefix(secure)}${COOKIE_NAMES.NEXT_AUTH_AUDIENCE[audience]}`
   )
   return {
     state: `${prefix}.state`,
@@ -43,11 +43,15 @@ export function audienceCookieNames(audience: AuthAudience, secure: boolean) {
   }
 }
 
-export function previewCsrfCookieOptions(secure: boolean) {
-  if (!process.env.NEXT_PUBLIC_PREVIEW_ID) return {}
+export function csrfCookieOptions(secure: boolean) {
+  const rawName = `${secure ? '__Host-' : ''}${
+    COOKIE_NAMES.NEXT_AUTH_CSRF_TOKEN
+  }`
+  const name = cookieName(rawName)
+  if (name === rawName) return {}
   return {
     csrfToken: {
-      name: previewCookieName(`${secure ? '__Host-' : ''}next-auth.csrf-token`),
+      name,
       options: {
         httpOnly: true,
         sameSite: 'lax' as const,

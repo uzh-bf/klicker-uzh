@@ -12,10 +12,10 @@
 __**
 
 deploy/*
-!deploy/northflank/
-deploy/northflank/*
-!deploy/northflank/Dockerfile.fixtures
-!deploy/northflank/bootstrap.mjs
+!deploy/preview/
+deploy/preview/*
+!deploy/preview/Dockerfile.fixtures
+!deploy/preview/bootstrap.mjs
 docs/
 legacy/
 newsletter/
@@ -25,6 +25,6 @@ project/
 **/.turbo/
 **/.venv/
 util/**
-!util/preview-build-env.mjs
+!util/deployment-build-env.mjs
 
 Dockerfile

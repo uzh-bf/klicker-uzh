@@ -1,5 +1,9 @@
 import { routing } from '@klicker-uzh/i18n'
-import { extractBearerToken, previewCookieName } from '@klicker-uzh/util/auth'
+import {
+  COOKIE_NAMES,
+  cookieName,
+  extractBearerToken,
+} from '@klicker-uzh/util/auth'
 import { jwtVerify } from 'jose'
 import type { NextRequest } from 'next/server'
 import { NextResponse } from 'next/server'
@@ -7,7 +11,6 @@ import { hasLocale } from 'next-intl'
 import {
   CHAT_SCOPED_TOKEN_HEADER,
   PWA_CHAT_EMBED_QUERY_KEY,
-  PWA_CHAT_EMBED_SESSION_COOKIE,
   PWA_CHAT_EMBED_SESSION_SCOPE,
 } from '@/src/lib/pwaEmbedAuth'
 
@@ -208,7 +211,7 @@ export async function proxy(request: NextRequest) {
   // CHIPS-unsupported-browser code path (sessionStorage-driven; see
   // `useChatGuestTokenBootstrap`).
   const guestCookieToken = request.cookies.get(
-    previewCookieName('chat_participant_token')
+    cookieName(COOKIE_NAMES.CHAT_PARTICIPANT_TOKEN)
   )?.value
   const guestQueryToken = request.nextUrl.searchParams.get('_t')
   // Each transport is validated independently and the first valid one wins.
@@ -240,7 +243,7 @@ export async function proxy(request: NextRequest) {
   }
 
   const pwaEmbedCookieToken = request.cookies.get(
-    PWA_CHAT_EMBED_SESSION_COOKIE
+    cookieName(COOKIE_NAMES.PWA_CHAT_EMBED_SESSION)
   )?.value
   const pwaEmbedQueryToken = request.nextUrl.searchParams.get(
     PWA_CHAT_EMBED_QUERY_KEY
@@ -269,7 +272,7 @@ export async function proxy(request: NextRequest) {
   // intentionally not supported; PWA iframe fallback uses the scoped token
   // branch above.
   const participantToken = request.cookies.get(
-    previewCookieName('participant_token')
+    cookieName(COOKIE_NAMES.PARTICIPANT_TOKEN)
   )?.value
 
   if (!participantToken) {

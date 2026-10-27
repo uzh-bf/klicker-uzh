@@ -15,8 +15,9 @@ import {
   SelfDocument,
   SetLiveQuizPinDocument,
 } from '@klicker-uzh/graphql/dist/ops'
-import Loader from '@klicker-uzh/shared-components/src/Loader'
 import { QUESTION_GROUPS } from '@klicker-uzh/shared-components/src/constants'
+import Loader from '@klicker-uzh/shared-components/src/Loader'
+import { COOKIE_NAMES, cookieName } from '@klicker-uzh/util'
 import { addApolloState, initializeApollo } from '@lib/apollo'
 import {
   Button,
@@ -28,17 +29,16 @@ import {
   toast,
 } from '@uzh-bf/design-system'
 import { Form, Formik } from 'formik'
-import { GetServerSidePropsContext } from 'next'
-import { useTranslations } from 'next-intl'
+import type { GetServerSidePropsContext } from 'next'
 import dynamic from 'next/dynamic'
 import { useRouter } from 'next/router'
+import { useTranslations } from 'next-intl'
 import { useEffect, useState } from 'react'
 import * as Yup from 'yup'
 import Layout from '../../components/Layout'
 import LiveQuizQuestionColumn from '../../components/liveQuiz/LiveQuizQuestionColumn'
 import LiveQuizSidebarColumn from '../../components/liveQuiz/LiveQuizSidebarColumn'
 import LiveQuizSubscriber from '../../components/liveQuiz/LiveQuizSubscriber'
-import { previewCookieName } from '@klicker-uzh/util'
 
 const DynamicAccountSelector = dynamic(
   () => import('../../components/liveQuiz/AccountSelector'),
@@ -542,6 +542,9 @@ export async function getServerSideProps(ctx: GetServerSidePropsContext) {
   }
 
   const apolloClient = initializeApollo()
+  const participantCookieName = cookieName(
+    COOKIE_NAMES.NEXT_AUTH_PARTICIPANT_SESSION
+  )
 
   let liveQuiz = null
   try {
@@ -550,10 +553,8 @@ export async function getServerSideProps(ctx: GetServerSidePropsContext) {
       variables: { id: ctx.query?.id as string },
       context: {
         headers: {
-          authorization: ctx.req.cookies?.[
-            previewCookieName('next-auth.participant-session-token')
-          ]
-            ? `Bearer ${ctx.req.cookies?.[previewCookieName('next-auth.participant-session-token')] ?? ''}`
+          authorization: ctx.req.cookies?.[participantCookieName]
+            ? `Bearer ${ctx.req.cookies?.[participantCookieName] ?? ''}`
             : undefined,
         },
       },

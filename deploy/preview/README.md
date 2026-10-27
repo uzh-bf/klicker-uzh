@@ -1,4 +1,4 @@
-# Northflank preview bootstrap
+# Preview deployment configuration and bootstrap
 
 The generic Devrouter controller owns preview admission, deadlines and teardown.
 Klicker owns its build inputs, database initialization and synthetic fixtures.
@@ -9,7 +9,7 @@ stay in the private installation layer.
 
 ## Disposable PostgreSQL
 
-`packages/prisma/scripts/northflankBootstrap.ts` initializes a newly allocated,
+`packages/prisma/scripts/previewBootstrap.ts` initializes a newly allocated,
 empty preview database. It defaults to dry-run and repeats target validation
 under an advisory lock before writing. It refuses retained or partially
 initialized targets. A partial failure requires a new environment.
@@ -22,14 +22,13 @@ PostgreSQL 17 or later is required before any role is created.
 
 The trusted runtime job injects these environment variables directly:
 
-| Variable                                    | Purpose                                                              |
-| ------------------------------------------- | -------------------------------------------------------------------- |
-| `KLICKER_NORTHFLANK_DISPOSABLE`             | Must equal `1`                                                       |
-| `KLICKER_NORTHFLANK_POSTGRES_HOST`          | Exact private host of the owned addon                                |
-| `KLICKER_NORTHFLANK_BOOTSTRAP_DATABASE_URL` | Privileged TLS URL for the fresh `klicker_test` database             |
-| `KLICKER_NORTHFLANK_APP_PASSWORD`           | Fresh generation-scoped password for the restricted application role |
-| `KLICKER_NORTHFLANK_HATCHET_PASSWORD`       | Optional separate password when Hatchet shares this addon            |
-| `DRY_RUN`                                   | Writes require exactly `false`; otherwise validation only            |
+| Variable                                 | Purpose                                                              |
+| ---------------------------------------- | -------------------------------------------------------------------- |
+| `KLICKER_PREVIEW_DISPOSABLE`             | Must equal `1`                                                       |
+| `KLICKER_PREVIEW_POSTGRES_HOST`          | Exact private host of the owned addon                                |
+| `KLICKER_PREVIEW_BOOTSTRAP_DATABASE_URL` | Privileged TLS URL for the fresh `klicker_test` database             |
+| `KLICKER_PREVIEW_APP_PASSWORD`           | Fresh generation-scoped password for the restricted application role |
+| `DRY_RUN`                                | Writes require exactly `false`; otherwise validation only            |
 
 The script rejects ambient `PG*` variables and other database URL overrides.
 Controller credentials never belong in this job. Do not put injected values in
@@ -39,21 +38,21 @@ Run from the repository root inside the provisioned development container, or
 from `/app` inside the fixture image:
 
 ```sh
-pnpm --filter @klicker-uzh/prisma exec tsx scripts/northflankBootstrap.ts
+pnpm --filter @klicker-uzh/prisma exec tsx scripts/previewBootstrap.ts
 ```
 
 Write mode creates the restricted `klicker_test` role, gives it ownership of the
 application and shadow databases, and marks both for the repository's existing
 disposable-database guards. It verifies login and schema access using that role
-after initialization. The optional Hatchet role is separate. Migration and seed
+after initialization. Hatchet uses its own addon and the manifest’s single `hatchet-init` job. The app bootstrap refuses an addon already containing Hatchet resources. Migration and seed
 execution are later jobs using restricted credentials.
 
 `pnpm --filter @klicker-uzh/prisma test:disposable` runs the bootstrap regression
 cases alongside the existing disposable-database checks. These tests use
 synthetic query clients and perform no database mutation.
 
-Native jobs use `node /app/deploy/northflank/bootstrap.mjs bootstrap` for the
-one-time database initialization and `node /app/deploy/northflank/bootstrap.mjs
+Native jobs use `node /app/deploy/preview/bootstrap.mjs bootstrap` for the
+one-time database initialization and `node /app/deploy/preview/bootstrap.mjs
 fixtures` for guarded migration deployment followed by synthetic seed data.
 The wrapper resolves the package directory from its own location, accepts only
 these two operations and bounds the complete operation to eight minutes. It
@@ -79,3 +78,25 @@ resource cleanup remains pending. This source slice prepares the manifest and
 plan and does not prove native runtime behavior. See the
 [approved rollout plan](../../project/2026-10-26-devrouter-preview-rollout-plan.md)
 for the remaining acceptance checks.
+
+## Deployment configuration
+
+Serving applications know origins, backing-service endpoints and the optional
+server runtime `KLICKER_COOKIE_NAMESPACE`. The same namespace must be supplied
+to auth, PWA, Chat, API, response API, response worker, LTI and GraphQL callers.
+Unset or empty preserves legacy names. Invalid values and the removed public
+preview variable refuse on cookie-name resolution. Namespacing separates
+trusted environments on the flat shared domain; access policy stays at ingress.
+
+The five Next images accept optional non-secret
+`KLICKER_DEPLOYMENT_BUILD_ENV_JSON`. The build helper validates only declared
+keys and supplemental build inputs, requiring explicit overrides for committed
+production defaults. Telemetry and optional flags have safe defaults. An absent
+envelope preserves ordinary builds; a non-empty old preview envelope refuses.
+Build arguments must never carry credentials. Public Next variables remain
+build-time values; runtime injection alone cannot change browser bundles.
+
+Devrouter and its provider adapter own lifecycle, generation identity, network
+policy and credential injection. This app-owned tooling handles only build
+configuration, guarded schema initialization and synthetic fixtures. Bootstrap
+credentials belong to the one-time job; serving images keep ordinary commands.

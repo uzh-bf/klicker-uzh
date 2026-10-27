@@ -1,27 +1,28 @@
+import { createHash, createHmac } from 'node:crypto'
 import * as DB from '@klicker-uzh/prisma/client'
 import {
   ActivityType,
-  ElementData,
-  ElementInstanceResults,
-  ElementResultsCaseStudy,
-  ElementResultsOpen,
-  HatchetHandlers,
   type ElementBlockInput,
+  type ElementData,
+  type ElementInstanceResults,
+  type ElementResultsCaseStudy,
   type ElementResultsChoices,
+  type ElementResultsOpen,
   type ElementResultsSelection,
   type ElementStackInput,
+  type HatchetHandlers,
 } from '@klicker-uzh/types'
 import {
   getActivityInstanceConnectOrCreate,
   getCachedBlockResults,
   getInitialInstanceResults,
   levelFromXp,
+  liveQuizPinCookieName,
+  type PrismaTransactionClient,
   propagateActivityToElements,
-  previewCookieName,
   recomputeDerivedPermissions,
   signJWT,
   updateLiveQuizBlockResultsFromCache,
-  type PrismaTransactionClient,
 } from '@klicker-uzh/util'
 import dayjs from 'dayjs'
 import generatePassword from 'generate-password'
@@ -29,7 +30,6 @@ import { GraphQLError } from 'graphql'
 import type { Redis } from 'ioredis'
 import { min } from 'mathjs'
 import schedule from 'node-schedule'
-import { createHash, createHmac } from 'node:crypto'
 import { omitBy, pick, prop, sortBy } from 'remeda'
 import { v4 as uuidv4 } from 'uuid'
 import type { Context, ContextWithUser } from '../lib/context.js'
@@ -2775,7 +2775,7 @@ export async function setLiveQuizPinCookie(
   }
 
   // remove any previously added cookie and set the new correct one
-  const cookieName = previewCookieName(`live-quiz-pin-${liveQuizId}`)
+  const cookieName = liveQuizPinCookieName(liveQuizId)
   if (!liveQuiz.pinCode || pin !== liveQuiz.pinCode) {
     try {
       ctx.res.clearCookie(cookieName, {
@@ -2938,7 +2938,7 @@ export async function getRunningLiveQuiz({ id }: { id: string }, ctx: Context) {
 
   // if a pin code is required, verify that the user has already entered a valid one
   if (quizInfo.pinCode) {
-    const cookieName = previewCookieName(`live-quiz-pin-${id}`)
+    const cookieName = liveQuizPinCookieName(id)
     const providedPin = ctx.req.cookies?.[cookieName]
 
     if (!providedPin) {

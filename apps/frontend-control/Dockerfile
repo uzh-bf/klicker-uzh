@@ -57,9 +57,11 @@ ENV NEXT_PUBLIC_GROWTHBOOK_CLIENT_KEY=${NEXT_PUBLIC_GROWTHBOOK_CLIENT_KEY}
 ENV NEXT_TELEMETRY_DISABLED 1
 
 COPY --from=builder /app/out/full/ .
-COPY --from=builder /app/util/preview-build-env.mjs /app/util/preview-build-env.mjs
+COPY --from=builder /app/apps/frontend-control/.env.production /app/apps/frontend-control/.env.production
+COPY --from=builder /app/util/deployment-build-env.mjs /app/util/deployment-build-env.mjs
 ARG KLICKER_PREVIEW_BUILD_ENV_JSON
-RUN node util/preview-build-env.mjs --app frontend-control -- pnpm run build --filter=@klicker-uzh/frontend-control
+ARG KLICKER_DEPLOYMENT_BUILD_ENV_JSON
+RUN node util/deployment-build-env.mjs --app frontend-control -- pnpm run build --filter=@klicker-uzh/frontend-control
 
 
 FROM base AS runner

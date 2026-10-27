@@ -5,14 +5,15 @@ import {
   UserRole,
 } from '@klicker-uzh/prisma/client'
 import { decodeJWT } from '@klicker-uzh/util'
-import { extractBearerToken, previewCookieName } from '@klicker-uzh/util/auth'
+import {
+  COOKIE_NAMES,
+  cookieName,
+  extractBearerToken,
+} from '@klicker-uzh/util/auth'
 import { jwtVerify } from 'jose'
 import { type NextRequest, NextResponse } from 'next/server'
 import { z } from 'zod'
-import {
-  PWA_CHAT_EMBED_SESSION_COOKIE,
-  PWA_CHAT_EMBED_SESSION_SCOPE,
-} from '@/src/lib/pwaEmbedAuth'
+import { PWA_CHAT_EMBED_SESSION_SCOPE } from '@/src/lib/pwaEmbedAuth'
 import {
   type AuthMode,
   GUEST_ACCOUNT_TYPE,
@@ -69,11 +70,15 @@ export function extractChatTransportTokens(
   req: NextRequest
 ): ChatTransportTokens {
   return {
-    participantToken: req.cookies.get(previewCookieName('participant_token'))
-      ?.value,
-    chatGuestToken: req.cookies.get(previewCookieName('chat_participant_token'))
-      ?.value,
-    pwaEmbedToken: req.cookies.get(PWA_CHAT_EMBED_SESSION_COOKIE)?.value,
+    participantToken: req.cookies.get(
+      cookieName(COOKIE_NAMES.PARTICIPANT_TOKEN)
+    )?.value,
+    chatGuestToken: req.cookies.get(
+      cookieName(COOKIE_NAMES.CHAT_PARTICIPANT_TOKEN)
+    )?.value,
+    pwaEmbedToken: req.cookies.get(
+      cookieName(COOKIE_NAMES.PWA_CHAT_EMBED_SESSION)
+    )?.value,
     // The Authorization header carries a scoped token for the
     // CHIPS-unsupported-browser path: client-side `authedFetch` reads a
     // chat-owned token from sessionStorage and attaches it to API calls. A raw

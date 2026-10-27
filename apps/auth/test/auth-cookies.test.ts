@@ -1,32 +1,40 @@
-import { afterEach, describe, expect, test, vi } from 'vitest'
+import { afterEach, beforeEach, describe, expect, test, vi } from 'vitest'
 import {
   audienceCookieNames,
   audienceCookieOptions,
   cookieNamePrefix,
-  previewCsrfCookieOptions,
+  csrfCookieOptions,
   resolveSecureCookies,
 } from '../src/lib/authCookies'
 
 describe('audience cookie configuration', () => {
+  beforeEach(() => vi.stubEnv('KLICKER_COOKIE_NAMESPACE', ''))
   afterEach(() => vi.unstubAllEnvs())
 
-  test('preview cookie names remain separate across concurrent environments', () => {
-    vi.stubEnv('NEXT_PUBLIC_PREVIEW_ID', 'preview-a')
+  test('runtime names remain separate across concurrent environments', () => {
+    vi.stubEnv('KLICKER_COOKIE_NAMESPACE', 'runtime-a')
     const first = audienceCookieNames('participant', true)
-    const csrf = previewCsrfCookieOptions(true)
-    vi.stubEnv('NEXT_PUBLIC_PREVIEW_ID', 'preview-b')
+    const csrf = csrfCookieOptions(true)
+    vi.stubEnv('KLICKER_COOKIE_NAMESPACE', 'runtime-b')
     const second = audienceCookieNames('participant', true)
     for (const name of Object.values(first)) {
       expect(Object.values(second)).not.toContain(name)
       expect(name.startsWith('__Secure-')).toBe(true)
     }
-    expect(csrf.csrfToken?.name.startsWith('__Host-klicker-preview-a.')).toBe(
-      true
+    expect(first.state).toBe(
+      '__Secure-klicker-runtime-a.next-auth.participant.state'
     )
-    expect(csrf.csrfToken?.options).not.toHaveProperty('domain')
-    expect(csrf.csrfToken?.options.httpOnly).toBe(true)
-    vi.stubEnv('NEXT_PUBLIC_PREVIEW_ID', '')
-    expect(previewCsrfCookieOptions(true)).toEqual({})
+    expect(csrf.csrfToken?.name).toBe(
+      '__Host-klicker-runtime-a.next-auth.csrf-token'
+    )
+    expect(csrf.csrfToken?.options).toEqual({
+      httpOnly: true,
+      sameSite: 'lax',
+      path: '/',
+      secure: true,
+    })
+    vi.stubEnv('KLICKER_COOKIE_NAMESPACE', '')
+    expect(csrfCookieOptions(true)).toEqual({})
   })
   test('secure derivation follows the next-auth URL convention', () => {
     expect(resolveSecureCookies('https://auth.klicker.uzh.ch')).toBe(true)
@@ -60,6 +68,24 @@ describe('audience cookie configuration', () => {
 
     const insecure = audienceCookieNames('participant', false)
     expect(insecure.state.startsWith('next-auth.participant.')).toBe(true)
+  })
+
+  test('empty namespaces preserve the legacy audience and CSRF contract', () => {
+    vi.stubEnv('KLICKER_COOKIE_NAMESPACE', '')
+
+    expect(audienceCookieNames('participant', true)).toEqual({
+      state: '__Secure-next-auth.participant.state',
+      pkceCodeVerifier: '__Secure-next-auth.participant.pkce.code_verifier',
+      nonce: '__Secure-next-auth.participant.nonce',
+      callbackUrl: '__Secure-next-auth.participant.callback-url',
+    })
+    expect(audienceCookieNames('lecturer', false)).toEqual({
+      state: 'next-auth.lecturer.state',
+      pkceCodeVerifier: 'next-auth.lecturer.pkce.code_verifier',
+      nonce: 'next-auth.lecturer.nonce',
+      callbackUrl: 'next-auth.lecturer.callback-url',
+    })
+    expect(csrfCookieOptions(true)).toEqual({})
   })
 
   test('temporary cookie options are bounded and HttpOnly', () => {

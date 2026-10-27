@@ -1,18 +1,25 @@
 import assert from 'node:assert/strict'
 import { spawnSync } from 'node:child_process'
-import { mkdtempSync, readdirSync, rmSync } from 'node:fs'
+import {
+  copyFileSync,
+  mkdtempSync,
+  readdirSync,
+  realpathSync,
+  rmSync,
+} from 'node:fs'
 import { tmpdir } from 'node:os'
 import { join } from 'node:path'
 import { test } from 'node:test'
 import { fileURLToPath } from 'node:url'
 import {
-  PreviewBuildEnvError,
-  parsePreviewBuildEnv,
+  DeploymentBuildEnvError,
+  parseDeploymentBuildEnv,
   prepareChildEnvironment,
-} from './preview-build-env.mjs'
+  requiredDeploymentKeys,
+} from './deployment-build-env.mjs'
 
 const helperPath = fileURLToPath(
-  new URL('./preview-build-env.mjs', import.meta.url)
+  new URL('./deployment-build-env.mjs', import.meta.url)
 )
 
 const printEnvironmentFixture = `
@@ -37,6 +44,7 @@ const validPreviewConfig = {
   AUTH_LECTURER_ALLOWED_HOSTS: 'auth.preview.test,manage.preview.test',
   AUTH_PWA_HOSTS: 'pwa.preview.test,assessment.preview.test',
   AUTH_STUDENT_ALLOWED_HOSTS: 'auth.preview.test,assessment.preview.test',
+  NEXT_PUBLIC_IMAGE_BASE_PATH: 'https://blob.preview.test/klickerdev/images',
   BLOB_STORAGE_ACCOUNT_URL: 'https://blob.preview.test/klickerdev',
   COOKIE_DOMAIN: '.preview.test',
   EDUID_CLIENT_ID: 'synthetic-preview-client',
@@ -55,7 +63,6 @@ const validPreviewConfig = {
   NEXT_PUBLIC_CONTROL_URL: 'https://control.preview.test',
   NEXT_PUBLIC_EDUID_ID: 'eduid-preview',
   NEXT_PUBLIC_ENV: 'staging',
-  NEXT_PUBLIC_PREVIEW_ID: 'preview-test',
   NEXT_PUBLIC_GROWTHBOOK_API_HOST: 'https://growthbook.preview.test',
   NEXT_PUBLIC_GROWTHBOOK_CLIENT_KEY: 'sdk-preview-test',
   NEXT_PUBLIC_LTI_URL: 'https://lti.preview.test',
@@ -74,7 +81,7 @@ function createEnvironment(overrides = {}) {
     PATH: process.env.PATH,
     PRINT_KEYS: [
       ...Object.keys(validPreviewConfig),
-      'KLICKER_PREVIEW_BUILD_ENV_JSON',
+      'KLICKER_DEPLOYMENT_BUILD_ENV_JSON',
       'TURBO_FORCE',
     ].join(','),
     ...overrides,
@@ -82,9 +89,9 @@ function createEnvironment(overrides = {}) {
 }
 
 function createWorkspace(context) {
-  const workspace = mkdtempSync(join(tmpdir(), 'klicker-preview-build-env-'))
+  const workspace = mkdtempSync(join(tmpdir(), 'klicker-deployment-build-env-'))
   context.after(() => rmSync(workspace, { force: true, recursive: true }))
-  return workspace
+  return realpathSync(workspace)
 }
 
 function runHelper(workspace, env, args = []) {
@@ -115,7 +122,7 @@ test('absent and empty input preserve the legacy build environment', (t) => {
   }
   const keys = [
     ...Object.keys(emptyBindings),
-    'KLICKER_PREVIEW_BUILD_ENV_JSON',
+    'KLICKER_DEPLOYMENT_BUILD_ENV_JSON',
     'TURBO_FORCE',
   ]
   const baseEnv = createEnvironment({
@@ -125,15 +132,15 @@ test('absent and empty input preserve the legacy build environment', (t) => {
 
   for (const input of [undefined, '', '   ']) {
     const env = { ...baseEnv }
-    if (input === undefined) delete env.KLICKER_PREVIEW_BUILD_ENV_JSON
-    else env.KLICKER_PREVIEW_BUILD_ENV_JSON = input
+    if (input === undefined) delete env.KLICKER_DEPLOYMENT_BUILD_ENV_JSON
+    else env.KLICKER_DEPLOYMENT_BUILD_ENV_JSON = input
 
     const result = runHelper(workspace, env, environmentArguments())
     assert.equal(result.status, 0, result.stderr)
     const childEnv = JSON.parse(result.stdout)
     assert.equal(childEnv.NEXT_PUBLIC_API_URL, '')
     assert.equal(childEnv.NEXT_PUBLIC_MANAGE_URL, '')
-    assert.equal(childEnv.KLICKER_PREVIEW_BUILD_ENV_JSON, null)
+    assert.equal(childEnv.KLICKER_DEPLOYMENT_BUILD_ENV_JSON, null)
     assert.equal(childEnv.TURBO_FORCE, null)
     assert.deepEqual(readdirSync(workspace), [])
   }
@@ -145,14 +152,14 @@ test('absent and empty input preserve the legacy build environment', (t) => {
       NEXT_PUBLIC_MATOMO_URL: 'https://production-matomo.test',
       NEXT_TELEMETRY_DISABLED: '0',
     }
-    if (input === undefined) delete env.KLICKER_PREVIEW_BUILD_ENV_JSON
-    else env.KLICKER_PREVIEW_BUILD_ENV_JSON = input
+    if (input === undefined) delete env.KLICKER_DEPLOYMENT_BUILD_ENV_JSON
+    else env.KLICKER_DEPLOYMENT_BUILD_ENV_JSON = input
 
     assert.deepEqual(
       prepareChildEnvironment(env, 'frontend-manage'),
       Object.fromEntries(
         Object.entries(env).filter(
-          ([key]) => key !== 'KLICKER_PREVIEW_BUILD_ENV_JSON'
+          ([key]) => key !== 'KLICKER_DEPLOYMENT_BUILD_ENV_JSON'
         )
       )
     )
@@ -162,7 +169,7 @@ test('absent and empty input preserve the legacy build environment', (t) => {
 test('valid preview bindings override existing values without changing files', (t) => {
   const workspace = createWorkspace(t)
   const env = createEnvironment({
-    KLICKER_PREVIEW_BUILD_ENV_JSON: JSON.stringify(validPreviewConfig),
+    KLICKER_DEPLOYMENT_BUILD_ENV_JSON: JSON.stringify(validPreviewConfig),
     NEXT_PUBLIC_API_URL: 'https://legacy-api.preview.test',
     NEXT_PUBLIC_MANAGE_URL: 'https://legacy-manage.preview.test',
     TURBO_FORCE: 'false',
@@ -175,7 +182,7 @@ test('valid preview bindings override existing values without changing files', (
   for (const [key, value] of Object.entries(validPreviewConfig)) {
     assert.equal(childEnv[key], value, key)
   }
-  assert.equal(childEnv.KLICKER_PREVIEW_BUILD_ENV_JSON, null)
+  assert.equal(childEnv.KLICKER_DEPLOYMENT_BUILD_ENV_JSON, null)
   assert.equal(childEnv.TURBO_FORCE, 'true')
   assert.deepEqual(readdirSync(workspace), [])
 })
@@ -188,7 +195,10 @@ test('endpoint and image paths survive validation for every app', () => {
     'frontend-manage',
     'frontend-pwa',
   ]) {
-    const result = parsePreviewBuildEnv(JSON.stringify(validPreviewConfig), app)
+    const result = parseDeploymentBuildEnv(
+      JSON.stringify(validPreviewConfig),
+      app
+    )
     assert.deepEqual({ ...result }, validPreviewConfig)
   }
 })
@@ -196,7 +206,7 @@ test('endpoint and image paths survive validation for every app', () => {
 test('each required binding must be supplied by preview config', () => {
   for (const [app, key] of [
     ['auth', 'NEXTAUTH_URL'],
-    ['auth', 'NEXT_PUBLIC_PREVIEW_ID'],
+    ['auth', 'APP_ORIGIN_API'],
     ['chat', 'NEXT_PUBLIC_MANAGE_URL'],
     ['frontend-control', 'NEXT_PUBLIC_CONTROL_URL'],
     ['frontend-manage', 'NEXT_PUBLIC_API_URL'],
@@ -210,11 +220,11 @@ test('each required binding must be supplied by preview config', () => {
         prepareChildEnvironment(
           {
             ...validPreviewConfig,
-            KLICKER_PREVIEW_BUILD_ENV_JSON: JSON.stringify(partialConfig),
+            KLICKER_DEPLOYMENT_BUILD_ENV_JSON: JSON.stringify(partialConfig),
           },
           app
         ),
-      PreviewBuildEnvError
+      DeploymentBuildEnvError
     )
   }
 })
@@ -236,12 +246,12 @@ test('newly required preview bindings cannot fall back to production values', ()
           {
             ...partialConfig,
             [key]: 'existing-production-environment-value',
-            KLICKER_PREVIEW_BUILD_ENV_JSON: JSON.stringify(partialConfig),
+            KLICKER_DEPLOYMENT_BUILD_ENV_JSON: JSON.stringify(partialConfig),
           },
           app
         ),
       (error) =>
-        error instanceof PreviewBuildEnvError && error.message.includes(key)
+        error instanceof DeploymentBuildEnvError && error.message.includes(key)
     )
   }
 })
@@ -269,7 +279,7 @@ test('harmless preview defaults replace unbound optional configuration', () => {
       NEXT_PUBLIC_MATOMO_URL: 'https://production-matomo.test',
       NEXT_PUBLIC_WITH_MAGIC_LINK: 'true',
       NEXT_TELEMETRY_DISABLED: '0',
-      KLICKER_PREVIEW_BUILD_ENV_JSON: JSON.stringify(config),
+      KLICKER_DEPLOYMENT_BUILD_ENV_JSON: JSON.stringify(config),
     },
     'frontend-pwa'
   )
@@ -321,7 +331,7 @@ test('app URLs remain origins and only classified SSR endpoints allow HTTP', () 
   const endpointKeys = ['EDUID_WELL_KNOWN']
   const internalKeys = ['API_URL_SSR', 'NEXT_PUBLIC_API_URL_SSR']
   const parseValue = (key, value) =>
-    parsePreviewBuildEnv(
+    parseDeploymentBuildEnv(
       JSON.stringify({ ...validPreviewConfig, [key]: value }),
       'frontend-pwa'
     )
@@ -329,13 +339,13 @@ test('app URLs remain origins and only classified SSR endpoints allow HTTP', () 
   for (const key of originKeys) {
     assert.throws(
       () => parseValue(key, 'https://service.preview.test/not-an-origin'),
-      PreviewBuildEnvError
+      DeploymentBuildEnvError
     )
   }
   for (const key of [...originKeys, ...publicEndpointKeys, ...endpointKeys]) {
     assert.throws(
       () => parseValue(key, 'http://service.preview.test/api/graphql'),
-      PreviewBuildEnvError
+      DeploymentBuildEnvError
     )
   }
   for (const key of internalKeys) {
@@ -362,7 +372,7 @@ test('app URLs remain origins and only classified SSR endpoints allow HTTP', () 
       'ftp://service.preview.test/',
       'https://service.preview.test/\n',
     ]) {
-      assert.throws(() => parseValue(key, value), PreviewBuildEnvError)
+      assert.throws(() => parseValue(key, value), DeploymentBuildEnvError)
     }
   }
 })
@@ -375,7 +385,7 @@ test('auth host lists accept trimmed host and host-port authorities', () => {
     AUTH_STUDENT_ALLOWED_HOSTS: 'assessment.preview.test,127.0.0.1:3001',
   }
 
-  const result = parsePreviewBuildEnv(
+  const result = parseDeploymentBuildEnv(
     JSON.stringify({ ...validPreviewConfig, ...authHosts }),
     'auth'
   )
@@ -404,11 +414,11 @@ test('auth host lists reject malformed authorities', () => {
     ]) {
       assert.throws(
         () =>
-          parsePreviewBuildEnv(
+          parseDeploymentBuildEnv(
             JSON.stringify({ ...validPreviewConfig, [key]: value }),
             'auth'
           ),
-        PreviewBuildEnvError
+        DeploymentBuildEnvError
       )
     }
   }
@@ -426,7 +436,7 @@ test('telemetry can be explicitly disabled without falling back to existing valu
   const result = prepareChildEnvironment(
     {
       ...validPreviewConfig,
-      KLICKER_PREVIEW_BUILD_ENV_JSON: JSON.stringify({
+      KLICKER_DEPLOYMENT_BUILD_ENV_JSON: JSON.stringify({
         ...validPreviewConfig,
         ...disabled,
       }),
@@ -439,11 +449,11 @@ test('telemetry can be explicitly disabled without falling back to existing valu
   }
   assert.throws(
     () =>
-      parsePreviewBuildEnv(
+      parseDeploymentBuildEnv(
         JSON.stringify({ ...validPreviewConfig, NEXT_PUBLIC_API_URL: '' }),
         'frontend-manage'
       ),
-    PreviewBuildEnvError
+    DeploymentBuildEnvError
   )
 })
 
@@ -454,7 +464,7 @@ test('public boolean settings accept only explicit boolean values', () => {
   ]) {
     for (const value of ['true', 'false']) {
       assert.equal(
-        parsePreviewBuildEnv(
+        parseDeploymentBuildEnv(
           JSON.stringify({ ...validPreviewConfig, [key]: value }),
           'frontend-pwa'
         )[key],
@@ -464,11 +474,11 @@ test('public boolean settings accept only explicit boolean values', () => {
     for (const value of ['', '1', 'yes']) {
       assert.throws(
         () =>
-          parsePreviewBuildEnv(
+          parseDeploymentBuildEnv(
             JSON.stringify({ ...validPreviewConfig, [key]: value }),
             'frontend-pwa'
           ),
-        PreviewBuildEnvError
+        DeploymentBuildEnvError
       )
     }
   }
@@ -535,7 +545,7 @@ test('invalid or partial preview config fails before the build without leaking v
   ]
 
   for (const { input } of cases) {
-    const env = createEnvironment({ KLICKER_PREVIEW_BUILD_ENV_JSON: input })
+    const env = createEnvironment({ KLICKER_DEPLOYMENT_BUILD_ENV_JSON: input })
     const result = runHelper(workspace, env, environmentArguments())
     assert.equal(result.status, 1, result.stderr)
     assert.notEqual(result.stderr, '')
@@ -548,7 +558,7 @@ test('invalid or partial preview config fails before the build without leaking v
 test('child exit status is preserved', (t) => {
   const workspace = createWorkspace(t)
   const env = createEnvironment({
-    KLICKER_PREVIEW_BUILD_ENV_JSON: JSON.stringify(validPreviewConfig),
+    KLICKER_DEPLOYMENT_BUILD_ENV_JSON: JSON.stringify(validPreviewConfig),
   })
   const result = runHelper(workspace, env, [
     '--app',
@@ -565,7 +575,9 @@ test('child exit status is preserved', (t) => {
 
 test('help exits without starting the build command', (t) => {
   const workspace = createWorkspace(t)
-  const env = createEnvironment({ KLICKER_PREVIEW_BUILD_ENV_JSON: 'invalid' })
+  const env = createEnvironment({
+    KLICKER_DEPLOYMENT_BUILD_ENV_JSON: 'invalid',
+  })
   const result = runHelper(workspace, env, [
     '--help',
     '--',
@@ -575,6 +587,90 @@ test('help exits without starting the build command', (t) => {
   ])
 
   assert.equal(result.status, 0)
-  assert.match(result.stdout, /Usage: node util\/preview-build-env\.mjs/)
   assert.deepEqual(readdirSync(workspace), [])
+})
+
+test('deployment declarations determine required bindings without reading values', () => {
+  const required = requiredDeploymentKeys(
+    'chat',
+    [
+      '# deployment keys',
+      'NEXT_PUBLIC_CHAT_URL=unused',
+      'export NEXT_PUBLIC_PWA_URL="unused"',
+      'NEXT_PUBLIC_GROWTHBOOK_API_HOST=unused',
+      '',
+    ].join('\n')
+  )
+  assert.ok(required.includes('NEXT_PUBLIC_CHAT_URL'))
+  assert.ok(required.includes('NEXT_PUBLIC_PWA_URL'))
+  assert.ok(required.includes('BLOB_STORAGE_ACCOUNT_URL'))
+  assert.ok(!required.includes('NEXT_PUBLIC_GROWTHBOOK_API_HOST'))
+  for (const declaration of [
+    'NEW_UNSUPPORTED_KEY=unused',
+    'malformed declaration',
+  ]) {
+    assert.throws(
+      () => requiredDeploymentKeys('chat', declaration),
+      DeploymentBuildEnvError
+    )
+  }
+})
+
+test('every declared required binding must override the environment', () => {
+  for (const app of [
+    'auth',
+    'chat',
+    'frontend-control',
+    'frontend-manage',
+    'frontend-pwa',
+  ]) {
+    for (const key of requiredDeploymentKeys(app)) {
+      const partial = { ...validPreviewConfig }
+      delete partial[key]
+      assert.throws(
+        () =>
+          prepareChildEnvironment(
+            {
+              ...validPreviewConfig,
+              KLICKER_DEPLOYMENT_BUILD_ENV_JSON: JSON.stringify(partial),
+            },
+            app
+          ),
+        DeploymentBuildEnvError
+      )
+    }
+  }
+})
+
+test('legacy build envelopes fail before a child can use deployment defaults', (t) => {
+  const workspace = createWorkspace(t)
+  const result = runHelper(
+    workspace,
+    createEnvironment({
+      KLICKER_PREVIEW_BUILD_ENV_JSON: JSON.stringify(validPreviewConfig),
+    }),
+    environmentArguments()
+  )
+  assert.equal(result.status, 1)
+  assert.equal(result.stdout, '')
+  assert.deepEqual(readdirSync(workspace), [])
+})
+
+test('active bindings require the defaults file but ordinary builds do not', (t) => {
+  const workspace = createWorkspace(t)
+  const copiedHelper = join(workspace, 'deployment-build-env.mjs')
+  copyFileSync(helperPath, copiedHelper)
+  const invoke = (env) =>
+    spawnSync(process.execPath, [copiedHelper, ...environmentArguments()], {
+      cwd: workspace,
+      env: createEnvironment(env),
+      encoding: 'utf8',
+      timeout: 10_000,
+    })
+  const missing = invoke({
+    KLICKER_DEPLOYMENT_BUILD_ENV_JSON: JSON.stringify(validPreviewConfig),
+  })
+  assert.equal(missing.status, 1)
+  assert.equal(missing.stdout, '')
+  assert.equal(invoke({}).status, 0)
 })

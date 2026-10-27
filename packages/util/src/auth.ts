@@ -22,23 +22,60 @@ export function parseCookiesHeader(
   return map
 }
 
-/** Keep trusted preview sessions separate while retaining cookie prefix rules. */
-export function previewCookieName(
-  name: string,
-  previewId = process.env.NEXT_PUBLIC_PREVIEW_ID
-): string {
-  if (!previewId) return name
-  if (!/^[a-z0-9](?:[a-z0-9-]{0,30}[a-z0-9])?$/.test(previewId)) {
+/** Raw cookie names shared by server, SSR, proxy, and worker callers. */
+export const COOKIE_NAMES = {
+  LTI_TOKEN: 'lti-token',
+  NEXT_AUTH_MANAGER_SESSION: 'next-auth.session-token',
+  NEXT_AUTH_PARTICIPANT_SESSION: 'next-auth.participant-session-token',
+  NEXT_AUTH_CSRF_TOKEN: 'next-auth.csrf-token',
+  NEXT_AUTH_AUDIENCE: {
+    participant: 'next-auth.participant',
+    lecturer: 'next-auth.lecturer',
+  },
+  PARTICIPANT_TOKEN: 'participant_token',
+  TEMPORARY_PARTICIPANT_TOKEN: 'temporary_participant_token',
+  CHAT_PARTICIPANT_TOKEN: 'chat_participant_token',
+  PWA_CHAT_EMBED_SESSION: 'chat_pwa_embed_token',
+  LIVE_QUIZ_PIN_PREFIX: 'live-quiz-pin-',
+} as const
+
+/**
+ * Resolve a raw cookie name in the optional server runtime namespace.
+ *
+ * Resolution stays lazy so request-time configuration is available and the
+ * legacy NEXT_PUBLIC_* value cannot be inlined by Next.js. This read also makes
+ * a stale consumer fail closed on its first cookie-name resolution.
+ */
+export function cookieName(rawName: string, namespace?: string): string {
+  const runtimeEnvironment = process.env
+  const resolvedNamespace =
+    namespace === undefined
+      ? runtimeEnvironment.KLICKER_COOKIE_NAMESPACE
+      : namespace
+  const legacyPreviewId = runtimeEnvironment.NEXT_PUBLIC_PREVIEW_ID
+
+  if (legacyPreviewId) {
     throw new Error(
-      'NEXT_PUBLIC_PREVIEW_ID must be a lowercase ID of 1-32 characters'
+      'NEXT_PUBLIC_PREVIEW_ID is no longer supported; ' +
+        'use KLICKER_COOKIE_NAMESPACE'
     )
   }
-  const prefix = name.startsWith('__Secure-')
+  if (!resolvedNamespace) return rawName
+  if (!/^[a-z0-9](?:[a-z0-9-]{0,30}[a-z0-9])?$/.test(resolvedNamespace)) {
+    throw new Error(
+      'KLICKER_COOKIE_NAMESPACE must be a lowercase ID of 1-32 characters'
+    )
+  }
+  const prefix = rawName.startsWith('__Secure-')
     ? '__Secure-'
-    : name.startsWith('__Host-')
+    : rawName.startsWith('__Host-')
       ? '__Host-'
       : ''
-  return `${prefix}klicker-${previewId}.${name.slice(prefix.length)}`
+  return `${prefix}klicker-${resolvedNamespace}.${rawName.slice(prefix.length)}`
+}
+
+export function liveQuizPinCookieName(id: string): string {
+  return cookieName(`${COOKIE_NAMES.LIVE_QUIZ_PIN_PREFIX}${id}`)
 }
 
 /**
@@ -96,12 +133,10 @@ export function extractBearerToken(headerValue: string | null): string | null {
   return token.length > 0 ? token : null
 }
 
-export const LTI_PROBE_COOKIE_NAME = previewCookieName('lti-token')
-
 export function cookiesAvailableViaLtiProbe(
   cookies: Record<string, string | undefined>
 ): boolean {
-  return !!cookies[LTI_PROBE_COOKIE_NAME]
+  return !!cookies[cookieName(COOKIE_NAMES.LTI_TOKEN)]
 }
 
 export function cookieSecurityOptions({

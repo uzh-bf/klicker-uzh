@@ -79,23 +79,23 @@ resources:
     kind: job
     build:
       context: .
-      dockerfile: deploy/northflank/Dockerfile.fixtures
+      dockerfile: deploy/preview/Dockerfile.fixtures
     dependsOn:
       - postgres
     command:
       - node
-      - /app/deploy/northflank/bootstrap.mjs
+      - /app/deploy/preview/bootstrap.mjs
       - bootstrap
   fixtures:
     kind: job
     build:
       context: .
-      dockerfile: deploy/northflank/Dockerfile.fixtures
+      dockerfile: deploy/preview/Dockerfile.fixtures
     dependsOn:
       - db-bootstrap
     command:
       - node
-      - /app/deploy/northflank/bootstrap.mjs
+      - /app/deploy/preview/bootstrap.mjs
       - fixtures
   hatchet-init:
     kind: job
@@ -382,7 +382,7 @@ resources:
     kind: service
     build:
       context: .
-      dockerfile: deploy/northflank/Dockerfile.fixtures
+      dockerfile: deploy/preview/Dockerfile.fixtures
     dependsOn:
       - fixtures
     command:
@@ -426,8 +426,8 @@ selection:
     - project/**
     - '**/*.md'
   controlPaths:
-    - deploy/northflank/**
-    - util/preview-build-env.mjs
+    - deploy/preview/**
+    - util/deployment-build-env.mjs
     - util/profile-resolver.sh
   fallback: full
   dominating: full

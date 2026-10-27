@@ -1,13 +1,14 @@
 import * as DB from '@klicker-uzh/prisma/client'
 import { DisplayMode } from '@klicker-uzh/types'
 import {
+  COOKIE_NAMES,
+  cookieName,
   DEFAULT_BASE_CHAT_BUDGET_CREDITS,
   getElearningChatHandoffSecret,
   getInitialInstanceResults,
   getInitialInstanceStatistics,
   getZurichMonthStart,
   normalizeEmail,
-  previewCookieName,
   processElementData,
   recomputeDerivedPermissions,
   signJWT,
@@ -42,10 +43,14 @@ const COOKIE_SETTINGS: CookieOptions = {
 }
 
 export async function logoutUser(_: any, ctx: ContextWithUser) {
-  ctx.res.cookie(previewCookieName('next-auth.session-token'), 'logoutString', {
-    ...COOKIE_SETTINGS,
-    maxAge: 0,
-  })
+  ctx.res.cookie(
+    cookieName(COOKIE_NAMES.NEXT_AUTH_MANAGER_SESSION),
+    'logoutString',
+    {
+      ...COOKIE_SETTINGS,
+      maxAge: 0,
+    }
+  )
 
   return ctx.user.sub
 }
@@ -95,8 +100,12 @@ async function doParticipantLogin(
   })
 
   const jwt = await createParticipantToken(participantId)
-  ctx.res.cookie(previewCookieName('participant_token'), jwt, COOKIE_SETTINGS)
-  ctx.res.cookie(previewCookieName('lti-token'), '', {
+  ctx.res.cookie(
+    cookieName(COOKIE_NAMES.PARTICIPANT_TOKEN),
+    jwt,
+    COOKIE_SETTINGS
+  )
+  ctx.res.cookie(cookieName(COOKIE_NAMES.LTI_TOKEN), '', {
     ...COOKIE_SETTINGS,
     maxAge: 0,
   })
@@ -219,7 +228,7 @@ export async function loginTemporaryParticipant(
   // create and return a new valid token for the temporary participant
   const jwt = await createTemporaryParticipantToken(temporaryParticipant.id)
   ctx.res.cookie(
-    previewCookieName('temporary_participant_token'),
+    cookieName(COOKIE_NAMES.TEMPORARY_PARTICIPANT_TOKEN),
     jwt,
     COOKIE_SETTINGS
   )
@@ -402,14 +411,14 @@ export async function activateParticipantAccount(
 
 export async function logoutParticipant(ctx: ContextWithUser) {
   // invalidate regular participant token
-  ctx.res.cookie(previewCookieName('participant_token'), 'logoutString', {
+  ctx.res.cookie(cookieName(COOKIE_NAMES.PARTICIPANT_TOKEN), 'logoutString', {
     ...COOKIE_SETTINGS,
     maxAge: 0,
   })
 
   // invalidate assessment / Edu-ID participant token
   ctx.res.cookie(
-    previewCookieName('next-auth.participant-session-token'),
+    cookieName(COOKIE_NAMES.NEXT_AUTH_PARTICIPANT_SESSION),
     'logoutString',
     {
       ...COOKIE_SETTINGS,
@@ -445,7 +454,7 @@ export async function logoutTemporaryParticipant(
 
   // delete the cookie
   ctx.res.cookie(
-    previewCookieName('temporary_participant_token'),
+    cookieName(COOKIE_NAMES.TEMPORARY_PARTICIPANT_TOKEN),
     'logoutString',
     {
       ...COOKIE_SETTINGS,
@@ -711,7 +720,7 @@ export async function deleteParticipantAccount(ctx: ContextWithUser) {
 
   if (!participant) return false
 
-  ctx.res.cookie(previewCookieName('participant_token'), 'logoutString', {
+  ctx.res.cookie(cookieName(COOKIE_NAMES.PARTICIPANT_TOKEN), 'logoutString', {
     ...COOKIE_SETTINGS,
     maxAge: 0,
   })

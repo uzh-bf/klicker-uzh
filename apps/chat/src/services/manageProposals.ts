@@ -1,7 +1,7 @@
 import hashes from '@klicker-uzh/graphql/dist/client.json'
 import { prisma } from '@klicker-uzh/prisma'
 import { AuditLogType, ObjectType } from '@klicker-uzh/prisma/client'
-import { previewCookieName } from '@klicker-uzh/util'
+import { COOKIE_NAMES, cookieName } from '@klicker-uzh/util'
 import { jwtVerify } from 'jose'
 import { z } from 'zod'
 import {
@@ -256,12 +256,14 @@ export async function confirmManageProposal({
   proposal: ManageElementCreateProposal
   sessionToken: string
 }) {
+  const managerCookieName = cookieName(COOKIE_NAMES.NEXT_AUTH_MANAGER_SESSION)
+  const cookie = `${managerCookieName}=${sessionToken}`
   const response = await fetchImpl(graphqlEndpoint, {
     body: JSON.stringify(buildManageProposalGraphqlRequest(proposal)),
     headers: {
       authorization: `Bearer ${sessionToken}`,
       'content-type': 'application/json',
-      cookie: `${previewCookieName('next-auth.session-token')}=${sessionToken}`,
+      cookie,
       origin: manageOrigin,
       'x-graphql-yoga-csrf': 'true',
     },

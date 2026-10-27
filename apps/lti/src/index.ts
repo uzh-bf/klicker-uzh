@@ -1,4 +1,4 @@
-import { previewCookieName, signJWT } from '@klicker-uzh/util'
+import { COOKIE_NAMES, cookieName, signJWT } from '@klicker-uzh/util'
 import {
   DefaultLogger,
   ExpressHttpHandler,
@@ -136,7 +136,7 @@ httpHandler.app.get('/handoff', async (req, res) => {
     }
   )
 
-  res.cookie(previewCookieName('lti-token'), jwt, {
+  res.cookie(cookieName(COOKIE_NAMES.LTI_TOKEN), jwt, {
     maxAge: 5 * 60 * 1000,
     path: '/',
     secure: true,

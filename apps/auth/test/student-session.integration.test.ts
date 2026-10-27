@@ -1,5 +1,5 @@
 import { afterAll, beforeEach, describe, expect, test, vi } from 'vitest'
-import { PARTICIPANT_COOKIE_NAME } from '../src/lib/constants'
+import { participantCookieName } from '../src/lib/constants'
 import { encode as jwtEncode } from '../src/lib/jwt'
 import studentSession from '../src/pages/api/student-session'
 import {
@@ -77,7 +77,7 @@ describe('student session lookup', () => {
     })
 
     const result = await invoke({
-      [PARTICIPANT_COOKIE_NAME]: await participantToken(),
+      [participantCookieName()]: await participantToken(),
     })
 
     expect(result.statusCode).toBe(200)
@@ -95,7 +95,7 @@ describe('student session lookup', () => {
     }
 
     const result = await invoke({
-      [PARTICIPANT_COOKIE_NAME]: await participantToken(),
+      [participantCookieName()]: await participantToken(),
     })
 
     expect(result.statusCode).toBe(503)
@@ -118,7 +118,7 @@ describe('student session lookup', () => {
       exp: Math.floor(Date.now() / 1000) - 60,
     })
 
-    const result = await invoke({ [PARTICIPANT_COOKIE_NAME]: expired })
+    const result = await invoke({ [participantCookieName()]: expired })
 
     expect(result.statusCode).toBe(200)
     expect(result.jsonBody).toEqual({ participant: null })
@@ -129,7 +129,7 @@ describe('student session lookup', () => {
     prismaOverrides['participant.findUnique'] = async () => null
 
     const result = await invoke({
-      [PARTICIPANT_COOKIE_NAME]: await participantToken(),
+      [participantCookieName()]: await participantToken(),
     })
 
     expect(result.statusCode).toBe(200)
@@ -148,7 +148,7 @@ describe('student session lookup', () => {
       secret: APP_SECRET,
     })
 
-    const result = await invoke({ [PARTICIPANT_COOKIE_NAME]: managerToken })
+    const result = await invoke({ [participantCookieName()]: managerToken })
 
     expect(result.statusCode).toBe(200)
     expect(result.jsonBody).toEqual({ participant: null })

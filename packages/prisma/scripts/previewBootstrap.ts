@@ -8,15 +8,14 @@ import {
 
 const APP = 'klicker_test'
 const SHADOW = 'klicker_test_shadow'
-const HATCHET = 'hatchet'
 const INPUT_ERROR =
-  'Northflank bootstrap input rejected; no database writes were attempted'
+  'Preview bootstrap input rejected; no database writes were attempted'
 const INSPECT_ERROR =
-  'Northflank bootstrap inspection failed; no database writes were attempted'
+  'Preview bootstrap inspection failed; no database writes were attempted'
 const WRITE_ERROR =
-  'Northflank bootstrap write failed; recreate the disposable environment'
+  'Preview bootstrap write failed; recreate the disposable environment'
 const VERIFY_ERROR =
-  'Northflank bootstrap verification failed; recreate the disposable environment'
+  'Preview bootstrap verification failed; recreate the disposable environment'
 const FORBIDDEN_URL_ENVIRONMENT = new Set([
   'DATABASE_URL',
   'SHADOW_DATABASE_URL',
@@ -33,19 +32,28 @@ export type BootstrapClientConnector = (
   connectionString: string
 ) => PromiseLike<BootstrapQueryClient>
 
+const BOOTSTRAP_KEYS = new Set([
+  'KLICKER_PREVIEW_DISPOSABLE',
+  'KLICKER_PREVIEW_POSTGRES_HOST',
+  'KLICKER_PREVIEW_BOOTSTRAP_DATABASE_URL',
+  'KLICKER_PREVIEW_APP_PASSWORD',
+])
+
 function readConfig(env: Environment) {
   for (const key of Object.keys(env)) {
     if (
       key.startsWith('PG') ||
+      key.startsWith('KLICKER_NORTHFLANK_') ||
+      (key.startsWith('KLICKER_PREVIEW_') && !BOOTSTRAP_KEYS.has(key)) ||
       (FORBIDDEN_URL_ENVIRONMENT.has(key) && env[key] !== undefined)
     ) {
       throw new Error(INPUT_ERROR)
     }
   }
-  if (env.KLICKER_NORTHFLANK_DISPOSABLE !== '1') throw new Error(INPUT_ERROR)
+  if (env.KLICKER_PREVIEW_DISPOSABLE !== '1') throw new Error(INPUT_ERROR)
 
-  const intendedHost = env.KLICKER_NORTHFLANK_POSTGRES_HOST
-  const rawUrl = env.KLICKER_NORTHFLANK_BOOTSTRAP_DATABASE_URL
+  const intendedHost = env.KLICKER_PREVIEW_POSTGRES_HOST
+  const rawUrl = env.KLICKER_PREVIEW_BOOTSTRAP_DATABASE_URL
   let url: URL | undefined
   let adminUser = ''
   try {
@@ -81,16 +89,11 @@ function readConfig(env: Environment) {
   }
   if (!url) throw new Error(INPUT_ERROR)
 
-  const appPassword = env.KLICKER_NORTHFLANK_APP_PASSWORD
-  const hatchetPassword = env.KLICKER_NORTHFLANK_HATCHET_PASSWORD
+  const appPassword = env.KLICKER_PREVIEW_APP_PASSWORD
   if (
     !appPassword ||
     appPassword.length > 1024 ||
-    /\p{Cc}/u.test(appPassword) ||
-    (hatchetPassword !== undefined &&
-      (!hatchetPassword ||
-        hatchetPassword.length > 1024 ||
-        /\p{Cc}/u.test(hatchetPassword)))
+    /\p{Cc}/u.test(appPassword)
   ) {
     throw new Error(INPUT_ERROR)
   }
@@ -98,14 +101,13 @@ function readConfig(env: Environment) {
     adminUser,
     adminUrl: url.toString(),
     appPassword,
-    hatchetPassword,
     dryRun: env.DRY_RUN !== 'false',
   }
 }
 
 // PostgreSQL hides backend_type for sessions owned by unrelated roles.
 const statusQuery = [
-  '/* northflank-bootstrap-status-v1 */',
+  '/* preview-bootstrap-status-v1 */',
   'SELECT current_database() AS database, session_user AS admin_role,',
   '       session_user = current_user AS same_identity,',
   "       shobj_description(d.oid, 'pg_database') IS NULL AS marker_free,",
@@ -147,28 +149,16 @@ const statusQuery = [
 ].join('\n')
 
 const lockQuery =
-  '/* northflank-bootstrap-lock-v1 */\n' +
+  '/* preview-bootstrap-lock-v1 */\n' +
   'SELECT pg_try_advisory_lock(1885973301, 1) AS locked'
 
 const accessQuery = [
-  '/* northflank-bootstrap-access-v1 */',
+  '/* preview-bootstrap-access-v1 */',
   'SELECT current_database() AS database, d.datdba = r.oid AS owns_database,',
   "       has_schema_privilege(current_user, 'public', 'CREATE') AS can_create_schema",
   '  FROM pg_database d',
   '  JOIN pg_roles r ON r.rolname = session_user',
   ' WHERE d.datname = current_database()',
-].join('\n')
-
-const restrictedRoleIdentityQuery = [
-  '/* northflank-bootstrap-role-identity-v1 */',
-  'SELECT session_user AS login, current_user AS role,',
-  '       r.rolsuper AS elevated_superuser,',
-  '       r.rolcreatedb AS elevated_createdb,',
-  '       r.rolcreaterole AS elevated_createrole,',
-  '       r.rolreplication AS elevated_replication,',
-  '       r.rolbypassrls AS elevated_bypassrls',
-  '  FROM pg_roles r',
-  ' WHERE r.rolname = session_user',
 ].join('\n')
 
 async function connectPostgres(
@@ -193,7 +183,7 @@ async function connectPostgres(
   }
 }
 
-export async function bootstrapNorthflankPostgres(
+export async function bootstrapPreviewPostgres(
   options: { env?: Environment; connect?: BootstrapClientConnector } = {}
 ): Promise<{ mode: 'dry-run' | 'applied' }> {
   const config = readConfig(options.env ?? process.env)
@@ -229,7 +219,6 @@ export async function bootstrapNorthflankPostgres(
     phase = 'write'
     const app = pg.escapeIdentifier(APP)
     const shadow = pg.escapeIdentifier(SHADOW)
-    const hatchet = pg.escapeIdentifier(HATCHET)
     const publicSchema = pg.escapeIdentifier('public')
     const currentAdmin = pg.escapeIdentifier(config.adminUser)
     const marker = pg.escapeLiteral(DISPOSABLE_DATABASE_MARKER)
@@ -251,25 +240,6 @@ export async function bootstrapNorthflankPostgres(
       ['CREATE DATABASE', shadow, 'OWNER', app].join(' '),
       ['COMMENT ON DATABASE', shadow, 'IS', marker].join(' '),
     ]
-    if (config.hatchetPassword !== undefined) {
-      writes.push(
-        [
-          'CREATE ROLE',
-          hatchet,
-          'LOGIN PASSWORD',
-          pg.escapeLiteral(config.hatchetPassword),
-          'NOSUPERUSER NOCREATEDB NOCREATEROLE NOREPLICATION NOBYPASSRLS',
-        ].join(' '),
-        [
-          'GRANT',
-          hatchet,
-          'TO',
-          currentAdmin,
-          'WITH INHERIT TRUE, SET TRUE',
-        ].join(' '),
-        ['CREATE DATABASE', hatchet, 'OWNER', hatchet].join(' ')
-      )
-    }
     for (const statement of writes) await session.query(statement)
     await session.end().catch(() => undefined)
     admin = undefined
@@ -298,40 +268,6 @@ export async function bootstrapNorthflankPostgres(
         if (appClient) await appClient.end().catch(() => undefined)
       }
     }
-    if (config.hatchetPassword !== undefined) {
-      let hatchetClient: BootstrapQueryClient | undefined
-      try {
-        const url = new URL(config.adminUrl)
-        url.username = HATCHET
-        url.password = encodeURIComponent(config.hatchetPassword)
-        url.pathname = `/${HATCHET}`
-        hatchetClient = await connect(url.toString())
-        const identity = await hatchetClient.query(restrictedRoleIdentityQuery)
-        const identityRow = identity.rows[0]
-        if (
-          identityRow?.login !== HATCHET ||
-          identityRow.role !== HATCHET ||
-          identityRow.elevated_superuser !== false ||
-          identityRow.elevated_createdb !== false ||
-          identityRow.elevated_createrole !== false ||
-          identityRow.elevated_replication !== false ||
-          identityRow.elevated_bypassrls !== false
-        ) {
-          throw new Error(VERIFY_ERROR)
-        }
-        const access = await hatchetClient.query(accessQuery)
-        const accessRow = access.rows[0]
-        if (
-          accessRow?.database !== HATCHET ||
-          accessRow.owns_database !== true ||
-          accessRow.can_create_schema !== true
-        ) {
-          throw new Error(VERIFY_ERROR)
-        }
-      } finally {
-        if (hatchetClient) await hatchetClient.end().catch(() => undefined)
-      }
-    }
     return { mode: 'applied' }
   } catch {
     if (phase === 'write') throw new Error(WRITE_ERROR)
@@ -343,12 +279,12 @@ export async function bootstrapNorthflankPostgres(
 }
 
 if (process.argv[1] === fileURLToPath(import.meta.url)) {
-  bootstrapNorthflankPostgres().then(
+  bootstrapPreviewPostgres().then(
     ({ mode }) => {
       console.log(
         mode === 'dry-run'
-          ? 'Northflank PostgreSQL bootstrap validated; no writes performed'
-          : 'Northflank PostgreSQL bootstrap completed and verified'
+          ? 'Preview PostgreSQL bootstrap validated; no writes performed'
+          : 'Preview PostgreSQL bootstrap completed and verified'
       )
     },
     (error: Error) => {

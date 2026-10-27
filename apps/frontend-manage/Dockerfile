@@ -58,13 +58,15 @@ ENV NEXT_PUBLIC_GROWTHBOOK_CLIENT_KEY=${NEXT_PUBLIC_GROWTHBOOK_CLIENT_KEY}
 ENV NEXT_TELEMETRY_DISABLED 1
 
 COPY --from=builder /app/out/full/ .
+COPY --from=builder /app/apps/frontend-manage/.env.production /app/apps/frontend-manage/.env.production
 # Next.js inlines the assistant target during this build. Both deployment
 # workflows replace .env.production first, so fail instead of silently hiding
 # the launcher when either environment loses the mapping.
 RUN grep -qx 'NEXT_PUBLIC_CHAT_URL=$APP_ORIGIN_CHAT' apps/frontend-manage/.env.production
-COPY --from=builder /app/util/preview-build-env.mjs /app/util/preview-build-env.mjs
+COPY --from=builder /app/util/deployment-build-env.mjs /app/util/deployment-build-env.mjs
 ARG KLICKER_PREVIEW_BUILD_ENV_JSON
-RUN node util/preview-build-env.mjs --app frontend-manage -- pnpm run build --filter=@klicker-uzh/frontend-manage
+ARG KLICKER_DEPLOYMENT_BUILD_ENV_JSON
+RUN node util/deployment-build-env.mjs --app frontend-manage -- pnpm run build --filter=@klicker-uzh/frontend-manage
 
 
 FROM base AS runner

@@ -7,8 +7,8 @@ import test from 'node:test'
 import { fileURLToPath } from 'node:url'
 import {
   type BootstrapClientConnector,
-  bootstrapNorthflankPostgres,
-} from '../scripts/northflankBootstrap.js'
+  bootstrapPreviewPostgres,
+} from '../scripts/previewBootstrap.js'
 import {
   DISPOSABLE_DATABASE_MARKER,
   disposableDatabaseIdentityQuery,
@@ -19,12 +19,10 @@ const ADMIN_URL =
   'postgresql://provider_admin:synthetic-admin@' +
   HOST +
   ':5432/klicker_test?sslmode=require'
-const URL_ENV = 'KLICKER_NORTHFLANK_BOOTSTRAP_DATABASE_URL'
-const HOST_ENV = 'KLICKER_NORTHFLANK_POSTGRES_HOST'
-const DISPOSABLE_ENV = 'KLICKER_NORTHFLANK_DISPOSABLE'
-const APP_PASSWORD_ENV = 'KLICKER_NORTHFLANK_APP_PASSWORD'
-const HATCHET_PASSWORD_ENV = 'KLICKER_NORTHFLANK_HATCHET_PASSWORD'
-const HATCHET_PASSWORD = 'synthetic-hatchet-password'
+const URL_ENV = 'KLICKER_PREVIEW_BOOTSTRAP_DATABASE_URL'
+const HOST_ENV = 'KLICKER_PREVIEW_POSTGRES_HOST'
+const DISPOSABLE_ENV = 'KLICKER_PREVIEW_DISPOSABLE'
+const APP_PASSWORD_ENV = 'KLICKER_PREVIEW_APP_PASSWORD'
 const ENV = {
   [URL_ENV]: ADMIN_URL,
   [HOST_ENV]: HOST,
@@ -39,9 +37,7 @@ test('reports bootstrap refusal through the CLI without disclosing credentials',
       fileURLToPath(
         new URL('../node_modules/tsx/dist/cli.mjs', import.meta.url)
       ),
-      fileURLToPath(
-        new URL('../scripts/northflankBootstrap.ts', import.meta.url)
-      ),
+      fileURLToPath(new URL('../scripts/previewBootstrap.ts', import.meta.url)),
     ],
     {
       encoding: 'utf8',
@@ -62,7 +58,7 @@ test('forwards only recognized bootstrap failure codes and suppresses raw tool o
       { mode: 0o700 }
     )
     const runner = fileURLToPath(
-      new URL('../../../deploy/northflank/bootstrap.mjs', import.meta.url)
+      new URL('../../../deploy/preview/bootstrap.mjs', import.meta.url)
     )
     for (const code of [2, 3, 4, 5, 19]) {
       const result = spawnSync(process.execPath, [runner, 'bootstrap'], {
@@ -106,22 +102,11 @@ const access = (database: string) => ({
   owns_database: true,
   can_create_schema: true,
 })
-const hatchetIdentity = (overrides: Record<string, unknown> = {}) => ({
-  login: 'hatchet',
-  role: 'hatchet',
-  elevated_superuser: false,
-  elevated_createdb: false,
-  elevated_createrole: false,
-  elevated_replication: false,
-  elevated_bypassrls: false,
-  ...overrides,
-})
 type HarnessOptions = {
-  credentials?: { app?: string; hatchet?: string }
+  credentials?: { app?: string }
   status?: Record<string, unknown>[]
   writeFailure?: string
   access?: (database: string) => Record<string, unknown>[]
-  hatchetIdentity?: Record<string, unknown>
 }
 function harness(options: HarnessOptions = {}) {
   const queries: string[] = []
@@ -135,11 +120,11 @@ function harness(options: HarnessOptions = {}) {
       return {
         async query(query) {
           queries.push(query)
-          if (query.includes('northflank-bootstrap-status-v1')) {
+          if (query.includes('preview-bootstrap-status-v1')) {
             const row = options.status?.[statusReads++] ?? fresh()
             return { rows: [row] }
           }
-          if (query.includes('northflank-bootstrap-lock-v1')) {
+          if (query.includes('preview-bootstrap-lock-v1')) {
             return { rows: [{ locked: true }] }
           }
           writes.push(query)
@@ -155,8 +140,6 @@ function harness(options: HarnessOptions = {}) {
     let expectedPassword: string | undefined
     if (url.username === 'klicker_test') {
       expectedPassword = options.credentials?.app ?? ENV[APP_PASSWORD_ENV]
-    } else if (url.username === 'hatchet') {
-      expectedPassword = options.credentials?.hatchet ?? HATCHET_PASSWORD
     }
     if (
       expectedPassword === undefined ||
@@ -174,13 +157,7 @@ function harness(options: HarnessOptions = {}) {
           verifications.push(database)
           return { rows: [identity(database)] }
         }
-        if (query.includes('northflank-bootstrap-role-identity-v1')) {
-          verifications.push(database)
-          return {
-            rows: [options.hatchetIdentity ?? hatchetIdentity()],
-          }
-        }
-        if (query.includes('northflank-bootstrap-access-v1')) {
+        if (query.includes('preview-bootstrap-access-v1')) {
           const rows = options.access?.(database) ?? [access(database)]
           return { rows }
         }
@@ -194,14 +171,14 @@ function harness(options: HarnessOptions = {}) {
 
 test('dry run validates, locks, rechecks and never writes', async () => {
   const fake = harness()
-  const result = await bootstrapNorthflankPostgres({
+  const result = await bootstrapPreviewPostgres({
     env: ENV,
     connect: fake.connect,
   })
   assert.deepEqual(result, { mode: 'dry-run' })
   assert.deepEqual(
     fake.queries.map(
-      (query) => query.match(/northflank-bootstrap-(status|lock)-v1/)?.[1]
+      (query) => query.match(/preview-bootstrap-(status|lock)-v1/)?.[1]
     ),
     ['status', 'lock', 'status']
   )
@@ -224,7 +201,7 @@ test('rejects malformed authority, URLs and environment inputs before connecting
 
   for (const override of invalid) {
     await assert.rejects(
-      bootstrapNorthflankPostgres({
+      bootstrapPreviewPostgres({
         env: { ...ENV, ...override },
         connect: fake.connect,
       })
@@ -241,7 +218,7 @@ test('refuses mismatched administrators, insufficient authority and nonfresh tar
   ]) {
     const fake = harness({ status: [status] })
     await assert.rejects(
-      bootstrapNorthflankPostgres({
+      bootstrapPreviewPostgres({
         env: { ...ENV, DRY_RUN: 'false' },
         connect: fake.connect,
       })
@@ -250,13 +227,12 @@ test('refuses mismatched administrators, insufficient authority and nonfresh tar
   }
 })
 
-test('applies the guarded writes and verifies app databases plus optional Hatchet', async () => {
+test('applies the guarded writes and verifies both restricted application databases', async () => {
   const fake = harness()
-  const result = await bootstrapNorthflankPostgres({
+  const result = await bootstrapPreviewPostgres({
     env: {
       ...ENV,
       DRY_RUN: 'false',
-      [HATCHET_PASSWORD_ENV]: HATCHET_PASSWORD,
     },
     connect: fake.connect,
   })
@@ -271,26 +247,19 @@ test('applies the guarded writes and verifies app databases plus optional Hatche
     /^COMMENT ON DATABASE "klicker_test" IS /,
     /^CREATE DATABASE "klicker_test_shadow" OWNER "klicker_test"$/,
     /^COMMENT ON DATABASE "klicker_test_shadow" IS /,
-    /^CREATE ROLE "hatchet" LOGIN PASSWORD '/,
-    /^GRANT "hatchet" TO "provider_admin" WITH INHERIT TRUE, SET TRUE$/,
-    /^CREATE DATABASE "hatchet" OWNER "hatchet"$/,
   ]
   assert.equal(fake.writes.length, expected.length)
   expected.forEach((pattern, index) => {
     assert.match(fake.writes[index] ?? '', pattern)
   })
-  assert.deepEqual(fake.verifications, [
-    'klicker_test',
-    'klicker_test_shadow',
-    'hatchet',
-  ])
-  assert.equal(fake.calls(), 4)
+  assert.deepEqual(fake.verifications, ['klicker_test', 'klicker_test_shadow'])
+  assert.equal(fake.calls(), 3)
 })
 
 test('preserves reserved characters when verifying the restricted password', async () => {
   const password = 'synthetic%41@/#:%zz'
   const fake = harness({ credentials: { app: password } })
-  const result = await bootstrapNorthflankPostgres({
+  const result = await bootstrapPreviewPostgres({
     env: { ...ENV, DRY_RUN: 'false', [APP_PASSWORD_ENV]: password },
     connect: fake.connect,
   })
@@ -301,7 +270,7 @@ test('preserves reserved characters when verifying the restricted password', asy
 test('stops after a partial write failure without retrying', async () => {
   const fake = harness({ writeFailure: 'GRANT USAGE, CREATE ON SCHEMA' })
   await assert.rejects(
-    bootstrapNorthflankPostgres({
+    bootstrapPreviewPostgres({
       env: { ...ENV, DRY_RUN: 'false' },
       connect: fake.connect,
     }),
@@ -320,7 +289,7 @@ test('rejects restricted-login verification failure without another write', asyn
     access: (database) => [{ ...access(database), can_create_schema: false }],
   })
   await assert.rejects(
-    bootstrapNorthflankPostgres({
+    bootstrapPreviewPostgres({
       env: { ...ENV, DRY_RUN: 'false' },
       connect: fake.connect,
     }),
@@ -334,29 +303,20 @@ test('rejects restricted-login verification failure without another write', asyn
   assert.equal(fake.calls(), 2)
 })
 
-test('rejects optional Hatchet verification failure without another write', async () => {
-  const fake = harness({
-    hatchetIdentity: hatchetIdentity({ elevated_createdb: true }),
-  })
-  await assert.rejects(
-    bootstrapNorthflankPostgres({
-      env: {
-        ...ENV,
-        DRY_RUN: 'false',
-        [HATCHET_PASSWORD_ENV]: HATCHET_PASSWORD,
-      },
-      connect: fake.connect,
-    }),
-    (error: Error) => {
-      assert.doesNotMatch(error.message, /synthetic-provider-secret/)
-      return error instanceof Error
-    }
-  )
-  assert.equal(fake.writes.length, 11)
-  assert.deepEqual(fake.verifications, [
-    'klicker_test',
-    'klicker_test_shadow',
-    'hatchet',
-  ])
-  assert.equal(fake.calls(), 4)
+test('refuses legacy and unsupported bootstrap keys before connecting', async () => {
+  for (const key of [
+    'KLICKER_NORTHFLANK_DISPOSABLE',
+    'KLICKER_PREVIEW_HATCHET_PASSWORD',
+    'KLICKER_PREVIEW_UNKNOWN',
+  ]) {
+    const fake = harness()
+    await assert.rejects(
+      bootstrapPreviewPostgres({
+        env: { ...ENV, [key]: 'synthetic-unused-value' },
+        connect: fake.connect,
+      })
+    )
+    assert.equal(fake.calls(), 0)
+    assert.deepEqual(fake.writes, [])
+  }
 })

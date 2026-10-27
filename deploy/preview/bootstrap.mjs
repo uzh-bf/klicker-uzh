@@ -6,7 +6,7 @@ const prismaRoot = fileURLToPath(
 )
 const operations = {
   bootstrap: [
-    ['database-bootstrap', ['exec', 'tsx', 'scripts/northflankBootstrap.ts']],
+    ['database-bootstrap', ['exec', 'tsx', 'scripts/previewBootstrap.ts']],
   ],
   fixtures: [
     [
