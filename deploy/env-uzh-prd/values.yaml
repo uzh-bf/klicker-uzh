@@ -534,7 +534,7 @@ frontendPWA:
 
   resources:
     requests:
-      cpu: 100m
+      cpu: 50m
       memory: 320Mi
     limits:
       memory: 1Gi
@@ -738,7 +738,7 @@ backendGraphql:
 
   resources:
     requests:
-      cpu: 100m
+      cpu: 50m
       memory: 448Mi
     limits:
       memory: 1Gi
