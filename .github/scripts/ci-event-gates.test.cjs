@@ -845,6 +845,7 @@ const BOUNDED_CODEBASE_STEPS = [
   'Check Prisma schema sync drift',
   'Check linting',
   'Check linting (Biome, advisory)',
+  'Check response worker contracts',
   'Check typescript types',
   'Check unused code and dependencies (knip, advisory)',
 ]
