@@ -182,6 +182,9 @@ function createIsomorphLink(ctx?: GetServerSidePropsContext) {
       shouldRetry: () => true,
       connectionAckWaitTimeout: 10000,
       retryWait: async (retries) => {
+        // The retry count only resets on acknowledgement, so a reconnect
+        // after the automatic attempts are exhausted must not wait again.
+        if (retries >= 5) return
         const delay = Math.min(1000 * 2 ** retries, 10000)
         await new Promise((resolve) =>
           setTimeout(resolve, delay + Math.random() * 1000)
