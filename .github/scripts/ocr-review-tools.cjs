@@ -272,6 +272,8 @@ function createAdvisorAllowance(options = {}) {
   }
   return {
     reserve() {
+      if (stateFile)
+        current = validateAllowance(readAllowanceFile(stateFile), head, policy)
       if (current.attempted >= ADVISOR_MAX_ATTEMPTS)
         throw failure('advisor_quota_exhausted')
       const next = { ...current, attempted: current.attempted + 1 }
@@ -284,6 +286,8 @@ function createAdvisorAllowance(options = {}) {
       return { ...current }
     },
     startLifetime() {
+      if (stateFile)
+        current = validateAllowance(readAllowanceFile(stateFile), head, policy)
       const next = { ...current, lifetimes: current.lifetimes + 1 }
       persist(next)
       return next.lifetimes
@@ -1676,6 +1680,8 @@ async function startFocusedAdvisor(options = {}) {
       tools: ['ask_review_advisor', 'read_review_context'],
     },
     consult,
+    remainingAttempts: () =>
+      ADVISOR_MAX_ATTEMPTS - allowance.snapshot().attempted,
     close,
   }
 }

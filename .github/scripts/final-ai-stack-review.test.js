@@ -4340,6 +4340,95 @@ test('fails closed on missing topology usage and enforces the turn and token bou
   assert.equal(advisorCalls, 1)
 })
 
+test('topology continues past bounded advisor errors and honors the remaining shared allowance', async (t) => {
+  const { github } = stackFixture()
+  const membership = await resolveStackMembership({
+    github,
+    context: context(),
+    pullNumber: 14,
+  })
+  const manifestBundle = await buildStackSnapshot({
+    github,
+    context: context(),
+    membership,
+  })
+  for (const error of [
+    'advisor_quota_exhausted',
+    'advisor_unavailable',
+    'source_unavailable',
+    'cancelled',
+    'UNTRUSTED_ERROR',
+    null,
+  ]) {
+    await t.test(error ?? 'already exhausted', async (t) => {
+      prepareDiagnosticsReceipt(t)
+      const requests = []
+      let consultations = 0
+      const pending = callTopologyModel({
+        advisor: {
+          consult: async () => {
+            consultations += 1
+            return { isError: true, content: [{ type: 'text', text: error }] }
+          },
+          remainingAttempts: () =>
+            error === null || consultations > 0 ? 0 : 1,
+          tool: advisorTool(),
+        },
+        apiKey: 'dummy-token',
+        codeResult: completeOCRResult(),
+        fetchImpl: async (_url, options) => {
+          const request = JSON.parse(options.body)
+          requests.push(request)
+          if (requests.length === 1 && error !== null)
+            return topologyToolCallResponse('error_call')
+          return new Response(
+            JSON.stringify({
+              model: FINAL_STACK_REVIEW_MODEL,
+              choices: [
+                {
+                  finish_reason: 'stop',
+                  message: {
+                    content: JSON.stringify({
+                      comments: [],
+                      summary: { comments: 0, coverage: 'complete' },
+                    }),
+                  },
+                },
+              ],
+              usage: {
+                total_tokens: 10,
+                prompt_tokens: 7,
+                completion_tokens: 3,
+              },
+            })
+          )
+        },
+        manifestBundle,
+        readDiffEvidence: syntheticDiffEvidence,
+        rulesText: 'test rules',
+      })
+      if (error === 'cancelled' || error === 'UNTRUSTED_ERROR') {
+        await assert.rejects(pending, /invalid advice/)
+        assert.equal(requests.length, 1)
+        return
+      }
+      const result = await pending
+      assert.equal(result.status, 'complete')
+      assert.equal(result.summary.coverage, 'complete')
+      assert.equal(consultations, error === null ? 0 : 1)
+      assert.equal(Object.hasOwn(requests.at(-1), 'tools'), false)
+      if (error !== null) {
+        const toolResult = requests[1].messages.find(
+          (message) => message.role === 'tool'
+        )
+        assert.equal(toolResult.content, error)
+        assert.equal(toolResult.tool_call_id, 'error_call')
+        assert.equal(result.usage.total_tokens, 20)
+      }
+    })
+  }
+})
+
 test('forces a tool-free ninth topology turn and aggregates all Flash turns', async (t) => {
   const { github } = stackFixture()
   const membership = await resolveStackMembership({

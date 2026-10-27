@@ -2720,7 +2720,13 @@ function commandFinalSummary(args) {
     ) {
       advisor =
         receipt.expected_receipts === 0
-          ? buildCostReport('', { adapter: 0 }, 'mistral').estimate
+          ? buildCostReport(
+              fs.existsSync(advisorPath)
+                ? fs.readFileSync(advisorPath, 'utf8')
+                : '',
+              { adapter: 0 },
+              'mistral'
+            ).estimate
           : readReport(
               advisorPath,
               { adapter: receipt.expected_receipts },

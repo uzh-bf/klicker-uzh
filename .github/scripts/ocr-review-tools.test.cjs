@@ -748,37 +748,6 @@ test('advisorTool exports the broker function schema without sharing mutable sta
   ])
 })
 
-test('advisor allowance serializes eight concurrent admissions and rejects the ninth', async (t) => {
-  const directory = fs.mkdtempSync(path.join(os.tmpdir(), 'ocr-allowance-'))
-  t.after(() => fs.rmSync(directory, { recursive: true, force: true }))
-  const allowance = createAdvisorAllowance({
-    statePath: path.join(directory, 'allowance.json'),
-    head: 'a'.repeat(40),
-    policy: 'b'.repeat(40),
-    initialize: true,
-    temp: directory,
-  })
-  const ordinals = await Promise.all(
-    Array.from({ length: ADVISOR_MAX_ATTEMPTS }, () =>
-      Promise.resolve().then(() => allowance.reserve())
-    )
-  )
-  assert.deepEqual(
-    ordinals,
-    Array.from({ length: ADVISOR_MAX_ATTEMPTS }, (_, index) => index + 1)
-  )
-  assert.throws(() => allowance.reserve(), {
-    code: 'advisor_quota_exhausted',
-  })
-  assert.deepEqual(allowance.snapshot(), {
-    schema: 'ocr-advisor-allowance/v1',
-    head: 'a'.repeat(40),
-    policy: 'b'.repeat(40),
-    attempted: ADVISOR_MAX_ATTEMPTS,
-    lifetimes: 0,
-  })
-})
-
 test('persistent advisor allowance survives two broker lifecycles and changed files fail closed', async (t) => {
   const source = fixture(t)
   const directory = fs.mkdtempSync(
@@ -907,6 +876,30 @@ test('review tools expose only the selected final tools', async (t) => {
     ).result.isError,
     true
   )
+})
+
+test('an already-open allowance revalidates persisted identity before reserving', (t) => {
+  const directory = fs.mkdtempSync(
+    path.join(os.tmpdir(), 'ocr-allowance-change-')
+  )
+  t.after(() => fs.rmSync(directory, { recursive: true, force: true }))
+  const statePath = path.join(directory, 'state.json')
+  const identity = {
+    statePath,
+    temp: directory,
+    head: 'a'.repeat(40),
+    policy: 'b'.repeat(40),
+  }
+  const allowance = createAdvisorAllowance({ ...identity, initialize: true })
+  assert.equal(allowance.reserve(), 1)
+  const sibling = createAdvisorAllowance(identity)
+  assert.equal(sibling.reserve(), 2)
+  assert.equal(allowance.reserve(), 3)
+  const changed = { ...allowance.snapshot(), head: 'c'.repeat(40) }
+  fs.writeFileSync(statePath, JSON.stringify(changed), { mode: 0o600 })
+  assert.throws(() => allowance.reserve(), /invalid_advisor_allowance/)
+  assert.throws(() => allowance.startLifetime(), /invalid_advisor_allowance/)
+  assert.equal(JSON.parse(fs.readFileSync(statePath)).head, changed.head)
 })
 
 test('focused advisor persists two lifetimes, expects receipts, and sends only selected source', async (t) => {

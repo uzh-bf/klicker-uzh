@@ -5797,6 +5797,22 @@ test('final summary prices Flash and advisor lifetimes once and preserves missin
       `scope=final_and_advisor status=complete estimated_with_cache_usd=${sum.toFixed(4)}`
     )
   )
+  fs.writeFileSync(
+    `${advisorPath}.expected.json`,
+    JSON.stringify({
+      schema: 'ocr-advisor-expectations/v1',
+      expected_receipts: 0,
+    })
+  )
+  const unexpected = await run()
+  assert.match(unexpected.stdout, /scope=glm_advisor status=unavailable/)
+  fs.writeFileSync(
+    `${advisorPath}.expected.json`,
+    JSON.stringify({
+      schema: 'ocr-advisor-expectations/v1',
+      expected_receipts: 1,
+    })
+  )
   fs.unlinkSync(advisorPath)
   const partial = await run()
   assert.match(partial.stdout, /scope=glm_advisor status=unavailable/)

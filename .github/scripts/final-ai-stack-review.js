@@ -3031,7 +3031,7 @@ function topologyPrompt({ manifest, codeSummary, mode, reviewRanges }) {
     'Review the supplied commit diffs for every layer, layer boundaries, dependency order, cross-layer integration, deployment and rollback behavior, and whether the cumulative code pass covered the changed paths.',
     'Complete coverage means every supplied layer diff was considered. It does not claim unchanged source or executed tests were reviewed.',
     'The evidence scope mode and repair ranges define finding admission. Full and incremental reviews both receive all layer diffs.',
-    `You have at most ${MAX_TOPOLOGY_ADVISOR_CALLS} consultations through ${ADVISOR_TOOL_NAME}, with one tool call in a turn. After the final consultation, return only the requested JSON object without tools. Advice is evidence that you must verify against the supplied source.`,
+    `The entire review job shares at most ${MAX_TOPOLOGY_ADVISOR_CALLS} consultations through ${ADVISOR_TOOL_NAME}, including consultations already used by the code pass. Make one tool call in a turn. If advice is unavailable, retain the evidence gap and continue your own review. When the tool is absent, return only the requested JSON object. Advice is evidence that you must verify against the supplied source.`,
     'A topology finding must depend on an interaction between stack layers. Omit single-layer concerns and any failure mode already reported by the code pass.',
     'Return only the requested JSON object. Report only verified merge-blocking correctness, security, data, contract, or operational failures supported by supplied diffs, a changed path, and valid owning layer numbers. Omit claims that require unavailable source or execution context. Do not report style preferences, speculative verification requests, or non-blocking follow-up suggestions.',
     'Every finding content must begin with three consecutive lines in this format:\nConfidence: <n>/100\nAutofix: mechanical|manual|not-applicable\nMotivating line: `<text>`\nUse confidence 50-100 for critical findings and 75-100 otherwise.',
@@ -3329,6 +3329,8 @@ async function callTopologyModel({
       }
       const allowAdvisor =
         advisor !== null &&
+        (typeof advisor.remainingAttempts !== 'function' ||
+          advisor.remainingAttempts() > 0) &&
         advisorCalls < MAX_TOPOLOGY_ADVISOR_CALLS &&
         turn < MAX_TOPOLOGY_TURNS
       const body = {
@@ -3391,12 +3393,28 @@ async function callTopologyModel({
           deadlineMs
         )
         if (
-          advice?.isError === true ||
           !Array.isArray(advice?.content) ||
           advice.content.length !== 1 ||
           advice.content[0]?.type !== 'text' ||
           typeof advice.content[0].text !== 'string' ||
           Buffer.byteLength(advice.content[0].text, 'utf8') > 16_384
+        ) {
+          throw new Error('Topology advisor returned invalid advice')
+        }
+        if (
+          advice.isError === true &&
+          ![
+            'invalid_source',
+            'invalid_range',
+            'source_unavailable',
+            'context_too_large',
+            'invalid_question',
+            'advisor_quota_exhausted',
+            'advisor_unavailable',
+            'invalid_advice',
+            'response_too_large',
+            'broker_unavailable',
+          ].includes(advice.content[0].text)
         ) {
           throw new Error('Topology advisor returned invalid advice')
         }
