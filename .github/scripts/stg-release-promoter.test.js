@@ -482,6 +482,19 @@ test('rejects unsafe workflow publication changes', () => {
     fixtureDefinitions({ pushBranches: ["'v3'"] }),
     /approved push triggers/
   )
+  // A candidate branch that has not synced the priority router yet keeps the
+  // previous types and must still promote.
+  const preRouter = mutate(
+    'types: [opened, synchronize, reopened, ready_for_review, labeled]',
+    'types: [opened, synchronize, reopened, ready_for_review]'
+  )
+  validateFixture({
+    definitions: preRouter,
+    expectedWorkflows: FIXTURE_STAGING_WORKFLOWS,
+    repository: REPOSITORY,
+    sourceBranch: 'v3',
+    targetIds: FIXTURE_TARGET_IDS,
+  })
   reject(
     'reduced pull-request types',
     mutate(
