@@ -26,7 +26,7 @@ The trusted runtime job injects these environment variables directly:
 | ---------------------------------------- | -------------------------------------------------------------------- |
 | `KLICKER_PREVIEW_DISPOSABLE`             | Must equal `1`                                                       |
 | `KLICKER_PREVIEW_POSTGRES_HOST`          | Exact private host of the owned addon                                |
-| `KLICKER_PREVIEW_BOOTSTRAP_DATABASE_URL` | Privileged TLS URL for the fresh `klicker_test` database             |
+| `KLICKER_PREVIEW_BOOTSTRAP_DATABASE_URL` | Privileged TLS URL for the owned `klicker_bootstrap` database        |
 | `KLICKER_PREVIEW_APP_PASSWORD`           | Fresh generation-scoped password for the restricted application role |
 | `DRY_RUN`                                | Writes require exactly `false`; otherwise validation only            |
 
@@ -41,10 +41,13 @@ from `/app` inside the fixture image:
 pnpm --filter @klicker-uzh/prisma exec tsx scripts/previewBootstrap.ts
 ```
 
-Write mode creates the restricted `klicker_test` role, gives it ownership of the
-application and shadow databases, and marks both for the repository's existing
-disposable-database guards. It verifies login and schema access using that role
-after initialization. Hatchet uses its own addon and the manifest’s single `hatchet-init` job. The app bootstrap refuses an addon already containing Hatchet resources. Migration and seed
+Write mode creates the restricted `klicker_test` role and creates the application
+and shadow databases from PostgreSQL's empty `template0`, owned by that role.
+Both databases must be absent before initialization and receive the markers
+required by the repository's disposable-database guards. The bootstrap verifies
+restricted login, schema access and the absence of other sessions in each new
+database. Provider activity may remain in the separate bootstrap database.
+Hatchet uses its own addon and the manifest’s single `hatchet-init` job. The app bootstrap refuses an addon already containing Hatchet resources. Migration and seed
 execution are later jobs using restricted credentials.
 
 `pnpm --filter @klicker-uzh/prisma test:disposable` runs the bootstrap regression

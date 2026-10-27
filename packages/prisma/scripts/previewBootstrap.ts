@@ -8,6 +8,7 @@ import {
 
 const APP = 'klicker_test'
 const SHADOW = 'klicker_test_shadow'
+const MAINTENANCE = 'klicker_bootstrap'
 const INPUT_ERROR =
   'Preview bootstrap input rejected; no database writes were attempted'
 const INSPECT_ERROR =
@@ -65,7 +66,7 @@ function readConfig(env: Environment) {
     if (
       !['postgres:', 'postgresql:'].includes(url.protocol) ||
       url.hostname !== intendedHost ||
-      url.pathname !== `/${APP}` ||
+      url.pathname !== `/${MAINTENANCE}` ||
       url.hash ||
       parameters.length !== 1 ||
       parameters[0]?.[0] !== 'sslmode' ||
@@ -105,7 +106,6 @@ function readConfig(env: Environment) {
   }
 }
 
-// PostgreSQL hides backend_type for sessions owned by unrelated roles.
 const statusQuery = [
   '/* preview-bootstrap-status-v1 */',
   'SELECT current_database() AS database, session_user AS admin_role,',
@@ -115,34 +115,11 @@ const statusQuery = [
   '         AND (r.rolsuper OR (r.rolcreatedb AND r.rolcreaterole))',
   "         AND (r.rolsuper OR pg_has_role(r.oid, d.datdba, 'MEMBER'))",
   '         AS authorized,',
-  '       (EXISTS (SELECT 1 FROM pg_namespace n',
-  "                WHERE n.nspname = 'public')",
-  '        AND NOT EXISTS (SELECT 1 FROM pg_class c',
-  '                         JOIN pg_namespace n ON n.oid = c.relnamespace',
-  "                        WHERE n.nspname = 'public'",
-  "                          AND c.relkind IN ('r','p','v','m','S','f')",
-  "                          AND NOT (c.relkind = 'v' AND EXISTS (",
-  '                            SELECT 1 FROM pg_depend dep',
-  '                            JOIN pg_extension ext ON ext.oid = dep.refobjid',
-  "                            WHERE dep.classid = 'pg_class'::regclass",
-  '                              AND dep.objid = c.oid',
-  "                              AND dep.refclassid = 'pg_extension'::regclass",
-  "                              AND dep.deptype = 'e'",
-  "                              AND ((ext.extname = 'pg_stat_statements'",
-  "                                    AND c.relname IN ('pg_stat_statements', 'pg_stat_statements_info'))",
-  "                                OR (ext.extname = 'pg_stat_kcache'",
-  "                                    AND c.relname IN ('pg_stat_kcache', 'pg_stat_kcache_detail')))",
-  '                          )))',
-  '        AND NOT EXISTS (SELECT 1 FROM pg_roles',
+  '       (NOT EXISTS (SELECT 1 FROM pg_roles',
   "                        WHERE rolname IN ('klicker_test', 'hatchet'))",
   '        AND NOT EXISTS (SELECT 1 FROM pg_database',
   '                        WHERE datname IN',
-  "                          ('klicker_test_shadow', 'hatchet'))",
-  '        AND NOT EXISTS (SELECT 1 FROM pg_stat_activity',
-  '                        WHERE datname = current_database()',
-  '                          AND pid <> pg_backend_pid()',
-  "                          AND COALESCE(backend_type, 'client backend')",
-  "                              = 'client backend')) AS fresh",
+  "                          ('klicker_test', 'klicker_test_shadow', 'hatchet'))) AS fresh",
   '  FROM pg_roles r',
   '  JOIN pg_database d ON d.datname = current_database()',
   ' WHERE r.rolname = session_user',
@@ -155,7 +132,10 @@ const lockQuery =
 const accessQuery = [
   '/* preview-bootstrap-access-v1 */',
   'SELECT current_database() AS database, d.datdba = r.oid AS owns_database,',
-  "       has_schema_privilege(current_user, 'public', 'CREATE') AS can_create_schema",
+  "       has_schema_privilege(current_user, 'public', 'CREATE') AS can_create_schema,",
+  '       NOT EXISTS (SELECT 1 FROM pg_stat_activity',
+  '                    WHERE datname = current_database()',
+  '                      AND pid <> pg_backend_pid()) AS no_other_sessions',
   '  FROM pg_database d',
   '  JOIN pg_roles r ON r.rolname = session_user',
   ' WHERE d.datname = current_database()',
@@ -199,15 +179,15 @@ export async function bootstrapPreviewPostgres(
       const row = rows[0]
       if (
         !row ||
-        row.database !== APP ||
+        row.database !== MAINTENANCE ||
         row.admin_role !== config.adminUser ||
         row.same_identity !== true ||
         row.authorized !== true ||
-        row.marker_free !== true
+        row.marker_free !== true ||
+        row.fresh !== true
       ) {
         throw new Error(INSPECT_ERROR)
       }
-      if (row.fresh !== true) throw new Error(INSPECT_ERROR)
     }
 
     await checkTarget()
@@ -219,7 +199,6 @@ export async function bootstrapPreviewPostgres(
     phase = 'write'
     const app = pg.escapeIdentifier(APP)
     const shadow = pg.escapeIdentifier(SHADOW)
-    const publicSchema = pg.escapeIdentifier('public')
     const currentAdmin = pg.escapeIdentifier(config.adminUser)
     const marker = pg.escapeLiteral(DISPOSABLE_DATABASE_MARKER)
     const writes = [
@@ -233,12 +212,12 @@ export async function bootstrapPreviewPostgres(
       ['GRANT', app, 'TO', currentAdmin, 'WITH INHERIT TRUE, SET TRUE'].join(
         ' '
       ),
-      ['ALTER DATABASE', app, 'OWNER TO', app].join(' '),
-      ['ALTER SCHEMA', publicSchema, 'OWNER TO', app].join(' '),
-      ['GRANT USAGE, CREATE ON SCHEMA', publicSchema, 'TO', app].join(' '),
-      ['COMMENT ON DATABASE', app, 'IS', marker].join(' '),
-      ['CREATE DATABASE', shadow, 'OWNER', app].join(' '),
-      ['COMMENT ON DATABASE', shadow, 'IS', marker].join(' '),
+      ...[app, shadow].flatMap((database) => [
+        ['CREATE DATABASE', database, 'OWNER', app, 'TEMPLATE template0'].join(
+          ' '
+        ),
+        ['COMMENT ON DATABASE', database, 'IS', marker].join(' '),
+      ]),
     ]
     for (const statement of writes) await session.query(statement)
     await session.end().catch(() => undefined)
@@ -260,7 +239,8 @@ export async function bootstrapPreviewPostgres(
         if (
           row?.database !== database ||
           row.owns_database !== true ||
-          row.can_create_schema !== true
+          row.can_create_schema !== true ||
+          row.no_other_sessions !== true
         ) {
           throw new Error(VERIFY_ERROR)
         }

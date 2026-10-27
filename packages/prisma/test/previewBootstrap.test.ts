@@ -18,7 +18,7 @@ const HOST = 'postgres.synthetic.invalid'
 const ADMIN_URL =
   'postgresql://provider_admin:synthetic-admin@' +
   HOST +
-  ':5432/klicker_test?sslmode=require'
+  ':5432/klicker_bootstrap?sslmode=require'
 const URL_ENV = 'KLICKER_PREVIEW_BOOTSTRAP_DATABASE_URL'
 const HOST_ENV = 'KLICKER_PREVIEW_POSTGRES_HOST'
 const DISPOSABLE_ENV = 'KLICKER_PREVIEW_DISPOSABLE'
@@ -82,7 +82,7 @@ test('forwards only recognized bootstrap failure codes and suppresses raw tool o
   }
 })
 const fresh = (overrides: Record<string, unknown> = {}) => ({
-  database: 'klicker_test',
+  database: 'klicker_bootstrap',
   admin_role: 'provider_admin',
   same_identity: true,
   marker_free: true,
@@ -101,6 +101,7 @@ const access = (database: string) => ({
   database,
   owns_database: true,
   can_create_schema: true,
+  no_other_sessions: true,
 })
 type HarnessOptions = {
   credentials?: { app?: string }
@@ -190,7 +191,8 @@ test('rejects malformed authority, URLs and environment inputs before connecting
   const fake = harness()
   const invalid = [
     { [HOST_ENV]: 'other.invalid' },
-    { [URL_ENV]: ADMIN_URL.replace('/klicker_test', '/klicker_prod') },
+    { [URL_ENV]: ADMIN_URL.replace('/klicker_bootstrap', '/klicker_test') },
+    { [URL_ENV]: ADMIN_URL.replace('/klicker_bootstrap', '/klicker_prod') },
     { [URL_ENV]: ADMIN_URL.replace('?sslmode=require', '') },
     { [URL_ENV]: `${ADMIN_URL}&host=other.invalid` },
     { [DISPOSABLE_ENV]: 'true' },
@@ -212,7 +214,10 @@ test('rejects malformed authority, URLs and environment inputs before connecting
 
 test('refuses mismatched administrators, insufficient authority and nonfresh targets', async () => {
   for (const status of [
+    fresh({ database: 'klicker_test' }),
     fresh({ admin_role: 'other_admin' }),
+    fresh({ same_identity: false }),
+    fresh({ marker_free: false }),
     fresh({ authorized: false }),
     fresh({ fresh: false }),
   ]) {
@@ -241,11 +246,9 @@ test('applies the guarded writes and verifies both restricted application databa
   const expected = [
     /^CREATE ROLE "klicker_test" LOGIN PASSWORD '/,
     /^GRANT "klicker_test" TO "provider_admin" WITH INHERIT TRUE, SET TRUE$/,
-    /^ALTER DATABASE "klicker_test" OWNER TO "klicker_test"$/,
-    /^ALTER SCHEMA "public" OWNER TO "klicker_test"$/,
-    /^GRANT USAGE, CREATE ON SCHEMA "public" TO "klicker_test"$/,
+    /^CREATE DATABASE "klicker_test" OWNER "klicker_test" TEMPLATE template0$/,
     /^COMMENT ON DATABASE "klicker_test" IS /,
-    /^CREATE DATABASE "klicker_test_shadow" OWNER "klicker_test"$/,
+    /^CREATE DATABASE "klicker_test_shadow" OWNER "klicker_test" TEMPLATE template0$/,
     /^COMMENT ON DATABASE "klicker_test_shadow" IS /,
   ]
   assert.equal(fake.writes.length, expected.length)
@@ -268,7 +271,9 @@ test('preserves reserved characters when verifying the restricted password', asy
 })
 
 test('stops after a partial write failure without retrying', async () => {
-  const fake = harness({ writeFailure: 'GRANT USAGE, CREATE ON SCHEMA' })
+  const fake = harness({
+    writeFailure: 'CREATE DATABASE "klicker_test_shadow"',
+  })
   await assert.rejects(
     bootstrapPreviewPostgres({
       env: { ...ENV, DRY_RUN: 'false' },
@@ -285,22 +290,27 @@ test('stops after a partial write failure without retrying', async () => {
 })
 
 test('rejects restricted-login verification failure without another write', async () => {
-  const fake = harness({
-    access: (database) => [{ ...access(database), can_create_schema: false }],
-  })
-  await assert.rejects(
-    bootstrapPreviewPostgres({
-      env: { ...ENV, DRY_RUN: 'false' },
-      connect: fake.connect,
-    }),
-    (error: Error) => {
-      assert.doesNotMatch(error.message, /synthetic-provider-secret/)
-      return error instanceof Error
-    }
-  )
-  assert.equal(fake.writes.length, 8)
-  assert.deepEqual(fake.verifications, ['klicker_test'])
-  assert.equal(fake.calls(), 2)
+  for (const override of [
+    { can_create_schema: false },
+    { no_other_sessions: false },
+  ]) {
+    const fake = harness({
+      access: (database) => [{ ...access(database), ...override }],
+    })
+    await assert.rejects(
+      bootstrapPreviewPostgres({
+        env: { ...ENV, DRY_RUN: 'false' },
+        connect: fake.connect,
+      }),
+      (error: Error) => {
+        assert.doesNotMatch(error.message, /synthetic-provider-secret/)
+        return error instanceof Error
+      }
+    )
+    assert.equal(fake.writes.length, 6)
+    assert.deepEqual(fake.verifications, ['klicker_test'])
+    assert.equal(fake.calls(), 2)
+  }
 })
 
 test('refuses legacy and unsupported bootstrap keys before connecting', async () => {
