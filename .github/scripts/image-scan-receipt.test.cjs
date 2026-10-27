@@ -7,9 +7,11 @@ const test = require('node:test')
 
 const {
   RECEIPT_SCHEMA_VERSION,
+  activeExceptions,
   buildReceipt,
   evaluatePolicy,
   formatReceipt,
+  readExceptions,
   readTrivyResults,
 } = require('./image-scan-receipt.cjs')
 
@@ -85,6 +87,7 @@ test('receipt identifies the scanned artifact, run and scanner', () => {
     failOn: ['HIGH', 'CRITICAL'],
     failOnUnfixed: false,
     unfixedFindings: 'reported-not-gating',
+    acceptedExceptions: [],
   })
   assert.deepEqual(receipt.reports, {
     findings: input.findingsReport,
@@ -135,6 +138,7 @@ test('policy fails on fixable HIGH and CRITICAL findings only', () => {
   assert.deepEqual(summary, {
     reported: 3,
     fixable: 2,
+    accepted: 0,
     unfixed: 1,
     fixableBySeverity: { HIGH: 1, CRITICAL: 1 },
     unfixedBySeverity: { HIGH: 1, CRITICAL: 0 },
@@ -259,4 +263,110 @@ test('policy CLI exits 1 for fixable findings and 0 for unfixed ones', () => {
     2
   )
   assert.equal(runCli(['check', '--report', malformed]).status, 2)
+})
+
+const EXCEPTION = {
+  ids: ['CVE-7', 'GHSA-aaaa-bbbb-cccc'],
+  package: 'example-sdk',
+  expires: '2026-12-31',
+  reason: 'test exception',
+}
+
+test('an active exception accepts only its advisory in its package', () => {
+  const summary = evaluatePolicy(
+    trivyResults([
+      {
+        VulnerabilityID: 'CVE-7',
+        PkgName: 'example-sdk',
+        Severity: 'HIGH',
+        FixedVersion: '2.0.0',
+      },
+      {
+        VulnerabilityID: 'CVE-8',
+        VendorIDs: ['GHSA-aaaa-bbbb-cccc'],
+        PkgName: 'example-sdk',
+        Severity: 'HIGH',
+        FixedVersion: '2.0.0',
+      },
+      {
+        VulnerabilityID: 'CVE-7',
+        PkgName: 'other-sdk',
+        Severity: 'CRITICAL',
+        FixedVersion: '2.0.0',
+      },
+    ]),
+    [EXCEPTION]
+  )
+
+  assert.equal(summary.accepted, 2)
+  assert.equal(summary.fixable, 1)
+  assert.deepEqual(summary.fixableBySeverity, { HIGH: 0, CRITICAL: 1 })
+  assert.equal(summary.violation, true)
+})
+
+test('an exception lapses after its expiry date', () => {
+  assert.deepEqual(
+    activeExceptions([EXCEPTION], new Date('2026-12-31T23:00:00Z')),
+    [EXCEPTION]
+  )
+  assert.deepEqual(
+    activeExceptions([EXCEPTION], new Date('2027-01-01T00:00:00Z')),
+    []
+  )
+})
+
+test('receipt records the active exceptions it was checked with', () => {
+  const receipt = buildReceipt(
+    receiptInput({ acceptedExceptions: [EXCEPTION] })
+  )
+  assert.deepEqual(receipt.policy.acceptedExceptions, [
+    {
+      ids: EXCEPTION.ids,
+      package: EXCEPTION.package,
+      expires: EXCEPTION.expires,
+    },
+  ])
+})
+
+test('policy CLI honors an exceptions file and fails closed on a bad one', () => {
+  const directory = temporaryDirectory()
+  const report = path.join(directory, 'report.json')
+  fs.writeFileSync(
+    report,
+    JSON.stringify(
+      trivyDocument([
+        {
+          VulnerabilityID: 'CVE-7',
+          PkgName: 'example-sdk',
+          Severity: 'HIGH',
+          FixedVersion: '2.0.0',
+        },
+      ])
+    )
+  )
+  const current = path.join(directory, 'current.json')
+  fs.writeFileSync(
+    current,
+    JSON.stringify([{ ...EXCEPTION, expires: '2999-12-31' }])
+  )
+  const lapsed = path.join(directory, 'lapsed.json')
+  fs.writeFileSync(
+    lapsed,
+    JSON.stringify([{ ...EXCEPTION, expires: '2000-01-01' }])
+  )
+  const undated = path.join(directory, 'undated.json')
+  fs.writeFileSync(undated, JSON.stringify([{ ...EXCEPTION, expires: 'soon' }]))
+
+  const check = (exceptions) =>
+    runCli(['check', '--report', report, '--exceptions', exceptions]).status
+  assert.equal(check(current), 0)
+  assert.equal(check(lapsed), 1)
+  assert.equal(check(undated), 2)
+  assert.equal(check(path.join(directory, 'absent.json')), 1)
+})
+
+test('the committed exceptions file is valid', () => {
+  for (const exception of readExceptions()) {
+    assert.ok(exception.reason.length > 0)
+  }
 })
