@@ -115,8 +115,9 @@ consumer checks also pass. The strict workflow mapping was extended alongside
 its new trusted output. The existing build-shell sampler fixture failure also
 reproduces on the untouched baseline and remains an explicit limitation.
 
-Next: publish immutable executor content, update caller pins, verify actual
-parity and finish integrated review and draft CI. Main-session simplification
+Immutable executor content is published; callers now pin that exact commit.
+Actual published parity and the affected portfolio pass with one inherited
+build-shell sampler fixture excluded. Next: integrated review and draft CI. Main-session simplification
 keeps the existing output path and defaults; no new module or dependency was
 introduced. Static scan: no findings or errors in the five changed source files.
 Draft CI and source review remain required; no live action follows automatically.
