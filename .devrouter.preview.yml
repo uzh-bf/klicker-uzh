@@ -54,8 +54,7 @@ bindings:
       - litellm
     mailhog:
       - mailhog
-    mcp_postgres:
-      - mcp-db
+    mcp_postgres: []
     oidc:
       - oidc
   processes:
@@ -73,8 +72,6 @@ resources:
     kind: redis
   redis-cache:
     kind: redis
-  mcp-db:
-    kind: postgres
   db-bootstrap:
     kind: job
     build:
@@ -93,6 +90,8 @@ resources:
       dockerfile: deploy/preview/Dockerfile.fixtures
     dependsOn:
       - db-bootstrap
+      - local-mcp
+      - azurite
     command:
       - node
       - /app/deploy/preview/bootstrap.mjs
@@ -203,7 +202,38 @@ resources:
     command:
       - /bin/bash
       - -c
-      - 'set -eu; [[ $PASSWORD =~ ^[0-9a-f]{64}$ ]] || exit 1; export DATABASE_URL="postgresql://hatchet_runtime:$PASSWORD@$DB_HOST:$DB_PORT/hatchet?sslmode=require"; echo HATCHET_STAGE_MIGRATE; if migrate_diagnostic=$(./hatchet-migrate 2>&1); then :; else echo HATCHET_MIGRATE_FAILED; for term in authentication permission certificate connection extension schema timeout database role; do if printf %s "$migrate_diagnostic" | grep -qi "$term"; then echo "HATCHET_MIGRATE_CATEGORY_$term"; fi; done; exit 1; fi; echo HATCHET_STAGE_CONFIG; ./hatchet-admin quickstart --skip certs --generated-config-dir ./config --overwrite=false >/dev/null 2>&1; echo HATCHET_STAGE_TOKEN; if [ ! -s ./config/authdisabled-token ]; then ./hatchet-admin token create --config ./config --name authdisabled-default > ./config/authdisabled-token 2>/dev/null; fi; echo HATCHET_STAGE_SERVER; exec ./hatchet-lite --config ./config'
+      - |
+        set -eu
+        [[ $PASSWORD =~ ^[0-9a-f]{64}$ ]] || exit 1
+        export DATABASE_URL="postgresql://hatchet_runtime:$PASSWORD@$DB_HOST:$DB_PORT/hatchet?sslmode=require"
+        echo HATCHET_STAGE_MIGRATE
+        if migrate_diagnostic=$(./hatchet-migrate 2>&1); then :; else
+          echo HATCHET_MIGRATE_FAILED
+          for term in authentication permission certificate connection extension schema timeout database role; do
+            if printf %s "$migrate_diagnostic" | grep -qi "$term"; then echo "HATCHET_MIGRATE_CATEGORY_$term"; fi
+          done
+          exit 1
+        fi
+        echo HATCHET_STAGE_CONFIG
+        ./hatchet-admin quickstart --skip certs --generated-config-dir ./config --overwrite=false >/dev/null 2>&1
+        umask 077
+        if [ ! -d /config/doc-scope ]; then
+          key_dir=$(mktemp -d /config/doc-scope.XXXXXXXX)
+          trap 'if [ -n "$key_dir" ]; then rm -f "$key_dir/private.pem" "$key_dir/public.pem"; rmdir "$key_dir"; fi' EXIT
+          openssl genpkey -algorithm EC -pkeyopt ec_paramgen_curve:P-256 -out "$key_dir/private.pem" >/dev/null 2>&1
+          openssl pkey -in "$key_dir/private.pem" -pubout -out "$key_dir/public.pem" >/dev/null 2>&1
+          mv -T "$key_dir" /config/doc-scope
+          key_dir=
+        fi
+        test -s /config/doc-scope/private.pem && test -s /config/doc-scope/public.pem
+        derived_public=$(openssl pkey -in /config/doc-scope/private.pem -pubout 2>/dev/null)
+        test "$derived_public" = "$(cat /config/doc-scope/public.pem)"
+        echo HATCHET_STAGE_TOKEN
+        if [ ! -s ./config/authdisabled-token ]; then
+          ./hatchet-admin token create --config ./config --name authdisabled-default > ./config/authdisabled-token 2>/dev/null
+        fi
+        echo HATCHET_STAGE_SERVER
+        exec ./hatchet-lite --config ./config
     ports:
       - name: http
         port: 8888
@@ -217,14 +247,30 @@ resources:
       - hatchet
   azurite:
     kind: service
-    image: mcr.microsoft.com/azure-storage/azurite@sha256:76b8127d608fab8287a14a4bfeb9a5502cdcffb4bf1e86f09f324ebb0e70edba
+    build:
+      context: .
+      dockerfile: deploy/preview/Dockerfile.azurite
+    command:
+      - node
+      - /app/deploy/preview/runtime.mjs
+      - azurite
     ports:
       - name: blob
         port: 10000
         public: true
   litellm:
     kind: service
-    image: ghcr.io/berriai/litellm-database@sha256:80e5e92bdcca246cd4153d451e5f75b65e19c7e39c46cc88a38bed4b65cc5836
+    build:
+      context: .
+      dockerfile: deploy/preview/Dockerfile.litellm
+    command:
+      - litellm
+      - --config
+      - /app/klicker-litellm.yaml
+      - --host
+      - 0.0.0.0
+      - --port
+      - '4000'
     ports:
       - name: http
         port: 4000
@@ -292,6 +338,11 @@ resources:
     dependsOn:
       - api
       - mcp-student
+      - litellm
+    command:
+      - node
+      - /app/deploy/preview/runtime.mjs
+      - chat
     ports:
       - name: http
         port: 3000
@@ -361,7 +412,6 @@ resources:
       dockerfile: apps/mcp-lecturer/Dockerfile
     dependsOn:
       - api
-      - mcp-db
     ports:
       - name: http
         port: 7081
@@ -373,7 +423,6 @@ resources:
       dockerfile: apps/mcp-student/Dockerfile
     dependsOn:
       - api
-      - mcp-db
     ports:
       - name: http
         port: 7080
@@ -384,10 +433,11 @@ resources:
       context: .
       dockerfile: deploy/preview/Dockerfile.fixtures
     dependsOn:
-      - fixtures
+      - hatchet
     command:
       - node
-      - /app/apps/chat/scripts/local-mcp-server.mjs
+      - /app/deploy/preview/runtime.mjs
+      - mcp
     ports:
       - name: http
         port: 1417

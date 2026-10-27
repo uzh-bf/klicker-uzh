@@ -14,6 +14,10 @@ const operations = {
       ['exec', 'tsx', 'scripts/disposable-prisma.ts', 'deploy'],
     ],
     ['synthetic-fixtures', ['run', 'prisma:seed:raw']],
+    [
+      'fixture-bindings',
+      ['exec', 'tsx', '../../deploy/preview/configure-fixtures.mjs'],
+    ],
   ],
 }
 

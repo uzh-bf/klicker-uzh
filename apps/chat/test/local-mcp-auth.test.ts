@@ -1,3 +1,4 @@
+import assert from 'node:assert/strict'
 import {
   exportSPKI,
   generateKeyPair,
@@ -411,4 +412,106 @@ describe('assertLocalSeedOwnership', () => {
       courseId: LOCAL_COURSE_ID,
     })
   })
+})
+
+test('decoded keys cross the real Chat signer and MCP verifier boundary', async () => {
+  const { generateKeyPairSync } = await import('node:crypto')
+  const pair = generateKeyPairSync('ec', { namedCurve: 'prime256v1' })
+  const privatePemEncoded = Buffer.from(
+    pair.privateKey.export({ type: 'pkcs8', format: 'pem' })
+  ).toString('base64')
+  const publicPemEncoded = Buffer.from(
+    pair.publicKey.export({ type: 'spki', format: 'pem' })
+  ).toString('base64')
+  const privateResolver = async () => ({ address: '10.24.0.8', family: 4 })
+  const { runtimeEnvironment } = await import(
+    '../../../deploy/preview/runtime.mjs'
+  )
+  const { signDocQueryScopeToken } = await import(
+    '../src/lib/server/docQueryScopeToken'
+  )
+  const { createLocalAuthenticator } = await import(
+    '../scripts/local-mcp-auth.mjs'
+  )
+  const { fileURLToPath } = await import('node:url')
+  const { loadLocalMcpFixture } = await import(
+    '../scripts/local-mcp-fixture.mjs'
+  )
+  const fixture = loadLocalMcpFixture({
+    LOCAL_MCP_FIXTURE_FILE: fileURLToPath(
+      new URL('../../../deploy/preview/mcp-fixture.json', import.meta.url)
+    ),
+  })
+  assert.ok(fixture)
+  const shared = {
+    DOC_QUERY_SCOPE_KID: 'a'.repeat(24),
+    DOC_QUERY_SCOPE_ISSUER: 'preview-test',
+    DOC_QUERY_SCOPE_AUDIENCE: 'preview-docs',
+    LOCAL_MCP_GENERATION: 'a'.repeat(24),
+    LOCAL_MCP_TRANSPORT_TOKEN: 'c'.repeat(64),
+  }
+  const chat = await runtimeEnvironment('chat', {
+    ...shared,
+    KLICKER_PREVIEW_SCOPE_PRIVATE_KEY: privatePemEncoded,
+  })
+  const verifier = await runtimeEnvironment(
+    'mcp',
+    {
+      ...shared,
+      KLICKER_PREVIEW_MCP_HOST: 'mcp.private',
+      KLICKER_PREVIEW_SCOPE_PUBLIC_KEY: publicPemEncoded,
+    },
+    privateResolver
+  )
+  const names = [
+    'DOC_QUERY_SCOPE_PRIVATE_KEY',
+    'DOC_QUERY_SCOPE_KID',
+    'DOC_QUERY_SCOPE_ISSUER',
+    'DOC_QUERY_SCOPE_AUDIENCE',
+  ]
+  const previous = Object.fromEntries(
+    names.map((name) => [name, process.env[name]])
+  )
+  try {
+    for (const name of names) process.env[name] = chat[name]
+    const token = await signDocQueryScopeToken({
+      chatbotId: fixture.chatbotId,
+      kbIds: [fixture.kbId],
+      sessionId: 'synthetic-session',
+    })
+    const headers = {
+      authorization: `Bearer ${shared.LOCAL_MCP_TRANSPORT_TOKEN}`,
+      'x-doc-query-scope-token': `Bearer ${token}`,
+    }
+    const accept = await createLocalAuthenticator(verifier, fixture)
+    assert.equal(await accept(headers), true)
+    assert.equal(
+      await accept({ ...headers, authorization: `Bearer ${'d'.repeat(64)}` }),
+      false
+    )
+    for (const name of [
+      'DOC_QUERY_SCOPE_KID',
+      'DOC_QUERY_SCOPE_ISSUER',
+      'DOC_QUERY_SCOPE_AUDIENCE',
+    ]) {
+      const wrong = await createLocalAuthenticator(
+        { ...verifier, [name]: 'another-generation' },
+        fixture
+      )
+      assert.equal(await wrong(headers), false)
+    }
+    const other = generateKeyPairSync('ec', {
+      namedCurve: 'prime256v1',
+    }).publicKey.export({ type: 'spki', format: 'pem' })
+    const another = await createLocalAuthenticator(
+      { ...verifier, LOCAL_MCP_PUBLIC_KEY: other },
+      fixture
+    )
+    assert.equal(await another(headers), false)
+  } finally {
+    for (const name of names) {
+      if (previous[name] === undefined) delete process.env[name]
+      else process.env[name] = previous[name]
+    }
+  }
 })

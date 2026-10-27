@@ -1,0 +1,6 @@
+FROM mcr.microsoft.com/azure-storage/azurite@sha256:76b8127d608fab8287a14a4bfeb9a5502cdcffb4bf1e86f09f324ebb0e70edba
+
+COPY deploy/preview/runtime.mjs /app/deploy/preview/runtime.mjs
+
+ENV HOME=/tmp
+USER 65532:65532

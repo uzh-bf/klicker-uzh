@@ -1,0 +1,6 @@
+{
+  "chatbotId": "8f9c2e1d-4b7a-4c3e-9f5d-1a2b3c4d5e6f",
+  "kbId": "7f8f2d21-5b7e-4d6b-9c42-1c0e6e4d7a02",
+  "chatMode": "tutor",
+  "documentsFile": "/app/deploy/preview/mcp-documents.json"
+}

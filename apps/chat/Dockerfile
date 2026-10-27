@@ -70,6 +70,7 @@ COPY --from=installer /app/apps/chat/package.json .
 COPY --from=installer --chown=nextjs:nodejs /app/apps/chat/.next/standalone ./
 COPY --from=installer --chown=nextjs:nodejs --chmod=550 /app/apps/chat/.next/static ./apps/chat/.next/static
 COPY --from=installer --chown=nextjs:nodejs --chmod=550 /app/apps/chat/public ./apps/chat/public
+COPY --from=builder /app/deploy/preview/runtime.mjs /app/deploy/preview/runtime.mjs
 
 ARG NODE_ENV="production"
 ENV NEXT_TELEMETRY_DISABLED 1

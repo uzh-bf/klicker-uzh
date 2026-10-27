@@ -1,0 +1,3 @@
+FROM ghcr.io/berriai/litellm-database@sha256:80e5e92bdcca246cd4153d451e5f75b65e19c7e39c46cc88a38bed4b65cc5836
+
+COPY util/litellm/config.yaml /app/klicker-litellm.yaml

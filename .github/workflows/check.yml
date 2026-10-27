@@ -334,7 +334,9 @@ jobs:
           pnpm run test:dev-runtime
 
       - name: Check deployment build configuration
-        run: node --test ./util/deployment-build-env.test.mjs
+        run: |
+          node --test ./util/deployment-build-env.test.mjs
+          node --test deploy/preview/runtime.test.mjs deploy/preview/configure-fixtures.test.mjs
 
       - name: Check workspace dependency mount generation
         run: node --test ./util/generate-dependency-mounts.test.mjs

@@ -100,3 +100,49 @@ Devrouter and its provider adapter own lifecycle, generation identity, network
 policy and credential injection. This app-owned tooling handles only build
 configuration, guarded schema initialization and synthetic fixtures. Bootstrap
 credentials belong to the one-time job; serving images keep ordinary commands.
+
+## Chat deployment harness
+
+The Chat profile reuses the local `chat`, `ai` and `mcp` profile union.
+Its cloud bindings omit the unused local MCP database. The fixture job migrates
+and seeds the restricted application database, then runs
+`deploy/preview/configure-fixtures.mjs`. This step binds the known synthetic
+chatbot and its existing synthetic knowledge base to the private MCP service, disables its
+seeded external documentation tool, and creates Blob containers with CORS for
+only the selected browser origins. Conflicting ownership refuses the operation.
+
+`runtime.mjs` starts Chat, MCP or Azurite only when explicitly selected by the
+preview manifest. The normal Chat image command remains the Next server.
+The wrapper validates P-256 keys, decodes base64 PEM inputs in memory, forwards
+termination signals and preserves the child's exit status. Hatchet's existing
+private config volume persists one key pair in an atomically installed directory;
+incomplete or mismatched keys refuse startup. Only Chat receives the private key
+as `KLICKER_PREVIEW_SCOPE_PRIVATE_KEY`, which becomes the existing
+`DOC_QUERY_SCOPE_PRIVATE_KEY` for its child process. MCP receives only
+`KLICKER_PREVIEW_SCOPE_PUBLIC_KEY`, decoded as `LOCAL_MCP_PUBLIC_KEY`.
+The installation supplies the same generation-derived `DOC_QUERY_SCOPE_KID`,
+issuer and audience to both. A generated `LOCAL_MCP_TRANSPORT_TOKEN` reaches
+MCP directly and the fixture job, which encrypts it into the owned server row
+using the application secret. The fixture job never receives the signing key.
+
+MCP accepts the declared private service authority and its resolved RFC1918
+IPv4 address. The configurator stores the latter because the existing Chat
+transport requires a private address for plain HTTP. A binding-only rerun
+retains the generation and encrypted token and updates only the owned endpoint.
+Native address stability and automated binding refresh remain unqualified;
+refresh must not rerun migrations or seeds. The initial deployment alone does
+not establish installed refresh or extension support.
+
+Azurite uses a generated account key shared with the application SDK; its public
+endpoint serves browser uploads while server requests use the private endpoint.
+The LiteLLM image copies the existing repository configuration. Its upstream
+credential is runtime-only. Neither image introduces a new application API.
+
+Run the harness tests with `node --test deploy/preview/runtime.test.mjs
+ deploy/preview/configure-fixtures.test.mjs`. The existing Chat authenticator suite also exercises the real signer/verifier
+with decoded deployment keys. Run that suite in the provisioned container. These source checks do not enable installed preview admission.
+
+Azurite currently stores data in its ephemeral container filesystem. Restart
+persistence for containers, uploaded objects and CORS is unqualified. A
+reviewed volume binding or idempotent startup configuration is required before
+claiming refresh/restart support; recreating a generation loses uploaded data.

@@ -15,7 +15,13 @@ deploy/*
 !deploy/preview/
 deploy/preview/*
 !deploy/preview/Dockerfile.fixtures
+!deploy/preview/Dockerfile.litellm
+!deploy/preview/Dockerfile.azurite
 !deploy/preview/bootstrap.mjs
+!deploy/preview/runtime.mjs
+!deploy/preview/configure-fixtures.mjs
+!deploy/preview/mcp-fixture.json
+!deploy/preview/mcp-documents.json
 docs/
 legacy/
 newsletter/
@@ -26,5 +32,6 @@ project/
 **/.venv/
 util/**
 !util/deployment-build-env.mjs
+!util/litellm/config.yaml
 
 Dockerfile
