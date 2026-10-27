@@ -418,7 +418,7 @@ Shard durations differ by architecture, so `playwright/timings.json` names the a
   keys stay in trusted adapter instances; the OCR child receives only local
   capabilities and no publication token. Sanitized seven-day receipts report
   registration, actual consultations and provider usage. Advisor receipts and
-  job summaries also retain local dispatch counts and up to two attempt outcomes
+  job summaries also retain local dispatch counts and up to eight attempt outcomes
   with fixed stages and sanitized reasons. A local dispatch is not evidence of a
   provider request. Deadline labels distinguish timer expiry from client
   cancellation while preserving existing client errors and counters. Older

@@ -207,38 +207,11 @@ function readAllowanceFile(stateFile) {
 }
 
 function writeAllowanceAtomic(stateFile, value) {
-  readAllowanceFile(stateFile)
-  const directory = path.dirname(stateFile)
-  const temporary = path.join(
-    directory,
-    `.${path.basename(stateFile)}.${process.pid}.${crypto.randomBytes(8).toString('hex')}.tmp`
-  )
-  let fd
   try {
-    fd = fs.openSync(
-      temporary,
-      fs.constants.O_WRONLY |
-        fs.constants.O_CREAT |
-        fs.constants.O_EXCL |
-        (fs.constants.O_NOFOLLOW ?? 0),
-      0o600
-    )
-    fs.fchmodSync(fd, 0o600)
-    fs.writeFileSync(fd, `${JSON.stringify(value)}\n`)
-    fs.fsyncSync(fd)
-    fs.closeSync(fd)
-    fd = undefined
-    fs.renameSync(temporary, stateFile)
+    readAllowanceFile(stateFile)
+    writePrivateJson(stateFile, value)
     readAllowanceFile(stateFile)
   } catch {
-    if (fd !== undefined) {
-      try {
-        fs.closeSync(fd)
-      } catch {}
-    }
-    try {
-      fs.unlinkSync(temporary)
-    } catch {}
     throw allowanceFailure()
   }
 }

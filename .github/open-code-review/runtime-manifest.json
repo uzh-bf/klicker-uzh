@@ -29,7 +29,7 @@
     ".github/scripts/ocr-controller.cjs": "a8fe80e67094ab5c1f819cd8812ceb7e7c95948321138dcc41a9aa5aaedca69b",
     ".github/scripts/ocr-draft-review.cjs": "d1bd3b8025ce6a69ab780df0b9f1f2d651bc64e58d7821ca6619a5be1eab0945",
     ".github/scripts/ocr-mistral-adapter.cjs": "94ee51c0b10c1b0bb44fcea5cbcedf659b6b64854cff281d11f6fa8fd51696d1",
-    ".github/scripts/ocr-review-tools.cjs": "86f6383bb81fa80a2eae0790d6705a9d3767d0b7cfe1c6ec3f273f1e906b8a4e",
+    ".github/scripts/ocr-review-tools.cjs": "b6d5b83980cb1fbf1e9eb5230c67c09884237d861694d0391e631dcadf7c6993",
     ".github/scripts/ocr-review-shared.cjs": "c12e084ae9bd5459791e8cd78e7c11b60eb494e8c6bb5804e7d223e5228c9676",
     ".github/scripts/ocr-runtime-config.cjs": "dfa184aff7e6ad048696086637223437adeee79ced4bcfa90139468c122f16b9",
     ".github/scripts/install-patched-ocr.cjs": "4a74aeb596b0252cb1182660d28ff8a196c51e501b69397ca94713d2d59a5eea",
