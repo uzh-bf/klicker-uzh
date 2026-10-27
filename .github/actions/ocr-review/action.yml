@@ -8,6 +8,10 @@ inputs:
   context7-api-key:
     description: Optional Context7 API key used by the OCR review tools.
     required: false
+  provider-paused:
+    description: Pause new provider requests when the trusted caller supplies true.
+    required: false
+    default: 'false'
   github-token:
     description: GitHub token used to check out trusted policy and publish the draft review.
     required: true
@@ -80,6 +84,7 @@ runs:
         OCR_ACTION_REPOSITORY: ${{ github.action_repository }}
         OCR_NO_UPDATE: '1'
         OCR_ADAPTER_PROVIDER: mistral-flash
+        OCR_PROVIDER_PAUSED: ${{ inputs['provider-paused'] }}
       run: node "${OCR_ACTION_PATH}/../../scripts/ocr-controller.cjs" run
 
     - name: Validate draft result envelope
@@ -95,7 +100,7 @@ runs:
       run: node "${OCR_ACTION_PATH}/../../scripts/ocr-controller.cjs" validate
 
     - name: Publish draft findings
-      if: ${{ !cancelled() && steps.validate.outcome == 'success' }}
+      if: ${{ !cancelled() && steps.validate.outcome == 'success' && steps.validate.outputs.publishable == 'true' }}
       uses: actions/github-script@3a2844b7e9c422d3c10d287c895573f7108da1b3 # v9.0.0
       env:
         OCR_ACTION_PATH: ${{ github.action_path }}
@@ -121,10 +126,12 @@ runs:
         name: draft-ai-review-adapter-diagnostics-${{ github.run_id }}-${{ github.run_attempt }}
         path: |
           ${{ runner.temp }}/draft-ai-review-adapter-diagnostics.jsonl
+          ${{ runner.temp }}/draft-ai-review-adapter-diagnostics.jsonl.events.jsonl
           ${{ runner.temp }}/draft-ai-review-outcome.json
           ${{ runner.temp }}/draft-ai-review-tools.json
           ${{ runner.temp }}/draft-ai-review-advisor-expectations.json
           ${{ runner.temp }}/draft-ai-review-advisor-diagnostics.jsonl
+          ${{ runner.temp }}/draft-ai-review-advisor-diagnostics.jsonl.events.jsonl
           ${{ runner.temp }}/ocr-runtime-identity.json
         if-no-files-found: warn
         retention-days: 7

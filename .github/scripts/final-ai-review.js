@@ -2949,6 +2949,7 @@ function decideFinalStatus({
   publishOutcome,
   cleanReview = 'false',
   cleanEvidenceDigest = '',
+  providerUnavailable = '',
 }) {
   if (
     currentHead !== reviewedHead ||
@@ -2958,6 +2959,16 @@ function decideFinalStatus({
     return {
       state: 'error',
       description: 'PR range changed; run /final-review for the current range',
+    }
+  }
+  if (
+    ['provider_paused', 'provider_payment_required'].includes(
+      providerUnavailable
+    )
+  ) {
+    return {
+      state: 'failure',
+      description: `Final review unavailable: ${providerUnavailable}; review incomplete`,
     }
   }
   if (
@@ -3025,6 +3036,7 @@ async function finalizeFinalReview({
   cleanReview,
   policyDigest = '',
   trustedSha = '',
+  providerUnavailable = '',
 }) {
   const ownsLatestStatus = async () => {
     const latestStatus = await getLatestFinalReviewStatus(
@@ -3048,6 +3060,7 @@ async function finalizeFinalReview({
     })
     if (
       eligibility.eligible &&
+      !providerUnavailable &&
       reviewOutcome === 'success' &&
       cleanupOutcome === 'success' &&
       publishOutcome === 'success'
@@ -3096,6 +3109,7 @@ async function finalizeFinalReview({
   let cleanEvidenceMetadata = null
   if (
     eligible &&
+    !providerUnavailable &&
     reviewOutcome === 'success' &&
     cleanupOutcome === 'success' &&
     publishOutcome === 'success' &&
@@ -3155,6 +3169,7 @@ async function finalizeFinalReview({
     publishOutcome,
     cleanReview,
     cleanEvidenceDigest: cleanEvidenceMetadata?.evidence_digest ?? '',
+    providerUnavailable,
   })
   const latestStatus = await getLatestFinalReviewStatus(
     github,

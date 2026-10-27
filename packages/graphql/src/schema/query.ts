@@ -2375,6 +2375,15 @@ export const Query = builder.queryType({
           objectType: t.arg({ type: ObjectType, required: true }),
         },
         resolve: async (_, args, ctx) => {
+          // object types without an activity log produce no access check below
+          // and must not fall through to an unfiltered activity query
+          if (
+            args.objectType === DB.ObjectType.CATALOG_COLLECTION ||
+            args.objectType === DB.ObjectType.USER_GROUP
+          ) {
+            return null
+          }
+
           // >= READ permissions on the corresponding object
           const validAccess = await checkAccess(
             [

@@ -1144,6 +1144,21 @@ export async function scheduleLiveQuiz(
 ) {
   // if the live quiz starts in the future, change its status to scheduled, otherwise publish it
   if (availableFrom && dayjs(availableFrom).isAfter(dayjs())) {
+    // only draft or already scheduled quizzes can be (re)scheduled; checked
+    // before the publication task is created so a running or ended quiz is
+    // never republished
+    const schedulableQuiz = await ctx.prisma.liveQuiz.findFirst({
+      where: {
+        id,
+        isDeleted: false,
+        status: {
+          in: [DB.PublicationStatus.DRAFT, DB.PublicationStatus.SCHEDULED],
+        },
+      },
+      select: { id: true },
+    })
+    if (!schedulableQuiz) return null
+
     try {
       // schedule the task to publish the live quiz
       const scheduledTask = await ctx.tasks.publishScheduledLiveQuiz.schedule(
@@ -1157,6 +1172,13 @@ export async function scheduleLiveQuiz(
       const taskId = scheduledTask.metadata.id
 
       // change the status of the live quiz to scheduled
+      const schedulableWhere = {
+        id,
+        isDeleted: false,
+        status: {
+          in: [DB.PublicationStatus.DRAFT, DB.PublicationStatus.SCHEDULED],
+        },
+      }
       const assessmentMode = await ctx.prisma.liveQuiz.findUnique({
         where: { id, isDeleted: false },
         select: { isAssessmentEnabled: true },
@@ -1168,7 +1190,7 @@ export async function scheduleLiveQuiz(
             async (tx, auditTx) => {
               const before = await loadAssessmentAuditSnapshot(tx, id)
               const updated = await tx.liveQuiz.update({
-                where: { id, isDeleted: false },
+                where: schedulableWhere,
                 data: {
                   availableFrom,
                   status: DB.PublicationStatus.SCHEDULED,
@@ -1199,7 +1221,7 @@ export async function scheduleLiveQuiz(
             { timeout: 60000 }
           )
         : await ctx.prisma.liveQuiz.update({
-            where: { id, isDeleted: false },
+            where: schedulableWhere,
             data: {
               availableFrom,
               status: DB.PublicationStatus.SCHEDULED,

@@ -228,11 +228,12 @@ export function validateStudentResponse({
     // if all cases are passed, choices response is considered to be valid
     return { valid: true }
   } else if (type === 'NUMERICAL') {
-    // response should be a string and be parseable as a number
+    // response should be a string and be parseable as a number (parsed with
+    // Number() like the grading step, so trailing characters are rejected)
     if (
       typeof response.value !== 'string' ||
-      !response.value ||
-      isNaN(parseFloat(response.value))
+      !response.value.trim() ||
+      !Number.isFinite(Number(response.value))
     ) {
       return {
         valid: false,
@@ -242,7 +243,7 @@ export function validateStudentResponse({
     }
 
     // if restrictions are defined, check that the parsed number is within the defined bounds
-    const parsedResponse = parseFloat(response.value)
+    const parsedResponse = Number(response.value)
     if (
       restrictions &&
       (('min' in restrictions &&

@@ -112,6 +112,7 @@ test('local runner options preserve defaults and forward test selectors', () => 
     profile: undefined,
     mode: undefined,
     preserveDatabase: false,
+    ciRuntime: false,
   })
   assert.deepEqual(
     parseLocalOptions([
@@ -125,7 +126,17 @@ test('local runner options preserve defaults and forward test selectors', () => 
       profile: 'chat',
       mode: undefined,
       preserveDatabase: true,
+      ciRuntime: false,
     }
+  )
+  assert.equal(parseLocalOptions(['--ci-runtime', 'x.spec.ts']).ciRuntime, true)
+  assert.throws(
+    () => parseLocalOptions(['tests/example.spec.ts', '--ci-runtime']),
+    /before Playwright arguments/
+  )
+  assert.throws(
+    () => parseLocalOptions(['--show-report', '--ci-runtime']),
+    /cannot select the CI runtime/
   )
   assert.throws(() => parseLocalOptions(['--runtime-profile', '--help']))
   assert.throws(() => parseLocalOptions(['--runtime-profile']))
@@ -283,6 +294,8 @@ function createLauncherHarness({
   const calls = []
   const logs = []
   const writes = []
+  const removals = []
+  const plans = []
   const root = '/synthetic/klicker-uzh'
   const workspaceGitDir = '/synthetic/git/worktrees/launcher'
   const testsRoot = `${root}/playwright/tests`
@@ -345,6 +358,8 @@ function createLauncherHarness({
     calls,
     logs,
     writes,
+    removals,
+    plans,
     dependencies: {
       resolveDevrouterFn: () => '/synthetic/bin/devrouter',
       commandExistsFn: () => false,
@@ -354,6 +369,12 @@ function createLauncherHarness({
       pathExists,
       readFile,
       writeFile: (path) => writes.push(path),
+      removeFile: (path) => removals.push(path),
+      makeDirectory: () => {},
+      resolveRuntimePlanFn: (options) => {
+        plans.push(options)
+        calls.push({ command: 'resolve-plan', args: [], options })
+      },
       readDirectory: (path) => {
         if (path === testsRoot) return [...specFiles].sort()
         throw new Error(`unexpected synthetic directory: ${path}`)
@@ -491,6 +512,60 @@ test('explicit profiles reach runtime reconciliation for testing and print-env',
       }
     }
   }
+})
+
+test('the CI runtime writes its plan before reconciliation and targets the baked GrowthBook host', () => {
+  const { calls, dependencies, plans, removals, writes } =
+    createLauncherHarness()
+  runPlaywrightHost(
+    ['--ci-runtime', '--runtime-profile', 'manage', '--', '--project=chromium'],
+    dependencies
+  )
+  const planPath = `${dependencies.root}/.devcontainer/.runtime/playwright-ci-plan.json`
+  assert.deepEqual(plans, [
+    {
+      profile: 'manage',
+      output: planPath,
+      repo: dependencies.root,
+      devrouterBin: '/synthetic/bin/devrouter',
+    },
+  ])
+  assert.ok(
+    calls.findIndex(({ command }) => command === 'resolve-plan') <
+      calls.indexOf(ensureCall(calls))
+  )
+  assert.ok(writes.some((path) => path.endsWith('/playwright-ci-build-id')))
+  assert.deepEqual(removals, [
+    `${dependencies.root}/.devcontainer/.runtime/playwright-dev-test`,
+  ])
+  assert.equal(
+    pnpmCalls(calls).at(-1).options.env.NEXT_PUBLIC_GROWTHBOOK_API_HOST,
+    'https://growthbook.test'
+  )
+})
+
+test('dev runs replace the CI runtime with the dev test servers while print-env keeps the selection', () => {
+  const dev = createLauncherHarness()
+  runPlaywrightHost(['--project=chromium'], dev.dependencies)
+  assert.deepEqual(dev.removals, [
+    `${dev.dependencies.root}/.devcontainer/.runtime/playwright-ci-plan.json`,
+    `${dev.dependencies.root}/.devcontainer/.runtime/playwright-ci-build-id`,
+  ])
+  assert.ok(dev.writes.some((path) => path.endsWith('/playwright-dev-test')))
+  assert.deepEqual(dev.plans, [])
+  assert.equal(
+    pnpmCalls(dev.calls).at(-1).options.env.NEXT_PUBLIC_GROWTHBOOK_API_HOST,
+    'https://manage.klicker.synthetic-launcher.localhost/__growthbook__'
+  )
+
+  const inspect = createLauncherHarness()
+  runPlaywrightHost(['--print-env'], inspect.dependencies)
+  assert.deepEqual(inspect.removals, [])
+  assert.deepEqual(
+    inspect.writes.filter((path) => path.includes('/.runtime/')),
+    []
+  )
+  assert.deepEqual(inspect.plans, [])
 })
 
 test('invalid launcher options have no external effects', () => {
@@ -1182,6 +1257,7 @@ test('cold runs stop before host preparation and reconcile afterward', () => {
   assert.ok(ensure > install)
   assert.deepEqual(harness.writes, [
     '/synthetic/klicker-uzh/node_modules/.playwright-host-filtered-install',
+    '/synthetic/klicker-uzh/.devcontainer/.runtime/playwright-dev-test',
   ])
   assert.equal(
     harness.calls.filter(

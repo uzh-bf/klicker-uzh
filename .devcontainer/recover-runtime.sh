@@ -14,10 +14,10 @@ done
 [[ "$(shasum -a 256 "$root/.devcontainer/recover-bootstrap.sh" | cut -d " " -f 1)" = "0724855f1205fc709b5de11ed4092ae64c88dccc79929c289cf248ac144c2a09" ]] || { echo "Recovery source changed: .devcontainer/recover-bootstrap.sh" >&2; exit 1; }
 [[ "$(shasum -a 256 "$root/.devcontainer/disposable-test-init.sql" | cut -d " " -f 1)" = "0070db33b8d5b8a2b4eb7a597a69b63518934f611bcf5fa4aa7e02a028a61aed" ]] || { echo "Recovery source changed: .devcontainer/disposable-test-init.sql" >&2; exit 1; }
 [[ "$(shasum -a 256 "$root/.github/scripts/provision-disposable-postgres.sh" | cut -d " " -f 1)" = "b1f7c3d1445ff2cf7781fdc2795ad9befacf6c95d7327c95e9af0ed88f0358a7" ]] || { echo "Recovery source changed: .github/scripts/provision-disposable-postgres.sh" >&2; exit 1; }
-[[ "$(shasum -a 256 "$root/util/dev-runtime.sh" | cut -d " " -f 1)" = "08f359da8c085ac4741165744a40a236a5c16d3de0f1600dbfc590d537233f26" ]] || { echo "Recovery source changed: util/dev-runtime.sh" >&2; exit 1; }
+[[ "$(shasum -a 256 "$root/util/dev-runtime.sh" | cut -d " " -f 1)" = "4e2aef012e1e9dec66a6ce151aba126dbd59e71bcf69f098811d28f6dcb045e4" ]] || { echo "Recovery source changed: util/dev-runtime.sh" >&2; exit 1; }
 
 [[ "$(docker exec "$app_id" sha256sum /workspaces/klicker-uzh/.devcontainer/recover-bootstrap.sh | cut -d " " -f 1)" = "0724855f1205fc709b5de11ed4092ae64c88dccc79929c289cf248ac144c2a09" ]] || { echo "Mounted bootstrap differs from reviewed source." >&2; exit 1; }
-[[ "$(docker exec "$app_id" sha256sum /workspaces/klicker-uzh/util/dev-runtime.sh | cut -d " " -f 1)" = "08f359da8c085ac4741165744a40a236a5c16d3de0f1600dbfc590d537233f26" ]] || { echo "Mounted runtime helper differs from reviewed source." >&2; exit 1; }
+[[ "$(docker exec "$app_id" sha256sum /workspaces/klicker-uzh/util/dev-runtime.sh | cut -d " " -f 1)" = "4e2aef012e1e9dec66a6ce151aba126dbd59e71bcf69f098811d28f6dcb045e4" ]] || { echo "Mounted runtime helper differs from reviewed source." >&2; exit 1; }
 
 docker exec "$app_id" bash /workspaces/klicker-uzh/util/dev-runtime.sh begin-bootstrap >/dev/null
 

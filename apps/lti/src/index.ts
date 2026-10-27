@@ -13,7 +13,11 @@ import {
   resolveLaunchTarget,
 } from './launchTarget.js'
 import { logger } from './logger.js'
-import { resolvePlatforms } from './platforms.js'
+import {
+  type PlatformRegistration,
+  parsePlatform,
+  resolvePlatforms,
+} from './platforms.js'
 
 // Validate required environment variables
 if (!process.env.APP_ORIGIN_LTI) {
@@ -174,7 +178,29 @@ const setup = async () => {
   await provider.listen({ silent: true })
   logger.info({ event: 'service.listening', port }, 'LTI service listening')
 
-  for (const registration of platforms) {
+  // Platforms that only ltijs 5 still knew keep working after the upgrade. The
+  // configuration wins when both list the same platform.
+  const configured = new Set(
+    platforms.map((p) => JSON.stringify([p.url, p.clientId]))
+  )
+  const legacy: PlatformRegistration[] = []
+  for (const row of await database.getLegacyPlatforms()) {
+    let platform: PlatformRegistration
+    try {
+      platform = parsePlatform(row, process.env, 'from ltijs 5')
+    } catch {
+      logger.warn(
+        { event: 'lti.legacy_platform.skipped', reason: 'invalid' },
+        'Skipped an invalid ltijs 5 platform'
+      )
+      continue
+    }
+    if (!configured.has(JSON.stringify([platform.url, platform.clientId]))) {
+      legacy.push(platform)
+    }
+  }
+
+  for (const registration of [...platforms, ...legacy]) {
     const fields = {
       name: registration.name,
       authenticationEndpoint: registration.authenticationEndpoint,
@@ -210,7 +236,11 @@ const setup = async () => {
     }
   }
   logger.info(
-    { event: 'lti.platforms.registered', count: platforms.length },
+    {
+      event: 'lti.platforms.registered',
+      count: platforms.length,
+      legacyCount: legacy.length,
+    },
     'LTI platforms registered'
   )
 }

@@ -103,6 +103,31 @@ export class PostgresDatabaseManager implements DatabaseManager {
     await this.pool.end()
   }
 
+  // ltijs 5 stored every platform it registered in the ltijs-sequelize
+  // `platforms` table, including platforms that were later removed from the
+  // configuration but are still used by LMS course elements. Returns those
+  // that ltijs 5 still treated as active, in the configuration's shape.
+  async getLegacyPlatforms(): Promise<unknown[]> {
+    const { rows: tables } = await this.pool.query<{
+      platforms: string | null
+      statuses: string | null
+    }>(
+      `SELECT to_regclass('platforms')::text AS platforms, to_regclass('"platformStatuses"')::text AS statuses`
+    )
+    if (!tables[0]?.platforms) return []
+    // ltijs 5 treats a platform without a status record as active
+    const status = tables[0].statuses
+      ? `LEFT JOIN "platformStatuses" s ON s.id = p.kid WHERE s.active IS NOT FALSE`
+      : ''
+    const { rows } = await this.pool.query(
+      `SELECT p."platformUrl" AS url, p."platformName" AS name, p."clientId" AS "clientId",
+        p."authEndpoint" AS "authenticationEndpoint", p."accesstokenEndpoint" AS "accesstokenEndpoint",
+        p."authConfig" AS "authConfig"
+      FROM platforms p ${status}`
+    )
+    return rows
+  }
+
   async getPlatforms(filter: PlatformFilter = {}) {
     const conditions: string[] = []
     const values: unknown[] = []
