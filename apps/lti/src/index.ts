@@ -12,7 +12,11 @@ import {
   getChatbotLaunchBinding,
   resolveLaunchTarget,
 } from './launchTarget.js'
-import { resolvePlatforms } from './platforms.js'
+import {
+  type PlatformRegistration,
+  parsePlatform,
+  resolvePlatforms,
+} from './platforms.js'
 
 // Validate required environment variables
 if (!process.env.APP_ORIGIN_LTI) {
@@ -159,7 +163,26 @@ const setup = async () => {
   await provider.listen({ silent: true })
   console.log(`LTI service listening on port ${port}`)
 
-  for (const registration of platforms) {
+  // Platforms that only ltijs 5 still knew keep working after the upgrade. The
+  // configuration wins when both list the same platform.
+  const configured = new Set(
+    platforms.map((p) => JSON.stringify([p.url, p.clientId]))
+  )
+  const legacy: PlatformRegistration[] = []
+  for (const row of await database.getLegacyPlatforms()) {
+    let platform: PlatformRegistration
+    try {
+      platform = parsePlatform(row, process.env, 'from ltijs 5')
+    } catch {
+      console.error('event=lti_legacy_platform_skipped reason=invalid')
+      continue
+    }
+    if (!configured.has(JSON.stringify([platform.url, platform.clientId]))) {
+      legacy.push(platform)
+    }
+  }
+
+  for (const registration of [...platforms, ...legacy]) {
     const fields = {
       name: registration.name,
       authenticationEndpoint: registration.authenticationEndpoint,
@@ -194,7 +217,9 @@ const setup = async () => {
       await provider.platformManager.updatePlatform(registered, fields)
     }
   }
-  console.log(`Registered ${platforms.length} LTI platforms`)
+  console.log(
+    `Registered ${platforms.length} configured and ${legacy.length} ltijs 5 LTI platforms`
+  )
 }
 
 setup().catch((error: unknown) => {
