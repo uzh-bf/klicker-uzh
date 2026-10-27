@@ -972,18 +972,28 @@ const messages = {
               "Questions per level: green = used in this run, grey = never used, red = no question at this level. Covered = got its minimum answers; not sampled = skipped this attempt; out of range = far from the student's level, not required.",
           },
           mastery: {
+            sublevels: 'Sublevels (e.g. B1.3)',
+            mainLevels: 'Main levels (e.g. B1 = B1.1 to B1.3)',
             title: 'Mastery (client reading)',
             hint: 'A level counts as mastered when the ability lies at or beyond the mastery point of its band, e.g. 70% of B1.3. The mastery probability says how likely that is, given the estimate and its uncertainty; from the required probability on, the level is shown as mastered. Measured against the simulated students, who have mastered their true level but not the next one.',
             masteryPoint: 'Mastered from {value}% of the level',
             probability: 'Shown as mastered from {value}% probability',
             loading: 'Loading the students…',
             tiles: {
+              mainMastered: 'Shown as mastered',
+              mainMasteredRight: 'Right when shown as mastered',
+              mainHighestExact: 'Highest mastered main level correct',
               mastered: 'Shown as mastered',
               masteredRight: 'Right when shown as mastered',
               highestExact: 'Highest mastered level correct',
               highestWithinOne: '… within ±1 level',
             },
             tileHints: {
+              mainMastered: 'e.g. "B1 mastered" with enough probability',
+              mainMasteredRight:
+                "the true level is at least the main level's last sublevel",
+              mainHighestExact:
+                'true: the main level whose last sublevel is reached',
               mastered: 'results with enough probability',
               masteredRight: 'the true level is at least the reported one',
               highestExact:
@@ -992,6 +1002,10 @@ const messages = {
             },
           },
           students: {
+            mainMastery:
+              'Main level {level} · mastered with {probability}% probability.',
+            mainRowHint:
+              'Probability that the main level is mastered (✓ = shown as mastered)',
             mastery:
               'At {position}% of {level} · mastered with {probability}% probability.',
             mastered: '{level} mastered',

@@ -27,6 +27,13 @@ function AdaptiveDryRunWithinReach({
   const summary = students
     ? summarizeDryRunMastery(students, workspace, settings)
     : null
+  const mainTiles = summary
+    ? ([
+        ['mainMastered', summary.main.masteredShare],
+        ['mainMasteredRight', summary.main.masteredRightShare],
+        ['mainHighestExact', summary.main.highestExactShare],
+      ] as const)
+    : []
   const tiles = summary
     ? ([
         ['mastered', summary.masteredShare],
@@ -78,7 +85,12 @@ function AdaptiveDryRunWithinReach({
         </div>
       </div>
       {summary ? (
-        <div className="mt-2 grid grid-cols-[repeat(auto-fit,minmax(10rem,1fr))] gap-2">
+        <h6 className="mt-3 text-xs font-semibold text-gray-700">
+          {t(`${KEY}.sublevels`)}
+        </h6>
+      ) : null}
+      {summary ? (
+        <div className="mt-1 grid grid-cols-[repeat(auto-fit,minmax(10rem,1fr))] gap-2">
           {tiles.map(([key, value]) => (
             <div
               key={key}
@@ -100,6 +112,32 @@ function AdaptiveDryRunWithinReach({
       ) : (
         <p className="mt-2 text-xs text-gray-500">{t(`${KEY}.loading`)}</p>
       )}
+      {summary ? (
+        <>
+          <h6 className="mt-3 text-xs font-semibold text-gray-700">
+            {t(`${KEY}.mainLevels`)}
+          </h6>
+          <div className="mt-1 grid grid-cols-[repeat(auto-fit,minmax(10rem,1fr))] gap-2">
+            {mainTiles.map(([key, value]) => (
+              <div
+                key={key}
+                className="rounded border border-gray-200 px-3 py-2"
+                data-cy={`adaptive-dry-run-mastery-${key}-tile`}
+              >
+                <div className="text-xs text-gray-600">
+                  {t(`${KEY}.tiles.${key}`)}
+                </div>
+                <div className="text-xl font-semibold tabular-nums">
+                  {value === null ? '–' : percent(value)}
+                </div>
+                <div className="text-xs text-gray-500">
+                  {t(`${KEY}.tileHints.${key}`)}
+                </div>
+              </div>
+            ))}
+          </div>
+        </>
+      ) : null}
     </div>
   )
 }

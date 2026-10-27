@@ -100,3 +100,40 @@ export function levelMasteryOfEstimate(
         : 0
   return { ...position, probability }
 }
+
+/**
+ * Mastery of a range of levels (e.g. a main level B1 = B1.1-B1.3): the chance
+ * that the ability lies at or beyond `masteryPoint` of the combined band from
+ * the first level's lower edge to the last level's upper edge.
+ */
+export function levelRangeMasteryOfEstimate(
+  { theta, standardError }: { theta: number; standardError: number | null },
+  levels: LevelDefinition[],
+  range: { fromOrder: number; toOrder: number },
+  thetaRange: ThetaRange = DEFAULT_THETA_RANGE,
+  mappingRule: LevelMappingRule = 'NEAREST',
+  masteryPoint = DEFAULT_MASTERY_POINT
+): { position: number; probability: number } | null {
+  if (!Number.isFinite(theta) || levels.length < 2) return null
+  const mapped = mapLevelsToTheta(levels, thetaRange, mappingRule)
+  const width = Math.abs(mapped[1]!.theta - mapped[0]!.theta)
+  const first = mapped.find(({ order }) => order === range.fromOrder)
+  const last = mapped.find(({ order }) => order === range.toOrder)
+  if (!first || !last) return null
+  const lower = Number.isFinite(first.lowerBound)
+    ? first.lowerBound
+    : first.upperBound - width
+  const upper = Number.isFinite(last.upperBound)
+    ? last.upperBound
+    : last.lowerBound + width
+  const cut = lower + masteryPoint * (upper - lower)
+  return {
+    position: Math.min(1, Math.max(0, (theta - lower) / (upper - lower))),
+    probability:
+      standardError !== null && standardError > 0
+        ? normalCdf((theta - cut) / standardError)
+        : theta >= cut
+          ? 1
+          : 0,
+  }
+}

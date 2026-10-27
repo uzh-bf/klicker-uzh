@@ -1,5 +1,7 @@
 import { describe, expect, it } from 'vitest'
 import {
+  dryRunMainLevels,
+  dryRunMainMastery,
   dryRunMastery,
   summarizeDryRunMastery,
 } from '../src/components/evaluation/adaptive/dryRuns/adaptiveDryRunHints'
@@ -76,6 +78,67 @@ describe('mastery probability', () => {
       masteredRightShare: 1 / 2,
       highestExactShare: 2 / 3,
       highestWithinOneShare: 1,
+    })
+  })
+})
+
+describe('main-level mastery', () => {
+  // Six levels: A2.1-A2.3, B1.1-B1.3 on -3..3 (spacing 1.2); B1 spans 0 ..
+  // 3.6 (the open top band closed with a regular width), cut at 70%: 2.52.
+  const cefr = {
+    levels: ['A2.1', 'A2.2', 'A2.3', 'B1.1', 'B1.2', 'B1.3'].map(
+      (label, order) => ({
+        id: order + 1,
+        label,
+        order,
+        __typename: 'AdaptiveDryRunLevel' as const,
+      })
+    ),
+    scale: { thetaMin: -3, thetaMax: 3, levelMappingRule: 'NEAREST' },
+  }
+
+  it('groups sublevels and judges the whole main level', () => {
+    expect(dryRunMainLevels(cefr.levels)).toEqual([
+      { label: 'A2', fromOrder: 0, toOrder: 2 },
+      { label: 'B1', fromOrder: 3, toOrder: 5 },
+    ])
+    expect(
+      dryRunMainMastery(
+        { theta: 3, standardError: 0.2, levelId: 6 },
+        cefr,
+        settings
+      )
+    ).toMatchObject({ label: 'B1', mastered: true, highestMastered: 'B1' })
+    expect(
+      dryRunMainMastery(
+        { theta: 1.8, standardError: 0.2, levelId: 5 },
+        cefr,
+        settings
+      )
+    ).toMatchObject({ label: 'B1', mastered: false, highestMastered: 'A2' })
+  })
+
+  it('counts a main level as truly mastered from its last sublevel', () => {
+    const student = (trueLevelId: number, theta: number, levelId: number) => ({
+      trueLevels: [{ nodeId: 1, levelId: trueLevelId }],
+      competences: [
+        { nodeId: 1, theta, levelId, standardError: 0.2, classified: false },
+      ],
+    })
+    const summary = summarizeDryRunMastery(
+      [
+        // true B1.3, "B1 mastered": right
+        student(6, 3, 6),
+        // true B1.2, "B1 not mastered, A2 mastered": right
+        student(5, 1.8, 5),
+      ],
+      cefr,
+      settings
+    )
+    expect(summary.main).toEqual({
+      masteredShare: 1 / 2,
+      masteredRightShare: 1,
+      highestExactShare: 1,
     })
   })
 })

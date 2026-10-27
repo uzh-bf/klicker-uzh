@@ -990,6 +990,8 @@ const messages = {
               'Fragen pro Niveau: grün = in diesem Testlauf verwendet, grau = nie verwendet, rot = keine Frage auf diesem Niveau. Abgedeckt = Minimum an Antworten erreicht; nicht ausgewählt = in diesem Durchlauf übersprungen; ausser Reichweite = weit vom Niveau der Person entfernt, nicht nötig.',
           },
           mastery: {
+            sublevels: 'Unterniveaus (z. B. B1.3)',
+            mainLevels: 'Hauptniveaus (z. B. B1 = B1.1 bis B1.3)',
             title: 'Gemeistert (Lesart der Kundin)',
             hint: 'Ein Niveau gilt als gemeistert, wenn die Fähigkeit am oder über dem Meisterungspunkt seines Bereichs liegt, z. B. bei 70 % von B1.3. Die Meisterungswahrscheinlichkeit sagt, wie wahrscheinlich das ist, aus der Schätzung und ihrer Unsicherheit; ab der nötigen Wahrscheinlichkeit wird das Niveau als gemeistert angezeigt. Gemessen an den simulierten Personen, die ihr wahres Niveau gemeistert haben, das nächste aber noch nicht.',
             masteryPoint: 'Gemeistert ab {value} % des Niveaus',
@@ -997,12 +999,21 @@ const messages = {
               'Als gemeistert angezeigt ab {value} % Wahrscheinlichkeit',
             loading: 'Studierende werden geladen…',
             tiles: {
+              mainMastered: 'Als gemeistert angezeigt',
+              mainMasteredRight: 'Richtig, wenn als gemeistert angezeigt',
+              mainHighestExact: 'Höchstes gemeistertes Hauptniveau richtig',
               mastered: 'Als gemeistert angezeigt',
               masteredRight: 'Richtig, wenn als gemeistert angezeigt',
               highestExact: 'Höchstes gemeistertes Niveau richtig',
               highestWithinOne: '… innerhalb ±1 Niveau',
             },
             tileHints: {
+              mainMastered:
+                'z. B. «B1 gemeistert» mit genügend Wahrscheinlichkeit',
+              mainMasteredRight:
+                'das wahre Niveau ist mindestens das letzte Unterniveau',
+              mainHighestExact:
+                'wahr: das Hauptniveau, dessen letztes Unterniveau erreicht ist',
               mastered: 'Ergebnisse mit genügend Wahrscheinlichkeit',
               masteredRight: 'das wahre Niveau ist mindestens das ausgegebene',
               highestExact:
@@ -1012,6 +1023,10 @@ const messages = {
             },
           },
           students: {
+            mainMastery:
+              'Hauptniveau {level} · mit {probability} % Wahrscheinlichkeit gemeistert.',
+            mainRowHint:
+              'Wahrscheinlichkeit, dass das Hauptniveau gemeistert ist (✓ = als gemeistert angezeigt)',
             mastery:
               'Bei {position} % von {level} · mit {probability} % Wahrscheinlichkeit gemeistert.',
             mastered: '{level} gemeistert',

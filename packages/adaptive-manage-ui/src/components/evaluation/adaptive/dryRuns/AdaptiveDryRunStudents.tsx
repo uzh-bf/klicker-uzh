@@ -6,8 +6,10 @@ import {
   traceDryRunCompetence,
 } from './adaptiveDryRunExplain'
 import {
+  type DryRunMainMastery,
   type DryRunMastery,
   type DryRunMasterySettings,
+  dryRunMainMastery,
   dryRunMastery,
 } from './adaptiveDryRunHints'
 import {
@@ -34,11 +36,13 @@ function CompetenceTrace({
   name,
   trace,
   hint,
+  main,
   workspace,
 }: {
   name: string
   trace: DryRunCompetenceTrace
   hint: DryRunMastery
+  main: DryRunMainMastery | null
   workspace: DryRunWorkspace
 }) {
   const t = useTranslations()
@@ -107,6 +111,28 @@ function CompetenceTrace({
               : t(`${KEY}.notMastered`, {
                   level: label(trace.reportedLevelId),
                 })}
+          </span>
+        </p>
+      ) : null}
+      {main ? (
+        <p className="mt-1 text-sm" data-cy="adaptive-dry-run-trace-main">
+          <span className="text-gray-600">
+            {t(`${KEY}.mainMastery`, {
+              level: main.label,
+              probability: Math.round(main.probability * 100),
+            })}
+          </span>
+          <span
+            className={twMerge(
+              'ml-2 rounded px-1.5 py-0.5 font-medium',
+              main.mastered
+                ? 'bg-green-100 text-green-900'
+                : 'bg-gray-100 text-gray-700'
+            )}
+          >
+            {main.mastered
+              ? t(`${KEY}.mastered`, { level: main.label })
+              : t(`${KEY}.notMastered`, { level: main.label })}
           </span>
         </p>
       ) : null}
@@ -234,6 +260,13 @@ function AdaptiveDryRunStudents({
   const traces = (student: DryRunStudent) =>
     workspace.competences.map((competence) => ({
       name: competence.name,
+      main: dryRunMainMastery(
+        student.competences.find(
+          ({ nodeId }) => nodeId === competence.nodeId
+        ) ?? { theta: null, standardError: null, levelId: null },
+        workspace,
+        mastery
+      ),
       hint: dryRunMastery(
         student.competences.find(
           ({ nodeId }) => nodeId === competence.nodeId
@@ -286,7 +319,7 @@ function AdaptiveDryRunStudents({
                       {`#${student.index}`}
                     </td>
                     <td className="px-3 py-2 text-xs">
-                      {rows.map(({ name, trace, hint }) => (
+                      {rows.map(({ name, trace, hint, main }) => (
                         <div key={trace.nodeId}>
                           <span className="font-medium">{name}</span>
                           {`: ${label(trace.trueLevelId)} → `}
@@ -304,6 +337,19 @@ function AdaptiveDryRunStudents({
                               title={t(`${KEY}.rowHint`)}
                             >
                               {`${hint.mastered ? '✓ ' : ''}${Math.round(hint.probability * 100)}%`}
+                            </span>
+                          ) : null}
+                          {main ? (
+                            <span
+                              className={twMerge(
+                                'ml-1 rounded px-1',
+                                main.mastered
+                                  ? 'bg-green-100 text-green-900'
+                                  : 'text-gray-500'
+                              )}
+                              title={t(`${KEY}.mainRowHint`)}
+                            >
+                              {`${main.label} ${main.mastered ? '✓ ' : ''}${Math.round(main.probability * 100)}%`}
                             </span>
                           ) : null}
                           {trace.difference !== 0 &&
@@ -335,12 +381,13 @@ function AdaptiveDryRunStudents({
                     <tr>
                       <td colSpan={6} className="bg-gray-50 px-3 py-3">
                         <div className="grid gap-3 lg:grid-cols-2">
-                          {rows.map(({ name, trace, hint }) => (
+                          {rows.map(({ name, trace, hint, main }) => (
                             <CompetenceTrace
                               key={trace.nodeId}
                               name={name}
                               trace={trace}
                               hint={hint}
+                              main={main}
                               workspace={workspace}
                             />
                           ))}
