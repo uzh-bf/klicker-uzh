@@ -113,7 +113,7 @@ test('preserves draft cancellation, publication and diagnostics policy', () => {
   )
   assert.equal(
     publication.if,
-    "${{ !cancelled() && steps.validate.outcome == 'success' }}"
+    "${{ !cancelled() && steps.validate.outcome == 'success' && steps.validate.outputs.publishable == 'true' }}"
   )
   const runIndex = action.runs.steps.findIndex((step) => step.id === 'review')
   const uploadIndex = action.runs.steps.findIndex((step) =>
@@ -124,10 +124,12 @@ test('preserves draft cancellation, publication and diagnostics policy', () => {
   const paths = upload.with.path.trim().split('\n')
   assert.deepEqual(paths, [
     '${{ runner.temp }}/draft-ai-review-adapter-diagnostics.jsonl',
+    '${{ runner.temp }}/draft-ai-review-adapter-diagnostics.jsonl.events.jsonl',
     '${{ runner.temp }}/draft-ai-review-outcome.json',
     '${{ runner.temp }}/draft-ai-review-tools.json',
     '${{ runner.temp }}/draft-ai-review-advisor-expectations.json',
     '${{ runner.temp }}/draft-ai-review-advisor-diagnostics.jsonl',
+    '${{ runner.temp }}/draft-ai-review-advisor-diagnostics.jsonl.events.jsonl',
     '${{ runner.temp }}/ocr-runtime-identity.json',
   ])
   assert.equal(upload.if, 'always()')
@@ -146,6 +148,7 @@ test('routes automatic drafts through Mistral Flash without changing the final p
     'mistral-api-key': '${{ secrets.MISTRAL_API_KEY }}',
     'context7-api-key': '${{ secrets.CONTEXT7_API_KEY }}',
     'github-token': '${{ github.token }}',
+    'provider-paused': '${{ vars.OCR_PROVIDER_PAUSED }}',
   })
   const trustedCheckout = action.runs.steps.find(
     (step) =>

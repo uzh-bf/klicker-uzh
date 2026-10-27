@@ -12,8 +12,8 @@ The action owns the repeated draft execution and publication steps. The
 The operator procedure remains `rs-ocr`; the model-facing procedure remains
 `.agents/skills/ocr-reviewer/SKILL.md`.
 
-Klicker's draft workflow selects the published action at
-`0032c990d40985ce120179ded2c9d4b6e6a1d940`. It retains one repository-owned
+Klicker's draft workflow selects the action through the full commit SHA in
+`.github/workflows/check-ocr-review.yml`. It retains one repository-owned
 job with the existing admission and execution policy; repeated draft steps live
 in that pinned release. Individual/stack final controllers retain their existing
 execution and admission. Other callers migrate independently after donor
@@ -83,12 +83,88 @@ Invalid results, cancellation and superseded heads cannot publish. Publisher
 and artifact failures fail the action. Summary failure remains best-effort. No
 retry, resume, accounting or budget policy is added by this controller.
 
+## Incremental usage and context evidence
+
+The current source adds a separate `.events.jsonl` sidecar beside each adapter
+usage receipt. The draft and advisor have separate sidecars; individual and
+stack final sidecars also include their preflight or topology calls. Attempt events
+have a random invocation identifier and attempt ordinal. Dispatch, parsed
+response and terminal outcome are distinct events. Response usage is written
+before response validation, so a rejected completion can retain observed usage
+without changing aggregate accounting. Missing or invalid usage stays null.
+
+Response events also record `reasoning_bytes`, `content_bytes`, `tool_calls`
+and `tool_arguments_bytes` from the normalized first assistant choice, including
+length-limited responses and partial argument strings. These UTF-8 byte counts
+contain no response content and do not estimate tokens. Unsupported message
+shapes produce null shape counters; a supported empty message produces zeros.
+`reasoning_tokens` retains an optional provider-reported count only when it is
+a safe nonnegative integer no larger than valid completion usage. Missing or
+invalid counts stay null. These fields explain response shape independently of
+validation and never affect review budgets, cost accounting or retries.
+
+The journal contains only fixed provider/model/stage labels, opaque conversation
+IDs, numeric counters and bounded outcome codes. It excludes prompts, source,
+arguments, reasoning, raw errors and provider-generated IDs. Synchronous writes
+preserve completed rows across process termination; an unfinished dispatch
+still has unknown usage. A hard runner loss can prevent artifact upload. Each
+sidecar is limited to 8 MiB and each invocation to 16,384 rows, including a
+truncation marker where space permits. I/O failure emits a fixed warning; the
+long-lived adapter also retains journal status in its aggregate diagnostic
+snapshot. These diagnostic failures never change review execution or retries.
+Sidecars have seven-day retention alongside existing sanitized artifacts.
+
+Broker `tool_results` count successful serialized results and their UTF-8 bytes
+for the three fixed tools, including discovery, pagination and cached lookups.
+They exclude transport envelopes and unsuccessful calls. The shared broker
+cannot attribute these counts to individual workers. Adapter conversation
+`observed_tool_results` instead count tool-result content replayed in model
+input, once per call ID within that adapter lifetime. These observations can
+include errors and omit results removed by compression or never sent back to
+the model. Missing conversation keys, the 256-conversation limit and the
+2,048-result deduplication limit remain explicit diagnostic gaps; observed
+input bytes are not authoritative broker-read bytes or billable tokens.
+
+Cost summaries add `OCR cost_components` per stage: uncached input, cached input,
+output and cached share of estimated charge, using existing pinned prices.
+Incomplete stages have unavailable components. Existing total/savings lines,
+budget units and aggregate receipt formulas remain unchanged. Event rows are
+never summed into those totals or treated as complete billing evidence.
+
+Draft callers use the diagnostics shipped by their selected immutable runtime;
+final workflows use the merged repository-owned adapter source. A runtime source
+change alone does not establish which draft implementation is active.
+
 ## Prepare a caller upgrade
 
-First publish the action source and verify its producing offline qualification.
-After merge, resolve the actual merged source revision with host `gh` and Git.
-Pin `OWNER/REPOSITORY/.github/actions/ocr-review@FULL_COMMIT_SHA` in the caller;
-do not use a guessed squash hash or a local action path as distribution proof.
+For donor changes, include the runtime and caller adoption in one PR:
+
+1. Commit the complete runtime and updated asset manifest. Record that commit's
+   full SHA before changing the caller.
+2. In a later commit on the same branch, pin
+   `OWNER/REPOSITORY/.github/actions/ocr-review@FULL_COMMIT_SHA` to that runtime
+   commit. Push both commits to the action's existing repository.
+3. Qualify the selected release and compare its verified manifest with the final
+   candidate's verified manifest. Equal manifests bind equal runtime assets;
+   later runtime changes require another runtime commit and refreshed pin.
+4. After merge, read back the caller, verify the merged runtime still matches
+   the selected release and confirm that the exact pin remains retrievable.
+
+The source SHA remains immutable across a squash merge. Ordinary codebase CI
+explicitly fetches that exact commit from the fixed public donor origin before
+its local `git show` and `git archive` checks. It clears credential helpers and
+GitHub authorization headers, changes no refs or checkout, and never executes
+the fetched candidate. A fresh checkout can otherwise omit a pre-merge commit
+after its branch is deleted. Present fetchability is evidence for the selected
+commit, not a promise of indefinite forge retention; an unavailable pin blocks
+qualification and needs an ordinary source correction.
+
+Keep independent adopter upgrades in their own release cadence. A later
+adopter can select an already merged release; a second donor PR is not required
+merely to replace a qualified source pin with its squash-merge SHA. Neither a
+guessed squash hash nor a mutable action ref is distribution proof. GitLab needs
+equivalent exact-revision retrieval and runtime-parity checks through its own
+qualified adapter before using the same one-MR procedure.
 
 The caller keeps one `ocr-review` job with `pull_request_target` draft admission,
 read-only contents and review-write permissions, its existing concurrency group,
@@ -100,7 +176,14 @@ with:
   mistral-api-key: ${{ secrets.MISTRAL_API_KEY }}
   context7-api-key: ${{ secrets.CONTEXT7_API_KEY }}
   github-token: ${{ github.token }}
+  provider-paused: ${{ vars.OCR_PROVIDER_PAUSED }}
 ```
+
+The workflow resolves the trusted repository pause variable and passes it as an
+action input. The composite reads the input only in the review step; the `vars`
+context is unavailable inside composite action metadata. Omitted
+or empty input keeps provider calls enabled, `true` pauses them, and invalid
+values fail closed.
 
 Do not expose these credentials through job-level environment variables.
 Repository-specific activation can narrow the normal draft expression and must

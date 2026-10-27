@@ -14,6 +14,7 @@ import YAML from 'yaml'
 
 import {
   buildGrowthBookCommand,
+  buildBuildCommand,
   buildStartCommand,
   createTerminalAccounting,
   resolveRuntimePlan,
@@ -345,6 +346,16 @@ test('stopping the runtime only marks children that are still running', () => {
 
   stopRunningChildren(entries, 'SIGTERM')
   assert.deepEqual(running.signals, ['SIGTERM'])
+})
+
+test('the local CI-runtime build covers exactly the apps the start command serves', () => {
+  const runtime = validateRuntimePlan(profilePlan())
+  const start = buildStartCommand(runtime)
+
+  assert.deepEqual(buildBuildCommand(runtime), {
+    ...start,
+    args: start.args.map((arg) => (arg === 'start:test' ? 'build:test' : arg)),
+  })
 })
 
 test('workflow shard startup steps explicitly select Bash', () => {
