@@ -333,6 +333,9 @@ jobs:
           node --test ./util/next-pages-development-config.test.mjs
           pnpm run test:dev-runtime
 
+      - name: Check deployment build configuration
+        run: node --test ./util/deployment-build-env.test.mjs
+
       - name: Check workspace dependency mount generation
         run: node --test ./util/generate-dependency-mounts.test.mjs
 
@@ -390,6 +393,11 @@ jobs:
           else
             pnpm exec turbo run build
           fi
+
+      - name: Check response worker contracts
+        run: |
+          pnpm exec turbo run build --filter="@klicker-uzh/hatchet-worker-response-processor..."
+          pnpm --filter @klicker-uzh/hatchet-worker-response-processor test:run
 
       - name: Check typescript types
         if: >-
