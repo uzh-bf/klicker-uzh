@@ -574,8 +574,14 @@ function validateStagingWorkflow({
   }
   // ready_for_review is where a draft pull request's deferred builds are
   // restored.
-  const approvedTypes = [...APPROVED_PULL_REQUEST_TYPES].sort()
-  if (prTypes.slice().sort().join(',') !== approvedTypes.join(',')) {
+  // Candidate branches that have not yet synced the priority router still list
+  // the types without 'labeled'. That narrower set starts no label-triggered
+  // builds, so it stays acceptable until every candidate branch has synced.
+  const approvedTypes = [
+    APPROVED_PULL_REQUEST_TYPES,
+    APPROVED_PULL_REQUEST_TYPES.filter((type) => type !== 'labeled'),
+  ].map((types) => [...types].sort().join(','))
+  if (!approvedTypes.includes(prTypes.slice().sort().join(','))) {
     throw new Error(
       workflowPath + ' does not use the approved pull-request triggers'
     )

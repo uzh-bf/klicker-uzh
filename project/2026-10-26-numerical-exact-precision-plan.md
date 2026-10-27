@@ -246,6 +246,15 @@ across existing consumers. A larger precision-policy refactor is out of scope.
 
 ## Progress
 
+2026-10-27 readiness continuation: strict target freshness now requires
+integrating `v3` at `80885112ac9889dc67b4dea1820ffa89c9cd08eb`.
+Its single staging-CI correction merges without conflicts and changes no
+numerical application code, tests, or dependencies. All 51 staging-promoter
+contract checks pass; staged secret and whitespace checks pass. Preserve the
+existing application reviews and browser evidence. Next: publish the ordinary
+merge and verify required hosted CI on its head. The separate final AI review
+remains incomplete after its failed tool-access preflight.
+
 2026-10-27 documentation follow-up: the user requested an Opus consultation
 and a durable policy for deciding when user docs need updates. Opus recommended
 restoring the tutorial; the policy now lives in the existing feature guide,
@@ -263,8 +272,8 @@ draft-only terminal for those named actions. Merge into `v3`, deployment, and
 data repair remain outside scope. The unchanged numerical-answer compatibility
 contract and regression portfolio still apply.
 
-Integration target: `4b09b2f2b2bac1d5e028af2203942a50edcfbf41`, the current
-`origin/v3` head. Reason: strict required checks need an up-to-date branch.
+First readiness integration target: `4b09b2f2b2bac1d5e028af2203942a50edcfbf41`,
+the `origin/v3` head at that pass. Reason: strict required checks need an up-to-date branch.
 The upstream CI-routing change has no path overlap with the precision fix.
 Preserve history with one ordinary merge into the task branch and a non-force
 push. Reuse source reviews and browser captures because the affected source,
