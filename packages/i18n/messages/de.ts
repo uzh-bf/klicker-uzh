@@ -1397,8 +1397,6 @@ Da die KlickerUZH-App noch nicht im iOS-App-Store verfügbar ist, folgen Sie die
       reconnect: 'Erneut verbinden',
       noActiveQuestion:
         'Aktuell ist keine Frage aktiv... Sobald eine neue Frage aktiviert wird, wird sie automatisch angezeigt. Alternativ können Sie auch die Seite <reload>aktualisieren</reload>, um ein Update zu erzwingen.',
-      allQuestionsAnswered:
-        'Sie haben bereits alle aktiven Fragen beantwortet oder der Block wurde geschlossen.',
       previousCase: 'Vorheriger Fall',
       nextCase: 'Nächster Fall',
       thisLiveQuizGamified: 'Diese Live-Quiz ist gamifiziert!',
@@ -1647,8 +1645,6 @@ Da die KlickerUZH-App noch nicht im iOS-App-Store verfügbar ist, folgen Sie die
         'Für diese Frage wurde bereits eine frühere Antwort erfasst. Diese zählt; der erneute Versuch ersetzt sie nicht.',
       submissionUnauthorizedError:
         'Ihr Login konnte nicht korrekt verifiziert werden. Bitte loggen Sie sich erneut ein und beantworten Sie die Frage nochmals.',
-      submissionServerError:
-        'Beim Abschicken Ihrer Antwort ist ein Serverfehler aufgetreten. Bitte versuchen Sie es erneut.',
       missingAssessmentCourseParticipation:
         'Sie sind nicht Teil des Assessment-Kurses, zu welchem dieses Quiz gehört. Bitte kontaktieren Sie Ihre Dozierenden.',
       accountDeletionMessage:

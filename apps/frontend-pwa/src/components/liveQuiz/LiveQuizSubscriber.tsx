@@ -27,7 +27,7 @@ function LiveQuizSubscriber({ id }: { id: string }) {
     let active = true
     let operationGeneration = 0
     let operationFailed = false
-    let authorizationFailed = false
+    let manualRecoveryRequired = false
     let subscriptions: { unsubscribe: () => void }[] = []
     let snapshotRequest: AbortController | undefined
     const connection = getSubscriptionConnection()
@@ -73,7 +73,7 @@ function LiveQuizSubscriber({ id }: { id: string }) {
       operationFailed = true
       if (error && typeof error === 'object' && 'graphQLErrors' in error) {
         // Operation-level GraphQL failures require explicit recovery, rather than a foreground retry loop.
-        authorizationFailed = true
+        manualRecoveryRequired = true
       }
       recovery.invalidate()
       setStatus('failed')
@@ -144,13 +144,13 @@ function LiveQuizSubscriber({ id }: { id: string }) {
     }
 
     function recover(manual = false) {
-      if (!active || (!manual && authorizationFailed)) return
+      if (!active || (!manual && manualRecoveryRequired)) return
       if (!navigator.onLine) {
         setStatus('failed')
         return
       }
       if (manual) {
-        authorizationFailed = false
+        manualRecoveryRequired = false
         connection.client?.terminate()
       }
       if (manual || operationFailed) startSubscriptions()
@@ -178,11 +178,12 @@ function LiveQuizSubscriber({ id }: { id: string }) {
               typeof event.code === 'number'
                 ? event.code
                 : undefined
+            // Protocol and authorization closes would fail again on automatic retry.
             if (
               code &&
               [4400, 4401, 4403, 4406, 4409, 4429, 4005].includes(code)
             )
-              authorizationFailed = true
+              manualRecoveryRequired = true
             recovery.invalidate()
             setStatus('failed')
           }),

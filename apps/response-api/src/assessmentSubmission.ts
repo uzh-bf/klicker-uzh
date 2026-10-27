@@ -13,6 +13,8 @@ export async function dispatchAssessmentSubmission({
     await enqueue()
     return 'accepted'
   } catch (error) {
+    // The audit is best effort: it must neither delay the unconfirmed response
+    // nor surface its own failure as an unhandled rejection.
     void Promise.resolve()
       .then(() => auditFailure(error))
       .catch(() => undefined)

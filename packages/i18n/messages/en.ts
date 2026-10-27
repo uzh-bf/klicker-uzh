@@ -1385,8 +1385,6 @@ Since the KlickerUZH app is not yet available in the iOS App Store, follow these
       reconnect: 'Reconnect',
       noActiveQuestion:
         'Currently, no question is active... Once a new question is activated, it will be shown automatically. Alternatively, you may also <reload>refresh</reload> the page to enforce an update.',
-      allQuestionsAnswered:
-        'You have already answered all active questions or the block has been closed.',
       previousCase: 'Previous case',
       nextCase: 'Next case',
       thisLiveQuizGamified: 'This live quiz is gamified!',
@@ -1636,8 +1634,6 @@ Since the KlickerUZH app is not yet available in the iOS App Store, follow these
         'An earlier answer to this question is already recorded. That answer counts; this attempt does not replace it.',
       submissionUnauthorizedError:
         'Your login could not be verified correctly. Please log in again and answer the question again.',
-      submissionServerError:
-        'A server error occurred while submitting your answer. Please try again.',
       missingAssessmentCourseParticipation:
         'You are not part of the assessment course to which this quiz belongs. Please contact your lecturers.',
       accountDeletionMessage:

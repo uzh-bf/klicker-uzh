@@ -93,7 +93,9 @@ function QuestionArea({
               )
             )
         })
-        .catch(() => {})
+        .catch(() => {
+          console.warn('[LiveQuiz] could not read stored submissions')
+        })
     }
     return () => {
       cancelled = true
@@ -109,22 +111,22 @@ function QuestionArea({
     })
 
   // Refreshing signed quiz metadata must not reset an in-progress answer.
-  const responseInstance = useRef({
+  const [responseInstance, setResponseInstance] = useState({
     quizId,
     execution,
     instance: currentInstance,
   })
   if (
-    responseInstance.current.quizId !== quizId ||
-    responseInstance.current.execution !== execution ||
-    responseInstance.current.instance?.id !== currentInstance?.id
+    responseInstance.quizId !== quizId ||
+    responseInstance.execution !== execution ||
+    responseInstance.instance?.id !== currentInstance?.id
   ) {
-    responseInstance.current = { quizId, execution, instance: currentInstance }
+    setResponseInstance({ quizId, execution, instance: currentInstance })
   }
 
   // hook running on every instance change to initialize the student response correctly
   useSingleStudentResponse({
-    instance: responseInstance.current.instance,
+    instance: responseInstance.instance,
     setStudentResponse,
   })
 
@@ -224,7 +226,12 @@ function QuestionArea({
     const storageKey = `lq-${quizId}-ex-${execution}-i-${instanceId}`
     let success = false
     try {
-      await localforage.setItem(`${storageKey}-temp`, studentResponse.response)
+      // A storage failure must not block the submission; the draft stays in memory.
+      await localforage
+        .setItem(`${storageKey}-temp`, studentResponse.response)
+        .catch(() => {
+          console.warn('[LiveQuiz] could not store the draft')
+        })
       success = await answerQuestion({
         instanceId,
         type: elementType,
@@ -232,6 +239,7 @@ function QuestionArea({
         correlationKey,
       })
     } catch {
+      console.warn('[LiveQuiz] submission handling failed')
       toast({
         type: 'error',
         message: t('pwa.assessment.submissionGeneralError'),
@@ -363,6 +371,8 @@ function QuestionArea({
 
     async function recordPreviousSubmission() {
       await localforage.setItem(storageKey, { previouslySubmitted: true })
+      // The earlier answer is final, so the unsent draft can no longer be used.
+      await localforage.removeItem(`${storageKey}-temp`)
       setSubmittedAt(null)
       setPreviouslySubmitted(true)
       setStudentResponse({

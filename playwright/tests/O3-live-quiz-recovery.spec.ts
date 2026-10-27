@@ -260,6 +260,8 @@ async function createQuiz(
       status: PublicationStatus.DRAFT,
       accessMode: AccessMode.PUBLIC,
       isAssessmentEnabled: true,
+      // Assessment quizzes require a PIN by database constraint.
+      pinCode: randomUUID().replaceAll('-', '').slice(0, 6).toUpperCase(),
       isGamificationEnabled: false,
       ownerId: LECTURER_ID,
       courseId: assessment.courseId,
@@ -307,6 +309,7 @@ async function createQuiz(
   })
   return {
     id: quiz.id,
+    pinCode: quiz.pinCode!,
     blocks: quiz.blocks.map((block) => ({
       id: block.id,
       instanceId: block.elements[0]!.id,
@@ -356,7 +359,11 @@ async function installWebSocketFaults(context: BrowserContext) {
         add('message', (event) => {
           if (!dropMessages) messageHandler?.call(socket, event)
         })
-        socket.addEventListener = function (type, listener, options) {
+        socket.addEventListener = function (
+          type: string,
+          listener: EventListenerOrEventListenerObject,
+          options?: boolean | AddEventListenerOptions
+        ) {
           if (type !== 'message' || typeof listener !== 'function') {
             return add(type, listener, options)
           }
@@ -493,6 +500,26 @@ async function withQuiz(
   run: (quiz: QuizFixture, token: string) => Promise<void>
 ) {
   const quiz = await createQuiz(assessment, timed)
+  // Equivalent to a successful PIN entry, which the session query requires.
+  const cookieDomain = process.env.COOKIE_DOMAIN?.trim()
+  const pinCookie = {
+    name: `live-quiz-pin-${quiz.id}`,
+    value: quiz.pinCode,
+    httpOnly: true,
+    sameSite: 'Lax' as const,
+    secure: new URL(env('URL_STUDENT')).protocol === 'https:',
+  }
+  await page.context().addCookies([
+    cookieDomain
+      ? {
+          ...pinCookie,
+          domain: cookieDomain.startsWith('.')
+            ? cookieDomain
+            : `.${cookieDomain}`,
+          path: '/',
+        }
+      : { ...pinCookie, url: new URL(env('URL_STUDENT')).origin },
+  ])
   let token: string | undefined
   try {
     token = await lecturerToken(page)

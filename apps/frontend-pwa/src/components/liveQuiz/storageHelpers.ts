@@ -80,6 +80,7 @@ export async function loadStoredResponse({
 
     // if the block was already submitted, load the previously submitted response and remove the temporary one (if it exists)
     if (stored?.previouslySubmitted) {
+      if (tempStored) await localforage.removeItem(`${key}-temp`)
       setSubmittedAt(null)
       setPreviouslySubmitted?.(true)
       setStudentResponse({
