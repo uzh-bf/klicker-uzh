@@ -1,9 +1,9 @@
 import { useMutation, useQuery } from '@apollo/client'
 import {
-  ApproveChatbotPublicationDocument,
   ChatbotStatus,
-  GetPendingChatbotPublicationsDocument,
-  RejectChatbotPublicationDocument,
+  GetPendingChatbotRevisionReviewsDocument,
+  MApproveChatbotRevisionDocument,
+  MRejectChatbotRevisionDocument,
 } from '@klicker-uzh/graphql/dist/ops'
 import Loader from '@klicker-uzh/shared-components/src/Loader'
 import { Button, UserNotification } from '@uzh-bf/design-system'
@@ -15,35 +15,38 @@ import ChatbotRejectionForm from './ChatbotRejectionForm'
 function ChatbotPublicationQueue() {
   const t = useTranslations()
   const { data, loading, error, refetch } = useQuery(
-    GetPendingChatbotPublicationsDocument,
+    GetPendingChatbotRevisionReviewsDocument,
     { fetchPolicy: 'network-only', notifyOnNetworkStatusChange: true }
   )
   const [approve, { loading: approving }] = useMutation(
-    ApproveChatbotPublicationDocument
+    MApproveChatbotRevisionDocument
   )
   const [reject, { loading: rejecting }] = useMutation(
-    RejectChatbotPublicationDocument
+    MRejectChatbotRevisionDocument
   )
   const [rejectionError, setRejectionError] = useState(false)
   const [rejectedName, setRejectedName] = useState<string | null>(null)
   const busy = loading || approving || rejecting
   const [approvalError, setApprovalError] = useState(false)
   const [publishedName, setPublishedName] = useState<string | null>(null)
-  const pending =
-    data?.getPendingChatbotPublications.filter(
-      ({ chatbot }) => chatbot.status === ChatbotStatus.PendingApproval
-    ) ?? []
+  const pending = data?.getPendingChatbotPublications ?? []
 
-  async function publish(id: string, name: string) {
+  async function publish(
+    id: string,
+    name: string,
+    expectedRevisionVersion: number
+  ) {
     setApprovalError(false)
     setRejectionError(false)
     setRejectedName(null)
     setPublishedName(null)
     try {
-      const result = await approve({ variables: { id } })
+      const result = await approve({
+        variables: { id, expectedRevisionVersion },
+      })
       if (
-        result.data?.approveChatbotPublication?.id !== id ||
-        result.data.approveChatbotPublication.status !== ChatbotStatus.Published
+        result.data?.approveChatbotRevision?.id !== id ||
+        result.data.approveChatbotRevision.status !== ChatbotStatus.Published
       ) {
         throw new Error('Approval was not confirmed')
       }
@@ -56,16 +59,24 @@ function ChatbotPublicationQueue() {
     await refetch().catch(() => undefined)
   }
 
-  async function rejectRequest(id: string, name: string, comment: string) {
+  async function rejectRequest(
+    id: string,
+    name: string,
+    expectedRevisionVersion: number,
+    comment: string
+  ) {
     setApprovalError(false)
     setRejectionError(false)
     setPublishedName(null)
     setRejectedName(null)
     try {
-      const result = await reject({ variables: { id, comment } })
+      const result = await reject({
+        variables: { id, expectedRevisionVersion, comment },
+      })
       if (
-        result.data?.rejectChatbotPublication?.id !== id ||
-        result.data.rejectChatbotPublication.status !== ChatbotStatus.Rejected
+        result.data?.rejectChatbotRevision?.id !== id ||
+        result.data.rejectChatbotRevision.revisionStatus !==
+          ChatbotStatus.Rejected
       ) {
         throw new Error('Rejection was not confirmed')
       }
@@ -137,7 +148,7 @@ function ChatbotPublicationQueue() {
                 className="cursor-pointer break-words px-4 py-3 font-semibold focus-visible:outline focus-visible:outline-2 focus-visible:outline-blue-600"
                 data-cy={`open-chatbot-review-${review.chatbot.id}`}
               >
-                {review.chatbot.name}
+                {review.chatbot.authoringRevision?.name ?? review.chatbot.name}
                 <span className="ml-2 text-sm font-normal text-gray-500">
                   {review.ownerShortname} ·{' '}
                   {t('manage.resources.chatbotStatusPendingApproval')}
@@ -162,7 +173,12 @@ function ChatbotPublicationQueue() {
                     disabled={busy || !review.ownerPublishingEnabled}
                     loading={approving}
                     onClick={() => {
-                      void publish(review.chatbot.id, review.chatbot.name)
+                      void publish(
+                        review.chatbot.id,
+                        review.chatbot.authoringRevision?.name ??
+                          review.chatbot.name,
+                        review.chatbot.revisionVersion
+                      )
                     }}
                     data={{ cy: `approve-chatbot-${review.chatbot.id}` }}
                   >
@@ -172,12 +188,15 @@ function ChatbotPublicationQueue() {
                   </Button>
                 </div>
                 <ChatbotRejectionForm
+                  key={`${review.chatbot.id}-${review.chatbot.revisionVersion}`}
                   id={review.chatbot.id}
                   disabled={busy}
                   onReject={(comment) =>
                     rejectRequest(
                       review.chatbot.id,
-                      review.chatbot.name,
+                      review.chatbot.authoringRevision?.name ??
+                        review.chatbot.name,
+                      review.chatbot.revisionVersion,
                       comment
                     )
                   }

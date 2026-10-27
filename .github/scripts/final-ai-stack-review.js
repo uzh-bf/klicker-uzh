@@ -2001,7 +2001,7 @@ function runBoundedGit(repositoryPath, args) {
   }
   try {
     return execFileSync(
-      'git',
+      '/usr/bin/git',
       ['--no-pager', '--no-replace-objects', ...args],
       {
         cwd: repositoryPath,
@@ -3153,7 +3153,7 @@ async function callTopologyModel({
     body,
     diagnosticsStage: 'topology',
     fetchImpl,
-    timeoutMs: 600_000,
+    timeoutMs: 120_000,
   })
   const choice = payload?.choices?.[0]
   if (

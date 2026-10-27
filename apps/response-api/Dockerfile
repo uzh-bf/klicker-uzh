@@ -12,7 +12,9 @@ WORKDIR /app
 RUN apk add --no-cache libc6-compat
 RUN apk update
 
-RUN npm i -g --ignore-scripts pnpm@11.5.0 turbo@2.10.11
+# pnpm 12 needs native setup for direct child-process execution on Alpine.
+RUN npm i -g --ignore-scripts pnpm@12.11.2 turbo@2.10.11 \
+ && node "$(npm root -g)/pnpm/install.js"
 
 COPY . .
 
@@ -25,7 +27,8 @@ WORKDIR /app
 RUN apk add --no-cache libc6-compat
 RUN apk update
 
-RUN npm i -g --ignore-scripts pnpm@11.5.0 turbo@2.10.11
+RUN npm i -g --ignore-scripts pnpm@12.11.2 turbo@2.10.11 \
+ && node "$(npm root -g)/pnpm/install.js"
 
 COPY --from=deps /app/out/json/ .
 COPY --from=deps /app/out/pnpm* .
@@ -43,7 +46,8 @@ WORKDIR /app
 
 ARG NODE_ENV="production"
 
-RUN npm i -g --ignore-scripts pnpm@11.5.0 turbo@2.10.11
+RUN npm i -g --ignore-scripts pnpm@12.11.2 turbo@2.10.11 \
+ && node "$(npm root -g)/pnpm/install.js"
 
 COPY --from=deps /app/out/json/ .
 COPY --from=deps /app/out/pnpm* .
@@ -59,6 +63,7 @@ RUN adduser --system --uid 1001 nodejs
 
 COPY --from=builder /app/packages/util/dist/ /app/packages/util/dist/
 COPY --from=builder /app/packages/hatchet/dist/ /app/packages/hatchet/dist/
+COPY --from=builder /app/packages/knowledge-graph/dist/ /app/packages/knowledge-graph/dist/
 COPY --from=builder /app/packages/types/dist/ /app/packages/types/dist/
 COPY --from=builder /app/packages/grading/dist/ /app/packages/grading/dist/
 COPY --from=builder /app/packages/prisma/dist/ /app/packages/prisma/dist/

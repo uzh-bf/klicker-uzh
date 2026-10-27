@@ -1,12 +1,11 @@
 import type { ParsedUrlQuery } from 'node:querystring'
 import { useQuery } from '@apollo/client'
 import {
-  type Chatbot,
   type ChatModelCapability,
   GetChatbotPublishingCapabilityDocument,
-  QGetChatbotsInfoWithStandardModesDocument,
   GetChatModelRegistryDocument,
   GetUserCoursesDocument,
+  QGetChatbotsInfoWithKnowledgeBasesDocument,
 } from '@klicker-uzh/graphql/dist/ops'
 import { Button, H2, Select } from '@uzh-bf/design-system'
 import { useRouter } from 'next/router'
@@ -37,7 +36,7 @@ function Chatbots() {
   const [navigationState, setNavigationState] =
     useState<ChatbotNavigationState>(cleanNavigationState)
   const { data, loading } = useQuery(
-    QGetChatbotsInfoWithStandardModesDocument,
+    QGetChatbotsInfoWithKnowledgeBasesDocument,
     {
       fetchPolicy: 'network-only',
     }
@@ -171,7 +170,7 @@ function Chatbots() {
     if (!selectedChatbot) return
     if (
       view === workspaceState.view &&
-      (view !== 'setup' || step === workspaceState.step)
+      (view !== 'overview' || step === workspaceState.step)
     ) {
       return
     }
@@ -194,17 +193,17 @@ function Chatbots() {
     }
   }
 
-  const handleSelect = (chatbot: Chatbot) => selectChatbot(chatbot.id)
+  const handleSelect = (chatbot: { id: string }) => selectChatbot(chatbot.id)
 
   const selectCreatedChatbot = (chatbotId: string) => {
     runInternalNavigation(() => {
-      setNavigationState(cleanNavigationState)
+      // The creation refetch may already have mounted the new draft and
+      // reported its unsaved disclaimer. Preserve that editor state.
       return router.push(
         {
           pathname: router.pathname,
           query: buildWorkspaceQuery(chatbotId, {
-            view: 'setup',
-            step: 'disclaimer',
+            view: 'disclaimer',
           }),
         },
         undefined,

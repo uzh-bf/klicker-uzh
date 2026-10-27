@@ -4,6 +4,8 @@ import type { ChatThread } from '@klicker-uzh/prisma/client'
 export interface Thread {
   id: string
   title: string | null
+  // Where the conversation began ('elearning' | 'pwa'); null for legacy rows.
+  origin: string | null
   createdAt: string
   updatedAt: string
   lastChatMode: string | null
@@ -25,6 +27,7 @@ export class ThreadService {
     return {
       id: thread.id,
       title: thread.title,
+      origin: thread.origin,
       createdAt: thread.createdAt.toISOString(),
       updatedAt: thread.updatedAt.toISOString(),
       lastChatMode,
@@ -37,11 +40,15 @@ export class ThreadService {
   static async createThread(
     participantId: string,
     chatbotId: string,
-    title?: string | null
+    title?: string | null,
+    id?: string,
+    origin?: string | null
   ): Promise<Thread> {
     const thread = await prisma.chatThread.create({
       data: {
+        ...(id ? { id } : {}),
         title,
+        ...(origin ? { origin } : {}),
         participant: {
           connect: { id: participantId },
         },

@@ -1,4 +1,5 @@
 import type { FeatureFlagKey } from '@klicker-uzh/feature-flags'
+import { GraphQLError } from 'graphql'
 import type { ContextWithUser } from './context.js'
 
 type FeatureFlagAccessContext = Pick<
@@ -47,5 +48,16 @@ export async function isFeatureFlagEnabled(
       `[feature-flags] Evaluation failed for "${key}"; denying access`
     )
     return false
+  }
+}
+
+export async function requireFeatureFlagAccess(
+  ctx: FeatureFlagAccessContext,
+  key: FeatureFlagKey
+): Promise<void> {
+  if (!(await isFeatureFlagEnabled(ctx, key))) {
+    throw new GraphQLError('Forbidden', {
+      extensions: { code: 'FORBIDDEN' },
+    })
   }
 }

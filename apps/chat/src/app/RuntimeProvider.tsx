@@ -1,22 +1,17 @@
 'use client'
 
-import { useChatResponse } from '@/src/hooks/useChatResponse'
-import { useThreadManagement } from '@/src/hooks/useThreadManagement'
-import {
-  useChatStore,
-  type ExtendedThreadMessageLike,
-} from '@/src/stores/chatStore'
-import {
-  selectModelReadsDocumentPages,
-  useSettingsStore,
-} from '@/src/stores/settingsStore'
 import {
   AssistantRuntimeProvider,
   CompositeAttachmentAdapter,
-  useExternalStoreRuntime,
   type ThreadMessageLike,
+  useExternalStoreRuntime,
 } from '@assistant-ui/react'
-import { useParams, useRouter, useSearchParams } from 'next/navigation'
+import {
+  useParams,
+  usePathname,
+  useRouter,
+  useSearchParams,
+} from 'next/navigation'
 import { useLocale, useTranslations } from 'next-intl'
 import {
   useCallback,
@@ -26,6 +21,16 @@ import {
   useState,
   useSyncExternalStore,
 } from 'react'
+import { useChatResponse } from '@/src/hooks/useChatResponse'
+import { useThreadManagement } from '@/src/hooks/useThreadManagement'
+import {
+  type ExtendedThreadMessageLike,
+  useChatStore,
+} from '@/src/stores/chatStore'
+import {
+  selectModelReadsDocumentPages,
+  useSettingsStore,
+} from '@/src/stores/settingsStore'
 import { useChatUi } from '../components/chat-ui-context'
 import {
   DictationProvider,
@@ -41,7 +46,7 @@ import {
 } from '../lib/attachments/documentAttachmentAdapter'
 import { parseMessageDocuments } from '../lib/attachments/documentText'
 import { imageAttachmentAdapter } from '../lib/attachments/imageAttachmentAdapter'
-import { resolveSelectedMode } from '../lib/config/modes'
+import { type ChatModeOptions, resolveSelectedMode } from '../lib/config/modes'
 import { useLocalSpeechSynthesis } from '../lib/speech/localSpeechSynthesis'
 
 const EMPTY_MESSAGES: ExtendedThreadMessageLike[] = []
@@ -57,11 +62,20 @@ export function RuntimeProvider({
   children,
 }: Readonly<{
   chatbotId: string
-  initialModeOptions: Record<string, string>
+  initialModeOptions: ChatModeOptions
   children: React.ReactNode
 }>) {
   const { embedded } = useChatUi()
-  const { threadId } = useParams<{ chatbotId: string; threadId?: string }>()
+  const { threadId: routeThreadId } = useParams<{
+    chatbotId: string
+    threadId?: string
+  }>()
+  const pathname = usePathname()
+  // Native history changes keep the authenticated embed mounted. Dynamic
+  // route params still describe its original server route, so read the path.
+  const threadId = embedded
+    ? pathname.match(/^\/[^/]+\/threads\/([^/]+)\/?$/)?.[1]
+    : routeThreadId
   const activeThreadId = useChatStore((state) => state.activeThreadId)
   const activeThread = useChatStore((state) =>
     state.threads.find((thread) => thread.id === state.activeThreadId)
@@ -161,6 +175,13 @@ export function RuntimeProvider({
     previousRuntimeContext.current = { chatbotId, embedded, threadId }
 
     if (!shouldLoadRuntimeData) return
+    if (
+      embeddedThreadBecameAvailable &&
+      useChatStore.getState().activeThreadId === threadId
+    ) {
+      setThreadsLoaded(true)
+      return
+    }
 
     const currentGen = ++loadGeneration.current
 
@@ -235,7 +256,8 @@ export function RuntimeProvider({
         return
       }
 
-      if (lastSyncedThreadId.current === threadId) {
+      if (embedded || lastSyncedThreadId.current === threadId) {
+        lastSyncedThreadId.current = threadId
         return
       }
     }
@@ -302,7 +324,9 @@ export function RuntimeProvider({
         modelId,
         reasoningEffort,
         creditsUsed,
+        learningContext,
         imageAttachments,
+        meetingClock,
         metadata,
         ...rest
       } = message
@@ -320,9 +344,11 @@ export function RuntimeProvider({
         modelId: modelId ?? null,
         reasoningEffort: reasoningEffort ?? null,
         creditsUsed: creditsUsed ?? null,
+        learningContext: learningContext ?? null,
         imageAttachments: imageAttachments ?? [],
         // The text stays with the chip for the document preview.
         documentAttachments: documents,
+        meetingClock: meetingClock ?? null,
       }
 
       return {

@@ -1,8 +1,22 @@
 import { signJWT } from '@klicker-uzh/util'
-import { Provider } from 'ltijs'
-// @ts-ignore
-import Database from 'ltijs-sequelize'
-import { appendJwt, resolveLaunchTarget } from './launchTarget.js'
+import {
+  DefaultLogger,
+  ExpressHttpHandler,
+  IdTokenValidationMethod,
+  type LaunchContext,
+  Provider,
+} from 'ltijs'
+import { PostgresDatabaseManager } from './database.js'
+import {
+  appendJwt,
+  getChatbotLaunchBinding,
+  resolveLaunchTarget,
+} from './launchTarget.js'
+import {
+  type PlatformRegistration,
+  parsePlatform,
+  resolvePlatforms,
+} from './platforms.js'
 
 // Validate required environment variables
 if (!process.env.APP_ORIGIN_LTI) {
@@ -10,68 +24,113 @@ if (!process.env.APP_ORIGIN_LTI) {
   process.exit(1)
 }
 
-const PROVIDER_OPTIONS = {
-  appRoute: '/',
-  loginRoute: '/login',
-  cookies: {
-    secure: true,
-    sameSite: 'none',
+const platforms = resolvePlatforms(process.env)
+
+const database = new PostgresDatabaseManager(
+  {
+    host: process.env.LTI_DB_HOST,
+    port: Number(process.env.LTI_DB_PORT ?? 5432),
+    database: process.env.LTI_DB_NAME,
+    user: process.env.LTI_DB_USER,
+    password: process.env.LTI_DB_PASS,
+    ssl: process.env.NODE_ENV !== 'development',
   },
-  devMode: process.env.LTI_DEV_MODE === 'true',
-  ltiaas: process.env.LTI_AAS_MODE === 'true',
-}
+  process.env.LTI_ENCRYPTION_KEY as string
+)
 
-// Initialize database connection
-if (process.env.LTI_DB_TYPE === 'postgres') {
-  const db = new Database(
-    process.env.LTI_DB_NAME,
-    process.env.LTI_DB_USER,
-    process.env.LTI_DB_PASS,
-    {
-      // see https://sequelize.org/api/v6/class/src/sequelize.js~sequelize#instance-constructor-constructor
-      host: process.env.LTI_DB_HOST,
-      port: process.env.LTI_DB_PORT ?? 5432,
-      dialect: 'postgres',
-      dialectOptions: {
-        ssl: process.env.NODE_ENV !== 'development',
-      },
-    }
-  )
+const port = Number(process.env.LTI_PORT ?? 4000)
 
-  // Setup LTI provider
-  Provider.setup(
-    process.env.LTI_ENCRYPTION_KEY as string,
-    {
-      plugin: db,
-    },
-    PROVIDER_OPTIONS
-  )
-} else {
-  // Setup LTI provider
-  Provider.setup(
-    process.env.LTI_ENCRYPTION_KEY as string,
-    {
-      url: process.env.LTI_DB_CONNECTION_STRING as string,
-    },
-    PROVIDER_OPTIONS
-  )
-}
+// No browser calls the LTI service cross-origin, so CORS stays off.
+const httpHandler = new ExpressHttpHandler(new DefaultLogger(), {
+  port,
+  cors: false,
+})
 
-// LTI launch callback (token has been verified by ltijs beforehand)
-// @ts-ignore The type here is wrong, a Promise is accepted as per official docs
-Provider.onConnect(async (token, req, res) => {
-  console.log('LTI launch callback:', token)
+// ltijs 7 keeps the launch state in the browser's localStorage instead of
+// cookies, so launches inside an LMS iframe also work when the browser blocks
+// third-party cookies. The routes keep the paths the platforms are registered
+// with.
+const provider = new Provider({
+  databaseManager: database,
+  httpHandler,
+  routes: { loginRoute: '/login', launchRoute: '/', keysetRoute: '/keys' },
+})
 
-  if (!process.env.APP_ORIGIN_LTI) {
-    console.error('APP_ORIGIN_LTI is required but not defined')
-    process.exit(1)
+// ltijs 7 responses cannot set cookies or headers, so the launch continues on
+// a same-origin handoff route that issues the KlickerUZH token.
+provider.onConnect(async (context, request, response) => {
+  const launchTarget = resolveLaunchTarget(toLaunchToken(context), {
+    query: request.query,
+  })
+
+  if (!launchTarget.ok) {
+    console.error(
+      `event=lti_launch_rejected targetSource=${launchTarget.source ?? 'null'} reason=${launchTarget.reason} rawType=${getRawType(launchTarget.rawValue)}`
+    )
+    return response.status(400).json({
+      error: 'invalid_launch_target',
+      reason: launchTarget.reason,
+      source: launchTarget.source,
+    })
+  }
+
+  const query: Record<string, string> = {}
+  if (launchTarget.source === 'query') {
+    query.redirectTo = launchTarget.target.href
+  }
+  context.redirect(response, '/handoff', { query })
+})
+
+httpHandler.app.get('/handoff', async (req, res) => {
+  res.setHeader('Cache-Control', 'no-store')
+  res.setHeader('Referrer-Policy', 'no-referrer')
+
+  let context: LaunchContext
+  try {
+    context = await provider.getLaunchContext(String(req.query.ltik))
+  } catch {
+    // also the path of a reused handoff URL, whose launch is already deleted
+    console.error('event=lti_handoff_rejected reason=unknown_or_used_launch')
+    return res.status(401).json({ error: 'invalid_launch' })
+  }
+
+  // A launch issues one KlickerUZH token; a replayed handoff URL is rejected.
+  // The launch is used up before its target is checked again, so a tampered
+  // redirectTo cannot be retried with another target.
+  let consumed: boolean
+  try {
+    consumed = await database.consumeIdToken(context.rawIdToken.id)
+  } catch (error) {
+    console.error(
+      `event=lti_handoff_failed message=${error instanceof Error ? error.message : String(error)}`
+    )
+    return res.status(500).json({ error: 'handoff_failed' })
+  }
+  if (!consumed) {
+    console.error('event=lti_handoff_rejected reason=used_or_expired_launch')
+    return res.status(401).json({ error: 'invalid_launch' })
+  }
+
+  const launchTarget = resolveLaunchTarget(toLaunchToken(context), {
+    query: req.query as Record<string, unknown>,
+  })
+  if (!launchTarget.ok) {
+    console.error(
+      `event=lti_handoff_rejected reason=${launchTarget.reason} targetSource=${launchTarget.source ?? 'null'}`
+    )
+    return res.status(400).json({
+      error: 'invalid_launch_target',
+      reason: launchTarget.reason,
+      source: launchTarget.source,
+    })
   }
 
   const jwt = await signJWT(
     {
-      sub: token.user,
-      email: token.userInfo.email,
+      sub: context.idToken.user.id,
+      email: context.idToken.user.email,
       scope: 'LTI1.3',
+      chatbotLaunch: getChatbotLaunchBinding(launchTarget.target),
     },
     process.env.APP_SECRET as string,
     {
@@ -89,29 +148,6 @@ Provider.onConnect(async (token, req, res) => {
     domain: process.env.COOKIE_DOMAIN as string,
   })
 
-  const launchTarget = resolveLaunchTarget(token, {
-    query: req.query as Record<string, unknown>,
-  })
-
-  if (!launchTarget.ok) {
-    console.error(
-      `event=lti_launch_rejected targetSource=${launchTarget.source ?? 'null'} reason=${launchTarget.reason} rawType=${getRawType(launchTarget.rawValue)}`
-    )
-
-    // remove lti token to avoid issues caused by this cookie
-    res.clearCookie('lti-token', {
-      secure: true,
-      sameSite: 'none',
-      domain: process.env.COOKIE_DOMAIN as string,
-    })
-
-    return res.status(400).json({
-      error: 'invalid_launch_target',
-      reason: launchTarget.reason,
-      source: launchTarget.source,
-    })
-  }
-
   const redirectUrl = appendJwt(launchTarget.target, jwt)
   console.log(
     `event=lti_launch_redirect targetSource=${launchTarget.source} targetHost=${launchTarget.target.hostname}`
@@ -120,60 +156,86 @@ Provider.onConnect(async (token, req, res) => {
   return res.redirect(redirectUrl)
 })
 
-// setup function
+// Registers each configured platform once and keeps its stored keys, so the
+// public keyset the platform knows stays valid across restarts.
 const setup = async () => {
-  const result = await Provider.deploy({
-    port: Number(process.env.LTI_PORT) ?? 4000,
-  })
-  console.log(result)
+  // ltijs's startup banner reports its default port, not the handler's
+  await provider.listen({ silent: true })
+  console.log(`LTI service listening on port ${port}`)
 
-  // Optional: Register platform if you're setting this up for the first time
-  const platform = await Provider.registerPlatform({
-    url: process.env.LTI_URL as string,
-    name: process.env.LTI_NAME as string,
-    clientId: process.env.LTI_CLIENT_ID as string,
-    authenticationEndpoint: process.env.LTI_AUTH_ENDPOINT as string,
-    accesstokenEndpoint: process.env.LTI_TOKEN_ENDPOINT as string,
-    authConfig: {
-      method: 'JWK_SET',
-      key: process.env.LTI_KEYS_ENDPOINT as string,
-    },
-  })
-
-  if (!platform) {
-    throw new Error('Failed to register platform')
+  // Platforms that only ltijs 5 still knew keep working after the upgrade. The
+  // configuration wins when both list the same platform.
+  const configured = new Set(
+    platforms.map((p) => JSON.stringify([p.url, p.clientId]))
+  )
+  const legacy: PlatformRegistration[] = []
+  for (const row of await database.getLegacyPlatforms()) {
+    let platform: PlatformRegistration
+    try {
+      platform = parsePlatform(row, process.env, 'from ltijs 5')
+    } catch {
+      console.error('event=lti_legacy_platform_skipped reason=invalid')
+      continue
+    }
+    if (!configured.has(JSON.stringify([platform.url, platform.clientId]))) {
+      legacy.push(platform)
+    }
   }
 
-  console.log(await platform.platformPublicKey())
+  for (const registration of [...platforms, ...legacy]) {
+    const fields = {
+      name: registration.name,
+      authenticationEndpoint: registration.authenticationEndpoint,
+      accessTokenEndpoint: registration.accesstokenEndpoint,
+      idTokenValidation: {
+        method: IdTokenValidationMethod.JwkSet,
+        key: registration.authConfig.key,
+      },
+    }
+    const existing = await provider.platformManager.getPlatformByUrlAndClientId(
+      registration.url,
+      registration.clientId
+    )
+    if (existing) {
+      await provider.platformManager.updatePlatform(existing, fields)
+      continue
+    }
+    try {
+      await provider.platformManager.registerPlatform({
+        url: registration.url,
+        clientId: registration.clientId,
+        ...fields,
+      })
+    } catch (error) {
+      // another replica registered the platform since the lookup above
+      const registered =
+        await provider.platformManager.getPlatformByUrlAndClientId(
+          registration.url,
+          registration.clientId
+        )
+      if (!registered) throw error
+      await provider.platformManager.updatePlatform(registered, fields)
+    }
+  }
+  console.log(
+    `Registered ${platforms.length} configured and ${legacy.length} ltijs 5 LTI platforms`
+  )
 }
 
-// Get user and context information
-Provider.app.get('/info', async (req, res) => {
-  console.log('GET-request to /info: ')
-
-  const token = res.locals.token
-
-  const info: {
-    name?: string
-    given_name?: string
-    family_name?: string
-    email?: string
-    user?: string
-  } = {}
-  if (token.userInfo) {
-    if (token.userInfo.name) info.name = token.userInfo.name
-    if (token.userInfo.given_name) info.given_name = token.userInfo.given_name
-    if (token.userInfo.family_name)
-      info.family_name = token.userInfo.family_name
-    if (token.userInfo.email) info.email = token.userInfo.email
-  }
-
-  if (token.user) info.user = token.user
-
-  return res.send(info)
+setup().catch((error: unknown) => {
+  console.error(
+    `LTI platform initialization failed: ${error instanceof Error ? error.message : String(error)}`
+  )
+  process.exit(1)
 })
 
-setup().catch((e) => console.error(e))
+// The launch-target helpers read the ltijs 5 token shape.
+function toLaunchToken(context: LaunchContext) {
+  return {
+    user: context.idToken.user.id,
+    platformContext: { custom: context.idToken.launch.custom },
+  }
+}
 
 function getRawType(value: unknown): string {
   if (value === null) return 'null'

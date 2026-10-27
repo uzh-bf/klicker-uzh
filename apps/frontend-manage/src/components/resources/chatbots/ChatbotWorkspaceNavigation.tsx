@@ -7,8 +7,12 @@ const viewItems = [
     view: 'overview',
     label: 'manage.resources.chatbotWorkspaceOverview',
   },
-  { view: 'setup', label: 'manage.resources.chatbotWorkspaceSetup' },
-  { view: 'advanced', label: 'manage.resources.chatbotWorkspaceAdvanced' },
+  { view: 'knowledge', label: 'manage.resources.chatbotWorkspaceKnowledge' },
+  { view: 'behavior', label: 'manage.resources.chatbotWorkspaceBehavior' },
+  {
+    view: 'disclaimer',
+    label: 'manage.resources.chatbotWorkspaceDisclaimer',
+  },
   { view: 'usage', label: 'manage.resources.chatbotWorkspaceUsage' },
 ] as const satisfies ReadonlyArray<{
   view: ChatbotWorkspaceView
@@ -18,12 +22,10 @@ const viewItems = [
 function ChatbotWorkspaceNavigation({
   view,
   step,
-  setupAvailable,
   onNavigate,
 }: {
   view: ChatbotWorkspaceView
   step?: ChatbotSetupStep
-  setupAvailable: boolean
   onNavigate: (view: ChatbotWorkspaceView, step?: ChatbotSetupStep) => void
 }) {
   const t = useTranslations()
@@ -35,30 +37,28 @@ function ChatbotWorkspaceNavigation({
       data-cy="chatbot-workspace-navigation"
     >
       <div className="flex gap-1 overflow-x-auto">
-        {viewItems
-          .filter((item) => item.view !== 'setup' || setupAvailable)
-          .map((item) => {
-            const active = item.view === view
-            const requestedStep = item.view === 'setup' ? step : undefined
+        {viewItems.map((item) => {
+          const active = item.view === view
+          const requestedStep = item.view === 'overview' ? step : undefined
 
-            return (
-              <button
-                key={item.view}
-                type="button"
-                aria-current={active ? 'page' : undefined}
-                className={twMerge(
-                  'min-h-11 whitespace-nowrap border-b-2 px-3 py-2 text-sm font-medium transition-colors',
-                  active
-                    ? 'border-primary-600 text-primary-700'
-                    : 'border-transparent text-gray-600 hover:border-gray-300 hover:text-gray-900'
-                )}
-                data-cy={`chatbot-view-${item.view}`}
-                onClick={() => onNavigate(item.view, requestedStep)}
-              >
-                {t(item.label)}
-              </button>
-            )
-          })}
+          return (
+            <button
+              key={item.view}
+              type="button"
+              aria-current={active ? 'page' : undefined}
+              className={twMerge(
+                'min-h-11 whitespace-nowrap border-b-2 px-3 py-2 text-sm font-medium transition-colors',
+                active
+                  ? 'border-primary-600 text-primary-700'
+                  : 'border-transparent text-gray-600 hover:border-gray-300 hover:text-gray-900'
+              )}
+              data-cy={`chatbot-view-${item.view}`}
+              onClick={() => onNavigate(item.view, requestedStep)}
+            >
+              {t(item.label)}
+            </button>
+          )
+        })}
       </div>
     </nav>
   )

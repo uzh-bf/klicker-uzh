@@ -117,7 +117,7 @@ async function scenario(body, options = {}) {
     guard = await createSpendGuard({
       policy: qualifiedPolicy,
       budgetFile,
-      apiKey: 'synthetic-guard-key',
+      apiKey: 'dummy-guard-key',
       upstreamKey: 'synthetic-upstream-key',
       upstreamOrigin: upstreamOrigin + '/v1',
     })
@@ -127,7 +127,7 @@ async function scenario(body, options = {}) {
       fetch(origin + path, {
         method: 'POST',
         headers: {
-          Authorization: 'Bearer synthetic-guard-key',
+          Authorization: 'Bearer dummy-guard-key',
           'Content-Type': 'application/json',
           ...headers,
         },
@@ -214,6 +214,10 @@ test('concurrent provider requests cannot dispatch beyond shared cap', async () 
 test('unpriced, unbounded, multiple-completion and paid-tool requests never reach upstream', async () => {
   validatePricingPolicy(policy)
   assert.equal(requestReservation(policy, '/v1/responses', request), 1200)
+  assert.equal(
+    requestReservation(policy, '/v1/responses', { ...request, store: false }),
+    1200
+  )
   await scenario(async ({ budgetFile, send, calls, origin }) => {
     await beginBudgetTurn(budgetFile)
     for (const invalid of [
@@ -239,6 +243,38 @@ test('unpriced, unbounded, multiple-completion and paid-tool requests never reac
       { ...request, prompt_cache_key: 'x'.repeat(65) },
       { ...request, prompt_cache_key: 7 },
       { ...request, store: true },
+      { ...request, store: 'true' },
+      { ...request, store: 1 },
+      { ...request, store: [true] },
+      { ...request, store: null },
+      {
+        ...request,
+        tools: [
+          {
+            type: 'function',
+            name: 'synthetic',
+            parameters: { type: 'object' },
+            cache_control: { type: 'ephemeral' },
+          },
+        ],
+      },
+      {
+        ...request,
+        input: [
+          {
+            type: 'message',
+            content: [
+              {
+                type: 'input_text',
+                text: 'synthetic input',
+                parameters: {
+                  cache_control: { type: 'ephemeral' },
+                },
+              },
+            ],
+          },
+        ],
+      },
       {
         ...request,
         input: [
@@ -282,10 +318,40 @@ test('unpriced, unbounded, multiple-completion and paid-tool requests never reac
         ],
         max_completion_tokens: 100,
       },
+      {
+        model: 'synthetic-model',
+        messages: [],
+        max_completion_tokens: 100,
+        tools: [
+          {
+            type: 'function',
+            cache_control: { type: 'ephemeral' },
+            function: {
+              name: 'synthetic',
+              parameters: { type: 'object' },
+            },
+          },
+        ],
+      },
+      {
+        model: 'synthetic-model',
+        messages: [],
+        max_completion_tokens: 100,
+        tools: [
+          {
+            type: 'function',
+            function: {
+              name: 'synthetic',
+              parameters: { type: 'object' },
+              cache_control: { type: 'ephemeral' },
+            },
+          },
+        ],
+      },
     ]) {
       const response = await fetch(origin + '/v1/chat/completions', {
         method: 'POST',
-        headers: { Authorization: 'Bearer synthetic-guard-key' },
+        headers: { Authorization: 'Bearer dummy-guard-key' },
         body: JSON.stringify(body),
       })
       assert.equal(response.status, 502)
@@ -305,6 +371,7 @@ test('the two true cache-bypass flags are stripped before forwarding and the nat
     ...request,
     cache: { 'no-cache': true, 'no-store': true },
     prompt_cache_key: 'synthetic-prompt-cache-key',
+    store: false,
   }
   assert.equal(requestReservation(policy, '/v1/responses', hinted), 1200)
   await scenario(async ({ budgetFile, send, calls }) => {
@@ -345,7 +412,7 @@ test('guard denies calls without active turn and qualification binds experiment 
       const config = {
         filePath,
         origin,
-        key: 'synthetic-guard-key',
+        key: 'dummy-guard-key',
         budgetFile,
         chatOrigin: qualification.chatOrigin,
         chatbotId: qualification.chatbotId,
@@ -541,7 +608,7 @@ test('guard startup rejects a bind failure with EADDRINUSE and registers no shut
         {
           KLICKER_EVAL_PRICING_FILE: policyFile,
           KLICKER_EVAL_BUDGET_FILE: budgetFile,
-          KLICKER_EVAL_GUARD_KEY: 'synthetic-guard-key',
+          KLICKER_EVAL_GUARD_KEY: 'dummy-guard-key',
           KLICKER_EVAL_UPSTREAM_ORIGIN: policy.upstreamOrigin,
           KLICKER_EVAL_UPSTREAM_KEY: 'synthetic-upstream-key',
           KLICKER_EVAL_GUARD_PORT: String(port),
@@ -989,23 +1056,30 @@ test('guard injects the closed OpenRouter route, refuses client routing controls
           999_000_000
         qualifiedPolicy.fixedRoute.provider = 'anthropic'
         qualifiedPolicy.upstreamOrigin = 'https://mutated.example/v1'
-        const second = await send({
-          ...payload,
-          tools: [
-            {
-              type: 'function',
-              name: 'lookup',
-              parameters: { type: 'object' },
+        const parameters = {
+          type: 'object',
+          properties: {
+            cache_control: {
+              type: 'object',
+              default: { type: 'file' },
             },
-          ],
-        })
+          },
+        }
+        const tool =
+          path === '/v1/responses'
+            ? { type: 'function', name: 'lookup', parameters }
+            : {
+                type: 'function',
+                function: { name: 'lookup', parameters },
+              }
+        const second = await send({ ...payload, tools: [tool] })
         assert.equal(second.status, 200)
         await second.text()
         assert.equal(calls.length, 2)
-        assert.equal(calls[1].body.tools[0].type, 'function')
+        assert.deepEqual(calls[1].body.tools[0], tool)
         assert.deepEqual(calls[1].body.provider, injectedProvider)
         const status = await fetch(`${origin}/status`, {
-          headers: { Authorization: 'Bearer synthetic-guard-key' },
+          headers: { Authorization: 'Bearer dummy-guard-key' },
           redirect: 'error',
         })
         assert.equal((await status.json()).upstreamOrigin, originalUpstream)

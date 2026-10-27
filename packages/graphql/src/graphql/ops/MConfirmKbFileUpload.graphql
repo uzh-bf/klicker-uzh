@@ -1,0 +1,21 @@
+mutation ConfirmKbFileUpload(
+  $kbId: ID!
+  $blobName: String!
+  $title: String!
+  $originalFilename: String!
+  $mimeType: String!
+  $sizeBytes: Int!
+  $materialType: KBResourceMaterialType
+) {
+  confirmKbFileUpload(
+    kbId: $kbId
+    blobName: $blobName
+    title: $title
+    originalFilename: $originalFilename
+    mimeType: $mimeType
+    sizeBytes: $sizeBytes
+    materialType: $materialType
+  ) {
+    id
+  }
+}

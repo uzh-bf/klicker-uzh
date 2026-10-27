@@ -39,20 +39,19 @@ import {
   getLangfuseAiSdkIntegration,
   getLangfuseTelemetryConfiguration,
   maskLangfuseData,
-  SANITIZED_ERROR_MESSAGE,
   registerLangfuseTelemetry,
-  resetLangfuseTelemetryForTests,
+  SANITIZED_ERROR_MESSAGE,
 } from '../src/lib/server/langfuseTracing'
 
 beforeEach(() => {
   vi.clearAllMocks()
   telemetryMocks.processorOptions = null
   telemetryMocks.sdkOptions = null
-  resetLangfuseTelemetryForTests()
+  vi.stubGlobal('__klickerLangfuseRuntime', undefined)
 })
 
 afterEach(() => {
-  resetLangfuseTelemetryForTests()
+  vi.unstubAllGlobals()
   vi.unstubAllEnvs()
 })
 
@@ -113,6 +112,7 @@ describe('Langfuse telemetry configuration', () => {
       secretKey: 'sk-lf-test',
     })
     expect(telemetryMocks.sdkOptions).toMatchObject({
+      serviceName: 'klicker-chat',
       spanProcessors: [expect.any(Object)],
     })
     expect(telemetryMocks.sdkStart).toHaveBeenCalledOnce()
