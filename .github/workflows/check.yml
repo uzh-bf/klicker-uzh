@@ -395,6 +395,9 @@ jobs:
           fi
 
       - name: Check response worker contracts
+        if: >-
+          github.event_name != 'pull_request' ||
+          steps.classify.outputs.codebase_check != 'bounded'
         run: |
           pnpm exec turbo run build --filter="@klicker-uzh/hatchet-worker-response-processor..."
           pnpm --filter @klicker-uzh/hatchet-worker-response-processor test:run
