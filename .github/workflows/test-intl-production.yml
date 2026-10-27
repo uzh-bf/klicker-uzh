@@ -185,7 +185,7 @@ jobs:
       contents: read
       issues: read
       pull-requests: read
-    uses: uzh-bf/klicker-uzh/.github/workflows/test-intl-production-execution.yml@aaf8d41393f9c5e51e0076827c80953afacb8c4a
+    uses: uzh-bf/klicker-uzh/.github/workflows/test-intl-production-execution.yml@4b09b2f2b2bac1d5e028af2203942a50edcfbf41
 
   priority-status:
     name: ${{ (vars.PRIORITY_CI_ENABLED == 'true' && github.event_name == 'pull_request' && github.event.pull_request.state == 'open' && github.event.pull_request.draft == false && github.event.repository.private == false && github.event.pull_request.head.repo.full_name == github.repository && github.event.pull_request.user.type != 'Bot' && contains(github.event.pull_request.labels.*.name, 'ci:priority') && (github.event.action != 'labeled' || github.event.label.name == 'ci:priority')) && (github.event.action != 'labeled' || needs.priority-execution.outputs.run_label_event == 'true') && 'test-intl-production-status' || 'test-intl-production-status (priority not admitted)' }}

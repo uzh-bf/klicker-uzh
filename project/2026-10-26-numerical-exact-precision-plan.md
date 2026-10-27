@@ -265,6 +265,15 @@ Acceptance: refreshed checks succeed, no unresolved review threads remain,
 the PR is ready, and final review actually runs against the held head. Any
 required human review or new finding remains visible and blocks merge.
 
+The first refreshed run exposed an upstream CI failure before job creation:
+GitHub could not resolve the seven immutable reusable-workflow references
+imported from `v3`. Repin only those seven caller references to the merged
+target commit above. Each referenced executor is byte-identical at the old
+and replacement commits; permissions, admission, runners, and job definitions
+are unchanged. Treat this as the bounded repair needed to run the authorized
+validation sequence. Verify generated/pinned parity, existing CI contracts,
+and actual workflow job registration before accepting the new candidate.
+
 2026-10-26: execution started. Root outcome: prevent silent loss of decimal exact
 answers, following the approved plan and the user's compatibility constraint.
 Current authorized terminal: verified draft PR against `v3`.
