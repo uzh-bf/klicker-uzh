@@ -1,5 +1,18 @@
 name: Test OLAT-API functionalities
 
+run-name: >-
+  ${{ vars.PRIORITY_CI_ENABLED == 'true' &&
+      github.event_name == 'pull_request' &&
+      github.event.pull_request.state == 'open' &&
+      github.event.pull_request.draft == false &&
+      github.event.repository.private == false &&
+      github.event.pull_request.head.repo.full_name == github.repository &&
+      github.event.pull_request.user.type != 'Bot' &&
+      contains(github.event.pull_request.labels.*.name, 'ci:priority') &&
+      (github.event.action != 'labeled' || github.event.label.name == 'ci:priority') &&
+      format('priority:{0}:{1}:{2}', github.event.pull_request.number, github.event.pull_request.head.sha, github.event.pull_request.base.sha)
+      || format('ordinary:{0}', github.run_id) }}
+
 on:
   push:
     branches: ['v3', 'v3*']
@@ -7,11 +20,40 @@ on:
     branches: ['v3', 'v3*']
     # No "edited": a title or body edit never changes the tested tree, and a
     # base retarget is revalidated by the restack push or a close and reopen.
-    types: [opened, synchronize, reopened]
+    types: [opened, synchronize, reopened, labeled]
 
 concurrency:
-  group: ${{ github.workflow }}-${{ github.event.pull_request.number || github.ref_name }}
-  cancel-in-progress: true
+  group: >-
+    ${{ github.event.action == 'labeled' &&
+        (vars.PRIORITY_CI_ENABLED == 'true' &&
+         github.event.label.name == 'ci:priority' &&
+         github.event.pull_request.state == 'open' &&
+      github.event.pull_request.draft == false &&
+         github.event.repository.private == false &&
+         github.event.pull_request.head.repo.full_name == github.repository &&
+         github.event.pull_request.user.type != 'Bot' &&
+         format('{0}-priority-{1}-{2}-{3}', github.workflow, github.event.pull_request.number, github.event.pull_request.head.sha, github.event.pull_request.base.sha) ||
+         format('{0}-ignored-{1}', github.workflow, github.run_id)) ||
+        (vars.PRIORITY_CI_ENABLED == 'true' &&
+         github.event_name == 'pull_request' &&
+         github.event.pull_request.state == 'open' &&
+      github.event.pull_request.draft == false &&
+         github.event.repository.private == false &&
+         github.event.pull_request.head.repo.full_name == github.repository &&
+         github.event.pull_request.user.type != 'Bot' &&
+         contains(github.event.pull_request.labels.*.name, 'ci:priority') &&
+         format('{0}-priority-{1}-{2}-{3}', github.workflow, github.event.pull_request.number, github.event.pull_request.head.sha, github.event.pull_request.base.sha)) ||
+        format('{0}-{1}', github.workflow, github.event.pull_request.number || github.ref_name) }}
+  cancel-in-progress: >-
+    ${{ github.event.action != 'labeled' &&
+        !(vars.PRIORITY_CI_ENABLED == 'true' &&
+          github.event_name == 'pull_request' &&
+          github.event.pull_request.state == 'open' &&
+      github.event.pull_request.draft == false &&
+          github.event.repository.private == false &&
+          github.event.pull_request.head.repo.full_name == github.repository &&
+          github.event.pull_request.user.type != 'Bot' &&
+          contains(github.event.pull_request.labels.*.name, 'ci:priority')) }}
 
 permissions:
   contents: read
@@ -20,7 +62,41 @@ permissions:
   checks: read
 
 jobs:
+  priority-route:
+    if: >-
+      !(vars.PRIORITY_CI_ENABLED == 'true' && github.event_name == 'pull_request' && github.event.pull_request.state == 'open' && github.event.pull_request.draft == false && github.event.repository.private == false && github.event.pull_request.head.repo.full_name == github.repository && github.event.pull_request.user.type != 'Bot' && contains(github.event.pull_request.labels.*.name, 'ci:priority') && (github.event.action != 'labeled' || github.event.label.name == 'ci:priority')) &&
+      (vars.PRIORITY_CI_ENABLED == 'true' && github.event_name == 'pull_request' && github.event.pull_request.state == 'open' && github.event.pull_request.draft == false && github.event.repository.private == false && github.event.pull_request.head.repo.full_name == github.repository && github.event.pull_request.user.type != 'Bot' && contains(github.event.pull_request.labels.*.name, 'ci:priority'))
+    runs-on: ubuntu-latest
+    permissions:
+      actions: read
+      contents: read
+      issues: read
+      pull-requests: read
+    outputs:
+      admitted: ${{ steps.route.outputs.admitted }}
+      run_label_event: ${{ steps.route.outputs.run_label_event }}
+      run_attempt: ${{ steps.route.outputs.run_attempt }}
+      runner_x64: ${{ steps.route.outputs.runner_x64 }}
+      runner_build: ${{ steps.route.outputs.runner_build }}
+      runner_arm: ${{ steps.route.outputs.runner_arm }}
+    steps:
+      - name: Check out the trusted priority router
+        uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4
+        with:
+          repository: uzh-bf/klicker-uzh
+          ref: v3
+          path: .ci-priority
+          sparse-checkout: .github/actions/priority-ci-route
+          persist-credentials: false
+      - name: Route priority validation
+        id: route
+        uses: ./.ci-priority/.github/actions/priority-ci-route
+
   filter:
+    needs: priority-route
+    if: >-
+      !(vars.PRIORITY_CI_ENABLED == 'true' && github.event_name == 'pull_request' && github.event.pull_request.state == 'open' && github.event.pull_request.draft == false && github.event.repository.private == false && github.event.pull_request.head.repo.full_name == github.repository && github.event.pull_request.user.type != 'Bot' && contains(github.event.pull_request.labels.*.name, 'ci:priority') && (github.event.action != 'labeled' || github.event.label.name == 'ci:priority')) &&
+      (!cancelled() && (github.event.action != 'labeled' || needs.priority-route.outputs.run_label_event == 'true'))
     runs-on: ubuntu-latest
     outputs:
       should_run: ${{ github.event_name == 'push' && 'true' || steps.check.outputs.should_run }}
@@ -35,10 +111,12 @@ jobs:
           prior-check-name: test-olat-api-status
 
   test-olat-api:
-    needs: filter
+    needs: [filter, priority-route]
     if: >-
-      needs.filter.outputs.should_run == 'true'
-    runs-on: ubuntu-latest
+      !(vars.PRIORITY_CI_ENABLED == 'true' && github.event_name == 'pull_request' && github.event.pull_request.state == 'open' && github.event.pull_request.draft == false && github.event.repository.private == false && github.event.pull_request.head.repo.full_name == github.repository && github.event.pull_request.user.type != 'Bot' && contains(github.event.pull_request.labels.*.name, 'ci:priority') && (github.event.action != 'labeled' || github.event.label.name == 'ci:priority')) &&
+      (!cancelled() && (github.event.action != 'labeled' || needs.priority-route.outputs.run_label_event == 'true') && (needs.priority-route.outputs.admitted != 'true' || needs.priority-route.outputs.run_attempt == format('{0}', github.run_attempt)) && needs.filter.outputs.should_run == 'true')
+    runs-on: ${{ needs.priority-route.outputs.runner_x64 || 'ubuntu-latest' }}
+    timeout-minutes: ${{ needs.priority-route.outputs.admitted == 'true' && 60 || 360 }}
     permissions:
       contents: read
 
@@ -75,8 +153,11 @@ jobs:
   # never read as acceptable; the helper fails on cancellation, an unexpected
   # skip or a failed suite.
   test-olat-api-status:
-    needs: [filter, test-olat-api]
-    if: always()
+    name: ${{ (vars.PRIORITY_CI_ENABLED == 'true' && github.event_name == 'pull_request' && github.event.pull_request.state == 'open' && github.event.pull_request.draft == false && github.event.repository.private == false && github.event.pull_request.head.repo.full_name == github.repository && github.event.pull_request.user.type != 'Bot' && contains(github.event.pull_request.labels.*.name, 'ci:priority') && (github.event.action != 'labeled' || github.event.label.name == 'ci:priority')) && 'test-olat-api-status (delegated)' || ((github.event.action != 'labeled' || needs.priority-route.outputs.run_label_event == 'true') && 'test-olat-api-status' || 'test-olat-api-status (priority not admitted)') }}
+    needs: [filter, test-olat-api, priority-route]
+    if: >-
+      !(vars.PRIORITY_CI_ENABLED == 'true' && github.event_name == 'pull_request' && github.event.pull_request.state == 'open' && github.event.pull_request.draft == false && github.event.repository.private == false && github.event.pull_request.head.repo.full_name == github.repository && github.event.pull_request.user.type != 'Bot' && contains(github.event.pull_request.labels.*.name, 'ci:priority') && (github.event.action != 'labeled' || github.event.label.name == 'ci:priority')) &&
+      (always() && (github.event.action != 'labeled' || needs.priority-route.outputs.run_label_event == 'true'))
     runs-on: ubuntu-latest
     permissions:
       contents: read
@@ -116,3 +197,30 @@ jobs:
           path: required-ci-evidence.json
           if-no-files-found: error
           retention-days: 7
+
+  priority-execution:
+    if: >-
+      vars.PRIORITY_CI_ENABLED == 'true' && github.event_name == 'pull_request' && github.event.pull_request.state == 'open' && github.event.pull_request.draft == false && github.event.repository.private == false && github.event.pull_request.head.repo.full_name == github.repository && github.event.pull_request.user.type != 'Bot' && contains(github.event.pull_request.labels.*.name, 'ci:priority') && (github.event.action != 'labeled' || github.event.label.name == 'ci:priority')
+    permissions:
+      actions: read
+      checks: read
+      contents: read
+      issues: read
+      pull-requests: read
+    uses: uzh-bf/klicker-uzh/.github/workflows/test-olat-api-execution.yml@aaf8d41393f9c5e51e0076827c80953afacb8c4a
+
+  priority-status:
+    name: ${{ (vars.PRIORITY_CI_ENABLED == 'true' && github.event_name == 'pull_request' && github.event.pull_request.state == 'open' && github.event.pull_request.draft == false && github.event.repository.private == false && github.event.pull_request.head.repo.full_name == github.repository && github.event.pull_request.user.type != 'Bot' && contains(github.event.pull_request.labels.*.name, 'ci:priority') && (github.event.action != 'labeled' || github.event.label.name == 'ci:priority')) && (github.event.action != 'labeled' || needs.priority-execution.outputs.run_label_event == 'true') && 'test-olat-api-status' || 'test-olat-api-status (priority not admitted)' }}
+    needs: priority-execution
+    if: >-
+      always() && (vars.PRIORITY_CI_ENABLED == 'true' && github.event_name == 'pull_request' && github.event.pull_request.state == 'open' && github.event.pull_request.draft == false && github.event.repository.private == false && github.event.pull_request.head.repo.full_name == github.repository && github.event.pull_request.user.type != 'Bot' && contains(github.event.pull_request.labels.*.name, 'ci:priority') && (github.event.action != 'labeled' || github.event.label.name == 'ci:priority'))
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    permissions: {}
+    steps:
+      - name: Require the actual trusted terminal result
+        if: github.event.action != 'labeled' || needs.priority-execution.outputs.run_label_event == 'true'
+        env:
+          EXECUTION_RESULT: ${{ needs.priority-execution.result }}
+          REQUIRED_RESULT: ${{ needs.priority-execution.outputs.required_result }}
+        run: test "$EXECUTION_RESULT" = success && test "$REQUIRED_RESULT" = success

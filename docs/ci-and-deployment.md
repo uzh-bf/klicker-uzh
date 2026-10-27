@@ -909,6 +909,60 @@ retain their existing authorization and serialized status locks.
 
 ## Public ARM64 runner operations
 
+### Priority pull-request validation
+
+A maintainer can request the paid validation lane with the `ci:priority` label.
+The lane is disabled unless `PRIORITY_CI_ENABLED` is exactly `true`.
+`PRIORITY_CI_CANARY_PR`, when present, limits admission to one exact PR number. Optional
+`PRIORITY_CI_CANARY_HEAD_SHA` and `PRIORITY_CI_CANARY_BASE_SHA` freeze its
+source inputs; `PRIORITY_CI_EXPIRES_AT` denies admission after an absolute
+deadline. Set all four in a finite qualification packet before enabling it.
+Apply the label to an open ready public same-repository PR. Subsequent pushes
+remain eligible while labeled. Removing the label changes future selection;
+already submitted jobs retain their assignment and continue.
+
+Trusted preparation verifies the current head and base, the latest label setter's
+write/maintain/admin permission, the exact first run attempt and complete prior
+run inventory. The first priority invocation for each workflow/PR/head/base owns
+the request even if it fails or is cancelled. Label reapplication and job reruns
+do not authorize another paid attempt. A new head or base is a new validation.
+Missing, stale or ambiguous evidence denies paid admission. A denied label-only
+event does not publish a passing required context; ordinary source events retain
+normal validation. Exact legacy Playwright tickets, burst grants or admission
+endpoints conflict with a priority request and must be independently reconciled.
+Ordinary unlabeled execution keeps the existing admission behavior.
+
+Independent compute jobs use fixed WarpBuild runners: x64 suites, secret scans,
+translation builds and affected image builds, plus the existing ARM Playwright
+build and canonical shard matrix. Dependencies still apply: Playwright builds
+once before its eight full-plan shards run in parallel. No shared matrix cap
+serializes the shards. Filtered or bounded plans retain their actual smaller
+coverage; a priority label does not prove an unfiltered suite ran. Selectors and
+required reporters stay hosted. Publication-only pushes retain hosted runners.
+Runner startup, dependencies and external services can still delay execution.
+
+The canonical workflows generate their priority-only execution envelopes with
+`node .github/scripts/priority-ci-workflows.cjs --write`. Edit the canonical
+workflow, regenerate and format the envelopes; CI checks parsed semantic parity using
+`node .github/scripts/priority-ci-workflows.cjs`. The same check compares each
+caller's pinned executor with its generated definition. Missing Git objects are
+fetched by exact SHA from the existing origin without making the checkout shallow;
+unavailable content, mutable refs and mismatches fail the check. Priority callers execute the
+published envelopes at an exact reviewed commit, which allows runner-group access
+to be restricted to those immutable workflow refs. Publish an executor commit
+before updating caller pins; GitHub resolves even disabled reusable calls. Before publication, draft CI exercises
+ordinary jobs and synthetic new-source contracts only. Source validation is
+separate from actual paid job, artifact, aggregate and billing acceptance.
+
+Activation requires a finite operator packet covering the exact runner-group
+allowlist, preserved repository selection and other policy fields, one validation,
+spending reservation, deadline, billing reconciliation and independent rollback
+of each owned setting. Removing admission prevents new selection and preserves
+submitted jobs. The enable switch is not an atomic account spending ledger;
+several labeled PRs and subsequent pushes can create concurrent paid work.
+Keep operational values, access and billing receipts outside source and artifacts.
+No external admission service or new secret is required by this route.
+
 ### Opt-in WarpBuild overflow
 
 The trusted execution envelope can place an explicitly admitted ready public

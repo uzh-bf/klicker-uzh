@@ -208,7 +208,11 @@ async function main(
   let route = readJson(args.route, 'Playwright route decision')
   let metadata = buildPlanMetadata(plan, route)
   // Validate the entire plan before a request can reserve paid capacity.
-  if (metadata.shouldRun && env.WARPBUILD_ADMISSION_URL) {
+  if (
+    metadata.shouldRun &&
+    env.WARPBUILD_ADMISSION_URL &&
+    env.PRIORITY_REQUESTED !== 'true'
+  ) {
     route = await chooseRouteWithAdmission(envInput(env), env, network)
     metadata = buildPlanMetadata(plan, route)
     fs.writeFileSync(args.route, `${JSON.stringify(route, null, 2)}\n`)
