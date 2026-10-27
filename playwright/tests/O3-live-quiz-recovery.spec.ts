@@ -518,7 +518,7 @@ async function withQuiz(
             : `.${cookieDomain}`,
           path: '/',
         }
-      : { ...pinCookie, url: new URL(env('URL_STUDENT')).origin },
+      : { ...pinCookie, url: new URL(graphqlUrl()).origin },
   ])
   let token: string | undefined
   try {
