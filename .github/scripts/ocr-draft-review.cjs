@@ -180,14 +180,22 @@ function preparePublication(temp, expectedHead, unavailable) {
   if (result.manifest?.input?.resolved_head !== expectedHead)
     throw new Error('invalid_result')
   const coverage = summarizeCoverage(result)
+  const counts = ['selected', 'completed', 'failed', 'reused', 'waived']
+  // OCR reports a range with no reviewable files, such as a Markdown-only
+  // change, as skipped with empty coverage. That is a finished review with
+  // nothing to cover, not a missing or broken result.
+  const skipped =
+    result.status === 'skipped' &&
+    result.manifest.terminal_state === 'skipped' &&
+    result.manifest.run_failure == null &&
+    counts.every((key) => coverage[key] === 0)
   if (
-    coverage.observed_status === 'unknown' ||
-    ['selected', 'completed', 'failed', 'reused', 'waived'].some(
-      (key) => coverage[key] === null
-    )
+    !skipped &&
+    (coverage.observed_status === 'unknown' ||
+      counts.some((key) => coverage[key] === null))
   )
     throw new Error('invalid_result')
-  if (coverage.observed_status !== 'complete') {
+  if (!skipped && coverage.observed_status !== 'complete') {
     const message = `⚠️ Review incomplete: selected ${coverage.selected}, completed ${coverage.completed}, reused ${coverage.reused}, failed ${coverage.failed}, waived ${coverage.waived}. Findings cover completed work only.`
     result.message = message
     result.warnings = [
