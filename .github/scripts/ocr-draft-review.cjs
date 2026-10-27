@@ -90,7 +90,7 @@ function summarizeAdvisor(tools) {
   const outcomes = tools?.attempt_outcomes
   const valid =
     Array.isArray(outcomes) &&
-    outcomes.length <= 2 &&
+    outcomes.length <= require('./ocr-review-tools.cjs').ADVISOR_MAX_ATTEMPTS &&
     outcomes.every(
       (item, index) =>
         item?.attempt === index + 1 &&

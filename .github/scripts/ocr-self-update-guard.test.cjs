@@ -141,7 +141,7 @@ test('preserves draft cancellation, publication and diagnostics policy', () => {
   assert.equal(upload.with['if-no-files-found'], 'warn')
 })
 
-test('routes automatic drafts through Mistral Flash without changing the final provider', () => {
+test('routes every main review through Flash while retaining separate advisor credentials', () => {
   const { job, actionStep, action, manifest } = loadPinnedDraftPolicy()
   assert.equal(job.env.OCR_ADAPTER_PROVIDER, 'mistral-flash')
   assert.deepEqual(actionStep.with, {
@@ -198,8 +198,11 @@ test('routes automatic drafts through Mistral Flash without changing the final p
       'utf8'
     )
   )
-  for (const finalJob of Object.values(manual.jobs)) {
-    assert.equal(finalJob.env?.OCR_ADAPTER_PROVIDER, undefined)
+  for (const [name, finalJob] of Object.entries(manual.jobs)) {
+    assert.equal(
+      finalJob.env?.OCR_ADAPTER_PROVIDER,
+      ['review', 'review_stack'].includes(name) ? 'mistral-flash' : undefined
+    )
     for (const step of finalJob.steps ?? [])
       assert.equal(step.env?.OCR_ADAPTER_PROVIDER, undefined)
   }

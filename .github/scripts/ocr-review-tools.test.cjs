@@ -4,7 +4,13 @@ const os = require('node:os')
 const path = require('node:path')
 const { execFileSync } = require('node:child_process')
 const test = require('node:test')
-const { startReviewTools } = require('./ocr-review-tools.cjs')
+const {
+  ADVISOR_MAX_ATTEMPTS,
+  advisorTool,
+  createAdvisorAllowance,
+  startFocusedAdvisor,
+  startReviewTools,
+} = require('./ocr-review-tools.cjs')
 
 function fixture(t) {
   const repo = fs.mkdtempSync(path.join(os.tmpdir(), 'ocr-tools-'))
@@ -103,6 +109,48 @@ function advice(overrides = {}) {
           },
         },
       ],
+      ...overrides,
+    })
+  )
+}
+
+function providerAdvice(overrides = {}) {
+  return new Response(
+    JSON.stringify({
+      id: 'synthetic-provider-completion',
+      model: 'zai-glm-5-3',
+      choices: [
+        {
+          index: 0,
+          finish_reason: 'tool_calls',
+          message: {
+            role: 'assistant',
+            content: '',
+            reasoning_content: 'PRIVATE_PROVIDER_REASONING',
+            tool_calls: [
+              {
+                id: 'synthetic-provider-tool',
+                type: 'function',
+                function: {
+                  name: 'review_advice',
+                  arguments: JSON.stringify({
+                    assessment: 'uncertain',
+                    answer: 'synthetic provider answer',
+                    evidence: [
+                      {
+                        path: 'source.js',
+                        line: 1,
+                        detail: 'synthetic provider evidence',
+                      },
+                    ],
+                  }),
+                },
+              },
+            ],
+          },
+        },
+      ],
+      usage: { prompt_tokens: 10, completion_tokens: 5, total_tokens: 15 },
       ...overrides,
     })
   )
@@ -686,7 +734,424 @@ test('MCP context reads trusted Git content and rejects traversal, symlinks and 
   assert.equal(browser.status, 403)
 })
 
-test('concurrent consultations keep reserved ordinals when completion order reverses', async (t) => {
+test('advisorTool exports the broker function schema without sharing mutable state', () => {
+  const first = advisorTool()
+  assert.deepEqual(Object.keys(first), ['type', 'function'])
+  assert.equal(first.type, 'function')
+  assert.equal(first.function.name, 'ask_review_advisor')
+  assert.equal(first.function.parameters.type, 'object')
+  assert.deepEqual(first.function.parameters.required, ['question', 'context'])
+  first.function.parameters.required.push('PRIVATE_SENTINEL')
+  assert.deepEqual(advisorTool().function.parameters.required, [
+    'question',
+    'context',
+  ])
+})
+
+test('advisor allowance serializes eight concurrent admissions and rejects the ninth', async (t) => {
+  const directory = fs.mkdtempSync(path.join(os.tmpdir(), 'ocr-allowance-'))
+  t.after(() => fs.rmSync(directory, { recursive: true, force: true }))
+  const allowance = createAdvisorAllowance({
+    statePath: path.join(directory, 'allowance.json'),
+    head: 'a'.repeat(40),
+    policy: 'b'.repeat(40),
+    initialize: true,
+    temp: directory,
+  })
+  const ordinals = await Promise.all(
+    Array.from({ length: ADVISOR_MAX_ATTEMPTS }, () =>
+      Promise.resolve().then(() => allowance.reserve())
+    )
+  )
+  assert.deepEqual(
+    ordinals,
+    Array.from({ length: ADVISOR_MAX_ATTEMPTS }, (_, index) => index + 1)
+  )
+  assert.throws(() => allowance.reserve(), {
+    code: 'advisor_quota_exhausted',
+  })
+  assert.deepEqual(allowance.snapshot(), {
+    schema: 'ocr-advisor-allowance/v1',
+    head: 'a'.repeat(40),
+    policy: 'b'.repeat(40),
+    attempted: ADVISOR_MAX_ATTEMPTS,
+    lifetimes: 0,
+  })
+})
+
+test('persistent advisor allowance survives two broker lifecycles and changed files fail closed', async (t) => {
+  const source = fixture(t)
+  const directory = fs.mkdtempSync(
+    path.join(os.tmpdir(), 'ocr-allowance-file-')
+  )
+  t.after(() => fs.rmSync(directory, { recursive: true, force: true }))
+  const statePath = path.join(directory, 'allowance.json')
+  const firstAllowance = createAdvisorAllowance({
+    statePath,
+    head: source.head,
+    policy: source.policy,
+    initialize: true,
+    temp: directory,
+  })
+  assert.equal(firstAllowance.startLifetime(), 1)
+  const first = await client(t, {
+    ...source,
+    allowance: firstAllowance,
+    advisorUrl: 'http://127.0.0.1:12345/v1/chat/completions',
+    advisorToken: 'local',
+    fetchImpl: async () => advice(),
+  })
+  assert.notEqual(
+    (await first.tool('ask_review_advisor', question)).result.isError,
+    true
+  )
+  await first.broker.close()
+
+  const secondAllowance = createAdvisorAllowance({
+    statePath,
+    head: source.head,
+    policy: source.policy,
+    temp: directory,
+  })
+  assert.deepEqual(secondAllowance.snapshot(), {
+    schema: 'ocr-advisor-allowance/v1',
+    head: source.head,
+    policy: source.policy,
+    attempted: 1,
+    lifetimes: 1,
+  })
+  assert.equal(secondAllowance.startLifetime(), 2)
+  const second = await client(t, {
+    ...source,
+    allowance: secondAllowance,
+    advisorUrl: 'http://127.0.0.1:12345/v1/chat/completions',
+    advisorToken: 'local',
+    fetchImpl: async () => advice(),
+  })
+  assert.notEqual(
+    (await second.tool('ask_review_advisor', question)).result.isError,
+    true
+  )
+  await second.broker.close()
+  assert.deepEqual(secondAllowance.snapshot(), {
+    schema: 'ocr-advisor-allowance/v1',
+    head: source.head,
+    policy: source.policy,
+    attempted: 2,
+    lifetimes: 2,
+  })
+  assert.equal(fs.statSync(statePath).mode & 0o777, 0o600)
+
+  assert.throws(
+    () =>
+      createAdvisorAllowance({
+        statePath: path.join(directory, 'missing.json'),
+        head: source.head,
+        policy: source.policy,
+        temp: directory,
+      }),
+    { code: 'advisor_allowance_unavailable' }
+  )
+  assert.throws(
+    () =>
+      createAdvisorAllowance({
+        statePath,
+        head: source.head,
+        policy: source.policy,
+        initialize: true,
+        temp: directory,
+      }),
+    { code: 'advisor_allowance_exists' }
+  )
+  fs.chmodSync(statePath, 0o644)
+  assert.throws(
+    () =>
+      createAdvisorAllowance({
+        statePath,
+        head: source.head,
+        policy: source.policy,
+        temp: directory,
+      }),
+    { code: 'advisor_allowance_unavailable' }
+  )
+  fs.chmodSync(statePath, 0o600)
+  fs.writeFileSync(statePath, '{"schema":', { mode: 0o600 })
+  assert.throws(
+    () =>
+      createAdvisorAllowance({
+        statePath,
+        head: source.head,
+        policy: source.policy,
+        temp: directory,
+      }),
+    { code: 'advisor_allowance_unavailable' }
+  )
+})
+
+test('review tools expose only the selected final tools', async (t) => {
+  const { rpc, tool } = await client(t, {
+    ...fixture(t),
+    toolNames: ['ask_review_advisor', 'read_review_context'],
+  })
+  const list = await rpc('tools/list')
+  assert.deepEqual(list.result.tools.map((entry) => entry.name).sort(), [
+    'ask_review_advisor',
+    'read_review_context',
+  ])
+  assert.equal(
+    (
+      await tool('lookup_library_docs', {
+        libraryId: '/vercel/next.js',
+        query: 'private API',
+      })
+    ).result.isError,
+    true
+  )
+})
+
+test('focused advisor persists two lifetimes, expects receipts, and sends only selected source', async (t) => {
+  const source = fixture(t)
+  const git = (...args) =>
+    execFileSync('git', args, { cwd: source.repo, encoding: 'utf8' }).trim()
+  fs.writeFileSync(
+    path.join(source.repo, 'unrelated.js'),
+    'PRIVATE_UNRELATED\n'
+  )
+  git('add', 'unrelated.js')
+  git('commit', '-m', 'test: unrelated sentinel')
+  const head = git('rev-parse', 'HEAD')
+  const directory = fs.mkdtempSync(path.join(os.tmpdir(), 'ocr-focused-'))
+  const previousRunnerTemp = process.env.RUNNER_TEMP
+  process.env.RUNNER_TEMP = directory
+  t.after(() => {
+    if (previousRunnerTemp === undefined) delete process.env.RUNNER_TEMP
+    else process.env.RUNNER_TEMP = previousRunnerTemp
+    fs.rmSync(directory, { recursive: true, force: true })
+  })
+  const statePath = path.join(directory, 'advisor-allowance.json')
+  const diagnosticsPath = path.join(directory, 'advisor.jsonl')
+  createAdvisorAllowance({
+    statePath,
+    head,
+    policy: source.policy,
+    initialize: true,
+  })
+  const providerCalls = []
+  let availabilityReads = 0
+  const availability = {
+    get reason() {
+      availabilityReads += 1
+      return null
+    },
+    markPaymentRequired() {},
+    snapshot() {
+      return { status: 'available', reason: null }
+    },
+  }
+  const first = await startFocusedAdvisor({
+    repo: source.repo,
+    head,
+    policy: source.policy,
+    statePath,
+    diagnosticsPath,
+    apiKey: 'synthetic-api-key',
+    availability,
+    deadlineMs: Date.now() + 30000,
+    fetchImpl: async (_url, init) => {
+      providerCalls.push(JSON.parse(init.body))
+      return providerAdvice()
+    },
+  })
+  assert.deepEqual(first.mcpConfig, {
+    type: 'remote',
+    url: first.url,
+    headers: { Authorization: 'Bearer ${OCR_REVIEW_TOOLS_TOKEN}' },
+    tools: ['ask_review_advisor', 'read_review_context'],
+  })
+  assert.equal(typeof first.token, 'string')
+  const call = (id) => ({
+    id,
+    type: 'function',
+    function: {
+      name: 'ask_review_advisor',
+      arguments: JSON.stringify(question),
+    },
+  })
+  const firstResult = await first.consult(call('focused-call-1'))
+  assert.notEqual(firstResult.isError, true)
+  assert.ok(availabilityReads > 0)
+  assert.equal(
+    JSON.parse(firstResult.content[0].text).answer,
+    'synthetic provider answer'
+  )
+  const duplicate = await first.consult(call('focused-call-1'))
+  assert.deepEqual(duplicate, {
+    isError: true,
+    content: [{ type: 'text', text: 'invalid_tool_call' }],
+  })
+  const wrongTool = await first.consult({
+    ...call('focused-call-2'),
+    function: {
+      name: 'read_review_context',
+      arguments: JSON.stringify({ path: 'docs/contract.md' }),
+    },
+  })
+  assert.equal(wrongTool.isError, true)
+  assert.equal(providerCalls.length, 1)
+  assert.doesNotMatch(
+    JSON.stringify(providerCalls[0]),
+    /PRIVATE_UNRELATED|untrusted-candidate/
+  )
+  await first.close()
+
+  const second = await startFocusedAdvisor({
+    repo: source.repo,
+    head,
+    policy: source.policy,
+    statePath,
+    diagnosticsPath,
+    apiKey: 'synthetic-api-key',
+    deadlineMs: Date.now() + 30000,
+    fetchImpl: async (_url, init) => {
+      providerCalls.push(JSON.parse(init.body))
+      return providerAdvice()
+    },
+  })
+  const secondResult = await second.consult(call('focused-call-3'))
+  assert.notEqual(secondResult.isError, true)
+  await second.close()
+
+  const persisted = createAdvisorAllowance({
+    statePath,
+    head,
+    policy: source.policy,
+  })
+  assert.deepEqual(persisted.snapshot(), {
+    schema: 'ocr-advisor-allowance/v1',
+    head,
+    policy: source.policy,
+    attempted: 2,
+    lifetimes: 2,
+  })
+  const expectedPath = `${diagnosticsPath}.expected.json`
+  assert.deepEqual(JSON.parse(fs.readFileSync(expectedPath, 'utf8')), {
+    schema: 'ocr-advisor-expectations/v1',
+    expected_receipts: 2,
+    attempted: 2,
+  })
+  assert.equal(fs.statSync(expectedPath).mode & 0o777, 0o600)
+  const adapterReceipts = fs
+    .readFileSync(diagnosticsPath, 'utf8')
+    .trim()
+    .split('\n')
+    .map(JSON.parse)
+  assert.equal(adapterReceipts.length, 2)
+  assert.ok(adapterReceipts.every((record) => record.provider === 'mistral'))
+  const toolReceipts = fs
+    .readFileSync(`${diagnosticsPath}.tools.jsonl`, 'utf8')
+    .trim()
+    .split('\n')
+    .map(JSON.parse)
+  assert.deepEqual(
+    [...new Set(toolReceipts.map((record) => record.lifetime_ordinal))].sort(),
+    [1, 2]
+  )
+  assert.ok(
+    toolReceipts.every(
+      (record) =>
+        record.schema === 'ocr-review-tools-receipt/v1' &&
+        record.broker &&
+        !JSON.stringify(record).includes('PRIVATE_UNRELATED')
+    )
+  )
+  for (const file of [
+    diagnosticsPath,
+    `${diagnosticsPath}.events.jsonl`,
+    `${diagnosticsPath}.tools.jsonl`,
+  ])
+    assert.equal(fs.statSync(file).mode & 0o777, 0o600)
+})
+
+test('focused advisor signal aborts the provider and broker response wait', async (t) => {
+  const source = fixture(t)
+  const directory = fs.mkdtempSync(
+    path.join(os.tmpdir(), 'ocr-focused-cancel-')
+  )
+  const previousRunnerTemp = process.env.RUNNER_TEMP
+  process.env.RUNNER_TEMP = directory
+  t.after(() => {
+    if (previousRunnerTemp === undefined) delete process.env.RUNNER_TEMP
+    else process.env.RUNNER_TEMP = previousRunnerTemp
+    fs.rmSync(directory, { recursive: true, force: true })
+  })
+  const statePath = path.join(directory, 'allowance.json')
+  const diagnosticsPath = path.join(directory, 'advisor.jsonl')
+  createAdvisorAllowance({
+    statePath,
+    head: source.head,
+    policy: source.policy,
+    initialize: true,
+  })
+  const entered = Promise.withResolvers()
+  let providerSignal
+  const controller = new AbortController()
+  const focused = await startFocusedAdvisor({
+    repo: source.repo,
+    head: source.head,
+    policy: source.policy,
+    statePath,
+    diagnosticsPath,
+    apiKey: 'synthetic-api-key',
+    signal: controller.signal,
+    deadlineMs: Date.now() + 30000,
+    fetchImpl: async (_url, init) => {
+      providerSignal = init.signal
+      entered.resolve()
+      return new Promise((_resolve, reject) => {
+        init.signal.addEventListener(
+          'abort',
+          () => reject(Error('PRIVATE_PROVIDER_SENTINEL')),
+          { once: true }
+        )
+      })
+    },
+  })
+  const pending = focused.consult({
+    id: 'cancelled-call',
+    type: 'function',
+    function: {
+      name: 'ask_review_advisor',
+      arguments: JSON.stringify(question),
+    },
+  })
+  await entered.promise
+  controller.abort()
+  const result = await pending
+  assert.deepEqual(result, {
+    isError: true,
+    content: [{ type: 'text', text: 'cancelled' }],
+  })
+  assert.equal(providerSignal.aborted, true)
+  await focused.close()
+  assert.equal(
+    createAdvisorAllowance({
+      statePath,
+      head: source.head,
+      policy: source.policy,
+    }).snapshot().attempted,
+    1
+  )
+  assert.deepEqual(
+    JSON.parse(fs.readFileSync(`${diagnosticsPath}.expected.json`, 'utf8')),
+    {
+      schema: 'ocr-advisor-expectations/v1',
+      expected_receipts: 1,
+      attempted: 1,
+    }
+  )
+})
+
+test('eight concurrent consultations keep reserved ordinals and reject the ninth admission', async (t) => {
   const requests = []
   let releaseFirst
   let startedFirst
@@ -721,15 +1186,20 @@ test('concurrent consultations keep reserved ordinals when completion order reve
   await firstStarted
   const secondCall = tool('ask_review_advisor', question)
   await secondStarted
-  const thirdCall = tool('ask_review_advisor', question)
-  const third = await thirdCall
+  const remaining = Array.from({ length: 7 }, () =>
+    tool('ask_review_advisor', question)
+  )
+  const outcomes = await Promise.all(remaining)
   const second = await secondCall
   releaseFirst()
   const first = await firstCall
-  assert.equal(requests.length, 2)
+  assert.equal(requests.length, ADVISOR_MAX_ATTEMPTS)
   assert.equal(first.result.isError, true)
   assert.notEqual(second.result.isError, true)
-  assert.equal(third.result.isError, true)
+  assert.equal(
+    outcomes.filter((value) => value.result.isError === true).length,
+    1
+  )
   for (const body of requests) {
     assert.equal(body.reasoning_effort, 'max')
     assert.equal(body.model, 'zai-glm-5-3')
@@ -738,7 +1208,7 @@ test('concurrent consultations keep reserved ordinals when completion order reve
     assert.equal(body.tool_choice.function.name, 'review_advice')
   }
   assert.equal(
-    JSON.stringify([first, second, third]).includes('PRIVATE_SENTINEL'),
+    JSON.stringify([first, second, outcomes]).includes('PRIVATE_SENTINEL'),
     false
   )
   assert.deepEqual(
@@ -748,32 +1218,30 @@ test('concurrent consultations keep reserved ordinals when completion order reve
       broker.diagnostics().failed,
       broker.diagnostics().rejected,
     ],
-    [2, 1, 1, 1]
+    [ADVISOR_MAX_ATTEMPTS, ADVISOR_MAX_ATTEMPTS - 1, 1, 1]
   )
-  assert.equal(broker.diagnostics().dispatched, 2)
-  assert.deepEqual(broker.diagnostics().attempt_outcomes, [
-    {
-      attempt: 1,
-      stage: 'dispatch',
-      outcome: 'failed',
-      reason: 'transport_error',
-      dispatched: true,
-    },
-    {
-      attempt: 2,
-      stage: 'advice',
-      outcome: 'completed',
-      reason: null,
-      dispatched: true,
-    },
-  ])
+  assert.equal(broker.diagnostics().dispatched, ADVISOR_MAX_ATTEMPTS)
+  assert.deepEqual(
+    broker.diagnostics().attempt_outcomes.map((value) => value.attempt),
+    Array.from({ length: ADVISOR_MAX_ATTEMPTS }, (_, index) => index + 1)
+  )
+  assert.equal(
+    broker.diagnostics().attempt_outcomes[0].reason,
+    'transport_error'
+  )
+  assert.ok(
+    broker
+      .diagnostics()
+      .attempt_outcomes.slice(1)
+      .every((value) => value.outcome === 'completed' && value.reason === null)
+  )
   assert.equal(broker.diagnostics().status, 'consulted')
   const snapshot = broker.diagnostics()
   const expectedOutcomes = broker.diagnostics().attempt_outcomes
   snapshot.dispatched = 99
   snapshot.attempt_outcomes[0].reason = 'PRIVATE_SENTINEL'
   snapshot.attempt_outcomes.push({ attempt: 3 })
-  assert.equal(broker.diagnostics().dispatched, 2)
+  assert.equal(broker.diagnostics().dispatched, ADVISOR_MAX_ATTEMPTS)
   assert.deepEqual(broker.diagnostics().attempt_outcomes, expectedOutcomes)
   assert.doesNotMatch(JSON.stringify(broker.diagnostics()), /PRIVATE_SENTINEL/)
 })

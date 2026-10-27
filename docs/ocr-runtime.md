@@ -31,13 +31,32 @@ missing assets and changed bytes are rejected. The action source must be pinned
 by its complete Git commit; mutable refs are rejected. The manifest records no
 enclosing commit hash, avoiding a self-reference.
 
+Draft and final main reviews use `zai-glm-5-3-flash` at maximum reasoning.
+The full `zai-glm-5-3` model is available only through focused advisor
+consultations at maximum reasoning. Each request contains one question and
+selected source excerpts; it receives neither the complete diff nor the
+reviewer conversation. The portable skill directs difficult and architectural
+questions to that advisor after source inspection.
+
 The draft profile uses stock npm `@alibaba-group/open-code-review@1.13.0`,
 `zai-glm-5-3-flash` through Mistral and the existing bounded `zai-glm-5-3` advisor.
 Verification checks the stock version and the immutable upstream publisher's
 digest. It does not claim platform-specific stock binary digest verification.
 Final execution keeps its separate pinned upstream source, compression patch,
 Go toolchain and executable provenance. The shared action does not run final
-review or grant its approval.
+review or grant its approval. Final code review attaches the same bounded
+advisor and trusted-context tools through its ephemeral OCR configuration.
+Stack topology can consult the advisor within its existing aggregate output
+allowance and deadline, then returns the existing strict final result.
+
+The advisor permits eight attempts shared across each review job, including
+workers, code ranges, resume and topology. Its private allowance is initialized
+once; unavailable or corrupt continuation state cannot reset it. Each attempt
+retains the existing source/request/output bounds. Failed and cancelled attempts
+consume allowance. Advice remains evidence for the Flash reviewer, which owns
+coverage and final findings. Advisor costs are reported separately and included
+in the combined model estimate; they retain separate application accounting.
+Missing expected receipts prevent a complete estimate.
 
 Repository context uses the existing `ocr-repository/v1` configuration at the
 frozen trusted policy commit. It admits context roots, root Markdown contracts,
