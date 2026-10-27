@@ -891,6 +891,215 @@ const messages = {
         expandNode: '{node} aufklappen',
         collapseNode: '{node} zuklappen',
         weightShare: 'Gewicht: {share}% des Gesamtniveaus',
+        dryRuns: {
+          title: 'Testläufe',
+          testingOnly: 'Nur Testumgebung',
+          description:
+            'Lass simulierte Studierende das Quiz lösen, bevor echte Studierende es machen. Jede simulierte Person hat ein wahres Niveau und beantwortet alle Fragen bis zu diesem Niveau richtig und alle darüber falsch; das Rauschen kehrt einzelne Antworten um. Die Stoppeinstellungen können pro Testlauf angepasst werden; das Quiz selbst bleibt unverändert. Testläufe fliessen in keine Ergebnisse ein.',
+          unavailable:
+            'Veröffentliche das Quiz (IRT v1), um einen Testlauf zu starten. Testläufe verwenden die aktuelle Veröffentlichung.',
+          form: {
+            sameStudents:
+              'Gleiche simulierte Studierende wie Testlauf #{number}. Nur die Stoppeinstellungen sind änderbar, damit der Vergleich fair ist.',
+            newStudents: 'Neue Studierende',
+            EVENHint:
+              'Die Studierenden verteilen sich gleichmässig auf diese Niveaus: Überblick über die ganze Skala.',
+            FIXEDHint:
+              'Alle Studierenden haben dieses Niveau: genauer Blick auf eine Stelle der Skala.',
+            SAME_LEVELHint: 'Jede Person ist in allen Kompetenzen gleich gut.',
+            INDEPENDENTHint:
+              'Jede Kompetenz erhält ein eigenes zufälliges Niveau, wie ein ungleiches echtes Profil.',
+            title: 'Neuer Testlauf',
+            students: 'Studierende',
+            studentsHint: 'Bis zu {max} simulierte Studierende pro Testlauf.',
+            studentsInvalid: 'Wähle zwischen 1 und {max} Studierenden.',
+            trueLevels: 'Wahre Niveaus',
+            EVEN: 'Gleichmässig über einen Bereich',
+            FIXED: 'Ein festes Niveau',
+            rangeInvalid:
+              'Das erste Niveau darf nicht über dem zweiten liegen.',
+            noise: 'Rauschen: {noise}%',
+            noiseHint:
+              'Wahrscheinlichkeit, dass eine einzelne Antwort dem idealen Muster widerspricht.',
+            competences: 'Kompetenzen',
+            SAME_LEVEL: 'Überall gleiches Niveau',
+            INDEPENDENT: 'Pro Kompetenz unabhängig',
+            stopSettings:
+              'Stoppeinstellungen für diesen Testlauf (aus dem Quiz übernommen)',
+            totalQuestionCap: 'Maximale Fragen',
+            capInvalid: 'Wähle zwischen 1 und 1000.',
+            tooLarge:
+              'Studierende × maximale Fragen darf höchstens {max} sein.',
+            precision: 'Genauigkeit der Einstufung',
+            precision0: 'Exaktes Niveau',
+            precision1: '±1 Niveau',
+            precision2: '±2 Niveaus',
+            confidence: 'Konfidenz',
+            minQuestionsPerLeaf: 'Minimum pro Teilkompetenz',
+            minInvalid: 'Wähle eine Zahl zwischen 0 und den maximalen Fragen.',
+            start: 'Testlauf starten',
+          },
+          result: {
+            engine: 'Engine: {revision}',
+            title: 'Testlauf #{number}',
+            meta: '{students} Studierende · wahre Niveaus {levels} · {noise}% Rauschen · {competences} · {date} · {seconds} s',
+            settings:
+              'max. {cap} Fragen · Genauigkeit {precision, select, 0 {exakt} other {±{precision}}} · {confidence}% Konfidenz · min. {minPerLeaf} pro Teilkompetenz',
+            olderPublication:
+              'Dieser Testlauf verwendete eine frühere Veröffentlichung des Quiz.',
+            exact: 'Exaktes Niveau',
+            withinOne: 'Innerhalb ±1 Niveau',
+            bias: 'Verzerrung',
+            biasHint: 'in Niveaus, + = zu hoch',
+            questions: 'Fragen pro Durchlauf',
+            questionsHint: 'Median {median}, max. {max}',
+            determined: 'Niveau bestimmt',
+            competence: 'Kompetenz',
+            confusion: 'Wahre und ausgegebene Niveaus',
+            confusionHint:
+              'Zeilen: wahres Niveau, Spalten: ausgegebenes Niveau, auf Unterniveau genau. Grün = exakt, gelb = ein Unterniveau daneben, rot = weiter daneben. Die letzte Spalte zeigt den Anteil exakter Ergebnisse pro wahrem Niveau.',
+            trueReported: 'Wahr ↓ / ausgegeben →',
+            notReported: 'keines',
+            trueLevel: 'wahr {level}',
+            stopReasons: 'Warum Durchläufe endeten',
+            itemUse: 'Verwendete Fragen',
+            itemUseSummary:
+              '{used} von {pool} Fragen verwendet, {unused} nie verwendet · {flipped} der Antworten durch Rauschen umgekehrt. Am häufigsten:',
+            showStudents: 'Studierende',
+            hideStudents: 'Studierende ausblenden',
+            export: 'CSV',
+            sameStudents: 'Gleiche Studierende, neue Einstellungen',
+          },
+          subcompetences: {
+            summary:
+              '{count} Teilkompetenzen · {gaps, plural, =0 {alle Niveaus abgedeckt} one {# mit fehlenden Niveaus} other {# mit fehlenden Niveaus}}',
+            title: 'Teilkompetenzen',
+            hint: 'Wie oft jede Teilkompetenz gefragt und gezählt wurde und welche Niveaus ihre Fragen abdecken. Die Abweichung ist nur ein grober Hinweis: Eine simulierte Person hat in allen Teilkompetenzen einer Kompetenz dasselbe wahre Niveau, und eine Teilkompetenz erhält nur wenige Antworten.',
+            subcompetence: 'Teilkompetenz',
+            answers: 'Antworten pro Durchlauf',
+            min: 'min. {min}',
+            covered: 'Abgedeckt',
+            notSampled: 'Nicht ausgewählt',
+            outOfRange: 'Ausser Reichweite',
+            pool: 'Fragen pro Niveau',
+            poolCell: '{level}: {count} Fragen, {used} verwendet',
+            gaps: 'Keine Fragen für {levels}',
+            deviation: 'Grobe Abweichung',
+            estimated: '{count} mit Niveau',
+            legend:
+              'Fragen pro Niveau: grün = in diesem Testlauf verwendet, grau = nie verwendet, rot = keine Frage auf diesem Niveau. Abgedeckt = Minimum an Antworten erreicht; nicht ausgewählt = in diesem Durchlauf übersprungen; ausser Reichweite = weit vom Niveau der Person entfernt, nicht nötig.',
+          },
+          mastery: {
+            sublevels: 'Unterniveaus (z. B. B1.3)',
+            mainLevels: 'Hauptniveaus (z. B. B1 = B1.1 bis B1.3)',
+            title: 'Gemeistert (Lesart der Kundin)',
+            hint: 'Ein Niveau gilt als gemeistert, wenn die Fähigkeit am oder über dem Meisterungspunkt seines Bereichs liegt, z. B. bei 70 % von B1.3. Die Meisterungswahrscheinlichkeit sagt, wie wahrscheinlich das ist, aus der Schätzung und ihrer Unsicherheit; ab der nötigen Wahrscheinlichkeit wird das Niveau als gemeistert angezeigt. Gemessen an den simulierten Personen, die ihr wahres Niveau gemeistert haben, das nächste aber noch nicht.',
+            masteryPoint: 'Gemeistert ab {value} % des Niveaus',
+            probability:
+              'Als gemeistert angezeigt ab {value} % Wahrscheinlichkeit',
+            loading: 'Studierende werden geladen…',
+            tiles: {
+              mainMastered: 'Als gemeistert angezeigt',
+              mainMasteredRight: 'Richtig, wenn als gemeistert angezeigt',
+              mainHighestExact: 'Höchstes gemeistertes Hauptniveau richtig',
+              mastered: 'Als gemeistert angezeigt',
+              masteredRight: 'Richtig, wenn als gemeistert angezeigt',
+              highestExact: 'Höchstes gemeistertes Niveau richtig',
+              highestWithinOne: '… innerhalb ±1 Niveau',
+            },
+            tileHints: {
+              mainMastered:
+                'z. B. «B1 gemeistert» mit genügend Wahrscheinlichkeit',
+              mainMasteredRight:
+                'das wahre Niveau ist mindestens das letzte Unterniveau',
+              mainHighestExact:
+                'wahr: das Hauptniveau, dessen letztes Unterniveau erreicht ist',
+              mastered: 'Ergebnisse mit genügend Wahrscheinlichkeit',
+              masteredRight: 'das wahre Niveau ist mindestens das ausgegebene',
+              highestExact:
+                'gemeistert: das ausgegebene Niveau, sonst das darunter',
+              highestWithinOne:
+                'höchstes gemeistertes Niveau höchstens eins daneben',
+            },
+          },
+          students: {
+            mainMastery:
+              'Hauptniveau {level} · mit {probability} % Wahrscheinlichkeit gemeistert.',
+            mainRowHint:
+              'Wahrscheinlichkeit, dass das Hauptniveau gemeistert ist (✓ = als gemeistert angezeigt)',
+            mastery:
+              'Bei {position} % von {level} · mit {probability} % Wahrscheinlichkeit gemeistert.',
+            mastered: '{level} gemeistert',
+            notMastered: '{level} noch nicht gemeistert',
+            rowHint:
+              'Wahrscheinlichkeit, dass das Niveau gemeistert ist (✓ = als gemeistert angezeigt)',
+            hint: 'Öffne eine Person, um zu sehen, wie jedes Ergebnis zustande kam: welche Fragen gestellt wurden, welche Antworten das wahre Niveau erwarten lässt und wie sich das Niveau nach jeder Antwort verändert hat.',
+            student: 'Person',
+            competences: 'Wahres → ausgegebenes Niveau',
+            overall: 'Gesamt',
+            questions: 'Fragen',
+            unexpectedAnswers: 'Unerwartete Antworten',
+            stop: 'Ende',
+            determined: 'Niveau bestimmt',
+            notDetermined: 'Nicht bestimmt',
+            result:
+              'Wahres Niveau <strong>{trueLevel}</strong> → Ergebnis <strong>{result}</strong>.',
+            matches: 'Richtig.',
+            tooHigh:
+              '{count, plural, one {# Niveau zu hoch.} other {# Niveaus zu hoch.}}',
+            tooLow:
+              '{count, plural, one {# Niveau zu tief.} other {# Niveaus zu tief.}}',
+            patterns: {
+              NONE: 'Zu dieser Kompetenz wurde keine Frage gestellt.',
+              ALL_CORRECT:
+                'Alle {count} Antworten waren richtig, die schwierigste auf {highest}. Ohne falsche Antwort begrenzt nichts die Schätzung nach oben, deshalb steigt sie bis {result}.',
+              ALL_WRONG:
+                'Alle {count} Antworten waren falsch, die leichteste auf {lowest}. Ohne richtige Antwort begrenzt nichts die Schätzung nach unten, deshalb sinkt sie bis {result}.',
+              CLEAR_BOUNDARY:
+                'Richtig bis {highest}, falsch ab {lowest}. Das Ergebnis liegt an dieser Grenze: {result}.',
+              MIXED:
+                'Gemischte Antworten: richtig bis {highest}, aber schon falsch auf {lowest}. Das Ergebnis gleicht beides aus: {result}.',
+            },
+            unexpectedNote:
+              '{count, plural, one {# Antwort widersprach} other {# Antworten widersprachen}} dem wahren Niveau (Rauschen).',
+            questionLevel: 'Fragenniveau',
+            expected: 'Erwartet',
+            answer: 'Antwort',
+            roughHint:
+              'Grob: bisher weniger als 4 Antworten in dieser Kompetenz, deshalb noch kein ausgegebenes Niveau.',
+            subcompetence: 'Teilkompetenz',
+            levelAfter: 'Niveau danach',
+            question: 'Frage',
+            correct: 'richtig',
+            incorrect: 'falsch',
+            unexpected: 'unerwartet',
+            tags: {
+              ALL_CORRECT: 'nur richtige Antworten',
+              ALL_WRONG: 'nur falsche Antworten',
+            },
+          },
+          runs: {
+            title: 'Gespeicherte Testläufe',
+            empty: 'Noch kein Testlauf.',
+            run: 'Testlauf',
+            settings: 'Einstellungen',
+            spec: '{students} Studierende · {noise}% Rauschen',
+            select: 'Testlauf #{number} zum Vergleich auswählen',
+            compare: '2 Testläufe vergleichen',
+            hideCompare: 'Vergleich ausblenden',
+            compareTitle: 'Testlauf #{first} und Testlauf #{second}',
+            delete: 'Löschen',
+          },
+          stopReasons: {
+            CLASSIFIED: 'Niveau bestimmt',
+            ALL_ROOTS_CLASSIFIED: 'Alle Kompetenzen bestimmt',
+            TOTAL_QUESTION_CAP: 'Fragenlimit erreicht',
+            NODE_QUESTION_CAP: 'Kompetenzlimit erreicht',
+            POOL_EXHAUSTED: 'Keine Fragen mehr',
+            INSUFFICIENT_DATA: 'Zu wenig Daten',
+            ABANDONED: 'Abgebrochen',
+          },
+        },
         attemptDiagnostics: {
           title: 'Versuche (Testumgebung)',
           description:

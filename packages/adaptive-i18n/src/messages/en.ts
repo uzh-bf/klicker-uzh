@@ -875,6 +875,210 @@ const messages = {
         expandNode: 'Expand {node}',
         collapseNode: 'Collapse {node}',
         weightShare: 'Weight: {share}% of the overall level',
+        dryRuns: {
+          title: 'Dry runs',
+          testingOnly: 'Testing only',
+          description:
+            'Run simulated students through this quiz before real students take it. Each simulated student has a true level and answers every question up to that level correctly and every question above it incorrectly; the noise flips single answers. Stop settings can be changed for a run; the quiz itself stays unchanged. Dry runs are not part of any results.',
+          unavailable:
+            'Publish the quiz (IRT v1) to start a dry run. Dry runs use the current publication.',
+          form: {
+            sameStudents:
+              'Same simulated students as run #{number}. Only the stop settings can change, so the runs compare fairly.',
+            newStudents: 'Use new students',
+            EVENHint:
+              'Students are spread evenly over these levels: an overview of the whole scale.',
+            FIXEDHint:
+              'All students have this level: a close look at one spot of the scale.',
+            SAME_LEVELHint: 'Each student is equally good in every competence.',
+            INDEPENDENTHint:
+              'Each competence gets its own random level, like an uneven real profile.',
+            title: 'New dry run',
+            students: 'Students',
+            studentsHint: 'Up to {max} simulated students per run.',
+            studentsInvalid: 'Choose between 1 and {max} students.',
+            trueLevels: 'True levels',
+            EVEN: 'Evenly over a range',
+            FIXED: 'One fixed level',
+            rangeInvalid: 'The first level must not be above the second.',
+            noise: 'Noise: {noise}%',
+            noiseHint:
+              'Chance that a single answer is the opposite of the ideal pattern.',
+            competences: 'Competences',
+            SAME_LEVEL: 'Same level in all',
+            INDEPENDENT: 'Independent per competence',
+            stopSettings:
+              'Stop settings for this run (prefilled from the quiz)',
+            totalQuestionCap: 'Maximum questions',
+            capInvalid: 'Choose between 1 and 1000.',
+            tooLarge: 'Students × maximum questions may not exceed {max}.',
+            precision: 'Classification precision',
+            precision0: 'Exact level',
+            precision1: '±1 level',
+            precision2: '±2 levels',
+            confidence: 'Confidence',
+            minQuestionsPerLeaf: 'Minimum per subcompetence',
+            minInvalid: 'Choose a number between 0 and the maximum questions.',
+            start: 'Start dry run',
+          },
+          result: {
+            engine: 'Engine: {revision}',
+            title: 'Dry run #{number}',
+            meta: '{students} students · true levels {levels} · {noise}% noise · {competences} · {date} · {seconds} s',
+            settings:
+              'max. {cap} questions · precision {precision, select, 0 {exact} other {±{precision}}} · {confidence}% confidence · min. {minPerLeaf} per subcompetence',
+            olderPublication:
+              'This run used an earlier publication of the quiz.',
+            exact: 'Exact level',
+            withinOne: 'Within ±1 level',
+            bias: 'Bias',
+            biasHint: 'in levels, + = too high',
+            questions: 'Questions per attempt',
+            questionsHint: 'median {median}, max. {max}',
+            determined: 'Level determined',
+            competence: 'Competence',
+            confusion: 'True and reported levels',
+            confusionHint:
+              'Rows: true level, columns: reported level, at sublevel precision. Green = exact, amber = one sublevel off, red = further off. The last column is the share of exact results per true level.',
+            trueReported: 'True ↓ / reported →',
+            notReported: 'none',
+            trueLevel: 'true {level}',
+            stopReasons: 'Why attempts stopped',
+            itemUse: 'Question use',
+            itemUseSummary:
+              '{used} of {pool} questions used, {unused} never used · {flipped} of the answers flipped by noise. Most used:',
+            showStudents: 'Students',
+            hideStudents: 'Hide students',
+            export: 'CSV',
+            sameStudents: 'Same students, new settings',
+          },
+          subcompetences: {
+            summary:
+              '{count} subcompetences · {gaps, plural, =0 {all levels covered} one {# with missing levels} other {# with missing levels}}',
+            title: 'Subcompetences',
+            hint: 'How often each subcompetence was asked and counted, and which levels its questions cover. The deviation is only a rough indicator: a simulated student has the same true level in all subcompetences of a competence, and a subcompetence gets only a few answers.',
+            subcompetence: 'Subcompetence',
+            answers: 'Answers per attempt',
+            min: 'min. {min}',
+            covered: 'Covered',
+            notSampled: 'Not sampled',
+            outOfRange: 'Out of range',
+            pool: 'Questions per level',
+            poolCell: '{level}: {count} questions, {used} used',
+            gaps: 'No questions for {levels}',
+            deviation: 'Rough deviation',
+            estimated: '{count} with a level',
+            legend:
+              "Questions per level: green = used in this run, grey = never used, red = no question at this level. Covered = got its minimum answers; not sampled = skipped this attempt; out of range = far from the student's level, not required.",
+          },
+          mastery: {
+            sublevels: 'Sublevels (e.g. B1.3)',
+            mainLevels: 'Main levels (e.g. B1 = B1.1 to B1.3)',
+            title: 'Mastery (client reading)',
+            hint: 'A level counts as mastered when the ability lies at or beyond the mastery point of its band, e.g. 70% of B1.3. The mastery probability says how likely that is, given the estimate and its uncertainty; from the required probability on, the level is shown as mastered. Measured against the simulated students, who have mastered their true level but not the next one.',
+            masteryPoint: 'Mastered from {value}% of the level',
+            probability: 'Shown as mastered from {value}% probability',
+            loading: 'Loading the students…',
+            tiles: {
+              mainMastered: 'Shown as mastered',
+              mainMasteredRight: 'Right when shown as mastered',
+              mainHighestExact: 'Highest mastered main level correct',
+              mastered: 'Shown as mastered',
+              masteredRight: 'Right when shown as mastered',
+              highestExact: 'Highest mastered level correct',
+              highestWithinOne: '… within ±1 level',
+            },
+            tileHints: {
+              mainMastered: 'e.g. "B1 mastered" with enough probability',
+              mainMasteredRight:
+                "the true level is at least the main level's last sublevel",
+              mainHighestExact:
+                'true: the main level whose last sublevel is reached',
+              mastered: 'results with enough probability',
+              masteredRight: 'the true level is at least the reported one',
+              highestExact:
+                'mastered: the reported level, otherwise the one below',
+              highestWithinOne: 'highest mastered level at most one off',
+            },
+          },
+          students: {
+            mainMastery:
+              'Main level {level} · mastered with {probability}% probability.',
+            mainRowHint:
+              'Probability that the main level is mastered (✓ = shown as mastered)',
+            mastery:
+              'At {position}% of {level} · mastered with {probability}% probability.',
+            mastered: '{level} mastered',
+            notMastered: '{level} not yet mastered',
+            rowHint:
+              'Probability that the level is mastered (✓ = shown as mastered)',
+            hint: 'Open a student to see why each result came out the way it did: which questions were asked, which answers the true level predicts, and how the level moved after each answer.',
+            student: 'Student',
+            competences: 'True → reported level',
+            overall: 'Overall',
+            questions: 'Questions',
+            unexpectedAnswers: 'Unexpected answers',
+            stop: 'Stop',
+            determined: 'Level determined',
+            notDetermined: 'Not determined',
+            result:
+              'True level <strong>{trueLevel}</strong> → result <strong>{result}</strong>.',
+            matches: 'Correct.',
+            tooHigh:
+              '{count, plural, one {# level too high.} other {# levels too high.}}',
+            tooLow:
+              '{count, plural, one {# level too low.} other {# levels too low.}}',
+            patterns: {
+              NONE: 'No question was asked for this competence.',
+              ALL_CORRECT:
+                'All {count} answers were correct, the hardest at {highest}. Without a wrong answer nothing limits the estimate from above, so it moves up to {result}.',
+              ALL_WRONG:
+                'All {count} answers were wrong, the easiest at {lowest}. Without a correct answer nothing limits the estimate from below, so it moves down to {result}.',
+              CLEAR_BOUNDARY:
+                'Correct up to {highest}, wrong from {lowest}. The result lies at this boundary: {result}.',
+              MIXED:
+                'Mixed answers: correct up to {highest}, but already wrong at {lowest}. The result balances both: {result}.',
+            },
+            unexpectedNote:
+              '{count, plural, one {# answer} other {# answers}} went against the true level (noise).',
+            questionLevel: 'Question level',
+            expected: 'Expected',
+            answer: 'Answer',
+            roughHint:
+              'Rough: fewer than 4 answers in this competence so far, so no level is reported yet.',
+            subcompetence: 'Subcompetence',
+            levelAfter: 'Level after',
+            question: 'Question',
+            correct: 'correct',
+            incorrect: 'incorrect',
+            unexpected: 'unexpected',
+            tags: {
+              ALL_CORRECT: 'only correct answers',
+              ALL_WRONG: 'only wrong answers',
+            },
+          },
+          runs: {
+            title: 'Saved dry runs',
+            empty: 'No dry run yet.',
+            run: 'Run',
+            settings: 'Settings',
+            spec: '{students} students · {noise}% noise',
+            select: 'Select run #{number} for comparison',
+            compare: 'Compare 2 runs',
+            hideCompare: 'Hide comparison',
+            compareTitle: 'Run #{first} and run #{second}',
+            delete: 'Delete',
+          },
+          stopReasons: {
+            CLASSIFIED: 'Level determined',
+            ALL_ROOTS_CLASSIFIED: 'All competences determined',
+            TOTAL_QUESTION_CAP: 'Question cap reached',
+            NODE_QUESTION_CAP: 'Competence cap reached',
+            POOL_EXHAUSTED: 'No questions left',
+            INSUFFICIENT_DATA: 'Not enough data',
+            ABANDONED: 'Abandoned',
+          },
+        },
         attemptDiagnostics: {
           title: 'Attempts (testing environment)',
           description:
