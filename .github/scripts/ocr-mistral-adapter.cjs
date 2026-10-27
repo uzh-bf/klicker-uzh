@@ -1907,6 +1907,7 @@ function summarizePlanGuidance(record) {
 }
 
 async function callMistral(options = {}) {
+  const profile = providerConfig(options.provider)
   const apiKey = options.apiKey
   const fetchImpl = options.fetchImpl ?? requestMistral
   const availability =
@@ -1935,10 +1936,14 @@ async function callMistral(options = {}) {
 
   const mistralBody = translateMistralRequest(
     options.body,
-    createHistoryStore()
+    options.history ?? createHistoryStore({ provider: profile.name }),
+    profile.name
   )
   const controller = new AbortController()
   const timer = setTimeout(() => controller.abort(), timeoutMs)
+  const abort = () => controller.abort()
+  options.signal?.addEventListener('abort', abort, { once: true })
+  if (options.signal?.aborted) controller.abort()
   const diagnostics = {
     schema_version: 1,
     stage: options.diagnosticsStage,
@@ -1955,8 +1960,8 @@ async function callMistral(options = {}) {
     stage: ['preflight', 'topology'].includes(options.diagnosticsStage)
       ? options.diagnosticsStage
       : 'adapter',
-    provider: 'mistral',
-    model: MISTRAL_MODEL,
+    provider: profile.name,
+    model: profile.model,
     kind: 'auxiliary',
     conversation: null,
     attempt: 1,
@@ -1968,7 +1973,7 @@ async function callMistral(options = {}) {
     diagnostics.requests += 1
     diagnostics.upstream_attempts += 1
     journal.write({ ...receipt, event: 'dispatch' })
-    const response = await fetchImpl(MISTRAL_URL, {
+    const response = await fetchImpl(profile.url, {
       method: 'POST',
       headers: {
         'content-type': 'application/json',
@@ -2014,7 +2019,7 @@ async function callMistral(options = {}) {
       ...receipt,
       event: 'response',
       ...observedUsage(payload),
-      ...observedResponseShape(payload, 'mistral'),
+      ...observedResponseShape(payload, profile.name),
       finish_reason: [
         'stop',
         'length',
@@ -2026,8 +2031,13 @@ async function callMistral(options = {}) {
         : 'unknown',
       http_status: httpStatus,
     })
-    const normalized = normalizeMistralResponse(payload)
+    const normalized = normalizeMistralResponse(payload, profile.name)
     recordResponseUsage(diagnostics, normalized.usage, payload.usage)
+    options.history?.remember(
+      mistralBody.messages,
+      payload.choices[0].message,
+      options.body.prompt_cache_key
+    )
     accepted = true
     return normalized
   } catch (error) {
@@ -2047,16 +2057,21 @@ async function callMistral(options = {}) {
       http_status: httpStatus,
     })
     clearTimeout(timer)
+    options.signal?.removeEventListener('abort', abort)
     if (['preflight', 'topology'].includes(options.diagnosticsStage)) {
-      writeDiagnostics({
+      const snapshot = {
         schema_version: 1,
         stage: options.diagnosticsStage,
+        provider: profile.name,
+        model: profile.model,
         provider_availability: availability.snapshot(),
         requests: diagnostics.requests,
         ...Object.fromEntries(
           COST_USAGE_FIELDS.map((field) => [field, diagnostics[field]])
         ),
-      })
+      }
+      if (options.diagnosticsSink) options.diagnosticsSink(snapshot)
+      else writeDiagnostics(snapshot)
     }
   }
 }
@@ -2675,6 +2690,71 @@ function commandSummary(args) {
   return 0
 }
 
+function commandFinalSummary(args) {
+  commandSummary(args)
+  const advisorPath = process.env.OCR_ADVISOR_DIAGNOSTICS_PATH
+  const readReport = (file, expected, provider) => {
+    try {
+      return buildCostReport(fs.readFileSync(file, 'utf8'), expected, provider)
+        .estimate
+    } catch {
+      return null
+    }
+  }
+  const expected = {}
+  for (const arg of args.slice(1)) {
+    const match = /^(adapter|preflight|topology)=(\d{1,16})$/.exec(arg)
+    if (match && !Object.hasOwn(expected, match[1]))
+      expected[match[1]] = Number(match[2])
+  }
+  const main = readReport(args[0], expected, 'mistral-flash')
+  let advisor
+  try {
+    const receipt = JSON.parse(
+      fs.readFileSync(`${advisorPath}.expected.json`, 'utf8')
+    )
+    if (
+      receipt.schema === 'ocr-advisor-expectations/v1' &&
+      Number.isSafeInteger(receipt.expected_receipts) &&
+      receipt.expected_receipts >= 0
+    ) {
+      advisor =
+        receipt.expected_receipts === 0
+          ? buildCostReport(
+              fs.existsSync(advisorPath)
+                ? fs.readFileSync(advisorPath, 'utf8')
+                : '',
+              { adapter: 0 },
+              'mistral'
+            ).estimate
+          : readReport(
+              advisorPath,
+              { adapter: receipt.expected_receipts },
+              'mistral'
+            )
+    }
+  } catch {
+    /* Missing expectations remain unknown. */
+  }
+  const line = (scope, value) =>
+    value
+      ? `OCR cost scope=${scope} status=complete estimated_with_cache_usd=${value.withCache.toFixed(4)} estimated_without_cache_usd=${value.withoutCache.toFixed(4)} estimated_savings_usd=${value.savings.toFixed(4)} savings_percent=${(value.withoutCache ? (100 * value.savings) / value.withoutCache : 0).toFixed(1)}`
+      : `OCR cost scope=${scope} status=unavailable`
+  const sum =
+    main && advisor
+      ? {
+          withCache: main.withCache + advisor.withCache,
+          withoutCache: main.withoutCache + advisor.withoutCache,
+          savings: main.savings + advisor.savings,
+        }
+      : null
+  const text = `\n${line('flash_main', main)}\n${line('glm_advisor', advisor)}\n${line('final_and_advisor', sum)}\nAdvisor usage has a separate allowance and is excluded from OCR's main review budget counters.\n`
+  process.stdout.write(text)
+  if (process.env.GITHUB_STEP_SUMMARY)
+    fs.appendFileSync(process.env.GITHUB_STEP_SUMMARY, text)
+  return 0
+}
+
 function createCompressionCounters() {
   return {
     started: 0,
@@ -2984,7 +3064,7 @@ function createProgressReporter(write, options = {}) {
   }
 }
 
-function configureAttempt(configPath, url) {
+function configureAttempt(configPath, url, mcpConfig) {
   let original
   let config
   try {
@@ -3017,6 +3097,7 @@ function configureAttempt(configPath, url) {
     }
   }
   config.llm.url = url
+  if (mcpConfig) config.mcp_servers = { klicker_review: mcpConfig }
   try {
     replace(JSON.stringify(config))
   } catch {
@@ -3037,7 +3118,7 @@ function configureAttempt(configPath, url) {
   }
 }
 
-async function commandRun(args) {
+async function commandRun(args, options = {}) {
   let configPath
   if (args[0] === '--ocr-config') {
     if (!args[1] || args[2] !== '--') {
@@ -3076,6 +3157,8 @@ async function commandRun(args) {
   const childEnv = { ...process.env }
   delete childEnv.MISTRAL_API_KEY
   delete childEnv.OPENROUTER_API_KEY
+  delete childEnv.OCR_ADVISOR_STATE_PATH
+  delete childEnv.OCR_ADVISOR_DIAGNOSTICS_PATH
   const liveProgress = childEnv.OCR_ADAPTER_PROGRESS_FD === '3'
   delete childEnv.OCR_ADAPTER_PROGRESS_FD
   childEnv.OCR_LLM_URL = `${adapter.url}${CHAT_PATH}`
@@ -3084,10 +3167,73 @@ async function commandRun(args) {
   childEnv.OCR_LLM_PROTOCOL = 'openai'
   childEnv.OCR_USE_ANTHROPIC = 'false'
 
-  let restoreConfig
+  let restoreConfig, focusedAdvisor, rulesPath
   try {
+    if (process.env.OCR_ADVISOR_STATE_PATH) {
+      if (!configPath || !process.env.OCR_ADVISOR_DIAGNOSTICS_PATH)
+        throw new AdapterError(
+          'invalid_advisor',
+          'advisor configuration is unavailable'
+        )
+      const { startFocusedAdvisor } = require('./ocr-review-tools.cjs')
+      const { readPolicyBlob } = require('./ocr-runtime-config.cjs')
+      const toIndex = argv.indexOf('--to')
+      if (toIndex < 0 || !/^[a-f0-9]{40}$/.test(argv[toIndex + 1] ?? ''))
+        throw new AdapterError('invalid_advisor', 'review head unavailable')
+      const reviewedHead = argv[toIndex + 1]
+      focusedAdvisor = await (
+        options.startFocusedAdvisor ?? startFocusedAdvisor
+      )({
+        repo: process.cwd(),
+        head: reviewedHead,
+        policy: process.env.TRUSTED_SHA,
+        identityHead: process.env.HEAD_SHA,
+        statePath: process.env.OCR_ADVISOR_STATE_PATH,
+        diagnosticsPath: process.env.OCR_ADVISOR_DIAGNOSTICS_PATH,
+        apiKey,
+        availability,
+      })
+      childEnv.OCR_REVIEW_TOOLS_TOKEN = focusedAdvisor.token
+      delete childEnv.OCR_ADVISOR_STATE_PATH
+      delete childEnv.OCR_ADVISOR_DIAGNOSTICS_PATH
+      const ruleIndex = argv.indexOf('--rule')
+      if (ruleIndex < 0)
+        throw new AdapterError('invalid_advisor', 'review rules unavailable')
+      const rules = JSON.parse(
+        readPolicyBlob(
+          process.cwd(),
+          process.env.TRUSTED_SHA,
+          argv[ruleIndex + 1],
+          262144
+        )
+      )
+      const skill = readPolicyBlob(
+        process.cwd(),
+        process.env.TRUSTED_SHA,
+        '.agents/skills/ocr-reviewer/SKILL.md',
+        32768
+      )
+      rules.rules = rules.rules.map((rule) => ({
+        ...rule,
+        rule: `${rule.rule}\n\n${skill}`,
+      }))
+      rules.rules.push({ path: '**/*', rule: skill, merge_system_rule: true })
+      rulesPath = path.join(
+        process.env.RUNNER_TEMP,
+        `final-ocr-rules-${crypto.randomUUID()}.json`
+      )
+      fs.writeFileSync(rulesPath, JSON.stringify(rules), {
+        mode: 0o600,
+        flag: 'wx',
+      })
+      argv[ruleIndex + 1] = rulesPath
+    }
     if (configPath)
-      restoreConfig = configureAttempt(configPath, childEnv.OCR_LLM_URL)
+      restoreConfig = configureAttempt(
+        configPath,
+        childEnv.OCR_LLM_URL,
+        focusedAdvisor?.mcpConfig
+      )
     const child = spawn(argv[0], argv.slice(1), {
       stdio: liveProgress ? ['inherit', 'inherit', 'pipe'] : 'inherit',
       env: childEnv,
@@ -3133,6 +3279,7 @@ async function commandRun(args) {
       child.on('exit', (code, signal) => resolve({ code, signal }))
     })
     try {
+      await focusedAdvisor?.close()
       await adapter.close()
       if (liveProgress) {
         // A descendant can retain stderr after the review process exits. Bound
@@ -3168,6 +3315,7 @@ async function commandRun(args) {
     return typeof result.code === 'number' ? result.code : 1
   } finally {
     try {
+      await focusedAdvisor?.close()
       await adapter.close()
     } finally {
       try {
@@ -3180,6 +3328,7 @@ async function commandRun(args) {
         }
       } finally {
         restoreConfig?.()
+        if (rulesPath) fs.rmSync(rulesPath, { force: true })
       }
     }
   }
@@ -3273,6 +3422,7 @@ async function main(argv) {
   if (command === 'serve') return commandServe(rest)
   if (command === 'stop') return commandStop(rest)
   if (command === 'summary') return commandSummary(rest)
+  if (command === 'final-summary') return commandFinalSummary(rest)
   process.stderr.write(
     'usage: ocr-mistral-adapter.cjs <run|start|serve|stop|summary> [args]\n'
   )
@@ -3293,11 +3443,13 @@ module.exports = {
   reportProviderAvailability,
   startAdapter,
   callMistral,
+  writeDiagnostics,
   estimateCost,
   buildCostReport,
   createProgressFilter,
   createProgressReporter,
   summarizePlanGuidance,
+  commandFinalSummary,
 }
 
 if (require.main === module) {

@@ -1315,6 +1315,8 @@ test('verifies the exact public Mistral tool contract', async (t) => {
   assert.deepEqual(receipts[0], {
     schema_version: 1,
     stage: 'preflight',
+    provider: 'mistral-flash',
+    model: FINAL_REVIEW_MODEL,
     requests: 1,
     upstream_attempts: 1,
     responses: 1,
@@ -1383,6 +1385,8 @@ test('retains preflight usage when a successful canary answer is rejected', asyn
     assert.deepEqual(receipt, {
       schema_version: 1,
       stage: 'preflight',
+      provider: 'mistral-flash',
+      model: FINAL_REVIEW_MODEL,
       requests: 1,
       upstream_attempts: 1,
       responses: 1,
@@ -4352,6 +4356,11 @@ test('selects incremental attestation only for bounded repaired changes', async 
   for (const policyPath of [
     '.github/workflows/check-ocr-final-review.yml',
     '.github/scripts/final-ai-review-shared.js',
+    '.github/scripts/ocr-review-tools.cjs',
+    '.github/scripts/ocr-runtime-config.cjs',
+    '.github/open-code-review/repository.json',
+    '.github/open-code-review/runtime-manifest.json',
+    '.agents/skills/ocr-reviewer/SKILL.md',
     '.github/scripts/install-patched-ocr.cjs',
     '.github/open-code-review/ocr-compression.patch',
   ]) {
