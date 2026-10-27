@@ -179,8 +179,10 @@ the two usage lanes shown for chatbot accounts.
 ### Authorization and lifecycle
 
 **AI usage authorization**:
-An account-level approval that requires an approved cost center and permits
-both base and advanced model usage. It is separate from publication approval.
+An account-level approval that permits base model usage. Advanced model usage
+additionally needs the advanced subscription tier and an approved cost center;
+setting a cost center grants that tier. It is separate from publication
+approval.
 _Avoid_: base authorization, advanced authorization, per-model approval
 
 **Publication approval**:
@@ -199,9 +201,12 @@ _Avoid_: raw prompt, system prompt editor, custom-mode configuration
 
 **Effective mode set**:
 The server-resolved modes a participant may present or request for one
-chatbot. It combines standard-mode configuration, legacy custom-mode entries,
-and required MCP capability checks; a hidden mode is rejected before thread or
-provider work.
+chatbot. It combines standard-mode configuration and the approved custom-mode
+configuration; a saved draft mode is offered only in the owner preview, and a
+mode is not hidden because the chatbot declares a required retrieval binding
+elsewhere. An unsupported or typed-disabled mode is rejected before thread or
+provider work, and a mode whose declared required binding is unavailable fails
+closed at request time.
 _Avoid_: client mode list, available modes (when referring to server policy)
 
 ### Model classes and budgets
@@ -254,8 +259,8 @@ same usage class.
 _Avoid_: lecturer budget, account credits
 
 **Auto model**:
-The automatic model choice, classified as `ADVANCED` for the MVP until every
-routed billable step can be attributed to a usage class.
+The automatic model choice, with an explicit registry usage class. The released
+policy permits `BASE` Auto entries; see ADR 0020's compatibility amendment.
 _Avoid_: base fallback, unclassified model
 
 **Class exhaustion**:

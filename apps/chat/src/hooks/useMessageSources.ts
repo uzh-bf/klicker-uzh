@@ -2,12 +2,14 @@ import { useAuiState } from '@assistant-ui/react'
 import { useMemo } from 'react'
 
 import { extractCitedPages } from '@/src/lib/markdown/remarkCitationMarkers'
+import { courseImageSourceMap } from '@/src/lib/sources/courseImages'
 import {
   type ChatSourcePart,
   normalizeSourcesFromParts,
 } from '@/src/lib/sources/normalizeSources'
 import { formatCitedPageRanges } from '@/src/lib/sources/sourceDisplay'
 import type { ChatSource } from '@/src/lib/sources/types'
+import { withVideoSourceFrames } from '@/src/lib/sources/videoSourceMedia'
 
 // Minimal shape this hook needs from the assistant message — kept local
 // (rather than importing assistant-ui's ThreadAssistantMessage type) so this
@@ -21,6 +23,7 @@ type MessageWithSourceParts = {
 export interface MessageSources {
   messageId: string
   sources: ChatSource[]
+  courseImageSourcesByAssetId: ReadonlyMap<string, ChatSource>
   /**
    * Source index -> the pages this answer cites for it, as the smallest
    * covering ranges (`6–7, 12`). A source the answer cites without a page
@@ -68,8 +71,9 @@ export function useMessageSources(): MessageSources {
     fingerprint += `|${'toolCallId' in part ? String(part.toolCallId) : ''}:${part.isError ? 1 : 0}:${resultMark}`
   }
 
+  // biome-ignore lint/correctness/useExhaustiveDependencies: parts are intentionally keyed by a stable fingerprint.
   const sources = useMemo(
-    () => normalizeSourcesFromParts(parts),
+    () => withVideoSourceFrames(normalizeSourcesFromParts(parts), parts),
     // Deliberately keyed on the fingerprint: `parts` is referentially
     // unstable on every render, and the fingerprint captures the values that
     // can actually change the normalization result.
@@ -80,6 +84,7 @@ export function useMessageSources(): MessageSources {
   // Cited pages come from the answer Markdown, not from the retrieval payload:
   // the payload lists the chunks that came back, while only the answer's own
   // markers say which of them it used.
+  // biome-ignore lint/correctness/useExhaustiveDependencies: answer text is intentionally keyed by the message fingerprint.
   const citedPageRanges = useMemo(() => {
     if (!answerText.includes(',')) return EMPTY_CITED_PAGE_RANGES
 
@@ -94,8 +99,22 @@ export function useMessageSources(): MessageSources {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [fingerprint])
 
+  // biome-ignore lint/correctness/useExhaustiveDependencies: parts are intentionally keyed by the same stable fingerprint as sources.
+  const courseImageSourcesByAssetId = useMemo(
+    () => courseImageSourceMap(sources, parts),
+    // Tool results use the same fingerprint and lifecycle as source
+    // normalization above; `sources` changes whenever that fingerprint does.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+    [fingerprint, sources]
+  )
+
   return useMemo(
-    () => ({ messageId: message.id, sources, citedPageRanges }),
-    [message.id, sources, citedPageRanges]
+    () => ({
+      messageId: message.id,
+      sources,
+      citedPageRanges,
+      courseImageSourcesByAssetId,
+    }),
+    [message.id, sources, citedPageRanges, courseImageSourcesByAssetId]
   )
 }

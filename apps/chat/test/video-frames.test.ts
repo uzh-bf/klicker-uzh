@@ -5,16 +5,20 @@ import { type ToolSet, tool } from 'ai'
 import { describe, expect, it, vi } from 'vitest'
 import { z } from 'zod'
 import {
+  courseImageMarker,
+  courseImagePlacements,
+} from '../src/lib/markdown/remarkCourseImages'
+import {
   readVideoFrame,
   videoFrameStoreConfigured,
 } from '../src/lib/server/videoFrameStore'
+import { withVideoFrameTool } from '../src/lib/server/videoFrameTools'
 import {
   parseVideoByteRange,
   readLocalVideo,
   signedVideoPlaybackUrl,
   videoObjectKey,
 } from '../src/lib/server/videoPlaybackStore'
-import { withVideoFrameTool } from '../src/lib/server/videoFrameTools'
 import {
   selectedVideoFrame,
   selectedVideoFrames,
@@ -90,11 +94,19 @@ describe('video frame selection', () => {
     await call(tools, 'KB_doc_query', { query: 'diagram in lecture' })
     expect(
       await call(tools, 'show_video_frame', { asset_id: candidate.asset_id })
-    ).toEqual({ status: 'selected', frame: candidate })
+    ).toEqual({
+      status: 'selected',
+      frame: candidate,
+      placement_marker: courseImageMarker(candidate.asset_id),
+    })
     expect(read).toHaveBeenCalledTimes(1)
     expect(
       await call(tools, 'show_video_frame', { asset_id: candidate.asset_id })
-    ).toEqual({ status: 'selected', frame: candidate })
+    ).toEqual({
+      status: 'selected',
+      frame: candidate,
+      placement_marker: courseImageMarker(candidate.asset_id),
+    })
     expect(read).toHaveBeenCalledTimes(1)
 
     const other = withVideoFrameTool(searchTools(), [], read)
@@ -103,6 +115,28 @@ describe('video frame selection', () => {
       await call(other, 'show_video_frame', { asset_id: candidate.asset_id })
     ).toEqual({ status: 'unavailable' })
     expect(read).toHaveBeenCalledTimes(1)
+  })
+
+  it('places selected video stills through the document image marker contract', async () => {
+    const tools = withVideoFrameTool(
+      searchTools(),
+      [candidate.kb_id],
+      async () => Buffer.from('jpeg')
+    )
+    await call(tools, 'KB_doc_query', { query: 'diagram in lecture' })
+    const selection = await call(tools, 'show_video_frame', {
+      asset_id: candidate.asset_id,
+    })
+    expect(selection).toMatchObject({
+      status: 'selected',
+      placement_marker: courseImageMarker(candidate.asset_id),
+    })
+    const marker = (selection as { placement_marker: string }).placement_marker
+    expect(
+      courseImagePlacements(
+        `Before the figure.\n\n${marker}\n\nAfter the figure.`
+      )
+    ).toEqual([candidate.asset_id])
   })
 
   it('shares concurrent reads and only selects a frame after storage succeeds', async () => {

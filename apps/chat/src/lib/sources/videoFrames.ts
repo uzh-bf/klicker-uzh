@@ -9,7 +9,7 @@ import type { ChatSource } from './types'
 export const VIDEO_FRAME_TOOL = 'show_video_frame'
 export const MAX_VIDEO_FRAME_CANDIDATES = 30
 export const MAX_VIDEO_FRAMES_PER_RESPONSE = 3
-const MAX_VIDEO_SOURCES_SCANNED = 20
+export const MAX_VIDEO_SOURCES_SCANNED = 20
 const MAX_VIDEO_CHUNKS_PER_SOURCE = 30
 const MAX_VIDEO_ASSETS_PER_CHUNK = 10
 export const videoAssetIdSchema = z.string().regex(/^[a-f0-9]{64}$/)
@@ -177,7 +177,12 @@ export function sourceForVideoFrame(
   return sources.find(
     (source) =>
       source.type === 'video' &&
-      source.title === frame.title &&
+      (source.videoFrame
+        ? source.videoFrame.kb_id === frame.kb_id &&
+          source.videoFrame.external_resource_id ===
+            frame.external_resource_id &&
+          source.videoFrame.source_video_sha256 === frame.source_video_sha256
+        : source.title === frame.title) &&
       source.startSec !== undefined &&
       source.endSec !== undefined &&
       Math.abs(source.startSec - frame.start_sec) < 0.001 &&

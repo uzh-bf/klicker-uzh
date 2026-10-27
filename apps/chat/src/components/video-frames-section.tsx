@@ -1,36 +1,23 @@
 'use client'
 
-import { useAuiState } from '@assistant-ui/react'
 import Image from 'next/image'
-import { useParams } from 'next/navigation'
 import { useTranslations } from 'next-intl'
 import { useState } from 'react'
+import { formatTimestamp } from '@/src/lib/sources/sourceDisplay'
 import {
   sourceForVideoFrame,
   type VideoFrame,
 } from '@/src/lib/sources/videoFrames'
-import { useChatStore } from '@/src/stores/chatStore'
 import { CitationChip } from './citation-chip'
+import { CourseImageViewer } from './course-image-viewer'
 import { useMessageSourcesContext } from './message-sources-context'
-
-function timestamp(totalSeconds: number) {
-  const safe = Math.max(0, Math.floor(totalSeconds))
-  const hours = Math.floor(safe / 3600)
-  const minutes = Math.floor((safe % 3600) / 60)
-  const seconds = String(safe % 60).padStart(2, '0')
-  return hours > 0
-    ? `${hours}:${String(minutes).padStart(2, '0')}:${seconds}`
-    : `${minutes}:${seconds}`
-}
 
 export function VideoFrameCard({
   frame,
   frameSrc,
-  videoSrc,
 }: {
   frame: VideoFrame
   frameSrc: string
-  videoSrc: string
 }) {
   const t = useTranslations('chat.videoFrames')
   const { sources } = useMessageSourcesContext()
@@ -39,12 +26,12 @@ export function VideoFrameCard({
   const source = sourceForVideoFrame(frame, sources)
   const label = t('source', {
     title: frame.title,
-    timestamp: timestamp(frame.timestamp_sec),
+    timestamp: formatTimestamp(frame.timestamp_sec),
   })
   return (
     <figure
       data-cy="chat-video-frame"
-      className="border-border my-3 overflow-hidden rounded-xl border bg-background"
+      className="my-5 overflow-hidden rounded-lg"
     >
       {failed ? (
         <div role="alert" className="p-4 text-sm">
@@ -61,45 +48,36 @@ export function VideoFrameCard({
           </button>
         </div>
       ) : (
-        <video
-          key={attempt}
-          controls
-          preload="metadata"
-          poster={frameSrc}
-          src={`${videoSrc}#t=${frame.start_sec},${frame.end_sec}`}
-          aria-label={label}
-          onError={() => setFailed(true)}
-          className="h-auto w-full object-contain"
+        <CourseImageViewer
+          src={frameSrc}
+          alt={label}
+          label={label}
+          width={frame.width_px}
+          height={frame.height_px}
         >
           <Image
+            key={attempt}
             src={frameSrc}
             alt={label}
             width={frame.width_px}
             height={frame.height_px}
             unoptimized
+            onError={() => setFailed(true)}
+            className="h-auto w-full object-contain"
           />
-        </video>
+        </CourseImageViewer>
       )}
-      <figcaption className="border-border flex items-center gap-1 border-t px-3 py-2 text-sm text-muted-foreground">
-        {source && <CitationChip index={source.index} />}
-        <span>{label}</span>
+      <figcaption className="mt-2 text-xs text-muted-foreground">
+        <p>
+          {label}
+          {source && (
+            <>
+              {' '}
+              <CitationChip index={source.index} />
+            </>
+          )}
+        </p>
       </figcaption>
     </figure>
-  )
-}
-
-export function InlineVideoFrame({ frame }: { frame: VideoFrame }) {
-  const { chatbotId } = useParams<{ chatbotId: string }>()
-  const threadId = useChatStore((state) => state.activeThreadId)
-  const messageId = useAuiState((state) => state.message.id)
-  if (!chatbotId || !threadId) return null
-  const assetBase = `/api/chatbots/${chatbotId}/threads/${threadId}/messages/${messageId}`
-
-  return (
-    <VideoFrameCard
-      frame={frame}
-      frameSrc={`${assetBase}/frames/${frame.asset_id}`}
-      videoSrc={`${assetBase}/videos/${frame.asset_id}`}
-    />
   )
 }

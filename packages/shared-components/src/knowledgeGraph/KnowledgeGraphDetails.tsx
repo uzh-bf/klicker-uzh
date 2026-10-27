@@ -1,9 +1,19 @@
 'use client'
 
-import type { KnowledgeGraphEdge, KnowledgeGraphNode } from '@klicker-uzh/types'
+import type {
+  KnowledgeGraphEdge,
+  KnowledgeGraphNode,
+  KnowledgeGraphSourceReference,
+} from '@klicker-uzh/types'
 import React from 'react'
 import type { KnowledgeGraphDetailsLabels } from './knowledgeGraphLabels'
-import type { KnowledgeGraphAskSelection } from './knowledgeGraphView'
+import {
+  conceptDefinition,
+  isSymmetricRelationType,
+  type KnowledgeGraphAskSelection,
+  readableDescription,
+  relationshipDisplayLabel,
+} from './knowledgeGraphView'
 
 const SIDEBAR_LAYOUT_CLASSES =
   'fixed inset-x-0 bottom-0 z-30 max-h-[70vh] overflow-y-auto rounded-t-2xl border border-[#E9E9E9] bg-white shadow-[0_-8px_30px_rgba(0,0,0,0.12)] md:!relative md:z-auto md:h-full md:max-h-none md:w-80 md:shrink-0 md:rounded-none md:border-y-0 md:border-r-0 md:shadow-none'
@@ -62,6 +72,88 @@ function PropertyList({
   )
 }
 
+function SourceList({
+  sources,
+  heading,
+  pages,
+}: {
+  sources: KnowledgeGraphSourceReference[]
+  heading: string
+  pages: KnowledgeGraphDetailsLabels['pages']
+}) {
+  if (sources.length === 0) {
+    return null
+  }
+
+  return (
+    <section aria-labelledby="knowledge-graph-sources-heading">
+      <h3
+        id="knowledge-graph-sources-heading"
+        className="mb-2 text-sm font-semibold text-[#121212]"
+      >
+        {heading}
+      </h3>
+      <ul className="space-y-2 text-sm text-[#4C4C4C]">
+        {sources.map((source) => {
+          const reference =
+            source.pages === undefined ? source.reference : pages(source.pages)
+          return (
+            <li
+              key={`${source.resourceId}:${source.reference ?? ''}`}
+              className="rounded border border-[#E9E9E9] px-3 py-2"
+            >
+              <span className="font-semibold text-[#121212]">
+                {source.title}
+              </span>
+              {reference === undefined ? null : (
+                <span className="block">{reference}</span>
+              )}
+            </li>
+          )
+        })}
+      </ul>
+    </section>
+  )
+}
+
+function EdgeEndpoints({
+  edge,
+  endpoints,
+  labels,
+}: {
+  edge: KnowledgeGraphEdge
+  endpoints: { source: string; target: string }
+  labels: KnowledgeGraphDetailsLabels
+}) {
+  if (isSymmetricRelationType(edge.relationType)) {
+    return (
+      <div>
+        <dt className="font-semibold text-[#4C4C4C]">{labels.concepts}</dt>
+        <dd className="mt-0.5 break-words text-[#121212]">
+          {endpoints.source}, {endpoints.target}
+        </dd>
+      </div>
+    )
+  }
+
+  return (
+    <>
+      <div>
+        <dt className="font-semibold text-[#4C4C4C]">{labels.from}</dt>
+        <dd className="mt-0.5 break-words text-[#121212]">
+          {endpoints.source}
+        </dd>
+      </div>
+      <div>
+        <dt className="font-semibold text-[#4C4C4C]">{labels.to}</dt>
+        <dd className="mt-0.5 break-words text-[#121212]">
+          {endpoints.target}
+        </dd>
+      </div>
+    </>
+  )
+}
+
 export function KnowledgeGraphDetails({
   node,
   edge,
@@ -78,7 +170,13 @@ export function KnowledgeGraphDetails({
     return null
   }
 
-  const heading = node?.displayLabel ?? edge?.label ?? labels.detailsFallback
+  const heading =
+    node?.displayLabel ??
+    (edge === undefined
+      ? undefined
+      : relationshipDisplayLabel(edge, labels.relationTypes)) ??
+    labels.detailsFallback
+  const definition = node === undefined ? undefined : conceptDefinition(node)
   const layoutClasses =
     layout === 'contained' ? CONTAINED_LAYOUT_CLASSES : SIDEBAR_LAYOUT_CLASSES
 
@@ -101,6 +199,14 @@ export function KnowledgeGraphDetails({
             <h2 className="break-words text-lg font-semibold leading-snug text-[#121212]">
               {heading}
             </h2>
+            {definition === undefined ? null : (
+              <p
+                className="mt-1 text-sm leading-6 text-[#4C4C4C]"
+                data-cy="knowledge-graph-definition"
+              >
+                {definition}
+              </p>
+            )}
           </div>
           <button
             type="button"
@@ -139,7 +245,8 @@ export function KnowledgeGraphDetails({
               </div>
             </dl>
 
-            {node.summary === undefined ? null : (
+            {node.summary === undefined ||
+            node.summary === definition ? null : (
               <section aria-labelledby="knowledge-graph-summary-heading">
                 <h3
                   id="knowledge-graph-summary-heading"
@@ -148,13 +255,14 @@ export function KnowledgeGraphDetails({
                   {labels.summary}
                 </h3>
                 <p className="whitespace-pre-wrap text-sm leading-6 text-[#4C4C4C]">
-                  {node.summary}
+                  {readableDescription(node.summary)}
                 </p>
               </section>
             )}
 
             {node.content === undefined ||
-            node.content === node.summary ? null : (
+            node.content === node.summary ||
+            node.content === definition ? null : (
               <section aria-labelledby="knowledge-graph-content-heading">
                 <h3
                   id="knowledge-graph-content-heading"
@@ -163,36 +271,16 @@ export function KnowledgeGraphDetails({
                   {labels.content}
                 </h3>
                 <p className="whitespace-pre-wrap text-sm leading-6 text-[#4C4C4C]">
-                  {node.content}
+                  {readableDescription(node.content)}
                 </p>
               </section>
             )}
 
-            {node.sourceReferences.length === 0 ? null : (
-              <section aria-labelledby="knowledge-graph-sources-heading">
-                <h3
-                  id="knowledge-graph-sources-heading"
-                  className="mb-2 text-sm font-semibold text-[#121212]"
-                >
-                  {labels.sources}
-                </h3>
-                <ul className="space-y-2 text-sm text-[#4C4C4C]">
-                  {node.sourceReferences.map((source) => (
-                    <li
-                      key={`${source.resourceId}:${source.reference ?? ''}`}
-                      className="rounded border border-[#E9E9E9] px-3 py-2"
-                    >
-                      <span className="font-semibold text-[#121212]">
-                        {source.title}
-                      </span>
-                      {source.reference === undefined ? null : (
-                        <span className="block">{source.reference}</span>
-                      )}
-                    </li>
-                  ))}
-                </ul>
-              </section>
-            )}
+            <SourceList
+              sources={node.sourceReferences}
+              heading={labels.sources}
+              pages={labels.pages}
+            />
 
             <button
               type="button"
@@ -212,30 +300,32 @@ export function KnowledgeGraphDetails({
           <div className="space-y-5">
             <dl className="grid grid-cols-1 gap-3 text-sm">
               {edgeEndpoints === undefined ? null : (
-                <>
-                  <div>
-                    <dt className="font-semibold text-[#4C4C4C]">
-                      {labels.from}
-                    </dt>
-                    <dd className="mt-0.5 break-words text-[#121212]">
-                      {edgeEndpoints.source}
-                    </dd>
-                  </div>
-                  <div>
-                    <dt className="font-semibold text-[#4C4C4C]">
-                      {labels.to}
-                    </dt>
-                    <dd className="mt-0.5 break-words text-[#121212]">
-                      {edgeEndpoints.target}
-                    </dd>
-                  </div>
-                </>
+                <EdgeEndpoints
+                  edge={edge}
+                  endpoints={edgeEndpoints}
+                  labels={labels}
+                />
               )}
               <div>
                 <dt className="font-semibold text-[#4C4C4C]">{labels.type}</dt>
-                <dd className="mt-0.5 text-[#121212]">{edge.type}</dd>
+                <dd className="mt-0.5 text-[#121212]">
+                  {labels.relationTypes[edge.relationType]}
+                </dd>
+              </div>
+              <div>
+                <dt className="font-semibold text-[#4C4C4C]">
+                  {labels.evidence}
+                </dt>
+                <dd className="mt-0.5 text-[#121212]">
+                  {labels.relationStatuses[edge.relationStatus]}
+                </dd>
               </div>
             </dl>
+            <SourceList
+              sources={edge.sourceReferences}
+              heading={labels.sources}
+              pages={labels.pages}
+            />
             <PropertyList
               properties={edge.properties}
               heading={labels.properties}

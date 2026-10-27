@@ -89,11 +89,17 @@ it('scopes the frame to the owned assistant message', async () => {
   )
 })
 
-it('rejects unselected frames and revoked KB bindings', async () => {
+it('allows the representative source preview without selecting an inline image', async () => {
   mocks.message.mockResolvedValue({
     chatMode: 'tutor',
     content: [{ type: 'tool-call', toolName: 'KB_doc_query', result: fixture }],
   })
+  expect((await GET(req, { params })).status).toBe(200)
+  expect(mocks.read).toHaveBeenCalledWith(frame)
+})
+
+it('rejects frames absent from the message and revoked KB bindings', async () => {
+  mocks.message.mockResolvedValue({ chatMode: 'tutor', content: [] })
   expect((await GET(req, { params })).status).toBe(404)
   expect(mocks.read).not.toHaveBeenCalled()
   mocks.message.mockResolvedValue({
@@ -107,6 +113,19 @@ it('rejects unselected frames and revoked KB bindings', async () => {
     ],
   })
   mocks.scope.mockReturnValue([])
+  expect((await GET(req, { params })).status).toBe(404)
+  expect(mocks.read).not.toHaveBeenCalled()
+})
+
+it('rejects source previews after KB access is revoked or the message is not owned', async () => {
+  mocks.message.mockResolvedValue({
+    chatMode: 'tutor',
+    content: [{ type: 'tool-call', toolName: 'KB_doc_query', result: fixture }],
+  })
+  mocks.scope.mockReturnValue([])
+  expect((await GET(req, { params })).status).toBe(404)
+  mocks.scope.mockReturnValue([frame.kb_id])
+  mocks.message.mockResolvedValue(null)
   expect((await GET(req, { params })).status).toBe(404)
   expect(mocks.read).not.toHaveBeenCalled()
 })

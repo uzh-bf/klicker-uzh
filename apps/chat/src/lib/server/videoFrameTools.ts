@@ -1,5 +1,6 @@
 import { type ToolSet, tool } from 'ai'
 import { z } from 'zod'
+import { courseImageMarker } from '@/src/lib/markdown/remarkCourseImages'
 import {
   isVideoSearchTool,
   MAX_VIDEO_FRAME_CANDIDATES,
@@ -40,16 +41,21 @@ export function withVideoFrameTool(
   }
   wrapped[VIDEO_FRAME_TOOL] = tool({
     description:
-      'Display the representative frame from a retrieved course video when that visual directly helps explain the answer. First search course material with doc_query, then select an asset_id from video_frames returned by that search. When selecting a frame, begin the final answer with a short paragraph that introduces what the student is about to see; the UI places the video directly after that paragraph. Continue the explanation afterward when useful. The frame was already described in the retrieved chunk; this displays the original pixels to the student. Do not invent frame ids or URLs. At most three frames per response.',
+      'Display a still image of the representative frame from a retrieved course video only when that visual directly helps explain the answer. First search course material with doc_query, then select an asset_id from video_frames returned by that search. After a successful selection, put the returned placement_marker on its own line, with blank lines before and after, between the paragraphs it illustrates, using the same image placement as course document images. The frame was already described in the retrieved chunk; this displays the original pixels to the student. Numbered citations in the answer and image caption jump to Sources; hovering previews the frame. The full source entry opens the original recording outside chat. There is no video player in the answer. Do not invent frame ids, placement markers or URLs. At most three frames per response.',
     inputSchema: z.object({ asset_id: videoAssetIdSchema }),
     execute: async ({ asset_id }) => {
       const frame = candidates.get(asset_id)
       if (!frame) return { status: 'unavailable' as const }
-      if (selected.has(asset_id)) return { status: 'selected' as const, frame }
+      const selection = {
+        status: 'selected' as const,
+        frame,
+        placement_marker: courseImageMarker(frame.asset_id),
+      }
+      if (selected.has(asset_id)) return selection
       const pendingRead = pendingReads.get(asset_id)
       if (pendingRead)
         return (await pendingRead)
-          ? { status: 'selected' as const, frame }
+          ? selection
           : { status: 'unavailable' as const }
       if (selected.size + pendingReads.size >= MAX_VIDEO_FRAMES_PER_RESPONSE)
         return { status: 'unavailable' as const }
@@ -72,7 +78,7 @@ export function withVideoFrameTool(
       pendingReads.set(asset_id, readPromise)
 
       if (!(await readPromise)) return { status: 'unavailable' as const }
-      return { status: 'selected' as const, frame }
+      return selection
     },
   })
   return wrapped

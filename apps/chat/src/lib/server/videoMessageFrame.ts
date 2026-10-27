@@ -1,10 +1,14 @@
 import { prisma } from '@klicker-uzh/prisma'
-import { resolveEffectiveMCPConfigurations } from './effectiveChatModes'
-import type { ChatSourcePart } from '../sources/normalizeSources'
-import { selectedVideoFrames, type VideoFrame } from '../sources/videoFrames'
 import { resolveMcpScope } from '../../services/mcpScope'
+import {
+  type ChatSourcePart,
+  normalizeSourcesFromParts,
+} from '../sources/normalizeSources'
+import { selectedVideoFrames, type VideoFrame } from '../sources/videoFrames'
+import { withVideoSourceFrames } from '../sources/videoSourceMedia'
+import { resolveEffectiveMCPConfigurations } from './effectiveChatModes'
 
-/** Resolve a selected frame only when the participant still owns its message and KB scope. */
+/** Resolve displayed or source-preview frames within the owned message and current KB scope. */
 export async function resolveAuthorizedVideoFrame({
   assetId,
   chatbotId,
@@ -29,7 +33,12 @@ export async function resolveAuthorizedVideoFrame({
   })
   if (!message || !Array.isArray(message.content)) return undefined
 
-  const frame = selectedVideoFrames(message.content as ChatSourcePart[]).find(
+  const parts = message.content as ChatSourcePart[]
+  const previews = withVideoSourceFrames(
+    normalizeSourcesFromParts(parts),
+    parts
+  ).flatMap((source) => (source.videoFrame ? [source.videoFrame] : []))
+  const frame = [...selectedVideoFrames(parts), ...previews].find(
     (item) => item.asset_id === assetId
   )
   if (!frame) return undefined

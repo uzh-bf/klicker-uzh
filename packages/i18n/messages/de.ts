@@ -1,5 +1,17 @@
 export default {
   chat: {
+    courseImages: {
+      expandLabel: 'Bild vergrößern: {label}',
+      closeViewer: 'Bildansicht schließen',
+      zoomIn: 'Vergrößern',
+      zoomOut: 'Verkleinern',
+      zoomLevel: 'Zoomstufe relativ zum eingepassten Bild',
+      fitImage: 'Bild einpassen',
+      panHint: 'Zum Erkunden des vergrößerten Bildes scrollen oder wischen.',
+      source: '{title} · Seite {page}',
+      unavailable: 'Dieses Kursbild ist derzeit nicht verfügbar.',
+      retry: 'Bild erneut laden',
+    },
     graphPanel: {
       missingEndpoint: 'Unbekannter Begriff',
       title: 'Wissensgraph',
@@ -8,6 +20,7 @@ export default {
       fullscreen: 'Graph im Vollbild anzeigen',
       restore: 'Graph in der Seitenleiste anzeigen',
       ask: 'Dazu eine Frage stellen',
+      showConcept: 'Begriff im Wissensgraph anzeigen',
       nodePrompt: 'Hilf mir, den Begriff «{topic}» zu verstehen.',
       edgePrompt:
         'Erkläre die Beziehung «{relationship}» zwischen «{source}» und «{target}».',
@@ -29,6 +42,7 @@ export default {
       quizzer: 'Quiz',
       quizzerDescription:
         'Übe mit prüfungsnahen Fragen aus den Kursunterlagen, jeweils eine nach der anderen, mit Rückmeldung.',
+      custom: 'Eigener Modus',
     },
     settingsPanel: {
       title: 'Einstellungen',
@@ -49,7 +63,7 @@ export default {
       usingPrimaryModel:
         'Die automatische Auswahl wird verwendet, solange Credits verfügbar sind.',
       usingFallbackModel:
-        'Es sind keine Credits mehr übrig. GPT-5.6 Luna kann als Credit-Fallback verwendet werden.',
+        'Es sind keine Credits mehr übrig. Das Basismodell kann als Credit-Fallback verwendet werden.',
       reasoningEffortLabel: 'Denkaufwand',
       selectReasoningEffort: 'Denkaufwand auswählen',
       reasoningEffortHint:
@@ -61,6 +75,19 @@ export default {
         medium: 'Mittel',
         high: 'Hoch',
         xhigh: 'Sehr hoch',
+      },
+      answerStyleLabel: 'Antwortformat',
+      answerStyleHint:
+        'Ändert, wie neue Antworten gegliedert sind, nicht wie viel Unterstützung Du bekommst.',
+      answerStyles: {
+        balanced: 'Standard',
+        bullets: 'Stichpunkte',
+      },
+      answerToneLabel: 'Ton',
+      answerTones: {
+        neutral: 'Neutral',
+        friendly: 'Freundlich',
+        direct: 'Direkt',
       },
     },
     credits: {
@@ -264,6 +291,20 @@ export default {
       partial: 'Unvollständige Antwort',
       error: 'Fehler',
     },
+    documentNotice: {
+      title: 'Bevor du Dokumente anhängst',
+      allowed:
+        'Hänge nur Material an, das du teilen darfst: eigene Notizen und Arbeiten, Kursmaterial, das du verwenden darfst, oder frei lizenziertes Material.',
+      notAllowed:
+        'Hänge keine vollständigen urheberrechtlich geschützten Werke ohne Erlaubnis an und keine Dokumente mit persönlichen oder vertraulichen Informationen über andere, sensiblen Daten oder Passwörtern.',
+      access:
+        'Dass du Zugriff auf eine Datei hast, heisst nicht, dass du sie teilen darfst. Frag im Zweifel deine Dozierenden.',
+      dataBoundary:
+        'Der Dokumenttext wird an den Anbieter des KI-Modells gesendet. Wenn das gewählte Modell Bilder lesen kann, können auch gerenderte PDF-Seiten zur visuellen Prüfung gesendet werden. KlickerUZH speichert den Text und eine allfällige Zusammenfassung der visuellen Prüfung mit diesem Gespräch, aber nicht die Seitenbilder.',
+      once: 'Dieser Hinweis erscheint auf diesem Gerät nur einmal.',
+      remove: 'Dokumente entfernen',
+      accept: 'Verstanden',
+    },
     disclaimer: {
       mediaTitle: 'Haftungsausschluss-Medien',
       introAlt: 'Chatbot-Einführung',
@@ -294,6 +335,13 @@ export default {
         'Die Bildanhänge für diese Nachricht konnten nicht geladen werden. Bitte versuche es erneut.',
       attachedImageAlt: 'Angehängtes Bild {index}',
     },
+    documentPreview: {
+      open: 'Vorschau von {name}',
+      extractedText: 'Text, den der Chat aus dieser Datei gelesen hat:',
+      extractedTextOnly:
+        'Die Originaldatei wird nicht gespeichert. Nach dem Neuladen wird nur der Text angezeigt, den der Chat daraus gelesen hat:',
+      openOriginal: 'Originaldatei öffnen',
+    },
     imageViewer: {
       previewUnavailable: 'Vorschau nicht verfügbar',
       title: 'Bildanhang',
@@ -318,6 +366,14 @@ export default {
       loadError: 'Deine Chats konnten nicht geladen werden.',
       retry: 'Erneut versuchen',
       loading: 'Deine Chats werden geladen...',
+      filterLabel: 'Chats nach Titel filtern',
+      filterPlaceholder: 'Nach Titel filtern',
+      filterClear: 'Filter löschen',
+      filterNoMatch: 'Kein Chat passt zu diesem Filter.',
+      exportMarkdown: 'Als Markdown exportieren',
+      exportUserLabel: 'Du',
+      exportAssistantLabel: 'Assistent',
+      exportSourcesLabel: 'Quellen',
       elearningTag: 'eLearning',
     },
     thread: {
@@ -387,6 +443,9 @@ export default {
       editDisabledTooltip:
         'Bearbeiten nicht möglich: Das ausgewählte Modell unterstützt keine Bilder',
       copy: 'Kopieren',
+      readAloud: 'Vorlesen',
+      stopReadAloud: 'Vorlesen stoppen',
+      readAloudFormula: 'Formel',
       refresh: 'Aktualisieren',
       retry: 'Erneut versuchen',
       rateUp: 'Hilfreiche Antwort',
@@ -398,6 +457,11 @@ export default {
     },
     composer: {
       placeholder: 'Nachricht schreiben...',
+      replyLanguageEn: 'Dieses Gespräch findet auf Englisch statt',
+      replyLanguageDe: 'Dieses Gespräch findet auf Deutsch statt',
+      meetingClockNotStarted: 'Die Uhr startet mit Deiner ersten Nachricht',
+      meetingClockElapsed: '{minutes} Min. seit Deiner ersten Nachricht',
+      meetingClockTime: '{time} Uhr (Zürcher Zeit)',
       modeUnavailable:
         'Für diesen Chatbot ist derzeit kein Chatmodus verfügbar. Wende Dich bitte an Deine Dozierenden.',
       send: 'Nachricht senden',
@@ -408,10 +472,72 @@ export default {
       attachmentReadError:
         'Das Bild konnte nicht gelesen werden. Bitte versuche es mit einer anderen Datei.',
       dismissError: 'Fehler schliessen',
+      dropFiles: 'Dateien zum Anhängen hier ablegen',
       dropImages: 'Bilder zum Anhängen hier ablegen',
       attachmentPreviewAlt: 'Anhang-Vorschau',
       removeAttachment: 'Anhang entfernen',
+      attachFile: 'Bild oder Dokument anhängen',
       attachImage: 'Bild anhängen',
+      attachmentTypeError:
+        'Dieser Dateityp kann nicht angehängt werden. Verwende ein Bild, ein PDF, eine Word-Datei (.docx) oder eine Text-, Markdown- oder CSV-Datei.',
+      documentOnlyTypeError:
+        'Das ausgewählte Modell kann keine Bilder lesen. Verwende ein PDF, eine Word-Datei (.docx) oder eine Text-, Markdown- oder CSV-Datei.',
+      documentLimitError: 'Du kannst höchstens {max} Dokumente anhängen.',
+      documentTooLarge: 'Dokumente müssen kleiner als {max} MB sein.',
+      documentNoText: 'Diese Datei enthält keinen lesbaren Text.',
+      documentPdfNoText:
+        'Dieses PDF enthält keinen markierbaren Text. Gescannte PDFs können noch nicht gelesen werden.',
+      documentPresentation:
+        'PowerPoint-Dateien können nicht gelesen werden. Speichere die Präsentation als PDF und hänge das PDF an.',
+      documentReadError:
+        'Das Dokument konnte nicht gelesen werden. Bitte versuche es mit einer anderen Datei.',
+      documentReading: 'Dokument wird gelesen…',
+      documentPages: '{count, plural, one {# Seite} other {# Seiten}}',
+      documentTokens: '~{count} Tokens',
+      documentShortened: 'Auf die ersten {max} Tokens gekürzt',
+      documentVisualReviewed:
+        '{count, plural, one {Seite visuell geprüft} other {Seiten visuell geprüft}}',
+      documentVisualTooManyPages:
+        '{count, plural, one {Seite nicht visuell geprüft} other {Seiten nicht visuell geprüft}}: höchstens {max} Seiten pro Nachricht',
+      documentVisualNoImageSupport:
+        '{count, plural, one {Seite nicht visuell geprüft} other {Seiten nicht visuell geprüft}}: Dieses Modell kann keine Bilder lesen',
+      documentVisualSkipped:
+        '{count, plural, one {Seite nicht visuell geprüft} other {Seiten nicht visuell geprüft}}',
+      documentDefaultQuestion:
+        'Bitte beziehe dich auf die angehängte(n) Datei(en).',
+      dictation: 'Nachricht diktieren',
+      dictationSetup: 'Diktieren einrichten',
+      dictationStop: 'Diktieren beenden',
+      dictationListening: 'Hört zu...',
+      dictationLanguageHint: 'Das deutsche Diktat verwendet Standarddeutsch.',
+      dictationSheetTitle: 'Lokales Diktieren aktivieren',
+      dictationSheetBody:
+        'Die Erkennung läuft auf diesem Gerät, und es wird kein Audio an den Chatdienst gesendet. Dein Browser fragt beim Start nach Mikrofonzugriff.',
+      dictationSheetDownload: 'Herunterladen',
+      dictationSheetNotNow: 'Jetzt nicht',
+      dictationSheetInstalling: 'Sprachpaket wird heruntergeladen...',
+      dictationSheetFailed:
+        'Das Sprachpaket konnte nicht installiert werden. Versuche es erneut oder schreibe weiter.',
+      dictationSheetRetry: 'Erneut herunterladen',
+      dictationSheetCheckAgain: 'Verfügbarkeit erneut prüfen',
+      dictationSheetReady: 'Das Sprachpaket ist auf diesem Gerät bereit.',
+      dictationSheetStart: 'Diktieren starten',
+      dictationErrorAborted: 'Das Diktieren wurde abgebrochen.',
+      dictationErrorAudioCapture:
+        'Das Mikrofon konnte nicht geöffnet werden. Überprüfe die Browserberechtigungen.',
+      dictationErrorInstall:
+        'Das lokale Sprachpaket konnte nicht installiert werden.',
+      dictationErrorLanguageNotSupported:
+        'Diese Sprache wird für lokales Diktieren nicht unterstützt.',
+      dictationErrorNetwork:
+        'Der Browser meldete einen Netzwerkfehler beim Diktieren.',
+      dictationErrorNoSpeech: 'Keine Sprache erkannt. Versuche es erneut.',
+      dictationErrorNotAllowed:
+        'Der Mikrofonzugriff wurde verweigert. Erlaube ihn in den Browsereinstellungen.',
+      dictationErrorServiceNotAllowed:
+        'Der Browser hat den Diktierdienst nicht zugelassen.',
+      dictationErrorUnknown:
+        'Das Diktieren konnte nicht gestartet werden. Versuche es erneut.',
       attachmentFallbackLabel: 'Anhang',
       editCancel: 'Abbrechen',
       editSend: 'Senden',
@@ -1775,7 +1901,7 @@ Da die KlickerUZH-App noch nicht im iOS-App-Store verfügbar ist, folgen Sie die
         'Das Diagramm zeigt die aggregierte Verteilung der Gesamtpunktzahlen aktiver Teilnehmender. Dein Punktebereich ist hervorgehoben.',
       histogramUserRange: 'Dein Punktebereich: {range}.',
       notEnoughDataForComparison:
-        'Es ist kein Peer-Vergleich verfügbar. Er wird nur bei mindestens 10 aktiven Teilnehmenden und einem verfügbaren Punktebereich grösser als null ausgegeben.',
+        'Dieser Bericht enthält keinen Peer-Vergleich. Er ist in Berichten nach Kursende enthalten, bei mindestens 10 aktiven Teilnehmenden und einem verfügbaren Punktebereich grösser als null. Berichte während des Kurses enthalten nur deine Punkte.',
       exportReportButton: 'Performance-Bericht exportieren',
       exportReportExplanation:
         'Stelle einen Bericht aus dem aktuellen Assessment-Datensatz aus. Sobald er bereit ist, kannst du ihn im Browser ansehen oder über den Druckdialog des Browsers als einseitige A4-PDF speichern. Der Bericht enthält einen Link zur Prüfung seines aktuellen Status und seiner Angaben.',
@@ -1801,7 +1927,7 @@ Da die KlickerUZH-App noch nicht im iOS-App-Store verfügbar ist, folgen Sie die
       exportReportPrintError:
         'Der Bericht konnte nicht zum Drucken geöffnet werden. Erlaube Pop-ups für diese Seite und versuche es erneut.',
       privacyAndTransparencyNotice:
-        'Ein Peer-Vergleich wird erst ab 10 aktiven Teilnehmenden ausgegeben. Zehn initiale Punktebereiche werden zusammengeführt, bis jeder angezeigte Bereich mindestens 3 Teilnehmende repräsentiert. Der Bericht enthält keine einzelnen Peer-Punktzahlen oder Identifikatoren.',
+        'Ein Peer-Vergleich ist nur in Berichten nach Kursende enthalten, und nur ab 10 aktiven Teilnehmenden. Zehn initiale Punktebereiche werden zusammengeführt, bis jeder angezeigte Bereich mindestens 3 Teilnehmende repräsentiert. Der Bericht enthält keine einzelnen Peer-Punktzahlen oder Identifikatoren.',
       courseNameLabel: 'Kurs',
       studentNameLabel: 'Name der studierenden Person',
       studentEmailAddressLabel: 'E-Mail-Adresse',
@@ -2717,7 +2843,7 @@ Da die KlickerUZH-App noch nicht im iOS-App-Store verfügbar ist, folgen Sie die
       chatAccountUsageClassUnavailable:
         'Diese Nutzungsklasse ist für Ihr Konto nicht freigeschaltet.',
       chatAccountUsageAdvancedCostCenter:
-        'Fortgeschrittene Modelle erfordern eine Kostenstelle, auf die die AI-Nutzung verrechnet werden kann.',
+        'Fortgeschrittene Modelle erfordern das fortgeschrittene AI-Abonnement und eine Kostenstelle, auf die die AI-Nutzung verrechnet werden kann.',
       chatAccountUsageRefreshing: 'Nutzung wird aktualisiert ...',
       chatAccountUsageStale:
         'Die aktuelle Nutzung konnte nicht geladen werden. Die unten angezeigten Werte sind möglicherweise veraltet.',
@@ -5078,9 +5204,6 @@ Da die KlickerUZH-App noch nicht im iOS-App-Store verfügbar ist, folgen Sie die
       chatbotTechnicalDetails: 'Technische Details',
       chatbotTechnicalId: 'ID',
       chatbotTechnicalAvatar: 'Avatar',
-      chatbotUsageTechnicalIntegrations: 'Technische Integrationen',
-      chatbotUsageTechnicalIntegrationsDescription:
-        'Prüfen Sie konfigurierte MCP-Integrationen und deren aktuellen Status.',
       chatbotSetupTitle: 'Chatbot einrichten',
       chatbotSetupDescription:
         'Bearbeiten und speichern Sie die folgenden Bereiche, bevor Sie die Veröffentlichung beantragen.',
@@ -5120,6 +5243,35 @@ Da die KlickerUZH-App noch nicht im iOS-App-Store verfügbar ist, folgen Sie die
       chatbotCustomModePersonaText: 'Persona und Anweisungen',
       chatbotCustomModePersonaPlaceholder:
         'Beschreiben Sie, wie dieser Modus auf Teilnehmende antworten soll.',
+      chatbotCustomModeWelcomeMessage: 'Begrüssungstext',
+      chatbotCustomModeWelcomePlaceholder:
+        'Wird in einem leeren Chat für diesen Modus angezeigt. Leer lassen für die Standardbegrüssung.',
+      chatbotCustomModeStarterPrompts: 'Startervorschläge',
+      chatbotCustomModeStarterPromptsDescription:
+        'Wird in einem leeren Chat für diesen Modus als Vorschläge angezeigt. Höchstens {count} Starter; Teilnehmende entscheiden, ob sie sie senden.',
+      chatbotCustomModeStarterPrompt: 'Starter {number}',
+      chatbotCustomModeStarterPromptAdd: 'Starter hinzufügen',
+      chatbotCustomModeShowReasoning:
+        'Denkprozess des Modells für Teilnehmende anzeigen',
+      chatbotCustomModeShowReasoningDescription:
+        'Standardmässig aus. Die Zusammenfassung des Denkprozesses kann Persona und Anweisungen dieses Modus wiedergeben, zum Beispiel die verborgenen Fakten eines Rollenspiels. In der Eigentümer-Vorschau ist sie immer sichtbar.',
+      chatbotCustomModeReasoningShown:
+        'Denkprozess des Modells für Teilnehmende sichtbar',
+      chatbotCustomModeReasoningHidden:
+        'Denkprozess des Modells für Teilnehmende verborgen',
+      chatbotCustomModeReplyLanguage: 'Antwortsprache',
+      chatbotCustomModeReplyLanguageDescription:
+        'Standardmässig folgen die Antworten der Sprache, in der Teilnehmende schreiben. Legen Sie eine Sprache fest für Rollenspiele, die in einer Sprache bleiben müssen.',
+      chatbotCustomModeReplyLanguageFollow: 'Sprache der Teilnehmenden folgen',
+      chatbotCustomModeReplyLanguageEn: 'Immer Englisch',
+      chatbotCustomModeReplyLanguageDe: 'Immer Deutsch',
+      chatbotCustomModeMeetingClock: 'Gesprächsuhr',
+      chatbotCustomModeMeetingClockDescription:
+        'Standardmässig aus. Teilt dem Modell mit, wie viele Minuten seit der ersten Nachricht der Teilnehmenden vergangen sind, für zeitlich begrenzte Rollenspiele. Dauer und Phasen des Gesprächs gehören in die Persona.',
+      chatbotCustomModeMeetingClockOff: 'Aus',
+      chatbotCustomModeMeetingClockElapsed: 'Vergangene Minuten',
+      chatbotCustomModeMeetingClockElapsedAndTime:
+        'Vergangene Minuten und Uhrzeit',
       chatbotCustomModeAdd: 'Eigenen Modus hinzufügen',
       chatbotCustomModeRemove: 'Entfernen',
       chatbotCustomModesLimit:
@@ -5351,10 +5503,19 @@ Da die KlickerUZH-App noch nicht im iOS-App-Store verfügbar ist, folgen Sie die
         'Inaktiv: Der Chatbot verwendet genau ein von der Lehrperson ausgewähltes Modell.',
       modelSelectionFixedDescription:
         'Teilnehmende verwenden dieses Modell. Neue Chatbots starten mit Auto.',
+      answerPreferences: 'Antwortformat und Ton durch Teilnehmende',
+      answerPreferencesEnabledDescription:
+        'Aktiv: Teilnehmende können für neue Antworten Stichpunkte und einen freundlichen oder direkten Ton wählen.',
+      answerPreferencesDisabledDescription:
+        'Inaktiv: Alle Teilnehmenden erhalten dasselbe Antwortformat und denselben Ton.',
       modelSelectionParticipantDescription:
         'Teilnehmende können zwischen diesen Modellen wählen. Wählen Sie mindestens eines.',
       selectedModel: 'Ausgewähltes Modell',
       allowedModels: 'Erlaubte Modelle',
+      modelUnavailableHint:
+        'Fortgeschrittene Modelle erfordern das fortgeschrittene AI-Abonnement mit einer Kostenstelle.',
+      modelUnavailableSelected:
+        'Ihr Konto kann dieses fortgeschrittene Modell nicht verwenden, daher können Teilnehmende damit nicht chatten. Wählen Sie ein anderes Modell.',
       allowedModelsAll: 'Alle',
       chatbotModelSettings: 'Modell- und Reasoning-Einstellungen',
       reasoningEffortsByModel: 'Reasoning-Level pro Modell',
@@ -5386,7 +5547,6 @@ Da die KlickerUZH-App noch nicht im iOS-App-Store verfügbar ist, folgen Sie die
       disclaimerAccepted: 'Akzeptiert',
       disclaimerDeclined: 'Abgelehnt',
       disclaimerPending: 'Ausstehend',
-      mcpConfigurations: 'MCP-Konfigurationen',
       knowledgeBase: 'Wissensdatenbank',
       knowledgeGraphPolicy: 'Wissensgraph',
       knowledgeGraphPolicyDescription:
@@ -5398,21 +5558,14 @@ Da die KlickerUZH-App noch nicht im iOS-App-Store verfügbar ist, folgen Sie die
         'Aus: Die Konzeptkarte bleibt für Teilnehmende verborgen.',
       knowledgeGraphRetrieval:
         'Graphverbindungen für die Dokumentsuche verwenden',
-      knowledgeGraphRetrievalDescription:
+      knowledgeGraphRetrievalEnabledDescription:
         'Ein: Die Dokumentsuche kann verwandte Konzepte aus dem veröffentlichten Graphen als zusätzliche Suchhinweise verwenden. Antworten belegen weiterhin ausschliesslich Dokumentstellen.',
+      knowledgeGraphRetrievalDisabledDescription:
+        'Aus: Die Dokumentsuche verwendet nur die Frage, ohne Hinweise aus dem Graphen.',
       knowledgeGraphSave: 'Wissensgraph-Einstellungen speichern',
       knowledgeGraphSaveSuccess: 'Wissensgraph-Einstellungen gespeichert.',
       noEnabledKnowledgeBase:
         'Es ist keine Wissensdatenbank verknüpft. Dieser Chatbot kann Kursmaterial nicht durchsuchen.',
-      noMcpConfigurations: 'Keine MCP-Konfigurationen.',
-      mcpServerActive: 'Server aktiv',
-      mcpServerInactive: 'Server inaktiv',
-      mcpChatMode: 'Chat-Modus',
-      mcpStatus: 'Status',
-      mcpStatusEnabled: 'Aktiviert',
-      mcpStatusDisabled: 'Deaktiviert',
-      mcpPriority: 'Priorität',
-      mcpAllowedTools: 'Erlaubte Tools',
       openChatbot: 'Chatbot öffnen',
       openOwnerPreview: 'Eigentümer-Vorschau öffnen',
       chatbotOwnerPreviewLive: 'Live-Konfiguration',

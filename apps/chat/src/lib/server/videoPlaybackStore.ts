@@ -1,7 +1,7 @@
 import { realpath, stat } from 'node:fs/promises'
 import path from 'node:path'
 import { getBlobStorageAccountUrl } from '@klicker-uzh/util'
-import { type VideoFrame, VIDEO_FORMATS } from '@/src/lib/sources/videoFrames'
+import { VIDEO_FORMATS, type VideoFrame } from '@/src/lib/sources/videoFrames'
 
 const DIGEST = /^[a-f0-9]{64}$/
 
