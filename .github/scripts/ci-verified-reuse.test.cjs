@@ -24,6 +24,44 @@ const uploadWindow = {
 }
 const uploadedAt = '2026-10-21T07:00:01Z'
 const buildStartedAt = '2026-10-21T07:00:03Z'
+function cancelsExecution(caller, action, enabled = false, priority = false) {
+  const expression = caller.jobs['test-playwright-execution'].concurrency[
+    'cancel-in-progress'
+  ]
+    .trim()
+    .replace(/^\$\{\{([\s\S]*)\}\}$/, '$1')
+    .replace(
+      /github\.event\.pull_request\.labels\.\*\.name/g,
+      'github.event.pull_request.labels.map(label => label.name)'
+    )
+  return new Function(
+    'github',
+    'vars',
+    'contains',
+    'endsWith',
+    `return (${expression})`
+  )(
+    {
+      event_name: 'pull_request',
+      repository,
+      event: {
+        action,
+        repository: { private: false },
+        label: { name: 'ci:priority' },
+        pull_request: {
+          state: 'open',
+          draft: false,
+          head: { repo: { full_name: repository } },
+          user: { login: 'maintainer' },
+          labels: priority ? [{ name: 'ci:priority' }] : [],
+        },
+      },
+    },
+    { PRIORITY_CI_ENABLED: enabled ? 'true' : 'false' },
+    (values, value) => values.includes(value),
+    (value, suffix) => value.endsWith(suffix)
+  )
+}
 function buildExecution() {
   return {
     name: 'Build shared Playwright artifact',
@@ -644,10 +682,22 @@ test('workflow preserves readiness in-flight, pins execution inputs and defaults
   const caller = YAML.parse(
     fs.readFileSync(path.join(root, 'workflows/test-playwright.yml'), 'utf8')
   )
-  assert.equal(
-    caller.jobs['test-playwright-execution'].concurrency['cancel-in-progress'],
-    "${{ github.event.action != 'ready_for_review' }}"
-  )
+  for (const enabled of [false, true]) {
+    for (const priority of [false, true]) {
+      assert.equal(
+        cancelsExecution(caller, 'ready_for_review', enabled, priority),
+        false
+      )
+      assert.equal(
+        cancelsExecution(caller, 'labeled', enabled, priority),
+        false
+      )
+      assert.equal(
+        cancelsExecution(caller, 'synchronize', enabled, priority),
+        !(enabled && priority)
+      )
+    }
+  }
   const reusable = YAML.parse(
     fs.readFileSync(
       path.join(root, 'workflows/public-pr-playwright-shards.yml'),
@@ -1015,14 +1065,12 @@ test('readiness preserves an in-flight run and accepts it only after completion'
       'utf8'
     )
   )
-  const expression = caller.jobs['test-playwright-execution'].concurrency[
-    'cancel-in-progress'
-  ].slice(3, -2)
-  assert.equal(expression.trim(), "github.event.action != 'ready_for_review'")
+  assert.equal(cancelsExecution(caller, 'ready_for_review'), false)
   assert.deepEqual(caller.jobs['test-playwright-execution'].permissions, {
     contents: 'read',
     actions: 'read',
     'pull-requests': 'read',
+    issues: 'read',
     'id-token': 'write', // Existing trusted WarpBuild admission capability.
   })
 })

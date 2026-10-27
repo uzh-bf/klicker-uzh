@@ -244,6 +244,27 @@ across existing consumers. A larger precision-policy refactor is out of scope.
 
 ## Progress
 
+2026-10-27: the user authorized the next readiness sequence for
+[PR #6741](https://github.com/uzh-bf/klicker-uzh/pull/6741): integrate current
+`v3`, resolve the remaining advisory review thread, mark ready, and run the
+normal final-review process on the refreshed head. This supersedes the earlier
+draft-only terminal for those named actions. Merge into `v3`, deployment, and
+data repair remain outside scope. The unchanged numerical-answer compatibility
+contract and regression portfolio still apply.
+
+Integration target: `4b09b2f2b2bac1d5e028af2203942a50edcfbf41`, the current
+`origin/v3` head. Reason: strict required checks need an up-to-date branch.
+The upstream CI-routing change has no path overlap with the precision fix.
+Preserve history with one ordinary merge into the task branch and a non-force
+push. Reuse source reviews and browser captures because the affected source,
+dependencies, and application behavior are unchanged; obtain new hosted CI and
+the separate final-review result for the integrated head. Resolve the advisory
+helper-extraction thread without refactoring, following the user's verified
+disposition. Main owns this coupled integration and forge-readiness sequence.
+Acceptance: refreshed checks succeed, no unresolved review threads remain,
+the PR is ready, and final review actually runs against the held head. Any
+required human review or new finding remains visible and blocks merge.
+
 2026-10-26: execution started. Root outcome: prevent silent loss of decimal exact
 answers, following the approved plan and the user's compatibility constraint.
 Current authorized terminal: verified draft PR against `v3`.

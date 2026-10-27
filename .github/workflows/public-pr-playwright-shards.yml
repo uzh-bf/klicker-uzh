@@ -16,6 +16,9 @@ on:
         type: boolean
         default: false
     outputs:
+      priority_label_event:
+        description: Whether this label-only invocation owns priority validation
+        value: ${{ jobs.prepare.outputs.priority_label_event }}
       duplicate_run_id:
         description: Successful equivalent PR validation run, when reused
         value: ${{ jobs.prepare.outputs.duplicate_run_id }}
@@ -53,6 +56,7 @@ jobs:
     runs-on: ubuntu-latest
     timeout-minutes: 15
     outputs:
+      priority_label_event: ${{ steps.priority.outputs.run_label_event }}
       duplicate_run_id: ${{ steps.equivalent.outputs.duplicate_run_id }}
       should_run: ${{ steps.metadata.outputs.should_run }}
       route: ${{ steps.metadata.outputs.route }}
@@ -90,11 +94,22 @@ jobs:
           fetch-depth: 0
           persist-credentials: false
 
+      - name: Verify priority admission
+        id: priority
+        if: >-
+          vars.PRIORITY_CI_ENABLED == 'true' && github.event_name == 'pull_request' && github.event.pull_request.state == 'open' && github.event.pull_request.draft == false && github.event.repository.private == false && github.event.pull_request.head.repo.full_name == github.repository && !endsWith(github.event.pull_request.user.login, '[bot]') && contains(github.event.pull_request.labels.*.name, 'ci:priority') && (github.event.action != 'labeled' || github.event.label.name == 'ci:priority')
+        uses: ./.ci-control/.github/actions/priority-ci-route
+
       - name: Decide backend and selector state
         id: route
         shell: bash
         env:
           EVENT_NAME: ${{ github.event_name }}
+          PR_ACTION: ${{ github.event.action }}
+          PRIORITY_REQUESTED: ${{ vars.PRIORITY_CI_ENABLED == 'true' && github.event_name == 'pull_request' && github.event.pull_request.state == 'open' && github.event.pull_request.draft == false && github.event.repository.private == false && github.event.pull_request.head.repo.full_name == github.repository && !endsWith(github.event.pull_request.user.login, '[bot]') && contains(github.event.pull_request.labels.*.name, 'ci:priority') && (github.event.action != 'labeled' || github.event.label.name == 'ci:priority') }}
+          PRIORITY_ADMITTED: ${{ steps.priority.outputs.admitted }}
+          PRIORITY_ATTEMPT: ${{ steps.priority.outputs.run_attempt }}
+          PRIORITY_LABEL_EVENT: ${{ steps.priority.outputs.run_label_event }}
           REPOSITORY: ${{ github.repository }}
           REPOSITORY_PRIVATE: ${{ github.event.repository.private }}
           HEAD_REPOSITORY: ${{ github.event.pull_request.head.repo.full_name }}
@@ -173,6 +188,11 @@ jobs:
         shell: bash
         env:
           EVENT_NAME: ${{ github.event_name }}
+          PR_ACTION: ${{ github.event.action }}
+          PRIORITY_REQUESTED: ${{ vars.PRIORITY_CI_ENABLED == 'true' && github.event_name == 'pull_request' && github.event.pull_request.state == 'open' && github.event.pull_request.draft == false && github.event.repository.private == false && github.event.pull_request.head.repo.full_name == github.repository && !endsWith(github.event.pull_request.user.login, '[bot]') && contains(github.event.pull_request.labels.*.name, 'ci:priority') && (github.event.action != 'labeled' || github.event.label.name == 'ci:priority') }}
+          PRIORITY_ADMITTED: ${{ steps.priority.outputs.admitted }}
+          PRIORITY_ATTEMPT: ${{ steps.priority.outputs.run_attempt }}
+          PRIORITY_LABEL_EVENT: ${{ steps.priority.outputs.run_label_event }}
           REPOSITORY: ${{ github.repository }}
           REPOSITORY_PRIVATE: ${{ github.event.repository.private }}
           HEAD_REPOSITORY: ${{ github.event.pull_request.head.repo.full_name }}
