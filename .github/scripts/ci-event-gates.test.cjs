@@ -1586,39 +1586,3 @@ test('every discovered priority compute consumer honors the canary duration and 
     '${{ steps.route.outputs.job_timeout }}'
   )
 })
-
-test('Playwright carries the validated duration through both routing steps into every paid build and shard', () => {
-  const workflow = readWorkflow('public-pr-playwright-shards.yml')
-  const prepare = workflow.jobs.prepare
-  const routeSteps = prepare.steps.filter((step) => step.env?.PRIORITY_ADMITTED)
-  assert.equal(routeSteps.length, 2)
-  for (const step of routeSteps) {
-    assert.equal(
-      step.env.PRIORITY_JOB_TIMEOUT,
-      '${{ steps.priority.outputs.job_timeout }}'
-    )
-  }
-  assert.equal(
-    prepare.outputs.job_timeout,
-    '${{ steps.metadata.outputs.job_timeout }}'
-  )
-  const paid = Object.entries(workflow.jobs).filter(([, job]) =>
-    JSON.stringify(job['runs-on'] ?? '').includes('needs.prepare.outputs.')
-  )
-  assert.ok(paid.length >= 2)
-  for (const [id, job] of paid) {
-    for (const value of ['1', '7', '15', '45', '120']) {
-      assert.equal(
-        evaluateGate(
-          job['timeout-minutes'],
-          {},
-          {
-            prepare: { outputs: { job_timeout: value } },
-          }
-        ),
-        Number(value),
-        id
-      )
-    }
-  }
-})

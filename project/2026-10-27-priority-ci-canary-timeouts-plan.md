@@ -105,8 +105,8 @@ packet remain authoritative. Rechecking expiry at admission completion is added.
 
 ## Progress
 
-Approved source batch; implementation and focused checks complete, publication
-and integrated review pending. Root acceptance is one bounded
+Approved source batch; implementation, immutable publication and integrated
+source review complete; current-head hosted CI remains pending. Root acceptance is one bounded
 priority-canary qualification, which remains blocked on source acceptance and a
 separate exact activation packet. This source batch proves the missing duration
 control only. Independent plan critique is dispositioned above. Five new
@@ -117,7 +117,10 @@ reproduces on the untouched baseline and remains an explicit limitation.
 
 Immutable executor content is published; callers now pin that exact commit.
 Actual published parity and the affected portfolio pass with one inherited
-build-shell sampler fixture excluded. Next: integrated review and draft CI. Main-session simplification
-keeps the existing output path and defaults; no new module or dependency was
+build-shell sampler fixture excluded. Independent integrated review found no
+correctness or security defect; its duplicate-test finding was accepted and the
+redundant Playwright assertion suite removed. Existing strict-validator mutation
+coverage retains that contract. Next: current-head draft CI and ordinary
+feedback disposition. Main-session simplification keeps the existing output path and defaults; no new module or dependency was
 introduced. Static scan: no findings or errors in the five changed source files.
-Draft CI and source review remain required; no live action follows automatically.
+Draft CI and ordinary feedback disposition remain required; no live action follows automatically.
