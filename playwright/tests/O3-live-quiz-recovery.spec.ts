@@ -2,7 +2,6 @@ import {
   AccessMode,
   ElementBlockStatus,
   ElementInstanceType,
-  ElementType,
   PermissionLevel,
   PublicationStatus,
 } from '@klicker-uzh/prisma/client'
@@ -324,6 +323,12 @@ async function openSession(page: Page, quizId: string) {
   await expect(page.getByTestId('live-quiz-connection-status')).toBeHidden({
     timeout: 30_000,
   })
+  // A missing PIN shows the PIN form, which has no connection status either.
+  await expect(page.locator('[data-cy^="live-quiz-pin-input"]')).toHaveCount(0)
+  // The connection event queues a second snapshot read after the first one;
+  // a late snapshot would otherwise mask the faults injected next.
+  await page.waitForLoadState('networkidle')
+  await expect(page.getByTestId('live-quiz-connection-status')).toBeHidden()
 }
 
 async function waitForSubscriptions(page: Page) {
@@ -382,9 +387,17 @@ async function installWebSocketFaults(context: BrowserContext) {
               const frame = JSON.parse(data) as {
                 id?: unknown
                 type?: unknown
+                payload?: { operationName?: unknown }
               }
               if (typeof frame.id === 'string') {
-                if (frame.type === 'subscribe') active.add(frame.id)
+                // Other components share the socket; fault only the
+                // subscriber's own operations.
+                if (
+                  frame.type === 'subscribe' &&
+                  (frame.payload?.operationName === 'RunningLiveQuizUpdated' ||
+                    frame.payload?.operationName === 'LiveQuizSettingsChanged')
+                )
+                  active.add(frame.id)
                 if (frame.type === 'complete') active.delete(frame.id)
               }
             } catch {
@@ -500,32 +513,31 @@ async function withQuiz(
   run: (quiz: QuizFixture, token: string) => Promise<void>
 ) {
   const quiz = await createQuiz(assessment, timed)
-  // Equivalent to a successful PIN entry, which the session query requires.
-  const cookieDomain = process.env.COOKIE_DOMAIN?.trim()
-  const pinCookie = {
-    name: `live-quiz-pin-${quiz.id}`,
-    value: quiz.pinCode,
-    httpOnly: true,
-    sameSite: 'Lax' as const,
-    secure: new URL(env('URL_STUDENT')).protocol === 'https:',
-  }
-  await page.context().addCookies([
-    cookieDomain
-      ? {
-          ...pinCookie,
-          domain: cookieDomain.startsWith('.')
-            ? cookieDomain
-            : `.${cookieDomain}`,
-          path: '/',
-        }
-      : { ...pinCookie, url: new URL(graphqlUrl()).origin },
-  ])
   let token: string | undefined
   try {
     token = await lecturerToken(page)
+    // Equivalent to a successful PIN entry, which the session query requires.
+    // WebKit omits cookies on cross-origin requests between local hosts, so
+    // the PIN is added to API requests the same way as the session cookie.
+    const pin = `live-quiz-pin-${quiz.id}=${quiz.pinCode}`
+    await page.route(
+      `${new URL(graphqlUrl()).origin}/api/graphql**`,
+      async (route) => {
+        const cookie = route.request().headers().cookie ?? ''
+        await route.fulfill({
+          response: await route.fetch({
+            headers: {
+              ...route.request().headers(),
+              cookie: [cookie, pin].filter(Boolean).join('; '),
+            },
+          }),
+        })
+      }
+    )
     await gql(token, START, { id: quiz.id })
     await run(quiz, token)
   } finally {
+    await page.unrouteAll({ behavior: 'ignoreErrors' })
     if (token) await gql(token, END, { id: quiz.id }).catch(() => undefined)
     await deleteLiveQuiz(quiz.id).catch(() => undefined)
   }
@@ -665,6 +677,11 @@ test.describe.serial('Assessment live-quiz recovery', () => {
       ).toBeVisible()
       await expect(page.getByTestId('live-quiz-block-submitted')).toHaveCount(0)
       await page.context().setOffline(false)
+      // Let the online recovery settle; a reload during it can be aborted.
+      await expect(page.getByTestId('live-quiz-connection-status')).toBeHidden({
+        timeout: 30_000,
+      })
+      await page.waitForLoadState('networkidle')
       await page.reload({ waitUntil: 'domcontentloaded' })
       await expect(answer).toBeVisible()
       await expectDraft(page, key)
