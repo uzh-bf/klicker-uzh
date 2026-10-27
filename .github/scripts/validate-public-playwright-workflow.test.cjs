@@ -333,6 +333,18 @@ test('public runner jobs require their exact scheduling role and reject unknown 
         "  'display' + require('./.candidate/script.cjs'),"
       summary.run = lines.join('\n')
     },
+    ...['route', 'metadata'].flatMap((id) => [
+      (w) => {
+        delete w.jobs.prepare.steps.find((step) => step.id === id).env
+          .PRIORITY_JOB_TIMEOUT
+      },
+      (w) => {
+        w.jobs.prepare.steps.find(
+          (step) => step.id === id
+        ).env.PRIORITY_JOB_TIMEOUT =
+          '${{ vars.PRIORITY_CI_CANARY_JOB_TIMEOUT_MINUTES }}'
+      },
+    ]),
     ...Object.entries({
       PATH: '.candidate/bin',
       BASH_ENV: '.candidate/bootstrap.sh',

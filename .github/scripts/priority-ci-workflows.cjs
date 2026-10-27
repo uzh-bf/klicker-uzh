@@ -23,6 +23,7 @@ function execution(source, terminal) {
     'admitted',
     'run_label_event',
     'run_attempt',
+    'job_timeout',
     'runner_x64',
     'runner_build',
     'runner_arm',

@@ -74,6 +74,7 @@ jobs:
       admitted: ${{ steps.route.outputs.admitted }}
       run_label_event: ${{ steps.route.outputs.run_label_event }}
       run_attempt: ${{ steps.route.outputs.run_attempt }}
+      job_timeout: ${{ steps.route.outputs.job_timeout }}
       runner_x64: ${{ steps.route.outputs.runner_x64 }}
       runner_build: ${{ steps.route.outputs.runner_build }}
       runner_arm: ${{ steps.route.outputs.runner_arm }}
@@ -97,7 +98,7 @@ jobs:
       !(vars.PRIORITY_CI_ENABLED == 'true' && github.event_name == 'pull_request' && github.event.pull_request.state == 'open' && github.event.pull_request.draft == false && github.event.repository.private == false && github.event.pull_request.head.repo.full_name == github.repository && github.event.pull_request.user.type != 'Bot' && contains(github.event.pull_request.labels.*.name, 'ci:priority') && (github.event.action != 'labeled' || github.event.label.name == 'ci:priority')) &&
       (!cancelled() && (github.event.action != 'labeled' || needs.priority-route.outputs.run_label_event == 'true'))
     runs-on: ${{ needs.priority-route.outputs.run_attempt == format('{0}', github.run_attempt) && needs.priority-route.outputs.runner_x64 || 'ubuntu-latest' }}
-    timeout-minutes: ${{ needs.priority-route.outputs.admitted == 'true' && 15 || 360 }}
+    timeout-minutes: ${{ needs.priority-route.outputs.admitted == 'true' && fromJSON(needs.priority-route.outputs.job_timeout || '15') || 360 }}
     steps:
       - name: Reject a stale paid preparation
         if: needs.priority-route.outputs.admitted == 'true' && needs.priority-route.outputs.run_attempt != format('{0}', github.run_attempt)
@@ -176,7 +177,7 @@ jobs:
       contents: read
       issues: read
       pull-requests: read
-    uses: uzh-bf/klicker-uzh/.github/workflows/check-gitleaks-execution.yml@4b09b2f2b2bac1d5e028af2203942a50edcfbf41
+    uses: uzh-bf/klicker-uzh/.github/workflows/check-gitleaks-execution.yml@a3286cc5cc77b98c7255b596084fd1032682bdaf
 
   priority-status:
     name: ${{ (vars.PRIORITY_CI_ENABLED == 'true' && github.event_name == 'pull_request' && github.event.pull_request.state == 'open' && github.event.pull_request.draft == false && github.event.repository.private == false && github.event.pull_request.head.repo.full_name == github.repository && github.event.pull_request.user.type != 'Bot' && contains(github.event.pull_request.labels.*.name, 'ci:priority') && (github.event.action != 'labeled' || github.event.label.name == 'ci:priority')) && (github.event.action != 'labeled' || needs.priority-execution.outputs.run_label_event == 'true') && 'check-gitleaks' || 'check-gitleaks (priority not admitted)' }}

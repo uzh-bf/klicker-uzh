@@ -534,3 +534,32 @@ test('draft sync pull requests defer Playwright to the ready transition', () => 
     assert.ok(!route.reasonCodes.includes('draft-sync-deferred'))
   }
 })
+
+test('priority duration survives routing only for a current admitted public paid attempt', () => {
+  const input = pullRequest({
+    publicRolloutEnabled: '',
+    priorityAdmitted: 'true',
+    priorityAttempt: '1',
+    runAttempt: '1',
+    priorityJobTimeout: '7',
+  })
+  assert.equal(choosePlaywrightRoute(input).jobTimeout, 7)
+  for (const changes of [
+    { forceHostedCanaryPr: '1234' },
+    { priorityAdmitted: 'false' },
+    { runAttempt: '2' },
+    { prDraft: 'true' },
+    { headRepository: 'synthetic/fork' },
+  ]) {
+    assert.equal(
+      choosePlaywrightRoute({ ...input, ...changes }).jobTimeout,
+      undefined
+    )
+  }
+  for (const value of ['0', '16', '01', '7.5', ' 7', '1e1']) {
+    assert.throws(
+      () => choosePlaywrightRoute({ ...input, priorityJobTimeout: value }),
+      /invalid priority job timeout/
+    )
+  }
+})

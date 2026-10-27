@@ -17,6 +17,7 @@ function ordinary() {
     admitted: 'false',
     run_label_event: 'false',
     run_attempt: '',
+    job_timeout: '',
     // Each consumer owns its pinned hosted selector when admission is denied.
     runner_x64: '',
     runner_build: '',
@@ -81,7 +82,15 @@ async function route(event, env, api) {
   const denied = ordinary()
   if (!requested(event, env)) return denied
   const pr = event.pull_request
+  const jobTimeout = env.PRIORITY_CANARY_JOB_TIMEOUT_MINUTES ?? ''
+  const validCanaryTimeout = () =>
+    /^(?:[1-9]|1[0-5])$/.test(jobTimeout) &&
+    env.PRIORITY_CANARY_PR === String(pr.number) &&
+    env.PRIORITY_CANARY_HEAD_SHA === pr.head?.sha &&
+    env.PRIORITY_CANARY_BASE_SHA === pr.base?.sha &&
+    Date.parse(env.PRIORITY_EXPIRES_AT) > Date.now()
   if (
+    (jobTimeout !== '' && !validCanaryTimeout()) ||
     env.GITHUB_RUN_ATTEMPT !== '1' ||
     !/^[1-9]\d*$/.test(env.GITHUB_RUN_ID ?? '') ||
     !Number.isSafeInteger(pr.number) ||
@@ -161,10 +170,12 @@ async function route(event, env, api) {
     // even if it failed, was cancelled, or produced no billable workload.
     const fresh = await api(`${prefix}/pulls/${pr.number}`)
     if (!samePull(fresh, pr)) return denied
+    if (jobTimeout !== '' && !validCanaryTimeout()) return denied
     return {
       admitted: 'true',
       run_label_event: event.action === 'labeled' ? 'true' : 'false',
       run_attempt: '1',
+      job_timeout: jobTimeout,
       runner_x64: 'warp-ubuntu-2404-x64-4x',
       runner_build: 'warp-ubuntu-2404-x64-8x',
       runner_arm: 'warp-ubuntu-2404-arm64-8x',

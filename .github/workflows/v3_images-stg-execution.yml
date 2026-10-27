@@ -25,6 +25,7 @@ jobs:
       admitted: ${{ steps.route.outputs.admitted }}
       run_label_event: ${{ steps.route.outputs.run_label_event }}
       run_attempt: ${{ steps.route.outputs.run_attempt }}
+      job_timeout: ${{ steps.route.outputs.job_timeout }}
       runner_x64: ${{ steps.route.outputs.runner_x64 }}
       runner_build: ${{ steps.route.outputs.runner_build }}
       runner_arm: ${{ steps.route.outputs.runner_arm }}
@@ -122,7 +123,7 @@ jobs:
     if: "!cancelled() && (github.event.action != 'labeled' || needs.priority-route.outputs.run_label_event == 'true') && (needs.priority-route.outputs.admitted != 'true' || needs.priority-route.outputs.run_attempt == format('{0}', github.run_attempt)) && needs.plan.outputs.migrator-build == 'true' && (github.event_name != 'pull_request' || github.event.pull_request.draft == false)"
     name: ${{ matrix.jobName }}
     runs-on: ${{ needs.priority-route.outputs.runner_arm || 'ubuntu-24.04-arm' }}
-    timeout-minutes: ${{ needs.priority-route.outputs.admitted == 'true' && 60 || 360 }}
+    timeout-minutes: ${{ needs.priority-route.outputs.admitted == 'true' && fromJSON(needs.priority-route.outputs.job_timeout || '60') || 360 }}
     permissions:
       contents: read
       packages: write
@@ -231,7 +232,7 @@ jobs:
     if: "!cancelled() && (github.event.action != 'labeled' || needs.priority-route.outputs.run_label_event == 'true') && (needs.priority-route.outputs.admitted != 'true' || needs.priority-route.outputs.run_attempt == format('{0}', github.run_attempt)) && needs.plan.outputs.build == 'true' && (github.event_name != 'pull_request' || github.event.pull_request.draft == false)"
     name: ${{ matrix.jobName }}
     runs-on: ${{ needs.priority-route.outputs.runner_arm || 'ubuntu-24.04-arm' }}
-    timeout-minutes: ${{ needs.priority-route.outputs.admitted == 'true' && 60 || 360 }}
+    timeout-minutes: ${{ needs.priority-route.outputs.admitted == 'true' && fromJSON(needs.priority-route.outputs.job_timeout || '60') || 360 }}
     permissions:
       contents: read
       packages: write
@@ -341,7 +342,7 @@ jobs:
     if: "!cancelled() && (github.event.action != 'labeled' || needs.priority-route.outputs.run_label_event == 'true') && (needs.priority-route.outputs.admitted != 'true' || needs.priority-route.outputs.run_attempt == format('{0}', github.run_attempt)) && needs.plan.outputs.after-migrator-build == 'true' && (github.event_name != 'pull_request' || github.event.pull_request.draft == false)"
     name: ${{ matrix.jobName }}
     runs-on: ${{ needs.priority-route.outputs.runner_arm || 'ubuntu-24.04-arm' }}
-    timeout-minutes: ${{ needs.priority-route.outputs.admitted == 'true' && 60 || 360 }}
+    timeout-minutes: ${{ needs.priority-route.outputs.admitted == 'true' && fromJSON(needs.priority-route.outputs.job_timeout || '60') || 360 }}
     permissions:
       contents: read
       packages: write
@@ -450,7 +451,7 @@ jobs:
     if: "!cancelled() && (github.event.action != 'labeled' || needs.priority-route.outputs.run_label_event == 'true') && (needs.priority-route.outputs.admitted != 'true' || needs.priority-route.outputs.run_attempt == format('{0}', github.run_attempt)) && needs.plan.outputs.amd-build == 'true' && (github.event_name != 'pull_request' || github.event.pull_request.draft == false)"
     name: ${{ matrix.jobName }}
     runs-on: ${{ needs.priority-route.outputs.runner_build || 'ubuntu-latest' }}
-    timeout-minutes: ${{ needs.priority-route.outputs.admitted == 'true' && 60 || 360 }}
+    timeout-minutes: ${{ needs.priority-route.outputs.admitted == 'true' && fromJSON(needs.priority-route.outputs.job_timeout || '60') || 360 }}
     permissions:
       contents: read
       packages: write

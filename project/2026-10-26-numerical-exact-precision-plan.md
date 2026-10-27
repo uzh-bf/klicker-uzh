@@ -246,6 +246,18 @@ across existing consumers. A larger precision-policy refactor is out of scope.
 
 ## Progress
 
+2026-10-27 conflict resolution: `v3` advanced during hosted CI to
+`a3286cc5cc77b98c7255b596084fd1032682bdaf`. Its updated executor references
+conflicted with the seven earlier pin repairs. Preserve the current target's
+workflow definitions and reference their byte-identical executors at this
+merged target. Generated/caller/pinned parity and all 101 affected CI contract
+checks pass. Numerical application code, tests, dependencies, and browser
+behavior are unchanged. The preceding head had six successful required contexts;
+codebase and Playwright verification remained incomplete at the observation
+bound. Publish this resolved integration and obtain its required CI. The user
+confirmed the final-review capability is still unavailable and instructed us
+to keep that review blocked.
+
 2026-10-27 readiness continuation: strict target freshness now requires
 integrating `v3` at `80885112ac9889dc67b4dea1820ffa89c9cd08eb`.
 Its single staging-CI correction merges without conflicts and changes no

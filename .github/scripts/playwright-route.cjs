@@ -197,6 +197,12 @@ function choosePlaywrightRoute(input) {
     input.priorityAdmitted === 'true' &&
     input.priorityAttempt === input.runAttempt &&
     input.runAttempt === '1'
+  if (
+    input.priorityJobTimeout &&
+    !/^(?:[1-9]|1[0-5])$/.test(input.priorityJobTimeout)
+  ) {
+    throw new Error('invalid priority job timeout')
+  }
   const publicReady =
     prDraft === 'false' &&
     publicEligible &&
@@ -217,6 +223,14 @@ function choosePlaywrightRoute(input) {
     schemaVersion: ROUTE_SCHEMA_VERSION,
     route: publicReady ? 'public-pr' : 'hosted',
     ...(admissionAttempt ? { provider: 'warpbuild', admissionAttempt } : {}),
+    ...(publicReady && priority
+      ? {
+          priorityAdmission: true,
+          ...(input.priorityJobTimeout
+            ? { jobTimeout: Number(input.priorityJobTimeout) }
+            : {}),
+        }
+      : {}),
     selectorPrState: smartDraftApplies ? 'draft' : 'ready',
     reasonCodes: [...new Set(reasons)].sort(),
   }
@@ -230,6 +244,7 @@ function envInput(env = process.env) {
     priorityAdmitted: env.PRIORITY_ADMITTED,
     priorityAttempt: env.PRIORITY_ATTEMPT,
     priorityLabelEvent: env.PRIORITY_LABEL_EVENT,
+    priorityJobTimeout: env.PRIORITY_JOB_TIMEOUT,
     repository: env.REPOSITORY,
     repositoryPrivate: env.REPOSITORY_PRIVATE,
     headRepository: env.HEAD_REPOSITORY,
