@@ -821,7 +821,7 @@ lti:
   image:
     repository: ghcr.io/uzh-bf/klicker-uzh/lti-arm
     pullPolicy: IfNotPresent
-    tag: v3.4.0-alpha.88
+    tag: v3.4.0-alpha.89
 
   ingress:
     className: haproxy
