@@ -38,7 +38,9 @@ function createIsomorphLink() {
       ? []
       : [
           createPersistedQueryLink({
-            useGETForHashedQueries: true, // Optional but allows better caching
+            // Same-origin GET omits Origin, which the API needs for cookie selection.
+            useGETForHashedQueries:
+              !isBrowser || !process.env.NEXT_PUBLIC_CONTROL_API_URL,
             // eslint-disable-next-line react-hooks/rules-of-hooks
             generateHash: usePregeneratedHashes(hashes),
           }),
