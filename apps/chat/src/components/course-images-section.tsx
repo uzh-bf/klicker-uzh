@@ -14,23 +14,27 @@ import {
   selectedCourseImages,
 } from '@/src/lib/sources/courseImages'
 import type { ChatSourcePart } from '@/src/lib/sources/normalizeSources'
+import { selectedVideoFrames } from '@/src/lib/sources/videoFrames'
 import { useChatStore } from '@/src/stores/chatStore'
 import { CitationChip } from './citation-chip'
 import { CourseImageViewer } from './course-image-viewer'
 import { useMessageSourcesContext } from './message-sources-context'
+import { VideoFrameCard } from './video-frames-section'
 
 function courseImageSrc({
   chatbotId,
   threadId,
   messageId,
   assetId,
+  kind = 'images',
 }: {
   chatbotId: string
   threadId: string
   messageId: string
   assetId: string
+  kind?: 'images' | 'frames'
 }) {
-  return `/api/chatbots/${chatbotId}/threads/${threadId}/messages/${messageId}/images/${assetId}`
+  return `/api/chatbots/${chatbotId}/threads/${threadId}/messages/${messageId}/${kind}/${assetId}`
 }
 
 function usePersistedCourseImageContext() {
@@ -152,8 +156,23 @@ export function InlineCourseImage({ assetId }: { assetId: string }) {
         (candidate) => candidate.asset_id === assetId
       )
     : undefined
-  // The image endpoint authorizes against the persisted assistant message.
-  if (!image || !context || partIndex !== firstPlacementIndex) return null
+  const frame = context
+    ? selectedVideoFrames(context.content).find(
+        (candidate) => candidate.asset_id === assetId
+      )
+    : undefined
+  // Both media endpoints authorize against the persisted assistant message.
+  // An ambiguous identity must never display the wrong visual.
+  if (!context || partIndex !== firstPlacementIndex || (image && frame))
+    return null
+  if (frame)
+    return (
+      <VideoFrameCard
+        frame={frame}
+        frameSrc={courseImageSrc({ ...context, assetId, kind: 'frames' })}
+      />
+    )
+  if (!image) return null
   return (
     <CourseImageCard
       image={image}
@@ -175,10 +194,20 @@ export function CourseImagesSection() {
         : []
     )
   )
-  const images = selectedCourseImages(context.content).filter(
-    (image) => !placements.has(image.asset_id)
+  const selectedImages = selectedCourseImages(context.content)
+  const selectedFrames = selectedVideoFrames(context.content)
+  const ambiguousIds = new Set(
+    selectedImages
+      .filter((image) =>
+        selectedFrames.some((frame) => frame.asset_id === image.asset_id)
+      )
+      .map((image) => image.asset_id)
   )
-  if (images.length === 0) return null
+  const unplaced = (asset: { asset_id: string }) =>
+    !placements.has(asset.asset_id) && !ambiguousIds.has(asset.asset_id)
+  const images = selectedImages.filter(unplaced)
+  const frames = selectedFrames.filter(unplaced)
+  if (images.length === 0 && frames.length === 0) return null
   return (
     <div>
       {images.map((image) => (
@@ -188,6 +217,17 @@ export function CourseImagesSection() {
           src={courseImageSrc({
             ...context,
             assetId: image.asset_id,
+          })}
+        />
+      ))}
+      {frames.map((frame) => (
+        <VideoFrameCard
+          key={`${context.messageId}-${frame.asset_id}`}
+          frame={frame}
+          frameSrc={courseImageSrc({
+            ...context,
+            assetId: frame.asset_id,
+            kind: 'frames',
           })}
         />
       ))}

@@ -2,9 +2,11 @@
 
 import { ExternalLinkIcon } from 'lucide-react'
 import { useTranslations } from 'next-intl'
+import { useSourceMedia } from '@/src/hooks/useSourceMedia'
 import { getSourceSecondaryLine } from '@/src/lib/sources/sourceDisplay'
-import { getSourceNavigationUrl } from '@/src/lib/sources/sourceUrl'
 import type { ChatSource } from '@/src/lib/sources/types'
+import { useMessageSourcesContext } from './message-sources-context'
+import { SourcePreviewContent } from './source-preview-content'
 import { Tooltip, TooltipContent, TooltipTrigger } from './ui/tooltip'
 
 // Compact single-line source row for embedded and mobile layouts. Same
@@ -24,6 +26,8 @@ export function SourceRow({
   citedPageRange?: string
 }) {
   const t = useTranslations()
+  const { href } = useSourceMedia(source)
+  const { messageId } = useMessageSourcesContext()
   const secondaryLine = getSourceSecondaryLine(source, t, citedPageRange)
 
   const content = (
@@ -42,7 +46,7 @@ export function SourceRow({
           {secondaryLine}
         </span>
       )}
-      {source.url && (
+      {href && (
         <ExternalLinkIcon
           aria-hidden="true"
           className="text-muted-foreground size-3 shrink-0"
@@ -53,14 +57,16 @@ export function SourceRow({
 
   const className =
     'focus-visible:ring-ring flex min-w-0 items-center gap-1.5 rounded-md py-0.5 text-left transition-colors outline-none focus-visible:ring-1 focus-visible:ring-ring' +
-    (source.url ? ' hover:bg-accent hover:text-accent-foreground' : '')
+    (href ? ' hover:bg-accent hover:text-accent-foreground' : '')
 
   return (
     <Tooltip>
       <TooltipTrigger asChild>
-        {source.url ? (
+        {href ? (
           <a
-            href={getSourceNavigationUrl(source.url, source.page)}
+            href={href}
+            id={`src-${messageId}-${source.index}`}
+            data-cy="chat-source-row"
             target="_blank"
             rel="noopener noreferrer"
             className={className}
@@ -69,17 +75,25 @@ export function SourceRow({
             <span className="sr-only">{t('chat.common.opensInNewTab')}</span>
           </a>
         ) : (
-          <span className={className}>{content}</span>
+          // biome-ignore lint/a11y/noNoninteractiveTabindex: Keyboard focus exposes the same passive preview as hover.
+          <span
+            id={`src-${messageId}-${source.index}`}
+            data-cy="chat-source-row"
+            tabIndex={0}
+            className={className}
+          >
+            {content}
+          </span>
         )}
       </TooltipTrigger>
-      <TooltipContent className="max-w-64 text-left">
+      <TooltipContent className="max-w-80 text-left">
         <span className="sr-only">
           {t('chat.citations.label', {
             index: source.index,
             title: source.title,
           })}
         </span>
-        {secondaryLine && <span aria-hidden="true">{secondaryLine}</span>}
+        <SourcePreviewContent source={source} />
       </TooltipContent>
     </Tooltip>
   )

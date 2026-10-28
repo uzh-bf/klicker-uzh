@@ -16,3 +16,9 @@ data:
   {{- if and .Values.chat.automaticModels .Values.chat.automaticModels.fallbackId }}
   CHAT_FALLBACK_MODEL_ID: {{ .Values.chat.automaticModels.fallbackId | quote }}
   {{- end }}
+  {{- if .Values.chat.videoBlob.container }}
+  CHAT_VIDEO_BLOB_CONTAINER: {{ .Values.chat.videoBlob.container | quote }}
+  {{- end }}
+  {{- if .Values.chat.videoBlob.accountName }}
+  BLOB_STORAGE_ACCOUNT_NAME: {{ .Values.chat.videoBlob.accountName | quote }}
+  {{- end }}

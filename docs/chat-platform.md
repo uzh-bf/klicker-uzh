@@ -1587,6 +1587,38 @@ structured `start_sec` and optional `end_sec` values in the first chunk, plus a 
 and prefers the structured start for the card and citation preview. Legacy results remain
 supported: a video position can still come from a clock- or `1m30s`-valued `labeled_page_number`
 or from a `t`/`start`/`time_continue`/`#t=` parameter on the source URL (`getSourceTimestamp`).
+
+Retrieved recording chunks may also carry a `video_frames` descriptor. The model can call
+`show_video_frame` only with an `asset_id` returned by `doc_query` in the same turn and only for a
+knowledge base still bound to the chatbot. A successful selection is persisted in the assistant
+message. Its `placement_marker` uses the same `course-image` marker, Markdown renderer, and
+`CourseImagesSection` fallback as document images. The model places it between the paragraphs it
+illustrates; legacy answers without markers display selected frames below the answer. Both paths
+wait for the assistant message to finish and render an enlargeable still image.
+Recording citation badges, source cards, and compact source rows preview the representative frame
+and cited time range on hover/focus. Numbered citations in the answer and frame caption use the
+same `CitationChip` as document images: they scroll to and focus the matching entry in Sources.
+The full source card or compact source row opens the external recording URL supplied during
+ingestion in a new tab, preserving its timestamp fragment. Sources without a usable external URL
+retain their frame preview and citation but have no recording link. Answer frames reuse `CourseImageViewer` from the course-image feature,
+including zoom, Fit reset, keyboard panning, Escape dismissal, and focus restoration. There is no
+inline recording player. Sources with retrieved frame metadata can show a preview even when the
+model does not select a frame for the answer.
+
+The producer publishes representative JPEGs and their manifest to a content-addressed Blob
+container under `e1/v1/{frames,manifests}/sha256/...`. Full recordings remain at the lecturer's
+external recording service; Chat uses the retrieved `source_url` and does not proxy, sign, or
+serve recording bytes. Ingestion's explicit `citation_handle` mapping supplies this URL; an
+internal reference is never turned into a fabricated recording link.
+
+Chat checks message ownership and current KB scope before serving a selected frame or a retrieved
+source preview. It reads frame artifacts on the server, enforces byte limits, and verifies SHA-256
+and manifest membership. The source-video digest identifies the frame's recording; it does not
+require a stored recording object. A representative frame may lie outside the cited transcript
+chunk's time range. The local `CHAT_VIDEO_FRAME_STORE_PATH` adapter exists for development fixtures.
+A deployed Chat pod needs `CHAT_VIDEO_BLOB_CONTAINER`, `BLOB_STORAGE_ACCOUNT_NAME`, and
+`BLOB_STORAGE_ACCESS_KEY` for the producer's frame container.
+
 A bare numeric `labeled_page_number` remains a publisher page label, never seconds; other labels
 such as `Kapitel IV` also remain page text. Each card's index badge mirrors the inline chip —
 a bare digit in a small `bg-primary/10` rounded square (`sources-section.tsx`), not a
