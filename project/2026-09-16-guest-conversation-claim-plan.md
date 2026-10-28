@@ -48,7 +48,55 @@ review on 2026-10-14; both are complete. Merge, deployment and production data
 changes remain withheld. The related LTI roadmap below records follow-up work,
 not additional implementation or release authority.
 
-## Related LTI roadmap — updated 2026-10-26
+## Dependency gate cleared — 2026-10-28
+
+The user's merged-and-tested prerequisites are satisfied.
+[The ltijs 7 upgrade (#6728)](https://github.com/uzh-bf/klicker-uzh/pull/6728)
+merged directly into `v3-ai`. [The security fixes (#6714)](https://github.com/uzh-bf/klicker-uzh/pull/6714)
+arrived through [the maintained sync (#6709)](https://github.com/uzh-bf/klicker-uzh/pull/6709),
+merged on 2026-10-27 at `10171c8eacd7116b66561389c0dbdef01dc78758`.
+That merged revision passed all eight Playwright shards, GraphQL, lightweight
+unit tests and code checks. Fresh ancestry and source inspection confirm both
+prerequisites on `v3-ai`, including HTTPS-only launch targets and session expiry.
+
+The user invoked `rs-whats-next` to resume the already-approved package.
+Integration target: `8df0efb23281b6b33c5eaafda90ad864c97ca774`, including the
+merged ltijs 5 platform-compatibility correction (#6749). Its push workflows
+also passed. The merge into the existing task branch is conflict-free and
+awaits local checks and a commit. Main owns integration, runtime and acceptance;
+one bounded read-only explorer mapped the existing launch harness and completed.
+The previous `standard` execution mode and existing authority remain in force.
+
+The ltijs 7 work incorporates the launch harness and supersedes the proposed
+ltijs 5 partitioned-cookie experiment below. It preserves the downstream signed
+handoff shape, but its current harness targets an existing account's PWA course;
+our transfer suite starts with an already-signed handoff. Refresh from the
+tested target and verify a real mock-LMS launch through ltijs 7
+and `/handoff` into Chat, then guest conversation → account link → relaunch →
+visible transferred history. Recheck subject stability, session precedence,
+expiry, atomicity, repeat launches and chronology. Preserve the security PR's
+HTTPS-only target rule; removing dev mode does not replace it.
+
+Use the existing local harness for this missing seam: add optional learner
+identity configuration to `playwright/lti-harness/mockPlatform.ts`, and add
+`playwright/lti-harness/guest-transfer.spec.ts` with top-level and cross-site
+iframe cases. The existing signed-handoff suite remains in ordinary CI. The
+local harness uses its established `standard` runtime profile, real browser
+redirects and the guarded disposable Prisma client; account linkage and thread
+history use isolated synthetic fixtures. The existing local Playwright mode in
+`.devcontainer/post-start.sh` adds the exact already-configured mock origin
+`http://127.0.0.1:4311` to Chat's frame policy so CSP permits the harness.
+Ordinary development, Compose configuration and deployed policies are unaffected.
+Preserve the mock's existing default learner
+for its original PWA tests. These are verification changes, not a new auth path.
+
+The earlier roadmap below records the preceding ltijs 5 alternatives. Its
+experiment and harness sequencing are superseded by the merged ltijs 7 work.
+Real OLAT/browser acceptance, the new ingress path, matching guest seed and
+concurrent-index migration acceptance remain separate release gates. The
+expired monitor remains off; this note authorizes no new schedule or merge.
+
+## Earlier LTI roadmap — 2026-10-26
 
 Outcome: validate the browser-to-LTI launch separately from participant-session
 recovery and guest-conversation transfer. Passing a downstream session test
@@ -389,6 +437,28 @@ util/_with_local_test_origins.sh, so local/CI guest flows work without real
 secrets. Never print or commit secret values; query by key/status only.
 
 ## Progress
+
+### Post-prerequisite verification — 2026-10-28
+
+The refreshed target and the additional local harness are implemented. All 30
+account/claim tests, 52 auth tests (including session expiry), and 15 focused
+guest/embedded-session tests pass. The existing nine LTI access browser cases
+pass. The isolated real-LMS harness passes top-level Chromium, Firefox and
+WebKit, plus WebKit with blocked third-party cookies in a cross-site iframe.
+Each case follows three genuine ltijs 7 launches, transfers and opens an old
+guest message, preserves activity time and verifies repeat-launch idempotency.
+Chromium and Firefox development iframe cases remain explicitly skipped because
+their local SameSite settings differ from deployed cookies.
+
+The shared development and Playwright seed used different course IDs for the
+same synthetic chatbot. Local validation temporarily aligned that one verified
+fixture and restores its original binding afterward; the committed harness
+uses isolated fixtures. The local Playwright startup mode admits only its
+already-registered mock LMS origin alongside the existing frame policy.
+Ordinary development, Compose settings and deployed frame policies are unchanged.
+TypeScript, formatting, shell syntax and the staged secret scan pass. Mandatory
+commit checks/build, integrated review and hosted CI on the refreshed candidate
+remain delivery gates. No merge or deployment is included.
 
 Plan constructed and grounded in this session (2026-09-16) by the main session
 with repository evidence verified at baseline c4f0ecde20. Product-primitive

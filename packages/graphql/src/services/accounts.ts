@@ -301,7 +301,7 @@ export async function sendMagicLink(
 
   await sendTeamsNotification({
     scope: 'graphql/sendMagicLink',
-    text: `One-time login token created for ${usernameOrEmail}: ${magicLink}`,
+    text: `One-time login link requested for ${usernameOrEmail}`,
   })
 
   await EmailService.sendEmail({
@@ -1127,7 +1127,7 @@ export async function createParticipantAccount(
 
     await sendTeamsNotification({
       scope: 'graphql/createParticipantAccount',
-      text: `New participant account created: ${participant.email} with activation link ${activationLink}`,
+      text: `New participant account created: ${participant.email}`,
     })
 
     await EmailService.sendEmail({

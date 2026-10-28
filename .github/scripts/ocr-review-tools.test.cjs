@@ -273,6 +273,120 @@ test('docs lookup validates outbound fields, returns bounded evidence and caches
   assert.equal(JSON.stringify(broker.diagnostics()).includes('cookies'), false)
 })
 
+test('tool result diagnostics count successful serialized payloads by UTF-8 bytes', async (t) => {
+  const emitted = []
+  const { broker, tool } = await client(t, {
+    ...fixture(t),
+    context7ApiKey: 'synthetic',
+    publicLibraries: ['/vercel/next.js'],
+    context7FetchImpl: async () =>
+      new Response(
+        JSON.stringify(
+          documentation({
+            codeSnippets: [
+              {
+                libraryId: '/vercel/next.js/v16.2.9',
+                codeTitle: 'Synthetic API',
+                codeId: 'https://example.invalid/docs',
+                codeList: [
+                  {
+                    language: 'TypeScript',
+                    code: 'RETURNED_CONTENT_π_漢字',
+                  },
+                ],
+              },
+            ],
+          })
+        )
+      ),
+    advisorUrl: 'http://127.0.0.1:12345/v1/chat/completions',
+    advisorToken: 'local',
+    fetchImpl: async () => advice(),
+    onDiagnostic: (value) => emitted.push(value),
+  })
+
+  let readBytes = 0
+  for (const input of [
+    {},
+    { path: 'docs/long.md' },
+    { path: 'docs/long.md', start_line: 101 },
+  ]) {
+    const result = await tool('read_review_context', input)
+    assert.notEqual(result.result.isError, true)
+    readBytes += Buffer.byteLength(result.result.content[0].text)
+  }
+  assert.equal(
+    emitted.at(-1).tool_results.read_review_context.returned_bytes,
+    readBytes
+  )
+  const readCount = broker.diagnostics().tool_results.read_review_context.calls
+  assert.equal(
+    (await tool('read_review_context', { path: '../.git/config' })).result
+      .isError,
+    true
+  )
+  assert.equal(
+    broker.diagnostics().tool_results.read_review_context.calls,
+    readCount
+  )
+
+  let docsBytes = 0
+  for (let i = 0; i < 2; i++) {
+    const result = await tool('lookup_library_docs', docsQuestion)
+    assert.notEqual(result.result.isError, true)
+    docsBytes += Buffer.byteLength(result.result.content[0].text)
+  }
+  assert.equal(
+    emitted.at(-1).tool_results.lookup_library_docs.returned_bytes,
+    docsBytes
+  )
+  const docsCount = broker.diagnostics().tool_results.lookup_library_docs.calls
+  assert.equal(
+    (
+      await tool('lookup_library_docs', {
+        ...docsQuestion,
+        query: 'https://private.invalid/path',
+      })
+    ).result.isError,
+    true
+  )
+  assert.equal(
+    broker.diagnostics().tool_results.lookup_library_docs.calls,
+    docsCount
+  )
+
+  const advisor = await tool('ask_review_advisor', question)
+  assert.notEqual(advisor.result.isError, true)
+  const advisorBytes = Buffer.byteLength(advisor.result.content[0].text)
+  assert.equal(
+    emitted.at(-1).tool_results.ask_review_advisor.returned_bytes,
+    advisorBytes
+  )
+  assert.equal(
+    (
+      await tool('ask_review_advisor', {
+        ...question,
+        question: '',
+      })
+    ).result.isError,
+    true
+  )
+
+  const expected = {
+    read_review_context: { calls: 3, returned_bytes: readBytes },
+    ask_review_advisor: { calls: 1, returned_bytes: advisorBytes },
+    lookup_library_docs: { calls: 2, returned_bytes: docsBytes },
+  }
+  assert.deepEqual(broker.diagnostics().tool_results, expected)
+  assert.equal(broker.diagnostics().context_reads, 3)
+
+  const snapshot = broker.diagnostics()
+  snapshot.tool_results.read_review_context.calls = 99
+  snapshot.tool_results.ask_review_advisor.returned_bytes = 99
+  snapshot.tool_results.extra = { calls: 99, returned_bytes: 99 }
+  assert.deepEqual(broker.diagnostics().tool_results, expected)
+})
+
 test('docs responses preserve version uncertainty, filter unrelated sources and bound the entire envelope', async (t) => {
   let payload
   const { tool } = await client(t, {

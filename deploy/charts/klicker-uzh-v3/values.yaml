@@ -597,17 +597,12 @@ lti:
   keysEndpoint:
   port: 4000
 
-  devMode: 'true'
-  ltiaas: 'false'
-
   db:
-    type: postgres
     host: ''
     port: 5432
     name: ''
     username: ''
     password: ''
-    connectionString: ''
 
   image:
     repository: ghcr.io/uzh-bf/klicker-uzh/lti
