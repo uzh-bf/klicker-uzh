@@ -994,7 +994,10 @@ async function startReviewTools(options) {
       send(response, 500, { error: 'tool_failed' })
     )
     pending.add(work)
-    work.finally(() => pending.delete(work))
+    work.then(
+      () => pending.delete(work),
+      () => pending.delete(work)
+    )
   })
   server.on('connection', (socket) => {
     sockets.add(socket)
