@@ -143,6 +143,7 @@ model User {
   answerCollections          AnswerCollection[]
   chatbots                   Chatbot[]
   chatAccountUsages          ChatAccountUsage[]
+  baselineOperations        ResponseExampleBaselineOperation[]
   chatbotDisclaimers         ChatbotDisclaimer[]
   kbs                        KB[]
   deletedKbs                 KB[]                   @relation("KBDeletedBy")

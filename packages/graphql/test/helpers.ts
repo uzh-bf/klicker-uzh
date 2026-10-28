@@ -38,11 +38,11 @@ import { createPubSub, Repeater } from 'graphql-yoga'
 import { Redis } from 'ioredis'
 import { v4 as uuidv4 } from 'uuid'
 import { vi } from 'vitest'
+import { handleProcessCourseDeletion } from '@/services/courseDeletion.js'
 import {
   handleProcessCourseDuplication,
   handleSweepStaleCourseDuplications,
 } from '@/services/courseDuplication.js'
-import { handleProcessCourseDeletion } from '@/services/courseDeletion.js'
 import {
   handleEndExpiredGroupActivity,
   handlePublishScheduledGroupActivity,
@@ -157,6 +157,10 @@ export async function testInitialization(
 
   // initialize tasks to be called
   const tasks = {
+    runResponseExampleBaseline: hatchet.task({
+      name: 'run-response-example-baseline',
+      fn: async (_input: { runId: string }) => ({ success: true }),
+    }),
     ingestKBResource: hatchet.task({
       name: 'ingest-kb-resource',
       fn: async (input: IngestKBResourceInput) => {
@@ -1382,7 +1386,7 @@ export async function seedLiveQuizWithResponses({
       ...acknowledgedParticipantDataUse,
       id: '36a3b9cf-00eb-46f3-a701-b222b68d0386',
       username: 'participant1',
-      password: 'participant1',
+      password: 'participant1', // Synthetic example participant login.
       participations: { create: [{ courseId: assessmentCourse.id }] },
     },
   })
@@ -1435,7 +1439,7 @@ export async function seedLiveQuizWithResponses({
       ...acknowledgedParticipantDataUse,
       id: 'fbdc8107-0f7e-4b9b-9dc5-9268c99dc784',
       username: 'participant2',
-      password: 'participant2',
+      password: 'participant2', // Synthetic example participant login.
       participations: { create: [{ courseId: assessmentCourse.id }] },
     },
   })
@@ -1467,7 +1471,7 @@ export async function seedLiveQuizWithResponses({
       ...acknowledgedParticipantDataUse,
       id: '56409db9-4bba-425d-81f6-98864ca3daed',
       username: 'participant3',
-      password: 'participant3',
+      password: 'participant3', // Synthetic example participant login.
       participations: { create: [{ courseId: assessmentCourse.id }] },
     },
   })

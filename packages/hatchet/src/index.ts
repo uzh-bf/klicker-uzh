@@ -552,7 +552,16 @@ export function prepareHatchetTasks({
     },
   })
 
+  const runResponseExampleBaseline = hatchet.task({
+    name: 'run-response-example-baseline',
+    retries: 0,
+    executionTimeout: '8h',
+    fn: (input: { runId: string }) =>
+      handlers.handleRunResponseExampleBaseline(input, globalContext),
+  })
+
   const tasks = {
+    runResponseExampleBaseline,
     updateGroupAverageScores,
     runningRandomGroupAssignments,
     finalRandomGroupAssignments,

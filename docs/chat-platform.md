@@ -111,6 +111,41 @@ Chat. A disabled exact Quizzer binding blocks inheritance on that server.
 Existing examples remain visible for inspection and rejection when their mode
 becomes unavailable; availability does not erase the lecturer's review record.
 
+### Lecturer baseline report
+
+Owners can start a baseline from response-example review on the chatbot's
+Knowledge page. It snapshots current approved, source-eligible examples and runs
+a fresh first exchange for each question. The target receives ordinary prompt,
+mode and retrieval configuration with the example skill excluded; the unchanged
+example-search tool returns no content. Only after target completion and usage
+settlement does the advisory judge receive the ideal answer. Both stages use the
+fixed platform BASE model. Normal chat and owner preview retain their included
+example skill and existing model choices.
+
+One current report per set shows progress, actual and ideal Markdown, source
+anchors and advisory answer comparison. Source identity and current content hashes
+are validated, while semantic support remains unassessed without authorized
+source passages. Missing evidence, failure, truncation or invalid judge output
+produces an unassessed case. Example or effective execution changes mark the
+report stale; replacing an active report invalidates its remaining work.
+
+Each target/judge stage checks the owner's configured BASE balance and records
+actual reported usage once without participant persistence. Admission serializes
+baseline stages per owner, including across replaced reports. A stage admitted
+with positive balance can exceed the remaining allowance, and participant chat
+may consume the same allowance concurrently. An uncertain dispatched operation
+retains the owner slot; missing usage is never treated as zero and no paid retry
+runs automatically. Accounting operations survive report replacement.
+
+The general Hatchet worker executes `runResponseExampleBaseline` with no retries.
+Its request to Chat carries only signed owner/chatbot/run/case identifiers. The
+fixed endpoint comes from `CHAT_BASELINE_INTERNAL_URL`; backend and general
+worker need that value and `RESPONSE_EXAMPLE_BASELINE_JOB_SECRET` (at least 32
+characters), and Chat needs the same secret. The route validates a 90-second
+HS256 issuer/audience scope and rechecks current ownership, AI access, run state,
+configuration and sources before dispatch. Missing configuration closes the
+baseline action. Source delivery does not provision secrets or enable real calls.
+
 The chat route returns an AI SDK UI message stream and passes
 `consumeSseStream: consumeStream` to `toUIMessageStreamResponse`. Keep this
 explicit when changing the transport: it keeps the UI stream's abort lifecycle

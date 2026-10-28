@@ -23,6 +23,8 @@ import * as ParticipantInvitationService from '../services/participantInvitation
 import * as ParticipantService from '../services/participants.js'
 import * as PracticeQuizService from '../services/practiceQuizzes.js'
 import * as ResourcesService from '../services/resources.js'
+import * as ResponseExampleBaselineService from '../services/responseExampleBaseline.js'
+import { ResponseExampleBaselineOverview } from './responseExample.js'
 import * as ResponseExamplesService from '../services/responseExamples.js'
 import * as SharingService from '../services/sharing.js'
 import * as StacksService from '../services/stacks.js'
@@ -1754,6 +1756,14 @@ export const Query = builder.queryType({
         resolve: async (_, args, ctx) => {
           return await ChatAccountUsageService.getChatAccountUsage(args, ctx)
         },
+      }),
+
+      getResponseExampleBaseline: t.withAuth(asUser).field({
+        nullable: true,
+        type: ResponseExampleBaselineOverview,
+        args: { chatbotId: t.arg.string({ required: true }) },
+        resolve: (_, args, ctx) =>
+          ResponseExampleBaselineService.getResponseExampleBaseline(args, ctx),
       }),
 
       getChatbotResponseExamples: t.withAuth(asUser).field({
