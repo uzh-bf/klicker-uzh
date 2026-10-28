@@ -1118,23 +1118,18 @@ function validateRevisionModelConfig(revision: ChatbotAuthoringRevision) {
 
 function validateCompleteRevision(
   revision: ChatbotAuthoringRevision,
-  requirePublicationFields: boolean
+  requirePublicationFields: boolean,
+  mcpConfigurations: ChatbotRevisionRecord['mcpConfigurations']
 ) {
   if (revision.name.trim().length === 0) {
     throw chatbotError('Chatbot name must not be empty', 'BAD_USER_INPUT')
   }
 
   if (revision.standardModeConfig !== null) {
-    try {
-      parseChatbotStandardModeConfigInput(revision.standardModeConfig)
-    } catch (error) {
-      throw chatbotError(
-        error instanceof Error
-          ? error.message
-          : 'Invalid standard mode configuration',
-        'BAD_USER_INPUT'
-      )
-    }
+    parseRevisionStandardModeConfig(
+      revision.standardModeConfig,
+      mcpConfigurations
+    )
   }
 
   if (revision.customModeConfig !== null) {
@@ -1419,15 +1414,18 @@ export async function saveChatbotRevision(
     if (input.standardModeConfig) {
       next = {
         ...next,
-        standardModeConfig: parseRevisionStandardModeConfig({
-          ...input.standardModeConfig,
-          writingCoachEnabled:
-            input.standardModeConfig.writingCoachEnabled ??
-            normalizeChatbotStandardModeConfig(
-              current.standardModeConfig,
-              chatbot.systemPrompts
-            ).writingCoachEnabled,
-        }),
+        standardModeConfig: parseRevisionStandardModeConfig(
+          {
+            ...input.standardModeConfig,
+            writingCoachEnabled:
+              input.standardModeConfig.writingCoachEnabled ??
+              normalizeChatbotStandardModeConfig(
+                current.standardModeConfig,
+                chatbot.systemPrompts
+              ).writingCoachEnabled,
+          },
+          chatbot.mcpConfigurations
+        ),
       }
     }
     // Custom-mode keys are minted here so a stale version throws before any key
@@ -1639,10 +1637,22 @@ function normalizeRevisionModelPolicy(args: RevisionModelPolicyInput) {
 }
 
 function parseRevisionStandardModeConfig(
-  input: ChatbotStandardModeConfigInput
+  input: ChatbotStandardModeConfigInput,
+  mcpConfigurations: ChatbotRevisionRecord['mcpConfigurations']
 ) {
   try {
-    return parseChatbotStandardModeConfigInput(input)
+    const config = parseChatbotStandardModeConfigInput(input)
+    if (
+      config.writingCoachEnabled &&
+      !config.tutorEnabled &&
+      !config.explainerEnabled &&
+      getWritingCoachUnavailableReason(mcpConfigurations)
+    ) {
+      throw new Error(
+        'Writing Coach cannot be the only conversational mode while a required tool binding makes it unavailable'
+      )
+    }
+    return config
   } catch (error) {
     throw chatbotError(
       error instanceof Error
@@ -1704,7 +1714,11 @@ export async function submitChatbotRevision(
     const revision = getRevisionSnapshot(chatbot)
     revision.publicationUseCase = args.useCase
     revision.expectedStudentCount = args.expectedStudentCount
-    const completeRevision = validateCompleteRevision(revision, true)
+    const completeRevision = validateCompleteRevision(
+      revision,
+      true,
+      chatbot.mcpConfigurations
+    )
     await assertGraphRetrievalTransition(
       ctx,
       chatbot.ownerId,
@@ -1867,7 +1881,11 @@ export async function approveChatbotRevision(
     }
 
     const revision = getRevisionSnapshot(chatbot)
-    const completeRevision = validateCompleteRevision(revision, true)
+    const completeRevision = validateCompleteRevision(
+      revision,
+      true,
+      chatbot.mcpConfigurations
+    )
     await assertGraphRetrievalTransition(
       ctx,
       chatbot.ownerId,

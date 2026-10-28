@@ -1,6 +1,6 @@
 # Writing Coach with useful lecturer context
 
-For current readiness and next actions, use [Current roadmap](#current-roadmap--26-october-2026).
+For current readiness and next actions, use [Current roadmap](#current-roadmap--28-october-2026).
 The original execution details below retain the September implementation contract and history.
 
 ## Approval summary
@@ -137,7 +137,7 @@ The main session owns review dispatch under `rs-model-routing`, corrections, and
 
 After human plan approval, commit this plan alone first and keep current glossary/research changes unstaged until their documentation commit. Preserve unrelated work. Keep ordinary source commits, review corrections, and documentation together on this branch. After complete verification and final review, push normally and create/update one draft pull request to the repository target. Include source/runtime evidence and any limits, follow one CI watcher, and fix in-scope failures. Do not mark ready, merge, deploy, or send other messages. The pull request was opened against `v3` and repointed to `v3-ai` on 15 September.
 
-## Current roadmap — 26 October 2026
+## Current roadmap — 28 October 2026
 
 This section owns current status and supersedes earlier execution checkpoints and
 the September readiness claims in this file. The approval summary still defines
@@ -149,15 +149,14 @@ separately gated.
 
 ### Status and evidence
 
-| Area                          | Status                                   | Evidence and remaining boundary                                                                                                                                                                                                                                                                                                                                                 |
-| ----------------------------- | ---------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| Product source                | Implemented on the task branch; unmerged | [PR #5867](https://github.com/uzh-bf/klicker-uzh/pull/5867) is open against `v3-ai`. The previously published feature head is `2bde9343c840870ef3f5cbf35b92e6b6d5524bff`; the integrated candidate awaits publication. Writing Coach is absent from the current target's standard-mode configuration.                                                                           |
-| Lecturer context and feedback | Current focused acceptance passed        | Shared 1,000-character limit, localized scientific/informal examples, saved context on subsequent requests, five adaptable criteria and optional Markdown Notes. The accepted synthetic evaluation covered context contrasts, rewrite pressure and learner revisions.                                                                                                           |
-| Current integration           | Candidate under verification             | Integrated target `432dd7bdc927a6ee49300ee6d2f41a6933daee31` into the existing task branch. Resolved revision-editor, custom-mode, evaluator and GraphQL conflicts. The shared standard-mode registry includes Writing Coach, preserving opt-in and exact tool bindings. Integrated local source checks and a seven-case current-model check pass; hosted CI remains pending.   |
-| Automated checks              | Local pass; hosted candidate pending     | The eight September required contexts passed at `2bde9343c8` on 16 September, including all eight Playwright shards. Current integrated typechecks, lint, utility/Chat/evaluator, 94 GraphQL and host contracts pass. All 16 host authoring tests pass across two matching-profile runs; current-head hosted checks remain pending. Current rules also require `sync-ancestry`. |
-| Review                        | Needs closure                            | Earlier corrections are retained, but one published documentation thread remains unresolved. The September final AI review ended partial; fixing its two reported findings does not establish a completed integrated review.                                                                                                                                                    |
-| Browser evidence              | Refreshed and published                  | Ten current synthetic captures cover English/German desktop/mobile authoring, standalone setup and owner preview. Context examples, the 1,000-character boundary, save/reload, standalone selection and required-tool availability were exercised; images are published on the existing PR. Historical captures are labeled separately.                                         |
-| Release and pilot             | Not established                          | This PR has not merged. No current staging acceptance, production release or learner pilot is established by this roadmap.                                                                                                                                                                                                                                                      |
+| Area                          | Status                                                    | Evidence and remaining boundary                                                                                                                                                                                                                                                                                                                                                                                                                                    |
+| ----------------------------- | --------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
+| Product source                | Integration published; review correction verified locally | [PR #5867](https://github.com/uzh-bf/klicker-uzh/pull/5867) targets `v3-ai`. The recorded integration target is `432dd7bdc927a6ee49300ee6d2f41a6933daee31`. Revision-based authoring, custom modes, welcomes/starters and learner answer preferences are preserved. Server validation now rejects an unavailable sole Writing Coach at save, submission and approval.                                                                                              |
+| Lecturer context and feedback | Bounded acceptance complete                               | Shared 1,000-character limit and English/German examples work in authoring. Seven selected frozen cases pass on the current GPT-6 Luna route, including context change, learner revision and rewrite pressure. The full 30-case matrix remains historical evidence; the submission ceiling is exhausted at 72 of 72.                                                                                                                                               |
+| Automated checks              | Guard regressions pass; candidate checks pending          | The affected publication and management suites pass all 97 tests, including the three new save/submission/approval regressions. Removing the guard makes all three regressions fail. Existing source, model and browser evidence remains applicable to unchanged paths. Mandatory hooks, review and hosted checks must qualify the resulting candidate. The earlier hosted Playwright run failed four element-sharing tests; eight other required contexts passed. |
+| Review                        | Earlier full review complete; follow-up review pending    | Independent source review found no material product defect and its ADR mismatch was corrected. New reviewer feedback identifies a server-side availability invariant and stale roadmap actions. Both corrections are implemented; their committed range still requires review and publication before resolving the threads.                                                                                                                                        |
+| Browser evidence              | Complete and published                                    | Ten inspected synthetic captures cover English/German desktop/mobile authoring, standalone setup and owner preview. Save/reload, context examples, the 1,000-character boundary and required-tool guidance were exercised. All 16 focused host authoring tests pass. No capture refresh is required for the server validation follow-up.                                                                                                                           |
+| Release and pilot             | Separately gated                                          | No merge, staging acceptance, production release or learner pilot is established by these source and local checks.                                                                                                                                                                                                                                                                                                                                                 |
 
 The branch implements the agreed scope: feedback on pasted excerpts, no
 replacement wording, generic criteria, lecturer context and ordinary Markdown.
@@ -172,19 +171,35 @@ The earlier implementation and review record remains in
 [evaluation results](EVALUATION_RESULTS.md), and Git history. Treat their status
 statements as dated evidence.
 
-The remaining [documentation finding](https://github.com/uzh-bf/klicker-uzh/pull/5867#discussion_r4024180445)
-is valid and corrected in the integration candidate: `saveChatbotRevision`
-locks the chatbot row and checks `expectedRevisionVersion`. The previous claim
-about comparing configuration and custom prompt text was removed. Verify the
-thread's disposition before claiming all feedback is closed.
+The earlier [documentation finding](https://github.com/uzh-bf/klicker-uzh/pull/5867#discussion_r4024180445)
+is corrected and its thread resolved. `saveChatbotRevision` locks the chatbot row
+and checks `expectedRevisionVersion`. ADR 0021 now records Writing Coach as a fourth
+standard mode and the shared 1,000-character context limit.
 
-The two findings from the partial final AI review were fixed in `1e0f0664da`:
-the evaluation harness now checks `LOCAL_COURSE_ID` and requires
-`passChatbotId === false` for its exact fixture. The PR still shows a pending
-`final-ai-review` status and a failed CodeQL aggregate; the earlier record
-accepted two harness CodeQL alerts as advisories. Reassess applicable findings
-and review requirements against the integrated candidate rather than treating
-a non-required status or a partial review as completed review coverage.
+The September partial final review remains historical evidence. A later complete
+independent review covered the integrated source; its documentation correction was
+verified. The evaluator's unawaited entrypoint was then corrected and its exact-head
+SonarCloud workflow and quality gate pass. CodeQL's local harness advisories remain
+a separate limitation, not a completed scan claim.
+
+The new [availability finding](https://github.com/uzh-bf/klicker-uzh/pull/5867#discussion_r4379949627)
+is valid: the UI preserves a usable conversational mode, but direct saves and
+approval could accept Writing Coach alone while required tools make it unavailable.
+The correction reuses standard-mode validation for save, submission and
+approval. Three synthetic transaction regressions pass and fail when the guard is
+removed. It changes no tool provisioning.
+The [roadmap finding](https://github.com/uzh-bf/klicker-uzh/pull/5867#discussion_r4379949641)
+is addressed by marking completed outcomes below and removing capture-publication
+work from the next action. Both new threads remain open until verified publication.
+
+The failed hosted Playwright shard starts with a timeout clicking the Resources
+menu after closing a user-group dialog. Later missing-group and permission
+failures are consistent with incomplete setup and retry state. The implicated
+test and group/menu components are unchanged by Writing Coach and current target
+drift. The diagnostics artifact is no longer available through GitHub, so the
+underlying modal/pointer-state cause remains unconfirmed. A new candidate run
+must establish its own result; neither a retry nor unchanged source proves the
+failure transient.
 
 All 30 frozen synthetic cases completed at least once. Bounded acceptance was
 approved after 65 submissions. On 26 October the user explicitly approved the
@@ -196,15 +211,15 @@ learning gains. Preserve the original failed transport receipts and historical
 ratings. Counter exhaustion and follow-up resolution still need isolated
 test-owned counter/receipt paths for unit coverage without real submissions.
 
-### Remaining work, in order
+### Delivery outcomes and remaining work
 
-| Order | Outcome                                    | Owner                             | Completion condition                                                                                                                                                                                                                                                                                                                                       |
-| ----- | ------------------------------------------ | --------------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| 1     | Restore compatibility with current `v3-ai` | Implementation agent              | Resolve the actual target and its conflicts in the existing worktree. Preserve current revision-based authoring, custom modes, welcomes/starters and student answer-format/tone preferences. Verify that presentation preferences cannot authorize rewriting or override the Writing Coach contract. Record the integrated target SHA.                     |
-| 2     | Close review and browser gaps              | Implementation agent              | Correct the documented save-conflict mechanism, disposition the open finding, and complete integrated review. Exercise context examples, save/reload, existing conversations, standalone mode and required-tool availability. Capture and visually inspect current English/German desktop/mobile authoring and learner states.                             |
-| 3     | Qualify one candidate                      | Implementation agent              | Run affected checks and all current required contexts on the integrated candidate. Reuse unaffected historical evidence. Recheck changed prompt behavior with focused scientific/informal, rewrite-pressure and learner-revision cases within the remaining authorized allowance; report any uncovered boundary. Stop the task runtime after verification. |
-| 4     | Decide merge and staging acceptance        | Maintainer / implementation agent | Present the qualified candidate and any remaining limitations. Merge only with named approval and required reviews complete. Resolve the current promotion route and request exact deployment authority separately; verify the served revision and the lecturer/learner workflow after an approved rollout.                                                |
-| 5     | Assess a small pilot                       | Pilot owner to be agreed          | Agree participants, data handling and acceptance before execution. Assess feedback usefulness, length, audience fit and learners' ability to make their own revisions. Keep real learner evidence in approved private custody. Functional acceptance alone does not establish learning gains.                                                              |
+| Order | Outcome                                             | Status and owner                                       | Completion condition                                                                                                                                                                                                                                                                                  |
+| ----- | --------------------------------------------------- | ------------------------------------------------------ | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| 1     | Integrate current authoring infrastructure          | Complete — implementation agent                        | Target `432dd7bdc927a6ee49300ee6d2f41a6933daee31` is integrated, with revision-based publication, custom modes and learner preferences preserved.                                                                                                                                                     |
+| 2     | Verify lecturer and learner behavior                | Complete within recorded bounds — implementation agent | Ten current captures are inspected and published; 16 host authoring tests and seven selected current-model cases pass. Historical results and limitations remain distinct.                                                                                                                            |
+| 3     | Close new review findings and qualify the candidate | In progress — implementation agent                     | Guard regressions pass. Complete mandatory checks and committed-range review, publish the guard and roadmap correction, and resolve both threads. Hold the candidate for hosted CI; report any unrelated failure with its evidence. Stop and verify the approved local runtime after its final check. |
+| 4     | Decide merge and staging acceptance                 | Gated — maintainer / implementation agent              | Merge needs named approval and required checks/reviews. Resolve and authorize the current promotion route separately, then verify the served revision and lecturer/learner workflow.                                                                                                                  |
+| 5     | Assess a small pilot                                | Gated — pilot owner to be agreed                       | Agree participants, data handling and acceptance before execution. Assess usefulness, length, audience fit and learner-authored revision; keep real learner evidence in approved private custody.                                                                                                     |
 
 Current required contexts are `sync-ancestry`, `check`, `check-gitleaks`,
 `test-graphql-status`, `test-playwright-status`, `test-unit-status`,
@@ -246,34 +261,25 @@ quality work has a separate course-chatbot roadmap; reconcile current upstream
 prompt changes during integration without expanding this feature into that
 workstream.
 
-## Integration progress — 26 October 2026
+## Integration progress — 28 October 2026
 
 - Root outcome: feedback-only Writing Coach with useful lecturer context.
 - Authorized terminal: verified source candidate on the existing pull request,
-  refreshed browser evidence, closed review findings and a stopped local runtime.
-- Execution mode: standard. Main owns integration, runtime, proof and delivery;
-  bounded read-only evaluation mapping completed independently.
-- Source integration: target `432dd7bdc927a6ee49300ee6d2f41a6933daee31`.
-  Syntax, integrated typechecks, application lint, utility/Chat/evaluator and
-  host contract checks pass. Authoring save/reload, standalone preview and
-  responsive locale captures passed. All 94 selected GraphQL checks pass.
-  Integrated review and hosted CI are pending. Ten refreshed browser captures
-  were inspected and published on the existing PR. All 16 host authoring tests pass after the approved locked dependency refresh
-  and matching standard profile with an explicit routed API origin.
-- First useful acceptance: existing utility and Chat mode/compiler tests, then
-  lecturer context save/reload and standalone learner mode in the real browser.
-- Active runtime: exact task checkout with `manage,chat,ai,mcp`. A stale
-  September fixture marker selected an incompatible Manage-only test path; it
-  was preserved under ignored local artifacts before canonical runtime repair.
-- The user directly approved seven remaining synthetic calls, temporary
-  account/model/100-credit budget setup, and a frozen-lockfile host dependency
-  refresh on 26 October. Earlier automatic-review refusals were not bypassed.
-  Both actions completed. The seven current GPT-6 Luna responses met the selected
-  frozen expectations with bullets/direct preferences. Temporary settings were
-  restored with usage retained; the cumulative counter is 72 of 72.
-- Next action: finish source review, publish the integrated candidate and fresh
-  authoring captures, run hosted CI, and stop the exact runtime. Merge, deployment
-  and a learner pilot remain separate unfulfilled boundaries.
+  refreshed browser evidence, closed findings and a stopped local runtime.
+- Execution mode: standard. Main owns integration, runtime, proof and delivery.
+  Integrated source review and simplification completed independently.
+- Complete: recorded target integration, source compatibility checks, seven selected
+  current-model cases, 16 host authoring tests and ten published inspected captures.
+  Temporary model-test settings were restored; the counter remains 72 of 72.
+- Runtime: the user approved a bounded resume/check/review/publish/stop cycle on
+  28 October for this exact worktree. The managed runtime is ready; the affected
+  GraphQL suites pass all 97 cases. No model call or budget change is included.
+- Pending: mandatory checks, committed-range review, publication and resolution
+  of the two new review findings, hosted CI and verified runtime stop. The earlier
+  hosted Playwright run failed in element-sharing setup; its trace is unavailable.
+- Next action: run normal mandatory hooks, review and publish the complete
+  correction, then qualify its held candidate and stop the runtime. Merge,
+  deployment and a learner pilot remain separate decisions.
 
 The model-evaluation harness accepts explicit current model and answer-preference
 settings. Receipts fingerprint the effective settings, so historical responses
