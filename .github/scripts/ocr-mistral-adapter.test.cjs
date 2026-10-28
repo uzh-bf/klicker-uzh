@@ -18,17 +18,148 @@ const {
   translateMistralRequest,
   createHistoryStore,
   createUsageJournal,
+  createProviderAvailability,
+  parseProviderPause,
   startAdapter,
   callMistral,
   estimateCost,
   buildCostReport,
   createProgressFilter,
   createProgressReporter,
+  summarizePlanGuidance,
 } = require('./ocr-mistral-adapter.cjs')
 
 const ADAPTER = path.join(__dirname, 'ocr-mistral-adapter.cjs')
 const CHAT_PATH = '/v1/chat/completions'
 const SHUTDOWN_PATH = '/shutdown'
+
+test('draft plan compatibility supplies only completed final text without retries or lost usage', async () => {
+  const key = '1234abcd-plan_task-0123456789abcdef'
+  const cases = [
+    { finish: 'stop', content: 'synthetic final plan', outcome: 'usable' },
+    { finish: 'length', content: '', outcome: 'length' },
+    { finish: 'length', content: 'partial final plan', outcome: 'length' },
+    { finish: 'stop', content: '', outcome: 'empty' },
+    { finish: 'stop', content: ' \n ', outcome: 'empty' },
+    { finish: 'content_filter', content: 'partial', outcome: 'invalid_finish' },
+    { finish: 'stop', content: '', outcome: null, enabled: false },
+    { finish: 'length', content: '', outcome: null, key: '1234abcd-plan_task' },
+    { finish: 'length', content: '', outcome: null, key: `x${key}` },
+    { finish: 'length', content: '', outcome: null, key: `${key}x` },
+    {
+      finish: 'length',
+      content: '',
+      outcome: null,
+      key: key.replace('plan_task', 'grouping_task'),
+    },
+    {
+      finish: 'length',
+      content: '',
+      outcome: null,
+      key: key.replace('0123456789abcdef', 'not-a-scope-hash'),
+    },
+    {
+      finish: 'length',
+      content: '',
+      outcome: null,
+      tools: [{ type: 'function', function: { name: 'synthetic_tool' } }],
+    },
+    {
+      finish: 'length',
+      content: '',
+      outcome: null,
+      tools: [{ type: 'function', function: { name: 'task_done' } }],
+    },
+  ]
+  for (const item of cases) {
+    const message = {
+      role: 'assistant',
+      content: item.content,
+      reasoning_content: 'SYNTHETIC_REASONING_ONLY',
+    }
+    const payload = completion(message, item.finish)
+    payload.usage = {
+      prompt_tokens: 100,
+      completion_tokens: 16384,
+      total_tokens: 16484,
+      prompt_tokens_details: { cached_tokens: 80 },
+    }
+    const fetchImpl = upstream(() => jsonResponse(200, payload))
+    const adapter = await startAdapter({
+      apiKey: 'synthetic',
+      finalPlanGuidance: item.enabled !== false,
+      fetchImpl,
+    })
+    try {
+      const result = await postJson(adapter, {
+        prompt_cache_key: item.key ?? key,
+        messages: [{ role: 'user', content: 'synthetic plan request' }],
+        max_tokens: 16384,
+        reasoning_effort: 'max',
+        ...(item.tools ? { tools: item.tools } : {}),
+      })
+      assert.equal(result.status, 200)
+      assert.equal(fetchImpl.calls.length, 1)
+      assert.equal(fetchImpl.calls[0].body.max_tokens, 16384)
+      assert.equal(fetchImpl.calls[0].body.reasoning_effort, 'max')
+      assert.equal(result.json.choices[0].finish_reason, item.finish)
+      assert.deepEqual(result.json.usage, {
+        prompt_tokens: 20,
+        completion_tokens: 16384,
+        total_tokens: 16404,
+      })
+      assert.deepEqual(
+        result.json.choices[0].message,
+        item.outcome && item.outcome !== 'usable'
+          ? { role: 'assistant', content: '' }
+          : message
+      )
+      assert.deepEqual(payload.choices[0].message, message)
+      const diagnostic = adapter.diagnostics()
+      assert.equal(diagnostic.completion_tokens, 16384)
+      assert.equal(diagnostic.prompt_tokens, 100)
+      assert.equal(diagnostic.cached_prompt_tokens, 80)
+      assert.equal(diagnostic.accepted_responses, 1)
+      assert.equal(diagnostic.length_finishes, item.finish === 'length' ? 1 : 0)
+      if (item.enabled === false) assert.equal(diagnostic.plan_guidance, null)
+      else {
+        assert.equal(diagnostic.plan_guidance.responses, item.outcome ? 1 : 0)
+        if (item.outcome)
+          assert.equal(diagnostic.plan_guidance[item.outcome], 1)
+      }
+    } finally {
+      await adapter.close()
+    }
+  }
+})
+
+test('planning summary rejects missing, unfinished or inconsistent counters and reflects only fixed fields', () => {
+  const plan = {
+    responses: 4,
+    usable: 1,
+    length: 1,
+    empty: 1,
+    invalid_finish: 1,
+    PRIVATE_SENTINEL: 7,
+  }
+  assert.equal(
+    summarizePlanGuidance({ unfinished_requests: 0, plan_guidance: plan }),
+    'OCR planning status=complete responses=4 usable=1 length=1 empty=1 invalid_finish=1'
+  )
+  for (const record of [
+    null,
+    {},
+    { unfinished_requests: 0 },
+    { unfinished_requests: 1, plan_guidance: plan },
+    { unfinished_requests: 0, plan_guidance: { ...plan, responses: 5 } },
+    { unfinished_requests: 0, plan_guidance: { ...plan, length: -1 } },
+    { unfinished_requests: 0, plan_guidance: { ...plan, usable: null } },
+  ])
+    assert.equal(
+      summarizePlanGuidance(record),
+      'OCR planning status=unavailable'
+    )
+})
 
 test('usage journals bound output, reject symlinks and do not retain payload fields', (t) => {
   const directory = fs.mkdtempSync(path.join(os.tmpdir(), 'ocr-usage-journal-'))
@@ -1497,7 +1628,7 @@ test('manual workflows reconcile shared stage receipts against independent step 
     const preflight = steps.find((step) => step.includes('id: preflight'))
     const execution = steps.find((step) => step.includes(`id: ${stepId}`))
     const summary = steps.find((step) =>
-      step.includes('ocr-mistral-adapter.cjs summary')
+      step.includes('ocr-mistral-adapter.cjs final-summary')
     )
     const receiptPath = execution.match(/OCR_ADAPTER_DIAGNOSTICS_PATH: (.+)/)[1]
     assert.equal(
@@ -2041,7 +2172,10 @@ async function loadLoopbackTransport(t, handler) {
       return Promise.reject(new Error('OCR_TRANSPORT_PRIVATE_SENTINEL'))
     },
   })
-  vm.runInContext(fs.readFileSync(ADAPTER, 'utf8'), context)
+  vm.runInContext(
+    `${fs.readFileSync(ADAPTER, 'utf8')}\nmodule.exports.__commandRun = commandRun\n`,
+    context
+  )
   return {
     ...sandboxModule.exports,
     attempts: () => attempts,
@@ -3638,6 +3772,338 @@ test('upstream failures are redacted to a fixed safe error', async () => {
   }
 })
 
+test('provider pause parsing is strict and paused adapters never dispatch', async () => {
+  for (const value of [undefined, '', 'false', false])
+    assert.equal(parseProviderPause(value), false)
+  for (const value of ['true', true])
+    assert.equal(parseProviderPause(value), true)
+  for (const value of ['FALSE', '0', 0, null])
+    assert.throws(
+      () => parseProviderPause(value),
+      { code: 'invalid_provider_pause' },
+      String(value)
+    )
+
+  const availability = createProviderAvailability()
+  assert.deepEqual(availability.snapshot(), {
+    status: 'available',
+    reason: null,
+  })
+  availability.markPaymentRequired()
+  assert.deepEqual(availability.snapshot(), {
+    status: 'unavailable',
+    reason: 'provider_payment_required',
+  })
+
+  const fetchImpl = upstream(() =>
+    jsonResponse(200, completion({ role: 'assistant', content: 'synthetic' }))
+  )
+  const adapter = await startAdapter({
+    apiKey: 'synthetic',
+    paused: true,
+    fetchImpl,
+  })
+  try {
+    const response = await postJson(adapter, {
+      messages: [{ role: 'user', content: 'synthetic' }],
+    })
+    assert.equal(response.status, 403)
+    assert.equal(response.json.error.code, 'provider_paused')
+    assert.equal(fetchImpl.calls.length, 0)
+    assert.deepEqual(adapter.diagnostics().provider_availability, {
+      status: 'unavailable',
+      reason: 'provider_paused',
+    })
+  } finally {
+    await adapter.close()
+  }
+})
+
+test('confirmed upstream 402 stops repeated requests and a separate shared advisor adapter', async (t) => {
+  const directory = fs.mkdtempSync(path.join(os.tmpdir(), 'ocr-402-latch-'))
+  t.after(() => fs.rmSync(directory, { recursive: true, force: true }))
+  const file = path.join(directory, 'events.jsonl')
+  const secret = 'PRIVATE_PROVIDER_SENTINEL'
+  const fetchImpl = upstream(() =>
+    jsonResponse(402, {
+      error: { code: 402, message: secret },
+      echo: secret,
+    })
+  )
+  const availability = createProviderAvailability()
+  const adapter = await startAdapter({
+    availability,
+    apiKey: 'synthetic',
+    usageJournalPath: file,
+    fetchImpl,
+  })
+  const advisor = await startAdapter({
+    apiKey: 'synthetic',
+    availability,
+    fetchImpl,
+  })
+  const mainBody = {
+    model: MISTRAL_MODEL,
+    messages: [{ role: 'user', content: 'synthetic main' }],
+    tools: [
+      { type: 'function', function: { name: 'task_done', parameters: {} } },
+    ],
+  }
+  const advisorBody = {
+    model: MISTRAL_MODEL,
+    messages: [{ role: 'user', content: 'synthetic advisor' }],
+  }
+  try {
+    const first = await postJson(adapter, mainBody)
+    assert.equal(first.status, 402)
+    assert.equal(first.json.error.code, 'provider_payment_required')
+    assert.doesNotMatch(first.text, /PRIVATE_PROVIDER_SENTINEL/)
+    for (const body of [mainBody, advisorBody, mainBody, advisorBody]) {
+      const response = await postJson(adapter, body)
+      assert.equal(response.status, 402)
+      assert.equal(response.json.error.code, 'provider_payment_required')
+      assert.doesNotMatch(response.text, /PRIVATE_PROVIDER_SENTINEL/)
+    }
+    assert.equal((await postJson(advisor, advisorBody)).status, 402)
+    assert.equal(advisor.diagnostics().upstream_attempts, 0)
+    assert.equal(fetchImpl.calls.length, 1)
+    const diagnostics = adapter.diagnostics()
+    assert.equal(diagnostics.upstream_attempts, 1)
+    assert.equal(diagnostics.responses, 0)
+    assert.deepEqual(diagnostics.last_upstream_error, {
+      http_status: 402,
+      code: 402,
+      reason: 'unknown',
+    })
+    assert.deepEqual(diagnostics.provider_availability, {
+      status: 'unavailable',
+      reason: 'provider_payment_required',
+    })
+    const rows = fs
+      .readFileSync(file, 'utf8')
+      .trim()
+      .split('\n')
+      .map(JSON.parse)
+    assert.equal(rows.filter((row) => row.event === 'dispatch').length, 1)
+    assert.deepEqual(
+      rows
+        .filter((row) => row.event === 'finished')
+        .map((row) => row.http_status),
+      [402, null, null, null, null]
+    )
+  } finally {
+    await advisor.close()
+    await adapter.close()
+  }
+})
+
+test('a 402 latch does not abort already dispatched work or lose its usage', async () => {
+  const firstHeaders = Promise.withResolvers()
+  const secondHeaders = Promise.withResolvers()
+  const draining = Promise.withResolvers()
+  const releaseDrain = Promise.withResolvers()
+  const fetchImpl = upstream((_record, index) => {
+    if (index === 1) return firstHeaders.promise
+    if (index === 2) return secondHeaders.promise
+    return jsonResponse(500, { error: { message: 'unexpected dispatch' } })
+  })
+  const availability = createProviderAvailability()
+  const adapter = await startAdapter({
+    apiKey: 'synthetic',
+    availability,
+    fetchImpl,
+  })
+  const body = {
+    model: MISTRAL_MODEL,
+    messages: [{ role: 'user', content: 'synthetic' }],
+  }
+  let first
+  let second
+  let third
+  try {
+    first = postJson(adapter, body)
+    await waitFor(() => fetchImpl.calls.length === 1)
+    second = postJson(adapter, body)
+    await waitFor(() => fetchImpl.calls.length === 2)
+
+    let read = false
+    firstHeaders.resolve({
+      status: 402,
+      ok: false,
+      body: {
+        getReader: () => ({
+          read: async () => {
+            if (read) return { done: true }
+            read = true
+            draining.resolve()
+            await releaseDrain.promise
+            return {
+              done: false,
+              value: Buffer.from(
+                JSON.stringify({ error: { code: 402, message: 'synthetic' } })
+              ),
+            }
+          },
+        }),
+      },
+    })
+    await draining.promise
+    assert.equal(availability.reason, 'provider_payment_required')
+
+    third = postJson(adapter, body)
+    secondHeaders.resolve(
+      jsonResponse(
+        200,
+        completion({ role: 'assistant', content: 'already dispatched' })
+      )
+    )
+    const secondResult = await second
+    assert.equal(secondResult.status, 200)
+    assert.equal((await third).status, 402)
+    releaseDrain.resolve()
+    assert.equal((await first).status, 402)
+
+    const diagnostics = adapter.diagnostics()
+    assert.equal(fetchImpl.calls.length, 2)
+    assert.equal(diagnostics.upstream_attempts, 2)
+    assert.equal(diagnostics.responses, 1)
+    assert.equal(diagnostics.accepted_responses, 1)
+    assert.equal(diagnostics.prompt_tokens, 3)
+    assert.deepEqual(diagnostics.provider_availability, {
+      status: 'unavailable',
+      reason: 'provider_payment_required',
+    })
+  } finally {
+    firstHeaders.resolve(jsonResponse(402, { error: { code: 402 } }))
+    secondHeaders.resolve(
+      jsonResponse(200, completion({ role: 'assistant', content: 'synthetic' }))
+    )
+    releaseDrain.resolve()
+    await Promise.allSettled([first, second, third].filter(Boolean))
+    await adapter.close()
+  }
+})
+
+test('other rejected and transient upstream responses do not latch availability', async () => {
+  for (const status of [401, 403, 429, 502, 503]) {
+    const fetchImpl = upstream(() =>
+      jsonResponse(status, { error: { message: 'synthetic' } })
+    )
+    const adapter = await startAdapter({ apiKey: 'synthetic', fetchImpl })
+    try {
+      const response = await postJson(adapter, {
+        messages: [{ role: 'user', content: 'synthetic' }],
+      })
+      assert.equal(response.status, 502)
+      assert.equal(fetchImpl.calls.length, 1)
+      assert.deepEqual(adapter.diagnostics().provider_availability, {
+        status: 'available',
+        reason: null,
+      })
+    } finally {
+      await adapter.close()
+    }
+  }
+})
+
+test('direct provider 402 is fixed and nonretryable, and pause blocks dispatch', async (t) => {
+  const directory = fs.mkdtempSync(path.join(os.tmpdir(), 'ocr-direct-402-'))
+  t.after(() => fs.rmSync(directory, { recursive: true, force: true }))
+  const file = path.join(directory, 'events.jsonl')
+  const secret = 'PRIVATE_PROVIDER_SENTINEL'
+  const availability = createProviderAvailability()
+  const fetchImpl = upstream(
+    () =>
+      new Response(secret, {
+        status: 402,
+        headers: { 'content-type': 'text/plain' },
+      })
+  )
+  const options = {
+    apiKey: 'synthetic',
+    availability,
+    usageJournalPath: file,
+    fetchImpl,
+    body: {
+      model: MISTRAL_MODEL,
+      messages: [{ role: 'user', content: 'synthetic' }],
+    },
+  }
+  await assert.rejects(
+    () => callMistral(options),
+    (error) => {
+      assert.equal(error.code, 'provider_payment_required')
+      assert.equal(error.status, 402)
+      assert.equal(error.retryable, false)
+      assert.doesNotMatch(error.message, /PRIVATE_PROVIDER_SENTINEL/)
+      return true
+    }
+  )
+  assert.equal(availability.reason, 'provider_payment_required')
+  await assert.rejects(
+    () => callMistral(options),
+    (error) => {
+      assert.equal(error.code, 'provider_payment_required')
+      assert.equal(error.status, 402)
+      assert.equal(error.retryable, false)
+      return true
+    }
+  )
+  assert.equal(fetchImpl.calls.length, 1)
+  const rows = fs.readFileSync(file, 'utf8').trim().split('\n').map(JSON.parse)
+  assert.equal(rows.filter((row) => row.event === 'dispatch').length, 1)
+  assert.deepEqual(
+    rows
+      .filter((row) => row.event === 'finished')
+      .map((row) => row.http_status),
+    [402]
+  )
+
+  const pausedFetch = upstream(() =>
+    jsonResponse(200, completion({ role: 'assistant', content: 'synthetic' }))
+  )
+  const summaryPath = path.join(directory, 'summary.md')
+  const outputPath = path.join(directory, 'output.txt')
+  fs.writeFileSync(summaryPath, '')
+  fs.writeFileSync(outputPath, '')
+  const previousSummary = process.env.GITHUB_STEP_SUMMARY
+  const previousOutput = process.env.GITHUB_OUTPUT
+  process.env.GITHUB_STEP_SUMMARY = summaryPath
+  process.env.GITHUB_OUTPUT = outputPath
+  try {
+    await assert.rejects(
+      () =>
+        callMistral({
+          ...options,
+          apiKey: undefined,
+          availability: undefined,
+          paused: true,
+          fetchImpl: pausedFetch,
+        }),
+      (error) => {
+        assert.equal(error.code, 'provider_paused')
+        assert.equal(error.status, 403)
+        assert.equal(error.retryable, false)
+        return true
+      }
+    )
+  } finally {
+    if (previousSummary === undefined) delete process.env.GITHUB_STEP_SUMMARY
+    else process.env.GITHUB_STEP_SUMMARY = previousSummary
+    if (previousOutput === undefined) delete process.env.GITHUB_OUTPUT
+    else process.env.GITHUB_OUTPUT = previousOutput
+  }
+  assert.equal(pausedFetch.calls.length, 0)
+  assert.equal(
+    fs.readFileSync(summaryPath, 'utf8'),
+    'OCR provider availability status=unavailable reason=provider_paused\n'
+  )
+  assert.equal(
+    fs.readFileSync(outputPath, 'utf8'),
+    'provider_unavailable=provider_paused\n'
+  )
+})
+
 test('rejection diagnostics keep only HTTP status and allowlisted numeric codes', async () => {
   const secret = 'PRIVATE_PROVIDER_SENTINEL'
   const cases = [
@@ -3796,8 +4262,11 @@ test('OpenRouter budget reasons are content-free, bounded and provider-scoped', 
         const response = await postJson(adapter, {
           messages: [{ role: 'user', content: 'synthetic' }],
         })
-        assert.equal(response.status, 502)
-        assert.equal(response.json.error.code, 'upstream_error')
+        assert.equal(response.status, status === 402 ? 402 : 502)
+        assert.equal(
+          response.json.error.code,
+          status === 402 ? 'provider_payment_required' : 'upstream_error'
+        )
         const receipt = adapter.diagnostics()
         assert.deepEqual(receipt.last_upstream_error, {
           http_status: status,
@@ -3859,7 +4328,7 @@ test('late rejection bodies cannot overwrite a newer observed error or an earlie
   try {
     await draining.promise
     const snapshot = adapter.diagnostics()
-    assert.equal((await postJson(adapter, body)).status, 502)
+    assert.equal((await postJson(adapter, body)).status, 402)
     release.resolve('{"error":{"code":403,"message":"Key limit exceeded"}}')
     assert.equal((await first).status, 502)
     assert.deepEqual(adapter.diagnostics().last_upstream_error, {
@@ -4186,6 +4655,71 @@ test('default upstream transport completes delayed headers and streamed bodies a
   assert.equal(receipt.responses, 1)
   assert.equal(receipt.prompt_tokens, 3)
   assert.equal(receipt.completion_tokens, 4)
+})
+
+test('run exits nonzero after a confirmed 402 even when the child succeeds', {
+  timeout: 6000,
+}, async (t) => {
+  const requests = []
+  const transport = await loadLoopbackTransport(t, async (req, res) => {
+    let body = ''
+    for await (const chunk of req) body += chunk
+    requests.push(JSON.parse(body))
+    res.writeHead(402, { 'content-type': 'application/json' })
+    res.end(JSON.stringify({ error: { code: 402, message: 'synthetic' } }))
+  })
+  const names = [
+    'GITHUB_OUTPUT',
+    'GITHUB_STEP_SUMMARY',
+    'MISTRAL_API_KEY',
+    'OCR_ADAPTER_DIAGNOSTICS_PATH',
+    'OCR_ADAPTER_PROVIDER',
+    'OCR_PROVIDER_PAUSED',
+  ]
+  const previous = Object.fromEntries(
+    names.map((name) => [name, process.env[name]])
+  )
+  delete process.env.GITHUB_OUTPUT
+  delete process.env.GITHUB_STEP_SUMMARY
+  process.env.MISTRAL_API_KEY = 'synthetic-key'
+  delete process.env.OCR_ADAPTER_DIAGNOSTICS_PATH
+  process.env.OCR_ADAPTER_PROVIDER = 'mistral'
+  process.env.OCR_PROVIDER_PAUSED = 'false'
+  try {
+    const child = `
+      ;(async () => {
+        const response = await fetch(process.env.OCR_LLM_URL, {
+          method: 'POST',
+          headers: {
+            authorization: \`Bearer \${process.env.OCR_LLM_TOKEN}\`,
+            'content-type': 'application/json',
+          },
+          body: JSON.stringify({
+            model: process.env.OCR_LLM_MODEL,
+            messages: [{ role: 'user', content: 'synthetic' }],
+          }),
+        })
+        await response.arrayBuffer()
+        process.exitCode = response.status === 402 ? 0 : 7
+      })().catch(() => { process.exitCode = 7 })
+    `
+    const code = await transport.__commandRun([
+      '--',
+      process.execPath,
+      '-e',
+      child,
+    ])
+    assert.equal(code, 1)
+    assert.equal(transport.attempts(), 1)
+    assert.deepEqual(requests[0].messages, [
+      { role: 'user', content: 'synthetic' },
+    ])
+  } finally {
+    for (const name of names) {
+      if (previous[name] === undefined) delete process.env[name]
+      else process.env[name] = previous[name]
+    }
+  }
 })
 
 test('default upstream transport bounds stalled headers, bodies, size and redirects at both callers', {
@@ -5118,5 +5652,303 @@ test('run with live progress terminates its listener on SIGTERM', async () => {
     child.kill('SIGKILL')
     await exited
     fs.rmSync(directory, { recursive: true, force: true })
+  }
+})
+
+test('direct Flash calls retain native tool reasoning, usage identity and the shared cancellation signal', async () => {
+  const history = createHistoryStore({ provider: 'mistral-flash' })
+  const receipts = []
+  const messages = [{ role: 'user', content: 'synthetic bounded question' }]
+  let calls = 0
+  const fetchImpl = async (_url, options) => {
+    const body = JSON.parse(options.body)
+    calls += 1
+    assert.equal(body.model, MISTRAL_FLASH_MODEL)
+    assert.equal(body.reasoning_effort, 'max')
+    if (calls === 2)
+      assert.equal(
+        body.messages[1].reasoning_content,
+        'synthetic native reasoning'
+      )
+    return new Response(
+      JSON.stringify({
+        model: MISTRAL_FLASH_MODEL,
+        choices: [
+          {
+            finish_reason: calls === 1 ? 'tool_calls' : 'stop',
+            message:
+              calls === 1
+                ? {
+                    role: 'assistant',
+                    content: '',
+                    reasoning_content: 'synthetic native reasoning',
+                    tool_calls: [
+                      {
+                        id: 'call_1',
+                        type: 'function',
+                        function: {
+                          name: 'ask_review_advisor',
+                          arguments: '{}',
+                        },
+                      },
+                    ],
+                  }
+                : { role: 'assistant', content: '{}' },
+          },
+        ],
+        usage: {
+          prompt_tokens: 100,
+          completion_tokens: 20,
+          total_tokens: 120,
+          prompt_tokens_details: { cached_tokens: 80 },
+        },
+      })
+    )
+  }
+  const request = (body) =>
+    callMistral({
+      apiKey: 'synthetic',
+      provider: 'mistral-flash',
+      body,
+      history,
+      fetchImpl,
+      diagnosticsStage: 'topology',
+      diagnosticsSink: (row) => receipts.push(row),
+    })
+  const first = await request({ messages })
+  messages.push(first.choices[0].message, {
+    role: 'tool',
+    tool_call_id: 'call_1',
+    content: 'synthetic advice',
+  })
+  await request({ messages })
+  assert.equal(receipts.length, 2)
+  assert.ok(
+    receipts.every(
+      (row) =>
+        row.provider === 'mistral-flash' &&
+        row.model === MISTRAL_FLASH_MODEL &&
+        row.completion_tokens === 20
+    )
+  )
+  const controller = new AbortController()
+  const pending = callMistral({
+    apiKey: 'synthetic',
+    provider: 'mistral-flash',
+    body: { messages: [{ role: 'user', content: 'synthetic' }] },
+    signal: controller.signal,
+    fetchImpl: async (_url, init) =>
+      new Promise((_resolve, reject) =>
+        init.signal.addEventListener(
+          'abort',
+          () => reject(new Error('PRIVATE_SENTINEL')),
+          { once: true }
+        )
+      ),
+  })
+  controller.abort()
+  await assert.rejects(
+    pending,
+    (error) =>
+      error.code === 'upstream_error' &&
+      !error.message.includes('PRIVATE_SENTINEL')
+  )
+})
+
+test('final summary prices Flash and advisor lifetimes once and preserves missing advisor receipts as unknown', async (t) => {
+  const directory = fs.mkdtempSync(path.join(os.tmpdir(), 'ocr-final-cost-'))
+  t.after(() => fs.rmSync(directory, { recursive: true, force: true }))
+  const mainPath = path.join(directory, 'main.jsonl')
+  const advisorPath = path.join(directory, 'advisor.jsonl')
+  const summary = path.join(directory, 'summary.md')
+  fs.writeFileSync(
+    mainPath,
+    JSON.stringify(
+      costReceipt({ provider: 'mistral-flash', model: MISTRAL_FLASH_MODEL })
+    )
+  )
+  fs.writeFileSync(
+    advisorPath,
+    JSON.stringify(costReceipt({ provider: 'mistral', model: MISTRAL_MODEL }))
+  )
+  fs.writeFileSync(
+    `${advisorPath}.expected.json`,
+    JSON.stringify({
+      schema: 'ocr-advisor-expectations/v1',
+      expected_receipts: 1,
+    })
+  )
+  const run = () =>
+    runCli(['final-summary', mainPath, 'adapter=1'], {
+      OCR_ADAPTER_PROVIDER: 'mistral-flash',
+      OCR_ADVISOR_DIAGNOSTICS_PATH: advisorPath,
+      GITHUB_STEP_SUMMARY: summary,
+    })
+  const complete = await run()
+  assert.equal(complete.code, 0)
+  assert.match(complete.stdout, /scope=flash_main status=complete/)
+  assert.match(complete.stdout, /scope=glm_advisor status=complete/)
+  assert.match(complete.stdout, /scope=final_and_advisor status=complete/)
+  const sum =
+    estimateCost(fs.readFileSync(mainPath, 'utf8'), 'mistral-flash').withCache +
+    estimateCost(fs.readFileSync(advisorPath, 'utf8'), 'mistral').withCache
+  assert.ok(
+    complete.stdout.includes(
+      `scope=final_and_advisor status=complete estimated_with_cache_usd=${sum.toFixed(4)}`
+    )
+  )
+  fs.writeFileSync(
+    `${advisorPath}.expected.json`,
+    JSON.stringify({
+      schema: 'ocr-advisor-expectations/v1',
+      expected_receipts: 0,
+    })
+  )
+  const unexpected = await run()
+  assert.match(unexpected.stdout, /scope=glm_advisor status=unavailable/)
+  fs.writeFileSync(
+    `${advisorPath}.expected.json`,
+    JSON.stringify({
+      schema: 'ocr-advisor-expectations/v1',
+      expected_receipts: 1,
+    })
+  )
+  fs.unlinkSync(advisorPath)
+  const partial = await run()
+  assert.match(partial.stdout, /scope=glm_advisor status=unavailable/)
+  assert.match(partial.stdout, /scope=final_and_advisor status=unavailable/)
+})
+
+test('final wrapper attaches focused tools and trusted guidance while hiding upstream credentials and restoring config', async (t) => {
+  const { execFileSync } = require('node:child_process')
+  const directory = fs.mkdtempSync(path.join(os.tmpdir(), 'ocr-final-wrapper-'))
+  t.after(() => fs.rmSync(directory, { recursive: true, force: true }))
+  const git = (...args) =>
+    execFileSync('git', args, { cwd: directory, encoding: 'utf8' }).trim()
+  git('init', '-b', 'main')
+  git('config', 'user.name', 'Synthetic fixture')
+  git('config', 'user.email', 'fixture@example.invalid')
+  git('config', 'core.hooksPath', '/dev/null')
+  fs.mkdirSync(path.join(directory, '.agents/skills/ocr-reviewer'), {
+    recursive: true,
+  })
+  fs.mkdirSync(path.join(directory, '.github/open-code-review'), {
+    recursive: true,
+  })
+  fs.writeFileSync(
+    path.join(directory, '.agents/skills/ocr-reviewer/SKILL.md'),
+    'synthetic trusted procedure'
+  )
+  const rule = '.github/open-code-review/final-review-rules.json'
+  fs.writeFileSync(
+    path.join(directory, rule),
+    JSON.stringify({
+      rules: [
+        {
+          path: '**/*',
+          rule: 'synthetic final policy',
+          merge_system_rule: true,
+        },
+      ],
+      exclude: ['**/*.md'],
+    })
+  )
+  git('add', '.')
+  git('commit', '-m', 'chore: synthetic policy')
+  const head = git('rev-parse', 'HEAD')
+  const config = path.join(directory, 'config.json')
+  const original = JSON.stringify({
+    llm: { model: MISTRAL_FLASH_MODEL, protocol: 'openai' },
+  })
+  fs.writeFileSync(config, original, { mode: 0o600 })
+  const output = path.join(directory, 'child.json')
+  const previous = Object.fromEntries(
+    [
+      'MISTRAL_API_KEY',
+      'OPENROUTER_API_KEY',
+      'OCR_ADAPTER_PROVIDER',
+      'OCR_ADVISOR_STATE_PATH',
+      'OCR_ADVISOR_DIAGNOSTICS_PATH',
+      'HEAD_SHA',
+      'TRUSTED_SHA',
+      'RUNNER_TEMP',
+    ].map((name) => [name, process.env[name]])
+  )
+  const cwd = process.cwd()
+  let closed = 0
+  try {
+    process.chdir(directory)
+    Object.assign(process.env, {
+      MISTRAL_API_KEY: 'UPSTREAM_PRIVATE_SENTINEL',
+      OPENROUTER_API_KEY: 'ROUTER_PRIVATE_SENTINEL',
+      OCR_ADAPTER_PROVIDER: 'mistral-flash',
+      OCR_ADVISOR_STATE_PATH: path.join(directory, 'state.json'),
+      OCR_ADVISOR_DIAGNOSTICS_PATH: path.join(directory, 'advisor.jsonl'),
+      HEAD_SHA: head,
+      TRUSTED_SHA: head,
+      RUNNER_TEMP: directory,
+    })
+    const transport = await loadLoopbackTransport(t, (_req, res) => {
+      res.writeHead(500)
+      res.end()
+    })
+    const program = `const fs=require('node:fs');const args=process.argv;const rule=args[args.indexOf('--rule')+1];fs.writeFileSync(${JSON.stringify(output)},JSON.stringify({config:JSON.parse(fs.readFileSync(${JSON.stringify(config)},'utf8')),rules:JSON.parse(fs.readFileSync(rule,'utf8')),key:process.env.MISTRAL_API_KEY??null,router:process.env.OPENROUTER_API_KEY??null,state:process.env.OCR_ADVISOR_STATE_PATH??null,token:process.env.OCR_REVIEW_TOOLS_TOKEN}))`
+    const result = await transport.__commandRun(
+      [
+        '--ocr-config',
+        config,
+        '--',
+        process.execPath,
+        '-e',
+        program,
+        '--',
+        '--to',
+        head,
+        '--rule',
+        rule,
+      ],
+      {
+        startFocusedAdvisor: async (options) => {
+          assert.equal(options.apiKey, 'UPSTREAM_PRIVATE_SENTINEL')
+          assert.equal(options.head, head)
+          assert.equal(options.policy, head)
+          return {
+            token: 'local-capability',
+            mcpConfig: {
+              type: 'remote',
+              url: 'http://127.0.0.1:1234/mcp',
+              tools: ['ask_review_advisor', 'read_review_context'],
+            },
+            close: async () => {
+              closed++
+            },
+          }
+        },
+      }
+    )
+    assert.equal(result, 0)
+    const seen = JSON.parse(fs.readFileSync(output, 'utf8'))
+    assert.equal(seen.key, null)
+    assert.equal(seen.router, null)
+    assert.equal(seen.state, null)
+    assert.equal(seen.token, 'local-capability')
+    assert.deepEqual(seen.config.mcp_servers.klicker_review.tools, [
+      'ask_review_advisor',
+      'read_review_context',
+    ])
+    assert.equal(seen.rules.rules.length, 2)
+    assert.deepEqual(seen.rules.rules[0], {
+      path: '**/*',
+      rule: 'synthetic final policy\n\nsynthetic trusted procedure',
+      merge_system_rule: true,
+    })
+    assert.deepEqual(seen.rules.exclude, ['**/*.md'])
+    assert.equal(fs.readFileSync(config, 'utf8'), original)
+    assert.ok(closed > 0)
+  } finally {
+    process.chdir(cwd)
+    for (const [name, value] of Object.entries(previous))
+      if (value === undefined) delete process.env[name]
+      else process.env[name] = value
   }
 })

@@ -25,15 +25,15 @@
     "patch_sha256": "670d1782a56548f4a4571b6e6bbeb33c92ebcbe99247469ad1aa73329fc5e7c0"
   },
   "assets": {
-    ".github/actions/ocr-review/action.yml": "700fc6d7ff827b90a76d571e60ebeea3ded590d1aca963a5090bfbfe50d029ec",
-    ".github/scripts/ocr-controller.cjs": "07bf5283421e3d699577ae06b06fd47441497372d56a772cf2ef14525fe3ef9f",
-    ".github/scripts/ocr-draft-review.cjs": "c46f749e1eab9e7d90bca9e4bfac96ec33a41afa52b40eacc891deb1070e1c27",
-    ".github/scripts/ocr-mistral-adapter.cjs": "45541f0d97fdf6d888eb6f0a8241ce250b7821ee9592995aa648653583153273",
-    ".github/scripts/ocr-review-tools.cjs": "ca441302e5c1ae4a9b3765ba725e858f92e8bf32ce8e9375e9e8534fa5e873dd",
+    ".github/actions/ocr-review/action.yml": "79b34d4003bdbc57e7076c1f5f9004376f77b32b7f81e22cb1e3da500be1d45a",
+    ".github/scripts/ocr-controller.cjs": "a8fe80e67094ab5c1f819cd8812ceb7e7c95948321138dcc41a9aa5aaedca69b",
+    ".github/scripts/ocr-draft-review.cjs": "d1bd3b8025ce6a69ab780df0b9f1f2d651bc64e58d7821ca6619a5be1eab0945",
+    ".github/scripts/ocr-mistral-adapter.cjs": "4bbc0cc8242277c71210b97756cb1a016c8490e5c582ebd7fa693243cd29020e",
+    ".github/scripts/ocr-review-tools.cjs": "79816630ece8a69809edc7f9dd856cefeb8bfa6b89f59d586d26a95fcbc9e840",
     ".github/scripts/ocr-review-shared.cjs": "c12e084ae9bd5459791e8cd78e7c11b60eb494e8c6bb5804e7d223e5228c9676",
     ".github/scripts/ocr-runtime-config.cjs": "dfa184aff7e6ad048696086637223437adeee79ced4bcfa90139468c122f16b9",
     ".github/scripts/install-patched-ocr.cjs": "4a74aeb596b0252cb1182660d28ff8a196c51e501b69397ca94713d2d59a5eea",
     ".github/open-code-review/ocr-compression.patch": "670d1782a56548f4a4571b6e6bbeb33c92ebcbe99247469ad1aa73329fc5e7c0",
-    ".agents/skills/ocr-reviewer/SKILL.md": "20db8b6c714a3d442913a3ece313697193bab5b8c35ec32110f8013e38ee84a3"
+    ".agents/skills/ocr-reviewer/SKILL.md": "9e68df11891aebbec0e32439c05d6a66f429f693318d30ae94b3639097b29685"
   }
 }

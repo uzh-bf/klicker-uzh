@@ -158,6 +158,86 @@ class AdapterError extends Error {
   }
 }
 
+const PROVIDER_AVAILABILITY_REASONS = new Set([
+  'provider_paused',
+  'provider_payment_required',
+])
+
+function invalidProviderPause() {
+  return new AdapterError(
+    'invalid_provider_pause',
+    'provider pause must be true or false'
+  )
+}
+
+function parseProviderPause(value) {
+  if (
+    value === undefined ||
+    value === '' ||
+    value === 'false' ||
+    value === false
+  )
+    return false
+  if (value === 'true' || value === true) return true
+  throw invalidProviderPause()
+}
+
+function createProviderAvailability(paused = false) {
+  if (typeof paused !== 'boolean') throw invalidProviderPause()
+  let reason = paused ? 'provider_paused' : null
+  return {
+    get reason() {
+      return reason
+    },
+    markPaymentRequired() {
+      if (reason === null) reason = 'provider_payment_required'
+    },
+    snapshot() {
+      return {
+        status: reason === null ? 'available' : 'unavailable',
+        reason,
+      }
+    },
+  }
+}
+
+function providerAvailabilityError(reason) {
+  if (!PROVIDER_AVAILABILITY_REASONS.has(reason)) return null
+  const error = new AdapterError(reason, 'provider unavailable')
+  error.status = reason === 'provider_payment_required' ? 402 : 403
+  error.retryable = false
+  return error
+}
+
+function reportProviderAvailability(availability) {
+  let reason
+  try {
+    reason = availability?.reason
+  } catch {
+    return
+  }
+  if (!PROVIDER_AVAILABILITY_REASONS.has(reason)) return
+  const line = `OCR provider availability status=unavailable reason=${reason}\n`
+  try {
+    if (process.env.OCR_ADAPTER_PROGRESS_FD === '3') fs.writeSync(3, line)
+    else process.stderr.write(line)
+  } catch {
+    // Availability reporting must not replace the adapter result.
+  }
+  for (const [name, contents] of [
+    ['GITHUB_STEP_SUMMARY', line],
+    ['GITHUB_OUTPUT', `provider_unavailable=${reason}\n`],
+  ]) {
+    const file = process.env[name]
+    if (typeof file !== 'string' || file.length === 0) continue
+    try {
+      fs.appendFileSync(file, contents)
+    } catch {
+      // Output sinks are best effort and cannot change the adapter outcome.
+    }
+  }
+}
+
 function providerConfig(name = 'mistral') {
   if (!Object.hasOwn(PROVIDERS, name)) {
     throw new AdapterError('invalid_provider', 'unknown adapter provider')
@@ -803,6 +883,8 @@ function sendJson(res, status, payload) {
 }
 
 function statusForErrorCode(code) {
+  if (code === 'provider_paused') return 403
+  if (code === 'provider_payment_required') return 402
   if (
     code === 'required_tool_call_missing' ||
     code === 'truncated_completion'
@@ -1227,6 +1309,11 @@ async function startAdapter(options = {}) {
   const profile = providerConfig(options.provider)
   const apiKey = options.apiKey
   const fetchImpl = options.fetchImpl ?? requestMistral
+  const availability =
+    options.availability ??
+    createProviderAvailability(
+      parseProviderPause(options.paused ?? process.env.OCR_PROVIDER_PAUSED)
+    )
   const timeoutMs = options.timeoutMs ?? DEFAULT_TIMEOUT_MS
   const maxLifetimeMs = options.maxLifetimeMs ?? DEFAULT_MAX_LIFETIME_MS
   const now = options.now ?? (() => performance.now())
@@ -1271,6 +1358,10 @@ async function startAdapter(options = {}) {
   const conversationSalt = crypto.randomBytes(32)
   const conversations = new Map()
   const observedToolIds = new Map()
+  const planGuidance =
+    options.finalPlanGuidance === true
+      ? { responses: 0, usable: 0, length: 0, empty: 0, invalid_finish: 0 }
+      : null
   const pendingRequests = new Set()
   const active = new Set()
   const sockets = new Set()
@@ -1501,6 +1592,8 @@ async function startAdapter(options = {}) {
     }, timeoutMs)
 
     try {
+      const unavailable = providerAvailabilityError(availability.reason)
+      if (unavailable) throw unavailable
       for (const counter of counters) counter.upstream_attempts += 1
       journal.write({ ...receipt, event: 'dispatch' })
       const upstream = await fetchImpl(profile.url, {
@@ -1535,6 +1628,7 @@ async function startAdapter(options = {}) {
           reason: 'unknown',
         }
         diagnostics.last_upstream_error = rejection
+        if (upstream.status === 402) availability.markPaymentRequired()
         const details = upstreamErrorDetails(
           await drain(upstream, maxResponseBytes),
           profile.name,
@@ -1542,7 +1636,12 @@ async function startAdapter(options = {}) {
         )
         rejection.code = details.code
         rejection.reason = details.reason
-        sendAdapterError(res, new AdapterError('upstream_error', 'status'))
+        sendAdapterError(
+          res,
+          upstream.status === 402
+            ? providerAvailabilityError('provider_payment_required')
+            : new AdapterError('upstream_error', 'status')
+        )
         return
       }
       const text = await readBoundedBody(upstream, maxResponseBytes)
@@ -1618,6 +1717,27 @@ async function startAdapter(options = {}) {
       }
       const message = payload.choices[0].message
       history.remember(body.messages, message, body.prompt_cache_key)
+      if (
+        planGuidance &&
+        /^[0-9a-f]{8}-plan_task-[0-9a-f]{16}$/.test(body.prompt_cache_key) &&
+        (!body.tools || (Array.isArray(body.tools) && body.tools.length === 0))
+      ) {
+        const outcome =
+          choice.finish_reason === 'length'
+            ? 'length'
+            : choice.finish_reason !== 'stop'
+              ? 'invalid_finish'
+              : choice.message.content.trim()
+                ? 'usable'
+                : 'empty'
+        planGuidance.responses += 1
+        planGuidance[outcome] += 1
+        // Stock planning uses Content(), which falls back to reasoning when
+        // final text is empty. An empty projection keeps its no-plan path
+        // without turning this response into a retried HTTP error.
+        if (outcome !== 'usable')
+          choice.message = { role: 'assistant', content: '' }
+      }
       if (normalized.usage) normalized.usage = billableUsage(normalized.usage)
       sendJson(res, 200, normalized)
       accepted = true
@@ -1727,6 +1847,7 @@ async function startAdapter(options = {}) {
       schema_version: 1,
       provider: profile.name,
       model: profile.model,
+      provider_availability: availability.snapshot(),
       ...diagnostics,
       last_upstream_error: diagnostics.last_upstream_error
         ? { ...diagnostics.last_upstream_error }
@@ -1754,6 +1875,7 @@ async function startAdapter(options = {}) {
       })),
       history: history.diagnostics(),
       usage_events: journal.snapshot(),
+      plan_guidance: planGuidance ? { ...planGuidance } : null,
     }
   }
 
@@ -1766,11 +1888,41 @@ async function startAdapter(options = {}) {
   }
 }
 
+function summarizePlanGuidance(record) {
+  const counters = record?.plan_guidance
+  const fields = ['responses', 'usable', 'length', 'empty', 'invalid_finish']
+  if (
+    record?.unfinished_requests !== 0 ||
+    !fields.every(
+      (field) => Number.isSafeInteger(counters?.[field]) && counters[field] >= 0
+    ) ||
+    counters.responses !==
+      counters.usable +
+        counters.length +
+        counters.empty +
+        counters.invalid_finish
+  )
+    return 'OCR planning status=unavailable'
+  return `OCR planning status=complete ${fields.map((field) => `${field}=${counters[field]}`).join(' ')}`
+}
+
 async function callMistral(options = {}) {
+  const profile = providerConfig(options.provider)
   const apiKey = options.apiKey
   const fetchImpl = options.fetchImpl ?? requestMistral
+  const availability =
+    options.availability ??
+    createProviderAvailability(
+      parseProviderPause(options.paused ?? process.env.OCR_PROVIDER_PAUSED)
+    )
   const timeoutMs = options.timeoutMs ?? DEFAULT_TIMEOUT_MS
   const maxResponseBytes = options.maxResponseBytes ?? MAX_RESPONSE_BYTES
+
+  const unavailable = providerAvailabilityError(availability.reason)
+  if (unavailable) {
+    reportProviderAvailability(availability)
+    throw unavailable
+  }
 
   if (typeof apiKey !== 'string' || apiKey.length === 0) {
     throw new AdapterError('missing_api_key', 'an upstream API key is required')
@@ -1784,10 +1936,14 @@ async function callMistral(options = {}) {
 
   const mistralBody = translateMistralRequest(
     options.body,
-    createHistoryStore()
+    options.history ?? createHistoryStore({ provider: profile.name }),
+    profile.name
   )
   const controller = new AbortController()
   const timer = setTimeout(() => controller.abort(), timeoutMs)
+  const abort = () => controller.abort()
+  options.signal?.addEventListener('abort', abort, { once: true })
+  if (options.signal?.aborted) controller.abort()
   const diagnostics = {
     schema_version: 1,
     stage: options.diagnosticsStage,
@@ -1804,8 +1960,8 @@ async function callMistral(options = {}) {
     stage: ['preflight', 'topology'].includes(options.diagnosticsStage)
       ? options.diagnosticsStage
       : 'adapter',
-    provider: 'mistral',
-    model: MISTRAL_MODEL,
+    provider: profile.name,
+    model: profile.model,
     kind: 'auxiliary',
     conversation: null,
     attempt: 1,
@@ -1817,7 +1973,7 @@ async function callMistral(options = {}) {
     diagnostics.requests += 1
     diagnostics.upstream_attempts += 1
     journal.write({ ...receipt, event: 'dispatch' })
-    const response = await fetchImpl(MISTRAL_URL, {
+    const response = await fetchImpl(profile.url, {
       method: 'POST',
       headers: {
         'content-type': 'application/json',
@@ -1838,7 +1994,11 @@ async function callMistral(options = {}) {
         : null
     if (!response.ok) {
       failureCategory = upstreamFailure(response.status)
+      if (response.status === 402) availability.markPaymentRequired()
       await drain(response, maxResponseBytes)
+      if (response.status === 402) {
+        throw providerAvailabilityError('provider_payment_required')
+      }
       // Only the numeric status is surfaced; the upstream body is discarded.
       const failure = new AdapterError(
         'upstream_error',
@@ -1859,7 +2019,7 @@ async function callMistral(options = {}) {
       ...receipt,
       event: 'response',
       ...observedUsage(payload),
-      ...observedResponseShape(payload, 'mistral'),
+      ...observedResponseShape(payload, profile.name),
       finish_reason: [
         'stop',
         'length',
@@ -1871,8 +2031,13 @@ async function callMistral(options = {}) {
         : 'unknown',
       http_status: httpStatus,
     })
-    const normalized = normalizeMistralResponse(payload)
+    const normalized = normalizeMistralResponse(payload, profile.name)
     recordResponseUsage(diagnostics, normalized.usage, payload.usage)
+    options.history?.remember(
+      mistralBody.messages,
+      payload.choices[0].message,
+      options.body.prompt_cache_key
+    )
     accepted = true
     return normalized
   } catch (error) {
@@ -1883,6 +2048,7 @@ async function callMistral(options = {}) {
     // A raw fetch error is never surfaced; a bounded status error is enough.
     throw new AdapterError('upstream_error', 'upstream request failed')
   } finally {
+    reportProviderAvailability(availability)
     journal.write({
       ...receipt,
       event: 'finished',
@@ -1891,15 +2057,21 @@ async function callMistral(options = {}) {
       http_status: httpStatus,
     })
     clearTimeout(timer)
+    options.signal?.removeEventListener('abort', abort)
     if (['preflight', 'topology'].includes(options.diagnosticsStage)) {
-      writeDiagnostics({
+      const snapshot = {
         schema_version: 1,
         stage: options.diagnosticsStage,
+        provider: profile.name,
+        model: profile.model,
+        provider_availability: availability.snapshot(),
         requests: diagnostics.requests,
         ...Object.fromEntries(
           COST_USAGE_FIELDS.map((field) => [field, diagnostics[field]])
         ),
-      })
+      }
+      if (options.diagnosticsSink) options.diagnosticsSink(snapshot)
+      else writeDiagnostics(snapshot)
     }
   }
 }
@@ -2518,6 +2690,71 @@ function commandSummary(args) {
   return 0
 }
 
+function commandFinalSummary(args) {
+  commandSummary(args)
+  const advisorPath = process.env.OCR_ADVISOR_DIAGNOSTICS_PATH
+  const readReport = (file, expected, provider) => {
+    try {
+      return buildCostReport(fs.readFileSync(file, 'utf8'), expected, provider)
+        .estimate
+    } catch {
+      return null
+    }
+  }
+  const expected = {}
+  for (const arg of args.slice(1)) {
+    const match = /^(adapter|preflight|topology)=(\d{1,16})$/.exec(arg)
+    if (match && !Object.hasOwn(expected, match[1]))
+      expected[match[1]] = Number(match[2])
+  }
+  const main = readReport(args[0], expected, 'mistral-flash')
+  let advisor
+  try {
+    const receipt = JSON.parse(
+      fs.readFileSync(`${advisorPath}.expected.json`, 'utf8')
+    )
+    if (
+      receipt.schema === 'ocr-advisor-expectations/v1' &&
+      Number.isSafeInteger(receipt.expected_receipts) &&
+      receipt.expected_receipts >= 0
+    ) {
+      advisor =
+        receipt.expected_receipts === 0
+          ? buildCostReport(
+              fs.existsSync(advisorPath)
+                ? fs.readFileSync(advisorPath, 'utf8')
+                : '',
+              { adapter: 0 },
+              'mistral'
+            ).estimate
+          : readReport(
+              advisorPath,
+              { adapter: receipt.expected_receipts },
+              'mistral'
+            )
+    }
+  } catch {
+    /* Missing expectations remain unknown. */
+  }
+  const line = (scope, value) =>
+    value
+      ? `OCR cost scope=${scope} status=complete estimated_with_cache_usd=${value.withCache.toFixed(4)} estimated_without_cache_usd=${value.withoutCache.toFixed(4)} estimated_savings_usd=${value.savings.toFixed(4)} savings_percent=${(value.withoutCache ? (100 * value.savings) / value.withoutCache : 0).toFixed(1)}`
+      : `OCR cost scope=${scope} status=unavailable`
+  const sum =
+    main && advisor
+      ? {
+          withCache: main.withCache + advisor.withCache,
+          withoutCache: main.withoutCache + advisor.withoutCache,
+          savings: main.savings + advisor.savings,
+        }
+      : null
+  const text = `\n${line('flash_main', main)}\n${line('glm_advisor', advisor)}\n${line('final_and_advisor', sum)}\nAdvisor usage has a separate allowance and is excluded from OCR's main review budget counters.\n`
+  process.stdout.write(text)
+  if (process.env.GITHUB_STEP_SUMMARY)
+    fs.appendFileSync(process.env.GITHUB_STEP_SUMMARY, text)
+  return 0
+}
+
 function createCompressionCounters() {
   return {
     started: 0,
@@ -2827,7 +3064,7 @@ function createProgressReporter(write, options = {}) {
   }
 }
 
-function configureAttempt(configPath, url) {
+function configureAttempt(configPath, url, mcpConfig) {
   let original
   let config
   try {
@@ -2860,6 +3097,7 @@ function configureAttempt(configPath, url) {
     }
   }
   config.llm.url = url
+  if (mcpConfig) config.mcp_servers = { klicker_review: mcpConfig }
   try {
     replace(JSON.stringify(config))
   } catch {
@@ -2880,7 +3118,7 @@ function configureAttempt(configPath, url) {
   }
 }
 
-async function commandRun(args) {
+async function commandRun(args, options = {}) {
   let configPath
   if (args[0] === '--ocr-config') {
     if (!args[1] || args[2] !== '--') {
@@ -2897,12 +3135,21 @@ async function commandRun(args) {
     throw new AdapterError('missing_command', 'run requires an executable')
   }
   const profile = providerConfig(process.env.OCR_ADAPTER_PROVIDER)
+  const availability = createProviderAvailability(
+    parseProviderPause(process.env.OCR_PROVIDER_PAUSED)
+  )
+  const unavailable = providerAvailabilityError(availability.reason)
+  if (unavailable) {
+    reportProviderAvailability(availability)
+    throw unavailable
+  }
   const apiKey = requireEnv(profile.secret)
   let executionReceipt
   let progress
   const adapter = await startAdapter({
     apiKey,
     provider: profile.name,
+    availability,
     onClose: (snapshot) => {
       executionReceipt = snapshot
     },
@@ -2910,6 +3157,8 @@ async function commandRun(args) {
   const childEnv = { ...process.env }
   delete childEnv.MISTRAL_API_KEY
   delete childEnv.OPENROUTER_API_KEY
+  delete childEnv.OCR_ADVISOR_STATE_PATH
+  delete childEnv.OCR_ADVISOR_DIAGNOSTICS_PATH
   const liveProgress = childEnv.OCR_ADAPTER_PROGRESS_FD === '3'
   delete childEnv.OCR_ADAPTER_PROGRESS_FD
   childEnv.OCR_LLM_URL = `${adapter.url}${CHAT_PATH}`
@@ -2918,10 +3167,73 @@ async function commandRun(args) {
   childEnv.OCR_LLM_PROTOCOL = 'openai'
   childEnv.OCR_USE_ANTHROPIC = 'false'
 
-  let restoreConfig
+  let restoreConfig, focusedAdvisor, rulesPath
   try {
+    if (process.env.OCR_ADVISOR_STATE_PATH) {
+      if (!configPath || !process.env.OCR_ADVISOR_DIAGNOSTICS_PATH)
+        throw new AdapterError(
+          'invalid_advisor',
+          'advisor configuration is unavailable'
+        )
+      const { startFocusedAdvisor } = require('./ocr-review-tools.cjs')
+      const { readPolicyBlob } = require('./ocr-runtime-config.cjs')
+      const toIndex = argv.indexOf('--to')
+      if (toIndex < 0 || !/^[a-f0-9]{40}$/.test(argv[toIndex + 1] ?? ''))
+        throw new AdapterError('invalid_advisor', 'review head unavailable')
+      const reviewedHead = argv[toIndex + 1]
+      focusedAdvisor = await (
+        options.startFocusedAdvisor ?? startFocusedAdvisor
+      )({
+        repo: process.cwd(),
+        head: reviewedHead,
+        policy: process.env.TRUSTED_SHA,
+        identityHead: process.env.HEAD_SHA,
+        statePath: process.env.OCR_ADVISOR_STATE_PATH,
+        diagnosticsPath: process.env.OCR_ADVISOR_DIAGNOSTICS_PATH,
+        apiKey,
+        availability,
+      })
+      childEnv.OCR_REVIEW_TOOLS_TOKEN = focusedAdvisor.token
+      delete childEnv.OCR_ADVISOR_STATE_PATH
+      delete childEnv.OCR_ADVISOR_DIAGNOSTICS_PATH
+      const ruleIndex = argv.indexOf('--rule')
+      if (ruleIndex < 0)
+        throw new AdapterError('invalid_advisor', 'review rules unavailable')
+      const rules = JSON.parse(
+        readPolicyBlob(
+          process.cwd(),
+          process.env.TRUSTED_SHA,
+          argv[ruleIndex + 1],
+          262144
+        )
+      )
+      const skill = readPolicyBlob(
+        process.cwd(),
+        process.env.TRUSTED_SHA,
+        '.agents/skills/ocr-reviewer/SKILL.md',
+        32768
+      )
+      rules.rules = rules.rules.map((rule) => ({
+        ...rule,
+        rule: `${rule.rule}\n\n${skill}`,
+      }))
+      rules.rules.push({ path: '**/*', rule: skill, merge_system_rule: true })
+      rulesPath = path.join(
+        process.env.RUNNER_TEMP,
+        `final-ocr-rules-${crypto.randomUUID()}.json`
+      )
+      fs.writeFileSync(rulesPath, JSON.stringify(rules), {
+        mode: 0o600,
+        flag: 'wx',
+      })
+      argv[ruleIndex + 1] = rulesPath
+    }
     if (configPath)
-      restoreConfig = configureAttempt(configPath, childEnv.OCR_LLM_URL)
+      restoreConfig = configureAttempt(
+        configPath,
+        childEnv.OCR_LLM_URL,
+        focusedAdvisor?.mcpConfig
+      )
     const child = spawn(argv[0], argv.slice(1), {
       stdio: liveProgress ? ['inherit', 'inherit', 'pipe'] : 'inherit',
       env: childEnv,
@@ -2967,6 +3279,7 @@ async function commandRun(args) {
       child.on('exit', (code, signal) => resolve({ code, signal }))
     })
     try {
+      await focusedAdvisor?.close()
       await adapter.close()
       if (liveProgress) {
         // A descendant can retain stderr after the review process exits. Bound
@@ -2994,12 +3307,19 @@ async function commandRun(args) {
       )
     }
     if (result.signal) return 1
+    if (availability.reason === 'provider_payment_required') {
+      return typeof result.code === 'number' && result.code !== 0
+        ? result.code
+        : 1
+    }
     return typeof result.code === 'number' ? result.code : 1
   } finally {
     try {
+      await focusedAdvisor?.close()
       await adapter.close()
     } finally {
       try {
+        reportProviderAvailability(availability)
         if (executionReceipt) {
           writeDiagnostics({
             ...executionReceipt,
@@ -3008,6 +3328,7 @@ async function commandRun(args) {
         }
       } finally {
         restoreConfig?.()
+        if (rulesPath) fs.rmSync(rulesPath, { force: true })
       }
     }
   }
@@ -3101,6 +3422,7 @@ async function main(argv) {
   if (command === 'serve') return commandServe(rest)
   if (command === 'stop') return commandStop(rest)
   if (command === 'summary') return commandSummary(rest)
+  if (command === 'final-summary') return commandFinalSummary(rest)
   process.stderr.write(
     'usage: ocr-mistral-adapter.cjs <run|start|serve|stop|summary> [args]\n'
   )
@@ -3116,12 +3438,18 @@ module.exports = {
   translateMistralRequest,
   createHistoryStore,
   createUsageJournal,
+  createProviderAvailability,
+  parseProviderPause,
+  reportProviderAvailability,
   startAdapter,
   callMistral,
+  writeDiagnostics,
   estimateCost,
   buildCostReport,
   createProgressFilter,
   createProgressReporter,
+  summarizePlanGuidance,
+  commandFinalSummary,
 }
 
 if (require.main === module) {

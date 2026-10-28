@@ -1315,6 +1315,8 @@ test('verifies the exact public Mistral tool contract', async (t) => {
   assert.deepEqual(receipts[0], {
     schema_version: 1,
     stage: 'preflight',
+    provider: 'mistral-flash',
+    model: FINAL_REVIEW_MODEL,
     requests: 1,
     upstream_attempts: 1,
     responses: 1,
@@ -1327,6 +1329,7 @@ test('verifies the exact public Mistral tool contract', async (t) => {
     missing_cache_usage: 0,
     invalid_cache_usage: 0,
     unfinished_requests: 0,
+    provider_availability: { status: 'available', reason: null },
   })
 })
 
@@ -1382,6 +1385,8 @@ test('retains preflight usage when a successful canary answer is rejected', asyn
     assert.deepEqual(receipt, {
       schema_version: 1,
       stage: 'preflight',
+      provider: 'mistral-flash',
+      model: FINAL_REVIEW_MODEL,
       requests: 1,
       upstream_attempts: 1,
       responses: 1,
@@ -1394,6 +1399,7 @@ test('retains preflight usage when a successful canary answer is rejected', asyn
       missing_cache_usage: 0,
       invalid_cache_usage: 0,
       unfinished_requests: 0,
+      provider_availability: { status: 'available', reason: null },
     })
   }
 })
@@ -3374,6 +3380,18 @@ test('publishes clean individual evidence as a check without a pull-request comm
     assert.equal(state.createdStatuses.at(-1).state, 'error')
   }
   pull.body = publishedBody
+  for (const providerUnavailable of [
+    'provider_paused',
+    'provider_payment_required',
+  ]) {
+    await finalizeFinalReview({ ...inputs, providerUnavailable })
+    assert.equal(state.createdCheckRuns.length, 0)
+    assert.equal(state.createdStatuses.at(-1).state, 'failure')
+    assert.equal(
+      state.createdStatuses.at(-1).description.includes(providerUnavailable),
+      true
+    )
+  }
   await finalizeFinalReview(inputs)
 
   assert.equal(state.createdCheckRuns.length, 1)
@@ -4338,6 +4356,11 @@ test('selects incremental attestation only for bounded repaired changes', async 
   for (const policyPath of [
     '.github/workflows/check-ocr-final-review.yml',
     '.github/scripts/final-ai-review-shared.js',
+    '.github/scripts/ocr-review-tools.cjs',
+    '.github/scripts/ocr-runtime-config.cjs',
+    '.github/open-code-review/repository.json',
+    '.github/open-code-review/runtime-manifest.json',
+    '.agents/skills/ocr-reviewer/SKILL.md',
     '.github/scripts/install-patched-ocr.cjs',
     '.github/open-code-review/ocr-compression.patch',
   ]) {
@@ -4951,4 +4974,28 @@ test('patched executable provenance refuses an upstream binary or a changed patc
     () => verifyArchive(Buffer.from('unexpected upstream archive')),
     /checksum mismatch/
   )
+})
+
+test('provider unavailability blocks final status even with successful stage envelopes', () => {
+  for (const providerUnavailable of [
+    'provider_paused',
+    'provider_payment_required',
+  ]) {
+    const status = decideFinalStatus({
+      reviewedHead: 'a',
+      currentHead: 'a',
+      reviewedBase: 'b',
+      currentBase: 'b',
+      eligible: true,
+      reviewOutcome: 'success',
+      cleanupOutcome: 'success',
+      publishOutcome: 'success',
+      cleanReview: 'true',
+      cleanEvidenceDigest: 'a'.repeat(64),
+      providerUnavailable,
+    })
+    assert.equal(status.state, 'failure')
+    assert.equal(status.description.includes(providerUnavailable), true)
+    assert.equal(status.description.includes('evidence='), false)
+  }
 })

@@ -57,7 +57,12 @@ function publishedRuntime(t) {
   const controller = require(
     path.join(root, '.github/scripts/ocr-controller.cjs')
   )
-  controller.verifyRelease(root)
+  const selectedRelease = controller.verifyRelease(root)
+  assert.equal(
+    selectedRelease.manifestDigest,
+    verifyRelease(ROOT).manifestDigest,
+    'the donor caller pins a stale OCR runtime'
+  )
   return { root, controller, workflow, repository, revision }
 }
 
@@ -78,6 +83,130 @@ test('the donor caller passes the actual published release contract and frozen p
         "github.event.action != 'synchronize' || github.event.pull_request.head.repo.full_name != github.repository || !startsWith(github.event.pull_request.head.ref, 'sync/')",
     }),
     { profile: 'draft-v1', revision: release.revision }
+  )
+})
+
+test('the OCR runtime pin is fetched and qualified before contract tests', () => {
+  const callerPath = '.github/workflows/check-ocr-review.yml'
+  let callerText = fs.readFileSync(path.join(ROOT, callerPath), 'utf8')
+  const workflow = YAML.parse(
+    fs.readFileSync(path.join(ROOT, '.github/workflows/check.yml'), 'utf8')
+  )
+  const steps = workflow.jobs['check-suite'].steps
+  const pinIndex = steps.findIndex((step) => step.id === 'ocr_runtime_pin')
+  const contractIndex = steps.findIndex(
+    (step) =>
+      typeof step.run === 'string' &&
+      step.run.includes('.github/scripts/ocr-controller.test.cjs')
+  )
+  assert.ok(pinIndex >= 0, 'the runtime pin qualification step is missing')
+  assert.ok(
+    contractIndex > pinIndex,
+    'the runtime pin qualification must precede review contract tests'
+  )
+  assert.equal(steps[pinIndex]['timeout-minutes'], 3)
+
+  const scriptLines = steps[pinIndex].run.trimEnd().split('\n')
+  assert.equal(scriptLines.shift().trim(), "node <<'NODE'")
+  assert.equal(scriptLines.pop().trim(), 'NODE')
+  const script = scriptLines.join('\n')
+  let calls = []
+  const runStep = (input, objectType = 'commit\n') => {
+    callerText = input
+    calls = []
+    const gitEnvironment = () => ({
+      PATH: '/synthetic/bin',
+      GIT_CONFIG_GLOBAL: os.devNull,
+      GIT_CONFIG_NOSYSTEM: '1',
+      GIT_CONFIG_SYSTEM: os.devNull,
+      GIT_NO_REPLACE_OBJECTS: '1',
+      GIT_TERMINAL_PROMPT: '0',
+    })
+    const execFileSync = (command, args, options) => {
+      calls.push({ command, args, options })
+      return args[0] === 'cat-file' ? objectType : ''
+    }
+    const sandbox = {
+      process: {
+        cwd: () => '/synthetic/repo',
+        env: { GITHUB_TOKEN: 'synthetic-credential' },
+      },
+      require: (request) => {
+        if (request === 'node:fs') {
+          return {
+            readFileSync: (file, encoding) => {
+              assert.equal(file, callerPath)
+              assert.equal(encoding, 'utf8')
+              return callerText
+            },
+          }
+        }
+        if (request === 'node:child_process') return { execFileSync }
+        if (request === 'yaml') return YAML
+        if (request === './.github/scripts/ocr-runtime-config.cjs') {
+          return { gitEnvironment }
+        }
+        throw new Error(`unexpected require: ${request}`)
+      },
+    }
+    vm.runInNewContext(script, sandbox, { filename: 'ocr-runtime-pin.cjs' })
+    return calls
+  }
+
+  const caller = YAML.parse(callerText)
+  const callerStep = caller.jobs['ocr-review'].steps[0]
+  for (const pin of [
+    'uzh-bf/klicker-uzh/.github/actions/ocr-review@main',
+    `other/klicker-uzh/.github/actions/ocr-review@${REVISION}`,
+    'uzh-bf/klicker-uzh/.github/actions/ocr-review@abc123',
+    `uzh-bf/klicker-uzh/.github/actions/ocr-review@${REVISION.toUpperCase()}`,
+  ]) {
+    callerStep.uses = pin
+    assert.throws(
+      () => runStep(YAML.stringify(caller)),
+      /invalid_ocr_runtime_pin/
+    )
+    assert.equal(calls.length, 0)
+  }
+
+  callerStep.uses = `uzh-bf/klicker-uzh/.github/actions/ocr-review@${REVISION}`
+  calls = runStep(YAML.stringify(caller))
+  assert.equal(calls.length, 2)
+  assert.equal(calls[0].command, 'git')
+  assert.deepEqual(Array.from(calls[0].args), [
+    'fetch',
+    '--no-tags',
+    '--no-recurse-submodules',
+    '--no-write-fetch-head',
+    'https://github.com/uzh-bf/klicker-uzh.git',
+    REVISION,
+  ])
+  assert.deepEqual(Array.from(calls[1].args), ['cat-file', '-t', REVISION])
+  for (const call of calls) {
+    assert.equal(call.command, 'git')
+    assert.equal(call.options.cwd, '/synthetic/repo')
+    assert.equal(call.options.encoding, 'utf8')
+    assert.equal(call.options.timeout, 120000)
+    assert.ok(
+      Number.isSafeInteger(call.options.maxBuffer) &&
+        call.options.maxBuffer > 0 &&
+        call.options.maxBuffer <= 16 * 1024 * 1024
+    )
+    assert.deepEqual(Array.from(call.options.stdio), ['ignore', 'pipe', 'pipe'])
+    assert.equal(
+      call.options.env.GIT_CONFIG_KEY_0,
+      'http.https://github.com/.extraheader'
+    )
+    assert.equal(call.options.env.GIT_CONFIG_VALUE_0, '')
+    assert.equal(call.options.env.GIT_CONFIG_KEY_1, 'credential.helper')
+    assert.equal(call.options.env.GIT_CONFIG_VALUE_1, '')
+    assert.equal(call.options.env.GITHUB_TOKEN, undefined)
+    assert.equal(call.options.env.MISTRAL_API_KEY, undefined)
+    assert.equal(call.options.env.CONTEXT7_API_KEY, undefined)
+  }
+  assert.throws(
+    () => runStep(YAML.stringify(caller), 'blob\n'),
+    /invalid_ocr_runtime_pin_object/
   )
 })
 
@@ -216,6 +345,7 @@ function caller() {
               'mistral-api-key': '${{ secrets.MISTRAL_API_KEY }}',
               'context7-api-key': '${{ secrets.CONTEXT7_API_KEY }}',
               'github-token': '${{ github.token }}',
+              'provider-paused': '${{ vars.OCR_PROVIDER_PAUSED }}',
             },
           },
         ],
@@ -583,6 +713,16 @@ test('the shared caller check rejects mutated pins, execution, credentials, poli
       w.jobs['ocr-review'].steps[0].env = { MISTRAL_API_KEY: 'synthetic-leak' }
     },
     (w) => {
+      delete w.jobs['ocr-review'].steps[0].with['provider-paused']
+    },
+    (w) => {
+      w.jobs['ocr-review'].steps[0].with['provider-paused'] = 'false'
+    },
+    (w) => {
+      w.jobs['ocr-review'].steps[0].with['provider-paused'] =
+        '${{ github.event.pull_request.body }}'
+    },
+    (w) => {
       w.jobs['ocr-review'].if = 'true'
     },
     (w) => {
@@ -662,15 +802,35 @@ test('the composite preserves failure, cancellation, validation, artifact and su
     true
   )
   assert.equal(
-    admitted(publication, { validate: { outcome: 'success' } }, false),
+    admitted(
+      publication,
+      { validate: { outcome: 'success', outputs: { publishable: 'true' } } },
+      false
+    ),
     true
   )
   assert.equal(
-    admitted(publication, { validate: { outcome: 'failure' } }, false),
+    admitted(
+      publication,
+      { validate: { outcome: 'failure', outputs: { publishable: 'true' } } },
+      false
+    ),
     false
   )
   assert.equal(
-    admitted(publication, { validate: { outcome: 'success' } }, true),
+    admitted(
+      publication,
+      { validate: { outcome: 'success', outputs: { publishable: 'true' } } },
+      true
+    ),
+    false
+  )
+  assert.equal(
+    admitted(
+      publication,
+      { validate: { outcome: 'success', outputs: { publishable: 'false' } } },
+      false
+    ),
     false
   )
   assert.notEqual(
@@ -711,4 +871,136 @@ test('the composite preserves failure, cancellation, validation, artifact and su
   assert.equal(checkout.with['persist-credentials'], false)
   assert.equal(checkout.with.filter, undefined)
   assert.equal(checkout.with['sparse-checkout'], undefined)
+})
+
+test('only frozen unavailable draft outcomes admit missing results, and valid partial findings keep the warning', async (t) => {
+  const f = fixture(t)
+  prepareReview(f.options)
+  const outcomePath = path.join(f.temp, 'draft-ai-review-outcome.json')
+  const outcome = {
+    head_sha: f.head,
+    policy_sha: f.policy,
+    profile: 'draft-v1',
+    provider_availability: {
+      status: 'unavailable',
+      reason: 'provider_payment_required',
+    },
+  }
+  fs.writeFileSync(outcomePath, JSON.stringify(outcome))
+  await runCommand('validate', f)
+  assert.equal(
+    fs.existsSync(path.join(f.temp, 'draft-ai-review-publication.json')),
+    false
+  )
+  const file = path.join(f.temp, 'draft-ai-review-result.json')
+  fs.writeFileSync(file, JSON.stringify(result(f.head)))
+  for (const invalid of [
+    { ...outcome, head_sha: 'f'.repeat(40) },
+    { ...outcome, policy_sha: 'f'.repeat(40) },
+    { ...outcome, provider_availability: undefined },
+    {
+      ...outcome,
+      provider_availability: {
+        status: 'available',
+        reason: 'provider_payment_required',
+      },
+    },
+    { ...outcome, provider_availability: { status: 'available' } },
+    { ...outcome, provider_availability: { status: 'unknown', reason: null } },
+    {
+      ...outcome,
+      provider_availability: {
+        status: 'unavailable',
+        reason: 'PRIVATE_SENTINEL',
+      },
+    },
+  ]) {
+    fs.writeFileSync(outcomePath, JSON.stringify(invalid))
+    await assert.rejects(runCommand('validate', f), /invalid_result/)
+  }
+  fs.writeFileSync(outcomePath, JSON.stringify(outcome))
+  fs.writeFileSync(file, '{}')
+  await assert.rejects(runCommand('validate', f), /invalid_result/)
+  const partial = result(f.head)
+  partial.comments = [{ path: 'source.js', content: 'Synthetic finding' }]
+  fs.writeFileSync(file, JSON.stringify(partial))
+  await runCommand('validate', f)
+  const publication = JSON.parse(
+    fs.readFileSync(path.join(f.temp, 'draft-ai-review-publication.json'))
+  )
+  assert.deepEqual(publication.comments, partial.comments)
+  assert.deepEqual(publication.manifest.coverage, partial.manifest.coverage)
+  assert.equal(publication.warnings.at(-1).type, 'provider_unavailable')
+  fs.writeFileSync(
+    outcomePath,
+    JSON.stringify({
+      ...outcome,
+      provider_availability: { status: 'available', reason: null },
+    })
+  )
+  await runCommand('validate', f)
+  assert.equal(
+    JSON.parse(
+      fs.readFileSync(path.join(f.temp, 'draft-ai-review-publication.json'))
+    ).warnings.at(-1).type,
+    'review_incomplete'
+  )
+  fs.unlinkSync(file)
+  fs.unlinkSync(outcomePath)
+  await assert.rejects(runCommand('validate', f))
+})
+
+test('the composite forwards pause inputs without workflow-only contexts', () => {
+  const action = YAML.parse(
+    fs.readFileSync(
+      path.join(ROOT, '.github/actions/ocr-review/action.yml'),
+      'utf8'
+    )
+  )
+  const { parseProviderPause } = require('./ocr-mistral-adapter.cjs')
+  const definition = action.inputs['provider-paused']
+  assert.equal(parseProviderPause(definition.default), false)
+  const review = action.runs.steps.find((step) => step.id === 'review')
+  const evaluatePause = (value = definition.default) =>
+    vm.runInNewContext(
+      review.env.OCR_PROVIDER_PAUSED.replace(/^\$\{\{\s*|\s*\}\}$/g, ''),
+      { inputs: { 'provider-paused': value } },
+      { timeout: 100 }
+    )
+  for (const value of [undefined, '', 'false'])
+    assert.equal(parseProviderPause(evaluatePause(value)), false)
+  assert.equal(parseProviderPause(evaluatePause('true')), true)
+  assert.throws(() => parseProviderPause(evaluatePause('invalid')), {
+    code: 'invalid_provider_pause',
+  })
+  for (const step of action.runs.steps)
+    if (step !== review) assert.equal(step.env?.OCR_PROVIDER_PAUSED, undefined)
+})
+
+test('manual provider pause reaches model steps without contaminating trusted helper self-tests', () => {
+  const workflow = YAML.parse(
+    fs.readFileSync(
+      path.join(__dirname, '../workflows/check-ocr-final-review.yml'),
+      'utf8'
+    )
+  )
+  for (const jobName of ['review', 'review_stack']) {
+    const job = workflow.jobs[jobName]
+    const expected =
+      jobName === 'review'
+        ? ['preflight', 'run_review']
+        : ['preflight', 'code_review', 'topology_review']
+    assert.equal(job.env.OCR_PROVIDER_PAUSED, undefined)
+    assert.deepEqual(
+      job.steps
+        .filter((step) => step.env?.OCR_PROVIDER_PAUSED !== undefined)
+        .map((step) => step.id),
+      expected
+    )
+    for (const step of job.steps.filter((step) => expected.includes(step.id)))
+      assert.equal(
+        step.env.OCR_PROVIDER_PAUSED,
+        '${{ vars.OCR_PROVIDER_PAUSED }}'
+      )
+  }
 })

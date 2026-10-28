@@ -709,6 +709,167 @@ test('repository configuration is strict and frozen at the trusted policy rather
   )
 })
 
+test('stock OCR consumes final plans and continues without truncated or empty guidance', {
+  skip: !process.env.OCR_TEST_BINARY,
+  timeout: 60000,
+}, async (t) => {
+  const root = fs.mkdtempSync(path.join(os.tmpdir(), 'ocr-plan-guidance-'))
+  t.after(() => fs.rmSync(root, { recursive: true, force: true }))
+  const repo = path.join(root, 'repo')
+  fs.mkdirSync(repo)
+  const git = (...args) =>
+    execFileSync('git', args, {
+      cwd: repo,
+      encoding: 'utf8',
+      stdio: ['ignore', 'pipe', 'pipe'],
+    }).trim()
+  git('init', '-b', 'main')
+  git('config', 'user.name', 'Synthetic fixture')
+  git('config', 'user.email', 'fixture@example.invalid')
+  git('config', 'core.hooksPath', '/dev/null')
+  fs.writeFileSync(path.join(repo, 'source.js'), 'export const baseline = 1\n')
+  git('add', '.')
+  git('commit', '-m', 'test: synthetic base')
+  const from = git('rev-parse', 'HEAD')
+  fs.writeFileSync(
+    path.join(repo, 'source.js'),
+    Array.from(
+      { length: 65 },
+      (_, i) => `export const value${i} = ${i}\n`
+    ).join('')
+  )
+  git('add', '.')
+  git('commit', '-m', 'test: synthetic candidate')
+  const head = git('rev-parse', 'HEAD')
+  for (const [content, finish, outcome] of [
+    ['SYNTHETIC_FINAL_PLAN', 'stop', 'usable'],
+    ['', 'length', 'length'],
+    ['SYNTHETIC_PARTIAL_PLAN', 'length', 'length'],
+    ['', 'stop', 'empty'],
+    [' \n ', 'stop', 'empty'],
+  ]) {
+    const temp = fs.mkdtempSync(path.join(root, 'review-'))
+    const logs = []
+    let calls = 0,
+      plans = 0,
+      reviews = 0
+    const result = await runDraftReview({
+      repo,
+      temp,
+      from,
+      head,
+      executable: process.env.OCR_TEST_BINARY,
+      apiKey: 'synthetic',
+      write: (line) => logs.push(line),
+      fetchImpl: async (_url, init) => {
+        const body = JSON.parse(init.body)
+        calls++
+        assert.equal(body.reasoning_effort, 'max')
+        assert.equal(body.max_tokens, 16384)
+        const main = body.tools?.some(
+          (tool) => tool.function.name === 'task_done'
+        )
+        if (!main) {
+          plans++
+          assert.match(
+            body.prompt_cache_key,
+            /^[0-9a-f]{8}-plan_task-[0-9a-f]{16}$/
+          )
+        } else {
+          reviews++
+          const input = JSON.stringify(body.messages)
+          assert.equal(
+            input.includes('SYNTHETIC_FINAL_PLAN'),
+            outcome === 'usable'
+          )
+          assert.doesNotMatch(
+            input,
+            /SYNTHETIC_UNFINISHED_REASONING|SYNTHETIC_PARTIAL_PLAN/
+          )
+        }
+        return new Response(
+          JSON.stringify({
+            id: `synthetic-${calls}`,
+            model: 'zai-glm-5-3-flash',
+            choices: [
+              {
+                index: 0,
+                finish_reason: main ? 'tool_calls' : finish,
+                message: main
+                  ? {
+                      role: 'assistant',
+                      content: '',
+                      tool_calls: [
+                        {
+                          id: `done-${calls}`,
+                          type: 'function',
+                          function: {
+                            name: 'task_done',
+                            arguments: JSON.stringify({ state: 'DONE' }),
+                          },
+                        },
+                      ],
+                    }
+                  : {
+                      role: 'assistant',
+                      content,
+                      reasoning_content: 'SYNTHETIC_UNFINISHED_REASONING',
+                    },
+              },
+            ],
+            usage: {
+              prompt_tokens: 100,
+              completion_tokens: main ? 20 : 16384,
+              total_tokens: main ? 120 : 16484,
+              prompt_tokens_details: { cached_tokens: 80 },
+            },
+          })
+        )
+      },
+    })
+    assert.equal(result.code, 0)
+    assert.equal(result.coverage.observed_status, 'complete')
+    assert.equal(result.coverage.selected, 1)
+    assert.equal(result.coverage.completed, 1)
+    assert.equal(result.coverage.failed, 0)
+    assert.deepEqual([calls, plans, reviews], [2, 1, 1])
+    const diagnostic = JSON.parse(
+      fs.readFileSync(
+        path.join(temp, 'draft-ai-review-adapter-diagnostics.jsonl')
+      )
+    )
+    assert.equal(diagnostic.upstream_attempts, 2)
+    assert.equal(diagnostic.responses, 2)
+    assert.equal(diagnostic.prompt_tokens, 200)
+    assert.equal(diagnostic.cached_prompt_tokens, 160)
+    assert.equal(diagnostic.completion_tokens, 16404)
+    assert.equal(diagnostic.plan_guidance.responses, 1)
+    assert.equal(diagnostic.plan_guidance[outcome], 1)
+    assert.match(logs.join(''), /OCR planning status=complete responses=1 /)
+    assert.doesNotMatch(logs.join(''), /SYNTHETIC_|plan_task-/)
+    const journal = fs
+      .readFileSync(
+        path.join(
+          temp,
+          'draft-ai-review-adapter-diagnostics.jsonl.events.jsonl'
+        ),
+        'utf8'
+      )
+      .trim()
+      .split('\n')
+      .map(JSON.parse)
+    const plan = journal.find(
+      (row) => row.event === 'response' && row.kind === 'auxiliary'
+    )
+    assert.equal(plan.finish_reason, finish)
+    assert.equal(plan.content_bytes, Buffer.byteLength(content))
+    assert.equal(
+      plan.reasoning_bytes,
+      Buffer.byteLength('SYNTHETIC_UNFINISHED_REASONING')
+    )
+  }
+})
+
 test('pinned OCR registers and invokes reviewer tools with trusted rules and complete accounting', {
   skip: !process.env.OCR_TEST_BINARY,
   timeout: 60000,
@@ -974,4 +1135,95 @@ test('pinned OCR registers and invokes reviewer tools with trusted rules and com
   }
   assert.ok(tools.tool_results.read_review_context.calls > 0)
   assert.ok(tools.tool_results.read_review_context.returned_bytes > 0)
+})
+
+test('paused drafts create an explicit unavailable outcome without credentials, provider calls or a child', async (t) => {
+  const temp = fs.mkdtempSync(path.join(os.tmpdir(), 'ocr-paused-draft-'))
+  t.after(() => fs.rmSync(temp, { recursive: true, force: true }))
+  const logs = []
+  const outcome = await runDraftReview({
+    repo: temp,
+    temp,
+    from: '1'.repeat(40),
+    head: '2'.repeat(40),
+    paused: true,
+    executable: '/must-not-execute',
+    fetchImpl: () => assert.fail('provider called while paused'),
+    write: (text) => logs.push(text),
+  })
+  assert.equal(outcome.code, 0)
+  assert.equal(fs.existsSync(outcome.resultPath), false)
+  const receipt = JSON.parse(
+    fs.readFileSync(path.join(temp, 'draft-ai-review-outcome.json'))
+  )
+  assert.equal(receipt.provider_availability.reason, 'provider_paused')
+  assert.notEqual(receipt.observed_status, 'complete')
+  assert.equal(receipt.completed, null)
+  assert.equal(
+    logs.some((text) => text.includes('status=unavailable')),
+    true
+  )
+})
+
+test('stock OCR stops upstream dispatch after 402 and preserves its incomplete result', {
+  skip: !process.env.OCR_TEST_BINARY,
+  timeout: 60000,
+}, async (t) => {
+  const temp = fs.mkdtempSync(path.join(os.tmpdir(), 'ocr-stock-payment-'))
+  t.after(() => fs.rmSync(temp, { recursive: true, force: true }))
+  const git = (...args) =>
+    execFileSync('git', args, {
+      cwd: temp,
+      encoding: 'utf8',
+      stdio: ['ignore', 'pipe', 'pipe'],
+    }).trim()
+  git('init', '-b', 'main')
+  git('config', 'user.name', 'Synthetic fixture')
+  git('config', 'user.email', 'fixture@example.invalid')
+  git('config', 'core.hooksPath', '/dev/null')
+  fs.writeFileSync(path.join(temp, 'source.js'), 'export const value = 1\n')
+  git('add', '.')
+  git('commit', '-m', 'test: synthetic base')
+  const from = git('rev-parse', 'HEAD')
+  fs.writeFileSync(path.join(temp, 'source.js'), 'export const value = 2\n')
+  git('add', '.')
+  git('commit', '-m', 'test: synthetic candidate')
+  const head = git('rev-parse', 'HEAD')
+  let calls = 0
+  const logs = []
+  const outcome = await runDraftReview({
+    repo: temp,
+    temp,
+    from,
+    head,
+    executable: process.env.OCR_TEST_BINARY,
+    apiKey: 'synthetic-provider',
+    fetchImpl: async () => {
+      calls++
+      return new Response('PRIVATE_PROVIDER_SENTINEL', { status: 402 })
+    },
+    write: (text) => logs.push(text),
+  })
+  assert.equal(calls, 1)
+  assert.equal(outcome.code, 0)
+  assert.equal(fs.existsSync(outcome.resultPath), true)
+  assert.equal(outcome.coverage.selected, 1)
+  assert.equal(outcome.coverage.failed, 1)
+  assert.equal(outcome.coverage.completed, 0)
+  const receipt = JSON.parse(
+    fs.readFileSync(path.join(temp, 'draft-ai-review-outcome.json'))
+  )
+  assert.equal(
+    receipt.provider_availability.reason,
+    'provider_payment_required'
+  )
+  assert.notEqual(receipt.observed_status, 'complete')
+  assert.doesNotMatch(logs.join(''), /PRIVATE_PROVIDER_SENTINEL/)
+  const adapter = JSON.parse(
+    fs.readFileSync(
+      path.join(temp, 'draft-ai-review-adapter-diagnostics.jsonl')
+    )
+  )
+  assert.equal(adapter.upstream_attempts, 1)
+  assert.equal(adapter.responses, 0)
 })

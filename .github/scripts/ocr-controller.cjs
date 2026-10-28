@@ -332,7 +332,10 @@ async function publishReview(
     repo,
     temp,
     head: context.head,
+    policy: context.policy,
   })
+  if (!fs.existsSync(path.join(temp, 'draft-ai-review-result.json')))
+    fail('invalid_result')
   const file = 'scripts/github-actions/post-review-comments.js'
   if (
     digest(readFile(publisherRoot, file)) !==
@@ -452,6 +455,7 @@ function checkCaller(workflow, options) {
       'mistral-api-key': '${{ secrets.MISTRAL_API_KEY }}',
       'context7-api-key': '${{ secrets.CONTEXT7_API_KEY }}',
       'github-token': '${{ github.token }}',
+      'provider-paused': '${{ vars.OCR_PROVIDER_PAUSED }}',
     })
   )
     fail('invalid_caller')

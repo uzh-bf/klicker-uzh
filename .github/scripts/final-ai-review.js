@@ -36,11 +36,11 @@ const {
 const FINAL_REVIEW_COMMAND = '/final-review'
 const FINAL_REVIEW_CONTEXT = 'final-ai-review'
 const {
-  MISTRAL_MODEL,
+  MISTRAL_FLASH_MODEL,
   MISTRAL_URL,
   callMistral,
 } = require('./ocr-mistral-adapter.cjs')
-const FINAL_REVIEW_MODEL = MISTRAL_MODEL
+const FINAL_REVIEW_MODEL = MISTRAL_FLASH_MODEL
 const FINAL_REVIEW_BOT = 'github-actions[bot]'
 const FINAL_REVIEW_SCHEMA = 'final-ai-review/v4'
 const FINAL_REVIEW_POLICY_SCHEMA = 'final-ai-policy/v1'
@@ -73,6 +73,11 @@ const FINAL_REVIEW_POLICY_PATHS = Object.freeze(
     '.github/scripts/native-stack.js',
     '.github/scripts/ocr-mistral-adapter.cjs',
     '.github/scripts/ocr-review-shared.cjs',
+    '.github/scripts/ocr-review-tools.cjs',
+    '.github/scripts/ocr-runtime-config.cjs',
+    '.github/open-code-review/repository.json',
+    '.github/open-code-review/runtime-manifest.json',
+    '.agents/skills/ocr-reviewer/SKILL.md',
     '.github/scripts/install-patched-ocr.cjs',
     '.github/open-code-review/ocr-compression.patch',
   ].sort()
@@ -629,6 +634,7 @@ async function verifyMistralToolAccess({
   const payload = await callMistral({
     apiKey: token,
     body: buildMistralToolCanaryRequest(),
+    provider: 'mistral-flash',
     diagnosticsStage: 'preflight',
     fetchImpl,
     timeoutMs: MISTRAL_TOOL_CANARY_TIMEOUT_MS,
@@ -2949,6 +2955,7 @@ function decideFinalStatus({
   publishOutcome,
   cleanReview = 'false',
   cleanEvidenceDigest = '',
+  providerUnavailable = '',
 }) {
   if (
     currentHead !== reviewedHead ||
@@ -2958,6 +2965,16 @@ function decideFinalStatus({
     return {
       state: 'error',
       description: 'PR range changed; run /final-review for the current range',
+    }
+  }
+  if (
+    ['provider_paused', 'provider_payment_required'].includes(
+      providerUnavailable
+    )
+  ) {
+    return {
+      state: 'failure',
+      description: `Final review unavailable: ${providerUnavailable}; review incomplete`,
     }
   }
   if (
@@ -3025,6 +3042,7 @@ async function finalizeFinalReview({
   cleanReview,
   policyDigest = '',
   trustedSha = '',
+  providerUnavailable = '',
 }) {
   const ownsLatestStatus = async () => {
     const latestStatus = await getLatestFinalReviewStatus(
@@ -3048,6 +3066,7 @@ async function finalizeFinalReview({
     })
     if (
       eligibility.eligible &&
+      !providerUnavailable &&
       reviewOutcome === 'success' &&
       cleanupOutcome === 'success' &&
       publishOutcome === 'success'
@@ -3096,6 +3115,7 @@ async function finalizeFinalReview({
   let cleanEvidenceMetadata = null
   if (
     eligible &&
+    !providerUnavailable &&
     reviewOutcome === 'success' &&
     cleanupOutcome === 'success' &&
     publishOutcome === 'success' &&
@@ -3155,6 +3175,7 @@ async function finalizeFinalReview({
     publishOutcome,
     cleanReview,
     cleanEvidenceDigest: cleanEvidenceMetadata?.evidence_digest ?? '',
+    providerUnavailable,
   })
   const latestStatus = await getLatestFinalReviewStatus(
     github,
@@ -3417,6 +3438,23 @@ function runCli() {
   if (command === 'configure-ocr') {
     writeOCRConfig()
     console.log('Ephemeral OCR configuration created')
+    return
+  }
+  if (command === 'initialize-advisor') {
+    require('./ocr-review-tools.cjs').createAdvisorAllowance({
+      statePath: process.env.OCR_ADVISOR_STATE_PATH,
+      head: process.env.HEAD_SHA,
+      policy: process.env.TRUSTED_SHA,
+      initialize: true,
+    })
+    fs.writeFileSync(
+      `${process.env.OCR_ADVISOR_DIAGNOSTICS_PATH}.expected.json`,
+      JSON.stringify({
+        schema: 'ocr-advisor-expectations/v1',
+        expected_receipts: 0,
+      }),
+      { mode: 0o600, flag: 'wx' }
+    )
     return
   }
   if (command === 'cleanup-ocr') {
