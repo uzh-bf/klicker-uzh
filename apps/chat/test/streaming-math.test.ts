@@ -133,6 +133,26 @@ describe('non-math dollar escaping', () => {
     )
   })
 
+  test.each([
+    [
+      'a formula',
+      'It costs $5 and $x$ is the unknown.',
+      'It costs \\$5 and $x$ is the unknown.',
+    ],
+    [
+      'a range and a formula',
+      'between $5-$10 and $x$',
+      'between \\$5-\\$10 and $x$',
+    ],
+    [
+      'a code span with a dollar',
+      'Price $5; use `$HOME` here',
+      'Price \\$5; use `$HOME` here',
+    ],
+  ])('escapes an amount before %s', (_, input, expected) => {
+    expect(escapeNonMathDollars(input)).toBe(expected)
+  })
+
   test('escapes amounts in prose after a fenced code block', () => {
     expect(escapeNonMathDollars('```\n$5\n```\nIt costs $5 and $10.')).toBe(
       '```\n$5\n```\nIt costs \\$5 and \\$10.'

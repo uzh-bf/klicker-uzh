@@ -302,8 +302,10 @@ const defaultComponents = memoizeMarkdownComponents({
 })
 
 export function normalizeCustomMathTags(input: string): string {
-  return escapeNonMathDollars(
-    input
+  // Escape currency before converting the explicit delimiters, so converted
+  // spans are always rendered as math.
+  return (
+    escapeNonMathDollars(input)
       // Keep display-math fences on their own lines so multiline formulas
       // cannot consume the Markdown that follows them.
       .replace(

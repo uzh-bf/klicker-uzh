@@ -246,16 +246,22 @@ function isSingleDollar(input: string, index: number) {
 }
 
 // Pandoc's rule: a closing `$` follows a non-space character and is not
-// followed by a digit, so "$90,000, leaving $10,000" is not a formula.
+// followed by a digit, so "$90,000, leaving $10,000" is not a formula. Only
+// the next single `$` can close, as in remark-math, and dollars inside code
+// spans are skipped because they never close math.
 function findInlineMathClose(input: string, opening: number) {
   for (let index = opening + 1; index < input.length; index++) {
     if (input.startsWith('\n\n', index)) return -1
-    if (
-      isSingleDollar(input, index) &&
-      !/\s/.test(input[index - 1] ?? '') &&
-      !/\d/.test(input[index + 1] ?? '')
-    ) {
-      return index
+    if (input[index] === '`') {
+      const codeLength = countRun(input, index, '`')
+      const closing = input.indexOf('`'.repeat(codeLength), index + codeLength)
+      index = (closing === -1 ? index : closing) + codeLength - 1
+      continue
+    }
+    if (isSingleDollar(input, index)) {
+      const closes =
+        !/\s/.test(input[index - 1] ?? '') && !/\d/.test(input[index + 1] ?? '')
+      return closes ? index : -1
     }
   }
 
