@@ -675,3 +675,24 @@ test('normalizes wildcard browser language headers to a valid locale before admi
     expect.anything()
   )
 })
+
+test('preserves credentialed CORS on the streaming response', async () => {
+  const dependencies = baseDependencies(async () => engineSse([]))
+  const origin = 'https://chat.synthetic.invalid'
+  const app = createChatApiApp(dependencies, {
+    browserAllowedOrigins: new Set([origin]),
+  })
+  const response = await app.request('/api/chatbots/chatbot-1/chat', {
+    method: 'POST',
+    headers: {
+      cookie: 'participant_token=test',
+      origin,
+      'content-type': 'application/json',
+    },
+    body: JSON.stringify(body),
+  })
+  expect(response.status).toBe(200)
+  expect(response.headers.get('access-control-allow-origin')).toBe(origin)
+  expect(response.headers.get('access-control-allow-credentials')).toBe('true')
+  await response.text()
+})

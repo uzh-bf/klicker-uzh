@@ -1120,13 +1120,10 @@ export function createChatApiApp(
         },
       })
 
-      return new Response(stream, {
-        status: 200,
-        headers: {
-          'content-type': 'text/event-stream; charset=utf-8',
-          'cache-control': 'no-cache, no-transform',
-          connection: 'keep-alive',
-        },
+      return c.body(stream, 200, {
+        'content-type': 'text/event-stream; charset=utf-8',
+        'cache-control': 'no-cache, no-transform',
+        connection: 'keep-alive',
       })
     }
   )
