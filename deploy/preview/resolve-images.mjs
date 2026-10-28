@@ -1205,6 +1205,11 @@ function createAdapter(options = {}) {
       const selected = request.targets.find((entry) => entry.target === target)
       buildConfiguration[target] = selected.configuration
     }
+    parseExceptionPolicy(
+      environment[SCAN_POLICY_NAME],
+      { sourceRevision: request.revision, platform: request.platform },
+      now()
+    )
     gh([
       'workflow',
       'run',
@@ -1291,6 +1296,11 @@ function createAdapter(options = {}) {
         await sourceCi(
           request.revision,
           staging.size > 0 ? STAGING_CONTEXTS : REQUIRED_CONTEXTS
+        )
+        parseExceptionPolicy(
+          environment[SCAN_POLICY_NAME],
+          { sourceRevision: request.revision, platform: request.platform },
+          now()
         )
         return {
           receipts: sortReceipts([...receipts, ...staging.values()]),

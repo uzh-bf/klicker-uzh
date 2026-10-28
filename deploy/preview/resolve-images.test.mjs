@@ -677,7 +677,7 @@ test('consumption recomputes finite exceptions from raw findings and requires op
       },
     })
     return adapterFor(fixture, {
-      now: () => clock,
+      now: typeof clock === 'function' ? clock : () => clock,
       environment: {
         [TOKEN_NAME]: token,
         [CONTROL_REF_NAME]: 'v3-ai',
@@ -723,6 +723,42 @@ test('consumption recomputes finite exceptions from raw findings and requires op
   await assert.rejects(
     resolve({ clock: Date.parse(policy.expiresAt) }),
     /expired/
+  )
+  let reads = 0
+  await assert.rejects(
+    resolve({
+      clock: () => (++reads < 3 ? now : Date.parse(policy.expiresAt)),
+    }),
+    /expired/
+  )
+  const dispatchFixture = transportFor()
+  reads = 0
+  await assert.rejects(
+    adapterFor(dispatchFixture, {
+      now: () => (++reads === 1 ? now : Date.parse(policy.expiresAt)),
+      environment: {
+        [TOKEN_NAME]: token,
+        [CONTROL_REF_NAME]: 'v3-ai',
+        DEVROUTER_PREVIEW_SCAN_POLICY_JSON: JSON.stringify(policy),
+      },
+    }).execute(
+      JSON.stringify(
+        request({
+          action: 'dispatch',
+          request: {
+            revision,
+            platform: 'linux/amd64',
+            targets: [{ target: 'azurite', configuration: {} }],
+          },
+          missing: ['azurite'],
+        })
+      )
+    ),
+    /expired/
+  )
+  assert.equal(
+    dispatchFixture.calls.some(({ args }) => args[0] === 'workflow'),
+    false
   )
 })
 

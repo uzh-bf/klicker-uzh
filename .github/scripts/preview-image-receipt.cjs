@@ -554,6 +554,10 @@ function finalizeReceipts(input) {
       left.target.localeCompare(right.target)
     ),
   }
+  parseExceptionPolicy(input.exceptionPolicy, {
+    sourceRevision,
+    platform: expectedPlatform,
+  })
   writeJson(path.join(input.outputRoot, 'preview-images.json'), envelope)
   return envelope
 }

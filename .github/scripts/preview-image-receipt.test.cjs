@@ -12,6 +12,8 @@ const {
   parseExceptionPolicy,
   evaluatePreviewScan,
   verifyScan,
+  buildMetadata,
+  finalizeReceipts,
 } = require('./preview-image-receipt.cjs')
 const { buildReceipt } = require('./image-scan-receipt.cjs')
 
@@ -230,6 +232,83 @@ test('scan annotation is required, recomputed at finalization and expires', (t) 
   annotated.previewAdmission.accepted[0].occurrences = 0
   fs.writeFileSync(scanPath, JSON.stringify(annotated))
   assert.throws(() => verifyScan(metadata, scanPath, identity))
+  fs.writeFileSync(
+    scanPath,
+    JSON.stringify({
+      ...scan,
+      previewAdmission: evaluatePreviewScan(
+        [{ Vulnerabilities: [FINDING] }],
+        'azurite',
+        PILOT
+      ).admission,
+    })
+  )
+  const buildDirectory = path.join(directory, 'builds')
+  const scanDirectory = path.join(directory, 'scans')
+  fs.mkdirSync(buildDirectory)
+  fs.mkdirSync(scanDirectory)
+  const build = buildMetadata({
+    id: 'azurite',
+    logicalTargets: ['azurite'],
+    platform: PILOT.platform,
+    sourceRevision: PILOT.sourceRevision,
+    controlRevision: CONTROL_REVISION,
+    image: IMAGE,
+    imageDigest: IMAGE_DIGEST,
+    inputFingerprint: FINGERPRINT,
+    configurationDigest: CONFIGURATION,
+  })
+  fs.writeFileSync(
+    path.join(buildDirectory, 'preview-build.json'),
+    JSON.stringify(build)
+  )
+  for (const [name, source] of [
+    ['image-scan-azurite-receipt.json', 'receipt.json'],
+    ['findings.json', 'findings.json'],
+    ['sbom.json', 'sbom.json'],
+  ])
+    fs.copyFileSync(
+      path.join(directory, source),
+      path.join(scanDirectory, name)
+    )
+  let clock = NOW
+  t.mock.method(Date, 'now', () => clock)
+  const copy = fs.cpSync
+  t.mock.method(fs, 'cpSync', (...args) => {
+    copy(...args)
+    clock = Date.parse(PILOT.expiresAt)
+  })
+  const outputRoot = path.join(directory, 'output')
+  assert.throws(
+    () =>
+      finalizeReceipts({
+        repository: REPOSITORY,
+        workflow: WORKFLOW,
+        controlRevision: CONTROL_REVISION,
+        sourceRevision: PILOT.sourceRevision,
+        runId: '101',
+        attempt: '2',
+        platform: PILOT.platform,
+        ciPassed: true,
+        admissionPassed: true,
+        targetMap: [
+          {
+            buildTarget: 'azurite',
+            logicalTarget: 'azurite',
+            configurationDigest: CONFIGURATION,
+          },
+        ],
+        buildArtifactsRoot: buildDirectory,
+        scanArtifactsRoot: scanDirectory,
+        outputRoot,
+        exceptionPolicy: PILOT,
+      }),
+    /expired/
+  )
+  assert.equal(
+    fs.existsSync(path.join(outputRoot, 'preview-images.json')),
+    false
+  )
 })
 
 function workflowRun(overrides = {}) {
