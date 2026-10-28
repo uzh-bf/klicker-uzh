@@ -37,8 +37,9 @@ and queue duration are unknown. Only the LTI image is activated in production.
 
 ### Baseline and ownership
 
-- Release target: `v3-ai`, integrated at `d786ffbe2b2e5750bdd5c5de7c9da871cbe80580`
-  after the approved amendment; the original baseline was `b92770a07d`.
+- Release target: `v3-ai`, integrated at `6243cf0d437fb94375a8e6536369e9f3fac096aa`
+  after its ancestry restoration. The approved amendment used `d786ffbe2b`;
+  the original baseline was `b92770a07d`.
 - Production manifest target: `v3`, inspected at
   `cac6bbf4dcd2caa973737abfe25d19d144069c42`; its approved CPU and legacy-LTI
   settings match the original `ea330a628b` baseline.
@@ -242,12 +243,15 @@ privately. Task-tracker comments and messages need separate explicit authority.
   release prerequisite. Configuration changes and the production procedure arm
   the full planning and final-review gates.
 - The approved three-file chart alignment is committed. Current `v3-ai` was
-  integrated once for freshness and to retain the newly approved receipt fields.
-  Source preparation is complete; hosted CI and independent final review remain.
+  integrated for freshness and to retain the newly approved receipt fields.
+  Source preparation and independent final review passed. The later ancestry
+  restoration leaves the LTI build inputs, migrations, and production effects
+  unchanged. Integrate that restored target so current-base CI validates the
+  merged release content; regenerate notes without another version bump.
 - Required plan critique: approved after one correction round; report in
   `project/_local/reviews/2026-10-28-lti-production-release-plan-critique.md`.
-  Final package review: pending after approval,
-  source completion, and applicable verification.
+  Final package review: passed for the complete release and prepared promotion;
+  reuse it for unchanged deployment content after the ancestry integration.
 - Approved amendment: `v3-ai` advanced to `d786ffbe2b` through
   [Writing Coach #5867](https://github.com/uzh-bf/klicker-uzh/pull/5867) and
   [response-example capture #5764](https://github.com/uzh-bf/klicker-uzh/pull/5764).
@@ -261,5 +265,5 @@ privately. Task-tracker comments and messages need separate explicit authority.
   from `v3`; image references, resources and all other manifests are unchanged.
 - Draft delivery: [release PR #6763](https://github.com/uzh-bf/klicker-uzh/pull/6763).
   No tag or production mutation has occurred. Next: hold the complete candidate
-  for independent final review and hosted checks, then execute the approved
+  for current-base hosted checks, then execute the approved
   readiness, review, merge and tag sequence when prerequisites pass.
