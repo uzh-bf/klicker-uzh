@@ -12,6 +12,9 @@ import type {
   ResponseCorrectness as PrismaResponseCorrectness,
 } from '@klicker-uzh/prisma/client'
 
+export const ASSESSMENT_EXPORT_DISCLOSURE_VERSION = 'v1'
+export const RESEARCH_EXPORT_DISCLOSURE_VERSION = 'v1'
+
 // ----- HATCHET (WORKER/TASK) TYPES -----
 export * from './assessmentReport.js'
 export * from './chatbotAuthoringRevision.js'
