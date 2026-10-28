@@ -10,6 +10,7 @@ import { fileURLToPath } from 'node:url'
 import {
   assertBudgetCanStart,
   budgetError,
+  EXTENDED_BUDGET_LIMITS,
   fingerprint,
   initializeBudget,
   readBudgetLedger,
@@ -71,12 +72,16 @@ export function validatePricingPolicy(policy) {
           'qualification',
           'upstreamOrigin',
           'models',
+          'fixedRoute',
         ].includes(key)
     )
   )
     throw budgetError('pricing_policy_invalid')
   try {
     const upstream = new URL(policy.upstreamOrigin)
+    const isLoopback = ['localhost', '127.0.0.1', '[::1]'].includes(
+      upstream.hostname
+    )
     if (
       upstream.href.replace(/\/$/, '') !== policy.upstreamOrigin ||
       upstream.username ||
@@ -84,12 +89,29 @@ export function validatePricingPolicy(policy) {
       upstream.search ||
       upstream.hash ||
       !['http:', 'https:'].includes(upstream.protocol) ||
-      (upstream.protocol === 'http:' &&
-        !['localhost', '127.0.0.1', '[::1]'].includes(upstream.hostname))
+      (upstream.protocol === 'http:' && !isLoopback)
     ) {
       throw new Error('invalid')
     }
+    const hostname = upstream.hostname.replace(/\.$/, '')
+    const isOpenRouter =
+      hostname === 'openrouter.ai' || hostname.endsWith('.openrouter.ai')
+    if (isOpenRouter && policy.fixedRoute === undefined) {
+      throw new Error('missing fixed route')
+    }
+    if (!isOpenRouter && !isLoopback && policy.fixedRoute !== undefined) {
+      throw new Error('unexpected fixed route')
+    }
   } catch {
+    throw budgetError('pricing_policy_invalid')
+  }
+  if (
+    policy.fixedRoute !== undefined &&
+    (!policy.fixedRoute ||
+      Object.keys(policy.fixedRoute).length !== 2 ||
+      policy.fixedRoute.type !== 'openrouter' ||
+      policy.fixedRoute.provider !== 'openai')
+  ) {
     throw budgetError('pricing_policy_invalid')
   }
   for (const [name, model] of Object.entries(policy.models)) {
@@ -142,6 +164,8 @@ export function requestReservation(policy, pathname, body) {
   if (!model) throw budgetError('provider_model_unqualified')
   if (body.n !== undefined && body.n !== 1)
     throw budgetError('provider_request_unbounded')
+  if (body.store !== undefined && body.store !== false)
+    throw budgetError('provider_request_unqualified')
   if (body.truncation !== undefined && body.truncation !== 'disabled')
     throw budgetError('provider_request_unbounded')
   if (
@@ -180,9 +204,18 @@ export function requestReservation(policy, pathname, body) {
   const input = pathname === '/v1/responses' ? body.input : body.messages
   if (!(typeof input === 'string' || Array.isArray(input)))
     throw budgetError('provider_input_invalid')
-  const checkModalities = (value, depth = 0) => {
+  const isToolSchemaPath = (path) =>
+    path[0] === 'tools' &&
+    /^(?:0|[1-9]\d*)$/.test(path[1]) &&
+    (pathname === '/v1/responses'
+      ? path.length === 3 && path[2] === 'parameters'
+      : path.length === 4 && path[2] === 'function' && path[3] === 'parameters')
+  const checkModalities = (value, depth = 0, path = []) => {
+    if (isToolSchemaPath(path)) return
     if (depth > 64) throw budgetError('provider_request_invalid')
     if (!value || typeof value !== 'object') return
+    if (Object.hasOwn(value, 'cache_control'))
+      throw budgetError('provider_request_unqualified')
     if (
       typeof value.type === 'string' &&
       /image|audio|video|file|web_search|computer|code_interpreter/.test(
@@ -191,9 +224,10 @@ export function requestReservation(policy, pathname, body) {
     ) {
       throw budgetError('provider_modality_unqualified')
     }
-    for (const entry of Object.values(value)) checkModalities(entry, depth + 1)
+    for (const [key, entry] of Object.entries(value))
+      checkModalities(entry, depth + 1, [...path, key])
   }
-  checkModalities(input)
+  checkModalities(body)
   const output =
     pathname === '/v1/responses'
       ? body.max_output_tokens
@@ -252,6 +286,7 @@ export async function createSpendGuard({
   upstreamKey,
   timeoutMs = 120_000,
 }) {
+  policy = structuredClone(policy)
   validatePricingPolicy(policy)
   const policyHash = fingerprint(policy)
   const ledger = await readBudgetLedger(budgetFile)
@@ -291,6 +326,21 @@ export async function createSpendGuard({
       // The guard consumes the proxy-only `cache` hint; the native upstream
       // does not support it, so forward the reserved request without it.
       delete body.cache
+      if (policy.fixedRoute) {
+        const model = policy.models[body.model]
+        body.service_tier = 'default'
+        body.provider = {
+          only: [policy.fixedRoute.provider],
+          order: [policy.fixedRoute.provider],
+          allow_fallbacks: false,
+          require_parameters: true,
+          max_price: {
+            prompt: String(model.inputMicroUsdPerMillion / 1_000_000),
+            completion: String(model.outputMicroUsdPerMillion / 1_000_000),
+            request: '0',
+          },
+        }
+      }
       timeout = setTimeout(() => controller.abort(), timeoutMs)
       response.once('close', () => {
         if (!response.writableEnded) controller.abort()
@@ -403,14 +453,35 @@ export async function verifyGuardQualification({
 }
 
 export async function main(env = process.env, argv = process.argv.slice(2)) {
+  let limits
+  if (argv.length && argv[0] !== '--initialize-budget')
+    throw budgetError('provider_guard_arguments_invalid')
+  if (argv.length > 1) {
+    const options = new Map([
+      [argv[1], argv[2]],
+      [argv[3], argv[4]],
+    ])
+    if (
+      argv.length !== 5 ||
+      options.get('--max-provider-micro-usd') !==
+        String(EXTENDED_BUDGET_LIMITS.maxProviderMicroUsd) ||
+      options.get('--max-submitted-turns') !==
+        String(EXTENDED_BUDGET_LIMITS.maxSubmittedTurns)
+    )
+      throw budgetError('provider_guard_arguments_invalid')
+    limits = EXTENDED_BUDGET_LIMITS
+  }
   const policy = validatePricingPolicy(
     JSON.parse(await readFile(env.KLICKER_EVAL_PRICING_FILE, 'utf8'))
   )
-  if (argv.length === 1 && argv[0] === '--initialize-budget') {
-    await initializeBudget(env.KLICKER_EVAL_BUDGET_FILE, fingerprint(policy))
+  if (argv[0] === '--initialize-budget') {
+    await initializeBudget(
+      env.KLICKER_EVAL_BUDGET_FILE,
+      fingerprint(policy),
+      limits
+    )
     return
   }
-  if (argv.length) throw budgetError('provider_guard_arguments_invalid')
   const ledger = await readBudgetLedger(env.KLICKER_EVAL_BUDGET_FILE)
   if (ledger.policyHash !== fingerprint(policy))
     throw budgetError('budget_policy_mismatch')

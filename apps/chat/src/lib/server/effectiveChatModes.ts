@@ -1,11 +1,23 @@
 import type { ChatbotCustomMode } from '@klicker-uzh/types'
 import {
+  type ChatModeMCPConfiguration,
+  getWritingCoachUnavailableReason,
+  isChatbotCustomModeKey,
   isChatbotStandardModeKey,
+  isSafeDocQueryBinding,
   normalizeChatbotCustomModeConfig,
   normalizeChatbotStandardModeConfig,
+  resolveEffectiveMCPConfigurations,
 } from '@klicker-uzh/util'
 import { DEFAULT_MODE_DESCRIPTIONS } from '@/src/lib/config/mode-descriptions'
+import type { ChatModeOption, ChatModeOptions } from '@/src/lib/config/modes'
 import { DEFAULT_PROMPT } from '@/src/lib/config/prompts'
+
+export {
+  type ChatModeMCPConfiguration,
+  isSafeDocQueryBinding,
+  resolveEffectiveMCPConfigurations,
+} from '@klicker-uzh/util'
 
 export interface EffectiveChatModeOptions {
   /**
@@ -21,197 +33,9 @@ export interface EffectiveChatModeOptions {
   allowUnapprovedModes?: boolean
 }
 
-export interface ChatModeMCPConfiguration {
-  allowedTools?: unknown
-  chatMode: string
-  isEnabled?: boolean
-  mcpServer?: { id?: string } | null
-  mcpServerId?: string
-  parameters?: unknown
-  priority?: number
-}
-
 function asRecord(value: unknown): Record<string, unknown> | null {
   if (!value || typeof value !== 'object' || Array.isArray(value)) return null
   return value as Record<string, unknown>
-}
-
-function isEnabled(config: ChatModeMCPConfiguration): boolean {
-  return config.isEnabled !== false
-}
-
-function isRequired(config: ChatModeMCPConfiguration): boolean {
-  return asRecord(config.parameters)?.required === true
-}
-
-function getServerId(config: ChatModeMCPConfiguration): string | null {
-  if (typeof config.mcpServerId === 'string') return config.mcpServerId
-  return typeof config.mcpServer?.id === 'string' ? config.mcpServer.id : null
-}
-
-function hasRequiredDocQueryAlias(config: ChatModeMCPConfiguration): boolean {
-  const parameters = asRecord(config.parameters)
-  const allowedTools = config.allowedTools
-
-  return !!(
-    parameters?.required === true &&
-    parameters.toolAlias === 'doc_query' &&
-    hasConcreteAllowedTools(allowedTools) &&
-    allowedTools.length === 1
-  )
-}
-
-function isConcreteToolName(tool: unknown): tool is string {
-  return typeof tool === 'string' && tool.length > 0 && !/[*?]/.test(tool)
-}
-
-function hasConcreteAllowedTools(
-  allowedTools: unknown
-): allowedTools is string[] {
-  return (
-    Array.isArray(allowedTools) &&
-    allowedTools.length > 0 &&
-    allowedTools.every(isConcreteToolName)
-  )
-}
-
-function hasExplicitDocQueryTool(config: ChatModeMCPConfiguration): boolean {
-  const allowedTools = config.allowedTools
-  return (
-    hasConcreteAllowedTools(allowedTools) && allowedTools.includes('doc_query')
-  )
-}
-
-function hasSafeQuizzerToolRestriction(
-  config: ChatModeMCPConfiguration
-): boolean {
-  return isRequired(config)
-    ? hasRequiredDocQueryAlias(config)
-    : hasConcreteAllowedTools(config.allowedTools)
-}
-
-export function isSafeDocQueryBinding(
-  config: ChatModeMCPConfiguration
-): boolean {
-  return isRequired(config)
-    ? hasRequiredDocQueryAlias(config)
-    : hasExplicitDocQueryTool(config)
-}
-
-type EffectiveMCPConfiguration<T extends ChatModeMCPConfiguration> = Omit<
-  T,
-  'allowedTools' | 'chatMode'
-> &
-  Pick<ChatModeMCPConfiguration, 'allowedTools' | 'chatMode'>
-
-function narrowInheritedBinding<T extends ChatModeMCPConfiguration>(
-  config: T,
-  targetMode: string
-): EffectiveMCPConfiguration<T> {
-  // Required alias bindings keep their sole raw tool name. Optional bindings
-  // expose only doc_query when inherited by another mode.
-  if (hasRequiredDocQueryAlias(config)) {
-    return { ...config, chatMode: targetMode }
-  }
-
-  return {
-    ...config,
-    allowedTools: ['doc_query'],
-    chatMode: targetMode,
-  }
-}
-
-function sortByPriority<T extends ChatModeMCPConfiguration>(configs: T[]): T[] {
-  return configs.sort((left, right) => {
-    return (left.priority ?? 0) - (right.priority ?? 0)
-  })
-}
-
-export function resolveEffectiveMCPConfigurations<
-  T extends ChatModeMCPConfiguration,
->(configs: readonly T[], selectedMode: string): EffectiveMCPConfiguration<T>[] {
-  if (selectedMode !== 'quizzer' && isChatbotStandardModeKey(selectedMode)) {
-    return sortByPriority(
-      configs.filter(
-        (config) => config.chatMode === selectedMode && isEnabled(config)
-      )
-    )
-  }
-
-  if (selectedMode !== 'quizzer') {
-    // Custom modes inherit only a required doc-query binding, re-tagged to
-    // the custom mode key so the scope assertion sees one binding per mode.
-    const exactByServer = new Map<string, T>()
-    const exactWithoutServer: T[] = []
-
-    for (const config of configs) {
-      if (config.chatMode !== selectedMode || !isEnabled(config)) continue
-      const serverId = getServerId(config)
-      if (serverId) {
-        exactByServer.set(serverId, config)
-      } else {
-        exactWithoutServer.push(config)
-      }
-    }
-
-    const resolved: EffectiveMCPConfiguration<T>[] = [
-      ...exactWithoutServer,
-      ...Array.from(exactByServer.values()),
-    ].map((config) => ({ ...config, chatMode: selectedMode }))
-
-    for (const sourceMode of ['tutor', 'explainer'] as const) {
-      for (const config of configs) {
-        if (
-          config.chatMode !== sourceMode ||
-          !isEnabled(config) ||
-          !isRequired(config) ||
-          !hasRequiredDocQueryAlias(config)
-        ) {
-          continue
-        }
-
-        const serverId = getServerId(config)
-        if (!serverId || exactByServer.has(serverId)) continue
-        exactByServer.set(serverId, config)
-        resolved.push(narrowInheritedBinding(config, selectedMode))
-      }
-    }
-
-    return sortByPriority(resolved)
-  }
-
-  const exactByServer = new Map<string, T>()
-  const exactWithoutServer: T[] = []
-
-  for (const config of configs) {
-    if (config.chatMode !== 'quizzer') continue
-    const serverId = getServerId(config)
-    if (serverId) exactByServer.set(serverId, config)
-    else if (isEnabled(config)) exactWithoutServer.push(config)
-  }
-
-  const resolved: EffectiveMCPConfiguration<T>[] = [
-    ...exactWithoutServer.filter(hasSafeQuizzerToolRestriction),
-    ...Array.from(exactByServer.values()).filter(
-      (config) => isEnabled(config) && hasSafeQuizzerToolRestriction(config)
-    ),
-  ]
-
-  for (const config of configs) {
-    if (
-      config.chatMode !== 'tutor' ||
-      !isEnabled(config) ||
-      !isSafeDocQueryBinding(config)
-    ) {
-      continue
-    }
-
-    const serverId = getServerId(config)
-    if (!serverId || exactByServer.has(serverId)) continue
-    resolved.push(narrowInheritedBinding(config, 'quizzer'))
-  }
-
-  return sortByPriority(resolved)
 }
 
 export function resolveRequestedChatMode(
@@ -245,6 +69,8 @@ function isStandardModeEnabled(
     systemPrompts
   )
 
+  if (mode === 'writing-coach') return normalizedConfig.writingCoachEnabled
+
   if (isChatbotStandardModeKey(mode)) {
     if (mode === 'tutor') return normalizedConfig.tutorEnabled
     if (mode === 'explainer') return normalizedConfig.explainerEnabled
@@ -258,7 +84,9 @@ function getModeDescription(systemPrompts: unknown, mode: string): string {
   const defaultDescription = (
     DEFAULT_MODE_DESCRIPTIONS as Record<string, string>
   )[mode]
-  if (typeof defaultDescription === 'string') return defaultDescription
+  if (typeof defaultDescription === 'string') {
+    return defaultDescription
+  }
 
   const modeConfig = asRecord(asRecord(systemPrompts)?.[mode])
   return typeof modeConfig?.description === 'string'
@@ -282,6 +110,41 @@ function getApprovedCustomModesByKey(
   return modesByKey
 }
 
+/**
+ * Whether a participant may receive the model's reasoning for a turn in
+ * `mode`, judged against the live approved config. Standard and legacy stored
+ * modes keep showing it. An approved custom mode shows it only after the
+ * lecturer opted in, and a custom key that is no longer approved stays
+ * hidden, because its stored reasoning can still echo the removed persona.
+ */
+export function isParticipantReasoningVisible(
+  customModeConfig: unknown,
+  mode: string | null | undefined
+): boolean {
+  if (!mode) return true
+
+  const customMode = getApprovedCustomModesByKey(customModeConfig).get(mode)
+  if (customMode) return customMode.showReasoning === true
+
+  return !isChatbotCustomModeKey(mode)
+}
+
+/**
+ * The per-turn settings of the custom mode `mode` in `customModeConfig`: its
+ * locked reply language and meeting clock. Standard modes and keys without a
+ * custom mode have neither.
+ */
+export function getCustomModeTurnSettings(
+  customModeConfig: unknown,
+  mode: string
+): Pick<ChatbotCustomMode, 'replyLanguage' | 'meetingClock'> {
+  const customMode = getApprovedCustomModesByKey(customModeConfig).get(mode)
+  return {
+    replyLanguage: customMode?.replyLanguage ?? null,
+    meetingClock: customMode?.meetingClock ?? null,
+  }
+}
+
 function getCustomModeDescription(mode: ChatbotCustomMode): string {
   // The switcher and the welcome card fall back to this string for a mode
   // without an i18n entry, so a mode without a description still needs label
@@ -289,13 +152,16 @@ function getCustomModeDescription(mode: ChatbotCustomMode): string {
   return mode.description ?? mode.name
 }
 
-function getCustomModeOption(mode: ChatbotCustomMode): {
-  description: string
-  name?: string
-} {
+function getCustomModeOption(mode: ChatbotCustomMode): ChatModeOption {
   return {
     description: getCustomModeDescription(mode),
     name: mode.name,
+    ...(mode.welcomeMessage ? { welcomeMessage: mode.welcomeMessage } : {}),
+    ...(mode.starterPrompts?.length
+      ? { starterPrompts: mode.starterPrompts }
+      : {}),
+    ...(mode.replyLanguage ? { replyLanguage: mode.replyLanguage } : {}),
+    ...(mode.meetingClock ? { meetingClock: mode.meetingClock } : {}),
   }
 }
 
@@ -304,7 +170,7 @@ export function resolveEffectiveChatModeOptions(
   mcpConfigurations: readonly ChatModeMCPConfiguration[],
   standardModeConfig: unknown = null,
   options: EffectiveChatModeOptions = {}
-): Record<string, { description: string; name?: string }> {
+): ChatModeOptions {
   const storedPrompts = asRecord(systemPrompts)
   const standardModes = Object.keys(DEFAULT_PROMPT)
   const customModesByKey = getApprovedCustomModesByKey(options.customModeConfig)
@@ -315,11 +181,18 @@ export function resolveEffectiveChatModeOptions(
   const candidates = Array.from(
     new Set([...standardModes, ...customModesByKey.keys(), ...storedModes])
   )
-  const modeOptions: Record<string, { description: string; name?: string }> = {}
+  const modeOptions: ChatModeOptions = {}
 
   for (const mode of candidates) {
     if (mode.trim().length === 0) continue
     if (!isStandardModeEnabled(standardModeConfig, systemPrompts, mode)) {
+      continue
+    }
+
+    if (
+      mode === 'writing-coach' &&
+      getWritingCoachUnavailableReason(mcpConfigurations)
+    ) {
       continue
     }
 

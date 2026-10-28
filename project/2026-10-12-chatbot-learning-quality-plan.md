@@ -1,5 +1,23 @@
 # Improve course-chatbot learning quality from anonymous usage evidence
 
+## Current continuation — 2026-10-17
+
+The citation-source correction in
+[PR 6483](https://github.com/uzh-bf/klicker-uzh/pull/6483) and the evaluator work
+in [PR 6489](https://github.com/uzh-bf/klicker-uzh/pull/6489) are merged.
+The original approval and progress entries below are historical; they do not
+describe current PR status or authorize a new experiment.
+
+Continue through the
+[quality roadmap](2026-10-01-tutor-prompt-quality-roadmap.md#current-evaluation-direction)
+and the [evaluation consolidation plan](2026-10-12-chatbot-evaluator-plan.md#evaluation-consolidation--2026-10-17).
+The immediate proposed work is offline corpus/receipt compatibility. Keep native
+application capture and provider admission stable, and place reusable assessment
+in the Python framework. Manual Explainer assessment is calibration; it does not
+establish an automated DeepEval regression gate or live course-quality acceptance.
+This update changes planning documents only. It performs no prompt apply, capture,
+judge request or deployment.
+
 ## Approval summary
 
 The Informatik und Wirtschaft HS26 chatbot is used for targeted explanations, course

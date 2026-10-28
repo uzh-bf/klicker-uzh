@@ -43,13 +43,13 @@ export function assertPlaywrightHostBoundary(options = {}) {
 
   if (isContainerRuntime({ ...options, env })) {
     throw new Error(
-      'Local Playwright execution is host-only. Exit the devcontainer and run `pnpm playwright:host -- <args>` from the host.'
+      'Local Playwright execution is host-only. Exit the devcontainer and run `node util/run-playwright-host.mjs <args>` from the host.'
     )
   }
 
   if (env[HOST_RUNNER_ENV] !== '1') {
     throw new Error(
-      'Local Playwright must use the host launcher so it targets the exact devrouter workspace. Run `pnpm playwright:host -- <args>`.'
+      'Local Playwright must use the host launcher so it targets the exact devrouter workspace. Run `node util/run-playwright-host.mjs <args>`.'
     )
   }
 }

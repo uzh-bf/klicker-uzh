@@ -43,7 +43,7 @@ stored rows with the chatbot's approved modes.
   configuration returns no scope instead of a scope violation, so an unbound
   mode serves without grounding rather than being hidden. Scope isolation is
   unchanged: enabled `KB` configurations must agree on one server ID and one
-  normalized UUID across the chatbot, and a selected mode that does resolve a
+  normalized KB ID set across the chatbot, and a selected mode that does resolve a
   binding must match it exactly.
 - Attaching a knowledge base upserts the required `doc_query` row for Tutor and
   Explainer only, and derives the eligible exact custom-mode keys from the
