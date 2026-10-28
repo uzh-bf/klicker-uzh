@@ -14,6 +14,7 @@ const {
   MISTRAL_URL,
   MISTRAL_MODEL,
   MISTRAL_FLASH_MODEL,
+  MISTRAL_DEEPSEEK_MODEL,
   normalizeMistralResponse,
   translateMistralRequest,
   createHistoryStore,
@@ -635,46 +636,72 @@ test('observed context results are isolated by conversation and deduplicate hist
   )
 })
 
-test('Mistral Flash fixes the draft model and max effort while preserving native tool requests', () => {
-  const body = {
-    model: MISTRAL_FLASH_MODEL,
-    messages: [{ role: 'user', content: 'synthetic' }],
-    reasoning_effort: 'max',
-    reasoning: { effort: 'none' },
-    provider: { only: ['untrusted'] },
-    max_completion_tokens: 16384,
-    prompt_cache_key: 'synthetic-session',
-    tools: [{ type: 'function', function: { name: 'task_done' } }],
-  }
-  const translated = translateMistralRequest(body, undefined, 'mistral-flash')
-  assert.equal(translated.model, MISTRAL_FLASH_MODEL)
-  assert.equal(translated.reasoning_effort, 'max')
-  assert.equal(translated.reasoning, undefined)
-  assert.equal(translated.provider, undefined)
-  assert.equal(translated.max_tokens, 16384)
-  assert.equal(translated.prompt_cache_key, 'synthetic-session')
-  assert.equal(translated.tool_choice, 'any')
-  for (const [change, code] of [
-    [{ reasoning_effort: 'high' }, 'invalid_request'],
-    [{ model: MISTRAL_MODEL }, 'model_mismatch'],
-  ])
+for (const [provider, model] of [
+  ['mistral-flash', MISTRAL_FLASH_MODEL],
+  ['mistral-deepseek', MISTRAL_DEEPSEEK_MODEL],
+])
+  test(`${provider} fixes the model and max effort while preserving native tool requests`, () => {
+    const body = {
+      model,
+      messages: [{ role: 'user', content: 'synthetic' }],
+      reasoning_effort: 'max',
+      reasoning: { effort: 'none' },
+      provider: { only: ['untrusted'] },
+      max_completion_tokens: 16384,
+      prompt_cache_key: 'synthetic-session',
+      tools: [{ type: 'function', function: { name: 'task_done' } }],
+    }
+    const translated = translateMistralRequest(body, undefined, provider)
+    assert.equal(translated.model, model)
+    assert.equal(translated.reasoning_effort, 'max')
+    assert.equal(translated.reasoning, undefined)
+    assert.equal(translated.provider, undefined)
+    assert.equal(translated.max_tokens, 16384)
+    assert.equal(translated.prompt_cache_key, 'synthetic-session')
+    assert.equal(translated.tool_choice, 'any')
+    for (const [change, code] of [
+      [{ reasoning_effort: 'high' }, 'invalid_request'],
+      [{ model: MISTRAL_MODEL }, 'model_mismatch'],
+    ])
+      assert.throws(
+        () =>
+          translateMistralRequest({ ...body, ...change }, undefined, provider),
+        { code }
+      )
     assert.throws(
       () =>
-        translateMistralRequest(
-          { ...body, ...change },
-          undefined,
-          'mistral-flash'
+        normalizeMistralResponse(
+          completion({ role: 'assistant', content: 'ok' }),
+          provider
         ),
-      { code }
+      { code: 'response_model_mismatch' }
     )
-  assert.throws(
-    () =>
-      normalizeMistralResponse(
-        completion({ role: 'assistant', content: 'ok' }),
-        'mistral-flash'
-      ),
-    { code: 'response_model_mismatch' }
-  )
+  })
+
+test('DeepSeek cost receipts use snapshot prices and reject GLM and unidentified receipts', () => {
+  const row = {
+    ...costReceipt(),
+    provider: 'mistral-deepseek',
+    model: MISTRAL_DEEPSEEK_MODEL,
+  }
+  const estimate = estimateCost(JSON.stringify(row), 'mistral-deepseek')
+  assert.ok(Math.abs(estimate.withCache - 0.20025) < 1e-10)
+  assert.ok(Math.abs(estimate.withoutCache - 0.42) < 1e-10)
+  assert.ok(Math.abs(estimate.savings - 0.21975) < 1e-10)
+  for (const bad of [
+    costReceipt(),
+    { ...row, model: MISTRAL_FLASH_MODEL },
+    { ...row, provider: 'mistral-flash' },
+  ]) {
+    const report = buildCostReport(
+      `${JSON.stringify(row)}\n${JSON.stringify({ ...bad, upstream_attempts: 2 })}`,
+      { adapter: 2 },
+      'mistral-deepseek'
+    )
+    assert.equal(report.estimate, null)
+    assert.equal(report.reportedResponseEstimate, null)
+    assert.ok(report.reasons.includes('provider_mismatch'))
+  }
 })
 
 test('Flash cost receipts use their model prices and reject mixed or unidentified models', () => {
@@ -1628,7 +1655,7 @@ test('manual workflows reconcile shared stage receipts against independent step 
     const preflight = steps.find((step) => step.includes('id: preflight'))
     const execution = steps.find((step) => step.includes(`id: ${stepId}`))
     const summary = steps.find((step) =>
-      step.includes('ocr-mistral-adapter.cjs summary')
+      step.includes('ocr-mistral-adapter.cjs final-summary')
     )
     const receiptPath = execution.match(/OCR_ADAPTER_DIAGNOSTICS_PATH: (.+)/)[1]
     assert.equal(
@@ -3173,7 +3200,7 @@ test('close bounds an uncooperative request and marks its accounting incomplete'
   }
 })
 
-for (const provider of ['mistral', 'mistral-flash'])
+for (const provider of ['mistral', 'mistral-flash', 'mistral-deepseek'])
   test(`${provider}: compression restores only exact reasoned turns, retaining native thinking and bounds`, () => {
     const history = createHistoryStore({ maxEntries: 3, provider })
     const prefix = [
@@ -3258,7 +3285,7 @@ for (const provider of ['mistral', 'mistral-flash'])
     assert.equal(misses.misses, 6)
   })
 
-for (const provider of ['mistral', 'mistral-flash'])
+for (const provider of ['mistral', 'mistral-flash', 'mistral-deepseek'])
   test(`${provider}: compressed tool replay without echoed reasoning requires the same conversation and unique native state`, () => {
     const history = createHistoryStore({ maxEntries: 3, provider })
     const prefix = [{ role: 'user', content: 'original' }]
@@ -3405,6 +3432,7 @@ test('request conversion and native replay work over the loopback listener', asy
 for (const [provider, model] of [
   ['mistral', MISTRAL_MODEL],
   ['mistral-flash', MISTRAL_FLASH_MODEL],
+  ['mistral-deepseek', MISTRAL_DEEPSEEK_MODEL],
 ])
   test(`${provider}: native memory keeps concurrent groups with reused tool-call ids apart`, async () => {
     const make = (marker) => ({
@@ -5098,6 +5126,7 @@ test('run strips both upstream keys and injects only the selected loopback model
   for (const [provider, model] of [
     [undefined, MISTRAL_MODEL],
     ['mistral-flash', MISTRAL_FLASH_MODEL],
+    ['mistral-deepseek', MISTRAL_DEEPSEEK_MODEL],
     ['openrouter', 'deepseek/deepseek-v4.1-flash-1017'],
   ]) {
     const result = await runCli(
@@ -5652,5 +5681,309 @@ test('run with live progress terminates its listener on SIGTERM', async () => {
     child.kill('SIGKILL')
     await exited
     fs.rmSync(directory, { recursive: true, force: true })
+  }
+})
+
+test('direct DeepSeek calls retain native tool reasoning, usage identity and the shared cancellation signal', async () => {
+  const history = createHistoryStore({ provider: 'mistral-deepseek' })
+  const receipts = []
+  const messages = [{ role: 'user', content: 'synthetic bounded question' }]
+  let calls = 0
+  const fetchImpl = async (_url, options) => {
+    const body = JSON.parse(options.body)
+    calls += 1
+    assert.equal(body.model, MISTRAL_DEEPSEEK_MODEL)
+    assert.equal(body.reasoning_effort, 'max')
+    if (calls === 2)
+      assert.equal(
+        body.messages[1].reasoning_content,
+        'synthetic native reasoning'
+      )
+    return new Response(
+      JSON.stringify({
+        model: MISTRAL_DEEPSEEK_MODEL,
+        choices: [
+          {
+            finish_reason: calls === 1 ? 'tool_calls' : 'stop',
+            message:
+              calls === 1
+                ? {
+                    role: 'assistant',
+                    content: '',
+                    reasoning_content: 'synthetic native reasoning',
+                    tool_calls: [
+                      {
+                        id: 'call_1',
+                        type: 'function',
+                        function: {
+                          name: 'ask_review_advisor',
+                          arguments: '{}',
+                        },
+                      },
+                    ],
+                  }
+                : { role: 'assistant', content: '{}' },
+          },
+        ],
+        usage: {
+          prompt_tokens: 100,
+          completion_tokens: 20,
+          total_tokens: 120,
+          prompt_tokens_details: { cached_tokens: 80 },
+        },
+      })
+    )
+  }
+  const request = (body) =>
+    callMistral({
+      apiKey: 'synthetic',
+      provider: 'mistral-deepseek',
+      body,
+      history,
+      fetchImpl,
+      diagnosticsStage: 'topology',
+      diagnosticsSink: (row) => receipts.push(row),
+    })
+  const first = await request({ messages })
+  messages.push(first.choices[0].message, {
+    role: 'tool',
+    tool_call_id: 'call_1',
+    content: 'synthetic advice',
+  })
+  await request({ messages })
+  assert.equal(receipts.length, 2)
+  assert.ok(
+    receipts.every(
+      (row) =>
+        row.provider === 'mistral-deepseek' &&
+        row.model === MISTRAL_DEEPSEEK_MODEL &&
+        row.completion_tokens === 20
+    )
+  )
+  const controller = new AbortController()
+  const pending = callMistral({
+    apiKey: 'synthetic',
+    provider: 'mistral-deepseek',
+    body: { messages: [{ role: 'user', content: 'synthetic' }] },
+    signal: controller.signal,
+    fetchImpl: async (_url, init) =>
+      new Promise((_resolve, reject) =>
+        init.signal.addEventListener(
+          'abort',
+          () => reject(new Error('PRIVATE_SENTINEL')),
+          { once: true }
+        )
+      ),
+  })
+  controller.abort()
+  await assert.rejects(
+    pending,
+    (error) =>
+      error.code === 'upstream_error' &&
+      !error.message.includes('PRIVATE_SENTINEL')
+  )
+})
+
+test('final summary prices DeepSeek and advisor lifetimes once and preserves missing advisor receipts as unknown', async (t) => {
+  const directory = fs.mkdtempSync(path.join(os.tmpdir(), 'ocr-final-cost-'))
+  t.after(() => fs.rmSync(directory, { recursive: true, force: true }))
+  const mainPath = path.join(directory, 'main.jsonl')
+  const advisorPath = path.join(directory, 'advisor.jsonl')
+  const summary = path.join(directory, 'summary.md')
+  fs.writeFileSync(
+    mainPath,
+    JSON.stringify(
+      costReceipt({
+        provider: 'mistral-deepseek',
+        model: MISTRAL_DEEPSEEK_MODEL,
+      })
+    )
+  )
+  fs.writeFileSync(
+    advisorPath,
+    JSON.stringify(costReceipt({ provider: 'mistral', model: MISTRAL_MODEL }))
+  )
+  fs.writeFileSync(
+    `${advisorPath}.expected.json`,
+    JSON.stringify({
+      schema: 'ocr-advisor-expectations/v1',
+      expected_receipts: 1,
+    })
+  )
+  const run = () =>
+    runCli(['final-summary', mainPath, 'adapter=1'], {
+      OCR_ADAPTER_PROVIDER: 'mistral-deepseek',
+      OCR_ADVISOR_DIAGNOSTICS_PATH: advisorPath,
+      GITHUB_STEP_SUMMARY: summary,
+    })
+  const complete = await run()
+  assert.equal(complete.code, 0)
+  assert.match(complete.stdout, /scope=deepseek_main status=complete/)
+  const cachedRate = /\$([0-9.]+) cached input/.exec(complete.stdout)
+  assert.equal(Number(cachedRate?.[1]), 0.007)
+  assert.match(complete.stdout, /scope=glm_advisor status=complete/)
+  assert.match(complete.stdout, /scope=final_and_advisor status=complete/)
+  const sum =
+    estimateCost(fs.readFileSync(mainPath, 'utf8'), 'mistral-deepseek')
+      .withCache +
+    estimateCost(fs.readFileSync(advisorPath, 'utf8'), 'mistral').withCache
+  assert.ok(
+    complete.stdout.includes(
+      `scope=final_and_advisor status=complete estimated_with_cache_usd=${sum.toFixed(4)}`
+    )
+  )
+  fs.writeFileSync(
+    `${advisorPath}.expected.json`,
+    JSON.stringify({
+      schema: 'ocr-advisor-expectations/v1',
+      expected_receipts: 0,
+    })
+  )
+  const unexpected = await run()
+  assert.match(unexpected.stdout, /scope=glm_advisor status=unavailable/)
+  fs.writeFileSync(
+    `${advisorPath}.expected.json`,
+    JSON.stringify({
+      schema: 'ocr-advisor-expectations/v1',
+      expected_receipts: 1,
+    })
+  )
+  fs.unlinkSync(advisorPath)
+  const partial = await run()
+  assert.match(partial.stdout, /scope=glm_advisor status=unavailable/)
+  assert.match(partial.stdout, /scope=final_and_advisor status=unavailable/)
+})
+
+test('final wrapper attaches focused tools and trusted guidance while hiding upstream credentials and restoring config', async (t) => {
+  const { execFileSync } = require('node:child_process')
+  const directory = fs.mkdtempSync(path.join(os.tmpdir(), 'ocr-final-wrapper-'))
+  t.after(() => fs.rmSync(directory, { recursive: true, force: true }))
+  const git = (...args) =>
+    execFileSync('git', args, { cwd: directory, encoding: 'utf8' }).trim()
+  git('init', '-b', 'main')
+  git('config', 'user.name', 'Synthetic fixture')
+  git('config', 'user.email', 'fixture@example.invalid')
+  git('config', 'core.hooksPath', '/dev/null')
+  fs.mkdirSync(path.join(directory, '.agents/skills/ocr-reviewer'), {
+    recursive: true,
+  })
+  fs.mkdirSync(path.join(directory, '.github/open-code-review'), {
+    recursive: true,
+  })
+  fs.writeFileSync(
+    path.join(directory, '.agents/skills/ocr-reviewer/SKILL.md'),
+    'synthetic trusted procedure'
+  )
+  const rule = '.github/open-code-review/final-review-rules.json'
+  fs.writeFileSync(
+    path.join(directory, rule),
+    JSON.stringify({
+      rules: [
+        {
+          path: '**/*',
+          rule: 'synthetic final policy',
+          merge_system_rule: true,
+        },
+      ],
+      exclude: ['**/*.md'],
+    })
+  )
+  git('add', '.')
+  git('commit', '-m', 'chore: synthetic policy')
+  const head = git('rev-parse', 'HEAD')
+  const config = path.join(directory, 'config.json')
+  const original = JSON.stringify({
+    llm: { model: MISTRAL_DEEPSEEK_MODEL, protocol: 'openai' },
+  })
+  fs.writeFileSync(config, original, { mode: 0o600 })
+  const output = path.join(directory, 'child.json')
+  const previous = Object.fromEntries(
+    [
+      'MISTRAL_API_KEY',
+      'OPENROUTER_API_KEY',
+      'OCR_ADAPTER_PROVIDER',
+      'OCR_ADVISOR_STATE_PATH',
+      'OCR_ADVISOR_DIAGNOSTICS_PATH',
+      'HEAD_SHA',
+      'TRUSTED_SHA',
+      'RUNNER_TEMP',
+    ].map((name) => [name, process.env[name]])
+  )
+  const cwd = process.cwd()
+  let closed = 0
+  try {
+    process.chdir(directory)
+    Object.assign(process.env, {
+      MISTRAL_API_KEY: 'UPSTREAM_PRIVATE_SENTINEL',
+      OPENROUTER_API_KEY: 'ROUTER_PRIVATE_SENTINEL',
+      OCR_ADAPTER_PROVIDER: 'mistral-deepseek',
+      OCR_ADVISOR_STATE_PATH: path.join(directory, 'state.json'),
+      OCR_ADVISOR_DIAGNOSTICS_PATH: path.join(directory, 'advisor.jsonl'),
+      HEAD_SHA: head,
+      TRUSTED_SHA: head,
+      RUNNER_TEMP: directory,
+    })
+    const transport = await loadLoopbackTransport(t, (_req, res) => {
+      res.writeHead(500)
+      res.end()
+    })
+    const program = `const fs=require('node:fs');const args=process.argv;const rule=args[args.indexOf('--rule')+1];fs.writeFileSync(${JSON.stringify(output)},JSON.stringify({config:JSON.parse(fs.readFileSync(${JSON.stringify(config)},'utf8')),rules:JSON.parse(fs.readFileSync(rule,'utf8')),key:process.env.MISTRAL_API_KEY??null,router:process.env.OPENROUTER_API_KEY??null,state:process.env.OCR_ADVISOR_STATE_PATH??null,token:process.env.OCR_REVIEW_TOOLS_TOKEN}))`
+    const result = await transport.__commandRun(
+      [
+        '--ocr-config',
+        config,
+        '--',
+        process.execPath,
+        '-e',
+        program,
+        '--',
+        '--to',
+        head,
+        '--rule',
+        rule,
+      ],
+      {
+        startFocusedAdvisor: async (options) => {
+          assert.equal(options.apiKey, 'UPSTREAM_PRIVATE_SENTINEL')
+          assert.equal(options.head, head)
+          assert.equal(options.policy, head)
+          return {
+            token: 'local-capability',
+            mcpConfig: {
+              type: 'remote',
+              url: 'http://127.0.0.1:1234/mcp',
+              tools: ['ask_review_advisor', 'read_review_context'],
+            },
+            close: async () => {
+              closed++
+            },
+          }
+        },
+      }
+    )
+    assert.equal(result, 0)
+    const seen = JSON.parse(fs.readFileSync(output, 'utf8'))
+    assert.equal(seen.key, null)
+    assert.equal(seen.router, null)
+    assert.equal(seen.state, null)
+    assert.equal(seen.token, 'local-capability')
+    assert.deepEqual(seen.config.mcp_servers.klicker_review.tools, [
+      'ask_review_advisor',
+      'read_review_context',
+    ])
+    assert.equal(seen.rules.rules.length, 2)
+    assert.deepEqual(seen.rules.rules[0], {
+      path: '**/*',
+      rule: 'synthetic final policy\n\nsynthetic trusted procedure',
+      merge_system_rule: true,
+    })
+    assert.deepEqual(seen.rules.exclude, ['**/*.md'])
+    assert.equal(fs.readFileSync(config, 'utf8'), original)
+    assert.ok(closed > 0)
+  } finally {
+    process.chdir(cwd)
+    for (const [name, value] of Object.entries(previous))
+      if (value === undefined) delete process.env[name]
+      else process.env[name] = value
   }
 })

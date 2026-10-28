@@ -300,6 +300,11 @@ jobs:
           push: ${{ github.event_name != 'pull_request' }}
           tags: ${{ steps.meta.outputs.tags }}
           platforms: linux/arm64
+          build-args: |
+            NEXT_PUBLIC_ENV=staging
+            NEXT_PUBLIC_GROWTHBOOK_API_HOST=${{ vars.NEXT_PUBLIC_GROWTHBOOK_API_HOST_STG }}
+            NEXT_PUBLIC_GROWTHBOOK_CLIENT_KEY=${{ vars.NEXT_PUBLIC_GROWTHBOOK_CLIENT_KEY_STG }}
+            NEXT_PUBLIC_ELEARNING_EMBED_ORIGINS=${{ vars.NEXT_PUBLIC_ELEARNING_EMBED_ORIGINS_STG }}
           cache-from: ${{ github.event_name == 'push' && format('type=registry,ref=ghcr.io/{0}/{1}-arm:buildcache-trusted-{2}', github.repository, matrix.image, needs.plan.outputs.cache-epoch) || github.event_name == 'pull_request' && github.event.pull_request.head.repo.full_name == github.repository && format('type=registry,ref=ghcr.io/{0}/{1}-arm:buildcache', github.repository, matrix.image) || '' }}
           cache-to: ${{ github.event_name == 'push' && format('type=registry,ref=ghcr.io/{0}/{1}-arm:buildcache-trusted-{2},mode=max', github.repository, matrix.image, needs.plan.outputs.cache-epoch) || github.event_name == 'pull_request' && github.event.pull_request.head.repo.full_name == github.repository && format('type=registry,ref=ghcr.io/{0}/{1}-arm:buildcache,mode=max', github.repository, matrix.image) || '' }}
           labels: ${{ steps.meta.outputs.labels }}
@@ -550,7 +555,7 @@ jobs:
           image-ref: ${{ format('{0}/{1}/{2}-arm@{3}', 'ghcr.io', github.repository, matrix.image, env.DIGEST) }}
           format: json
           severity: HIGH,CRITICAL
-          exit-code: '0'
+          exit-code: "0"
           output: image-scan-${{ matrix.jobBase }}-arm-findings.json
           timeout: 10m
       - name: Generate a CycloneDX SBOM
@@ -560,7 +565,7 @@ jobs:
           scan-type: image
           image-ref: ${{ format('{0}/{1}/{2}-arm@{3}', 'ghcr.io', github.repository, matrix.image, env.DIGEST) }}
           format: cyclonedx
-          exit-code: '0'
+          exit-code: "0"
           output: image-scan-${{ matrix.jobBase }}-arm-sbom.cdx.json
           timeout: 10m
       - name: Write the scan receipt
@@ -622,7 +627,7 @@ jobs:
           PLAN_SELECTED: ${{ needs.plan.outputs.selected }}
           PLAN_STATE: ${{ needs.plan.outputs.state }}
           PLAN_UNAVAILABLE: ${{ needs.plan.outputs.unavailable }}
-          PRIORITY_JOB_NAMESPACE: 'priority-execution / '
+          PRIORITY_JOB_NAMESPACE: "priority-execution / "
         with:
           script: |
             const {

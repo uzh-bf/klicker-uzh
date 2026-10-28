@@ -107,24 +107,25 @@ jobs:
           PR_HEAD_SHA: ${{ github.event.pull_request.head.sha }}
         run: |
           base=$(git merge-base "$PR_BASE_SHA" "$PR_HEAD_SHA")
-          bash util/check-git-identity.sh range "${base}..${PR_HEAD_SHA}"
+          bash util/check-git-identity.sh range "${base}..${PR_HEAD_SHA}" \
+            --published-glob 'refs/remotes/origin/v3*'
       - name: Test Git identity guard
         run: node --test ./util/check-git-identity.test.mjs
       - name: Set up uv
         uses: astral-sh/setup-uv@v5
         with:
-          python-version: '3.12'
+          python-version: "3.12"
           enable-cache: false
       - name: Test Playwright timing aggregation
         run: uv run --no-project --python 3.12 python -m unittest discover -s .github/scripts -p test_update_playwright_timings.py
       - name: Set up pnpm
         uses: pnpm/action-setup@v4
         with:
-          version: 11.5.0
+          version: 12.11.2
       - name: Set up Node.js with pnpm cache
         uses: ./.github/actions/setup-node-pnpm
         with:
-          cache-write: 'true'
+          cache-write: "true"
       - name: Install dependencies
         run: pnpm install --frozen-lockfile
       - name: Test evaluation launcher without private submodule access
@@ -139,8 +140,14 @@ jobs:
           uv run --no-project --python 3.12 --with pytest==9.1.1 python -m pytest -q -p no:cacheprovider evaluation/tests/test_budget_admission.py
       - name: Install Devrouter profile planner
         run: bash .github/scripts/install-devrouter.sh
-      - name: Check hosted pnpm cache policy
-        run: node --test ./.github/scripts/hosted-pnpm-cache.test.cjs
+      - name: Check pnpm toolchain and hosted cache policy
+        run: |
+          node --test --test-concurrency=1 \
+            ./.github/scripts/pnpm-toolchain-pins.test.cjs \
+            ./.github/scripts/hosted-pnpm-cache.test.cjs \
+            ./.agents/skills/klicker-dependency-overrides/scripts/lockfile-readers.test.mjs
+      - name: Check staging release contracts
+        run: node --test .github/scripts/stg-release-ref-promotion.test.cjs
       - name: Check OCR runtime action pin
         id: ocr_runtime_pin
         timeout-minutes: 3
@@ -241,7 +248,8 @@ jobs:
             .github/scripts/image-input-fingerprint.test.cjs \
             .github/scripts/release-image-manifest.test.cjs \
             .github/scripts/deploy-parity.test.cjs \
-            .github/actions/priority-ci-route/route.test.cjs
+            .github/actions/priority-ci-route/route.test.cjs \
+            .github/scripts/doc-query-token-ownership.test.cjs
       - name: Select shared OCR runtime qualification
         id: ocr_shared
         uses: ./.github/actions/changed-paths
@@ -251,9 +259,9 @@ jobs:
         if: steps.ocr_shared.outputs.should_run != 'false'
         timeout-minutes: 25
         env:
-          OCR_NO_UPDATE: '1'
-          TURBO_TOKEN: ''
-          TURBO_TEAM: ''
+          OCR_NO_UPDATE: "1"
+          TURBO_TOKEN: ""
+          TURBO_TEAM: ""
         run: |
           set -euo pipefail
           ocr_package="$(node -p "require('./.github/scripts/ocr-controller.cjs').verifyRelease().manifest.draft.package")"
@@ -271,7 +279,7 @@ jobs:
         id: ocr_engine
         uses: ./.github/actions/changed-paths
         with:
-          pattern: ^\.github/(scripts/install-patched-ocr\.cjs|open-code-review/ocr-compression\.patch|workflows/check(-ocr-final-review)?\.yml)$
+          pattern: ^\.github/(scripts/(install-patched-ocr\.cjs|ocr-self-update-guard\.test\.cjs)|open-code-review/ocr-compression\.patch|workflows/check(-ocr-final-review)?\.yml)$
       - name: Set up pinned OCR build toolchain
         if: steps.ocr_engine.outputs.should_run != 'false'
         uses: actions/setup-go@924ae3a1cded613372ab5595356fb5720e22ba16
@@ -300,6 +308,16 @@ jobs:
           else
             node ./.github/scripts/deploy-parity.cjs --other v3-ai
           fi
+      - name: Check Doc Query scope-token ownership on v3-ai
+        if: (github.event_name == 'push' && github.ref_name == 'v3-ai') || (github.event_name == 'pull_request' && github.base_ref == 'v3-ai')
+        env:
+          PR_BASE_SHA: ${{ github.event.pull_request.base.sha }}
+        run: |
+          if [ -n "$PR_BASE_SHA" ]; then
+            node ./.github/scripts/doc-query-token-ownership.cjs --base "$PR_BASE_SHA"
+          else
+            node ./.github/scripts/doc-query-token-ownership.cjs
+          fi
       - name: Check Playwright CI contracts
         run: |
           bash util/reconcile-public-pr-arm64-runner-group.test.sh
@@ -309,6 +327,8 @@ jobs:
           node --test .github/scripts/playwright-resource-sampler.test.cjs
       - name: Check Playwright host launcher
         run: pnpm run check:playwright-host
+      - name: Check local KB lifecycle contracts
+        run: pnpm run check:local-kb
       - name: Check Next.js development configuration and readiness
         run: |
           node --test ./util/next-pages-development-config.test.mjs
@@ -333,10 +353,14 @@ jobs:
       - name: Check Prisma schema sync drift
         if: github.event_name != 'pull_request' || steps.classify.outputs.codebase_check != 'bounded'
         run: pnpm run check:prisma-sync
+      - name: Check replica ownership contract
+        run: pnpm run check:klicker-replica-ownership
       - name: Check AGENTS.md command smoke
         run: pnpm run check:agents-md
       - name: Check removed engineering-wiki paths
         run: pnpm run check:removed-doc-artifacts
+      - name: Check KB ingestion staging render
+        run: pnpm run check:kb-ingestion-stg
       - name: Build packages for typecheck (turbo)
         if: github.event_name != 'pull_request' || steps.classify.outputs.codebase_check != 'bounded'
         run: |
