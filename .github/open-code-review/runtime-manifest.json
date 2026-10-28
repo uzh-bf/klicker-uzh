@@ -27,7 +27,7 @@
   "assets": {
     ".github/actions/ocr-review/action.yml": "ab884ba5fffe7f8d6caba4c8ea999f9a5ab43d8d903047c8fc8ac95a3625d1ba",
     ".github/scripts/ocr-controller.cjs": "9fabb089393c0557019fa94b19c7953b5f09f4c6892f233a821093bf6b1c0a1e",
-    ".github/scripts/ocr-draft-review.cjs": "9a99e52791fef13803e287acf6e13b11adae78a520db8a086788707dd2958c8b",
+    ".github/scripts/ocr-draft-review.cjs": "06432cbdf12efdcddd09c14795dbf0830517ef4c493feeee770a130a89e9fc48",
     ".github/scripts/ocr-mistral-adapter.cjs": "6d58d7b0a42d241023d4563e0b0266a5dcbeb898842253b57cb1951d03dcebda",
     ".github/scripts/ocr-review-tools.cjs": "79816630ece8a69809edc7f9dd856cefeb8bfa6b89f59d586d26a95fcbc9e840",
     ".github/scripts/ocr-review-shared.cjs": "c12e084ae9bd5459791e8cd78e7c11b60eb494e8c6bb5804e7d223e5228c9676",

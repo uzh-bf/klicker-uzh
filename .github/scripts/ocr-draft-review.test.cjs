@@ -429,6 +429,67 @@ test('publication binds coverage to the exact head and retains complete results 
   }
 })
 
+test('publication accepts a skipped review with empty coverage but still refuses failed or nonempty skips', () => {
+  const directory = fs.mkdtempSync(
+    path.join(os.tmpdir(), 'ocr-publication-skipped-')
+  )
+  const head = '1'.repeat(40)
+  const run = () =>
+    spawnSync(process.execPath, [RUNNER, 'validate'], {
+      env: { RUNNER_TEMP: directory, HEAD_SHA: head },
+      encoding: 'utf8',
+    })
+  const file = path.join(directory, 'draft-ai-review-result.json')
+  const publication = path.join(directory, 'draft-ai-review-publication.json')
+  const skipped = () => ({
+    status: 'skipped',
+    message: 'Review skipped: no items were selected.',
+    comments: [],
+    manifest: {
+      terminal_state: 'skipped',
+      input: { resolved_head: head },
+      coverage: {
+        selected: [],
+        completed: [],
+        failed: [],
+        reused: [],
+        waived: [],
+      },
+    },
+  })
+  try {
+    fs.writeFileSync(file, JSON.stringify(skipped()))
+    assert.equal(run().status, 0)
+    assert.deepEqual(JSON.parse(fs.readFileSync(publication)), skipped())
+    for (const change of [
+      (result) => {
+        result.manifest.run_failure = { classification: 'provider' }
+      },
+      (result) => {
+        result.manifest.coverage.selected = ['a']
+      },
+      (result) => {
+        result.manifest.coverage.waived = null
+      },
+      (result) => {
+        result.manifest.terminal_state = 'complete'
+      },
+      (result) => {
+        result.manifest.input.resolved_head = '2'.repeat(40)
+      },
+    ]) {
+      fs.rmSync(publication, { force: true })
+      const result = skipped()
+      change(result)
+      fs.writeFileSync(file, JSON.stringify(result))
+      assert.equal(run().status, 1)
+      assert.equal(fs.existsSync(publication), false)
+    }
+  } finally {
+    fs.rmSync(directory, { recursive: true, force: true })
+  }
+})
+
 test('draft runner streams only bounded progress, retains private results, and isolates its child', async () => {
   const directory = fs.mkdtempSync(path.join(os.tmpdir(), 'ocr-draft-test-'))
   const executable = path.join(directory, 'ocr.cjs')
