@@ -300,6 +300,7 @@ test('the consolidated workflow declares the matrix the plan emits', () => {
   }
   // The terminal job keeps the exact required context name.
   assert.ok(workflow.jobs['build-images-status'])
+  assert.equal(workflow.jobs['preview-build'].permissions.actions, 'read')
   assert.equal(
     workflow.jobs['build-images-status'].if,
     "always() && github.event_name != 'workflow_dispatch'",

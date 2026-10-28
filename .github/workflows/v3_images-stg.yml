@@ -903,6 +903,7 @@ jobs:
     runs-on: ${{ needs.preview-plan.outputs.runner }}
     timeout-minutes: 60
     permissions:
+      actions: read
       contents: read
       packages: write
     strategy:

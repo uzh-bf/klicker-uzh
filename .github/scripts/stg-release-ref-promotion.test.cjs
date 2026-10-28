@@ -371,8 +371,8 @@ test('the consolidated workflow covers every trusted target and guard', () => {
   )
   assert.equal(
     definition.jobs['build-images-status'].if,
-    'always()',
-    'the required context must always report'
+    "always() && github.event_name != 'workflow_dispatch'",
+    'the required context must report for every source CI event'
   )
 
   const promoter = readYaml('.github/workflows/deploy-stg-promote.yml')
