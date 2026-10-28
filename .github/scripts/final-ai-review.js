@@ -36,11 +36,11 @@ const {
 const FINAL_REVIEW_COMMAND = '/final-review'
 const FINAL_REVIEW_CONTEXT = 'final-ai-review'
 const {
-  MISTRAL_FLASH_MODEL,
+  MISTRAL_DEEPSEEK_MODEL,
   MISTRAL_URL,
   callMistral,
 } = require('./ocr-mistral-adapter.cjs')
-const FINAL_REVIEW_MODEL = MISTRAL_FLASH_MODEL
+const FINAL_REVIEW_MODEL = MISTRAL_DEEPSEEK_MODEL
 const FINAL_REVIEW_BOT = 'github-actions[bot]'
 const FINAL_REVIEW_SCHEMA = 'final-ai-review/v4'
 const FINAL_REVIEW_POLICY_SCHEMA = 'final-ai-policy/v1'
@@ -634,7 +634,7 @@ async function verifyMistralToolAccess({
   const payload = await callMistral({
     apiKey: token,
     body: buildMistralToolCanaryRequest(),
-    provider: 'mistral-flash',
+    provider: 'mistral-deepseek',
     diagnosticsStage: 'preflight',
     fetchImpl,
     timeoutMs: MISTRAL_TOOL_CANARY_TIMEOUT_MS,
