@@ -12,9 +12,15 @@ import { getKbImportedSourcesConnection } from '../src/services/knowledge.js'
 const KB_ID = '11111111-1111-4111-8111-111111111111'
 const OWNER_ID = '22222222-2222-4222-8222-222222222222'
 const MANAGED_RESOURCE_ID = '33333333-3333-4333-8333-333333333333'
+const MANAGED_INGESTED_AT = new Date('2026-09-21T14:44:00.000Z')
 const MCP_URL = 'http://localhost:1417/mcp'
 const MCP_SERVER_ID = 'mcp-1'
 const SCOPED_MCP_URL = 'http://localhost:1417/mcp/klicker/kb'
+const SOURCE_GATEWAY_ORIGIN = 'http://source-gateway.example.test:3000'
+
+afterEach(() => {
+  vi.unstubAllEnvs()
+})
 
 function videoSource(overrides: Record<string, unknown> = {}) {
   return {
@@ -144,7 +150,12 @@ function createContext({
           async ({ where }: { where: { id: { in: string[] } } }) =>
             managedResourceIds
               .filter((id) => where.id.in.includes(id))
-              .map((id) => ({ id }))
+              .map((id) => ({
+                id,
+                type: 'BLOB',
+                sourceUrl: null,
+                ingestedAt: MANAGED_INGESTED_AT,
+              }))
         ),
       },
     },
@@ -658,8 +669,70 @@ describe('getKbImportedSourcesConnection', () => {
     // The lookup is bounded to the UUID-shaped ids that actually appeared.
     expect(context.prisma.kBResource.findMany).toHaveBeenCalledWith({
       where: { kbId: KB_ID, id: { in: [MANAGED_RESOURCE_ID] } },
-      select: { id: true },
+      select: {
+        id: true,
+        type: true,
+        sourceUrl: true,
+        ingestedAt: true,
+      },
     })
+  })
+
+  it('recognizes legacy managed blobs from their ingestion gateway URL', async () => {
+    vi.stubEnv('KB_SOURCE_GATEWAY_URL', SOURCE_GATEWAY_ORIGIN)
+    const factory = createClientFactory([
+      textResult(
+        envelope({
+          sources: [
+            documentSource({
+              external_resource_id: null,
+              source_url: `${SOURCE_GATEWAY_ORIGIN}/api/ingestion/resources/${MANAGED_RESOURCE_ID}/versions/1`,
+              ingested_at: null,
+            }),
+          ],
+        })
+      ),
+    ])
+
+    const connection = await getKbImportedSourcesConnection(
+      { kbId: KB_ID },
+      createContext({ managedResourceIds: [MANAGED_RESOURCE_ID] }),
+      createDeps(factory)
+    )
+
+    expect(connection.items[0]).toMatchObject({
+      origin: 'MANAGED',
+      sourceUrl: null,
+      ingestedAt: MANAGED_INGESTED_AT,
+    })
+  })
+
+  it('does not recognize a legacy lookalike from a foreign origin', async () => {
+    vi.stubEnv('KB_SOURCE_GATEWAY_URL', SOURCE_GATEWAY_ORIGIN)
+    const factory = createClientFactory([
+      textResult(
+        envelope({
+          sources: [
+            documentSource({
+              external_resource_id: null,
+              source_url: `https://foreign.example.org/api/ingestion/resources/${MANAGED_RESOURCE_ID}/versions/1`,
+            }),
+          ],
+        })
+      ),
+    ])
+
+    const context = createContext({
+      managedResourceIds: [MANAGED_RESOURCE_ID],
+    })
+    const connection = await getKbImportedSourcesConnection(
+      { kbId: KB_ID },
+      context,
+      createDeps(factory)
+    )
+
+    expect(connection.items[0]?.origin).toBe('IMPORTED')
+    expect(context.prisma.kBResource.findMany).not.toHaveBeenCalled()
   })
 
   it('keeps an unmatched or non-UUID resource id as imported', async () => {
