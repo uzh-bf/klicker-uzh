@@ -19,8 +19,8 @@ rollback to alpha.88. This is preferable to removing them during promotion and
 requiring a configuration rollback as well. Legacy database tables remain intact.
 
 Release metadata is generated from the repository scripts and `.versionrc.js`.
-The initial candidate contains only the configured version bumps and changelog.
-The deployment alignment below has not been applied. No Prisma migration differs
+The candidate contains the configured version bumps, generated changelog, and
+approved deployment alignment, with the receipt metadata retained. No Prisma migration differs
 between alpha.88 and the proposed release source. ltijs 7 creates its own storage
 tables at startup; legacy platform import and concurrent startup remain rollout
 checks. The mixed alpha.89 LTI / alpha.88 backend combination has source-contract
@@ -46,8 +46,10 @@ and queue duration are unknown. Only the LTI image is activated in production.
   `chore/release-3.4.0-alpha.89`. Reuse it.
 - Promotion worktree, created only when needed: `trees/promote-prd-alpha89`,
   branch `chore/promote-prd-alpha.89`, based on the refreshed `origin/v3`.
-- Main session owns source integration, release actions, and proof. The user
-  supplies production cluster evidence and real OLAT browser acceptance.
+- Main session owns source integration, release actions, scoped cluster
+  verification, and acceptance evidence. The user explicitly authorized checking
+  the configured production cluster access. Real OLAT browser acceptance remains
+  a separate required observation.
 
 Refresh remote state before mutation after a pause. Inspect new target drift;
 stop for a material change to the release content, production manifest baseline,
@@ -67,7 +69,7 @@ allows a planned merge to activate staging.
 | --- | --- | --- |
 | Source preparation | Main | Approved source and check policy; exact diff, checks, final review, draft release PR. Mechanical alignment stays local because dispatch overhead exceeds the edit. |
 | Release publication | Main | Verified merged release; immutable tag and successful LTI image publication. |
-| Production promotion | Main | Published image, parity, current required checks and reviews; exact one-tag promotion merge. |
+| Production promotion | Main | Published image, parity, current required checks and reviews; approved LTI tag and receipt-metadata promotion merge. |
 | Acceptance and recovery | Main | User cluster/browser evidence and rollback prerequisites; verified acceptance, approved rollback, or explicit blocker. |
 
 ### Verification portfolio
@@ -162,8 +164,9 @@ run the normal hooks in the provisioned task runtime instead.
    checks and `/final-review` results for the final head and current base, plus
    required human review, then merge into `v3`. This activates ArgoCD's normal production sync.
    Confirm deployed revision, image digest, rollout completion, and both intended
-   LTI replicas through user-supplied cluster evidence. No new cluster
-   connectivity or manual cluster mutation is authorized by this plan.
+   LTI replicas through scoped read-only cluster evidence. Use the configured
+   cluster access under the user's explicit verification instruction; manual
+   cluster mutation remains outside this plan.
 
    Preflight also requires healthy existing chat/backend replicas and rolling
    update settings that preserve availability while replacements start. The
