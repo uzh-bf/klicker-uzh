@@ -13,6 +13,9 @@ import {
 const { configurationDigest } = await import(
   '../../.github/scripts/preview-image-plan.cjs'
 )
+const { parseExceptionPolicy, evaluatePreviewScan } = await import(
+  '../../.github/scripts/preview-image-receipt.cjs'
+)
 
 const revision = 'a'.repeat(40)
 const controlRevision = 'b'.repeat(40)
@@ -125,6 +128,7 @@ function scanReceipt({
     run: { id: '101', attempt: '2', gitSha: sha },
     scanner: { name: 'trivy' },
     policy: { failOn: ['HIGH', 'CRITICAL'], failOnUnfixed: false },
+    reports: { findings: 'findings.json' },
   }
 }
 
@@ -366,7 +370,10 @@ test('reuses an exact staging fingerprint adoption without dispatching', async (
     },
     members: {
       ...options.members,
-      501: { 'image-scan-fixtures-receipt.json': scan },
+      501: {
+        'image-scan-fixtures-receipt.json': scan,
+        'findings.json': { SchemaVersion: 2, Results: [] },
+      },
       502: { 'preview-images.json': { receipts: [receipt] } },
     },
   }
@@ -518,6 +525,7 @@ test('preview receipts must bind source, configuration and architecture', async 
       members: {
         301: {
           'image-scan-api-receipt.json': scan ?? scanReceipt({ image }),
+          'findings.json': { SchemaVersion: 2, Results: [] },
         },
         302: { 'preview-images.json': { receipts: [receipt] } },
       },
@@ -592,6 +600,132 @@ test('pinned and admitted images must prove the requested OCI platform', async (
   )
 })
 
+test('consumption recomputes finite exceptions from raw findings and requires operator opt-in', async () => {
+  const now = Date.parse('2026-10-28T12:00:00Z')
+  const policy = {
+    sourceRevision: revision,
+    platform: 'linux/amd64',
+    expiresAt: '2026-10-30T15:29:31Z',
+    exceptions: [
+      {
+        target: 'azurite',
+        vulnerabilityId: 'CVE-2026-109461',
+        packageName: '@azure/msal-node',
+        installedVersion: '5.5.0',
+        severity: 'HIGH',
+        maxOccurrences: 1,
+      },
+    ],
+  }
+  const findings = [
+    {
+      Vulnerabilities: [
+        {
+          VulnerabilityID: 'CVE-2026-109461',
+          PkgName: '@azure/msal-node',
+          InstalledVersion: '5.5.0',
+          Severity: 'HIGH',
+          FixedVersion: '7.1.0',
+        },
+      ],
+    },
+  ]
+  const image = `ghcr.io/uzh-bf/klicker-uzh/preview-azurite@${digest}`
+  const receipt = previewReceipt({
+    image,
+    target: 'azurite',
+    platform: 'linux/amd64',
+  })
+  const scan = scanReceipt({ image, architecture: 'linux/amd64' })
+  scan.previewAdmission = evaluatePreviewScan(
+    findings,
+    'azurite',
+    parseExceptionPolicy(
+      policy,
+      { sourceRevision: revision, platform: 'linux/amd64' },
+      now
+    )
+  ).admission
+  async function resolve({
+    configured = policy,
+    annotation = scan,
+    report = findings,
+    clock = now,
+  } = {}) {
+    const fixture = transportFor({
+      runs: [run()],
+      jobs: [
+        job('preview-azurite-amd64', controlRevision, '2026-10-28T10:00:00Z'),
+        job('preview-scan-azurite', controlRevision, '2026-10-28T10:01:00Z'),
+        job('preview-finalize', controlRevision, '2026-10-28T10:02:00Z'),
+      ],
+      artifacts: [
+        artifact('preview-scan-azurite', 301, '2026-10-28T10:01:30Z'),
+        artifact(`preview-images-${correlation}`, 302, '2026-10-28T10:02:30Z'),
+      ],
+      members: {
+        301: {
+          'image-scan-azurite-receipt.json': annotation,
+          'findings.json': { SchemaVersion: 2, Results: report },
+        },
+        302: { 'preview-images.json': { receipts: [receipt] } },
+      },
+      registry: {
+        [image]: {
+          manifests: [{ platform: { os: 'linux', architecture: 'amd64' } }],
+        },
+      },
+    })
+    return adapterFor(fixture, {
+      now: () => clock,
+      environment: {
+        [TOKEN_NAME]: token,
+        [CONTROL_REF_NAME]: 'v3-ai',
+        ...(configured
+          ? { DEVROUTER_PREVIEW_SCAN_POLICY_JSON: JSON.stringify(configured) }
+          : {}),
+      },
+    }).execute(
+      JSON.stringify(
+        request({
+          request: {
+            revision,
+            platform: 'linux/amd64',
+            targets: [{ target: 'azurite', configuration: {} }],
+          },
+          missing: ['azurite'],
+        })
+      )
+    )
+  }
+  assert.equal((await resolve()).receipts.length, 1)
+  await assert.rejects(resolve({ configured: null }), /operator policy/)
+  const missing = { ...scan }
+  delete missing.previewAdmission
+  await assert.rejects(resolve({ annotation: missing }), /operator policy/)
+  await assert.rejects(
+    resolve({
+      report: [
+        ...findings,
+        {
+          Vulnerabilities: [
+            {
+              VulnerabilityID: 'CVE-2026-999999',
+              Severity: 'HIGH',
+              FixedVersion: '1',
+            },
+          ],
+        },
+      ],
+    }),
+    /operator policy/
+  )
+  await assert.rejects(
+    resolve({ clock: Date.parse(policy.expiresAt) }),
+    /expired/
+  )
+})
+
 test('another preview command reuses only matching qualified image receipts', async () => {
   const previousCorrelation = '7'.repeat(64)
   async function resolve(
@@ -619,7 +753,10 @@ test('another preview command reuses only matching qualified image receipts', as
         ),
       ],
       members: {
-        301: { 'image-scan-api-receipt.json': scan },
+        301: {
+          'image-scan-api-receipt.json': scan,
+          'findings.json': { SchemaVersion: 2, Results: [] },
+        },
         302: { 'preview-images.json': { receipts: [receipt] } },
       },
     })
@@ -695,7 +832,10 @@ test('completed partial publication retains images from an earlier preview comma
         ),
       ],
     }
-    members[base + 1] = { [`image-scan-${target}-receipt.json`]: scan }
+    members[base + 1] = {
+      [`image-scan-${target}-receipt.json`]: scan,
+      'findings.json': { SchemaVersion: 2, Results: [] },
+    }
     members[base + 2] = { 'preview-images.json': { receipts: [receipt] } }
   }
   const fixture = transportFor({ runs: [current, previous], runData, members })

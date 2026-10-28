@@ -322,6 +322,38 @@ test('preview dispatch has an isolated lane and cannot cancel staging work', () 
   assert.match(workflow.concurrency.group, /github\.workflow/)
 })
 
+test('finite scan policy is validated before builds and isolated from ordinary scans', () => {
+  const workflow = YAML.parse(fs.readFileSync(CONSOLIDATED, 'utf8'))
+  const planStep = workflow.jobs['preview-plan'].steps.find((step) =>
+    step.run?.includes('preview-image-plan.cjs validate')
+  )
+  assert.ok(
+    planStep.run.indexOf('preview-image-receipt.cjs policy') <
+      planStep.run.indexOf('preview-image-plan.cjs validate')
+  )
+  assert.equal(
+    planStep.env.PREVIEW_IMAGE_SCAN_POLICY_JSON,
+    '${{ inputs.scanExceptionPolicyJson }}'
+  )
+  const preview = workflow.jobs['preview-scan'].steps.find((step) =>
+    step.run?.includes('preview-image-receipt.cjs scan')
+  )
+  assert.equal(
+    preview.env.PREVIEW_IMAGE_SCAN_POLICY_JSON,
+    '${{ inputs.scanExceptionPolicyJson }}'
+  )
+  assert.ok(
+    workflow.jobs.scan.steps.some((step) =>
+      step.run?.includes('image-scan-receipt.cjs check')
+    )
+  )
+  assert.ok(
+    workflow.jobs.scan.steps.every(
+      (step) => !step.env?.PREVIEW_IMAGE_SCAN_POLICY_JSON
+    )
+  )
+})
+
 // The dependency closure is the reason a target is selected at all. A target
 // whose globs omit a workspace it bundles would silently under-build after a
 // dependency change, which is the regression this suite exists to catch.

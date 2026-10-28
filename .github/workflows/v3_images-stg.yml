@@ -46,6 +46,10 @@ on:
         description: Unique preview publication correlation ID
         required: true
         type: string
+      scanExceptionPolicyJson:
+        description: Optional operator-approved finite pilot scan policy
+        required: false
+        type: string
       platform:
         description: Native platform to build
         required: true
@@ -854,10 +858,13 @@ jobs:
           PLATFORM: ${{ inputs.platform }}
           SOURCE_REVISION: ${{ inputs.sourceSha }}
           TARGETS: ${{ inputs.targets }}
+          PREVIEW_IMAGE_SCAN_POLICY_JSON: ${{ inputs.scanExceptionPolicyJson }}
         shell: bash
-        run: >-
-          node trusted/.github/scripts/preview-image-plan.cjs validate
-          --control-root trusted
+        run: |
+          set -euo pipefail
+          node trusted/.github/scripts/preview-image-receipt.cjs policy --source-revision "$SOURCE_REVISION" --platform "$PLATFORM"
+          node trusted/.github/scripts/preview-image-plan.cjs validate \
+            --control-root trusted
 
       - name: Check out the exact candidate source
         uses: actions/checkout@v4
@@ -1121,6 +1128,15 @@ jobs:
             --findings image-scan-${{ matrix.id }}-findings.json \
             --sbom image-scan-${{ matrix.id }}-sbom.cdx.json
 
+      - name: Enforce preview image admission
+        env:
+          PREVIEW_IMAGE_SCAN_POLICY_JSON: ${{ inputs.scanExceptionPolicyJson }}
+          SOURCE_REVISION: ${{ needs.preview-plan.outputs.source-revision }}
+        run: |
+          node trusted/.github/scripts/preview-image-receipt.cjs scan \
+            --metadata "$RUNNER_TEMP/build/preview-build.json" \
+            --scan-receipt image-scan-${{ matrix.id }}-receipt.json
+
       - name: Upload the scan evidence
         if: always()
         uses: actions/upload-artifact@v4
@@ -1131,11 +1147,6 @@ jobs:
             image-scan-${{ matrix.id }}-sbom.cdx.json
             image-scan-${{ matrix.id }}-receipt.json
           if-no-files-found: warn
-
-      - name: Enforce the fixable HIGH/CRITICAL policy
-        run: |
-          node trusted/.github/scripts/image-scan-receipt.cjs check \
-            --report image-scan-${{ matrix.id }}-findings.json
 
   preview-finalize:
     needs: [preview-plan, preview-build, preview-scan]
@@ -1179,6 +1190,7 @@ jobs:
           RUN_ATTEMPT: ${{ github.run_attempt }}
           RUN_ID: ${{ github.run_id }}
           SCAN_ARTIFACTS: ${{ runner.temp }}/scans
+          PREVIEW_IMAGE_SCAN_POLICY_JSON: ${{ inputs.scanExceptionPolicyJson }}
           SOURCE_REVISION: ${{ needs.preview-plan.outputs.source-revision }}
           TARGET_MAP: ${{ needs.preview-plan.outputs.target-map }}
           WORKFLOW_PATH: .github/workflows/v3_images-stg.yml

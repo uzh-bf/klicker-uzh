@@ -2,11 +2,18 @@
 
 const assert = require('node:assert/strict')
 const test = require('node:test')
+const fs = require('node:fs')
+const os = require('node:os')
+const path = require('node:path')
 
 const {
   findReusablePreviewImage,
   publicReceipt,
+  parseExceptionPolicy,
+  evaluatePreviewScan,
+  verifyScan,
 } = require('./preview-image-receipt.cjs')
+const { buildReceipt } = require('./image-scan-receipt.cjs')
 
 const REPOSITORY = 'uzh-bf/klicker-uzh'
 const WORKFLOW = '.github/workflows/v3_images-stg.yml'
@@ -16,6 +23,214 @@ const CONFIGURATION = `sha256:${'2'.repeat(64)}`
 const IMAGE_DIGEST = `sha256:${'3'.repeat(64)}`
 const IMAGE = `ghcr.io/${REPOSITORY}/preview-fixtures@${IMAGE_DIGEST}`
 const ARTIFACT_NAME = `preview-images-${'4'.repeat(64)}`
+const NOW = Date.parse('2026-10-28T12:00:00Z')
+const PILOT = {
+  sourceRevision: 'b'.repeat(40),
+  platform: 'linux/amd64',
+  expiresAt: '2026-10-30T15:29:31Z',
+  exceptions: [
+    {
+      target: 'azurite',
+      vulnerabilityId: 'CVE-2026-109461',
+      packageName: '@azure/msal-node',
+      installedVersion: '5.5.0',
+      severity: 'HIGH',
+      maxOccurrences: 1,
+    },
+  ],
+}
+const FINDING = {
+  VulnerabilityID: 'CVE-2026-109461',
+  PkgName: '@azure/msal-node',
+  InstalledVersion: '5.5.0',
+  Severity: 'HIGH',
+  FixedVersion: '7.1.0',
+}
+
+test('finite pilot policy rejects any scope, expiry or tuple expansion', () => {
+  const identity = {
+    sourceRevision: PILOT.sourceRevision,
+    platform: PILOT.platform,
+  }
+  assert.equal(parseExceptionPolicy(undefined, identity, NOW), undefined)
+  assert.deepEqual(
+    parseExceptionPolicy(JSON.stringify(PILOT), identity, NOW),
+    PILOT
+  )
+  for (const policy of [
+    { ...PILOT, sourceRevision: 'c'.repeat(40) },
+    { ...PILOT, platform: 'linux/arm64' },
+    { ...PILOT, expiresAt: '2026-10-31T00:00:00Z' },
+    { ...PILOT, expiresAt: '2026-10-27T00:00:00Z' },
+    { ...PILOT, exceptions: [...PILOT.exceptions, ...PILOT.exceptions] },
+    ...[
+      'packageName',
+      'installedVersion',
+      'severity',
+      'vulnerabilityId',
+      'target',
+      'maxOccurrences',
+    ].map((key) => ({
+      ...PILOT,
+      exceptions: [
+        {
+          ...PILOT.exceptions[0],
+          [key]: key === 'maxOccurrences' ? 2 : 'different',
+        },
+      ],
+    })),
+  ])
+    assert.throws(() => parseExceptionPolicy(policy, identity, NOW))
+})
+
+test('pilot exceptions preserve raw findings and block other or repeated occurrences', () => {
+  const results = [{ Vulnerabilities: [FINDING] }]
+  assert.equal(evaluatePreviewScan(results, 'azurite').summary.violation, true)
+  const result = evaluatePreviewScan(results, 'azurite', PILOT)
+  assert.equal(result.summary.violation, false)
+  assert.equal(result.admission.accepted[0].occurrences, 1)
+  assert.deepEqual(results, [{ Vulnerabilities: [FINDING] }])
+  assert.equal(
+    evaluatePreviewScan(results, 'litellm', PILOT).summary.violation,
+    true
+  )
+  assert.equal(
+    evaluatePreviewScan(
+      [
+        {
+          Vulnerabilities: [
+            FINDING,
+            { ...FINDING, VulnerabilityID: 'CVE-2026-999999' },
+          ],
+        },
+      ],
+      'azurite',
+      PILOT
+    ).summary.violation,
+    true
+  )
+  assert.throws(() =>
+    evaluatePreviewScan([...results, ...results], 'azurite', PILOT)
+  )
+  for (const key of ['PkgName', 'InstalledVersion', 'Severity']) {
+    assert.equal(
+      evaluatePreviewScan(
+        [
+          {
+            Vulnerabilities: [
+              { ...FINDING, [key]: key === 'Severity' ? 'CRITICAL' : 'other' },
+            ],
+          },
+        ],
+        'azurite',
+        PILOT
+      ).summary.violation,
+      true
+    )
+  }
+  const filelockPolicy = {
+    ...PILOT,
+    exceptions: [
+      {
+        target: 'litellm',
+        vulnerabilityId: 'CVE-2026-112940',
+        packageName: 'filelock',
+        installedVersion: '3.32.7',
+        severity: 'HIGH',
+        maxOccurrences: 1,
+      },
+    ],
+  }
+  assert.equal(
+    evaluatePreviewScan(
+      [
+        {
+          Vulnerabilities: [
+            {
+              VulnerabilityID: 'CVE-2026-112940',
+              PkgName: 'filelock',
+              InstalledVersion: '3.32.7',
+              Severity: 'HIGH',
+              FixedVersion: '4.2.1',
+            },
+          ],
+        },
+      ],
+      'litellm',
+      parseExceptionPolicy(
+        filelockPolicy,
+        { sourceRevision: PILOT.sourceRevision, platform: PILOT.platform },
+        NOW
+      )
+    ).summary.violation,
+    false
+  )
+})
+
+test('scan annotation is required, recomputed at finalization and expires', (t) => {
+  const directory = fs.mkdtempSync(path.join(os.tmpdir(), 'preview-exception-'))
+  t.after(() => fs.rmSync(directory, { recursive: true, force: true }))
+  const scanPath = path.join(directory, 'receipt.json')
+  const findings = JSON.stringify({
+    SchemaVersion: 2,
+    Results: [{ Vulnerabilities: [FINDING] }],
+  })
+  fs.writeFileSync(path.join(directory, 'findings.json'), findings)
+  fs.writeFileSync(path.join(directory, 'sbom.json'), '{}')
+  const metadata = {
+    id: 'azurite',
+    platform: PILOT.platform,
+    image: IMAGE,
+    digest: IMAGE_DIGEST,
+  }
+  const identity = {
+    sourceRevision: PILOT.sourceRevision,
+    runId: '101',
+    attempt: '2',
+    exceptionPolicy: PILOT,
+    now: NOW,
+  }
+  const scan = buildReceipt({
+    image: IMAGE,
+    digest: IMAGE_DIGEST,
+    architecture: PILOT.platform,
+    runId: '101',
+    runAttempt: '2',
+    gitSha: PILOT.sourceRevision,
+    engineVersion: 'v0.74.0',
+    actionRef: 'pinned-action',
+    findingsReport: 'findings.json',
+    sbomReport: 'sbom.json',
+  })
+  fs.writeFileSync(scanPath, JSON.stringify(scan))
+  assert.throws(() => verifyScan(metadata, scanPath, identity))
+  verifyScan(metadata, scanPath, { ...identity, recordAdmission: true })
+  verifyScan(metadata, scanPath, identity)
+  assert.equal(
+    fs.readFileSync(path.join(directory, 'findings.json'), 'utf8'),
+    findings
+  )
+  assert.throws(() =>
+    verifyScan(metadata, scanPath, { ...identity, exceptionPolicy: undefined })
+  )
+  assert.throws(() =>
+    verifyScan(metadata, scanPath, {
+      ...identity,
+      now: Date.parse(PILOT.expiresAt),
+    })
+  )
+  assert.throws(() =>
+    verifyScan(
+      { ...metadata, digest: `sha256:${'f'.repeat(64)}` },
+      scanPath,
+      identity
+    )
+  )
+  const annotated = JSON.parse(fs.readFileSync(scanPath, 'utf8'))
+  annotated.previewAdmission.accepted[0].occurrences = 0
+  fs.writeFileSync(scanPath, JSON.stringify(annotated))
+  assert.throws(() => verifyScan(metadata, scanPath, identity))
+})
 
 function workflowRun(overrides = {}) {
   return {

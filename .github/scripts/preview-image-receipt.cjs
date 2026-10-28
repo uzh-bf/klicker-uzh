@@ -4,6 +4,7 @@ const { execFile } = require('node:child_process')
 const fs = require('node:fs')
 const os = require('node:os')
 const path = require('node:path')
+const { isDeepStrictEqual } = require('node:util')
 
 const { evaluatePolicy, readTrivyResults } = require('./image-scan-receipt.cjs')
 const { PREVIEW_IMAGE_TARGETS } = require('./staging-image-targets.cjs')
@@ -17,6 +18,25 @@ const TARGET_PATTERN = /^[a-z0-9][a-z0-9-]*$/
 const PREVIEW_ARTIFACT_PATTERN = /^preview-images-[0-9a-f]{64}$/
 const MAX_PREVIEW_RECEIPT_BYTES = 1024 * 1024
 const GH_TIMEOUT_MS = 20000
+const PILOT_EXCEPTION_CUTOFF = '2026-10-30T15:29:31Z'
+const PILOT_EXCEPTIONS = [
+  {
+    target: 'azurite',
+    vulnerabilityId: 'CVE-2026-109461',
+    packageName: '@azure/msal-node',
+    installedVersion: '5.5.0',
+    severity: 'HIGH',
+    maxOccurrences: 1,
+  },
+  {
+    target: 'litellm',
+    vulnerabilityId: 'CVE-2026-112940',
+    packageName: 'filelock',
+    installedVersion: '3.32.7',
+    severity: 'HIGH',
+    maxOccurrences: 1,
+  },
+]
 
 function fail(message) {
   throw new Error(`preview-image-receipt: ${message}`)
@@ -166,6 +186,136 @@ function reportPath(scanPath, reportName, label) {
   return report
 }
 
+function parseExceptionPolicy(value, identity, now = Date.now()) {
+  if (value === undefined || value === '') return undefined
+  let policy
+  try {
+    policy = typeof value === 'string' ? JSON.parse(value) : value
+  } catch {
+    fail('scan exception policy must contain JSON')
+  }
+  const fields = ['sourceRevision', 'platform', 'expiresAt', 'exceptions']
+  if (
+    !policy ||
+    Array.isArray(policy) ||
+    Object.keys(policy).length !== fields.length ||
+    fields.some((field) => !Object.hasOwn(policy, field)) ||
+    policy.sourceRevision !==
+      gitSha('policy source revision', identity.sourceRevision) ||
+    policy.platform !== platform(identity.platform) ||
+    policy.platform !== 'linux/amd64' ||
+    typeof policy.expiresAt !== 'string' ||
+    !Number.isFinite(Date.parse(policy.expiresAt)) ||
+    Date.parse(policy.expiresAt) <= now ||
+    Date.parse(policy.expiresAt) > Date.parse(PILOT_EXCEPTION_CUTOFF) ||
+    !Array.isArray(policy.exceptions) ||
+    policy.exceptions.length === 0 ||
+    policy.exceptions.length > PILOT_EXCEPTIONS.length
+  ) {
+    fail(
+      'scan exception policy is malformed, expired or outside this source/platform'
+    )
+  }
+  const seen = new Set()
+  const exceptions = policy.exceptions
+    .map((entry) => {
+      const keys = [
+        'target',
+        'vulnerabilityId',
+        'packageName',
+        'installedVersion',
+        'severity',
+        'maxOccurrences',
+      ]
+      if (
+        !entry ||
+        Array.isArray(entry) ||
+        Object.keys(entry).length !== keys.length ||
+        keys.some((key) => !Object.hasOwn(entry, key)) ||
+        !PREVIEW_IMAGE_TARGETS.some((target) => target.id === entry.target) ||
+        !/^(?:CVE-[0-9]{4}-[0-9]+|GHSA-[a-z0-9-]+)$/.test(
+          entry.vulnerabilityId
+        ) ||
+        typeof entry.packageName !== 'string' ||
+        !entry.packageName.trim() ||
+        typeof entry.installedVersion !== 'string' ||
+        !entry.installedVersion.trim() ||
+        !['HIGH', 'CRITICAL'].includes(entry.severity) ||
+        !Number.isSafeInteger(entry.maxOccurrences) ||
+        entry.maxOccurrences < 1 ||
+        entry.maxOccurrences > 16
+      )
+        fail(
+          'scan exception must name one exact target, vulnerability, package, version and severity with a bounded occurrence count'
+        )
+      const normalized = Object.fromEntries(
+        keys.map((key) => [key, entry[key]])
+      )
+      if (
+        !PILOT_EXCEPTIONS.some((approved) =>
+          isDeepStrictEqual(approved, normalized)
+        )
+      ) {
+        fail('scan exception is outside the approved finite pilot')
+      }
+      const key = JSON.stringify({ ...normalized, maxOccurrences: undefined })
+      if (seen.has(key)) fail('scan exception policy repeats a finding')
+      seen.add(key)
+      return normalized
+    })
+    .sort((left, right) =>
+      JSON.stringify(left).localeCompare(JSON.stringify(right))
+    )
+  return {
+    sourceRevision: policy.sourceRevision,
+    platform: policy.platform,
+    expiresAt: policy.expiresAt,
+    exceptions,
+  }
+}
+
+function evaluatePreviewScan(results, target, policy) {
+  const accepted = new Map()
+  const remaining = results.map((result) => ({
+    ...result,
+    Vulnerabilities: (Array.isArray(result?.Vulnerabilities)
+      ? result.Vulnerabilities
+      : []
+    ).filter((finding) => {
+      const rule = policy?.exceptions.find(
+        (entry) =>
+          entry.target === target &&
+          entry.vulnerabilityId === finding.VulnerabilityID &&
+          entry.packageName === finding.PkgName &&
+          entry.installedVersion === finding.InstalledVersion &&
+          entry.severity === finding.Severity
+      )
+      if (
+        !rule ||
+        evaluatePolicy([{ Vulnerabilities: [finding] }]).fixable !== 1
+      )
+        return true
+      const occurrences = (accepted.get(rule) ?? 0) + 1
+      if (occurrences > rule.maxOccurrences)
+        fail(`${target} exceeds its approved scan exception occurrence limit`)
+      accepted.set(rule, occurrences)
+      return false
+    }),
+  }))
+  return {
+    summary: evaluatePolicy(remaining),
+    admission: accepted.size
+      ? {
+          policy,
+          accepted: [...accepted].map(([rule, occurrences]) => ({
+            ...rule,
+            occurrences,
+          })),
+        }
+      : undefined,
+  }
+}
+
 function verifyScan(metadata, scanPath, identity) {
   const scan = readJson(scanPath, 'scan receipt')
   if (scan.schemaVersion !== 'klicker.image-scan-receipt/v1') {
@@ -207,7 +357,28 @@ function verifyScan(metadata, scanPath, identity) {
     'findings report'
   )
   const sbom = reportPath(scanPath, scan.reports?.sbom, 'SBOM report')
-  const summary = evaluatePolicy(readTrivyResults(findings))
+  const policy = parseExceptionPolicy(
+    identity.exceptionPolicy,
+    {
+      sourceRevision: identity.sourceRevision,
+      platform: metadata.platform,
+    },
+    identity.now
+  )
+  const { summary, admission } = evaluatePreviewScan(
+    readTrivyResults(findings),
+    metadata.id,
+    policy
+  )
+  if (identity.recordAdmission) {
+    if (admission) scan.previewAdmission = admission
+    else delete scan.previewAdmission
+    writeJson(scanPath, scan)
+  } else if (!isDeepStrictEqual(scan.previewAdmission, admission)) {
+    fail(
+      `${metadata.id} scan exceptions do not match the operator policy and findings`
+    )
+  }
   if (summary.violation) {
     fail(
       `${metadata.id} still has ${summary.fixable} fixable HIGH/CRITICAL findings`
@@ -340,7 +511,12 @@ function finalizeReceipts(input) {
   fs.rmSync(input.outputRoot, { force: true, recursive: true })
   fs.mkdirSync(input.outputRoot, { recursive: true })
 
-  const identity = { attempt, runId, sourceRevision }
+  const identity = {
+    attempt,
+    runId,
+    sourceRevision,
+    exceptionPolicy: input.exceptionPolicy,
+  }
   const verifiedScans = new Map()
   for (const entry of metadataById.values()) {
     const matching = scanReceipts.filter(({ receipt }) => {
@@ -699,6 +875,7 @@ function writeMetadataForRun(args) {
 
 function finalizeForRun(args) {
   return finalizeReceipts({
+    exceptionPolicy: process.env.PREVIEW_IMAGE_SCAN_POLICY_JSON,
     admissionPassed: args['admission-passed'] ?? process.env.ADMISSION_PASSED,
     attempt: args.attempt ?? process.env.RUN_ATTEMPT,
     buildArtifactsRoot: requiredText(
@@ -723,6 +900,27 @@ function finalizeForRun(args) {
 
 async function main(argv = process.argv.slice(2)) {
   const { args, command } = parseArguments(argv)
+  if (command === 'policy') {
+    parseExceptionPolicy(process.env.PREVIEW_IMAGE_SCAN_POLICY_JSON, {
+      sourceRevision: args['source-revision'],
+      platform: args.platform,
+    })
+    return 0
+  }
+  if (command === 'scan') {
+    const metadata = readJson(
+      requiredText('--metadata', args.metadata),
+      'build metadata'
+    )
+    verifyScan(metadata, requiredText('--scan-receipt', args['scan-receipt']), {
+      sourceRevision: process.env.SOURCE_REVISION,
+      runId: process.env.GITHUB_RUN_ID,
+      attempt: process.env.GITHUB_RUN_ATTEMPT,
+      exceptionPolicy: process.env.PREVIEW_IMAGE_SCAN_POLICY_JSON,
+      recordAdmission: true,
+    })
+    return 0
+  }
   if (command === 'metadata') {
     const metadata = writeMetadataForRun(args)
     process.stdout.write(`${JSON.stringify(metadata)}\n`)
@@ -760,6 +958,8 @@ module.exports = {
   buildMetadata,
   finalizeReceipts,
   findReusablePreviewImage,
+  evaluatePreviewScan,
+  parseExceptionPolicy,
   parseTargetMap,
   publicReceipt,
   verifyScan,

@@ -7,6 +7,7 @@ import { createRequire } from 'node:module'
 import { tmpdir } from 'node:os'
 import { basename, join } from 'node:path'
 import { pathToFileURL } from 'node:url'
+import { isDeepStrictEqual } from 'node:util'
 
 const require = createRequire(import.meta.url)
 const {
@@ -19,6 +20,10 @@ const {
 const {
   configurationDigest,
 } = require('../../.github/scripts/preview-image-plan.cjs')
+const {
+  evaluatePreviewScan,
+  parseExceptionPolicy,
+} = require('../../.github/scripts/preview-image-receipt.cjs')
 const {
   validateScanReceipt,
 } = require('../../.github/scripts/image-scan-admission.cjs')
@@ -69,6 +74,7 @@ const STAGING_CONTEXTS = Object.freeze([
 const PREVIEW_RECEIPT_MEMBER = 'preview-images.json'
 const TOKEN_NAME = 'DEVROUTER_PREVIEW_GITHUB_TOKEN'
 const CONTROL_REF_NAME = 'DEVROUTER_PREVIEW_GITHUB_CONTROL_REF'
+const SCAN_POLICY_NAME = 'DEVROUTER_PREVIEW_SCAN_POLICY_JSON'
 const PLATFORMS = Object.freeze({
   'linux/amd64': 'amd64',
   'linux/arm64': 'arm64',
@@ -433,11 +439,13 @@ function createAdapter(options = {}) {
   const transport = options.transport ?? createProcessTransport()
   const token = environment[TOKEN_NAME]
   const controlRef = environment[CONTROL_REF_NAME]
+  const now = options.now ?? Date.now
   let expectedControlRevision
   const ghEnv = token ? ghEnvironment(environment, token) : null
   const tempRoot = mkdtempSync(join(tmpdir(), 'klicker-preview-images-'))
   const registryCache = new Map()
   const workflowCache = new Map()
+  const artifactCache = new Map()
   const registryEnvironment = {
     PATH: environment.PATH,
     ...(environment.DEVROUTER_PREVIEW_DOCKER_CONFIG
@@ -704,18 +712,21 @@ function createAdapter(options = {}) {
   }
 
   function artifactContent(artifact, member) {
-    const bytes = gh([
-      'api',
-      '--method',
-      'GET',
-      `repos/${REPOSITORY}/actions/artifacts/${artifact.id}/zip`,
-    ])
+    const bytes =
+      artifactCache.get(artifact.id) ??
+      gh([
+        'api',
+        '--method',
+        'GET',
+        `repos/${REPOSITORY}/actions/artifacts/${artifact.id}/zip`,
+      ])
     if (bytes.byteLength < 1 || bytes.byteLength > MAX_ARTIFACT_BYTES) {
       fail(
         'artifact_mismatch',
         `${artifact.name} is outside the download budget`
       )
     }
+    artifactCache.set(artifact.id, bytes)
     let content
     try {
       content = extractArtifact(bytes, member)
@@ -942,6 +953,7 @@ function createAdapter(options = {}) {
           scanJob,
           targetId: entry.target.id,
           receiptMember: `image-scan-${entry.target.id}-receipt.json`,
+          preview: true,
         })
         result.push(receipt)
       }
@@ -1126,10 +1138,50 @@ function createAdapter(options = {}) {
     scanJob,
     targetId,
     receiptMember,
+    preview = false,
   }) {
     const artifact = selectArtifact(artifacts, scanArtifact, scanJob)
     const scanReceipt = artifactMember(artifact, receiptMember)
+    if (preview) {
+      const reportName = scanReceipt.reports?.findings
+      if (
+        typeof reportName !== 'string' ||
+        /[\\/]/.test(reportName) ||
+        !reportName.endsWith('.json')
+      ) {
+        fail('scan_admission_missing', `${targetId}: invalid findings member`)
+      }
+      const report = artifactMember(artifact, reportName)
+      if (
+        !report ||
+        typeof report.SchemaVersion !== 'number' ||
+        !Object.hasOwn(report, 'Results') ||
+        (report.Results !== null && !Array.isArray(report.Results))
+      ) {
+        fail('scan_admission_missing', `${targetId}: malformed findings report`)
+      }
+      const policy = parseExceptionPolicy(
+        environment[SCAN_POLICY_NAME],
+        { sourceRevision: revision, platform },
+        now()
+      )
+      const { summary, admission } = evaluatePreviewScan(
+        report.Results ?? [],
+        targetId,
+        policy
+      )
+      if (
+        summary.violation ||
+        !isDeepStrictEqual(scanReceipt.previewAdmission, admission)
+      ) {
+        fail(
+          'scan_admission_missing',
+          `${targetId}: findings or exception annotation differ from operator policy`
+        )
+      }
+    }
     const decision = validateScanReceipt(scanReceipt, {
+      allowPreviewExceptions: preview,
       candidateSha: revision,
       digest: imageDigest,
       image: repository,
@@ -1171,6 +1223,12 @@ function createAdapter(options = {}) {
       `sourceSha=${request.revision}`,
       '--field',
       `targets=${request.missing.join(',')}`,
+      ...(environment[SCAN_POLICY_NAME]
+        ? [
+            '--field',
+            `scanExceptionPolicyJson=${environment[SCAN_POLICY_NAME]}`,
+          ]
+        : []),
     ])
     return {}
   }
@@ -1179,6 +1237,11 @@ function createAdapter(options = {}) {
     async execute(raw) {
       try {
         const request = parseEnvelope(raw)
+        parseExceptionPolicy(
+          environment[SCAN_POLICY_NAME],
+          { sourceRevision: request.revision, platform: request.platform },
+          now()
+        )
         if (
           typeof controlRef !== 'string' ||
           !/^[A-Za-z0-9_./-]{1,240}$/.test(controlRef)

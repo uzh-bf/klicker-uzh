@@ -62,6 +62,14 @@ function validateScanReceipt(receipt, expected) {
   if (receipt.schemaVersion !== RECEIPT_SCHEMA_VERSION) {
     return rejected('receipt schema is ' + String(receipt.schemaVersion))
   }
+  if (
+    receipt.previewAdmission !== undefined &&
+    expected.allowPreviewExceptions !== true
+  ) {
+    return rejected(
+      'preview scan exceptions are not allowed for this admission'
+    )
+  }
   if (!DIGEST_PATTERN.test(String(expected.digest ?? ''))) {
     return rejected('promoted digest is incomplete')
   }

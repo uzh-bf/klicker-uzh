@@ -175,3 +175,28 @@ proxy image because previews do not use its database; compatible dependency
 updates pass package checks. Native ARM64 Blob/SAS/CORS and proxy health/model
 checks pass. Each image still has one fixable finding outside its parent package
 range, so neither is admitted for paid qualification.
+
+### Finite pilot scan exceptions
+
+The user chose supported upstream releases over local parent-package variants
+and explicitly approved two exceptions for the bounded UZH-only pilot. The
+trusted operator supplies a policy scoped to the exact source revision, native
+platform and original batch cutoff. It permits one HIGH finding each for
+Azurite's `@azure/msal-node` 5.5.0 (`CVE-2026-109461`) and LiteLLM's filelock
+3.32.7 (`CVE-2026-112940`). Repository defaults and ordinary CI remain strict.
+
+Extend the existing preview receipt module, selective workflow and repository
+resolver. Validate the optional policy before image builds; preserve complete
+Trivy reports and record accepted findings beside their immutable image and run.
+Finalization and resolution independently verify the same operator policy,
+including expiry, package version, severity and occurrence limit. Candidate
+source cannot select the operator environment. No generic Devrouter or serving
+application change is needed. Missing, mismatched, expired or additional findings
+block admission. Tests cover the policy boundary and its producing workflow;
+independent review and simplification precede paid qualification.
+
+The existing two-attempt budget, first-attempt prerequisite checks, cleanup,
+UZH access, synthetic data and fixed expiry remain binding. A second attempt
+still requires a diagnosed failure, reviewed correction, terminal CI and
+independently verified cleanup. No parent-package variant or broader waiver is
+authorized. Reconcile native ownership before any new allocation.
