@@ -75,8 +75,6 @@ export function videoFrameUrls(
   const base = `/api/chatbots/${encodeURIComponent(chatbotId)}/threads/${encodeURIComponent(threadId)}/messages/${encodeURIComponent(messageId)}`
   return {
     frameSrc: `${base}/frames/${frame.asset_id}`,
-    // Open the complete recording at the cited start; do not stop at the end of the excerpt.
-    recordingUrl: `${base}/videos/${frame.asset_id}#t=${frame.start_sec}`,
   }
 }
 
@@ -89,7 +87,6 @@ export function sourceMedia(
     : undefined
   return {
     frameSrc: media?.frameSrc,
-    href:
-      media?.recordingUrl ?? getSourceNavigationUrl(source?.url, source?.page),
+    href: getSourceNavigationUrl(source?.url, source?.page),
   }
 }

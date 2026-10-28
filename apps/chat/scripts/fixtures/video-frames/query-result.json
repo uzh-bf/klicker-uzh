@@ -1,6 +1,9 @@
 {
   "mode": "documents",
-  "summary": { "sources_returned": 1, "chunks_returned": 1 },
+  "summary": {
+    "sources_returned": 1,
+    "chunks_returned": 1
+  },
   "sources": [
     {
       "reference": "urn:video-ingestion:sha256:34f453033678a90c989939d9c845ffdb031d39c5869c2eb794d073d7047c9f67#t=42,59",
@@ -8,7 +11,7 @@
       "source_type": "video",
       "video_name": "lecture-01.mp4",
       "display_name": "Synthetic learning-cycle lecture",
-      "title": "Synthetic learning-cycle lecture · 0:42–0:59",
+      "title": "Synthetic learning-cycle lecture \u00b7 0:42\u20130:59",
       "chunks": [
         {
           "chunk_id": "video-unit-0001",
@@ -23,12 +26,6 @@
             "kb_id": "35a72f62-a714-45f1-8b18-2cf5681b0c75",
             "external_resource_id": "video-lecture:synthetic-001",
             "resource_version": 1,
-            "video": {
-              "sha256": "34f453033678a90c989939d9c845ffdb031d39c5869c2eb794d073d7047c9f67",
-              "mime_type": "video/mp4",
-              "extension": "mp4",
-              "kind": "video"
-            },
             "assets": [
               {
                 "asset_id": "f1d7d1bb20d0b9996ff110fd93ede38d2914c03073f2f30c7dabdabfb263f1c7",

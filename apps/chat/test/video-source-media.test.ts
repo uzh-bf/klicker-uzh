@@ -33,8 +33,35 @@ describe('video source media', () => {
     expect(source?.videoFrame).toEqual(frame)
     expect(sourceMedia(source!, scope)).toEqual({
       frameSrc: `/api/chatbots/bot/threads/thread/messages/message/frames/${frame.asset_id}`,
-      href: `/api/chatbots/bot/threads/thread/messages/message/videos/${frame.asset_id}#t=42`,
+      href: undefined,
     })
+  })
+
+  it('opens the supplied recording URL while keeping the protected frame preview', () => {
+    const payload = structuredClone(fixture)
+    const url = 'https://video.example.edu/recordings/lecture-01#t=42,59'
+    payload.sources[0].source_url = url
+    const [source] = sources([{ ...query, result: payload }])
+    expect(sourceMedia(source, scope)).toEqual({
+      frameSrc: `/api/chatbots/bot/threads/thread/messages/message/frames/${frame.asset_id}`,
+      href: url,
+    })
+    expect(sourceMedia(source, { ...scope, messageId: '' })).toEqual({
+      frameSrc: undefined,
+      href: url,
+    })
+  })
+
+  it.each([
+    'javascript:alert(1)',
+    'https://user:password@video.example.edu/lecture',
+    'http://127.0.0.1/recording',
+  ])('never opens an unsafe supplied recording URL: %s', (url) => {
+    const payload = structuredClone(fixture)
+    payload.sources[0].source_url = url
+    const [source] = sources([{ ...query, result: payload }])
+    expect(sourceMedia(source, scope).href).toBeUndefined()
+    expect(sourceMedia(source, scope).frameSrc).toContain('/frames/')
   })
 
   it('keeps same-title recordings associated with their own retrieved source', () => {
@@ -42,7 +69,6 @@ describe('video source media', () => {
     second.reference = 'urn:video-ingestion:second-recording'
     second.chunks[0].video_frames.external_resource_id = 'other-recording'
     second.chunks[0].video_frames.source_video_sha256 = 'b'.repeat(64)
-    second.chunks[0].video_frames.video.sha256 = 'b'.repeat(64)
     second.chunks[0].video_frames.assets[0].asset_id = 'c'.repeat(64)
     const parts = [
       {

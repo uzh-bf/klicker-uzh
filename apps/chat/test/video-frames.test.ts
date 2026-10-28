@@ -14,12 +14,6 @@ import {
 } from '../src/lib/server/videoFrameStore'
 import { withVideoFrameTool } from '../src/lib/server/videoFrameTools'
 import {
-  parseVideoByteRange,
-  readLocalVideo,
-  signedVideoPlaybackUrl,
-  videoObjectKey,
-} from '../src/lib/server/videoPlaybackStore'
-import {
   selectedVideoFrame,
   selectedVideoFrames,
   sourceForVideoFrame,
@@ -75,14 +69,37 @@ describe('video frame selection', () => {
     ).toEqual([candidate])
   })
 
-  it('rejects non-video, failed and out-of-range frame evidence', () => {
+  it('rejects non-video, failed and reversed-range frame evidence', () => {
     expect(videoFrameCandidates({ isError: true, ...fixture })).toEqual([])
     const broken = structuredClone(fixture)
     broken.sources[0].source_type = 'pdf'
     expect(videoFrameCandidates(broken)).toEqual([])
     broken.sources[0].source_type = 'video'
-    broken.sources[0].chunks[0].video_frames.assets[0].timestamp_sec = 60
+    broken.sources[0].chunks[0].video_frames.assets[0].end_sec = 41
     expect(videoFrameCandidates(broken)).toEqual([])
+  })
+
+  it('keeps representative frames outside a transcript-split range', async () => {
+    const split = structuredClone(fixture)
+    split.sources[0].chunks[0].start_sec = 52
+    split.sources[0].chunks[0].video_frames.assets[0].start_sec = 52
+    const frame = videoFrameCandidates(split)[0]!
+    expect(frame.timestamp_sec).toBe(50)
+    expect(frame.start_sec).toBe(52)
+    await expect(readVideoFrame(frame, root)).resolves.toBeInstanceOf(Buffer)
+  })
+
+  it('requires no stored recording and ignores obsolete playback descriptors', () => {
+    expect(candidate).toBeDefined()
+    expect(candidate).not.toHaveProperty('video_sha256')
+    const legacy = structuredClone(fixture)
+    legacy.sources[0].chunks[0].video_frames.video = {
+      sha256: 'a'.repeat(64),
+      mime_type: 'video/mp4',
+      extension: 'mp4',
+      kind: 'video',
+    }
+    expect(videoFrameCandidates(legacy)).toEqual([candidate])
   })
 
   it('requires current-turn evidence and allowed KB before opening storage', async () => {
@@ -300,81 +317,5 @@ describe('video frame selection', () => {
       )
     ).resolves.toEqual(frameBytes)
     expect(requestedKeys).toEqual([...objects.keys()])
-  })
-
-  it('resolves the cited recording from the content-addressed video projection', async () => {
-    expect(videoObjectKey(candidate)).toContain(candidate.video_sha256)
-    expect(() =>
-      videoObjectKey({ ...candidate, video_extension: 'avi' as 'mp4' })
-    ).toThrow('extension')
-    const previous = process.env.CHAT_VIDEO_FRAME_STORE_PATH
-    process.env.CHAT_VIDEO_FRAME_STORE_PATH = root
-    try {
-      const { filename, size } = await readLocalVideo(candidate)
-      const bytes = await readFile(filename)
-      expect(size).toBe(33688)
-      expect(bytes.subarray(4, 8).toString('ascii')).toBe('ftyp')
-    } finally {
-      if (previous === undefined) delete process.env.CHAT_VIDEO_FRAME_STORE_PATH
-      else process.env.CHAT_VIDEO_FRAME_STORE_PATH = previous
-    }
-  })
-
-  it('uses the configured Blob endpoint for signed playback', async () => {
-    const previous = {
-      account: process.env.BLOB_STORAGE_ACCOUNT_NAME,
-      accountUrl: process.env.BLOB_STORAGE_ACCOUNT_URL,
-      accessKey: process.env.BLOB_STORAGE_ACCESS_KEY,
-      container: process.env.CHAT_VIDEO_BLOB_CONTAINER,
-    }
-    process.env.BLOB_STORAGE_ACCOUNT_NAME = 'devstoreaccount1'
-    process.env.BLOB_STORAGE_ACCOUNT_URL =
-      'http://localhost:10000/devstoreaccount1'
-    process.env.BLOB_STORAGE_ACCESS_KEY = Buffer.alloc(32).toString('base64')
-    process.env.CHAT_VIDEO_BLOB_CONTAINER = 'course-media'
-    try {
-      await expect(signedVideoPlaybackUrl(candidate)).resolves.toMatch(
-        /^http:\/\/localhost:10000\/devstoreaccount1\/course-media\//
-      )
-    } finally {
-      if (previous.account === undefined)
-        delete process.env.BLOB_STORAGE_ACCOUNT_NAME
-      else process.env.BLOB_STORAGE_ACCOUNT_NAME = previous.account
-      if (previous.accountUrl === undefined)
-        delete process.env.BLOB_STORAGE_ACCOUNT_URL
-      else process.env.BLOB_STORAGE_ACCOUNT_URL = previous.accountUrl
-      if (previous.accessKey === undefined)
-        delete process.env.BLOB_STORAGE_ACCESS_KEY
-      else process.env.BLOB_STORAGE_ACCESS_KEY = previous.accessKey
-      if (previous.container === undefined)
-        delete process.env.CHAT_VIDEO_BLOB_CONTAINER
-      else process.env.CHAT_VIDEO_BLOB_CONTAINER = previous.container
-    }
-  })
-
-  it('parses explicit and suffix byte ranges without falling back silently', () => {
-    expect(parseVideoByteRange(null, 1000)).toEqual({
-      start: 0,
-      end: 999,
-      partial: false,
-    })
-    expect(parseVideoByteRange('bytes=100-199', 1000)).toEqual({
-      start: 100,
-      end: 199,
-      partial: true,
-    })
-    expect(parseVideoByteRange('bytes=-200', 1000)).toEqual({
-      start: 800,
-      end: 999,
-      partial: true,
-    })
-    expect(parseVideoByteRange('bytes=-2000', 1000)).toEqual({
-      start: 0,
-      end: 999,
-      partial: true,
-    })
-    expect(parseVideoByteRange('bytes=100-50', 1000)).toBeUndefined()
-    expect(parseVideoByteRange('bytes=0-1,4-5', 1000)).toBeUndefined()
-    expect(parseVideoByteRange('items=0-5', 1000)).toBeUndefined()
   })
 })

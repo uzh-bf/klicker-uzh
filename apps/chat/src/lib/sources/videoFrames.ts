@@ -14,25 +14,6 @@ const MAX_VIDEO_CHUNKS_PER_SOURCE = 30
 const MAX_VIDEO_ASSETS_PER_CHUNK = 10
 export const videoAssetIdSchema = z.string().regex(/^[a-f0-9]{64}$/)
 const digest = videoAssetIdSchema
-export const VIDEO_FORMATS = {
-  mp4: 'video/mp4',
-  webm: 'video/webm',
-  m4v: 'video/x-m4v',
-  mov: 'video/quicktime',
-} as const
-const videoExtension = z.enum(
-  Object.keys(VIDEO_FORMATS) as [
-    keyof typeof VIDEO_FORMATS,
-    ...(keyof typeof VIDEO_FORMATS)[],
-  ]
-)
-const videoMimeType = z.enum(
-  Object.values(VIDEO_FORMATS) as [
-    (typeof VIDEO_FORMATS)[keyof typeof VIDEO_FORMATS],
-    ...(typeof VIDEO_FORMATS)[keyof typeof VIDEO_FORMATS][],
-  ]
-)
-
 export const videoFrameSchema = z
   .object({
     asset_id: digest,
@@ -50,27 +31,11 @@ export const videoFrameSchema = z
     kb_id: z.string().uuid(),
     external_resource_id: z.string().min(1).max(300),
     resource_version: z.number().int().positive(),
-    video_sha256: digest,
-    video_mime_type: videoMimeType,
-    video_extension: videoExtension,
     title: z.string().min(1),
   })
   .refine((frame) => frame.end_sec >= frame.start_sec, {
     message: 'end_sec must not precede start_sec',
   })
-  .refine((frame) => frame.video_sha256 === frame.source_video_sha256, {
-    message: 'video asset must match the cited source video',
-  })
-  .refine(
-    (frame) => VIDEO_FORMATS[frame.video_extension] === frame.video_mime_type,
-    { message: 'video format is inconsistent' }
-  )
-  .refine(
-    (frame) =>
-      frame.timestamp_sec >= frame.start_sec &&
-      frame.timestamp_sec <= frame.end_sec,
-    { message: 'timestamp_sec must lie inside the retrieved video range' }
-  )
 
 export type VideoFrame = z.infer<typeof videoFrameSchema>
 
@@ -102,14 +67,7 @@ export function videoFrameCandidates(raw: unknown): VideoFrame[] {
     ).slice(0, MAX_VIDEO_CHUNKS_PER_SOURCE)) {
       const chunk = record(rawChunk)
       const envelope = record(chunk?.video_frames)
-      const video = record(envelope?.video)
-      if (
-        !chunk ||
-        envelope?.version !== 1 ||
-        !video ||
-        video.kind !== 'video' ||
-        !Array.isArray(envelope.assets)
-      )
+      if (!chunk || envelope?.version !== 1 || !Array.isArray(envelope.assets))
         continue
       for (const rawAsset of envelope.assets.slice(
         0,
@@ -120,9 +78,6 @@ export function videoFrameCandidates(raw: unknown): VideoFrame[] {
         const parsed = videoFrameSchema.safeParse({
           ...envelope,
           ...asset,
-          video_sha256: video.sha256,
-          video_mime_type: video.mime_type,
-          video_extension: video.extension,
           title,
         })
         if (!parsed.success) {
