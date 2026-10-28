@@ -97,6 +97,27 @@ Use a layered verification loop:
    no complete Playwright runtime, and label that result separately from E2E
    status.
 
+## Current host-runner path and cold builds
+
+Local Playwright now runs through `pnpm playwright:host -- <args>` on the
+host, against the exact managed container. This supersedes the historical
+container-browser setup above; do not install browser binaries in the
+application container or bypass the launcher.
+
+In [PR #5764](https://github.com/uzh-bf/klicker-uzh/pull/5764), startup reached
+Auth's readiness deadline while GraphQL was still compiling. Isolated package
+builds succeeded. A standalone prebuild did not warm the runtime's cache:
+`.devcontainer/post-start.sh:12` loads the canonical environment and namespaces
+workspace URLs, while `turbo.json:3` declares environment-dependent cache
+inputs. A prebuild with that same environment completed all eight tasks, and
+the next canonical startup and both focused browser scenarios passed.
+
+When this failure recurs, inspect the producing build and its cache hits before
+changing source or extending readiness deadlines. Warm only the required
+dependencies inside the exact runtime, matching its startup environment without
+printing or copying secret values. Do not treat an isolated bundle's successful
+exit as proof that the application started or the browser scenario passed.
+
 ## Why This Works
 
 Each gate has a different owner and failure signal:

@@ -546,10 +546,10 @@ test.describe.serial('Lecturer chatbot draft authoring', () => {
       `${process.env.URL_CHAT ?? URL_CHAT}/preview/${chatbotId}`
     )
 
+    await page.bringToFront()
     await expect(page.getByTestId('chatbot-disclaimer-title')).toHaveValue(
       'Unsaved title'
     )
-
     const discardNavigationDialogPromise = page
       .waitForEvent('dialog')
       .then((dialog) => {

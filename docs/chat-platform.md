@@ -88,9 +88,22 @@ timestamps.
 
 The owner-only GraphQL surface is the source of truth for lecturer review:
 the owner can inspect the set, approve, edit and approve, or reject an entry.
-Non-owners receive `null`, and no production GraphQL or chat runtime path
-creates candidates or marks evidence eligible. Local/test fixtures may seed
-synthetic candidates and evidence solely to exercise the review lifecycle.
+Non-owners receive `null`. In owner preview, the first completed, grounded
+answer can carry a short-lived signed receipt. The owner can use that receipt
+once to create a `CANDIDATE`; capture rechecks account AI access, the chatbot, mode, source hashes,
+and citation parity before writing. Capture never approves or publishes the
+example, and participant chats cannot use this path. Local/test fixtures may
+seed synthetic candidates and evidence solely to exercise the review lifecycle.
+
+General owner preview retains the selected mode's complete retrieval scope,
+including plural knowledge bases and graph retrieval. Capture currently needs
+one matching live knowledge-base attachment and explicit source/chunk/hash/anchor
+lineage from the retrieval result. Missing lineage or a plural retrieval scope
+leaves capture unavailable; display titles, excerpts and page numbers never
+substitute for canonical evidence.
+Custom modes defined only in the authored preview configuration remain
+previewable, but capture is unavailable until the review mode contract supports
+them. Legacy prompt-key modes retain their existing review support.
 
 Quizzer selection and approval in response-example review use its standard-mode
 setting and the same effective document-query binding resolver as participant
