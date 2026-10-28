@@ -61,6 +61,9 @@ RUN node util/deployment-build-env.mjs --app chat -- pnpm run build --filter=@kl
 FROM base AS runner
 WORKDIR /app
 
+# Standalone servers run Node directly; package managers are build tools.
+RUN rm -rf /usr/local/lib/node_modules/npm /usr/local/bin/npm /usr/local/bin/npx
+
 RUN addgroup --system --gid 1001 nodejs
 RUN adduser --system --uid 1001 nextjs
 USER nextjs

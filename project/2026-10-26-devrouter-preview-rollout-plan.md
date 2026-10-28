@@ -159,3 +159,12 @@ successful preview publications, preserving exact source, trusted controller,
 configuration, platform, producing attempt and scan checks. Frontend variants
 with different URLs remain distinct. Image publication still never activates a
 preview. Full application and forge qualification remain separate gates.
+
+The approved runtime-image repair removes unused global package managers from
+final Node images and refreshes the student MCP transport dependencies within
+their declared majors. PWA excludes the webpack serializer from its standalone
+runtime after build; native image and browser checks cover startup, login/join
+rendering and service-worker delivery. Production feature modules are unchanged.
+Image admission remains mandatory. Upstream Azure Identity/MSAL and LiteLLM/filelock
+constraints require separate compatibility evidence before adopting new majors;
+local package-range patches are not implied by a major-version exception.
