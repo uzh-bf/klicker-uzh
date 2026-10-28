@@ -141,9 +141,9 @@ test('preserves draft cancellation, publication and diagnostics policy', () => {
   assert.equal(upload.with['if-no-files-found'], 'warn')
 })
 
-test('routes automatic drafts through Mistral Flash without changing the final provider', () => {
+test('routes every main review through Flash while retaining separate advisor credentials', () => {
   const { job, actionStep, action, manifest } = loadPinnedDraftPolicy()
-  assert.equal(job.env.OCR_ADAPTER_PROVIDER, 'mistral-flash')
+  assert.equal(job.env.OCR_ADAPTER_PROVIDER, 'mistral-deepseek')
   assert.deepEqual(actionStep.with, {
     'mistral-api-key': '${{ secrets.MISTRAL_API_KEY }}',
     'context7-api-key': '${{ secrets.CONTEXT7_API_KEY }}',
@@ -168,7 +168,7 @@ test('routes automatic drafts through Mistral Flash without changing the final p
   assert.equal(run.env.MISTRAL_API_KEY, '${{ inputs.mistral-api-key }}')
   assert.equal(run.env.OPENROUTER_API_KEY, undefined)
   assert.equal(run.env.CONTEXT7_API_KEY, '${{ inputs.context7-api-key }}')
-  assert.equal(run.env.OCR_ADAPTER_PROVIDER, 'mistral-flash')
+  assert.equal(run.env.OCR_ADAPTER_PROVIDER, 'mistral-deepseek')
   const publisher = action.runs.steps.find(
     (step) => step.with?.repository === 'alibaba/open-code-review'
   )
@@ -198,8 +198,11 @@ test('routes automatic drafts through Mistral Flash without changing the final p
       'utf8'
     )
   )
-  for (const finalJob of Object.values(manual.jobs)) {
-    assert.equal(finalJob.env?.OCR_ADAPTER_PROVIDER, undefined)
+  for (const [name, finalJob] of Object.entries(manual.jobs)) {
+    assert.equal(
+      finalJob.env?.OCR_ADAPTER_PROVIDER,
+      ['review', 'review_stack'].includes(name) ? 'mistral-deepseek' : undefined
+    )
     for (const step of finalJob.steps ?? [])
       assert.equal(step.env?.OCR_ADAPTER_PROVIDER, undefined)
   }

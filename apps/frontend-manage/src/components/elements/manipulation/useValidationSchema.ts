@@ -5,7 +5,7 @@ import {
 } from '@klicker-uzh/graphql/dist/ops'
 import { useTranslations } from 'next-intl'
 import * as yup from 'yup'
-import { ElementFormTypesCaseStudy } from './types'
+import { ElementFormTypesCaseStudy, ElementFormTypesNumerical } from './types'
 
 function useSharedValidationSchema() {
   const t = useTranslations()
@@ -156,7 +156,12 @@ function useOptionsSchemaKPRIM() {
   }
 }
 
-function useOptionsSchemaNumerical() {
+function useOptionsSchemaNumerical(
+  originalOptions?: Pick<
+    ElementFormTypesNumerical['options'],
+    'accuracy' | 'exactSolutions'
+  >
+) {
   const t = useTranslations()
 
   return {
@@ -165,7 +170,25 @@ function useOptionsSchemaNumerical() {
     accuracy: yup
       .number()
       .nullable()
-      .min(0, t('manage.formErrors.NRPrecision')),
+      .test({
+        message: t('manage.formErrors.NRPrecision'),
+        test: (accuracy, context) => {
+          if (accuracy == null) return true
+          if (Number.isInteger(accuracy) && accuracy >= 0 && accuracy <= 100) {
+            return true
+          }
+
+          return (
+            accuracy === originalOptions?.accuracy &&
+            context.parent.exactSolutions?.length ===
+              originalOptions?.exactSolutions?.length &&
+            (context.parent.exactSolutions ?? []).every(
+              (solution: number, index: number) =>
+                solution === originalOptions?.exactSolutions?.[index]
+            )
+          )
+        },
+      }),
     unit: yup.string().nullable(),
 
     restrictions: yup.object().shape({
@@ -775,13 +798,20 @@ function useOptionsSchemaCaseStudy() {
 
 function useValidationSchema({
   numberOfAnswerOptions,
+  originalNumericalOptions,
 }: {
   numberOfAnswerOptions?: number
+  originalNumericalOptions?: Pick<
+    ElementFormTypesNumerical['options'],
+    'accuracy' | 'exactSolutions'
+  >
 }) {
   const optionsSchemaSC = useOptionsSchemaSC()
   const optionsSchemaMC = useOptionsSchemaMC()
   const optionsSchemaKPRIM = useOptionsSchemaKPRIM()
-  const optionsSchemaNumerical = useOptionsSchemaNumerical()
+  const optionsSchemaNumerical = useOptionsSchemaNumerical(
+    originalNumericalOptions
+  )
   const optionsSchemaFreeText = useOptionsSchemaFreeText()
   const optionsSchemaSelection = useOptionsSchemaSelection({
     numberOfAnswerOptions,

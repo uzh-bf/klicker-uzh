@@ -1,6 +1,7 @@
 import { describe, expect, test } from 'vitest'
 
 import {
+  escapeNonMathDollars,
   hideIncompleteMath,
   inspectStreamingMath,
 } from '../src/lib/markdown/streamingMath'
@@ -102,5 +103,59 @@ describe('streaming math scanner', () => {
       incompleteMathStart: mathStart,
     })
     expect(hideIncompleteMath(input)).toBe(input.slice(0, mathStart))
+  })
+})
+
+describe('non-math dollar escaping', () => {
+  test.each([
+    ['two amounts', 'returned $90,000, leaving $10,000.'],
+    ['a range', 'between $5-$10 per unit'],
+    ['a single amount', 'The price is $5 today'],
+  ])('escapes currency in %s', (_, input) => {
+    expect(escapeNonMathDollars(input)).toBe(input.replaceAll('$', '\\$'))
+  })
+
+  test.each([
+    ['a symbol', '$x$'],
+    ['an equation', '$3 + 4 = 7$'],
+    ['two formulas', '$NPV = -I_0 + CF_1$ and $k$'],
+    ['display math', '$$\nx^2\n$$'],
+    ['an escaped dollar', 'Use \\$5 already escaped'],
+    ['inline code', '`$5 and $10`'],
+    ['fenced code', '```\n$5 and $10\n```'],
+  ])('leaves %s unchanged', (_, input) => {
+    expect(escapeNonMathDollars(input)).toBe(input)
+  })
+
+  test('keeps a formula and escapes the amount in the same paragraph', () => {
+    expect(escapeNonMathDollars('With $k = 0.09$, it costs $100.')).toBe(
+      'With $k = 0.09$, it costs \\$100.'
+    )
+  })
+
+  test.each([
+    [
+      'a formula',
+      'It costs $5 and $x$ is the unknown.',
+      'It costs \\$5 and $x$ is the unknown.',
+    ],
+    [
+      'a range and a formula',
+      'between $5-$10 and $x$',
+      'between \\$5-\\$10 and $x$',
+    ],
+    [
+      'a code span with a dollar',
+      'Price $5; use `$HOME` here',
+      'Price \\$5; use `$HOME` here',
+    ],
+  ])('escapes an amount before %s', (_, input, expected) => {
+    expect(escapeNonMathDollars(input)).toBe(expected)
+  })
+
+  test('escapes amounts in prose after a fenced code block', () => {
+    expect(escapeNonMathDollars('```\n$5\n```\nIt costs $5 and $10.')).toBe(
+      '```\n$5\n```\nIt costs \\$5 and \\$10.'
+    )
   })
 })
