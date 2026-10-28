@@ -555,7 +555,7 @@ jobs:
           image-ref: ${{ format('{0}/{1}/{2}-arm@{3}', 'ghcr.io', github.repository, matrix.image, env.DIGEST) }}
           format: json
           severity: HIGH,CRITICAL
-          exit-code: "0"
+          exit-code: '0'
           output: image-scan-${{ matrix.jobBase }}-arm-findings.json
           timeout: 10m
       - name: Generate a CycloneDX SBOM
@@ -565,7 +565,7 @@ jobs:
           scan-type: image
           image-ref: ${{ format('{0}/{1}/{2}-arm@{3}', 'ghcr.io', github.repository, matrix.image, env.DIGEST) }}
           format: cyclonedx
-          exit-code: "0"
+          exit-code: '0'
           output: image-scan-${{ matrix.jobBase }}-arm-sbom.cdx.json
           timeout: 10m
       - name: Write the scan receipt
@@ -627,7 +627,7 @@ jobs:
           PLAN_SELECTED: ${{ needs.plan.outputs.selected }}
           PLAN_STATE: ${{ needs.plan.outputs.state }}
           PLAN_UNAVAILABLE: ${{ needs.plan.outputs.unavailable }}
-          PRIORITY_JOB_NAMESPACE: "priority-execution / "
+          PRIORITY_JOB_NAMESPACE: 'priority-execution / '
         with:
           script: |
             const {

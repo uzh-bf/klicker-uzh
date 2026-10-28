@@ -140,8 +140,8 @@ jobs:
         if: ${{ !cancelled() && steps.build.outcome == 'success' && steps.setup_chat_db.outcome == 'success' }}
         run: pnpm --filter @klicker-uzh/chat test:run --coverage --coverage.provider=v8 --coverage.reporter=lcov --coverage.reportsDirectory=coverage
         env:
-          CHAT_ACCOUNT_USAGE_INTEGRATION: "1"
-          CHAT_ACCOUNT_USAGE_ENFORCEMENT_ENABLED: "false"
+          CHAT_ACCOUNT_USAGE_INTEGRATION: '1'
+          CHAT_ACCOUNT_USAGE_ENFORCEMENT_ENABLED: 'false'
           DATABASE_URL: postgresql://klicker_test:klicker@localhost:5432/klicker_test
           SHADOW_DATABASE_URL: postgresql://klicker_test:klicker@localhost:5432/klicker_test_shadow
       - name: Test frontend PWA
