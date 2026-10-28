@@ -1,4 +1,6 @@
 import { readFileSync } from 'node:fs'
+import { dirname, join } from 'node:path'
+import { fileURLToPath } from 'node:url'
 import Handlebars from 'handlebars'
 
 type PromptContext = {
@@ -52,7 +54,13 @@ export function renderPromptTemplate<Name extends keyof PromptContext>(
   if (!template) {
     // Assets stay beside the owning package in both API and Next standalone builds.
     const source = readFileSync(
-      new URL(`../../prompts/${name}.hbs`, import.meta.url),
+      join(
+        dirname(fileURLToPath(import.meta.url)),
+        '..',
+        '..',
+        'prompts',
+        `${name}.hbs`
+      ),
       'utf8'
     ).replace(/\r?\n$/, '')
     template = Handlebars.compile(source, { strict: true })
