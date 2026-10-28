@@ -453,7 +453,9 @@ async function worker() {
       limitations: [
         'deterministic local provider and execution transports',
         'no real Python or guest-termination proof',
-        'browser qualification remains separate',
+        ...(setup.browser
+          ? []
+          : ['browser acceptance not included in this run']),
       ],
     })
   } catch (error) {
@@ -644,6 +646,14 @@ async function browserQualification(setup, generation) {
     next = await control('stats')
     assert.equal(next.codeApiCalls, previous.codeApiCalls + 2)
     completed.push('browser-recovery')
+    await control('failure')
+    previous = await control('stats')
+    send('Report the synthetic execution-service failure without retrying.')
+    waitText('synthetic-service-unavailable')
+    next = await control('stats')
+    assert.equal(next.codeApiCalls, previous.codeApiCalls + 1)
+    assert.equal(next.modelCalls, previous.modelCalls + 2)
+    completed.push('browser-service-failure-single-attempt')
     await control('disable')
     previous = await control('stats')
     send('Answer without Python when the feature is disabled.')

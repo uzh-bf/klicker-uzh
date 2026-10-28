@@ -157,3 +157,10 @@ The host package uses the patched Handlebars release and native manifest orderin
 
 
 The local browser acceptance uses the existing participant-login mutation from the browser to obtain the ordinary HTTP-only cookie, then exercises the actual selected chat interface. This keeps authentication and cookie transport real without making an unchanged PWA login screen a prerequisite for the API migration. The PWA login UI itself remains outside this acceptance claim. No injected cookie, synthetic authentication endpoint or production authentication change is introduced.
+
+
+### Local acceptance and source delivery checkpoint
+
+The final local browser path now passes ordinary cookie authentication, direct API selection, enabled Python result consumption, reload without new execution, Stop transport cancellation, recovery and the disabled zero-dispatch gate. The actual API/Prisma/Catalyst path also passes canonical persistence, one usage charge, replay protection, owner denial, history and feedback. Existing guarded PostgreSQL tests confirm a single concurrent provider claim and atomic distinct-turn charging. These use deterministic provider/execution fixtures; real guest execution, reaping, teaching quality, hosted consumer configuration and rollout are outside this acceptance. The unchanged PWA login interface is not qualified.
+
+The standalone Next artifact imports host routes and reads its traced prompt assets; full managed-runtime typecheck and build pass. A reproduced credentialed-stream CORS regression is corrected in the host layer with an explicit regression test. Independent integrated review and the focused correction pass cover the public host/browser source, reusing unchanged private engine evidence. The bounded service-failure case also passes with a single execution attempt and no retry. Remaining delivery checks are exact latest CI, draft descriptions and verified runtime shutdown, recorded in the private completion receipt. The original foundation dependency gate still requires an explicit Zod major-version decision; no check is waived and no major migration is included here.
