@@ -88,9 +88,22 @@ timestamps.
 
 The owner-only GraphQL surface is the source of truth for lecturer review:
 the owner can inspect the set, approve, edit and approve, or reject an entry.
-Non-owners receive `null`, and no production GraphQL or chat runtime path
-creates candidates or marks evidence eligible. Local/test fixtures may seed
-synthetic candidates and evidence solely to exercise the review lifecycle.
+Non-owners receive `null`. In owner preview, the first completed, grounded
+answer can carry a short-lived signed receipt. The owner can use that receipt
+once to create a `CANDIDATE`; capture rechecks account AI access, the chatbot, mode, source hashes,
+and citation parity before writing. Capture never approves or publishes the
+example, and participant chats cannot use this path. Local/test fixtures may
+seed synthetic candidates and evidence solely to exercise the review lifecycle.
+
+General owner preview retains the selected mode's complete retrieval scope,
+including plural knowledge bases and graph retrieval. Capture currently needs
+one matching live knowledge-base attachment and explicit source/chunk/hash/anchor
+lineage from the retrieval result. Missing lineage or a plural retrieval scope
+leaves capture unavailable; display titles, excerpts and page numbers never
+substitute for canonical evidence.
+Custom modes defined only in the authored preview configuration remain
+previewable, but capture is unavailable until the review mode contract supports
+them. Legacy prompt-key modes retain their existing review support.
 
 Quizzer selection and approval in response-example review use its standard-mode
 setting and the same effective document-query binding resolver as participant
@@ -1282,9 +1295,9 @@ this order:
 
 1. server-sourced course data containing JSON-serialized `Course.displayName`;
 2. lower-priority lecturer guidance for a standard mode, when stored;
-3. one JSON-serialized typed lecturer context section for Tutor or Explainer, or a scope-note-only
+3. one JSON-serialized typed lecturer context section for Tutor, Explainer, or Writing Coach, or a scope-note-only
    section for Quizzer, when valid and present;
-4. the platform-owned Tutor, Explainer, or Quizzer contract from `DEFAULT_PROMPT`, or instead the
+4. the platform-owned Tutor, Explainer, Quizzer, or Writing Coach contract from `DEFAULT_PROMPT`, or instead the
    lecturer-defined persona for a custom mode;
 5. the student answer preferences, when the student chose a non-default style or tone (see
    [Student answer style and tone](#student-answer-style-and-tone));
@@ -1298,10 +1311,37 @@ this order:
 10. the fixed conversation-language and Swiss Standard German policy from
     `src/lib/server/languageInstructions.ts:withLanguageStyleContract`.
 
-The course-data and typed-context sections explicitly treat their entire JSON values as data
-rather than instructions. Quotes, newlines, and instruction-like text in a display name or typed
-persona field therefore cannot gain prompt authority. A custom mode omits both standard-mode
-sections but still receives every fixed platform section.
+The course-data section treats its JSON value as data. Typed lecturer context is also serialized
+as one JSON value, with explicit instructions to apply compatible audience, prior-knowledge,
+task and learning-priority guidance. That guidance remains subordinate to the fixed mode and
+platform contracts. Serialization preserves the data boundary; actual model compliance still
+requires behavioral evaluation. A custom mode omits both standard-mode sections but still
+receives every fixed platform section.
+
+Lecturer framing (`scopeNote`) accepts 1,000 characters through the existing JSON configuration.
+Manage uses the shared limit and provides persistent scientific and informal examples without
+prefilling the field. Active context enters prompt compilation on each request, including in
+an existing conversation. Published chatbots continue using their live configuration until a
+saved revision is approved. Context changes do not alter a response already in flight or
+earlier messages.
+
+Writing Coach (`writing-coach`) starts disabled and may be the only conversational mode. At
+least one of Tutor, Explainer, or Writing Coach must remain enabled; Quizzer alone is invalid.
+Missing historical flags normalize to false. An older mutation that omits the new flag preserves
+the stored choice. `saveChatbotRevision` locks the chatbot row and checks
+`expectedRevisionVersion`; if the revision version has advanced, it rejects the save as an edit
+conflict instead of overwriting concurrent changes. `writing-coach` is a standard-mode
+identifier. Stored guidance with that key
+cannot enable the mode or replace its platform contract. Other custom modes retain their
+existing behavior; stored prompt text is never returned to the client.
+
+The Writing Coach prompt uses generic criteria for purpose, reasoning, organization, clarity
+and tone. It asks for evidence-based feedback and revision strategies adapted to the excerpt,
+without replacement wording, translations or completions. Optional Notes are ordinary Markdown
+within a response; they add no separate storage or learning record. The mode uses only its exact
+MCP bindings and follows existing required-tool eligibility. It inherits no Tutor tools.
+Authoring explains a missing required binding even when the mode flag is enabled. Neither the
+prompt nor source tests alone establish the quality of its feedback or adherence to its boundary.
 
 A custom-mode persona holds at most 10,000 characters. The `chatbot-long-custom-prompts` flag
 raises that limit to 100,000 for the lecturer who writes or edits the text. Stored configurations

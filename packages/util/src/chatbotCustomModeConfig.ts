@@ -19,11 +19,13 @@ import {
   CHATBOT_CUSTOM_MODE_WELCOME_MESSAGE_MAX_LENGTH,
 } from './chatbotCustomModeLimits.js'
 
+import { CHATBOT_STANDARD_MODE_KEYS } from './chatbotStandardModeConfig.js'
+
 export * from './chatbotCustomModeLimits.js'
 
 // Custom mode names must stay distinguishable from the built-in modes, so the
 // reserved names are the standard mode identifiers the runtime already offers.
-const RESERVED_MODE_NAMES = new Set(['tutor', 'explainer', 'quizzer'])
+const RESERVED_MODE_NAMES = new Set<string>(CHATBOT_STANDARD_MODE_KEYS)
 
 const MODE_KEY_PREFIX = 'cm_'
 
