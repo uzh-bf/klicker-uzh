@@ -156,7 +156,11 @@ async function handleAddResponse(req: IncomingMessage, res: ServerResponse) {
   const eventName = isAuthenticatedParticipant
     ? 'response-received:authenticated'
     : 'response-received:anonymous'
-  console.log(`Pushing event ${eventName} with payload`, message)
+  console.log(`Pushing event ${eventName}`, {
+    messageId: message.messageId,
+    sessionId: message.sessionId,
+    instanceId: message.instanceId,
+  })
 
   await hatchetClient.events.push(eventName, message)
   return sendJson(req, res, 200, { status: 'ok', responseTimestamp })
@@ -174,7 +178,7 @@ async function handleAddAssessmentResponse(
     payload = await readBody(req)
   } catch (err: any) {
     hatchetClient.events.push('create-audit-log-entry', {
-      info: `[ERROR] [AddResponse Assessment] Failed to read request body: ${err.message} for request ${JSON.stringify(req)}`,
+      info: `[ERROR] [AddResponse Assessment] Failed to read request body: ${err.message}`,
     })
     return badRequest(req, res, err.message)
   }
@@ -267,7 +271,7 @@ async function handleAddAssessmentResponse(
     !!user && user.role === 'PARTICIPANT' && user.scope === UserLoginScope.EDUID
   if (!user || !user.sub || !isAssessmentCookieValid) {
     hatchetClient.events.push('create-audit-log-entry', {
-      info: `[ERROR] [AddResponse Assessment] Missing or invalid assessment cookie: ${cookies} for response ${JSON.stringify(payload)}`,
+      info: `[ERROR] [AddResponse Assessment] Missing or invalid assessment cookie for response ${JSON.stringify(payload)}`,
     })
     return sendJson(req, res, 401, {
       error: 'missing_invalid_assessment_cookie',
@@ -319,10 +323,11 @@ async function handleAddAssessmentResponse(
   }
 
   // start the processing of an assessment response
-  console.log(
-    `Pushing event ${'response-received:assessment'} with payload`,
-    message
-  )
+  console.log(`Pushing event ${'response-received:assessment'}`, {
+    correlationId,
+    liveQuizId: message.liveQuizId,
+    instanceId: message.instanceId,
+  })
 
   try {
     await hatchetClient.events.push('response-received:assessment', message)

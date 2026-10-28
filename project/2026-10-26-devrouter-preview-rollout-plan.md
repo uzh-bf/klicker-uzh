@@ -200,3 +200,16 @@ UZH access, synthetic data and fixed expiry remain binding. A second attempt
 still requires a diagnosed failure, reviewed correction, terminal CI and
 independently verified cleanup. No parent-package variant or broader waiver is
 authorized. Reconcile native ownership before any new allocation.
+
+
+### Target integration required for CI
+
+GitHub reported merge conflicts and did not start required source workflows.
+Integrate `v3-ai` at `3d6a945b83ff05e8afa3e1ece86ead3576af3ed7` once to
+restore a testable candidate. Preserve the target's ordinary/priority routing
+and add the preview lane without shared cancellation or status-name collisions.
+The priority image executor remains semantically unchanged. Generate the
+codebase executor with this branch's existing preview and worker checks, publish
+that immutable artifact commit, then pin the caller to its SHA in the next
+commit. The final candidate must pass executor parity and all required CI before
+any paid image publication. No target merge, release or permission change follows.

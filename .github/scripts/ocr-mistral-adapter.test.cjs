@@ -14,61 +14,694 @@ const {
   MISTRAL_URL,
   MISTRAL_MODEL,
   MISTRAL_FLASH_MODEL,
+  MISTRAL_DEEPSEEK_MODEL,
   normalizeMistralResponse,
   translateMistralRequest,
   createHistoryStore,
+  createUsageJournal,
+  createProviderAvailability,
+  parseProviderPause,
   startAdapter,
   callMistral,
   estimateCost,
   buildCostReport,
   createProgressFilter,
   createProgressReporter,
+  summarizePlanGuidance,
 } = require('./ocr-mistral-adapter.cjs')
 
 const ADAPTER = path.join(__dirname, 'ocr-mistral-adapter.cjs')
 const CHAT_PATH = '/v1/chat/completions'
 const SHUTDOWN_PATH = '/shutdown'
 
-test('Mistral Flash fixes the draft model and max effort while preserving native tool requests', () => {
-  const body = {
-    model: MISTRAL_FLASH_MODEL,
-    messages: [{ role: 'user', content: 'synthetic' }],
-    reasoning_effort: 'max',
-    reasoning: { effort: 'none' },
-    provider: { only: ['untrusted'] },
-    max_completion_tokens: 16384,
-    prompt_cache_key: 'synthetic-session',
-    tools: [{ type: 'function', function: { name: 'task_done' } }],
+test('draft plan compatibility supplies only completed final text without retries or lost usage', async () => {
+  const key = '1234abcd-plan_task-0123456789abcdef'
+  const cases = [
+    { finish: 'stop', content: 'synthetic final plan', outcome: 'usable' },
+    { finish: 'length', content: '', outcome: 'length' },
+    { finish: 'length', content: 'partial final plan', outcome: 'length' },
+    { finish: 'stop', content: '', outcome: 'empty' },
+    { finish: 'stop', content: ' \n ', outcome: 'empty' },
+    { finish: 'content_filter', content: 'partial', outcome: 'invalid_finish' },
+    { finish: 'stop', content: '', outcome: null, enabled: false },
+    { finish: 'length', content: '', outcome: null, key: '1234abcd-plan_task' },
+    { finish: 'length', content: '', outcome: null, key: `x${key}` },
+    { finish: 'length', content: '', outcome: null, key: `${key}x` },
+    {
+      finish: 'length',
+      content: '',
+      outcome: null,
+      key: key.replace('plan_task', 'grouping_task'),
+    },
+    {
+      finish: 'length',
+      content: '',
+      outcome: null,
+      key: key.replace('0123456789abcdef', 'not-a-scope-hash'),
+    },
+    {
+      finish: 'length',
+      content: '',
+      outcome: null,
+      tools: [{ type: 'function', function: { name: 'synthetic_tool' } }],
+    },
+    {
+      finish: 'length',
+      content: '',
+      outcome: null,
+      tools: [{ type: 'function', function: { name: 'task_done' } }],
+    },
+  ]
+  for (const item of cases) {
+    const message = {
+      role: 'assistant',
+      content: item.content,
+      reasoning_content: 'SYNTHETIC_REASONING_ONLY',
+    }
+    const payload = completion(message, item.finish)
+    payload.usage = {
+      prompt_tokens: 100,
+      completion_tokens: 16384,
+      total_tokens: 16484,
+      prompt_tokens_details: { cached_tokens: 80 },
+    }
+    const fetchImpl = upstream(() => jsonResponse(200, payload))
+    const adapter = await startAdapter({
+      apiKey: 'synthetic',
+      finalPlanGuidance: item.enabled !== false,
+      fetchImpl,
+    })
+    try {
+      const result = await postJson(adapter, {
+        prompt_cache_key: item.key ?? key,
+        messages: [{ role: 'user', content: 'synthetic plan request' }],
+        max_tokens: 16384,
+        reasoning_effort: 'max',
+        ...(item.tools ? { tools: item.tools } : {}),
+      })
+      assert.equal(result.status, 200)
+      assert.equal(fetchImpl.calls.length, 1)
+      assert.equal(fetchImpl.calls[0].body.max_tokens, 16384)
+      assert.equal(fetchImpl.calls[0].body.reasoning_effort, 'max')
+      assert.equal(result.json.choices[0].finish_reason, item.finish)
+      assert.deepEqual(result.json.usage, {
+        prompt_tokens: 20,
+        completion_tokens: 16384,
+        total_tokens: 16404,
+      })
+      assert.deepEqual(
+        result.json.choices[0].message,
+        item.outcome && item.outcome !== 'usable'
+          ? { role: 'assistant', content: '' }
+          : message
+      )
+      assert.deepEqual(payload.choices[0].message, message)
+      const diagnostic = adapter.diagnostics()
+      assert.equal(diagnostic.completion_tokens, 16384)
+      assert.equal(diagnostic.prompt_tokens, 100)
+      assert.equal(diagnostic.cached_prompt_tokens, 80)
+      assert.equal(diagnostic.accepted_responses, 1)
+      assert.equal(diagnostic.length_finishes, item.finish === 'length' ? 1 : 0)
+      if (item.enabled === false) assert.equal(diagnostic.plan_guidance, null)
+      else {
+        assert.equal(diagnostic.plan_guidance.responses, item.outcome ? 1 : 0)
+        if (item.outcome)
+          assert.equal(diagnostic.plan_guidance[item.outcome], 1)
+      }
+    } finally {
+      await adapter.close()
+    }
   }
-  const translated = translateMistralRequest(body, undefined, 'mistral-flash')
-  assert.equal(translated.model, MISTRAL_FLASH_MODEL)
-  assert.equal(translated.reasoning_effort, 'max')
-  assert.equal(translated.reasoning, undefined)
-  assert.equal(translated.provider, undefined)
-  assert.equal(translated.max_tokens, 16384)
-  assert.equal(translated.prompt_cache_key, 'synthetic-session')
-  assert.equal(translated.tool_choice, 'any')
-  for (const [change, code] of [
-    [{ reasoning_effort: 'high' }, 'invalid_request'],
-    [{ model: MISTRAL_MODEL }, 'model_mismatch'],
+})
+
+test('planning summary rejects missing, unfinished or inconsistent counters and reflects only fixed fields', () => {
+  const plan = {
+    responses: 4,
+    usable: 1,
+    length: 1,
+    empty: 1,
+    invalid_finish: 1,
+    PRIVATE_SENTINEL: 7,
+  }
+  assert.equal(
+    summarizePlanGuidance({ unfinished_requests: 0, plan_guidance: plan }),
+    'OCR planning status=complete responses=4 usable=1 length=1 empty=1 invalid_finish=1'
+  )
+  for (const record of [
+    null,
+    {},
+    { unfinished_requests: 0 },
+    { unfinished_requests: 1, plan_guidance: plan },
+    { unfinished_requests: 0, plan_guidance: { ...plan, responses: 5 } },
+    { unfinished_requests: 0, plan_guidance: { ...plan, length: -1 } },
+    { unfinished_requests: 0, plan_guidance: { ...plan, usable: null } },
   ])
-    assert.throws(
-      () =>
-        translateMistralRequest(
-          { ...body, ...change },
-          undefined,
-          'mistral-flash'
-        ),
-      { code }
+    assert.equal(
+      summarizePlanGuidance(record),
+      'OCR planning status=unavailable'
     )
-  assert.throws(
-    () =>
-      normalizeMistralResponse(
-        completion({ role: 'assistant', content: 'ok' }),
-        'mistral-flash'
-      ),
+})
+
+test('usage journals bound output, reject symlinks and do not retain payload fields', (t) => {
+  const directory = fs.mkdtempSync(path.join(os.tmpdir(), 'ocr-usage-journal-'))
+  t.after(() => fs.rmSync(directory, { recursive: true, force: true }))
+  const file = path.join(directory, 'events.jsonl')
+  const journal = createUsageJournal(file, { maxRecords: 3, maxBytes: 2048 })
+  for (let attempt = 1; attempt <= 5; attempt++)
+    journal.write({ event: 'dispatch', attempt, content: 'PRIVATE_SENTINEL' })
+  const rows = fs.readFileSync(file, 'utf8').trim().split('\n').map(JSON.parse)
+  assert.deepEqual(
+    rows.map((row) => row.event),
+    ['dispatch', 'dispatch', 'truncated']
+  )
+  assert.equal(
+    fs.readFileSync(file, 'utf8').includes('PRIVATE_SENTINEL'),
+    false
+  )
+  assert.equal(journal.snapshot().status, 'truncated')
+  assert.equal(journal.snapshot().dropped, 3)
+  assert.equal(fs.statSync(file).mode & 0o777, 0o600)
+  const byteFile = path.join(directory, 'bytes.jsonl')
+  const byteBounded = createUsageJournal(byteFile, { maxBytes: 400 })
+  for (let attempt = 1; attempt <= 6; attempt++)
+    byteBounded.write({ event: 'dispatch', attempt })
+  assert.equal(byteBounded.snapshot().status, 'truncated')
+  assert.ok(fs.statSync(byteFile).size <= 400)
+  const link = path.join(directory, 'link')
+  fs.symlinkSync(file, link)
+  const unsafe = createUsageJournal(link)
+  const before = fs.readFileSync(file, 'utf8')
+  unsafe.write({ event: 'dispatch' })
+  assert.equal(unsafe.snapshot().status, 'unavailable')
+  assert.equal(fs.readFileSync(file, 'utf8'), before)
+})
+
+test('response journal retains rejected usage without changing aggregate accounting', async (t) => {
+  const directory = fs.mkdtempSync(
+    path.join(os.tmpdir(), 'ocr-rejected-usage-')
+  )
+  t.after(() => fs.rmSync(directory, { recursive: true, force: true }))
+  const file = path.join(directory, 'events.jsonl')
+  const payload = completion({ role: 'assistant', content: 'PRIVATE_SENTINEL' })
+  payload.model = 'PRIVATE_SENTINEL'
+  payload.choices[0].finish_reason = 'PRIVATE_SENTINEL'
+  payload.usage.prompt_tokens_details = { cached_tokens: 2 }
+  const adapter = await startAdapter({
+    apiKey: 'PRIVATE_SENTINEL',
+    usageJournalPath: file,
+    fetchImpl: upstream(() => jsonResponse(200, payload)),
+  })
+  t.after(() => adapter.close())
+  const response = await postJson(adapter, {
+    model: MISTRAL_MODEL,
+    prompt_cache_key: 'PRIVATE_SENTINEL',
+    messages: [{ role: 'user', content: 'PRIVATE_SENTINEL' }],
+  })
+  assert.notEqual(response.status, 200)
+  const raw = fs.readFileSync(file, 'utf8')
+  assert.equal(raw.includes('PRIVATE_SENTINEL'), false)
+  const rows = raw.trim().split('\n').map(JSON.parse)
+  assert.deepEqual(
+    rows.map((row) => row.event),
+    ['dispatch', 'response', 'finished']
+  )
+  assert.equal(rows[1].prompt_tokens, 3)
+  assert.equal(rows[1].cached_prompt_tokens, 2)
+  assert.equal(rows[1].uncached_prompt_tokens, 1)
+  assert.equal(rows[1].finish_reason, 'unknown')
+  assert.equal(rows[2].outcome, 'rejected')
+  assert.equal(adapter.diagnostics().responses, 0)
+  assert.equal(adapter.diagnostics().usage_events.written, 3)
+})
+
+test('unwritable journals preserve provider results and incomplete usage stays null', async (t) => {
+  const directory = fs.mkdtempSync(
+    path.join(os.tmpdir(), 'ocr-journal-failure-')
+  )
+  t.after(() => fs.rmSync(directory, { recursive: true, force: true }))
+  const payload = completion({ role: 'assistant', content: 'synthetic' })
+  payload.usage = {
+    prompt_tokens: -1,
+    completion_tokens: 2,
+    prompt_tokens_details: { cached_tokens: 99 },
+  }
+  const file = path.join(directory, 'events.jsonl')
+  for (const usageJournalPath of [
+    path.join(directory, 'absent', 'events.jsonl'),
+    file,
+  ]) {
+    const adapter = await startAdapter({
+      apiKey: 'synthetic',
+      usageJournalPath,
+      fetchImpl: upstream(() => jsonResponse(200, payload)),
+    })
+    try {
+      assert.equal(
+        (
+          await postJson(adapter, {
+            model: MISTRAL_MODEL,
+            messages: [{ role: 'user', content: 'synthetic' }],
+          })
+        ).status,
+        200
+      )
+      assert.equal(adapter.diagnostics().responses, 1)
+      if (usageJournalPath !== file)
+        assert.equal(adapter.diagnostics().usage_events.status, 'unavailable')
+    } finally {
+      await adapter.close()
+    }
+  }
+  const response = fs
+    .readFileSync(file, 'utf8')
+    .trim()
+    .split('\n')
+    .map(JSON.parse)
+    .find((row) => row.event === 'response')
+  assert.equal(response.prompt_tokens, null)
+  assert.equal(response.cached_prompt_tokens, null)
+  assert.equal(response.uncached_prompt_tokens, null)
+  assert.equal(response.completion_tokens, 2)
+})
+
+test('advisor boundary preserves forced tool choice and journals truncated response sizes without content', async (t) => {
+  const directory = fs.mkdtempSync(path.join(os.tmpdir(), 'ocr-advisor-shape-'))
+  t.after(() => fs.rmSync(directory, { recursive: true, force: true }))
+  const file = path.join(directory, 'events.jsonl')
+  const thinking = 'PRIVATE_SENTINEL é'
+  const text = 'PRIVATE_SENTINEL 🧪'
+  const argumentsText = '{"answer":"PRIVATE_SENTINEL é'
+  const payload = completion(
+    {
+      role: 'assistant',
+      content: [
+        { type: 'thinking', thinking },
+        { type: 'text', text },
+      ],
+      reasoning_content: 'PRIVATE_SENTINEL',
+      tool_calls: [
+        {
+          id: 'PRIVATE_SENTINEL',
+          type: 'function',
+          function: { name: 'review_advice', arguments: argumentsText },
+        },
+      ],
+    },
+    'length'
+  )
+  payload.usage = {
+    prompt_tokens: 100,
+    completion_tokens: 16384,
+    total_tokens: 16484,
+    completion_tokens_details: { reasoning_tokens: 16000 },
+  }
+  const fetchImpl = upstream(() => jsonResponse(200, payload))
+  const adapter = await startAdapter({
+    apiKey: 'PRIVATE_SENTINEL',
+    usageJournalPath: file,
+    fetchImpl,
+  })
+  t.after(() => adapter.close())
+  const toolChoice = { type: 'function', function: { name: 'review_advice' } }
+  const result = await postJson(adapter, {
+    model: MISTRAL_MODEL,
+    messages: [{ role: 'user', content: 'synthetic advisor question' }],
+    reasoning_effort: 'max',
+    max_tokens: 16384,
+    tools: [{ type: 'function', function: { name: 'review_advice' } }],
+    tool_choice: toolChoice,
+  })
+  assert.equal(result.status, 200)
+  assert.equal(fetchImpl.calls.length, 1)
+  assert.deepEqual(fetchImpl.calls[0].body.tool_choice, toolChoice)
+  assert.equal(fetchImpl.calls[0].body.reasoning_effort, 'max')
+  assert.equal(fetchImpl.calls[0].body.max_tokens, 16384)
+  assert.equal(
+    result.json.choices[0].message.tool_calls[0].function.arguments,
+    argumentsText
+  )
+  const raw = fs.readFileSync(file, 'utf8')
+  assert.doesNotMatch(raw, /PRIVATE_SENTINEL/)
+  const row = raw
+    .trim()
+    .split('\n')
+    .map(JSON.parse)
+    .find((r) => r.event === 'response')
+  assert.equal(row.reasoning_tokens, 16000)
+  assert.equal(
+    row.reasoning_bytes,
+    Buffer.byteLength(thinking + 'PRIVATE_SENTINEL')
+  )
+  assert.equal(row.content_bytes, Buffer.byteLength(text))
+  assert.equal(row.tool_calls, 1)
+  assert.equal(row.tool_arguments_bytes, Buffer.byteLength(argumentsText))
+  assert.equal(row.finish_reason, 'length')
+  assert.equal(row.completion_tokens, 16384)
+  assert.equal(adapter.diagnostics().completion_tokens, 16384)
+  assert.equal(adapter.diagnostics().auxiliary_requests, 1)
+})
+
+test('response shape journals distinguish empty, missing and malformed evidence without changing rejection', async (t) => {
+  const directory = fs.mkdtempSync(path.join(os.tmpdir(), 'ocr-shape-unknown-'))
+  t.after(() => fs.rmSync(directory, { recursive: true, force: true }))
+  const valid = { role: 'assistant', content: null }
+  const cases = [
+    {
+      message: valid,
+      reasoning: undefined,
+      tokens: null,
+      shape: 0,
+      status: 200,
+    },
+    { message: valid, reasoning: 0, tokens: 0, shape: 0, status: 200 },
+    { message: valid, reasoning: -1, tokens: null, shape: 0, status: 200 },
+    { message: valid, reasoning: 5, tokens: null, shape: 0, status: 200 },
+    { message: valid, reasoning: 1.5, tokens: null, shape: 0, status: 200 },
+    { message: valid, reasoning: '2', tokens: null, shape: 0, status: 200 },
+    {
+      message: valid,
+      reasoning: Number.MAX_SAFE_INTEGER + 1,
+      tokens: null,
+      shape: 0,
+      status: 200,
+    },
+    {
+      message: valid,
+      reasoning: 2,
+      completion: -1,
+      tokens: null,
+      shape: 0,
+      status: 200,
+    },
+    {
+      message: valid,
+      reasoning: 2,
+      completion: undefined,
+      tokens: null,
+      shape: 0,
+      status: 200,
+    },
+    { message: undefined, reasoning: 2, tokens: 2, shape: null, status: 502 },
+    {
+      message: {
+        role: 'assistant',
+        content: [{ type: 'unsupported', text: 'PRIVATE_SENTINEL' }],
+      },
+      reasoning: 2,
+      tokens: 2,
+      shape: null,
+      status: 502,
+    },
+    {
+      message: { ...valid, tool_calls: 'PRIVATE_SENTINEL' },
+      reasoning: 2,
+      tokens: 2,
+      shape: null,
+      status: 502,
+    },
+  ]
+  for (const [index, fixture] of cases.entries()) {
+    const file = path.join(directory, `${index}.jsonl`)
+    const payload = completion(fixture.message)
+    if (Object.hasOwn(fixture, 'completion'))
+      payload.usage.completion_tokens = fixture.completion
+    payload.usage.completion_tokens_details = {
+      reasoning_tokens: fixture.reasoning,
+    }
+    const adapter = await startAdapter({
+      apiKey: 'synthetic',
+      usageJournalPath: file,
+      fetchImpl: upstream(() => jsonResponse(200, payload)),
+    })
+    try {
+      assert.equal(
+        (
+          await postJson(adapter, {
+            model: MISTRAL_MODEL,
+            messages: [{ role: 'user', content: 'synthetic' }],
+          })
+        ).status,
+        fixture.status
+      )
+      const raw = fs.readFileSync(file, 'utf8')
+      assert.doesNotMatch(raw, /PRIVATE_SENTINEL/)
+      const rows = raw.trim().split('\n').map(JSON.parse)
+      const row = rows.find((r) => r.event === 'response')
+      assert.equal(row.reasoning_tokens, fixture.tokens)
+      for (const field of [
+        'reasoning_bytes',
+        'content_bytes',
+        'tool_calls',
+        'tool_arguments_bytes',
+      ])
+        assert.equal(row[field], fixture.shape)
+      assert.equal(
+        rows.at(-1).outcome,
+        fixture.status === 200 ? 'accepted' : 'rejected'
+      )
+      assert.equal(
+        adapter.diagnostics().responses,
+        fixture.status === 200 ? 1 : 0
+      )
+    } finally {
+      await adapter.close()
+    }
+  }
+})
+
+test('direct preflight journals preserve stage identity and record response before validation', async (t) => {
+  const directory = fs.mkdtempSync(
+    path.join(os.tmpdir(), 'ocr-preflight-events-')
+  )
+  t.after(() => fs.rmSync(directory, { recursive: true, force: true }))
+  const file = path.join(directory, 'events.jsonl')
+  const payload = completion({ role: 'assistant', content: 'synthetic' })
+  payload.model = 'unrecognized'
+  payload.usage.completion_tokens_details = { reasoning_tokens: 2 }
+  await assert.rejects(
+    callMistral({
+      apiKey: 'synthetic',
+      diagnosticsStage: 'preflight',
+      usageJournalPath: file,
+      body: {
+        model: MISTRAL_MODEL,
+        messages: [{ role: 'user', content: 'synthetic' }],
+      },
+      fetchImpl: upstream(() => jsonResponse(200, payload)),
+    }),
     { code: 'response_model_mismatch' }
   )
+  const rows = fs.readFileSync(file, 'utf8').trim().split('\n').map(JSON.parse)
+  assert.deepEqual(
+    rows.map((row) => row.event),
+    ['dispatch', 'response', 'finished']
+  )
+  assert.ok(rows.every((row) => row.stage === 'preflight'))
+  assert.equal(rows[1].completion_tokens, 4)
+  assert.equal(rows[1].reasoning_tokens, 2)
+  assert.equal(rows[1].reasoning_bytes, 0)
+  assert.equal(rows[1].content_bytes, Buffer.byteLength('synthetic'))
+  assert.equal(rows[1].tool_calls, 0)
+  assert.equal(rows[1].tool_arguments_bytes, 0)
+  assert.equal(rows[2].outcome, 'rejected')
+  assert.equal(rows[2].failure, 'adapter_error')
+})
+
+test('response evidence survives SIGKILL while a later dispatch stays unknown', {
+  timeout: 10000,
+}, async (t) => {
+  const directory = fs.mkdtempSync(path.join(os.tmpdir(), 'ocr-killed-usage-'))
+  t.after(() => fs.rmSync(directory, { recursive: true, force: true }))
+  const file = path.join(directory, 'events.jsonl')
+  const script = `
+const { startAdapter, MISTRAL_MODEL } = require(process.argv[1])
+let calls = 0
+;(async () => {
+ const adapter = await startAdapter({ apiKey: 'synthetic', usageJournalPath: process.argv[2], fetchImpl: async () => {
+  if (++calls === 2) { process.stdout.write('pending\\n'); return new Promise(() => {}) }
+  return new Response(JSON.stringify({ model: MISTRAL_MODEL, choices: [{ finish_reason: 'stop', message: { role: 'assistant', content: 'synthetic' } }], usage: { prompt_tokens: 10, completion_tokens: 2, prompt_tokens_details: { cached_tokens: 4 } } }), { status: 200 })
+ } })
+ const request = () => fetch(adapter.url + '/v1/chat/completions', { method: 'POST', headers: { authorization: 'Bearer ' + adapter.token, 'content-type': 'application/json' }, body: JSON.stringify({ model: MISTRAL_MODEL, messages: [{ role: 'user', content: 'synthetic' }] }) })
+ await (await request()).text()
+ await request()
+})().catch(() => process.exit(1))
+`
+  const child = spawn(process.execPath, ['-e', script, ADAPTER, file], {
+    stdio: ['ignore', 'pipe', 'pipe'],
+  })
+  t.after(() => child.kill('SIGKILL'))
+  let output = ''
+  await new Promise((resolve, reject) => {
+    const timer = setTimeout(
+      () => reject(new Error('fixture dispatch timeout')),
+      5000
+    )
+    child.once('error', reject)
+    child.stdout.on('data', (chunk) => {
+      output += chunk
+      if (output.includes('pending')) {
+        clearTimeout(timer)
+        resolve()
+      }
+    })
+  })
+  await new Promise((resolve) => {
+    child.once('exit', resolve)
+    child.kill('SIGKILL')
+  })
+  const rows = fs.readFileSync(file, 'utf8').trim().split('\n').map(JSON.parse)
+  assert.deepEqual(
+    rows.map((row) => row.event),
+    ['dispatch', 'response', 'finished', 'dispatch']
+  )
+  assert.equal(rows[1].prompt_tokens, 10)
+  assert.equal(rows[3].attempt, 2)
+  assert.equal(
+    rows.some((row) => row.attempt === 2 && row.event === 'response'),
+    false
+  )
+})
+
+test('observed context results are isolated by conversation and deduplicate history replay', async (t) => {
+  const native = {
+    role: 'assistant',
+    content: '',
+    tool_calls: [
+      {
+        id: 'private-call',
+        type: 'function',
+        function: {
+          name: 'klicker_review_read_review_context',
+          arguments: '{}',
+        },
+      },
+    ],
+  }
+  const adapter = await startAdapter({
+    apiKey: 'synthetic',
+    fetchImpl: upstream(() =>
+      jsonResponse(200, completion(native, 'tool_calls'))
+    ),
+  })
+  t.after(() => adapter.close())
+  const initial = {
+    model: MISTRAL_MODEL,
+    prompt_cache_key: 'private-session',
+    messages: [{ role: 'user', content: 'synthetic' }],
+  }
+  const first = await postJson(adapter, initial)
+  const next = {
+    ...initial,
+    messages: [
+      ...initial.messages,
+      first.json.choices[0].message,
+      { role: 'tool', tool_call_id: 'private-call', content: 'é' },
+    ],
+  }
+  assert.equal((await postJson(adapter, next)).status, 200)
+  assert.equal((await postJson(adapter, next)).status, 200)
+  assert.equal(
+    (
+      await postJson(adapter, {
+        ...initial,
+        prompt_cache_key: 'other-private-session',
+      })
+    ).status,
+    200
+  )
+  const rows = adapter.diagnostics().conversations
+  const observed = rows.find(
+    (row) => row.observed_tool_results.read_review_context.calls
+  )
+  assert.equal(observed.observed_tool_results.read_review_context.calls, 1)
+  assert.equal(
+    observed.observed_tool_results.read_review_context.returned_bytes,
+    2
+  )
+  assert.equal(
+    rows.filter(
+      (row) => row.observed_tool_results.read_review_context.calls === 0
+    ).length,
+    1
+  )
+  observed.observed_tool_results.read_review_context.calls = 99
+  assert.equal(
+    adapter.diagnostics().conversations[0].observed_tool_results
+      .read_review_context.calls,
+    1
+  )
+  assert.equal(
+    JSON.stringify(adapter.diagnostics()).includes('private-'),
+    false
+  )
+})
+
+for (const [provider, model] of [
+  ['mistral-flash', MISTRAL_FLASH_MODEL],
+  ['mistral-deepseek', MISTRAL_DEEPSEEK_MODEL],
+])
+  test(`${provider} fixes the model and max effort while preserving native tool requests`, () => {
+    const body = {
+      model,
+      messages: [{ role: 'user', content: 'synthetic' }],
+      reasoning_effort: 'max',
+      reasoning: { effort: 'none' },
+      provider: { only: ['untrusted'] },
+      max_completion_tokens: 16384,
+      prompt_cache_key: 'synthetic-session',
+      tools: [{ type: 'function', function: { name: 'task_done' } }],
+    }
+    const translated = translateMistralRequest(body, undefined, provider)
+    assert.equal(translated.model, model)
+    assert.equal(translated.reasoning_effort, 'max')
+    assert.equal(translated.reasoning, undefined)
+    assert.equal(translated.provider, undefined)
+    assert.equal(translated.max_tokens, 16384)
+    assert.equal(translated.prompt_cache_key, 'synthetic-session')
+    assert.equal(translated.tool_choice, 'any')
+    for (const [change, code] of [
+      [{ reasoning_effort: 'high' }, 'invalid_request'],
+      [{ model: MISTRAL_MODEL }, 'model_mismatch'],
+    ])
+      assert.throws(
+        () =>
+          translateMistralRequest({ ...body, ...change }, undefined, provider),
+        { code }
+      )
+    assert.throws(
+      () =>
+        normalizeMistralResponse(
+          completion({ role: 'assistant', content: 'ok' }),
+          provider
+        ),
+      { code: 'response_model_mismatch' }
+    )
+  })
+
+test('DeepSeek cost receipts use snapshot prices and reject GLM and unidentified receipts', () => {
+  const row = {
+    ...costReceipt(),
+    provider: 'mistral-deepseek',
+    model: MISTRAL_DEEPSEEK_MODEL,
+  }
+  const estimate = estimateCost(JSON.stringify(row), 'mistral-deepseek')
+  assert.ok(Math.abs(estimate.withCache - 0.20025) < 1e-10)
+  assert.ok(Math.abs(estimate.withoutCache - 0.42) < 1e-10)
+  assert.ok(Math.abs(estimate.savings - 0.21975) < 1e-10)
+  for (const bad of [
+    costReceipt(),
+    { ...row, model: MISTRAL_FLASH_MODEL },
+    { ...row, provider: 'mistral-flash' },
+  ]) {
+    const report = buildCostReport(
+      `${JSON.stringify(row)}\n${JSON.stringify({ ...bad, upstream_attempts: 2 })}`,
+      { adapter: 2 },
+      'mistral-deepseek'
+    )
+    assert.equal(report.estimate, null)
+    assert.equal(report.reportedResponseEstimate, null)
+    assert.ok(report.reasons.includes('provider_mismatch'))
+  }
 })
 
 test('Flash cost receipts use their model prices and reject mixed or unidentified models', () => {
@@ -723,6 +1356,53 @@ function costReceipt(overrides = {}) {
   }
 }
 
+test('cost components reconcile complete stages and withhold incomplete stages', async (t) => {
+  const directory = fs.mkdtempSync(
+    path.join(os.tmpdir(), 'ocr-cost-components-')
+  )
+  t.after(() => fs.rmSync(directory, { recursive: true, force: true }))
+  const receipt = path.join(directory, 'receipt.jsonl')
+  fs.writeFileSync(receipt, JSON.stringify(costReceipt()))
+  const complete = await runCli(['summary', receipt], {
+    GITHUB_STEP_SUMMARY: path.join(directory, 'summary.md'),
+  })
+  assert.equal(complete.code, 0)
+  const line = complete.stdout
+    .split('\n')
+    .find((line) => line.startsWith('OCR cost_components '))
+  const fields = Object.fromEntries(
+    [...line.matchAll(/([a-z_]+)=([^ ]+)/g)].map(([, key, value]) => [
+      key,
+      value,
+    ])
+  )
+  assert.equal(fields.status, 'complete')
+  assert.equal(Number(fields.uncached_input_usd), 0.35)
+  assert.equal(Number(fields.cached_input_usd), 0.105)
+  assert.equal(Number(fields.output_usd), 0.44)
+  assert.ok(Math.abs(Number(fields.cached_share_percent) - 11.7) < 0.01)
+  assert.ok(
+    Math.abs(
+      Number(fields.uncached_input_usd) +
+        Number(fields.cached_input_usd) +
+        Number(fields.output_usd) -
+        estimateCost(JSON.stringify(costReceipt())).withCache
+    ) < 0.0001
+  )
+  fs.writeFileSync(
+    receipt,
+    JSON.stringify(costReceipt({ upstream_attempts: 2 }))
+  )
+  const partial = await runCli(['summary', receipt], {
+    GITHUB_STEP_SUMMARY: path.join(directory, 'summary.md'),
+  })
+  assert.equal(partial.code, 0)
+  assert.match(
+    partial.stdout,
+    /^OCR cost_components stage=adapter status=unavailable$/m
+  )
+})
+
 test('cost estimates aggregate lifetimes once and keep output cost in the no-cache baseline', () => {
   const row = costReceipt({
     request_types: { main: costReceipt() },
@@ -975,7 +1655,7 @@ test('manual workflows reconcile shared stage receipts against independent step 
     const preflight = steps.find((step) => step.includes('id: preflight'))
     const execution = steps.find((step) => step.includes(`id: ${stepId}`))
     const summary = steps.find((step) =>
-      step.includes('ocr-mistral-adapter.cjs summary')
+      step.includes('ocr-mistral-adapter.cjs final-summary')
     )
     const receiptPath = execution.match(/OCR_ADAPTER_DIAGNOSTICS_PATH: (.+)/)[1]
     assert.equal(
@@ -1519,7 +2199,10 @@ async function loadLoopbackTransport(t, handler) {
       return Promise.reject(new Error('OCR_TRANSPORT_PRIVATE_SENTINEL'))
     },
   })
-  vm.runInContext(fs.readFileSync(ADAPTER, 'utf8'), context)
+  vm.runInContext(
+    `${fs.readFileSync(ADAPTER, 'utf8')}\nmodule.exports.__commandRun = commandRun\n`,
+    context
+  )
   return {
     ...sandboxModule.exports,
     attempts: () => attempts,
@@ -2517,7 +3200,7 @@ test('close bounds an uncooperative request and marks its accounting incomplete'
   }
 })
 
-for (const provider of ['mistral', 'mistral-flash'])
+for (const provider of ['mistral', 'mistral-flash', 'mistral-deepseek'])
   test(`${provider}: compression restores only exact reasoned turns, retaining native thinking and bounds`, () => {
     const history = createHistoryStore({ maxEntries: 3, provider })
     const prefix = [
@@ -2602,7 +3285,7 @@ for (const provider of ['mistral', 'mistral-flash'])
     assert.equal(misses.misses, 6)
   })
 
-for (const provider of ['mistral', 'mistral-flash'])
+for (const provider of ['mistral', 'mistral-flash', 'mistral-deepseek'])
   test(`${provider}: compressed tool replay without echoed reasoning requires the same conversation and unique native state`, () => {
     const history = createHistoryStore({ maxEntries: 3, provider })
     const prefix = [{ role: 'user', content: 'original' }]
@@ -2749,6 +3432,7 @@ test('request conversion and native replay work over the loopback listener', asy
 for (const [provider, model] of [
   ['mistral', MISTRAL_MODEL],
   ['mistral-flash', MISTRAL_FLASH_MODEL],
+  ['mistral-deepseek', MISTRAL_DEEPSEEK_MODEL],
 ])
   test(`${provider}: native memory keeps concurrent groups with reused tool-call ids apart`, async () => {
     const make = (marker) => ({
@@ -3116,6 +3800,338 @@ test('upstream failures are redacted to a fixed safe error', async () => {
   }
 })
 
+test('provider pause parsing is strict and paused adapters never dispatch', async () => {
+  for (const value of [undefined, '', 'false', false])
+    assert.equal(parseProviderPause(value), false)
+  for (const value of ['true', true])
+    assert.equal(parseProviderPause(value), true)
+  for (const value of ['FALSE', '0', 0, null])
+    assert.throws(
+      () => parseProviderPause(value),
+      { code: 'invalid_provider_pause' },
+      String(value)
+    )
+
+  const availability = createProviderAvailability()
+  assert.deepEqual(availability.snapshot(), {
+    status: 'available',
+    reason: null,
+  })
+  availability.markPaymentRequired()
+  assert.deepEqual(availability.snapshot(), {
+    status: 'unavailable',
+    reason: 'provider_payment_required',
+  })
+
+  const fetchImpl = upstream(() =>
+    jsonResponse(200, completion({ role: 'assistant', content: 'synthetic' }))
+  )
+  const adapter = await startAdapter({
+    apiKey: 'synthetic',
+    paused: true,
+    fetchImpl,
+  })
+  try {
+    const response = await postJson(adapter, {
+      messages: [{ role: 'user', content: 'synthetic' }],
+    })
+    assert.equal(response.status, 403)
+    assert.equal(response.json.error.code, 'provider_paused')
+    assert.equal(fetchImpl.calls.length, 0)
+    assert.deepEqual(adapter.diagnostics().provider_availability, {
+      status: 'unavailable',
+      reason: 'provider_paused',
+    })
+  } finally {
+    await adapter.close()
+  }
+})
+
+test('confirmed upstream 402 stops repeated requests and a separate shared advisor adapter', async (t) => {
+  const directory = fs.mkdtempSync(path.join(os.tmpdir(), 'ocr-402-latch-'))
+  t.after(() => fs.rmSync(directory, { recursive: true, force: true }))
+  const file = path.join(directory, 'events.jsonl')
+  const secret = 'PRIVATE_PROVIDER_SENTINEL'
+  const fetchImpl = upstream(() =>
+    jsonResponse(402, {
+      error: { code: 402, message: secret },
+      echo: secret,
+    })
+  )
+  const availability = createProviderAvailability()
+  const adapter = await startAdapter({
+    availability,
+    apiKey: 'synthetic',
+    usageJournalPath: file,
+    fetchImpl,
+  })
+  const advisor = await startAdapter({
+    apiKey: 'synthetic',
+    availability,
+    fetchImpl,
+  })
+  const mainBody = {
+    model: MISTRAL_MODEL,
+    messages: [{ role: 'user', content: 'synthetic main' }],
+    tools: [
+      { type: 'function', function: { name: 'task_done', parameters: {} } },
+    ],
+  }
+  const advisorBody = {
+    model: MISTRAL_MODEL,
+    messages: [{ role: 'user', content: 'synthetic advisor' }],
+  }
+  try {
+    const first = await postJson(adapter, mainBody)
+    assert.equal(first.status, 402)
+    assert.equal(first.json.error.code, 'provider_payment_required')
+    assert.doesNotMatch(first.text, /PRIVATE_PROVIDER_SENTINEL/)
+    for (const body of [mainBody, advisorBody, mainBody, advisorBody]) {
+      const response = await postJson(adapter, body)
+      assert.equal(response.status, 402)
+      assert.equal(response.json.error.code, 'provider_payment_required')
+      assert.doesNotMatch(response.text, /PRIVATE_PROVIDER_SENTINEL/)
+    }
+    assert.equal((await postJson(advisor, advisorBody)).status, 402)
+    assert.equal(advisor.diagnostics().upstream_attempts, 0)
+    assert.equal(fetchImpl.calls.length, 1)
+    const diagnostics = adapter.diagnostics()
+    assert.equal(diagnostics.upstream_attempts, 1)
+    assert.equal(diagnostics.responses, 0)
+    assert.deepEqual(diagnostics.last_upstream_error, {
+      http_status: 402,
+      code: 402,
+      reason: 'unknown',
+    })
+    assert.deepEqual(diagnostics.provider_availability, {
+      status: 'unavailable',
+      reason: 'provider_payment_required',
+    })
+    const rows = fs
+      .readFileSync(file, 'utf8')
+      .trim()
+      .split('\n')
+      .map(JSON.parse)
+    assert.equal(rows.filter((row) => row.event === 'dispatch').length, 1)
+    assert.deepEqual(
+      rows
+        .filter((row) => row.event === 'finished')
+        .map((row) => row.http_status),
+      [402, null, null, null, null]
+    )
+  } finally {
+    await advisor.close()
+    await adapter.close()
+  }
+})
+
+test('a 402 latch does not abort already dispatched work or lose its usage', async () => {
+  const firstHeaders = Promise.withResolvers()
+  const secondHeaders = Promise.withResolvers()
+  const draining = Promise.withResolvers()
+  const releaseDrain = Promise.withResolvers()
+  const fetchImpl = upstream((_record, index) => {
+    if (index === 1) return firstHeaders.promise
+    if (index === 2) return secondHeaders.promise
+    return jsonResponse(500, { error: { message: 'unexpected dispatch' } })
+  })
+  const availability = createProviderAvailability()
+  const adapter = await startAdapter({
+    apiKey: 'synthetic',
+    availability,
+    fetchImpl,
+  })
+  const body = {
+    model: MISTRAL_MODEL,
+    messages: [{ role: 'user', content: 'synthetic' }],
+  }
+  let first
+  let second
+  let third
+  try {
+    first = postJson(adapter, body)
+    await waitFor(() => fetchImpl.calls.length === 1)
+    second = postJson(adapter, body)
+    await waitFor(() => fetchImpl.calls.length === 2)
+
+    let read = false
+    firstHeaders.resolve({
+      status: 402,
+      ok: false,
+      body: {
+        getReader: () => ({
+          read: async () => {
+            if (read) return { done: true }
+            read = true
+            draining.resolve()
+            await releaseDrain.promise
+            return {
+              done: false,
+              value: Buffer.from(
+                JSON.stringify({ error: { code: 402, message: 'synthetic' } })
+              ),
+            }
+          },
+        }),
+      },
+    })
+    await draining.promise
+    assert.equal(availability.reason, 'provider_payment_required')
+
+    third = postJson(adapter, body)
+    secondHeaders.resolve(
+      jsonResponse(
+        200,
+        completion({ role: 'assistant', content: 'already dispatched' })
+      )
+    )
+    const secondResult = await second
+    assert.equal(secondResult.status, 200)
+    assert.equal((await third).status, 402)
+    releaseDrain.resolve()
+    assert.equal((await first).status, 402)
+
+    const diagnostics = adapter.diagnostics()
+    assert.equal(fetchImpl.calls.length, 2)
+    assert.equal(diagnostics.upstream_attempts, 2)
+    assert.equal(diagnostics.responses, 1)
+    assert.equal(diagnostics.accepted_responses, 1)
+    assert.equal(diagnostics.prompt_tokens, 3)
+    assert.deepEqual(diagnostics.provider_availability, {
+      status: 'unavailable',
+      reason: 'provider_payment_required',
+    })
+  } finally {
+    firstHeaders.resolve(jsonResponse(402, { error: { code: 402 } }))
+    secondHeaders.resolve(
+      jsonResponse(200, completion({ role: 'assistant', content: 'synthetic' }))
+    )
+    releaseDrain.resolve()
+    await Promise.allSettled([first, second, third].filter(Boolean))
+    await adapter.close()
+  }
+})
+
+test('other rejected and transient upstream responses do not latch availability', async () => {
+  for (const status of [401, 403, 429, 502, 503]) {
+    const fetchImpl = upstream(() =>
+      jsonResponse(status, { error: { message: 'synthetic' } })
+    )
+    const adapter = await startAdapter({ apiKey: 'synthetic', fetchImpl })
+    try {
+      const response = await postJson(adapter, {
+        messages: [{ role: 'user', content: 'synthetic' }],
+      })
+      assert.equal(response.status, 502)
+      assert.equal(fetchImpl.calls.length, 1)
+      assert.deepEqual(adapter.diagnostics().provider_availability, {
+        status: 'available',
+        reason: null,
+      })
+    } finally {
+      await adapter.close()
+    }
+  }
+})
+
+test('direct provider 402 is fixed and nonretryable, and pause blocks dispatch', async (t) => {
+  const directory = fs.mkdtempSync(path.join(os.tmpdir(), 'ocr-direct-402-'))
+  t.after(() => fs.rmSync(directory, { recursive: true, force: true }))
+  const file = path.join(directory, 'events.jsonl')
+  const secret = 'PRIVATE_PROVIDER_SENTINEL'
+  const availability = createProviderAvailability()
+  const fetchImpl = upstream(
+    () =>
+      new Response(secret, {
+        status: 402,
+        headers: { 'content-type': 'text/plain' },
+      })
+  )
+  const options = {
+    apiKey: 'synthetic',
+    availability,
+    usageJournalPath: file,
+    fetchImpl,
+    body: {
+      model: MISTRAL_MODEL,
+      messages: [{ role: 'user', content: 'synthetic' }],
+    },
+  }
+  await assert.rejects(
+    () => callMistral(options),
+    (error) => {
+      assert.equal(error.code, 'provider_payment_required')
+      assert.equal(error.status, 402)
+      assert.equal(error.retryable, false)
+      assert.doesNotMatch(error.message, /PRIVATE_PROVIDER_SENTINEL/)
+      return true
+    }
+  )
+  assert.equal(availability.reason, 'provider_payment_required')
+  await assert.rejects(
+    () => callMistral(options),
+    (error) => {
+      assert.equal(error.code, 'provider_payment_required')
+      assert.equal(error.status, 402)
+      assert.equal(error.retryable, false)
+      return true
+    }
+  )
+  assert.equal(fetchImpl.calls.length, 1)
+  const rows = fs.readFileSync(file, 'utf8').trim().split('\n').map(JSON.parse)
+  assert.equal(rows.filter((row) => row.event === 'dispatch').length, 1)
+  assert.deepEqual(
+    rows
+      .filter((row) => row.event === 'finished')
+      .map((row) => row.http_status),
+    [402]
+  )
+
+  const pausedFetch = upstream(() =>
+    jsonResponse(200, completion({ role: 'assistant', content: 'synthetic' }))
+  )
+  const summaryPath = path.join(directory, 'summary.md')
+  const outputPath = path.join(directory, 'output.txt')
+  fs.writeFileSync(summaryPath, '')
+  fs.writeFileSync(outputPath, '')
+  const previousSummary = process.env.GITHUB_STEP_SUMMARY
+  const previousOutput = process.env.GITHUB_OUTPUT
+  process.env.GITHUB_STEP_SUMMARY = summaryPath
+  process.env.GITHUB_OUTPUT = outputPath
+  try {
+    await assert.rejects(
+      () =>
+        callMistral({
+          ...options,
+          apiKey: undefined,
+          availability: undefined,
+          paused: true,
+          fetchImpl: pausedFetch,
+        }),
+      (error) => {
+        assert.equal(error.code, 'provider_paused')
+        assert.equal(error.status, 403)
+        assert.equal(error.retryable, false)
+        return true
+      }
+    )
+  } finally {
+    if (previousSummary === undefined) delete process.env.GITHUB_STEP_SUMMARY
+    else process.env.GITHUB_STEP_SUMMARY = previousSummary
+    if (previousOutput === undefined) delete process.env.GITHUB_OUTPUT
+    else process.env.GITHUB_OUTPUT = previousOutput
+  }
+  assert.equal(pausedFetch.calls.length, 0)
+  assert.equal(
+    fs.readFileSync(summaryPath, 'utf8'),
+    'OCR provider availability status=unavailable reason=provider_paused\n'
+  )
+  assert.equal(
+    fs.readFileSync(outputPath, 'utf8'),
+    'provider_unavailable=provider_paused\n'
+  )
+})
+
 test('rejection diagnostics keep only HTTP status and allowlisted numeric codes', async () => {
   const secret = 'PRIVATE_PROVIDER_SENTINEL'
   const cases = [
@@ -3274,8 +4290,11 @@ test('OpenRouter budget reasons are content-free, bounded and provider-scoped', 
         const response = await postJson(adapter, {
           messages: [{ role: 'user', content: 'synthetic' }],
         })
-        assert.equal(response.status, 502)
-        assert.equal(response.json.error.code, 'upstream_error')
+        assert.equal(response.status, status === 402 ? 402 : 502)
+        assert.equal(
+          response.json.error.code,
+          status === 402 ? 'provider_payment_required' : 'upstream_error'
+        )
         const receipt = adapter.diagnostics()
         assert.deepEqual(receipt.last_upstream_error, {
           http_status: status,
@@ -3337,7 +4356,7 @@ test('late rejection bodies cannot overwrite a newer observed error or an earlie
   try {
     await draining.promise
     const snapshot = adapter.diagnostics()
-    assert.equal((await postJson(adapter, body)).status, 502)
+    assert.equal((await postJson(adapter, body)).status, 402)
     release.resolve('{"error":{"code":403,"message":"Key limit exceeded"}}')
     assert.equal((await first).status, 502)
     assert.deepEqual(adapter.diagnostics().last_upstream_error, {
@@ -3664,6 +4683,71 @@ test('default upstream transport completes delayed headers and streamed bodies a
   assert.equal(receipt.responses, 1)
   assert.equal(receipt.prompt_tokens, 3)
   assert.equal(receipt.completion_tokens, 4)
+})
+
+test('run exits nonzero after a confirmed 402 even when the child succeeds', {
+  timeout: 6000,
+}, async (t) => {
+  const requests = []
+  const transport = await loadLoopbackTransport(t, async (req, res) => {
+    let body = ''
+    for await (const chunk of req) body += chunk
+    requests.push(JSON.parse(body))
+    res.writeHead(402, { 'content-type': 'application/json' })
+    res.end(JSON.stringify({ error: { code: 402, message: 'synthetic' } }))
+  })
+  const names = [
+    'GITHUB_OUTPUT',
+    'GITHUB_STEP_SUMMARY',
+    'MISTRAL_API_KEY',
+    'OCR_ADAPTER_DIAGNOSTICS_PATH',
+    'OCR_ADAPTER_PROVIDER',
+    'OCR_PROVIDER_PAUSED',
+  ]
+  const previous = Object.fromEntries(
+    names.map((name) => [name, process.env[name]])
+  )
+  delete process.env.GITHUB_OUTPUT
+  delete process.env.GITHUB_STEP_SUMMARY
+  process.env.MISTRAL_API_KEY = 'synthetic-key'
+  delete process.env.OCR_ADAPTER_DIAGNOSTICS_PATH
+  process.env.OCR_ADAPTER_PROVIDER = 'mistral'
+  process.env.OCR_PROVIDER_PAUSED = 'false'
+  try {
+    const child = `
+      ;(async () => {
+        const response = await fetch(process.env.OCR_LLM_URL, {
+          method: 'POST',
+          headers: {
+            authorization: \`Bearer \${process.env.OCR_LLM_TOKEN}\`,
+            'content-type': 'application/json',
+          },
+          body: JSON.stringify({
+            model: process.env.OCR_LLM_MODEL,
+            messages: [{ role: 'user', content: 'synthetic' }],
+          }),
+        })
+        await response.arrayBuffer()
+        process.exitCode = response.status === 402 ? 0 : 7
+      })().catch(() => { process.exitCode = 7 })
+    `
+    const code = await transport.__commandRun([
+      '--',
+      process.execPath,
+      '-e',
+      child,
+    ])
+    assert.equal(code, 1)
+    assert.equal(transport.attempts(), 1)
+    assert.deepEqual(requests[0].messages, [
+      { role: 'user', content: 'synthetic' },
+    ])
+  } finally {
+    for (const name of names) {
+      if (previous[name] === undefined) delete process.env[name]
+      else process.env[name] = previous[name]
+    }
+  }
 })
 
 test('default upstream transport bounds stalled headers, bodies, size and redirects at both callers', {
@@ -4042,6 +5126,7 @@ test('run strips both upstream keys and injects only the selected loopback model
   for (const [provider, model] of [
     [undefined, MISTRAL_MODEL],
     ['mistral-flash', MISTRAL_FLASH_MODEL],
+    ['mistral-deepseek', MISTRAL_DEEPSEEK_MODEL],
     ['openrouter', 'deepseek/deepseek-v4.1-flash-1017'],
   ]) {
     const result = await runCli(
@@ -4596,5 +5681,309 @@ test('run with live progress terminates its listener on SIGTERM', async () => {
     child.kill('SIGKILL')
     await exited
     fs.rmSync(directory, { recursive: true, force: true })
+  }
+})
+
+test('direct DeepSeek calls retain native tool reasoning, usage identity and the shared cancellation signal', async () => {
+  const history = createHistoryStore({ provider: 'mistral-deepseek' })
+  const receipts = []
+  const messages = [{ role: 'user', content: 'synthetic bounded question' }]
+  let calls = 0
+  const fetchImpl = async (_url, options) => {
+    const body = JSON.parse(options.body)
+    calls += 1
+    assert.equal(body.model, MISTRAL_DEEPSEEK_MODEL)
+    assert.equal(body.reasoning_effort, 'max')
+    if (calls === 2)
+      assert.equal(
+        body.messages[1].reasoning_content,
+        'synthetic native reasoning'
+      )
+    return new Response(
+      JSON.stringify({
+        model: MISTRAL_DEEPSEEK_MODEL,
+        choices: [
+          {
+            finish_reason: calls === 1 ? 'tool_calls' : 'stop',
+            message:
+              calls === 1
+                ? {
+                    role: 'assistant',
+                    content: '',
+                    reasoning_content: 'synthetic native reasoning',
+                    tool_calls: [
+                      {
+                        id: 'call_1',
+                        type: 'function',
+                        function: {
+                          name: 'ask_review_advisor',
+                          arguments: '{}',
+                        },
+                      },
+                    ],
+                  }
+                : { role: 'assistant', content: '{}' },
+          },
+        ],
+        usage: {
+          prompt_tokens: 100,
+          completion_tokens: 20,
+          total_tokens: 120,
+          prompt_tokens_details: { cached_tokens: 80 },
+        },
+      })
+    )
+  }
+  const request = (body) =>
+    callMistral({
+      apiKey: 'synthetic',
+      provider: 'mistral-deepseek',
+      body,
+      history,
+      fetchImpl,
+      diagnosticsStage: 'topology',
+      diagnosticsSink: (row) => receipts.push(row),
+    })
+  const first = await request({ messages })
+  messages.push(first.choices[0].message, {
+    role: 'tool',
+    tool_call_id: 'call_1',
+    content: 'synthetic advice',
+  })
+  await request({ messages })
+  assert.equal(receipts.length, 2)
+  assert.ok(
+    receipts.every(
+      (row) =>
+        row.provider === 'mistral-deepseek' &&
+        row.model === MISTRAL_DEEPSEEK_MODEL &&
+        row.completion_tokens === 20
+    )
+  )
+  const controller = new AbortController()
+  const pending = callMistral({
+    apiKey: 'synthetic',
+    provider: 'mistral-deepseek',
+    body: { messages: [{ role: 'user', content: 'synthetic' }] },
+    signal: controller.signal,
+    fetchImpl: async (_url, init) =>
+      new Promise((_resolve, reject) =>
+        init.signal.addEventListener(
+          'abort',
+          () => reject(new Error('PRIVATE_SENTINEL')),
+          { once: true }
+        )
+      ),
+  })
+  controller.abort()
+  await assert.rejects(
+    pending,
+    (error) =>
+      error.code === 'upstream_error' &&
+      !error.message.includes('PRIVATE_SENTINEL')
+  )
+})
+
+test('final summary prices DeepSeek and advisor lifetimes once and preserves missing advisor receipts as unknown', async (t) => {
+  const directory = fs.mkdtempSync(path.join(os.tmpdir(), 'ocr-final-cost-'))
+  t.after(() => fs.rmSync(directory, { recursive: true, force: true }))
+  const mainPath = path.join(directory, 'main.jsonl')
+  const advisorPath = path.join(directory, 'advisor.jsonl')
+  const summary = path.join(directory, 'summary.md')
+  fs.writeFileSync(
+    mainPath,
+    JSON.stringify(
+      costReceipt({
+        provider: 'mistral-deepseek',
+        model: MISTRAL_DEEPSEEK_MODEL,
+      })
+    )
+  )
+  fs.writeFileSync(
+    advisorPath,
+    JSON.stringify(costReceipt({ provider: 'mistral', model: MISTRAL_MODEL }))
+  )
+  fs.writeFileSync(
+    `${advisorPath}.expected.json`,
+    JSON.stringify({
+      schema: 'ocr-advisor-expectations/v1',
+      expected_receipts: 1,
+    })
+  )
+  const run = () =>
+    runCli(['final-summary', mainPath, 'adapter=1'], {
+      OCR_ADAPTER_PROVIDER: 'mistral-deepseek',
+      OCR_ADVISOR_DIAGNOSTICS_PATH: advisorPath,
+      GITHUB_STEP_SUMMARY: summary,
+    })
+  const complete = await run()
+  assert.equal(complete.code, 0)
+  assert.match(complete.stdout, /scope=deepseek_main status=complete/)
+  const cachedRate = /\$([0-9.]+) cached input/.exec(complete.stdout)
+  assert.equal(Number(cachedRate?.[1]), 0.007)
+  assert.match(complete.stdout, /scope=glm_advisor status=complete/)
+  assert.match(complete.stdout, /scope=final_and_advisor status=complete/)
+  const sum =
+    estimateCost(fs.readFileSync(mainPath, 'utf8'), 'mistral-deepseek')
+      .withCache +
+    estimateCost(fs.readFileSync(advisorPath, 'utf8'), 'mistral').withCache
+  assert.ok(
+    complete.stdout.includes(
+      `scope=final_and_advisor status=complete estimated_with_cache_usd=${sum.toFixed(4)}`
+    )
+  )
+  fs.writeFileSync(
+    `${advisorPath}.expected.json`,
+    JSON.stringify({
+      schema: 'ocr-advisor-expectations/v1',
+      expected_receipts: 0,
+    })
+  )
+  const unexpected = await run()
+  assert.match(unexpected.stdout, /scope=glm_advisor status=unavailable/)
+  fs.writeFileSync(
+    `${advisorPath}.expected.json`,
+    JSON.stringify({
+      schema: 'ocr-advisor-expectations/v1',
+      expected_receipts: 1,
+    })
+  )
+  fs.unlinkSync(advisorPath)
+  const partial = await run()
+  assert.match(partial.stdout, /scope=glm_advisor status=unavailable/)
+  assert.match(partial.stdout, /scope=final_and_advisor status=unavailable/)
+})
+
+test('final wrapper attaches focused tools and trusted guidance while hiding upstream credentials and restoring config', async (t) => {
+  const { execFileSync } = require('node:child_process')
+  const directory = fs.mkdtempSync(path.join(os.tmpdir(), 'ocr-final-wrapper-'))
+  t.after(() => fs.rmSync(directory, { recursive: true, force: true }))
+  const git = (...args) =>
+    execFileSync('git', args, { cwd: directory, encoding: 'utf8' }).trim()
+  git('init', '-b', 'main')
+  git('config', 'user.name', 'Synthetic fixture')
+  git('config', 'user.email', 'fixture@example.invalid')
+  git('config', 'core.hooksPath', '/dev/null')
+  fs.mkdirSync(path.join(directory, '.agents/skills/ocr-reviewer'), {
+    recursive: true,
+  })
+  fs.mkdirSync(path.join(directory, '.github/open-code-review'), {
+    recursive: true,
+  })
+  fs.writeFileSync(
+    path.join(directory, '.agents/skills/ocr-reviewer/SKILL.md'),
+    'synthetic trusted procedure'
+  )
+  const rule = '.github/open-code-review/final-review-rules.json'
+  fs.writeFileSync(
+    path.join(directory, rule),
+    JSON.stringify({
+      rules: [
+        {
+          path: '**/*',
+          rule: 'synthetic final policy',
+          merge_system_rule: true,
+        },
+      ],
+      exclude: ['**/*.md'],
+    })
+  )
+  git('add', '.')
+  git('commit', '-m', 'chore: synthetic policy')
+  const head = git('rev-parse', 'HEAD')
+  const config = path.join(directory, 'config.json')
+  const original = JSON.stringify({
+    llm: { model: MISTRAL_DEEPSEEK_MODEL, protocol: 'openai' },
+  })
+  fs.writeFileSync(config, original, { mode: 0o600 })
+  const output = path.join(directory, 'child.json')
+  const previous = Object.fromEntries(
+    [
+      'MISTRAL_API_KEY',
+      'OPENROUTER_API_KEY',
+      'OCR_ADAPTER_PROVIDER',
+      'OCR_ADVISOR_STATE_PATH',
+      'OCR_ADVISOR_DIAGNOSTICS_PATH',
+      'HEAD_SHA',
+      'TRUSTED_SHA',
+      'RUNNER_TEMP',
+    ].map((name) => [name, process.env[name]])
+  )
+  const cwd = process.cwd()
+  let closed = 0
+  try {
+    process.chdir(directory)
+    Object.assign(process.env, {
+      MISTRAL_API_KEY: 'UPSTREAM_PRIVATE_SENTINEL',
+      OPENROUTER_API_KEY: 'ROUTER_PRIVATE_SENTINEL',
+      OCR_ADAPTER_PROVIDER: 'mistral-deepseek',
+      OCR_ADVISOR_STATE_PATH: path.join(directory, 'state.json'),
+      OCR_ADVISOR_DIAGNOSTICS_PATH: path.join(directory, 'advisor.jsonl'),
+      HEAD_SHA: head,
+      TRUSTED_SHA: head,
+      RUNNER_TEMP: directory,
+    })
+    const transport = await loadLoopbackTransport(t, (_req, res) => {
+      res.writeHead(500)
+      res.end()
+    })
+    const program = `const fs=require('node:fs');const args=process.argv;const rule=args[args.indexOf('--rule')+1];fs.writeFileSync(${JSON.stringify(output)},JSON.stringify({config:JSON.parse(fs.readFileSync(${JSON.stringify(config)},'utf8')),rules:JSON.parse(fs.readFileSync(rule,'utf8')),key:process.env.MISTRAL_API_KEY??null,router:process.env.OPENROUTER_API_KEY??null,state:process.env.OCR_ADVISOR_STATE_PATH??null,token:process.env.OCR_REVIEW_TOOLS_TOKEN}))`
+    const result = await transport.__commandRun(
+      [
+        '--ocr-config',
+        config,
+        '--',
+        process.execPath,
+        '-e',
+        program,
+        '--',
+        '--to',
+        head,
+        '--rule',
+        rule,
+      ],
+      {
+        startFocusedAdvisor: async (options) => {
+          assert.equal(options.apiKey, 'UPSTREAM_PRIVATE_SENTINEL')
+          assert.equal(options.head, head)
+          assert.equal(options.policy, head)
+          return {
+            token: 'local-capability',
+            mcpConfig: {
+              type: 'remote',
+              url: 'http://127.0.0.1:1234/mcp',
+              tools: ['ask_review_advisor', 'read_review_context'],
+            },
+            close: async () => {
+              closed++
+            },
+          }
+        },
+      }
+    )
+    assert.equal(result, 0)
+    const seen = JSON.parse(fs.readFileSync(output, 'utf8'))
+    assert.equal(seen.key, null)
+    assert.equal(seen.router, null)
+    assert.equal(seen.state, null)
+    assert.equal(seen.token, 'local-capability')
+    assert.deepEqual(seen.config.mcp_servers.klicker_review.tools, [
+      'ask_review_advisor',
+      'read_review_context',
+    ])
+    assert.equal(seen.rules.rules.length, 2)
+    assert.deepEqual(seen.rules.rules[0], {
+      path: '**/*',
+      rule: 'synthetic final policy\n\nsynthetic trusted procedure',
+      merge_system_rule: true,
+    })
+    assert.deepEqual(seen.rules.exclude, ['**/*.md'])
+    assert.equal(fs.readFileSync(config, 'utf8'), original)
+    assert.ok(closed > 0)
+  } finally {
+    process.chdir(cwd)
+    for (const [name, value] of Object.entries(previous))
+      if (value === undefined) delete process.env[name]
+      else process.env[name] = value
   }
 })

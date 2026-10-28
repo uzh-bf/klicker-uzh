@@ -12,6 +12,7 @@ import {
   CHATBOT_CUSTOM_MODE_PERSONA_MAX_LENGTH,
   getChatModelAutoPolicyIssues,
   getChatModelBasePolicyIssues,
+  getWritingCoachUnavailableReason,
   isChatUsageClassEntitled,
   normalizeChatbotCustomModeConfig,
   normalizeChatbotStandardModeConfig,
@@ -436,6 +437,9 @@ const chatbotOwnerSelect = {
   avatar: true,
   systemPrompts: true,
   standardModeConfig: true,
+  mcpConfigurations: {
+    select: { chatMode: true, isEnabled: true, parameters: true },
+  },
   customModeConfig: true,
   draftConfig: true,
   modelSelection: true,
@@ -469,6 +473,15 @@ type ChatbotWithOwnerCourse = {
   avatar: string | null
   systemPrompts: unknown
   standardModeConfig: unknown
+  // Required: `shapeChatbotResponse` derives the Writing Coach unavailability
+  // reason from these rows, so a caller that forgets to spread
+  // `chatbotOwnerSelect` fails to compile instead of silently reporting the
+  // mode as available.
+  mcpConfigurations: {
+    chatMode: string
+    isEnabled: boolean
+    parameters: unknown
+  }[]
   customModeConfig: unknown
   modelSelection: boolean
   allowedModelIds: string[]
@@ -548,6 +561,7 @@ function shapeChatbotResponse<T extends ChatbotWithOwnerCourse>(
 ) {
   const {
     systemPrompts,
+    mcpConfigurations,
     draftConfig: _draftConfig,
     ...chatbotWithoutSystemPrompts
   } = chatbot
@@ -555,6 +569,8 @@ function shapeChatbotResponse<T extends ChatbotWithOwnerCourse>(
 
   return {
     ...chatbotWithoutSystemPrompts,
+    writingCoachUnavailableReason:
+      getWritingCoachUnavailableReason(mcpConfigurations),
     standardModeConfig: normalizeChatbotStandardModeConfig(
       chatbot.standardModeConfig,
       systemPrompts
@@ -1102,23 +1118,18 @@ function validateRevisionModelConfig(revision: ChatbotAuthoringRevision) {
 
 function validateCompleteRevision(
   revision: ChatbotAuthoringRevision,
-  requirePublicationFields: boolean
+  requirePublicationFields: boolean,
+  mcpConfigurations: ChatbotRevisionRecord['mcpConfigurations']
 ) {
   if (revision.name.trim().length === 0) {
     throw chatbotError('Chatbot name must not be empty', 'BAD_USER_INPUT')
   }
 
   if (revision.standardModeConfig !== null) {
-    try {
-      parseChatbotStandardModeConfigInput(revision.standardModeConfig)
-    } catch (error) {
-      throw chatbotError(
-        error instanceof Error
-          ? error.message
-          : 'Invalid standard mode configuration',
-        'BAD_USER_INPUT'
-      )
-    }
+    parseRevisionStandardModeConfig(
+      revision.standardModeConfig,
+      mcpConfigurations
+    )
   }
 
   if (revision.customModeConfig !== null) {
@@ -1371,13 +1382,6 @@ export async function saveChatbotRevision(
     ...(input.modelPolicy
       ? normalizeRevisionModelPolicy(input.modelPolicy)
       : {}),
-    ...(input.standardModeConfig
-      ? {
-          standardModeConfig: parseRevisionStandardModeConfig(
-            input.standardModeConfig
-          ),
-        }
-      : {}),
     ...(input.creditPolicy
       ? normalizeAndValidateCreditPolicy(input.creditPolicy)
       : {}),
@@ -1405,6 +1409,25 @@ export async function saveChatbotRevision(
 
     const current = getRevisionSnapshot(chatbot)
     let next = { ...current, ...patch }
+    // An older client omits writingCoachEnabled; keep the stored choice instead
+    // of silently disabling the mode.
+    if (input.standardModeConfig) {
+      next = {
+        ...next,
+        standardModeConfig: parseRevisionStandardModeConfig(
+          {
+            ...input.standardModeConfig,
+            writingCoachEnabled:
+              input.standardModeConfig.writingCoachEnabled ??
+              normalizeChatbotStandardModeConfig(
+                current.standardModeConfig,
+                chatbot.systemPrompts
+              ).writingCoachEnabled,
+          },
+          chatbot.mcpConfigurations
+        ),
+      }
+    }
     // Custom-mode keys are minted here so a stale version throws before any key
     // is generated, and an existing mode keeps the key stored on messages.
     if (input.customModeConfig) {
@@ -1614,10 +1637,22 @@ function normalizeRevisionModelPolicy(args: RevisionModelPolicyInput) {
 }
 
 function parseRevisionStandardModeConfig(
-  input: ChatbotStandardModeConfigInput
+  input: ChatbotStandardModeConfigInput,
+  mcpConfigurations: ChatbotRevisionRecord['mcpConfigurations']
 ) {
   try {
-    return parseChatbotStandardModeConfigInput(input)
+    const config = parseChatbotStandardModeConfigInput(input)
+    if (
+      config.writingCoachEnabled &&
+      !config.tutorEnabled &&
+      !config.explainerEnabled &&
+      getWritingCoachUnavailableReason(mcpConfigurations)
+    ) {
+      throw new Error(
+        'Writing Coach cannot be the only conversational mode while a required tool binding makes it unavailable'
+      )
+    }
+    return config
   } catch (error) {
     throw chatbotError(
       error instanceof Error
@@ -1679,7 +1714,11 @@ export async function submitChatbotRevision(
     const revision = getRevisionSnapshot(chatbot)
     revision.publicationUseCase = args.useCase
     revision.expectedStudentCount = args.expectedStudentCount
-    const completeRevision = validateCompleteRevision(revision, true)
+    const completeRevision = validateCompleteRevision(
+      revision,
+      true,
+      chatbot.mcpConfigurations
+    )
     await assertGraphRetrievalTransition(
       ctx,
       chatbot.ownerId,
@@ -1842,7 +1881,11 @@ export async function approveChatbotRevision(
     }
 
     const revision = getRevisionSnapshot(chatbot)
-    const completeRevision = validateCompleteRevision(revision, true)
+    const completeRevision = validateCompleteRevision(
+      revision,
+      true,
+      chatbot.mcpConfigurations
+    )
     await assertGraphRetrievalTransition(
       ctx,
       chatbot.ownerId,
@@ -1912,6 +1955,7 @@ export async function getPendingChatbotPublications(ctx: ContextWithUser) {
           isEnabled: true,
           priority: true,
           allowedTools: true,
+          parameters: true,
           mcpServer: {
             select: { id: true, name: true, isActive: true },
           },
@@ -1927,7 +1971,7 @@ export async function getPendingChatbotPublications(ctx: ContextWithUser) {
       ownerPublishingEnabled: owner.aiFeaturesEnabled,
       disclaimerTitle: disclaimer?.title ?? null,
       disclaimerIntroText: disclaimer?.introText ?? null,
-      chatbot: shapeChatbotResponse(chatbot),
+      chatbot: shapeChatbotResponse({ ...chatbot, mcpConfigurations }),
       tools: mcpConfigurations.map((config) => ({
         serverName: config.mcpServer.name,
         chatMode: config.chatMode,

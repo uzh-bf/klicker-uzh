@@ -364,15 +364,13 @@ test('the consolidated workflow covers every trusted target and guard', () => {
   // validator uses on the raw content.
   const asList = (value) =>
     value === undefined ? [] : Array.isArray(value) ? value : [value]
-  assert.deepEqual(asList(definition.jobs['build-migrator'].needs), ['plan'])
+  assert.deepEqual(asList(definition.jobs['build-migrator'].needs), [
+    'plan',
+    'priority-route',
+  ])
   assert.deepEqual(
     asList(definition.jobs['build-after-migrator'].needs).sort(),
-    ['build-migrator', 'plan']
-  )
-  assert.equal(
-    definition.jobs['build-images-status'].if,
-    "always() && github.event_name != 'workflow_dispatch'",
-    'the required context must report for every source CI event'
+    ['build-migrator', 'plan', 'priority-route']
   )
 
   const promoter = readYaml('.github/workflows/deploy-stg-promote.yml')
@@ -389,11 +387,12 @@ test('the consolidated workflow covers every trusted target and guard', () => {
 test('the status display name keeps the required build-images-status context', () => {
   const workflowPath = CONSOLIDATED_WORKFLOW_PATH
   const content = fs.readFileSync(path.join(ROOT, workflowPath), 'utf8')
-  const conditionalName =
-    "${{ github.event_name == 'workflow_dispatch' && 'preview-build-images-status' || 'build-images-status' }}"
+  const definition = readYaml(workflowPath)
+  const conditionalName = definition.jobs['build-images-status'].name
   const nameLine = '    name: ' + conditionalName + '\n'
-  const conditionLine =
-    "    if: always() && github.event_name != 'workflow_dispatch'\n"
+  const conditionLine = content.match(
+    /  build-images-status:[\s\S]*?(    if: >-\n[\s\S]*?)(?=    runs-on:)/
+  )[1]
 
   assert.ok(content.includes(nameLine), 'conditional status name is missing')
   assert.ok(content.includes(conditionLine), 'status condition has changed')

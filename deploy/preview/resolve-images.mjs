@@ -579,6 +579,9 @@ function createAdapter(options = {}) {
     if (
       !/^run-name:[ ]*[$][{][{][ ]*inputs[.]correlationId[ ]*[}][}][ ]*$/m.test(
         content
+      ) &&
+      !/^run-name:[ ]*>-\n[ ]*[$][{][{][ ]*github[.]event_name == 'workflow_dispatch' && inputs[.]correlationId [|][|] [(]/m.test(
+        content
       )
     ) {
       fail(

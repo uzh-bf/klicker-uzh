@@ -286,6 +286,7 @@ test('the consolidated workflow declares the matrix the plan emits', () => {
     'synchronize',
     'reopened',
     'ready_for_review',
+    'labeled',
   ])
   // No path filter: the required context must always be reportable.
   assert.equal(workflow.on.pull_request.paths, undefined)
@@ -301,22 +302,28 @@ test('the consolidated workflow declares the matrix the plan emits', () => {
   // The terminal job keeps the exact required context name.
   assert.ok(workflow.jobs['build-images-status'])
   assert.equal(
-    workflow.jobs['build-images-status'].name,
-    "${{ github.event_name == 'workflow_dispatch' && 'preview-build-images-status' || 'build-images-status' }}"
-  )
-  assert.equal(workflow.jobs['preview-build'].permissions.actions, 'read')
-  assert.equal(
-    workflow.jobs['build-images-status'].if,
-    "always() && github.event_name != 'workflow_dispatch'",
-    'the staging status job reports for push and PR events'
+    workflow.jobs['build-images-status'].if
+      .replace(/\s+/g, ' ')
+      .replace(" && github.event_name != 'workflow_dispatch'", '')
+      .replace(
+        /^!\(vars\.PRIORITY_CI_ENABLED.*?\) && \((always\(\).*)\)$/,
+        '$1'
+      ),
+    "always() && (github.event.action != 'labeled' || needs.priority-route.outputs.run_label_event == 'true')",
+    'ordinary and admitted priority status must always report'
   )
 })
 
-test('preview dispatch has an isolated lane and cannot cancel staging work', () => {
+test('the consolidated workflow separates preview, priority and ordinary cancellation', () => {
   const workflow = YAML.parse(fs.readFileSync(CONSOLIDATED, 'utf8'))
-  assert.equal(
+  assert.match(
     workflow.concurrency['cancel-in-progress'],
-    "${{ github.event_name != 'workflow_dispatch' }}"
+    /github\.event\.action != 'labeled'/
+  )
+  assert.match(workflow.concurrency.group, /priority-/)
+  assert.match(
+    workflow.concurrency['cancel-in-progress'],
+    /github\.event_name != 'workflow_dispatch'/
   )
   assert.match(workflow.concurrency.group, /inputs\.correlation/)
   assert.match(workflow.concurrency.group, /github\.workflow/)
