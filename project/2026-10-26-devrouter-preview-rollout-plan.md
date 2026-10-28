@@ -150,3 +150,12 @@ A replacement paid generation, runtime architecture proof, cold build measuremen
 and warm provisioning measurement require a separately approved bounded live run.
 No budget, identity, DNS or access-policy changes are included in this source
 package. UZH restrictions and explicit-command-only updates remain binding.
+
+The first image-only canary qualified native AMD64 helper deployment and fresh
+PostgreSQL bootstrap. Full Chat preparation then reproduced a discovery gap:
+preview receipts were visible only to the command that published them. The
+resolver now supplements initial and partial command results with recent
+successful preview publications, preserving exact source, trusted controller,
+configuration, platform, producing attempt and scan checks. Frontend variants
+with different URLs remain distinct. Image publication still never activates a
+preview. Full application and forge qualification remain separate gates.

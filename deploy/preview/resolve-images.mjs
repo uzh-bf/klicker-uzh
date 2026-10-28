@@ -41,6 +41,7 @@ const MAX_OUTPUT_BYTES = 128 * 1024
 const MAX_RECEIPTS = 128
 const MAX_PINNED_IMAGES = 64
 const MAX_DISCOVERY_PAGES = 5
+const MAX_PREVIEW_REUSE_RUNS = 10
 const MAX_ARTIFACT_PAGES = 3
 const MAX_ARTIFACT_BYTES = 16 * 1024 * 1024
 const MAX_RECEIPT_BYTES = 1024 * 1024
@@ -831,8 +832,7 @@ function createAdapter(options = {}) {
     }
   }
 
-  async function correlatedRun(request) {
-    const runs = await listDispatchedRuns()
+  function correlatedRun(request, runs) {
     const matches = runs.filter(
       (run) =>
         run?.display_title === request.correlation &&
@@ -856,7 +856,7 @@ function createAdapter(options = {}) {
     return run
   }
 
-  async function previewReceipts(request, run, physical) {
+  async function previewReceipts(request, run, physical, discovery = false) {
     validateCompletedRun(run, 'correlated preview run')
     const jobs = await listJobs(run)
     const finalize = requireJob(jobs, run, 'preview-finalize', {
@@ -890,6 +890,19 @@ function createAdapter(options = {}) {
     const result = []
     for (const entry of physical.values()) {
       if (!entry.logicalTargets.some((target) => byTarget.has(target))) continue
+      if (
+        discovery &&
+        !entry.logicalTargets.some((target) =>
+          (byTarget.get(target) ?? []).some(
+            (receipt) =>
+              receipt.revision === request.revision &&
+              receipt.controlRevision === request.controlRevision &&
+              receipt.platform === request.platform &&
+              receipt.configurationDigest === entry.configurationDigest
+          )
+        )
+      )
+        continue
       const suffix = PLATFORMS[request.platform]
       requireJob(jobs, run, `preview-${entry.target.id}-${suffix}`, {
         headSha: run.head_sha,
@@ -934,6 +947,45 @@ function createAdapter(options = {}) {
       }
     }
     return result
+  }
+
+  async function existingPreviewReceipts(request, runs, available) {
+    const candidates = runs
+      .filter(
+        (run) =>
+          run?.display_title !== request.correlation &&
+          CORRELATION.test(run?.display_title) &&
+          run?.repository?.full_name === REPOSITORY &&
+          run?.path === WORKFLOW_PATH &&
+          run?.event === 'workflow_dispatch' &&
+          run?.head_sha === request.controlRevision &&
+          run?.status === 'completed' &&
+          run?.conclusion === 'success'
+      )
+      .sort((left, right) => Number(right.id) - Number(left.id))
+      .slice(0, MAX_PREVIEW_REUSE_RUNS)
+    const receipts = []
+    for (const run of candidates) {
+      const missing = expectedPhysicalTargets(
+        request.targets.filter((entry) => !available.has(entry.target))
+      )
+      if (missing.size === 0) break
+      validateRunIdentity(run, {
+        event: 'workflow_dispatch',
+        label: 'existing preview run',
+        sha: request.controlRevision,
+      })
+      for (const receipt of await previewReceipts(
+        request,
+        run,
+        missing,
+        true
+      )) {
+        available.add(receipt.target)
+        receipts.push(receipt)
+      }
+    }
+    return receipts
   }
 
   async function stagingReceipts(request, missing, physical) {
@@ -1156,28 +1208,21 @@ function createAdapter(options = {}) {
         }
 
         await validatePinnedImages(request)
-        const run = await correlatedRun(request)
+        const dispatchedRuns = await listDispatchedRuns()
+        const run = correlatedRun(request, dispatchedRuns)
         if (run && isPendingRun(run)) {
           return { receipts: [], pending: true }
         }
-        if (run) {
-          await sourceCi(request.revision)
-          const receipts = await previewReceipts(request, run, physical)
-          const available = new Set(receipts.map((receipt) => receipt.target))
-          const staging = await stagingReceipts(
-            request,
-            request.missing.filter((target) => !available.has(target)),
-            physical
-          )
-          return {
-            receipts: sortReceipts([...receipts, ...staging.values()]),
-            pending: false,
-          }
-        }
-
+        const receipts = run
+          ? await previewReceipts(request, run, physical)
+          : []
+        const available = new Set(receipts.map((receipt) => receipt.target))
+        receipts.push(
+          ...(await existingPreviewReceipts(request, dispatchedRuns, available))
+        )
         const staging = await stagingReceipts(
           request,
-          request.missing,
+          request.missing.filter((target) => !available.has(target)),
           physical
         )
         await sourceCi(
@@ -1185,7 +1230,7 @@ function createAdapter(options = {}) {
           staging.size > 0 ? STAGING_CONTEXTS : REQUIRED_CONTEXTS
         )
         return {
-          receipts: sortReceipts([...staging.values()]),
+          receipts: sortReceipts([...receipts, ...staging.values()]),
           pending: false,
         }
       } finally {

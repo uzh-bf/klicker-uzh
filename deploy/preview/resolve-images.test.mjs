@@ -155,6 +155,7 @@ function transportFor({
   members = {},
   registry = {},
   metadata = {},
+  runData = {},
   workflowText = workflow,
 } = {}) {
   const calls = []
@@ -209,9 +210,13 @@ function transportFor({
       if (path.includes('/check-runs'))
         return response({ check_runs: sourceChecks })
       if (path.includes('/attempts/') && path.endsWith('/jobs')) {
-        return response({ jobs })
+        const id = path.match(/\/actions\/runs\/(\d+)\//)?.[1]
+        return response({ jobs: runData[id]?.jobs ?? jobs })
       }
-      if (path.endsWith('/artifacts')) return response({ artifacts })
+      if (path.endsWith('/artifacts')) {
+        const id = path.match(/\/actions\/runs\/(\d+)\//)?.[1]
+        return response({ artifacts: runData[id]?.artifacts ?? artifacts })
+      }
       if (path.includes('/actions/artifacts/') && path.endsWith('/zip')) {
         const id = Number(path.split('/').at(-2))
         const bytes = memberBytes(members[id] ?? {})
@@ -267,7 +272,7 @@ test('reuses an exact staging fingerprint adoption without dispatching', async (
     '2026-10-28T10:01:00Z'
   )
   const statusJob = job('build-images-status', revision, '2026-10-28T10:03:00Z')
-  const fixture = transportFor({
+  const options = {
     runs: [run({ event: 'push', sha: revision })],
     sourceChecks: checks(STAGING_CONTEXTS),
     jobs: [buildJob, scanJob, statusJob],
@@ -302,7 +307,8 @@ test('reuses an exact staging fingerprint adoption without dispatching', async (
         manifests: [{ platform: { os: 'linux', architecture: 'arm64' } }],
       },
     },
-  })
+  }
+  const fixture = transportFor(options)
 
   const result = await adapterFor(fixture).execute(JSON.stringify(request()))
 
@@ -325,6 +331,66 @@ test('reuses an exact staging fingerprint adoption without dispatching', async (
           !args.some((arg) => arg.includes(token))
       )
   )
+
+  const previous = { ...run(), id: 102, display_title: '7'.repeat(64) }
+  const receipt = previewReceipt({
+    target: 'fixtures',
+    runId: '102',
+    image: `ghcr.io/uzh-bf/klicker-uzh/preview-fixtures@${digest}`,
+  })
+  const scan = scanReceipt({ image: receipt.image })
+  scan.run.id = '102'
+  const mixedOptions = {
+    ...options,
+    runs: [...options.runs, previous],
+    runData: {
+      102: {
+        jobs: [
+          job(
+            'preview-fixtures-arm64',
+            controlRevision,
+            '2026-10-28T10:00:00Z'
+          ),
+          job('preview-scan-fixtures', controlRevision, '2026-10-28T10:01:00Z'),
+          job('preview-finalize', controlRevision, '2026-10-28T10:02:00Z'),
+        ].map((value) => ({ ...value, run_id: 102 })),
+        artifacts: [
+          artifact('preview-scan-fixtures', 501, '2026-10-28T10:01:30Z'),
+          artifact(
+            `preview-images-${previous.display_title}`,
+            502,
+            '2026-10-28T10:02:30Z'
+          ),
+        ],
+      },
+    },
+    members: {
+      ...options.members,
+      501: { 'image-scan-fixtures-receipt.json': scan },
+      502: { 'preview-images.json': { receipts: [receipt] } },
+    },
+  }
+  const mixedRequest = request()
+  mixedRequest.request.targets.push({ target: 'fixtures', configuration: {} })
+  for (const sourceChecks of [
+    checks(REQUIRED_CONTEXTS),
+    checks(STAGING_CONTEXTS).map((check) =>
+      check.name.startsWith('SonarCloud')
+        ? { ...check, conclusion: 'failure' }
+        : check
+    ),
+  ]) {
+    await assert.rejects(
+      adapterFor(transportFor({ ...mixedOptions, sourceChecks })).execute(
+        JSON.stringify(mixedRequest)
+      ),
+      (error) => ['source_ci_missing', 'source_ci_blocked'].includes(error.code)
+    )
+  }
+  const mixed = await adapterFor(transportFor(mixedOptions)).execute(
+    JSON.stringify(mixedRequest)
+  )
+  assert.equal(mixed.receipts.length, 2)
 })
 
 test('pending correlated run returns pending without dispatching', async () => {
@@ -523,6 +589,129 @@ test('pinned and admitted images must prove the requested OCI platform', async (
       JSON.stringify(request({ pinnedImages: [image] }))
     ),
     /does not contain exactly one linux\/arm64 manifest/
+  )
+})
+
+test('another preview command reuses only matching qualified image receipts', async () => {
+  const previousCorrelation = '7'.repeat(64)
+  async function resolve(
+    receipt = previewReceipt(),
+    scanAttempt = '2',
+    sourceChecks = checks(REQUIRED_CONTEXTS)
+  ) {
+    const image = receipt.image
+    const scan = scanReceipt({ image })
+    scan.run.attempt = scanAttempt
+    const fixture = transportFor({
+      runs: [{ ...run(), display_title: previousCorrelation }],
+      sourceChecks,
+      jobs: [
+        job('preview-api-arm64', controlRevision, '2026-10-28T10:00:00Z'),
+        job('preview-scan-api', controlRevision, '2026-10-28T10:01:00Z'),
+        job('preview-finalize', controlRevision, '2026-10-28T10:02:00Z'),
+      ],
+      artifacts: [
+        artifact('preview-scan-api', 301, '2026-10-28T10:01:30Z'),
+        artifact(
+          `preview-images-${previousCorrelation}`,
+          302,
+          '2026-10-28T10:02:30Z'
+        ),
+      ],
+      members: {
+        301: { 'image-scan-api-receipt.json': scan },
+        302: { 'preview-images.json': { receipts: [receipt] } },
+      },
+    })
+    const result = await adapterFor(fixture).execute(JSON.stringify(request()))
+    assert.equal(
+      fixture.calls.some(({ args }) => args[0] === 'workflow'),
+      false
+    )
+    return result
+  }
+
+  const reused = await resolve()
+  assert.equal(reused.receipts.length, 1)
+  assert.equal(reused.receipts[0].image, previewReceipt().image)
+  assert.equal(reused.receipts[0].runId, '101')
+  for (const different of [
+    { revision: '8'.repeat(40) },
+    { controlRevision: '8'.repeat(40) },
+    { configurationDigest: `sha256:${'8'.repeat(64)}` },
+    { platform: 'linux/amd64' },
+  ]) {
+    assert.equal((await resolve(previewReceipt(different))).receipts.length, 0)
+  }
+  await assert.rejects(
+    resolve(previewReceipt({ attempt: 1 })),
+    /receipt attempt differs/
+  )
+  await assert.rejects(
+    resolve(previewReceipt(), '1'),
+    (error) => error.code === 'scan_admission_missing'
+  )
+  await assert.rejects(
+    resolve(
+      previewReceipt(),
+      '2',
+      checks(REQUIRED_CONTEXTS).map((check) => ({
+        ...check,
+        conclusion: 'failure',
+      }))
+    ),
+    (error) => error.code === 'source_ci_blocked'
+  )
+})
+
+test('completed partial publication retains images from an earlier preview command', async () => {
+  const previous = { ...run(), display_title: '7'.repeat(64) }
+  const current = { ...run(), id: 102 }
+  const runData = {},
+    members = {}
+  for (const [producing, target, base] of [
+    [previous, 'api', 500],
+    [current, 'fixtures', 600],
+  ]) {
+    const receipt = previewReceipt({
+      target,
+      runId: String(producing.id),
+      image: `ghcr.io/uzh-bf/klicker-uzh/preview-${target}@${digest}`,
+    })
+    const scan = scanReceipt({ image: receipt.image })
+    scan.run.id = String(producing.id)
+    runData[producing.id] = {
+      jobs: [
+        job(`preview-${target}-arm64`, controlRevision, '2026-10-28T10:00:00Z'),
+        job(`preview-scan-${target}`, controlRevision, '2026-10-28T10:01:00Z'),
+        job('preview-finalize', controlRevision, '2026-10-28T10:02:00Z'),
+      ].map((value) => ({ ...value, run_id: producing.id })),
+      artifacts: [
+        artifact(`preview-scan-${target}`, base + 1, '2026-10-28T10:01:30Z'),
+        artifact(
+          `preview-images-${producing.display_title}`,
+          base + 2,
+          '2026-10-28T10:02:30Z'
+        ),
+      ],
+    }
+    members[base + 1] = { [`image-scan-${target}-receipt.json`]: scan }
+    members[base + 2] = { 'preview-images.json': { receipts: [receipt] } }
+  }
+  const fixture = transportFor({ runs: [current, previous], runData, members })
+  const input = request()
+  input.request.targets.push({ target: 'fixtures', configuration: {} })
+  const result = await adapterFor(fixture).execute(JSON.stringify(input))
+  assert.deepEqual(
+    result.receipts.map((receipt) => [receipt.target, receipt.runId]),
+    [
+      ['api', '101'],
+      ['fixtures', '102'],
+    ]
+  )
+  assert.equal(
+    fixture.calls.some(({ args }) => args[0] === 'workflow'),
+    false
   )
 })
 
