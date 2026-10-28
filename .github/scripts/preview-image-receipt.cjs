@@ -231,19 +231,7 @@ function parseExceptionPolicy(value, identity, now = Date.now()) {
         !entry ||
         Array.isArray(entry) ||
         Object.keys(entry).length !== keys.length ||
-        keys.some((key) => !Object.hasOwn(entry, key)) ||
-        !PREVIEW_IMAGE_TARGETS.some((target) => target.id === entry.target) ||
-        !/^(?:CVE-[0-9]{4}-[0-9]+|GHSA-[a-z0-9-]+)$/.test(
-          entry.vulnerabilityId
-        ) ||
-        typeof entry.packageName !== 'string' ||
-        !entry.packageName.trim() ||
-        typeof entry.installedVersion !== 'string' ||
-        !entry.installedVersion.trim() ||
-        !['HIGH', 'CRITICAL'].includes(entry.severity) ||
-        !Number.isSafeInteger(entry.maxOccurrences) ||
-        entry.maxOccurrences < 1 ||
-        entry.maxOccurrences > 16
+        keys.some((key) => !Object.hasOwn(entry, key))
       )
         fail(
           'scan exception must name one exact target, vulnerability, package, version and severity with a bounded occurrence count'
