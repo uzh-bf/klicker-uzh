@@ -1,5 +1,18 @@
 name: Check codebase
 
+run-name: >-
+  ${{ vars.PRIORITY_CI_ENABLED == 'true' &&
+      github.event_name == 'pull_request' &&
+      github.event.pull_request.state == 'open' &&
+      github.event.pull_request.draft == false &&
+      github.event.repository.private == false &&
+      github.event.pull_request.head.repo.full_name == github.repository &&
+      github.event.pull_request.user.type != 'Bot' &&
+      contains(github.event.pull_request.labels.*.name, 'ci:priority') &&
+      (github.event.action != 'labeled' || github.event.label.name == 'ci:priority') &&
+      format('priority:{0}:{1}:{2}', github.event.pull_request.number, github.event.pull_request.head.sha, github.event.pull_request.base.sha)
+      || format('ordinary:{0}', github.run_id) }}
+
 # The suite runs in one of two envelopes, decided by the repository-owned
 # classifier from the same changed-path records the rest of CI selects on. A
 # class that cannot affect the application build skips the application build, the
@@ -24,13 +37,41 @@ on:
   pull_request:
     # No "edited": a title or body edit never changes the tested tree, and a
     # base retarget is revalidated by the restack push or a close and reopen.
-    # "ready_for_review" recomputes the required context at the ready boundary
-    # so a draft-era success cannot stand in for the ready state.
-    types: [opened, synchronize, reopened, ready_for_review]
+    # Readiness does not change this suite or its tested inputs.
+    types: [opened, synchronize, reopened, labeled]
 
 concurrency:
-  group: ${{ github.workflow }}-${{ github.event.pull_request.number || github.ref_name }}
-  cancel-in-progress: true
+  group: >-
+    ${{ github.event.action == 'labeled' &&
+        (vars.PRIORITY_CI_ENABLED == 'true' &&
+         github.event.label.name == 'ci:priority' &&
+         github.event.pull_request.state == 'open' &&
+      github.event.pull_request.draft == false &&
+         github.event.repository.private == false &&
+         github.event.pull_request.head.repo.full_name == github.repository &&
+         github.event.pull_request.user.type != 'Bot' &&
+         format('{0}-priority-{1}-{2}-{3}', github.workflow, github.event.pull_request.number, github.event.pull_request.head.sha, github.event.pull_request.base.sha) ||
+         format('{0}-ignored-{1}', github.workflow, github.run_id)) ||
+        (vars.PRIORITY_CI_ENABLED == 'true' &&
+         github.event_name == 'pull_request' &&
+         github.event.pull_request.state == 'open' &&
+      github.event.pull_request.draft == false &&
+         github.event.repository.private == false &&
+         github.event.pull_request.head.repo.full_name == github.repository &&
+         github.event.pull_request.user.type != 'Bot' &&
+         contains(github.event.pull_request.labels.*.name, 'ci:priority') &&
+         format('{0}-priority-{1}-{2}-{3}', github.workflow, github.event.pull_request.number, github.event.pull_request.head.sha, github.event.pull_request.base.sha)) ||
+        format('{0}-{1}', github.workflow, github.event.pull_request.number || github.ref_name) }}
+  cancel-in-progress: >-
+    ${{ github.event.action != 'labeled' &&
+        !(vars.PRIORITY_CI_ENABLED == 'true' &&
+          github.event_name == 'pull_request' &&
+          github.event.pull_request.state == 'open' &&
+      github.event.pull_request.draft == false &&
+          github.event.repository.private == false &&
+          github.event.pull_request.head.repo.full_name == github.repository &&
+          github.event.pull_request.user.type != 'Bot' &&
+          contains(github.event.pull_request.labels.*.name, 'ci:priority')) }}
 
 permissions:
   contents: read
@@ -44,11 +85,46 @@ env:
   TURBO_REMOTE_ONLY: true
 
 jobs:
+  priority-route:
+    if: >-
+      !(vars.PRIORITY_CI_ENABLED == 'true' && github.event_name == 'pull_request' && github.event.pull_request.state == 'open' && github.event.pull_request.draft == false && github.event.repository.private == false && github.event.pull_request.head.repo.full_name == github.repository && github.event.pull_request.user.type != 'Bot' && contains(github.event.pull_request.labels.*.name, 'ci:priority') && (github.event.action != 'labeled' || github.event.label.name == 'ci:priority')) &&
+      (vars.PRIORITY_CI_ENABLED == 'true' && github.event_name == 'pull_request' && github.event.pull_request.state == 'open' && github.event.pull_request.draft == false && github.event.repository.private == false && github.event.pull_request.head.repo.full_name == github.repository && github.event.pull_request.user.type != 'Bot' && contains(github.event.pull_request.labels.*.name, 'ci:priority'))
+    runs-on: ubuntu-latest
+    permissions:
+      actions: read
+      contents: read
+      issues: read
+      pull-requests: read
+    outputs:
+      admitted: ${{ steps.route.outputs.admitted }}
+      run_label_event: ${{ steps.route.outputs.run_label_event }}
+      run_attempt: ${{ steps.route.outputs.run_attempt }}
+      job_timeout: ${{ steps.route.outputs.job_timeout }}
+      runner_x64: ${{ steps.route.outputs.runner_x64 }}
+      runner_build: ${{ steps.route.outputs.runner_build }}
+      runner_arm: ${{ steps.route.outputs.runner_arm }}
+    steps:
+      - name: Check out the trusted priority router
+        uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4
+        with:
+          repository: uzh-bf/klicker-uzh
+          ref: v3
+          path: .ci-priority
+          sparse-checkout: .github/actions/priority-ci-route
+          persist-credentials: false
+      - name: Route priority validation
+        id: route
+        uses: ./.ci-priority/.github/actions/priority-ci-route
+
   # Every subscribed event selects the suite. The selector's metadata-only
   # reuse of a completed successful check at the same head only applies to an
   # edited event, which this workflow no longer receives; it runs the suite when
   # the prior result is missing, pending, failed, or unavailable.
   select:
+    needs: priority-route
+    if: >-
+      !(vars.PRIORITY_CI_ENABLED == 'true' && github.event_name == 'pull_request' && github.event.pull_request.state == 'open' && github.event.pull_request.draft == false && github.event.repository.private == false && github.event.pull_request.head.repo.full_name == github.repository && github.event.pull_request.user.type != 'Bot' && contains(github.event.pull_request.labels.*.name, 'ci:priority') && (github.event.action != 'labeled' || github.event.label.name == 'ci:priority')) &&
+      (!cancelled() && (github.event.action != 'labeled' || needs.priority-route.outputs.run_label_event == 'true'))
     runs-on: ubuntu-latest
     outputs:
       should_run: ${{ github.event_name == 'push' && 'true' || steps.check.outputs.should_run }}
@@ -65,11 +141,12 @@ jobs:
           prior-check-name: check
 
   check-suite:
-    needs: select
+    needs: [select, priority-route]
     if: >-
-      !cancelled() &&
-      needs.select.outputs.should_run == 'true'
-    runs-on: ubuntu-latest
+      !(vars.PRIORITY_CI_ENABLED == 'true' && github.event_name == 'pull_request' && github.event.pull_request.state == 'open' && github.event.pull_request.draft == false && github.event.repository.private == false && github.event.pull_request.head.repo.full_name == github.repository && github.event.pull_request.user.type != 'Bot' && contains(github.event.pull_request.labels.*.name, 'ci:priority') && (github.event.action != 'labeled' || github.event.label.name == 'ci:priority')) &&
+      (!cancelled() && (github.event.action != 'labeled' || needs.priority-route.outputs.run_label_event == 'true') && (needs.priority-route.outputs.admitted != 'true' || needs.priority-route.outputs.run_attempt == format('{0}', github.run_attempt)) && needs.select.outputs.should_run == 'true')
+    runs-on: ${{ needs.priority-route.outputs.runner_build || 'ubuntu-latest' }}
+    timeout-minutes: ${{ needs.priority-route.outputs.admitted == 'true' && fromJSON(needs.priority-route.outputs.job_timeout || '60') || 360 }}
     steps:
       - name: Checkout repository
         uses: actions/checkout@v4
@@ -140,7 +217,7 @@ jobs:
       - name: Set up pnpm
         uses: pnpm/action-setup@v4
         with:
-          version: 11.5.0
+          version: 12.11.2
 
       - name: Set up Node.js with pnpm cache
         uses: ./.github/actions/setup-node-pnpm
@@ -151,35 +228,117 @@ jobs:
         run: pnpm install --frozen-lockfile
 
       - name: Test evaluation launcher without private submodule access
+        timeout-minutes: 10
         run: |
           node --test util/read-klicker-eval-config.test.mjs
           bash util/test-klicker-eval-wrapper.sh
           uv run --no-project --python 3.12 python -m unittest util/test-klicker-eval-judge.py
+          judge_image="$(python3 -c "import runpy; print(runpy.run_path('util/klicker-eval-judge.py')['IMAGE'])")"
+          docker run --rm --network none --env KLICKER_EVAL_GATEWAY_TEST=1 --env LITELLM_LOCAL_MODEL_COST_MAP=True --mount "type=bind,source=$GITHUB_WORKSPACE,target=/work,readonly" --workdir /work --entrypoint python3 "$judge_image" -m unittest util/test-klicker-eval-judge.py
+          uv run --no-project --python 3.12 --with pytest==9.1.1 python -m pytest -q -p no:cacheprovider evaluation/tests/test_klicker_trajectories.py
+          uv run --no-project --python 3.12 --with pytest==9.1.1 python -m pytest -q -p no:cacheprovider evaluation/tests/test_budget_admission.py
 
       - name: Install Devrouter profile planner
         run: bash .github/scripts/install-devrouter.sh
 
-      - name: Check hosted pnpm cache policy
-        run: node --test ./.github/scripts/hosted-pnpm-cache.test.cjs
+      - name: Check pnpm toolchain and hosted cache policy
+        run: |
+          node --test --test-concurrency=1 \
+            ./.github/scripts/pnpm-toolchain-pins.test.cjs \
+            ./.github/scripts/hosted-pnpm-cache.test.cjs \
+            ./.agents/skills/klicker-dependency-overrides/scripts/lockfile-readers.test.mjs
 
       - name: Check staging release contracts
         run: node --test .github/scripts/stg-release-ref-promotion.test.cjs
+
+      - name: Check OCR runtime action pin
+        id: ocr_runtime_pin
+        timeout-minutes: 3
+        run: |
+          node <<'NODE'
+          'use strict'
+
+          const fs = require('node:fs')
+          const { execFileSync } = require('node:child_process')
+          const YAML = require('yaml')
+          const {
+            gitEnvironment,
+          } = require('./.github/scripts/ocr-runtime-config.cjs')
+
+          const caller = YAML.parse(
+            fs.readFileSync('.github/workflows/check-ocr-review.yml', 'utf8')
+          )
+          const reference = caller.jobs?.['ocr-review']?.steps?.[0]?.uses
+          const prefix =
+            'uzh-bf/klicker-uzh/.github/actions/ocr-review@'
+          const sha =
+            typeof reference === 'string' && reference.startsWith(prefix)
+              ? reference.slice(prefix.length)
+              : ''
+          if (!/^[a-f0-9]{40}$/.test(sha)) {
+            throw new Error('invalid_ocr_runtime_pin')
+          }
+
+          const origin = 'https://github.com/uzh-bf/klicker-uzh.git'
+          const options = {
+            cwd: process.cwd(),
+            env: {
+              ...gitEnvironment(),
+              GIT_CONFIG_COUNT: '2',
+              GIT_CONFIG_KEY_0: 'http.https://github.com/.extraheader',
+              GIT_CONFIG_VALUE_0: '',
+              GIT_CONFIG_KEY_1: 'credential.helper',
+              GIT_CONFIG_VALUE_1: '',
+            },
+            encoding: 'utf8',
+            timeout: 120000,
+            maxBuffer: 1024 * 1024,
+            stdio: ['ignore', 'pipe', 'pipe'],
+          }
+          execFileSync(
+            'git',
+            [
+              'fetch',
+              '--no-tags',
+              '--no-recurse-submodules',
+              '--no-write-fetch-head',
+              origin,
+              sha,
+            ],
+            options
+          )
+          const type = execFileSync(
+            'git',
+            ['cat-file', '-t', sha],
+            options
+          ).trim()
+          if (type !== 'commit') {
+            throw new Error('invalid_ocr_runtime_pin_object')
+          }
+          NODE
 
       - name: Check CI and review contracts
         run: |
           node --test \
             .github/scripts/direct-script-invocations.test.cjs \
             .github/scripts/ci-equivalent-run.test.cjs \
+            .github/scripts/ci-verified-reuse.test.cjs \
+            .github/scripts/ci-reuse-policy.test.cjs \
+            .github/scripts/install-devrouter-locked.test.cjs \
             .github/scripts/ci-duplicate-audit.test.cjs \
             .github/scripts/minimum-validation-class.test.cjs \
             .github/scripts/changed-paths.test.cjs \
             .github/scripts/ci-obsolete-runs.test.cjs \
             .github/scripts/ci-event-gates.test.cjs \
             .github/scripts/draft-sync-prs.test.cjs \
+            .github/scripts/sync-pr-changelog.test.cjs \
             .github/scripts/sync-ancestry-guard.test.cjs \
             .github/scripts/required-ci-status.test.cjs \
             .github/scripts/ocr-self-update-guard.test.cjs \
             .github/scripts/ocr-mistral-adapter.test.cjs \
+            .github/scripts/ocr-draft-review.test.cjs \
+            .github/scripts/ocr-controller.test.cjs \
+            .github/scripts/ocr-review-tools.test.cjs \
             .github/scripts/final-ai-review.test.js \
             .github/scripts/final-ai-stack-review.test.js \
             .github/scripts/stg-release-promoter.test.js \
@@ -193,7 +352,53 @@ jobs:
             .github/scripts/image-input-fingerprint.test.cjs \
             .github/scripts/release-image-manifest.test.cjs \
             .github/scripts/deploy-parity.test.cjs \
+            .github/actions/priority-ci-route/route.test.cjs \
             .github/scripts/doc-query-token-ownership.test.cjs
+
+      - name: Select shared OCR runtime qualification
+        id: ocr_shared
+        uses: ./.github/actions/changed-paths
+        with:
+          pattern: '^\.github/(actions/ocr-review/|workflows/(check|check-ocr-review)\.yml|scripts/ocr-(controller|draft-review|review-shared|runtime-config|review-tools|mistral-adapter)(\.test)?\.cjs|open-code-review/runtime-manifest\.json)|^\.agents/skills/ocr-reviewer/'
+
+      - name: Qualify stock OCR runtime with synthetic providers
+        if: steps.ocr_shared.outputs.should_run != 'false'
+        timeout-minutes: 25
+        env:
+          OCR_NO_UPDATE: '1'
+          TURBO_TOKEN: ''
+          TURBO_TEAM: ''
+        run: |
+          set -euo pipefail
+          ocr_package="$(node -p "require('./.github/scripts/ocr-controller.cjs').verifyRelease().manifest.draft.package")"
+          ocr_revision="$(node -p "require('./.github/scripts/ocr-controller.cjs').verifyRelease().manifest.draft.publisher.revision")"
+          npm install --prefix "${RUNNER_TEMP}/ocr-stock-qualification" "${ocr_package}"
+          export OCR_TEST_BINARY="${RUNNER_TEMP}/ocr-stock-qualification/node_modules/.bin/ocr"
+          publisher_root="${RUNNER_TEMP}/ocr-stock-publisher"
+          git init "${publisher_root}"
+          git -C "${publisher_root}" fetch --depth=1 https://github.com/alibaba/open-code-review.git "${ocr_revision}"
+          git -C "${publisher_root}" checkout --detach FETCH_HEAD
+          export OCR_TEST_PUBLISHER="${publisher_root}/scripts/github-actions/post-review-comments.js"
+          export OCR_REQUIRE_STOCK_BINARY=1
+          node --test .github/scripts/ocr-controller.test.cjs .github/scripts/ocr-draft-review.test.cjs
+
+      - name: Select OCR engine qualification
+        id: ocr_engine
+        uses: ./.github/actions/changed-paths
+        with:
+          pattern: '^\.github/(scripts/(install-patched-ocr\.cjs|ocr-self-update-guard\.test\.cjs)|open-code-review/ocr-compression\.patch|workflows/check(-ocr-final-review)?\.yml)$'
+
+      - name: Set up pinned OCR build toolchain
+        if: steps.ocr_engine.outputs.should_run != 'false'
+        uses: actions/setup-go@924ae3a1cded613372ab5595356fb5720e22ba16 # v6
+        with:
+          go-version: '1.26.9'
+          cache: false
+
+      - name: Qualify the pinned OCR compression engine
+        timeout-minutes: 25
+        if: steps.ocr_engine.outputs.should_run != 'false'
+        run: node .github/scripts/install-patched-ocr.cjs "${RUNNER_TEMP}/patched-ocr"
 
       # The chart is what production consumes from this branch, and nothing
       # else renders it: a scheduling policy reaches a pod spec only when a
@@ -256,6 +461,7 @@ jobs:
 
       - name: Check Playwright CI contracts
         run: |
+          bash util/reconcile-public-pr-arm64-runner-group.test.sh
           pnpm run check:playwright-ci
           node --test .github/scripts/playwright-pnpm-seed-fallback.test.cjs
           node --test .github/scripts/pnpm-install-retry.test.cjs
@@ -356,8 +562,11 @@ jobs:
   # an unexpected skip, a cancellation, a failed suite or a missing selection
   # must fail inside it.
   check:
-    needs: [select, check-suite]
-    if: always()
+    name: ${{ (vars.PRIORITY_CI_ENABLED == 'true' && github.event_name == 'pull_request' && github.event.pull_request.state == 'open' && github.event.pull_request.draft == false && github.event.repository.private == false && github.event.pull_request.head.repo.full_name == github.repository && github.event.pull_request.user.type != 'Bot' && contains(github.event.pull_request.labels.*.name, 'ci:priority') && (github.event.action != 'labeled' || github.event.label.name == 'ci:priority')) && 'check (delegated)' || ((github.event.action != 'labeled' || needs.priority-route.outputs.run_label_event == 'true') && 'check' || 'check (priority not admitted)') }}
+    needs: [select, check-suite, priority-route]
+    if: >-
+      !(vars.PRIORITY_CI_ENABLED == 'true' && github.event_name == 'pull_request' && github.event.pull_request.state == 'open' && github.event.pull_request.draft == false && github.event.repository.private == false && github.event.pull_request.head.repo.full_name == github.repository && github.event.pull_request.user.type != 'Bot' && contains(github.event.pull_request.labels.*.name, 'ci:priority') && (github.event.action != 'labeled' || github.event.label.name == 'ci:priority')) &&
+      (always() && (github.event.action != 'labeled' || needs.priority-route.outputs.run_label_event == 'true'))
     runs-on: ubuntu-latest
     permissions:
       contents: read
@@ -397,3 +606,31 @@ jobs:
           path: required-ci-evidence.json
           if-no-files-found: error
           retention-days: 7
+
+  priority-execution:
+    if: >-
+      vars.PRIORITY_CI_ENABLED == 'true' && github.event_name == 'pull_request' && github.event.pull_request.state == 'open' && github.event.pull_request.draft == false && github.event.repository.private == false && github.event.pull_request.head.repo.full_name == github.repository && github.event.pull_request.user.type != 'Bot' && contains(github.event.pull_request.labels.*.name, 'ci:priority') && (github.event.action != 'labeled' || github.event.label.name == 'ci:priority')
+    permissions:
+      actions: read
+      checks: read
+      contents: read
+      issues: read
+      pull-requests: read
+    uses: uzh-bf/klicker-uzh/.github/workflows/check-execution.yml@28c21d776517a88bbf981d11e3bde59c50cda483
+    secrets: inherit
+
+  priority-status:
+    name: ${{ (vars.PRIORITY_CI_ENABLED == 'true' && github.event_name == 'pull_request' && github.event.pull_request.state == 'open' && github.event.pull_request.draft == false && github.event.repository.private == false && github.event.pull_request.head.repo.full_name == github.repository && github.event.pull_request.user.type != 'Bot' && contains(github.event.pull_request.labels.*.name, 'ci:priority') && (github.event.action != 'labeled' || github.event.label.name == 'ci:priority')) && (github.event.action != 'labeled' || needs.priority-execution.outputs.run_label_event == 'true') && 'check' || 'check (priority not admitted)' }}
+    needs: priority-execution
+    if: >-
+      always() && (vars.PRIORITY_CI_ENABLED == 'true' && github.event_name == 'pull_request' && github.event.pull_request.state == 'open' && github.event.pull_request.draft == false && github.event.repository.private == false && github.event.pull_request.head.repo.full_name == github.repository && github.event.pull_request.user.type != 'Bot' && contains(github.event.pull_request.labels.*.name, 'ci:priority') && (github.event.action != 'labeled' || github.event.label.name == 'ci:priority'))
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    permissions: {}
+    steps:
+      - name: Require the actual trusted terminal result
+        if: github.event.action != 'labeled' || needs.priority-execution.outputs.run_label_event == 'true'
+        env:
+          EXECUTION_RESULT: ${{ needs.priority-execution.result }}
+          REQUIRED_RESULT: ${{ needs.priority-execution.outputs.required_result }}
+        run: test "$EXECUTION_RESULT" = success && test "$REQUIRED_RESULT" = success

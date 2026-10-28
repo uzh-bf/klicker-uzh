@@ -64,7 +64,7 @@ function validateTrajectoryTurnInput(turn, index) {
       throw evaluationError('trajectory_turn_unknown_field')
     }
   }
-  if (typeof turn.message === 'string') {
+  if ('message' in turn) {
     if ('repeatPrevious' in turn || 'suffix' in turn) {
       throw evaluationError('trajectory_turn_invalid')
     }
@@ -117,7 +117,10 @@ export function validateTrajectoryCase(value) {
   const turns = value.turns.map((turn, index) =>
     validateTrajectoryTurnInput(turn, index)
   )
-  if (!Array.isArray(value.assessmentTurns)) {
+  if (
+    !Array.isArray(value.assessmentTurns) ||
+    value.assessmentTurns.length === 0
+  ) {
     throw evaluationError('trajectory_case_assessment_turns_invalid')
   }
   const assessmentTurns = []
@@ -514,7 +517,14 @@ function verifyTrajectoryTurn({ messages, chain, mode, modelId, stream }) {
 // verification.
 export async function runTrajectory(target, definition, options = {}) {
   const plan = validateTrajectoryCase(definition)
-  const { arm = null, repeat = 0, beforeTurn, onTurn } = options ?? {}
+  const {
+    arm = null,
+    repeat = 0,
+    answerStyle,
+    answerTone,
+    beforeTurn,
+    onTurn,
+  } = options ?? {}
 
   await target.ensureSession()
   const threadId = await target.createThread()
@@ -559,6 +569,8 @@ export async function runTrajectory(target, definition, options = {}) {
       maxStreamBytes: target.maxStreamBytes,
       history,
       parentId: previousAssistantId,
+      answerStyle,
+      answerTone,
     })
     const messages = await target.pollThreadMessages(
       threadId,

@@ -174,12 +174,25 @@ from public PR code. Keep the build at four concurrent Turbo tasks for the
 four-runner, 16-vCPU host layout, and keep service health polling at five
 seconds so container readiness is detected promptly.
 
+For CI result-reuse changes, run `ci-verified-reuse.test.cjs`,
+`ci-reuse-policy.test.cjs`,
+`ci-equivalent-run.test.cjs`, `ci-event-gates.test.cjs`,
+`validate-public-playwright-workflow.test.cjs` and `stg-release-promoter.test.js`.
+Keep the sparse trusted-control boundary and fingerprint synchronized. Reuse
+requires real full coverage on the same route and architecture; neither a reduced
+plan nor an ARM64 PR result can satisfy hosted staging coverage. Test the
+promoter with real ZIP/digest fixtures, including forged and missing evidence.
+The opt-in `CI_VERIFIED_REUSE_ENABLED` variable must not be changed as part of a
+code-only task. PR tests exercise the verifier, but the `@v3` reusable workflow
+and trusted staging controller execute their new code only after landing.
+
 ## Decide whether e2e is warranted locally
 
 CI runs Playwright (8-way shard) on almost every code PR — CI is the real e2e gate. Run e2e locally only when your change plausibly breaks a flow (new UI, changed selectors/`data-cy`, auth/redirect changes, activity lifecycle). If you do:
 
-- Run `pnpm playwright:host -- <args>` from the host. Never invoke Playwright or install browsers through `devrouter exec`, a DevPod shell, or another local container.
+- Run `node util/run-playwright-host.mjs <args>` from the host. Never invoke Playwright or install browsers through `devrouter exec`, a DevPod shell, or another local container.
 - You are **authorized to start the required servers for this purpose** through the host launcher. By default it reconciles the full devrouter profile, including the Hatchet workers, response-api, and response processor. For focused tests with an existing synthetic baseline, explicit local options `--runtime-profile chat --preserve-database` before Playwright arguments select Chat dependencies and skip global reset/seed. Inspect the selected spec's own fixture writes and cleanup first; those remain active. CI and default setup are unchanged.
+- A local failure that CI does not show usually comes from the dev servers. Rerun with `--ci-runtime` before the Playwright arguments to serve CI's production test builds; a later run without the flag returns to the dev servers.
 - If the launcher started a runtime for your task, tear it down afterwards with `devrouter stop .`; leave the machine as you found it.
 - On environment failure, switch to `klicker-environment-doctor` before blaming the test.
 

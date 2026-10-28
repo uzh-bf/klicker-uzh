@@ -49,6 +49,136 @@ main() {
   render_hook started >"$started_hook"
   render_hook completed >"$completed_hook"
   shellcheck "$telemetry_hook" "$started_hook" "$completed_hook"
+
+  local unit policy bootstrap_unit mount profile
+  unit="${TEMP_DIR}/runner.service"
+  render_runner_service public-pr-arm64-05 '' >"$unit"
+  policy=$(awk -F= '/^(Restart|RestartSec|StartLimitIntervalSec|StartLimitBurst|OOMPolicy)=/ {print}' "$unit")
+  [[ "$policy" == $'StartLimitIntervalSec=600\nStartLimitBurst=3\nRestart=on-failure\nRestartSec=60\nOOMPolicy=stop' ]] ||
+    fail 'managed service does not bound recovery after an OOM failure'
+  bootstrap_unit=$(bash -c '
+    source "$1"
+    PROFILE=public-pr
+    RUNNER_DIR=/opt/actions-runner/public-pr-arm64-05
+    render_runner_service "" actions.runner.uzh-bf.public-pr-arm64-05.service
+  ' bash "${SCRIPT_DIR}/provision-hetzner-arm64-runner.sh")
+  [[ "$bootstrap_unit" == "$(cat "$unit")" ]] || fail 'provisioning and reconciliation unit policies differ'
+  for mount in '' /mnt/HC_Volume_123456; do
+    for profile in public-pr trusted; do
+      bootstrap_unit=$(bash -c '
+        source "$1"
+        PROFILE=$2
+        RUNNER_DIR=/opt/actions-runner/public-pr-arm64-05
+        render_runner_service "$3" actions.runner.uzh-bf.public-pr-arm64-05.service
+      ' bash "${SCRIPT_DIR}/provision-hetzner-arm64-runner.sh" "$profile" "${mount:+RequiresMountsFor=$mount}")
+      policy=current
+      [[ "$profile" != 'trusted' ]] || policy=legacy
+      [[ "$bootstrap_unit" == "$(render_runner_service public-pr-arm64-05 "$mount" "$policy")" ]] ||
+        fail 'bootstrap changed a trusted unit or lost the managed mount requirement'
+    done
+  done
+  # These command and filesystem adapters are consumed by the sourced reconciler.
+  # shellcheck disable=SC2329,SC2034
+  (
+    EXPECTED_NAMES=(public-pr-arm64-05 public-pr-arm64-06 public-pr-arm64-07)
+    readonly fixture_dir="${TEMP_DIR}/services"
+    mkdir "$fixture_dir"
+    runner_unit_path() { printf '%s/%s.service\n' "$fixture_dir" "$1"; }
+    runner_service_mount() { printf ''; }
+    stat() {
+      [[ "$1" == '-c' && "$2" == '%U:%G:%a' ]] || return 2
+      printf 'root:root:644\n'
+    }
+    systemctl() {
+      local name=${2:-}
+      name=${name#actions.runner.uzh-bf.}
+      name=${name%.service}
+      case "$1" in
+        show)
+          case "$4" in
+            FragmentPath) runner_unit_path "$name" ;;
+            DropInPaths)
+              [[ "${fixture_show_failure:-0}" != '1' ]] || return 1
+              printf '%s' "${fixture_drop_in:-}" ;;
+            ActiveState)
+              case "$name" in
+                *05) printf active ;;
+                *06) printf '%s' "${fixture_held_state:-inactive}" ;;
+                *07) printf failed ;;
+                *) return 2 ;;
+              esac ;;
+            UnitFileState)
+              if [[ "$name" == *06 ]]; then printf disabled; else printf enabled; fi ;;
+            *) return 2 ;;
+          esac ;;
+        daemon-reload | restart) printf '%s\n' "$*" >>"${fixture_dir}/commands" ;;
+        is-active) [[ "$3" == *05.service ]] ;;
+        *) return 2 ;;
+      esac
+    }
+    pgrep() { [[ "${fixture_busy:-0}" == '1' ]]; }
+    write_file_from_stdin() { cat >"$4"; }
+    docker() {
+      [[ "$1" == info && "$2" == --format ]] || return 2
+      printf '/synthetic/docker\n'
+    }
+    df() {
+      [[ "$1" == -h && "$2" == /var/lib/docker ]] || return 2
+      printf 'Filesystem Size Used Available Use%% Mounted\nfixture 1G 0G 1G 0%% /synthetic\n'
+    }
+    for name in "${EXPECTED_NAMES[@]}"; do
+      render_runner_service "$name" '' legacy >"$(runner_unit_path "$name")"
+    done
+    capture_runner_service_states
+    configure_runner_services
+    for name in "${EXPECTED_NAMES[@]}"; do
+      cmp -s "$(runner_unit_path "$name")" <(render_runner_service "$name" '') ||
+        fail 'reconciliation did not converge the legacy service policy'
+    done
+    [[ "$(cat "${fixture_dir}/commands")" == 'daemon-reload' ]] ||
+      fail 'unit policy reconciliation changed runner activation'
+    : >"${fixture_dir}/commands"
+    configure_runner_services
+    [[ ! -s "${fixture_dir}/commands" ]] || fail 'service-policy reconciliation is not idempotent'
+    local state_lines
+    state_lines=$(print_summary | awk '$2 ~ /^ActiveState=/ && $3 ~ /^UnitFileState=/ {print $1, $2, $3}')
+    [[ "$state_lines" == $'public-pr-arm64-05 ActiveState=active UnitFileState=enabled\npublic-pr-arm64-06 ActiveState=inactive UnitFileState=disabled\npublic-pr-arm64-07 ActiveState=failed UnitFileState=enabled' ]] ||
+      fail 'configuration summary omitted current activation or enablement'
+    [[ ! -s "${fixture_dir}/commands" ]] || fail 'configuration summary mutated a service'
+
+    RUNNER_ENV_CHANGED_NAMES=("${EXPECTED_NAMES[@]}")
+    restart_runners
+    [[ "$(cat "${fixture_dir}/commands")" == $'daemon-reload\nrestart actions.runner.uzh-bf.public-pr-arm64-05.service' ]] ||
+      fail 'hook reconciliation restarted an inactive or disabled service'
+    : >"${fixture_dir}/commands"
+    RUNNER_ENV_CHANGED_NAMES=(public-pr-arm64-06)
+    restart_runners
+    [[ "$(cat "${fixture_dir}/commands")" == 'daemon-reload' ]] ||
+      fail 'unchanged active service was restarted'
+
+    render_runner_service public-pr-arm64-05 '' legacy >"$(runner_unit_path public-pr-arm64-05)"
+    : >"${fixture_dir}/commands"
+    fixture_busy=1
+    if (configure_runner_services) >/dev/null 2>&1; then fail 'busy host accepted a unit mutation'; fi
+    [[ ! -s "${fixture_dir}/commands" ]] || fail 'busy host ran a systemd mutation'
+    cmp -s "$(runner_unit_path public-pr-arm64-05)" <(render_runner_service public-pr-arm64-05 '' legacy) ||
+      fail 'busy host rewrote a unit'
+    fixture_busy=0
+    fixture_held_state=active
+    if (configure_runner_services) >/dev/null 2>&1; then fail 'changed activation state was accepted'; fi
+    fixture_held_state=activating
+    if (capture_runner_service_states) >/dev/null 2>&1; then fail 'transitional service state was accepted'; fi
+    fixture_held_state=inactive
+    fixture_drop_in=/unmanaged/policy.conf
+    if (configure_runner_services) >/dev/null 2>&1; then fail 'unmanaged drop-in was accepted'; fi
+    fixture_drop_in=''
+    fixture_show_failure=1
+    if (configure_runner_services) >/dev/null 2>&1; then fail 'unreadable unit properties were accepted'; fi
+    fixture_show_failure=0
+    printf '\nEnvironment=UNRECOGNIZED\n' >>"$(runner_unit_path public-pr-arm64-05)"
+    if (configure_runner_services) >/dev/null 2>&1; then fail 'unknown unit policy was accepted'; fi
+    [[ ! -s "${fixture_dir}/commands" ]] || fail 'refused mutation changed systemd state'
+  )
   [[ "$START_HOOK" == *.sh && "$COMPLETE_HOOK" == *.sh ]] ||
     fail 'job hooks must use a runner-recognized script extension'
   grep -Fq 'job-started.sh' <<<"$START_HOOK" || fail 'started hook path differs'
