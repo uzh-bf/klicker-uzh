@@ -22,10 +22,10 @@ vi.mock('@klicker-uzh/prisma', () => ({
   },
 }))
 
-vi.mock('../src/utils/transactions', async () => {
+vi.mock('@klicker-uzh/chat-api/host/utils/transactions', async () => {
   const actual = await vi.importActual<
-    typeof import('../src/utils/transactions')
-  >('../src/utils/transactions')
+    typeof import('@klicker-uzh/chat-api/host/utils/transactions')
+  >('@klicker-uzh/chat-api/host/utils/transactions')
 
   return {
     ...actual,

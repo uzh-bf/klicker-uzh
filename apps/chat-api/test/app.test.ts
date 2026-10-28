@@ -9,6 +9,12 @@ import { type ChatApiDependencies, createChatApiApp } from '../src/app.js'
 const chatbot = {
   id: 'chatbot-1',
   courseId: 'course-1',
+  ownerId: 'owner-1',
+  owner: { aiFeaturesEnabled: true },
+  course: { displayName: 'Synthetic course' },
+  standardModeConfig: null,
+  answerPreferencesEnabled: true,
+  mcpConfigurations: [],
   systemPrompts: null,
   modelSelection: true,
   allowedModelIds: [],
@@ -24,6 +30,7 @@ const ready = {
     contractVersion: CHAT_ENGINE_CONTRACT_VERSION,
     engineId: 'fake-engine',
     reason: null,
+    features: conformanceManifest.features,
   }),
 }
 
@@ -38,6 +45,12 @@ function baseDependencies(
   chat: (request: EngineChatRequest) => Response | Promise<Response>
 ): ChatApiDependencies {
   return {
+    claimChatTurn: vi.fn(async () => ({
+      outcome: 'claimed' as const,
+      lifecycleAttemptId: null,
+    })),
+    failChatTurn: vi.fn(async () => undefined),
+    isChatAccountUsageAvailable: vi.fn(async () => true),
     authenticate: vi.fn(async () => ({
       participantId: 'participant-1',
       courseId: 'course-1',
@@ -184,7 +197,7 @@ describe('chat-api Slice 2 tracer', () => {
 
     const response = await app.request('/api/chatbots/chatbot-1/chat', {
       method: 'POST',
-      headers: { cookie: 'participant_token=test' },
+      headers: { cookie: 'participant_token=test', origin: 'http://localhost' },
       body: JSON.stringify(body),
     })
 
@@ -210,8 +223,8 @@ describe('chat-api Slice 2 tracer', () => {
             contractVersion: CHAT_ENGINE_CONTRACT_VERSION,
             engineId: 'fake-engine',
             runId: request.runId,
-            modelId: 'gpt-4.1-mini',
-            deploymentId: 'gpt-4.1-mini',
+            modelId: 'gpt-6-luna',
+            deploymentId: 'gpt-6-luna',
             usage: {
               inputTokens: 12,
               outputTokens: 8,
@@ -229,13 +242,13 @@ describe('chat-api Slice 2 tracer', () => {
     const app = createChatApiApp(dependencies)
     const response = await app.request('/api/chatbots/chatbot-1/chat', {
       method: 'POST',
-      headers: { cookie: 'participant_token=test' },
+      headers: { cookie: 'participant_token=test', origin: 'http://localhost' },
       body: JSON.stringify(body),
     })
     const text = await response.text()
 
     expect(response.status).toBe(200)
-    expect(captured.value?.generation.modelId).toBe('gpt-4.1-mini')
+    expect(captured.value?.generation.modelId).toBe('gpt-6-luna')
     expect(captured.value?.generation.credentialMode.mode).toBe('deployment')
     expect(captured.value).not.toHaveProperty('traceContext')
     expect(dependencies.engine.chat).toHaveBeenCalledWith(
@@ -249,7 +262,7 @@ describe('chat-api Slice 2 tracer', () => {
       })
     )
     expect(text).toContain('"type":"finish"')
-    expect(text).toContain('"creditsUsed":0.0000176')
+    expect(text).toContain('"creditsUsed":0.0000052')
     expect(dependencies.engine.chat).toHaveBeenCalledTimes(1)
     expect(dependencies.finalizeAssistantTurn).toHaveBeenCalledTimes(1)
   })
@@ -265,8 +278,8 @@ describe('chat-api Slice 2 tracer', () => {
             contractVersion: CHAT_ENGINE_CONTRACT_VERSION,
             engineId: 'fake-engine',
             runId: request.runId,
-            modelId: 'gpt-4.1-mini',
-            deploymentId: 'gpt-4.1-mini',
+            modelId: 'gpt-6-luna',
+            deploymentId: 'gpt-6-luna',
             usage: {
               inputTokens: 10,
               outputTokens: 3,
@@ -285,7 +298,7 @@ describe('chat-api Slice 2 tracer', () => {
     const app = createChatApiApp(dependencies)
     const response = await app.request('/api/chatbots/chatbot-1/chat', {
       method: 'POST',
-      headers: { cookie: 'participant_token=test' },
+      headers: { cookie: 'participant_token=test', origin: 'http://localhost' },
       body: JSON.stringify(body),
     })
     const text = await response.text()
@@ -295,8 +308,11 @@ describe('chat-api Slice 2 tracer', () => {
     expect(text).toContain('client cancelled')
     expect(finalize).toHaveBeenCalledTimes(1)
     expect(finalize.mock.calls[0]?.[0]).toMatchObject({
-      content: [{ type: 'text', text: 'Partial' }],
-      creditsUsed: 0.0000088,
+      content: [
+        { type: 'text', text: 'Partial' },
+        { type: 'data', name: 'chat-stopped', data: {} },
+      ],
+      creditsUsed: 0.0000025,
     })
   })
 
@@ -313,8 +329,8 @@ describe('chat-api Slice 2 tracer', () => {
             contractVersion: CHAT_ENGINE_CONTRACT_VERSION,
             engineId: 'fake-engine',
             runId: request.runId,
-            modelId: 'gpt-4.1-mini',
-            deploymentId: 'gpt-4.1-mini',
+            modelId: 'gpt-6-luna',
+            deploymentId: 'gpt-6-luna',
             usage: {
               inputTokens: null,
               outputTokens: 4,
@@ -332,7 +348,7 @@ describe('chat-api Slice 2 tracer', () => {
     const app = createChatApiApp(dependencies)
     const response = await app.request('/api/chatbots/chatbot-1/chat', {
       method: 'POST',
-      headers: { cookie: 'participant_token=test' },
+      headers: { cookie: 'participant_token=test', origin: 'http://localhost' },
       body: JSON.stringify(body),
     })
     const text = await response.text()
@@ -352,7 +368,10 @@ describe('chat-api Slice 2 tracer', () => {
       '/api/chatbots/chatbot-1/chat',
       {
         method: 'POST',
-        headers: { cookie: 'participant_token=test' },
+        headers: {
+          cookie: 'participant_token=test',
+          origin: 'http://localhost',
+        },
         body: JSON.stringify(body),
       }
     )
@@ -376,7 +395,10 @@ describe('chat-api Slice 2 tracer', () => {
       '/api/chatbots/chatbot-1/chat',
       {
         method: 'POST',
-        headers: { cookie: 'participant_token=test' },
+        headers: {
+          cookie: 'participant_token=test',
+          origin: 'http://localhost',
+        },
         body: JSON.stringify(body),
       }
     )
@@ -398,8 +420,8 @@ describe('chat-api Slice 2 tracer', () => {
             contractVersion: CHAT_ENGINE_CONTRACT_VERSION,
             engineId: 'fake-engine',
             runId: request.runId,
-            modelId: 'gpt-4.1-mini',
-            deploymentId: 'gpt-4.1-mini',
+            modelId: 'gpt-6-luna',
+            deploymentId: 'gpt-6-luna',
             usage: {
               inputTokens: 12,
               outputTokens: 8,
@@ -424,7 +446,7 @@ describe('chat-api Slice 2 tracer', () => {
       providerAllowedOrigins: new Set(['https://provider.example.test']),
     }).request('/api/chatbots/chatbot-1/chat', {
       method: 'POST',
-      headers: { cookie: 'participant_token=test' },
+      headers: { cookie: 'participant_token=test', origin: 'http://localhost' },
       body: JSON.stringify(body),
     })
 
@@ -456,7 +478,7 @@ describe('chat-api Slice 2 tracer', () => {
       providerAllowedOrigins: new Set(['https://provider.example.test']),
     }).request('/api/chatbots/chatbot-1/chat', {
       method: 'POST',
-      headers: { cookie: 'participant_token=test' },
+      headers: { cookie: 'participant_token=test', origin: 'http://localhost' },
       body: JSON.stringify(body),
     })
 
@@ -484,7 +506,10 @@ describe('chat-api Slice 2 tracer', () => {
       '/api/chatbots/chatbot-1/chat',
       {
         method: 'POST',
-        headers: { cookie: 'participant_token=test' },
+        headers: {
+          cookie: 'participant_token=test',
+          origin: 'http://localhost',
+        },
         body: JSON.stringify(body),
       }
     )
@@ -506,8 +531,8 @@ describe('chat-api Slice 2 tracer', () => {
             contractVersion: CHAT_ENGINE_CONTRACT_VERSION,
             engineId: 'fake-engine',
             runId: request.runId,
-            modelId: 'gpt-4.1-mini',
-            deploymentId: 'gpt-4.1-mini',
+            modelId: 'gpt-6-luna',
+            deploymentId: 'gpt-6-luna',
             usage: {
               inputTokens: 12,
               outputTokens: 8,
@@ -537,7 +562,10 @@ describe('chat-api Slice 2 tracer', () => {
       '/api/chatbots/chatbot-1/chat',
       {
         method: 'POST',
-        headers: { cookie: 'participant_token=test' },
+        headers: {
+          cookie: 'participant_token=test',
+          origin: 'http://localhost',
+        },
         body: JSON.stringify(body),
       }
     )
@@ -550,4 +578,101 @@ describe('chat-api Slice 2 tracer', () => {
       expect.objectContaining({ mcpExecutionToken: 'scoped-token' })
     )
   })
+})
+
+describe('current host admission and turn lifecycle', () => {
+  const request = (data: unknown = body, origin = 'http://localhost') => ({
+    method: 'POST',
+    headers: { cookie: 'participant_token=test', origin },
+    body: JSON.stringify(data),
+  })
+  test.each([
+    { documentPages: ['synthetic-page'] },
+    { handoffSource: 'synthetic-source' },
+  ])('rejects unsupported input before claiming or execution: %j', async (extra) => {
+    const dependencies = baseDependencies(async () => engineSse([]))
+    const response = await createChatApiApp(dependencies).request(
+      '/api/chatbots/chatbot-1/chat',
+      request({ ...body, ...extra })
+    )
+    expect(response.status).toBe(400)
+    expect(dependencies.claimChatTurn).not.toHaveBeenCalled()
+    expect(dependencies.engine.chat).not.toHaveBeenCalled()
+  })
+  test('rejects forged origins before authentication or database work', async () => {
+    const dependencies = baseDependencies(async () => engineSse([]))
+    const response = await createChatApiApp(dependencies).request(
+      '/api/chatbots/chatbot-1/chat',
+      request(body, 'https://other.example.invalid')
+    )
+    expect(response.status).toBe(403)
+    expect(dependencies.authenticate).not.toHaveBeenCalled()
+  })
+  test('does not execute a completed or concurrent turn again', async () => {
+    for (const outcome of ['completed', 'in_progress'] as const) {
+      const dependencies = baseDependencies(async () => engineSse([]))
+      dependencies.claimChatTurn = vi.fn(async () => ({
+        outcome,
+        lifecycleAttemptId: null,
+      }))
+      const response = await createChatApiApp(dependencies).request(
+        '/api/chatbots/chatbot-1/chat',
+        request()
+      )
+      expect(response.status).toBe(409)
+      expect(dependencies.persistUserMessage).not.toHaveBeenCalled()
+      expect(dependencies.engine.chat).not.toHaveBeenCalled()
+      expect(dependencies.finalizeAssistantTurn).not.toHaveBeenCalled()
+    }
+  })
+  test('marks an admitted claim failed when the engine fails before streaming', async () => {
+    const dependencies = baseDependencies(async () => {
+      throw new Error('synthetic failure')
+    })
+    await createChatApiApp(dependencies).request(
+      '/api/chatbots/chatbot-1/chat',
+      request({ ...body, allowRegeneration: true })
+    )
+    expect(dependencies.claimChatTurn).toHaveBeenCalledWith(
+      expect.objectContaining({ allowRegeneration: true, parentId: 'user-1' })
+    )
+    expect(dependencies.failChatTurn).toHaveBeenCalledTimes(1)
+  })
+  test('keeps existing course tools from being silently dropped by the Python pilot', async () => {
+    const dependencies = baseDependencies(async () => engineSse([]))
+    dependencies.getChatbot = vi.fn(async () => ({
+      ...chatbot,
+      mcpConfigurations: [
+        { chatMode: 'tutor', isEnabled: true, parameters: { required: true } },
+      ],
+    }))
+    const response = await createChatApiApp(dependencies).request(
+      '/api/chatbots/chatbot-1/chat',
+      request()
+    )
+    expect(response.status).toBe(503)
+    expect(dependencies.claimChatTurn).not.toHaveBeenCalled()
+    expect(dependencies.engine.chat).not.toHaveBeenCalled()
+  })
+})
+
+test('normalizes wildcard browser language headers to a valid locale before admission', async () => {
+  const dependencies = baseDependencies(async () => engineSse([]))
+  const response = await createChatApiApp(dependencies).request(
+    '/api/chatbots/chatbot-1/chat',
+    {
+      method: 'POST',
+      headers: {
+        cookie: 'participant_token=test',
+        origin: 'http://localhost',
+        'accept-language': '*',
+      },
+      body: JSON.stringify(body),
+    }
+  )
+  expect(response.status).toBe(200)
+  expect(dependencies.engine.chat).toHaveBeenCalledWith(
+    expect.objectContaining({ locale: 'en' }),
+    expect.anything()
+  )
 })

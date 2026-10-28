@@ -1,15 +1,28 @@
 import { prisma } from '@klicker-uzh/prisma'
-import { CreditResetPeriod } from '@klicker-uzh/prisma/client'
+import type { ChatUsageClass, Prisma } from '@klicker-uzh/prisma/client'
 import type {
   EngineMessage,
   ImageAttachment,
 } from '@klicker-uzh/chat-engine-contract'
-import { getCurrentPeriodStart, isPeriodExpired } from './creditPeriods.js'
-import { DEFAULT_TUTOR_PROMPT } from './prompts.js'
+import { compileSystemPrompt } from '../host/lib/server/systemPromptCompiler.js'
+import type {
+  AnswerStyle,
+  AnswerTone,
+} from '../host/lib/config/answerStyles.js'
+import type { ChatModeMCPConfiguration } from '../host/lib/server/effectiveChatModes.js'
+import { CreditsService } from '../host/services/credits.js'
+import { DisclaimersService } from '../host/services/disclaimers.js'
+import { finalizeChatTurn } from '../host/services/accountUsage.js'
 
 export type ChatbotRecord = {
   id: string
   courseId: string
+  ownerId: string
+  owner: { aiFeaturesEnabled: boolean }
+  course: { displayName: string }
+  standardModeConfig: unknown
+  answerPreferencesEnabled: boolean
+  mcpConfigurations: ChatModeMCPConfiguration[]
   systemPrompts: unknown
   modelSelection: boolean
   allowedModelIds: string[]
@@ -35,6 +48,9 @@ export type PersistedMessage = {
 }
 
 export type FinalizeAssistantInput = {
+  ownerId: string
+  usageClass: ChatUsageClass
+  lifecycleAttemptId: string | null
   participantId: string
   chatbotId: string
   threadId: string
@@ -49,26 +65,25 @@ export type FinalizeAssistantInput = {
 }
 
 export type FinalizeAssistantResult = {
+  creditsUsed?: number | null
   persisted: boolean
   creditsCharged: boolean
 }
 
-export function getSystemPrompt(chatbot: ChatbotRecord, mode: string): string {
-  const prompts =
-    chatbot.systemPrompts && typeof chatbot.systemPrompts === 'object'
-      ? (chatbot.systemPrompts as Record<string, unknown>)
-      : {}
-  const selected = prompts[mode]
-  let basePrompt: string | null = null
-  if (selected && typeof selected === 'object') {
-    const prompt = (selected as Record<string, unknown>).prompt
-    if (typeof prompt === 'string' && prompt.length > 0) basePrompt = prompt
+export function getSystemPrompt(
+  chatbot: ChatbotRecord,
+  mode: string,
+  context: {
+    toolNames: readonly string[]
+    answerStyle?: AnswerStyle
+    answerTone?: AnswerTone
   }
-  basePrompt ??=
-    mode === 'tutor'
-      ? DEFAULT_TUTOR_PROMPT
-      : 'You are KlickerChat, an educational assistant. Answer clearly and help the learner.'
-  return `${basePrompt.trimEnd()}\n\nLanguage style: when writing German, use Swiss High German orthography. Write "ss" instead of "ß" (e.g. "gross", not "groß"), and always use real umlauts (ä, ö, ü and Ä, Ö, Ü).`
+): string {
+  return compileSystemPrompt(chatbot.systemPrompts, mode, {
+    courseDisplayName: chatbot.course.displayName,
+    standardModeConfig: chatbot.standardModeConfig,
+    ...context,
+  })
 }
 
 function jsonRecord(value: unknown): Record<string, unknown> | null {
@@ -157,39 +172,43 @@ export async function loadEngineMessages(
 export async function getChatbot(
   chatbotId: string
 ): Promise<ChatbotRecord | null> {
-  const chatbot = await prisma.chatbot.findUnique({
+  return prisma.chatbot.findUnique({
     where: { id: chatbotId },
     select: {
       id: true,
       courseId: true,
+      ownerId: true,
+      owner: { select: { aiFeaturesEnabled: true } },
+      course: { select: { displayName: true } },
       systemPrompts: true,
+      standardModeConfig: true,
       modelSelection: true,
+      answerPreferencesEnabled: true,
       allowedModelIds: true,
       allowedReasoningEffortsByModel: true,
       openaiApiKey: true,
       openaiBaseUrl: true,
       disclaimerId: true,
+      mcpConfigurations: {
+        select: {
+          chatMode: true,
+          allowedTools: true,
+          isEnabled: true,
+          parameters: true,
+          mcpServerId: true,
+          priority: true,
+        },
+      },
     },
   })
-  return chatbot
 }
 
 export async function checkDisclaimer(
   participantId: string,
   chatbotId: string,
-  disclaimerId: string | null
+  _disclaimerId: string | null
 ) {
-  if (!disclaimerId) return { required: false, accepted: true }
-  const credits = await prisma.chatUsageCredits.findUnique({
-    where: { participantId_chatbotId: { participantId, chatbotId } },
-    select: { acceptedDisclaimerId: true, disclaimerDeclined: true },
-  })
-  return {
-    required: true,
-    accepted:
-      credits?.acceptedDisclaimerId === disclaimerId &&
-      !credits.disclaimerDeclined,
-  }
+  return DisclaimersService.checkDisclaimerStatus(chatbotId, participantId)
 }
 
 export async function getThread(
@@ -203,86 +222,11 @@ export async function getThread(
   })
 }
 
-async function initializeCredits(
-  participantId: string,
-  chatbotId: string
-): Promise<Credits> {
-  const chatbot = await prisma.chatbot.findUnique({
-    where: { id: chatbotId },
-    select: {
-      creditInitialCredits: true,
-      creditMaxCredits: true,
-      creditResetPeriod: true,
-    },
-  })
-  const initial = chatbot?.creditInitialCredits ?? 1
-  const max = chatbot?.creditMaxCredits ?? 1
-  const period = chatbot?.creditResetPeriod ?? CreditResetPeriod.WEEKLY
-  const created = await prisma.chatUsageCredits.upsert({
-    where: { participantId_chatbotId: { participantId, chatbotId } },
-    create: {
-      participantId,
-      chatbotId,
-      current: initial,
-      total: max,
-      periodStartedAt: getCurrentPeriodStart(period),
-      lastResetAt: new Date(),
-    },
-    update: { participantId },
-  })
-  return {
-    current: created.current.toNumber(),
-    total: created.total.toNumber(),
-  }
-}
-
 export async function getCredits(
   participantId: string,
   chatbotId: string
 ): Promise<Credits> {
-  const credits = await prisma.chatUsageCredits.findUnique({
-    where: { participantId_chatbotId: { participantId, chatbotId } },
-  })
-  if (!credits) return initializeCredits(participantId, chatbotId)
-  const chatbot = await prisma.chatbot.findUnique({
-    where: { id: chatbotId },
-    select: {
-      creditResetPeriod: true,
-      creditResetAmount: true,
-      creditMaxCredits: true,
-    },
-  })
-  if (
-    chatbot &&
-    chatbot.creditResetPeriod !== CreditResetPeriod.NONE &&
-    isPeriodExpired(
-      credits.periodStartedAt ?? credits.createdAt,
-      chatbot.creditResetPeriod
-    )
-  ) {
-    const current = Math.min(
-      credits.current.toNumber() + chatbot.creditResetAmount,
-      chatbot.creditMaxCredits
-    )
-    const updated = await prisma.chatUsageCredits.update({
-      where: { participantId_chatbotId: { participantId, chatbotId } },
-      data: {
-        current,
-        total: chatbot.creditMaxCredits,
-        periodStartedAt: getCurrentPeriodStart(chatbot.creditResetPeriod),
-        lastResetAt: new Date(),
-        resetCount: { increment: 1 },
-      },
-    })
-    return {
-      current: updated.current.toNumber(),
-      total: updated.total.toNumber(),
-    }
-  }
-  return {
-    current: credits.current.toNumber(),
-    total: credits.total.toNumber(),
-  }
+  return CreditsService.getUserCredits(participantId, chatbotId)
 }
 
 export async function persistUserMessage(input: {
@@ -298,9 +242,24 @@ export async function persistUserMessage(input: {
   await prisma.$transaction(async (tx) => {
     const existing = await tx.chatMessage.findUnique({
       where: { id: input.messageId },
-      select: { threadId: true },
+      select: { threadId: true, role: true },
     })
-    if (existing) return
+    if (existing) {
+      if (existing.threadId !== input.threadId || existing.role !== 'user')
+        throw new Error('Message identity is unavailable')
+      return
+    }
+    if (input.parentId) {
+      const parent = await tx.chatMessage.findFirst({
+        where: {
+          id: input.parentId,
+          threadId: input.threadId,
+          lifecycleStatus: 'COMPLETED',
+        },
+        select: { id: true },
+      })
+      if (!parent) throw new Error('Parent message is unavailable')
+    }
     await tx.chatMessage.create({
       data: {
         id: input.messageId,
@@ -335,54 +294,26 @@ export async function persistUserMessage(input: {
 export async function finalizeAssistantTurn(
   input: FinalizeAssistantInput
 ): Promise<FinalizeAssistantResult> {
-  return prisma.$transaction(async (tx) => {
-    const existing = await tx.chatMessage.findUnique({
-      where: { id: input.assistantMessageId },
-      select: { threadId: true },
-    })
-    if (existing)
-      return {
-        persisted: existing.threadId === input.threadId,
-        creditsCharged: false,
-      }
-
-    await tx.chatMessage.create({
-      data: {
-        id: input.assistantMessageId,
-        threadId: input.threadId,
-        parentId: input.userMessageId,
-        role: 'assistant',
-        content: input.content,
-        chatMode: input.chatMode,
-        modelId: input.modelId,
-        reasoningEffort: input.reasoningEffort,
-        reasoningContent: input.reasoningContent,
-        creditsUsed: input.creditsUsed,
-      },
-    })
-    await tx.chatThread.update({
-      where: { id: input.threadId },
-      data: { updatedAt: new Date() },
-    })
-
-    if (input.creditsUsed === null || input.creditsUsed <= 0) {
-      return { persisted: true, creditsCharged: false }
-    }
-    const creditKey = {
-      participantId: input.participantId,
-      chatbotId: input.chatbotId,
-    }
-    const decremented = await tx.chatUsageCredits.updateMany({
-      where: { ...creditKey, current: { gte: input.creditsUsed } },
-      data: { current: { decrement: input.creditsUsed } },
-    })
-    if (decremented.count === 0) {
-      const clamped = await tx.chatUsageCredits.updateMany({
-        where: creditKey,
-        data: { current: 0 },
-      })
-      if (clamped.count === 0) throw new Error('Credits record not found')
-    }
-    return { persisted: true, creditsCharged: true }
+  const result = await finalizeChatTurn({
+    ownerId: input.ownerId,
+    usageClass: input.usageClass,
+    lifecycleAttemptId: input.lifecycleAttemptId,
+    participantId: input.participantId,
+    chatbotId: input.chatbotId,
+    threadId: input.threadId,
+    assistantMessageId: input.assistantMessageId,
+    parentId: input.userMessageId,
+    content: input.content as Prisma.InputJsonValue,
+    chatMode: input.chatMode,
+    modelId: input.modelId,
+    reasoningEffort: input.reasoningEffort,
+    reasoningContent: input.reasoningContent,
+    rawCreditsUsed: input.creditsUsed,
   })
+  return {
+    creditsUsed: result.creditsUsed,
+    persisted: result.outcome !== 'empty',
+    creditsCharged:
+      result.outcome === 'completed' && result.creditsUsed !== null,
+  }
 }

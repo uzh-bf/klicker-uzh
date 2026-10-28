@@ -45,6 +45,8 @@ export type ValidatedStreamOptions = {
   onCancel?: () => void
   expected?: {
     assistantMessageId: string
+    engineId?: string
+    toolNames?: readonly string[]
     runId: string
     modelId: string
     deploymentId: string
@@ -63,6 +65,12 @@ function validateIdentity(
 ) {
   if (!expected) return
   if (
+    'toolName' in part &&
+    expected.toolNames &&
+    !expected.toolNames.includes(part.toolName)
+  )
+    throw new InvalidEngineStreamError('Engine tool was not admitted.')
+  if (
     part.type === 'start' &&
     part.messageId &&
     part.messageId !== expected.assistantMessageId
@@ -75,6 +83,8 @@ function validateIdentity(
       : null
   if (!metadata) return
   if (
+    (expected.engineId !== undefined &&
+      metadata.engineId !== expected.engineId) ||
     metadata.runId !== expected.runId ||
     metadata.modelId !== expected.modelId ||
     metadata.deploymentId !== expected.deploymentId
@@ -499,7 +509,11 @@ export function createValidatedPlatformStream(
         }
       } catch (error) {
         if (cancelled) return
-        if (state.status === 'streaming') state.status = 'aborted'
+        if (state.status === 'streaming')
+          state.status =
+            error instanceof Error && error.name === 'AbortError'
+              ? 'aborted'
+              : 'error'
         const [finalization] = await Promise.allSettled([
           finalizeOnce(),
           stopUpstream(true),

@@ -11,7 +11,10 @@
     "@hono/node-server": "1.19.11",
     "@klicker-uzh/chat-engine-contract": "workspace:*",
     "@klicker-uzh/prisma": "workspace:*",
+    "@klicker-uzh/types": "workspace:*",
     "@klicker-uzh/util": "workspace:*",
+    "ai": "7.0.52",
+    "handlebars": "4.7.9",
     "hono": "4.12.30",
     "jose": "5.9.4",
     "zod": "4.6.6"
@@ -21,7 +24,6 @@
     "@rollup/plugin-node-resolve": "~15.3.1",
     "@rollup/plugin-typescript": "~12.1.4",
     "@types/node": "^24.10.1",
-    "ai": "~7.0.52",
     "npm-run-all": "~4.1.5",
     "rollup": "~4.34.9",
     "tsx": "~4.19.4",
@@ -44,5 +46,19 @@
   "volta": {
     "extends": "../../package.json"
   },
-  "type": "module"
+  "type": "module",
+  "exports": {
+    ".": {
+      "types": "./dist/index.d.ts",
+      "default": "./dist/index.js"
+    },
+    "./host/*": {
+      "types": "./dist/host/*.d.ts",
+      "default": "./dist/host/*.js"
+    },
+    "./auth": {
+      "types": "./dist/runtime/auth.d.ts",
+      "default": "./dist/runtime/auth.js"
+    }
+  }
 }

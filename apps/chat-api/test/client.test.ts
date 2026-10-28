@@ -104,3 +104,19 @@ test('concurrent readiness callers await the same first manifest probe', async (
   expect(states.map((state) => state.ok)).toEqual([true, true])
   expect(manifest).toHaveBeenCalledTimes(1)
 })
+
+test('requires the configured engine identity and rechecks it after recovery', async () => {
+  let id = 'other-engine'
+  const probe = new EngineReadinessProbe(
+    {
+      manifest: async () => ({ ...conformanceManifest, engineId: id }),
+      chat: vi.fn(),
+    },
+    0,
+    5000,
+    'selected-engine'
+  )
+  expect((await probe.get()).ok).toBe(false)
+  id = 'selected-engine'
+  expect((await probe.get()).ok).toBe(true)
+})

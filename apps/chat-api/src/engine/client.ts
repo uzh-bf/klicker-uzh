@@ -118,6 +118,7 @@ export type EngineReadiness = {
   contractVersion: typeof CHAT_ENGINE_CONTRACT_VERSION
   engineId: string | null
   reason: string | null
+  features?: EngineManifest['features']
 }
 
 export class EngineReadinessProbe {
@@ -133,7 +134,8 @@ export class EngineReadinessProbe {
   constructor(
     private readonly engine: EngineClient,
     private readonly ttlMs = 15_000,
-    private readonly manifestTimeoutMs = 5_000
+    private readonly manifestTimeoutMs = 5_000,
+    private readonly expectedEngineId = process.env.CHAT_ENGINE_ID
   ) {}
 
   async get(): Promise<EngineReadiness> {
@@ -160,14 +162,18 @@ export class EngineReadinessProbe {
         this.engine.manifest({ signal: abortController.signal }),
         timeout,
       ])
+      const compatible =
+        manifest.contractVersion === CHAT_ENGINE_CONTRACT_VERSION &&
+        Boolean(this.expectedEngineId) &&
+        manifest.engineId === this.expectedEngineId
       this.state = {
-        ok: manifest.contractVersion === CHAT_ENGINE_CONTRACT_VERSION,
+        ok: compatible,
         contractVersion: manifest.contractVersion,
         engineId: manifest.engineId,
-        reason:
-          manifest.contractVersion === CHAT_ENGINE_CONTRACT_VERSION
-            ? null
-            : 'Engine contract version is incompatible.',
+        features: manifest.features,
+        reason: compatible
+          ? null
+          : 'Engine identity or contract version is incompatible.',
       }
     } catch (error) {
       this.state = {
