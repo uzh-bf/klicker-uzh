@@ -22,7 +22,7 @@ jobs:
     # module-resolution error instead of reviewing the pull request.
     env:
       OCR_NO_UPDATE: '1'
-      OCR_ADAPTER_PROVIDER: mistral-flash
+      OCR_ADAPTER_PROVIDER: mistral-deepseek
     if: >-
       (github.event.pull_request.user.login != 'dependabot[bot]' &&
       github.event.pull_request.draft == true) &&
@@ -33,7 +33,7 @@ jobs:
     timeout-minutes: 45
     steps:
       - name: Run pinned OCR draft review
-        uses: uzh-bf/klicker-uzh/.github/actions/ocr-review@29286131494b136cccffabb75c4de72135edd056
+        uses: uzh-bf/klicker-uzh/.github/actions/ocr-review@56c50f970bac0fa2f4732151270ed3dec0b45abb
         with:
           mistral-api-key: ${{ secrets.MISTRAL_API_KEY }}
           context7-api-key: ${{ secrets.CONTEXT7_API_KEY }}

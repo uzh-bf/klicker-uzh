@@ -44,13 +44,13 @@ const {
 
 const STACK_REVIEW_COMMAND = '/final-review-stack'
 const {
-  MISTRAL_FLASH_MODEL,
+  MISTRAL_DEEPSEEK_MODEL,
   MISTRAL_URL,
   callMistral,
   createHistoryStore,
   writeDiagnostics,
 } = require('./ocr-mistral-adapter.cjs')
-const FINAL_STACK_REVIEW_MODEL = MISTRAL_FLASH_MODEL
+const FINAL_STACK_REVIEW_MODEL = MISTRAL_DEEPSEEK_MODEL
 const STACK_REVIEW_CONTEXT = 'final-ai-stack-review'
 const STACK_REVIEW_SCHEMA = 'final-ai-stack-review/v4'
 const STACK_COMBINED_OCR_SCHEMA = 'final-ai-stack-combined-ocr/v1'
@@ -3068,7 +3068,7 @@ function buildTopologyRequest({
 }) {
   const request = {
     model: FINAL_STACK_REVIEW_MODEL,
-    provider: 'mistral-flash',
+    provider: 'mistral-deepseek',
     max_tokens: maxTokens,
     messages: messages ?? [
       {
@@ -3139,7 +3139,7 @@ function aggregateTopologyDiagnostics(snapshots) {
   for (const snapshot of snapshots) {
     if (
       snapshot?.stage !== 'topology' ||
-      snapshot.provider !== 'mistral-flash' ||
+      snapshot.provider !== 'mistral-deepseek' ||
       snapshot.model !== FINAL_STACK_REVIEW_MODEL
     ) {
       throw new Error('Topology diagnostics have an invalid identity')
@@ -3163,7 +3163,7 @@ function aggregateTopologyDiagnostics(snapshots) {
   return {
     schema_version: 1,
     stage: 'topology',
-    provider: 'mistral-flash',
+    provider: 'mistral-deepseek',
     model: FINAL_STACK_REVIEW_MODEL,
     provider_availability: providerAvailability,
     ...aggregate,
@@ -3295,7 +3295,7 @@ async function callTopologyModel({
     Math.max(0, deadlineMs - Date.now())
   )
   const diagnosticsSnapshots = []
-  const history = createHistoryStore({ provider: 'mistral-flash' })
+  const history = createHistoryStore({ provider: 'mistral-deepseek' })
   const seenToolIds = new Set()
   const aggregateUsage = {
     completion_tokens: 0,
@@ -3360,7 +3360,7 @@ async function callTopologyModel({
         diagnosticsStage: 'topology',
         fetchImpl,
         history,
-        provider: 'mistral-flash',
+        provider: 'mistral-deepseek',
         signal: controller.signal,
         timeoutMs: Math.max(1, deadlineMs - Date.now()),
         usageJournalPath,

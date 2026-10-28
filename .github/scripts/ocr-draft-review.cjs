@@ -9,7 +9,7 @@ const {
   createProgressReporter,
   buildCostReport,
   MISTRAL_MODEL,
-  MISTRAL_FLASH_MODEL,
+  MISTRAL_DEEPSEEK_MODEL,
   createProviderAvailability,
   parseProviderPause,
   summarizePlanGuidance,
@@ -21,8 +21,8 @@ const {
   gitEnvironment,
 } = require('./ocr-runtime-config.cjs')
 
-const DRAFT_MODEL = MISTRAL_FLASH_MODEL
-const DRAFT_PROVIDER = 'mistral-flash'
+const DRAFT_MODEL = MISTRAL_DEEPSEEK_MODEL
+const DRAFT_PROVIDER = 'mistral-deepseek'
 const DRAFT_PROFILE = Object.freeze({
   id: 'draft-v1',
   reasoning: 'max',
