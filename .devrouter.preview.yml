@@ -74,9 +74,7 @@ resources:
     kind: redis
   db-bootstrap:
     kind: job
-    build:
-      context: .
-      dockerfile: deploy/preview/Dockerfile.fixtures
+    imageTarget: fixtures
     dependsOn:
       - postgres
     command:
@@ -85,9 +83,7 @@ resources:
       - bootstrap
   fixtures:
     kind: job
-    build:
-      context: .
-      dockerfile: deploy/preview/Dockerfile.fixtures
+    imageTarget: fixtures
     dependsOn:
       - db-bootstrap
       - local-mcp
@@ -247,9 +243,7 @@ resources:
       - hatchet
   azurite:
     kind: service
-    build:
-      context: .
-      dockerfile: deploy/preview/Dockerfile.azurite
+    imageTarget: azurite
     command:
       - node
       - /app/deploy/preview/runtime.mjs
@@ -260,9 +254,7 @@ resources:
         public: true
   litellm:
     kind: service
-    build:
-      context: .
-      dockerfile: deploy/preview/Dockerfile.litellm
+    imageTarget: litellm
     command:
       - litellm
       - --config
@@ -294,9 +286,7 @@ resources:
         public: true
   api:
     kind: service
-    build:
-      context: .
-      dockerfile: apps/backend-docker/Dockerfile
+    imageTarget: api
     dependsOn:
       - fixtures
       - hatchet
@@ -310,9 +300,7 @@ resources:
         public: true
   auth:
     kind: service
-    build:
-      context: .
-      dockerfile: apps/auth/Dockerfile
+    imageTarget: auth
     dependsOn:
       - api
     ports:
@@ -321,9 +309,7 @@ resources:
         public: true
   pwa:
     kind: service
-    build:
-      context: .
-      dockerfile: apps/frontend-pwa/Dockerfile
+    imageTarget: pwa
     dependsOn:
       - api
     ports:
@@ -332,9 +318,7 @@ resources:
         public: true
   chat:
     kind: service
-    build:
-      context: .
-      dockerfile: apps/chat/Dockerfile
+    imageTarget: chat
     dependsOn:
       - api
       - mcp-student
@@ -349,9 +333,7 @@ resources:
         public: true
   manage:
     kind: service
-    build:
-      context: .
-      dockerfile: apps/frontend-manage/Dockerfile
+    imageTarget: manage
     dependsOn:
       - api
       - mcp-lecturer
@@ -361,9 +343,7 @@ resources:
         public: true
   control:
     kind: service
-    build:
-      context: .
-      dockerfile: apps/frontend-control/Dockerfile
+    imageTarget: control
     dependsOn:
       - api
       - worker-general
@@ -374,9 +354,7 @@ resources:
         public: true
   response-api:
     kind: service
-    build:
-      context: .
-      dockerfile: apps/response-api/Dockerfile
+    imageTarget: response-api
     dependsOn:
       - api
     ports:
@@ -385,9 +363,7 @@ resources:
         public: true
   lti:
     kind: service
-    build:
-      context: .
-      dockerfile: apps/lti/Dockerfile
+    imageTarget: lti
     dependsOn:
       - api
     ports:
@@ -396,9 +372,7 @@ resources:
         public: true
   olat-api:
     kind: service
-    build:
-      context: .
-      dockerfile: apps/olat-api/Dockerfile
+    imageTarget: olat-api
     dependsOn:
       - api
     ports:
@@ -407,9 +381,7 @@ resources:
         public: true
   mcp-lecturer:
     kind: service
-    build:
-      context: .
-      dockerfile: apps/mcp-lecturer/Dockerfile
+    imageTarget: mcp-lecturer
     dependsOn:
       - api
     ports:
@@ -418,9 +390,7 @@ resources:
         public: false
   mcp-student:
     kind: service
-    build:
-      context: .
-      dockerfile: apps/mcp-student/Dockerfile
+    imageTarget: mcp-student
     dependsOn:
       - api
     ports:
@@ -429,9 +399,7 @@ resources:
         public: false
   local-mcp:
     kind: service
-    build:
-      context: .
-      dockerfile: deploy/preview/Dockerfile.fixtures
+    imageTarget: fixtures
     dependsOn:
       - hatchet
     command:
@@ -444,17 +412,13 @@ resources:
         public: false
   worker-general:
     kind: service
-    build:
-      context: .
-      dockerfile: apps/hatchet-worker-general/Dockerfile
+    imageTarget: worker-general
     dependsOn:
       - api
       - hatchet
   worker-response:
     kind: service
-    build:
-      context: .
-      dockerfile: apps/hatchet-worker-response-processor/Dockerfile
+    imageTarget: worker-response
     dependsOn:
       - api
       - hatchet

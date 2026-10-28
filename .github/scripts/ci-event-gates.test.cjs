@@ -709,9 +709,14 @@ test('closed-pr sweeper covers every per-PR workflow concurrency group', () => {
     }
 
     const name = workflow.name ?? entry
-    const prefix = group.startsWith('${{ github.workflow }}-')
-      ? name
-      : group.slice(0, group.indexOf('-${{'))
+    const prefix =
+      group.startsWith('${{ github.workflow }}-') ||
+      (entry === 'v3_images-stg.yml' &&
+        group.includes(
+          "format('{0}-{1}', github.workflow, github.event.pull_request.number || github.ref_name)"
+        ))
+        ? name
+        : group.slice(0, group.indexOf('-${{'))
     targets.set(entry, { name, prefix })
   }
 

@@ -492,7 +492,11 @@ function validateScanJob(block, path, jobId) {
 }
 
 function validateStatusJob(block, path, jobId) {
-  if (!/^[ ]{4}if:[ ]*always[(][)][ ]*$/m.test(block)) {
+  if (
+    !/^[ ]{4}if:[ ]*always[(][)](?:[ ]*&&[ ]*github[.]event_name[ ]*!=[ ]*'workflow_dispatch')?[ ]*$/m.test(
+      block
+    )
+  ) {
     fail(path, jobId, 'must report for every outcome')
   }
   const declared = new Set(jobNeeds(block))

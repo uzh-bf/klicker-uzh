@@ -149,3 +149,30 @@ Azurite currently stores data in its ephemeral container filesystem. Restart
 persistence for containers, uploaded objects and CORS is unqualified. A
 reviewed volume binding or idempotent startup configuration is required before
 claiming refresh/restart support; recreating a generation loses uploaded data.
+
+## CI image reuse
+
+The remote manifest maps application resources to logical CI image targets. The
+existing image workflow has an opt-in dispatch path for an exact commit, selected
+targets and one native CPU platform. Its frontend variants include complete public
+build configuration in their identity. Builds publish images only; they do not
+start or refresh environments.
+
+Install a reviewed copy of `resolve-images.mjs` with its trusted CI helpers under
+the operator installation directory. Its JSON protocol is the generic Devrouter
+image backend contract. Keep publishing/controller credentials in mapped scoped
+environment variables. `DEVROUTER_PREVIEW_GITHUB_CONTROL_REF` names the reviewed
+producer branch or tag; its resolved commit must equal the installed
+`producer.controlRevision`. A moved ref requires review before dispatch. For a
+private registry, `DEVROUTER_PREVIEW_DOCKER_CONFIG` can name an existing protected
+Docker authentication directory. Its contents stay outside candidate builds and
+receipt output. The adapter checks successful CI and immutable registry
+platforms; it returns no credentials. Northflank receives admitted digests and
+existing registry pull-credential references. A missing CI image never falls back
+to a Northflank source build.
+
+Qualification still requires proof of the selected Northflank architecture and an
+actual image deployment with no provider build. The previous trial deadline does
+not authorize another paid generation. Record CI image waiting/build time
+separately from provisioning with available images. The source/contract tests do
+not provide those live timings.

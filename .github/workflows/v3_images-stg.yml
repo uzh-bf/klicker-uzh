@@ -1,4 +1,5 @@
 name: Build staging images
+run-name: ${{ inputs.correlationId }}
 
 # One workflow replaces the thirteen per-image staging publications and the
 # separate Build Fallback reporter. It resolves the changed-image selection
@@ -8,7 +9,7 @@ name: Build staging images
 # artifact the staging promotion controller admits.
 #
 # The image inventory is trusted controller input:
-# .github/scripts/staging-image-targets.json is read from the same revision as
+# .github/scripts/staging-image-targets.cjs is read from the same revision as
 # this workflow, and the promotion controller validates the candidate against
 # its own copy of that inventory before it promotes anything.
 #
@@ -35,10 +36,35 @@ on:
     # ready_for_review recomputes the required context against the builds that
     # the ready boundary restores.
     types: [opened, synchronize, reopened, ready_for_review]
+  workflow_dispatch:
+    inputs:
+      buildConfigurationJson:
+        description: Canonical non-secret deployment build configuration JSON
+        required: true
+        type: string
+      correlationId:
+        description: Unique preview publication correlation ID
+        required: true
+        type: string
+      platform:
+        description: Native platform to build
+        required: true
+        type: choice
+        options:
+          - linux/amd64
+          - linux/arm64
+      sourceSha:
+        description: Exact candidate commit SHA to check out and publish
+        required: true
+        type: string
+      targets:
+        description: Comma-separated logical preview targets
+        required: true
+        type: string
 
 concurrency:
-  group: ${{ github.workflow }}-${{ github.event.pull_request.number || github.ref_name }}
-  cancel-in-progress: true
+  group: ${{ github.event_name == 'workflow_dispatch' && format('{0}-preview-{1}', github.workflow, inputs.correlationId) || format('{0}-{1}', github.workflow, github.event.pull_request.number || github.ref_name) }}
+  cancel-in-progress: ${{ github.event_name != 'workflow_dispatch' }}
 
 permissions:
   actions: read
@@ -46,6 +72,7 @@ permissions:
 
 jobs:
   plan:
+    if: github.event_name != 'workflow_dispatch'
     runs-on: ubuntu-latest
     outputs:
       after-migrator-build: ${{ steps.plan.outputs.after-migrator-build }}
@@ -128,6 +155,7 @@ jobs:
   build-migrator:
     needs: plan
     if: >-
+      github.event_name != 'workflow_dispatch' &&
       needs.plan.outputs.migrator-build == 'true' &&
       (github.event_name != 'pull_request' ||
        github.event.pull_request.draft == false)
@@ -259,6 +287,7 @@ jobs:
   build:
     needs: plan
     if: >-
+      github.event_name != 'workflow_dispatch' &&
       needs.plan.outputs.build == 'true' &&
       (github.event_name != 'pull_request' ||
        github.event.pull_request.draft == false)
@@ -405,6 +434,7 @@ jobs:
   build-after-migrator:
     needs: [plan, build-migrator]
     if: >-
+      github.event_name != 'workflow_dispatch' &&
       needs.plan.outputs.after-migrator-build == 'true' &&
       (github.event_name != 'pull_request' ||
        github.event.pull_request.draft == false)
@@ -539,6 +569,7 @@ jobs:
   build-amd:
     needs: plan
     if: >-
+      github.event_name != 'workflow_dispatch' &&
       needs.plan.outputs.amd-build == 'true' &&
       (github.event_name != 'pull_request' ||
        github.event.pull_request.draft == false)
@@ -603,6 +634,7 @@ jobs:
   scan:
     needs: [plan, build-migrator, build, build-after-migrator]
     if: >-
+      github.event_name != 'workflow_dispatch' &&
       needs.plan.outputs.scan-build == 'true' &&
       github.event_name != 'pull_request'
     name: ${{ matrix.jobName }}
@@ -727,7 +759,7 @@ jobs:
       - build-amd
       - build-migrator
       - scan
-    if: always()
+    if: always() && github.event_name != 'workflow_dispatch'
     runs-on: ubuntu-latest
     timeout-minutes: 10
     steps:
@@ -763,3 +795,400 @@ jobs:
           if-no-files-found: error
           name: required-ci-evidence
           path: ${{ runner.temp }}/required-ci-evidence.json
+
+  # The dispatch path is a separate publication mode. It is dispatched only by
+  # the trusted preview controller, builds one native platform at a time, and
+  # publishes into preview repositories. The trusted workflow, inventory and
+  # scripts are checked out before the candidate source, so candidate code can
+  # never replace the planner or receipt writer that runs with a registry login.
+  preview-plan:
+    if: github.event_name == 'workflow_dispatch'
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    outputs:
+      build: ${{ steps.plan.outputs.build }}
+      build-matrix: ${{ steps.plan.outputs.build-matrix }}
+      cache-epoch: ${{ steps.plan.outputs.cache-epoch }}
+      configuration-digests: ${{ steps.plan.outputs.configuration-digests }}
+      control-revision: ${{ steps.plan.outputs.control-revision }}
+      correlation-id: ${{ steps.plan.outputs.correlation-id }}
+      expected-targets: ${{ steps.plan.outputs.expected-targets }}
+      platform: ${{ steps.plan.outputs.platform }}
+      platform-suffix: ${{ steps.plan.outputs.platform-suffix }}
+      runner: ${{ steps.plan.outputs.runner }}
+      scan-build: ${{ steps.plan.outputs.scan-build }}
+      scan-matrix: ${{ steps.plan.outputs.scan-matrix }}
+      selected-logical-targets: ${{ steps.plan.outputs.selected-logical-targets }}
+      source-revision: ${{ steps.plan.outputs.source-revision }}
+      target-map: ${{ steps.plan.outputs.target-map }}
+    steps:
+      - name: Check out the dispatcher's trusted controller revision
+        uses: actions/checkout@v4
+        with:
+          ref: ${{ github.sha }}
+          path: trusted
+          persist-credentials: false
+
+      - name: Record the trusted controller revision
+        id: control
+        shell: bash
+        run: |
+          set -euo pipefail
+          revision="$(git -C trusted rev-parse HEAD)"
+          if [[ ! "$revision" =~ ^[0-9a-f]{40}$ ]]; then
+            echo "::error::the trusted controller checkout has no full revision"
+            exit 1
+          fi
+          printf 'revision=%s\n' "$revision" >> "$GITHUB_OUTPUT"
+
+      # This runs before any candidate checkout. The trusted inventory and the
+      # deployment-configuration validator reject an incomplete or malformed
+      # dispatch before candidate files are visible to the planner.
+      - name: Validate the dispatch against the trusted plan
+        env:
+          BUILD_CONFIGURATION_JSON: ${{ inputs.buildConfigurationJson }}
+          CONTROL_REVISION: ${{ steps.control.outputs.revision }}
+          CORRELATION_ID: ${{ inputs.correlationId }}
+          EVENT_NAME: ${{ github.event_name }}
+          PLATFORM: ${{ inputs.platform }}
+          SOURCE_REVISION: ${{ inputs.sourceSha }}
+          TARGETS: ${{ inputs.targets }}
+        shell: bash
+        run: >-
+          node trusted/.github/scripts/preview-image-plan.cjs validate
+          --control-root trusted
+
+      - name: Check out the exact candidate source
+        uses: actions/checkout@v4
+        with:
+          ref: ${{ inputs.sourceSha }}
+          path: candidate
+          fetch-depth: 1
+          persist-credentials: false
+
+      - name: Verify the candidate checkout revision
+        id: candidate
+        shell: bash
+        run: |
+          set -euo pipefail
+          actual="$(git -C candidate rev-parse HEAD)"
+          if [[ "$actual" != "${{ inputs.sourceSha }}" ]]; then
+            echo "::error::the candidate checkout is $actual, not ${{ inputs.sourceSha }}"
+            exit 1
+          fi
+          printf 'revision=%s\n' "$actual" >> "$GITHUB_OUTPUT"
+
+      - name: Resolve the preview image plan
+        id: plan
+        env:
+          BUILD_CONFIGURATION_JSON: ${{ inputs.buildConfigurationJson }}
+          CONTROL_REVISION: ${{ steps.control.outputs.revision }}
+          CORRELATION_ID: ${{ inputs.correlationId }}
+          EVENT_NAME: ${{ github.event_name }}
+          PLATFORM: ${{ inputs.platform }}
+          SOURCE_REVISION: ${{ steps.candidate.outputs.revision }}
+          TARGETS: ${{ inputs.targets }}
+          PLAN_PATH: ${{ runner.temp }}/preview-plan.json
+        shell: bash
+        run: >-
+          node trusted/.github/scripts/preview-image-plan.cjs resolve
+          --control-root trusted --source-root candidate
+
+  preview-build:
+    needs: preview-plan
+    if: >-
+      !cancelled() &&
+      needs.preview-plan.outputs.build == 'true'
+    name: ${{ matrix.jobName }}
+    runs-on: ${{ needs.preview-plan.outputs.runner }}
+    timeout-minutes: 60
+    permissions:
+      contents: read
+      packages: write
+    strategy:
+      fail-fast: false
+      matrix:
+        include: ${{ fromJSON(needs.preview-plan.outputs.build-matrix) }}
+    steps:
+      - name: Check out the trusted controller revision
+        uses: actions/checkout@v4
+        with:
+          ref: ${{ needs.preview-plan.outputs.control-revision }}
+          path: trusted
+          persist-credentials: false
+
+      - name: Verify the trusted controller revision
+        shell: bash
+        run: |
+          set -euo pipefail
+          test "$(git -C trusted rev-parse HEAD)" = "${{ needs.preview-plan.outputs.control-revision }}"
+
+      - name: Check out the exact candidate source
+        uses: actions/checkout@v4
+        with:
+          ref: ${{ needs.preview-plan.outputs.source-revision }}
+          path: candidate
+          fetch-depth: 1
+          persist-credentials: false
+
+      - name: Verify the candidate checkout revision
+        id: candidate
+        shell: bash
+        run: |
+          set -euo pipefail
+          actual="$(git -C candidate rev-parse HEAD)"
+          test "$actual" = "${{ needs.preview-plan.outputs.source-revision }}"
+          printf 'revision=%s\n' "$actual" >> "$GITHUB_OUTPUT"
+
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v3
+
+      - name: Log into the registry
+        uses: docker/login-action@v3
+        with:
+          registry: ghcr.io
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Resolve the native input fingerprint
+        id: fingerprint
+        env:
+          TARGET_CONFIGURATION: ${{ matrix.configuration }}
+        shell: bash
+        run: |
+          set -euo pipefail
+          mkdir -p "$RUNNER_TEMP/preview-build"
+          node trusted/.github/scripts/preview-image-plan.cjs fingerprint \
+            --source-root candidate --trusted-root trusted \
+            --source-revision "${{ steps.candidate.outputs.revision }}" \
+            --target "${{ matrix.id }}" \
+            --configuration-digest "${{ matrix.configurationDigest }}" \
+            --platform "${{ matrix.platform }}" \
+            --output "$RUNNER_TEMP/preview-build/fingerprint.json"
+
+      - name: Reuse a qualified image with identical inputs
+        id: reuse
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          REPOSITORY: ${{ github.repository }}
+          CONTROL_REVISION: ${{ needs.preview-plan.outputs.control-revision }}
+          TARGET_ID: ${{ matrix.id }}
+          PLATFORM: ${{ matrix.platform }}
+          CONFIGURATION_DIGEST: ${{ matrix.configurationDigest }}
+        run: >-
+          node trusted/.github/scripts/preview-image-receipt.cjs reuse
+          --fingerprint "${{ runner.temp }}/preview-build/fingerprint.json"
+
+      - name: Build and publish the preview image
+        if: steps.reuse.outputs.adopt != 'true'
+        id: build
+        uses: docker/build-push-action@v6
+        with:
+          context: candidate
+          file: candidate/${{ matrix.dockerfile }}
+          push: true
+          platforms: ${{ matrix.platform }}
+          tags: ghcr.io/${{ github.repository }}/${{ matrix.image }}:${{ matrix.tag }}
+          build-args: |
+            ${{ matrix.buildArgs }}
+          labels: |
+            org.opencontainers.image.revision=${{ steps.candidate.outputs.revision }}
+            io.klicker.preview.correlation-id=${{ inputs.correlationId }}
+            io.klicker.preview.configuration-digest=${{ matrix.configurationDigest }}
+          cache-from: |
+            type=registry,ref=ghcr.io/${{ github.repository }}/${{ matrix.image }}:buildcache-preview-${{ matrix.platformSuffix }}-${{ needs.preview-plan.outputs.cache-epoch }}
+            ${{ matrix.stagingCacheRef != '' && format('type=registry,ref=ghcr.io/{0}/{1}', github.repository, matrix.stagingCacheRef) || '' }}
+          cache-to: type=registry,ref=ghcr.io/${{ github.repository }}/${{ matrix.image }}:buildcache-preview-${{ matrix.platformSuffix }}-${{ needs.preview-plan.outputs.cache-epoch }},mode=max
+
+      - name: Record the build metadata
+        env:
+          CONTROL_REVISION: ${{ needs.preview-plan.outputs.control-revision }}
+          IMAGE_NAME: ghcr.io/${{ github.repository }}/${{ matrix.image }}@${{ steps.reuse.outputs.digest || steps.build.outputs.digest }}
+          IMAGE_DIGEST: ${{ steps.reuse.outputs.digest || steps.build.outputs.digest }}
+          CONFIGURATION_DIGEST: ${{ matrix.configurationDigest }}
+          INPUT_FINGERPRINT: ${{ steps.fingerprint.outputs.fingerprint }}
+          LOGICAL_TARGETS: ${{ matrix.logicalTargets }}
+          PLATFORM: ${{ matrix.platform }}
+          SOURCE_REVISION: ${{ steps.candidate.outputs.revision }}
+          TARGET_ID: ${{ matrix.id }}
+        shell: bash
+        run: |
+          set -euo pipefail
+          node trusted/.github/scripts/preview-image-receipt.cjs metadata \
+            --output "$RUNNER_TEMP/preview-build/preview-build.json"
+
+      - name: Upload the preview build metadata
+        uses: actions/upload-artifact@v4
+        with:
+          name: preview-build-${{ matrix.id }}
+          path: ${{ runner.temp }}/preview-build
+          if-no-files-found: error
+
+  preview-scan:
+    needs: [preview-plan, preview-build]
+    if: >-
+      !cancelled() &&
+      needs.preview-plan.outputs.scan-build == 'true' &&
+      needs.preview-build.result == 'success'
+    name: preview-scan-${{ matrix.id }}
+    runs-on: ${{ needs.preview-plan.outputs.runner }}
+    timeout-minutes: 45
+    permissions:
+      contents: read
+      packages: read
+    env:
+      TRIVY_PLATFORM: ${{ matrix.platform }}
+    strategy:
+      fail-fast: false
+      matrix:
+        include: ${{ fromJSON(needs.preview-plan.outputs.scan-matrix) }}
+    steps:
+      - name: Check out the trusted controller revision
+        uses: actions/checkout@v4
+        with:
+          ref: ${{ needs.preview-plan.outputs.control-revision }}
+          path: trusted
+          persist-credentials: false
+
+      - name: Download the build metadata
+        uses: actions/download-artifact@v4
+        with:
+          name: preview-build-${{ matrix.id }}
+          path: ${{ runner.temp }}/build
+
+      - name: Resolve the immutable image reference
+        shell: bash
+        run: |
+          set -euo pipefail
+          metadata="$RUNNER_TEMP/build/preview-build.json"
+          test -s "$metadata"
+          image="$(node -e 'process.stdout.write(require(process.argv[1]).image)' "$metadata")"
+          digest="$(node -e 'process.stdout.write(require(process.argv[1]).digest)' "$metadata")"
+          case "$image" in
+            *@sha256:*) ;;
+            *) echo "::error::the build metadata carries no immutable image"; exit 1 ;;
+          esac
+          printf 'PREVIEW_IMAGE=%s\nPREVIEW_DIGEST=%s\n' "$image" "$digest" >> "$GITHUB_ENV"
+
+      - name: Log into the registry
+        uses: docker/login-action@v3
+        with:
+          registry: ghcr.io
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Scan the pushed image for vulnerabilities
+        uses: aquasecurity/trivy-action@a9c7b0f06e461e9d4b4d1711f154ee024b8d7ab8 # v0.36.0
+        with:
+          version: v0.74.0
+          scan-type: image
+          image-ref: ${{ env.PREVIEW_IMAGE }}
+          format: json
+          severity: HIGH,CRITICAL
+          exit-code: '0'
+          output: image-scan-${{ matrix.id }}-findings.json
+          timeout: 10m
+
+      - name: Generate a CycloneDX SBOM
+        uses: aquasecurity/trivy-action@a9c7b0f06e461e9d4b4d1711f154ee024b8d7ab8 # v0.36.0
+        with:
+          version: v0.74.0
+          scan-type: image
+          image-ref: ${{ env.PREVIEW_IMAGE }}
+          format: cyclonedx
+          exit-code: '0'
+          output: image-scan-${{ matrix.id }}-sbom.cdx.json
+          timeout: 10m
+
+      - name: Write the scan receipt
+        env:
+          SOURCE_REVISION: ${{ needs.preview-plan.outputs.source-revision }}
+        shell: bash
+        run: |
+          set -euo pipefail
+          node trusted/.github/scripts/image-scan-receipt.cjs receipt \
+            --output image-scan-${{ matrix.id }}-receipt.json \
+            --image "$PREVIEW_IMAGE" \
+            --digest "$PREVIEW_DIGEST" \
+            --architecture "${{ matrix.platform }}" \
+            --run-id "$GITHUB_RUN_ID" \
+            --run-attempt "$GITHUB_RUN_ATTEMPT" \
+            --git-sha "$SOURCE_REVISION" \
+            --engine-version v0.74.0 \
+            --action-ref aquasecurity/trivy-action@a9c7b0f06e461e9d4b4d1711f154ee024b8d7ab8 \
+            --findings image-scan-${{ matrix.id }}-findings.json \
+            --sbom image-scan-${{ matrix.id }}-sbom.cdx.json
+
+      - name: Upload the scan evidence
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: preview-scan-${{ matrix.id }}
+          path: |
+            image-scan-${{ matrix.id }}-findings.json
+            image-scan-${{ matrix.id }}-sbom.cdx.json
+            image-scan-${{ matrix.id }}-receipt.json
+          if-no-files-found: warn
+
+      - name: Enforce the fixable HIGH/CRITICAL policy
+        run: |
+          node trusted/.github/scripts/image-scan-receipt.cjs check \
+            --report image-scan-${{ matrix.id }}-findings.json
+
+  preview-finalize:
+    needs: [preview-plan, preview-build, preview-scan]
+    if: >-
+      !cancelled() &&
+      needs.preview-plan.outputs.build == 'true' &&
+      needs.preview-build.result == 'success' &&
+      needs.preview-scan.result == 'success'
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    permissions:
+      contents: read
+    steps:
+      - name: Check out the trusted controller revision
+        uses: actions/checkout@v4
+        with:
+          ref: ${{ needs.preview-plan.outputs.control-revision }}
+          path: trusted
+          persist-credentials: false
+
+      - name: Download the build metadata
+        uses: actions/download-artifact@v4
+        with:
+          pattern: preview-build-*
+          path: ${{ runner.temp }}/builds
+
+      - name: Download the scan evidence
+        uses: actions/download-artifact@v4
+        with:
+          pattern: preview-scan-*
+          path: ${{ runner.temp }}/scans
+
+      - name: Write the preview image receipts
+        env:
+          ADMISSION_PASSED: 'true'
+          BUILD_ARTIFACTS: ${{ runner.temp }}/builds
+          CI_PASSED: 'true'
+          CONTROL_REVISION: ${{ needs.preview-plan.outputs.control-revision }}
+          PLATFORM: ${{ needs.preview-plan.outputs.platform }}
+          REPOSITORY: ${{ github.repository }}
+          RUN_ATTEMPT: ${{ github.run_attempt }}
+          RUN_ID: ${{ github.run_id }}
+          SCAN_ARTIFACTS: ${{ runner.temp }}/scans
+          SOURCE_REVISION: ${{ needs.preview-plan.outputs.source-revision }}
+          TARGET_MAP: ${{ needs.preview-plan.outputs.target-map }}
+          WORKFLOW_PATH: .github/workflows/v3_images-stg.yml
+        shell: bash
+        run: |
+          set -euo pipefail
+          node trusted/.github/scripts/preview-image-receipt.cjs finalize \
+            --output "$RUNNER_TEMP/preview-images"
+
+      - name: Publish the preview image receipts
+        uses: actions/upload-artifact@v4
+        with:
+          name: preview-images-${{ inputs.correlationId }}
+          path: ${{ runner.temp }}/preview-images
+          if-no-files-found: error

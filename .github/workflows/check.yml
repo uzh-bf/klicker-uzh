@@ -199,6 +199,9 @@ jobs:
             .github/scripts/final-ai-stack-review.test.js \
             .github/scripts/stg-release-promoter.test.js \
             .github/scripts/staging-image-plan.test.cjs \
+            .github/scripts/preview-image-plan.test.cjs \
+            .github/scripts/preview-image-receipt.test.cjs \
+            deploy/preview/resolve-images.test.mjs \
             .github/scripts/staging-image-status.test.cjs \
             .github/scripts/sonar-coverage-inputs.test.cjs \
             .github/scripts/sonar-new-code-boundary.test.cjs \

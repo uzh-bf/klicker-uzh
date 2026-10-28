@@ -124,3 +124,29 @@ The target integration is committed at cbb1ac8cbc. The LTI diff against the targ
 Source delivery remains a draft. Local browser verification reached an invalid redirect refusal, so authenticated cookie isolation is unqualified. Native bootstrap, allowed-network success, whole-application behavior and installed PR commands remain blocked by the recorded provider, installation and budget evidence; no further paid allocation is admitted. Existing proof for smaller lifecycle and credential fixtures does not satisfy those consumer gates.
 
 Integrated Opus5.5 review covered all54changed paths at5742b9b8ba after one oversized packet timed out without a result. It found one low-severity operational issue: the outer job suppressed the database CLI's failure phase. The correction assigns fixed bootstrap exit codes2–5 and emits only their machine-readable wrapper marker; raw child output remains suppressed. Two consequential process-boundary regressions now cover CLI refusal, forwarding recognized codes, refusing unknown codes and credential redaction. All26disposable-database checks pass. Focused correction review and simplification follow before the final ordinary push; native admission remains disabled.
+
+
+## CI image reuse source package
+
+The user requested CI-published immutable image reuse, explicitly selected frontend
+variants keyed by commit and complete public configuration, and approved Sol as
+the unavailable Opus review substitute. The source package maps profiles to
+logical image targets, validates producing CI/digests/platforms, builds only
+missing native targets through the existing image workflow, and deploys admitted
+images without Northflank builds. Bootstrap and fixtures share their tooling
+image. No preview logic is added to serving application source.
+
+The generic backend and engine/provider integration live in the Devrouter
+`rs/preview-ci-images` task. This consumer slice owns the logical mappings,
+selective CI producer, public build configuration and reviewed GitHub resolver.
+GitLab can install another adapter through the same generic command contract; a
+GitLab image transport has not been qualified by this consumer slice.
+
+Source checks cover selected targets, configuration identity, exact source and
+attempt, pinned-image platforms, successful digest-bound scans, helper reuse
+provenance and uncertain dispatch. Provider compilation proves zero build nodes;
+it does not prove a live deployment. The original paid trial cutoff has passed.
+A replacement paid generation, runtime architecture proof, cold build measurement
+and warm provisioning measurement require a separately approved bounded live run.
+No budget, identity, DNS or access-policy changes are included in this source
+package. UZH restrictions and explicit-command-only updates remain binding.

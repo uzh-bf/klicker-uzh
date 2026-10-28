@@ -302,14 +302,18 @@ test('the consolidated workflow declares the matrix the plan emits', () => {
   assert.ok(workflow.jobs['build-images-status'])
   assert.equal(
     workflow.jobs['build-images-status'].if,
-    'always()',
-    'the status job must always report'
+    "always() && github.event_name != 'workflow_dispatch'",
+    'the staging status job reports for push and PR events'
   )
 })
 
-test('the consolidated workflow has a single concurrency lane', () => {
+test('preview dispatch has an isolated lane and cannot cancel staging work', () => {
   const workflow = YAML.parse(fs.readFileSync(CONSOLIDATED, 'utf8'))
-  assert.equal(workflow.concurrency['cancel-in-progress'], true)
+  assert.equal(
+    workflow.concurrency['cancel-in-progress'],
+    "${{ github.event_name != 'workflow_dispatch' }}"
+  )
+  assert.match(workflow.concurrency.group, /inputs\.correlation/)
   assert.match(workflow.concurrency.group, /github\.workflow/)
 })
 

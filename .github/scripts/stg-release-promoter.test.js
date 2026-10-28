@@ -621,7 +621,7 @@ test('rejects unsafe workflow publication changes', () => {
   reject(
     'status job no longer reports',
     mutate(
-      '    if: always()\n    runs-on: ubuntu-latest\n    timeout-minutes: 10',
+      "    if: always() && github.event_name != 'workflow_dispatch'\n    runs-on: ubuntu-latest\n    timeout-minutes: 10",
       '    if: success()\n    runs-on: ubuntu-latest\n    timeout-minutes: 10'
     ),
     /must report for every outcome/
