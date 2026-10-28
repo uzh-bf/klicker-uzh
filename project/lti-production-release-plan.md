@@ -7,9 +7,12 @@ Publish alpha.89 from `v3-ai`, then promote only the LTI image through a PR into
 alignment, local-hook exception, and conditional release/rollback sequence in
 the current chat. The approval remains bound to this plan's scope and checks.
 
-The production promotion can remain a single image-tag change if the release
-branch first aligns its deployment files with the current `v3` baseline. Retain
-the existing production CPU settings and legacy LTI chart fields during the
+The user also approved integrating the newly merged Writing Coach and
+response-example source changes and their receipt-metadata chart additions.
+Production promotion changes the LTI image tag and adds those empty metadata
+settings to the chat/backend ConfigMaps and chart defaults. Their checksum
+changes cause rolling restarts of chat and backend at alpha.88. Retain the
+existing production CPU settings and legacy LTI chart fields during the
 rollback window. The ltijs 7 service does not read `LTI_DEV_MODE` or
 `LTI_AAS_MODE`; retaining the existing rendered fields preserves an image-only
 rollback to alpha.88. This is preferable to removing them during promotion and
@@ -23,9 +26,9 @@ tables at startup; legacy platform import and concurrent startup remain rollout
 checks. The mixed alpha.89 LTI / alpha.88 backend combination has source-contract
 evidence, but has not had a complete live acceptance run.
 
-Approval should name the source changes, commit-check policy, and each requested
-release action below. A source-only approval ends at draft PR delivery. A full
-conditional approval ends after production acceptance or the defined rollback.
+The granted authority covers the source changes, local-hook exception,
+conditional release and image-only LTI rollback, plus the additional chat/backend
+rolling restarts. It ends after production acceptance or the defined rollback.
 Required human review remains a prerequisite. Tag publication starts the
 repository's production image workflows, including images beyond LTI; build cost
 and queue duration are unknown. Only the LTI image is activated in production.
@@ -34,9 +37,11 @@ and queue duration are unknown. Only the LTI image is activated in production.
 
 ### Baseline and ownership
 
-- Release target: `v3-ai`, inspected at `b92770a07d89fb755f7559418d9da2328fabc3bf`.
+- Release target: `v3-ai`, integrated at `d786ffbe2b2e5750bdd5c5de7c9da871cbe80580`
+  after the approved amendment; the original baseline was `b92770a07d`.
 - Production manifest target: `v3`, inspected at
-  `ea330a628b985cdebca47811d2da93c8f9ac8ce0`.
+  `cac6bbf4dcd2caa973737abfe25d19d144069c42`; its approved CPU and legacy-LTI
+  settings match the original `ea330a628b` baseline.
 - Release worktree: `trees/release-alpha89`, branch
   `chore/release-3.4.0-alpha.89`. Reuse it.
 - Promotion worktree, created only when needed: `trees/promote-prd-alpha89`,
@@ -81,11 +86,12 @@ recorded source; it is not proof of the mixed-version production combination.
 
 ### Source preparation
 
-1. Copy only the following deployment paths from the recorded `v3` baseline to
-   the release branch: `deploy/charts/klicker-uzh-v3/templates/cm-lti.yaml`,
+1. Align only the approved LTI and CPU hunks in the following deployment paths
+   with the recorded `v3` baseline: `deploy/charts/klicker-uzh-v3/templates/cm-lti.yaml`,
    `deploy/charts/klicker-uzh-v3/values.yaml`, and
    `deploy/env-uzh-prd/values.yaml`. The inspected delta is the retained legacy LTI
-   fields and the existing production CPU requests. Environment-owned image tags
+   fields and the existing production CPU requests. Preserve the receipt metadata
+   from the integrated target. Environment-owned image tags
    remain alpha.88. Confirm every resulting hunk matches that description.
 2. Retain the generated alpha.89 metadata in the `.versionrc.js` version targets
    and `CHANGELOG.md`. Any regeneration uses the repository release script with
@@ -140,8 +146,11 @@ run the normal hooks in the provisioned task runtime instead.
    production image build for that tag and verify the image exists for the
    configured architecture. A failed build blocks promotion; no automatic rerun
    or broadened release follows. Do not activate other service images.
-4. Create a draft promotion PR into `v3` changing only
-   `lti.image.tag` in `deploy/env-uzh-prd/values.yaml` to `v3.4.0-alpha.89`.
+4. Create a draft promotion PR into `v3` changing `lti.image.tag` in
+   `deploy/env-uzh-prd/values.yaml` to `v3.4.0-alpha.89`, adding the approved
+   receipt metadata in `deploy/charts/klicker-uzh-v3/templates/cm-chat.yaml` and
+   `deploy/charts/klicker-uzh-v3/templates/cm-backend-graphql.yaml`, and preserving
+   the matching `chat.responseExampleReceipt` defaults in the chart `values.yaml`.
    Confirm deploy parity, unchanged other image references, unchanged migrator
    configuration, render checks, and required CI. Verify that the release-source
    chart retained the legacy fields before accepting an image-only rollback.
@@ -155,6 +164,14 @@ run the normal hooks in the provisioned task runtime instead.
    Confirm deployed revision, image digest, rollout completion, and both intended
    LTI replicas through user-supplied cluster evidence. No new cluster
    connectivity or manual cluster mutation is authorized by this plan.
+
+   Preflight also requires healthy existing chat/backend replicas and rolling
+   update settings that preserve availability while replacements start. The
+   rendered promotion must change only the LTI image, the two receipt ConfigMaps,
+   and their chat/backend pod-template checksums. Keep every non-LTI image at
+   alpha.88. Verify chat/backend readiness and basic health after their restarts.
+   A chat/backend problem stops for diagnosis; the LTI rollback does not authorize
+   a configuration rollback, parity bypass, or application repair.
 
 The normal ArgoCD PreSync migrator hook can run even for an LTI-only promotion.
 Its existing image and configuration remain pinned. If it reports pending
@@ -221,19 +238,25 @@ privately. Task-tracker comments and messages need separate explicit authority.
   edits and generated changelog. The proposed chart alignment is an isolated
   release prerequisite. Configuration changes and the production procedure arm
   the full planning and final-review gates.
-- The approved three-file chart alignment is applied. Metadata is staged;
-  commits, final package review, and draft delivery are in progress.
+- The approved three-file chart alignment is committed. Current `v3-ai` was
+  integrated once for freshness and to retain the newly approved receipt fields.
+  Source preparation is complete; hosted CI and independent final review remain.
 - Required plan critique: approved after one correction round; report in
   `project/_local/reviews/2026-10-28-lti-production-release-plan-critique.md`.
   Final package review: pending after approval,
   source completion, and applicable verification.
-- Post-approval source drift: `v3-ai` advanced to `d786ffbe2b` through
+- Approved amendment: `v3-ai` advanced to `d786ffbe2b` through
   [Writing Coach #5867](https://github.com/uzh-bf/klicker-uzh/pull/5867) and
   [response-example capture #5764](https://github.com/uzh-bf/klicker-uzh/pull/5764).
-  The latter adds receipt metadata to the backend and chat ConfigMaps and chart
-  defaults. These are outside the three-path alignment's recorded delta.
+  The user approved the additional rolling restarts through the amendment
+  question in the current chat. Its independent critique returned APPROVED.
   `v3` advanced to `cac6bbf4dc` without changing the approved deployment paths.
-  Finish independent source preparation, but hold source integration, release
-  merge/tag, and production promotion until the material chart/content drift is
-  resolved under the plan's existing stop condition. Approval is otherwise
-  retained; it is not a request to approve the original batch again.
+- Verification: 22 version targets remain alpha.89; formatting, syncpack,
+  structural checks and gitleaks passed. Helm lint, 10 deploy-parity tests and
+  five LTI platform tests passed. After integration, structured render comparison
+  confirms only receipt ConfigMaps and their two pod-template checksums differ
+  from `v3`; image references, resources and all other manifests are unchanged.
+- Draft delivery: [release PR #6763](https://github.com/uzh-bf/klicker-uzh/pull/6763).
+  No tag or production mutation has occurred. Next: hold the complete candidate
+  for independent final review and hosted checks, then execute the approved
+  readiness, review, merge and tag sequence when prerequisites pass.

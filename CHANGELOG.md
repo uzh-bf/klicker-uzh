@@ -8,6 +8,7 @@ All notable changes to this project will be documented in this file. See [standa
 ### Features
 
 * **chat:** add on-device dictation to the composer ([#6631](https://github.com/uzh-bf/klicker-uzh/issues/6631)) ([7f9d57b](https://github.com/uzh-bf/klicker-uzh/commit/7f9d57be6f653dd8c3ec9a692833573ddc920ac9))
+* **chat:** capture preview answers as response examples ([#5764](https://github.com/uzh-bf/klicker-uzh/issues/5764)) ([d786ffb](https://github.com/uzh-bf/klicker-uzh/commit/d786ffbe2b2e5750bdd5c5de7c9da871cbe80580))
 * **chat:** read assistant answers aloud with on-device voices ([#6638](https://github.com/uzh-bf/klicker-uzh/issues/6638)) ([d4247e8](https://github.com/uzh-bf/klicker-uzh/commit/d4247e8dd2c3157859bb8b7648768bd681daf28d))
 
 
@@ -83,6 +84,7 @@ All notable changes to this project will be documented in this file. See [standa
 
 ### Enhancements
 
+* **chat:** add feedback-only Writing Coach and useful lecturer context ([#5867](https://github.com/uzh-bf/klicker-uzh/issues/5867)) ([894225d](https://github.com/uzh-bf/klicker-uzh/commit/894225d893552c51ae246bc1bd77eb59681f6199))
 * **chat:** end new-concept explanations with one higher-order check ([#6649](https://github.com/uzh-bf/klicker-uzh/issues/6649)) ([8ab99bd](https://github.com/uzh-bf/klicker-uzh/commit/8ab99bd5fe2ec651856d9087b79a3126f6b8d49e))
 * **chat:** export the open thread as Markdown ([#6634](https://github.com/uzh-bf/klicker-uzh/issues/6634)) ([3acbb70](https://github.com/uzh-bf/klicker-uzh/commit/3acbb7004305d29dd75b1373604dbfbeadff5ddd))
 * **chat:** filter conversation history by title ([#6635](https://github.com/uzh-bf/klicker-uzh/issues/6635)) ([45b63ec](https://github.com/uzh-bf/klicker-uzh/commit/45b63ec9aa1f448cff9866f1e22dd3bed7633a83))
@@ -122,6 +124,7 @@ All notable changes to this project will be documented in this file. See [standa
 ### Documentation
 
 * **chat:** focus learner roadmap on delivery and acceptance ([#6667](https://github.com/uzh-bf/klicker-uzh/issues/6667)) ([f2edd0a](https://github.com/uzh-bf/klicker-uzh/commit/f2edd0afcbdc36a687d4df4564bda75b67e475eb))
+* **project:** add LTI production release plan ([a85ad64](https://github.com/uzh-bf/klicker-uzh/commit/a85ad644c27edc0d57cad1b7f8d2afdc42f8f448))
 * **project:** add v3-ai conflict resolution implementation plan ([accc45e](https://github.com/uzh-bf/klicker-uzh/commit/accc45e1cace621e6b96fcb19573351a873793b0))
 * **project:** extend sync correction plan for Quizzer eligibility ([be6ecbf](https://github.com/uzh-bf/klicker-uzh/commit/be6ecbf8ed16c63090d9c21a1fd63f9fa9a0f2ba))
 * **project:** record chat UX staging sync plan ([ddc9d96](https://github.com/uzh-bf/klicker-uzh/commit/ddc9d96e2dc10b6da1b38025991286521e484cb9))
