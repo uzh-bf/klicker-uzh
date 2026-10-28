@@ -1,3 +1,5 @@
 query GetResponseExampleBaseline($chatbotId: String!) {
-  getResponseExampleBaseline(chatbotId: $chatbotId) { ...ResponseExampleBaselineData }
+  getResponseExampleBaseline(chatbotId: $chatbotId) {
+    ...ResponseExampleBaselineData
+  }
 }

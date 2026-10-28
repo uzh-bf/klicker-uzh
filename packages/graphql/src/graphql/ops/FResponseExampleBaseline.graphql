@@ -1,7 +1,28 @@
 fragment ResponseExampleBaselineData on ResponseExampleBaselineOverview {
-  eligibleCount excludedCount available
+  eligibleCount
+  excludedCount
+  available
   report {
-    id status stale excludedCount errorCode modelId createdAt updatedAt
-    cases { id exampleId chatMode question idealAnswer expectedEvidence status actualAnswer actualEvidence assessment errorCode }
+    id
+    status
+    stale
+    excludedCount
+    errorCode
+    modelId
+    createdAt
+    updatedAt
+    cases {
+      id
+      exampleId
+      chatMode
+      question
+      idealAnswer
+      expectedEvidence
+      status
+      actualAnswer
+      actualEvidence
+      assessment
+      errorCode
+    }
   }
 }

@@ -251,7 +251,8 @@ merge or deployment is authorized by this source batch.
   reused. This planning approval is separate from the human execution approval.
 - Task branch: `feat/chatbot-baseline-report`; worktree
   `/Users/rschlae/Git/klicker/klicker-uzh/trees/chatbot-baseline-report`.
-  Baseline `d786ffbe2b`; tracking `origin/v3-ai` until first task-branch publication.
+  Baseline `d786ffbe2b`; published branch tracks
+  `origin/feat/chatbot-baseline-report`. Draft [PR #6765](https://github.com/uzh-bf/klicker-uzh/pull/6765) targets `v3-ai`.
 - First useful acceptance: one synthetic target/judge execution observes isolation,
   signed worker authority, ordering and cleanup before schema/UI expansion.
 - Current work: shared preview context extraction and its excluded-target
@@ -266,9 +267,9 @@ merge or deployment is authorized by this source batch.
   allowance overshoot, one unsettled baseline stage per owner and uncertain-call
   blocking. The approved policy above replaces maximum reservation. Continue
   durable accounting/report execution and UI under the existing batch approval.
-- Runtime: exact workspace `feat-chatbot-baseline-report` was stopped at the
-  accounting decision boundary and is resumed for approved container and browser
-  verification. Stop and verify it at source finish.
+- Runtime: source verification completed and the exact workspace was verified
+  stopped with zero routes. Resume only for required CI-correction hooks, then
+  stop and verify it again before source finish.
 - Package topology: one ordinary PR into `v3-ai` delivers the complete current
   report. The migration, signed worker execution, accounting and UI form one
   usable outcome; no split layer is independently useful. Do not stack with
@@ -280,5 +281,9 @@ merge or deployment is authorized by this source batch.
   Lecturer UI type check and browser lifecycle pass, with inspected EN/DE and
   compact screenshots from synthetic transport. Independent backend simplifier
   accepted removal of duplicate deadline/lock and unused protocol state; all10
-  durable tests pass after correction. Final review, production build and draft
-  delivery remain pending. No plan-only PR is opened.
+  durable tests pass after correction. Full production build27/27 passes;
+  combined capture/review/baseline browser3/3 passes. Four synthetic screenshots
+  are attached and rendered in the draft. Hosted CI found three unformatted
+  GraphQL operations; format-only correction preserves their parsed AST.
+  Full independent review remains pending after unavailable review routes.
+  No readiness, merge, deployment or live-model acceptance is claimed.
