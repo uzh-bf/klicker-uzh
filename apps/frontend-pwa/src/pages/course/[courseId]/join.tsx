@@ -9,6 +9,7 @@ import {
 import Loader from '@klicker-uzh/shared-components/src/Loader'
 import { PARTICIPANT_DATA_USE_DISCLOSURE_VERSION } from '@klicker-uzh/util'
 import { initializeApollo } from '@lib/apollo'
+import getCourseAssessmentRedirect from '@lib/getCourseAssessmentRedirect'
 import {
   Button,
   FormikPinField,
@@ -17,13 +18,13 @@ import {
 } from '@uzh-bf/design-system'
 import { Form, Formik } from 'formik'
 import generatePassword from 'generate-password'
-import { GetServerSidePropsContext } from 'next'
-import { useTranslations } from 'next-intl'
+import type { GetServerSidePropsContext } from 'next'
 import { useRouter } from 'next/router'
+import { useTranslations } from 'next-intl'
 import { useEffect, useState } from 'react'
 import * as Yup from 'yup'
-import Layout from '../../../components/Layout'
 import CreateAccountForm from '../../../components/forms/CreateAccountForm'
+import Layout from '../../../components/Layout'
 
 function JoinCourse({
   courseId,
@@ -206,6 +207,13 @@ export async function getServerSideProps(ctx: GetServerSidePropsContext) {
   const apolloClient = initializeApollo()
 
   try {
+    const redirect = await getCourseAssessmentRedirect({
+      apolloClient,
+      courseId: ctx.params.courseId,
+      ctx,
+    })
+    if (redirect) return { redirect }
+
     const { data, loading } = await apolloClient.query({
       query: GetBasicCourseInformationDocument,
       variables: {
