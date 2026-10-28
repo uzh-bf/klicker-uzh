@@ -229,7 +229,6 @@ chat:
 
   openai:
     baseUrl: 'http://litellm.prd-litellm.svc.cluster.local:4000/v1'
-    allowedOrigins: 'http://litellm.prd-litellm.svc.cluster.local:4000'
     storeResponses: true
 
   telemetry:

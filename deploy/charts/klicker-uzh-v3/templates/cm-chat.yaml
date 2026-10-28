@@ -22,8 +22,6 @@ data:
   KB_FALKORDB_TLS: {{ .Values.backendGraphql.knowledgeGraph.tls | quote }}
   KB_FALKORDB_QUERY_TIMEOUT_MS: {{ .Values.backendGraphql.knowledgeGraph.queryTimeoutMs | quote }}
   OPENAI_BASE_URL: {{ .Values.chat.openai.baseUrl | quote }}
-  CHAT_PROVIDER_ALLOWED_ORIGINS: {{ .Values.chat.openai.allowedOrigins | default "" | quote }}
-  CHAT_ENGINE_PROVIDER_ALLOWED_ORIGINS: {{ .Values.chat.openai.allowedOrigins | default "" | quote }}
   CHAT_OPENAI_STORE_RESPONSES: {{ .Values.chat.openai.storeResponses | default false | quote }}
   CHAT_ENABLE_AI_TELEMETRY: {{ $chatTelemetryEnabled | quote }}
   LANGFUSE_RELEASE: {{ $langfuseRelease | quote }}
