@@ -11,7 +11,7 @@ import {
 import path from 'node:path'
 import { tmpdir } from 'node:os'
 import { request } from 'node:https'
-import { generateKeyPairSync, randomUUID } from 'node:crypto'
+import { generateKeyPairSync, randomUUID, verify } from 'node:crypto'
 import { afterEach, describe, expect, test } from 'vitest'
 import { certificate } from '../scripts/codeapi-browser-fixture.mjs'
 import {
@@ -19,6 +19,12 @@ import {
   qualificationProgram,
   startQualificationRelay,
   startQualificationFixture,
+  registerQualification,
+  startManagedQualification,
+  readQualificationBootstrap,
+  admitQualificationVerifier,
+  cleanupQualificationVerifier,
+  probeLegacyCompatibility,
 } from '../scripts/codeapi-stg-qualification.mjs'
 
 const cleanups: Array<() => Promise<unknown>> = []
@@ -77,6 +83,294 @@ function post(
   })
 }
 describe('bounded real-transport qualification', () => {
+  test('requires matching one-time public registration and explicit arming', async () => {
+    let received = 0
+    const backend = createServer((_req, res) => {
+      received++
+      res.end('{}')
+    })
+    await new Promise<void>((resolve) =>
+      backend.listen(0, '127.0.0.1', resolve)
+    )
+    cleanups.push(async () => {
+      backend.closeAllConnections()
+      await new Promise<void>((resolve) => backend.close(() => resolve()))
+    })
+    const address = backend.address() as { port: number }
+    const generation = randomUUID()
+    const relay = await startQualificationRelay({
+      upstreamOrigin: `http://127.0.0.1:${address.port}`,
+      tls,
+      generation,
+      requireRegistration: true,
+    })
+    cleanups.push(relay.close)
+    expect((await post(relay.origin, body())).status).toBe(503)
+    expect(() => relay.arm()).toThrow('qualification_arm_invalid')
+    const publicJwk = {
+      ...generateKeyPairSync('ed25519').publicKey.export({ format: 'jwk' }),
+      kid: `qualification-${randomUUID()}`,
+      alg: 'EdDSA',
+    }
+    await expect(
+      registerQualification({
+        origin: relay.origin,
+        ca: tls.cert,
+        generation: randomUUID(),
+        publicJwk,
+      })
+    ).rejects.toThrow('qualification_registration_failed')
+    await registerQualification({
+      origin: relay.origin,
+      ca: tls.cert,
+      generation,
+      publicJwk,
+    })
+    expect(await relay.registration).toMatchObject({ generation, publicJwk })
+    await expect(
+      registerQualification({
+        origin: relay.origin,
+        ca: tls.cert,
+        generation,
+        publicJwk,
+      })
+    ).rejects.toThrow('qualification_registration_failed')
+    expect((await post(relay.origin, body())).status).toBe(503)
+    relay.arm()
+    expect((await post(relay.origin, body())).status).toBe(200)
+    expect(received).toBe(1)
+  })
+
+  test('coordinates canonical lifecycle and removes only its own public bootstrap', async () => {
+    const parent = await mkdtemp(path.join(tmpdir(), 'qualification-managed-'))
+    cleanups.push(() => rm(parent, { recursive: true, force: true }))
+    const checkout = path.join(parent, 'chat-codeapi-browser-qualification')
+    await mkdir(path.join(checkout, '.devcontainer/.runtime'), {
+      recursive: true,
+    })
+    const calls: string[][] = []
+    const managed = await startManagedQualification({
+      checkout,
+      upstreamOrigin: 'http://127.0.0.1:1',
+      runLifecycle: async (args: string[]) => {
+        calls.push(args)
+        if (args[0] === 'ensure') {
+          const bootstrap = await readQualificationBootstrap(checkout)
+          expect(bootstrap).not.toHaveProperty('privateKey')
+          expect(
+            await readFile(
+              path.join(
+                checkout,
+                '.devcontainer/.runtime/codeapi-browser-fixture'
+              ),
+              'utf8'
+            )
+          ).toBe('enabled')
+          const publicJwk = {
+            ...generateKeyPairSync('ed25519').publicKey.export({
+              format: 'jwk',
+            }),
+            kid: `qualification-${randomUUID()}`,
+            alg: 'EdDSA',
+          }
+          await registerQualification({
+            origin: bootstrap.relayOrigin.replace(
+              'host.docker.internal',
+              '127.0.0.1'
+            ),
+            ca: bootstrap.relayCA,
+            generation: bootstrap.generation,
+            publicJwk,
+          })
+        }
+      },
+    })
+    expect(calls.map((x) => x[0])).toEqual(['stop', 'ensure'])
+    expect(calls[1]).toEqual([
+      'ensure',
+      checkout,
+      '--profile',
+      'chat',
+      '--json',
+    ])
+    await managed.close()
+    expect(calls.map((x) => x[0])).toEqual(['stop', 'ensure', 'stop'])
+    expect(await readQualificationBootstrap(checkout)).toBeNull()
+    await writeFile(
+      path.join(checkout, '.devcontainer/.runtime/codeapi-browser-fixture'),
+      'disabled'
+    )
+    await expect(
+      startManagedQualification({
+        checkout,
+        upstreamOrigin: 'http://127.0.0.1:1',
+        runLifecycle: async () => {
+          throw new Error('must not run')
+        },
+      })
+    ).rejects.toThrow('qualification_marker_conflict')
+    expect(
+      await readFile(
+        path.join(checkout, '.devcontainer/.runtime/codeapi-browser-fixture'),
+        'utf8'
+      )
+    ).toBe('disabled')
+  })
+
+  test('rejects expired bootstrap instead of silently starting another attempt', async () => {
+    const checkout = await mkdtemp(
+      path.join(tmpdir(), 'qualification-expired-')
+    )
+    cleanups.push(() => rm(checkout, { recursive: true, force: true }))
+    await mkdir(path.join(checkout, '.devcontainer/.runtime'), {
+      recursive: true,
+    })
+    await writeFile(
+      path.join(
+        checkout,
+        '.devcontainer/.runtime/codeapi-stg-qualification.json'
+      ),
+      JSON.stringify({
+        generation: randomUUID(),
+        relayOrigin: 'https://host.docker.internal:12345',
+        relayCA: tls.cert.toString(),
+        expiresAt: Date.now() - 1,
+      })
+    )
+    await expect(readQualificationBootstrap(checkout)).rejects.toThrow(
+      'qualification_bootstrap_invalid'
+    )
+  })
+
+  test('create conflicts and ambiguous writes never become updates or inferred ownership', async () => {
+    const secret = {
+      apiVersion: 'v1',
+      kind: 'Secret',
+      metadata: { name: 'codeapi-klicker-verifier', namespace: 'codeapi' },
+      type: 'Opaque',
+      data: {},
+    }
+    const externalSecret = {
+      apiVersion: 'external-secrets.io/v1',
+      kind: 'ExternalSecret',
+      metadata: secret.metadata,
+      spec: {
+        target: {
+          name: secret.metadata.name,
+          creationPolicy: 'Owner',
+          deletionPolicy: 'Retain',
+        },
+      },
+    }
+    for (const second of [409, 403, 'ambiguous']) {
+      const writes: string[] = []
+      const result = await admitQualificationVerifier({
+        secret,
+        externalSecret,
+        request: async (method: string, object: typeof secret) => {
+          writes.push(`${method}:${object.kind}`)
+          if (object.kind === 'Secret')
+            return {
+              status: 201,
+              metadata: {
+                ...secret.metadata,
+                uid: 'owned-secret',
+                resourceVersion: '1',
+              },
+            }
+          if (second === 'ambiguous') throw new Error('unknown response')
+          return { status: second }
+        },
+      })
+      expect(writes).toEqual(['POST:Secret', 'POST:ExternalSecret'])
+      expect(result.created).toEqual([
+        {
+          kind: 'Secret',
+          metadata: {
+            ...secret.metadata,
+            uid: 'owned-secret',
+            resourceVersion: '1',
+          },
+        },
+      ])
+      expect(result.outcome).toBe(
+        second === 409 ? 'conflict' : second === 403 ? 'rejected' : 'unknown'
+      )
+      const deletions: unknown[] = []
+      expect(
+        await cleanupQualificationVerifier({
+          created: result.created,
+          request: async (_method: string, object: unknown) => {
+            deletions.push(object)
+            return { status: 409 }
+          },
+        })
+      ).toEqual({ outcome: 'held' })
+      expect(deletions).toHaveLength(1)
+      expect(deletions[0]).toMatchObject({
+        options: {
+          preconditions: { uid: 'owned-secret', resourceVersion: '1' },
+        },
+      })
+    }
+    const unknown = await admitQualificationVerifier({
+      secret,
+      externalSecret,
+      request: async () => {
+        throw new Error('ambiguous first create')
+      },
+    })
+    expect(unknown).toEqual({ outcome: 'unknown', created: [] })
+    expect(
+      await cleanupQualificationVerifier({
+        created: [],
+        request: async () => {
+          throw new Error('must not run')
+        },
+      })
+    ).toEqual({ outcome: 'deletion_requested' })
+  })
+
+  test('cleanup stops on changed identity, revision or interrupted deletion', async () => {
+    const created = ['Secret', 'ExternalSecret'].map((kind) => ({
+      kind,
+      metadata: {
+        name: 'codeapi-klicker-verifier',
+        namespace: 'codeapi',
+        uid: `owned-${kind}`,
+        resourceVersion: '2',
+      },
+    }))
+    for (const current of [
+      { uid: 'replacement', resourceVersion: '2' },
+      { uid: 'owned-ExternalSecret', resourceVersion: '3' },
+    ]) {
+      let attempts = 0
+      expect(
+        await cleanupQualificationVerifier({
+          created,
+          request: async (
+            _method: string,
+            object: { options: { preconditions: unknown } }
+          ) => {
+            attempts++
+            expect(object.options.preconditions).not.toEqual(current)
+            return { status: 409 }
+          },
+        })
+      ).toEqual({ outcome: 'held' })
+      expect(attempts).toBe(1)
+    }
+    expect(
+      await cleanupQualificationVerifier({
+        created,
+        request: async () => {
+          throw new Error('interrupted')
+        },
+      })
+    ).toEqual({ outcome: 'unknown' })
+  })
+
   test('reserves attempts before forwarding and does not interpret responses as guest admission', async () => {
     let received = 0
     const relay = await setup((_req, res) => {
@@ -331,5 +625,141 @@ describe('bounded real-transport qualification', () => {
     expect(() => qualificationProgram('http-error', randomUUID())).toThrow(
       'qualification_scenario_invalid'
     )
+  })
+})
+
+describe('existing-client compatibility probe transport', () => {
+  test('sends one signed bounded request and requires successful exact output', async () => {
+    const { privateKey, publicKey } = generateKeyPairSync('ed25519')
+    const privateJwk = {
+      ...privateKey.export({ format: 'jwk' }),
+      kid: 'legacy-synthetic',
+    }
+    const nonce = randomUUID()
+    let calls = 0
+    const server = createServer(async (req, res) => {
+      calls++
+      const token = req.headers.authorization!.slice(7)
+      const [header, payload, signature] = token.split('.')
+      expect(
+        verify(
+          null,
+          Buffer.from(`${header}.${payload}`),
+          publicKey,
+          Buffer.from(signature, 'base64url')
+        )
+      ).toBe(true)
+      expect(
+        JSON.parse(Buffer.from(header, 'base64url').toString())
+      ).toMatchObject({ alg: 'EdDSA', kid: privateJwk.kid })
+      const claims = JSON.parse(Buffer.from(payload, 'base64url').toString())
+      expect(claims).toMatchObject({
+        iss: 'synthetic-issuer',
+        aud: 'synthetic-audience',
+        principal_source: 'librechat_jwt',
+        tenant_id: 'synthetic',
+      })
+      expect(claims.exp - claims.iat).toBe(120)
+      expect(req.url).toBe('/v1/exec')
+      const chunks = []
+      for await (const chunk of req) chunks.push(chunk)
+      expect(JSON.parse(Buffer.concat(chunks).toString())).toEqual({
+        code: `print("CODEAPI_VALUE:${nonce}", end="")`,
+        files: [],
+        lang: 'python',
+        timeout: 5000,
+      })
+      res.end(
+        JSON.stringify({
+          code: 0,
+          stdout: `CODEAPI_VALUE:${nonce}`,
+          stderr: '',
+          files: [],
+        })
+      )
+    })
+    await new Promise<void>((resolve) => server.listen(0, '127.0.0.1', resolve))
+    cleanups.push(async () => {
+      server.closeAllConnections()
+      await new Promise<void>((resolve) => server.close(() => resolve()))
+    })
+    const origin = `http://127.0.0.1:${(server.address() as { port: number }).port}`
+    expect(
+      await probeLegacyCompatibility({
+        origin,
+        privateJwk,
+        issuer: 'synthetic-issuer',
+        audience: 'synthetic-audience',
+        nonce,
+      })
+    ).toEqual({ outcome: 'accepted' })
+    expect(calls).toBe(1)
+    await expect(
+      probeLegacyCompatibility({
+        origin: 'https://example.test',
+        privateJwk,
+        issuer: 'synthetic-issuer',
+        audience: 'synthetic-audience',
+        nonce,
+      })
+    ).rejects.toThrow('qualification_legacy_probe_origin_invalid')
+    expect(calls).toBe(1)
+  })
+
+  test.each([
+    'redirect',
+    'oversized',
+    'wrong-output',
+    'status-failure',
+    'disconnect',
+  ])('fails closed for %s without retry or value output', async (failure) => {
+    const privateJwk = {
+      ...generateKeyPairSync('ed25519').privateKey.export({ format: 'jwk' }),
+      kid: 'legacy-synthetic',
+    }
+    const nonce = randomUUID()
+    let calls = 0
+    const server = createServer((req, res) => {
+      calls++
+      req.resume()
+      if (failure === 'redirect') {
+        res.writeHead(302, { location: 'http://127.0.0.1:1/other' })
+        res.end()
+        return
+      }
+      if (failure === 'disconnect') {
+        req.socket.destroy()
+        return
+      }
+      if (failure === 'oversized') {
+        res.end('x'.repeat(128 * 1024 + 1))
+        return
+      }
+      res.end(
+        JSON.stringify({
+          code: 0,
+          stdout:
+            failure === 'wrong-output' ? 'wrong' : `CODEAPI_VALUE:${nonce}`,
+          stderr: '',
+          files: [],
+          status: failure === 'status-failure' ? 'failed' : null,
+        })
+      )
+    })
+    await new Promise<void>((resolve) => server.listen(0, '127.0.0.1', resolve))
+    cleanups.push(async () => {
+      server.closeAllConnections()
+      await new Promise<void>((resolve) => server.close(() => resolve()))
+    })
+    const result = await probeLegacyCompatibility({
+      origin: `http://127.0.0.1:${(server.address() as { port: number }).port}`,
+      privateJwk,
+      issuer: 'synthetic-issuer',
+      audience: 'synthetic-audience',
+      nonce,
+    })
+    expect(result.outcome).not.toBe('accepted')
+    expect(Object.keys(result)).toEqual(['outcome'])
+    expect(calls).toBe(1)
   })
 })

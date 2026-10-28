@@ -350,6 +350,10 @@ describe('bounded CodeAPI browser fixture', () => {
       new URL('../scripts/codeapi-browser-fixture.mjs', import.meta.url),
       path.join(scripts, 'codeapi-browser-fixture.mjs')
     )
+    await copyFile(
+      new URL('../scripts/codeapi-stg-qualification.mjs', import.meta.url),
+      path.join(scripts, 'codeapi-stg-qualification.mjs')
+    )
     await writeFile(
       path.join(directory, '.devcontainer/.runtime/codeapi-browser-fixture'),
       'enabled'

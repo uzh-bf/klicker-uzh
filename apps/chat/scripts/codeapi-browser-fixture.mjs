@@ -503,6 +503,15 @@ async function main() {
   for (const signal of ['SIGINT', 'SIGTERM']) process.on(signal, stop)
   try {
     const mode = await fixtureMode()
+    if (mode === 'enabled') {
+      const { readQualificationBootstrap, superviseQualification } =
+        await import('./codeapi-stg-qualification.mjs')
+      const qualification = await readQualificationBootstrap(root)
+      if (qualification) {
+        await superviseQualification(qualification)
+        return
+      }
+    }
     stopped.signal.throwIfAborted()
     const env = { ...process.env }
     if (mode) {
@@ -569,4 +578,4 @@ if (
   process.argv[1] &&
   path.resolve(process.argv[1]) === fileURLToPath(import.meta.url)
 )
-  await main()
+  void main()
