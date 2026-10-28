@@ -388,14 +388,19 @@ test.describe('Chatbot response-example review', () => {
     const replacementRequests: boolean[] = []
     let activeQueryCount = 0
 
-    await page.route('**/graphql', async (route) => {
+    await page.route('**/graphql*', async (route) => {
       const request = route.request()
-      if (request.method() !== 'POST') return route.continue()
-      const body = request.postDataJSON() as {
-        operationName?: string
-        variables?: { replaceActive?: boolean }
-      }
-      if (body.operationName === 'GetResponseExampleBaseline') {
+      const body =
+        request.method() === 'POST'
+          ? (request.postDataJSON() as {
+              operationName?: string
+              variables?: { replaceActive?: boolean }
+            })
+          : null
+      const operationName =
+        body?.operationName ??
+        new URL(request.url()).searchParams.get('operationName')
+      if (operationName === 'GetResponseExampleBaseline') {
         if (report?.status === 'QUEUED') {
           activeQueryCount += 1
           if (activeQueryCount > 1) report = { ...report, status: 'RUNNING' }
@@ -417,9 +422,9 @@ test.describe('Chatbot response-example review', () => {
         })
         return
       }
-      if (body.operationName === 'StartResponseExampleBaseline') {
+      if (operationName === 'StartResponseExampleBaseline') {
         startCount += 1
-        replacementRequests.push(body.variables?.replaceActive === true)
+        replacementRequests.push(body?.variables?.replaceActive === true)
         if (startCount === 1) {
           report = {
             ...completedReport,
