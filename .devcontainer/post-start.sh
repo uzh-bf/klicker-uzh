@@ -159,6 +159,20 @@ if [ -f "$ROOT/.devcontainer/.runtime/beta-enrollment-fixture" ]; then
   DEV_TURBO_TASK=dev:test
   export NEXT_PUBLIC_GROWTHBOOK_CLIENT_KEY=sdk-test
 fi
+KLICKER_CODEAPI_FIXTURE_MODE=off
+if [ -f "$ROOT/.devcontainer/.runtime/codeapi-browser-fixture" ]; then
+  if [ "$DEVROUTER_PROFILE" != chat ] || [ -f "$ROOT/.devcontainer/.runtime/beta-enrollment-fixture" ]; then
+    echo '[post-start] ERROR: CodeAPI browser fixture requires the exclusive chat profile.' >&2
+    exit 1
+  fi
+  KLICKER_CODEAPI_FIXTURE_MODE="$(cat "$ROOT/.devcontainer/.runtime/codeapi-browser-fixture")"
+  case "$KLICKER_CODEAPI_FIXTURE_MODE" in
+    enabled|disabled) ;;
+    *) echo '[post-start] ERROR: Invalid CodeAPI browser fixture marker.' >&2; exit 1 ;;
+  esac
+  DEV_TURBO_TASK=dev:test
+fi
+export KLICKER_CODEAPI_FIXTURE_MODE
 # The host Playwright launcher writes this marker for runs against the dev
 # servers. Their dev:test scripts load the same synthetic feature flag fixture
 # and test controller as CI's start:test processes.
@@ -192,7 +206,7 @@ export DEV_TURBO_TASK
 : "${DEVROUTER_PROCESS_HELPER:?Run devrouter ensure to start this managed application process.}"
 
 export DEVROUTER_PROCESS_FINGERPRINT_ENV='APP_ORIGIN_API,APP_ORIGIN_AUTH,APP_ORIGIN_PWA,APP_ORIGIN_MANAGE,APP_ORIGIN_CONTROL,APP_ORIGIN_ASSESSMENT_API,APP_ORIGIN_ASSESSMENT_PWA,APP_ORIGIN_LTI,APP_ORIGIN_CHAT,APP_MANAGE_SUBDOMAIN,APP_STUDENT_SUBDOMAIN,APP_CONTROL_SUBDOMAIN,NEXTAUTH_URL,COOKIE_DOMAIN,NEXT_PUBLIC_API_URL,NEXT_PUBLIC_AUTH_URL,NEXT_PUBLIC_MANAGE_URL,NEXT_PUBLIC_PWA_URL,NEXT_PUBLIC_ASSESSMENT_URL,NEXT_PUBLIC_CONTROL_URL,NEXT_PUBLIC_ADD_RESPONSE_URL,NEXT_PUBLIC_CHAT_URL,NEXT_PUBLIC_GROWTHBOOK_API_HOST,NEXT_PUBLIC_GROWTHBOOK_CLIENT_KEY,CORS_ALLOWED_ORIGINS,AUTH_LECTURER_ALLOWED_HOSTS,AUTH_STUDENT_ALLOWED_HOSTS,NODE_EXTRA_CA_CERTS,DEVROUTER_PROFILE,EDUID_WELL_KNOWN,EDUID_CLIENT_ID,NEXT_PUBLIC_EDUID_ID'
-export DEVROUTER_PROCESS_FINGERPRINT_ENV="${DEVROUTER_PROCESS_FINGERPRINT_ENV},DEV_TURBO_TASK,PLAYWRIGHT_CI_BUILD_ID"
+export DEVROUTER_PROCESS_FINGERPRINT_ENV="${DEVROUTER_PROCESS_FINGERPRINT_ENV},DEV_TURBO_TASK,PLAYWRIGHT_CI_BUILD_ID,KLICKER_CODEAPI_FIXTURE_MODE"
 # Keep credentials out of fingerprints; rotate the generation with guard keys.
 export DEVROUTER_PROCESS_FINGERPRINT_ENV="${DEVROUTER_PROCESS_FINGERPRINT_ENV},KLICKER_EVAL_GUARD_ORIGIN,OPENAI_BASE_URL,CHAT_MODEL_REGISTRY_JSON,KLICKER_EVAL_GUARD_GENERATION"
 

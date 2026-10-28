@@ -6,6 +6,7 @@
     "types": ["node", "@playwright/test"],
     "lib": ["ES2022", "DOM"],
     "strict": true,
+    "allowJs": true,
     "noEmit": true,
     "resolveJsonModule": true,
     "skipLibCheck": true
