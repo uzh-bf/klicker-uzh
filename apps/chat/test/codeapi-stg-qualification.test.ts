@@ -331,7 +331,7 @@ describe('bounded real-transport qualification', () => {
     ).toEqual({ outcome: 'deletion_requested' })
   })
 
-  test('cleanup stops on changed identity, revision or interrupted deletion', async () => {
+  test('cleanup supplies both identity preconditions and stops on conflict or interruption', async () => {
     const created = ['Secret', 'ExternalSecret'].map((kind) => ({
       kind,
       metadata: {
@@ -341,26 +341,24 @@ describe('bounded real-transport qualification', () => {
         resourceVersion: '2',
       },
     }))
-    for (const current of [
-      { uid: 'replacement', resourceVersion: '2' },
-      { uid: 'owned-ExternalSecret', resourceVersion: '3' },
-    ]) {
-      let attempts = 0
-      expect(
-        await cleanupQualificationVerifier({
-          created,
-          request: async (
-            _method: string,
-            object: { options: { preconditions: unknown } }
-          ) => {
-            attempts++
-            expect(object.options.preconditions).not.toEqual(current)
-            return { status: 409 }
-          },
-        })
-      ).toEqual({ outcome: 'held' })
-      expect(attempts).toBe(1)
-    }
+    let attempts = 0
+    expect(
+      await cleanupQualificationVerifier({
+        created,
+        request: async (
+          _method: string,
+          object: { options: { preconditions: unknown } }
+        ) => {
+          attempts++
+          expect(object.options.preconditions).toEqual({
+            uid: 'owned-ExternalSecret',
+            resourceVersion: '2',
+          })
+          return { status: 409 }
+        },
+      })
+    ).toEqual({ outcome: 'held' })
+    expect(attempts).toBe(1)
     expect(
       await cleanupQualificationVerifier({
         created,
