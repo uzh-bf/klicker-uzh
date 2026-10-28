@@ -1,17 +1,76 @@
-import DynamicMarkdown from '@klicker-uzh/shared-components/src/evaluation/DynamicMarkdown'
-import { H3, TabContent, Tabs, UserNotification } from '@uzh-bf/design-system'
-import { GetStaticPropsContext } from 'next'
+import { useQuery } from '@apollo/client'
+import {
+  GetCourseChatbotsDocument,
+  GetStudentDocsCourseDocument,
+} from '@klicker-uzh/graphql/dist/ops'
+import { initializeApollo } from '@lib/apollo'
+import getParticipantToken from '@lib/getParticipantToken'
+import useParticipantToken from '@lib/useParticipantToken'
+import { UserNotification } from '@uzh-bf/design-system'
+import type { GetServerSidePropsContext } from 'next'
+import { useRouter } from 'next/router'
 import { useTranslations } from 'next-intl'
+import StudentDocsPrototype from '../components/docs/StudentDocsPrototype'
 import Layout from '../components/Layout'
 
-function StudentDocs() {
+function StudentDocs({
+  participantToken,
+  cookiesAvailable,
+}: {
+  participantToken?: string
+  cookiesAvailable?: boolean
+}) {
   const t = useTranslations()
+  const router = useRouter()
+  useParticipantToken({ participantToken, cookiesAvailable })
+  const courseId =
+    router.isReady &&
+    typeof router.query.courseId === 'string' &&
+    router.query.courseId.trim() !== ''
+      ? router.query.courseId
+      : undefined
+  const assessment = process.env.NEXT_PUBLIC_IS_ASSESSMENT === 'true'
+  const courseResult = useQuery(GetStudentDocsCourseDocument, {
+    variables: { courseId: courseId ?? '' },
+    skip: !courseId || assessment,
+    fetchPolicy: 'network-only',
+  })
+  const loadedCourse = courseResult.data?.getCourseOverviewData?.course
+  const course =
+    !courseResult.loading &&
+    !courseResult.error &&
+    loadedCourse?.id === courseId
+      ? (loadedCourse ?? undefined)
+      : undefined
+  const restricted = assessment || course?.isAssessmentEnabled === true
+  const chatbotResult = useQuery(GetCourseChatbotsDocument, {
+    variables: { courseId: courseId ?? '' },
+    skip: !course || restricted,
+    fetchPolicy: 'network-only',
+  })
+  const chatbots =
+    course &&
+    !restricted &&
+    !chatbotResult.loading &&
+    !chatbotResult.error &&
+    chatbotResult.variables?.courseId === courseId
+      ? (chatbotResult.data?.courseChatbots ?? []).map((bot) => {
+          const href = `/${router.locale ?? 'en'}/course/${encodeURIComponent(course.id)}/chatbot/${encodeURIComponent(bot.id)}`
+          return {
+            id: bot.id,
+            name: bot.name,
+            href,
+            embeddedHref: `${href}?embed=true`,
+          }
+        })
+      : []
 
   return (
-    <Layout displayName={t('shared.generic.documentation')}>
-      {process.env.NEXT_PUBLIC_IS_ASSESSMENT === 'true' && (
+    <Layout displayName={t('shared.generic.documentation')} course={course}>
+      {restricted && (
         <UserNotification
           type="warning"
+          data={{ cy: 'student-docs-assessment-warning' }}
           className={{ root: 'mx-auto mb-3 w-full max-w-5xl text-base' }}
         >
           {t.rich('pwa.studentDocs.assessmentInstanceWarning', {
@@ -19,78 +78,36 @@ function StudentDocs() {
           })}
         </UserNotification>
       )}
-      <Tabs
-        defaultValue="features-overview"
-        tabs={[
-          {
-            id: 'tab-features-overview',
-            value: 'features-overview',
-            label: t('pwa.studentDocs.featuresTitle'),
-            data: { cy: 'tab-features-overview' },
-          },
-          {
-            id: 'tab-first-login-account',
-            value: 'first-login-account',
-            label: t('pwa.studentDocs.firstLoginTitle'),
-            data: { cy: 'tab-first-login-account' },
-          },
-          {
-            id: 'tab-app-setup',
-            value: 'app-setup',
-            label: t('pwa.studentDocs.appSetupTitle'),
-            data: { cy: 'tab-app-setup' },
-          },
-        ]}
-        className={{ root: 'mx-auto w-full max-w-5xl' }}
-      >
-        <div className="prose prose-img:m-0 max-w-none rounded-lg border border-slate-200 p-4">
-          <TabContent
-            value="features-overview"
-            className={{ root: 'mt-0 pt-0' }}
-          >
-            <H3 className={{ root: 'mt-0' }}>
-              {t('pwa.studentDocs.featuresTitle')}
-            </H3>
-            <DynamicMarkdown
-              withProse
-              className={{ root: 'prose-headings:mt-0! prose-p:mt-0!' }}
-              content={t('pwa.studentDocs.features')}
-            />
-          </TabContent>
-
-          <TabContent value="first-login-account">
-            <H3 className={{ root: 'mt-0' }}>
-              {t('pwa.studentDocs.firstLoginTitle')}
-            </H3>
-            <DynamicMarkdown
-              withProse
-              className={{ root: 'prose-headings:mt-0 prose-p:mt-0' }}
-              content={t('pwa.studentDocs.firstLogin')}
-            />
-          </TabContent>
-
-          <TabContent value="app-setup">
-            <H3 className={{ root: 'mt-0' }}>
-              {t('pwa.studentDocs.appSetupTitle')}
-            </H3>
-            <DynamicMarkdown
-              withProse
-              className={{ root: 'prose-headings:mt-0 prose-p:mt-0' }}
-              content={t('pwa.studentDocs.appSetup', {
-                pwa_url: process.env.NEXT_PUBLIC_PWA_URL!,
-              })}
-            />
-          </TabContent>
-        </div>
-      </Tabs>
+      <StudentDocsPrototype
+        key={courseId ?? 'student-guide'}
+        gamificationEnabled={
+          !restricted && course?.isGamificationEnabled === true
+        }
+        learningAnalyticsEnabled={false}
+        chatbots={chatbots}
+      />
     </Layout>
   )
 }
 
-export async function getStaticProps({ locale }: GetStaticPropsContext) {
+export async function getServerSideProps(ctx: GetServerSidePropsContext) {
+  const courseId =
+    typeof ctx.query.courseId === 'string' && ctx.query.courseId.trim() !== ''
+      ? ctx.query.courseId
+      : undefined
+  const { participantToken, cookiesAvailable } = await getParticipantToken({
+    apolloClient: initializeApollo(undefined, ctx),
+    courseId,
+    ctx,
+  })
   return {
     props: {
-      messages: (await import(`@klicker-uzh/i18n/messages/${locale}`)).default,
+      ...(typeof participantToken === 'string' && !cookiesAvailable
+        ? { participantToken, cookiesAvailable }
+        : {}),
+      messages: (
+        await import(`@klicker-uzh/i18n/messages/${ctx.locale ?? 'en'}`)
+      ).default,
     },
   }
 }

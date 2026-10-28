@@ -1,0 +1,11 @@
+query GetStudentDocsCourse($courseId: String!) {
+  getCourseOverviewData(courseId: $courseId) {
+    course {
+      id
+      displayName
+      color
+      isGamificationEnabled
+      isAssessmentEnabled
+    }
+  }
+}

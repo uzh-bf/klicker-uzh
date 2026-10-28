@@ -6,62 +6,85 @@ title: Course Chatbot
 
 ## What is the course chatbot?
 
-The course chatbot is an AI assistant for a specific course. You can ask it questions about the course content and receive answers in a chat interface. Depending on how your lecturer has set it up, the chatbot can guide you with questions, explain topics directly, or refer to the materials of your course. This section describes the **student view**; lecturers can find the corresponding information in the [chatbot tutorial](/tutorials/chatbot/).
+The course chatbot is an AI assistant for one specific course. You ask it questions about the course content in a chat. Depending on how your lecturer has set it up, it guides you with questions, explains topics directly, or refers to the course materials. This page describes the **student view**; lecturers can find the setup in the [chatbot tutorial](/tutorials/chatbot/).
 
 :::warning
-AI-generated answers can be wrong or incomplete. Always verify important information against the official course materials before you rely on it, especially when preparing for an exam.
+AI-generated answers can be wrong or incomplete. Check important information against the official course materials before you rely on it, especially when preparing for an exam.
 :::
 
 ## How do I get access?
 
-The chatbot belongs to one course, so you need to be logged in with your KlickerUZH account and be enrolled in that course.
+You need a KlickerUZH account and must be enrolled in the course the chatbot belongs to. If you do not have an account yet, start with the [tutorial on participant accounts](/student_tutorials/student_accounts/).
 
-1. **Open the link:** Your lecturer shares a chatbot link, either directly or embedded in a page of the learning management system of the course (for example OpenOLAT or Moodle).
-2. **Get enrolled automatically:** If you are logged in and not yet part of the course, opening the link enrols you and redirects you into the chat interface.
-3. **Accept the disclaimer:** Before your first message, you have to accept a short disclaimer. If you decline, the chatbot stays blocked; you can change that decision later when you open the chatbot directly (the corresponding button is not shown in a view embedded in the learning management system).
-
-If you do not have a KlickerUZH account yet, please refer to the [tutorial on participant accounts](/student_tutorials/student_accounts/) first.
+1. **Open the link:** Your lecturer shares a chatbot link, either directly or embedded in a page of the course's learning management system (for example OpenOLAT or Moodle).
+2. **Confirm course access:** For ordinary courses, opening the link can create your course participation before it takes you to the chat. Courses with restricted access still require their admission rules. Joining or leaving the leaderboard does not control chatbot access.
+3. **Accept the disclaimer:** You accept a short disclaimer before your first message. If you decline, the chatbot stays blocked. To change your decision later, open the chatbot directly. A view embedded in the learning management system does not show this option.
 
 ## How do I chat with the assistant?
 
-Type your question in the input field at the bottom and send it. The answer is streamed back to you as it is generated. Beyond simply asking questions, the chat offers a few functions:
+Type your question in the input field at the bottom and send it. The answer appears while it is being generated.
 
-1. **Several conversations:** You can hold multiple conversations in parallel and switch between them in the sidebar. This helps you keep separate topics apart, for example one conversation per lecture week.
-2. **Rename and delete:** Every conversation can be renamed. Deleting one asks for a confirmation directly in the sidebar before it is removed.
-3. **Conversation modes:** If the chatbot offers more than one mode (for example a tutor mode that guides you with questions and an explainer mode that explains directly), a mode switcher is displayed. If only one mode is available, no switcher appears. A change of mode applies to the next message you send.
-4. **Editing a message:** You can edit one of your earlier messages. The assistant then generates a new answer variant, and a small pager lets you switch back and forth between the variants.
-5. **Images:** For models that support images, a button lets you attach up to three images to a message. The assistant describes the image and takes it into account in follow-up answers, which are marked with an "Image analyzed" indicator.
+- **Several conversations:** Keep separate topics in separate conversations, for example one per lecture week. Switch between them in the sidebar.
+- **Rename and delete:** You can rename any conversation. Before a conversation is deleted, the sidebar asks you to confirm.
+- **Modes:** If the chatbot offers more than one mode, a mode switcher appears. For example, a tutor mode guides you with questions and an explainer mode explains directly. A new mode applies to the next message you send.
+- **Edit a message:** When you edit one of your earlier messages, the assistant generates a new answer variant. A small pager switches between the variants.
 
-## How do I choose a model and reasoning effort?
+## How do I attach documents and images?
 
-If your lecturer has enabled model selection, you can choose the AI model in the settings panel of the chat. The available models depend on the course and on the deployment, so what you see may differ from what other courses offer.
+You can attach these documents to a message:
+
+- PDF files
+- Word documents (`.docx`)
+- Text files (`.txt`, `.md`, `.csv`)
+
+PowerPoint files cannot be attached directly. Export the presentation to PDF first and attach the PDF.
+
+Your browser reads the document and extracts its text. The extracted text is sent with your message. If the selected model supports images and the PDF fits the page limit, its pages are also sent as images so the assistant can read slides and figures. A PDF needs selectable text; a scan without a text layer cannot be read. Very long documents are shortened, and files over the size limit are rejected. Sending waits until the document has been read.
+
+For models that support images, you can also attach up to three images to a message. An answer to a message with images shows an "Image analyzed" indicator. Ask a specific question about the image and check the answer against it.
+
+:::info
+The first time you attach a document in a browser, a reminder asks you to attach only material you may share. Leave out personal data, both your own and that of other people. If you choose to remove the documents, they are taken off your message. The reminder is remembered only in this browser. It is not a recorded consent.
+:::
+
+## Can I dictate a question?
+
+On supported desktop browsers, open the chatbot directly to dictate a question instead of typing it. Dictation is unavailable in embedded chats and on mobile devices. Speech recognition runs on your device. Your audio is not sent to the chat service or to a cloud recognizer, and there is no cloud fallback. Dictation needs a browser with on-device recognition and a language pack for the chat interface language (German or English). If the pack is missing, the browser may offer to install it first.
+
+Your browser may ask for microphone access. While you dictate, the text appears in the input field and typing is paused. Check and edit the transcript before you send it.
+
+## Can I listen to an answer?
+
+When you open the chatbot directly, a speaker button appears below answers if your browser has an on-device voice for the interface language. Use it to read the answer aloud, and press stop to end playback. No cloud voice is used. Read-aloud is unavailable in embedded chats.
+
+## Which settings can I change?
+
+The chat has a settings panel. What it offers depends on your lecturer's configuration and on the deployment, so other courses may show different options.
 
 ![Settings panel of the chat with the model selection; the offered models depend on the course configuration](/img/chatbot/chat_settings.png)
 
-- **Without model selection:** The model is chosen automatically. If your credits run out, the chatbot falls back to a smaller model.
-- **With model selection:** You pick a model from the list your lecturer has allowed. In addition, a small fallback model always stays available, so you are never left without an option.
-- **Reasoning effort:** Models that support reasoning additionally offer a choice of effort level. A higher effort can improve answers to difficult questions, but the answer takes longer and consumes more credits.
+- **Model:** If your lecturer has enabled model selection, you choose from the models they allow. Otherwise, the model is chosen automatically and only displayed. When your credits run out, access depends on the fallback models allowed for this chatbot.
+- **Reasoning effort:** Some models offer several effort levels. A higher effort can improve answers to difficult questions, but the answer takes longer and uses more credits.
+- **Answer format and tone:** If your lecturer has enabled them, you can choose a format (balanced or bullet points) and a tone (neutral, friendly or direct). They change how an answer is laid out and worded. They do not change how much help you get or what the assistant knows, and they do not make answers more accurate.
 
 ## How do credits work?
 
-You have your own credit balance for each chatbot. The cost of a turn depends on the selected model and on the length of the conversation, so it is not one credit per message. A long conversation with a lot of previous messages consumes more credits than a short question, which is another good reason to start a new conversation for a new topic.
+Each chatbot has its own credit balance. The cost of a turn depends on the model and on the length of the conversation, so it is not one credit per message. A long conversation costs more than a short question, which is another reason to start a new conversation for a new topic.
 
-At the bottom of the sidebar, you see your remaining balance together with the date of the next refill, or the information that your credits do not refill automatically. If your balance reaches zero, the chatbot keeps working and answers with a smaller model.
+The bottom of the sidebar shows your remaining balance and the date of the next refill, or tells you that your credits do not refill automatically. When your balance reaches zero, the chatbot may offer a configured fallback model or ask you to wait for a refill. Follow the information shown for your chatbot.
 
 ## How do I rate an answer?
 
-Below every answer, you can mark it as **helpful** or **not helpful**. You can change your rating later or retract it entirely. Only your current rating is stored, without any free text. The stored ratings allow the KlickerUZH team to review the quality of the answers over time.
+Below every answer, you can mark it as **helpful** or **not helpful**. You can change or retract your rating later. Only your current rating is stored, without any free text. The KlickerUZH team uses the ratings to review answer quality over time.
 
 ## Does the chatbot show sources?
 
-:::info
-If your chatbot is connected to a knowledge base with course materials, answers can cite them. Numbered markers such as `[1]` in the answer refer to source cards below it, which point to the corresponding file and page or to a link. Not every chatbot is connected to a knowledge base; if yours is not, the assistant answers based on the AI model alone and no sources are shown.
-:::
+If your chatbot is connected to a knowledge base with course materials, answers can cite them. Numbered markers such as `[1]` refer to source cards below the answer, which point to a file and page or to a link. Available sources depend on the chatbot configuration and the material you provide. Open a source to check whether it supports the answer; a citation does not guarantee that an answer is correct.
 
 ## In which language does the chatbot answer?
 
-The chat interface follows the language of the KlickerUZH application you came from, so there is no separate language switcher inside the chat. In German, the interface uses the informal "Du" and Swiss spelling. The language of the answers depends on how your chatbot has been configured: typically, the assistant answers in German and switches to English when you write your question in English.
+The chat interface uses the language of the KlickerUZH application you came from; the chat has no separate language switcher. The German interface uses the informal "Du" and Swiss spelling. The answer language depends on the chatbot configuration. Typically, the assistant answers in German and switches to English when you write in English.
 
 ## What happens with my data?
 
-Your conversations are processed by an AI model provider and may be reviewed in anonymised form to improve the offering. Please do not share personal data in your prompts, neither your own nor that of other people. The binding privacy statement is provided separately from this documentation.
+The chatbot's disclosure and the KlickerUZH privacy policy explain how your conversations are processed and whether they may be reviewed. Read them before you accept the disclosure. Do not share personal data in your messages or attachments, neither your own nor that of other people. The binding privacy statement is provided separately from this documentation.
