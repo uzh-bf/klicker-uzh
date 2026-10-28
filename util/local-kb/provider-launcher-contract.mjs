@@ -80,7 +80,7 @@ export const LAUNCHER_CONTRACTS = {
   },
   docProcessing: {
     facade: 'scripts/local_launcher.py',
-    revision: 'b6448bf8d8d5ada2e99392877bb85f4e4d7a4c75',
+    revision: '26b65eacbaa3b842ab833bcc1baed776626c1d56',
     globalFlags: [],
     verbs: {
       setup: {

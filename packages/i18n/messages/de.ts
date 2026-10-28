@@ -1,5 +1,23 @@
 export default {
   chat: {
+    courseImages: {
+      pixelsProvided: 'Bildpixel an das Modell übermittelt',
+      descriptionOnly: 'Nur Beschreibung',
+      pixelsProvidedExplanation:
+        'Die Pixel dieser Abbildung waren vor der Auswahl in der Modelleingabe enthalten. Das belegt nicht, auf welche Eingaben sich das Modell gestützt hat.',
+      descriptionOnlyExplanation:
+        'Die Pixel dieser Abbildung waren vor der Auswahl nicht in der Modelleingabe enthalten. Dem Modell standen der abgerufene Text und gegebenenfalls die Bildunterschrift oder Beschreibung zur Verfügung.',
+      expandLabel: 'Bild vergrößern: {label}',
+      closeViewer: 'Bildansicht schließen',
+      zoomIn: 'Vergrößern',
+      zoomOut: 'Verkleinern',
+      zoomLevel: 'Zoomstufe relativ zum eingepassten Bild',
+      fitImage: 'Bild einpassen',
+      panHint: 'Zum Erkunden des vergrößerten Bildes scrollen oder wischen.',
+      source: '{title} · Seite {page}',
+      unavailable: 'Dieses Kursbild ist derzeit nicht verfügbar.',
+      retry: 'Bild erneut laden',
+    },
     graphPanel: {
       missingEndpoint: 'Unbekannter Begriff',
       title: 'Wissensgraph',

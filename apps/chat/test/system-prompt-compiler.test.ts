@@ -9,7 +9,9 @@ vi.mock('@/src/lib/server/promptTemplates', async (importOriginal) => {
     renderPromptTemplate: (name: string, context: unknown) =>
       name === 'citation-contract'
         ? '<SYNTHETIC-CITATION-CONTRACT>'
-        : actual.renderPromptTemplate(name as never, context as never),
+        : name === 'course-images'
+          ? JSON.stringify({ template: name, context })
+          : actual.renderPromptTemplate(name as never, context as never),
   }
 })
 
@@ -18,6 +20,7 @@ import { withCitationContract } from '../src/lib/server/citationInstructions'
 import { withLanguageStyleContract } from '../src/lib/server/languageInstructions'
 import { renderPromptTemplate } from '../src/lib/server/promptTemplates'
 import { compileSystemPrompt } from '../src/lib/server/systemPromptCompiler'
+import { COURSE_IMAGE_TOOL } from '../src/lib/sources/courseImages'
 
 const COURSE_DATA_MARK = '## Course data'
 const LECTURER_GUIDANCE_MARK = '## Lecturer-provided guidance'
@@ -574,6 +577,26 @@ describe('compileSystemPrompt', () => {
     expect(result).toContain(
       'Do not default every coding answer to one language'
     )
+  })
+
+  test.each([
+    { toolNames: [], enabled: false },
+    { toolNames: [COURSE_IMAGE_TOOL], enabled: false },
+    { toolNames: [DOC_TOOL], enabled: false },
+    { toolNames: [DOC_TOOL, COURSE_IMAGE_TOOL], enabled: true },
+  ])('includes the image template when enabled=$enabled: $toolNames', ({
+    toolNames,
+    enabled,
+  }) => {
+    const result = compilePrompt(null, 'explainer', toolNames)
+    const rendered = JSON.stringify({
+      template: 'course-images',
+      context: {
+        courseImageTool: COURSE_IMAGE_TOOL,
+        visualEvidence: '',
+      },
+    })
+    expect(result.includes(rendered)).toBe(enabled)
   })
 
   test('keeps scope, evidence, privacy, non-disclosure, integrity, and safety fixed', () => {
