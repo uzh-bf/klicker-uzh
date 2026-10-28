@@ -459,6 +459,11 @@ type BetaEnrollmentCapability {
   signupAvailable: Boolean!
 }
 
+type CaptureResponseExampleResult {
+  created: Boolean!
+  exampleId: ID!
+}
+
 type CaseStudyActivityEvaluationData {
   cases: [CaseStudyElementResultCaseInfo!]!
   content: String!
@@ -783,6 +788,7 @@ type Chatbot {
   status: ChatbotStatus!
   updatedAt: Date
   usageSummary: ChatbotUsageSummary
+  writingCoachUnavailableReason: String
 }
 
 type ChatbotAuthoringRevision {
@@ -956,6 +962,7 @@ type ChatbotStandardModeConfig {
   scopeNote: String
   subjectDomain: String
   tutorEnabled: Boolean!
+  writingCoachEnabled: Boolean!
 }
 
 input ChatbotStandardModeConfigInput {
@@ -966,6 +973,7 @@ input ChatbotStandardModeConfigInput {
   scopeNote: String
   subjectDomain: String
   tutorEnabled: Boolean!
+  writingCoachEnabled: Boolean
 }
 
 enum ChatbotStatus {
@@ -2826,6 +2834,7 @@ type Mutation {
   bookmarkElementStack(bookmarked: Boolean!, courseId: String!, stackId: Int!): [Int!]
   cancelLiveQuiz(id: String!): LiveQuiz
   cancelObjectSharingRequest(objectId: String!, objectType: ObjectType!): Boolean!
+  captureResponseExample(answer: String!, chatbotId: String!, question: String!, receipt: String!): CaptureResponseExampleResult
   changeActivityName(displayName: String!, id: String!, name: String!, type: ActivityType!): Boolean
   changeCatalogCollectionName(catalogCollectionId: String!, name: String!): Boolean
   changeCatalogCollectionObjectAccess(access: ObjectAccess!, catalogCollectionId: String!): Boolean
