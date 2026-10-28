@@ -1270,3 +1270,61 @@ test('advisor deadline is diagnosed as timeout without changing cancellation beh
     global.clearTimeout = originalClearTimeout
   }
 })
+
+test('failed error responses settle request tracking without unhandled rejections', () => {
+  const output = execFileSync(
+    process.execPath,
+    [
+      '-e',
+      `
+      const http = require('node:http')
+      const { EventEmitter } = require('node:events')
+      let handle
+      http.createServer = (callback) => {
+        handle = callback
+        const server = new EventEmitter()
+        server.listen = (_port, _host, ready) => ready()
+        server.address = () => ({ port: 12345 })
+        server.close = (done) => done()
+        return server
+      }
+      const unhandled = []
+      process.on('unhandledRejection', () => unhandled.push('rejected'))
+      ;(async () => {
+        const { startReviewTools } = require(process.argv[1])
+        const broker = await startReviewTools({
+          repo: '.',
+          head: 'a'.repeat(40),
+          policy: 'b'.repeat(40),
+        })
+        handle({ headers: {} }, {
+          destroyed: false,
+          writableEnded: false,
+          writeHead() { throw new Error('synthetic response write failed') },
+        })
+        await new Promise((resolve) => setImmediate(resolve))
+        let status, ended = false
+        handle({ headers: {} }, {
+          destroyed: false,
+          writableEnded: false,
+          writeHead(value) { status = value },
+          end() { ended = true },
+        })
+        await new Promise((resolve) => setImmediate(resolve))
+        await broker.close()
+        process.stdout.write(JSON.stringify({
+          unhandled: unhandled.length, status, ended, closed: true,
+        }))
+      })().catch(() => { process.exitCode = 1 })
+      `,
+      path.join(__dirname, 'ocr-review-tools.cjs'),
+    ],
+    { encoding: 'utf8', timeout: 5000 }
+  )
+  assert.deepEqual(JSON.parse(output), {
+    unhandled: 0,
+    status: 403,
+    ended: true,
+    closed: true,
+  })
+})
