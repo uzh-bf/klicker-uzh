@@ -14,7 +14,7 @@
     "@klicker-uzh/types": "workspace:*",
     "@klicker-uzh/util": "workspace:*",
     "ai": "7.0.52",
-    "handlebars": "4.7.9",
+    "handlebars": "4.7.10",
     "hono": "4.12.30",
     "jose": "5.9.4",
     "zod": "4.6.6"
@@ -46,7 +46,6 @@
   "volta": {
     "extends": "../../package.json"
   },
-  "type": "module",
   "exports": {
     ".": {
       "types": "./dist/index.d.ts",
@@ -60,5 +59,6 @@
       "types": "./dist/runtime/auth.d.ts",
       "default": "./dist/runtime/auth.js"
     }
-  }
+  },
+  "type": "module"
 }
