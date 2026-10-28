@@ -76,6 +76,24 @@ export function getSearchNodesQuery(searchText: string): FixedQuery {
   }
 }
 
+/** Full rows for a bounded set of already selected concepts. */
+export function getNodesByIdQuery(nodeIds: string[]): FixedQuery {
+  if (nodeIds.length > KNOWLEDGE_GRAPH_SEARCH_NODE_LIMIT) {
+    throw new KnowledgeGraphInputError('Too many node IDs')
+  }
+  nodeIds.forEach(validateNodeId)
+
+  return {
+    cypher: `
+      MATCH (n)
+      WHERE id(n) IN [nodeId IN $nodeIds | toInteger(nodeId)]
+      RETURN id(n) AS id, labels(n) AS labels, properties(n) AS properties,
+        indegree(n) + outdegree(n) AS degree
+    `,
+    params: { nodeIds },
+  }
+}
+
 export function getNeighborhoodNodesQuery(nodeId: string): FixedQuery {
   validateNodeId(nodeId)
 

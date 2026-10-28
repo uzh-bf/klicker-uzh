@@ -193,6 +193,7 @@ test.describe
     let feedbacksEnabled = false
     let audienceEnabled = false
     let audienceCount = 0
+    let feedbackQuizId = sessionQuizId
     let feedbackMode: 'held' | 'ok' | 'error' = 'held'
     let mutationRejected = true
     let settingsRequests = 0
@@ -260,7 +261,7 @@ test.describe
           data: {
             controlLiveQuizFeedbacks: {
               __typename: 'LiveQuiz',
-              id: sessionQuizId,
+              id: feedbackQuizId,
               isLiveQAEnabled: feedbacksEnabled,
               isModerationEnabled: feedbacksEnabled,
               isConfusionFeedbackEnabled: audienceEnabled,
@@ -301,6 +302,9 @@ test.describe
     await expect(audienceToggle).toBeEnabled()
     await expect(audienceToggle).not.toBeChecked()
     expect(audienceEnabled).toBe(false)
+    const notifications = page.locator('[data-sonner-toast]')
+    await expect(notifications).toHaveCount(1)
+    await expect(notifications).toHaveCount(0, { timeout: 7000 })
 
     mutationRejected = false
     await audienceToggle.click()
@@ -341,6 +345,38 @@ test.describe
       'ready',
       { timeout: 8000 }
     )
+    // A saved mutation stays successful when only its immediate refresh fails.
+    feedbackMode = 'error'
+    await audienceToggle.click()
+    await expect.poll(() => settingsRequests).toBe(3)
+    expect(audienceEnabled).toBe(false)
+    await expect(audienceToggle).toBeEnabled({ timeout: 10000 })
+    await expect(notifications).toHaveCount(0)
+    feedbackMode = 'ok'
+    await expect(audienceToggle).not.toBeChecked({ timeout: 8000 })
+    await audienceToggle.click()
+    await expect(audienceToggle).toBeChecked()
+    await expect(page.getByTestId('audience-feedback-summary')).toHaveAttribute(
+      'data-state',
+      'ready'
+    )
+
+    // Neither current nor retained feedback from another quiz can drive controls.
+    feedbackQuizId = '00000000-0000-4000-8000-000000000001'
+    await expect(page.getByTestId('audience-feedback-summary')).toHaveAttribute(
+      'data-state',
+      'error',
+      { timeout: 8000 }
+    )
+    await expect(page.getByRole('meter')).toHaveCount(0)
+    await expect(audienceToggle).toBeDisabled()
+    feedbackQuizId = sessionQuizId
+    await expect(page.getByTestId('audience-feedback-summary')).toHaveAttribute(
+      'data-state',
+      'ready',
+      { timeout: 8000 }
+    )
+
     await page.getByTestId('close-audience-feedback').click()
     audienceEnabled = false
     await expect(page.getByTestId('audience-feedback-summary')).toHaveAttribute(

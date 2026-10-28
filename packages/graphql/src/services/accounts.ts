@@ -300,7 +300,7 @@ export async function sendMagicLink(
 
   await sendTeamsNotification({
     scope: 'graphql/sendMagicLink',
-    text: `One-time login token created for ${usernameOrEmail}: ${magicLink}`,
+    text: `One-time login link requested for ${usernameOrEmail}`,
   })
 
   await EmailService.sendEmail({
@@ -540,8 +540,9 @@ export async function getUsersAiFeatures(ctx: ContextWithUser) {
 // records that an account has a cost center to bill AI usage to, and that
 // arrangement can end. Returns 0 when the setting changed, 1 when no account
 // carries the address, and 2 when it already had the requested value. The
-// optional tier and cost center carry the separate entitlement for
-// cost-carrying model classes; omitting either leaves it untouched.
+// optional tier and cost center carry the entitlement for cost-carrying model
+// classes. Passing a cost center derives the tier unless an explicit tier is
+// supplied; omitting both leaves the recorded tier and cost center untouched.
 export async function setAiFeatures(
   {
     email,
@@ -1125,7 +1126,7 @@ export async function createParticipantAccount(
 
     await sendTeamsNotification({
       scope: 'graphql/createParticipantAccount',
-      text: `New participant account created: ${participant.email} with activation link ${activationLink}`,
+      text: `New participant account created: ${participant.email}`,
     })
 
     await EmailService.sendEmail({

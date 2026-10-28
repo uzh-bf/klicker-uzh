@@ -1,0 +1,39 @@
+{
+  "schema": "ocr-runtime/v1",
+  "draft": {
+    "package": "@alibaba-group/open-code-review@1.13.0",
+    "profile": {
+      "id": "draft-v1",
+      "reasoning": "max",
+      "providerTimeout": "480",
+      "taskTimeout": "15",
+      "concurrency": "4"
+    },
+    "model": "deepseek-v4-1-flash-1017",
+    "advisor_model": "zai-glm-5-3",
+    "publisher": {
+      "repository": "alibaba/open-code-review",
+      "revision": "1672852136fc87748249d22bce0819f33419ea79",
+      "sha256": "1d5decf90627353f1e7a2cad291d4ee4ec0a661d9724b93b2d7d5246f33462e2"
+    }
+  },
+  "final": {
+    "execution": "repository-owned",
+    "source": "1672852136fc87748249d22bce0819f33419ea79",
+    "archive_sha256": "a1378ddc336bb874349ad47ad370fdf725e8db1dd03753d7df73347342ae093f",
+    "go": "1.26.9",
+    "patch_sha256": "670d1782a56548f4a4571b6e6bbeb33c92ebcbe99247469ad1aa73329fc5e7c0"
+  },
+  "assets": {
+    ".github/actions/ocr-review/action.yml": "ab884ba5fffe7f8d6caba4c8ea999f9a5ab43d8d903047c8fc8ac95a3625d1ba",
+    ".github/scripts/ocr-controller.cjs": "9fabb089393c0557019fa94b19c7953b5f09f4c6892f233a821093bf6b1c0a1e",
+    ".github/scripts/ocr-draft-review.cjs": "06432cbdf12efdcddd09c14795dbf0830517ef4c493feeee770a130a89e9fc48",
+    ".github/scripts/ocr-mistral-adapter.cjs": "6d58d7b0a42d241023d4563e0b0266a5dcbeb898842253b57cb1951d03dcebda",
+    ".github/scripts/ocr-review-tools.cjs": "270673dca9d80417158b0a45f3a0d65e910ea605d73ff6f00291b0282c398970",
+    ".github/scripts/ocr-review-shared.cjs": "c12e084ae9bd5459791e8cd78e7c11b60eb494e8c6bb5804e7d223e5228c9676",
+    ".github/scripts/ocr-runtime-config.cjs": "dfa184aff7e6ad048696086637223437adeee79ced4bcfa90139468c122f16b9",
+    ".github/scripts/install-patched-ocr.cjs": "4a74aeb596b0252cb1182660d28ff8a196c51e501b69397ca94713d2d59a5eea",
+    ".github/open-code-review/ocr-compression.patch": "670d1782a56548f4a4571b6e6bbeb33c92ebcbe99247469ad1aa73329fc5e7c0",
+    ".agents/skills/ocr-reviewer/SKILL.md": "9e68df11891aebbec0e32439c05d6a66f429f693318d30ae94b3639097b29685"
+  }
+}

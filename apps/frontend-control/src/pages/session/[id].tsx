@@ -114,10 +114,14 @@ function RunningLiveQuiz() {
   const qa = qaData?.controlLiveQuizFeedbacks
   // Q&A keeps its existing data semantics. Audience feedback can use Apollo's
   // previous result after a network error, but an explicit null is authoritative.
-  const audienceFeedbackData =
+  const audienceFeedbackResult =
     qaData !== undefined
       ? qaData.controlLiveQuizFeedbacks
       : previousQaData?.controlLiveQuizFeedbacks
+  const audienceFeedbackData =
+    audienceFeedbackResult && audienceFeedbackResult.id !== quizId
+      ? undefined
+      : audienceFeedbackResult
   const pendingQuestions = qa?.isModerationEnabled
     ? (qa.feedbacks ?? []).filter(
         (feedback) => !feedback.isPublished && !feedback.isResolved

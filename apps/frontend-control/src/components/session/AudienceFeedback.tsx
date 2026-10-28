@@ -196,7 +196,8 @@ function AudienceFeedback({
       if (!result.data?.changeLiveQuizSettings) {
         throw new Error('confusion feedback setting was not updated')
       }
-      await refetch()
+      // Refresh failure does not undo the saved setting; polling can recover.
+      await refetch().catch(() => undefined)
     } catch {
       toast({
         type: 'error',

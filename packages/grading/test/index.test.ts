@@ -258,6 +258,34 @@ describe('@klicker-uzh/grading', () => {
     })
     expect(points8).toEqual(null)
 
+    // a bound of zero is enforced like any other bound
+    expect(
+      gradeQuestionNumerical({
+        solutionRanges: [{ min: 0, max: 10 }],
+        response: -5,
+      })
+    ).toEqual(0)
+    expect(
+      gradeQuestionNumerical({
+        solutionRanges: [{ min: -10, max: 0 }],
+        response: 5,
+      })
+    ).toEqual(0)
+
+    // non-numeric input never matches a range or an exact solution
+    expect(
+      gradeQuestionNumerical({
+        solutionRanges: [{ min: 0, max: 10 }],
+        response: Number.NaN,
+      })
+    ).toEqual(0)
+    expect(
+      gradeQuestionNumerical({
+        exactSolutions: [0],
+        response: Number.NaN,
+      })
+    ).toEqual(0)
+
     const points9 = gradeQuestionNumerical({
       exactSolutions: [0],
       response: 0,
