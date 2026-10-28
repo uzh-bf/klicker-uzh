@@ -3,7 +3,6 @@ import { faExternalLinkAlt } from '@fortawesome/free-solid-svg-icons'
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome'
 import { useFeatureFlag } from '@klicker-uzh/feature-flags/react'
 import {
-  AiSubscriptionTier,
   ChatbotStatus,
   type ChatModelCapability,
   ChatUsageClass,
@@ -180,6 +179,7 @@ function ChatbotDetails({
   publishingAuthorized,
   publishingAuthorizationLoading,
   publishingAuthorizationError,
+  focusedResponseExampleId,
 }: {
   chatbot?: RevisionChatbot
   modelRegistry: ChatModelCapability[]
@@ -195,6 +195,7 @@ function ChatbotDetails({
   publishingAuthorized: boolean
   publishingAuthorizationLoading: boolean
   publishingAuthorizationError: boolean
+  focusedResponseExampleId?: string
 }) {
   const t = useTranslations()
   const graphRetrievalAvailable = useFeatureFlag('chatbot-graphrag')
@@ -203,8 +204,8 @@ function ChatbotDetails({
   // Only the owner edits a chatbot, so the viewer's own entitlement decides
   // which models its participants can actually use.
   const { data: accountUsageData } = useQuery(GetChatAccountUsageDocument)
-  // Drafts can be prepared without AI access, so an unauthorized owner falls
-  // back to the subscription tier; saving still requires its cost center.
+  // Drafts can be prepared without AI access, while advanced models still
+  // require an advanced subscription and a cost center.
   // Delegated logins cannot read the overview; the server's save check stays
   // authoritative, so an unknown entitlement leaves every model enabled.
   const accountUsage = accountUsageData?.getChatAccountUsage
@@ -212,7 +213,7 @@ function ChatbotDetails({
     ? true
     : accountUsage.authorized
       ? accountUsage.advancedModelUsage.entitled
-      : accountUsage.subscriptionTier === AiSubscriptionTier.Advanced
+      : accountUsage.advancedModelConfigurationEntitled
   // Models in the saved revision stay selectable, as the server accepts them.
   const savedModelIds = useMemo(
     () => (chatbot ? getChatbotRevisionValues(chatbot).allowedModelIds : []),
@@ -234,6 +235,7 @@ function ChatbotDetails({
   const { loading: revisionReloading, reload: reloadRevision } =
     useChatbotRevisionReload()
   const [modelSelectionEnabled, setModelSelectionEnabled] = useState(false)
+  const [answerPreferencesEnabled, setAnswerPreferencesEnabled] = useState(true)
   const [fixedModelId, setFixedModelId] = useState('')
   const [allowedModelIds, setAllowedModelIds] = useState<string[]>([])
   const [reasoningConfig, setReasoningConfig] = useState<ReasoningConfigState>(
@@ -330,6 +332,7 @@ function ChatbotDetails({
 
     const revisionValues = getChatbotRevisionValues(chatbot)
     setModelSelectionEnabled(revisionValues.modelSelection)
+    setAnswerPreferencesEnabled(revisionValues.answerPreferencesEnabled)
     setFixedModelId(getDefaultFixedModelId(revisionValues, modelRegistry))
     setAllowedModelIds(
       getInitialSelectedModelIds(revisionValues, modelRegistry)
@@ -388,11 +391,13 @@ function ChatbotDetails({
 
     return (
       modelSelectionEnabled !== revisionValues.modelSelection ||
+      answerPreferencesEnabled !== revisionValues.answerPreferencesEnabled ||
       !sameStringSet(currentSelectedModelIds, initialSelectedModelIds) ||
       reasoningConfigIsDirty
     )
   }, [
     allowedModelIds,
+    answerPreferencesEnabled,
     chatbot,
     modelRegistry,
     modelSelectionEnabled,
@@ -542,6 +547,13 @@ function ChatbotDetails({
     setFixedModelId(modelId)
   }
 
+  const handleAnswerPreferencesChange = (checked: boolean) => {
+    setSaveError(null)
+    setSaveSuccess(false)
+    clearRevisionConflict()
+    setAnswerPreferencesEnabled(checked)
+  }
+
   const handleModelSelectionChange = (checked: boolean) => {
     setSaveError(null)
     setSaveSuccess(false)
@@ -640,6 +652,7 @@ function ChatbotDetails({
           input: {
             modelPolicy: {
               modelSelection: modelSelectionEnabled,
+              answerPreferencesEnabled,
               allowedModelIds: normalizedAllowedModelIds,
               allowedReasoningEffortsByModel: normalizedReasoningConfig,
             },
@@ -1031,7 +1044,13 @@ function ChatbotDetails({
                     />
                   </div>
                   <div className="text-xs text-gray-500">
-                    {t('manage.resources.knowledgeGraphRetrievalDescription')}
+                    {knowledgeGraphPolicy.retrievalEnabled
+                      ? t(
+                          'manage.resources.knowledgeGraphRetrievalEnabledDescription'
+                        )
+                      : t(
+                          'manage.resources.knowledgeGraphRetrievalDisabledDescription'
+                        )}
                   </div>
                 </div>
               )}
@@ -1076,8 +1095,12 @@ function ChatbotDetails({
               )}
             </div>
             <Accordion
+              key={`${chatbot.id}:${focusedResponseExampleId ?? ''}`}
               type="single"
               collapsible
+              defaultValue={
+                focusedResponseExampleId ? 'response-examples' : undefined
+              }
               className="border-t border-gray-200 pt-4"
               data-cy="chatbot-knowledge-secondary"
             >
@@ -1101,6 +1124,7 @@ function ChatbotDetails({
                   <ChatbotResponseExampleReview
                     key={chatbot.id}
                     chatbotId={chatbot.id}
+                    focusedExampleId={focusedResponseExampleId}
                   />
                 </AccordionContent>
               </AccordionItem>
@@ -1610,6 +1634,35 @@ function ChatbotDetails({
                   </div>
                 )}
 
+                <div className="flex flex-col gap-2 border-t pt-4">
+                  <div className="flex items-center justify-between gap-3">
+                    <label
+                      htmlFor="chatbot-answer-preferences-switch"
+                      className="text-sm font-medium text-gray-700"
+                    >
+                      {t('manage.resources.answerPreferences')}
+                    </label>
+                    <Switch
+                      id="chatbot-answer-preferences-switch"
+                      checked={answerPreferencesEnabled}
+                      disabled={
+                        isSaving || !modelSettingsEditable || revisionPending
+                      }
+                      onCheckedChange={handleAnswerPreferencesChange}
+                      data={{ cy: 'chatbot-answer-preferences-switch' }}
+                    />
+                  </div>
+                  <div className="text-xs text-gray-500">
+                    {answerPreferencesEnabled
+                      ? t(
+                          'manage.resources.answerPreferencesEnabledDescription'
+                        )
+                      : t(
+                          'manage.resources.answerPreferencesDisabledDescription'
+                        )}
+                  </div>
+                </div>
+
                 <div className="flex items-center gap-3 border-t pt-4">
                   <Button
                     onClick={handleSaveModelSettings}
@@ -1625,7 +1678,10 @@ function ChatbotDetails({
                     </Button.Label>
                   </Button>
                   {saveSuccess && (
-                    <span className="text-xs text-green-700">
+                    <span
+                      data-cy="chatbot-model-settings-save-success"
+                      className="text-xs text-green-700"
+                    >
                       {t('manage.resources.chatbotModelSettingsSaveSuccess')}
                     </span>
                   )}

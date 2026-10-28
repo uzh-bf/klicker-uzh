@@ -1,6 +1,7 @@
 query GetChatAccountUsage($ownerId: String) {
   getChatAccountUsage(ownerId: $ownerId) {
     authorized
+    advancedModelConfigurationEntitled
     subscriptionTier
     baseModelUsage {
       usageClass

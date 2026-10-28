@@ -919,6 +919,21 @@ export async function scheduleLiveQuiz(
 ) {
   // if the live quiz starts in the future, change its status to scheduled, otherwise publish it
   if (availableFrom && dayjs(availableFrom).isAfter(dayjs())) {
+    // only draft or already scheduled quizzes can be (re)scheduled; checked
+    // before the publication task is created so a running or ended quiz is
+    // never republished
+    const schedulableQuiz = await ctx.prisma.liveQuiz.findFirst({
+      where: {
+        id,
+        isDeleted: false,
+        status: {
+          in: [DB.PublicationStatus.DRAFT, DB.PublicationStatus.SCHEDULED],
+        },
+      },
+      select: { id: true },
+    })
+    if (!schedulableQuiz) return null
+
     try {
       // schedule the task to publish the live quiz
       const scheduledTask = await ctx.tasks.publishScheduledLiveQuiz.schedule(
@@ -929,7 +944,13 @@ export async function scheduleLiveQuiz(
 
       // change the status of the live quiz to scheduled
       const updatedQuiz = await ctx.prisma.liveQuiz.update({
-        where: { id, isDeleted: false },
+        where: {
+          id,
+          isDeleted: false,
+          status: {
+            in: [DB.PublicationStatus.DRAFT, DB.PublicationStatus.SCHEDULED],
+          },
+        },
         data: {
           availableFrom,
           status: DB.PublicationStatus.SCHEDULED,
@@ -3535,9 +3556,15 @@ export const handleStandardLiveQuizBlockClosureAggregation: HatchetHandlers['han
     const isLastBlock = quiz.blocks[quiz.blocks.length - 1]!.id === blockId
     const block = quiz.blocks.find((b) => b.id === blockId)
     if (!block) return false
+    if (
+      block.status !== DB.ElementBlockStatus.EXECUTED ||
+      quiz.activeBlockId === blockId
+    ) {
+      return true
+    }
 
     // update the aggregated instance results based on the cache data after a waiting period for processing remaining submissions
-    await updateLiveQuizBlockResultsFromCache({
+    const updatedQuiz = await updateLiveQuizBlockResultsFromCache({
       quizId: liveQuizId,
       blockId,
       prisma: globalCtx.prisma,
@@ -3551,6 +3578,11 @@ export const handleStandardLiveQuizBlockClosureAggregation: HatchetHandlers['han
       // the block was closed already, only re-aggregate its results
       closeBlock: false,
     })
+
+    if (!updatedQuiz) {
+      // Keep cached submissions available until persistence succeeds on a retry.
+      throw new Error('Could not persist delayed live quiz block results')
+    }
 
     // remove all cache entries related to this block only (or the entire live quiz, if this was the last block)
     await removeCacheEntriesBlock({

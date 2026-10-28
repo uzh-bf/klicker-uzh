@@ -130,7 +130,10 @@ describe('splitCitationMarkers', () => {
     ['[1, Kapitel 7]', 1],
     ['[3 , p. 2]', 3],
     ['[2–4, S. 10–12]', 2],
-  ])('renders a marker with a labelled page detail (%s)', (input, index) => {
+    ['[1, S. 02:34]', 1],
+    ['[1, p. 1:02:03]', 1],
+    ['[1, S. 02:34–03:10]', 1],
+  ])('renders only the number for a labelled detail (%s)', (input, index) => {
     const nodes = splitCitationMarkers(input)
     expect(nodes[0]).toEqual(citationLinkNode(index))
     expect(nodes.every((node) => node.type === 'link')).toBe(true)
@@ -163,6 +166,9 @@ describe('splitCitationMarkers', () => {
     '[1,]',
     '[1, ]',
     '[2, ]',
+    '[1, 02:34]',
+    '[1, S. 00:60]',
+    '[1, S. 1:60:00]',
   ])('leaves an unlabelled or non-numeric bracket list literal (%s)', (input) => {
     expect(splitCitationMarkers(input)).toEqual([textNode(input)])
   })
@@ -242,6 +248,15 @@ describe('extractCitedPages', () => {
   test('deduplicates pages that several markers repeat', () => {
     expect(extractCitedPages('[1, p. 6] and [1, p. 6–7].')).toEqual(
       new Map([[1, [6, 7]]])
+    )
+  })
+
+  test('keeps video times out of cited page metadata', () => {
+    expect(extractCitedPages('[1, S. 02:34] [1, p. 1:02:03]')).toEqual(
+      new Map()
+    )
+    expect(extractCitedPages('[1, S. 02:34] [2, p. 6]')).toEqual(
+      new Map([[2, [6]]])
     )
   })
 })
@@ -423,6 +438,7 @@ describe('citation protocol across streaming boundaries', () => {
     ['[2–4]', [2, 3, 4]],
     ['[2-4]', [2, 3, 4]],
     ['[2—4]', [2, 3, 4]],
+    ['[1, S. 02:34]', [1]],
   ] as const)('emits only completed markers while %s arrives character by character', (input, expected) => {
     for (let length = 0; length <= input.length; length += 1) {
       const prefix = input.slice(0, length)

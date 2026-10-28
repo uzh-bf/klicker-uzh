@@ -2,6 +2,8 @@ import { describe, expect, test } from 'vitest'
 import {
   formatModeLabel,
   getComposerSubmitMode,
+  getModeDescription,
+  getModeIcon,
   hasAvailableChatMode,
   isKnownMode,
 } from '../src/lib/config/modes'
@@ -12,6 +14,7 @@ const t = ((key: string) => {
   if (key === 'chat.modes.tutor') return 'Tutor'
   if (key === 'chat.modes.explainer') return 'Explainer'
   if (key === 'chat.modes.quizzer') return 'Quizzer'
+  if (key === 'chat.modes.custom') return 'Custom mode'
   return key
 }) as unknown as Parameters<typeof formatModeLabel>[0]
 
@@ -38,12 +41,20 @@ describe('formatModeLabel', () => {
     ).toBe('Debate coach')
   })
 
-  test('falls back to the capitalized key when an authored name is blank', () => {
+  test('falls back to a generic label when an authored name is blank', () => {
     expect(
       formatModeLabel(t, 'cm_custom', {
         cm_custom: { description: 'Practises debates.', name: '   ' },
       })
-    ).toBe('Cm_custom')
+    ).toBe('Custom mode')
+  })
+
+  test('falls back to a generic label for a custom mode that is no longer approved', () => {
+    expect(
+      formatModeLabel(t, 'cm_88c7e708', {
+        tutor: { description: 'Guides step by step.' },
+      })
+    ).toBe('Custom mode')
   })
 
   test('does not treat inherited object keys as known modes', () => {
@@ -57,4 +68,16 @@ describe('formatModeLabel', () => {
     expect(getComposerSubmitMode(false)).toBe('none')
     expect(getComposerSubmitMode(true)).toBe('enter')
   })
+})
+
+test('uses localized standard-mode presentation for Writing Coach', () => {
+  const syntheticT = ((key: string) =>
+    `localized:${key}`) as unknown as Parameters<typeof formatModeLabel>[0]
+  const mode = 'writing-coach'
+  expect(isKnownMode(mode)).toBe(true)
+  expect(formatModeLabel(syntheticT, mode)).toBe(`localized:chat.modes.${mode}`)
+  expect(getModeDescription(syntheticT, mode, {})).toBe(
+    `localized:chat.modes.${mode}Description`
+  )
+  expect(getModeIcon(mode)).not.toBe(getModeIcon('synthetic-custom'))
 })

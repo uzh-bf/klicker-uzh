@@ -17,7 +17,7 @@ from pathlib import Path
 ROOT = Path(__file__).resolve().parents[1]
 WRAPPER = ROOT / "util" / "_run_klicker_eval.sh"
 FRAMEWORK = ROOT / "evaluation" / "framework"
-FRAMEWORK_SHA = "e545dfcfa9979eddeae22197fd7c0f0b053049df"
+FRAMEWORK_SHA = "33fac627cb691813a777181c428d40c4355ea45f"
 MODEL = "synthetic-loopback-model"
 API_KEY = "synthetic-target-key"
 ANSWER = "KLICKER_EVAL_INTEGRATION_OK"
