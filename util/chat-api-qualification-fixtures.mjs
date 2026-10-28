@@ -61,6 +61,8 @@ export async function startQualificationFixtures({
     resultConsumed: false,
     violations: 0,
   }
+  let behavior = 'success'
+  let cancelledCalls = 0
   const used = new Set()
   const tenant = 'synthetic-chat-api-qualification'
   const scopeHash = (parts) =>
@@ -136,6 +138,17 @@ export async function startQualificationFixtures({
       )
       used.add(claims.jti)
       stats.codeApiCalls += 1
+      if (behavior === 'cancel') {
+        response.on('close', () => {
+          if (!response.writableEnded) cancelledCalls += 1
+        })
+        return
+      }
+      if (behavior === 'failure') {
+        response.writeHead(503, { 'content-type': 'application/json' })
+        response.end(JSON.stringify({ error: 'synthetic-unavailable' }))
+        return
+      }
       response.writeHead(200, { 'content-type': 'application/json' })
       response.end(
         JSON.stringify({
@@ -159,9 +172,10 @@ export async function startQualificationFixtures({
       const body = await jsonBody(request)
       stats.modelCalls += 1
       assert(stats.modelCalls <= 32)
-      const result = body.input.find(
-        (item) => item.type === 'function_call_output'
-      )
+      const userIndex = body.input.findLastIndex((item) => item.role === 'user')
+      const result = body.input
+        .slice(userIndex + 1)
+        .find((item) => item.type === 'function_call_output')
       const hasPython = body.tools?.some((tool) => tool.name === 'run_python')
       const events = [
         {
@@ -202,7 +216,7 @@ export async function startQualificationFixtures({
           const output = JSON.parse(result.output)
           stats.resultConsumed =
             output.kind === 'execution' && output.stdout.text === `${nonce}\n`
-          assert(stats.resultConsumed)
+          if (behavior !== 'failure') assert(stats.resultConsumed)
         }
         const item = { type: 'message', id: randomUUID() }
         events.push(
@@ -210,7 +224,11 @@ export async function startQualificationFixtures({
           {
             type: 'response.output_text.delta',
             item_id: item.id,
-            delta: result ? answer : 'synthetic-without-tool',
+            delta: result
+              ? behavior === 'failure'
+                ? 'synthetic-service-unavailable'
+                : answer
+              : 'synthetic-without-tool',
           },
           { type: 'response.output_item.done', output_index: 0, item }
         )
@@ -282,6 +300,12 @@ export async function startQualificationFixtures({
     certificate,
     answer,
     stats: () => ({ ...stats }),
+    browserStats: () => ({ ...stats, cancelledCalls }),
+    setBehavior: (value) => {
+      if (!['success', 'cancel', 'failure'].includes(value))
+        throw new Error('Invalid fixture scenario')
+      behavior = value
+    },
     close,
   }
 }

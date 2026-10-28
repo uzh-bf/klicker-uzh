@@ -14,13 +14,13 @@ import {
   writeFileSync,
 } from 'node:fs'
 import { dirname, join, relative, resolve, sep } from 'node:path'
-import { fileURLToPath } from 'node:url'
 import { setTimeout as delay } from 'node:timers/promises'
+import { fileURLToPath } from 'node:url'
 import {
-  startQualificationFixtures,
-  SYNTHETIC_SERVICE_TOKEN,
-  SYNTHETIC_PROVIDER_TOKEN,
   QUALIFICATION_ENGINE_ID,
+  SYNTHETIC_PROVIDER_TOKEN,
+  SYNTHETIC_SERVICE_TOKEN,
+  startQualificationFixtures,
 } from './chat-api-qualification-fixtures.mjs'
 
 const root = realpathSync(
@@ -44,6 +44,7 @@ const shutdown = new AbortController()
 if (mode === '--worker') {
   process.once('SIGTERM', () => shutdown.abort())
   process.once('SIGINT', () => shutdown.abort())
+  setTimeout(() => shutdown.abort(), 780000).unref()
 }
 const receipt = (name, data) => {
   const path = receiptPath(name)
@@ -112,6 +113,7 @@ async function worker() {
     thread: randomUUID(),
   }
   const tag = `chat-qualification-${randomUUID()}`
+  const username = `chatq-${setup.generation.slice(0, 8)}`
   let fixtures
   let api
   let owned = false
@@ -129,6 +131,7 @@ async function worker() {
         CHAT_ENGINE_URL: setup.engineUrl,
         CHAT_ENGINE_ID: QUALIFICATION_ENGINE_ID,
         CHAT_ENGINE_SERVICE_TOKEN: SYNTHETIC_SERVICE_TOKEN,
+        CHAT_BROWSER_ALLOWED_ORIGINS: setup.chatOrigin,
         CHAT_TURN_LIFECYCLE_WRITES_ENABLED: 'true',
         CHAT_ACCOUNT_USAGE_ENFORCEMENT_ENABLED: 'true',
         PORT: '3005',
@@ -186,11 +189,14 @@ async function worker() {
         creditResetPeriod: 'NONE',
       },
     })
+    const { default: bcrypt } = await import(
+      '../packages/graphql/node_modules/bcryptjs/index.js'
+    )
     await prisma.participant.create({
       data: {
         id: id.participant,
-        username: tag,
-        password: 'synthetic-unusable-password',
+        username,
+        password: await bcrypt.hash('synthetic-local-browser-password', 10),
       },
     })
     await prisma.participation.create({
@@ -390,6 +396,54 @@ async function worker() {
     assert.equal(fixtures.stats().codeApiCalls, 1)
     assert.equal(fixtures.stats().violations, 0)
     checks.push('disabled-gate-zero-new-codeapi-dispatch')
+    if (setup.browser) {
+      phase = 'browser-acceptance'
+      await stopChild(api)
+      await startApi(true)
+      receipt('browser-ready.json', {
+        generation: setup.generation,
+        username,
+        chatbotId: id.bot,
+        answer: fixtures.answer,
+      })
+      let lastSequence = 0
+      await waitFor(async () => {
+        if (existsSync(join(directory, 'browser-result.json'))) return true
+        if (!existsSync(join(directory, 'browser-control.json'))) return false
+        const command = readReceipt('browser-control.json')
+        assert.equal(command.generation, setup.generation)
+        if (command.sequence <= lastSequence) return false
+        assert.equal(command.sequence, lastSequence + 1)
+        if (command.action === 'disable') {
+          await stopChild(api)
+          await startApi(false)
+        } else if (command.action !== 'stats')
+          fixtures.setBehavior(command.action)
+        lastSequence = command.sequence
+        receipt('browser-ack.json', {
+          generation: setup.generation,
+          sequence: lastSequence,
+          stats: fixtures.browserStats(),
+        })
+        return false
+      }, 600000)
+      assert.equal(readReceipt('browser-result.json').status, 'passed')
+      const stopped = await prisma.chatMessage.findMany({
+        where: {
+          thread: { chatbotId: id.bot, participantId: id.participant },
+          lifecycleStatus: 'COMPLETED',
+        },
+        select: { content: true },
+      })
+      assert(
+        stopped.some((message) =>
+          message.content.some(
+            (part) => part.type === 'data' && part.name === 'chat-stopped'
+          )
+        )
+      )
+      checks.push('browser-enabled-reload-stop-recovery-and-disabled')
+    }
     receipt('acceptance.json', {
       status: 'passed',
       generation: setup.generation,
@@ -430,7 +484,7 @@ async function worker() {
       if (owned && stopped) {
         await requireDisposableDatabase(prisma)
         await prisma.participant.deleteMany({
-          where: { id: id.participant, username: tag },
+          where: { id: id.participant, username },
         })
         await prisma.user.deleteMany({
           where: {
@@ -447,6 +501,160 @@ async function worker() {
         ownedRowsCleaned: owned && stopped,
       })
     }
+  }
+}
+
+async function browserQualification(setup, generation) {
+  await waitFor(() => existsSync(join(directory, 'browser-ready.json')), 60000)
+  const binding = readReceipt('browser-ready.json')
+  assert.equal(binding.generation, generation)
+  const activated = spawnSync(
+    'devrouter',
+    ['ensure', root, '--profile', 'chat,chat-api', '--json'],
+    { cwd: root, encoding: 'utf8', timeout: 180000, maxBuffer: 2 * 1024 * 1024 }
+  )
+  assert.equal(
+    activated.status,
+    0,
+    'Direct API profile did not reach readiness'
+  )
+  receipt('browser-runtime.json', JSON.parse(activated.stdout))
+  const session = `chat-catalyst-${generation.slice(0, 8)}`
+  let sequence = 0
+  const completed = []
+  const browser = (...args) => {
+    const result = spawnSync(
+      'agent-browser',
+      ['--session', session, '--ignore-https-errors', ...args],
+      {
+        cwd: root,
+        encoding: 'utf8',
+        timeout: 45000,
+        maxBuffer: 256 * 1024,
+        env: { ...process.env, AGENT_BROWSER_DEFAULT_TIMEOUT: '30000' },
+      }
+    )
+    assert.equal(result.status, 0, `Browser command failed: ${args[0]}`)
+    return result.stdout.trim()
+  }
+  const control = async (action) => {
+    receipt('browser-control.json', {
+      generation,
+      sequence: ++sequence,
+      action,
+    })
+    await waitFor(
+      () =>
+        existsSync(join(directory, 'browser-ack.json')) &&
+        readReceipt('browser-ack.json').sequence === sequence,
+      30000
+    )
+    return readReceipt('browser-ack.json').stats
+  }
+  const waitText = (text) => {
+    browser(
+      'wait',
+      '--fn',
+      `document.querySelector('[data-cy="chat-assistant-message-content"]') && document.body.innerText.includes(${JSON.stringify(text)})`
+    )
+    browser(
+      'wait',
+      '--fn',
+      `document.querySelector('[data-cy="chat-cancel-button"]')?.hasAttribute('inert') === true`
+    )
+  }
+  const send = (text) => {
+    browser('fill', '[data-cy="chat-composer-input"]', text)
+    browser('click', '[data-cy="chat-send-button"]')
+  }
+  try {
+    browser('open', `${setup.pwaOrigin}/login`)
+    browser(
+      'wait',
+      '--fn',
+      `document.querySelector('[data-cy="username-field"]') && Object.keys(document.querySelector('[data-cy="username-field"]')).some(key => key.startsWith('__reactFiber'))`
+    )
+    browser('fill', '[data-cy="username-field"]', binding.username)
+    browser(
+      'fill',
+      '[data-cy="password-field"]',
+      'synthetic-local-browser-password'
+    )
+    browser('click', '[data-cy="submit-login"]')
+    browser('wait', '[data-cy="homepage"]')
+    browser('open', `${setup.chatOrigin}/${binding.chatbotId}`)
+    browser('wait', '[data-cy="chat-composer-input"]')
+    const selectedOrigin = browser('get', 'attr', 'html', 'data-chat-api-url')
+    assert(selectedOrigin.includes(setup.apiOrigin))
+    completed.push('direct-api-runtime-binding')
+    browser('click', '[data-cy="chat-new-thread-button"]')
+    browser(
+      'wait',
+      '--fn',
+      `document.querySelectorAll('[data-cy="chat-assistant-message-content"]').length === 0`
+    )
+    let previous = await control('stats')
+    send('Use the Python tool for this synthetic calculation.')
+    waitText(binding.answer)
+    let next = await control('stats')
+    assert.equal(next.codeApiCalls, previous.codeApiCalls + 1)
+    completed.push('browser-python-result')
+    browser('reload')
+    waitText(binding.answer)
+    previous = await control('stats')
+    assert.equal(previous.codeApiCalls, next.codeApiCalls)
+    assert.equal(previous.modelCalls, next.modelCalls)
+    completed.push('reload-no-new-execution')
+    await control('cancel')
+    send('Run the next synthetic calculation and wait for Stop.')
+    await waitFor(
+      async () =>
+        (await control('stats')).codeApiCalls === previous.codeApiCalls + 1,
+      30000
+    )
+    browser('click', '[data-cy="chat-cancel-button"]')
+    await waitFor(
+      async () => (await control('stats')).cancelledCalls === 1,
+      30000
+    )
+    browser('wait', '[data-cy="chat-message-stopped"]')
+    completed.push('browser-stop-cancels-transport')
+    await control('success')
+    send('Recover with another Python calculation.')
+    browser(
+      'wait',
+      '--fn',
+      `document.querySelectorAll('[data-cy="chat-assistant-message-content"]').length >= 3 && !document.querySelector('[data-cy="chat-cancel-button"]:not([inert])')`
+    )
+    next = await control('stats')
+    assert.equal(next.codeApiCalls, previous.codeApiCalls + 2)
+    completed.push('browser-recovery')
+    browser('screenshot', join(directory, 'browser-desktop.png'))
+    browser('set', 'viewport', '390', '844')
+    browser('screenshot', join(directory, 'browser-mobile.png'))
+    await control('disable')
+    previous = await control('stats')
+    send('Answer without Python when the feature is disabled.')
+    waitText('synthetic-without-tool')
+    next = await control('stats')
+    assert.equal(next.codeApiCalls, previous.codeApiCalls)
+    assert.equal(next.violations, 0)
+    completed.push('browser-disabled-no-codeapi')
+    receipt('browser-result.json', {
+      generation,
+      status: 'passed',
+      completed,
+      stats: next,
+    })
+  } catch {
+    receipt('browser-result.json', { generation, status: 'failed', completed })
+    throw new Error('Browser qualification failed at its recorded boundary')
+  } finally {
+    spawnSync('agent-browser', ['--session', session, 'close'], {
+      cwd: root,
+      stdio: 'ignore',
+      timeout: 20000,
+    })
   }
 }
 
@@ -522,6 +730,10 @@ async function host() {
   const engineName = `${workspace}-catalyst-qualification-${generation.slice(0, 8)}`
   const engineAlias = `${workspace}-catalyst-qualification`
   const engineUrl = `http://${engineAlias}:3015`
+  const browser = process.argv.includes('--browser')
+  const chatOrigin = `https://chat.klicker.${workspace}.localhost`
+  const apiOrigin = `https://chat-api.klicker.${workspace}.localhost`
+  const pwaOrigin = `https://pwa.klicker.${workspace}.localhost`
   const mapped = spawnSync(
     'devrouter',
     [
@@ -548,6 +760,10 @@ async function host() {
     containerSourcePath,
     fixtureHost: `${workspace}-app`,
     engineUrl,
+    browser,
+    chatOrigin,
+    apiOrigin,
+    pwaOrigin,
   })
   let engine
   let workerProcess
@@ -576,13 +792,13 @@ async function host() {
         'CHAT_API_QUALIFICATION=1',
         'node',
         'util/run-chat-api-qualification.mjs',
-        '--worker',
+        '--start-worker',
         relativeDirectory,
       ],
       { cwd: root, stdio: ['ignore', 'ignore', 'ignore'] }
     )
     await waitFor(() => {
-      if (workerProcess.exitCode !== null)
+      if (workerProcess.exitCode !== null && workerProcess.exitCode !== 0)
         throw new Error('Fixture worker exited early')
       return existsSync(join(directory, 'fixtures.json'))
     }, 30000)
@@ -626,18 +842,35 @@ async function host() {
       ],
       { cwd: root, stdio: ['ignore', 'ignore', 'ignore'] }
     )
-    const workerExit = once(workerProcess, 'exit')
-    const exit = await Promise.race([
-      workerExit,
-      delay(150000, undefined, { ref: false }).then(() => {
-        throw new Error('Qualification exceeded its total bound')
-      }),
-    ])
-    assert.equal(exit[0], 0, 'Qualification worker failed')
+    if (browser)
+      await browserQualification(
+        { chatOrigin, apiOrigin, pwaOrigin },
+        generation
+      )
+    await waitFor(
+      () => existsSync(join(directory, 'worker-cleanup.json')),
+      browser ? 780000 : 150000
+    )
     assert.equal(readReceipt('acceptance.json').status, 'passed')
     assert.equal(readReceipt('worker-cleanup.json').apiStopped, true)
+    const verified = spawnSync(
+      'devrouter',
+      [
+        'exec',
+        root,
+        '--',
+        'node',
+        'util/run-chat-api-qualification.mjs',
+        '--verify-worker-stopped',
+        relativeDirectory,
+      ],
+      { cwd: root, stdio: 'ignore', timeout: 20000 }
+    )
+    assert.equal(verified.status, 0, 'Owned worker shutdown is unproved')
     console.log(
-      'HTTP/Prisma/Catalyst qualification passed; browser acceptance is still pending.'
+      browser
+        ? 'Local HTTP/Prisma/Catalyst and browser qualification passed.'
+        : 'HTTP/Prisma/Catalyst qualification passed; browser acceptance is still pending.'
     )
   } finally {
     if (
@@ -676,7 +909,29 @@ async function host() {
 }
 
 try {
-  if (mode === '--stop-worker') {
+  if (mode === '--verify-worker-stopped') {
+    const owner = readReceipt('worker-owner.json')
+    const setup = readReceipt('setup.json')
+    assert.equal(owner.generation, setup.generation)
+    assert.equal(owner.containerSourcePath, root)
+    assert(Number.isInteger(owner.pid) && owner.pid > 1)
+    const status = `/proc/${owner.pid}/stat`
+    assert(
+      !existsSync(status) ||
+        readFileSync(status, 'utf8').split(') ')[1]?.startsWith('Z '),
+      'Owned worker is still active'
+    )
+  } else if (mode === '--start-worker') {
+    assert.equal(process.env.CHAT_API_QUALIFICATION, '1')
+    const child = spawn(
+      process.execPath,
+      [fileURLToPath(import.meta.url), '--worker', directory],
+      { cwd: root, env: process.env, detached: true, stdio: 'ignore' }
+    )
+    await once(child, 'spawn')
+    child.unref()
+    console.log('Owned qualification worker started')
+  } else if (mode === '--stop-worker') {
     const owner = readReceipt('worker-owner.json')
     const setup = readReceipt('setup.json')
     assert.equal(owner.containerSourcePath, root)
@@ -688,7 +943,10 @@ try {
         '\0'
       )
       assert(
-        command.includes('util/run-chat-api-qualification.mjs') &&
+        command.some(
+          (argument) =>
+            resolve(root, argument) === fileURLToPath(import.meta.url)
+        ) &&
           command.includes('--worker') &&
           command.some((argument) => resolve(root, argument) === directory)
       )

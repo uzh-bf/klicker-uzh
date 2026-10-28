@@ -1,6 +1,7 @@
 import { useParams } from 'next/navigation'
 import { useTranslations } from 'next-intl'
 import { useCallback, useRef } from 'react'
+import { fetchChatApi } from '../lib/api/types'
 import {
   hasAllImageAttachmentsHydrated,
   setPendingDocumentPages,
@@ -10,7 +11,6 @@ import {
   type ImageSupport,
   withoutPageReview,
 } from '../lib/attachments/documentText'
-import { authedFetch } from '../lib/client/authedFetch'
 import type { ReasoningEffort } from '../lib/config/reasoning'
 import { readHandoffSource } from '../lib/handoff'
 import { normalizeLiveToolOutput } from '../lib/toolOutput'
@@ -287,7 +287,7 @@ export function useChatResponse(
 
         // send request to API with streaming enabled
         const handoffSource = readHandoffSource()
-        const response = await authedFetch(`/api/chatbots/${chatbotId}/chat`, {
+        const response = await fetchChatApi(`/api/chatbots/${chatbotId}/chat`, {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
           signal: abortController.signal,
