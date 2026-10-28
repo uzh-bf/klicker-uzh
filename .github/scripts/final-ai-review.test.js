@@ -422,6 +422,86 @@ function executeExtractedOCRAttempt({
   return result
 }
 
+test('final setup resolves advisor paths on the runner and preserves them for later steps', (t) => {
+  const workflow = fs.readFileSync(
+    path.join(__dirname, '../workflows/check-ocr-final-review.yml'),
+    'utf8'
+  )
+  for (const jobName of ['review', 'review_stack']) {
+    const directory = fs.mkdtempSync(path.join(os.tmpdir(), 'ocr setup '))
+    t.after(() => fs.rmSync(directory, { recursive: true, force: true }))
+    const start = workflow.indexOf(`  ${jobName}:\n`)
+    const next = workflow.slice(start + 1).search(/^  \S/m)
+    const job = workflow.slice(start, next < 0 ? undefined : start + 1 + next)
+    const jobEnv = extractWorkflowJobEnv(job, jobName)
+    assert.ok(
+      Object.values(jobEnv).every((value) => !value.includes('runner.'))
+    )
+    const setup = job.slice(
+      job.indexOf('      - name: Configure ephemeral Mistral access')
+    )
+    const setupEnv = {}
+    for (const line of setup
+      .slice(0, setup.indexOf('        run: |'))
+      .split('\n')) {
+      const entry = line.match(/^          (OCR_ADVISOR_[A-Z_]+): (.+)$/)
+      if (entry)
+        setupEnv[entry[1]] = entry[2].replace('${{ runner.temp }}', directory)
+    }
+    const githubEnv = path.join(directory, 'github-env')
+    const observed = path.join(directory, 'observed')
+    const run = spawnSync(
+      'bash',
+      [
+        '-c',
+        [
+          'node() {',
+          '  printf "%s\\n%s\\n" "$OCR_ADVISOR_STATE_PATH" "$OCR_ADVISOR_DIAGNOSTICS_PATH" >>"$OBSERVED"',
+          '  mkdir -p "$HOME/.opencodereview"',
+          '  printf "{}" >"$HOME/.opencodereview/config.json"',
+          '}',
+          extractWorkflowStepScript(job, 'Configure ephemeral Mistral access'),
+        ].join('\n'),
+      ],
+      {
+        encoding: 'utf8',
+        env: {
+          PATH: '/usr/bin:/bin',
+          HOME: directory,
+          GITHUB_ENV: githubEnv,
+          OBSERVED: observed,
+          ...setupEnv,
+        },
+      }
+    )
+    assert.equal(run.status, 0, run.stderr)
+    const inherited = Object.fromEntries(
+      fs
+        .readFileSync(githubEnv, 'utf8')
+        .trim()
+        .split('\n')
+        .map((line) => {
+          const at = line.indexOf('=')
+          return [line.slice(0, at), line.slice(at + 1)]
+        })
+    )
+    assert.deepEqual(Object.keys(inherited).sort(), [
+      'OCR_ADVISOR_DIAGNOSTICS_PATH',
+      'OCR_ADVISOR_STATE_PATH',
+    ])
+    assert.deepEqual(inherited, setupEnv)
+    assert.ok(
+      Object.values(inherited).every((file) => path.dirname(file) === directory)
+    )
+    assert.deepEqual(fs.readFileSync(observed, 'utf8').trim().split('\n'), [
+      inherited.OCR_ADVISOR_STATE_PATH,
+      inherited.OCR_ADVISOR_DIAGNOSTICS_PATH,
+      inherited.OCR_ADVISOR_STATE_PATH,
+      inherited.OCR_ADVISOR_DIAGNOSTICS_PATH,
+    ])
+  }
+})
+
 test('executes both workflow OCR command boundaries with pinned version diagnostics', () => {
   const workflow = fs.readFileSync(
     path.join(__dirname, '../workflows/check-ocr-final-review.yml'),
