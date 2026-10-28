@@ -39,6 +39,7 @@ import {
   remarkConceptLinks,
 } from '../lib/markdown/remarkConceptLinks'
 import {
+  escapeNonMathDollars,
   hideIncompleteMath,
   inspectStreamingMath,
 } from '../lib/markdown/streamingMath'
@@ -381,8 +382,10 @@ const defaultComponents = memoizeMarkdownComponents({
 })
 
 export function normalizeCustomMathTags(input: string): string {
+  // Escape currency before converting the explicit delimiters, so converted
+  // spans are always rendered as math.
   return (
-    input
+    escapeNonMathDollars(input)
       // Keep display-math fences on their own lines so multiline formulas
       // cannot consume the Markdown that follows them.
       .replace(

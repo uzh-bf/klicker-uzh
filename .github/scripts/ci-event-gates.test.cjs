@@ -1,5 +1,6 @@
 const assert = require('node:assert/strict')
 const fs = require('node:fs')
+const os = require('node:os')
 const path = require('node:path')
 const test = require('node:test')
 const YAML = require('yaml')
@@ -22,11 +23,18 @@ function evaluateGate(
   steps = {}
 ) {
   const normalized = expression
+    .trim()
+    .replace(/^\$\{\{([\s\S]*)\}\}$/, '$1')
+    .replace(
+      /github\.event\.pull_request\.labels\.\*\.name/g,
+      'github.event.pull_request.labels.map(label => label.name)'
+    )
     .replace(/needs\.([a-z][a-z0-9-]*)/g, 'needs["$1"]')
     .replace(
-      /steps\.([a-z][a-z0-9-]*)\.outputs\.([a-z_]+)/g,
+      /steps\.([a-z][a-z0-9-]*)\.outputs\.([a-z][a-z0-9_-]*)/g,
       'steps["$1"].outputs["$2"]'
     )
+    .replace(/\.outputs\.([a-z][a-z0-9_-]*)/g, '.outputs["$1"]')
   // Repository-controlled input only: the expression must originate from a
   // parsed file under .github/workflows/. Do not route external or untrusted
   // text here.
@@ -39,6 +47,9 @@ function evaluateGate(
     'steps',
     'format',
     'startsWith',
+    'endsWith',
+    'contains',
+    'fromJSON',
     `return (${normalized})`
   )(
     github,
@@ -47,14 +58,278 @@ function evaluateGate(
     () => cancelled,
     vars,
     steps,
-    (pattern, value) => {
-      assert.equal(pattern, '{0}')
-      return String(value)
-    },
+    (pattern, ...values) =>
+      pattern.replace(/\{(\d+)\}/g, (_, i) => String(values[Number(i)])),
     (value, prefix) =>
-      String(value).toLowerCase().startsWith(String(prefix).toLowerCase())
+      String(value).toLowerCase().startsWith(String(prefix).toLowerCase()),
+    (value, suffix) =>
+      String(value).toLowerCase().endsWith(String(suffix).toLowerCase()),
+    (values, value) => values.includes(value),
+    JSON.parse
   )
 }
+
+test('gate evaluation supports hyphenated step identities and output names', () => {
+  for (const value of ['true', 'false']) {
+    assert.equal(
+      evaluateGate(
+        "${{ steps.cache-epoch.outputs.cache-hit == 'true' }}",
+        {},
+        {},
+        false,
+        {},
+        { 'cache-epoch': { outputs: { 'cache-hit': value } } }
+      ),
+      value === 'true'
+    )
+  }
+})
+
+function assertReporter(job, required) {
+  for (const cancelled of [false, true]) {
+    assert.equal(
+      evaluateGate(job.if, { event: { action: 'synchronize' } }, {}, cancelled),
+      true
+    )
+  }
+  for (const admitted of ['false', 'true']) {
+    const context = { event: { action: 'labeled' } }
+    const needs = {
+      'priority-route': { outputs: { run_label_event: admitted } },
+    }
+    assert.equal(evaluateGate(job.if, context, needs), admitted === 'true')
+    assert.equal(
+      evaluateGate(job.name, context, needs) === required,
+      admitted === 'true'
+    )
+  }
+}
+
+const PRIORITY_CONSUMERS = {
+  'check.yml': ['check-suite'],
+  'check-gitleaks.yml': ['check-gitleaks'],
+  'test-unit.yml': ['test-unit'],
+  'test-graphql.yml': ['test-graphql'],
+  'test-olat-api.yml': ['test-olat-api'],
+  'test-intl-production.yml': ['intl-production-smoke'],
+  'v3_images-stg.yml': [
+    'build',
+    'build-migrator',
+    'build-after-migrator',
+    'build-amd',
+  ],
+}
+
+function priorityContext(action = 'labeled') {
+  return {
+    workflow: 'synthetic workflow',
+    run_id: 200,
+    run_attempt: 1,
+    event_name: 'pull_request',
+    event: {
+      action,
+      label: { name: 'ci:priority' },
+      repository: { private: false },
+      pull_request: {
+        number: 42,
+        state: 'open',
+        draft: false,
+        user: { login: 'synthetic-contributor', type: 'User' },
+        labels: [{ name: 'ci:priority' }],
+        head: { sha: 'a'.repeat(40), repo: { full_name: 'synthetic/project' } },
+        base: { sha: 'b'.repeat(40) },
+      },
+    },
+    repository: 'synthetic/project',
+  }
+}
+
+test('every label-only event is noncancelling and isolated from ordinary validation', () => {
+  for (const file of Object.keys(PRIORITY_CONSUMERS)) {
+    const workflow = readWorkflow(file)
+    const vars = { PRIORITY_CI_ENABLED: 'true' }
+    const context = priorityContext()
+    const ordinary = priorityContext('synchronize')
+    ordinary.event.pull_request.labels = []
+    const ordinaryGroup = evaluateGate(
+      workflow.concurrency.group,
+      ordinary,
+      {},
+      false,
+      vars
+    )
+    for (const [change, settings] of [
+      [() => {}, vars],
+      [() => {}, { PRIORITY_CI_ENABLED: 'false' }],
+      [
+        (c) => {
+          c.event.pull_request.draft = true
+        },
+        vars,
+      ],
+      [
+        (c) => {
+          c.event.pull_request.head.repo.full_name = 'synthetic/fork'
+        },
+        vars,
+      ],
+      [
+        (c) => {
+          c.event.pull_request.user.type = 'Bot'
+        },
+        vars,
+      ],
+      [
+        (c) => {
+          c.event.label.name = 'unrelated'
+        },
+        vars,
+      ],
+    ]) {
+      const candidate = structuredClone(context)
+      change(candidate)
+      assert.equal(
+        evaluateGate(
+          workflow.concurrency['cancel-in-progress'],
+          candidate,
+          {},
+          false,
+          settings
+        ),
+        false,
+        file
+      )
+      assert.notEqual(
+        evaluateGate(
+          workflow.concurrency.group,
+          candidate,
+          {},
+          false,
+          settings
+        ),
+        ordinaryGroup,
+        file
+      )
+    }
+    const labeled = evaluateGate(
+      workflow.concurrency.group,
+      context,
+      {},
+      false,
+      vars
+    )
+    assert.equal(
+      labeled,
+      evaluateGate(
+        workflow.concurrency.group,
+        priorityContext('synchronize'),
+        {},
+        false,
+        vars
+      ),
+      file
+    )
+    assert.equal(
+      evaluateGate(
+        workflow.concurrency['cancel-in-progress'],
+        ordinary,
+        {},
+        false,
+        vars
+      ),
+      true,
+      file
+    )
+  }
+})
+
+test('priority consumers reject stale paid attempts and preserve ordinary hosted routing', () => {
+  const { ordinary } = require('../actions/priority-ci-route/route.cjs')
+  for (const [file, consumers] of Object.entries(PRIORITY_CONSUMERS)) {
+    const workflow = readWorkflow(file)
+    for (const id of consumers) {
+      const job = readWorkflow(file.replace('.yml', '-execution.yml')).jobs[id]
+      const context = priorityContext('synchronize')
+      const outputs = {
+        admitted: 'true',
+        run_attempt: '1',
+        run_label_event: 'true',
+      }
+      const needs = {
+        'priority-route': { outputs },
+        select: { outputs: { should_run: 'true' } },
+        filter: { outputs: { should_run: 'true' } },
+        plan: {
+          outputs: {
+            build: 'true',
+            'migrator-build': 'true',
+            'after-migrator-build': 'true',
+            'amd-build': 'true',
+          },
+        },
+        'build-migrator': { result: 'success' },
+      }
+      if (id === 'check-gitleaks') {
+        outputs.runner_x64 = 'warp-ubuntu-2404-x64-4x'
+        context.run_attempt = 2
+        assert.equal(
+          evaluateGate(job['runs-on'], context, needs),
+          'ubuntu-latest'
+        )
+        assert.equal(evaluateGate(job.steps[0].if, context, needs), true)
+      } else {
+        assert.equal(
+          evaluateGate(job.if, context, needs),
+          true,
+          `${file}/${id}`
+        )
+        context.run_attempt = 2
+        assert.equal(
+          evaluateGate(job.if, context, needs),
+          false,
+          `${file}/${id} stale attempt`
+        )
+        outputs.admitted = 'false'
+        assert.equal(
+          evaluateGate(job.if, context, needs),
+          true,
+          `${file}/${id} hosted fallback`
+        )
+      }
+      Object.assign(outputs, ordinary())
+      context.run_attempt = 1
+      const hosted =
+        id === 'intl-production-smoke'
+          ? 'ubuntu-24.04'
+          : file === 'v3_images-stg.yml' && id !== 'build-amd'
+            ? 'ubuntu-24.04-arm'
+            : 'ubuntu-latest'
+      assert.equal(
+        evaluateGate(job['runs-on'], context, needs),
+        hosted,
+        `${file}/${id} preserves its hosted selector after denial`
+      )
+      assert.equal(job.strategy?.['max-parallel'], undefined)
+      assert.ok(
+        Array.isArray(job.needs)
+          ? job.needs.includes('priority-route')
+          : job.needs === 'priority-route'
+      )
+    }
+    const route = workflow.jobs['priority-route']
+    assert.equal(
+      evaluateGate(route.if, priorityContext(), {}, false, {}),
+      false,
+      'disabled skips unpublished action'
+    )
+    assert.equal(route.steps[0].with.ref, 'v3')
+    assert.equal(route.steps[0].with['persist-credentials'], false)
+    assert.equal(
+      route.steps[1].uses,
+      './.ci-priority/.github/actions/priority-ci-route'
+    )
+  }
+})
 
 test('paid jobs and legacy required coverage reject stale preparation on rerun', () => {
   const workflow = readWorkflow('public-pr-playwright-shards.yml')
@@ -255,7 +530,7 @@ test('terminal reporters run unconditionally so a skip cannot read as acceptable
   // GitHub can count a skipped required check as acceptable, so these jobs must
   // run even when a dependency failed or was cancelled and let the reporter body
   // decide: the shared helper fails on a cancelled dependency.
-  assert.equal(graphql.jobs['test-graphql-status'].if, 'always()')
+  assertReporter(graphql.jobs['test-graphql-status'], 'test-graphql-status')
   assert.doesNotMatch(graphql.jobs['test-graphql-status'].if, /!cancelled\(\)/)
   assert.doesNotMatch(
     graphql.jobs['test-graphql-status'].if,
@@ -415,6 +690,7 @@ test('graphql validation re-runs neither on edits nor at the ready boundary', ()
     'opened',
     'synchronize',
     'reopened',
+    'labeled',
   ])
 })
 
@@ -525,7 +801,11 @@ test('the producer-hosted analysis runs for a same-repository pull request only'
     assert.ok(job, name + ' must analyze the coverage it just produced')
     assert.equal(job.uses, './.github/workflows/sonar-analysis.yml', name)
     const reporter = suite + '-status'
-    assert.deepEqual(job.needs, ['filter', suite, reporter], name)
+    assert.deepEqual(
+      job.needs,
+      ['filter', suite, reporter, 'priority-route'],
+      name
+    )
     assert.ok(!workflow.jobs[reporter].needs.includes('sonarcloud'))
 
     // A draft is admitted here and deferred inside the analysis, because the
@@ -664,8 +944,11 @@ test('no workflow holds a runner while it waits for a coverage producer', () => 
 // requests are untrusted, so it restores a read-only Actions cache instead and
 // no public run may hold a credential that can write the shared cache.
 const TURBO_REMOTE_CACHE_CONSUMERS = [
+  'check-execution.yml',
   'check.yml',
+  'test-graphql-execution.yml',
   'test-graphql.yml',
+  'test-unit-execution.yml',
   'test-unit.yml',
 ]
 
@@ -762,9 +1045,17 @@ test('closed-pr sweeper covers every per-PR workflow concurrency group', () => {
     }
 
     const name = workflow.name ?? entry
-    const prefix = group.startsWith('${{ github.workflow }}-')
-      ? name
-      : group.slice(0, group.indexOf('-${{'))
+    const context = {
+      workflow: name,
+      run_id: 101,
+      event_name: 'pull_request',
+      event: { action: 'synchronize', pull_request: { number: 42 } },
+    }
+    const resolved = group.replace(/\$\{\{([\s\S]*?)\}\}/g, (_, expression) =>
+      evaluateGate(expression, context, {}, false, {})
+    )
+    if (!resolved.endsWith('-42')) continue
+    const prefix = resolved.replace(/-42$/, '')
     targets.set(entry, { name, prefix })
   }
 
@@ -811,11 +1102,13 @@ const REQUIRED_STATUS_REPORTERS = new Map([
 test('summary reporters always report and never suppress a required check', () => {
   for (const [name, [status, filter, suite]] of REQUIRED_STATUS_REPORTERS) {
     const workflow = readWorkflow(name)
-    const job = workflow.jobs[status]
+    const job = readWorkflow(name.replace('.yml', '-execution.yml')).jobs[
+      status
+    ]
     assert.ok(job, name + ' must define ' + status)
     // Unconditional: a skipped required context can count as acceptable, so the
     // job must run and let the reporter fail cancellation itself.
-    assert.equal(job.if, 'always()', name)
+    assertReporter(job, status)
     assert.doesNotMatch(job.if, /cancelled/, name)
     assert.ok(job.needs.includes(filter), name)
     assert.ok(job.needs.includes(suite), name)
@@ -832,7 +1125,10 @@ test('summary reporters always report and never suppress a required check', () =
       name + ' must not re-run on the ready transition'
     )
     assert.doesNotMatch(
-      String(workflow.jobs[suite].if ?? ''),
+      String(
+        readWorkflow(name.replace('.yml', '-execution.yml')).jobs[suite].if ??
+          ''
+      ),
       /pull_request\.draft/,
       name + ' suite must not gate on the draft state'
     )
@@ -860,8 +1156,8 @@ test('the codebase check reuses prior validation without suppressing its context
   const workflow = readWorkflow('check.yml')
   const terminal = workflow.jobs.check
   assert.ok(terminal, 'check.yml must define the required check job')
-  assert.equal(terminal.if, 'always()')
-  assert.deepEqual(terminal.needs, ['select', 'check-suite'])
+  assertReporter(terminal, 'check')
+  assert.deepEqual(terminal.needs, ['select', 'check-suite', 'priority-route'])
   assert.ok(
     terminal.steps.some(
       (step) =>
@@ -1107,4 +1403,186 @@ test('OCR engine qualification only runs for related paths or an unproven diff',
       )
     }
   }
+})
+
+test('trusted priority envelopes are exact acyclic derivatives and required wrappers reject missing results', () => {
+  const { generate, TERMINALS } = require('./priority-ci-workflows.cjs')
+  generate(root)
+  for (const [file, terminal] of Object.entries(TERMINALS)) {
+    const caller = readWorkflow(file)
+    const child = readWorkflow(file.replace('.yml', '-execution.yml'))
+    assert.deepEqual(Object.keys(child.on), ['workflow_call'])
+    assert.equal(child.concurrency, undefined)
+    assert.equal(child.jobs['priority-execution'], undefined)
+    assert.equal(child.jobs['priority-status'], undefined)
+    assert.match(
+      caller.jobs['priority-execution'].uses,
+      new RegExp(
+        `^uzh-bf/klicker-uzh/\\.github/workflows/${file.replace('.yml', '-execution\\.yml')}@[a-f0-9]{40}$`
+      )
+    )
+    const report = caller.jobs['priority-status']
+    assert.match(report.if, /always\(\)/)
+    const step = report.steps[0]
+    assert.equal(
+      evaluateGate(
+        step.if,
+        { event: { action: 'labeled' } },
+        { 'priority-execution': { outputs: { run_label_event: 'false' } } }
+      ),
+      false
+    )
+    assert.equal(
+      evaluateGate(step.if, { event: { action: 'synchronize' } }, {}),
+      true
+    )
+    assert.equal(
+      step.env.EXECUTION_RESULT,
+      '${{ needs.priority-execution.result }}'
+    )
+    assert.equal(
+      step.env.REQUIRED_RESULT,
+      '${{ needs.priority-execution.outputs.required_result }}'
+    )
+    assert.equal(
+      step.run,
+      'test "$EXECUTION_RESULT" = success && test "$REQUIRED_RESULT" = success'
+    )
+    const producer = child.jobs[terminal]
+    assert.equal(producer.steps.at(-1).if, 'always()')
+    assert.equal(producer.steps.at(-1).env.TERMINAL_RESULT, '${{ job.status }}')
+    assert.equal(
+      child.on.workflow_call.outputs.required_result.value,
+      '${{ jobs.' + terminal + '.outputs.required_result }}'
+    )
+  }
+})
+
+test('executor generation rejects missing or remapped admission outputs', () => {
+  const { execution } = require('./priority-ci-workflows.cjs')
+  const source = readWorkflow('check.yml')
+  assert.doesNotThrow(() => execution(YAML.stringify(source), 'check'))
+  for (const output of [
+    'admitted',
+    'run_label_event',
+    'run_attempt',
+    'job_timeout',
+    'runner_x64',
+    'runner_build',
+    'runner_arm',
+  ]) {
+    for (const value of [undefined, '${{ steps.other.outputs.result }}']) {
+      const changed = structuredClone(source)
+      if (value === undefined)
+        delete changed.jobs['priority-route'].outputs[output]
+      else changed.jobs['priority-route'].outputs[output] = value
+      assert.throws(
+        () => execution(YAML.stringify(changed), 'check'),
+        /canonical priority-route must map its .* output/
+      )
+    }
+  }
+})
+
+test('regenerated executors cannot hide stale or mutable published execution refs', (t) => {
+  const { generate, TERMINALS } = require('./priority-ci-workflows.cjs')
+  const fixture = fs.mkdtempSync(path.join(os.tmpdir(), 'priority-parity-'))
+  t.after(() => fs.rmSync(fixture, { recursive: true, force: true }))
+  const directory = path.join(fixture, '.github/workflows')
+  fs.mkdirSync(directory, { recursive: true })
+  const pinned = new Map()
+  for (const file of Object.keys(TERMINALS)) {
+    for (const name of [file, file.replace('.yml', '-execution.yml')]) {
+      const source = fs.readFileSync(
+        path.join(root, '.github/workflows', name),
+        'utf8'
+      )
+      fs.writeFileSync(path.join(directory, name), source)
+      if (name.endsWith('-execution.yml')) pinned.set(name, source)
+    }
+  }
+  const readPinned = (_root, _ref, file) => pinned.get(file)
+  assert.doesNotThrow(() => generate(fixture, false, readPinned))
+
+  const file = path.join(directory, 'test-unit.yml')
+  const workflow = YAML.parse(fs.readFileSync(file, 'utf8'))
+  workflow.jobs['test-unit-status'].steps.push({ run: 'exit 1' })
+  fs.writeFileSync(file, YAML.stringify(workflow))
+  generate(fixture, true)
+  assert.throws(
+    () => generate(fixture, false, readPinned),
+    /pinned priority workflow differs: test-unit.yml/
+  )
+
+  workflow.jobs['priority-execution'].uses =
+    'uzh-bf/klicker-uzh/.github/workflows/test-unit-execution.yml@v3'
+  fs.writeFileSync(file, YAML.stringify(workflow))
+  generate(fixture, true)
+  assert.throws(
+    () => generate(fixture, false, readPinned),
+    /priority workflow requires an exact executor SHA: test-unit.yml/
+  )
+})
+
+test('every discovered priority compute consumer honors the canary duration and existing defaults', () => {
+  const files = Object.keys(PRIORITY_CONSUMERS)
+  for (const file of files) {
+    for (const name of [file, file.replace('.yml', '-execution.yml')]) {
+      const workflow = readWorkflow(name)
+      const consumers = Object.entries(workflow.jobs).filter(([, job]) =>
+        JSON.stringify(job['runs-on'] ?? '').includes(
+          'priority-route.outputs.runner'
+        )
+      )
+      assert.ok(consumers.length > 0, name)
+      for (const [id, job] of consumers) {
+        const paidDefault =
+          file === 'check-gitleaks.yml'
+            ? 15
+            : file === 'test-intl-production.yml'
+              ? 30
+              : 60
+        const hostedDefault = file === 'test-intl-production.yml' ? 30 : 360
+        for (const job_timeout of ['', '1', '7', '15']) {
+          for (const admitted of ['true', 'false']) {
+            const actual = evaluateGate(
+              job['timeout-minutes'],
+              priorityContext(),
+              {
+                'priority-route': { outputs: { admitted, job_timeout } },
+              }
+            )
+            const expected =
+              admitted === 'true'
+                ? job_timeout
+                  ? Number(job_timeout)
+                  : paidDefault
+                : hostedDefault
+            assert.equal(actual, expected, name + '/' + id)
+            assert.ok(
+              actual <= (admitted === 'true' ? paidDefault : hostedDefault)
+            )
+          }
+        }
+      }
+      assert.equal(
+        workflow.jobs['priority-route'].outputs.job_timeout,
+        '${{ steps.route.outputs.job_timeout }}'
+      )
+    }
+  }
+  const action = YAML.parse(
+    fs.readFileSync(
+      path.join(root, '.github/actions/priority-ci-route/action.yml'),
+      'utf8'
+    )
+  )
+  assert.equal(
+    action.runs.steps[0].env.PRIORITY_CANARY_JOB_TIMEOUT_MINUTES,
+    '${{ vars.PRIORITY_CI_CANARY_JOB_TIMEOUT_MINUTES }}'
+  )
+  assert.equal(
+    action.outputs.job_timeout.value,
+    '${{ steps.route.outputs.job_timeout }}'
+  )
 })
