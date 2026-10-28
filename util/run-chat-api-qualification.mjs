@@ -583,7 +583,7 @@ async function browserQualification(setup, generation) {
     const authenticated = browser(
       'eval',
       `(async () => {
-        const response = await fetch(${JSON.stringify(`${setup.backendOrigin}/graphql`)}, {
+        const response = await fetch(${JSON.stringify(`${setup.backendOrigin}/api/graphql`)}, {
           method: 'POST', credentials: 'include',
           headers: { 'content-type': 'application/json', 'x-graphql-yoga-csrf': 'true' },
           body: JSON.stringify({
@@ -644,9 +644,6 @@ async function browserQualification(setup, generation) {
     next = await control('stats')
     assert.equal(next.codeApiCalls, previous.codeApiCalls + 2)
     completed.push('browser-recovery')
-    browser('screenshot', join(directory, 'browser-desktop.png'))
-    browser('set', 'viewport', '390', '844')
-    browser('screenshot', join(directory, 'browser-mobile.png'))
     await control('disable')
     previous = await control('stats')
     send('Answer without Python when the feature is disabled.')
