@@ -15,22 +15,21 @@ Reuse the current source eligibility, Markdown rendering, owner authorization,
 Hatchet worker, and account BASE usage. There is no second GT dataset, report
 history, locale field, new evaluation framework, or automatic candidate generation.
 
-The user approved this planning refresh and updating capture PR #5764 on
-28 October 2026. **Approval mode: direction-only for report implementation.**
-This turn delivers the reviewed plan and the verified target update to that PR.
-A later execution approval would cover source, synthetic tests, reviews, ordinary
-pushes and a draft report PR into fresh `v3-ai`. It would stop at source readiness;
-merge, deployment, secret provisioning, paid model calls and live proof remain
-separate. Costs and timing for a real run are not yet measured. The initial
+The user approved implementation on 28 October 2026 after
+[capture PR #5764](https://github.com/uzh-bf/klicker-uzh/pull/5764) merged.
+**Approval mode: executable batch.** Source, synthetic tests, configured reviews,
+ordinary pushes and a draft report PR into `v3-ai` are authorized. The batch stops
+at source readiness; merge, deployment, secret provisioning, paid model calls
+and live proof remain separate. Costs and timing for a real run are not yet measured. The initial
 implementation proves a single synthetic case before building the complete report.
 
 ## Execution details
 
 ### Current evidence and primitive impact
 
-Baseline: capture PR #5764 at `e9d12df867`, with target refresh to
-`v3-ai@8df0efb23281b6b33c5eaafda90ad864c97ca774`. Foundation, lecturer review
-and runtime skill are already merged. Capture remains a separate open PR.
+Execution baseline: `v3-ai@d786ffbe2b2e5750bdd5c5de7c9da871cbe80580`,
+including merged [capture PR #5764](https://github.com/uzh-bf/klicker-uzh/pull/5764).
+Foundation, lecturer review, runtime skill and preview capture are merged.
 Browser capture tests use mocked transport; they do not establish live lineage.
 
 | Product primitive | Disposition | Contract |
@@ -153,7 +152,7 @@ incomplete on read using its deadline, without redispatching paid calls.
 
 ### Delivery sequence, owners and acceptance
 
-Execution mode: standard. Main owns isolation, accounting, cross-process authority,
+Main owns isolation, accounting, cross-process authority,
 integration and final proof. A bounded implementation worker may own the Manage
 report after the API is fixed; a second owner may implement the settled persistence
 subset. One writer per path set. No other KB/ingestion work is assigned here.
@@ -165,9 +164,24 @@ subset. One writer per path set. No other KB/ingestion work is assigned here.
 | Lecturer report | Existing ChatbotResponseExampleReview / ChatbotDetails, existing rich-text/Markdown/source components and EN/DE i18n | Start, progress, actual/ideal sources, incomplete, stale and replacement journeys pass browser checks; desktop/mobile synthetic screenshots reviewed. |
 | Source finish | Applicable domain/ADR guidance and report package plan | Simplification, risk review, integrated final review and exact-head CI; draft PR into `v3-ai`; exact task runtime stopped. |
 
-Add only the server-only shared execution helper, scoped job transport and report
-component that their second callers require. Name their exact paths in the derived
-execution plan before editing. Extend existing services and tests by default.
+Extend this plan in place. The first coherent component uses these new paths:
+`apps/chat/src/lib/server/ownerPreviewExecution.ts` for shared request assembly,
+`apps/chat/src/lib/server/responseExampleBaseline.ts` for target-before-judge
+execution, `packages/util/src/responseExampleBaseline.ts` for scoped worker-token
+signing and verification, and
+`apps/chat/src/app/api/internal/response-example-baseline/route.ts` for the internal
+job boundary. Extend `packages/util/src/auth.ts` instead of creating a token module
+if its export conventions support the shared contract. Name exact report,
+accounting and UI paths after the one-case proof settles those contracts and before
+editing them. The independent source-mapping owner investigates only accounting
+bounds and reuse; main retains decisions, writes and verification.
+
+The synthetic prototype lives under ignored `project/_local/prototypes/` and
+observes the existing excluded skill and signed worker claims with fake model
+transport. It creates no schema or durable service and makes no provider calls.
+It must prove no example content is read, request/claim ownership and expiry are
+checked, target completes before judge input is opened, and failure closes tools.
+Promote only the evidence after this question is settled. Extend existing services and tests by default.
 If proving the seam requires a new service, framework, participant persistence,
 broad provider routing or a different accounting policy, stop at that decision.
 
@@ -189,17 +203,29 @@ or provider activation work is included here.
 
 Recover source with an ordinary revert; preserve recorded usage and uncertain
 operations. No live data migration, account-budget change, new allowance, reset,
-merge or deployment is authorized by this plan refresh.
+merge or deployment is authorized by this source batch.
 
 ## Progress
 
-The planning refresh is independently reviewed. The source mapping confirmed the
-excluded projection and existing worker registration, and identified the missing
-shared execution and participant-free accounting seams. Report implementation
-has not started. Native Sol's first critique identified three accepted
-clarifications: fixed BASE routing is an explicit preview-parity exception,
-credit reservation needs enforced
-input and output bounds, and durable settlement proof follows the generated
-accounting migration. The same native Sol reviewer approved the corrected
-draft with no remaining blockers. This is independent plan critique, not implementation approval.
-Capture-PR target verification and publication are in progress.
+- Root outcome: lecturers compare base-model answers with their current approved
+  examples while target execution cannot read those examples.
+- Authorized terminal: tested and independently reviewed source in a draft PR
+  into `v3-ai`, with the exact task runtime stopped. Real calls and activation are
+  separate.
+- Approval reference: the human's "approved" immediately after the proposal to
+  implement the baseline report, tests, reviews and draft PR on 28 October 2026.
+- Existing independent critique: native Sol approved the direction plan after
+  clarifying fixed BASE routing, enforced input/output credit bounds and
+  migration-before-durable-settlement proof. That unchanged design critique is
+  reused. This planning approval is separate from the human execution approval.
+- Task branch: `feat/chatbot-baseline-report`; worktree
+  `/Users/rschlae/Git/klicker/klicker-uzh/trees/chatbot-baseline-report`.
+  Baseline `d786ffbe2b`; tracking `origin/v3-ai` until first task-branch publication.
+- First useful acceptance: one synthetic target/judge execution observes isolation,
+  signed worker authority, ordering and cleanup before schema/UI expansion.
+- Current work: restore the approved plan to executable status, map enforceable
+  accounting bounds and run the one-case prototype. No paid call or schema change.
+- Consumer blockers: shared execution and participant-free reservation/settlement
+  are unimplemented. If enforcing bounds needs a different accounting policy,
+  deny dispatch and return that exact decision before expanding the design.
+- Verification, implementation review, draft PR and source finish remain pending.
