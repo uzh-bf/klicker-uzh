@@ -5,19 +5,15 @@ const prismaRoot = fileURLToPath(
   new URL('../../packages/prisma/', import.meta.url)
 )
 const operations = {
-  bootstrap: [
-    ['database-bootstrap', ['exec', 'tsx', 'scripts/previewBootstrap.ts']],
-  ],
+  bootstrap: [['database-bootstrap', ['scripts/previewBootstrap.js']]],
   fixtures: [
+    ['schema-migrations', ['scripts/disposable-prisma.js', 'deploy']],
+    ['synthetic-fixtures', ['../prisma-data/src/data/seedTEST.js']],
     [
-      'schema-migrations',
-      ['exec', 'tsx', 'scripts/disposable-prisma.ts', 'deploy'],
+      'synthetic-assessment-fixtures',
+      ['../prisma-data/src/data/seedAssessmentCourse.js'],
     ],
-    ['synthetic-fixtures', ['run', 'prisma:seed:raw']],
-    [
-      'fixture-bindings',
-      ['exec', 'tsx', '../../deploy/preview/configure-fixtures.mjs'],
-    ],
+    ['fixture-bindings', ['../../deploy/preview/configure-fixtures.mjs']],
   ],
 }
 
@@ -35,8 +31,9 @@ for (const [phase, args] of operations[operation]) {
     process.exit(1)
   }
   // Database tools inherit runtime credentials; their raw output can contain them.
-  const result = spawnSync('pnpm', args, {
+  const result = spawnSync(process.execPath, args, {
     cwd: prismaRoot,
+    env: { ...process.env, ENV: 'development' },
     timeout: remaining,
     stdio: 'ignore',
   })

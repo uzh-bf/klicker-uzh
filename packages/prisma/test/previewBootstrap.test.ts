@@ -1,6 +1,12 @@
 import assert from 'node:assert/strict'
 import { spawnSync } from 'node:child_process'
-import { mkdtempSync, rmSync, writeFileSync } from 'node:fs'
+import {
+  copyFileSync,
+  mkdirSync,
+  mkdtempSync,
+  rmSync,
+  writeFileSync,
+} from 'node:fs'
 import { tmpdir } from 'node:os'
 import path from 'node:path'
 import test from 'node:test'
@@ -52,13 +58,18 @@ test('reports bootstrap refusal through the CLI without disclosing credentials',
 test('forwards only recognized bootstrap failure codes and suppresses raw tool output', () => {
   const folder = mkdtempSync(path.join(tmpdir(), 'preview-bootstrap-'))
   try {
+    mkdirSync(path.join(folder, 'packages/prisma/scripts'), { recursive: true })
+    mkdirSync(path.join(folder, 'deploy/preview'), { recursive: true })
     writeFileSync(
-      path.join(folder, 'pnpm'),
-      `#!${process.execPath}\nconsole.log('synthetic-secret'); console.error('synthetic-secret'); process.exit(Number(process.env.KLICKER_TEST_BOOTSTRAP_EXIT))\n`,
-      { mode: 0o700 }
+      path.join(folder, 'packages/prisma/scripts/previewBootstrap.js'),
+      "console.log('synthetic-secret'); console.error('synthetic-secret'); process.exit(Number(process.env.KLICKER_TEST_BOOTSTRAP_EXIT))\n"
     )
-    const runner = fileURLToPath(
-      new URL('../../../deploy/preview/bootstrap.mjs', import.meta.url)
+    const runner = path.join(folder, 'deploy/preview/bootstrap.mjs')
+    copyFileSync(
+      fileURLToPath(
+        new URL('../../../deploy/preview/bootstrap.mjs', import.meta.url)
+      ),
+      runner
     )
     for (const code of [2, 3, 4, 5, 19]) {
       const result = spawnSync(process.execPath, [runner, 'bootstrap'], {
@@ -66,7 +77,6 @@ test('forwards only recognized bootstrap failure codes and suppresses raw tool o
         timeout: 10_000,
         env: {
           ...process.env,
-          PATH: `${folder}${path.delimiter}${process.env.PATH}`,
           KLICKER_TEST_BOOTSTRAP_EXIT: String(code),
         },
       })

@@ -752,6 +752,7 @@ jobs:
   # ready_for_review on the unchanged head, restores the deferred builds, and
   # this required context recomputes against them.
   build-images-status:
+    name: ${{ github.event_name == 'workflow_dispatch' && 'preview-build-images-status' || 'build-images-status' }}
     needs:
       - plan
       - build

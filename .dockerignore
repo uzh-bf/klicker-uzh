@@ -18,6 +18,7 @@ deploy/preview/*
 !deploy/preview/Dockerfile.litellm
 !deploy/preview/Dockerfile.azurite
 !deploy/preview/bootstrap.mjs
+!deploy/preview/prepare-fixtures.mjs
 !deploy/preview/runtime.mjs
 !deploy/preview/configure-fixtures.mjs
 !deploy/preview/mcp-fixture.json

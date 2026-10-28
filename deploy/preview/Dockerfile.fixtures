@@ -1,7 +1,7 @@
 # Reusable tooling image for synthetic Prisma migration/fixture jobs and the
 # existing Chat local MCP harness. Runtime commands and credentials belong to
 # the Native Job; this image performs no database mutation on its own.
-FROM docker.io/library/node:24.21.0-alpine
+FROM docker.io/library/node:24.21.0-alpine AS builder
 
 # Match the repository's patched Alpine/npm baseline. Prisma's musl engines
 # also require libc6-compat and OpenSSL.
@@ -16,9 +16,8 @@ WORKDIR /app
 RUN npm install --global --ignore-scripts pnpm@12.11.2 \
  && node "$(npm root -g)/pnpm/install.js"
 
-# Keep the complete workspace so runtime jobs retain the fixture sources,
-# Prisma tooling, Chat MCP script, and their development dependencies. The root
-# .dockerignore excludes project/ account and artifact context.
+# Build from the workspace; only traced runtime files reach the final stage.
+# The root .dockerignore excludes project/ account and artifact context.
 COPY . .
 
 RUN pnpm install --frozen-lockfile --ignore-scripts
@@ -28,17 +27,29 @@ RUN pnpm install --frozen-lockfile --ignore-scripts
 RUN DATABASE_URL="postgresql://fixtures@127.0.0.1:5432/fixtures" \
     pnpm run build --filter="@klicker-uzh/prisma-data..."
 
+RUN node deploy/preview/prepare-fixtures.mjs /runtime
+
+FROM docker.io/library/node:24.21.0-alpine
+
+RUN apk upgrade --no-cache \
+ && apk add --no-cache libc6-compat openssl \
+ && rm -rf /usr/local/lib/node_modules/npm /usr/local/bin/npm /usr/local/bin/npx
+
+COPY --from=builder /runtime /app
+
 RUN addgroup --system --gid 1001 fixtures \
  && adduser --system --uid 1001 --ingroup fixtures fixtures \
  && mkdir -p /tmp/fixtures \
- && chown fixtures:fixtures /tmp/fixtures \
-      /app/node_modules/.pnpm-workspace-state-v1.json
+ && chown fixtures:fixtures /tmp/fixtures
 
 ENV HOME=/tmp/fixtures \
     TMPDIR=/tmp/fixtures
 
 WORKDIR /tmp/fixtures
 USER fixtures
+
+RUN node /app/packages/prisma/node_modules/prisma/build/index.js --version \
+ && node --input-type=module -e "await import('/app/deploy/preview/configure-fixtures.mjs'); await import('/app/apps/chat/scripts/local-mcp-auth.mjs')"
 
 EXPOSE 1417
 

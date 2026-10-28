@@ -570,6 +570,36 @@ test('a completed preview with empty evidence is rejected', async () => {
   )
 })
 
+test('a newer skipped preview status does not shadow the required build status', async () => {
+  const sourceChecks = [
+    ...checks(REQUIRED_CONTEXTS),
+    {
+      id: 9999,
+      name: 'preview-build-images-status',
+      head_sha: revision,
+      app: { slug: 'github-actions' },
+      status: 'completed',
+      conclusion: 'skipped',
+      started_at: '2026-10-28T10:01:00Z',
+    },
+  ]
+  const fixture = transportFor({ runs: [], sourceChecks })
+  const result = await adapterFor(fixture).execute(
+    JSON.stringify(
+      request({
+        request: {
+          revision,
+          platform: 'linux/amd64',
+          targets: [{ target: 'fixtures', configuration: {} }],
+        },
+        missing: [],
+      })
+    )
+  )
+
+  assert.deepEqual(result, { receipts: [], pending: false })
+})
+
 test('a newer queued source check blocks an older completed success', async () => {
   const sourceChecks = [
     ...checks(REQUIRED_CONTEXTS),

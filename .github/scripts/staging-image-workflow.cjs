@@ -35,6 +35,8 @@
 
 const STAGING_WORKFLOW_NAME = 'Build staging images'
 const STAGING_STATUS_JOB_ID = 'build-images-status'
+const PREVIEW_EVENT_STATUS_JOB_NAME =
+  "${{ github.event_name == 'workflow_dispatch' && 'preview-build-images-status' || 'build-images-status' }}"
 const STAGING_PLAN_JOB_ID = 'plan'
 const STAGING_SCAN_JOB_ID = 'scan'
 const STAGING_AMD_JOB_ID = 'build-amd'
@@ -492,12 +494,39 @@ function validateScanJob(block, path, jobId) {
 }
 
 function validateStatusJob(block, path, jobId) {
+  const reportsOutsideDispatch =
+    /^[ ]{4}if:[ ]*always[(][)][ ]*&&[ ]*github[.]event_name[ ]*!=[ ]*'workflow_dispatch'[ ]*$/m.test(
+      block
+    )
   if (
     !/^[ ]{4}if:[ ]*always[(][)](?:[ ]*&&[ ]*github[.]event_name[ ]*!=[ ]*'workflow_dispatch')?[ ]*$/m.test(
       block
     )
   ) {
     fail(path, jobId, 'must report for every outcome')
+  }
+  // The job id supplies the required build-images-status context when name is
+  // absent. Historical workflows may also spell that name out. A preview
+  // dispatch must keep its skipped check under a distinct display name so it
+  // cannot shadow a successful build status at the same source revision.
+  const statusName = /^[ ]{4}name:[ ]*(.+?)[ ]*$/m.exec(block)?.[1]
+  if (
+    statusName !== undefined &&
+    statusName !== STAGING_STATUS_JOB_ID &&
+    statusName !== PREVIEW_EVENT_STATUS_JOB_NAME
+  ) {
+    fail(
+      path,
+      jobId,
+      'does not retain the required build-images-status context name'
+    )
+  }
+  if (statusName === PREVIEW_EVENT_STATUS_JOB_NAME && !reportsOutsideDispatch) {
+    fail(
+      path,
+      jobId,
+      'uses the preview status name without excluding workflow_dispatch'
+    )
   }
   const declared = new Set(jobNeeds(block))
   for (const required of STAGING_REQUIRED_JOB_IDS) {

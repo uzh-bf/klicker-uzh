@@ -62,6 +62,14 @@ these two operations and bounds the complete operation to eight minutes. It
 reports phases while suppressing raw child output that could contain runtime
 credentials. The existing database identity and dry-run guards still apply.
 
+The helper image compiles its TypeScript entrypoints and copies their traced
+runtime files into a separate final stage. That stage retains the Prisma CLI,
+schema and migrations, generated client, synthetic seeds, transactional HTML
+and MCP harness. It runs Node directly and contains no pnpm, npm, tsx or esbuild.
+The full workspace and build dependencies remain in the builder. Tracing is
+packaging evidence; the resulting image still requires its own vulnerability
+scan and isolated bootstrap, seed and MCP acceptance checks.
+
 Bootstrap CLI failures use exit codes `2` (input refusal), `3` (inspection
 refusal before writes), `4` (write failure) and `5` (verification failure).
 The wrapper emits `KLICKER_BOOTSTRAP_FAILURE_<code>` for these failures while

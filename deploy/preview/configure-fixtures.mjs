@@ -241,7 +241,7 @@ async function main() {
     ),
   })
   const { USER_ID_TEST, COURSE_ID_TEST } = await import(
-    '../../packages/prisma-data/src/data/constants.ts'
+    '../../packages/prisma-data/src/data/constants.js'
   )
   const { encrypt, decrypt } = await import(
     pathToFileURL(chatRequire.resolve('@klicker-uzh/util')).href
