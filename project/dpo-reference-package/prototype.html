@@ -1,0 +1,660 @@
+<!doctype html>
+<html lang="de">
+<head>
+<!-- Prototype question: Can explanatory data-processing accordions and a default-open Learning Analytics choice keep the account and assessment screens understandable without changing the agreed choice semantics? Success means the information is available without crowding the initial account form. Backend implementation is deliberately omitted. -->
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>KlickerUZH · DPO-Prüfpaket (2026-09-05)</title>
+<style>
+  :root{
+    --ink:#171717; --muted:#4b5563; --line:#d1d5db; --bg:#e7ebef; --card:#ffffff;
+    --brand:#0033a0; --header:#344256; --brand-ink:#ffffff; --accent:#eef3ff;
+    --warn-bg:#fff7e0; --warn-ink:#92400e; --warn-line:#f0b429;
+    --ok-bg:#f3f4f6; --ok-ink:#374151;
+    --danger:#b91c1c; --focus:#60a5fa; --uzh-red:#e2001a;
+  }
+  *{box-sizing:border-box}
+  body{margin:0;font:14px/1.45 "Source Sans 3","Segoe UI",system-ui,-apple-system,sans-serif;color:var(--ink);background:var(--bg)}
+  a{color:var(--brand)}
+  h1,h2,h3{line-height:1.25;margin:0 0 .5rem}
+  h1{font-size:1.5rem} h2{font-size:1.2rem} h3{font-size:1.02rem}
+  p{margin:.4rem 0 .8rem;max-width:80ch}
+  .small{font-size:.87rem;color:var(--muted)}
+  code{font-family:ui-monospace,SFMono-Regular,Menlo,monospace;font-size:1em;background:#eef1f5;padding:.05em .3em;border-radius:3px}
+
+  /* Klicker shell */
+  .topbar{width:100%;min-height:55px;background:var(--header);color:var(--brand-ink);padding:.55rem 2rem;border-bottom:7px solid var(--uzh-red);display:flex;flex-wrap:wrap;gap:.6rem 1.2rem;align-items:center}
+  .topbar strong{font-size:1.05rem}
+  .topbar .small{color:#dbe7f2}
+  nav.tabs{display:flex;flex-wrap:wrap;gap:.35rem;padding:.7rem 2rem;background:var(--card);border-bottom:1px solid var(--line);position:sticky;top:0;z-index:5}
+  nav.tabs button{font:inherit;font-size:.9rem;padding:.4rem .7rem;border:1px solid var(--line);background:#fff;border-radius:6px;cursor:pointer;color:var(--ink)}
+  nav.tabs button[aria-selected="true"]{background:var(--brand);color:#fff;border-color:var(--brand)}
+  nav.tabs label{margin-left:auto;font-size:.9rem;display:flex;align-items:center;gap:.4rem}
+
+  .view{display:none;padding:1rem 2rem 2rem;max-width:1119px;margin:0 auto}
+  .view.active{display:block}
+  .context{background:#eef6ff;border:1px solid #b6d4f2;border-radius:8px;padding:.7rem 1rem;margin-bottom:1rem;font-size:.9rem}
+  .context strong{color:var(--brand)}
+
+  /* frames */
+  .frame{width:100%;background:var(--card);border:1px solid var(--line);border-radius:9px;padding:0;overflow:hidden;box-shadow:0 2px 7px rgba(15,23,42,.1)}
+  .frame>h1,.frame>h2,.frame>p{padding-left:18px;padding-right:18px}
+  .frame>h1{padding-top:16px}
+  .frame>.setting{margin-left:18px;margin-right:18px}
+  #gateHost .choices-slot{padding:0 18px}
+  .two-col{display:grid;grid-template-columns:1fr 1fr;gap:0}
+  .two-col>div{min-width:0;padding:17px 18px 16px}
+  .two-col>div+div{border-left:1px solid #e2e5e9}
+  .two-col h2{border-bottom:1px solid var(--brand);padding-bottom:6px;margin-bottom:12px}
+  @media (max-width:820px){.two-col{grid-template-columns:1fr}}
+
+  label.field{display:block;margin-bottom:.9rem}
+  label.field span{display:block;font-weight:600;margin-bottom:.25rem}
+  input[type=text],input[type=email],input[type=password]{width:100%;font:inherit;padding:.55rem .65rem;border:1px solid var(--line);border-radius:6px}
+  input:focus-visible,button:focus-visible,summary:focus-visible,a:focus-visible,[tabindex]:focus-visible{outline:3px solid var(--focus);outline-offset:2px}
+
+  /* choice sections */
+  .choice{border:0;border-bottom:1px solid #e5e7eb;margin:0;background:#fff}
+  .regime{font-size:.87rem;letter-spacing:.02em;text-transform:uppercase;font-weight:700;color:var(--muted)}
+  .status{font-size:.85rem;padding:.12rem .55rem;border-radius:999px;background:var(--ok-bg);color:var(--ok-ink);border:1px solid #d5d9e0}
+  .status.missing{background:var(--warn-bg);color:var(--warn-ink);border-color:var(--warn-line)}
+  details summary{cursor:pointer;font-weight:600;color:var(--brand);margin:.2rem 0 .5rem}
+  blockquote.notice{margin:.6rem 0 .8rem;padding:.6rem .9rem;border-left:4px solid #9ca3af;background:#f5f6f8;font-size:.9rem;color:var(--muted)}
+  blockquote.notice .lbl{display:block;font-size:.87rem;text-transform:uppercase;letter-spacing:.02em;margin-bottom:.2rem}
+
+  /* research: collapsed by default, controls inside */
+  details.choice{padding:0}
+  details.choice summary{list-style:none;padding:.9rem 0;margin:0;cursor:pointer;font-weight:400;color:var(--ink)}
+  details.choice summary::-webkit-details-marker{display:none}
+  details.choice .row{display:grid;grid-template-columns:minmax(0,1fr) auto auto;align-items:center;gap:.5rem .8rem}
+  details.choice .ttl{font-weight:700;font-size:1.02rem}
+  details.choice .chev{color:var(--brand);font-weight:600;font-size:.9rem}
+  details.choice .chev::after{content:"+";font-size:1.15rem;font-weight:400}
+  details.choice[open] .chev::after{content:"−"}
+  details.choice .body{padding:0 0 1rem}
+  details.choice .body>p:first-child{margin-top:0}
+
+  /* explanatory data-processing accordions */
+  .info-accordions{border-top:1px solid #e5e7eb;margin-top:.9rem}
+  details.info-accordion{border-bottom:1px solid #e5e7eb}
+  details.info-accordion summary{display:flex;align-items:center;justify-content:space-between;gap:.75rem;list-style:none;margin:0;padding:.72rem 0;color:var(--ink);font-weight:600}
+  details.info-accordion summary::-webkit-details-marker{display:none}
+  details.info-accordion summary::after{content:"+";color:var(--brand);font-size:1.05rem;font-weight:400}
+  details.info-accordion[open] summary::after{content:"−"}
+  details.info-accordion .info-body{padding:0 0 .7rem;color:var(--muted);font-size:.9rem}
+  details.info-accordion .info-body p{margin:.15rem 0 .55rem}
+
+  /* learning analytics: group summaries only */
+  .boundary{font-size:.9rem;color:var(--muted);border-left:3px solid var(--line);padding-left:.7rem;margin:.2rem 0 .4rem}
+
+  /* research: objection control (segmented) */
+  .segmented{display:inline-flex;border:1px solid var(--line);border-radius:8px;overflow:hidden}
+  .segmented button{font:inherit;padding:.5rem .9rem;border:0;background:#fff;cursor:pointer;color:var(--ink);min-height:44px}
+  .segmented button+button{border-left:1px solid var(--line)}
+  .segmented button[aria-pressed="true"]{background:var(--accent);font-weight:700;color:var(--brand)}
+
+  /* learning analytics: two radio cards */
+  .radio-cards{display:grid;grid-template-columns:1fr 1fr;gap:.7rem;margin:.4rem 0}
+  @media (max-width:520px){.radio-cards{grid-template-columns:1fr}}
+  .radio-cards label{display:flex;gap:.6rem;align-items:flex-start;border:1px solid var(--line);border-radius:8px;padding:.7rem .8rem;cursor:pointer;min-height:44px}
+  .radio-cards label:has(input:checked){border-color:var(--brand);background:var(--accent)}
+  .radio-cards input{width:22px;height:22px;margin:.1rem 0 0;flex:none}
+  .radio-cards b{display:block}
+  .radio-cards .small{margin:0}
+
+  /* footer / summary */
+  .footer{min-height:82px;display:grid;grid-template-columns:minmax(0,1fr) auto;align-items:center;gap:.55rem .9rem;border-top:1px solid var(--line);padding:10px 18px 12px;background:#fff}
+  .ack{grid-column:1;display:flex;gap:.7rem;align-items:flex-start;margin:0;color:#991b1b}
+  .ack.accepted{color:#454545}
+  .ack input{width:24px;height:24px;flex:none;margin:.1rem 0 0}
+  .ack input:not(:checked){outline:2px solid #dc2626;outline-offset:1px}
+  .ack span{max-width:80ch}
+  .actions{display:flex;flex-wrap:wrap;gap:.7rem;align-items:center;justify-content:flex-end}
+  .footer .actions{grid-column:2;grid-row:1}
+  .btn{font:inherit;padding:.6rem 1.1rem;border-radius:8px;border:1px solid var(--brand);background:var(--brand);color:#fff;cursor:pointer;min-height:44px}
+  .btn.secondary{background:#fff;color:var(--brand)}
+  .btn[aria-disabled="true"]{opacity:.55;cursor:not-allowed}
+  .btn:disabled{opacity:.55;cursor:not-allowed}
+
+  /* settings */
+  .setting{display:grid;grid-template-columns:1fr auto;gap:1rem;align-items:start;padding:1rem 0;border-top:1px solid var(--line)}
+  .setting:first-of-type{border-top:0}
+  .switch{display:inline-flex;align-items:center;gap:.5rem;font-weight:600;cursor:pointer;min-height:44px}
+  .switch input{width:44px;height:24px;appearance:none;background:#9ca3af;border-radius:999px;position:relative;cursor:pointer;flex:none}
+  .switch input::after{content:"";position:absolute;top:2px;left:2px;width:20px;height:20px;border-radius:50%;background:#fff;transition:left .15s}
+  .switch input:checked{background:var(--brand)}
+  .switch input:checked::after{left:22px}
+  .inline-note{font-size:.9rem;background:#f5f6f8;border:1px solid var(--line);border-radius:6px;padding:.5rem .7rem;margin-top:.5rem;max-width:80ch}
+  .inline-confirm{background:var(--warn-bg);border:1px solid var(--warn-line);color:var(--warn-ink)}
+
+  /* dialogs */
+  .dialog{max-width:760px;margin:0 auto;background:#fff;border:1px solid var(--line);border-radius:9px;box-shadow:0 12px 32px rgba(0,0,0,.18);padding:1.3rem 1.5rem}
+  .dialog h2{margin-bottom:.6rem}
+  .dialog ol{padding-left:1.2rem;max-width:80ch}
+  .dialog li{margin-bottom:.45rem}
+  .kv{display:grid;grid-template-columns:max-content 1fr;gap:.25rem 1rem;font-size:.92rem;background:#f5f6f8;border:1px solid var(--line);border-radius:8px;padding:.7rem .9rem;margin:.6rem 0 1rem}
+  .kv dt{font-weight:600;color:var(--muted)} .kv dd{margin:0}
+  .classification{display:inline-block;font-size:.87rem;font-weight:700;padding:.15rem .55rem;border-radius:4px;letter-spacing:.02em}
+  .classification.identifiable{background:#fee2e2;color:#7f1d1d}
+  .classification.deidentified{background:#fef3c7;color:#78350f}
+  .result{margin-top:1rem;border:1px solid var(--line);border-radius:8px;padding:.8rem 1rem;background:#f5f6f8;font-size:.92rem}
+  .result:empty{display:none}
+  .field textarea{width:100%;font:inherit;padding:.6rem;border:1px solid var(--line);border-radius:6px;resize:vertical}
+  .field input[aria-invalid="true"],.field textarea[aria-invalid="true"]{border-color:#b91c1c;outline:1px solid #b91c1c}
+
+  table{border-collapse:collapse;width:100%;font-size:.88rem}
+  th,td{text-align:left;border-bottom:1px solid var(--line);padding:.45rem .5rem;vertical-align:top}
+  th{background:#f5f6f8}
+  .scroll{overflow-x:auto}
+
+  /* lecturer learning-analytics specimen */
+  .metric-grid{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:.7rem;margin:.8rem 0 1rem}
+  .metric{border:1px solid var(--line);border-radius:7px;padding:.75rem;background:#f8fafc}
+  .metric b{display:block;font-size:1.3rem;color:var(--brand)}
+  .course-control{display:flex;align-items:center;justify-content:space-between;gap:1rem;padding:.8rem;border:1px solid var(--line);border-radius:7px;background:#f8fafc}
+
+  .modal-backdrop{background:rgba(15,23,42,.35);padding:2rem 1rem;border-radius:12px}
+  .visually-hidden{position:absolute;width:1px;height:1px;overflow:hidden;clip:rect(0 0 0 0)}
+  @media (max-width:820px){
+    nav.tabs{padding-left:1rem;padding-right:1rem}
+    .view{padding-left:1rem;padding-right:1rem}
+    .two-col{grid-template-columns:1fr}
+    .two-col>div+div{border-top:1px solid #e2e5e9;border-left:0}
+    .footer{grid-template-columns:1fr}
+    .footer .ack,.footer .actions{grid-column:1;grid-row:auto;justify-self:stretch;text-align:left}
+    .footer .actions .btn{width:100%}
+    .metric-grid{grid-template-columns:1fr}
+  }
+</style>
+</head>
+<body>
+
+<div class="topbar">
+  <strong>KlickerUZH · Datennutzung und Exporte</strong>
+  <span class="small">DPO-Prüfpaket · 5. September 2026 · Zielbild, ausschliesslich synthetische Beispieldaten</span>
+  <a href="learning-analytics-students.html" style="color:white">Learning Analytics für Studierende</a>
+</div>
+
+<nav class="tabs" role="tablist" aria-label="Ansichten">
+  <button role="tab" aria-selected="true" data-view="v-create">1 · Konto erstellen</button>
+  <button role="tab" aria-selected="false" data-view="v-create-eduid">Konto mit edu-ID</button>
+  <button role="tab" aria-selected="false" data-view="v-assessment">2 · Assessment freischalten</button>
+  <button role="tab" aria-selected="false" data-view="v-gate">3 · Entscheidung nachholen</button>
+  <button role="tab" aria-selected="false" data-view="v-settings">4 · Einstellungen</button>
+  <button role="tab" aria-selected="false" data-view="v-leaderboard">5 · Rangliste beitreten</button>
+  <button role="tab" aria-selected="false" data-view="v-lecturer-la">6 · Learning Analytics</button>
+  <button role="tab" aria-selected="false" data-view="v-export-assessment">7 · Export Assessment</button>
+  <button role="tab" aria-selected="false" data-view="v-export-research">8 · Export Forschung</button>
+  <button role="tab" aria-selected="false" data-view="v-knowledge-upload">Wissensbasis: Materialien</button>
+  <button role="tab" aria-selected="false" data-view="v-audit">9 · Protokoll</button>
+</nav>
+
+<!-- ============ 1 · Konto erstellen ============ -->
+<section id="v-create" class="view active" role="tabpanel">
+  <div class="context"><strong>Prüffrage:</strong> Können die beiden freiwilligen Entscheidungen in der heutigen zweispaltigen Kontoerstellung verständlich und rechtlich eindeutig erfasst werden? Forschung ist standardmässig zugelassen; Learning Analytics verlangt eine ausdrückliche Wahl.</div>
+  <div class="frame" data-choices="create">
+    <h1>Konto erstellen</h1>
+    <div class="two-col">
+      <div>
+        <h2>Dein Konto</h2>
+        <label class="field"><span>E-Mail</span><input type="email" value="student-0042@example.invalid" autocomplete="email"></label>
+        <label class="field"><span>Benutzername</span><input type="text" value="lernende_0042" autocomplete="username"><span class="small" style="font-weight:400">Wird bei einem Beitritt in der Kursrangliste angezeigt.</span></label>
+        <label class="field"><span>Passwort</span><input type="password" value="••••••••••" autocomplete="new-password"></label>
+        <div class="info-accordions">
+          <details class="info-accordion"><summary>Welche Daten werden über mich gesammelt?</summary><div class="info-body"><p>Wir speichern deine Kontodaten sowie Daten aus deinen Kursen und Aktivitäten, etwa Gruppen, Antworten, deren Bewertung, Punkte und Rückmeldungen. Deine Punkte und persönlichen Statistiken bleiben unabhängig von einem Ranglistenbeitritt erhalten. Erst wenn du beitrittst, erscheinen deine Ranglistenangaben für andere Teilnehmende.</p></div></details>
+          <details class="info-accordion"><summary>Wer sieht meine Daten?</summary><div class="info-body"><p>Dozierende und weitere berechtigte Personen sehen die Angaben, die sie für die Durchführung und Auswertung des Kurses benötigen. Bei einem Ranglistenbeitritt sehen andere Teilnehmende deinen Benutzernamen und deine Ranglistenangaben. Learning Analytics zeigt Dozierenden nur zusammengefasste Gruppenwerte.</p></div></details>
+          <details class="info-accordion"><summary>Wofür werden meine Daten genutzt?</summary><div class="info-body"><p>Wir verwenden deine Daten, um dein Konto zu betreiben und Kursaktivitäten durchzuführen und auszuwerten. Für Forschung und Learning Analytics gilt deine Auswahl auf dieser Seite. Diese Auswahl hat keinen Einfluss auf Punkte, Noten oder den Kurszugang.</p></div></details>
+          <details class="info-accordion"><summary>Wie lange werden meine Daten gespeichert?</summary><div class="info-body"><p>Deine Kontodaten und Antworten werden gespeichert, solange dein Konto besteht. Daten können bis zum Ablauf rechtlicher oder vertraglicher Aufbewahrungsfristen gespeichert bleiben. Danach werden sie gelöscht oder so verändert, dass sie keiner Person mehr zugeordnet werden können. Du kannst die Löschung deines Kontos und deiner Daten beantragen.</p></div></details>
+        </div>
+      </div>
+      <div>
+        <h2>Datennutzung und Einstellungen</h2>
+        <!-- CHOICES: shared markup (cloned by script for views 2 and 3) -->
+        <div class="choices-slot"></div>
+      </div>
+    </div>
+    <div class="footer" data-footer>
+      <label class="ack"><input type="checkbox" data-ack aria-describedby="ack-help-create"><span>Ich habe die <a href="https://www.klicker.uzh.ch/privacy_policy">KlickerUZH Datenschutzbestimmungen</a> gelesen, akzeptiere die <a href="https://www.klicker.uzh.ch/terms_of_service">Nutzungsbedingungen</a> und bestätige meine Auswahl. Konto- und Aktivitätsdaten sind für die Nutzung erforderlich; Forschung und Learning Analytics sind freiwillig und können abgelehnt werden.</span></label>
+      <span id="ack-help-create" class="visually-hidden">Pflichtfeld</span>
+      <div class="actions"><button class="btn" data-submit aria-disabled="true">Konto erstellen</button></div>
+    </div>
+  </div>
+</section>
+
+<!-- ============ 2 · Assessment freischalten ============ -->
+<section id="v-assessment" class="view" role="tabpanel">
+  <div class="context"><strong>Prüffrage:</strong> Reicht derselbe Text für Assessment-Konten, wenn Zweck, Identität, Einsicht und Aufbewahrung des Assessments zusätzlich erklärt werden? Der Zugang bleibt bis zur vollständigen Auswahl gesperrt.</div>
+  <div class="frame" data-choices="assessment">
+    <h1>Zugang zum Assessment freischalten</h1>
+    <div class="two-col">
+      <div>
+        <h2>Dein Zugang</h2>
+        <div class="inline-note" style="margin-top:0">
+          <b>Switch edu-ID verbunden</b><br>
+          <span>student-0042@example.invalid</span><br>
+          <span class="small">Du brauchst kein Passwort und keine weiteren Eingaben.</span>
+        </div>
+        <div class="info-accordions">
+          <details class="info-accordion"><summary>Welche Daten werden über mich gesammelt?</summary><div class="info-body"><p>Wir speichern die von Switch edu-ID übermittelten Identitätsangaben sowie Antworten, deren Bewertung, Punkte und technische Protokolldaten, die für die Durchführung, Auswertung und Nachvollziehbarkeit des Assessments erforderlich sind. Diese Speicherung hängt nicht von einem Ranglistenbeitritt ab.</p></div></details>
+          <details class="info-accordion"><summary>Wer sieht meine Daten?</summary><div class="info-body"><p>Berechtigte Assessment-Mitarbeitende sehen deine Identitätsangaben, Antworten, Korrekturen und Ergebnisse, soweit dies für das Assessment erforderlich ist. Andere Teilnehmende sehen diese Angaben nicht. Learning Analytics zeigt Dozierenden nur zusammengefasste Gruppenwerte.</p></div></details>
+          <details class="info-accordion"><summary>Wofür werden meine Daten genutzt?</summary><div class="info-body"><p>Wir verwenden deine Daten, um dein Konto zu betreiben und assessment- oder notenrelevante Aktivitäten durchzuführen, auszuwerten und nachvollziehbar zu dokumentieren. Für Forschung und Learning Analytics gilt deine Auswahl auf dieser Seite. Diese Auswahl hat keinen Einfluss auf Punkte, Noten oder den Zugang zum Assessment.</p></div></details>
+          <details class="info-accordion"><summary>Wie lange werden meine Daten gespeichert?</summary><div class="info-body"><p>Dein Assessment-Konto und deine Assessment-Daten werden für die Durchführung, Korrektur und Nachvollziehbarkeit sowie während geltender Einsprache- und Aufbewahrungsfristen gespeichert. Während dieser Zeit kann eine Löschung eingeschränkt oder abgelehnt werden. Danach werden die Daten gelöscht oder so verändert, dass sie keiner Person mehr zugeordnet werden können.</p></div></details>
+        </div>
+      </div>
+      <div>
+        <h2>Datennutzung und Einstellungen</h2>
+        <div class="choices-slot"></div>
+      </div>
+    </div>
+    <div class="footer" data-footer>
+      <label class="ack"><input type="checkbox" data-ack><span>Ich habe die <a href="https://www.klicker.uzh.ch/privacy_policy">KlickerUZH Datenschutzbestimmungen</a> gelesen, akzeptiere die <a href="https://www.klicker.uzh.ch/terms_of_service">Nutzungsbedingungen</a> und bestätige meine Auswahl. Konto- und Aktivitätsdaten sind für die Nutzung erforderlich; Forschung und Learning Analytics sind freiwillig und können abgelehnt werden.</span></label>
+      <div class="actions"><button class="btn" data-submit aria-disabled="true">Zugang freischalten</button></div>
+    </div>
+  </div>
+</section>
+
+<!-- ============ 3 · Entscheidung nachholen (Gate) ============ -->
+<section id="v-gate" class="view" role="tabpanel">
+  <div class="context"><strong>Bestehende Konten:</strong> Die Seite ergänzt fehlende Entscheidungen und erfasst die Bestätigung der aktuellen Datenschutzbestimmungen und Nutzungsbedingungen. Gespeicherte Entscheidungen bleiben erhalten. Dies gilt bei normalem Login und bei edu-ID, auch im Assessment-Modus.
+    <label>Beispielzustand <select id="gateScenario"><option value="legacy">Altes Konto ohne Entscheidungen</option><option value="saved">Entscheidungen vorhanden: Forschung widersprochen, LA nein</option></select></label>
+  </div>
+  <div id="gateHost">
+    <div class="frame">
+      <h1>Bevor du weitermachst</h1>
+      <p>Bitte überprüfe für dein Konto <b>lernende_0042</b> deine Auswahl für Forschung und Learning Analytics und bestätige die aktuellen Datenschutzbestimmungen und Nutzungsbedingungen. Danach geht es direkt zurück zu <b>Chat · Benibot</b>.</p>
+      <div data-choices="gate">
+        <div class="choices-slot"></div>
+        <div class="footer" data-footer>
+          <label class="ack"><input type="checkbox" data-ack><span>Ich habe die <a href="https://www.klicker.uzh.ch/privacy_policy">KlickerUZH Datenschutzbestimmungen</a> gelesen, akzeptiere die <a href="https://www.klicker.uzh.ch/terms_of_service">Nutzungsbedingungen</a> und bestätige meine Auswahl. Konto- und Aktivitätsdaten sind für die Nutzung erforderlich; Forschung und Learning Analytics sind freiwillig und können abgelehnt werden.</span></label>
+          <div class="actions"><button class="btn" data-submit aria-disabled="true">Speichern und weiter</button></div>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ============ 4 · Einstellungen ============ -->
+<section id="v-settings" class="view" role="tabpanel">
+  <div class="context"><strong>Ansicht 4: Einstellungen.</strong> Beide Entscheidungen bleiben änderbar. Jede Änderung schreibt einen Protokolleintrag.</div>
+  <div class="frame">
+    <h1>Einstellungen</h1>
+
+    <h2 style="margin-top:.8rem">Deine Daten</h2>
+    <div class="setting">
+      <div>
+        <h3>Daten für Forschung</h3>
+        <p class="small">Deine aktuelle Wahl wird unmittelbar vor jedem neuen Forschungs-Export geprüft. Wenn du widersprichst, werden deine Daten nicht in später bereitgestellte Forschungsdatensätze aufgenommen. Wenn du später wieder zustimmst, können alle dann vorhandenen und geeigneten Daten in spätere Exporte aufgenommen werden. Bereits bereitgestellte Daten ohne direkte Identifikatoren unterliegen dem jeweiligen Forschungsprojekt. Bereits bereitgestellte Ergebnisse, die eine dokumentierte Offenlegungsprüfung bestanden haben und keine Rückschlüsse auf einzelne Personen zulassen, können nicht nachträglich einer Person zugeordnet oder für sie entfernt werden.</p>
+        <div class="inline-note" id="researchSaved" hidden></div>
+      </div>
+      <label class="switch"><input type="checkbox" id="setResearch" checked> <span id="setResearchLabel">Zugelassen</span></label>
+    </div>
+
+    <div class="setting">
+      <div>
+        <h3>Learning Analytics</h3>
+        <p class="small">Learning Analytics bietet dir private Einblicke in deine Übungen. Dozierende sehen ausschliesslich geschützte Gruppenberichte. Deine Wahl gilt für alle Kurse. Wenn du ausschaltest, werden keine weiteren Aktivitäten für LA aufgenommen; deine persönlichen LA-Daten und Einblicke werden nach Verarbeitung der Änderung gelöscht. Bereits freigegebene, geprüfte Gruppenberichte bleiben bestehen. Beim erneuten Einschalten zählen nur neue Aktivitäten. <a href="learning-analytics-students.html#entscheidung">Mehr zu deiner Entscheidung</a></p>
+        <div class="inline-note inline-confirm" id="laConfirm" hidden>
+          <b>Learning Analytics ausschalten?</b> Deine persönlichen LA-Daten und Einblicke werden nach Verarbeitung der Änderung gelöscht. Bereits freigegebene, geprüfte Gruppenberichte bleiben bestehen. Deine Antworten für den Kursbetrieb bleiben erhalten.
+          <div class="actions" style="margin-top:.5rem"><button class="btn" id="laConfirmYes" style="min-height:36px;padding:.35rem .9rem">Ausschalten</button><button class="btn secondary" id="laConfirmNo" style="min-height:36px;padding:.35rem .9rem">Eingeschaltet lassen</button></div>
+        </div>
+        <div class="inline-note" id="laSaved" hidden></div>
+      </div>
+      <label class="switch"><input type="checkbox" id="setLa" checked> <span id="setLaLabel">Eingeschaltet</span></label>
+    </div>
+
+  </div>
+</section>
+
+<!-- ============ 5 · Rangliste beitreten ============ -->
+<section id="v-leaderboard" class="view" role="tabpanel">
+  <div class="context"><strong>Ansicht 5: Hinweis beim Ranglisten-Beitritt.</strong> Vereinbartes Zielverhalten: Der Beitritt steuert die Sichtbarkeit in der Rangliste, nicht das Sammeln oder Speichern persönlicher Punkte. Die Backend-Anpassung steht noch aus.</div>
+  <div class="modal-backdrop">
+    <div class="dialog" role="dialog" aria-labelledby="lbTitle">
+      <h2 id="lbTitle">Rangliste von «Testkurs HS 2026» beitreten</h2>
+      <p>Die Teilnahme ist freiwillig. Auch ohne Rangliste kannst du alle Kursaktivitäten nutzen, Punkte sammeln und deine persönlichen Statistiken ansehen. Wenn du beitrittst, sehen andere Teilnehmende deinen Benutzernamen <b>lernende_0042</b>, deine Platzierung, Punkte und Erfolge in der Rangliste. Du kannst jederzeit austreten und wieder beitreten. Nach dem Austritt erscheinst du nicht mehr in der Rangliste; deine Punkte und persönlichen Statistiken bleiben erhalten. Deine Auswahl für Forschung und Learning Analytics bleibt davon unberührt.</p>
+      <div class="actions" style="margin-top:1rem">
+        <button class="btn">Rangliste beitreten</button>
+        <button class="btn secondary">Nicht beitreten</button>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ============ 6 · Learning Analytics for lecturers ============ -->
+<section id="v-lecturer-la" class="view" role="tabpanel">
+  <div class="context"><strong>Geplante erste Version:</strong> Im LA-Bereich sehen Dozierende nur geschützte Gruppenberichte. Die zugehörigen API-Antworten dürfen keine Einzelwerte mehr liefern. Persönliche Einblicke bleiben nur für die betroffene Person vorgesehen. Forschungsexporte sind davon getrennt und dürfen unter den Forschungsregeln einzelne Datensätze enthalten. <a href="learning-analytics-students.html">Studenteninformation mit Beispielen</a></div>
+  <div class="frame">
+    <h1>Learning Analytics</h1>
+    <p class="small">Testkurs HS 2026</p>
+    <div style="padding:0 18px 18px">
+      <h2>Kursübersicht</h2>
+      <p>Wo braucht die Gruppe mehr Erklärung oder Übung? Learning Analytics zeigt Aktivität, Bearbeitungsstand und Antwortmuster pro Kursaktivität. Alle Beispiele zeigen das geplante Angebot und keine echten Kursdaten.</p>
+      <div class="metric-grid" aria-label="Beispiel für Gruppenwerte">
+        <div class="metric"><span class="small">Zinsrechnung: abgeschlossen</span><b>etwa 70&nbsp;%</b></div>
+        <div class="metric"><span class="small">Beim ersten Versuch richtig</span><b>etwa 55&nbsp;%</b></div>
+        <div class="metric"><span class="small">Beim letzten Versuch richtig</span><b>etwa 75&nbsp;%</b></div>
+      </div>
+      <h3>Antwortmuster nach Aktivität</h3>
+      <div class="scroll">
+        <table>
+          <caption style="text-align:left;padding-bottom:.6rem">Synthetisches Beispiel: gerundete Gruppenwerte aus einbezogenen Aktivitäten.</caption>
+          <thead><tr><th scope="col">Aktivität</th><th scope="col">Abgeschlossen</th><th scope="col">Richtig beim ersten Versuch</th><th scope="col">Richtig beim letzten Versuch</th></tr></thead>
+          <tbody>
+            <tr><th scope="row">Zinsrechnung</th><td>etwa 70&nbsp;%</td><td>etwa 55&nbsp;%</td><td>etwa 75&nbsp;%</td></tr>
+            <tr><th scope="row">Barwert und Annuität</th><td>etwa 60&nbsp;%</td><td>etwa 40&nbsp;%</td><td>etwa 60&nbsp;%</td></tr>
+            <tr><th scope="row">Optionen und Futures</th><td colspan="3">Keine Anzeige: Für eine geschützte Auswertung reichen die Daten nicht aus.</td></tr>
+          </tbody>
+        </table>
+      </div>
+      <p class="small">Die Werte beschreiben die einbezogene Gruppe, nicht den gesamten Kurs. Nicht bearbeitete Aufgaben gelten nicht als falsch. Bessere Ergebnisse beim Wiederholen sind kein Beleg für Lernerfolg allein durch KlickerUZH.</p>
+      <details class="info-accordion"><summary>Was lässt sich daraus ableiten?</summary><div class="info-body"><p>Bei Barwert und Annuität könnten zusätzliche Erklärungen oder eine überarbeitete Aufgabe helfen. Der Bericht zeigt keine Fehlerquoten einzelner Studierender und dient nicht der Benotung.</p></div></details>
+      <details class="info-accordion"><summary>Wie bleiben einzelne Personen geschützt?</summary><div class="info-body"><p>Nur ausreichend grosse, geprüfte Gruppen werden angezeigt. Seltene Werte, rekonstruierbare Teilsummen und verräterische Vergleiche werden unterdrückt. Im LA-Bereich gibt es keine Einzelansichten oder frei kombinierbaren Personenfilter. Auch frühere Berichte werden bei der Freigabe berücksichtigt. Separate Forschungsexporte können einzelne Datensätze enthalten; Versuche, Personen zu identifizieren, auch durch Zusammenführen von Daten, sind untersagt.</p></div></details>
+      <details class="info-accordion"><summary>Werden Chat-Gespräche ausgewertet?</summary><div class="info-body"><p>In der ersten Version nicht. Gemeinsame Gesprächsthemen sind ein mögliches späteres Angebot. Es braucht eine eigene Prüfung der Datennutzung und Qualität; Gesprächsinhalte oder Zitate würden nicht in diesen Gruppenberichten erscheinen. <a href="learning-analytics-students.html#ausblick">Mehr zum geplanten Ausbau</a></p></div></details>
+      <div class="course-control">
+        <div><b>Learning Analytics für diesen Kurs</b><div class="small">Die globale Wahl der einzelnen Teilnehmenden bleibt davon unberührt.</div></div>
+        <label class="switch"><input type="checkbox" id="courseLa" checked> <span id="courseLaLabel">Eingeschaltet</span></label>
+      </div>
+      <p class="small" id="courseLaState" aria-live="polite">Neue Kursberichte können erstellt werden, sobald die Schutzprüfung erfüllt ist.</p>
+    </div>
+  </div>
+</section>
+
+<!-- ============ 7 · Export Assessment ============ -->
+<section id="v-export-assessment" class="view" role="tabpanel">
+  <div class="context"><strong>Zur Prüfung:</strong> Bestätigung für den Export direkt identifizierbarer, assessment- oder notenrelevanter Ergebnisse. Technische Exportdetails sind nicht Gegenstand dieser Textfreigabe.</div>
+  <div class="modal-backdrop">
+    <div class="dialog" role="dialog" aria-labelledby="axTitle" aria-describedby="axLead">
+      <h2 id="axTitle">Assessment-Ergebnisse exportieren</h2>
+      <span class="classification identifiable">Direkt identifizierbare Personendaten</span>
+      <dl class="kv">
+        <dt>Assessment</dt><dd>Notenrelevante Kursaktivitäten · Grundlagen (Beispiel)</dd>
+        <dt>Umfang</dt><dd>Ausgewählte Ergebnisse mit Identitätsangaben und Punktwerten</dd>
+      </dl>
+      <p id="axLead">Diese Datei enthält direkt identifizierbare Personendaten und Assessment-Ergebnisse. Sie ist ausschliesslich für die Durchführung, Bewertung und notwendige Nachbearbeitung dieses Assessments bestimmt.</p>
+      <h3>Mit dem Download bestätige ich:</h3>
+      <ol>
+        <li><b>Zweckbindung.</b> Ich verwende die Datei nur für dieses Assessment und nicht für Forschung.</li>
+        <li><b>Beschränkter Zugriff.</b> Zugriff erhalten nur Personen, die diese Daten für die Durchführung, Bewertung oder notwendige Nachbearbeitung des Assessments benötigen.</li>
+        <li><b>Sichere Ablage.</b> Ich speichere und bearbeite die Datei nur auf dafür freigegebenen Geräten und Ablagen der UZH und schütze sie vor unberechtigtem Zugriff.</li>
+        <li><b>Aufbewahrung und Löschung.</b> Ich bewahre die Datei nur so lange auf, wie sie für den genannten Zweck oder aufgrund einer Aufbewahrungspflicht benötigt wird, und lösche sie anschliessend sicher.</li>
+      </ol>
+      <p class="small">Deine Exportanfrage und diese Bestätigung werden mit deinem Konto, Zeitpunkt und Datenumfang protokolliert.</p>
+      <label class="ack"><input type="checkbox" id="axAck"><span><b>Ich bestätige diese vier Punkte für diesen Export.</b></span></label>
+      <div class="actions">
+        <button class="btn secondary" onclick="document.getElementById('axResult').textContent=''">Abbrechen</button>
+        <button class="btn" id="axSubmit" disabled>Exportieren</button>
+      </div>
+      <div class="result" id="axResult" aria-live="polite"></div>
+    </div>
+  </div>
+</section>
+
+<!-- ============ 8 · Export Forschung ============ -->
+<section id="v-export-research" class="view" role="tabpanel">
+  <div class="context"><strong>Prüffrage:</strong> Welche Datenklassen dürfen ohne direkte Identifikatoren für Forschung freigegeben werden, und welche zusätzliche Prüfung braucht Gesprächsfreitext? Die Forschungswahl wird unmittelbar vor der Freigabe geprüft; Konten ohne Entscheidung bleiben ausgeschlossen.</div>
+  <div class="modal-backdrop">
+    <div class="dialog" role="dialog" aria-labelledby="rxTitle" aria-describedby="rxLead">
+      <h2 id="rxTitle">Forschungsdaten exportieren</h2>
+      <span class="classification deidentified">Personendaten ohne direkte Identifikatoren</span>
+      <h3 style="margin-top:.8rem">Angaben zum Forschungsprojekt</h3>
+      <p class="small" style="margin-top:0">Diese Angaben werden mit jedem Export gespeichert. Es gibt kein Genehmigungsverfahren in KlickerUZH; du bist für die Zulässigkeit deines Projekts verantwortlich.</p>
+      <label class="field"><span>Projekttitel <span class="small" style="font-weight:400;display:inline">(erforderlich)</span></span><input type="text" id="rxTitleIn" placeholder="Titel deines Forschungsprojekts" required></label>
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:0 1rem">
+        <label class="field"><span>Verantwortliche Person <span class="small" style="font-weight:400;display:inline">(erforderlich)</span></span><input type="text" id="rxPiIn" required></label>
+        <label class="field"><span>Kontaktadresse <span class="small" style="font-weight:400;display:inline">(erforderlich)</span></span><input type="email" id="rxMailIn" required></label>
+      </div>
+      <label class="field"><span>Zweck <span class="small" style="font-weight:400;display:inline">(erforderlich, 1–2 Sätze)</span></span><textarea id="rxPurposeIn" rows="2" required></textarea></label>
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:0 1rem">
+        <label class="field"><span>Geplantes Löschdatum <span class="small" style="font-weight:400;display:inline">(erforderlich)</span></span><input type="date" id="rxUntilIn" required></label>
+        <label class="field"><span>Referenz <span class="small" style="font-weight:400;display:inline">(optional: Ethik-, Bewilligungs- oder DMP-Nummer)</span></span><input type="text" id="rxRefIn" value="" placeholder="z. B. Ethikkommission 2026-xx"></label>
+      </div>
+      <fieldset style="border:1px solid var(--line);border-radius:8px;padding:.5rem .9rem;margin:0 0 .8rem">
+        <legend class="small" style="font-weight:600">Benötigte Datenklassen (Beispiele, mindestens eine auswählen)</legend>
+        <label style="display:block"><input type="checkbox" data-research-class> Live-Quiz-Antworten</label>
+        <label style="display:block"><input type="checkbox" data-research-class> Asynchrone Antworten (Lernelemente, Microlearning)</label>
+        <label style="display:block"><input type="checkbox" data-research-class> Learning-Analytics-Daten (Einzel- und Gruppenwerte)</label>
+        <label style="display:block"><input type="checkbox" id="rxTranscripts" data-research-class> Chat-Transkripte</label>
+        <p class="small" style="margin:.2rem 0 .3rem 1.5rem">Gesprächsfreitext kann persönliche Angaben enthalten, auch wenn Kontokennungen entfernt sind. Beschränke die Auswahl auf die für dein Projekt erforderlichen Daten. Der konkrete Datenumfang und die Schutzmassnahmen werden gesondert festgelegt.</p>
+      </fieldset>
+      <dl class="kv">
+        <dt>Datenumfang</dt><dd>Testkurs HS 2026, Testkurs FS 2027 · 2026-02-01 bis 2026-12-31 (aus deiner Auswahl)</dd>
+        <dt>Klassifikation</dt><dd id="rxClass">Personendaten ohne direkte Identifikatoren</dd>
+      </dl>
+      <p id="rxLead">Diese Datei enthält Personendaten ohne direkte Identifikatoren. Einzelne Personen können dennoch erkennbar sein. Die Daten dürfen nur für das angegebene Forschungsprojekt und nur durch dessen Mitarbeitende verwendet werden.</p>
+      <h3>Mit dem Download bestätige ich:</h3>
+      <ol>
+        <li><b>Zweckbindung.</b> Ich verwende die Daten nur für das oben angegebene Forschungsprojekt und nur für den angegebenen Zweck.</li>
+        <li><b>Keine Reidentifizierung oder unzulässige Verknüpfung.</b> Ich versuche nicht, Personen zu identifizieren, und verknüpfe die Datei nicht mit anderen Daten, die eine Identifizierung ermöglichen könnten.</li>
+        <li><b>Beschränkter Zugriff und keine Weitergabe.</b> Ich mache die Datei nur den Mitarbeitenden des angegebenen Projekts zugänglich und gebe sie nicht ausserhalb des Projekts weiter.</li>
+        <li><b>Sicherheit, Entfernung des Personenbezugs und Löschung.</b> Ich bearbeite die Datei nur in einer dafür geeigneten, geschützten Umgebung, entferne den Personenbezug so früh wie möglich und lösche sie spätestens zum angegebenen Datum, soweit keine Aufbewahrungspflicht entgegensteht. Veröffentlicht werden nur Ergebnisse, die keine Rückschlüsse auf einzelne Personen zulassen.</li>
+      </ol>
+      <p class="small">Deine Exportanfrage und diese Bestätigung werden mit deinen Projektangaben, Konto, Zeitpunkt und angefragtem Datenumfang protokolliert. Bei der Bereitstellung gilt die aktuelle Forschungswahl der Teilnehmenden.</p>
+      <label class="ack"><input type="checkbox" id="rxAck"><span><b>Ich bestätige diese vier Punkte für diesen Export.</b></span></label>
+      <div class="actions">
+        <button class="btn secondary" onclick="document.getElementById('rxResult').textContent=''">Abbrechen</button>
+        <button class="btn" id="rxSubmit" disabled>Forschungsdaten exportieren</button>
+      </div>
+      <div class="result" id="rxResult" aria-live="polite"></div>
+    </div>
+  </div>
+</section>
+
+<section id="v-knowledge-upload" class="view" role="tabpanel">
+  <div class="context"><strong>Vorschlag zur rechtlichen Prüfung:</strong> Hinweis vor dem ersten und jedem weiteren Upload in eine Wissensbasis. Die urheberrechtliche Zulässigkeit wird mit spezialisierten Juristinnen und Juristen geklärt. Übliche Autorennamen und bibliografische Angaben sind zulässig; andere personenbezogene Daten sind für diesen Upload nicht vorgesehen. Der Prototyp lädt keine Dateien hoch.</div>
+  <div class="modal-backdrop">
+    <div class="dialog" role="dialog" aria-labelledby="kbTitle" aria-describedby="kbLead">
+      <h2 id="kbTitle">Materialien für die Wissensbasis bereitstellen</h2>
+      <p id="kbLead">Lade nur Materialien hoch, die du für die vorgesehene Nutzung in dieser Wissensbasis verwenden und den vorgesehenen Studierenden zugänglich machen darfst.</p>
+      <h3>Urheberrecht und Nutzungsrechte</h3>
+      <p>Beachte die Regeln für die Bereitstellung von Lehrmaterialien an Studierende, wie auch bei der Verteilung über ein Lernmanagementsystem. Kläre zusätzlich, ob deine Berechtigung die Verarbeitung in der KI-gestützten Wissensbasis und die Verwendung von Inhalten in Antworten umfasst. Eine Erlaubnis zur Ablage im LMS deckt diese Nutzung nicht automatisch ab.</p>
+      <p>Halte Lizenzbedingungen, Quellenangaben sowie Beschränkungen des Nutzerkreises und der Nutzungsdauer ein. Wenn die Rechte für diese Nutzung unklar sind, lade das Material erst nach rechtlicher Klärung hoch.</p>
+      <h3>Schutz personenbezogener Daten</h3>
+      <p>Übliche Autorennamen und bibliografische Angaben dürfen enthalten sein und sollen erhalten bleiben. Lade keine anderen personenbezogenen Daten hoch, etwa Studierendendaten, private Korrespondenz oder Fallbeschreibungen mit erkennbaren Personen. Prüfe auch Dateinamen, Metadaten, Kommentare, Bilder und eingebettete Inhalte. Das Entfernen direkter Kennungen reicht nicht aus, wenn Personen weiterhin erkennbar sind.</p>
+      <p class="small">Die Bestätigung ersetzt weder die Klärung der Nutzungsrechte noch die Prüfung der Dateien auf personenbezogene Daten.</p>
+      <label class="ack"><input type="checkbox" id="kbRightsAck"><span>Ich bin zur vorgesehenen Nutzung berechtigt und halte die genannten Nutzungsbedingungen und Beschränkungen ein.</span></label>
+      <label class="ack" style="margin-top:.8rem"><input type="checkbox" id="kbPrivacyAck"><span>Ich habe die ausgewählten Dateien geprüft. Sie enthalten ausser üblichen Autorennamen und bibliografischen Angaben keine personenbezogenen Daten.</span></label>
+      <div class="actions" style="margin-top:1rem">
+        <button class="btn secondary" id="kbCancel">Abbrechen</button>
+        <button class="btn" id="kbSubmit" disabled>Materialien hochladen</button>
+      </div>
+      <div class="result" id="kbResult" aria-live="polite"></div>
+    </div>
+  </div>
+</section>
+
+<!-- ============ 9 · Protokoll ============ -->
+<section id="v-audit" class="view" role="tabpanel">
+  <div class="context"><strong>Ansicht 9: Protokoll (synthetisches Muster).</strong> Der aktuelle Wert und der Zeitpunkt der letzten Änderung liegen am Teilnehmenden-Datensatz. Das Protokoll erfasst jede Entscheidungsänderung, Bestätigung der Datenschutzbestimmungen und Download-Bestätigung. Es enthält keine Widerspruchslisten.</div>
+  <div class="frame">
+    <h1>Protokolleinträge (Auszug, synthetisch)</h1>
+    <div class="scroll">
+      <table>
+        <thead><tr><th>Zeitpunkt (UTC)</th><th>Ereignis</th><th>Subjekt</th><th>Wert</th><th>Artefakt</th></tr></thead>
+        <tbody>
+          <tr><td>2026-09-01T12:02:11Z</td><td>policy_acknowledged</td><td>participant 7c1e…a1f3</td><td>–</td><td>–</td></tr>
+          <tr><td>2026-09-01T12:02:11Z</td><td>research_choice_set</td><td>participant 7c1e…a1f3</td><td>allowed</td><td>–</td></tr>
+          <tr><td>2026-09-01T12:02:11Z</td><td>learning_analytics_choice_set</td><td>participant 7c1e…a1f3</td><td>enabled</td><td>–</td></tr>
+          <tr><td>2026-09-02T08:47:30Z</td><td>learning_analytics_choice_set</td><td>participant 7c1e…a1f3</td><td>disabled</td><td>Löschjob <code>la-purge-…</code> geplant</td></tr>
+          <tr><td>2026-09-02T09:15:04Z</td><td>export_attested</td><td>user lecturer 91b0…cc02</td><td>assessment 5d4a…</td><td>48 Zeilen · sha256 3f9c…e2</td></tr>
+          <tr><td>2026-09-02T09:15:06Z</td><td>export_downloaded</td><td>user lecturer 91b0…cc02</td><td>assessment 5d4a…</td><td>sha256 3f9c…e2</td></tr>
+          <tr><td>2026-09-03T10:30:00Z</td><td>research_export_attested</td><td>user researcher 2ab7…10ee</td><td>project «Adaptive Wiederholung …» · Dr. R. Example</td><td>eligibility rev 2026-09-03T10:29:58Z · 1 240 Zeilen · sha256 8a01…77</td></tr>
+        </tbody>
+      </table>
+    </div>
+    <p class="small" style="margin-top:.8rem">Am Teilnehmenden-Datensatz gespeichert (Beispiel): <code>researchDataUse = ALLOWED</code>, <code>researchDataUseChangedAt</code>, <code>learningAnalyticsChoice = DISABLED</code> und <code>learningAnalyticsChoiceChangedAt</code>.</p>
+  </div>
+</section>
+
+<script>
+/* ---------- shared choice markup (identical in views 1–3, F15: one authoritative description per purpose) ---------- */
+const CHOICES_HTML = `
+<details class="choice research">
+  <summary>
+    <span class="row">
+      <span class="ttl" id="{id}-research-title">Daten für Forschung</span>
+      <span class="status" data-research-status>Zugelassen</span>
+      <span class="chev" aria-hidden="true"></span>
+    </span>
+  </summary>
+  <div class="body">
+    <p>KlickerUZH kann deine Nutzungs- und Lerndaten für Forschungsprojekte der Universität Zürich bereitstellen. Direkte Kontokennungen werden entfernt oder ersetzt; Freitext kann trotzdem persönliche Angaben enthalten und braucht besondere Schutzmassnahmen. Veröffentlicht werden nur Ergebnisse ohne Rückschlüsse auf einzelne Personen. Du kannst jederzeit widersprechen oder wieder zustimmen. Deine aktuelle Wahl gilt für danach bereitgestellte Datensätze. Für bereits bereitgestellte Daten gelten die Regeln des jeweiligen Forschungsprojekts.</p>
+    <div class="segmented" role="group" aria-labelledby="{id}-research-title">
+      <button type="button" data-research="allow" aria-pressed="true">✓ Zulassen</button>
+      <button type="button" data-research="object" aria-pressed="false">✕ Widersprechen</button>
+    </div>
+  </div>
+</details>
+
+<details class="choice la" open>
+  <summary>
+    <span class="row">
+      <span class="ttl" id="{id}-la-title">Learning Analytics</span>
+      <span class="status missing" data-la-status>Entscheidung erforderlich</span>
+      <span class="chev" aria-hidden="true"></span>
+    </span>
+  </summary>
+  <div class="body">
+    <p>Learning Analytics hilft dir, deine Übungen und Fortschritte besser einzuordnen. Deine persönlichen Einblicke siehst nur du. Dozierende erhalten geschützte Gruppenberichte, etwa darüber, wo viele beim Üben Schwierigkeiten haben. Einzelwerte und Chat-Inhalte gehören nicht zu diesen Berichten. Deine Wahl gilt für alle Kurse und ist jederzeit änderbar. Bei "Nein" bleiben Kurse, Chat und Punkte nutzbar; persönliche LA-Daten werden nach Verarbeitung der Änderung gelöscht. Freigegebene, geprüfte Gruppenberichte bleiben bestehen. Beim Einschalten zählen nur neue Aktivitäten. <a href="learning-analytics-students.html">Was du und deine Dozierenden sehen</a></p>
+    <div class="radio-cards" role="radiogroup" aria-labelledby="{id}-la-title">
+      <label><input type="radio" name="{id}-la" value="yes"><span><b>Ja, teilnehmen</b><span class="small">Private Einblicke und geschützte Gruppenberichte.</span></span></label>
+      <label><input type="radio" name="{id}-la" value="no"><span><b>Nein, nicht teilnehmen</b><span class="small">Kurse, Punkte und Chat funktionieren wie gewohnt.</span></span></label>
+    </div>
+  </div>
+</details>`;
+
+function showView(id){
+  document.querySelectorAll('.view').forEach(v=>v.classList.toggle('active',v.id===id));
+  document.querySelectorAll('nav.tabs button').forEach(b=>b.setAttribute('aria-selected',String(b.dataset.view===id)));
+  window.scrollTo(0,0);
+}
+document.querySelectorAll('nav.tabs button').forEach(b=>b.addEventListener('click',()=>showView(b.dataset.view)));
+
+// Normal edu-ID signup shares the account notice, not assessment retention rules.
+const eduCreate = document.getElementById('v-create').cloneNode(true);
+eduCreate.id = 'v-create-eduid';
+eduCreate.classList.remove('active');
+eduCreate.querySelector('.context').textContent = 'Geplante Erweiterung: normales Konto über Switch edu-ID, ohne Assessment-Modus. Der Anmeldeweg allein macht Aktivitäten nicht notenrelevant. Forschung bleibt standardmässig zugelassen; Learning Analytics verlangt eine ausdrückliche Wahl.';
+eduCreate.querySelector('[data-choices]').dataset.choices = 'create-eduid';
+eduCreate.querySelector('h1').textContent = 'Konto mit Switch edu-ID erstellen';
+eduCreate.querySelectorAll('.field').forEach(field=>field.remove());
+eduCreate.querySelector('h2').insertAdjacentHTML('afterend', '<div class="inline-note"><b>Switch edu-ID verbunden</b><br>student-0042@example.invalid<br><span class="small">Du brauchst kein zusätzliches Passwort. Für dieses Beispiel ist der Benutzername lernende_0042 hinterlegt.</span></div>');
+const eduCollection = eduCreate.querySelector('.info-body p');
+eduCollection.textContent = 'Wir speichern die von Switch edu-ID für dein Konto übermittelten Identitätsangaben sowie Daten aus deinen Kursen und Aktivitäten, etwa Gruppen, Antworten, deren Bewertung, Punkte und Rückmeldungen. Deine Punkte und persönlichen Statistiken bleiben unabhängig von einem Ranglistenbeitritt erhalten. Erst wenn du beitrittst, erscheinen deine Ranglistenangaben für andere Teilnehmende.';
+eduCreate.querySelector('[data-ack]').setAttribute('aria-describedby','ack-help-create-eduid');
+eduCreate.querySelector('#ack-help-create').id = 'ack-help-create-eduid';
+document.getElementById('v-create').after(eduCreate);
+
+/* ---------- wire up each choice block (views 1–3) ---------- */
+document.querySelectorAll('[data-choices]').forEach(root=>{
+  const id = root.dataset.choices;
+  root.querySelector('.choices-slot').innerHTML = CHOICES_HTML.replaceAll('{id}', id);
+  const state = {research:'allow', la:null, ack:false};
+  const researchStatus = root.querySelector('[data-research-status]');
+  const laStatus = root.querySelector('[data-la-status]');
+  const submit = root.querySelector('[data-submit]');
+  const ack = root.querySelector('[data-ack]');
+
+  function render(){
+    root.querySelectorAll('[data-research]').forEach(b=>b.setAttribute('aria-pressed',String(b.dataset.research===state.research)));
+    root.querySelectorAll(`input[name="${id}-la"]`).forEach(r=>{r.checked=r.value===state.la;});
+    researchStatus.textContent = state.research==='allow' ? 'Zugelassen' : 'Widersprochen';
+    laStatus.textContent = state.la ? (state.la==='yes' ? 'Teilnahme: ja' : 'Teilnahme: nein') : 'Entscheidung erforderlich';
+    laStatus.classList.toggle('missing', !state.la);
+    const complete = !!state.la && state.ack;
+    submit.disabled = !complete;
+    submit.setAttribute('aria-disabled', String(!complete));
+  }
+
+  root.querySelectorAll('[data-research]').forEach(b=>b.addEventListener('click',()=>{
+    state.research = b.dataset.research;
+    root.querySelectorAll('[data-research]').forEach(x=>x.setAttribute('aria-pressed',String(x===b)));
+    render();
+  }));
+  root.querySelectorAll(`input[name="${id}-la"]`).forEach(r=>r.addEventListener('change',()=>{state.la=r.value;render();}));
+  ack.addEventListener('change',()=>{state.ack=ack.checked;root.querySelector('.ack').classList.toggle('accepted',state.ack);render();});
+
+  submit.addEventListener('click',e=>{
+    e.preventDefault();
+    const target = id==='gate' ? 'Zurück zu Chat · Benibot.' : (id==='assessment' ? 'Assessment-Zugang ist freigeschaltet.' : 'Konto ist erstellt.');
+    alert(`Gespeichert (Prototyp).\nForschung: ${state.research==='allow'?'zugelassen':'widersprochen'}\nLearning Analytics: ${state.la==='yes'?'ja':'nein'}\nDatenschutzerklärung/Nutzungsbedingungen: bestätigt\n\n3 Protokolleinträge geschrieben (siehe Ansicht 9). ${target}`);
+  });
+  if(id==='gate') document.getElementById('gateScenario').addEventListener('change',e=>{
+    const saved=e.target.value==='saved';
+    state.research=saved?'object':'allow';
+    state.la=saved?'no':null;
+    state.ack=false;
+    ack.checked=false;
+    root.querySelector('.ack').classList.remove('accepted');
+    render();
+  });
+  render();
+});
+
+/* ---------- settings ---------- */
+const setResearch = document.getElementById('setResearch');
+setResearch.addEventListener('change',()=>{
+  document.getElementById('setResearchLabel').textContent = setResearch.checked?'Zugelassen':'Widersprochen';
+  const n=document.getElementById('researchSaved'); n.hidden=false;
+  n.textContent = setResearch.checked
+    ? 'Gespeichert: zugelassen. Ab jetzt können auch deine älteren geeigneten Daten in spätere Forschungsexporte aufgenommen werden. Diese Änderung wird protokolliert.'
+    : 'Gespeichert: widersprochen. Deine Daten werden in keinen später bereitgestellten Forschungsdatensatz aufgenommen. Diese Änderung wird protokolliert.';
+});
+const setLa = document.getElementById('setLa');
+const laConfirm = document.getElementById('laConfirm');
+setLa.addEventListener('change',()=>{
+  if(!setLa.checked){ setLa.checked=true; laConfirm.hidden=false; document.getElementById('laConfirmYes').focus(); return; }
+  document.getElementById('setLaLabel').textContent='Eingeschaltet';
+  const n=document.getElementById('laSaved'); n.hidden=false;
+  n.textContent='Gespeichert: eingeschaltet. Ab jetzt werden nur neue Aktivitäten berücksichtigt; frühere Aktivitäten werden nicht nachgetragen. Diese Änderung wird protokolliert.';
+});
+document.getElementById('laConfirmYes').addEventListener('click',()=>{
+  setLa.checked=false; laConfirm.hidden=true;
+  document.getElementById('setLaLabel').textContent='Ausgeschaltet';
+  const n=document.getElementById('laSaved'); n.hidden=false;
+  n.textContent='Gespeichert: ausgeschaltet. Deine abgeleiteten personenbezogenen Learning-Analytics-Daten werden nach der Verarbeitung gelöscht. Diese Änderung wird protokolliert.';
+});
+document.getElementById('laConfirmNo').addEventListener('click',()=>{ laConfirm.hidden=true; setLa.focus(); });
+
+document.getElementById('courseLa').addEventListener('change',e=>{
+  document.getElementById('courseLaLabel').textContent=e.target.checked?'Eingeschaltet':'Ausgeschaltet';
+  document.getElementById('courseLaState').textContent=e.target.checked
+    ? 'Neue Kursberichte können erstellt werden, sobald die Schutzprüfung erfüllt ist.'
+    : 'Keine neuen Kursberichte. Bereits freigegebene Berichte bleiben sichtbar; private Einblicke und die globale LA-Wahl bleiben unberührt.';
+});
+
+/* ---------- export dialogs ---------- */
+function wireExport(ackId, btnId, resultId, text, requiredIds, requiredCheckboxSelector){
+  const ack=document.getElementById(ackId), btn=document.getElementById(btnId), res=document.getElementById(resultId);
+  const req=(requiredIds||[]).map(i=>document.getElementById(i));
+  const checkboxReq=requiredCheckboxSelector ? [...document.querySelectorAll(requiredCheckboxSelector)] : [];
+  const update=()=>{btn.disabled=!(ack.checked && req.every(i=>i.value.trim() && i.checkValidity()) && (!checkboxReq.length || checkboxReq.some(i=>i.checked)));};
+  ack.addEventListener('change',update); req.forEach(i=>i.addEventListener('input',update)); checkboxReq.forEach(i=>i.addEventListener('change',update));
+  req.forEach(i=>{
+    const validate=()=>i.setAttribute('aria-invalid',String(!i.value.trim() || !i.checkValidity()));
+    i.addEventListener('blur',validate);
+    i.addEventListener('input',()=>{if(i.hasAttribute('aria-invalid')) validate();});
+  });
+  btn.addEventListener('click',()=>{if(!btn.disabled) res.innerHTML=text;});
+  update();
+}
+const today=new Date();
+document.getElementById('rxUntilIn').min=`${today.getFullYear()}-${String(today.getMonth()+1).padStart(2,'0')}-${String(today.getDate()).padStart(2,'0')}`;
+const kbChecks=['kbRightsAck','kbPrivacyAck'].map(id=>document.getElementById(id));
+const kbSubmit=document.getElementById('kbSubmit');
+const kbResult=document.getElementById('kbResult');
+function renderKnowledgeUpload(){
+  kbSubmit.disabled=!kbChecks.every(input=>input.checked);
+  kbChecks.forEach(input=>input.closest('.ack').classList.toggle('accepted',input.checked));
+  kbResult.textContent='';
+}
+kbChecks.forEach(input=>input.addEventListener('change',renderKnowledgeUpload));
+document.getElementById('kbCancel').addEventListener('click',()=>{kbChecks.forEach(input=>{input.checked=false;});renderKnowledgeUpload();});
+kbSubmit.addEventListener('click',()=>{if(!kbSubmit.disabled) kbResult.textContent='Bestätigt (Prototyp). Es wurden keine Dateien hochgeladen.';});
+wireExport('axAck','axSubmit','axResult',
+  '<b>Exportanfrage bestätigt (Prototyp).</b><br>Die Bestätigung bezieht sich auf den angezeigten Datenumfang. Es wurde kein Export erstellt.');
+document.getElementById('rxTranscripts').addEventListener('change',e=>{document.getElementById('rxClass').textContent = e.target.checked ? 'Personendaten ohne direkte Identifikatoren, inkl. Gesprächsdaten (Freitext)' : 'Personendaten ohne direkte Identifikatoren';});
+wireExport('rxAck','rxSubmit','rxResult',
+  '<b>Exportanfrage bestätigt (Prototyp).</b><br>Die Bestätigung bezieht sich auf deine Projektangaben und die ausgewählten Datenklassen. Format und technische Bereitstellung werden gesondert festgelegt. Es wurde kein Export erstellt.', ['rxTitleIn','rxPiIn','rxMailIn','rxPurposeIn','rxUntilIn'], '[data-research-class]');
+</script>
+</body>
+</html>

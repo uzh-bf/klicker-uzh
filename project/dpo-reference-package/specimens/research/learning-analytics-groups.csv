@@ -1,0 +1,4 @@
+﻿coursePseudonym,activityPseudonym,activityType,eligibleParticipantCount,startedCount,completedCount,repeatedCount,firstWrongRate,firstPartialRate,firstCorrectRate,lastWrongRate,lastPartialRate,lastCorrectRate,totalWrongRate,totalPartialRate,totalCorrectRate,computedDay
+course_projectA_001,activity_projectA_001,PRACTICE_QUIZ,38,35,27,12,0.29,0.14,0.57,0.18,0.11,0.71,0.23,0.13,0.64,2026-04-18
+course_projectA_001,activity_projectA_002,MICRO_LEARNING,36,31,22,,,,,,,,0.42,0.17,0.41,2026-04-18
+course_projectA_002,activity_projectA_003,PRACTICE_QUIZ,4,,,,,,,,,,,,,2026-04-18
