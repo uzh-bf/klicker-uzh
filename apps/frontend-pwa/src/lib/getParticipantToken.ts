@@ -1,8 +1,14 @@
-import { ApolloClient, NormalizedCacheObject } from '@apollo/client'
+import type { ApolloClient, NormalizedCacheObject } from '@apollo/client'
 import { LoginParticipantWithLtiDocument } from '@klicker-uzh/graphql/dist/ops'
 import { verifyJWT } from '@klicker-uzh/util'
-import { GetServerSidePropsContext } from 'next'
+import type { GetServerSidePropsContext } from 'next'
 import nookies from 'nookies'
+
+// Provenance of a resolved participant token. Only a freshly verified LTI
+// handoff ('lti') may replace a participant session the browser has already
+// established; a raw ?participantToken= relay ('query') must not, otherwise
+// an induced link performs a login-CSRF session substitution.
+export type ParticipantTokenSource = 'session' | 'query' | 'lti'
 
 export default async function getParticipantToken({
   apolloClient,
@@ -18,19 +24,23 @@ export default async function getParticipantToken({
 
   // if the user already has a participant token, skip registration
   // fetch the relevant data directly
-  let participantToken: string | undefined | null =
-    (process.env.ASSESSMENT_MODE === 'true'
+  const sessionCookie =
+    process.env.ASSESSMENT_MODE === 'true'
       ? cookies['next-auth.participant-session-token']
-      : cookies['participant_token']) ?? query.participantToken
+      : cookies['participant_token']
+  let participantToken: string | undefined | null =
+    sessionCookie ?? query.participantToken
 
   // TODO: only check for existing participantToken once participation issues with LTI are resolved
   if (participantToken && !cookies['lti-token'] && !query.jwt) {
+    const cookiesAvailable = !!sessionCookie
+    const tokenSource: ParticipantTokenSource = cookiesAvailable
+      ? 'session'
+      : 'query'
     return {
       participantToken,
-      cookiesAvailable:
-        process.env.ASSESSMENT_MODE === 'true'
-          ? !!cookies['next-auth.participant-session-token']
-          : !!cookies['participant_token'],
+      cookiesAvailable,
+      tokenSource,
     }
   }
 
@@ -104,6 +114,7 @@ export default async function getParticipantToken({
       participantToken,
       participant: result?.data?.loginParticipantWithLti,
       cookiesAvailable,
+      tokenSource: ltiParticipantToken ? ('lti' as const) : undefined,
     }
   } catch (e) {
     console.error(e)

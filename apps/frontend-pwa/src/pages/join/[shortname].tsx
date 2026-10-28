@@ -7,31 +7,35 @@ import {
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome'
 import { GetShortnameQuizzesDocument } from '@klicker-uzh/graphql/dist/ops'
 import { addApolloState, initializeApollo } from '@lib/apollo'
+import type { ParticipantTokenSource } from '@lib/getParticipantToken'
 import getParticipantToken from '@lib/getParticipantToken'
 import useParticipantToken from '@lib/useParticipantToken'
 import { H2, UserNotification } from '@uzh-bf/design-system'
-import { GetServerSidePropsContext } from 'next'
+import type { GetServerSidePropsContext } from 'next'
 import { useTranslations } from 'next-intl'
 import nookies from 'nookies'
-import Layout from '../../components/Layout'
 import LinkButton from '../../components/common/LinkButton'
+import Layout from '../../components/Layout'
 
 function Join({
   isInactive,
   shortname,
   participantToken,
   cookiesAvailable,
+  tokenSource,
 }: {
   isInactive: boolean
   shortname: string
   participantToken?: string
   cookiesAvailable?: boolean
+  tokenSource?: ParticipantTokenSource
 }) {
   const t = useTranslations()
 
   useParticipantToken({
     participantToken,
     cookiesAvailable,
+    tokenSource,
   })
 
   const { data } = useQuery(GetShortnameQuizzesDocument, {
@@ -196,16 +200,18 @@ export async function getServerSideProps(ctx: GetServerSidePropsContext) {
       }
     }
 
-    const { participantToken, cookiesAvailable } = await getParticipantToken({
-      apolloClient,
-      ctx,
-    })
+    const { participantToken, cookiesAvailable, tokenSource } =
+      await getParticipantToken({
+        apolloClient,
+        ctx,
+      })
 
     if (participantToken) {
       return {
         props: {
           participantToken,
           cookiesAvailable,
+          tokenSource,
           shortname: ctx.params.shortname,
           messages: (await import(`@klicker-uzh/i18n/messages/${ctx.locale}`))
             .default,
