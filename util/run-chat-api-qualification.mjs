@@ -522,7 +522,10 @@ async function browserQualification(setup, generation) {
   const session = `chat-catalyst-${generation.slice(0, 8)}`
   let sequence = 0
   const completed = []
+  let browserStep = null
+  let browserError = null
   const browser = (...args) => {
+    browserStep = args[0]
     const result = spawnSync(
       'agent-browser',
       ['--session', session, '--ignore-https-errors', ...args],
@@ -534,6 +537,14 @@ async function browserQualification(setup, generation) {
         env: { ...process.env, AGENT_BROWSER_DEFAULT_TIMEOUT: '30000' },
       }
     )
+    if (result.status !== 0) {
+      const output = `${result.stderr ?? ''} ${result.stdout ?? ''}`
+      browserError = /Timeout|timed out/i.test(output)
+        ? 'timeout'
+        : /Target closed/i.test(output)
+          ? 'browser-runtime'
+          : 'command-failed'
+    }
     assert.equal(result.status, 0, `Browser command failed: ${args[0]}`)
     return result.stdout.trim()
   }
@@ -568,20 +579,24 @@ async function browserQualification(setup, generation) {
     browser('click', '[data-cy="chat-send-button"]')
   }
   try {
-    browser('open', `${setup.pwaOrigin}/login`)
-    browser(
-      'wait',
-      '--fn',
-      `document.querySelector('[data-cy="username-field"]') && Object.keys(document.querySelector('[data-cy="username-field"]')).some(key => key.startsWith('__reactFiber'))`
+    browser('open', `${setup.chatOrigin}/noLogin`)
+    const authenticated = browser(
+      'eval',
+      `(async () => {
+        const response = await fetch(${JSON.stringify(`${setup.backendOrigin}/graphql`)}, {
+          method: 'POST', credentials: 'include',
+          headers: { 'content-type': 'application/json', 'x-graphql-yoga-csrf': 'true' },
+          body: JSON.stringify({
+            query: 'mutation LoginParticipant($usernameOrEmail: String!, $password: String!) { loginParticipant(usernameOrEmail: $usernameOrEmail, password: $password) }',
+            variables: { usernameOrEmail: ${JSON.stringify(binding.username)}, password: 'synthetic-local-browser-password' }
+          })
+        })
+        const result = await response.json()
+        return response.ok && !!result.data?.loginParticipant && !result.errors
+      })()`
     )
-    browser('fill', '[data-cy="username-field"]', binding.username)
-    browser(
-      'fill',
-      '[data-cy="password-field"]',
-      'synthetic-local-browser-password'
-    )
-    browser('click', '[data-cy="submit-login"]')
-    browser('wait', '[data-cy="homepage"]')
+    assert.equal(authenticated, 'true', 'Existing participant login failed')
+    completed.push('real-browser-login-cookie')
     browser('open', `${setup.chatOrigin}/${binding.chatbotId}`)
     browser('wait', '[data-cy="chat-composer-input"]')
     const selectedOrigin = browser('get', 'attr', 'html', 'data-chat-api-url')
@@ -647,7 +662,13 @@ async function browserQualification(setup, generation) {
       stats: next,
     })
   } catch {
-    receipt('browser-result.json', { generation, status: 'failed', completed })
+    receipt('browser-result.json', {
+      generation,
+      status: 'failed',
+      completed,
+      browserStep,
+      browserError,
+    })
     throw new Error('Browser qualification failed at its recorded boundary')
   } finally {
     spawnSync('agent-browser', ['--session', session, 'close'], {
@@ -734,6 +755,7 @@ async function host() {
   const chatOrigin = `https://chat.klicker.${workspace}.localhost`
   const apiOrigin = `https://chat-api.klicker.${workspace}.localhost`
   const pwaOrigin = `https://pwa.klicker.${workspace}.localhost`
+  const backendOrigin = `https://api.klicker.${workspace}.localhost`
   const mapped = spawnSync(
     'devrouter',
     [
@@ -844,7 +866,7 @@ async function host() {
     )
     if (browser)
       await browserQualification(
-        { chatOrigin, apiOrigin, pwaOrigin },
+        { chatOrigin, apiOrigin, pwaOrigin, backendOrigin },
         generation
       )
     await waitFor(
