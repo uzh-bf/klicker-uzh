@@ -25,11 +25,11 @@
     "patch_sha256": "670d1782a56548f4a4571b6e6bbeb33c92ebcbe99247469ad1aa73329fc5e7c0"
   },
   "assets": {
-    ".github/actions/ocr-review/action.yml": "2c11a239c244691ced6a82aa0c582e34aed1b6868cfbea59b8cc23f7a56d101e",
-    ".github/scripts/ocr-controller.cjs": "07bf5283421e3d699577ae06b06fd47441497372d56a772cf2ef14525fe3ef9f",
-    ".github/scripts/ocr-draft-review.cjs": "3973be4572d4ffc162170d62342fca160faaa03378321aa4e703e73578e3ddbf",
-    ".github/scripts/ocr-mistral-adapter.cjs": "45942246aa50a37bbc0fc2fe5851b856c2897a08dd4ad9f06380b5a900595025",
-    ".github/scripts/ocr-review-tools.cjs": "cdf00c5076c5bff660544ce9bd5dd56fd3cf99e20ec4c1baf515e31492b6f2e0",
+    ".github/actions/ocr-review/action.yml": "79b34d4003bdbc57e7076c1f5f9004376f77b32b7f81e22cb1e3da500be1d45a",
+    ".github/scripts/ocr-controller.cjs": "a8fe80e67094ab5c1f819cd8812ceb7e7c95948321138dcc41a9aa5aaedca69b",
+    ".github/scripts/ocr-draft-review.cjs": "85ca88a616f6c72c193103f7bc83d52c286c741b7207f26ad1562162fe53f046",
+    ".github/scripts/ocr-mistral-adapter.cjs": "f764953744a958fe4b8f28993544a50be02f261b5c7a70278fba8922701d22b9",
+    ".github/scripts/ocr-review-tools.cjs": "ca441302e5c1ae4a9b3765ba725e858f92e8bf32ce8e9375e9e8534fa5e873dd",
     ".github/scripts/ocr-review-shared.cjs": "c12e084ae9bd5459791e8cd78e7c11b60eb494e8c6bb5804e7d223e5228c9676",
     ".github/scripts/ocr-runtime-config.cjs": "dfa184aff7e6ad048696086637223437adeee79ced4bcfa90139468c122f16b9",
     ".github/scripts/install-patched-ocr.cjs": "4a74aeb596b0252cb1182660d28ff8a196c51e501b69397ca94713d2d59a5eea",

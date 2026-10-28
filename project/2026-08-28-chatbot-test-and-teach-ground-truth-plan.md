@@ -1,6 +1,11 @@
 # Chatbot Test & Teach ground-truth plan
 
-## Plan identity
+Current report direction is in the [lecturer baseline report plan](2026-10-28-chatbot-baseline-report-plan.md).
+It supersedes K7's historical assumptions about an existing execution kernel and
+owner-only BASE settlement. This is a planning refresh; report implementation
+requires its own approval. Capture PR #5764 remains the active delivery package.
+
+## Historical plan identity
 
 - Date: 2026-08-28
 - Ceremony: full-path, multi-package product plan
@@ -977,6 +982,23 @@ paths named by the package plan and do not revert other work.
   exact diff classification.
 
 ## Progress
+
+### Current checkpoint — 28 October 2026
+
+Capture PR #5764 is open into `v3-ai` at the reviewed `e9d12df867` head, with
+passing CI/final AI review and no unresolved threads before this refresh. The
+user approved refreshing the lecturer-report plan and updating that PR with
+current `v3-ai`. The target update pins `8df0efb23281b6b33c5eaafda90ad864c97ca774`;
+verification and publication are in progress. No report implementation, merge,
+deployment or live activation is part of this continuation.
+
+The linked report plan reuses current evaluation contracts and makes the missing
+execution and accounting seams explicit. Historical K7 slices below remain
+context; the refreshed plan owns the proposed implementation sequence. Current
+upstream lineage/active-serving evidence must be checked before any later live
+proof or automatic generation; older upstream-blocked statements are historical.
+
+### Historical runtime-skill delivery
 
 - Status: K6 is source-complete and published as open, non-draft PR #5650
   against `v3-ai`. The runtime skill, participant composition, and deterministic

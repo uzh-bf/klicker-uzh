@@ -85,6 +85,28 @@ After PR #5633 merges and is fetched: revalidate merged seams, create the fresh 
 
 ## Progress
 
+### Target and planning refresh — 28 October 2026
+
+The user approved refreshing the [lecturer baseline report plan](2026-10-28-chatbot-baseline-report-plan.md)
+and bringing this PR up to date with its target. The history-preserving merge of
+`v3-ai@8df0efb23281b6b33c5eaafda90ad864c97ca774` has no textual conflicts.
+It preserves upstream Next.js/Zod updates and the existing capture/review scope.
+Main owns integration, checks and publication; a read-only explorer maps report
+reuse seams and the configured planner critiques the proposed report plan.
+Report implementation remains a later approval. Target-integration checks,
+review and exact-head CI are pending; merge, deployment and activation remain
+separate. The earlier candidate passed all CI/final review and quiet settle at
+`e9d12df867`; terminal evidence is in the ignored final report. Only affected
+verification is repeated for the refreshed target.
+
+The independent native Sol plan critique approved the corrected report plan.
+Refreshed verification passes 169 Chat, 24 utility and 52 GraphQL database/input
+validation tests, both Chromium capture/review scenarios (38.1 seconds), all host
+policy checks, staged formatting, Gitleaks and the focused Opengrep scan. The
+production build passes all 27 tasks. Browser captures were refreshed and
+visually inspected; capture transport remains mocked. All 42 type/build-check tasks, repository lint and syncpack now pass.
+The committed integration review and exact-head hosted CI precede readiness. No capture source correction or feature migration was needed.
+
 ### Approved current-target integration on 2026-10-26
 
 The user approved integrating `v3-ai@c86162dd786960e3ec3fbf0ab3f70a3d0b4c013a`, adapting capture to current retrieval and citation contracts, affected verification, and updating [PR #5764 — preview response-example capture](https://github.com/uzh-bf/klicker-uzh/pull/5764). This supersedes historical single-KB preview decisions and earlier integration holds. General preview preserves per-mode plural MCP scope, graph retrieval, custom-mode identity, model entitlement and citation behavior. Capture remains available only for one matching live attachment and complete canonical evidence; no lineage is inferred from display fields. The canonical capture mutation rechecks current account AI access before candidate creation.

@@ -14,6 +14,12 @@ tags:
 
 ## Automated review context and portability
 
+Runtime changes and Klicker's caller-pin update normally share one PR. Commit
+the runtime first, then pin its full SHA in a later caller commit. Ordinary CI
+fetches that exact source commit and verifies that the final candidate ships the
+same runtime manifest and assets. Read [the shared runtime guide](ocr-runtime.md#prepare-a-caller-upgrade)
+for source, squash-merge and post-merge verification boundaries.
+
 The [ocr-reviewer skill](../.agents/skills/ocr-reviewer/SKILL.md) is portable
 across repositories and forges. Copy it unchanged when adopting this OCR
 approach; keep repository-specific contracts and skill pointers in local docs.
@@ -391,7 +397,7 @@ see **Bounded codebase check** below. Pushes always run the full suite.
 
 Shard durations differ by architecture, so `playwright/timings.json` names the architecture its weights were measured on. The timing workflow maps the run's recorded route to `x64` for hosted runs and `arm64` for the public pool, passes it to the updater as `--architecture`, and the updater leaves the table untouched when it is calibrated for a different architecture, reporting why instead of writing. An untagged table is adopted by the producing architecture on its first tagged write. Replacing a calibration with another architecture's measurements is therefore a human decision rather than an automatic side effect of a successful run.
 
-- **AI review**: While a PR is a draft, OpenCodeReview runs GLM 5.3 Flash (`zai-glm-5-3-flash`) through Mistral at max reasoning through a runner-local adapter against the exact PR head and its immediate base. A ready transition cancels an in-flight draft run, and ready PRs do not start new automatic reviews. Draft review diffs are sent to Mistral and incur usage cost.
+- **AI review**: While a PR is a draft, OpenCodeReview runs GLM 5.3 Flash (`zai-glm-5-3-flash`) through Mistral at max reasoning through a runner-local adapter against the exact PR head and its immediate base. A ready transition cancels an in-flight draft run, and ready PRs do not start new automatic reviews. Draft review diffs are sent to Mistral and incur usage cost. New commits (`synchronize`) on same-repository `sync/` branches skip automatic draft review; their initial opening, reopening or conversion to draft remains eligible. Ordinary feature PRs retain automatic review on new commits. Manual final review remains a separate gate for the current head.
 - **Draft advisor and repository context**: The trusted draft runner bootstraps
   `.agents/skills/ocr-reviewer/SKILL.md` as merged review rules. Its
   `read_review_context` MCP tool reads bounded Markdown from the trusted policy
@@ -716,6 +722,40 @@ Refresh the rates and date together when provider pricing changes.
 Summaries label the pricing date and exclude account discounts, taxes, and runner
 costs; these are estimates, not billing receipts.
 
+### Provider unavailable or paused
+
+Set the repository variable `OCR_PROVIDER_PAUSED` to `true` to pause model calls
+in new eligible OCR runs. Unset it or set it to `false` to resume on the next
+normal event. Invalid values fail closed. Changing the variable requires
+maintainer authority; neither pause nor resume triggers replay or backfill.
+Existing admission, activation and final-review authorization still apply.
+Already-running jobs use the value resolved when they started.
+
+A confirmed numeric upstream HTTP 402 latches provider unavailability for that
+review invocation. Subsequent main and advisor requests are refused locally;
+already-dispatched requests may finish and retain their usage. The adapter
+returns a fixed payment error instead of translating it into a transient 502.
+Rate limits and server errors retain their existing retry behavior. The payment
+status does not identify whether an allowance, credit balance or billing setting
+caused the rejection.
+
+Draft runs emit `OCR availability status=unavailable` and preserve valid partial
+findings. An early rejection can leave no OCR result; coverage and cost remain
+unknown where receipts are missing. Successful handling of this advisory does
+not establish a passed review. Publication still requires a validated result for
+the frozen head and an open draft PR. Malformed results and unrelated execution
+failures remain failures.
+
+Individual and stack final reviews remain blocking while unavailable. Their
+fixed reason appears in logs, summaries and the authoritative final status.
+Payment rejection prevents later resume attempts, stack ranges and topology
+calls through the existing failed-stage dependencies. No clean evidence is
+published. Models, maximum reasoning, token budgets and accounting are unchanged.
+
+The shared action supplies the draft pause interface. Existing callers need an
+immutable pin to a release containing this behavior after it merges; source
+publication alone does not activate it in pinned adopters.
+
 To investigate scheduling delays, read the existing workflow `created_at` and
 `run_started_at`, then each job's `created_at`, `started_at` and `completed_at`
 through `gh api`. Job-created-to-start time is pending time; the timestamps alone
@@ -731,6 +771,23 @@ The sanitized outcome artifact and logs distinguish selected, completed, failed,
 reused and waived coverage; a partial result remains advisory and emits a warning.
 Sticky summaries, incremental comment deduplication, low-severity routing and
 existing OCR reasoning, budgets, timeouts and retry behavior are preserved.
+
+The draft adapter recognizes the pinned CLI's planning task affinity shape and
+supplies guidance only from a `stop` response with nonempty final text. Truncated
+or empty plans reach the stock CLI as an empty answer without reasoning, using
+its existing continue-without-plan path. HTTP success, original finish reason,
+returned usage and private native history remain intact; this adds no provider
+request or retry. Main-review reasoning and unrecognized task identities retain
+their existing handling. The separate final-review adapter is unchanged.
+
+`OCR planning` logs and summaries count recognized responses as `usable`,
+`length`, `empty` or `invalid_finish`. `status=complete` means those diagnostic
+counters are available; `usable` identifies completed final plans. Missing or
+unfinished diagnostics report `status=unavailable`. Counters contain no affinity
+keys or response content. The CLI's `phase_completed phase=planning` progress
+event records that its planning request returned; it alone does not prove usable
+guidance. Raw usage journals retain the original response sizes and finish reason
+before the compatibility projection, and aggregate accounting remains unchanged.
 
 Manual individual and stack code reviews use human-audience progress through the
 adapter's `OCR_ADAPTER_PROGRESS_FD=3` opt-in. Their shell functions bind descriptor
