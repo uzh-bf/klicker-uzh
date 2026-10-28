@@ -32,6 +32,21 @@ export default {
         'Übe mit prüfungsnahen Fragen aus den Kursunterlagen, jeweils eine nach der anderen, mit Rückmeldung.',
       custom: 'Eigener Modus',
     },
+    dataUse: {
+      accountTitle: 'Datennutzung für Dein Konto',
+      guestTitle: 'Chat als Gast nutzen',
+      guestStart: 'Chat starten',
+      guestAcknowledgement:
+        'Ich habe die KlickerUZH [Datenschutzbestimmungen](https://www.klicker.uzh.ch/datenschutz) gelesen und akzeptiere sie für mein Gastkonto. Ich bestätige meine Auswahl. Forschung und Learning Analytics sind freiwillig.',
+      accountIntro:
+        'Der Chatbot antwortet in Deinem Namen und speichert die Unterhaltung auf Deinem KlickerUZH-Konto. Was gespeichert wird, beschreibt die [Datenschutzerklärung](https://www.klicker.uzh.ch/datenschutz). Nachfolgend bestätigst Du die beiden optionalen Zwecke; Du kannst beide später in den Chat-Einstellungen ändern.',
+      guestIntro:
+        'Für diesen Chat wird ein Gastkonto angelegt. Du musst keinen Namen und keine E-Mail-Adresse angeben. Deine Chatnachrichten und die für den Betrieb erforderlichen Nutzungsdaten werden gespeichert und deinem Gastkonto zugeordnet. Du kannst unabhängig entscheiden, ob deine Daten für Forschung und Learning Analytics verwendet werden dürfen. Beide Entscheidungen kannst du später in den Chat-Einstellungen ändern. Weitere Informationen findest du in der [Datenschutzerklärung](https://www.klicker.uzh.ch/datenschutz).',
+      settingsTitle: 'Datennutzung',
+      settingsIntro:
+        'Ändere die optionalen Zwecke für Dein KlickerUZH-Konto. Forschung und Learning Analytics sind freiwillig, und ein Widerspruch gilt für deren künftige Nutzung.',
+      settingsLoading: 'Einstellungen zur Datennutzung werden geladen…',
+    },
     settingsPanel: {
       title: 'Einstellungen',
       aiModelLabel: 'KI-Modell',
@@ -91,6 +106,9 @@ export default {
         'Deine Credits sind aufgebraucht. Einige Modelle sind möglicherweise nicht mehr verfügbar.',
     },
     sidebar: {
+      guestLabel: 'Gast',
+      guestAccountHint:
+        'Deine Chats werden in einem Gastkonto gespeichert, getrennt von Deinem registrierten KlickerUZH-Konto.',
       newChat: 'Neuer Chat',
       closeSidebar: 'Seitenleiste schliessen',
       openSidebar: 'Seitenleiste öffnen',

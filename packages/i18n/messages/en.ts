@@ -32,6 +32,21 @@ export default {
         'Practise with exam-style course questions, one at a time, with formative feedback.',
       custom: 'Custom mode',
     },
+    dataUse: {
+      accountTitle: 'Data use for your account',
+      guestTitle: 'Use chat as a guest',
+      guestStart: 'Start chat',
+      guestAcknowledgement:
+        'I have read and accept the KlickerUZH [privacy policy](https://www.klicker.uzh.ch/privacy_policy) for my guest account. I confirm my choices. Research and Learning Analytics are voluntary.',
+      accountIntro:
+        'The chatbot answers on your behalf and stores the conversation on your KlickerUZH account. The [privacy policy](https://www.klicker.uzh.ch/privacy_policy) describes what is stored. Below you confirm the two optional purposes; you can change both later in the chat settings.',
+      guestIntro:
+        'A guest account is created for this chat. You do not need to provide a name or email address. Your chat messages and the usage data needed to operate the service are stored and linked to your guest account. You can decide independently whether your data may be used for research and Learning Analytics. You can change both decisions later in the chat settings. See the [privacy policy](https://www.klicker.uzh.ch/privacy_policy) for more information.',
+      settingsTitle: 'Data use',
+      settingsIntro:
+        'Change the optional purposes for your KlickerUZH account. Research and Learning Analytics are voluntary, and an objection applies to their future use.',
+      settingsLoading: 'Loading your data use settings…',
+    },
     settingsPanel: {
       title: 'Settings',
       aiModelLabel: 'AI Model',
@@ -90,6 +105,9 @@ export default {
         'Your credits are used up. Some models may no longer be available.',
     },
     sidebar: {
+      guestLabel: 'Guest',
+      guestAccountHint:
+        'Your chats are saved in a guest account, separate from your registered KlickerUZH account.',
       newChat: 'New Chat',
       closeSidebar: 'Close sidebar',
       openSidebar: 'Open sidebar',

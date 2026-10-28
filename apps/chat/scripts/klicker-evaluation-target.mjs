@@ -716,6 +716,21 @@ export class KlickerEvaluationTarget {
   }
 
   async acceptDisclaimer(cookie) {
+    const dataUseResponse = await fetchWithTimeout(
+      urlFor(this.chatOrigin, `/api/chatbots/${this.chatbotId}/data-use`),
+      { headers: requestHeaders(cookie) },
+      this.requestTimeoutMs
+    )
+    const dataUse = await readJsonResponse(
+      dataUseResponse,
+      'participant_data_use'
+    )
+    // The synthetic evaluation account must be prepared through onboarding;
+    // the adapter never acknowledges policies or selects purposes for it.
+    if (dataUse?.state?.complete !== true) {
+      throw evaluationError('participant_data_use_required')
+    }
+
     const disclaimerResponse = await fetchWithTimeout(
       urlFor(this.chatOrigin, `/api/chatbots/${this.chatbotId}/disclaimer`),
       { headers: requestHeaders(cookie) },
@@ -808,8 +823,9 @@ export class KlickerEvaluationTarget {
     if (cookies.length === 0) {
       throw evaluationError('elearning_cookies_missing')
     }
-    this.elearningCookie = cookies.join('; ')
-    await this.acceptDisclaimer(this.elearningCookie)
+    const cookie = cookies.join('; ')
+    await this.acceptDisclaimer(cookie)
+    this.elearningCookie = cookie
   }
 
   async createThread(cookie = this.cookie, isElearning = false) {
