@@ -133,8 +133,7 @@ export type ChatApiDependencies = {
   getChatbot: (chatbotId: string) => Promise<ChatbotRecord | null>
   checkDisclaimer: (
     participantId: string,
-    chatbotId: string,
-    disclaimerId: string | null
+    chatbotId: string
   ) => Promise<{ required: boolean; accepted: boolean }>
   getCredits: (
     participantId: string,
@@ -713,8 +712,7 @@ export function createChatApiApp(
 
       const disclaimer = await dependencies.checkDisclaimer(
         auth.participantId,
-        chatbotId,
-        chatbot.disclaimerId
+        chatbotId
       )
       if (disclaimer.required && !disclaimer.accepted) {
         const error = jsonError(
@@ -1100,7 +1098,7 @@ export function createChatApiApp(
                     content,
                     creditsUsed,
                   })
-                : { persisted: false, creditsCharged: false, creditsUsed: null }
+                : { persisted: false, creditsUsed: null }
             if (!result.persisted) await failClaim()
             return {
               creditsUsed: result.persisted

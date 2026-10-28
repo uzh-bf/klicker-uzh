@@ -67,7 +67,6 @@ export type FinalizeAssistantInput = {
 export type FinalizeAssistantResult = {
   creditsUsed?: number | null
   persisted: boolean
-  creditsCharged: boolean
 }
 
 export function getSystemPrompt(
@@ -205,8 +204,7 @@ export async function getChatbot(
 
 export async function checkDisclaimer(
   participantId: string,
-  chatbotId: string,
-  _disclaimerId: string | null
+  chatbotId: string
 ) {
   return DisclaimersService.checkDisclaimerStatus(chatbotId, participantId)
 }
@@ -313,7 +311,5 @@ export async function finalizeAssistantTurn(
   return {
     creditsUsed: result.creditsUsed,
     persisted: result.outcome !== 'empty',
-    creditsCharged:
-      result.outcome === 'completed' && result.creditsUsed !== null,
   }
 }

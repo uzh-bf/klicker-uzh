@@ -69,7 +69,6 @@ function baseDependencies(
     persistUserMessage: vi.fn(async () => undefined),
     finalizeAssistantTurn: vi.fn(async () => ({
       persisted: true,
-      creditsCharged: true,
     })),
     engine: {
       manifest: vi.fn(async () => ({
