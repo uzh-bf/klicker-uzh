@@ -20,6 +20,7 @@ export const FEATURE_FLAG_DEFAULTS = {
   'kb-graph-builds': false,
   'kb-graph-domain-selection': false,
   'question-focus-topic': false,
+  'question-library-comparison': false,
   // Raises the persona limit for custom chat modes the lecturer writes or
   // edits from 10,000 to 100,000 characters. Stored long personas stay
   // readable and savable unchanged without it.

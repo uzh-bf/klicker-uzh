@@ -1,0 +1,340 @@
+import * as DB from '@klicker-uzh/prisma/client'
+import { describe, expect, it, vi } from 'vitest'
+import type { ContextWithUser } from '@/lib/context.js'
+import { MAX_BUFFERED_QUESTION_GENERATION_ARTIFACT_BYTES } from '@/services/questionGenerationContracts.js'
+import {
+  createQuestionLibrarySnapshot,
+  normalizeQuestionLibraryElement,
+  normalizeQuestionPoolElement,
+  questionLibraryComparisonEnabled,
+  questionLibraryComparisonMaxElements,
+} from '@/services/questionGenerationLibrary.js'
+
+function element(
+  overrides: Record<string, unknown> = {}
+): Parameters<typeof normalizeQuestionLibraryElement>[0] {
+  return {
+    id: 42,
+    version: 3,
+    type: DB.ElementType.MC,
+    name: 'Portfolio risk',
+    content: 'Why can diversification reduce portfolio risk?',
+    options: {
+      displayMode: 'LIST',
+      choices: [
+        { ix: 1, value: 'It guarantees returns.', correct: false },
+        {
+          ix: 0,
+          value: 'It reduces asset-specific risk.',
+          correct: true,
+        },
+      ],
+    },
+    ...overrides,
+  } as Parameters<typeof normalizeQuestionLibraryElement>[0]
+}
+
+function context(rows: ReturnType<typeof element>[]) {
+  const findMany = vi.fn(async () => rows)
+  return {
+    findMany,
+    ctx: {
+      user: { sub: '123e4567-e89b-42d3-a456-426614174000' },
+      prisma: { element: { findMany } },
+    } as unknown as ContextWithUser,
+  }
+}
+
+describe('question-library snapshot', () => {
+  it('fails closed without an evaluator and targets the lecturer', async () => {
+    const { ctx } = context([])
+    expect(await questionLibraryComparisonEnabled(ctx)).toBe(false)
+    const isEnabled = vi.fn(() => true)
+    ctx.featureFlags = { isEnabled } as never
+    ctx.betaPreference = { userId: ctx.user.sub, value: Promise.resolve(true) }
+    expect(await questionLibraryComparisonEnabled(ctx)).toBe(true)
+    expect(isEnabled).toHaveBeenCalledWith(
+      'question-library-comparison',
+      expect.objectContaining({ id: ctx.user.sub, actorType: 'user' })
+    )
+    isEnabled.mockReturnValue(false)
+    expect(await questionLibraryComparisonEnabled(ctx)).toBe(false)
+  })
+
+  it('validates the adjustable bounded library size', () => {
+    expect(questionLibraryComparisonMaxElements({})).toBe(500)
+    expect(
+      questionLibraryComparisonMaxElements({
+        KB_QUESTION_LIBRARY_COMPARISON_MAX_ELEMENTS: '25',
+      })
+    ).toBe(25)
+    expect(() =>
+      questionLibraryComparisonMaxElements({
+        KB_QUESTION_LIBRARY_COMPARISON_MAX_ELEMENTS: '501',
+      })
+    ).toThrow(/integer from 1 to 500/)
+  })
+
+  it('normalizes choice order without losing answer association', () => {
+    expect(normalizeQuestionLibraryElement(element())).toEqual({
+      element_id: 42,
+      version: 3,
+      element_type: 'MC',
+      name: 'Portfolio risk',
+      stem: 'Why can diversification reduce portfolio risk?',
+      choices: [
+        { text: 'It reduces asset-specific risk.', correct: true },
+        { text: 'It guarantees returns.', correct: false },
+      ],
+    })
+  })
+
+  it('queries only owned active supported questions in deterministic order', async () => {
+    const { ctx, findMany } = context([element()])
+    const bytes = await createQuestionLibrarySnapshot(ctx, {
+      KB_QUESTION_LIBRARY_COMPARISON_MAX_ELEMENTS: '5',
+    })
+
+    expect(findMany).toHaveBeenCalledWith({
+      where: {
+        ownerId: '123e4567-e89b-42d3-a456-426614174000',
+        isArchived: false,
+        isDeleted: false,
+        type: { in: ['SC', 'MC', 'KPRIM'] },
+      },
+      orderBy: [{ updatedAt: 'desc' }, { id: 'desc' }],
+      take: 6,
+      select: {
+        id: true,
+        version: true,
+        type: true,
+        name: true,
+        content: true,
+        options: true,
+      },
+    })
+    expect(JSON.parse(bytes.toString('utf8'))).toEqual({
+      questions: [normalizeQuestionLibraryElement(element())],
+      reference_count: 1,
+      schema_version: 1,
+      truncated: false,
+    })
+    expect(bytes.toString('utf8')).not.toContain(ctx.user.sub)
+  })
+
+  it('marks a deterministic recent-first snapshot as truncated', async () => {
+    const { ctx } = context([element({ id: 2 }), element({ id: 1 })])
+
+    const first = await createQuestionLibrarySnapshot(ctx, {
+      KB_QUESTION_LIBRARY_COMPARISON_MAX_ELEMENTS: '1',
+    })
+    const second = await createQuestionLibrarySnapshot(ctx, {
+      KB_QUESTION_LIBRARY_COMPARISON_MAX_ELEMENTS: '1',
+    })
+
+    expect(first.equals(second)).toBe(true)
+    expect(JSON.parse(first.toString('utf8'))).toMatchObject({
+      reference_count: 1,
+      truncated: true,
+      questions: [{ element_id: 2 }],
+    })
+  })
+
+  it('fails closed on malformed choice data', () => {
+    expect(() =>
+      normalizeQuestionLibraryElement(element({ options: { choices: [] } }))
+    ).toThrow(/choices must contain/)
+  })
+
+  it('skips malformed legacy elements without blocking generation', async () => {
+    const warning = vi.spyOn(console, 'warn').mockImplementation(() => {})
+    const malformed = element({ id: 43, options: { choices: [] } })
+    const valid = element({ id: 42 })
+    const { ctx } = context([malformed, valid])
+
+    const snapshot = JSON.parse(
+      (
+        await createQuestionLibrarySnapshot(ctx, {
+          KB_QUESTION_LIBRARY_COMPARISON_MAX_ELEMENTS: '5',
+        })
+      ).toString('utf8')
+    )
+
+    expect(snapshot).toMatchObject({
+      reference_count: 1,
+      truncated: true,
+      questions: [{ element_id: 42 }],
+    })
+    expect(warning).toHaveBeenCalledWith(
+      'event=question_library_snapshot_element_skipped element_id=%d version=%d reason=%s',
+      43,
+      3,
+      'Question-library choices must contain 1-100 entries'
+    )
+    warning.mockRestore()
+  })
+
+  describe.each([
+    1, 2,
+  ] as const)('schema %i text validation', (schemaVersion) => {
+    it.each([
+      'name',
+      'content',
+      'choice',
+    ] as const)('skips records with forbidden controls in %s', async (field) => {
+      const warning = vi.spyOn(console, 'warn').mockImplementation(() => {})
+      try {
+        const rows = Array.from({ length: 32 }, (_, code) => code)
+          .filter((code) => ![9, 10, 13].includes(code))
+          .map((code) => {
+            const value = `Before${String.fromCharCode(code)}After`
+            return element({
+              id: code + 100,
+              ...(field === 'choice'
+                ? { options: { choices: [{ ix: 0, value, correct: true }] } }
+                : { [field]: value }),
+            })
+          })
+        const valid = element()
+        const { ctx } = context([...rows, valid])
+        const snapshot = JSON.parse(
+          (
+            await createQuestionLibrarySnapshot(ctx, {}, { schemaVersion })
+          ).toString('utf8')
+        )
+        expect(snapshot).toMatchObject({
+          schema_version: schemaVersion,
+          reference_count: 1,
+          truncated: true,
+        })
+        expect(snapshot.questions).toEqual([
+          schemaVersion === 1
+            ? normalizeQuestionLibraryElement(valid)
+            : normalizeQuestionPoolElement(valid),
+        ])
+      } finally {
+        warning.mockRestore()
+      }
+    })
+
+    it('preserves tab, newline and carriage return in text', async () => {
+      const text = 'Before\tMiddle\nNext\rAfter'
+      const { ctx } = context([
+        element({
+          name: text,
+          content: text,
+          options: { choices: [{ ix: 0, value: text, correct: true }] },
+        }),
+      ])
+      const snapshot = JSON.parse(
+        (
+          await createQuestionLibrarySnapshot(ctx, {}, { schemaVersion })
+        ).toString('utf8')
+      )
+      expect(snapshot).toMatchObject({
+        schema_version: schemaVersion,
+        reference_count: 1,
+        truncated: false,
+        questions: [{ name: text, stem: text, choices: [{ text }] }],
+      })
+    })
+  })
+
+  it.each([
+    1, 2,
+  ] as const)('bounds schema %i snapshots by the artifact byte limit', async (schemaVersion) => {
+    const largeChoices = Array.from({ length: 100 }, (_, ix) => ({
+      ix,
+      value: `${ix}`.padEnd(10_000, 'x'),
+      correct: ix === 0,
+    }))
+    const rows = Array.from({ length: 11 }, (_, index) =>
+      element({
+        id: index + 1,
+        name: `Large question ${index + 1}`,
+        options: { choices: largeChoices },
+      })
+    )
+    const { ctx } = context(rows)
+
+    const bytes = await createQuestionLibrarySnapshot(
+      ctx,
+      {
+        KB_QUESTION_LIBRARY_COMPARISON_MAX_ELEMENTS: '20',
+      },
+      { schemaVersion }
+    )
+    const snapshot = JSON.parse(bytes.toString('utf8'))
+
+    expect(bytes.byteLength).toBeLessThanOrEqual(
+      MAX_BUFFERED_QUESTION_GENERATION_ARTIFACT_BYTES
+    )
+    expect(snapshot.reference_count).toBeLessThan(rows.length)
+    expect(snapshot.questions).toHaveLength(snapshot.reference_count)
+    expect(snapshot.truncated).toBe(true)
+  })
+})
+
+describe('generic question pool snapshot', () => {
+  it('preserves unknown keys and restricts uses to comparison', () => {
+    const question = normalizeQuestionPoolElement(
+      element({
+        options: {
+          hasSampleSolution: false,
+          choices: [{ ix: 0, value: 'Synthetic choice', correct: false }],
+        },
+      })
+    )
+    expect(question.source).toEqual({
+      namespace: 'klicker',
+      item_id: '42',
+      revision: '3',
+    })
+    expect(question.allowed_uses).toEqual(['comparison'])
+    expect(question.choices[0]?.correct).toBeNull()
+  })
+
+  it('preserves known answer association in option order', () => {
+    const question = normalizeQuestionPoolElement(
+      element({
+        options: {
+          hasSampleSolution: true,
+          choices: [
+            { ix: 1, value: 'Second', correct: false },
+            {
+              ix: 0,
+              value: 'First',
+              correct: true,
+              feedback: 'Synthetic feedback',
+            },
+          ],
+        },
+      })
+    )
+    expect(question.choices).toEqual([
+      { text: 'First', correct: true, feedback: 'Synthetic feedback' },
+      { text: 'Second', correct: false, feedback: '' },
+    ])
+  })
+
+  it('emits generic snapshots only on explicit caller opt-in', async () => {
+    const { ctx } = context([element()])
+    const legacy = JSON.parse(
+      (await createQuestionLibrarySnapshot(ctx, {})).toString()
+    )
+    const generic = JSON.parse(
+      (
+        await createQuestionLibrarySnapshot(ctx, {}, { schemaVersion: 2 })
+      ).toString()
+    )
+    expect(legacy.schema_version).toBe(1)
+    expect(generic.schema_version).toBe(2)
+    expect(generic.scope).toBe('owned_active_library')
+    expect(generic.reference_count).toBe(legacy.reference_count)
+    expect(generic.truncated).toBe(legacy.truncated)
+    expect(generic.questions[0].source.item_id).toBe(
+      String(legacy.questions[0].element_id)
+    )
+    expect(generic.questions[0].stem).toBe(legacy.questions[0].stem)
+  })
+})
