@@ -129,6 +129,7 @@ async function readResponse(response: Response, signal: AbortSignal) {
   const cancel = () => void reader.cancel().catch(() => {})
   signal.addEventListener('abort', cancel, { once: true })
   try {
+    if (signal.aborted) cancel()
     signal.throwIfAborted()
     while (true) {
       const { done, value } = await reader.read()

@@ -532,6 +532,33 @@ describe('run_python admission and execution', () => {
     expect(fetchMock.mock.calls[0][1]?.signal?.aborted).toBe(true)
   })
 
+  test('cancels a response body when cancellation wins just before body reading', async () => {
+    const controller = new AbortController()
+    let bodyCancelled = false
+    fetchMock.mockImplementation(async () => {
+      controller.abort()
+      return new Response(
+        new ReadableStream<Uint8Array>(
+          {
+            cancel() {
+              bodyCancelled = true
+            },
+          },
+          { highWaterMark: 0 }
+        ),
+        { headers: { 'content-type': 'application/json' } }
+      )
+    })
+    await expect(
+      getExecute(makeTools())(
+        { code: 'pass' },
+        { abortSignal: controller.signal }
+      )
+    ).resolves.toEqual({ kind: 'cancelled' })
+    expect(bodyCancelled).toBe(true)
+    expect(fetchMock).toHaveBeenCalledTimes(1)
+  })
+
   test('cancels a response body when the SDK caller aborts while it is being read', async () => {
     const controller = new AbortController()
     let markReadStarted!: () => void
