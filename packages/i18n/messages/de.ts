@@ -5656,6 +5656,67 @@ Da die KlickerUZH-App noch nicht im iOS-App-Store verfügbar ist, folgen Sie die
         'Dieses Beispiel wurde während Ihrer Bearbeitung geändert. Ihr Entwurf ist weiterhin geöffnet. Schliessen Sie den Dialog und öffnen Sie das Beispiel erneut, bevor Sie wieder speichern.',
       responseExampleReviewForbidden:
         'Nur die Eigentümerin oder der Eigentümer des Chatbots kann Antwortbeispiele überprüfen.',
+      responseExampleBaselineTitle: 'Chatbot testen',
+      responseExampleBaselineDescription:
+        'Vergleichen Sie Chatbot-Antworten mit Ihren freigegebenen Beispielen. Der Chatbot sieht die erwarteten Antworten während des Tests nicht.',
+      responseExampleBaselineAllowance:
+        'Jede Antwort und jeder Vergleich wird über das BASE-Modellguthaben Ihres Kontos abgerechnet. Ein gestarteter Schritt kann mehr als das verbleibende Guthaben verbrauchen.',
+      responseExampleBaselineEligible: 'Geeignete Beispiele: {count}',
+      responseExampleBaselineExcluded: 'Ausgeschlossene Beispiele: {count}',
+      responseExampleBaselineExcludedReason:
+        'Einige Beispiele verwenden einen nicht unterstützten Chat-Modus oder benötigen aktuelle Quellennachweise.',
+      responseExampleBaselineRun: 'Basistest starten',
+      responseExampleBaselineRunAgain: 'Neuen Test starten',
+      responseExampleBaselineReplace: 'Laufenden Test ersetzen',
+      responseExampleBaselineLoading: 'Basistestbericht wird geladen ...',
+      responseExampleBaselineLoadError:
+        'Der Basistestbericht konnte nicht geladen werden. Bitte versuchen Sie es erneut.',
+      responseExampleBaselineRefreshError:
+        'Der aktuelle Bericht konnte nicht aktualisiert werden. Die gespeicherten Ergebnisse werden weiterhin angezeigt.',
+      responseExampleBaselineActionError:
+        'Der Basistest konnte nicht gestartet werden. Bitte versuchen Sie es erneut.',
+      responseExampleBaselineUnavailable:
+        'Ein Test kann derzeit nicht gestartet werden. Prüfen Sie die geeigneten Beispiele und das Kontoguthaben.',
+      responseExampleBaselineQueued: 'Wartet auf den Start',
+      responseExampleBaselineRunning: 'In Bearbeitung',
+      responseExampleBaselineCompleted: 'Abgeschlossen',
+      responseExampleBaselineFailed: 'Vorzeitig beendet',
+      responseExampleBaselineIncomplete:
+        'Einige Antworten konnten nicht erstellt werden',
+      responseExampleBaselineStale: 'Beispiele wurden geändert',
+      responseExampleBaselineStaleDescription:
+        'Dieser Bericht verwendet eine frühere Version der Beispiele oder Chatbot-Einstellungen. Starten Sie einen neuen Test für die aktuelle Version.',
+      responseExampleBaselineProgress:
+        '{completed} von {total} Fällen abgeschlossen',
+      responseExampleBaselineFailedDescription:
+        'Der Test wurde beendet, bevor alle Beispiele geprüft waren. Abgeschlossene Ergebnisse bleiben unten verfügbar.',
+      responseExampleBaselineIncompleteDescription:
+        'Einige Beispiele konnten nicht geprüft werden. Sehen Sie sich die Fälle unten an, bevor Sie sich auf den Bericht verlassen.',
+      responseExampleBaselineUnassessedSummary:
+        '{count} {count, plural, one {Fall ist} other {Fälle sind}} nicht bewertet. Prüfen Sie diese Antworten selbst.',
+      responseExampleBaselineNoCases: 'Dieser Bericht enthält keine Testfälle.',
+      responseExampleBaselinePass: 'Sieht gut aus',
+      responseExampleBaselineNeedsAttention: 'Bitte prüfen',
+      responseExampleBaselineNotAssessed: 'Nicht bewertet',
+      responseExampleBaselineAssessmentPending:
+        'Die Antwort ist bereit. Der Vergleich läuft noch.',
+      responseExampleBaselineSourceSupportUnassessed:
+        'Die inhaltliche Belegbarkeit der Quellen wurde nicht bewertet. Prüfen Sie die Zitate selbst anhand der Kursunterlagen.',
+      responseExampleBaselineActualAnswer: 'Chatbot-Antwort',
+      responseExampleBaselineIdealAnswer: 'Erwartete Antwort',
+      responseExampleBaselineSources: 'Quellen',
+      responseExampleBaselineNoSources: 'Keine Quellenangaben verfügbar.',
+      responseExampleBaselineAnswerUnavailable:
+        'Für diesen Fall ist keine Antwort verfügbar.',
+      responseExampleBaselineOtherMode: 'Anderer Chat-Modus',
+      responseExampleBaselineCasePending: 'Ausstehend',
+      responseExampleBaselineCaseAnswerReady: 'Antwort bereit',
+      responseExampleBaselineCaseCompleted: 'Geprüft',
+      responseExampleBaselineCaseUnassessed: 'Bitte selbst prüfen',
+      responseExampleBaselineReplaceTitle: 'Laufenden Test ersetzen?',
+      responseExampleBaselineReplaceDescription:
+        'Der aktuelle Test startet keine weiteren Antworten. Eine bereits laufende Antwort kann fertiggestellt werden, ihr Ergebnis ersetzt jedoch nicht den neuen Bericht.',
+      responseExampleBaselineReplaceConfirm: 'Test ersetzen',
       answerCollections: 'Antwort-Sammlungen',
       answerCollectionsDescription:
         'Hier finden Sie alle Ihre Antwort-Sammlungen. Sie benötigen diese zur Erstellung bestimmter komplexer Fragetypen, wie beispielsweise Auswahl-Fragen und Fallstudien. Um bestehende Antwort-Sammlungen anderer Nutzer zu importieren oder Zugriff auf diese zu beantragen, besuchen Sie bitte den <link>Katalog</link>.',

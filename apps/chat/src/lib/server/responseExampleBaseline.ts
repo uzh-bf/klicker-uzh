@@ -98,6 +98,7 @@ function modelDigest(model: ReturnType<typeof getChatModelRegistry>[number]) {
     deploymentId: model.deploymentId,
     maxOutputTokens: model.maxOutputTokens,
     usesResponsesApi: model.usesResponsesApi,
+    supportsReasoning: model.supportsReasoning,
     cost: model.cost,
     supportedReasoningEfforts: model.supportedReasoningEfforts,
   })
@@ -207,8 +208,7 @@ export async function executeResponseExampleBaselineCase(
   let stage: BaselineOperationStage = 'TARGET'
   try {
     const { entry, chatbot, model: modelConfig } = await currentCase(scope)
-    if (entry.status !== 'PENDING')
-      return { completed: false, continueRun: false }
+    if (entry.status !== 'PENDING') return { continueRun: false }
     const modeConfigurations = resolveEffectiveMCPConfigurations(
       chatbot.mcpConfigurations,
       entry.chatMode
@@ -267,7 +267,8 @@ export async function executeResponseExampleBaselineCase(
       selectedMode: entry.chatMode,
       responseExampleRole: 'excluded',
     })
-    if (context.unavailable) throw new Error('BASELINE_TOOLS_UNAVAILABLE')
+    if (context.unavailable || !context.docQueryToolName)
+      throw new Error('BASELINE_TOOLS_UNAVAILABLE')
     const { model } = getChatModel(
       { ...chatbot, openaiApiKey: null, openaiBaseUrl: null },
       modelConfig
@@ -295,10 +296,10 @@ export async function executeResponseExampleBaselineCase(
       inputRate: modelConfig.cost.input,
       outputRate: modelConfig.cost.output,
     })
-    if (!operation) return { completed: false, continueRun: false }
+    if (!operation) return { continueRun: false }
     operationId = operation.id
     if (!(await markBaselineOperationDispatched(prisma, operationId)))
-      return { completed: false, continueRun: false }
+      return { continueRun: false }
     providerDispatched = true
     let targetFailed = false
     const result = streamText({
@@ -429,8 +430,8 @@ export async function executeResponseExampleBaselineCase(
         errorCode: completeTarget ? null : 'BASELINE_TARGET_UNASSESSED',
       },
     })
-    if (!updated.count) return { completed: false, continueRun: false }
-    if (!completeTarget) return { completed: false, continueRun: true }
+    if (!updated.count) return { continueRun: false }
+    if (!completeTarget) return { continueRun: true }
 
     // Expected answer content is opened only after target execution and usage settlement.
     stage = 'JUDGE'
@@ -443,17 +444,17 @@ export async function executeResponseExampleBaselineCase(
       },
       select: { idealAnswer: true, actualAnswer: true },
     })
-    if (!judgeCase) return { completed: false, continueRun: false }
+    if (!judgeCase) return { continueRun: false }
     const judgeOperation = await claimBaselineOperation(prisma, {
       ...scope,
       stage,
       inputRate: modelConfig.cost.input,
       outputRate: modelConfig.cost.output,
     })
-    if (!judgeOperation) return { completed: false, continueRun: false }
+    if (!judgeOperation) return { continueRun: false }
     operationId = judgeOperation.id
     if (!(await markBaselineOperationDispatched(prisma, operationId)))
-      return { completed: false, continueRun: false }
+      return { continueRun: false }
     providerDispatched = true
     const judged = await generateText({
       model,
@@ -501,7 +502,7 @@ export async function executeResponseExampleBaselineCase(
         assessment: { ...assessment.data, sourceSupport: 'UNASSESSED' },
       },
     })
-    return { completed: true, continueRun: true }
+    return { continueRun: true }
   } catch (error) {
     if (operationId) {
       if (providerDispatched)
@@ -525,7 +526,7 @@ export async function executeResponseExampleBaselineCase(
             ? 'BASELINE_JUDGE_UNASSESSED'
             : 'BASELINE_TARGET_UNASSESSED'
     await markUnassessed(scope, code)
-    return { completed: false, continueRun: false }
+    return { continueRun: false }
   } finally {
     await closeTools?.()
   }

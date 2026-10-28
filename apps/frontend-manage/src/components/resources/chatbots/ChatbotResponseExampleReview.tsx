@@ -24,6 +24,7 @@ import { useTranslations } from 'next-intl'
 import { useEffect, useRef, useState } from 'react'
 import { twMerge } from 'tailwind-merge'
 import ContentInput from '../../common/ContentInput'
+import ChatbotResponseExampleBaseline from './ChatbotResponseExampleBaseline'
 
 type ResponseExample = ResponseExampleDataFragment
 
@@ -157,6 +158,14 @@ function ChatbotResponseExampleReview({
     data?.getChatbotResponseExamples?.examples ?? EMPTY_RESPONSE_EXAMPLES
   const chatModes = data?.getChatbotResponseExamples?.chatModes ?? []
   const isMutating = approving || editing || rejecting
+  const baselineExampleSetDigest = JSON.stringify({
+    chatModes,
+    examples: examples.map(({ id, updatedAt, status }) => ({
+      id,
+      updatedAt,
+      status,
+    })),
+  })
 
   useEffect(() => {
     if (
@@ -316,6 +325,11 @@ function ChatbotResponseExampleReview({
           {t('manage.resources.responseExamplesDescription')}
         </span>
       </div>
+
+      <ChatbotResponseExampleBaseline
+        chatbotId={chatbotId}
+        exampleSetDigest={baselineExampleSetDigest}
+      />
 
       {loading && (
         <div

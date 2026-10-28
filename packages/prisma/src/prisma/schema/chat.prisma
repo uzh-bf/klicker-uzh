@@ -468,7 +468,6 @@ model ResponseExampleBaselineOperation {
   inputRate    Decimal                 @db.Decimal(18, 6)
   outputRate   Decimal                 @db.Decimal(18, 6)
   creditsUsed  Decimal?                @db.Decimal(18, 6)
-  expiresAt    DateTime
   dispatchedAt DateTime?
   settledAt    DateTime?
   createdAt    DateTime                @default(now())

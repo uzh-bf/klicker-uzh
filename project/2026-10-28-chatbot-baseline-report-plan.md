@@ -277,5 +277,8 @@ merge or deployment is authorized by this source batch.
   new durable report/accounting10 passed. The single SQL migration exactly matches
   a repeat Prisma schema-to-schema generation from the recorded old schema, and
   the applied disposable database diff is empty. Chat/GraphQL/worker types pass.
-  Lecturer UI/browser checks, simplification, integrated review and draft delivery
-  remain pending. No plan-only PR is opened.
+  Lecturer UI type check and browser lifecycle pass, with inspected EN/DE and
+  compact screenshots from synthetic transport. Independent backend simplifier
+  accepted removal of duplicate deadline/lock and unused protocol state; all10
+  durable tests pass after correction. Final review, production build and draft
+  delivery remain pending. No plan-only PR is opened.

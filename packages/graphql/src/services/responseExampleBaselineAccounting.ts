@@ -59,9 +59,6 @@ async function operationIsCurrent(
   },
   now: Date
 ): Promise<boolean> {
-  await tx.$queryRaw(
-    Prisma.sql`SELECT "id" FROM "Chatbot" WHERE "id"=${operation.chatbotId}::uuid FOR UPDATE`
-  )
   if (
     !isChatUsageClassEntitled({
       usageClass: 'BASE',
@@ -204,10 +201,6 @@ export async function claimBaselineOperation(
     if (!usage.budgetCredits.minus(usage.usedCredits).greaterThan(0))
       fail('BASELINE_BUDGET_EXHAUSTED')
 
-    const report = await tx.responseExampleBaselineReport.findUniqueOrThrow({
-      where: { id: args.runId },
-      select: { deadline: true },
-    })
     const id = randomUUID()
     return tx.responseExampleBaselineOperation.create({
       data: {
@@ -221,7 +214,6 @@ export async function claimBaselineOperation(
         monthStart,
         inputRate: new Prisma.Decimal(args.inputRate),
         outputRate: new Prisma.Decimal(args.outputRate),
-        expiresAt: report.deadline,
       },
     })
   })

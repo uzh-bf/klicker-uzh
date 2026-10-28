@@ -102,6 +102,7 @@ export function baselineModelDigest(model = currentBaselineModel()) {
     deploymentId: model.deploymentId,
     maxOutputTokens: model.maxOutputTokens,
     usesResponsesApi: model.usesResponsesApi,
+    supportsReasoning: model.supportsReasoning,
     cost: model.cost,
     supportedReasoningEfforts: model.supportedReasoningEfforts,
   })
@@ -358,7 +359,7 @@ export async function handleRunResponseExampleBaseline(
       })
       if (!response.ok) throw new Error('BASELINE_EXECUTION_UNAVAILABLE')
       const result = z
-        .object({ completed: z.boolean(), continueRun: z.boolean() })
+        .object({ continueRun: z.boolean() })
         .safeParse(await response.json())
       if (!result.success || !result.data.continueRun)
         throw new Error('BASELINE_INCOMPLETE')

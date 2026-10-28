@@ -209,10 +209,9 @@ describe('current lecturer baseline report', () => {
         ctx
       )
       replacementId = replaced!.report!.id
-      return new Response(
-        JSON.stringify({ completed: true, continueRun: true }),
-        { status: 200 }
-      )
+      return new Response(JSON.stringify({ continueRun: true }), {
+        status: 200,
+      })
     })
     vi.stubGlobal('fetch', transport)
     try {

@@ -5530,6 +5530,66 @@ Since the KlickerUZH app is not yet available in the iOS App Store, follow these
         'This example changed while you were editing. Your draft is still open. Close this dialog and reopen the example before saving again.',
       responseExampleReviewForbidden:
         'Only the chatbot owner can review response examples.',
+      responseExampleBaselineTitle: 'Test your chatbot',
+      responseExampleBaselineDescription:
+        'Compare chatbot answers with your approved examples. The chatbot does not see the expected answers during the test.',
+      responseExampleBaselineAllowance:
+        'Each answer and comparison uses your account’s BASE model allowance. A stage started with a positive balance can use more than the remaining balance.',
+      responseExampleBaselineEligible: 'Eligible examples: {count}',
+      responseExampleBaselineExcluded: 'Excluded examples: {count}',
+      responseExampleBaselineExcludedReason:
+        'Some examples use an unsupported chat mode or need current source evidence.',
+      responseExampleBaselineRun: 'Run baseline test',
+      responseExampleBaselineRunAgain: 'Run new test',
+      responseExampleBaselineReplace: 'Replace running test',
+      responseExampleBaselineLoading: 'Loading baseline report...',
+      responseExampleBaselineLoadError:
+        'The baseline report could not be loaded. Please try again.',
+      responseExampleBaselineRefreshError:
+        'The latest report could not be refreshed. The saved results are still shown.',
+      responseExampleBaselineActionError:
+        'The baseline test could not be started. Please try again.',
+      responseExampleBaselineUnavailable:
+        'A test cannot be started right now. Check the eligible examples and account allowance.',
+      responseExampleBaselineQueued: 'Waiting to start',
+      responseExampleBaselineRunning: 'In progress',
+      responseExampleBaselineCompleted: 'Completed',
+      responseExampleBaselineFailed: 'Stopped early',
+      responseExampleBaselineIncomplete: 'Some answers could not be completed',
+      responseExampleBaselineStale: 'Examples have changed',
+      responseExampleBaselineStaleDescription:
+        'This report uses an earlier version of the examples or chatbot settings. Run a new test to compare the current version.',
+      responseExampleBaselineProgress: '{completed} of {total} cases completed',
+      responseExampleBaselineFailedDescription:
+        'The test stopped before all examples were checked. Completed results remain available below.',
+      responseExampleBaselineIncompleteDescription:
+        'Some examples could not be checked. Review the cases below before relying on this report.',
+      responseExampleBaselineUnassessedSummary:
+        '{count} {count, plural, one {case is} other {cases are}} unassessed. Review these answers yourself.',
+      responseExampleBaselineNoCases:
+        'This report does not contain any test cases.',
+      responseExampleBaselinePass: 'Looks good',
+      responseExampleBaselineNeedsAttention: 'Needs attention',
+      responseExampleBaselineNotAssessed: 'Not assessed',
+      responseExampleBaselineAssessmentPending:
+        'The answer is ready. Its comparison is still in progress.',
+      responseExampleBaselineSourceSupportUnassessed:
+        'Source support has not been assessed. Check the citations against the course material yourself.',
+      responseExampleBaselineActualAnswer: 'Chatbot answer',
+      responseExampleBaselineIdealAnswer: 'Expected answer',
+      responseExampleBaselineSources: 'Sources',
+      responseExampleBaselineNoSources: 'No source references are available.',
+      responseExampleBaselineAnswerUnavailable:
+        'No answer is available for this case.',
+      responseExampleBaselineOtherMode: 'Other chat mode',
+      responseExampleBaselineCasePending: 'Waiting',
+      responseExampleBaselineCaseAnswerReady: 'Answer ready',
+      responseExampleBaselineCaseCompleted: 'Checked',
+      responseExampleBaselineCaseUnassessed: 'Needs your review',
+      responseExampleBaselineReplaceTitle: 'Replace the running test?',
+      responseExampleBaselineReplaceDescription:
+        'The current test will stop starting new answers. Any answer already in progress may finish, but its result will not replace the new report.',
+      responseExampleBaselineReplaceConfirm: 'Replace test',
       answerCollections: 'Answer Collections',
       answerCollectionsDescription:
         'Here you can find all your answer collections. You need these to create certain complex question types, such as selection questions and case studies. To import existing answer collections form other users or request access to these, please visit the <link>catalog</link>.',

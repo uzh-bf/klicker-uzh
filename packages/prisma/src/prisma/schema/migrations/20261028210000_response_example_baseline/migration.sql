@@ -64,7 +64,6 @@ CREATE TABLE "ResponseExampleBaselineOperation" (
     "inputRate" DECIMAL(18,6) NOT NULL,
     "outputRate" DECIMAL(18,6) NOT NULL,
     "creditsUsed" DECIMAL(18,6),
-    "expiresAt" TIMESTAMP(3) NOT NULL,
     "dispatchedAt" TIMESTAMP(3),
     "settledAt" TIMESTAMP(3),
     "createdAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,

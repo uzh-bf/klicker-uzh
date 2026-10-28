@@ -116,6 +116,7 @@ beforeEach(() => {
       deploymentId: modelConfig.deploymentId,
       maxOutputTokens: modelConfig.maxOutputTokens,
       usesResponsesApi: true,
+      supportsReasoning: false,
       cost: modelConfig.cost,
       supportedReasoningEfforts: [],
     }),
@@ -146,7 +147,12 @@ beforeEach(() => {
   mocks.dispatch.mockResolvedValue(true)
   mocks.settle.mockResolvedValue('SETTLED')
   mocks.close.mockResolvedValue(undefined)
-  mocks.tools.mockReturnValue({})
+  mocks.tools.mockReturnValue({
+    KB_doc_query: tool({
+      inputSchema: z.object({}),
+      execute: async () => ({}),
+    }),
+  })
 })
 
 describe('baseline execution boundary', () => {
@@ -174,7 +180,7 @@ describe('baseline execution boundary', () => {
     })
     mocks.model.mockReturnValue(model)
     const result = await executeResponseExampleBaselineCase(scope)
-    expect(result).toEqual({ completed: false, continueRun: true })
+    expect(result).toEqual({ continueRun: true })
     expect(model.doStreamCalls).toHaveLength(1)
     expect(JSON.stringify(model.doStreamCalls)).not.toContain(ideal)
     expect(
@@ -219,6 +225,7 @@ describe('baseline execution boundary', () => {
             deploymentId: modelConfig.deploymentId,
             maxOutputTokens: 4096,
             usesResponsesApi: true,
+            supportsReasoning: false,
             cost: modelConfig.cost,
             supportedReasoningEfforts: [],
           }),
@@ -299,7 +306,7 @@ describe('baseline execution boundary', () => {
     })
     mocks.model.mockReturnValue(model)
     const result = await executeResponseExampleBaselineCase(scope)
-    expect(result).toEqual({ completed: true, continueRun: true })
+    expect(result).toEqual({ continueRun: true })
     expect(model.doStreamCalls).toHaveLength(2)
     expect(model.doGenerateCalls).toHaveLength(1)
     expect(JSON.stringify(model.doStreamCalls)).not.toContain(ideal)
@@ -361,7 +368,6 @@ describe('baseline execution boundary', () => {
     mocks.model.mockReturnValue(model)
     mocks.settle.mockResolvedValue('UNCERTAIN')
     expect(await executeResponseExampleBaselineCase(scope)).toEqual({
-      completed: false,
       continueRun: false,
     })
     expect(mocks.settle).toHaveBeenCalledWith(expect.anything(), {
@@ -374,12 +380,21 @@ describe('baseline execution boundary', () => {
     expect(mocks.close).toHaveBeenCalledOnce()
   })
 
+  it('denies dispatch before accounting when source retrieval is unavailable', async () => {
+    mocks.tools.mockReturnValue({})
+    expect(await executeResponseExampleBaselineCase(scope)).toEqual({
+      continueRun: false,
+    })
+    expect(mocks.claim).not.toHaveBeenCalled()
+    expect(mocks.model).not.toHaveBeenCalled()
+    expect(mocks.close).toHaveBeenCalledOnce()
+  })
+
   it('never calls the provider when operation dispatch is denied', async () => {
     const model = new MockLanguageModelV4({})
     mocks.model.mockReturnValue(model)
     mocks.dispatch.mockResolvedValue(false)
     expect(await executeResponseExampleBaselineCase(scope)).toEqual({
-      completed: false,
       continueRun: false,
     })
     expect(model.doStreamCalls).toHaveLength(0)
