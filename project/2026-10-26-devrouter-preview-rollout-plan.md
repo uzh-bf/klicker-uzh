@@ -168,3 +168,10 @@ rendering and service-worker delivery. Production feature modules are unchanged.
 Image admission remains mandatory. Upstream Azure Identity/MSAL and LiteLLM/filelock
 constraints require separate compatibility evidence before adopting new majors;
 local package-range patches are not implied by a major-version exception.
+
+Azurite retains its supported Azure Identity dependency tree while updating its
+HTTP dependencies and removing its package manager. LiteLLM uses the standard
+proxy image because previews do not use its database; compatible dependency
+updates pass package checks. Native ARM64 Blob/SAS/CORS and proxy health/model
+checks pass. Each image still has one fixable finding outside its parent package
+range, so neither is admitted for paid qualification.
