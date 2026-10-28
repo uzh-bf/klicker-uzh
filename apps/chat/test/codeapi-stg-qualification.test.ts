@@ -103,6 +103,7 @@ describe('bounded real-transport qualification', () => {
       tls,
       generation,
       requireRegistration: true,
+      maxAttempts: 2,
     })
     cleanups.push(relay.close)
     expect((await post(relay.origin, body())).status).toBe(503)
@@ -138,7 +139,13 @@ describe('bounded real-transport qualification', () => {
     expect((await post(relay.origin, body())).status).toBe(503)
     relay.arm()
     expect((await post(relay.origin, body())).status).toBe(200)
-    expect(received).toBe(1)
+    expect((await post(relay.origin, body())).status).toBe(200)
+    expect((await post(relay.origin, body())).status).toBe(429)
+    expect(received).toBe(2)
+    expect(relay.snapshot()).toMatchObject({
+      attempts: 2,
+      requestedGuestMs: 10000,
+    })
   })
 
   test('coordinates canonical lifecycle and removes only its own public bootstrap', async () => {
@@ -262,7 +269,7 @@ describe('bounded real-transport qualification', () => {
         },
       },
     }
-    for (const second of [409, 403, 'ambiguous']) {
+    for (const second of [409, 403, 'ambiguous', 'malformed']) {
       const writes: string[] = []
       const result = await admitQualificationVerifier({
         secret,
@@ -279,6 +286,7 @@ describe('bounded real-transport qualification', () => {
               },
             }
           if (second === 'ambiguous') throw new Error('unknown response')
+          if (second === 'malformed') return undefined
           return { status: second }
         },
       })
@@ -366,6 +374,9 @@ describe('bounded real-transport qualification', () => {
           throw new Error('interrupted')
         },
       })
+    ).toEqual({ outcome: 'unknown' })
+    expect(
+      await cleanupQualificationVerifier({ created, request: async () => null })
     ).toEqual({ outcome: 'unknown' })
   })
 

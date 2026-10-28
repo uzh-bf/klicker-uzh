@@ -282,7 +282,7 @@ async function boundedBody(stream) {
  * A closed-route transport observer; attempted forwarding never implies guest admission.
  * @param {{upstreamOrigin: string, tls?: ReturnType<typeof certificate>,
  * onObservation?: (record: Record<string, unknown>) => void, lifetimeMs?: number,
- * statusPath?: string, generation?: string, requireRegistration?: boolean}} options
+ * statusPath?: string, generation?: string, requireRegistration?: boolean, maxAttempts?: number}} options
  */
 export async function startQualificationRelay({
   upstreamOrigin,
@@ -292,7 +292,10 @@ export async function startQualificationRelay({
   statusPath = undefined,
   generation = undefined,
   requireRegistration = false,
+  maxAttempts = 10,
 }) {
+  if (!Number.isInteger(maxAttempts) || maxAttempts < 1 || maxAttempts > 10)
+    throw new Error('qualification_attempt_config_invalid')
   const upstream = new URL(upstreamOrigin)
   if (
     upstream.username ||
@@ -441,7 +444,7 @@ export async function startQualificationRelay({
         )
       )
         return reply(res, 400, 'qualification_contract')
-      if (active || records.has(selected[2]) || attempts >= 10)
+      if (active || records.has(selected[2]) || attempts >= maxAttempts)
         return reply(res, 429, 'qualification_attempt_bound')
       // Reserve before constructing or writing an upstream request; unknown outcomes consume it.
       attempts++
@@ -708,6 +711,7 @@ export async function startManagedQualification({
       upstreamOrigin,
       generation,
       requireRegistration: true,
+      maxAttempts: 2,
       lifetimeMs,
       statusPath: path.join(
         checkout,
@@ -854,6 +858,8 @@ export async function admitQualificationVerifier({
     } catch {
       return { outcome: 'unknown', created }
     }
+    if (!result || !Number.isInteger(result.status))
+      return { outcome: 'unknown', created }
     if (result.status !== 201)
       return {
         outcome: result.status === 409 ? 'conflict' : 'rejected',
@@ -915,6 +921,8 @@ export async function cleanupQualificationVerifier({ request, created }) {
     } catch {
       return { outcome: 'unknown' }
     }
+    if (!result || !Number.isInteger(result.status))
+      return { outcome: 'unknown' }
     if (![200, 202, 404].includes(result.status)) return { outcome: 'held' }
   }
   return { outcome: 'deletion_requested' }
