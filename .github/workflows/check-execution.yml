@@ -35,7 +35,7 @@ jobs:
       runner_arm: ${{ steps.route.outputs.runner_arm }}
     steps:
       - name: Check out the trusted priority router
-        uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1
         with:
           repository: uzh-bf/klicker-uzh
           ref: v3
@@ -53,7 +53,7 @@ jobs:
       should_run: ${{ github.event_name == 'push' && 'true' || steps.check.outputs.should_run }}
     steps:
       - name: Checkout repository
-        uses: actions/checkout@v4
+        uses: actions/checkout@v7
       - name: Check for changes
         id: check
         uses: ./.github/actions/changed-paths
@@ -69,7 +69,7 @@ jobs:
     timeout-minutes: ${{ needs.priority-route.outputs.admitted == 'true' && fromJSON(needs.priority-route.outputs.job_timeout || '60') || 360 }}
     steps:
       - name: Checkout repository
-        uses: actions/checkout@v4
+        uses: actions/checkout@v7
         with:
           fetch-depth: 0
       - name: Classify the changed paths
@@ -79,7 +79,7 @@ jobs:
           receipt-path: minimum-validation-classification.json
       - name: Upload the classification receipt
         if: always()
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v7
         with:
           name: minimum-validation-classification
           path: minimum-validation-classification.json
@@ -111,14 +111,14 @@ jobs:
       - name: Test Git identity guard
         run: node --test ./util/check-git-identity.test.mjs
       - name: Set up uv
-        uses: astral-sh/setup-uv@v5
+        uses: astral-sh/setup-uv@v7
         with:
           python-version: '3.12'
           enable-cache: false
       - name: Test Playwright timing aggregation
         run: uv run --no-project --python 3.12 python -m unittest discover -s .github/scripts -p test_update_playwright_timings.py
       - name: Set up pnpm
-        uses: pnpm/action-setup@v4
+        uses: pnpm/action-setup@v6
         with:
           version: 11.5.0
       - name: Set up Node.js with pnpm cache
@@ -274,7 +274,7 @@ jobs:
           pattern: ^\.github/(scripts/install-patched-ocr\.cjs|open-code-review/ocr-compression\.patch|workflows/check(-ocr-final-review)?\.yml)$
       - name: Set up pinned OCR build toolchain
         if: steps.ocr_engine.outputs.should_run != 'false'
-        uses: actions/setup-go@924ae3a1cded613372ab5595356fb5720e22ba16
+        uses: actions/setup-go@b7ad1dad31e06c5925ef5d2fc7ad053ef454303e
         with:
           go-version: 1.26.9
           cache: false
@@ -371,7 +371,7 @@ jobs:
     permissions:
       contents: read
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v7
         with:
           persist-credentials: false
           sparse-checkout: .github/scripts
@@ -400,7 +400,7 @@ jobs:
         run: node .github/scripts/required-ci-status.cjs report
       - name: Upload required CI evidence
         if: always()
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v7
         with:
           name: required-ci-evidence
           path: required-ci-evidence.json
