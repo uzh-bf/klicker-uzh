@@ -12,8 +12,14 @@ const config = defineConfig([
             'instrumented/index.ts',
             'instrumented/ops.ts',
             'instrumented/participant-data-use.ts',
+            'instrumented/services/responseExampleBaselineAccounting.ts',
           ]
-        : ['src/index.ts', 'src/ops.ts', 'src/participant-data-use.ts'],
+        : [
+            'src/index.ts',
+            'src/ops.ts',
+            'src/participant-data-use.ts',
+            'src/services/responseExampleBaselineAccounting.ts',
+          ],
     output: {
       dir: 'dist',
       format: 'esm',

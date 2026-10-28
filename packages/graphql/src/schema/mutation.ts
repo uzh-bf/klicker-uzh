@@ -28,6 +28,8 @@ import * as ParticipantService from '../services/participants.js'
 import * as PracticeQuizService from '../services/practiceQuizzes.js'
 import { elementGenerationGraphQLResult } from '../services/questionGenerationErrors.js'
 import * as ResourcesService from '../services/resources.js'
+import * as ResponseExampleBaselineService from '../services/responseExampleBaseline.js'
+import { ResponseExampleBaselineOverview } from './responseExample.js'
 import * as ResponseExamplesService from '../services/responseExamples.js'
 import * as SharingService from '../services/sharing.js'
 import * as StacksService from '../services/stacks.js'
@@ -1715,6 +1717,20 @@ export const Mutation = builder.mutationType({
         resolve: async (_, args, ctx) => {
           return await ResponseExamplesService.approveResponseExample(args, ctx)
         },
+      }),
+
+      startResponseExampleBaseline: t.withAuth(asUserFullAccess).field({
+        nullable: true,
+        type: ResponseExampleBaselineOverview,
+        args: {
+          chatbotId: t.arg.string({ required: true }),
+          replaceActive: t.arg.boolean(),
+        },
+        resolve: (_, args, ctx) =>
+          ResponseExampleBaselineService.startResponseExampleBaseline(
+            args,
+            ctx
+          ),
       }),
 
       captureResponseExample: t.withAuth(asUserFullAccess).field({

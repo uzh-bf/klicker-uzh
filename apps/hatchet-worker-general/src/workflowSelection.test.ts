@@ -23,6 +23,7 @@ const workflows = {
   buildKBGraph: 'build-graph',
   monitorKBGraphBuilds: 'monitor-graph',
   publishScheduledLiveQuiz: 'publish-quiz',
+  runResponseExampleBaseline: 'baseline',
 }
 
 describe('general worker KB workflow selection', () => {
@@ -32,7 +33,10 @@ describe('general worker KB workflow selection', () => {
       graphDisabled: true,
     })
 
-    expect(selection.selectedKeys).toEqual(['publishScheduledLiveQuiz'])
+    expect(selection.selectedKeys).toEqual([
+      'publishScheduledLiveQuiz',
+      'runResponseExampleBaseline',
+    ])
     expect(selection.disabledKeys).toEqual([
       'ingestKBResource',
       'deleteKBResource',

@@ -1,0 +1,11 @@
+mutation StartResponseExampleBaseline(
+  $chatbotId: String!
+  $replaceActive: Boolean
+) {
+  startResponseExampleBaseline(
+    chatbotId: $chatbotId
+    replaceActive: $replaceActive
+  ) {
+    ...ResponseExampleBaselineData
+  }
+}

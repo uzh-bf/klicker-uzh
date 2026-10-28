@@ -453,6 +453,21 @@ type AwardEntry {
   type: String!
 }
 
+enum BaselineCaseStatus {
+  COMPLETED
+  PENDING
+  TARGET_COMPLETE
+  UNASSESSED
+}
+
+enum BaselineReportStatus {
+  COMPLETED
+  FAILED
+  INCOMPLETE
+  QUEUED
+  RUNNING
+}
+
 type BetaEnrollmentCapability {
   mayChange: Boolean!
   membership: Boolean
@@ -3002,6 +3017,7 @@ type Mutation {
   startElementGeneration(input: StartElementGenerationInput!): ElementGenerationBuild!
   startGroupActivity(activityId: String!, groupId: String!): GroupActivityDetails
   startLiveQuiz(id: String!): LiveQuizMeta
+  startResponseExampleBaseline(chatbotId: String!, replaceActive: Boolean): ResponseExampleBaselineOverview
   submitChatbotRevision(chatbotId: String!, expectedRevisionVersion: Int!, expectedStudentCount: Int!, useCase: String!): Chatbot
   submitGroupActivityDecisions(activityId: Int!, responses: [StackResponseInput!]!): Int
   subscribeToPush(courseId: String!, subscriptionObject: SubscriptionObjectInput!): Participation
@@ -3585,6 +3601,7 @@ type Query {
   getPracticeQuizList: [CourseOverview!]
   getPracticeQuizSummary(id: String!): ActivitySummary
   getPreviousStackEvaluation(stackId: Int!): StackFeedback
+  getResponseExampleBaseline(chatbotId: String!): ResponseExampleBaselineOverview
   getSingleAnswerCollection(id: Int!): AnswerCollection
   getSingleElementInstance(id: Int!): ElementInstance
   getSingleMicroLearning(id: String!): MicroLearning
@@ -3690,6 +3707,39 @@ type ResponseExample {
   setId: ID!
   status: ResponseExampleStatus!
   studentMessage: String!
+  updatedAt: Date!
+}
+
+type ResponseExampleBaselineCase {
+  actualAnswer: String
+  actualEvidence: Json
+  assessment: Json
+  chatMode: String!
+  errorCode: String
+  exampleId: ID!
+  expectedEvidence: Json!
+  id: ID!
+  idealAnswer: String!
+  question: String!
+  status: BaselineCaseStatus!
+}
+
+type ResponseExampleBaselineOverview {
+  available: Boolean!
+  eligibleCount: Int!
+  excludedCount: Int!
+  report: ResponseExampleBaselineReport
+}
+
+type ResponseExampleBaselineReport {
+  cases: [ResponseExampleBaselineCase!]!
+  createdAt: Date!
+  errorCode: String
+  excludedCount: Int!
+  id: ID!
+  modelId: String
+  stale: Boolean!
+  status: BaselineReportStatus!
   updatedAt: Date!
 }
 
