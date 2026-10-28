@@ -2,7 +2,7 @@
 type: Operations
 title: CI & Deployment
 description: PR gates, image builds, the standard-version release flow, Helm deployment reality, and what is NOT in this repo.
-timestamp: '2026-10-12'
+timestamp: '2026-10-17'
 tags:
   - ci
   - deployment
@@ -12,6 +12,46 @@ tags:
 
 **The deploy driver is ArgoCD** (confirmed with maintainers; the ArgoCD `Application`/sync trigger itself lives outside this repo). What IS in-repo: the chart (`deploy/charts/klicker-uzh-v3/` — internally still named `klicker-uzh-v2`, chart version drifted behind the repo version), per-env values (`deploy/env-uzh-stg`, `deploy/env-uzh-prd`), Stakater **Reloader** annotations (`reloader.stakater.com/auto: "true"`) so config/secret changes restart pods, and an ArgoCD **PreSync migration hook** that runs `prisma migrate deploy` before each rollout — enabled on stg and prd (see [Deployment migrations](#deployment-migrations)).
 
+## Automated review context and portability
+
+Runtime changes and Klicker's caller-pin update normally share one PR. Commit
+the runtime first, then pin its full SHA in a later caller commit. Ordinary CI
+fetches that exact source commit and verifies that the final candidate ships the
+same runtime manifest and assets. Read [the shared runtime guide](ocr-runtime.md#prepare-a-caller-upgrade)
+for source, squash-merge and post-merge verification boundaries.
+
+The [ocr-reviewer skill](../.agents/skills/ocr-reviewer/SKILL.md) is portable
+across repositories and forges. Copy it unchanged when adopting this OCR
+approach; keep repository-specific contracts and skill pointers in local docs.
+It discovers relevant guidance through `read_review_context` and uses
+`ask_review_advisor` under the adopting runner's configured bounds and quota.
+An optional `lookup_library_docs` tool supplies bounded public dependency docs;
+the adopting runner owns its public-library allowlist and separate quota.
+
+An adopting runner must load the skill from trusted policy, fix the reviewed
+revision and comparison range, expose the same authenticated MCP tool schemas,
+and retain isolated credentials, bounded reads, usage receipts and sanitized
+logs. Providers, reasoning, budgets, retries and publication remain runner policy.
+GitHub PR and GitLab MR metadata map to that same review identity. GitLab
+adoption additionally needs a trusted GitLab CI and MR-publication wrapper;
+the workflow implemented and qualified in this repository uses GitHub Actions.
+
+For KlickerUZH, discover contracts and specialized skills from these starting
+points. They describe review evidence and grant no execution permissions.
+
+| Changed area                         | Repository guidance                                                                                                                        | Review focus                                                            |
+| ------------------------------------ | ------------------------------------------------------------------------------------------------------------------------------------------ | ----------------------------------------------------------------------- |
+| GraphQL, permissions, operations     | [GraphQL API](graphql-api-layer.md), [API skill](../.agents/skills/klicker-graphql-api/SKILL.md)                                           | Authenticate, authorize, execute; regenerate changed operations         |
+| Prisma, migrations, data lifecycle   | [Data and migrations](data-and-migrations.md), [data-model skill](../.agents/skills/klicker-data-model/SKILL.md)                           | Minimal migrations, data preservation and guarded disposable databases  |
+| Frontend, interaction, accessibility | [Frontend skill](../.agents/skills/klicker-frontend-ui/SKILL.md), [interface guidelines](../.agents/skills/web-design-guidelines/SKILL.md) | Loading, error, keyboard and responsive states; actual browser evidence |
+| Tests and CI                         | [Testing](testing.md), this guide, [verification skill](../.agents/skills/klicker-testing-verification/SKILL.md)                           | Exact-commit producer evidence, skipped work and partial coverage       |
+| Domain and cross-system changes      | [Domain model](domain-model.md), [architecture](architecture-overview.md), [ADRs](adr/)                                                    | Ownership, lifecycle and domain invariants                              |
+
+`Participation.isActive` controls leaderboard opt-in, independently of enrollment
+and course access. Preserve GraphQL's authenticate → authorize → execute boundary.
+Use the matching contracts for generated outputs, migrations, provider usage
+and cached-token accounting.
+
 ## Draft sync PR maintenance
 
 `maintain-draft-sync-prs.yml` maintains the exact forward pairs `v3` ->
@@ -19,7 +59,8 @@ tags:
 sync PR's head is a bot-owned branch,
 `sync/<source>-into-<target>-<sha10>`, never the long-lived source branch. The
 suffix is the source SHA the PR started from, so every new sync PR gets a fresh
-branch. GitHub's
+branch. Branches that merely resemble this prefix without the hexadecimal SHA
+suffix are outside controller ownership and are ignored. GitHub's
 "Update branch" button and web conflict edits write to a PR's head. With the
 source branch as head, one click merged `v3-audit` back into the production
 branch `v3-ai`. With a sync branch as head, the same click only changes the
@@ -42,20 +83,66 @@ On every run, for each pair, the controller:
    reports `stale-branch` and leaves it alone; delete it to let the next run
    proceed.
 
-Existing PR descriptions and draft/ready states are preserved. Ready sync PRs
+Draft/ready states are preserved. The controller replaces the complete description
+on creation and reconciliation with a deterministic changelog: exact revision
+links, imported commit subjects grouped by conventional commit category,
+merge-edit paths and additional sync-branch commits. Category names and order come
+from `.versionrc.js`; headers support optional scopes and `!`, case-insensitively.
+Unrecognized or malformed subjects remain under Other. Empty sections and
+zero-omission footers are omitted, and revision metadata follows the changelog.
+It includes source commits only when the actual sync head contains them,
+and excludes target history. Subjects and paths use code spans so embedded
+mentions and issue references create no cross-reference notifications. There is
+no model-generated explanation or manually maintained section; agents leave these
+bodies to the controller and report in chat, existing checks or separately
+authorized comments. Existing prose and screenshot sections are replaced on the
+next maintenance run. Legacy source-headed and ancestry-restoration PRs retain
+their separate behavior.
+
+Merge edits come from Git's remerge diff against the recorded two-parent merge.
+They include conflict resolutions and any other changes from Git's automatic
+merge, without inferring intent. Separate sync-branch commits appear as additional
+changes; octopus merges explicitly report unsupported analysis. Bodies have a
+60,000-byte UTF-8 budget, with counted omissions and immutable comparison links.
+The generator reserves metadata, then prioritizes merge edits, additional changes
+and imported commits. A squashed sync can relist already-present changes until
+its ancestry-restoration PR merges.
+
+The controller reads head and target revisions directly from Git refs before
+analysis and rechecks those refs before writing. PR revision metadata can lag a
+branch update, so it is used for identity and lifecycle checks rather than the
+analyzed SHAs. A moved ref, closed PR, changed repository or retargeted candidate
+defers the body update. Branch advancement and preview labels also use the canonical head, so stale PR
+list metadata cannot cause a redundant or rejected non-fast-forward update.
+GitHub provides no atomic body-update lease; movement after that read is
+reconciled on a later run. Analysis failures retain
+an existing body and report failure without blocking branch advancement or the
+conflict notice. A new PR requires successful analysis; other pairs continue.
+Manual previews include generated bodies and write no branches, PRs or comments.
+
+Ready sync PRs
 keep tracking the source; review and merge decisions apply to the latest
-synchronized head. The run summary lists each pair's result. The controller
+synchronized head. The run summary and structured JSON logs list each pair's
+branch action, description status and deferral reason. The controller
 never force-updates a branch, never writes the source or target branches and
 never merges. Maintainers
 choose when to mark ready and merge with a merge commit to preserve ancestry.
 Resolve conflicts directly on the sync branch.
 
-The controller runs from `v3` after Check codebase completes for a push to
-either source branch, regardless of the check result. Completion is a wakeup,
-not a merge-readiness signal. Both pairs are reconciled against current refs on
+The controller runs from `v3` after Check codebase completes for a push to any
+configured source or target branch, or for a same-repository PR on a maintained
+sync branch, regardless of the check result. Completion is a wakeup,
+not a merge-readiness signal. All three pairs are reconciled against current refs on
 every run; delayed or coalesced events do not replay old heads. The workflow
-checks out its own trusted workflow SHA, never the triggering branch or its
-artifacts. It becomes active when merged into `v3`, without waiting for the
+checks out its own trusted workflow SHA, including `.versionrc.js` for categories,
+never the triggering branch or its artifacts. Invalid or missing category config
+fails description analysis without publishing a placeholder.
+History is fetched with the read-only job token into a shared isolated
+bare repository, with blob filtering and lazy reads for merge analysis. Fetched
+code is never checked out or executed. A controller source merge can cause one
+additional check completion; unchanged reconciliation performs no writes. Target
+wakeups can open the next draft immediately after a sync merge.
+It becomes active when merged into `v3`, without waiting for the
 workflow to reach the integration branches.
 
 For manual reconciliation, dispatch from `v3`. Preview is the default:
@@ -75,7 +162,8 @@ GitHub App installation token would remove the dependence on one person's
 account. Without the secret, automatic and
 non-preview runs fail and previews still work. The sync branches are not
 protected integration branches, so the token needs no ruleset bypass. Drafts
-skip staging image builds and some analysis. Marking ready invokes the existing
+skip staging image builds, Playwright and some analysis; the cheaper suites
+still run on every draft head. Marking ready invokes the existing
 ready-state validation; required checks must pass before merging.
 
 Closing a sync PR without merging does not pause maintenance: the next eligible
@@ -264,7 +352,7 @@ lint, schema and guide drift, incremental builds and types, the rendered chart's
 scheduling contract, plus advisory Knip) and required `check-gitleaks`. Branch
 protection binds both contexts to GitHub
 Actions and no longer requires the former split check jobs. The Node/pnpm
-workflow uses pnpm 11.5.0, pins Node 24 via the root Volta configuration
+workflow uses pnpm 12.11.2, pins Node 24 via the root Volta configuration
 (`package.json`), and uses the Turbo remote cache; `check-gitleaks` is a
 standalone secret scan that installs the Gitleaks binary directly and needs
 neither Node nor pnpm.
@@ -278,16 +366,20 @@ see **Bounded codebase check** below. Pushes always run the full suite.
 - **Minimum validation envelope**: One repository-owned classifier (`.github/scripts/minimum-validation-class.cjs`) turns the rename-aware changed-path records into exactly one change class and the decisions that class requires: `documentation-and-planning` for Markdown and assets under `docs/`, `project/`, and `.agents/skills/`, which runs no Playwright, no application build, and no static analysis; `ci-orchestration` for `.github/workflows/` and `.github/scripts/`, which runs a bounded Playwright selection, a bounded codebase check, and still the static analysis, because `.github/scripts` is analyzed source and a workflow file is analyzed input; and `application` for everything else. It fails closed: an empty, unresolvable, renamed, copied, or deleted diff, a path outside those trees, a mixed documentation-and-CI diff, and a root `README.md` or `AGENTS.md` all expand to the application envelope. The class travels with the run: the Playwright plan artifact and its `envelope_class` output carry it into the required status reporter, the codebase check uploads a classification receipt naming the paths that justified the class, and `.github/actions/change-envelope` is the one adapter every lane calls. Narrowing applies to pull requests only, so every push validates a deployment candidate in full whatever the class of its changed paths. A lane reads an empty or unreadable decision as the full envelope, and a classifier failure widens the lane with a warning instead of failing it, so a broken classification can neither remove validation nor block a required context. Class boundaries are reviewable source changes, and the reduced coverage a bounded class accepts is an explicit review contract rather than a silent path filter.
 - **Bounded codebase check**: A pull request whose class is bounded still installs dependencies and still runs every contract suite that can falsify the class, including the CI queue and workflow contracts, the Playwright CI contracts, formatting, syncpack, and the documentation and policy drift checks; it deliberately skips the application-wide steps, which are the Turbo build, the TypeScript check, ESLint, Biome, Knip, and the Prisma schema-sync drift check. Pushes run all of them. The envelope is computed inside the suite job, on the checkout it already performs, so it never delays the suite behind a second runner allocation, and every skipped step is gated on its class output, so an unproven class runs it.
 - **Playwright cache contract**: The pnpm store uses a stable dependency fingerprint containing Node/pnpm compatibility, the lockfile, workspace configuration, package manifests, `.npmrc`, `.pnpmfile.cjs`, and tracked patches. It does not create a duplicate store for each source commit or invalidate dependencies for a telemetry-only workflow edit. The separate `.turbo` fingerprint retains the conservative build configuration, synthetic environment schema, and immutable build-image contract, with source-specific snapshots. Both cache families include OS and architecture in their keys. The trusted `v3` cache-seed matrix builds on hosted ARM64 and x64 runners and is the only writer; public PR jobs remain restore-only readers. Restore stays disabled for PRs until a global or exact canary control enables it. Cache-service errors fall back to an ordinary install/build, while actual build failures remain failures. Compact build, shard, route, selector, and queue telemetry is retained for seven days; large build outputs and diagnostics keep their existing short retention. Seed telemetry artifacts include the architecture in their names. The hosted, checkout-free Playwright status job collects queue telemetry with only `actions: read` permission; telemetry errors do not alter the test result. Configuration and successful seeding are not performance proof: verify compatible matched keys, Turbo task hits, output equivalence, and a normalized comparison cohort before claiming a speedup.
-- **Profile-aware Playwright runtime**: `playwright/profiles.json` assigns every active spec exactly once and the timing-aware sharder emits the canonical profile union for each shard. Exact `@devrouter/cli` `0.3.0` resolves that union and validates it against the repository-owned `playwright/runtime-contract.yml` without runtime access. When the trusted planner assigns a candidate-only spec to `full`, the adapter resolves that trusted union through the explicit `playwright` Devrouter profile, which covers every CI-supported application without selecting local-only MCP, LiteLLM, or MailHog resources. Activity-lifecycle specs that publish, schedule, start, or end activities select `live-quiz` because it owns both Hatchet workers. Both hosted and public-PR workflows fail closed when planning is unavailable or unexpected, then start only the selected app processes without exposing the host Docker socket. A caller checkout created before profile runtimes existed may use the explicit legacy full-stack startup only when all three profile-runtime files are absent; partial migrations fail closed. The job-level Postgres, Redis, and Hatchet containers remain fixed. The corrected manifest selects 57 app and worker process instances across eight shards instead of the previous fixed 72, a configuration-derived 20.8% reduction; this is not yet measured end-to-end speedup evidence.
+- **Profile-aware Playwright runtime**: `playwright/profiles.json` assigns every active spec exactly once and the timing-aware sharder emits the canonical profile union for each shard. Exact `@devrouter/cli` `0.5.1` resolves that union and validates it against the repository-owned `playwright/runtime-contract.yml` without runtime access. When the trusted planner assigns a candidate-only spec to `full`, the adapter resolves that trusted union through the explicit `playwright` Devrouter profile, which covers every CI-supported application without selecting local-only MCP, LiteLLM, or MailHog resources. Activity-lifecycle specs that publish, schedule, start, or end activities select `live-quiz` because it owns both Hatchet workers. Both hosted and public-PR workflows fail closed when planning is unavailable or unexpected, then start only the selected app processes without exposing the host Docker socket. A caller checkout created before profile runtimes existed may use the explicit legacy full-stack startup only when all three profile-runtime files are absent; partial migrations fail closed. The job-level Postgres, Redis, and Hatchet containers remain fixed. The corrected manifest selects 57 app and worker process instances across eight shards instead of the previous fixed 72, a configuration-derived 20.8% reduction; this is not yet measured end-to-end speedup evidence.
 - **Stacked pull requests**: The consolidated `check` workflow runs for every opened, synchronized, or reopened pull request target, including feature-branch targets used by stacked PRs. Its push trigger remains limited to `v3` and `v3*`.
-- **Status reporting and cancellation**: GraphQL and Playwright status jobs report real failures and successful path skips. Draft and ready PRs run the same Playwright execution envelope. Every push and every ready PR must show successful execution in full mode with the complete eight-shard matrix; a draft may attest the narrower plan the trusted envelope selected for it, which is a partial shard set or a skip, while any other mode, a partial matrix on a full plan, unexpected skips, missing outputs, failures, and cancellations without proven supersession fail. Smart-draft selection stays off until the `PUBLIC_PR_PLAYWRIGHT_SMART_DRAFT_ENABLED` repository variable, or its exact-canary PR variable, enables it for an eligible same-repository draft; forks, bots, private repositories, and the force-hosted canary keep the full plan. PR closure cancels running execution through the same checkout-free no-op job; a conversion to draft no longer cancels, because the running plan stays valid evidence. They exclude workflow cancellation and canceled execution dependencies, so obsolete reporters do not keep waiting for a runner. Playwright retains one route-neutral concurrency group on its reusable-workflow caller; the called workflow has no concurrency and its sibling jobs cannot cancel each other. The status job stays outside this group. Queue telemetry and metadata uploads run in that same hosted reporter, including after test failures, and stop on cancellation.
-- **Equivalent push validation**: Non-`v3` pushes may reuse completed successful hosted Playwright PR validation. Unit reuse applies to push reruns only, so initial unit validation does not acquire an extra runner or scheduling wait. The read-only gate requires one open, ready, same-repository PR with the exact head and base, an equivalent merge tree, the latest workflow run and attempt, and actual successful test coverage. A run- and attempt-bound artifact records the actual checkout tree; older runs without it cannot be reused. Playwright also requires the same trusted control revision and a matching full eight-shard plan. The summary links the reused run. Missing, stale, failed, skipped, partial, or ambiguous evidence runs normal validation. Default-branch pushes and manual runs remain independent; other workflows retain their different path/build semantics. Translation validation is already PR-only. Playwright performs its lookup inside the existing preparation job, so it can check first attempts without adding another runner allocation. Preparation inherits caller permissions: older contents-only callers continue normal validation when API access is insufficient, while updated callers forward read access to Actions and pull requests. Execution jobs retain explicit contents-only tokens.
-- **Equivalent pull-request lifecycle validation**: A `ready_for_review` or `reopened` event on an unchanged head may validate the PR's own completed full run instead of repeating it. The same read-only gate binds the prior run to the same pull request, head, base, merge tree, trusted control revision, full eight-shard plan, latest attempt, and complete coverage of exactly the route the current event selected (hosted or public ARM64, never mixed). The validating event's own run is excluded from the candidate set, because it is always the newest run for that head and is still executing; without that exclusion the lookup could only ever reach a run that has not finished. A base retarget changes the bound base, so it always runs normal validation. The prior run's tested-source receipt must exist on the route that produced it, so both hosted and public builds record one. Push validation is never reused by a lifecycle event, and any failed or ambiguous proof runs the full suite; the reporter fails if a duplicate is ever offered on a push.
-- **Playwright lifecycle guards**: Playwright execution and its status reporter run only for open pull requests or pushes. Lifecycle events on a merged or closed pull request — such as a post-merge title edit — start nothing, and the close action keeps its dedicated cancel job. `ready_for_review` is retained because the ready boundary runs the envelope so it can validate the existing full proof of an unchanged head; converting back to a draft conservatively re-runs full validation.
-- **Draft → ready transition contract**: Marking a draft PR ready fires `ready_for_review` on the unchanged head SHA and re-runs every workflow that lists it. Draft and ready PRs now run the same validation, so a green draft-era run stays authoritative. The validation suites (`test-unit`, `test-olat-api`, `test-graphql`, `test-intl-production`) run identically for drafts and ready PRs; they do not list `ready_for_review` and do not gate any job on `github.event.pull_request.draft`. The consolidated staging image workflow (`v3_images-stg.yml`) is the documented exception: draft pull requests defer every build leg of the selected plan (each build job gates on `github.event_name != 'pull_request' || github.event.pull_request.draft == false`; pushes always build) to relieve the constrained hosted ARM64 pool, and the workflow lists `ready_for_review` so the boundary restores the deferred builds on the unchanged head. The same run owns the required `build-images-status` context, so the image-build contract recomputes against those restored builds. Its always-reporting terminal job passes a genuine success and fails a real failure, an unexpected skip, a cancellation, or missing selection data, whether or not the pull request is a draft. `test-playwright` runs the full eight-shard suite for drafts and ready PRs alike unless the changed paths resolve to a bounded class, whose bounded Playwright selection applies in both states; at the `ready_for_review` boundary its envelope validates the draft-era full proof instead of rebuilding and retesting an unchanged head (see equivalent pull-request lifecycle validation above). The AI review and code-review workflows own their ready-boundary handoff. `ci-event-gates.test.cjs` fails any `ready_for_review` trigger without a documented lifecycle role, and fails any required suite that gates on the draft state, so the duplicate-run and draft-deferral classes cannot return silently.
+- **Status reporting and cancellation**: GraphQL and Playwright status jobs report real failures and successful path skips. Draft and ready PRs run the same Playwright execution envelope. Every push and every ready PR must show successful execution in full mode with the complete eight-shard matrix; a draft may attest the narrower plan the trusted envelope selected for it, which is a partial shard set or a skip, while any other mode, a partial matrix on a full plan, unexpected skips, missing outputs, failures, and cancellations without proven supersession fail. Smart-draft selection stays off until the `PUBLIC_PR_PLAYWRIGHT_SMART_DRAFT_ENABLED` repository variable, or its exact-canary PR variable, enables it for an eligible same-repository draft; forks, bots, private repositories, and the force-hosted canary keep the full plan. PR closure cancels running execution through the same checkout-free no-op job; conversion to draft has no Playwright trigger, so it preserves the running plan without starting a replacement. Ready transitions still run the existing validation and reuse gates. They exclude workflow cancellation and canceled execution dependencies, so obsolete reporters do not keep waiting for a runner. Playwright retains one route-neutral concurrency group on its reusable-workflow caller; the called workflow has no concurrency and its sibling jobs cannot cancel each other. The status job stays outside this group. Queue telemetry and metadata uploads run in that same hosted reporter, including after test failures, and stop on cancellation.
+- **Verified Playwright result reuse**: `.github/scripts/ci-verified-reuse.cjs` is the active policy. Reuse defaults off unless `CI_VERIFIED_REUSE_ENABLED` is exactly `true`; an unset/false value is also the rollback switch. It requires a successful latest attempt from the same repository, the canonical caller workflow byte-for-byte, the actual trusted reusable workflow revision recorded by GitHub, a v2 tested-source receipt bound to the PR number and target branch, and the exact complete eight-shard plan and executed coverage. Artifact API timestamps must place both receipt and plan creation inside the corresponding successful trusted upload step of that exact run attempt; a later deleted/recreated replacement cannot authorize reuse. The first candidate-executing build step must start in a strictly later timestamp second than the producer upload completes; same-second or missing timing evidence causes an explicit miss. This relies on the trusted workflow ordering and is not a general artifact-signature mechanism. Source attempts older than seven days, missing/expired/ambiguous artifacts, digest mismatches, partial plans, failed/cancelled attempts, inaccessible APIs and transitive reuse chains all rerun. Each lookup logs a miss reason and a source link when one was found. The old v1 helper remains for historical audit tests and shared collection/coverage primitives; workflows no longer use its acceptance path.
+- **Control input closure**: Trusted checkouts materialize exactly `/.github/`, `/playwright/`, `/.devrouter.yml`, and `/.gitattributes` in non-cone sparse mode. The control fingerprint covers every file, symlink, mode and submodule in that boundary, including new transitive scripts, toolchain locks, workflow/action definitions and selector data. Builds and tests consume the candidate checkout separately, and its entire Git tree must match exactly. Thus deployment-values-only control changes do not invalidate a result, while a changed deployment file in the actual tested tree still does. Moving composite-action refs are replaced with local actions from a separate immutable checkout of `job.workflow_sha`; upstream actions, browser and service containers are pinned. Node is exact, pnpm is exact, and the CI profile planner installs its complete npm lock with integrity checks. Adding control dependencies outside the sparse boundary requires extending the boundary and its verifier/tests together.
+- **Runner compatibility**: Hosted Linux x64 and public Linux ARM64 are distinct supported environments. Reuse requires the same route, provider, OS, architecture, worker count, pinned container/service/toolchain definitions and full plan. Host kernel and patch revisions within the same route are considered compatible because execution is in the pinned container; this is not an attestation of host integrity. **A hosted x64 draft run still reruns when readiness selects public ARM64. Public ARM64 PR coverage cannot satisfy a hosted staging push.** Paid qualification waves retain their actual-execution admission. No service image is published from a PR. The locked profile planner is exposed through a clean `bin/devrouter` path accepted by the production host-executable resolver; its dependency tree stays locked under `node_modules`.
+- **Lifecycle and in-flight validation**: Readiness enters the same concurrency group with cancellation disabled, so an active draft execution finishes before the ready lookup runs. GitHub owns this queue; there is no polling runner or separate wait job. New commits and closure still cancel obsolete work. There is no custom queue deadline beyond GitHub concurrency and the existing job timeouts. Only completed, independently proven coverage may satisfy the current run, and the verifier rechecks the live PR/merge and source attempt before acceptance.
+- **Squash and ordinary merge pushes**: For `v3` and `v3-*`, an opted-in caller may reuse its merged PR's actual full hosted result. GitHub's commit-to-PR association, exact merged commit, first-parent base, tested synthetic merge parents and identical trees prove identity; commit messages are ignored. Two-parent merges also bind their second parent. The push retains its own required status. The staging controller runs its own trusted verifier and independently reconstructs the complete source proof before admitting skipped push shards, recording the source in `validationReuse`. A green reporter, a candidate receipt, a generic cache hit, or ARM64 coverage alone cannot authorize promotion. All other promotion, image, scan, ancestry and selection gates remain in force.
+- **Rollout and remaining suites**: Land producer, verifier and promotion consumer together, then obtain actual full v2 receipts under the trusted `v3` workflow. Before enabling the reuse variable, qualify a same-route draft/ready example, a squash example, and a staging-controller dry run with synthetic data; this PR does not change that variable or run a deployment. Set it false/unset to resume actual execution immediately; restoring the readiness trigger rolls back stage 1. Codebase push checks include Git history and still execute. Unit/GraphQL, OLAT and production-translation pushes also still execute: their current candidate-authored producers do not meet this trusted v2 provenance contract. This is an explicit remaining optimization, not completed reuse; the implementation plan inventories each missing identity and migration needed.
 
-- **Public PR ARM64 runners**: The exact reusable `public-pr-playwright-shards.yml` workflow is now the single backend-neutral Playwright envelope. A hosted preparation job checks out trusted `v3` control files separately from the candidate data, computes one route and one canonical selector plan, and both hosted and public execution jobs consume that same plan. The execution jobs call the trusted `v3` composite actions remotely; candidate code supplies source and tests but cannot replace the orchestration action. Every PR, draft or ready, uses the full eight-shard suite. The trusted routing always returns the ready-state selector and never selects the partial draft plan, so the draft-selection controls cannot narrow a draft even when enabled. Forks, bots, private repositories, pushes, malformed event or policy data, and disabled smart routing fall back to hosted full execution; only `route_hint: auto` is accepted, and any other hint rejects the invocation. `PUBLIC_PR_ARM64_PLAYWRIGHT_FORCE_HOSTED_CANARY_PR` can force one exact PR to hosted execution without changing the global public rollout. The build artifact archives `packages/*/dist`, so every workspace package dist is covered without a hand-maintained list. Public jobs use read-only contents permission, receive no secrets, do not persist checkout credentials, and publish no service ports. They restore available pnpm and Turbo caches but never save caches from public PR jobs. The required `test-playwright-status` gate remains GitHub-hosted and consumes the one reusable invocation result. The public runner group stays restricted to `uzh-bf/klicker-uzh` and the exact workflow `uzh-bf/klicker-uzh/.github/workflows/public-pr-playwright-shards.yml@refs/heads/v3`; no other repository or workflow can target it. Two persistent public hosts expose eight runner processes, four per host. They have no private repository or private-network access and require scheduled rebuilds plus immediate replacement after anomalies. Disk cleanup is not compromise recovery.
-- **Reusable workflow reference syntax**: The Playwright caller uses `uzh-bf/klicker-uzh/.github/workflows/public-pr-playwright-shards.yml@v3`; GitHub records that ref as `refs/heads/v3`. Keep the full `@refs/heads/v3` spelling for the organization runner-group policy and trusted composite action refs. Using the full spelling in the reusable-workflow caller creates a zero-job workflow run. The trusted cache seed also marks only its exact checked-out workspace as a Git safe directory before reading repository metadata inside its container.
+- **Draft → ready transition contract**: Marking a draft PR ready fires `ready_for_review` on the unchanged head SHA and re-runs every workflow that lists it. Draft and ready PRs now run the same validation, so a green draft-era run stays authoritative. The validation suites (`check`, `test-unit`, `test-olat-api`, `test-graphql`, `test-intl-production`) run identically for drafts and ready PRs; they do not list `ready_for_review` and do not gate any job on `github.event.pull_request.draft`. The consolidated staging image workflow (`v3_images-stg.yml`) is the documented exception: draft pull requests defer every build leg of the selected plan (each build job gates on `github.event_name != 'pull_request' || github.event.pull_request.draft == false`; pushes always build) to relieve the constrained hosted ARM64 pool, and the workflow lists `ready_for_review` so the boundary restores the deferred builds on the unchanged head. The same run owns the required `build-images-status` context, so the image-build contract recomputes against those restored builds. Its always-reporting terminal job passes a genuine success and fails a real failure, an unexpected skip, a cancellation, or missing selection data, whether or not the pull request is a draft. Draft sync PRs are the second exception: their Playwright envelope selects a `skip` plan with reason `draft-sync-deferred`, and the ready transition runs full validation. Otherwise `test-playwright` runs the full eight-shard suite for drafts and ready PRs alike unless the changed paths resolve to a bounded class, whose bounded Playwright selection applies in both states; at the `ready_for_review` boundary its envelope validates the draft-era full proof instead of rebuilding and retesting an unchanged head (see equivalent pull-request lifecycle validation above). The AI review and code-review workflows own their ready-boundary handoff. `ci-event-gates.test.cjs` fails any `ready_for_review` trigger without a documented lifecycle role, and fails any required suite that gates on the draft state, so the duplicate-run and draft-deferral classes cannot return silently.
+
+- **Public PR ARM64 runners**: The exact reusable `public-pr-playwright-shards.yml` workflow is now the single backend-neutral Playwright envelope. A hosted preparation job checks out trusted `v3` control files separately from the candidate data, computes one route and one canonical selector plan, and both hosted and public execution jobs consume that same plan. The execution jobs call composite actions from a separate immutable trusted checkout; candidate code supplies source and tests but cannot replace the orchestration action. Drafts run the plan the trusted route selects: the full eight-shard suite by default, the change-based plan when smart drafts are enabled, and a deferred skip for draft sync PRs. Ready PRs and pushes run the full suite unless a bounded change class applies, and pushes never narrow. Forks, bots, private repositories, pushes, malformed event or policy data, and disabled smart routing fall back to hosted full execution; only `route_hint: auto` is accepted, and any other hint rejects the invocation. `PUBLIC_PR_ARM64_PLAYWRIGHT_FORCE_HOSTED_CANARY_PR` can force one exact PR to hosted execution without changing the global public rollout. The build artifact archives `packages/*/dist`, so every workspace package dist is covered without a hand-maintained list. Public jobs use read-only contents permission, receive no secrets, do not persist checkout credentials, and publish no service ports. They restore available pnpm and Turbo caches but never save caches from public PR jobs. The required `test-playwright-status` gate remains GitHub-hosted and consumes the one reusable invocation result. The public runner group stays restricted to `uzh-bf/klicker-uzh` and the exact workflow `uzh-bf/klicker-uzh/.github/workflows/public-pr-playwright-shards.yml@refs/heads/v3`; no other repository or workflow can target it. Two persistent public hosts expose eight runner processes, four per host. They have no private repository or private-network access and require scheduled rebuilds plus immediate replacement after anomalies. Disk cleanup is not compromise recovery.
+- **Reusable workflow reference syntax**: The Playwright caller uses `uzh-bf/klicker-uzh/.github/workflows/public-pr-playwright-shards.yml@v3`; GitHub records that ref as `refs/heads/v3`. Keep the full `@refs/heads/v3` spelling for the organization runner-group policy; composite actions use the exact called workflow revision. Using the full spelling in the reusable-workflow caller creates a zero-job workflow run. The trusted cache seed also marks only its exact checked-out workspace as a Git safe directory before reading repository metadata inside its container.
 - **Public ARM64 performance evidence**: The first eight-way run after rollout (`33246023106`, 2026-08-29) scheduled all eight shards simultaneously on distinct `public-pr-arm64-01` through `-08` runners. The restore-only build took 3m59s instead of the prior 7m43s cache-writing build. Shard jobs ranged from 14m30s to 21m24s; the remaining floor was spec structure, led by the 846-second serial live-quiz file. Job summaries report the prepare, build, and shard runner names, while the hosted status job records the selected route and dependency results. GitHub's own step timestamps remain the source for phase duration.
 - **Closed PR execution**: Closing or merging a PR starts a checkout-free GitHub-hosted no-op in that PR's existing execution concurrency group. It cancels obsolete Playwright execution without an Actions write token. The close event does not start preparation, builds, shards, status reporting, or telemetry. Push verification uses a branch-ref key and remains independent. Cancellation is asynchronous; verify actual job termination before counting capacity as recovered. Reopening a PR resumes the normal execution path.
 - **Closed PR check sweeping**: `cancel-closed-pr-checks.yml` fires only on `pull_request: closed` and joins every other per-PR workflow concurrency group through a no-op matrix leg with `cancel-in-progress`, so merged or closed pull requests also reclaim queued `check`, gitleaks, CodeQL, SonarCloud, OpenCodeReview, unit/GraphQL/OLAT/translation validation, dependency review, staging image builds, and build-fallback capacity without an Actions write token. Each matrix entry carries the target's literal group prefix — the workflow name, or `intl-production` for the translation suite whose group does not use `github.workflow`. Three entries cover the lecturer/student MCP workflows that exist only on the v3-ai and v3-audit integration branches; on v3 those legs finish as no-ops, and the gate test allowlists them as documented integration-only entries so the single v3-owned matrix stays valid across the sync chain. Playwright keeps its own dedicated cancel job, the final-review workflow owns its closed-event supersession, and push-only, `workflow_run`, dispatch, and reusable workflows have no per-PR groups. A target still waiting for its first runner can reject the joining leg with a 409 conflict; that state self-resolves, `fail-fast` is disabled, and sweeping is a large reduction rather than a guarantee. `ci-event-gates.test.cjs` fails when a per-PR workflow appears without a sweeper entry or a sweeper entry stops matching a live workflow, so renames cannot silently break coverage.
@@ -299,33 +391,475 @@ see **Bounded codebase check** below. Pushes always run the full suite.
 - **Unused code**: `check` runs Knip **advisory** (non-blocking); ratchet it to blocking only after the per-workspace entry config is tuned.
 - **Secret scanning**: `check-gitleaks` runs a **blocking** Gitleaks scan of commits introduced by the push or pull request (`.gitleaks.toml`, default ruleset + false-positive allowlist). For a branch-creation push, where GitHub supplies an all-zero `before` SHA, it fetches the repository default branch and scans from its merge base to the new tip; it fails closed when the default branch or merge base cannot be resolved. The configured push trigger covers `v3` and `v3*`; other branch names are covered when a pull request is opened or updated. A local husky pre-commit hook scans staged changes when the binary is present.
 - **SonarCloud suppressions must live in `sonar-project.properties`.** Sonar reports rules such as `typescript:S3776` on the function declaration line, and Biome always moves a trailing `NOSONAR` comment onto its own line, so an inline marker silently stops suppressing after formatting. Use a scoped `sonar.issue.ignore.multicriteria` entry instead (current example: the chat POST handler's cognitive complexity).
-- **Security analysis**: `codeql-analysis.yml` analyzes JavaScript/TypeScript, the analytics Python sources, and the GitHub Actions workflows with SHA-pinned CodeQL v4 actions, and runs the `security-extended` suite as a pilot; the job is not a required check. A documentation-and-planning pull request skips the analysis in both workflows, because it changes no analyzed source: each workflow computes the class in a small classify job from the same changed-path records, and each analysis gate repeats the pull-request-only boundary, so a push, the weekly CodeQL run, and any class the classifier cannot prove still analyze. `v3_sonarcloud.yml` pins the Sonar scanner, derives the project version from the root `package.json`, awaits the quality gate on a pull request, and imports LCOV coverage only from a test run that belongs to the analyzed head and recorded the same tested source tree, rewriting the imported report paths to repository-relative form (`.github/scripts/sonar-coverage-inputs.cjs`, `.github/scripts/sonar-coverage-transport.cjs`); a missing or unverified report leaves coverage "not computed" in SonarCloud instead of reporting a satisfied metric, and no coverage threshold is armed yet. `.github/workflows/sonar-analysis.yml` holds the single analysis definition, and `v3_sonarcloud.yml` (branch push and ready-for-review boundary) and both coverage producers call it, so the analysis has one definition instead of one per host: the producer run that observes every producer terminal imports the coverage and analyzes, and a run that still sees a queued producer defers with a named reason instead of holding a runner, so no analysis job waits for a queued test run. At most one analysis is published per pull request, head, and base: a successful scan uploads a receipt artifact named for that revision, a later host that finds the receipt defers, and an explicit re-run (`github.run_attempt > 1`) ignores it and analyzes again. Fork and Dependabot pull requests cannot receive `SONAR_TOKEN`, so their analysis fails closed with a named unavailable result rather than an authorization error. **New-code definition**: SonarCloud fixes a branch's type at its first analysis and never changes it, and the type decides what new code means. A long-lived branch — the main branch, or a name matching the organization's `sonar.branch.longLivedBranches.regex` pattern — uses the project New Code definition. A short-lived branch has no project definition: its new code is everything that differs from the branch it merges into. The `uzh-bf_klicker-uzh` project keeps the repository's former default branch `dev` as its main branch, last analysed 2022-08-20, and neither `v3` nor `v3-*` matches the inherited `(branch|release)-.*` pattern. Before the project pattern was widened, `v3` was therefore a short-lived branch measured against `dev`, so nearly the whole repository counted as new code there and the branch gate failed on historical findings while the pull-request analysis of the same code stayed healthy. The project pattern is now `(branch|release)-.*|v3(-.*)?`, so every `v3` branch is long-lived and uses the project definition; a branch re-analysed after that change reports the definition on its next analysis, so no separate New Code setting is required. Because the type is fixed at a branch’s first analysis, the branch analysis is published without awaiting the gate — a failure there would block the staging promotion controller without changing the condition — and only the pull request, where new code is the diff against the base, remains gated. The red `v3` check is not caused by the scanner's `-Dsonar.projectVersion`: a version cannot inflate a short-lived branch, and the pre-#5924 job never awaited the gate, so it surfaced only once the workflow began to. `.github/scripts/sonar-new-code-boundary.cjs` names the cause from the branch's recorded type and merge target plus the measured `lines` and `new_lines`; it runs after the scan so the branch analysis is always published, carries `if: always()` so it also runs when the awaited pull-request gate has already failed the job, and stays non-fatal when either API is unavailable or the branch has no measures yet; it reports the boundary and never gates a branch run. Because the type is assigned once, correcting it is a platform action: extend the long-lived branch pattern on the project's Branches page to cover the `v3` names, delete the branch analysis through `api/project_branches/delete`, then re-analyse so the branch is recreated with the type the pattern assigns — or recreate the project with `v3` as its main branch. The project pattern is the lever because the organization-level pattern is Enterprise-only. It was applied on 2026-09-16 with the repository's own `SONAR_TOKEN`, which does carry project administration, from a disposable push-triggered workflow rather than an operator console. `dependency-review.yml` reviews changed dependencies and fails on high severity. GitHub's dependency graph resolves the pinned pnpm 11.5 workspace: the `v3` SBOM records 4,487 npm packages with 10,757 dependency edges, and the 336 open alerts are attributed to the root `pnpm-lock.yaml` (250), workspace `package.json` files (83), and `apps/analytics/uv.lock` (3), with resolved npm versions matching the `pnpm-workspace.yaml` override targets. Detection and graph coverage are verified; PR-time blocking of a newly introduced vulnerable dependency, and triage of the existing backlog, are not. Trivy scanning is piloted on the staging backend-docker image and migrator by the `scan-arm-backend-docker` and `scan-arm-backend-docker-migrator` legs of `v3_images-stg.yml`, and the trusted staging controller admits a candidate only when the receipt of each scanned image matches the digest it is about to promote. The pilot scope is still those two images, so the other staging images publish no receipt yet. Because the controller runs the workflow definition of its own revision, this admission applies to the controller once this source reaches the default branch.
+- **Security analysis**: `codeql-analysis.yml` analyzes JavaScript/TypeScript, the analytics Python sources, and the GitHub Actions workflows with SHA-pinned CodeQL v4 actions, and runs the `security-extended` suite as a pilot; the job is not a required check. A documentation-and-planning pull request skips the analysis in both workflows, because it changes no analyzed source: each workflow computes the class in a small classify job from the same changed-path records, and each analysis gate repeats the pull-request-only boundary, so a push, the weekly CodeQL run, and any class the classifier cannot prove still analyze. `v3_sonarcloud.yml` pins the Sonar scanner, derives the project version from the root `package.json`, awaits the quality gate on a pull request, and imports LCOV coverage only from a test run that belongs to the analyzed head and recorded the same tested source tree, rewriting the imported report paths to repository-relative form (`.github/scripts/sonar-coverage-inputs.cjs`, `.github/scripts/sonar-coverage-transport.cjs`); a missing or unverified report leaves coverage "not computed" in SonarCloud instead of reporting a satisfied metric, and no coverage threshold is armed yet. `.github/workflows/sonar-analysis.yml` holds the single analysis definition, and `v3_sonarcloud.yml` (branch push and ready-for-review boundary) and both coverage producers call it, so the analysis has one definition instead of one per host: the producer run that observes every producer terminal imports the coverage and analyzes, and a run that still sees a queued producer defers with a named reason instead of holding a runner, so no analysis job waits for a queued test run. At most one analysis is published per pull request, head, and base: a successful scan uploads a receipt artifact named for that revision, a later host that finds the receipt defers, and an explicit re-run (`github.run_attempt > 1`) ignores it and analyzes again. Fork and Dependabot pull requests cannot receive `SONAR_TOKEN`, so their analysis fails closed with a named unavailable result rather than an authorization error. **New-code definition**: SonarCloud fixes a branch's type at its first analysis and never changes it, and the type decides what new code means. A long-lived branch — the main branch, or a name matching the organization's `sonar.branch.longLivedBranches.regex` pattern — uses the project New Code definition. A short-lived branch has no project definition: its new code is everything that differs from the branch it merges into. The `uzh-bf_klicker-uzh` project keeps the repository's former default branch `dev` as its main branch, last analysed 2022-08-20, and neither `v3` nor `v3-*` matches the inherited `(branch|release)-.*` pattern. Before the project pattern was widened, `v3` was therefore a short-lived branch measured against `dev`, so nearly the whole repository counted as new code there and the branch gate failed on historical findings while the pull-request analysis of the same code stayed healthy. The project pattern is now `(branch|release)-.*|v3(-.*)?`, so every `v3` branch is long-lived and uses the project definition; a branch re-analysed after that change reports the definition on its next analysis, so no separate New Code setting is required. Because the type is fixed at a branch’s first analysis, the branch analysis is published without awaiting the gate — a failure there would block the staging promotion controller without changing the condition — and only the pull request, where new code is the diff against the base, remains gated. The red `v3` check is not caused by the scanner's `-Dsonar.projectVersion`: a version cannot inflate a short-lived branch, and the pre-#5924 job never awaited the gate, so it surfaced only once the workflow began to. `.github/scripts/sonar-new-code-boundary.cjs` names the cause from the branch's recorded type and merge target plus the measured `lines` and `new_lines`; it runs after the scan so the branch analysis is always published, carries `if: always()` so it also runs when the awaited pull-request gate has already failed the job, and stays non-fatal when either API is unavailable or the branch has no measures yet; it reports the boundary and never gates a branch run. Because the type is assigned once, correcting it is a platform action: extend the long-lived branch pattern on the project's Branches page to cover the `v3` names, delete the branch analysis through `api/project_branches/delete`, then re-analyse so the branch is recreated with the type the pattern assigns — or recreate the project with `v3` as its main branch. The project pattern is the lever because the organization-level pattern is Enterprise-only. It was applied on 2026-09-16 with the repository's own `SONAR_TOKEN`, which does carry project administration, from a disposable push-triggered workflow rather than an operator console. `dependency-review.yml` reviews changed dependencies and fails on high severity. The prior pnpm 11.5 workspace had verified GitHub dependency-graph coverage: the `v3` SBOM records 4,487 npm packages with 10,757 dependency edges, and the 336 open alerts are attributed to the root `pnpm-lock.yaml` (250), workspace `package.json` files (83), and `apps/analytics/uv.lock` (3), with resolved npm versions matching the `pnpm-workspace.yaml` override targets. Those counts describe the earlier pnpm 11.5 snapshot; recheck graph coverage after the pnpm 12 rollout. PR-time blocking of a newly introduced vulnerable dependency, and triage of the existing backlog, remain unverified. Trivy scanning is piloted on the staging backend-docker image and migrator by the `scan-arm-backend-docker` and `scan-arm-backend-docker-migrator` legs of `v3_images-stg.yml`, and the trusted staging controller admits a candidate only when the receipt of each scanned image matches the digest it is about to promote. The pilot scope is still those two images, so the other staging images publish no receipt yet. Because the controller runs the workflow definition of its own revision, this admission applies to the controller once this source reaches the default branch.
 - **Automation**: `claude-code-review.yml` auto-reviews every PR; `claude.yml` responds to @claude mentions; CodeQL (JavaScript/TypeScript, Python, and Actions; weekly + PR) and SonarCloud run alongside — note that `sonar-project.properties` puts `packages/i18n/messages/**` in `sonar.cpd.exclusions`, because locale catalogs are parallel translations of one key structure and copy-paste detection reads that as duplication by construction, failing the new-code duplication gate on any string-heavy PR; the files stay in scope for every other rule, so do not remove the exclusion. Conventional commits per `.versionrc.js` (feat/enhance/fix/docs/refactor/…); PRs are squash-merged, so the PR title must be a valid conventional commit.
 - **Playwright timing feedback**: `update-playwright-timings.yml` listens for a successful direct `v3` run of `test-playwright`, validates all eight compact JUnit artifacts, and opens or updates one human-reviewed timing PR on `automation/playwright-timings`. It requires `PLAYWRIGHT_TIMINGS_BOT_TOKEN` with repository contents and pull-request write permissions. The default `GITHUB_TOKEN` is deliberately insufficient because PRs it creates do not trigger their required checks; the timing workflow never auto-merges.
 
 Shard durations differ by architecture, so `playwright/timings.json` names the architecture its weights were measured on. The timing workflow maps the run's recorded route to `x64` for hosted runs and `arm64` for the public pool, passes it to the updater as `--architecture`, and the updater leaves the table untouched when it is calibrated for a different architecture, reporting why instead of writing. An untagged table is adopted by the producing architecture on its first tagged write. Replacing a calibration with another architecture's measurements is therefore a human decision rather than an automatic side effect of a successful run.
 
-- **AI review**: While a PR is a draft, OpenCodeReview runs Mistral-hosted GLM 5.3 (`zai-glm-5-3`) at high reasoning through a runner-local adapter against the exact PR head and its immediate base. A ready transition cancels an in-flight draft run, and ready PRs do not start new automatic reviews. Mistral is an external model provider, so review diffs cross that provider boundary and incur usage cost.
-- **Manual final review**: After CI and the draft feedback are settled, a collaborator with calculated `write` or `admin` permission posts `/final-review` on an unstacked PR or on one verified native stack layer. The workflow uses `zai-glm-5-3` with max reasoning, applies the repository's diff-led operational lenses, and publishes one consolidated review attached to an immutable head. Before review fan-out, one fixed public-safe request must return the expected function call; failure stops the run with bounded provider diagnostics. The manual jobs pin OpenCodeReview 1.13.0 and use its low review-effort preset for one review round; this does not lower the model's max reasoning setting. Both manual command paths bound each conversation to 32,768 prompt tokens, so history compression starts earlier. Before paid execution, offline previews at the default and bounded limits must select identical paths and exclusion reasons; a new size exclusion stops the review. Each individual OCR task has a 45-minute deadline, and an individual range has a 3,000,000-token ceiling. When the first attempt returns structurally valid partial coverage for a non-budget failure, the same job may resume that exact session once with only the unused token allowance. Strict lineage and identity checks protect checkpoint reuse, and combined usage cannot exceed the original range ceiling. Budget exhaustion, an invalid session, or a still-partial resume fails immediately. The job has a 90-minute ceiling and reserves time after OCR for cleanup and finalization. No incomplete result reaches publication. The mode-0600 OCR config contains an environment-based loopback token command, never the upstream key. Each OCR attempt starts its own adapter and removes `MISTRAL_API_KEY` from OCR's child environment. The wrapper closes the listener before returning, and always-run configuration cleanup must succeed before publication. Keep these jobs on fresh GitHub-hosted runners. If no actionable findings exist, it records an evidence-bound clean success status with description `zai-glm-5-3 final review clean; evidence=<64-hex evidence digest>` and skips the PR comment. The evidence digest covers the exact PR range, review mode, root review, stack identity, dispositions, and policy. A later descendant containing only bounded, declared repairs may be attested incrementally; material scope changes, stale stack identities, missing dispositions, or exceeded bounds require another complete manual review. For a finding-bearing report, a permitted collaborator records the exact machine-readable marker `<!-- final-ai-disposition/v1 {"schema_version":"final-ai-disposition/v1","review_id":"...","root_head":"...","workflow_run_id":123,"entries":[{"finding_id":"...","state":"fixed|follow-up|rejected","reference":"public-safe reference","paths":["path/to/finding"]}]} -->`; every entry must cover exactly one root finding and include its finding path in the explicit remediation paths. Malformed or missing records force a complete review. Findings are advisory: collaborators verify them and record each blocker as fixed, follow-up, or rejected.
-- **Manual stack review**: For a verified native stack, post `/final-review-stack` on the top PR. The workflow uses `zai-glm-5-3` with max reasoning to review the cumulative change and stack topology, assigns cross-layer findings to exact layer deltas, and publishes one report on the top PR. Each cumulative OCR task has a 30-minute deadline. A full-stack range has a 20,000,000-token ceiling; each incremental layer range retains its own 750,000-token ceiling. The first eligible partial range in declared order may consume the job's single resume allowance and shares that range's ceiling. A later or ineligible partial fails immediately. The 90-minute job uses an inner code-review deadline to reserve time for cleanup, topology review, publication, and finalization. Partial coverage is never published. The topology request removes derivation-only patch operations before sending evidence and fails closed above its bounded request and output budgets. It receives bounded excerpts of prior code findings, reports only defects that depend on a cross-layer interaction, and suppresses a topology result when it restates an overlapping code finding with the same path and category. Metadata retains both generated and published topology counts for later evaluation. If neither pass produces an actionable finding, it records an evidence-bound clean success status with description `zai-glm-5-3 stack review clean; evidence=<64-hex evidence digest>` and skips the PR comment. It stores the immutable reviewed-path and rename-alias set in the trusted `Final AI stack clean evidence` check output so an unrelated default-branch advance can be revalidated without recreating a comment. The stack evidence digest covers the ordered layer identities, topology identity, exact range, dispositions, and policy. A later repair in one or more layers may use the same bounded, disposition-backed attestation contract when every changed layer descends from its reviewed head, every upper layer contains the current parent head, and each per-layer remediation range remains within the declared bounds. Topology drift, material scope changes, or missing dispositions require another cumulative review. Any layer drift resets the top `final-ai-stack-review` status, even when the top PR's SHA is unchanged. Neither final status grants merge authority; merge readiness still requires current evidence, green required CI, and terminal dispositions. The repository grants agents and the shared PR babysitter standing approval to post `/final-review` or `/final-review-stack` after exact-head CI and ordinary feedback settle; no per-run approval is required for the configured external Mistral request and its usage cost. This standing approval does not cover non-public payloads or grant merge authority. The babysitter still stops after two autonomous head-changing rounds and never guesses a tracker destination. Add `final-ai-review` or `final-ai-stack-review` to branch protection only after a controlled live run has proved its status lifecycle.
-- **Publisher rejection diagnostics**: A failed validation or publisher step keeps its exact rejected JSON input as a one-day workflow artifact. The individual job retains its initial, resumed, or final result JSON as applicable. The stack job normally retains the combined code result and optional topology result. An incremental validation or resume failure may instead retain the exact affected range result JSONs, while a combine failure retains every range result passed to the failed combine step. The workflow never adds stderr, Mistral configuration, stack manifests, review-range directories as directories, unrelated wildcard inputs, or runner workspaces to these artifacts. Treat the payloads as public because this repository is public: use them only for offline parser diagnosis, never as authorization to replay or publish a review. The upload runs only after the corresponding validation or publisher step fails and does not change the failed job or final status. Live artifact proof remains a post-merge check because `pull_request_target` uses workflow code from the default branch. See [OpenCodeReview publisher rejection payloads](./solutions/integration/opencodereview-publisher-rejection-payloads.md) for the failure pattern and safe diagnostic boundary.
+- **AI review**: While a PR is a draft, OpenCodeReview runs DeepSeek V4.1 Flash 1017 (`deepseek-v4-1-flash-1017`) through Mistral at max reasoning through a runner-local adapter against the exact PR head and its immediate base. A ready transition cancels an in-flight draft run, and ready PRs do not start new automatic reviews. Draft review diffs are sent to Mistral and incur usage cost. New commits (`synchronize`) on same-repository `sync/` branches skip automatic draft review; their initial opening, reopening or conversion to draft remains eligible. Ordinary feature PRs retain automatic review on new commits. Manual final review remains a separate gate for the current head.
+- **Draft advisor and repository context**: The trusted draft runner bootstraps
+  `.agents/skills/ocr-reviewer/SKILL.md` as merged review rules. Its
+  `read_review_context` MCP tool reads bounded Markdown from the trusted policy
+  revision under `docs/` and `.agents/skills/`; it never loads candidate policy.
+  The reviewer may ask `ask_review_advisor` a focused question with up to three
+  source ranges from the immutable PR head. One broker shares eight attempted
+  consultations across planning and all four review workers. It consults
+  Mistral `zai-glm-5-3` at max reasoning with a 16 KiB complete request bound,
+  16,384-token output cap, 480-second deadline and no retries. Failures consume
+  a slot; malformed, truncated or unsupported evidence is rejected. The advisor
+  prompt asks for one direct answer in two to four short sentences with decisive
+  line evidence, or an `uncertain` assessment naming the missing evidence. This
+  is answer-format guidance within the existing schema and token limits; it
+  does not guarantee that a max-reasoning response will avoid the completion cap.
+  The advisor has no execution, browser, write or recursive tools. Its verdict
+  is advisory; the manual final-review gate remains separate. Missing advisor
+  access leaves
+  ordinary source review available with an explicit unavailable status. Provider
+  keys stay in trusted adapter instances; the OCR child receives only local
+  capabilities and no publication token. Sanitized seven-day receipts report
+  registration, actual consultations and provider usage. Advisor receipts and
+  job summaries also retain local dispatch counts and up to eight attempt outcomes
+  with fixed stages and sanitized reasons. A local dispatch is not evidence of a
+  provider request. Deadline labels distinguish timer expiry from client
+  cancellation while preserving existing client errors and counters. Older
+  receipts report unknown outcome details. Advice validation reasons distinguish
+  finish status, tool count/name, argument JSON, object shape, assessment, answer
+  type/length, evidence array/count and source evidence. These fixed codes retain
+  the client error `invalid_advice`; receipts include no answer, source or private
+  reasoning. Older generic `invalid_advice` receipts cannot identify which check
+  failed. Tool discovery describes the complete
+  16 KiB serialized request bound, including overhead, the 256 KiB source-file
+  bound and each range's 120-line/8 KiB bound; prefer minimal sufficient ranges.
+  Bracket paths such as Next.js dynamic routes retain the same immutable-source
+  and traversal checks. Draft and advisor costs use separate provider rates; a
+  combined estimate is unavailable when either expected usage receipt is incomplete. Advisor usage has its own quota and does
+  not change OCR's existing token accounting. This adds Mistral provider usage
+  to draft review; source configuration becomes active only after merge.
+- **Trusted review configuration**: `.github/open-code-review/repository.json`
+  is read from the frozen trusted policy commit. The `ocr-repository/v1` schema
+  selects only the fixed `draft-v1` profile, context roots, exact root Markdown
+  contracts, guide pointers and public-library IDs. Unknown fields, invalid
+  paths and missing declared entry points fail before provider dispatch. The
+  donor explicitly exposes `AGENTS.md`, `CONTEXT.md`, `docs/` and
+  `.agents/skills/`; reads retain the existing blob, symlink, line and byte
+  bounds. Candidate configuration never replaces policy. Missing configuration
+  retains the two directory roots and disables docs lookup through an empty
+  library list. The schema grants no activation or execution-setting authority.
+  Pure background/result helpers are shared with the final controller, whose
+  policy digest includes their source. Final admission and its individual/stack
+  execution contracts stay in the existing GitHub controller.
+  The [shared runtime](ocr-runtime.md) packages these contracts as a pinned
+  composite action and release manifest. Klicker's draft caller selects release
+  `0032c990d40985ce120179ded2c9d4b6e6a1d940`; CI checks the caller against that
+  published controller and verifies its trusted configuration and portable skill.
+  Actual remote-action execution remains a separate ordinary post-merge receipt.
+- **Public library documentation**: `lookup_library_docs` uses Context7's
+  [Search API](https://context7.com/docs/search-api) through the same trusted
+  broker. `CONTEXT7_API_KEY` stays in the parent; OCR receives only its existing
+  loopback capability. The trusted runner currently permits the public Next.js,
+  React, Prisma and TypeScript documentation IDs through that explicit trusted
+  configuration. Adopters select their own public-library IDs instead of
+  inheriting this stack. Four attempted uncached
+  lookups are shared across the run, independently of the eight advisor attempts.
+  Each lookup has a 15-second deadline, no retry, a bounded upstream body and an
+  8 KiB returned JSON envelope. Completed results are cached by library, query,
+  version and language; concurrent misses may consume separate attempts.
+  Missing credentials, rate limits and lookup failures leave source review and
+  advisor consultations available. Returned snippets are evidence, not policy.
+  The tool reports requested and served versions separately and marks missing
+  or inconsistent provider version evidence unverified. The reviewer reads the
+  dependency version from the reviewed source before supplying a hint.
+  Queries are restricted to public API topics, with bounded input validation;
+  obvious code, URLs and credential-like content are rejected. These checks
+  cannot establish semantic privacy for arbitrary prose. Context7
+  [stores formulated queries and uses LLM providers for reranking](https://context7.com/docs/security/data-privacy).
+  Private repository adopters must authorize an appropriate public-query policy.
+  No source excerpts or PR/MR descriptions are automatically attached. The
+  existing sanitized tools receipt and `OCR docs` log lines report counters
+  without query or result content. Failed lookups also record a fixed failure
+  classification and the HTTP status of the most recent failed attempt, when
+  a response arrived. Transport failures and deadlines remain distinct from
+  HTTP rejection; older receipts without those fields report unknown details.
+  Filtered live progress includes documentation tool start, completion and
+  failure events without arguments or results. A separate service reference
+  estimate uses
+  the [2026-10-18 Pro overage rate](https://context7.com/plans) of USD 0.005 per
+  upstream request; four requests represent USD 0.02. It excludes subscriptions,
+  included allowances and model tokens, and is not an actual bill. Failed or
+  disconnected requests retain unknown usage. The `draft_and_advisor` model
+  cost and cache-savings formula remains scoped to those two models. Docs consume
+  ordinary model context within the existing OCR ceilings. GitLab adopters can
+  reuse the broker and skill with their own trusted CI and publisher.
+- **Manual final review**: After CI and the draft feedback are settled, a collaborator with calculated `write` or `admin` permission posts `/final-review` on an unstacked PR or on one verified native stack layer. The workflow uses `deepseek-v4-1-flash-1017` with max reasoning, applies the repository's diff-led operational lenses, and publishes one consolidated review attached to an immutable head. Before review fan-out, one fixed public-safe request must return the expected function call; failure stops the run with bounded provider diagnostics. The manual jobs pin OpenCodeReview 1.13.0 and use its low review-effort preset for one review round; this does not lower the model's max reasoning setting. Both manual command paths use OCR's 200,000-token prompt ceiling, with estimated compression thresholds at 120,000 and 160,000 tokens. The separate completion cap remains 16,384 tokens. Before paid execution, one offline preview runs at the same prompt limit; malformed selection data or any `too_large` size exclusion stops the review. Other intentional rule and path exclusions remain valid: `final-review-rules.json` excludes unit tests and their support code (`*.test.*`, `__tests__`, `__mocks__`, `test/` directories and `tests/` directories under `apps/` and `packages/`) and documentation, in addition to OCR's default filters. Its `include` entry `playwright/**/*.ts` bypasses OCR's built-in test filter, so Playwright specs, helpers and configuration are reviewed. User excludes take precedence over `include`, so no exclude pattern may match `playwright/`. A successful selection preview does not prove that rendered group prompts fit or that the review completed. Each individual OCR task has a 45-minute deadline, and an individual range has a 10,000,000-token aggregate ceiling on billable tokens (uncached input plus output; see the cache accounting below). When the first attempt returns structurally valid partial coverage for a non-budget failure, the same job may resume that exact session once with only the unused token allowance. Strict lineage and identity checks protect checkpoint reuse, and combined usage cannot exceed the original range ceiling. Budget exhaustion, an invalid session, or a still-partial resume fails immediately. The job has a 90-minute ceiling and reserves time after OCR for cleanup and finalization. No incomplete result reaches publication. The result CLI commands also emit a bounded JSON diagnostic to stderr
+  with status, coverage counts, allowlisted failure classifications, resume outcome
+  and a fixed rejection code. A still-partial resume has a terminal-status rejection
+  rather than an identity error. The two-line resume-plan and JSON merge stdout
+  protocols, coverage requirements and retry decisions remain unchanged. The mode-0600 OCR config contains an environment-based loopback token command, never the upstream key. Each OCR attempt starts its own adapter and removes `MISTRAL_API_KEY` from OCR's child environment. The wrapper closes the listener before returning, and always-run configuration cleanup must succeed before publication. Keep these jobs on fresh GitHub-hosted runners. If no actionable findings exist, it records an evidence-bound clean success status with description `deepseek-v4-1-flash-1017 final review clean; evidence=<64-hex evidence digest>` and skips the PR comment. The evidence digest covers the exact PR range, review mode, root review, stack identity, dispositions, and policy. A later descendant containing only bounded, declared repairs may be attested incrementally; material scope changes, stale stack identities, missing dispositions, or exceeded bounds require another complete manual review. For a finding-bearing report, a permitted collaborator records the exact machine-readable marker `<!-- final-ai-disposition/v1 {"schema_version":"final-ai-disposition/v1","review_id":"...","root_head":"...","workflow_run_id":123,"entries":[{"finding_id":"...","state":"fixed|follow-up|rejected","reference":"public-safe reference","paths":["path/to/finding"]}]} -->`; every entry must cover exactly one root finding and include its finding path in the explicit remediation paths. Malformed or missing records force a complete review. Findings are advisory: collaborators verify them and record each blocker as fixed, follow-up, or rejected.
+- **Individual requirements context**: `/final-review` sends the normalized PR title and up to 8,000 Unicode code points of the description as untrusted context. Put the problem, intended behavior, boundaries and acceptance criteria first. Hidden HTML comments and image embeds are omitted before truncation; fenced and inline code examples remain data. The structured context marks descriptions as complete, truncated or absent; missing descriptions retain a title-only fallback. Links and images are never fetched. Description text cannot override trusted review rules, waive findings, change settings or grant authority. The effective background digest binds authorization, startup, evidence reuse, publication and finalization; an effective context edit during the run prevents stale success. The individual review also appends the pull request's changed `project/**/*-plan.md` documents, read from the head commit, as untrusted context: hidden comments and images are removed, and all plans share 16,000 code points in path order, so the earliest-dated plan comes first. At most ten plan files are read, a plan larger than 256 KiB is omitted, and only the first 65,536 code points of a plan are normalized, which bounds the cost of crafted content. The plans are context, not reviewed files; the background digest still covers only the title and description, because plan content is fixed by the bound head commit. Cumulative `/final-review-stack` retains its existing background and per-layer topology descriptions.
+- **Manual stack review**: For a verified native stack, post `/final-review-stack` on the top PR. The workflow uses `deepseek-v4-1-flash-1017` with max reasoning to review the cumulative change and stack topology, assigns cross-layer findings to exact layer deltas, and publishes one report on the top PR. Each cumulative OCR task has a 30-minute deadline. A full-stack range has a 20,000,000-token ceiling; each incremental layer range retains its own 750,000-token ceiling. The first eligible partial range in declared order may consume the job's single resume allowance and shares that range's ceiling. A later or ineligible partial fails immediately. The 90-minute job uses an inner code-review deadline to reserve time for cleanup, topology review, publication, and finalization. Partial coverage is never published. The topology request removes derivation-only patch operations before sending evidence and fails closed above its bounded request and output budgets. It receives bounded excerpts of prior code findings, reports only defects that depend on a cross-layer interaction, and suppresses a topology result when it restates an overlapping code finding with the same path and category. Metadata retains both generated and published topology counts for later evaluation. If neither pass produces an actionable finding, it records an evidence-bound clean success status with description `deepseek-v4-1-flash-1017 stack review clean; evidence=<64-hex evidence digest>` and skips the PR comment. It stores the immutable reviewed-path and rename-alias set in the trusted `Final AI stack clean evidence` check output so an unrelated default-branch advance can be revalidated without recreating a comment. The stack evidence digest covers the ordered layer identities, topology identity, exact range, dispositions, and policy. A later repair in one or more layers may use the same bounded, disposition-backed attestation contract when every changed layer descends from its reviewed head, every upper layer contains the current parent head, and each per-layer remediation range remains within the declared bounds. Topology drift, material scope changes, or missing dispositions require another cumulative review. Any layer drift resets the top `final-ai-stack-review` status, even when the top PR's SHA is unchanged. Neither final status grants merge authority; merge readiness still requires current evidence, green required CI, and terminal dispositions. The repository grants agents and the shared PR babysitter standing approval to post `/final-review` or `/final-review-stack` after exact-head CI and ordinary feedback settle; no per-run approval is required for the configured external Mistral request and its usage cost. This standing approval does not cover non-public payloads or grant merge authority. The babysitter still stops after two autonomous head-changing rounds and never guesses a tracker destination. Add `final-ai-review` or `final-ai-stack-review` to branch protection only after a controlled live run has proved its status lifecycle.
+- **Stack topology evidence**: The topology pass receives unified Git diffs for
+  every frozen layer, including unchanged lower layers during incremental repair.
+  The root diff starts at the verified merge base; upper diffs use their recorded
+  parent heads. The review job verifies commit/tree identities and reads local
+  objects after the existing immutable-range fetches, with external diff and text
+  conversion disabled. Missing objects, identity mismatches, binary changes,
+  bounded Git-read failures and requests above the existing 1 MB ceiling stop
+  topology dispatch. Source is neither truncated nor written into snapshot
+  artifacts. Metadata-only changes remain valid evidence. Complete topology
+  coverage means considering all supplied diffs; it does not establish inspection
+  of unchanged source or executed tests. Findings use the same confidence,
+  autofix and motivating-line contract as the code pass, plus exact layer and
+  incremental-range attribution. Models, reasoning, budgets, usage accounting,
+  retries and publication gates remain unchanged.
+- **Clean-check URLs**: GitHub Actions ignores a custom `details_url` on checks
+  created with `GITHUB_TOKEN` and returns the check's own repository URL instead
+  ([GitHub explanation](https://github.com/orgs/community/discussions/26757)).
+  Individual and stack evidence verification accepts the exact workflow URL or
+  the exact repository `/runs/<check.id>` URL with a positive safe integer check
+  ID. The external ID, status target and evidence metadata still identify the
+  workflow run; the check ID is a separate identity. App, head, workflow success,
+  policy, context, digest and reviewed-path validation remain required. A green
+  workflow can otherwise appear stale when its returned URL is compared only
+  with the requested workflow URL.
+- **Publisher rejection diagnostics**: A failed validation or publisher step keeps its exact rejected JSON input as a one-day workflow artifact. The individual job retains its initial, resumed, or final result JSON as applicable. An allowed resume that remains partial is reported as an incomplete review instead of an identity mismatch. The stack job normally retains the combined code result and optional topology result. An incremental validation or resume failure may instead retain the exact affected range result JSONs, while a combine failure retains every range result passed to the failed combine step. The workflow never adds stderr, Mistral configuration, stack manifests, review-range directories as directories, unrelated wildcard inputs, or runner workspaces to these artifacts. Treat the payloads as public because this repository is public: use them only for offline parser diagnosis, never as authorization to replay or publish a review. The upload runs only after the corresponding validation or publisher step fails and does not change the failed job or final status. Live artifact proof remains a post-merge check because `pull_request_target` uses workflow code from the default branch. See [OpenCodeReview publisher rejection payloads](./solutions/integration/opencodereview-publisher-rejection-payloads.md) for the failure pattern and safe diagnostic boundary.
+- **Final-review compression engine**: The manual individual and stack jobs build OCR 1.13.0 from immutable upstream commit `1672852136fc87748249d22bce0819f33419ea79` using Go 1.26.9, a verified source archive and the repository's compression patch. Installation runs the affected upstream race tests and fails closed; it never falls back to an unpatched executable. The installer and patch participate in review policy identity, and every attempt checks the executable's source/patch version marker. The compressor preserves the original review instructions, reserves their context cost, keeps one rolling summary in compressible history and includes evicted tool calls and results in the next summary. Group dispatch reserves rendered rules and maximum plan output before splitting oversized groups without excluding any selected path; oversized singletons still fail. Prompt, completion and aggregate ceilings, model, reasoning effort and complete-coverage validation remain unchanged. Synthetic request/token improvements establish an execution regression fix; complete live review remains a separate activation check.
+- **Compression telemetry**: Patched manual binaries emit fixed lifecycle records with estimated context tokens before and after each compression computation. The adapter exposes sanitized progress events and bounded aggregate counts in the existing execution artifact and job summary. `rebuilt` means a usable snapshot was produced; a background snapshot can later be discarded, so these estimates are neither applied-context reductions nor billable usage or USD savings. Failed, cancelled and unchanged computations retain distinct counts. A version marker and fully drained, balanced records establish complete telemetry, including zero attempts. Missing instrumentation, malformed records, overflow or an incomplete stderr drain reports telemetry as unavailable while preserving cost accounting and the review outcome. Released draft binaries remain uninstrumented.
 - **Legacy generated staging promotion**: Phase 1 supersedes the annotation-write-back mechanism and removes its `Verified generated staging promotion` no-report exemption. The successor creates no pull request, and a legacy-named promotion pull request follows ordinary final-review policy. Its privileged `workflow_run` executes only trusted default-branch control code; candidate Git objects and API metadata are inputs, never executable policy.
 - **Offline qualification**: Public-safe synthetic receipts and a dependency-free evaluator live under `.github/open-code-review/qualification/`. The evaluator's strict synthetic contract covers explicit blocker and false-blocker dispositions, prompt-injection text treated as untrusted data, valid and invalid stack topology, exact path ownership, incomplete coverage, and token-counter consistency. It is intentionally separate from the runtime OCR parser and does not claim to validate live provider receipts. Run `node --test .github/open-code-review/qualification/final-review-qualification.test.js` and `node .github/open-code-review/qualification/final-review-qualification.js`; this checks deterministic local contracts and reports offline-only metrics. OCR 1.13.0 synthetic qualification exercises the released binary against the same adapter without a live key. Source tests cover token translation, native thinking-history restoration, bounded requests and cache, capability authentication, child isolation, and shutdown. The adapter digest participates in final-review policy identity, so earlier route evidence cannot silently qualify the new route. Neither offline path qualifies live model behavior, proves first-trigger success, or makes a merge-readiness decision. Real `/final-review` and `/final-review-stack` proof remains a post-merge gate because `pull_request_target` executes trusted default-branch workflow code.
 
-Both workflows require the repository's `MISTRAL_API_KEY` secret. The adapter
-fixes the endpoint to `https://api.mistral.ai/v1/chat/completions`, model to
-`zai-glm-5-3`, and accepts only `high` or `max` for `reasoning_effort`.
-Omitted effort defaults to `max`; draft reviews request `high`, while final
-individual and stack reviews request `max`. It converts OCR's
-`max_completion_tokens` to Mistral's `max_tokens` and exposes only final text
-plus separate reasoning metadata. Complete native assistant chunks stay in
+Manual workflows run `final-ai-review.test.js` and
+`final-ai-stack-review.test.js` without installing dependencies. Keep those
+trusted helper suites dependency-free. YAML-based workflow assertions belong in
+`ocr-self-update-guard.test.cjs`, which runs after dependency installation in
+the codebase check.
+
+The draft workflow selects `OCR_ADAPTER_PROVIDER=mistral-deepseek` for both startup
+and the separate summary process. Drafts and the advisor require only
+`MISTRAL_API_KEY`. The draft endpoint is
+`https://api.mistral.ai/v1/chat/completions`, the model is
+`deepseek-v4-1-flash-1017`, and `reasoning_effort` is fixed to `max`.
+Manual final, stack code, topology and preflight reviews select the same DeepSeek
+profile with maximum reasoning. Full `zai-glm-5-3` at maximum reasoning is used
+only for focused advisor questions. The advisor receives one question and up to
+three source ranges, each at most 120 lines and 8 KiB; the complete request is
+at most 16 KiB. Eight attempted consultations are shared across the job's
+workers, ranges, resume and topology. Its separate allowance is initialized
+once and cannot reset on a missing or corrupt continuation state. The portable
+reviewer skill directs difficult and architectural questions to the advisor
+after source inspection. The main reviewer validates the advice and owns all
+coverage and final findings. See [the runtime guide](ocr-runtime.md). Unknown
+profiles and missing selected credentials fail closed without a provider switch.
+The adapter converts OCR's `max_completion_tokens` to `max_tokens` and exposes
+only final text plus separate reasoning metadata. OpenRouter's native
+`reasoning_details` stay intact in memory; OCR-facing reasoning prefers its
+nonempty `reasoning` string, then text/summary details, then legacy
+`reasoning_content`, avoiding duplicate reasoning. Complete native turns stay in
 bounded process memory and are restored on conversation replay; missing or
-ambiguous history fails closed. OCR compression rewrites the conversation prefix; a retained turn may then be restored only by its exact assistant identity and reasoning hash when these identify one native payload. Main review requests offering `task_done` force Mistral tool use with `tool_choice: any`; a successful response without a tool call fails closed instead of entering OCR's prose retry loop. Auxiliary grouping, planning, filtering and compression requests remain unchanged. Manual jobs retain one-day aggregate execution counters for request counts, input/output usage, missing tools, length finishes and history restoration. These receipts contain no prompts, code, reasoning traces, credentials or raw provider errors. Draft startup copies the trusted adapter to
-`runner.temp` before the composite action's checkout and masks its random
-loopback capability. Always-run stop authenticates shutdown and proves listener
-closure before deleting capability state. Neither the upstream key nor native
-history is persisted. Live tool and structured-output proof remains pending
-secret provisioning and trusted default-branch activation.
+ambiguous history fails closed. OCR compression rewrites the conversation prefix;
+a retained turn may then match one native payload by exact assistant identity
+and reasoning hash. When the SDK omits reasoning, an exact tool turn may instead
+match within its validated conversation key; cross-task and ambiguous matches
+remain rejected. Main review requests offering `task_done` force tool use with `tool_choice: any` for Mistral and `required` for OpenRouter; a length-limited response without a tool call may enter OCR's existing continuation loop once per replayed chain, retaining its native history and billable usage. A finished tool-free response or another tool-free turn in that chain still fails closed. Auxiliary grouping, planning, filtering and compression requests remain unchanged. Manual jobs retain seven-day aggregate execution counters for request counts, input/output usage, missing tools, length finishes and history restoration. These receipts contain no prompts, code, reasoning traces, credentials or raw provider errors. The trusted draft runner starts its adapters and broker in the parent process,
+gives OCR an isolated temporary home and scoped loopback capabilities, and closes
+those listeners during bounded cleanup. Neither upstream keys nor native
+history are persisted. Live qualification of a changed draft route requires trusted default-branch
+activation; branch CI runs the current default-branch policy.
+
+Manual jobs pass the private configuration to the adapter's
+`run --ocr-config <path> -- <command>` option. Each attempt atomically fills in
+its own loopback endpoint before starting OCR and restores the original bytes
+with mode 0600 after cleanup, including failed or signaled children. OCR 1.13.0
+ignores an incomplete saved endpoint rather than merging its extra fields into
+environment settings, so the per-attempt URL is required for cache affinity.
+The child keeps its original home/session directory and receives only the
+loopback token; the upstream key stays in the adapter. A configuration update
+or restoration failure stops the attempt before publication or another resume.
+
+All three OCR modes configure `prompt_cache_key: "{ocr_session_key}"`. OCR expands
+that template per conversation; the adapter validates and forwards the bounded
+key. Direct tool canaries omit it. Provider cache hits remain opportunistic.
+Cache reads are discounted, so the adapter reports billable usage
+to OCR: a valid `usage.prompt_tokens_details.cached_tokens` is subtracted from
+`prompt_tokens` and `total_tokens`, and the cache detail is dropped. OCR's token
+budgets, summaries, resume allowances and the draft summary therefore count
+uncached input plus output in every mode. A missing or invalid cache report, or a
+response without a completion count, passes through unchanged with the full
+prompt count. The adapter's own diagnostics keep the raw provider usage
+and distinguish reported zero, missing and invalid cache usage.
+`cached_prompt_tokens` and `uncached_prompt_tokens` cover only responses with a
+valid cache report; consult `cache_usage_responses`, `missing_cache_usage` and
+`invalid_cache_usage` before interpreting them. Cache keys and raw provider metadata
+are never copied into those diagnostics. New receipts include only the
+fixed profile and model identifiers so cost reporting can reject mismatched
+receipts. OpenRouter uses the forwarded key for provider sticky routing; cache
+hits remain opportunistic across endpoints.
+
+Draft reviews use the same bounded, sanitized PR-description context as manual
+reviews, with the existing absent-description fallback. The description remains
+untrusted data and cannot change review scope or policy.
+
+Draft and manual adapters retain one diagnostics snapshot per adapter lifetime.
+`request_types` splits counters into main review and auxiliary requests;
+`conversations` contains at most 256 buckets keyed by an opaque process-local
+digest. These IDs are not routing keys or file identities and cannot be compared
+across adapter lifetimes. `unattributed_requests` counts requests without affinity;
+`omitted_conversation_requests` counts requests beyond the bucket cap. Both remain
+in aggregate and request-type usage. `request_duration_ms` sums request durations,
+which overlap during concurrency; it is not review wall time or billed cost.
+Timing diagnostics separately report the maximum forwarded-request duration and
+the maximum duration of a completed response accepted by the adapter. The
+accepted-response count exceeding 300,000 ms provides direct evidence of a
+response beyond five minutes. Rejected completions, malformed responses,
+cancellations and timeouts do not establish that evidence. A response may have
+recorded usage before a later acceptance check rejects it, so usage-response and
+accepted-response counts measure different events. Missing timing fields in
+older receipts and unfinished shutdown accounting are reported as unavailable.
+The `failures` counters use fixed categories for local/history rejection,
+upstream throttling/rejection/server failure, timeout, transport, malformed
+response, adapter failure, missing tools (including length/no-tool), truncated completion and
+cancellation. A request records its first failure once; the categories do not
+change provider-facing errors or retry decisions. Summary records use the same
+allowlist. No prompts, source, arguments, reasoning, paths or raw provider errors
+are kept.
+
+Adapter receipts retain the latest observed rejection as `last_upstream_error`
+with an integer HTTP status and an allowlisted numeric `error.code`, or `unknown`.
+Only codes 400, 401, 402, 403, 408, 429, 502 and 503 are retained from the top-level
+JSON error envelope ([OpenRouter error codes](https://openrouter.ai/docs/api_reference/errors-and-debugging)). For OpenRouter HTTP 402/403, a fixed `reason` distinguishes
+`key_budget_exhausted`, `guardrail_budget_exhausted`,
+`in_flight_budget_exhausted` and `credits_insufficient` from the documented
+`error.metadata.limit_source` allowlist. HTTP 403 can also identify a key cap
+from the documented leading `Key limit exceeded` phrase when structured limit
+evidence is absent. Unknown or malformed structured evidence blocks that legacy
+fallback; an arbitrary 403 remains `unknown`. These classifications follow the
+[OpenRouter limits contract](https://openrouter.ai/docs/api_reference/limits).
+Messages, metadata values, account amounts and arbitrary codes are discarded. Parsing
+uses at most 16 KiB of an already bounded response; a body read failure preserves
+the observed HTTP status. Concurrent rejection bodies cannot overwrite a later
+observed rejection. The `OCR upstream_error` summary revalidates these fields and
+uses the last non-null rejection in receipt order, separately from cost and usage
+accounting. Older receipts with status/code but no reason report `reason=unknown`;
+receipts without status/code report this diagnostic as unavailable. Preflight and
+stack topology `callMistral` receipts retain their existing behavior.
+
+Draft `OCR coverage` log and summary lines also include the existing sanitized
+`failure_classes` counts (`budget`, `provider`, `timeout`, or `other`) from the
+outcome diagnostic. These are OCR coverage-item classifications, independent of
+the adapter's provider-budget reasons. They do not identify an individual
+request or establish an account-spending cause. Missing coverage evidence is
+`unknown`; raw failed-item reasons, paths and arbitrary classifications stay private.
+
+History diagnostics retain the existing total misses and add one reason for
+each miss: the fallback lacked usable reasoning, no exact reasoned turn matched,
+or the reasoned turn was ambiguous. A valid exact-prefix hit remains preferred.
+These reasons describe lookup conditions; they do not identify the caller
+transformation that caused one. They expose no message-derived identifiers or
+reasoning and do not change replay recovery or rejection behavior. Older
+receipts without the reason fields report the breakdown as unavailable.
+
+Shutdown refuses new work and aborts active requests before attempting its single
+diagnostics write. The listener closes after that attempt, so the stop receipt
+precedes artifact upload. A bounded drain records `unfinished_requests` when
+accounting could not settle; such a snapshot is incomplete. Write failures emit
+a fixed warning and preserve cleanup. Draft jobs attempt to upload only the fixed
+diagnostics JSONL file even after startup failure, with seven-day retention and a
+warning when absent.
+
+Sanitized diagnostics remain available for seven days; rejected raw result
+artifacts retain their existing one-day lifetime.
+
+Each cost summary is printed in the job log for `gh run view --log` as well as in
+the GitHub job summary.
+
+Draft, individual final, and stack code-review jobs also summarize estimated
+cost and caching savings after cleanup. Draft estimates cover the adapter.
+Manual estimates additionally cover the existing tool-access preflight and,
+for stacks, the topology request. Direct calls record content-free stage-tagged
+usage in the same job-specific diagnostics file, before caller validation;
+a rejected answer can still have complete, chargeable usage.
+They sum the aggregate counters once per invocation, including retries and
+resumes. The comparison prices
+the same input/output tokens with and without reported caching; cached input
+remains part of the full prompt token total. Missing or malformed diagnostics,
+unfinished requests, unaccounted upstream attempts, and incomplete usage/cache
+reports make the estimate unavailable instead of assuming zero spend. An adapter
+with no requests reports zero. Before each manual OCR launch, the workflow saves
+its expected invocation count separately in step outputs; this includes resumes
+and incremental stack layers. Summaries reconcile those counts and the direct
+step outcomes against observed receipts. Missing or extra receipts block the
+combined estimate while independently complete stage estimates remain visible.
+When every expected receipt is present and unaccounted attempts are the only
+obstacle, the summary additionally estimates cost and caching savings for
+reported responses only. It includes valid recorded usage even when a later
+acceptance check rejected the response. The full invocation estimate remains
+unavailable, and the partial report names the number of responses priced and
+attempts without usage. It never assigns zero cost to those attempts or presents
+the subtotal as a complete bill or guaranteed lower bound. Other invalidity,
+missing usage/cache data or unfinished requests suppresses the combined subtotal.
+An explicitly skipped stage with zero expected invocations is labeled `not_run`.
+Summary steps are non-blocking. Logs distinguish OCR's uncached-input-plus-output
+budget basis from full provider usage and estimated USD. Failed task responses
+may have provider usage without contributing to OCR's result counters; this does
+not change budget arithmetic.
+
+The log and job summary include fixed `OCR cost` records with stage, status,
+reason codes, expected/observed receipt counts and allowlisted usage/cache
+coverage counters. Missing files, malformed receipts, invalid counters,
+unaccounted attempts and unfinished requests have distinct reasons; raw errors,
+paths and unknown receipt fields never enter these records. The CLI form is
+`summary <receipt-path> adapter=N [preflight=N] [topology=N]`; draft reporting
+defaults to one adapter lifetime.
+
+`MISTRAL_PRICING` and each profile in `PROVIDERS` in
+`ocr-mistral-adapter.cjs` hold profile-specific USD reference rates and dates,
+sourced from [Mistral's model pricing](https://docs.mistral.ai/models/zai-glm-5-3)
+and [OpenRouter's snapshot catalog](https://openrouter.ai/deepseek/deepseek-v4.1-flash-1017). Main reviews use
+[Mistral DeepSeek pricing](https://docs.mistral.ai/models/deepseek-v4-flash-1017):
+$0.30 input, $0.007 cached input and $1.20 output per million tokens, checked
+2026-10-28. The historical GLM Flash profile retains its own rates for explicit
+receipt interpretation; it is not an automatic fallback. New receipts include exact profile/model identity; legacy receipts
+without identity are accepted only for full GLM. Main-review and advisor estimates
+remain separate before combining, even when they share one Mistral key.
+OpenRouter estimates use the catalog reference rates of $0.15 input, $0.003 cached
+input and $0.60 output per million tokens, checked 2026-10-17. Actual endpoint
+prices and time-based overrides vary, so these estimates are labelled as
+reference-price comparisons. Summaries retain three-decimal rate precision and
+refuse to apply a profile's rates to another profile's receipts.
+Refresh the rates and date together when provider pricing changes.
+Summaries label the pricing date and exclude account discounts, taxes, and runner
+costs; these are estimates, not billing receipts.
+
+### Provider unavailable or paused
+
+Set the repository variable `OCR_PROVIDER_PAUSED` to `true` to pause model calls
+in new eligible OCR runs. Unset it or set it to `false` to resume on the next
+normal event. Invalid values fail closed. Changing the variable requires
+maintainer authority; neither pause nor resume triggers replay or backfill.
+Existing admission, activation and final-review authorization still apply.
+Already-running jobs use the value resolved when they started.
+
+A confirmed numeric upstream HTTP 402 latches provider unavailability for that
+review invocation. Subsequent main and advisor requests are refused locally;
+already-dispatched requests may finish and retain their usage. The adapter
+returns a fixed payment error instead of translating it into a transient 502.
+Rate limits and server errors retain their existing retry behavior. The payment
+status does not identify whether an allowance, credit balance or billing setting
+caused the rejection.
+
+Draft runs emit `OCR availability status=unavailable` and preserve valid partial
+findings. An early rejection can leave no OCR result; coverage and cost remain
+unknown where receipts are missing. Successful handling of this advisory does
+not establish a passed review. Publication still requires a validated result for
+the frozen head and an open draft PR. Malformed results and unrelated execution
+failures remain failures.
+
+Individual and stack final reviews remain blocking while unavailable. Their
+fixed reason appears in logs, summaries and the authoritative final status.
+Payment rejection prevents later resume attempts, stack ranges and topology
+calls through the existing failed-stage dependencies. No clean evidence is
+published. Models, maximum reasoning, token budgets and accounting are unchanged.
+
+The shared action supplies the draft pause interface. Existing callers need an
+immutable pin to a release containing this behavior after it merges; source
+publication alone does not activate it in pinned adopters.
+
+To investigate scheduling delays, read the existing workflow `created_at` and
+`run_started_at`, then each job's `created_at`, `started_at` and `completed_at`
+through `gh api`. Job-created-to-start time is pending time; the timestamps alone
+do not identify runner availability or concurrency-lock contention. Compare the
+OCR step duration separately before changing job boundaries or timeouts.
+
+Draft reviews use the repository-owned runner with the unchanged OCR 1.13.0
+CLI and publisher helper pinned to upstream commit
+`1672852136fc87748249d22bce0819f33419ea79`. The runner emits the same bounded
+progress events described below, including heartbeats and process exits. Raw
+result JSON and stderr remain in private runner scratch and are not uploaded.
+The sanitized outcome artifact and logs distinguish selected, completed, failed,
+reused and waived coverage; a partial result remains advisory and emits a warning.
+Sticky summaries, incremental comment deduplication, low-severity routing and
+existing OCR reasoning, budgets, timeouts and retry behavior are preserved.
+
+The draft adapter recognizes the pinned CLI's planning task affinity shape and
+supplies guidance only from a `stop` response with nonempty final text. Truncated
+or empty plans reach the stock CLI as an empty answer without reasoning, using
+its existing continue-without-plan path. HTTP success, original finish reason,
+returned usage and private native history remain intact; this adds no provider
+request or retry. Main-review reasoning and unrecognized task identities retain
+their existing handling. The separate final-review adapter is unchanged.
+
+`OCR planning` logs and summaries count recognized responses as `usable`,
+`length`, `empty` or `invalid_finish`. `status=complete` means those diagnostic
+counters are available; `usable` identifies completed final plans. Missing or
+unfinished diagnostics report `status=unavailable`. Counters contain no affinity
+keys or response content. The CLI's `phase_completed phase=planning` progress
+event records that its planning request returned; it alone does not prove usable
+guidance. Raw usage journals retain the original response sizes and finish reason
+before the compatibility projection, and aggregate accounting remains unchanged.
+
+Manual individual and stack code reviews use human-audience progress through the
+adapter's `OCR_ADAPTER_PROGRESS_FD=3` opt-in. Their shell functions bind descriptor
+3 to the live log before redirecting raw stderr to its existing private file.
+The adapter reconstructs only known event/tool/phase identifiers and bounded
+numeric counts; it discards arguments, paths, group/session identities, raw
+errors, unknown lines, and overlong records. Logging failures are best-effort,
+and the child receives neither the descriptor nor the option selecting it.
+While quiet, the wrapper emits a heartbeat no more than once per minute with
+elapsed and idle milliseconds. After cleanup it emits one `process_exited`
+event with the exit code and boolean signal/spawn-failure flags. This records
+process termination; validation and publication still determine review success.
+Its timer is unreferenced and cleared on exit, and all lifecycle events use the
+same filtered descriptor.
+Fatal CLI lines produce at most one fixed `cli_error` event per process with
+`review_failed` or `cli_failed` and an allowlisted classification
+(`budget`, `provider`, `timeout`, `git_diff`, `merge_base`, or `unknown`). Git
+input failures match the pinned CLI's fixed root prefixes; paths, revisions and
+Git error details stay private. Arbitrary error messages and
+continuation lines remain private. On nonzero CLI exit, the manual attempt
+functions also call `diagnose-ocr-failure` to emit content-free coverage counts
+and failure classes from any result JSON. Missing or malformed output produces
+fixed safe diagnostics. This reporting never validates or resumes the result,
+and a reporting failure preserves the original CLI exit status.
+The adapter cleans up at direct child exit, then drains stderr for at most one
+second before closing its read end. A descendant retaining the writer
+cannot hold the job open. This preserves final output and the direct child's exit
+code across full, range, and resumed reviews. Previews remain silent; findings still
+arrive as one validated JSON document.
+
+A main review response with `finish_reason: length` and a `task_done` call is
+refused with HTTP 422 and is never retained as replayable native history. Its
+usage and `truncated_completions` counter remain visible in diagnostics. This
+does not make OCR's own aggregate budget strict or prove that the engine accounted
+for usage in rejected HTTP responses.
+
+Manual individual and stack reviews explicitly use `--concurrency 2`; automatic
+draft reviews retain concurrency four. Fewer in-flight groups limit simultaneous
+work and can reduce budget overrun, at the cost of longer elapsed time. OCR's
+aggregate budget is reactive and can still be exceeded by in-flight, queued and
+grace calls. The unmodified 1.13.0 binary completed identical synthetic coverage
+at concurrency eight, two and one; changing concurrency alone did not reduce
+total tokens for completed runs. Budget-exhausted synthetic results remained
+rejected by the existing validation and resume gates. This offline evidence does
+not establish live cache savings or completion within the configured allowance.
+
+OCR's HTTP request deadline is separate from its per-task `--timeout` in minutes.
+The manual jobs set `OCR_LLM_TIMEOUT` in seconds to match their existing task
+deadlines: 2700 for individual reviews and 1800 for stack code reviews, including
+resumed attempts. Without an explicit setting, OCR 1.13.0 defaults requests to
+five minutes. Task, adapter, cleanup and job ceilings still apply. Draft reviews
+retain their explicit 480-second HTTP deadline. These settings do not change
+reasoning, token limits, accounting or retry behavior.
+
+The adapter's fixed upstream endpoints use native HTTPS under the existing
+AbortControllers. Node's fetch transport has independent
+[300-second header and body deadlines](https://undici.nodejs.org/api/Client),
+which otherwise preempt the configured OCR and adapter deadlines. Adapter
+forwarding uses one HTTPS request, retains TLS verification, refuses redirects
+and requests uncompressed JSON for the existing bounded body reader. The direct
+request helper shares that default transport, while the workflow's preflight
+and topology wrappers still inject fetch with their existing 30-second and
+120-second deadlines. Those deadlines must stay below fetch's limit while that
+injection remains. No transport retry or dependency is added.
 
 The draft, individual and stack review jobs disable OCR's background updater
 with `OCR_NO_UPDATE=1`, including the installation version check. OCR 1.13.0
@@ -385,6 +919,221 @@ retain their existing authorization and serialized status locks.
 
 ## Public ARM64 runner operations
 
+### Priority pull-request validation
+
+A maintainer can request the paid validation lane with the `ci:priority` label.
+The lane is disabled unless `PRIORITY_CI_ENABLED` is exactly `true`.
+`PRIORITY_CI_CANARY_PR`, when present, limits admission to one exact PR number. Optional
+`PRIORITY_CI_CANARY_HEAD_SHA` and `PRIORITY_CI_CANARY_BASE_SHA` freeze its
+source inputs; `PRIORITY_CI_EXPIRES_AT` denies admission after an absolute
+deadline. Set all four in a finite qualification packet before enabling it.
+For a fully pinned finite canary, optional
+`PRIORITY_CI_CANARY_JOB_TIMEOUT_MINUTES` sets each paid compute job to an integer
+from 1 through 15 minutes. It requires all four matching canary controls above.
+Invalid or incomplete values deny priority, and expiry is checked again after
+admission evidence is collected. An unset value preserves existing job limits;
+ordinary hosted execution retains its own limits. The duration covers checks,
+secret scanning, suites, both translation legs, selected image builds, and the
+Playwright build and every selected shard. A short duration can cause genuine
+validation failure without reducing the selected coverage.
+
+Before enabling this control, verify that the frozen candidate workflows, their
+immutable executor pins and the trusted router all contain its implementation.
+Older definitions cannot acquire it retroactively. Reserve the exact selected
+matrix against runner rates, billing rounding and margin; per-job timeouts do
+not enforce an account spending limit. Admission expiry prevents new selection,
+while submitted jobs retain their timeouts and continue.
+
+Apply the label to an open ready public same-repository PR. Subsequent pushes
+remain eligible while labeled. Removing the label changes future selection;
+already submitted jobs retain their assignment and continue.
+
+Trusted preparation verifies the current head and base, the latest label setter's
+write/maintain/admin permission, the exact first run attempt and complete prior
+run inventory. The first priority invocation for each workflow/PR/head/base owns
+the request even if it fails or is cancelled. Label reapplication and job reruns
+do not authorize another paid attempt. A new head or base is a new validation.
+Missing, stale or ambiguous evidence denies paid admission. A denied label-only
+event does not publish a passing required context; ordinary source events retain
+normal validation. Exact legacy Playwright tickets, burst grants or admission
+endpoints conflict with a priority request and must be independently reconciled.
+Ordinary unlabeled execution keeps the existing admission behavior.
+
+Independent compute jobs use fixed WarpBuild runners: x64 suites, secret scans,
+translation builds and affected image builds, plus the existing ARM Playwright
+build and canonical shard matrix. Dependencies still apply: Playwright builds
+once before its eight full-plan shards run in parallel. No shared matrix cap
+serializes the shards. Filtered or bounded plans retain their actual smaller
+coverage; a priority label does not prove an unfiltered suite ran. Selectors and
+required reporters stay hosted. Publication-only pushes retain hosted runners.
+Runner startup, dependencies and external services can still delay execution.
+
+The canonical workflows generate their priority-only execution envelopes with
+`node .github/scripts/priority-ci-workflows.cjs --write`. Edit the canonical
+workflow, regenerate and format the envelopes; CI checks parsed semantic parity using
+`node .github/scripts/priority-ci-workflows.cjs`. The same check compares each
+caller's pinned executor with its generated definition. Missing Git objects are
+fetched by exact SHA from the existing origin without making the checkout shallow;
+unavailable content, mutable refs and mismatches fail the check. Priority callers execute the
+published envelopes at an exact reviewed commit, which allows runner-group access
+to be restricted to those immutable workflow refs. Publish an executor commit
+before updating caller pins; GitHub resolves even disabled reusable calls. Before publication, draft CI exercises
+ordinary jobs and synthetic new-source contracts only. Source validation is
+separate from actual paid job, artifact, aggregate and billing acceptance.
+
+Activation requires a finite operator packet covering the exact runner-group
+allowlist, preserved repository selection and other policy fields, one validation,
+spending reservation, deadline, billing reconciliation and independent rollback
+of each owned setting. Removing admission prevents new selection and preserves
+submitted jobs. The enable switch is not an atomic account spending ledger;
+several labeled PRs and subsequent pushes can create concurrent paid work.
+Keep operational values, access and billing receipts outside source and artifacts.
+No external admission service or new secret is required by this route.
+
+### Opt-in WarpBuild overflow
+
+The trusted execution envelope can place an explicitly admitted ready public
+pull request on WarpBuild instead of the persistent public pool. It keeps the
+`public-pr` trust lane, canonical plan, shared artifacts, service topology and
+restore-only caches. The provider is a separate field in route metadata.
+Routine checks, preparation and required status reporting remain GitHub-hosted.
+Drafts, forks, bots, pushes and the force-hosted override retain their existing
+behavior. This is operator-selected overflow, not automatic queue migration.
+
+`PUBLIC_PR_PLAYWRIGHT_WARPBUILD_ADMISSIONS` is a JSON array of at most three
+tickets. Each ticket has exactly these string fields:
+
+- `runId`, `runAttempt`, `pullRequestNumber`: positive decimal identities.
+- `headSha`, `baseSha`, `controlSha`: full lowercase commit revisions from the
+  candidate event and the actual resolved reusable workflow.
+- `expiresAt`: an absolute timestamp after preparation and at most four hours
+  ahead. Expiry bounds selection, not the lifetime of already submitted jobs.
+
+Unset, empty, malformed, duplicate, expired or mismatched tickets allocate no
+cloud work; the normal backend remains available. A new head, base, control,
+run or attempt needs a new ticket. Existing callers need no new input.
+The normal caller accepts the provider and attempt outputs and
+rejects stale paid attempts in its required reporter. Both paid jobs also check
+the attempt independently, including a failed-job rerun that reused preparation.
+The existing `should_run` output becomes false on a stale paid attempt, so older
+required reporters also reject missing coverage rather than accepting skipped jobs.
+Admitted waves bypass equivalent-result reuse so they produce actual evidence.
+
+Cloud execution uses Ubuntu 24.04 ARM8 for the build and ARM4 for each shard,
+with one test worker and a 45-minute execution timeout per job. Runner selectors
+are fixed by trusted metadata: the cloud group is `Default`; unadmitted public
+jobs keep their exact `public-pr-arm64` group and build/shard role labels.
+This retains ARM's existing email-test exclusion; hosted coverage remains
+necessary. Provider selection does not change full-plan coverage requirements.
+
+Before installing tickets, an operator must approve the finite submission and
+spending envelope, reserve whole-wave exposure including unresolved prior and
+in-flight costs, and read back narrowly scoped runner-group access to this
+repository and this reusable workflow at `refs/heads/v3`. Keep live access and
+billing receipts private. No new API key is required when billing is reconciled
+from operator exports. Ticket count and expiry are not an atomic monthly cost
+limit. Reporting lag and cancelled/failed setup can still incur costs.
+
+A queued job keeps its original runner assignment. Moving an existing run needs
+a separately approved full workflow rerun after the previous attempt is
+terminal, with a ticket for the next attempt and actual resolved control.
+Never silently retry paid work. Removing tickets prevents new admission; it
+does not cancel submitted work. Stop admission on correctness failure,
+unexplained billing or insufficient reservation. Accept a wave only after its
+actual build, consuming shards and aggregate pass, and reconcile job-linked
+charges before expanding. Keep fixed capacity available during qualification.
+
+Source publication alone changes no group policy or admission variable. The
+historical trial workflow remains separate and disabled.
+
+#### Reserved burst admission
+
+An optional coordinator can reserve a validation during trusted preparation,
+after the canonical plan is validated and before runner selection. Skipped
+plans make no admission request. Configure `PUBLIC_PR_PLAYWRIGHT_WARPBUILD_ADMISSION_URL`
+only through an approved deployment packet. Its value is an HTTPS endpoint
+ending in `/admit`, with no query, credentials or fragment. An absent endpoint
+keeps the manual-ticket behavior. The client makes one bounded request, never
+retries a paid attempt, and keeps ordinary routing on denial or an unavailable
+response. Existing exact manual tickets take precedence.
+Failed requests emit only a fixed warning, without tokens, endpoints or
+coordinator reasons; a lost response still retains its reservation.
+
+The caller forwards `id-token: write` for hosted trusted preparation. Candidate
+build and shard jobs explicitly retain only `contents: read`. Preparation
+requests audience `klicker-playwright-admission`. The coordinator verifies the
+GitHub signature, issuer, audience, repository ID, public PR event, run/attempt,
+PR ref and exact trusted reusable workflow revision. It independently verifies
+the current open, ready, same-repository PR and the single active preparation
+through host `gh`. A changed source, ambiguous invocation, started workload or
+incomplete API response admits no cloud work. Legacy callers without identity
+token access keep ordinary routing.
+
+`util/warpbuild-admission-server.cjs` is a Node 24 operator program. Its database
+and configuration belong in an owner-only directory outside the repository.
+Use a local filesystem with SQLite locking and durable storage; shared network
+filesystems and multiple independent database copies are unsupported. The
+database initializes once per approved burst and cannot reset its limits. The
+source provides no deployment, daemon installation, TLS configuration or
+credential provisioning. See [ADR 0052](adr/0052-private-playwright-admission-reservations.md).
+
+The local commands are:
+
+```bash
+node util/warpbuild-admission-server.cjs init /private/operator/state.sqlite < /private/operator/policy.json
+node util/warpbuild-admission-server.cjs billing /private/operator/state.sqlite < /private/operator/billing.json
+node util/warpbuild-admission-server.cjs serve /private/operator/state.sqlite /private/operator/config.json
+node util/warpbuild-admission-server.cjs reconcile /private/operator/state.sqlite < /private/operator/receipt.json
+node util/warpbuild-admission-server.cjs disable /private/operator/state.sqlite
+node util/warpbuild-admission-server.cjs status /private/operator/state.sqlite
+```
+
+Paths above are placeholders. Keep command output and all files private. Serve
+binds loopback port 8080 and exposes only `POST /admit`; ledger administration
+is local. A later deployment must supply an approved HTTPS ingress, request
+limits, service supervision, durable storage and existing read-only forge
+authentication. Neither the PR nor the endpoint receives the forge credential.
+
+The private policy supplies `windowId`, `expiresAt`, `controlSha`,
+`maxSubmissions`, `maxConcurrent`, `budgetMicros`, `reservationMicros`,
+`accountLimitMicros`, `historicalLiabilityMicros`, `maxBillingAgeSeconds` and
+`ticketSeconds`. Amounts are nonnegative integer millionths of one currency,
+used consistently for the burst, account and receipts. The window lasts at most
+24 hours; at most two unreconciled validations may coexist. Billing observations
+are at most 15 minutes old. Issued tickets retain a one-minute clock margin
+below the client's four-hour lifetime ceiling. Start with one
+concurrent validation. All operational values require the finite operator
+packet; the source supplies no spending defaults.
+
+The configuration contains `repository`, its decimal-string `repositoryId`,
+decimal-string `groupId`, the complete approved `selectedWorkflows` list,
+`workflowRef` and `audience`. Every admission rechecks the group restrictions
+and exact repository/workflow selection; unknown or changed access denies it.
+The repository and reusable workflow are fixed to
+this public repository and its normal `v3` execution envelope. Billing input
+contains `observedAt` and `reportedMicros`; observations must be monotonic.
+The operator accounts for unrelated usage and retained historical liabilities
+before refreshing headroom. Reported spend plus all window charges and holds is
+conservative: it can count a reconciled charge twice rather than omit exposure.
+
+Reconciliation supplies the original `identity` and a `receipt` containing
+`terminal: true`, `completeBilling: true`, boolean `successful`, integer
+`actualMicros`, and `receiptSha256` binding the privately inspected evidence for
+that validation. The same receipt cannot settle a different reservation.
+These are operator attestations, not an automated billing verifier. Only after
+checking every actual producer, aggregate and job-linked charge may the operator
+release a hold. Failure or an overrun permanently disables further admission
+for that window. An expired ticket, cancelled job, lost response or coordinator
+restart alone never releases a hold or resets the submission count.
+
+Disabling admission prevents future ticket responses; it cannot retract a
+response already delivered or stop submitted jobs. Preserve those jobs and
+reconcile them. Before enabling a successor window, reconcile the predecessor
+or explicitly carry its unresolved liabilities into the approved policy.
+This is bounded operator-enabled burst admission. Queue-pressure activation,
+automated billing collection and comparative speed qualification remain later
+work; source tests do not establish them.
+
 Run the policy reconciler from a trusted administrator checkout. Both modes
 accept `GH_TOKEN` or a hidden prompt for a short-lived fine-grained token;
 `--check` needs organization
@@ -402,6 +1151,76 @@ restrictions enabled, and only
 The script fails on inherited or read-only policy, extra repositories or
 workflows, and runner membership other than `public-pr-arm64-01` through `-08`.
 
+### Public build and shard scheduling roles
+
+The public build job additionally requires `playwright-build`; public shards
+require `playwright-shard`. Both retain the same group and generic labels.
+Use one already-active dual-role runner per physical host. Other approved active
+runners receive only the shard role; held runners receive neither role.
+GitHub schedules one job per runner, so this limits builds to one per mapped
+host while keeping dual-role runners available for shards. A build can wait
+behind a shard. This does not reserve build priority, cap memory, qualify another
+active slot, or prove natural failure recovery. Hosted fallback is unchanged.
+
+The same policy CLI has separate role modes. Prepare a complete, task-private
+JSON map with a root `runners` array covering all eight exact identities. Each
+entry has `id` (numeric GitHub runner ID), `name`, `host` (verified physical-host
+alias), `state` (`active` or `held`), `roles`, and `priorCustomLabels`. Use
+`["build", "shard"]` for the one active build runner on each of the two hosts,
+`["shard"]` for other active runners, and `[]` for held runners. Capture every
+prior custom label exactly as returned by the API, including unrelated labels
+and any existing role labels. The desired set preserves unrelated labels and
+replaces only the two role labels. Real maps, receipts and host observations
+belong outside the repository and CI artifacts.
+
+```bash
+util/reconcile-public-pr-arm64-runner-group.sh --check-roles "$PRIVATE_ROLE_MAP"
+util/reconcile-public-pr-arm64-runner-group.sh --apply-roles "$PRIVATE_ROLE_MAP" \
+  --receipt "$NEW_PRIVATE_RECEIPT"
+```
+
+Read permission suffices for role checks; role apply needs Self-hosted runners
+write permission and a separate `APPLY PUBLIC PR RUNNER ROLES` confirmation.
+Neither role mode repairs group access or changes membership, registration or
+services. Both require the exact locked policy, complete API responses and
+ID/name agreement. Checks verify the complete desired custom-label sets.
+Apply initially requires every runner idle, active runners online and held
+runners offline. It compares every prior custom-label set before any write, rechecks
+group policy and the target's labels before each write, and verifies all desired
+sets again at completion. During the batch, every runner whose labels have not
+yet been verified must remain idle. Already-verified runners may start queued
+role-specific jobs while the remaining idle runners receive their labels. A busy
+unverified runner stops further writes. An API denial blocks the operation; it never grants
+permission to expand credentials.
+
+The map is an operator assertion about physical hosts and held services. GitHub
+metadata cannot prove that mapping or service enablement. Before a separately
+approved rollout, verify the actual hosts and service states, record the current
+dispatch variable, pause new public dispatch and drain already-planned, queued
+and running generic-lane jobs. A route-variable change cannot reroute those jobs.
+Use one operator for the window: label writes are sequential. This tool has no
+atomic multi-runner transaction or compare-and-swap protection. Install/read back labels before
+the normally approved source merge, verify the merged selectors, then restore
+and read back the exact prior routing value. Preserve all active/held service
+states and existing capacity.
+
+Apply creates a new owner-private JSONL receipt before the first API write. It
+records complete prior/desired sets, attempted writes and verified readbacks.
+Only a terminal `complete` record attests the full batch; an interrupted or
+`stopped` batch is unverified even if some writes succeeded. On failure, stop new
+writes and retain the recorded dispatch pause. Use the receipt for separately
+approved recovery after fresh reads; never overwrite concurrent label changes.
+Before source merge, recovery restores exact prior labels and verifies generic
+routing compatibility before restoring dispatch. After source merge, retain role
+labels for queued role-specific work; rollback needs an approved source revert
+and drain before restoring labels. Removing labels does not stop assigned jobs.
+
+Verify actual build, shard and required aggregate producers after rollout, with
+assignments covering both approved hosts and bounded host health readback. Green
+source CI or a successful label API response does not establish live acceptance.
+
+### Existing host recovery policy
+
 Check both existing hosts from the administrator machine before applying the
 optional optimization. Verify and register both SSH host keys before running
 the controller; unknown or changed keys are rejected. Pause new workflow
@@ -409,6 +1228,31 @@ dispatch to the pool and let active jobs finish before applying changes.
 `--check` streams the checksum-verified payload and
 makes no persistent remote change. `--apply` is rerunnable, requires both hosts
 to be idle, and asks once before changing either host.
+
+Public-PR runner units use `Restart=on-failure`, `RestartSec=60`,
+`StartLimitIntervalSec=600`, `StartLimitBurst=3` and `OOMPolicy=stop`.
+An intentional service stop remains stopped; repeated failures exhaust the
+start limit instead of restarting indefinitely. An OOM can fail the unit even
+when its wrapper exits successfully. Inspect the unit result and kernel log
+before clearing a start limit or bringing held capacity back online.
+
+The host reconciler owns the complete unit, accepts only the known legacy or
+current template, and rejects unmanaged drop-ins. It preserves active, inactive
+or failed state and enabled or disabled state. A policy-only update reloads
+systemd without starting held services. Hook changes restart only already-active,
+idle services whose own hook settings changed. Use this reconciliation path for
+registered runners; reprovisioning retains its archive-integrity checks and is
+not an update mechanism for runner binaries that have self-updated.
+Both modes print each service's `ActiveState` and `UnitFileState`; matching
+configuration does not imply that every runner is online. Held services load
+updated hook settings when an operator next starts them.
+
+Applying the policy, activating runners and planning a reboot are separate
+operator decisions. Disabled services remain disabled, but enabled services
+can start on reboot even if reconciliation preserved their stopped state.
+Recovery does not establish safe capacity: runner-service memory limits would
+not constrain Docker containers in separate scopes. Qualify cold builds before
+choosing container limits or enabling more slots.
 
 ```bash
 util/reconcile-public-pr-arm64-pool.sh \
@@ -440,6 +1284,22 @@ available memory, Docker-disk pressure, conclusion, and artifact. This separates
 cache misses, host contention, service setup, test structure, and scheduling;
 do not infer one cause from total duration alone.
 
+### Build task concurrency
+
+The shared Playwright build action uses Turbo task concurrency four for both
+`public-pr` and `hosted`, on bounded and full application build graphs.
+Unknown routes fail before a build starts. The full graph still
+builds Prisma separately, and missing bounded filters still select the complete
+graph. This limits overlapping Turbo tasks, not subprocesses or container memory.
+Browser worker counts and runner activation are independent.
+
+Qualify the memory and duration trade-off before increasing capacity. Record a
+matched concurrency-four control before merging a changed shared action: an old
+candidate head still loads orchestration from trusted `v3`. Count every build's
+automatically scheduled shards and aggregate in a trial budget. Incomplete
+sampling or unmatched source, host, graph and cache conditions cannot establish
+an improvement.
+
 ### In-job resource samples
 
 Build and shard telemetry artifacts also contain `playwright-resources-*.jsonl`.
@@ -448,13 +1308,27 @@ Prisma and application builds have separate files; shard samples span service
 readiness and tests. Sampling failures do not change the wrapped command result.
 Artifacts retain the existing seven-day lifetime. No VM update is required.
 
-Samples contain only numeric procfs observations and timestamps. CPU tick order
+Samples contain numeric observations, scope labels and timestamps. CPU tick order
 is user, nice, system, idle, iowait, irq, softirq, steal; guest ticks are already
 included in user/nice. Compute interval shares from successive counter deltas,
 not cumulative totals. Pressure totals are microseconds; divide their deltas by
 elapsed microseconds. Missing metrics are null, not zero. Counters describe the
-system visible from the container, not exclusive usage by its job. They do not
-measure per-process activity or establish a causal performance diagnosis alone.
+system visible from the container, not exclusive usage by its job.
+
+`cgroupMemory` adds cgroup v2 `currentBytes`, `peakBytes`, `anonymousBytes`,
+`fileBytes`, `kernelBytes`, and cumulative `high`, `max`, `oom` and `oomKill`
+event counts. Membership and mount metadata resolve the wrapper's current
+cgroup and descendants; the artifact contains no cgroup path or process data.
+Unsupported, inaccessible or malformed counters are null, never inferred from
+a parent cgroup. The existing procfs fields retain their system-wide scope.
+
+Peak memory is the cgroup's lifetime high-water mark, including file cache,
+not a peak of anonymous memory or necessarily a peak of the wrapped command.
+The sampler never resets counters. Compare event deltas within the same scope;
+separate service containers may sit outside it. Build and shard samples alone
+do not qualify additional capacity or establish the cause of an OOM. See the
+[kernel cgroup v2 interface](https://docs.kernel.org/admin-guide/cgroup-v2.html)
+for memory accounting semantics.
 
 ## Image builds
 
@@ -605,7 +1479,7 @@ branches re-export it would remove the divergence this gate watches for.
 
 ## Deployment values (facts, not procedures)
 
-- **stg** (`*.klicker.stg.df-app.ch`): `STG_SOURCE_BRANCH` selects the supported `v3*` branch that publishes staging candidates; it currently selects `v3-adaptive-learning`. The release-ref design makes ArgoCD track `stg-release` and inject its resolved full commit SHA as the first-party image tag. Automatic promotion is active, so the selected source advances staging on every qualified candidate — see [Staging promotion](#staging-promotion) below.
+- **stg** (`*.klicker.stg.df-app.ch`): the `STG_SOURCE_BRANCH` repository variable selects the supported `v3*` branch that publishes staging candidates; read the current value with `gh variable get STG_SOURCE_BRANCH`. The release-ref design makes ArgoCD track `stg-release` and inject its resolved full commit SHA as the first-party image tag. Automatic promotion is active, so the selected source advances staging on every qualified candidate — see [Staging promotion](#staging-promotion) below.
 - **prd** (`*.klicker.uzh.ch`): pinned version tags and `replicaCount: 2` for web/API services. Production stays on `v3`, receives no `global.imageTag` parameter, and keeps the existing release-tag flow.
 - **Secrets are external**: deployments reference `envFrom.secretRef` names, but the chart defines no `Secret` manifests — provision them out-of-band with matching names. GrowthBook-ready Node workloads reference the optional shared `<rendered-chart-fullname>-secret-growthbook`, which supplies only `GROWTHBOOK_API_HOST` and the server SDK `GROWTHBOOK_CLIENT_KEY`; `GROWTHBOOK_ENV` comes from the global ConfigMap. The primary GraphQL backend separately retains the optional `<rendered-chart-fullname>-secret-growthbook-management` reference for `GROWTHBOOK_MANAGEMENT_API_URL` and `GROWTHBOOK_MANAGEMENT_API_KEY`. Beta preferences are stored in the application database, so enrollment does not use that management connection or a saved-group identifier. Optional references preserve startup before provisioning. Do not place the write-capable management key in the shared evaluator Secret.
 - **Hatchet endpoint pair**: `hatchet.client.apiUrl` in the environment values renders `HATCHET_API_URL`, while the external secret supplies `HATCHET_CLIENT_HOST_PORT`. They must resolve to the same Hatchet installation; worker health alone does not validate programmatic schedule creation over the HTTP API. Staging uses `app-hatchet-svc-api.stg-hatchet-svc.svc.cluster.local:8080`, and production uses `app-hatchet-svc-api.prd-hatchet-svc.svc.cluster.local:8080` (see [Async & Workers](./async-and-workers.md)).

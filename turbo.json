@@ -59,6 +59,8 @@
     "HATCHET_API_URL",
     "HATCHET_TENANT_ID",
     "HATCHET_LOG_LEVEL",
+    "HTTP_PROXY",
+    "HTTPS_PROXY",
     "KB_INGESTION_API_URL",
     "KLICKER_LOCAL_KB_RETRIEVAL_URL",
     "KB_INGESTION_API_KEY",
@@ -114,10 +116,13 @@
     "DOC_QUERY_SCOPE_KID",
     "DOC_QUERY_SCOPE_ISSUER",
     "DOC_QUERY_SCOPE_AUDIENCE",
+    "RESPONSE_EXAMPLE_RECEIPT_PUBLIC_KEY",
+    "RESPONSE_EXAMPLE_RECEIPT_KID",
+    "RESPONSE_EXAMPLE_RECEIPT_ISSUER",
+    "RESPONSE_EXAMPLE_RECEIPT_AUDIENCE",
     "DOC_QUERY_SCOPED_MCP_SERVER_ID",
     "DOC_QUERY_SCOPED_MCP_LEGACY_URL",
     "DOC_QUERY_SCOPED_MCP_URL",
-    "LTI_DB_TYPE",
     "LTI_DB_HOST",
     "LTI_DB_PORT",
     "LTI_DB_USER",
@@ -130,12 +135,9 @@
     "LTI_KEYS_ENDPOINT",
     "LTI_CLIENT_ID",
     "LTI_ADDITIONAL_PLATFORMS",
-    "LTI_DB_CONNECTION_STRING",
     "LTI_ENCRYPTION_KEY",
     "LTI_PORT",
     "LTI_REDIRECT_URL",
-    "LTI_DEV_MODE",
-    "LTI_AAS_MODE",
     "NEXTAUTH_URL",
     "NEXT_PUBLIC_CONTROL_API_URL",
     "NEXT_PUBLIC_EDUID_ID",
@@ -146,6 +148,9 @@
     "NODE_ENV",
     "KLICKER_PLAYWRIGHT_FIXTURES",
     "NODE_EXTRA_CA_CERTS",
+    "NODE_USE_ENV_PROXY",
+    "NODE_USE_SYSTEM_CA",
+    "NO_PROXY",
     "NOTIFICATION_SECRET",
     "NOTIFICATION_SUPPORT_MAIL",
     "NOTIFICATION_URL",
@@ -277,6 +282,12 @@
       "dependsOn": ["^build"],
       "persistent": true
     },
+    "@klicker-uzh/chat#dev": {
+      "cache": false,
+      "dependsOn": ["^build"],
+      "env": ["RESPONSE_EXAMPLE_RECEIPT_PRIVATE_KEY"],
+      "persistent": true
+    },
     "dev:lti": {
       "cache": false,
       "dependsOn": ["^build"],
@@ -300,6 +311,12 @@
       "cache": false,
       "persistent": true
     },
+    "@klicker-uzh/chat#dev:test": {
+      "cache": false,
+      "env": ["RESPONSE_EXAMPLE_RECEIPT_PRIVATE_KEY"],
+      "outputs": ["dist/**", ".next/**", "build/**", "out/**"],
+      "persistent": true
+    },
     "publish": {
       "cache": false,
       "dependsOn": ["build"]
@@ -308,8 +325,18 @@
       "dependsOn": ["^build", "build"],
       "outputs": ["dist/**", ".next/**", "build/**", "out/**"]
     },
+    "@klicker-uzh/chat#start": {
+      "dependsOn": ["^build", "build"],
+      "env": ["RESPONSE_EXAMPLE_RECEIPT_PRIVATE_KEY"],
+      "outputs": ["dist/**", ".next/**", "build/**", "out/**"]
+    },
     "start:test": {
       "cache": false,
+      "persistent": true
+    },
+    "@klicker-uzh/chat#start:test": {
+      "cache": false,
+      "env": ["RESPONSE_EXAMPLE_RECEIPT_PRIVATE_KEY"],
       "persistent": true
     },
     "test": {

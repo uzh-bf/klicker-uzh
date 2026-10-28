@@ -12,6 +12,7 @@ import {
   CHATBOT_CUSTOM_MODE_PERSONA_MAX_LENGTH,
   getChatModelAutoPolicyIssues,
   getChatModelBasePolicyIssues,
+  getWritingCoachUnavailableReason,
   isChatUsageClassEntitled,
   normalizeChatbotCustomModeConfig,
   normalizeChatbotStandardModeConfig,
@@ -436,11 +437,15 @@ const chatbotOwnerSelect = {
   avatar: true,
   systemPrompts: true,
   standardModeConfig: true,
+  mcpConfigurations: {
+    select: { chatMode: true, isEnabled: true, parameters: true },
+  },
   customModeConfig: true,
   draftConfig: true,
   modelSelection: true,
   allowedModelIds: true,
   allowedReasoningEffortsByModel: true,
+  answerPreferencesEnabled: true,
   knowledgeGraphVisible: true,
   knowledgeGraphRetrievalEnabled: true,
   creditInitialCredits: true,
@@ -468,10 +473,20 @@ type ChatbotWithOwnerCourse = {
   avatar: string | null
   systemPrompts: unknown
   standardModeConfig: unknown
+  // Required: `shapeChatbotResponse` derives the Writing Coach unavailability
+  // reason from these rows, so a caller that forgets to spread
+  // `chatbotOwnerSelect` fails to compile instead of silently reporting the
+  // mode as available.
+  mcpConfigurations: {
+    chatMode: string
+    isEnabled: boolean
+    parameters: unknown
+  }[]
   customModeConfig: unknown
   modelSelection: boolean
   allowedModelIds: string[]
   allowedReasoningEffortsByModel: unknown
+  answerPreferencesEnabled: boolean
   knowledgeGraphVisible: boolean
   knowledgeGraphRetrievalEnabled: boolean
   creditInitialCredits: number
@@ -546,6 +561,7 @@ function shapeChatbotResponse<T extends ChatbotWithOwnerCourse>(
 ) {
   const {
     systemPrompts,
+    mcpConfigurations,
     draftConfig: _draftConfig,
     ...chatbotWithoutSystemPrompts
   } = chatbot
@@ -553,6 +569,8 @@ function shapeChatbotResponse<T extends ChatbotWithOwnerCourse>(
 
   return {
     ...chatbotWithoutSystemPrompts,
+    writingCoachUnavailableReason:
+      getWritingCoachUnavailableReason(mcpConfigurations),
     standardModeConfig: normalizeChatbotStandardModeConfig(
       chatbot.standardModeConfig,
       systemPrompts
@@ -628,15 +646,17 @@ function cloneJson(value: unknown): unknown {
   )
 }
 
-type ChatbotKnowledgeGraphPolicy = Pick<
+type ChatbotRevisionLiveFlags = Pick<
   DB.Chatbot,
-  'knowledgeGraphVisible' | 'knowledgeGraphRetrievalEnabled'
+  | 'answerPreferencesEnabled'
+  | 'knowledgeGraphVisible'
+  | 'knowledgeGraphRetrievalEnabled'
 >
 
 // Live columns are the fallback for revisions saved before these fields existed.
 function parseStoredRevision(
   value: unknown,
-  live: ChatbotKnowledgeGraphPolicy
+  live: ChatbotRevisionLiveFlags
 ): ChatbotAuthoringRevision | null {
   if (!isRecord(value)) return null
 
@@ -738,6 +758,12 @@ function parseStoredRevision(
     return null
   }
   if (
+    value.answerPreferencesEnabled !== undefined &&
+    typeof value.answerPreferencesEnabled !== 'boolean'
+  ) {
+    return null
+  }
+  if (
     value.knowledgeGraphRetrievalEnabled !== undefined &&
     typeof value.knowledgeGraphRetrievalEnabled !== 'boolean'
   ) {
@@ -761,6 +787,10 @@ function parseStoredRevision(
     modelSelection: value.modelSelection,
     allowedModelIds: [...value.allowedModelIds] as string[],
     allowedReasoningEffortsByModel,
+    answerPreferencesEnabled:
+      value.answerPreferencesEnabled === undefined
+        ? live.answerPreferencesEnabled
+        : value.answerPreferencesEnabled,
     creditInitialCredits: value.creditInitialCredits as number,
     creditResetPeriod: value.creditResetPeriod as DB.CreditResetPeriod,
     creditResetAmount: value.creditResetAmount as number,
@@ -807,6 +837,7 @@ function buildRevisionFromLive(
     allowedReasoningEffortsByModel: cloneJson(
       chatbot.allowedReasoningEffortsByModel
     ) as ChatbotAuthoringRevision['allowedReasoningEffortsByModel'],
+    answerPreferencesEnabled: chatbot.answerPreferencesEnabled,
     creditInitialCredits: chatbot.creditInitialCredits,
     creditResetPeriod: chatbot.creditResetPeriod,
     creditResetAmount: chatbot.creditResetAmount,
@@ -987,6 +1018,7 @@ function revisionLiveData(
       revision.allowedReasoningEffortsByModel === null
         ? Prisma.JsonNull
         : (revision.allowedReasoningEffortsByModel as Prisma.InputJsonValue),
+    answerPreferencesEnabled: revision.answerPreferencesEnabled,
     knowledgeGraphVisible: revision.knowledgeGraphVisible,
     knowledgeGraphRetrievalEnabled: revision.knowledgeGraphRetrievalEnabled,
     creditInitialCredits: revision.creditInitialCredits,
@@ -1086,23 +1118,18 @@ function validateRevisionModelConfig(revision: ChatbotAuthoringRevision) {
 
 function validateCompleteRevision(
   revision: ChatbotAuthoringRevision,
-  requirePublicationFields: boolean
+  requirePublicationFields: boolean,
+  mcpConfigurations: ChatbotRevisionRecord['mcpConfigurations']
 ) {
   if (revision.name.trim().length === 0) {
     throw chatbotError('Chatbot name must not be empty', 'BAD_USER_INPUT')
   }
 
   if (revision.standardModeConfig !== null) {
-    try {
-      parseChatbotStandardModeConfigInput(revision.standardModeConfig)
-    } catch (error) {
-      throw chatbotError(
-        error instanceof Error
-          ? error.message
-          : 'Invalid standard mode configuration',
-        'BAD_USER_INPUT'
-      )
-    }
+    parseRevisionStandardModeConfig(
+      revision.standardModeConfig,
+      mcpConfigurations
+    )
   }
 
   if (revision.customModeConfig !== null) {
@@ -1192,6 +1219,7 @@ function validateCompleteRevision(
 type RevisionModelPolicyInput = {
   modelSelection: boolean
   allowedModelIds: string[]
+  answerPreferencesEnabled?: boolean | null
   allowedReasoningEffortsByModel?: Array<{
     modelId: string
     efforts: string[]
@@ -1354,13 +1382,6 @@ export async function saveChatbotRevision(
     ...(input.modelPolicy
       ? normalizeRevisionModelPolicy(input.modelPolicy)
       : {}),
-    ...(input.standardModeConfig
-      ? {
-          standardModeConfig: parseRevisionStandardModeConfig(
-            input.standardModeConfig
-          ),
-        }
-      : {}),
     ...(input.creditPolicy
       ? normalizeAndValidateCreditPolicy(input.creditPolicy)
       : {}),
@@ -1388,6 +1409,25 @@ export async function saveChatbotRevision(
 
     const current = getRevisionSnapshot(chatbot)
     let next = { ...current, ...patch }
+    // An older client omits writingCoachEnabled; keep the stored choice instead
+    // of silently disabling the mode.
+    if (input.standardModeConfig) {
+      next = {
+        ...next,
+        standardModeConfig: parseRevisionStandardModeConfig(
+          {
+            ...input.standardModeConfig,
+            writingCoachEnabled:
+              input.standardModeConfig.writingCoachEnabled ??
+              normalizeChatbotStandardModeConfig(
+                current.standardModeConfig,
+                chatbot.systemPrompts
+              ).writingCoachEnabled,
+          },
+          chatbot.mcpConfigurations
+        ),
+      }
+    }
     // Custom-mode keys are minted here so a stale version throws before any key
     // is generated, and an existing mode keeps the key stored on messages.
     if (input.customModeConfig) {
@@ -1579,6 +1619,9 @@ function normalizeRevisionModelPolicy(args: RevisionModelPolicyInput) {
   }
 
   return {
+    ...(typeof args.answerPreferencesEnabled === 'boolean'
+      ? { answerPreferencesEnabled: args.answerPreferencesEnabled }
+      : {}),
     modelSelection: args.modelSelection,
     allowedModelIds,
     allowedReasoningEffortsByModel:
@@ -1594,10 +1637,22 @@ function normalizeRevisionModelPolicy(args: RevisionModelPolicyInput) {
 }
 
 function parseRevisionStandardModeConfig(
-  input: ChatbotStandardModeConfigInput
+  input: ChatbotStandardModeConfigInput,
+  mcpConfigurations: ChatbotRevisionRecord['mcpConfigurations']
 ) {
   try {
-    return parseChatbotStandardModeConfigInput(input)
+    const config = parseChatbotStandardModeConfigInput(input)
+    if (
+      config.writingCoachEnabled &&
+      !config.tutorEnabled &&
+      !config.explainerEnabled &&
+      getWritingCoachUnavailableReason(mcpConfigurations)
+    ) {
+      throw new Error(
+        'Writing Coach cannot be the only conversational mode while a required tool binding makes it unavailable'
+      )
+    }
+    return config
   } catch (error) {
     throw chatbotError(
       error instanceof Error
@@ -1659,7 +1714,11 @@ export async function submitChatbotRevision(
     const revision = getRevisionSnapshot(chatbot)
     revision.publicationUseCase = args.useCase
     revision.expectedStudentCount = args.expectedStudentCount
-    const completeRevision = validateCompleteRevision(revision, true)
+    const completeRevision = validateCompleteRevision(
+      revision,
+      true,
+      chatbot.mcpConfigurations
+    )
     await assertGraphRetrievalTransition(
       ctx,
       chatbot.ownerId,
@@ -1822,7 +1881,11 @@ export async function approveChatbotRevision(
     }
 
     const revision = getRevisionSnapshot(chatbot)
-    const completeRevision = validateCompleteRevision(revision, true)
+    const completeRevision = validateCompleteRevision(
+      revision,
+      true,
+      chatbot.mcpConfigurations
+    )
     await assertGraphRetrievalTransition(
       ctx,
       chatbot.ownerId,
@@ -1892,6 +1955,7 @@ export async function getPendingChatbotPublications(ctx: ContextWithUser) {
           isEnabled: true,
           priority: true,
           allowedTools: true,
+          parameters: true,
           mcpServer: {
             select: { id: true, name: true, isActive: true },
           },
@@ -1907,7 +1971,7 @@ export async function getPendingChatbotPublications(ctx: ContextWithUser) {
       ownerPublishingEnabled: owner.aiFeaturesEnabled,
       disclaimerTitle: disclaimer?.title ?? null,
       disclaimerIntroText: disclaimer?.introText ?? null,
-      chatbot: shapeChatbotResponse(chatbot),
+      chatbot: shapeChatbotResponse({ ...chatbot, mcpConfigurations }),
       tools: mcpConfigurations.map((config) => ({
         serverName: config.mcpServer.name,
         chatMode: config.chatMode,

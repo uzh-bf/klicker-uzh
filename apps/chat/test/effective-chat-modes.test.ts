@@ -35,6 +35,27 @@ function config({
 }
 
 describe('effective chatbot modes', () => {
+  test('projects authored introduction and starters without exposing the mode persona', () => {
+    const welcomeMessage = 'Synthetic welcome\nIntroduction'
+    const mode = {
+      key: 'cm_presentation_fixture',
+      name: 'Conversation fixture',
+      description: null,
+      personaText: 'Private fixture instructions',
+      welcomeMessage,
+      starterPrompts: ['Synthetic starter'],
+    }
+    const options = resolveEffectiveChatModeOptions(null, [], null, {
+      customModeConfig: { modes: [mode] },
+    })
+    expect(options[mode.key]).toEqual({
+      name: mode.name,
+      description: mode.name,
+      welcomeMessage,
+      starterPrompts: mode.starterPrompts,
+    })
+  })
+
   // The shared key list decides which modes carry a standard-mode flag, so it
   // has to name exactly the modes the runtime offers.
   test('matches the shared standard-mode keys to the prompt registry', () => {
@@ -139,12 +160,14 @@ describe('effective chatbot modes', () => {
     })
   })
 
-  test('ignores a custom-mode entry that reuses a standard-mode key', () => {
+  test.each(
+    CHATBOT_STANDARD_MODE_KEYS
+  )('ignores a custom-mode entry that reuses %s', (key) => {
     const modeOptions = resolveEffectiveChatModeOptions(null, [], null, {
       customModeConfig: {
         modes: [
           {
-            key: 'tutor',
+            key,
             name: 'Tutor replacement',
             description: 'Replacement description',
             personaText: null,
@@ -153,10 +176,7 @@ describe('effective chatbot modes', () => {
       },
     })
 
-    expect(modeOptions.tutor).toEqual({
-      description:
-        'Guides students with focused questions, hints, and feedback.',
-    })
+    expect(modeOptions).toEqual(resolveEffectiveChatModeOptions(null, [], null))
   })
 
   test('honours explicit mode opt-outs', () => {
@@ -674,5 +694,63 @@ describe('effective chatbot modes', () => {
         priority: 1,
       }),
     ])
+  })
+})
+
+describe('Writing Coach availability', () => {
+  const config = {
+    tutorEnabled: false,
+    explainerEnabled: false,
+    quizzerEnabled: false,
+    writingCoachEnabled: true,
+  }
+
+  test('requires opt-in and supports a standalone writing chatbot', () => {
+    expect(resolveEffectiveChatModeOptions(null, [])).not.toHaveProperty(
+      'writing-coach'
+    )
+    expect(
+      Object.keys(resolveEffectiveChatModeOptions(null, [], config))
+    ).toEqual(['writing-coach'])
+  })
+
+  test('keeps required-tool eligibility on the exact writing mode', () => {
+    const requiredBinding = {
+      chatMode: 'tutor',
+      isEnabled: true,
+      parameters: { required: true },
+      mcpServerId: 'synthetic-server',
+    }
+    expect(
+      resolveEffectiveChatModeOptions(null, [requiredBinding], config)
+    ).toEqual({})
+    expect(
+      Object.keys(
+        resolveEffectiveChatModeOptions(
+          null,
+          [{ ...requiredBinding, chatMode: 'writing-coach' }],
+          config
+        )
+      )
+    ).toEqual(['writing-coach'])
+  })
+
+  test('requires the typed opt-in even when stored guidance uses the same key', () => {
+    const stored = { 'writing-coach': { enabled: true } }
+    expect(resolveEffectiveChatModeOptions(stored, [])).not.toHaveProperty(
+      'writing-coach'
+    )
+    const options = resolveEffectiveChatModeOptions(stored, [], config)
+    expect(Object.keys(options)).toEqual(['writing-coach'])
+    expect(resolveRequestedChatMode(options, 'WRITING-COACH')).toBe(
+      'writing-coach'
+    )
+    expect(
+      resolveEffectiveChatModeOptions(
+        { 'writing-coach': { enabled: false } },
+        [],
+        config
+      )
+    ).toHaveProperty('writing-coach')
   })
 })

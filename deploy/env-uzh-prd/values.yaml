@@ -45,7 +45,7 @@ hatchet:
       image:
         repository: ghcr.io/uzh-bf/klicker-uzh/hatchet-worker-general-arm
         pullPolicy: IfNotPresent
-        tag: v3.4.0-alpha.87
+        tag: v3.4.0-alpha.88
       resources:
         requests:
           cpu: 50m
@@ -86,7 +86,7 @@ hatchet:
       image:
         repository: ghcr.io/uzh-bf/klicker-uzh/hatchet-worker-response-processor-arm
         pullPolicy: IfNotPresent
-        tag: v3.4.0-alpha.87
+        tag: v3.4.0-alpha.88
       resources:
         requests:
           cpu: 25m
@@ -127,7 +127,7 @@ hatchet:
       image:
         repository: ghcr.io/uzh-bf/klicker-uzh/hatchet-worker-response-processor-arm
         pullPolicy: IfNotPresent
-        tag: v3.4.0-alpha.87
+        tag: v3.4.0-alpha.88
       resources:
         requests:
           cpu: 50m
@@ -194,7 +194,7 @@ auth:
   image:
     repository: ghcr.io/uzh-bf/klicker-uzh/auth-arm
     pullPolicy: IfNotPresent
-    tag: v3.4.0-alpha.87
+    tag: v3.4.0-alpha.88
 
   ingress:
     annotations:
@@ -258,14 +258,12 @@ chat:
     # "Auto" routes through the LiteLLM auto-router-v2, which self-selects the
     # tier per request (SIMPLE=gpt-6-luna-high, MEDIUM=gpt-6.1-sol-low,
     # COMPLEX=gpt-6.1-sol-medium, REASONING=gpt-6.1-sol-high), as on staging.
-    # The v1 auto-router (MEDIUM=gpt-6-luna-xhigh, COMPLEX=gpt-6.1-sol-high,
-    # REASONING=gpt-6.1-sol-medium) stays deployed beside it. Auto is a BASE
-    # model; Sol selected directly stays ADVANCED.
+    # Auto is a BASE model; Sol selected directly stays ADVANCED.
     # A chatbot can be pinned to Auto-only via its DB columns
     # (modelSelection=false + allowedModelIds=["auto"]).
     # Auto's accounting rate matches a generation mix of about 50% Luna and
-    # 50% Sol at GPT-6 list prices. Classifier and embedding overhead remain
-    # outside the registry's selected-model token fields.
+    # 50% Sol at GPT-6 list prices. Classifier overhead remains outside the
+    # registry's selected-model token fields.
     - id: auto
       deploymentId: klickeruzh/azure/auto-router-v2
       name: Auto
@@ -357,7 +355,7 @@ chat:
   image:
     repository: ghcr.io/uzh-bf/klicker-uzh/chat-arm
     pullPolicy: IfNotPresent
-    tag: v3.4.0-alpha.87
+    tag: v3.4.0-alpha.88
 
   ingress:
     annotations:
@@ -425,7 +423,7 @@ mcpStudent:
   image:
     repository: ghcr.io/uzh-bf/klicker-uzh/mcp-student-arm
     pullPolicy: IfNotPresent
-    tag: v3.4.0-alpha.87
+    tag: v3.4.0-alpha.88
 
   strategy:
     type: RollingUpdate
@@ -475,7 +473,7 @@ mcpLecturer:
   image:
     repository: ghcr.io/uzh-bf/klicker-uzh/mcp-lecturer-arm
     pullPolicy: IfNotPresent
-    tag: v3.4.0-alpha.87
+    tag: v3.4.0-alpha.88
 
   strategy:
     type: RollingUpdate
@@ -512,7 +510,7 @@ frontendPWA:
   image:
     repository: ghcr.io/uzh-bf/klicker-uzh/frontend-pwa-arm
     pullPolicy: IfNotPresent
-    tag: v3.4.0-alpha.87
+    tag: v3.4.0-alpha.88
 
   ingress:
     className: haproxy
@@ -536,7 +534,7 @@ frontendPWA:
 
   resources:
     requests:
-      cpu: 100m
+      cpu: 50m
       memory: 320Mi
     limits:
       memory: 1Gi
@@ -565,7 +563,7 @@ frontendManage:
   image:
     repository: ghcr.io/uzh-bf/klicker-uzh/frontend-manage-arm
     pullPolicy: IfNotPresent
-    tag: v3.4.0-alpha.87
+    tag: v3.4.0-alpha.88
 
   ingress:
     className: haproxy
@@ -603,7 +601,7 @@ frontendControl:
   image:
     repository: ghcr.io/uzh-bf/klicker-uzh/frontend-control-arm
     pullPolicy: IfNotPresent
-    tag: v3.4.0-alpha.87
+    tag: v3.4.0-alpha.88
 
   affinity:
     podAntiAffinity:
@@ -700,7 +698,7 @@ backendGraphql:
   image:
     repository: ghcr.io/uzh-bf/klicker-uzh/backend-docker-arm
     pullPolicy: IfNotPresent
-    tag: v3.4.0-alpha.87
+    tag: v3.4.0-alpha.88
 
   appManageSubdomain: manage
   appStudentSubdomain: pwa
@@ -740,7 +738,7 @@ backendGraphql:
 
   resources:
     requests:
-      cpu: 100m
+      cpu: 50m
       memory: 448Mi
     limits:
       memory: 1Gi
@@ -753,7 +751,7 @@ olatApi:
   image:
     repository: ghcr.io/uzh-bf/klicker-uzh/olat-api-arm
     pullPolicy: IfNotPresent
-    tag: v3.4.0-alpha.87
+    tag: v3.4.0-alpha.88
 
   affinity:
     podAntiAffinity:
@@ -823,7 +821,7 @@ lti:
   image:
     repository: ghcr.io/uzh-bf/klicker-uzh/lti-arm
     pullPolicy: IfNotPresent
-    tag: v3.4.0-alpha.87
+    tag: v3.4.0-alpha.88
 
   ingress:
     className: haproxy
@@ -855,7 +853,7 @@ responseApi:
 
   image:
     repository: ghcr.io/uzh-bf/klicker-uzh/response-api-arm
-    tag: v3.4.0-alpha.87
+    tag: v3.4.0-alpha.88
     pullPolicy: IfNotPresent
 
   affinity:
@@ -945,7 +943,7 @@ assessment:
     image:
       repository: ghcr.io/uzh-bf/klicker-uzh/frontend-assessment-arm
       pullPolicy: IfNotPresent
-      tag: v3.4.0-alpha.87
+      tag: v3.4.0-alpha.88
 
     ingress:
       className: haproxy
@@ -1020,7 +1018,7 @@ assessment:
     image:
       repository: ghcr.io/uzh-bf/klicker-uzh/backend-docker-arm
       pullPolicy: IfNotPresent
-      tag: v3.4.0-alpha.87
+      tag: v3.4.0-alpha.88
 
     appManageSubdomain: manage
     appStudentSubdomain: assessment
@@ -1096,7 +1094,7 @@ assessment:
     image:
       repository: ghcr.io/uzh-bf/klicker-uzh/response-api-arm
       pullPolicy: IfNotPresent
-      tag: v3.4.0-alpha.87
+      tag: v3.4.0-alpha.88
 
     ingress:
       className: haproxy
