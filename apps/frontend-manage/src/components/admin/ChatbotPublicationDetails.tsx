@@ -1,10 +1,11 @@
-import type { GetPendingChatbotRevisionReviewsQuery } from '@klicker-uzh/graphql/dist/ops'
+import type { GetPendingChatbotRevisionReviewsWithPreferencesQuery } from '@klicker-uzh/graphql/dist/ops'
 import { useTranslations } from 'next-intl'
 import type { ReactNode } from 'react'
+import { formatCustomModeSettings } from '../resources/chatbots/ChatbotAuthoring'
 import ChatbotDisclaimerPreview from '../resources/chatbots/ChatbotDisclaimerPreview'
 
 type Review =
-  GetPendingChatbotRevisionReviewsQuery['getPendingChatbotPublications'][number]
+  GetPendingChatbotRevisionReviewsWithPreferencesQuery['getPendingChatbotPublications'][number]
 
 function ReviewField({
   label,
@@ -28,7 +29,7 @@ function ChatbotPublicationDetails({
   models,
 }: {
   review: Review
-  models: GetPendingChatbotRevisionReviewsQuery['getChatModelRegistry']
+  models: GetPendingChatbotRevisionReviewsWithPreferencesQuery['getChatModelRegistry']
 }) {
   const t = useTranslations()
   const revision = review.chatbot.authoringRevision
@@ -118,6 +119,11 @@ function ChatbotPublicationDetails({
         <ReviewField label={t('manage.resources.allowedModels')}>
           {modelNames}
         </ReviewField>
+        <ReviewField label={t('manage.resources.answerPreferences')}>
+          {chatbot.answerPreferencesEnabled
+            ? t('manage.resources.modelSelectionEnabled')
+            : t('manage.resources.modelSelectionDisabled')}
+        </ReviewField>
         <ReviewField label={t('manage.resources.chatbotSetupModesTitle')}>
           {[
             config?.tutorEnabled && t('manage.resources.chatbotModeTutor'),
@@ -173,6 +179,46 @@ function ChatbotPublicationDetails({
           )}
         </ReviewField>
       </dl>
+      {revision?.customModeConfig?.modes.length ? (
+        <dl className="space-y-4">
+          {revision.customModeConfig.modes.map((mode) => (
+            <ReviewField key={mode.key} label={mode.name}>
+              {mode.description && <p>{mode.description}</p>}
+              {mode.welcomeMessage && (
+                <div data-cy={`chatbot-admin-review-welcome-${mode.key}`}>
+                  <p className="font-medium">
+                    {t('manage.resources.chatbotCustomModeWelcomeMessage')}
+                  </p>
+                  <p>{mode.welcomeMessage}</p>
+                </div>
+              )}
+              {mode.starterPrompts?.length ? (
+                <div data-cy={`chatbot-admin-review-starters-${mode.key}`}>
+                  <p className="font-medium">
+                    {t('chat.suggestions.sectionLabel')}
+                  </p>
+                  <p>
+                    {mode.starterPrompts
+                      .map((prompt, index) => `${index + 1}. ${prompt}`)
+                      .join('\n')}
+                  </p>
+                </div>
+              ) : null}
+              {mode.personaText && <p>{mode.personaText}</p>}
+              <p data-cy={`chatbot-admin-review-reasoning-${mode.key}`}>
+                {t(
+                  mode.showReasoning
+                    ? 'manage.resources.chatbotCustomModeReasoningShown'
+                    : 'manage.resources.chatbotCustomModeReasoningHidden'
+                )}
+              </p>
+              <p data-cy={`chatbot-admin-review-settings-${mode.key}`}>
+                {formatCustomModeSettings(t, mode)}
+              </p>
+            </ReviewField>
+          ))}
+        </dl>
+      ) : null}
       {disclaimerTitle ? (
         <ChatbotDisclaimerPreview
           title={disclaimerTitle}

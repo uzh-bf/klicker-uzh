@@ -1,7 +1,7 @@
 import { useMutation, useQuery } from '@apollo/client'
 import {
   ChatbotStatus,
-  GetPendingChatbotRevisionReviewsDocument,
+  GetPendingChatbotRevisionReviewsWithPreferencesDocument,
   MApproveChatbotRevisionDocument,
   MRejectChatbotRevisionDocument,
 } from '@klicker-uzh/graphql/dist/ops'
@@ -15,7 +15,7 @@ import ChatbotRejectionForm from './ChatbotRejectionForm'
 function ChatbotPublicationQueue() {
   const t = useTranslations()
   const { data, loading, error, refetch } = useQuery(
-    GetPendingChatbotRevisionReviewsDocument,
+    GetPendingChatbotRevisionReviewsWithPreferencesDocument,
     { fetchPolicy: 'network-only', notifyOnNetworkStatusChange: true }
   )
   const [approve, { loading: approving }] = useMutation(

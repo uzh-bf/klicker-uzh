@@ -10,11 +10,15 @@ tags:
 
 # Getting Started
 
-**The one thing to get right first: use pnpm 11.** A stale pnpm major (e.g. a Volta shim serving 9.x because `VOLTA_FEATURE_PNPM` is unset) will install successfully but **silently rewrite `pnpm-lock.yaml`** (~380-line churn). Run `pnpm --version` and confirm `11.x` before installing; if the lockfile got churned, `git checkout pnpm-lock.yaml` and reinstall with pnpm 11.
+**The one thing to get right first: use pnpm 12.** A stale pnpm major (e.g. a Volta shim serving 9.x because `VOLTA_FEATURE_PNPM` is unset) can **rewrite `pnpm-lock.yaml`** or reject the workspace configuration. Run `pnpm --version` and confirm `12.x` before installing; if the lockfile got churned, `git checkout pnpm-lock.yaml` and reinstall with pnpm 12.
 
-## Toolchain (verified 2026-09-14)
+## Toolchain (pins updated 2026-10-15)
 
-Aligned to Node `24.21.0` and pnpm `11.5.0` across the entire workspace, including the self-contained devcontainer. Pinned in root `package.json`: `volta.node = 24.21.0`, `volta.pnpm = 11.5.0`, `packageManager = pnpm@11.5.0`. The pnpm pin stays on the 11.5.0 line because the shared Playwright composite actions declare their own pnpm version, so `pnpm/action-setup` rejects a pull request that moves the pin; the production Dockerfiles drop `pnpm` and `turbo` after installing production dependencies instead, which keeps their vendored advisories out of the scanned runtime images.
+Aligned to Node `24.21.0` and pnpm `12.11.2` across the entire workspace, including the self-contained devcontainer. Pinned in root `package.json`: `volta.node = 24.21.0`, `volta.pnpm = 12.11.2`, `packageManager = pnpm@12.11.2`. Keep the Dockerfiles, CI actions/workflows, `.tool-versions`, and Playwright cache contract aligned with the root pin; `.github/scripts/pnpm-toolchain-pins.test.cjs` checks that contract. The production Dockerfiles drop `pnpm` and `turbo` after installing production dependencies, keeping their vendored dependencies out of scanned runtime images.
+
+Playwright executes trusted composite actions from `refs/heads/v3`, even for candidate branches. A pnpm upgrade therefore needs a coordinated trusted-control update before candidate CI: updating only the local action files does not change the remote action that `pnpm/action-setup` runs. Preserve the trusted-action boundary; do not point public PR jobs at candidate orchestration to work around a version mismatch.
+
+The Alpine app Dockerfiles retain `npm --ignore-scripts` while installing the toolchain, then explicitly run the pinned pnpm package's `install.js` to provision its native executables. pnpm 12 otherwise leaves shebang-less placeholders: a shell can run them, but direct child-process execution on Alpine can fail with `ENOEXEC`. Only pnpm's native setup is allowed here; other package lifecycle scripts stay disabled. The devcontainer's normal npm installation already runs this setup, while Corepack uses pnpm's separate Node entrypoint.
 
 The workspace TypeScript baseline is `~6.0.3` across all packages, including `apps/office-addin`. The Office Add-in uses the browser/bundler contract (`target: ES2022`, `module: ESNext`, `moduleResolution: Bundler`, `noEmit`) and explicitly loads the `office-js` global types required by TypeScript 6. No syncpack exception is needed.
 
@@ -64,7 +68,7 @@ The lecturer MCP server (`apps/mcp-lecturer`, port 7081) and the student MCP ser
 2. **Accessing the apps:**
    - **Mode 1 (Primary checkout):** Stable routes such as `https://manage.klicker.localhost` plus the fixed localhost application ports; the database listens on an ephemeral loopback port or `db.klicker.localhost:5432` through the router. Lecturer login is `lecturer`/`abcd`.
    - **Mode 2 (linked checkout):** Routes linked-worktree traffic over HTTPS at `https://manage.klicker.<workspace>.localhost`. Requires:
-     1. Install devrouter ≥ 0.0.55 and run `devrouter setup --yes` once. Version 0.0.42 does not enforce post-create lifecycle ordering for managed adapters, 0.0.44 serializes shared TLS refresh, 0.0.45 assigns collision-safe identities to parallel DevPod and Devsy worktrees, 0.0.46 queues parallel provider transitions fairly with visible wait progress and fail-closed detached-state recovery, 0.0.52 adds explicit `ensure --repair` for a retained degraded runtime, and 0.0.53-0.0.55 add synchronous adapter dependency preparation and correct retained-runtime configuration and mount comparison.
+     1. Install devrouter ≥ 0.5.1 and run `devrouter setup --yes` once. Version 0.0.42 does not enforce post-create lifecycle ordering for managed adapters, 0.0.44 serializes shared TLS refresh, 0.0.45 assigns collision-safe identities to parallel DevPod and Devsy worktrees, 0.0.46 queues parallel provider transitions fairly with visible wait progress and fail-closed detached-state recovery, 0.0.52 adds explicit `ensure --repair` for a retained degraded runtime, and 0.0.53-0.0.55 add synchronous adapter dependency preparation and correct retained-runtime configuration and mount comparison.
      2. From an existing linked worktree, start and prove the environment with:
         ```bash
         devrouter ensure .
@@ -72,13 +76,14 @@ The lecturer MCP server (`apps/mcp-lecturer`, port 7081) and the student MCP ser
         Use `devrouter workspace up <branch-name>` from the main repository to create a new worktree. Do not use bare `devpod up` or manual route-token loops; `ensure` owns the persisted identity, Git mount, overlay, aliases, runtime proof, and routes together.
      3. Those namespaced hosts only work because `allowedDevOrigins` in `packages/next-config/index.js` is `['**.localhost']` in development (and `undefined` in production) — Next's implicit `*.localhost` matches a single label only. If that glob ever stops covering a worktree host, the symptom is an app that serves HTML but never hydrates, with no obvious error.
 3. **Logs:** The dev servers auto-start inside the container. View logs via `devrouter exec . -- tail -f /tmp/dev.log`.
-4. **Browser E2E:** Run Playwright from the host with `pnpm playwright:host -- --project=chromium <spec>`. The launcher reconciles the routed devrouter workspace, maps the app URLs and seed database, and reuses the host browser cache. Never install Playwright browser binaries in a DevPod. The existing global setup resets and reseeds the mapped database, so use only a disposable local test runtime.
+4. **Browser E2E:** Run Playwright from the host with `node util/run-playwright-host.mjs --project=chromium <spec>`. The launcher reconciles the routed devrouter workspace, maps the app URLs and seed database, and reuses the host browser cache. Never install Playwright browser binaries in a DevPod. The existing global setup resets and reseeds the mapped database, so use only a disposable local test runtime.
 
 Choose an application profile such as `manage`, `pwa`, `chat`, or
-`live-quiz`. Add the orthogonal `ai`, `mcp`, `email`, or `eduid` capability
-only when needed; for example, `devrouter ensure . --profile chat,ai,mcp`, or
+`live-quiz`. Add the orthogonal `ai`, `mcp`, `email`, `eduid`, or `db` capability
+only when needed; for example, `devrouter ensure . --profile chat,ai,mcp`,
 `devrouter ensure . --profile manage,eduid` for Edu-ID login through the
-local OIDC mock. Capability-only profiles run no Turbo app process. Omitting
+local OIDC mock, or `manage,db` to route Postgres at
+`db.klicker.<workspace>.localhost:5432` for host tools. Capability-only profiles run no Turbo app process. Omitting
 `--profile` keeps the compatibility default `full`. Profile unions are additive
 and order-insensitive, and a warm transition does not recreate the app
 container or reset persistent data.
@@ -96,7 +101,7 @@ the `clean:cache` / `clean:generated` / `clean:worktree` / `disk:usage`
 commands.
 
 Playwright is the deliberate toolchain exception. Run
-`pnpm playwright:host -- <args>` from the host; the launcher calls
+`node util/run-playwright-host.mjs <args>` from the host; the launcher calls
 `devrouter ensure`, resolves the exact worktree routes, and connects the host
 Prisma setup to that workspace's random loopback PostgreSQL port. The browser
 and Playwright process never enter the devcontainer. Direct local Playwright
@@ -142,7 +147,7 @@ managed startup, not the separately reviewed retained-recovery callback.
 The devcontainer image contains no devrouter package or helper, and
 `devcontainer.json` does not run the managed adapter independently.
 
-The image does include the repository's development toolchain: pnpm `11.5.0`, uv `0.11.12`, and the Python 3.12 selection used by analytics CI. This keeps `pnpm run check:all` reproducible inside the container.
+The image does include the repository's development toolchain: pnpm `12.11.2`, uv `0.11.12`, and the Python 3.12 selection used by analytics CI. This keeps `pnpm run check:all` reproducible inside the container.
 
 Before Compose starts, `.devcontainer/initialize.sh` creates the external
 Docker volume `klicker-uzh-pnpm-store-v1`. Every worktree mounts that volume at
@@ -182,13 +187,13 @@ Run `pnpm run test:dev-runtime` for the shell-level guard checks.
 Runs all services on your host machine. Needs Traefik (`*.klicker.com` reverse proxy), mkcert, `/etc/hosts` configurations, and Infisical for secret injection.
 
 ```bash
-pnpm --version        # must print 11.x
+pnpm --version        # must print 12.x
 pnpm install          # ~20s cold; peer warnings are pre-existing
 pnpm run build        # 21 production-mode turbo tasks, ~1.5min; needs NO secrets
 pnpm run check        # typecheck — only passes AFTER build (generated artifacts)
 ```
 
-Order matters: on a fresh clone, `pnpm run check` fails in ~19 packages until `pnpm run build` has produced the Prisma client, GraphQL codegen output, and package dists. The root build script forces `NODE_ENV=production`, even when the devcontainer exports `NODE_ENV=development` for live apps. Direct checks for the five Next apps are self-contained with respect to Next-generated route types: each app runs `next typegen` before `tsc --noEmit`, so those ignored types do not require a prior app build. Workspace dependency builds are still required; CI builds changed packages before checking them. Git hooks depend on the same broader workspace state: pre-commit runs `check:all`, pre-push runs `build` — both fail hard without `node_modules` and the required workspace-generated artifacts.
+Order matters: on a fresh clone, `pnpm run check` fails in ~19 packages until `pnpm run build` has produced the Prisma client, GraphQL codegen output, and package dists. The root build script forces `NODE_ENV=production`, even when the devcontainer exports `NODE_ENV=development` for live apps. Direct checks for the five Next apps are self-contained with respect to Next-generated route types: each app runs `next typegen` before `tsc --noEmit`, so those ignored types do not require a prior app build. Workspace dependency builds are still required; CI builds changed packages before checking them. Git hooks normally run the full pre-commit `check:all` and pre-push `build` paths, which fail hard without `node_modules` and the required workspace-generated artifacts. Regular, non-executable Markdown additions and modifications under `docs/`, `project/` and `.agents/skills/` can use host formatting, parsing and document-policy checks against exact Git content. A push qualifies only for one linear fast-forward of an existing non-integration branch from its checked-out HEAD. New branches, integration branches, multiple refs, mode changes and uncertain validation policy retain the full build. Secret and identity scans remain in place.
 
 ### Git hooks with isolated container dependencies
 
@@ -221,9 +226,9 @@ the pre-push build to run after local development without deleting `.next`.
 
 | Exact error                                                                                                                   | Cause                                                                                                                                          | Fix                                                                                             |
 | ----------------------------------------------------------------------------------------------------------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------- | ----------------------------------------------------------------------------------------------- |
-| `sh: run-p: command not found` + `husky - pre-commit script failed`                                                           | `node_modules` missing                                                                                                                         | `pnpm install` (pnpm 11)                                                                        |
-| `ERR_PNPM_ABORTED_REMOVE_MODULES_DIR_NO_TTY`                                                                                  | pnpm 11 found `node_modules` from another pnpm major; headless shell can't confirm purge                                                       | `pnpm install --config.confirmModulesPurge=false`                                               |
-| `ERR_PNPM_LOCKFILE_CONFIG_MISMATCH` … `"overrides" configuration doesn't match`                                               | `CI=true` forces frozen install after a wrong-major pnpm rewrote the lockfile                                                                  | `git checkout pnpm-lock.yaml`, non-frozen install with pnpm 11                                  |
+| `sh: run-p: command not found` + `husky - pre-commit script failed`                                                           | `node_modules` missing                                                                                                                         | `pnpm install` (pnpm 12)                                                                        |
+| `ERR_PNPM_ABORTED_REMOVE_MODULES_DIR_NO_TTY`                                                                                  | pnpm 12 found `node_modules` from another pnpm major; headless shell can't confirm purge                                                       | `pnpm install --config.confirmModulesPurge=false`                                               |
+| `ERR_PNPM_LOCKFILE_CONFIG_MISMATCH` … `"overrides" configuration doesn't match`                                               | `CI=true` forces frozen install after a wrong-major pnpm rewrote the lockfile                                                                  | `git checkout pnpm-lock.yaml`, non-frozen install with pnpm 12                                  |
 | `Bind for :::5432 failed: port is already allocated`                                                                          | another stack holds the host port (also seen on 6379, 7077/8888, 80/443)                                                                       | `lsof -nP -iTCP:5432 -sTCP:LISTEN`, stop the other stack                                        |
 | ~19 packages fail `pnpm run check` on fresh clone                                                                             | generated artifacts missing                                                                                                                    | `pnpm run build` once, then check                                                               |
 | A known page or nested API route answers HTML 404 although it exists in the checked-out branch (for example Chat's chat list) | stale Next.js development route state                                                                                                          | `devrouter ensure .`; it verifies and repairs this signature once                               |

@@ -1,7 +1,15 @@
 #!/usr/bin/env node
 
 import { spawnSync } from 'node:child_process'
-import { existsSync, readdirSync, readFileSync, rmSync } from 'node:fs'
+import { randomUUID } from 'node:crypto'
+import {
+  existsSync,
+  mkdirSync,
+  readdirSync,
+  readFileSync,
+  rmSync,
+  writeFileSync,
+} from 'node:fs'
 import { createRequire } from 'node:module'
 import { tmpdir } from 'node:os'
 import {
@@ -20,6 +28,7 @@ import {
   HOST_RUNNER_ENV,
   preserveLocalDatabase,
 } from './playwright-host-policy.mjs'
+import { resolveRuntimePlan } from './playwright-profile-runtime.mjs'
 
 const require = createRequire(import.meta.url)
 const {
@@ -37,6 +46,35 @@ const uuidPattern =
   /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i
 export const PNPM_VERIFY_DEPS_ENV = 'pnpm_config_verify_deps_before_run'
 export const PLAYWRIGHT_PROFILE_FALLBACK = 'playwright'
+// Marks the root install as the launcher's Playwright-only filtered install so
+// util/run-hook-pnpm.sh does not mistake it for a full host install.
+export const FILTERED_INSTALL_MARKER = join(
+  'node_modules',
+  '.playwright-host-filtered-install'
+)
+// .devcontainer/post-start.sh switches the managed app process to CI's
+// production test runtime while this plan exists.
+export const CI_RUNTIME_PLAN = join(
+  '.devcontainer',
+  '.runtime',
+  'playwright-ci-plan.json'
+)
+export const CI_RUNTIME_BUILD_ID = join(
+  '.devcontainer',
+  '.runtime',
+  'playwright-ci-build-id'
+)
+// While this marker exists, .devcontainer/post-start.sh runs the dev servers
+// through their dev:test scripts, which load the backend's Playwright feature
+// flag fixture under NODE_ENV=test.
+export const DEV_TEST_RUNTIME = join(
+  '.devcontainer',
+  '.runtime',
+  'playwright-dev-test'
+)
+// The CI-parity production builds bake in this GrowthBook host, which the
+// Playwright fixtures intercept; the dev servers proxy through manage instead.
+const CI_GROWTHBOOK_API_HOST = 'https://growthbook.test'
 
 const PLAYWRIGHT_OPTIONS_WITH_VALUES = new Set([
   '--browser',
@@ -276,6 +314,10 @@ function createRuntime({
   commandExistsFn = (command) => commandExists(command),
   pathExists = existsSync,
   readFile = readFileSync,
+  writeFile = writeFileSync,
+  removeFile = (path) => rmSync(path, { force: true }),
+  makeDirectory = (path) => mkdirSync(path, { recursive: true }),
+  resolveRuntimePlanFn = resolveRuntimePlan,
   readDirectory = readdirSync,
   parseProfileManifestFn = parseProfileManifest,
   clock = defaultClock,
@@ -293,6 +335,10 @@ function createRuntime({
     log,
     pathExists,
     readFile,
+    writeFile,
+    removeFile,
+    makeDirectory,
+    resolveRuntimePlanFn,
     readDirectory,
     parseProfileManifestFn,
     clock,
@@ -488,13 +534,46 @@ export function readCommittedEnvironment(contents) {
   return values
 }
 
-export function parsePublishedPort(output) {
-  for (const line of output.split(/\r?\n/)) {
-    const match = line.trim().match(/:(\d+)$/)
-    if (match) return Number(match[1])
+// `devrouter env --json` (report version 1) attributes the loopback port to
+// this checkout's own devcontainer and names the reason when it cannot.
+export function parseHostEnvironment(output) {
+  let report
+  try {
+    report = JSON.parse(output)
+  } catch {
+    fail('devrouter env did not return a JSON report')
   }
-
-  fail('the workspace Postgres container has no loopback host port')
+  if (report?.version !== 1) {
+    fail(`unsupported devrouter env report version ${report?.version}`)
+  }
+  const databases = (report.apps ?? []).filter(
+    (app) => app.protocol === 'tcp' && app.tcpProtocol === 'postgres'
+  )
+  if (databases.length !== 1) {
+    fail(
+      `expected one Postgres app in devrouter env, found ${databases.length}`
+    )
+  }
+  const [{ loopback, loopbackReason }] = databases
+  if (!loopback) {
+    fail(`the workspace Postgres has no loopback host port (${loopbackReason})`)
+  }
+  if (
+    typeof loopback.host !== 'string' ||
+    loopback.host === '' ||
+    !Number.isInteger(loopback.port) ||
+    loopback.port < 1 ||
+    loopback.port > 65535
+  ) {
+    fail('the workspace Postgres loopback endpoint lacks a host or port')
+  }
+  return {
+    workspace: report.workspace ?? '',
+    databaseHost: loopback.host.includes(':')
+      ? `[${loopback.host}]`
+      : loopback.host,
+    databasePort: loopback.port,
+  }
 }
 
 export function parseLocalOptions(argv) {
@@ -502,6 +581,7 @@ export function parseLocalOptions(argv) {
   let profile
   let mode
   let preserveDatabase = false
+  let ciRuntime = false
   while (args.length) {
     const option = args[0]
     if (option === '--') {
@@ -526,6 +606,9 @@ export function parseLocalOptions(argv) {
     } else if (option === '--preserve-database') {
       args.shift()
       preserveDatabase = true
+    } else if (option === '--ci-runtime') {
+      args.shift()
+      ciRuntime = true
     } else if (option === '--print-env' || option === '--show-report') {
       if (mode) fail('Specify only one launcher mode')
       mode = args.shift()
@@ -536,22 +619,27 @@ export function parseLocalOptions(argv) {
   if (mode === '--show-report' && profile !== undefined) {
     fail('--show-report cannot select a runtime profile')
   }
+  if (mode === '--show-report' && ciRuntime) {
+    fail('--show-report cannot select the CI runtime')
+  }
   for (const option of args) {
     if (option.startsWith('--preserve-database=')) {
       fail(
         '--preserve-database does not accept a value; use space syntax before Playwright arguments'
       )
     }
-    if (option === '--preserve-database') {
+    if (option === '--preserve-database' || option === '--ci-runtime') {
       fail(`${option} must appear before Playwright arguments`)
     }
   }
-  return { args, profile, mode, preserveDatabase }
+  return { args, profile, mode, preserveDatabase, ciRuntime }
 }
 
 export function resolvePlaywrightEnvironment({
   appSecret,
+  ciRuntime = false,
   databaseTemplate,
+  databaseHost = '127.0.0.1',
   databasePort,
   postgresContainer,
   workspace,
@@ -560,7 +648,7 @@ export function resolvePlaywrightEnvironment({
   const appUrl = (app) => `https://${app}.klicker${namespace}.localhost`
   const databaseUrl = new URL(databaseTemplate)
 
-  databaseUrl.hostname = '127.0.0.1'
+  databaseUrl.hostname = databaseHost
   databaseUrl.port = String(databasePort)
 
   const studentUrl = appUrl('pwa')
@@ -573,7 +661,9 @@ export function resolvePlaywrightEnvironment({
     KLICKER_PLAYWRIGHT_POSTGRES_CONTAINER: postgresContainer,
     [HOST_RUNNER_ENV]: '1',
     PLAYWRIGHT_BASE_URL: studentUrl,
-    NEXT_PUBLIC_GROWTHBOOK_API_HOST: `${appUrl('manage')}/__growthbook__`,
+    NEXT_PUBLIC_GROWTHBOOK_API_HOST: ciRuntime
+      ? CI_GROWTHBOOK_API_HOST
+      : `${appUrl('manage')}/__growthbook__`,
     NEXT_PUBLIC_GROWTHBOOK_CLIENT_KEY: 'sdk-test',
     URL_AUTH: appUrl('auth'),
     URL_CHAT: appUrl('chat'),
@@ -584,7 +674,7 @@ export function resolvePlaywrightEnvironment({
   }
 }
 
-function resolveWorkspace(runtime) {
+function resolveGitDirectories(runtime) {
   const gitDir = runtime.commandRunner(
     'git',
     [
@@ -607,15 +697,17 @@ function resolveWorkspace(runtime) {
     ],
     { capture: true }
   )
+  return { gitDir, commonDir }
+}
 
-  if (gitDir === commonDir) return ''
-
-  const workspaceFile = join(gitDir, 'devrouter-workspace')
-  if (!runtime.pathExists(workspaceFile)) {
-    fail('devrouter did not persist a workspace token for this worktree')
-  }
-
-  return runtime.readFile(workspaceFile, 'utf8').trim()
+// A linked worktree gets its devrouter workspace identity on its first ensure.
+// Before that no devcontainer can exist, so there is nothing to stop.
+function hasLinkedWorkspaceIdentity(runtime) {
+  const { gitDir, commonDir } = resolveGitDirectories(runtime)
+  return (
+    gitDir === commonDir ||
+    runtime.pathExists(join(gitDir, 'devrouter-workspace'))
+  )
 }
 
 export function resolvePostgresContainer(runtime) {
@@ -645,16 +737,28 @@ export function resolvePostgresContainer(runtime) {
   return containerIds[0]
 }
 
-export function resolveDatabasePort(runtime, containerId) {
-  if (!containerId) fail('a Postgres container id is required')
-
-  const publishedPort = runtime.commandRunner(
-    'docker',
-    ['port', containerId, '5432/tcp'],
-    { capture: true }
+function resolveHostEnvironment(runtime) {
+  return parseHostEnvironment(
+    runtime.commandRunner(
+      runtime.devrouter(),
+      ['env', runtime.repoRoot, '--json'],
+      { capture: true }
+    )
   )
+}
 
-  return parsePublishedPort(publishedPort)
+// A linked worktree's devrouter env must report its own workspace name: that
+// name namespaces every host URL and the database the suite reads and seeds,
+// so a missing value would silently run the suite against the primary
+// checkout's namespace instead.
+function assertLinkedWorkspaceName(runtime, workspace) {
+  const { gitDir, commonDir } = resolveGitDirectories(runtime)
+  if (gitDir === commonDir) return
+  if (typeof workspace !== 'string' || workspace.length === 0) {
+    fail(
+      `devrouter env did not report a workspace name for linked worktree ${runtime.repoRoot}; refusing to run against the primary checkout's URLs and database`
+    )
+  }
 }
 
 function ensureHostDependencies(runtime, playwrightArgs) {
@@ -668,8 +772,10 @@ function ensureHostDependencies(runtime, playwrightArgs) {
   )
 
   if (!runtime.pathExists(playwrightCli)) {
-    runtime.log('[playwright:host] Stopping the devcontainer before install')
-    runtime.commandRunner(runtime.devrouter(), ['stop', runtime.repoRoot])
+    if (hasLinkedWorkspaceIdentity(runtime)) {
+      runtime.log('[playwright:host] Stopping the devcontainer before install')
+      runtime.commandRunner(runtime.devrouter(), ['stop', runtime.repoRoot])
+    }
     runtime.log('[playwright:host] Installing host Playwright dependencies')
     runtime.runPnpm([
       'install',
@@ -677,6 +783,7 @@ function ensureHostDependencies(runtime, playwrightArgs) {
       '@klicker-uzh/playwright...',
       '--frozen-lockfile',
     ])
+    runtime.writeFile(join(runtime.repoRoot, FILTERED_INSTALL_MARKER), '')
   }
 
   if (
@@ -714,6 +821,36 @@ function ensureHostDependencies(runtime, playwrightArgs) {
   ])
 }
 
+// Writes CI's resolved runtime plan for --ci-runtime. Otherwise it removes the
+// plan and selects the dev servers' test mode, so the next ensure runs dev:test.
+// --print-env inspects the current runtime and keeps its selection unless
+// --ci-runtime is given.
+function selectRuntimeMode(runtime, { ciRuntime, keepSelection, profile }) {
+  const planPath = join(runtime.repoRoot, CI_RUNTIME_PLAN)
+  const buildIdPath = join(runtime.repoRoot, CI_RUNTIME_BUILD_ID)
+  const devTestPath = join(runtime.repoRoot, DEV_TEST_RUNTIME)
+  if (!ciRuntime) {
+    if (keepSelection) return
+    runtime.removeFile(planPath)
+    runtime.removeFile(buildIdPath)
+    runtime.makeDirectory(dirname(devTestPath))
+    runtime.writeFile(devTestPath, '')
+    return
+  }
+  runtime.log(
+    `[playwright:host] Selecting the CI production runtime for profile ${profile}`
+  )
+  runtime.removeFile(devTestPath)
+  runtime.makeDirectory(dirname(planPath))
+  runtime.resolveRuntimePlanFn({
+    profile,
+    output: planPath,
+    repo: runtime.repoRoot,
+    devrouterBin: runtime.devrouter(),
+  })
+  runtime.writeFile(buildIdPath, `${randomUUID()}\n`)
+}
+
 export function main(argv = process.argv.slice(2), dependencies = {}) {
   const localArgs = argv[0] === '--' ? argv.slice(1) : argv
   const runtime = createRuntime(dependencies)
@@ -743,7 +880,8 @@ export function main(argv = process.argv.slice(2), dependencies = {}) {
   }
 
   try {
-    const { args, profile, mode, preserveDatabase } = parseLocalOptions(argv)
+    const { args, profile, mode, preserveDatabase, ciRuntime } =
+      parseLocalOptions(argv)
     const hostEnvironment = {
       ...runtime.environment,
       [HOST_RUNNER_ENV]: '1',
@@ -791,6 +929,11 @@ export function main(argv = process.argv.slice(2), dependencies = {}) {
       })
 
     timer.begin('runtime')
+    selectRuntimeMode(runtime, {
+      ciRuntime,
+      keepSelection: printEnvironment,
+      profile: runtimeProfile,
+    })
     runtime.log('[playwright:host] Reconciling the devcontainer runtime')
     const ensureTelemetry = runRuntimeEnsure(runtime, [
       'ensure',
@@ -800,9 +943,10 @@ export function main(argv = process.argv.slice(2), dependencies = {}) {
     ])
     queueWaitSeconds = queueWaitSecondsFrom(runtime.readFile, ensureTelemetry)
 
-    const workspace = resolveWorkspace(runtime)
+    const { workspace, databaseHost, databasePort } =
+      resolveHostEnvironment(runtime)
+    assertLinkedWorkspaceName(runtime, workspace)
     const postgresContainer = resolvePostgresContainer(runtime)
-    const databasePort = resolveDatabasePort(runtime, postgresContainer)
     const committedEnvironment = readCommittedEnvironment(
       runtime.readFile(
         join(runtime.repoRoot, '.devcontainer', 'devcontainer.env'),
@@ -818,7 +962,9 @@ export function main(argv = process.argv.slice(2), dependencies = {}) {
 
     const resolvedEnvironment = resolvePlaywrightEnvironment({
       appSecret,
+      ciRuntime,
       databaseTemplate,
+      databaseHost,
       databasePort,
       postgresContainer,
       workspace,
@@ -828,7 +974,7 @@ export function main(argv = process.argv.slice(2), dependencies = {}) {
       runtime.log(
         JSON.stringify(
           {
-            databaseHost: `127.0.0.1:${databasePort}`,
+            databaseHost: `${databaseHost}:${databasePort}`,
             postgresContainer,
             manageUrl: resolvedEnvironment.URL_MANAGE,
             studentUrl: resolvedEnvironment.URL_STUDENT,
@@ -844,6 +990,12 @@ export function main(argv = process.argv.slice(2), dependencies = {}) {
     timer.begin('browser')
     runtime.log(
       `[playwright:host] Running on the host against ${resolvedEnvironment.URL_MANAGE}`
+    )
+    const stack = ciRuntime
+      ? 'CI production test builds'
+      : 'Next dev servers (CI tests production builds; use --ci-runtime to match)'
+    runtime.log(
+      `[playwright:host] Stack: ${stack}, profile=${runtimeProfile}, database=${databaseHost}:${databasePort}`
     )
     runtime.runPnpm(
       [

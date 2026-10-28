@@ -448,7 +448,7 @@ function createTrajectoryTarget(overrides = {}) {
     apiOrigin: 'https://api.klicker.localhost',
     chatOrigin: 'https://chat.klicker.localhost',
     modelId: SYNTHETIC_MODEL,
-    apiKey: 'target-key',
+    apiKey: 'dummy-target-key',
     participantUsername: 'synthetic-participant',
     participantPassword: 'synthetic-password',
     pollTimeoutMs: 1000,
@@ -1004,6 +1004,8 @@ test('trajectory corpus validation rejects invalid shapes', () => {
   assert.deepEqual(normalized.cases[0].assessmentTurns, [1])
 
   for (const [corpus, code] of [
+    [{ ...valid, notes: 'unexpected' }, 'corpus_unknown_field'],
+    [{ ...valid, version: true }, 'corpus_version_unsupported'],
     [{ version: 2, cases: [trajectoryCase()] }, 'corpus_version_unsupported'],
     [{ version: 1, cases: [] }, 'corpus_cases_invalid'],
     [
@@ -1033,6 +1035,24 @@ test('trajectory corpus validation rejects invalid shapes', () => {
       { version: 1, cases: [trajectoryCase({ assessmentTurns: [2] })] },
       'trajectory_case_assessment_turns_invalid',
     ],
+    ...[[], [1, 1], [0], [true], [1.5], ['1']].map((assessmentTurns) => [
+      { version: 1, cases: [trajectoryCase({ assessmentTurns })] },
+      'trajectory_case_assessment_turns_invalid',
+    ]),
+    ...[null, false, 7].map((message) => [
+      {
+        version: 1,
+        cases: [
+          trajectoryCase({
+            turns: [
+              { message: 'Synthetic question one' },
+              { message, repeatPrevious: true, suffix: '' },
+            ],
+          }),
+        ],
+      },
+      'trajectory_turn_invalid',
+    ]),
     [
       {
         version: 1,
@@ -1051,6 +1071,28 @@ test('trajectory corpus validation rejects invalid shapes', () => {
   }
 })
 
+test('corpus normalization preserves authored text without mutating input', () => {
+  const corpus = {
+    version: 1,
+    cases: [
+      trajectoryCase({
+        id: ' exact-id ',
+        assessmentTurns: [2, 1],
+        turns: [
+          { message: ' Exact question.\n' },
+          { repeatPrevious: true, suffix: '' },
+        ],
+      }),
+    ],
+  }
+  const original = structuredClone(corpus)
+  const [normalized] = validateTrajectoryCorpus(corpus).cases
+  assert.deepEqual(normalized.assessmentTurns, [1, 2])
+  assert.equal(normalized.id, original.cases[0].id)
+  assert.deepEqual(normalized.turns, original.cases[0].turns)
+  assert.deepEqual(corpus, original)
+})
+
 test('runner argument validation fails closed before any file or network use', () => {
   assert.equal(
     parseArguments([
@@ -1066,6 +1108,37 @@ test('runner argument validation fails closed before any file or network use', (
     2
   )
   assert.throws(() => parseArguments([]), { code: 'corpus_argument_missing' })
+  const required = [
+    '--corpus',
+    'a',
+    '--output',
+    'b',
+    '--budget-file',
+    'c',
+    '--arm',
+    'candidate',
+  ]
+  assert.deepEqual(
+    parseArguments([
+      ...required,
+      '--answer-style',
+      'bullets',
+      '--answer-tone',
+      'direct',
+    ]),
+    {
+      ...parseArguments(required),
+      answerStyle: 'bullets',
+      answerTone: 'direct',
+    }
+  )
+  assert.throws(
+    () => parseArguments([...required, '--answer-style', 'short']),
+    { code: 'answer_style_invalid' }
+  )
+  assert.throws(() => parseArguments([...required, '--answer-tone', 'blunt']), {
+    code: 'answer_tone_invalid',
+  })
   assert.throws(
     () =>
       parseArguments([
@@ -1466,6 +1539,16 @@ test('runner writes one verified receipt per turn and keeps the ledger honest', 
       assert.equal(summary.reservedProviderMicroUsd, 2 * SYNTHETIC_RESERVATION)
       assert.equal(summary.uncertain, false)
       assert.equal(summary.model, SYNTHETIC_MODEL)
+      assert.equal(summary.answerStyle, 'balanced')
+      assert.equal(summary.answerTone, 'neutral')
+      const chatBodies = app.calls
+        .filter(({ requestUrl }) => requestUrl.endsWith('/chat'))
+        .map(({ body }) => JSON.parse(body))
+      assert.equal(chatBodies.length, 2)
+      for (const body of chatBodies) {
+        assert.equal(body.answerStyle, 'balanced')
+        assert.equal(body.answerTone, 'neutral')
+      }
 
       const ledger = await readBudgetLedger(paths.budget)
       assert.equal(ledger.submittedTurns, 2)
