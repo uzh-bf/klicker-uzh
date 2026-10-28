@@ -1395,7 +1395,7 @@ test('verifies the exact public Mistral tool contract', async (t) => {
   assert.deepEqual(receipts[0], {
     schema_version: 1,
     stage: 'preflight',
-    provider: 'mistral-flash',
+    provider: 'mistral-deepseek',
     model: FINAL_REVIEW_MODEL,
     requests: 1,
     upstream_attempts: 1,
@@ -1465,7 +1465,7 @@ test('retains preflight usage when a successful canary answer is rejected', asyn
     assert.deepEqual(receipt, {
       schema_version: 1,
       stage: 'preflight',
-      provider: 'mistral-flash',
+      provider: 'mistral-deepseek',
       model: FINAL_REVIEW_MODEL,
       requests: 1,
       upstream_attempts: 1,
@@ -3324,6 +3324,7 @@ test('accepts a trusted clean status without requiring a review body', async () 
     { evidence_digest: 'e'.repeat(64) },
     { policy_digest: 'e'.repeat(64) },
     { background_digest: 'e'.repeat(64) },
+    { model: 'zai-glm-5-3-flash' },
   ]) {
     state.checkRuns[0] = {
       ...trustedCheck,
@@ -3338,6 +3339,18 @@ test('accepts a trusted clean status without requiring a review body', async () 
     )
   }
   state.checkRuns[0] = trustedCheck
+  state.statuses[0] = {
+    ...trustedStatus,
+    description: trustedStatus.description.replace(
+      FINAL_REVIEW_CLEAN_STATUS_PREFIX,
+      'zai-glm-5-3-flash final review clean; evidence='
+    ),
+  }
+  assert.equal(
+    await hasCurrentSuccessfulFinalReview({ github, context, pull, plan }),
+    false
+  )
+  state.statuses[0] = trustedStatus
 
   assert.equal(
     await hasCurrentSuccessfulFinalReview({ github, context, pull, plan }),

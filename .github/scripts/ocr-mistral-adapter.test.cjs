@@ -14,6 +14,7 @@ const {
   MISTRAL_URL,
   MISTRAL_MODEL,
   MISTRAL_FLASH_MODEL,
+  MISTRAL_DEEPSEEK_MODEL,
   normalizeMistralResponse,
   translateMistralRequest,
   createHistoryStore,
@@ -635,46 +636,72 @@ test('observed context results are isolated by conversation and deduplicate hist
   )
 })
 
-test('Mistral Flash fixes the draft model and max effort while preserving native tool requests', () => {
-  const body = {
-    model: MISTRAL_FLASH_MODEL,
-    messages: [{ role: 'user', content: 'synthetic' }],
-    reasoning_effort: 'max',
-    reasoning: { effort: 'none' },
-    provider: { only: ['untrusted'] },
-    max_completion_tokens: 16384,
-    prompt_cache_key: 'synthetic-session',
-    tools: [{ type: 'function', function: { name: 'task_done' } }],
-  }
-  const translated = translateMistralRequest(body, undefined, 'mistral-flash')
-  assert.equal(translated.model, MISTRAL_FLASH_MODEL)
-  assert.equal(translated.reasoning_effort, 'max')
-  assert.equal(translated.reasoning, undefined)
-  assert.equal(translated.provider, undefined)
-  assert.equal(translated.max_tokens, 16384)
-  assert.equal(translated.prompt_cache_key, 'synthetic-session')
-  assert.equal(translated.tool_choice, 'any')
-  for (const [change, code] of [
-    [{ reasoning_effort: 'high' }, 'invalid_request'],
-    [{ model: MISTRAL_MODEL }, 'model_mismatch'],
-  ])
+for (const [provider, model] of [
+  ['mistral-flash', MISTRAL_FLASH_MODEL],
+  ['mistral-deepseek', MISTRAL_DEEPSEEK_MODEL],
+])
+  test(`${provider} fixes the model and max effort while preserving native tool requests`, () => {
+    const body = {
+      model,
+      messages: [{ role: 'user', content: 'synthetic' }],
+      reasoning_effort: 'max',
+      reasoning: { effort: 'none' },
+      provider: { only: ['untrusted'] },
+      max_completion_tokens: 16384,
+      prompt_cache_key: 'synthetic-session',
+      tools: [{ type: 'function', function: { name: 'task_done' } }],
+    }
+    const translated = translateMistralRequest(body, undefined, provider)
+    assert.equal(translated.model, model)
+    assert.equal(translated.reasoning_effort, 'max')
+    assert.equal(translated.reasoning, undefined)
+    assert.equal(translated.provider, undefined)
+    assert.equal(translated.max_tokens, 16384)
+    assert.equal(translated.prompt_cache_key, 'synthetic-session')
+    assert.equal(translated.tool_choice, 'any')
+    for (const [change, code] of [
+      [{ reasoning_effort: 'high' }, 'invalid_request'],
+      [{ model: MISTRAL_MODEL }, 'model_mismatch'],
+    ])
+      assert.throws(
+        () =>
+          translateMistralRequest({ ...body, ...change }, undefined, provider),
+        { code }
+      )
     assert.throws(
       () =>
-        translateMistralRequest(
-          { ...body, ...change },
-          undefined,
-          'mistral-flash'
+        normalizeMistralResponse(
+          completion({ role: 'assistant', content: 'ok' }),
+          provider
         ),
-      { code }
+      { code: 'response_model_mismatch' }
     )
-  assert.throws(
-    () =>
-      normalizeMistralResponse(
-        completion({ role: 'assistant', content: 'ok' }),
-        'mistral-flash'
-      ),
-    { code: 'response_model_mismatch' }
-  )
+  })
+
+test('DeepSeek cost receipts use snapshot prices and reject GLM and unidentified receipts', () => {
+  const row = {
+    ...costReceipt(),
+    provider: 'mistral-deepseek',
+    model: MISTRAL_DEEPSEEK_MODEL,
+  }
+  const estimate = estimateCost(JSON.stringify(row), 'mistral-deepseek')
+  assert.ok(Math.abs(estimate.withCache - 0.20025) < 1e-10)
+  assert.ok(Math.abs(estimate.withoutCache - 0.42) < 1e-10)
+  assert.ok(Math.abs(estimate.savings - 0.21975) < 1e-10)
+  for (const bad of [
+    costReceipt(),
+    { ...row, model: MISTRAL_FLASH_MODEL },
+    { ...row, provider: 'mistral-flash' },
+  ]) {
+    const report = buildCostReport(
+      `${JSON.stringify(row)}\n${JSON.stringify({ ...bad, upstream_attempts: 2 })}`,
+      { adapter: 2 },
+      'mistral-deepseek'
+    )
+    assert.equal(report.estimate, null)
+    assert.equal(report.reportedResponseEstimate, null)
+    assert.ok(report.reasons.includes('provider_mismatch'))
+  }
 })
 
 test('Flash cost receipts use their model prices and reject mixed or unidentified models', () => {
@@ -3173,7 +3200,7 @@ test('close bounds an uncooperative request and marks its accounting incomplete'
   }
 })
 
-for (const provider of ['mistral', 'mistral-flash'])
+for (const provider of ['mistral', 'mistral-flash', 'mistral-deepseek'])
   test(`${provider}: compression restores only exact reasoned turns, retaining native thinking and bounds`, () => {
     const history = createHistoryStore({ maxEntries: 3, provider })
     const prefix = [
@@ -3258,7 +3285,7 @@ for (const provider of ['mistral', 'mistral-flash'])
     assert.equal(misses.misses, 6)
   })
 
-for (const provider of ['mistral', 'mistral-flash'])
+for (const provider of ['mistral', 'mistral-flash', 'mistral-deepseek'])
   test(`${provider}: compressed tool replay without echoed reasoning requires the same conversation and unique native state`, () => {
     const history = createHistoryStore({ maxEntries: 3, provider })
     const prefix = [{ role: 'user', content: 'original' }]
@@ -3405,6 +3432,7 @@ test('request conversion and native replay work over the loopback listener', asy
 for (const [provider, model] of [
   ['mistral', MISTRAL_MODEL],
   ['mistral-flash', MISTRAL_FLASH_MODEL],
+  ['mistral-deepseek', MISTRAL_DEEPSEEK_MODEL],
 ])
   test(`${provider}: native memory keeps concurrent groups with reused tool-call ids apart`, async () => {
     const make = (marker) => ({
@@ -5098,6 +5126,7 @@ test('run strips both upstream keys and injects only the selected loopback model
   for (const [provider, model] of [
     [undefined, MISTRAL_MODEL],
     ['mistral-flash', MISTRAL_FLASH_MODEL],
+    ['mistral-deepseek', MISTRAL_DEEPSEEK_MODEL],
     ['openrouter', 'deepseek/deepseek-v4.1-flash-1017'],
   ]) {
     const result = await runCli(
@@ -5655,15 +5684,15 @@ test('run with live progress terminates its listener on SIGTERM', async () => {
   }
 })
 
-test('direct Flash calls retain native tool reasoning, usage identity and the shared cancellation signal', async () => {
-  const history = createHistoryStore({ provider: 'mistral-flash' })
+test('direct DeepSeek calls retain native tool reasoning, usage identity and the shared cancellation signal', async () => {
+  const history = createHistoryStore({ provider: 'mistral-deepseek' })
   const receipts = []
   const messages = [{ role: 'user', content: 'synthetic bounded question' }]
   let calls = 0
   const fetchImpl = async (_url, options) => {
     const body = JSON.parse(options.body)
     calls += 1
-    assert.equal(body.model, MISTRAL_FLASH_MODEL)
+    assert.equal(body.model, MISTRAL_DEEPSEEK_MODEL)
     assert.equal(body.reasoning_effort, 'max')
     if (calls === 2)
       assert.equal(
@@ -5672,7 +5701,7 @@ test('direct Flash calls retain native tool reasoning, usage identity and the sh
       )
     return new Response(
       JSON.stringify({
-        model: MISTRAL_FLASH_MODEL,
+        model: MISTRAL_DEEPSEEK_MODEL,
         choices: [
           {
             finish_reason: calls === 1 ? 'tool_calls' : 'stop',
@@ -5708,7 +5737,7 @@ test('direct Flash calls retain native tool reasoning, usage identity and the sh
   const request = (body) =>
     callMistral({
       apiKey: 'synthetic',
-      provider: 'mistral-flash',
+      provider: 'mistral-deepseek',
       body,
       history,
       fetchImpl,
@@ -5726,15 +5755,15 @@ test('direct Flash calls retain native tool reasoning, usage identity and the sh
   assert.ok(
     receipts.every(
       (row) =>
-        row.provider === 'mistral-flash' &&
-        row.model === MISTRAL_FLASH_MODEL &&
+        row.provider === 'mistral-deepseek' &&
+        row.model === MISTRAL_DEEPSEEK_MODEL &&
         row.completion_tokens === 20
     )
   )
   const controller = new AbortController()
   const pending = callMistral({
     apiKey: 'synthetic',
-    provider: 'mistral-flash',
+    provider: 'mistral-deepseek',
     body: { messages: [{ role: 'user', content: 'synthetic' }] },
     signal: controller.signal,
     fetchImpl: async (_url, init) =>
@@ -5755,7 +5784,7 @@ test('direct Flash calls retain native tool reasoning, usage identity and the sh
   )
 })
 
-test('final summary prices Flash and advisor lifetimes once and preserves missing advisor receipts as unknown', async (t) => {
+test('final summary prices DeepSeek and advisor lifetimes once and preserves missing advisor receipts as unknown', async (t) => {
   const directory = fs.mkdtempSync(path.join(os.tmpdir(), 'ocr-final-cost-'))
   t.after(() => fs.rmSync(directory, { recursive: true, force: true }))
   const mainPath = path.join(directory, 'main.jsonl')
@@ -5764,7 +5793,10 @@ test('final summary prices Flash and advisor lifetimes once and preserves missin
   fs.writeFileSync(
     mainPath,
     JSON.stringify(
-      costReceipt({ provider: 'mistral-flash', model: MISTRAL_FLASH_MODEL })
+      costReceipt({
+        provider: 'mistral-deepseek',
+        model: MISTRAL_DEEPSEEK_MODEL,
+      })
     )
   )
   fs.writeFileSync(
@@ -5780,17 +5812,20 @@ test('final summary prices Flash and advisor lifetimes once and preserves missin
   )
   const run = () =>
     runCli(['final-summary', mainPath, 'adapter=1'], {
-      OCR_ADAPTER_PROVIDER: 'mistral-flash',
+      OCR_ADAPTER_PROVIDER: 'mistral-deepseek',
       OCR_ADVISOR_DIAGNOSTICS_PATH: advisorPath,
       GITHUB_STEP_SUMMARY: summary,
     })
   const complete = await run()
   assert.equal(complete.code, 0)
-  assert.match(complete.stdout, /scope=flash_main status=complete/)
+  assert.match(complete.stdout, /scope=deepseek_main status=complete/)
+  const cachedRate = /\$([0-9.]+) cached input/.exec(complete.stdout)
+  assert.equal(Number(cachedRate?.[1]), 0.007)
   assert.match(complete.stdout, /scope=glm_advisor status=complete/)
   assert.match(complete.stdout, /scope=final_and_advisor status=complete/)
   const sum =
-    estimateCost(fs.readFileSync(mainPath, 'utf8'), 'mistral-flash').withCache +
+    estimateCost(fs.readFileSync(mainPath, 'utf8'), 'mistral-deepseek')
+      .withCache +
     estimateCost(fs.readFileSync(advisorPath, 'utf8'), 'mistral').withCache
   assert.ok(
     complete.stdout.includes(
@@ -5858,7 +5893,7 @@ test('final wrapper attaches focused tools and trusted guidance while hiding ups
   const head = git('rev-parse', 'HEAD')
   const config = path.join(directory, 'config.json')
   const original = JSON.stringify({
-    llm: { model: MISTRAL_FLASH_MODEL, protocol: 'openai' },
+    llm: { model: MISTRAL_DEEPSEEK_MODEL, protocol: 'openai' },
   })
   fs.writeFileSync(config, original, { mode: 0o600 })
   const output = path.join(directory, 'child.json')
@@ -5881,7 +5916,7 @@ test('final wrapper attaches focused tools and trusted guidance while hiding ups
     Object.assign(process.env, {
       MISTRAL_API_KEY: 'UPSTREAM_PRIVATE_SENTINEL',
       OPENROUTER_API_KEY: 'ROUTER_PRIVATE_SENTINEL',
-      OCR_ADAPTER_PROVIDER: 'mistral-flash',
+      OCR_ADAPTER_PROVIDER: 'mistral-deepseek',
       OCR_ADVISOR_STATE_PATH: path.join(directory, 'state.json'),
       OCR_ADVISOR_DIAGNOSTICS_PATH: path.join(directory, 'advisor.jsonl'),
       HEAD_SHA: head,

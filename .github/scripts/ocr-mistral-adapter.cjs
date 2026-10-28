@@ -21,6 +21,7 @@ const { Readable } = require('node:stream')
 const MISTRAL_URL = 'https://api.mistral.ai/v1/chat/completions'
 const MISTRAL_MODEL = 'zai-glm-5-3'
 const MISTRAL_FLASH_MODEL = 'zai-glm-5-3-flash'
+const MISTRAL_DEEPSEEK_MODEL = 'deepseek-v4-1-flash-1017'
 const MISTRAL_EFFORT = 'max'
 
 // USD per million tokens, checked 2026-10-16 against the provider's model page.
@@ -54,6 +55,21 @@ const PROVIDERS = {
       input: 0.15,
       cachedInput: 0.03,
       output: 0.5,
+    },
+  },
+  'mistral-deepseek': {
+    name: 'mistral-deepseek',
+    label: 'Mistral',
+    url: MISTRAL_URL,
+    model: MISTRAL_DEEPSEEK_MODEL,
+    responseModels: [MISTRAL_DEEPSEEK_MODEL],
+    secret: 'MISTRAL_API_KEY',
+    pricing: {
+      date: '2026-10-28',
+      source: 'https://docs.mistral.ai/models/deepseek-v4-flash-1017',
+      input: 0.3,
+      cachedInput: 0.007,
+      output: 1.2,
     },
   },
   openrouter: {
@@ -803,7 +819,10 @@ function translateMistralRequest(
       'reasoning effort must be high or max'
     )
   }
-  if (['openrouter', 'mistral-flash'].includes(provider) && effort !== 'max') {
+  if (
+    ['openrouter', 'mistral-flash', 'mistral-deepseek'].includes(provider) &&
+    effort !== 'max'
+  ) {
     throw new AdapterError('invalid_request', 'draft reasoning must be max')
   }
 
@@ -2522,7 +2541,9 @@ function commandSummary(args) {
   }
   const estimate = report.estimate
   const pricing = profile.pricing
-  const priceDigits = profile.name === 'openrouter' ? 3 : 2
+  const priceDigits = ['openrouter', 'mistral-deepseek'].includes(profile.name)
+    ? 3
+    : 2
   const failures = Object.fromEntries(
     FAILURE_CATEGORIES.map((category) => [category, 0])
   )
@@ -2707,7 +2728,7 @@ function commandFinalSummary(args) {
     if (match && !Object.hasOwn(expected, match[1]))
       expected[match[1]] = Number(match[2])
   }
-  const main = readReport(args[0], expected, 'mistral-flash')
+  const main = readReport(args[0], expected, 'mistral-deepseek')
   let advisor
   try {
     const receipt = JSON.parse(
@@ -2748,7 +2769,7 @@ function commandFinalSummary(args) {
           savings: main.savings + advisor.savings,
         }
       : null
-  const text = `\n${line('flash_main', main)}\n${line('glm_advisor', advisor)}\n${line('final_and_advisor', sum)}\nAdvisor usage has a separate allowance and is excluded from OCR's main review budget counters.\n`
+  const text = `\n${line('deepseek_main', main)}\n${line('glm_advisor', advisor)}\n${line('final_and_advisor', sum)}\nAdvisor usage has a separate allowance and is excluded from OCR's main review budget counters.\n`
   process.stdout.write(text)
   if (process.env.GITHUB_STEP_SUMMARY)
     fs.appendFileSync(process.env.GITHUB_STEP_SUMMARY, text)
@@ -3433,6 +3454,7 @@ module.exports = {
   MISTRAL_URL,
   MISTRAL_MODEL,
   MISTRAL_FLASH_MODEL,
+  MISTRAL_DEEPSEEK_MODEL,
   MISTRAL_EFFORT,
   normalizeMistralResponse,
   translateMistralRequest,

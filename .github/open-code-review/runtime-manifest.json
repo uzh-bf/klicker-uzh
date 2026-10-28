@@ -9,7 +9,7 @@
       "taskTimeout": "15",
       "concurrency": "4"
     },
-    "model": "zai-glm-5-3-flash",
+    "model": "deepseek-v4-1-flash-1017",
     "advisor_model": "zai-glm-5-3",
     "publisher": {
       "repository": "alibaba/open-code-review",
@@ -25,10 +25,10 @@
     "patch_sha256": "670d1782a56548f4a4571b6e6bbeb33c92ebcbe99247469ad1aa73329fc5e7c0"
   },
   "assets": {
-    ".github/actions/ocr-review/action.yml": "79b34d4003bdbc57e7076c1f5f9004376f77b32b7f81e22cb1e3da500be1d45a",
-    ".github/scripts/ocr-controller.cjs": "a8fe80e67094ab5c1f819cd8812ceb7e7c95948321138dcc41a9aa5aaedca69b",
-    ".github/scripts/ocr-draft-review.cjs": "d1bd3b8025ce6a69ab780df0b9f1f2d651bc64e58d7821ca6619a5be1eab0945",
-    ".github/scripts/ocr-mistral-adapter.cjs": "4bbc0cc8242277c71210b97756cb1a016c8490e5c582ebd7fa693243cd29020e",
+    ".github/actions/ocr-review/action.yml": "ab884ba5fffe7f8d6caba4c8ea999f9a5ab43d8d903047c8fc8ac95a3625d1ba",
+    ".github/scripts/ocr-controller.cjs": "9fabb089393c0557019fa94b19c7953b5f09f4c6892f233a821093bf6b1c0a1e",
+    ".github/scripts/ocr-draft-review.cjs": "9a99e52791fef13803e287acf6e13b11adae78a520db8a086788707dd2958c8b",
+    ".github/scripts/ocr-mistral-adapter.cjs": "6d58d7b0a42d241023d4563e0b0266a5dcbeb898842253b57cb1951d03dcebda",
     ".github/scripts/ocr-review-tools.cjs": "79816630ece8a69809edc7f9dd856cefeb8bfa6b89f59d586d26a95fcbc9e840",
     ".github/scripts/ocr-review-shared.cjs": "c12e084ae9bd5459791e8cd78e7c11b60eb494e8c6bb5804e7d223e5228c9676",
     ".github/scripts/ocr-runtime-config.cjs": "dfa184aff7e6ad048696086637223437adeee79ced4bcfa90139468c122f16b9",
