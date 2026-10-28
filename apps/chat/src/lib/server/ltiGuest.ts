@@ -1,14 +1,21 @@
 import { prisma } from '@klicker-uzh/prisma'
 import { Prisma } from '@klicker-uzh/prisma/client'
-import { signJWT, verifyJWT } from '@klicker-uzh/util'
+import {
+  deriveGuestSsoId,
+  GUEST_ACCOUNT_TYPE,
+  GUEST_SSO_PREFIX,
+  signJWT,
+  verifyJWT,
+} from '@klicker-uzh/util'
 import bcrypt from 'bcryptjs'
 import { createHmac, randomBytes } from 'crypto'
 
-// Stable, exported across phases: Phase C will recompute these to match guest
-// personas to a real account by `(ltiSub, courseId)`. Do not change without
-// a migration plan for existing guest rows.
-export const GUEST_SSO_PREFIX = 'chat-guest:'
-export const GUEST_ACCOUNT_TYPE = 'lti_guest'
+// The guest persona identity contract (prefix, account type, derivation and
+// seed resolution) lives in @klicker-uzh/util so the backend account resolver
+// can recompute the same persona key for a (ltiSub, courseId) pair. These
+// re-exports keep the chat-side importers on their existing paths.
+export { deriveGuestSsoId, GUEST_ACCOUNT_TYPE, GUEST_SSO_PREFIX }
+
 const CHAT_GUEST_TOKEN_EXPIRY = '14d'
 const CHAT_GUEST_SCOPE = 'CHAT_GUEST'
 
@@ -20,20 +27,6 @@ export type AuthMode = 'account' | 'anonymous'
 // module load (Next.js evaluates route modules at build time, which would
 // otherwise blow up `next build` in environments without these secrets).
 // ---------------------------------------------------------------------------
-
-function getChatGuestSeed(): string {
-  if (process.env.CHAT_GUEST_SEED) return process.env.CHAT_GUEST_SEED
-  if (process.env.NODE_ENV === 'production') {
-    throw new Error(
-      'CHAT_GUEST_SEED is required in production. Falling back to ' +
-        'APP_SECRET-derived value would link guest persona derivation to ' +
-        'APP_SECRET, which is a separate trust domain.'
-    )
-  }
-  const appSecret = process.env.APP_SECRET
-  if (!appSecret) throw new Error('APP_SECRET is required')
-  return createHmac('sha256', appSecret).update('chat-guest-seed').digest('hex')
-}
 
 function getChatGuestSecret(): string {
   if (process.env.APP_CHAT_GUEST_SECRET)
@@ -49,21 +42,6 @@ function getChatGuestSecret(): string {
   return createHmac('sha256', appSecret)
     .update('chat-guest-secret')
     .digest('hex')
-}
-
-// ---------------------------------------------------------------------------
-// Guest SSO ID derivation
-// ---------------------------------------------------------------------------
-
-// Per-course HMAC. A single LTI `sub` maps to N guest personas (one per
-// course); Phase C cross-course claim flow enumerates by recomputing this
-// for every course the recovered account is enrolled in.
-export function deriveGuestSsoId(ltiSub: string, courseId: string): string {
-  const seed = getChatGuestSeed()
-  const hmac = createHmac('sha256', seed)
-    .update(`${ltiSub}:${courseId}`)
-    .digest('base64url')
-  return `${GUEST_SSO_PREFIX}${hmac}`
 }
 
 // ---------------------------------------------------------------------------

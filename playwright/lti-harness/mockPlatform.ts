@@ -43,6 +43,7 @@ export type MockPlatformOptions = {
   port?: number
   // sandbox attribute for the iframe launch, to reproduce an LMS that sets one
   iframeSandbox?: string
+  learner?: { sub: string; email?: string }
 }
 
 export type MockPlatform = {
@@ -56,6 +57,10 @@ export async function startMockPlatform({
   redirectTarget,
   port = MOCK_PLATFORM_PORT,
   iframeSandbox,
+  learner = {
+    sub: 'lti-harness-learner',
+    email: 'testuser50@test.uzh.ch',
+  },
 }: MockPlatformOptions): Promise<MockPlatform> {
   // The issuer must equal LTI_URL in the tool's platform registration.
   const origin = `http://127.0.0.1:${port}`
@@ -147,10 +152,10 @@ export async function startMockPlatform({
       const idToken = signJwt(privateKey, kid, {
         iss: origin,
         aud: MOCK_PLATFORM_CLIENT_ID,
-        sub: 'lti-harness-learner',
-        // A seeded participant: the first launch links this LTI identity to
-        // it by email, so the PWA can sign the learner in.
-        email: 'testuser50@test.uzh.ch',
+        sub: learner.sub,
+        // The default learner links to a seeded participant by email. Guest
+        // fixtures omit email so the first launch has no account to recover.
+        ...(learner.email ? { email: learner.email } : {}),
         name: 'LTI Harness Learner',
         nonce: params.get('nonce'),
         iat: now,

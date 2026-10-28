@@ -21,6 +21,9 @@ an LMS. The platform:
 The LTI service registers this platform on startup from the `LTI_*` values in
 `.devcontainer/devcontainer.env`. ltijs fetches the key set from inside the
 devcontainer through `host.docker.internal:4311`.
+The host launcher's local Playwright mode allows that exact mock origin as a
+Chat frame ancestor alongside the development policy. Ordinary development
+and deployed frame policies remain configured independently.
 
 ltijs 7 keeps the launch state in the browser's `localStorage`, not in cookies.
 A launch counts as successful when the browser requests the PWA with the `jwt`
@@ -43,8 +46,10 @@ Two further tests, run in Chromium only, check the server side:
 
 ## Run it
 
-The harness has its own Playwright configuration and no global setup. It does
-not reset or seed the database.
+The harness has its own Playwright configuration and no global setup. The PWA
+launch spec does not reset or seed the database. The guest-transfer spec creates
+an isolated synthetic course, chatbot and participants through the disposable
+database guard, and removes only its own fixtures. It never resets the database.
 
 1. Install the extra browsers once:
 
@@ -64,6 +69,13 @@ For a manual launch, run the platform alone and open the printed URL:
 ```bash
 node playwright/lti-harness/mockPlatform.ts
 ```
+
+`guest-transfer.spec.ts` exercises real launches into Chat before and after
+linking the same LMS subject to an account. It checks ownership, unchanged
+activity timestamps, visible history and repeat-launch idempotency. Top-level
+launches run in each browser; WebKit additionally verifies the cross-site iframe
+path without the shared LTI cookie. Account linkage and history use synthetic
+database fixtures, so this does not test the account-registration UI or an LLM.
 
 For a linked worktree, whose hosts include the workspace name, set
 `LTI_HARNESS_TOOL_ORIGIN` and `LTI_HARNESS_REDIRECT_TARGET` for this manual run.
