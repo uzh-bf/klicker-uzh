@@ -119,6 +119,11 @@ function ChatbotPublicationDetails({
         <ReviewField label={t('manage.resources.allowedModels')}>
           {modelNames}
         </ReviewField>
+        <ReviewField label={t('manage.resources.answerPreferences')}>
+          {chatbot.answerPreferencesEnabled
+            ? t('manage.resources.modelSelectionEnabled')
+            : t('manage.resources.modelSelectionDisabled')}
+        </ReviewField>
         <ReviewField label={t('manage.resources.chatbotSetupModesTitle')}>
           {[
             config?.tutorEnabled && t('manage.resources.chatbotModeTutor'),
