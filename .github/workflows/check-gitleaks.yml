@@ -80,7 +80,7 @@ jobs:
       runner_arm: ${{ steps.route.outputs.runner_arm }}
     steps:
       - name: Check out the trusted priority router
-        uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
           repository: uzh-bf/klicker-uzh
           ref: v3
@@ -104,7 +104,7 @@ jobs:
         if: needs.priority-route.outputs.admitted == 'true' && needs.priority-route.outputs.run_attempt != format('{0}', github.run_attempt)
         run: exit 1
       - name: Checkout repository
-        uses: actions/checkout@v4
+        uses: actions/checkout@v7
         with:
           fetch-depth: 0
           persist-credentials: false
