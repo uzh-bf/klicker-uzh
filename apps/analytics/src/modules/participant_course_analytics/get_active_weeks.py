@@ -1,9 +1,28 @@
 import pandas as pd
 
+from ..analytics_eligibility import (
+    AnalyticsEligibilityContext,
+    ensure_analytics_eligibility,
+)
 
-def get_active_weeks(db, course):
+
+def get_active_weeks(
+    db,
+    course,
+    eligibility: AnalyticsEligibilityContext | None = None,
+):
+    eligibility = ensure_analytics_eligibility(db, eligibility)
     course_id = course["id"]
-    participations = course["participations"]
+
+    eligible_participant_ids = set(eligibility.participant_ids)
+    participations = [
+        participation
+        for participation in course["participations"]
+        if participation["participantId"] in eligible_participant_ids
+    ]
+
+    if not participations:
+        return pd.DataFrame(columns=["participantId", "courseId", "activeWeeks"])
 
     # initialize pandas dataframe to store the participant activity
     df_activity = pd.DataFrame(columns=["participantId", "courseId", "activeWeeks"])
