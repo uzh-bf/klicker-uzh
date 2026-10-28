@@ -1,11 +1,11 @@
-import type { GetPendingChatbotRevisionReviewsQuery } from '@klicker-uzh/graphql/dist/ops'
+import type { GetPendingChatbotRevisionReviewsWithPreferencesQuery } from '@klicker-uzh/graphql/dist/ops'
 import { useTranslations } from 'next-intl'
 import type { ReactNode } from 'react'
 import { formatCustomModeSettings } from '../resources/chatbots/ChatbotAuthoring'
 import ChatbotDisclaimerPreview from '../resources/chatbots/ChatbotDisclaimerPreview'
 
 type Review =
-  GetPendingChatbotRevisionReviewsQuery['getPendingChatbotPublications'][number]
+  GetPendingChatbotRevisionReviewsWithPreferencesQuery['getPendingChatbotPublications'][number]
 
 function ReviewField({
   label,
@@ -29,7 +29,7 @@ function ChatbotPublicationDetails({
   models,
 }: {
   review: Review
-  models: GetPendingChatbotRevisionReviewsQuery['getChatModelRegistry']
+  models: GetPendingChatbotRevisionReviewsWithPreferencesQuery['getChatModelRegistry']
 }) {
   const t = useTranslations()
   const revision = review.chatbot.authoringRevision
