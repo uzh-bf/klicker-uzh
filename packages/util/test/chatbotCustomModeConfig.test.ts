@@ -10,6 +10,7 @@ import {
   normalizeChatbotCustomModeConfig,
   parseChatbotCustomModeConfigInput,
 } from '../src/chatbotCustomModeConfig.js'
+import { CHATBOT_STANDARD_MODE_KEYS } from '../src/chatbotStandardModeConfig.js'
 
 function parseModes(
   modes: Array<Record<string, unknown>>,
@@ -477,9 +478,9 @@ describe('chatbot custom mode configuration', () => {
   })
 
   it('rejects names colliding with the standard modes or with each other', () => {
-    expect(() => parseModes([{ name: 'Tutor' }], null)).toThrow(
-      'Mode name "Tutor" is reserved'
-    )
+    for (const key of CHATBOT_STANDARD_MODE_KEYS) {
+      expect(() => parseModes([{ name: key.toUpperCase() }], null)).toThrow()
+    }
     expect(() =>
       parseModes([{ name: 'Interview' }, { name: ' interview ' }], null)
     ).toThrow('Mode name "interview" is used more than once')

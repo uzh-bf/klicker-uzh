@@ -118,6 +118,95 @@ describe('Integration tests for the chatbot publication workflow', () => {
     )
   }
 
+  it.each([
+    'save',
+    'submit',
+    'approve',
+  ] as const)('rejects %s when the sole Writing Coach mode is unavailable', async (transition) => {
+    await enablePublishing()
+    const standardModeConfig = {
+      tutorEnabled: false,
+      explainerEnabled: false,
+      quizzerEnabled: false,
+      writingCoachEnabled: true,
+    }
+    const bot = await seedChatbot(
+      transition === 'approve'
+        ? ChatbotStatus.PENDING_APPROVAL
+        : ChatbotStatus.DRAFT,
+      {
+        standardModeConfig:
+          transition === 'save'
+            ? { ...standardModeConfig, tutorEnabled: true }
+            : standardModeConfig,
+      }
+    )
+    const server = await prisma.chatbotMCPServer.create({
+      data: {
+        name: `Synthetic required binding ${bot.id}`,
+        url: 'http://127.0.0.1:1/mcp',
+        authType: 'none',
+        configurations: {
+          create: {
+            chatbotId: bot.id,
+            chatMode: 'tutor',
+            isEnabled: true,
+            allowedTools: ['synthetic_tool'],
+            parameters: { required: true },
+          },
+        },
+      },
+    })
+    onTestFinished(async () => {
+      await prisma.chatbotMCPServer.delete({ where: { id: server.id } })
+    })
+    const readState = () =>
+      prisma.chatbot.findUniqueOrThrow({
+        where: { id: bot.id },
+        select: {
+          status: true,
+          revisionStatus: true,
+          revisionVersion: true,
+          standardModeConfig: true,
+          draftConfig: true,
+        },
+      })
+    const attempt = () => {
+      if (transition === 'save') {
+        return saveChatbotRevision(
+          {
+            chatbotId: bot.id,
+            expectedRevisionVersion: bot.revisionVersion,
+            input: { standardModeConfig },
+          },
+          userOneCtx
+        )
+      }
+      return transition === 'submit'
+        ? submit(bot)
+        : approveChatbotRevision(
+            { id: bot.id, expectedRevisionVersion: bot.revisionVersion },
+            adminCtx
+          )
+    }
+    const before = await readState()
+    await expect(attempt()).rejects.toMatchObject({
+      extensions: { code: 'BAD_USER_INPUT' },
+    })
+    await expect(readState()).resolves.toEqual(before)
+
+    if (transition === 'save') {
+      standardModeConfig.tutorEnabled = true
+      standardModeConfig.writingCoachEnabled = false
+    } else {
+      await prisma.chatbotMCPConfig.updateMany({
+        where: { chatbotId: bot.id, mcpServerId: server.id },
+        data: { isEnabled: false },
+      })
+    }
+    await expect(attempt()).resolves.toMatchObject({ id: bot.id })
+  })
+
   describe('getPendingChatbotPublications', () => {
     it('rejects non-admin callers', async () => {
       await seedChatbot(ChatbotStatus.PENDING_APPROVAL)
@@ -158,6 +247,7 @@ describe('Integration tests for the chatbot publication workflow', () => {
               chatbotId: pending.id,
               chatMode: 'tutor',
               allowedTools: ['doc_query'],
+              parameters: { required: true },
             },
           },
         },
@@ -198,6 +288,7 @@ describe('Integration tests for the chatbot publication workflow', () => {
         disclaimerTitle: 'Course chatbot disclaimer',
         disclaimerIntroText: 'Course-specific introduction',
         chatbot: {
+          writingCoachUnavailableReason: 'REQUIRED_TOOL_BINDING',
           id: pending.id,
           name: 'Synthetic review bot',
           publicationUseCase: 'Practice course concepts',

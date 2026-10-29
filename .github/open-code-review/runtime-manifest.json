@@ -9,7 +9,7 @@
       "taskTimeout": "15",
       "concurrency": "4"
     },
-    "model": "zai-glm-5-3-flash",
+    "model": "deepseek-v4-1-flash-1017",
     "advisor_model": "zai-glm-5-3",
     "publisher": {
       "repository": "alibaba/open-code-review",
@@ -25,15 +25,15 @@
     "patch_sha256": "670d1782a56548f4a4571b6e6bbeb33c92ebcbe99247469ad1aa73329fc5e7c0"
   },
   "assets": {
-    ".github/actions/ocr-review/action.yml": "79b34d4003bdbc57e7076c1f5f9004376f77b32b7f81e22cb1e3da500be1d45a",
-    ".github/scripts/ocr-controller.cjs": "a8fe80e67094ab5c1f819cd8812ceb7e7c95948321138dcc41a9aa5aaedca69b",
-    ".github/scripts/ocr-draft-review.cjs": "85ca88a616f6c72c193103f7bc83d52c286c741b7207f26ad1562162fe53f046",
-    ".github/scripts/ocr-mistral-adapter.cjs": "f764953744a958fe4b8f28993544a50be02f261b5c7a70278fba8922701d22b9",
-    ".github/scripts/ocr-review-tools.cjs": "ca441302e5c1ae4a9b3765ba725e858f92e8bf32ce8e9375e9e8534fa5e873dd",
+    ".github/actions/ocr-review/action.yml": "ab884ba5fffe7f8d6caba4c8ea999f9a5ab43d8d903047c8fc8ac95a3625d1ba",
+    ".github/scripts/ocr-controller.cjs": "9fabb089393c0557019fa94b19c7953b5f09f4c6892f233a821093bf6b1c0a1e",
+    ".github/scripts/ocr-draft-review.cjs": "06432cbdf12efdcddd09c14795dbf0830517ef4c493feeee770a130a89e9fc48",
+    ".github/scripts/ocr-mistral-adapter.cjs": "6d58d7b0a42d241023d4563e0b0266a5dcbeb898842253b57cb1951d03dcebda",
+    ".github/scripts/ocr-review-tools.cjs": "270673dca9d80417158b0a45f3a0d65e910ea605d73ff6f00291b0282c398970",
     ".github/scripts/ocr-review-shared.cjs": "c12e084ae9bd5459791e8cd78e7c11b60eb494e8c6bb5804e7d223e5228c9676",
     ".github/scripts/ocr-runtime-config.cjs": "dfa184aff7e6ad048696086637223437adeee79ced4bcfa90139468c122f16b9",
     ".github/scripts/install-patched-ocr.cjs": "4a74aeb596b0252cb1182660d28ff8a196c51e501b69397ca94713d2d59a5eea",
     ".github/open-code-review/ocr-compression.patch": "670d1782a56548f4a4571b6e6bbeb33c92ebcbe99247469ad1aa73329fc5e7c0",
-    ".agents/skills/ocr-reviewer/SKILL.md": "20db8b6c714a3d442913a3ece313697193bab5b8c35ec32110f8013e38ee84a3"
+    ".agents/skills/ocr-reviewer/SKILL.md": "9e68df11891aebbec0e32439c05d6a66f429f693318d30ae94b3639097b29685"
   }
 }

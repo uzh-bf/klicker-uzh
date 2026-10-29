@@ -290,6 +290,11 @@ chat:
     audience: ''
     keyId: ''
 
+  responseExampleReceipt:
+    issuer: ''
+    audience: ''
+    keyId: ''
+
   image:
     repository: ghcr.io/uzh-bf/klicker-uzh/chat
     pullPolicy: Always
@@ -704,12 +709,17 @@ lti:
   keysEndpoint:
   port: 4000
 
+  devMode: 'true'
+  ltiaas: 'false'
+
   db:
+    type: postgres
     host: ''
     port: 5432
     name: ''
     username: ''
     password: ''
+    connectionString: ''
 
   image:
     repository: ghcr.io/uzh-bf/klicker-uzh/lti

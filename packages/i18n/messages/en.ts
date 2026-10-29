@@ -30,6 +30,9 @@ const baseMessages = {
       explainer: 'Explainer',
       explainerDescription:
         'Get direct explanations with definitions and course-based examples.',
+      'writing-coach': 'Writing Coach',
+      'writing-coachDescription':
+        'Get specific feedback and tips on your writing, then make the revisions yourself.',
       quizzer: 'Quizzer',
       quizzerDescription:
         'Practise with exam-style course questions, one at a time, with formative feedback.',
@@ -242,6 +245,23 @@ const baseMessages = {
         'Sign in to KlickerUZH Manage with the account that owns this chatbot to open its preview.',
       loginButton: 'Go to KlickerUZH Manage',
       opensInNewTab: '(opens in a new tab; return here after signing in)',
+      responseExample: {
+        captureAction: 'Save this answer as a response example',
+        captureUnavailable:
+          'This answer is not available to save. Start a new preview to try again.',
+        capturePending: 'Saving response example…',
+        captureCreated: 'Response example saved and ready for review.',
+        captureDuplicate:
+          'This response example is already saved and ready for review.',
+        captureStale:
+          'The source material changed. Start a new preview to capture this answer again.',
+        captureExpired:
+          'This capture expired. Start a new preview to try again.',
+        captureFailed: 'We could not save this response example.',
+        captureRetry: 'Try again',
+        reviewNow: 'Review now',
+        startNewPreview: 'Start a new preview',
+      },
     },
     recovery: {
       notFoundTitle: 'Chatbot not found',
@@ -397,6 +417,13 @@ const baseMessages = {
       },
     },
     suggestions: {
+      reviewWriting: 'Get feedback on writing',
+      reviewWritingPrompt:
+        'Give me feedback on the course-writing excerpt below. Explain the most useful improvements and how I can make them myself.\n\n[Paste your excerpt here]',
+      reviewRevision: 'Review my revision',
+      reviewRevisionPrompt:
+        'I have revised my course-writing excerpt. Give feedback on what improved and what I should focus on next.\n\n[Paste your revision here]',
+
       sectionLabel: 'Conversation starters',
       editHint: 'Choose a starter to edit it before sending.',
       practiceTopic: 'Practise a topic',
@@ -4130,7 +4157,8 @@ Since the KlickerUZH app is not yet available in the iOS App Store, follow these
         'The minimum value must be less than the maximum value.',
       NROneValueRequired:
         'For solution ranges at least one boundary value must be entered.',
-      NRPrecision: 'The number of decimal places must be at least 0.',
+      NRPrecision:
+        'The number of decimal places must be a whole number from 0 to 100.',
       chooseSolutionType:
         'Please choose a solution type for your numerical question or deactivate the sample solution.',
       solutionRangeRequired: 'Please enter at least one valid solution range.',
@@ -5092,7 +5120,12 @@ Since the KlickerUZH app is not yet available in the iOS App Store, follow these
         'Choose which standard modes participants can use',
       chatbotSetupModesTitle: 'Learning modes',
       chatbotSetupModesDescriptionLong:
-        'Choose the standard modes that should be available to participants. Tutor and Explainer are available without course-material retrieval; Quizzer is shown only when its required capability is available.',
+        'Choose the standard modes available to participants. Writing Coach supports feedback on writing. Course-tool requirements still apply to every mode; Quizzer additionally needs course-material retrieval.',
+      chatbotModeWritingCoach: 'Writing Coach',
+      chatbotModeWritingCoachDescription:
+        'Gives specific writing feedback and revision strategies. Participants write every revision themselves.',
+      chatbotWritingCoachRequiredTool:
+        'Writing Coach is currently unavailable to participants because this chatbot requires a course-tool binding that the mode does not have. Contact the chatbot administrator to configure a compatible binding.',
       chatbotModeTutor: 'Tutor',
       chatbotModeTutorDescription:
         'Guides participants with questions, hints, and formative feedback.',
@@ -5102,7 +5135,7 @@ Since the KlickerUZH app is not yet available in the iOS App Store, follow these
       chatbotModeQuizzer: 'Quizzer',
       chatbotModeQuizzerDescription:
         'Practises exam-style course questions one at a time with formative feedback.',
-      chatbotModeInvariant: 'Keep Tutor or Explainer enabled.',
+      chatbotModeInvariant: 'Keep Tutor, Explainer or Writing Coach enabled.',
       chatbotModeQuizzerCapabilityNote:
         'Quizzer may still be hidden when its course-material capability is unavailable.',
       chatbotModeEnabled: 'Enabled',
@@ -5162,11 +5195,18 @@ Since the KlickerUZH app is not yet available in the iOS App Store, follow these
         'Could not save the custom modes. Please try again.',
       chatbotFraming: 'Chatbot framing',
       chatbotFramingDescription:
-        'Briefly describe the course, audience, or intended focus. This context is used in the standard learning modes.',
+        'Describe the course, audience, prior knowledge, typical tasks and learning priorities. This context guides responses in standard learning modes, including Writing Coach. For published chatbots, saved changes apply after approval.',
+      chatbotFramingExamples: 'Context examples',
+      chatbotFramingScientific: 'Scientific writing',
+      chatbotFramingScientificExample:
+        'This chatbot supports a bachelor-level biology lab course. Students write short experiment reports and interpret figures. They know basic genetics but are learning scientific argumentation. Focus on linking claims to results, distinguishing observation from interpretation, and expressing uncertainty. Explain unfamiliar terms briefly. Keep feedback direct and encouraging. Preserve the writer’s voice and assess only the excerpt provided.',
+      chatbotFramingInformal: 'Less formal writing',
+      chatbotFramingInformalExample:
+        'This chatbot supports a project-based communication course. Students write short updates and reflective notes for peers and project partners. Focus on a clear purpose, concrete examples, logical flow and an obvious next action when relevant. A natural, conversational tone is appropriate; academic vocabulary and citations are usually unnecessary. Give practical, encouraging feedback.',
       chatbotFramingPlaceholder:
         'For example: First-year organic chemistry for medical students.',
       chatbotFramingTooLong:
-        'Chatbot framing must be 200 characters or fewer when edited.',
+        'Chatbot framing must be {count} characters or fewer when edited.',
       chatbotModesSave: 'Save learning modes',
       chatbotModesSaving: 'Saving…',
       chatbotModesSaveSuccess: 'Learning modes saved.',
