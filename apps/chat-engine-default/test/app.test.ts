@@ -193,7 +193,7 @@ describe('default chat engine', () => {
     expect(model.doStreamCalls).toHaveLength(0)
   })
 
-  test('reconstructs persisted tool output and executes approved tools', async () => {
+  test('replays completed tools and retains text after an interrupted tool', async () => {
     const toolRequest = {
       ...conformanceRequest,
       messages: [
@@ -202,6 +202,13 @@ describe('default chat engine', () => {
           id: 'assistant-tool-1',
           role: 'assistant' as const,
           parts: [
+            { type: 'text' as const, text: 'Retained preamble' },
+            {
+              type: 'tool-call' as const,
+              toolCallId: 'call-history-unfinished',
+              toolName: 'doc_query',
+              input: { query: 'unfinished' },
+            },
             {
               type: 'tool-call' as const,
               toolCallId: 'call-history-1',
@@ -342,10 +349,26 @@ describe('default chat engine', () => {
       toolName: 'doc_query',
       output: { type: 'error-json', value: { error: 'unavailable' } },
     })
+    const assistantParts = (
+      observedPrompt as Array<{ role: string; content: unknown[] }>
+    )
+      .filter((message) => message.role === 'assistant')
+      .flatMap((message) => message.content)
+    expect(assistantParts).toContainEqual({
+      type: 'text',
+      text: 'Retained preamble',
+    })
+    expect(assistantParts).not.toContainEqual(
+      expect.objectContaining({ toolCallId: 'call-history-unfinished' })
+    )
     expect(model.doStreamCalls).toHaveLength(2)
   })
 
-  test('emits normalized abort metadata after client cancellation', async () => {
+  test.each([
+    'tool',
+    'next-step',
+    'partial-next-step',
+  ] as const)('retains reported usage when cancellation interrupts %s', async (phase) => {
     const abortController = new AbortController()
     const abortRequest = {
       ...conformanceRequest,
@@ -427,24 +450,30 @@ describe('default chat engine', () => {
               abortSignal?.addEventListener(
                 'abort',
                 () => {
-                  controller.enqueue({
-                    type: 'finish',
-                    finishReason: { unified: 'stop', raw: 'stop' },
-                    usage: {
-                      inputTokens: {
-                        total: 12,
-                        noCache: 12,
-                        cacheRead: undefined,
-                        cacheWrite: undefined,
+                  if (phase === 'partial-next-step') {
+                    controller.enqueue({
+                      type: 'finish',
+                      finishReason: { unified: 'stop', raw: 'stop' },
+                      usage: {
+                        inputTokens: {
+                          total: 12,
+                          noCache: 12,
+                          cacheRead: undefined,
+                          cacheWrite: undefined,
+                        },
+                        outputTokens: {
+                          total: undefined,
+                          text: undefined,
+                          reasoning: undefined,
+                        },
                       },
-                      outputTokens: {
-                        total: 4,
-                        text: 4,
-                        reasoning: undefined,
-                      },
-                    },
-                  })
-                  controller.close()
+                    })
+                    controller.close()
+                  } else {
+                    controller.error(
+                      new DOMException('Synthetic abort', 'AbortError')
+                    )
+                  }
                 },
                 { once: true }
               )
@@ -456,7 +485,20 @@ describe('default chat engine', () => {
     const app = createDefaultEngineApp({
       serviceToken: 'service-secret',
       modelFactory: () => model,
-      toolExecutor: async () => ({ text: 'A bond is debt.' }),
+      toolExecutor: async ({ abortSignal }) => {
+        if (phase === 'tool') {
+          await new Promise<void>((_resolve, reject) => {
+            if (abortSignal.aborted) reject(abortSignal.reason)
+            else
+              abortSignal.addEventListener(
+                'abort',
+                () => reject(abortSignal.reason),
+                { once: true }
+              )
+          })
+        }
+        return { text: 'A bond is debt.' }
+      },
     })
     const request = new Request('http://engine/v1/chat', {
       method: 'POST',
@@ -473,7 +515,10 @@ describe('default chat engine', () => {
     const reader = response.body!.getReader()
     const decoder = new TextDecoder()
     let body = ''
-    while (model.doStreamCalls.length < 2) {
+    while (
+      model.doStreamCalls.length < (phase === 'tool' ? 1 : 2) ||
+      !body.includes('"aborted":false')
+    ) {
       const next = await Promise.race([
         reader.read(),
         new Promise<null>((resolve) => setTimeout(() => resolve(null), 1_000)),
@@ -482,6 +527,15 @@ describe('default chat engine', () => {
       if (next.done) throw new Error('Stream ended before the second step.')
       body += decoder.decode(next.value, { stream: true })
     }
+    const completedMetadata = body
+      .split(/\r?\n\r?\n/)
+      .filter((frame) => frame.startsWith('data: {'))
+      .map((frame) => JSON.parse(frame.slice(6)))
+      .find((part) => part.type === 'message-metadata')
+    expect(completedMetadata?.messageMetadata).toMatchObject({
+      aborted: false,
+      usage: { inputTokens: 12, outputTokens: 4, totalTokens: 16 },
+    })
     abortController.abort('client cancelled')
 
     for (;;) {
@@ -500,7 +554,9 @@ describe('default chat engine', () => {
       .map((line) =>
         parseEngineStreamPart(JSON.parse(line.slice('data: '.length)))
       )
-    const metadata = parts.find((part) => part.type === 'message-metadata')
+    const metadata = parts.find(
+      (part) => part.type === 'message-metadata' && part.messageMetadata.aborted
+    )
     expect(
       metadata?.type === 'message-metadata' ? metadata.messageMetadata : null
     ).toMatchObject({

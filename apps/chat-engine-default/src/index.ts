@@ -144,6 +144,12 @@ function sumStepUsage(steps: unknown): EngineUsage {
   let sawUsage = false
   for (const step of steps) {
     const usage = normalizeUsage(asRecord(step)?.usage)
+    if (
+      usage.inputTokens === null ||
+      usage.outputTokens === null ||
+      usage.totalTokens === null
+    )
+      continue
     const values = [
       'inputTokens',
       'outputTokens',
@@ -195,6 +201,7 @@ function toModelMessages(messages: EngineMessage[]): ModelMessage[] {
       } else if (part.type === 'reasoning') {
         assistantContent.push({ type: 'reasoning', text: part.text })
       } else if (part.type === 'tool-call') {
+        if (part.output === undefined) continue
         assistantContent.push({
           type: 'tool-call',
           toolCallId: part.toolCallId,
@@ -437,6 +444,7 @@ export function createDefaultEngineApp(options: DefaultEngineOptions = {}) {
 
     let reasoningContent = ''
     let writer: UIMessageStreamWriter | undefined
+    const completedCalls: Array<{ usage: unknown }> = []
     const tools =
       request.tools.length > 0
         ? buildTools(request.tools, mcpToken!, options, c.req.raw.signal)
@@ -458,13 +466,30 @@ export function createDefaultEngineApp(options: DefaultEngineOptions = {}) {
       onChunk: ({ chunk }) => {
         if (chunk.type === 'reasoning-delta') reasoningContent += chunk.text
       },
+      onLanguageModelCallEnd: (call) => {
+        completedCalls.push({ usage: call.usage })
+        writer?.write({
+          type: 'message-metadata',
+          messageMetadata: finishMetadata(
+            request,
+            engineId,
+            sumStepUsage(completedCalls),
+            reasoningContent,
+            false
+          ),
+        })
+      },
       onAbort: async (steps) => {
         writer?.write({
           type: 'message-metadata',
           messageMetadata: finishMetadata(
             request,
             engineId,
-            sumStepUsage(steps?.steps),
+            sumStepUsage(
+              steps?.steps && steps.steps.length >= completedCalls.length
+                ? steps.steps
+                : completedCalls
+            ),
             reasoningContent,
             true
           ),

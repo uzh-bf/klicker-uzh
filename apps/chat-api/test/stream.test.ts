@@ -1,5 +1,6 @@
-import { describe, expect, test, vi } from 'vitest'
+import { createServer } from 'node:http'
 import { CHAT_ENGINE_CONTRACT_VERSION } from '@klicker-uzh/chat-engine-contract'
+import { describe, expect, test, vi } from 'vitest'
 import {
   createValidatedPlatformStream,
   type StreamState,
@@ -88,6 +89,70 @@ describe('validated engine stream', () => {
     expect(finalize).toHaveBeenCalledTimes(1)
     expect(text.match(/"type":"message-metadata"/g)).toHaveLength(1)
     expect(text).toContain('"type":"abort"')
+  })
+
+  test.each([
+    false,
+    true,
+  ])('cancels a rejected HTTP stream when finalization fails: %s', async (failFinalization) => {
+    const upstreamCancel = vi.fn()
+    const server = createServer((_request, response) => {
+      response.writeHead(200, { 'content-type': 'text/event-stream' })
+      response.write(
+        `data: ${JSON.stringify({ type: 'text-delta', id: 'text-1', delta: 'rejected' })}\n\n`
+      )
+      response.on('close', upstreamCancel)
+    })
+    await new Promise<void>((resolve) => server.listen(0, '127.0.0.1', resolve))
+    const address = server.address()
+    if (!address || typeof address === 'string')
+      throw new Error('No HTTP listener')
+    try {
+      const upstream = await fetch(`http://127.0.0.1:${address.port}`)
+      const finalize = vi.fn(async () => {
+        if (failFinalization) throw new Error('Synthetic persistence failure')
+        return {
+          creditsUsed: null,
+          finalPersistenceStatus: 'not-persisted' as const,
+        }
+      })
+      const onCancel = vi.fn()
+      const stream = createValidatedPlatformStream(upstream, {
+        metadata: () => ({
+          chatMode: 'tutor',
+          modelId: 'gpt-4.1-mini',
+          reasoningEffort: null,
+          userMessageId: 'user-1',
+          assistantMessageId: 'assistant-1',
+          creditsUsed: null,
+          finalPersistenceStatus: 'not-persisted',
+        }),
+        finalize,
+        onCancel,
+      })
+
+      const reading = read(stream)
+      if (failFinalization) await expect(reading).rejects.toThrow()
+      else {
+        const parts = (await reading)
+          .split('\n')
+          .filter((line) => line.startsWith('data: {'))
+          .map((line) => JSON.parse(line.slice(6)))
+        expect(parts).toContainEqual(
+          expect.objectContaining({
+            type: 'error',
+            code: 'INVALID_ENGINE_STREAM',
+          })
+        )
+      }
+      expect(finalize).toHaveBeenCalledTimes(1)
+      await vi.waitFor(() => expect(upstreamCancel).toHaveBeenCalledTimes(1))
+      expect(onCancel).toHaveBeenCalledTimes(1)
+      expect(upstream.body?.locked).toBe(false)
+    } finally {
+      server.closeAllConnections()
+      await new Promise<void>((resolve) => server.close(() => resolve()))
+    }
   })
 
   test('fails closed on an unknown part and emits no unknown payload', async () => {

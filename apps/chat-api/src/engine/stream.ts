@@ -1,8 +1,8 @@
 import {
-  parseEngineStreamPart,
   type EngineFinishMetadata,
   type EngineStreamPart,
   type EngineUsage,
+  parseEngineStreamPart,
 } from '@klicker-uzh/chat-engine-contract'
 
 const textEncoder = new TextEncoder()
@@ -270,13 +270,35 @@ export function createValidatedPlatformStream(
   const startedTools = new Set<string>()
   let abortMetadataPending = false
   let cancelled = false
+  let cancellationNotified = false
+  let upstreamStopped: Promise<void> | null = null
+
+  const stopUpstream = async (notifyCancellation = false) => {
+    const notification = Promise.resolve().then(() => {
+      if (notifyCancellation && !cancellationNotified) {
+        cancellationNotified = true
+        options.onCancel?.()
+      }
+    })
+    upstreamStopped ??= reader.cancel().finally(() => reader.releaseLock())
+    const results = await Promise.allSettled([notification, upstreamStopped])
+    for (const result of results) {
+      if (
+        result.status === 'rejected' &&
+        !(result.reason instanceof Error && result.reason.name === 'AbortError')
+      )
+        throw result.reason
+    }
+  }
 
   const finalizeOnce = async (): Promise<PlatformMetadata> => {
     if (!finalized) {
-      finalized = options.finalize(state).then((result) => ({
-        ...options.metadata(state),
-        ...result,
-      }))
+      finalized = Promise.resolve()
+        .then(() => options.finalize(state))
+        .then((result) => ({
+          ...options.metadata(state),
+          ...result,
+        }))
     }
     return finalized
   }
@@ -367,7 +389,7 @@ export function createValidatedPlatformStream(
           )
         )
         controller.enqueue(textEncoder.encode('data: [DONE]\n\n'))
-        await reader.cancel()
+        await stopUpstream()
         controller.close()
         return true
       }
@@ -375,7 +397,7 @@ export function createValidatedPlatformStream(
       const metadata = await finalizeOnce()
       controller.enqueue(encodeSse(platformFinishPart(parsed, metadata)))
       controller.enqueue(textEncoder.encode('data: [DONE]\n\n'))
-      await reader.cancel()
+      await stopUpstream()
       controller.close()
       return true
     }
@@ -400,7 +422,7 @@ export function createValidatedPlatformStream(
       controller.enqueue(encodeSse(parsed))
       abortMetadataPending = false
       controller.enqueue(textEncoder.encode('data: [DONE]\n\n'))
-      await reader.cancel()
+      await stopUpstream()
       controller.close()
       return true
     }
@@ -415,7 +437,7 @@ export function createValidatedPlatformStream(
       }
       controller.enqueue(encodeSse(adaptPlatformPart(parsed)))
       controller.enqueue(textEncoder.encode('data: [DONE]\n\n'))
-      await reader.cancel()
+      await stopUpstream()
       controller.close()
       return true
     }
@@ -455,6 +477,7 @@ export function createValidatedPlatformStream(
               await finalizeOnce()
             }
             controller.enqueue(textEncoder.encode('data: [DONE]\n\n'))
+            await stopUpstream(state.status !== 'finished')
             controller.close()
             return
           }
@@ -476,10 +499,12 @@ export function createValidatedPlatformStream(
         }
       } catch (error) {
         if (cancelled) return
-        if (state.status === 'streaming') {
-          state.status = 'aborted'
-          await finalizeOnce()
-        }
+        if (state.status === 'streaming') state.status = 'aborted'
+        const [finalization] = await Promise.allSettled([
+          finalizeOnce(),
+          stopUpstream(true),
+        ])
+        if (finalization.status === 'rejected') throw finalization.reason
         controller.enqueue(
           encodeSse(
             streamError(
@@ -501,10 +526,9 @@ export function createValidatedPlatformStream(
     async cancel() {
       cancelled = true
       if (state.status === 'streaming') state.status = 'aborted'
-      options.onCancel?.()
       const [finalization, cancellation] = await Promise.allSettled([
         finalizeOnce(),
-        reader.cancel(),
+        stopUpstream(true),
       ])
       if (finalization.status === 'rejected') throw finalization.reason
       if (
