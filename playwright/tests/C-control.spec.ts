@@ -96,6 +96,11 @@ test.describe('Test functionalities of frontend-control application', () => {
     ).toBeVisible()
     await page.getByTestId(`ppt-link-${CONTROL_DATA.quizName}`).click()
     await page.getByTestId('close-embedding-modal').click()
+    await page
+      .getByRole('button', { name: CONTROL_DATA.quizName, exact: false })
+      .press('Enter')
+    await expect(page.getByTestId('confirm-start-live-quiz')).toBeVisible()
+    await page.getByTestId('cancel-start-live-quiz-modal').click()
     await page.getByTestId(`start-live-quiz-${CONTROL_DATA.quizName}`).click()
     await page.getByTestId('confirm-start-live-quiz').click()
 
