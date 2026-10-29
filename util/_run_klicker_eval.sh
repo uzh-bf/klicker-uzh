@@ -235,21 +235,45 @@ fi
 
 set -- ${EVAL_ARGS[@]+"${EVAL_ARGS[@]}"}
 
-DEFAULT_EVAL_MODEL='klickeruzh/azure/gpt-5.6-luna-high'
+DEFAULT_EVAL_MODEL='klickeruzh/azure/gpt-6-luna-high'
 EFFECTIVE_EVAL_MODEL="${EVAL_MODEL:-$DEFAULT_EVAL_MODEL}"
 if [ "$EFFECTIVE_EVAL_MODEL" = "$DEFAULT_EVAL_MODEL" ]; then
-  EFFECTIVE_CAPABILITY_MODEL="${EVAL_MODEL_CAPABILITY_MODEL:-gpt-5.6-luna}"
+  EFFECTIVE_CAPABILITY_MODEL="${EVAL_MODEL_CAPABILITY_MODEL:-gpt-6-luna}"
 else
   EFFECTIVE_CAPABILITY_MODEL="${EVAL_MODEL_CAPABILITY_MODEL:-}"
 fi
 
 cd "$REPO_ROOT"
 
-if [ "$LOCAL_TARGET" = true ] && [ -z "${EVAL_METRICS_PATH:-}" ]; then
-  EFFECTIVE_METRICS_PATH="$REPO_ROOT/evaluation/data/metrics/klicker_fineco_semantic_similarity.yaml"
-else
-  EFFECTIVE_METRICS_PATH="${EVAL_METRICS_PATH:-$FRAMEWORK_ROOT/data/input/metrics/metrics.yaml}"
+# Committed non-secret defaults; the caller's environment wins. Only allowlisted
+# names are read, so the file cannot redirect the judge or inject credentials.
+DEFAULTS_FILE="${KLICKER_EVAL_DEFAULTS_FILE:-$REPO_ROOT/evaluation/defaults.env}"
+load_eval_defaults() {
+  local line name value
+  [ -f "$DEFAULTS_FILE" ] || return 0
+  while IFS= read -r line || [ -n "$line" ]; do
+    case "$line" in '' | '#'*) continue ;; esac
+    name="${line%%=*}"
+    value="${line#*=}"
+    case "$name" in
+      EVAL_METRICS_PATH) ;;
+      *)
+        echo "Error: unsupported variable in $DEFAULTS_FILE: $name" >&2
+        exit 1
+        ;;
+    esac
+    if [ -z "${!name:-}" ]; then
+      export "$name=$value"
+    fi
+  done <"$DEFAULTS_FILE"
+}
+load_eval_defaults
+
+if [ -z "${EVAL_METRICS_PATH:-}" ]; then
+  echo "Error: set EVAL_METRICS_PATH or define it in $DEFAULTS_FILE" >&2
+  exit 1
 fi
+EFFECTIVE_METRICS_PATH="$EVAL_METRICS_PATH"
 EFFECTIVE_TOOLS_PATH="${EVAL_TOOLS_PATH:-$REPO_ROOT/evaluation/data/tools/klicker_fineco.yaml}"
 EFFECTIVE_GT_ROOT_DIR="${GT_ROOT_DIR:-$REPO_ROOT/evaluation/data/ground_truth/klicker_fineco}"
 EFFECTIVE_DEFAULT_GT_DIR="${DEFAULT_GT_DIR:-$REPO_ROOT/evaluation/data/ground_truth/klicker_fineco}"

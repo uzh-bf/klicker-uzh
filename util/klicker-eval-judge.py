@@ -23,8 +23,8 @@ from types import FrameType
 REPO_ROOT = Path(__file__).resolve().parents[1]
 CONFIG_PATH = REPO_ROOT / "evaluation" / "litellm.yaml"
 IMAGE = (
-    "ghcr.io/berriai/litellm-database:v1.96.2"
-    "@sha256:80e5e92bdcca246cd4153d451e5f75b65e19c7e39c46cc88a38bed4b65cc5836"
+    "ghcr.io/berriai/litellm-database:v1.101.0"
+    "@sha256:070df884f52600352a4aedda059180be141f3645c61c59b89b0ee35c17a4ea84"
 )
 CONTAINER_CONFIG_PATH = "/app/config.yaml"
 CONTAINER_PORT = "4000"
