@@ -177,6 +177,49 @@
   --animate-scale-out-content: scale-out-content 0.2s ease;
   --animate-fade-in: fade-in 0.2s ease;
   --animate-fade-out: fade-out 0.2s ease;
+
+  /* controller redesign (UZH DF design-system tokens) */
+  --color-ctrl-ink: #111111;
+  --color-ctrl-ink-2: #333333;
+  --color-ctrl-muted: #666666;
+  --color-ctrl-faint: #9a9a9a;
+  --color-ctrl-border: #e0e0e0;
+  --color-ctrl-hair: #efefef;
+  --color-ctrl-bg: #fafafa;
+  --color-ctrl-blue-hover: #3062ff;
+  --color-ctrl-good: #536b18;
+  --color-ctrl-good-bg: #ecf6d6;
+  --color-ctrl-info: #147082;
+  --color-ctrl-info-bg: #dbf4f9;
+  --shadow-ctrl:
+    0 1px 3px 0 rgb(0 0 0 / 0.06), 0 1px 2px -1px rgb(0 0 0 / 0.06);
+  --animate-ctrl-screen-in: ctrl-screen-in 240ms ease;
+  --animate-ctrl-live-dot: ctrl-live-dot 1.6s infinite;
+
+  /* animates `top` (on a relative element) instead of `transform`, so fixed
+     descendants such as the mobile action bar stay pinned to the viewport */
+  @keyframes ctrl-screen-in {
+    from {
+      opacity: 0;
+      top: 8px;
+    }
+    to {
+      opacity: 1;
+      top: 0;
+    }
+  }
+
+  @keyframes ctrl-live-dot {
+    0% {
+      box-shadow: 0 0 0 0 rgb(220 96 39 / 0.55);
+    }
+    70% {
+      box-shadow: 0 0 0 6px rgb(220 96 39 / 0);
+    }
+    100% {
+      box-shadow: 0 0 0 0 rgb(220 96 39 / 0);
+    }
+  }
 }
 
 /*

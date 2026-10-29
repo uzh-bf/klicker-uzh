@@ -6,11 +6,62 @@
  * running it from the control app, and cleaning up.
  */
 
+import { readFileSync } from 'node:fs'
+import { randomUUID } from 'node:crypto'
 import { cleanupTest } from '../util/cleanup.js'
 import { CONTROL_DATA, LECTURER_ID, viewPorts } from '../util/constants.js'
 import { expect, test } from '../util/fixtures.js'
 import { createQuestionSC } from '../util/fixtures/elements.js'
 import { removeSoftDeletedLiveQuiz } from '../util/fixtures/manage.js'
+
+const fixtureSuffix = randomUUID().slice(0, 8)
+const CONTROL_FIXTURE = {
+  ...CONTROL_DATA,
+  questionTitle: `${CONTROL_DATA.questionTitle} ${fixtureSuffix}`,
+  quizName: `${CONTROL_DATA.quizName} ${fixtureSuffix}`,
+}
+
+const persistedOperations = JSON.parse(
+  readFileSync(
+    new URL('../../packages/graphql/src/public/client.json', import.meta.url),
+    'utf8'
+  )
+) as Record<string, string>
+const persistedNames = new Map(
+  Object.entries(persistedOperations).map(([name, hash]) => [hash, name])
+)
+const graphQLRoute = /\/graphql(?:-proxy)?(?:[/?]|$)/
+
+function graphQLOperationName(request: {
+  method(): string
+  postDataJSON(): unknown
+  url(): string
+}) {
+  try {
+    const url = new URL(request.url())
+    const payload =
+      request.method() === 'POST'
+        ? (request.postDataJSON() as {
+            extensions?: {
+              persistedQuery?: { sha256Hash?: string }
+            }
+            operationName?: string
+          } | null)
+        : null
+    const extensions =
+      payload?.extensions ??
+      JSON.parse(url.searchParams.get('extensions') ?? 'null')
+    const hash = extensions?.persistedQuery?.sha256Hash
+
+    return (
+      url.searchParams.get('operationName') ??
+      payload?.operationName ??
+      (hash ? persistedNames.get(hash) : undefined)
+    )
+  } catch {
+    return undefined
+  }
+}
 
 test('CLEANUP', cleanupTest)
 
@@ -22,8 +73,8 @@ test.describe('Test functionalities of frontend-control application', () => {
   }) => {
     // Seed the SC question directly via DB helper
     await createQuestionSC({
-      name: CONTROL_DATA.questionTitle,
-      content: CONTROL_DATA.questionContent,
+      name: CONTROL_FIXTURE.questionTitle,
+      content: CONTROL_FIXTURE.questionContent,
       choices: [{ value: '50%' }, { value: '100%' }],
       userId: LECTURER_ID,
     })
@@ -32,49 +83,336 @@ test.describe('Test functionalities of frontend-control application', () => {
     await page.reload()
 
     await createLiveQuiz(page, {
-      name: CONTROL_DATA.quizName,
-      displayName: CONTROL_DATA.quizDisplayName,
-      questionTitle: CONTROL_DATA.questionTitle,
+      name: CONTROL_FIXTURE.quizName,
+      displayName: CONTROL_FIXTURE.quizDisplayName,
+      questionTitle: CONTROL_FIXTURE.questionTitle,
     })
   })
 
   test('Log in as the lecturer in the control application and test different screen sizes', async ({
     page,
+    context,
     loginLecturerControl,
   }) => {
     await loginLecturerControl()
+    const controlOrigin = new URL(page.url()).origin
 
     // PPT link and start quiz
     await page.getByTestId('unassigned-live-quizzes').click()
     await expect(
-      page.getByTestId(`ppt-link-${CONTROL_DATA.quizName}`)
+      page.getByTestId(`ppt-link-${CONTROL_FIXTURE.quizName}`)
     ).toBeVisible()
-    await page.getByTestId(`ppt-link-${CONTROL_DATA.quizName}`).click()
+    await page.getByTestId(`ppt-link-${CONTROL_FIXTURE.quizName}`).click()
     await page.getByTestId('close-embedding-modal').click()
-    await page.getByTestId(`start-live-quiz-${CONTROL_DATA.quizName}`).click()
+    await page
+      .getByRole('button', { name: CONTROL_FIXTURE.quizName, exact: false })
+      .press('Enter')
+    await expect(page.getByTestId('confirm-start-live-quiz')).toBeVisible()
+    await page.getByTestId('cancel-start-live-quiz-modal').click()
+    await page
+      .getByTestId(`start-live-quiz-${CONTROL_FIXTURE.quizName}`)
+      .click()
     await page.getByTestId('confirm-start-live-quiz').click()
 
-    // Mobile menu test (iphone-6: 375x667)
+    // Mobile navigation test (iphone-6: 375x667): app bar PPT and back buttons
     await page.setViewportSize(viewPorts.iphone6)
-    await page.getByTestId('ppt-button').click()
+    await page.getByTestId('session-ppt-link').click()
     await page.getByTestId('close-embedding-modal').click()
-    await page.getByTestId('home-button').click()
+    await page.getByTestId('app-bar-back').click() // session -> quiz list
+    await expect(page).toHaveURL(/\/course\/unassigned$/)
+    await page.getByTestId('app-bar-back').click() // quiz list -> home
     await page.getByTestId('unassigned-live-quizzes').click()
-    await page.getByTestId(`running-live-quiz-${CONTROL_DATA.quizName}`).click()
-    await page.getByTestId('back-button').click()
-    await page.getByTestId(`running-live-quiz-${CONTROL_DATA.quizName}`).click()
+    await page
+      .getByTestId(`running-live-quiz-${CONTROL_FIXTURE.quizName}`)
+      .click()
+    await expect(page).toHaveURL(/\/session\/[^/]+$/)
+    await page.getByTestId('app-bar-back').click()
+    await expect(page).toHaveURL(/\/course\/unassigned$/)
+    await page
+      .getByTestId(`running-live-quiz-${CONTROL_FIXTURE.quizName}`)
+      .click()
+    await expect(page).toHaveURL(/\/session\/[^/]+$/)
     await page.setViewportSize(viewPorts.default)
 
-    // Open block, deactivate, end quiz
+    // Open a block before exercising overview-stop and live updates
     await page.getByTestId('activate-next-block').click()
+    await expect(page.getByTestId('deactivate-block')).toBeVisible()
+
+    // A rejected close must keep the overview stop sheet open and must not
+    // send the end mutation. Cover both false and null mutation results.
+    let deactivationResult: boolean | null = false
+    let deactivationRequests = 0
+    let endRequests = 0
+    await page.route(graphQLRoute, async (route) => {
+      const operationName = graphQLOperationName(route.request())
+      if (operationName?.includes('DeactivateLiveQuizBlock')) {
+        deactivationRequests += 1
+        await route.fulfill({
+          json: { data: { deactivateLiveQuizBlock: deactivationResult } },
+        })
+        return
+      }
+      if (operationName?.includes('EndLiveQuiz')) {
+        endRequests += 1
+        await route.fulfill({ json: { data: { endLiveQuiz: true } } })
+        return
+      }
+      await route.continue()
+    })
+
+    await page.goto(`${controlOrigin}/`)
+    await page
+      .getByTestId(`stop-running-quiz-${CONTROL_FIXTURE.quizName}`)
+      .click()
+    const confirmStop = page.getByTestId('confirm-stop-running-quiz')
+    await expect(confirmStop).toBeEnabled()
+    await confirmStop.click()
+    await expect.poll(() => deactivationRequests).toBe(1)
+    await expect(page.getByTestId('stop-running-quiz-sheet')).toBeVisible()
+    await expect(confirmStop).toBeEnabled()
+    expect(endRequests).toBe(0)
+
+    deactivationResult = null
+    await confirmStop.click()
+    await expect.poll(() => deactivationRequests).toBe(2)
+    await expect(page.getByTestId('stop-running-quiz-sheet')).toBeVisible()
+    await expect(confirmStop).toBeEnabled()
+    expect(endRequests).toBe(0)
+
+    await page.unroute(graphQLRoute)
+    await page.getByTestId('cancel-stop-running-quiz').click()
+    await page
+      .getByTestId(`running-banner-link-${CONTROL_FIXTURE.quizName}`)
+      .click()
+    await expect(page.getByTestId('deactivate-block')).toBeVisible()
+
+    // Two independently loaded control pages must observe Q&A polling after
+    // it was disabled and empty. No reload occurs after their first load.
+    const sessionPath = new URL(page.url()).pathname
+    const secondPage = await context.newPage()
+    const sessionQuizId = sessionPath.split('/').at(-1) as string
+    let feedbacksEnabled = false
+    const feedbackPages = new Set<typeof page>()
+    const remoteQuestion = {
+      __typename: 'Feedback',
+      id: 1,
+      content: 'Synthetic remote question',
+      votes: 1,
+      isPublished: false,
+      isResolved: false,
+      isPinned: false,
+      createdAt: new Date().toISOString(),
+      resolvedAt: null,
+      responses: [],
+    }
+    // Mock only the feedback feed. Both pages read the same changing state.
+    await context.route(graphQLRoute, async (route) => {
+      const operationName = graphQLOperationName(route.request())
+      if (!operationName?.includes('GetControlLiveQuizFeedbacks')) {
+        await route.continue()
+        return
+      }
+
+      const requestingPage = route.request().frame().page()
+      if (requestingPage) feedbackPages.add(requestingPage)
+      await route.fulfill({
+        json: {
+          data: {
+            controlLiveQuizFeedbacks: {
+              __typename: 'LiveQuiz',
+              id: sessionQuizId,
+              isLiveQAEnabled: feedbacksEnabled,
+              isModerationEnabled: feedbacksEnabled,
+              feedbacks: feedbacksEnabled ? [remoteQuestion] : [],
+            },
+          },
+        },
+      })
+    })
+
+    await Promise.all([
+      page.goto(`${controlOrigin}${sessionPath}`),
+      secondPage.goto(`${controlOrigin}${sessionPath}`),
+    ])
+    await expect.poll(() => feedbackPages.size).toBe(2)
+    for (const controlPage of [page, secondPage]) {
+      await expect(controlPage.getByTestId('session-tab-qa')).toBeVisible()
+      await expect(
+        controlPage.getByTestId('session-tab-qa-pending')
+      ).toHaveCount(0)
+    }
+
+    feedbacksEnabled = true
+    await Promise.all(
+      [page, secondPage].map((controlPage) =>
+        expect(
+          controlPage
+            .getByTestId('session-tab-qa-pending')
+            .locator('span[aria-hidden="true"]')
+        ).toHaveText('1', { timeout: 8000 })
+      )
+    )
+    for (const controlPage of [page, secondPage]) {
+      await controlPage.getByTestId('session-tab-qa').click()
+      await expect(controlPage.getByTestId('qa-toggle-enabled')).toBeChecked()
+      await expect(controlPage.getByTestId('qa-question-1')).toBeVisible()
+    }
+    await context.unroute(graphQLRoute)
+
+    // A change from another controller must refresh the mounted controls.
+    for (const controlPage of [page, secondPage]) {
+      const displayResponse = controlPage.waitForResponse(
+        (response) =>
+          graphQLOperationName(response.request())?.includes(
+            'GetLiveQuizEvaluationDisplay'
+          ) === true
+      )
+      await controlPage.getByTestId('session-tab-control').click()
+      await displayResponse
+      await expect(
+        controlPage.getByTestId('leinwand-show-percentages')
+      ).toBeVisible()
+    }
+    const projectionToggle = page.getByTestId('leinwand-show-percentages')
+    const remoteProjectionToggle = secondPage.getByTestId(
+      'leinwand-show-percentages'
+    )
+    const percentagesBefore = await remoteProjectionToggle.isChecked()
+    await remoteProjectionToggle.click()
+    await expect(projectionToggle).toHaveAttribute(
+      'aria-checked',
+      String(!percentagesBefore),
+      { timeout: 8000 }
+    )
+    await secondPage.close()
+
+    // Content acknowledgments carry totalAnswers but are not questions. They
+    // must not inflate votes, question counts or fallback participants.
+    let evaluationAnswers = 3
+    await page.route(graphQLRoute, async (route) => {
+      const operationName = graphQLOperationName(route.request())
+      if (!operationName?.includes('GetControlLiveQuizEvaluation')) {
+        await route.continue()
+        return
+      }
+
+      await route.fulfill({
+        json: {
+          data: {
+            liveQuizEvaluation: {
+              __typename: 'ActivityEvaluation',
+              id: sessionQuizId,
+              isAssessmentEnabled: false,
+              results: [
+                {
+                  __typename: 'StackEvaluation',
+                  stackId: 1,
+                  stackName: null,
+                  stackDescription: null,
+                  stackOrder: 0,
+                  stackActive: true,
+                  status: 'ACTIVE',
+                  expiresAt: null,
+                  timeLimit: null,
+                  instances: [
+                    {
+                      __typename: 'ChoicesActivityEvaluationData',
+                      id: 101,
+                      type: 'SC',
+                      name: 'Synthetic question',
+                      content: 'Synthetic question',
+                      hasSampleSolution: false,
+                      hasAnswerFeedbacks: false,
+                      results: {
+                        __typename: 'ChoicesElementResults',
+                        totalAnswers: evaluationAnswers,
+                        anonymousAnswers: 0,
+                        choices: [
+                          {
+                            __typename: 'ChoiceElementResults',
+                            value: 'A',
+                            count: evaluationAnswers - 1,
+                            correct: false,
+                            feedback: null,
+                          },
+                          {
+                            __typename: 'ChoiceElementResults',
+                            value: 'B',
+                            count: 1,
+                            correct: false,
+                            feedback: null,
+                          },
+                        ],
+                      },
+                    },
+                    {
+                      __typename: 'ContentActivityEvaluationData',
+                      id: 102,
+                      type: 'CONTENT',
+                      name: 'Synthetic content',
+                      content: 'Synthetic content',
+                      hasSampleSolution: false,
+                      hasAnswerFeedbacks: false,
+                      results: {
+                        __typename: 'ContentElementResults',
+                        totalAnswers: 12,
+                        anonymousAnswers: 0,
+                      },
+                    },
+                  ],
+                },
+              ],
+            },
+          },
+        },
+      })
+    })
+
+    await page.getByTestId('session-tab-stats').click()
+    await expect(
+      page.getByTestId('stats-votes').locator(':scope > div').nth(1)
+    ).toHaveText('3')
+    await expect(
+      page.getByTestId('stats-participants').locator(':scope > div').nth(1)
+    ).toHaveText('3')
+    const firstBlock = page.getByTestId('stats-block-1')
+    await expect(
+      firstBlock.locator(':scope > div').first().locator('span').last()
+    ).toHaveText('3')
+    await expect(firstBlock.locator(':scope > div').last()).toHaveText(
+      /\b3\b\D+\b3\b\D+\b1\b/
+    )
+    // Results can change after closure, while either panel stays mounted.
+    await page.getByTestId('session-tab-control').click()
     await page.getByTestId('deactivate-block').click()
+    await expect(page.getByTestId('end-live-quiz')).toBeVisible()
+    await expect(page.getByTestId('live-evaluation')).toContainText('67%')
+    evaluationAnswers = 4
+    await expect(page.getByTestId('live-evaluation')).toContainText('75%', {
+      timeout: 8000,
+    })
+    await page.getByTestId('session-tab-stats').click()
+    await expect(
+      page.getByTestId('stats-votes').locator(':scope > div').nth(1)
+    ).toHaveText('4')
+    evaluationAnswers = 5
+    await expect(
+      page.getByTestId('stats-votes').locator(':scope > div').nth(1)
+    ).toHaveText('5', { timeout: 8000 })
+    await page.unroute(graphQLRoute)
+
+    // End the real quiz (with confirmation).
+    await page.getByTestId('session-tab-control').click()
     await page.getByTestId('end-live-quiz').click()
+    await page.getByTestId('confirm-end-live-quiz').click()
+    await expect(page.getByTestId('live-quiz-ended')).toBeVisible()
+    await page.getByTestId('back-to-course').click()
 
     await expect(
-      page.getByTestId(`start-live-quiz-${CONTROL_DATA.quizName}`)
+      page.getByTestId(`start-live-quiz-${CONTROL_FIXTURE.quizName}`)
     ).not.toBeVisible()
     await expect(
-      page.getByTestId(`running-live-quiz-${CONTROL_DATA.quizName}`)
+      page.getByTestId(`running-live-quiz-${CONTROL_FIXTURE.quizName}`)
     ).not.toBeVisible()
   })
 
@@ -86,18 +424,22 @@ test.describe('Test functionalities of frontend-control application', () => {
     await page.getByTestId('activities').click()
 
     await expect(
-      page.getByTestId(`activity-LIVE_QUIZ-${CONTROL_DATA.quizName}`)
+      page.getByTestId(`activity-LIVE_QUIZ-${CONTROL_FIXTURE.quizName}`)
     ).toBeVisible()
-    await page.getByTestId(`actions-LIVE_QUIZ-${CONTROL_DATA.quizName}`).click()
-    await page.getByTestId(`delete-live-quiz-${CONTROL_DATA.quizName}`).click()
+    await page
+      .getByTestId(`actions-LIVE_QUIZ-${CONTROL_FIXTURE.quizName}`)
+      .click()
+    await page
+      .getByTestId(`delete-live-quiz-${CONTROL_FIXTURE.quizName}`)
+      .click()
     await page.getByTestId('confirmation-modal-confirm').click()
-    await expect(page.getByText(CONTROL_DATA.quizName)).not.toBeVisible()
+    await expect(page.getByText(CONTROL_FIXTURE.quizName)).not.toBeVisible()
   })
 
   test('Cleanup (DB): Hard delete soft-deleted live quiz directly in database', async ({
     loginLecturer,
   }) => {
-    await removeSoftDeletedLiveQuiz({ lqName: CONTROL_DATA.quizName })
+    await removeSoftDeletedLiveQuiz({ lqName: CONTROL_FIXTURE.quizName })
     await loginLecturer()
   })
 })
