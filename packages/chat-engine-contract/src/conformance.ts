@@ -45,7 +45,7 @@ export type ChatEngineConformanceSuiteResult = {
   deploymentStream: EngineStreamPart[]
   requestCredentialStream: EngineStreamPart[]
   toolStream: EngineStreamPart[]
-  abortStream: EngineStreamPart[]
+  transportCancelled: true
 }
 
 function endpoint(baseUrl: string, path: string): string {
@@ -194,6 +194,102 @@ export async function runChatEngineConformance(
   return { manifest, stream }
 }
 
+function bounded<T>(operation: Promise<T>, milliseconds: number): Promise<T> {
+  let timer: ReturnType<typeof setTimeout>
+  const timeout = new Promise<never>((_, reject) => {
+    timer = setTimeout(
+      () => reject(new Error('Cancellation check exceeded its deadline.')),
+      milliseconds
+    )
+  })
+  return Promise.race([operation, timeout]).finally(() => clearTimeout(timer))
+}
+
+async function verifyTransportCancellation(
+  options: ChatEngineConformanceOptions
+): Promise<true> {
+  const controller = new AbortController()
+  let reader: ReadableStreamDefaultReader<Uint8Array> | undefined
+  let failed = false
+  let failure: unknown
+  const expiresAt = Date.now() + 10000
+  const withinDeadline = <T>(operation: Promise<T>) =>
+    bounded(operation, Math.max(1, expiresAt - Date.now()))
+  try {
+    const response = await withinDeadline(sendChat(options, controller.signal))
+    reader = response.body?.getReader()
+    if (!response.ok)
+      throw new Error(`Abort scenario returned HTTP ${response.status}.`)
+    if (
+      !response.headers.get('content-type')?.includes('text/event-stream') ||
+      !reader
+    ) {
+      throw new Error('Abort scenario returned no SSE stream.')
+    }
+    const decoder = new TextDecoder()
+    let pending = ''
+    let admitted = false
+    while (!admitted) {
+      const chunk = await withinDeadline(reader.read())
+      if (chunk.done)
+        throw new Error('Abort scenario ended before cancellation.')
+      pending += decoder.decode(chunk.value, { stream: true })
+      if (pending.length > 65536)
+        throw new Error('Abort scenario exceeded the initial event bound.')
+      const frames = pending.split(/\r?\n\r?\n/)
+      pending = frames.pop() ?? ''
+      for (const frame of frames) {
+        if (frame.trim() === 'data: [DONE]')
+          throw new Error('Abort scenario already completed.')
+        if (!frame.startsWith('data: '))
+          throw new Error('Abort scenario contained a non-data SSE frame.')
+        const part = parseEngineStreamPart(
+          JSON.parse(frame.slice('data: '.length))
+        )
+        if (['finish', 'abort', 'error'].includes(part.type)) {
+          throw new Error('Abort scenario already returned a terminal event.')
+        }
+        admitted = true
+      }
+    }
+    controller.abort()
+    let cancelled = false
+    try {
+      await withinDeadline(reader.read())
+    } catch (error) {
+      if (!(error instanceof Error && error.name === 'AbortError')) throw error
+      cancelled = true
+    }
+    if (!cancelled)
+      throw new Error('Abort scenario did not cancel its response transport.')
+  } catch (error) {
+    failed = true
+    failure = error
+  }
+  controller.abort()
+  if (reader) {
+    try {
+      await bounded(reader.cancel(), 1000)
+    } catch (error) {
+      if (!failed && !(error instanceof Error && error.name === 'AbortError')) {
+        failed = true
+        failure = error
+      }
+    } finally {
+      try {
+        reader.releaseLock()
+      } catch (error) {
+        if (!failed) {
+          failed = true
+          failure = error
+        }
+      }
+    }
+  }
+  if (failed) throw failure
+  return true
+}
+
 export async function runChatEngineConformanceSuite(
   options: ChatEngineConformanceSuiteOptions
 ): Promise<ChatEngineConformanceSuiteResult> {
@@ -258,53 +354,16 @@ export async function runChatEngineConformanceSuite(
     throw new Error('The tool stream did not execute an approved tool.')
   }
 
-  const abortController = new AbortController()
-  const abortResponse = await sendChat(
-    {
-      ...shared,
-      request: options.abortRequest,
-    },
-    abortController.signal
-  )
-  if (!abortResponse.ok) {
-    throw new Error(`Abort scenario returned HTTP ${abortResponse.status}.`)
-  }
-  if (!abortResponse.body) {
-    throw new Error('Abort scenario returned no stream.')
-  }
-  const abortReader = abortResponse.body.getReader()
-  const firstChunk = await abortReader.read()
-  if (firstChunk.done) {
-    throw new Error('Abort scenario ended before cancellation.')
-  }
-  abortController.abort('conformance cancellation')
-  const abortStream = await readStream(
-    new Response(
-      new ReadableStream({
-        async start(controller) {
-          controller.enqueue(firstChunk.value)
-          for (;;) {
-            const chunk = await abortReader.read()
-            if (chunk.done) break
-            controller.enqueue(chunk.value)
-          }
-          controller.close()
-        },
-        cancel(reason) {
-          return abortReader.cancel(reason)
-        },
-      }),
-      { headers: abortResponse.headers }
-    ),
-    'abort'
-  )
-  assertTerminalIdentity(abortStream, options.abortRequest, 'abort')
+  const transportCancelled = await verifyTransportCancellation({
+    ...shared,
+    request: options.abortRequest,
+  })
 
   return {
     manifest: deployment.manifest,
     deploymentStream: deployment.stream,
     requestCredentialStream: requestCredential.stream,
     toolStream,
-    abortStream,
+    transportCancelled,
   }
 }
