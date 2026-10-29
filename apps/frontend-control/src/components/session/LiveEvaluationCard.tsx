@@ -205,9 +205,8 @@ function LiveEvaluationCard({
   const t = useTranslations()
   const { data } = useQuery(GetControlLiveQuizEvaluationDocument, {
     variables: { id: quizId },
-    // live counts while the block runs; on every (re)mount fetch once more so
-    // answers submitted just before the block closed are included
-    pollInterval: live ? 2000 : 0,
+    // Delayed aggregation can update closed results minutes after closure.
+    pollInterval: live ? 2000 : 5000,
     fetchPolicy: 'cache-and-network',
   })
 

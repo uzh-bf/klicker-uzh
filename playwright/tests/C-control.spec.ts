@@ -414,11 +414,38 @@ test.describe
       await expect(controlPage.getByTestId('qa-toggle-enabled')).toBeChecked()
       await expect(controlPage.getByTestId('qa-question-1')).toBeVisible()
     }
-    await secondPage.close()
     await context.unroute(graphQLRoute)
+
+    // A change from another controller must refresh the mounted controls.
+    for (const controlPage of [page, secondPage]) {
+      const displayResponse = controlPage.waitForResponse(
+        (response) =>
+          graphQLOperationName(response.request())?.includes(
+            'GetLiveQuizEvaluationDisplay'
+          ) === true
+      )
+      await controlPage.getByTestId('session-tab-control').click()
+      await displayResponse
+      await expect(
+        controlPage.getByTestId('leinwand-show-percentages')
+      ).toBeVisible()
+    }
+    const projectionToggle = page.getByTestId('leinwand-show-percentages')
+    const remoteProjectionToggle = secondPage.getByTestId(
+      'leinwand-show-percentages'
+    )
+    const percentagesBefore = await remoteProjectionToggle.isChecked()
+    await remoteProjectionToggle.click()
+    await expect(projectionToggle).toHaveAttribute(
+      'aria-checked',
+      String(!percentagesBefore),
+      { timeout: 8000 }
+    )
+    await secondPage.close()
 
     // Content acknowledgments carry totalAnswers but are not questions. They
     // must not inflate votes, question counts or fallback participants.
+    let evaluationAnswers = 3
     await page.route(graphQLRoute, async (route) => {
       const operationName = graphQLOperationName(route.request())
       if (!operationName?.includes('GetControlLiveQuizEvaluation')) {
@@ -455,9 +482,24 @@ test.describe
                       hasAnswerFeedbacks: false,
                       results: {
                         __typename: 'ChoicesElementResults',
-                        totalAnswers: 3,
+                        totalAnswers: evaluationAnswers,
                         anonymousAnswers: 0,
-                        choices: [],
+                        choices: [
+                          {
+                            __typename: 'ChoiceElementResults',
+                            value: 'A',
+                            count: evaluationAnswers - 1,
+                            correct: false,
+                            feedback: null,
+                          },
+                          {
+                            __typename: 'ChoiceElementResults',
+                            value: 'B',
+                            count: 1,
+                            correct: false,
+                            feedback: null,
+                          },
+                        ],
                       },
                     },
                     {
@@ -498,20 +540,28 @@ test.describe
     await expect(firstBlock.locator(':scope > div').last()).toHaveText(
       /\b3\b\D+\b3\b\D+\b1\b/
     )
-    await page.unroute(graphQLRoute)
-
-    // Deactivate the real block, end quiz (with confirmation)
+    // Results can change after closure, while either panel stays mounted.
     await page.getByTestId('session-tab-control').click()
-    const projectionToggle = page.getByTestId('leinwand-show-percentages')
-    await expect(projectionToggle).toBeVisible()
-    const percentagesBefore = await projectionToggle.isChecked()
-    await projectionToggle.click()
-    await expect(projectionToggle).toHaveAttribute(
-      'aria-checked',
-      String(!percentagesBefore)
-    )
     expect(embeddingRequests).toBe(0)
     await page.getByTestId('deactivate-block').click()
+    await expect(page.getByTestId('end-live-quiz')).toBeVisible()
+    await expect(page.getByTestId('live-evaluation')).toContainText('67%')
+    evaluationAnswers = 4
+    await expect(page.getByTestId('live-evaluation')).toContainText('75%', {
+      timeout: 8000,
+    })
+    await page.getByTestId('session-tab-stats').click()
+    await expect(
+      page.getByTestId('stats-votes').locator(':scope > div').nth(1)
+    ).toHaveText('4')
+    evaluationAnswers = 5
+    await expect(
+      page.getByTestId('stats-votes').locator(':scope > div').nth(1)
+    ).toHaveText('5', { timeout: 8000 })
+    await page.unroute(graphQLRoute)
+
+    // End the real quiz (with confirmation).
+    await page.getByTestId('session-tab-control').click()
     await page.getByTestId('end-live-quiz').click()
     await page.getByTestId('confirm-end-live-quiz').click()
     await expect(page.getByTestId('live-quiz-ended')).toBeVisible()

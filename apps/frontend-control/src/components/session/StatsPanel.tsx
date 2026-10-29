@@ -69,8 +69,8 @@ function StatsPanel({
   )
   const { data } = useQuery(GetControlLiveQuizEvaluationDocument, {
     variables: { id: quizId },
-    pollInterval: live ? 5000 : 0,
-    // opening the tab fetches the final numbers of closed blocks once more
+    // Closed blocks can still receive delayed aggregation updates.
+    pollInterval: 5000,
     fetchPolicy: 'cache-and-network',
   })
 
