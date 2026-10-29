@@ -416,9 +416,11 @@ beforeAll(async () => {
 
 beforeEach(() => {
   vi.clearAllMocks()
+  vi.stubEnv('APP_SECRET', randomUUID())
 })
 
 afterEach(async () => {
+  vi.unstubAllEnvs()
   await requireDisposableDatabase(prisma)
 
   if (fixtureIds.quizzes.length > 0) {

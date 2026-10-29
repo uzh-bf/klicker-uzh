@@ -136,7 +136,7 @@ function ActivityEvaluation({
   const displaySettingKey = JSON.stringify(displaySetting ?? null)
   // question for which a controller setting is currently applied
   const controlledInstance = useRef<number | null>(null)
-  // biome-ignore lint/correctness/useExhaustiveDependencies: re-apply only when the setting or the question changes
+  // biome-ignore lint/correctness/useExhaustiveDependencies: re-apply only when the setting, question, or stack changes
   useEffect(() => {
     const elementType = instanceResults[activeInstance]?.type
     if (!elementType) return
@@ -164,7 +164,7 @@ function ActivityEvaluation({
       setChartType(displaySetting.chartType as ChartType)
     }
     setShowSolution(displaySetting.showSolution)
-  }, [displaySettingKey, activeInstance])
+  }, [displaySettingKey, activeInstance, activeStack])
 
   if (
     typeof activeStack === 'number' &&
