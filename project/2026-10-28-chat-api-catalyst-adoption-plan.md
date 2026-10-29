@@ -1,5 +1,7 @@
 # Direct chat API and Catalyst local adoption
 
+> Proposed `v3-ai` restacking and full-parity readiness work is specified in the [follow-up roadmap](./2026-10-29-chat-api-v3-ai-restack-roadmap.md). The user approved its finite source-readiness batch on 2026-10-29; this document retains the original scope and historical acceptance record.
+
 ## Approval summary
 
 Connect the Klicker browser to the new public chat API and the existing Catalyst tutoring engine, without adding a temporary model-execution bridge to the old Next route. The user approved refreshing the API against current admission, history, prompts and credits, integrating scoped Python authorization there, and testing that final path locally. Reuse the existing foundation and browser scenarios. The final local acceptance must use the actual chat API, Prisma persistence and pinned Catalyst/Mastra runtime, with deterministic provider and CodeAPI-compatible transports. This does not prove real Python, guest termination or model teaching quality.
