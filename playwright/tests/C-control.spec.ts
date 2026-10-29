@@ -110,6 +110,11 @@ test.describe
       page.getByTestId(`ppt-link-${CONTROL_FIXTURE.quizName}`)
     ).toHaveCount(0)
     await page
+      .getByRole('button', { name: CONTROL_FIXTURE.quizName, exact: false })
+      .press('Enter')
+    await expect(page.getByTestId('confirm-start-live-quiz')).toBeVisible()
+    await page.getByTestId('cancel-start-live-quiz-modal').click()
+    await page
       .getByTestId(`start-live-quiz-${CONTROL_FIXTURE.quizName}`)
       .click()
     await page.getByTestId('confirm-start-live-quiz').click()
