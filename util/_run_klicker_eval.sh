@@ -256,7 +256,7 @@ load_eval_defaults() {
     name="${line%%=*}"
     value="${line#*=}"
     case "$name" in
-      EVAL_METRICS_PATH) ;;
+      EVAL_METRICS_PATH | EVAL_OUTPUT_DIR) ;;
       *)
         echo "Error: unsupported variable in $DEFAULTS_FILE: $name" >&2
         exit 1
@@ -464,6 +464,10 @@ EFFECTIVE_GT_ROOT_DIR="$(resolve_input_path "$EFFECTIVE_GT_ROOT_DIR")"
 EFFECTIVE_DEFAULT_GT_DIR="$(resolve_input_path "$EFFECTIVE_DEFAULT_GT_DIR")"
 EFFECTIVE_LOCAL_GT_DIR="$(resolve_input_path "$EFFECTIVE_LOCAL_GT_DIR")"
 EFFECTIVE_CONTEXT_DIR="$(resolve_input_path "$EFFECTIVE_CONTEXT_DIR")"
+EFFECTIVE_OUTPUT_DIR=""
+if [ -n "${EVAL_OUTPUT_DIR:-}" ]; then
+  EFFECTIVE_OUTPUT_DIR="$(resolve_input_path "$EVAL_OUTPUT_DIR")"
+fi
 
 validate_framework_args
 set -- ${EVAL_ARGS[@]+"${EVAL_ARGS[@]}"}
@@ -824,6 +828,9 @@ EVAL_ENV+=(
   "EVAL_CONTEXT_DIR=$EFFECTIVE_CONTEXT_DIR"
   "TOOL_PROFILE=${TOOL_PROFILE:-catalog_expert_v1}"
 )
+if [ -n "$EFFECTIVE_OUTPUT_DIR" ]; then
+  EVAL_ENV+=("EVAL_OUTPUT_DIR=$EFFECTIVE_OUTPUT_DIR")
+fi
 if [ "$NEEDS_JUDGE" = true ]; then
   export LITELLM_API_BASE LITELLM_API_KEY
 fi
