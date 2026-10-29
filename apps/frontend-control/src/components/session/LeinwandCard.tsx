@@ -49,6 +49,8 @@ function LeinwandCard({
   const { data: displayData } = useQuery(GetLiveQuizEvaluationDisplayDocument, {
     variables: { id: quizId },
     skip: isAssessment,
+    pollInterval: 5000,
+    fetchPolicy: 'cache-and-network',
   })
   const [updateDisplay, { loading: saving }] = useMutation(
     UpdateEvaluationDisplayDocument,
