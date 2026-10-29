@@ -24,6 +24,7 @@ import {
   type ElementData,
   type ElementInstanceOptions,
   type ElementInstanceResults,
+  type LiveQuizBlockAggregationInput,
 } from '@klicker-uzh/types'
 import {
   getInitialInstanceResults,
@@ -248,42 +249,30 @@ export async function testInitialization(
     aggregateLiveQuizBlockResultsStandard: hatchet.task({
       name: 'aggregate-block-closure-standard',
       retries: 3,
-      fn: async (
-        {
-          liveQuizId,
-          blockId,
-        }: {
-          liveQuizId: string
-          blockId: number
-        },
-        executionContext
-      ) => {
+      fn: async (input: LiveQuizBlockAggregationInput, executionContext) => {
         const success = await handleStandardLiveQuizBlockClosureAggregation(
-          { liveQuizId, blockId },
+          input,
           hatchetCtx,
           executionContext
         )
+        if (!success) {
+          throw new Error('Standard live quiz block aggregation failed')
+        }
         return { success }
       },
     }),
     aggregateLiveQuizBlockResultsAssessment: hatchet.task({
       name: 'aggregate-block-closure-assessment',
       retries: 3,
-      fn: async (
-        {
-          liveQuizId,
-          blockId,
-        }: {
-          liveQuizId: string
-          blockId: number
-        },
-        executionContext
-      ) => {
+      fn: async (input: LiveQuizBlockAggregationInput, executionContext) => {
         const success = await handleAssessmentLiveQuizBlockClosureAggregation(
-          { liveQuizId, blockId },
+          input,
           hatchetCtx,
           executionContext
         )
+        if (!success) {
+          throw new Error('Assessment live quiz block aggregation failed')
+        }
         return { success }
       },
     }),

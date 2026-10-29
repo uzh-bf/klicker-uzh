@@ -1,0 +1,52 @@
+query GetLiveQuizEvaluationWithActivation($id: String!, $hmac: String) {
+  liveQuizEvaluation(id: $id, hmac: $hmac) {
+    id
+    name
+    status
+    displayName
+    description
+    courseLanguage
+    courseName
+
+    isAssessmentEnabled
+    pinCode
+
+    ...EvaluationResults
+    results {
+      stackId
+      startedAt
+    }
+
+    feedbacks {
+      id
+      isPublished
+      isPinned
+      isResolved
+      content
+      votes
+      resolvedAt
+      createdAt
+      responses {
+        id
+        content
+        positiveReactions
+        negativeReactions
+        createdAt
+      }
+    }
+    confusionFeedbacks {
+      speed
+      difficulty
+      createdAt
+    }
+  }
+  liveQuizLeaderboard(quizId: $id, hmac: $hmac) {
+    id
+    participantId
+    rank
+    username
+    avatar
+    score
+    isTemporary
+  }
+}
