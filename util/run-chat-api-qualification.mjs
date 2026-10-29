@@ -121,13 +121,14 @@ async function worker() {
   let lastHttpStatus = null
   let lastHttpCode = null
   const checks = []
-  async function startApi(enabled) {
+  async function startApi(enabled, pilots = [id.bot]) {
     api = spawn(process.execPath, [join(root, 'apps/chat-api/dist/index.js')], {
       cwd: root,
       env: {
         ...process.env,
         ...fixtures.apiEnvironment,
         CHAT_CODEAPI_ENABLED: enabled ? 'true' : 'false',
+        CHAT_CODEAPI_PILOT_CHATBOT_IDS: JSON.stringify(pilots),
         CHAT_ENGINE_URL: setup.engineUrl,
         CHAT_ENGINE_ID: QUALIFICATION_ENGINE_ID,
         CHAT_ENGINE_SERVICE_TOKEN: SYNTHETIC_SERVICE_TOKEN,
@@ -385,6 +386,29 @@ async function worker() {
       data: { aiFeaturesEnabled: true },
     })
     checks.push('ineligible-owner-zero-dispatch')
+    const beforeModeDenial = fixtures.stats()
+    const nonTutor = await call('/chat', {
+      ...body,
+      assistantMessageId: randomUUID(),
+      selectedMode: 'explainer',
+      allowRegeneration: true,
+    })
+    assert.equal(nonTutor.response.status, 200)
+    assert.equal(fixtures.stats().codeApiCalls, beforeModeDenial.codeApiCalls)
+    assert.equal(fixtures.stats().modelCalls, beforeModeDenial.modelCalls + 1)
+    checks.push('non-tutor-zero-codeapi-dispatch')
+    await stopChild(api)
+    await startApi(true, ['synthetic-other-pilot'])
+    const beforePilotDenial = fixtures.stats()
+    const unallowlisted = await call('/chat', {
+      ...body,
+      assistantMessageId: randomUUID(),
+      allowRegeneration: true,
+    })
+    assert.equal(unallowlisted.response.status, 200)
+    assert.equal(fixtures.stats().codeApiCalls, beforePilotDenial.codeApiCalls)
+    assert.equal(fixtures.stats().modelCalls, beforePilotDenial.modelCalls + 1)
+    checks.push('unallowlisted-zero-codeapi-dispatch')
     await stopChild(api)
     await startApi(false)
     const disabled = await call('/chat', {
