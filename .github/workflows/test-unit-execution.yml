@@ -35,7 +35,7 @@ jobs:
       runner_arm: ${{ steps.route.outputs.runner_arm }}
     steps:
       - name: Check out the trusted priority router
-        uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1
         with:
           repository: uzh-bf/klicker-uzh
           ref: v3
@@ -53,7 +53,7 @@ jobs:
       should_run: ${{ github.event_name == 'push' && 'true' || steps.check.outputs.should_run }}
     steps:
       - name: Checkout repository
-        uses: actions/checkout@v4
+        uses: actions/checkout@v7
       - name: Check for changes
         id: check
         uses: ./.github/actions/changed-paths
@@ -79,7 +79,7 @@ jobs:
           - 5432:5432
     steps:
       - name: Checkout repository
-        uses: actions/checkout@v4
+        uses: actions/checkout@v7
       - name: Record tested source tree
         continue-on-error: true
         if: github.event_name == 'pull_request'
@@ -106,13 +106,13 @@ jobs:
       - name: Upload tested source receipt
         continue-on-error: true
         if: github.event_name == 'pull_request'
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v7
         with:
           name: ci-validation-receipt
           path: ci-validation-receipt.json
           retention-days: 7
       - name: Set up pnpm
-        uses: pnpm/action-setup@v4
+        uses: pnpm/action-setup@v6
         with:
           version: 11.5.0
       - name: Set up Node.js with pnpm cache
@@ -172,7 +172,7 @@ jobs:
         run: pnpm --filter @klicker-uzh/util test --coverage --coverage.provider=v8 --coverage.reporter=lcov --coverage.reportsDirectory=coverage
       - name: Upload LCOV coverage
         if: always()
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v7
         with:
           name: coverage-lcov
           overwrite: true
@@ -192,7 +192,7 @@ jobs:
     permissions:
       contents: read
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v7
         with:
           persist-credentials: false
           sparse-checkout: .github/scripts
@@ -221,7 +221,7 @@ jobs:
         run: node .github/scripts/required-ci-status.cjs report
       - name: Upload required CI evidence
         if: always()
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v7
         with:
           name: required-ci-evidence
           path: required-ci-evidence.json

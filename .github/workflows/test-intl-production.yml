@@ -78,7 +78,7 @@ jobs:
       runner_arm: ${{ steps.route.outputs.runner_arm }}
     steps:
       - name: Check out the trusted priority router
-        uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
           repository: uzh-bf/klicker-uzh
           ref: v3
@@ -99,7 +99,7 @@ jobs:
       should_run: ${{ github.event_name == 'push' && 'true' || steps.check.outputs.should_run }}
     steps:
       - name: Checkout repository
-        uses: actions/checkout@v4
+        uses: actions/checkout@v7
       - name: Check for changes
         id: check
         uses: ./.github/actions/changed-paths
@@ -120,7 +120,7 @@ jobs:
       matrix:
         app: [frontend-pwa, frontend-manage]
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v7
         with:
           ref: ${{ github.event.pull_request.head.sha || github.sha }}
           persist-credentials: false
@@ -141,7 +141,7 @@ jobs:
     permissions:
       contents: read
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v7
         with:
           persist-credentials: false
           sparse-checkout: .github/scripts
@@ -170,7 +170,7 @@ jobs:
         run: node .github/scripts/required-ci-status.cjs report
       - name: Upload required CI evidence
         if: always()
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v7
         with:
           name: required-ci-evidence
           path: required-ci-evidence.json
@@ -186,7 +186,7 @@ jobs:
       contents: read
       issues: read
       pull-requests: read
-    uses: uzh-bf/klicker-uzh/.github/workflows/test-intl-production-execution.yml@a3286cc5cc77b98c7255b596084fd1032682bdaf
+    uses: uzh-bf/klicker-uzh/.github/workflows/test-intl-production-execution.yml@52d1abddfb33607bd3a6c0d891219c4d11fad0d6
 
   priority-status:
     name: ${{ (vars.PRIORITY_CI_ENABLED == 'true' && github.event_name == 'pull_request' && github.event.pull_request.state == 'open' && github.event.pull_request.draft == false && github.event.repository.private == false && github.event.pull_request.head.repo.full_name == github.repository && github.event.pull_request.user.type != 'Bot' && contains(github.event.pull_request.labels.*.name, 'ci:priority') && (github.event.action != 'labeled' || github.event.label.name == 'ci:priority')) && (github.event.action != 'labeled' || needs.priority-execution.outputs.run_label_event == 'true') && 'test-intl-production-status' || 'test-intl-production-status (priority not admitted)' }}
