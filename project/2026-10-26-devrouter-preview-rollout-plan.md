@@ -216,3 +216,6 @@ any paid image publication. No target merge, release or permission change follow
 
 
 Full-profile image repair: final LTI, response and worker images now omit the unused global package manager, matching the API image. Manage and Control also omit package managers and the same build-only standalone serializer already removed from PWA. Lecturer MCP uses the matching supported Node base and patched Alpine packages without runtime package managers. Manage pins the patched nanoid release within major 5; pnpm regenerates its lockfile. These are packaging/dependency corrections, with no preview-specific application branches. Full native image admission and real browser login remain pending; the existing finite pilot exceptions are not widened by source publication.
+
+
+The human approved carrying the same two finite upstream exceptions onto the reviewed repaired source and classifying only the pinned GraphQL Scalars 1.23.0 PhoneNumber finding as not affected. The upstream advisory explicitly excludes this version, and its published code uses the bounded linear regex. This exact worker-image tuple remains opt-in and bound to the existing source, platform and expiry checks; ordinary image admission stays strict.
