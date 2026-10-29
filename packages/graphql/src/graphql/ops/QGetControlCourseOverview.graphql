@@ -1,0 +1,11 @@
+query GetControlCourseOverview {
+  controlCourses {
+    id
+    name
+    isArchived
+    liveQuizzes {
+      id
+      status
+    }
+  }
+}
