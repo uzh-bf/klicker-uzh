@@ -5,7 +5,6 @@ import {
   MAX_COMPETENCE_TREE_DEPTH,
   MAX_DISCRIMINATION,
 } from '@klicker-uzh/adaptive-contract'
-import type { ContextWithUser } from '@klicker-uzh/graphql/adaptive-context-types'
 import * as DB from '@klicker-uzh/prisma/client'
 import type { PrismaTransactionClient } from '@klicker-uzh/util'
 import { GraphQLError } from 'graphql'
@@ -254,19 +253,19 @@ export function assertValidTree(
 
 export async function getAccessibleElements(
   assignments: CompetenceTreeAssignmentInput[],
-  ctx: ContextWithUser
+  {
+    prisma,
+    userId,
+  }: { prisma: Pick<PrismaTransactionClient, 'element'>; userId: string }
 ): Promise<AccessibleElement[]> {
   const elementIds = [...new Set(assignments.map(({ elementId }) => elementId))]
   if (elementIds.length === 0) return []
 
-  const elements = await ctx.prisma.element.findMany({
+  const elements = await prisma.element.findMany({
     where: {
       id: { in: elementIds },
       isDeleted: false,
-      OR: [
-        { ownerId: ctx.user.sub },
-        { permissions: { some: { userId: ctx.user.sub } } },
-      ],
+      OR: [{ ownerId: userId }, { permissions: { some: { userId } } }],
     },
     select: {
       id: true,
