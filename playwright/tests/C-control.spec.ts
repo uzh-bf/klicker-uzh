@@ -95,6 +95,8 @@ test.describe
     context,
     loginLecturerControl,
   }) => {
+    // This journey crosses several independent polling refresh cycles.
+    test.setTimeout(120_000)
     await loginLecturerControl()
     const controlOrigin = new URL(page.url()).origin
     let embeddingRequests = 0

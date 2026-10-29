@@ -5,6 +5,7 @@ import {
   requireDisposableDatabase,
 } from '@klicker-uzh/prisma'
 import * as DB from '@klicker-uzh/prisma/client'
+import { DisplayMode } from '@klicker-uzh/types'
 import type { Redis } from 'ioredis'
 import schedule from 'node-schedule'
 import {
@@ -20,6 +21,7 @@ import {
 import type { ContextWithUser } from '../src/lib/context.js'
 import {
   activateLiveQuizBlock,
+  deactivateLiveQuizBlock,
   endLiveQuiz,
   getControlLiveQuizFeedbacks,
 } from '../src/services/liveQuizzes.js'
@@ -229,6 +231,8 @@ type RedisStubOptions = {
   lb?: Record<string, string>
   xp?: Record<string, string>
   holdFirstRead?: boolean
+  hashes?: Record<string, Record<string, string>>
+  holdFirstCacheRead?: boolean
 }
 
 function createRedisStub({
@@ -236,17 +240,40 @@ function createRedisStub({
   lb = {},
   xp = {},
   holdFirstRead = false,
+  hashes = {},
+  holdFirstCacheRead = false,
 }: RedisStubOptions) {
-  const hold = holdFirstRead
-    ? { entered: signal(), release: signal() }
-    : undefined
+  const hold =
+    holdFirstRead || holdFirstCacheRead
+      ? { entered: signal(), release: signal() }
+      : undefined
   let isHeld = false
 
   const pipelineCommands = {
     hmset: vi.fn(),
+    hset: vi.fn(),
     exec: vi.fn(async () => []),
   }
   const pipeline = vi.fn(() => pipelineCommands)
+  const multi = vi.fn(() => {
+    const keys: string[] = []
+    const commands = {
+      hgetall(key: string) {
+        keys.push(key)
+        return commands
+      },
+      async exec() {
+        const values = keys.map((key) => [null, hashes[key] ?? {}])
+        if (holdFirstCacheRead && hold && !isHeld) {
+          isHeld = true
+          hold.entered.resolve()
+          await hold.release.promise
+        }
+        return values
+      },
+    }
+    return commands
+  })
   const hgetall = vi.fn(async (key: string) => {
     if (hold && !isHeld) {
       isHeld = true
@@ -259,9 +286,11 @@ function createRedisStub({
   })
 
   return {
-    redis: { hgetall, pipeline } as unknown as Redis,
+    redis: { hgetall, pipeline, multi } as unknown as Redis,
     hgetall,
     pipeline,
+    pipelineCommands,
+    multi,
     hold,
   }
 }
@@ -305,7 +334,47 @@ function createContext({
     },
   } as unknown as ContextWithUser
 
-  return { context, pubSubPublish }
+  return { context, pubSubPublish, emitterEmit, taskSchedule }
+}
+
+async function addCloseQuestion(fixture: Fixture, blockId = fixture.blockId) {
+  const element = await prisma.element.create({
+    data: {
+      ownerId: fixture.ownerId,
+      name: 'Synthetic close question',
+      content: 'Synthetic close question',
+      type: DB.ElementType.SC,
+      options: {
+        choices: [],
+        displayMode: DisplayMode.LIST,
+        hasSampleSolution: false,
+      },
+    },
+  })
+  return prisma.elementInstance.create({
+    data: {
+      ownerId: fixture.ownerId,
+      elementId: element.id,
+      elementBlockId: blockId,
+      type: DB.ElementInstanceType.LIVE_QUIZ,
+      elementType: DB.ElementType.SC,
+      order: 0,
+      options: {},
+      elementData: {
+        ...element,
+        id: String(element.id),
+        elementId: element.id,
+        type: 'SC',
+        options: {
+          choices: [],
+          displayMode: DisplayMode.LIST,
+          hasSampleSolution: false,
+        },
+      },
+      results: { choices: {}, total: 0 },
+      anonymousResults: { choices: {}, total: 0 },
+    },
+  })
 }
 
 type InstrumentOptions = {
@@ -517,6 +586,283 @@ describe('controller audience feedback', () => {
 })
 
 describe('live quiz lifecycle concurrency', () => {
+  it.each([
+    false,
+    true,
+  ])('keeps a later block active after a stale duplicate close (assessment=%s)', async (isAssessmentEnabled) => {
+    const fixture = await createFixture()
+    const firstQuestion = await addCloseQuestion(fixture)
+    const nextBlock = await prisma.elementBlock.create({
+      data: { liveQuizId: fixture.quizId, order: 1 },
+    })
+    const nextQuestion = await addCloseQuestion(fixture, nextBlock.id)
+    await prisma.liveQuiz.update({
+      where: { id: fixture.quizId },
+      data: {
+        isAssessmentEnabled,
+        pinCode: isAssessmentEnabled ? randomUUID() : null,
+      },
+    })
+    const hashes = {
+      [`lq:${fixture.quizId}:i:${firstQuestion.id}:results`]: {
+        participants: '3',
+        '0': '3',
+      },
+      [`lq:${fixture.quizId}:i:${nextQuestion.id}:results`]: {
+        participants: '5',
+        '0': '5',
+      },
+    }
+    const redis = createRedisStub({ quizId: fixture.quizId, hashes })
+    const staleRedis = createRedisStub({
+      quizId: fixture.quizId,
+      hashes,
+      holdFirstCacheRead: true,
+    })
+    const unusedRedis = createRedisStub({ quizId: fixture.quizId })
+    const live = createContext({
+      ownerId: fixture.ownerId,
+      client: prisma,
+      redis: redis.redis,
+    })
+    const stale = createContext({
+      ownerId: fixture.ownerId,
+      client: prisma,
+      redis: staleRedis.redis,
+    })
+    if (isAssessmentEnabled) {
+      live.context.redisExec = unusedRedis.redis
+      stale.context.redisExec = unusedRedis.redis
+    } else {
+      live.context.redisAssessmentExec = unusedRedis.redis
+      stale.context.redisAssessmentExec = unusedRedis.redis
+    }
+    await activateLiveQuizBlock(
+      { quizId: fixture.quizId, blockId: fixture.blockId },
+      live.context
+    )
+    const closing = deactivateLiveQuizBlock(
+      { quizId: fixture.quizId, blockId: fixture.blockId },
+      stale.context
+    )
+    try {
+      await bounded(staleRedis.hold!.entered.promise, 'stale close cache read')
+      expect(
+        await deactivateLiveQuizBlock(
+          { quizId: fixture.quizId, blockId: fixture.blockId },
+          live.context
+        )
+      ).toBe(true)
+      const firstClosed = await prisma.elementBlock.findUniqueOrThrow({
+        where: { id: fixture.blockId },
+      })
+      await activateLiveQuizBlock(
+        { quizId: fixture.quizId, blockId: nextBlock.id },
+        live.context
+      )
+      staleRedis.hold!.release.resolve()
+      expect(await bounded(closing, 'stale close result')).toBe(false)
+      expect(
+        await prisma.liveQuiz.findUniqueOrThrow({
+          where: { id: fixture.quizId },
+          select: { activeBlockId: true },
+        })
+      ).toEqual({ activeBlockId: nextBlock.id })
+      expect(
+        await prisma.elementBlock.findUniqueOrThrow({
+          where: { id: fixture.blockId },
+        })
+      ).toEqual(firstClosed)
+      expect(await endLiveQuiz({ id: fixture.quizId }, live.context)).toBeNull()
+      expect(stale.pubSubPublish).not.toHaveBeenCalled()
+      expect(stale.emitterEmit).not.toHaveBeenCalled()
+      expect(staleRedis.pipelineCommands.hset).not.toHaveBeenCalled()
+      expect(stale.taskSchedule.standard).not.toHaveBeenCalled()
+      expect(stale.taskSchedule.assessment).not.toHaveBeenCalled()
+      expect(unusedRedis.multi).not.toHaveBeenCalled()
+      expect(
+        await deactivateLiveQuizBlock(
+          { quizId: fixture.quizId, blockId: nextBlock.id },
+          live.context
+        )
+      ).toBe(true)
+      const saved = await prisma.elementInstance.findUniqueOrThrow({
+        where: { id: nextQuestion.id },
+      })
+      expect(
+        isAssessmentEnabled ? saved.results : saved.anonymousResults
+      ).toEqual({ choices: { 0: 5 }, total: 5 })
+    } finally {
+      staleRedis.hold!.release.resolve()
+      await Promise.allSettled([closing])
+    }
+  })
+
+  it.each([
+    'execution',
+    'activation',
+  ] as const)('rolls back a stale close after waiting on a changed block %s', async (changedIdentity) => {
+    const fixture = await createFixture()
+    const question = await addCloseQuestion(fixture)
+    const redis = createRedisStub({
+      quizId: fixture.quizId,
+      holdFirstCacheRead: true,
+      hashes: {
+        [`lq:${fixture.quizId}:i:${question.id}:results`]: {
+          participants: '3',
+          '0': '3',
+        },
+      },
+    })
+    const writeStarted = signal()
+    const queryPrisma = instrumentPrisma({
+      onLiveQuizUpdate: writeStarted.resolve,
+      onLiveQuizUpdateMany: writeStarted.resolve,
+    })
+    const { context, pubSubPublish, emitterEmit, taskSchedule } = createContext(
+      {
+        ownerId: fixture.ownerId,
+        client: prisma,
+        redis: redis.redis,
+      }
+    )
+    await activateLiveQuizBlock(
+      { quizId: fixture.quizId, blockId: fixture.blockId },
+      context
+    )
+    context.prisma = queryPrisma
+    vi.clearAllMocks()
+    const closing = deactivateLiveQuizBlock(
+      { quizId: fixture.quizId, blockId: fixture.blockId },
+      context
+    )
+    const locked = signal()
+    const releaseReset = signal()
+    let resetting: Promise<unknown> | undefined
+    let blockerPid = 0
+    try {
+      await bounded(redis.hold!.entered.promise, 'old execution cache read')
+      resetting = prisma.$transaction(async (tx) => {
+        await tx.liveQuiz.update({
+          where: { id: fixture.quizId },
+          data: { activeBlockId: fixture.blockId },
+        })
+        const [backend] = await tx.$queryRaw<{ pid: number }[]>`
+            SELECT pg_backend_pid() AS pid
+          `
+        blockerPid = backend!.pid
+        locked.resolve()
+        await releaseReset.promise
+        await tx.elementBlock.update({
+          where: { id: fixture.blockId },
+          data:
+            changedIdentity === 'execution'
+              ? { execution: { increment: 1 } }
+              : { startedAt: new Date(Date.now() + 60_000) },
+        })
+      })
+      await bounded(locked.promise, 'competing execution lock')
+      redis.hold!.release.resolve()
+      await bounded(writeStarted.promise, 'stale close write')
+      const lockDeadline = Date.now() + 4000
+      let blocked = false
+      while (!blocked && Date.now() < lockDeadline) {
+        const [state] = await prisma.$queryRaw<{ blocked: boolean }[]>`
+            SELECT EXISTS (
+              SELECT 1 FROM pg_stat_activity
+              WHERE ${blockerPid} = ANY(pg_blocking_pids(pid))
+            ) AS blocked
+          `
+        blocked = state!.blocked
+        if (!blocked) await new Promise((resolve) => setTimeout(resolve, 20))
+      }
+      expect(blocked).toBe(true)
+      releaseReset.resolve()
+      await resetting
+      expect(await bounded(closing, 'stale execution result')).toBe(false)
+      expect(
+        await prisma.liveQuiz.findUniqueOrThrow({
+          where: { id: fixture.quizId },
+          select: { activeBlockId: true },
+        })
+      ).toEqual({ activeBlockId: fixture.blockId })
+      const block = await prisma.elementBlock.findUniqueOrThrow({
+        where: { id: fixture.blockId },
+      })
+      expect(block.status).toBe(DB.ElementBlockStatus.ACTIVE)
+      expect(block.closedAt).toBeNull()
+      expect(
+        (
+          await prisma.elementInstance.findUniqueOrThrow({
+            where: { id: question.id },
+          })
+        ).anonymousResults
+      ).toEqual({ choices: {}, total: 0 })
+      expect(pubSubPublish).not.toHaveBeenCalled()
+      expect(emitterEmit).not.toHaveBeenCalled()
+      expect(redis.pipelineCommands.hset).not.toHaveBeenCalled()
+      expect(taskSchedule.standard).not.toHaveBeenCalled()
+      expect(taskSchedule.assessment).not.toHaveBeenCalled()
+    } finally {
+      redis.hold!.release.resolve()
+      releaseReset.resolve()
+      await Promise.allSettled([closing, ...(resetting ? [resetting] : [])])
+    }
+  })
+
+  it('rolls back a close claim when result persistence fails', async () => {
+    const fixture = await createFixture()
+    const question = await addCloseQuestion(fixture)
+    const redis = createRedisStub({
+      quizId: fixture.quizId,
+      hashes: {
+        [`lq:${fixture.quizId}:i:${question.id}:results`]: {
+          participants: '3',
+          '0': '3',
+        },
+      },
+    })
+    const live = createContext({
+      ownerId: fixture.ownerId,
+      client: prisma,
+      redis: redis.redis,
+    })
+    await activateLiveQuizBlock(
+      { quizId: fixture.quizId, blockId: fixture.blockId },
+      live.context
+    )
+    const before = await prisma.liveQuiz.findUniqueOrThrow({
+      where: { id: fixture.quizId },
+      include: { blocks: { include: { elements: true } } },
+    })
+    const failure = new Error('Synthetic close persistence failure')
+    const failing = createContext({
+      ownerId: fixture.ownerId,
+      client: instrumentPrisma({
+        onLiveQuizUpdate() {
+          throw failure
+        },
+      }),
+      redis: redis.redis,
+    })
+    await expect(
+      deactivateLiveQuizBlock(
+        { quizId: fixture.quizId, blockId: fixture.blockId },
+        failing.context
+      )
+    ).rejects.toBe(failure)
+    expect(
+      await prisma.liveQuiz.findUniqueOrThrow({
+        where: { id: fixture.quizId },
+        include: { blocks: { include: { elements: true } } },
+      })
+    ).toEqual(before)
+    expect(failing.pubSubPublish).not.toHaveBeenCalled()
+    expect(failing.emitterEmit).not.toHaveBeenCalled()
+    expect(failing.taskSchedule.standard).not.toHaveBeenCalled()
+    expect(failing.taskSchedule.assessment).not.toHaveBeenCalled()
+  })
+
   it('holds end after its claim until commit, so competing activation rejects without activation side effects', async () => {
     const fixture = await createFixture({ withParticipant: true })
     const redis = createRedisStub({
