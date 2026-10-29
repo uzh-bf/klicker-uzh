@@ -67,7 +67,7 @@ fi
 exit 2'
 
 write_file "$FAKE_BIN/uv" '#!/usr/bin/env bash
-for name in LITELLM_API_BASE EVAL_MODEL EVAL_MODEL_CAPABILITY_MODEL EVAL_REASONING_EFFORT EVAL_JUDGE_SINGLE_ATTEMPT EVAL_METRICS_PATH EVAL_TOOLS_PATH GT_ROOT_DIR DEFAULT_GT_DIR TOOL_PROFILE EVAL_API_MODE EVAL_ENDPOINT_URL EVAL_MODELS_URL EVAL_STREAM AGENT_ID; do
+for name in LITELLM_API_BASE EVAL_MODEL EVAL_MODEL_CAPABILITY_MODEL EVAL_REASONING_EFFORT EVAL_JUDGE_SINGLE_ATTEMPT EVAL_METRICS_PATH EVAL_OUTPUT_DIR EVAL_TOOLS_PATH GT_ROOT_DIR DEFAULT_GT_DIR TOOL_PROFILE EVAL_API_MODE EVAL_ENDPOINT_URL EVAL_MODELS_URL EVAL_STREAM AGENT_ID; do
   printf "%s=%s\n" "$name" "${!name-}" >>"$KLICKER_TEST_CHILD_LOG"
 done
 for name in AZURE_OPENAI_API_KEY AZURE_OPENAI_BASE_URL UPSTREAM_OPENAI_API_KEY UPSTREAM_OPENAI_BASE_URL OPENAI_API_KEY LITELLM_API_KEY JUDGE_KEY JUDGE_URL PIPELINES_LITELLM_API_KEY INFISICAL_TOKEN KLICKER_EVAL_GUARD_KEY KLICKER_EVAL_UPSTREAM_KEY; do
@@ -344,6 +344,7 @@ assert_line 'EVAL_MODEL_CAPABILITY_MODEL=gpt-6-luna' "$CHILD_LOG"
 assert_line 'EVAL_REASONING_EFFORT=high' "$CHILD_LOG"
 assert_line 'EVAL_JUDGE_SINGLE_ATTEMPT=true' "$CHILD_LOG"
 assert_line "EVAL_METRICS_PATH=$FAKE_REPO/evaluation/data/metrics/klicker_metrics.yaml" "$CHILD_LOG"
+assert_line "EVAL_OUTPUT_DIR=$FAKE_REPO/evaluation/data/output" "$CHILD_LOG"
 assert_line "EVAL_TOOLS_PATH=$FAKE_REPO/evaluation/data/tools/klicker_fineco.yaml" "$CHILD_LOG"
 assert_line "GT_ROOT_DIR=$FAKE_REPO/evaluation/data/ground_truth/klicker_fineco" "$CHILD_LOG"
 assert_line "DEFAULT_GT_DIR=$FAKE_REPO/evaluation/data/ground_truth/klicker_fineco" "$CHILD_LOG"
@@ -375,6 +376,7 @@ env -i \
   EVAL_MODEL_CAPABILITY_MODEL='gpt-5.4-mini' \
   EVAL_JUDGE_SINGLE_ATTEMPT='false' \
   EVAL_METRICS_PATH='evaluation/data/metrics/klicker_metrics.yaml' \
+  EVAL_OUTPUT_DIR='/tmp/klicker-eval-caller-output' \
   EVAL_TOOLS_PATH='evaluation/data/tools/klicker_fineco.yaml' \
   GT_ROOT_DIR='evaluation/data/ground_truth/klicker_fineco' \
   DEFAULT_GT_DIR='evaluation/data/ground_truth/klicker_fineco' \
@@ -390,6 +392,7 @@ assert_line 'EVAL_MODEL=caller/model' "$CHILD_LOG"
 assert_line 'EVAL_MODEL_CAPABILITY_MODEL=gpt-5.4-mini' "$CHILD_LOG"
 assert_line 'EVAL_JUDGE_SINGLE_ATTEMPT=false' "$CHILD_LOG"
 assert_line "EVAL_METRICS_PATH=$FAKE_REPO/evaluation/data/metrics/klicker_metrics.yaml" "$CHILD_LOG"
+assert_line 'EVAL_OUTPUT_DIR=/tmp/klicker-eval-caller-output' "$CHILD_LOG"
 assert_line "EVAL_TOOLS_PATH=$FAKE_REPO/evaluation/data/tools/klicker_fineco.yaml" "$CHILD_LOG"
 assert_line "GT_ROOT_DIR=$FAKE_REPO/evaluation/data/ground_truth/klicker_fineco" "$CHILD_LOG"
 assert_line "DEFAULT_GT_DIR=$FAKE_REPO/evaluation/data/ground_truth/klicker_fineco" "$CHILD_LOG"
