@@ -27,7 +27,7 @@
   "scripts": {
     "build": "run-s build:ts",
     "build:test": "pnpm run build",
-    "build:ts": "rollup -c",
+    "build:ts": "rollup -c --forceExit",
     "check": "tsc --noEmit --tsBuildInfoFile dist/tsconfig.check.tsbuildinfo",
     "dev": "tsx --watch src/index.ts",
     "smoke:openrouter": "tsx src/smoke/openrouter.ts",
