@@ -1,5 +1,12 @@
+import { once } from 'node:events'
 import { createServer } from 'node:http'
-import { CHAT_ENGINE_CONTRACT_VERSION } from '@klicker-uzh/chat-engine-contract'
+import { serve } from '@hono/node-server'
+import {
+  CHAT_ENGINE_CONTRACT_VERSION,
+  conformanceToolRequest,
+} from '@klicker-uzh/chat-engine-contract'
+import { createDefaultEngineApp } from '@klicker-uzh/chat-engine-default'
+import { MockLanguageModelV4 } from 'ai/test'
 import { describe, expect, test, vi } from 'vitest'
 import {
   createValidatedPlatformStream,
@@ -435,4 +442,208 @@ test.each([
   expect(finalize).toHaveBeenCalledTimes(1)
   expect(onCancel).toHaveBeenCalledTimes(1)
   reader.releaseLock()
+})
+
+test.each([
+  'complete',
+  'tool',
+  'next-step',
+  'partial-next-step',
+] as const)('settles native engine HTTP usage once after %s', async (phase) => {
+  const upstreamAbort = vi.fn()
+  const peerClosed = vi.fn()
+  const beginPhase = vi.fn()
+  let calls = 0
+  const model = new MockLanguageModelV4({
+    doStream: async ({ abortSignal }) => {
+      calls += 1
+      const first = calls === 1
+      return {
+        stream: new ReadableStream({
+          start(controller) {
+            controller.enqueue({ type: 'stream-start', warnings: [] })
+            if (first) {
+              controller.enqueue({
+                type: 'tool-call',
+                toolCallId: 'call-http',
+                toolName: 'doc_query',
+                input: '{"query":"synthetic"}',
+              })
+              controller.enqueue({
+                type: 'finish',
+                finishReason: { unified: 'tool-calls', raw: 'tool_calls' },
+                usage: {
+                  inputTokens: {
+                    total: 12,
+                    noCache: 12,
+                    cacheRead: undefined,
+                    cacheWrite: undefined,
+                  },
+                  outputTokens: { total: 4, text: 4, reasoning: undefined },
+                },
+              })
+              controller.close()
+              return
+            }
+            controller.enqueue({ type: 'text-start', id: 'text-http' })
+            controller.enqueue({
+              type: 'text-delta',
+              id: 'text-http',
+              delta: 'synthetic answer',
+            })
+            if (phase === 'complete') {
+              controller.enqueue({ type: 'text-end', id: 'text-http' })
+              controller.enqueue({
+                type: 'finish',
+                finishReason: { unified: 'stop', raw: 'stop' },
+                usage: {
+                  inputTokens: {
+                    total: 20,
+                    noCache: 20,
+                    cacheRead: undefined,
+                    cacheWrite: undefined,
+                  },
+                  outputTokens: { total: 6, text: 6, reasoning: undefined },
+                },
+              })
+              controller.close()
+              return
+            }
+            beginPhase()
+            abortSignal?.addEventListener(
+              'abort',
+              () => {
+                upstreamAbort()
+                if (phase === 'partial-next-step') {
+                  controller.enqueue({
+                    type: 'finish',
+                    finishReason: { unified: 'stop', raw: 'stop' },
+                    usage: {
+                      inputTokens: {
+                        total: 9,
+                        noCache: 9,
+                        cacheRead: undefined,
+                        cacheWrite: undefined,
+                      },
+                      outputTokens: {
+                        total: undefined,
+                        text: undefined,
+                        reasoning: undefined,
+                      },
+                    },
+                  })
+                  controller.close()
+                } else
+                  controller.error(
+                    new DOMException('Synthetic abort', 'AbortError')
+                  )
+              },
+              { once: true }
+            )
+          },
+        }),
+      }
+    },
+  })
+  const engine = createDefaultEngineApp({
+    serviceToken: 'synthetic-service',
+    modelFactory: () => model,
+    toolExecutor: async ({ abortSignal }) => {
+      if (phase === 'tool') {
+        beginPhase()
+        await new Promise<void>((_resolve, reject) => {
+          const aborted = () => {
+            upstreamAbort()
+            reject(abortSignal.reason)
+          }
+          if (abortSignal.aborted) aborted()
+          else abortSignal.addEventListener('abort', aborted, { once: true })
+        })
+      }
+      return { evidence: 17 }
+    },
+  })
+  const server = serve({
+    hostname: '127.0.0.1',
+    port: 0,
+    fetch: (request, environment) => {
+      environment.outgoing.once('close', () =>
+        peerClosed(!environment.outgoing.writableFinished)
+      )
+      return engine.fetch(request)
+    },
+  })
+  await once(server, 'listening')
+  const address = server.address()
+  if (!address || typeof address === 'string')
+    throw new Error('No HTTP listener')
+  const transport = new AbortController()
+  const finalize = vi.fn(async (_state: StreamState) => ({
+    creditsUsed: null,
+    finalPersistenceStatus: 'not-persisted' as const,
+  }))
+  try {
+    const response = await fetch(`http://127.0.0.1:${address.port}/v1/chat`, {
+      method: 'POST',
+      signal: AbortSignal.any([transport.signal, AbortSignal.timeout(3_000)]),
+      headers: {
+        authorization: 'Bearer synthetic-service',
+        'content-type': 'application/json',
+        'x-mcp-execution-token': 'synthetic-run',
+      },
+      body: JSON.stringify(conformanceToolRequest),
+    })
+    const stream = createValidatedPlatformStream(response, {
+      expected: {
+        assistantMessageId: conformanceToolRequest.assistantMessageId,
+        runId: conformanceToolRequest.runId,
+        modelId: conformanceToolRequest.generation.modelId,
+        deploymentId: conformanceToolRequest.generation.deploymentId,
+      },
+      metadata: () => ({
+        chatMode: 'tutor',
+        modelId: 'synthetic-model',
+        reasoningEffort: null,
+        userMessageId: 'user-1',
+        assistantMessageId: 'assistant-1',
+        creditsUsed: null,
+        finalPersistenceStatus: 'not-persisted',
+      }),
+      finalize,
+      onCancel: () => transport.abort(),
+    })
+    if (phase === 'complete') {
+      const output = await read(stream)
+      expect(output).not.toContain('INVALID_ENGINE_STREAM')
+      expect(output).toContain('"type":"tool-output-available"')
+      expect(finalize.mock.calls[0]?.[0]).toMatchObject({
+        status: 'finished',
+        usage: { inputTokens: 32, outputTokens: 10, totalTokens: 42 },
+      })
+    } else {
+      const reader = stream.getReader()
+      let output = ''
+      const decoder = new TextDecoder()
+      while (!output.includes('"totalTokens":16')) {
+        const next = await reader.read()
+        if (next.done)
+          throw new Error('Engine ended before its completed usage snapshot')
+        output += decoder.decode(next.value, { stream: true })
+      }
+      await vi.waitFor(() => expect(beginPhase).toHaveBeenCalledTimes(1))
+      await reader.cancel('Synthetic participant Stop')
+      reader.releaseLock()
+      await vi.waitFor(() => expect(upstreamAbort).toHaveBeenCalledTimes(1))
+      await vi.waitFor(() => expect(peerClosed).toHaveBeenCalledWith(true))
+      expect(finalize.mock.calls[0]?.[0]).toMatchObject({
+        status: 'aborted',
+        usage: { inputTokens: 12, outputTokens: 4, totalTokens: 16 },
+      })
+    }
+    expect(finalize).toHaveBeenCalledTimes(1)
+  } finally {
+    transport.abort()
+    if ('closeAllConnections' in server) server.closeAllConnections()
+    await new Promise<void>((resolve) => server.close(() => resolve()))
+  }
 })

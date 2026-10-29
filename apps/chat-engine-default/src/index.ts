@@ -34,6 +34,7 @@ import {
   streamText,
   type ToolResultPart,
   type UIMessage,
+  type UIMessageChunk,
   type UIMessageStreamWriter,
 } from 'ai'
 import { Hono } from 'hono'
@@ -621,32 +622,57 @@ export function createDefaultEngineApp(options: DefaultEngineOptions = {}) {
         generateId: () => request.assistantMessageId,
         execute: ({ writer: streamWriter }) => {
           writer = streamWriter
+          const startedToolInputs = new Set<string>()
           streamWriter.merge(
-            result.toUIMessageStream({
-              originalMessages: [
-                {
-                  id: request.assistantMessageId,
-                  role: 'assistant',
-                  parts: [],
+            result
+              .toUIMessageStream({
+                originalMessages: [
+                  {
+                    id: request.assistantMessageId,
+                    role: 'assistant',
+                    parts: [],
+                  },
+                ] satisfies UIMessage[],
+                generateMessageId: () => request.assistantMessageId,
+                sendReasoning: true,
+                messageMetadata: ({ part }) =>
+                  part.type === 'finish'
+                    ? finishMetadata(
+                        request,
+                        engineId,
+                        normalizeUsage(part.totalUsage),
+                        reasoningContent,
+                        false
+                      )
+                    : undefined,
+                onError: (error) => {
+                  const serialized = serializeStreamError(error)
+                  return JSON.stringify(serialized)
                 },
-              ] satisfies UIMessage[],
-              generateMessageId: () => request.assistantMessageId,
-              sendReasoning: true,
-              messageMetadata: ({ part }) =>
-                part.type === 'finish'
-                  ? finishMetadata(
-                      request,
-                      engineId,
-                      normalizeUsage(part.totalUsage),
-                      reasoningContent,
-                      false
-                    )
-                  : undefined,
-              onError: (error) => {
-                const serialized = serializeStreamError(error)
-                return JSON.stringify(serialized)
-              },
-            })
+              })
+              .pipeThrough(
+                new TransformStream<UIMessageChunk, UIMessageChunk>({
+                  transform(part, controller) {
+                    if (part.type === 'tool-input-start')
+                      startedToolInputs.add(part.toolCallId)
+                    // Providers can return complete calls without streaming arguments.
+                    // Atomic calls still need the platform contract's start event.
+                    if (
+                      (part.type === 'tool-input-available' ||
+                        part.type === 'tool-input-error') &&
+                      !startedToolInputs.has(part.toolCallId)
+                    ) {
+                      startedToolInputs.add(part.toolCallId)
+                      controller.enqueue({
+                        type: 'tool-input-start',
+                        toolCallId: part.toolCallId,
+                        toolName: part.toolName,
+                      })
+                    }
+                    controller.enqueue(part)
+                  },
+                })
+              )
           )
         },
         onError: (error) => JSON.stringify(serializeStreamError(error)),
