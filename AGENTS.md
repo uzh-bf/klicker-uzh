@@ -177,6 +177,9 @@ devrouter ensure .
 New empty disposable databases require the explicit one-shot initialization
 contract in [.devcontainer/README.md](.devcontainer/README.md#fresh-disposable-database-initialization).
 Automatic startup verifies an existing schema and preserves its contents.
+Use this contract when following the environment-doctor or data-model skills;
+their legacy reset/push/seed examples describe separately authorized destructive
+operations rather than automatic post-create behavior.
 
 The same command starts and proves primary and linked checkouts. Use `devrouter exec . -- <command...>` for one-shot commands or the exact DevPod ID printed by `ensure` for an interactive shell.
 

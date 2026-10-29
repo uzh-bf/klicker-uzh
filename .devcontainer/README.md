@@ -3,7 +3,7 @@
 Self-contained local environment for `klicker-uzh`. No Infisical/Doppler, no
 external EduID, no `/etc/hosts` edits — clone, route through devrouter, and run.
 The devcontainer owns the whole stack (toolchain, Postgres, 3× Redis, MailHog,
-Hatchet, install + build + seed, `turbo dev`);
+Hatchet, dependency preparation and `turbo dev`);
 [devrouter](https://github.com/rschlaefli/devrouter) fronts it on a shared
 `:443` / `:5432`. Linked worktrees publish only ephemeral host ports and can
 coexist; the primary checkout keeps fixed localhost application ports,
