@@ -38,7 +38,12 @@ RUN printf '%s\n' \
 # The pin stays on its own `RUN npm install prisma@` line because
 # util/check-prisma-sync.sh reads it from there and fails when it drifts from the
 # packages/prisma devDependency.
-RUN npm install prisma@7.8.0 --no-package-lock --no-audit --no-fund
+#
+# npm is removed in the same layer once Prisma is installed: no published npm
+# release vendors a patched brace-expansion (>=5.0.11) or undici (>=6.28.1) yet,
+# and the hook runs the local Prisma binary directly (see CMD), never npm or npx.
+RUN npm install prisma@7.8.0 --no-package-lock --no-audit --no-fund \
+ && rm -rf /root/.npm /usr/local/lib/node_modules/npm /usr/local/bin/npm /usr/local/bin/npx
 
 # npm's vendored undici and brace-expansion carry fixable HIGH advisories that no
 # npm release has picked up yet. The migration command runs the local binary, so
@@ -47,11 +52,13 @@ RUN rm -rf /usr/local/lib/node_modules/npm /usr/local/bin/npm /usr/local/bin/npx
 
 # Prisma 7 keeps the datasource URL out of the schema: prisma.config.ts supplies it
 # from DATABASE_URL and points at the schema/migrations paths (relative to /app).
-COPY packages/prisma/prisma.config.ts ./prisma.config.ts
+COPY packages/prisma/prisma.migrator.config.ts ./prisma.config.ts
 
 # Only the schema folder is needed; it contains datasource + models + the migrations/
 # directory that `migrate deploy` applies. No generated client, no app code required.
 COPY packages/prisma/src/prisma/schema ./src/prisma/schema
+COPY packages/adaptive-persistence/src/prisma/schema/*.prisma ./src/prisma/schema/
+COPY packages/adaptive-persistence/src/prisma/schema/migrations ./src/prisma/schema/migrations
 
 RUN addgroup -S nodejs -g 1001 && adduser -S -G nodejs -u 1001 prisma
 USER prisma

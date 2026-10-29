@@ -1,0 +1,5 @@
+query CompetenceTrees($includeArchived: Boolean = false) {
+  competenceTrees(includeArchived: $includeArchived) {
+    ...CompetenceTreeSummaryData
+  }
+}

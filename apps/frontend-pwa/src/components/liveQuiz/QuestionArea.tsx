@@ -1,18 +1,22 @@
 import { faCheck } from '@fortawesome/free-solid-svg-icons'
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome'
-import { ElementInstance, ElementType } from '@klicker-uzh/graphql/dist/ops'
-import StudentElement, {
-  InstanceStackStudentResponseType,
-} from '@klicker-uzh/shared-components/src/StudentElement'
+import {
+  type ElementInstance,
+  ElementType,
+} from '@klicker-uzh/graphql/dist/ops'
 import useSingleStudentResponse from '@klicker-uzh/shared-components/src/hooks/useSingleStudentResponse'
 import LiveQuizProgress from '@klicker-uzh/shared-components/src/questions/LiveQuizProgress'
+import StudentElement, {
+  type InstanceStackStudentResponseType,
+} from '@klicker-uzh/shared-components/src/StudentElement'
 import { push } from '@socialgouv/matomo-next'
 import { H2, toast, UserNotification } from '@uzh-bf/design-system'
 import dayjs from 'dayjs'
 import localforage from 'localforage'
-import { useTranslations } from 'next-intl'
 import dynamic from 'next/dynamic'
-import React, { useEffect, useRef, useState } from 'react'
+import { useTranslations } from 'next-intl'
+import type React from 'react'
+import { useEffect, useRef, useState } from 'react'
 import { isDeepEqual } from 'remeda'
 import useRemainingInstances from '../hooks/useRemainingInstances'
 import { loadStoredResponse, updateStoredResponses } from './storageHelpers'
@@ -32,13 +36,20 @@ interface QuestionAreaProps {
     type,
     answer,
     correlationKey,
+    submissionId,
   }: {
     liveQuizId: string
     instanceId: number
     type: ElementType
     answer: any
     correlationKey?: string | null
-  }) => Promise<{ statusCode: number; responseTimestamp?: number }>
+    submissionId: string
+  }) => Promise<{
+    statusCode: number
+    responseTimestamp?: number
+    submissionId?: string
+    hatchetEventId?: string
+  }>
   quizId: string
   execution: number
   timeLimit?: number
@@ -268,8 +279,8 @@ function QuestionArea({
         type: 'error',
       })
     }
-    // status code 500 (regular responses) -> server error
-    else if (statusCode === 500) {
+    // status code 500/503 -> server or durable transport unavailable
+    else if (statusCode === 500 || statusCode === 503) {
       toast({
         message: t('pwa.assessment.submissionServerError'),
         type: 'error',
@@ -291,6 +302,7 @@ function QuestionArea({
     correlationKey?: string | null
   }): Promise<boolean> {
     const storageKey = `lq-${quizId}-ex-${execution}-i-${instanceId}`
+    const submissionId = crypto.randomUUID()
 
     if (!input.valid) {
       toast({
@@ -314,6 +326,7 @@ function QuestionArea({
           selected: typeof value === 'boolean' ? value : false,
         })),
         correlationKey,
+        submissionId,
       })
 
       // --> show toast based on status code
@@ -344,6 +357,7 @@ function QuestionArea({
         type,
         answer: input.response,
         correlationKey,
+        submissionId,
       })
 
       // --> show toast based on status code
@@ -372,6 +386,7 @@ function QuestionArea({
         type,
         answer: String(parseFloat(input.response)),
         correlationKey,
+        submissionId,
       })
 
       // --> show toast based on status code
@@ -402,6 +417,7 @@ function QuestionArea({
           typeof entry === 'undefined' || entry === null ? -1 : entry
         ),
         correlationKey,
+        submissionId,
       })
 
       // --> show toast based on status code
@@ -430,6 +446,7 @@ function QuestionArea({
         type,
         answer: input.response,
         correlationKey,
+        submissionId,
       })
 
       // --> show toast based on status code
@@ -454,6 +471,7 @@ function QuestionArea({
         type,
         answer: true,
         correlationKey,
+        submissionId,
       })
 
       // --> show toast based on status code

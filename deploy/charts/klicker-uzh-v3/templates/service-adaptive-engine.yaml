@@ -1,0 +1,21 @@
+{{- if .Values.adaptiveEngine.enabled -}}
+# Cluster-internal only: the engine authenticates callers with a bearer token
+# over plain HTTP, so it must never be exposed through an ingress.
+apiVersion: v1
+kind: Service
+metadata:
+  name: {{ include "chart.fullname" . }}-adaptive-engine
+  labels:
+    {{- include "chart.labels" . | nindent 4 }}
+    app.kubernetes.io/component: adaptive-engine
+spec:
+  type: ClusterIP
+  ports:
+    - port: {{ .Values.adaptiveEngine.service.port }}
+      targetPort: http
+      protocol: TCP
+      name: http
+  selector:
+    {{- include "chart.selectorLabels" . | nindent 4 }}
+    app.kubernetes.io/component: adaptive-engine
+{{- end }}

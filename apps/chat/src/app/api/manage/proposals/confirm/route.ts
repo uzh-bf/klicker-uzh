@@ -1,5 +1,13 @@
+import type { AppLogger } from '@klicker-uzh/logging/node'
+import { cookies } from 'next/headers'
+import { NextRequest, NextResponse } from 'next/server'
+import { z } from 'zod'
 import { getManageAiCapability } from '@/src/lib/server/featureFlags'
 import { getAuthenticatedManageUser } from '@/src/lib/server/manageAuth'
+import {
+  getRouteLogger,
+  withRouteLogging,
+} from '@/src/lib/server/requestLogging'
 import {
   confirmManageProposal,
   getRequiredManageOrigin,
@@ -7,9 +15,6 @@ import {
   verifyManageProposalToken,
 } from '@/src/services/manageProposals'
 import { createRateLimiter } from '@/src/services/rateLimiter'
-import { cookies } from 'next/headers'
-import { NextRequest, NextResponse } from 'next/server'
-import { z } from 'zod'
 
 export const runtime = 'nodejs'
 
@@ -28,14 +33,15 @@ function getGraphqlEndpoint() {
     if (process.env.NODE_ENV === 'production') {
       throw new Error('APP_ORIGIN_API is required')
     }
-    console.warn(
+    getRouteLogger().warn(
+      { event: 'chat.manage.api_origin.defaulted' },
       'APP_ORIGIN_API is not set; falling back to http://localhost:3000 for local dev only'
     )
   }
   return `${origin ?? 'http://localhost:3000'}/api/graphql`
 }
 
-export async function POST(req: NextRequest) {
+async function handlePOST(req: NextRequest, log: AppLogger) {
   const manageUser = await getAuthenticatedManageUser()
   if (!manageUser) {
     return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
@@ -89,7 +95,10 @@ export async function POST(req: NextRequest) {
     manageOrigin = getRequiredManageOrigin()
     graphqlEndpoint = getGraphqlEndpoint()
   } catch (error) {
-    console.error('Manage proposal confirmation misconfigured:', error)
+    log.error(
+      { event: 'chat.manage.proposal.misconfigured' },
+      'Manage proposal confirmation misconfigured'
+    )
     return NextResponse.json(
       { error: 'Proposal confirmation is not configured' },
       { status: 500 }
@@ -97,7 +106,8 @@ export async function POST(req: NextRequest) {
   }
 
   if (!secret || !issuer) {
-    console.error(
+    log.error(
+      { event: 'chat.manage.proposal.misconfigured' },
       'Manage proposal confirmation misconfigured: missing MCP_LECTURER_JWT_SECRET/APP_SECRET or APP_ORIGIN_AUTH'
     )
     return NextResponse.json(
@@ -149,10 +159,19 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ error: 'Invalid proposal' }, { status: 403 })
     }
 
-    console.error('Manage proposal confirmation failed:', error)
+    log.error(
+      { event: 'chat.manage.proposal.failed' },
+      'Manage proposal confirmation failed'
+    )
     return NextResponse.json(
       { error: 'Proposal confirmation failed' },
       { status: 502 }
     )
   }
+}
+
+export function POST(req: NextRequest) {
+  return withRouteLogging(req, '/api/manage/proposals/confirm', (log) =>
+    handlePOST(req, log)
+  )
 }

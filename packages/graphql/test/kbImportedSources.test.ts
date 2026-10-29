@@ -128,6 +128,7 @@ function createContext({
   mcpServer?: Record<string, unknown> | null
 } = {}) {
   return {
+    log: { error: vi.fn() },
     user: {
       sub: OWNER_ID,
       role: 'USER',

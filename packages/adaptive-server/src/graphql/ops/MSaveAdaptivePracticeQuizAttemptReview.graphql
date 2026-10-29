@@ -1,0 +1,19 @@
+mutation MSaveAdaptivePracticeQuizAttemptReview(
+  $practiceQuizId: String!
+  $attemptCode: String!
+  $verdict: String!
+  $expectedOverallLevelLabel: String
+  $expectedCompetenceLevels: [AdaptiveAttemptExpectedLevelInput!]
+  $comment: String
+) {
+  saveAdaptivePracticeQuizAttemptReview(
+    practiceQuizId: $practiceQuizId
+    attemptCode: $attemptCode
+    verdict: $verdict
+    expectedOverallLevelLabel: $expectedOverallLevelLabel
+    expectedCompetenceLevels: $expectedCompetenceLevels
+    comment: $comment
+  ) {
+    ...FAdaptiveAttemptReview
+  }
+}

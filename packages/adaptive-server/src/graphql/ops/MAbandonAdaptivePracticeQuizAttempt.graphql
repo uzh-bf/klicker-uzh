@@ -1,0 +1,5 @@
+mutation MAbandonAdaptivePracticeQuizAttempt($attemptId: String!) {
+  abandonAdaptivePracticeQuizAttempt(attemptId: $attemptId) {
+    ...FAdaptivePracticeQuizAttemptState
+  }
+}

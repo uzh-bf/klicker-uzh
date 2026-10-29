@@ -1,0 +1,58 @@
+mutation ManipulateNumericalQuestionWithTreeAssignments(
+  $id: Int
+  $status: ElementStatus
+  $name: String
+  $content: String
+  $explanation: String
+  $options: OptionsNumericalInput
+  $basePoints: Boolean
+  $pointsMultiplier: Int
+  $tags: [String!]
+  $initialCompetenceTreeAssignments: [CompetenceTreeElementAssignmentCreateInput!]
+  $creationRequestId: String
+) {
+  manipulateNumericalQuestion(
+    id: $id
+    status: $status
+    name: $name
+    content: $content
+    explanation: $explanation
+    options: $options
+    basePoints: $basePoints
+    pointsMultiplier: $pointsMultiplier
+    tags: $tags
+    initialCompetenceTreeAssignments: $initialCompetenceTreeAssignments
+    creationRequestId: $creationRequestId
+  ) {
+    __typename
+    ... on NumericalElement {
+      id
+      name
+      status
+      type
+      content
+      explanation
+      basePoints
+      pointsMultiplier
+      options {
+        hasSampleSolution
+        accuracy
+        placeholder
+        unit
+        restrictions {
+          min
+          max
+        }
+        solutionRanges {
+          min
+          max
+        }
+        exactSolutions
+      }
+      tags {
+        id
+        name
+      }
+    }
+  }
+}
