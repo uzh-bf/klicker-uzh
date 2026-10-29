@@ -358,6 +358,7 @@ function resolveProviderKey(
 }
 
 export function createDefaultEngineApp(options: DefaultEngineOptions = {}) {
+  options.deploymentBaseUrl ??= process.env.OPENAI_BASE_URL
   options.providerAllowedOrigins ??= parseProviderAllowedOrigins(
     process.env.CHAT_ENGINE_PROVIDER_ALLOWED_ORIGINS
   )

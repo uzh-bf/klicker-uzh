@@ -1,9 +1,12 @@
 import { describe, expect, test, vi } from 'vitest'
 import { CHAT_ENGINE_CONTRACT_VERSION } from '@klicker-uzh/chat-engine-contract'
-import { createValidatedPlatformStream } from '../src/engine/stream.js'
+import {
+  createValidatedPlatformStream,
+  type StreamState,
+} from '../src/engine/stream.js'
 
 function responseFor(parts: unknown[]) {
-  const body = parts.map((part) => `data: ${JSON.stringify(part)}\n`).join('')
+  const body = parts.map((part) => `data: ${JSON.stringify(part)}\n\n`).join('')
   return new Response(body, {
     headers: { 'content-type': 'text/event-stream' },
   })
@@ -220,7 +223,7 @@ describe('validated engine stream', () => {
           messageMetadata: metadata(),
         },
       ]
-        .map((part) => `data: ${JSON.stringify(part)}\n`)
+        .map((part) => `data: ${JSON.stringify(part)}\n\n`)
         .join(''),
       `data: ${JSON.stringify({ type: 'text-start', id: 'late-text' })}\n`,
     ])
@@ -244,4 +247,75 @@ describe('validated engine stream', () => {
     expect(finalize).toHaveBeenCalledTimes(1)
     expect(chunks.wasCancelled()).toBe(true)
   })
+})
+
+test('persists text segments without duplicating text across tool parts', async () => {
+  const finalize = vi.fn(async (_state: StreamState) => ({
+    creditsUsed: 0,
+    finalPersistenceStatus: 'persisted' as const,
+  }))
+  const stream = createValidatedPlatformStream(
+    responseFor([
+      { type: 'text-start', id: 'text-1' },
+      { type: 'text-delta', id: 'text-1', delta: 'A' },
+      { type: 'tool-input-start', toolCallId: 'call-1', toolName: 'calculate' },
+      { type: 'text-delta', id: 'text-1', delta: 'B' },
+      { type: 'text-delta', id: 'text-1', delta: 'C' },
+      { type: 'text-end', id: 'text-1' },
+      { type: 'finish', messageMetadata: metadata() },
+    ]),
+    {
+      metadata: () => ({
+        chatMode: 'tutor',
+        modelId: 'gpt-4.1-mini',
+        reasoningEffort: null,
+        userMessageId: 'user-1',
+        assistantMessageId: 'assistant-1',
+        creditsUsed: null,
+        finalPersistenceStatus: 'not-persisted',
+      }),
+      finalize,
+    }
+  )
+  await read(stream)
+  const state = finalize.mock.calls[0]![0]
+  expect(state.text).toBe('ABC')
+  expect(
+    state.parts.filter((part) => part.type === 'text').map((part) => part.text)
+  ).toEqual(['A', 'BC'])
+})
+
+test.each([
+  'finish',
+  'abort',
+  'error',
+])('closes once for an unterminated final %s frame', async (type) => {
+  const finalize = vi.fn(async (_state: StreamState) => ({
+    creditsUsed: 0,
+    finalPersistenceStatus: 'persisted' as const,
+  }))
+  const part =
+    type === 'finish'
+      ? { type, messageMetadata: metadata() }
+      : type === 'error'
+        ? { type, errorText: 'synthetic failure' }
+        : { type }
+  const stream = createValidatedPlatformStream(
+    new Response(`data: ${JSON.stringify(part)}`),
+    {
+      metadata: () => ({
+        chatMode: 'tutor',
+        modelId: 'gpt-4.1-mini',
+        reasoningEffort: null,
+        userMessageId: 'user-1',
+        assistantMessageId: 'assistant-1',
+        creditsUsed: null,
+        finalPersistenceStatus: 'not-persisted',
+      }),
+      finalize,
+    }
+  )
+  const body = await read(stream)
+  expect(body.match(/data: \[DONE\]/g)).toHaveLength(1)
+  expect(finalize).toHaveBeenCalledTimes(1)
 })

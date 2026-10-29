@@ -3,7 +3,7 @@ import {
   parseEngineStreamPart,
 } from '@klicker-uzh/chat-engine-contract'
 import { MockLanguageModelV3 } from 'ai/test'
-import { describe, expect, test } from 'vitest'
+import { describe, expect, test, vi } from 'vitest'
 import { createDefaultEngineApp } from '../src/index.js'
 
 function mockStream() {
@@ -509,4 +509,64 @@ describe('default chat engine', () => {
     })
     expect(parts.some((part) => part.type === 'abort')).toBe(true)
   })
+})
+
+test('uses the deployment provider origin without a model factory', async () => {
+  const request = vi.fn(
+    async (_input: RequestInfo | URL, _init?: RequestInit) =>
+      new Response(
+        [
+          {
+            id: 'response-1',
+            object: 'chat.completion.chunk',
+            created: 0,
+            model: 'gpt-4.1-mini',
+            choices: [
+              {
+                index: 0,
+                delta: { role: 'assistant', content: 'synthetic answer' },
+                finish_reason: null,
+              },
+            ],
+          },
+          {
+            id: 'response-1',
+            object: 'chat.completion.chunk',
+            created: 0,
+            model: 'gpt-4.1-mini',
+            choices: [{ index: 0, delta: {}, finish_reason: 'stop' }],
+            usage: { prompt_tokens: 2, completion_tokens: 1, total_tokens: 3 },
+          },
+        ]
+          .map((part) => `data: ${JSON.stringify(part)}\n\n`)
+          .join('') + 'data: [DONE]\n\n',
+        { headers: { 'content-type': 'text/event-stream' } }
+      )
+  )
+  vi.stubEnv('OPENAI_BASE_URL', 'https://deployment.synthetic.invalid/v1')
+  vi.stubGlobal('fetch', request)
+  try {
+    const app = createDefaultEngineApp({
+      serviceToken: 'synthetic-service',
+      deploymentApiKey: 'synthetic-provider',
+    })
+    const response = await app.request('/v1/chat', {
+      method: 'POST',
+      headers: {
+        authorization: 'Bearer synthetic-service',
+        'content-type': 'application/json',
+      },
+      body: JSON.stringify(conformanceRequest),
+    })
+    expect(response.status).toBe(200)
+    const parts = await readParts(response)
+    expect(parts.at(-1)?.type).toBe('finish')
+    expect(request).toHaveBeenCalledTimes(1)
+    expect(String(request.mock.calls[0]![0])).toBe(
+      'https://deployment.synthetic.invalid/v1/chat/completions'
+    )
+  } finally {
+    vi.unstubAllGlobals()
+    vi.unstubAllEnvs()
+  }
 })

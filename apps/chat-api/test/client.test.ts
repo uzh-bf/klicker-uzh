@@ -1,6 +1,5 @@
 import { describe, expect, test, vi } from 'vitest'
 import {
-  CHAT_ENGINE_CONTRACT_VERSION,
   conformanceManifest,
   conformanceRequest,
 } from '@klicker-uzh/chat-engine-contract'
@@ -81,4 +80,27 @@ describe('engine client and readiness', () => {
     })
     expect(aborted).toBe(true)
   })
+})
+
+test('concurrent readiness callers await the same first manifest probe', async () => {
+  let resolveManifest!: (value: typeof conformanceManifest) => void
+  const manifest = vi.fn(
+    () =>
+      new Promise<typeof conformanceManifest>((resolve) => {
+        resolveManifest = resolve
+      })
+  )
+  vi.stubEnv('CHAT_ENGINE_ID', conformanceManifest.engineId)
+  const probe = new EngineReadinessProbe(
+    { manifest, chat: vi.fn() },
+    15000,
+    5000
+  )
+  vi.unstubAllEnvs()
+  const first = probe.get()
+  const second = probe.get()
+  resolveManifest(conformanceManifest)
+  const states = await Promise.all([first, second])
+  expect(states.map((state) => state.ok)).toEqual([true, true])
+  expect(manifest).toHaveBeenCalledTimes(1)
 })

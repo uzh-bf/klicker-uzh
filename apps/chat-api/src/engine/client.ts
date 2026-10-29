@@ -122,6 +122,7 @@ export type EngineReadiness = {
 
 export class EngineReadinessProbe {
   private lastCheckedAt = 0
+  private inFlight: Promise<EngineReadiness> | null = null
   private state: EngineReadiness = {
     ok: false,
     contractVersion: CHAT_ENGINE_CONTRACT_VERSION,
@@ -136,8 +137,16 @@ export class EngineReadinessProbe {
   ) {}
 
   async get(): Promise<EngineReadiness> {
+    if (this.inFlight) return this.inFlight
     if (Date.now() - this.lastCheckedAt < this.ttlMs) return this.state
-    this.lastCheckedAt = Date.now()
+    this.inFlight = this.refresh().finally(() => {
+      this.lastCheckedAt = Date.now()
+      this.inFlight = null
+    })
+    return this.inFlight
+  }
+
+  private async refresh(): Promise<EngineReadiness> {
     const abortController = new AbortController()
     let timeoutHandle: ReturnType<typeof setTimeout> | undefined
     try {

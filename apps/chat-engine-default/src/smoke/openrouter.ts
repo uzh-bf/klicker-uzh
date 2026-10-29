@@ -80,7 +80,9 @@ async function main() {
     },
     body: JSON.stringify(request),
   })
-  assert.equal(response.status, 200, await response.text())
+  if (response.status !== 200) {
+    throw new Error(`Engine returned HTTP ${response.status}`)
+  }
 
   const parts = await readParts(response)
   const text = parts

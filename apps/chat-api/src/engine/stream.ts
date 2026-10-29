@@ -136,8 +136,8 @@ function consumePart(state: StreamState, part: EngineStreamPart) {
     case 'text-delta': {
       state.text += part.delta
       const previous = state.parts[state.parts.length - 1]
-      if (previous?.type === 'text') previous.text = state.text
-      else state.parts.push({ type: 'text', text: state.text })
+      if (previous?.type === 'text') previous.text += part.delta
+      else state.parts.push({ type: 'text', text: part.delta })
       break
     }
     case 'reasoning-delta': {
@@ -283,10 +283,10 @@ export function createValidatedPlatformStream(
   const consumeLine = async (
     line: string,
     controller: ReadableStreamDefaultController<Uint8Array>
-  ) => {
+  ): Promise<boolean> => {
     const trimmed = line.trim()
-    if (!trimmed || trimmed.startsWith(':')) return
-    if (trimmed === 'data: [DONE]' || trimmed === '[DONE]') return
+    if (!trimmed || trimmed.startsWith(':')) return false
+    if (trimmed === 'data: [DONE]' || trimmed === '[DONE]') return false
 
     const payload = trimmed.startsWith('data: ')
       ? trimmed.slice('data: '.length)
@@ -368,7 +368,7 @@ export function createValidatedPlatformStream(
         controller.enqueue(textEncoder.encode('data: [DONE]\n\n'))
         await reader.cancel()
         controller.close()
-        return
+        return true
       }
       state.status = 'finished'
       const metadata = await finalizeOnce()
@@ -376,7 +376,7 @@ export function createValidatedPlatformStream(
       controller.enqueue(textEncoder.encode('data: [DONE]\n\n'))
       await reader.cancel()
       controller.close()
-      return
+      return true
     }
 
     consumePart(state, parsed)
@@ -385,7 +385,7 @@ export function createValidatedPlatformStream(
       abortMetadataPending = true
       const metadata = await finalizeOnce()
       controller.enqueue(encodeSse(platformMetadataPart(parsed, metadata)))
-      return
+      return true
     }
 
     if (parsed.type === 'abort') {
@@ -401,7 +401,7 @@ export function createValidatedPlatformStream(
       controller.enqueue(textEncoder.encode('data: [DONE]\n\n'))
       await reader.cancel()
       controller.close()
-      return
+      return true
     }
 
     if (parsed.type === 'error') {
@@ -416,50 +416,61 @@ export function createValidatedPlatformStream(
       controller.enqueue(textEncoder.encode('data: [DONE]\n\n'))
       await reader.cancel()
       controller.close()
-      return
+      return true
     }
 
     controller.enqueue(encodeSse(adaptPlatformPart(parsed)))
+    return true
   }
 
   return new ReadableStream<Uint8Array>({
     async pull(controller) {
       try {
-        const { done, value } = await reader.read()
-        if (done) {
-          if (buffer.length > 0) {
-            const lastLine = buffer
-            buffer = ''
-            await consumeLine(lastLine, controller)
-          }
-          if (state.status === 'streaming') {
-            state.status = 'error'
-            controller.enqueue(
-              encodeSse(
-                streamError(
-                  'ENGINE_STREAM_INCOMPLETE',
-                  'The chat engine closed the stream before finishing.'
+        for (;;) {
+          const { done, value } = await reader.read()
+          if (done) {
+            if (buffer.length > 0) {
+              const lastLine = buffer
+              buffer = ''
+              await consumeLine(lastLine, controller)
+              if (
+                state.status === 'error' ||
+                state.status === 'finished' ||
+                (state.status === 'aborted' && !abortMetadataPending)
+              )
+                return
+            }
+            if (state.status === 'streaming') {
+              state.status = 'error'
+              controller.enqueue(
+                encodeSse(
+                  streamError(
+                    'ENGINE_STREAM_INCOMPLETE',
+                    'The chat engine closed the stream before finishing.'
+                  )
                 )
               )
-            )
-            await finalizeOnce()
+              await finalizeOnce()
+            }
+            controller.enqueue(textEncoder.encode('data: [DONE]\n\n'))
+            controller.close()
+            return
           }
-          controller.enqueue(textEncoder.encode('data: [DONE]\n\n'))
-          controller.close()
-          return
-        }
 
-        buffer += decoder.decode(value, { stream: true })
-        const lines = buffer.split(/\r?\n/)
-        buffer = lines.pop() ?? ''
-        for (const line of lines) {
-          await consumeLine(line, controller)
-          if (
-            state.status === 'error' ||
-            state.status === 'finished' ||
-            (state.status === 'aborted' && !abortMetadataPending)
-          )
-            break
+          buffer += decoder.decode(value, { stream: true })
+          const lines = buffer.split(/\r?\n/)
+          buffer = lines.pop() ?? ''
+          let emitted = false
+          for (const line of lines) {
+            emitted = (await consumeLine(line, controller)) || emitted
+            if (
+              state.status === 'error' ||
+              state.status === 'finished' ||
+              (state.status === 'aborted' && !abortMetadataPending)
+            )
+              break
+          }
+          if (emitted) return
         }
       } catch (error) {
         if (state.status === 'streaming') {
