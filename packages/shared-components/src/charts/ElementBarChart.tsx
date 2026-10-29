@@ -23,6 +23,7 @@ interface ElementBarChartProps {
   instance: ElementInstanceEvaluation
   showSolution: boolean
   showExplanation: boolean
+  showPercentages?: boolean
   textSize: {
     legend: string
     legendMd: string
@@ -38,6 +39,7 @@ function ElementBarChart({
   instance,
   showSolution,
   showExplanation,
+  showPercentages = false,
   textSize,
   className,
 }: ElementBarChartProps) {
@@ -50,7 +52,10 @@ function ElementBarChart({
     ElementType.Flashcard,
   ]
 
-  const labeledData = useEvaluationBarChartData({ instance })
+  const labeledData = useEvaluationBarChartData({
+    instance,
+    showPercentages,
+  })
 
   if (!supportedElementTypes.includes(instance.type)) {
     return (
