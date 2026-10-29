@@ -969,11 +969,14 @@ try {
     assert.equal(owner.containerSourcePath, root)
     assert(Number.isInteger(owner.pid) && owner.pid > 1)
     const status = `/proc/${owner.pid}/stat`
-    assert(
-      !existsSync(status) ||
-        readFileSync(status, 'utf8').split(') ')[1]?.startsWith('Z '),
-      'Owned worker is still active'
-    )
+    await waitFor(() => {
+      try {
+        return readFileSync(status, 'utf8').split(') ')[1]?.startsWith('Z ')
+      } catch (error) {
+        if (error.code === 'ENOENT') return true
+        throw error
+      }
+    }, 15000)
   } else if (mode === '--start-worker') {
     assert.equal(process.env.CHAT_API_QUALIFICATION, '1')
     const child = spawn(
