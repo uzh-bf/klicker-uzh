@@ -1,4 +1,5 @@
 import { adaptiveAttemptDiagnosticsMutationFields } from '@klicker-uzh/adaptive-server/schema/adaptiveAttemptDiagnostics'
+import { adaptiveDryRunMutationFields } from '@klicker-uzh/adaptive-server/schema/adaptiveDryRuns'
 import { adaptiveMutationFields } from '@klicker-uzh/adaptive-server/schema/adaptiveMutationFields'
 import * as DB from '@klicker-uzh/prisma/client'
 import { ActivityType as ActivityTypeEnum } from '@klicker-uzh/types'
@@ -42,6 +43,7 @@ import {
   AdaptiveAttemptExpectedLevelInput,
   AdaptiveAttemptReviewRef,
 } from './adaptiveAttemptDiagnostics.js'
+import { AdaptiveDryRunRef } from './adaptiveDryRuns.js'
 import { AdaptivePracticeQuizConfigInput } from './adaptivePracticeQuiz.js'
 import {
   AdaptivePracticeQuizAttemptStateRef,
@@ -841,6 +843,10 @@ export const Mutation = builder.mutationType({
         AdaptiveWorkflowReceiptRef,
         CompetenceTreeScaleLevelInput,
         Course,
+      }),
+      ...adaptiveDryRunMutationFields(t, {
+        withPermission,
+        AdaptiveDryRunRef,
       }),
       ...adaptiveAttemptDiagnosticsMutationFields(t, {
         withPermission,

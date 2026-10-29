@@ -231,6 +231,34 @@ host change. New quizzes default to the retake settings, so with an older
 engine the publication guard refuses to publish them until the settings are
 turned off.
 
+### Dry runs (engine contract)
+
+Catalyst `POST /adaptive/v1/dry-run` (IRT_V1) runs up to 200 simulated
+students through the normal decisions in one request. Each student has a true
+level per root competence and answers an item correctly exactly when the item's
+level is at or below that level; every answer flips with `noiseProbability`
+(0–0.5). `students × totalQuestionCap` is bounded to 20,000 decisions, and the
+seed makes a run reproducible on the same engine revision.
+
+- **Scope.** Testing environments only (`ADAPTIVE_QUIZ_SHOW_SOLUTIONS=true`),
+  like the attempt check, with ADMIN permission on the quiz. Runs never create
+  attempts, results, exposure counts or calibration data. The UI calls them
+  "Dry runs" / «Testläufe»; "simulation" stays reserved for the Catalyst
+  research harness (see the simulation boundary test).
+- **Snapshot.** A run uses the quiz's current sealed IRT_V1 publication, with
+  four stop settings overridable per run: question cap, minimum per
+  subcompetence, classification z and tolerance bands. Unpublished and IRT v2
+  quizzes cannot start a run.
+- **Storage.** `AdaptivePracticeQuizDryRun` keeps the spec (including the
+  seed), the effective settings, a host-computed summary (exact and ±1 share,
+  bias, questions, determined share, stop reasons, true × reported levels,
+  question use) and the compact per-student rows. Deleting the quiz deletes its
+  runs.
+
+**Deploy order:** deploy an engine image with the endpoint before using the
+section; an older engine answers 404 and the host reports
+`ADAPTIVE_DRY_RUN_ENGINE_UNAVAILABLE`.
+
 ## Attempt concurrency
 
 Participant attempt commands (start, resume, restart, submit, abandon and

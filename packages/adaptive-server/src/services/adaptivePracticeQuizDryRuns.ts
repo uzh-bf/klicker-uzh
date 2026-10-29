@@ -1,0 +1,406 @@
+import { randomBytes } from 'node:crypto'
+import {
+  ADAPTIVE_DRY_RUN_MAX_DECISIONS,
+  ADAPTIVE_DRY_RUN_MAX_STUDENTS,
+  AdaptiveEngineUnavailableError,
+  createAdaptiveClient,
+  type DryRunRequest,
+  type DryRunResponse,
+} from '@klicker-uzh/adaptive-client'
+import type { ContextWithUser } from '@klicker-uzh/graphql/adaptive-context-types'
+import * as DB from '@klicker-uzh/prisma/client'
+import {
+  summarizeAdaptiveDryRun,
+  toAdaptiveDryRunStudent,
+} from './adaptivePracticeQuizDryRunSummary.js'
+import { adaptivePracticeQuizError } from './adaptivePracticeQuizErrors.js'
+import {
+  adaptiveEngineGraphQLError,
+  buildAdaptiveDecisionRequest,
+} from './adaptivePracticeQuizEstimatorVersions.js'
+import {
+  type LoadedAdaptiveRuntime,
+  loadAdaptiveRuntime,
+} from './adaptivePracticeQuizRuntimeData.js'
+import { isAdaptiveTestingInfoEnabled } from './adaptivePracticeQuizTestingInfo.js'
+
+/**
+ * Dry runs: simulated students run through the engine against the current
+ * publication of an IRT_V1 quiz, with optional stop-setting overrides. Only
+ * where ADAPTIVE_QUIZ_SHOW_SOLUTIONS=true (staging, local), like the attempt
+ * check. Callers are authorized by the GraphQL field (asUser + ADMIN
+ * permission on the quiz). Runs never touch attempts, results, exposure
+ * counts or calibration data.
+ */
+
+export type AdaptiveDryRunInput = {
+  students: number
+  noiseProbability: number
+  fromLevelId: number
+  toLevelId: number
+  competences: 'SAME_LEVEL' | 'INDEPENDENT'
+  seed?: string | null
+  totalQuestionCap: number
+  minQuestionsPerLeaf: number
+  classificationZ: number
+  classificationToleranceBands: number
+}
+
+export type AdaptiveDryRunRecord = Pick<
+  DB.AdaptivePracticeQuizDryRun,
+  | 'id'
+  | 'number'
+  | 'publicationId'
+  | 'engineRevision'
+  | 'durationMs'
+  | 'spec'
+  | 'effectiveSettings'
+  | 'summary'
+  | 'createdAt'
+> & { students: PrismaJson.PrismaAdaptiveDryRunStudents | null }
+
+export type AdaptiveDryRunWorkspace = {
+  available: boolean
+  /** Why no dry run can start, e.g. no IRT_V1 publication. */
+  unavailableReason: string | null
+  publicationId: string | null
+  levels: Array<{ id: number; label: string; order: number }>
+  competences: Array<{ nodeId: number; name: string }>
+  items: Array<{
+    poolItemId: number
+    elementName: string
+    levelId: number
+    nodeNames: string[]
+  }>
+  defaults: PrismaJson.PrismaAdaptiveDryRunSettings | null
+  maxStudents: number
+  maxDecisions: number
+  runs: AdaptiveDryRunRecord[]
+}
+
+const runSelect = {
+  id: true,
+  number: true,
+  publicationId: true,
+  engineRevision: true,
+  durationMs: true,
+  spec: true,
+  effectiveSettings: true,
+  summary: true,
+  createdAt: true,
+} satisfies DB.Prisma.AdaptivePracticeQuizDryRunSelect
+
+function settingsOf(
+  runtime: LoadedAdaptiveRuntime
+): PrismaJson.PrismaAdaptiveDryRunSettings {
+  const settings = runtime.algorithm.settings
+  return {
+    totalQuestionCap: settings.totalQuestionCap,
+    minQuestionsPerLeaf: settings.minQuestionsPerLeaf,
+    classificationZ: settings.classificationZ,
+    classificationToleranceBands:
+      'classificationToleranceBands' in settings
+        ? (settings.classificationToleranceBands ?? 0)
+        : 0,
+  }
+}
+
+async function loadIrtV1Runtime(practiceQuizId: string, ctx: ContextWithUser) {
+  let runtime: LoadedAdaptiveRuntime
+  try {
+    runtime = await loadAdaptiveRuntime(ctx.prisma, practiceQuizId, {
+      includeAlgorithmData: true,
+    })
+  } catch (error) {
+    if (
+      error instanceof Error &&
+      'extensions' in error &&
+      (error.extensions as { code?: string }).code ===
+        'ADAPTIVE_QUIZ_UNAVAILABLE'
+    )
+      return null
+    throw error
+  }
+  return runtime.estimator.measurementVersion ===
+    DB.AdaptiveMeasurementVersion.IRT_V1
+    ? runtime
+    : null
+}
+
+export async function getAdaptivePracticeQuizDryRuns(
+  { practiceQuizId }: { practiceQuizId: string },
+  ctx: ContextWithUser,
+  showSolutions: string | undefined = process.env.ADAPTIVE_QUIZ_SHOW_SOLUTIONS
+): Promise<AdaptiveDryRunWorkspace | null> {
+  if (!isAdaptiveTestingInfoEnabled(showSolutions)) return null
+  const [runtime, runs] = await Promise.all([
+    loadIrtV1Runtime(practiceQuizId, ctx),
+    ctx.prisma.adaptivePracticeQuizDryRun.findMany({
+      where: { practiceQuizId },
+      select: runSelect,
+      orderBy: { number: 'desc' },
+    }),
+  ])
+  const nodeNames = new Map(
+    runtime?.publication.hierarchicalWeightSnapshot.map(({ nodeId, name }) => [
+      nodeId,
+      name,
+    ]) ?? []
+  )
+  return {
+    available: runtime !== null,
+    unavailableReason: runtime === null ? 'NO_IRT_V1_PUBLICATION' : null,
+    publicationId: runtime?.publication.id ?? null,
+    levels:
+      runtime?.algorithm.levels
+        .slice()
+        .sort((a, b) => a.order - b.order)
+        .map(({ id, label, order }) => ({ id, label, order })) ?? [],
+    competences:
+      runtime?.algorithm.nodes
+        .filter(({ parentId, enabled }) => parentId === null && enabled)
+        .map(({ id }) => ({
+          nodeId: id,
+          name: nodeNames.get(id) ?? `#${id}`,
+        })) ?? [],
+    items:
+      runtime?.publishedPool.map((item) => ({
+        poolItemId: item.id,
+        elementName: item.elementName,
+        levelId: item.levelId,
+        nodeNames: [...item.nodeNamePath],
+      })) ?? [],
+    defaults: runtime ? settingsOf(runtime) : null,
+    maxStudents: ADAPTIVE_DRY_RUN_MAX_STUDENTS,
+    maxDecisions: ADAPTIVE_DRY_RUN_MAX_DECISIONS,
+    runs: runs.map((run) => ({ ...run, students: null })),
+  }
+}
+
+export async function getAdaptivePracticeQuizDryRun(
+  { practiceQuizId, id }: { practiceQuizId: string; id: string },
+  ctx: ContextWithUser,
+  showSolutions: string | undefined = process.env.ADAPTIVE_QUIZ_SHOW_SOLUTIONS
+): Promise<AdaptiveDryRunRecord | null> {
+  if (!isAdaptiveTestingInfoEnabled(showSolutions)) return null
+  return await ctx.prisma.adaptivePracticeQuizDryRun.findFirst({
+    where: { id, practiceQuizId },
+    select: { ...runSelect, students: true },
+  })
+}
+
+export async function deleteAdaptivePracticeQuizDryRun(
+  { practiceQuizId, id }: { practiceQuizId: string; id: string },
+  ctx: ContextWithUser,
+  showSolutions: string | undefined = process.env.ADAPTIVE_QUIZ_SHOW_SOLUTIONS
+): Promise<boolean | null> {
+  if (!isAdaptiveTestingInfoEnabled(showSolutions)) return null
+  const { count } = await ctx.prisma.adaptivePracticeQuizDryRun.deleteMany({
+    where: { id, practiceQuizId },
+  })
+  return count > 0
+}
+
+function invalidInput(message: string) {
+  return adaptivePracticeQuizError(message, 'ADAPTIVE_DRY_RUN_INVALID')
+}
+
+/** Validates the form input and builds the engine spec and settings. */
+export function buildAdaptiveDryRunSpec(
+  input: AdaptiveDryRunInput,
+  levels: ReadonlyArray<{ id: number; order: number }>,
+  seed = input.seed ?? randomBytes(32).toString('hex')
+) {
+  const isInt = (value: number, min: number, max: number) =>
+    Number.isInteger(value) && value >= min && value <= max
+  if (!isInt(input.students, 1, ADAPTIVE_DRY_RUN_MAX_STUDENTS))
+    throw invalidInput(
+      `Choose between 1 and ${ADAPTIVE_DRY_RUN_MAX_STUDENTS} students.`
+    )
+  if (
+    !Number.isFinite(input.noiseProbability) ||
+    input.noiseProbability < 0 ||
+    input.noiseProbability > 0.5
+  )
+    throw invalidInput('The noise must lie between 0% and 50%.')
+  if (!/^[a-f0-9]{64}$/.test(seed))
+    throw invalidInput('The seed must have 64 hexadecimal characters.')
+  if (!isInt(input.totalQuestionCap, 1, 1000))
+    throw invalidInput('The question cap must lie between 1 and 1000.')
+  if (input.students * input.totalQuestionCap > ADAPTIVE_DRY_RUN_MAX_DECISIONS)
+    throw invalidInput(
+      `Students × maximum questions may not exceed ${ADAPTIVE_DRY_RUN_MAX_DECISIONS}.`
+    )
+  if (!isInt(input.minQuestionsPerLeaf, 0, input.totalQuestionCap))
+    throw invalidInput(
+      'The minimum per subcompetence must lie between 0 and the question cap.'
+    )
+  if (
+    !Number.isFinite(input.classificationZ) ||
+    input.classificationZ <= 0 ||
+    input.classificationZ > 10
+  )
+    throw invalidInput('The confidence value is invalid.')
+  if (!isInt(input.classificationToleranceBands, 0, 5))
+    throw invalidInput('The classification precision is invalid.')
+  if (input.competences !== 'SAME_LEVEL' && input.competences !== 'INDEPENDENT')
+    throw invalidInput('The competence mode is invalid.')
+  const order = new Map(levels.map(({ id, order }) => [id, order]))
+  const from = order.get(input.fromLevelId)
+  const to = order.get(input.toLevelId)
+  if (from === undefined || to === undefined || from > to)
+    throw invalidInput('Choose a valid level range.')
+
+  const spec: PrismaJson.PrismaAdaptiveDryRunSpec = {
+    students: input.students,
+    seed,
+    noiseProbability: input.noiseProbability,
+    trueLevels:
+      input.fromLevelId === input.toLevelId
+        ? { kind: 'FIXED', levelId: input.fromLevelId }
+        : {
+            kind: 'EVEN',
+            fromLevelId: input.fromLevelId,
+            toLevelId: input.toLevelId,
+          },
+    competences: input.competences,
+  }
+  const settings: PrismaJson.PrismaAdaptiveDryRunSettings = {
+    totalQuestionCap: input.totalQuestionCap,
+    minQuestionsPerLeaf: input.minQuestionsPerLeaf,
+    classificationZ: input.classificationZ,
+    classificationToleranceBands: input.classificationToleranceBands,
+  }
+  return { spec, settings }
+}
+
+/** The engine request: the publication snapshot with the run's overrides. */
+export function buildAdaptiveDryRunRequest(
+  runtime: LoadedAdaptiveRuntime,
+  spec: PrismaJson.PrismaAdaptiveDryRunSpec,
+  settings: PrismaJson.PrismaAdaptiveDryRunSettings
+): DryRunRequest {
+  const request = buildAdaptiveDecisionRequest({
+    attemptId: '00000000-0000-4000-8000-000000000000',
+    runtime: runtime.estimator,
+    responses: [],
+  })
+  if (request.measurementVersion !== 'IRT_V1')
+    throw adaptivePracticeQuizError(
+      'Dry runs support IRT v1 quizzes only.',
+      'ADAPTIVE_DRY_RUN_UNSUPPORTED'
+    )
+  const {
+    routingSeed: _routingSeed,
+    responses: _responses,
+    terminalStopReason: _terminalStopReason,
+    retake: _retake,
+    settings: published,
+    ...snapshot
+  } = request
+  const { classificationToleranceBands: _tolerance, ...base } = published
+  return {
+    ...snapshot,
+    settings: {
+      ...base,
+      totalQuestionCap: settings.totalQuestionCap,
+      minQuestionsPerLeaf: settings.minQuestionsPerLeaf,
+      classificationZ: settings.classificationZ,
+      // Only above 0, as for publications, so older engines accept the rest.
+      ...(settings.classificationToleranceBands > 0
+        ? {
+            classificationToleranceBands: settings.classificationToleranceBands,
+          }
+        : {}),
+    },
+    dryRun: spec,
+  }
+}
+
+export async function runAdaptivePracticeQuizDryRun(
+  {
+    practiceQuizId,
+    input,
+  }: { practiceQuizId: string; input: AdaptiveDryRunInput },
+  ctx: ContextWithUser,
+  {
+    showSolutions = process.env.ADAPTIVE_QUIZ_SHOW_SOLUTIONS,
+    runEngine = defaultEngineRunner,
+    now = () => Date.now(),
+  }: {
+    showSolutions?: string | undefined
+    runEngine?: (request: DryRunRequest) => Promise<DryRunResponse>
+    now?: () => number
+  } = {}
+): Promise<AdaptiveDryRunRecord | null> {
+  if (!isAdaptiveTestingInfoEnabled(showSolutions)) return null
+  const runtime = await loadIrtV1Runtime(practiceQuizId, ctx)
+  if (!runtime)
+    throw adaptivePracticeQuizError(
+      'Publish the adaptive practice quiz (IRT v1) before starting a dry run.',
+      'ADAPTIVE_DRY_RUN_UNAVAILABLE'
+    )
+  const { spec, settings } = buildAdaptiveDryRunSpec(
+    input,
+    runtime.algorithm.levels
+  )
+  const request = buildAdaptiveDryRunRequest(runtime, spec, settings)
+  const startedAt = now()
+  const response = await runEngine(request)
+  const durationMs = Math.max(0, Math.round(now() - startedAt))
+  const students = response.students.map(toAdaptiveDryRunStudent)
+  const summary = summarizeAdaptiveDryRun({
+    students,
+    levels: runtime.algorithm.levels,
+    poolSize: runtime.algorithm.pool.length,
+  })
+
+  // Run numbers count up per quiz; the unique key settles concurrent runs.
+  const latest = await ctx.prisma.adaptivePracticeQuizDryRun.findFirst({
+    where: { practiceQuizId },
+    orderBy: { number: 'desc' },
+    select: { number: true },
+  })
+  return await ctx.prisma.adaptivePracticeQuizDryRun.create({
+    data: {
+      practiceQuizId,
+      publicationId: runtime.publication.id,
+      createdById: ctx.user.sub,
+      number: (latest?.number ?? 0) + 1,
+      engineRevision: process.env.ADAPTIVE_ENGINE_REVISION || null,
+      durationMs,
+      spec,
+      effectiveSettings: settings,
+      summary,
+      students,
+    },
+    select: { ...runSelect, students: true },
+  })
+}
+
+async function defaultEngineRunner(request: DryRunRequest) {
+  const baseUrl = process.env.ADAPTIVE_ENGINE_URL
+  const token = process.env.ADAPTIVE_ENGINE_TOKEN
+  if (!baseUrl || !token)
+    throw adaptivePracticeQuizError(
+      'The adaptive calculation service is not configured.',
+      'ADAPTIVE_ENGINE_UNAVAILABLE'
+    )
+  try {
+    // A run is up to 20,000 decisions in one engine call (about 3 s at most).
+    return await createAdaptiveClient({
+      baseUrl,
+      token,
+      timeoutMs: 20000,
+    }).dryRun(request)
+  } catch (error) {
+    if (error instanceof AdaptiveEngineUnavailableError) {
+      if (error.overloaded) throw adaptiveEngineGraphQLError(error)
+      throw adaptivePracticeQuizError(
+        'The adaptive calculation service is unavailable or does not support dry runs yet.',
+        'ADAPTIVE_DRY_RUN_ENGINE_UNAVAILABLE'
+      )
+    }
+    throw error
+  }
+}
