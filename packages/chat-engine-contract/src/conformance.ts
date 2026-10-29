@@ -1,19 +1,40 @@
 import {
-  CHAT_ENGINE_CONTRACT_VERSION,
+  CHAT_ENGINE_CONTRACT_V2,
+  type CHAT_ENGINE_CONTRACT_VERSION,
   type EngineChatRequest,
+  type EngineContractVersion,
   type EngineManifest,
   type EngineStreamPart,
-  engineManifestSchema,
+  type EngineV2ChatRequest,
+  type EngineV2Manifest,
+  type EngineV2StreamPart,
   MCP_EXECUTION_TOKEN_HEADER,
+  parseEngineChatRequest,
+  parseEngineManifest,
   parseEngineStreamPart,
+  type SupportedEngineChatRequest,
+  type SupportedEngineStreamPart,
   TRACEPARENT_HEADER,
   TRACESTATE_HEADER,
 } from './schema.js'
 
-export type ChatEngineConformanceOptions = {
+type RequestFor<V extends EngineContractVersion> =
+  V extends typeof CHAT_ENGINE_CONTRACT_V2
+    ? EngineV2ChatRequest
+    : EngineChatRequest
+type ManifestFor<V extends EngineContractVersion> =
+  V extends typeof CHAT_ENGINE_CONTRACT_V2 ? EngineV2Manifest : EngineManifest
+type StreamPartFor<V extends EngineContractVersion> =
+  V extends typeof CHAT_ENGINE_CONTRACT_V2
+    ? EngineV2StreamPart
+    : EngineStreamPart
+
+export type ChatEngineConformanceOptions<
+  V extends EngineContractVersion = typeof CHAT_ENGINE_CONTRACT_VERSION,
+> = {
   baseUrl: string
   serviceToken: string
-  request: EngineChatRequest
+  request: RequestFor<V>
   providerAuthorization?: string
   mcpExecutionToken?: string
   traceparent?: string
@@ -21,30 +42,36 @@ export type ChatEngineConformanceOptions = {
   fetch?: typeof globalThis.fetch
 }
 
-export type ChatEngineConformanceResult = {
-  manifest: EngineManifest
-  stream: EngineStreamPart[]
+export type ChatEngineConformanceResult<
+  V extends EngineContractVersion = typeof CHAT_ENGINE_CONTRACT_VERSION,
+> = {
+  manifest: ManifestFor<V>
+  stream: StreamPartFor<V>[]
 }
 
-export type ChatEngineConformanceSuiteOptions = Pick<
-  ChatEngineConformanceOptions,
+export type ChatEngineConformanceSuiteOptions<
+  V extends EngineContractVersion = typeof CHAT_ENGINE_CONTRACT_VERSION,
+> = Pick<
+  ChatEngineConformanceOptions<V>,
   'baseUrl' | 'serviceToken' | 'fetch'
 > & {
   traceparent: string
   tracestate: string
-  deploymentRequest: EngineChatRequest
-  requestCredentialRequest: EngineChatRequest
+  deploymentRequest: RequestFor<V>
+  requestCredentialRequest: RequestFor<V>
   requestProviderAuthorization: string
-  toolRequest: EngineChatRequest
+  toolRequest: RequestFor<V>
   mcpExecutionToken: string
-  abortRequest: EngineChatRequest
+  abortRequest: RequestFor<V>
 }
 
-export type ChatEngineConformanceSuiteResult = {
-  manifest: EngineManifest
-  deploymentStream: EngineStreamPart[]
-  requestCredentialStream: EngineStreamPart[]
-  toolStream: EngineStreamPart[]
+export type ChatEngineConformanceSuiteResult<
+  V extends EngineContractVersion = typeof CHAT_ENGINE_CONTRACT_VERSION,
+> = {
+  manifest: ManifestFor<V>
+  deploymentStream: StreamPartFor<V>[]
+  requestCredentialStream: StreamPartFor<V>[]
+  toolStream: StreamPartFor<V>[]
   transportCancelled: true
 }
 
@@ -61,8 +88,9 @@ function endpoint(baseUrl: string, path: string): string {
 
 async function readStream(
   response: Response,
-  expectedTerminal: 'finish' | 'abort'
-): Promise<EngineStreamPart[]> {
+  expectedTerminal: 'finish' | 'abort',
+  version: EngineContractVersion
+): Promise<SupportedEngineStreamPart[]> {
   const text = await response.text()
   const frames = text.split(/\r?\n\r?\n/).filter(Boolean)
   if (frames.at(-1)?.trim() !== 'data: [DONE]') {
@@ -74,7 +102,10 @@ async function readStream(
     if (!line.startsWith('data: ')) {
       throw new Error('The engine stream contained a non-data SSE frame.')
     }
-    return parseEngineStreamPart(JSON.parse(line.slice('data: '.length)))
+    return parseEngineStreamPart(
+      JSON.parse(line.slice('data: '.length)),
+      version
+    )
   })
   const terminals = parts.filter((part) =>
     ['finish', 'abort', 'error'].includes(part.type)
@@ -89,7 +120,7 @@ async function readStream(
 
 function requestHeaders(
   options: Pick<
-    ChatEngineConformanceOptions,
+    ChatEngineConformanceOptions<EngineContractVersion>,
     | 'serviceToken'
     | 'providerAuthorization'
     | 'mcpExecutionToken'
@@ -113,21 +144,24 @@ function requestHeaders(
 }
 
 async function sendChat(
-  options: ChatEngineConformanceOptions,
+  options: ChatEngineConformanceOptions<EngineContractVersion>,
   signal?: AbortSignal
 ): Promise<Response> {
   const request = options.fetch ?? globalThis.fetch
-  return request(endpoint(options.baseUrl, '/v1/chat'), {
-    method: 'POST',
-    headers: requestHeaders(options),
-    body: JSON.stringify(options.request),
-    signal,
-  })
+  return request(
+    endpoint(options.baseUrl, `/${options.request.contractVersion}/chat`),
+    {
+      method: 'POST',
+      headers: requestHeaders(options),
+      body: JSON.stringify(options.request),
+      signal,
+    }
+  )
 }
 
 function assertTerminalIdentity(
-  stream: EngineStreamPart[],
-  request: EngineChatRequest,
+  stream: SupportedEngineStreamPart[],
+  request: SupportedEngineChatRequest,
   expectedTerminal: 'finish' | 'abort'
 ): void {
   const metadataPart =
@@ -140,7 +174,7 @@ function assertTerminalIdentity(
       : null
   if (
     !metadata ||
-    metadata.contractVersion !== CHAT_ENGINE_CONTRACT_VERSION ||
+    metadata.contractVersion !== request.contractVersion ||
     metadata.runId !== request.runId ||
     metadata.modelId !== request.generation.modelId ||
     metadata.deploymentId !== request.generation.deploymentId ||
@@ -151,7 +185,7 @@ function assertTerminalIdentity(
 }
 
 async function expectRejected(
-  options: ChatEngineConformanceOptions,
+  options: ChatEngineConformanceOptions<EngineContractVersion>,
   expectedStatus: number,
   label: string
 ): Promise<void> {
@@ -163,21 +197,36 @@ async function expectRejected(
   }
 }
 
+export function runChatEngineConformance(
+  options: ChatEngineConformanceOptions<typeof CHAT_ENGINE_CONTRACT_VERSION>
+): Promise<ChatEngineConformanceResult<typeof CHAT_ENGINE_CONTRACT_VERSION>>
+export function runChatEngineConformance(
+  options: ChatEngineConformanceOptions<typeof CHAT_ENGINE_CONTRACT_V2>
+): Promise<ChatEngineConformanceResult<typeof CHAT_ENGINE_CONTRACT_V2>>
+export function runChatEngineConformance(
+  options: ChatEngineConformanceOptions<EngineContractVersion>
+): Promise<ChatEngineConformanceResult<EngineContractVersion>>
 export async function runChatEngineConformance(
-  options: ChatEngineConformanceOptions
-): Promise<ChatEngineConformanceResult> {
+  options: ChatEngineConformanceOptions<EngineContractVersion>
+): Promise<ChatEngineConformanceResult<EngineContractVersion>> {
+  if (options.request.contractVersion === CHAT_ENGINE_CONTRACT_V2)
+    parseEngineChatRequest(options.request, CHAT_ENGINE_CONTRACT_V2)
   const request = options.fetch ?? globalThis.fetch
   const manifestResponse = await request(
-    endpoint(options.baseUrl, '/v1/manifest')
+    endpoint(options.baseUrl, `/${options.request.contractVersion}/manifest`)
   )
   if (!manifestResponse.ok) {
     throw new Error(`Engine manifest returned HTTP ${manifestResponse.status}.`)
   }
-  const manifest = engineManifestSchema.parse(await manifestResponse.json())
+  const manifest = parseEngineManifest(
+    await manifestResponse.json(),
+    options.request.contractVersion
+  )
 
-  const unauthenticated = await request(endpoint(options.baseUrl, '/v1/chat'), {
-    method: 'POST',
-  })
+  const unauthenticated = await request(
+    endpoint(options.baseUrl, `/${options.request.contractVersion}/chat`),
+    { method: 'POST' }
+  )
   if (unauthenticated.status !== 401) {
     throw new Error('The engine accepted an unauthenticated chat request.')
   }
@@ -191,7 +240,11 @@ export async function runChatEngineConformance(
   ) {
     throw new Error('The engine chat response is not an SSE stream.')
   }
-  const stream = await readStream(chatResponse, 'finish')
+  const stream = await readStream(
+    chatResponse,
+    'finish',
+    options.request.contractVersion
+  )
   assertTerminalIdentity(stream, options.request, 'finish')
 
   return { manifest, stream }
@@ -209,7 +262,7 @@ function bounded<T>(operation: Promise<T>, milliseconds: number): Promise<T> {
 }
 
 async function verifyTransportCancellation(
-  options: ChatEngineConformanceOptions
+  options: ChatEngineConformanceOptions<EngineContractVersion>
 ): Promise<true> {
   const controller = new AbortController()
   let reader: ReadableStreamDefaultReader<Uint8Array> | undefined
@@ -247,7 +300,8 @@ async function verifyTransportCancellation(
         if (!frame.startsWith('data: '))
           throw new Error('Abort scenario contained a non-data SSE frame.')
         const part = parseEngineStreamPart(
-          JSON.parse(frame.slice('data: '.length))
+          JSON.parse(frame.slice('data: '.length)),
+          options.request.contractVersion
         )
         if (['finish', 'abort', 'error'].includes(part.type)) {
           throw new Error('Abort scenario already returned a terminal event.')
@@ -293,9 +347,37 @@ async function verifyTransportCancellation(
   return true
 }
 
+export function runChatEngineConformanceSuite(
+  options: ChatEngineConformanceSuiteOptions<
+    typeof CHAT_ENGINE_CONTRACT_VERSION
+  >
+): Promise<
+  ChatEngineConformanceSuiteResult<typeof CHAT_ENGINE_CONTRACT_VERSION>
+>
+export function runChatEngineConformanceSuite(
+  options: ChatEngineConformanceSuiteOptions<typeof CHAT_ENGINE_CONTRACT_V2>
+): Promise<ChatEngineConformanceSuiteResult<typeof CHAT_ENGINE_CONTRACT_V2>>
+export function runChatEngineConformanceSuite(
+  options: ChatEngineConformanceSuiteOptions<EngineContractVersion>
+): Promise<ChatEngineConformanceSuiteResult<EngineContractVersion>>
 export async function runChatEngineConformanceSuite(
-  options: ChatEngineConformanceSuiteOptions
-): Promise<ChatEngineConformanceSuiteResult> {
+  options: ChatEngineConformanceSuiteOptions<EngineContractVersion>
+): Promise<ChatEngineConformanceSuiteResult<EngineContractVersion>> {
+  const version = options.deploymentRequest.contractVersion
+  for (const request of [
+    options.deploymentRequest,
+    options.requestCredentialRequest,
+    options.toolRequest,
+    options.abortRequest,
+  ]) {
+    if (request.contractVersion !== version) {
+      throw new Error(
+        'Conformance suite requests must use the same generation.'
+      )
+    }
+    if (version === CHAT_ENGINE_CONTRACT_V2)
+      parseEngineChatRequest(request, version)
+  }
   const shared = {
     baseUrl: options.baseUrl,
     serviceToken: options.serviceToken,
@@ -339,7 +421,7 @@ export async function runChatEngineConformanceSuite(
   if (!toolResponse.ok) {
     throw new Error(`Tool request returned HTTP ${toolResponse.status}.`)
   }
-  const toolStream = await readStream(toolResponse, 'finish')
+  const toolStream = await readStream(toolResponse, 'finish', version)
   assertTerminalIdentity(toolStream, options.toolRequest, 'finish')
   const approvedNames = new Set(
     options.toolRequest.tools.map((tool) => tool.name)

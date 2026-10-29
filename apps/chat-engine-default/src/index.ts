@@ -2,14 +2,20 @@ import { fileURLToPath } from 'node:url'
 import { serve } from '@hono/node-server'
 import {
   type ApprovedTool,
+  CHAT_ENGINE_CONTRACT_V2,
   CHAT_ENGINE_CONTRACT_VERSION,
-  type EngineChatRequest,
-  type EngineFinishMetadata,
+  CHAT_ENGINE_MAX_V2_REQUEST_BYTES,
+  type SupportedEngineChatRequest as EngineChatRequest,
+  type EngineContractVersion,
+  type SupportedEngineFinishMetadata as EngineFinishMetadata,
   type EngineManifest,
-  type EngineMessage,
+  type SupportedEngineMessage as EngineMessage,
   type EngineUsage,
   engineChatRequestSchema,
   engineManifestSchema,
+  engineToolExecutionV2ResultSchema,
+  engineV2ChatRequestSchema,
+  engineV2ManifestSchema,
   MCP_EXECUTION_TOKEN_HEADER,
   parseProviderAllowedOrigins,
   providerOriginIsAllowed,
@@ -31,6 +37,7 @@ import {
   type UIMessageStreamWriter,
 } from 'ai'
 import { Hono } from 'hono'
+import { bodyLimit } from 'hono/body-limit'
 import {
   createProviderModel,
   type ProviderConfig,
@@ -45,6 +52,7 @@ export type ToolExecutionContext = {
   input: unknown
   token: string
   abortSignal: AbortSignal
+  contractVersion: EngineContractVersion
 }
 
 export type DefaultEngineOptions = ProviderConfig & {
@@ -78,15 +86,28 @@ const DEFAULT_MANIFEST: EngineManifest = engineManifestSchema.parse({
   },
 })
 
+const DEFAULT_V2_MANIFEST = engineV2ManifestSchema.parse({
+  ...DEFAULT_MANIFEST,
+  contractVersion: CHAT_ENGINE_CONTRACT_V2,
+  features: { ...DEFAULT_MANIFEST.features, modelToolOutputs: true },
+  limits: {
+    ...DEFAULT_MANIFEST.limits,
+    maxDocumentPages: 10,
+    maxDocumentPageDataUrlLength: 2_000_000,
+    maxRequestBytes: CHAT_ENGINE_MAX_V2_REQUEST_BYTES,
+  },
+})
+
 function jsonError(
   status: number,
   code: string,
   message: string,
-  retryable = false
+  retryable = false,
+  contractVersion: EngineContractVersion = CHAT_ENGINE_CONTRACT_VERSION
 ) {
   return new Response(
     JSON.stringify({
-      contractVersion: CHAT_ENGINE_CONTRACT_VERSION,
+      contractVersion,
       error: { code, message, retryable },
     }),
     {
@@ -209,13 +230,17 @@ function toModelMessages(messages: EngineMessage[]): ModelMessage[] {
           input: part.input ?? {},
         })
         if (part.output !== undefined) {
+          const modelOutput: ToolResultPart['output'] =
+            'modelOutput' in part && part.modelOutput !== undefined
+              ? (part.modelOutput as ToolResultPart['output'])
+              : part.isError
+                ? { type: 'error-json', value: part.output as JSONValue }
+                : { type: 'json', value: part.output as JSONValue }
           toolResults.push({
             type: 'tool-result',
             toolCallId: part.toolCallId,
             toolName: part.toolName,
-            output: part.isError
-              ? { type: 'error-json', value: part.output as JSONValue }
-              : { type: 'json', value: part.output as JSONValue },
+            output: modelOutput,
           })
         }
       }
@@ -238,7 +263,8 @@ function buildTools(
   tools: ApprovedTool[],
   token: string,
   options: DefaultEngineOptions,
-  requestSignal: AbortSignal
+  requestSignal: AbortSignal,
+  contractVersion: EngineContractVersion
 ) {
   const executeTool =
     options.toolExecutor ??
@@ -255,6 +281,9 @@ function buildTools(
           serverId: context.tool.serverId,
           toolName: context.tool.name,
           input: context.input,
+          ...(context.contractVersion === CHAT_ENGINE_CONTRACT_V2
+            ? { contractVersion: context.contractVersion }
+            : {}),
         }),
         signal: context.abortSignal,
       })
@@ -264,19 +293,51 @@ function buildTools(
       return await response.json()
     })
 
+  const modelOutputs = new Map<string, ToolResultPart['output']>()
   return Object.fromEntries(
     tools.map((tool) => [
       tool.name,
       dynamicTool({
         description: tool.description,
         inputSchema: jsonSchema(tool.inputSchema as never),
-        execute: (input, executionOptions) =>
-          executeTool({
+        execute: async (input, executionOptions) => {
+          const result = await executeTool({
             tool,
             input,
             token,
             abortSignal: executionOptions.abortSignal ?? requestSignal,
-          }),
+            contractVersion,
+          })
+          if (contractVersion === CHAT_ENGINE_CONTRACT_VERSION) return result
+          const { output, modelOutput } =
+            engineToolExecutionV2ResultSchema.parse(result)
+          if (modelOutput !== undefined)
+            modelOutputs.set(
+              executionOptions.toolCallId,
+              modelOutput as ToolResultPart['output']
+            )
+          return output
+        },
+        ...(contractVersion === CHAT_ENGINE_CONTRACT_V2
+          ? {
+              toModelOutput: ({
+                output,
+                toolCallId,
+              }: {
+                output: unknown
+                toolCallId: string
+              }) => {
+                const projection = modelOutputs.get(toolCallId)
+                modelOutputs.delete(toolCallId)
+                return (
+                  projection ?? {
+                    type: 'json' as const,
+                    value: output as JSONValue,
+                  }
+                )
+              },
+            }
+          : {}),
       }),
     ])
   )
@@ -290,7 +351,7 @@ function finishMetadata(
   aborted: boolean
 ): EngineFinishMetadata {
   return {
-    contractVersion: CHAT_ENGINE_CONTRACT_VERSION,
+    contractVersion: request.contractVersion,
     engineId,
     runId: request.runId,
     modelId: request.generation.modelId,
@@ -373,7 +434,6 @@ export function createDefaultEngineApp(options: DefaultEngineOptions = {}) {
     options.engineId ?? process.env.CHAT_ENGINE_ID ?? DEFAULT_ENGINE_ID
   const serviceToken =
     options.serviceToken ?? process.env.CHAT_ENGINE_SERVICE_TOKEN
-  const manifest = { ...DEFAULT_MANIFEST, engineId }
   const app = new Hono()
 
   app.get('/health', (c) =>
@@ -383,165 +443,218 @@ export function createDefaultEngineApp(options: DefaultEngineOptions = {}) {
       contractVersion: CHAT_ENGINE_CONTRACT_VERSION,
     })
   )
-  app.get('/v1/manifest', (c) => c.json(manifest))
-
-  app.post('/v1/chat', async (c) => {
+  app.use('/v2/chat', async (c, next) => {
     if (!serviceAuthorized(c.req.raw, serviceToken)) {
       return jsonError(
         401,
         'ENGINE_AUTH_REQUIRED',
-        'Engine service authentication is required.'
+        'Engine service authentication is required.',
+        false,
+        CHAT_ENGINE_CONTRACT_V2
       )
     }
-
-    let request: EngineChatRequest
-    try {
-      request = engineChatRequestSchema.parse(await c.req.json())
-    } catch {
-      return jsonError(
-        400,
-        'INVALID_ENGINE_REQUEST',
-        'The engine request is invalid.'
-      )
-    }
-
-    const provider = resolveProviderKey(
-      c.req.raw,
-      request.generation,
-      options,
-      options.modelFactory ? 'model-factory' : undefined
-    )
-    if ('error' in provider) {
-      return jsonError(400, provider.code, provider.error)
-    }
-
-    const mcpToken = c.req.header(MCP_EXECUTION_TOKEN_HEADER)
-    if (request.tools.length > 0 && !mcpToken) {
-      return jsonError(
-        400,
-        'MCP_TOKEN_REQUIRED',
-        'MCP execution token is required when tools are supplied.'
-      )
-    }
-
-    let model: LanguageModel
-    try {
-      model = options.modelFactory
-        ? options.modelFactory(request.generation, provider.providerApiKey)
-        : createProviderModel(
-            request.generation,
-            provider.providerApiKey,
-            options
-          )
-    } catch {
-      return jsonError(
-        503,
-        'ENGINE_NOT_CONFIGURED',
-        'The selected engine is not configured.',
-        true
-      )
-    }
-
-    let reasoningContent = ''
-    let writer: UIMessageStreamWriter | undefined
-    const completedCalls: Array<{ usage: unknown }> = []
-    const tools =
-      request.tools.length > 0
-        ? buildTools(request.tools, mcpToken!, options, c.req.raw.signal)
-        : undefined
-
-    const result = streamText({
-      model,
-      system: request.systemPrompt,
-      messages: toModelMessages(request.messages),
-      ...(request.generation.maxOutputTokens
-        ? { maxOutputTokens: request.generation.maxOutputTokens }
-        : {}),
-      providerOptions: providerOptionsForGeneration(request.generation),
-      ...(tools
-        ? { tools, toolChoice: 'auto' as const, stopWhen: isStepCount(5) }
-        : {}),
-      maxRetries: 0,
-      abortSignal: c.req.raw.signal,
-      onChunk: ({ chunk }) => {
-        if (chunk.type === 'reasoning-delta') reasoningContent += chunk.text
-      },
-      onLanguageModelCallEnd: (call) => {
-        completedCalls.push({ usage: call.usage })
-        writer?.write({
-          type: 'message-metadata',
-          messageMetadata: finishMetadata(
-            request,
-            engineId,
-            sumStepUsage(completedCalls),
-            reasoningContent,
-            false
-          ),
-        })
-      },
-      onAbort: async (steps) => {
-        writer?.write({
-          type: 'message-metadata',
-          messageMetadata: finishMetadata(
-            request,
-            engineId,
-            sumStepUsage(
-              steps?.steps && steps.steps.length >= completedCalls.length
-                ? steps.steps
-                : completedCalls
-            ),
-            reasoningContent,
-            true
-          ),
-        })
-      },
-      onError: () => undefined,
-    })
-
-    const stream = createUIMessageStream({
-      originalMessages: [
-        {
-          id: request.assistantMessageId,
-          role: 'assistant',
-          parts: [],
-        },
-      ] satisfies UIMessage[],
-      generateId: () => request.assistantMessageId,
-      execute: ({ writer: streamWriter }) => {
-        writer = streamWriter
-        streamWriter.merge(
-          result.toUIMessageStream({
-            originalMessages: [
-              {
-                id: request.assistantMessageId,
-                role: 'assistant',
-                parts: [],
-              },
-            ] satisfies UIMessage[],
-            generateMessageId: () => request.assistantMessageId,
-            sendReasoning: true,
-            messageMetadata: ({ part }) =>
-              part.type === 'finish'
-                ? finishMetadata(
-                    request,
-                    engineId,
-                    normalizeUsage(part.totalUsage),
-                    reasoningContent,
-                    false
-                  )
-                : undefined,
-            onError: (error) => {
-              const serialized = serializeStreamError(error)
-              return JSON.stringify(serialized)
-            },
-          })
-        )
-      },
-      onError: (error) => JSON.stringify(serializeStreamError(error)),
-    })
-
-    return createUIMessageStreamResponse({ stream })
+    await next()
   })
+  app.use(
+    '/v2/chat',
+    bodyLimit({
+      maxSize: CHAT_ENGINE_MAX_V2_REQUEST_BYTES,
+      onError: () =>
+        jsonError(
+          413,
+          'ENGINE_REQUEST_TOO_LARGE',
+          'The engine request exceeds its byte limit.',
+          false,
+          CHAT_ENGINE_CONTRACT_V2
+        ),
+    })
+  )
+
+  for (const version of [
+    CHAT_ENGINE_CONTRACT_VERSION,
+    CHAT_ENGINE_CONTRACT_V2,
+  ]) {
+    const manifest = {
+      ...(version === CHAT_ENGINE_CONTRACT_VERSION
+        ? DEFAULT_MANIFEST
+        : DEFAULT_V2_MANIFEST),
+      engineId,
+    }
+    const fail = (
+      status: number,
+      code: string,
+      message: string,
+      retryable = false
+    ) => jsonError(status, code, message, retryable, version)
+    app.get(`/${version}/manifest`, (c) => c.json(manifest))
+    app.post(`/${version}/chat`, async (c) => {
+      if (!serviceAuthorized(c.req.raw, serviceToken)) {
+        return fail(
+          401,
+          'ENGINE_AUTH_REQUIRED',
+          'Engine service authentication is required.'
+        )
+      }
+
+      let request: EngineChatRequest
+      try {
+        request = (
+          version === CHAT_ENGINE_CONTRACT_VERSION
+            ? engineChatRequestSchema
+            : engineV2ChatRequestSchema
+        ).parse(await c.req.json())
+      } catch {
+        return fail(
+          400,
+          'INVALID_ENGINE_REQUEST',
+          'The engine request is invalid.'
+        )
+      }
+
+      const provider = resolveProviderKey(
+        c.req.raw,
+        request.generation,
+        options,
+        options.modelFactory ? 'model-factory' : undefined
+      )
+      if ('error' in provider) {
+        return fail(400, provider.code, provider.error)
+      }
+
+      const mcpToken = c.req.header(MCP_EXECUTION_TOKEN_HEADER)
+      if (request.tools.length > 0 && !mcpToken) {
+        return fail(
+          400,
+          'MCP_TOKEN_REQUIRED',
+          'MCP execution token is required when tools are supplied.'
+        )
+      }
+
+      let model: LanguageModel
+      try {
+        model = options.modelFactory
+          ? options.modelFactory(request.generation, provider.providerApiKey)
+          : createProviderModel(
+              request.generation,
+              provider.providerApiKey,
+              options
+            )
+      } catch {
+        return fail(
+          503,
+          'ENGINE_NOT_CONFIGURED',
+          'The selected engine is not configured.',
+          true
+        )
+      }
+
+      let reasoningContent = ''
+      let writer: UIMessageStreamWriter | undefined
+      const completedCalls: Array<{ usage: unknown }> = []
+      const tools =
+        request.tools.length > 0
+          ? buildTools(
+              request.tools,
+              mcpToken!,
+              options,
+              c.req.raw.signal,
+              request.contractVersion
+            )
+          : undefined
+
+      const result = streamText({
+        model,
+        system: request.systemPrompt,
+        messages: toModelMessages(request.messages),
+        ...(request.generation.maxOutputTokens
+          ? { maxOutputTokens: request.generation.maxOutputTokens }
+          : {}),
+        providerOptions: providerOptionsForGeneration(request.generation),
+        ...(tools
+          ? { tools, toolChoice: 'auto' as const, stopWhen: isStepCount(5) }
+          : {}),
+        maxRetries: 0,
+        abortSignal: c.req.raw.signal,
+        onChunk: ({ chunk }) => {
+          if (chunk.type === 'reasoning-delta') reasoningContent += chunk.text
+        },
+        onLanguageModelCallEnd: (call) => {
+          completedCalls.push({ usage: call.usage })
+          writer?.write({
+            type: 'message-metadata',
+            messageMetadata: finishMetadata(
+              request,
+              engineId,
+              sumStepUsage(completedCalls),
+              reasoningContent,
+              false
+            ),
+          })
+        },
+        onAbort: async (steps) => {
+          writer?.write({
+            type: 'message-metadata',
+            messageMetadata: finishMetadata(
+              request,
+              engineId,
+              sumStepUsage(
+                steps?.steps && steps.steps.length >= completedCalls.length
+                  ? steps.steps
+                  : completedCalls
+              ),
+              reasoningContent,
+              true
+            ),
+          })
+        },
+        onError: () => undefined,
+      })
+
+      const stream = createUIMessageStream({
+        originalMessages: [
+          {
+            id: request.assistantMessageId,
+            role: 'assistant',
+            parts: [],
+          },
+        ] satisfies UIMessage[],
+        generateId: () => request.assistantMessageId,
+        execute: ({ writer: streamWriter }) => {
+          writer = streamWriter
+          streamWriter.merge(
+            result.toUIMessageStream({
+              originalMessages: [
+                {
+                  id: request.assistantMessageId,
+                  role: 'assistant',
+                  parts: [],
+                },
+              ] satisfies UIMessage[],
+              generateMessageId: () => request.assistantMessageId,
+              sendReasoning: true,
+              messageMetadata: ({ part }) =>
+                part.type === 'finish'
+                  ? finishMetadata(
+                      request,
+                      engineId,
+                      normalizeUsage(part.totalUsage),
+                      reasoningContent,
+                      false
+                    )
+                  : undefined,
+              onError: (error) => {
+                const serialized = serializeStreamError(error)
+                return JSON.stringify(serialized)
+              },
+            })
+          )
+        },
+        onError: (error) => JSON.stringify(serializeStreamError(error)),
+      })
+
+      return createUIMessageStreamResponse({ stream })
+    })
+  }
 
   return app
 }

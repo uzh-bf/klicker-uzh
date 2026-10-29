@@ -1,6 +1,11 @@
 import { z } from 'zod'
 
 export const CHAT_ENGINE_CONTRACT_VERSION = 'v1' as const
+export const CHAT_ENGINE_CONTRACT_V2 = 'v2' as const
+export const CHAT_ENGINE_MAX_V2_REQUEST_BYTES = 64 * 1024 * 1024
+export type EngineContractVersion =
+  | typeof CHAT_ENGINE_CONTRACT_VERSION
+  | typeof CHAT_ENGINE_CONTRACT_V2
 export const MCP_EXECUTION_TOKEN_HEADER = 'x-mcp-execution-token'
 export const TRACEPARENT_HEADER = 'traceparent'
 export const TRACESTATE_HEADER = 'tracestate'
@@ -8,6 +13,8 @@ export const TRACESTATE_HEADER = 'tracestate'
 const MAX_DATA_URL_LENGTH = 7_000_000
 const MAX_DECODED_IMAGE_BYTES = 5 * 1024 * 1024
 const MAX_IMAGE_ATTACHMENTS = 3
+const MAX_DOCUMENT_PAGES = 10
+const MAX_DOCUMENT_PAGE_DATA_URL_LENGTH = 2_000_000
 const MAX_MESSAGES = 100
 const MAX_TOOLS = 64
 const IMAGE_MEDIA_TYPES = [
@@ -45,7 +52,7 @@ const providerBaseUrlSchema = z.string().url().refine(validProviderBaseUrl, {
     'Provider base URL must be HTTP(S) without credentials, query, or fragment.',
 })
 
-export const imageAttachmentSchema = z
+const imageAttachmentObjectSchema = z
   .object({
     id: boundedString(128),
     type: z.literal('image'),
@@ -57,27 +64,60 @@ export const imageAttachmentSchema = z
     description: z.string().max(20_000).optional(),
   })
   .strict()
+
+function validateImageAttachment(
+  attachment: z.infer<typeof imageAttachmentObjectSchema>,
+  ctx: z.RefinementCtx
+): void {
+  const match = attachment.dataUrl.match(
+    /^data:(image\/(?:jpeg|png|gif|webp));base64,([A-Za-z0-9+/]+={0,2})$/
+  )
+  if (!match) return
+
+  if (match[1] !== attachment.mediaType) {
+    ctx.addIssue({
+      code: z.ZodIssueCode.custom,
+      path: ['mediaType'],
+      message: 'Declared media type must match the data URL.',
+    })
+  }
+
+  const payload = match[2]
+  if (payload && decodedBase64Bytes(payload) > MAX_DECODED_IMAGE_BYTES) {
+    ctx.addIssue({
+      code: z.ZodIssueCode.custom,
+      path: ['dataUrl'],
+      message: 'Decoded image exceeds the 5 MiB limit.',
+    })
+  }
+}
+
+export const imageAttachmentSchema = imageAttachmentObjectSchema.superRefine(
+  validateImageAttachment
+)
+
+export const imageV2AttachmentSchema = imageAttachmentObjectSchema
+  .extend({
+    source: z.enum(['attachment', 'document-page']),
+  })
+  .strict()
   .superRefine((attachment, ctx) => {
-    const match = attachment.dataUrl.match(
-      /^data:(image\/(?:jpeg|png|gif|webp));base64,([A-Za-z0-9+/]+={0,2})$/
-    )
-    if (!match) return
-
-    if (match[1] !== attachment.mediaType) {
-      ctx.addIssue({
-        code: z.ZodIssueCode.custom,
-        path: ['mediaType'],
-        message: 'Declared media type must match the data URL.',
-      })
-    }
-
-    const payload = match[2]
-    if (payload && decodedBase64Bytes(payload) > MAX_DECODED_IMAGE_BYTES) {
-      ctx.addIssue({
-        code: z.ZodIssueCode.custom,
-        path: ['dataUrl'],
-        message: 'Decoded image exceeds the 5 MiB limit.',
-      })
+    validateImageAttachment(attachment, ctx)
+    if (attachment.source === 'document-page') {
+      if (attachment.mediaType !== 'image/jpeg') {
+        ctx.addIssue({
+          code: z.ZodIssueCode.custom,
+          path: ['mediaType'],
+          message: 'Document pages must be JPEG images.',
+        })
+      }
+      if (attachment.dataUrl.length > MAX_DOCUMENT_PAGE_DATA_URL_LENGTH) {
+        ctx.addIssue({
+          code: z.ZodIssueCode.custom,
+          path: ['dataUrl'],
+          message: 'Document page data URL exceeds its length limit.',
+        })
+      }
     }
   })
 
@@ -106,6 +146,91 @@ const toolCallPartSchema = z
   })
   .strict()
 
+type JsonValue =
+  | string
+  | number
+  | boolean
+  | null
+  | JsonValue[]
+  | { [key: string]: JsonValue }
+
+const jsonValueSchema: z.ZodType<JsonValue> = z.lazy(() =>
+  z.union([
+    z.string(),
+    z.number().finite(),
+    z.boolean(),
+    z.null(),
+    z.array(jsonValueSchema),
+    z.record(z.string(), jsonValueSchema),
+  ])
+)
+const modelToolOutputProviderOptionsSchema = z
+  .record(z.string(), jsonValueSchema)
+  .optional()
+const requiredUnknownSchema = z
+  .unknown()
+  .refine((value): value is NonNullable<unknown> | null => value !== undefined)
+
+export const engineModelToolOutputSchema = z.discriminatedUnion('type', [
+  z
+    .object({
+      type: z.literal('text'),
+      value: z.string().max(200_000),
+      providerOptions: modelToolOutputProviderOptionsSchema,
+    })
+    .strict(),
+  z
+    .object({
+      type: z.literal('json'),
+      value: jsonValueSchema,
+      providerOptions: modelToolOutputProviderOptionsSchema,
+    })
+    .strict(),
+  z
+    .object({
+      type: z.literal('content'),
+      value: z
+        .array(z.object({ type: boundedString(128) }).catchall(jsonValueSchema))
+        .max(256),
+      providerOptions: modelToolOutputProviderOptionsSchema,
+    })
+    .strict(),
+  z
+    .object({
+      type: z.literal('error-text'),
+      value: z.string().max(200_000),
+      providerOptions: modelToolOutputProviderOptionsSchema,
+    })
+    .strict(),
+  z
+    .object({
+      type: z.literal('error-json'),
+      value: jsonValueSchema,
+      providerOptions: modelToolOutputProviderOptionsSchema,
+    })
+    .strict(),
+  z
+    .object({
+      type: z.literal('execution-denied'),
+      reason: z.string().optional(),
+      providerOptions: modelToolOutputProviderOptionsSchema,
+    })
+    .strict(),
+])
+
+export const engineToolExecutionV2ResultSchema = z
+  .object({
+    output: requiredUnknownSchema,
+    modelOutput: engineModelToolOutputSchema.optional(),
+  })
+  .strict()
+
+const toolCallV2PartSchema = toolCallPartSchema
+  .extend({
+    modelOutput: engineModelToolOutputSchema.optional(),
+  })
+  .strict()
+
 const messagePartSchema = z.union([
   textPartSchema,
   reasoningPartSchema,
@@ -120,6 +245,36 @@ export const engineMessageSchema = z
     parts: z.array(messagePartSchema).min(1).max(256),
   })
   .strict()
+
+export const engineV2MessageSchema = z
+  .object({
+    id: boundedString(128),
+    role: z.enum(['user', 'assistant']),
+    parts: z
+      .array(
+        z.union([
+          textPartSchema,
+          reasoningPartSchema,
+          toolCallV2PartSchema,
+          imageV2AttachmentSchema,
+        ])
+      )
+      .min(1)
+      .max(256),
+  })
+  .strict()
+  .superRefine((message, ctx) => {
+    if (message.role !== 'user') return
+    message.parts.forEach((part, index) => {
+      if (part.type === 'tool-call' && 'modelOutput' in part) {
+        ctx.addIssue({
+          code: z.ZodIssueCode.custom,
+          path: ['parts', index, 'modelOutput'],
+          message: 'Only assistant tool calls can include model output.',
+        })
+      }
+    })
+  })
 
 export const approvedToolSchema = z
   .object({
@@ -184,7 +339,7 @@ export const resolvedGenerationSchema = z
     }
   })
 
-export const engineChatRequestSchema = z
+const engineChatRequestObjectSchema = z
   .object({
     contractVersion: z.literal(CHAT_ENGINE_CONTRACT_VERSION),
     requestId: boundedString(128),
@@ -202,18 +357,27 @@ export const engineChatRequestSchema = z
     tools: z.array(approvedToolSchema).max(MAX_TOOLS),
   })
   .strict()
-  .superRefine((request, ctx) => {
-    const seenNames = new Set<string>()
-    request.tools.forEach((tool, index) => {
-      if (seenNames.has(tool.name)) {
-        ctx.addIssue({
-          code: z.ZodIssueCode.custom,
-          path: ['tools', index, 'name'],
-          message: 'Tool names must be unique within a request.',
-        })
-      }
-      seenNames.add(tool.name)
-    })
+
+function validateToolNames(
+  tools: { name: string }[],
+  ctx: z.RefinementCtx
+): void {
+  const seenNames = new Set<string>()
+  tools.forEach((tool, index) => {
+    if (seenNames.has(tool.name)) {
+      ctx.addIssue({
+        code: z.ZodIssueCode.custom,
+        path: ['tools', index, 'name'],
+        message: 'Tool names must be unique within a request.',
+      })
+    }
+    seenNames.add(tool.name)
+  })
+}
+
+export const engineChatRequestSchema =
+  engineChatRequestObjectSchema.superRefine((request, ctx) => {
+    validateToolNames(request.tools, ctx)
     let imageCount = 0
     request.messages.forEach((message, messageIndex) => {
       message.parts.forEach((part) => {
@@ -233,6 +397,61 @@ export const engineChatRequestSchema = z
         code: z.ZodIssueCode.custom,
         path: ['messages'],
         message: 'At most three image attachments are allowed.',
+      })
+    }
+  })
+
+export const engineV2ChatRequestSchema = engineChatRequestObjectSchema
+  .extend({
+    contractVersion: z.literal(CHAT_ENGINE_CONTRACT_V2),
+    messages: z.array(engineV2MessageSchema).min(1).max(MAX_MESSAGES),
+  })
+  .strict()
+  .superRefine((request, ctx) => {
+    validateToolNames(request.tools, ctx)
+    let imageCount = 0
+    let documentPageCount = 0
+    request.messages.forEach((message, messageIndex) => {
+      message.parts.forEach((part, partIndex) => {
+        if (part.type !== 'image') return
+        if (message.role !== 'user') {
+          ctx.addIssue({
+            code: z.ZodIssueCode.custom,
+            path: ['messages', messageIndex, 'parts', partIndex],
+            message: 'Assistant messages cannot contain images.',
+          })
+        }
+        if (part.source === 'attachment') {
+          imageCount += 1
+        } else {
+          documentPageCount += 1
+          if (
+            messageIndex !== request.messages.length - 1 ||
+            message.role !== 'user' ||
+            message.id !== request.userMessageId
+          ) {
+            ctx.addIssue({
+              code: z.ZodIssueCode.custom,
+              path: ['messages', messageIndex, 'parts', partIndex],
+              message:
+                'Document pages must belong to the current user message.',
+            })
+          }
+        }
+      })
+    })
+    if (imageCount > MAX_IMAGE_ATTACHMENTS) {
+      ctx.addIssue({
+        code: z.ZodIssueCode.custom,
+        path: ['messages'],
+        message: 'At most three image attachments are allowed.',
+      })
+    }
+    if (documentPageCount > MAX_DOCUMENT_PAGES) {
+      ctx.addIssue({
+        code: z.ZodIssueCode.custom,
+        path: ['messages'],
+        message: 'At most ten document pages are allowed.',
       })
     }
   })
@@ -260,6 +479,12 @@ export const engineFinishMetadataSchema = z
     usage: engineUsageSchema,
     reasoningContent: z.string().max(200_000).nullable(),
     aborted: z.boolean(),
+  })
+  .strict()
+
+export const engineV2FinishMetadataSchema = engineFinishMetadataSchema
+  .extend({
+    contractVersion: z.literal(CHAT_ENGINE_CONTRACT_V2),
   })
   .strict()
 
@@ -442,8 +667,7 @@ const errorSchema = z
   })
   .strict()
 
-export const engineStreamPartSchema = z.union([
-  streamStartSchema,
+const commonStreamPartSchemas = [
   z.object({ type: z.literal('start-step') }).strict(),
   z.object({ type: z.literal('finish-step') }).strict(),
   textStartSchema,
@@ -458,15 +682,33 @@ export const engineStreamPartSchema = z.union([
   toolInputAvailableSchema,
   toolOutputAvailableSchema,
   toolOutputErrorSchema,
-  finishSchema,
   abortSchema,
   errorSchema,
-  z
-    .object({
-      type: z.literal('message-metadata'),
-      messageMetadata: engineFinishMetadataSchema,
-    })
-    .strict(),
+] as const
+
+const messageMetadataSchema = z
+  .object({
+    type: z.literal('message-metadata'),
+    messageMetadata: engineFinishMetadataSchema,
+  })
+  .strict()
+
+export const engineStreamPartSchema = z.union([
+  streamStartSchema,
+  ...commonStreamPartSchemas,
+  finishSchema,
+  messageMetadataSchema,
+])
+
+export const engineV2StreamPartSchema = z.union([
+  streamStartSchema.extend({
+    messageMetadata: engineV2FinishMetadataSchema.optional(),
+  }),
+  ...commonStreamPartSchemas,
+  finishSchema.extend({ messageMetadata: engineV2FinishMetadataSchema }),
+  messageMetadataSchema.extend({
+    messageMetadata: engineV2FinishMetadataSchema,
+  }),
 ])
 
 export const engineManifestSchema = z
@@ -498,26 +740,120 @@ export const engineManifestSchema = z
   })
   .strict()
 
+export const engineV2ManifestSchema = engineManifestSchema
+  .extend({
+    contractVersion: z.literal(CHAT_ENGINE_CONTRACT_V2),
+    features: engineManifestSchema.shape.features.extend({
+      modelToolOutputs: z.literal(true),
+    }),
+    limits: engineManifestSchema.shape.limits.extend({
+      maxDocumentPages: z.literal(MAX_DOCUMENT_PAGES),
+      maxDocumentPageDataUrlLength: z.literal(
+        MAX_DOCUMENT_PAGE_DATA_URL_LENGTH
+      ),
+      maxRequestBytes: z.literal(CHAT_ENGINE_MAX_V2_REQUEST_BYTES),
+    }),
+  })
+  .strict()
+
 export type ImageAttachment = z.infer<typeof imageAttachmentSchema>
+export type ImageV2Attachment = z.infer<typeof imageV2AttachmentSchema>
+export type EngineV2ImageAttachment = ImageV2Attachment
+export type EngineModelToolOutput = z.infer<typeof engineModelToolOutputSchema>
+export type EngineToolExecutionV2Result = z.infer<
+  typeof engineToolExecutionV2ResultSchema
+>
+export type EngineV2ToolExecutionResult = EngineToolExecutionV2Result
 export type EngineMessage = z.infer<typeof engineMessageSchema>
+export type EngineV2Message = z.infer<typeof engineV2MessageSchema>
 export type ApprovedTool = z.infer<typeof approvedToolSchema>
 export type ResolvedGeneration = z.infer<typeof resolvedGenerationSchema>
 export type EngineChatRequest = z.infer<typeof engineChatRequestSchema>
+export type EngineV2ChatRequest = z.infer<typeof engineV2ChatRequestSchema>
 export type EngineUsage = z.infer<typeof engineUsageSchema>
 export type EngineFinishMetadata = z.infer<typeof engineFinishMetadataSchema>
+export type EngineV2FinishMetadata = z.infer<
+  typeof engineV2FinishMetadataSchema
+>
 export type EngineStreamPart = z.infer<typeof engineStreamPartSchema>
+export type EngineV2StreamPart = z.infer<typeof engineV2StreamPartSchema>
 export type EngineManifest = z.infer<typeof engineManifestSchema>
+export type EngineV2Manifest = z.infer<typeof engineV2ManifestSchema>
+export type SupportedEngineChatRequest = EngineChatRequest | EngineV2ChatRequest
+export type SupportedEngineMessage = EngineMessage | EngineV2Message
+export type SupportedEngineFinishMetadata =
+  | EngineFinishMetadata
+  | EngineV2FinishMetadata
+export type SupportedEngineStreamPart = EngineStreamPart | EngineV2StreamPart
+export type SupportedEngineManifest = EngineManifest | EngineV2Manifest
 
-export function parseEngineChatRequest(value: unknown): EngineChatRequest {
-  return engineChatRequestSchema.parse(value)
+export function parseEngineChatRequest(
+  value: unknown,
+  version?: typeof CHAT_ENGINE_CONTRACT_VERSION
+): EngineChatRequest
+export function parseEngineChatRequest(
+  value: unknown,
+  version: typeof CHAT_ENGINE_CONTRACT_V2
+): EngineV2ChatRequest
+export function parseEngineChatRequest(
+  value: unknown,
+  version: EngineContractVersion
+): SupportedEngineChatRequest
+export function parseEngineChatRequest(
+  value: unknown,
+  version: EngineContractVersion = CHAT_ENGINE_CONTRACT_VERSION
+): SupportedEngineChatRequest {
+  if (version === CHAT_ENGINE_CONTRACT_V2)
+    return engineV2ChatRequestSchema.parse(value)
+  if (version === CHAT_ENGINE_CONTRACT_VERSION)
+    return engineChatRequestSchema.parse(value)
+  throw new Error('Unsupported chat engine contract version.')
 }
 
-export function parseEngineStreamPart(value: unknown): EngineStreamPart {
-  return engineStreamPartSchema.parse(value)
+export function parseEngineStreamPart(
+  value: unknown,
+  version?: typeof CHAT_ENGINE_CONTRACT_VERSION
+): EngineStreamPart
+export function parseEngineStreamPart(
+  value: unknown,
+  version: typeof CHAT_ENGINE_CONTRACT_V2
+): EngineV2StreamPart
+export function parseEngineStreamPart(
+  value: unknown,
+  version: EngineContractVersion
+): SupportedEngineStreamPart
+export function parseEngineStreamPart(
+  value: unknown,
+  version: EngineContractVersion = CHAT_ENGINE_CONTRACT_VERSION
+): SupportedEngineStreamPart {
+  if (version === CHAT_ENGINE_CONTRACT_V2)
+    return engineV2StreamPartSchema.parse(value)
+  if (version === CHAT_ENGINE_CONTRACT_VERSION)
+    return engineStreamPartSchema.parse(value)
+  throw new Error('Unsupported chat engine contract version.')
 }
 
-export function parseEngineManifest(value: unknown): EngineManifest {
-  return engineManifestSchema.parse(value)
+export function parseEngineManifest(
+  value: unknown,
+  version?: typeof CHAT_ENGINE_CONTRACT_VERSION
+): EngineManifest
+export function parseEngineManifest(
+  value: unknown,
+  version: typeof CHAT_ENGINE_CONTRACT_V2
+): EngineV2Manifest
+export function parseEngineManifest(
+  value: unknown,
+  version: EngineContractVersion
+): SupportedEngineManifest
+export function parseEngineManifest(
+  value: unknown,
+  version: EngineContractVersion = CHAT_ENGINE_CONTRACT_VERSION
+): SupportedEngineManifest {
+  if (version === CHAT_ENGINE_CONTRACT_V2)
+    return engineV2ManifestSchema.parse(value)
+  if (version === CHAT_ENGINE_CONTRACT_VERSION)
+    return engineManifestSchema.parse(value)
+  throw new Error('Unsupported chat engine contract version.')
 }
 
 export function validateProviderCredentialHeaders(

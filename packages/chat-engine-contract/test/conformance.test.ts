@@ -2,6 +2,8 @@ import { once } from 'node:events'
 import { createServer } from 'node:http'
 import { describe, expect, test, vi } from 'vitest'
 import {
+  CHAT_ENGINE_CONTRACT_V2,
+  CHAT_ENGINE_CONTRACT_VERSION,
   conformanceAbortRequest,
   conformanceAbortStream,
   conformanceManifest,
@@ -10,11 +12,18 @@ import {
   conformanceStream,
   conformanceToolRequest,
   conformanceToolStream,
-  type EngineStreamPart,
+  conformanceV2AbortRequest,
+  conformanceV2Manifest,
+  conformanceV2Request,
+  conformanceV2RequestCredentialRequest,
+  conformanceV2ToolRequest,
+  runChatEngineConformance,
   runChatEngineConformanceSuite,
+  type SupportedEngineChatRequest,
+  type SupportedEngineStreamPart,
 } from '../src/index.js'
 
-function sse(parts: EngineStreamPart[]): Response {
+function sse(parts: unknown[]): Response {
   return new Response(
     `${parts.map((part) => `data: ${JSON.stringify(part)}\n\n`).join('')}data: [DONE]\n\n`,
     { headers: { 'content-type': 'text/event-stream' } }
@@ -45,15 +54,36 @@ function abortSse(signal: AbortSignal | null): Response {
 function requestFixture(
   abortResponse: (
     signal: AbortSignal | null
-  ) => Response | Promise<Response> = abortSse
+  ) => Response | Promise<Response> = abortSse,
+  version: 'v1' | 'v2' = CHAT_ENGINE_CONTRACT_VERSION,
+  metadataVersion: 'v1' | 'v2' = version,
+  manifestVersion: 'v1' | 'v2' = version
 ): typeof fetch {
+  const withVersion = (parts: SupportedEngineStreamPart[]): unknown[] =>
+    parts.map((part) =>
+      'messageMetadata' in part && part.messageMetadata
+        ? {
+            ...part,
+            messageMetadata: {
+              ...part.messageMetadata,
+              contractVersion: metadataVersion,
+            },
+          }
+        : part
+    )
   return async (input: string | URL | Request, init?: RequestInit) => {
     const url = new URL(
       typeof input === 'string' || input instanceof URL ? input : input.url
     )
-    if (url.pathname === '/v1/manifest') {
-      return Response.json(conformanceManifest)
+    if (url.pathname === `/${version}/manifest`) {
+      return Response.json(
+        manifestVersion === CHAT_ENGINE_CONTRACT_V2
+          ? conformanceV2Manifest
+          : conformanceManifest
+      )
     }
+    if (url.pathname !== `/${version}/chat`)
+      return new Response(null, { status: 404 })
     const headers = new Headers(init?.headers)
     if (headers.get('authorization') !== 'Bearer service-token') {
       return new Response(null, { status: 401 })
@@ -65,7 +95,9 @@ function requestFixture(
     ) {
       return new Response(null, { status: 400 })
     }
-    const body = JSON.parse(String(init?.body)) as typeof conformanceRequest
+    const body = JSON.parse(String(init?.body)) as SupportedEngineChatRequest
+    if (body.contractVersion !== version)
+      return new Response(null, { status: 400 })
     const provider = headers.get('provider-authorization')
     if (body.generation.credentialMode.mode === 'gateway' && !provider) {
       return new Response(null, { status: 400 })
@@ -77,12 +109,12 @@ function requestFixture(
       if (!headers.get('x-mcp-execution-token')) {
         return new Response(null, { status: 400 })
       }
-      return sse(conformanceToolStream)
+      return sse(withVersion(conformanceToolStream))
     }
     if (body.requestId === conformanceAbortRequest.requestId) {
       return abortResponse(init?.signal ?? null)
     }
-    return sse(conformanceStream)
+    return sse(withVersion(conformanceStream))
   }
 }
 
@@ -97,6 +129,14 @@ const options = {
   abortRequest: conformanceAbortRequest,
   traceparent: '00-aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa-bbbbbbbbbbbbbbbb-01',
   tracestate: 'vendor=value',
+}
+
+const v2Options = {
+  ...options,
+  deploymentRequest: conformanceV2Request,
+  requestCredentialRequest: conformanceV2RequestCredentialRequest,
+  toolRequest: conformanceV2ToolRequest,
+  abortRequest: conformanceV2AbortRequest,
 }
 
 async function deadline<T>(operation: Promise<T>): Promise<T> {
@@ -154,6 +194,59 @@ describe('chat engine conformance suite', () => {
       result.toolStream.some((part) => part.type === 'tool-output-available')
     ).toBe(true)
     expect(result.transportCancelled).toBe(true)
+  })
+
+  test('uses explicit v2 endpoints and rejects mixed generations', async () => {
+    const urls: string[] = []
+    const fixture = requestFixture(undefined, CHAT_ENGINE_CONTRACT_V2)
+    const result = await runChatEngineConformanceSuite({
+      ...v2Options,
+      fetch: async (input, init) => {
+        const url = new URL(
+          typeof input === 'string' || input instanceof URL ? input : input.url
+        )
+        urls.push(url.pathname)
+        return fixture(input, init)
+      },
+    })
+    expect(result.manifest).toEqual(conformanceV2Manifest)
+    expect(result.transportCancelled).toBe(true)
+    expect(urls.every((url) => url.startsWith('/v2/'))).toBe(true)
+    expect(urls).toContain('/v2/manifest')
+    expect(urls).toContain('/v2/chat')
+
+    const noFetch = vi.fn(requestFixture())
+    await expect(
+      runChatEngineConformanceSuite({
+        ...v2Options,
+        toolRequest: conformanceToolRequest,
+        fetch: noFetch,
+      })
+    ).rejects.toThrow()
+    expect(noFetch).not.toHaveBeenCalled()
+    await expect(
+      runChatEngineConformance({
+        ...options,
+        request: conformanceV2Request,
+        fetch: requestFixture(
+          undefined,
+          CHAT_ENGINE_CONTRACT_V2,
+          CHAT_ENGINE_CONTRACT_V2,
+          CHAT_ENGINE_CONTRACT_VERSION
+        ),
+      })
+    ).rejects.toThrow()
+    await expect(
+      runChatEngineConformance({
+        ...options,
+        request: conformanceV2Request,
+        fetch: requestFixture(
+          undefined,
+          CHAT_ENGINE_CONTRACT_V2,
+          CHAT_ENGINE_CONTRACT_VERSION
+        ),
+      })
+    ).rejects.toThrow()
   })
 
   test.each([

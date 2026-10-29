@@ -41,6 +41,8 @@ The durable record of **why** — the significant, hard-to-reverse choices behin
 - [0051](./0051-ai-releases-tag-v3-ai-with-deploy-parity.md) — AI releases are tagged on `v3-ai` and rendered from `v3` under deploy parity
 - [0054](./0054-student-answer-style-layer.md) — Students choose how answers read (style and tone), never how much help they get, below every fixed prompt contract
 
+- [0056](./0056-chat-engine-parity-contract-generation.md) — Full participant parity uses an explicit chat-engine contract generation
+
 `0001`, `0003`, and `0008` are each used twice — their lines were numbered
 independently before this index existed. Numbers are not reassigned, because
 existing records cite them. Open branches claim numbers through `0018` (KB line `0009`–`0016`, feature flags, UZH

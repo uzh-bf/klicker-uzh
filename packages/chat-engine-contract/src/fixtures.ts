@@ -1,8 +1,12 @@
 import {
+  CHAT_ENGINE_CONTRACT_V2,
   CHAT_ENGINE_CONTRACT_VERSION,
+  CHAT_ENGINE_MAX_V2_REQUEST_BYTES,
   type EngineChatRequest,
   type EngineManifest,
   type EngineStreamPart,
+  type EngineV2ChatRequest,
+  type EngineV2Manifest,
 } from './schema.js'
 
 export const conformanceRequest: EngineChatRequest = {
@@ -192,5 +196,62 @@ export const conformanceManifest: EngineManifest = {
     maxImageAttachments: 3,
     maxDecodedImageBytes: 5 * 1024 * 1024,
     maxDataUrlLength: 7_000_000,
+  },
+}
+
+export const conformanceV2Request: EngineV2ChatRequest = {
+  ...conformanceRequest,
+  contractVersion: CHAT_ENGINE_CONTRACT_V2,
+  messages: [
+    {
+      id: conformanceRequest.userMessageId,
+      role: 'user',
+      parts: [
+        { type: 'text', text: 'What is a bond?' },
+        ...Array.from({ length: 3 }, (_, index) => ({
+          id: `image-${index + 1}`,
+          type: 'image' as const,
+          source: 'attachment' as const,
+          mediaType: 'image/png' as const,
+          dataUrl: 'data:image/png;base64,AA==',
+        })),
+        ...Array.from({ length: 10 }, (_, index) => ({
+          id: `page-${index + 1}`,
+          type: 'image' as const,
+          source: 'document-page' as const,
+          mediaType: 'image/jpeg' as const,
+          dataUrl: 'data:image/jpeg;base64,AA==',
+        })),
+      ],
+    },
+  ],
+}
+
+export const conformanceV2RequestCredentialRequest: EngineV2ChatRequest = {
+  ...conformanceV2Request,
+  requestId: conformanceRequestCredentialRequest.requestId,
+  generation: conformanceRequestCredentialRequest.generation,
+}
+
+export const conformanceV2ToolRequest: EngineV2ChatRequest = {
+  ...conformanceV2Request,
+  requestId: conformanceToolRequest.requestId,
+  tools: conformanceToolRequest.tools,
+}
+
+export const conformanceV2AbortRequest: EngineV2ChatRequest = {
+  ...conformanceV2Request,
+  requestId: conformanceAbortRequest.requestId,
+}
+
+export const conformanceV2Manifest: EngineV2Manifest = {
+  ...conformanceManifest,
+  contractVersion: CHAT_ENGINE_CONTRACT_V2,
+  features: { ...conformanceManifest.features, modelToolOutputs: true },
+  limits: {
+    ...conformanceManifest.limits,
+    maxDocumentPages: 10,
+    maxDocumentPageDataUrlLength: 2_000_000,
+    maxRequestBytes: CHAT_ENGINE_MAX_V2_REQUEST_BYTES,
   },
 }
