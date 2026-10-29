@@ -353,6 +353,14 @@
     },
     "test:run": {
       "cache": false
+    },
+    "@klicker-uzh/chat-api#test:run": {
+      "dependsOn": ["^build"],
+      "cache": false
+    },
+    "@klicker-uzh/chat-engine-default#test:run": {
+      "dependsOn": ["^build"],
+      "cache": false
     }
   }
 }
