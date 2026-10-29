@@ -20,5 +20,7 @@ model_list:
       api_key: os.environ/AZURE_OPENAI_API_KEY
       reasoning_effort: high
       timeout: 120
+    model_info:
+      base_model: gpt-6-luna
 
 request_timeout: 120

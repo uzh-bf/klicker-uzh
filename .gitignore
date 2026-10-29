@@ -100,5 +100,6 @@ evaluation/config.local.json
 .commandcode/
 .zcode/
 
-# QA exports contain real chatbot conversations; keep them out of the public repo.
-evaluation/data/qa_pairs/
+# Evaluation inputs and outputs (QA exports, results, conversations) contain real
+# chatbot conversations; keep them out of this public repository.
+evaluation/data/output/

@@ -388,17 +388,18 @@ this local gateway automatically. They fail before evaluation if it is not runni
 never select a judge. Explicit configuration, including incomplete configuration,
 does not fall back to the local gateway after a failure.
 
-Place the supplied QA file under the ignored framework output directory, then run
-from the Klicker repository. The default metrics file is set by
-`EVAL_METRICS_PATH` in the committed, non-secret `evaluation/defaults.env`;
-export `EVAL_METRICS_PATH` or pass `--metrics` to use another file. The wrapper
-reads only allowlisted names from that file and never lets it override a value
-already set in your environment.
+Place the supplied QA file in the Git-ignored `evaluation/data/output/qa_pairs/`,
+then run from the Klicker repository. The committed, non-secret
+`evaluation/defaults.env` sets the default metrics file (`EVAL_METRICS_PATH`) and
+output directory (`EVAL_OUTPUT_DIR`, `evaluation/data/output`); results land in
+its `test_results/` folder. Export either variable, or pass `--metrics`, to
+override it. The wrapper reads only allowlisted names from that file and never
+lets it override a value already set in your environment.
 
 ```bash
 pnpm run eval:klicker -- \
   --mode eval \
-  --qa-file path/to/qa/file.json \
+  --qa-file evaluation/data/output/qa_pairs/<file>.json \
   --eval-mode self-assessment \
   --limit 1
 ```
@@ -499,12 +500,6 @@ not require routine export commands. Automated agent runs use the existing
 restricted rs-infisical-operator allowlist for approved values. Do not place
 credentials in prompts, arguments, logs, or committed files, and do not invent
 a new secret mapping when the approved scope is unavailable.
-
-Query output is written under EVAL_OUTPUT_DIR (the framework default is
-evaluation/framework/data/output): QA JSON files live in qa_pairs/, and
-last_output_file_name.txt points to the latest artifact. Keep generated QA,
-evaluation output, and receipts outside the repository when they contain
-anything other than synthetic data.
 
 ## Portable integration check
 
