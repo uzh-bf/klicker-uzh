@@ -319,3 +319,55 @@ test.each([
   expect(body.match(/data: \[DONE\]/g)).toHaveLength(1)
   expect(finalize).toHaveBeenCalledTimes(1)
 })
+
+test.each([
+  'close',
+  'abort',
+])('finalizes a pending read once when downstream cancellation causes %s', async (termination) => {
+  let controller!: ReadableStreamDefaultController<Uint8Array>
+  let admit!: () => void
+  const pending = new Promise<void>((resolve) => {
+    admit = resolve
+  })
+  const upstream = new ReadableStream<Uint8Array>({
+    start(value) {
+      controller = value
+    },
+    pull() {
+      admit()
+      return new Promise<void>(() => {})
+    },
+  })
+  const finalize = vi.fn(async (state: StreamState) => {
+    expect(state.status).toBe('aborted')
+    return {
+      creditsUsed: null,
+      finalPersistenceStatus: 'not-persisted' as const,
+    }
+  })
+  const onCancel = vi.fn(() => {
+    if (termination === 'abort')
+      controller.error(new DOMException('Synthetic abort', 'AbortError'))
+  })
+  const stream = createValidatedPlatformStream(new Response(upstream), {
+    metadata: () => ({
+      chatMode: 'tutor',
+      modelId: 'gpt-4.1-mini',
+      reasoningEffort: null,
+      userMessageId: 'user-1',
+      assistantMessageId: 'assistant-1',
+      creditsUsed: null,
+      finalPersistenceStatus: 'not-persisted',
+    }),
+    finalize,
+    onCancel,
+  })
+  const reader = stream.getReader()
+  const reading = reader.read()
+  await pending
+  await reader.cancel()
+  expect(await reading).toEqual({ done: true, value: undefined })
+  expect(finalize).toHaveBeenCalledTimes(1)
+  expect(onCancel).toHaveBeenCalledTimes(1)
+  reader.releaseLock()
+})

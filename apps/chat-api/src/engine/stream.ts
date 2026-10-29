@@ -269,6 +269,7 @@ export function createValidatedPlatformStream(
   const activeReasoningIds = new Set<string>()
   const startedTools = new Set<string>()
   let abortMetadataPending = false
+  let cancelled = false
 
   const finalizeOnce = async (): Promise<PlatformMetadata> => {
     if (!finalized) {
@@ -428,6 +429,7 @@ export function createValidatedPlatformStream(
       try {
         for (;;) {
           const { done, value } = await reader.read()
+          if (cancelled) return
           if (done) {
             if (buffer.length > 0) {
               const lastLine = buffer
@@ -473,6 +475,7 @@ export function createValidatedPlatformStream(
           if (emitted) return
         }
       } catch (error) {
+        if (cancelled) return
         if (state.status === 'streaming') {
           state.status = 'aborted'
           await finalizeOnce()
@@ -496,12 +499,22 @@ export function createValidatedPlatformStream(
       }
     },
     async cancel() {
+      cancelled = true
+      if (state.status === 'streaming') state.status = 'aborted'
       options.onCancel?.()
-      await reader.cancel()
-      if (state.status === 'streaming') {
-        state.status = 'aborted'
-        await finalizeOnce()
-      }
+      const [finalization, cancellation] = await Promise.allSettled([
+        finalizeOnce(),
+        reader.cancel(),
+      ])
+      if (finalization.status === 'rejected') throw finalization.reason
+      if (
+        cancellation.status === 'rejected' &&
+        !(
+          cancellation.reason instanceof Error &&
+          cancellation.reason.name === 'AbortError'
+        )
+      )
+        throw cancellation.reason
     },
   })
 }
