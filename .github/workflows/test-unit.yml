@@ -91,7 +91,7 @@ jobs:
       runner_arm: ${{ steps.route.outputs.runner_arm }}
     steps:
       - name: Check out the trusted priority router
-        uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
           repository: uzh-bf/klicker-uzh
           ref: v3
@@ -112,7 +112,7 @@ jobs:
       should_run: ${{ github.event_name == 'push' && 'true' || steps.check.outputs.should_run }}
     steps:
       - name: Checkout repository
-        uses: actions/checkout@v4
+        uses: actions/checkout@v7
       - name: Check for changes
         id: check
         uses: ./.github/actions/changed-paths
@@ -143,7 +143,7 @@ jobs:
           - 5432:5432
     steps:
       - name: Checkout repository
-        uses: actions/checkout@v4
+        uses: actions/checkout@v7
 
       - name: Record tested source tree
         continue-on-error: true
@@ -172,14 +172,14 @@ jobs:
       - name: Upload tested source receipt
         continue-on-error: true
         if: github.event_name == 'pull_request'
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v7
         with:
           name: ci-validation-receipt
           path: ci-validation-receipt.json
           retention-days: 7
 
       - name: Set up pnpm
-        uses: pnpm/action-setup@v4
+        uses: pnpm/action-setup@v6
         with:
           version: 11.5.0
 
@@ -263,7 +263,7 @@ jobs:
         # means a suite stopped producing coverage; fail instead of reporting a
         # green test job without coverage.
         if: always()
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v7
         with:
           name: coverage-lcov
           # A re-run replaces the prior attempt's artifact; upload-artifact v4
@@ -289,7 +289,7 @@ jobs:
     permissions:
       contents: read
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v7
         with:
           persist-credentials: false
           sparse-checkout: .github/scripts
@@ -318,7 +318,7 @@ jobs:
         run: node .github/scripts/required-ci-status.cjs report
       - name: Upload required CI evidence
         if: always()
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v7
         with:
           name: required-ci-evidence
           path: required-ci-evidence.json
@@ -358,7 +358,7 @@ jobs:
       contents: read
       issues: read
       pull-requests: read
-    uses: uzh-bf/klicker-uzh/.github/workflows/test-unit-execution.yml@a3286cc5cc77b98c7255b596084fd1032682bdaf
+    uses: uzh-bf/klicker-uzh/.github/workflows/test-unit-execution.yml@52d1abddfb33607bd3a6c0d891219c4d11fad0d6
     secrets: inherit
 
   priority-status:
