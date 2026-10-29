@@ -117,6 +117,30 @@ async function deadline<T>(operation: Promise<T>): Promise<T> {
 }
 
 describe('chat engine conformance suite', () => {
+  test.each([
+    'https://engine.example.test/engine',
+    'https://engine.example.test/engine/',
+  ])('retains the configured path prefix for %s', async (baseUrl) => {
+    const fixture = requestFixture()
+    const urls: string[] = []
+    const result = await runChatEngineConformanceSuite({
+      ...options,
+      baseUrl,
+      fetch: async (input, init) => {
+        const url = new URL(
+          typeof input === 'string' || input instanceof URL ? input : input.url
+        )
+        urls.push(url.pathname)
+        expect(url.pathname).toMatch(/^\/engine\/v1\//)
+        url.pathname = url.pathname.slice('/engine'.length)
+        return fixture(url, init)
+      },
+    })
+    expect(result.transportCancelled).toBe(true)
+    expect(urls).toContain('/engine/v1/manifest')
+    expect(urls).toContain('/engine/v1/chat')
+  })
+
   test('covers credentials, approved tools, and transport cancellation', async () => {
     const result = await runChatEngineConformanceSuite({
       ...options,

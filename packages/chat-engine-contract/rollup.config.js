@@ -15,6 +15,7 @@ export default defineConfig({
     typescript({
       tsconfig: './tsconfig.json',
       rootDir: 'src',
+      include: ['**/src/**/*'],
     }),
   ],
   external: [/node_modules/],

@@ -1,5 +1,7 @@
 # PLAN - PR 5126 Public Chat API And Engine Seam
 
+> Historical record. Integration order and readiness are now governed by the [direct chat API and Catalyst adoption plan](./2026-10-28-chat-api-catalyst-adoption-plan.md). Its native stack is reviewed and landed as one unit; historical per-package merge instructions below are superseded.
+
 ## Identity
 
 - Original date: 2026-06-24

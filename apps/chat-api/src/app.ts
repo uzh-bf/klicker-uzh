@@ -518,8 +518,14 @@ export function createChatApiApp(
         runId,
         locale:
           input.locale ??
-          c.req.header('accept-language')?.split(',')[0] ??
-          'en',
+          (() => {
+            const tag = c.req
+              .header('accept-language')
+              ?.split(',')[0]
+              ?.split(';')[0]
+              ?.trim()
+            return tag && tag.length >= 2 && tag.length <= 16 ? tag : 'en'
+          })(),
         systemPrompt: getSystemPrompt(chatbot, input.selectedMode),
         generation,
         messages: engineMessages,
@@ -537,17 +543,6 @@ export function createChatApiApp(
         )
       }
 
-      await dependencies.persistUserMessage({
-        threadId: input.threadId,
-        messageId: userMessageId,
-        parentId: input.parentId ?? null,
-        content: lastMessage.content,
-        chatMode: input.selectedMode,
-        modelId: model.id,
-        reasoningEffort: appliedReasoningEffort,
-        attachments: images,
-      })
-
       const engineAbort = new AbortController()
       const abortIncomingEngine = () => engineAbort.abort()
       c.req.raw.signal.addEventListener('abort', abortIncomingEngine, {
@@ -563,12 +558,38 @@ export function createChatApiApp(
           signal: engineAbort.signal,
         })
       } catch {
+        abortIncomingEngine()
+        c.req.raw.signal.removeEventListener('abort', abortIncomingEngine)
         return c.json(
           {
             error: 'The selected chat engine failed before streaming',
             code: 'ENGINE_REQUEST_FAILED',
           },
           503
+        )
+      }
+
+      try {
+        await dependencies.persistUserMessage({
+          threadId: input.threadId,
+          messageId: userMessageId,
+          parentId: input.parentId ?? null,
+          content: lastMessage.content,
+          chatMode: input.selectedMode,
+          modelId: model.id,
+          reasoningEffort: appliedReasoningEffort,
+          attachments: images,
+        })
+      } catch {
+        abortIncomingEngine()
+        c.req.raw.signal.removeEventListener('abort', abortIncomingEngine)
+        await engineResponse.body?.cancel().catch(() => undefined)
+        return c.json(
+          {
+            error: 'The user message could not be persisted',
+            code: 'MESSAGE_PERSISTENCE_FAILED',
+          },
+          500
         )
       }
 

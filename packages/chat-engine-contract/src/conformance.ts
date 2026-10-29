@@ -53,7 +53,10 @@ function endpoint(baseUrl: string, path: string): string {
   if (url.protocol !== 'http:' && url.protocol !== 'https:') {
     throw new Error('The conformance engine URL must use HTTP or HTTPS.')
   }
-  return new URL(path, `${url.toString().replace(/\/$/, '')}/`).toString()
+  return new URL(
+    path.replace(/^\//, ''),
+    `${url.toString().replace(/\/$/, '')}/`
+  ).toString()
 }
 
 async function readStream(

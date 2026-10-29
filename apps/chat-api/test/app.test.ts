@@ -79,6 +79,103 @@ const body = {
 }
 
 describe('chat-api Slice 2 tracer', () => {
+  test.each([
+    ['de-CH;q=0.8,en;q=0.5', 'de-CH'],
+    ['*', 'en'],
+    ['zh-Hant-TW-x-private;q=0.9', 'en'],
+  ])('normalizes language header %s', async (header, locale) => {
+    const dependencies = baseDependencies(async () => engineSse([]))
+    const response = await createChatApiApp(dependencies).request(
+      '/api/chatbots/chatbot-1/chat',
+      {
+        method: 'POST',
+        headers: { 'accept-language': header },
+        body: JSON.stringify(body),
+      }
+    )
+    expect(response.status).toBe(200)
+    expect(vi.mocked(dependencies.engine.chat).mock.calls[0]?.[0].locale).toBe(
+      locale
+    )
+    await response.body?.cancel()
+  })
+
+  test('preserves an explicit locale over the language header', async () => {
+    const dependencies = baseDependencies(async () => engineSse([]))
+    const response = await createChatApiApp(dependencies).request(
+      '/api/chatbots/chatbot-1/chat',
+      {
+        method: 'POST',
+        headers: { 'accept-language': '*' },
+        body: JSON.stringify({ ...body, locale: 'fr-CH' }),
+      }
+    )
+    expect(response.status).toBe(200)
+    expect(vi.mocked(dependencies.engine.chat).mock.calls[0]?.[0].locale).toBe(
+      'fr-CH'
+    )
+    await response.body?.cancel()
+  })
+
+  test('does not persist an orphan before a successful retry with a new message id', async () => {
+    let accepted = false
+    const dependencies = baseDependencies(async () => {
+      if (!accepted) throw new Error('engine unavailable')
+      return engineSse([])
+    })
+    const app = createChatApiApp(dependencies)
+    const failed = await app.request('/api/chatbots/chatbot-1/chat', {
+      method: 'POST',
+      body: JSON.stringify(body),
+    })
+    expect(failed.status).toBe(503)
+    expect(dependencies.persistUserMessage).not.toHaveBeenCalled()
+    accepted = true
+    const retry = await app.request('/api/chatbots/chatbot-1/chat', {
+      method: 'POST',
+      body: JSON.stringify({
+        ...body,
+        messages: [{ id: 'user-retry', role: 'user', content: 'Question' }],
+      }),
+    })
+    expect(retry.status).toBe(200)
+    expect(dependencies.persistUserMessage).toHaveBeenCalledTimes(1)
+    expect(dependencies.persistUserMessage).toHaveBeenCalledWith(
+      expect.objectContaining({ messageId: 'user-retry' })
+    )
+    await retry.body?.cancel()
+  })
+
+  test('aborts and cancels an accepted engine response when persistence fails', async () => {
+    const cancel = vi.fn()
+    const upstream = new Response(new ReadableStream({ cancel }), {
+      headers: { 'content-type': 'text/event-stream' },
+    })
+    const dependencies = baseDependencies(async () => upstream)
+    dependencies.persistUserMessage = vi.fn(async () => {
+      throw new Error('database unavailable')
+    })
+    const signals: AbortSignal[] = []
+    dependencies.engine.chat = vi.fn(async (_, options) => {
+      signals.push(options.signal)
+      return upstream
+    })
+    const response = await createChatApiApp(dependencies).request(
+      '/api/chatbots/chatbot-1/chat',
+      {
+        method: 'POST',
+        body: JSON.stringify(body),
+      }
+    )
+    expect(response.status).toBe(500)
+    expect(await response.json()).toMatchObject({
+      code: 'MESSAGE_PERSISTENCE_FAILED',
+    })
+    expect(signals[0]?.aborted).toBe(true)
+    expect(cancel).toHaveBeenCalledTimes(1)
+    expect(dependencies.finalizeAssistantTurn).not.toHaveBeenCalled()
+  })
+
   test('rejects a missing persisted thread without invoking or writing', async () => {
     const engine = vi.fn(async () => engineSse([]))
     const dependencies = baseDependencies(engine)
@@ -265,6 +362,7 @@ describe('chat-api Slice 2 tracer', () => {
       code: 'ENGINE_REQUEST_FAILED',
     })
     expect(dependencies.engine.chat).toHaveBeenCalledTimes(1)
+    expect(dependencies.persistUserMessage).not.toHaveBeenCalled()
     expect(dependencies.finalizeAssistantTurn).not.toHaveBeenCalled()
   })
 
