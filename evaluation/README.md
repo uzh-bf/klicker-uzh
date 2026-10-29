@@ -351,7 +351,7 @@ uv sync --frozen --project evaluation/framework
 ### Standalone Docker judge
 
 Start only the evaluation judge in a separate terminal. It uses Azure's
-OpenAI-compatible `/openai/v1` endpoint and the `gpt-5.6-luna` deployment.
+OpenAI-compatible `/openai/v1` endpoint and the `gpt-6-luna` deployment.
 Start it from the repository root after logging in to the team's Infisical instance:
 
 ```bash
@@ -388,21 +388,24 @@ this local gateway automatically. They fail before evaluation if it is not runni
 never select a judge. Explicit configuration, including incomplete configuration,
 does not fall back to the local gateway after a failure.
 
-Place the supplied QA and metrics files at their requested paths under the
-ignored framework data directories, then run from the Klicker repository:
+Place the supplied QA file under the ignored framework output directory, then run
+from the Klicker repository. The default metrics file is set by
+`EVAL_METRICS_PATH` in the committed, non-secret `evaluation/defaults.env`;
+export `EVAL_METRICS_PATH` or pass `--metrics` to use another file. The wrapper
+reads only allowlisted names from that file and never lets it override a value
+already set in your environment.
 
 ```bash
 pnpm run eval:klicker -- \
   --mode eval \
-  --qa-file evaluation/framework/data/output/qa_pairs/qa_pairs_fineco_chatbot_clean.json \
-  --metrics evaluation/framework/data/input/metrics/klicker_chatbot.yaml \
+  --qa-file path/to/qa/file.json \
   --eval-mode self-assessment \
   --limit 1
 ```
 
-No `LITELLM_*` exports or `PIPELINES_LITELLM_API_KEY` are needed for this local
-path. The QA and metric files are supplied separately; they are not generated
-or replaced by the launcher. Keep QA data and result files uncommitted.
+No `LITELLM_*` exports are needed for this local path. The QA file is supplied
+separately; the launcher does not generate or replace it. Keep QA data and result
+files uncommitted.
 
 ### Remote judge through Infisical
 

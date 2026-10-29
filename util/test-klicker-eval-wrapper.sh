@@ -156,8 +156,7 @@ printf "%s\n" "synthetic eval stdout"
 printf "%s\n" "synthetic eval stderr" >&2
 exit "${KLICKER_TEST_RUNNER_STATUS:-99}"'
 chmod +x "$FAKE_REPO/evaluation/framework/scripts/_run_eval.sh"
-write_file "$FAKE_REPO/evaluation/framework/data/input/metrics/metrics.yaml" 'metrics: []'
-write_file "$FAKE_REPO/evaluation/data/metrics/klicker_fineco_semantic_similarity.yaml" 'metrics: []'
+write_file "$FAKE_REPO/evaluation/data/metrics/klicker_metrics.yaml" 'metrics: []'
 write_file "$FAKE_REPO/evaluation/data/tools/klicker_fineco.yaml" 'tools: []'
 write_file "$FAKE_REPO/evaluation/data/canaries/klicker_local_mcp.json" '{}'
 write_file "$FAKE_REPO/synthetic-qa.json" '{"synthetic":true}'
@@ -165,6 +164,7 @@ mkdir -p "$FAKE_REPO/evaluation/data/ground_truth/klicker_fineco"
 mkdir -p "$FAKE_REPO/util" "$FAKE_REPO/apps/chat/scripts"
 cp "$SOURCE_WRAPPER" "$FAKE_REPO/util/_run_klicker_eval.sh"
 cp "$REPO_ROOT/util/read-klicker-eval-config.mjs" "$FAKE_REPO/util/"
+cp "$REPO_ROOT/evaluation/defaults.env" "$FAKE_REPO/evaluation/defaults.env"
 write_file "$FAKE_REPO/evaluation/config.local.json" '{"schemaVersion":1,"infisical":{"domain":"https://secrets.example.test","projectId":"test-project","environment":"test","path":"/judge"},"judge":{"baseUrlSecret":"JUDGE_URL","apiKeySecret":"JUDGE_KEY"}}'
 chmod +x "$FAKE_REPO/util/_run_klicker_eval.sh"
 WRAPPER="$FAKE_REPO/util/_run_klicker_eval.sh"
@@ -339,11 +339,11 @@ env -i \
 
 assert_line 'LITELLM_API_BASE=https://litellm.example.test' "$CHILD_LOG"
 assert_line 'LITELLM_API_KEY_PRESENT=yes' "$CHILD_LOG"
-assert_line 'EVAL_MODEL=klickeruzh/azure/gpt-5.6-luna-high' "$CHILD_LOG"
-assert_line 'EVAL_MODEL_CAPABILITY_MODEL=gpt-5.6-luna' "$CHILD_LOG"
+assert_line 'EVAL_MODEL=klickeruzh/azure/gpt-6-luna-high' "$CHILD_LOG"
+assert_line 'EVAL_MODEL_CAPABILITY_MODEL=gpt-6-luna' "$CHILD_LOG"
 assert_line 'EVAL_REASONING_EFFORT=high' "$CHILD_LOG"
 assert_line 'EVAL_JUDGE_SINGLE_ATTEMPT=true' "$CHILD_LOG"
-assert_line "EVAL_METRICS_PATH=$FAKE_REPO/evaluation/framework/data/input/metrics/metrics.yaml" "$CHILD_LOG"
+assert_line "EVAL_METRICS_PATH=$FAKE_REPO/evaluation/data/metrics/klicker_metrics.yaml" "$CHILD_LOG"
 assert_line "EVAL_TOOLS_PATH=$FAKE_REPO/evaluation/data/tools/klicker_fineco.yaml" "$CHILD_LOG"
 assert_line "GT_ROOT_DIR=$FAKE_REPO/evaluation/data/ground_truth/klicker_fineco" "$CHILD_LOG"
 assert_line "DEFAULT_GT_DIR=$FAKE_REPO/evaluation/data/ground_truth/klicker_fineco" "$CHILD_LOG"
@@ -374,7 +374,7 @@ env -i \
   EVAL_MODEL='caller/model' \
   EVAL_MODEL_CAPABILITY_MODEL='gpt-5.4-mini' \
   EVAL_JUDGE_SINGLE_ATTEMPT='false' \
-  EVAL_METRICS_PATH='evaluation/framework/data/input/metrics/metrics.yaml' \
+  EVAL_METRICS_PATH='evaluation/data/metrics/klicker_metrics.yaml' \
   EVAL_TOOLS_PATH='evaluation/data/tools/klicker_fineco.yaml' \
   GT_ROOT_DIR='evaluation/data/ground_truth/klicker_fineco' \
   DEFAULT_GT_DIR='evaluation/data/ground_truth/klicker_fineco' \
@@ -389,7 +389,7 @@ env -i \
 assert_line 'EVAL_MODEL=caller/model' "$CHILD_LOG"
 assert_line 'EVAL_MODEL_CAPABILITY_MODEL=gpt-5.4-mini' "$CHILD_LOG"
 assert_line 'EVAL_JUDGE_SINGLE_ATTEMPT=false' "$CHILD_LOG"
-assert_line "EVAL_METRICS_PATH=$FAKE_REPO/evaluation/framework/data/input/metrics/metrics.yaml" "$CHILD_LOG"
+assert_line "EVAL_METRICS_PATH=$FAKE_REPO/evaluation/data/metrics/klicker_metrics.yaml" "$CHILD_LOG"
 assert_line "EVAL_TOOLS_PATH=$FAKE_REPO/evaluation/data/tools/klicker_fineco.yaml" "$CHILD_LOG"
 assert_line "GT_ROOT_DIR=$FAKE_REPO/evaluation/data/ground_truth/klicker_fineco" "$CHILD_LOG"
 assert_line "DEFAULT_GT_DIR=$FAKE_REPO/evaluation/data/ground_truth/klicker_fineco" "$CHILD_LOG"
@@ -519,10 +519,29 @@ assert_missing_input EVAL_TOOLS_PATH file
 assert_missing_input GT_ROOT_DIR directory
 assert_missing_input DEFAULT_GT_DIR directory
 
+# The defaults file only accepts allowlisted, non-secret names.
+write_file "$TEST_ROOT/unsafe-defaults.env" 'LITELLM_API_BASE=https://attacker.example.test'
+status=0
+: >"$CHILD_LOG"
+env -i \
+  KLICKER_EVAL_DEFAULTS_FILE="$TEST_ROOT/unsafe-defaults.env" \
+  LITELLM_API_BASE='https://litellm.example.test' \
+  LITELLM_API_KEY='synthetic-test-key' \
+  PATH="$TEST_PATH" \
+  KLICKER_TEST_REPO_ROOT="$FAKE_REPO" \
+  KLICKER_TEST_CHILD_LOG="$CHILD_LOG" \
+  "$WRAPPER" --mode eval >"$TEST_ROOT/unsafe-defaults.out" 2>&1 || status=$?
+[ "$status" -eq 1 ] || fail "unsafe defaults file returned $status instead of 1"
+assert_line \
+  "Error: unsupported variable in $TEST_ROOT/unsafe-defaults.env: LITELLM_API_BASE" \
+  "$TEST_ROOT/unsafe-defaults.out"
+[ ! -s "$CHILD_LOG" ] || fail "unsafe defaults file must not invoke uv"
+
 MISSING_REPO="$TEST_ROOT/missing-repo"
 mkdir -p "$MISSING_REPO"
 mkdir -p "$MISSING_REPO/util"
 cp "$SOURCE_WRAPPER" "$MISSING_REPO/util/_run_klicker_eval.sh"
+write_file "$MISSING_REPO/evaluation/defaults.env" "$(cat "$REPO_ROOT/evaluation/defaults.env")"
 chmod +x "$MISSING_REPO/util/_run_klicker_eval.sh"
 status=0
 env -i \
@@ -654,7 +673,7 @@ assert_line 'KLICKER_EVAL_UPSTREAM_KEY_PRESENT=' "$CHILD_LOG"
 assert_line 'KEYGEN_KLICKER_EVAL_GUARD_KEY_PRESENT=' "$TEST_ROOT/helper.log"
 assert_line 'ADAPTER_KLICKER_EVAL_GUARD_KEY_PRESENT=yes' "$TEST_ROOT/helper.log"
 assert_line 'ADAPTER_KLICKER_EVAL_UPSTREAM_KEY_PRESENT=' "$TEST_ROOT/helper.log"
-assert_line "EVAL_METRICS_PATH=$FAKE_REPO/evaluation/data/metrics/klicker_fineco_semantic_similarity.yaml" "$CHILD_LOG"
+assert_line "EVAL_METRICS_PATH=$FAKE_REPO/evaluation/data/metrics/klicker_metrics.yaml" "$CHILD_LOG"
 assert_line "ARG=$FAKE_REPO/evaluation/data/ground_truth/klicker_fineco" "$CHILD_LOG"
 assert_line 'EVAL_API_KEY_PRESENT=yes' "$CHILD_LOG"
 assert_line 'PARTICIPANT_USERNAME_PRESENT=' "$CHILD_LOG"
