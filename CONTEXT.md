@@ -397,6 +397,18 @@ authorization, canonical conversation state, model and credit policy,
 attachments, MCP authorization, persistence, and engine invocation. Avoid
 calling it an engine: it does not own generation strategy.
 
+## Saved chat conversation
+
+A participant's retained chat messages, branches and attachments. An older
+item remains part of the saved conversation when it no longer contributes to
+a new reply.
+
+## Chat reply context
+
+The instructions, selected conversation messages and attachment information
+available when producing one chat reply. It can contain less history than the
+saved chat conversation.
+
 ## Public engine contract
 
 The canonical, repository-neutral HTTP contract owned by the public
