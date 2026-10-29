@@ -1,8 +1,8 @@
 #!/usr/bin/env bash
-# Reconstruct app prerequisites after replacing the application container.
+# Prepare app prerequisites for startup or application-container replacement.
 # Role and database provisioning must already be complete. With the explicit
-# initialization option, verify both disposable identities before schema push
-# and synthetic seeding; otherwise only verify the existing schema.
+# initialization option, verify both disposable identities and empty databases
+# before schema push and synthetic seeding; otherwise verify the existing schema.
 set -euo pipefail
 
 SCRIPT_ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
@@ -30,6 +30,11 @@ write_secret_file() {
   fi
 }
 
+# Hatchet client token — automatically created by hatchet-lite-dev at the path
+# configured by HATCHET_TOKEN_FILE.
+# The backend's HatchetClient.init runs at MODULE LOAD (not lazy), so the backend
+# CRASHES at boot without it — capture it here so post-start sources it before
+# turbo dev.
 capture_hatchet_token() {
   local token hatchet_env
 
@@ -51,7 +56,7 @@ verify_databases() {
     'packages/prisma/package.json'
   (
     cd "$ROOT/packages/prisma"
-    pnpm exec tsx -e "$(cat <<'TS'
+    KLICKER_RECOVERY_CHECK_MODE="${1:-preserve}" pnpm exec tsx -e "$(cat <<'TS'
 import pg from "pg"
 import {
   assertDisposableDatabaseIdentity,
@@ -92,6 +97,24 @@ const check = async (
     const identity = await client.query(disposableDatabaseIdentityQuery)
     assertDisposableDatabaseIdentity(identity.rows, database)
 
+    if (process.env.KLICKER_RECOVERY_CHECK_MODE === "initialize") {
+      const contents = await client.query(`
+        SELECT EXISTS (
+          SELECT 1 FROM pg_catalog.pg_namespace n
+          WHERE n.nspname !~ '^pg_' AND n.nspname <> 'information_schema'
+            AND (
+              n.nspname <> 'public'
+              OR EXISTS (SELECT 1 FROM pg_catalog.pg_class c WHERE c.relnamespace = n.oid)
+              OR EXISTS (SELECT 1 FROM pg_catalog.pg_proc p WHERE p.pronamespace = n.oid)
+              OR EXISTS (SELECT 1 FROM pg_catalog.pg_type t WHERE t.typnamespace = n.oid)
+            )
+        ) AS populated
+      `)
+      if (contents.rows.length !== 1 || contents.rows[0]?.populated !== false) {
+        throw new Error("Initialization requires empty disposable databases")
+      }
+    }
+
     if (requireSchema) {
       const schema = await client.query({
         text: `
@@ -117,11 +140,11 @@ const check = async (
 
 async function main() {
 try {
-  await check(process.env.DATABASE_URL, "klicker_test", process.env.KLICKER_RECOVERY_IDENTITY_ONLY !== "1")
+  await check(process.env.DATABASE_URL, "klicker_test", process.env.KLICKER_RECOVERY_CHECK_MODE !== "initialize")
   await check(process.env.SHADOW_DATABASE_URL, "klicker_test_shadow", false)
 } catch {
   console.error(
-    "[recover-bootstrap] Disposable database identity or schema readiness check failed."
+    "[recover-bootstrap] Disposable database identity, emptiness or schema readiness check failed."
   )
   process.exitCode = 1
 }
@@ -129,12 +152,16 @@ try {
 void main()
 TS
 )"
-  ) || die 'Marked disposable databases or the application schema are not ready.'
+  ) || die 'Marked disposable databases are not ready for the requested bootstrap mode.'
 }
 
 # Invalidate the old marker before resolving any other prerequisite. The
 # application cannot start successfully while this run is incomplete.
 bash "$SCRIPT_ROOT/../util/dev-runtime.sh" begin-bootstrap >/dev/null
+
+if [ "$#" -gt 1 ] || { [ "$#" -eq 1 ] && [ "$1" != '--initialize-new-disposable' ]; }; then
+  die 'Unsupported recovery bootstrap argument.'
+fi
 
 ROOT="$(cd "$ROOT" && pwd)" || die 'Configured container root is unavailable.'
 require_file "$ROOT/.devcontainer/devcontainer.env" \
@@ -158,6 +185,15 @@ echo '[recover-bootstrap] Installing frozen dependencies.'
 pnpm install --frozen-lockfile --prefer-offline
 bash "$ROOT/util/dev-runtime.sh" stamp-dependencies
 
+# Build the workspace PACKAGES (graphql, prisma, util, markdown, transactional,
+# types, i18n, ...) the apps import — turbo orders them by their dep graph, and
+# prisma's build runs `prisma generate`. ALSO pre-build backend-docker: its dev
+# is `rollup --watch` + `nodemon` in PARALLEL, and nodemon launches
+# dist/index.js immediately — if rollup hasn't emitted it yet, nodemon crashes
+# with MODULE_NOT_FOUND and waits, so the API never comes up. Pre-building means
+# dist/index.js exists before `turbo dev` starts. The Next apps use `next dev`
+# (compile on the fly) so they are NOT pre-built. (GOTCHAS: build the graph
+# before any dev server.)
 echo '[recover-bootstrap] Building workspace packages, backend, and LTI.'
 pnpm exec turbo run build \
   --filter='./packages/*' \
@@ -174,11 +210,9 @@ done
 
 capture_hatchet_token
 if [ "${1:-}" = '--initialize-new-disposable' ]; then
-  KLICKER_RECOVERY_IDENTITY_ONLY=1 verify_databases
+  verify_databases initialize
   pnpm --filter @klicker-uzh/prisma run prisma:push:raw
   pnpm --filter @klicker-uzh/prisma-data run seed:raw
-elif [ "$#" -ne 0 ]; then
-  die 'Unsupported recovery bootstrap argument.'
 fi
 verify_databases
 
