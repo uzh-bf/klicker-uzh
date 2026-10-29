@@ -25,8 +25,7 @@ type ListRowProps = BaseRowProps &
         actions?: React.ReactNode
       }
     | {
-        // clickable row: the click is a convenience, so the actions are
-        // required as the keyboard-accessible path
+        // actionable row: the primary button and trailing actions are siblings
         href?: never
         onClick: () => void
         actions: React.ReactNode
@@ -38,16 +37,16 @@ const rowClass =
 
 function RowText({ title, meta }: Pick<BaseRowProps, 'title' | 'meta'>) {
   return (
-    <div className="min-w-0 flex-1">
-      <div className="text-ctrl-ink truncate text-base font-semibold">
+    <span className="block min-w-0 flex-1">
+      <span className="text-ctrl-ink block truncate text-base font-semibold">
         {title}
-      </div>
+      </span>
       {meta && (
-        <div className="text-ctrl-muted flex flex-wrap items-center gap-1.5 text-sm">
+        <span className="text-ctrl-muted flex flex-wrap items-center gap-1.5 text-sm">
           {meta}
-        </div>
+        </span>
       )}
-    </div>
+    </span>
   )
 }
 
@@ -81,27 +80,27 @@ function ListRow({
   }
 
   return (
-    // the row click is a convenience; the action buttons are the accessible path
-    // biome-ignore lint/a11y/useKeyWithClickEvents: actions provide keyboard access
-    // biome-ignore lint/a11y/noStaticElementInteractions: actions provide keyboard access
     <div
       data-cy={dataCy}
-      onClick={(e) => {
-        // ignore clicks that originate from the row's own action buttons
-        if ((e.target as HTMLElement).closest('[data-row-actions]')) return
-        onClick?.()
-      }}
       className={twMerge(
         rowClass,
-        onClick && 'hover:bg-ctrl-bg cursor-pointer',
+        onClick && 'hover:bg-ctrl-bg',
         dimmed && 'opacity-55'
       )}
     >
-      <RowText title={title} meta={meta} />
+      {onClick ? (
+        <button
+          type="button"
+          onClick={onClick}
+          className="focus-visible:ring-uzh-blue -my-3.5 -ml-4 min-h-[64px] min-w-0 flex-1 cursor-pointer py-3.5 pl-4 text-left focus-visible:ring-2 focus-visible:ring-inset focus-visible:outline-none"
+        >
+          <RowText title={title} meta={meta} />
+        </button>
+      ) : (
+        <RowText title={title} meta={meta} />
+      )}
       {actions && (
-        <div data-row-actions className="flex shrink-0 items-center gap-2">
-          {actions}
-        </div>
+        <div className="flex shrink-0 items-center gap-2">{actions}</div>
       )}
     </div>
   )
