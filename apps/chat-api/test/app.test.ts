@@ -101,7 +101,7 @@ describe('chat-api Slice 2 tracer', () => {
       '/api/chatbots/chatbot-1/chat',
       {
         method: 'POST',
-        headers: { 'accept-language': header },
+        headers: { 'accept-language': header, origin: 'http://localhost' },
         body: JSON.stringify(body),
       }
     )
@@ -118,7 +118,7 @@ describe('chat-api Slice 2 tracer', () => {
       '/api/chatbots/chatbot-1/chat',
       {
         method: 'POST',
-        headers: { 'accept-language': '*' },
+        headers: { 'accept-language': '*', origin: 'http://localhost' },
         body: JSON.stringify({ ...body, locale: 'fr-CH' }),
       }
     )
@@ -129,7 +129,7 @@ describe('chat-api Slice 2 tracer', () => {
     await response.body?.cancel()
   })
 
-  test('does not persist an orphan before a successful retry with a new message id', async () => {
+  test('retains one admitted question per attempt when the engine fails and a participant retries', async () => {
     let accepted = false
     const dependencies = baseDependencies(async () => {
       if (!accepted) throw new Error('engine unavailable')
@@ -138,27 +138,29 @@ describe('chat-api Slice 2 tracer', () => {
     const app = createChatApiApp(dependencies)
     const failed = await app.request('/api/chatbots/chatbot-1/chat', {
       method: 'POST',
+      headers: { origin: 'http://localhost' },
       body: JSON.stringify(body),
     })
     expect(failed.status).toBe(503)
-    expect(dependencies.persistUserMessage).not.toHaveBeenCalled()
+    expect(dependencies.persistUserMessage).toHaveBeenCalledTimes(1)
     accepted = true
     const retry = await app.request('/api/chatbots/chatbot-1/chat', {
       method: 'POST',
+      headers: { origin: 'http://localhost' },
       body: JSON.stringify({
         ...body,
         messages: [{ id: 'user-retry', role: 'user', content: 'Question' }],
       }),
     })
     expect(retry.status).toBe(200)
-    expect(dependencies.persistUserMessage).toHaveBeenCalledTimes(1)
-    expect(dependencies.persistUserMessage).toHaveBeenCalledWith(
+    expect(dependencies.persistUserMessage).toHaveBeenCalledTimes(2)
+    expect(dependencies.persistUserMessage).toHaveBeenLastCalledWith(
       expect.objectContaining({ messageId: 'user-retry' })
     )
     await retry.body?.cancel()
   })
 
-  test('aborts and cancels an accepted engine response when persistence fails', async () => {
+  test('fails the admitted claim before generation when question persistence fails', async () => {
     const cancel = vi.fn()
     const upstream = new Response(new ReadableStream({ cancel }), {
       headers: { 'content-type': 'text/event-stream' },
@@ -176,6 +178,7 @@ describe('chat-api Slice 2 tracer', () => {
       '/api/chatbots/chatbot-1/chat',
       {
         method: 'POST',
+        headers: { origin: 'http://localhost' },
         body: JSON.stringify(body),
       }
     )
@@ -183,8 +186,10 @@ describe('chat-api Slice 2 tracer', () => {
     expect(await response.json()).toMatchObject({
       code: 'MESSAGE_PERSISTENCE_FAILED',
     })
-    expect(signals[0]?.aborted).toBe(true)
-    expect(cancel).toHaveBeenCalledTimes(1)
+    expect(signals).toHaveLength(0)
+    expect(dependencies.engine.chat).not.toHaveBeenCalled()
+    expect(dependencies.failChatTurn).toHaveBeenCalledTimes(1)
+    expect(cancel).not.toHaveBeenCalled()
     expect(dependencies.finalizeAssistantTurn).not.toHaveBeenCalled()
   })
 
@@ -380,7 +385,8 @@ describe('chat-api Slice 2 tracer', () => {
       code: 'ENGINE_REQUEST_FAILED',
     })
     expect(dependencies.engine.chat).toHaveBeenCalledTimes(1)
-    expect(dependencies.persistUserMessage).not.toHaveBeenCalled()
+    expect(dependencies.persistUserMessage).toHaveBeenCalledTimes(1)
+    expect(dependencies.failChatTurn).toHaveBeenCalledTimes(1)
     expect(dependencies.finalizeAssistantTurn).not.toHaveBeenCalled()
   })
 
@@ -695,4 +701,50 @@ test('preserves credentialed CORS on the streaming response', async () => {
   expect(response.headers.get('access-control-allow-origin')).toBe(origin)
   expect(response.headers.get('access-control-allow-credentials')).toBe('true')
   await response.text()
+})
+
+test('forwards all participant transports and rejects denied authentication before generation', async () => {
+  const dependencies = baseDependencies(async () => engineSse([]))
+  dependencies.authenticate = vi.fn(async () => ({
+    error: 'Invalid authentication token',
+    status: 401 as const,
+  }))
+  const app = createChatApiApp(dependencies)
+  const response = await app.request('/api/chatbots/chatbot-1/chat', {
+    method: 'POST',
+    headers: {
+      origin: 'http://localhost',
+      cookie:
+        'participant_token=account; chat_participant_token=guest; chat_pwa_embed_token=embed',
+      authorization: 'Bearer scoped',
+    },
+    body: JSON.stringify(body),
+  })
+  expect(response.status).toBe(401)
+  expect(dependencies.authenticate).toHaveBeenCalledWith(
+    {
+      participantToken: 'account',
+      chatGuestToken: 'guest',
+      pwaEmbedToken: 'embed',
+      scopedFallbackToken: 'scoped',
+    },
+    'chatbot-1'
+  )
+  expect(dependencies.getChatbot).not.toHaveBeenCalled()
+  expect(dependencies.claimChatTurn).not.toHaveBeenCalled()
+  expect(dependencies.engine.chat).not.toHaveBeenCalled()
+  const preflight = await app.request('/api/chatbots/chatbot-1/chat', {
+    method: 'OPTIONS',
+    headers: {
+      origin: 'http://localhost',
+      'access-control-request-headers': 'authorization',
+    },
+  })
+  expect(preflight.status).toBe(204)
+  expect(
+    preflight.headers
+      .get('access-control-allow-headers')
+      ?.toLowerCase()
+      .split(/,\s*/)
+  ).toContain('authorization')
 })

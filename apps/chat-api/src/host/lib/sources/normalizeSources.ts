@@ -368,7 +368,7 @@ function cleanVideoRange(source: Record<string, unknown>): {
 }
 
 function lastPathSegment(value: string): string | undefined {
-  const withoutQuery = value.split(/[?#]/)[0]
+  const withoutQuery = value.split(/[?#]/)[0] ?? ''
   const segments = withoutQuery.split('/').filter(Boolean)
   const last = segments[segments.length - 1]
   if (!last) return undefined

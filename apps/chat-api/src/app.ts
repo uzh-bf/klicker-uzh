@@ -8,15 +8,11 @@ import {
   parseProviderAllowedOrigins,
   providerOriginIsAllowed,
 } from '@klicker-uzh/chat-engine-contract'
-import { safeDecrypt } from '@klicker-uzh/util'
-import { Hono, type Context } from 'hono'
 import { prisma } from '@klicker-uzh/prisma'
 import { ChatMessageRating } from '@klicker-uzh/prisma/client'
-import { getChatbotOr404 } from './runtime/auth.js'
-import { getModelsForChatbot } from './host/lib/server/chatModelRegistry.js'
-import { getNextResetTime } from './host/utils/creditPeriods.js'
-import { ThreadService } from './host/services/threads.js'
-import { DisclaimersService } from './host/services/disclaimers.js'
+import { safeDecrypt } from '@klicker-uzh/util'
+import { extractBearerToken } from '@klicker-uzh/util/auth'
+import { type Context, Hono } from 'hono'
 import { bodyLimit } from 'hono/body-limit'
 import { getCookie } from 'hono/cookie'
 import { z } from 'zod'
@@ -32,18 +28,47 @@ import {
   usageIsChargeable,
 } from './engine/stream.js'
 import {
+  DEFAULT_ANSWER_STYLE,
+  DEFAULT_ANSWER_TONE,
+} from './host/lib/config/answerStyles.js'
+import { PWA_CHAT_EMBED_SESSION_COOKIE } from './host/lib/pwaEmbedAuth.js'
+import {
+  answerStyleSchema,
+  answerToneSchema,
+} from './host/lib/server/answerStyleInstructions.js'
+import type { AuthMode } from './host/lib/server/chatGuestToken.js'
+import { getModelsForChatbot } from './host/lib/server/chatModelRegistry.js'
+import {
+  resolveEffectiveChatModeOptions,
+  resolveEffectiveMCPConfigurations,
+  resolveRequestedChatMode,
+} from './host/lib/server/effectiveChatModes.js'
+import {
+  ChatTurnConflictError,
+  claimChatTurn,
+  failChatTurn,
+  isChatAccountUsageAvailable,
+  isChatAccountUsageEnforcementEnabled,
+} from './host/services/accountUsage.js'
+import { DisclaimersService } from './host/services/disclaimers.js'
+import { ThreadService } from './host/services/threads.js'
+import { getNextResetTime } from './host/utils/creditPeriods.js'
+import {
   type ChatModelConfig,
   calculateCost,
   getAllowedReasoningEffortsForModel,
   getAutomaticModelId,
-  getParticipantFallbackModelId,
   getChatModelRegistry,
+  getParticipantFallbackModelId,
 } from './policy/modelRegistry.js'
 import {
   type AuthFailure,
   authenticateParticipant,
+  type ChatTransportTokens,
+  getChatbotOr404,
   isFailure,
 } from './runtime/auth.js'
+import { createCodeApiAuthorization } from './runtime/codeapi.js'
 import {
   type ChatbotRecord,
   checkDisclaimer,
@@ -57,28 +82,6 @@ import {
   loadEngineMessages,
   persistUserMessage,
 } from './runtime/defaultDependencies.js'
-
-import {
-  answerStyleSchema,
-  answerToneSchema,
-} from './host/lib/server/answerStyleInstructions.js'
-import {
-  DEFAULT_ANSWER_STYLE,
-  DEFAULT_ANSWER_TONE,
-} from './host/lib/config/answerStyles.js'
-import {
-  resolveEffectiveChatModeOptions,
-  resolveRequestedChatMode,
-  resolveEffectiveMCPConfigurations,
-} from './host/lib/server/effectiveChatModes.js'
-import {
-  claimChatTurn,
-  failChatTurn,
-  isChatAccountUsageEnforcementEnabled,
-  isChatAccountUsageAvailable,
-  ChatTurnConflictError,
-} from './host/services/accountUsage.js'
-import { createCodeApiAuthorization } from './runtime/codeapi.js'
 
 const MAX_BODY_BYTES = 32 * 1024 * 1024
 
@@ -127,9 +130,17 @@ export type ChatApiDependencies = {
   failChatTurn: typeof failChatTurn
   isChatAccountUsageAvailable: typeof isChatAccountUsageAvailable
   authenticate: (
-    participantToken: string | undefined,
+    tokens: ChatTransportTokens,
     chatbotId: string
-  ) => Promise<{ participantId: string; courseId: string } | AuthFailure>
+  ) => Promise<
+    | {
+        participantId: string
+        courseId: string
+        authMode?: AuthMode
+        learnerBinding?: string
+      }
+    | AuthFailure
+  >
   getChatbot: (chatbotId: string) => Promise<ChatbotRecord | null>
   checkDisclaimer: (
     participantId: string,
@@ -353,7 +364,7 @@ export function createChatApiApp(
       )
       c.header(
         'access-control-allow-headers',
-        'Content-Type, Traceparent, Tracestate'
+        'Content-Type, Authorization, Traceparent, Tracestate'
       )
       return c.body(null, 204)
     }
@@ -384,7 +395,14 @@ export function createChatApiApp(
     async (c: Context) => {
       const chatbotId = c.req.param('chatbotId')!
       const auth = await dependencies.authenticate(
-        getCookie(c, 'participant_token'),
+        {
+          participantToken: getCookie(c, 'participant_token'),
+          chatGuestToken: getCookie(c, 'chat_participant_token'),
+          pwaEmbedToken: getCookie(c, PWA_CHAT_EMBED_SESSION_COOKIE),
+          scopedFallbackToken:
+            extractBearerToken(c.req.header('authorization') ?? null) ??
+            undefined,
+        },
         chatbotId
       )
       if (isFailure(auth)) return c.json({ error: auth.error }, auth.status)
@@ -659,7 +677,14 @@ export function createChatApiApp(
     async (c) => {
       const chatbotId = c.req.param('chatbotId')
       const auth = await dependencies.authenticate(
-        getCookie(c, 'participant_token'),
+        {
+          participantToken: getCookie(c, 'participant_token'),
+          chatGuestToken: getCookie(c, 'chat_participant_token'),
+          pwaEmbedToken: getCookie(c, PWA_CHAT_EMBED_SESSION_COOKIE),
+          scopedFallbackToken:
+            extractBearerToken(c.req.header('authorization') ?? null) ??
+            undefined,
+        },
         chatbotId
       )
       if (isFailure(auth)) return c.json({ error: auth.error }, auth.status)
@@ -1013,30 +1038,6 @@ export function createChatApiApp(
             code: 'ENGINE_REQUEST_FAILED',
           },
           503
-        )
-      }
-
-      try {
-        await dependencies.persistUserMessage({
-          threadId: input.threadId,
-          messageId: userMessageId,
-          parentId: input.parentId ?? null,
-          content: lastMessage.content,
-          chatMode: input.selectedMode,
-          modelId: model.id,
-          reasoningEffort: appliedReasoningEffort,
-          attachments: images,
-        })
-      } catch {
-        abortIncomingEngine()
-        c.req.raw.signal.removeEventListener('abort', abortIncomingEngine)
-        await engineResponse.body?.cancel().catch(() => undefined)
-        return c.json(
-          {
-            error: 'The user message could not be persisted',
-            code: 'MESSAGE_PERSISTENCE_FAILED',
-          },
-          500
         )
       }
 

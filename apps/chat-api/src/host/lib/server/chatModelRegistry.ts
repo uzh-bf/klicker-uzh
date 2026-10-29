@@ -330,7 +330,7 @@ export function getAutomaticModelId(allowedModelIds?: string[]): string | null {
     (configuredPrimary &&
       registry.find((model) => model.id === configuredPrimary)) ||
     defaultPrimary ||
-    registry[0]
+    registry[0]!
 
   if (configuredPrimary && primary.id !== configuredPrimary) {
     console.warn(

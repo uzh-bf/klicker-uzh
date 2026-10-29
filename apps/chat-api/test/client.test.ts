@@ -1,8 +1,8 @@
-import { describe, expect, test, vi } from 'vitest'
 import {
   conformanceManifest,
   conformanceRequest,
 } from '@klicker-uzh/chat-engine-contract'
+import { describe, expect, test, vi } from 'vitest'
 import {
   createEngineClient,
   EngineReadinessProbe,
@@ -19,7 +19,7 @@ describe('engine client and readiness', () => {
       }),
       chat: vi.fn(),
     }
-    const probe = new EngineReadinessProbe(engine, 0)
+    const probe = new EngineReadinessProbe(engine, 0, 5_000, 'default')
 
     expect((await probe.get()).ok).toBe(false)
     expect((await probe.get()).ok).toBe(true)
