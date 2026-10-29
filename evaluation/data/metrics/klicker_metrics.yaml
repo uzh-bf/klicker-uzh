@@ -1,0 +1,302 @@
+- name: language_consistency
+  modes: [self-assessment]
+  threshold: 0.7
+  criteria: 'Evaluate whether the assistant communicates in an appropriate and consistent language without inferring a language from ambiguous input.'
+  evaluation_steps:
+    - "Identify the user's language only when the input contains enough explicit linguistic evidence to support that judgment."
+    - 'Do not infer English, German, or another language from a single greeting, interjection, name, abbreviation, emoji, symbol, code-switched fragment, or other language-ambiguous input.'
+    - 'When the input is too short or ambiguous to establish a language, do not penalize the assistant for choosing a reasonable response language.'
+    - "When the user's language is explicit, verify that the response generally matches it, while allowing standard technical terms, proper names, quotations, and necessary code or formulas."
+    - 'Check for any inconsistent or mixed-language content. Some elements like course or original document names do not need to be translated. Assistant can also provide both original and translated names.'
+    - 'If the response is in German, check if it follows Swiss German orthography rules: all “ß” must have been replaced with “ss”.'
+  evaluation_params:
+    - INPUT
+    - ACTUAL_OUTPUT
+
+#- name: scope_compliance
+#  modes: [self-assessment]
+#  threshold: 0.7
+#  criteria: "Assess whether the assistant stays within its role and responds appropriately to the user's apparent intent, including ambiguous and partially specified turns."
+#  evaluation_steps:
+#    - "Identify whether the user's request is in-scope or out-of-scope."
+#    - "If the input is ambiguous, fragmentary, conversational, or a follow-up, accept a reasonable interpretation, a concise clarification question, or a relevant continuation. Do not require the assistant to infer unstated intent with certainty."
+#    - "If in-scope: Check whether the response is relevant and useful for the apparent intent; do not treat incompleteness alone as a scope violation."
+#    - "In tutor mode, a relevant hint, partial derivation, guided next step, or question that lets the learner finish the reasoning is compliant even when it does not provide the final answer."
+#    - "In explainer mode, assess whether the response addresses the requested explanation, but leave completeness and missing reasoning to the explanation-focused metrics."
+#    - "If out-of-scope: Verify that assistant refused to answer and no additional explanation, tools, or content were added."
+#  evaluation_params:
+#    - INPUT
+#    - ACTUAL_OUTPUT
+#    - CONTEXT
+
+- name: tool_relevancy
+  modes: [self-assessment]
+  threshold: 0.7
+  criteria: "Assess whether an AI agent correctly selected and called the appropriate expert tools (MCP servers) to answer a user's query based on the available tools list: {available_tools}."
+  evaluation_steps:
+    - 'Check if the right expert tools were called for this query.'
+    - 'Check if any tools were called that are not relevant to the query.'
+    - 'Do not penalize for the lack of tools if assistant asked for clarifications, message was a simple greeting or out-of-scope query.'
+  evaluation_params:
+    - INPUT
+    - ACTUAL_OUTPUT
+    - TOOLS_CALLED
+    - RETRIEVAL_CONTEXT
+
+- name: tool_correctness
+  modes: [ground-truth]
+  threshold: 0.7
+  criteria: 'Evaluate whether the AI agent used the correct Tools Called for the query, compared with Expected Tools.'
+  evaluation_steps:
+    - "First, check if Expected Tools is empty or contains '[]'. If so, this is an OUT-OF-SCOPE question where NO tools should be called - give full score if no tools were called."
+    - 'If Expected Tools lists specific tools, verify those tools were called.'
+    - 'Compare Expected Tools with Tools Called. DO NOT penalize for additional tool calls that were relevant for the query but not mentioned in Expected Tools.'
+    - 'For in-scope questions: penalize missing expected tools and irrelevant tool calls.'
+    - 'For out-of-scope questions: the agent should NOT call any tools - give full score for calling no tools.'
+  evaluation_params:
+    - INPUT
+    - ACTUAL_OUTPUT
+    - TOOLS_CALLED
+    - EXPECTED_TOOLS
+
+- name: source_accuracy
+  modes: [self-assessment]
+  chatbot_modes: [explainer]
+  threshold: 0.7
+  criteria: 'Evaluate whether the assistant cites sources accurately and presents citations clearly when sources are used or required.'
+  evaluation_steps:
+    - 'When the answer cites sources, verify that each cited source exists in or can be identified from the retrieval context or context.'
+    - 'Check that citations support the claims they are attached to and are formatted as clear descriptive links when links are available.'
+    - 'Penalize invented, misattributed, irrelevant, or misleading citations.'
+    - 'Note that not every question needs sources: When it is a simple greeting, out-of-scope query or assistant asks for clarifications - do not penalize when there are no sources.'
+  evaluation_params:
+    - INPUT
+    - ACTUAL_OUTPUT
+    - RETRIEVAL_CONTEXT
+    - CONTEXT
+
+- name: semantic_similarity
+  modes: [ground-truth]
+  threshold: 0.5
+  criteria: "Determine how well the assistant's answer matches the expected answer in meaning (not wording)."
+  evaluation_steps:
+    - 'Identify the essential points in the expected answer (the information that must be present for an answer to be considered correct).'
+    - "Check whether each essential point is present in the assistant's answer."
+    - "Penalize missing essential points, contradictions between the assistant's answer and the expected answer."
+    - 'Extra information is acceptable if it is consistent with the expected answer and does not change the core meaning.'
+    - 'Ignore stylistic differences, formatting, citations, and disclaimers unless they affect meaning.'
+  evaluation_params:
+    - INPUT
+    - ACTUAL_OUTPUT
+    - EXPECTED_OUTPUT
+
+- name: conciseness
+  modes: [self-assessment]
+  threshold: 0.5
+  diagnostic: true
+  criteria: "Evaluate whether the assistant's response avoids excessive verbosity. Be lenient - only penalize clear cases of unnecessary bloat."
+  evaluation_steps:
+    - 'IMPORTANT: Longer responses are acceptable if they provide useful information. Only penalize truly unnecessary content.'
+    - 'Check for exact repetition of the same information multiple times (not rephrasing for clarity).'
+    - "Look for excessive filler phrases like 'It's important to note that', 'As mentioned earlier', repeated multiple times."
+    - 'Do not penalize: structured formatting (lists, headers), disclaimers, source citations, or thorough explanations of complex topics.'
+    - 'Do not penalize responses that are long because the question requires a detailed answer or when assistant asks for clarifications.'
+    - 'Only give a low score if the response could be shortened by 50%+ without losing any meaningful information.'
+  evaluation_params:
+    - INPUT
+    - ACTUAL_OUTPUT
+
+- name: task_completion
+  modes: [ground-truth]
+  threshold: 0.8
+  criteria: "Evaluate whether the assistant successfully completes the user's requested learning or support task."
+  evaluation_steps:
+    - "Identify the user's explicit request and intended outcome."
+    - 'Check whether the assistant provides a complete and usable response.'
+    - 'Verify that all necessary parts of the task are addressed.'
+    - 'Penalize incomplete answers, ignored constraints, unnecessary refusals, or responses that require avoidable follow-up.'
+  evaluation_params:
+    - INPUT
+    - ACTUAL_OUTPUT
+    - EXPECTED_OUTPUT
+
+- name: course_grounding
+  modes: [self-assessment]
+  threshold: 0.7
+  criteria: "Evaluate whether the assistant's answer is supported by course material, retrieved documents, or provided context."
+  evaluation_steps:
+    - "Identify the factual, instructional, and course-specific claims in the assistant's response."
+    - 'Check whether those claims are supported by the retrieved documents, course material, or provided context.'
+    - 'Penalize claims that contradict the course material, retrieved documents, or context.'
+    - 'Penalize unsupported course-specific details, invented policies, invented requirements, or invented references.'
+    - 'Do not penalize general reasoning, brief clarification questions, or clearly marked uncertainty when the answer does not assert unsupported facts.'
+  evaluation_params:
+    - INPUT
+    - ACTUAL_OUTPUT
+    - RETRIEVAL_CONTEXT
+    - CONTEXT
+
+- name: mathematical_correctness
+  modes: [ground-truth]
+  threshold: 0.7
+  criteria: "Evaluate whether the assistant's mathematical reasoning, calculations, formulas, notation, and final answer are correct."
+  evaluation_steps:
+    - 'Identify all mathematical claims, formulas, derivations, calculations, units, and final numerical or symbolic answers.'
+    - 'Verify each step for arithmetic, algebraic, logical, statistical, and conceptual correctness.'
+    - 'Check whether assumptions are stated and valid for the problem.'
+    - 'Penalize incorrect calculations, invalid transformations, missing constraints, wrong units, or a final answer that does not follow from the reasoning.'
+    - 'Do not penalize harmless differences in notation, rounding, or equivalent forms when the mathematical meaning is unchanged.'
+  evaluation_params:
+    - INPUT
+    - ACTUAL_OUTPUT
+    - EXPECTED_OUTPUT
+
+- name: pedagogical_helpfulness
+  modes: [self-assessment]
+  chatbot_modes: [explainer]
+  threshold: 0.7
+  diagnostic: true
+  criteria: "Evaluate whether the assistant's answer helps the student learn, understand the reasoning, and make progress without simply dumping an answer."
+  evaluation_steps:
+    - "Check whether the response explains the relevant concept, reasoning, or process at an appropriate level for the student's question."
+    - 'Assess whether the answer is clear, structured, and actionable for a learner.'
+    - 'Look for helpful scaffolding such as definitions, intermediate steps, examples, checks for understanding, or guidance on common mistakes when appropriate.'
+    - 'Penalize responses that are overly terse, confusing, condescending, misleading, or that give only the final answer when explanation is needed.'
+    - "Do not penalize concise answers when the user's request is simple or when the assistant appropriately asks a clarifying question."
+  evaluation_params:
+    - INPUT
+    - ACTUAL_OUTPUT
+
+- name: topical_focus
+  modes: [self-assessment]
+  threshold: 0.7
+  criteria: "Evaluate whether the assistant remains relevant to the user's apparent topic or intent, without confusing relevance with completeness."
+  evaluation_steps:
+    - "Identify the clearest supported topic or intent in the user's input; when the input is ambiguous, consider the assistant's stated interpretation reasonable if it is plausible and clearly marked as an interpretation."
+    - 'Check whether the response stays relevant to that topic without unnecessary digressions.'
+    - 'Verify that the assistant adapts when the user intentionally changes the topic.'
+    - 'In tutor mode, a relevant hint, partial solution, clarification question, or guided follow-up remains focused even if it does not answer every sub-question or finish the solution.'
+    - 'In explainer mode, penalize irrelevant explanations or excessive background, but do not use this metric to penalize missing steps or examples when the response remains on topic.'
+  evaluation_params:
+    - INPUT
+    - ACTUAL_OUTPUT
+
+- name: misconception_diagnosis
+  modes: [ground-truth]
+  chatbot_modes: [tutor]
+  threshold: 0.7
+  criteria: 'Evaluate whether the assistant identifies student mistakes, misunderstandings, or faulty reasoning when they are present.'
+  evaluation_steps:
+    - "Determine whether the user's input contains an error, misconception, missing assumption, or flawed reasoning."
+    - 'Check whether the assistant identifies the specific point of confusion.'
+    - 'Verify that the explanation corrects the misunderstanding constructively.'
+    - 'Penalize responses that ignore student errors, simply provide the answer, or correct the student without explaining why.'
+  evaluation_params:
+    - INPUT
+    - ACTUAL_OUTPUT
+    - EXPECTED_OUTPUT
+
+- name: learner_personalization
+  modes: [self-assessment]
+  chatbot_modes: [tutor]
+  threshold: 0.7
+  diagnostic: true
+  criteria: "Evaluate whether the assistant adapts the explanation to the learner's level, context, prior knowledge, mood, or stated preferences."
+  evaluation_steps:
+    - "Identify any available information about the learner's knowledge level, course context, goals, age, interests, capabilities, or emotional state."
+    - 'If the input is only a greeting, fragment, ambiguous follow-up, or otherwise provides no learner information, do not penalize the response for lacking personalization; a neutral greeting or clarification is appropriate.'
+    - 'Check whether the assistant adjusts the explanation accordingly.'
+    - "Verify that examples, terminology, and depth match the learner's apparent needs."
+    - 'Penalize generic responses when clear personalization cues are available.'
+  evaluation_params:
+    - INPUT
+    - ACTUAL_OUTPUT
+
+- name: active_engagement
+  modes: [self-assessment]
+  chatbot_modes: [tutor]
+  threshold: 0.7
+  diagnostic: true
+  criteria: 'Evaluate whether the assistant actively supports learning through follow-up questions, feedback, hints, or prompts for further exploration.'
+  evaluation_steps:
+    - 'Do not require a follow-up question or learning activity for a simple greeting, straightforward factual answer, clarification request, or other turn where continued scaffolding is not yet useful.'
+    - 'Check whether the assistant encourages the learner to think, respond, or continue working through the problem.'
+    - 'Verify that follow-up questions or hints are relevant and not excessive.'
+    - "Assess whether the assistant gives useful feedback on the student's current understanding."
+    - 'Penalize passive answers that end the learning interaction too quickly when engagement would be helpful.'
+  evaluation_params:
+    - INPUT
+    - ACTUAL_OUTPUT
+
+- name: supportive_tone
+  modes: [self-assessment]
+  chatbot_modes: [tutor]
+  threshold: 0.7
+  diagnostic: true
+  criteria: 'Evaluate whether the assistant uses a positive, encouraging, respectful, and non-patronizing tutoring tone.'
+  evaluation_steps:
+    - 'Check whether the response is encouraging and supportive.'
+    - 'Verify that corrections are phrased respectfully and constructively.'
+    - 'Assess whether the tone avoids condescension, impatience, mockery, or excessive praise.'
+    - 'Penalize responses that could discourage the learner or make them feel inadequate.'
+  evaluation_params:
+    - INPUT
+    - ACTUAL_OUTPUT
+
+- name: cognitive_challenge
+  modes: [self-assessment]
+  chatbot_modes: [tutor]
+  threshold: 0.7
+  diagnostic: true
+  criteria: 'Evaluate whether the assistant challenges the learner to think more deeply and build robust understanding.'
+  evaluation_steps:
+    - 'If the input contains no substantive problem or learning task, mark this criterion as not applicable in practice and do not penalize a brief greeting or orientation response.'
+    - 'In tutor mode, a suitable hint or focused next-step question is sufficient; do not require a deep reasoning challenge on every turn.'
+    - 'Check whether the assistant encourages reasoning rather than memorization.'
+    - 'Verify that the response asks the learner to connect concepts, justify steps, or reflect on assumptions when appropriate.'
+    - 'Assess whether the explanation promotes deeper conceptual understanding.'
+    - 'Penalize responses that are overly simplistic, purely answer-based, or do not push the learner beyond surface understanding.'
+  evaluation_params:
+    - INPUT
+    - ACTUAL_OUTPUT
+
+- name: step_by_step_clarity
+  modes: [self-assessment]
+  chatbot_modes: [explainer]
+  threshold: 0.7
+  diagnostic: true
+  criteria: 'Evaluate whether the assistant explains concepts or solutions in simple, logical, atomic steps.'
+  evaluation_steps:
+    - 'Check whether the explanation is broken into clear and manageable steps.'
+    - 'Verify that each step follows logically from the previous one.'
+    - 'Assess whether the response avoids skipping important reasoning steps.'
+    - 'Penalize explanations that are too compressed, disorganized, or cognitively overwhelming.'
+  evaluation_params:
+    - INPUT
+    - ACTUAL_OUTPUT
+
+- name: example_usage
+  modes: [self-assessment]
+  chatbot_modes: [explainer]
+  threshold: 0.7
+  diagnostic: true
+  criteria: 'Evaluate whether the assistant uses examples, analogies, or illustrations effectively to clarify concepts.'
+  evaluation_steps:
+    - 'Determine whether an example would help explain the requested concept.'
+    - 'Check whether the assistant provides a relevant and understandable example when appropriate.'
+    - 'Verify that the example supports the core explanation rather than distracting from it.'
+    - 'Penalize vague, misleading, overly complex, or absent examples when examples are pedagogically useful.'
+  evaluation_params:
+    - INPUT
+    - ACTUAL_OUTPUT
+
+- name: contextual_precision
+  type: contextual_precision
+  modes: [ground-truth]
+  threshold: 0.7
+
+- name: contextual_recall
+  type: contextual_recall
+  modes: [ground-truth]
+  threshold: 0.5
+  advisory_threshold: 0.3

@@ -300,7 +300,7 @@ class GatewayTests(unittest.IsolatedAsyncioTestCase):
                         "id": "synthetic-completion",
                         "object": "chat.completion",
                         "created": 0,
-                        "model": "gpt-5.6-luna",
+                        "model": "gpt-6-luna",
                         "choices": [
                             {
                                 "index": 0,
@@ -373,7 +373,7 @@ class GatewayTests(unittest.IsolatedAsyncioTestCase):
                                     len(sends), 3 if defaults and failure else 1
                                 )
                                 for body in sends:
-                                    self.assertEqual(body["model"], "gpt-5.6-luna")
+                                    self.assertEqual(body["model"], "gpt-6-luna")
                                     self.assertEqual(body["reasoning_effort"], "high")
                                     self.assertEqual(
                                         body["max_completion_tokens"], 8192
