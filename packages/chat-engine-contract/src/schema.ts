@@ -129,7 +129,7 @@ export const approvedToolSchema = z
       .max(128)
       .regex(/^[A-Za-z0-9_.-]+$/),
     description: z.string().max(2_000).optional(),
-    inputSchema: z.record(z.unknown()),
+    inputSchema: z.record(z.string(), z.unknown()),
     serverId: boundedString(128),
   })
   .strict()
@@ -237,7 +237,7 @@ export const engineChatRequestSchema = z
     }
   })
 
-const tokenSchema = z.number().int().nonnegative().nullable()
+const tokenSchema = z.number().nonnegative().refine(Number.isInteger).nullable()
 
 export const engineUsageSchema = z
   .object({
@@ -263,8 +263,12 @@ export const engineFinishMetadataSchema = z
   })
   .strict()
 
-const providerMetadataSchema = z.record(z.unknown()).optional()
-const sparseProviderIndexSchema = z.number().int().nonnegative().optional()
+const providerMetadataSchema = z.record(z.string(), z.unknown()).optional()
+const sparseProviderIndexSchema = z
+  .number()
+  .nonnegative()
+  .refine(Number.isInteger)
+  .optional()
 
 const streamStartSchema = z
   .object({

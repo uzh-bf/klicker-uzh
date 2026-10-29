@@ -13,7 +13,7 @@
     "@klicker-uzh/chat-engine-contract": "workspace:*",
     "ai": "7.0.52",
     "hono": "4.12.30",
-    "zod": "3.25.76"
+    "zod": "4.6.6"
   },
   "devDependencies": {
     "@rollup/plugin-node-resolve": "~15.3.1",

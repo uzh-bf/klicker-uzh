@@ -42,6 +42,59 @@ describe('chat engine contract', () => {
     )
   })
 
+  test('preserves nested tool schemas and provider metadata as JSON records', () => {
+    const inputSchema = {
+      type: 'object',
+      properties: { code: { type: 'string', maxLength: 2000 } },
+      required: ['code'],
+      additionalProperties: false,
+      'x-provider': { enabled: true, options: [null, 1, 'value'] },
+    }
+    const request = {
+      ...conformanceToolRequest,
+      tools: [{ ...conformanceToolRequest.tools[0], inputSchema }],
+    }
+    expect(engineChatRequestSchema.parse(request)).toEqual(request)
+    const part = {
+      type: 'text-delta',
+      id: 'part-1',
+      delta: 'answer',
+      providerMetadata: { vendor: { cached: true, details: [null, 1] } },
+    }
+    expect(parseEngineStreamPart(part)).toEqual(part)
+    expect(
+      engineStreamPartSchema.safeParse({ ...part, providerMetadata: [] })
+        .success
+    ).toBe(false)
+  })
+
+  test.each([
+    [0, true],
+    [Number.MAX_SAFE_INTEGER + 1, true],
+    [-1, false],
+    [1.5, false],
+    [Number.POSITIVE_INFINITY, false],
+  ])('preserves protocol integer validation for %s', (value, accepted) => {
+    expect(
+      engineStreamPartSchema.safeParse({
+        type: 'tool-input-delta',
+        toolCallId: 'call-1',
+        inputTextDelta: '{}',
+        providerToolCallIndex: value,
+      }).success
+    ).toBe(accepted)
+    const finish = conformanceStream.find((part) => part.type === 'finish')!
+    expect(
+      engineStreamPartSchema.safeParse({
+        ...finish,
+        messageMetadata: {
+          ...finish.messageMetadata,
+          usage: { ...finish.messageMetadata.usage, inputTokens: value },
+        },
+      }).success
+    ).toBe(accepted)
+  })
+
   test('keeps W3C trace context out of the JSON request', () => {
     expect(
       engineChatRequestSchema.safeParse({

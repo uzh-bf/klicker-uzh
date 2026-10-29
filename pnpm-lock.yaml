@@ -816,8 +816,8 @@ importers:
         specifier: 5.9.4
         version: 5.9.4
       zod:
-        specifier: 3.25.76
-        version: 3.25.76
+        specifier: 4.6.6
+        version: 4.6.6
     devDependencies:
       '@rollup/plugin-node-resolve':
         specifier: ~15.3.1
@@ -848,7 +848,7 @@ importers:
     dependencies:
       '@ai-sdk/openai':
         specifier: 4.0.30
-        version: 4.0.30(zod@3.25.76)
+        version: 4.0.30(zod@4.6.6)
       '@hono/node-server':
         specifier: 1.19.11
         version: 1.19.11(hono@4.12.30)
@@ -857,13 +857,13 @@ importers:
         version: link:../../packages/chat-engine-contract
       ai:
         specifier: 7.0.52
-        version: 7.0.52(zod@3.25.76)
+        version: 7.0.52(zod@4.6.6)
       hono:
         specifier: 4.12.30
         version: 4.12.30
       zod:
-        specifier: 3.25.76
-        version: 3.25.76
+        specifier: 4.6.6
+        version: 4.6.6
     devDependencies:
       '@rollup/plugin-node-resolve':
         specifier: ~15.3.1
@@ -2022,8 +2022,8 @@ importers:
   packages/chat-engine-contract:
     dependencies:
       zod:
-        specifier: 3.25.76
-        version: 3.25.76
+        specifier: 4.6.6
+        version: 4.6.6
     devDependencies:
       '@rollup/plugin-node-resolve':
         specifier: ~15.3.1
@@ -42848,6 +42848,8 @@ snapshots:
   zod-validation-error@4.0.2(zod@4.6.6):
     dependencies:
       zod: 4.6.6
+
+  zod@4.6.6: {}
 
   zod@4.6.6: {}
 

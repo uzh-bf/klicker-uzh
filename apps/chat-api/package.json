@@ -14,7 +14,7 @@
     "@klicker-uzh/util": "workspace:*",
     "hono": "4.12.30",
     "jose": "5.9.4",
-    "zod": "3.25.76"
+    "zod": "4.6.6"
   },
   "devDependencies": {
     "@rollup/plugin-node-resolve": "~15.3.1",
