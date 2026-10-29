@@ -213,3 +213,6 @@ codebase executor with this branch's existing preview and worker checks, publish
 that immutable artifact commit, then pin the caller to its SHA in the next
 commit. The final candidate must pass executor parity and all required CI before
 any paid image publication. No target merge, release or permission change follows.
+
+
+Full-profile image repair: final LTI, response and worker images now omit the unused global package manager, matching the API image. Manage and Control also omit package managers and the same build-only standalone serializer already removed from PWA. Lecturer MCP uses the matching supported Node base and patched Alpine packages without runtime package managers. Manage pins the patched nanoid release within major 5; pnpm regenerates its lockfile. These are packaging/dependency corrections, with no preview-specific application branches. Full native image admission and real browser login remain pending; the existing finite pilot exceptions are not widened by source publication.

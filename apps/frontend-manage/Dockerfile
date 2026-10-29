@@ -68,9 +68,16 @@ ARG KLICKER_PREVIEW_BUILD_ENV_JSON
 ARG KLICKER_DEPLOYMENT_BUILD_ENV_JSON
 RUN node util/deployment-build-env.mjs --app frontend-manage -- pnpm run build --filter=@klicker-uzh/frontend-manage
 
+# Next traces its webpack serializer into the standalone tree although the
+# generated server consumes the already serialized build configuration.
+RUN node -e 'const fs = require("fs"); const root = "apps/frontend-manage/.next/standalone/node_modules/.pnpm"; for (const name of fs.readdirSync(root)) if (name.startsWith("serialize-javascript@")) fs.rmSync(root + "/" + name, { recursive: true });'
+
 
 FROM base AS runner
 WORKDIR /app
+
+# Standalone servers run Node directly; package managers are build tools.
+RUN rm -rf /usr/local/lib/node_modules/npm /usr/local/bin/npm /usr/local/bin/npx
 
 RUN addgroup --system --gid 1001 nodejs
 RUN adduser --system --uid 1001 nextjs

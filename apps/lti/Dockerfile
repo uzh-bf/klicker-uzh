@@ -56,7 +56,8 @@ COPY --from=deps /app/out/pnpm* .
 # the cache removal share one RUN so no build state lands in a committed layer.
 RUN pnpm i --frozen-lockfile --prod --ignore-scripts \
  && npm rm -g --ignore-scripts pnpm turbo \
- && rm -rf /root/.cache/pnpm /root/.local/share/pnpm /root/.npm
+ && rm -rf /root/.cache/pnpm /root/.local/share/pnpm /root/.npm \
+ && rm -rf /usr/local/lib/node_modules/npm /usr/local/bin/npm /usr/local/bin/npx
 
 COPY --from=builder --chown=nodejs:nodejs /app/packages/util/dist/ ./packages/util/dist/
 COPY --from=builder --chown=nodejs:nodejs /app/packages/types/dist/ ./packages/types/dist/
