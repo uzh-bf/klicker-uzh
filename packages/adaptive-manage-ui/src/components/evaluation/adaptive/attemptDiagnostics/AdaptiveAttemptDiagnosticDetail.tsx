@@ -65,6 +65,15 @@ function AdaptiveAttemptDiagnosticDetail({
             number: attempt.attemptNumber,
           })}
         </H4>
+        <span
+          className="font-mono text-xs text-gray-600"
+          title={attempt.engineRevision ?? undefined}
+          data-cy="adaptive-attempt-engine-revision"
+        >
+          {t('manage.evaluation.adaptive.attemptDiagnostics.engineRevision', {
+            revision: attempt.engineRevision ?? '–',
+          })}
+        </span>
         <Button
           onClick={() =>
             downloadCsv(

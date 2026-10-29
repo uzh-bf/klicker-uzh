@@ -57,6 +57,7 @@ const attempt = {
   startedAt: '2026-10-06T10:00:00.000Z',
   completedAt: '2026-10-06T10:10:00.000Z',
   elapsedSeconds: 600,
+  engineRevision: '9f9afd45-arm',
   stopReason: 'TOTAL_QUESTION_CAP',
   answerCount: 2,
   overall: node({}),
@@ -110,16 +111,17 @@ describe('adaptive attempt CSV', () => {
     const csv = buildAttemptAnswersCsv([attempt])
     expect(csv.startsWith('﻿')).toBe(true)
     const lines = csv.slice(1).trimEnd().split('\r\n')
-    expect(lines[0]?.split(',').slice(0, 5)).toEqual([
+    expect(lines[0]?.split(',').slice(0, 6)).toEqual([
       'participant_code',
       'attempt_code',
       'attempt_number',
       'completed_at',
+      'engine_revision',
       'order',
     ])
     expect(
       lines[1]?.startsWith(
-        'p9e8d7c6,a1b2c3d4,1,2026-10-06T10:10:00.000Z,1,"Synthetic, ""quoted"" competence",Leaf,item-1,L3,-0.5,true,1,COVERAGE,,,,,0.25,0.9,L3,L1 - L5,L4,L2 - L4,true,L3,L2 - L4,false,CHECK,TOO_HIGH,L2,L3,"Expected lower; line'
+        'p9e8d7c6,a1b2c3d4,1,2026-10-06T10:10:00.000Z,9f9afd45-arm,1,"Synthetic, ""quoted"" competence",Leaf,item-1,L3,-0.5,true,1,COVERAGE,,,,,0.25,0.9,L3,L1 - L5,L4,L2 - L4,true,L3,L2 - L4,false,CHECK,TOO_HIGH,L2,L3,"Expected lower; line'
       )
     ).toBe(true)
     expect(csv).toContain(
