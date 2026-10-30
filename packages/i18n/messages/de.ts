@@ -1387,10 +1387,16 @@ Da die KlickerUZH-App noch nicht im iOS-App-Store verfügbar ist, folgen Sie die
         'Dieses Microlearning ist abgelaufen und es können keine Antworten mehr eingereicht werden.',
     },
     liveQuiz: {
+      blockClosed:
+        'Dieser Fragenblock ist geschlossen. Dies bestätigt nicht, welche Antworten gespeichert wurden.',
+      allQuestionsSubmitted:
+        'Sie haben alle Fragen in diesem Block übermittelt.',
+      synchronizing: 'Der aktuelle Quiz-Stand wird geladen…',
+      connectionLost:
+        'Die Live-Aktualisierung ist unterbrochen. Die angezeigten Fragen sind möglicherweise nicht aktuell.',
+      reconnect: 'Erneut verbinden',
       noActiveQuestion:
         'Aktuell ist keine Frage aktiv... Sobald eine neue Frage aktiviert wird, wird sie automatisch angezeigt. Alternativ können Sie auch die Seite <reload>aktualisieren</reload>, um ein Update zu erzwingen.',
-      allQuestionsAnswered:
-        'Sie haben bereits alle aktiven Fragen beantwortet oder der Block wurde geschlossen.',
       previousCase: 'Vorheriger Fall',
       nextCase: 'Nächster Fall',
       thisLiveQuizGamified: 'Diese Live-Quiz ist gamifiziert!',
@@ -1630,21 +1636,20 @@ Da die KlickerUZH-App noch nicht im iOS-App-Store verfügbar ist, folgen Sie die
         'Edu-ID-Authentifizierung ist für Assessments erforderlich',
       submissionInputsInvalid:
         'Beim Abschicken Ihrer Antwort ist ein Fehler aufgetreten. Bitte überprüfen Sie Ihre Eingaben auf Fehlermeldungen.',
-      submissionSuccessful:
-        'Ihre Antwort wurde erfolgreich abgeschickt und gespeichert.',
+      submissionUnconfirmed:
+        'Die Übermittlung konnte nicht bestätigt werden. Ihr Entwurf bleibt erhalten. Prüfen Sie Ihre Verbindung und versuchen Sie es erneut, solange der Block offen ist.',
+      submissionSuccessful: 'Ihre Antwort wurde zur Verarbeitung übermittelt.',
       submissionGeneralError:
         'Beim Abschicken Ihrer Antwort ist ein Fehler aufgetreten. Bitte versuchen Sie es erneut.',
       submissionAlreadyRecorded:
-        'Sie haben diese Frage bereits beantwortet. Ihre vorherige Antwort wurde gespeichert.',
+        'Für diese Frage wurde bereits eine frühere Antwort erfasst. Diese zählt; der erneute Versuch ersetzt sie nicht.',
       submissionUnauthorizedError:
         'Ihr Login konnte nicht korrekt verifiziert werden. Bitte loggen Sie sich erneut ein und beantworten Sie die Frage nochmals.',
-      submissionServerError:
-        'Beim Abschicken Ihrer Antwort ist ein Serverfehler aufgetreten. Bitte versuchen Sie es erneut.',
       missingAssessmentCourseParticipation:
         'Sie sind nicht Teil des Assessment-Kurses, zu welchem dieses Quiz gehört. Bitte kontaktieren Sie Ihre Dozierenden.',
       accountDeletionMessage:
         'Da Sie Ihr KlickerUZH-Konto derzeit zur Teilnahme an einem Assessment-Kurs verwenden, können Sie Ihr Konto nicht selbst löschen. Für weitere Informationen zur Löschung Ihres Kontos und zum Verlassen des Kurses wenden Sie sich bitte an Ihre Dozierenden.',
-      respondedAt: 'Beantwortet am {date}',
+      respondedAt: 'Übermittelt am {date}',
       failedToLoadActivityResults:
         'Beim Laden der Resultate für die Aktivitäten in diesem Assessment Kurs ist leider ein Fehler aufgetreten. Bitte versuchen Sie es erneut oder kontaktieren Sie Ihre Dozierenden, falls das Problem weiterhin besteht.',
       activityResultsDescription:
