@@ -192,7 +192,13 @@ describe('useChatResponse attachment hydration', () => {
     expect(storeState.threads[0]!.replyContextLimited).toBe(true)
   })
 
-  test('reports server budget omissions and retains completed tool-only history', async () => {
+  test.each([
+    '',
+    'https://chat-api.example.test',
+  ])('preserves tool-only replay for the selected origin %s', async (chatApiUrl) => {
+    vi.stubGlobal('document', {
+      documentElement: { dataset: { chatApiUrl } },
+    })
     const messages = [
       {
         id: 'question',
@@ -231,9 +237,14 @@ describe('useChatResponse attachment hydration', () => {
       'thread-1'
     )
     const request = JSON.parse(fetchSpy.mock.calls[0]![1].body)
-    expect(
-      request.messages.map((message: { id: string }) => message.id)
-    ).toEqual(['question', 'tool', 'follow-up'])
+    expect(fetchSpy.mock.calls[0]![0]).toBe(
+      `${chatApiUrl}/api/chatbots/chatbot-1/chat`
+    )
+    expect(request.messages).toEqual([
+      { id: 'question', role: 'user', content: 'synthetic' },
+      ...(chatApiUrl ? [{ id: 'tool', role: 'assistant', content: '' }] : []),
+      { id: 'follow-up', role: 'user', content: 'synthetic follow-up' },
+    ])
     expect(storeState.threads[0]!.replyContextLimited).toBe(true)
   })
 

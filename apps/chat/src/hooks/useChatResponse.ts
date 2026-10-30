@@ -298,12 +298,17 @@ export function useChatResponse(
 
         // send request to API with streaming enabled
         const handoffSource = readHandoffSource()
+        const usesDirectChatApi = Boolean(
+          typeof document !== 'undefined' &&
+            document.documentElement?.dataset.chatApiUrl
+        )
         const serializedMessages = resolvedMessagesToSend
           .filter(
             (message) =>
               message.role !== 'assistant' ||
               serializeMessageContent(message).trim() !== '' ||
-              (Array.isArray(message.content) &&
+              (usesDirectChatApi &&
+                Array.isArray(message.content) &&
                 message.content.some(
                   (part) =>
                     part.type === 'tool-call' && part.result !== undefined
