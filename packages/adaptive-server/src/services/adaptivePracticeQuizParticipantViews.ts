@@ -1,6 +1,7 @@
 import {
   classificationIntervalWithinLevelBand,
   isNearLevelBoundary,
+  levelMasteryOf,
 } from '@klicker-uzh/adaptive-contract'
 import * as DB from '@klicker-uzh/prisma/client'
 import { adaptivePracticeQuizError } from './adaptivePracticeQuizErrors.js'
@@ -100,6 +101,8 @@ export type AdaptiveResultTrajectoryPoint = {
   levelLabel: string | null
 }
 
+const NO_MASTERY = { mastered: null, nextLevelLabel: null } as const
+
 export type AdaptiveStudentResultNode = {
   id: number
   name: string
@@ -123,6 +126,12 @@ export type AdaptiveStudentResultNode = {
   coverageStatus: DB.AdaptiveLeafCoverageStatus | null
   // Competences only: share of this competence in the overall level.
   weightShare: number | null
+  // Mastery indication of the reported level (`levelMasteryOf`): true from
+  // the quiz's mastery mark of the level band on; null without a reported
+  // level, with the indicator off, or for IRT v2.
+  mastered: boolean | null
+  // The level after the reported one ("ready for"), null at the top.
+  nextLevelLabel: string | null
   children: AdaptiveStudentResultNode[]
 }
 
@@ -147,6 +156,10 @@ export type AdaptiveStudentResult = {
   levelBands: AdaptiveResultLevelBand[]
   // IRT_V1 classification tolerance in level bands (0 = exact level).
   classificationToleranceBands: number
+  // Share of a level band from which it counts as mastered; 0 = no indicator.
+  masteryFrom: number
+  mastered: boolean | null
+  nextLevelLabel: string | null
   trajectory: AdaptiveResultTrajectoryPoint[]
   competenceProfile: AdaptiveStudentResultNode[]
   // Debug-only answer history; null unless ADAPTIVE_QUIZ_SHOW_SOLUTIONS=true.
@@ -287,11 +300,38 @@ function serializeAdaptiveStudentResultCore(
       )
     ),
   })
+  // Annotates a reported level; the level itself is unchanged.
+  const orderedLevels = runtime.algorithm.levels
+    .slice()
+    .sort((a, b) => a.order - b.order)
+  const masteryView = (
+    estimate: (typeof attempt.estimates)[number] | undefined
+  ) => {
+    const level =
+      estimate?.levelId != null ? levelsById.get(estimate.levelId) : undefined
+    if (!level || estimate?.theta == null) return NO_MASTERY
+    const mastery = levelMasteryOf({
+      theta: estimate.theta,
+      levels: runtime.algorithm.levels,
+      range: settings.thetaRange,
+      mappingRule: settings.levelMappingRule,
+      masteryFrom: runtime.masteryFrom,
+    })
+    return {
+      // Only for the band of the reported level, so it never contradicts it.
+      mastered: mastery?.order === level.order ? mastery.mastered : null,
+      nextLevelLabel:
+        orderedLevels[orderedLevels.indexOf(level) + 1]?.label ?? null,
+    }
+  }
   const reportedView = (
     nodeId: number | null,
     estimate: (typeof attempt.estimates)[number] | undefined
   ) => {
-    const view = serializeEstimateView({ estimate, levelsById, settings })
+    const view = {
+      ...serializeEstimateView({ estimate, levelsById, settings }),
+      ...masteryView(estimate),
+    }
     return view.levelLabel !== null &&
       estimate &&
       determination.isDetermined(nodeId, {
@@ -300,7 +340,7 @@ function serializeAdaptiveStudentResultCore(
         stopReason: estimate.stopReason,
       })
       ? view
-      : { ...view, levelLabel: null }
+      : { ...view, levelLabel: null, ...NO_MASTERY }
   }
   const overallView = reportedView(null, overall)
   const childrenByParent = new Map<number | null, AdaptiveRuntimeNode[]>()
@@ -323,6 +363,7 @@ function serializeAdaptiveStudentResultCore(
             levels: runtime.algorithm.levels,
             range: settings.thetaRange,
             mappingRule: settings.levelMappingRule,
+            reachedFrom: settings.levelReachedFrom ?? 0,
             z: settings.classificationZ,
           })
         : null
@@ -411,6 +452,7 @@ function serializeAdaptiveStudentResultCore(
     leadingLevelLabels: [],
     classificationProbability: null,
     ...overallView,
+    masteryFrom: runtime.masteryFrom,
     levelBands: withLevelBandElements(
       serializeLevelBands(
         runtime.algorithm.levels,
@@ -498,6 +540,8 @@ function serializeAdaptiveV2StudentResult(
     }
     const view = serializeV2EstimateView({ estimate, levels, runtime })
     return {
+      // IRT v2 has no mastery mark.
+      ...NO_MASTERY,
       id: node.id,
       name,
       kind: node.kind,
@@ -567,6 +611,8 @@ function serializeAdaptiveV2StudentResult(
   }
 
   return {
+    ...NO_MASTERY,
+    masteryFrom: 0,
     isPlacementPilot:
       runtime.publication.preset === DB.AdaptivePracticeQuizPreset.PLACEMENT,
     attemptId: attempt.id,
@@ -656,6 +702,7 @@ function serializeEstimateView({
     levels: [...levelsById.values()],
     range: settings.thetaRange,
     mappingRule: settings.levelMappingRule,
+    reachedFrom: settings.levelReachedFrom ?? 0,
     z: settings.classificationZ,
     toleranceBands: settings.classificationToleranceBands ?? 0,
   })
@@ -664,6 +711,7 @@ function serializeEstimateView({
     levels: [...levelsById.values()],
     range: settings.thetaRange,
     mappingRule: settings.levelMappingRule,
+    reachedFrom: settings.levelReachedFrom ?? 0,
     margin: settings.classificationZ * estimate.standardError,
   })
   return {
