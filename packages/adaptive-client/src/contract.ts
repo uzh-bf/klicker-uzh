@@ -58,6 +58,8 @@ const settings = z
 const v1Settings = settings
   .extend({
     classificationToleranceBands: z.number().int().min(0).max(5).optional(),
+    // Catalyst levelReachedFrom; hosts omit it at 0 for older engines.
+    levelReachedFrom: finite.min(0).max(0.95).optional(),
   })
   .strict()
 const v2Settings = settings
@@ -464,7 +466,9 @@ export type ValidationRequest = z.infer<typeof validationRequestSchema>
 
 // Dry runs (Catalyst `/adaptive/v1/dry-run`, IRT_V1): simulated students
 // answer the ideal pattern for their true level, each answer flipping with
-// `noiseProbability`. Mirrors the engine bounds.
+// `noiseProbability`, or with answerModel REALISTIC draw every answer from
+// the item's IRT probability at a true ability. Mirrors the engine bounds.
+export const ADAPTIVE_DRY_RUN_ANSWER_MODELS = ['IDEAL', 'REALISTIC'] as const
 export const ADAPTIVE_DRY_RUN_MAX_STUDENTS = 200
 export const ADAPTIVE_DRY_RUN_MAX_DECISIONS = 20000
 export const dryRunSpecSchema = z
@@ -486,6 +490,11 @@ export const dryRunSpecSchema = z
         .strict(),
     ]),
     competences: z.enum(['SAME_LEVEL', 'INDEPENDENT']),
+    // Omitted for IDEAL, so engines without the field accept the request.
+    answerModel: z.enum(ADAPTIVE_DRY_RUN_ANSWER_MODELS).optional(),
+    // IDEAL only: HALF answers the student's own level right and wrong in
+    // turn (ability in the middle of the level), RIGHT (default) all right.
+    idealOwnLevel: z.enum(['RIGHT', 'HALF']).optional(),
   })
   .strict()
 export type DryRunSpec = z.infer<typeof dryRunSpecSchema>

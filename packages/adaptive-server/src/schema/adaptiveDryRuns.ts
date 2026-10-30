@@ -191,11 +191,13 @@ export function adaptiveDryRunMutationFields(
         fromLevelId: t.arg.int({ required: true }),
         toLevelId: t.arg.int({ required: true }),
         competences: t.arg.string({ required: true }),
+        answerModel: t.arg.string({ required: false }),
         seed: t.arg.string({ required: false }),
         totalQuestionCap: t.arg.int({ required: true }),
         minQuestionsPerLeaf: t.arg.int({ required: true }),
         classificationZ: t.arg.float({ required: true }),
         classificationToleranceBands: t.arg.int({ required: true }),
+        levelReachedFrom: t.arg.float({ required: true }),
       },
       resolve: withPermission(
         (args) => ({ practiceQuizId: args.practiceQuizId }),
