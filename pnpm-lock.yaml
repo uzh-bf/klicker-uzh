@@ -832,7 +832,7 @@ importers:
         specifier: ^24.10.1
         version: 24.12.4
       ai:
-        specifier: 7.0.52
+        specifier: ~7.0.52
         version: 7.0.52(zod@4.6.6)
       npm-run-all:
         specifier: ~4.1.5
