@@ -7,7 +7,7 @@ const mocks = vi.hoisted(() => ({
   rateLimitCheck: vi.fn(),
 }))
 
-vi.mock('@/src/lib/server/featureFlags', () => ({
+vi.mock('@klicker-uzh/chat-api/host/lib/server/featureFlags', () => ({
   getManageAiCapability: mocks.getManageAiCapability,
 }))
 

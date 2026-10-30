@@ -14,13 +14,13 @@ vi.mock('@klicker-uzh/prisma', () => ({
     chatbot: { findUnique: mocks.chatbot },
   },
 }))
-vi.mock('@/src/lib/server/featureFlags', () => ({
+vi.mock('@klicker-uzh/chat-api/host/lib/server/featureFlags', () => ({
   isChatbotGraphRetrievalEnabled: mocks.flag,
 }))
-vi.mock('@/src/lib/server/apiGuards', () => ({
+vi.mock('@klicker-uzh/chat-api/host/lib/server/apiGuards', () => ({
   authorizeIdentityForChatbot: mocks.access,
 }))
-vi.mock('@/src/lib/server/knowledgeGraphRuntime', () => ({
+vi.mock('@klicker-uzh/chat-api/host/lib/server/knowledgeGraphRuntime', () => ({
   getPublishedKnowledgeGraph: mocks.publication,
   readKnowledgeGraphSearchHints: mocks.hints,
 }))

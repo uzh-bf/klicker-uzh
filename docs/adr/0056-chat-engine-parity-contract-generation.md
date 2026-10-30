@@ -36,6 +36,14 @@ the transition and independently pass canonical `v2` conformance before the
 host selects `v2`. The host explicitly selects a single configured generation;
 there is no automatic negotiation, downgrade, backend retry or failover.
 
+The host's v2 generation selects the provider's chat or Responses API explicitly,
+independently of reasoning effort. Its step policy can require an admitted tool
+on the first step and supplies the final system reminder for every model step,
+after accumulated tool results. Engines apply these controls without choosing
+participant policy or persisting the reminder as conversation history. Omitting
+these optional controls preserves each engine's transition behavior; the full
+participant host supplies them explicitly.
+
 The public host continues to own identity, scope, model policy, attachment
 preparation, trusted learning context, tool discovery and capabilities,
 conversation persistence and accounting. Engines receive only approved tools

@@ -8,8 +8,12 @@
     "dist"
   ],
   "dependencies": {
+    "@ai-sdk/mcp": "2.0.25",
     "@hono/node-server": "1.19.11",
     "@klicker-uzh/chat-engine-contract": "workspace:*",
+    "@klicker-uzh/doc-query-client": "workspace:*",
+    "@klicker-uzh/feature-flags": "workspace:*",
+    "@klicker-uzh/knowledge-graph": "workspace:*",
     "@klicker-uzh/prisma": "workspace:*",
     "@klicker-uzh/types": "workspace:*",
     "@klicker-uzh/util": "workspace:*",
@@ -17,6 +21,7 @@
     "handlebars": "4.7.10",
     "hono": "4.12.30",
     "jose": "5.9.4",
+    "sharp": "0.35.5",
     "zod": "4.6.6"
   },
   "devDependencies": {

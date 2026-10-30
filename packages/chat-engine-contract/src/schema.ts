@@ -302,7 +302,7 @@ const deploymentCredentialModeSchema = z
   })
   .strict()
 
-export const resolvedGenerationSchema = z
+const resolvedGenerationObjectSchema = z
   .object({
     modelId: boundedString(128),
     deploymentId: boundedString(256),
@@ -316,28 +316,42 @@ export const resolvedGenerationSchema = z
     ]),
   })
   .strict()
-  .superRefine((generation, ctx) => {
-    if (
-      generation.reasoningEffort === 'none' &&
-      generation.reasoningSummary !== 'none'
-    ) {
-      ctx.addIssue({
-        code: z.ZodIssueCode.custom,
-        path: ['reasoningSummary'],
-        message: 'Reasoning summary must be none when reasoning is disabled.',
-      })
-    }
-    if (
-      generation.reasoningEffort !== 'none' &&
-      generation.reasoningSummary === 'none'
-    ) {
-      ctx.addIssue({
-        code: z.ZodIssueCode.custom,
-        path: ['reasoningSummary'],
-        message: 'Reasoning summary must be auto when reasoning is enabled.',
-      })
-    }
+
+const validateGeneration = (
+  generation: z.infer<typeof resolvedGenerationObjectSchema>,
+  ctx: z.RefinementCtx
+) => {
+  if (
+    generation.reasoningEffort === 'none' &&
+    generation.reasoningSummary !== 'none'
+  ) {
+    ctx.addIssue({
+      code: z.ZodIssueCode.custom,
+      path: ['reasoningSummary'],
+      message: 'Reasoning summary must be none when reasoning is disabled.',
+    })
+  }
+  if (
+    generation.reasoningEffort !== 'none' &&
+    generation.reasoningSummary === 'none'
+  ) {
+    ctx.addIssue({
+      code: z.ZodIssueCode.custom,
+      path: ['reasoningSummary'],
+      message: 'Reasoning summary must be auto when reasoning is enabled.',
+    })
+  }
+}
+
+export const resolvedGenerationSchema =
+  resolvedGenerationObjectSchema.superRefine(validateGeneration)
+
+const resolvedV2GenerationSchema = resolvedGenerationObjectSchema
+  .extend({
+    providerApi: z.enum(['responses', 'chat']).optional(),
   })
+  .strict()
+  .superRefine(validateGeneration)
 
 const engineChatRequestObjectSchema = z
   .object({
@@ -404,11 +418,32 @@ export const engineChatRequestSchema =
 export const engineV2ChatRequestSchema = engineChatRequestObjectSchema
   .extend({
     contractVersion: z.literal(CHAT_ENGINE_CONTRACT_V2),
+    generation: resolvedV2GenerationSchema,
+    stepPolicy: z
+      .object({
+        firstToolName: z.string().min(1).max(128).optional(),
+        trailingSystemMessage: z.string().max(200_000),
+        unbilledReplyReplacement: z.string().max(1_000).optional(),
+      })
+      .strict()
+      .optional(),
     messages: z.array(engineV2MessageSchema).min(1).max(MAX_MESSAGES),
   })
   .strict()
   .superRefine((request, ctx) => {
     validateToolNames(request.tools, ctx)
+    if (
+      request.stepPolicy?.firstToolName &&
+      !request.tools.some(
+        (tool) => tool.name === request.stepPolicy!.firstToolName
+      )
+    ) {
+      ctx.addIssue({
+        code: z.ZodIssueCode.custom,
+        path: ['stepPolicy', 'firstToolName'],
+        message: 'First-step tool must be admitted by the host.',
+      })
+    }
     let imageCount = 0
     let documentPageCount = 0
     request.messages.forEach((message, messageIndex) => {

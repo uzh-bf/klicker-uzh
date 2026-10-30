@@ -32,6 +32,43 @@ import {
 } from '../src/index.js'
 
 describe('chat engine contract', () => {
+  test('limits host step policy and explicit provider transport to v2 admitted capabilities', () => {
+    const request = {
+      ...conformanceV2ToolRequest,
+      generation: {
+        ...conformanceV2ToolRequest.generation,
+        providerApi: 'responses' as const,
+      },
+      stepPolicy: {
+        firstToolName: conformanceV2ToolRequest.tools[0]!.name,
+        trailingSystemMessage: 'test-policy-1',
+      },
+    }
+    expect(engineV2ChatRequestSchema.parse(request)).toEqual(request)
+    expect(
+      engineV2ChatRequestSchema.safeParse({
+        ...request,
+        stepPolicy: { ...request.stepPolicy, firstToolName: 'foreign-tool' },
+      }).success
+    ).toBe(false)
+    expect(
+      engineChatRequestSchema.safeParse({ ...request, contractVersion: 'v1' })
+        .success
+    ).toBe(false)
+    expect(
+      engineChatRequestSchema.safeParse({
+        ...conformanceRequest,
+        generation: request.generation,
+      }).success
+    ).toBe(false)
+    expect(
+      engineV2ChatRequestSchema.safeParse({
+        ...request,
+        generation: { ...request.generation, providerApi: 'foreign-protocol' },
+      }).success
+    ).toBe(false)
+  })
+
   test('accepts the conformance requests and stream fixtures', () => {
     for (const request of [
       conformanceRequest,

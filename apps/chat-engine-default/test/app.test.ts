@@ -16,8 +16,16 @@ import {
 import { MockLanguageModelV3, MockLanguageModelV4 } from 'ai/test'
 import { describe, expect, test, vi } from 'vitest'
 import { createDefaultEngineApp } from '../src/index.js'
+import {
+  createProviderModel,
+  providerOptionsForGeneration,
+} from '../src/provider.js'
 
-function mockStream() {
+function mockStream(
+  inputTokens = 12,
+  outputTokens = 8,
+  text = 'A bond is debt.'
+) {
   return new ReadableStream({
     start(controller) {
       controller.enqueue({ type: 'stream-start', warnings: [] })
@@ -25,7 +33,7 @@ function mockStream() {
       controller.enqueue({
         type: 'text-delta',
         id: 'text-1',
-        delta: 'A bond is debt.',
+        delta: text,
       })
       controller.enqueue({ type: 'text-end', id: 'text-1' })
       controller.enqueue({
@@ -33,12 +41,16 @@ function mockStream() {
         finishReason: { unified: 'stop', raw: 'stop' },
         usage: {
           inputTokens: {
-            total: 12,
-            noCache: 12,
+            total: inputTokens,
+            noCache: inputTokens,
             cacheRead: undefined,
             cacheWrite: undefined,
           },
-          outputTokens: { total: 8, text: 8, reasoning: undefined },
+          outputTokens: {
+            total: outputTokens,
+            text: outputTokens,
+            reasoning: undefined,
+          },
         },
       })
       controller.close()
@@ -60,6 +72,69 @@ async function readParts(
 }
 
 describe('default chat engine', () => {
+  test.each([
+    [0, 0, 'test-provider-reply', 'test-replacement'],
+    [20, 5, 'test-provider-reply', 'test-provider-reply'],
+    [0, 0, 'x'.repeat(121), 'x'.repeat(121)],
+  ])('applies the host unbilled-reply policy only to a short unbilled step (%s, %s)', async (inputTokens, outputTokens, text, expected) => {
+    const model = new MockLanguageModelV3({
+      doStream: { stream: mockStream(inputTokens, outputTokens, text) },
+    })
+    const app = createDefaultEngineApp({
+      serviceToken: 'service-secret',
+      modelFactory: () => model,
+    })
+    const response = await app.request('/v2/chat', {
+      method: 'POST',
+      headers: {
+        authorization: 'Bearer service-secret',
+        'content-type': 'application/json',
+      },
+      body: JSON.stringify({
+        ...conformanceV2Request,
+        stepPolicy: {
+          trailingSystemMessage: 'test-policy-1',
+          unbilledReplyReplacement: 'test-replacement',
+        },
+      }),
+    })
+    expect(response.status).toBe(200)
+    const parts = await readParts(response, 'v2')
+    expect(
+      parts
+        .filter((part) => part.type === 'text-delta')
+        .map((part) => part.delta)
+        .join('')
+    ).toBe(expected)
+    const finish = parts.find((part) => part.type === 'finish')
+    expect(finish?.messageMetadata.usage).toMatchObject({
+      inputTokens,
+      outputTokens,
+    })
+  })
+
+  test.each([
+    'responses',
+    'chat',
+  ] as const)('uses explicit %s transport independently of reasoning', (providerApi) => {
+    const generation = {
+      ...conformanceV2Request.generation,
+      reasoningEffort: 'none',
+      reasoningSummary: 'none' as const,
+      providerApi,
+      responseStorage: false,
+    }
+    const model = createProviderModel(generation, 'synthetic-key', {
+      deploymentBaseUrl: 'https://provider.invalid/v1',
+    })
+    if (typeof model === 'string')
+      throw new Error('Expected a constructed provider model')
+    expect(model.provider).toBe(`openai.${providerApi}`)
+    expect(providerOptionsForGeneration(generation)).toEqual({
+      openai: providerApi === 'responses' ? { store: false } : {},
+    })
+  })
+
   test.each([
     'v1',
     'v2',
@@ -544,6 +619,13 @@ describe('default chat engine', () => {
         },
       ],
     }
+    if (toolRequest.contractVersion === 'v2')
+      Object.assign(toolRequest, {
+        stepPolicy: {
+          firstToolName: 'doc_query',
+          trailingSystemMessage: 'test-policy-1',
+        },
+      })
     const executed: Array<Record<string, unknown>> = []
     let streamCallCount = 0
     let observedPrompt: unknown
@@ -637,6 +719,25 @@ describe('default chat engine', () => {
     expect(
       parts.find((part) => part.type === 'tool-output-available')?.output
     ).toEqual({ text: 'A bond is debt.' })
+    if (version === 'v2') {
+      expect(model.doStreamCalls[0]?.toolChoice).toEqual({
+        type: 'tool',
+        toolName: 'doc_query',
+      })
+      expect(model.doStreamCalls[1]?.toolChoice).toEqual({ type: 'auto' })
+      for (const call of model.doStreamCalls) {
+        expect(call.prompt.at(-1)).toEqual({
+          role: 'system',
+          content: 'test-policy-1',
+        })
+        expect(
+          call.prompt.filter(
+            (message) =>
+              message.role === 'system' && message.content === 'test-policy-1'
+          )
+        ).toHaveLength(1)
+      }
+    }
     const nextToolParts = model.doStreamCalls[1]?.prompt
       .filter((message) => message.role === 'tool')
       .flatMap((message) => message.content)

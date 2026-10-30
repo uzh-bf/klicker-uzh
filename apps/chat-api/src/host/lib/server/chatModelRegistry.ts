@@ -18,6 +18,7 @@ const chatModelSchema = z
     supportsImageAttachments: z.boolean().default(false),
     supportedReasoningEfforts: z.array(z.string().min(1)).optional(),
     maxOutputTokens: z.number().int().min(1).max(4096),
+    maxInputTokens: z.number().int().min(1).max(1_000_000).optional(),
     apiVersion: z.string().min(1).optional(),
     // Explicit usage class (BASE/ADVANCED). Older external registry JSON that
     // omits the class is conservatively normalized to ADVANCED, never BASE.

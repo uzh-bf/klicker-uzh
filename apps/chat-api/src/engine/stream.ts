@@ -1,8 +1,10 @@
 import {
-  type EngineFinishMetadata,
-  type EngineStreamPart,
+  CHAT_ENGINE_CONTRACT_VERSION,
+  type EngineContractVersion,
   type EngineUsage,
   parseEngineStreamPart,
+  type SupportedEngineFinishMetadata,
+  type SupportedEngineStreamPart,
 } from '@klicker-uzh/chat-engine-contract'
 
 const textEncoder = new TextEncoder()
@@ -27,7 +29,7 @@ export type StreamState = {
   parts: PersistedAssistantPart[]
   usage: EngineUsage | null
   finishReason: string | null
-  engineMetadata: EngineFinishMetadata | null
+  engineMetadata: SupportedEngineFinishMetadata | null
   status: 'streaming' | 'finished' | 'aborted' | 'error'
 }
 
@@ -38,10 +40,15 @@ export type PlatformMetadata = {
   userMessageId: string
   assistantMessageId: string
   creditsUsed: number | null
+  contextOmittedMessages?: number
+  meetingClockStartedAt?: string
+  serverNow?: string
   finalPersistenceStatus: 'persisted' | 'not-persisted' | 'not-applicable'
 }
 
 export type ValidatedStreamOptions = {
+  contractVersion?: EngineContractVersion
+  showReasoning?: boolean
   onCancel?: () => void
   expected?: {
     assistantMessageId: string
@@ -60,7 +67,7 @@ export type ValidatedStreamOptions = {
 class InvalidEngineStreamError extends Error {}
 
 function validateIdentity(
-  part: EngineStreamPart,
+  part: SupportedEngineStreamPart,
   expected: ValidatedStreamOptions['expected']
 ) {
   if (!expected) return
@@ -141,7 +148,7 @@ function isToolErrorOutput(output: unknown): boolean {
   )
 }
 
-function consumePart(state: StreamState, part: EngineStreamPart) {
+function consumePart(state: StreamState, part: SupportedEngineStreamPart) {
   switch (part.type) {
     case 'text-delta': {
       state.text += part.delta
@@ -211,23 +218,33 @@ function encodeSse(value: unknown): Uint8Array {
 }
 
 function platformFinishPart(
-  part: Extract<EngineStreamPart, { type: 'finish' }>,
-  metadata: PlatformMetadata
+  part: Extract<SupportedEngineStreamPart, { type: 'finish' }>,
+  metadata: PlatformMetadata,
+  showReasoning = true
 ) {
   return {
     type: 'finish',
     finishReason: part.finishReason,
-    messageMetadata: { ...part.messageMetadata, ...metadata },
+    messageMetadata: {
+      ...part.messageMetadata,
+      ...(!showReasoning ? { reasoningContent: null } : {}),
+      ...metadata,
+    },
   }
 }
 
 function platformMetadataPart(
-  part: Extract<EngineStreamPart, { type: 'message-metadata' }>,
-  metadata: PlatformMetadata
+  part: Extract<SupportedEngineStreamPart, { type: 'message-metadata' }>,
+  metadata: PlatformMetadata,
+  showReasoning = true
 ) {
   return {
     type: 'message-metadata',
-    messageMetadata: { ...part.messageMetadata, ...metadata },
+    messageMetadata: {
+      ...part.messageMetadata,
+      ...(!showReasoning ? { reasoningContent: null } : {}),
+      ...metadata,
+    },
   }
 }
 
@@ -235,7 +252,9 @@ function streamError(code: string, errorText: string) {
   return { type: 'error', code, errorText, retryable: true }
 }
 
-function adaptPlatformPart(part: EngineStreamPart): EngineStreamPart {
+function adaptPlatformPart(
+  part: SupportedEngineStreamPart
+): SupportedEngineStreamPart {
   switch (part.type) {
     case 'tool-input-error':
       return { ...part, errorText: SAFE_TOOL_ERROR }
@@ -324,7 +343,10 @@ export function createValidatedPlatformStream(
     const payload = trimmed.startsWith('data: ')
       ? trimmed.slice('data: '.length)
       : trimmed
-    const parsed = parseEngineStreamPart(JSON.parse(payload))
+    const parsed = parseEngineStreamPart(
+      JSON.parse(payload),
+      options.contractVersion ?? CHAT_ENGINE_CONTRACT_VERSION
+    )
     if (
       state.status !== 'streaming' &&
       !(
@@ -405,7 +427,11 @@ export function createValidatedPlatformStream(
       }
       state.status = 'finished'
       const metadata = await finalizeOnce()
-      controller.enqueue(encodeSse(platformFinishPart(parsed, metadata)))
+      controller.enqueue(
+        encodeSse(
+          platformFinishPart(parsed, metadata, options.showReasoning !== false)
+        )
+      )
       controller.enqueue(textEncoder.encode('data: [DONE]\n\n'))
       await stopUpstream()
       controller.close()
@@ -417,7 +443,15 @@ export function createValidatedPlatformStream(
       state.status = 'aborted'
       abortMetadataPending = true
       const metadata = await finalizeOnce()
-      controller.enqueue(encodeSse(platformMetadataPart(parsed, metadata)))
+      controller.enqueue(
+        encodeSse(
+          platformMetadataPart(
+            parsed,
+            metadata,
+            options.showReasoning !== false
+          )
+        )
+      )
       return true
     }
 
@@ -452,7 +486,28 @@ export function createValidatedPlatformStream(
       return true
     }
 
-    controller.enqueue(encodeSse(adaptPlatformPart(parsed)))
+    if (
+      options.showReasoning !== false ||
+      !parsed.type.startsWith('reasoning-')
+    ) {
+      const visiblePart = adaptPlatformPart(parsed)
+      controller.enqueue(
+        encodeSse(
+          visiblePart.type === 'start'
+            ? {
+                ...visiblePart,
+                messageMetadata: {
+                  ...visiblePart.messageMetadata,
+                  ...options.metadata(state),
+                  ...(options.showReasoning === false
+                    ? { reasoningContent: null }
+                    : {}),
+                },
+              }
+            : visiblePart
+        )
+      )
+    }
     return true
   }
 

@@ -80,11 +80,11 @@ vi.mock('@klicker-uzh/prisma', () => ({
   },
 }))
 
-vi.mock('@/src/services/mcpClients', () => ({
+vi.mock('@klicker-uzh/chat-api/host/services/mcpClients', () => ({
   getAggregatedMCPTools: mocks.getAggregatedMCPTools,
 }))
 
-vi.mock('@/src/lib/server/responseExampleRuntime', () => ({
+vi.mock('@klicker-uzh/chat-api/host/lib/server/responseExampleRuntime', () => ({
   RESPONSE_EXAMPLE_SEARCH_TOOL_NAME: 'search_response_examples',
   loadResponseExampleRuntimeSkill: mocks.loadResponseExampleRuntimeSkill,
   createResponseExampleSearchTool: mocks.createResponseExampleSearchTool,

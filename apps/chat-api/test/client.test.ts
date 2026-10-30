@@ -1,6 +1,8 @@
 import {
   conformanceManifest,
   conformanceRequest,
+  conformanceV2Manifest,
+  conformanceV2Request,
 } from '@klicker-uzh/chat-engine-contract'
 import { describe, expect, test, vi } from 'vitest'
 import {
@@ -119,4 +121,33 @@ test('requires the configured engine identity and rechecks it after recovery', a
   expect((await probe.get()).ok).toBe(false)
   id = 'selected-engine'
   expect((await probe.get()).ok).toBe(true)
+})
+
+test('selects v2 explicitly and never sends a mismatched generation', async () => {
+  const urls: string[] = []
+  const request = vi.fn(async (url: string | URL | Request) => {
+    urls.push(String(url))
+    return String(url).endsWith('/manifest')
+      ? Response.json(conformanceV2Manifest)
+      : new Response('data: [DONE]\n\n')
+  })
+  const client = createEngineClient({
+    baseUrl: 'https://engine.test',
+    contractVersion: 'v2',
+    fetch: request,
+  })
+  expect((await client.manifest()).contractVersion).toBe('v2')
+  const options = { signal: new AbortController().signal }
+  await client.chat(conformanceV2Request, options)
+  await expect(client.chat(conformanceRequest, options)).rejects.toThrow()
+  expect(urls).toEqual([
+    'https://engine.test/v2/manifest',
+    'https://engine.test/v2/chat',
+  ])
+  const incompatible = createEngineClient({
+    baseUrl: 'https://engine.test',
+    contractVersion: 'v2',
+    fetch: vi.fn(async () => Response.json(conformanceManifest)),
+  })
+  await expect(incompatible.manifest()).rejects.toThrow()
 })

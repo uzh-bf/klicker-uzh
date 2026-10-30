@@ -1,16 +1,24 @@
 import {
-  CHAT_ENGINE_CONTRACT_VERSION,
-  conformanceManifest,
-  type EngineChatRequest,
+  CHAT_ENGINE_CONTRACT_V2,
+  conformanceV2Manifest,
+  type EngineV2ChatRequest,
 } from '@klicker-uzh/chat-engine-contract'
+import { prisma } from '@klicker-uzh/prisma'
+import { jsonSchema, tool } from 'ai'
 import { describe, expect, test, vi } from 'vitest'
 import { type ChatApiDependencies, createChatApiApp } from '../src/app.js'
+import { RequiredMCPUnavailableError } from '../src/host/lib/server/mcpRuntimePolicy.js'
+import { selectReplyContext } from '../src/policy/modelRegistry.js'
 
 const chatbot = {
   id: 'chatbot-1',
   courseId: 'course-1',
   ownerId: 'owner-1',
-  owner: { aiFeaturesEnabled: true },
+  owner: {
+    aiFeaturesEnabled: true,
+    aiSubscriptionTier: 'ADVANCED' as const,
+    aiChatbotCostCenter: 'synthetic-cost-center',
+  },
   course: { displayName: 'Synthetic course' },
   standardModeConfig: null,
   answerPreferencesEnabled: true,
@@ -27,10 +35,10 @@ const chatbot = {
 const ready = {
   get: async () => ({
     ok: true,
-    contractVersion: CHAT_ENGINE_CONTRACT_VERSION,
+    contractVersion: CHAT_ENGINE_CONTRACT_V2,
     engineId: 'fake-engine',
     reason: null,
-    features: conformanceManifest.features,
+    features: conformanceV2Manifest.features,
   }),
 }
 
@@ -42,9 +50,21 @@ function engineSse(parts: unknown[]) {
 }
 
 function baseDependencies(
-  chat: (request: EngineChatRequest) => Response | Promise<Response>
+  chat: (request: EngineV2ChatRequest) => Response | Promise<Response>
 ): ChatApiDependencies {
   return {
+    getMeetingClockStart: vi.fn(async () => null),
+    prepareAttachmentContext: vi.fn(async (input) => ({
+      images: input.images,
+      documentPageSummary: null,
+      creditsUsed: 0,
+    })),
+    prepareTools: vi.fn(async () => ({
+      tools: {},
+      promptToolNames: [],
+      promptContext: '',
+      close: async () => undefined,
+    })),
     claimChatTurn: vi.fn(async () => ({
       outcome: 'claimed' as const,
       lifecycleAttemptId: null,
@@ -57,8 +77,10 @@ function baseDependencies(
     })),
     getChatbot: vi.fn(async () => chatbot),
     checkDisclaimer: vi.fn(async () => ({ required: false, accepted: true })),
+    previewCredits: vi.fn(async () => ({ current: 0, total: 1 })),
     getCredits: vi.fn(async () => ({ current: 0, total: 1 })),
     getThread: vi.fn(async () => ({ id: 'thread-1' })),
+    loadTurnContext: vi.fn(async () => ({ prompt: '', learningContext: null })),
     loadEngineMessages: vi.fn(async () => [
       {
         id: 'user-1',
@@ -72,7 +94,7 @@ function baseDependencies(
     })),
     engine: {
       manifest: vi.fn(async () => ({
-        ...conformanceManifest,
+        ...conformanceV2Manifest,
         engineId: 'fake-engine',
       })),
       chat: vi.fn(async (request) => chat(request)),
@@ -212,7 +234,7 @@ describe('chat-api Slice 2 tracer', () => {
   })
 
   test('selects the fallback model at zero credits and traces one engine request', async () => {
-    const captured: { value: EngineChatRequest | null } = { value: null }
+    const captured: { value: EngineV2ChatRequest | null } = { value: null }
     const dependencies = baseDependencies(async (request) => {
       captured.value = request
       return engineSse([
@@ -224,7 +246,7 @@ describe('chat-api Slice 2 tracer', () => {
           type: 'finish',
           finishReason: 'stop',
           messageMetadata: {
-            contractVersion: CHAT_ENGINE_CONTRACT_VERSION,
+            contractVersion: CHAT_ENGINE_CONTRACT_V2,
             engineId: 'fake-engine',
             runId: request.runId,
             modelId: 'gpt-6-luna',
@@ -279,7 +301,7 @@ describe('chat-api Slice 2 tracer', () => {
         {
           type: 'message-metadata',
           messageMetadata: {
-            contractVersion: CHAT_ENGINE_CONTRACT_VERSION,
+            contractVersion: CHAT_ENGINE_CONTRACT_V2,
             engineId: 'fake-engine',
             runId: request.runId,
             modelId: 'gpt-6-luna',
@@ -330,7 +352,7 @@ describe('chat-api Slice 2 tracer', () => {
           type: 'finish',
           finishReason: 'stop',
           messageMetadata: {
-            contractVersion: CHAT_ENGINE_CONTRACT_VERSION,
+            contractVersion: CHAT_ENGINE_CONTRACT_V2,
             engineId: 'fake-engine',
             runId: request.runId,
             modelId: 'gpt-6-luna',
@@ -422,7 +444,7 @@ describe('chat-api Slice 2 tracer', () => {
           type: 'finish',
           finishReason: 'stop',
           messageMetadata: {
-            contractVersion: CHAT_ENGINE_CONTRACT_VERSION,
+            contractVersion: CHAT_ENGINE_CONTRACT_V2,
             engineId: 'fake-engine',
             runId: request.runId,
             modelId: 'gpt-6-luna',
@@ -533,7 +555,7 @@ describe('chat-api Slice 2 tracer', () => {
           type: 'finish',
           finishReason: 'stop',
           messageMetadata: {
-            contractVersion: CHAT_ENGINE_CONTRACT_VERSION,
+            contractVersion: CHAT_ENGINE_CONTRACT_V2,
             engineId: 'fake-engine',
             runId: request.runId,
             modelId: 'gpt-6-luna',
@@ -585,12 +607,13 @@ describe('chat-api Slice 2 tracer', () => {
   })
 })
 
+const request = (data: unknown = body, origin = 'http://localhost') => ({
+  method: 'POST',
+  headers: { cookie: 'participant_token=test', origin },
+  body: JSON.stringify(data),
+})
+
 describe('current host admission and turn lifecycle', () => {
-  const request = (data: unknown = body, origin = 'http://localhost') => ({
-    method: 'POST',
-    headers: { cookie: 'participant_token=test', origin },
-    body: JSON.stringify(data),
-  })
   test.each([
     { documentPages: ['synthetic-page'] },
     { handoffSource: 'synthetic-source' },
@@ -627,6 +650,8 @@ describe('current host admission and turn lifecycle', () => {
       expect(response.status).toBe(409)
       expect(dependencies.persistUserMessage).not.toHaveBeenCalled()
       expect(dependencies.engine.chat).not.toHaveBeenCalled()
+      expect(dependencies.prepareTools).not.toHaveBeenCalled()
+      expect(dependencies.prepareAttachmentContext).not.toHaveBeenCalled()
       expect(dependencies.finalizeAssistantTurn).not.toHaveBeenCalled()
     }
   })
@@ -643,8 +668,11 @@ describe('current host admission and turn lifecycle', () => {
     )
     expect(dependencies.failChatTurn).toHaveBeenCalledTimes(1)
   })
-  test('keeps existing course tools from being silently dropped by the Python pilot', async () => {
+  test('keeps a required course-tool outage closed before generation', async () => {
     const dependencies = baseDependencies(async () => engineSse([]))
+    dependencies.prepareTools = vi.fn(async () => {
+      throw new RequiredMCPUnavailableError()
+    })
     dependencies.getChatbot = vi.fn(async () => ({
       ...chatbot,
       mcpConfigurations: [
@@ -656,7 +684,8 @@ describe('current host admission and turn lifecycle', () => {
       request()
     )
     expect(response.status).toBe(503)
-    expect(dependencies.claimChatTurn).not.toHaveBeenCalled()
+    expect(dependencies.claimChatTurn).toHaveBeenCalledTimes(1)
+    expect(dependencies.failChatTurn).toHaveBeenCalledTimes(1)
     expect(dependencies.engine.chat).not.toHaveBeenCalled()
   })
 })
@@ -747,4 +776,314 @@ test('forwards all participant transports and rejects denied authentication befo
       ?.toLowerCase()
       .split(/,\s*/)
   ).toContain('authorization')
+})
+
+test.each([
+  99, 100, 101,
+])('bounds model context while admitting a saved branch of %s messages', async (count) => {
+  const dependencies = baseDependencies(async () => engineSse([]))
+  const messages = Array.from({ length: count }, (_, index) => ({
+    id: `message-${index}`,
+    role: (index === count - 1 || index % 2 === 0 ? 'user' : 'assistant') as
+      | 'user'
+      | 'assistant',
+    content: 'synthetic',
+  }))
+  dependencies.loadEngineMessages = vi.fn(async () =>
+    messages.map((message) => ({
+      id: message.id,
+      role: message.role,
+      parts: [{ type: 'text' as const, text: message.content }],
+    }))
+  )
+  const response = await createChatApiApp(dependencies).request(
+    '/api/chatbots/chatbot-1/chat',
+    request({ ...body, messages })
+  )
+  expect(response.status).toBe(200)
+  const submitted = vi.mocked(dependencies.engine.chat).mock.calls[0]?.[0]
+  expect(submitted?.messages.length).toBeLessThanOrEqual(100)
+  expect(submitted?.messages.at(-1)?.id).toBe(messages.at(-1)?.id)
+  expect(messages).toHaveLength(count)
+  await response.body?.cancel()
+})
+
+test('admits full document text with three originals and ten transient pages in v2', async () => {
+  const dependencies = baseDependencies(async () => engineSse([]))
+  const first = 'x'.repeat(120_000)
+  const second = 'y'.repeat(120_000)
+  const originals = Array.from({ length: 3 }, (_, index) => ({
+    id: `image-${index}`,
+    type: 'image' as const,
+    source: 'attachment' as const,
+    mediaType: 'image/png' as const,
+    dataUrl: 'data:image/png;base64,AQ==',
+  }))
+  const pages = Array.from({ length: 10 }, () => 'data:image/jpeg;base64,AQ==')
+  dependencies.loadEngineMessages = vi.fn(async () => [
+    {
+      id: 'user-1',
+      role: 'user' as const,
+      parts: [
+        { type: 'text' as const, text: first },
+        { type: 'text' as const, text: second },
+        ...originals,
+      ],
+    },
+  ])
+  const response = await createChatApiApp(dependencies).request(
+    '/api/chatbots/chatbot-1/chat',
+    request({
+      ...body,
+      messages: [{ id: 'user-1', role: 'user', content: first + second }],
+      images: originals.map((image) => image.dataUrl),
+      documentPages: pages,
+    })
+  )
+  expect(response.status).toBe(200)
+  const submitted = vi.mocked(dependencies.engine.chat).mock.calls[0]?.[0]
+  expect(submitted?.contractVersion).toBe('v2')
+  const parts = submitted?.messages.at(-1)?.parts ?? []
+  expect(
+    parts
+      .filter((part) => part.type === 'text')
+      .map((part) => part.text)
+      .join('')
+  ).toBe(first + second)
+  expect(
+    parts.filter((part) => part.type === 'image').map((part) => part.dataUrl)
+  ).toEqual([...originals.map((image) => image.dataUrl), ...pages])
+  expect(
+    vi.mocked(dependencies.persistUserMessage).mock.calls[0]?.[0].attachments
+  ).toHaveLength(3)
+  await response.body?.cancel()
+})
+
+test('trims whole old exchanges and refuses a current turn that cannot fit its model budget', () => {
+  const messages = [
+    {
+      id: 'user-old',
+      role: 'user' as const,
+      parts: [{ type: 'text' as const, text: 'x'.repeat(4000) }],
+    },
+    {
+      id: 'assistant-old',
+      role: 'assistant' as const,
+      parts: [
+        {
+          type: 'tool-call' as const,
+          toolCallId: 'call-old',
+          toolName: 'search',
+          input: {},
+          output: {},
+        },
+      ],
+    },
+    {
+      id: 'user-current',
+      role: 'user' as const,
+      parts: [{ type: 'text' as const, text: 'synthetic' }],
+    },
+  ]
+  const options = {
+    maxInputTokens: 100,
+    systemPrompt: 'system',
+    tools: [],
+    maxOutputTokens: 10,
+  }
+  const context = selectReplyContext(messages, options)
+  expect(context?.messages.map((message) => message.id)).toEqual([
+    'user-current',
+  ])
+  expect(context?.omittedMessages).toBe(2)
+  expect(messages).toHaveLength(3)
+  expect(selectReplyContext([messages[0]!], options)).toBeNull()
+})
+
+test('persists the question before auxiliary generation and settles known costs when it stops', async () => {
+  const dependencies = baseDependencies(async () => engineSse([]))
+  dependencies.prepareAttachmentContext = vi.fn(async (input) => {
+    expect(dependencies.persistUserMessage).toHaveBeenCalledTimes(1)
+    return {
+      images: input.images,
+      documentPageSummary: null,
+      creditsUsed: 0.03,
+      aborted: true,
+    }
+  })
+  const response = await createChatApiApp(dependencies).request(
+    '/api/chatbots/chatbot-1/chat',
+    request({ ...body, images: ['data:image/png;base64,AQ=='] })
+  )
+  expect(response.status).toBe(503)
+  expect(dependencies.engine.chat).not.toHaveBeenCalled()
+  expect(dependencies.finalizeAssistantTurn).toHaveBeenCalledOnce()
+  expect(
+    vi.mocked(dependencies.finalizeAssistantTurn).mock.calls[0]?.[0]
+  ).toMatchObject({
+    creditsUsed: 0.03,
+    content: [{ type: 'data', name: 'chat-stopped', data: {} }],
+  })
+  expect(dependencies.failChatTurn).not.toHaveBeenCalled()
+})
+
+test('starts no auxiliary work when saving the admitted question fails', async () => {
+  const dependencies = baseDependencies(async () => engineSse([]))
+  dependencies.persistUserMessage = vi.fn(async () => {
+    throw new Error('synthetic persistence failure')
+  })
+  const response = await createChatApiApp(dependencies).request(
+    '/api/chatbots/chatbot-1/chat',
+    request({ ...body, images: ['data:image/png;base64,AQ=='] })
+  )
+  expect(response.status).toBe(500)
+  expect(dependencies.prepareAttachmentContext).not.toHaveBeenCalled()
+  expect(dependencies.engine.chat).not.toHaveBeenCalled()
+  expect(dependencies.failChatTurn).toHaveBeenCalledOnce()
+})
+
+test.each([
+  ['gpt-4.1', 'chat'],
+  ['auto', 'responses'],
+])('preserves model-selected transport for %s without reasoning', async (selectedModel, providerApi) => {
+  const dependencies = baseDependencies(async () => engineSse([]))
+  dependencies.previewCredits = vi.fn(async () => ({
+    current: 100,
+    total: 100,
+  }))
+  dependencies.getCredits = vi.fn(async () => ({ current: 100, total: 100 }))
+  const response = await createChatApiApp(dependencies).request(
+    '/api/chatbots/chatbot-1/chat',
+    request({ ...body, selectedModel })
+  )
+  expect(response.status).toBe(200)
+  expect(
+    vi.mocked(dependencies.engine.chat).mock.calls[0]?.[0].generation
+  ).toMatchObject({ providerApi, reasoningEffort: 'none' })
+  await response.body?.cancel()
+})
+
+test.each([
+  'tutor',
+  'cm_clock_fixture',
+])('preserves step retrieval policy and custom clocks for %s', async (selectedMode) => {
+  const dependencies = baseDependencies(async (engineRequest) =>
+    engineSse([{ type: 'start', messageId: engineRequest.assistantMessageId }])
+  )
+  const mode = {
+    key: 'cm_clock_fixture',
+    name: 'Synthetic',
+    personaText: 'test-persona-1',
+    showReasoning: false,
+    replyLanguage: 'de',
+    meetingClock: 'ELAPSED_AND_TIME',
+  }
+  dependencies.getChatbot = vi.fn(async () => ({
+    ...chatbot,
+    customModeConfig: { modes: [mode] },
+  }))
+  dependencies.getMeetingClockStart = vi.fn(
+    async () => new Date('2026-01-01T00:00:00Z')
+  )
+  dependencies.prepareTools = vi.fn(async () => ({
+    tools: {
+      doc_query: tool({
+        inputSchema: jsonSchema({ type: 'object' }),
+        execute: async () => ({}),
+      }),
+    },
+    promptToolNames: ['doc_query'],
+    promptContext: '',
+    close: async () => undefined,
+  }))
+  const response = await createChatApiApp(dependencies).request(
+    '/api/chatbots/chatbot-1/chat',
+    request({ ...body, selectedMode })
+  )
+  expect(response.status).toBe(200)
+  const sent = vi.mocked(dependencies.engine.chat).mock.calls[0]?.[0]
+  if (sent?.contractVersion !== 'v2')
+    throw new Error('Expected explicit v2 request')
+  expect(sent.stepPolicy?.firstToolName).toBe(
+    selectedMode === 'tutor' ? 'doc_query' : undefined
+  )
+  const events = (await response.text())
+    .split('\n')
+    .filter((line) => line.startsWith('data: {'))
+    .map((line) => JSON.parse(line.slice(6)))
+  const start = events.find((event) => event.type === 'start')
+  if (selectedMode === mode.key) {
+    expect(dependencies.getMeetingClockStart).toHaveBeenCalledWith('thread-1')
+    expect(start?.messageMetadata.meetingClockStartedAt).toBe(
+      '2026-01-01T00:00:00.000Z'
+    )
+    expect(Number.isFinite(Date.parse(start?.messageMetadata.serverNow))).toBe(
+      true
+    )
+  } else {
+    expect(dependencies.getMeetingClockStart).not.toHaveBeenCalled()
+  }
+})
+
+test('reloads only the participant message DTO and applies current reasoning visibility', async () => {
+  const dependencies = baseDependencies(async () => engineSse([]))
+  const now = new Date('2026-01-01T00:00:00Z')
+  const learningContext = { kind: 'synthetic-context' }
+  const findMany = vi
+    .spyOn(prisma.chatMessage, 'findMany')
+    .mockResolvedValueOnce([
+      {
+        id: 'assistant-1',
+        threadId: 'thread-1',
+        role: 'assistant',
+        content: [
+          { type: 'text', text: 'test-answer-1' },
+          { type: 'reasoning', text: 'test-private-reasoning-1' },
+        ],
+        chatMode: 'cm_removed',
+        modelId: 'gpt-4.1',
+        reasoningEffort: 'low',
+        reasoningContent: 'test-private-reasoning-1',
+        learningContext,
+        rating: null,
+        creditsUsed: null,
+        parentId: 'user-1',
+        lifecycleStatus: 'COMPLETED',
+        lifecycleAttemptId: 'internal-attempt-1',
+        createdAt: now,
+        updatedAt: now,
+        attachments: [],
+      },
+    ] as never)
+  try {
+    const response = await createChatApiApp(dependencies).request(
+      '/api/chatbots/chatbot-1/threads/thread-1/messages'
+    )
+    expect(response.status).toBe(200)
+    const messages = (await response.json()) as Array<Record<string, unknown>>
+    expect(messages[0]).toMatchObject({
+      content: [{ type: 'text', text: 'test-answer-1' }],
+      reasoningContent: null,
+      learningContext,
+      parentId: 'user-1',
+    })
+    expect(messages[0]).not.toHaveProperty('lifecycleAttemptId')
+    expect(messages[0]).not.toHaveProperty('lifecycleStatus')
+    expect(findMany).toHaveBeenCalledWith(
+      expect.objectContaining({
+        where: expect.objectContaining({
+          lifecycleStatus: 'COMPLETED',
+          thread: { participantId: 'participant-1', chatbotId: 'chatbot-1' },
+        }),
+        include: {
+          attachments: {
+            where: { imageBase64: { not: null } },
+            orderBy: { position: 'asc' },
+          },
+        },
+      })
+    )
+  } finally {
+    findMany.mockRestore()
+  }
 })
