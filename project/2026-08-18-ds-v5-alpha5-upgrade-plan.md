@@ -1439,3 +1439,28 @@ evidence. The attempt grants no retry, recreation, cleanup or guard bypass.
   are unverified. Preserve known chart/manual-device limitations. Finish as a
   qualified draft with truthful evidence; readiness, target integration, merge,
   release and deployment remain outside this continuation.
+
+### Approved preserving post-create continuation — 2026-10-30
+
+- **Authority and outcome:** the human approved the reviewed bounded consumer
+  batch in the existing Devrouter coordination. Keep this historical pilot's
+  source, target and draft. Compose the existing preserving bootstrap with
+  canonical post-create; cold startup with an empty schema intentionally refuses.
+- **Source and verification:** change only the post-create delegation, existing
+  mocked shell contracts and affected guidance. Keep the helper, callback pins,
+  CLI pins and fresh-initialization declarations unchanged. Run syntax, mock
+  contracts and scoped formatting/static checks while stopped. Commit and hold
+  the candidate for independent consequential review and passing CI before
+  runtime admission. Existing unchanged alpha.7 verification remains applicable.
+- **Runtime batch:** after exact ownership, source/configuration, endpoint, daemon
+  and retained-volume admission proof, permit one ordinary full-profile ensure
+  using released 0.6.3 and the pinned toolchain, with a 30-minute deadline and
+  supported cancellation/drainage. No reset, schema push, seed, forced
+  recreation, deletion or out-of-band helper replay. Full-profile guarded
+  synthetic fixture writes are explicitly accepted and may persist after failure.
+- **Terminal:** successful readiness enables the existing alpha.7 API/browser
+  acceptance, followed by canonical stop and exact stopped/zero-route proof.
+  No manual retention lease is approved. Failure or interruption permits bounded
+  diagnostics and one canonical stop repair under a five-minute deadline; guard
+  refusal or uncertain drainage remains unknown, with no retry or bypass.
+  Required CI or admission refusal blocks only dependent runtime work.

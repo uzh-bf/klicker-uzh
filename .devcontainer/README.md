@@ -1,9 +1,10 @@
 # Self-contained dev container
 
 Self-contained local environment for `klicker-uzh`. No Infisical/Doppler, no
-external EduID, no `/etc/hosts` edits — clone, route through devrouter, and run.
+external EduID, no `/etc/hosts` edits. Ordinary startup requires an already
+initialized, marked disposable database; an empty schema refuses startup.
 The devcontainer owns the whole stack (toolchain, Postgres, 3× Redis, MailHog,
-Hatchet, install + build + seed, `turbo dev`);
+Hatchet, dependency installation + builds, `turbo dev`);
 [devrouter](https://github.com/rschlaefli/devrouter) fronts it on a shared
 `:443` / `:5432`. Linked worktrees publish only ephemeral host ports and can
 coexist; the primary checkout keeps fixed localhost application ports,
@@ -20,7 +21,13 @@ publishes its database on an ephemeral loopback port, and is one-at-a-time.
 
 ## How to Run
 
-You can run the devcontainer in two modes:
+Post-create delegates to the preserving bootstrap: it installs frozen
+dependencies, builds application prerequisites and verifies the existing schema.
+It never resets, pushes or seeds the database. Fresh initialization requires a
+separate reviewed operation; this setup does not configure one. Do not replay a
+legacy reset or initialization helper to resolve an empty-schema refusal.
+
+You can run an initialized devcontainer in two modes:
 
 ### Mode 1: Primary checkout
 
@@ -166,11 +173,12 @@ release named by this repository's pin.
 Cold startup waits for `postCreateCommand` before devrouter invokes the managed
 adapter. Post-create invalidates a container-local completion marker before any
 bootstrap work and publishes it only after dependency installation, builds,
-database setup, seed data, runtime shims, and Hatchet preparation succeed.
+database identity/schema verification, runtime shims, and Hatchet preparation
+succeed.
 Post-start requires the exact marker before reading bootstrap outputs or
 starting any profile process. A missing or malformed marker is a lifecycle
 failure; do not repair it by rerunning post-create during a warm profile switch.
-The bounded post-create Hatchet check may finish before its token appears;
+The post-create Hatchet token capture may finish before its token appears;
 application profiles close that documented service race in post-start before
 starting the backend or workers.
 
@@ -333,7 +341,8 @@ boot because its `HatchetClient.init` runs at module load (not lazy).
 Environment lives in `devcontainer.env` (committed, dev-only). Lifecycle:
 host-side `initialize.sh` creates the persistent machine-local pnpm store,
 `post-create.sh` links dependencies into the worktree-specific `node_modules`
-volumes and builds/seeds the workspace, then `devrouter ensure` delivers its
+volumes, builds the workspace and verifies the retained schema, then
+`devrouter ensure` delivers its
 matching process helper and invokes `post-start.sh`. Runtime state is
 `/tmp/devrouter-process-klicker-dev.state` for the app stack and
 `/tmp/devrouter-process-klicker-local-mcp.state` for the seeded local MCP

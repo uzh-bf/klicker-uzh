@@ -168,11 +168,16 @@ See [Domain Model](docs/domain-model.md) for the canonical explanation.
 
 ### Self-contained devcontainer (recommended)
 
-Clone-and-run via a self-contained devcontainer — no Infisical/Doppler, no EduID, no `/etc/hosts` edits. The container owns the whole stack (Node 24 + pnpm toolchain, Postgres, 3× Redis, MailHog, Hatchet) and runs **all core apps in ONE container** via `turbo dev`. Run pnpm, Prisma, and unit tests **inside the container**. Playwright is the exception: always run `node util/run-playwright-host.mjs <args>` from the host against the routed container stack. Never invoke Playwright or install its browsers through `devrouter exec`, a DevPod shell, or another local container; CI keeps its existing official Playwright container path.
+A self-contained devcontainer for an already initialized disposable database — no Infisical/Doppler, no EduID, no `/etc/hosts` edits. The container owns the whole stack (Node 24 + pnpm toolchain, Postgres, 3× Redis, MailHog, Hatchet) and runs **all core apps in ONE container** via `turbo dev`. Run pnpm, Prisma, and unit tests **inside the container**. Playwright is the exception: always run `node util/run-playwright-host.mjs <args>` from the host against the routed container stack. Never invoke Playwright or install its browsers through `devrouter exec`, a DevPod shell, or another local container; CI keeps its existing official Playwright container path.
 
 ```bash
 devrouter ensure .
 ```
+
+Post-create restores dependencies and build outputs, then verifies the existing
+marked databases and application schema. It never resets, pushes or seeds the
+database. An empty schema refuses startup; fresh initialization is a separate,
+explicitly approved operation and is not configured by this setup.
 
 The same command starts and proves primary and linked checkouts. Use `devrouter exec . -- <command...>` for one-shot commands or the exact DevPod ID printed by `ensure` for an interactive shell.
 

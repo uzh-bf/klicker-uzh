@@ -3,6 +3,7 @@ set -euo pipefail
 
 REPO_ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
 RECOVERY_SCRIPT="$REPO_ROOT/.devcontainer/recover-bootstrap.sh"
+POST_CREATE_SCRIPT="$REPO_ROOT/.devcontainer/post-create.sh"
 RECOVERY_RUNTIME_SCRIPT="$REPO_ROOT/.devcontainer/recover-runtime.sh"
 TEST_ROOT="$(mktemp -d)"
 trap 'rm -rf "$TEST_ROOT"' EXIT
@@ -87,6 +88,7 @@ cp "$REPO_ROOT/util/dev-runtime.sh" "$ROOT/util-dev-runtime.sh"
 mkdir -p "$ROOT/util"
 mv "$ROOT/util-dev-runtime.sh" "$ROOT/util/dev-runtime.sh"
 cp "$RECOVERY_SCRIPT" "$ROOT/.devcontainer/recover-bootstrap.sh"
+cp "$POST_CREATE_SCRIPT" "$ROOT/.devcontainer/post-create.sh"
 write_file "$TOKEN_FILE" 'synthetic-hatchet-token'
 
 cat >"$FAKE_BIN/pnpm" <<'FAKE_PNPM'
@@ -253,56 +255,76 @@ if grep -Fq 'begin-bootstrap' "$RUNTIME_DOCKER_LOG"; then
 fi
 
 mkdir -p "$MARKER_DIR"
-for failure_stage in install build; do
-  : >"$COMMAND_LOG"
+for bootstrap_script in \
+  "$ROOT/.devcontainer/recover-bootstrap.sh" \
+  "$ROOT/.devcontainer/post-create.sh"; do
   write_file "$MARKER_DIR/bootstrap-complete" 'klicker-devcontainer-bootstrap-v1'
-  if KLICKER_TEST_FAIL_AT="$failure_stage" KLICKER_TEST_SCHEMA_STATE=push-compatible \
-    bash "$ROOT/.devcontainer/recover-bootstrap.sh" >"$OUTPUT_LOG" 2>&1; then
-    fail "recovery succeeded after $failure_stage failed"
+  if KLICKER_DEVCONTAINER_ROOT="$TEST_ROOT/missing-root" \
+    bash "$bootstrap_script" >"$OUTPUT_LOG" 2>&1; then
+    fail 'bootstrap accepted a missing configured root'
   fi
   assert_absent "$MARKER_DIR/bootstrap-complete"
+  for failure_stage in install build; do
+    : >"$COMMAND_LOG"
+    write_file "$MARKER_DIR/bootstrap-complete" 'klicker-devcontainer-bootstrap-v1'
+    if KLICKER_TEST_FAIL_AT="$failure_stage" KLICKER_TEST_SCHEMA_STATE=push-compatible \
+      bash "$bootstrap_script" >"$OUTPUT_LOG" 2>&1; then
+      fail "recovery succeeded after $failure_stage failed"
+    fi
+    assert_absent "$MARKER_DIR/bootstrap-complete"
+  done
+  : >"$COMMAND_LOG"
+  write_file "$MARKER_DIR/bootstrap-complete" 'klicker-devcontainer-bootstrap-v1'
+  set +e
+  KLICKER_TEST_SCHEMA_STATE=missing \
+    bash "$bootstrap_script" >"$OUTPUT_LOG" 2>&1
+  failure_status=$?
+  set -e
+  assert_equal "$failure_status" '1'
+  assert_absent "$MARKER_DIR/bootstrap-complete"
+  assert_equal "$(tr '\n' ' ' <"$COMMAND_LOG")" \
+    'install build verify-missing-schema '
+  if grep -E '^(reset|push|seed|migrate)$' "$COMMAND_LOG" >/dev/null; then
+    fail 'database-changing command was executed during failed recovery'
+  fi
+
+  : >"$COMMAND_LOG"
+  write_file "$ROOT/apps/hatchet-worker-general/.env" 'existing-worker-env'
+  write_file "$ROOT/apps/hatchet-worker-response-processor/.env" 'existing-processor-env'
+  write_file "$ROOT/packages/graphql/.env" 'existing-graphql-env'
+  rm -f "$ROOT/apps/response-api/.env"
+  (
+    cd "$TEST_ROOT"
+    KLICKER_DEVCONTAINER_ROOT=repo KLICKER_TEST_SCHEMA_STATE=push-compatible \
+      bash "$bootstrap_script" >"$OUTPUT_LOG" 2>&1
+  )
+
+  assert_contains "$MARKER_DIR/bootstrap-complete" \
+    'klicker-devcontainer-bootstrap-v1'
+  assert_equal "$(tr '\n' ' ' <"$COMMAND_LOG")" \
+    'install build verify-push-compatible '
+  assert_equal "$(cat "$ROOT/apps/hatchet-worker-general/.env")" 'existing-worker-env'
+  assert_equal "$(cat "$ROOT/apps/hatchet-worker-response-processor/.env")" \
+    'existing-processor-env'
+  assert_equal "$(wc -c <"$ROOT/apps/response-api/.env" | tr -d ' ')" '0'
+  assert_contains "$ROOT/.devcontainer/.hatchet.env" \
+    'HATCHET_CLIENT_TOKEN=synthetic-hatchet-token'
+  assert_contains "$ROOT/packages/graphql/.env" \
+    'HATCHET_CLIENT_TOKEN=synthetic-hatchet-token'
+  if grep -Fq 'synthetic-hatchet-token' "$OUTPUT_LOG"; then
+    fail 'Hatchet token was printed during recovery'
+  fi
+  if grep -E '^(reset|push|seed|migrate)$' "$COMMAND_LOG" >/dev/null; then
+    fail 'database-changing command was executed during successful recovery'
+  fi
+
 done
-: >"$COMMAND_LOG"
-write_file "$MARKER_DIR/bootstrap-complete" 'klicker-devcontainer-bootstrap-v1'
-set +e
-KLICKER_TEST_SCHEMA_STATE=missing \
-  bash "$ROOT/.devcontainer/recover-bootstrap.sh" >"$OUTPUT_LOG" 2>&1
-failure_status=$?
-set -e
-assert_equal "$failure_status" '1'
-assert_absent "$MARKER_DIR/bootstrap-complete"
-assert_equal "$(tr '\n' ' ' <"$COMMAND_LOG")" \
-  'install build verify-missing-schema '
-if grep -E '^(reset|push|seed|migrate)$' "$COMMAND_LOG" >/dev/null; then
-  fail 'database-changing command was executed during failed recovery'
-fi
 
 : >"$COMMAND_LOG"
-write_file "$ROOT/apps/hatchet-worker-general/.env" 'existing-worker-env'
-write_file "$ROOT/apps/hatchet-worker-response-processor/.env" 'existing-processor-env'
-write_file "$ROOT/packages/graphql/.env" 'existing-graphql-env'
-rm -f "$ROOT/apps/response-api/.env"
 KLICKER_TEST_SCHEMA_STATE=push-compatible \
-  bash "$ROOT/.devcontainer/recover-bootstrap.sh" >"$OUTPUT_LOG" 2>&1
-
-assert_contains "$MARKER_DIR/bootstrap-complete" \
-  'klicker-devcontainer-bootstrap-v1'
+  bash "$ROOT/.devcontainer/post-create.sh" --initialize-new-disposable >"$OUTPUT_LOG" 2>&1
 assert_equal "$(tr '\n' ' ' <"$COMMAND_LOG")" \
   'install build verify-push-compatible '
-assert_equal "$(cat "$ROOT/apps/hatchet-worker-general/.env")" 'existing-worker-env'
-assert_equal "$(cat "$ROOT/apps/hatchet-worker-response-processor/.env")" \
-  'existing-processor-env'
-assert_equal "$(wc -c <"$ROOT/apps/response-api/.env" | tr -d ' ')" '0'
-assert_contains "$ROOT/.devcontainer/.hatchet.env" \
-  'HATCHET_CLIENT_TOKEN=synthetic-hatchet-token'
-assert_contains "$ROOT/packages/graphql/.env" \
-  'HATCHET_CLIENT_TOKEN=synthetic-hatchet-token'
-if grep -Fq 'synthetic-hatchet-token' "$OUTPUT_LOG"; then
-  fail 'Hatchet token was printed during recovery'
-fi
-if grep -E '^(reset|push|seed|migrate)$' "$COMMAND_LOG" >/dev/null; then
-  fail 'database-changing command was executed during successful recovery'
-fi
 
 : >"$COMMAND_LOG"
 KLICKER_TEST_SCHEMA_STATE=push-compatible bash "$ROOT/.devcontainer/recover-bootstrap.sh" --initialize-new-disposable >"$OUTPUT_LOG" 2>&1

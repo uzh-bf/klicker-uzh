@@ -45,8 +45,13 @@ Existing volumes are not adopted or marked automatically. If bootstrap refuses
 an old database, preserve it and use an explicitly approved fresh disposable
 environment; do not bypass the guard. See [Testing](./testing.md#disposable-database-boundary).
 
-Clone-and-run via a self-contained devcontainer — no Infisical, no external
-EduID, no `/etc/hosts` edits needed. The default `full` profile runs every
+Use a self-contained devcontainer with an already initialized, marked disposable
+database — no Infisical, no external EduID, no `/etc/hosts` edits needed.
+Post-create restores dependencies and build outputs, then verifies the existing
+database identities and application schema without reset, schema push or seed.
+An empty schema refuses startup. Fresh initialization is a separate reviewed
+operation and is not configured here; do not replay a legacy bootstrap to bypass
+that refusal. The default `full` profile runs every
 routed app plus the two Hatchet workers. Dependency-aware profiles select only
 the needed app roots, optional services, and managed processes while keeping
 Postgres and Hatchet as the boot-critical base.
@@ -113,7 +118,7 @@ and a failed profile transition restores the last usable generated config.
 
 The Dev Container waits for `postCreateCommand` before managed post-start.
 Post-create publishes a fixed container-local completion marker only after the
-destructive bootstrap and generated runtime inputs succeed; post-start checks
+preserving bootstrap and generated runtime inputs succeed; post-start checks
 that marker before it reads those inputs or starts a process. If the marker is
 missing or malformed, treat the workspace as incompletely bootstrapped and use
 the [guarded recovery procedure](../.devcontainer/README.md#guarded-retained-runtime-recovery). A warm profile switch never manufactures the

@@ -124,7 +124,16 @@ Feature "does nothing" / mutation fails `workflow not found` → the Hatchet eng
 
 ## Check 8 — database state (config-derived)
 
-Seeded dev DB contains the AGENTS.md test accounts (`lecturer`, `testuser1..50` — values in AGENTS.md only). Prisma 7 reset/migrate commands are seed-free. On the legacy host stack, `pnpm run prisma:setup` wraps the reset/push/seed composite with Infisical. In the self-contained DevPod, use `pnpm --filter @klicker-uzh/prisma run prisma:reset:raw --force`, then `pnpm --filter @klicker-uzh/prisma run prisma:push:raw`, then `pnpm --filter @klicker-uzh/prisma-data run seed:raw` as shown in `.devcontainer/post-create.sh`. Use either path **only after confirming the volume holds no real work** (fresh volume, test course names like "Testkurs"). When in doubt, ask the user.
+Seeded dev DB contains the AGENTS.md test accounts (`lecturer`, `testuser1..50` — values in AGENTS.md only). Prisma 7 reset/migrate commands are seed-free. On the legacy host stack, `pnpm run prisma:setup` wraps the reset/push/seed composite with Infisical. In the self-contained DevPod, use `pnpm --filter @klicker-uzh/prisma run prisma:reset:raw --force`, then `pnpm --filter @klicker-uzh/prisma run prisma:push:raw`, then `pnpm --filter @klicker-uzh/prisma-data run seed:raw` only under explicit reset authority after proving the exact disposable target.
+
+Ordinary `.devcontainer/post-create.sh` delegates to the no-argument preserving
+bootstrap. It restores dependencies/builds, verifies marked main/shadow database
+identities and the existing application schema, and never resets, pushes or
+seeds. An empty schema refuses startup. Fresh initialization is separately
+reviewed and not configured here; neither a test-looking course name nor the
+identity-only helper option proves both schemas empty or authorizes reset.
+Do not replay initialization or the legacy host recovery callback to bypass
+this refusal.
 
 ## Check 9 — secrets (config-derived)
 
