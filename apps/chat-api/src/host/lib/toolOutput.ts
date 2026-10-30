@@ -13,3 +13,4 @@ export function normalizeLiveToolOutput(output: unknown, failed = false) {
     isError,
   }
 }
+export const STUDENT_PRACTICE_QUIZ_TOOL_NAME = 'start_student_practice_quiz'
