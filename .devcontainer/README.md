@@ -480,6 +480,18 @@ stop at that capability boundary instead of substituting raw Docker mutations.
 
 ### Fresh disposable database initialization
 
+With Devrouter 0.6.3 and a verified Devsy 1.19.0 or 1.24.0 agent, a genuinely
+new disposable worktree can use the repository's `freshBootstrap` declaration:
+
+```sh
+devrouter ensure /absolute/path/to/new-worktree --profile live-quiz,manage --initialize-new --json
+```
+
+Qualify the complete selected Compose recipe and resource limits first. Devrouter
+runs the declared initializer once before replaying ordinary preserving hooks.
+A failed, canceled or uncertain attempt remains consumed; retain its data and
+use preserving recovery or a separately authorized new disposable checkout.
+
 Initialization is a separate, explicit operation for newly provisioned empty
 `klicker_test` and `klicker_test_shadow` databases with the restricted
 `klicker_test` login and disposable marker. Both targets must have no user schema
