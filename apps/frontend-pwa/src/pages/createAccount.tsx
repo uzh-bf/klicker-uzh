@@ -1,21 +1,22 @@
+import { useMutation } from '@apollo/client'
+import CreateAccountForm from '@components/forms/CreateAccountForm'
+import Layout from '@components/Layout'
+import { CreateParticipantAccountWithDataUseDocument } from '@klicker-uzh/graphql/dist/ops'
 import {
+  COOKIE_NAMES,
+  cookieName,
   PARTICIPANT_DATA_USE_DISCLOSURE_VERSION,
   verifyJWT,
 } from '@klicker-uzh/util'
-import { toast } from '@uzh-bf/design-system'
-import generatePassword from 'generate-password'
-import { GetServerSidePropsContext } from 'next'
-import { useTranslations } from 'next-intl'
-import { useRouter } from 'next/router'
-import nookies from 'nookies'
-
-import { useMutation } from '@apollo/client'
-import Layout from '@components/Layout'
-import CreateAccountForm from '@components/forms/CreateAccountForm'
-import { CreateParticipantAccountWithDataUseDocument } from '@klicker-uzh/graphql/dist/ops'
 import { addApolloState, initializeApollo } from '@lib/apollo'
 import getParticipantToken from '@lib/getParticipantToken'
 import useParticipantToken from '@lib/useParticipantToken'
+import { toast } from '@uzh-bf/design-system'
+import generatePassword from 'generate-password'
+import type { GetServerSidePropsContext } from 'next'
+import { useRouter } from 'next/router'
+import { useTranslations } from 'next-intl'
+import nookies from 'nookies'
 
 interface Props {
   signedLtiData?: string
@@ -152,8 +153,8 @@ export async function getServerSideProps(ctx: GetServerSidePropsContext) {
     const signedLtiData = { token: '', ssoId: '', email: '' }
 
     // LTI 1.3 authentication flow
-    if (cookies['lti-token'] || query.jwt) {
-      const token = cookies['lti-token'] ?? query.jwt
+    if (cookies[cookieName(COOKIE_NAMES.LTI_TOKEN)] || query.jwt) {
+      const token = cookies[cookieName(COOKIE_NAMES.LTI_TOKEN)] ?? query.jwt
 
       const parsedToken = (await verifyJWT(
         token,
@@ -208,7 +209,7 @@ export async function getServerSideProps(ctx: GetServerSidePropsContext) {
 
     // remove the lti-token, if it is defined
     try {
-      nookies.destroy(ctx, 'lti-token', {
+      nookies.destroy(ctx, cookieName(COOKIE_NAMES.LTI_TOKEN), {
         domain: process.env.COOKIE_DOMAIN,
         path: '/',
       })

@@ -19,6 +19,26 @@ function execution(source, terminal) {
   const jobs = workflow.jobs
   delete jobs['priority-execution']
   delete jobs['priority-status']
+  if (terminal === 'build-images-status') {
+    for (const id of Object.keys(jobs))
+      if (id.startsWith('preview-')) delete jobs[id]
+    for (const job of Object.values(jobs)) {
+      if (job.if)
+        job.if = job.if.replace(
+          "github.event_name != 'workflow_dispatch' && ",
+          ''
+        )
+    }
+    const previewName =
+      "${{ github.event_name == 'workflow_dispatch' && 'preview-build-images-status' || ("
+    if (
+      jobs[terminal].name?.startsWith(previewName) &&
+      jobs[terminal].name.endsWith(') }}')
+    ) {
+      jobs[terminal].name =
+        '${{ ' + jobs[terminal].name.slice(previewName.length, -4) + ' }}'
+    }
+  }
   for (const output of [
     'admitted',
     'run_label_event',

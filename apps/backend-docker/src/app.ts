@@ -10,7 +10,7 @@ import {
   normalizeFeatureFlagEnvironment,
 } from '@klicker-uzh/feature-flags'
 import { enhanceContext, schema } from '@klicker-uzh/graphql'
-import { verifyJWT } from '@klicker-uzh/util'
+import { COOKIE_NAMES, cookieName, verifyJWT } from '@klicker-uzh/util'
 import cookieParser from 'cookie-parser'
 import cors from 'cors'
 import express from 'express'
@@ -82,13 +82,15 @@ function prepareApp({
           process.env.APP_CONTROL_SUBDOMAIN ?? 'control'
         )
       ) {
-        token = req.cookies?.['next-auth.session-token']
+        token =
+          req.cookies?.[cookieName(COOKIE_NAMES.NEXT_AUTH_MANAGER_SESSION)]
       } else if (
         req.headers.origin?.includes(
           process.env.APP_ASSESSMENT_SUBDOMAIN ?? 'assessment'
         )
       ) {
-        token = req.cookies?.['next-auth.participant-session-token']
+        token =
+          req.cookies?.[cookieName(COOKIE_NAMES.NEXT_AUTH_PARTICIPANT_SESSION)]
       }
     } else {
       if (
@@ -99,14 +101,15 @@ function prepareApp({
           process.env.APP_CONTROL_SUBDOMAIN ?? 'control'
         )
       ) {
-        token = req.cookies?.['next-auth.session-token']
+        token =
+          req.cookies?.[cookieName(COOKIE_NAMES.NEXT_AUTH_MANAGER_SESSION)]
       } else if (
         req.headers.origin?.includes(process.env.APP_STUDENT_SUBDOMAIN ?? 'pwa')
       ) {
         token =
-          req.cookies?.['participant_token'] ??
-          req.cookies?.['temporary_participant_token'] ??
-          req.cookies?.['next-auth.session-token']
+          req.cookies?.[cookieName(COOKIE_NAMES.PARTICIPANT_TOKEN)] ??
+          req.cookies?.[cookieName(COOKIE_NAMES.TEMPORARY_PARTICIPANT_TOKEN)] ??
+          req.cookies?.[cookieName(COOKIE_NAMES.NEXT_AUTH_MANAGER_SESSION)]
       }
     }
 

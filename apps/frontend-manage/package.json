@@ -44,7 +44,7 @@
     "katex": "0.16.22",
     "localforage": "1.10.0",
     "lodash": "4.18.1",
-    "nanoid": "5.0.8",
+    "nanoid": "5.1.16",
     "next": "16.4.3",
     "next-intl": "4.13.7",
     "react": "19.2.8",

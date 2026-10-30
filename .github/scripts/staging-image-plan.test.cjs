@@ -304,6 +304,7 @@ test('the consolidated workflow declares the matrix the plan emits', () => {
   assert.equal(
     workflow.jobs['build-images-status'].if
       .replace(/\s+/g, ' ')
+      .replace(" && github.event_name != 'workflow_dispatch'", '')
       .replace(
         /^!\(vars\.PRIORITY_CI_ENABLED.*?\) && \((always\(\).*)\)$/,
         '$1'
@@ -313,14 +314,51 @@ test('the consolidated workflow declares the matrix the plan emits', () => {
   )
 })
 
-test('the consolidated workflow separates priority from ordinary cancellation', () => {
+test('the consolidated workflow separates preview, priority and ordinary cancellation', () => {
   const workflow = YAML.parse(fs.readFileSync(CONSOLIDATED, 'utf8'))
   assert.match(
     workflow.concurrency['cancel-in-progress'],
     /github\.event\.action != 'labeled'/
   )
   assert.match(workflow.concurrency.group, /priority-/)
+  assert.match(
+    workflow.concurrency['cancel-in-progress'],
+    /github\.event_name != 'workflow_dispatch'/
+  )
+  assert.match(workflow.concurrency.group, /inputs\.correlation/)
   assert.match(workflow.concurrency.group, /github\.workflow/)
+})
+
+test('finite scan policy is validated before builds and isolated from ordinary scans', () => {
+  const workflow = YAML.parse(fs.readFileSync(CONSOLIDATED, 'utf8'))
+  const planStep = workflow.jobs['preview-plan'].steps.find((step) =>
+    step.run?.includes('preview-image-plan.cjs validate')
+  )
+  assert.ok(
+    planStep.run.indexOf('preview-image-receipt.cjs policy') <
+      planStep.run.indexOf('preview-image-plan.cjs validate')
+  )
+  assert.equal(
+    planStep.env.PREVIEW_IMAGE_SCAN_POLICY_JSON,
+    '${{ inputs.scanExceptionPolicyJson }}'
+  )
+  const preview = workflow.jobs['preview-scan'].steps.find((step) =>
+    step.run?.includes('preview-image-receipt.cjs scan')
+  )
+  assert.equal(
+    preview.env.PREVIEW_IMAGE_SCAN_POLICY_JSON,
+    '${{ inputs.scanExceptionPolicyJson }}'
+  )
+  assert.ok(
+    workflow.jobs.scan.steps.some((step) =>
+      step.run?.includes('image-scan-receipt.cjs check')
+    )
+  )
+  assert.ok(
+    workflow.jobs.scan.steps.every(
+      (step) => !step.env?.PREVIEW_IMAGE_SCAN_POLICY_JSON
+    )
+  )
 })
 
 // The dependency closure is the reason a target is selected at all. A target

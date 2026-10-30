@@ -3,11 +3,10 @@ import {
   LoginParticipantWithLtiDocument,
   type LoginParticipantWithLtiMutation,
 } from '@klicker-uzh/graphql/dist/ops'
-import { verifyJWT } from '@klicker-uzh/util'
+import { COOKIE_NAMES, cookieName, verifyJWT } from '@klicker-uzh/util'
 import {
   cookieSecurityOptions,
   cookiesAvailableViaLtiProbe,
-  LTI_PROBE_COOKIE_NAME,
 } from '@klicker-uzh/util/auth'
 import type { GetServerSidePropsContext } from 'next'
 import nookies from 'nookies'
@@ -57,8 +56,9 @@ export default async function getParticipantToken({
   // fetch the relevant data directly
   let participantToken: string | undefined | null =
     (process.env.ASSESSMENT_MODE === 'true'
-      ? cookies['next-auth.participant-session-token']
-      : cookies.participant_token) ?? query.participantToken
+      ? cookies[cookieName(COOKIE_NAMES.NEXT_AUTH_PARTICIPANT_SESSION)]
+      : cookies[cookieName(COOKIE_NAMES.PARTICIPANT_TOKEN)]) ??
+    query.participantToken
 
   // TODO: only check for existing participantToken once participation issues with LTI are resolved
   if (participantToken && !ltiProbeAvailable && !query.jwt) {
@@ -66,8 +66,8 @@ export default async function getParticipantToken({
       participantToken,
       cookiesAvailable:
         process.env.ASSESSMENT_MODE === 'true'
-          ? !!cookies['next-auth.participant-session-token']
-          : !!cookies.participant_token,
+          ? !!cookies[cookieName(COOKIE_NAMES.NEXT_AUTH_PARTICIPANT_SESSION)]
+          : !!cookies[cookieName(COOKIE_NAMES.PARTICIPANT_TOKEN)],
     }
   }
 
@@ -78,7 +78,7 @@ export default async function getParticipantToken({
 
     // LTI 1.3 authentication flow
     if (ltiProbeAvailable || query.jwt) {
-      const token = cookies[LTI_PROBE_COOKIE_NAME] ?? query.jwt
+      const token = cookies[cookieName(COOKIE_NAMES.LTI_TOKEN)] ?? query.jwt
 
       if (!token) {
         return {
@@ -117,7 +117,8 @@ export default async function getParticipantToken({
       })
 
       // set a proper participant_token
-      nookies.set(ctx, 'participant_token', participantToken, {
+      const participantCookieName = cookieName(COOKIE_NAMES.PARTICIPANT_TOKEN)
+      nookies.set(ctx, participantCookieName, participantToken, {
         domain: process.env.COOKIE_DOMAIN,
         path: '/',
         httpOnly: true,
@@ -126,12 +127,12 @@ export default async function getParticipantToken({
       })
 
       // remove the lti-token cookie since we now have a proper participant_token
-      nookies.destroy(ctx, LTI_PROBE_COOKIE_NAME, {
+      nookies.destroy(ctx, cookieName(COOKIE_NAMES.LTI_TOKEN), {
         domain: process.env.COOKIE_DOMAIN,
         path: '/',
       })
       if (partitioned) {
-        appendCookieAttribute(ctx, 'participant_token', 'Partitioned')
+        appendCookieAttribute(ctx, participantCookieName, 'Partitioned')
       }
     } else {
       // LTI auth attempted but failed -- clear stale token to prevent session leakage

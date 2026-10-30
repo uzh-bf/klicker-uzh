@@ -18,9 +18,10 @@ import {
   type AuthAudience,
   audienceCookieNames,
   audienceCookieOptions,
+  csrfCookieOptions,
   resolveSecureCookies,
 } from '@/lib/authCookies'
-import { MANAGER_COOKIE_NAME, PARTICIPANT_COOKIE_NAME } from '@/lib/constants'
+import { managerCookieName, participantCookieName } from '@/lib/constants'
 import {
   isProviderErrorCallback,
   parseAuthAction,
@@ -237,8 +238,9 @@ function getParticipantConfig({
       // Temporary OAuth cookies are namespaced per audience so overlapping
       // participant and lecturer attempts cannot overwrite each other.
       ...audienceCookieOptions('participant', secure),
+      ...csrfCookieOptions(secure),
       sessionToken: {
-        name: PARTICIPANT_COOKIE_NAME,
+        name: participantCookieName(),
         options: {
           // Scope cookie to auth host only (no sharing across apps)
           ...(cookieDomain ? { domain: cookieDomain } : {}),
@@ -486,8 +488,9 @@ function getLecturerConfig({
 
     cookies: {
       ...audienceCookieOptions('lecturer', secure),
+      ...csrfCookieOptions(secure),
       sessionToken: {
-        name: MANAGER_COOKIE_NAME,
+        name: managerCookieName(),
         options: {
           // Scope cookie to auth host only (no sharing across apps)
           ...(cookieDomain ? { domain: cookieDomain } : {}),

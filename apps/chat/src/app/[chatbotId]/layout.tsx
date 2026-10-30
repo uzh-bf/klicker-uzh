@@ -1,13 +1,11 @@
+import { COOKIE_NAMES, cookieName } from '@klicker-uzh/util'
 import { cookies, headers } from 'next/headers'
 import Link from 'next/link'
 import { notFound } from 'next/navigation'
 import { getTranslations } from 'next-intl/server'
 import { Assistant } from '../../components/assistant'
 import { ChatRecoveryCard } from '../../components/chat-recovery-card'
-import {
-  CHAT_SCOPED_TOKEN_HEADER,
-  PWA_CHAT_EMBED_SESSION_COOKIE,
-} from '../../lib/pwaEmbedAuth'
+import { CHAT_SCOPED_TOKEN_HEADER } from '../../lib/pwaEmbedAuth'
 import {
   authorizeIdentityForChatbot,
   getChatbotOr404,
@@ -59,9 +57,15 @@ export default async function ChatLayout({
   const [cookieStore, headerStore] = await Promise.all([cookies(), headers()])
   const identityResult = await resolveParticipantIdentity(
     {
-      participantToken: cookieStore.get('participant_token')?.value,
-      chatGuestToken: cookieStore.get('chat_participant_token')?.value,
-      pwaEmbedToken: cookieStore.get(PWA_CHAT_EMBED_SESSION_COOKIE)?.value,
+      participantToken: cookieStore.get(
+        cookieName(COOKIE_NAMES.PARTICIPANT_TOKEN)
+      )?.value,
+      chatGuestToken: cookieStore.get(
+        cookieName(COOKIE_NAMES.CHAT_PARTICIPANT_TOKEN)
+      )?.value,
+      pwaEmbedToken: cookieStore.get(
+        cookieName(COOKIE_NAMES.PWA_CHAT_EMBED_SESSION)
+      )?.value,
       // Cookie-less transports (blocked third-party cookies) arrive in the
       // reserved header the proxy sets. The value is re-verified here by
       // signature, scope and chatbot/course binding before it can authorize.

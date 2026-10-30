@@ -1,0 +1,17 @@
+FROM mcr.microsoft.com/azure-storage/azurite@sha256:830430c1da1a2d537e08f3e6764dd1f5ae00cf0346bcaf625b968ec3f0971fd5
+
+USER root
+WORKDIR /opt/azurite
+
+# Keep the upstream application and its supported dependency majors, including
+# the Azure Identity/MSAL dependency contract.
+RUN apk upgrade --no-cache \
+ && node -e 'const fs = require("fs"); const p = require("./package.json"); p.dependencies.axios = "1.20.0"; Object.assign(p.overrides, { axios: "$axios", "@grpc/grpc-js": "1.14.5", "body-parser": "2.4.0", "follow-redirects": "1.16.1", "proxy-addr": "2.0.8" }); fs.writeFileSync("package.json", JSON.stringify(p));' \
+ && npm install --omit=dev --ignore-scripts --no-audit --no-fund \
+ && npm ls --omit=dev \
+ && rm -rf /usr/local/lib/node_modules/npm /usr/local/bin/npm /usr/local/bin/npx /root/.npm
+
+COPY deploy/preview/runtime.mjs /app/deploy/preview/runtime.mjs
+
+ENV HOME=/tmp
+USER 65532:65532

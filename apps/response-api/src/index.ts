@@ -1,10 +1,15 @@
+import { createHash } from 'node:crypto'
 import { hatchetClient } from '@klicker-uzh/hatchet'
 import { UserLoginScope } from '@klicker-uzh/prisma/client'
-import { verifyJWT, type JWTPayload } from '@klicker-uzh/util'
+import {
+  COOKIE_NAMES,
+  cookieName,
+  type JWTPayload,
+  verifyJWT,
+} from '@klicker-uzh/util'
 import { randomUUID } from 'crypto'
-import { createServer, IncomingMessage, ServerResponse } from 'http'
+import { createServer, type IncomingMessage, type ServerResponse } from 'http'
 import { Redis } from 'ioredis'
-import { createHash } from 'node:crypto'
 
 const redis = new Redis({
   family: 4,
@@ -116,11 +121,15 @@ async function handleAddResponse(req: IncomingMessage, res: ServerResponse) {
   if (typeof req.headers['cookie'] === 'string') {
     const raw = req.headers['cookie']
     const parts = raw.split(';').map((s) => s.trim())
+    const participantCookieName = cookieName(COOKIE_NAMES.PARTICIPANT_TOKEN)
+    const temporaryParticipantCookieName = cookieName(
+      COOKIE_NAMES.TEMPORARY_PARTICIPANT_TOKEN
+    )
     const participantPair = parts.find((p) =>
-      p.startsWith('participant_token=')
+      p.startsWith(`${participantCookieName}=`)
     )
     const temporaryPair = parts.find((p) =>
-      p.startsWith('temporary_participant_token=')
+      p.startsWith(`${temporaryParticipantCookieName}=`)
     )
     const forwarded: string[] = []
     if (participantPair) forwarded.push(participantPair)
@@ -141,10 +150,7 @@ async function handleAddResponse(req: IncomingMessage, res: ServerResponse) {
   }
 
   // determine if the participant is logged in with a valid student cookie (temporary or standard)
-  const isAuthenticatedParticipant =
-    cookie &&
-    (cookie.includes('participant_token=') ||
-      cookie.includes('temporary_participant_token='))
+  const isAuthenticatedParticipant = Boolean(cookie)
 
   // depending on the authentication state, add the response to the correct hatchet event queue
   const eventName = isAuthenticatedParticipant
@@ -245,12 +251,12 @@ async function handleAddAssessmentResponse(
   // check if the assessment cookie is present and valid
   let user: JWTPayload | null = null
   try {
-    user = parsedCookies['next-auth.participant-session-token']
-      ? await verifyJWT(
-          parsedCookies['next-auth.participant-session-token'],
-          process.env.APP_SECRET as string,
-          { issuer: process.env.APP_ORIGIN_AUTH }
-        )
+    const assessmentToken =
+      parsedCookies[cookieName(COOKIE_NAMES.NEXT_AUTH_PARTICIPANT_SESSION)]
+    user = assessmentToken
+      ? await verifyJWT(assessmentToken, process.env.APP_SECRET as string, {
+          issuer: process.env.APP_ORIGIN_AUTH,
+        })
       : null
   } catch (err) {
     hatchetClient.events.push('create-audit-log-entry', {

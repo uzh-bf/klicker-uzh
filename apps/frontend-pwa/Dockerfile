@@ -60,11 +60,22 @@ ENV NEXT_PUBLIC_GROWTHBOOK_CLIENT_KEY=${NEXT_PUBLIC_GROWTHBOOK_CLIENT_KEY}
 ENV NEXT_TELEMETRY_DISABLED 1
 
 COPY --from=builder /app/out/full/ .
-RUN pnpm run build --filter=@klicker-uzh/frontend-pwa
+COPY --from=builder /app/apps/frontend-pwa/.env.production /app/apps/frontend-pwa/.env.production
+COPY --from=builder /app/util/deployment-build-env.mjs /app/util/deployment-build-env.mjs
+ARG KLICKER_PREVIEW_BUILD_ENV_JSON
+ARG KLICKER_DEPLOYMENT_BUILD_ENV_JSON
+RUN node util/deployment-build-env.mjs --app frontend-pwa -- pnpm run build --filter=@klicker-uzh/frontend-pwa
+
+# Next traces its webpack serializer into the standalone tree although the
+# generated server consumes the already serialized build configuration.
+RUN node -e 'const fs = require("fs"); const root = "apps/frontend-pwa/.next/standalone/node_modules/.pnpm"; for (const name of fs.readdirSync(root)) if (name.startsWith("serialize-javascript@")) fs.rmSync(root + "/" + name, { recursive: true });'
 
 
 FROM base AS runner
 WORKDIR /app
+
+# Standalone servers run Node directly; package managers are build tools.
+RUN rm -rf /usr/local/lib/node_modules/npm /usr/local/bin/npm /usr/local/bin/npx
 
 RUN addgroup --system --gid 1001 nodejs
 RUN adduser --system --uid 1001 nextjs

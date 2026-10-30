@@ -20,7 +20,8 @@ function evaluateGate(
   needs = {},
   cancelled = false,
   vars = {},
-  steps = {}
+  steps = {},
+  inputs = {}
 ) {
   const normalized = expression
     .trim()
@@ -45,6 +46,7 @@ function evaluateGate(
     'cancelled',
     'vars',
     'steps',
+    'inputs',
     'format',
     'startsWith',
     'endsWith',
@@ -58,6 +60,7 @@ function evaluateGate(
     () => cancelled,
     vars,
     steps,
+    inputs,
     (pattern, ...values) =>
       pattern.replace(/\{(\d+)\}/g, (_, i) => String(values[Number(i)])),
     (value, prefix) =>
@@ -1194,6 +1197,7 @@ const BOUNDED_CODEBASE_STEPS = [
   'Check Prisma schema sync drift',
   'Check linting',
   'Check linting (Biome, advisory)',
+  'Check response worker contracts',
   'Check typescript types',
   'Check unused code and dependencies (knip, advisory)',
 ]
@@ -1403,6 +1407,39 @@ test('OCR engine qualification only runs for related paths or an unproven diff',
       )
     }
   }
+})
+
+test('preview publications keep their correlation and cannot cancel source CI', () => {
+  const workflow = readWorkflow('v3_images-stg.yml')
+  const github = {
+    workflow: workflow.name,
+    event_name: 'workflow_dispatch',
+    event: { action: '' },
+  }
+  const inputs = { correlationId: 'synthetic-preview-command' }
+  const evaluate = (expression) =>
+    evaluateGate(expression, github, {}, false, {}, {}, inputs)
+  assert.equal(evaluate(workflow.concurrency['cancel-in-progress']), false)
+  assert.equal(
+    evaluate(workflow.concurrency.group),
+    workflow.name + '-preview-' + inputs.correlationId
+  )
+  assert.equal(evaluate(workflow['run-name']), inputs.correlationId)
+  for (const id of [
+    'plan',
+    'build-migrator',
+    'build',
+    'build-after-migrator',
+    'build-amd',
+    'scan',
+    'build-images-status',
+  ]) {
+    assert.equal(evaluate(workflow.jobs[id].if), false, id)
+  }
+  assert.equal(
+    evaluate(workflow.jobs['build-images-status'].name),
+    'preview-build-images-status'
+  )
 })
 
 test('trusted priority envelopes are exact acyclic derivatives and required wrappers reject missing results', () => {

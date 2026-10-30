@@ -1,7 +1,7 @@
 import { prisma } from '@klicker-uzh/prisma'
 import crypto from 'crypto'
 import type { NextApiRequest, NextApiResponse } from 'next'
-import { PARTICIPANT_COOKIE_NAME } from '@/lib/constants'
+import { participantCookieName } from '@/lib/constants'
 import { decode as jwtDecode } from '@/lib/jwt'
 import { authEvent } from '@/lib/telemetry'
 
@@ -48,11 +48,10 @@ function diagnosticCode(error: unknown): string {
 }
 
 function readSessionToken(req: NextApiRequest): string | null {
+  const name = participantCookieName()
   const chunks = Object.entries(req.cookies ?? {})
     .filter(
-      ([name]) =>
-        name === PARTICIPANT_COOKIE_NAME ||
-        name.startsWith(`${PARTICIPANT_COOKIE_NAME}.`)
+      ([cookieName]) => cookieName === name || cookieName.startsWith(`${name}.`)
     )
     .sort(([a], [b]) => {
       const aSuffix = Number.parseInt(a.split('.').pop() ?? '0', 10) || 0

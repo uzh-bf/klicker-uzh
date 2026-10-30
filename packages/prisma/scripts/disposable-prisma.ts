@@ -14,6 +14,7 @@ export function guardedPrismaCommand(operation: string, args: string[]) {
     reset: ['migrate', 'reset'],
     push: ['db', 'push'],
     migrate: ['migrate', 'dev'],
+    deploy: ['migrate', 'deploy'],
     seed: ['db', 'seed'],
     diff: [
       'migrate',
@@ -23,12 +24,15 @@ export function guardedPrismaCommand(operation: string, args: string[]) {
       'src/prisma/schema/migrations',
     ],
   }
-  const command = commands[operation]
-  if (!command) throw new Error('Unsupported guarded Prisma operation')
+  if (!Object.hasOwn(commands, operation)) {
+    throw new Error('Unsupported guarded Prisma operation')
+  }
+  const command = commands[operation]!
   const flags: Record<string, string[]> = {
     reset: ['--force', '-f'],
     push: ['--accept-data-loss', '--force-reset'],
     migrate: ['--create-only'],
+    deploy: [],
     seed: [],
     diff: ['--script', '--exit-code'],
   }

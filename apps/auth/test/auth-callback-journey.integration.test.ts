@@ -9,10 +9,7 @@ import {
   vi,
 } from 'vitest'
 import { audienceCookieNames } from '../src/lib/authCookies'
-import {
-  MANAGER_COOKIE_NAME,
-  PARTICIPANT_COOKIE_NAME,
-} from '../src/lib/constants'
+import { managerCookieName, participantCookieName } from '../src/lib/constants'
 import { decode as jwtDecode, encode as jwtEncode } from '../src/lib/jwt'
 import {
   type FakeIdentityProvider,
@@ -159,7 +156,7 @@ async function runSuccessfulParticipantCallback(options: {
 async function assertParticipantPrincipal(result: {
   sessionCookies: Record<string, string>
 }) {
-  const sessionToken = result.sessionCookies[PARTICIPANT_COOKIE_NAME]
+  const sessionToken = result.sessionCookies[participantCookieName()]
   if (!sessionToken) {
     throw new Error('the participant session cookie must be issued')
   }
@@ -170,7 +167,7 @@ async function assertParticipantPrincipal(result: {
   // issued token expires with the session
   expect(Number(decoded?.exp)).toBeGreaterThan(Date.now() / 1000)
   expect(
-    result.sessionCookies[MANAGER_COOKIE_NAME],
+    result.sessionCookies[managerCookieName()],
     'no manager session may be issued for a participant callback'
   ).toBeUndefined()
 }
@@ -318,8 +315,8 @@ describe('participant callback journeys against the real NextAuth handler', () =
     // No account handling and no session of either audience.
     expect(helperCalls).toEqual([])
     expect(prismaCalls).toEqual([])
-    expect(result.sessionCookies[PARTICIPANT_COOKIE_NAME]).toBeUndefined()
-    expect(result.sessionCookies[MANAGER_COOKIE_NAME]).toBeUndefined()
+    expect(result.sessionCookies[participantCookieName()]).toBeUndefined()
+    expect(result.sessionCookies[managerCookieName()]).toBeUndefined()
   })
 
   test('an invalid PKCE cookie recovers into the participant restart page', async () => {
@@ -343,7 +340,7 @@ describe('participant callback journeys against the real NextAuth handler', () =
       '/restart?audience=participant&error=OAuthCallback'
     )
     expect(helperCalls).toEqual([])
-    expect(result.sessionCookies[MANAGER_COOKIE_NAME]).toBeUndefined()
+    expect(result.sessionCookies[managerCookieName()]).toBeUndefined()
   })
 
   test('the recovered retry continues as participant authentication', async () => {
@@ -371,7 +368,7 @@ describe('participant callback journeys against the real NextAuth handler', () =
     expect(
       result.sessionCookies[lecturerCookies.pkceCodeVerifier]
     ).toBeUndefined()
-    expect(result.sessionCookies[MANAGER_COOKIE_NAME]).toBeUndefined()
+    expect(result.sessionCookies[managerCookieName()]).toBeUndefined()
   })
 
   test('a participant callback without a stored destination returns to the assessment root', async () => {
@@ -468,8 +465,8 @@ describe('participant callback journeys against the real NextAuth handler', () =
       expect(identityProvider.tokenRequests).toHaveLength(0)
       expect(helperCalls).toEqual([])
       expect(prismaCalls).toEqual([])
-      expect(result.sessionCookies[PARTICIPANT_COOKIE_NAME]).toBeUndefined()
-      expect(result.sessionCookies[MANAGER_COOKIE_NAME]).toBeUndefined()
+      expect(result.sessionCookies[participantCookieName()]).toBeUndefined()
+      expect(result.sessionCookies[managerCookieName()]).toBeUndefined()
 
       // The verified audience is recorded, while the raw provider error is
       // written to neither the response nor telemetry.

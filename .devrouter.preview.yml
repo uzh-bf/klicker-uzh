@@ -1,0 +1,448 @@
+# Source preparation only: native admission stays disabled until qualification passes.
+version: 1
+aliases:
+  chat:
+    profiles:
+      - chat
+      - ai
+      - mcp
+  full:
+    profiles:
+      - full
+bindings:
+  apps:
+    api:
+      - api
+    auth:
+      - auth
+    pwa:
+      - pwa
+    chat:
+      - chat
+    manage:
+      - manage
+    control:
+      - control
+    response-api:
+      - response-api
+    lti:
+      - lti
+    olat-api:
+      - olat-api
+    blob:
+      - azurite
+    db:
+      - postgres
+    oidc:
+      - oidc
+  dependencies: {}
+  services:
+    postgres:
+      - postgres
+    hatchet:
+      - hatchet
+      - hatchet-config
+    azurite:
+      - azurite
+    redis_exec:
+      - redis-exec
+    redis_assessment:
+      - redis-assessment
+    redis_cache:
+      - redis-cache
+    litellm:
+      - litellm
+    mailhog:
+      - mailhog
+    mcp_postgres: []
+    oidc:
+      - oidc
+  processes:
+    klicker-dev: []
+    klicker-local-mcp:
+      - local-mcp
+resources:
+  postgres:
+    kind: postgres
+  hatchet-db:
+    kind: postgres
+  redis-exec:
+    kind: redis
+  redis-assessment:
+    kind: redis
+  redis-cache:
+    kind: redis
+  db-bootstrap:
+    kind: job
+    imageTarget: fixtures
+    dependsOn:
+      - postgres
+    command:
+      - node
+      - /app/deploy/preview/bootstrap.mjs
+      - bootstrap
+  fixtures:
+    kind: job
+    imageTarget: fixtures
+    dependsOn:
+      - db-bootstrap
+      - local-mcp
+      - azurite
+    command:
+      - node
+      - /app/deploy/preview/bootstrap.mjs
+      - fixtures
+  hatchet-init:
+    kind: job
+    image: postgres@sha256:b8faeff7712663c2773a190181e1246e37e364b887611c04658c28b44e2408fe
+    dependsOn:
+      - hatchet-db
+    command:
+      - /bin/sh
+      - -c
+      - |
+        set -eu
+        if [ "$PGDATABASE" != hatchet ]; then printf '%s\n' HATCHET_INIT_DBNAME_MISMATCH; exit 1; fi
+        if ! diagnostic=$(timeout 30 psql -Xq -v ON_ERROR_STOP=1 -v VERBOSITY=sqlstate 2>&1 <<'SQL'
+        \getenv runtime_password RUNTIME_PASSWORD
+        SET statement_timeout = '5s';
+        BEGIN;
+        \echo HATCHET_INIT_LOCK
+        SELECT pg_try_advisory_xact_lock(1885973302, 1) AS locked \gset
+        \if :locked
+        \else
+          DO $$BEGIN RAISE EXCEPTION 'Hatchet initialization refused'; END$$;
+        \endif
+        \echo HATCHET_INIT_FRESH
+        WITH flags AS (
+          SELECT current_database() = 'hatchet' AS database_name,
+            current_user = session_user AS identity,
+            current_setting('server_version_num')::integer >= 170000 AND EXISTS (SELECT 1 FROM pg_roles WHERE rolname=current_user AND rolcreaterole AND rolcreatedb) AS capable,
+            pg_has_role((SELECT datdba FROM pg_database WHERE datname=current_database()),'MEMBER') AS database_owner,
+            NOT EXISTS (
+            SELECT 1 FROM pg_class c
+            WHERE c.relnamespace = 'public'::regnamespace AND c.relkind IN ('r','p','v','m','S','f')
+            AND NOT (c.relkind = 'v' AND EXISTS (
+              SELECT 1 FROM pg_depend dep JOIN pg_extension ext ON ext.oid = dep.refobjid
+              WHERE dep.classid = 'pg_class'::regclass AND dep.objid = c.oid
+                AND dep.refclassid = 'pg_extension'::regclass AND dep.deptype = 'e'
+                AND ((ext.extname = 'pg_stat_statements' AND c.relname IN ('pg_stat_statements', 'pg_stat_statements_info'))
+                  OR (ext.extname = 'pg_stat_kcache' AND c.relname IN ('pg_stat_kcache', 'pg_stat_kcache_detail')))
+            ))
+            ) AS empty_public,
+            NOT EXISTS (SELECT 1 FROM pg_roles WHERE rolname = 'hatchet_runtime') AS runtime_role_absent
+        )
+        SELECT *, database_name AND identity AND capable AND database_owner AND empty_public AND runtime_role_absent AS fresh FROM flags \gset
+        \if :database_name
+        \else
+          \echo HATCHET_INIT_FRESH_FAIL_DATABASE_NAME
+        \endif
+        \if :identity
+        \else
+          \echo HATCHET_INIT_FRESH_FAIL_SESSION_IDENTITY
+        \endif
+        \if :capable
+        \else
+          \echo HATCHET_INIT_FRESH_FAIL_ADMIN_CAPABILITIES
+        \endif
+        \if :database_owner
+        \else
+          \echo HATCHET_INIT_FRESH_FAIL_DATABASE_OWNER
+        \endif
+        \if :empty_public
+        \else
+          \echo HATCHET_INIT_FRESH_FAIL_EMPTY_PUBLIC
+        \endif
+        \if :runtime_role_absent
+        \else
+          \echo HATCHET_INIT_FRESH_FAIL_RUNTIME_ROLE_ABSENT
+        \endif
+        \if :fresh
+        \else
+          DO $$BEGIN RAISE EXCEPTION 'Hatchet initialization refused'; END$$;
+        \endif
+        \echo HATCHET_INIT_ROLE
+        CREATE ROLE hatchet_runtime LOGIN PASSWORD :'runtime_password' NOSUPERUSER NOCREATEDB NOCREATEROLE NOREPLICATION NOBYPASSRLS;
+        GRANT hatchet_runtime TO CURRENT_USER WITH INHERIT TRUE, SET TRUE;
+        \echo HATCHET_INIT_OWNER
+        ALTER DATABASE hatchet OWNER TO hatchet_runtime;
+        \echo HATCHET_INIT_SCHEMA
+        ALTER SCHEMA public OWNER TO hatchet_runtime;
+        COMMIT;
+        SQL
+        ); then
+          printf '%s\n' HATCHET_INIT_FAILED
+          if ! printf %s "$diagnostic" | grep -q HATCHET_INIT_LOCK; then printf '%s\n' HATCHET_INIT_CONNECT_OR_TIMEOUT; fi
+          for stage in LOCK FRESH ROLE OWNER SCHEMA; do
+            if printf %s "$diagnostic" | grep -q "HATCHET_INIT_$stage"; then printf 'HATCHET_INIT_REACHED_%s\n' "$stage"; fi
+          done
+          printf '%s\n' "$diagnostic" | grep -Ex 'HATCHET_INIT_FRESH_FAIL_(DATABASE_NAME|SESSION_IDENTITY|ADMIN_CAPABILITIES|DATABASE_OWNER|EMPTY_PUBLIC|RUNTIME_ROLE_ABSENT)' || :
+          for state in 42501 42710 42P01 28P01 3D000 57014 P0001; do
+            if printf %s "$diagnostic" | grep -q "$state"; then printf 'HATCHET_INIT_SQLSTATE_%s\n' "$state"; fi
+          done
+          exit 1
+        fi
+        if result=$(PGUSER=hatchet_runtime PGPASSWORD="$RUNTIME_PASSWORD" timeout 5 psql -XAt -v ON_ERROR_STOP=1 -c "SELECT current_database()='hatchet' AND d.datdba=r.oid AND has_database_privilege(current_database(),'CREATE') AND has_schema_privilege(current_user,'public','CREATE') AND NOT (r.rolsuper OR r.rolcreatedb OR r.rolcreaterole OR r.rolreplication OR r.rolbypassrls) FROM pg_roles r JOIN pg_database d ON d.datname=current_database() WHERE r.rolname=current_user" 2>/dev/null); then
+          if [ "$result" != t ]; then printf '%s\n' HATCHET_VERIFY_PREDICATE_FAILED; exit 1; fi
+        else
+          printf '%s\n' HATCHET_VERIFY_FAILED
+          exit 1
+        fi
+        printf '%s\n' HATCHET_DB_OWNER_READY
+  hatchet:
+    kind: service
+    image: ghcr.io/hatchet-dev/hatchet/hatchet-lite-dev@sha256:7dfc696a6f2e45f510002ac395f110f404e2207fb867b4e8d4412ae31ceb1ee5
+    dependsOn:
+      - hatchet-db
+      - hatchet-init
+    command:
+      - /bin/bash
+      - -c
+      - |
+        set -eu
+        [[ $PASSWORD =~ ^[0-9a-f]{64}$ ]] || exit 1
+        export DATABASE_URL="postgresql://hatchet_runtime:$PASSWORD@$DB_HOST:$DB_PORT/hatchet?sslmode=require"
+        echo HATCHET_STAGE_MIGRATE
+        if migrate_diagnostic=$(./hatchet-migrate 2>&1); then :; else
+          echo HATCHET_MIGRATE_FAILED
+          for term in authentication permission certificate connection extension schema timeout database role; do
+            if printf %s "$migrate_diagnostic" | grep -qi "$term"; then echo "HATCHET_MIGRATE_CATEGORY_$term"; fi
+          done
+          exit 1
+        fi
+        echo HATCHET_STAGE_CONFIG
+        ./hatchet-admin quickstart --skip certs --generated-config-dir ./config --overwrite=false >/dev/null 2>&1
+        umask 077
+        if [ ! -d /config/doc-scope ]; then
+          key_dir=$(mktemp -d /config/doc-scope.XXXXXXXX)
+          trap 'if [ -n "$key_dir" ]; then rm -f "$key_dir/private.pem" "$key_dir/public.pem"; rmdir "$key_dir"; fi' EXIT
+          openssl genpkey -algorithm EC -pkeyopt ec_paramgen_curve:P-256 -out "$key_dir/private.pem" >/dev/null 2>&1
+          openssl pkey -in "$key_dir/private.pem" -pubout -out "$key_dir/public.pem" >/dev/null 2>&1
+          mv -T "$key_dir" /config/doc-scope
+          key_dir=
+        fi
+        test -s /config/doc-scope/private.pem && test -s /config/doc-scope/public.pem
+        derived_public=$(openssl pkey -in /config/doc-scope/private.pem -pubout 2>/dev/null)
+        test "$derived_public" = "$(cat /config/doc-scope/public.pem)"
+        echo HATCHET_STAGE_TOKEN
+        if [ ! -s ./config/authdisabled-token ]; then
+          ./hatchet-admin token create --config ./config --name authdisabled-default > ./config/authdisabled-token 2>/dev/null
+        fi
+        echo HATCHET_STAGE_SERVER
+        exec ./hatchet-lite --config ./config
+    ports:
+      - name: http
+        port: 8888
+        public: false
+      - name: grpc
+        port: 7077
+        public: false
+  hatchet-config:
+    kind: volume
+    dependsOn:
+      - hatchet
+  azurite:
+    kind: service
+    imageTarget: azurite
+    command:
+      - node
+      - /app/deploy/preview/runtime.mjs
+      - azurite
+    ports:
+      - name: blob
+        port: 10000
+        public: true
+  litellm:
+    kind: service
+    imageTarget: litellm
+    command:
+      - litellm
+      - --config
+      - /app/klicker-litellm.yaml
+      - --host
+      - 0.0.0.0
+      - --port
+      - '4000'
+    ports:
+      - name: http
+        port: 4000
+        public: false
+  mailhog:
+    kind: service
+    image: mailhog/mailhog@sha256:8d76a3d4ffa32a3661311944007a415332c4bb855657f4f6c57996405c009bea
+    ports:
+      - name: smtp
+        port: 1025
+        public: false
+      - name: http
+        port: 8025
+        public: false
+  oidc:
+    kind: service
+    image: ghcr.io/navikt/mock-oauth2-server@sha256:d1ab58574b6fd50e27575bb1626db4d1bc5cb91d797d6efc61951d79789e969d
+    ports:
+      - name: http
+        port: 8080
+        public: true
+  api:
+    kind: service
+    imageTarget: api
+    dependsOn:
+      - fixtures
+      - hatchet
+      - redis-exec
+      - redis-assessment
+      - redis-cache
+      - azurite
+    ports:
+      - name: http
+        port: 3000
+        public: true
+  auth:
+    kind: service
+    imageTarget: auth
+    dependsOn:
+      - api
+    ports:
+      - name: http
+        port: 3000
+        public: true
+  pwa:
+    kind: service
+    imageTarget: pwa
+    dependsOn:
+      - api
+    ports:
+      - name: http
+        port: 3000
+        public: true
+  chat:
+    kind: service
+    imageTarget: chat
+    dependsOn:
+      - api
+      - mcp-student
+      - litellm
+    command:
+      - node
+      - /app/deploy/preview/runtime.mjs
+      - chat
+    ports:
+      - name: http
+        port: 3000
+        public: true
+  manage:
+    kind: service
+    imageTarget: manage
+    dependsOn:
+      - api
+      - mcp-lecturer
+    ports:
+      - name: http
+        port: 3000
+        public: true
+  control:
+    kind: service
+    imageTarget: control
+    dependsOn:
+      - api
+      - worker-general
+      - worker-response
+    ports:
+      - name: http
+        port: 3000
+        public: true
+  response-api:
+    kind: service
+    imageTarget: response-api
+    dependsOn:
+      - api
+    ports:
+      - name: http
+        port: 7078
+        public: true
+  lti:
+    kind: service
+    imageTarget: lti
+    dependsOn:
+      - api
+    ports:
+      - name: http
+        port: 4000
+        public: true
+  olat-api:
+    kind: service
+    imageTarget: olat-api
+    dependsOn:
+      - api
+    ports:
+      - name: http
+        port: 3000
+        public: true
+  mcp-lecturer:
+    kind: service
+    imageTarget: mcp-lecturer
+    dependsOn:
+      - api
+    ports:
+      - name: http
+        port: 7081
+        public: false
+  mcp-student:
+    kind: service
+    imageTarget: mcp-student
+    dependsOn:
+      - api
+    ports:
+      - name: http
+        port: 7080
+        public: false
+  local-mcp:
+    kind: service
+    imageTarget: fixtures
+    dependsOn:
+      - hatchet
+    command:
+      - node
+      - /app/deploy/preview/runtime.mjs
+      - mcp
+    ports:
+      - name: http
+        port: 1417
+        public: false
+  worker-general:
+    kind: service
+    imageTarget: worker-general
+    dependsOn:
+      - api
+      - hatchet
+  worker-response:
+    kind: service
+    imageTarget: worker-response
+    dependsOn:
+      - api
+      - hatchet
+selection:
+  rules:
+    - paths:
+        - apps/chat/**
+      aliases:
+        - chat
+    - paths:
+        - packages/**
+        - apps/backend-docker/**
+        - apps/response-api/**
+        - apps/hatchet-worker-*/**
+      aliases:
+        - full
+  ignorePaths:
+    - docs/**
+    - project/**
+    - '**/*.md'
+  controlPaths:
+    - deploy/preview/**
+    - util/deployment-build-env.mjs
+    - util/profile-resolver.sh
+  fallback: full
+  dominating: full
+  allowedUnions: []

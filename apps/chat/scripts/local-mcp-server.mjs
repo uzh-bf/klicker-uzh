@@ -13,9 +13,60 @@ import {
 } from './local-mcp-documents.mjs'
 import { loadLocalMcpFixture } from './local-mcp-fixture.mjs'
 
-const HOST = '127.0.0.1'
+const DEFAULT_HOST = '127.0.0.1'
 const PORT = 1417
 const MAX_BODY_BYTES = 1024 * 1024
+
+function parseHostAuthority(value, variable, allowPort = false) {
+  const authority = value.trim()
+  let parsed
+
+  try {
+    parsed = new URL(`local-mcp://${authority}`)
+  } catch {
+    parsed = null
+  }
+
+  if (
+    !authority ||
+    authority.includes('*') ||
+    !parsed ||
+    (!allowPort && parsed.port) ||
+    parsed.username ||
+    parsed.password ||
+    parsed.pathname ||
+    parsed.search ||
+    parsed.hash ||
+    parsed.host !== authority.toLowerCase()
+  ) {
+    const expected = allowPort
+      ? 'a comma-separated list of exact hostname[:port] authorities'
+      : 'an exact hostname or IP address'
+    throw new Error(`${variable} must be ${expected}`)
+  }
+
+  return parsed.host
+}
+
+const HOST = parseHostAuthority(
+  process.env.LOCAL_MCP_BIND_HOST ?? DEFAULT_HOST,
+  'LOCAL_MCP_BIND_HOST'
+)
+const DEFAULT_ALLOWED_HOSTS = [
+  `${HOST}:${PORT}`,
+  `localhost:${PORT}`,
+  `${DEFAULT_HOST}:${PORT}`,
+]
+const ALLOWED_HOSTS = [
+  ...new Set([
+    ...DEFAULT_ALLOWED_HOSTS,
+    ...(process.env.LOCAL_MCP_ALLOWED_HOSTS === undefined
+      ? []
+      : process.env.LOCAL_MCP_ALLOWED_HOSTS.split(',').map((entry) =>
+          parseHostAuthority(entry, 'LOCAL_MCP_ALLOWED_HOSTS', true)
+        )),
+  ]),
+]
 const fixture = loadLocalMcpFixture(process.env)
 const authenticate = await createLocalAuthenticator(process.env, fixture, {
   returnIdentity: true,
@@ -246,7 +297,7 @@ const httpServer = createServer(async (request, response) => {
     sessionIdGenerator: undefined,
     enableJsonResponse: true,
     enableDnsRebindingProtection: true,
-    allowedHosts: [`${HOST}:${PORT}`, `localhost:${PORT}`],
+    allowedHosts: ALLOWED_HOSTS,
   })
 
   response.on('close', () => {

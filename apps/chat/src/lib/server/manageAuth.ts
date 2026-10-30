@@ -1,4 +1,4 @@
-import { verifyJWT } from '@klicker-uzh/util'
+import { COOKIE_NAMES, cookieName, verifyJWT } from '@klicker-uzh/util'
 import { cookies } from 'next/headers'
 
 // The Manage assistant serves the lecturer-facing roles: 'USER', plus
@@ -37,7 +37,9 @@ export interface AuthenticatedManageUser {
  */
 export async function getAuthenticatedManageUser(): Promise<AuthenticatedManageUser | null> {
   const cookieStore = await cookies()
-  const token = cookieStore.get('next-auth.session-token')?.value
+  const token = cookieStore.get(
+    cookieName(COOKIE_NAMES.NEXT_AUTH_MANAGER_SESSION)
+  )?.value
   if (!token || !process.env.APP_SECRET) return null
 
   try {

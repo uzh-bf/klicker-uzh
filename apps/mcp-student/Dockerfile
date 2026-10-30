@@ -1,4 +1,6 @@
-FROM docker.io/library/node:24.16.0-alpine AS base
+FROM docker.io/library/node:24.21.0-alpine AS base
+
+RUN apk upgrade --no-cache
 
 
 FROM base AS deps
@@ -39,7 +41,9 @@ RUN npm i -g --ignore-scripts pnpm@12.11.2 \
 COPY --from=deps /app/out/json/ .
 COPY --from=deps /app/out/pnpm* .
 
-RUN pnpm install --prod --frozen-lockfile --ignore-scripts
+RUN pnpm install --prod --frozen-lockfile --ignore-scripts \
+ && rm -rf /usr/local/lib/node_modules/npm /usr/local/lib/node_modules/pnpm \
+    /usr/local/bin/npm /usr/local/bin/npx /usr/local/bin/pnpm /usr/local/bin/pnpx
 
 RUN addgroup --system --gid 1001 nodejs
 RUN adduser --system --uid 1001 nodejs
