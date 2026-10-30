@@ -1,6 +1,6 @@
 import assert from 'node:assert/strict'
 import { spawn, spawnSync } from 'node:child_process'
-import { createHmac, randomUUID } from 'node:crypto'
+import { randomUUID } from 'node:crypto'
 import { once } from 'node:events'
 import {
   existsSync,
@@ -202,17 +202,16 @@ async function worker() {
     await startApi(true)
     const secret = process.env.APP_SECRET
     assert(secret)
-    const header = Buffer.from(
-      JSON.stringify({ alg: 'HS256', typ: 'JWT' })
-    ).toString('base64url')
-    const payload = Buffer.from(
-      JSON.stringify({
-        sub: id.participant,
-        exp: Math.floor(Date.now() / 1000) + 300,
-      })
-    ).toString('base64url')
-    const content = `${header}.${payload}`
-    const jwt = `${content}.${createHmac('sha256', secret).update(content).digest('base64url')}`
+    const { signJWT } = await import('../packages/util/dist/index.js')
+    assert(process.env.APP_ORIGIN_API)
+    const jwt = await signJWT(
+      { sub: id.participant, role: 'PARTICIPANT' },
+      secret,
+      {
+        issuer: process.env.APP_ORIGIN_API,
+        expiresIn: '5m',
+      }
+    )
     const apiOrigin = 'http://127.0.0.1:3005'
     const headers = {
       cookie: `participant_token=${jwt}`,

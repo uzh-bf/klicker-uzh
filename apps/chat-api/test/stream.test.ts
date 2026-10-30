@@ -678,6 +678,7 @@ test.each([
           delta: finishMetadata.reasoningContent,
         },
         { type: 'reasoning-end', id: 'reason' },
+        { type: 'message-metadata', messageMetadata: finishMetadata },
         { type: 'text-start', id: 'answer' },
         { type: 'text-delta', id: 'answer', delta: 'synthetic answer' },
         { type: 'text-end', id: 'answer' },

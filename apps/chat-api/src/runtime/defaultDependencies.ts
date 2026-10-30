@@ -115,6 +115,7 @@ export type FinalizeAssistantInput = {
   reasoningContent: string | null
   content: unknown[]
   creditsUsed: number | null
+  outcome?: 'completed' | 'failed'
 }
 
 export type FinalizeAssistantResult = {
@@ -880,6 +881,7 @@ export async function finalizeAssistantTurn(
     reasoningEffort: input.reasoningEffort,
     reasoningContent: input.reasoningContent,
     rawCreditsUsed: input.creditsUsed,
+    outcome: input.outcome,
   })
   return {
     creditsUsed: result.creditsUsed,

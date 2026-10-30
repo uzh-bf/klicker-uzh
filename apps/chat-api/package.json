@@ -18,6 +18,8 @@
     "@klicker-uzh/types": "workspace:*",
     "@klicker-uzh/util": "workspace:*",
     "ai": "7.0.52",
+    "ajv": "8.20.0",
+    "ajv-formats": "3.0.1",
     "handlebars": "4.7.10",
     "hono": "4.12.30",
     "jose": "5.9.4",

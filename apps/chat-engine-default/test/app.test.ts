@@ -1,4 +1,5 @@
 import { once } from 'node:events'
+import { createServer } from 'node:http'
 import { serve } from '@hono/node-server'
 import {
   conformanceAbortRequest,
@@ -10,10 +11,13 @@ import {
   conformanceV2RequestCredentialRequest,
   conformanceV2ToolRequest,
   type EngineContractVersion,
+  engineToolExecutionV2RequestSchema,
+  engineToolProjectionV2RequestSchema,
   parseEngineStreamPart,
   runChatEngineConformanceSuite,
 } from '@klicker-uzh/chat-engine-contract'
 import { MockLanguageModelV3, MockLanguageModelV4 } from 'ai/test'
+import { Hono } from 'hono'
 import { describe, expect, test, vi } from 'vitest'
 import { createDefaultEngineApp } from '../src/index.js'
 import {
@@ -69,6 +73,126 @@ async function readParts(
     .map((line) =>
       parseEngineStreamPart(JSON.parse(line.slice('data: '.length)), version)
     )
+}
+
+function toolStream(parts: Array<Record<string, unknown>>) {
+  return new ReadableStream({
+    start(controller) {
+      controller.enqueue({ type: 'stream-start', warnings: [] })
+      for (const part of parts) controller.enqueue(part)
+      controller.enqueue({
+        type: 'finish',
+        finishReason: { unified: 'tool-calls', raw: 'tool_calls' },
+        usage: {
+          inputTokens: {
+            total: 12,
+            noCache: 12,
+            cacheRead: undefined,
+            cacheWrite: undefined,
+          },
+          outputTokens: { total: 4, text: 4, reasoning: undefined },
+        },
+      })
+      controller.close()
+    },
+  })
+}
+
+const projectionRequest = {
+  ...conformanceV2Request,
+  messages: [
+    conformanceRequest.messages[0]!,
+    {
+      id: 'assistant-history',
+      role: 'assistant' as const,
+      parts: [
+        {
+          type: 'tool-call' as const,
+          toolCallId: 'history',
+          toolName: 'doc_query',
+          input: { query: 'history' },
+          output: { source: 'history-raw' },
+          modelOutput: {
+            type: 'json' as const,
+            value: { source: 'history-model' },
+          },
+        },
+      ],
+    },
+  ],
+  tools: [
+    {
+      name: 'doc_query',
+      description: 'Search course documents.',
+      inputSchema: {
+        type: 'object',
+        properties: { query: { type: 'string' } },
+        required: ['query'],
+      },
+      serverId: 'doc-server',
+    },
+  ],
+  stepPolicy: { trailingSystemMessage: 'reminder', projectToolResults: true },
+}
+
+const projectionHeaders = {
+  authorization: 'Bearer service-secret',
+  'content-type': 'application/json',
+  'x-mcp-execution-token': 'mcp-secret',
+}
+
+function interleavedCalls(atomicSecond = false) {
+  return toolStream([
+    { type: 'tool-input-start', id: 'a', toolName: 'doc_query' },
+    ...(atomicSecond
+      ? []
+      : [
+          { type: 'tool-input-start', id: 'b', toolName: 'doc_query' },
+          { type: 'tool-input-delta', id: 'b', delta: '{"query":"b"}' },
+          { type: 'tool-input-end', id: 'b' },
+        ]),
+    {
+      type: 'tool-call',
+      toolCallId: 'b',
+      toolName: 'doc_query',
+      input: '{"query":"b"}',
+    },
+    { type: 'tool-input-delta', id: 'a', delta: '{"query":"a"}' },
+    { type: 'tool-input-end', id: 'a' },
+    {
+      type: 'tool-call',
+      toolCallId: 'a',
+      toolName: 'doc_query',
+      input: '{"query":"a"}',
+    },
+  ])
+}
+
+function atomicCall(id: string, input = `{"query":"${id}"}`) {
+  return toolStream([
+    { type: 'tool-call', toolCallId: id, toolName: 'doc_query', input },
+  ])
+}
+
+function projectedOutputs(ids: string[]) {
+  return {
+    contractVersion: 'v2',
+    outputs: ids.map((toolCallId, index) => ({
+      toolCallId,
+      modelOutput: {
+        type: 'json',
+        value: { source: toolCallId, citation: index + 1 },
+      },
+    })),
+  }
+}
+
+function modelToolResults(prompt: Array<{ role: string; content: unknown }>) {
+  return prompt.flatMap((message) =>
+    message.role === 'tool' && Array.isArray(message.content)
+      ? message.content
+      : []
+  ) as Array<{ toolCallId: string; output: unknown }>
 }
 
 describe('default chat engine', () => {
@@ -790,6 +914,577 @@ describe('default chat engine', () => {
       expect.objectContaining({ toolCallId: 'call-history-unfinished' })
     )
     expect(model.doStreamCalls).toHaveLength(2)
+  })
+
+  test.each([
+    { version: 'v3' as const, atomicSecond: false },
+    { version: 'v4' as const, atomicSecond: false },
+    { version: 'v4' as const, atomicSecond: true },
+  ])('projects delivered calls in UI start order across $version model steps (atomic second: $atomicSecond)', async ({
+    version,
+    atomicSecond,
+  }) => {
+    const arrivals: string[] = []
+    const completions: string[] = []
+    const projections: string[][] = []
+    const host = new Hono()
+    host.post('/v2/tools/execute', async (c) => {
+      expect(c.req.header('authorization')).toBe('Bearer mcp-secret')
+      const request = engineToolExecutionV2RequestSchema.parse(
+        await c.req.json()
+      )
+      arrivals.push(request.toolCallId)
+      if (request.toolCallId === 'a')
+        await new Promise((resolve) => setTimeout(resolve, 50))
+      completions.push(request.toolCallId)
+      return c.json({
+        output: { source: request.toolCallId, raw: true },
+        modelOutput: { type: 'json', value: { baseline: request.toolCallId } },
+      })
+    })
+    host.post('/v2/tools/project', async (c) => {
+      expect(c.req.header('authorization')).toBe('Bearer mcp-secret')
+      const request = engineToolProjectionV2RequestSchema.parse(
+        await c.req.json()
+      )
+      projections.push(request.toolCallIds)
+      return c.json(projectedOutputs(request.toolCallIds))
+    })
+    const server = serve({ fetch: host.fetch, port: 0, hostname: '127.0.0.1' })
+    await once(server, 'listening')
+    const address = server.address()
+    if (!address || typeof address === 'string')
+      throw new Error('No HTTP listener')
+    let calls = 0
+    const doStream = async () => {
+      calls += 1
+      return {
+        stream:
+          calls === 1
+            ? interleavedCalls(atomicSecond)
+            : calls === 2
+              ? atomicCall('c')
+              : mockStream(),
+      }
+    }
+    const model =
+      version === 'v3'
+        ? new MockLanguageModelV3({ doStream })
+        : new MockLanguageModelV4({ doStream })
+    const app = createDefaultEngineApp({
+      serviceToken: 'service-secret',
+      mcpExecutionUrl: `http://127.0.0.1:${address.port}/v2/tools/execute`,
+      modelFactory: () => model,
+    })
+    try {
+      const response = await app.request('/v2/chat', {
+        method: 'POST',
+        headers: projectionHeaders,
+        body: JSON.stringify(projectionRequest),
+      })
+      const parts = await readParts(response, 'v2')
+      expect(
+        parts
+          .filter((part) => part.type === 'tool-input-start')
+          .map((part) => part.toolCallId)
+      ).toEqual(['a', 'b', 'c'])
+      expect(arrivals).toEqual(['b', 'a', 'c'])
+      expect(completions).toEqual(['b', 'a', 'c'])
+      expect(projections).toEqual([
+        ['a', 'b'],
+        ['a', 'b', 'c'],
+      ])
+      for (const id of ['a', 'b', 'c']) {
+        expect(parts).toContainEqual(
+          expect.objectContaining({
+            type: 'tool-output-available',
+            toolCallId: id,
+            output: { source: id, raw: true },
+          })
+        )
+      }
+      expect(model.doStreamCalls).toHaveLength(3)
+      for (const [index, ids] of [
+        [1, ['a', 'b']],
+        [2, ['a', 'b', 'c']],
+      ] as const) {
+        const results = modelToolResults(model.doStreamCalls[index]!.prompt)
+        expect(
+          results.find((item) => item.toolCallId === 'history')?.output
+        ).toEqual({ type: 'json', value: { source: 'history-model' } })
+        for (const [position, id] of ids.entries()) {
+          expect(
+            results.find((item) => item.toolCallId === id)?.output
+          ).toEqual({
+            type: 'json',
+            value: { source: id, citation: position + 1 },
+          })
+        }
+        expect(model.doStreamCalls[index]!.prompt.at(-1)).toEqual({
+          role: 'system',
+          content: 'reminder',
+        })
+      }
+    } finally {
+      if ('closeAllConnections' in server) server.closeAllConnections()
+      await new Promise<void>((resolve) => server.close(() => resolve()))
+    }
+  })
+
+  test('excludes malformed or lost host receipts and SDK-local invalid calls', async () => {
+    let calls = 0
+    const hostSuccesses: string[] = []
+    const server = createServer(async (request, response) => {
+      const chunks: Buffer[] = []
+      for await (const chunk of request) chunks.push(Buffer.from(chunk))
+      const payload = engineToolExecutionV2RequestSchema.parse(
+        JSON.parse(Buffer.concat(chunks).toString())
+      )
+      hostSuccesses.push(payload.toolCallId)
+      if (payload.toolCallId === 'lost') {
+        request.socket.destroy()
+        return
+      }
+      response.setHeader('content-type', 'application/json')
+      response.end(
+        JSON.stringify(
+          payload.toolCallId === 'malformed'
+            ? { output: { raw: true }, unexpected: true }
+            : payload.toolCallId === 'oversized'
+              ? { output: { raw: 'x'.repeat(8 * 1024 * 1024) } }
+              : { output: { source: payload.toolCallId, raw: true } }
+        )
+      )
+    })
+    server.listen(0, '127.0.0.1')
+    await once(server, 'listening')
+    const address = server.address()
+    if (!address || typeof address === 'string')
+      throw new Error('No HTTP listener')
+    const projector = vi.fn(
+      async ({ toolCallIds }: { toolCallIds: string[] }) =>
+        projectedOutputs(toolCallIds)
+    )
+    const model = new MockLanguageModelV3({
+      doStream: async () => {
+        calls += 1
+        return {
+          stream:
+            calls === 1
+              ? toolStream([
+                  {
+                    type: 'tool-call',
+                    toolCallId: 'lost',
+                    toolName: 'doc_query',
+                    input: '{"query":"lost"}',
+                  },
+                  {
+                    type: 'tool-call',
+                    toolCallId: 'bad-input',
+                    toolName: 'doc_query',
+                    input: '{"query":',
+                  },
+                  {
+                    type: 'tool-call',
+                    toolCallId: 'malformed',
+                    toolName: 'doc_query',
+                    input: '{"query":"malformed"}',
+                  },
+                  {
+                    type: 'tool-call',
+                    toolCallId: 'oversized',
+                    toolName: 'doc_query',
+                    input: '{"query":"oversized"}',
+                  },
+                  {
+                    type: 'tool-call',
+                    toolCallId: 'good',
+                    toolName: 'doc_query',
+                    input: '{"query":"good"}',
+                  },
+                ])
+              : mockStream(),
+        }
+      },
+    })
+    const app = createDefaultEngineApp({
+      serviceToken: 'service-secret',
+      modelFactory: () => model,
+      toolProjector: projector,
+      mcpExecutionUrl: `http://127.0.0.1:${address.port}/v2/tools/execute`,
+    })
+    try {
+      const response = await app.request('/v2/chat', {
+        method: 'POST',
+        headers: projectionHeaders,
+        body: JSON.stringify(projectionRequest),
+      })
+      const parts = await readParts(response, 'v2')
+      expect(hostSuccesses).toEqual(['lost', 'malformed', 'oversized', 'good'])
+      expect(projector).toHaveBeenCalledTimes(1)
+      expect(projector.mock.calls[0]![0].toolCallIds).toEqual(['good'])
+      expect(parts).toContainEqual(
+        expect.objectContaining({
+          type: 'tool-output-available',
+          toolCallId: 'good',
+          output: { source: 'good', raw: true },
+        })
+      )
+      expect(
+        parts
+          .filter(
+            (part) =>
+              part.type === 'tool-output-error' ||
+              part.type === 'tool-input-error'
+          )
+          .map((part) => part.toolCallId)
+      ).toEqual(
+        expect.arrayContaining(['lost', 'malformed', 'oversized', 'bad-input'])
+      )
+      expect(model.doStreamCalls).toHaveLength(2)
+      expect(
+        modelToolResults(model.doStreamCalls[1]!.prompt).find(
+          (item) => item.toolCallId === 'good'
+        )?.output
+      ).toEqual({ type: 'json', value: { source: 'good', citation: 1 } })
+    } finally {
+      server.closeAllConnections()
+      await new Promise<void>((resolve) => server.close(() => resolve()))
+    }
+  })
+
+  test.each([
+    [
+      'missing',
+      {
+        contractVersion: 'v2',
+        outputs: [
+          { toolCallId: 'a', modelOutput: { type: 'json', value: {} } },
+        ],
+      },
+    ],
+    ['extra', projectedOutputs(['a', 'b', 'foreign'])],
+    ['duplicate', projectedOutputs(['a', 'a'])],
+    ['reordered', projectedOutputs(['b', 'a'])],
+    [
+      'malformed',
+      {
+        contractVersion: 'v2',
+        outputs: [{ toolCallId: 'a', modelOutput: { type: 'unknown' } }],
+      },
+    ],
+  ])('rejects %s projections before another model call', async (_label, projection) => {
+    let calls = 0
+    const model = new MockLanguageModelV3({
+      doStream: async () => ({
+        stream: ++calls === 1 ? interleavedCalls() : mockStream(),
+      }),
+    })
+    const app = createDefaultEngineApp({
+      serviceToken: 'service-secret',
+      modelFactory: () => model,
+      toolExecutor: async ({ toolCallId }) => ({
+        output: { source: toolCallId },
+      }),
+      toolProjector: async () => projection,
+    })
+    const response = await app.request('/v2/chat', {
+      method: 'POST',
+      headers: projectionHeaders,
+      body: JSON.stringify(projectionRequest),
+    })
+    const parts = await readParts(response, 'v2')
+    expect(model.doStreamCalls).toHaveLength(1)
+    expect(parts.some((part) => part.type === 'error')).toBe(true)
+    expect(
+      parts.some(
+        (part) =>
+          part.type === 'message-metadata' &&
+          part.messageMetadata.usage.inputTokens === 12
+      )
+    ).toBe(true)
+  })
+
+  test.each([
+    'oversized',
+    'chunked',
+    'redirect',
+  ] as const)('rejects a %s host projection response', async (mode) => {
+    let calls = 0
+    let redirectTargetCalls = 0
+    const host = new Hono()
+    host.post('/v2/tools/project', (c) => {
+      if (mode === 'redirect') return c.redirect('/redirect-target', 307)
+      if (mode === 'chunked') {
+        const encoder = new TextEncoder()
+        const block = encoder.encode('x'.repeat(64 * 1024))
+        let chunk = 0
+        return new Response(
+          new ReadableStream({
+            pull(controller) {
+              if (chunk === 0) {
+                controller.enqueue(
+                  encoder.encode(
+                    '{"contractVersion":"v2","outputs":[{"toolCallId":"a","modelOutput":{"type":"json","value":"'
+                  )
+                )
+              } else if (chunk <= 256) {
+                controller.enqueue(block)
+              } else {
+                controller.enqueue(encoder.encode('"}}]}'))
+                controller.close()
+              }
+              chunk += 1
+            },
+          }),
+          { headers: { 'content-type': 'application/json' } }
+        )
+      }
+      return new Response('x', {
+        headers: { 'content-length': String(16 * 1024 * 1024 + 1) },
+      })
+    })
+    host.post('/redirect-target', (c) => {
+      redirectTargetCalls += 1
+      return c.json(projectedOutputs(['a']))
+    })
+    const server = serve({ fetch: host.fetch, port: 0, hostname: '127.0.0.1' })
+    await once(server, 'listening')
+    const address = server.address()
+    if (!address || typeof address === 'string')
+      throw new Error('No HTTP listener')
+    const model = new MockLanguageModelV3({
+      doStream: async () => ({
+        stream: ++calls === 1 ? atomicCall('a') : mockStream(),
+      }),
+    })
+    const app = createDefaultEngineApp({
+      serviceToken: 'service-secret',
+      modelFactory: () => model,
+      mcpExecutionUrl: `http://127.0.0.1:${address.port}/v2/tools/execute`,
+      toolExecutor: async () => ({ output: { raw: true } }),
+    })
+    try {
+      const response = await app.request('/v2/chat', {
+        method: 'POST',
+        headers: projectionHeaders,
+        body: JSON.stringify(projectionRequest),
+      })
+      const parts = await readParts(response, 'v2')
+      expect(parts.some((part) => part.type === 'error')).toBe(true)
+      expect(model.doStreamCalls).toHaveLength(1)
+      expect(redirectTargetCalls).toBe(0)
+    } finally {
+      if ('closeAllConnections' in server) server.closeAllConnections()
+      await new Promise<void>((resolve) => server.close(() => resolve()))
+    }
+  })
+
+  test.each([
+    'v1',
+    'v2',
+  ] as const)('preserves %s execution wire and skips projection without policy', async (version) => {
+    let calls = 0
+    let received: unknown
+    const host = new Hono()
+    host.post('/v2/tools/execute', async (c) => {
+      received = await c.req.json()
+      return c.json(
+        version === 'v2' ? { output: { raw: true } } : { raw: true }
+      )
+    })
+    const server = serve({ fetch: host.fetch, port: 0, hostname: '127.0.0.1' })
+    await once(server, 'listening')
+    const address = server.address()
+    if (!address || typeof address === 'string')
+      throw new Error('No HTTP listener')
+    const model = new MockLanguageModelV3({
+      doStream: async () => ({
+        stream: ++calls === 1 ? atomicCall('a') : mockStream(),
+      }),
+    })
+    const projector = vi.fn()
+    const app = createDefaultEngineApp({
+      serviceToken: 'service-secret',
+      modelFactory: () => model,
+      toolProjector: projector,
+      mcpExecutionUrl: `http://127.0.0.1:${address.port}/v2/tools/execute`,
+    })
+    try {
+      const { stepPolicy: _stepPolicy, ...withoutPolicy } = projectionRequest
+      const response = await app.request(`/${version}/chat`, {
+        method: 'POST',
+        headers: projectionHeaders,
+        body: JSON.stringify({
+          ...withoutPolicy,
+          contractVersion: version,
+          generation:
+            version === 'v1'
+              ? conformanceRequest.generation
+              : withoutPolicy.generation,
+          messages: [conformanceRequest.messages[0]],
+        }),
+      })
+      await readParts(response, version)
+      expect(received).toEqual({
+        serverId: 'doc-server',
+        toolName: 'doc_query',
+        input: { query: 'a' },
+        ...(version === 'v2' ? { contractVersion: 'v2', toolCallId: 'a' } : {}),
+      })
+      expect(projector).not.toHaveBeenCalled()
+      expect(model.doStreamCalls).toHaveLength(2)
+    } finally {
+      if ('closeAllConnections' in server) server.closeAllConnections()
+      await new Promise<void>((resolve) => server.close(() => resolve()))
+    }
+  })
+
+  test.each([
+    'timeout',
+    'cancel',
+  ] as const)('aborts projection on %s before another model call', async (mode) => {
+    let calls = 0
+    let projectionStarted!: () => void
+    const started = new Promise<void>((resolve) => {
+      projectionStarted = resolve
+    })
+    let projectionSignal: AbortSignal | undefined
+    const model = new MockLanguageModelV3({
+      doStream: async () => ({
+        stream: ++calls === 1 ? atomicCall('a') : mockStream(),
+      }),
+    })
+    const app = createDefaultEngineApp({
+      serviceToken: 'service-secret',
+      modelFactory: () => model,
+      toolExecutor: async () => ({ output: { raw: true } }),
+      toolProjector: async ({ abortSignal }) => {
+        projectionSignal = abortSignal
+        projectionStarted()
+        return await new Promise(() => undefined)
+      },
+    })
+    const controller = new AbortController()
+    const response = await app.request('/v2/chat', {
+      method: 'POST',
+      headers: projectionHeaders,
+      body: JSON.stringify(projectionRequest),
+      signal: controller.signal,
+    })
+    const partsPromise = readParts(response, 'v2')
+    await started
+    if (mode === 'cancel') controller.abort()
+    const parts = await partsPromise
+    expect(projectionSignal?.aborted).toBe(true)
+    expect(model.doStreamCalls).toHaveLength(1)
+    expect(
+      parts.some(
+        (part) =>
+          part.type === 'message-metadata' &&
+          part.messageMetadata.usage.inputTokens === 12
+      )
+    ).toBe(true)
+    expect(
+      parts.some((part) => part.type === 'error' || part.type === 'abort')
+    ).toBe(true)
+  }, 10_000)
+
+  test.each([
+    'timeout',
+    'cancel',
+  ] as const)('aborts a pending host projection over HTTP on %s', async (mode) => {
+    let calls = 0
+    let projectionStarted!: () => void
+    let projectionClosed!: () => void
+    const started = new Promise<void>((resolve) => {
+      projectionStarted = resolve
+    })
+    const closed = new Promise<void>((resolve) => {
+      projectionClosed = resolve
+    })
+    const server = createServer((request, response) => {
+      request.resume()
+      response.on('close', projectionClosed)
+      projectionStarted()
+    })
+    server.listen(0, '127.0.0.1')
+    await once(server, 'listening')
+    const address = server.address()
+    if (!address || typeof address === 'string')
+      throw new Error('No HTTP listener')
+    const model = new MockLanguageModelV3({
+      doStream: async () => ({
+        stream: ++calls === 1 ? atomicCall('a') : mockStream(),
+      }),
+    })
+    const app = createDefaultEngineApp({
+      serviceToken: 'service-secret',
+      modelFactory: () => model,
+      mcpExecutionUrl: `http://127.0.0.1:${address.port}/v2/tools/execute`,
+      toolExecutor: async () => ({ output: { raw: true } }),
+    })
+    const controller = new AbortController()
+    try {
+      const response = await app.request('/v2/chat', {
+        method: 'POST',
+        headers: projectionHeaders,
+        body: JSON.stringify(projectionRequest),
+        signal: controller.signal,
+      })
+      const partsPromise = readParts(response, 'v2')
+      await started
+      if (mode === 'cancel') controller.abort()
+      const parts = await partsPromise
+      await closed
+      expect(model.doStreamCalls).toHaveLength(1)
+      expect(
+        parts.some(
+          (part) =>
+            part.type === 'message-metadata' &&
+            part.messageMetadata.usage.inputTokens === 12
+        )
+      ).toBe(true)
+      expect(
+        parts.some((part) => part.type === 'error' || part.type === 'abort')
+      ).toBe(true)
+    } finally {
+      server.closeAllConnections()
+      await new Promise<void>((resolve) => server.close(() => resolve()))
+    }
+  }, 10_000)
+
+  test('fails closed when a streamed call ID is reused for a later result', async () => {
+    let calls = 0
+    const projector = vi.fn(
+      async ({ toolCallIds }: { toolCallIds: string[] }) =>
+        projectedOutputs(toolCallIds)
+    )
+    const model = new MockLanguageModelV3({
+      doStream: async () => ({
+        stream:
+          ++calls === 1
+            ? atomicCall('a')
+            : calls === 2
+              ? atomicCall('a')
+              : mockStream(),
+      }),
+    })
+    const app = createDefaultEngineApp({
+      serviceToken: 'service-secret',
+      modelFactory: () => model,
+      toolExecutor: async () => ({ output: { raw: true } }),
+      toolProjector: projector,
+    })
+    const response = await app.request('/v2/chat', {
+      method: 'POST',
+      headers: projectionHeaders,
+      body: JSON.stringify(projectionRequest),
+    })
+    const parts = await readParts(response, 'v2')
+    expect(projector).toHaveBeenCalledTimes(1)
+    expect(model.doStreamCalls).toHaveLength(2)
+    expect(parts.some((part) => part.type === 'error')).toBe(true)
   })
 })
 

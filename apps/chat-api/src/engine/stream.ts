@@ -455,6 +455,19 @@ export function createValidatedPlatformStream(
       return true
     }
 
+    if (parsed.type === 'message-metadata') {
+      controller.enqueue(
+        encodeSse(
+          platformMetadataPart(
+            parsed,
+            options.metadata(state),
+            options.showReasoning !== false
+          )
+        )
+      )
+      return true
+    }
+
     if (parsed.type === 'abort') {
       const alreadyFinalized = finalized !== null
       const metadata = await finalizeOnce()

@@ -2,6 +2,7 @@ import { createHash, randomUUID } from 'node:crypto'
 import {
   CHAT_ENGINE_CONTRACT_V2,
   CHAT_ENGINE_MAX_V2_REQUEST_BYTES,
+  CHAT_ENGINE_MAX_V2_TOOL_PROJECTION_REQUEST_BYTES,
   type EngineV2ChatRequest,
   engineV2ChatRequestSchema,
   type ImageAttachment,
@@ -296,18 +297,23 @@ function resolveCredentialMode(
     )
   }
   const custom = hasCustomKey || hasCustomBase
+  const generation = {
+    modelId: model.id,
+    deploymentId: model.deploymentId,
+    providerApi: model.usesResponsesApi
+      ? ('responses' as const)
+      : ('chat' as const),
+    ...(model.maxOutputTokens
+      ? { maxOutputTokens: model.maxOutputTokens }
+      : {}),
+    reasoningEffort: 'none',
+    reasoningSummary: 'none' as const,
+    responseStorage: model.usesResponsesApi && getOpenAIResponsesStore(),
+  }
   if (!custom) {
     return {
       generation: {
-        modelId: model.id,
-        deploymentId: model.deploymentId,
-        providerApi: model.usesResponsesApi ? 'responses' : 'chat',
-        ...(model.maxOutputTokens
-          ? { maxOutputTokens: model.maxOutputTokens }
-          : {}),
-        reasoningEffort: 'none',
-        reasoningSummary: 'none',
-        responseStorage: model.usesResponsesApi && getOpenAIResponsesStore(),
+        ...generation,
         credentialMode: { mode: 'deployment' },
       },
     }
@@ -326,15 +332,7 @@ function resolveCredentialMode(
 
   return {
     generation: {
-      modelId: model.id,
-      deploymentId: model.deploymentId,
-      providerApi: model.usesResponsesApi ? 'responses' : 'chat',
-      ...(model.maxOutputTokens
-        ? { maxOutputTokens: model.maxOutputTokens }
-        : {}),
-      reasoningEffort: 'none',
-      reasoningSummary: 'none',
-      responseStorage: model.usesResponsesApi && getOpenAIResponsesStore(),
+      ...generation,
       credentialMode: { mode: 'gateway', gatewayOrigin: providerBaseUrl },
     },
     providerAuthorization: `Bearer ${providerApiKey}`,
@@ -350,7 +348,6 @@ function withReasoning(
     ...generation,
     reasoningEffort: effort,
     reasoningSummary: effort === 'none' ? ('none' as const) : ('auto' as const),
-    responseStorage: process.env.CHAT_OPENAI_STORE_RESPONSES === 'true',
   }
 }
 
@@ -461,7 +458,7 @@ export function createChatApiApp(
         c: Context,
         participantId: string,
         chatbotId: string,
-        identity: { learnerBinding?: string }
+        identity: { learnerBinding?: string; authMode?: AuthMode }
       ) => Promise<Response>
     ) =>
     async (c: Context) => {
@@ -500,7 +497,7 @@ export function createChatApiApp(
   )
   app.get(
     '/api/chatbots/:chatbotId/credits',
-    participantRoute(async (c, participant, id) => {
+    participantRoute(async (c, participant, id, identity) => {
       const result = await getChatbotOr404(id, {
         allowedModelIds: true,
         allowedReasoningEffortsByModel: true,
@@ -509,7 +506,11 @@ export function createChatApiApp(
       if (isFailure(result))
         return c.json({ error: result.error }, result.status)
       const bot = result.chatbot
-      const availableModels = getModelsForChatbot(bot).map(
+      const authMode = identity.authMode ?? 'account'
+      const models = getModelsForChatbot(bot).filter(
+        (model) => authMode !== 'anonymous' || model.fallback
+      )
+      const availableModels = models.map(
         ({
           id,
           name,
@@ -531,7 +532,11 @@ export function createChatApiApp(
       return c.json({
         ...(await dependencies.getCredits(participant, id)),
         availableModels,
-        automaticModelId: getAutomaticModelId(bot.allowedModelIds),
+        automaticModelId:
+          authMode === 'anonymous'
+            ? (models[0]?.id ?? null)
+            : getAutomaticModelId(bot.allowedModelIds),
+        authMode,
         nextResetAt:
           getNextResetTime(bot.creditResetPeriod)?.toISOString() ?? null,
       })
@@ -757,6 +762,35 @@ export function createChatApiApp(
         return result ? c.json(result) : c.json({ code: 'UNAUTHORIZED' }, 401)
       } catch {
         return c.json({ code: 'TOOL_EXECUTION_FAILED' }, 400)
+      }
+    }
+  )
+
+  app.post(
+    '/v2/tools/project',
+    async (c, next) => {
+      const token =
+        extractBearerToken(c.req.header('authorization') ?? null) ?? undefined
+      if (!toolDispatcher.isAuthorized(token))
+        return c.json({ code: 'UNAUTHORIZED' }, 401)
+      await next()
+    },
+    bodyLimit({
+      maxSize: CHAT_ENGINE_MAX_V2_TOOL_PROJECTION_REQUEST_BYTES,
+      onError: (c) => c.json({ code: 'BODY_TOO_LARGE' }, 413),
+    }),
+    async (c) => {
+      try {
+        const token =
+          extractBearerToken(c.req.header('authorization') ?? null) ?? undefined
+        const result = await toolDispatcher.project(
+          token,
+          await c.req.json(),
+          c.req.raw.signal
+        )
+        return result ? c.json(result) : c.json({ code: 'UNAUTHORIZED' }, 401)
+      } catch {
+        return c.json({ code: 'TOOL_PROJECTION_FAILED' }, 400)
       }
     }
   )
@@ -1116,6 +1150,7 @@ export function createChatApiApp(
             assistantMessageId,
             parentId: userMessageId,
             allowRegeneration: input.allowRegeneration,
+            requireAttemptFence: true,
           })
         } catch (error) {
           if (error instanceof ChatTurnConflictError)
@@ -1279,6 +1314,9 @@ export function createChatApiApp(
           stepPolicy: {
             ...(firstToolName ? { firstToolName } : {}),
             trailingSystemMessage: stepReminder.content,
+            projectToolResults: tools.some((tool) =>
+              isDocQueryToolName(tool.name)
+            ),
             unbilledReplyReplacement: providerRefusalDeflection(
               turnSettings.replyLanguage ?? null,
               input.locale ?? getCookie(c, 'NEXT_LOCALE')
@@ -1361,6 +1399,37 @@ export function createChatApiApp(
           await failClaim()
           return c.json({ code: 'ATTACHMENT_PREPARATION_FAILED' }, 503)
         }
+        const settleFailedAttachmentWork = async () => {
+          const stopped = c.req.raw.signal.aborted
+          if (attachmentContext.creditsUsed <= 0 && !stopped) {
+            await failClaim()
+            return
+          }
+          const result = await dependencies.finalizeAssistantTurn({
+            ownerId: chatbot.ownerId,
+            usageClass: model.usageClass,
+            lifecycleAttemptId: claim.lifecycleAttemptId,
+            participantId: auth.participantId,
+            chatbotId,
+            threadId: input.threadId,
+            assistantMessageId,
+            userMessageId,
+            chatMode: input.selectedMode,
+            modelId: model.id,
+            reasoningEffort: appliedReasoningEffort,
+            reasoningContent: null,
+            content: stopped
+              ? [{ type: 'data', name: 'chat-stopped', data: {} }]
+              : [],
+            creditsUsed:
+              attachmentContext.creditsUsed > 0
+                ? attachmentContext.creditsUsed
+                : null,
+            ...(stopped ? {} : { outcome: 'failed' as const }),
+          })
+          if (result.persisted) releaseUnstartedClaim = undefined
+          else await failClaim()
+        }
         if (attachmentContext.aborted || engineAbort.signal.aborted) {
           const result = await dependencies.finalizeAssistantTurn({
             ownerId: chatbot.ownerId,
@@ -1391,7 +1460,7 @@ export function createChatApiApp(
               attachmentContext.documentPageSummary
             )
           } catch {
-            await failClaim()
+            await settleFailedAttachmentWork()
             return c.json({ code: 'MESSAGE_PERSISTENCE_FAILED' }, 500)
           }
         }
@@ -1407,7 +1476,7 @@ export function createChatApiApp(
         } catch {
           abortIncomingEngine()
           c.req.raw.signal.removeEventListener('abort', abortIncomingEngine)
-          await failClaim()
+          await settleFailedAttachmentWork()
           return c.json(
             {
               error: 'The selected chat engine failed before streaming',
@@ -1469,8 +1538,9 @@ export function createChatApiApp(
                       { type: 'data', name: 'chat-stopped', data: {} },
                     ]
                   : state.parts
+              const failed = state.status === 'error' || content.length === 0
               const result =
-                content.length > 0
+                content.length > 0 || (creditsUsed !== null && creditsUsed > 0)
                   ? await dependencies.finalizeAssistantTurn({
                       ownerId: chatbot.ownerId,
                       usageClass: model.usageClass,
@@ -1488,6 +1558,7 @@ export function createChatApiApp(
                         (state.reasoning || null),
                       content,
                       creditsUsed,
+                      ...(failed ? { outcome: 'failed' as const } : {}),
                     })
                   : { persisted: false, creditsUsed: null }
               if (!result.persisted) await failClaim()
@@ -1497,9 +1568,8 @@ export function createChatApiApp(
                     ? creditsUsed
                     : result.creditsUsed
                   : null,
-                finalPersistenceStatus: result.persisted
-                  ? 'persisted'
-                  : 'not-persisted',
+                finalPersistenceStatus:
+                  result.persisted && !failed ? 'persisted' : 'not-persisted',
               }
             } catch {
               await failClaim()

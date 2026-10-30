@@ -1,5 +1,13 @@
 import { z } from 'zod'
 
+export const CHAT_ENGINE_MAX_V2_TOOL_RESULT_BYTES = 8 * 1024 * 1024
+export const CHAT_ENGINE_MAX_V2_TOOL_CACHE_BYTES = 16 * 1024 * 1024
+export const CHAT_ENGINE_MAX_V2_DISPATCHER_CACHE_BYTES = 64 * 1024 * 1024
+export const CHAT_ENGINE_MAX_V2_TOOL_PROJECTION_REQUEST_BYTES = 16 * 1024
+export const CHAT_ENGINE_MAX_V2_TOOL_PROJECTION_BYTES = 16 * 1024 * 1024
+export const CHAT_ENGINE_MAX_V2_TOOL_PROJECTION_REQUESTS = 5
+export const CHAT_ENGINE_V2_TOOL_PROJECTION_TIMEOUT_MS = 5_000
+
 export const CHAT_ENGINE_CONTRACT_VERSION = 'v1' as const
 export const CHAT_ENGINE_CONTRACT_V2 = 'v2' as const
 export const CHAT_ENGINE_MAX_V2_REQUEST_BYTES = 64 * 1024 * 1024
@@ -218,6 +226,69 @@ export const engineModelToolOutputSchema = z.discriminatedUnion('type', [
     .strict(),
 ])
 
+export const engineToolExecutionV2RequestSchema = z
+  .object({
+    contractVersion: z.literal(CHAT_ENGINE_CONTRACT_V2),
+    toolCallId: boundedString(128),
+    serverId: boundedString(128),
+    toolName: boundedString(128),
+    input: jsonValueSchema,
+  })
+  .strict()
+
+export const engineToolProjectionV2RequestSchema = z
+  .object({
+    contractVersion: z.literal(CHAT_ENGINE_CONTRACT_V2),
+    toolCallIds: z.array(boundedString(128)).min(1).max(64),
+  })
+  .strict()
+  .superRefine((request, ctx) => {
+    if (new Set(request.toolCallIds).size !== request.toolCallIds.length)
+      ctx.addIssue({
+        code: z.ZodIssueCode.custom,
+        path: ['toolCallIds'],
+        message: 'Projection call identities must be unique.',
+      })
+  })
+
+export const engineToolProjectionV2ResultSchema = z
+  .object({
+    contractVersion: z.literal(CHAT_ENGINE_CONTRACT_V2),
+    outputs: z
+      .array(
+        z
+          .object({
+            toolCallId: boundedString(128),
+            modelOutput: engineModelToolOutputSchema,
+          })
+          .strict()
+      )
+      .min(1)
+      .max(64),
+  })
+  .strict()
+  .superRefine((result, ctx) => {
+    if (
+      new Set(result.outputs.map((output) => output.toolCallId)).size !==
+      result.outputs.length
+    )
+      ctx.addIssue({
+        code: z.ZodIssueCode.custom,
+        path: ['outputs'],
+        message: 'Projection call identities must be unique.',
+      })
+  })
+
+export type EngineToolExecutionV2Request = z.infer<
+  typeof engineToolExecutionV2RequestSchema
+>
+export type EngineToolProjectionV2Request = z.infer<
+  typeof engineToolProjectionV2RequestSchema
+>
+export type EngineToolProjectionV2Result = z.infer<
+  typeof engineToolProjectionV2ResultSchema
+>
+
 export const engineToolExecutionV2ResultSchema = z
   .object({
     output: requiredUnknownSchema,
@@ -424,6 +495,7 @@ export const engineV2ChatRequestSchema = engineChatRequestObjectSchema
         firstToolName: z.string().min(1).max(128).optional(),
         trailingSystemMessage: z.string().max(200_000),
         unbilledReplyReplacement: z.string().max(1_000).optional(),
+        projectToolResults: z.boolean().optional(),
       })
       .strict()
       .optional(),

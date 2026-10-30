@@ -20,7 +20,10 @@ import {
   engineManifestSchema,
   engineModelToolOutputSchema,
   engineStreamPartSchema,
+  engineToolExecutionV2RequestSchema,
   engineToolExecutionV2ResultSchema,
+  engineToolProjectionV2RequestSchema,
+  engineToolProjectionV2ResultSchema,
   engineV2ChatRequestSchema,
   engineV2StreamPartSchema,
   parseEngineChatRequest,
@@ -32,6 +35,70 @@ import {
 } from '../src/index.js'
 
 describe('chat engine contract', () => {
+  test('binds v2 execution and projection to unique bounded call identities', () => {
+    const execution = {
+      contractVersion: 'v2',
+      toolCallId: 'call-1',
+      serverId: 'host',
+      toolName: 'doc_query',
+      input: { query: 'test-query' },
+    }
+    expect(engineToolExecutionV2RequestSchema.parse(execution)).toEqual(
+      execution
+    )
+    expect(
+      engineToolExecutionV2RequestSchema.safeParse({
+        ...execution,
+        toolCallId: undefined,
+      }).success
+    ).toBe(false)
+    expect(
+      engineToolExecutionV2RequestSchema.safeParse({
+        ...execution,
+        input: undefined,
+      }).success
+    ).toBe(false)
+    const request = { contractVersion: 'v2', toolCallIds: ['call-1', 'call-2'] }
+    expect(engineToolProjectionV2RequestSchema.parse(request)).toEqual(request)
+    for (const toolCallIds of [
+      [],
+      ['call-1', 'call-1'],
+      Array.from({ length: 65 }, (_, index) => `call-${index}`),
+    ])
+      expect(
+        engineToolProjectionV2RequestSchema.safeParse({
+          ...request,
+          toolCallIds,
+        }).success
+      ).toBe(false)
+    const result = {
+      contractVersion: 'v2',
+      outputs: [
+        {
+          toolCallId: 'call-1',
+          modelOutput: { type: 'json', value: { sources: [] } },
+        },
+      ],
+    }
+    expect(engineToolProjectionV2ResultSchema.parse(result)).toEqual(result)
+    expect(
+      engineToolProjectionV2ResultSchema.safeParse({
+        ...result,
+        outputs: [...result.outputs, ...result.outputs],
+      }).success
+    ).toBe(false)
+    expect(
+      engineToolProjectionV2ResultSchema.safeParse({ ...result, output: {} })
+        .success
+    ).toBe(false)
+    expect(
+      engineToolProjectionV2RequestSchema.safeParse({
+        ...request,
+        contractVersion: 'v1',
+      }).success
+    ).toBe(false)
+  })
+
   test('limits host step policy and explicit provider transport to v2 admitted capabilities', () => {
     const request = {
       ...conformanceV2ToolRequest,

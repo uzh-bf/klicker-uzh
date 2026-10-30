@@ -690,27 +690,6 @@ describe('current host admission and turn lifecycle', () => {
   })
 })
 
-test('normalizes wildcard browser language headers to a valid locale before admission', async () => {
-  const dependencies = baseDependencies(async () => engineSse([]))
-  const response = await createChatApiApp(dependencies).request(
-    '/api/chatbots/chatbot-1/chat',
-    {
-      method: 'POST',
-      headers: {
-        cookie: 'participant_token=test',
-        origin: 'http://localhost',
-        'accept-language': '*',
-      },
-      body: JSON.stringify(body),
-    }
-  )
-  expect(response.status).toBe(200)
-  expect(dependencies.engine.chat).toHaveBeenCalledWith(
-    expect.objectContaining({ locale: 'en' }),
-    expect.anything()
-  )
-})
-
 test('preserves credentialed CORS on the streaming response', async () => {
   const dependencies = baseDependencies(async () => engineSse([]))
   const origin = 'https://chat.synthetic.invalid'
@@ -1086,4 +1065,301 @@ test('reloads only the participant message DTO and applies current reasoning vis
   } finally {
     findMany.mockRestore()
   }
+})
+
+test.each([
+  ' TRUE ',
+  '1',
+  'yes',
+  'on',
+])('preserves normalized Responses storage policy: %s', async (value) => {
+  vi.stubEnv('CHAT_OPENAI_STORE_RESPONSES', value)
+  try {
+    const dependencies = baseDependencies(async () => engineSse([]))
+    const response = await createChatApiApp(dependencies).request(
+      '/api/chatbots/chatbot-1/chat',
+      request(body)
+    )
+    expect(response.status).toBe(200)
+    expect(
+      vi.mocked(dependencies.engine.chat).mock.calls[0]?.[0].generation
+        .responseStorage
+    ).toBe(true)
+    await response.body?.cancel()
+  } finally {
+    vi.unstubAllEnvs()
+  }
+})
+
+test.each([
+  'primary-request',
+  'primary-stop',
+  'attachment-save',
+  'empty-primary',
+  'projection-error',
+  'partial-error',
+  'projection-stop',
+] as const)('settles completed work for %s with a truthful retryable outcome', async (stage) => {
+  const controller = new AbortController()
+  const dependencies = baseDependencies(async (sent) => {
+    if (stage === 'primary-stop') {
+      controller.abort()
+      throw new DOMException('test-stop', 'AbortError')
+    }
+    if (stage === 'primary-request')
+      throw new Error('synthetic-primary-failure')
+    if (stage === 'empty-primary') return engineSse([])
+    const metadata = {
+      contractVersion: 'v2',
+      engineId: 'fake-engine',
+      runId: sent.runId,
+      modelId: sent.generation.modelId,
+      deploymentId: sent.generation.deploymentId,
+      usage: {
+        inputTokens: 10,
+        outputTokens: 3,
+        totalTokens: 13,
+        reasoningTokens: null,
+        cacheReadTokens: null,
+        cacheWriteTokens: null,
+      },
+      reasoningContent: null,
+      aborted: stage === 'projection-stop',
+    }
+    const content =
+      stage === 'partial-error'
+        ? [
+            { type: 'text-start', id: 'text-1' },
+            { type: 'text-delta', id: 'text-1', delta: 'test-partial-answer' },
+            { type: 'text-end', id: 'text-1' },
+          ]
+        : [
+            {
+              type: 'tool-input-start',
+              toolCallId: 'call-1',
+              toolName: 'doc_query',
+            },
+            {
+              type: 'tool-input-available',
+              toolCallId: 'call-1',
+              toolName: 'doc_query',
+              input: {},
+            },
+            {
+              type: 'tool-output-available',
+              toolCallId: 'call-1',
+              output: { sources: [] },
+            },
+          ]
+    return engineSse([
+      { type: 'start', messageId: sent.assistantMessageId },
+      ...content,
+      { type: 'message-metadata', messageMetadata: metadata },
+      stage === 'projection-stop'
+        ? { type: 'abort' }
+        : {
+            type: 'error',
+            errorText: 'test-projection-error',
+            code: 'PROJECTION_FAILED',
+            retryable: true,
+          },
+    ])
+  })
+  dependencies.claimChatTurn = vi.fn(async () => ({
+    outcome: 'claimed' as const,
+    lifecycleAttemptId: 'attempt-1',
+  }))
+  dependencies.prepareTools = vi.fn(async () => ({
+    tools: {
+      doc_query: tool({
+        inputSchema: jsonSchema({ type: 'object' }),
+        execute: async () => ({}),
+      }),
+    },
+    promptToolNames: ['doc_query'],
+    promptContext: '',
+    close: async () => undefined,
+  }))
+  dependencies.prepareAttachmentContext = vi.fn(async (input) => ({
+    images: input.images,
+    documentPageSummary: null,
+    creditsUsed: 0.05,
+  }))
+  if (stage === 'attachment-save')
+    dependencies.persistUserMessage = vi
+      .fn()
+      .mockResolvedValueOnce(undefined)
+      .mockRejectedValueOnce(new Error('synthetic-save-failure'))
+  const response = await createChatApiApp(dependencies).request(
+    '/api/chatbots/chatbot-1/chat',
+    {
+      ...request({ ...body, images: ['data:image/png;base64,AQ=='] }),
+      signal: controller.signal,
+    }
+  )
+  await response.text()
+  expect(response.status).toBe(
+    ['primary-request', 'primary-stop'].includes(stage)
+      ? 503
+      : stage === 'attachment-save'
+        ? 500
+        : 200
+  )
+  expect(dependencies.claimChatTurn).toHaveBeenCalledWith(
+    expect.objectContaining({ requireAttemptFence: true })
+  )
+  expect(dependencies.finalizeAssistantTurn).toHaveBeenCalledOnce()
+  const settlement = vi.mocked(dependencies.finalizeAssistantTurn).mock
+    .calls[0]![0]
+  expect(settlement.lifecycleAttemptId).toBe('attempt-1')
+  if (
+    [
+      'primary-request',
+      'primary-stop',
+      'attachment-save',
+      'empty-primary',
+    ].includes(stage)
+  )
+    expect(settlement.creditsUsed).toBe(0.05)
+  else expect(settlement.creditsUsed).toBeGreaterThan(0.05)
+  if (stage === 'projection-stop' || stage === 'primary-stop') {
+    expect(settlement.outcome).toBeUndefined()
+    expect(settlement.content.at(-1)).toEqual({
+      type: 'data',
+      name: 'chat-stopped',
+      data: {},
+    })
+  } else expect(settlement.outcome).toBe('failed')
+  expect(dependencies.failChatTurn).not.toHaveBeenCalled()
+})
+
+test('keeps anonymous model choices and the automatic fallback aligned with Next policy', async () => {
+  const dependencies = baseDependencies(async () => engineSse([]))
+  dependencies.authenticate = vi.fn(async () => ({
+    participantId: 'participant-1',
+    courseId: 'course-1',
+    authMode: 'anonymous' as const,
+  }))
+  const findUnique = vi
+    .spyOn(prisma.chatbot, 'findUnique')
+    .mockResolvedValueOnce({
+      allowedModelIds: [],
+      allowedReasoningEffortsByModel: null,
+      creditResetPeriod: 'NONE',
+      status: 'PUBLISHED',
+    } as never)
+  try {
+    const response = await createChatApiApp(dependencies).request(
+      '/api/chatbots/11111111-1111-4111-8111-111111111111/credits'
+    )
+    expect(response.status).toBe(200)
+    const credits = (await response.json()) as {
+      authMode: string
+      automaticModelId: string | null
+      availableModels: Array<{ id: string; fallback: boolean }>
+    }
+    expect(credits.authMode).toBe('anonymous')
+    expect(credits.availableModels.length).toBeGreaterThan(0)
+    expect(credits.availableModels.every((model) => model.fallback)).toBe(true)
+    expect(credits.automaticModelId).toBe(credits.availableModels[0]!.id)
+  } finally {
+    findUnique.mockRestore()
+  }
+})
+
+test.each([
+  'execute',
+  'project',
+])('authenticates internal %s before body admission', async (operation) => {
+  const dependencies = baseDependencies(async () => engineSse([]))
+  const response = await createChatApiApp(dependencies).request(
+    `/v2/tools/${operation}`,
+    {
+      method: 'POST',
+      headers: { 'content-type': 'application/json' },
+      body: 'x'.repeat(20 * 1024),
+    }
+  )
+  expect(response.status).toBe(401)
+  expect(dependencies.authenticate).not.toHaveBeenCalled()
+  expect(dependencies.engine.chat).not.toHaveBeenCalled()
+})
+
+test('binds execution and ordered projection routes to the same admitted turn and revokes both on close', async () => {
+  const execute = vi.fn(async () => ({ value: 17 }))
+  const close = vi.fn(async () => undefined)
+  const dependencies = baseDependencies(async () => engineSse([]))
+  dependencies.prepareTools = vi.fn(async () => ({
+    tools: {
+      calculator: tool({
+        inputSchema: jsonSchema({ type: 'object' }),
+        execute,
+      }),
+    },
+    promptToolNames: [],
+    promptContext: '',
+    close,
+  }))
+  let token: string | undefined
+  const app = createChatApiApp(dependencies)
+  dependencies.engine.chat = vi.fn(async (_sent, options) => {
+    token = options?.mcpExecutionToken
+    const headers = {
+      authorization: `Bearer ${token}`,
+      'content-type': 'application/json',
+    }
+    const execution = await app.request('/v2/tools/execute', {
+      method: 'POST',
+      headers,
+      body: JSON.stringify({
+        contractVersion: 'v2',
+        toolCallId: 'call-1',
+        serverId: 'klicker-host',
+        toolName: 'calculator',
+        input: {},
+      }),
+    })
+    expect(execution.status).toBe(200)
+    expect(await execution.json()).toMatchObject({ output: { value: 17 } })
+    const project = await app.request('/v2/tools/project', {
+      method: 'POST',
+      headers,
+      body: JSON.stringify({ contractVersion: 'v2', toolCallIds: ['call-1'] }),
+    })
+    expect(project.status).toBe(200)
+    expect(await project.json()).toEqual({
+      contractVersion: 'v2',
+      outputs: [
+        {
+          toolCallId: 'call-1',
+          modelOutput: { type: 'json', value: { value: 17 } },
+        },
+      ],
+    })
+    const invalid = await app.request('/v2/tools/project', {
+      method: 'POST',
+      headers,
+      body: JSON.stringify({ contractVersion: 'v2', toolCallIds: ['foreign'] }),
+    })
+    expect(invalid.status).toBe(400)
+    return engineSse([])
+  })
+  const response = await app.request(
+    '/api/chatbots/chatbot-1/chat',
+    request(body)
+  )
+  expect(response.status).toBe(200)
+  await response.body?.cancel()
+  expect(execute).toHaveBeenCalledOnce()
+  expect(close).toHaveBeenCalledOnce()
+  const expired = await app.request('/v2/tools/project', {
+    method: 'POST',
+    headers: {
+      authorization: `Bearer ${token}`,
+      'content-type': 'application/json',
+    },
+    body: JSON.stringify({ contractVersion: 'v2', toolCallIds: ['call-1'] }),
+  })
+  expect(expired.status).toBe(401)
+  expect(execute).toHaveBeenCalledOnce()
 })

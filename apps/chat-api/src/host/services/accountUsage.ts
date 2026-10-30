@@ -49,11 +49,12 @@ export type FinalizeChatTurnInput = {
   reasoningEffort: string | null
   reasoningContent: string | null
   rawCreditsUsed: number | null
+  outcome?: 'completed' | 'failed'
   now?: Date
 }
 
 export type FinalizeChatTurnResult = {
-  outcome: 'completed' | 'duplicate' | 'empty'
+  outcome: 'completed' | 'failed' | 'duplicate' | 'empty'
   creditsUsed: number | null
 }
 
@@ -64,6 +65,7 @@ export type ClaimChatTurnInput = {
   assistantMessageId: string
   parentId: string | null
   allowRegeneration?: boolean
+  requireAttemptFence?: boolean
 }
 
 export type ClaimChatTurnResult =
@@ -145,9 +147,10 @@ export async function isChatAccountUsageAvailable({
 export async function claimChatTurn(
   input: ClaimChatTurnInput
 ): Promise<ClaimChatTurnResult> {
-  const lifecycleAttemptId = isChatTurnLifecycleWritesEnabled()
-    ? randomUUID()
-    : null
+  const lifecycleAttemptId =
+    input.requireAttemptFence || isChatTurnLifecycleWritesEnabled()
+      ? randomUUID()
+      : null
 
   return withTransaction(async (tx) => {
     const thread = await tx.chatThread.findFirst({
@@ -347,6 +350,9 @@ export async function failChatTurn({
 export async function finalizeChatTurn(
   input: FinalizeChatTurnInput
 ): Promise<FinalizeChatTurnResult> {
+  const failed = input.outcome === 'failed'
+  if (failed && input.lifecycleAttemptId === null)
+    throw new ChatTurnConflictError()
   const finalizedAt = input.now ?? new Date()
   const monthStart = getZurichMonthStart(finalizedAt)
   const credits =
@@ -395,7 +401,8 @@ export async function finalizeChatTurn(
       reasoningEffort: input.reasoningEffort,
       reasoningContent: input.reasoningContent,
       creditsUsed: credits,
-      lifecycleStatus: 'COMPLETED' as const,
+      lifecycleStatus: failed ? ('FAILED' as const) : ('COMPLETED' as const),
+      // A settled failure retires its fence so a late success cannot complete it.
       lifecycleAttemptId: null,
     }
     const completed =
@@ -415,7 +422,9 @@ export async function finalizeChatTurn(
               id: input.assistantMessageId,
               threadId: input.threadId,
               role: 'assistant',
-              lifecycleStatus: { in: ['IN_PROGRESS', 'FAILED'] },
+              lifecycleStatus: failed
+                ? 'IN_PROGRESS'
+                : { in: ['IN_PROGRESS', 'FAILED'] },
               lifecycleAttemptId: input.lifecycleAttemptId,
             },
             data: messageData,
@@ -427,6 +436,7 @@ export async function finalizeChatTurn(
           role: true,
           threadId: true,
           lifecycleStatus: true,
+          lifecycleAttemptId: true,
           creditsUsed: true,
           thread: {
             select: {
@@ -439,7 +449,10 @@ export async function finalizeChatTurn(
       if (
         existing?.role === 'assistant' &&
         existing.threadId === input.threadId &&
-        existing.lifecycleStatus === 'COMPLETED' &&
+        (existing.lifecycleStatus === 'COMPLETED' ||
+          (failed &&
+            existing.lifecycleStatus === 'FAILED' &&
+            existing.lifecycleAttemptId === null)) &&
         existing.thread.chatbotId === input.chatbotId &&
         existing.thread.chatbot.ownerId === input.ownerId
       ) {
@@ -499,7 +512,7 @@ export async function finalizeChatTurn(
     })
 
     return {
-      outcome: 'completed',
+      outcome: failed ? 'failed' : 'completed',
       creditsUsed: credits?.toNumber() ?? null,
     }
   })
