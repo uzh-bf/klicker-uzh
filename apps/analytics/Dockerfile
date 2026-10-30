@@ -17,4 +17,5 @@ COPY packages/prisma/src/prisma/schema/*.prisma prisma/schema/
 RUN rm prisma/schema/js.prisma prisma/schema/datasource.prisma
 COPY apps/analytics/prisma/schema/datasource.prisma prisma/schema/datasource.prisma
 
-RUN uv run --no-sync prisma generate
+RUN uv run --no-sync python -m nodeenv --node=24.21.0 /root/.cache/prisma-python/nodeenv \
+    && uv run --no-sync prisma generate
