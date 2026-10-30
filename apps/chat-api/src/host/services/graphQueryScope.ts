@@ -41,8 +41,13 @@ export function graphQueryDependencies(
         },
       })
       const actual =
-        chatbot?.knowledgeBases.map((binding) => binding.kbId).sort() ?? []
-      const expected = [...(context.kbIds ?? [])].sort()
+        chatbot?.knowledgeBases
+          .map((binding) => binding.kbId)
+          .sort((left, right) => (left < right ? -1 : left > right ? 1 : 0)) ??
+        []
+      const expected = [...(context.kbIds ?? [])].sort((left, right) =>
+        left < right ? -1 : left > right ? 1 : 0
+      )
       if (
         !chatbot ||
         (ownerPreview &&
