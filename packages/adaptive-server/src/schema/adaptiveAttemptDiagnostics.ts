@@ -9,6 +9,7 @@ import type {
   AdaptiveAttemptEstimateBackfill,
   AdaptiveAttemptRatingReason,
   AdaptiveAttemptReviewAccuracy,
+  AdaptiveAttemptVersion,
   AdaptiveDiagnosticAnswer,
   AdaptiveDiagnosticNodeResult,
   AdaptiveDiagnosticReview,
@@ -150,6 +151,7 @@ export function createAdaptiveAttemptDiagnosticsSchema(
         startedAt: t.expose('startedAt', { type: 'Date' }),
         completedAt: t.expose('completedAt', { type: 'Date', nullable: true }),
         elapsedSeconds: t.exposeInt('elapsedSeconds', { nullable: true }),
+        engineRevision: t.exposeString('engineRevision', { nullable: true }),
         stopReason: t.exposeString('stopReason', { nullable: true }),
         answerCount: t.exposeInt('answerCount'),
         overall: t.expose('overall', { type: NodeResultType }),
@@ -186,12 +188,46 @@ export function createAdaptiveAttemptDiagnosticsSchema(
       }),
     })
 
+  const VersionType = builder
+    .objectRef<AdaptiveAttemptVersion>('AdaptiveAttemptVersion')
+    .implement({
+      fields: (t) => ({
+        publicationVersion: t.exposeInt('publicationVersion', {
+          nullable: true,
+        }),
+        publishedAt: t.expose('publishedAt', { type: 'Date', nullable: true }),
+        current: t.exposeBoolean('current'),
+        engineRevision: t.exposeString('engineRevision', { nullable: true }),
+        estimatorImplementationVersion: t.exposeString(
+          'estimatorImplementationVersion',
+          { nullable: true }
+        ),
+        measurementVersion: t.exposeString('measurementVersion'),
+        attemptCount: t.exposeInt('attemptCount'),
+        firstStartedAt: t.expose('firstStartedAt', { type: 'Date' }),
+        lastStartedAt: t.expose('lastStartedAt', { type: 'Date' }),
+        totalQuestionCap: t.exposeInt('totalQuestionCap', { nullable: true }),
+        minQuestionsPerLeaf: t.exposeInt('minQuestionsPerLeaf', {
+          nullable: true,
+        }),
+        classificationZ: t.exposeFloat('classificationZ', { nullable: true }),
+        classificationToleranceBands: t.exposeInt(
+          'classificationToleranceBands',
+          { nullable: true }
+        ),
+        levelReachedFrom: t.exposeFloat('levelReachedFrom', {
+          nullable: true,
+        }),
+      }),
+    })
+
   const AdaptiveAttemptDiagnosticsRef = builder
     .objectRef<AdaptiveAttemptDiagnosticsList>('AdaptiveAttemptDiagnostics')
     .implement({
       fields: (t) => ({
         levelLabels: t.exposeStringList('levelLabels'),
         attempts: t.expose('attempts', { type: [SummaryType] }),
+        versions: t.expose('versions', { type: [VersionType] }),
         earlierPublicationAttemptCount: t.exposeInt(
           'earlierPublicationAttemptCount'
         ),

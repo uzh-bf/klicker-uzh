@@ -18,6 +18,13 @@ export type AdaptiveRuntimeSettings = {
   classificationZ: number
   topInformationRatio: number
   levelMappingRule: LevelMappingRule
+  /**
+   * Optional "level reached from" (0 <= x < 1, default 0), see
+   * `mapLevelsToTheta`. Applies to reported levels and classification bands.
+   * KlickerUZH no longer sets it: the stored share is the mastery mark of
+   * `levelMasteryOf`, which only annotates the reported level.
+   */
+  levelReachedFrom?: number
   thetaRange: ThetaRange
   /**
    * IRT_V1 only: classify within ±t bands of the band containing θ (Catalyst

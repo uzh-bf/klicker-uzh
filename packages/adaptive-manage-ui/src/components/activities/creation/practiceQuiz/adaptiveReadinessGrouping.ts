@@ -5,6 +5,7 @@ import type { AdaptiveReadinessIssueLike } from './adaptiveReadinessIssue'
 export const ADAPTIVE_COVERAGE_ISSUE_CODES = [
   'ADAPTIVE_COVERAGE_CELL_EMPTY',
   'ADAPTIVE_COVERAGE_BELOW_PRODUCT_MINIMUM',
+  'ADAPTIVE_COVERAGE_BELOW_RECOMMENDED',
   'ADAPTIVE_COVERAGE_BELOW_TARGET',
 ] as const
 

@@ -30,6 +30,7 @@ export function resolveLegacyRoughEstimate({
   levels,
   range,
   mappingRule,
+  reachedFrom = 0,
   z,
 }: {
   estimate:
@@ -42,6 +43,8 @@ export function resolveLegacyRoughEstimate({
   levels: LevelDefinition[]
   range: ThetaRange
   mappingRule: LevelMappingRule
+  /** "Level reached from", see `mapLevelsToTheta`. */
+  reachedFrom?: number
   z: number
 }): AdaptiveRoughEstimate | null {
   if (
@@ -57,7 +60,7 @@ export function resolveLegacyRoughEstimate({
   // The estimator may report theta at (or beyond) the scale clamp after a few
   // all-correct or all-wrong answers; the lowest/highest band then applies.
   const theta = clamp(estimate.theta, range)
-  const mapped = mapLevelsToTheta(levels, range, mappingRule)
+  const mapped = mapLevelsToTheta(levels, range, mappingRule, reachedFrom)
   const level =
     mapped.find(
       (candidate) =>

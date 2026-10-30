@@ -1,24 +1,29 @@
 import { useTranslations } from 'next-intl'
-import { Fragment, useState } from 'react'
+import { Fragment } from 'react'
 import { twMerge } from 'tailwind-merge'
+import AdaptiveDryRunStudentLevels from './AdaptiveDryRunStudentLevels'
+import {
+  type DryRunLevelSplit,
+  dryRunChartScale,
+  dryRunLevelSplit,
+  dryRunUnexpectedAnswers,
+} from './adaptiveDryRunChart'
 import {
   type DryRunCompetenceTrace,
   traceDryRunCompetence,
 } from './adaptiveDryRunExplain'
 import {
-  type DryRunMainMastery,
-  type DryRunMastery,
-  type DryRunMasterySettings,
-  dryRunMainMastery,
-  dryRunMastery,
-} from './adaptiveDryRunHints'
-import {
+  type DryRun,
   type DryRunStudent,
   type DryRunWorkspace,
   toDryRunStopReason,
 } from './adaptiveDryRunTypes'
 
 const KEY = 'manage.evaluation.adaptive.dryRuns.students'
+// A result this many levels or more off, with fewer than a quarter of its
+// questions within one level of the true level, was barely measured there.
+const FAR_FROM_TRUE_LEVEL = 2
+const NEAR_SHARE = 0.25
 
 const arrow = (change: string) =>
   change === 'UP' ? '↑ ' : change === 'DOWN' ? '↓ ' : ''
@@ -35,14 +40,12 @@ const differenceTone = (difference: number | null) =>
 function CompetenceTrace({
   name,
   trace,
-  hint,
-  main,
+  split,
   workspace,
 }: {
   name: string
   trace: DryRunCompetenceTrace
-  hint: DryRunMastery
-  main: DryRunMainMastery | null
+  split: DryRunLevelSplit | null
   workspace: DryRunWorkspace
 }) {
   const t = useTranslations()
@@ -57,6 +60,23 @@ function CompetenceTrace({
     lowest: label(trace.lowestWrongLevelId),
     result: label(trace.reportedLevelId),
   }
+  const orderOf = (id: number | null) =>
+    workspace.levels.find((level) => level.id === id)?.order ?? null
+  // A clear boundary bounds the estimate between the two questions; where it
+  // lands in between decides whether the result is at, below or above it.
+  const reportedOrder = orderOf(trace.reportedLevelId) ?? 0
+  const highestOrder = orderOf(trace.highestCorrectLevelId) ?? 0
+  const pattern =
+    trace.pattern !== 'CLEAR_BOUNDARY'
+      ? trace.pattern
+      : reportedOrder < highestOrder
+        ? 'CLEAR_BOUNDARYBELOW'
+        : reportedOrder > highestOrder
+          ? 'CLEAR_BOUNDARYABOVE'
+          : 'CLEAR_BOUNDARY'
+  const unexpected = trace.steps.filter(
+    ({ correct, expectedCorrect }) => correct !== expectedCorrect
+  ).length
 
   return (
     <div
@@ -65,15 +85,21 @@ function CompetenceTrace({
     >
       <div className="flex flex-wrap items-baseline justify-between gap-2">
         <h6 className="font-semibold">{name}</h6>
-        <span className="text-xs text-gray-600">
+        <span
+          className="text-xs text-gray-600"
+          title={t(
+            trace.classified
+              ? `${KEY}.determinedHint`
+              : `${KEY}.notDeterminedHint`
+          )}
+        >
           {trace.classified
             ? t(`${KEY}.determined`)
             : t(`${KEY}.notDetermined`)}
         </span>
       </div>
       <p className="mt-1 text-sm">
-        {t.rich(`${KEY}.result`, {
-          trueLevel: label(trace.trueLevelId),
+        {t.rich(`${KEY}.explain.result`, {
           result: label(trace.reportedLevelId),
           strong: (chunks) => <strong>{chunks}</strong>,
         })}{' '}
@@ -83,65 +109,64 @@ function CompetenceTrace({
           {trace.difference === null
             ? ''
             : trace.difference === 0
-              ? t(`${KEY}.matches`)
-              : t(trace.difference > 0 ? `${KEY}.tooHigh` : `${KEY}.tooLow`, {
-                  count: Math.abs(trace.difference),
-                })}
+              ? t(`${KEY}.explain.correct`)
+              : t(
+                  trace.difference > 0
+                    ? `${KEY}.explain.tooHigh`
+                    : `${KEY}.explain.tooLow`,
+                  { count: Math.abs(trace.difference) }
+                )}
+        </span>{' '}
+        <span className="text-gray-600">
+          {t(`${KEY}.explain.trueLevel`, { level: label(trace.trueLevelId) })}
         </span>
       </p>
-      {hint.position !== null && hint.probability !== null ? (
-        <p className="mt-1 text-sm" data-cy="adaptive-dry-run-trace-hint">
-          <span className="text-gray-600">
-            {t(`${KEY}.mastery`, {
-              position: Math.round(hint.position * 100),
-              level: label(trace.reportedLevelId),
-              probability: Math.round(hint.probability * 100),
-            })}
-          </span>
-          <span
-            className={twMerge(
-              'ml-2 rounded px-1.5 py-0.5 font-medium',
-              hint.mastered
-                ? 'bg-green-100 text-green-900'
-                : 'bg-gray-100 text-gray-700'
-            )}
-          >
-            {hint.mastered
-              ? t(`${KEY}.mastered`, { level: label(trace.reportedLevelId) })
-              : t(`${KEY}.notMastered`, {
-                  level: label(trace.reportedLevelId),
-                })}
-          </span>
-        </p>
-      ) : null}
-      {main ? (
-        <p className="mt-1 text-sm" data-cy="adaptive-dry-run-trace-main">
-          <span className="text-gray-600">
-            {t(`${KEY}.mainMastery`, {
-              level: main.label,
-              probability: Math.round(main.probability * 100),
-            })}
-          </span>
-          <span
-            className={twMerge(
-              'ml-2 rounded px-1.5 py-0.5 font-medium',
-              main.mastered
-                ? 'bg-green-100 text-green-900'
-                : 'bg-gray-100 text-gray-700'
-            )}
-          >
-            {main.mastered
-              ? t(`${KEY}.mastered`, { level: main.label })
-              : t(`${KEY}.notMastered`, { level: main.label })}
-          </span>
-        </p>
-      ) : null}
       <p className="mt-1 text-sm text-gray-700">
-        {t(`${KEY}.patterns.${trace.pattern}`, values)}
-        {trace.unexpectedCount > 0
-          ? ` ${t(`${KEY}.unexpectedNote`, { count: trace.unexpectedCount })}`
+        <strong>{t(`${KEY}.explain.why`)}</strong>{' '}
+        {t(`${KEY}.patterns.${pattern}`, values)}
+        {unexpected > 0
+          ? ` ${t(`${KEY}.unexpectedNote`, { count: unexpected })}`
+          : ''}
+        {trace.difference !== null &&
+        Math.abs(trace.difference) >= FAR_FROM_TRUE_LEVEL &&
+        trace.nearCount < trace.steps.length * NEAR_SHARE
+          ? ` ${t(`${KEY}.farNote`, {
+              start: trace.startsAfterOthers ? 'previous' : 'other',
+              first: label(trace.steps[0]?.levelId ?? null),
+              near: trace.nearCount,
+              count: trace.steps.length,
+              trueLevel: label(trace.trueLevelId),
+            })}`
           : ''}
       </p>
+      {split ? (
+        <p
+          className="mt-1 text-sm text-gray-700"
+          data-cy="adaptive-dry-run-trace-split"
+        >
+          <strong>{t(`${KEY}.explain.howSure`)}</strong>{' '}
+          {[
+            t(`${KEY}.explain.splitExactly`, {
+              probability: split.exactly,
+              level: label(trace.reportedLevelId),
+            }),
+            split.aboveLevelId !== null
+              ? t(`${KEY}.explain.splitHigher`, {
+                  probability: split.higher,
+                  level: label(split.aboveLevelId),
+                })
+              : null,
+            split.belowLevelId !== null
+              ? t(`${KEY}.explain.splitLower`, {
+                  probability: split.lower,
+                  level: label(split.belowLevelId),
+                })
+              : null,
+          ]
+            .filter(Boolean)
+            .join(' · ')}
+        </p>
+      ) : null}
 
       {trace.steps.length > 0 ? (
         <table className="mt-2 w-full text-left text-xs tabular-nums">
@@ -193,7 +218,20 @@ function CompetenceTrace({
                     ) : null}
                   </td>
                   <td className="py-1 pr-2">
-                    {step.after?.levelId != null ? (
+                    {step.bound ? (
+                      <span
+                        className="text-gray-500 italic"
+                        title={t(`${KEY}.boundHint`)}
+                      >
+                        {arrow(step.levelChange)}
+                        {t(
+                          step.bound.kind === 'BELOW'
+                            ? `${KEY}.levelBelow`
+                            : `${KEY}.levelAbove`,
+                          { level: label(step.bound.levelId) }
+                        )}
+                      </span>
+                    ) : step.after?.levelId != null ? (
                       <span
                         className={twMerge(
                           step.levelChange === 'UP' ||
@@ -239,17 +277,20 @@ function CompetenceTrace({
 // Per simulated student: true and reported level per competence; a row opens
 // the reasoning behind each result.
 function AdaptiveDryRunStudents({
+  run,
   students,
   workspace,
-  mastery,
+  open,
+  onOpen,
 }: {
+  run: DryRun
   students: DryRunStudent[]
   workspace: DryRunWorkspace
-  /** When a level counts as mastered (client reading). */
-  mastery: DryRunMasterySettings
+  /** The expanded student, also opened from the chart. */
+  open: number | null
+  onOpen: (index: number | null) => void
 }) {
   const t = useTranslations()
-  const [open, setOpen] = useState<number | null>(null)
   const rootOfItem = new Map(
     workspace.items.map(({ poolItemId, rootId }) => [poolItemId, rootId])
   )
@@ -257,23 +298,18 @@ function AdaptiveDryRunStudents({
     id === null
       ? '–'
       : (workspace.levels.find((level) => level.id === id)?.label ?? '–')
+  const scale = dryRunChartScale(workspace, run)
   const traces = (student: DryRunStudent) =>
     workspace.competences.map((competence) => ({
       name: competence.name,
-      main: dryRunMainMastery(
-        student.competences.find(
-          ({ nodeId }) => nodeId === competence.nodeId
-        ) ?? { theta: null, standardError: null, levelId: null },
-        workspace,
-        mastery
-      ),
-      hint: dryRunMastery(
-        student.competences.find(
-          ({ nodeId }) => nodeId === competence.nodeId
-        ) ?? { theta: null, standardError: null, levelId: null },
-        workspace,
-        mastery
-      ),
+      split: scale
+        ? dryRunLevelSplit(
+            scale,
+            student.competences.find(
+              ({ nodeId }) => nodeId === competence.nodeId
+            ) ?? { theta: null, standardError: null, levelId: null }
+          )
+        : null,
       trace: traceDryRunCompetence({
         student,
         nodeId: competence.nodeId,
@@ -310,7 +346,7 @@ function AdaptiveDryRunStudents({
                       'cursor-pointer border-t border-gray-100 align-top hover:bg-gray-50',
                       isOpen && 'bg-gray-50'
                     )}
-                    onClick={() => setOpen(isOpen ? null : student.index)}
+                    onClick={() => onOpen(isOpen ? null : student.index)}
                     aria-expanded={isOpen}
                     data-cy={`adaptive-dry-run-student-${student.index}`}
                   >
@@ -319,37 +355,19 @@ function AdaptiveDryRunStudents({
                       {`#${student.index}`}
                     </td>
                     <td className="px-3 py-2 text-xs">
-                      {rows.map(({ name, trace, hint, main }) => (
+                      {rows.map(({ name, trace, split }) => (
                         <div key={trace.nodeId}>
                           <span className="font-medium">{name}</span>
                           {`: ${label(trace.trueLevelId)} → `}
                           <span className={differenceTone(trace.difference)}>
                             {label(trace.reportedLevelId)}
                           </span>
-                          {hint.probability !== null ? (
+                          {split ? (
                             <span
-                              className={twMerge(
-                                'ml-1 rounded px-1',
-                                hint.mastered
-                                  ? 'bg-green-100 text-green-900'
-                                  : 'text-gray-500'
-                              )}
+                              className="ml-1 text-gray-500"
                               title={t(`${KEY}.rowHint`)}
                             >
-                              {`${hint.mastered ? '✓ ' : ''}${Math.round(hint.probability * 100)}%`}
-                            </span>
-                          ) : null}
-                          {main ? (
-                            <span
-                              className={twMerge(
-                                'ml-1 rounded px-1',
-                                main.mastered
-                                  ? 'bg-green-100 text-green-900'
-                                  : 'text-gray-500'
-                              )}
-                              title={t(`${KEY}.mainRowHint`)}
-                            >
-                              {`${main.label} ${main.mastered ? '✓ ' : ''}${Math.round(main.probability * 100)}%`}
+                              {`${split.exactly}%`}
                             </span>
                           ) : null}
                           {trace.difference !== 0 &&
@@ -369,7 +387,11 @@ function AdaptiveDryRunStudents({
                       {student.questionCount}
                     </td>
                     <td className="px-3 py-2 text-right tabular-nums">
-                      {student.answers.filter(({ flipped }) => flipped).length}
+                      {dryRunUnexpectedAnswers(
+                        student,
+                        workspace.levels,
+                        (id) => rootOfItem.get(id)
+                      )}
                     </td>
                     <td className="px-3 py-2 text-xs">
                       {t(
@@ -380,14 +402,20 @@ function AdaptiveDryRunStudents({
                   {isOpen ? (
                     <tr>
                       <td colSpan={6} className="bg-gray-50 px-3 py-3">
+                        <div className="mb-3 rounded border border-gray-200 bg-white p-3">
+                          <AdaptiveDryRunStudentLevels
+                            run={run}
+                            student={student}
+                            workspace={workspace}
+                          />
+                        </div>
                         <div className="grid gap-3 lg:grid-cols-2">
-                          {rows.map(({ name, trace, hint, main }) => (
+                          {rows.map(({ name, trace, split }) => (
                             <CompetenceTrace
                               key={trace.nodeId}
                               name={name}
                               trace={trace}
-                              hint={hint}
-                              main={main}
+                              split={split}
                               workspace={workspace}
                             />
                           ))}

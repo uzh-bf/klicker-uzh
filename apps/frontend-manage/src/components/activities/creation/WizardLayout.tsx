@@ -108,6 +108,7 @@ export interface PracticeQuizFormValues extends CommonFormValues {
     minQuestionsPerLeaf: string
     minItemsPerCoverageCell: string
     classificationToleranceBands: string
+    levelReachedFrom: string
     classificationZ: string
     showTimer: boolean
     retakeStartFromPreviousResult: boolean

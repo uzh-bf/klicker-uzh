@@ -145,10 +145,12 @@ it as invalid. V6 also carries a routing prior across roots, which needs no
 host change.
 
 `PracticeQuizAdaptiveConfig.classificationToleranceBands` stores the setting.
-It defaults to 0 and has a CHECK for 0–5. The authoring UI ("classification
-precision") offers exact, ±1 and ±2. New and existing quizzes both default to
-exact, because a tolerance requires the upgraded engine. For scales with ten
-or more levels the UI recommends ±1. With t = 1, about 80% of root estimates
+It defaults to 0 and has a CHECK for 0–5. The authoring UI ("required
+certainty", also in dry runs) offers ±1 and ±2 only. An exact level is almost
+never reached on fine scales, so the quiz would always run to its cap; a stored
+0 stays visible until changed. New quizzes start with ±1, which requires the
+upgraded engine; existing quizzes keep their value. Dry runs use the quiz's own
+`classificationZ` and no longer let authors change the confidence. With t = 1, about 80% of root estimates
 classify within ±1 sublevel on a 16-level scale. With t = 2, more than 99%
 classify, but the stated band then covers roughly a whole main level.
 
@@ -190,6 +192,20 @@ every IRT_V1 decision, and adaptive quizzes fail with
 `ADAPTIVE_ENGINE_UNAVAILABLE`. Don't publish a quiz with a classification
 tolerance above 0 until the engine runs `SEQUENTIAL_ROOTS_V6`. The publication
 guard refuses it before then.
+
+### Mastery mark (host only)
+
+`PracticeQuizAdaptiveConfig.levelReachedFrom` (authoring label "Mastered
+from", default 0.7, 0 = off) is a presentation-only mastery mark. It is never
+sent to the engine, although Catalyst accepts `settings.levelReachedFrom`:
+routing, stopping, classification and the reported level all use the plain
+bands of `mapLevelsToTheta`. `levelMasteryOf` in `@klicker-uzh/adaptive-contract`
+reports how far the estimate lies into its plain band; at or above the mark
+the student result shows "mastered – ready for <next level>", below it "not yet
+fully mastered". Publications freeze the mark in `evidenceMinimumSnapshot`, and
+the loaded runtime exposes it as `masteryFrom`. Dry runs store it with
+`masteryMark: true`; earlier runs without that flag shifted the bands instead
+and are still drawn that way.
 
 ### Retake context (engine contract)
 

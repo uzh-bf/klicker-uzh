@@ -27,6 +27,8 @@ model PracticeQuizAdaptiveConfig {
   /// IRT_V1 classification tolerance in level bands (0–5; 0 = exact level).
   /// Values above 0 require Catalyst SEQUENTIAL_ROOTS_V6.
   classificationToleranceBands Int                      @default(0)
+  /// IRT_V1 "level reached from" (0-0.95 of a level band); 0 = plain bands.
+  levelReachedFrom             Float                    @default(0)
   topInformationRatio          Float                    @default(0.8)
   defaultDiscrimination        Float                    @default(1.2)
   levelMappingRule             AdaptiveLevelMappingRule @default(NEAREST)
@@ -390,6 +392,9 @@ model AdaptivePracticeQuizAttempt {
   finalStandardError            Float?
   finalLevelId                  Int?
   finalScaleLevelId             Int?
+  /// Engine build that started the attempt (ADAPTIVE_ENGINE_REVISION, the
+  /// Catalyst image tag); null when the host has no revision configured.
+  engineRevision                String?
   elapsedSeconds                Int?
   nextPoolItemId                Int?
   nextAdministrationProbability Float?

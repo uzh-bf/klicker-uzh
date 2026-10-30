@@ -287,6 +287,7 @@ type AdaptiveAttemptDiagnosticSummary {
   competences: [AdaptiveAttemptNodeResult!]!
   completedAt: Date
   elapsedSeconds: Int
+  engineRevision: String
   estimatesComplete: Boolean!
   overall: AdaptiveAttemptNodeResult!
   participantCode: String!
@@ -303,6 +304,7 @@ type AdaptiveAttemptDiagnostics {
   earlierPublicationAttemptCount: Int!
   incompleteEstimateAttemptCount: Int!
   levelLabels: [String!]!
+  versions: [AdaptiveAttemptVersion!]!
 }
 
 type AdaptiveAttemptEstimateBackfill {
@@ -371,6 +373,23 @@ type AdaptiveAttemptReviewAccuracy {
 enum AdaptiveAttemptSelectionPolicy {
   FIRST_COMPLETED
   LATEST_COMPLETED
+}
+
+type AdaptiveAttemptVersion {
+  attemptCount: Int!
+  classificationToleranceBands: Int
+  classificationZ: Float
+  current: Boolean!
+  engineRevision: String
+  estimatorImplementationVersion: String
+  firstStartedAt: Date!
+  lastStartedAt: Date!
+  levelReachedFrom: Float
+  measurementVersion: String!
+  minQuestionsPerLeaf: Int
+  publicationVersion: Int
+  publishedAt: Date
+  totalQuestionCap: Int
 }
 
 type AdaptiveCalibrationCounts {
@@ -657,6 +676,7 @@ type AdaptivePracticeQuizConfig {
   competenceTreeId: String!
   defaultDiscrimination: Float!
   levelMappingRule: AdaptiveLevelMappingRule!
+  levelReachedFrom: Float!
   measurementVersion: String!
   minItemsPerCoverageCell: Int!
   minQuestionsPerLeaf: Int!
@@ -677,6 +697,7 @@ input AdaptivePracticeQuizConfigInput {
   classificationZ: Float
   competenceTreeId: String!
   elementOverrides: [AdaptivePracticeQuizElementOverrideInput!]
+  levelReachedFrom: Float
   minItemsPerCoverageCell: Int
   minQuestionsPerLeaf: Int
   nodeOverrides: [AdaptivePracticeQuizNodeOverrideInput!]
@@ -4222,7 +4243,7 @@ type Mutation {
   reviewElementGeneration(input: ReviewElementGenerationInput!): ElementGenerationBuild!
   revokeAssessmentReport(id: String!): CourseAssessmentReportRecord!
   revokeObjectAccess(objectId: String!, objectType: ObjectType!, permissionId: Int!): Int
-  runAdaptivePracticeQuizDryRun(classificationToleranceBands: Int!, classificationZ: Float!, competences: String!, fromLevelId: Int!, minQuestionsPerLeaf: Int!, noiseProbability: Float!, practiceQuizId: String!, seed: String, students: Int!, toLevelId: Int!, totalQuestionCap: Int!): AdaptiveDryRun
+  runAdaptivePracticeQuizDryRun(answerModel: String, classificationToleranceBands: Int!, classificationZ: Float!, competences: String!, fromLevelId: Int!, levelReachedFrom: Float!, minQuestionsPerLeaf: Int!, noiseProbability: Float!, practiceQuizId: String!, seed: String, students: Int!, toLevelId: Int!, totalQuestionCap: Int!): AdaptiveDryRun
   saveAdaptivePracticeQuizAttemptReview(attemptCode: String!, comment: String, expectedCompetenceLevels: [AdaptiveAttemptExpectedLevelInput!], expectedOverallLevelLabel: String, practiceQuizId: String!, verdict: String!): AdaptiveAttemptReview
   saveChatbotRevision(chatbotId: String!, expectedRevisionVersion: Int!, input: ChatbotRevisionSaveInput!): Chatbot
   saveGeneratedElements(input: ElementGenerationBuildInput!): ElementGenerationSaveResult!

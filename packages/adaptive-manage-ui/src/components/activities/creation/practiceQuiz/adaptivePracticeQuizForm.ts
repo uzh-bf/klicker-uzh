@@ -1,4 +1,5 @@
 import {
+  ADAPTIVE_RECOMMENDED_CLASSIFICATION_TOLERANCE_BANDS,
   type AdaptivePresetName,
   getAdaptivePresetDefaults,
 } from '@klicker-uzh/adaptive-contract'
@@ -58,12 +59,17 @@ export function createAdaptivePracticeQuizDefaultConfig(): AdaptivePracticeQuizC
     totalQuestionCap: String(defaults.totalQuestionCap),
     timeLimitMinutes: '',
     perLeafQuestionCap: nullableNumberToString(defaults.perLeafQuestionCap),
-    minQuestionsPerLeaf: String(defaults.minQuestionsPerLeaf),
+    // 0 by default: on larger trees any minimum per subcompetence quickly
+    // exceeds the questions per competence, and the quiz never stops early.
+    minQuestionsPerLeaf: '0',
     minItemsPerCoverageCell: String(defaults.minItemsPerCoverageCell),
     classificationZ: String(defaults.classificationZ),
-    // Exact level by default: a tolerance needs an upgraded engine and is an
-    // explicit authoring choice.
-    classificationToleranceBands: String(defaults.classificationToleranceBands),
+    // ±1 level by default: an exact level is rarely reachable on fine scales.
+    // Existing quizzes keep their stored value.
+    classificationToleranceBands: String(
+      ADAPTIVE_RECOMMENDED_CLASSIFICATION_TOLERANCE_BANDS
+    ),
+    levelReachedFrom: String(defaults.levelReachedFrom),
     showTimer: defaults.showTimer,
     retakeStartFromPreviousResult: defaults.retakeStartFromPreviousResult,
     retakeStartMaxAgeDays: String(defaults.retakeStartMaxAgeDays),
@@ -196,6 +202,10 @@ export function serializeAdaptivePracticeQuizConfig(
           config.classificationToleranceBands,
           defaults.classificationToleranceBands
         ),
+    // IRT_V1 only, like the tolerance.
+    levelReachedFrom: config.scaleVersionId
+      ? undefined
+      : requiredNumber(config.levelReachedFrom, defaults.levelReachedFrom),
     showTimer: config.showTimer,
     // IRT_V1 retake settings; calibrated-scale (IRT v2) quizzes ignore them.
     retakeStartFromPreviousResult: config.retakeStartFromPreviousResult,
@@ -298,6 +308,8 @@ export function mapAdaptivePracticeQuizPreviewToForm(
     classificationToleranceBands: String(
       preview.config.classificationToleranceBands
     ),
+    // Quizzes stored before the setting keep the nearest-level mapping.
+    levelReachedFrom: String(preview.config.levelReachedFrom ?? 0),
     showTimer: preview.config.showTimer,
     retakeStartFromPreviousResult: preview.config.retakeStartFromPreviousResult,
     retakeStartMaxAgeDays: String(preview.config.retakeStartMaxAgeDays),

@@ -7,23 +7,24 @@ import {
   percent,
 } from './adaptiveDryRunTypes'
 
+// The same tones as the chart points and the counts next to the table.
 const cellTone = (difference: number | null) =>
   difference === null
-    ? 'bg-gray-100 text-gray-700'
+    ? 'bg-gray-400 text-white'
     : difference === 0
-      ? 'bg-green-100 text-green-900'
+      ? 'bg-green-600 text-white'
       : Math.abs(difference) === 1
-        ? 'bg-amber-100 text-amber-900'
-        : 'bg-red-100 text-red-900'
+        ? 'bg-amber-500 text-white'
+        : 'bg-red-600 text-white'
 
 // True × reported level at full sublevel resolution: one row per true level
 // of the run, one column per level of the scale. Thicker lines separate main
 // levels (A2, B1, …) only for orientation; nothing is grouped.
 function AdaptiveDryRunConfusion({
-  summary,
+  confusion,
   levels,
 }: {
-  summary: DryRunSummary
+  confusion: DryRunSummary['confusion']
   levels: DryRunLevel[]
 }) {
   const t = useTranslations()
@@ -33,10 +34,10 @@ function AdaptiveDryRunConfusion({
     index > 0 &&
     mainLevelOf(ordered[index]!.label) !==
       mainLevelOf(ordered[index - 1]!.label)
-  const hasUnreported = summary.confusion.some(({ reported }) =>
+  const hasUnreported = confusion.some(({ reported }) =>
     reported.some(({ levelId }) => levelId === null)
   )
-  const rows = summary.confusion
+  const rows = confusion
     .slice()
     .sort(
       (a, b) =>

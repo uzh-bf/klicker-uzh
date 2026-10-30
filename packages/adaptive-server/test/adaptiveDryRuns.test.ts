@@ -4,6 +4,7 @@ import {
   summarizeAdaptiveDryRunSubcompetences,
 } from '../src/services/adaptivePracticeQuizDryRunSummary.js'
 import {
+  adaptiveDryRunEngineSeed,
   buildAdaptiveDryRunSpec,
   getAdaptivePracticeQuizDryRuns,
   runAdaptivePracticeQuizDryRun,
@@ -59,6 +60,7 @@ const input = {
   minQuestionsPerLeaf: 2,
   classificationZ: 1.28,
   classificationToleranceBands: 0,
+  levelReachedFrom: 0.7,
 }
 
 describe('dry-run summary', () => {
@@ -235,21 +237,57 @@ describe('dry-run spec', () => {
         noiseProbability: 0.02,
         trueLevels: { kind: 'EVEN', fromLevelId: 1, toLevelId: 3 },
         competences: 'SAME_LEVEL',
+        // ideal students sit in the middle of their level
+        idealOwnLevel: 'HALF',
       },
       settings: {
         totalQuestionCap: 20,
         minQuestionsPerLeaf: 2,
         classificationZ: 1.28,
         classificationToleranceBands: 0,
+        levelReachedFrom: 0.7,
+        // the share is the mastery mark only, never a band shift
+        masteryMark: true,
       },
     })
     expect(
       buildAdaptiveDryRunSpec({ ...input, toLevelId: 1 }, levels, seed).spec
         .trueLevels
     ).toEqual({ kind: 'FIXED', levelId: 1 })
-    expect(buildAdaptiveDryRunSpec(input, levels).spec.seed).toMatch(
-      /^[a-f0-9]{64}$/
+    expect(buildAdaptiveDryRunSpec(input, levels).spec.seed).toMatch(/^\d{6}$/)
+    expect(
+      buildAdaptiveDryRunSpec({ ...input, seed: ' class-2026 ' }, levels).spec
+        .seed
+    ).toBe('class-2026')
+  })
+
+  it('hands the engine a hexadecimal seed', () => {
+    expect(adaptiveDryRunEngineSeed(seed)).toBe(seed)
+    expect(adaptiveDryRunEngineSeed('42')).toMatch(/^[a-f0-9]{64}$/)
+    expect(adaptiveDryRunEngineSeed('42')).toBe(adaptiveDryRunEngineSeed('42'))
+    expect(adaptiveDryRunEngineSeed('42')).not.toBe(
+      adaptiveDryRunEngineSeed('43')
     )
+  })
+
+  it('stores realistic answers without noise and omits the ideal default', () => {
+    const realistic = buildAdaptiveDryRunSpec(
+      { ...input, answerModel: 'REALISTIC' },
+      levels,
+      seed
+    ).spec
+    expect(realistic).toMatchObject({
+      answerModel: 'REALISTIC',
+      noiseProbability: 0,
+    })
+    expect(
+      'answerModel' in
+        buildAdaptiveDryRunSpec(
+          { ...input, answerModel: 'IDEAL' },
+          levels,
+          seed
+        ).spec
+    ).toBe(false)
   })
 
   it('rejects inputs outside the engine bounds', () => {
@@ -262,7 +300,11 @@ describe('dry-run spec', () => {
       { fromLevelId: 3, toLevelId: 1 },
       { fromLevelId: 99 },
       { classificationToleranceBands: 6 },
-      { seed: 'xyz' },
+      { levelReachedFrom: 0.96 },
+      { levelReachedFrom: -0.1 },
+      { answerModel: 'RANDOM' },
+      { seed: 'two words' },
+      { seed: 'x'.repeat(65) },
     ])
       expect(() =>
         buildAdaptiveDryRunSpec({ ...input, ...invalid }, levels)

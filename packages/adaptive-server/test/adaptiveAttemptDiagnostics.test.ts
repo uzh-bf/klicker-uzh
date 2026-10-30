@@ -3,6 +3,7 @@ import { summarizeAdaptiveReviewAccuracy } from '../src/services/adaptivePractic
 import {
   getAdaptivePracticeQuizAttemptDiagnostic,
   getAdaptivePracticeQuizAttemptDiagnostics,
+  loadAdaptiveAttemptVersions,
 } from '../src/services/adaptivePracticeQuizAttemptDiagnostics.js'
 import {
   type AdaptiveDiagnosticAttemptRecord,
@@ -339,6 +340,86 @@ describe('adaptive attempt diagnostics', () => {
       withinOneLevelShare: 0.75,
       meanLevelDifference: 0.5,
       meanAbsoluteLevelDifference: 0.5,
+    })
+  })
+})
+
+describe('adaptive attempt versions', () => {
+  it('groups attempts by publication, engine and estimator, newest first', async () => {
+    const day = (d: number) => new Date(`2026-10-${10 + d}T08:00:00Z`)
+    const group = (
+      publicationId: string | null,
+      engineRevision: string | null,
+      count: number,
+      first: number,
+      last: number
+    ) => ({
+      publicationId,
+      engineRevision,
+      estimatorImplementationVersion: 'irt-v1-legacy',
+      measurementVersion: 'IRT_V1',
+      _count: { _all: count },
+      _min: { startedAt: day(first) },
+      _max: { startedAt: day(last) },
+    })
+    const prisma = {
+      adaptivePracticeQuizAttempt: {
+        groupBy: async () => [
+          group('pub-1', 'engine-a', 3, 1, 4),
+          group('pub-2', 'engine-b', 2, 5, 9),
+          group('pub-2', 'engine-a', 1, 5, 5),
+        ],
+      },
+      practiceQuizAdaptivePublication: {
+        findMany: async () => [
+          {
+            id: 'pub-1',
+            version: 1,
+            publishedAt: day(0),
+            totalQuestionCap: 60,
+            evidenceMinimumSnapshot: {
+              minimumResponsesPerLeaf: 2,
+              classificationZ: 1.28,
+            },
+          },
+          {
+            id: 'pub-2',
+            version: 2,
+            publishedAt: day(5),
+            totalQuestionCap: 100,
+            evidenceMinimumSnapshot: {
+              minimumResponsesPerLeaf: 0,
+              classificationZ: 1.28,
+              classificationToleranceBands: 1,
+              levelReachedFrom: 0.7,
+            },
+          },
+        ],
+      },
+    } as never
+
+    const versions = await loadAdaptiveAttemptVersions('quiz', 'pub-2', prisma)
+
+    expect(
+      versions.map((v) => [v.publicationVersion, v.engineRevision, v.current])
+    ).toEqual([
+      [2, 'engine-b', true],
+      [2, 'engine-a', true],
+      [1, 'engine-a', false],
+    ])
+    expect(versions[0]).toMatchObject({
+      attemptCount: 2,
+      firstStartedAt: day(5),
+      lastStartedAt: day(9),
+      totalQuestionCap: 100,
+      minQuestionsPerLeaf: 0,
+      classificationToleranceBands: 1,
+      levelReachedFrom: 0.7,
+    })
+    // Older publications have no tolerance or "reached from" frozen.
+    expect(versions[2]).toMatchObject({
+      classificationToleranceBands: null,
+      levelReachedFrom: null,
     })
   })
 })

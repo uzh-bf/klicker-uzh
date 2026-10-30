@@ -1,4 +1,4 @@
-import { randomBytes } from 'node:crypto'
+import { createHash, randomInt } from 'node:crypto'
 import {
   ADAPTIVE_DRY_RUN_MAX_DECISIONS,
   ADAPTIVE_DRY_RUN_MAX_STUDENTS,
@@ -7,6 +7,7 @@ import {
   type DryRunRequest,
   type DryRunResponse,
 } from '@klicker-uzh/adaptive-client'
+import { isValidAdaptiveLevelReachedFrom } from '@klicker-uzh/adaptive-contract'
 import type { ContextWithUser } from '@klicker-uzh/graphql/adaptive-context-types'
 import * as DB from '@klicker-uzh/prisma/client'
 import {
@@ -24,6 +25,7 @@ import {
   loadAdaptiveRuntime,
 } from './adaptivePracticeQuizRuntimeData.js'
 import { isAdaptiveTestingInfoEnabled } from './adaptivePracticeQuizTestingInfo.js'
+import { isAdaptiveUniqueConstraintConflict } from './adaptiveTransactions.js'
 
 /**
  * Dry runs: simulated students run through the engine against the current
@@ -40,11 +42,13 @@ export type AdaptiveDryRunInput = {
   fromLevelId: number
   toLevelId: number
   competences: 'SAME_LEVEL' | 'INDEPENDENT'
+  answerModel?: string | null
   seed?: string | null
   totalQuestionCap: number
   minQuestionsPerLeaf: number
   classificationZ: number
   classificationToleranceBands: number
+  levelReachedFrom: number
 }
 
 export type AdaptiveDryRunRecord = Pick<
@@ -87,6 +91,9 @@ export type AdaptiveDryRunWorkspace = {
   runs: AdaptiveDryRunRecord[]
 }
 
+// Tries to number a finished run before giving up on concurrent clashes.
+const RUN_NUMBER_ATTEMPTS = 3
+
 const runSelect = {
   id: true,
   number: true,
@@ -98,6 +105,21 @@ const runSelect = {
   summary: true,
   createdAt: true,
 } satisfies DB.Prisma.AdaptivePracticeQuizDryRunSelect
+
+function levelsOf(runtime: LoadedAdaptiveRuntime) {
+  return runtime.algorithm.levels
+    .slice()
+    .sort((a, b) => a.order - b.order)
+    .map(({ id, label, order }) => ({ id, label, order }))
+}
+
+function scaleOf(runtime: LoadedAdaptiveRuntime) {
+  return {
+    thetaMin: runtime.algorithm.settings.thetaRange.min,
+    thetaMax: runtime.algorithm.settings.thetaRange.max,
+    levelMappingRule: runtime.algorithm.settings.levelMappingRule,
+  }
+}
 
 function settingsOf(
   runtime: LoadedAdaptiveRuntime
@@ -111,6 +133,8 @@ function settingsOf(
       'classificationToleranceBands' in settings
         ? (settings.classificationToleranceBands ?? 0)
         : 0,
+    // The quiz's mastery mark ("mastered from"), not a band shift.
+    levelReachedFrom: runtime.masteryFrom,
   }
 }
 
@@ -160,11 +184,7 @@ export async function getAdaptivePracticeQuizDryRuns(
     available: runtime !== null,
     unavailableReason: runtime === null ? 'NO_IRT_V1_PUBLICATION' : null,
     publicationId: runtime?.publication.id ?? null,
-    levels:
-      runtime?.algorithm.levels
-        .slice()
-        .sort((a, b) => a.order - b.order)
-        .map(({ id, label, order }) => ({ id, label, order })) ?? [],
+    levels: runtime ? levelsOf(runtime) : [],
     competences:
       runtime?.algorithm.nodes
         .filter(({ parentId, enabled }) => parentId === null && enabled)
@@ -188,13 +208,7 @@ export async function getAdaptivePracticeQuizDryRuns(
         nodeNames: [...item.nodeNamePath],
       })) ?? [],
     defaults: runtime ? settingsOf(runtime) : null,
-    scale: runtime
-      ? {
-          thetaMin: runtime.algorithm.settings.thetaRange.min,
-          thetaMax: runtime.algorithm.settings.thetaRange.max,
-          levelMappingRule: runtime.algorithm.settings.levelMappingRule,
-        }
-      : null,
+    scale: runtime ? scaleOf(runtime) : null,
     maxStudents: ADAPTIVE_DRY_RUN_MAX_STUDENTS,
     maxDecisions: ADAPTIVE_DRY_RUN_MAX_DECISIONS,
     runs: runs.map((run) => ({ ...run, students: null })),
@@ -264,11 +278,28 @@ function invalidInput(message: string) {
   return adaptivePracticeQuizError(message, 'ADAPTIVE_DRY_RUN_INVALID')
 }
 
+const SEED_PATTERN = /^[A-Za-z0-9_-]{1,64}$/
+
+/** A short random seed that people can read, note and type again. */
+export function randomAdaptiveDryRunSeed() {
+  return String(randomInt(100_000, 1_000_000))
+}
+
+/**
+ * The engine's seed: 64 hexadecimal characters. Seeds of earlier runs already
+ * have that form and pass unchanged; any other seed is hashed.
+ */
+export function adaptiveDryRunEngineSeed(seed: string) {
+  return /^[a-f0-9]{64}$/.test(seed)
+    ? seed
+    : createHash('sha256').update(seed).digest('hex')
+}
+
 /** Validates the form input and builds the engine spec and settings. */
 export function buildAdaptiveDryRunSpec(
   input: AdaptiveDryRunInput,
   levels: ReadonlyArray<{ id: number; order: number }>,
-  seed = input.seed ?? randomBytes(32).toString('hex')
+  seed = input.seed?.trim() || randomAdaptiveDryRunSeed()
 ) {
   const isInt = (value: number, min: number, max: number) =>
     Number.isInteger(value) && value >= min && value <= max
@@ -282,8 +313,10 @@ export function buildAdaptiveDryRunSpec(
     input.noiseProbability > 0.5
   )
     throw invalidInput('The noise must lie between 0% and 50%.')
-  if (!/^[a-f0-9]{64}$/.test(seed))
-    throw invalidInput('The seed must have 64 hexadecimal characters.')
+  if (!SEED_PATTERN.test(seed))
+    throw invalidInput(
+      'The seed may have up to 64 letters, digits, hyphens and underscores.'
+    )
   if (!isInt(input.totalQuestionCap, 1, 1000))
     throw invalidInput('The question cap must lie between 1 and 1000.')
   if (input.students * input.totalQuestionCap > ADAPTIVE_DRY_RUN_MAX_DECISIONS)
@@ -302,18 +335,25 @@ export function buildAdaptiveDryRunSpec(
     throw invalidInput('The confidence value is invalid.')
   if (!isInt(input.classificationToleranceBands, 0, 5))
     throw invalidInput('The classification precision is invalid.')
+  if (!isValidAdaptiveLevelReachedFrom(input.levelReachedFrom))
+    throw invalidInput('“Level reached from” must lie between 0% and 95%.')
   if (input.competences !== 'SAME_LEVEL' && input.competences !== 'INDEPENDENT')
     throw invalidInput('The competence mode is invalid.')
+  const answerModel = input.answerModel ?? 'IDEAL'
+  if (answerModel !== 'IDEAL' && answerModel !== 'REALISTIC')
+    throw invalidInput('The answer model is invalid.')
   const order = new Map(levels.map(({ id, order }) => [id, order]))
   const from = order.get(input.fromLevelId)
   const to = order.get(input.toLevelId)
   if (from === undefined || to === undefined || from > to)
     throw invalidInput('Choose a valid level range.')
 
+  const realistic = answerModel === 'REALISTIC'
   const spec: PrismaJson.PrismaAdaptiveDryRunSpec = {
     students: input.students,
     seed,
-    noiseProbability: input.noiseProbability,
+    // Realistic answers carry their own randomness; noise does not apply.
+    noiseProbability: realistic ? 0 : input.noiseProbability,
     trueLevels:
       input.fromLevelId === input.toLevelId
         ? { kind: 'FIXED', levelId: input.fromLevelId }
@@ -323,12 +363,20 @@ export function buildAdaptiveDryRunSpec(
             toLevelId: input.toLevelId,
           },
     competences: input.competences,
+    // Ideal students sit in the middle of their level, as reported levels
+    // use the plain bands: their own level is answered right and wrong in
+    // turn instead of all right (which puts them on the border above).
+    ...(realistic
+      ? { answerModel: 'REALISTIC' as const }
+      : { idealOwnLevel: 'HALF' as const }),
   }
   const settings: PrismaJson.PrismaAdaptiveDryRunSettings = {
     totalQuestionCap: input.totalQuestionCap,
     minQuestionsPerLeaf: input.minQuestionsPerLeaf,
     classificationZ: input.classificationZ,
     classificationToleranceBands: input.classificationToleranceBands,
+    levelReachedFrom: input.levelReachedFrom,
+    masteryMark: true,
   }
   return { spec, settings }
 }
@@ -357,7 +405,11 @@ export function buildAdaptiveDryRunRequest(
     settings: published,
     ...snapshot
   } = request
-  const { classificationToleranceBands: _tolerance, ...base } = published
+  const {
+    classificationToleranceBands: _tolerance,
+    levelReachedFrom: _reachedFrom,
+    ...base
+  } = published
   return {
     ...snapshot,
     settings: {
@@ -371,8 +423,10 @@ export function buildAdaptiveDryRunRequest(
             classificationToleranceBands: settings.classificationToleranceBands,
           }
         : {}),
+      // The run's "mastered from" share is a mastery mark for presentation
+      // only, so the engine always uses the plain bands.
     },
-    dryRun: spec,
+    dryRun: { ...spec, seed: adaptiveDryRunEngineSeed(spec.seed) },
   }
 }
 
@@ -430,29 +484,42 @@ export async function runAdaptivePracticeQuizDryRun(
       leaves: dryRunLeaves(runtime),
       pool: runtime.algorithm.pool,
     }),
+    scale: { ...scaleOf(runtime), levels: levelsOf(runtime) },
   }
 
-  // Run numbers count up per quiz; the unique key settles concurrent runs.
-  const latest = await ctx.prisma.adaptivePracticeQuizDryRun.findFirst({
-    where: { practiceQuizId },
-    orderBy: { number: 'desc' },
-    select: { number: true },
-  })
-  return await ctx.prisma.adaptivePracticeQuizDryRun.create({
-    data: {
-      practiceQuizId,
-      publicationId: runtime.publication.id,
-      createdById: ctx.user.sub,
-      number: (latest?.number ?? 0) + 1,
-      engineRevision: process.env.ADAPTIVE_ENGINE_REVISION || null,
-      durationMs,
-      spec,
-      effectiveSettings: settings,
-      summary,
-      students,
-    },
-    select: { ...runSelect, students: true },
-  })
+  // Run numbers count up per quiz. Two runs finishing together can pick the
+  // same number; the unique key rejects the second, which then takes the
+  // next one instead of losing its finished work.
+  for (let attempt = 1; ; attempt += 1) {
+    const latest = await ctx.prisma.adaptivePracticeQuizDryRun.findFirst({
+      where: { practiceQuizId },
+      orderBy: { number: 'desc' },
+      select: { number: true },
+    })
+    try {
+      return await ctx.prisma.adaptivePracticeQuizDryRun.create({
+        data: {
+          practiceQuizId,
+          publicationId: runtime.publication.id,
+          createdById: ctx.user.sub,
+          number: (latest?.number ?? 0) + 1,
+          engineRevision: process.env.ADAPTIVE_ENGINE_REVISION || null,
+          durationMs,
+          spec,
+          effectiveSettings: settings,
+          summary,
+          students,
+        },
+        select: { ...runSelect, students: true },
+      })
+    } catch (error) {
+      if (
+        !isAdaptiveUniqueConstraintConflict(error) ||
+        attempt >= RUN_NUMBER_ATTEMPTS
+      )
+        throw error
+    }
+  }
 }
 
 // Decision cost grows with the tree and pool (200 x 100 on a 1,200-item,
