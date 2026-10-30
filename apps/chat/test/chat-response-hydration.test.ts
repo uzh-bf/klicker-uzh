@@ -69,6 +69,7 @@ type MockThread = {
   messages: any[]
   allMessages?: any[]
   isRunning?: boolean
+  replyContextLimited?: boolean
 }
 
 type MockState = {
@@ -128,6 +129,112 @@ describe('useChatResponse attachment hydration', () => {
     })
 
     loadCreditsMock.mockClear()
+  })
+
+  test.each([
+    99, 100, 101,
+  ])('bounds %i reply messages without changing saved history', async (count) => {
+    const messages = Array.from({ length: count }, (_, index) => ({
+      id: `history-${index}`,
+      role:
+        index % 2 === 0 || index === count - 1
+          ? ('user' as const)
+          : ('assistant' as const),
+      content: [{ type: 'text' as const, text: `synthetic-${index}` }],
+      parentId: index === 0 ? null : `history-${index - 1}`,
+    }))
+    storeState.threads[0]!.messages = messages
+    storeState.threads[0]!.allMessages = messages
+    const saved = structuredClone(messages)
+    const fetchSpy = vi
+      .fn()
+      .mockResolvedValue(
+        createStreamingResponse(['data: {"type":"finish"}', 'data: [DONE]'])
+      )
+    vi.stubGlobal('fetch', fetchSpy)
+    await useChatResponse('model-1', 'chat', 'none').generateChatResponse(
+      messages,
+      'thread-1'
+    )
+    const request = JSON.parse(fetchSpy.mock.calls[0]![1].body)
+    expect(request.messages.length).toBeLessThanOrEqual(100)
+    expect(request.messages[0].role).toBe('user')
+    expect(request.messages.at(-1).id).toBe(messages.at(-1)!.id)
+    expect(request.parentId).toBe(messages.at(-1)!.parentId)
+    expect(storeState.threads[0]!.allMessages).toEqual(saved)
+    expect(storeState.threads[0]!.replyContextLimited).toBe(count > 100)
+  })
+
+  test('limits serialized history by bytes while preserving the current question and complete exchanges', async () => {
+    const messages = Array.from({ length: 25 }, (_, index) => ({
+      id: `large-${index}`,
+      role: index % 2 === 0 ? ('user' as const) : ('assistant' as const),
+      content: [{ type: 'text' as const, text: '界'.repeat(300000) }],
+    }))
+    storeState.threads[0]!.allMessages = messages
+    const fetchSpy = vi
+      .fn()
+      .mockResolvedValue(createStreamingResponse(['data: {"type":"finish"}']))
+    vi.stubGlobal('fetch', fetchSpy)
+    await useChatResponse('model-1', 'chat', 'none').generateChatResponse(
+      messages,
+      'thread-1'
+    )
+    const request = JSON.parse(fetchSpy.mock.calls[0]![1].body)
+    expect(
+      new TextEncoder().encode(JSON.stringify(request.messages)).byteLength
+    ).toBeLessThanOrEqual(16 * 1024 * 1024)
+    expect(request.messages[0].role).toBe('user')
+    expect(request.messages.at(-1).content).toBe(
+      messages.at(-1)!.content[0]!.text
+    )
+    expect(storeState.threads[0]!.allMessages).toHaveLength(25)
+    expect(storeState.threads[0]!.replyContextLimited).toBe(true)
+  })
+
+  test('reports server budget omissions and retains completed tool-only history', async () => {
+    const messages = [
+      {
+        id: 'question',
+        role: 'user' as const,
+        content: [{ type: 'text' as const, text: 'synthetic' }],
+      },
+      {
+        id: 'tool',
+        role: 'assistant' as const,
+        content: [
+          {
+            type: 'tool-call' as const,
+            toolCallId: 'call',
+            toolName: 'retrieve',
+            result: { content: [] },
+          },
+        ],
+      },
+      {
+        id: 'follow-up',
+        role: 'user' as const,
+        content: [{ type: 'text' as const, text: 'synthetic follow-up' }],
+      },
+    ]
+    const fetchSpy = vi
+      .fn()
+      .mockResolvedValue(
+        createStreamingResponse([
+          'data: {"type":"start","messageMetadata":{"contextOmittedMessages":2}}',
+          'data: {"type":"finish","messageMetadata":{"contextOmittedMessages":2}}',
+        ])
+      )
+    vi.stubGlobal('fetch', fetchSpy)
+    await useChatResponse('model-1', 'chat', 'none').generateChatResponse(
+      messages,
+      'thread-1'
+    )
+    const request = JSON.parse(fetchSpy.mock.calls[0]![1].body)
+    expect(
+      request.messages.map((message: { id: string }) => message.id)
+    ).toEqual(['question', 'tool', 'follow-up'])
+    expect(storeState.threads[0]!.replyContextLimited).toBe(true)
   })
 
   test.each([
