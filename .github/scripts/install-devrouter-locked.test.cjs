@@ -21,8 +21,8 @@ function fixture(t, { exitCode = 0, missingBinary = false } = {}) {
 const fs = require('node:fs')
 const args = process.argv.slice(2)
 if (args[0] === '-V') {
-  console.log('Installed CLI version: 0.5.1')
-  console.log('Local repo version (.devrouter.yml): 0.5.1')
+  console.log('Installed CLI version: 0.6.1')
+  console.log('Local repo version (.devrouter.yml): 0.6.1')
   process.exit(0)
 }
 if (args[0] !== 'profile' || args[1] !== 'plan') process.exit(2)
