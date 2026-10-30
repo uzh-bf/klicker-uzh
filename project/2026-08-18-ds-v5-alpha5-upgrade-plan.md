@@ -1464,3 +1464,29 @@ evidence. The attempt grants no retry, recreation, cleanup or guard bypass.
   diagnostics and one canonical stop repair under a five-minute deadline; guard
   refusal or uncertain drainage remains unknown, with no retry or bypass.
   Required CI or admission refusal blocks only dependent runtime work.
+
+### Focused student layout SSR correction — 2026-10-30
+
+- **Actual acceptance:** ordinary full-profile startup, Auth and sampled lecturer
+  work passed on the previous candidate. Student Live Quiz SSR failed because
+  the panels hook defaults storage to the browser-only localStorage global.
+  The approved single runtime attempt ended in verified canonical stop with
+  preserved storage and zero checkout routes; it does not authorize a retry.
+- **Source scope and authority:** continue the approved alpha.7 adaptation after
+  the human's coordination instruction to proceed. Add only a PWA-local
+  `liveQuizLayoutStorage.ts` adapter and its native `node:test` regression,
+  and pass it to the existing session hook. Keep panel IDs, percentage bounds,
+  storage keys and the desktop-after-mount behavior. Existing Manage callers
+  remain a latent SSR risk, without five asserted failures or expanded edits.
+- **Source verification:** the real integrity-verified panels 4.14.8 hook
+  reproduces the default SSR failure; explicit storage passes server rendering,
+  saved percentage reads without writes, and restricted-storage checks. An
+  isolated real-hook React hydration fixture restores a saved 65/35 layout
+  without recoverable errors or default overwrite. Narrow TypeScript6 checks
+  and formatting pass. This synthetic proof is independent of app services.
+- **Delivery and limit:** commit the coherent focused candidate, complete its
+  independent consequential review, push normally and update the existing
+  draft. Full PWA type/build and actual application browser verification remain
+  pending because the container is stopped. Prepare one precise bounded
+  live-verification request for the corrected head; keep hosted CI, readiness,
+  merge and deployment separate. Preserve the synthetic quiz's persisted state.

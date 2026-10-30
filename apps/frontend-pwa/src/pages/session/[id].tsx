@@ -39,6 +39,7 @@ import Layout from '../../components/Layout'
 import LiveQuizQuestionColumn from '../../components/liveQuiz/LiveQuizQuestionColumn'
 import LiveQuizSidebarColumn from '../../components/liveQuiz/LiveQuizSidebarColumn'
 import LiveQuizSubscriber from '../../components/liveQuiz/LiveQuizSubscriber'
+import { liveQuizLayoutStorage } from '../../lib/liveQuizLayoutStorage'
 
 const DynamicAccountSelector = dynamic(
   () => import('../../components/liveQuiz/AccountSelector'),
@@ -147,6 +148,7 @@ function Index({ id }: { id: string }) {
   const { defaultLayout, onLayoutChanged } = useDefaultLayout({
     id: `live-quiz-${id}-panels`,
     panelIds: [`live-quiz-${id}-question`, `live-quiz-${id}-sidebar`],
+    storage: liveQuizLayoutStorage,
   })
   const t = useTranslations()
   const router = useRouter()
