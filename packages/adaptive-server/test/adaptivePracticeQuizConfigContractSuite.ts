@@ -93,6 +93,10 @@ const adaptiveConfigFieldBehavior = {
     kind: 'runtime',
     consumer: 'engine classification tolerance bands',
   },
+  levelReachedFrom: {
+    kind: 'runtime',
+    consumer: 'share of a level band reached before the level is reported',
+  },
   topInformationRatio: {
     kind: 'runtime',
     consumer: 'randomesque information band',
@@ -188,6 +192,7 @@ export function registerAdaptivePracticeQuizConfigContractTests() {
         'competenceTreeId',
         'defaultDiscrimination',
         'levelMappingRule',
+        'levelReachedFrom',
         'measurementVersion',
         'minItemsPerCoverageCell',
         'minQuestionsPerLeaf',
@@ -218,6 +223,7 @@ export function registerAdaptivePracticeQuizConfigContractTests() {
         'showTimer',
         'classificationToleranceBands',
         'classificationZ',
+        'levelReachedFrom',
         'minItemsPerCoverageCell',
         'minQuestionsPerLeaf',
         'perLeafQuestionCap',

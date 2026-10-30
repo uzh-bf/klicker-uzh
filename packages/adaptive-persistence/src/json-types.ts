@@ -104,6 +104,9 @@ declare global {
       // IRT_V1 classification tolerance in level bands; absent in
       // publications written before it existed (= 0, the exact rule).
       classificationToleranceBands?: number
+      // IRT_V1 "level reached from"; absent in publications written before it
+      // existed (= 0, the plain bands).
+      levelReachedFrom?: number
       topInformationRatio: number
       levelMappingRule: 'NEAREST' | 'MASTERY'
       thetaMin: number
@@ -262,6 +265,14 @@ declare global {
         | { kind: 'FIXED'; levelId: number }
         | { kind: 'EVEN'; fromLevelId: number; toLevelId: number }
       competences: 'SAME_LEVEL' | 'INDEPENDENT'
+      /** Absent for the ideal pattern (and in older runs). */
+      answerModel?: 'REALISTIC'
+      /**
+       * Ideal pattern only: HALF when the student's own level is answered
+       * right and wrong in turn (ability in the middle of the level). Absent
+       * in earlier runs, where the whole own level was answered right.
+       */
+      idealOwnLevel?: 'HALF'
     }
 
     type PrismaAdaptiveDryRunSettings = {
@@ -269,6 +280,13 @@ declare global {
       minQuestionsPerLeaf: number
       classificationZ: number
       classificationToleranceBands: number
+      /** Absent in runs stored before the setting (= 0). */
+      levelReachedFrom?: number
+      /**
+       * True when `levelReachedFrom` is the mastery mark only (plain bands).
+       * Absent in earlier runs, where it shifted the level bands.
+       */
+      masteryMark?: boolean
     }
 
     type PrismaAdaptiveDryRunMetrics = {
@@ -320,11 +338,22 @@ declare global {
         /** Pool items mapped to the leaf, per level, and how many were used. */
         pool: Array<{ levelId: number; count: number; used: number }>
       }>
+      /**
+       * Levels and ability range of the publication the run used, so the run
+       * is drawn as it ran after a republish. Absent in older runs.
+       */
+      scale?: {
+        thetaMin: number
+        thetaMax: number
+        levelMappingRule: string
+        levels: Array<{ id: number; label: string; order: number }>
+      }
     }
 
     type PrismaAdaptiveDryRunStudents = Array<{
       index: number
-      trueLevels: Array<{ nodeId: number; levelId: number }>
+      /** `theta`: true ability of realistic students. */
+      trueLevels: Array<{ nodeId: number; levelId: number; theta?: number }>
       stopReason: string
       questionCount: number
       answers: Array<{

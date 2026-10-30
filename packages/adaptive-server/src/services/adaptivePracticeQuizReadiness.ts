@@ -3,6 +3,7 @@ import {
   ADAPTIVE_SECONDS_PER_ITEM,
   isAdaptiveProductPreset,
   MAX_DISCRIMINATION,
+  MIN_PRODUCT_ITEMS_PER_COVERAGE_CELL,
 } from '@klicker-uzh/adaptive-contract'
 import {
   adviseCoverageCellMinimum,
@@ -299,23 +300,26 @@ export async function validateAdaptiveQuizReadiness({
     }
   }
 
+  // Diagnostic quizzes recommend the product minimum per cell but never block
+  // on it; the per-quiz minimum is no longer authored.
+  const diagnosticCoverage =
+    settings.preset === 'DIAGNOSTIC' && !rootBalancedPlacement
   const coverageResult = evaluateAdaptiveCoverageReadiness({
     coverages,
     enabledLeafIds,
     assignmentsByCell,
-    requiredItemCount: resolveRequiredItemsPerCoverageCell(
-      settings,
-      strictProductReadiness
-    ),
+    requiredItemCount: diagnosticCoverage
+      ? MIN_PRODUCT_ITEMS_PER_COVERAGE_CELL
+      : resolveRequiredItemsPerCoverageCell(settings, strictProductReadiness),
+    advisoryOnly: diagnosticCoverage,
   })
   const coverageReadiness: AdaptiveCoverageReadiness[] =
     coverageResult.coverages
   errors.push(...coverageResult.errors)
   warnings.push(...coverageResult.warnings)
-  const coverageMinimumAdvisory = adviseCoverageCellMinimum(
-    settings,
-    strictProductReadiness
-  )
+  const coverageMinimumAdvisory = diagnosticCoverage
+    ? null
+    : adviseCoverageCellMinimum(settings, strictProductReadiness)
   if (coverageMinimumAdvisory) warnings.push(coverageMinimumAdvisory)
 
   if (!rootBalancedPlacement) {
@@ -577,7 +581,8 @@ export function validateAdaptiveSettings(
     max: number
   }> = [
     { key: 'totalQuestionCap', min: 1, max: MAX_ADAPTIVE_QUESTION_CAP },
-    { key: 'minQuestionsPerLeaf', min: 1, max: MAX_ADAPTIVE_QUESTION_CAP },
+    // 0: no minimum per subcompetence; the quiz asks where evidence is needed.
+    { key: 'minQuestionsPerLeaf', min: 0, max: MAX_ADAPTIVE_QUESTION_CAP },
   ]
   for (const { key, min, max } of integerBounds) {
     const value = settings[key]

@@ -246,6 +246,11 @@ const messages = {
           INSUFFICIENT_DATA:
             'Es lagen nicht genügend Daten für ein vollständiges Ergebnis vor.',
         },
+        mastery: {
+          mastered: '{level} gemeistert',
+          masteredNext: '{level} gemeistert – bereit für {next}',
+          notYetMastered: '{level} noch nicht vollständig gemeistert',
+        },
         profile: {
           estimatedLevel: 'Geschätztes Niveau: {level}',
           determinedLevel: 'Dein Niveau: {level}',
@@ -421,22 +426,20 @@ const messages = {
             'Endet nach der Mindestabdeckung frühzeitig, wenn die Gesamtschätzung ausreichend konzentriert ist. Sonst läuft der Test bis zum Fragen- oder Zeitlimit und kann einen Bereich anzeigen. Dieser Pilot ist nicht empirisch validiert.',
           title: 'Wann soll das Quiz enden?',
           description:
-            'Das Quiz kann früher enden, sobald für jede aktive Kompetenz genügend Antworten vorliegen und ihr Unsicherheitsintervall innerhalb einer Stufe liegt.',
+            'Das Quiz kann früher enden, sobald für jede aktive Kompetenz genügend Antworten vorliegen und das Quiz sich ihrer Stufe so sicher ist wie unten verlangt.',
           maxQuestions: 'Maximale Anzahl Fragen',
           maxQuestionsHint: 'Das Quiz stellt nie mehr Fragen als dieses Limit.',
-          interval: 'Konfidenzintervall für vorzeitiges Beenden',
-          interval80: '80% · kürzere Quiz (Standard)',
-          interval90: '90% · mehr Antworten',
-          interval95: '95% · vorsichtiger',
-          customInterval: 'Bestehende individuelle Einstellung (z = {value})',
-          intervalHint:
-            'Ein höherer Prozentsatz ergibt ein breiteres Unsicherheitsintervall und benötigt meist mehr Fragen. Dies ist ein modellbasiertes Intervall, keine Garantie für die Richtigkeit der angezeigten Stufe.',
-          precision: 'Bestimmungsgenauigkeit',
-          precisionExact: 'Exakte Stufe',
-          precisionTolerance:
-            '{count, plural, one {±# Stufe} other {±# Stufen}}',
-          precisionHint:
-            'Mit „±1 Stufe“ gilt eine Stufe als bestimmt, wenn das Unsicherheitsintervall höchstens eine Stufe von der angezeigten Stufe abweicht; Ergebnisse zeigen dann z. B. „B1.2 (±1 Stufe)“. Empfohlen für Skalen mit {levelCount} oder mehr Stufen, bei denen eine exakte Stufe selten erreichbar ist. Erfordert die aktualisierte adaptive Engine; andernfalls schlägt die Veröffentlichung mit einer klaren Meldung fehl.',
+          certainty: 'Erforderliche Sicherheit',
+          certainty1: 'Innerhalb ±1 Stufe (empfohlen)',
+          certainty2: 'Innerhalb ±2 Stufen (kürzeres Quiz)',
+          certaintyExact: 'Exakte Stufe (endet selten früher)',
+          certaintyWithin:
+            '{count, plural, one {Innerhalb ±# Stufe} other {Innerhalb ±# Stufen}}',
+          certaintyHint:
+            'Wie sicher das Quiz sein muss, bevor eine Kompetenz als bestimmt gilt: Die Person liegt mit 80 % Sicherheit höchstens so viele Stufen von der angezeigten Stufe entfernt. ±1 ergibt das genauere Ergebnis; mit ±2 sind die meisten deutlich früher fertig. Eine exakte Stufe wird nicht angeboten, weil sie auf feinen Skalen fast nie erreicht wird und das Quiz dann immer bis zum Maximum läuft. Erfordert die aktualisierte adaptive Engine; andernfalls schlägt die Veröffentlichung mit einer klaren Meldung fehl.',
+          reachedFrom: 'Gemeistert ab',
+          reachedFromHint:
+            'Ab wo innerhalb einer Stufe die Person sie gemeistert hat (0–95 %; empfohlen 70 %). Das Ergebnis zeigt die Stufe, in der die Schätzung liegt, und ab diesem Anteil der Stufe zusätzlich „gemeistert – bereit für die nächste Stufe“, darunter „noch nicht vollständig gemeistert“. Es ist nur dieser Hinweis: Fragen, Ende des Quiz und angezeigte Stufe bleiben gleich. 0 % schaltet den Hinweis aus.',
           scalePolicy:
             'Konfidenz und vorzeitiges Beenden folgen der genehmigten Regel der gewählten kalibrierten Skala. Die Frage- und Zeitlimits gelten weiterhin.',
           enableTimeLimit: 'Zusätzlich ein Zeitlimit setzen',
@@ -445,11 +448,8 @@ const messages = {
             'Das zuerst erreichte Frage- oder Zeitlimit beendet das Quiz, auch wenn Unsicherheit verbleibt. Das Ergebnis zeigt die verfügbare Schätzung und ihre Unsicherheit.',
           coverage: 'Abdeckung einstellen (optional)',
           coverageHint:
-            'Vor dem vorzeitigen Beenden sind einige Antworten pro Unterkompetenz erforderlich. Lassen Sie die maximale Anzahl pro Unterkompetenz leer, um nur das Gesamtlimit zu verwenden.',
+            'Vor dem vorzeitigen Beenden sind einige Antworten pro Unterkompetenz erforderlich. 0 (empfohlen) lässt das Quiz dort fragen, wo das Ergebnis noch Antworten braucht; höhere Werte funktionieren nur, wenn Unterkompetenzen × Mindestanzahl in die maximale Anzahl Fragen passen, sonst endet das Quiz nie früher. Lassen Sie die maximale Anzahl pro Unterkompetenz leer, um nur das Gesamtlimit zu verwenden.',
           minPerLeaf: 'Mindestanzahl Fragen pro Unterkompetenz',
-          minPerCell: 'Mindestanzahl Elemente pro Zelle',
-          minPerCellHint:
-            'Die Mindestanzahl aktiver Elemente, die jede eingeschaltete Kombination aus Unterkompetenz und Stufe (Zelle) im inhaltlichen Bauplan benötigt, bevor das Quiz veröffentlicht werden kann. Empfohlen sind 5. Mit tieferen Werten (bis 1) können Sie Quiz für fein gegliederte Kompetenzbäume veröffentlichen, das Quiz hat dann aber weniger alternative Fragen pro Zelle.',
           maxPerLeaf: 'Maximale Anzahl Fragen pro Unterkompetenz (optional)',
         },
         settings: {
@@ -583,9 +583,11 @@ const messages = {
           coverageGroups: {
             summary: {
               ADAPTIVE_COVERAGE_CELL_EMPTY:
-                '{count, plural, one {# aktive Kombination aus Blatt und Stufe hat} other {# aktive Kombinationen aus Blatt und Stufe haben}} keine aktiven Elemente. Fügen Sie Elemente hinzu oder deaktivieren Sie diese Kombinationen im inhaltlichen Bauplan des Kompetenzbaums.',
+                '{count, plural, one {# aktive Kombination aus Blatt und Stufe hat} other {# aktive Kombinationen aus Blatt und Stufe haben}} keine aktiven Elemente. Das Quiz stellt dort keine Fragen; Einstufungsquiz lassen sich erst veröffentlichen, wenn jede eines hat. Fügen Sie Elemente hinzu oder deaktivieren Sie diese Kombinationen im inhaltlichen Bauplan des Kompetenzbaums.',
               ADAPTIVE_COVERAGE_BELOW_PRODUCT_MINIMUM:
                 '{count, plural, one {# aktive Kombination aus Blatt und Stufe hat} other {# aktive Kombinationen aus Blatt und Stufe haben}} weniger als die {minimumValue} unabhängigen, aktiven und automatisch bewertbaren Elemente, die dieses Quiz pro Kombination benötigt.',
+              ADAPTIVE_COVERAGE_BELOW_RECOMMENDED:
+                '{count, plural, one {# aktive Kombination aus Blatt und Stufe hat} other {# aktive Kombinationen aus Blatt und Stufe haben}} weniger als die empfohlenen {minimumValue} Elemente. Das Quiz kann trotzdem veröffentlicht werden; mit weniger Alternativen sehen Studierende öfter dieselben Fragen.',
               ADAPTIVE_COVERAGE_BELOW_TARGET:
                 '{count, plural, one {# aktive Kombination aus Blatt und Stufe liegt} other {# aktive Kombinationen aus Blatt und Stufe liegen}} unter der Zielanzahl an Elementen.',
             },
@@ -593,6 +595,8 @@ const messages = {
               ADAPTIVE_COVERAGE_CELL_EMPTY: '{cell}: keine aktiven Elemente',
               ADAPTIVE_COVERAGE_BELOW_PRODUCT_MINIMUM:
                 '{cell}: {enabledAssignmentCount} von {minimumValue} Elementen',
+              ADAPTIVE_COVERAGE_BELOW_RECOMMENDED:
+                '{cell}: {enabledAssignmentCount} von {minimumValue} empfohlenen Elementen',
               ADAPTIVE_COVERAGE_BELOW_TARGET:
                 '{cell}: {enabledAssignmentCount} von {targetItemCount} Elementen',
             },
@@ -617,9 +621,11 @@ const messages = {
             ADAPTIVE_ITEM_PARAMETERS_INVALID:
               'Das Element "{elementName}" hat ungültige effektive Itemparameter.',
             ADAPTIVE_COVERAGE_CELL_EMPTY:
-              'Jede aktive Kombination aus Blatt und Stufe benötigt mindestens ein aktives Element.',
+              'Diese Kombination aus Blatt und Stufe hat kein aktives Element, deshalb stellt das Quiz hier keine Fragen. Einstufungsquiz benötigen mindestens eines.',
             ADAPTIVE_COVERAGE_BELOW_PRODUCT_MINIMUM:
               'Dieses Quiz benötigt {minimumValue} unabhängige, aktive und automatisch bewertbare Elemente in dieser Blatt-Stufen-Kombination; {enabledAssignmentCount} sind verfügbar.',
+            ADAPTIVE_COVERAGE_BELOW_RECOMMENDED:
+              'Für diese Blatt-Stufen-Kombination werden {minimumValue} unabhängige, aktive und automatisch bewertbare Elemente empfohlen; {enabledAssignmentCount} sind verfügbar. Das Quiz kann trotzdem veröffentlicht werden.',
             ADAPTIVE_COVERAGE_MINIMUM_BELOW_RECOMMENDED:
               'Jede aktive Kombination aus Blatt und Stufe benötigt nur {minimumValue} {minimumValue, plural, one {Element} other {Elemente}}. Empfohlen sind {maximumValue}, damit das Quiz in jeder Kombination genügend alternative Fragen hat.',
             ADAPTIVE_COVERAGE_CELL_MINIMUM_INVALID:
@@ -651,7 +657,7 @@ const messages = {
             ADAPTIVE_CLASSIFICATION_BANDS_UNREACHABLE:
               'Die Planungsschätzung unterstützt für "{nodeName}" ein präzises Ergebnis in {classifiableLevelCount} von {levelCount} Stufen. Mit diesem Fragelimit können Ergebnisse unsicher bleiben.',
             ADAPTIVE_CLASSIFICATION_TOLERANCE_SUGGESTED:
-              'Mit diesen Fragen kann für "{nodeName}" ({levelCount} Stufen) keine Stufe exakt bestimmt werden. Erwägen Sie, die Bestimmungsgenauigkeit auf „±1 Stufe“ zu setzen.',
+              'Mit diesen Fragen kann für "{nodeName}" ({levelCount} Stufen) keine Stufe exakt bestimmt werden. Erwägen Sie, die erforderliche Sicherheit auf „Innerhalb ±1 Stufe“ zu setzen.',
             ADAPTIVE_TIME_BUDGET_EXCEEDED:
               'Die Abdeckung dauert voraussichtlich etwa {estimatedDurationMinutes} Minuten bei {secondsPerItem} Sekunden pro Item.',
             ADAPTIVE_CONFIG_INTEGER_RANGE:
@@ -722,6 +728,8 @@ const messages = {
           integer: 'Geben Sie eine ganze Zahl ein.',
           positive: 'Geben Sie einen Wert grösser als 0 ein.',
           questionCapMax: 'Geben Sie höchstens 1000 Fragen ein.',
+          levelReachedFromRange:
+            'Geben Sie eine ganze Prozentzahl von 0 bis 95 ein.',
           classificationZMax: 'Geben Sie einen Wert von höchstens 5 ein.',
           ratioMax: 'Geben Sie einen Wert von höchstens 1 ein.',
           cellMinimumRange:
@@ -749,6 +757,11 @@ const messages = {
     },
     evaluation: {
       adaptive: {
+        levelReachedFrom: {
+          nearest: 'des Niveaus · kein Hinweis',
+          ofTheLevel: 'des Niveaus',
+          invalid: 'Gib eine ganze Zahl von 0 bis {max} ein.',
+        },
         title: 'Adaptive Kohortenauswertung',
         attemptSummary: 'Versuchsübersicht',
         attempts: {
@@ -895,20 +908,30 @@ const messages = {
           title: 'Testläufe',
           testingOnly: 'Nur Testumgebung',
           description:
-            'Lass simulierte Studierende das Quiz lösen, bevor echte Studierende es machen. Jede simulierte Person hat ein wahres Niveau und beantwortet alle Fragen bis zu diesem Niveau richtig und alle darüber falsch; das Rauschen kehrt einzelne Antworten um. Die Stoppeinstellungen können pro Testlauf angepasst werden; das Quiz selbst bleibt unverändert. Testläufe fliessen in keine Ergebnisse ein.',
+            'Lass simulierte Studierende das Quiz lösen, bevor echte Studierende es machen: wie oft trifft es ihr wahres Niveau, und wie viele Fragen braucht es dafür? Die Stoppeinstellungen können pro Testlauf angepasst werden; das Quiz selbst bleibt unverändert. Testläufe fliessen in keine Ergebnisse ein.',
           unavailable:
             'Veröffentliche das Quiz (IRT v1), um einen Testlauf zu starten. Testläufe verwenden die aktuelle Veröffentlichung.',
           form: {
-            sameStudents:
-              'Gleiche simulierte Studierende wie Testlauf #{number}. Nur die Stoppeinstellungen sind änderbar, damit der Vergleich fair ist.',
-            newStudents: 'Neue Studierende',
-            EVENHint:
-              'Die Studierenden verteilen sich gleichmässig auf diese Niveaus: Überblick über die ganze Skala.',
-            FIXEDHint:
-              'Alle Studierenden haben dieses Niveau: genauer Blick auf eine Stelle der Skala.',
-            SAME_LEVELHint: 'Jede Person ist in allen Kompetenzen gleich gut.',
-            INDEPENDENTHint:
-              'Jede Kompetenz erhält ein eigenes zufälliges Niveau, wie ein ungleiches echtes Profil.',
+            studentsGroup: 'Simulierte Studierende',
+            trueLevelsHint:
+              'Gleichmässig über einen Bereich: Die Studierenden verteilen sich gleichmässig auf diese Niveaus, als Überblick über die ganze Skala. Ein festes Niveau: Alle haben dieses Niveau, für einen genauen Blick auf eine Stelle der Skala.',
+            competencesHint:
+              'Überall gleiches Niveau: Jede Person ist in allen Kompetenzen gleich gut. Unabhängig: Jede Kompetenz erhält ein eigenes zufälliges Niveau, wie ein ungleiches echtes Profil.',
+            answerModelHint:
+              'Ideales Muster: richtig bis zum wahren Niveau, falsch darüber; das Rauschen kehrt einzelne Antworten um. Zeigt den Algorithmus im besten Fall. Realistisch: Jede Antwort ist zufällig, mit der Chance auf eine richtige Antwort, die das Modell erwartet (hoch bei leichten Fragen, etwa die Hälfte nahe am eigenen Niveau, tief bei schweren). Näher an echten Studierenden.',
+            seed: 'Seed (optional)',
+            seedPlaceholder: 'zufällig',
+            seedHint:
+              'Bestimmt, welche zufälligen Studierenden simuliert werden. Derselbe Seed mit denselben Einstellungen zu den Studierenden ergibt genau dieselben Studierenden, so lassen sich Stoppeinstellungen fair vergleichen. Leer lassen für neue zufällige Studierende; jeder Testlauf zeigt seinen Seed an.',
+            seedInvalid:
+              'Bis zu 64 Buchstaben, Ziffern, Binde- oder Unterstriche.',
+            stopSettings: 'Stoppeinstellungen (aus dem Quiz übernommen)',
+            totalQuestionCapHint:
+              'Ein Durchlauf endet nach höchstens so vielen Fragen, auch wenn das Niveau noch nicht sicher ist.',
+            reachedFromHint:
+              'Ab wo innerhalb eines Niveaus die Person es gemeistert hat. Das Ergebnis zeigt neben dem angezeigten Niveau „gemeistert“ oder „noch nicht gemeistert“; die gestrichelte Linie im Bild jeder Person markiert die Grenze. Fragen, Ende und angezeigtes Niveau ändern sich nicht.',
+            minQuestionsPerLeafHint:
+              'Jede Teilkompetenz, die für die Person zählt, erhält mindestens so viele Fragen, bevor das Quiz stoppen darf.',
             title: 'Neuer Testlauf',
             students: 'Studierende',
             studentsHint: 'Bis zu {max} simulierte Studierende pro Testlauf.',
@@ -918,33 +941,47 @@ const messages = {
             FIXED: 'Ein festes Niveau',
             rangeInvalid:
               'Das erste Niveau darf nicht über dem zweiten liegen.',
+            answerModel: 'Antworten der Studierenden',
+            answerModelIDEAL: 'Ideales Muster',
+            answerModelREALISTIC: 'Realistisch',
             noise: 'Rauschen: {noise}%',
             noiseHint:
               'Wahrscheinlichkeit, dass eine einzelne Antwort dem idealen Muster widerspricht.',
             competences: 'Kompetenzen',
             SAME_LEVEL: 'Überall gleiches Niveau',
             INDEPENDENT: 'Pro Kompetenz unabhängig',
-            stopSettings:
-              'Stoppeinstellungen für diesen Testlauf (aus dem Quiz übernommen)',
             totalQuestionCap: 'Maximale Fragen',
             capInvalid: 'Wähle zwischen 1 und 1000.',
             tooLarge:
               'Studierende × maximale Fragen darf höchstens {max} sein.',
-            precision: 'Genauigkeit der Einstufung',
-            precision0: 'Exaktes Niveau',
-            precision1: '±1 Niveau',
-            precision2: '±2 Niveaus',
-            confidence: 'Konfidenz',
+            reachedFrom: 'Gemeistert ab',
             minQuestionsPerLeaf: 'Minimum pro Teilkompetenz',
             minInvalid: 'Wähle eine Zahl zwischen 0 und den maximalen Fragen.',
             start: 'Testlauf starten',
           },
           result: {
+            exactTooltip:
+              'Anteil der Ergebnisse, die genau dem wahren Niveau entsprechen (Unterniveau, z. B. B1.2).',
+            withinOneTooltip:
+              'Anteil der Ergebnisse, die höchstens ein Unterniveau vom wahren Niveau entfernt sind.',
+            biasTooltip:
+              'Durchschnittlicher Unterschied zwischen angezeigtem und wahrem Niveau, in Unterniveaus. +0,3 heisst: Das Quiz zeigt im Schnitt etwa ein Drittel Unterniveau zu hoch an; 0 heisst: kein systematischer Fehler in eine Richtung.',
+            questionsTooltip:
+              'Fragen, die ein Durchlauf im Schnitt über alle Kompetenzen brauchte.',
+            determinedTooltip:
+              'Anteil der Kompetenzen, bei denen das Quiz sicher genug war, um früher zu stoppen, statt die Fragegrenze zu erreichen.',
+            seed: 'Seed',
+            useSeed: 'Diesen Seed verwenden',
+            useSeedHint:
+              'Setzt diesen Seed oben ins Formular. Einstellungen zu den Studierenden beibehalten, Stoppeinstellungen ändern und starten: Der neue Testlauf erhält dieselben Studierenden.',
+            tabOverview: 'Übersicht',
+            tabStudents: 'Studierende',
+            tabQuestions: 'Fragen und Stopps',
             engine: 'Engine: {revision}',
             title: 'Testlauf #{number}',
-            meta: '{students} Studierende · wahre Niveaus {levels} · {noise}% Rauschen · {competences} · {date} · {seconds} s',
+            meta: '{students} Studierende · wahre Niveaus {levels} · {realistic, select, yes {realistische Antworten} other {{noise}% Rauschen}} · {competences} · {date} · {seconds} s',
             settings:
-              'max. {cap} Fragen · Genauigkeit {precision, select, 0 {exakt} other {±{precision}}} · {confidence}% Konfidenz · min. {minPerLeaf} pro Teilkompetenz',
+              'max. {cap} Fragen · Sicherheit {precision, select, 0 {exakt} other {±{precision}}} · {confidence}% Konfidenz · min. {minPerLeaf} pro Teilkompetenz · {reachedFrom, select, 0 {kein Meisterungshinweis} other {gemeistert ab {reachedFrom} %}}',
             olderPublication:
               'Dieser Testlauf verwendete eine frühere Veröffentlichung des Quiz.',
             exact: 'Exaktes Niveau',
@@ -955,6 +992,9 @@ const messages = {
             questionsHint: 'Median {median}, max. {max}',
             determined: 'Niveau bestimmt',
             competence: 'Kompetenz',
+            levelsView: 'Wahre und ausgegebene Niveaus anzeigen als',
+            levelsViewCHART: 'Grafik',
+            levelsViewTABLE: 'Tabelle',
             confusion: 'Wahre und ausgegebene Niveaus',
             confusionHint:
               'Zeilen: wahres Niveau, Spalten: ausgegebenes Niveau, auf Unterniveau genau. Grün = exakt, gelb = ein Unterniveau daneben, rot = weiter daneben. Die letzte Spalte zeigt den Anteil exakter Ergebnisse pro wahrem Niveau.',
@@ -965,74 +1005,68 @@ const messages = {
             itemUse: 'Verwendete Fragen',
             itemUseSummary:
               '{used} von {pool} Fragen verwendet, {unused} nie verwendet · {flipped} der Antworten durch Rauschen umgekehrt. Am häufigsten:',
-            showStudents: 'Studierende',
-            hideStudents: 'Studierende ausblenden',
             export: 'CSV',
-            sameStudents: 'Gleiche Studierende, neue Einstellungen',
           },
-          subcompetences: {
-            summary:
-              '{count} Teilkompetenzen · {gaps, plural, =0 {alle Niveaus abgedeckt} one {# mit fehlenden Niveaus} other {# mit fehlenden Niveaus}}',
-            title: 'Teilkompetenzen',
-            hint: 'Wie oft jede Teilkompetenz gefragt und gezählt wurde und welche Niveaus ihre Fragen abdecken. Die Abweichung ist nur ein grober Hinweis: Eine simulierte Person hat in allen Teilkompetenzen einer Kompetenz dasselbe wahre Niveau, und eine Teilkompetenz erhält nur wenige Antworten.',
-            subcompetence: 'Teilkompetenz',
-            answers: 'Antworten pro Durchlauf',
-            min: 'min. {min}',
-            covered: 'Abgedeckt',
-            notSampled: 'Nicht ausgewählt',
-            outOfRange: 'Ausser Reichweite',
-            pool: 'Fragen pro Niveau',
-            poolCell: '{level}: {count} Fragen, {used} verwendet',
-            gaps: 'Keine Fragen für {levels}',
-            deviation: 'Grobe Abweichung',
-            estimated: '{count} mit Niveau',
-            legend:
-              'Fragen pro Niveau: grün = in diesem Testlauf verwendet, grau = nie verwendet, rot = keine Frage auf diesem Niveau. Abgedeckt = Minimum an Antworten erreicht; nicht ausgewählt = in diesem Durchlauf übersprungen; ausser Reichweite = weit vom Niveau der Person entfernt, nicht nötig.',
-          },
-          mastery: {
-            sublevels: 'Unterniveaus (z. B. B1.3)',
-            mainLevels: 'Hauptniveaus (z. B. B1 = B1.1 bis B1.3)',
-            title: 'Gemeistert (Lesart der Kundin)',
-            hint: 'Ein Niveau gilt als gemeistert, wenn die Fähigkeit am oder über dem Meisterungspunkt seines Bereichs liegt, z. B. bei 70 % von B1.3. Die Meisterungswahrscheinlichkeit sagt, wie wahrscheinlich das ist, aus der Schätzung und ihrer Unsicherheit; ab der nötigen Wahrscheinlichkeit wird das Niveau als gemeistert angezeigt. Gemessen an den simulierten Personen, die ihr wahres Niveau gemeistert haben, das nächste aber noch nicht.',
-            masteryPoint: 'Gemeistert ab {value} % des Niveaus',
-            probability:
-              'Als gemeistert angezeigt ab {value} % Wahrscheinlichkeit',
-            loading: 'Studierende werden geladen…',
-            tiles: {
-              mainMastered: 'Als gemeistert angezeigt',
-              mainMasteredRight: 'Richtig, wenn als gemeistert angezeigt',
-              mainHighestExact: 'Höchstes gemeistertes Hauptniveau richtig',
-              mastered: 'Als gemeistert angezeigt',
-              masteredRight: 'Richtig, wenn als gemeistert angezeigt',
-              highestExact: 'Höchstes gemeistertes Niveau richtig',
-              highestWithinOne: '… innerhalb ±1 Niveau',
+          chart: {
+            title: 'Wahre und angezeigte Niveaus pro Person',
+            clickHint: 'Klicke auf einen Punkt, um die Person zu öffnen.',
+            hint: 'Ein Punkt pro Person und Kompetenz. Von links nach rechts: wo die Person wirklich steht. Von unten nach oben: wo der Test sie eingestuft hat; die waagrechten Streifen sind die angezeigten Niveaus. Ein Punkt im grünen Feld seiner Spalte hat sein wahres Niveau erhalten. Klicke auf einen Punkt, um die Person zu öffnen.',
+            hintIdeal:
+              'Ein wahres Niveau umfasst, was der Test als dieses Niveau anzeigt. Personen mit idealem Muster stehen in seiner Mitte, leicht gestreut, damit gleiche Personen sichtbar bleiben.',
+            hintRealistic:
+              'Ein wahres Niveau umfasst, was der Test als dieses Niveau anzeigt. Realistische Personen stehen bei ihrer simulierten wahren Fähigkeit darin.',
+            overall: 'Gesamtniveau',
+            pooled: 'Alle Kompetenzen (zusammen)',
+            noScale:
+              'Die Niveaus dieses Laufs sind nicht verfügbar, deshalb lässt sich das Gesamtniveau nicht vergleichen. Wählen Sie stattdessen eine Kompetenz.',
+            agreementTitle: '{count} Ergebnisse',
+            hintOverall:
+              'Gesamtniveau: ein Punkt pro Student:in. Die Gesamtschätzung des Quiz ist der Durchschnitt der Kompetenzschätzungen. Das wahre Gesamtniveau ist darum das Niveau, in das der Durchschnitt der wahren Kompetenzfähigkeiten fällt.',
+            xAxis: 'Wahres Niveau',
+            yAxis: 'Schätzung (angezeigtes Niveau)',
+            loading: 'Personen werden geladen…',
+            point:
+              'Person #{index} · {competence}: wahr {trueLevel} → angezeigt {reported}',
+            legend: {
+              right: 'richtiges Niveau',
+              oneOff: 'ein Niveau daneben',
+              moreOff: 'mehr als eines daneben',
+              zone: 'richtiger Bereich',
             },
-            tileHints: {
-              mainMastered:
-                'z. B. «B1 gemeistert» mit genügend Wahrscheinlichkeit',
-              mainMasteredRight:
-                'das wahre Niveau ist mindestens das letzte Unterniveau',
-              mainHighestExact:
-                'wahr: das Hauptniveau, dessen letztes Unterniveau erreicht ist',
-              mastered: 'Ergebnisse mit genügend Wahrscheinlichkeit',
-              masteredRight: 'das wahre Niveau ist mindestens das ausgegebene',
-              highestExact:
-                'gemeistert: das ausgegebene Niveau, sonst das darunter',
-              highestWithinOne:
-                'höchstes gemeistertes Niveau höchstens eins daneben',
+            student: {
+              title: 'Wahres und angezeigtes Niveau pro Kompetenz',
+              hint: 'Das Ergebnis stimmt, wenn die grüne Linie (wahre Fähigkeit) im blauen Feld (angezeigtes Niveau) liegt. Die Kurve zeigt, wo die Person wahrscheinlich steht: je höher, desto wahrscheinlicher. Die dunkle Linie ist die Schätzung (θ); die gestrichelte markiert, ab wo das Niveau als gemeistert gilt.',
+              truth: 'Wahres Niveau {level}',
+              reported: 'Angezeigtes Niveau {level}',
+              thetaLabel: 'θ {theta}',
+              masteryMarkAt:
+                'Ab hier gemeistert: θ {theta} (Meisterungsgrenze des Niveaus)',
+              summary: {
+                reported: 'angezeigt',
+                mastered: 'gemeistert',
+                notMastered: 'noch nicht gemeistert',
+                theta: 'θ {theta} ± {se}',
+                into: '{share} % in {level} (gemeistert ab θ {mark})',
+                trueTheta: 'wahres θ {theta}',
+                true: 'wahr {level}',
+                correct: '✓ richtig',
+                tooHigh: '{count} zu hoch',
+                tooLow: '{count} zu tief',
+                withinOne:
+                  '{probability} % Chance, dass es höchstens ±1 Niveau daneben ist',
+              },
+              legend: {
+                trueTheta: 'wahre Fähigkeit (θ)',
+                reported: 'angezeigtes Niveau',
+                curve: 'wo die Person wahrscheinlich steht',
+                estimate: 'Schätzung (θ)',
+                masteryMark: 'gemeistert ab ({share} % des Niveaus)',
+              },
             },
           },
           students: {
-            mainMastery:
-              'Hauptniveau {level} · mit {probability} % Wahrscheinlichkeit gemeistert.',
-            mainRowHint:
-              'Wahrscheinlichkeit, dass das Hauptniveau gemeistert ist (✓ = als gemeistert angezeigt)',
-            mastery:
-              'Bei {position} % von {level} · mit {probability} % Wahrscheinlichkeit gemeistert.',
-            mastered: '{level} gemeistert',
-            notMastered: '{level} noch nicht gemeistert',
             rowHint:
-              'Wahrscheinlichkeit, dass das Niveau gemeistert ist (✓ = als gemeistert angezeigt)',
+              'Chance, dass die Person genau auf dem angezeigten Niveau ist',
             hint: 'Öffne eine Person, um zu sehen, wie jedes Ergebnis zustande kam: welche Fragen gestellt wurden, welche Antworten das wahre Niveau erwarten lässt und wie sich das Niveau nach jeder Antwort verändert hat.',
             student: 'Person',
             competences: 'Wahres → ausgegebenes Niveau',
@@ -1040,28 +1074,49 @@ const messages = {
             questions: 'Fragen',
             unexpectedAnswers: 'Unerwartete Antworten',
             stop: 'Ende',
-            determined: 'Niveau bestimmt',
-            notDetermined: 'Nicht bestimmt',
-            result:
-              'Wahres Niveau <strong>{trueLevel}</strong> → Ergebnis <strong>{result}</strong>.',
-            matches: 'Richtig.',
-            tooHigh:
-              '{count, plural, one {# Niveau zu hoch.} other {# Niveaus zu hoch.}}',
-            tooLow:
-              '{count, plural, one {# Niveau zu tief.} other {# Niveaus zu tief.}}',
+            determined: 'Sicher genug für frühes Ende',
+            notDetermined: 'Nicht sicher genug für frühes Ende',
+            determinedHint:
+              'Der Test war bei dieser Kompetenz sicher genug, um vor dem Fragenlimit aufzuhören.',
+            notDeterminedHint:
+              'Der Test war nie sicher genug, um früh aufzuhören, und fragte bis zum Ende. Das angezeigte Niveau ist trotzdem seine beste Schätzung.',
+            explain: {
+              result: '<strong>Ergebnis: {result}</strong> –',
+              correct: 'richtig.',
+              tooHigh:
+                '{count, plural, one {# Niveau zu hoch.} other {# Niveaus zu hoch.}}',
+              tooLow:
+                '{count, plural, one {# Niveau zu tief.} other {# Niveaus zu tief.}}',
+              trueLevel: '(Die simulierte Person ist {level}.)',
+              why: 'Warum:',
+              howSure: 'Wie sicher:',
+              splitExactly: '{probability} % genau {level}',
+              splitHigher: '{probability} % höher (meist {level})',
+              splitLower: '{probability} % tiefer (meist {level})',
+            },
             patterns: {
               NONE: 'Zu dieser Kompetenz wurde keine Frage gestellt.',
               ALL_CORRECT:
-                'Alle {count} Antworten waren richtig, die schwierigste auf {highest}. Ohne falsche Antwort begrenzt nichts die Schätzung nach oben, deshalb steigt sie bis {result}.',
+                'alle {count} Antworten richtig, bis {highest}. Ohne falsche Antwort weiss der Test nicht, wie weit hinauf die Person reicht, und legt sich auf {result} fest.',
               ALL_WRONG:
-                'Alle {count} Antworten waren falsch, die leichteste auf {lowest}. Ohne richtige Antwort begrenzt nichts die Schätzung nach unten, deshalb sinkt sie bis {result}.',
+                'alle {count} Antworten falsch, bis hinunter zu {lowest}. Ohne richtige Antwort weiss der Test nicht, wie weit hinunter die Person reicht, und legt sich auf {result} fest.',
               CLEAR_BOUNDARY:
-                'Richtig bis {highest}, falsch ab {lowest}. Das Ergebnis liegt an dieser Grenze: {result}.',
+                'alle Fragen bis {highest} richtig, ab {lowest} falsch.',
+              CLEAR_BOUNDARYBELOW:
+                'alle Fragen bis {highest} richtig, ab {lowest} falsch, aber zu wenige richtige Antworten bei {highest}, um es als erreicht zu zählen.',
+              CLEAR_BOUNDARYABOVE:
+                'alle Fragen bis {highest} richtig, ab {lowest} falsch, und nahe genug an {lowest}, um als {result} zu zählen.',
               MIXED:
-                'Gemischte Antworten: richtig bis {highest}, aber schon falsch auf {lowest}. Das Ergebnis gleicht beides aus: {result}.',
+                'gemischte Antworten: richtig bis {highest}, aber ab {lowest} schon einige falsch. Der Test wägt beides ab und legt sich auf {result} fest.',
             },
+            farNote:
+              '{start, select, previous {Die Fragen begannen bei {first}, wo die vorherige Kompetenz endete, und} other {Die Fragen begannen bei {first}, und}} nur {near} von {count} lagen höchstens ein Niveau von {trueLevel} entfernt, deshalb hatte das Quiz zu wenig Hinweise nahe bei der Person.',
+            levelBelow: 'unter {level}',
+            levelAbove: 'über {level}',
+            boundHint:
+              'Bisher nur falsche (oder nur richtige) Antworten: Die Person liegt unter der leichtesten falschen (oder über der schwierigsten richtigen) Frage, aber wie weit, ist noch unbekannt. Das Quiz gibt dann das Ende der Skala aus.',
             unexpectedNote:
-              '{count, plural, one {# Antwort widersprach} other {# Antworten widersprachen}} dem wahren Niveau (Rauschen).',
+              '{count, plural, one {# Antwort passte} other {# Antworten passten}} nicht zum wahren Niveau.',
             questionLevel: 'Fragenniveau',
             expected: 'Erwartet',
             answer: 'Antwort',
@@ -1080,10 +1135,12 @@ const messages = {
           },
           runs: {
             title: 'Gespeicherte Testläufe',
+            scrollHint:
+              'Die letzten {visible} werden angezeigt; scrolle in der Liste für {older, plural, one {# älteren Testlauf} other {# ältere Testläufe}}.',
             empty: 'Noch kein Testlauf.',
             run: 'Testlauf',
             settings: 'Einstellungen',
-            spec: '{students} Studierende · {noise}% Rauschen',
+            spec: '{students} Studierende · {realistic, select, yes {realistische Antworten} other {{noise}% Rauschen}}',
             select: 'Testlauf #{number} zum Vergleich auswählen',
             compare: '2 Testläufe vergleichen',
             hideCompare: 'Vergleich ausblenden',
@@ -1101,6 +1158,24 @@ const messages = {
           },
         },
         attemptDiagnostics: {
+          scrollHint:
+            'Die letzten {visible} werden angezeigt; scrolle in der Liste für {older, plural, one {# älteren Durchlauf} other {# ältere Durchläufe}}.',
+          versions: {
+            title: 'Algorithmus-Versionen',
+            tooltip:
+              'Auf welcher Version des Algorithmus die abgeschlossenen Durchläufe liefen, und wann. Eine Version besteht aus der Veröffentlichung des Quiz (mit den beim Veröffentlichen eingefrorenen Stoppeinstellungen), dem Engine-Build und dem Schätzer. Eine neue Zeile beginnt, wenn das Quiz neu veröffentlicht oder eine neue Engine ausgerollt wird. Durchläufe, bevor die Engine erfasst wurde, zeigen «nicht erfasst».',
+            publication: 'Veröffentlichung',
+            publicationVersion: 'v{version}',
+            current: 'aktuell',
+            publishedAt: 'veröffentlicht {date}',
+            settings: 'Stoppeinstellungen',
+            engine: 'Engine',
+            estimator: 'Schätzer',
+            attempts: 'Durchläufe',
+            period: 'Gestartet',
+            unknown: 'unbekannt',
+            notRecorded: 'nicht erfasst',
+          },
           title: 'Versuche (Testumgebung)',
           description:
             'Wie jeder Versuch bewertet wurde, Frage für Frage. Nur in Testumgebungen verfügbar; Studierende erscheinen als pseudonyme Codes. Öffne einen Versuch, um sein Ergebnis zu prüfen.',

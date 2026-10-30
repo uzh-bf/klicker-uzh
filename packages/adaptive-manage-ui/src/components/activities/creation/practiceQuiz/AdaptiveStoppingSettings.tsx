@@ -1,16 +1,9 @@
-import {
-  ADAPTIVE_CLASSIFICATION_TOLERANCE_OPTIONS,
-  ADAPTIVE_TOLERANCE_RECOMMENDED_MIN_LEVELS,
-  MAX_CONFIGURABLE_ITEMS_PER_COVERAGE_CELL,
-  MIN_CONFIGURABLE_ITEMS_PER_COVERAGE_CELL,
-} from '@klicker-uzh/adaptive-contract'
-import { AdaptivePracticeQuizPreset } from '@klicker-uzh/graphql/dist/ops'
-import { FormikNumberField, Select, Switch } from '@uzh-bf/design-system'
+import { FormikNumberField, Switch } from '@uzh-bf/design-system'
 import { useTranslations } from 'next-intl'
 import type { AdaptivePracticeQuizConfigFormValues } from '../../../../types/practiceQuiz'
 import { isPlacementPilotConfig } from './adaptivePracticeQuizForm'
-
-const INTERVALS = ['1.28', '1.645', '1.96'] as const
+import LevelReachedFromInput from './LevelReachedFromInput'
+import RequiredCertaintySelect from './RequiredCertaintySelect'
 
 function AdaptiveStoppingSettings({
   config,
@@ -23,17 +16,6 @@ function AdaptiveStoppingSettings({
   const update = (patch: Partial<AdaptivePracticeQuizConfigFormValues>) =>
     onChange({ ...config, ...patch })
   const placementPilot = isPlacementPilotConfig(config)
-  // The per-cell minimum gates product readiness only; Research requires one
-  // element per cell and root-balanced placement does not check cells.
-  const showCellMinimum =
-    config.preset !== AdaptivePracticeQuizPreset.Research && !placementPilot
-  const custom = !INTERVALS.some(
-    (value) => Number(value) === Number(config.classificationZ)
-  )
-  const tolerance = config.classificationToleranceBands || '0'
-  const customTolerance = !ADAPTIVE_CLASSIFICATION_TOLERANCE_OPTIONS.some(
-    (value) => value === Number(tolerance)
-  )
   return (
     <section
       className="space-y-4 rounded border border-gray-200 p-4"
@@ -71,76 +53,36 @@ function AdaptiveStoppingSettings({
             <>
               <label
                 className="mb-1 block text-sm font-bold"
-                htmlFor="adaptive-confidence-interval"
-              >
-                {t('interval')}
-              </label>
-              <Select
-                id="adaptive-confidence-interval"
-                value={config.classificationZ}
-                onChange={(classificationZ) => update({ classificationZ })}
-                items={[
-                  ...INTERVALS.map((value, index) => ({
-                    value,
-                    label: t(
-                      (['interval80', 'interval90', 'interval95'] as const)[
-                        index
-                      ]!
-                    ),
-                  })),
-                  ...(custom
-                    ? [
-                        {
-                          value: config.classificationZ,
-                          label: t('customInterval', {
-                            value: config.classificationZ,
-                          }),
-                        },
-                      ]
-                    : []),
-                ]}
-                data={{ cy: 'adaptive-confidence-interval' }}
-                className={{ root: 'w-full', trigger: 'w-full' }}
-              />
-              <p className="mt-1 text-sm text-gray-600">{t('intervalHint')}</p>
-              <label
-                className="mb-1 mt-4 block text-sm font-bold"
                 htmlFor="adaptive-classification-tolerance"
               >
-                {t('precision')}
+                {t('certainty')}
               </label>
-              <Select
+              <RequiredCertaintySelect
                 id="adaptive-classification-tolerance"
-                value={tolerance}
+                value={config.classificationToleranceBands || '0'}
                 onChange={(classificationToleranceBands) =>
                   update({ classificationToleranceBands })
                 }
-                items={[
-                  ...ADAPTIVE_CLASSIFICATION_TOLERANCE_OPTIONS.map((value) => ({
-                    value: String(value),
-                    label:
-                      value === 0
-                        ? t('precisionExact')
-                        : t('precisionTolerance', { count: value }),
-                  })),
-                  ...(customTolerance
-                    ? [
-                        {
-                          value: tolerance,
-                          label: t('precisionTolerance', {
-                            count: Number(tolerance),
-                          }),
-                        },
-                      ]
-                    : []),
-                ]}
-                data={{ cy: 'adaptive-classification-tolerance' }}
-                className={{ root: 'w-full', trigger: 'w-full' }}
+                cy="adaptive-classification-tolerance"
+              />
+              <p className="mt-1 text-sm text-gray-600">{t('certaintyHint')}</p>
+              <label
+                className="mb-1 mt-4 block text-sm font-bold"
+                htmlFor="adaptive-level-reached-from"
+              >
+                {t('reachedFrom')}
+              </label>
+              <LevelReachedFromInput
+                id="adaptive-level-reached-from"
+                value={config.levelReachedFrom || '0'}
+                // An invalid entry fails the form validation until fixed.
+                onChange={(levelReachedFrom) =>
+                  update({ levelReachedFrom: levelReachedFrom ?? 'invalid' })
+                }
+                cy="adaptive-level-reached-from"
               />
               <p className="mt-1 text-sm text-gray-600">
-                {t('precisionHint', {
-                  levelCount: ADAPTIVE_TOLERANCE_RECOMMENDED_MIN_LEVELS,
-                })}
+                {t('reachedFromHint')}
               </p>
             </>
           )}
@@ -183,35 +125,12 @@ function AdaptiveStoppingSettings({
             id="adaptive-min-questions-per-leaf"
             label={t('minPerLeaf')}
             name="adaptiveConfig.minQuestionsPerLeaf"
-            min={placementPilot ? 4 : 1}
+            min={placementPilot ? 4 : 0}
             max={1000}
             precision={0}
             className={{ root: 'min-w-0', label: 'min-w-0 whitespace-normal' }}
             data={{ cy: 'adaptive-min-questions-per-leaf' }}
           />
-          {showCellMinimum && (
-            <div className="min-w-0">
-              <FormikNumberField
-                id="adaptive-min-items-per-coverage-cell"
-                label={t('minPerCell')}
-                name="adaptiveConfig.minItemsPerCoverageCell"
-                min={MIN_CONFIGURABLE_ITEMS_PER_COVERAGE_CELL}
-                max={MAX_CONFIGURABLE_ITEMS_PER_COVERAGE_CELL}
-                precision={0}
-                className={{
-                  root: 'min-w-0',
-                  label: 'min-w-0 whitespace-normal',
-                }}
-                data={{ cy: 'adaptive-min-items-per-coverage-cell' }}
-              />
-              <p
-                className="mt-1 text-sm text-gray-600"
-                id="adaptive-min-items-per-coverage-cell-hint"
-              >
-                {t('minPerCellHint')}
-              </p>
-            </div>
-          )}
           <FormikNumberField
             id="adaptive-per-leaf-question-cap"
             label={t('maxPerLeaf')}
