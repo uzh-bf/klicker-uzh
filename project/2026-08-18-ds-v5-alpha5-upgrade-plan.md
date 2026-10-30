@@ -6,16 +6,16 @@
 
 **Approval mode:** executable batch, approved by the user on 2026-10-20.
 
-**Current status:** implementation and scoped local qualification are complete.
-[Draft PR #6652](https://github.com/uzh-bf/klicker-uzh/pull/6652) targets `v3` and
-contains 59 verified native screenshot attachments. The approved parser repair
-passes local and hosted quality checks. The subsequent compatibility slice
-passes simplification and risk review; earlier review coverage applies to
-unchanged source. The PR's Readiness section records the producing final-review
-and hosted-CI status, including any outstanding findings. The repository final
-AI workflow requires a ready PR; the approved terminal keeps it draft. Retain
-the exact user runtime, pinned for manual Browser use, and record final health
-in the PR and local lifecycle receipt.
+**Current status — 2026-10-30:** alpha.7 is installed from the official archive
+and verified across every consumer with shared React and ReactDOM. The approved
+exact dependency prerequisites and consumer adaptations pass type checking,
+lint and the forced production build. Browser acceptance and independent
+implementation review remain pending. The prior provisioning attempt was
+interrupted, and its stop branch refused changed container identity. The
+published devrouter repair is verified; a bounded database-preserving recovery
+procedure is prepared privately. A fresh named runtime ruling is still required.
+Earlier screenshots and hosted checks remain historical alpha.5 evidence.
+The Office parser metadata repair is already committed in the delivered head.
 
 The historical pilot at commit `1de7ad9` has not accepted the final candidate
 tarball because its canonical Auth development server returns 404 for the
@@ -1313,3 +1313,129 @@ ruling. Final lifecycle and review receipts live in the ignored evidence root;
 current draft readiness, hosted checks and review disposition live in the linked
 PR. Marking ready, merging, release, deployment, further destructive recovery
 and human-review notifications remain outside this package's authority.
+
+
+### Bounded alpha.7 continuation — 2026-10-28
+
+- **Authority and owner:** the human approved the alpha.7 pilot update in the
+  design-system chat (`01a07331-92c6-72c0-9107-b4340aaa65a2`, user turn
+  `01a18488-8c49-7c42-ba46-de3d7ccf2c23`). Its preceding proposal names the
+  existing pilot and authorizes sending the continuation here. This chat keeps
+  ownership of the same worktree, branch and
+  [draft PR #6652](https://github.com/uzh-bf/klicker-uzh/pull/6652).
+- **Approved batch:** exact alpha.7 pins and lock, replace only the exact alpha.5
+  age waiver, verify actual registry bytes and shared React, run appropriate
+  checks plus forms/theme/Auth/Manage/PWA/Control/Chat journeys, inspect current
+  responsive English/German captures, obtain applicable independent review, and
+  update the draft. Ordinary commits, task-branch pushes and one bounded quiet
+  CI continuation are covered. Preserve the historical `v3` base; no trunk
+  integration, merge, ready, release, deployment, library patch, other age waiver,
+  destructive cleanup or unrelated runtime change is authorized.
+- **Live baseline:** clean branch `rs/ds-v5-alpha5-upgrade` at
+  `4f6e8c56e36b8ceeaa87ce859d2c736d7c9a71a4`, equal to its remote upstream.
+  Fresh fetch records `origin/v3` at
+  `cac6bbf4dcd2caa973737abfe25d19d144069c42`; the pilot is 29 ahead and 45 behind.
+  The existing draft reports conflicts against current `v3`. Integration is
+  excluded from this continuation. No second worktree or writer was created.
+- **First useful acceptance:** a fresh official npm download is exactly
+  `5.0.0-alpha.7`, 304 files, SHA-256
+  `01914cd45125dfeebf2ce87770bde200176d74d08f4302cad0a4df628d8a94d4`, matching
+  registry SHA-512 integrity and source
+  `b9ffd3b116ebc285679abc2458f3ec99150f19d3`. Private archive and JSON receipts
+  are in `project/_local/alpha7-consumer/`. No local candidate overlay is used.
+- **Dependency prerequisite:** alpha.7 pins `react-resizable-panels@4.14.8`,
+  published 2026-10-20 at 22:54:21.707 UTC. It reaches the repository's 14-day
+  delay on 2026-11-03 at 22:54:21.707 UTC. The sole approved alpha.7 waiver
+  does not exempt this package. No extra waiver was applied. Alpha.7's required
+  Recharts peer is `>=3.8.0 <4`; Docs, Manage, PWA and shared-components declare
+  `3.0.2` or `~3.0.2`. A precise proposal aligns only those four pins to mature
+  `3.8.0`; it does not change application source or convert forms.
+- **Runtime prerequisite:** canonical provisioning can run a post-create hook
+  that resets and reseeds a retained database. That requires named authority.
+  Historical recovery approvals do not grant another attempt. Exact private
+  ownership, state and retained-data observations stay in ignored evidence.
+- **Pending work and terminal:** the unapplied
+  `project/_local/alpha7-consumer/proposed-prerequisites.patch` makes the
+  dependency prerequisites reviewable. It includes the exact alpha.7 pins,
+  four exact Recharts 3.8.0 pins and one proposed panels waiver. Generating the
+  lock requires resolution after the policy choice. Installed identity,
+  React sharing, builds, browser captures and alpha.7 CI remain unrun. The
+  native chart keyboard-tooltip overflow after settled compact layout remains
+  a separate known gate; retain that observation, manual AT/Safari/device and
+  packaging-license limitations. Complete only as a qualified draft, or pause
+  with exact missing prerequisite authority. The tracked plan stays a local
+  change while its mandatory commit checks cannot run in the absent container.
+
+- **Independent prerequisite critique:** the configured Gemini fallback completed
+  after the Claude consultation failed before a review. It confirms the age
+  waiver, peer alignment and retained-database reset require a concrete ruling.
+  Exact Recharts pins follow repository version-pinning guidance. This is a
+  decision critique; final implementation review remains pending. The report
+  and verified disposition are in `project/_local/reviews/2026-10-28-alpha7-*`.
+- **Static acceptance and public checkpoint:** all used design-system import
+  subpaths exist. Archive graph inspection finds no RHF import reachable from
+  root or primitives; the dedicated RHF entry reaches it. These checks do not
+  establish installed React identity. The draft now labels its 59 screenshots
+  as historical alpha.5 and explains the alpha.7 blockers. Fresh readback holds
+  the same draft/head/base; all eight required checks remain successful on the
+  unchanged alpha.5 head. No alpha.7 CI watcher is needed before a candidate.
+  The only tracked local change is this plan; dependency inputs are unchanged.
+
+
+### Approved alpha.7 prerequisites — 2026-10-28
+
+The human approved the exact prerequisite question
+`call_70d6fe2b4fb84dbe9f5b744d6e50eead` with “Approve these exact prerequisites”.
+This adds only the exact panels 4.14.8 age waiver, four exact Recharts 3.8.0
+peer pins, and one canonical `ensure --profile full --json` attempt on this
+checkout/project. Post-create may force-reset, push and reseed the retained
+development database. Named volumes remain. On readiness continue the approved
+acceptance and draft sequence; on failure capture evidence and use only
+non-deleting canonical stop/status, with no retry, cleanup or workaround.
+
+The reviewed dependency patch is applied. Lock resolution and the single
+provisioning attempt are next; package and runtime acceptance remain pending.
+
+
+### Interrupted provisioning — 2026-10-28
+
+The single approved provisioning attempt was interrupted during its build hook.
+Its canonical stop branch rejected retained-container identity drift. This does
+not establish a library regression or a build timeout. Stopped state and database
+reset completion remain unknown. Exact runtime receipts stay in ignored local
+evidence. The attempt grants no retry, recreation, cleanup or guard bypass.
+
+### Active goal and alpha.7 source checkpoint — 2026-10-30
+
+- **Outcome and authority:** the human requested a goal to work through the
+  existing roadmap. Continue this approved historical-base alpha.7 pilot through
+  qualified draft delivery; retain the existing owners and PR. The consumer
+  path first needs a working exact-package build and browser acceptance. The
+  source repair and preparation approvals do not grant another runtime attempt.
+- **Consumer changes:** keep nine exact alpha.7 pins, four exact Recharts 3.8.0
+  pins and the separately approved exact panels age exception. Scope Syncpack's
+  exact dev-dependency policy to the two affected Recharts consumers. Adapt six
+  panel groups to the published orientation, percentage-size, layout-persistence
+  and resize APIs. Accept optional Recharts label geometry only when finite.
+  Preserve PWA block selection with a functional state update while satisfying
+  the touched effect's dependency check. No library patch or extra dependency.
+- **Fresh evidence:** all 304 official archive files match at all nine installed
+  consumers, sharing React and ReactDOM. All 35 type-check tasks, seven lint
+  tasks and 23 forced production-build tasks pass. Host launcher tests pass
+  41/41; host CI contract tests pass 97/97 with pinned Node 24.21.0. Source
+  checks run in the container and host contracts on the host. Separate failed
+  toolchain/container-boundary attempts are not acceptance evidence.
+- **Next bounded step:** complete the committed-source review, then present the
+  reviewed database-preserving recovery sequence for named authority. The
+  sequence uses the existing bootstrap helper's default verification-only
+  database path, followed by canonical retained-runtime repair; its failure
+  branch ends in canonical stop repair. Exact effects and preconditions remain
+  in ignored evidence until approval. No recovery command has been run.
+- **Terminal and open gates:** browser checks must cover percentage sizing,
+  keyboard resizing, collapse/expand, reload persistence, PWA manual and active
+  block selection, chart labels, forms/theme and the approved app journeys at
+  relevant English/German viewports. Historical screenshots do not establish
+  alpha.7 acceptance. Legacy saved-layout migration and current browser behavior
+  are unverified. Preserve known chart/manual-device limitations. Finish as a
+  qualified draft with truthful evidence; readiness, target integration, merge,
+  release and deployment remain outside this continuation.

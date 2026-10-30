@@ -1,4 +1,4 @@
-import {
+import type {
   CaseStudyElementResultCaseInfo,
   CaseStudyElementResultCriterionInfo,
   CaseStudyElementResultItemInfo,
@@ -10,14 +10,15 @@ import {
   ResizablePanel,
   ResizablePanelGroup,
   UserNotification,
+  useDefaultLayout,
 } from '@uzh-bf/design-system'
 import { useTranslations } from 'next-intl'
 import { useEffect, useState } from 'react'
 import { twMerge } from 'tailwind-merge'
-import { ActivityEvaluationType } from '../ActivityEvaluation'
+import type { ActivityEvaluationType } from '../ActivityEvaluation'
 import useCaseStudyScatterData from '../hooks/useCaseStudyScatterData'
-import { TextSizeType } from '../textSizes'
-import { CSResultsEvaluationObject } from './CSEvaluation'
+import type { TextSizeType } from '../textSizes'
+import type { CSResultsEvaluationObject } from './CSEvaluation'
 import CSEvaluationScatterSidebar from './CSEvaluationScatterSidebar'
 import CSOneDimScatterPlot from './CSOneDimScatterPlot'
 import CSTwoDimScatterPlot from './CSTwoDimScatterPlot'
@@ -69,6 +70,10 @@ function CSEvaluationScatter({
   pinCode,
   type,
 }: CSEvaluationScatterProps) {
+  const { defaultLayout, onLayoutChanged } = useDefaultLayout({
+    id: 'evaluation-case-study',
+    panelIds: ['evaluation-case-study-chart', 'evaluation-case-study-sidebar'],
+  })
   const t = useTranslations()
 
   const [initialLoading, setInitialLoading] = useState(true)
@@ -111,13 +116,16 @@ function CSEvaluationScatter({
 
   return (
     <ResizablePanelGroup
-      autoSaveId="evaluation-case-study"
+      id="evaluation-case-study"
+      defaultLayout={defaultLayout}
+      onLayoutChanged={onLayoutChanged}
       key={`panel-group-${evaluationId}`}
-      direction="horizontal"
+      orientation="horizontal"
     >
       <ResizablePanel
-        defaultSize={70}
-        minSize={50}
+        id="evaluation-case-study-chart"
+        defaultSize="70%"
+        minSize="50%"
         className="flex h-full w-full flex-col px-3"
       >
         <EvaluationExplanation
@@ -167,10 +175,11 @@ function CSEvaluationScatter({
       </ResizablePanel>
       <ResizableHandle withHandle className="w-0.5" />
       <ResizablePanel
-        defaultSize={30}
-        minSize={20}
+        id="evaluation-case-study-sidebar"
+        defaultSize="30%"
+        minSize="20%"
         collapsible
-        collapsedSize={0}
+        collapsedSize="0%"
         className={twMerge('gap-2 border-l', textSize.text)}
       >
         <CSEvaluationScatterSidebar

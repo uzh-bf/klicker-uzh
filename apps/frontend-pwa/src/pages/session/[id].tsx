@@ -15,8 +15,8 @@ import {
   SelfDocument,
   SetLiveQuizPinDocument,
 } from '@klicker-uzh/graphql/dist/ops'
-import Loader from '@klicker-uzh/shared-components/src/Loader'
 import { QUESTION_GROUPS } from '@klicker-uzh/shared-components/src/constants'
+import Loader from '@klicker-uzh/shared-components/src/Loader'
 import { addApolloState, initializeApollo } from '@lib/apollo'
 import {
   Button,
@@ -26,12 +26,13 @@ import {
   ResizablePanel,
   ResizablePanelGroup,
   toast,
+  useDefaultLayout,
 } from '@uzh-bf/design-system'
 import { Form, Formik } from 'formik'
-import { GetServerSidePropsContext } from 'next'
-import { useTranslations } from 'next-intl'
+import type { GetServerSidePropsContext } from 'next'
 import dynamic from 'next/dynamic'
 import { useRouter } from 'next/router'
+import { useTranslations } from 'next-intl'
 import { useEffect, useState } from 'react'
 import * as Yup from 'yup'
 import Layout from '../../components/Layout'
@@ -143,6 +144,10 @@ Promise<{ statusCode: number; responseTimestamp?: number }> {
 }
 
 function Index({ id }: { id: string }) {
+  const { defaultLayout, onLayoutChanged } = useDefaultLayout({
+    id: `live-quiz-${id}-panels`,
+    panelIds: [`live-quiz-${id}-question`, `live-quiz-${id}-sidebar`],
+  })
   const t = useTranslations()
   const router = useRouter()
   const [selectedBlock, setSelectedBlock] = useState<number | null>(null)
@@ -165,29 +170,29 @@ function Index({ id }: { id: string }) {
 
   // if a block is active when the page is loaded or a new block is activated, switch to the corresponding block
   useEffect(() => {
-    if (data?.studentLiveQuiz?.activeBlock) {
-      const activeBlockIndex = data.studentLiveQuiz.blocks?.findIndex(
-        (b) => b.id === data.studentLiveQuiz?.activeBlock?.id
-      )
-
-      if (activeBlockIndex !== -1 && typeof activeBlockIndex === 'number') {
-        setSelectedBlock(activeBlockIndex)
-      }
-    } else if (selectedBlock === null || selectedBlock === -1) {
-      const lastCompletedBlockIndex =
-        data?.studentLiveQuiz?.blocks?.findLastIndex(
-          (b) => b.status === ElementBlockStatus.Executed
+    setSelectedBlock((currentBlock) => {
+      if (data?.studentLiveQuiz?.activeBlock) {
+        const activeBlockIndex = data.studentLiveQuiz.blocks?.findIndex(
+          (b) => b.id === data.studentLiveQuiz?.activeBlock?.id
         )
 
-      if (
-        lastCompletedBlockIndex !== -1 &&
-        typeof lastCompletedBlockIndex === 'number'
-      ) {
-        setSelectedBlock(lastCompletedBlockIndex)
-      } else {
-        setSelectedBlock(-1)
+        return activeBlockIndex !== -1 && typeof activeBlockIndex === 'number'
+          ? activeBlockIndex
+          : currentBlock
       }
-    }
+      if (currentBlock === null || currentBlock === -1) {
+        const lastCompletedBlockIndex =
+          data?.studentLiveQuiz?.blocks?.findLastIndex(
+            (b) => b.status === ElementBlockStatus.Executed
+          )
+
+        return lastCompletedBlockIndex !== -1 &&
+          typeof lastCompletedBlockIndex === 'number'
+          ? lastCompletedBlockIndex
+          : -1
+      }
+      return currentBlock
+    })
   }, [data])
 
   // keep right-side tab valid when availability changes, without overriding user choice
@@ -494,21 +499,25 @@ function Index({ id }: { id: string }) {
         {isDesktop ? (
           hasQuestionPanel && hasSidebarPanel ? (
             <ResizablePanelGroup
-              direction="horizontal"
-              autoSaveId={`live-quiz-${id}-panels`}
+              orientation="horizontal"
+              id={`live-quiz-${id}-panels`}
+              defaultLayout={defaultLayout}
+              onLayoutChanged={onLayoutChanged}
               className="flex h-full w-full"
             >
               <ResizablePanel
-                defaultSize={60}
-                minSize={45}
+                id={`live-quiz-${id}-question`}
+                defaultSize="60%"
+                minSize="45%"
                 className="h-full min-w-0 pr-5"
               >
                 {renderQuestionColumn()}
               </ResizablePanel>
               <ResizableHandle withHandle />
               <ResizablePanel
-                defaultSize={40}
-                minSize={25}
+                id={`live-quiz-${id}-sidebar`}
+                defaultSize="40%"
+                minSize="25%"
                 className="h-full min-w-0 pl-5"
               >
                 {renderSidebarColumn()}

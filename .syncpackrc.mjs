@@ -29,6 +29,12 @@ export default {
       packages: ['**'],
     },
     {
+      range: '',
+      dependencyTypes: ['dev'],
+      dependencies: ['recharts'],
+      packages: ['@klicker-uzh/docs', '@klicker-uzh/shared-components'],
+    },
+    {
       // Keep reviewed upgrade targets exact instead of floating across releases.
       range: '',
       dependencyTypes: ['dev'],

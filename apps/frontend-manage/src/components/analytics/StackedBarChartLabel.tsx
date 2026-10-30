@@ -6,15 +6,23 @@ function StackedBarChartLabel({
   height,
 }: {
   value: number
-  x: number
-  y: number
-  width: number
-  height: number
+  x?: number | string
+  y?: number | string
+  width?: number | string
+  height?: number | string
 }) {
+  const labelX = Number(x)
+  const labelY = Number(y)
+  const labelWidth = Number(width)
+  const labelHeight = Number(height)
+  if (![labelX, labelY, labelWidth, labelHeight].every(Number.isFinite)) {
+    return null
+  }
+
   return (
     <text
-      x={x + width / 2}
-      y={y + height / 2 + 1}
+      x={labelX + labelWidth / 2}
+      y={labelY + labelHeight / 2 + 1}
       fill="white"
       fontSize={14}
       textAnchor="middle"
