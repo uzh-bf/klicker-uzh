@@ -38,14 +38,14 @@ const PILOT_EXCEPTIONS = [
   },
   // Upstream GHSA-x8rm-f576-gq67 excludes 1.23.0: its PhoneNumber regex
   // is bounded and linear. Keep this disposition within the finite pilot.
-  {
-    target: 'worker-general',
+  ...['api', 'mcp-student', 'worker-general'].map((target) => ({
+    target,
     vulnerabilityId: 'CVE-2026-115887',
     packageName: 'graphql-scalars',
     installedVersion: '1.23.0',
     severity: 'HIGH',
     maxOccurrences: 1,
-  },
+  })),
 ]
 
 function fail(message) {

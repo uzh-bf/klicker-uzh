@@ -85,59 +85,64 @@ test('finite pilot policy rejects any scope, expiry or tuple expansion', () => {
     assert.throws(() => parseExceptionPolicy(policy, identity, NOW))
 })
 
-test('confirmed scalar false positive is limited to its exact finite pilot tuple', () => {
-  const entry = {
-    target: 'worker-general',
-    vulnerabilityId: 'CVE-2026-115887',
-    packageName: 'graphql-scalars',
-    installedVersion: '1.23.0',
-    severity: 'HIGH',
-    maxOccurrences: 1,
-  }
-  const policy = { ...PILOT, exceptions: [entry] }
-  const identity = {
-    sourceRevision: PILOT.sourceRevision,
-    platform: PILOT.platform,
-  }
-  assert.deepEqual(parseExceptionPolicy(policy, identity, NOW), policy)
-  const finding = {
-    VulnerabilityID: entry.vulnerabilityId,
-    PkgName: entry.packageName,
-    InstalledVersion: entry.installedVersion,
-    Severity: entry.severity,
-    FixedVersion: '2.0.1',
-  }
-  const raw = [{ Vulnerabilities: [finding] }]
-  assert.equal(
-    evaluatePreviewScan(raw, entry.target, policy).summary.violation,
-    false
-  )
-  assert.equal(evaluatePreviewScan(raw, entry.target).summary.violation, true)
-  assert.equal(evaluatePreviewScan(raw, 'api', policy).summary.violation, true)
-  assert.equal(
-    evaluatePreviewScan(
-      [{ Vulnerabilities: [{ ...finding, InstalledVersion: '1.24.1' }] }],
-      entry.target,
-      policy
-    ).summary.violation,
-    true
-  )
-  assert.throws(() =>
-    evaluatePreviewScan(
-      [{ Vulnerabilities: [finding, finding] }],
-      entry.target,
-      policy
+for (const target of ['api', 'mcp-student', 'worker-general']) {
+  test(`confirmed scalar false positive is limited to its exact ${target} pilot tuple`, () => {
+    const entry = {
+      target,
+      vulnerabilityId: 'CVE-2026-115887',
+      packageName: 'graphql-scalars',
+      installedVersion: '1.23.0',
+      severity: 'HIGH',
+      maxOccurrences: 1,
+    }
+    const policy = { ...PILOT, exceptions: [entry] }
+    const identity = {
+      sourceRevision: PILOT.sourceRevision,
+      platform: PILOT.platform,
+    }
+    assert.deepEqual(parseExceptionPolicy(policy, identity, NOW), policy)
+    const finding = {
+      VulnerabilityID: entry.vulnerabilityId,
+      PkgName: entry.packageName,
+      InstalledVersion: entry.installedVersion,
+      Severity: entry.severity,
+      FixedVersion: '2.0.1',
+    }
+    const raw = [{ Vulnerabilities: [finding] }]
+    assert.equal(
+      evaluatePreviewScan(raw, entry.target, policy).summary.violation,
+      false
     )
-  )
-  assert.deepEqual(raw, [{ Vulnerabilities: [finding] }])
-  assert.throws(() =>
-    parseExceptionPolicy(
-      { ...policy, expiresAt: '2026-10-31T00:00:00Z' },
-      identity,
-      NOW
+    assert.equal(evaluatePreviewScan(raw, entry.target).summary.violation, true)
+    assert.equal(
+      evaluatePreviewScan(raw, 'auth', policy).summary.violation,
+      true
     )
-  )
-})
+    assert.equal(
+      evaluatePreviewScan(
+        [{ Vulnerabilities: [{ ...finding, InstalledVersion: '1.24.1' }] }],
+        entry.target,
+        policy
+      ).summary.violation,
+      true
+    )
+    assert.throws(() =>
+      evaluatePreviewScan(
+        [{ Vulnerabilities: [finding, finding] }],
+        entry.target,
+        policy
+      )
+    )
+    assert.deepEqual(raw, [{ Vulnerabilities: [finding] }])
+    assert.throws(() =>
+      parseExceptionPolicy(
+        { ...policy, expiresAt: '2026-10-31T00:00:00Z' },
+        identity,
+        NOW
+      )
+    )
+  })
+}
 
 test('pilot exceptions preserve raw findings and block other or repeated occurrences', () => {
   const results = [{ Vulnerabilities: [FINDING] }]

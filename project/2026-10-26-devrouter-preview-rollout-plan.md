@@ -219,3 +219,9 @@ Full-profile image repair: final LTI, response and worker images now omit the un
 
 
 The human approved carrying the same two finite upstream exceptions onto the reviewed repaired source and classifying only the pinned GraphQL Scalars 1.23.0 PhoneNumber finding as not affected. The upstream advisory explicitly excludes this version, and its published code uses the bounded linear regex. This exact worker-image tuple remains opt-in and bound to the existing source, platform and expiry checks; ordinary image admission stays strict.
+
+The approved scalar disposition also covers exactly API and student MCP images
+containing the same pinned, unaffected package version. Their existing opt-in,
+source, AMD64, expiry and single-occurrence limits remain enforced. Reuse the
+prepared full-profile source and public configurations with a separately
+reviewed CI controller revision; scan raw image reports again before admission.
