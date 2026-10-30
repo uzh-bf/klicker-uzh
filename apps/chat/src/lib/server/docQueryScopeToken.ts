@@ -1,1 +1,5 @@
-export * from '@klicker-uzh/chat-api/host/lib/server/docQueryScopeToken'
+export {
+  createDocQueryScopedFetch,
+  DocQueryScopeTokenError,
+  signDocQueryScopeToken,
+} from '@klicker-uzh/doc-query-client'
