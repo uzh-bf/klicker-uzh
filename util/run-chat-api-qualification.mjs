@@ -689,12 +689,9 @@ async function worker() {
       })
       fixtures.setScenario('course')
       const courseBody = question((await thread()).id)
-      await verifyTurn(variant, courseBody)
+      const { stored: original } = await verifyTurn(variant, courseBody)
       assert.equal(fixtures.stats().courseCalls, counts.courseCalls + 1)
       assert.equal(fixtures.stats().courseResults, counts.courseResults + 1)
-      const original = await prisma.chatMessage.findUniqueOrThrow({
-        where: { id: courseBody.assistantMessageId },
-      })
       assert(!JSON.stringify(original.content).includes('citation_index'))
       await prisma.chatbotMCPConfig.updateMany({
         where: { chatbotId: id.bot, mcpServerId: id.server },
@@ -763,7 +760,7 @@ async function worker() {
       fixtures.setScenario('practice')
       const practiceCounts = fixtures.stats()
       const practiceBody = question((await thread()).id)
-      await verifyTurn(variant, practiceBody)
+      const { stored: storedPractice } = await verifyTurn(variant, practiceBody)
       assert.equal(
         fixtures.stats().practiceStarts,
         practiceCounts.practiceStarts + 1
@@ -772,9 +769,6 @@ async function worker() {
         fixtures.stats().practiceResults,
         practiceCounts.practiceResults + 1
       )
-      const storedPractice = await prisma.chatMessage.findUniqueOrThrow({
-        where: { id: practiceBody.assistantMessageId },
-      })
       const practiceResult = storedPractice.content.find(
         (part) =>
           part.type === 'tool-call' &&
@@ -1114,9 +1108,10 @@ async function worker() {
       ).join('\n\n')
       const mixed = question((await thread()).id, { images, documentPages })
       mixed.messages[0].content = documentText + '\nWhat is visible?'
+      const beforeMixed = fixtures.stats()
       const mixedResult = await verifyTurn(variant, mixed)
-      assert.equal(fixtures.stats().replyImages, 13)
-      assert(fixtures.stats().documentObserved)
+      assert.equal(fixtures.stats().lastReplyImages, 13)
+      assert(fixtures.stats().documentCalls > beforeMixed.documentCalls)
       const attachments = await prisma.chatAttachment.findMany({
         where: { messageId: mixed.messages[0].id },
       })
@@ -1478,11 +1473,11 @@ async function host() {
     assert.equal(result.status, 0, `Qualification ${command} failed`)
     return result.stdout.trim()
   }
-  const inspect = (id, source, destination) => {
+  const inspect = (id, source, destination, requireRunning = true) => {
     const value = JSON.parse(
       run('docker', ['inspect', '--format', '{{json .}}', id])
     )
-    assert(value.State.Running)
+    if (requireRunning) assert(value.State.Running)
     assert(
       value.Mounts.some(
         (mount) =>
@@ -1641,59 +1636,92 @@ async function host() {
       clearTimeout(timeout)
     }
   } finally {
-    if (
-      workerProcess &&
-      workerProcess.exitCode === null &&
-      existsSync(join(directory, 'worker-owner.json'))
-    ) {
-      inspect(publicId, root, setup.containerSourcePath)
-      const ownerPath = join(
-        setup.containerSourcePath,
-        relativeDirectory,
-        'worker-owner.json'
-      )
-      const stop = `const fs=require('node:fs');const p=JSON.parse(fs.readFileSync(${JSON.stringify(ownerPath)},'utf8'));if(p.generation!==${JSON.stringify(generation)}||p.containerSourcePath!==${JSON.stringify(setup.containerSourcePath)})throw Error('Owner mismatch');try{const cmd=fs.readFileSync('/proc/'+p.pid+'/cmdline','utf8');if(!cmd.includes('util/run-chat-api-qualification.mjs')||!cmd.includes('--worker'))throw Error('Process incarnation mismatch');process.kill(p.pid,'SIGTERM')}catch(e){if(e.code!=='ENOENT'&&e.code!=='ESRCH')throw e}`
-      run('devsy', [
-        'workspace',
-        'exec',
-        '--container-id',
-        publicId,
-        '--workspace-folder',
-        setup.containerSourcePath,
-        '--',
-        'node',
-        '-e',
-        stop,
-      ])
-      await Promise.race([
-        once(workerProcess, 'exit'),
-        delay(30000, undefined, { ref: false }).then(() => {
-          throw new Error('Owned worker did not finish cleanup')
-        }),
-      ])
+    const cleanupFailures = []
+    const attemptCleanup = async (name, cleanup) => {
+      try {
+        await cleanup()
+      } catch {
+        cleanupFailures.push(name)
+      }
     }
-    if (workerProcess) await stopChild(workerProcess)
-    if (engineProcess) {
-      inspect(privateId, privateSource, '/workspaces/catalyst')
-      const stop = `const f=require('node:fs');const p=JSON.parse(f.readFileSync(${JSON.stringify(enginePidPath)},'utf8'));if(p.generation!==${JSON.stringify(generation)})throw Error('Owner mismatch');try{process.kill(p.pid,'SIGTERM')}catch(e){if(e.code!=='ESRCH')throw e}`
-      run('docker', [
-        'exec',
-        '-w',
-        '/workspaces/catalyst',
-        privateId,
-        'node',
-        '-e',
-        stop,
-      ])
-      await stopChild(engineProcess)
-    }
-    if (attached) run('docker', ['network', 'disconnect', 'devnet', privateId])
+    let workerStopped = !workerProcess
+    let engineStopped = !engineProcess
+    let networkDetached = !attached
+    await attemptCleanup('worker-stop', async () => {
+      if (
+        workerProcess &&
+        workerProcess.exitCode === null &&
+        workerProcess.signalCode === null
+      ) {
+        inspect(publicId, root, setup.containerSourcePath)
+        const ownerPath = join(
+          setup.containerSourcePath,
+          relativeDirectory,
+          'worker-owner.json'
+        )
+        const stop = `const fs=require('node:fs');const p=JSON.parse(fs.readFileSync(${JSON.stringify(ownerPath)},'utf8'));if(p.generation!==${JSON.stringify(generation)}||p.containerSourcePath!==${JSON.stringify(setup.containerSourcePath)})throw Error('Owner mismatch');try{const cmd=fs.readFileSync('/proc/'+p.pid+'/cmdline','utf8');if(!cmd.includes('util/run-chat-api-qualification.mjs')||!cmd.includes('--worker'))throw Error('Process incarnation mismatch');process.kill(p.pid,'SIGTERM')}catch(e){if(e.code!=='ENOENT'&&e.code!=='ESRCH')throw e}`
+        run('devsy', [
+          'workspace',
+          'exec',
+          '--container-id',
+          publicId,
+          '--workspace-folder',
+          setup.containerSourcePath,
+          '--',
+          'node',
+          '-e',
+          stop,
+        ])
+        await Promise.race([
+          once(workerProcess, 'exit'),
+          delay(30000, undefined, { ref: false }).then(() => {
+            throw new Error('Owned worker did not finish cleanup')
+          }),
+        ])
+      }
+      if (workerProcess) await stopChild(workerProcess)
+      workerStopped = true
+    })
+    await attemptCleanup('engine-stop', async () => {
+      if (engineProcess) {
+        const state = inspect(
+          privateId,
+          privateSource,
+          '/workspaces/catalyst',
+          false
+        )
+        if (state.State.Running) {
+          const stop = `const f=require('node:fs');const wait=require('node:timers/promises').setTimeout;(async()=>{const p=JSON.parse(f.readFileSync(${JSON.stringify(enginePidPath)},'utf8'));if(p.generation!==${JSON.stringify(generation)})throw Error('Owner mismatch');const command=()=>{try{return f.readFileSync('/proc/'+p.pid+'/cmdline','utf8')}catch(e){if(e.code==='ENOENT')return null;throw e}};const initial=command();if(initial===null)return;if(!initial.includes('apps/tutoring-engine/dist/server-runtime.js'))throw Error('Process incarnation mismatch');try{process.kill(p.pid,'SIGTERM')}catch(e){if(e.code!=='ESRCH')throw e}for(let n=0;n<100;n++){if(command()!==initial)return;await wait(50)}throw Error('Engine stop deadline exceeded')})().catch(()=>{process.exitCode=1})`
+          run('docker', [
+            'exec',
+            '-w',
+            '/workspaces/catalyst',
+            privateId,
+            'node',
+            '-e',
+            stop,
+          ])
+        }
+        await stopChild(engineProcess)
+      }
+      engineStopped = true
+    })
+    await attemptCleanup('network-detach', async () => {
+      if (attached) {
+        inspect(privateId, privateSource, '/workspaces/catalyst', false)
+        run('docker', ['network', 'disconnect', 'devnet', privateId])
+      }
+      networkDetached = true
+    })
     receipt('host-cleanup.json', {
       generation,
-      taskNetworkDetached: attached,
-      engineStopped: engineProcess?.exitCode !== null,
-      workerStopped: workerProcess?.exitCode !== null,
+      taskNetworkDetached: networkDetached,
+      engineStopped,
+      workerStopped,
+      cleanupFailures,
     })
+    if (cleanupFailures.length)
+      throw new Error('Qualification cleanup incomplete')
   }
 }
 
