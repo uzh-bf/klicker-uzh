@@ -113,6 +113,7 @@ async function worker() {
   const children = new Set()
   let api, next, fixtures, graphClient, graph
   let owned = false
+  let workerFailed = false
   let phase = 'seed'
   const checks = []
   receipt('worker-owner.json', {
@@ -1399,6 +1400,7 @@ async function worker() {
       ],
     })
   } catch (error) {
+    workerFailed = true
     receipt('acceptance.json', {
       status: 'failed',
       generation: setup.generation,
@@ -1416,39 +1418,77 @@ async function worker() {
     })
     throw new Error('Local qualification failed; inspect the private receipt')
   } finally {
+    const cleanupFailures = []
+    const attemptCleanup = async (name, cleanup) => {
+      try {
+        await cleanup()
+        return true
+      } catch {
+        cleanupFailures.push(name)
+        return false
+      }
+    }
     let stopped = true
     for (const child of [...children].reverse()) {
       try {
         await stopChild(child)
       } catch {
         stopped = false
+        cleanupFailures.push('child-stop')
       }
     }
-    if (fixtures) await fixtures.close()
-    if (graph && stopped) await graph.delete()
-    if (graphClient) await graphClient.close()
-    if (owned && stopped) {
-      await requireDisposableDatabase(prisma)
-      await prisma.participant.deleteMany({
-        where: { id: id.participant, username: tag },
-      })
-      await prisma.user.deleteMany({
-        where: {
-          id: id.owner,
-          shortname: tag,
-          email: `${tag}@example.invalid`,
-        },
-      })
-      await prisma.chatbotMCPServer.deleteMany({
-        where: { id: id.server, name: mcpName },
-      })
+    const fixturesStopped = fixtures
+      ? await attemptCleanup('fixtures', () => fixtures.close())
+      : true
+    const graphRemoved = graph
+      ? stopped && (await attemptCleanup('graph', () => graph.delete()))
+      : true
+    const graphClientClosed = graphClient
+      ? await attemptCleanup('graph-client', () => graphClient.close())
+      : true
+    let rowsCleaned = false
+    if (
+      owned &&
+      stopped &&
+      (await attemptCleanup('database-ownership', () =>
+        requireDisposableDatabase(prisma)
+      ))
+    ) {
+      const participantCleaned = await attemptCleanup('participant-rows', () =>
+        prisma.participant.deleteMany({
+          where: { id: id.participant, username: tag },
+        })
+      )
+      const ownerCleaned = await attemptCleanup('owner-rows', () =>
+        prisma.user.deleteMany({
+          where: {
+            id: id.owner,
+            shortname: tag,
+            email: `${tag}@example.invalid`,
+          },
+        })
+      )
+      const serverCleaned = await attemptCleanup('server-rows', () =>
+        prisma.chatbotMCPServer.deleteMany({
+          where: { id: id.server, name: mcpName },
+        })
+      )
+      rowsCleaned = participantCleaned && ownerCleaned && serverCleaned
     }
-    await prisma.$disconnect()
+    const databaseDisconnected = await attemptCleanup('prisma-disconnect', () =>
+      prisma.$disconnect()
+    )
     receipt('worker-cleanup.json', {
       childrenStopped: stopped,
-      fixturesStopped: true,
-      ownedRowsCleaned: owned && stopped,
+      fixturesStopped,
+      graphRemoved,
+      graphClientClosed,
+      ownedRowsCleaned: rowsCleaned,
+      databaseDisconnected,
+      cleanupFailures,
     })
+    if (!workerFailed && cleanupFailures.length)
+      throw new Error('Qualification worker cleanup incomplete')
   }
 }
 
