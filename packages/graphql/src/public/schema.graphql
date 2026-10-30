@@ -972,7 +972,10 @@ type AdaptivePracticeQuizResult {
   levelInterpretation: AdaptiveLevelMappingRule!
   levelLabel: String
   lowerPosition: Float
+  mastered: Boolean
+  masteryFrom: Float!
   nearBoundary: Boolean!
+  nextLevelLabel: String
   position: Float
   practiceQuizId: String!
   practiceQuizName: String!
@@ -1001,8 +1004,10 @@ type AdaptivePracticeQuizResultNode {
   leadingLevelLabels: [String!]!
   levelLabel: String
   lowerPosition: Float
+  mastered: Boolean
   name: String!
   nearBoundary: Boolean!
+  nextLevelLabel: String
   order: Int!
   position: Float
   responseCount: Int!
