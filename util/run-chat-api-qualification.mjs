@@ -678,9 +678,11 @@ async function worker() {
         headers: {
           'content-type': 'application/json',
           authorization: `Bearer ${foreignToken}`,
+          origin: setup.chatOrigin,
         },
       })
       assert([401, 403].includes(forbidden.status))
+      assert.notEqual(JSON.parse(forbidden.text).code, 'ORIGIN_NOT_ALLOWED')
       assert.deepEqual(fixtures.stats(), after)
       variantChecks.push('scoped-guest-embed-and-foreign-denial')
       phase = `${variant}:course-tool`
