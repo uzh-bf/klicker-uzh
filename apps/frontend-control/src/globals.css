@@ -254,6 +254,12 @@
     @apply bg-background text-foreground;
   }
 
+  /* Keep notifications below display cutouts, including the close button. */
+  [data-sonner-toaster][data-y-position="top"] {
+    /* biome-ignore lint/complexity/noImportantStyles: Override the design system's forced viewport offset. */
+    top: calc(0.75rem + env(safe-area-inset-top, 0px)) !important;
+  }
+
   html,
   body,
   #__next {

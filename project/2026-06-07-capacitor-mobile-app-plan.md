@@ -1,5 +1,10 @@
 # Capacitor Mobile App Plan
 
+Historical student-app proposal. For the current lecturer Control release,
+see the [Control mobile store roadmap](2026-10-23-control-mobile-store-roadmap.md).
+Its bundling, authentication and update recommendations supersede assumptions
+from this proposal only for Control; student implementation remains separate.
+
 Problem: ship full Klicker student PWA through Android Play Store and Apple App Store with one Capacitor code path.
 Target: least new code, full hosted PWA, native push, offline downloaded practice.
 Plan path: `project/2026-06-07-capacitor-mobile-app-plan.md`.
