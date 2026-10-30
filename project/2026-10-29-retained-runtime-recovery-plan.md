@@ -107,3 +107,12 @@ static checks; independent integration review and real acceptance remain pending
 starts only after supported identity, source, mounts, caps and agent checks pass.
 The original single runtime/90-minute limit and final exact non-destructive
 stop/zero-routes/data-retained terminal condition still apply.
+
+
+Provider capability preflight now stops before runtime creation: the released
+managed CLI exposes initialization, ordinary startup and stop, but no explicit
+application-container replacement operation. Managed ensure refuses its legacy
+recreation fallback; repair only starts retained resources and reruns preserving
+adapters. Direct provider recreation is outside this batch's managed path.
+The single runtime budget remains unused. Source adoption can finish with this
+explicit limitation; consumer content preservation remains unqualified.
