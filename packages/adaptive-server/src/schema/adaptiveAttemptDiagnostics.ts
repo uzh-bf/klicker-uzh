@@ -150,6 +150,7 @@ export function createAdaptiveAttemptDiagnosticsSchema(
         startedAt: t.expose('startedAt', { type: 'Date' }),
         completedAt: t.expose('completedAt', { type: 'Date', nullable: true }),
         elapsedSeconds: t.exposeInt('elapsedSeconds', { nullable: true }),
+        engineRevision: t.exposeString('engineRevision', { nullable: true }),
         stopReason: t.exposeString('stopReason', { nullable: true }),
         answerCount: t.exposeInt('answerCount'),
         overall: t.expose('overall', { type: NodeResultType }),
