@@ -225,3 +225,9 @@ containing the same pinned, unaffected package version. Their existing opt-in,
 source, AMD64, expiry and single-occurrence limits remain enforced. Reuse the
 prepared full-profile source and public configurations with a separately
 reviewed CI controller revision; scan raw image reports again before admission.
+
+A refreshed raw scan found a new Wolfi pip-wheel advisory. Update only the
+bundled package to the maintained 26.2.2-r1 security revision; retain the LiteLLM
+base digest and Python dependency constraints. Verify the native image before
+publishing source. Image admission on the resulting source still requires the
+existing finite findings to be bound to that reviewed revision.

@@ -2,7 +2,8 @@ FROM ghcr.io/berriai/litellm@sha256:7d6ae6c8d73d1b6aea4cb75d07c4a8a953f0809b0764
 
 # The preview proxy uses no LiteLLM database. Keep dependency updates inside the
 # upstream package constraints.
-RUN PYTHONPATH=/usr/share/python-wheels/pip-26.2.2-py3-none-any.whl python -m pip install --no-cache-dir 'ddtrace==4.15.6' 'dnspython==2.9.0' \
+RUN apk add --no-cache 'py3-pip-wheel=26.2.2-r1' \
+ && PYTHONPATH=/usr/share/python-wheels/pip-26.2.2-py3-none-any.whl python -m pip install --no-cache-dir 'ddtrace==4.15.6' 'dnspython==2.9.0' \
  && PYTHONPATH=/usr/share/python-wheels/pip-26.2.2-py3-none-any.whl python -m pip check
 
 COPY util/litellm/config.yaml /app/klicker-litellm.yaml
