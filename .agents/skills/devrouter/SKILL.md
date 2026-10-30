@@ -11,7 +11,8 @@ Local dev routing via a shared Traefik reverse proxy. Provides stable `*.localho
 ## How it works
 
 - Shared Traefik router owns host ports 80 (HTTP), 443 (HTTPS), 5432 (Postgres TCP).
-- Per-repo config: `.devrouter.yml` (single source of truth).
+- Local routing/profile config: `.devrouter.yml`. Only `devrouter preview` reads the opt-in `.devrouter.preview.yml`; local profiles retain membership authority.
+- Remote previews: `preview init [--write]` prints/creates a scaffold; `preview plan --alias <name> --json` inspects it offline. Installed `doctor`, `state-init`, `handle-event` and `sweep` use separate reviewed installation policy; see `docs/PREVIEWS.md` before remote operations. Planning does not deploy.
 - Global runtime artifacts: `~/.config/devrouter` (never edit manually).
 - Hostnames must end with `.localhost` (lowercase alphanumeric + hyphens only).
 
@@ -243,10 +244,13 @@ Run several worktrees of one repo in parallel without host/route collisions. A *
 - **When active**: hosts auto-namespace (`web.localhost` → `web.<ws>.localhost`), `${WORKSPACE}` in `upstream` is substituted with the token, and the docker `router` key is suffixed per workspace. Managed `ensure` rejects every HTTP/TCP proxy upstream outside that exact alias namespace before it mutates DevPod or routes. The runtime config is computed in memory only — the committed `.devrouter.yml` is never rewritten.
 - **TLS**: namespaced hosts (`web.<ws>.localhost`) are not covered by the `*.localhost` wildcard; devrouter auto-extends the mkcert cert SANs for active hosts when TLS is enabled.
 - **devcontainer integration**: managed scaffolds list the base compose file, then `${localEnv:DEVCONTAINER_COMPOSE_OVERLAY:docker-compose.default.yml}`; custom repositories may keep another default overlay. Selecting `.devcontainer/docker-compose.devrouter.yml` for linked worktrees must pass `WORKSPACE` and `DEVROUTER_WORKSPACE` across the combined base/overlay config and bind-mount `${DEVROUTER_GIT_COMMON_DIR}` to the same absolute app-container path. The app exposes `${WORKSPACE}-app`; the proxy uses `upstream: ${WORKSPACE}-app:<port>`.
-- **Lifecycle**: after one-time `setup`, use `ensure .` for both primary and linked checkouts; never branch manually on checkout kind or use live verify as startup. `stop .` is non-destructive; `stop . --delete` is explicit exact-owner cleanup without worktree removal; and `exec . -- <command...>` runs one-shot commands only in the exact running workspace runtime (DevPod or Devsy). Never substitute raw `devpod up`, `stop`, `delete`, or the Devsy equivalents: they bypass devrouter's machine-global ownership lock, which serializes provider mutations in a fair arrival-order queue and lets contenders wait up to thirty minutes with throttled stderr progress before failing with the queue position or holder PID and true durations. Runtime selection is path-aware: `DEVROUTER_WORKSPACE_RUNTIME=devpod|devsy` forces one runtime, an exact-path registry owner wins next, then the machine preference from `devrouter setup --workspace-runtime`, then installed-CLI auto-detection. `workspace up` creates linked worktrees; destructive worktree removal and GC remain ledger-scoped. Dirty or locked full down fails before side effects. For Devsy, run `devrouter setup --yes --workspace-runtime devsy` once so Devrouter acquires and verifies the pinned agent in its own machine cache. `doctor` reports `ready`, `missing`, `stale`, or `invalid` without network access, and `ensure` fails before the provider queue when readiness is not `ready`. An explicit `DEVSY_AGENT_BINARY` remains authoritative and must match a pinned official asset.
+- **Lifecycle**: after one-time `setup`, use `ensure .` for both primary and linked checkouts; never branch manually on checkout kind or use live verify as startup. `stop .` is non-destructive; `stop . --delete` is explicit exact-owner cleanup without worktree removal; and `exec . -- <command...>` runs one-shot commands only in the exact running workspace runtime (DevPod or Devsy). Never substitute raw `devpod up`, `stop`, `delete`, or the Devsy equivalents: they bypass devrouter's machine-global ownership lock, which serializes provider mutations in a fair arrival-order queue and lets contenders wait up to thirty minutes with throttled stderr progress before failing with the queue position or holder PID and true durations. Runtime selection is path-aware: `DEVROUTER_WORKSPACE_RUNTIME=devpod|devsy` forces one runtime, an exact-path registry owner wins next, then the machine preference from `devrouter setup --workspace-runtime`, then installed-CLI auto-detection. `workspace up` creates linked worktrees; `down` and GC remain ledger-scoped, and `workspace reclaim|trim` act only on an approved manifest's exact candidates. Dirty or locked full down fails before side effects. For Devsy, run `devrouter setup --yes --workspace-runtime devsy` once per installed Devsy release, rerunning it after a Devsy update, so Devrouter acquires and verifies the official Linux agent in its own machine cache. Devrouter supports Devsy releases in the range >=1.16.2 <2.0.0 and refuses a release whose published asset has no SHA-256 digest. `doctor` reports `ready`, `missing`, `stale`, or `invalid` without network access, and `ensure` fails before the provider queue when readiness is not `ready`. An explicit `DEVSY_AGENT_BINARY` remains authoritative and must match the official asset for the installed release.
+- **Interrupted lifecycle**: ensure reconciles an interrupted or never-dispatched ensure after positive worker drainage and automatically repairs retained degraded runtimes. Unknown arbitrary exec is never replayed; explicit stop reconciles that uncertainty. A start refused before any provider mutation — a fixed published host port already held by a running container — stays visible in `status` as a `start-refused` attention reason naming the read-only `doctor` check and the consumer-side fix; an explicit `stop` releases the intent and the reason, and a later admitted ensure clears it. Preserve journals and retained configuration when evidence is unavailable. This does not provide OOM prevention or capacity-managed automatic recovery.
 - **Managed process identity**: `ensure` executes an exact captured adapter snapshot. Default reuse includes command argv, workspace, and adapter SHA-256. Set `DEVROUTER_PROCESS_FINGERPRINT_ENV` only to comma-separated non-secret environment names whose values affect runtime identity; secret-like names are rejected and raw values are never persisted.
 - **Route state**: the versioned Traefik dynamic file is authoritative for both metadata and rendering. JSON is a compatibility mirror; valid headerless generations migrate automatically, while corrupt canonical metadata fails closed.
 - **Cleanup**: `workspace cleanup --repo . --inactive-for 30d --json` is a report-only, no-`--yes` report for managed linked workspaces. It joins ownership (`present|missing|locked|conflict`), workspace runtime registration, runtime state (`running|stopped|busy|not-found|absent|unknown`), checkout, route, advisory activity, and integration evidence without mutating the workspace runtime, routes, ownership, Git, Docker, applications, worktrees, or branches. Local DevPod/Devsy list/status checks always run; `--check-merged` alone enables read-only origin and matching GitHub/GitLab checks. Treat `not-found` as stale runtime after Docker pruning; busy, unavailable, or conflicting evidence suppresses destructive suggestions. Explicit `gc`/`down` can remove exact stale registration only after expected-ID `NotFound` proof and ownership revalidation. GC never removes Git worktrees, branches, or prune state. Git has no worktree-removal hook.
+- **Idle stop**: `workspace idle [--idle-for 30m] --json` is read-only and marks each running managed environment `active`, `idle`, `unknown` or `protected` from Traefik requests to its routes, the provider activity file, its lifecycle journal and route updates; only fully evidenced `idle` environments stop with `--stop`, through the normal `stop` path. Machines opt in with `devrouter setup --yes --idle-stop 30m` (macOS launchd, every five minutes; `off` removes it). Database-only use is invisible to it, so run `workspace pin .` before long sessions without HTTP or `exec` traffic, and `workspace pin . --off` afterwards. Do not set `--devsy-inactivity-timeout`; it is deprecated and ignored.
+- **Reclaim and trim**: for disk cleanup across every linked worktree, managed or not, run `workspace cleanup --all-worktrees --check-merged` for `RECLAIM`/`KEEP`/`PRUNE` verdicts with stable reason codes, then `--manifest --output <file>` (add `--action trim` for the paths declared in `.devrouter.yml` `worktrees.trim`). A person approves the printed SHA-256; `workspace reclaim|trim --manifest <file> --sha256 <hash>` is a dry run until `--yes`, never adds targets, and re-checks identity, verdict, activity and an optional `--veto-command` inside each target's lifecycle lock. Never replace it with hand-run `git worktree remove`, `rm -rf` or `git branch -D` loops. The installable `worktree-reclaim` skill shares the manifest format and delegates to these commands when devrouter is installed. Reclaim before trim: trimming a top-level path updates the tree's mtime, so an unmanaged tree then reads as active until the window passes.
 - **Sizing**: `--measure-size` adds per-workspace storage consumption to that report and stays read-only, but it walks each worktree and runs `docker ps` / `docker inspect --size`, so leave it off when you only need the evidence states. Each row reports reclaimable `worktree` and `containerWritable` bytes, non-reclaimable `imageShared` bytes, and a `reclaimable` total of the first two. `imageShared` covers image layers shared with other containers and overlaps across rows, so never sum it. Attribution is the workspace's own app container; sibling compose services such as a database are excluded. Any untrustworthy figure reports `unknown` with a reason rather than zero, and a workspace with no container reports a measured `0`.
 - **Boundary**: workspace commands require Git. Normal config, app, status, and doctor flows remain usable from a `.devrouter.yml` folder without `.git`.
 
@@ -298,11 +302,13 @@ Run several worktrees of one repo in parallel without host/route collisions. A *
 - `devrouter -V [--repo .]`: show installed CLI version, local repo version, and next upgrade target
 - `devrouter upgrade [version] [--repo .]`: list upgrade targets or print target Agent Adaptation Prompt
 - `devrouter setup --yes [--repo .] [--json] [--workspace-runtime <devpod|devsy>]`: first-run machine setup plus structured diagnostics; explicit Devsy selection acquires its verified agent
-- `devrouter ensure [path] [--profile <name>] [--repair] [--open] [--json]`: canonical startup/reconciliation for primary and linked checkouts; explicit repair uses the recorded degraded profile and unchanged retained configuration
+- `devrouter ensure [path] [--profile <name>] [--repair] [--open] [--json]`: canonical startup/reconciliation for primary and linked checkouts; automatically repairs retained degraded state before startup; explicit repair uses the recorded profile only
 - `devrouter profile resolve --repo <path> [--profile <selection>] [--json]`: resolve exact profile resources for automation without starting or inspecting a runtime
 - `devrouter profile plan --repo <path> [--profile <selection>] --contract <repo-relative-yaml> [--output <path>] [--json]`: validate repository-owned resource policy and emit literal bindings without runtime access
 - `devrouter stop [path] [--delete] [--json]`: stop the exact workspace runtime and remove exact routes; `--delete` explicitly deletes its ownership-proven data without removing the checkout
 - `devrouter exec [path] -- <command...>`: literal one-shot command inside the exact running workspace runtime
+- `devrouter harness gate [--repo <path>] [--wait-budget-ms <ms>] [--json]`: defer one harness tool call until this checkout's lifecycle phase settles; prints the harness permission decision
+- `devrouter capacity reconcile --yes [--json]`: replace a provably absent capacity ledger with a fresh empty baseline once no journal-visible charge remains
 - `devrouter up` / `devrouter down`: start/stop shared Traefik router
 - `devrouter status`: router/container/network/TLS health
 - `devrouter doctor [--repo .]`: deep diagnostics (global + repo)
@@ -325,10 +331,73 @@ Run several worktrees of one repo in parallel without host/route collisions. A *
 - `devrouter workspace up <branch> [--path <dir>] [--no-devpod] [--open]`: create a worktree and start/prove it unless create-only mode is requested
 - `devrouter workspace ensure [path] [--profile <name>] [--repair] [--open] [--json]`: compatibility alias of `devrouter ensure`
 - `devrouter workspace ls [--json]`: list ownership, Git, workspace runtime, route, path, and branch evidence
-- `devrouter workspace cleanup [--repo .] [--inactive-for 30d] [--check-merged] [--measure-size] [--json]`: report-only cleanup evidence and exact guarded suggestions; no `--yes` or apply mode
+- `devrouter workspace cleanup [--repo .] [--inactive-for 30d] [--check-merged] [--measure-size] [--all-worktrees] [--manifest [--action reclaim|trim|leftover] [--output <file>]] [--json]`: report-only cleanup evidence and exact guarded suggestions; `--all-worktrees` also lists Docker leftovers of deleted checkouts; `--manifest` emits an approval manifest instead of the report
 - `devrouter workspace stop <workspace|branch>`: stop DevPod and routes; preserve checkout, owner record, and data
 - `devrouter workspace down <workspace|branch> [--keep-worktree]`: delete runtime/routes and optionally remove the clean worktree and record
+- `devrouter workspace idle [--repo .] [--idle-for 30m] [--stop] [--json]`: read-only idle report; `--stop` stops only fully evidenced idle environments
+- `devrouter workspace pin [path] [--off] [--json]`: keep one environment from idle stop, or remove the pin
 - `devrouter workspace gc [--json] [--yes]`: report missing owners by default; apply exact eligible cleanup with `--yes`
+- `devrouter workspace manifest hash|select <file>`: print a manifest's SHA-256, or a canonical subset of exact candidate IDs (`--expected-sha256`, `--id`)
+- `devrouter workspace reclaim|trim --manifest <file> --sha256 <hash> [--veto-command <abs>] [--yes] [--json]`: apply an approved manifest; dry run without `--yes`
+- `devrouter workspace leftover --manifest <file> --sha256 <hash> [--yes] [--json]`: remove the Docker containers, volumes and networks of an approved leftover manifest; dry run without `--yes`
+
+## Agent harness gating
+
+A managed consumer can gate agent tool calls so a command never starts while the
+checkout's environment is mid-transition. Wire `devrouter harness gate` as a
+`PreToolUse` hook. Claude Code reads it from a settings file:
+
+    {
+      "hooks": {
+        "PreToolUse": [
+          { "matcher": ".*", "hooks": [
+            { "type": "command", "command": "devrouter harness gate", "timeout": 90 }
+          ] }
+        ]
+      }
+    }
+
+The Codex CLI reads the same hook from `$CODEX_HOME/hooks.json`:
+
+    {
+      "hooks": {
+        "PreToolUse": [
+          { "matcher": ".*", "hooks": [
+            { "type": "command", "command": "devrouter harness gate", "timeout": 180 }
+          ] }
+        ]
+      }
+    }
+
+`.*` matches every tool, including the shell, file-editing and MCP tools a model
+can point at the environment. The gate answers a settled checkout immediately, so
+the price is one short-lived process per gated call; narrow the matcher when that
+price matters more than covering every tool.
+
+The gate identifies the requesting harness from its payload and answers in that
+harness's accepted shape: a refusal is a `deny` in both, while an allowed call is
+`permissionDecision: allow` for Claude Code and Codex receives a bare completion
+carrying the same guidance as `additionalContext`, because Codex rejects an
+`allow` decision as unsupported hook output.
+
+the checkout's durable phase is `queued`, `starting`, `verifying`, `recovering`
+or `stopping`, and prints the harness permission decision. The deferral consumes
+no model turns because the harness is blocked on the hook. `--wait-budget-ms`
+bounds the wait (default 30000); a phase that outlasts it returns one `deny` that
+names the phase and asks the agent not to retry automatically. Lifecycle
+commands (`devrouter ...`) always pass through, and unreadable journal evidence
+is allowed rather than blocking the agent. Set the harness hook `timeout` above
+the wait budget: an overrunning hook is not honored, and the tool proceeds under
+the harness's normal permission rules. Use `--json` for the devrouter decision
+envelope with wait metrics.
+
+Gated calls are keyed by the harness `tool_use_id` and recorded durably. If the
+harness re-delivers a call it already granted or cancelled, the gate returns one
+refusal naming the earlier decision instead of waiting again, because that call
+may already have run; the agent should verify it and issue a new call. Entries
+expire after 24 hours, the ledger keeps the newest 64 per checkout, and an
+unreadable or unwritable ledger never blocks the agent. Payloads without a
+`tool_use_id` keep the wait-only behavior.
 
 ## Validation workflow
 

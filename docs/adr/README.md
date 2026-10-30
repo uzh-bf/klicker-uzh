@@ -17,6 +17,7 @@ The durable record of **why** — the significant, hard-to-reverse choices behin
 - [0003](./0003-promote-stg-via-release-annotation-write-back.md) — Promote to staging by writing the built commit into a release annotation
 - [0003](./0003-chat-framework-upgrade.md) — Fold the chat framework upgrade into the v3 student-chat branch
 - [0004](./0004-chat-citations-from-tool-call-parts.md) — Chat citations are derived from tool-call parts
+- [0005](./0005-versioned-chat-engine-boundary.md) — Cross chat generation through a versioned internal engine boundary
 - [0006](./0006-public-catalyst-capability-floor.md) — What public KlickerUZH keeps when Catalyst is absent
 - [0007](./0007-reintegrate-v3-ai-behind-feature-flags.md) — Reintegrate `v3-ai` into `v3` behind feature flags, after VK2
 - [0008](./0008-assessment-identity-boundary-and-public-projection.md) — Keep assessment identity course-scoped and minimize public credential identity
@@ -40,9 +41,10 @@ The durable record of **why** — the significant, hard-to-reverse choices behin
 - [0051](./0051-ai-releases-tag-v3-ai-with-deploy-parity.md) — AI releases are tagged on `v3-ai` and rendered from `v3` under deploy parity
 - [0054](./0054-student-answer-style-layer.md) — Students choose how answers read (style and tone), never how much help they get, below every fixed prompt contract
 
+- [0056](./0056-chat-engine-parity-contract-generation.md) — Full participant parity uses an explicit chat-engine contract generation
+
 `0001`, `0003`, and `0008` are each used twice — their lines were numbered
 independently before this index existed. Numbers are not reassigned, because
-existing records cite them. `0005` is reserved by an open PR, and open branches
-claim numbers through `0018` (KB line `0009`–`0016`, feature flags, UZH
+existing records cite them. Open branches claim numbers through `0018` (KB line `0009`–`0016`, feature flags, UZH
 theming). Pick the next free number by checking this directory **and**
 `docs/adr/` on open branches, not by counting entries.

@@ -189,6 +189,9 @@
     "OPENAI_API_KEY",
     "OPENAI_BASE_URL",
     "KLICKER_EVAL_GUARD_ORIGIN",
+    "CHAT_PROVIDER_ALLOWED_ORIGINS",
+    "CHAT_ENGINE_PROVIDER_ALLOWED_ORIGINS",
+    "MCP_EXECUTION_URL",
     "CHAT_OPENAI_STORE_RESPONSES",
     "CHAT_ENABLE_AI_TELEMETRY",
     "CHAT_PRIMARY_MODEL_ID",
@@ -197,6 +200,10 @@
     "GROWTHBOOK_REFRESH_INTERVAL_MS",
     "CHAT_TURN_LIFECYCLE_WRITES_ENABLED",
     "CHAT_MODEL_REGISTRY_JSON",
+    "CHAT_ENGINE_URL",
+    "CHAT_ENGINE_ID",
+    "PORT",
+    "CHAT_ENGINE_SERVICE_TOKEN",
     "DOC_QUERY_SCOPE_AUDIENCE",
     "DOC_QUERY_SCOPE_ISSUER",
     "DOC_QUERY_SCOPE_KID",
@@ -345,6 +352,14 @@
       "persistent": true
     },
     "test:run": {
+      "cache": false
+    },
+    "@klicker-uzh/chat-api#test:run": {
+      "dependsOn": ["^build"],
+      "cache": false
+    },
+    "@klicker-uzh/chat-engine-default#test:run": {
+      "dependsOn": ["^build"],
       "cache": false
     }
   }
