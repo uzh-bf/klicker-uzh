@@ -16,3 +16,8 @@ export const CHATBOT_CUSTOM_MODE_WELCOME_MESSAGE_MAX_LENGTH = 2000
 // composer.
 export const CHATBOT_CUSTOM_MODE_STARTER_PROMPT_MAX_COUNT = 4
 export const CHATBOT_CUSTOM_MODE_STARTER_PROMPT_MAX_LENGTH = 500
+// Time facts a custom mode may add to each turn; absence means none.
+export const CHATBOT_CUSTOM_MODE_MEETING_CLOCKS = [
+  'ELAPSED',
+  'ELAPSED_AND_TIME',
+] as const

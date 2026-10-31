@@ -119,6 +119,46 @@ describe('graph document scope', () => {
     expect(mocks.publication).not.toHaveBeenCalled()
   })
 
+  it('admits only the owner of an active chatbot in owner preview', async () => {
+    const preview = {
+      chatbotId: 'bot-1',
+      authMode: 'account' as const,
+      ownerPreviewUserId: 'owner-1',
+      kbIds: ['kb-1'],
+    }
+    mocks.chatbot.mockResolvedValue({
+      knowledgeGraphRetrievalEnabled: true,
+      ownerId: 'owner-1',
+      status: 'PUBLISHED',
+      knowledgeBases: [binding],
+    })
+    expect(
+      (await graphQueryDependencies(preview).validateScope()).enabled
+    ).toBe(true)
+    expect(mocks.participant).not.toHaveBeenCalled()
+    expect(mocks.access).not.toHaveBeenCalled()
+
+    for (const chatbot of [
+      { ownerId: 'owner-2', status: 'PUBLISHED' },
+      { ownerId: 'owner-1', status: 'PAUSED' },
+    ]) {
+      mocks.chatbot.mockResolvedValue({
+        knowledgeGraphRetrievalEnabled: true,
+        knowledgeBases: [binding],
+        ...chatbot,
+      })
+      await expect(
+        graphQueryDependencies(preview).validateScope()
+      ).rejects.toThrow()
+    }
+    await expect(
+      graphQueryDependencies({
+        ...preview,
+        participantId: 'participant-1',
+      }).validateScope()
+    ).rejects.toThrow()
+  })
+
   it('does not use a stale or unpublished graph', async () => {
     mocks.publication.mockResolvedValue({ buildId: 'old-build', isStale: true })
     const dependencies = graphQueryDependencies(context)

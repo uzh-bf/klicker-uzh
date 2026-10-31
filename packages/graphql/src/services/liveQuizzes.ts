@@ -905,6 +905,21 @@ export async function scheduleLiveQuiz(
 ) {
   // if the live quiz starts in the future, change its status to scheduled, otherwise publish it
   if (availableFrom && dayjs(availableFrom).isAfter(dayjs())) {
+    // only draft or already scheduled quizzes can be (re)scheduled; checked
+    // before the publication task is created so a running or ended quiz is
+    // never republished
+    const schedulableQuiz = await ctx.prisma.liveQuiz.findFirst({
+      where: {
+        id,
+        isDeleted: false,
+        status: {
+          in: [DB.PublicationStatus.DRAFT, DB.PublicationStatus.SCHEDULED],
+        },
+      },
+      select: { id: true },
+    })
+    if (!schedulableQuiz) return null
+
     try {
       // schedule the task to publish the live quiz
       const scheduledTask = await ctx.tasks.publishScheduledLiveQuiz.schedule(
@@ -915,7 +930,13 @@ export async function scheduleLiveQuiz(
 
       // change the status of the live quiz to scheduled
       const updatedQuiz = await ctx.prisma.liveQuiz.update({
-        where: { id, isDeleted: false },
+        where: {
+          id,
+          isDeleted: false,
+          status: {
+            in: [DB.PublicationStatus.DRAFT, DB.PublicationStatus.SCHEDULED],
+          },
+        },
         data: {
           availableFrom,
           status: DB.PublicationStatus.SCHEDULED,

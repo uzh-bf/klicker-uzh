@@ -24,6 +24,11 @@ type ResponseExampleSetData = DB.ResponseExampleSet & {
   chatModes: string[]
 }
 
+export interface CaptureResponseExampleResultData {
+  exampleId: string
+  created: boolean
+}
+
 export const ResponseExampleEvidenceReferenceRef =
   builder.objectRef<ResponseExampleEvidenceReferenceData>(
     'ResponseExampleEvidenceReference'
@@ -101,3 +106,15 @@ export const ResponseExampleSet = ResponseExampleSetRef.implement({
     updatedAt: t.expose('updatedAt', { type: 'Date' }),
   }),
 })
+
+export const CaptureResponseExampleResultRef =
+  builder.objectRef<CaptureResponseExampleResultData>(
+    'CaptureResponseExampleResult'
+  )
+export const CaptureResponseExampleResult =
+  CaptureResponseExampleResultRef.implement({
+    fields: (t) => ({
+      exampleId: t.exposeID('exampleId'),
+      created: t.exposeBoolean('created'),
+    }),
+  })
