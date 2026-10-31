@@ -184,6 +184,7 @@ export const KnowledgeGraphSourceReferenceType =
       resourceId: t.exposeID('resourceId'),
       title: t.exposeString('title'),
       reference: t.exposeString('reference', { nullable: true }),
+      pages: t.exposeIntList('pages', { nullable: true }),
     }),
   })
 
@@ -213,6 +214,11 @@ export const KnowledgeGraphEdgeType = KnowledgeGraphEdgeRef.implement({
     target: t.exposeID('target'),
     type: t.exposeString('type'),
     label: t.exposeString('label'),
+    relationType: t.exposeString('relationType'),
+    relationStatus: t.exposeString('relationStatus'),
+    sourceReferences: t.expose('sourceReferences', {
+      type: [KnowledgeGraphSourceReferenceRef],
+    }),
     properties: t.expose('properties', { type: 'Json' }),
   }),
 })

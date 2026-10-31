@@ -30,6 +30,7 @@ type ChatbotRevisionValues = Pick<
   | 'avatar'
   | 'standardModeConfig'
   | 'customModeConfig'
+  | 'answerPreferencesEnabled'
   | 'modelSelection'
   | 'allowedModelIds'
   | 'allowedReasoningEffortsByModel'
@@ -71,6 +72,9 @@ function getChatbotRevisionValues(
     customModeConfig: revision
       ? revision.customModeConfig
       : (chatbot.customModeConfig ?? null),
+    answerPreferencesEnabled: revision
+      ? revision.answerPreferencesEnabled
+      : chatbot.answerPreferencesEnabled,
     modelSelection: revision ? revision.modelSelection : chatbot.modelSelection,
     allowedModelIds: revision
       ? [...revision.allowedModelIds]
