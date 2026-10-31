@@ -63,6 +63,32 @@ Use this to mirror production domain behaviors, test cookie-sharing over HTTPS, 
 
 Do not use bare `devpod up`, manual `WORKSPACE`, or per-app `--workspace` route loops for this managed devcontainer. Those paths bypass the identity and runtime proof.
 
+## HTTPS proxy environments
+
+The app image can trust an additional public CA for a managed HTTPS proxy.
+Export `KLICKER_EXTRA_CA_PEM` with the PEM certificate contents before running
+`devrouter ensure .`; Compose passes it as an optional build argument and the
+image installs it in the system trust store before downloading pnpm. Node uses
+the system CA store as well. Leave the argument unset for ordinary local setup.
+The certificate becomes part of the image: supply only a public trust root,
+never a private key or credential. TLS verification remains enabled.
+
+The app forwards the host's `HTTP_PROXY`, `HTTPS_PROXY`, and `NO_PROXY`, and
+Node enables environment-proxy support. Docker builds use Docker's standard
+proxy configuration. Proxy hostnames must resolve from Docker's network.
+When supplying `NO_PROXY`, retain loopback and `.localhost` plus the internal
+host endpoint `host.docker.internal` and service names (`postgres`, `hatchet`, `redis_exec`, `redis_assessment`,
+`redis_cache`, `litellm`, `mailhog`, `oidc`, `azurite`, and `klicker-uzh-azurite`).
+Managed startup also appends the selected internal Blob hostname (including
+`${WORKSPACE}-azurite`) before storage setup and application tasks, preserving
+entries in a supplied `NO_PROXY`. An override used outside managed startup must
+include the internal Blob hostname selected by `BLOB_STORAGE_INTERNAL_ACCOUNT_URL`.
+If Docker injects proxy settings
+into the shared Traefik router, its exclusions must also cover the app's
+Docker alias (`klicker-uzh-app` for the primary checkout, or the exact linked
+checkout alias). Otherwise the local route can return the egress proxy's error
+while the application's direct port remains healthy.
+
 ## Checkout lifecycle
 
 ```bash
@@ -186,8 +212,13 @@ node util/run-playwright-host.mjs --runtime-profile manage,live-quiz --project=c
 
 The caller must include every profile the selected tests need; the launcher
 does not infer them from spec names or reuse a previous narrow selection.
-Place `--runtime-profile` and `--print-env` before other arguments, or use `--`
-to end the launcher-option prefix. `--print-env` still reconciles the runtime
+`--ci-runtime` replaces the dev servers with CI's production test builds for
+the selected profile and keeps them until a launcher run without the flag.
+Without the flag, the launcher selects the dev servers' `dev:test` scripts. A
+plain `devrouter ensure .` keeps the last selection; see
+[Testing](../docs/testing.md).
+Place `--runtime-profile`, `--ci-runtime` and `--print-env` before other
+arguments, or use `--` to end the launcher-option prefix. `--print-env` still reconciles the runtime
 and can start services. `--show-report` does not accept a runtime profile.
 
 The repository sets pnpm's `verifyDepsBeforeRun` policy to `error`, so pnpm
@@ -341,7 +372,7 @@ boot because its `HatchetClient.init` runs at module load (not lazy).
 
 | Service                             | Image                                            | Purpose                                                                              |
 | ----------------------------------- | ------------------------------------------------ | ------------------------------------------------------------------------------------ |
-| `app`                               | local `Dockerfile` (Node 24 + pnpm 11.5.0)       | runs every routed app plus the two Hatchet workers and both MCP servers              |
+| `app`                               | local `Dockerfile` (Node 24 + pnpm 12.11.2)      | runs every routed app plus the two Hatchet workers and both MCP servers              |
 | `postgres`                          | `postgres:15`                                    | Marked `klicker_test` + `klicker_test_shadow`; separate legacy/LTI/Hatchet databases |
 | `redis_exec`/`_assessment`/`_cache` | `redis:7`                                        | live-quiz exec / assessment / cache + pub/sub                                        |
 | `mailhog`                           | `mailhog/mailhog`                                | dev SMTP sink                                                                        |
@@ -503,12 +534,11 @@ disabled and the rest of the DevPod still starts normally.
   volume `klicker-uzh-pnpm-store-v1` is created idempotently before Compose and
   survives individual DevPod deletion. `node_modules`, `.next`, and PostgreSQL
   data remain worktree-scoped.
-- The same store volume is also mounted at `<workspace>/.pnpm-store`. The
-  workspace bind and the store volume are different devices inside the
-  container, so pnpm can fall back from the configured store to a workspace
-  store during installs; the second mount makes that fallback land in the
-  shared volume instead of writing a per-worktree store onto the host bind
-  mount.
+- The same store volume remains mounted at `<workspace>/.pnpm-store` for the
+  legacy fallback location. The image explicitly configures
+  `/pnpm/.pnpm-store`; keep that setting when upgrading the toolchain. Without
+  an explicit store directory, pnpm 12's sandbox fallback is instead
+  `<project>/node_modules/.pnpm-store`, inside the worktree's dependency volume.
 - Removing `klicker-uzh-pnpm-store-v1` is destructive cache cleanup. Stop every
   Klicker DevPod that uses it first, then remove that exact volume manually with
   `docker volume rm klicker-uzh-pnpm-store-v1`; never use broad Docker pruning.

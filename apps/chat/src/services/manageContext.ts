@@ -21,23 +21,26 @@ const queryValueSchema = z.union([
   z.array(z.string().max(MAX_QUERY_VALUE_LENGTH)).max(MAX_QUERY_VALUES_PER_KEY),
 ])
 
-const querySchema = z.preprocess((value) => {
-  if (!value || typeof value !== 'object' || Array.isArray(value)) {
-    return value
-  }
+const querySchema = z.preprocess(
+  (value) => {
+    if (!value || typeof value !== 'object' || Array.isArray(value)) {
+      return value
+    }
 
-  const query = value as Record<string, unknown>
-  const entries: [string, unknown][] = []
-  for (const key in query) {
-    if (!Object.prototype.hasOwnProperty.call(query, key)) continue
-    if (SENSITIVE_QUERY_KEY_PATTERN.test(key)) continue
+    const query = value as Record<string, unknown>
+    const entries: [string, unknown][] = []
+    for (const key in query) {
+      if (!Object.prototype.hasOwnProperty.call(query, key)) continue
+      if (SENSITIVE_QUERY_KEY_PATTERN.test(key)) continue
 
-    entries.push([key, query[key]])
-    if (entries.length >= MAX_QUERY_KEYS) break
-  }
+      entries.push([key, query[key]])
+      if (entries.length >= MAX_QUERY_KEYS) break
+    }
 
-  return Object.fromEntries(entries)
-}, z.record(queryValueSchema))
+    return Object.fromEntries(entries)
+  },
+  z.record(z.string(), queryValueSchema)
+)
 
 // Mirrors the query-key filtering above: route.asPath is a raw string (not
 // parsed query params), so a caller could otherwise smuggle sensitive values
