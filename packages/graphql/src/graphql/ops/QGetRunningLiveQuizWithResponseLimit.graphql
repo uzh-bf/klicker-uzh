@@ -1,0 +1,25 @@
+query GetRunningLiveQuizWithResponseLimit($id: String!) {
+  studentLiveQuiz(id: $id) {
+    id
+    status
+    isLiveQAEnabled
+    isConfusionFeedbackEnabled
+    isModerationEnabled
+    isGamificationEnabled
+    isAssessmentEnabled
+    isPartOfGamifiedCourse
+    beforeFirstBlock
+
+    namespace
+    displayName
+    description
+
+    course {
+      id
+      displayName
+      color
+    }
+
+    ...StudentLiveQuizBlocksDataWithResponseLimit
+  }
+}

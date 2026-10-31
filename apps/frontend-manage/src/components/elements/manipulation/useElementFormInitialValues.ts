@@ -129,6 +129,7 @@ function useElementFormInitialValues({
               }
             : undefined,
           solutions: options.solutions,
+          responseLimit: options.responseLimit ?? undefined,
         },
       }
     } else if (question.__typename === 'SelectionElement') {
