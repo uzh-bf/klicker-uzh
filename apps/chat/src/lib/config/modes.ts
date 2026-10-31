@@ -3,6 +3,7 @@ import {
   Lightbulb,
   ListChecks,
   type LucideIcon,
+  PencilLine,
   Sparkles,
 } from 'lucide-react'
 import type { useTranslations } from 'next-intl'
@@ -16,19 +17,26 @@ const MODE_ICONS = {
   tutor: GraduationCap,
   explainer: Lightbulb,
   quizzer: ListChecks,
+  'writing-coach': PencilLine,
 } as const
 
 export type KnownMode = keyof typeof MODE_ICONS
 
 export function isKnownMode(mode: string): mode is KnownMode {
-  return Object.prototype.hasOwnProperty.call(MODE_ICONS, mode)
+  return Object.hasOwn(MODE_ICONS, mode)
 }
+
+export type ChatModeReplyLanguage = 'en' | 'de'
+export type ChatModeMeetingClock = 'ELAPSED' | 'ELAPSED_AND_TIME'
 
 export interface ChatModeOption {
   description: string
   name?: string
   welcomeMessage?: string
   starterPrompts?: string[]
+  // Shown to participants so they see the language and time the model uses.
+  replyLanguage?: ChatModeReplyLanguage
+  meetingClock?: ChatModeMeetingClock
 }
 
 export type ChatModeOptions = Record<string, ChatModeOption>
@@ -77,6 +85,13 @@ export function parseModeOptions(value: unknown): ChatModeOptions | null {
           ? { welcomeMessage: option.welcomeMessage }
           : {}),
         ...(starterPrompts.length > 0 ? { starterPrompts } : {}),
+        ...(option.replyLanguage === 'en' || option.replyLanguage === 'de'
+          ? { replyLanguage: option.replyLanguage }
+          : {}),
+        ...(option.meetingClock === 'ELAPSED' ||
+        option.meetingClock === 'ELAPSED_AND_TIME'
+          ? { meetingClock: option.meetingClock }
+          : {}),
       },
     ])
   }
@@ -91,9 +106,7 @@ export function resolveSelectedMode(
   const firstMode = Object.keys(modeOptions)[0]
   if (!firstMode) return ''
 
-  return Object.prototype.hasOwnProperty.call(modeOptions, selectedMode)
-    ? selectedMode
-    : firstMode
+  return Object.hasOwn(modeOptions, selectedMode) ? selectedMode : firstMode
 }
 
 export function hasAvailableChatMode(modeOptions: ChatModeOptions): boolean {

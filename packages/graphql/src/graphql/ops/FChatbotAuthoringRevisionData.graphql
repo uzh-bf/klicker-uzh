@@ -9,6 +9,7 @@ fragment ChatbotAuthoringRevisionData on ChatbotAuthoringRevision {
     tutorEnabled
     explainerEnabled
     quizzerEnabled
+    writingCoachEnabled
     courseName
     subjectDomain
     languageOfInstruction
@@ -23,10 +24,13 @@ fragment ChatbotAuthoringRevisionData on ChatbotAuthoringRevision {
       welcomeMessage
       starterPrompts
       showReasoning
+      replyLanguage
+      meetingClock
     }
   }
   modelSelection
   allowedModelIds
+  answerPreferencesEnabled
   allowedReasoningEffortsByModel {
     modelId
     efforts

@@ -1,6 +1,8 @@
 import type {
   KnowledgeGraphEdge,
   KnowledgeGraphNode,
+  KnowledgeGraphRelationStatus,
+  KnowledgeGraphRelationType,
   KnowledgeGraphSourceReference,
 } from '@klicker-uzh/types'
 
@@ -11,6 +13,40 @@ export const KNOWLEDGE_GRAPH_CONTENT_MAX_LENGTH = 8_000
 const KNOWLEDGE_GRAPH_SUMMARY_MAX_LENGTH = 1_000
 const KNOWLEDGE_GRAPH_LABEL_MAX_LENGTH = 300
 const KNOWLEDGE_GRAPH_EDGE_PROPERTY_MAX_LENGTH = 500
+const EVIDENCE_RESOURCE_LIMIT = 20
+const EVIDENCE_PAGE_LIMIT = 50
+
+// Typed relations of the kg-relations/v1 contract (Catalyst ADR
+// knowledge-graph/0001). Anything else, including `related`, reads as an
+// untyped relation.
+const TYPED_RELATION_TYPES: ReadonlySet<string> =
+  new Set<KnowledgeGraphRelationType>([
+    'prerequisite_of',
+    'part_of',
+    'example_of',
+    'applies_to',
+    'is_a',
+    'has_formula',
+    'has_variable',
+    'decision_rule',
+    'advantage_of',
+    'disadvantage_of',
+    'contrasts_with',
+    'synonym_of',
+  ])
+// `extracted` belongs to untyped relations only, and `instructor` stays
+// unknown until lecturer-confirmed types exist.
+const TYPED_RELATION_STATUSES: ReadonlySet<string> =
+  new Set<KnowledgeGraphRelationStatus>(['source', 'inferred'])
+const UNTYPED_RELATION = {
+  relationType: 'related',
+  relationStatus: 'extracted',
+} as const
+// Read into typed fields; never forwarded as raw edge properties.
+const RELATION_PROPERTY_KEYS: ReadonlySet<string> = new Set([
+  'relation_type',
+  'relation_status',
+])
 
 const SENSITIVE_PROPERTY_KEY =
   /embedding|vector|password|secret|token|credential|ingestion|workflow|internal|(?:^|_)(?:url|uri|href|blob|storage|path)(?:_|$)|^(?:source_id|created_at|truncate)$/i
@@ -162,6 +198,85 @@ function sourceReference(
   return references
 }
 
+/**
+ * Resolves the generator's server-only `internal_evidence_refs`
+ * (`resourceId|page,page;…`) to the published build's own sources. A resource
+ * outside the build never resolves, so references cannot name other material.
+ * Returns undefined when the property is absent, for the legacy fallback.
+ */
+function evidenceReferences(
+  properties: Properties,
+  sources: ReadonlyMap<string, KnowledgeGraphSourceMetadata>
+): KnowledgeGraphSourceReference[] | undefined {
+  const value = properties.internal_evidence_refs
+  if (typeof value !== 'string') {
+    return undefined
+  }
+
+  const pagesByResource = new Map<string, Set<number>>()
+  for (const part of value.split(';')) {
+    const separator = part.indexOf('|')
+    const resourceId = separator === -1 ? part : part.slice(0, separator)
+    if (!sources.has(resourceId)) {
+      continue
+    }
+
+    let pages = pagesByResource.get(resourceId)
+    if (pages === undefined) {
+      if (pagesByResource.size >= EVIDENCE_RESOURCE_LIMIT) {
+        continue
+      }
+      pages = new Set()
+      pagesByResource.set(resourceId, pages)
+    }
+
+    if (separator === -1) {
+      continue
+    }
+    for (const page of part.slice(separator + 1).split(',')) {
+      if (pages.size < EVIDENCE_PAGE_LIMIT && /^[1-9]\d{0,5}$/.test(page)) {
+        pages.add(Number(page))
+      }
+    }
+  }
+
+  return Array.from(pagesByResource, ([resourceId, pages]) => ({
+    resourceId,
+    title:
+      safeText(
+        sources.get(resourceId)?.title,
+        KNOWLEDGE_GRAPH_LABEL_MAX_LENGTH
+      ) ?? 'Source',
+    ...(pages.size === 0
+      ? {}
+      : { pages: Array.from(pages).sort((a, b) => a - b) }),
+  }))
+}
+
+function relation(properties: Properties): {
+  relationType: KnowledgeGraphRelationType
+  relationStatus: KnowledgeGraphRelationStatus
+} {
+  const type = properties.relation_type
+  const status = properties.relation_status
+  if (
+    typeof type !== 'string' ||
+    typeof status !== 'string' ||
+    !TYPED_RELATION_TYPES.has(type) ||
+    !TYPED_RELATION_STATUSES.has(status) ||
+    // A prerequisite is a pedagogical judgement and is never `source`; a
+    // build that claims otherwise breaks the contract.
+    (type === 'prerequisite_of' && status === 'source')
+  ) {
+    return UNTYPED_RELATION
+  }
+
+  return {
+    relationType: type as KnowledgeGraphRelationType,
+    relationStatus: status as KnowledgeGraphRelationStatus,
+  }
+}
+
 export function normalizeKnowledgeGraphNode(
   row: KnowledgeGraphNodeRow,
   sources: ReadonlyMap<string, KnowledgeGraphSourceMetadata>
@@ -206,7 +321,9 @@ export function normalizeKnowledgeGraphNode(
     ...(summary === undefined ? {} : { summary }),
     ...(content === undefined ? {} : { content }),
     degree: normalizeDegree(row.degree),
-    sourceReferences: sourceReference(properties, sources),
+    sourceReferences:
+      evidenceReferences(properties, sources) ??
+      sourceReference(properties, sources),
   }
 }
 
@@ -222,7 +339,10 @@ function safeEdgeProperties(
     const normalizedKey = key
       .replace(/([a-z\d])([A-Z])/g, '$1_$2')
       .toLowerCase()
-    if (SENSITIVE_PROPERTY_KEY.test(normalizedKey)) {
+    if (
+      SENSITIVE_PROPERTY_KEY.test(normalizedKey) ||
+      RELATION_PROPERTY_KEYS.has(normalizedKey)
+    ) {
       continue
     }
 
@@ -255,7 +375,8 @@ function safeEdgeProperties(
 }
 
 export function normalizeKnowledgeGraphEdge(
-  row: KnowledgeGraphEdgeRow
+  row: KnowledgeGraphEdgeRow,
+  sources: ReadonlyMap<string, KnowledgeGraphSourceMetadata>
 ): KnowledgeGraphEdge | null {
   const id = internalId(row.id)
   const source = internalId(row.source)
@@ -280,6 +401,8 @@ export function normalizeKnowledgeGraphEdge(
     target,
     type,
     label,
+    ...relation(properties),
+    sourceReferences: evidenceReferences(properties, sources) ?? [],
     properties: safeEdgeProperties(properties),
   }
 }

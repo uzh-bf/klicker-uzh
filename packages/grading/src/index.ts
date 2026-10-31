@@ -101,6 +101,9 @@ export function gradeQuestionNumerical({
 }: GradeQuestionNumericalArgs): number | null {
   if (!solutionRanges?.length && !exactSolutions?.length) return null
 
+  // NaN fails every comparison below and would otherwise match any range
+  if (!Number.isFinite(response)) return 0
+
   if (solutionRanges && solutionRanges.length > 0) {
     // TODO: maybe incorporate distance from ranges for partial credit?
     const definedSolutionRanges = solutionRanges.filter(({ min, max }) => {
@@ -110,8 +113,10 @@ export function gradeQuestionNumerical({
     if (definedSolutionRanges.length === 0) return null
 
     const withinRanges = definedSolutionRanges.map(({ min, max }) => {
-      if (min && response < min - Number.EPSILON) return false
-      if (max && response > max + Number.EPSILON) return false
+      if (typeof min === 'number' && response < min - Number.EPSILON)
+        return false
+      if (typeof max === 'number' && response > max + Number.EPSILON)
+        return false
       return true
     })
 

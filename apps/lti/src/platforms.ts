@@ -35,54 +35,63 @@ export function resolvePlatforms(
   ]
   const seen = new Set<string>()
   return registrations.map((value, index) => {
-    const invalid = () => new Error(`Invalid LTI platform at index ${index}`)
-    if (!value || typeof value !== 'object') throw invalid()
-    const item = value as Record<string, unknown>
-    const text = (field: string): string => {
-      const result = item[field]
-      if (typeof result !== 'string' || !result.trim()) throw invalid()
-      return result
-    }
-    const endpoint = (value: string): string => {
-      let parsed: URL
-      try {
-        parsed = new URL(value)
-      } catch {
-        throw invalid()
-      }
-      if (
-        ![
-          'https:',
-          ...(env.NODE_ENV === 'development' ? ['http:'] : []),
-        ].includes(parsed.protocol) ||
-        parsed.username ||
-        parsed.password ||
-        parsed.hash
-      ) {
-        throw invalid()
-      }
-      return value
-    }
-    const auth = item.authConfig as Record<string, unknown> | null
-    if (
-      auth?.method !== 'JWK_SET' ||
-      typeof auth.key !== 'string' ||
-      !auth.key.trim()
-    ) {
-      throw invalid()
-    }
-    const platform: PlatformRegistration = {
-      url: endpoint(text('url')),
-      name: text('name'),
-      clientId: text('clientId'),
-      authenticationEndpoint: endpoint(text('authenticationEndpoint')),
-      accesstokenEndpoint: endpoint(text('accesstokenEndpoint')),
-      authConfig: { method: 'JWK_SET', key: endpoint(auth.key) },
-    }
+    const platform = parsePlatform(value, env, `at index ${index}`)
     const identity = JSON.stringify([platform.url, platform.clientId])
     if (seen.has(identity))
       throw new Error('Duplicate LTI platform registration')
     seen.add(identity)
     return platform
   })
+}
+
+export function parsePlatform(
+  value: unknown,
+  env: NodeJS.ProcessEnv,
+  label: string
+): PlatformRegistration {
+  const invalid = () => new Error(`Invalid LTI platform ${label}`)
+  if (!value || typeof value !== 'object') throw invalid()
+  const item = value as Record<string, unknown>
+  const text = (field: string): string => {
+    const result = item[field]
+    if (typeof result !== 'string' || !result.trim()) throw invalid()
+    return result
+  }
+  const endpoint = (value: string): string => {
+    let parsed: URL
+    try {
+      parsed = new URL(value)
+    } catch {
+      throw invalid()
+    }
+    if (
+      ![
+        'https:',
+        ...(env.NODE_ENV === 'development' ? ['http:'] : []),
+      ].includes(parsed.protocol) ||
+      parsed.username ||
+      parsed.password ||
+      parsed.hash
+    ) {
+      throw invalid()
+    }
+    return value
+  }
+  const auth = item.authConfig as Record<string, unknown> | null
+  if (
+    auth?.method !== 'JWK_SET' ||
+    typeof auth.key !== 'string' ||
+    !auth.key.trim()
+  ) {
+    throw invalid()
+  }
+  const platform: PlatformRegistration = {
+    url: endpoint(text('url')),
+    name: text('name'),
+    clientId: text('clientId'),
+    authenticationEndpoint: endpoint(text('authenticationEndpoint')),
+    accesstokenEndpoint: endpoint(text('accesstokenEndpoint')),
+    authConfig: { method: 'JWK_SET', key: endpoint(auth.key) },
+  }
+  return platform
 }
