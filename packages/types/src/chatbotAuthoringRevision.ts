@@ -21,6 +21,8 @@ export type ChatbotAuthoringRevision = {
   modelSelection: boolean
   allowedModelIds: string[]
   allowedReasoningEffortsByModel: Record<string, string[]> | null
+  /** Revisions saved before this field existed inherit the live setting. */
+  answerPreferencesEnabled: boolean
   creditInitialCredits: number
   creditResetPeriod: CreditResetPeriod
   creditResetAmount: number

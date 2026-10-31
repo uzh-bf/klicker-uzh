@@ -71,9 +71,51 @@ for (const entry of workspace.packages ?? []) {
   }
 }
 
-const lock = yaml.parse(
-  fs.readFileSync(path.join(root, 'pnpm-lock.yaml'), 'utf8')
-)
+// pnpm 12 may prepend the package-manager/config-dependency environment.
+// The project graph is always last; reject missing or ambiguous graphs instead
+// of accidentally reporting a clean audit of pnpm's own dependencies.
+// https://github.com/pnpm/pnpm/blob/main/pnpm/docs/lockfile.md
+const lockDocuments = yaml
+  .parseAllDocuments(fs.readFileSync(path.join(root, 'pnpm-lock.yaml'), 'utf8'))
+  .map((document) => {
+    if (document.errors.length) throw document.errors[0]
+    return document.toJSON()
+  })
+const isMap = (value) =>
+  value !== null && typeof value === 'object' && !Array.isArray(value)
+const isLockfile = (document) =>
+  isMap(document) &&
+  document.lockfileVersion !== undefined &&
+  isMap(document.importers) &&
+  Object.keys(document.importers).length > 0 &&
+  Object.values(document.importers).every(isMap)
+const isEnvironment = (document) =>
+  Object.values(document.importers).some(
+    (importer) =>
+      'configDependencies' in importer ||
+      'packageManagerDependencies' in importer
+  )
+const hasProjectDependencies = (document) =>
+  Object.values(document.importers).some((importer) =>
+    ['dependencies', 'devDependencies', 'optionalDependencies'].some(
+      (field) => field in importer
+    )
+  )
+if (
+  lockDocuments.length < 1 ||
+  lockDocuments.length > 2 ||
+  !lockDocuments.every(isLockfile) ||
+  isEnvironment(lockDocuments.at(-1)) ||
+  (lockDocuments.length === 2 &&
+    (!isEnvironment(lockDocuments[0]) ||
+      hasProjectDependencies(lockDocuments[0])))
+) {
+  throw new Error(
+    'pnpm-lock.yaml must contain one project dependency graph, optionally ' +
+      'preceded by one package-manager/config-dependency environment document'
+  )
+}
+const lock = lockDocuments.at(-1)
 let mismatches = 0
 let compared = 0
 
