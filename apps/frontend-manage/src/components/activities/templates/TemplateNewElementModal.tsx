@@ -1,3 +1,4 @@
+import { ElementType } from '@klicker-uzh/graphql/dist/ops'
 import ElementEditForm from '../../elements/manipulation/ElementEditForm'
 import { ElementEditMode } from '../../elements/manipulation/ElementEditModal'
 import { ElementFormTypes } from '../../elements/manipulation/types'
@@ -32,6 +33,11 @@ function TemplateNewElementModal({
       mode={ElementEditMode.CREATE}
       loading={false}
       initialValues={formValues}
+      originalNumericalOptions={
+        instanceFormValues.type === ElementType.Numerical
+          ? instanceFormValues.options
+          : undefined
+      }
       onSubmitElement={async (values) => {
         onSaveNewElement(values)
         return true
