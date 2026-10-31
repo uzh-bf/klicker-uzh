@@ -1,0 +1,8 @@
+{
+  "name": "klicker-ci-devrouter",
+  "private": true,
+  "version": "1.0.0",
+  "dependencies": {
+    "@devrouter/cli": "0.5.1"
+  }
+}

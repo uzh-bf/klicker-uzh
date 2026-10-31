@@ -1,6 +1,6 @@
 {
   "name": "@klicker-uzh/hatchet-worker-general",
-  "version": "3.4.0-alpha.88",
+  "version": "3.4.0-alpha.89",
   "license": "AGPL-3.0",
   "main": "dist/index.js",
   "types": "dist/index.d.ts",
@@ -9,7 +9,7 @@
   ],
   "dependencies": {
     "@graphql-yoga/redis-event-target": "1.0.0",
-    "@hatchet-dev/typescript-sdk": "1.9.4",
+    "@hatchet-dev/typescript-sdk": "1.22.0",
     "@klicker-uzh/graphql": "workspace:*",
     "@klicker-uzh/hatchet": "workspace:*",
     "@klicker-uzh/prisma": "workspace:*",
@@ -34,7 +34,7 @@
   "scripts": {
     "build": "run-s --npm-path pnpm build:ts",
     "build:test": "pnpm run build",
-    "build:ts": "cross-env NODE_ENV=production rollup -c",
+    "build:ts": "cross-env NODE_ENV=production rollup -c --forceExit",
     "check": "tsc --noEmit --tsBuildInfoFile dist/tsconfig.check.tsbuildinfo",
     "dev": "cross-env NODE_ENV=development run-s --npm-path pnpm build:ts dev:watch",
     "dev:assessment": "pnpm run dev",

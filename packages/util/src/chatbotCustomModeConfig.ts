@@ -1,13 +1,16 @@
 import { randomUUID } from 'node:crypto'
+import type { Locale } from '@klicker-uzh/prisma/client'
 import type {
   ChatbotCustomMode,
   ChatbotCustomModeConfig,
   ChatbotCustomModeConfigInput,
+  ChatbotCustomModeMeetingClock,
 } from '@klicker-uzh/types'
 
 import {
   CHATBOT_CUSTOM_MODE_DESCRIPTION_MAX_LENGTH,
   CHATBOT_CUSTOM_MODE_MAX_COUNT,
+  CHATBOT_CUSTOM_MODE_MEETING_CLOCKS,
   CHATBOT_CUSTOM_MODE_NAME_MAX_LENGTH,
   CHATBOT_CUSTOM_MODE_PERSONA_EXTENDED_MAX_LENGTH,
   CHATBOT_CUSTOM_MODE_PERSONA_MAX_LENGTH,
@@ -16,11 +19,13 @@ import {
   CHATBOT_CUSTOM_MODE_WELCOME_MESSAGE_MAX_LENGTH,
 } from './chatbotCustomModeLimits.js'
 
+import { CHATBOT_STANDARD_MODE_KEYS } from './chatbotStandardModeConfig.js'
+
 export * from './chatbotCustomModeLimits.js'
 
 // Custom mode names must stay distinguishable from the built-in modes, so the
 // reserved names are the standard mode identifiers the runtime already offers.
-const RESERVED_MODE_NAMES = new Set(['tutor', 'explainer', 'quizzer'])
+const RESERVED_MODE_NAMES = new Set<string>(CHATBOT_STANDARD_MODE_KEYS)
 
 const MODE_KEY_PREFIX = 'cm_'
 
@@ -144,6 +149,47 @@ function normalizeShowReasoning(value: unknown): boolean {
   return value
 }
 
+const REPLY_LANGUAGES: ReadonlySet<string> = new Set<Locale>(['en', 'de'])
+
+function normalizeReplyLanguage(value: unknown): Locale | null {
+  if (value === undefined || value === null) return null
+  if (typeof value !== 'string' || !REPLY_LANGUAGES.has(value)) {
+    throw new Error('replyLanguage must be en, de, or null')
+  }
+  return value as Locale
+}
+
+const MEETING_CLOCKS: ReadonlySet<string> = new Set(
+  CHATBOT_CUSTOM_MODE_MEETING_CLOCKS
+)
+
+function normalizeMeetingClock(
+  value: unknown
+): ChatbotCustomModeMeetingClock | null {
+  if (value === undefined || value === null) return null
+  if (typeof value !== 'string' || !MEETING_CLOCKS.has(value)) {
+    throw new Error(
+      `meetingClock must be ${CHATBOT_CUSTOM_MODE_MEETING_CLOCKS.join(', ')}, or null`
+    )
+  }
+  return value as ChatbotCustomModeMeetingClock
+}
+
+/**
+ * Tolerant read of an optional stored setting: an invalid value counts as
+ * unset, so it neither hides the mode nor reaches the prompt.
+ */
+function readStoredSetting<T>(
+  normalize: (value: unknown) => T | null,
+  value: unknown
+): T | null {
+  try {
+    return normalize(value)
+  } catch {
+    return null
+  }
+}
+
 /** Mints a stable, opaque mode key; this is what messages persist. */
 export function generateChatbotCustomModeKey(): string {
   return `${MODE_KEY_PREFIX}${randomUUID()}`
@@ -250,6 +296,23 @@ export function parseChatbotCustomModeConfigInput(
         ? existingModes.get(key)?.showReasoning === true
         : normalizeShowReasoning(entry.showReasoning)
 
+    // Omitted settings keep the stored ones, like the fields above, so an
+    // older client cannot silently unlock a language or stop the clock.
+    const replyLanguage =
+      entry.replyLanguage === undefined
+        ? readStoredSetting(
+            normalizeReplyLanguage,
+            existingModes.get(key)?.replyLanguage
+          )
+        : normalizeReplyLanguage(entry.replyLanguage)
+    const meetingClock =
+      entry.meetingClock === undefined
+        ? readStoredSetting(
+            normalizeMeetingClock,
+            existingModes.get(key)?.meetingClock
+          )
+        : normalizeMeetingClock(entry.meetingClock)
+
     return {
       key,
       name: normalizeName(entry.name),
@@ -258,6 +321,8 @@ export function parseChatbotCustomModeConfigInput(
       ...(welcomeMessage !== null ? { welcomeMessage } : {}),
       ...(starterPrompts !== null ? { starterPrompts } : {}),
       ...(showReasoning ? { showReasoning: true } : {}),
+      ...(replyLanguage !== null ? { replyLanguage } : {}),
+      ...(meetingClock !== null ? { meetingClock } : {}),
     }
   })
 
@@ -311,6 +376,14 @@ function normalizeStoredMode(value: unknown): ChatbotCustomMode | null {
     // or starter list must not hide an otherwise valid mode.
     const welcomeMessage = normalizeStoredWelcomeMessage(value.welcomeMessage)
     const starterPrompts = readStarterPrompts(value.starterPrompts)
+    const replyLanguage = readStoredSetting(
+      normalizeReplyLanguage,
+      value.replyLanguage
+    )
+    const meetingClock = readStoredSetting(
+      normalizeMeetingClock,
+      value.meetingClock
+    )
 
     return {
       key,
@@ -324,6 +397,8 @@ function normalizeStoredMode(value: unknown): ChatbotCustomMode | null {
       ...(starterPrompts !== null ? { starterPrompts } : {}),
       // Anything but an explicit true keeps reasoning hidden.
       ...(value.showReasoning === true ? { showReasoning: true } : {}),
+      ...(replyLanguage !== null ? { replyLanguage } : {}),
+      ...(meetingClock !== null ? { meetingClock } : {}),
     }
   } catch {
     return null

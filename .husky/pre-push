@@ -1,2 +1,13 @@
-bash util/check-git-identity.sh pre-push
-node util/run-git-hook.mjs build
+#!/usr/bin/env sh
+set -eu
+
+refs_file=$(mktemp "${TMPDIR:-/tmp}/klicker-pre-push-refs.XXXXXX")
+cleanup() {
+  rm -f -- "$refs_file"
+}
+trap cleanup EXIT HUP INT TERM
+
+cat > "$refs_file"
+
+bash util/check-git-identity.sh pre-push "$@" < "$refs_file"
+node util/run-git-hook.mjs push "$refs_file" "$@"
