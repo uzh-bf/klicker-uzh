@@ -42,7 +42,34 @@ spec:
     matchLabels:
       {{- include "chart.selectorLabels" . | nindent 6 }}
       app.kubernetes.io/component: frontend-pwa
+    {{- if .Values.frontendPWA.burst.enabled }}
+    # Burst pods carry the tier label and have their own budget below. The
+    # eviction API rejects a pod that matches more than one budget, and a
+    # shared budget would let a single burst pod block node drains.
+    matchExpressions:
+      - key: klicker.uzh.ch/tier
+        operator: DoesNotExist
+    {{- end }}
 ---
+{{- if .Values.frontendPWA.burst.enabled }}
+# Frontend PWA burst tier PDB
+apiVersion: policy/v1
+kind: PodDisruptionBudget
+metadata:
+  name: {{ include "chart.fullname" . }}-frontend-pwa-burst
+  labels:
+    {{- include "chart.labels" . | nindent 4 }}
+    app.kubernetes.io/component: frontend-pwa
+    klicker.uzh.ch/tier: burst
+spec:
+  maxUnavailable: 1
+  selector:
+    matchLabels:
+      {{- include "chart.selectorLabels" . | nindent 6 }}
+      app.kubernetes.io/component: frontend-pwa
+      klicker.uzh.ch/tier: burst
+---
+{{- end }}
 # Frontend Manage PDB
 apiVersion: policy/v1
 kind: PodDisruptionBudget
