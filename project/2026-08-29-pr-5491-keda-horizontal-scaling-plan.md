@@ -25,7 +25,7 @@ regular nodes (W4).
 | W4 — Assessment staging pilot and later packages | Not activated | Close the named evidence and authority gates before staging, spot, or production claims |
 | W10 — Chat and MCP multi-replica readiness | Source scan only; no implementation | Prove or replace the stateful MCP transport, add a chat drain contract, then feed W9 |
 | W11 — Production capacity baseline | Request corrections ([#6283](https://github.com/uzh-bf/klicker-uzh/pull/6283), [#6284](https://github.com/uzh-bf/klicker-uzh/pull/6284)), replica restore ([#6278](https://github.com/uzh-bf/klicker-uzh/pull/6278), [#6279](https://github.com/uzh-bf/klicker-uzh/pull/6279)) and chat at 3 ([#6291](https://github.com/uzh-bf/klicker-uzh/pull/6291), [#6292](https://github.com/uzh-bf/klicker-uzh/pull/6292)) merged 2026-09-23 and live; the 2026-10-06 read-only read found every Deployment at its desired count with no restarts or Pending Pods | General-worker restore after queue evidence; explain why the `apps` pool still runs 4 nodes |
-| W12 — HTTP spot burst tier | Chart pair ready: [#6294](https://github.com/uzh-bf/klicker-uzh/pull/6294) (`v3-ai`, final AI review pending on the integrated head) and [#6295](https://github.com/uzh-bf/klicker-uzh/pull/6295) (`v3`); platform half drafted as df-cloud !644 with staging previews | Merge #6294, then #6295 after a `v3` merge, apply !644 to staging and read the live Argo rule back, then the staging-enable values pair and the self-heal drill |
+| W12 — HTTP spot burst tier | Chart pair ready: [#6294](https://github.com/uzh-bf/klicker-uzh/pull/6294) (`v3-ai`, final AI review blocked on provider billing since 2026-10-31) and [#6295](https://github.com/uzh-bf/klicker-uzh/pull/6295) (`v3`); platform half ready as df-cloud !644, refreshed against `stg` on 2026-10-31 | Merge #6294, then #6295 after a `v3` merge, apply !644 to staging and read the live Argo rule back, then the staging-enable values pair and the self-heal drill |
 | W13 — Staging capacity on spot | Added 2026-09-23; !644 keeps the staging `asyncspot` maximum at 7 | Move staging Klicker workloads onto `asyncspot` under A6 |
 
 Merge, new upstream integration, deployment, cluster connectivity or changes,
@@ -1708,8 +1708,9 @@ a values edit.
   to `v3` and superseded #6332, so `v3` and `v3-ai` now hold the same
   `deploy/` tree apart from image tags. #6365 closed as redundant.
 - **Platform half (A6):** df-cloud !644 (`rs/klicker-pwa-burst-argo`,
-  `6219317e`, draft against `stg`) hands `/spec/replicas` of
-  `app-klicker-klicker-uzh-v2-frontend-pwa-burst` in `<env>-klicker` to its
+  against `stg`, no longer draft; `stg` merged in on 2026-10-31 at
+  `3c8ad58c`, which also corrects its PWA request note to 50m) hands
+  `/spec/replicas` of `app-klicker-klicker-uzh-v2-frontend-pwa-burst` in `<env>-klicker` to its
   HPA with `withArgoCDReplicaOwnership`, which also sets
   `RespectIgnoreDifferences=true`, and raises the production `asyncspot`
   maximum from 6 to 7. Staging stays at 7, because the guarded capacity job
@@ -1717,7 +1718,9 @@ a values edit.
   11 capacity tests, 102 inventory rows). The staging previews (pipelines
   675590 and 675591) show exactly the burst rule plus the sync option on
   `app-klicker` and no `asyncspot` change; the production half has no
-  preview. OpenCodeReview found nothing in the two source files.
+  preview. OpenCodeReview found nothing in the two source files. Those
+  previews predate the `stg` merge; read the previews from the pipeline on
+  the merged head before merging.
 - **Staging-only analysis, 2026-10-02:** #6294, #6293 and !644 can merge
   without touching production. #6294 reaches staging through the
   `v3-ai` → `v3-audit` sync and the `stg-release` promoter; !644 applies
@@ -1738,6 +1741,25 @@ a values edit.
   !644 is independent: merge it to `stg` and apply it at any point. After the live Argo rule
   reads back, open the staging-enable values pair,
   then run the self-heal and eviction drills under A2-style approval.
+- **Status, 2026-10-31:** The `/final-review` retry on #6294 stopped before
+  reviewing because the OCR provider returned `provider_payment_required`.
+  It needs provider billing restored, then a new `/final-review`. A
+  read-only review of both simulated merge results (#6294 into `v3-ai`,
+  #6295 into `v3`) found no source change needed: the charts render with the
+  tier on and off, the replica-ownership fixtures and the promotion test
+  pass, and the two `deploy/` trees differ only in one image tag. #6295
+  still needs #6294 merged first and then a `v3` merge before its `check`
+  rerun.
+- **For the staging-enable values pair:** (1) `v3-ai` lowered the PWA CPU
+  request to 50m, and HPA utilisation is relative to the request, so the
+  chart's default 70% target scales burst Pods out at about 35m each. Set
+  `frontendPWA.burst.targetCPUUtilizationPercentage` from the staging load
+  test. (2) Add a `preStop` delay and confirm the PWA process receives
+  SIGTERM; the 25-second grace period only helps if spot eviction drains the
+  node. (3) Reconsider the burst budget's `maxUnavailable: 1` (for example
+  100%) and whether burst Pods should keep the `production-workload`
+  priority on the shared `asyncspot` pool. The eviction drill decides all
+  three.
 
 ### Cost and spot review — 2026-09-23
 
