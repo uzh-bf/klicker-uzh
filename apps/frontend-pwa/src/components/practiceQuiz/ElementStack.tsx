@@ -167,9 +167,11 @@ function ElementStack({
               ? responsesValid
               : responsesInitialized &&
                 !submittingResponse &&
+                !refreshingStudyStreak &&
                 !responseSubmissionDisabled,
           },
     [
+      refreshingStudyStreak,
       responseSubmissionDisabled,
       responsesInitialized,
       responsesValid,

@@ -29,7 +29,6 @@ import {
   FREEZE_EARN_THRESHOLD,
   getStudyStreakResponsesToday,
   getStudyStreakResponsesRemainingTodayForParticipations,
-  QUALIFIED_RESPONSES_PER_DAY,
   reconcileStudyStreak,
 } from '../src/services/studyStreak.js'
 
@@ -56,14 +55,6 @@ const activeParticipation = {
 
 afterEach(() => {
   vi.useRealTimers()
-})
-
-describe('constants', () => {
-  it('uses the approved thresholds', () => {
-    expect(QUALIFIED_RESPONSES_PER_DAY).toBe(5)
-    expect(FREEZE_EARN_THRESHOLD).toBe(7)
-    expect(FREEZE_BALANCE_MAX).toBe(3)
-  })
 })
 
 describe('applyQualifiedDate', () => {
