@@ -167,6 +167,9 @@ const STAGING_IMAGE_TARGETS = Object.freeze([
     dockerfile: 'apps/chat/Dockerfile',
     globs: [
       'apps/chat/**',
+      'apps/chat-api/**',
+      'apps/chat-engine-default/**',
+      'packages/chat-engine-contract/**',
       'packages/audit/**',
       'packages/doc-query-client/**',
       'packages/feature-flags/**',

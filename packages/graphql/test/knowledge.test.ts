@@ -32,19 +32,13 @@ import {
 import { vi } from 'vitest'
 import type { ContextWithUser } from '../src/lib/context.js'
 
-vi.mock('@/src/lib/config/toolNames', async () =>
-  vi.importActual('../../../apps/chat/src/lib/config/toolNames.ts')
-)
-vi.mock('@/src/lib/server/mcpRuntimePolicy', async () =>
-  vi.importActual('../../../apps/chat/src/lib/server/mcpRuntimePolicy.ts')
-)
 const { resolveMcpScope } = await vi.importActual<{
   resolveMcpScope: (
     configurations: readonly unknown[],
     selectedMode: string,
     effectiveConfigurations: readonly unknown[]
   ) => string[] | undefined
-}>('../../../apps/chat/src/services/mcpScope.ts')
+}>('../../../apps/chat-api/src/host/services/mcpScope.ts')
 
 import {
   attachKbToChatbot,

@@ -26,20 +26,16 @@ export function isKnownMode(mode: string): mode is KnownMode {
   return Object.hasOwn(MODE_ICONS, mode)
 }
 
-export type ChatModeReplyLanguage = 'en' | 'de'
-export type ChatModeMeetingClock = 'ELAPSED' | 'ELAPSED_AND_TIME'
-
-export interface ChatModeOption {
-  description: string
-  name?: string
-  welcomeMessage?: string
-  starterPrompts?: string[]
-  // Shown to participants so they see the language and time the model uses.
-  replyLanguage?: ChatModeReplyLanguage
-  meetingClock?: ChatModeMeetingClock
-}
-
-export type ChatModeOptions = Record<string, ChatModeOption>
+export type {
+  ChatModeReplyLanguage,
+  ChatModeMeetingClock,
+  ChatModeOption,
+  ChatModeOptions,
+} from '@klicker-uzh/chat-api/host/lib/config/modes'
+import type {
+  ChatModeOption,
+  ChatModeOptions,
+} from '@klicker-uzh/chat-api/host/lib/config/modes'
 
 export function parseModeOptions(value: unknown): ChatModeOptions | null {
   if (!value || typeof value !== 'object' || Array.isArray(value)) return null

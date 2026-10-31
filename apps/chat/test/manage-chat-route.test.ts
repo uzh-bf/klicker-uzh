@@ -11,7 +11,7 @@ const mocks = vi.hoisted(() => ({
 
 // These cases focus on the route boundary. The capability helper is stubbed so
 // the route's denial and temporary-outage contracts stay independently visible.
-vi.mock('@/src/lib/server/featureFlags', () => ({
+vi.mock('@klicker-uzh/chat-api/host/lib/server/featureFlags', () => ({
   getManageAiCapability: mocks.getManageAiCapability,
 }))
 
