@@ -1,6 +1,14 @@
 'use client'
 import { create } from 'zustand'
 import { persist } from 'zustand/middleware'
+import {
+  ANSWER_STYLES,
+  ANSWER_TONES,
+  type AnswerStyle,
+  type AnswerTone,
+  DEFAULT_ANSWER_STYLE,
+  DEFAULT_ANSWER_TONE,
+} from '../lib/config/answerStyles'
 import { authedFetch } from '../lib/client/authedFetch'
 import { DEFAULT_MODE_DESCRIPTIONS } from '../lib/config/mode-descriptions'
 import { type ModelID, type ModelOption } from '../lib/config/models'
@@ -63,6 +71,8 @@ interface SettingsState {
   selectedModel: ModelID
   selectedMode: string
   selectedReasoningEffort: ReasoningEffort
+  answerStyle: AnswerStyle
+  answerTone: AnswerTone
   credits: {
     current: number
     total: number
@@ -74,6 +84,9 @@ interface SettingsState {
   // cannot make before the server has answered.
   creditsLoaded: boolean
   modelSelectionEnabled: boolean
+  // Whether the chatbot lets students choose an answer format and tone. Off
+  // until the chatbot's settings have loaded, so the controls never flash.
+  answerPreferencesEnabled: boolean
   authMode: AuthMode
 
   // Available options
@@ -85,6 +98,8 @@ interface SettingsState {
   setSelectedModel: (model: ModelID) => void
   setSelectedMode: (mode: string) => void
   setSelectedReasoningEffort: (effort: ReasoningEffort) => void
+  setAnswerStyle: (answerStyle: AnswerStyle) => void
+  setAnswerTone: (answerTone: AnswerTone) => void
   loadModeOptions: (
     chatbotId: string,
     initialModeOptions?: ChatModeOptions
@@ -94,6 +109,21 @@ interface SettingsState {
   resetCredits: () => void
 }
 
+/**
+ * Whether rendered PDF pages may be sent to the given model. Unlike image
+ * attachments, pages are only sent once the model option confirms image
+ * support. An unknown model (options not loaded yet, or no longer listed)
+ * returns null: no pages, but no stored claim that it cannot read images.
+ */
+export function selectModelReadsDocumentPages(
+  state: { modelOptions: ModelOption[] },
+  modelId: string
+): boolean | null {
+  const option = state.modelOptions.find((model) => model.id === modelId)
+  if (!option || option.supportsImageAttachments == null) return null
+  return option.supportsImageAttachments
+}
+
 export const useSettingsStore = create<SettingsState>()(
   persist(
     (set) => ({
@@ -101,6 +131,8 @@ export const useSettingsStore = create<SettingsState>()(
       selectedModel: 'auto',
       selectedMode: 'tutor',
       selectedReasoningEffort: 'none',
+      answerStyle: DEFAULT_ANSWER_STYLE,
+      answerTone: DEFAULT_ANSWER_TONE,
       credits: {
         current: 0.0,
         total: 0.0,
@@ -108,6 +140,7 @@ export const useSettingsStore = create<SettingsState>()(
       },
       creditsLoaded: false,
       modelSelectionEnabled: false,
+      answerPreferencesEnabled: false,
       authMode: 'account' as AuthMode,
       modeOptions: {},
       modeOptionsChatbotId: null,
@@ -143,6 +176,8 @@ export const useSettingsStore = create<SettingsState>()(
 
           return { selectedReasoningEffort: resolvedEffort }
         }),
+      setAnswerStyle: (answerStyle: AnswerStyle) => set({ answerStyle }),
+      setAnswerTone: (answerTone: AnswerTone) => set({ answerTone }),
 
       loadModeOptions: async (
         chatbotId: string,
@@ -162,11 +197,13 @@ export const useSettingsStore = create<SettingsState>()(
               state.selectedMode
             ),
             modelSelectionEnabled: false,
+            answerPreferencesEnabled: false,
           }))
         set({
           modeOptions: {},
           modeOptionsChatbotId: null,
           modelSelectionEnabled: false,
+          answerPreferencesEnabled: false,
         })
 
         try {
@@ -183,6 +220,8 @@ export const useSettingsStore = create<SettingsState>()(
           }
 
           const modelSelectionEnabled = responseData.modelSelection ?? false
+          const answerPreferencesEnabled =
+            responseData.answerPreferencesEnabled === true
 
           const resolvedModeOptions = parseModeOptions(responseData.modeOptions)
           if (!resolvedModeOptions) {
@@ -194,6 +233,7 @@ export const useSettingsStore = create<SettingsState>()(
               modeOptions: resolvedModeOptions,
               modeOptionsChatbotId: chatbotId,
               modelSelectionEnabled,
+              answerPreferencesEnabled,
               selectedMode: resolveSelectedMode(
                 resolvedModeOptions,
                 state.selectedMode
@@ -303,10 +343,27 @@ export const useSettingsStore = create<SettingsState>()(
     }),
     {
       name: 'settings-storage',
+      merge: (persistedState, currentState) => {
+        const state = {
+          ...currentState,
+          ...(persistedState as Partial<SettingsState>),
+        }
+        return {
+          ...state,
+          answerStyle: ANSWER_STYLES.includes(state.answerStyle)
+            ? state.answerStyle
+            : DEFAULT_ANSWER_STYLE,
+          answerTone: ANSWER_TONES.includes(state.answerTone)
+            ? state.answerTone
+            : DEFAULT_ANSWER_TONE,
+        }
+      },
       partialize: (state) => ({
         selectedModel: state.selectedModel,
         selectedMode: state.selectedMode,
         selectedReasoningEffort: state.selectedReasoningEffort,
+        answerStyle: state.answerStyle,
+        answerTone: state.answerTone,
       }),
     }
   )

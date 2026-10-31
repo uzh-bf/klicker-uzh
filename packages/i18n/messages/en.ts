@@ -8,6 +8,7 @@ export default {
       fullscreen: 'Expand graph to fullscreen',
       restore: 'Return graph to sidebar',
       ask: 'Ask about this',
+      showConcept: 'Show this concept in the knowledge graph',
       nodePrompt: 'Help me understand the concept “{topic}”.',
       edgePrompt:
         'Explain the relationship “{relationship}” between “{source}” and “{target}”.',
@@ -26,6 +27,9 @@ export default {
       explainer: 'Explainer',
       explainerDescription:
         'Get direct explanations with definitions and course-based examples.',
+      'writing-coach': 'Writing Coach',
+      'writing-coachDescription':
+        'Get specific feedback and tips on your writing, then make the revisions yourself.',
       quizzer: 'Quizzer',
       quizzerDescription:
         'Practise with exam-style course questions, one at a time, with formative feedback.',
@@ -61,6 +65,19 @@ export default {
         medium: 'Medium',
         high: 'High',
         xhigh: 'Extra high',
+      },
+      answerStyleLabel: 'Answer format',
+      answerStyleHint:
+        'Changes how new answers are laid out, not how much help you get.',
+      answerStyles: {
+        balanced: 'Standard',
+        bullets: 'Bullet points',
+      },
+      answerToneLabel: 'Tone',
+      answerTones: {
+        neutral: 'Neutral',
+        friendly: 'Friendly',
+        direct: 'Direct',
       },
     },
     credits: {
@@ -225,6 +242,23 @@ export default {
         'Sign in to KlickerUZH Manage with the account that owns this chatbot to open its preview.',
       loginButton: 'Go to KlickerUZH Manage',
       opensInNewTab: '(opens in a new tab; return here after signing in)',
+      responseExample: {
+        captureAction: 'Save this answer as a response example',
+        captureUnavailable:
+          'This answer is not available to save. Start a new preview to try again.',
+        capturePending: 'Saving response example…',
+        captureCreated: 'Response example saved and ready for review.',
+        captureDuplicate:
+          'This response example is already saved and ready for review.',
+        captureStale:
+          'The source material changed. Start a new preview to capture this answer again.',
+        captureExpired:
+          'This capture expired. Start a new preview to try again.',
+        captureFailed: 'We could not save this response example.',
+        captureRetry: 'Try again',
+        reviewNow: 'Review now',
+        startNewPreview: 'Start a new preview',
+      },
     },
     recovery: {
       notFoundTitle: 'Chatbot not found',
@@ -259,6 +293,20 @@ export default {
       partial: 'Partial response',
       error: 'Error',
     },
+    documentNotice: {
+      title: 'Before you attach documents',
+      allowed:
+        'Attach only material you may share: your own notes and work, course material you have permission to use, or openly licensed material.',
+      notAllowed:
+        'Do not attach complete copyrighted works without permission, or documents with personal or confidential information about others, sensitive data or passwords.',
+      access:
+        'Having access to a file does not mean you may share it. When in doubt, ask your lecturer.',
+      dataBoundary:
+        'Document text is sent to the AI model provider. When the selected model can read images, rendered PDF pages may also be sent for visual review. KlickerUZH saves the text and any generated visual summary with this conversation, but does not save the page images.',
+      once: 'This notice appears once on this device.',
+      remove: 'Remove documents',
+      accept: 'I understand',
+    },
     disclaimer: {
       mediaTitle: 'Disclaimer media',
       introAlt: 'Chatbot Introduction',
@@ -288,6 +336,13 @@ export default {
         'Image attachments for this message could not be loaded. Please try again.',
       attachedImageAlt: 'Attached image {index}',
     },
+    documentPreview: {
+      open: 'Preview {name}',
+      extractedText: 'Text the chat read from this file:',
+      extractedTextOnly:
+        'The original file is not stored, so after a reload only the text the chat read from it is shown:',
+      openOriginal: 'Open original file',
+    },
     imageViewer: {
       previewUnavailable: 'Preview unavailable',
       title: 'Image attachment',
@@ -312,6 +367,14 @@ export default {
       loadError: 'Your chats could not be loaded.',
       retry: 'Retry',
       loading: 'Loading conversations...',
+      filterLabel: 'Filter conversations by title',
+      filterPlaceholder: 'Filter by title',
+      filterClear: 'Clear filter',
+      filterNoMatch: 'No conversations match this filter.',
+      exportMarkdown: 'Export as Markdown',
+      exportUserLabel: 'You',
+      exportAssistantLabel: 'Assistant',
+      exportSourcesLabel: 'Sources',
       elearningTag: 'eLearning',
     },
     thread: {
@@ -351,6 +414,13 @@ export default {
       },
     },
     suggestions: {
+      reviewWriting: 'Get feedback on writing',
+      reviewWritingPrompt:
+        'Give me feedback on the course-writing excerpt below. Explain the most useful improvements and how I can make them myself.\n\n[Paste your excerpt here]',
+      reviewRevision: 'Review my revision',
+      reviewRevisionPrompt:
+        'I have revised my course-writing excerpt. Give feedback on what improved and what I should focus on next.\n\n[Paste your revision here]',
+
       sectionLabel: 'Conversation starters',
       editHint: 'Choose a starter to edit it before sending.',
       practiceTopic: 'Practise a topic',
@@ -381,6 +451,9 @@ export default {
       editDisabledTooltip:
         'Cannot edit: selected model does not support images',
       copy: 'Copy',
+      readAloud: 'Read aloud',
+      stopReadAloud: 'Stop reading aloud',
+      readAloudFormula: 'formula',
       refresh: 'Refresh',
       retry: 'Try again',
       rateUp: 'Helpful answer',
@@ -392,6 +465,11 @@ export default {
     },
     composer: {
       placeholder: 'Write a message...',
+      replyLanguageEn: 'This conversation is in English',
+      replyLanguageDe: 'This conversation is in German',
+      meetingClockNotStarted: 'The clock starts with your first message',
+      meetingClockElapsed: '{minutes} min since your first message',
+      meetingClockTime: '{time} (Zurich time)',
       modeUnavailable:
         'No chat mode is currently available. Please contact your lecturer.',
       send: 'Send message',
@@ -402,10 +480,69 @@ export default {
       attachmentReadError:
         'The image could not be read. Please try a different file.',
       dismissError: 'Dismiss error',
+      dropFiles: 'Drop files to attach',
       dropImages: 'Drop images to attach',
       attachmentPreviewAlt: 'Attachment preview',
       removeAttachment: 'Remove attachment',
+      attachFile: 'Attach an image or document',
       attachImage: 'Attach image',
+      attachmentTypeError:
+        'This file type cannot be attached. Use an image, PDF, Word (.docx), text, Markdown or CSV file.',
+      documentOnlyTypeError:
+        'The selected model cannot read images. Use a PDF, Word (.docx), text, Markdown or CSV file.',
+      documentLimitError: 'You can only attach up to {max} documents.',
+      documentTooLarge: 'Documents must be smaller than {max} MB.',
+      documentNoText: 'This file contains no readable text.',
+      documentPdfNoText:
+        'This PDF contains no selectable text. Scanned PDFs cannot be read yet.',
+      documentPresentation:
+        'PowerPoint files cannot be read. Save the presentation as a PDF and attach the PDF.',
+      documentReadError:
+        'The document could not be read. Please try a different file.',
+      documentReading: 'Reading document…',
+      documentPages: '{count, plural, one {# page} other {# pages}}',
+      documentTokens: '~{count} tokens',
+      documentShortened: 'Shortened to the first {max} tokens',
+      documentVisualReviewed:
+        '{count, plural, one {Page reviewed visually} other {Pages reviewed visually}}',
+      documentVisualTooManyPages:
+        '{count, plural, one {Page not reviewed visually} other {Pages not reviewed visually}}: up to {max} pages per message',
+      documentVisualNoImageSupport:
+        '{count, plural, one {Page not reviewed visually} other {Pages not reviewed visually}}: this model cannot read images',
+      documentVisualSkipped:
+        '{count, plural, one {Page not reviewed visually} other {Pages not reviewed visually}}',
+      documentDefaultQuestion: 'Please refer to the attached file(s).',
+      dictation: 'Dictate message',
+      dictationSetup: 'Set up dictation',
+      dictationStop: 'Stop dictation',
+      dictationListening: 'Listening...',
+      dictationLanguageHint: 'English dictation uses US English.',
+      dictationSheetTitle: 'Enable on-device dictation',
+      dictationSheetBody:
+        'Recognition runs on this device, and no audio is sent to the chat service. Your browser will ask for microphone access when you start dictation.',
+      dictationSheetDownload: 'Download',
+      dictationSheetNotNow: 'Not now',
+      dictationSheetInstalling: 'Downloading the language pack...',
+      dictationSheetFailed:
+        'The language pack could not be installed. Try again or continue typing.',
+      dictationSheetRetry: 'Try download again',
+      dictationSheetCheckAgain: 'Check availability again',
+      dictationSheetReady: 'The language pack is ready on this device.',
+      dictationSheetStart: 'Start dictation',
+      dictationErrorAborted: 'Dictation was cancelled.',
+      dictationErrorAudioCapture:
+        'The microphone could not be opened. Check your browser permissions.',
+      dictationErrorInstall: 'The local language pack could not be installed.',
+      dictationErrorLanguageNotSupported:
+        'This language is not supported for on-device dictation.',
+      dictationErrorNetwork:
+        'The browser reported a network error for dictation.',
+      dictationErrorNoSpeech: 'No speech was detected. Try again.',
+      dictationErrorNotAllowed:
+        'Microphone access was denied. Allow it in your browser settings.',
+      dictationErrorServiceNotAllowed:
+        'The browser did not allow the dictation service.',
+      dictationErrorUnknown: 'Dictation could not be started. Try again.',
       attachmentFallbackLabel: 'Attachment',
       editCancel: 'Cancel',
       editSend: 'Send',
@@ -4024,7 +4161,8 @@ Since the KlickerUZH app is not yet available in the iOS App Store, follow these
         'The minimum value must be less than the maximum value.',
       NROneValueRequired:
         'For solution ranges at least one boundary value must be entered.',
-      NRPrecision: 'The number of decimal places must be at least 0.',
+      NRPrecision:
+        'The number of decimal places must be a whole number from 0 to 100.',
       chooseSolutionType:
         'Please choose a solution type for your numerical question or deactivate the sample solution.',
       solutionRangeRequired: 'Please enter at least one valid solution range.',
@@ -4986,7 +5124,12 @@ Since the KlickerUZH app is not yet available in the iOS App Store, follow these
         'Choose which standard modes participants can use',
       chatbotSetupModesTitle: 'Learning modes',
       chatbotSetupModesDescriptionLong:
-        'Choose the standard modes that should be available to participants. Tutor and Explainer are available without course-material retrieval; Quizzer is shown only when its required capability is available.',
+        'Choose the standard modes available to participants. Writing Coach supports feedback on writing. Course-tool requirements still apply to every mode; Quizzer additionally needs course-material retrieval.',
+      chatbotModeWritingCoach: 'Writing Coach',
+      chatbotModeWritingCoachDescription:
+        'Gives specific writing feedback and revision strategies. Participants write every revision themselves.',
+      chatbotWritingCoachRequiredTool:
+        'Writing Coach is currently unavailable to participants because this chatbot requires a course-tool binding that the mode does not have. Contact the chatbot administrator to configure a compatible binding.',
       chatbotModeTutor: 'Tutor',
       chatbotModeTutorDescription:
         'Guides participants with questions, hints, and formative feedback.',
@@ -4996,7 +5139,7 @@ Since the KlickerUZH app is not yet available in the iOS App Store, follow these
       chatbotModeQuizzer: 'Quizzer',
       chatbotModeQuizzerDescription:
         'Practises exam-style course questions one at a time with formative feedback.',
-      chatbotModeInvariant: 'Keep Tutor or Explainer enabled.',
+      chatbotModeInvariant: 'Keep Tutor, Explainer or Writing Coach enabled.',
       chatbotModeQuizzerCapabilityNote:
         'Quizzer may still be hidden when its course-material capability is unavailable.',
       chatbotModeEnabled: 'Enabled',
@@ -5030,6 +5173,19 @@ Since the KlickerUZH app is not yet available in the iOS App Store, follow these
         'Model reasoning visible to participants',
       chatbotCustomModeReasoningHidden:
         'Model reasoning hidden from participants',
+      chatbotCustomModeReplyLanguage: 'Reply language',
+      chatbotCustomModeReplyLanguageDescription:
+        'By default, replies follow the language the participant writes in. Fix a language for role-plays that must stay in one language.',
+      chatbotCustomModeReplyLanguageFollow: 'Follow the participant',
+      chatbotCustomModeReplyLanguageEn: 'Always English',
+      chatbotCustomModeReplyLanguageDe: 'Always German',
+      chatbotCustomModeMeetingClock: 'Meeting clock',
+      chatbotCustomModeMeetingClockDescription:
+        "Off by default. Tells the model how many minutes have passed since the participant's first message, for timed role-plays. Keep the meeting length and phases in the persona.",
+      chatbotCustomModeMeetingClockOff: 'Off',
+      chatbotCustomModeMeetingClockElapsed: 'Elapsed minutes',
+      chatbotCustomModeMeetingClockElapsedAndTime:
+        'Elapsed minutes and time of day',
       chatbotCustomModeAdd: 'Add custom mode',
       chatbotCustomModeRemove: 'Remove',
       chatbotCustomModesLimit: 'At most {count} custom modes are supported.',
@@ -5043,11 +5199,18 @@ Since the KlickerUZH app is not yet available in the iOS App Store, follow these
         'Could not save the custom modes. Please try again.',
       chatbotFraming: 'Chatbot framing',
       chatbotFramingDescription:
-        'Briefly describe the course, audience, or intended focus. This context is used in the standard learning modes.',
+        'Describe the course, audience, prior knowledge, typical tasks and learning priorities. This context guides responses in standard learning modes, including Writing Coach. For published chatbots, saved changes apply after approval.',
+      chatbotFramingExamples: 'Context examples',
+      chatbotFramingScientific: 'Scientific writing',
+      chatbotFramingScientificExample:
+        'This chatbot supports a bachelor-level biology lab course. Students write short experiment reports and interpret figures. They know basic genetics but are learning scientific argumentation. Focus on linking claims to results, distinguishing observation from interpretation, and expressing uncertainty. Explain unfamiliar terms briefly. Keep feedback direct and encouraging. Preserve the writer’s voice and assess only the excerpt provided.',
+      chatbotFramingInformal: 'Less formal writing',
+      chatbotFramingInformalExample:
+        'This chatbot supports a project-based communication course. Students write short updates and reflective notes for peers and project partners. Focus on a clear purpose, concrete examples, logical flow and an obvious next action when relevant. A natural, conversational tone is appropriate; academic vocabulary and citations are usually unnecessary. Give practical, encouraging feedback.',
       chatbotFramingPlaceholder:
         'For example: First-year organic chemistry for medical students.',
       chatbotFramingTooLong:
-        'Chatbot framing must be 200 characters or fewer when edited.',
+        'Chatbot framing must be {count} characters or fewer when edited.',
       chatbotModesSave: 'Save learning modes',
       chatbotModesSaving: 'Saving…',
       chatbotModesSaveSuccess: 'Learning modes saved.',
@@ -5241,6 +5404,11 @@ Since the KlickerUZH app is not yet available in the iOS App Store, follow these
         'Off: the chatbot uses exactly one model selected by the lecturer.',
       modelSelectionFixedDescription:
         'Participants use this model. New chatbots start with Auto.',
+      answerPreferences: 'Let participants choose answer format and tone',
+      answerPreferencesEnabledDescription:
+        'On: participants can choose bullet points and a friendly or direct tone for new answers.',
+      answerPreferencesDisabledDescription:
+        'Off: all participants get the same answer format and tone.',
       modelSelectionParticipantDescription:
         'Participants can choose among these models. Select at least one.',
       selectedModel: 'Selected model',
@@ -5290,8 +5458,10 @@ Since the KlickerUZH app is not yet available in the iOS App Store, follow these
       knowledgeGraphVisibleDisabledDescription:
         'Off: the concept map stays hidden from participants.',
       knowledgeGraphRetrieval: 'Use graph connections for document search',
-      knowledgeGraphRetrievalDescription:
+      knowledgeGraphRetrievalEnabledDescription:
         'On: document search may use related concepts from the published graph as additional search hints. Answers still cite document passages only.',
+      knowledgeGraphRetrievalDisabledDescription:
+        'Off: document search uses the question only, without graph hints.',
       knowledgeGraphSave: 'Save knowledge graph settings',
       knowledgeGraphSaveSuccess: 'Knowledge graph settings saved.',
       noEnabledKnowledgeBase:
