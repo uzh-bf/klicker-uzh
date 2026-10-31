@@ -418,6 +418,78 @@ describe('chatbot authoring revision transitions', () => {
     })
   })
 
+  it('stages answer preferences until approval and preserves a disabled value', async () => {
+    const bot = await seed()
+    expect(bot.answerPreferencesEnabled).toBe(true)
+
+    const staged = await service.saveChatbotRevision(
+      {
+        chatbotId: bot.id,
+        expectedRevisionVersion: 0,
+        input: {
+          modelPolicy: {
+            modelSelection: false,
+            allowedModelIds: ['auto'],
+            answerPreferencesEnabled: false,
+          },
+        },
+      },
+      owner
+    )
+    expect(staged?.answerPreferencesEnabled).toBe(true)
+    expect(staged?.authoringRevision).toMatchObject({
+      answerPreferencesEnabled: false,
+      modelSelection: false,
+    })
+    expect(await read(bot.id)).toMatchObject({
+      answerPreferencesEnabled: true,
+      draftConfig: {
+        answerPreferencesEnabled: false,
+        modelSelection: false,
+      },
+    })
+
+    await service.saveChatbotRevision(
+      {
+        chatbotId: bot.id,
+        expectedRevisionVersion: 1,
+        input: { metadata: { description: 'Unrelated revision change' } },
+      },
+      owner
+    )
+    const resaved = await service.saveChatbotRevision(
+      {
+        chatbotId: bot.id,
+        expectedRevisionVersion: 2,
+        input: {
+          modelPolicy: { modelSelection: false, allowedModelIds: ['auto'] },
+        },
+      },
+      owner
+    )
+    expect(resaved?.authoringRevision).toMatchObject({
+      description: 'Unrelated revision change',
+      answerPreferencesEnabled: false,
+    })
+    expect(await read(bot.id)).toMatchObject({
+      answerPreferencesEnabled: true,
+      draftConfig: {
+        description: 'Unrelated revision change',
+        answerPreferencesEnabled: false,
+      },
+    })
+
+    await submit(bot.id, 3)
+    await service.approveChatbotRevision(
+      { id: bot.id, expectedRevisionVersion: 4 },
+      admin
+    )
+    expect(await read(bot.id)).toMatchObject({
+      answerPreferencesEnabled: false,
+      draftConfig: null,
+    })
+  })
+
   it('serializes competing saves and freezes pending content', async () => {
     const bot = await seed()
     const results = await Promise.allSettled(
@@ -812,11 +884,12 @@ describe('chatbot authoring revision transitions', () => {
     })
   })
 
-  it('inherits the live knowledge-graph flags for a revision that predates them', async () => {
+  it('inherits live flags for a revision that predates them', async () => {
     const bot = await seed()
     await dependencies.prisma.chatbot.update({
       where: { id: bot.id },
       data: {
+        answerPreferencesEnabled: false,
         knowledgeGraphVisible: true,
         knowledgeGraphRetrievalEnabled: true,
         revisionStatus: ChatbotStatus.DRAFT,
@@ -851,12 +924,15 @@ describe('chatbot authoring revision transitions', () => {
       owner
     )
     expect(saved?.authoringRevision).toMatchObject({
+      answerPreferencesEnabled: false,
       knowledgeGraphVisible: true,
       knowledgeGraphRetrievalEnabled: true,
     })
     const inherited = (await read(bot.id)).draftConfig as {
+      answerPreferencesEnabled: boolean
       knowledgeGraphRetrievalEnabled: boolean
     }
+    expect(inherited.answerPreferencesEnabled).toBe(false)
     expect(inherited.knowledgeGraphRetrievalEnabled).toBe(true)
   })
 
@@ -880,7 +956,7 @@ describe('chatbot authoring revision transitions', () => {
     expect((await read(bot.id)).revisionVersion).toBe(0)
   })
 
-  it('rejects a stored revision whose knowledge-graph flag is not a boolean', async () => {
+  it('rejects malformed stored revision flags', async () => {
     const bot = await seed()
     await service.saveChatbotRevision(
       {
@@ -898,6 +974,27 @@ describe('chatbot authoring revision transitions', () => {
           ...(staged.draftConfig as object),
           // @ts-expect-error Persist malformed data to exercise runtime validation.
           knowledgeGraphVisible: 'yes',
+        },
+      },
+    })
+    await expect(
+      service.saveChatbotRevision(
+        {
+          chatbotId: bot.id,
+          expectedRevisionVersion: staged.revisionVersion,
+          input: { metadata: { description: 'Next' } },
+        },
+        owner
+      )
+    ).rejects.toMatchObject({ extensions: { code: 'BAD_USER_INPUT' } })
+
+    await dependencies.prisma.chatbot.update({
+      where: { id: bot.id },
+      data: {
+        draftConfig: {
+          ...(staged.draftConfig as object),
+          // @ts-expect-error Persist malformed data to exercise runtime validation.
+          answerPreferencesEnabled: 'yes',
         },
       },
     })

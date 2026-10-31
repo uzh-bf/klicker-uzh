@@ -1,6 +1,10 @@
 #!/usr/bin/env bash
 set -euo pipefail
 
+# pnpm run disables repeat verification in its children. Isolate the synthetic
+# fixture so it checks lifecycle-script overrides, not the outer test runner.
+unset pnpm_config_verify_deps_before_run
+
 REPO_ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
 RUNTIME_SCRIPT="$REPO_ROOT/util/dev-runtime.sh"
 TEST_ROOT="$(mktemp -d)"
@@ -45,9 +49,10 @@ NEXT_APPS=(auth chat frontend-control frontend-manage frontend-pwa)
 VOLUME_NAME='klicker-uzh-pnpm-store-v1'
 mkdir -p "$ROOT/node_modules" "$FAKE_BIN"
 
-write_file "$ROOT/package.json" '{"packageManager":"pnpm@11.5.0"}'
+write_file "$ROOT/package.json" '{"packageManager":"pnpm@12.11.2"}'
 write_file "$ROOT/pnpm-lock.yaml" 'lockfileVersion: 9'
-write_file "$ROOT/pnpm-workspace.yaml" 'packages: [apps/*, packages/*]'
+write_file "$ROOT/pnpm-workspace.yaml" 'packages: [apps/*, packages/*]
+verifyDepsBeforeRun: error'
 write_file "$ROOT/packages/example/package.json" '{"name":"example"}'
 
 for app in "${NEXT_APPS[@]}"; do
@@ -61,8 +66,10 @@ write_file "$ROOT/apps/chat/src/app/api/example/route.ts" 'export const GET = tr
 write_file "$ROOT/apps/auth/src/pages/index.tsx" 'export default true'
 
 write_file "$FAKE_BIN/pnpm" '#!/usr/bin/env bash
+[ "${npm_config_verify_deps_before_run:-error}" = error ] || exit 71
+[ "${pnpm_config_verify_deps_before_run:-error}" = error ] || exit 72
 if [ "${1:-}" = "--version" ]; then
-  echo "11.5.0"
+  echo "12.11.2"
   exit 0
 fi
 if [ -n "${KLICKER_TEST_PNPM_FAIL_MATCH:-}" ] && [[ "$*" == *"$KLICKER_TEST_PNPM_FAIL_MATCH"* ]]; then
@@ -297,6 +304,7 @@ if [ "${2:-}" = --help ]; then
 fi
 [ "$1" = ensure ] || exit 0
 printf "%s\n%s\n" "$DATABASE_URL" "$SHADOW_DATABASE_URL" >"$KLICKER_TEST_PROCESS_ENV"
+printf "%s\n%s\n" "$BLOB_STORAGE_INTERNAL_ACCOUNT_URL" "$NO_PROXY" >>"$KLICKER_TEST_PROCESS_ENV"
 exit 23'
 chmod +x "$FAKE_BIN/process-helper"
 export KLICKER_TEST_PROCESS_ENV="$TEST_ROOT/process-env"
@@ -305,6 +313,7 @@ for profile in mcp chat; do
   KLICKER_DEVCONTAINER_ROOT="$ROOT" \
     DEVROUTER_PROFILE="$profile" \
     DEVROUTER_PROCESS_HELPER="$FAKE_BIN/process-helper" \
+    NO_PROXY=external.invalid \
     LOCAL_MCP_BOOTSTRAPPED="$([ "$profile" = mcp ] && echo 1 || echo 0)" \
     LOCAL_MCP_GENERATION=synthetic-generation \
     DATABASE_URL=postgresql://klicker_test:synthetic@mcp_postgres:5432/klicker_test \
@@ -318,6 +327,32 @@ for profile in mcp chat; do
     "postgresql://klicker_test:synthetic@${expected_host}:5432/klicker_test"
   assert_equal "$(sed -n '2p' "$KLICKER_TEST_PROCESS_ENV")" \
     "postgresql://klicker_test:synthetic@${expected_host}:5432/klicker_test_shadow"
+  blob_host="$(sed -n '3p' "$KLICKER_TEST_PROCESS_ENV")"
+  blob_host="${blob_host#http://}"
+  blob_host="${blob_host%%:*}"
+  assert_equal "$(sed -n '4p' "$KLICKER_TEST_PROCESS_ENV")" "external.invalid,$blob_host"
+done
+
+# Isolated startup preserves the supplied endpoint, so all local Blob naming
+# forms can be verified without a certificate mount or a real storage service.
+for blob_host in azurite klicker-uzh-azurite synthetic-workspace-azurite; do
+  (
+    . "$ROOT/util/local-kb/runtime-environment.sh"
+    local_kb_capture_environment >/dev/null 2>&1 || true
+    for key in "${LOCAL_KB_ENV_KEYS[@]}"; do
+      export "$key=synthetic-isolated-value"
+    done
+    status=0
+    KLICKER_DEVCONTAINER_ROOT="$ROOT" KLICKER_LOCAL_KB_RUNTIME_ONLY=1 LOCAL_MCP_BOOTSTRAPPED=0 \
+      BLOB_STORAGE_INTERNAL_ACCOUNT_URL="http://$blob_host:10000/klickerdev" \
+      DEVROUTER_PROFILE=chat DEVROUTER_PROCESS_HELPER="$FAKE_BIN/process-helper" \
+      NO_PROXY=external.invalid \
+      bash "$REPO_ROOT/.devcontainer/post-start.sh" >"$TEST_ROOT/blob-start.log" 2>&1 || status=$?
+    [ "$status" = 23 ] || cat "$TEST_ROOT/blob-start.log" >&2
+    assert_equal "$status" 23
+    assert_equal "$(sed -n '3p' "$KLICKER_TEST_PROCESS_ENV")" "http://$blob_host:10000/klickerdev"
+    assert_equal "$(sed -n '4p' "$KLICKER_TEST_PROCESS_ENV")" "external.invalid,$blob_host"
+  )
 done
 write_file "$ROOT/.devcontainer/devcontainer.env" ''
 : > "$INSTALL_LOG"
@@ -623,7 +658,7 @@ if DEVROUTER_PROFILE=unsupported bash "$RUNTIME_SCRIPT" preparation-filters >/de
   fail 'preparation accepted an unknown profile'
 fi
 
-write_file "$ROOT/package.json" '{"packageManager":"pnpm@11.5.0","scripts":{"dev:container":"turbo run dev --filter=@klicker-uzh/example --concurrency 30"}}'
+write_file "$ROOT/package.json" '{"packageManager":"pnpm@12.11.2","scripts":{"dev:container":"turbo run dev --filter=@klicker-uzh/example --concurrency 30"}}'
 assert_equal "$(DEVROUTER_PROFILE=full bash "$RUNTIME_SCRIPT" preparation-filters)" '--filter=@klicker-uzh/example^...'
 for command in \
   'turbo run dev --concurrency 30' \
