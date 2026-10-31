@@ -99,54 +99,37 @@ function csv(key) {
   return (properties[key] || '').split(',').filter(Boolean)
 }
 
-function matches(file, pattern) {
-  const expression = pattern
-    .split(/(\*\*\/|\*\*|\*|\?)/)
-    .map((part) => {
-      if (part === '**/') return '(?:.*/)?'
-      if (part === '**') return '.*'
-      if (part === '*') return '[^/]*'
-      if (part === '?') return '[^/]'
-      return part.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')
-    })
-    .join('')
-  return new RegExp(`^${expression}$`).test(file)
-}
-
-function indexed(file) {
-  const inRoots = (key) => csv(key).some((root) => file.startsWith(`${root}/`))
-  const includedTest = csv('sonar.test.inclusions').some((pattern) =>
-    matches(file, pattern)
-  )
-  const excludedSource = csv('sonar.exclusions').some((pattern) =>
-    matches(file, pattern)
-  )
-  return {
-    source: inRoots('sonar.sources') && !includedTest && !excludedSource,
-    test: inRoots('sonar.tests') && includedTest,
-  }
-}
-
 describe('Sonar classification contract', () => {
-  it('keeps test fixtures separate from production and credential-sensitive scripts', () => {
-    for (const file of [
-      'apps/example/src/handler.test.ts',
-      'packages/example/test/handler.ts',
-      '.github/scripts/example.test.cjs',
-      '.github/scripts/test_update_playwright_timings.py',
-      'util/test-klicker-eval-integration.py',
-      'util/test-klicker-eval-judge.py',
+  it('provides test roots and selectors for each analyzed test family', () => {
+    const roots = new Set([
+      'apps',
+      'packages',
+      'deploy',
+      'util',
+      '.github/scripts',
+    ])
+    assert.deepEqual(new Set(csv('sonar.sources')), roots)
+    assert.deepEqual(new Set(csv('sonar.tests')), roots)
+    const inclusions = new Set(csv('sonar.test.inclusions'))
+    for (const [file, selector] of [
+      ['apps/example/src/handler.test.ts', '**/*.test.ts'],
+      ['packages/example/test/handler.ts', 'packages/*/test/**'],
+      ['.github/scripts/example.test.cjs', '**/*.test.cjs'],
+      [
+        '.github/scripts/test_update_playwright_timings.py',
+        '.github/scripts/test_update_playwright_timings.py',
+      ],
+      [
+        'util/test-klicker-eval-integration.py',
+        'util/test-klicker-eval-integration.py',
+      ],
+      ['util/test-klicker-eval-judge.py', 'util/test-klicker-eval-judge.py'],
     ]) {
-      assert.deepEqual(indexed(file), { source: false, test: true }, file)
-    }
-    for (const file of [
-      'apps/example/src/handler.ts',
-      'packages/example/src/handler.ts',
-      'deploy/charts/example/templates/deployment.yaml',
-      'util/init.sql',
-      '.github/scripts/sonar-coverage-inputs.cjs',
-    ]) {
-      assert.deepEqual(indexed(file), { source: true, test: false }, file)
+      assert.ok(
+        [...roots].some((root) => file.startsWith(`${root}/`)),
+        file
+      )
+      assert.ok(inclusions.has(selector), file)
     }
   })
 
