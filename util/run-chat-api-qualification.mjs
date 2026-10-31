@@ -3,6 +3,7 @@ import { spawn, spawnSync } from 'node:child_process'
 import { createHash, randomUUID } from 'node:crypto'
 import { once } from 'node:events'
 import {
+  accessSync,
   closeSync,
   constants,
   cpSync,
@@ -12,9 +13,18 @@ import {
   readFileSync,
   realpathSync,
   renameSync,
+  statSync,
   writeFileSync,
 } from 'node:fs'
-import { dirname, join, relative, resolve, sep } from 'node:path'
+import {
+  delimiter,
+  dirname,
+  isAbsolute,
+  join,
+  relative,
+  resolve,
+  sep,
+} from 'node:path'
 import { createRequire } from 'node:module'
 import { setTimeout as delay } from 'node:timers/promises'
 import { fileURLToPath } from 'node:url'
@@ -1495,6 +1505,30 @@ async function worker() {
 }
 
 async function host() {
+  const executables = new Map(
+    ['docker', 'git', 'devsy'].map((command) => {
+      const executable = (process.env.PATH ?? '')
+        .split(delimiter)
+        .filter(isAbsolute)
+        .map((directory) => join(directory, command))
+        .find((candidate) => {
+          try {
+            const canonical = realpathSync(candidate)
+            if (canonical.split(sep).includes('node_modules')) return false
+            accessSync(canonical, constants.X_OK)
+            return (
+              statSync(canonical).isFile() &&
+              (statSync(canonical).mode & 0o022) === 0 &&
+              (statSync(dirname(canonical)).mode & 0o022) === 0
+            )
+          } catch {
+            return false
+          }
+        })
+      assert(executable, `No owned host executable found for ${command}`)
+      return [command, realpathSync(executable)]
+    })
+  )
   const [publicId, privateId, privateSourceArg, revision] = process.argv.slice(
     4,
     8
@@ -1506,7 +1540,7 @@ async function host() {
   assert(/^[a-f0-9]{40}$/.test(revision ?? ''))
   const privateSource = realpathSync(privateSourceArg)
   const run = (command, args) => {
-    const result = spawnSync(command, args, {
+    const result = spawnSync(executables.get(command), args, {
       cwd: root,
       encoding: 'utf8',
       timeout: 30000,
@@ -1609,7 +1643,7 @@ async function host() {
       attached = true
     }
     workerProcess = spawn(
-      'devsy',
+      executables.get('devsy'),
       [
         'workspace',
         'exec',
@@ -1635,9 +1669,9 @@ async function host() {
     const fixture = readReceipt('fixtures.json')
     assert.equal(fixture.generation, generation)
     inspect(privateId, privateSource, '/workspaces/catalyst')
-    const bootstrap = `require('node:fs').writeFileSync(${JSON.stringify(enginePidPath)},JSON.stringify({pid:process.pid,generation:${JSON.stringify(generation)}}));import('./apps/tutoring-engine/dist/server-runtime.js')`
+    const bootstrap = `const [path,generation]=process.argv.slice(1);require('node:fs').writeFileSync(path,JSON.stringify({pid:process.pid,generation}),{mode:0o600,flag:'wx'});import('./apps/tutoring-engine/dist/server-runtime.js')`
     engineProcess = spawn(
-      'docker',
+      executables.get('docker'),
       [
         'exec',
         '-w',
@@ -1650,6 +1684,8 @@ async function host() {
         'node',
         '-e',
         bootstrap,
+        enginePidPath,
+        generation,
       ],
       { cwd: root, stdio: ['ignore', 'ignore', 'ignore'] }
     )
@@ -1701,7 +1737,7 @@ async function host() {
           relativeDirectory,
           'worker-owner.json'
         )
-        const stop = `const fs=require('node:fs');const p=JSON.parse(fs.readFileSync(${JSON.stringify(ownerPath)},'utf8'));if(p.generation!==${JSON.stringify(generation)}||p.containerSourcePath!==${JSON.stringify(setup.containerSourcePath)})throw Error('Owner mismatch');try{const cmd=fs.readFileSync('/proc/'+p.pid+'/cmdline','utf8');if(!cmd.includes('util/run-chat-api-qualification.mjs')||!cmd.includes('--worker'))throw Error('Process incarnation mismatch');process.kill(p.pid,'SIGTERM')}catch(e){if(e.code!=='ENOENT'&&e.code!=='ESRCH')throw e}`
+        const stop = `const fs=require('node:fs');const [path,generation,source]=process.argv.slice(1);const fd=fs.openSync(path,fs.constants.O_RDONLY|fs.constants.O_NOFOLLOW);let p;try{p=JSON.parse(fs.readFileSync(fd,'utf8'))}finally{fs.closeSync(fd)}if(p.generation!==generation||p.containerSourcePath!==source||!Number.isSafeInteger(p.pid)||p.pid<=1)throw Error('Owner mismatch');try{const cmd=fs.readFileSync('/proc/'+p.pid+'/cmdline','utf8');if(!cmd.includes('util/run-chat-api-qualification.mjs')||!cmd.includes('--worker'))throw Error('Process incarnation mismatch');process.kill(p.pid,'SIGTERM')}catch(e){if(e.code!=='ENOENT'&&e.code!=='ESRCH')throw e}`
         run('devsy', [
           'workspace',
           'exec',
@@ -1713,6 +1749,9 @@ async function host() {
           'node',
           '-e',
           stop,
+          ownerPath,
+          generation,
+          setup.containerSourcePath,
         ])
         await Promise.race([
           once(workerProcess, 'exit'),
@@ -1733,7 +1772,7 @@ async function host() {
           false
         )
         if (state.State.Running) {
-          const stop = `const f=require('node:fs');const wait=require('node:timers/promises').setTimeout;(async()=>{const p=JSON.parse(f.readFileSync(${JSON.stringify(enginePidPath)},'utf8'));if(p.generation!==${JSON.stringify(generation)})throw Error('Owner mismatch');const command=()=>{try{return f.readFileSync('/proc/'+p.pid+'/cmdline','utf8')}catch(e){if(e.code==='ENOENT')return null;throw e}};const initial=command();if(initial===null)return;if(!initial.includes('apps/tutoring-engine/dist/server-runtime.js'))throw Error('Process incarnation mismatch');try{process.kill(p.pid,'SIGTERM')}catch(e){if(e.code!=='ESRCH')throw e}for(let n=0;n<100;n++){if(command()!==initial)return;await wait(50)}throw Error('Engine stop deadline exceeded')})().catch(()=>{process.exitCode=1})`
+          const stop = `const f=require('node:fs');const wait=require('node:timers/promises').setTimeout;const [path,generation]=process.argv.slice(1);(async()=>{const fd=f.openSync(path,f.constants.O_RDONLY|f.constants.O_NOFOLLOW);let p;try{p=JSON.parse(f.readFileSync(fd,'utf8'))}finally{f.closeSync(fd)}if(p.generation!==generation||!Number.isSafeInteger(p.pid)||p.pid<=1)throw Error('Owner mismatch');const command=()=>{try{return f.readFileSync('/proc/'+p.pid+'/cmdline','utf8')}catch(e){if(e.code==='ENOENT')return null;throw e}};const initial=command();if(initial===null)return;if(!initial.includes('apps/tutoring-engine/dist/server-runtime.js'))throw Error('Process incarnation mismatch');try{process.kill(p.pid,'SIGTERM')}catch(e){if(e.code!=='ESRCH')throw e}for(let n=0;n<100;n++){if(command()!==initial)return;await wait(50)}throw Error('Engine stop deadline exceeded')})().catch(()=>{process.exitCode=1})`
           run('docker', [
             'exec',
             '-w',
@@ -1742,6 +1781,8 @@ async function host() {
             'node',
             '-e',
             stop,
+            enginePidPath,
+            generation,
           ])
         }
         await stopChild(engineProcess)
