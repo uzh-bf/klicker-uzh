@@ -22,18 +22,22 @@ import type { PublishedKnowledgeGraph } from './publication.js'
 import {
   getEdgesForNodeIdsQuery,
   getNeighborhoodNodesQuery,
+  getNodesByIdQuery,
   getOverviewNodesQuery,
   getSearchNodesQuery,
   type KnowledgeGraphEdgeRow,
   type KnowledgeGraphNodeRow,
 } from './queries.js'
 import {
+  GRAPH_MENTION_LIMIT,
   GRAPH_SEARCH_HINT_LIMIT,
   GRAPH_SEARCH_NODE_SCAN_LIMIT,
   GRAPH_SEARCH_QUERY_TIMEOUT_MS,
   graphSearchNeighborsQuery,
   graphSearchSeedsQuery,
   graphSearchTerms,
+  type KnowledgeGraphMention,
+  selectGraphMentions,
   selectGraphSearchSeeds,
 } from './retrieval.js'
 
@@ -202,11 +206,15 @@ function normalizedNodes(
   return Array.from(nodes.values())
 }
 
-function normalizedEdges(rows: KnowledgeGraphEdgeRow[]): KnowledgeGraphEdge[] {
+function normalizedEdges(
+  rows: KnowledgeGraphEdgeRow[],
+  context: PublishedKnowledgeGraph
+): KnowledgeGraphEdge[] {
   const edges = new Map<string, KnowledgeGraphEdge>()
+  const sources = sourceMap(context)
 
   for (const row of rows) {
-    const edge = normalizeKnowledgeGraphEdge(row)
+    const edge = normalizeKnowledgeGraphEdge(row, sources)
     if (edge !== null && !edges.has(edge.id)) {
       edges.set(edge.id, edge)
     }
@@ -256,7 +264,8 @@ export async function readKnowledgeGraphOverview(
           )
         )
   const edges = normalizedEdges(
-    edgeRows.slice(0, KNOWLEDGE_GRAPH_OVERVIEW_EDGE_LIMIT)
+    edgeRows.slice(0, KNOWLEDGE_GRAPH_OVERVIEW_EDGE_LIMIT),
+    context
   )
 
   return response(
@@ -304,7 +313,8 @@ export async function readKnowledgeGraphNeighbors(
     )
   )
   const edges = normalizedEdges(
-    edgeRows.slice(0, KNOWLEDGE_GRAPH_NEIGHBOR_EDGE_LIMIT)
+    edgeRows.slice(0, KNOWLEDGE_GRAPH_NEIGHBOR_EDGE_LIMIT),
+    context
   )
 
   return response(
@@ -363,4 +373,64 @@ export async function readKnowledgeGraphSearchHints(
         !query.toLowerCase().includes(name.toLowerCase())
     )
     .slice(0, GRAPH_SEARCH_HINT_LIMIT)
+}
+
+const MENTION_LABEL_CACHE_LIMIT = 16
+// A published graph name identifies one immutable build, so its concept labels
+// can be reused until the entry is evicted.
+const mentionLabelCache = new Map<string, Promise<KnowledgeGraphNode[]>>()
+
+function mentionNodes(
+  context: PublishedKnowledgeGraph
+): Promise<KnowledgeGraphNode[]> {
+  const cached = mentionLabelCache.get(context.graphName)
+  if (cached) return cached
+  const loaded = (async () => {
+    const { graph, config } = await graphSession(context.graphName)
+    const rows = await readRows<KnowledgeGraphNodeRow>(
+      graph,
+      config,
+      graphSearchSeedsQuery()
+    )
+    return rows.length > GRAPH_SEARCH_NODE_SCAN_LIMIT
+      ? []
+      : normalizedNodes(rows, context)
+  })()
+  mentionLabelCache.set(context.graphName, loaded)
+  loaded.catch(() => mentionLabelCache.delete(context.graphName))
+  if (mentionLabelCache.size > MENTION_LABEL_CACHE_LIMIT) {
+    const oldest = mentionLabelCache.keys().next().value
+    if (oldest !== undefined) mentionLabelCache.delete(oldest)
+  }
+  return loaded
+}
+
+/** Concepts whose labels a text names verbatim, for linking them in the UI. */
+export async function readKnowledgeGraphMentions(
+  context: PublishedKnowledgeGraph,
+  text: string
+): Promise<KnowledgeGraphMention[]> {
+  if (context.isStale) return []
+  const mentions = selectGraphMentions(
+    await mentionNodes(context),
+    text,
+    GRAPH_MENTION_LIMIT
+  )
+  if (mentions.length === 0) return []
+  // The label scan reads names only; the UI focuses a concept with its details.
+  const { graph, config } = await graphSession(context.graphName)
+  const full = new Map(
+    normalizedNodes(
+      await readRows<KnowledgeGraphNodeRow>(
+        graph,
+        config,
+        getNodesByIdQuery(mentions.map((mention) => mention.node.id))
+      ),
+      context
+    ).map((node) => [node.id, node] as const)
+  )
+  return mentions.flatMap((mention) => {
+    const node = full.get(mention.node.id)
+    return node ? [{ node, text: mention.text }] : []
+  })
 }

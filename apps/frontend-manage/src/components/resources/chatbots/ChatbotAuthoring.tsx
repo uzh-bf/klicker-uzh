@@ -2,12 +2,14 @@ import { useMutation } from '@apollo/client'
 import { useFeatureFlag } from '@klicker-uzh/feature-flags/react'
 import {
   type ChatbotCustomModeInput,
+  ChatbotCustomModeMeetingClock,
   ChatbotStatus,
-  type LocaleType,
+  LocaleType,
   MSaveChatbotRevisionDocument,
   QGetChatbotsInfoWithKnowledgeBasesDocument,
 } from '@klicker-uzh/graphql/dist/ops'
 import { Markdown } from '@klicker-uzh/markdown'
+import { CHATBOT_STANDARD_MODE_SCOPE_NOTE_MAX_LENGTH } from '@klicker-uzh/types'
 import {
   CHATBOT_CUSTOM_MODE_DESCRIPTION_MAX_LENGTH,
   CHATBOT_CUSTOM_MODE_MAX_COUNT,
@@ -24,6 +26,7 @@ import {
   AccordionItem,
   AccordionTrigger,
   Button,
+  FormikSelectField,
   FormikTextareaField,
   FormikTextField,
   H4,
@@ -88,12 +91,13 @@ const disclaimerEditableStatuses = [
   ChatbotStatus.Published,
 ]
 
-type StandardMode = 'tutor' | 'explainer' | 'quizzer'
+type StandardMode = 'tutor' | 'explainer' | 'quizzer' | 'writing-coach'
 
 type StandardModeFormValues = {
   tutorEnabled: boolean
   explainerEnabled: boolean
   quizzerEnabled: boolean
+  writingCoachEnabled: boolean
   courseName: string | null
   subjectDomain: string | null
   languageOfInstruction: LocaleType | null
@@ -109,6 +113,7 @@ function getStandardModeFormValues(
     tutorEnabled: config?.tutorEnabled ?? true,
     explainerEnabled: config?.explainerEnabled ?? true,
     quizzerEnabled: config?.quizzerEnabled ?? true,
+    writingCoachEnabled: config?.writingCoachEnabled ?? false,
     courseName: config?.courseName ?? null,
     subjectDomain: config?.subjectDomain ?? null,
     languageOfInstruction: config?.languageOfInstruction ?? null,
@@ -125,7 +130,44 @@ type CustomModeFormValues = {
     starterPrompts: string[]
     personaText: string
     showReasoning: boolean
+    replyLanguage: ReplyLanguageOption
+    meetingClock: MeetingClockOption
   }[]
+}
+
+// Select values for the two optional per-mode settings; the unset choice needs
+// a non-empty value of its own and is sent as null.
+type ReplyLanguageOption = LocaleType | 'FOLLOW'
+type MeetingClockOption = ChatbotCustomModeMeetingClock | 'OFF'
+
+const REPLY_LANGUAGE_LABELS = {
+  FOLLOW: 'manage.resources.chatbotCustomModeReplyLanguageFollow',
+  [LocaleType.En]: 'manage.resources.chatbotCustomModeReplyLanguageEn',
+  [LocaleType.De]: 'manage.resources.chatbotCustomModeReplyLanguageDe',
+} as const satisfies Record<ReplyLanguageOption, string>
+
+const MEETING_CLOCK_LABELS = {
+  OFF: 'manage.resources.chatbotCustomModeMeetingClockOff',
+  [ChatbotCustomModeMeetingClock.Elapsed]:
+    'manage.resources.chatbotCustomModeMeetingClockElapsed',
+  [ChatbotCustomModeMeetingClock.ElapsedAndTime]:
+    'manage.resources.chatbotCustomModeMeetingClockElapsedAndTime',
+} as const satisfies Record<MeetingClockOption, string>
+
+/**
+ * One-line summary of a custom mode's reply language and meeting clock, for
+ * the authoring and publication review summaries.
+ */
+export function formatCustomModeSettings(
+  t: ReturnType<typeof useTranslations<never>>,
+  mode: {
+    replyLanguage?: ReplyLanguageOption | null
+    meetingClock?: MeetingClockOption | null
+  }
+): string {
+  const replyLanguage = t(REPLY_LANGUAGE_LABELS[mode.replyLanguage ?? 'FOLLOW'])
+  const meetingClock = t(MEETING_CLOCK_LABELS[mode.meetingClock ?? 'OFF'])
+  return `${t('manage.resources.chatbotCustomModeReplyLanguage')}: ${replyLanguage} · ${t('manage.resources.chatbotCustomModeMeetingClock')}: ${meetingClock}`
 }
 
 function getCustomModeFormValues(
@@ -144,6 +186,8 @@ function getCustomModeFormValues(
       starterPrompts: [...(mode.starterPrompts ?? [])],
       personaText: mode.personaText ?? '',
       showReasoning: mode.showReasoning,
+      replyLanguage: mode.replyLanguage ?? 'FOLLOW',
+      meetingClock: mode.meetingClock ?? 'OFF',
     })),
   }
 }
@@ -163,6 +207,8 @@ function getCustomModeInputs(
       .filter((prompt) => prompt.length > 0),
     personaText: mode.personaText || null,
     showReasoning: mode.showReasoning,
+    replyLanguage: mode.replyLanguage === 'FOLLOW' ? null : mode.replyLanguage,
+    meetingClock: mode.meetingClock === 'OFF' ? null : mode.meetingClock,
   }))
 }
 
@@ -771,6 +817,68 @@ function CustomModesEditor({
                             }}
                           />
                         </div>
+                        <div className="grid gap-4 md:grid-cols-2">
+                          <div>
+                            <FormikSelectField
+                              name={`modes[${index}].replyLanguage`}
+                              className={{ select: { trigger: 'w-full' } }}
+                              label={t(
+                                'manage.resources.chatbotCustomModeReplyLanguage'
+                              )}
+                              labelType="small"
+                              disabled={controlsDisabled}
+                              items={(
+                                Object.keys(
+                                  REPLY_LANGUAGE_LABELS
+                                ) as ReplyLanguageOption[]
+                              ).map((value) => ({
+                                value,
+                                label: t(REPLY_LANGUAGE_LABELS[value]),
+                                data: {
+                                  cy: `chatbot-custom-mode-reply-language-${index}-${value}`,
+                                },
+                              }))}
+                              data={{
+                                cy: `chatbot-custom-mode-reply-language-${index}`,
+                              }}
+                            />
+                            <p className="mt-1 text-sm text-gray-600">
+                              {t(
+                                'manage.resources.chatbotCustomModeReplyLanguageDescription'
+                              )}
+                            </p>
+                          </div>
+                          <div>
+                            <FormikSelectField
+                              name={`modes[${index}].meetingClock`}
+                              className={{ select: { trigger: 'w-full' } }}
+                              label={t(
+                                'manage.resources.chatbotCustomModeMeetingClock'
+                              )}
+                              labelType="small"
+                              disabled={controlsDisabled}
+                              items={(
+                                Object.keys(
+                                  MEETING_CLOCK_LABELS
+                                ) as MeetingClockOption[]
+                              ).map((value) => ({
+                                value,
+                                label: t(MEETING_CLOCK_LABELS[value]),
+                                data: {
+                                  cy: `chatbot-custom-mode-meeting-clock-${index}-${value}`,
+                                },
+                              }))}
+                              data={{
+                                cy: `chatbot-custom-mode-meeting-clock-${index}`,
+                              }}
+                            />
+                            <p className="mt-1 text-sm text-gray-600">
+                              {t(
+                                'manage.resources.chatbotCustomModeMeetingClockDescription'
+                              )}
+                            </p>
+                          </div>
+                        </div>
                       </div>
                     ))}
                   </div>
@@ -795,6 +903,8 @@ function CustomModesEditor({
                           starterPrompts: [],
                           personaText: '',
                           showReasoning: false,
+                          replyLanguage: 'FOLLOW',
+                          meetingClock: 'OFF',
                         },
                       ])
                     }}
@@ -919,6 +1029,7 @@ function ChatbotAuthoring({
   const disclaimerEditable = metadataEditable
   const disclaimer = chatbot.disclaimerSummary
   const standardModeConfig = getStandardModeFormValues(chatbot)
+  const writingCoachUnavailableReason = chatbot.writingCoachUnavailableReason
   const customModeConfig = getCustomModeFormValues(chatbot)
   const disclaimerInitialValues = {
     title:
@@ -947,6 +1058,11 @@ function ChatbotAuthoring({
       mode: 'quizzer' as const,
       title: t('manage.resources.chatbotModeQuizzer'),
       enabled: standardModeConfig.quizzerEnabled,
+    },
+    {
+      mode: 'writing-coach' as const,
+      title: t('manage.resources.chatbotModeWritingCoach'),
+      enabled: standardModeConfig.writingCoachEnabled,
     },
   ]
   const published = chatbot.status === ChatbotStatus.Published
@@ -1305,11 +1421,16 @@ function ChatbotAuthoring({
                     validate={(values) => {
                       if (
                         values.scopeNote !== standardModeConfig.scopeNote &&
-                        values.scopeNote.length > 200
+                        values.scopeNote.length >
+                          CHATBOT_STANDARD_MODE_SCOPE_NOTE_MAX_LENGTH
                       ) {
                         return {
                           scopeNote: t(
-                            'manage.resources.chatbotFramingTooLong'
+                            'manage.resources.chatbotFramingTooLong',
+                            {
+                              count:
+                                CHATBOT_STANDARD_MODE_SCOPE_NOTE_MAX_LENGTH,
+                            }
                           ),
                         }
                       }
@@ -1380,6 +1501,14 @@ function ChatbotAuthoring({
                     }) => {
                       const controlsDisabled =
                         isSubmitting || publicationPending || revisionPending
+                      // Writing Coach is removed from the participant-facing
+                      // mode set while a required tool binding belongs to
+                      // another mode, so in that state it cannot satisfy the
+                      // "keep one conversational mode enabled" invariant on its
+                      // own.
+                      const writingCoachCannotHoldInvariant =
+                        writingCoachUnavailableReason ===
+                        'REQUIRED_TOOL_BINDING'
 
                       return (
                         <Form className="space-y-4">
@@ -1402,13 +1531,47 @@ function ChatbotAuthoring({
                               placeholder={t(
                                 'manage.resources.chatbotFramingPlaceholder'
                               )}
-                              maxLength={200}
+                              maxLength={
+                                CHATBOT_STANDARD_MODE_SCOPE_NOTE_MAX_LENGTH
+                              }
                               maxLengthUnit={t('shared.generic.characters')}
                               data={{ cy: 'chatbot-framing' }}
                             />
                             <p className="text-xs text-gray-500">
                               {t('manage.resources.chatbotFramingDescription')}
                             </p>
+                            <details
+                              className="text-sm text-gray-600"
+                              data-cy="chatbot-framing-examples"
+                            >
+                              <summary className="cursor-pointer py-2 font-medium">
+                                {t('manage.resources.chatbotFramingExamples')}
+                              </summary>
+                              <div className="space-y-3 pt-1">
+                                <p>
+                                  <strong>
+                                    {t(
+                                      'manage.resources.chatbotFramingScientific'
+                                    )}
+                                  </strong>
+                                  <br />
+                                  {t(
+                                    'manage.resources.chatbotFramingScientificExample'
+                                  )}
+                                </p>
+                                <p>
+                                  <strong>
+                                    {t(
+                                      'manage.resources.chatbotFramingInformal'
+                                    )}
+                                  </strong>
+                                  <br />
+                                  {t(
+                                    'manage.resources.chatbotFramingInformalExample'
+                                  )}
+                                </p>
+                              </div>
+                            </details>
                           </div>
                           <div className="space-y-3">
                             <StandardModeCard
@@ -1419,7 +1582,9 @@ function ChatbotAuthoring({
                                 controlsDisabled ||
                                 revisionPending ||
                                 (values.tutorEnabled &&
-                                  !values.explainerEnabled)
+                                  !values.explainerEnabled &&
+                                  (!values.writingCoachEnabled ||
+                                    writingCoachCannotHoldInvariant))
                               }
                               enabled={values.tutorEnabled}
                               mode="tutor"
@@ -1442,7 +1607,9 @@ function ChatbotAuthoring({
                                 controlsDisabled ||
                                 revisionPending ||
                                 (values.explainerEnabled &&
-                                  !values.tutorEnabled)
+                                  !values.tutorEnabled &&
+                                  (!values.writingCoachEnabled ||
+                                    writingCoachCannotHoldInvariant))
                               }
                               enabled={values.explainerEnabled}
                               mode="explainer"
@@ -1475,6 +1642,46 @@ function ChatbotAuthoring({
                               )}
                               title={t('manage.resources.chatbotModeQuizzer')}
                             />
+                            <StandardModeCard
+                              description={t(
+                                'manage.resources.chatbotModeWritingCoachDescription'
+                              )}
+                              disabled={
+                                controlsDisabled ||
+                                revisionPending ||
+                                (!values.tutorEnabled &&
+                                  !values.explainerEnabled &&
+                                  (values.writingCoachEnabled ||
+                                    writingCoachCannotHoldInvariant))
+                              }
+                              enabled={values.writingCoachEnabled}
+                              mode="writing-coach"
+                              onChange={(enabled) => {
+                                setModeError(null)
+                                void setFieldValue(
+                                  'writingCoachEnabled',
+                                  enabled
+                                )
+                              }}
+                              statusLabel={t(
+                                values.writingCoachEnabled
+                                  ? 'manage.resources.chatbotModeEnabled'
+                                  : 'manage.resources.chatbotModeDisabled'
+                              )}
+                              title={t(
+                                'manage.resources.chatbotModeWritingCoach'
+                              )}
+                            />
+                            {writingCoachUnavailableReason ? (
+                              <p
+                                className="text-sm text-amber-800"
+                                data-cy="chatbot-writing-coach-unavailable"
+                              >
+                                {t(
+                                  'manage.resources.chatbotWritingCoachRequiredTool'
+                                )}
+                              </p>
+                            ) : null}
                           </div>
                           <p
                             className="text-sm text-gray-600"
@@ -1574,6 +1781,31 @@ function ChatbotAuthoring({
                         )}
                         title={t('manage.resources.chatbotModeQuizzer')}
                       />
+                      <StandardModeCard
+                        description={t(
+                          'manage.resources.chatbotModeWritingCoachDescription'
+                        )}
+                        disabled
+                        enabled={standardModeConfig.writingCoachEnabled}
+                        mode="writing-coach"
+                        onChange={() => undefined}
+                        statusLabel={t(
+                          standardModeConfig.writingCoachEnabled
+                            ? 'manage.resources.chatbotModeEnabled'
+                            : 'manage.resources.chatbotModeDisabled'
+                        )}
+                        title={t('manage.resources.chatbotModeWritingCoach')}
+                      />
+                      {writingCoachUnavailableReason ? (
+                        <p
+                          className="text-sm text-amber-800"
+                          data-cy="chatbot-writing-coach-unavailable"
+                        >
+                          {t(
+                            'manage.resources.chatbotWritingCoachRequiredTool'
+                          )}
+                        </p>
+                      ) : null}
                     </div>
                     <p
                       className="text-sm text-gray-600"
@@ -2051,6 +2283,12 @@ function ChatbotAuthoring({
                                 ? 'manage.resources.chatbotCustomModeReasoningShown'
                                 : 'manage.resources.chatbotCustomModeReasoningHidden'
                             )}
+                          </div>
+                          <div
+                            className="mt-1 text-gray-700"
+                            data-cy={`chatbot-review-custom-mode-settings-${index}`}
+                          >
+                            {formatCustomModeSettings(t, mode)}
                           </div>
                         </li>
                       ))}

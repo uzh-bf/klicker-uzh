@@ -10,6 +10,7 @@ import {
   normalizeChatbotCustomModeConfig,
   parseChatbotCustomModeConfigInput,
 } from '../src/chatbotCustomModeConfig.js'
+import { CHATBOT_STANDARD_MODE_KEYS } from '../src/chatbotStandardModeConfig.js'
 
 function parseModes(
   modes: Array<Record<string, unknown>>,
@@ -206,6 +207,53 @@ describe('chatbot custom mode configuration', () => {
         ],
       })?.modes.map((mode) => mode.showReasoning ?? false)
     ).toEqual([false, true])
+  })
+
+  it.each([
+    ['replyLanguage', 'en', 'de', 'fr'],
+    ['meetingClock', 'ELAPSED', 'ELAPSED_AND_TIME', 'ALWAYS'],
+  ] as const)('stores, keeps, clears, and validates %s', (field, first, second, invalid) => {
+    const created = parseModes(
+      [{ name: 'Unset' }, { name: 'Set', [field]: first }],
+      null
+    )
+    const [unsetKey, setKey] = created.modes.map((mode) => mode.key)
+    expect(created.modes.map((mode) => mode[field] ?? null)).toEqual([
+      null,
+      first,
+    ])
+
+    // Omission keeps the stored value; null clears it.
+    const resaved = parseModes(
+      [
+        { key: unsetKey, name: 'Unset', [field]: second },
+        { key: setKey, name: 'Set' },
+      ],
+      created
+    )
+    expect(resaved.modes.map((mode) => mode[field] ?? null)).toEqual([
+      second,
+      first,
+    ])
+    const cleared = parseModes(
+      [{ key: setKey, name: 'Set', [field]: null }],
+      resaved
+    )
+    expect(cleared.modes[0]).not.toHaveProperty(field)
+
+    expect(() =>
+      parseModes([{ name: 'Invalid', [field]: invalid }], null)
+    ).toThrow(field)
+
+    // An invalid stored value counts as unset and keeps the mode.
+    expect(
+      normalizeChatbotCustomModeConfig({
+        modes: [
+          { key: 'cm_invalid', name: 'Invalid', [field]: invalid },
+          { key: 'cm_valid', name: 'Valid', [field]: second },
+        ],
+      })?.modes.map((mode) => mode[field] ?? null)
+    ).toEqual([null, second])
   })
 
   it('discards only an invalid stored welcome and keeps the mode', () => {
@@ -430,9 +478,9 @@ describe('chatbot custom mode configuration', () => {
   })
 
   it('rejects names colliding with the standard modes or with each other', () => {
-    expect(() => parseModes([{ name: 'Tutor' }], null)).toThrow(
-      'Mode name "Tutor" is reserved'
-    )
+    for (const key of CHATBOT_STANDARD_MODE_KEYS) {
+      expect(() => parseModes([{ name: key.toUpperCase() }], null)).toThrow()
+    }
     expect(() =>
       parseModes([{ name: 'Interview' }, { name: ' interview ' }], null)
     ).toThrow('Mode name "interview" is used more than once')

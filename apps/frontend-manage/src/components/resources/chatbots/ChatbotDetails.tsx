@@ -244,6 +244,7 @@ function ChatbotDetails({
   publishingAuthorized,
   publishingAuthorizationLoading,
   publishingAuthorizationError,
+  focusedResponseExampleId,
 }: {
   chatbot?: RevisionChatbot
   modelRegistry: ChatModelCapability[]
@@ -255,6 +256,7 @@ function ChatbotDetails({
   publishingAuthorized: boolean
   publishingAuthorizationLoading: boolean
   publishingAuthorizationError: boolean
+  focusedResponseExampleId?: string
 }) {
   const t = useTranslations()
   const graphRetrievalAvailable = useFeatureFlag('chatbot-graphrag')
@@ -294,6 +296,7 @@ function ChatbotDetails({
   const { loading: revisionReloading, reload: reloadRevision } =
     useChatbotRevisionReload()
   const [modelSelectionEnabled, setModelSelectionEnabled] = useState(false)
+  const [answerPreferencesEnabled, setAnswerPreferencesEnabled] = useState(true)
   const [fixedModelId, setFixedModelId] = useState('')
   const [allowedModelIds, setAllowedModelIds] = useState<string[]>([])
   const [reasoningConfig, setReasoningConfig] = useState<ReasoningConfigState>(
@@ -402,6 +405,7 @@ function ChatbotDetails({
 
     const revisionValues = getChatbotRevisionValues(chatbot)
     setModelSelectionEnabled(revisionValues.modelSelection)
+    setAnswerPreferencesEnabled(revisionValues.answerPreferencesEnabled)
     setFixedModelId(getDefaultFixedModelId(revisionValues, modelRegistry))
     setAllowedModelIds(
       getInitialSelectedModelIds(revisionValues, modelRegistry)
@@ -485,8 +489,11 @@ function ChatbotDetails({
   }
 
   // A link into a former workspace view opens its section once per chatbot
-  // and link; every other section starts closed.
-  const setupLinkTarget = getSetupLinkTarget({ view: requestedView, step })
+  // and link; every other section starts closed. A link to one response
+  // example opens the knowledge graph section, which holds the review.
+  const setupLinkTarget = focusedResponseExampleId
+    ? 'graph'
+    : getSetupLinkTarget({ view: requestedView, step })
   const linkedChatbotId = chatbot?.id
   useEffect(() => {
     if (!linkedChatbotId) return
@@ -546,11 +553,13 @@ function ChatbotDetails({
 
     return (
       modelSelectionEnabled !== revisionValues.modelSelection ||
+      answerPreferencesEnabled !== revisionValues.answerPreferencesEnabled ||
       !sameStringSet(currentSelectedModelIds, initialSelectedModelIds) ||
       reasoningConfigIsDirty
     )
   }, [
     allowedModelIds,
+    answerPreferencesEnabled,
     chatbot,
     modelRegistry,
     modelSelectionEnabled,
@@ -676,6 +685,12 @@ function ChatbotDetails({
     setFixedModelId(modelId)
   }
 
+  const handleAnswerPreferencesChange = (checked: boolean) => {
+    setSaveError(null)
+    clearRevisionConflict()
+    setAnswerPreferencesEnabled(checked)
+  }
+
   const handleModelSelectionChange = (checked: boolean) => {
     setSaveError(null)
     clearRevisionConflict()
@@ -770,6 +785,7 @@ function ChatbotDetails({
           input: {
             modelPolicy: {
               modelSelection: modelSelectionEnabled,
+              answerPreferencesEnabled,
               allowedModelIds: normalizedAllowedModelIds,
               allowedReasoningEffortsByModel: normalizedReasoningConfig,
             },
@@ -1081,6 +1097,34 @@ function ChatbotDetails({
           </div>
         )}
 
+        <div className="flex flex-col gap-2 border-t pt-4">
+          <div className="flex items-center justify-between gap-3">
+            <label
+              htmlFor="chatbot-answer-preferences-switch"
+              className="text-sm font-medium text-gray-700"
+            >
+              {t('manage.resources.answerPreferences')}
+            </label>
+            <Switch
+              id="chatbot-answer-preferences-switch"
+              checked={answerPreferencesEnabled}
+              disabled={
+                isSaving ||
+                !modelSettingsEditable ||
+                revisionPending ||
+                publicationSubmitting
+              }
+              onCheckedChange={handleAnswerPreferencesChange}
+              data={{ cy: 'chatbot-answer-preferences-switch' }}
+            />
+          </div>
+          <div className="text-xs text-gray-500">
+            {answerPreferencesEnabled
+              ? t('manage.resources.answerPreferencesEnabledDescription')
+              : t('manage.resources.answerPreferencesDisabledDescription')}
+          </div>
+        </div>
+
         {!modelSettingsEditable ? (
           <UserNotification>
             {t('manage.resources.chatbotModelSettingsReadonly')}
@@ -1181,7 +1225,13 @@ function ChatbotDetails({
               />
             </div>
             <div className="text-xs text-gray-500">
-              {t('manage.resources.knowledgeGraphRetrievalDescription')}
+              {knowledgeGraphPolicy.retrievalEnabled
+                ? t(
+                    'manage.resources.knowledgeGraphRetrievalEnabledDescription'
+                  )
+                : t(
+                    'manage.resources.knowledgeGraphRetrievalDisabledDescription'
+                  )}
             </div>
           </div>
         )}
@@ -1204,8 +1254,12 @@ function ChatbotDetails({
       {/* Curated response examples train reviewers to judge answer quality against the chatbot's own knowledge base, a task an ordinary lecturer does not perform. */}
       {responseExamplesEnabled ? (
         <Accordion
+          key={`${chatbot.id}:${focusedResponseExampleId ?? ''}`}
           type="single"
           collapsible
+          defaultValue={
+            focusedResponseExampleId ? 'response-examples' : undefined
+          }
           className="border-t border-gray-200 pt-4"
           data-cy="chatbot-knowledge-secondary"
         >
@@ -1229,6 +1283,7 @@ function ChatbotDetails({
               <ChatbotResponseExampleReview
                 key={chatbot.id}
                 chatbotId={chatbot.id}
+                focusedExampleId={focusedResponseExampleId}
               />
             </AccordionContent>
           </AccordionItem>

@@ -8,6 +8,7 @@ export default {
       fullscreen: 'Graph im Vollbild anzeigen',
       restore: 'Graph in der Seitenleiste anzeigen',
       ask: 'Dazu eine Frage stellen',
+      showConcept: 'Begriff im Wissensgraph anzeigen',
       nodePrompt: 'Hilf mir, den Begriff «{topic}» zu verstehen.',
       edgePrompt:
         'Erkläre die Beziehung «{relationship}» zwischen «{source}» und «{target}».',
@@ -26,6 +27,9 @@ export default {
       explainer: 'Erklärer',
       explainerDescription:
         'Erhalte direkte Erklärungen mit Definitionen und Beispielen aus den Kursunterlagen.',
+      'writing-coach': 'Schreibcoach',
+      'writing-coachDescription':
+        'Erhalte konkretes Feedback und Tipps zu deinem Text und überarbeite ihn anschliessend selbst.',
       quizzer: 'Quiz',
       quizzerDescription:
         'Übe mit prüfungsnahen Fragen aus den Kursunterlagen, jeweils eine nach der anderen, mit Rückmeldung.',
@@ -62,6 +66,19 @@ export default {
         medium: 'Mittel',
         high: 'Hoch',
         xhigh: 'Sehr hoch',
+      },
+      answerStyleLabel: 'Antwortformat',
+      answerStyleHint:
+        'Ändert, wie neue Antworten gegliedert sind, nicht wie viel Unterstützung Du bekommst.',
+      answerStyles: {
+        balanced: 'Standard',
+        bullets: 'Stichpunkte',
+      },
+      answerToneLabel: 'Ton',
+      answerTones: {
+        neutral: 'Neutral',
+        friendly: 'Freundlich',
+        direct: 'Direkt',
       },
     },
     credits: {
@@ -231,6 +248,23 @@ export default {
       loginButton: 'KlickerUZH Manage öffnen',
       opensInNewTab:
         '(öffnet in einem neuen Tab; kehre nach der Anmeldung hierher zurück)',
+      responseExample: {
+        captureAction: 'Diese Antwort als Antwortbeispiel speichern',
+        captureUnavailable:
+          'Diese Antwort kann nicht gespeichert werden. Starte eine neue Vorschau, um es erneut zu versuchen.',
+        capturePending: 'Antwortbeispiel wird gespeichert…',
+        captureCreated: 'Antwortbeispiel gespeichert und zur Prüfung bereit.',
+        captureDuplicate:
+          'Dieses Antwortbeispiel ist bereits gespeichert und zur Prüfung bereit.',
+        captureStale:
+          'Das Quellenmaterial hat sich geändert. Starte eine neue Vorschau, um diese Antwort erneut zu erfassen.',
+        captureExpired:
+          'Diese Erfassung ist abgelaufen. Starte eine neue Vorschau, um es erneut zu versuchen.',
+        captureFailed: 'Das Antwortbeispiel konnte nicht gespeichert werden.',
+        captureRetry: 'Erneut versuchen',
+        reviewNow: 'Jetzt prüfen',
+        startNewPreview: 'Neue Vorschau starten',
+      },
     },
     recovery: {
       notFoundTitle: 'Chatbot nicht gefunden',
@@ -265,6 +299,20 @@ export default {
       partial: 'Unvollständige Antwort',
       error: 'Fehler',
     },
+    documentNotice: {
+      title: 'Bevor du Dokumente anhängst',
+      allowed:
+        'Hänge nur Material an, das du teilen darfst: eigene Notizen und Arbeiten, Kursmaterial, das du verwenden darfst, oder frei lizenziertes Material.',
+      notAllowed:
+        'Hänge keine vollständigen urheberrechtlich geschützten Werke ohne Erlaubnis an und keine Dokumente mit persönlichen oder vertraulichen Informationen über andere, sensiblen Daten oder Passwörtern.',
+      access:
+        'Dass du Zugriff auf eine Datei hast, heisst nicht, dass du sie teilen darfst. Frag im Zweifel deine Dozierenden.',
+      dataBoundary:
+        'Der Dokumenttext wird an den Anbieter des KI-Modells gesendet. Wenn das gewählte Modell Bilder lesen kann, können auch gerenderte PDF-Seiten zur visuellen Prüfung gesendet werden. KlickerUZH speichert den Text und eine allfällige Zusammenfassung der visuellen Prüfung mit diesem Gespräch, aber nicht die Seitenbilder.',
+      once: 'Dieser Hinweis erscheint auf diesem Gerät nur einmal.',
+      remove: 'Dokumente entfernen',
+      accept: 'Verstanden',
+    },
     disclaimer: {
       mediaTitle: 'Haftungsausschluss-Medien',
       introAlt: 'Chatbot-Einführung',
@@ -295,6 +343,13 @@ export default {
         'Die Bildanhänge für diese Nachricht konnten nicht geladen werden. Bitte versuche es erneut.',
       attachedImageAlt: 'Angehängtes Bild {index}',
     },
+    documentPreview: {
+      open: 'Vorschau von {name}',
+      extractedText: 'Text, den der Chat aus dieser Datei gelesen hat:',
+      extractedTextOnly:
+        'Die Originaldatei wird nicht gespeichert. Nach dem Neuladen wird nur der Text angezeigt, den der Chat daraus gelesen hat:',
+      openOriginal: 'Originaldatei öffnen',
+    },
     imageViewer: {
       previewUnavailable: 'Vorschau nicht verfügbar',
       title: 'Bildanhang',
@@ -319,6 +374,14 @@ export default {
       loadError: 'Deine Chats konnten nicht geladen werden.',
       retry: 'Erneut versuchen',
       loading: 'Deine Chats werden geladen...',
+      filterLabel: 'Chats nach Titel filtern',
+      filterPlaceholder: 'Nach Titel filtern',
+      filterClear: 'Filter löschen',
+      filterNoMatch: 'Kein Chat passt zu diesem Filter.',
+      exportMarkdown: 'Als Markdown exportieren',
+      exportUserLabel: 'Du',
+      exportAssistantLabel: 'Assistent',
+      exportSourcesLabel: 'Quellen',
       elearningTag: 'eLearning',
     },
     thread: {
@@ -358,6 +421,13 @@ export default {
       },
     },
     suggestions: {
+      reviewWriting: 'Feedback zum Text',
+      reviewWritingPrompt:
+        'Gib mir Feedback zum folgenden Textausschnitt aus meiner Kursarbeit. Erkläre die wichtigsten Verbesserungen und wie ich sie selbst umsetzen kann.\n\n[Textausschnitt hier einfügen]',
+      reviewRevision: 'Überarbeitung prüfen',
+      reviewRevisionPrompt:
+        'Ich habe meinen Textausschnitt aus der Kursarbeit überarbeitet. Gib mir Feedback dazu, was sich verbessert hat und worauf ich als Nächstes achten sollte.\n\n[Überarbeitung hier einfügen]',
+
       sectionLabel: 'Gesprächseinstiege',
       editHint: 'Wähle einen Einstieg und passe ihn vor dem Senden an.',
       practiceTopic: 'Ein Thema üben',
@@ -388,6 +458,9 @@ export default {
       editDisabledTooltip:
         'Bearbeiten nicht möglich: Das ausgewählte Modell unterstützt keine Bilder',
       copy: 'Kopieren',
+      readAloud: 'Vorlesen',
+      stopReadAloud: 'Vorlesen stoppen',
+      readAloudFormula: 'Formel',
       refresh: 'Aktualisieren',
       retry: 'Erneut versuchen',
       rateUp: 'Hilfreiche Antwort',
@@ -399,6 +472,11 @@ export default {
     },
     composer: {
       placeholder: 'Nachricht schreiben...',
+      replyLanguageEn: 'Dieses Gespräch findet auf Englisch statt',
+      replyLanguageDe: 'Dieses Gespräch findet auf Deutsch statt',
+      meetingClockNotStarted: 'Die Uhr startet mit Deiner ersten Nachricht',
+      meetingClockElapsed: '{minutes} Min. seit Deiner ersten Nachricht',
+      meetingClockTime: '{time} Uhr (Zürcher Zeit)',
       modeUnavailable:
         'Für diesen Chatbot ist derzeit kein Chatmodus verfügbar. Wende Dich bitte an Deine Dozierenden.',
       send: 'Nachricht senden',
@@ -409,10 +487,72 @@ export default {
       attachmentReadError:
         'Das Bild konnte nicht gelesen werden. Bitte versuche es mit einer anderen Datei.',
       dismissError: 'Fehler schliessen',
+      dropFiles: 'Dateien zum Anhängen hier ablegen',
       dropImages: 'Bilder zum Anhängen hier ablegen',
       attachmentPreviewAlt: 'Anhang-Vorschau',
       removeAttachment: 'Anhang entfernen',
+      attachFile: 'Bild oder Dokument anhängen',
       attachImage: 'Bild anhängen',
+      attachmentTypeError:
+        'Dieser Dateityp kann nicht angehängt werden. Verwende ein Bild, ein PDF, eine Word-Datei (.docx) oder eine Text-, Markdown- oder CSV-Datei.',
+      documentOnlyTypeError:
+        'Das ausgewählte Modell kann keine Bilder lesen. Verwende ein PDF, eine Word-Datei (.docx) oder eine Text-, Markdown- oder CSV-Datei.',
+      documentLimitError: 'Du kannst höchstens {max} Dokumente anhängen.',
+      documentTooLarge: 'Dokumente müssen kleiner als {max} MB sein.',
+      documentNoText: 'Diese Datei enthält keinen lesbaren Text.',
+      documentPdfNoText:
+        'Dieses PDF enthält keinen markierbaren Text. Gescannte PDFs können noch nicht gelesen werden.',
+      documentPresentation:
+        'PowerPoint-Dateien können nicht gelesen werden. Speichere die Präsentation als PDF und hänge das PDF an.',
+      documentReadError:
+        'Das Dokument konnte nicht gelesen werden. Bitte versuche es mit einer anderen Datei.',
+      documentReading: 'Dokument wird gelesen…',
+      documentPages: '{count, plural, one {# Seite} other {# Seiten}}',
+      documentTokens: '~{count} Tokens',
+      documentShortened: 'Auf die ersten {max} Tokens gekürzt',
+      documentVisualReviewed:
+        '{count, plural, one {Seite visuell geprüft} other {Seiten visuell geprüft}}',
+      documentVisualTooManyPages:
+        '{count, plural, one {Seite nicht visuell geprüft} other {Seiten nicht visuell geprüft}}: höchstens {max} Seiten pro Nachricht',
+      documentVisualNoImageSupport:
+        '{count, plural, one {Seite nicht visuell geprüft} other {Seiten nicht visuell geprüft}}: Dieses Modell kann keine Bilder lesen',
+      documentVisualSkipped:
+        '{count, plural, one {Seite nicht visuell geprüft} other {Seiten nicht visuell geprüft}}',
+      documentDefaultQuestion:
+        'Bitte beziehe dich auf die angehängte(n) Datei(en).',
+      dictation: 'Nachricht diktieren',
+      dictationSetup: 'Diktieren einrichten',
+      dictationStop: 'Diktieren beenden',
+      dictationListening: 'Hört zu...',
+      dictationLanguageHint: 'Das deutsche Diktat verwendet Standarddeutsch.',
+      dictationSheetTitle: 'Lokales Diktieren aktivieren',
+      dictationSheetBody:
+        'Die Erkennung läuft auf diesem Gerät, und es wird kein Audio an den Chatdienst gesendet. Dein Browser fragt beim Start nach Mikrofonzugriff.',
+      dictationSheetDownload: 'Herunterladen',
+      dictationSheetNotNow: 'Jetzt nicht',
+      dictationSheetInstalling: 'Sprachpaket wird heruntergeladen...',
+      dictationSheetFailed:
+        'Das Sprachpaket konnte nicht installiert werden. Versuche es erneut oder schreibe weiter.',
+      dictationSheetRetry: 'Erneut herunterladen',
+      dictationSheetCheckAgain: 'Verfügbarkeit erneut prüfen',
+      dictationSheetReady: 'Das Sprachpaket ist auf diesem Gerät bereit.',
+      dictationSheetStart: 'Diktieren starten',
+      dictationErrorAborted: 'Das Diktieren wurde abgebrochen.',
+      dictationErrorAudioCapture:
+        'Das Mikrofon konnte nicht geöffnet werden. Überprüfe die Browserberechtigungen.',
+      dictationErrorInstall:
+        'Das lokale Sprachpaket konnte nicht installiert werden.',
+      dictationErrorLanguageNotSupported:
+        'Diese Sprache wird für lokales Diktieren nicht unterstützt.',
+      dictationErrorNetwork:
+        'Der Browser meldete einen Netzwerkfehler beim Diktieren.',
+      dictationErrorNoSpeech: 'Keine Sprache erkannt. Versuche es erneut.',
+      dictationErrorNotAllowed:
+        'Der Mikrofonzugriff wurde verweigert. Erlaube ihn in den Browsereinstellungen.',
+      dictationErrorServiceNotAllowed:
+        'Der Browser hat den Diktierdienst nicht zugelassen.',
+      dictationErrorUnknown:
+        'Das Diktieren konnte nicht gestartet werden. Versuche es erneut.',
       attachmentFallbackLabel: 'Anhang',
       editCancel: 'Abbrechen',
       editSend: 'Senden',
@@ -4166,7 +4306,8 @@ Da die KlickerUZH-App noch nicht im iOS-App-Store verfügbar ist, folgen Sie die
       NRMinLessThanMax: 'Das Minimum muss kleiner als das Maximum sein.',
       NROneValueRequired:
         'Bei einem Lösungsbereich muss mindestens ein Wert angegeben werden.',
-      NRPrecision: 'Die Anzahl Nachkommastellen muss mindestens 0 sein.',
+      NRPrecision:
+        'Die Anzahl Nachkommastellen muss eine ganze Zahl von 0 bis 100 sein.',
       chooseSolutionType:
         'Bitte wählen Sie einen Lösungstyp für Ihre numerische Frage aus oder deaktivieren Sie die Musterlösung.',
       solutionRangeRequired:
@@ -5278,7 +5419,12 @@ Da die KlickerUZH-App noch nicht im iOS-App-Store verfügbar ist, folgen Sie die
         'Wählen Sie die verfügbaren Standardmodi für Teilnehmende',
       chatbotSetupModesTitle: 'Lernmodi',
       chatbotSetupModesDescriptionLong:
-        'Wählen Sie die Standardmodi, die Teilnehmenden zur Verfügung stehen sollen. Tutor und Erklärer sind ohne Abruf von Kursmaterialien verfügbar; der Quizzer wird nur angezeigt, wenn seine erforderliche Fähigkeit verfügbar ist.',
+        'Wählen Sie die Standardmodi für Teilnehmende. Der Schreibcoach gibt Feedback zu Texten. Kurswerkzeug-Vorgaben gelten weiterhin für jeden Modus; der Quizzer benötigt zusätzlich Zugriff auf Kursmaterialien.',
+      chatbotModeWritingCoach: 'Schreibcoach',
+      chatbotModeWritingCoachDescription:
+        'Gibt konkretes Schreibfeedback und Strategien zur Überarbeitung. Die Teilnehmenden schreiben jede Überarbeitung selbst.',
+      chatbotWritingCoachRequiredTool:
+        'Der Schreibcoach ist für Teilnehmende derzeit nicht verfügbar, weil diesem Modus eine für den Chatbot erforderliche Kurswerkzeug-Verknüpfung fehlt. Kontaktieren Sie die Chatbot-Administration, um eine passende Verknüpfung einzurichten.',
       chatbotModeTutor: 'Tutor',
       chatbotModeTutorDescription:
         'Führt Studierende mit Fragen, Hinweisen und Rückmeldungen.',
@@ -5288,7 +5434,8 @@ Da die KlickerUZH-App noch nicht im iOS-App-Store verfügbar ist, folgen Sie die
       chatbotModeQuizzer: 'Quizzer',
       chatbotModeQuizzerDescription:
         'Übt nacheinander klausurähnliche Fragen aus dem Kurs mit formativen Rückmeldungen.',
-      chatbotModeInvariant: 'Tutor oder Erklärer muss aktiviert bleiben.',
+      chatbotModeInvariant:
+        'Tutor, Erklärer oder Schreibcoach muss aktiviert bleiben.',
       chatbotModeQuizzerCapabilityNote:
         'Der Quizzer kann weiterhin ausgeblendet sein, wenn die Fähigkeit für Kursmaterialien nicht verfügbar ist.',
       chatbotModeEnabled: 'Aktiviert',
@@ -5323,6 +5470,19 @@ Da die KlickerUZH-App noch nicht im iOS-App-Store verfügbar ist, folgen Sie die
         'Denkprozess des Modells für Teilnehmende sichtbar',
       chatbotCustomModeReasoningHidden:
         'Denkprozess des Modells für Teilnehmende verborgen',
+      chatbotCustomModeReplyLanguage: 'Antwortsprache',
+      chatbotCustomModeReplyLanguageDescription:
+        'Standardmässig folgen die Antworten der Sprache, in der Teilnehmende schreiben. Legen Sie eine Sprache fest für Rollenspiele, die in einer Sprache bleiben müssen.',
+      chatbotCustomModeReplyLanguageFollow: 'Sprache der Teilnehmenden folgen',
+      chatbotCustomModeReplyLanguageEn: 'Immer Englisch',
+      chatbotCustomModeReplyLanguageDe: 'Immer Deutsch',
+      chatbotCustomModeMeetingClock: 'Gesprächsuhr',
+      chatbotCustomModeMeetingClockDescription:
+        'Standardmässig aus. Teilt dem Modell mit, wie viele Minuten seit der ersten Nachricht der Teilnehmenden vergangen sind, für zeitlich begrenzte Rollenspiele. Dauer und Phasen des Gesprächs gehören in die Persona.',
+      chatbotCustomModeMeetingClockOff: 'Aus',
+      chatbotCustomModeMeetingClockElapsed: 'Vergangene Minuten',
+      chatbotCustomModeMeetingClockElapsedAndTime:
+        'Vergangene Minuten und Uhrzeit',
       chatbotCustomModeAdd: 'Eigenen Modus hinzufügen',
       chatbotCustomModeRemove: 'Entfernen',
       chatbotCustomModesLimit:
@@ -5338,11 +5498,18 @@ Da die KlickerUZH-App noch nicht im iOS-App-Store verfügbar ist, folgen Sie die
         'Die eigenen Modi konnten nicht gespeichert werden. Bitte versuchen Sie es erneut.',
       chatbotFraming: 'Rahmung des Chatbots',
       chatbotFramingDescription:
-        'Beschreiben Sie kurz den Kurs, die Zielgruppe oder den gewünschten Schwerpunkt. Dieser Kontext wird in den Standard-Lernmodi verwendet.',
+        'Beschreiben Sie den Kurs, die Zielgruppe, Vorkenntnisse, typische Aufgaben und Lernschwerpunkte. Dieser Kontext steuert Antworten in den Standard-Lernmodi einschliesslich des Schreibcoachs. Bei veröffentlichten Chatbots werden gespeicherte Änderungen nach der Freigabe wirksam.',
+      chatbotFramingExamples: 'Kontextbeispiele',
+      chatbotFramingScientific: 'Wissenschaftliches Schreiben',
+      chatbotFramingScientificExample:
+        'Dieser Chatbot unterstützt einen Biologie-Laborkurs auf Bachelorstufe. Die Studierenden schreiben kurze Versuchsberichte und interpretieren Abbildungen. Sie kennen die Grundlagen der Genetik und lernen wissenschaftliches Argumentieren. Achten Sie auf die Verbindung von Aussagen und Ergebnissen, die Trennung von Beobachtung und Interpretation sowie den Umgang mit Unsicherheit. Erklären Sie unbekannte Begriffe kurz. Geben Sie direktes, ermutigendes Feedback. Bewahren Sie den individuellen Schreibstil und beurteilen Sie nur den vorgelegten Ausschnitt.',
+      chatbotFramingInformal: 'Weniger formelles Schreiben',
+      chatbotFramingInformalExample:
+        'Dieser Chatbot unterstützt einen projektbasierten Kommunikationskurs. Die Studierenden schreiben kurze Updates und Reflexionen für Mitstudierende und Projektpartner. Achten Sie auf einen klaren Zweck, konkrete Beispiele, einen logischen Aufbau und gegebenenfalls einen erkennbaren nächsten Schritt. Ein natürlicher Gesprächston passt zu diesen Aufgaben; wissenschaftliche Fachsprache und Quellenangaben sind meist nicht nötig. Geben Sie praktische, ermutigende Rückmeldungen.',
       chatbotFramingPlaceholder:
         'Zum Beispiel: Organische Chemie im ersten Jahr für Medizinstudierende.',
       chatbotFramingTooLong:
-        'Die Rahmung des Chatbots darf beim Bearbeiten höchstens 200 Zeichen enthalten.',
+        'Die Rahmung des Chatbots darf beim Bearbeiten höchstens {count} Zeichen enthalten.',
       chatbotModesSave: 'Lernmodi speichern',
       chatbotModesSaving: 'Wird gespeichert…',
       chatbotModesSaveSuccess: 'Lernmodi gespeichert.',
@@ -5549,6 +5716,11 @@ Da die KlickerUZH-App noch nicht im iOS-App-Store verfügbar ist, folgen Sie die
       modelSelectionDisabledDescription:
         'Aus: Der Chatbot nutzt immer das Modell, das Sie wählen.',
       modelSelectionFixedDescription: 'Studierende nutzen dieses Modell.',
+      answerPreferences: 'Antwortformat und Ton durch Studierende',
+      answerPreferencesEnabledDescription:
+        'Ein: Studierende können für neue Antworten Stichpunkte und einen freundlichen oder direkten Ton wählen.',
+      answerPreferencesDisabledDescription:
+        'Aus: Alle Studierenden erhalten dasselbe Antwortformat und denselben Ton.',
       modelSelectionParticipantDescription:
         'Studierende können zwischen diesen Modellen wählen. Wählen Sie mindestens eines.',
       selectedModel: 'Ausgewähltes Modell',
@@ -5590,8 +5762,10 @@ Da die KlickerUZH-App noch nicht im iOS-App-Store verfügbar ist, folgen Sie die
         'Aus: Die Konzeptkarte bleibt für Studierende verborgen.',
       knowledgeGraphRetrieval:
         'Graphverbindungen für die Dokumentsuche verwenden',
-      knowledgeGraphRetrievalDescription:
+      knowledgeGraphRetrievalEnabledDescription:
         'Ein: Die Dokumentsuche kann verwandte Konzepte aus dem veröffentlichten Graphen als zusätzliche Suchhinweise verwenden. Antworten belegen weiterhin ausschliesslich Dokumentstellen.',
+      knowledgeGraphRetrievalDisabledDescription:
+        'Aus: Die Dokumentsuche verwendet nur die Frage, ohne Hinweise aus dem Graphen.',
       openOwnerPreview: 'Eigentümer-Vorschau öffnen',
       chatbotOwnerPreviewLive: 'Live-Konfiguration',
       chatbotOwnerPreviewLiveDescription:

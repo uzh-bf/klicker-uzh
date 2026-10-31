@@ -1,6 +1,6 @@
 'use client'
 
-import { CheckIcon, EditIcon, Trash2, XIcon } from 'lucide-react'
+import { CheckIcon, Download, EditIcon, Trash2, XIcon } from 'lucide-react'
 import type { FC } from 'react'
 import { createElement, useEffect, useMemo, useRef, useState } from 'react'
 
@@ -8,9 +8,15 @@ import { TextField, useSidebar } from '@uzh-bf/design-system'
 import { useTranslations } from 'next-intl'
 import { useParams, useRouter } from 'next/navigation'
 import { formatModeLabel, getModeIcon } from '../lib/config/modes'
+import {
+  getThreadMarkdownFilename,
+  threadToMarkdown,
+} from '../lib/thread-markdown'
 import { useChatStore, type Thread } from '../stores/chatStore'
 import { useEffectiveModeOptions } from './mode-options-context'
 import {
+  filterThreadsByTitle,
+  resolveThreadTitle,
   transitionDeleteConfirm,
   type DeleteConfirmPhase,
 } from './thread-list-state'
@@ -33,10 +39,24 @@ const ThreadListItems: FC = () => {
   const { threads, deleteThread, isLoading, threadsLoadError, loadThreads } =
     useChatStore()
   const { setOpenMobile } = useSidebar()
+  const [filterQuery, setFilterQuery] = useState('')
+  const filterInputRef = useRef<HTMLInputElement>(null)
 
-  const groupedThreads = useMemo(() => groupThreadsByDate(threads), [threads])
+  const newChatTitle = t('chat.threadList.newChatTitle')
+  const groupedThreads = useMemo(
+    () =>
+      groupThreadsByDate(
+        filterThreadsByTitle(threads, filterQuery, newChatTitle)
+      ),
+    [threads, filterQuery, newChatTitle]
+  )
 
-  if (groupedThreads.length === 0) {
+  const clearFilter = () => {
+    setFilterQuery('')
+    filterInputRef.current?.focus()
+  }
+
+  if (threads.length === 0) {
     // While threads are still being fetched, an empty array means "unknown",
     // not "no history" — showing the first-conversation hint then would
     // wrongly greet returning users during the loadThreads round-trip. Show
@@ -97,6 +117,50 @@ const ThreadListItems: FC = () => {
 
   return (
     <div data-cy="chat-thread-list" className="flex flex-col gap-2 p-1">
+      <div className="px-1">
+        <label htmlFor="chat-thread-filter" className="sr-only">
+          {t('chat.threadList.filterLabel')}
+        </label>
+        <div className="relative">
+          <input
+            ref={filterInputRef}
+            id="chat-thread-filter"
+            data-cy="chat-thread-filter-input"
+            type="text"
+            autoComplete="off"
+            value={filterQuery}
+            placeholder={t('chat.threadList.filterPlaceholder')}
+            onChange={(e) => setFilterQuery(e.target.value)}
+            onKeyDown={(e) => {
+              if (e.key === 'Escape') setFilterQuery('')
+            }}
+            className="bg-background border-input placeholder:text-muted-foreground focus-visible:ring-ring h-8 w-full rounded-md border pl-2 pr-8 text-sm focus-visible:outline-none focus-visible:ring-1"
+          />
+          {filterQuery && (
+            <button
+              type="button"
+              data-cy="chat-thread-filter-clear"
+              onClick={clearFilter}
+              aria-label={t('chat.threadList.filterClear')}
+              className="text-muted-foreground hover:text-foreground focus-visible:ring-ring absolute right-2 top-1/2 inline-flex size-6 -translate-y-1/2 items-center justify-center rounded-md focus-visible:outline-none focus-visible:ring-1 [&>svg]:size-4"
+            >
+              <XIcon />
+            </button>
+          )}
+        </div>
+        {/* Rendered empty rather than conditionally so the live region exists
+            before a filter first matches nothing. */}
+        <div role="status">
+          {groupedThreads.length === 0 && (
+            <p
+              data-cy="chat-thread-list-no-match"
+              className="text-muted-foreground mt-2 px-1 text-sm"
+            >
+              {t('chat.threadList.filterNoMatch')}
+            </p>
+          )}
+        </div>
+      </div>
       {groupedThreads.map(({ key, items }) => (
         <div key={key} className="flex flex-col gap-0.5">
           <p className="text-muted-foreground px-2 text-xs font-semibold uppercase">
@@ -283,23 +347,8 @@ const ThreadListItem: FC<ThreadListItemProps> = ({
     }
   }
 
-  const getThreadTitle = () => {
-    if (thread.title) return thread.title
-    if (thread.messages.length > 0) {
-      const firstUserMessage = thread.messages.find((m) => m.role === 'user')
-      if (firstUserMessage) {
-        const content = Array.isArray(firstUserMessage.content)
-          ? firstUserMessage.content.find(
-              (c: { type: string; text?: string }) => c.type === 'text'
-            )?.text
-          : firstUserMessage.content
-        return content
-          ? content.slice(0, 30) + (content.length > 30 ? '...' : '')
-          : t('chat.threadList.newChatTitle')
-      }
-    }
-    return t('chat.threadList.newChatTitle')
-  }
+  const getThreadTitle = () =>
+    resolveThreadTitle(thread) ?? t('chat.threadList.newChatTitle')
 
   const handleEditStart = () => {
     // Switching to the edit UI hides the delete button entirely, so drop any
@@ -307,6 +356,27 @@ const ThreadListItem: FC<ThreadListItemProps> = ({
     revertDeleteConfirm()
     setEditTitle(getThreadTitle())
     setIsEditing(true)
+  }
+
+  const handleExport = () => {
+    revertDeleteConfirm()
+    const title = getThreadTitle()
+    const markdown = threadToMarkdown({
+      title,
+      messages: thread.messages,
+      labels: {
+        user: t('chat.threadList.exportUserLabel'),
+        assistant: t('chat.threadList.exportAssistantLabel'),
+        sources: t('chat.threadList.exportSourcesLabel'),
+      },
+    })
+    const blob = new Blob([markdown], { type: 'text/markdown' })
+    const url = URL.createObjectURL(blob)
+    const anchor = document.createElement('a')
+    anchor.href = url
+    anchor.download = getThreadMarkdownFilename(title, thread.id)
+    anchor.click()
+    URL.revokeObjectURL(url)
   }
 
   const handleEditSave = async () => {
@@ -421,6 +491,25 @@ const ThreadListItem: FC<ThreadListItemProps> = ({
               </p>
             )}
           </button>
+          {/* Only the open thread has its messages loaded; other rows hold
+              an empty list until selected, so exporting them would yield a
+              title-only file. */}
+          {isActive && thread.messages.length > 0 && (
+            <button
+              type="button"
+              data-cy="chat-thread-export-button"
+              onClick={handleExport}
+              disabled={thread.isRunning}
+              aria-label={t('chat.threadList.exportMarkdown')}
+              title={t('chat.threadList.exportMarkdown')}
+              className="text-foreground hover:text-primary focus-visible:ring-ring mr-1 inline-flex size-6 shrink-0 items-center justify-center whitespace-nowrap rounded-md p-1 text-sm font-medium focus-visible:outline-none focus-visible:ring-1 disabled:pointer-events-none disabled:opacity-50 [&>svg]:size-4"
+            >
+              <Download />
+              <span className="sr-only">
+                {t('chat.threadList.exportMarkdown')}
+              </span>
+            </button>
+          )}
           <button
             type="button"
             data-cy="chat-thread-edit-button"
