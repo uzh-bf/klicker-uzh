@@ -83,3 +83,80 @@ describe('Sonar workflow shell boundaries', () => {
     assert.equal(result.output, 'value=0.0.0-synthetic\n')
   })
 })
+
+const properties = Object.fromEntries(
+  fs
+    .readFileSync(path.join(ROOT, 'sonar-project.properties'), 'utf8')
+    .split('\n')
+    .filter((line) => line && !line.startsWith('#'))
+    .map((line) => {
+      const separator = line.indexOf('=')
+      return [line.slice(0, separator), line.slice(separator + 1)]
+    })
+)
+
+function csv(key) {
+  return (properties[key] || '').split(',').filter(Boolean)
+}
+
+function matches(file, pattern) {
+  const expression = pattern
+    .split(/(\*\*\/|\*\*|\*|\?)/)
+    .map((part) => {
+      if (part === '**/') return '(?:.*/)?'
+      if (part === '**') return '.*'
+      if (part === '*') return '[^/]*'
+      if (part === '?') return '[^/]'
+      return part.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')
+    })
+    .join('')
+  return new RegExp(`^${expression}$`).test(file)
+}
+
+function indexed(file) {
+  const inRoots = (key) => csv(key).some((root) => file.startsWith(`${root}/`))
+  const includedTest = csv('sonar.test.inclusions').some((pattern) =>
+    matches(file, pattern)
+  )
+  const excludedSource = csv('sonar.exclusions').some((pattern) =>
+    matches(file, pattern)
+  )
+  return {
+    source: inRoots('sonar.sources') && !includedTest && !excludedSource,
+    test: inRoots('sonar.tests') && includedTest,
+  }
+}
+
+describe('Sonar classification contract', () => {
+  it('keeps test fixtures separate from production and credential-sensitive scripts', () => {
+    for (const file of [
+      'apps/example/src/handler.test.ts',
+      'packages/example/test/handler.ts',
+      '.github/scripts/example.test.cjs',
+      '.github/scripts/test_update_playwright_timings.py',
+      'util/test-klicker-eval-integration.py',
+      'util/test-klicker-eval-judge.py',
+    ]) {
+      assert.deepEqual(indexed(file), { source: false, test: true }, file)
+    }
+    for (const file of [
+      'apps/example/src/handler.ts',
+      'packages/example/src/handler.ts',
+      'deploy/charts/example/templates/deployment.yaml',
+      'util/init.sql',
+      '.github/scripts/sonar-coverage-inputs.cjs',
+    ]) {
+      assert.deepEqual(indexed(file), { source: true, test: false }, file)
+    }
+  })
+
+  it('assigns migration SQL to PostgreSQL while retaining the other dialect suffixes', () => {
+    assert.ok(csv('sonar.postgres.file.suffixes').includes('sql'))
+    assert.ok(!csv('sonar.plsql.file.suffixes').includes('sql'))
+    assert.ok(csv('sonar.postgres.file.suffixes').includes('pgsql'))
+    assert.ok(csv('sonar.postgres.file.suffixes').includes('psql'))
+    assert.ok(csv('sonar.plsql.file.suffixes').includes('tab'))
+    assert.ok(csv('sonar.plsql.file.suffixes').includes('pkb'))
+    assert.equal(properties['sonar.tsql.file.suffixes'], undefined)
+  })
+})
