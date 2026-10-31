@@ -102,7 +102,7 @@ async function handleAddResponse(req: IncomingMessage, res: ServerResponse) {
     return badRequest(req, res, 'Body must be a JSON object')
   }
 
-  const { response, liveQuizId, instanceId } = payload
+  const { response, liveQuizId, instanceId, isFirstResponse } = payload
   if (!response || !liveQuizId || typeof instanceId === 'undefined') {
     return badRequest(
       req,
@@ -138,6 +138,8 @@ async function handleAddResponse(req: IncomingMessage, res: ServerResponse) {
     response, // pass through as-is; worker validates
     cookie,
     responseTimestamp,
+    // device-side flag for repeated free-text responses; the worker trusts it only for anonymous participants
+    ...(typeof isFirstResponse === 'boolean' ? { isFirstResponse } : {}),
   }
 
   // determine if the participant is logged in with a valid student cookie (temporary or standard)

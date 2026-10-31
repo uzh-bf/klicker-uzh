@@ -130,6 +130,7 @@ export const FreeTextElementOptions = builder
         nullable: true,
       }),
       solutions: t.exposeStringList('solutions', { nullable: true }),
+      responseLimit: t.exposeInt('responseLimit', { nullable: true }),
     }),
   })
 
