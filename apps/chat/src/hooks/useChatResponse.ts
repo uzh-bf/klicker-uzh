@@ -1,6 +1,7 @@
 import { useParams } from 'next/navigation'
 import { useTranslations } from 'next-intl'
 import { useCallback, useRef } from 'react'
+import { fetchChatApi } from '../lib/api/types'
 import {
   hasAllImageAttachmentsHydrated,
   setPendingDocumentPages,
@@ -10,7 +11,6 @@ import {
   type ImageSupport,
   withoutPageReview,
 } from '../lib/attachments/documentText'
-import { authedFetch } from '../lib/client/authedFetch'
 import type { ReasoningEffort } from '../lib/config/reasoning'
 import { readHandoffSource } from '../lib/handoff'
 import { normalizeLiveToolOutput } from '../lib/toolOutput'
@@ -120,8 +120,19 @@ export function useChatResponse(
         }))
       }
 
+      const updateReplyContextLimited = (limited: boolean) => {
+        useChatStore.setState((state) => ({
+          threads: state.threads.map((thread) =>
+            thread.id === threadId
+              ? { ...thread, replyContextLimited: limited }
+              : thread
+          ),
+        }))
+      }
+
       updateThreadRunning(true)
       updateThreadRunOutcome(null)
+      updateReplyContextLimited(false)
 
       const triggerMessage = messagesToSend[messagesToSend.length - 1]
       const parentId = triggerMessage?.parentId
@@ -287,26 +298,54 @@ export function useChatResponse(
 
         // send request to API with streaming enabled
         const handoffSource = readHandoffSource()
-        const response = await authedFetch(`/api/chatbots/${chatbotId}/chat`, {
+        const usesDirectChatApi = Boolean(
+          typeof document !== 'undefined' &&
+            document.documentElement?.dataset.chatApiUrl
+        )
+        const serializedMessages = resolvedMessagesToSend
+          .filter(
+            (message) =>
+              message.role !== 'assistant' ||
+              serializeMessageContent(message).trim() !== '' ||
+              (usesDirectChatApi &&
+                Array.isArray(message.content) &&
+                message.content.some(
+                  (part) =>
+                    part.type === 'tool-call' && part.result !== undefined
+                ))
+          )
+          .map((message) => ({
+            id: message.id,
+            role: message.role,
+            content: serializeMessageContent(message),
+          }))
+        // Bound only reply input. Keep full saved/display history and each
+        // retained user exchange intact; the host applies its model budget.
+        let contextStart = serializedMessages.length - 1
+        const encoder = new TextEncoder()
+        let contextBytes = encoder.encode(
+          JSON.stringify(serializedMessages.slice(contextStart))
+        ).byteLength
+        while (contextStart > 0) {
+          let previous = contextStart - 1
+          while (previous >= 0 && serializedMessages[previous]?.role !== 'user')
+            previous--
+          if (previous < 0 || serializedMessages.length - previous > 100) break
+          const addedBytes = encoder.encode(
+            JSON.stringify(serializedMessages.slice(previous, contextStart))
+          ).byteLength
+          if (contextBytes + addedBytes > 16 * 1024 * 1024) break
+          contextBytes += addedBytes
+          contextStart = previous
+        }
+        const browserContextLimited = contextStart > 0
+        updateReplyContextLimited(browserContextLimited)
+        const response = await fetchChatApi(`/api/chatbots/${chatbotId}/chat`, {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
           signal: abortController.signal,
           body: JSON.stringify({
-            // Assistant turns that carry no text — stopped-before-output or
-            // error-only turns hold just a data marker part — would serialize
-            // to empty assistant messages, which some upstream models reject
-            // and none benefit from.
-            messages: resolvedMessagesToSend
-              .filter(
-                (m) =>
-                  m.role !== 'assistant' ||
-                  serializeMessageContent(m).trim() !== ''
-              )
-              .map((m) => ({
-                id: m.id,
-                role: m.role,
-                content: serializeMessageContent(m),
-              })),
+            messages: serializedMessages.slice(contextStart),
             threadId,
             selectedModel,
             selectedMode,
@@ -388,7 +427,11 @@ export function useChatResponse(
                 name: 'chat-error',
                 data: {
                   errorLabel: t('chat.response.errorLabel'),
-                  message: t('chat.response.genericError'),
+                  message: t(
+                    errorCode === 'CONTEXT_LIMIT_EXCEEDED'
+                      ? 'chat.response.contextTooLarge'
+                      : 'chat.response.genericError'
+                  ),
                 },
               },
             ],
@@ -491,6 +534,13 @@ export function useChatResponse(
                   jsonData = JSON.parse(jsonString)
                 } else {
                   jsonData = JSON.parse(line)
+                }
+
+                const omitted = jsonData.messageMetadata?.contextOmittedMessages
+                if (Number.isSafeInteger(omitted) && omitted >= 0) {
+                  updateReplyContextLimited(
+                    browserContextLimited || omitted > 0
+                  )
                 }
 
                 if (jsonData.type === 'text-delta') {

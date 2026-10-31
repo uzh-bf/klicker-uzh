@@ -385,6 +385,8 @@ export default {
       runStarted: 'Generating an answer …',
       runCompleted: 'Answer complete.',
       runStopped: 'Answer stopped.',
+      contextLimited:
+        'This reply uses recent messages. Your full conversation is still available.',
       runFailed: 'Answer failed.',
       welcomeTitle: 'Welcome!',
       welcomeTo: 'You are chatting with {chatbot}.',
@@ -592,6 +594,8 @@ export default {
       loginButton: 'Go to KlickerUZH Login',
     },
     response: {
+      contextTooLarge:
+        'This question exceeds the reply context limit. Try a shorter question or fewer attachments.',
       errorLabel: 'Error',
       networkError:
         "I'm sorry, I couldn't reach the server. Please check your connection and try again.",

@@ -168,3 +168,25 @@ describe('settingsStore credits loading', () => {
     expect(useSettingsStore.getState().selectedModel).toBe(expected)
   })
 })
+
+test('direct API calls use the injected origin with cookie credentials and preserve default routing', async () => {
+  const { fetchChatApi } = await import('../src/lib/api/types')
+  const request = vi.fn(async () => new Response('{}'))
+  vi.stubGlobal('fetch', request)
+  vi.stubGlobal('document', {
+    documentElement: {
+      dataset: { chatApiUrl: 'https://chat-api.synthetic.localhost' },
+    },
+  })
+  await fetchChatApi('/api/chatbots/synthetic/credits')
+  expect(request).toHaveBeenLastCalledWith(
+    'https://chat-api.synthetic.localhost/api/chatbots/synthetic/credits',
+    { credentials: 'include' }
+  )
+  vi.stubGlobal('document', { documentElement: { dataset: {} } })
+  await fetchChatApi('/api/chatbots/synthetic/credits')
+  expect(request).toHaveBeenLastCalledWith(
+    '/api/chatbots/synthetic/credits',
+    {}
+  )
+})

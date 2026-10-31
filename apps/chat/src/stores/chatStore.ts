@@ -84,6 +84,7 @@ export interface Thread {
   lastChatMode?: string | null // mode of the thread's most recent message (D6)
   origin?: string | null // where the conversation began ('elearning' | 'pwa')
   lastRunOutcome?: ThreadRunOutcome | null // reset when a new run starts
+  replyContextLimited?: boolean
 }
 
 interface ChatState {

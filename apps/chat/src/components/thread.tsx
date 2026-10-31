@@ -357,7 +357,7 @@ export const Thread: FC<ThreadProps> = ({
   initialModeOptionsAreFallback = false,
 }) => {
   const t = useTranslations()
-  const { embedded } = useChatUi()
+  const { embedded, variant } = useChatUi()
   const resolvedSuggestions =
     suggestions ??
     getStudentThreadSuggestions(contextualSuggestions ?? Boolean(contextLabel))
@@ -459,6 +459,15 @@ export const Thread: FC<ThreadProps> = ({
       >
         <div className="from-background bg-linear-to-t pointer-events-none absolute inset-x-0 bottom-full h-12 to-transparent" />
         {!embedded && <ThreadScrollToBottom />}
+        {variant === 'participant' && activeThread?.replyContextLimited && (
+          <p
+            role="status"
+            data-cy="chat-context-limited"
+            className="text-muted-foreground mb-2 w-full max-w-3xl px-2 text-center text-xs"
+          >
+            {t('chat.thread.contextLimited')}
+          </p>
+        )}
         {hasAvailableMode ? (
           <Composer
             maxImageAttachments={maxImageAttachments}

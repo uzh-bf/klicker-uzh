@@ -392,6 +392,8 @@ export default {
       runStarted: 'Antwort wird generiert …',
       runCompleted: 'Antwort abgeschlossen.',
       runStopped: 'Antwort gestoppt.',
+      contextLimited:
+        'Diese Antwort berücksichtigt die jüngsten Nachrichten. Dein vollständiger Gesprächsverlauf bleibt verfügbar.',
       runFailed: 'Antwort fehlgeschlagen.',
       welcomeTitle: 'Willkommen!',
       welcomeTo: 'Du chattest mit {chatbot}.',
@@ -603,6 +605,8 @@ export default {
       loginButton: 'Zur KlickerUZH-Anmeldung',
     },
     response: {
+      contextTooLarge:
+        'Diese Frage überschreitet das Kontextlimit. Versuche eine kürzere Frage oder weniger Anhänge.',
       errorLabel: 'Fehler',
       networkError:
         'Der Server konnte leider nicht erreicht werden. Bitte überprüfe Deine Verbindung und versuche es erneut.',
