@@ -355,6 +355,14 @@ test.describe.serial('Lecturer chatbot draft authoring', () => {
     page,
   }) => {
     const chatbotId = await createChatbot(page, FIRST_CHATBOT)
+    await page.context().addInitScript(() => {
+      if (!window.location.pathname.startsWith('/preview/')) return
+      window.localStorage.setItem(
+        'settings-storage',
+        '{"state":{"answerStyle":"bullets","answerTone":"direct"},"version":0}'
+      )
+    })
+
     const previewPagePromise = page.context().waitForEvent('page')
     await page.getByTestId('chatbot-owner-preview-link').click()
     const previewPage = await previewPagePromise
@@ -367,7 +375,140 @@ test.describe.serial('Lecturer chatbot draft authoring', () => {
     await expect(previewPage.getByTestId('chat-welcome-mode')).toContainText(
       'Tutor'
     )
+
+    const previewPreferences = await previewPage.evaluate(() => {
+      const persisted = JSON.parse(
+        window.localStorage.getItem('settings-storage') ?? '{}'
+      ) as { state?: Record<string, unknown> }
+      return [persisted.state?.answerStyle, persisted.state?.answerTone]
+    })
+    expect(previewPreferences).toEqual(['bullets', 'direct'])
+
+    await previewPage.route(
+      '**/api/manage/chatbots/*/preview/chat',
+      (route) => {
+        if (route.request().method() !== 'POST') return route.fallback()
+
+        return route.fulfill({
+          body:
+            [
+              'data: {"type":"start"}',
+              'data: {"type":"start-step"}',
+              'data: {"type":"text-start","id":"preview-text"}',
+              'data: {"type":"text-delta","id":"preview-text","delta":"Mocked reply."}',
+              'data: {"type":"text-end","id":"preview-text"}',
+              'data: {"type":"finish-step"}',
+              'data: {"type":"finish"}',
+              'data: [DONE]',
+            ].join('\n\n') + '\n\n',
+          headers: {
+            'content-type': 'text/event-stream',
+            'x-vercel-ai-ui-message-stream': 'v1',
+          },
+          status: 200,
+        })
+      }
+    )
+
+    const previewRequest = previewPage.waitForRequest(
+      (request) =>
+        request.method() === 'POST' &&
+        request.url().includes(`/api/manage/chatbots/${chatbotId}/preview/chat`)
+    )
+    await previewPage.getByTestId('chat-composer-input').fill('Check prefs')
+    await previewPage.getByTestId('chat-send-button').click()
+
+    const previewRequestBody = (await previewRequest).postDataJSON() as {
+      answerStyle?: string
+      answerTone?: string
+    }
+    expect({
+      answerStyle: previewRequestBody.answerStyle ?? 'balanced',
+      answerTone: previewRequestBody.answerTone ?? 'neutral',
+    }).toEqual({
+      answerStyle: 'balanced',
+      answerTone: 'neutral',
+    })
   })
+
+  for (const withHistory of [false, true]) {
+    test(`clears the owner-preview run announcement after an early stop (${withHistory ? 'with history' : 'empty conversation'})`, async ({
+      page,
+    }) => {
+      const chatbotId = await createChatbot(page, FIRST_CHATBOT)
+      const opened = page.context().waitForEvent('page')
+      await page.getByTestId('chatbot-owner-preview-link').click()
+      const preview = await opened
+      await expect(preview.getByTestId('chat-welcome-message')).toBeVisible()
+      const requested = createRequestGate()
+      const release = createRequestGate()
+      let requests = 0
+      await preview.route(
+        `**/api/manage/chatbots/${chatbotId}/preview/chat`,
+        async (route) => {
+          requests += 1
+          if (requests === (withHistory ? 2 : 1)) {
+            requested.release()
+            await release.wait
+            await route.abort('aborted')
+            return
+          }
+          await route.fulfill({
+            status: 200,
+            contentType: 'text/event-stream',
+            headers: { 'x-vercel-ai-ui-message-stream': 'v1' },
+            body: [
+              { type: 'start', messageId: `synthetic-${requests}` },
+              { type: 'text-start', id: 'text-1' },
+              { type: 'text-delta', id: 'text-1', delta: 'Synthetic response' },
+              { type: 'text-end', id: 'text-1' },
+              { type: 'finish', finishReason: 'stop' },
+            ]
+              .map((part) => `data: ${JSON.stringify(part)}\n\n`)
+              .join('')
+              .concat('data: [DONE]\n\n'),
+          })
+        }
+      )
+
+      const input = preview.getByTestId('chat-composer-input')
+      const send = preview.getByTestId('chat-send-button')
+      const cancel = preview.getByTestId('chat-cancel-button')
+      const status = preview.getByTestId('chat-run-status')
+      if (withHistory) {
+        await input.fill('Synthetic initial turn')
+        await send.click()
+        await expect(cancel).toHaveAttribute('aria-hidden', 'true')
+        await expect(preview.getByTestId('chat-assistant-message')).toHaveCount(
+          1
+        )
+      }
+
+      try {
+        const pendingPrompt = 'Synthetic pending turn'
+        await input.fill(pendingPrompt)
+        await send.click()
+        await requested.wait
+        await expect(status).not.toBeEmpty()
+        await cancel.click()
+        await expect(cancel).toHaveAttribute('aria-hidden', 'true')
+        await expect(input).toHaveValue(pendingPrompt)
+        await expect(status).toBeEmpty()
+      } finally {
+        release.release()
+      }
+
+      await input.fill('Synthetic recovery turn')
+      await send.click()
+      await expect(cancel).toHaveAttribute('aria-hidden', 'true')
+      await expect(preview.getByTestId('chat-assistant-message')).toHaveCount(
+        withHistory ? 2 : 1
+      )
+      await expect(status).not.toBeEmpty()
+      await expect(preview.getByTestId('chat-error')).toHaveCount(0)
+      await preview.close()
+    })
+  }
 
   test('guards the owner preview while authoring changes are unsaved', async ({
     page,
@@ -405,10 +546,10 @@ test.describe.serial('Lecturer chatbot draft authoring', () => {
       `${process.env.URL_CHAT ?? URL_CHAT}/preview/${chatbotId}`
     )
 
+    await page.bringToFront()
     await expect(page.getByTestId('chatbot-disclaimer-title')).toHaveValue(
       'Unsaved title'
     )
-
     const discardNavigationDialogPromise = page
       .waitForEvent('dialog')
       .then((dialog) => {
@@ -672,10 +813,19 @@ test.describe.serial('Lecturer chatbot draft authoring', () => {
     ).toBeChecked()
     await expect(page.getByTestId('chatbot-mode-switch-quizzer')).toBeChecked()
     const framingField = page.getByTestId('chatbot-framing')
-    await expect(framingField).toHaveAttribute('maxlength', '200')
-    await framingField.fill(
-      'Focus on the course materials and applied examples.'
-    )
+    await expect(framingField).toHaveAttribute('maxlength', '1000')
+    await expect(framingField).toHaveValue('')
+    const examples = page.getByTestId('chatbot-framing-examples')
+    await examples.locator('summary').focus()
+    await page.keyboard.press('Enter')
+    await expect(examples).toHaveAttribute('open', '')
+    await expect(framingField).toHaveValue('')
+    const scopeNote = 'Synthetic audience context. '.repeat(40).slice(0, 1000)
+    await framingField.fill(`${scopeNote}x`)
+    await expect(framingField).toHaveValue(scopeNote)
+    await expect(
+      page.getByTestId('chatbot-mode-switch-writing-coach')
+    ).not.toBeChecked()
     await page.getByTestId('chatbot-mode-switch-tutor').click()
     await expect(
       page.getByTestId('chatbot-mode-switch-explainer')
@@ -690,9 +840,7 @@ test.describe.serial('Lecturer chatbot draft authoring', () => {
       page.getByTestId('chatbot-mode-switch-explainer')
     ).toBeDisabled()
     await expect(page.getByTestId('chatbot-mode-switch-quizzer')).toBeDisabled()
-    await expect(
-      page.getByTestId('chatbot-mode-capability-note')
-    ).toContainText('Quizzer may still be hidden')
+    await expect(page.getByTestId('chatbot-mode-capability-note')).toBeVisible()
     await expect
       .poll(() => modeConfigVariables)
       .toMatchObject({
@@ -702,7 +850,8 @@ test.describe.serial('Lecturer chatbot draft authoring', () => {
         courseName: null,
         subjectDomain: null,
         languageOfInstruction: null,
-        scopeNote: 'Focus on the course materials and applied examples.',
+        writingCoachEnabled: false,
+        scopeNote,
       })
     modeRequestGate.release()
     await expect(page.getByText('Learning modes saved.')).toBeVisible()
@@ -719,7 +868,7 @@ test.describe.serial('Lecturer chatbot draft authoring', () => {
       'Disabled'
     )
     await expect(page.getByTestId('chatbot-review-framing')).toHaveText(
-      'Focus on the course materials and applied examples.'
+      scopeNote
     )
     await page.getByTestId('chatbot-setup-edit-modes').click()
     await expect(page.getByTestId('chatbot-setup-modes')).toBeVisible()
@@ -800,6 +949,12 @@ test.describe.serial('Lecturer chatbot draft authoring', () => {
       'aria-current',
       'page'
     )
+    const answerPreferencesSwitch = page.getByTestId(
+      'chatbot-answer-preferences-switch'
+    )
+    await expect(answerPreferencesSwitch).toBeChecked()
+    await answerPreferencesSwitch.click()
+    await expect(answerPreferencesSwitch).not.toBeChecked()
     await page.getByTestId('chatbot-model-settings-save').click()
     await expect(
       page.getByTestId('chatbot-model-selection-switch')
@@ -823,9 +978,16 @@ test.describe.serial('Lecturer chatbot draft authoring', () => {
         allowedReasoningEffortsByModel: [
           { modelId: 'gpt-6-luna', efforts: ['high'] },
         ],
+        answerPreferencesEnabled: false,
       })
     modelSettingsRequestGate.release()
-    await expect(page.getByText('Model settings saved.')).toBeVisible()
+    const saveSuccess = page.getByTestId('chatbot-model-settings-save-success')
+    await expect(saveSuccess).toBeVisible()
+    await answerPreferencesSwitch.click()
+    await expect(answerPreferencesSwitch).toBeChecked()
+    await expect(saveSuccess).toHaveCount(0)
+    await answerPreferencesSwitch.click()
+    await expect(answerPreferencesSwitch).not.toBeChecked()
 
     await page.getByTestId('chatbot-view-usage').click()
     await expect(page.getByText('Credits', { exact: true })).toBeVisible()
@@ -873,9 +1035,7 @@ test.describe.serial('Lecturer chatbot draft authoring', () => {
     await expect(page.getByTestId('chatbot-setup-review')).toBeVisible()
     await navigateToSetupStep(page, 'modes')
     await expect(page.getByTestId('chatbot-mode-switch-tutor')).toBeChecked()
-    await expect(page.getByTestId('chatbot-framing')).toHaveValue(
-      'Focus on the course materials and applied examples.'
-    )
+    await expect(page.getByTestId('chatbot-framing')).toHaveValue(scopeNote)
     await expect(
       page.getByTestId('chatbot-mode-switch-explainer')
     ).not.toBeChecked()
@@ -928,6 +1088,50 @@ test.describe.serial('Lecturer chatbot draft authoring', () => {
     await expect(page.getByTestId('chatbot-framing')).toHaveValue(
       legacyScopeNote
     )
+    await page.getByTestId('chatbot-mode-switch-writing-coach').click()
+    await page.getByTestId('chatbot-mode-switch-tutor').click()
+    await page.getByTestId('chatbot-mode-switch-explainer').click()
+    await expect(
+      page.getByTestId('chatbot-mode-switch-writing-coach')
+    ).toBeChecked()
+    await expect(
+      page.getByTestId('chatbot-mode-switch-writing-coach')
+    ).toBeDisabled()
+    await page.getByTestId('save-chatbot-modes').click()
+    await expect
+      .poll(() => modeConfigVariables)
+      .toMatchObject({
+        tutorEnabled: false,
+        explainerEnabled: false,
+        quizzerEnabled: false,
+        writingCoachEnabled: true,
+        scopeNote: legacyScopeNote,
+      })
+    await expect
+      .poll(async () =>
+        prisma.chatbot.findUnique({
+          where: { id: firstChatbotId },
+          select: { standardModeConfig: true },
+        })
+      )
+      .toMatchObject({
+        standardModeConfig: {
+          writingCoachEnabled: true,
+          tutorEnabled: false,
+          explainerEnabled: false,
+        },
+      })
+    await page.reload()
+    await navigateToSetupStep(page, 'modes')
+    await expect(
+      page.getByTestId('chatbot-mode-switch-writing-coach')
+    ).toBeChecked()
+    await expect(
+      page.getByTestId('chatbot-mode-switch-tutor')
+    ).not.toBeChecked()
+    await expect(
+      page.getByTestId('chatbot-mode-switch-explainer')
+    ).not.toBeChecked()
     await navigateToSetupStep(page, 'basics')
     await expect(page.getByTestId('chatbot-name')).toHaveValue(FIRST_CHATBOT)
     await expect(page.getByTestId('chatbot-description')).toHaveValue(

@@ -1,6 +1,6 @@
 {
   "name": "@klicker-uzh/hatchet",
-  "version": "3.4.0-alpha.88",
+  "version": "3.4.0-alpha.89",
   "license": "AGPL-3.0",
   "main": "dist/index.js",
   "types": "dist/index.d.ts",
@@ -9,7 +9,7 @@
   ],
   "dependencies": {
     "@azure/storage-blob": "12.25.0",
-    "@hatchet-dev/typescript-sdk": "1.9.4",
+    "@hatchet-dev/typescript-sdk": "1.22.0",
     "@klicker-uzh/knowledge-graph": "workspace:*",
     "@klicker-uzh/prisma": "workspace:*",
     "@klicker-uzh/types": "workspace:*",
@@ -33,7 +33,7 @@
   "scripts": {
     "build": "run-s --npm-path pnpm build:ts",
     "build:test": "pnpm run build",
-    "build:ts": "cross-env NODE_ENV=production rollup -c",
+    "build:ts": "cross-env NODE_ENV=production rollup -c --forceExit",
     "check": "tsc --noEmit --tsBuildInfoFile dist/tsconfig.check.tsbuildinfo",
     "dev": "run-p --npm-path pnpm dev:ts",
     "dev:infisical": "../../util/_run_with_infisical.sh --env dev pnpm run dev",

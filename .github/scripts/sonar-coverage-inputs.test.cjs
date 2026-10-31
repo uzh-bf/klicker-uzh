@@ -420,6 +420,76 @@ describe('importCoverage', () => {
 })
 
 describe('resolveProducers', () => {
+  it('recognizes only the exact priority producer namespace while its parent waits', async () => {
+    const transport = fakeTransport({
+      runs: () => [completedRun({ status: 'in_progress', conclusion: null })],
+      jobs: () => [
+        { name: 'test-unit-status', status: 'queued', conclusion: null },
+        {
+          name: 'priority-execution / test-unit-status',
+          status: 'completed',
+          conclusion: 'success',
+        },
+      ],
+    })
+    const [producer] = await resolveProducers(
+      transport,
+      [UNIT_WORKFLOW],
+      EXPECTED_TREE.headSha
+    )
+    assert.equal(producer.pending, false)
+    assert.equal(producer.run.conclusion, 'success')
+  })
+
+  it('does not let empty or denied label runs replace real validation, or hide real failures', async () => {
+    for (const [jobs, expected] of [
+      [[{ name: 'filter', conclusion: 'skipped' }], 10],
+      [
+        [
+          { name: 'priority-route', conclusion: 'success' },
+          {
+            name: 'test-unit-status (priority not admitted)',
+            conclusion: 'success',
+          },
+        ],
+        10,
+      ],
+      [
+        [
+          {
+            name: 'test-unit-status',
+            status: 'completed',
+            conclusion: 'failure',
+          },
+        ],
+        11,
+      ],
+    ]) {
+      const transport = fakeTransport({
+        runs: () => [
+          completedRun({ id: 10, run_number: 4 }),
+          completedRun({ id: 11, run_number: 5 }),
+        ],
+        jobs: (id) =>
+          id === 11
+            ? jobs
+            : [
+                {
+                  name: 'test-unit-status',
+                  status: 'completed',
+                  conclusion: 'success',
+                },
+              ],
+      })
+      const [producer] = await resolveProducers(
+        transport,
+        [UNIT_WORKFLOW],
+        EXPECTED_TREE.headSha
+      )
+      assert.equal(producer.run.id, expected)
+    }
+  })
+
   it('reports every producer of this head without waiting for it', async () => {
     const transport = fakeTransport({
       onListRuns: (workflowFile) =>

@@ -4,6 +4,7 @@ import type {
   KnowledgeGraphResponse,
 } from '@klicker-uzh/types'
 import { describe, expect, it } from 'vitest'
+import { DEFAULT_KNOWLEDGE_GRAPH_LABELS } from '../../../packages/shared-components/src/knowledgeGraph/knowledgeGraphLabels.js'
 import { KNOWLEDGE_GRAPH_MAX_SUGGESTIONS } from '../../../packages/shared-components/src/knowledgeGraph/knowledgeGraphSearch.js'
 import {
   initialKnowledgeGraphState,
@@ -41,6 +42,9 @@ function edge(id: string, source: string, target: string): KnowledgeGraphEdge {
     target,
     type: 'RELATED',
     label: 'RELATED',
+    relationType: 'related',
+    relationStatus: 'extracted',
+    sourceReferences: [],
     properties: {},
   }
 }
@@ -639,13 +643,17 @@ describe('knowledge graph question selection', () => {
       target: 'missing-internal-id',
       type: 'RELATED',
       label: 'y'.repeat(300),
+      relationType: 'related',
+      relationStatus: 'extracted',
+      sourceReferences: [],
       properties: { hidden: 'Do not copy' },
     }
     expect(
       edgeAskSelection(
         relationship,
         new Map([[selected.id, selected]]),
-        'Unknown'
+        'Unknown',
+        DEFAULT_KNOWLEDGE_GRAPH_LABELS.details.relationTypes
       )
     ).toEqual({
       kind: 'edge',
@@ -653,5 +661,17 @@ describe('knowledge graph question selection', () => {
       source: 'x'.repeat(200),
       target: 'Unknown',
     })
+    // A generated edge has no label of its own; the ask carries its type.
+    expect(
+      edgeAskSelection(
+        { ...relationship, label: 'RELATED', relationType: 'part_of' },
+        new Map([[selected.id, selected]]),
+        'Unknown',
+        {
+          ...DEFAULT_KNOWLEDGE_GRAPH_LABELS.details.relationTypes,
+          part_of: 'P',
+        }
+      ).label
+    ).toBe('P')
   })
 })
