@@ -1,12 +1,14 @@
 export {
   closeKnowledgeGraphClient,
   deleteKnowledgeGraph,
+  readKnowledgeGraphMentions,
   readKnowledgeGraphNeighbors,
   readKnowledgeGraphOverview,
   readKnowledgeGraphSearchHints,
   searchKnowledgeGraph,
 } from './client.js'
 export * from './config.js'
+export type { KnowledgeGraphMention } from './retrieval.js'
 export {
   computeKBContentDigest,
   hashKBContentDigestEntries,

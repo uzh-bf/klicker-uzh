@@ -112,12 +112,41 @@ interface PrepareNumericalArgsProps {
   elementId?: number
   isDuplication: boolean
   values: ElementFormTypesNumerical & { status: ElementStatus }
+  originalOptions?: Pick<
+    ElementFormTypesNumerical['options'],
+    'accuracy' | 'exactSolutions'
+  >
 }
 export function prepareNumericalArgs({
   elementId,
   isDuplication,
   values,
+  originalOptions,
 }: PrepareNumericalArgsProps) {
+  const accuracy =
+    values.options.accuracy == null || String(values.options.accuracy) === ''
+      ? undefined
+      : Number(values.options.accuracy)
+  const precisionUnchanged =
+    originalOptions !== undefined &&
+    accuracy === (originalOptions.accuracy ?? undefined)
+  const preserveExactSolutions =
+    precisionUnchanged &&
+    values.options.exactSolutions?.length ===
+      originalOptions.exactSolutions?.length &&
+    (values.options.exactSolutions ?? []).every(
+      (solution, index) =>
+        Number(solution) === originalOptions.exactSolutions?.[index]
+    )
+
+  if (
+    accuracy !== undefined &&
+    (!Number.isInteger(accuracy) || accuracy < 0 || accuracy > 100) &&
+    !preserveExactSolutions
+  ) {
+    throw new Error('Numerical precision must be an integer from 0 to 100')
+  }
+
   return {
     id: isDuplication ? undefined : elementId,
     name: values.name,
@@ -132,9 +161,7 @@ export function prepareNumericalArgs({
 
     options: {
       hasSampleSolution: values.options.hasSampleSolution,
-      accuracy: values.options.accuracy
-        ? parseInt(String(values.options.accuracy))
-        : undefined,
+      accuracy,
       unit: values.options.unit,
       restrictions: {
         min:
@@ -164,12 +191,12 @@ export function prepareNumericalArgs({
         values.options.hasSampleSolution &&
         values.options.solutionType === 'exact'
           ? values.options.exactSolutions?.map((solution) => {
-              if (typeof solution === 'number') {
-                return solution
-              }
-
-              const precision = parseInt(String(values.options.accuracy))
-              return parseFloat(parseFloat(solution).toFixed(precision))
+              const value = Number(solution)
+              return accuracy === undefined ||
+                (precisionUnchanged &&
+                  originalOptions?.exactSolutions?.includes(value))
+                ? value
+                : Number(value.toFixed(accuracy))
             })
           : undefined,
     },
