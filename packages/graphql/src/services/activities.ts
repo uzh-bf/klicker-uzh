@@ -1123,6 +1123,11 @@ export async function applyActivityBatchOperations(
   )
 }
 
+// free-text elements with a response limit count responses in `total`; the
+// distinct `respondents` count is absent for single-response elements
+const countRespondents = (results: { total: number; respondents?: number }) =>
+  results.respondents ?? results.total
+
 export async function getLiveQuizDetails(
   { id }: { id: string },
   ctx: ContextWithUser
@@ -1261,8 +1266,8 @@ export async function getLiveQuizDetails(
     return {
       id: block.id,
       numOfParticipants: block.elements[0]
-        ? block.elements[0].results.total +
-          block.elements[0].anonymousResults.total
+        ? countRespondents(block.elements[0].results) +
+          countRespondents(block.elements[0].anonymousResults)
         : 0,
       timeLimit: block.timeLimit,
       stackPoints: arePointsAwarded
