@@ -56,6 +56,8 @@ export interface MCPServerWithConfig {
 export interface MCPRequestContext {
   chatbotId: string
   participantId?: string
+  /** Manage user running an owner preview; never combined with participantId. */
+  ownerPreviewUserId?: string
   courseId?: string
   authMode: AuthMode
   kbIds?: readonly string[]

@@ -287,6 +287,50 @@ test.describe('W4 activity wizard safety', () => {
     ).toBe(true)
   })
 
+  test('activity wizard navigation fits a mobile viewport', async ({
+    page,
+    loginLecturer,
+  }) => {
+    await page.setViewportSize({ width: 390, height: 844 })
+    await loginLecturer()
+    await openLibrary(page, 'en')
+    await openWizard(page, wizardTypes[0])
+
+    const expectNavigationToFit = () =>
+      expect
+        .poll(() =>
+          page.evaluate(() => {
+            const cancel = document
+              .querySelector('[data-cy="cancel-activity-creation"]')
+              ?.getBoundingClientRect()
+            const next = document
+              .querySelector('[data-cy="next-or-submit"]')
+              ?.getBoundingClientRect()
+            if (!cancel || !next) return false
+            return (
+              document.documentElement.scrollWidth <= innerWidth &&
+              cancel.x >= 0 &&
+              cancel.right <= innerWidth &&
+              next.x >= 0 &&
+              next.right <= innerWidth &&
+              !(
+                cancel.x < next.right &&
+                next.x < cancel.right &&
+                cancel.y < next.bottom &&
+                next.y < cancel.bottom
+              )
+            )
+          })
+        )
+        .toBe(true)
+
+    await expectNavigationToFit()
+    await page.getByTestId(wizardTypes[0].nameField).fill('W4 Mobile Layout')
+    await page.getByTestId('next-or-submit').click()
+    await expect(page.getByTestId('insert-live-display-name')).toBeVisible()
+    await expectNavigationToFit()
+  })
+
   test('element creation remains available while an activity wizard is open', async ({
     page,
     loginLecturer,

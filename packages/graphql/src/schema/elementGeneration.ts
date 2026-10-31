@@ -13,6 +13,7 @@ import type {
   QuestionGenerationDesignSummary,
   QuestionGenerationPlanSummary,
 } from '@klicker-uzh/types'
+import { z } from 'zod'
 import builder from '../builder.js'
 import type {
   GeneratedElementEditableInput as GeneratedElementEditableInputValue,
@@ -915,7 +916,10 @@ const ElementGenerationSourceScopeInputRef = builder
   .inputRef<SourceScopeInput>('ElementGenerationSourceScopeInput')
   .implement({
     fields: (t) => ({
-      resourceId: t.id({ required: true, validate: { uuid: true } }),
+      resourceId: t.id({
+        required: true,
+        validate: { schema: z.string().guid() },
+      }),
       pageFrom: t.int({ required: false, validate: { min: 1 } }),
       pageTo: t.int({ required: false, validate: { min: 1 } }),
     }),
@@ -943,8 +947,14 @@ export const StartElementGenerationInputRef = builder
   .inputRef<StartElementGenerationInput>('StartElementGenerationInput')
   .implement({
     fields: (t) => ({
-      kbId: t.id({ required: true, validate: { uuid: true } }),
-      graphBuildId: t.id({ required: true, validate: { uuid: true } }),
+      kbId: t.id({
+        required: true,
+        validate: { schema: z.string().guid() },
+      }),
+      graphBuildId: t.id({
+        required: true,
+        validate: { schema: z.string().guid() },
+      }),
       basisFingerprint: t.string({
         required: true,
         validate: { minLength: 1, maxLength: 128 },
@@ -994,7 +1004,10 @@ export const ReviewElementGenerationInputRef = builder
   .inputRef<ReviewElementGenerationInput>('ReviewElementGenerationInput')
   .implement({
     fields: (t) => ({
-      buildId: t.id({ required: true, validate: { uuid: true } }),
+      buildId: t.id({
+        required: true,
+        validate: { schema: z.string().guid() },
+      }),
       gate: t.field({ type: ElementGenerationReviewGate, required: true }),
       decision: t.field({
         type: ElementGenerationReviewDecision,
@@ -1096,7 +1109,10 @@ export const UpdateGeneratedElementDraftInputRef = builder
   )
   .implement({
     fields: (t) => ({
-      draftId: t.id({ required: true, validate: { uuid: true } }),
+      draftId: t.id({
+        required: true,
+        validate: { schema: z.string().guid() },
+      }),
       expectedRevision: t.int({ required: true, validate: { min: 0 } }),
       current: t.field({
         type: GeneratedElementEditableInputRef,
@@ -1110,7 +1126,10 @@ export const GeneratedElementDraftInputRef = builder
   .inputRef<GeneratedElementDraftInput>('GeneratedElementDraftInput')
   .implement({
     fields: (t) => ({
-      draftId: t.id({ required: true, validate: { uuid: true } }),
+      draftId: t.id({
+        required: true,
+        validate: { schema: z.string().guid() },
+      }),
     }),
   })
 
@@ -1124,7 +1143,10 @@ export const SetGeneratedElementDecisionInputRef = builder
   )
   .implement({
     fields: (t) => ({
-      draftId: t.id({ required: true, validate: { uuid: true } }),
+      draftId: t.id({
+        required: true,
+        validate: { schema: z.string().guid() },
+      }),
       decision: t.field({ type: GeneratedElementDecision, required: true }),
     }),
   })
@@ -1134,7 +1156,10 @@ export const ElementGenerationBuildInputRef = builder
   .inputRef<ElementGenerationBuildInput>('ElementGenerationBuildInput')
   .implement({
     fields: (t) => ({
-      buildId: t.id({ required: true, validate: { uuid: true } }),
+      buildId: t.id({
+        required: true,
+        validate: { schema: z.string().guid() },
+      }),
     }),
   })
 
@@ -1148,7 +1173,10 @@ export const PublishIncompleteElementGenerationInputRef = builder
   )
   .implement({
     fields: (t) => ({
-      buildId: t.id({ required: true, validate: { uuid: true } }),
+      buildId: t.id({
+        required: true,
+        validate: { schema: z.string().guid() },
+      }),
       warningsAcknowledged: t.boolean({ required: true }),
     }),
   })

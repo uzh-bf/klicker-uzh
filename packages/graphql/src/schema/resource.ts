@@ -7,6 +7,7 @@ import type {
   ChatbotStandardModeConfig as ChatbotStandardModeConfigShape,
   SharingType as SharingTypeEnum,
 } from '@klicker-uzh/types'
+import { CHATBOT_CUSTOM_MODE_MEETING_CLOCKS } from '@klicker-uzh/util'
 import builder from '../builder.js'
 import type {
   ChatAccountUsageLane,
@@ -116,6 +117,11 @@ export const ChatUsageClass = builder.enumType('ChatUsageClass', {
   values: Object.values(DB.ChatUsageClass),
 })
 
+export const ChatbotCustomModeMeetingClock = builder.enumType(
+  'ChatbotCustomModeMeetingClock',
+  { values: CHATBOT_CUSTOM_MODE_MEETING_CLOCKS }
+)
+
 export const ChatAccountUsageLaneRef = builder.objectRef<ChatAccountUsageLane>(
   'ChatAccountUsageLane'
 )
@@ -192,6 +198,7 @@ export const ChatbotStandardModeConfigInput =
       tutorEnabled: t.boolean({ required: true }),
       explainerEnabled: t.boolean({ required: true }),
       quizzerEnabled: t.boolean({ required: true }),
+      writingCoachEnabled: t.boolean({ required: false }),
       courseName: t.string({ required: false }),
       subjectDomain: t.string({ required: false }),
       languageOfInstruction: t.field({
@@ -210,6 +217,7 @@ export const ChatbotStandardModeConfig = ChatbotStandardModeConfigRef.implement(
       tutorEnabled: t.exposeBoolean('tutorEnabled'),
       explainerEnabled: t.exposeBoolean('explainerEnabled'),
       quizzerEnabled: t.exposeBoolean('quizzerEnabled'),
+      writingCoachEnabled: t.exposeBoolean('writingCoachEnabled'),
       courseName: t.exposeString('courseName', { nullable: true }),
       subjectDomain: t.exposeString('subjectDomain', { nullable: true }),
       languageOfInstruction: t.expose('languageOfInstruction', {
@@ -233,6 +241,11 @@ export const ChatbotCustomModeInput = ChatbotCustomModeInputRef.implement({
     welcomeMessage: t.string({ required: false }),
     starterPrompts: t.stringList({ required: false }),
     showReasoning: t.boolean({ required: false }),
+    replyLanguage: t.field({ type: LocaleType, required: false }),
+    meetingClock: t.field({
+      type: ChatbotCustomModeMeetingClock,
+      required: false,
+    }),
   }),
 })
 
@@ -261,6 +274,16 @@ export const ChatbotCustomMode = ChatbotCustomModeRef.implement({
     starterPrompts: t.exposeStringList('starterPrompts', { nullable: true }),
     showReasoning: t.boolean({
       resolve: (mode) => mode.showReasoning === true,
+    }),
+    replyLanguage: t.field({
+      type: LocaleType,
+      nullable: true,
+      resolve: (mode) => mode.replyLanguage ?? null,
+    }),
+    meetingClock: t.field({
+      type: ChatbotCustomModeMeetingClock,
+      nullable: true,
+      resolve: (mode) => mode.meetingClock ?? null,
     }),
   }),
 })
@@ -296,6 +319,7 @@ export const ChatbotRevisionModelPolicyInput =
     fields: (t) => ({
       modelSelection: t.boolean({ required: true }),
       allowedModelIds: t.stringList({ required: true }),
+      answerPreferencesEnabled: t.boolean({ required: false }),
       allowedReasoningEffortsByModel: t.field({
         type: [ChatbotReasoningConfigInputRef],
         required: false,
@@ -400,6 +424,7 @@ export const ChatbotAuthoringRevision = ChatbotAuthoringRevisionRef.implement({
     }),
     modelSelection: t.exposeBoolean('modelSelection'),
     allowedModelIds: t.exposeStringList('allowedModelIds'),
+    answerPreferencesEnabled: t.exposeBoolean('answerPreferencesEnabled'),
     allowedReasoningEffortsByModel: t.field({
       type: [ChatbotReasoningConfigRef],
       resolve: (revision) =>
@@ -461,10 +486,12 @@ export interface IChatbot {
   description?: string | null
   avatar?: string | null
   standardModeConfig?: ChatbotStandardModeConfigShape | null
+  writingCoachUnavailableReason?: string | null
   customModeConfig?: ChatbotCustomModeConfigShape | null
   modelSelection: boolean
   allowedModelIds: string[]
   allowedReasoningEffortsByModel?: IChatbotReasoningConfig[]
+  answerPreferencesEnabled: boolean
   knowledgeGraphVisible: boolean
   knowledgeGraphRetrievalEnabled: boolean
   creditInitialCredits: number
@@ -614,6 +641,10 @@ export const Chatbot = ChatbotRef.implement({
     name: t.exposeString('name'),
     description: t.exposeString('description', { nullable: true }),
     avatar: t.exposeString('avatar', { nullable: true }),
+    writingCoachUnavailableReason: t.exposeString(
+      'writingCoachUnavailableReason',
+      { nullable: true }
+    ),
     standardModeConfig: t.field({
       type: ChatbotStandardModeConfigRef,
       nullable: true,
@@ -626,6 +657,7 @@ export const Chatbot = ChatbotRef.implement({
     }),
     modelSelection: t.exposeBoolean('modelSelection'),
     allowedModelIds: t.exposeStringList('allowedModelIds'),
+    answerPreferencesEnabled: t.exposeBoolean('answerPreferencesEnabled'),
     allowedReasoningEffortsByModel: t.field({
       type: [ChatbotReasoningConfigRef],
       resolve: (chatbot) => chatbot.allowedReasoningEffortsByModel ?? [],

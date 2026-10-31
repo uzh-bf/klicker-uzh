@@ -58,8 +58,12 @@ function useArtificialElementInstance({
                 accuracy:
                   'accuracy' in values.options &&
                   typeof values.options.accuracy !== 'undefined' &&
-                  values.options.accuracy !== null
-                    ? parseInt(String(values.options.accuracy))
+                  values.options.accuracy !== null &&
+                  String(values.options.accuracy) !== '' &&
+                  Number.isInteger(Number(values.options.accuracy)) &&
+                  Number(values.options.accuracy) >= 0 &&
+                  Number(values.options.accuracy) <= 100
+                    ? Number(values.options.accuracy)
                     : undefined,
                 unit:
                   'unit' in values.options ? values.options.unit : undefined,
