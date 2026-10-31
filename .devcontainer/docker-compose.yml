@@ -132,11 +132,17 @@ services:
     build:
       context: .
       dockerfile: Dockerfile
+      args:
+        KLICKER_EXTRA_CA_PEM: ${KLICKER_EXTRA_CA_PEM:-}
     init: true # tini PID1 reaps the dev servers' zombie children (GOTCHAS #10)
     env_file:
       - devcontainer.env
     environment:
       - WORKSPACE=${WORKSPACE:-}
+      - HTTP_PROXY=${HTTP_PROXY:-}
+      - HTTPS_PROXY=${HTTPS_PROXY:-}
+      - NO_PROXY=${NO_PROXY:-localhost,127.0.0.1,.localhost,postgres,hatchet,redis_exec,redis_assessment,redis_cache}
+      - NODE_USE_ENV_PROXY=1
     extra_hosts:
       - 'api.klicker.localhost:host-gateway'
       - 'auth.klicker.localhost:host-gateway'

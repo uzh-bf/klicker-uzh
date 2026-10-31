@@ -1,9 +1,12 @@
 const { isDeepStrictEqual } = require('node:util')
+const { createHash } = require('node:crypto')
 const fs = require('node:fs')
 const os = require('node:os')
 const path = require('node:path')
 const { execFileSync } = require('node:child_process')
 
+const MAX_ARTIFACT_BYTES = 1048576
+const PLAYWRIGHT_SHARD_COUNT = 8
 const REPOSITORY = 'uzh-bf/klicker-uzh'
 const WORKFLOWS = {
   unit: 'test-unit.yml',
@@ -54,7 +57,14 @@ async function listAll(request, key) {
   throw new Error('API pagination limit reached')
 }
 
-async function readArtifactJson(github, repo, run, name, filename) {
+async function readArtifactJson(
+  github,
+  repo,
+  run,
+  name,
+  filename,
+  verified = false
+) {
   const artifacts = await listAll(
     (paging) =>
       github.rest.actions.listWorkflowRunArtifacts({
@@ -67,13 +77,111 @@ async function readArtifactJson(github, repo, run, name, filename) {
   const matches = artifacts.filter(
     (artifact) => artifact.name === name && !artifact.expired
   )
-  if (matches.length !== 1 || matches[0].size_in_bytes > 1048576)
-    throw new Error('Missing or ambiguous artifact')
+  if (matches.length !== 1) throw new Error('missing-or-ambiguous-artifact')
+  if (matches[0].size_in_bytes > MAX_ARTIFACT_BYTES)
+    throw new Error('artifact-too-large')
+  if (
+    verified &&
+    (!Number.isSafeInteger(matches[0].id) ||
+      matches[0].id <= 0 ||
+      !Number.isSafeInteger(matches[0].size_in_bytes) ||
+      matches[0].size_in_bytes <= 0 ||
+      matches[0].expired !== false ||
+      matches[0].workflow_run?.id !== run.id ||
+      matches[0].workflow_run?.head_sha !== run.head_sha ||
+      !/^sha256:[a-f0-9]{64}$/.test(matches[0].digest ?? ''))
+  )
+    throw new Error('artifact-provenance-invalid')
+  if (verified) {
+    // Artifact digests prove byte integrity, not the producing step: a later
+    // untrusted job can delete/re-create an artifact through the runtime service.
+    // Bind server-created artifact time to the successful upload step reported
+    // independently by GitHub for this exact attempt, before downloading bytes.
+    const jobs = await listAll(
+      (paging) =>
+        github.rest.actions.listJobsForWorkflowRunAttempt({
+          ...repo,
+          ...paging,
+          run_id: run.id,
+          attempt_number: run.run_attempt,
+        }),
+      'jobs'
+    )
+    const producerJobs = jobs.filter((job) => {
+      if (!successful(job) || typeof job.name !== 'string') return false
+      if (name === 'ci-validation-receipt') {
+        return Object.values(PLAYWRIGHT_ROUTE_JOBS).some(({ build }) =>
+          job.name.endsWith(`/ ${build}`)
+        )
+      }
+      return (
+        name === 'playwright-execution-plan' && job.name.endsWith('/ prepare')
+      )
+    })
+    if (producerJobs.length !== 1) throw new Error('artifact-producer-unproven')
+    const stepName =
+      name === 'ci-validation-receipt'
+        ? 'Upload tested source receipt'
+        : 'Upload canonical execution plan'
+    const steps = producerJobs[0].steps?.filter(
+      (step) => step.name === stepName && successful(step)
+    )
+    if (steps?.length !== 1) throw new Error('artifact-producer-unproven')
+    const startedAt = Date.parse(steps[0].started_at)
+    const completedAt = Date.parse(steps[0].completed_at)
+    const createdAt = Date.parse(matches[0].created_at)
+    if (
+      ![startedAt, completedAt, createdAt].every(Number.isFinite) ||
+      startedAt > completedAt
+    )
+      throw new Error('artifact-producer-time-invalid')
+    if (createdAt < startedAt || createdAt > completedAt)
+      throw new Error('artifact-created-outside-producer-step')
+    // API times have second precision. Prove that candidate code could not
+    // execute during that same timestamp bucket; do not assume a checkout took
+    // long enough. Only a reused push plan may have no executed build.
+    const executedBuilds = jobs.filter(
+      (job) =>
+        job.conclusion !== 'skipped' &&
+        typeof job.name === 'string' &&
+        Object.values(PLAYWRIGHT_ROUTE_JOBS).some(({ build }) =>
+          job.name.endsWith(`/ ${build}`)
+        )
+    )
+    const maySkipBuild =
+      name === 'playwright-execution-plan' && run.event === 'push'
+    if (
+      executedBuilds.length > 1 ||
+      (!maySkipBuild && executedBuilds.length !== 1)
+    )
+      throw new Error('artifact-execution-window-unproven')
+    for (const build of executedBuilds) {
+      const execution = build.steps?.filter(
+        (step) =>
+          step.name === 'Build shared Playwright artifact' && successful(step)
+      )
+      const executionStart =
+        execution?.length === 1 ? Date.parse(execution[0].started_at) : NaN
+      if (
+        !successful(build) ||
+        !Number.isFinite(executionStart) ||
+        executionStart <= completedAt
+      )
+        throw new Error('artifact-execution-window-unproven')
+    }
+  }
   const response = await github.rest.actions.downloadArtifact({
     ...repo,
     artifact_id: matches[0].id,
     archive_format: 'zip',
   })
+  if (Buffer.byteLength(response.data) > MAX_ARTIFACT_BYTES)
+    throw new Error('artifact-too-large')
+  const actualDigest =
+    'sha256:' +
+    createHash('sha256').update(Buffer.from(response.data)).digest('hex')
+  if (verified && actualDigest !== matches[0].digest)
+    throw new Error('artifact-digest-mismatch')
   const directory = fs.mkdtempSync(path.join(os.tmpdir(), 'ci-proof-'))
   try {
     const archive = path.join(directory, 'proof.zip')
@@ -81,7 +189,7 @@ async function readArtifactJson(github, repo, run, name, filename) {
     return JSON.parse(
       execFileSync('unzip', ['-p', archive, filename], {
         encoding: 'utf8',
-        maxBuffer: 1048576,
+        maxBuffer: MAX_ARTIFACT_BYTES,
         timeout: 10000,
       })
     )
@@ -131,7 +239,11 @@ function coverageMatches(kind, jobs, plan, route = 'hosted') {
       )
     )
   }
-  if (kind !== 'playwright' || plan?.mode !== 'full' || plan.shardCount !== 8) {
+  if (
+    kind !== 'playwright' ||
+    plan?.mode !== 'full' ||
+    plan.shardCount !== PLAYWRIGHT_SHARD_COUNT
+  ) {
     return false
   }
   const names = PLAYWRIGHT_ROUTE_JOBS[route]
@@ -141,11 +253,13 @@ function coverageMatches(kind, jobs, plan, route = 'hosted') {
   return (
     builds.length === 1 &&
     successful(builds[0]) &&
-    shards.length === 8 &&
+    shards.length === PLAYWRIGHT_SHARD_COUNT &&
     shards.every(successful) &&
-    Array.from({ length: 8 }, (_, i) => i + 1).every(
+    Array.from({ length: PLAYWRIGHT_SHARD_COUNT }, (_, i) => i + 1).every(
       (index) =>
-        shards.filter((job) => job.name.endsWith(` (${index}, 8)`)).length === 1
+        shards.filter((job) =>
+          job.name.endsWith(` (${index}, ${PLAYWRIGHT_SHARD_COUNT})`)
+        ).length === 1
     ) &&
     jobs.every(
       (job) => !job.name.includes(names.other) || job.conclusion === 'skipped'
@@ -168,7 +282,7 @@ function planMatches(previous, current) {
   return (
     previous?.mode === 'full' &&
     current?.mode === 'full' &&
-    current.shardCount === 8 &&
+    current.shardCount === PLAYWRIGHT_SHARD_COUNT &&
     fields.every(
       (field) =>
         current[field] !== undefined &&
@@ -739,6 +853,10 @@ async function reportEquivalentRun(options) {
 }
 
 module.exports = {
+  MAX_ARTIFACT_BYTES,
+  PLAYWRIGHT_SHARD_COUNT,
+  PLAYWRIGHT_ROUTE_JOBS,
+  readArtifactJson,
   PR_REUSE_ACTIONS,
   listAll,
   samePull,

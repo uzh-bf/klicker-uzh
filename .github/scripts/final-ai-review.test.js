@@ -4,6 +4,11 @@ const fs = require('node:fs')
 const os = require('node:os')
 const path = require('node:path')
 const test = require('node:test')
+const {
+  expectedVersion,
+  verifyVersion,
+  verifyArchive,
+} = require('./install-patched-ocr.cjs')
 
 const { invalidCleanCheckChanges } = require('./final-ai-review-fixtures')
 const {
@@ -304,7 +309,7 @@ function executeExtractedOCRAttempt({
     OCR_VERSION_OUTPUT:
       versionMode === 'drift'
         ? `open-code-review v1.10.0 ${versionSentinel}`
-        : 'open-code-review v1.13.0 synthetic',
+        : `${expectedVersion()}linux/arm64`,
     OCR_VERSION_STATUS: String(versionStatus),
     OCR_VERSION_STDERR: 'OCR_VERSION_STDERR_SENTINEL',
     OUTPUT_PATH: outputPath,
@@ -329,6 +334,7 @@ function executeExtractedOCRAttempt({
     '  "$@"',
     '}',
     'node() {',
+    '  if [[ "$1" == .github/scripts/install-patched-ocr.cjs && "$2" == verify-version ]]; then command node "$@"; return; fi',
     '  if [[ "$1" == .github/scripts/final-ai-review.js && "$2" == validate-ocr-preview ]]; then',
     '    command node "$@" || return',
     '    printf "coverage checked\\n" >>"${OCR_CALLS_PATH}"',
@@ -415,6 +421,86 @@ function executeExtractedOCRAttempt({
   fs.rmSync(directory, { recursive: true, force: true })
   return result
 }
+
+test('final setup resolves advisor paths on the runner and preserves them for later steps', (t) => {
+  const workflow = fs.readFileSync(
+    path.join(__dirname, '../workflows/check-ocr-final-review.yml'),
+    'utf8'
+  )
+  for (const jobName of ['review', 'review_stack']) {
+    const directory = fs.mkdtempSync(path.join(os.tmpdir(), 'ocr setup '))
+    t.after(() => fs.rmSync(directory, { recursive: true, force: true }))
+    const start = workflow.indexOf(`  ${jobName}:\n`)
+    const next = workflow.slice(start + 1).search(/^  \S/m)
+    const job = workflow.slice(start, next < 0 ? undefined : start + 1 + next)
+    const jobEnv = extractWorkflowJobEnv(job, jobName)
+    assert.ok(
+      Object.values(jobEnv).every((value) => !value.includes('runner.'))
+    )
+    const setup = job.slice(
+      job.indexOf('      - name: Configure ephemeral Mistral access')
+    )
+    const setupEnv = {}
+    for (const line of setup
+      .slice(0, setup.indexOf('        run: |'))
+      .split('\n')) {
+      const entry = line.match(/^          (OCR_ADVISOR_[A-Z_]+): (.+)$/)
+      if (entry)
+        setupEnv[entry[1]] = entry[2].replace('${{ runner.temp }}', directory)
+    }
+    const githubEnv = path.join(directory, 'github-env')
+    const observed = path.join(directory, 'observed')
+    const run = spawnSync(
+      'bash',
+      [
+        '-c',
+        [
+          'node() {',
+          '  printf "%s\\n%s\\n" "$OCR_ADVISOR_STATE_PATH" "$OCR_ADVISOR_DIAGNOSTICS_PATH" >>"$OBSERVED"',
+          '  mkdir -p "$HOME/.opencodereview"',
+          '  printf "{}" >"$HOME/.opencodereview/config.json"',
+          '}',
+          extractWorkflowStepScript(job, 'Configure ephemeral Mistral access'),
+        ].join('\n'),
+      ],
+      {
+        encoding: 'utf8',
+        env: {
+          PATH: '/usr/bin:/bin',
+          HOME: directory,
+          GITHUB_ENV: githubEnv,
+          OBSERVED: observed,
+          ...setupEnv,
+        },
+      }
+    )
+    assert.equal(run.status, 0, run.stderr)
+    const inherited = Object.fromEntries(
+      fs
+        .readFileSync(githubEnv, 'utf8')
+        .trim()
+        .split('\n')
+        .map((line) => {
+          const at = line.indexOf('=')
+          return [line.slice(0, at), line.slice(at + 1)]
+        })
+    )
+    assert.deepEqual(Object.keys(inherited).sort(), [
+      'OCR_ADVISOR_DIAGNOSTICS_PATH',
+      'OCR_ADVISOR_STATE_PATH',
+    ])
+    assert.deepEqual(inherited, setupEnv)
+    assert.ok(
+      Object.values(inherited).every((file) => path.dirname(file) === directory)
+    )
+    assert.deepEqual(fs.readFileSync(observed, 'utf8').trim().split('\n'), [
+      inherited.OCR_ADVISOR_STATE_PATH,
+      inherited.OCR_ADVISOR_DIAGNOSTICS_PATH,
+      inherited.OCR_ADVISOR_STATE_PATH,
+      inherited.OCR_ADVISOR_DIAGNOSTICS_PATH,
+    ])
+  }
+})
 
 test('executes both workflow OCR command boundaries with pinned version diagnostics', () => {
   const workflow = fs.readFileSync(
@@ -1309,6 +1395,8 @@ test('verifies the exact public Mistral tool contract', async (t) => {
   assert.deepEqual(receipts[0], {
     schema_version: 1,
     stage: 'preflight',
+    provider: 'mistral-deepseek',
+    model: FINAL_REVIEW_MODEL,
     requests: 1,
     upstream_attempts: 1,
     responses: 1,
@@ -1321,6 +1409,7 @@ test('verifies the exact public Mistral tool contract', async (t) => {
     missing_cache_usage: 0,
     invalid_cache_usage: 0,
     unfinished_requests: 0,
+    provider_availability: { status: 'available', reason: null },
   })
 })
 
@@ -1376,6 +1465,8 @@ test('retains preflight usage when a successful canary answer is rejected', asyn
     assert.deepEqual(receipt, {
       schema_version: 1,
       stage: 'preflight',
+      provider: 'mistral-deepseek',
+      model: FINAL_REVIEW_MODEL,
       requests: 1,
       upstream_attempts: 1,
       responses: 1,
@@ -1388,6 +1479,7 @@ test('retains preflight usage when a successful canary answer is rejected', asyn
       missing_cache_usage: 0,
       invalid_cache_usage: 0,
       unfinished_requests: 0,
+      provider_availability: { status: 'available', reason: null },
     })
   }
 })
@@ -1451,7 +1543,8 @@ test('uses one qualified canary and OCR release in both manual jobs', () => {
     )?.[1] ?? ''
 
   assert.equal(
-    source.match(/@alibaba-group\/open-code-review@1\.13\.0/g)?.length,
+    source.match(/install-patched-ocr\.cjs "\$\{RUNNER_TEMP\}\/patched-ocr"/g)
+      ?.length,
     2
   )
   assert.equal(source.match(/verify-mistral-tools/g)?.length, 2)
@@ -1475,69 +1568,6 @@ test('uses one qualified canary and OCR release in both manual jobs', () => {
       block,
       /if: always\(\) && needs\.(?:start|start_stack)\.outputs\.run_review == 'true'/
     )
-  }
-})
-
-test('draft context preserves the complete multiline workflow output', () => {
-  const workflow = fs.readFileSync(
-    path.join(__dirname, '../workflows/check-ocr-review.yml'),
-    'utf8'
-  )
-  const script = extractWorkflowStepScript(
-    workflow,
-    'Prepare bounded review context'
-  )
-  const directory = fs.mkdtempSync(
-    path.join(os.tmpdir(), 'ocr-context-output-')
-  )
-  const markerPath = path.join(directory, 'shell-executed-marker')
-  const title = 'Synthetic context with "quotes", EOF and $(exit 1)'
-  const body = [
-    'Literal body with "double" and \'single\' quotes.',
-    'Backtick `touch ' + markerPath + '` and $(touch ' + markerPath + ')',
-    '; touch ' + markerPath,
-    '$(exit 1)',
-    'A trailing backslash \\ and $NOT_A_VARIABLE and * glob.',
-    `<!-- ${'x'.repeat(9_000)} -->`,
-    'Visible boundaries.',
-    '![gallery](https://example.test/image_(1).png)',
-    '\u202e',
-    '🙂'.repeat(8_001),
-  ].join('\n')
-
-  try {
-    assert.match(script, /randomUUID\(\)/)
-    for (const [index, caseBody] of [undefined, body].entries()) {
-      const outputPath = path.join(directory, `github-output-${index}`)
-      const env = {
-        PATH: process.env.PATH,
-        PR_TITLE: title,
-        GITHUB_OUTPUT: outputPath,
-      }
-      if (caseBody !== undefined) env.PR_BODY = caseBody
-      const result = spawnSync('bash', ['-e', '-c', script], {
-        cwd: path.join(__dirname, '../..'),
-        env,
-        encoding: 'utf8',
-      })
-      assert.equal(result.status, 0, result.stderr)
-      const lines = fs.readFileSync(outputPath, 'utf8').split('\n')
-      const header = /^background<<(.+)$/.exec(lines[0])
-      assert.ok(header, 'background must use multiline output framing')
-      const endIndex = lines.indexOf(header[1], 1)
-      assert.equal(endIndex, lines.length - 2, 'exactly one complete output')
-      assert.equal(lines.at(-1), '')
-      const background = lines.slice(1, endIndex).join('\n')
-      assert.ok(background.includes('\n'), 'exercise a multiline value')
-      assert.equal(background, buildReviewBackground(title, caseBody))
-      assert.equal(
-        fs.existsSync(markerPath),
-        false,
-        'the workflow must not execute PR metadata'
-      )
-    }
-  } finally {
-    fs.rmSync(directory, { recursive: true, force: true })
   }
 })
 
@@ -3294,6 +3324,7 @@ test('accepts a trusted clean status without requiring a review body', async () 
     { evidence_digest: 'e'.repeat(64) },
     { policy_digest: 'e'.repeat(64) },
     { background_digest: 'e'.repeat(64) },
+    { model: 'zai-glm-5-3-flash' },
   ]) {
     state.checkRuns[0] = {
       ...trustedCheck,
@@ -3308,6 +3339,18 @@ test('accepts a trusted clean status without requiring a review body', async () 
     )
   }
   state.checkRuns[0] = trustedCheck
+  state.statuses[0] = {
+    ...trustedStatus,
+    description: trustedStatus.description.replace(
+      FINAL_REVIEW_CLEAN_STATUS_PREFIX,
+      'zai-glm-5-3-flash final review clean; evidence='
+    ),
+  }
+  assert.equal(
+    await hasCurrentSuccessfulFinalReview({ github, context, pull, plan }),
+    false
+  )
+  state.statuses[0] = trustedStatus
 
   assert.equal(
     await hasCurrentSuccessfulFinalReview({ github, context, pull, plan }),
@@ -3430,6 +3473,18 @@ test('publishes clean individual evidence as a check without a pull-request comm
     assert.equal(state.createdStatuses.at(-1).state, 'error')
   }
   pull.body = publishedBody
+  for (const providerUnavailable of [
+    'provider_paused',
+    'provider_payment_required',
+  ]) {
+    await finalizeFinalReview({ ...inputs, providerUnavailable })
+    assert.equal(state.createdCheckRuns.length, 0)
+    assert.equal(state.createdStatuses.at(-1).state, 'failure')
+    assert.equal(
+      state.createdStatuses.at(-1).description.includes(providerUnavailable),
+      true
+    )
+  }
   await finalizeFinalReview(inputs)
 
   assert.equal(state.createdCheckRuns.length, 1)
@@ -4394,6 +4449,13 @@ test('selects incremental attestation only for bounded repaired changes', async 
   for (const policyPath of [
     '.github/workflows/check-ocr-final-review.yml',
     '.github/scripts/final-ai-review-shared.js',
+    '.github/scripts/ocr-review-tools.cjs',
+    '.github/scripts/ocr-runtime-config.cjs',
+    '.github/open-code-review/repository.json',
+    '.github/open-code-review/runtime-manifest.json',
+    '.agents/skills/ocr-reviewer/SKILL.md',
+    '.github/scripts/install-patched-ocr.cjs',
+    '.github/open-code-review/ocr-compression.patch',
   ]) {
     state.policyFiles[policyPath] = 'changed trusted policy'
     const changedPolicy = await buildReviewPlan({
@@ -4987,4 +5049,46 @@ test('treats chore/promote-stg-* as ordinary final-review policy', async () => {
     source,
     /Generated staging promotion|isPromotionCandidate|validatePromotionContract/
   )
+})
+
+test('patched executable provenance refuses an upstream binary or a changed patch', () => {
+  const patch = Buffer.from('synthetic compression patch')
+  const version = expectedVersion(patch) + 'linux/arm64'
+  verifyVersion(version, patch)
+  assert.throws(
+    () => verifyVersion('open-code-review v1.13.0 upstream', patch),
+    /does not match/
+  )
+  assert.throws(
+    () => verifyVersion(version, Buffer.from('different synthetic patch')),
+    /does not match/
+  )
+  assert.throws(
+    () => verifyArchive(Buffer.from('unexpected upstream archive')),
+    /checksum mismatch/
+  )
+})
+
+test('provider unavailability blocks final status even with successful stage envelopes', () => {
+  for (const providerUnavailable of [
+    'provider_paused',
+    'provider_payment_required',
+  ]) {
+    const status = decideFinalStatus({
+      reviewedHead: 'a',
+      currentHead: 'a',
+      reviewedBase: 'b',
+      currentBase: 'b',
+      eligible: true,
+      reviewOutcome: 'success',
+      cleanupOutcome: 'success',
+      publishOutcome: 'success',
+      cleanReview: 'true',
+      cleanEvidenceDigest: 'a'.repeat(64),
+      providerUnavailable,
+    })
+    assert.equal(status.state, 'failure')
+    assert.equal(status.description.includes(providerUnavailable), true)
+    assert.equal(status.description.includes('evidence='), false)
+  }
 })

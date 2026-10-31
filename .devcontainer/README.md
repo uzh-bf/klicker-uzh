@@ -20,6 +20,11 @@ publishes its database on an ephemeral loopback port, and is one-at-a-time.
 
 ## How to Run
 
+These startup commands verify an existing application schema. For newly
+provisioned disposable databases, complete the explicit
+[fresh initialization](#fresh-disposable-database-initialization) first.
+Automatic lifecycle replay never resets or seeds retained databases.
+
 You can run the devcontainer in two modes:
 
 ### Mode 1: Primary checkout
@@ -55,6 +60,27 @@ Use this to mirror production domain behaviors, test cookie-sharing over HTTPS, 
 3. Open `https://manage.klicker.<workspace>.localhost` (credentials: `lecturer` / `abcd`).
 
 Do not use bare `devpod up`, manual `WORKSPACE`, or per-app `--workspace` route loops for this managed devcontainer. Those paths bypass the identity and runtime proof.
+
+## HTTPS proxy environments
+
+The app image can trust an additional public CA for a managed HTTPS proxy.
+Export `KLICKER_EXTRA_CA_PEM` with the PEM certificate contents before running
+`devrouter ensure .`; Compose passes it as an optional build argument and the
+image installs it in the system trust store before downloading pnpm. Node uses
+the system CA store as well. Leave the argument unset for ordinary local setup.
+The certificate becomes part of the image: supply only a public trust root,
+never a private key or credential. TLS verification remains enabled.
+
+The app forwards the host's `HTTP_PROXY`, `HTTPS_PROXY`, and `NO_PROXY`, and
+Node enables environment-proxy support. Docker builds use Docker's standard
+proxy configuration. Proxy hostnames must resolve from Docker's network.
+When supplying `NO_PROXY`, retain loopback and `.localhost` plus the internal
+service names (`postgres`, `hatchet`, `redis_exec`, `redis_assessment`,
+`redis_cache`, `litellm`, `mailhog`, and `oidc`). If Docker injects proxy settings
+into the shared Traefik router, its exclusions must also cover the app's
+Docker alias (`klicker-uzh-app` for the primary checkout, or the exact linked
+checkout alias). Otherwise the local route can return the egress proxy's error
+while the application's direct port remains healthy.
 
 ## Checkout lifecycle
 
@@ -170,8 +196,13 @@ node util/run-playwright-host.mjs --runtime-profile manage,live-quiz --project=c
 
 The caller must include every profile the selected tests need; the launcher
 does not infer them from spec names or reuse a previous narrow selection.
-Place `--runtime-profile` and `--print-env` before other arguments, or use `--`
-to end the launcher-option prefix. `--print-env` still reconciles the runtime
+`--ci-runtime` replaces the dev servers with CI's production test builds for
+the selected profile and keeps them until a launcher run without the flag.
+Without the flag, the launcher selects the dev servers' `dev:test` scripts. A
+plain `devrouter ensure .` keeps the last selection; see
+[Testing](../docs/testing.md).
+Place `--runtime-profile`, `--ci-runtime` and `--print-env` before other
+arguments, or use `--` to end the launcher-option prefix. `--print-env` still reconciles the runtime
 and can start services. `--show-report` does not accept a runtime profile.
 
 The repository sets pnpm's `verifyDepsBeforeRun` policy to `error`, so pnpm
@@ -418,25 +449,16 @@ restart is appropriate, stop the exact checkout with `devrouter stop <checkout>`
 and confirm its provider is stopped and its routes are gone before restarting.
 
 The repository's `.devcontainer/recover-runtime.sh` is a consumer callback for
-the separately reviewed devrouter retained-recovery implementation. It is not
-an ordinary startup hook or a command to invoke manually. The repository-pinned
-0.2.0 release does not provide this recovery contract. The recovery performed
-for this branch used devrouter source revision
-`aacf9ea595b9c76b0aaf66c0f4d52179b05197d8`, whose `recovery-preview`,
-`recovery-apply` and `recovery-resume` commands own the lifecycle locks, exact
-container identities and digest-bound journal. This is source-version evidence,
-not a claim that the contract is available in a published release. Confirm a
-release provides that contract before changing the repository version pin.
+a managed provider that owns the lifecycle locks and supplies exact 64-character
+application and PostgreSQL container IDs. It assumes the canonical mount
+`/workspaces/klicker-uzh`. It verifies the existing restricted disposable database
+identities and application schema without reset, schema push or seeding.
 
-The callback requires the provider to inject exact 64-character application
-and PostgreSQL container IDs. It assumes the canonical container mount
-`/workspaces/klicker-uzh`. Both restricted disposable databases must already be
-provisioned and marked; the callback explicitly initializes their schema and
-synthetic seeds after verifying their identities. This path therefore requires
-approval for that initialization. It never marks an existing retained database
-as disposable. The provisioning helper defaults to bootstrap login `klicker`
-for CI; the retained local environment explicitly selects the allow-listed
-`klicker-prod` login. Neither is the restricted `klicker_test` application login.
+The version pin in `.devrouter.yml` is the configuration source of truth.
+Inspect installed help and the provider contract before selecting recovery or
+replacement commands. A version pin does not establish that the installed tool
+can perform retained replacement. When that capability is unavailable, stop at
+that boundary rather than substituting raw Docker lifecycle operations.
 
 The four hashes in `recover-runtime.sh` bind the reviewed consumer source.
 When one of those files changes, review the semantic change and refresh its pin
@@ -449,9 +471,62 @@ publication. A pin failure must never be bypassed by deleting the guard.
 | `Repair requires a persisted degraded managed runtime`                | Use normal `ensure` for a stopped healthy runtime.                                                                                                 |
 | `Lifecycle worker completion is unknown` or an operation-request lock | Preserve the existing operation and inspect its owner/journal through devrouter; do not clear locks or start competing operations.                 |
 | `Managed stop Compose file identity changed`                          | Compare recorded and current source configuration through the provider's recovery preview; do not bypass identity checks with raw Docker commands. |
-| Disposable identity or schema refusal                                 | Stop initialization and verify configuration and marked identities without exposing connection strings; do not reset or reseed blindly.            |
+| Disposable identity or schema refusal                                 | Stop recovery and verify configuration and marked identities without exposing connection strings; missing schema never selects initialization.     |
 
 A partial recovery journal records work already performed. Resume only through
 the owning recovery command and its reviewed preview; repeating replacement
 can lose writable-layer data. If the installed tool lacks the required command,
 stop at that capability boundary instead of substituting raw Docker mutations.
+
+### Fresh disposable database initialization
+
+Initialization is a separate, explicit operation for newly provisioned empty
+`klicker_test` and `klicker_test_shadow` databases with the restricted
+`klicker_test` login and disposable marker. Both targets must have no user schema
+objects before any schema push or synthetic seeding. Existing tables, views,
+sequences, functions, types or additional user schemas cause refusal, even when
+they contain no rows. A marker alone does not make retained contents expendable.
+
+The consumer command for an authorized one-shot provider bootstrap is:
+
+```bash
+bash .devcontainer/post-create.sh --initialize-new-disposable
+```
+
+Supply that literal argument only through a supported managed provider path
+bound to the exact new resources. Keep the committed `postCreateCommand` at its
+preserving default; do not persist an initialization flag in environment files
+or a reusable provider configuration. If the installed tool cannot deliver this
+one-shot bootstrap while owning its lifecycle/admission contract, stop before
+creating the runtime and report that capability gap. Ordinary `ensure` is not an
+initialization command. Existing explicit reset commands require their own data
+mutation authority.
+
+A failed initialization may leave partial schema or fixtures. Preserve that
+state and report the failed phase; a rerun must not reset or adopt it as empty.
+Default recovery still verifies both identities and the required application
+schema. Failed install, build, identity or schema checks leave bootstrap
+incomplete so post-start refuses application startup.
+
+### Synthetic provider acceptance
+
+Use a new task-owned scratch namespace and synthetic data. Before any mutation,
+record the source checkout, selected profile, effective overrides, exact
+resources/mounts, supported lifecycle commands, bootstrap state and downstream
+adapter effects. Include dependency preparation, token/generated files, local
+storage CORS, pending cache repair and selected processes/routes. Require the
+approved resource limits and exclude live inference and unrelated runtimes.
+
+After explicit fresh initialization, create a test-owned domain sentinel with
+meaningful values and a relationship. Verify those contents after one ordinary
+restart, then after one application-container replacement. Prove replacement
+through a changed app-container ID and stable database/service volume identities.
+Check application readiness separately from the bootstrap marker. Volume names
+alone do not establish preservation.
+
+Use the owning provider's exact stop and verify stopped state plus zero owned
+routes after success or failure. Preserve the synthetic database and sanitized
+diagnostics for review; database-volume and worktree deletion require separate
+authority. If the installed provider lacks any required transition or limit,
+report provider acceptance as blocked. Script regressions establish their
+mocked contract only; they do not substitute for this provider/content proof.

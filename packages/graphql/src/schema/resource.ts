@@ -241,6 +241,7 @@ export interface IChatbot {
   modelSelection: boolean
   allowedModelIds: string[]
   allowedReasoningEffortsByModel?: IChatbotReasoningConfig[]
+  answerPreferencesEnabled: boolean
   creditInitialCredits: number
   creditResetPeriod: DB.CreditResetPeriod
   creditResetAmount: number
@@ -374,6 +375,7 @@ export const Chatbot = ChatbotRef.implement({
     }),
     modelSelection: t.exposeBoolean('modelSelection'),
     allowedModelIds: t.exposeStringList('allowedModelIds'),
+    answerPreferencesEnabled: t.exposeBoolean('answerPreferencesEnabled'),
     allowedReasoningEffortsByModel: t.field({
       type: [ChatbotReasoningConfigRef],
       resolve: (chatbot) => chatbot.allowedReasoningEffortsByModel ?? [],

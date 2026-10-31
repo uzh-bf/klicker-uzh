@@ -1,4 +1,5 @@
 const assert = require('node:assert/strict')
+const { execFileSync } = require('node:child_process')
 const crypto = require('node:crypto')
 const fs = require('node:fs')
 const os = require('node:os')
@@ -10,6 +11,7 @@ const {
   FINAL_REVIEW_MODEL,
   mergeOCRResumeResults,
 } = require('./final-ai-review.js')
+const { MISTRAL_DEEPSEEK_MODEL } = require('./ocr-mistral-adapter.cjs')
 const {
   FINAL_STACK_REVIEW_MODEL,
   STACK_CLEAN_EVIDENCE_CHECK_NAME,
@@ -378,6 +380,233 @@ function topologyResult(comments = []) {
   }
 }
 
+function advisorTool() {
+  return {
+    type: 'function',
+    function: {
+      name: 'ask_review_advisor',
+      description: 'Ask one focused review question.',
+      parameters: { type: 'object' },
+    },
+  }
+}
+
+function advisorContent(answer = 'Synthetic advice.') {
+  return {
+    content: [
+      {
+        text: JSON.stringify({
+          answer,
+          assessment: 'uncertain',
+          evidence: [],
+        }),
+        type: 'text',
+      },
+    ],
+  }
+}
+
+function topologyToolCallResponse(id, finishReason = 'tool_calls') {
+  return new Response(
+    JSON.stringify({
+      model: FINAL_STACK_REVIEW_MODEL,
+      choices: [
+        {
+          finish_reason: finishReason,
+          message: {
+            content: '',
+            reasoning_content: 'synthetic native reasoning',
+            role: 'assistant',
+            tool_calls: [
+              {
+                id,
+                type: 'function',
+                function: {
+                  name: 'ask_review_advisor',
+                  arguments: JSON.stringify({
+                    context: [
+                      { path: 'src/one.ts', start_line: 1, end_line: 1 },
+                    ],
+                    question: 'Does this stack boundary preserve its contract?',
+                  }),
+                },
+              },
+            ],
+          },
+        },
+      ],
+      usage: { total_tokens: 10, prompt_tokens: 7, completion_tokens: 3 },
+    })
+  )
+}
+
+function gitRun(repositoryPath, ...args) {
+  return execFileSync('git', args, {
+    cwd: repositoryPath,
+    encoding: 'utf8',
+    stdio: ['ignore', 'pipe', 'pipe'],
+  }).trim()
+}
+
+function gitCommit(repositoryPath, message) {
+  gitRun(repositoryPath, 'add', '-A')
+  gitRun(
+    repositoryPath,
+    '-c',
+    'user.name=Stack Test',
+    '-c',
+    'user.email=stack-test@example.invalid',
+    'commit',
+    '--quiet',
+    '-m',
+    message
+  )
+  return gitRun(repositoryPath, 'rev-parse', 'HEAD')
+}
+
+function githubForGitRepository(repositoryPath) {
+  return {
+    rest: {
+      git: {
+        getCommit: async ({ commit_sha }) => ({
+          data: {
+            tree: {
+              sha: gitRun(repositoryPath, 'rev-parse', `${commit_sha}^{tree}`),
+            },
+          },
+        }),
+      },
+    },
+  }
+}
+
+function makeGitStackFixture(
+  t,
+  { binary = false, emptyUpper = false, large = 0 } = {}
+) {
+  const repositoryPath = fs.mkdtempSync(
+    path.join(os.tmpdir(), 'stack-git-evidence-')
+  )
+  t.after(() => fs.rmSync(repositoryPath, { recursive: true, force: true }))
+  gitRun(repositoryPath, 'init', '--quiet')
+  gitRun(repositoryPath, 'config', 'diff.external', 'false')
+  gitRun(repositoryPath, 'config', 'diff.test.textconv', 'false')
+  fs.writeFileSync(
+    path.join(repositoryPath, '.gitattributes'),
+    '*.txt diff=test\n'
+  )
+  fs.writeFileSync(path.join(repositoryPath, 'mode.txt'), 'mode source\n')
+  fs.writeFileSync(path.join(repositoryPath, 'deleted.txt'), 'deleted source\n')
+  fs.writeFileSync(path.join(repositoryPath, 'old-name.txt'), 'rename source\n')
+  const ultimateBase = gitCommit(repositoryPath, 'ultimate base')
+
+  fs.writeFileSync(
+    path.join(repositoryPath, 'base-advance.txt'),
+    'base advance\n'
+  )
+  const rootBase = gitCommit(repositoryPath, 'root pull-request base')
+  gitRun(repositoryPath, 'checkout', '--quiet', '--detach', ultimateBase)
+
+  fs.chmodSync(path.join(repositoryPath, 'mode.txt'), 0o755)
+  fs.unlinkSync(path.join(repositoryPath, 'deleted.txt'))
+  fs.renameSync(
+    path.join(repositoryPath, 'old-name.txt'),
+    path.join(repositoryPath, 'renamed.txt')
+  )
+  fs.writeFileSync(
+    path.join(repositoryPath, 'binary-marker.txt'),
+    'Binary files a/source and b/source differ\n'
+  )
+  if (large) {
+    fs.writeFileSync(
+      path.join(repositoryPath, 'large-one.txt'),
+      `${'x'.repeat(large)}\n`
+    )
+  }
+  const rootHead = gitCommit(repositoryPath, 'root layer')
+
+  if (!emptyUpper) {
+    fs.writeFileSync(path.join(repositoryPath, 'upper.txt'), 'upper layer\n')
+    if (binary) {
+      fs.writeFileSync(
+        path.join(repositoryPath, 'binary.dat'),
+        Buffer.from([0, 1, 2, 3])
+      )
+    }
+    if (large) {
+      fs.writeFileSync(
+        path.join(repositoryPath, 'large-two.txt'),
+        `${'y'.repeat(large)}\n`
+      )
+    }
+  }
+  const upperHead = emptyUpper
+    ? rootHead
+    : gitCommit(repositoryPath, 'upper layer')
+  const rootPull = makePull(
+    11,
+    'v3',
+    rootBase,
+    'rs/git-layer-1',
+    rootHead,
+    'Git layer one'
+  )
+  const upperPull = makePull(
+    12,
+    'rs/git-layer-1',
+    rootHead,
+    'rs/git-layer-2',
+    upperHead,
+    'Git layer two'
+  )
+  const membership = {
+    id: 'git-stack',
+    identityDigest: '1'.repeat(64),
+    members: [
+      { number: 11, pull: rootPull },
+      { number: 12, pull: upperPull },
+    ],
+    numbers: [11, 12],
+    orderDigest: '2'.repeat(64),
+    ranges: [
+      {
+        response: {
+          data: {
+            files: [],
+            merge_base_commit: { sha: ultimateBase },
+            status: 'behind',
+          },
+        },
+      },
+      { response: { data: { files: [], status: 'ahead' } } },
+    ],
+    top: upperPull,
+    valid: true,
+  }
+  const gitContext = context()
+  return {
+    gitContext,
+    github: githubForGitRepository(repositoryPath),
+    membership,
+    repositoryPath,
+    rootBase,
+    rootHead,
+    ultimateBase,
+    upperHead,
+  }
+}
+
+function syntheticDiffEvidence(manifest) {
+  const result = structuredClone(manifest)
+  for (const [index, layer] of result.layers.entries()) {
+    layer.diff = ''
+    layer.diff_base_sha =
+      index === 0 ? manifest.ultimate_base.sha : layer.base_sha
+    layer.diff_head_sha = layer.head_sha
+  }
+  return result
+}
+
 function prepareDiagnosticsReceipt(t) {
   const directory = fs.mkdtempSync(
     path.join(os.tmpdir(), 'final-stack-diagnostics-')
@@ -549,6 +778,7 @@ test('accepts a trusted clean stack status without requiring a review body', asy
     { evidence_digest: 'e'.repeat(64) },
     { policy_digest: 'e'.repeat(64) },
     { background_digest: 'e'.repeat(64) },
+    { model: 'zai-glm-5-3-flash' },
   ]) {
     state.checkRuns[0] = {
       ...trustedCheck,
@@ -568,6 +798,23 @@ test('accepts a trusted clean stack status without requiring a review body', asy
     )
   }
   state.checkRuns[0] = trustedCheck
+  state.statuses[0] = {
+    ...trustedStatus,
+    description: trustedStatus.description.replace(
+      STACK_REVIEW_CLEAN_STATUS_PREFIX,
+      'zai-glm-5-3-flash stack review clean; evidence='
+    ),
+  }
+  assert.equal(
+    await getVerifiedStackCleanEvidence({
+      github,
+      context: stackContext,
+      headSha: plan.headSha,
+      evidenceDigest,
+    }),
+    null
+  )
+  state.statuses[0] = trustedStatus
 
   assert.deepEqual(
     await getVerifiedStackCleanEvidence({
@@ -643,7 +890,7 @@ test('publishes clean stack evidence as a check without a pull-request comment',
     membership,
   })
 
-  await finalizeStackReview({
+  const inputs = {
     github,
     context: stackContext,
     prNumber: 14,
@@ -665,7 +912,20 @@ test('publishes clean stack evidence as a check without a pull-request comment',
     cleanupOutcome: 'success',
     publishOutcome: 'success',
     cleanReview: 'true',
-  })
+  }
+  for (const providerUnavailable of [
+    'provider_paused',
+    'provider_payment_required',
+  ]) {
+    await finalizeStackReview({ ...inputs, providerUnavailable })
+    assert.equal(state.createdCheckRuns.length, 0)
+    assert.equal(state.createdStatuses.at(-1).state, 'failure')
+    assert.equal(
+      state.createdStatuses.at(-1).description.includes(providerUnavailable),
+      true
+    )
+  }
+  await finalizeStackReview(inputs)
 
   assert.equal(state.createdCheckRuns.length, 1)
   assert.equal(state.createdCheckRuns[0].name, STACK_CLEAN_EVIDENCE_CHECK_NAME)
@@ -1316,13 +1576,14 @@ test('keeps actions read permission for stack revalidation', () => {
   }
 })
 
-test('uses GLM Flash for individual and cumulative stack review jobs', () => {
+test('uses DeepSeek for individual and cumulative stack review jobs', () => {
   const workflow = fs.readFileSync(
     path.join(__dirname, '../workflows/check-ocr-final-review.yml'),
     'utf8'
   )
 
   assert.equal(FINAL_STACK_REVIEW_MODEL, FINAL_REVIEW_MODEL)
+  assert.equal(FINAL_STACK_REVIEW_MODEL, MISTRAL_DEEPSEEK_MODEL)
   assert.doesNotMatch(workflow, /anthropic\/claude-opus-4\.6/)
   assert.doesNotMatch(workflow, /OCR_LLM_MODEL/)
 })
@@ -1333,10 +1594,10 @@ test('retains only the rejected stack publisher inputs for one day', () => {
     'utf8'
   )
   const stageStep = workflow.match(
-    /      - name: Stage rejected stack publisher inputs\n[\s\S]*?(?=\n      - name:)/
+    / {6}- name: Stage rejected stack publisher inputs\n[\s\S]*?(?=\n {6}- name:)/
   )?.[0]
   const uploadStep = workflow.match(
-    /      - name: Upload rejected stack publisher inputs\n[\s\S]*?(?=\n      - name:|\n  finalize_stack:)/
+    / {6}- name: Upload rejected stack publisher inputs\n[\s\S]*?(?=\n {6}- name:|\n {2}finalize_stack:)/
   )?.[0]
 
   assert.ok(stageStep)
@@ -3098,7 +3359,8 @@ test('rejects duplicate code and topology finding IDs before publication', async
 
   const topologyFinding = {
     category: 'bug',
-    content: 'The stack topology can fail after merge.',
+    content:
+      'Confidence: 90/100\nAutofix: manual\nMotivating line: `stack contract`\nThe stack topology can fail after merge.',
     end_line: 4,
     layer_numbers: [1],
     path: 'src/one.ts',
@@ -3134,7 +3396,7 @@ test('suppresses topology findings that restate an overlapping code finding', as
     membership,
   })
   const duplicateContent =
-    'The topology pass repeated the same failure on the same changed line.'
+    'Confidence: 90/100\nAutofix: manual\nMotivating line: `stack contract`\nThe topology pass repeated the same failure on the same changed line.'
   const report = renderStackReview({
     codeResult: completeOCRResult([codeFinding()]),
     headSha: membership.top.head.sha,
@@ -3198,7 +3460,7 @@ test('renders consolidated code and topology findings with one stack marker', as
           category: 'architecture',
           severity: 'medium',
           content:
-            'The shared file changes in non-adjacent layers without a compatible boundary.',
+            'Confidence: 90/100\nAutofix: manual\nMotivating line: `shared boundary`\nThe shared file changes in non-adjacent layers without a compatible boundary.',
         },
       ].map((finding) => ({ ...finding, category: 'maintainability' }))
     ),
@@ -3291,6 +3553,139 @@ test('skips the stack pull-request comment when code and topology have no findin
   assert.equal(createdReviews.length, 0)
 })
 
+test('sends frozen layer source from the merge base in full and incremental review', async (t) => {
+  for (const emptyUpper of [false, true]) {
+    const fixture = makeGitStackFixture(t, { emptyUpper })
+    const manifestBundle = await buildStackSnapshot({
+      github: fixture.github,
+      context: fixture.gitContext,
+      membership: fixture.membership,
+    })
+    const requests = []
+    const fetchImpl = async (_url, options) => {
+      requests.push(JSON.parse(options.body))
+      return new Response(
+        JSON.stringify({
+          model: FINAL_STACK_REVIEW_MODEL,
+          choices: [
+            {
+              finish_reason: 'stop',
+              message: {
+                content: JSON.stringify({
+                  summary: { coverage: 'complete', comments: 0 },
+                  comments: [],
+                }),
+              },
+            },
+          ],
+          usage: { total_tokens: 50, prompt_tokens: 35, completion_tokens: 15 },
+        })
+      )
+    }
+    const ranges = [
+      {
+        layer_number: 2,
+        base_sha: fixture.rootHead,
+        head_sha: fixture.upperHead,
+        files: [],
+      },
+    ]
+    fs.writeFileSync(
+      path.join(fixture.repositoryPath, 'upper.txt'),
+      'UNCOMMITTED_SENTINEL'
+    )
+    for (const mode of ['full', 'incremental']) {
+      await callTopologyModel({
+        apiKey: 'dummy-token',
+        repositoryPath: fixture.repositoryPath,
+        codeResult:
+          mode === 'full'
+            ? completeOCRResult()
+            : combineOCRResults([completeOCRResult()], [2]),
+        manifestBundle,
+        fetchImpl,
+        mode,
+        reviewRanges: mode === 'full' ? [] : ranges,
+        rulesText: 'test rules',
+      })
+    }
+    for (const [index, request] of requests.entries()) {
+      const evidence = JSON.parse(
+        request.messages[1].content.slice(
+          request.messages[1].content.lastIndexOf(
+            'Stack manifest and code coverage: '
+          ) + 'Stack manifest and code coverage: '.length
+        )
+      )
+      assert.deepEqual(evidence.evidence_scope, {
+        mode: index === 0 ? 'full' : 'incremental',
+        review_ranges: index === 0 ? [] : ranges,
+      })
+      const [root, upper] = evidence.manifest.layers
+      assert.equal(root.diff_base_sha, fixture.ultimateBase)
+      assert.equal(root.base_sha, fixture.rootBase)
+      assert.equal(root.diff_head_sha, fixture.rootHead)
+      assert.doesNotMatch(root.diff, /base-advance\.txt/)
+      assert.match(root.diff, /rename from old-name\.txt/)
+      assert.match(root.diff, /deleted file mode/)
+      assert.match(root.diff, /old mode 100644/)
+      assert.match(root.diff, /Binary files a\/source and b\/source differ/)
+      assert.doesNotMatch(upper.diff, /UNCOMMITTED_SENTINEL/)
+      if (emptyUpper) assert.equal(upper.diff, '')
+      else assert.match(upper.diff, /upper layer/)
+    }
+    assert.equal(
+      Object.hasOwn(manifestBundle.manifest.layers[0], 'diff'),
+      false
+    )
+  }
+})
+
+test('rejects unavailable, mismatched, binary and oversized evidence before dispatch', async (t) => {
+  for (const kind of [
+    'tree',
+    'missing',
+    'binary',
+    'git-size',
+    'request-size',
+  ]) {
+    await t.test(kind, async (t) => {
+      const fixture = makeGitStackFixture(t, {
+        binary: kind === 'binary',
+        large:
+          kind === 'git-size'
+            ? 1_100_000
+            : kind === 'request-size'
+              ? 550_000
+              : 0,
+      })
+      const bundle = await buildStackSnapshot({
+        github: fixture.github,
+        context: fixture.gitContext,
+        membership: fixture.membership,
+      })
+      if (kind === 'tree') bundle.manifest.root_base.tree_sha = '0'.repeat(40)
+      if (kind === 'missing')
+        bundle.manifest.layers[0].head_sha = '9'.repeat(40)
+      let calls = 0
+      await assert.rejects(
+        callTopologyModel({
+          apiKey: 'dummy-token',
+          repositoryPath: fixture.repositoryPath,
+          codeResult: completeOCRResult(),
+          manifestBundle: bundle,
+          fetchImpl: async () => {
+            calls += 1
+            throw new Error('must not dispatch')
+          },
+        }),
+        /tree identity|Git evidence|binary source|bounded payload limit/
+      )
+      assert.equal(calls, 0)
+    })
+  }
+})
+
 test('sends strict max-reasoning topology requests and rejects invalid owners', async (t) => {
   const { github } = stackFixture()
   const membership = await resolveStackMembership({
@@ -3309,6 +3704,7 @@ test('sends strict max-reasoning topology requests and rejects invalid owners', 
   let fetchCalls = 0
   const response = await callTopologyModel({
     apiKey: 'dummy-token',
+    readDiffEvidence: syntheticDiffEvidence,
     codeResult,
     manifestBundle,
     rulesText: 'test rules',
@@ -3363,12 +3759,95 @@ test('sends strict max-reasoning topology requests and rejects invalid owners', 
     end_line: 1,
     category: 'bug',
     severity: 'high',
-    content: 'Synthetic cross-layer contract failure.',
+    content:
+      'Confidence: 90/100\nAutofix: manual\nMotivating line: `stack contract`\nSynthetic cross-layer contract failure.',
   }
   assert.equal(
     validateTopologyResult(topologyResult([finding]), manifestBundle.manifest)
       .comments.length,
     1
+  )
+  assert.equal(
+    validateTopologyResult(
+      topologyResult([
+        {
+          ...finding,
+          severity: 'critical',
+          content:
+            'Confidence: 50/100\nAutofix: manual\nMotivating line: `stack contract`\nCritical threshold is accepted.',
+        },
+      ]),
+      manifestBundle.manifest
+    ).comments.length,
+    1
+  )
+  assert.throws(
+    () =>
+      validateTopologyResult(
+        topologyResult([
+          { ...finding, content: 'Missing the required evidence prefix.' },
+        ]),
+        manifestBundle.manifest
+      ),
+    /invalid confidence score/
+  )
+  assert.throws(
+    () =>
+      validateTopologyResult(
+        topologyResult([
+          {
+            ...finding,
+            content: finding.content.replace('90/100', '74/100'),
+          },
+        ]),
+        manifestBundle.manifest
+      ),
+    /invalid confidence score/
+  )
+  assert.throws(
+    () =>
+      validateTopologyResult(
+        topologyResult([
+          {
+            ...finding,
+            content: finding.content.replace('90/100', '101/100'),
+          },
+        ]),
+        manifestBundle.manifest
+      ),
+    /invalid confidence score/
+  )
+  const incrementalRanges = [
+    {
+      base_sha: 'b'.repeat(40),
+      files: [
+        {
+          changed_line_ranges: [{ end_line: 1, start_line: 1 }],
+          filename: 'src/one.ts',
+        },
+      ],
+      head_sha: 'c'.repeat(40),
+      layer_number: 1,
+    },
+  ]
+  assert.equal(
+    validateTopologyResult(
+      topologyResult([finding]),
+      manifestBundle.manifest,
+      'incremental',
+      incrementalRanges
+    ).comments.length,
+    1
+  )
+  assert.throws(
+    () =>
+      validateTopologyResult(
+        topologyResult([{ ...finding, start_line: 2, end_line: 2 }]),
+        manifestBundle.manifest,
+        'incremental',
+        incrementalRanges
+      ),
+    /invalid/
   )
   assert.throws(
     () =>
@@ -3389,7 +3868,8 @@ test('sends strict max-reasoning topology requests and rejects invalid owners', 
             end_line: 1,
             category: 'bug',
             severity: 'high',
-            content: 'Invalid owner',
+            content:
+              'Confidence: 90/100\nAutofix: manual\nMotivating line: `stack contract`\nInvalid owner',
           },
         ]),
         manifestBundle.manifest
@@ -3423,6 +3903,8 @@ test('sends strict max-reasoning topology requests and rejects invalid owners', 
   assert.deepEqual(receipts[0], {
     schema_version: 1,
     stage: 'topology',
+    provider: 'mistral-deepseek',
+    model: FINAL_STACK_REVIEW_MODEL,
     requests: 1,
     upstream_attempts: 1,
     responses: 1,
@@ -3435,7 +3917,622 @@ test('sends strict max-reasoning topology requests and rejects invalid owners', 
     missing_cache_usage: 1,
     invalid_cache_usage: 0,
     unfinished_requests: 0,
+    provider_availability: { status: 'available', reason: null },
   })
+})
+
+test('continues topology review through the advisor and returns aggregate DeepSeek usage', async (t) => {
+  const { github } = stackFixture()
+  const membership = await resolveStackMembership({
+    github,
+    context: context(),
+    pullNumber: 14,
+  })
+  const manifestBundle = await buildStackSnapshot({
+    github,
+    context: context(),
+    membership,
+  })
+  const diagnosticsPath = prepareDiagnosticsReceipt(t)
+  const requests = []
+  const consultations = []
+  let fetchCalls = 0
+  const result = await callTopologyModel({
+    advisor: {
+      consult: async (toolCall) => {
+        consultations.push(toolCall)
+        return advisorContent(
+          'The boundary is consistent with the supplied excerpts.'
+        )
+      },
+      tool: advisorTool(),
+    },
+    apiKey: 'dummy-token',
+    codeResult: completeOCRResult([codeFinding()]),
+    fetchImpl: async (_url, options) => {
+      requests.push(JSON.parse(options.body))
+      fetchCalls += 1
+      if (fetchCalls === 1) {
+        return new Response(
+          JSON.stringify({
+            model: FINAL_STACK_REVIEW_MODEL,
+            choices: [
+              {
+                finish_reason: 'tool_calls',
+                message: {
+                  content: '',
+                  reasoning_content: 'synthetic native reasoning',
+                  role: 'assistant',
+                  tool_calls: [
+                    {
+                      id: 'call_topology_1',
+                      type: 'function',
+                      function: {
+                        name: 'ask_review_advisor',
+                        arguments: JSON.stringify({
+                          context: [
+                            {
+                              end_line: 1,
+                              path: 'src/one.ts',
+                              start_line: 1,
+                            },
+                          ],
+                          question:
+                            'Does the stack boundary preserve its contract?',
+                        }),
+                      },
+                    },
+                  ],
+                },
+              },
+            ],
+            usage: {
+              total_tokens: 100,
+              prompt_tokens: 60,
+              completion_tokens: 40,
+            },
+          })
+        )
+      }
+      return new Response(
+        JSON.stringify({
+          model: FINAL_STACK_REVIEW_MODEL,
+          choices: [
+            {
+              finish_reason: 'stop',
+              message: {
+                content: JSON.stringify({
+                  comments: [],
+                  summary: { comments: 0, coverage: 'complete' },
+                }),
+              },
+            },
+          ],
+          usage: {
+            total_tokens: 80,
+            prompt_tokens: 50,
+            completion_tokens: 30,
+          },
+        })
+      )
+    },
+    manifestBundle,
+    readDiffEvidence: syntheticDiffEvidence,
+    rulesText: 'test rules',
+  })
+
+  assert.deepEqual(result.usage, {
+    completion_tokens: 70,
+    prompt_tokens: 110,
+    total_tokens: 180,
+  })
+  assert.equal(fetchCalls, 2)
+  assert.equal(consultations.length, 1)
+  assert.equal(consultations[0].id, 'call_topology_1')
+  assert.equal(requests[0].model, MISTRAL_DEEPSEEK_MODEL)
+  assert.equal(requests[0].tools[0].function.name, 'ask_review_advisor')
+  assert.equal(requests[0].max_tokens, 65_536)
+  assert.equal(requests[1].max_tokens, 65_496)
+  assert.equal(Object.hasOwn(requests[1], 'provider'), false)
+  const assistant = requests[1].messages.find(
+    (message) => message.role === 'assistant'
+  )
+  const toolResult = requests[1].messages.find(
+    (message) => message.role === 'tool'
+  )
+  assert.equal(assistant.reasoning_content, 'synthetic native reasoning')
+  assert.equal(assistant.tool_calls[0].id, 'call_topology_1')
+  assert.equal(toolResult.tool_call_id, 'call_topology_1')
+  assert.deepEqual(readDiagnosticsReceipts(diagnosticsPath), [
+    {
+      schema_version: 1,
+      stage: 'topology',
+      provider: 'mistral-deepseek',
+      model: FINAL_STACK_REVIEW_MODEL,
+      provider_availability: { reason: null, status: 'available' },
+      requests: 2,
+      upstream_attempts: 2,
+      responses: 2,
+      missing_usage: 0,
+      prompt_tokens: 110,
+      completion_tokens: 70,
+      cached_prompt_tokens: 0,
+      uncached_prompt_tokens: 0,
+      cache_usage_responses: 0,
+      missing_cache_usage: 2,
+      invalid_cache_usage: 0,
+      unfinished_requests: 0,
+    },
+  ])
+})
+
+test('rejects malformed, duplicate and disallowed topology tool calls', async (t) => {
+  const { github } = stackFixture()
+  const membership = await resolveStackMembership({
+    github,
+    context: context(),
+    pullNumber: 14,
+  })
+  const manifestBundle = await buildStackSnapshot({
+    github,
+    context: context(),
+    membership,
+  })
+  const diagnosticsPath = prepareDiagnosticsReceipt(t)
+  const cases = [
+    [
+      [
+        {
+          id: 'call_one',
+          type: 'function',
+          function: { name: 'ask_review_advisor', arguments: '{}' },
+        },
+        {
+          id: 'call_two',
+          type: 'function',
+          function: { name: 'ask_review_advisor', arguments: '{}' },
+        },
+      ],
+      /invalid advisor tool call/,
+    ],
+    [
+      [
+        {
+          id: 'call_one',
+          type: 'function',
+          function: { name: 'read_review_context', arguments: '{}' },
+        },
+      ],
+      /invalid advisor tool call/,
+    ],
+    [
+      [
+        {
+          id: 'call_one',
+          type: 'function',
+          function: { name: 'ask_review_advisor', arguments: '{not json' },
+        },
+      ],
+      /invalid advisor tool arguments/,
+    ],
+    [
+      [
+        {
+          id: 'x'.repeat(129),
+          type: 'function',
+          function: { name: 'ask_review_advisor', arguments: '{}' },
+        },
+      ],
+      /invalid advisor tool call/,
+    ],
+  ]
+  let consultations = 0
+  for (const [toolCalls, pattern] of cases) {
+    await assert.rejects(
+      callTopologyModel({
+        advisor: {
+          consult: async () => {
+            consultations += 1
+            return advisorContent()
+          },
+          tool: advisorTool(),
+        },
+        apiKey: 'dummy-token',
+        codeResult: completeOCRResult(),
+        fetchImpl: async () =>
+          new Response(
+            JSON.stringify({
+              model: FINAL_STACK_REVIEW_MODEL,
+              choices: [
+                {
+                  finish_reason: 'tool_calls',
+                  message: {
+                    content: '',
+                    role: 'assistant',
+                    tool_calls: toolCalls,
+                  },
+                },
+              ],
+              usage: {
+                total_tokens: 10,
+                prompt_tokens: 7,
+                completion_tokens: 3,
+              },
+            })
+          ),
+        manifestBundle,
+        readDiffEvidence: syntheticDiffEvidence,
+        rulesText: 'test rules',
+      }),
+      pattern
+    )
+  }
+  assert.equal(consultations, 0)
+  assert.equal(readDiagnosticsReceipts(diagnosticsPath).length, cases.length)
+
+  let turn = 0
+  await assert.rejects(
+    callTopologyModel({
+      advisor: {
+        consult: async () => advisorContent(),
+        tool: advisorTool(),
+      },
+      apiKey: 'dummy-token',
+      codeResult: completeOCRResult(),
+      fetchImpl: async () => {
+        turn += 1
+        return new Response(
+          JSON.stringify({
+            model: FINAL_STACK_REVIEW_MODEL,
+            choices: [
+              {
+                finish_reason: 'tool_calls',
+                message: {
+                  content: '',
+                  role: 'assistant',
+                  tool_calls: [
+                    {
+                      id: 'call_duplicate',
+                      type: 'function',
+                      function: {
+                        name: 'ask_review_advisor',
+                        arguments: JSON.stringify({
+                          context: [],
+                          question: 'Synthetic question',
+                        }),
+                      },
+                    },
+                  ],
+                },
+              },
+            ],
+            usage: {
+              total_tokens: 10,
+              prompt_tokens: 7,
+              completion_tokens: 3,
+            },
+          })
+        )
+      },
+      manifestBundle,
+      readDiffEvidence: syntheticDiffEvidence,
+      rulesText: 'test rules',
+    }),
+    /reused an advisor tool-call ID/
+  )
+  assert.equal(turn, 2)
+})
+
+test('applies the topology deadline while the focused advisor is pending', async (t) => {
+  const { github } = stackFixture()
+  const membership = await resolveStackMembership({
+    github,
+    context: context(),
+    pullNumber: 14,
+  })
+  const manifestBundle = await buildStackSnapshot({
+    github,
+    context: context(),
+    membership,
+  })
+  const diagnosticsPath = prepareDiagnosticsReceipt(t)
+  t.mock.timers.enable({ apis: ['setTimeout'] })
+  let consulted = false
+  const pending = callTopologyModel({
+    advisor: {
+      consult: () => {
+        consulted = true
+        return new Promise(() => {})
+      },
+      tool: advisorTool(),
+    },
+    apiKey: 'dummy-token',
+    codeResult: completeOCRResult(),
+    fetchImpl: async () => topologyToolCallResponse('call_pending'),
+    manifestBundle,
+    readDiffEvidence: syntheticDiffEvidence,
+    rulesText: 'test rules',
+  })
+  await new Promise(setImmediate)
+  assert.equal(consulted, true)
+  t.mock.timers.tick(600_000)
+  await assert.rejects(pending, /Topology review deadline exceeded/)
+  assert.equal(readDiagnosticsReceipts(diagnosticsPath).length, 1)
+})
+
+test('fails closed on missing topology usage and enforces the turn and token bounds', async (t) => {
+  const { github } = stackFixture()
+  const membership = await resolveStackMembership({
+    github,
+    context: context(),
+    pullNumber: 14,
+  })
+  const manifestBundle = await buildStackSnapshot({
+    github,
+    context: context(),
+    membership,
+  })
+  const diagnosticsPath = prepareDiagnosticsReceipt(t)
+  await assert.rejects(
+    callTopologyModel({
+      apiKey: 'dummy-token',
+      codeResult: completeOCRResult(),
+      fetchImpl: async () =>
+        new Response(
+          JSON.stringify({
+            model: FINAL_STACK_REVIEW_MODEL,
+            choices: [
+              {
+                finish_reason: 'stop',
+                message: {
+                  content: JSON.stringify({
+                    comments: [],
+                    summary: { comments: 0, coverage: 'complete' },
+                  }),
+                },
+              },
+            ],
+          })
+        ),
+      manifestBundle,
+      readDiffEvidence: syntheticDiffEvidence,
+      rulesText: 'test rules',
+    }),
+    /incomplete usage counters/
+  )
+  const missingUsage = readDiagnosticsReceipts(diagnosticsPath)
+  assert.equal(missingUsage.length, 1)
+  assert.equal(missingUsage[0].missing_usage, 1)
+
+  let advisorCalls = 0
+  await assert.rejects(
+    callTopologyModel({
+      advisor: {
+        consult: async () => {
+          advisorCalls += 1
+          return advisorContent()
+        },
+        tool: advisorTool(),
+      },
+      apiKey: 'dummy-token',
+      codeResult: completeOCRResult(),
+      fetchImpl: async () =>
+        new Response(
+          JSON.stringify({
+            model: FINAL_STACK_REVIEW_MODEL,
+            choices: [
+              {
+                finish_reason: 'tool_calls',
+                message: {
+                  content: '',
+                  role: 'assistant',
+                  tool_calls: [
+                    {
+                      id: 'call_exhausted',
+                      type: 'function',
+                      function: {
+                        name: 'ask_review_advisor',
+                        arguments: JSON.stringify({
+                          context: [],
+                          question: 'Synthetic question',
+                        }),
+                      },
+                    },
+                  ],
+                },
+              },
+            ],
+            usage: {
+              total_tokens: 65_537,
+              prompt_tokens: 1,
+              completion_tokens: 65_536,
+            },
+          })
+        ),
+      manifestBundle,
+      readDiffEvidence: syntheticDiffEvidence,
+      rulesText: 'test rules',
+    }),
+    /exhausted its completion token limit/
+  )
+  assert.equal(advisorCalls, 1)
+})
+
+test('topology continues past bounded advisor errors and honors the remaining shared allowance', async (t) => {
+  const { github } = stackFixture()
+  const membership = await resolveStackMembership({
+    github,
+    context: context(),
+    pullNumber: 14,
+  })
+  const manifestBundle = await buildStackSnapshot({
+    github,
+    context: context(),
+    membership,
+  })
+  for (const error of [
+    'advisor_quota_exhausted',
+    'advisor_unavailable',
+    'source_unavailable',
+    'cancelled',
+    'tool_failed',
+    'diagnostics_unavailable',
+    'UNTRUSTED_ERROR',
+    null,
+  ]) {
+    await t.test(error ?? 'already exhausted', async (t) => {
+      prepareDiagnosticsReceipt(t)
+      const requests = []
+      let consultations = 0
+      const pending = callTopologyModel({
+        advisor: {
+          consult: async () => {
+            consultations += 1
+            return { isError: true, content: [{ type: 'text', text: error }] }
+          },
+          remainingAttempts: () =>
+            error === null || consultations > 0 ? 0 : 1,
+          tool: advisorTool(),
+        },
+        apiKey: 'dummy-token',
+        codeResult: completeOCRResult(),
+        fetchImpl: async (_url, options) => {
+          const request = JSON.parse(options.body)
+          requests.push(request)
+          if (requests.length === 1 && error !== null)
+            return topologyToolCallResponse('error_call')
+          return new Response(
+            JSON.stringify({
+              model: FINAL_STACK_REVIEW_MODEL,
+              choices: [
+                {
+                  finish_reason: 'stop',
+                  message: {
+                    content: JSON.stringify({
+                      comments: [],
+                      summary: { comments: 0, coverage: 'complete' },
+                    }),
+                  },
+                },
+              ],
+              usage: {
+                total_tokens: 10,
+                prompt_tokens: 7,
+                completion_tokens: 3,
+              },
+            })
+          )
+        },
+        manifestBundle,
+        readDiffEvidence: syntheticDiffEvidence,
+        rulesText: 'test rules',
+      })
+      if (error === 'diagnostics_unavailable' || error === 'UNTRUSTED_ERROR') {
+        await assert.rejects(pending, /invalid advice/)
+        assert.equal(requests.length, 1)
+        return
+      }
+      const result = await pending
+      assert.equal(result.status, 'complete')
+      assert.equal(result.summary.coverage, 'complete')
+      assert.equal(consultations, error === null ? 0 : 1)
+      assert.equal(Object.hasOwn(requests.at(-1), 'tools'), false)
+      if (error !== null) {
+        const toolResult = requests[1].messages.find(
+          (message) => message.role === 'tool'
+        )
+        assert.equal(toolResult.content, error)
+        assert.equal(toolResult.tool_call_id, 'error_call')
+        assert.equal(result.usage.total_tokens, 20)
+      }
+    })
+  }
+})
+
+test('forces a tool-free ninth topology turn and aggregates all Flash turns', async (t) => {
+  const { github } = stackFixture()
+  const membership = await resolveStackMembership({
+    github,
+    context: context(),
+    pullNumber: 14,
+  })
+  const manifestBundle = await buildStackSnapshot({
+    github,
+    context: context(),
+    membership,
+  })
+  const diagnosticsPath = prepareDiagnosticsReceipt(t)
+  const requests = []
+  let consultations = 0
+  const result = await callTopologyModel({
+    advisor: {
+      consult: async () => {
+        consultations += 1
+        return advisorContent()
+      },
+      tool: advisorTool(),
+    },
+    apiKey: 'dummy-token',
+    codeResult: completeOCRResult(),
+    fetchImpl: async (_url, options) => {
+      requests.push(JSON.parse(options.body))
+      if (requests.length < 9) {
+        return topologyToolCallResponse(`call_turn_${requests.length}`)
+      }
+      return new Response(
+        JSON.stringify({
+          model: FINAL_STACK_REVIEW_MODEL,
+          choices: [
+            {
+              finish_reason: 'stop',
+              message: {
+                content: JSON.stringify({
+                  comments: [],
+                  summary: { comments: 0, coverage: 'complete' },
+                }),
+              },
+            },
+          ],
+          usage: { total_tokens: 10, prompt_tokens: 7, completion_tokens: 3 },
+        })
+      )
+    },
+    manifestBundle,
+    readDiffEvidence: syntheticDiffEvidence,
+    rulesText: 'test rules',
+  })
+
+  assert.equal(requests.length, 9)
+  assert.equal(consultations, 8)
+  assert.equal(Object.hasOwn(requests[8], 'tools'), false)
+  assert.equal(Object.hasOwn(requests[8], 'tool_choice'), false)
+  assert.equal(requests[8].max_tokens, 65_512)
+  assert.deepEqual(result.usage, {
+    completion_tokens: 27,
+    prompt_tokens: 63,
+    total_tokens: 90,
+  })
+  assert.deepEqual(readDiagnosticsReceipts(diagnosticsPath), [
+    {
+      schema_version: 1,
+      stage: 'topology',
+      provider: 'mistral-deepseek',
+      model: FINAL_STACK_REVIEW_MODEL,
+      provider_availability: { reason: null, status: 'available' },
+      requests: 9,
+      upstream_attempts: 9,
+      responses: 9,
+      missing_usage: 0,
+      prompt_tokens: 63,
+      completion_tokens: 27,
+      cached_prompt_tokens: 0,
+      uncached_prompt_tokens: 0,
+      cache_usage_responses: 0,
+      missing_cache_usage: 9,
+      invalid_cache_usage: 0,
+      unfinished_requests: 0,
+    },
+  ])
 })
 
 test('retains topology usage when caller validation rejects the answer', async (t) => {
@@ -3473,7 +4570,8 @@ test('retains topology usage when caller validation rejects the answer', async (
             end_line: 1,
             category: 'bug',
             severity: 'high',
-            content: 'Invalid owner',
+            content:
+              'Confidence: 90/100\nAutofix: manual\nMotivating line: `stack contract`\nInvalid owner',
           },
         ],
       }),
@@ -3485,6 +4583,7 @@ test('retains topology usage when caller validation rejects the answer', async (
     await assert.rejects(
       callTopologyModel({
         apiKey: 'dummy-token',
+        readDiffEvidence: syntheticDiffEvidence,
         codeResult,
         manifestBundle,
         rulesText: 'test rules',
@@ -3514,6 +4613,8 @@ test('retains topology usage when caller validation rejects the answer', async (
     assert.deepEqual(receipt, {
       schema_version: 1,
       stage: 'topology',
+      provider: 'mistral-deepseek',
+      model: FINAL_STACK_REVIEW_MODEL,
       requests: 1,
       upstream_attempts: 1,
       responses: 1,
@@ -3526,6 +4627,7 @@ test('retains topology usage when caller validation rejects the answer', async (
       missing_cache_usage: 1,
       invalid_cache_usage: 0,
       unfinished_requests: 0,
+      provider_availability: { status: 'available', reason: null },
     })
   }
 })
@@ -3548,6 +4650,7 @@ test('keeps the topology deadline and records the aborted request', async (t) =>
   let fetchCalls = 0
   const pending = callTopologyModel({
     apiKey: 'dummy-token',
+    readDiffEvidence: syntheticDiffEvidence,
     codeResult,
     manifestBundle,
     rulesText: 'test rules',
@@ -3584,4 +4687,27 @@ test('latest stack drift becomes an error even when the top SHA is unchanged', (
   assert.equal(status.state, 'error')
   assert.equal(isStackReviewCommand('/final-review-stack'), true)
   assert.equal(isStackReviewCommand('/final-review-stack now'), false)
+})
+
+test('provider unavailability blocks stack clean status after either model stage', () => {
+  for (const providerUnavailable of [
+    'provider_paused',
+    'provider_payment_required',
+  ]) {
+    const status = decideStackStatus({
+      reviewedHead: 'a',
+      currentHead: 'a',
+      eligible: true,
+      codeOutcome: 'success',
+      topologyOutcome: 'success',
+      cleanupOutcome: 'success',
+      publishOutcome: 'success',
+      cleanReview: 'true',
+      cleanEvidenceDigest: 'a'.repeat(64),
+      providerUnavailable,
+    })
+    assert.equal(status.state, 'failure')
+    assert.equal(status.description.includes(providerUnavailable), true)
+    assert.equal(status.description.includes('evidence='), false)
+  }
 })

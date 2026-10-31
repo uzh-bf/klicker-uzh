@@ -6,6 +6,7 @@ import {
   MessagePrimitive,
   ThreadPrimitive,
   useAui,
+  useAuiEvent,
   useAuiState,
 } from '@assistant-ui/react'
 import { Button } from '@uzh-bf/design-system'
@@ -13,8 +14,10 @@ import {
   ArrowDownIcon,
   CheckIcon,
   CopyIcon,
+  FileTextIcon,
   ImageIcon,
-  ImagePlusIcon,
+  LoaderCircleIcon,
+  PaperclipIcon,
   PencilIcon,
   PencilOffIcon,
   RefreshCwIcon,
@@ -22,6 +25,7 @@ import {
   SquareIcon,
   ThumbsDownIcon,
   ThumbsUpIcon,
+  Volume2Icon,
   XIcon,
 } from 'lucide-react'
 import Image from 'next/image'
@@ -41,14 +45,33 @@ import {
 import { twMerge } from 'tailwind-merge'
 import { useMessageSources } from '@/src/hooks/useMessageSources'
 import {
+  type DocumentOriginal,
+  extractDocumentsForSending,
+  getDocumentAttachmentKey,
+  getDocumentOriginal,
   getImageAttachmentKey,
   hasAnyImageAttachmentData,
   parentMessageHasImageAttachment,
 } from '@/src/lib/attachments/attachmentState'
 import { getAttachmentPreviewSrc } from '@/src/lib/attachments/attachmentUi'
 import {
+  DOCUMENT_ERROR_CODE,
+  documentAttachmentAdapter,
+} from '@/src/lib/attachments/documentAttachmentAdapter'
+import {
+  applyVisualReview,
+  type DocumentAttachmentInfo,
+  type ImageSupport,
+  MAX_DOCUMENT_ATTACHMENTS,
+  MAX_DOCUMENT_SIZE_BYTES,
+  MAX_DOCUMENT_TOKENS,
+  MAX_VISUAL_REVIEW_PAGES,
+  parseMessageDocuments,
+  type VisualReviewStatus,
+  visualReviewWithoutPages,
+} from '@/src/lib/attachments/documentText'
+import {
   ATTACHMENT_ERROR_CODE,
-  AttachmentAdapterError,
   imageAttachmentAdapter,
 } from '@/src/lib/attachments/imageAttachmentAdapter'
 import {
@@ -59,7 +82,10 @@ import {
   MAX_IMAGE_ATTACHMENTS,
   useComposerStore,
 } from '@/src/stores/composerStore'
-import { useSettingsStore } from '@/src/stores/settingsStore'
+import {
+  selectModelReadsDocumentPages,
+  useSettingsStore,
+} from '@/src/stores/settingsStore'
 import {
   formatModeLabel,
   getComposerSubmitMode,
@@ -75,7 +101,15 @@ import {
 } from '../lib/history-rail'
 import { BranchPicker } from './branch-picker'
 import { useChatUi, useDisclaimerGateOpen } from './chat-ui-context'
+import { useDictationContext } from './dictation-context'
+import {
+  DictationButton,
+  DictationSheet,
+  useDictationErrorMessage,
+} from './dictation-controls'
+import { DocumentNoticeGate } from './document-notice-modal'
 import { HistoryRail } from './history-rail'
+import { DocumentPreviewModal } from './document-preview-modal'
 import { MessageAttachments } from './message-attachments'
 import { AssistantMessageParts } from './message-parts'
 import { hasChatError, isStoppedWithoutText } from './message-parts-state'
@@ -125,10 +159,13 @@ type MessageWithCustomMetadata = {
     custom?:
       | (Record<string, unknown> & {
           imageAttachments?: ImageAttachment[]
+          documentAttachments?: DocumentChipInfo[]
         })
       | null
   } | null
 }
+
+type DocumentChipInfo = DocumentAttachmentInfo
 
 const extractMessageText = (message: {
   content?: readonly { type: string; text?: string }[]
@@ -137,6 +174,11 @@ const extractMessageText = (message: {
     .filter((part) => part.type === 'text' && typeof part.text === 'string')
     .map((part) => part.text ?? '')
     .join('')
+
+const useReadsDocumentPages = () =>
+  useSettingsStore((state) =>
+    selectModelReadsDocumentPages(state, state.selectedModel)
+  )
 
 const useSupportsImageAttachments = () => {
   const selectedModel = useSettingsStore((state) => state.selectedModel)
@@ -650,6 +692,8 @@ const Composer: FC = () => {
   const { embedded } = useChatUi()
   const disclaimerGateOpen = useDisclaimerGateOpen()
   const [attachmentError, setAttachmentError] = useState<string | null>(null)
+  const { clearError: clearDictationError } = useDictationContext()
+  const dictationError = useDictationErrorMessage()
   const inputRef = useRef<HTMLTextAreaElement>(null)
   // Whether the gate was open the last time this ran, so only the *closing*
   // transition hands focus back — the ordinary, no-disclaimer mount is
@@ -684,8 +728,11 @@ const Composer: FC = () => {
         <ComposerAttachments />
 
         <AttachmentErrorBanner
-          error={attachmentError}
-          onDismiss={() => setAttachmentError(null)}
+          error={attachmentError ?? dictationError}
+          onDismiss={() => {
+            if (attachmentError) setAttachmentError(null)
+            else clearDictationError()
+          }}
           className="px-2 pt-2"
         />
 
@@ -705,9 +752,11 @@ const Composer: FC = () => {
               embedded ? 'max-h-20 py-2' : 'max-h-40 py-4'
             )}
           />
+          <DictationButton />
           <ComposerAction />
         </div>
       </ComposerPrimitive.Root>
+      <DictationSheet />
     </ComposerDropzone>
   )
 }
@@ -733,59 +782,172 @@ const ComposerHint: FC = () => {
 const useComposerAttachmentLimit = ({
   setError,
   currentCount,
+  currentDocumentCount,
 }: {
   setError: (msg: string | null) => void
   currentCount?: number
+  currentDocumentCount?: number
 }) => {
   const t = useTranslations()
   const aui = useAui()
   const attachments = useAuiState((s) => s.composer.attachments)
-  const composerAttachmentCount = attachments.length
-  const existingAttachmentCount =
-    currentCount == null
-      ? 0
-      : Math.max(0, currentCount - composerAttachmentCount)
-  const maxComposerAttachmentCount = Math.max(
+  const composerImageCount = attachments.filter(isImageAttachment).length
+  const existingImageCount =
+    currentCount == null ? 0 : Math.max(0, currentCount - composerImageCount)
+  const maxComposerImageCount = Math.max(
     0,
-    MAX_IMAGE_ATTACHMENTS - existingAttachmentCount
+    MAX_IMAGE_ATTACHMENTS - existingImageCount
+  )
+  const composerDocumentCount = attachments.length - composerImageCount
+  const existingDocumentCount =
+    currentDocumentCount == null
+      ? 0
+      : Math.max(0, currentDocumentCount - composerDocumentCount)
+  const maxComposerDocumentCount = Math.max(
+    0,
+    MAX_DOCUMENT_ATTACHMENTS - existingDocumentCount
   )
 
   useEffect(() => {
-    if (attachments.length <= maxComposerAttachmentCount) return
+    const imageIndexes = attachments.flatMap((attachment, index) =>
+      isImageAttachment(attachment) ? [index] : []
+    )
+    const documentIndexes = attachments.flatMap((attachment, index) =>
+      isImageAttachment(attachment) ? [] : [index]
+    )
+    const overflowImageIndexes = imageIndexes.slice(maxComposerImageCount)
+    const overflowDocumentIndexes = documentIndexes.slice(
+      maxComposerDocumentCount
+    )
+    if (
+      overflowImageIndexes.length === 0 &&
+      overflowDocumentIndexes.length === 0
+    ) {
+      return
+    }
 
     setError(
-      t('chat.composer.attachmentLimitError', { max: MAX_IMAGE_ATTACHMENTS })
+      overflowImageIndexes.length > 0
+        ? t('chat.composer.attachmentLimitError', {
+            max: MAX_IMAGE_ATTACHMENTS,
+          })
+        : t('chat.composer.documentLimitError', {
+            max: MAX_DOCUMENT_ATTACHMENTS,
+          })
     )
 
-    const overflowAttachmentIndexes = attachments
-      .map((_, index) => index)
-      .slice(maxComposerAttachmentCount)
-      .reverse()
+    const overflowAttachmentIndexes = [
+      ...overflowImageIndexes,
+      ...overflowDocumentIndexes,
+    ].sort((a, b) => b - a)
 
     void Promise.all(
       overflowAttachmentIndexes.map((index) =>
         aui.composer.attachment({ index }).remove()
       )
     )
-  }, [attachments, aui, maxComposerAttachmentCount, setError, t])
+  }, [
+    attachments,
+    aui,
+    maxComposerDocumentCount,
+    maxComposerImageCount,
+    setError,
+    t,
+  ])
+}
+
+const isImageAttachment = (attachment: { type: string }): boolean =>
+  attachment.type === 'image'
+
+// Adapter errors carry stable codes as their message, which map to localized
+// text (a FileReader failure would otherwise read "[object ProgressEvent]");
+// other adapter errors already carry a readable message.
+const getAttachmentErrorMessage = (
+  t: ReturnType<typeof useTranslations<never>>,
+  code: string
+): string => {
+  switch (code) {
+    case ATTACHMENT_ERROR_CODE.readFailed:
+      return t('chat.composer.attachmentReadError')
+    case DOCUMENT_ERROR_CODE.tooLarge:
+      return t('chat.composer.documentTooLarge', {
+        max: MAX_DOCUMENT_SIZE_BYTES / 1024 / 1024,
+      })
+    case DOCUMENT_ERROR_CODE.noText:
+      return t('chat.composer.documentNoText')
+    case DOCUMENT_ERROR_CODE.pdfNoText:
+      return t('chat.composer.documentPdfNoText')
+    case DOCUMENT_ERROR_CODE.presentation:
+      return t('chat.composer.documentPresentation')
+    case DOCUMENT_ERROR_CODE.readFailed:
+      return t('chat.composer.documentReadError')
+    default:
+      return code
+  }
+}
+
+/**
+ * Drag and drop swallows adapter errors, and a document that fails after it
+ * started reading stays behind as an incomplete chip. Show the error and drop
+ * the failed chip so it can never be sent empty.
+ */
+const useAttachmentErrorHandling = (setError: (msg: string | null) => void) => {
+  const t = useTranslations()
+  const aui = useAui()
+  const supportsImages = useSupportsImageAttachments()
+  const failedIndexes = useAuiState((s) =>
+    s.composer.attachments
+      .flatMap((attachment, index) =>
+        attachment.status.type === 'incomplete' ? [index] : []
+      )
+      .join(',')
+  )
+
+  useAuiEvent('composer.attachmentAddError', ({ reason, message }) => {
+    setError(
+      reason === 'not-accepted' || reason === 'no-adapter'
+        ? t(
+            supportsImages
+              ? 'chat.composer.attachmentTypeError'
+              : 'chat.composer.documentOnlyTypeError'
+          )
+        : getAttachmentErrorMessage(t, message)
+    )
+  })
+
+  useEffect(() => {
+    if (!failedIndexes) return
+    const indexes = failedIndexes.split(',').map(Number).reverse()
+    void Promise.all(
+      indexes.map((index) => aui.composer.attachment({ index }).remove())
+    )
+  }, [aui, failedIndexes])
 }
 
 const ComposerDropzone: FC<
   PropsWithChildren<{
     setError: (msg: string | null) => void
     currentCount?: number
+    currentDocumentCount?: number
     className?: string
     roundedClass: string
   }>
-> = ({ setError, currentCount, className, roundedClass, children }) => {
-  const supportsImages = useSupportsImageAttachments()
+> = ({
+  setError,
+  currentCount,
+  currentDocumentCount,
+  className,
+  roundedClass,
+  children,
+}) => {
+  useComposerAttachmentLimit({ setError, currentCount, currentDocumentCount })
+  useAttachmentErrorHandling(setError)
 
-  useComposerAttachmentLimit({ setError, currentCount })
-
+  // Documents are always accepted, so the dropzone stays enabled even when
+  // the selected model cannot read images.
   return (
     <ComposerPrimitive.AttachmentDropzone
       data-testid="composer-dropzone"
-      disabled={!supportsImages}
       className={twMerge(
         'data-[dragging]:ring-primary/40 group relative transition-colors data-[dragging]:ring-2',
         roundedClass,
@@ -793,7 +955,7 @@ const ComposerDropzone: FC<
       )}
     >
       {children}
-      {supportsImages && <ComposerDropOverlay roundedClass={roundedClass} />}
+      <ComposerDropOverlay roundedClass={roundedClass} />
     </ComposerPrimitive.AttachmentDropzone>
   )
 }
@@ -809,7 +971,7 @@ const ComposerDropOverlay: FC<{ roundedClass: string }> = ({
         roundedClass
       )}
     >
-      {t('chat.composer.dropImages')}
+      {t('chat.composer.dropFiles')}
     </div>
   )
 }
@@ -834,18 +996,32 @@ const ComposerAttachments: FC<{
 }> = ({ source = 'thread', inline = false }) => {
   const primitive = (
     <ComposerPrimitive.Attachments>
-      {() => <ComposerImageAttachment variant={source} />}
+      {({ attachment }) =>
+        attachment.type === 'document' ? (
+          <ComposerDocumentAttachment />
+        ) : (
+          <ComposerImageAttachment variant={source} />
+        )
+      }
     </ComposerPrimitive.Attachments>
   )
 
   if (inline) {
-    return <>{primitive}</>
+    return (
+      <>
+        {primitive}
+        <DocumentNoticeGate />
+      </>
+    )
   }
 
   return (
-    <div className="flex w-full flex-wrap gap-2 py-2 empty:hidden">
-      {primitive}
-    </div>
+    <>
+      <div className="flex w-full flex-wrap gap-2 py-2 empty:hidden">
+        {primitive}
+      </div>
+      <DocumentNoticeGate />
+    </>
   )
 }
 
@@ -877,6 +1053,290 @@ const selectAttachmentImageSrc = (
 
 const selectAttachmentName = (attachment: ComposerAttachmentLike): string =>
   attachment.name
+
+const selectAttachmentDocument = (
+  attachment: ComposerAttachmentLike
+): string | null => {
+  const textPart = attachment.content?.find(
+    (part): part is { type: 'text'; text: string } =>
+      typeof part === 'object' &&
+      part !== null &&
+      (part as { type?: unknown }).type === 'text' &&
+      typeof (part as { text?: unknown }).text === 'string'
+  )
+  return textPart?.text ?? null
+}
+
+const getVisualReviewLabel = (
+  t: ReturnType<typeof useTranslations<never>>,
+  status: VisualReviewStatus,
+  pages: number | null
+): string => {
+  const count = pages ?? 2
+  switch (status) {
+    case 'reviewed':
+      return t('chat.composer.documentVisualReviewed', { count })
+    case 'too-many-pages':
+      return t('chat.composer.documentVisualTooManyPages', {
+        count,
+        max: MAX_VISUAL_REVIEW_PAGES,
+      })
+    case 'no-image-support':
+      return t('chat.composer.documentVisualNoImageSupport', { count })
+    case 'skipped':
+      return t('chat.composer.documentVisualSkipped', { count })
+  }
+}
+
+const DocumentChip: FC<{
+  name: string
+  document?: DocumentChipInfo
+  reading?: boolean
+  removable?: boolean
+  onPreview?: () => void
+  children?: ReactNode
+}> = ({
+  name,
+  document,
+  reading = false,
+  removable = false,
+  onPreview,
+  children,
+}) => {
+  const t = useTranslations()
+  const format = useFormatter()
+  const details = reading
+    ? t('chat.composer.documentReading')
+    : document
+      ? [
+          document.pages != null
+            ? t('chat.composer.documentPages', { count: document.pages })
+            : null,
+          t('chat.composer.documentTokens', {
+            count: format.number(document.tokenEstimate),
+          }),
+        ]
+          .filter(Boolean)
+          .join(' · ')
+      : null
+  const chipContent = (
+    <>
+      <span
+        aria-hidden
+        className="bg-primary/10 text-primary flex size-8 shrink-0 items-center justify-center rounded"
+      >
+        {reading ? (
+          <LoaderCircleIcon className="size-4 animate-spin motion-reduce:animate-none" />
+        ) : (
+          <FileTextIcon className="size-4" />
+        )}
+      </span>
+      <span className="min-w-0">
+        <span
+          className="text-foreground block truncate font-medium"
+          title={name}
+        >
+          {name}
+        </span>
+        {details && (
+          <span className="text-muted-foreground block truncate">
+            {details}
+          </span>
+        )}
+        {document?.shortened && (
+          <span
+            data-cy="chat-document-shortened"
+            className="block text-amber-800"
+          >
+            {t('chat.composer.documentShortened', {
+              max: format.number(MAX_DOCUMENT_TOKENS),
+            })}
+          </span>
+        )}
+        {!reading && document?.visualReview && (
+          <span
+            data-cy="chat-document-visual-review"
+            data-status={document.visualReview}
+            className="text-muted-foreground block whitespace-normal"
+          >
+            {getVisualReviewLabel(t, document.visualReview, document.pages)}
+          </span>
+        )}
+      </span>
+    </>
+  )
+
+  return (
+    <div
+      data-cy="chat-document-attachment"
+      className={twMerge(
+        'bg-background relative flex max-w-64 min-w-0 items-center gap-2 rounded-lg border py-1.5 pl-2 pr-3 text-left text-xs',
+        removable && 'pr-14 fine-pointer:pr-9',
+        document?.shortened && 'border-amber-500/50 bg-amber-50'
+      )}
+    >
+      {onPreview && !reading ? (
+        <button
+          type="button"
+          data-cy="chat-document-preview-open"
+          onClick={onPreview}
+          aria-haspopup="dialog"
+          title={t('chat.documentPreview.open', { name })}
+          className="focus-visible:ring-ring flex min-w-0 items-center gap-2 rounded text-left focus-visible:outline-none focus-visible:ring-2"
+        >
+          {chipContent}
+        </button>
+      ) : (
+        chipContent
+      )}
+      {children}
+    </div>
+  )
+}
+
+/**
+ * A document chip that opens the document preview. `resolveOriginal` returns
+ * the original file while it is still in this tab, and a release callback for
+ * an object URL created just for this preview.
+ */
+const PreviewableDocumentChip: FC<{
+  name: string
+  document?: DocumentChipInfo
+  reading?: boolean
+  removable?: boolean
+  resolveOriginal: () => {
+    original: DocumentOriginal | null
+    release?: () => void
+  }
+  children?: ReactNode
+}> = ({ resolveOriginal, children, ...chipProps }) => {
+  const [preview, setPreview] = useState<{
+    original: DocumentOriginal | null
+    release?: () => void
+  } | null>(null)
+  // Frees an object URL created for the preview when it closes or unmounts.
+  useEffect(() => () => preview?.release?.(), [preview])
+
+  return (
+    <>
+      <DocumentChip
+        {...chipProps}
+        onPreview={
+          chipProps.document ? () => setPreview(resolveOriginal()) : undefined
+        }
+      >
+        {children}
+      </DocumentChip>
+      {chipProps.document && (
+        <DocumentPreviewModal
+          name={chipProps.name}
+          text={chipProps.document.text}
+          original={preview?.original ?? null}
+          isOpen={preview != null}
+          onClose={() => setPreview(null)}
+        />
+      )}
+    </>
+  )
+}
+
+type ComposerAttachmentList = readonly (NonNullable<
+  Parameters<typeof extractDocumentsForSending>[0]
+>[number] & { id: string })[]
+
+// Every document chip needs the projection of all composer documents. It is
+// computed once per attachments array and model capability, not per chip.
+const composerDocumentProjections = new WeakMap<
+  object,
+  { supportsImages: ImageSupport; blocks: Map<string, string> }
+>()
+
+function projectComposerDocuments(
+  attachments: ComposerAttachmentList,
+  supportsImages: ImageSupport
+): Map<string, string> {
+  const cached = composerDocumentProjections.get(attachments)
+  if (cached?.supportsImages === supportsImages) return cached.blocks
+  const documents = attachments
+    .filter((attachment) => attachment.type === 'document')
+    .slice(0, MAX_DOCUMENT_ATTACHMENTS)
+  // A document still being read has no block yet and keeps its place.
+  const { blocks } = applyVisualReview(
+    documents.map(
+      (attachment) =>
+        extractDocumentsForSending([attachment])[0] ?? {
+          block: '',
+          pageImages: [],
+        }
+    ),
+    { supportsImages }
+  )
+  const blocksById = new Map<string, string>()
+  documents.forEach((attachment, index) => {
+    if (blocks[index]) blocksById.set(attachment.id, blocks[index])
+  })
+  composerDocumentProjections.set(attachments, {
+    supportsImages,
+    blocks: blocksById,
+  })
+  return blocksById
+}
+
+const ComposerDocumentAttachment: FC = () => {
+  const name = useAuiState((s) => selectAttachmentName(s.attachment))
+  const reading = useAuiState((s) => s.attachment.status.type === 'running')
+  const blockText = useAuiState((s) => selectAttachmentDocument(s.attachment))
+  const file = useAuiState((s) => s.attachment.file)
+  const supportsImages = useReadsDocumentPages()
+  // The status the pages will get when the message is sent: the model may
+  // have changed since the file was read, and earlier documents may already
+  // use up the page budget.
+  const attachmentId = useAuiState((s) => s.attachment.id)
+  // The attachments array keeps its identity between stream updates, so the
+  // projection below only reruns when the composer's attachments change.
+  const composerAttachments = useAuiState((s) => s.composer.attachments)
+  const sendBlockText = useMemo(
+    () =>
+      projectComposerDocuments(composerAttachments, supportsImages).get(
+        attachmentId
+      ) ?? null,
+    [attachmentId, composerAttachments, supportsImages]
+  )
+  const document = useMemo(() => {
+    const text = sendBlockText ?? blockText
+    return text ? parseMessageDocuments(text).documents[0] : undefined
+  }, [blockText, sendBlockText])
+
+  return (
+    <AttachmentPrimitive.Root className="relative">
+      <PreviewableDocumentChip
+        name={name}
+        document={document}
+        reading={reading}
+        removable
+        resolveOriginal={() => {
+          if (!(file instanceof Blob)) return { original: null }
+          const url = URL.createObjectURL(file)
+          return {
+            original: { url, type: file.type, size: file.size },
+            release: () => URL.revokeObjectURL(url),
+          }
+        }}
+      >
+        <AttachmentPrimitive.Remove asChild>
+          <AttachmentRemoveButton />
+        </AttachmentPrimitive.Remove>
+      </PreviewableDocumentChip>
+    </AttachmentPrimitive.Root>
+  )
+}
+
+const getMessageDocuments = (
+  message: MessageWithCustomMetadata
+): DocumentChipInfo[] => {
+  const documents = message.metadata?.custom?.documentAttachments
+  return Array.isArray(documents) ? documents : []
+}
 
 const AttachmentTile: FC<{
   imageSrc: string | null
@@ -956,53 +1416,76 @@ const ComposerAttachmentView: FC<{
 const ComposerAttachButton: FC<{
   setError: (msg: string | null) => void
   currentCount?: number
+  currentDocumentCount?: number
   dataCy?: string
-}> = ({ setError, currentCount, dataCy }) => {
+}> = ({ setError, currentCount, currentDocumentCount, dataCy }) => {
   const t = useTranslations()
   const { embedded } = useChatUi()
   const aui = useAui()
-  const composerAttachmentCount = useAuiState(
-    (s) => s.composer.attachments.length
+  const composerImageCount = useAuiState(
+    (s) => s.composer.attachments.filter(isImageAttachment).length
   )
-  const attachmentCount = currentCount ?? composerAttachmentCount
+  const composerDocumentCount = useAuiState(
+    (s) =>
+      s.composer.attachments.filter(
+        (attachment) => !isImageAttachment(attachment)
+      ).length
+  )
+  const imageCount = currentCount ?? composerImageCount
+  const documentCount = currentDocumentCount ?? composerDocumentCount
   const inputRef = useRef<HTMLInputElement | null>(null)
   const supportsImages = useSupportsImageAttachments()
+  const canAddImages = supportsImages && imageCount < MAX_IMAGE_ATTACHMENTS
+  const canAddDocuments = documentCount < MAX_DOCUMENT_ATTACHMENTS
 
-  if (!supportsImages || attachmentCount >= MAX_IMAGE_ATTACHMENTS) return null
+  if (!canAddImages && !canAddDocuments) return null
 
   const handleFiles = async (files: FileList | null) => {
     if (!files || files.length === 0) return
-    const remaining = Math.max(0, MAX_IMAGE_ATTACHMENTS - attachmentCount)
-    const accepted = Array.from(files).slice(0, remaining)
-    const rejectedCount = files.length - accepted.length
+    // Limits are checked here, before any file is read.
+    let remainingImages = canAddImages
+      ? Math.max(0, MAX_IMAGE_ATTACHMENTS - imageCount)
+      : 0
+    let remainingDocuments = Math.max(
+      0,
+      MAX_DOCUMENT_ATTACHMENTS - documentCount
+    )
+    let rejectedImages = 0
+    let rejectedDocuments = 0
+    const accepted = Array.from(files).filter((file) => {
+      if (supportsImages && file.type.startsWith('image/')) {
+        if (remainingImages > 0) {
+          remainingImages--
+          return true
+        }
+        rejectedImages++
+        return false
+      }
+      if (remainingDocuments > 0) {
+        remainingDocuments--
+        return true
+      }
+      rejectedDocuments++
+      return false
+    })
 
     setError(null)
 
-    let lastAdapterError: string | null = null
+    // Adapter errors reach the banner through `useAttachmentErrorHandling`.
     for (const file of accepted) {
       try {
         await aui.composer.addAttachment(file)
-      } catch (e) {
-        // the adapter rejects with a typed error + stable code for failures
-        // that need a localized message (e.g. FileReader errors, which
-        // otherwise stringify to "[object ProgressEvent]"); other adapter
-        // errors already carry a readable `message`
-        lastAdapterError =
-          e instanceof AttachmentAdapterError &&
-          e.code === ATTACHMENT_ERROR_CODE.readFailed
-            ? t('chat.composer.attachmentReadError')
-            : e instanceof Error
-              ? e.message
-              : String(e)
-      }
+      } catch {}
     }
 
-    if (rejectedCount > 0) {
+    if (rejectedImages > 0) {
       setError(
         t('chat.composer.attachmentLimitError', { max: MAX_IMAGE_ATTACHMENTS })
       )
-    } else if (lastAdapterError) {
-      setError(lastAdapterError)
+    } else if (rejectedDocuments > 0) {
+      setError(
+        t('chat.composer.documentLimitError', { max: MAX_DOCUMENT_ATTACHMENTS })
+      )
     }
   }
 
@@ -1012,7 +1495,12 @@ const ComposerAttachButton: FC<{
         ref={inputRef}
         data-cy={dataCy ? `${dataCy}-attach-input` : 'chat-attach-input'}
         type="file"
-        accept={imageAttachmentAdapter.accept}
+        accept={[
+          canAddImages ? imageAttachmentAdapter.accept : null,
+          canAddDocuments ? documentAttachmentAdapter.accept : null,
+        ]
+          .filter(Boolean)
+          .join(',')}
         multiple
         className="hidden"
         onChange={(event) => {
@@ -1032,9 +1520,9 @@ const ComposerAttachButton: FC<{
             ? 'size-11 fine-pointer:size-8'
             : 'size-11 fine-pointer:size-9'
         )}
-        aria-label={t('chat.composer.attachImage')}
+        aria-label={t('chat.composer.attachFile')}
       >
-        <ImagePlusIcon className={embedded ? 'size-4' : 'size-5'} />
+        <PaperclipIcon className={embedded ? 'size-4' : 'size-5'} />
       </button>
     </>
   )
@@ -1186,6 +1674,7 @@ function getEditTooltip(
 const UserMessage: FC = () => {
   const message = useAuiState((s) => s.message) as MessageWithCustomMetadata
   const attachments = getMessageAttachments(message)
+  const documents = getMessageDocuments(message)
 
   return (
     <MessagePrimitive.Root
@@ -1205,6 +1694,21 @@ const UserMessage: FC = () => {
             hydrationSourceMessageId={message.attachmentSourceMessageId}
             className="mb-2"
           />
+        )}
+        {documents.length > 0 && (
+          <div className="mb-2 flex flex-wrap gap-2">
+            {documents.map((document, index) => (
+              <PreviewableDocumentChip
+                // biome-ignore lint/suspicious/noArrayIndexKey: documents have no id and keep their order
+                key={index}
+                name={document.name}
+                document={document}
+                resolveOriginal={() => ({
+                  original: getDocumentOriginal(message.id, index),
+                })}
+              />
+            ))}
+          </div>
         )}
         <MessagePrimitive.Content />
       </div>
@@ -1293,8 +1797,10 @@ const EditComposer: FC = () => {
   const t = useTranslations()
   const { showMessageActions } = useChatUi()
   const message = useAuiState((s) => s.message) as MessageWithCustomMetadata
+  const readsDocumentPages = useReadsDocumentPages()
   const [attachmentError, setAttachmentError] = useState<string | null>(null)
   const attachments = getMessageAttachments(message)
+  const documents = getMessageDocuments(message)
   const removedAttachmentKeys = useComposerStore(
     (state) =>
       state.editRemovedAttachmentKeysByMessageId[message.id] ??
@@ -1308,6 +1814,15 @@ const EditComposer: FC = () => {
   )
   const pendingAttachmentCount = useAuiState(
     (s) => s.message.composer.attachments.length
+  )
+  const pendingImageCount = useAuiState(
+    (s) => s.message.composer.attachments.filter(isImageAttachment).length
+  )
+  const pendingDocumentCount = pendingAttachmentCount - pendingImageCount
+  const readingDocument = useAuiState((s) =>
+    s.message.composer.attachments.some(
+      (attachment) => attachment.status.type === 'running'
+    )
   )
   const composerText = useAuiState((s) => s.message.composer.text)
   const originalText = extractMessageText(message)
@@ -1330,16 +1845,40 @@ const EditComposer: FC = () => {
   const visibleAttachmentEntries = attachmentEntries.filter(
     ({ key }) => !removedAttachmentKeySet.has(key)
   )
+  // Kept documents are sent again without page images, so their chips show
+  // the status the edited message will get.
+  const visibleDocumentEntries = documents
+    .map((document, index) => ({
+      document:
+        document.visualReview == null
+          ? document
+          : {
+              ...document,
+              visualReview: visualReviewWithoutPages(document.visualReview, {
+                supportsImages: readsDocumentPages,
+              }),
+            },
+      key: getDocumentAttachmentKey(index),
+      index,
+    }))
+    .filter(({ key }) => !removedAttachmentKeySet.has(key))
   const totalAttachmentCount =
-    visibleAttachmentEntries.length + pendingAttachmentCount
+    visibleAttachmentEntries.length +
+    visibleDocumentEntries.length +
+    pendingAttachmentCount
+  const totalImageCount = visibleAttachmentEntries.length + pendingImageCount
+  const totalDocumentCount =
+    visibleDocumentEntries.length + pendingDocumentCount
 
   // require text or attachment change to enable send
   const textChanged = composerText !== originalText
   const attachmentsChanged =
     pendingAttachmentCount > 0 ||
-    attachmentEntries.length !== visibleAttachmentEntries.length
+    attachmentEntries.length !== visibleAttachmentEntries.length ||
+    documents.length !== visibleDocumentEntries.length
   const canSubmit =
     hasAvailableMode &&
+    !readingDocument &&
     composerText.trim().length + totalAttachmentCount > 0 &&
     (textChanged || attachmentsChanged)
 
@@ -1372,7 +1911,8 @@ const EditComposer: FC = () => {
   return (
     <ComposerDropzone
       setError={setAttachmentError}
-      currentCount={totalAttachmentCount}
+      currentCount={totalImageCount}
+      currentDocumentCount={totalDocumentCount}
       className="my-4 w-full max-w-[var(--thread-max-width)]"
       roundedClass="rounded-2xl"
     >
@@ -1383,7 +1923,9 @@ const EditComposer: FC = () => {
         <ComposerPrimitive.Input
           data-cy="chat-edit-composer-input"
           autoFocus
-          submitMode={getComposerSubmitMode(hasAvailableMode)}
+          submitMode={getComposerSubmitMode(
+            hasAvailableMode && !readingDocument
+          )}
           className="text-foreground flex min-h-[2.5rem] w-full resize-none border-0 bg-transparent px-4 pt-4 outline-none focus:border-0 focus:shadow-none focus:outline-none focus:ring-0"
         />
 
@@ -1395,8 +1937,24 @@ const EditComposer: FC = () => {
 
         <div className="mx-4 mb-2 flex items-end gap-2 pb-2">
           {(visibleAttachmentEntries.length > 0 ||
+            visibleDocumentEntries.length > 0 ||
             pendingAttachmentCount > 0) && (
             <div className="flex flex-wrap gap-2">
+              {visibleDocumentEntries.map(({ document, key, index }) => (
+                <PreviewableDocumentChip
+                  key={key}
+                  name={document.name}
+                  document={document}
+                  removable
+                  resolveOriginal={() => ({
+                    original: getDocumentOriginal(message.id, index),
+                  })}
+                >
+                  <AttachmentRemoveButton
+                    onClick={() => addEditRemovedAttachmentKey(message.id, key)}
+                  />
+                </PreviewableDocumentChip>
+              ))}
               {visibleAttachmentEntries.map(({ attachment, key }) => {
                 const previewSrc = getAttachmentPreviewSrc(attachment, 'edit')
                 const label =
@@ -1424,7 +1982,8 @@ const EditComposer: FC = () => {
           )}
           <ComposerAttachButton
             setError={setAttachmentError}
-            currentCount={totalAttachmentCount}
+            currentCount={totalImageCount}
+            currentDocumentCount={totalDocumentCount}
             dataCy="chat-edit-composer"
           />
           <div className="ml-auto flex items-center justify-center gap-2">
@@ -1637,6 +2196,46 @@ const AssistantActionBar: FC<{ embedded?: boolean }> = ({ embedded }) => {
           </TooltipTrigger>
           <TooltipContent>{t('chat.message.copy')}</TooltipContent>
         </Tooltip>
+        <AuiIf
+          condition={(s) =>
+            s.thread.capabilities.speech && s.message.speech == null
+          }
+        >
+          <Tooltip>
+            <TooltipTrigger asChild>
+              <ActionBarPrimitive.Speak asChild>
+                <button
+                  data-cy="chat-read-aloud-button"
+                  aria-pressed={false}
+                  className={actionBarButtonClassName}
+                >
+                  <Volume2Icon />
+                  <span className="sr-only">{t('chat.message.readAloud')}</span>
+                </button>
+              </ActionBarPrimitive.Speak>
+            </TooltipTrigger>
+            <TooltipContent>{t('chat.message.readAloud')}</TooltipContent>
+          </Tooltip>
+        </AuiIf>
+        <AuiIf condition={(s) => s.message.speech != null}>
+          <Tooltip>
+            <TooltipTrigger asChild>
+              <ActionBarPrimitive.StopSpeaking asChild>
+                <button
+                  data-cy="chat-stop-read-aloud-button"
+                  aria-pressed={true}
+                  className={actionBarButtonClassName}
+                >
+                  <SquareIcon />
+                  <span className="sr-only">
+                    {t('chat.message.stopReadAloud')}
+                  </span>
+                </button>
+              </ActionBarPrimitive.StopSpeaking>
+            </TooltipTrigger>
+            <TooltipContent>{t('chat.message.stopReadAloud')}</TooltipContent>
+          </Tooltip>
+        </AuiIf>
         {!hideAnswerActions && hasAvailableMode && (
           <Tooltip>
             <TooltipTrigger asChild>

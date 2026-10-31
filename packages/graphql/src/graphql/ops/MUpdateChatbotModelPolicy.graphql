@@ -3,12 +3,14 @@ mutation MUpdateChatbotModelPolicy(
   $modelSelection: Boolean!
   $allowedModelIds: [String!]!
   $allowedReasoningEffortsByModel: [ChatbotReasoningConfigInput!]
+  $answerPreferencesEnabled: Boolean
 ) {
   updateChatbotModelPolicy(
     chatbotId: $chatbotId
     modelSelection: $modelSelection
     allowedModelIds: $allowedModelIds
     allowedReasoningEffortsByModel: $allowedReasoningEffortsByModel
+    answerPreferencesEnabled: $answerPreferencesEnabled
   ) {
     id
     modelSelection
@@ -17,6 +19,7 @@ mutation MUpdateChatbotModelPolicy(
       modelId
       efforts
     }
+    answerPreferencesEnabled
     updatedAt
   }
 }

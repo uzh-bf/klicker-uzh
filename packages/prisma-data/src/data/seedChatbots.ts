@@ -1,20 +1,9 @@
 import * as Prisma from '@klicker-uzh/prisma/client'
-import { readFileSync } from 'fs'
 import { COURSE_ID_TEST, USER_ID_TEST } from './constants.js'
 
 export const CHATBOT_ID_TEST = '8f9c2e1d-4b7a-4c3e-9f5d-1a2b3c4d5e6f'
 
 export const CHATBOT_AVATAR_HASH = '217ed4744160a52219711edc6636550d49b6d672'
-
-const tutorPrompt = readFileSync(
-  './src/data/data/tutorMode.txt',
-  'utf-8'
-).trim()
-
-const explainerPrompt = readFileSync(
-  './src/data/data/explainerMode.txt',
-  'utf-8'
-).trim()
 
 export async function seedChatbots(prisma: Prisma.PrismaClient) {
   const testDisclaimer = await prisma.chatbotDisclaimer.upsert({
@@ -53,6 +42,9 @@ Der Chatbot soll **kursbezogene Fragen** im Kurs "Banking and Finance I/II" bean
       allowedModelIds: ['auto', 'gpt-6-luna', 'gpt-4.1'],
       // Repair status on reseed of an existing DB so the bot stays reachable.
       status: 'PUBLISHED',
+      // Clear prompts left by earlier seeds so the bot keeps the platform
+      // defaults, like a chatbot created in the manage app.
+      systemPrompts: Prisma.Prisma.DbNull,
     },
     create: {
       id: CHATBOT_ID_TEST,
@@ -62,16 +54,8 @@ Der Chatbot soll **kursbezogene Fragen** im Kurs "Banking and Finance I/II" bean
       avatar: CHATBOT_AVATAR_HASH,
       ownerId: USER_ID_TEST,
       courseId: COURSE_ID_TEST,
-      systemPrompts: {
-        tutor: {
-          prompt: tutorPrompt,
-          description: 'Acts as a patient and knowledgeable tutor.',
-        },
-        explainer: {
-          prompt: explainerPrompt,
-          description: 'Act as an expert explainer.',
-        },
-      },
+      // systemPrompts stays unset so the chat runtime composes its Tutor and
+      // Explainer platform defaults, as for a chatbot created in the manage app.
       creditInitialCredits: 100, // Generous amount for testing
       creditResetPeriod: 'WEEKLY', // Weekly reset for testing
       creditResetAmount: 50, // Add 50 credits on reset

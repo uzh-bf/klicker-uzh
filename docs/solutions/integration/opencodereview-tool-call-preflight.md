@@ -23,9 +23,9 @@ tags:
 
 ## Current review routes
 
-Draft reviews use DeepSeek V4.1 Flash 1017 through OpenRouter; manual reviews
-and the bounded draft advisor use Mistral-hosted `zai-glm-5-3`. Both models use
-maximum reasoning. The manual tool canary and stack topology request call the
+Draft and manual main reviews use Mistral-hosted
+`deepseek-v4-1-flash-1017` through the `mistral-deepseek` profile. The bounded
+advisor uses Mistral-hosted `zai-glm-5-3`. Both models use maximum reasoning. The manual tool canary and stack topology request call the
 fixed Mistral endpoint directly. OCR uses the runner-local
 [adapter](../../../.github/scripts/ocr-mistral-adapter.cjs), which translates
 `max_completion_tokens` to `max_tokens` and restores native thinking chunks
@@ -36,6 +36,16 @@ HTTP 400. The request schema omits that keyword; `validateTopologyResult`
 still rejects duplicate layer numbers before publication. The topology call
 allows up to 65,536 completion tokens and ten minutes for maximum reasoning;
 length-truncated answers fail closed.
+
+Topology source evidence is assembled after the review job fetches the frozen
+commit range. Reading it while creating the earlier metadata snapshot would
+require additional fetches in a shallow checkout and put source into an artifact.
+The root layer uses the merge base rather than an advanced PR base; otherwise
+unrelated upstream changes appear as reversals. Local Git boundary tests cover
+that divergence and reject unavailable or oversized evidence before dispatch.
+The schema describes the confidence prefix using its existing vocabulary;
+the shared finding validator enforces it before publication. This keeps provider
+grammar compatibility separate from local acceptance checks.
 
 The upstream `MISTRAL_API_KEY` exists only in the adapter or direct request
 process. OCR receives a random loopback capability, and its mode-0600 config
@@ -68,6 +78,45 @@ Qualify tool extensions with the pinned released binary against synthetic
 providers. A successful MCP initialization proves discovery; actual tool
 invocation, bounded source reads and separate usage receipts prove the
 [draft runner contract](../../../.github/scripts/ocr-draft-review.test.cjs).
+
+Trusted repository context is declared in
+[repository.json](../../../.github/open-code-review/repository.json) at the
+frozen policy revision. The runner validates its limited schema and declared
+entry points before adapters start. Root Markdown contracts use the same bounded
+Git-blob reads as nested docs and skills. Public-library IDs are explicit;
+omitting them leaves lookup unavailable instead of importing donor assumptions.
+Model choices and operational limits remain fixed in the runtime. The exported
+runner accepts a summary sink; only the GitHub CLI wrapper selects the Actions
+summary file.
+
+### Credential-free reviews need complete Git objects
+
+A sparse `actions/checkout` implicitly requests `blob:none`, even when
+`fetch-depth: 0` supplies complete commit history. A later range fetch does not
+prove every blob is local. When OCR computes the diff after checkout credentials
+are removed, Git may try to fetch missing blobs and fail before any model call.
+
+Use a complete trusted-policy checkout with `fetch-depth: 0`, no `filter` and no
+`sparse-checkout`. Keep `persist-credentials: false`; the repair supplies local
+objects rather than credentials to OCR. The candidate remains in Git objects
+and is never checked out or executed. Unrelated publisher checkouts can remain
+sparse.
+
+The draft runner checks object availability and a credential-free diff before
+starting either provider adapter. Metadata Git commands receive an explicit
+environment without provider or publication credentials. System/global Git
+configuration and replacement objects are disabled so a frozen policy SHA
+cannot resolve to substituted content. The CLI launcher keeps
+keys only as adapter options and removes them from its ambient environment.
+An OCR failure can still produce valid partial findings: validation and eligible
+publication run after that failure, retain the incomplete-coverage warning and
+leave the original job failed. Invalid output never reaches the publisher.
+
+A synthetic promisor clone with an unavailable remote reproduces the failure;
+a full clone of the same range loads the diff offline. File selection and model
+preflight cannot prove this input boundary. The shared progress filter emits
+`classification=git_diff` or `classification=merge_base` for the pinned CLI's
+fixed root errors and discards their untrusted details.
 
 The sections below record the original OpenRouter failure and its resolution.
 Their provider selection and high-reasoning settings are historical.

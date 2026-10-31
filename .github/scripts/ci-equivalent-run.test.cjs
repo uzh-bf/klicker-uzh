@@ -573,7 +573,7 @@ test('reuse wiring preserves the canonical plan and execution gates', () => {
   // tested tree must be produced on both routes.
   assert.equal(
     workflow.jobs.prepare.steps.find((step) => step.id === 'equivalent').if,
-    `(github.event_name == 'push' && github.ref != 'refs/heads/v3') || (github.event_name == 'pull_request' && contains(fromJSON('["ready_for_review","edited","reopened"]'), github.event.action))`
+    `steps.metadata.outputs.provider != 'warpbuild' && ((github.event_name == 'push' && inputs.allow_push_reuse) || (github.event_name == 'pull_request' && contains(fromJSON('["ready_for_review","edited","reopened"]'), github.event.action)))`
   )
   assert.match(
     workflow.jobs.prepare.steps.find((step) => step.id === 'equivalent').with
@@ -593,7 +593,7 @@ test('reuse wiring preserves the canonical plan and execution gates', () => {
     assert.ok(
       workflow.jobs[name].steps.some(
         (step) =>
-          step.uses === 'actions/upload-artifact@v4' &&
+          step.uses?.startsWith('actions/upload-artifact@') &&
           step.with?.name === 'ci-validation-receipt'
       ),
       name
@@ -615,7 +615,8 @@ test('reuse wiring preserves the canonical plan and execution gates', () => {
     fs.readFileSync(path.join(__dirname, '../workflows/test-unit.yml'), 'utf8')
   )
   assert.equal(units.jobs['equivalent-validation'], undefined)
-  assert.equal(units.jobs['test-unit'].needs, 'filter')
+  for (const dependency of ['filter', 'priority-route'])
+    assert.ok(units.jobs['test-unit'].needs.includes(dependency))
   assert.ok(units.jobs['test-unit'].if.includes('!cancelled()'))
 })
 

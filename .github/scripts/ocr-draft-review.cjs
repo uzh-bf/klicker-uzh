@@ -9,21 +9,111 @@ const {
   createProgressReporter,
   buildCostReport,
   MISTRAL_MODEL,
+  MISTRAL_DEEPSEEK_MODEL,
+  createProviderAvailability,
+  parseProviderPause,
+  summarizePlanGuidance,
 } = require('./ocr-mistral-adapter.cjs')
-const { buildOCRResultDiagnostic } = require('./final-ai-review.js')
+const { buildOCRResultDiagnostic } = require('./ocr-review-shared.cjs')
+const {
+  readRepositoryConfig,
+  readPolicyBlob,
+  gitEnvironment,
+} = require('./ocr-runtime-config.cjs')
 
-const DRAFT_MODEL = 'deepseek/deepseek-v4.1-flash-1017'
-const PUBLIC_DOC_LIBRARIES = [
-  '/vercel/next.js',
-  '/reactjs/react.dev',
-  '/prisma/web',
-  '/microsoft/typescript',
-]
+const DRAFT_MODEL = MISTRAL_DEEPSEEK_MODEL
+const DRAFT_PROVIDER = 'mistral-deepseek'
+const DRAFT_PROFILE = Object.freeze({
+  id: 'draft-v1',
+  reasoning: 'max',
+  providerTimeout: '480',
+  taskTimeout: '15',
+  concurrency: '4',
+})
 const PUBLISHER_SHA256 =
   '1d5decf90627353f1e7a2cad291d4ee4ec0a661d9724b93b2d7d5246f33462e2'
 
 function summarizeCoverage(result) {
   return buildOCRResultDiagnostic('draft', { result, status: result?.status })
+}
+
+function summarizeAdvisor(tools) {
+  const counters = [
+    'attempted',
+    'dispatched',
+    'completed',
+    'failed',
+    'rejected',
+    'cancelled',
+    'context_reads',
+  ]
+    .map(
+      (name) =>
+        `${name}=${Number.isSafeInteger(tools?.[name]) && tools[name] >= 0 ? tools[name] : 'unknown'}`
+    )
+    .join(' ')
+  const stages = [
+    'availability',
+    'question',
+    'source',
+    'request',
+    'dispatch',
+    'response',
+    'advice',
+  ]
+  const reasons = [
+    'invalid_source',
+    'invalid_range',
+    'source_unavailable',
+    'context_too_large',
+    'invalid_question',
+    'advisor_unavailable',
+    'invalid_advice',
+    'invalid_finish_reason',
+    'invalid_tool_call_count',
+    'invalid_tool_name',
+    'invalid_advice_shape',
+    'invalid_assessment',
+    'invalid_answer_type',
+    'invalid_answer_length',
+    'invalid_evidence_type',
+    'invalid_evidence_count',
+    'invalid_evidence',
+    'transport_error',
+    'invalid_response',
+    'response_too_large',
+    'length',
+    'timeout',
+    'cancelled',
+    'tool_failed',
+  ]
+  const outcomes = tools?.attempt_outcomes
+  const valid =
+    Array.isArray(outcomes) &&
+    outcomes.length <= require('./ocr-review-tools.cjs').ADVISOR_MAX_ATTEMPTS &&
+    outcomes.every(
+      (item, index) =>
+        item?.attempt === index + 1 &&
+        stages.includes(item.stage) &&
+        ['running', 'completed', 'failed'].includes(item.outcome) &&
+        (item.reason === null || reasons.includes(item.reason)) &&
+        typeof item.dispatched === 'boolean'
+    )
+  const attempts = valid
+    ? JSON.stringify(
+        outcomes.map(({ attempt, stage, outcome, reason, dispatched }) => ({
+          attempt,
+          stage,
+          outcome,
+          reason,
+          dispatched,
+        }))
+      )
+    : 'unknown'
+  const status = ['unavailable', 'unused', 'consulted'].includes(tools?.status)
+    ? tools.status
+    : 'unavailable'
+  return `OCR advisor status=${status} registered=${tools?.registered === true} ${counters} attempt_outcomes=${attempts}`
 }
 
 function summarizeDocs(docs) {
@@ -85,24 +175,40 @@ function readResult(file) {
   return result
 }
 
-function preparePublication(temp, expectedHead) {
+function preparePublication(temp, expectedHead, unavailable) {
   const result = readResult(path.join(temp, 'draft-ai-review-result.json'))
   if (result.manifest?.input?.resolved_head !== expectedHead)
     throw new Error('invalid_result')
   const coverage = summarizeCoverage(result)
+  const counts = ['selected', 'completed', 'failed', 'reused', 'waived']
+  // OCR reports a range with no reviewable files, such as a Markdown-only
+  // change, as skipped with empty coverage. That is a finished review with
+  // nothing to cover, not a missing or broken result.
+  const skipped =
+    result.status === 'skipped' &&
+    result.manifest.terminal_state === 'skipped' &&
+    result.manifest.run_failure == null &&
+    counts.every((key) => coverage[key] === 0)
   if (
-    coverage.observed_status === 'unknown' ||
-    ['selected', 'completed', 'failed', 'reused', 'waived'].some(
-      (key) => coverage[key] === null
-    )
+    !skipped &&
+    (coverage.observed_status === 'unknown' ||
+      counts.some((key) => coverage[key] === null))
   )
     throw new Error('invalid_result')
-  if (coverage.observed_status !== 'complete') {
+  if (!skipped && coverage.observed_status !== 'complete') {
     const message = `⚠️ Review incomplete: selected ${coverage.selected}, completed ${coverage.completed}, reused ${coverage.reused}, failed ${coverage.failed}, waived ${coverage.waived}. Findings cover completed work only.`
     result.message = message
     result.warnings = [
       ...(Array.isArray(result.warnings) ? result.warnings : []),
       { type: 'review_incomplete', message },
+    ]
+  }
+  if (unavailable) {
+    const message = `OCR unavailable: ${unavailable}. Review incomplete; findings cover completed work only.`
+    result.message = message
+    result.warnings = [
+      ...(Array.isArray(result.warnings) ? result.warnings : []),
+      { type: 'provider_unavailable', message },
     ]
   }
   fs.writeFileSync(
@@ -117,17 +223,49 @@ function preparePublication(temp, expectedHead) {
   )
 }
 
-function appendSummary(text, write) {
+function appendSummary(text, write, summary) {
   try {
     write(`${text}\n`)
   } catch {
     /* Logs are best-effort. */
   }
   try {
-    if (process.env.GITHUB_STEP_SUMMARY)
-      fs.appendFileSync(process.env.GITHUB_STEP_SUMMARY, `${text}\n`)
+    summary?.(`${text}\n`)
   } catch {
     /* Summary failure cannot prevent cleanup. */
+  }
+}
+
+function assertCompleteRange(repo, from, head) {
+  const env = gitEnvironment()
+  try {
+    const objects = execFileSync(
+      'git',
+      ['rev-list', '--objects', '--no-walk', '--missing=print', from, head],
+      {
+        cwd: repo,
+        env,
+        encoding: 'utf8',
+        maxBuffer: 32 * 1024 * 1024,
+        timeout: 30000,
+        stdio: ['ignore', 'pipe', 'pipe'],
+      }
+    )
+    if (objects.split('\n').some((line) => line.startsWith('?')))
+      throw new Error('missing_blob')
+    execFileSync(
+      'git',
+      ['diff', '--no-ext-diff', '--no-textconv', '--stat', from, head, '--'],
+      {
+        cwd: repo,
+        env,
+        timeout: 30000,
+        maxBuffer: 4 * 1024 * 1024,
+        stdio: ['ignore', 'pipe', 'pipe'],
+      }
+    )
+  } catch {
+    throw new Error('review_source_unavailable')
   }
 }
 
@@ -143,8 +281,44 @@ async function runDraftReview(options) {
   for (const revision of [from, head]) {
     if (!/^[a-f0-9]{40}$/.test(revision)) throw new Error('invalid_revision')
   }
+  if (options.policy) assertCompleteRange(repo, from, head)
+  const repositoryConfig = options.policy
+    ? readRepositoryConfig(repo, options.policy)
+    : null
   const write = options.write ?? ((text) => process.stdout.write(text))
+  const availability = createProviderAvailability(
+    parseProviderPause(options.paused ?? process.env.OCR_PROVIDER_PAUSED)
+  )
   const resultPath = path.join(temp, 'draft-ai-review-result.json')
+  const outcomePath = path.join(temp, 'draft-ai-review-outcome.json')
+  const recordOutcome = (coverage) => {
+    fs.writeFileSync(
+      outcomePath,
+      JSON.stringify({
+        ...coverage,
+        head_sha: head,
+        provider_availability: {
+          status: availability.reason ? 'unavailable' : 'available',
+          reason: availability.reason,
+        },
+        ...(options.policy
+          ? { policy_sha: options.policy, profile: DRAFT_PROFILE.id }
+          : {}),
+      }),
+      { mode: 0o600 }
+    )
+    if (availability.reason)
+      appendSummary(
+        `::warning::OCR availability status=unavailable reason=${availability.reason} review=incomplete`,
+        write,
+        options.summary
+      )
+  }
+  if (availability.reason) {
+    const coverage = summarizeCoverage(null)
+    recordOutcome(coverage)
+    return { code: 0, resultPath, coverage }
+  }
   const stderrPath = path.join(temp, 'draft-ai-review-stderr.log')
   const diagnosticsPath = path.join(
     temp,
@@ -171,6 +345,8 @@ async function runDraftReview(options) {
     status: 'unavailable',
     registered: false,
     attempted: 0,
+    dispatched: 0,
+    attempt_outcomes: [],
     completed: 0,
     failed: 0,
     rejected: 0,
@@ -214,8 +390,11 @@ async function runDraftReview(options) {
   process.on('SIGINT', interrupt)
   try {
     adapter = await startAdapter({
-      provider: 'openrouter',
+      availability,
+      finalPlanGuidance: true,
+      provider: DRAFT_PROVIDER,
       apiKey: options.apiKey,
+      usageJournalPath: `${diagnosticsPath}.events.jsonl`,
       onClose: (record) =>
         fs.appendFileSync(diagnosticsPath, `${JSON.stringify(record)}\n`, {
           mode: 0o600,
@@ -233,7 +412,7 @@ async function runDraftReview(options) {
         auth_token: '',
         auth_token_cmd: 'printf "%s" "$OCR_LLM_TOKEN"',
         extra_body: {
-          reasoning_effort: 'max',
+          reasoning_effort: DRAFT_PROFILE.reasoning,
           prompt_cache_key: '{ocr_session_key}',
         },
       },
@@ -242,16 +421,11 @@ async function runDraftReview(options) {
     if (options.policy) {
       if (!/^[a-f0-9]{40}$/.test(options.policy))
         throw new Error('invalid_revision')
-      const skill = execFileSync(
-        'git',
-        ['show', `${options.policy}:.agents/skills/ocr-reviewer/SKILL.md`],
-        {
-          cwd: repo,
-          encoding: 'utf8',
-          timeout: 5000,
-          maxBuffer: 32768,
-          stdio: ['ignore', 'pipe', 'pipe'],
-        }
+      const skill = readPolicyBlob(
+        repo,
+        options.policy,
+        '.agents/skills/ocr-reviewer/SKILL.md',
+        32768
       )
       rulePath = path.join(home, 'review-rules.json')
       fs.writeFileSync(
@@ -264,8 +438,10 @@ async function runDraftReview(options) {
       try {
         if (options.advisorApiKey) {
           advisor = await startAdapter({
+            availability,
             provider: 'mistral',
             apiKey: options.advisorApiKey,
+            usageJournalPath: `${advisorDiagnosticsPath}.events.jsonl`,
             ...(options.advisorFetchImpl
               ? { fetchImpl: options.advisorFetchImpl }
               : {}),
@@ -292,7 +468,10 @@ async function runDraftReview(options) {
             : undefined,
           advisorToken: advisor?.token,
           context7ApiKey: options.context7ApiKey,
-          publicLibraries: PUBLIC_DOC_LIBRARIES,
+          publicLibraries: repositoryConfig.publicLibraries,
+          contextRoots: repositoryConfig.contextRoots,
+          rootFiles: repositoryConfig.rootFiles,
+          guides: repositoryConfig.guides,
           ...(options.context7FetchImpl
             ? { context7FetchImpl: options.context7FetchImpl }
             : {}),
@@ -373,7 +552,7 @@ async function runDraftReview(options) {
       TMPDIR: temp,
       LANG: 'C.UTF-8',
       OCR_NO_UPDATE: '1',
-      OCR_LLM_TIMEOUT: '480',
+      OCR_LLM_TIMEOUT: DRAFT_PROFILE.providerTimeout,
       OCR_LLM_URL: config.llm.url,
       OCR_LLM_TOKEN: adapter.token,
       OCR_LLM_MODEL: DRAFT_MODEL,
@@ -390,9 +569,9 @@ async function runDraftReview(options) {
       '--format',
       'json',
       '--timeout',
-      '15',
+      DRAFT_PROFILE.taskTimeout,
       '--concurrency',
-      '4',
+      DRAFT_PROFILE.concurrency,
     ]
     if (background) args.push('--background', background)
     if (rulePath) args.push('--rule', rulePath)
@@ -456,16 +635,20 @@ async function runDraftReview(options) {
     const counts = ['selected', 'completed', 'failed', 'reused', 'waived']
       .map((key) => `${key}=${coverage[key] ?? 'unknown'}`)
       .join(' ')
-    const line = `OCR coverage status=${coverage.observed_status} ${counts}`
-    appendSummary(line, write)
+    const failures = coverage.failure_classes
+      ? JSON.stringify(coverage.failure_classes)
+      : 'unknown'
+    const line = `OCR coverage status=${coverage.observed_status} ${counts} failure_classes=${failures}`
+    appendSummary(line, write, options.summary)
     if (coverage.observed_status !== 'complete') write(`::warning::${line}\n`)
-    fs.writeFileSync(
-      path.join(temp, 'draft-ai-review-outcome.json'),
-      JSON.stringify(coverage),
-      { mode: 0o600 }
-    )
+    recordOutcome(coverage)
     return {
-      code: result.signal || result.failed ? 1 : (result.code ?? 1),
+      code:
+        result.signal || result.failed || terminating
+          ? 1
+          : availability.reason
+            ? 0
+            : (result.code ?? 1),
       resultPath,
       stderrPath,
       coverage,
@@ -480,22 +663,25 @@ async function runDraftReview(options) {
       toolsState = tools.diagnostics()
       toolReceipt(toolsState)
     }
-    appendSummary(
-      `OCR advisor status=${toolsState.status} registered=${Boolean(toolsState.registered)} attempted=${toolsState.attempted} completed=${toolsState.completed} failed=${toolsState.failed} rejected=${toolsState.rejected} context_reads=${toolsState.context_reads}`,
-      write
-    )
-    appendSummary(summarizeDocs(toolsState.docs), write)
+    appendSummary(summarizeAdvisor(toolsState), write, options.summary)
+    appendSummary(summarizeDocs(toolsState.docs), write, options.summary)
     await advisor?.close()
     await adapter?.close()
+    if (adapter)
+      appendSummary(
+        summarizePlanGuidance(adapter.diagnostics()),
+        write,
+        options.summary
+      )
     if (resultFd !== undefined) fs.closeSync(resultFd)
     if (stderrFd !== undefined) fs.closeSync(stderrFd)
     fs.rmSync(home, { recursive: true, force: true })
   }
 }
 
-function summarizeCosts(temp) {
+function summarizeCosts(temp, summary) {
   const file = path.join(temp, 'draft-ai-review-adapter-diagnostics.jsonl')
-  const env = { ...process.env, OCR_ADAPTER_PROVIDER: 'openrouter' }
+  const env = { ...process.env, OCR_ADAPTER_PROVIDER: DRAFT_PROVIDER }
   execFileSync(
     process.execPath,
     [path.join(__dirname, 'ocr-mistral-adapter.cjs'), 'summary', file],
@@ -515,7 +701,7 @@ function summarizeCosts(temp) {
   const draft = readReport(
     'draft-ai-review-adapter-diagnostics.jsonl',
     1,
-    'openrouter'
+    DRAFT_PROVIDER
   )
   let expected
   try {
@@ -558,39 +744,54 @@ function summarizeCosts(temp) {
     ? `OCR cost scope=draft_and_advisor status=complete estimated_with_cache_usd=${sum.withCache.toFixed(4)} estimated_without_cache_usd=${sum.withoutCache.toFixed(4)} estimated_savings_usd=${sum.savings.toFixed(4)} savings_percent=${(sum.withoutCache ? (100 * sum.savings) / sum.withoutCache : 0).toFixed(1)}`
     : 'OCR cost scope=draft_and_advisor status=unavailable'
   appendSummary(
-    `\nCombined DeepSeek draft and ${MISTRAL_MODEL} advisor reference estimate:\n\n${line}\n\nAdvisor provider usage has its own quota and does not change OCR token accounting.`,
-    (text) => process.stdout.write(text)
+    `\nCombined ${DRAFT_MODEL} draft and ${MISTRAL_MODEL} advisor reference estimate:\n\n${line}\n\nAdvisor usage retains its separate application allowance and accounting. Both models use Mistral; OCR token accounting is unchanged.`,
+    (text) => process.stdout.write(text),
+    summary
   )
-  let docs
+  let docs, tools
   try {
-    const tools = JSON.parse(
+    const receipt = JSON.parse(
       fs.readFileSync(path.join(temp, 'draft-ai-review-tools.json'), 'utf8')
     )
-    if (tools.schema === 'ocr-review-tools/v1') docs = tools.docs
+    if (receipt.schema === 'ocr-review-tools/v1') {
+      tools = receipt
+      docs = receipt.docs
+    }
   } catch {
     /* Missing service usage is unknown, not zero. */
   }
   appendSummary(
+    summarizeAdvisor(tools),
+    (text) => process.stdout.write(text),
+    summary
+  )
+  appendSummary(
     `${summarizeDocs(docs)}\nContext7 reference pricing excludes subscriptions, included allowances and model tokens. Actual service billing is unknown; the draft_and_advisor model total excludes this service.`,
-    (text) => process.stdout.write(text)
+    (text) => process.stdout.write(text),
+    summary
   )
 }
 
-async function main() {
-  const temp = process.env.RUNNER_TEMP ?? os.tmpdir()
-  if (process.argv[2] === 'summary') {
-    summarizeCosts(temp)
+async function main(options = {}) {
+  const command = options.command ?? process.argv[2]
+  const repo = options.repo ?? process.cwd()
+  const temp = options.temp ?? process.env.RUNNER_TEMP ?? os.tmpdir()
+  const summary = process.env.GITHUB_STEP_SUMMARY
+    ? (text) => fs.appendFileSync(process.env.GITHUB_STEP_SUMMARY, text)
+    : undefined
+  if (command === 'summary') {
+    summarizeCosts(temp, summary)
     return 0
   }
-  if (process.argv[2] === 'verify-install') {
+  if (command === 'verify-install') {
     const version = execFileSync('ocr', ['version'], {
       encoding: 'utf8',
       timeout: 5000,
     })
     const publisher = fs.readFileSync(
       path.join(
-        process.cwd(),
-        '.ocr-upstream/scripts/github-actions/post-review-comments.js'
+        options.publisherRoot ?? path.join(repo, '.ocr-upstream'),
+        'scripts/github-actions/post-review-comments.js'
       )
     )
     if (
@@ -604,28 +805,83 @@ async function main() {
     process.stdout.write('OCR pinned CLI and publisher verified\n')
     return 0
   }
-  if (process.argv[2] === 'validate') {
-    preparePublication(temp, process.env.HEAD_SHA)
+  if (command === 'validate') {
+    const head = options.head ?? process.env.HEAD_SHA
+    let unavailable
+    const outcomePath = path.join(temp, 'draft-ai-review-outcome.json')
+    if (fs.existsSync(outcomePath)) {
+      const outcome = readResult(outcomePath)
+      const state = outcome.provider_availability
+      const available = state?.status === 'available' && state.reason === null
+      const rejected =
+        state?.status === 'unavailable' &&
+        ['provider_paused', 'provider_payment_required'].includes(state.reason)
+      if (
+        (!available && !rejected) ||
+        outcome.head_sha !== head ||
+        !options.policy ||
+        outcome.policy_sha !== options.policy ||
+        outcome.profile !== DRAFT_PROFILE.id
+      )
+        throw new Error('invalid_result')
+      if (rejected) unavailable = state.reason
+    }
+    const hasResult = fs.existsSync(
+      path.join(temp, 'draft-ai-review-result.json')
+    )
+    if (!unavailable || hasResult) preparePublication(temp, head, unavailable)
+    else
+      fs.rmSync(path.join(temp, 'draft-ai-review-publication.json'), {
+        force: true,
+      })
+    if (process.env.GITHUB_OUTPUT)
+      fs.appendFileSync(process.env.GITHUB_OUTPUT, `publishable=${hasResult}\n`)
+    if (unavailable)
+      appendSummary(
+        `OCR availability status=unavailable reason=${unavailable} review=incomplete publication=${hasResult ? 'partial_findings' : 'none'}`,
+        (text) => process.stdout.write(text),
+        summary
+      )
     return 0
   }
-  if (process.argv[2] !== 'run') return 2
-  const outcome = await runDraftReview({
-    repo: process.cwd(),
-    temp,
-    from: process.env.REVIEW_FROM,
-    head: process.env.HEAD_SHA,
-    background: process.env.BACKGROUND,
-    apiKey: process.env.OPENROUTER_API_KEY,
+  if (command !== 'run') return 2
+  const credentials = options.credentials ?? {
+    apiKey: process.env.MISTRAL_API_KEY,
     advisorApiKey: process.env.MISTRAL_API_KEY,
     context7ApiKey: process.env.CONTEXT7_API_KEY,
-    policy: execFileSync('git', ['rev-parse', 'HEAD'], {
-      encoding: 'utf8',
-    }).trim(),
+  }
+  for (const name of Object.keys(process.env)) {
+    if (
+      /(?:TOKEN|API_KEY|PASSWORD|SECRET|AUTHORIZATION|CREDENTIAL)/i.test(name)
+    )
+      delete process.env[name]
+  }
+  const outcome = await runDraftReview({
+    repo,
+    temp,
+    from: options.from ?? process.env.REVIEW_FROM,
+    head: options.head ?? process.env.HEAD_SHA,
+    background: options.background ?? process.env.BACKGROUND,
+    ...credentials,
+    summary,
+    policy:
+      options.policy ??
+      execFileSync('git', ['rev-parse', 'HEAD'], {
+        cwd: repo,
+        encoding: 'utf8',
+        env: gitEnvironment(),
+      }).trim(),
   })
   return outcome.code
 }
 
-module.exports = { runDraftReview, summarizeCoverage }
+module.exports = {
+  main,
+  runDraftReview,
+  summarizeCoverage,
+  DRAFT_PROFILE,
+  PUBLISHER_SHA256,
+}
 if (require.main === module)
   main()
     .then((code) => {
