@@ -64,7 +64,7 @@ jobs:
         env:
           SONAR_TOKEN: ${{ secrets.SONAR_TOKEN }}
         run: |
-          if [ -n "\${SONAR_TOKEN}" ]; then
+          if [ -n "${SONAR_TOKEN}" ]; then
             exit 0
           fi
           {
@@ -119,7 +119,7 @@ jobs:
         if: steps.coverage.outputs.decision == 'scan'
         run: |
           version="$(node -p "require('./package.json').version")"
-          echo "value=\${version}" >> "$GITHUB_OUTPUT"
+          echo "value=${version}" >> "$GITHUB_OUTPUT"
 
       - name: SonarCloud Scan
         id: scan
