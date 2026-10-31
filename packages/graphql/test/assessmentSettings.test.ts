@@ -1,8 +1,13 @@
 import type { Hatchet } from '@hatchet-dev/typescript-sdk/index.js'
-import { ElementOrderType, PrismaClient } from '@klicker-uzh/prisma/client'
-import { EventEmitter } from 'events'
+import {
+  ElementOrderType,
+  Locale,
+  type PrismaClient,
+} from '@klicker-uzh/prisma/client'
+import type { EventEmitter } from 'events'
 import { v4 as uuid } from 'uuid'
 import type { ContextWithUser } from '../src/lib/context.js'
+import { updateCourseSettings } from '../src/services/courses.js'
 import { manipulateGroupActivity } from '../src/services/groups.js'
 import { manipulateLiveQuiz } from '../src/services/liveQuizzes.js'
 import { manipulateMicroLearning } from '../src/services/microLearning.js'
@@ -984,5 +989,41 @@ describe('Integration tests for assessment configuration functionalities', () =>
       expect(groupActivity8Edited.isGamificationEnabled).toBe(true)
       expect(groupActivity8Edited.isAssessmentEnabled).toBe(true)
     })
+  })
+
+  it('starts study streak tracking when course settings enable gamification', async () => {
+    const course = await seedCourse(
+      { isGamificationEnabled: false, isAssessmentEnabled: false },
+      userOneCtx
+    )
+    const assessmentCourse = await seedCourse(
+      { isGamificationEnabled: false, isAssessmentEnabled: true },
+      userOneCtx
+    )
+    const participant = await prisma.participant.create({
+      data: { username: uuid(), password: uuid() },
+    })
+    const participations = await Promise.all(
+      [course.id, assessmentCourse.id].map((courseId) =>
+        prisma.participation.create({
+          data: { courseId, participantId: participant.id, isActive: true },
+        })
+      )
+    )
+
+    for (const { id } of [course, assessmentCourse]) {
+      await updateCourseSettings(
+        { id, language: Locale.en, isGamificationEnabled: true },
+        userOneCtx
+      )
+    }
+
+    const [tracked, untracked] = await Promise.all(
+      participations.map(({ id }) =>
+        prisma.participation.findUniqueOrThrow({ where: { id } })
+      )
+    )
+    expect(tracked?.studyStreakTrackingStartedAt).not.toBeNull()
+    expect(untracked?.studyStreakTrackingStartedAt).toBeNull()
   })
 })

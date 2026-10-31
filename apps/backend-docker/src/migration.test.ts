@@ -7,6 +7,7 @@ interface FakeDatabase {
   records: Set<string>
   lockedIds: string[]
   findFirstFailures: unknown[]
+  participationUpdates: unknown[]
 }
 
 function prismaError(code: string, message = code) {
@@ -40,6 +41,12 @@ function createFakePrisma(db: FakeDatabase) {
 
   const prisma = {
     migration,
+    participation: {
+      updateMany: async (args: unknown) => {
+        db.participationUpdates.push(args)
+        return { count: 0 }
+      },
+    },
     $transaction: async <T>(callback: (client: typeof tx) => Promise<T>) => {
       const snapshot = new Set(db.records)
       try {
@@ -59,6 +66,7 @@ function setup(migrations: Migration[]) {
     records: new Set(),
     lockedIds: [],
     findFirstFailures: [],
+    participationUpdates: [],
   }
   const prisma = createFakePrisma(db)
   const run = () =>
@@ -67,6 +75,21 @@ function setup(migrations: Migration[]) {
 }
 
 describe('migrate', () => {
+  it('runs the study streak rollout from the production registry', async (t) => {
+    t.mock.method(console, 'log', () => {})
+    const db: FakeDatabase = {
+      records: new Set(),
+      lockedIds: [],
+      findFirstFailures: [],
+      participationUpdates: [],
+    }
+
+    await migrate(createFakePrisma(db))
+
+    assert.ok(db.records.has('20260824_initialize_active_study_streaks'))
+    assert.equal(db.participationUpdates.length, 1)
+  })
+
   it('applies a transactional migration once under the advisory lock', async (t) => {
     t.mock.method(console, 'log', () => {})
     let runs = 0
