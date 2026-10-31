@@ -1,0 +1,1843 @@
+{
+  "apiVersion": "v1.2",
+  "arguments": {
+    "startInstances": 0,
+    "skip": {
+      "postgres": "true",
+      "redisCache": "true",
+      "redisExec": "true",
+      "redisAssessment": "true",
+      "hatchet": "true",
+      "litellm": "true",
+      "oidc": "true",
+      "mailhog": "true",
+      "azurite": "true",
+      "runtimeConfig": "true",
+      "backendData": "true",
+      "redisData": "true",
+      "hatchetClient": "true",
+      "schemaMigration": "true",
+      "fixtures": "true",
+      "runMigration": "true",
+      "runFixtures": "true",
+      "auth": "true",
+      "chat": "true",
+      "control": "true",
+      "manage": "true",
+      "pwa": "true",
+      "api": "true",
+      "responseApi": "true",
+      "workerGeneral": "true",
+      "workerResponse": "true",
+      "lti": "true",
+      "olatApi": "true",
+      "mcpLecturer": "true",
+      "mcpStudent": "true",
+      "localMcp": "true"
+    }
+  },
+  "spec": {
+    "kind": "Workflow",
+    "spec": {
+      "type": "sequential",
+      "context": {
+        "projectId": "${args.projectId}"
+      },
+      "steps": [
+        {
+          "ref": "persistent_addons",
+          "kind": "Workflow",
+          "spec": {
+            "type": "sequential",
+            "steps": [
+              {
+                "ref": "postgres_addon",
+                "kind": "Addon",
+                "updateMode": "create",
+                "skipNodeExecution": "${args.skip.postgres}",
+                "spec": {
+                  "name": "${args.envId}-postgres",
+                  "stageId": "${args.envId}",
+                  "type": "postgresql",
+                  "version": "15-latest",
+                  "billing": {
+                    "deploymentPlan": "nf-compute-50",
+                    "storage": 6144,
+                    "replicas": 1,
+                    "diskAutoscaling": {
+                      "enabled": false
+                    }
+                  },
+                  "tlsEnabled": true,
+                  "externalAccessEnabled": false,
+                  "vpcAccessible": false,
+                  "customCredentials": {
+                    "dbName": "klicker_test"
+                  }
+                }
+              },
+              {
+                "ref": "redis_cache_addon",
+                "kind": "Addon",
+                "updateMode": "create",
+                "skipNodeExecution": "${args.skip.redisCache}",
+                "spec": {
+                  "name": "${args.envId}-r-cache",
+                  "stageId": "${args.envId}",
+                  "type": "redis",
+                  "version": "7.2.16",
+                  "billing": {
+                    "deploymentPlan": "nf-compute-50",
+                    "storage": 6144,
+                    "replicas": 1,
+                    "diskAutoscaling": {
+                      "enabled": false
+                    }
+                  },
+                  "tlsEnabled": false,
+                  "externalAccessEnabled": false,
+                  "vpcAccessible": false
+                }
+              },
+              {
+                "ref": "redis_exec_addon",
+                "kind": "Addon",
+                "updateMode": "create",
+                "skipNodeExecution": "${args.skip.redisExec}",
+                "spec": {
+                  "name": "${args.envId}-r-exec",
+                  "stageId": "${args.envId}",
+                  "type": "redis",
+                  "version": "7.2.16",
+                  "billing": {
+                    "deploymentPlan": "nf-compute-50",
+                    "storage": 6144,
+                    "replicas": 1,
+                    "diskAutoscaling": {
+                      "enabled": false
+                    }
+                  },
+                  "tlsEnabled": false,
+                  "externalAccessEnabled": false,
+                  "vpcAccessible": false
+                }
+              },
+              {
+                "ref": "redis_assessment_addon",
+                "kind": "Addon",
+                "updateMode": "create",
+                "skipNodeExecution": "${args.skip.redisAssessment}",
+                "spec": {
+                  "name": "${args.envId}-r-assess",
+                  "stageId": "${args.envId}",
+                  "type": "redis",
+                  "version": "7.2.16",
+                  "billing": {
+                    "deploymentPlan": "nf-compute-50",
+                    "storage": 6144,
+                    "replicas": 1,
+                    "diskAutoscaling": {
+                      "enabled": false
+                    }
+                  },
+                  "tlsEnabled": false,
+                  "externalAccessEnabled": false,
+                  "vpcAccessible": false
+                }
+              }
+            ]
+          }
+        },
+        {
+          "ref": "preview_subdomains",
+          "kind": "Workflow",
+          "spec": {
+            "type": "sequential",
+            "steps": [
+              {
+                "ref": "subdomain_auth",
+                "kind": "Subdomain",
+                "skipNodeExecution": "${args.skip.auth}",
+                "spec": {
+                  "domain": "${args.domain}",
+                  "name": "${args.envId}--auth"
+                }
+              },
+              {
+                "ref": "subdomain_chat",
+                "kind": "Subdomain",
+                "skipNodeExecution": "${args.skip.chat}",
+                "spec": {
+                  "domain": "${args.domain}",
+                  "name": "${args.envId}--chat"
+                }
+              },
+              {
+                "ref": "subdomain_control",
+                "kind": "Subdomain",
+                "skipNodeExecution": "${args.skip.control}",
+                "spec": {
+                  "domain": "${args.domain}",
+                  "name": "${args.envId}--control"
+                }
+              },
+              {
+                "ref": "subdomain_manage",
+                "kind": "Subdomain",
+                "skipNodeExecution": "${args.skip.manage}",
+                "spec": {
+                  "domain": "${args.domain}",
+                  "name": "${args.envId}--manage"
+                }
+              },
+              {
+                "ref": "subdomain_pwa",
+                "kind": "Subdomain",
+                "skipNodeExecution": "${args.skip.pwa}",
+                "spec": {
+                  "domain": "${args.domain}",
+                  "name": "${args.envId}--pwa"
+                }
+              },
+              {
+                "ref": "subdomain_api",
+                "kind": "Subdomain",
+                "skipNodeExecution": "${args.skip.api}",
+                "spec": {
+                  "domain": "${args.domain}",
+                  "name": "${args.envId}--api"
+                }
+              },
+              {
+                "ref": "subdomain_response_api",
+                "kind": "Subdomain",
+                "skipNodeExecution": "${args.skip.responseApi}",
+                "spec": {
+                  "domain": "${args.domain}",
+                  "name": "${args.envId}--response-api"
+                }
+              },
+              {
+                "ref": "subdomain_lti",
+                "kind": "Subdomain",
+                "skipNodeExecution": "${args.skip.lti}",
+                "spec": {
+                  "domain": "${args.domain}",
+                  "name": "${args.envId}--lti"
+                }
+              },
+              {
+                "ref": "subdomain_olat_api",
+                "kind": "Subdomain",
+                "skipNodeExecution": "${args.skip.olatApi}",
+                "spec": {
+                  "domain": "${args.domain}",
+                  "name": "${args.envId}--olat-api"
+                }
+              },
+              {
+                "ref": "subdomain_oidc",
+                "kind": "Subdomain",
+                "skipNodeExecution": "${args.skip.oidc}",
+                "spec": {
+                  "domain": "${args.domain}",
+                  "name": "${args.envId}--oidc"
+                }
+              },
+              {
+                "ref": "subdomain_mailhog",
+                "kind": "Subdomain",
+                "skipNodeExecution": "${args.skip.mailhog}",
+                "spec": {
+                  "domain": "${args.domain}",
+                  "name": "${args.envId}--mailhog"
+                }
+              }
+            ]
+          }
+        },
+        {
+          "ref": "dependency_services",
+          "kind": "Workflow",
+          "spec": {
+            "type": "sequential",
+            "steps": [
+              {
+                "ref": "hatchet_config_volume",
+                "kind": "Volume",
+                "updateMode": "create",
+                "skipNodeExecution": "${args.skip.hatchet}",
+                "spec": {
+                  "name": "${args.envId}-h-config",
+                  "stageId": "${args.envId}",
+                  "mounts": [
+                    {
+                      "containerMountPath": "/config",
+                      "volumeMountPath": ""
+                    }
+                  ],
+                  "spec": {
+                    "accessMode": "ReadWriteOnce",
+                    "storageClassName": "nvme",
+                    "storageSize": 6144
+                  }
+                }
+              },
+              {
+                "ref": "hatchet_service",
+                "kind": "DeploymentService",
+                "updateMode": "create",
+                "skipNodeExecution": "${args.skip.hatchet}",
+                "spec": {
+                  "name": "${args.envId}-hatchet",
+                  "stageId": "${args.envId}",
+                  "billing": {
+                    "deploymentPlan": "nf-compute-50"
+                  },
+                  "deployment": {
+                    "instances": "${args.startInstances}",
+                    "external": {
+                      "imagePath": "ghcr.io/hatchet-dev/hatchet/hatchet-lite-dev:v0.101.0"
+                    }
+                  },
+                  "ports": [
+                    {
+                      "name": "http",
+                      "internalPort": 8888,
+                      "protocol": "HTTP",
+                      "public": false
+                    },
+                    {
+                      "name": "grpc",
+                      "internalPort": 7077,
+                      "protocol": "TCP",
+                      "public": false
+                    }
+                  ],
+                  "runtimeEnvironment": {
+                    "PREVIEW_ENV_ID": "${args.envId}",
+                    "PREVIEW_SOURCE_REPOSITORY": "${args.source.repository}",
+                    "PREVIEW_SOURCE_REF": "${args.source.ref}",
+                    "PREVIEW_SOURCE_SHA": "${args.source.headSha}",
+                    "PREVIEW_CONTROLLER_SHA": "${args.source.controllerSha}",
+                    "NODE_ENV": "development",
+                    "SERVER_GRPC_BIND_ADDRESS": "0.0.0.0",
+                    "SERVER_GRPC_BROADCAST_ADDRESS": "${args.envId}-hatchet:7077",
+                    "SERVER_GRPC_INSECURE": "true",
+                    "SERVER_GRPC_PORT": "7077",
+                    "SERVER_URL": "http://${args.envId}-hatchet:8888"
+                  },
+                  "createOptions": {
+                    "expiryTime": "${args.lifetimeSeconds}",
+                    "volumesToAttach": ["${args.envId}-h-config"]
+                  }
+                }
+              },
+              {
+                "ref": "litellm_service",
+                "kind": "DeploymentService",
+                "updateMode": "put",
+                "skipNodeExecution": "${args.skip.litellm}",
+                "spec": {
+                  "name": "${args.envId}-litellm",
+                  "stageId": "${args.envId}",
+                  "billing": {
+                    "deploymentPlan": "nf-compute-200-4"
+                  },
+                  "deployment": {
+                    "instances": "${args.startInstances}",
+                    "external": {
+                      "imagePath": "${args.images.litellm.image}"
+                    },
+                    "docker": {
+                      "configType": "customEntrypointCustomCommand",
+                      "customEntrypoint": "litellm",
+                      "customCommand": "--config=/app/config.yaml --port=4000"
+                    }
+                  },
+                  "ports": [
+                    {
+                      "name": "http",
+                      "internalPort": 4000,
+                      "protocol": "HTTP",
+                      "public": false
+                    }
+                  ],
+                  "runtimeEnvironment": {
+                    "PREVIEW_ENV_ID": "${args.envId}",
+                    "PREVIEW_SOURCE_REPOSITORY": "${args.source.repository}",
+                    "PREVIEW_SOURCE_REF": "${args.source.ref}",
+                    "PREVIEW_SOURCE_SHA": "${args.source.headSha}",
+                    "PREVIEW_CONTROLLER_SHA": "${args.source.controllerSha}",
+                    "NODE_ENV": "development",
+                    "PORT": "4000"
+                  },
+                  "createOptions": {
+                    "expiryTime": "${args.lifetimeSeconds}"
+                  },
+                  "runtimeFiles": {
+                    "/app/config.yaml": "${args.files.litellmConfig}"
+                  }
+                }
+              },
+              {
+                "ref": "oidc_service",
+                "kind": "DeploymentService",
+                "updateMode": "put",
+                "skipNodeExecution": "${args.skip.oidc}",
+                "spec": {
+                  "name": "${args.envId}-oidc",
+                  "stageId": "${args.envId}",
+                  "billing": {
+                    "deploymentPlan": "nf-compute-100-2"
+                  },
+                  "deployment": {
+                    "instances": "${args.startInstances}",
+                    "external": {
+                      "imagePath": "${args.images.oidc.image}"
+                    }
+                  },
+                  "ports": [
+                    {
+                      "name": "http",
+                      "internalPort": 8080,
+                      "protocol": "HTTP",
+                      "public": true,
+                      "domains": ["${args.envId}--oidc.${args.domain}"],
+                      "disableNfDomain": true,
+                      "security": {
+                        "ip": [
+                          {
+                            "addresses": ["${args.allowedIp}"],
+                            "action": "ALLOW"
+                          }
+                        ]
+                      }
+                    }
+                  ],
+                  "runtimeEnvironment": {
+                    "PREVIEW_ENV_ID": "${args.envId}",
+                    "PREVIEW_SOURCE_REPOSITORY": "${args.source.repository}",
+                    "PREVIEW_SOURCE_REF": "${args.source.ref}",
+                    "PREVIEW_SOURCE_SHA": "${args.source.headSha}",
+                    "PREVIEW_CONTROLLER_SHA": "${args.source.controllerSha}",
+                    "NODE_ENV": "development",
+                    "SERVER_PORT": "8080",
+                    "JSON_CONFIG": "${args.configuration.oidcJson}"
+                  },
+                  "createOptions": {
+                    "expiryTime": "${args.lifetimeSeconds}"
+                  }
+                }
+              },
+              {
+                "ref": "mailhog_service",
+                "kind": "DeploymentService",
+                "updateMode": "put",
+                "skipNodeExecution": "${args.skip.mailhog}",
+                "spec": {
+                  "name": "${args.envId}-mailhog",
+                  "stageId": "${args.envId}",
+                  "billing": {
+                    "deploymentPlan": "nf-compute-20"
+                  },
+                  "deployment": {
+                    "instances": "${args.startInstances}",
+                    "external": {
+                      "imagePath": "${args.images.mailhog.image}"
+                    }
+                  },
+                  "ports": [
+                    {
+                      "name": "smtp",
+                      "internalPort": 1025,
+                      "protocol": "TCP",
+                      "public": false
+                    },
+                    {
+                      "name": "http",
+                      "internalPort": 8025,
+                      "protocol": "HTTP",
+                      "public": true,
+                      "domains": ["${args.envId}--mailhog.${args.domain}"],
+                      "disableNfDomain": true,
+                      "security": {
+                        "ip": [
+                          {
+                            "addresses": ["${args.allowedIp}"],
+                            "action": "ALLOW"
+                          }
+                        ]
+                      }
+                    }
+                  ],
+                  "runtimeEnvironment": {
+                    "PREVIEW_ENV_ID": "${args.envId}",
+                    "PREVIEW_SOURCE_REPOSITORY": "${args.source.repository}",
+                    "PREVIEW_SOURCE_REF": "${args.source.ref}",
+                    "PREVIEW_SOURCE_SHA": "${args.source.headSha}",
+                    "PREVIEW_CONTROLLER_SHA": "${args.source.controllerSha}",
+                    "NODE_ENV": "development"
+                  },
+                  "createOptions": {
+                    "expiryTime": "${args.lifetimeSeconds}"
+                  }
+                }
+              },
+              {
+                "ref": "azurite_service",
+                "kind": "DeploymentService",
+                "updateMode": "put",
+                "skipNodeExecution": "${args.skip.azurite}",
+                "spec": {
+                  "name": "${args.envId}-azurite",
+                  "stageId": "${args.envId}",
+                  "billing": {
+                    "deploymentPlan": "nf-compute-20"
+                  },
+                  "deployment": {
+                    "instances": "${args.startInstances}",
+                    "external": {
+                      "imagePath": "${args.images.azurite.image}"
+                    },
+                    "docker": {
+                      "configType": "customEntrypointCustomCommand",
+                      "customEntrypoint": "azurite-blob",
+                      "customCommand": "--blobHost 0.0.0.0 --blobPort 10000 --location /tmp/azurite"
+                    }
+                  },
+                  "ports": [
+                    {
+                      "name": "blob",
+                      "internalPort": 10000,
+                      "protocol": "HTTP",
+                      "public": false
+                    }
+                  ],
+                  "runtimeEnvironment": {
+                    "PREVIEW_ENV_ID": "${args.envId}",
+                    "PREVIEW_SOURCE_REPOSITORY": "${args.source.repository}",
+                    "PREVIEW_SOURCE_REF": "${args.source.ref}",
+                    "PREVIEW_SOURCE_SHA": "${args.source.headSha}",
+                    "PREVIEW_CONTROLLER_SHA": "${args.source.controllerSha}",
+                    "NODE_ENV": "development"
+                  },
+                  "createOptions": {
+                    "expiryTime": "${args.lifetimeSeconds}"
+                  }
+                }
+              }
+            ]
+          }
+        },
+        {
+          "ref": "application_workloads",
+          "kind": "Workflow",
+          "spec": {
+            "type": "sequential",
+            "steps": [
+              {
+                "ref": "auth_service",
+                "kind": "DeploymentService",
+                "updateMode": "put",
+                "skipNodeExecution": "${args.skip.auth}",
+                "spec": {
+                  "name": "${args.envId}-auth",
+                  "stageId": "${args.envId}",
+                  "billing": {
+                    "deploymentPlan": "nf-compute-20"
+                  },
+                  "deployment": {
+                    "instances": "${args.startInstances}",
+                    "internal": {
+                      "id": "${args.images.auth.serviceId}",
+                      "buildId": "${args.images.auth.buildId}",
+                      "branch": "${args.images.auth.branch}"
+                    }
+                  },
+                  "ports": [
+                    {
+                      "name": "http",
+                      "internalPort": 3000,
+                      "protocol": "HTTP",
+                      "public": true,
+                      "domains": ["${args.envId}--auth.${args.domain}"],
+                      "disableNfDomain": true,
+                      "security": {
+                        "ip": [
+                          {
+                            "addresses": ["${args.allowedIp}"],
+                            "action": "ALLOW"
+                          }
+                        ]
+                      }
+                    }
+                  ],
+                  "runtimeEnvironment": {
+                    "PREVIEW_ENV_ID": "${args.envId}",
+                    "PREVIEW_SOURCE_REPOSITORY": "${args.source.repository}",
+                    "PREVIEW_SOURCE_REF": "${args.source.ref}",
+                    "PREVIEW_SOURCE_SHA": "${args.source.headSha}",
+                    "PREVIEW_CONTROLLER_SHA": "${args.source.controllerSha}",
+                    "NODE_ENV": "development",
+                    "PORT": "3000",
+                    "GRAPHQL_API_URL": "http://${args.envId}-api:3000/graphql",
+                    "NEXT_PUBLIC_PREVIEW_ID": "${args.envId}"
+                  },
+                  "createOptions": {
+                    "expiryTime": "${args.lifetimeSeconds}"
+                  }
+                }
+              },
+              {
+                "ref": "chat_service",
+                "kind": "DeploymentService",
+                "updateMode": "put",
+                "skipNodeExecution": "${args.skip.chat}",
+                "spec": {
+                  "name": "${args.envId}-chat",
+                  "stageId": "${args.envId}",
+                  "billing": {
+                    "deploymentPlan": "nf-compute-50"
+                  },
+                  "deployment": {
+                    "instances": "${args.startInstances}",
+                    "internal": {
+                      "id": "${args.images.chat.serviceId}",
+                      "buildId": "${args.images.chat.buildId}",
+                      "branch": "${args.images.chat.branch}"
+                    }
+                  },
+                  "ports": [
+                    {
+                      "name": "http",
+                      "internalPort": 3000,
+                      "protocol": "HTTP",
+                      "public": true,
+                      "domains": ["${args.envId}--chat.${args.domain}"],
+                      "disableNfDomain": true,
+                      "security": {
+                        "ip": [
+                          {
+                            "addresses": ["${args.allowedIp}"],
+                            "action": "ALLOW"
+                          }
+                        ]
+                      }
+                    }
+                  ],
+                  "runtimeEnvironment": {
+                    "PREVIEW_ENV_ID": "${args.envId}",
+                    "PREVIEW_SOURCE_REPOSITORY": "${args.source.repository}",
+                    "PREVIEW_SOURCE_REF": "${args.source.ref}",
+                    "PREVIEW_SOURCE_SHA": "${args.source.headSha}",
+                    "PREVIEW_CONTROLLER_SHA": "${args.source.controllerSha}",
+                    "NODE_ENV": "development",
+                    "PORT": "3000",
+                    "GRAPHQL_API_URL": "http://${args.envId}-api:3000/graphql",
+                    "RESPONSE_API_URL": "http://${args.envId}-response-api:7078",
+                    "LITELLM_BASE_URL": "http://${args.envId}-litellm:4000",
+                    "LOCAL_MCP_URL": "http://${args.bindings.localMcp.host}:1417/mcp",
+                    "MCP_LECTURER_URL": "http://${args.envId}-mcp-lecturer:7081",
+                    "MCP_STUDENT_URL": "http://${args.envId}-mcp-student:7080",
+                    "NEXT_PUBLIC_PREVIEW_ID": "${args.envId}"
+                  },
+                  "createOptions": {
+                    "expiryTime": "${args.lifetimeSeconds}"
+                  }
+                }
+              },
+              {
+                "ref": "control_service",
+                "kind": "DeploymentService",
+                "updateMode": "put",
+                "skipNodeExecution": "${args.skip.control}",
+                "spec": {
+                  "name": "${args.envId}-control",
+                  "stageId": "${args.envId}",
+                  "billing": {
+                    "deploymentPlan": "nf-compute-20"
+                  },
+                  "deployment": {
+                    "instances": "${args.startInstances}",
+                    "internal": {
+                      "id": "${args.images.control.serviceId}",
+                      "buildId": "${args.images.control.buildId}",
+                      "branch": "${args.images.control.branch}"
+                    }
+                  },
+                  "ports": [
+                    {
+                      "name": "http",
+                      "internalPort": 3000,
+                      "protocol": "HTTP",
+                      "public": true,
+                      "domains": ["${args.envId}--control.${args.domain}"],
+                      "disableNfDomain": true,
+                      "security": {
+                        "ip": [
+                          {
+                            "addresses": ["${args.allowedIp}"],
+                            "action": "ALLOW"
+                          }
+                        ]
+                      }
+                    }
+                  ],
+                  "runtimeEnvironment": {
+                    "PREVIEW_ENV_ID": "${args.envId}",
+                    "PREVIEW_SOURCE_REPOSITORY": "${args.source.repository}",
+                    "PREVIEW_SOURCE_REF": "${args.source.ref}",
+                    "PREVIEW_SOURCE_SHA": "${args.source.headSha}",
+                    "PREVIEW_CONTROLLER_SHA": "${args.source.controllerSha}",
+                    "NODE_ENV": "development",
+                    "PORT": "3000",
+                    "GRAPHQL_API_URL": "http://${args.envId}-api:3000/graphql",
+                    "RESPONSE_API_URL": "http://${args.envId}-response-api:7078",
+                    "NEXT_PUBLIC_PREVIEW_ID": "${args.envId}"
+                  },
+                  "createOptions": {
+                    "expiryTime": "${args.lifetimeSeconds}"
+                  }
+                }
+              },
+              {
+                "ref": "manage_service",
+                "kind": "DeploymentService",
+                "updateMode": "put",
+                "skipNodeExecution": "${args.skip.manage}",
+                "spec": {
+                  "name": "${args.envId}-manage",
+                  "stageId": "${args.envId}",
+                  "billing": {
+                    "deploymentPlan": "nf-compute-50"
+                  },
+                  "deployment": {
+                    "instances": "${args.startInstances}",
+                    "internal": {
+                      "id": "${args.images.manage.serviceId}",
+                      "buildId": "${args.images.manage.buildId}",
+                      "branch": "${args.images.manage.branch}"
+                    }
+                  },
+                  "ports": [
+                    {
+                      "name": "http",
+                      "internalPort": 3000,
+                      "protocol": "HTTP",
+                      "public": true,
+                      "domains": ["${args.envId}--manage.${args.domain}"],
+                      "disableNfDomain": true,
+                      "security": {
+                        "ip": [
+                          {
+                            "addresses": ["${args.allowedIp}"],
+                            "action": "ALLOW"
+                          }
+                        ]
+                      }
+                    }
+                  ],
+                  "runtimeEnvironment": {
+                    "PREVIEW_ENV_ID": "${args.envId}",
+                    "PREVIEW_SOURCE_REPOSITORY": "${args.source.repository}",
+                    "PREVIEW_SOURCE_REF": "${args.source.ref}",
+                    "PREVIEW_SOURCE_SHA": "${args.source.headSha}",
+                    "PREVIEW_CONTROLLER_SHA": "${args.source.controllerSha}",
+                    "NODE_ENV": "development",
+                    "PORT": "3000",
+                    "GRAPHQL_API_URL": "http://${args.envId}-api:3000/graphql",
+                    "NEXT_PUBLIC_PREVIEW_ID": "${args.envId}"
+                  },
+                  "createOptions": {
+                    "expiryTime": "${args.lifetimeSeconds}"
+                  }
+                }
+              },
+              {
+                "ref": "pwa_service",
+                "kind": "DeploymentService",
+                "updateMode": "put",
+                "skipNodeExecution": "${args.skip.pwa}",
+                "spec": {
+                  "name": "${args.envId}-pwa",
+                  "stageId": "${args.envId}",
+                  "billing": {
+                    "deploymentPlan": "nf-compute-50"
+                  },
+                  "deployment": {
+                    "instances": "${args.startInstances}",
+                    "internal": {
+                      "id": "${args.images.pwa.serviceId}",
+                      "buildId": "${args.images.pwa.buildId}",
+                      "branch": "${args.images.pwa.branch}"
+                    }
+                  },
+                  "ports": [
+                    {
+                      "name": "http",
+                      "internalPort": 3000,
+                      "protocol": "HTTP",
+                      "public": true,
+                      "domains": ["${args.envId}--pwa.${args.domain}"],
+                      "disableNfDomain": true,
+                      "security": {
+                        "ip": [
+                          {
+                            "addresses": ["${args.allowedIp}"],
+                            "action": "ALLOW"
+                          }
+                        ]
+                      }
+                    }
+                  ],
+                  "runtimeEnvironment": {
+                    "PREVIEW_ENV_ID": "${args.envId}",
+                    "PREVIEW_SOURCE_REPOSITORY": "${args.source.repository}",
+                    "PREVIEW_SOURCE_REF": "${args.source.ref}",
+                    "PREVIEW_SOURCE_SHA": "${args.source.headSha}",
+                    "PREVIEW_CONTROLLER_SHA": "${args.source.controllerSha}",
+                    "NODE_ENV": "development",
+                    "PORT": "3000",
+                    "GRAPHQL_API_URL": "http://${args.envId}-api:3000/graphql",
+                    "RESPONSE_API_URL": "http://${args.envId}-response-api:7078",
+                    "NEXT_PUBLIC_PREVIEW_ID": "${args.envId}"
+                  },
+                  "createOptions": {
+                    "expiryTime": "${args.lifetimeSeconds}"
+                  }
+                }
+              },
+              {
+                "ref": "api_service",
+                "kind": "DeploymentService",
+                "updateMode": "put",
+                "skipNodeExecution": "${args.skip.api}",
+                "spec": {
+                  "name": "${args.envId}-api",
+                  "stageId": "${args.envId}",
+                  "billing": {
+                    "deploymentPlan": "nf-compute-50"
+                  },
+                  "deployment": {
+                    "instances": "${args.startInstances}",
+                    "internal": {
+                      "id": "${args.images.api.serviceId}",
+                      "buildId": "${args.images.api.buildId}",
+                      "branch": "${args.images.api.branch}"
+                    }
+                  },
+                  "ports": [
+                    {
+                      "name": "http",
+                      "internalPort": 3000,
+                      "protocol": "HTTP",
+                      "public": true,
+                      "domains": ["${args.envId}--api.${args.domain}"],
+                      "disableNfDomain": true,
+                      "security": {
+                        "ip": [
+                          {
+                            "addresses": ["${args.allowedIp}"],
+                            "action": "ALLOW"
+                          }
+                        ]
+                      }
+                    }
+                  ],
+                  "runtimeEnvironment": {
+                    "PREVIEW_ENV_ID": "${args.envId}",
+                    "PREVIEW_SOURCE_REPOSITORY": "${args.source.repository}",
+                    "PREVIEW_SOURCE_REF": "${args.source.ref}",
+                    "PREVIEW_SOURCE_SHA": "${args.source.headSha}",
+                    "PREVIEW_CONTROLLER_SHA": "${args.source.controllerSha}",
+                    "NODE_ENV": "development",
+                    "PORT": "3000",
+                    "RESPONSE_API_URL": "http://${args.envId}-response-api:7078",
+                    "HATCHET_CLIENT_HOST_PORT": "${args.envId}-hatchet:7077",
+                    "HATCHET_CLIENT_TLS_STRATEGY": "none",
+                    "NEXT_PUBLIC_PREVIEW_ID": "${args.envId}"
+                  },
+                  "createOptions": {
+                    "expiryTime": "${args.lifetimeSeconds}"
+                  }
+                }
+              },
+              {
+                "ref": "response_api_service",
+                "kind": "DeploymentService",
+                "updateMode": "put",
+                "skipNodeExecution": "${args.skip.responseApi}",
+                "spec": {
+                  "name": "${args.envId}-response-api",
+                  "stageId": "${args.envId}",
+                  "billing": {
+                    "deploymentPlan": "nf-compute-20"
+                  },
+                  "deployment": {
+                    "instances": "${args.startInstances}",
+                    "internal": {
+                      "id": "${args.images.responseApi.serviceId}",
+                      "buildId": "${args.images.responseApi.buildId}",
+                      "branch": "${args.images.responseApi.branch}"
+                    }
+                  },
+                  "ports": [
+                    {
+                      "name": "http",
+                      "internalPort": 7078,
+                      "protocol": "HTTP",
+                      "public": true,
+                      "domains": ["${args.envId}--response-api.${args.domain}"],
+                      "disableNfDomain": true,
+                      "security": {
+                        "ip": [
+                          {
+                            "addresses": ["${args.allowedIp}"],
+                            "action": "ALLOW"
+                          }
+                        ]
+                      }
+                    }
+                  ],
+                  "runtimeEnvironment": {
+                    "PREVIEW_ENV_ID": "${args.envId}",
+                    "PREVIEW_SOURCE_REPOSITORY": "${args.source.repository}",
+                    "PREVIEW_SOURCE_REF": "${args.source.ref}",
+                    "PREVIEW_SOURCE_SHA": "${args.source.headSha}",
+                    "PREVIEW_CONTROLLER_SHA": "${args.source.controllerSha}",
+                    "NODE_ENV": "development",
+                    "PORT": "7078",
+                    "HATCHET_CLIENT_HOST_PORT": "${args.envId}-hatchet:7077",
+                    "HATCHET_CLIENT_TLS_STRATEGY": "none",
+                    "NEXT_PUBLIC_PREVIEW_ID": "${args.envId}"
+                  },
+                  "createOptions": {
+                    "expiryTime": "${args.lifetimeSeconds}"
+                  }
+                }
+              },
+              {
+                "ref": "worker_general_service",
+                "kind": "DeploymentService",
+                "updateMode": "put",
+                "skipNodeExecution": "${args.skip.workerGeneral}",
+                "spec": {
+                  "name": "${args.envId}-worker-general",
+                  "stageId": "${args.envId}",
+                  "billing": {
+                    "deploymentPlan": "nf-compute-20"
+                  },
+                  "deployment": {
+                    "instances": "${args.startInstances}",
+                    "internal": {
+                      "id": "${args.images.workerGeneral.serviceId}",
+                      "buildId": "${args.images.workerGeneral.buildId}",
+                      "branch": "${args.images.workerGeneral.branch}"
+                    }
+                  },
+                  "ports": [],
+                  "runtimeEnvironment": {
+                    "PREVIEW_ENV_ID": "${args.envId}",
+                    "PREVIEW_SOURCE_REPOSITORY": "${args.source.repository}",
+                    "PREVIEW_SOURCE_REF": "${args.source.ref}",
+                    "PREVIEW_SOURCE_SHA": "${args.source.headSha}",
+                    "PREVIEW_CONTROLLER_SHA": "${args.source.controllerSha}",
+                    "NODE_ENV": "development",
+                    "HATCHET_CLIENT_HOST_PORT": "${args.envId}-hatchet:7077",
+                    "HATCHET_CLIENT_TLS_STRATEGY": "none",
+                    "NEXT_PUBLIC_PREVIEW_ID": "${args.envId}"
+                  },
+                  "createOptions": {
+                    "expiryTime": "${args.lifetimeSeconds}"
+                  }
+                }
+              },
+              {
+                "ref": "worker_response_service",
+                "kind": "DeploymentService",
+                "updateMode": "put",
+                "skipNodeExecution": "${args.skip.workerResponse}",
+                "spec": {
+                  "name": "${args.envId}-worker-response",
+                  "stageId": "${args.envId}",
+                  "billing": {
+                    "deploymentPlan": "nf-compute-20"
+                  },
+                  "deployment": {
+                    "instances": "${args.startInstances}",
+                    "internal": {
+                      "id": "${args.images.workerResponse.serviceId}",
+                      "buildId": "${args.images.workerResponse.buildId}",
+                      "branch": "${args.images.workerResponse.branch}"
+                    }
+                  },
+                  "ports": [],
+                  "runtimeEnvironment": {
+                    "PREVIEW_ENV_ID": "${args.envId}",
+                    "PREVIEW_SOURCE_REPOSITORY": "${args.source.repository}",
+                    "PREVIEW_SOURCE_REF": "${args.source.ref}",
+                    "PREVIEW_SOURCE_SHA": "${args.source.headSha}",
+                    "PREVIEW_CONTROLLER_SHA": "${args.source.controllerSha}",
+                    "NODE_ENV": "development",
+                    "HATCHET_CLIENT_HOST_PORT": "${args.envId}-hatchet:7077",
+                    "HATCHET_CLIENT_TLS_STRATEGY": "none",
+                    "NEXT_PUBLIC_PREVIEW_ID": "${args.envId}"
+                  },
+                  "createOptions": {
+                    "expiryTime": "${args.lifetimeSeconds}"
+                  }
+                }
+              },
+              {
+                "ref": "lti_service",
+                "kind": "DeploymentService",
+                "updateMode": "put",
+                "skipNodeExecution": "${args.skip.lti}",
+                "spec": {
+                  "name": "${args.envId}-lti",
+                  "stageId": "${args.envId}",
+                  "billing": {
+                    "deploymentPlan": "nf-compute-20"
+                  },
+                  "deployment": {
+                    "instances": "${args.startInstances}",
+                    "internal": {
+                      "id": "${args.images.lti.serviceId}",
+                      "buildId": "${args.images.lti.buildId}",
+                      "branch": "${args.images.lti.branch}"
+                    }
+                  },
+                  "ports": [
+                    {
+                      "name": "http",
+                      "internalPort": 4000,
+                      "protocol": "HTTP",
+                      "public": true,
+                      "domains": ["${args.envId}--lti.${args.domain}"],
+                      "disableNfDomain": true,
+                      "security": {
+                        "ip": [
+                          {
+                            "addresses": ["${args.allowedIp}"],
+                            "action": "ALLOW"
+                          }
+                        ]
+                      }
+                    }
+                  ],
+                  "runtimeEnvironment": {
+                    "PREVIEW_ENV_ID": "${args.envId}",
+                    "PREVIEW_SOURCE_REPOSITORY": "${args.source.repository}",
+                    "PREVIEW_SOURCE_REF": "${args.source.ref}",
+                    "PREVIEW_SOURCE_SHA": "${args.source.headSha}",
+                    "PREVIEW_CONTROLLER_SHA": "${args.source.controllerSha}",
+                    "NODE_ENV": "development",
+                    "PORT": "4000",
+                    "GRAPHQL_API_URL": "http://${args.envId}-api:3000/graphql",
+                    "NEXT_PUBLIC_PREVIEW_ID": "${args.envId}"
+                  },
+                  "createOptions": {
+                    "expiryTime": "${args.lifetimeSeconds}"
+                  }
+                }
+              },
+              {
+                "ref": "olat_service",
+                "kind": "DeploymentService",
+                "updateMode": "put",
+                "skipNodeExecution": "${args.skip.olatApi}",
+                "spec": {
+                  "name": "${args.envId}-olat-api",
+                  "stageId": "${args.envId}",
+                  "billing": {
+                    "deploymentPlan": "nf-compute-20"
+                  },
+                  "deployment": {
+                    "instances": "${args.startInstances}",
+                    "internal": {
+                      "id": "${args.images.olatApi.serviceId}",
+                      "buildId": "${args.images.olatApi.buildId}",
+                      "branch": "${args.images.olatApi.branch}"
+                    }
+                  },
+                  "ports": [
+                    {
+                      "name": "http",
+                      "internalPort": 3030,
+                      "protocol": "HTTP",
+                      "public": true,
+                      "domains": ["${args.envId}--olat-api.${args.domain}"],
+                      "disableNfDomain": true,
+                      "security": {
+                        "ip": [
+                          {
+                            "addresses": ["${args.allowedIp}"],
+                            "action": "ALLOW"
+                          }
+                        ]
+                      }
+                    }
+                  ],
+                  "runtimeEnvironment": {
+                    "PREVIEW_ENV_ID": "${args.envId}",
+                    "PREVIEW_SOURCE_REPOSITORY": "${args.source.repository}",
+                    "PREVIEW_SOURCE_REF": "${args.source.ref}",
+                    "PREVIEW_SOURCE_SHA": "${args.source.headSha}",
+                    "PREVIEW_CONTROLLER_SHA": "${args.source.controllerSha}",
+                    "NODE_ENV": "development",
+                    "PORT": "3030",
+                    "GRAPHQL_API_URL": "http://${args.envId}-api:3000/graphql",
+                    "NEXT_PUBLIC_PREVIEW_ID": "${args.envId}"
+                  },
+                  "createOptions": {
+                    "expiryTime": "${args.lifetimeSeconds}"
+                  }
+                }
+              },
+              {
+                "ref": "local_mcp_service",
+                "kind": "DeploymentService",
+                "updateMode": "put",
+                "skipNodeExecution": "${args.skip.localMcp}",
+                "spec": {
+                  "name": "${args.envId}-local-mcp",
+                  "stageId": "${args.envId}",
+                  "billing": {
+                    "deploymentPlan": "nf-compute-20"
+                  },
+                  "deployment": {
+                    "instances": "${args.startInstances}",
+                    "internal": {
+                      "id": "${args.images.localMcp.serviceId}",
+                      "buildId": "${args.images.localMcp.buildId}",
+                      "branch": "${args.images.localMcp.branch}"
+                    },
+                    "docker": {
+                      "configType": "customEntrypointCustomCommand",
+                      "customEntrypoint": "node",
+                      "customCommand": "/app/apps/chat/scripts/local-mcp-server.mjs"
+                    }
+                  },
+                  "ports": [
+                    {
+                      "name": "mcp",
+                      "internalPort": 1417,
+                      "protocol": "HTTP",
+                      "public": false
+                    }
+                  ],
+                  "runtimeEnvironment": {
+                    "PREVIEW_ENV_ID": "${args.envId}",
+                    "PREVIEW_SOURCE_REPOSITORY": "${args.source.repository}",
+                    "PREVIEW_SOURCE_REF": "${args.source.ref}",
+                    "PREVIEW_SOURCE_SHA": "${args.source.headSha}",
+                    "PREVIEW_CONTROLLER_SHA": "${args.source.controllerSha}",
+                    "NODE_ENV": "development",
+                    "PORT": "1417",
+                    "NEXT_PUBLIC_PREVIEW_ID": "${args.envId}",
+                    "LOCAL_MCP_BIND_HOST": "0.0.0.0",
+                    "LOCAL_MCP_ALLOWED_HOSTS": "${args.bindings.localMcp.host}:1417",
+                    "LOCAL_MCP_FIXTURE_FILE": "/fixture/mcp.json"
+                  },
+                  "createOptions": {
+                    "expiryTime": "${args.lifetimeSeconds}"
+                  },
+                  "runtimeFiles": {
+                    "/fixture/mcp.json": "${args.files.localMcpFixture}",
+                    "/fixture/docs.json": "${args.files.localMcpDocuments}"
+                  }
+                }
+              },
+              {
+                "ref": "mcp_lecturer_service",
+                "kind": "DeploymentService",
+                "updateMode": "put",
+                "skipNodeExecution": "${args.skip.mcpLecturer}",
+                "spec": {
+                  "name": "${args.envId}-mcp-lecturer",
+                  "stageId": "${args.envId}",
+                  "billing": {
+                    "deploymentPlan": "nf-compute-20"
+                  },
+                  "deployment": {
+                    "instances": "${args.startInstances}",
+                    "internal": {
+                      "id": "${args.images.mcpLecturer.serviceId}",
+                      "buildId": "${args.images.mcpLecturer.buildId}",
+                      "branch": "${args.images.mcpLecturer.branch}"
+                    }
+                  },
+                  "ports": [
+                    {
+                      "name": "mcp",
+                      "internalPort": 7081,
+                      "protocol": "HTTP",
+                      "public": false
+                    }
+                  ],
+                  "runtimeEnvironment": {
+                    "PREVIEW_ENV_ID": "${args.envId}",
+                    "PREVIEW_SOURCE_REPOSITORY": "${args.source.repository}",
+                    "PREVIEW_SOURCE_REF": "${args.source.ref}",
+                    "PREVIEW_SOURCE_SHA": "${args.source.headSha}",
+                    "PREVIEW_CONTROLLER_SHA": "${args.source.controllerSha}",
+                    "NODE_ENV": "development",
+                    "PORT": "7081",
+                    "NEXT_PUBLIC_PREVIEW_ID": "${args.envId}"
+                  },
+                  "createOptions": {
+                    "expiryTime": "${args.lifetimeSeconds}"
+                  }
+                }
+              },
+              {
+                "ref": "mcp_student_service",
+                "kind": "DeploymentService",
+                "updateMode": "put",
+                "skipNodeExecution": "${args.skip.mcpStudent}",
+                "spec": {
+                  "name": "${args.envId}-mcp-student",
+                  "stageId": "${args.envId}",
+                  "billing": {
+                    "deploymentPlan": "nf-compute-20"
+                  },
+                  "deployment": {
+                    "instances": "${args.startInstances}",
+                    "internal": {
+                      "id": "${args.images.mcpStudent.serviceId}",
+                      "buildId": "${args.images.mcpStudent.buildId}",
+                      "branch": "${args.images.mcpStudent.branch}"
+                    }
+                  },
+                  "ports": [
+                    {
+                      "name": "mcp",
+                      "internalPort": 7080,
+                      "protocol": "HTTP",
+                      "public": false
+                    }
+                  ],
+                  "runtimeEnvironment": {
+                    "PREVIEW_ENV_ID": "${args.envId}",
+                    "PREVIEW_SOURCE_REPOSITORY": "${args.source.repository}",
+                    "PREVIEW_SOURCE_REF": "${args.source.ref}",
+                    "PREVIEW_SOURCE_SHA": "${args.source.headSha}",
+                    "PREVIEW_CONTROLLER_SHA": "${args.source.controllerSha}",
+                    "NODE_ENV": "development",
+                    "PORT": "7080",
+                    "NEXT_PUBLIC_PREVIEW_ID": "${args.envId}"
+                  },
+                  "createOptions": {
+                    "expiryTime": "${args.lifetimeSeconds}"
+                  }
+                }
+              },
+              {
+                "ref": "migration_job",
+                "kind": "ManualJob",
+                "updateMode": "put",
+                "skipNodeExecution": "${args.skip.schemaMigration}",
+                "spec": {
+                  "name": "${args.envId}-migrate",
+                  "stageId": "${args.envId}",
+                  "billing": {
+                    "deploymentPlan": "nf-compute-20"
+                  },
+                  "deployment": {
+                    "internal": {
+                      "id": "${args.images.migrator.serviceId}",
+                      "buildId": "${args.images.migrator.buildId}",
+                      "branch": "${args.images.migrator.branch}"
+                    },
+                    "docker": {
+                      "configType": "customEntrypointCustomCommand",
+                      "customEntrypoint": "${args.jobs.schemaMigration.entrypoint}",
+                      "customCommand": "${args.jobs.schemaMigration.command}"
+                    }
+                  },
+                  "runtimeEnvironment": {
+                    "PREVIEW_ENV_ID": "${args.envId}",
+                    "PREVIEW_SOURCE_REPOSITORY": "${args.source.repository}",
+                    "PREVIEW_SOURCE_REF": "${args.source.ref}",
+                    "PREVIEW_SOURCE_SHA": "${args.source.headSha}",
+                    "PREVIEW_CONTROLLER_SHA": "${args.source.controllerSha}",
+                    "NODE_ENV": "development"
+                  },
+                  "backoffLimit": 0,
+                  "runOnSourceChange": "never",
+                  "activeDeadlineSeconds": 600
+                }
+              },
+              {
+                "ref": "fixture_job",
+                "kind": "ManualJob",
+                "updateMode": "put",
+                "skipNodeExecution": "${args.skip.fixtures}",
+                "spec": {
+                  "name": "${args.envId}-fixtures",
+                  "stageId": "${args.envId}",
+                  "billing": {
+                    "deploymentPlan": "nf-compute-20"
+                  },
+                  "deployment": {
+                    "internal": {
+                      "id": "${args.images.fixtures.serviceId}",
+                      "buildId": "${args.images.fixtures.buildId}",
+                      "branch": "${args.images.fixtures.branch}"
+                    },
+                    "docker": {
+                      "configType": "customEntrypointCustomCommand",
+                      "customEntrypoint": "${args.jobs.fixtures.entrypoint}",
+                      "customCommand": "${args.jobs.fixtures.command}"
+                    }
+                  },
+                  "runtimeEnvironment": {
+                    "PREVIEW_ENV_ID": "${args.envId}",
+                    "PREVIEW_SOURCE_REPOSITORY": "${args.source.repository}",
+                    "PREVIEW_SOURCE_REF": "${args.source.ref}",
+                    "PREVIEW_SOURCE_SHA": "${args.source.headSha}",
+                    "PREVIEW_CONTROLLER_SHA": "${args.source.controllerSha}",
+                    "NODE_ENV": "development",
+                    "ENV": "development"
+                  },
+                  "backoffLimit": 0,
+                  "runOnSourceChange": "never",
+                  "activeDeadlineSeconds": 600
+                }
+              }
+            ]
+          }
+        },
+        {
+          "ref": "scoped_secrets",
+          "kind": "Workflow",
+          "spec": {
+            "type": "sequential",
+            "steps": [
+              {
+                "ref": "runtime_config_secret",
+                "kind": "SecretGroup",
+                "updateMode": "put",
+                "skipNodeExecution": "${args.skip.runtimeConfig}",
+                "spec": {
+                  "name": "${args.envId}-runtime",
+                  "description": "The trusted controller supplies these runtime bindings. Only the listed keys are injected.",
+                  "stageId": "${args.envId}",
+                  "type": "secret",
+                  "secretType": "environment",
+                  "priority": 10,
+                  "secrets": {
+                    "variables": {
+                      "COOKIE_DOMAIN": "${args.runtimeEnvironment.COOKIE_DOMAIN}",
+                      "APP_ORIGIN_API": "${args.runtimeEnvironment.APP_ORIGIN_API}",
+                      "APP_ORIGIN_AUTH": "${args.runtimeEnvironment.APP_ORIGIN_AUTH}",
+                      "APP_ORIGIN_MANAGE": "${args.runtimeEnvironment.APP_ORIGIN_MANAGE}",
+                      "APP_ORIGIN_PWA": "${args.runtimeEnvironment.APP_ORIGIN_PWA}",
+                      "APP_ORIGIN_LTI": "${args.runtimeEnvironment.APP_ORIGIN_LTI}",
+                      "APP_ORIGIN_ASSESSMENT_API": "${args.runtimeEnvironment.APP_ORIGIN_ASSESSMENT_API}",
+                      "APP_ORIGIN_ASSESSMENT_PWA": "${args.runtimeEnvironment.APP_ORIGIN_ASSESSMENT_PWA}",
+                      "NEXTAUTH_URL": "${args.runtimeEnvironment.NEXTAUTH_URL}"
+                    }
+                  },
+                  "restrictions": {
+                    "restricted": true,
+                    "nfObjects": [
+                      {
+                        "id": "${args.envId}-auth",
+                        "type": "service"
+                      },
+                      {
+                        "id": "${args.envId}-chat",
+                        "type": "service"
+                      },
+                      {
+                        "id": "${args.envId}-control",
+                        "type": "service"
+                      },
+                      {
+                        "id": "${args.envId}-manage",
+                        "type": "service"
+                      },
+                      {
+                        "id": "${args.envId}-pwa",
+                        "type": "service"
+                      },
+                      {
+                        "id": "${args.envId}-api",
+                        "type": "service"
+                      },
+                      {
+                        "id": "${args.envId}-response-api",
+                        "type": "service"
+                      },
+                      {
+                        "id": "${args.envId}-worker-general",
+                        "type": "service"
+                      },
+                      {
+                        "id": "${args.envId}-worker-response",
+                        "type": "service"
+                      },
+                      {
+                        "id": "${args.envId}-lti",
+                        "type": "service"
+                      },
+                      {
+                        "id": "${args.envId}-olat-api",
+                        "type": "service"
+                      },
+                      {
+                        "id": "${args.envId}-mcp-lecturer",
+                        "type": "service"
+                      },
+                      {
+                        "id": "${args.envId}-mcp-student",
+                        "type": "service"
+                      }
+                    ]
+                  }
+                }
+              },
+              {
+                "ref": "app_signing_secret",
+                "kind": "SecretGroup",
+                "updateMode": "put",
+                "skipNodeExecution": "${args.skip.runtimeConfig}",
+                "spec": {
+                  "name": "${args.envId}-signing",
+                  "description": "The trusted controller supplies the private environment signing secret. This graph generates no secret values.",
+                  "stageId": "${args.envId}",
+                  "type": "secret",
+                  "secretType": "environment",
+                  "priority": 10,
+                  "secrets": {
+                    "variables": {
+                      "APP_SECRET": "${args.secrets.appSecret}"
+                    }
+                  },
+                  "restrictions": {
+                    "restricted": true,
+                    "nfObjects": [
+                      {
+                        "id": "${args.envId}-auth",
+                        "type": "service"
+                      },
+                      {
+                        "id": "${args.envId}-chat",
+                        "type": "service"
+                      },
+                      {
+                        "id": "${args.envId}-control",
+                        "type": "service"
+                      },
+                      {
+                        "id": "${args.envId}-manage",
+                        "type": "service"
+                      },
+                      {
+                        "id": "${args.envId}-pwa",
+                        "type": "service"
+                      },
+                      {
+                        "id": "${args.envId}-api",
+                        "type": "service"
+                      },
+                      {
+                        "id": "${args.envId}-response-api",
+                        "type": "service"
+                      },
+                      {
+                        "id": "${args.envId}-worker-general",
+                        "type": "service"
+                      },
+                      {
+                        "id": "${args.envId}-worker-response",
+                        "type": "service"
+                      },
+                      {
+                        "id": "${args.envId}-lti",
+                        "type": "service"
+                      },
+                      {
+                        "id": "${args.envId}-olat-api",
+                        "type": "service"
+                      },
+                      {
+                        "id": "${args.envId}-mcp-lecturer",
+                        "type": "service"
+                      },
+                      {
+                        "id": "${args.envId}-mcp-student",
+                        "type": "service"
+                      }
+                    ]
+                  }
+                }
+              },
+              {
+                "ref": "nextauth_signing_secret",
+                "kind": "SecretGroup",
+                "updateMode": "put",
+                "skipNodeExecution": "${args.skip.runtimeConfig}",
+                "spec": {
+                  "name": "${args.envId}-nextauth",
+                  "description": "The trusted controller supplies the private NextAuth signing secret. This graph generates no secret values.",
+                  "stageId": "${args.envId}",
+                  "type": "secret",
+                  "secretType": "environment",
+                  "priority": 10,
+                  "secrets": {
+                    "variables": {
+                      "NEXTAUTH_SECRET": "${args.secrets.nextauthSecret}"
+                    }
+                  },
+                  "restrictions": {
+                    "restricted": true,
+                    "nfObjects": [
+                      {
+                        "id": "${args.envId}-auth",
+                        "type": "service"
+                      },
+                      {
+                        "id": "${args.envId}-chat",
+                        "type": "service"
+                      },
+                      {
+                        "id": "${args.envId}-control",
+                        "type": "service"
+                      },
+                      {
+                        "id": "${args.envId}-manage",
+                        "type": "service"
+                      },
+                      {
+                        "id": "${args.envId}-pwa",
+                        "type": "service"
+                      }
+                    ]
+                  }
+                }
+              },
+              {
+                "ref": "local_mcp_auth_secret",
+                "kind": "SecretGroup",
+                "updateMode": "put",
+                "skipNodeExecution": "${args.skip.localMcp}",
+                "spec": {
+                  "name": "${args.envId}-mcp-auth",
+                  "description": "The trusted controller supplies ephemeral MCP authentication material. This graph generates no keys or tokens.",
+                  "stageId": "${args.envId}",
+                  "type": "secret",
+                  "secretType": "environment",
+                  "priority": 10,
+                  "secrets": {
+                    "variables": {
+                      "LOCAL_MCP_TRANSPORT_TOKEN": "${args.secrets.localMcpToken}",
+                      "LOCAL_MCP_PUBLIC_KEY": "${args.secrets.localMcpPublicKey}",
+                      "LOCAL_MCP_GENERATION": "${args.secrets.localMcpGeneration}",
+                      "DOC_QUERY_SCOPE_KID": "${args.secrets.localMcpGeneration}",
+                      "DOC_QUERY_SCOPE_ISSUER": "${args.bindings.localMcp.issuer}",
+                      "DOC_QUERY_SCOPE_AUDIENCE": "${args.bindings.localMcp.audience}"
+                    }
+                  },
+                  "restrictions": {
+                    "restricted": true,
+                    "nfObjects": [
+                      {
+                        "id": "${args.envId}-local-mcp",
+                        "type": "service"
+                      },
+                      {
+                        "id": "${args.envId}-chat",
+                        "type": "service"
+                      }
+                    ]
+                  }
+                }
+              },
+              {
+                "ref": "local_mcp_signer_secret",
+                "kind": "SecretGroup",
+                "updateMode": "put",
+                "skipNodeExecution": "${args.skip.localMcp}",
+                "spec": {
+                  "name": "${args.envId}-mcp-signer",
+                  "description": "The trusted controller supplies the private MCP scope signer to Chat only.",
+                  "stageId": "${args.envId}",
+                  "type": "secret",
+                  "secretType": "environment",
+                  "priority": 10,
+                  "secrets": {
+                    "variables": {
+                      "DOC_QUERY_SCOPE_PRIVATE_KEY": "${args.secrets.localMcpPrivateKey}"
+                    }
+                  },
+                  "restrictions": {
+                    "restricted": true,
+                    "nfObjects": [
+                      {
+                        "id": "${args.envId}-chat",
+                        "type": "service"
+                      }
+                    ]
+                  }
+                }
+              },
+              {
+                "ref": "backend_data_secret",
+                "kind": "SecretGroup",
+                "updateMode": "put",
+                "skipNodeExecution": "${args.skip.backendData}",
+                "spec": {
+                  "name": "${args.envId}-db-app",
+                  "stageId": "${args.envId}",
+                  "type": "secret",
+                  "secretType": "environment",
+                  "priority": 10,
+                  "secrets": {
+                    "variables": {
+                      "DATABASE_URL": "${args.secrets.appDatabaseUrl}"
+                    }
+                  },
+                  "restrictions": {
+                    "restricted": true,
+                    "nfObjects": [
+                      {
+                        "id": "${args.envId}-api",
+                        "type": "service"
+                      },
+                      {
+                        "id": "${args.envId}-response-api",
+                        "type": "service"
+                      },
+                      {
+                        "id": "${args.envId}-worker-general",
+                        "type": "service"
+                      },
+                      {
+                        "id": "${args.envId}-worker-response",
+                        "type": "service"
+                      },
+                      {
+                        "id": "${args.envId}-auth",
+                        "type": "service"
+                      },
+                      {
+                        "id": "${args.envId}-chat",
+                        "type": "service"
+                      },
+                      {
+                        "id": "${args.envId}-pwa",
+                        "type": "service"
+                      }
+                    ]
+                  }
+                }
+              },
+              {
+                "ref": "redis_data_secret",
+                "kind": "SecretGroup",
+                "updateMode": "put",
+                "skipNodeExecution": "${args.skip.redisData}",
+                "spec": {
+                  "name": "${args.envId}-redis",
+                  "stageId": "${args.envId}",
+                  "type": "secret",
+                  "secretType": "environment",
+                  "priority": 10,
+                  "secrets": {
+                    "variables": {
+                      "REDIS_HOST": "${args.bindings.redisExec.host}",
+                      "REDIS_PORT": "${args.bindings.redisExec.port}",
+                      "REDIS_PASS": "${args.secrets.redisExecPass}",
+                      "REDIS_CACHE_HOST": "${args.bindings.redisCache.host}",
+                      "REDIS_CACHE_PORT": "${args.bindings.redisCache.port}",
+                      "REDIS_CACHE_PASS": "${args.secrets.redisCachePass}",
+                      "REDIS_ASSESSMENT_HOST": "${args.bindings.redisAssessment.host}",
+                      "REDIS_ASSESSMENT_PORT": "${args.bindings.redisAssessment.port}",
+                      "REDIS_ASSESSMENT_PASS": "${args.secrets.redisAssessmentPass}"
+                    }
+                  },
+                  "restrictions": {
+                    "restricted": true,
+                    "nfObjects": [
+                      {
+                        "id": "${args.envId}-api",
+                        "type": "service"
+                      },
+                      {
+                        "id": "${args.envId}-response-api",
+                        "type": "service"
+                      },
+                      {
+                        "id": "${args.envId}-worker-general",
+                        "type": "service"
+                      },
+                      {
+                        "id": "${args.envId}-worker-response",
+                        "type": "service"
+                      },
+                      {
+                        "id": "${args.envId}-chat",
+                        "type": "service"
+                      }
+                    ]
+                  }
+                }
+              },
+              {
+                "ref": "hatchet_client_secret",
+                "kind": "SecretGroup",
+                "updateMode": "put",
+                "skipNodeExecution": "${args.skip.hatchetClient}",
+                "spec": {
+                  "name": "${args.envId}-h-client",
+                  "stageId": "${args.envId}",
+                  "type": "secret",
+                  "secretType": "environment",
+                  "priority": 10,
+                  "secrets": {
+                    "variables": {
+                      "HATCHET_CLIENT_TOKEN": "${args.secrets.hatchetClientToken}"
+                    }
+                  },
+                  "restrictions": {
+                    "restricted": true,
+                    "nfObjects": [
+                      {
+                        "id": "${args.envId}-api",
+                        "type": "service"
+                      },
+                      {
+                        "id": "${args.envId}-response-api",
+                        "type": "service"
+                      },
+                      {
+                        "id": "${args.envId}-worker-general",
+                        "type": "service"
+                      },
+                      {
+                        "id": "${args.envId}-worker-response",
+                        "type": "service"
+                      }
+                    ]
+                  }
+                }
+              },
+              {
+                "ref": "migration_secret",
+                "kind": "SecretGroup",
+                "updateMode": "put",
+                "skipNodeExecution": "${args.skip.schemaMigration}",
+                "spec": {
+                  "name": "${args.envId}-mig-db",
+                  "stageId": "${args.envId}",
+                  "type": "secret",
+                  "secretType": "environment",
+                  "priority": 10,
+                  "secrets": {
+                    "variables": {
+                      "DATABASE_URL": "${args.secrets.migrationDatabaseUrl}"
+                    }
+                  },
+                  "restrictions": {
+                    "restricted": true,
+                    "nfObjects": [
+                      {
+                        "id": "${args.envId}-migrate",
+                        "type": "job"
+                      }
+                    ]
+                  }
+                }
+              },
+              {
+                "ref": "fixture_secret",
+                "kind": "SecretGroup",
+                "updateMode": "put",
+                "skipNodeExecution": "${args.skip.fixtures}",
+                "spec": {
+                  "name": "${args.envId}-fix-db",
+                  "stageId": "${args.envId}",
+                  "type": "secret",
+                  "secretType": "environment",
+                  "priority": 10,
+                  "secrets": {
+                    "variables": {
+                      "DATABASE_URL": "${args.secrets.fixtureDatabaseUrl}"
+                    }
+                  },
+                  "restrictions": {
+                    "restricted": true,
+                    "nfObjects": [
+                      {
+                        "id": "${args.envId}-fixtures",
+                        "type": "job"
+                      }
+                    ]
+                  }
+                }
+              },
+              {
+                "ref": "hatchet_database_secret",
+                "kind": "SecretGroup",
+                "updateMode": "put",
+                "skipNodeExecution": "${args.skip.hatchet}",
+                "spec": {
+                  "name": "${args.envId}-hatchet",
+                  "stageId": "${args.envId}",
+                  "type": "secret",
+                  "secretType": "environment",
+                  "priority": 10,
+                  "secrets": {
+                    "variables": {
+                      "DATABASE_URL": "${args.secrets.hatchetDatabaseUrl}"
+                    }
+                  },
+                  "restrictions": {
+                    "restricted": true,
+                    "nfObjects": [
+                      {
+                        "id": "${args.envId}-hatchet",
+                        "type": "service"
+                      }
+                    ]
+                  }
+                }
+              }
+            ]
+          }
+        },
+        {
+          "ref": "database_job_runs",
+          "kind": "Workflow",
+          "spec": {
+            "type": "sequential",
+            "steps": [
+              {
+                "ref": "migration_run",
+                "kind": "JobRun",
+                "condition": "success",
+                "skipNodeExecution": "${args.skip.runMigration}",
+                "spec": {
+                  "jobId": "${args.envId}-migrate"
+                }
+              },
+              {
+                "ref": "fixture_run",
+                "kind": "JobRun",
+                "condition": "success",
+                "runNodeOnce": "true",
+                "skipNodeExecution": "${args.skip.runFixtures}",
+                "spec": {
+                  "jobId": "${args.envId}-fixtures"
+                }
+              }
+            ]
+          }
+        }
+      ]
+    }
+  }
+}
