@@ -505,7 +505,16 @@ async function host() {
     existsSync(engineSource),
     'A previously qualified Catalyst build context is required'
   )
-  const ensured = readReceipt('../runtime-ensure.json')
+  const runtimeDescriptor = openSync(
+    join(dirname(directory), 'runtime-ensure.json'),
+    constants.O_RDONLY | constants.O_NOFOLLOW
+  )
+  let ensured
+  try {
+    ensured = JSON.parse(readFileSync(runtimeDescriptor, 'utf8'))
+  } finally {
+    closeSync(runtimeDescriptor)
+  }
   assert.equal(realpathSync(ensured.repoPath), root)
   const generation = randomUUID()
   const workspace = ensured.workspace
