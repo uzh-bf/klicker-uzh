@@ -2,7 +2,7 @@
 
 ## Quick Reference
 
-- **Monorepo**: pnpm 11.x + Turborepo, Node.js 24 (Volta-pinned; see `volta` in root `package.json` for exact versions)
+- **Monorepo**: pnpm 12.x + Turborepo, Node.js 24 (Volta-pinned; see `volta` in root `package.json` for exact versions)
 - **Main branch**: `v3` (active development)
 - **Legacy branches**: `dev` and `master` belong to the older Klicker variant and are not actively developed.
 - **Package names**: `@klicker-uzh/<name>` (e.g., `@klicker-uzh/graphql`)
@@ -335,6 +335,8 @@ Traefik reverse proxy serves the apps on `*.klicker.com` domains (needs `/etc/ho
 [docs/](docs/) is the selective, agent-facing OKF v0.1 engineering wiki for working on this codebase (not to be confused with `apps/docs`, the user-facing site). It contains durable knowledge that is non-obvious from the source: top-level area guides explain _what_ and _how_, [docs/adr/](docs/adr/) records _why_, and `docs/solutions/` captures reusable lessons from resolved problems. Preserve concept frontmatter and use descriptive filenames, direct links, and repository search. The OKF index and log paths (`docs/index.md`, `docs/log.md`, and `docs/log/`) are intentionally absent and must never be created or restored because they duplicate directory discovery and Git history.
 
 Read the relevant pages before working in an unfamiliar area. Update `docs/` and the relevant skills in `.agents/skills/` in the same PR when a change makes existing guidance inaccurate or introduces a durable contract that the code does not explain. A behavior change does not require a ceremonial documentation edit. The former `project/CODEBASE_NOTES.md` is a retired pointer stub.
+
+Before editing `apps/docs` or shipping a change to user-visible behavior, apply [User documentation](docs/developing-a-feature.md#user-documentation).
 
 ## AI Assistance (Skills)
 

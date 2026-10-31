@@ -1,10 +1,11 @@
-import type { GetPendingChatbotRevisionReviewsQuery } from '@klicker-uzh/graphql/dist/ops'
+import type { GetPendingChatbotRevisionReviewsWithPreferencesQuery } from '@klicker-uzh/graphql/dist/ops'
 import { useTranslations } from 'next-intl'
 import type { ReactNode } from 'react'
+import { formatCustomModeSettings } from '../resources/chatbots/ChatbotAuthoring'
 import ChatbotDisclaimerPreview from '../resources/chatbots/ChatbotDisclaimerPreview'
 
 type Review =
-  GetPendingChatbotRevisionReviewsQuery['getPendingChatbotPublications'][number]
+  GetPendingChatbotRevisionReviewsWithPreferencesQuery['getPendingChatbotPublications'][number]
 
 function ReviewField({
   label,
@@ -28,7 +29,7 @@ function ChatbotPublicationDetails({
   models,
 }: {
   review: Review
-  models: GetPendingChatbotRevisionReviewsQuery['getChatModelRegistry']
+  models: GetPendingChatbotRevisionReviewsWithPreferencesQuery['getChatModelRegistry']
 }) {
   const t = useTranslations()
   const revision = review.chatbot.authoringRevision
@@ -118,6 +119,11 @@ function ChatbotPublicationDetails({
         <ReviewField label={t('manage.resources.allowedModels')}>
           {modelNames}
         </ReviewField>
+        <ReviewField label={t('manage.resources.answerPreferences')}>
+          {chatbot.answerPreferencesEnabled
+            ? t('manage.resources.modelSelectionEnabled')
+            : t('manage.resources.modelSelectionDisabled')}
+        </ReviewField>
         <ReviewField label={t('manage.resources.chatbotSetupModesTitle')}>
           {[
             config?.tutorEnabled && t('manage.resources.chatbotModeTutor'),
@@ -205,6 +211,9 @@ function ChatbotPublicationDetails({
                     ? 'manage.resources.chatbotCustomModeReasoningShown'
                     : 'manage.resources.chatbotCustomModeReasoningHidden'
                 )}
+              </p>
+              <p data-cy={`chatbot-admin-review-settings-${mode.key}`}>
+                {formatCustomModeSettings(t, mode)}
               </p>
             </ReviewField>
           ))}

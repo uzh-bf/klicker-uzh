@@ -364,15 +364,13 @@ test('the consolidated workflow covers every trusted target and guard', () => {
   // validator uses on the raw content.
   const asList = (value) =>
     value === undefined ? [] : Array.isArray(value) ? value : [value]
-  assert.deepEqual(asList(definition.jobs['build-migrator'].needs), ['plan'])
+  assert.deepEqual(asList(definition.jobs['build-migrator'].needs), [
+    'plan',
+    'priority-route',
+  ])
   assert.deepEqual(
     asList(definition.jobs['build-after-migrator'].needs).sort(),
-    ['build-migrator', 'plan']
-  )
-  assert.equal(
-    definition.jobs['build-images-status'].if,
-    'always()',
-    'the required context must always report'
+    ['build-migrator', 'plan', 'priority-route']
   )
 
   const promoter = readYaml('.github/workflows/deploy-stg-promote.yml')

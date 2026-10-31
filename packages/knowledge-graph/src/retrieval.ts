@@ -127,3 +127,123 @@ export function graphSearchNeighborsQuery(seedIds: string[], terms: string[]) {
     params: { seedIds, terms },
   }
 }
+
+export const GRAPH_MENTION_LIMIT = 12
+const GRAPH_MENTION_TEXT_LIMIT = 8000
+const GRAPH_MENTION_PHRASE_TOKENS = 6
+
+/** "Head (Alias)" -> "Head"; undefined without one trailing parenthetical. */
+function labelHead(label: string): string | undefined {
+  if (!label.endsWith(')')) return undefined
+  const open = label.lastIndexOf('(')
+  if (open <= 0 || label.slice(open + 1, -1).includes(')')) return undefined
+  const head = label.slice(0, open).trimEnd()
+  return head.length > 0 ? head : undefined
+}
+
+export type KnowledgeGraphMention = {
+  node: KnowledgeGraphNode
+  /** The phrase as it appears in the text, for locating it in rendered output. */
+  text: string
+}
+
+function mentionKey(value: string): string {
+  return (value.toLowerCase().match(/[\p{L}\p{N}][\p{L}\p{N}-]*/gu) ?? []).join(
+    ' '
+  )
+}
+
+/**
+ * Maps each concept label, and the head of a label ending in a parenthetical
+ * alias ("Net present value (NPV)" -> "net present value"), to exactly one
+ * concept. A key shared by several concepts resolves to the concept whose full
+ * label equals it, and is dropped when that is still ambiguous, so a link never
+ * points at a guessed concept.
+ */
+function mentionIndex(
+  nodes: KnowledgeGraphNode[]
+): Map<string, KnowledgeGraphNode> {
+  const candidates = new Map<
+    string,
+    { full: KnowledgeGraphNode[]; head: KnowledgeGraphNode[] }
+  >()
+  const add = (key: string, node: KnowledgeGraphNode, full: boolean) => {
+    if (key.length < 3 || STOP_WORDS.has(key)) return
+    const entry = candidates.get(key) ?? { full: [], head: [] }
+    entry[full ? 'full' : 'head'].push(node)
+    candidates.set(key, entry)
+  }
+  for (const node of nodes) {
+    const label = node.displayLabel.trim()
+    if (label.length > 100 || /^Concept \d+$/.test(label)) continue
+    add(mentionKey(label), node, true)
+    const head = labelHead(label)
+    if (head) add(mentionKey(head), node, false)
+  }
+  const index = new Map<string, KnowledgeGraphNode>()
+  for (const [key, { full, head }] of candidates) {
+    // Full-label matches take precedence over label heads, and the key links
+    // only when exactly one concept remains.
+    const matches = full.length > 0 ? full : head
+    const [only] = matches
+    if (matches.length === 1 && only) index.set(key, only)
+  }
+  return index
+}
+
+/**
+ * Finds concept labels named verbatim in a text. Longer phrases win over the
+ * words inside them, each concept is reported once at its first occurrence,
+ * and matches are returned in text order.
+ */
+export function selectGraphMentions(
+  nodes: KnowledgeGraphNode[],
+  text: string,
+  limit = GRAPH_MENTION_LIMIT
+): KnowledgeGraphMention[] {
+  const bounded = text.slice(0, GRAPH_MENTION_TEXT_LIMIT)
+  const index = mentionIndex(nodes)
+  if (index.size === 0) return []
+  const tokens = [...bounded.matchAll(/[\p{L}\p{N}][\p{L}\p{N}-]*/gu)].map(
+    (match) => ({
+      value: match[0].toLowerCase(),
+      start: match.index,
+      end: match.index + match[0].length,
+    })
+  )
+  const mentions: KnowledgeGraphMention[] = []
+  const seen = new Set<string>()
+  let position = 0
+  while (position < tokens.length && mentions.length < limit) {
+    let matched = 0
+    for (
+      let length = Math.min(
+        GRAPH_MENTION_PHRASE_TOKENS,
+        tokens.length - position
+      );
+      length > 0;
+      length--
+    ) {
+      const phrase = tokens
+        .slice(position, position + length)
+        .map((token) => token.value)
+        .join(' ')
+      const node = index.get(phrase)
+      if (!node) continue
+      matched = length
+      if (!seen.has(node.id)) {
+        seen.add(node.id)
+        mentions.push({
+          node,
+          text: bounded.slice(
+            tokens[position]!.start,
+            tokens[position + length - 1]!.end
+          ),
+        })
+      }
+      break
+    }
+    position += Math.max(matched, 1)
+  }
+  return mentions
+}

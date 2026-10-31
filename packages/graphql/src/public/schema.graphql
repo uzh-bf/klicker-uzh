@@ -459,6 +459,11 @@ type BetaEnrollmentCapability {
   signupAvailable: Boolean!
 }
 
+type CaptureResponseExampleResult {
+  created: Boolean!
+  exampleId: ID!
+}
+
 type CaseStudyActivityEvaluationData {
   cases: [CaseStudyElementResultCaseInfo!]!
   content: String!
@@ -753,6 +758,7 @@ enum ChatUsageClass {
 type Chatbot {
   allowedModelIds: [String!]!
   allowedReasoningEffortsByModel: [ChatbotReasoningConfig!]!
+  answerPreferencesEnabled: Boolean!
   authoringRevision: ChatbotAuthoringRevision
   avatar: String
   courses: [CourseListEntry!]!
@@ -782,11 +788,13 @@ type Chatbot {
   status: ChatbotStatus!
   updatedAt: Date
   usageSummary: ChatbotUsageSummary
+  writingCoachUnavailableReason: String
 }
 
 type ChatbotAuthoringRevision {
   allowedModelIds: [String!]!
   allowedReasoningEffortsByModel: [ChatbotReasoningConfig!]!
+  answerPreferencesEnabled: Boolean!
   avatar: String
   creditInitialCredits: Int!
   creditMaxCredits: Int!
@@ -818,8 +826,10 @@ input ChatbotCreditPolicyInput {
 type ChatbotCustomMode {
   description: String
   key: String!
+  meetingClock: ChatbotCustomModeMeetingClock
   name: String!
   personaText: String
+  replyLanguage: LocaleType
   showReasoning: Boolean!
   starterPrompts: [String!]
   welcomeMessage: String
@@ -836,11 +846,18 @@ input ChatbotCustomModeConfigInput {
 input ChatbotCustomModeInput {
   description: String
   key: String
+  meetingClock: ChatbotCustomModeMeetingClock
   name: String!
   personaText: String
+  replyLanguage: LocaleType
   showReasoning: Boolean
   starterPrompts: [String!]
   welcomeMessage: String
+}
+
+enum ChatbotCustomModeMeetingClock {
+  ELAPSED
+  ELAPSED_AND_TIME
 }
 
 type ChatbotDisclaimerSummary {
@@ -924,6 +941,7 @@ input ChatbotRevisionMetadataInput {
 input ChatbotRevisionModelPolicyInput {
   allowedModelIds: [String!]!
   allowedReasoningEffortsByModel: [ChatbotReasoningConfigInput!]
+  answerPreferencesEnabled: Boolean
   modelSelection: Boolean!
 }
 
@@ -945,6 +963,7 @@ type ChatbotStandardModeConfig {
   scopeNote: String
   subjectDomain: String
   tutorEnabled: Boolean!
+  writingCoachEnabled: Boolean!
 }
 
 input ChatbotStandardModeConfigInput {
@@ -955,6 +974,7 @@ input ChatbotStandardModeConfigInput {
   scopeNote: String
   subjectDomain: String
   tutorEnabled: Boolean!
+  writingCoachEnabled: Boolean
 }
 
 enum ChatbotStatus {
@@ -2636,7 +2656,10 @@ type KnowledgeGraphEdge {
   id: ID!
   label: String!
   properties: Json!
+  relationStatus: String!
+  relationType: String!
   source: ID!
+  sourceReferences: [KnowledgeGraphSourceReference!]!
   target: ID!
   type: String!
 }
@@ -2662,6 +2685,7 @@ type KnowledgeGraphResponse {
 }
 
 type KnowledgeGraphSourceReference {
+  pages: [Int!]
   reference: String
   resourceId: ID!
   title: String!
@@ -2847,6 +2871,7 @@ type Mutation {
   bookmarkElementStack(bookmarked: Boolean!, courseId: String!, stackId: Int!): [Int!]
   cancelLiveQuiz(id: String!): LiveQuiz
   cancelObjectSharingRequest(objectId: String!, objectType: ObjectType!): Boolean!
+  captureResponseExample(answer: String!, chatbotId: String!, question: String!, receipt: String!): CaptureResponseExampleResult
   changeActivityName(displayName: String!, id: String!, name: String!, type: ActivityType!): Boolean
   changeCatalogCollectionName(catalogCollectionId: String!, name: String!): Boolean
   changeCatalogCollectionObjectAccess(access: ObjectAccess!, catalogCollectionId: String!): Boolean
