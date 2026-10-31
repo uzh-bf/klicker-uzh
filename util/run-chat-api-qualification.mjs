@@ -3,13 +3,17 @@ import { spawn, spawnSync } from 'node:child_process'
 import { randomUUID } from 'node:crypto'
 import { once } from 'node:events'
 import {
+  closeSync,
+  constants,
   existsSync,
   mkdirSync,
+  openSync,
   readFileSync,
   realpathSync,
+  renameSync,
   writeFileSync,
 } from 'node:fs'
-import { dirname, join, relative, resolve } from 'node:path'
+import { dirname, join, relative, resolve, sep } from 'node:path'
 import { fileURLToPath } from 'node:url'
 import { setTimeout as delay } from 'node:timers/promises'
 import {
@@ -24,17 +28,43 @@ const root = realpathSync(
 )
 const directory = resolve(process.argv[3] ?? '')
 const mode = process.argv[2]
+const reviews = join(root, 'project', '_local', 'reviews')
+assert(process.argv[3] && directory.startsWith(`${reviews}${sep}`))
+assert.equal(realpathSync(dirname(directory)), dirname(directory))
+if (mode !== '--host') assert.equal(realpathSync(directory), directory)
+
+const receiptPath = (name) => {
+  assert(/^[a-z][a-z0-9-]*\.json$/.test(name))
+  const path = resolve(directory, name)
+  assert(path.startsWith(`${reviews}${sep}`))
+  assert.equal(realpathSync(dirname(path)), dirname(path))
+  return path
+}
 const shutdown = new AbortController()
 if (mode === '--worker') {
   process.once('SIGTERM', () => shutdown.abort())
   process.once('SIGINT', () => shutdown.abort())
 }
-const receipt = (name, data) =>
-  writeFileSync(join(directory, name), `${JSON.stringify(data, null, 2)}\n`, {
+const receipt = (name, data) => {
+  const path = receiptPath(name)
+  const temporary = `${path}.${process.pid}.tmp`
+  writeFileSync(temporary, `${JSON.stringify(data, null, 2)}\n`, {
     mode: 0o600,
+    flag: 'wx',
   })
-const readReceipt = (name) =>
-  JSON.parse(readFileSync(join(directory, name), 'utf8'))
+  renameSync(temporary, path)
+}
+const readReceipt = (name) => {
+  const descriptor = openSync(
+    receiptPath(name),
+    constants.O_RDONLY | constants.O_NOFOLLOW
+  )
+  try {
+    return JSON.parse(readFileSync(descriptor, 'utf8'))
+  } finally {
+    closeSync(descriptor)
+  }
+}
 
 async function waitFor(test, milliseconds) {
   const deadline = Date.now() + milliseconds
@@ -502,10 +532,6 @@ async function host() {
       containerSourcePath.startsWith('/')
   )
   const relativeDirectory = relative(root, directory)
-  assert(
-    relativeDirectory.startsWith('project/_local/reviews/') &&
-      !relativeDirectory.includes('..')
-  )
   mkdirSync(directory, { recursive: false })
   receipt('setup.json', {
     generation,
