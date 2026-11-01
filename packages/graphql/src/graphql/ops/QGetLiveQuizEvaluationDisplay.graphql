@@ -1,0 +1,8 @@
+query GetLiveQuizEvaluationDisplay($id: String!, $hmac: String) {
+  liveQuizEvaluationDisplay(id: $id, hmac: $hmac) {
+    instanceId
+    chartType
+    showSolution
+    showPercentages
+  }
+}
