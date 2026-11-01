@@ -1,6 +1,7 @@
 import type { PrismaClient } from '@klicker-uzh/prisma/client'
 import { ResponseExampleStatus } from '@klicker-uzh/prisma/client'
 import { afterEach, describe, expect, test, vi } from 'vitest'
+import { prepareOwnerPreviewContext } from '../src/lib/server/ownerPreviewExecution'
 import {
   createResponseExampleSearchTool,
   loadResponseExampleRuntimeSkill,
@@ -54,6 +55,55 @@ describe('response-example runtime skill', () => {
     })
     expect(reconcile).not.toHaveBeenCalled()
     expect(RESPONSE_EXAMPLE_SEARCH_TOOL_NAME).toBe('search_response_examples')
+  })
+
+  test('assembles an excluded target context without opening the example set', async () => {
+    let reads = 0
+    const prisma = new Proxy(
+      {},
+      {
+        get() {
+          reads++
+          throw new Error('Target cannot read examples')
+        },
+      }
+    ) as PrismaClient
+    const configuredTool = { description: 'synthetic tool schema' }
+    const context = await prepareOwnerPreviewContext({
+      prisma,
+      chatbot: {
+        id: '00000000-0000-4000-8000-000000000002',
+        systemPrompts: {},
+        standardModeConfig: { tutorEnabled: true },
+        customModeConfig: null,
+        draftConfig: null,
+        answerPreferencesEnabled: true,
+        course: { displayName: 'Synthetic course' },
+      } as never,
+      tools: { configured_tool: configuredTool as never },
+      selectedMode: 'tutor',
+      responseExampleRole: 'excluded',
+    })
+    expect(context.unavailable).toBe(false)
+    if (context.unavailable) throw new Error('Expected available context')
+    expect(context.tools.configured_tool).toBe(configuredTool)
+    const search = context.tools[RESPONSE_EXAMPLE_SEARCH_TOOL_NAME]!
+    const input = { query: 'synthetic question' }
+    const output = await search.execute!(input, {
+      toolCallId: 'target-search',
+      messages: [],
+      context: undefined,
+    } as never)
+    const modelOutput = await search.toModelOutput!({
+      toolCallId: 'target-search',
+      input,
+      output,
+    })
+    expect(modelOutput).toEqual({
+      type: 'text',
+      value: JSON.stringify({ degraded: false, examples: [] }),
+    })
+    expect(reads).toBe(0)
   })
 
   test('bounds the database query and degrades without aborting the caller', async () => {

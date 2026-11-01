@@ -1,4 +1,5 @@
 import type { HatchetHandlers } from '@klicker-uzh/types'
+import { handleRunResponseExampleBaseline } from './services/responseExampleBaseline.js'
 
 export { default as enhanceContext } from './lib/context.js'
 export { getChatModelRegistry } from './services/chatbots.js'
@@ -92,6 +93,7 @@ export const schema = builder.toSchema({
 })
 
 export const handlers: HatchetHandlers = {
+  handleRunResponseExampleBaseline,
   handleFinalRandomGroupAssignments,
   handleRunningRandomGroupAssignments,
   handleUpdateGroupAverageScores,

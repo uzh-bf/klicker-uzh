@@ -15,22 +15,21 @@ Reuse the current source eligibility, Markdown rendering, owner authorization,
 Hatchet worker, and account BASE usage. There is no second GT dataset, report
 history, locale field, new evaluation framework, or automatic candidate generation.
 
-The user approved this planning refresh and updating capture PR #5764 on
-28 October 2026. **Approval mode: direction-only for report implementation.**
-This turn delivers the reviewed plan and the verified target update to that PR.
-A later execution approval would cover source, synthetic tests, reviews, ordinary
-pushes and a draft report PR into fresh `v3-ai`. It would stop at source readiness;
-merge, deployment, secret provisioning, paid model calls and live proof remain
-separate. Costs and timing for a real run are not yet measured. The initial
+The user approved implementation on 28 October 2026 after
+[capture PR #5764](https://github.com/uzh-bf/klicker-uzh/pull/5764) merged.
+**Approval mode: executable batch.** Source, synthetic tests, configured reviews,
+ordinary pushes and a draft report PR into `v3-ai` are authorized. The batch stops
+at source readiness; merge, deployment, secret provisioning, paid model calls
+and live proof remain separate. Costs and timing for a real run are not yet measured. The initial
 implementation proves a single synthetic case before building the complete report.
 
 ## Execution details
 
 ### Current evidence and primitive impact
 
-Baseline: capture PR #5764 at `e9d12df867`, with target refresh to
-`v3-ai@8df0efb23281b6b33c5eaafda90ad864c97ca774`. Foundation, lecturer review
-and runtime skill are already merged. Capture remains a separate open PR.
+Execution baseline: `v3-ai@d786ffbe2b2e5750bdd5c5de7c9da871cbe80580`,
+including merged [capture PR #5764](https://github.com/uzh-bf/klicker-uzh/pull/5764).
+Foundation, lecturer review, runtime skill and preview capture are merged.
 Browser capture tests use mocked transport; they do not establish live lineage.
 
 | Product primitive | Disposition | Contract |
@@ -116,18 +115,23 @@ The first prototype must prove this seam before the schema and UI are expanded.
 
 ### Accounting, persistence and failure behavior
 
-Add owner-only usage admission and settlement to the existing account-usage
-implementation. Require configured BASE entitlement and sufficient remaining
-allowance before each paid stage; reserve its bounded maximum atomically with
-the operation claim. Account for every target tool/model step and the advisory
-judge. Fix the base model, output ceiling, five-step bound and sequential case
-execution. The first database proof must establish the route's enforced input/context
-and output bounds, including accumulated tool results and judge input, and derive
-the maximum reservation from existing credit factors. Output and step limits alone
-do not bound input credits. If an enforceable bound is unavailable, deny dispatch
-and return that accounting decision before introducing a new policy. Release unused reservation only after a known terminal outcome;
-uncertain provider outcomes retain their reservation and cannot auto-retry.
-This is application credit accounting, not a claim of a provider-dollar cap.
+Use the normal-chat accounting policy explicitly approved by the human on
+28 October 2026 through the answer "Use normal chat accounting (Recommended)".
+Before every target or judge stage, atomically validate current owner entitlement
+and positive configured BASE balance and claim the stable operation identity.
+Admit at most one unsettled baseline stage per owner across all reports. Charge
+aggregate provider-reported input/output usage from every model step once using
+existing credit factors. Recheck before the next stage and stop when exhausted.
+An admitted stage may exceed remaining allowance; no numeric overshoot maximum or
+provider-dollar cap is promised. Participant chat may concurrently consume the
+same allowance. Keep fixed BASE routing, sequential stages, five target steps,
+finite output limits and deadlines and no automatic paid retries.
+
+Distinguish proven pre-dispatch failure from possible provider execution. Missing
+usage is unknown, never zero. Retain uncertain operations and the owner admission
+slot; replacement cannot free it. A late authoritative completion may settle once
+without updating a replacement report. This supersedes the earlier guaranteed
+maximum-reservation requirement; no tokenizer or byte-to-token estimate is added.
 
 Use stable run/case/stage operation identity. Settlement is idempotent and remains
 accountable after report replacement; do not delete billing operations with the
@@ -153,7 +157,7 @@ incomplete on read using its deadline, without redispatching paid calls.
 
 ### Delivery sequence, owners and acceptance
 
-Execution mode: standard. Main owns isolation, accounting, cross-process authority,
+Main owns isolation, accounting, cross-process authority,
 integration and final proof. A bounded implementation worker may own the Manage
 report after the API is fixed; a second owner may implement the settled persistence
 subset. One writer per path set. No other KB/ingestion work is assigned here.
@@ -161,21 +165,62 @@ subset. One writer per path set. No other KB/ingestion work is assigned here.
 | Slice | Work and intended existing seams | First useful acceptance |
 | --- | --- | --- |
 | One-case transport/isolation prototype | Chat's preview request assembly, excluded projection and one scoped internal job endpoint/client, named explicitly before implementation | Test-double transport proves no expected/example content in target input, ordinary preview parity, worker-to-Chat authentication and failure cleanup. This establishes no durable accounting claim. |
-| One-case durable report and worker | Prisma chat/account schema, GraphQL responseExamples service/schema/ops, accountUsage, existing Hatchet prepared-task map and general-worker selection | One generated migration includes minimal durable operation state before the one-case settlement proof. One owner-funded target/judge pair settles once without participant writes; current-run CAS, replacement, concurrent budget admission, replay, uncertain dispatch, enqueue failure and partial results pass database/transport tests. |
+| One-case durable report and worker | Prisma chat/account schema, GraphQL responseExamples service/schema/ops, accountUsage, existing Hatchet prepared-task map and general-worker selection | One generated migration includes minimal durable operation state before the one-case settlement proof. One owner-funded target/judge pair settles once without participant writes; current-run CAS, replacement, concurrent owner admission, replay, uncertain dispatch, enqueue failure and partial results pass database/transport tests. |
 | Lecturer report | Existing ChatbotResponseExampleReview / ChatbotDetails, existing rich-text/Markdown/source components and EN/DE i18n | Start, progress, actual/ideal sources, incomplete, stale and replacement journeys pass browser checks; desktop/mobile synthetic screenshots reviewed. |
 | Source finish | Applicable domain/ADR guidance and report package plan | Simplification, risk review, integrated final review and exact-head CI; draft PR into `v3-ai`; exact task runtime stopped. |
 
-Add only the server-only shared execution helper, scoped job transport and report
-component that their second callers require. Name their exact paths in the derived
-execution plan before editing. Extend existing services and tests by default.
+Extend this plan in place. The first coherent component uses these new paths:
+`apps/chat/src/lib/server/ownerPreviewExecution.ts` for shared request assembly,
+`apps/chat/src/lib/server/responseExampleBaseline.ts` for target-before-judge
+execution, `packages/util/src/auth.ts` for scoped worker-token signing and verification, and
+`apps/chat/src/app/api/internal/response-example-baseline/route.ts` for the internal
+job boundary. Shared configuration identity extends the existing
+`packages/util/src/responseExampleRuntime.ts` entry. Name exact report,
+accounting and UI paths after the one-case proof settles those contracts and before
+editing them. The independent source-mapping owner investigates only accounting
+bounds and reuse; main retains decisions, writes and verification.
+
+The synthetic prototype lives under ignored `project/_local/prototypes/` and
+observes the existing excluded skill and signed worker claims with fake model
+transport. It creates no schema or durable service and makes no provider calls.
+It must prove no example content is read, request/claim ownership and expiry are
+checked, target completes before judge input is opened, and failure closes tools.
+Promote only the evidence after this question is settled. Extend existing services and tests by default.
 If proving the seam requires a new service, framework, participant persistence,
 broad provider routing or a different accounting policy, stop at that decision.
+
+### Durable and report implementation paths
+
+The approved durable slice extends `packages/prisma/src/prisma/schema/chat.prisma`
+and the owner relation in `user.prisma`. One generated migration adds the current
+report, bounded case snapshots and independent operation accounting. The accounting
+writer owns `packages/graphql/src/services/responseExampleBaselineAccounting.ts`
+and its database tests. Main owns
+`packages/graphql/src/services/responseExampleBaseline.ts`, extending existing
+response-example schema/query/mutation/GraphQL operations and exports, and the
+Chat execution/job boundary named above. Report UI uses
+`apps/frontend-manage/src/components/resources/chatbots/ChatbotResponseExampleBaseline.tsx`
+inside existing response-example review, plus existing EN/DE message files and
+`playwright/tests/Y-response-examples.spec.ts`. Existing Hatchet task definitions,
+types and worker-selection tests gain the bounded baseline task. `turbo.json`
+passes only the named internal endpoint and job-signing configuration through
+the existing strict environment contract. The existing GraphQL Rollup build
+exposes the accounting service as an isolated entry so Chat does not bundle
+worker-only Hatchet dependencies. New paths are
+limited to these named coherent consumers; extend current auth/token utilities.
+
+The focused contracts extend `packages/graphql/test/responseExampleBaseline.test.ts`,
+`packages/graphql/test/responseExampleBaselineAccounting.test.ts`,
+`apps/chat/test/response-example-baseline.test.ts`, and
+`packages/util/test/responseExampleBaseline.test.ts` for owner snapshots, accounting,
+actual target/judge transport and signed scope. Existing preview/citation tests
+remain the regression suite for the shared execution extraction.
 
 ### Verification and release boundaries
 
 Primary tests cover actual target request capture and temporal target-before-judge
 ordering; cross-owner and worker-token rejection; current-source snapshotting;
-concurrent reservations and idempotent settlement; old-run denial; and persisted
+concurrent owner admission and idempotent settlement; old-run denial; and persisted
 report/browser states. Use minimal test-owned synthetic fixtures. Assert behavior
 and structured contracts, never sample prose, translation strings or seed counts.
 
@@ -189,17 +234,56 @@ or provider activation work is included here.
 
 Recover source with an ordinary revert; preserve recorded usage and uncertain
 operations. No live data migration, account-budget change, new allowance, reset,
-merge or deployment is authorized by this plan refresh.
+merge or deployment is authorized by this source batch.
 
 ## Progress
 
-The planning refresh is independently reviewed. The source mapping confirmed the
-excluded projection and existing worker registration, and identified the missing
-shared execution and participant-free accounting seams. Report implementation
-has not started. Native Sol's first critique identified three accepted
-clarifications: fixed BASE routing is an explicit preview-parity exception,
-credit reservation needs enforced
-input and output bounds, and durable settlement proof follows the generated
-accounting migration. The same native Sol reviewer approved the corrected
-draft with no remaining blockers. This is independent plan critique, not implementation approval.
-Capture-PR target verification and publication are in progress.
+- Root outcome: lecturers compare base-model answers with their current approved
+  examples while target execution cannot read those examples.
+- Authorized terminal: tested and independently reviewed source in a draft PR
+  into `v3-ai`, with the exact task runtime stopped. Real calls and activation are
+  separate.
+- Approval reference: the human's "approved" immediately after the proposal to
+  implement the baseline report, tests, reviews and draft PR on 28 October 2026.
+- Existing independent critique: native Sol approved the direction plan after
+  clarifying fixed BASE routing, enforced input/output credit bounds and
+  migration-before-durable-settlement proof. That unchanged design critique is
+  reused. This planning approval is separate from the human execution approval.
+- Task branch: `feat/chatbot-baseline-report`; worktree
+  `/Users/rschlae/Git/klicker/klicker-uzh/trees/chatbot-baseline-report`.
+  Baseline `d786ffbe2b`; published branch tracks
+  `origin/feat/chatbot-baseline-report`. Draft [PR #6765](https://github.com/uzh-bf/klicker-uzh/pull/6765) targets `v3-ai`.
+- First useful acceptance: one synthetic target/judge execution observes isolation,
+  signed worker authority, ordering and cleanup before schema/UI expansion.
+- Current work: shared preview context extraction and its excluded-target
+  regression are implemented locally. Existing preview/citation/runtime suites
+  pass 57 tests; the actual AI SDK/JWT synthetic prototype passes 3 tests. Chat
+  type checking and the three-file Biome check pass. The prototype proves
+  reference withholding, target-before-judge ordering, scoped signed identity,
+  expiry/tamper rejection and failure cleanup. It is not a deployed job endpoint,
+  durable accounting proof or live-model acceptance.
+- Accounting decision resolved: the human selected normal-chat accounting.
+  The same independent plan reviewer recommended this smaller policy with explicit
+  allowance overshoot, one unsettled baseline stage per owner and uncertain-call
+  blocking. The approved policy above replaces maximum reservation. Continue
+  durable accounting/report execution and UI under the existing batch approval.
+- Runtime: source verification completed and the exact workspace was verified
+  stopped with zero routes. Resume only for required CI-correction hooks, then
+  stop and verify it again before source finish.
+- Package topology: one ordinary PR into `v3-ai` delivers the complete current
+  report. The migration, signed worker execution, accounting and UI form one
+  usable outcome; no split layer is independently useful. Do not stack with
+  the separate consolidation promotion to `v3`.
+- Current evidence: full Chat regression1765 passed/33 skipped; utility176 passed;
+  new durable report/accounting10 passed. The single SQL migration exactly matches
+  a repeat Prisma schema-to-schema generation from the recorded old schema, and
+  the applied disposable database diff is empty. Chat/GraphQL/worker types pass.
+  Lecturer UI type check and browser lifecycle pass, with inspected EN/DE and
+  compact screenshots from synthetic transport. Independent backend simplifier
+  accepted removal of duplicate deadline/lock and unused protocol state; all10
+  durable tests pass after correction. Full production build27/27 passes;
+  combined capture/review/baseline browser3/3 passes. Four synthetic screenshots
+  are attached and rendered in the draft. Hosted CI found three unformatted
+  GraphQL operations; format-only correction preserves their parsed AST.
+  Full independent review remains pending after unavailable review routes.
+  No readiness, merge, deployment or live-model acceptance is claimed.

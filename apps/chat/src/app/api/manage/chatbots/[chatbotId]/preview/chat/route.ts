@@ -13,10 +13,6 @@ import {
 } from 'ai'
 import { type NextRequest, NextResponse } from 'next/server'
 import { z } from 'zod'
-import {
-  DEFAULT_ANSWER_STYLE,
-  DEFAULT_ANSWER_TONE,
-} from '@/src/lib/config/answerStyles'
 import { resolveOwnerPreviewModel } from '@/src/lib/ownerPreviewPolicy'
 import {
   answerStyleSchema,
@@ -29,15 +25,10 @@ import {
 } from '@/src/lib/server/chatModelRegistry'
 import { withModelCitationIndices } from '@/src/lib/server/citationInstructions'
 import {
-  getCustomModeTurnSettings,
   resolveEffectiveChatModeOptions,
   resolveEffectiveMCPConfigurations,
   resolveRequestedChatMode,
 } from '@/src/lib/server/effectiveChatModes'
-import {
-  formatMeetingClock,
-  replyLanguageReminder,
-} from '@/src/lib/server/languageInstructions'
 import {
   MANAGE_CHAT_BODY_TIMEOUT_MS,
   MANAGE_CHAT_TOTAL_TIMEOUT_MS,
@@ -47,6 +38,7 @@ import {
 import { REQUIRED_MCP_UNAVAILABLE_CODE } from '@/src/lib/server/mcpRuntimePolicy'
 import { getOpenAIResponsesStore } from '@/src/lib/server/openaiResponsesOptions'
 import { withOwnerPreviewAuth } from '@/src/lib/server/ownerPreviewAuth'
+import { prepareOwnerPreviewContext } from '@/src/lib/server/ownerPreviewExecution'
 import { resolveOwnerPreviewModeConfiguration } from '@/src/lib/server/previewAuthoringConfig'
 import { buildPromptCacheRequest } from '@/src/lib/server/promptCacheIdentity'
 import {
@@ -57,13 +49,6 @@ import {
   issuePreviewResponseExampleReceipt,
   RESPONSE_EXAMPLE_RECEIPT_DATA_PART,
 } from '@/src/lib/server/responseExampleReceipt'
-import {
-  createResponseExampleSearchTool,
-  loadResponseExampleRuntimeSkill,
-  RESPONSE_EXAMPLE_SEARCH_TOOL_NAME,
-} from '@/src/lib/server/responseExampleRuntime'
-import { compileSystemPrompt } from '@/src/lib/server/systemPromptCompiler'
-import { isDocQueryToolName } from '@/src/lib/sources/normalizeSources'
 import { chatModelUnavailableResponse } from '@/src/services/accountUsage'
 import {
   getAggregatedMCPTools,
@@ -372,43 +357,16 @@ export async function POST(
   }
 
   try {
-    let responseExampleSummary = ''
-    try {
-      const responseExampleSkill = await loadResponseExampleRuntimeSkill({
-        prisma,
-        chatbotId,
-        chatMode: selectedMode,
-        role: 'included',
-      })
-      if (Object.hasOwn(tools, RESPONSE_EXAMPLE_SEARCH_TOOL_NAME)) {
-        console.warn(
-          'Response-example skill name conflicts with an existing tool; continuing without response examples',
-          { chatbotId }
-        )
-      } else {
-        tools = {
-          ...tools,
-          [RESPONSE_EXAMPLE_SEARCH_TOOL_NAME]:
-            createResponseExampleSearchTool(responseExampleSkill),
-        }
-        responseExampleSummary = responseExampleSkill.summary
-      }
-    } catch (error) {
-      console.warn(
-        'Response-example skill loading failed; continuing without response examples',
-        {
-          chatbotId,
-          errorType: error instanceof Error ? error.name : typeof error,
-        }
-      )
-    }
-
-    const toolNames = Object.keys(tools)
-    const docQueryToolName = toolNames.find(isDocQueryToolName)
-    const quizzerDocQueryToolName =
-      selectedMode === 'quizzer' ? docQueryToolName : undefined
-
-    if (selectedMode === 'quizzer' && !quizzerDocQueryToolName) {
+    const context = await prepareOwnerPreviewContext({
+      prisma,
+      chatbot,
+      tools,
+      selectedMode,
+      answerStyle: options.data.answerStyle,
+      answerTone: options.data.answerTone,
+      responseExampleRole: 'included',
+    })
+    if (context.unavailable) {
       await closeMcpTools()
       return NextResponse.json(
         {
@@ -418,48 +376,14 @@ export async function POST(
         { status: 503 }
       )
     }
-    const draftConfig = chatbot.draftConfig
-    const savedAnswerPreferencesEnabled =
-      draftConfig &&
-      typeof draftConfig === 'object' &&
-      !Array.isArray(draftConfig)
-        ? (draftConfig as Record<string, unknown>).answerPreferencesEnabled
-        : undefined
-    const answerPreferencesEnabled =
-      typeof savedAnswerPreferencesEnabled === 'boolean'
-        ? savedAnswerPreferencesEnabled
-        : chatbot.answerPreferencesEnabled
-    const systemPrompt = compileSystemPrompt(
-      chatbot.systemPrompts,
-      selectedMode,
-      {
-        courseDisplayName: chatbot.course.displayName,
-        toolNames,
-        answerStyle: answerPreferencesEnabled
-          ? options.data.answerStyle
-          : DEFAULT_ANSWER_STYLE,
-        answerTone: answerPreferencesEnabled
-          ? options.data.answerTone
-          : DEFAULT_ANSWER_TONE,
-        standardModeConfig: chatbot.standardModeConfig,
-        // Owner preview is an authoring surface, so it compiles the saved
-        // revision's custom modes rather than the currently approved set.
-        customModeConfig: resolveOwnerPreviewModeConfiguration(chatbot),
-      }
-    )
-    const effectiveSystemPrompt = responseExampleSummary
-      ? `${systemPrompt}\n\n${responseExampleSummary}`
-      : systemPrompt
-    // Preview persists no thread and its messages carry no timestamps, so a
-    // meeting clock reports zero elapsed minutes here.
-    const turnSettings = getCustomModeTurnSettings(
-      resolveOwnerPreviewModeConfiguration(chatbot),
-      selectedMode
-    )
-    const languageReminder = replyLanguageReminder(
-      turnSettings.replyLanguage ?? null,
-      formatMeetingClock(turnSettings.meetingClock ?? null, null, new Date())
-    )
+    tools = context.tools
+    const {
+      effectiveSystemPrompt,
+      turnSettings,
+      languageReminder,
+      docQueryToolName,
+      quizzerDocQueryToolName,
+    } = context
 
     const modelMessages = await convertToModelMessages(parsed.messages, {
       ignoreIncompleteToolCalls: true,

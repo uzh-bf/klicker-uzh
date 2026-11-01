@@ -1,3 +1,5 @@
+import { jwtVerify, SignJWT } from 'jose'
+
 /**
  * Parse a Cookie header string into a key-value map.
  * Decodes URL-encoded values, keeps raw value if decoding fails.
@@ -158,5 +160,70 @@ export function deriveCookieDomainFromURL(url?: string): string | undefined {
     return parts.join('.')
   } catch {
     return undefined
+  }
+}
+
+export type ResponseExampleBaselineJobScope = {
+  ownerId: string
+  chatbotId: string
+  runId: string
+  caseId: string
+}
+
+const BASELINE_JOB_ISSUER = 'klicker-baseline-worker'
+const BASELINE_JOB_AUDIENCE = 'klicker-baseline-chat'
+const BASELINE_JOB_TTL_SECONDS = 90
+
+function baselineJobKey(secret: string | undefined) {
+  if (!secret || secret.length < 32) throw new Error('BASELINE_JOB_UNAVAILABLE')
+  return new TextEncoder().encode(secret)
+}
+
+function validBaselineScope(scope: ResponseExampleBaselineJobScope) {
+  return Object.values(scope).every((value) =>
+    /^[0-9a-f]{8}-[0-9a-f]{4}-[1-8][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i.test(
+      value
+    )
+  )
+}
+
+export async function signResponseExampleBaselineJob(
+  scope: ResponseExampleBaselineJobScope,
+  secret: string | undefined,
+  now = new Date()
+) {
+  if (!validBaselineScope(scope)) throw new Error('BASELINE_JOB_INVALID')
+  const issuedAt = Math.floor(now.getTime() / 1000)
+  return new SignJWT({ ...scope, purpose: 'response-example-baseline' })
+    .setProtectedHeader({ alg: 'HS256' })
+    .setIssuer(BASELINE_JOB_ISSUER)
+    .setAudience(BASELINE_JOB_AUDIENCE)
+    .setIssuedAt(issuedAt)
+    .setExpirationTime(issuedAt + BASELINE_JOB_TTL_SECONDS)
+    .sign(baselineJobKey(secret))
+}
+
+export async function verifyResponseExampleBaselineJob(
+  token: string,
+  expected: ResponseExampleBaselineJobScope,
+  secret: string | undefined,
+  now = new Date()
+) {
+  if (token.length > 4096 || !validBaselineScope(expected))
+    throw new Error('BASELINE_JOB_INVALID')
+  const { payload } = await jwtVerify(token, baselineJobKey(secret), {
+    algorithms: ['HS256'],
+    issuer: BASELINE_JOB_ISSUER,
+    audience: BASELINE_JOB_AUDIENCE,
+    currentDate: now,
+  })
+  if (
+    payload.purpose !== 'response-example-baseline' ||
+    typeof payload.iat !== 'number' ||
+    typeof payload.exp !== 'number' ||
+    payload.exp - payload.iat > BASELINE_JOB_TTL_SECONDS ||
+    Object.entries(expected).some(([key, value]) => payload[key] !== value)
+  ) {
+    throw new Error('BASELINE_JOB_INVALID')
   }
 }

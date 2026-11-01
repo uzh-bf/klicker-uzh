@@ -24,8 +24,12 @@ An approved response example can have two run-scoped roles:
 Evaluation reports must identify the examples-excluded configuration. Such a
 run evaluates the chatbot without response-example context; it does not prove
 the quality or generalization of the normal chatbot configuration that receives
-the examples. The model, mode, scaffolding, corpus, graph, retrieval settings,
+the examples. The mode, scaffolding, corpus, graph, retrieval settings,
 and registered tools stay unchanged between normal and examples-excluded runs.
+The initial lecturer baseline deliberately fixes both target and judge to the
+platform BASE model to keep the first report simple. Its report identifies that
+BASE, examples-excluded configuration; ordinary chat retains its configured
+model selection. Other controlled evaluations retain their selected model.
 The evaluation projection removes the summary and makes the unchanged example
 search tool return no example content. Each run captures the current
 example-set content and its digest as its immutable input artifact.
