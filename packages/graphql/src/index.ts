@@ -4,6 +4,10 @@ export { default as enhanceContext } from './lib/context.js'
 export { getChatModelRegistry } from './services/chatbots.js'
 export { settleKbKnowledgeGraphResult } from './services/knowledge.js'
 export {
+  type KBGraphPreparationSweepSummary,
+  sweepKbGraphPreparation,
+} from './services/knowledgeGraphPreparation.js'
+export {
   handleKBSourceGateway,
   type KBSourceGatewayResult,
 } from './services/knowledgeSourceGateway.js'

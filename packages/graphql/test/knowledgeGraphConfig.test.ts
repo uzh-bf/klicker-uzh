@@ -1,9 +1,11 @@
+import { Priority } from '@hatchet-dev/typescript-sdk'
 import {
   getDefaultKBGraphDomainCatalog,
   hashKBContentDigestEntries,
   KB_GRAPH_DOMAIN_CATALOG_REVISION_ENV,
 } from '@klicker-uzh/knowledge-graph'
 import {
+  KBGraphBuildOrigin,
   KBGraphBuildStatus,
   KBGraphQualityTier,
   KBResourceType,
@@ -505,9 +507,13 @@ describe('system-triggered KB graph builds', () => {
     kbDomain?: Record<string, unknown>
     publishedDomain?: Record<string, unknown>
   } = {}) {
-    const create = vi.fn()
+    const create = vi.fn(async ({ data }: { data: { id: string } }) => ({
+      id: data.id,
+    }))
+    const quotaId = '99999999-9999-4999-8999-999999999999'
     const transaction = {
       $queryRaw: vi.fn().mockResolvedValueOnce([{ id: kbId }]),
+      $executeRaw: vi.fn(),
       kB: {
         findUniqueOrThrow: vi.fn().mockResolvedValue({
           id: kbId,
@@ -516,6 +522,22 @@ describe('system-triggered KB graph builds', () => {
           publishedGraphBuildId: publishedBuildId,
           ...kbDomain,
         }),
+        updateMany: vi.fn().mockResolvedValue({ count: 1 }),
+      },
+      kBGraphQuota: {
+        findUniqueOrThrow: vi
+          .fn()
+          .mockResolvedValueOnce({ id: quotaId })
+          .mockResolvedValueOnce({
+            id: quotaId,
+            ownerId,
+            semesterKey: costEnv.KB_GRAPH_SEMESTER_KEY,
+            currency: costEnv.KB_GRAPH_COST_CURRENCY,
+            limitMinorUnits: 1000,
+            reservedMinorUnits: 0,
+            settledMinorUnits: 0,
+          }),
+        update: vi.fn(),
       },
       kBResource: {
         findMany: vi.fn().mockResolvedValue([
@@ -561,7 +583,14 @@ describe('system-triggered KB graph builds', () => {
       featureFlags: { isEnabled, getAiBetaDecision, refresh: vi.fn() },
       tasks: { buildKBGraph: { runNoWait: vi.fn() } },
     } as unknown as KBGraphBuildServiceContext
-    return { deps, $transaction, isEnabled, getAiBetaDecision, create }
+    return {
+      deps,
+      $transaction,
+      isEnabled,
+      getAiBetaDecision,
+      create,
+      transaction,
+    }
   }
 
   const start = (deps: KBGraphBuildServiceContext) =>
@@ -603,15 +632,59 @@ describe('system-triggered KB graph builds', () => {
   })
 
   it('reserves nothing when the published graph already matches', async () => {
-    // With domain selection closed a build would freeze the legacy triple, so
-    // a legacy published graph is current even though the KB stores a choice.
-    const { deps, create } = createDeps()
+    process.env[KB_GRAPH_DOMAIN_CATALOG_REVISION_ENV] =
+      getDefaultKBGraphDomainCatalog().revision
+    const { deps, create } = createDeps({
+      enabledFlags: [
+        'kb-auto-graph-preparation',
+        'kb-graph-builds',
+        'kb-graph-domain-selection',
+      ],
+      publishedDomain: {
+        domainPolicyId: 'mathematics',
+        domainPolicyVersion: 1,
+        domainPolicyLanguage: 'German',
+      },
+    })
 
     await expect(start(deps)).resolves.toMatchObject({
       outcome: 'NOT_DUE',
       build: null,
     })
     expect(create).not.toHaveBeenCalled()
+  })
+
+  it.each([
+    ['domain selection is closed for the owner', {}],
+    [
+      'the stored subject is not in the catalog',
+      {
+        enabledFlags: [
+          'kb-auto-graph-preparation',
+          'kb-graph-builds',
+          'kb-graph-domain-selection',
+        ],
+        kbDomain: {
+          domainPolicyId: 'unknown-subject',
+          domainPolicyVersion: 1,
+          domainPolicyLanguage: 'German',
+        },
+      },
+    ],
+  ])('never builds with provider defaults when %s', async (_, options) => {
+    Object.assign(process.env, costEnv)
+    process.env[KB_GRAPH_DOMAIN_CATALOG_REVISION_ENV] =
+      getDefaultKBGraphDomainCatalog().revision
+    const { deps, create, transaction } = createDeps(options)
+
+    await expect(start(deps)).resolves.toMatchObject({
+      outcome: 'UNSUPPORTED_SETTINGS',
+      build: null,
+    })
+    expect(transaction.kBGraphQuota.findUniqueOrThrow).not.toHaveBeenCalled()
+    expect(transaction.kB.updateMany).not.toHaveBeenCalled()
+    expect(create).not.toHaveBeenCalled()
+    expect(deps.tasks.buildKBGraph.runNoWait).not.toHaveBeenCalled()
   })
 
   it('admits a language change through the cost gate', async () => {
@@ -634,5 +707,37 @@ describe('system-triggered KB graph builds', () => {
       extensions: { code: 'KB_GRAPH_COST_CONFIGURATION_MISSING' },
     })
     expect(create).not.toHaveBeenCalled()
+  })
+
+  it('records an admitted build as automatic and queues it at low priority', async () => {
+    Object.assign(process.env, costEnv)
+    process.env[KB_GRAPH_DOMAIN_CATALOG_REVISION_ENV] =
+      getDefaultKBGraphDomainCatalog().revision
+    const { deps, create } = createDeps({
+      enabledFlags: [
+        'kb-auto-graph-preparation',
+        'kb-graph-builds',
+        'kb-graph-domain-selection',
+      ],
+      publishedDomain: {
+        domainPolicyId: 'mathematics',
+        domainPolicyVersion: 1,
+        domainPolicyLanguage: 'English',
+      },
+    })
+
+    await expect(start(deps)).resolves.toMatchObject({ outcome: 'QUEUED' })
+    expect(create).toHaveBeenCalledWith(
+      expect.objectContaining({
+        data: expect.objectContaining({
+          origin: KBGraphBuildOrigin.SYSTEM,
+          requestedById: ownerId,
+        }),
+      })
+    )
+    expect(deps.tasks.buildKBGraph.runNoWait).toHaveBeenCalledWith(
+      { buildId: expect.any(String) },
+      { priority: Priority.LOW }
+    )
   })
 })

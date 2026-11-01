@@ -8,7 +8,11 @@ const KB_INGESTION_WORKFLOW_KEYS = new Set([
   'deleteKBResource',
   'monitorKBIngestions',
 ])
-const KB_GRAPH_WORKFLOW_KEYS = new Set(['buildKBGraph', 'monitorKBGraphBuilds'])
+const KB_GRAPH_WORKFLOW_KEYS = new Set([
+  'buildKBGraph',
+  'monitorKBGraphBuilds',
+  'prepareKBGraphs',
+])
 const KB_MAINTENANCE_WORKFLOW_KEY = 'maintainKBResources'
 
 export type KBWorkerIntegrationState = {

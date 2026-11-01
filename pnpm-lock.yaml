@@ -1548,6 +1548,9 @@ importers:
       '@hatchet-dev/typescript-sdk':
         specifier: 1.22.0
         version: 1.22.0(debug@4.4.3(supports-color@8.1.1))(supports-color@8.1.1)(zod@4.6.6)
+      '@klicker-uzh/feature-flags':
+        specifier: workspace:*
+        version: link:../../packages/feature-flags
       '@klicker-uzh/graphql':
         specifier: workspace:*
         version: link:../../packages/graphql
