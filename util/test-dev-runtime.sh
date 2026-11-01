@@ -217,7 +217,9 @@ mkdir -p \
   "$ROOT/apps/hatchet-worker-general" \
   "$ROOT/apps/hatchet-worker-response-processor" \
   "$ROOT/packages/graphql" \
+  "$ROOT/packages/prisma" \
   "$ROOT/util"
+write_file "$ROOT/packages/prisma/package.json" '{"name":"@klicker-uzh/prisma"}'
 write_file "$ROOT/.devcontainer/devcontainer.env" ''
 cp "$RUNTIME_SCRIPT" "$ROOT/util/dev-runtime.sh"
 cp "$REPO_ROOT/util/check-dev-pages-manifest.mjs" "$ROOT/util/check-dev-pages-manifest.mjs"
