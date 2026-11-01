@@ -32,6 +32,7 @@ import {
 } from '../lib/featureFlags.js'
 import {
   type ChatbotCreditPolicy,
+  DEFAULT_CHATBOT_CREDIT_POLICY,
   MAX_SIGNED_INT32,
   normalizeAndValidateCreditPolicy,
 } from './chatbotCreditPolicy.js'
@@ -2273,6 +2274,7 @@ export async function createChatbot(
       // New chatbots start with the participant map off (lecturer opts in).
       knowledgeGraphVisible: false,
       knowledgeGraphRetrievalEnabled: false,
+      ...DEFAULT_CHATBOT_CREDIT_POLICY,
       owner: { connect: { id: ctx.user.sub } },
       course: { connect: { id: args.courseId } },
       // systemPrompts intentionally left unset (null): the chat runtime
