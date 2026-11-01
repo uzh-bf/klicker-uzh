@@ -158,6 +158,13 @@ export const KB = KBRef.implement({
     id: t.exposeID('id'),
     name: t.exposeString('name'),
     description: t.exposeString('description', { nullable: true }),
+    domainPolicyId: t.exposeString('domainPolicyId', { nullable: true }),
+    domainPolicyVersion: t.exposeInt('domainPolicyVersion', {
+      nullable: true,
+    }),
+    domainPolicyLanguage: t.exposeString('domainPolicyLanguage', {
+      nullable: true,
+    }),
     metrics: t.field({
       type: KBMetricsRef,
       nullable: true,
