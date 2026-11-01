@@ -1,4 +1,5 @@
 import { useQuery } from '@apollo/client'
+import { useFeatureFlag } from '@klicker-uzh/feature-flags/react'
 import { QGetChatbotsInfoWithKnowledgeBasesDocument } from '@klicker-uzh/graphql/dist/ops'
 import { KnowledgeBaseDetail } from '@klicker-uzh/kb-management'
 import type { GetStaticPropsContext } from 'next'
@@ -11,6 +12,7 @@ import { useAiFeaturesEnabled } from '../../../lib/hooks/useAiFeaturesEnabled'
 function KnowledgeBasePage({ kbId }: { kbId: string }) {
   const t = useTranslations()
   const aiFeaturesEnabled = useAiFeaturesEnabled()
+  const advancedManagementEnabled = useFeatureFlag('ai-advanced-management')
   const router = useRouter()
   const requestedChatbotId =
     typeof router.query.chatbotId === 'string'
@@ -38,7 +40,11 @@ function KnowledgeBasePage({ kbId }: { kbId: string }) {
   return (
     <Layout displayName={t('kb.title')}>
       {aiFeaturesEnabled ? (
-        <KnowledgeBaseDetail kbId={kbId} backLink={backLink} />
+        <KnowledgeBaseDetail
+          kbId={kbId}
+          backLink={backLink}
+          showBulkIngestion={advancedManagementEnabled}
+        />
       ) : (
         <AiBetaUnavailable />
       )}

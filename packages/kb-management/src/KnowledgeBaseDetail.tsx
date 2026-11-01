@@ -16,8 +16,10 @@ import { getGraphQLErrorCode } from './graphqlError'
 function KnowledgeBaseDetail({
   kbId,
   backLink,
+  showBulkIngestion,
 }: {
   kbId: string
+  showBulkIngestion?: boolean
   // A banner leading back, for example to the chatbot whose materials are
   // being prepared. The caller owns and validates the target.
   backLink?: { href: string; label: string; message: string }
@@ -231,6 +233,7 @@ function KnowledgeBaseDetail({
         kbId={kbId}
         refreshKey={resourceRefreshKey}
         onMetricsChanged={refreshMetrics}
+        showBulkIngestion={showBulkIngestion}
         onAddResource={(trigger) => {
           addResourceTriggerRef.current = trigger
           setAddResourceOpen(true)
