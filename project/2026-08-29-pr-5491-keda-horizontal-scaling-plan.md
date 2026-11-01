@@ -25,7 +25,7 @@ regular nodes (W4).
 | W4 — Assessment staging pilot and later packages | Not activated | Close the named evidence and authority gates before staging, spot, or production claims |
 | W10 — Chat and MCP multi-replica readiness | Source scan only; no implementation | Prove or replace the stateful MCP transport, add a chat drain contract, then feed W9 |
 | W11 — Production capacity baseline | Request corrections ([#6283](https://github.com/uzh-bf/klicker-uzh/pull/6283), [#6284](https://github.com/uzh-bf/klicker-uzh/pull/6284)), replica restore ([#6278](https://github.com/uzh-bf/klicker-uzh/pull/6278), [#6279](https://github.com/uzh-bf/klicker-uzh/pull/6279)) and chat at 3 ([#6291](https://github.com/uzh-bf/klicker-uzh/pull/6291), [#6292](https://github.com/uzh-bf/klicker-uzh/pull/6292)) merged 2026-09-23 and live; the 2026-10-06 read-only read found every Deployment at its desired count with no restarts or Pending Pods | General-worker restore after queue evidence; explain why the `apps` pool still runs 4 nodes |
-| W12 — HTTP spot burst tier | Chart pair ready: [#6294](https://github.com/uzh-bf/klicker-uzh/pull/6294) (`v3-ai`, final AI review blocked on provider billing since 2026-10-31) and [#6295](https://github.com/uzh-bf/klicker-uzh/pull/6295) (`v3`); platform half ready as df-cloud !644, refreshed against `stg` on 2026-10-31 | Merge #6294, then #6295 after a `v3` merge, apply !644 to staging and read the live Argo rule back, then the staging-enable values pair and the self-heal drill |
+| W12 — HTTP spot burst tier | Chart pair ready: [#6294](https://github.com/uzh-bf/klicker-uzh/pull/6294) (`v3-ai`, final AI review blocked on provider billing since 2026-10-31) and [#6295](https://github.com/uzh-bf/klicker-uzh/pull/6295) (`v3`); platform half ready as df-cloud !644, refreshed against `stg` on 2026-10-31 | Merge the staging-enable values pair, then run the self-heal and eviction drills |
 | W13 — Staging capacity on spot | Added 2026-09-23; !644 keeps the staging `asyncspot` maximum at 7 | Move staging Klicker workloads onto `asyncspot` under A6 |
 
 Merge, new upstream integration, deployment, cluster connectivity or changes,
@@ -1760,6 +1760,15 @@ a values edit.
   100%) and whether burst Pods should keep the `production-workload`
   priority on the shared `asyncspot` pool. The eviction drill decides all
   three.
+- **Status, 2026-11-01:** #6293, #6294 and #6295 are merged, and !644 is
+  applied to staging; the stg `app-klicker` Application carries the burst
+  `/spec/replicas` exception with `RespectIgnoreDifferences=true`. The
+  staging-enable values pair turns the tier on in `env-uzh-stg` and adds an
+  optional `frontendPWA.preStopSleepSeconds` (5 seconds on staging, unset
+  elsewhere). The PWA image runs the Node server as PID 1, so SIGTERM reaches
+  it. The CPU target stays at the chart default, the budget at
+  `maxUnavailable: 1` and the priority at the staging class until the
+  eviction drill says otherwise.
 
 ### Cost and spot review — 2026-09-23
 
