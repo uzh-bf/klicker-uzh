@@ -15,6 +15,7 @@ import type {
 } from '@klicker-uzh/types'
 import { z } from 'zod'
 import builder from '../builder.js'
+import type { ContextWithUser } from '../lib/context.js'
 import type {
   GeneratedElementEditableInput as GeneratedElementEditableInputValue,
   StartElementGenerationInput,
@@ -23,7 +24,8 @@ import type {
   KBGraphPreparationPendingReason,
   KBQuestionPreparationState,
 } from '../services/knowledge.js'
-import { KBResourceType } from './knowledge.js'
+import { getKBQuestionGenerationSource } from '../services/questionGenerationGraph.js'
+import { KBRef, KBResourceType } from './knowledge.js'
 
 export type GeneratableElementType = 'SC' | 'MC' | 'KPRIM' | 'FLASHCARD'
 type ElementGenerationLanguageValue = 'de' | 'en'
@@ -254,6 +256,53 @@ ElementGenerationSourceRef.implement({
     }),
   }),
 })
+
+type KBQuestionPreparationView = {
+  state: KBQuestionPreparationState
+  pendingReason: KBGraphPreparationPendingReason | null
+  hasBasis: boolean
+  basisIndexedAt: Date | null
+}
+const KBQuestionPreparationRef = builder.objectRef<KBQuestionPreparationView>(
+  'KBQuestionPreparation'
+)
+KBQuestionPreparationRef.implement({
+  fields: (t) => ({
+    state: t.expose('state', { type: ElementGenerationPreparationState }),
+    pendingReason: t.expose('pendingReason', {
+      type: ElementGenerationPreparationPendingReason,
+      nullable: true,
+    }),
+    hasBasis: t.exposeBoolean('hasBasis'),
+    basisIndexedAt: t.expose('basisIndexedAt', {
+      type: 'Date',
+      nullable: true,
+    }),
+  }),
+})
+// Null without question-generation preview access or when its load fails,
+// so a KB listing never fails because of it.
+builder.objectField(KBRef, 'questionPreparation', (t) =>
+  t.field({
+    type: KBQuestionPreparationRef,
+    nullable: true,
+    resolve: async (kb, _args, ctx) => {
+      if (!ctx.user) return null
+      const source = await getKBQuestionGenerationSource(
+        ctx as ContextWithUser,
+        kb.id
+      )
+      return source
+        ? {
+            state: source.preparationState,
+            pendingReason: source.preparationPendingReason,
+            hasBasis: source.basis !== null,
+            basisIndexedAt: source.basis?.indexedAt ?? null,
+          }
+        : null
+    },
+  })
+)
 
 type ElementGenerationConfigurationSourceScopeView = {
   resourceId: string

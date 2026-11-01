@@ -8,6 +8,7 @@ import KnowledgeBaseAddResourceModal from './components/KnowledgeBaseAddResource
 import KnowledgeBaseChatbotBindings from './components/KnowledgeBaseChatbotBindings'
 import KnowledgeBaseDomainSettings from './components/KnowledgeBaseDomainSettings'
 import KnowledgeBaseImportedSourceList from './components/KnowledgeBaseImportedSourceList'
+import KnowledgeBaseQuestionReadiness from './components/KnowledgeBaseQuestionReadiness'
 import KnowledgeBaseResourceList from './components/KnowledgeBaseResourceList'
 import KnowledgeGraphPanel from './components/KnowledgeGraphPanel'
 import { getGraphQLErrorCode } from './graphqlError'
@@ -129,6 +130,13 @@ function KnowledgeBaseDetail({
           language: data.getKb.domainPolicyLanguage ?? null,
         }}
       />
+      {data.getKb.questionPreparation ? (
+        <div className="mt-3">
+          <KnowledgeBaseQuestionReadiness
+            preparation={data.getKb.questionPreparation}
+          />
+        </div>
+      ) : null}
       {metrics ? (
         <section
           className="mt-6"
