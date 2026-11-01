@@ -495,7 +495,7 @@ test.describe('Knowledge base subject area and language', () => {
       await page.getByTestId('kb-domain-settings-edit').click()
       const subject = page.getByTestId('kb-domain-settings-subject')
       const language = page.getByTestId('kb-domain-settings-language')
-      await expect(subject).toContainText(EN_DOMAIN_LABELS.finance)
+      await expect(subject).toContainText(EN_DOMAIN_LABELS['general-academic'])
       await expect(language).toContainText(EN_LANGUAGE_LABELS.German)
 
       await selectOption(

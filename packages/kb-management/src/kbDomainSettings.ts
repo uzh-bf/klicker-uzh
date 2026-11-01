@@ -8,6 +8,10 @@ import { useTranslations } from 'next-intl'
  */
 export const DEFAULT_DOMAIN_POLICY_ID = 'finance'
 export const DEFAULT_DOMAIN_POLICY_VERSION = 1
+// The subject a lecturer is offered before choosing one. It fits most course
+// material, so a knowledge base nobody configures still gets a sensible
+// selection that scheduled graph preparation can use.
+export const SUGGESTED_DOMAIN_POLICY_ID = 'general-academic'
 // The generation language is an explicit part of the domain selection, so it is
 // never derived from the interface locale. German stays the default for builds
 // that predate an explicit language.
@@ -206,11 +210,10 @@ export function isKbDomainSelectionSupported(
 }
 
 /**
- * The selection a lecturer is offered before they choose one. Finance leads the
- * catalog wherever it is still offered, because it is what every build that
- * predates explicit selection ran with; otherwise the catalog's own first entry
- * stands in, so a deployment shipping a different catalog still opens on a
- * usable pair instead of an empty control. A proposed language, such as the
+ * The selection a lecturer is offered before they choose one. The general
+ * academic subject leads wherever the catalog offers it; otherwise the
+ * catalog's own first entry stands in, so a deployment shipping a different
+ * catalog still opens on a usable pair instead of an empty control. A proposed language, such as the
  * language of the course a knowledge base is created for, wins whenever the
  * suggested subject can generate in it.
  */
@@ -218,14 +221,14 @@ export function suggestedKbDomain(
   options: readonly KbDomainOption[],
   proposedLanguage?: DomainGenerationLanguage
 ): { id: string; version: number; language: DomainGenerationLanguage } | null {
-  const finance = options
-    .filter((option) => option.id === DEFAULT_DOMAIN_POLICY_ID)
+  const suggested = options
+    .filter((option) => option.id === SUGGESTED_DOMAIN_POLICY_ID)
     .reduce<KbDomainOption | null>(
       (latest, option) =>
         latest == null || option.version > latest.version ? option : latest,
       null
     )
-  const preferred = finance ?? options.at(0)
+  const preferred = suggested ?? options.at(0)
   if (!preferred) return null
   if (
     proposedLanguage &&
