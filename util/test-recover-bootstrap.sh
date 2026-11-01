@@ -8,6 +8,7 @@ unset pnpm_config_verify_deps_before_run
 REPO_ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
 RECOVERY_SCRIPT="$REPO_ROOT/.devcontainer/recover-bootstrap.sh"
 RECOVERY_RUNTIME_SCRIPT="$REPO_ROOT/.devcontainer/recover-runtime.sh"
+POST_CREATE_SCRIPT="$REPO_ROOT/.devcontainer/post-create.sh"
 TEST_ROOT="$(mktemp -d)"
 trap 'rm -rf "$TEST_ROOT"' EXIT
 
@@ -92,6 +93,7 @@ cp "$REPO_ROOT/util/dev-runtime.sh" "$ROOT/util-dev-runtime.sh"
 mkdir -p "$ROOT/util"
 mv "$ROOT/util-dev-runtime.sh" "$ROOT/util/dev-runtime.sh"
 cp "$RECOVERY_SCRIPT" "$ROOT/.devcontainer/recover-bootstrap.sh"
+cp "$POST_CREATE_SCRIPT" "$ROOT/.devcontainer/post-create.sh"
 write_file "$TOKEN_FILE" 'synthetic-hatchet-token'
 
 cat >"$FAKE_BIN/pnpm" <<'FAKE_PNPM'
@@ -190,6 +192,10 @@ case "${3:-}" in
   pg_isready)
     ;;
   bash)
+    if [ "${4:-}" = '/workspaces/klicker-uzh/.devcontainer/recover-bootstrap.sh' ]; then
+      [ "$#" -eq 4 ] || exit 44
+      [ "${KLICKER_TEST_CALLBACK_FAIL:-0}" != 1 ] || exit 45
+    fi
     ;;
   *)
     exit 43
@@ -231,6 +237,11 @@ assert_log_before "$RUNTIME_DOCKER_LOG" \
 assert_log_before "$RUNTIME_DOCKER_LOG" \
   'sha256sum /workspaces/klicker-uzh/util/dev-runtime.sh' \
   'bash /workspaces/klicker-uzh/util/dev-runtime.sh begin-bootstrap'
+assert_equal "$(tail -n 1 "$RUNTIME_DOCKER_LOG")" \
+  "exec $APP_CONTAINER_ID bash /workspaces/klicker-uzh/.devcontainer/recover-bootstrap.sh"
+if KLICKER_TEST_CALLBACK_FAIL=1 run_recovery_runtime; then
+  fail 'runtime callback concealed a failed preserving bootstrap'
+fi
 
 for pinned_source in \
   .devcontainer/recover-bootstrap.sh \
@@ -320,5 +331,42 @@ if KLICKER_TEST_FAIL_IDENTITY=1 KLICKER_TEST_SCHEMA_STATE=push-compatible bash "
   fail 'initialization continued with failed identity'
 fi
 assert_equal "$(tr '\n' ' ' <"$COMMAND_LOG")" 'install build identity '
+assert_absent "$MARKER_DIR/bootstrap-complete"
+
+# Exercise the actual provider entry point against retained schema fixtures.
+: >"$COMMAND_LOG"
+KLICKER_TEST_SCHEMA_STATE=push-compatible \
+  bash "$ROOT/.devcontainer/post-create.sh" >"$OUTPUT_LOG" 2>&1
+assert_equal "$(tr '\n' ' ' <"$COMMAND_LOG")" 'install build verify-push-compatible '
+bash "$ROOT/util/dev-runtime.sh" require-bootstrap >/dev/null
+for failure_stage in install build schema; do
+  : >"$COMMAND_LOG"
+  write_file "$MARKER_DIR/bootstrap-complete" 'klicker-devcontainer-bootstrap-v1'
+  schema_state=push-compatible
+  [ "$failure_stage" != schema ] || schema_state=missing
+  if KLICKER_TEST_FAIL_AT="$failure_stage" KLICKER_TEST_SCHEMA_STATE="$schema_state" \
+    bash "$ROOT/.devcontainer/post-create.sh" >"$OUTPUT_LOG" 2>&1; then
+    fail "post-create accepted failed $failure_stage"
+  fi
+  assert_absent "$MARKER_DIR/bootstrap-complete"
+  if grep -E '^(reset|push|seed|migrate)$' "$COMMAND_LOG" >/dev/null; then
+    fail 'post-create mutated a retained database'
+  fi
+done
+: >"$COMMAND_LOG"
+if bash "$ROOT/.devcontainer/post-create.sh" --initialize-new-disposable >"$OUTPUT_LOG" 2>&1; then
+  fail 'provider startup accepted initialization intent'
+fi
+assert_equal "$(cat "$COMMAND_LOG")" ''
+mkdir -p "$ROOT/util/local-kb"
+write_file "$ROOT/util/local-kb/runtime-environment.sh" 'local_kb_capture_environment() {
+  echo isolated-capture >>"$KLICKER_TEST_COMMAND_LOG"
+  return 1
+}'
+: >"$COMMAND_LOG"
+if KLICKER_LOCAL_KB_RUNTIME_ONLY=1 bash "$ROOT/.devcontainer/post-create.sh" >"$OUTPUT_LOG" 2>&1; then
+  fail 'isolated startup concealed environment capture failure'
+fi
+assert_equal "$(cat "$COMMAND_LOG")" isolated-capture
 assert_absent "$MARKER_DIR/bootstrap-complete"
 echo '[test-recover-bootstrap] PASS'

@@ -31,5 +31,5 @@ for attempt in {1..60}; do
   fi
   sleep 1
 done
-# Bootstrap verifies both restricted database identities before schema writes.
-docker exec "$app_id" bash /workspaces/klicker-uzh/.devcontainer/recover-bootstrap.sh --initialize-new-disposable
+# Bootstrap verifies both restricted identities and the retained application schema.
+docker exec "$app_id" bash /workspaces/klicker-uzh/.devcontainer/recover-bootstrap.sh

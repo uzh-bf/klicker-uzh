@@ -389,6 +389,8 @@ model ConfusionTimestep {
   liveQuizId String?   @db.Uuid
 
   createdAt DateTime @default(now())
+
+  @@index([liveQuizId, createdAt])
 }
 
 // #endregion
