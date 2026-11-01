@@ -107,7 +107,15 @@ async function signInStudentFromReturnTarget(page: Page, target: string) {
 // firstLogin flag is true. Each controlled case flips the flag, exercises
 // the decision UI, and restores the original value in a finally block so
 // later tests never inherit an unset decision.
-async function withSyntheticFirstLogin(run: () => Promise<void>) {
+async function withSyntheticFirstLogin(page: Page, run: () => Promise<void>) {
+  // The video is unrelated to these form checks. Keep its external login
+  // redirects from navigating the synthetic test page.
+  await page.route('https://uzh.mediaspace.cast.switch.ch/embed/**', (route) =>
+    route.fulfill({
+      contentType: 'text/html',
+      body: '<!doctype html><html></html>',
+    })
+  )
   const prisma = await getPrisma()
   const original = await prisma.user.findUniqueOrThrow({
     where: { id: USER_ID_TEST },
@@ -759,7 +767,7 @@ test.describe('Login / Logout workflows for lecturer and students', () => {
       mutationFired = true
     })
 
-    await withSyntheticFirstLogin(async () => {
+    await withSyntheticFirstLogin(page, async () => {
       await loginLecturer()
 
       const saveButton = page.getByTestId('first-login-save-settings')
@@ -791,7 +799,7 @@ test.describe('Login / Logout workflows for lecturer and students', () => {
       signupAvailable: true,
     })
 
-    await withSyntheticFirstLogin(async () => {
+    await withSyntheticFirstLogin(page, async () => {
       await loginLecturer()
 
       await expect(
@@ -824,7 +832,7 @@ test.describe('Login / Logout workflows for lecturer and students', () => {
         capturedSeedDemoElements = variables.seedDemoElements
       })
 
-      await withSyntheticFirstLogin(async () => {
+      await withSyntheticFirstLogin(page, async () => {
         await loginLecturer()
         await page.getByTestId(choice.testId).click()
         await expect(

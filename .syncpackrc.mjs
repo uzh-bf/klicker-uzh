@@ -103,6 +103,16 @@ export default {
   ],
   versionGroups: [
     {
+      label: 'Chat API and engine contracts use the patched Zod major',
+      dependencies: ['zod'],
+      packages: [
+        '@klicker-uzh/chat-api',
+        '@klicker-uzh/chat-engine-contract',
+        '@klicker-uzh/chat-engine-default',
+      ],
+      pinVersion: '4.6.6',
+    },
+    {
       // Rollup 4.59 fixes an arbitrary-file-write advisory. Keep the add-in
       // patched until the workspace-wide Rollup upgrade is handled separately.
       label: 'Office Add-in Rollup security floor can differ',
