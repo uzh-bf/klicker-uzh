@@ -1,12 +1,12 @@
 import assert from 'node:assert/strict'
-import { describe, it } from 'node:test'
-import { useDefaultLayout } from '@uzh-bf/design-system'
+import { before, describe, it } from 'node:test'
 import { createElement } from 'react'
 import { renderToString } from 'react-dom/server'
 import { liveQuizLayoutStorage } from './liveQuizLayoutStorage'
 
 const layoutId = 'live-quiz-synthetic-panels'
 const panelIds = ['live-quiz-synthetic-question', 'live-quiz-synthetic-sidebar']
+let useDefaultLayout: typeof import('@uzh-bf/design-system')['useDefaultLayout']
 
 function LayoutProbe({
   preserving,
@@ -25,6 +25,10 @@ function LayoutProbe({
 }
 
 describe('live quiz layout storage during rendering', () => {
+  before(async () => {
+    useDefaultLayout = (await import('@uzh-bf/design-system')).useDefaultLayout
+  })
+
   it('avoids the real default hook failure when browser storage is absent', () => {
     assert.equal(typeof window, 'undefined')
     assert.throws(

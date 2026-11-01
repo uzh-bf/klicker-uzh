@@ -1486,7 +1486,14 @@ evidence. The attempt grants no retry, recreation, cleanup or guard bypass.
   and formatting pass. This synthetic proof is independent of app services.
 - **Delivery and limit:** commit the coherent focused candidate, complete its
   independent consequential review, push normally and update the existing
-  draft. Full PWA type/build and actual application browser verification remain
-  pending because the container is stopped. Prepare one precise bounded
-  live-verification request for the corrected head; keep hosted CI, readiness,
-  merge and deployment separate. Preserve the synthetic quiz's persisted state.
+  draft. The later bounded retest passed PWA type-check and lint and rendered
+  the quiz route, then stopped at the native test's CommonJS loading of the
+  ESM-only design-system export. The source-only follow-up loads the hook in
+  an asynchronous suite setup; all regression assertions remain unchanged.
+  A native loader fixture reproduces the old export failure and passes all
+  three corrected tests with the published export contract and real panels
+  hook. Full design-system graph execution, production build and application
+  layout/block-selection acceptance remain pending. The earlier startup and
+  terminal-stop allowances are consumed. Requalify current resources and the
+  selected CLI before preparing a new bounded runtime decision; keep hosted
+  CI, readiness, merge and deployment separate. Preserve synthetic quiz state.
