@@ -6,15 +6,19 @@ import { useRouter } from 'next/router'
 import { twMerge } from 'tailwind-merge'
 import Header from './layout/Header'
 import MobileMenuBar from './layout/MobileMenuBar'
+import PageContainer from './layout/PageContainer'
 
 interface LayoutProps {
   title: string
   children: React.ReactNode
   quizId?: string
   className?: string
+  // redesigned screens pass their own sticky header; this replaces the dark
+  // title bar and the mobile menu bar of the original layout
+  header?: React.ReactNode
 }
 
-function Layout({ title, children, quizId, className }: LayoutProps) {
+function Layout({ title, children, quizId, className, header }: LayoutProps) {
   const router = useRouter()
   const {
     loading: loadingUser,
@@ -29,16 +33,39 @@ function Layout({ title, children, quizId, className }: LayoutProps) {
     return <Loader />
   }
 
+  const head = (
+    <Head>
+      <title>{`KlickerUZH Controller ${title}`}</title>
+      <meta
+        name="description"
+        content="KlickerUZH Controller App"
+        charSet="utf-8"
+      ></meta>
+    </Head>
+  )
+
+  if (header) {
+    return (
+      <div className="bg-ctrl-bg flex h-full w-full flex-col font-sans">
+        {head}
+        <div className="flex-1 overflow-y-auto">
+          {header}
+          <PageContainer
+            className={twMerge(
+              'animate-ctrl-screen-in relative pt-4 pb-6',
+              className
+            )}
+          >
+            {children}
+          </PageContainer>
+        </div>
+      </div>
+    )
+  }
+
   return (
     <div className="flex h-full w-full flex-col">
-      <Head>
-        <title>KlickerUZH Controller {title}</title>
-        <meta
-          name="description"
-          content="KlickerUZH Controller App"
-          charSet="utf-8"
-        ></meta>
-      </Head>
+      {head}
 
       <div className={twMerge('overflow-y-none h-full', className)}>
         <div className="fixed top-0 z-10 w-full">
