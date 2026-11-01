@@ -140,3 +140,10 @@ Main owns public stack integration and final acceptance. Reuse prior review and 
 
 
 The API and default-engine unit tasks declare workspace build prerequisites in their package-specific Turbo entries. This keeps fresh-checkout test execution ordered without broadening build requirements for unrelated workspace tests. The shared per-process PORT contract and existing explicit multi-service launcher bindings remain authoritative.
+
+
+### Host-policy implementation checkpoint
+
+The host extraction retains compatibility exports in Next and one API-owned implementation of participant/publication/course guards, current model/mode/prompt policy, credits and turn lifecycle. Prompt assets follow the owning module in built API output. Presentation-only reasoning labels remain in Next; only their shared type crosses the package boundary. The direct API rejects unsupported document-page/handoff inputs and existing course-tool bindings before claims. Its Python capability is default-off and restricted to explicit Tutor pilot configuration. Request Origin is checked before admission, and engine identity/capabilities plus returned tool and terminal identity are validated.
+
+The current host layer is in progress and unreviewed. API-focused checks and shared Next compatibility checks have passed at their recorded private revisions. The local authenticated HTTP/Prisma/Catalyst acceptance now covers exact result consumption, canonical persistence, single usage finalization, duplicate replay and the disabled/ineligible gates. Detailed receipts remain private; browser acceptance, installed-package standalone tracing, integrated source review, hosted CI and source-draft closeout remain pending. Runtime observations and attempt-specific evidence are private under the ignored review directory. A failed local attempt is preserved and repaired within the approved synthetic debugging boundary.

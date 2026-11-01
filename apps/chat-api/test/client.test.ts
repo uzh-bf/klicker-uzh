@@ -1,8 +1,10 @@
-import { describe, expect, test, vi } from 'vitest'
 import {
   conformanceManifest,
   conformanceRequest,
+  conformanceV2Manifest,
+  conformanceV2Request,
 } from '@klicker-uzh/chat-engine-contract'
+import { describe, expect, test, vi } from 'vitest'
 import {
   createEngineClient,
   EngineReadinessProbe,
@@ -19,7 +21,7 @@ describe('engine client and readiness', () => {
       }),
       chat: vi.fn(),
     }
-    const probe = new EngineReadinessProbe(engine, 0)
+    const probe = new EngineReadinessProbe(engine, 0, 5_000, 'default')
 
     expect((await probe.get()).ok).toBe(false)
     expect((await probe.get()).ok).toBe(true)
@@ -103,4 +105,49 @@ test('concurrent readiness callers await the same first manifest probe', async (
   const states = await Promise.all([first, second])
   expect(states.map((state) => state.ok)).toEqual([true, true])
   expect(manifest).toHaveBeenCalledTimes(1)
+})
+
+test('requires the configured engine identity and rechecks it after recovery', async () => {
+  let id = 'other-engine'
+  const probe = new EngineReadinessProbe(
+    {
+      manifest: async () => ({ ...conformanceManifest, engineId: id }),
+      chat: vi.fn(),
+    },
+    0,
+    5000,
+    'selected-engine'
+  )
+  expect((await probe.get()).ok).toBe(false)
+  id = 'selected-engine'
+  expect((await probe.get()).ok).toBe(true)
+})
+
+test('selects v2 explicitly and never sends a mismatched generation', async () => {
+  const urls: string[] = []
+  const request = vi.fn(async (url: string | URL | Request) => {
+    urls.push(String(url))
+    return String(url).endsWith('/manifest')
+      ? Response.json(conformanceV2Manifest)
+      : new Response('data: [DONE]\n\n')
+  })
+  const client = createEngineClient({
+    baseUrl: 'https://engine.test',
+    contractVersion: 'v2',
+    fetch: request,
+  })
+  expect((await client.manifest()).contractVersion).toBe('v2')
+  const options = { signal: new AbortController().signal }
+  await client.chat(conformanceV2Request, options)
+  await expect(client.chat(conformanceRequest, options)).rejects.toThrow()
+  expect(urls).toEqual([
+    'https://engine.test/v2/manifest',
+    'https://engine.test/v2/chat',
+  ])
+  const incompatible = createEngineClient({
+    baseUrl: 'https://engine.test',
+    contractVersion: 'v2',
+    fetch: vi.fn(async () => Response.json(conformanceManifest)),
+  })
+  await expect(incompatible.manifest()).rejects.toThrow()
 })

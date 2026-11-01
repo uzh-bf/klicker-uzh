@@ -202,6 +202,10 @@ export const conformanceManifest: EngineManifest = {
 export const conformanceV2Request: EngineV2ChatRequest = {
   ...conformanceRequest,
   contractVersion: CHAT_ENGINE_CONTRACT_V2,
+  generation: { ...conformanceRequest.generation, providerApi: 'responses' },
+  stepPolicy: {
+    trailingSystemMessage: 'Apply the host turn policy after tool results.',
+  },
   messages: [
     {
       id: conformanceRequest.userMessageId,
@@ -230,13 +234,21 @@ export const conformanceV2Request: EngineV2ChatRequest = {
 export const conformanceV2RequestCredentialRequest: EngineV2ChatRequest = {
   ...conformanceV2Request,
   requestId: conformanceRequestCredentialRequest.requestId,
-  generation: conformanceRequestCredentialRequest.generation,
+  generation: {
+    ...conformanceRequestCredentialRequest.generation,
+    providerApi: 'responses',
+  },
 }
 
 export const conformanceV2ToolRequest: EngineV2ChatRequest = {
   ...conformanceV2Request,
   requestId: conformanceToolRequest.requestId,
   tools: conformanceToolRequest.tools,
+  stepPolicy: {
+    firstToolName: conformanceToolRequest.tools[0]!.name,
+    trailingSystemMessage:
+      conformanceV2Request.stepPolicy!.trailingSystemMessage,
+  },
 }
 
 export const conformanceV2AbortRequest: EngineV2ChatRequest = {

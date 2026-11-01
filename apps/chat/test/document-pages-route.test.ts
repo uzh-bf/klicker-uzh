@@ -40,7 +40,7 @@ vi.mock('@klicker-uzh/prisma', () => ({
   },
 }))
 
-vi.mock('@/src/services/mcpClients', () => ({
+vi.mock('@klicker-uzh/chat-api/host/services/mcpClients', () => ({
   getAggregatedMCPTools: mocks.getAggregatedMCPTools,
 }))
 
