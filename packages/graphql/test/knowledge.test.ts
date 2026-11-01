@@ -72,6 +72,7 @@ import {
   requestKbFileUpload,
   searchKbKnowledgeGraph,
   setKbKnowledgeGraphEnabled,
+  updateKb,
   updateKbResourceMaterialType,
 } from '../src/services/knowledge.js'
 import { seedCourse, testCleanup, testInitialization } from './helpers.js'
@@ -574,9 +575,61 @@ describe('Integration tests for knowledge base CRUD', () => {
     ).resolves.toBe(1)
   })
 
-  it('reserves a build only for a complete, supported domain selection', async () => {
+  it('rejects an unusable selection on the knowledge base and freezes the stored pair onto the build', async () => {
     const catalog = getDefaultKBGraphDomainCatalog()
-    const kb = await createKb({ name: 'Domain-scoped graph' }, userOneCtx)
+    process.env.KB_GRAPH_DOMAIN_CATALOG_REVISION = catalog.revision
+
+    // The knowledge base owns the choice, so every rejection lands where the
+    // lecturer makes it instead of when a build is dispatched.
+    await expect(
+      createKb(
+        { name: 'Partial domain', domainPolicyId: 'finance' },
+        userOneCtx
+      )
+    ).rejects.toMatchObject({
+      extensions: { code: 'KB_GRAPH_DOMAIN_SELECTION_INCOMPLETE' },
+    })
+    await expect(
+      createKb(
+        {
+          name: 'Unknown domain',
+          domainPolicyId: 'retired-policy',
+          domainPolicyVersion: 1,
+          domainPolicyLanguage: 'German',
+        },
+        userOneCtx
+      )
+    ).rejects.toMatchObject({
+      extensions: { code: 'KB_GRAPH_DOMAIN_UNKNOWN_POLICY' },
+    })
+    await expect(
+      createKb(
+        {
+          name: 'Unsupported version',
+          domainPolicyId: 'finance',
+          domainPolicyVersion: 2,
+          domainPolicyLanguage: 'German',
+        },
+        userOneCtx
+      )
+    ).rejects.toMatchObject({
+      extensions: { code: 'KB_GRAPH_DOMAIN_UNSUPPORTED_VERSION' },
+    })
+
+    const kb = await createKb(
+      {
+        name: 'Domain-scoped graph',
+        domainPolicyId: 'finance',
+        domainPolicyVersion: 1,
+        domainPolicyLanguage: 'German',
+      },
+      userOneCtx
+    )
+    expect(kb).toMatchObject({
+      domainPolicyId: 'finance',
+      domainPolicyVersion: 1,
+      domainPolicyLanguage: 'German',
+    })
     await setKbKnowledgeGraphEnabled({ kbId: kb.id, enabled: true }, userOneCtx)
     await prisma.kBResource.create({
       data: {
@@ -590,108 +643,10 @@ describe('Integration tests for knowledge base CRUD', () => {
         activeContentSha256: 'c'.repeat(64),
       },
     })
-    process.env.KB_GRAPH_DOMAIN_CATALOG_REVISION = catalog.revision
 
-    // A partial selection is rejected before any cost reservation exists.
-    await expect(
-      rebuildKbKnowledgeGraph(
-        { kbId: kb.id, domainPolicyId: 'finance' },
-        userOneCtx
-      )
-    ).rejects.toMatchObject({
-      extensions: { code: 'KB_GRAPH_DOMAIN_SELECTION_INCOMPLETE' },
-    })
-    await expect(
-      rebuildKbKnowledgeGraph(
-        {
-          kbId: kb.id,
-          domainPolicyId: 'retired-policy',
-          domainPolicyVersion: 1,
-          domainPolicyLanguage: 'German',
-        },
-        userOneCtx
-      )
-    ).rejects.toMatchObject({
-      extensions: { code: 'KB_GRAPH_DOMAIN_UNKNOWN_POLICY' },
-    })
-    await expect(
-      rebuildKbKnowledgeGraph(
-        {
-          kbId: kb.id,
-          domainPolicyId: 'finance',
-          domainPolicyVersion: 2,
-          domainPolicyLanguage: 'German',
-        },
-        userOneCtx
-      )
-    ).rejects.toMatchObject({
-      extensions: { code: 'KB_GRAPH_DOMAIN_UNSUPPORTED_VERSION' },
-    })
-
-    // The same request without the capability gate is refused as well.
-    delete process.env.KB_GRAPH_DOMAIN_CATALOG_REVISION
-    await expect(
-      rebuildKbKnowledgeGraph(
-        {
-          kbId: kb.id,
-          domainPolicyId: 'finance',
-          domainPolicyVersion: 1,
-          domainPolicyLanguage: 'German',
-        },
-        userOneCtx
-      )
-    ).rejects.toMatchObject({
-      extensions: { code: 'KB_GRAPH_DOMAIN_CAPABILITY_DISABLED' },
-    })
-
-    await expect(
-      prisma.kBGraphBuild.count({ where: { kbId: kb.id } })
-    ).resolves.toBe(0)
-
-    // The catalog revision does not stand in for the actor's rollout. With the
-    // revision declared, an actor the rollout does not admit is refused, and
-    // the capability handshake advertises no options for that actor.
-    process.env.KB_GRAPH_DOMAIN_CATALOG_REVISION = catalog.revision
-    const deniedCtx = withDeniedFeatureFlag(
-      userOneCtx,
-      'kb-graph-domain-selection'
-    )
-    await expect(
-      rebuildKbKnowledgeGraph(
-        {
-          kbId: kb.id,
-          domainPolicyId: 'finance',
-          domainPolicyVersion: 1,
-          domainPolicyLanguage: 'German',
-        },
-        deniedCtx
-      )
-    ).rejects.toMatchObject({
-      extensions: { code: 'KB_GRAPH_DOMAIN_CAPABILITY_DISABLED' },
-    })
-    await expect(
-      getKbKnowledgeGraphDomainConfig({ kbId: kb.id }, deniedCtx)
-    ).resolves.toMatchObject({ capabilityEnabled: false, options: [] })
-    await expect(
-      rebuildKbKnowledgeGraph(
-        { kbId: kb.id, focusTopic: 'Capital budgeting' },
-        deniedCtx
-      )
-    ).rejects.toMatchObject({
-      extensions: { code: 'KB_GRAPH_DOMAIN_CAPABILITY_DISABLED' },
-    })
-
-    // A complete, supported selection is frozen onto the build.
-    process.env.KB_GRAPH_DOMAIN_CATALOG_REVISION = catalog.revision
-    const config = await rebuildKbKnowledgeGraph(
-      {
-        kbId: kb.id,
-        domainPolicyId: 'finance',
-        domainPolicyVersion: 1,
-        domainPolicyLanguage: 'German',
-      },
-      userOneCtx
-    )
+    // The build carries no selection of its own: it reads the stored pair and
+    // freezes it, so a later change to the knowledge base cannot relabel it.
+    const config = await rebuildKbKnowledgeGraph({ kbId: kb.id }, userOneCtx)
     expect(config).toMatchObject({
       domainPolicyId: 'finance',
       domainPolicyVersion: 1,
@@ -712,6 +667,83 @@ describe('Integration tests for knowledge base CRUD', () => {
       domainPolicyId: 'finance',
       domainPolicyVersion: 1,
       domainPolicyLanguage: 'German',
+    })
+
+    // The catalog revision does not stand in for the actor's rollout. An actor
+    // the rollout does not admit cannot record a selection, and the capability
+    // handshake advertises no options for them.
+    const deniedCtx = withDeniedFeatureFlag(
+      userOneCtx,
+      'kb-graph-domain-selection'
+    )
+    await expect(
+      updateKb(
+        {
+          id: kb.id,
+          domainPolicyId: 'economics',
+          domainPolicyVersion: 1,
+          domainPolicyLanguage: 'German',
+        },
+        deniedCtx
+      )
+    ).rejects.toMatchObject({
+      extensions: { code: 'KB_GRAPH_DOMAIN_CAPABILITY_DISABLED' },
+    })
+    await expect(
+      getKbKnowledgeGraphDomainConfig({ kbId: kb.id }, deniedCtx)
+    ).resolves.toMatchObject({ capabilityEnabled: false, options: [] })
+  })
+
+  it('builds on the provider default when the deployment cannot honor the stored pair', async () => {
+    const catalog = getDefaultKBGraphDomainCatalog()
+    process.env.KB_GRAPH_DOMAIN_CATALOG_REVISION = catalog.revision
+    const kb = await createKb(
+      {
+        name: 'Unhonorable domain graph',
+        domainPolicyId: 'finance',
+        domainPolicyVersion: 1,
+        domainPolicyLanguage: 'German',
+      },
+      userOneCtx
+    )
+    await setKbKnowledgeGraphEnabled({ kbId: kb.id, enabled: true }, userOneCtx)
+    await prisma.kBResource.create({
+      data: {
+        kbId: kb.id,
+        type: KBResourceType.URL,
+        title: 'Unhonorable domain source',
+        materialType: KBResourceMaterialType.COURSE_CONTENT,
+        sourceUrl: 'https://example.com/unhonorable-domain-source',
+        status: KBResourceStatus.READY,
+        activeResourceVersion: 1,
+        activeContentSha256: 'e'.repeat(64),
+      },
+    })
+
+    // A deployment shipping another catalog cannot honor the stored pair, and
+    // the same closed gate hides the controls that would replace it. Refusing
+    // would leave a knowledge base that can neither be rebuilt nor
+    // reconfigured, so the build runs on the provider default instead.
+    delete process.env.KB_GRAPH_DOMAIN_CATALOG_REVISION
+    const config = await rebuildKbKnowledgeGraph({ kbId: kb.id }, userOneCtx)
+    expect(config).toMatchObject({
+      domainPolicyId: null,
+      domainPolicyVersion: null,
+      domainPolicyLanguage: null,
+    })
+    await expect(
+      prisma.kBGraphBuild.findUniqueOrThrow({
+        where: { id: config.buildId! },
+        select: {
+          domainPolicyId: true,
+          domainPolicyVersion: true,
+          domainPolicyLanguage: true,
+        },
+      })
+    ).resolves.toEqual({
+      domainPolicyId: null,
+      domainPolicyVersion: null,
+      domainPolicyLanguage: null,
     })
   })
 
