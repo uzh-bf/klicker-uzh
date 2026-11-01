@@ -12,7 +12,15 @@ import KnowledgeBaseResourceList from './components/KnowledgeBaseResourceList'
 import KnowledgeGraphPanel from './components/KnowledgeGraphPanel'
 import { getGraphQLErrorCode } from './graphqlError'
 
-function KnowledgeBaseDetail({ kbId }: { kbId: string }) {
+function KnowledgeBaseDetail({
+  kbId,
+  backLink,
+}: {
+  kbId: string
+  // An additional way back, for example to the chatbot this knowledge base
+  // was just created for. The caller owns and validates the target.
+  backLink?: { href: string; label: string }
+}) {
   const t = useTranslations()
   const format = useFormatter()
   const [resourceRefreshKey, setResourceRefreshKey] = useState(0)
@@ -98,6 +106,15 @@ function KnowledgeBaseDetail({ kbId }: { kbId: string }) {
       >
         {t('kb.backToList')}
       </Link>
+      {backLink ? (
+        <Link
+          href={backLink.href}
+          className="ml-4 text-primary-100 hover:underline"
+          data-cy="kb-back-to-chatbot"
+        >
+          {backLink.label}
+        </Link>
+      ) : null}
       <H1 className={{ root: 'mt-4 break-words' }}>{data.getKb.name}</H1>
       {data.getKb.description ? (
         <p className="mt-2 break-words text-slate-600">

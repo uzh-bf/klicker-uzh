@@ -3,6 +3,7 @@ query GetUserCourses {
     id
     name
     displayName
+    language
     color
     isArchived
     isGamificationEnabled
