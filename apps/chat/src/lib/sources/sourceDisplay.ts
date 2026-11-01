@@ -228,7 +228,17 @@ export function getSourceSecondaryLine(
 
   if (source.type === 'video') {
     const timestamp = getSourceTimestamp(source)
-    parts.push(timestamp ?? t('chat.sources.video'))
+    const end =
+      source.startSec !== undefined &&
+      source.endSec !== undefined &&
+      source.endSec > source.startSec
+        ? formatTimestamp(source.endSec)
+        : undefined
+    parts.push(
+      timestamp
+        ? `${timestamp}${end ? `–${end}` : ''}`
+        : t('chat.sources.video')
+    )
     if (timestamp === undefined && pageLabel) {
       parts.push(t('chat.sources.page', { page: pageLabel }))
     }

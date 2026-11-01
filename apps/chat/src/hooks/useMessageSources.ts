@@ -9,6 +9,7 @@ import {
 } from '@/src/lib/sources/normalizeSources'
 import { formatCitedPageRanges } from '@/src/lib/sources/sourceDisplay'
 import type { ChatSource } from '@/src/lib/sources/types'
+import { withVideoSourceFrames } from '@/src/lib/sources/videoSourceMedia'
 
 // Minimal shape this hook needs from the assistant message — kept local
 // (rather than importing assistant-ui's ThreadAssistantMessage type) so this
@@ -72,7 +73,7 @@ export function useMessageSources(): MessageSources {
 
   // biome-ignore lint/correctness/useExhaustiveDependencies: parts are intentionally keyed by a stable fingerprint.
   const sources = useMemo(
-    () => normalizeSourcesFromParts(parts),
+    () => withVideoSourceFrames(normalizeSourcesFromParts(parts), parts),
     // Deliberately keyed on the fingerprint: `parts` is referentially
     // unstable on every render, and the fingerprint captures the values that
     // can actually change the normalization result.
