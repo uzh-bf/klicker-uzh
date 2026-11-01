@@ -13,7 +13,7 @@ enum KBResourceMaterialType {
 }
 
 enum KBResourceStatus {
-  ADDED // resource registered (blob uploaded or URL added), not yet queued for ingestion
+  ADDED // resource registered outside the ordinary confirm/create flow (e.g. seed or import), not yet queued for ingestion
   QUEUED
   PROCESSING
   READY
