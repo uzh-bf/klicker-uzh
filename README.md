@@ -15,8 +15,8 @@ KlickerUZH v3.0 uses multiple different web applications and services, which com
 - [Frontend Control](https://github.com/uzh-bf/klicker-uzh/tree/v3/apps/frontend-control) is a minimal controller frontend, which allows to control live quizzes from mobile devices in an optimized layout. Soon, this app will also be available as a [PowerPoint integration](https://github.com/uzh-bf/klicker-uzh/tree/v3/apps/office-addin) (work in progress) for catalyst users.
 - [Fontend Authentication](https://github.com/uzh-bf/klicker-uzh/tree/v3/apps/auth) is the authentication frontend of KlickerUZH, providing login functionalities through Edu-ID accounts and delegated logins to the manage frontend.
 - [Backend Docker](https://github.com/uzh-bf/klicker-uzh/tree/v3/apps/backend-docker) is the main backend service of KlickerUZH.
-- [Backend Responses](https://github.com/uzh-bf/klicker-uzh/tree/v3/apps/func-incoming-responses) is a service that handles incoming student responses during a live quizzes and puts them into an Azure queue for improved load handling.
-- [Backend Response Processor](https://github.com/uzh-bf/klicker-uzh/tree/v3/apps/func-response-processor) accesses queued elements from the aforementioned service and processes them by computing scores and experience points, updating the cache, etc.
+- [Response API](apps/response-api) handles incoming student responses during live quizzes and queues their processing through Hatchet.
+- [Response Processor](apps/hatchet-worker-response-processor) processes those responses, computes scores and experience points, and updates the cache.
 
 In addition to the key application components, this repository also includes the codebases for our landing page and documentation at [www.klicker.uzh.ch](https://www.klicker.uzh.ch/), as well as deployment scripts for Helm/Kubernetes. An updated deployment documentation for self-hosting KlickerUZH v3.0 will be added until the end of the year.
 
@@ -28,7 +28,7 @@ To share code more easily between different services, we added new packages to t
 - [Prisma](https://github.com/uzh-bf/klicker-uzh/tree/v3/packages/prisma): The prisma package contains the SQL database schema as well as migration scripts between different minor versions of KlickerUZH.
 - [GraphQL](https://github.com/uzh-bf/klicker-uzh/tree/v3/packages/graphql): The GraphQL package contains the complete GraphQL schema and all resolvers for the KlickerUZH backend, as well as all business logic for provided services. For consistent typing, Pothos GraphQL and an auto-generated schema are used.
 - [Grading](https://github.com/uzh-bf/klicker-uzh/tree/v3/packages/grading): The grading package provides the grading logic that is used to assign scores and experience points to participants and groups in gamified live quizzes, practice quizzes, microlearnings and other KlickerUZH elements.
-- [LTI](https://github.com/uzh-bf/klicker-uzh/tree/v3/packages/lti): The LTI package contains logic to offer automatic sign ins for students through the Learning Tools Interoperability "LTI" standard (for OpenOLAT and Moodle integration).
+- [LTI](apps/lti): The LTI service offers automatic sign ins for students through the Learning Tools Interoperability "LTI" standard (for OpenOLAT and Moodle integration).
 - [Internationalization](https://github.com/uzh-bf/klicker-uzh/tree/v3/packages/i18n): The i18n package provides internationalized messages for all KlickerUZH services.
 - [Shared Components](https://github.com/uzh-bf/klicker-uzh/tree/v3/packages/shared-components): The `shared-components` package is configured as an internal turborepo package, mainly providing the possibility to share React components between the frontends and reduce code duplication.
 - [Markdown](https://github.com/uzh-bf/klicker-uzh/tree/v3/packages/markdown): The markdown package exports a React component to render markdown strings into formatted elements.
@@ -45,6 +45,9 @@ The following resources might be of special interest to you:
 
 - [User Documentation](https://www.klicker.uzh.ch/getting_started/welcome)
 - [Engineering Wiki](docs/) (agent-facing, for working on this codebase)
+- [Developer Setup](docs/getting-started.md)
+- [Feature Development](docs/developing-a-feature.md)
+- [Testing](docs/testing.md)
 - [Frequently Asked Questions](https://www.klicker.uzh.ch/faq)
 - [Community and Discussions](https://community.klicker.uzh.ch/)
 - [Roadmap](https://www.klicker.uzh.ch/development)
@@ -55,7 +58,7 @@ This section is still work in progress as our architecture continues to experien
 
 ## Contributing
 
-We welcome any contributions to the KlickerUZH project. Before considering any contribution, we recommend that you create a discussion to discuss your proposed addition with the project maintainers and other contributors. Please also make sure to follow our [Contributing Guidelines](https://www.klicker.uzh.ch/v2/contributing/contributing_guidelines/), as your PR might need amendments otherwise.
+We welcome any contributions to the KlickerUZH project. Before considering any contribution, we recommend that you create a discussion to discuss your proposed addition with the project maintainers and other contributors. Start with [Developer Setup](docs/getting-started.md), then follow [Developing a Feature](docs/developing-a-feature.md) and [Testing](docs/testing.md) for the contribution workflow and verification requirements.
 
 ## License
 
