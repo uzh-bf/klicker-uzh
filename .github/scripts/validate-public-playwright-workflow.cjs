@@ -6,8 +6,35 @@ const { CONTROL_SPARSE_PATHS } = require('./ci-verified-reuse.cjs')
 
 const CONTROL_SPARSE_CHECKOUT = `${CONTROL_SPARSE_PATHS.join('\n')}\n`
 
+const PRIORITY_REQUEST =
+  "vars.PRIORITY_CI_ENABLED == 'true' && github.event_name == 'pull_request' && github.event.pull_request.state == 'open' && github.event.pull_request.draft == false && github.event.repository.private == false && github.event.pull_request.head.repo.full_name == github.repository && !endsWith(github.event.pull_request.user.login, '[bot]') && contains(github.event.pull_request.labels.*.name, 'ci:priority') && (github.event.action != 'labeled' || github.event.label.name == 'ci:priority')"
+const PRIORITY_MARKER =
+  "format('priority:{0}:{1}:{2}', github.event.pull_request.number, github.event.pull_request.head.sha, github.event.pull_request.base.sha)"
+const PRIORITY_RUN_NAME =
+  '${{ ' +
+  PRIORITY_REQUEST +
+  ' && ' +
+  PRIORITY_MARKER +
+  " || format('ordinary:{0}', github.run_id) }}"
+const PRIORITY_STATUS_NAME =
+  "${{ (github.event.action != 'labeled' || needs.test-playwright-execution.outputs.priority_label_event == 'true') && 'test-playwright-status' || 'test-playwright-status (priority not admitted)' }}"
+const PRIORITY_OUTER_GROUP =
+  '${{ github.workflow }}-${{ ' +
+  PRIORITY_REQUEST +
+  ' && ' +
+  PRIORITY_MARKER +
+  " || format('ordinary:{0}', github.run_id) }}"
 const EXECUTION_GROUP =
-  '${{ github.workflow }}-playwright-${{ github.event.pull_request.number || github.ref }}'
+  "${{ github.event.action == 'labeled' && format('ignored:{0}', github.run_id) || (" +
+  PRIORITY_REQUEST +
+  ') && ' +
+  PRIORITY_MARKER +
+  " || format('{0}-playwright-{1}', github.workflow, github.event.pull_request.number || github.ref) }}"
+const EXECUTION_CANCEL =
+  "${{ github.event.action != 'ready_for_review' && github.event.action != 'labeled' && !(" +
+  PRIORITY_REQUEST +
+  ') }}'
+
 // Lifecycle events on a merged or closed pull request must launch neither
 // execution nor reporting; the open-state guard subsumes the closed action.
 const OPEN_EVENT =
@@ -37,22 +64,25 @@ function validateCallerLifecycle(caller) {
   const close = jobs['cancel-closed-pr']
   if (
     caller?.name !== 'Klicker automated testing with playwright' ||
+    caller?.['run-name'] !== PRIORITY_RUN_NAME ||
     !caller?.on?.pull_request?.types?.includes('closed') ||
     caller.on.pull_request.types.includes('converted_to_draft') ||
-    caller.concurrency !== undefined
+    caller.concurrency?.group !== PRIORITY_OUTER_GROUP ||
+    caller.concurrency?.['cancel-in-progress'] !== false
   ) {
     issues.push(
-      'caller must preserve workflow identity, handle closed PRs, and omit draft-conversion triggers and workflow concurrency'
+      'caller must preserve workflow identity, handle closed PRs, and omit draft-conversion triggers and serialize exact priority requests'
     )
   }
   for (const [name, job] of Object.entries(jobs)) {
     if (['test-playwright-execution', 'cancel-closed-pr'].includes(name)) {
       if (
-        job.concurrency?.group !== EXECUTION_GROUP ||
+        job.concurrency?.group !==
+          (name === 'cancel-closed-pr'
+            ? '${{ github.workflow }}-playwright-${{ github.event.pull_request.number || github.ref }}'
+            : EXECUTION_GROUP) ||
         job.concurrency?.['cancel-in-progress'] !==
-          (name === 'test-playwright-execution'
-            ? "${{ github.event.action != 'ready_for_review' }}"
-            : true)
+          (name === 'test-playwright-execution' ? EXECUTION_CANCEL : true)
       ) {
         issues.push(`${name} must use the exact PR execution concurrency group`)
       }
@@ -67,6 +97,16 @@ function validateCallerLifecycle(caller) {
   const statusEnv = status?.steps?.find(
     (step) => step.name === 'Check result'
   )?.env
+  if (
+    status?.name !== PRIORITY_STATUS_NAME ||
+    statusEnv?.IS_LABEL_EVENT !== "${{ github.event.action == 'labeled' }}" ||
+    statusEnv?.PRIORITY_LABEL_EVENT !==
+      '${{ needs.test-playwright-execution.outputs.priority_label_event }}'
+  ) {
+    issues.push(
+      'status must preserve the denied label-only name and admission inputs'
+    )
+  }
   if (
     statusEnv?.PROVIDER !==
       `\${{ needs.test-playwright-execution.outputs.provider }}` ||
@@ -228,6 +268,16 @@ function validatePublicRunnerRoles(workflow) {
     }
   }
   if (
+    jobs.prepare?.outputs?.priority_label_event !==
+      '${{ steps.priority.outputs.run_label_event }}' ||
+    workflow?.on?.workflow_call?.outputs?.priority_label_event?.value !==
+      '${{ jobs.prepare.outputs.priority_label_event }}'
+  ) {
+    issues.push(
+      'reusable workflow must expose exact priority label admission to its reporter'
+    )
+  }
+  if (
     Object.keys(workflow?.env ?? {}).length !== 1 ||
     workflow?.env?.PLAYWRIGHT_CACHE_ENABLED !==
       `\${{ github.event_name != 'pull_request' || vars.PUBLIC_PR_PLAYWRIGHT_CACHE_ENABLED == 'true' || vars.PUBLIC_PR_PLAYWRIGHT_CACHE_CANARY_PR == format('{0}', github.event.pull_request.number) }}` ||
@@ -255,6 +305,12 @@ function validatePublicRunnerRoles(workflow) {
     FORCE_HOSTED_CANARY_PR: `\${{ vars.PUBLIC_PR_ARM64_PLAYWRIGHT_FORCE_HOSTED_CANARY_PR }}`,
     ROUTE_HINT: `\${{ inputs.route_hint }}`,
     WARPBUILD_ADMISSIONS: `\${{ vars.PUBLIC_PR_PLAYWRIGHT_WARPBUILD_ADMISSIONS }}`,
+    PR_ACTION: '${{ github.event.action }}',
+    PRIORITY_REQUESTED: '${{ ' + PRIORITY_REQUEST + ' }}',
+    PRIORITY_ADMITTED: '${{ steps.priority.outputs.admitted }}',
+    PRIORITY_ATTEMPT: '${{ steps.priority.outputs.run_attempt }}',
+    PRIORITY_LABEL_EVENT: '${{ steps.priority.outputs.run_label_event }}',
+    PRIORITY_JOB_TIMEOUT: '${{ steps.priority.outputs.job_timeout }}',
     HEAD_SHA: `\${{ github.event.pull_request.head.sha }}`,
     BASE_SHA: `\${{ github.event.pull_request.base.sha }}`,
     CONTROL_SHA: `\${{ job.workflow_sha }}`,
@@ -284,6 +340,11 @@ function validatePublicRunnerRoles(workflow) {
         'fetch-depth': 0,
         'persist-credentials': false,
       },
+    },
+    {
+      id: 'priority',
+      if: PRIORITY_REQUEST,
+      uses: './.ci-control/.github/actions/priority-ci-route',
     },
     {
       id: 'route',
@@ -761,6 +822,7 @@ function validatePublicPlaywrightWorkflow(root) {
       contents: 'read',
       actions: 'read',
       'pull-requests': 'read',
+      issues: 'read',
       'id-token': 'write',
     })
   ) {

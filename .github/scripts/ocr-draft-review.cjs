@@ -9,7 +9,10 @@ const {
   createProgressReporter,
   buildCostReport,
   MISTRAL_MODEL,
-  MISTRAL_FLASH_MODEL,
+  MISTRAL_DEEPSEEK_MODEL,
+  createProviderAvailability,
+  parseProviderPause,
+  summarizePlanGuidance,
 } = require('./ocr-mistral-adapter.cjs')
 const { buildOCRResultDiagnostic } = require('./ocr-review-shared.cjs')
 const {
@@ -18,8 +21,8 @@ const {
   gitEnvironment,
 } = require('./ocr-runtime-config.cjs')
 
-const DRAFT_MODEL = MISTRAL_FLASH_MODEL
-const DRAFT_PROVIDER = 'mistral-flash'
+const DRAFT_MODEL = MISTRAL_DEEPSEEK_MODEL
+const DRAFT_PROVIDER = 'mistral-deepseek'
 const DRAFT_PROFILE = Object.freeze({
   id: 'draft-v1',
   reasoning: 'max',
@@ -87,7 +90,7 @@ function summarizeAdvisor(tools) {
   const outcomes = tools?.attempt_outcomes
   const valid =
     Array.isArray(outcomes) &&
-    outcomes.length <= 2 &&
+    outcomes.length <= require('./ocr-review-tools.cjs').ADVISOR_MAX_ATTEMPTS &&
     outcomes.every(
       (item, index) =>
         item?.attempt === index + 1 &&
@@ -172,24 +175,40 @@ function readResult(file) {
   return result
 }
 
-function preparePublication(temp, expectedHead) {
+function preparePublication(temp, expectedHead, unavailable) {
   const result = readResult(path.join(temp, 'draft-ai-review-result.json'))
   if (result.manifest?.input?.resolved_head !== expectedHead)
     throw new Error('invalid_result')
   const coverage = summarizeCoverage(result)
+  const counts = ['selected', 'completed', 'failed', 'reused', 'waived']
+  // OCR reports a range with no reviewable files, such as a Markdown-only
+  // change, as skipped with empty coverage. That is a finished review with
+  // nothing to cover, not a missing or broken result.
+  const skipped =
+    result.status === 'skipped' &&
+    result.manifest.terminal_state === 'skipped' &&
+    result.manifest.run_failure == null &&
+    counts.every((key) => coverage[key] === 0)
   if (
-    coverage.observed_status === 'unknown' ||
-    ['selected', 'completed', 'failed', 'reused', 'waived'].some(
-      (key) => coverage[key] === null
-    )
+    !skipped &&
+    (coverage.observed_status === 'unknown' ||
+      counts.some((key) => coverage[key] === null))
   )
     throw new Error('invalid_result')
-  if (coverage.observed_status !== 'complete') {
+  if (!skipped && coverage.observed_status !== 'complete') {
     const message = `⚠️ Review incomplete: selected ${coverage.selected}, completed ${coverage.completed}, reused ${coverage.reused}, failed ${coverage.failed}, waived ${coverage.waived}. Findings cover completed work only.`
     result.message = message
     result.warnings = [
       ...(Array.isArray(result.warnings) ? result.warnings : []),
       { type: 'review_incomplete', message },
+    ]
+  }
+  if (unavailable) {
+    const message = `OCR unavailable: ${unavailable}. Review incomplete; findings cover completed work only.`
+    result.message = message
+    result.warnings = [
+      ...(Array.isArray(result.warnings) ? result.warnings : []),
+      { type: 'provider_unavailable', message },
     ]
   }
   fs.writeFileSync(
@@ -267,7 +286,39 @@ async function runDraftReview(options) {
     ? readRepositoryConfig(repo, options.policy)
     : null
   const write = options.write ?? ((text) => process.stdout.write(text))
+  const availability = createProviderAvailability(
+    parseProviderPause(options.paused ?? process.env.OCR_PROVIDER_PAUSED)
+  )
   const resultPath = path.join(temp, 'draft-ai-review-result.json')
+  const outcomePath = path.join(temp, 'draft-ai-review-outcome.json')
+  const recordOutcome = (coverage) => {
+    fs.writeFileSync(
+      outcomePath,
+      JSON.stringify({
+        ...coverage,
+        head_sha: head,
+        provider_availability: {
+          status: availability.reason ? 'unavailable' : 'available',
+          reason: availability.reason,
+        },
+        ...(options.policy
+          ? { policy_sha: options.policy, profile: DRAFT_PROFILE.id }
+          : {}),
+      }),
+      { mode: 0o600 }
+    )
+    if (availability.reason)
+      appendSummary(
+        `::warning::OCR availability status=unavailable reason=${availability.reason} review=incomplete`,
+        write,
+        options.summary
+      )
+  }
+  if (availability.reason) {
+    const coverage = summarizeCoverage(null)
+    recordOutcome(coverage)
+    return { code: 0, resultPath, coverage }
+  }
   const stderrPath = path.join(temp, 'draft-ai-review-stderr.log')
   const diagnosticsPath = path.join(
     temp,
@@ -339,6 +390,8 @@ async function runDraftReview(options) {
   process.on('SIGINT', interrupt)
   try {
     adapter = await startAdapter({
+      availability,
+      finalPlanGuidance: true,
       provider: DRAFT_PROVIDER,
       apiKey: options.apiKey,
       usageJournalPath: `${diagnosticsPath}.events.jsonl`,
@@ -385,6 +438,7 @@ async function runDraftReview(options) {
       try {
         if (options.advisorApiKey) {
           advisor = await startAdapter({
+            availability,
             provider: 'mistral',
             apiKey: options.advisorApiKey,
             usageJournalPath: `${advisorDiagnosticsPath}.events.jsonl`,
@@ -587,21 +641,14 @@ async function runDraftReview(options) {
     const line = `OCR coverage status=${coverage.observed_status} ${counts} failure_classes=${failures}`
     appendSummary(line, write, options.summary)
     if (coverage.observed_status !== 'complete') write(`::warning::${line}\n`)
-    fs.writeFileSync(
-      path.join(temp, 'draft-ai-review-outcome.json'),
-      JSON.stringify({
-        ...coverage,
-        ...(options.policy
-          ? {
-              policy_sha: options.policy,
-              profile: DRAFT_PROFILE.id,
-            }
-          : {}),
-      }),
-      { mode: 0o600 }
-    )
+    recordOutcome(coverage)
     return {
-      code: result.signal || result.failed ? 1 : (result.code ?? 1),
+      code:
+        result.signal || result.failed || terminating
+          ? 1
+          : availability.reason
+            ? 0
+            : (result.code ?? 1),
       resultPath,
       stderrPath,
       coverage,
@@ -620,6 +667,12 @@ async function runDraftReview(options) {
     appendSummary(summarizeDocs(toolsState.docs), write, options.summary)
     await advisor?.close()
     await adapter?.close()
+    if (adapter)
+      appendSummary(
+        summarizePlanGuidance(adapter.diagnostics()),
+        write,
+        options.summary
+      )
     if (resultFd !== undefined) fs.closeSync(resultFd)
     if (stderrFd !== undefined) fs.closeSync(stderrFd)
     fs.rmSync(home, { recursive: true, force: true })
@@ -753,7 +806,42 @@ async function main(options = {}) {
     return 0
   }
   if (command === 'validate') {
-    preparePublication(temp, options.head ?? process.env.HEAD_SHA)
+    const head = options.head ?? process.env.HEAD_SHA
+    let unavailable
+    const outcomePath = path.join(temp, 'draft-ai-review-outcome.json')
+    if (fs.existsSync(outcomePath)) {
+      const outcome = readResult(outcomePath)
+      const state = outcome.provider_availability
+      const available = state?.status === 'available' && state.reason === null
+      const rejected =
+        state?.status === 'unavailable' &&
+        ['provider_paused', 'provider_payment_required'].includes(state.reason)
+      if (
+        (!available && !rejected) ||
+        outcome.head_sha !== head ||
+        !options.policy ||
+        outcome.policy_sha !== options.policy ||
+        outcome.profile !== DRAFT_PROFILE.id
+      )
+        throw new Error('invalid_result')
+      if (rejected) unavailable = state.reason
+    }
+    const hasResult = fs.existsSync(
+      path.join(temp, 'draft-ai-review-result.json')
+    )
+    if (!unavailable || hasResult) preparePublication(temp, head, unavailable)
+    else
+      fs.rmSync(path.join(temp, 'draft-ai-review-publication.json'), {
+        force: true,
+      })
+    if (process.env.GITHUB_OUTPUT)
+      fs.appendFileSync(process.env.GITHUB_OUTPUT, `publishable=${hasResult}\n`)
+    if (unavailable)
+      appendSummary(
+        `OCR availability status=unavailable reason=${unavailable} review=incomplete publication=${hasResult ? 'partial_findings' : 'none'}`,
+        (text) => process.stdout.write(text),
+        summary
+      )
     return 0
   }
   if (command !== 'run') return 2

@@ -315,6 +315,7 @@ jobs:
     env:
       OCR_NO_UPDATE: '1'
       OCR_LLM_TIMEOUT: '2700'
+      OCR_ADAPTER_PROVIDER: mistral-deepseek
     if: >-
       needs.authorize.outputs.authorized == 'true' &&
       needs.start.outputs.run_review == 'true'
@@ -330,6 +331,7 @@ jobs:
       actions: read
     outputs:
       review_outcome: ${{ steps.run_review.outcome }}
+      provider_unavailable: ${{ steps.run_review.outputs.provider_unavailable || steps.preflight.outputs.provider_unavailable }}
       cleanup_outcome: ${{ steps.cleanup.outcome }}
       publish_outcome: ${{ steps.publish.outcome }}
       clean_review: ${{ steps.publish.outputs.clean_review }}
@@ -413,8 +415,16 @@ jobs:
       - name: Configure ephemeral Mistral access
         id: configure
         if: needs.start.outputs.run_review == 'true'
+        env:
+          HEAD_SHA: ${{ needs.authorize.outputs.head_sha }}
+          TRUSTED_SHA: ${{ needs.authorize.outputs.trusted_sha }}
+          OCR_ADVISOR_STATE_PATH: ${{ runner.temp }}/final-ai-review-advisor-state.json
+          OCR_ADVISOR_DIAGNOSTICS_PATH: ${{ runner.temp }}/final-ai-review-advisor-diagnostics.jsonl
         run: |
           set -euo pipefail
+          printf 'OCR_ADVISOR_STATE_PATH=%s\nOCR_ADVISOR_DIAGNOSTICS_PATH=%s\n' \
+            "${OCR_ADVISOR_STATE_PATH}" "${OCR_ADVISOR_DIAGNOSTICS_PATH}" >>"${GITHUB_ENV}"
+          node .github/scripts/final-ai-review.js initialize-advisor
           node .github/scripts/final-ai-review.js configure-ocr
           test -s "${HOME}/.opencodereview/config.json"
 
@@ -422,7 +432,9 @@ jobs:
         id: preflight
         if: needs.start.outputs.run_review == 'true'
         env:
+          OCR_PROVIDER_PAUSED: ${{ vars.OCR_PROVIDER_PAUSED }}
           MISTRAL_API_KEY: ${{ secrets.MISTRAL_API_KEY }}
+          TRUSTED_SHA: ${{ needs.authorize.outputs.trusted_sha }}
           OCR_ADAPTER_DIAGNOSTICS_PATH: ${{ runner.temp }}/final-ai-review-adapter-diagnostics.jsonl
         run: |
           set -euo pipefail
@@ -432,7 +444,9 @@ jobs:
         id: run_review
         if: needs.start.outputs.run_review == 'true'
         env:
+          OCR_PROVIDER_PAUSED: ${{ vars.OCR_PROVIDER_PAUSED }}
           MISTRAL_API_KEY: ${{ secrets.MISTRAL_API_KEY }}
+          TRUSTED_SHA: ${{ needs.authorize.outputs.trusted_sha }}
           BACKGROUND: ${{ needs.start.outputs.background }}
           HEAD_SHA: ${{ needs.authorize.outputs.head_sha }}
           REVIEW_FROM: ${{ steps.range.outputs.review_from }}
@@ -694,6 +708,10 @@ jobs:
           path: |
             ${{ runner.temp }}/final-ai-review-adapter-diagnostics.jsonl
             ${{ runner.temp }}/final-ai-review-adapter-diagnostics.jsonl.events.jsonl
+            ${{ runner.temp }}/final-ai-review-advisor-diagnostics.jsonl
+            ${{ runner.temp }}/final-ai-review-advisor-diagnostics.jsonl.events.jsonl
+            ${{ runner.temp }}/final-ai-review-advisor-diagnostics.jsonl.tools.jsonl
+            ${{ runner.temp }}/final-ai-review-advisor-diagnostics.jsonl.expected.json
           if-no-files-found: warn
           retention-days: 7
 
@@ -705,7 +723,7 @@ jobs:
           PREFLIGHT_RECEIPTS: ${{ steps.preflight.outcome == 'skipped' && '0' || '1' }}
           ADAPTER_RECEIPTS: ${{ steps.run_review.outputs.adapter_lifetimes || '0' }}
         run: >-
-          node .github/scripts/ocr-mistral-adapter.cjs summary "${DIAGNOSTICS_PATH}"
+          node .github/scripts/ocr-mistral-adapter.cjs final-summary "${DIAGNOSTICS_PATH}"
           "preflight=${PREFLIGHT_RECEIPTS}" "adapter=${ADAPTER_RECEIPTS}"
 
   finalize:
@@ -751,6 +769,7 @@ jobs:
           DISPOSITION_DIGEST: ${{ needs.authorize.outputs.disposition_digest }}
           DISPOSITION_IDS: ${{ needs.authorize.outputs.disposition_ids }}
           REVIEW_OUTCOME: ${{ needs.review.outputs.review_outcome || needs.review.result }}
+          PROVIDER_UNAVAILABLE: ${{ needs.review.outputs.provider_unavailable }}
           CLEANUP_OUTCOME: ${{ needs.review.outputs.cleanup_outcome || needs.review.result }}
           PUBLISH_OUTCOME: ${{ needs.review.outputs.publish_outcome || needs.review.result }}
           CLEAN_REVIEW: ${{ needs.review.outputs.clean_review || 'false' }}
@@ -777,6 +796,7 @@ jobs:
               dispositionDigest: process.env.DISPOSITION_DIGEST,
               dispositionIds: JSON.parse(process.env.DISPOSITION_IDS || '[]'),
               reviewOutcome: process.env.REVIEW_OUTCOME,
+              providerUnavailable: process.env.PROVIDER_UNAVAILABLE,
               cleanupOutcome: process.env.CLEANUP_OUTCOME,
               publishOutcome: process.env.PUBLISH_OUTCOME,
               cleanReview: process.env.CLEAN_REVIEW,
@@ -944,6 +964,7 @@ jobs:
     env:
       OCR_NO_UPDATE: '1'
       OCR_LLM_TIMEOUT: '1800'
+      OCR_ADAPTER_PROVIDER: mistral-deepseek
     needs: [authorize_stack, start_stack]
     if: >-
       needs.authorize_stack.outputs.authorized == 'true' &&
@@ -961,6 +982,7 @@ jobs:
     outputs:
       code_outcome: ${{ steps.code_review.outcome }}
       topology_outcome: ${{ steps.topology_review.outcome }}
+      provider_unavailable: ${{ steps.topology_review.outputs.provider_unavailable || steps.code_review.outputs.provider_unavailable || steps.preflight.outputs.provider_unavailable }}
       cleanup_outcome: ${{ steps.cleanup.outcome }}
       publish_outcome: ${{ steps.publish.outcome }}
       clean_review: ${{ steps.publish.outputs.clean_review }}
@@ -1057,8 +1079,16 @@ jobs:
       - name: Configure ephemeral Mistral access
         id: configure
         if: needs.start_stack.outputs.run_review == 'true'
+        env:
+          HEAD_SHA: ${{ needs.authorize_stack.outputs.head_sha }}
+          TRUSTED_SHA: ${{ needs.authorize_stack.outputs.trusted_sha }}
+          OCR_ADVISOR_STATE_PATH: ${{ runner.temp }}/final-ai-stack-advisor-state.json
+          OCR_ADVISOR_DIAGNOSTICS_PATH: ${{ runner.temp }}/final-ai-stack-advisor-diagnostics.jsonl
         run: |
           set -euo pipefail
+          printf 'OCR_ADVISOR_STATE_PATH=%s\nOCR_ADVISOR_DIAGNOSTICS_PATH=%s\n' \
+            "${OCR_ADVISOR_STATE_PATH}" "${OCR_ADVISOR_DIAGNOSTICS_PATH}" >>"${GITHUB_ENV}"
+          node .github/scripts/final-ai-review.js initialize-advisor
           node .github/scripts/final-ai-review.js configure-ocr
           test -s "${HOME}/.opencodereview/config.json"
 
@@ -1066,7 +1096,9 @@ jobs:
         id: preflight
         if: needs.start_stack.outputs.run_review == 'true'
         env:
+          OCR_PROVIDER_PAUSED: ${{ vars.OCR_PROVIDER_PAUSED }}
           MISTRAL_API_KEY: ${{ secrets.MISTRAL_API_KEY }}
+          TRUSTED_SHA: ${{ needs.authorize_stack.outputs.trusted_sha }}
           OCR_ADAPTER_DIAGNOSTICS_PATH: ${{ runner.temp }}/final-ai-stack-adapter-diagnostics.jsonl
         run: |
           set -euo pipefail
@@ -1076,7 +1108,9 @@ jobs:
         id: code_review
         if: needs.start_stack.outputs.run_review == 'true'
         env:
+          OCR_PROVIDER_PAUSED: ${{ vars.OCR_PROVIDER_PAUSED }}
           MISTRAL_API_KEY: ${{ secrets.MISTRAL_API_KEY }}
+          TRUSTED_SHA: ${{ needs.authorize_stack.outputs.trusted_sha }}
           BACKGROUND: ${{ needs.start_stack.outputs.background }}
           HEAD_SHA: ${{ needs.authorize_stack.outputs.head_sha }}
           REVIEW_FROM: ${{ steps.range.outputs.review_from }}
@@ -1263,8 +1297,11 @@ jobs:
         id: topology_review
         if: steps.code_review.outcome == 'success' && steps.cleanup.outcome == 'success'
         env:
+          OCR_PROVIDER_PAUSED: ${{ vars.OCR_PROVIDER_PAUSED }}
           MISTRAL_API_KEY: ${{ secrets.MISTRAL_API_KEY }}
+          TRUSTED_SHA: ${{ needs.authorize_stack.outputs.trusted_sha }}
           OCR_ADAPTER_DIAGNOSTICS_PATH: ${{ runner.temp }}/final-ai-stack-adapter-diagnostics.jsonl
+          HEAD_SHA: ${{ needs.authorize_stack.outputs.head_sha }}
           MANIFEST_DIGEST: ${{ needs.start_stack.outputs.manifest_digest }}
           MANIFEST_PATH: ${{ runner.temp }}/final-ai-stack-manifest.json
           CODE_RESULT_PATH: ${{ runner.temp }}/final-ai-stack-code-result.json
@@ -1384,6 +1421,10 @@ jobs:
           path: |
             ${{ runner.temp }}/final-ai-stack-adapter-diagnostics.jsonl
             ${{ runner.temp }}/final-ai-stack-adapter-diagnostics.jsonl.events.jsonl
+            ${{ runner.temp }}/final-ai-stack-advisor-diagnostics.jsonl
+            ${{ runner.temp }}/final-ai-stack-advisor-diagnostics.jsonl.events.jsonl
+            ${{ runner.temp }}/final-ai-stack-advisor-diagnostics.jsonl.tools.jsonl
+            ${{ runner.temp }}/final-ai-stack-advisor-diagnostics.jsonl.expected.json
           if-no-files-found: warn
           retention-days: 7
 
@@ -1396,7 +1437,7 @@ jobs:
           ADAPTER_RECEIPTS: ${{ steps.code_review.outputs.adapter_lifetimes || '0' }}
           TOPOLOGY_RECEIPTS: ${{ steps.topology_review.outcome == 'skipped' && '0' || '1' }}
         run: >-
-          node .github/scripts/ocr-mistral-adapter.cjs summary "${DIAGNOSTICS_PATH}"
+          node .github/scripts/ocr-mistral-adapter.cjs final-summary "${DIAGNOSTICS_PATH}"
           "preflight=${PREFLIGHT_RECEIPTS}" "adapter=${ADAPTER_RECEIPTS}"
           "topology=${TOPOLOGY_RECEIPTS}"
 
@@ -1445,6 +1486,7 @@ jobs:
           REVIEW_RANGES: ${{ needs.authorize_stack.outputs.review_ranges }}
           TRUSTED_SHA: ${{ needs.authorize_stack.outputs.trusted_sha }}
           CODE_OUTCOME: ${{ needs.review_stack.outputs.code_outcome || needs.review_stack.result }}
+          PROVIDER_UNAVAILABLE: ${{ needs.review_stack.outputs.provider_unavailable }}
           TOPOLOGY_OUTCOME: ${{ needs.review_stack.outputs.topology_outcome || needs.review_stack.result }}
           CLEANUP_OUTCOME: ${{ needs.review_stack.outputs.cleanup_outcome || needs.review_stack.result }}
           PUBLISH_OUTCOME: ${{ needs.review_stack.outputs.publish_outcome || needs.review_stack.result }}
@@ -1472,6 +1514,7 @@ jobs:
               reviewRanges: JSON.parse(process.env.REVIEW_RANGES || '[]'),
               trustedSha: process.env.TRUSTED_SHA,
               codeOutcome: process.env.CODE_OUTCOME,
+              providerUnavailable: process.env.PROVIDER_UNAVAILABLE,
               topologyOutcome: process.env.TOPOLOGY_OUTCOME,
               cleanupOutcome: process.env.CLEANUP_OUTCOME,
               publishOutcome: process.env.PUBLISH_OUTCOME,

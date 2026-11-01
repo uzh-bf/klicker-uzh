@@ -174,6 +174,10 @@ Clone-and-run via a self-contained devcontainer — no Infisical/Doppler, no Edu
 devrouter ensure .
 ```
 
+New empty disposable databases require the explicit one-shot initialization
+contract in [.devcontainer/README.md](.devcontainer/README.md#fresh-disposable-database-initialization).
+Automatic startup verifies an existing schema and preserves its contents.
+
 The same command starts and proves primary and linked checkouts. Use `devrouter exec . -- <command...>` for one-shot commands or the exact DevPod ID printed by `ensure` for an interactive shell.
 
 The dev servers auto-start in the background (`devrouter exec . -- tail -f /tmp/dev.log`; first compile takes ~1min). Host-side `devrouter ensure` owns lifecycle reconciliation and delivers its matching process helper to the exact validated container. The default `full` profile runs every routed app plus the two Hatchet workers (no worker route); `devrouter ensure . --profile <name>[,<name>]` selects exact app/service/process unions (e.g. `chat`, `ai`, `mcp`, `chat,ai,mcp` - see `.devcontainer/README.md`). Analytics, Office add-in, and docs remain outside this stack.
@@ -329,6 +333,8 @@ Traefik reverse proxy serves the apps on `*.klicker.com` domains (needs `/etc/ho
 [docs/](docs/) is the selective, agent-facing OKF v0.1 engineering wiki for working on this codebase (not to be confused with `apps/docs`, the user-facing site). It contains durable knowledge that is non-obvious from the source: top-level area guides explain _what_ and _how_, [docs/adr/](docs/adr/) records _why_, and `docs/solutions/` captures reusable lessons from resolved problems. Preserve concept frontmatter and use descriptive filenames, direct links, and repository search. The OKF index and log paths (`docs/index.md`, `docs/log.md`, and `docs/log/`) are intentionally absent and must never be created or restored because they duplicate directory discovery and Git history.
 
 Read the relevant pages before working in an unfamiliar area. Update `docs/` and the relevant skills in `.agents/skills/` in the same PR when a change makes existing guidance inaccurate or introduces a durable contract that the code does not explain. A behavior change does not require a ceremonial documentation edit. The former `project/CODEBASE_NOTES.md` is a retired pointer stub.
+
+Before editing `apps/docs` or shipping a change to user-visible behavior, apply [User documentation](docs/developing-a-feature.md#user-documentation).
 
 ## AI Assistance (Skills)
 

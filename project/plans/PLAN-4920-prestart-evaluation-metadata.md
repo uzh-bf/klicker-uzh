@@ -1,10 +1,81 @@
 # PR 4920: evaluation metadata and active-block reveal controls
 
-## Current continuation — 2026-10-26
+## Current continuation — 2026-11-01
 
-This section is authoritative for the current pass. Dated sections below are
-historical evidence and rationale; they do not define current source, checks,
-review, runtime or delivery authority.
+### Outcome and authority
+
+Finish the existing [evaluation PR](https://github.com/uzh-bf/klicker-uzh/pull/4920)
+through verified source publication and an actually executed platform final
+review. The user's "proceed and try again as new month" resumes the approved
+completion batch and authorizes one new final-review attempt. A new month is
+not evidence that provider access has recovered; the producing run must prove it.
+Human clearance and release qualification remain separate.
+
+### Progress and next acceptance
+
+Entry head is `c6bba573d570351fd497214cbf9595240f7ff4be`, with all eight required
+CI contexts passing and all 31 review threads resolved. The October 26 platform
+review failed before reviewing code with upstream HTTP 402. No completed review
+was inferred from its successful finalizer. The native goal remains blocked;
+preserve it rather than replacing it.
+
+GitHub reports the branch behind its `v3` target. A normal merge of target
+`e6d813a530f1d9d148ca90e299a54beca0fdba0e` applied without conflicts. The direct
+live-quiz service overlap adds the upstream future-scheduling state guard.
+The evaluation implementation and existing behavioral tests are preserved.
+
+Integrated source checks now pass. The root check completed 34 tasks; GraphQL
+stopped at a Git schema comparison because the isolated container lacked linked
+Git metadata. Code generation and the equivalent host schema comparison pass;
+the remaining GraphQL TypeScript and element-import checks pass separately.
+Root lint passes all seven tasks, Syncpack passes, and production build passes
+all 23 tasks. CI tooling and the 43 host-launcher tests also pass. These are
+equivalent split checks, not one successful aggregate hook invocation.
+
+Docker and limited disk capacity recovered externally after an interrupted first
+attempt. Temporary Next.js output was placed on the internal disk without source
+configuration changes. All four owned source-check containers are now exited;
+their caches and the temporary outputs remain retained. No application runtime
+or database was started or reset. Fresh managed initialization remains unavailable
+because this branch lacks the installed provider's explicit bootstrap declaration.
+Do not add runtime configuration merely to repeat unchanged local proof.
+
+All 36 non-project feature patches retain identical added and removed lines
+against the integrated target. Main reviewed the upstream scheduling-guard seam
+and reuses the completed independent source review and synthetic captures for
+unchanged contracts. Existing local browser evidence remains scoped to its actual
+tested revisions; exact-head hosted browser coverage remains required.
+
+Commit one complete candidate, then publish through an ordinary non-force push to
+`origin/activity-info-on-eval`, hold its SHA and require all eight exact-head CI
+contexts and producing Playwright shards. A platform retry was requested on the
+held green entry head before the integration could be published. Account for that
+run before moving the published head or making another request; preserve its
+immutable review coverage and avoid duplicate model work. Final review must
+identify the published candidate and actually execute. Correct genuine source
+findings within this scope; if provider access fails again, preserve its evidence
+and stop that retry branch. Do not probe, change providers or alter account limits.
+
+The authorized retry is [run 41288752522](https://github.com/uzh-bf/klicker-uzh/actions/runs/41288752522),
+requested through [the command comment](https://github.com/uzh-bf/klicker-uzh/pull/4920#issuecomment-6555506072).
+Its review job has started setup at the checkpoint. Actual model execution and
+recovered provider access are still unproven.
+
+Record terminal run links and results in the ignored verification receipt and PR
+description, without adding another tracked receipt commit. Stop any runtime
+used for verification and prove its provider state and route release. Bound
+automatic continuation to four hours from this resumed execution, ending by
+2026-11-01T12:20:00Z or earlier at the source checkpoint, user stop, or closed PR.
+
+Historical human changes-requested reviews remain a merge clearance requirement.
+No merge, PR approval, marking ready, force push, deployment, reviewer replies,
+human notifications, provider/configuration repair, or data/worktree deletion is
+included. Queue draining, rollout and rollback qualification remain later work.
+
+## Previous continuation — 2026-10-26
+
+This section records the previous pass. The current continuation above governs
+the resumed batch; historical evidence remains reusable where its scope matches.
 
 ### Approved completion batch
 

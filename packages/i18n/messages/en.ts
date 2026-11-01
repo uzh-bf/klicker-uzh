@@ -3169,7 +3169,8 @@ Since the KlickerUZH app is not yet available in the iOS App Store, follow these
         'The minimum value must be less than the maximum value.',
       NROneValueRequired:
         'For solution ranges at least one boundary value must be entered.',
-      NRPrecision: 'The number of decimal places must be at least 0.',
+      NRPrecision:
+        'The number of decimal places must be a whole number from 0 to 100.',
       chooseSolutionType:
         'Please choose a solution type for your numerical question or deactivate the sample solution.',
       solutionRangeRequired: 'Please enter at least one valid solution range.',

@@ -6,8 +6,11 @@
  * for Numerical (NR) element type.
  */
 
+import type { Page } from '@playwright/test'
+import { PermissionLevel } from '@klicker-uzh/prisma/client'
+import { getPrisma } from '../global-setup.js'
 import { cleanupTest } from '../util/cleanup.js'
-import { NR_DATA as NR } from '../util/constants.js'
+import { NR_DATA as NR, USER_ID_TEST } from '../util/constants.js'
 import { expect, test } from '../util/fixtures.js'
 import {
   fillEditorField,
@@ -21,6 +24,103 @@ import {
   verifyNumericalFields,
 } from '../util/fixtures/elements.js'
 import { elementTypeLabels, statusLabels } from '../util/messages.js'
+
+type NumericalOptionsPayload = {
+  accuracy?: number | null
+  exactSolutions?: number[] | null
+}
+
+function expectNumericalOptions(
+  options: NumericalOptionsPayload | undefined,
+  expected: { accuracy?: number; exactSolutions: number[] }
+) {
+  expect(options?.exactSolutions).toEqual(expected.exactSolutions)
+  if (expected.accuracy === undefined) {
+    expect(options).not.toHaveProperty('accuracy')
+  } else {
+    expect(options?.accuracy).toBe(expected.accuracy)
+  }
+}
+
+async function saveNumericalElement(page: Page) {
+  const requestPromise = page.waitForRequest((request) => {
+    if (
+      request.method() !== 'POST' ||
+      !request.url().includes('/api/graphql')
+    ) {
+      return false
+    }
+
+    try {
+      const body = request.postDataJSON() as { operationName?: string }
+      return body.operationName === 'ManipulateNumericalQuestion'
+    } catch {
+      return false
+    }
+  })
+  const responsePromise = page.waitForResponse(async (response) => {
+    return response.request() === (await requestPromise)
+  })
+
+  await saveElement(page)
+  const response = await responsePromise
+  expect(response.ok()).toBe(true)
+  const result = (await response.json()) as { errors?: unknown[] }
+  expect(result.errors).toBeUndefined()
+  const body = (await requestPromise).postDataJSON() as {
+    variables?: { options?: NumericalOptionsPayload }
+  }
+  return body.variables?.options
+}
+
+async function readNumericalOptions(
+  prisma: Awaited<ReturnType<typeof getPrisma>>,
+  elementId: number
+) {
+  const element = await prisma.element.findUniqueOrThrow({
+    where: { id: elementId },
+    select: { options: true },
+  })
+  return element.options as NumericalOptionsPayload
+}
+
+async function createSyntheticNumericalElement(
+  prisma: Awaited<ReturnType<typeof getPrisma>>,
+  options: { name: string; accuracy: number; exactSolutions: number[] }
+) {
+  const element = await prisma.element.create({
+    data: {
+      type: 'NUMERICAL',
+      status: 'READY',
+      name: options.name,
+      content: 'Synthetic legacy numerical content',
+      basePoints: true,
+      pointsMultiplier: 1,
+      options: {
+        hasSampleSolution: true,
+        accuracy: options.accuracy,
+        restrictions: { min: -1, max: 1 },
+        exactSolutions: options.exactSolutions,
+      },
+      owner: { connect: { id: USER_ID_TEST } },
+    },
+  })
+  await prisma.derivedPermission.upsert({
+    where: {
+      elementId_userId: {
+        elementId: element.id,
+        userId: USER_ID_TEST,
+      },
+    },
+    create: {
+      permissionLevel: PermissionLevel.OWNER,
+      element: { connect: { id: element.id } },
+      user: { connect: { id: USER_ID_TEST } },
+    },
+    update: { permissionLevel: PermissionLevel.OWNER },
+  })
+  return element
+}
 
 test('CLEANUP', cleanupTest)
 
@@ -269,5 +369,189 @@ test.describe('Test creation and editing functionalities for Numerical elements'
     }
 
     await page.getByTestId('close-element-modal').click()
+  })
+
+  test('Preserves numerical precision contracts across create, edit, and reopen', async ({
+    page,
+  }) => {
+    test.setTimeout(120_000)
+
+    const precisionTitle = 'Numerical Precision Contract'
+    const legacyTitle = 'Numerical Legacy Precision Contract'
+    const legacyTitleEdited = `${legacyTitle} Edited`
+    const invalidLegacyTitle = 'Numerical Legacy Invalid Precision Contract'
+    const invalidLegacyTitleEdited = `${invalidLegacyTitle} Edited`
+    const prisma = await getPrisma()
+
+    await prisma.element.deleteMany({
+      where: {
+        ownerId: USER_ID_TEST,
+        name: {
+          in: [
+            precisionTitle,
+            legacyTitle,
+            legacyTitleEdited,
+            invalidLegacyTitle,
+            invalidLegacyTitleEdited,
+          ],
+        },
+      },
+    })
+
+    const legacyElement = await createSyntheticNumericalElement(prisma, {
+      name: legacyTitle,
+      accuracy: 2,
+      exactSolutions: [-0.024],
+    })
+    const invalidLegacyElement = await createSyntheticNumericalElement(prisma, {
+      name: invalidLegacyTitle,
+      accuracy: 101,
+      exactSolutions: [-0.024],
+    })
+
+    await page.getByTestId('create-question').click()
+    await switchElementType(page, elementTypeLabels.numerical)
+    await page.getByTestId('insert-question-title').fill(precisionTitle)
+    await setElementStatus(page, statusLabels.ready)
+    await fillEditorField(
+      page,
+      'insert-question-text',
+      'Synthetic numerical precision content'
+    )
+    await fillNumericalFields(page, { min: '-1', max: '1' })
+    await page.getByTestId('configure-sample-solution').click({ force: true })
+    await page.getByTestId('set-solution-type-exact').click()
+
+    for (const [index, solution] of [0.024, -0.024].entries()) {
+      await page.getByTestId('add-exact-solution').click()
+      await page
+        .getByTestId(`set-exact-solution-${index}`)
+        .fill(String(solution))
+    }
+    await expect(page.getByTestId('save-new-question')).toBeEnabled()
+
+    const blankPrecisionPayload = await saveNumericalElement(page)
+    expectNumericalOptions(blankPrecisionPayload, {
+      exactSolutions: [0.024, -0.024],
+    })
+    const createdElement = await prisma.element.findFirstOrThrow({
+      where: { name: precisionTitle, ownerId: USER_ID_TEST },
+      select: { id: true },
+    })
+    const blankPrecisionStored = await readNumericalOptions(
+      prisma,
+      createdElement.id
+    )
+    expectNumericalOptions(blankPrecisionStored, {
+      exactSolutions: [0.024, -0.024],
+    })
+
+    await searchAndEdit(page, precisionTitle)
+    await expect(page.getByTestId('set-numerical-accuracy')).toHaveValue('')
+    await expect(page.getByTestId('set-exact-solution-0')).toHaveValue('0.024')
+    await expect(page.getByTestId('set-exact-solution-1')).toHaveValue('-0.024')
+    await page.getByTestId('set-exact-solution-0').fill('0.02')
+    await page.getByTestId('set-exact-solution-1').fill('-0.02')
+    await fillNumericalFields(page, { accuracy: '0' })
+
+    const explicitZeroPayload = await saveNumericalElement(page)
+    expectNumericalOptions(explicitZeroPayload, {
+      accuracy: 0,
+      exactSolutions: [0, 0],
+    })
+    expectNumericalOptions(
+      await readNumericalOptions(prisma, createdElement.id),
+      { accuracy: 0, exactSolutions: [0, 0] }
+    )
+
+    await searchAndEdit(page, precisionTitle)
+    await expect(page.getByTestId('set-numerical-accuracy')).toHaveValue('0')
+    await page.getByTestId('set-numerical-accuracy').clear()
+    await page.getByTestId('set-exact-solution-0').fill('-0.024')
+    await page.getByTestId('set-exact-solution-1').fill('0.024')
+    await fillNumericalFields(page, { accuracy: '2' })
+
+    const twoDecimalsPayload = await saveNumericalElement(page)
+    expectNumericalOptions(twoDecimalsPayload, {
+      accuracy: 2,
+      exactSolutions: [-0.02, 0.02],
+    })
+    expectNumericalOptions(
+      await readNumericalOptions(prisma, createdElement.id),
+      { accuracy: 2, exactSolutions: [-0.02, 0.02] }
+    )
+
+    await searchAndEdit(page, precisionTitle)
+    await expect(page.getByTestId('set-exact-solution-0')).toHaveValue('-0.02')
+    const precisionInput = page.getByTestId('set-numerical-accuracy')
+    await precisionInput.fill('101')
+    await expect(page.getByTestId('save-new-question')).toBeDisabled()
+    await precisionInput.fill('100')
+    await expect(page.getByTestId('save-new-question')).toBeEnabled()
+    await precisionInput.clear()
+    await page.getByTestId('set-exact-solution-0').fill('-0.024')
+    await page.getByTestId('set-exact-solution-1').fill('0.024')
+
+    const clearedPrecisionPayload = await saveNumericalElement(page)
+    expectNumericalOptions(clearedPrecisionPayload, {
+      exactSolutions: [-0.024, 0.024],
+    })
+    const clearedPrecisionStored = await readNumericalOptions(
+      prisma,
+      createdElement.id
+    )
+    expectNumericalOptions(clearedPrecisionStored, {
+      exactSolutions: [-0.024, 0.024],
+    })
+
+    await searchAndEdit(page, legacyTitle)
+    await page.getByTestId('insert-question-title').fill(legacyTitleEdited)
+    const legacyMetadataPayload = await saveNumericalElement(page)
+    expectNumericalOptions(legacyMetadataPayload, {
+      accuracy: 2,
+      exactSolutions: [-0.024],
+    })
+    const legacyMetadataStored = await readNumericalOptions(
+      prisma,
+      legacyElement.id
+    )
+    expectNumericalOptions(legacyMetadataStored, {
+      accuracy: 2,
+      exactSolutions: [-0.024],
+    })
+
+    await searchAndEdit(page, legacyTitleEdited)
+    await fillNumericalFields(page, { accuracy: '1' })
+    const legacyPrecisionChangePayload = await saveNumericalElement(page)
+    expectNumericalOptions(legacyPrecisionChangePayload, {
+      accuracy: 1,
+      exactSolutions: [0],
+    })
+    const legacyPrecisionChangeStored = await readNumericalOptions(
+      prisma,
+      legacyElement.id
+    )
+    expectNumericalOptions(legacyPrecisionChangeStored, {
+      accuracy: 1,
+      exactSolutions: [0],
+    })
+
+    await searchAndEdit(page, invalidLegacyTitle)
+    await page
+      .getByTestId('insert-question-title')
+      .fill(invalidLegacyTitleEdited)
+    const invalidLegacyPayload = await saveNumericalElement(page)
+    expectNumericalOptions(invalidLegacyPayload, {
+      accuracy: 101,
+      exactSolutions: [-0.024],
+    })
+    const invalidLegacyStored = await readNumericalOptions(
+      prisma,
+      invalidLegacyElement.id
+    )
+    expectNumericalOptions(invalidLegacyStored, {
+      accuracy: 101,
+      exactSolutions: [-0.024],
+    })
   })
 })

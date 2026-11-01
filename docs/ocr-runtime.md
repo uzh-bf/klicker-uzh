@@ -12,8 +12,8 @@ The action owns the repeated draft execution and publication steps. The
 The operator procedure remains `rs-ocr`; the model-facing procedure remains
 `.agents/skills/ocr-reviewer/SKILL.md`.
 
-Klicker's draft workflow selects the published action at
-`0032c990d40985ce120179ded2c9d4b6e6a1d940`. It retains one repository-owned
+Klicker's draft workflow selects the action through the full commit SHA in
+`.github/workflows/check-ocr-review.yml`. It retains one repository-owned
 job with the existing admission and execution policy; repeated draft steps live
 in that pinned release. Individual/stack final controllers retain their existing
 execution and admission. Other callers migrate independently after donor
@@ -31,13 +31,41 @@ missing assets and changed bytes are rejected. The action source must be pinned
 by its complete Git commit; mutable refs are rejected. The manifest records no
 enclosing commit hash, avoiding a self-reference.
 
+Draft and final main reviews use `deepseek-v4-1-flash-1017` at maximum reasoning.
+The fixed Mistral profile is `mistral-deepseek`; its upstream remains
+`/v1/chat/completions`. Mistral's [Responses preview](https://docs.mistral.ai/studio/conversations/responses)
+is stateless and still requires resending prior output, so it does not replace
+the adapter or reduce context automatically. Responses transport needs its own
+history, tool-call, terminal-state and usage qualification before adoption.
+
+The full `zai-glm-5-3` model is available only through focused advisor
+consultations at maximum reasoning. Each request contains one question and
+selected source excerpts; it receives neither the complete diff nor the
+reviewer conversation. The portable skill directs difficult and architectural
+questions to that advisor after source inspection.
+
 The draft profile uses stock npm `@alibaba-group/open-code-review@1.13.0`,
-`zai-glm-5-3-flash` through Mistral and the existing bounded `zai-glm-5-3` advisor.
+`deepseek-v4-1-flash-1017` through Mistral and the existing bounded `zai-glm-5-3` advisor.
 Verification checks the stock version and the immutable upstream publisher's
 digest. It does not claim platform-specific stock binary digest verification.
 Final execution keeps its separate pinned upstream source, compression patch,
 Go toolchain and executable provenance. The shared action does not run final
-review or grant its approval.
+review or grant its approval. Final code review attaches the same bounded
+advisor and trusted-context tools through its ephemeral OCR configuration.
+Final rules use first-match resolution, so the wrapper combines the portable
+procedure with every existing rule before supplying it to OCR; a later matching
+rule alone would leave the procedure inactive.
+Stack topology can consult the advisor within its existing aggregate output
+allowance and deadline, then returns the existing strict final result.
+
+The advisor permits eight attempts shared across each review job, including
+workers, code ranges, resume and topology. Its private allowance is initialized
+once; unavailable or corrupt continuation state cannot reset it. Each attempt
+retains the existing source/request/output bounds. Failed and cancelled attempts
+consume allowance. Advice remains evidence for the main reviewer, which owns
+coverage and final findings. Advisor costs are reported separately and included
+in the combined model estimate; they retain separate application accounting.
+Missing expected receipts prevent a complete estimate.
 
 Repository context uses the existing `ocr-repository/v1` configuration at the
 frozen trusted policy commit. It admits context roots, root Markdown contracts,
@@ -131,16 +159,40 @@ Incomplete stages have unavailable components. Existing total/savings lines,
 budget units and aggregate receipt formulas remain unchanged. Event rows are
 never summed into those totals or treated as complete billing evidence.
 
-This source does not advance the donor's immutable action pin. Draft callers
-need a separately published and reviewed pin update before these diagnostics
-become active; final workflows use the merged repository-owned adapter source.
+Draft callers use the diagnostics shipped by their selected immutable runtime;
+final workflows use the merged repository-owned adapter source. A runtime source
+change alone does not establish which draft implementation is active.
 
 ## Prepare a caller upgrade
 
-First publish the action source and verify its producing offline qualification.
-After merge, resolve the actual merged source revision with host `gh` and Git.
-Pin `OWNER/REPOSITORY/.github/actions/ocr-review@FULL_COMMIT_SHA` in the caller;
-do not use a guessed squash hash or a local action path as distribution proof.
+For donor changes, include the runtime and caller adoption in one PR:
+
+1. Commit the complete runtime and updated asset manifest. Record that commit's
+   full SHA before changing the caller.
+2. In a later commit on the same branch, pin
+   `OWNER/REPOSITORY/.github/actions/ocr-review@FULL_COMMIT_SHA` to that runtime
+   commit. Push both commits to the action's existing repository.
+3. Qualify the selected release and compare its verified manifest with the final
+   candidate's verified manifest. Equal manifests bind equal runtime assets;
+   later runtime changes require another runtime commit and refreshed pin.
+4. After merge, read back the caller, verify the merged runtime still matches
+   the selected release and confirm that the exact pin remains retrievable.
+
+The source SHA remains immutable across a squash merge. Ordinary codebase CI
+explicitly fetches that exact commit from the fixed public donor origin before
+its local `git show` and `git archive` checks. It clears credential helpers and
+GitHub authorization headers, changes no refs or checkout, and never executes
+the fetched candidate. A fresh checkout can otherwise omit a pre-merge commit
+after its branch is deleted. Present fetchability is evidence for the selected
+commit, not a promise of indefinite forge retention; an unavailable pin blocks
+qualification and needs an ordinary source correction.
+
+Keep independent adopter upgrades in their own release cadence. A later
+adopter can select an already merged release; a second donor PR is not required
+merely to replace a qualified source pin with its squash-merge SHA. Neither a
+guessed squash hash nor a mutable action ref is distribution proof. GitLab needs
+equivalent exact-revision retrieval and runtime-parity checks through its own
+qualified adapter before using the same one-MR procedure.
 
 The caller keeps one `ocr-review` job with `pull_request_target` draft admission,
 read-only contents and review-write permissions, its existing concurrency group,
@@ -152,7 +204,14 @@ with:
   mistral-api-key: ${{ secrets.MISTRAL_API_KEY }}
   context7-api-key: ${{ secrets.CONTEXT7_API_KEY }}
   github-token: ${{ github.token }}
+  provider-paused: ${{ vars.OCR_PROVIDER_PAUSED }}
 ```
+
+The workflow resolves the trusted repository pause variable and passes it as an
+action input. The composite reads the input only in the review step; the `vars`
+context is unavailable inside composite action metadata. Omitted
+or empty input keeps provider calls enabled, `true` pauses them, and invalid
+values fail closed.
 
 Do not expose these credentials through job-level environment variables.
 Repository-specific activation can narrow the normal draft expression and must
