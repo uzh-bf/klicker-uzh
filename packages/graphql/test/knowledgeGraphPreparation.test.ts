@@ -61,6 +61,7 @@ function candidate(
     activeBuild: null,
     published: {
       ...domain,
+      buildId: '44444444-4444-4444-8444-444444444444',
       qualityTier: KBGraphQualityTier.STANDARD,
       sourceContentDigest: 'older-digest',
       createdAt: minutesAgo(4000),
@@ -100,6 +101,7 @@ describe('scheduled graph preparation due check', () => {
       {
         published: {
           ...domain,
+          buildId: '44444444-4444-4444-8444-444444444444',
           qualityTier: KBGraphQualityTier.STANDARD,
           sourceContentDigest: currentDigest,
           createdAt: minutesAgo(4000),

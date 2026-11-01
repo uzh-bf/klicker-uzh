@@ -841,21 +841,26 @@ test('generation configuration follows graph language and scopes focus to questi
     Object.entries(persisted).map(([name, hash]) => [hash, name])
   )
   const sources = ['en', 'de'].map((language, index) => ({
-    graphBuildId: `b1000000-0000-4000-8000-00000000000${index}`,
     kbId: `b2000000-0000-4000-8000-00000000000${index}`,
     kbName: `Synthetic ${language} course`,
-    language,
-    indexedAt: '2026-09-01T00:00:00Z',
-    isStale: false,
-    sourceCount: 1,
-    sources: [
-      {
-        resourceId: `b3000000-0000-4000-8000-00000000000${index}`,
-        title: 'Synthetic course evidence',
-        sourceFile: `course-${index}.md`,
-        pageCount: null,
-      },
-    ],
+    preparationState: 'READY',
+    preparationPendingReason: null,
+    basis: {
+      graphBuildId: `b1000000-0000-4000-8000-00000000000${index}`,
+      fingerprint: `synthetic-basis-${index}`,
+      language,
+      indexedAt: '2026-09-01T00:00:00Z',
+      recentChangesExcluded: false,
+      sourceCount: 1,
+      sources: [
+        {
+          resourceId: `b3000000-0000-4000-8000-00000000000${index}`,
+          title: 'Synthetic course evidence',
+          sourceFile: `course-${index}.md`,
+          pageCount: null,
+        },
+      ],
+    },
   }))
   await page.route('**/graphql*', async (route) => {
     const request = route.request()
@@ -946,7 +951,9 @@ test('generation configuration follows graph language and scopes focus to questi
     await page.getByTestId('element-generation-start').click()
     await expect.poll(() => submitted.length).toBe(locale === 'en' ? 1 : 3)
     expect(submitted.at(-1)).toMatchObject({
-      graphBuildId: sources[0].graphBuildId,
+      kbId: sources[0].kbId,
+      graphBuildId: sources[0].basis.graphBuildId,
+      basisFingerprint: sources[0].basis.fingerprint,
       language: 'en',
       focusTopic: 'Synthetic topic',
       elementType: 'SC',
@@ -984,21 +991,26 @@ test('refreshes the generation capabilities after a rejected submission', async 
     Object.entries(persisted).map(([name, hash]) => [hash, name])
   )
   const source = {
-    graphBuildId: 'b1000000-0000-4000-8000-00000000000a',
     kbId: 'b2000000-0000-4000-8000-00000000000a',
     kbName: 'Synthetic focus course',
-    language: 'en',
-    indexedAt: '2026-09-01T00:00:00Z',
-    isStale: false,
-    sourceCount: 1,
-    sources: [
-      {
-        resourceId: 'b3000000-0000-4000-8000-00000000000a',
-        title: 'Synthetic course evidence',
-        sourceFile: 'course.md',
-        pageCount: null,
-      },
-    ],
+    preparationState: 'READY',
+    preparationPendingReason: null,
+    basis: {
+      graphBuildId: 'b1000000-0000-4000-8000-00000000000a',
+      fingerprint: 'synthetic-basis-a',
+      language: 'en',
+      indexedAt: '2026-09-01T00:00:00Z',
+      recentChangesExcluded: false,
+      sourceCount: 1,
+      sources: [
+        {
+          resourceId: 'b3000000-0000-4000-8000-00000000000a',
+          title: 'Synthetic course evidence',
+          sourceFile: 'course.md',
+          pageCount: null,
+        },
+      ],
+    },
   }
   // The first capability answer still offers focus; every answer after the
   // rejection reflects the actor's current rollout.
@@ -1087,7 +1099,9 @@ test('refreshes the generation capabilities after a rejected submission', async 
   await expect.poll(() => capabilityCalls).toBeGreaterThan(1)
   expect(submitted).toHaveLength(1)
   expect(submitted[0]).toMatchObject({
-    graphBuildId: source.graphBuildId,
+    kbId: source.kbId,
+    graphBuildId: source.basis.graphBuildId,
+    basisFingerprint: source.basis.fingerprint,
     focusTopic: 'Synthetic topic',
   })
 })
