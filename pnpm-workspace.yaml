@@ -61,6 +61,10 @@ minimumReleaseAgeExclude:
   - '@img/sharp-win32-arm64@0.35.5'
   - '@img/sharp-win32-ia32@0.35.5'
   - '@img/sharp-win32-x64@0.35.5'
+  # Reviewed security fix for the 2026-10-31 backend image scan:
+  # follow-redirects 1.16.2 (CVE-2026-116689). Drop once it ages past the
+  # 14-day window.
+  - 'follow-redirects@1.16.2'
   # Reviewed React Email preview Next.js 16.4.1.
   - 'next@16.4.1'
   - '@next/env@16.4.1'
@@ -180,6 +184,9 @@ overrides:
   # vulnerable release through a range that already allows the fix, so lift
   # that line here.
   'sharp@>=0.35.0 <0.35.5': 0.35.5
+  # follow-redirects 1.16.2 fixes CVE-2026-116689 in the backend image; axios and
+  # http-proxy keep resolving 1.16.1 through ranges that already allow the fix.
+  'follow-redirects@<1.16.2': 1.16.2
 
 packageExtensions:
   # The published stylesheet imports this plugin, but 4.1.8 lists it only as a devDependency.
