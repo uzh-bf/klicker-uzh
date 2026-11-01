@@ -449,6 +449,13 @@ frontendPWA:
   autoscaling:
     enabled: false
 
+  # Spot burst tier next to the static replica. Its replicas are owned by the
+  # burst HPA, which the stg Argo CD Application excludes from replica drift.
+  burst:
+    enabled: true
+
+  preStopSleepSeconds: 5
+
   affinity:
     podAntiAffinity:
       preferredDuringSchedulingIgnoredDuringExecution:
