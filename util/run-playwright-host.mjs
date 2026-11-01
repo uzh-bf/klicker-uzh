@@ -190,16 +190,23 @@ full reference in an installed workspace, run:
     'test',
     'package.json'
   )
-  if (runtime.pathExists(installed)) {
-    const metadata = JSON.parse(runtime.readFile(installed, 'utf8'))
-    runtime.log(`Version ${metadata.version}`)
-    return
+  const hasInstalledMetadata = runtime.pathExists(installed)
+  if (hasInstalledMetadata) {
+    try {
+      const { version } = JSON.parse(runtime.readFile(installed, 'utf8'))
+      if (typeof version === 'string' && version.trim()) {
+        runtime.log(`Version ${version}`)
+        return
+      }
+    } catch {
+      // An interrupted install can leave unreadable or truncated metadata.
+    }
   }
   const metadata = JSON.parse(
     runtime.readFile(join(workspace, 'package.json'), 'utf8')
   )
   runtime.log(
-    `Playwright not installed; declared requirement: ${metadata.devDependencies['@playwright/test']}`
+    `Playwright ${hasInstalledMetadata ? 'version unavailable' : 'not installed'}; declared requirement: ${metadata.devDependencies['@playwright/test']}`
   )
 }
 

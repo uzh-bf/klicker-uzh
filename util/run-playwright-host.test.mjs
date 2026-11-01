@@ -396,6 +396,37 @@ test('informational requests avoid all preparation in cold and warm environments
   }
 })
 
+test('unreadable or incomplete installed metadata falls back without preparation', () => {
+  for (const metadata of [null, '{', '{}', '{"version":""}']) {
+    const harness = createLauncherHarness({
+      installedPlaywrightVersion: '9.8.6',
+    })
+    const readFile = harness.dependencies.readFile
+    harness.dependencies.readFile = (path) => {
+      if (
+        path.endsWith('/playwright/node_modules/@playwright/test/package.json')
+      ) {
+        if (metadata === null)
+          throw new Error('synthetic metadata read failure')
+        return metadata
+      }
+      return readFile(path)
+    }
+    harness.dependencies.commandExistsFn = () => {
+      assert.fail('version fallback must not probe executables')
+    }
+    harness.dependencies.makeDirectory = () => {
+      assert.fail('version fallback must not create directories')
+    }
+    runPlaywrightHost(['--version'], harness.dependencies)
+    assert.ok(harness.logs[0].includes('~9.8.7'))
+    assert.deepEqual(harness.calls, [])
+    assert.deepEqual(harness.writes, [])
+    assert.deepEqual(harness.removals, [])
+    assert.deepEqual(harness.plans, [])
+  }
+})
+
 test('informational flags used as option values remain test arguments', () => {
   for (const args of [['--grep', '--help'], ['--grep=--version']]) {
     const harness = createLauncherHarness()

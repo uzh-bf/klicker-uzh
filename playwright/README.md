@@ -27,11 +27,12 @@ node util/run-playwright-host.mjs --help
 node util/run-playwright-host.mjs --version
 ```
 
-Version output uses the locally installed Playwright version when available;
-otherwise it labels the declared package requirement as not installed. The
-direct Node form works on a cold checkout. The `pnpm run playwright:host` wrapper
-reaches the same launcher, but pnpm rejects a missing or stale dependency install
-before running its script. Keep that dependency guard enabled.
+Version output uses the locally installed Playwright version when readable;
+otherwise it reports the declared requirement and labels the installation as
+missing or its version as unavailable. The direct Node form works on a cold
+checkout. The `pnpm run playwright:host` wrapper reaches the same launcher, but
+pnpm rejects a missing or stale dependency install before running its script.
+Keep that dependency guard enabled.
 
 Run from a host shell at the repository root. The launcher starts or reconciles
 the exact devrouter workspace, resolves its namespaced routes and database, and

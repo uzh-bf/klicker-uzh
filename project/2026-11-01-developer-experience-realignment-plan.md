@@ -32,8 +32,9 @@ reconfiguration, production access and manually initiated paid inference.
    writes or lifecycle operations. Values of other options are not treated as
    flags. Invalid launcher options retain their nonzero, effect-free rejection.
    Help describes launcher options without duplicating the full Playwright help.
-   Version reads metadata in the Playwright workspace; absent installed metadata,
-   it clearly labels the declared package requirement as not installed.
+   Version reads metadata in the Playwright workspace; absent or unreadable
+   installed metadata, it labels the declared package requirement and distinguishes
+   a missing installation from an unavailable version.
    Ordinary test, list, report, print-env and CI-runtime behavior stays intact.
 3. README navigation reaches the existing setup, feature and testing guides.
    The obsolete response/LTI paths point to `apps/response-api`,
@@ -109,11 +110,11 @@ arms simplification. Standing platform reviews remain a separate evidence layer.
 ## Progress
 
 Source is complete at the recorded baseline, equal to fetched `origin/v3`.
-The candidate contains 175 substantive changed lines across the task definition,
+The candidate contains 213 substantive changed lines across the task definition,
 launcher and its existing tests; documentation and this plan are excluded from
 that calculation. One cohesive package remains appropriate.
 
-Verification passed: 46 launcher tests, cold direct and installed host-wrapper
+Verification passed: 47 launcher tests, cold direct and installed host-wrapper
 information, all touched documentation links, zero AGENTS smoke warnings,
 whole-tree formatting, all 35 aggregate tasks and the full 23-task build.
 The focused Opengrep scan ran 200 rules against the two changed JavaScript files
@@ -134,8 +135,25 @@ tooling and concurrent package generation; the existing pinned CI planner and
 package prebuilds resolved these environment prerequisites without source changes.
 No application service was started. Source checks do not prove hosted CI.
 
-Remaining delivery: commit and normal push, one draft PR, exact-candidate hosted
-CI and feedback reconciliation, and removal of the owned tooling container and
-its anonymous dependency volumes. No PR exists yet. Review of the committed
-candidate remains by the main session under the risk ruling above. All detailed
-logs and controls remain ignored local evidence.
+The first candidate was published as [draft PR #6786](https://github.com/uzh-bf/klicker-uzh/pull/6786).
+Hosted CI passed all eight required contexts on `b4596bf398`. Automated feedback
+found one reproducible low-severity defect: incomplete or unreadable installed
+metadata made version inspection fail. The correction falls back to the declared
+requirement without preparation and labels that version as unavailable. Its new
+regression test passes; the corrected aggregate and focused scan passed again.
+
+The report-artifact formatter finding was not reproduced. Pinned Prettier 3.3.3
+honors root `.gitignore`: synthetic HTML reports and result JSON are ignored,
+blob ZIPs have no inferred parser, and the actual directory check passes with
+these artifacts present. Formatter configuration stays unchanged. The public
+PR description carries this disposition without an additional comment.
+
+The original tooling container was stopped and removed with its anonymous
+volumes. A correction-only container uses the same pinned image and owned
+verification copy's existing isolated dependencies; no app service was started.
+The full build and unchanged formatting-control evidence remain applicable.
+
+Remaining delivery: commit and normal push of the correction, current-candidate
+hosted CI and feedback reconciliation, and exact tooling-container removal.
+Review remains by the main session under the risk ruling above. Detailed logs,
+control fixtures and terminal verification remain ignored local evidence.
