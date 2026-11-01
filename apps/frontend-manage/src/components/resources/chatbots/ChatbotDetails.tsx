@@ -100,6 +100,7 @@ function getModeComparison(
     tutorEnabled: standard?.tutorEnabled ?? null,
     explainerEnabled: standard?.explainerEnabled ?? null,
     quizzerEnabled: standard?.quizzerEnabled ?? null,
+    writingCoachEnabled: standard?.writingCoachEnabled ?? false,
     courseName: standard?.courseName ?? null,
     subjectDomain: standard?.subjectDomain ?? null,
     languageOfInstruction: standard?.languageOfInstruction ?? null,
@@ -112,6 +113,8 @@ function getModeComparison(
       welcomeMessage: mode.welcomeMessage ?? null,
       starterPrompts: mode.starterPrompts ?? null,
       showReasoning: mode.showReasoning,
+      replyLanguage: mode.replyLanguage ?? null,
+      meetingClock: mode.meetingClock ?? null,
     })),
   }
 }
@@ -953,6 +956,7 @@ function ChatbotDetails({
                         isSaving ||
                         !modelSettingsEditable ||
                         revisionPending ||
+                        publicationSubmitting ||
                         isLastSelected ||
                         (isModelLocked(model) && !checked)
                       }
@@ -1070,6 +1074,7 @@ function ChatbotDetails({
                                   isSaving ||
                                   !modelSettingsEditable ||
                                   revisionPending ||
+                                  publicationSubmitting ||
                                   (checked && !canToggleOff)
                                 }
                                 aria-label={`${model.name}: ${effort}`}
