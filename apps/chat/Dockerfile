@@ -48,13 +48,21 @@ ENV NEXT_PUBLIC_GROWTHBOOK_CLIENT_KEY=${NEXT_PUBLIC_GROWTHBOOK_CLIENT_KEY}
 ENV NEXT_PUBLIC_ELEARNING_EMBED_ORIGINS=${NEXT_PUBLIC_ELEARNING_EMBED_ORIGINS}
 
 COPY --from=builder /app/out/full/ .
+COPY --from=builder /app/apps/chat/.env.production /app/apps/chat/.env.production
 
 ARG BLOB_STORAGE_ACCOUNT_URL
-RUN pnpm run build --filter=@klicker-uzh/chat
+COPY --from=builder /app/util/deployment-build-env.mjs /app/util/deployment-build-env.mjs
+COPY --from=builder /app/deploy/preview/runtime.mjs /app/deploy/preview/runtime.mjs
+ARG KLICKER_PREVIEW_BUILD_ENV_JSON
+ARG KLICKER_DEPLOYMENT_BUILD_ENV_JSON
+RUN node util/deployment-build-env.mjs --app chat -- pnpm run build --filter=@klicker-uzh/chat
 
 
 FROM base AS runner
 WORKDIR /app
+
+# Standalone servers run Node directly; package managers are build tools.
+RUN rm -rf /usr/local/lib/node_modules/npm /usr/local/bin/npm /usr/local/bin/npx
 
 RUN addgroup --system --gid 1001 nodejs
 RUN adduser --system --uid 1001 nextjs
@@ -66,6 +74,7 @@ COPY --from=installer /app/apps/chat/package.json .
 COPY --from=installer --chown=nextjs:nodejs /app/apps/chat/.next/standalone ./
 COPY --from=installer --chown=nextjs:nodejs --chmod=550 /app/apps/chat/.next/static ./apps/chat/.next/static
 COPY --from=installer --chown=nextjs:nodejs --chmod=550 /app/apps/chat/public ./apps/chat/public
+COPY --from=builder /app/deploy/preview/runtime.mjs /app/deploy/preview/runtime.mjs
 
 ARG NODE_ENV="production"
 ENV NEXT_TELEMETRY_DISABLED 1

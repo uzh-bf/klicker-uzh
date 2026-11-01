@@ -1,18 +1,99 @@
-import { describe, expect, it } from 'vitest'
+import { afterEach, describe, expect, it, vi } from 'vitest'
 import {
-  LTI_PROBE_COOKIE_NAME,
+  COOKIE_NAMES,
+  cookieName,
   cookieSecurityOptions,
   cookiesAvailableViaLtiProbe,
   deriveCookieDomainFromURL,
   extractBearerToken,
   extractProviderFromAffiliationId,
   generateRandomString,
+  liveQuizPinCookieName,
   parseCookiesHeader,
   parseCsvHosts,
   reduceCatalyst,
 } from '../src/auth.js'
 
 describe('Auth helpers', () => {
+  afterEach(() => vi.unstubAllEnvs())
+
+  describe('cookieName', () => {
+    it('keeps the central raw cookie-name contract', () => {
+      expect(COOKIE_NAMES.NEXT_AUTH_MANAGER_SESSION).toBe(
+        'next-auth.session-token'
+      )
+      expect(COOKIE_NAMES.NEXT_AUTH_PARTICIPANT_SESSION).toBe(
+        'next-auth.participant-session-token'
+      )
+      expect(COOKIE_NAMES.NEXT_AUTH_CSRF_TOKEN).toBe('next-auth.csrf-token')
+      expect(COOKIE_NAMES.NEXT_AUTH_AUDIENCE).toEqual({
+        participant: 'next-auth.participant',
+        lecturer: 'next-auth.lecturer',
+      })
+      expect(COOKIE_NAMES.PWA_CHAT_EMBED_SESSION).toBe('chat_pwa_embed_token')
+    })
+
+    it('preserves exact legacy names when the namespace is empty', () => {
+      expect(cookieName(COOKIE_NAMES.PARTICIPANT_TOKEN, '')).toBe(
+        COOKIE_NAMES.PARTICIPANT_TOKEN
+      )
+      expect(cookieName('__Host-next-auth.csrf-token', '')).toBe(
+        '__Host-next-auth.csrf-token'
+      )
+    })
+
+    it('keeps namespaces disjoint and preserves browser prefixes', () => {
+      for (const name of [
+        COOKIE_NAMES.PARTICIPANT_TOKEN,
+        '__Secure-next-auth.state',
+        '__Host-next-auth.csrf-token',
+      ]) {
+        const first = cookieName(name, 'runtime-a')
+        const second = cookieName(name, 'runtime-b')
+        expect(first).not.toBe(second)
+        expect(first).toContain('klicker-runtime-a.')
+        for (const prefix of ['__Secure-', '__Host-']) {
+          expect(first.startsWith(prefix)).toBe(name.startsWith(prefix))
+        }
+      }
+    })
+
+    it('rejects invalid IDs before emitting a cookie name', () => {
+      for (const id of [
+        'Uppercase',
+        '../branch',
+        '-branch',
+        'branch-',
+        'a'.repeat(33),
+        'a; Domain=example.com',
+      ]) {
+        expect(() => cookieName(COOKIE_NAMES.PARTICIPANT_TOKEN, id)).toThrow(
+          'KLICKER_COOKIE_NAMESPACE must be a lowercase ID of 1-32 characters'
+        )
+      }
+    })
+
+    it('resolves the runtime namespace lazily', () => {
+      vi.stubEnv('KLICKER_COOKIE_NAMESPACE', 'runtime-a')
+      expect(cookieName(COOKIE_NAMES.PARTICIPANT_TOKEN)).toBe(
+        'klicker-runtime-a.participant_token'
+      )
+      expect(liveQuizPinCookieName('quiz-id')).toBe(
+        'klicker-runtime-a.live-quiz-pin-quiz-id'
+      )
+    })
+
+    it('rejects a nonempty legacy preview ID at name resolution', () => {
+      vi.stubEnv('NEXT_PUBLIC_PREVIEW_ID', 'preview-a')
+      expect(() =>
+        cookieName(COOKIE_NAMES.PARTICIPANT_TOKEN, 'runtime-a')
+      ).toThrow(
+        'NEXT_PUBLIC_PREVIEW_ID is no longer supported; ' +
+          'use KLICKER_COOKIE_NAMESPACE'
+      )
+    })
+  })
+
   describe('parseCookiesHeader', () => {
     it('parses and decodes cookie header pairs', () => {
       const header = 'a=1; b=hello%20world; c=with=equals; d=;  e=%'
@@ -113,13 +194,13 @@ describe('Auth helpers', () => {
 
   describe('cookiesAvailableViaLtiProbe', () => {
     it('detects the shared LTI probe cookie', () => {
-      expect(
-        cookiesAvailableViaLtiProbe({ [LTI_PROBE_COOKIE_NAME]: '1' })
-      ).toBe(true)
+      vi.stubEnv('KLICKER_COOKIE_NAMESPACE', 'runtime-a')
+      const probeName = cookieName(COOKIE_NAMES.LTI_TOKEN)
+      expect(cookiesAvailableViaLtiProbe({ [probeName]: '1' })).toBe(true)
       expect(cookiesAvailableViaLtiProbe({ other: '1' })).toBe(false)
-      expect(
-        cookiesAvailableViaLtiProbe({ [LTI_PROBE_COOKIE_NAME]: undefined })
-      ).toBe(false)
+      expect(cookiesAvailableViaLtiProbe({ [probeName]: undefined })).toBe(
+        false
+      )
     })
   })
 

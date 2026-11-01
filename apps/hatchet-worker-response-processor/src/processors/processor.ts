@@ -11,7 +11,12 @@ import type {
   LiveQuizResponseInput,
   NumericalRestrictions,
 } from '@klicker-uzh/types'
-import { verifyJWT, type JWTPayload } from '@klicker-uzh/util'
+import {
+  COOKIE_NAMES,
+  cookieName,
+  type JWTPayload,
+  verifyJWT,
+} from '@klicker-uzh/util'
 import { strict as assert } from 'assert'
 import { createHash } from 'crypto'
 import type { ChainableCommander } from 'ioredis'
@@ -62,6 +67,11 @@ export async function processResponseMessage(
     return { status: 200 }
   }
 
+  const participantTokenCookieName = cookieName(COOKIE_NAMES.PARTICIPANT_TOKEN)
+  const temporaryTokenCookieName = cookieName(
+    COOKIE_NAMES.TEMPORARY_PARTICIPANT_TOKEN
+  )
+
   let redisMulti: ChainableCommander
   // redisMulti = redisExec.multi() -> transaction
   redisMulti = redisExec.pipeline() // -> pipeline (not atomic)
@@ -96,9 +106,11 @@ export async function processResponseMessage(
             return acc
           }, {})
 
-        if (parsedCookies['participant_token'] !== undefined) {
+        const participantToken = parsedCookies[participantTokenCookieName]
+        const temporaryToken = parsedCookies[temporaryTokenCookieName]
+        if (participantToken !== undefined) {
           participantData = await verifyJWT(
-            parsedCookies['participant_token'],
+            participantToken,
             process.env.APP_SECRET as string
           )
 
@@ -107,9 +119,9 @@ export async function processResponseMessage(
           } else {
             ctx.logger.info("Participant's JWT verified")
           }
-        } else if (parsedCookies['temporary_participant_token'] !== undefined) {
+        } else if (temporaryToken !== undefined) {
           participantData = await verifyJWT(
-            parsedCookies['temporary_participant_token'],
+            temporaryToken,
             process.env.APP_SECRET as string
           )
 

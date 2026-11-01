@@ -637,7 +637,7 @@ test('rejects unsafe workflow publication changes', () => {
   reject(
     'status job no longer reports',
     mutate(
-      "(always() && (github.event.action != 'labeled' || needs.priority-route.outputs.run_label_event == 'true'))",
+      "(always() && github.event_name != 'workflow_dispatch' && (github.event.action != 'labeled' || needs.priority-route.outputs.run_label_event == 'true'))",
       'success()'
     ),
     /must report for every outcome/

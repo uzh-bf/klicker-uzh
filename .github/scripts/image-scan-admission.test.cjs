@@ -148,6 +148,21 @@ function scanGithub(jobRounds) {
 
 const CONTEXT = { repo: { owner: 'uzh-bf', repo: 'klicker-uzh' } }
 
+it('staging rejects any preview exception annotation', () => {
+  const annotated = {
+    ...receipt(),
+    previewAdmission: { policy: {}, accepted: [] },
+  }
+  const decision = validateScanReceipt(annotated, {
+    digest: APP_DIGEST,
+    image: APP_IMAGE,
+    runId: RUN.id,
+    runAttempt: RUN.attempt,
+    candidateSha: CANDIDATE_SHA,
+  })
+  assert.equal(decision.ok, false)
+})
+
 function admissionArgs(jobRounds, receipts) {
   return {
     candidateSha: CANDIDATE_SHA,

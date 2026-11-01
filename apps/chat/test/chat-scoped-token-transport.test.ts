@@ -1,4 +1,4 @@
-import { signJWT } from '@klicker-uzh/util'
+import { COOKIE_NAMES, cookieName, signJWT } from '@klicker-uzh/util'
 import { NextRequest } from 'next/server'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 
@@ -16,10 +16,7 @@ vi.mock('@klicker-uzh/prisma', () => ({
   },
 }))
 
-import {
-  PWA_CHAT_EMBED_QUERY_KEY,
-  PWA_CHAT_EMBED_SESSION_COOKIE,
-} from '../src/lib/pwaEmbedAuth'
+import { PWA_CHAT_EMBED_QUERY_KEY } from '../src/lib/pwaEmbedAuth'
 import {
   authorizeIdentityForChatbot,
   resolveParticipantIdentity,
@@ -163,9 +160,14 @@ describe('stale transport fallback', () => {
       chatbotId: CHATBOT_ID,
       courseId: COURSE_A,
     })
+    const pwaEmbedCookieName = cookieName(COOKIE_NAMES.PWA_CHAT_EMBED_SESSION)
     const request = new NextRequest(
       chatbotUrl('?' + PWA_CHAT_EMBED_QUERY_KEY + '=' + scopeToken),
-      { headers: { cookie: PWA_CHAT_EMBED_SESSION_COOKIE + '=stale-invalid' } }
+      {
+        headers: {
+          cookie: `${pwaEmbedCookieName}=stale-invalid`,
+        },
+      }
     )
 
     const response = await proxy(request)
@@ -563,10 +565,15 @@ describe('stale embed session account fallback', () => {
       id: 'participation-1',
     })
 
+    const pwaEmbedCookieName = cookieName(COOKIE_NAMES.PWA_CHAT_EMBED_SESSION)
+    const participantCookieName = cookieName(COOKIE_NAMES.PARTICIPANT_TOKEN)
+    const otherBotToken = await otherBotEmbedToken()
+    const accountTokenValue = await accountToken('account-1')
+    const cookie =
+      `${pwaEmbedCookieName}=${otherBotToken}; ` +
+      `${participantCookieName}=${accountTokenValue}`
     const request = new NextRequest(chatbotUrl(''), {
-      headers: {
-        cookie: `${PWA_CHAT_EMBED_SESSION_COOKIE}=${await otherBotEmbedToken()}; participant_token=${await accountToken('account-1')}`,
-      },
+      headers: { cookie },
     })
 
     const authorization = await withChatbotAuth(request, CHATBOT_ID)

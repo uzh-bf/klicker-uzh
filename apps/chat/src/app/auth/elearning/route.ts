@@ -5,16 +5,14 @@ import {
   verifyElearningChatGrant,
 } from '@klicker-uzh/util'
 import {
+  COOKIE_NAMES,
+  cookieName,
   cookieSecurityOptions,
   cookiesAvailableViaLtiProbe,
-  LTI_PROBE_COOKIE_NAME,
 } from '@klicker-uzh/util/auth'
 import { type NextRequest, NextResponse } from 'next/server'
 import { z } from 'zod'
-import {
-  PWA_CHAT_EMBED_QUERY_KEY,
-  PWA_CHAT_EMBED_SESSION_COOKIE,
-} from '@/src/lib/pwaEmbedAuth'
+import { PWA_CHAT_EMBED_QUERY_KEY } from '@/src/lib/pwaEmbedAuth'
 import {
   findOrCreateGuestPersona,
   signChatGuestToken,
@@ -119,6 +117,14 @@ export function parseElearningAuthQuery(searchParams: URLSearchParams) {
 
 export async function GET(req: NextRequest) {
   const { searchParams } = req.nextUrl
+  const ltiTokenCookieName = cookieName(COOKIE_NAMES.LTI_TOKEN)
+  const participantTokenCookieName = cookieName(COOKIE_NAMES.PARTICIPANT_TOKEN)
+  const chatParticipantTokenCookieName = cookieName(
+    COOKIE_NAMES.CHAT_PARTICIPANT_TOKEN
+  )
+  const pwaEmbedSessionCookieName = cookieName(
+    COOKIE_NAMES.PWA_CHAT_EMBED_SESSION
+  )
 
   const queryResult = parseElearningAuthQuery(searchParams)
 
@@ -237,7 +243,7 @@ export async function GET(req: NextRequest) {
   // Probe whether third-party cookies survived the LMS iframe context.
   // Mirrors the LTI pattern in `auth/lti/route.ts`.
   const cookiesAvailable = cookiesAvailableViaLtiProbe({
-    [LTI_PROBE_COOKIE_NAME]: req.cookies.get(LTI_PROBE_COOKIE_NAME)?.value,
+    [ltiTokenCookieName]: req.cookies.get(ltiTokenCookieName)?.value,
   })
 
   const chatbotUrl = resolveElearningLaunchUrl(req.nextUrl.clone(), {
@@ -278,31 +284,35 @@ export async function GET(req: NextRequest) {
       chatbotUrl.searchParams.set(PWA_CHAT_EMBED_QUERY_KEY, scopedToken)
     const response = launchResponse(chatbotUrl)
     setLocaleCookie(response, locale, isProduction)
-    response.cookies.set(LTI_PROBE_COOKIE_NAME, '', {
+    response.cookies.set(ltiTokenCookieName, '', {
       ...cookieSecurityOptions({ isProduction }),
       domain: process.env.COOKIE_DOMAIN,
       path: '/',
       maxAge: 0,
     })
-    response.cookies.set('chat_participant_token', '', {
+    response.cookies.set(chatParticipantTokenCookieName, '', {
       httpOnly: true,
       ...cookieSecurityOptions({ isProduction }),
       path: '/',
       maxAge: 0,
     })
-    response.cookies.set(PWA_CHAT_EMBED_SESSION_COOKIE, scopedToken, {
+    response.cookies.set(pwaEmbedSessionCookieName, scopedToken, {
       httpOnly: true,
       ...cookieSecurityOptions({ isProduction }),
       path: '/',
       maxAge: 12 * 60 * 60,
     })
-    response.cookies.set('participant_token', decision.participantToken!, {
-      httpOnly: true,
-      ...cookieSecurityOptions({ isProduction }),
-      domain: process.env.COOKIE_DOMAIN,
-      path: '/',
-      maxAge: 14 * 24 * 60 * 60,
-    })
+    response.cookies.set(
+      participantTokenCookieName,
+      decision.participantToken!,
+      {
+        httpOnly: true,
+        ...cookieSecurityOptions({ isProduction }),
+        domain: process.env.COOKIE_DOMAIN,
+        path: '/',
+        maxAge: 14 * 24 * 60 * 60,
+      }
+    )
     return response
   }
 
@@ -326,13 +336,13 @@ export async function GET(req: NextRequest) {
 
   const response = launchResponse(chatbotUrl)
   setLocaleCookie(response, locale, isProduction)
-  response.cookies.set(LTI_PROBE_COOKIE_NAME, '', {
+  response.cookies.set(ltiTokenCookieName, '', {
     ...cookieSecurityOptions({ isProduction }),
     domain: process.env.COOKIE_DOMAIN,
     path: '/',
     maxAge: 0,
   })
-  response.cookies.set(PWA_CHAT_EMBED_SESSION_COOKIE, '', {
+  response.cookies.set(pwaEmbedSessionCookieName, '', {
     httpOnly: true,
     ...cookieSecurityOptions({ isProduction }),
     path: '/',
@@ -340,7 +350,7 @@ export async function GET(req: NextRequest) {
   })
 
   // Host-only cookie: no `domain` set → cookie never leaves the chat subdomain.
-  response.cookies.set('chat_participant_token', chatGuestToken, {
+  response.cookies.set(chatParticipantTokenCookieName, chatGuestToken, {
     httpOnly: true,
     ...cookieSecurityOptions({ isProduction }),
     path: '/',

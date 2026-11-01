@@ -10,6 +10,8 @@
 // The persistent session cookies are intentionally NOT touched here; their
 // names are the backend delivery contract (see constants.ts).
 
+import { COOKIE_NAMES, cookieName } from '@klicker-uzh/util/auth'
+
 export type AuthAudience = 'participant' | 'lecturer'
 
 // Matches next-auth's default STATE_MAX_AGE / PKCE_MAX_AGE (15 minutes),
@@ -30,12 +32,33 @@ export function cookieNamePrefix(secure: boolean): string {
 }
 
 export function audienceCookieNames(audience: AuthAudience, secure: boolean) {
-  const prefix = `${cookieNamePrefix(secure)}next-auth.${audience}`
+  const prefix = cookieName(
+    `${cookieNamePrefix(secure)}${COOKIE_NAMES.NEXT_AUTH_AUDIENCE[audience]}`
+  )
   return {
     state: `${prefix}.state`,
     pkceCodeVerifier: `${prefix}.pkce.code_verifier`,
     nonce: `${prefix}.nonce`,
     callbackUrl: `${prefix}.callback-url`,
+  }
+}
+
+export function csrfCookieOptions(secure: boolean) {
+  const rawName = `${secure ? '__Host-' : ''}${
+    COOKIE_NAMES.NEXT_AUTH_CSRF_TOKEN
+  }`
+  const name = cookieName(rawName)
+  if (name === rawName) return {}
+  return {
+    csrfToken: {
+      name,
+      options: {
+        httpOnly: true,
+        sameSite: 'lax' as const,
+        path: '/' as const,
+        secure,
+      },
+    },
   }
 }
 

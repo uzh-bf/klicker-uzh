@@ -510,6 +510,220 @@ const STAGING_IMAGE_TARGETS = Object.freeze([
   },
 ])
 
+const PREVIEW_DEPLOYMENT_INPUTS = Object.freeze([
+  '.dockerignore',
+  'deploy/preview/**',
+  'util/deployment-build-env.mjs',
+])
+
+function stagingTarget(targetId) {
+  const target = STAGING_IMAGE_TARGETS.find((entry) => entry.id === targetId)
+  if (!target) throw new Error('missing staging inventory target ' + targetId)
+  return target
+}
+
+function previewFromStaging({
+  id,
+  image,
+  logicalTargets,
+  stagingId,
+  usesDeploymentConfig = false,
+}) {
+  const staging = stagingTarget(stagingId)
+  return {
+    dockerfile: staging.dockerfile,
+    globs: [...new Set([...staging.globs, ...PREVIEW_DEPLOYMENT_INPUTS])],
+    id,
+    image,
+    logicalTargets,
+    stagingId,
+    stagingImage: imageName(staging),
+    stage: 'independent',
+    usesDeploymentConfig,
+  }
+}
+
+// Preview dispatch targets follow the public manifest vocabulary. The trusted
+// plan resolves these names before it checks out a candidate. Each physical
+// build has its own preview repository, so a preview tag can never move a
+// staging branch or full-SHA tag.
+//
+// A Dockerfile shared by more than one logical target is listed once. Its
+// receipt is duplicated for every logical target after the exact digest has
+// passed the scan policy, so db-bootstrap, fixtures and local-mcp cannot build
+// the same fixture image three times.
+const PREVIEW_IMAGE_TARGETS = Object.freeze([
+  previewFromStaging({
+    id: 'api',
+    image: 'preview-api',
+    logicalTargets: ['api'],
+    stagingId: 'backend-docker-arm',
+  }),
+  previewFromStaging({
+    id: 'auth',
+    image: 'preview-auth',
+    logicalTargets: ['auth'],
+    stagingId: 'auth-arm',
+    usesDeploymentConfig: true,
+  }),
+  previewFromStaging({
+    id: 'pwa',
+    image: 'preview-pwa',
+    logicalTargets: ['pwa'],
+    stagingId: 'frontend-pwa-arm',
+    usesDeploymentConfig: true,
+  }),
+  previewFromStaging({
+    id: 'chat',
+    image: 'preview-chat',
+    logicalTargets: ['chat'],
+    stagingId: 'chat-arm',
+    usesDeploymentConfig: true,
+  }),
+  previewFromStaging({
+    id: 'manage',
+    image: 'preview-manage',
+    logicalTargets: ['manage'],
+    stagingId: 'frontend-manage-arm',
+    usesDeploymentConfig: true,
+  }),
+  previewFromStaging({
+    id: 'control',
+    image: 'preview-control',
+    logicalTargets: ['control'],
+    stagingId: 'frontend-control-arm',
+    usesDeploymentConfig: true,
+  }),
+  previewFromStaging({
+    id: 'response-api',
+    image: 'preview-response-api',
+    logicalTargets: ['response-api'],
+    stagingId: 'response-api-arm',
+  }),
+  previewFromStaging({
+    id: 'lti',
+    image: 'preview-lti',
+    logicalTargets: ['lti'],
+    stagingId: 'lti-arm',
+  }),
+  previewFromStaging({
+    id: 'olat-api',
+    image: 'preview-olat-api',
+    logicalTargets: ['olat-api'],
+    stagingId: 'olat-api-arm',
+  }),
+  previewFromStaging({
+    id: 'mcp-lecturer',
+    image: 'preview-mcp-lecturer',
+    logicalTargets: ['mcp-lecturer'],
+    stagingId: 'mcp-lecturer-arm',
+  }),
+  previewFromStaging({
+    id: 'mcp-student',
+    image: 'preview-mcp-student',
+    logicalTargets: ['mcp-student'],
+    stagingId: 'mcp-student-arm',
+  }),
+  previewFromStaging({
+    id: 'worker-general',
+    image: 'preview-worker-general',
+    logicalTargets: ['worker-general'],
+    stagingId: 'hatchet-worker-general-arm',
+  }),
+  previewFromStaging({
+    id: 'worker-response',
+    image: 'preview-worker-response',
+    logicalTargets: ['worker-response'],
+    stagingId: 'hatchet-worker-response-processor-arm',
+  }),
+  {
+    dockerfile: 'deploy/preview/Dockerfile.fixtures',
+    globs: ['.'],
+    id: 'fixtures',
+    image: 'preview-fixtures',
+    logicalTargets: ['db-bootstrap', 'fixtures', 'local-mcp'],
+    stage: 'independent',
+    stagingImage: null,
+    usesDeploymentConfig: false,
+  },
+  {
+    dockerfile: 'deploy/preview/Dockerfile.azurite',
+    globs: [
+      '.dockerignore',
+      'deploy/preview/Dockerfile.azurite',
+      'deploy/preview/runtime.mjs',
+    ],
+    id: 'azurite',
+    image: 'preview-azurite',
+    logicalTargets: ['azurite'],
+    stage: 'independent',
+    stagingImage: null,
+    usesDeploymentConfig: false,
+  },
+  {
+    dockerfile: 'deploy/preview/Dockerfile.litellm',
+    globs: [
+      '.dockerignore',
+      'deploy/preview/Dockerfile.litellm',
+      'util/litellm/config.yaml',
+    ],
+    id: 'litellm',
+    image: 'preview-litellm',
+    logicalTargets: ['litellm'],
+    stage: 'independent',
+    stagingImage: null,
+    usesDeploymentConfig: false,
+  },
+  {
+    dockerfile: 'packages/prisma/Dockerfile',
+    globs: [
+      ...stagingTarget('backend-docker-migrator-arm').globs,
+      '.dockerignore',
+    ],
+    id: 'backend-docker-migrator',
+    image: 'preview-backend-docker-migrator',
+    logicalTargets: ['backend-docker-migrator', 'migrator'],
+    stagingId: 'backend-docker-migrator-arm',
+    stagingImage: 'backend-docker-migrator',
+    stage: 'independent',
+    usesDeploymentConfig: false,
+  },
+])
+
+const PREVIEW_LOGICAL_TARGETS = Object.freeze(
+  PREVIEW_IMAGE_TARGETS.flatMap((target) =>
+    target.logicalTargets.map((logicalTarget) => ({ logicalTarget, target }))
+  )
+)
+
+// A preview dispatch may adopt a staging publication instead of rebuilding it.
+// The resolver looks up a successful staging run for the same source revision,
+// reads the build digest artifact, and requires the scan job of the same run to
+// have passed. These names are the stable staging identities; a change to the
+// staging job layout must update this inventory in the same commit.
+const PREVIEW_STAGING_IMAGES = Object.freeze(
+  PREVIEW_LOGICAL_TARGETS.flatMap(({ logicalTarget, target }) => {
+    if (!target.stagingImage || !target.stagingId) return []
+    const staging = stagingTarget(target.stagingId)
+    return [
+      Object.freeze({
+        buildArtifact: 'build-digest-' + staging.id,
+        buildJob: buildJobName(staging),
+        configuration: Object.freeze({}),
+        image: imageName(staging) + '-arm',
+        jobBase: staging.jobBase,
+        logicalTarget,
+        platform: 'linux/arm64',
+        scan: staging.scan === true,
+        scanArtifact: 'image-scan-' + staging.jobBase + '-arm',
+        scanJob: scanJobName(staging),
+        stagingTarget: staging.id,
+        workflow: CONSOLIDATED_WORKFLOW_PATH,
+      }),
+    ]
+  })
+)
+
 const WORKFLOWS_DIRECTORY = '.github/workflows'
 
 function globToRegExp(glob) {
@@ -624,6 +838,10 @@ function legacyImageWorkflows(rootDirectory = process.cwd()) {
 
 module.exports = {
   CONSOLIDATED_WORKFLOW_PATH,
+  PREVIEW_DEPLOYMENT_INPUTS,
+  PREVIEW_IMAGE_TARGETS,
+  PREVIEW_LOGICAL_TARGETS,
+  PREVIEW_STAGING_IMAGES,
   ROOT_BUILD_GLOBS,
   STAGING_IMAGE_TARGETS,
   WORKFLOWS_DIRECTORY,

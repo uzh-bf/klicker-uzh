@@ -384,6 +384,43 @@ test('the consolidated workflow covers every trusted target and guard', () => {
   assert.deepEqual(promoter.on.workflow_run.types, ['completed'])
 })
 
+test('the status display name keeps the required build-images-status context', () => {
+  const workflowPath = CONSOLIDATED_WORKFLOW_PATH
+  const content = fs.readFileSync(path.join(ROOT, workflowPath), 'utf8')
+  const definition = readYaml(workflowPath)
+  const conditionalName = definition.jobs['build-images-status'].name
+  const nameLine = '    name: ' + conditionalName + '\n'
+  const conditionLine = content.match(
+    /  build-images-status:[\s\S]*?(    if: >-\n[\s\S]*?)(?=    runs-on:)/
+  )[1]
+
+  assert.ok(content.includes(nameLine), 'conditional status name is missing')
+  assert.ok(content.includes(conditionLine), 'status condition has changed')
+
+  const validate = (candidate) =>
+    validateStagingWorkflow({
+      content: candidate,
+      path: workflowPath,
+      repository: REPOSITORY,
+      sourceBranch: 'v3-audit',
+      targetIds: STAGING_TARGET_IDS,
+    })
+
+  assert.doesNotThrow(() => validate(content.replace(nameLine, '')))
+  assert.doesNotThrow(() =>
+    validate(content.replace(nameLine, '    name: build-images-status\n'))
+  )
+  assert.doesNotThrow(() => validate(content))
+  assert.throws(
+    () => validate(content.replace(nameLine, '    name: wrong-status\n')),
+    /does not retain the required build-images-status context name/u
+  )
+  assert.throws(
+    () => validate(content.replace(conditionLine, '    if: always()\n')),
+    /uses the preview status name without excluding workflow_dispatch/u
+  )
+})
+
 test('the publish-once guard reuses a canonical digest and fails closed', (t) => {
   const digest = `sha256:${'b'.repeat(64)}`
   const existing = runPublishGuard(`Name: fixture\nDigest: ${digest}`, 0)

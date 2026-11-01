@@ -50,11 +50,18 @@ ENV NEXT_PUBLIC_GROWTHBOOK_API_HOST=${NEXT_PUBLIC_GROWTHBOOK_API_HOST}
 ENV NEXT_PUBLIC_GROWTHBOOK_CLIENT_KEY=${NEXT_PUBLIC_GROWTHBOOK_CLIENT_KEY}
 
 COPY --from=builder /app/out/full/ .
-RUN pnpm run build --filter=@klicker-uzh/auth
+COPY --from=builder /app/apps/auth/.env.production /app/apps/auth/.env.production
+COPY --from=builder /app/util/deployment-build-env.mjs /app/util/deployment-build-env.mjs
+ARG KLICKER_PREVIEW_BUILD_ENV_JSON
+ARG KLICKER_DEPLOYMENT_BUILD_ENV_JSON
+RUN node util/deployment-build-env.mjs --app auth -- pnpm run build --filter=@klicker-uzh/auth
 
 
 FROM base AS runner
 WORKDIR /app
+
+# Standalone servers run Node directly; package managers are build tools.
+RUN rm -rf /usr/local/lib/node_modules/npm /usr/local/bin/npm /usr/local/bin/npx
 
 RUN addgroup --system --gid 1001 nodejs
 RUN adduser --system --uid 1001 nextjs

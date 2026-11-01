@@ -343,6 +343,9 @@ jobs:
             .github/scripts/final-ai-stack-review.test.js \
             .github/scripts/stg-release-promoter.test.js \
             .github/scripts/staging-image-plan.test.cjs \
+            .github/scripts/preview-image-plan.test.cjs \
+            .github/scripts/preview-image-receipt.test.cjs \
+            deploy/preview/resolve-images.test.mjs \
             .github/scripts/staging-image-status.test.cjs \
             .github/scripts/sonar-coverage-inputs.test.cjs \
             .github/scripts/sonar-new-code-boundary.test.cjs \
@@ -478,6 +481,11 @@ jobs:
           node --test ./util/next-pages-development-config.test.mjs
           pnpm run test:dev-runtime
 
+      - name: Check deployment build configuration
+        run: |
+          node --test ./util/deployment-build-env.test.mjs
+          node --test deploy/preview/runtime.test.mjs deploy/preview/configure-fixtures.test.mjs
+
       - name: Check workspace dependency mount generation
         run: node --test ./util/generate-dependency-mounts.test.mjs
 
@@ -535,6 +543,14 @@ jobs:
           else
             pnpm exec turbo run build
           fi
+
+      - name: Check response worker contracts
+        if: >-
+          github.event_name != 'pull_request' ||
+          steps.classify.outputs.codebase_check != 'bounded'
+        run: |
+          pnpm exec turbo run build --filter="@klicker-uzh/hatchet-worker-response-processor..."
+          pnpm --filter @klicker-uzh/hatchet-worker-response-processor test:run
 
       - name: Check typescript types
         if: >-
@@ -616,7 +632,7 @@ jobs:
       contents: read
       issues: read
       pull-requests: read
-    uses: uzh-bf/klicker-uzh/.github/workflows/check-execution.yml@28c21d776517a88bbf981d11e3bde59c50cda483
+    uses: uzh-bf/klicker-uzh/.github/workflows/check-execution.yml@0fc3d09b5c9bb8fd22f6287337be241b02d86491
     secrets: inherit
 
   priority-status:

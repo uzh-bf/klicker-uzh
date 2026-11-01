@@ -2,7 +2,7 @@ import crypto from 'node:crypto'
 import { UserRole } from '@klicker-uzh/prisma/client'
 import type { NextApiRequest, NextApiResponse } from 'next'
 import { getToken } from 'next-auth/jwt'
-import { MANAGER_COOKIE_NAME } from '@/lib/constants'
+import { managerCookieName } from '@/lib/constants'
 import { decode } from '@/lib/jwt'
 
 type ResponseData = {
@@ -16,7 +16,7 @@ export default async function handler(
   const session = await getToken({
     req,
     decode,
-    cookieName: MANAGER_COOKIE_NAME,
+    cookieName: managerCookieName(),
     secret: process.env.APP_SECRET,
   })
 
