@@ -780,6 +780,47 @@ test.describe('Login / Logout workflows for lecturer and students', () => {
     })
   })
 
+  test('The intro player cannot navigate the first-login page', async ({
+    page,
+    loginLecturer,
+  }) => {
+    await page.route('https://switchcast-auth.invalid/**', (route) =>
+      route.fulfill({ contentType: 'text/html', body: 'Synthetic sign-in' })
+    )
+    await page.route(
+      (url) =>
+        url.hostname === 'api.cast.switch.ch' &&
+        url.pathname.startsWith('/p/106/sp/10600/embedIframeJs/'),
+      (route) =>
+        route.fulfill({
+          contentType: 'text/html',
+          body: `<button data-cy="navigate-parent" onclick="
+            try {
+              window.top.location.href = 'https://switchcast-auth.invalid/sign-in';
+              this.dataset.navigationResult = 'allowed';
+            } catch (error) {
+              this.dataset.navigationResult = error.name;
+            }
+          ">Continue</button>`,
+        })
+    )
+
+    await withSyntheticFirstLogin(async () => {
+      await loginLecturer()
+      const firstLoginUrl = page.url()
+      const player = page.frameLocator('iframe.kmsembed')
+
+      await player.getByTestId('navigate-parent').click()
+      await expect(player.getByTestId('navigate-parent')).toHaveAttribute(
+        'data-navigation-result',
+        'SecurityError'
+      )
+      await expect(page).toHaveURL(firstLoginUrl)
+      await page.getByTestId('first-login-seed-demo-elements-no').click()
+      await expect(page.getByTestId('first-login-save-settings')).toBeEnabled()
+    })
+  })
+
   test('First login surfaces beta enrollment for eligible users', async ({
     page,
     loginLecturer,
