@@ -1649,28 +1649,40 @@ async function expireBlockCache(
         ...(await redis.keys(`lq:${liveQuizId}:b:${target.id}:*`)),
       ]
   const keys = [...new Set(discoveredKeys)]
-  const guards = blocks.flatMap((block) =>
-    block.elements.map((instance) => ({
+  const guards = blocks.flatMap((block) => {
+    const cacheKeys = [
+      ...keys.filter(
+        (key) =>
+          key.startsWith(`lq:${liveQuizId}:b:${block.id}:`) ||
+          block.elements.some((instance) =>
+            key.startsWith(`lq:${liveQuizId}:i:${instance.id}:`)
+          )
+      ),
+      ...block.elements.flatMap((instance) => [
+        `lq:${liveQuizId}:i:${instance.id}:info`,
+        `lq:${liveQuizId}:i:${instance.id}:results`,
+        `lq:${liveQuizId}:i:${instance.id}:responses`,
+        `lq:${liveQuizId}:i:${instance.id}:responseHashes`,
+      ]),
+      `lq:${liveQuizId}:b:${block.id}:lb`,
+      `lq:${liveQuizId}:b:${block.id}:lbTemporary`,
+    ]
+    return block.elements.map((instance) => ({
       key: `lq:${liveQuizId}:i:${instance.id}:info`,
       resultsKey: `lq:${liveQuizId}:i:${instance.id}:results`,
       execution: String(block.execution),
       startedAt: block.startedAt ? String(block.startedAt.getTime()) : '',
       allowMissing: isLastBlock && block.id !== target.id,
-      cachePatterns: [
-        ...block.elements.map(
-          (element) => `lq:${liveQuizId}:i:${element.id}:*`
-        ),
-        `lq:${liveQuizId}:b:${block.id}:*`,
-      ],
+      cacheKeys: [...new Set(cacheKeys)],
     }))
-  )
+  })
   const result = await redis.eval(
     `local guards = cjson.decode(ARGV[1])
      for _, guard in ipairs(guards) do
        local hasCache = false
        if guard.allowMissing then
-         for _, pattern in ipairs(guard.cachePatterns) do
-           if #redis.call('KEYS', pattern) > 0 then
+         for _, key in ipairs(guard.cacheKeys) do
+           if redis.call('EXISTS', key) == 1 then
              hasCache = true
              break
            end

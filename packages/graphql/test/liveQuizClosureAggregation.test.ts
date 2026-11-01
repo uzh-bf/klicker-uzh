@@ -553,6 +553,8 @@ describe('Closed live quiz aggregation ownership', () => {
     'expired',
     'reappeared',
     'partial',
+    'late-partial',
+    'late-block-leaderboard',
   ] as const)('finalizes the last block with %s historical cache', async (historicalCache) => {
     await prisma.liveQuiz.update({
       where: { id: quizId },
@@ -606,13 +608,27 @@ describe('Closed live quiz aggregation ownership', () => {
           '1'
         )
       }
-      if (historicalCache === 'reappeared') {
+      if (
+        historicalCache === 'reappeared' ||
+        historicalCache === 'late-partial' ||
+        historicalCache === 'late-block-leaderboard'
+      ) {
         const evaluate = redis.eval.bind(redis)
         vi.spyOn(redis, 'eval').mockImplementationOnce(async (...args) => {
-          await redis.hset(infoKey(), {
-            blockExecution: 3,
-            blockStartedAt: closedAt.getTime(),
-          })
+          if (historicalCache === 'late-partial') {
+            await redis.hset(
+              `lq:${quizId}:i:${instanceId}:responseHashes`,
+              'synthetic',
+              '1'
+            )
+          } else if (historicalCache === 'late-block-leaderboard') {
+            await redis.hset(`lq:${quizId}:b:${blockId}:lb`, 'synthetic', '1')
+          } else {
+            await redis.hset(infoKey(), {
+              blockExecution: 3,
+              blockStartedAt: closedAt.getTime(),
+            })
+          }
           return evaluate(...args)
         })
       }

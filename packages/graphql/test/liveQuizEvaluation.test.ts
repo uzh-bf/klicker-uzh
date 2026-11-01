@@ -1,3 +1,4 @@
+import { readFileSync } from 'node:fs'
 import type { Hatchet } from '@hatchet-dev/typescript-sdk'
 import {
   ElementBlockStatus,
@@ -90,6 +91,22 @@ async function createSingleChoiceQuestion(
 }
 
 type SyntheticQuestion = Awaited<ReturnType<typeof createSingleChoiceQuestion>>
+
+describe('Persisted evaluation operation compatibility', () => {
+  it.each([
+    'fa751a965ef3afe5dcc106c185df4c0aacf3e7c9614512d2e0825d6aec8ecbca',
+    '14d6405c5bb2833510ba20cb99111fd8589fa5e353fb5c77f2fb77252f102509',
+    '7832372964f6252310c02c1505ad5c30a4bf3512618a91e03f7a61b0084124fd',
+  ])('continues serving the deployed operation hash %s', (hash) => {
+    const operations = JSON.parse(
+      readFileSync(
+        new URL('../src/public/server.json', import.meta.url),
+        'utf8'
+      )
+    )
+    expect(operations[hash]).toBeDefined()
+  })
+})
 
 function createEvaluationBlock(
   question: SyntheticQuestion,

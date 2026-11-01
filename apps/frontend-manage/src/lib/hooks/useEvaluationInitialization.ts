@@ -2,9 +2,13 @@ import { StackEvaluation } from '@klicker-uzh/graphql/dist/ops'
 import { Dispatch, SetStateAction, useEffect } from 'react'
 import { ActivityEvaluationType } from '../../components/evaluation/ActivityEvaluation'
 
+export type EvaluationStack = Omit<StackEvaluation, 'instanceCount'> & {
+  instanceCount?: number
+}
+
 export function getEvaluationQuestionLocation(
   questionIx: string | null | undefined,
-  stacks: StackEvaluation[]
+  stacks: EvaluationStack[]
 ) {
   if (typeof questionIx !== 'string') return null
 
@@ -51,7 +55,7 @@ function useEvaluationInitialization({
     SetStateAction<number | 'feedbacks' | 'confusion' | 'leaderboard'>
   >
   questionIx?: string | null
-  stacks: StackEvaluation[]
+  stacks: EvaluationStack[]
   showLeaderboard?: boolean
   type: ActivityEvaluationType
 }) {

@@ -1,8 +1,8 @@
 import { faPieChart } from '@fortawesome/free-solid-svg-icons'
 import { useFeatureFlag } from '@klicker-uzh/feature-flags/react'
-import type { StackEvaluation } from '@klicker-uzh/graphql/dist/ops'
 import { Button, Tooltip } from '@uzh-bf/design-system'
 import { useTranslations } from 'next-intl'
+import type { EvaluationStack } from '../../../lib/hooks/useEvaluationInitialization'
 import type {
   ActiveStackType,
   ActivityEvaluationType,
@@ -15,7 +15,7 @@ import StackNavigation from './StackNavigation'
 interface EvaluationNavigationProps {
   courseId: string
   activityId: string
-  stacks: StackEvaluation[]
+  stacks: EvaluationStack[]
   stackInstanceMap: Record<number, { label: string; value: number }[]>
   activeStack: ActiveStackType
   setActiveStack: (stack: ActiveStackType) => void

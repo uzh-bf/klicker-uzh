@@ -1,10 +1,10 @@
-import { StackEvaluation } from '@klicker-uzh/graphql/dist/ops'
 import { useTranslations } from 'next-intl'
 import { useMemo } from 'react'
+import type { EvaluationStack } from '../../../lib/hooks/useEvaluationInitialization'
 import { ActiveStackType, ActivityEvaluationType } from '../ActivityEvaluation'
 
 interface UseVisibleStacksProps {
-  stacks: StackEvaluation[]
+  stacks: EvaluationStack[]
   activeStack: ActiveStackType
   width: number
   type: ActivityEvaluationType

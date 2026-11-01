@@ -4,7 +4,6 @@ import {
   Feedback,
   LocaleType,
   PublicationStatus,
-  StackEvaluation,
 } from '@klicker-uzh/graphql/dist/ops'
 import { ChartType } from '@klicker-uzh/shared-components/src/constants'
 import Leaderboard, {
@@ -21,6 +20,7 @@ import Rank3Img from 'public/img/rank3.svg'
 import { useEffect, useReducer, useState } from 'react'
 import { twMerge } from 'tailwind-merge'
 import useEvaluationInitialization, {
+  type EvaluationStack,
   getEvaluationQuestionLocation,
 } from '../../lib/hooks/useEvaluationInitialization'
 import useEvaluationSettingsInitialization from '../../lib/hooks/useEvaluationSettingsInitialization'
@@ -46,7 +46,7 @@ interface ActivityEvaluationProps {
   activityStatus?: PublicationStatus
   activityType?: ActivityType
   courseLanguage?: LocaleType | null
-  stacks: StackEvaluation[]
+  stacks: EvaluationStack[]
   feedbacks?: Feedback[] | null
   confusionFeedbacks?: ConfusionTimestep[] | null
   leaderboard?: LeaderboardCombinedEntry[] | null

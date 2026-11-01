@@ -1,8 +1,8 @@
-import { StackEvaluation } from '@klicker-uzh/graphql/dist/ops'
 import { useMemo } from 'react'
+import type { EvaluationStack } from '../../../lib/hooks/useEvaluationInitialization'
 
 interface UseStackInstanceMapProps {
-  stacks: StackEvaluation[]
+  stacks: EvaluationStack[]
 }
 
 function useStackInstanceMap({ stacks }: UseStackInstanceMapProps) {

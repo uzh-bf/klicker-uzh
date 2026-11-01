@@ -6,15 +6,15 @@ import {
   faLayerGroup,
   IconDefinition,
 } from '@fortawesome/free-solid-svg-icons'
-import { StackEvaluation } from '@klicker-uzh/graphql/dist/ops'
 import { Button } from '@uzh-bf/design-system'
 import { useTranslations } from 'next-intl'
 import { twMerge } from 'tailwind-merge'
+import type { EvaluationStack } from '../../../lib/hooks/useEvaluationInitialization'
 import { ActiveStackType, ActivityEvaluationType } from '../ActivityEvaluation'
 import useVisibleStacks from '../hooks/useVisibleStacks'
 
 interface StackNavigationProps {
-  stacks: StackEvaluation[]
+  stacks: EvaluationStack[]
   activeStack: ActiveStackType
   setActiveStack: (stack: ActiveStackType) => void
   setActiveInstance: (instance: number) => void

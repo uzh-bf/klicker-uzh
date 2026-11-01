@@ -40,26 +40,43 @@ or database was started or reset. Fresh managed initialization remains unavailab
 because this branch lacks the installed provider's explicit bootstrap declaration.
 Do not add runtime configuration merely to repeat unchanged local proof.
 
-All 36 non-project feature patches retain identical added and removed lines
-against the integrated target. Main reviewed the upstream scheduling-guard seam
-and reuses the completed independent source review and synthetic captures for
-unchanged contracts. Existing local browser evidence remains scoped to its actual
-tested revisions; exact-head hosted browser coverage remains required.
+The initial integration preserves all 36 non-project feature patches. The
+completed independent review and existing synthetic captures still cover the
+unchanged contracts. Existing local browser evidence retains its tested revision;
+exact-head hosted browser coverage remains required.
 
-Commit one complete candidate, then publish through an ordinary non-force push to
-`origin/activity-info-on-eval`, hold its SHA and require all eight exact-head CI
-contexts and producing Playwright shards. A platform retry was requested on the
-held green entry head before the integration could be published. Account for that
-run before moving the published head or making another request; preserve its
-immutable review coverage and avoid duplicate model work. Final review must
-identify the published candidate and actually execute. Correct genuine source
-findings within this scope; if provider access fails again, preserve its evidence
-and stop that retry branch. Do not probe, change providers or alter account limits.
+The authorized retry, [run 41288752522](https://github.com/uzh-bf/klicker-uzh/actions/runs/41288752522),
+actually reviewed the held entry head and published
+[the complete result](https://github.com/uzh-bf/klicker-uzh/pull/4920#pullrequestreview-5727528214).
+Four findings warrant corrections: preserve deployed persisted-query hashes by
+selecting new metadata only in the versioned live query; accept optional instance
+counts in legacy evaluation presentation types; permit the Office iframe's
+existing details link to open a sandboxed popup; and replace Redis keyspace scans
+inside Lua with ownership checks on concrete cache keys. The reveal-state finding
+is rejected because the installed hook reads the current storage key through
+`useSyncExternalStore`. No reveal behavior is changed.
 
-The authorized retry is [run 41288752522](https://github.com/uzh-bf/klicker-uzh/actions/runs/41288752522),
-requested through [the command comment](https://github.com/uzh-bf/klicker-uzh/pull/4920#issuecomment-6555506072).
-Its review job has started setup at the checkpoint. Actual model execution and
-recovered provider access are still unproven.
+The corrections have passed independent review, including its one focused
+correction for cache keys appearing after discovery. Actual isolated Redis checks
+pass eight ownership/expiry scenarios with zero Lua keyspace scans. Three generated
+persisted-document hash regression tests pass. GraphQL and manage typechecks,
+Office typecheck and six tests, root lint and the production build pass. A focused
+GraphQL typecheck and build also pass after the final Redis correction. Browser
+verification uses the built evaluation page with synthetic API responses: the
+original iframe blocks the details popup and the corrected sandbox opens the
+expected URL. This does not establish signed-backend or native Office execution.
+The unchanged Office stylesheet differs only in quote formatting between source
+and deployed assets, so its existing whole-artifact verifier remains a recorded
+mismatch; the changed HTML mirror matches exactly.
+
+Publish the complete corrected candidate through an ordinary non-force push to
+`origin/activity-info-on-eval`, then hold its SHA and require all eight exact-head
+CI contexts and producing Playwright shards. The completed old-head review proves
+that execution access recovered, but does not cover the corrected candidate.
+Request its platform final review once after CI settles, and disposition genuine
+findings. Preserve failed-provider evidence if access fails again; do not probe,
+change providers or alter limits. Local full database/worker regression coverage
+remains dependent on hosted CI because fresh managed initialization is unavailable.
 
 Record terminal run links and results in the ignored verification receipt and PR
 description, without adding another tracked receipt commit. Stop any runtime

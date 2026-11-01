@@ -7,7 +7,6 @@ import {
   ElementType,
   LocaleType,
   PublicationStatus,
-  StackEvaluation,
 } from '@klicker-uzh/graphql/dist/ops'
 import { ChartType } from '@klicker-uzh/shared-components/src/constants'
 import { useSessionStorage } from '@uidotdev/usehooks'
@@ -15,6 +14,7 @@ import { Button } from '@uzh-bf/design-system'
 import { useTranslations } from 'next-intl'
 import { useEffect, useState } from 'react'
 import { twMerge } from 'tailwind-merge'
+import type { EvaluationStack } from '../../lib/hooks/useEvaluationInitialization'
 import LiveQuizCountdown from '../liveQuiz/cockpit/LiveQuizCountdown'
 import { ActivityEvaluationType } from './ActivityEvaluation'
 import BlockStatusIndicator from './BlockStatusIndicator'
@@ -31,7 +31,7 @@ import { TextSizeType } from './textSizes'
 
 interface ElementEvaluationProps {
   currentInstance: ElementInstanceEvaluation
-  currentStack?: StackEvaluation
+  currentStack?: EvaluationStack
   activeInstance: number
   activeStack: number
   courseLanguage?: LocaleType | null
