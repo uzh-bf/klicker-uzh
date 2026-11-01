@@ -60,12 +60,14 @@ export async function loadStoredResponse({
   currentInstance,
   setStudentResponse,
   setSubmittedAt,
+  setPreviouslySubmitted,
 }: {
   quizId: string
   execution: number
   currentInstance: ElementInstance | undefined
   setStudentResponse: Dispatch<SetStateAction<InstanceStackStudentResponseType>>
   setSubmittedAt: Dispatch<SetStateAction<number | null>>
+  setPreviouslySubmitted?: Dispatch<SetStateAction<boolean>>
 }) {
   if (!currentInstance) return
   try {
@@ -77,6 +79,24 @@ export async function loadStoredResponse({
     if (!stored && !tempStored) return
 
     // if the block was already submitted, load the previously submitted response and remove the temporary one (if it exists)
+    if (stored?.previouslySubmitted) {
+      if (tempStored) await localforage.removeItem(`${key}-temp`)
+      setSubmittedAt(null)
+      setPreviouslySubmitted?.(true)
+      setStudentResponse({
+        type: currentInstance.elementType,
+        response: [
+          ElementType.Sc,
+          ElementType.Mc,
+          ElementType.Kprim,
+          ElementType.CaseStudy,
+        ].includes(currentInstance.elementType)
+          ? {}
+          : undefined,
+        valid: false,
+      } as InstanceStackStudentResponseType)
+      return
+    }
     if (stored) {
       setStudentResponse({
         type: currentInstance.elementType,
