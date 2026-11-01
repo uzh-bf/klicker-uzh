@@ -93,6 +93,13 @@ profiles:
     readiness: [chat, pwa, manage, api, response-api]
     devcontainerServices: [redis_exec, redis_assessment, redis_cache]
     processes: [klicker-dev]
+  # API route for the bounded local qualification supervisor; it starts the
+  # child with per-run keys and verifies /ready before browser admission.
+  chat-api:
+    apps: [chat-api]
+    readiness: []
+    devcontainerServices: []
+    processes: []
   # local Edu-ID replacement, devcontainer-only: add `,eduid` to a selective
   # selection to route the OIDC mock. The default `full` selection already
   # includes it. See .devcontainer/README.md.
@@ -233,6 +240,12 @@ apps:
     protocol: http
     runtime: proxy
     upstream: ${WORKSPACE}-app:3004
+
+  - name: chat-api
+    host: chat-api.klicker.localhost
+    protocol: http
+    runtime: proxy
+    upstream: ${WORKSPACE}-app:3005
 
   # local Edu-ID replacement: the OIDC mock shares the app container's network
   # namespace, so devrouter reaches it on devnet as ${WORKSPACE}-app:8090. The
