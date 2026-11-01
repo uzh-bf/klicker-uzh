@@ -1,7 +1,7 @@
-import { ApolloClient, NormalizedCacheObject } from '@apollo/client'
+import type { ApolloClient, NormalizedCacheObject } from '@apollo/client'
 import { LoginParticipantWithLtiDocument } from '@klicker-uzh/graphql/dist/ops'
-import { verifyJWT } from '@klicker-uzh/util'
-import { GetServerSidePropsContext } from 'next'
+import { previewCookieName, verifyJWT } from '@klicker-uzh/util'
+import type { GetServerSidePropsContext } from 'next'
 import nookies from 'nookies'
 
 export default async function getParticipantToken({
@@ -20,28 +20,33 @@ export default async function getParticipantToken({
   // fetch the relevant data directly
   let participantToken: string | undefined | null =
     (process.env.ASSESSMENT_MODE === 'true'
-      ? cookies['next-auth.participant-session-token']
-      : cookies['participant_token']) ?? query.participantToken
+      ? cookies[previewCookieName('next-auth.participant-session-token')]
+      : cookies[previewCookieName('participant_token')]) ??
+    query.participantToken
 
   // TODO: only check for existing participantToken once participation issues with LTI are resolved
-  if (participantToken && !cookies['lti-token'] && !query.jwt) {
+  if (
+    participantToken &&
+    !cookies[previewCookieName('lti-token')] &&
+    !query.jwt
+  ) {
     return {
       participantToken,
       cookiesAvailable:
         process.env.ASSESSMENT_MODE === 'true'
-          ? !!cookies['next-auth.participant-session-token']
-          : !!cookies['participant_token'],
+          ? !!cookies[previewCookieName('next-auth.participant-session-token')]
+          : !!cookies[previewCookieName('participant_token')],
     }
   }
 
   try {
     let result
 
-    const cookiesAvailable = !!cookies['lti-token']
+    const cookiesAvailable = !!cookies[previewCookieName('lti-token')]
 
     // LTI 1.3 authentication flow
-    if (cookies['lti-token'] || query.jwt) {
-      const token = cookies['lti-token'] ?? query.jwt
+    if (cookies[previewCookieName('lti-token')] || query.jwt) {
+      const token = cookies[previewCookieName('lti-token')] ?? query.jwt
 
       if (!token) {
         return {
@@ -75,23 +80,28 @@ export default async function getParticipantToken({
       participantToken = ltiParticipantToken
 
       // set a proper participant_token
-      nookies.set(ctx, 'participant_token', participantToken, {
-        domain: process.env.COOKIE_DOMAIN,
-        path: '/',
-        httpOnly: true,
-        maxAge: 1000 * 60 * 60 * 24 * 13,
-        secure:
-          process.env.NODE_ENV === 'production' &&
-          process.env.COOKIE_DOMAIN !== '127.0.0.1',
-        sameSite:
-          process.env.NODE_ENV === 'development' ||
-          process.env.COOKIE_DOMAIN === '127.0.0.1'
-            ? 'lax'
-            : 'none',
-      })
+      nookies.set(
+        ctx,
+        previewCookieName('participant_token'),
+        participantToken,
+        {
+          domain: process.env.COOKIE_DOMAIN,
+          path: '/',
+          httpOnly: true,
+          maxAge: 1000 * 60 * 60 * 24 * 13,
+          secure:
+            process.env.NODE_ENV === 'production' &&
+            process.env.COOKIE_DOMAIN !== '127.0.0.1',
+          sameSite:
+            process.env.NODE_ENV === 'development' ||
+            process.env.COOKIE_DOMAIN === '127.0.0.1'
+              ? 'lax'
+              : 'none',
+        }
+      )
 
       // remove the lti-token cookie since we now have a proper participant_token
-      nookies.destroy(ctx, 'lti-token', {
+      nookies.destroy(ctx, previewCookieName('lti-token'), {
         domain: process.env.COOKIE_DOMAIN,
         path: '/',
       })

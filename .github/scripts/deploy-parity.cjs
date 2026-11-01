@@ -21,6 +21,8 @@
 // change that itself edits 'deploy/'; a candidate that leaves 'deploy/'
 // untouched reports the existing divergence and passes. Without '--base' the
 // strict whole-branch comparison applies.
+// Northflank previews are deployed independently of the production chart and
+// environment values, so deploy/northflank/ is outside this parity contract.
 //
 // Usage: node .github/scripts/deploy-parity.cjs [--other <branch>]
 //        [--candidate <ref>] [--base <ref>]
@@ -64,12 +66,17 @@ function normalizeDeployFile(path, text) {
   return text.replace(IMAGE_REFERENCE_LINE, ENVIRONMENT_OWNED_REFERENCE)
 }
 
+function isParityPath(path) {
+  return path.startsWith('deploy/') && !path.startsWith('deploy/northflank/')
+}
+
 // The comparison is pure so the contract is covered without a network, a second
 // branch checkout, or an Actions run.
 function evaluateParity(changes) {
   const violations = []
   const environmentOwned = []
   for (const change of changes) {
+    if (!isParityPath(change.path)) continue
     if (change.status === 'A' || change.status === 'D') {
       violations.push({
         path: change.path,
@@ -125,7 +132,7 @@ function candidateTouchesDeploy(baseRef, candidate) {
       DEPLOY_PATH,
     ])
   )
-  return touched.length > 0
+  return touched.some((change) => isParityPath(change.path))
 }
 
 function parseArguments(argv) {
@@ -364,5 +371,6 @@ module.exports = {
   attributeDivergence,
   evaluateParity,
   normalizeDeployFile,
+  isParityPath,
   parseNameStatus,
 }

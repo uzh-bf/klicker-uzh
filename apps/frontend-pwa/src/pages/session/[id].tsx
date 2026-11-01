@@ -38,6 +38,7 @@ import Layout from '../../components/Layout'
 import LiveQuizQuestionColumn from '../../components/liveQuiz/LiveQuizQuestionColumn'
 import LiveQuizSidebarColumn from '../../components/liveQuiz/LiveQuizSidebarColumn'
 import LiveQuizSubscriber from '../../components/liveQuiz/LiveQuizSubscriber'
+import { previewCookieName } from '@klicker-uzh/util'
 
 const DynamicAccountSelector = dynamic(
   () => import('../../components/liveQuiz/AccountSelector'),
@@ -550,9 +551,9 @@ export async function getServerSideProps(ctx: GetServerSidePropsContext) {
       context: {
         headers: {
           authorization: ctx.req.cookies?.[
-            'next-auth.participant-session-token'
+            previewCookieName('next-auth.participant-session-token')
           ]
-            ? `Bearer ${ctx.req.cookies?.['next-auth.participant-session-token'] ?? ''}`
+            ? `Bearer ${ctx.req.cookies?.[previewCookieName('next-auth.participant-session-token')] ?? ''}`
             : undefined,
         },
       },
