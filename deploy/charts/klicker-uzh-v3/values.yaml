@@ -438,6 +438,11 @@ frontendPWA:
     # Kept below the roughly 30-second spot eviction notice.
     terminationGracePeriodSeconds: 25
 
+  # Optional delay before SIGTERM on both PWA tiers, so Service endpoints drop a
+  # terminating pod before the server stops. It counts against the termination
+  # grace period. Unset renders no preStop hook.
+  preStopSleepSeconds: null
+
   nodeSelector: {}
 
   tolerations: []
