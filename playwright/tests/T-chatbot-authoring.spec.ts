@@ -1157,7 +1157,7 @@ test.describe.serial('Lecturer chatbot draft authoring', () => {
     await expect(
       page.getByTestId('chatbot-mode-switch-writing-coach')
     ).toBeDisabled()
-    await page.getByTestId('save-chatbot-modes').click()
+    await page.getByTestId('chatbot-section-modes-save').click()
     await expect
       .poll(() => modeConfigVariables)
       .toMatchObject({
