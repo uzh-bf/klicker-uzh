@@ -147,6 +147,62 @@ function optionName(option) {
   return option.split('=', 1)[0]
 }
 
+function informationalOption(args) {
+  for (let index = 0; index < args.length; index += 1) {
+    const argument = args[index]
+    if (argument === '--') break
+    if (argument === '--help' || argument === '--version') return argument
+    if (
+      PLAYWRIGHT_OPTIONS_WITH_VALUES.has(optionName(argument)) &&
+      !argument.includes('=')
+    ) {
+      index += 1
+    }
+  }
+}
+
+function showInformation(runtime, option) {
+  if (option === '--help') {
+    runtime.log(`Usage: node util/run-playwright-host.mjs [launcher options] [Playwright test arguments]
+
+Launcher options (before Playwright arguments):
+  --runtime-profile <name[,name]>  Select the local runtime profile
+  --preserve-database             Keep the existing synthetic database
+  --ci-runtime                    Serve CI production test builds
+  --print-env                     Reconcile and report the local environment
+  --show-report                   Open the existing Playwright report
+  --                              End the launcher-option prefix
+  --help                          Show this help without preparing a runtime
+  --version                       Read the local Playwright version or requirement
+
+Other arguments are forwarded to Playwright test. Normal test runs may install
+dependencies and Chromium and reconcile this checkout's runtime. For Playwright's
+full reference in an installed workspace, run:
+  pnpm --filter @klicker-uzh/playwright exec playwright test --help`)
+    return
+  }
+
+  const workspace = join(runtime.repoRoot, 'playwright')
+  const installed = join(
+    workspace,
+    'node_modules',
+    '@playwright',
+    'test',
+    'package.json'
+  )
+  if (runtime.pathExists(installed)) {
+    const metadata = JSON.parse(runtime.readFile(installed, 'utf8'))
+    runtime.log(`Version ${metadata.version}`)
+    return
+  }
+  const metadata = JSON.parse(
+    runtime.readFile(join(workspace, 'package.json'), 'utf8')
+  )
+  runtime.log(
+    `Playwright not installed; declared requirement: ${metadata.devDependencies['@playwright/test']}`
+  )
+}
+
 function isWithinDirectory(directory, candidate) {
   const relativePath = relative(directory, candidate)
   return (
@@ -731,12 +787,17 @@ function selectRuntimeMode(runtime, { ciRuntime, keepSelection, profile }) {
 
 export function main(argv = process.argv.slice(2), dependencies = {}) {
   const runtime = createRuntime(dependencies)
+  const options = parseLocalOptions(argv)
+  const information = informationalOption(options.args)
+  if (information) {
+    showInformation(runtime, information)
+    return
+  }
   const timer = createPhaseTimer(runtime.clock)
   let queueWaitSeconds = 0
 
   try {
-    const { args, profile, mode, preserveDatabase, ciRuntime } =
-      parseLocalOptions(argv)
+    const { args, profile, mode, preserveDatabase, ciRuntime } = options
     const hostEnvironment = {
       ...runtime.environment,
       [HOST_RUNNER_ENV]: '1',

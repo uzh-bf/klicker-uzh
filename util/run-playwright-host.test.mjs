@@ -4,6 +4,7 @@ import {
   existsSync,
   mkdirSync,
   mkdtempSync,
+  readdirSync,
   readFileSync,
   rmSync,
   symlinkSync,
@@ -242,6 +243,7 @@ function syntheticHostEnvironment({
 
 function createLauncherHarness({
   playwrightCli = true,
+  installedPlaywrightVersion,
   prismaDist = true,
   typesDist = true,
   workspaceIdentity = true,
@@ -287,6 +289,11 @@ function createLauncherHarness({
     if (path.endsWith('/playwright/node_modules/@playwright/test/cli.js')) {
       return playwrightCli
     }
+    if (
+      path.endsWith('/playwright/node_modules/@playwright/test/package.json')
+    ) {
+      return installedPlaywrightVersion !== undefined
+    }
     if (path.endsWith('/packages/prisma/dist/index.js')) return prismaDist
     if (path.endsWith('/packages/types/dist/index.js')) return typesDist
     if (path.endsWith('/devrouter-workspace')) return workspaceIdentity
@@ -300,6 +307,16 @@ function createLauncherHarness({
   }
 
   const readFile = (path) => {
+    if (
+      path.endsWith('/playwright/node_modules/@playwright/test/package.json')
+    ) {
+      return JSON.stringify({ version: installedPlaywrightVersion })
+    }
+    if (path === `${root}/playwright/package.json`) {
+      return JSON.stringify({
+        devDependencies: { '@playwright/test': '~9.8.7' },
+      })
+    }
     if (path.endsWith('/devrouter-workspace')) return 'synthetic-launcher\n'
     if (path === `${root}/playwright/profiles.json`) {
       return JSON.stringify(profileManifest)
@@ -343,6 +360,97 @@ function createLauncherHarness({
     },
   }
 }
+
+test('informational requests avoid all preparation in cold and warm environments', () => {
+  for (const installedPlaywrightVersion of [undefined, '9.8.6']) {
+    for (const args of [
+      ['--help'],
+      ['--', '--help'],
+      ['--runtime-profile=chat', '--help'],
+      ['--version'],
+      ['--', '--version'],
+    ]) {
+      const harness = createLauncherHarness({
+        playwrightCli: installedPlaywrightVersion !== undefined,
+        installedPlaywrightVersion,
+        environment: { KLICKER_DEVCONTAINER: '1' },
+      })
+      harness.dependencies.commandExistsFn = () => {
+        assert.fail('informational requests must not probe executables')
+      }
+      harness.dependencies.makeDirectory = () => {
+        assert.fail('informational requests must not create directories')
+      }
+      runPlaywrightHost(args, harness.dependencies)
+      assert.deepEqual(harness.calls, [])
+      assert.deepEqual(harness.writes, [])
+      assert.deepEqual(harness.removals, [])
+      assert.deepEqual(harness.plans, [])
+      assert.equal(harness.logs.length, 1)
+      if (args.includes('--version')) {
+        assert.ok(
+          harness.logs[0].includes(installedPlaywrightVersion ?? '~9.8.7')
+        )
+      }
+    }
+  }
+})
+
+test('informational flags used as option values remain test arguments', () => {
+  for (const args of [['--grep', '--help'], ['--grep=--version']]) {
+    const harness = createLauncherHarness()
+    runPlaywrightHost(args, harness.dependencies)
+    assert.deepEqual(
+      pnpmCalls(harness.calls).at(-1).args.slice(-args.length),
+      args
+    )
+    assert.ok(harness.calls.length > 0)
+  }
+  const harness = createLauncherHarness()
+  assert.throws(() =>
+    runPlaywrightHost(['--runtime-profile', '--help'], harness.dependencies)
+  )
+  assert.deepEqual(harness.calls, [])
+})
+
+test('the cold executable exposes information without dependencies or external commands', (t) => {
+  const root = mkdtempSync(join(tmpdir(), 'klicker-host-information-'))
+  t.after(() => rmSync(root, { recursive: true, force: true }))
+  for (const relative of [
+    'util/run-playwright-host.mjs',
+    'util/devrouter-cli.mjs',
+    'util/playwright-host-policy.mjs',
+    'util/playwright-profile-runtime.mjs',
+    '.github/scripts/get-shard-files.js',
+    'playwright/package.json',
+  ]) {
+    const target = join(root, relative)
+    mkdirSync(dirname(target), { recursive: true })
+    writeFileSync(target, readFileSync(join(repoRoot, relative)))
+  }
+  const before = readdirSync(root, { recursive: true }).sort()
+  for (const args of [
+    ['--help'],
+    ['--version'],
+    ['--', '--help'],
+    ['--', '--version'],
+  ]) {
+    const result = spawnSync(
+      process.execPath,
+      [join(root, 'util/run-playwright-host.mjs'), ...args],
+      {
+        cwd: root,
+        env: { PATH: join(root, 'unavailable'), KLICKER_DEVCONTAINER: '1' },
+        encoding: 'utf8',
+        timeout: 10000,
+      }
+    )
+    assert.equal(result.status, 0, result.stderr)
+    assert.ok(result.stdout.trim())
+    assert.equal(result.stderr, '')
+    assert.deepEqual(readdirSync(root, { recursive: true }).sort(), before)
+  }
+})
 
 test('launcher falls back to the maximal playwright profile and forwards Playwright arguments verbatim', () => {
   const { calls, dependencies } = createLauncherHarness()
