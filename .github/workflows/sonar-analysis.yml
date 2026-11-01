@@ -64,7 +64,7 @@ jobs:
         env:
           SONAR_TOKEN: ${{ secrets.SONAR_TOKEN }}
         run: |
-          if [ -n "\${SONAR_TOKEN}" ]; then
+          if [ -n "${SONAR_TOKEN}" ]; then
             exit 0
           fi
           {
@@ -119,7 +119,7 @@ jobs:
         if: steps.coverage.outputs.decision == 'scan'
         run: |
           version="$(node -p "require('./package.json').version")"
-          echo "value=\${version}" >> "$GITHUB_OUTPUT"
+          echo "value=${version}" >> "$GITHUB_OUTPUT"
 
       - name: SonarCloud Scan
         id: scan
@@ -134,12 +134,9 @@ jobs:
           # fails this workflow instead of leaving a green run next to a red
           # one. Merge enforcement stays a separate, separately authorized
           # change.
-          # A branch analysis is published without awaiting the gate: SonarCloud
-          # fixes a branch's type at its first analysis, so on this project's
-          # short-lived integration branches nearly the whole repository is new
-          # code and the gate fails on historical findings. The boundary step
-          # below names that condition instead of turning every branch analysis
-          # into a failure.
+          # A branch analysis is published without awaiting the gate. Only the
+          # pull-request diff gates this workflow; the boundary step below
+          # reports the branch's actual type and new-code scope.
           args: >-
             -Dsonar.projectVersion=${{ steps.version.outputs.value }}
             ${{ github.event_name == 'pull_request' && '-Dsonar.qualitygate.wait=true -Dsonar.qualitygate.timeout=600' || '' }}
@@ -160,13 +157,9 @@ jobs:
           if-no-files-found: error
           retention-days: 7
 
-      # SonarCloud fixes a branch's type at its first analysis, and the type
-      # decides what new code means. This project keeps the former default
-      # branch dev as its main branch, so v3 is a short-lived branch whose new
-      # code is everything that differs from dev; nearly the whole repository
-      # enters new code and the branch gate fails on historical findings while
-      # the pull-request analysis of the same code is healthy. This diagnostic
-      # names that cause.
+      # The diagnostic reads the recorded branch type, merge target and new-code
+      # measures. It identifies an inflated baseline without changing branch
+      # history or the project's gate policy.
       # It runs after the scan so the analysis is always published, and carries
       # always() because the awaited pull-request gate can already have failed
       # this job. Only the pull-request analysis is gated here, so only there
