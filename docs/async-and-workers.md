@@ -166,7 +166,7 @@ Scheduled graph preparation reads these operator settings from the general worke
 | `KB_GRAPH_AUTO_PREPARATION_CONCURRENCY`              | 2       | 1–50 active graph builds, counting lecturer builds       |
 | `KB_GRAPH_AUTO_PREPARATION_HEADROOM_MINOR_UNITS`     | 0       | 0 or more quota minor units kept free after the estimate |
 
-The sweep also needs the `KB_GRAPH_COST_*` and semester settings that the backend uses for reservations; without them it reports `COST_CONFIGURATION_MISSING` and admits nothing. The worker evaluates owner flags through its own GrowthBook client from the shared `GROWTHBOOK_*` settings. `KB_GRAPH_DISABLED=true` also omits `prepare-kb-graphs`.
+The sweep also needs the `KB_GRAPH_COST_*` and semester settings that the backend uses for reservations; without them it reports `COST_CONFIGURATION_MISSING` and admits nothing. The Helm chart renders them into the general worker's config map from the same `backendGraphql.knowledgeGraph.cost` values as the backend, so both read one quota ledger with identical settings. The worker evaluates owner flags through its own GrowthBook client from the shared `GROWTHBOOK_*` settings. `KB_GRAPH_DISABLED=true` also omits `prepare-kb-graphs`.
 
 Native graph builds canonicalize every source artifact to `${resourceId}.md`, regardless of whether the original resource was an uploaded document or a URL. `packages/graphql/src/services/questionGenerationGraph.ts:questionGenerationSourceSnapshot` must preserve that filename when preparing question-generation evidence. Artifact validation remains extension-aware and rejects the original upload or URL basename when it does not identify the graph artifact.
 
