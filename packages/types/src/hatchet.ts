@@ -29,6 +29,13 @@ export type CourseDeletionEvent = {
   deleteDraftActivities: boolean
 }
 
+export type LiveQuizBlockAggregationInput = {
+  liveQuizId: string
+  blockId: number
+  blockExecution: number
+  blockStartedAt: string
+}
+
 export interface HatchetHandlers {
   handleSendTeamsNotification: (
     { scope, text }: { scope: string; text: string },
@@ -91,12 +98,12 @@ export interface HatchetHandlers {
     executionCtx: Context<unknown>
   ) => Promise<boolean>
   handleAssessmentLiveQuizBlockClosureAggregation: (
-    { liveQuizId, blockId }: { liveQuizId: string; blockId: number },
+    input: LiveQuizBlockAggregationInput,
     globalCtx: HatchetHandlerGlobalContext,
     executionCtx: Context<unknown>
   ) => Promise<boolean>
   handleStandardLiveQuizBlockClosureAggregation: (
-    { liveQuizId, blockId }: { liveQuizId: string; blockId: number },
+    input: LiveQuizBlockAggregationInput,
     globalCtx: HatchetHandlerGlobalContext,
     executionCtx: Context<unknown>
   ) => Promise<boolean>
@@ -153,11 +160,11 @@ export interface PreparedHatchetTasks {
     { success: boolean }
   >
   aggregateLiveQuizBlockResultsStandard: TaskWorkflowDeclaration<
-    { liveQuizId: string; blockId: number },
+    LiveQuizBlockAggregationInput,
     { success: boolean }
   >
   aggregateLiveQuizBlockResultsAssessment: TaskWorkflowDeclaration<
-    { liveQuizId: string; blockId: number },
+    LiveQuizBlockAggregationInput,
     { success: boolean }
   >
   processCourseDuplication: TaskWorkflowDeclaration<
