@@ -3,7 +3,7 @@
 Self-contained local environment for `klicker-uzh`. No Infisical/Doppler, no
 external EduID, no `/etc/hosts` edits — clone, route through devrouter, and run.
 The devcontainer owns the whole stack (toolchain, Postgres, 3× Redis, MailHog,
-Hatchet, install + build + seed, `turbo dev`);
+Hatchet, dependency preparation and `turbo dev`);
 [devrouter](https://github.com/rschlaefli/devrouter) fronts it on a shared
 `:443` / `:5432`. Linked worktrees publish only ephemeral host ports and can
 coexist; the primary checkout keeps fixed localhost application ports,
@@ -48,7 +48,7 @@ The primary checkout keeps fixed localhost application ports, publishes the data
 
 Use this to mirror production domain behaviors, test cookie-sharing over HTTPS, and enable parallel workspaces:
 
-1. **Host prerequisite**: Install [devrouter](https://github.com/rschlaefli/devrouter) ≥ 0.5.1 and set it up:
+1. **Host prerequisite**: Install [devrouter](https://github.com/rschlaefli/devrouter) ≥ 0.6.3 and set it up:
    ```bash
    devrouter setup --yes   # Traefik + the shared `devnet` + mkcert CA
    ```
@@ -126,7 +126,7 @@ marker creation to work around a refusal.
 
 ## Profiles
 
-This repository pins devrouter 0.5.1. Managed profiles, introduced in 0.0.40,
+This repository pins devrouter 0.6.3. Managed profiles, introduced in 0.0.40,
 select three independent dimensions: routed
 apps, optional Compose services, and managed processes. Merged selections are
 additive and order-insensitive; omitting `--profile` keeps the all-on `full`
@@ -479,6 +479,18 @@ can lose writable-layer data. If the installed tool lacks the required command,
 stop at that capability boundary instead of substituting raw Docker mutations.
 
 ### Fresh disposable database initialization
+
+With Devrouter 0.6.3 and a verified Devsy 1.19.0 or 1.24.0 agent, a genuinely
+new disposable worktree can use the repository's `freshBootstrap` declaration:
+
+```sh
+devrouter ensure /absolute/path/to/new-worktree --profile live-quiz,manage --initialize-new --json
+```
+
+Qualify the complete selected Compose recipe and resource limits first. Devrouter
+runs the declared initializer once before replaying ordinary preserving hooks.
+A failed, canceled or uncertain attempt remains consumed; retain its data and
+use preserving recovery or a separately authorized new disposable checkout.
 
 Initialization is a separate, explicit operation for newly provisioned empty
 `klicker_test` and `klicker_test_shadow` databases with the restricted

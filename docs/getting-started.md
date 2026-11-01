@@ -115,9 +115,11 @@ stale owned groups are replaced boundedly, unknown processes are never killed,
 and a failed profile transition restores the last usable generated config.
 
 The Dev Container waits for `postCreateCommand` before managed post-start.
-Post-create publishes a fixed container-local completion marker only after the
-destructive bootstrap and generated runtime inputs succeed; post-start checks
-that marker before it reads those inputs or starts a process. If the marker is
+Post-create publishes a fixed container-local completion marker only after
+dependency preparation, existing-schema verification and generated runtime
+inputs succeed; post-start checks that marker before it reads those inputs or
+starts a process. New empty disposable databases require separate
+[fresh initialization](../.devcontainer/README.md#fresh-disposable-database-initialization). If the marker is
 missing or malformed, treat the workspace as incompletely bootstrapped and use
 the [guarded recovery procedure](../.devcontainer/README.md#guarded-retained-runtime-recovery). A warm profile switch never manufactures the
 marker or reruns database bootstrap. The `ROOT` contract in
