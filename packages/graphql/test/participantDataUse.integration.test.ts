@@ -25,6 +25,8 @@ import { getParticipantDataUse } from '../src/services/participants.js'
 const TEST_PREFIX = `participant-data-use-integration-${Date.now()}`
 const fixtureIds = {
   participants: [] as string[],
+  courses: [] as string[],
+  users: [] as string[],
 }
 
 function participantContext(participantId: string): ContextWithUser {
@@ -132,6 +134,66 @@ async function createParticipant(label: string) {
   return participant
 }
 
+async function createCourse(label: string, areAnalyticsValid: boolean) {
+  await requireDisposableDatabase(prisma)
+  const owner = await prisma.user.create({
+    data: {
+      email: `${TEST_PREFIX}-${label}@example.org`,
+      shortname: `${TEST_PREFIX}-${label}`,
+    },
+  })
+  fixtureIds.users.push(owner.id)
+  const course = await prisma.course.create({
+    data: {
+      name: `${TEST_PREFIX}-${label}`,
+      displayName: `${TEST_PREFIX}-${label}`,
+      startDate: new Date('2026-09-01T00:00:00.000Z'),
+      endDate: new Date('2026-12-31T00:00:00.000Z'),
+      groupDeadlineDate: new Date('2026-10-01T00:00:00.000Z'),
+      areAnalyticsValid,
+      ownerId: owner.id,
+      pinCode: Math.floor(Math.random() * 9_000_000 + 1_000_000),
+    },
+  })
+  fixtureIds.courses.push(course.id)
+  return course
+}
+
+async function readAnalyticsEligibilityGeneration() {
+  await requireDisposableDatabase(prisma)
+  const row = await prisma.analyticsEligibilityGeneration.findUnique({
+    where: { id: 0 },
+  })
+  return row?.generation ?? 0n
+}
+
+async function createParticipantWithDataUse(
+  label: string,
+  learningAnalyticsConsent: boolean
+) {
+  await requireDisposableDatabase(prisma)
+  const participant = await prisma.$transaction(async (tx) => {
+    const dataUse = await initialParticipantDataUseData(
+      validateInitialParticipantDataUse({
+        disclosureVersion: PARTICIPANT_DATA_USE_DISCLOSURE_VERSION,
+        researchConsent: false,
+        learningAnalyticsConsent,
+        acknowledged: true,
+      }),
+      tx
+    )
+    return tx.participant.create({
+      data: {
+        username: `${TEST_PREFIX}-${label}`,
+        password: 'integration-test-password',
+        ...dataUse,
+      },
+    })
+  })
+  fixtureIds.participants.push(participant.id)
+  return participant
+}
+
 describe('participant data-use PostgreSQL integration', () => {
   beforeAll(async () => {
     await requireDisposableDatabase(prisma)
@@ -145,6 +207,18 @@ describe('participant data-use PostgreSQL integration', () => {
         where: { id: { in: fixtureIds.participants } },
       })
       fixtureIds.participants.length = 0
+    }
+    if (fixtureIds.courses.length > 0) {
+      await prisma.course.deleteMany({
+        where: { id: { in: fixtureIds.courses } },
+      })
+      fixtureIds.courses.length = 0
+    }
+    if (fixtureIds.users.length > 0) {
+      await prisma.user.deleteMany({
+        where: { id: { in: fixtureIds.users } },
+      })
+      fixtureIds.users.length = 0
     }
   })
 
@@ -479,4 +553,80 @@ describe('participant data-use PostgreSQL integration', () => {
     })
     await expectLearningAnalyticsWriterGateReleased()
   })
+
+  it('advances the eligibility generation only when the analytics cohort changes', async () => {
+    const course = await createCourse('cohort-change', true)
+    const participant = await createParticipant('cohort-change')
+    const ctx = participantContext(participant.id)
+    const baseline = await readAnalyticsEligibilityGeneration()
+
+    await completeParticipant(participant.id)
+    await expect(readAnalyticsEligibilityGeneration()).resolves.toBe(baseline)
+    await expect(
+      prisma.course.findUnique({
+        where: { id: course.id },
+        select: { areAnalyticsValid: true },
+      })
+    ).resolves.toEqual({ areAnalyticsValid: true })
+
+    await updateParticipantDataUseChoice(
+      'analytics',
+      choiceInput(true, completedRevision),
+      ctx
+    )
+    await expect(readAnalyticsEligibilityGeneration()).resolves.toBe(
+      baseline + 1n
+    )
+    await expect(
+      prisma.course.findUnique({
+        where: { id: course.id },
+        select: { areAnalyticsValid: true },
+      })
+    ).resolves.toEqual({ areAnalyticsValid: false })
+
+    const researchOnly = await createParticipant('research-only')
+    await completeParticipant(researchOnly.id)
+    const afterGrant = await readAnalyticsEligibilityGeneration()
+    await updateParticipantDataUseChoice(
+      'research',
+      choiceInput(true, completedRevision),
+      participantContext(researchOnly.id)
+    )
+    await expect(readAnalyticsEligibilityGeneration()).resolves.toBe(afterGrant)
+
+    await updateParticipantDataUseChoice(
+      'analytics',
+      choiceInput(false, completedRevision + 1),
+      ctx
+    )
+    await expect(readAnalyticsEligibilityGeneration()).resolves.toBe(
+      afterGrant + 1n
+    )
+  })
+
+  it('serializes a cohort-joining signup with the learning-analytics writers', async () => {
+    const baseline = await readAnalyticsEligibilityGeneration()
+    await createParticipantWithDataUse('signup-declined', false)
+    await expect(readAnalyticsEligibilityGeneration()).resolves.toBe(baseline)
+
+    const holder = await holdLearningAnalyticsWriterGate()
+    const creation = createParticipantWithDataUse('signup-granted', true)
+    try {
+      await expect(
+        Promise.race([creation, wait(1_000).then(() => null)])
+      ).resolves.toBeNull()
+      await expect(readAnalyticsEligibilityGeneration()).resolves.toBe(baseline)
+    } finally {
+      holder.release()
+      await holder.done.catch(() => undefined)
+    }
+
+    await expect(creation).resolves.toMatchObject({
+      learningAnalyticsConsent: true,
+      dataUseRevision: 1,
+    })
+    await expect(readAnalyticsEligibilityGeneration()).resolves.toBe(
+      baseline + 1n
+    )
+  }, 15_000)
 })
