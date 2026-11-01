@@ -119,6 +119,8 @@ async function seedTest(prisma: Prisma.PrismaClient) {
   await requireDisposableDatabase(prisma)
   if (process.env.ENV !== 'development') process.exit(1)
 
+  const studyStreakTrackingStartedAt = new Date()
+
   await seedLevels(prisma)
   await seedAchievements(prisma)
   await seedUsers(prisma)
@@ -864,7 +866,7 @@ async function seedTest(prisma: Prisma.PrismaClient) {
     })
   )
 
-  // create participations for all the first 30 participants
+  // create participations for all seeded participants
   await Promise.all(
     PARTICIPANT_IDS.map(async (id, ix) => {
       return prisma.participation.upsert({
@@ -876,6 +878,7 @@ async function seedTest(prisma: Prisma.PrismaClient) {
         },
         create: {
           isActive: true,
+          studyStreakTrackingStartedAt,
           course: {
             connect: {
               id: COURSE_ID_TEST,
@@ -893,6 +896,15 @@ async function seedTest(prisma: Prisma.PrismaClient) {
       })
     })
   )
+
+  await prisma.participation.updateMany({
+    where: {
+      courseId: COURSE_ID_TEST,
+      isActive: true,
+      studyStreakTrackingStartedAt: null,
+    },
+    data: { studyStreakTrackingStartedAt },
+  })
 
   // add participants 30 to 35 to single groups
   const PARTICIPANT_GROUP_IDS_SINGLE = [

@@ -10,7 +10,7 @@ import {
   faRepeat,
 } from '@fortawesome/free-solid-svg-icons'
 import {
-  ParticipationsDocument,
+  QParticipationsWithStudyStreakStatusDocument,
   SelfDocument,
   SubscribeToPushDocument,
   UnsubscribeFromPushDocument,
@@ -104,7 +104,7 @@ function Index() {
       },
       refetchQueries: [
         {
-          query: ParticipationsDocument,
+          query: QParticipationsWithStudyStreakStatusDocument,
           variables: {
             endpoint: subscriptionObject.endpoint,
             assessmentOnly: process.env.NEXT_PUBLIC_IS_ASSESSMENT === 'true',
@@ -125,7 +125,7 @@ function Index() {
       },
       refetchQueries: [
         {
-          query: ParticipationsDocument,
+          query: QParticipationsWithStudyStreakStatusDocument,
           variables: {
             endpoint: subscriptionObject.endpoint,
             assessmentOnly: process.env.NEXT_PUBLIC_IS_ASSESSMENT === 'true',
@@ -146,13 +146,16 @@ function Index() {
     unsubscribeFromPush: unsubscribeUser,
   })
 
-  const { data, loading, subscribeToMore } = useQuery(ParticipationsDocument, {
-    variables: {
-      endpoint: subscription?.endpoint,
-      assessmentOnly: process.env.NEXT_PUBLIC_IS_ASSESSMENT === 'true',
-    },
-    fetchPolicy: 'network-only',
-  })
+  const { data, loading, subscribeToMore } = useQuery(
+    QParticipationsWithStudyStreakStatusDocument,
+    {
+      variables: {
+        endpoint: subscription?.endpoint,
+        assessmentOnly: process.env.NEXT_PUBLIC_IS_ASSESSMENT === 'true',
+      },
+      fetchPolicy: 'network-only',
+    }
+  )
 
   const { courses, oldCourses, activeLiveQuizzes, activeMicrolearning } =
     useStudentOverviewSplit({ participations: data?.participations ?? [] })
