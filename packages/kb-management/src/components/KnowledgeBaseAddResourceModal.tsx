@@ -112,7 +112,12 @@ function KnowledgeBaseAddResourceModal({
         kbId={kbId}
         embedded
         onUploadStateChange={setUploadingDocument}
-        onResourceCreated={handleResourceCreated}
+        onResourceCreated={onResourceCreated}
+        onUploadFinished={({ failed }) => {
+          // A batch that lost files stays open so they can be chosen again
+          // next to the ones that were added.
+          if (failed === 0) closeModal()
+        }}
       />
     )
 
