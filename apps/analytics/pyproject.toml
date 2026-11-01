@@ -27,6 +27,13 @@ dev = [
 package = false
 exclude-newer = "14d"
 
+[tool.prisma]
+# prisma generate installs Node through nodeenv, which otherwise resolves the
+# newest Node release. nodeenv 1.10.0 cannot parse pre-release version strings
+# such as 27.0.0-alpha, so pin the repository's Node version (Volta pin in the
+# root package.json) to keep image builds reproducible.
+nodeenv_extra_args = ["--node=24.21.0"]
+
 [tool.pyright]
 typeCheckingMode = "strict"
 
