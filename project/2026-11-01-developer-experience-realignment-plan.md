@@ -110,7 +110,7 @@ arms simplification. Standing platform reviews remain a separate evidence layer.
 ## Progress
 
 Source is complete at the recorded baseline, equal to fetched `origin/v3`.
-The candidate contains 213 substantive changed lines across the task definition,
+The candidate contains 224 substantive changed lines across the task definition,
 launcher and its existing tests; documentation and this plan are excluded from
 that calculation. One cohesive package remains appropriate.
 
@@ -153,7 +153,16 @@ volumes. A correction-only container uses the same pinned image and owned
 verification copy's existing isolated dependencies; no app service was started.
 The full build and unchanged formatting-control evidence remain applicable.
 
-Remaining delivery: commit and normal push of the correction, current-candidate
-hosted CI and feedback reconciliation, and exact tooling-container removal.
+The next automated review found a macOS fixture-path defect and a missing
+no-probe assertion. The process test reproduced the macOS failure; canonicalizing
+its temporary path fixes the entry-point mismatch. Both informational harnesses
+now reject Devrouter resolution. All 47 tests pass on macOS and Linux; the focused
+scan passes. The suggested prose-label assertions are declined under the
+repository's content-independent testing rule; actual output was checked manually.
+
+Remaining delivery: commit and normal push of the test correction, followed by
+current-candidate hosted CI and feedback reconciliation. All owned tooling
+containers are removed. No application source changed after the passing build
+and aggregate; their evidence remains applicable.
 Review remains by the main session under the risk ruling above. Detailed logs,
 control fixtures and terminal verification remain ignored local evidence.

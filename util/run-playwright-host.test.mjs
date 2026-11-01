@@ -6,6 +6,7 @@ import {
   mkdtempSync,
   readdirSync,
   readFileSync,
+  realpathSync,
   rmSync,
   symlinkSync,
   writeFileSync,
@@ -378,6 +379,10 @@ test('informational requests avoid all preparation in cold and warm environments
       harness.dependencies.commandExistsFn = () => {
         assert.fail('informational requests must not probe executables')
       }
+      harness.dependencies.resolveDevrouterFn = () => {
+        harness.calls.push({ command: 'resolveDevrouter' })
+        assert.fail('informational requests must not resolve Devrouter')
+      }
       harness.dependencies.makeDirectory = () => {
         assert.fail('informational requests must not create directories')
       }
@@ -415,6 +420,10 @@ test('unreadable or incomplete installed metadata falls back without preparation
     harness.dependencies.commandExistsFn = () => {
       assert.fail('version fallback must not probe executables')
     }
+    harness.dependencies.resolveDevrouterFn = () => {
+      harness.calls.push({ command: 'resolveDevrouter' })
+      assert.fail('version fallback must not resolve Devrouter')
+    }
     harness.dependencies.makeDirectory = () => {
       assert.fail('version fallback must not create directories')
     }
@@ -445,7 +454,9 @@ test('informational flags used as option values remain test arguments', () => {
 })
 
 test('the cold executable exposes information without dependencies or external commands', (t) => {
-  const root = mkdtempSync(join(tmpdir(), 'klicker-host-information-'))
+  const root = realpathSync(
+    mkdtempSync(join(tmpdir(), 'klicker-host-information-'))
+  )
   t.after(() => rmSync(root, { recursive: true, force: true }))
   for (const relative of [
     'util/run-playwright-host.mjs',
