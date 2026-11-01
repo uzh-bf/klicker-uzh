@@ -2,6 +2,7 @@ query QGetKbChatbotBindingsWithKnowledgeBases($kbId: ID!) {
   getKbChatbotBindings(kbId: $kbId) {
     chatbotId
     chatbotName
+    chatbotStatus
     enabledKbs {
       id
       name
