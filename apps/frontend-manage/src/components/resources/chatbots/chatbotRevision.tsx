@@ -190,6 +190,10 @@ function ChatbotRevisionStatusNotice({
         <UserNotification>
           {t('manage.resources.chatbotRevisionSaved', { version })}
         </UserNotification>
+      ) : chatbot.status === ChatbotStatus.Draft ? (
+        <UserNotification>
+          {t('manage.resources.chatbotRevisionDraftOnly')}
+        </UserNotification>
       ) : (
         <UserNotification>
           {t('manage.resources.chatbotRevisionLiveOnly')}

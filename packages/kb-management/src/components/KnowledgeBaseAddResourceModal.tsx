@@ -14,11 +14,14 @@ const FOCUS_SELECTORS: Record<AddResourceMode, string> = {
 
 function KnowledgeBaseAddResourceModal({
   kbId,
+  kbName,
   triggerRef,
   onClose,
   onResourceCreated,
 }: {
   kbId: string
+  // Names the knowledge base in the title where the page does not show it.
+  kbName?: string
   triggerRef: React.RefObject<HTMLElement | null>
   onClose: () => void
   onResourceCreated: () => Promise<unknown>
@@ -96,7 +99,9 @@ function KnowledgeBaseAddResourceModal({
 
   const isChooser = mode === 'chooser'
   const modeTitles: Record<AddResourceMode, string> = {
-    chooser: t('kb.addResourceTitle'),
+    chooser: kbName
+      ? t('kb.addResourceTitleFor', { kbName })
+      : t('kb.addResourceTitle'),
     website: t('kb.addWebsite'),
     document: t('kb.addDocument'),
   }

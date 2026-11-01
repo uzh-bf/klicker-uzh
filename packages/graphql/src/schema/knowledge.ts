@@ -113,6 +113,7 @@ interface IKBMetrics {
   servingResourceCount: number
   processingResourceCount: number
   failedResourceCount: number
+  lastChangedAt: Date | null
 }
 
 function validateKbByteMetric(value: number): number {
@@ -161,6 +162,7 @@ export const KBMaterialsReadinessRef = builder.objectRef<
     | 'servingResourceCount'
     | 'processingResourceCount'
     | 'failedResourceCount'
+    | 'lastChangedAt'
   >
 >('KBMaterialsReadiness')
 export const KBMaterialsReadiness = KBMaterialsReadinessRef.implement({
@@ -171,6 +173,8 @@ export const KBMaterialsReadiness = KBMaterialsReadinessRef.implement({
     servingResourceCount: t.exposeInt('servingResourceCount'),
     processingResourceCount: t.exposeInt('processingResourceCount'),
     failedResourceCount: t.exposeInt('failedResourceCount'),
+    // The latest change to a resource that is not deleted; null without any.
+    lastChangedAt: t.expose('lastChangedAt', { type: 'Date', nullable: true }),
   }),
 })
 

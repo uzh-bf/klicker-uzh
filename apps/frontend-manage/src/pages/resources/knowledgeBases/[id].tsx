@@ -1,4 +1,5 @@
 import { useQuery } from '@apollo/client'
+import { useFeatureFlag } from '@klicker-uzh/feature-flags/react'
 import { QGetChatbotsInfoWithKnowledgeBasesDocument } from '@klicker-uzh/graphql/dist/ops'
 import { KnowledgeBaseDetail } from '@klicker-uzh/kb-management'
 import type { GetStaticPropsContext } from 'next'
@@ -11,6 +12,7 @@ import { useAiFeaturesEnabled } from '../../../lib/hooks/useAiFeaturesEnabled'
 function KnowledgeBasePage({ kbId }: { kbId: string }) {
   const t = useTranslations()
   const aiFeaturesEnabled = useAiFeaturesEnabled()
+  const advancedManagementEnabled = useFeatureFlag('ai-advanced-management')
   const router = useRouter()
   const requestedChatbotId =
     typeof router.query.chatbotId === 'string'
@@ -28,14 +30,21 @@ function KnowledgeBasePage({ kbId }: { kbId: string }) {
   const backLink = chatbot
     ? {
         href: `/resources/chatbots?chatbotId=${encodeURIComponent(chatbot.id)}&view=knowledge`,
-        label: t('manage.resources.backToChatbot', { name: chatbot.name }),
+        label: t('manage.resources.backToChatbotSetup'),
+        message: t('manage.resources.chatbotKnowledgeBaseBanner', {
+          name: chatbot.name,
+        }),
       }
     : undefined
 
   return (
     <Layout displayName={t('kb.title')}>
       {aiFeaturesEnabled ? (
-        <KnowledgeBaseDetail kbId={kbId} backLink={backLink} />
+        <KnowledgeBaseDetail
+          kbId={kbId}
+          backLink={backLink}
+          showBulkIngestion={advancedManagementEnabled}
+        />
       ) : (
         <AiBetaUnavailable />
       )}

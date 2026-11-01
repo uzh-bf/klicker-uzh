@@ -302,6 +302,15 @@ function KnowledgeGraphPanel({ kbId }: { kbId: string }) {
       setDetailsOpen(true)
     }
   }, [router.asPath])
+  // A plain anchor on the same page changes only the hash, without a router
+  // navigation, so it is followed separately.
+  useEffect(() => {
+    const openFromHash = () => {
+      if (window.location.hash === '#knowledge-graph') setDetailsOpen(true)
+    }
+    window.addEventListener('hashchange', openFromHash)
+    return () => window.removeEventListener('hashchange', openFromHash)
+  }, [])
   const formattedBillingLabel =
     config?.billingLabel === 'SEMESTER_QUOTA'
       ? t('kb.graphBillingSemesterQuota')
@@ -436,7 +445,7 @@ function KnowledgeGraphPanel({ kbId }: { kbId: string }) {
         : null,
     ]
       .filter((value): value is string => Boolean(value))
-      .join(' · ')
+      .join(', ')
   }
 
   const handleRebuild = async () => {

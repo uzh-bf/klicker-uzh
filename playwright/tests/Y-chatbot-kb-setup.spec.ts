@@ -8,6 +8,7 @@ import { URL_MANAGE, USER_ID_TEST } from '../util/constants.js'
 const PREFIX = 'E2E KB Setup'
 const CHATBOT_NAME = `${PREFIX} Chatbot`
 const KB_NAME = `${PREFIX} Material`
+const NO_KB_OPTION = 'No knowledge base. Answers use general model knowledge.'
 
 async function cleanup() {
   const prisma = await getPrisma()
@@ -62,26 +63,45 @@ test.describe('Chatbot knowledge base setup', () => {
       `${manageUrl}/resources/chatbots?chatbotId=${chatbotId}&view=knowledge`
     )
     await expect(page.getByTestId('chatbot-kb-setup')).toBeVisible()
-    await expect(
-      page.getByTestId('chatbot-no-enabled-knowledge-base')
-    ).toBeVisible()
+    // Without material the section warns instead of showing a notice.
+    await expect(page.getByTestId('chatbot-section-materials')).toHaveAttribute(
+      'data-status',
+      'warning'
+    )
     // A draft change is reviewed with the next publication request.
     await expect(page.getByTestId('chatbot-kb-live-change-note')).toHaveCount(0)
+    // The advanced-management flag is on by default in this mock.
+    await expect(page.getByTestId('chatbot-section-usage-toggle')).toBeVisible()
 
-    // Creating from the chatbot connects the new knowledge base and opens it
-    // with a way back to the chatbot.
+    // Creating from the chatbot connects the new knowledge base and offers to
+    // add materials without leaving the chatbot.
     await page.getByTestId('chatbot-kb-create').click()
+    await expect(page.getByTestId('knowledge-base-name')).toHaveValue(
+      CHATBOT_NAME
+    )
     await page.getByTestId('knowledge-base-name').fill(KB_NAME)
     await page.getByTestId('submit-create-knowledge-base').click()
 
+    await expect(page.getByTestId('kb-add-resource-modal')).toBeVisible()
+    await expect(page).toHaveURL(
+      new RegExp(`/resources/chatbots\\?chatbotId=${chatbotId}&view=knowledge$`)
+    )
+    await page.getByTestId('close-kb-add-resource-modal').click()
+    await expect(page.getByTestId('kb-add-resource-modal')).toHaveCount(0)
+    await expect(page.getByTestId('chatbot-kb-card')).toBeVisible()
+    await expect(page.getByTestId('chatbot-enabled-knowledge-base')).toHaveText(
+      KB_NAME
+    )
+
+    // The knowledge base page leads back to the chatbot's setup.
+    await page.getByTestId('chatbot-kb-open').click()
     await expect(page).toHaveURL(
       new RegExp(`/resources/knowledgeBases/[^?]+\\?chatbotId=${chatbotId}$`)
     )
-    const backLink = page.getByTestId('kb-back-to-chatbot')
-    await expect(backLink).toBeVisible()
-    await expect(backLink).toContainText(CHATBOT_NAME)
-
-    await backLink.click()
+    await expect(page.getByTestId('kb-chatbot-banner')).toContainText(
+      CHATBOT_NAME
+    )
+    await page.getByTestId('kb-back-to-chatbot').click()
     await expect(page).toHaveURL(
       new RegExp(`/resources/chatbots\\?chatbotId=${chatbotId}&view=knowledge$`)
     )
@@ -89,15 +109,23 @@ test.describe('Chatbot knowledge base setup', () => {
       KB_NAME
     )
 
-    await page.getByTestId('chatbot-kb-disconnect').click()
     await expect(
-      page.getByTestId('chatbot-no-enabled-knowledge-base')
-    ).toBeVisible()
+      page.getByTestId('chatbot-section-materials')
+    ).not.toHaveAttribute('data-status', 'warning')
+
+    // Choosing the empty option disconnects the material.
+    await selectOption(page, '[data-cy="chatbot-kb-select"]', NO_KB_OPTION)
+    await expect(page.getByTestId('chatbot-section-materials')).toHaveAttribute(
+      'data-status',
+      'warning'
+    )
+    await expect(
+      page.getByTestId('chatbot-enabled-knowledge-base')
+    ).toHaveCount(0)
     await expect(page.getByTestId('chatbot-kb-disconnect')).toHaveCount(0)
 
     // An existing knowledge base is connected by selecting it.
     await selectOption(page, '[data-cy="chatbot-kb-select"]', KB_NAME)
-    await page.getByTestId('chatbot-kb-connect').click()
     await expect(page.getByTestId('chatbot-enabled-knowledge-base')).toHaveText(
       KB_NAME
     )
@@ -182,5 +210,96 @@ test.describe('Chatbot knowledge base setup', () => {
     )
     await expect(page.getByTestId('knowledge-base-detail')).toBeVisible()
     await expect(page.getByTestId('kb-back-to-chatbot')).toHaveCount(0)
+  })
+
+  test('requests publication of a new chatbot without opening the disclaimer', async ({
+    page,
+  }) => {
+    const prisma = await getPrisma()
+    await prisma.user.update({
+      where: { id: USER_ID_TEST },
+      data: { aiFeaturesEnabled: true },
+    })
+    await prisma.kB.create({ data: { name: KB_NAME, ownerId: USER_ID_TEST } })
+    const manageUrl = process.env.URL_MANAGE ?? URL_MANAGE
+
+    // Without the advanced-management flag the lecturer sees the reduced
+    // workspace.
+    await mockGrowthBookFeatureFlags(page, {
+      aiBeta: true,
+      aiAdvancedManagement: false,
+    })
+    // GrowthBook keeps the beforeEach payload in localStorage for a minute,
+    // so the new payload only applies once that cache is gone.
+    await page.evaluate(() => localStorage.clear())
+    await page.goto(`${manageUrl}/resources/chatbots`)
+    await expect(page.getByTestId('create-chatbot')).toBeVisible()
+
+    const chatbotId = await createDraftChatbot(page)
+    // A draft is prepared on one page of sections.
+    await expect(page.getByTestId('chatbot-draft-setup')).toBeVisible()
+    await expect(page.getByTestId('chatbot-technical-details')).toHaveCount(0)
+    await expect(
+      page.getByTestId('chatbot-section-materials-toggle')
+    ).toBeVisible()
+    await expect(
+      page.getByTestId('chatbot-section-students-toggle')
+    ).toBeVisible()
+    await expect(page.getByTestId('chatbot-section-request')).toBeVisible()
+
+    // Choosing material connects it without a Connect button.
+    await selectOption(page, '[data-cy="chatbot-kb-select"]', KB_NAME)
+    await expect(page.getByTestId('chatbot-enabled-knowledge-base')).toHaveText(
+      KB_NAME
+    )
+    await expect(page.getByTestId('chatbot-kb-connect')).toHaveCount(0)
+
+    // Student information stays a suggestion until the lecturer edits it, and
+    // the optional behavior section stays closed.
+    await expect(page.getByTestId('chatbot-section-students')).toHaveAttribute(
+      'data-status',
+      'suggested'
+    )
+    await expect(
+      page.getByTestId('chatbot-section-students-toggle')
+    ).toHaveAttribute('aria-expanded', 'false')
+    await expect(page.getByTestId('chatbot-setup-disclaimer')).toHaveCount(0)
+    await expect(
+      page.getByTestId('chatbot-section-modes-toggle')
+    ).toHaveAttribute('aria-expanded', 'false')
+
+    // The publication request is open and prefilled.
+    await expect(page.getByTestId('chatbot-setup-review')).toBeVisible()
+    await expect(page.getByTestId('chatbot-publication-use-case')).toHaveValue(
+      `${CHATBOT_NAME} description`
+    )
+    await page
+      .getByTestId('chatbot-publication-expected-student-count')
+      .fill('40')
+    const submitButton = page.getByTestId('request-chatbot-publication')
+    await expect(submitButton).toBeEnabled()
+    await submitButton.click()
+
+    await expect
+      .poll(async () => {
+        const chatbot = await prisma.chatbot.findUniqueOrThrow({
+          where: { id: chatbotId },
+          select: { status: true, disclaimerId: true },
+        })
+        return chatbot.disclaimerId !== null && chatbot.status
+      })
+      .toBe('PENDING_APPROVAL')
+
+    // A pending chatbot keeps the same page. An old link to the usage view
+    // opens the usage section, which is locked while the request is pending.
+    await page.goto(
+      `${manageUrl}/resources/chatbots?chatbotId=${chatbotId}&view=usage`
+    )
+    await expect(page.getByTestId('chatbot-draft-setup')).toBeVisible()
+    await expect(
+      page.getByTestId('chatbot-section-usage-toggle')
+    ).toHaveAttribute('aria-expanded', 'true')
+    await expect(page.getByTestId('chatbot-credit-initial')).toBeDisabled()
+    await expect(page.getByTestId('chatbot-publication-readonly')).toBeVisible()
   })
 })

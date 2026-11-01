@@ -1,4 +1,5 @@
 import * as DB from '@klicker-uzh/prisma/client'
+import { DEFAULT_CHATBOT_CREDIT_POLICY_VALUES } from '@klicker-uzh/util/chatbot-credit-policy-defaults'
 import { GraphQLError } from 'graphql'
 
 export const MAX_SIGNED_INT32 = 2_147_483_647
@@ -10,15 +11,12 @@ export type ChatbotCreditPolicy = {
   creditMaxCredits: number
 }
 
-// What a chatbot starts with when its owner never touches the credit
-// controls. One credit is one participant message. The daily refill means
-// the chatbot is usable by participants on the day it is created, rather
-// than waiting for a longer reset period to elapse.
 export const DEFAULT_CHATBOT_CREDIT_POLICY: ChatbotCreditPolicy = {
-  creditInitialCredits: 3,
-  creditResetPeriod: DB.CreditResetPeriod.DAILY,
-  creditResetAmount: 3,
-  creditMaxCredits: 3,
+  ...DEFAULT_CHATBOT_CREDIT_POLICY_VALUES,
+  creditResetPeriod:
+    DB.CreditResetPeriod[
+      DEFAULT_CHATBOT_CREDIT_POLICY_VALUES.creditResetPeriod
+    ],
 }
 
 function invalidCreditPolicy(message: string) {

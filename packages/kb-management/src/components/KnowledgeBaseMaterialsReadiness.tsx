@@ -44,7 +44,7 @@ function KnowledgeBaseMaterialsReadiness({
       }`}
       data-cy="kb-materials-readiness"
     >
-      {parts.join(' · ')}
+      {parts.join(', ')}
     </span>
   )
 }

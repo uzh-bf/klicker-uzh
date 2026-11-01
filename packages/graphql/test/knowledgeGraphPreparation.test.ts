@@ -23,7 +23,8 @@ import {
 } from '../src/services/knowledgeGraphPreparation.js'
 
 const MINUTE = 60_000
-const now = new Date('2026-09-24T12:00:00.000Z')
+// 00:00 in Europe/Zurich, inside the default nightly window.
+const now = new Date('2026-09-24T22:00:00.000Z')
 const minutesAgo = (minutes: number) =>
   new Date(now.getTime() - minutes * MINUTE)
 const config = getKBGraphPreparationScheduleConfig({})
@@ -558,5 +559,85 @@ describe('scheduled graph preparation sweep', () => {
 
     expect(summary.status).toBe('CONFIGURATION_INVALID')
     expect(startBuild).not.toHaveBeenCalled()
+  })
+
+  describe('nightly window', () => {
+    async function sweepAt(at: string, env: NodeJS.ProcessEnv = {}) {
+      const { deps } = createDeps()
+      const startBuild = vi.fn()
+      const summary = await sweepKbGraphPreparation({
+        ...deps,
+        env: { ...costEnv, ...env },
+        now: () => new Date(at),
+        startBuild,
+      })
+      return { summary, deps }
+    }
+
+    it.each([
+      ['inside the window', '2026-09-24T20:00:00.000Z', 'COMPLETED'],
+      ['before the window opens', '2026-09-24T19:59:00.000Z', 'OUTSIDE_WINDOW'],
+      ['after the window closes', '2026-09-25T04:00:00.000Z', 'OUTSIDE_WINDOW'],
+      ['at midday', '2026-09-24T10:00:00.000Z', 'OUTSIDE_WINDOW'],
+    ])('reads the default window %s', async (_, at, status) => {
+      const { summary, deps } = await sweepAt(at)
+
+      expect(summary.status).toBe(status)
+      if (status === 'OUTSIDE_WINDOW') {
+        expect(summary.scanned).toBe(0)
+        expect(deps.prisma.kB.findMany).not.toHaveBeenCalled()
+      }
+    })
+
+    it.each([
+      ['inside a same-day window', '2026-09-24T09:30:00.000Z', 'COMPLETED'],
+      [
+        'outside a same-day window',
+        '2026-09-24T06:00:00.000Z',
+        'OUTSIDE_WINDOW',
+      ],
+    ])('reads a same-day window %s', async (_, at, status) => {
+      const { summary } = await sweepAt(at, {
+        KB_GRAPH_AUTO_PREPARATION_WINDOW: '10:00-12:00',
+      })
+
+      expect(summary.status).toBe(status)
+    })
+
+    // Zurich moves to summer time at 01:00Z on 2026-03-29 and back to winter
+    // time at 01:00Z on 2026-10-25; the window stays 22:00-06:00 local.
+    it.each([
+      ['2026-03-28T21:30:00.000Z', 'COMPLETED'], // 22:30 CET
+      ['2026-03-29T00:30:00.000Z', 'COMPLETED'], // 01:30 CET
+      ['2026-03-29T03:59:00.000Z', 'COMPLETED'], // 05:59 CEST
+      ['2026-03-29T04:00:00.000Z', 'OUTSIDE_WINDOW'], // 06:00 CEST
+      ['2026-03-29T19:59:00.000Z', 'OUTSIDE_WINDOW'], // 21:59 CEST
+      ['2026-03-29T20:00:00.000Z', 'COMPLETED'], // 22:00 CEST
+      ['2026-10-24T20:00:00.000Z', 'COMPLETED'], // 22:00 CEST
+      ['2026-10-25T04:59:00.000Z', 'COMPLETED'], // 05:59 CET
+      ['2026-10-25T05:00:00.000Z', 'OUTSIDE_WINDOW'], // 06:00 CET
+      ['2026-10-25T20:59:00.000Z', 'OUTSIDE_WINDOW'], // 21:59 CET
+      ['2026-10-25T21:00:00.000Z', 'COMPLETED'], // 22:00 CET
+    ])('follows local time across a daylight-saving change at %s', async (at, status) => {
+      const { summary } = await sweepAt(at)
+
+      expect(summary.status).toBe(status)
+    })
+
+    it('falls back to the default window for invalid settings', async () => {
+      const invalid = {
+        KB_GRAPH_AUTO_PREPARATION_WINDOW: '25:00-06:00',
+        KB_GRAPH_AUTO_PREPARATION_WINDOW_TIMEZONE: 'Mars/Olympus',
+      }
+
+      expect(getKBGraphPreparationScheduleConfig(invalid)).toMatchObject({
+        windowStartMinutes: 22 * 60,
+        windowEndMinutes: 6 * 60,
+        windowTimeZone: 'Europe/Zurich',
+      })
+      expect(
+        (await sweepAt('2026-09-24T10:00:00.000Z', invalid)).summary.status
+      ).toBe('OUTSIDE_WINDOW')
+    })
   })
 })

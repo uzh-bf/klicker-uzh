@@ -131,11 +131,13 @@ export async function mockGrowthBookFeatureFlags(
   {
     aiBeta = false,
     aiAdvancedManagement = true,
+    responseExamples = false,
     failRefresh = false,
     learningAnalytics = true,
   }: {
     aiBeta?: boolean
     aiAdvancedManagement?: boolean
+    responseExamples?: boolean
     failRefresh?: boolean
     learningAnalytics?: boolean
   } = {}
@@ -154,6 +156,7 @@ export async function mockGrowthBookFeatureFlags(
         features: {
           'ai-beta': { defaultValue: aiBeta },
           'ai-advanced-management': { defaultValue: aiAdvancedManagement },
+          'chatbot-response-examples': { defaultValue: responseExamples },
           'learning-analytics': { defaultValue: learningAnalytics },
         },
       }),
@@ -169,6 +172,19 @@ export async function mockGrowthBookLearningAnalytics(
     aiBeta: true,
     learningAnalytics: enabled,
   })
+}
+
+// Opens a section of the chatbot setup page unless it is already open.
+export async function openChatbotSection(
+  page: Page,
+  id: 'materials' | 'students' | 'modes' | 'model' | 'usage' | 'graph'
+) {
+  const toggle = page.getByTestId(`chatbot-section-${id}-toggle`)
+  await expect(toggle).toBeVisible()
+  if ((await toggle.getAttribute('aria-expanded')) !== 'true') {
+    await toggle.click()
+  }
+  await expect(toggle).toHaveAttribute('aria-expanded', 'true')
 }
 
 export async function mockBetaEnrollmentGraphQL(
