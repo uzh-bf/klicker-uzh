@@ -50,6 +50,14 @@ spec:
             - name: http
               containerPort: 3000
               protocol: TCP
+          {{- if .Values.chat.courseImages.existingSecret }}
+          env:
+            - name: COURSE_IMAGE_PROJECTION_STORAGE_CONNECTION_STRING
+              valueFrom:
+                secretKeyRef:
+                  name: {{ .Values.chat.courseImages.existingSecret | quote }}
+                  key: {{ .Values.chat.courseImages.connectionStringKey | quote }}
+          {{- end }}
           envFrom:
             - configMapRef:
                 name: {{ include "chart.fullname" . }}-config-global

@@ -1933,3 +1933,11 @@ parser-only freshness remain deferred. Parser changes require an explicit rebuil
 The existing `chatbot-graphrag` GrowthBook flag and lecturer controls govern
 student graph retrieval. Map interaction and retrieval quality remain separate
 acceptance checks.
+
+## Optional retrieved-figure visual inspection
+
+The server-only `CHAT_COURSE_IMAGE_VISION_ENABLED` experiment is default-off.
+It requires an effective model with `supportsImageAttachments` and scoped course
+image retrieval. See [Course image retrieval](./course-image-retrieval.md#optional-model-inspection-of-figure-pixels)
+for configuration, preview limits, lifecycle checks, privacy boundaries and the
+unchanged description-only fallback. It does not enable image display by itself.

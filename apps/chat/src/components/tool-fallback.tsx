@@ -8,6 +8,10 @@ import {
 import { useTranslations } from 'next-intl'
 import { type FC, useState } from 'react'
 import { twMerge } from 'tailwind-merge'
+import {
+  COURSE_IMAGE_TOOL,
+  courseImageModelInput,
+} from '@/src/lib/sources/courseImages'
 import { getDocQueryResult } from '@/src/lib/sources/docQueryResult'
 import {
   countDocQueryDocuments,
@@ -201,6 +205,17 @@ export const ToolFallback: FC<ToolFallbackProps> = ({
       />
     )
   }
+  const imageModelInput =
+    toolName === COURSE_IMAGE_TOOL && !isRunning && !isFailed
+      ? courseImageModelInput(result)
+      : undefined
+  const imageInputLabel = imageModelInput
+    ? t(
+        imageModelInput === 'pixels'
+          ? 'chat.courseImages.pixelsProvided'
+          : 'chat.courseImages.descriptionOnly'
+      )
+    : undefined
   const isDocQuery = isDocQueryToolName(toolName)
 
   const docQueryState = isDocQuery
@@ -225,45 +240,57 @@ export const ToolFallback: FC<ToolFallbackProps> = ({
 
   return (
     <div>
-      <button
-        type="button"
-        data-cy="chat-tool-call-toggle"
-        data-tool-kind={isDocQuery ? 'doc-query' : 'other'}
-        onClick={() => setIsCollapsed(!isCollapsed)}
-        aria-expanded={!isCollapsed}
-        className={twMerge(
-          'inline-flex min-h-6 items-center gap-1 rounded-full px-2 py-0.5 text-xs transition-colors touch-manipulation [@media(pointer:coarse)]:min-h-11',
-          isFailed
-            ? 'bg-destructive/10 text-foreground hover:bg-destructive/20'
-            : 'text-muted-foreground hover:bg-accent hover:text-foreground'
-        )}
-      >
-        {/* Keep a fixed status slot so trace labels align across row types. */}
-        {isCollapsed ? (
-          <ChevronRightIcon className="size-3" aria-hidden />
-        ) : (
-          <ChevronDownIcon className="size-3" aria-hidden />
-        )}
-        <span
-          className="inline-flex size-3 shrink-0 items-center justify-center"
-          aria-hidden
+      <div className="flex flex-wrap items-center gap-x-2 gap-y-1">
+        <button
+          type="button"
+          data-cy="chat-tool-call-toggle"
+          data-tool-kind={isDocQuery ? 'doc-query' : 'other'}
+          onClick={() => setIsCollapsed(!isCollapsed)}
+          aria-expanded={!isCollapsed}
+          className={twMerge(
+            'inline-flex min-h-6 items-center gap-1 rounded-full px-2 py-0.5 text-xs transition-colors touch-manipulation [@media(pointer:coarse)]:min-h-11',
+            isFailed
+              ? 'bg-destructive/10 text-foreground hover:bg-destructive/20'
+              : 'text-muted-foreground hover:bg-accent hover:text-foreground'
+          )}
         >
-          {isRunning && (
-            <LoaderCircleIcon className="text-primary size-3 animate-spin" />
+          {/* Keep a fixed status slot so trace labels align across row types. */}
+          {isCollapsed ? (
+            <ChevronRightIcon className="size-3" aria-hidden />
+          ) : (
+            <ChevronDownIcon className="size-3" aria-hidden />
           )}
-          {isFailed && <AlertCircleIcon className="text-destructive size-3" />}
-          {(docQueryState === 'done' || docQueryState === 'doneEmpty') && (
-            <SearchIcon className="size-3" />
-          )}
-        </span>
-        {docQueryState
-          ? docQueryChipLabel(t, docQueryState)
-          : isFailed
-            ? t('chat.toolFallback.failed', { tool })
-            : isRunning
-              ? t('chat.toolFallback.running', { tool })
-              : t('chat.toolFallback.done', { tool })}
-      </button>
+          <span
+            className="inline-flex size-3 shrink-0 items-center justify-center"
+            aria-hidden
+          >
+            {isRunning && (
+              <LoaderCircleIcon className="text-primary size-3 animate-spin" />
+            )}
+            {isFailed && (
+              <AlertCircleIcon className="text-destructive size-3" />
+            )}
+            {(docQueryState === 'done' || docQueryState === 'doneEmpty') && (
+              <SearchIcon className="size-3" />
+            )}
+          </span>
+          {docQueryState
+            ? docQueryChipLabel(t, docQueryState)
+            : isFailed
+              ? t('chat.toolFallback.failed', { tool })
+              : isRunning
+                ? t('chat.toolFallback.running', { tool })
+                : t('chat.toolFallback.done', { tool })}
+        </button>
+        {imageInputLabel && (
+          <span
+            data-cy="chat-course-image-model-input"
+            className="text-xs text-muted-foreground"
+          >
+            {imageInputLabel}
+          </span>
+        )}
+      </div>
 
       <div
         aria-hidden={isCollapsed}
@@ -300,6 +327,18 @@ export const ToolFallback: FC<ToolFallbackProps> = ({
               </>
             ) : (
               <>
+                {imageInputLabel && (
+                  <p
+                    className="mb-2"
+                    data-cy="chat-course-image-model-input-explanation"
+                  >
+                    {t(
+                      imageModelInput === 'pixels'
+                        ? 'chat.courseImages.pixelsProvidedExplanation'
+                        : 'chat.courseImages.descriptionOnlyExplanation'
+                    )}
+                  </p>
+                )}
                 <p className="mb-1 font-mono">{toolName}</p>
                 <pre className="whitespace-pre-wrap">{argsText}</pre>
                 {resultText !== undefined && (
