@@ -649,42 +649,42 @@ export async function updateLiveQuizBlockResultsFromCache({
     const closeActiveBlock = async (
       tx: Pick<DB.Prisma.TransactionClient, 'liveQuiz' | 'elementBlock'>
     ) => {
-          const claim = await tx.liveQuiz.updateMany({
-            where: {
-              id: quizId,
-              status: DB.PublicationStatus.PUBLISHED,
-              activeBlockId: blockId,
-            },
-            data: { activeBlockId: null },
-          })
-          if (claim.count === 0) return null
+      const claim = await tx.liveQuiz.updateMany({
+        where: {
+          id: quizId,
+          status: DB.PublicationStatus.PUBLISHED,
+          activeBlockId: blockId,
+        },
+        data: { activeBlockId: null },
+      })
+      if (claim.count === 0) return null
 
-          // Read execution identity after acquiring the quiz lock. A reset or
-          // reactivation may have committed while the claim was waiting.
-          const currentBlock = await tx.elementBlock.findUnique({
-            where: { id: blockId },
-            select: { execution: true, startedAt: true, status: true },
+      // Read execution identity after acquiring the quiz lock. A reset or
+      // reactivation may have committed while the claim was waiting.
+      const currentBlock = await tx.elementBlock.findUnique({
+        where: { id: blockId },
+        select: { execution: true, startedAt: true, status: true },
+      })
+      if (
+        !currentBlock ||
+        currentBlock.status !== DB.ElementBlockStatus.ACTIVE ||
+        currentBlock.execution !== block.execution ||
+        currentBlock.startedAt?.getTime() !== block.startedAt?.getTime()
+      ) {
+        if (transaction) {
+          // A caller-owned transaction still commits after this function
+          // reports a loser, so restore the claimed pointer explicitly.
+          await tx.liveQuiz.update({
+            where: { id: quizId },
+            data: { activeBlockId: blockId },
           })
-          if (
-            !currentBlock ||
-            currentBlock.status !== DB.ElementBlockStatus.ACTIVE ||
-            currentBlock.execution !== block.execution ||
-            currentBlock.startedAt?.getTime() !== block.startedAt?.getTime()
-          ) {
-            if (transaction) {
-              // A caller-owned transaction still commits after this function
-              // reports a loser, so restore the claimed pointer explicitly.
-              await tx.liveQuiz.update({
-                where: { id: quizId },
-                data: { activeBlockId: blockId },
-              })
-              return null
-            }
-            // Throwing rolls back the pointer claim before reporting a loser.
-            throw staleClosure
-          }
+          return null
+        }
+        // Throwing rolls back the pointer claim before reporting a loser.
+        throw staleClosure
+      }
 
-          return tx.liveQuiz.update(updateArgs)
+      return tx.liveQuiz.update(updateArgs)
     }
 
     const updatedQuiz = transaction
