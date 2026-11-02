@@ -1,5 +1,8 @@
 import { useQuery } from '@apollo/client'
-import { GetLiveQuizEvaluationDocument } from '@klicker-uzh/graphql/dist/ops'
+import {
+  GetLiveQuizEvaluationDisplayDocument,
+  GetLiveQuizEvaluationDocument,
+} from '@klicker-uzh/graphql/dist/ops'
 import Loader from '@klicker-uzh/shared-components/src/Loader'
 import { useRouter } from 'next/router'
 import ActivityEvaluation from '../../../components/evaluation/ActivityEvaluation'
@@ -19,6 +22,16 @@ function LiveQuizEvaluation() {
     onError: () => {
       router.push('/404')
     },
+  })
+
+  // projection settings from the controller app (chart type, solution, percent)
+  const { data: displayData } = useQuery(GetLiveQuizEvaluationDisplayDocument, {
+    variables: {
+      id: router.query.id as string,
+      hmac: router.query.hmac as string,
+    },
+    pollInterval: 5000,
+    skip: !router.query.id,
   })
 
   if (loading) {
@@ -51,6 +64,7 @@ function LiveQuizEvaluation() {
       isAssessmentEnabled={evaluation?.isAssessmentEnabled ?? false}
       pinCode={evaluation?.pinCode ?? null}
       leaderboard={leaderboard}
+      displaySettings={displayData?.liveQuizEvaluationDisplay}
     />
   )
 }

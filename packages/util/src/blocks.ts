@@ -331,6 +331,7 @@ export async function updateLiveQuizBlockResultsFromCache({
   redisAssessmentExec,
   updateResults,
   updateLeaderboards,
+  closeBlock,
   transaction,
 }: {
   quizId: string
@@ -340,28 +341,49 @@ export async function updateLiveQuizBlockResultsFromCache({
   redisAssessmentExec: Redis
   updateResults: boolean
   updateLeaderboards: boolean
+  // true: close the active block and persist its results (block closure)
+  // false: re-aggregate an already closed block (delayed aggregation)
+  closeBlock: boolean
+  // Runs the writes in a caller-owned transaction, e.g. with audit events.
   transaction?: <T>(
-    write: (tx: Pick<DB.Prisma.TransactionClient, 'liveQuiz'>) => Promise<T>
+    write: (
+      tx: Pick<DB.Prisma.TransactionClient, 'liveQuiz' | 'elementBlock'>
+    ) => Promise<T>
   ) => Promise<T>
 }) {
   const quiz = await prisma.liveQuiz.findUnique({
     where: { id: quizId },
     include: {
       course: true,
-      activeBlock: { include: { elements: { orderBy: { order: 'asc' } } } },
-      blocks: { orderBy: { id: 'asc' } },
+      // only the target block is needed (its elements can be large)
+      blocks: {
+        where: { id: blockId },
+        include: { elements: { orderBy: { order: 'asc' } } },
+      },
     },
   })
 
-  if (!quiz || !quiz.activeBlock) return null
+  if (!quiz) return null
 
-  // if the block is not the active one, return early
-  if (quiz.activeBlockId !== blockId) return null
+  const block = quiz.blocks.find((b) => b.id === blockId)
+  if (!block) return null
 
+  // closing requires the block to be the active one, re-aggregation requires
+  // it to be closed already (and not to have been reactivated)
+  if (closeBlock && quiz.activeBlockId !== blockId) return null
+  if (
+    !closeBlock &&
+    (block.status !== DB.ElementBlockStatus.EXECUTED ||
+      quiz.activeBlockId === blockId)
+  ) {
+    return null
+  }
+
+  const staleClosure = new Error('The live quiz block execution changed')
   try {
     const cachedResults = await getCachedBlockResults({
       redisExec: quiz.isAssessmentEnabled ? redisAssessmentExec : redisExec,
-      activeBlock: quiz.activeBlock,
+      activeBlock: block,
     })
 
     if (!cachedResults) return null
@@ -503,126 +525,181 @@ export async function updateLiveQuizBlockResultsFromCache({
       })
     }
 
-    const updateQuiz = (
-      client: Pick<DB.Prisma.TransactionClient, 'liveQuiz'>
-    ) =>
-      client.liveQuiz.update({
-        where: { id: quizId },
-        data: {
-          activeBlock: { disconnect: true },
-          blocks: {
-            update: {
-              where: { id: blockId },
-              data: {
-                status: DB.ElementBlockStatus.EXECUTED,
-                closedAt: new Date(),
-                ...(updateResults
-                  ? {
-                      elements: {
-                        update: Object.entries(instanceResults).map(
-                          ([id, instanceResult]) => ({
-                            where: { id: Number(id) },
-                            // update the anonymous results for regular live quizzes and the normal results for assessment live quizzes
-                            data: {
-                              anonymousResults: quiz.isAssessmentEnabled
-                                ? undefined
-                                : instanceResult.anonymousResults,
-                              results: quiz.isAssessmentEnabled
-                                ? instanceResult.anonymousResults
-                                : undefined,
-                            },
-                          })
-                        ),
-                      },
-                    }
-                  : {}),
-              },
+    // skip instances without cached results (e.g., expired cache entries),
+    // so that persisted results are never overwritten with empty ones
+    const cachedInstanceResults = Object.entries(instanceResults).filter(
+      ([, instanceResult]) =>
+        Number.isFinite(instanceResult.anonymousResults.total)
+    )
+
+    const updateArgs = {
+      where: { id: quizId },
+      data: {
+        ...(closeBlock ? { activeBlock: { disconnect: true } } : {}),
+        blocks: {
+          update: {
+            where: { id: blockId },
+            data: {
+              ...(closeBlock
+                ? {
+                    status: DB.ElementBlockStatus.EXECUTED,
+                    closedAt: new Date(),
+                  }
+                : {}),
+              ...(updateResults
+                ? {
+                    elements: {
+                      update: cachedInstanceResults.map(
+                        ([id, instanceResult]) => ({
+                          where: { id: Number(id) },
+                          // update the anonymous results for regular live quizzes and the normal results for assessment live quizzes
+                          data: {
+                            anonymousResults: quiz.isAssessmentEnabled
+                              ? undefined
+                              : instanceResult.anonymousResults,
+                            results: quiz.isAssessmentEnabled
+                              ? instanceResult.anonymousResults
+                              : undefined,
+                          },
+                        })
+                      ),
+                    },
+                  }
+                : {}),
             },
           },
-          leaderboard:
-            quiz.isGamificationEnabled && updateLeaderboards
-              ? {
-                  upsert: regularParticipantLeaderboard.map(
-                    ({ participantId, score }) => ({
-                      where: {
-                        type_participantId_liveQuizId: {
-                          type: DB.LeaderboardType.SESSION,
-                          participantId,
-                          liveQuizId: quizId,
-                        },
-                      },
-                      create: {
+        },
+        leaderboard:
+          quiz.isGamificationEnabled && updateLeaderboards
+            ? {
+                upsert: regularParticipantLeaderboard.map(
+                  ({ participantId, score }) => ({
+                    where: {
+                      type_participantId_liveQuizId: {
                         type: DB.LeaderboardType.SESSION,
-                        participant: { connect: { id: participantId } },
-                        score,
-                        sessionParticipation: quiz.courseId
-                          ? {
-                              connectOrCreate: {
-                                where: {
-                                  courseId_participantId: {
-                                    courseId: quiz.courseId,
-                                    participantId,
-                                  },
-                                },
-                                create: {
-                                  course: { connect: { id: quiz.courseId! } },
-                                  participant: {
-                                    connect: { id: participantId },
-                                  },
+                        participantId,
+                        liveQuizId: quizId,
+                      },
+                    },
+                    create: {
+                      type: DB.LeaderboardType.SESSION,
+                      participant: { connect: { id: participantId } },
+                      score,
+                      sessionParticipation: quiz.courseId
+                        ? {
+                            connectOrCreate: {
+                              where: {
+                                courseId_participantId: {
+                                  courseId: quiz.courseId,
+                                  participantId,
                                 },
                               },
-                            }
-                          : undefined,
-                      },
-                      update: { score },
-                    })
-                  ),
-                }
-              : undefined,
-          temporaryLeaderboard:
-            quiz.isGamificationEnabled && updateLeaderboards
-              ? {
-                  upsert: [
-                    ...temporaryParticipantLeaderboard,
-                    ...existingTemporaryLB,
-                  ].map(
-                    ({
-                      participantId,
-                      participantUsername,
-                      participantAvatar,
-                      score,
-                    }) => ({
-                      where: {
-                        id_quizId: {
-                          id: participantId,
-                          quizId,
-                        },
-                      },
-                      create: {
+                              create: {
+                                course: { connect: { id: quiz.courseId! } },
+                                participant: { connect: { id: participantId } },
+                              },
+                            },
+                          }
+                        : undefined,
+                    },
+                    update: { score },
+                  })
+                ),
+              }
+            : undefined,
+        temporaryLeaderboard:
+          quiz.isGamificationEnabled && updateLeaderboards
+            ? {
+                upsert: [
+                  ...temporaryParticipantLeaderboard,
+                  ...existingTemporaryLB,
+                ].map(
+                  ({
+                    participantId,
+                    participantUsername,
+                    participantAvatar,
+                    score,
+                  }) => ({
+                    where: {
+                      id_quizId: {
                         id: participantId,
-                        username: participantUsername ?? '', // fallback should never be used
-                        avatar: participantAvatar ?? undefined,
-                        score,
+                        quizId,
                       },
-                      update: { score },
-                    })
-                  ),
-                }
-              : undefined,
+                    },
+                    create: {
+                      id: participantId,
+                      username: participantUsername ?? '', // fallback should never be used
+                      avatar: participantAvatar ?? undefined,
+                      score,
+                    },
+                    update: { score },
+                  })
+                ),
+              }
+            : undefined,
+      },
+      include: {
+        blocks: {
+          include: { elements: { orderBy: { order: 'asc' } } },
+          orderBy: { order: 'asc' },
         },
-        include: {
-          blocks: {
-            include: { elements: { orderBy: { order: 'asc' } } },
-            orderBy: { order: 'asc' },
-          },
-        },
-      })
+      },
+    } satisfies DB.Prisma.LiveQuizUpdateArgs
+
+    const closeActiveBlock = async (
+      tx: Pick<DB.Prisma.TransactionClient, 'liveQuiz' | 'elementBlock'>
+    ) => {
+          const claim = await tx.liveQuiz.updateMany({
+            where: {
+              id: quizId,
+              status: DB.PublicationStatus.PUBLISHED,
+              activeBlockId: blockId,
+            },
+            data: { activeBlockId: null },
+          })
+          if (claim.count === 0) return null
+
+          // Read execution identity after acquiring the quiz lock. A reset or
+          // reactivation may have committed while the claim was waiting.
+          const currentBlock = await tx.elementBlock.findUnique({
+            where: { id: blockId },
+            select: { execution: true, startedAt: true, status: true },
+          })
+          if (
+            !currentBlock ||
+            currentBlock.status !== DB.ElementBlockStatus.ACTIVE ||
+            currentBlock.execution !== block.execution ||
+            currentBlock.startedAt?.getTime() !== block.startedAt?.getTime()
+          ) {
+            if (transaction) {
+              // A caller-owned transaction still commits after this function
+              // reports a loser, so restore the claimed pointer explicitly.
+              await tx.liveQuiz.update({
+                where: { id: quizId },
+                data: { activeBlockId: blockId },
+              })
+              return null
+            }
+            // Throwing rolls back the pointer claim before reporting a loser.
+            throw staleClosure
+          }
+
+          return tx.liveQuiz.update(updateArgs)
+    }
+
     const updatedQuiz = transaction
-      ? await transaction(updateQuiz)
-      : await updateQuiz(prisma)
+      ? await transaction((tx) =>
+          closeBlock ? closeActiveBlock(tx) : tx.liveQuiz.update(updateArgs)
+        )
+      : closeBlock
+        ? await prisma.$transaction(closeActiveBlock)
+        : await prisma.liveQuiz.update(updateArgs)
+
+    if (!updatedQuiz) return null
 
     return { updatedQuiz, activeInstanceIds }
   } catch (e) {
+    if (e === staleClosure) return null
     throw e
   }
 }

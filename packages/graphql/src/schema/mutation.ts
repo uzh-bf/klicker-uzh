@@ -117,6 +117,7 @@ import {
 } from './knowledge.js'
 import {
   ConfusionTimestep,
+  EvaluationDisplaySetting,
   Feedback,
   FeedbackResponse,
   LiveQuiz,
@@ -1088,6 +1089,25 @@ export const Mutation = builder.mutationType({
             return await LiveQuizService.deactivateLiveQuizBlock(args, ctx)
           },
           { actionType: 'ASSESSMENT_BLOCK_CLOSE' }
+        ),
+      }),
+
+      updateEvaluationDisplay: t.withAuth(asUserSessionExec).field({
+        nullable: true,
+        type: EvaluationDisplaySetting,
+        args: {
+          quizId: t.arg.string({ required: true }),
+          instanceId: t.arg.int({ required: true }),
+          chartType: t.arg.string({ required: false }),
+          showSolution: t.arg.boolean({ required: false }),
+          showPercentages: t.arg.boolean({ required: false }),
+        },
+        resolve: withPermission(
+          (args) => ({ liveQuizId: args.quizId }),
+          DB.PermissionLevel.EXECUTE,
+          async (_, args, ctx) => {
+            return await LiveQuizService.updateEvaluationDisplay(args, ctx)
+          }
         ),
       }),
 

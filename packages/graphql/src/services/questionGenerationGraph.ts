@@ -581,9 +581,12 @@ export async function getKBQuestionGenerationSource(
         () => null
       )
       .catch((error: unknown) => {
-        console.error(
-          'Failed to load question generation readiness',
-          error instanceof Error ? error.message : error
+        ctx.log.error(
+          {
+            event: 'question-generation.readiness.load_failed',
+            errorType: error instanceof Error ? error.name : 'unknown',
+          },
+          'Failed to load question generation readiness'
         )
         return null
       })
