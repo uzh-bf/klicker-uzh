@@ -1357,6 +1357,7 @@ export async function deactivateLiveQuizBlock(
       redisAssessmentExec: ctx.redisAssessmentExec,
       updateResults: true,
       updateLeaderboards: true, // always update the leaderboard when a block is closed
+      closeBlock: true,
     })
 
     // if the update was not successful, return false
@@ -3315,9 +3316,15 @@ export const handleStandardLiveQuizBlockClosureAggregation: HatchetHandlers['han
     const isLastBlock = quiz.blocks[quiz.blocks.length - 1]!.id === blockId
     const block = quiz.blocks.find((b) => b.id === blockId)
     if (!block) return false
+    if (
+      block.status !== DB.ElementBlockStatus.EXECUTED ||
+      quiz.activeBlockId === blockId
+    ) {
+      return true
+    }
 
     // update the aggregated instance results based on the cache data after a waiting period for processing remaining submissions
-    await updateLiveQuizBlockResultsFromCache({
+    const updatedQuiz = await updateLiveQuizBlockResultsFromCache({
       quizId: liveQuizId,
       blockId,
       prisma: globalCtx.prisma,
@@ -3328,7 +3335,14 @@ export const handleStandardLiveQuizBlockClosureAggregation: HatchetHandlers['han
       // only update the leaderboard for the quiz, if this is the last block of the quiz
       // -> otherwise leaderboard updates at the block closures of other blocks might interfere with this update
       updateLeaderboards: isLastBlock,
+      // the block was closed already, only re-aggregate its results
+      closeBlock: false,
     })
+
+    if (!updatedQuiz) {
+      // Keep cached submissions available until persistence succeeds on a retry.
+      throw new Error('Could not persist delayed live quiz block results')
+    }
 
     // remove all cache entries related to this block only (or the entire live quiz, if this was the last block)
     await removeCacheEntriesBlock({
@@ -3429,6 +3443,7 @@ export const handleAssessmentLiveQuizBlockClosureAggregation: HatchetHandlers['h
         redisAssessmentExec: globalCtx.redisAssessmentExec,
         updateResults: false,
         updateLeaderboards: true,
+        closeBlock: false,
       })
     }
 
