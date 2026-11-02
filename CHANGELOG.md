@@ -14,12 +14,15 @@ All notable changes to this project will be documented in this file. See [standa
 
 * **analytics:** pin Node for Prisma client generation ([#6779](https://github.com/uzh-bf/klicker-uzh/issues/6779)) ([ec53f87](https://github.com/uzh-bf/klicker-uzh/commit/ec53f87a9bca3288e7dfecbbbd95f1668b5a278c))
 * **ci:** correct Sonar metadata and source classification ([#6780](https://github.com/uzh-bf/klicker-uzh/issues/6780)) ([46770a4](https://github.com/uzh-bf/klicker-uzh/commit/46770a48c789df4669088fbdfb3e5155e46cbf05))
+* **deploy:** apply the PWA burst budget split and add its dashboard ([#6797](https://github.com/uzh-bf/klicker-uzh/issues/6797)) ([50da5e8](https://github.com/uzh-bf/klicker-uzh/commit/50da5e85b6cccfa9acf2b3f52ebd238884a4ebd9))
+* **deploy:** apply the PWA burst budget split and add its dashboard ([#6798](https://github.com/uzh-bf/klicker-uzh/issues/6798)) ([43b6320](https://github.com/uzh-bf/klicker-uzh/commit/43b63200b8b5cbff9dcb664cdd0097eb7edd101b))
 * **deploy:** give the general worker the graph cost settings ([#6366](https://github.com/uzh-bf/klicker-uzh/issues/6366)) ([deaac5b](https://github.com/uzh-bf/klicker-uzh/commit/deaac5b99f539f646222e5362ab6d2ddbe113e06))
 * **deps:** lift backend image dependencies past the 2026-10-31 scan ([#6785](https://github.com/uzh-bf/klicker-uzh/issues/6785)) ([5525d36](https://github.com/uzh-bf/klicker-uzh/commit/5525d364811e1aff892ff039a9fa2e50936143ce))
 * **deps:** lift follow-redirects to 1.16.2 for the backend image scan ([#6784](https://github.com/uzh-bf/klicker-uzh/issues/6784)) ([9cb4c00](https://github.com/uzh-bf/klicker-uzh/commit/9cb4c00c732f8abcda8774dc6dcc2827e75c67ec))
 * **devcontainer:** preserve retained databases during recovery ([#6772](https://github.com/uzh-bf/klicker-uzh/issues/6772)) ([8d56d46](https://github.com/uzh-bf/klicker-uzh/commit/8d56d46fe389f6c0a2b2cce7476a3cf55293a23c))
 * **dx:** make local verification and launcher inspection reliable ([#6786](https://github.com/uzh-bf/klicker-uzh/issues/6786)) ([74e7d99](https://github.com/uzh-bf/klicker-uzh/commit/74e7d99eebfec1810b7584ff5aa060bd990d9bfc))
 * **live-quiz:** persist late results in delayed block aggregation ([#6536](https://github.com/uzh-bf/klicker-uzh/issues/6536)) ([6d7a809](https://github.com/uzh-bf/klicker-uzh/commit/6d7a809e9046ff30bafad26eb13424ba7cfe05d5))
+* **manage:** reload tabs whose persisted queries a new release rejects ([#6781](https://github.com/uzh-bf/klicker-uzh/issues/6781)) ([4a4afc8](https://github.com/uzh-bf/klicker-uzh/commit/4a4afc8f21cbf6bc11108233b1c3f0a09ac6b9e3))
 
 
 ### Build and CI
@@ -39,6 +42,7 @@ All notable changes to this project will be documented in this file. See [standa
 
 ### Enhancements
 
+* **ai:** open knowledge base and graph features to the AI beta and add a settings switch ([#6799](https://github.com/uzh-bf/klicker-uzh/issues/6799)) ([2903348](https://github.com/uzh-bf/klicker-uzh/commit/290334863dcce9b3ecb538eb134067816f027218))
 * **chatbots:** give lecturers a simplified chatbot surface and a workable credit default ([#6254](https://github.com/uzh-bf/klicker-uzh/issues/6254)) ([fcb7366](https://github.com/uzh-bf/klicker-uzh/commit/fcb73662ec20926adb90db95754ecc958ab2ac19))
 * **chatbots:** set up every chatbot on one page of sections ([#6625](https://github.com/uzh-bf/klicker-uzh/issues/6625)) ([18ac9be](https://github.com/uzh-bf/klicker-uzh/commit/18ac9be917f26833be7775f9b0b4c96890aa9b6f))
 * **control:** add audience feedback and remove embedding links ([#6686](https://github.com/uzh-bf/klicker-uzh/issues/6686)) ([6afc189](https://github.com/uzh-bf/klicker-uzh/commit/6afc189ec21647a7928304620e1362fda6f73152))
@@ -47,6 +51,7 @@ All notable changes to this project will be documented in this file. See [standa
 * **deploy:** add an opt-in spot burst tier for the PWA ([#6295](https://github.com/uzh-bf/klicker-uzh/issues/6295)) ([e6d813a](https://github.com/uzh-bf/klicker-uzh/commit/e6d813a530f1d9d148ca90e299a54beca0fdba0e))
 * **deploy:** enable the PWA spot burst tier on staging ([#6782](https://github.com/uzh-bf/klicker-uzh/issues/6782)) ([f7941e4](https://github.com/uzh-bf/klicker-uzh/commit/f7941e4f8f79e99d90ef5fdd4efd84523d489c90))
 * **deploy:** enable the PWA spot burst tier on staging ([#6783](https://github.com/uzh-bf/klicker-uzh/issues/6783)) ([fcae8e4](https://github.com/uzh-bf/klicker-uzh/commit/fcae8e45bea188ba5a90c745793cc05e548a4338))
+* **deploy:** route chat Auto through auto-router-v4 ([#6796](https://github.com/uzh-bf/klicker-uzh/issues/6796)) ([0c438ac](https://github.com/uzh-bf/klicker-uzh/commit/0c438acb59565d553eb681d5cca6f3916786b9c4))
 * **graphql:** extend controller and projection APIs ([#6537](https://github.com/uzh-bf/klicker-uzh/issues/6537)) ([f367d56](https://github.com/uzh-bf/klicker-uzh/commit/f367d56894104c8a8b128abb613b2d9b52cd866f))
 * **graphql:** resolve question generation from the selected knowledge base and revalidate its basis ([#6302](https://github.com/uzh-bf/klicker-uzh/issues/6302)) ([63f6e7e](https://github.com/uzh-bf/klicker-uzh/commit/63f6e7eb077e0f90e6f0091ef91c0d1e080024dc))
 * **graphql:** share graph build admission with a trusted system trigger ([#6300](https://github.com/uzh-bf/klicker-uzh/issues/6300)) ([965f15b](https://github.com/uzh-bf/klicker-uzh/commit/965f15b4553c45287a3cd72fe01c7c23eec742a1))
