@@ -224,12 +224,12 @@ chat:
 
   modelRegistry:
     # Staging makes Auto the global automatic-model primary, so chatbots using
-    # automatic model selection exercise auto-router-v2, as in production.
+    # automatic model selection exercise auto-router-v4, as in production.
     # Explicit model selections remain respected, and new chatbots
     # still start fixed on GPT-6 Luna. GPT-6 Luna is the participant-credit
     # fallback.
-    # "Auto" routes through the LiteLLM auto-router-v2, which self-selects the
-    # tier per request (SIMPLE=gpt-6-luna-high, MEDIUM=gpt-6.1-sol-low,
+    # "Auto" routes through the LiteLLM auto-router-v4, which self-selects the
+    # tier per request (SIMPLE=gpt-6.1-terra-low, MEDIUM=gpt-6.1-sol-low,
     # COMPLEX=gpt-6.1-sol-medium, REASONING=gpt-6.1-sol-high), with
     # Microsoft-Decision-1 classifying every request. Auto is a BASE model; Sol
     # selected directly stays ADVANCED.
@@ -241,7 +241,7 @@ chat:
     # price. Classifier overhead remains outside the registry's
     # selected-model token fields.
     - id: auto
-      deploymentId: klickeruzh/azure/auto-router-v2
+      deploymentId: klickeruzh/azure/auto-router-v4
       name: Auto
       description: Automatic model selection (routes to the best model per request)
       supportsImageAttachments: true
