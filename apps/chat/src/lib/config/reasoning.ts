@@ -1,6 +1,7 @@
 import type { useTranslations } from 'next-intl'
 
-export type ReasoningEffort = string
+import type { ReasoningEffort } from '@klicker-uzh/chat-api/host/lib/config/reasoning'
+export type { ReasoningEffort } from '@klicker-uzh/chat-api/host/lib/config/reasoning'
 
 // Reasoning efforts are configured per chatbot and per model, so the value is a
 // free-form string. Only the well-known ones get a localized label; anything

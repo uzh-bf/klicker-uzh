@@ -51,7 +51,10 @@ endpoint instead of opening caller-selected MCP server URLs.
 The unfinished `v3-ai` roll-up is a later consumer of this boundary, not a
 prerequisite for the `v1` contract or either engine implementation. Until its
 public MCP authorization and token issuer are integrated, `chat-api` supplies
-no tools. The host interface accepts tools only together with their scoped
+no general course tools. A separately configured, default-off Tutor pilot may
+authorize only `catalyst-codeapi/run_python` for explicitly allowlisted chatbots
+using a short-lived host-signed capability. It rejects mixed course tools and
+never replaces a required tool with Python. The host interface accepts tools only together with their scoped
 execution token so a partial integration fails closed.
 
 This preserves one platform policy and one conversation store while allowing

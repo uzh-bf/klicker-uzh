@@ -1,17 +1,20 @@
 import { describe, expect, test, vi } from 'vitest'
 
-vi.mock('@/src/lib/server/promptTemplates', async (importOriginal) => {
-  const actual =
-    await importOriginal<typeof import('../src/lib/server/promptTemplates')>()
+vi.mock(
+  '@klicker-uzh/chat-api/host/lib/server/promptTemplates',
+  async (importOriginal) => {
+    const actual =
+      await importOriginal<typeof import('../src/lib/server/promptTemplates')>()
 
-  return {
-    ...actual,
-    renderPromptTemplate: (name: string, context: unknown) =>
-      name === 'citation-contract'
-        ? '<SYNTHETIC-CITATION-CONTRACT>'
-        : actual.renderPromptTemplate(name as never, context as never),
+    return {
+      ...actual,
+      renderPromptTemplate: (name: string, context: unknown) =>
+        name === 'citation-contract'
+          ? '<SYNTHETIC-CITATION-CONTRACT>'
+          : actual.renderPromptTemplate(name as never, context as never),
+    }
   }
-})
+)
 
 import { CHAT_MODE_KEYS } from '../scripts/chat-mode-keys.mjs'
 import { DEFAULT_PROMPT } from '../src/lib/config/prompts'

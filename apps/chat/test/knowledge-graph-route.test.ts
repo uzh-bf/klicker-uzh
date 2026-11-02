@@ -33,7 +33,7 @@ vi.mock('@klicker-uzh/prisma', () => ({
   prisma: { kBChatbot: {} },
 }))
 
-vi.mock('@/src/lib/server/knowledgeGraphRuntime', () => {
+vi.mock('@klicker-uzh/chat-api/host/lib/server/knowledgeGraphRuntime', () => {
   return {
     KnowledgeGraphSelectionRequiredError: class extends Error {
       constructor(readonly choices: { id: string; name: string }[]) {
@@ -159,7 +159,7 @@ describe('chatbot graph binding selection', () => {
   async function reader() {
     return vi.importActual<
       typeof import('../src/lib/server/knowledgeGraphRuntime')
-    >('../src/lib/server/knowledgeGraphRuntime')
+    >('@klicker-uzh/chat-api/host/lib/server/knowledgeGraphRuntime')
   }
 
   it('requires an explicit choice for multiple attached graphs', async () => {

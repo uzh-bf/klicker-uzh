@@ -1,5 +1,5 @@
-import { NextRequest } from 'next/server'
 import { signJWT } from '@klicker-uzh/util'
+import { NextRequest } from 'next/server'
 import { beforeEach, describe, expect, test, vi } from 'vitest'
 
 const mocks = vi.hoisted(() => ({
@@ -63,7 +63,7 @@ vi.mock('@klicker-uzh/prisma', () => ({
   },
 }))
 
-vi.mock('@/src/services/mcpClients', () => ({
+vi.mock('@klicker-uzh/chat-api/host/services/mcpClients', () => ({
   getAggregatedMCPTools: mocks.getAggregatedMCPTools,
 }))
 

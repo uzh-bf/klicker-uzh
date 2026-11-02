@@ -1,0 +1,70 @@
+import { readFileSync } from 'node:fs'
+import { dirname, join } from 'node:path'
+import { fileURLToPath } from 'node:url'
+import Handlebars from 'handlebars'
+
+type PromptContext = {
+  'citation-contract': { maxSources: number }
+  'course-data': { courseData: string }
+  'course-grounding': Record<string, never>
+  'course-policy': { customPersona: boolean }
+  'input-context': Record<string, never>
+  'language-style': { lockedLanguage: string | null }
+  'reply-language-reminder': { lockedLanguage: string | null }
+  'meeting-clock': {
+    elapsedMinutes: number
+    currentTime: string | null
+    timeZone: string
+  }
+  'numeric-precision': Record<string, never>
+  'feedback-check': Record<string, never>
+  'quiz-feedback-check': Record<string, never>
+  'feedback-evidence': {
+    reusedSharePercent: number
+    reusedNumbers: string
+  }
+  'output-format': { customPersona: boolean }
+  'mode-tutor': Record<string, never>
+  'mode-explainer': Record<string, never>
+  'mode-quizzer': Record<string, never>
+  'mode-writing-coach': Record<string, never>
+  'lecturer-guidance': { lecturerPrompt: string }
+  'lecturer-custom-persona': {
+    selectedModeJson: string
+    lecturerPrompt: string
+  }
+  'lecturer-standard-context': { personaContextJson: string }
+  'student-answer-style': {
+    bullets: boolean
+    friendly: boolean
+    direct: boolean
+  }
+  'image-description': { userContent: string }
+  'document-pages-summary': { userContent: string; pageCount: number }
+}
+
+const templates = new Map<keyof PromptContext, Handlebars.TemplateDelegate>()
+
+/** Render only repository-owned templates; supplied values are plain text data. */
+export function renderPromptTemplate<Name extends keyof PromptContext>(
+  name: Name,
+  context: PromptContext[Name]
+): string {
+  let template = templates.get(name)
+  if (!template) {
+    // Assets stay beside the owning package in both API and Next standalone builds.
+    const source = readFileSync(
+      join(
+        dirname(fileURLToPath(import.meta.url)),
+        '..',
+        '..',
+        'prompts',
+        `${name}.hbs`
+      ),
+      'utf8'
+    ).replace(/\r?\n$/, '')
+    template = Handlebars.compile(source, { strict: true })
+    templates.set(name, template)
+  }
+  return template(context)
+}

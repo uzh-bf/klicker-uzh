@@ -31,10 +31,28 @@ use the projection for model input; original output retains its browser and
 persistence meaning. A model-only projection must not leak into streamed or
 persisted results merely because the host and engine cross HTTP.
 
+V2 tool execution carries the engine's call identity. After a tool step, the
+engine requests model projections for the cumulative delivered results in
+canonical input-start order. The host fixes citation indices against that
+ordered prefix, using its retained originals. Results whose execution response
+was lost never consume a citation index. Engines validate exact projection
+coverage before another model invocation; projection failure ends that turn.
+Execution/cache bytes, call counts and projection deadlines are bounded by the
+canonical contract. These model-only operations use the same admitted run
+capability and never change raw display or persisted tool results.
+
 Both the public default engine and Catalyst retain strict `v1` service during
 the transition and independently pass canonical `v2` conformance before the
 host selects `v2`. The host explicitly selects a single configured generation;
 there is no automatic negotiation, downgrade, backend retry or failover.
+
+The host's v2 generation selects the provider's chat or Responses API explicitly,
+independently of reasoning effort. Its step policy can require an admitted tool
+on the first step and supplies the final system reminder for every model step,
+after accumulated tool results. Engines apply these controls without choosing
+participant policy or persisting the reminder as conversation history. Omitting
+these optional controls preserves each engine's transition behavior; the full
+participant host supplies them explicitly.
 
 The public host continues to own identity, scope, model policy, attachment
 preparation, trusted learning context, tool discovery and capabilities,

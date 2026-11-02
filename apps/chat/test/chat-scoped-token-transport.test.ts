@@ -1,3 +1,4 @@
+import { authenticateParticipant } from '@klicker-uzh/chat-api/auth'
 import { signJWT } from '@klicker-uzh/util'
 import { NextRequest } from 'next/server'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
@@ -576,5 +577,137 @@ describe('stale embed session account fallback', () => {
       authMode: 'account',
       chatbot: { courseId: COURSE_A },
     })
+  })
+})
+
+describe('standalone API shared identity policy', () => {
+  beforeEach(() => {
+    vi.stubEnv('APP_ORIGIN_API', 'https://api.test')
+    mocks.chatbotFindUnique.mockImplementation(async () => ({
+      courseId: COURSE_A,
+      status: 'PUBLISHED',
+    }))
+    mocks.participationFindUnique.mockResolvedValue({ id: 'participation-1' })
+  })
+
+  it.each([
+    { role: 'LECTURER', issuer: 'https://api.test', expiresIn: '1h' },
+    { role: 'PARTICIPANT', issuer: 'https://other.test', expiresIn: '1h' },
+    { role: 'PARTICIPANT', issuer: 'https://api.test', expiresIn: '-1s' },
+    { role: 'PARTICIPANT', issuer: 'https://api.test' },
+  ])('rejects an invalid account-token claim set: %j', async ({
+    role,
+    issuer,
+    expiresIn,
+  }) => {
+    const token = await signJWT(
+      { sub: 'participant-1', role },
+      'test-app-secret',
+      { issuer, ...(expiresIn ? { expiresIn } : {}) }
+    )
+    const result = await authenticateParticipant(
+      { participantToken: token },
+      CHATBOT_ID
+    )
+    expect(result).toMatchObject({ status: 401 })
+    expect(mocks.chatbotFindUnique).not.toHaveBeenCalled()
+  })
+
+  it.each([
+    null,
+    { isActive: false, accounts: [] },
+    { isActive: true, accounts: [{ type: 'lti_guest' }] },
+  ])('requires an active account persona: %j', async (participant) => {
+    mocks.participantFindUnique.mockResolvedValue(participant)
+    const token = await signJWT(
+      { sub: 'participant-1', role: 'PARTICIPANT' },
+      'test-app-secret',
+      { issuer: 'https://api.test', expiresIn: '1h' }
+    )
+    const result = await authenticateParticipant(
+      { participantToken: token },
+      CHATBOT_ID
+    )
+    expect(result).toMatchObject({ status: 401 })
+    expect(mocks.chatbotFindUnique).not.toHaveBeenCalled()
+  })
+
+  it('preserves guest precedence and signed learner binding', async () => {
+    const guest = await signChatGuestToken(
+      'guest-participant',
+      'synthetic-binding'
+    )
+    const result = await authenticateParticipant(
+      { chatGuestToken: guest, participantToken: 'invalid' },
+      CHATBOT_ID
+    )
+    expect(result).toMatchObject({
+      participantId: 'guest-participant',
+      authMode: 'anonymous',
+      learnerBinding: 'synthetic-binding',
+      courseId: COURSE_A,
+    })
+  })
+
+  it('accepts a scoped bearer but rejects a raw account bearer', async () => {
+    const scopedFallbackToken = await signPwaEmbedSessionToken({
+      participantId: 'participant-1',
+      chatbotId: CHATBOT_ID,
+      courseId: COURSE_A,
+    })
+    expect(
+      await authenticateParticipant({ scopedFallbackToken }, CHATBOT_ID)
+    ).toMatchObject({ participantId: 'participant-1', courseId: COURSE_A })
+    const account = await signJWT(
+      { sub: 'participant-1', role: 'PARTICIPANT' },
+      'test-app-secret',
+      { issuer: 'https://api.test', expiresIn: '1h' }
+    )
+    expect(
+      await authenticateParticipant(
+        { scopedFallbackToken: account },
+        CHATBOT_ID
+      )
+    ).toMatchObject({ status: 401 })
+  })
+
+  it('preserves stale embed fallback while denying a foreign scope alone', async () => {
+    const pwaEmbedToken = await signPwaEmbedSessionToken({
+      participantId: 'participant-1',
+      chatbotId: OTHER_CHATBOT_ID,
+      courseId: COURSE_A,
+    })
+    expect(
+      await authenticateParticipant({ pwaEmbedToken }, CHATBOT_ID)
+    ).toMatchObject({ status: 403 })
+    const participantToken = await signJWT(
+      { sub: 'account-1', role: 'PARTICIPANT' },
+      'test-app-secret',
+      { issuer: 'https://api.test', expiresIn: '1h' }
+    )
+    expect(
+      await authenticateParticipant(
+        { pwaEmbedToken, participantToken },
+        CHATBOT_ID
+      )
+    ).toMatchObject({ participantId: 'account-1', courseId: COURSE_A })
+  })
+
+  it('denies a mismatched course and missing participation', async () => {
+    const pwaEmbedToken = await signPwaEmbedSessionToken({
+      participantId: 'participant-1',
+      chatbotId: CHATBOT_ID,
+      courseId: COURSE_B,
+    })
+    expect(
+      await authenticateParticipant({ pwaEmbedToken }, CHATBOT_ID)
+    ).toMatchObject({ status: 403 })
+    mocks.participationFindUnique.mockResolvedValue(null)
+    expect(
+      await authenticateParticipant(
+        { chatGuestToken: await signChatGuestToken('guest-participant') },
+        CHATBOT_ID
+      )
+    ).toMatchObject({ status: 403 })
   })
 })

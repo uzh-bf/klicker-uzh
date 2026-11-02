@@ -9,13 +9,13 @@ import { useTranslations } from 'next-intl'
 import { type FC, useState } from 'react'
 import { twMerge } from 'tailwind-merge'
 import { getDocQueryResult } from '@/src/lib/sources/docQueryResult'
+import { STUDENT_PRACTICE_QUIZ_TOOL_NAME } from '@/src/lib/toolOutput'
 import {
   countDocQueryDocuments,
   isDocQueryToolName,
   parseDocQueryPayload,
 } from '@/src/lib/sources/normalizeSources'
 import type { Translate } from '@/src/lib/sources/sourceDisplay'
-import { STUDENT_PRACTICE_QUIZ_TOOL_NAME } from '@/src/services/studentPracticeMcp'
 import { getManageProposalResult } from '../services/manageProposalResult'
 import { DocQueryResults } from './doc-query-results'
 import { ManageProposalCard } from './manage-proposal-card'
