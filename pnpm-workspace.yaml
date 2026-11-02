@@ -14,6 +14,11 @@ minimumReleaseAge: 20160
 minimumReleaseAgeStrict: true
 minimumReleaseAgeIgnoreMissingTime: false
 minimumReleaseAgeExclude:
+  # Reviewed security fixes for the 2026-10-31 backend image scan
+  # (body-parser CVE-2026-111181, follow-redirects CVE-2026-116689). Drop
+  # once they age past the 14-day window.
+  - 'body-parser@1.20.9||2.4.0'
+  - 'follow-redirects@1.16.2'
   # Reviewed security fix for CVE-2026-93749 (indexed source map DoS): bounds
   # section offsets plus a CSP-safe sort fallback, same sole maintainer, no
   # install scripts. Drop once it ages past the 14-day window.
@@ -96,7 +101,7 @@ overrides:
   'fast-xml-parser@>=5.0.0 <5.7.0': 5.7.0
   'glob@>=10.2.0 <10.5.0': 10.5.0
   'mysql2@<3.22.0': 3.22.0
-  'next@>=15.0.0 <15.5.24': 15.5.24
+  'next@>=15.0.0 <15.5.28': 15.5.28
   'systeminformation@>=4.17.0 <=5.31.5': 5.31.6
   # Image-scan remediation (2026-09-14): the backend and migrator images carried
   # fixable HIGH/CRITICAL advisories in transitive dependencies. Each entry lifts
@@ -124,10 +129,15 @@ overrides:
   'deepmerge-ts@>=7.0.0 <8.0.0': 8.0.0
   'nodemailer@>=6.0.0 <10.0.6': 10.0.10
   '@opentelemetry/propagator-jaeger@>=1.0.0 <2.9.0': 2.9.0
-  # The mergeDeep prototype pollution advisory GHSA-7mx3-vvmw-hjmv is fixed
-  # only in 12.0.1. Older utility major lines are still requested by Yoga,
+  # The mergeDeep and mergeIncrementalResult prototype pollution advisories
+  # are fixed in 12.0.2. Older utility major lines are still requested by Yoga,
   # the executors, envelop and the codegen loaders.
-  '@graphql-tools/utils@<12.0.1': 12.0.1
+  '@graphql-tools/utils@<12.0.2': 12.0.2
+  # Backend image scan remediation (2026-10-31): keep each body-parser major on
+  # its first patched release, and lift follow-redirects past CVE-2026-116689.
+  'body-parser@>=1.0.0 <1.20.9': 1.20.9
+  'body-parser@>=2.0.0 <2.4.0': 2.4.0
+  'follow-redirects@<1.16.2': 1.16.2
 
 packageExtensions:
   # The published stylesheet imports this plugin, but 4.1.8 lists it only as a devDependency.
