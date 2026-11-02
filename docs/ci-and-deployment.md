@@ -1526,6 +1526,26 @@ the shared codebase workflow. It runs the same gate for pushes to `v3` and
 also rejects unsupported autoscaling stanzas in the base, staging, and
 production values files.
 
+### PWA spot burst tier
+
+With `frontendPWA.burst.enabled`, a `-frontend-pwa-burst` Deployment runs on
+`asyncspot` nodes and its HPA owns its replicas; the baseline keeps static
+replicas on regular nodes, and the Service selects both. Each tier has its own
+disruption budget, so a Pod always matches exactly one.
+
+The Klicker Applications use Argo CD's `RespectIgnoreDifferences=true` sync
+option for the burst replica exception. Before applying, Argo merges every
+existing object's live state into the desired manifest, so an in-place change
+to a list-valued field such as a label selector may never apply. A resource
+that stays `OutOfSync` after a successful sync is the symptom. The chart
+therefore gives the baseline PWA budget its own name while the burst tier is
+enabled, and a future selector change needs the same approach.
+
+Import `deploy/dashboards/klicker-pwa-burst.json` into Grafana to watch both
+tiers, the burst HPA, Pending burst Pods, `asyncspot` headroom and the other
+workloads on that pool. Kube-state-metrics exports no node labels, so the
+dashboard selects spot nodes by their `aks-asyncspot-` name prefix.
+
 ## Deployment migrations
 
 `prisma migrate deploy` runs automatically as an ArgoCD **`PreSync` hook Job** (`deploy/charts/klicker-uzh-v3/templates/job-migrate.yaml`) before each stg and prd rollout. **On prd the hook is enabled** (`migrator.enabled: true`) because the pinned release tags have matching migrator images, so normal prd rollouts apply pending Prisma migrations to the primary GraphQL database before its application Deployments start. The assessment database is covered only if its separate backend Secret targets that same database; otherwise it needs a separately proven migration path. The dedicated `backend-docker-migrator` image (`packages/prisma/Dockerfile`) is CI-built in lockstep with `backend-docker` (`v3_backend-docker-{stg,prd}.yml`). Without a global override, its tag tracks `migrator.image.tag`, then `backendGraphql.image.tag`; on Phase 1 staging, `global.imageTag` takes precedence so the hook and all app workloads use ArgoCD's same resolved commit. Production receives no global override and keeps its pinned release tag. A failed hook aborts the whole sync, so app Deployments in the main wave never start against an unmigrated DB. The hook uses **ArgoCD-native** annotations (`argocd.argoproj.io/hook: PreSync`), not Helm chart hooks — the two must not be mixed, because a single ArgoCD hook annotation makes ArgoCD ignore _all_ Helm-native hooks on the chart. Full details: [Data & Migrations → Deployment migrations](./data-and-migrations.md#deployment-migrations). Manual `pnpm --filter @klicker-uzh/prisma prisma:deploy:prod` remains a break-glass fallback only.
