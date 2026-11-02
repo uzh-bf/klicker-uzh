@@ -32,7 +32,11 @@ spec:
 apiVersion: policy/v1
 kind: PodDisruptionBudget
 metadata:
-  name: {{ include "chart.fullname" . }}-frontend-pwa
+  # With the burst tier this budget gets its own name. Argo CD's
+  # RespectIgnoreDifferences sync option merges an existing object's live
+  # selector into the desired one, so an in-place selector change never
+  # applies; a new object is created exactly as rendered.
+  name: {{ include "chart.fullname" . }}-frontend-pwa{{ if .Values.frontendPWA.burst.enabled }}-baseline{{ end }}
   labels:
     {{- include "chart.labels" . | nindent 4 }}
     app.kubernetes.io/component: frontend-pwa
