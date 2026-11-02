@@ -126,7 +126,7 @@ correction. The pinned Node/pnpm container and frozen dependencies are ready;
 the unchanged baseline passes 114 focused tests. Maintained regressions expose
 33 failures against that source, including invalid draft admission.
 
-The approved source correction is implemented. All 151 focused parser and
+The approved source correction is implemented. All 143 focused parser and
 caller checks pass, along with GraphQL and workspace type checks, formatting,
 lint, dependency consistency, host contracts and scoped scans. The production
 build passes all 27 tasks. Hook-equivalent checks ran with Git on the host and

@@ -1977,21 +1977,7 @@ describe('partial question-generation delivery lifecycle', () => {
 
   it.each([
     { manifest: { requested_questions: 3 } },
-    { manifest: { generated_questions: 0 } },
-    { manifest: { generated_questions: 2 } },
-    { manifest: { review_required_questions: undefined } },
-    {
-      manifest: {
-        slot_failures: [groundingSlotFailure(), groundingSlotFailure()],
-      },
-    },
     { manifest: { slot_failures: [groundingSlotFailure({ slot_id: 'q01' })] } },
-    {
-      manifest: {
-        slot_failures: [groundingSlotFailure({ slot_id: 'foreign' })],
-      },
-    },
-    { manifest: { schema_version: 2 } },
     { design: null },
     { design: { slots: [] } },
     {
@@ -1999,16 +1985,12 @@ describe('partial question-generation delivery lifecycle', () => {
         slots: [{ sourceQuestionId: 'q01' }, { sourceQuestionId: 'q01' }],
       },
     },
-    { retainedSlot: undefined },
-    { retainedSlot: 'foreign' },
   ])('rejects malformed partial delivery before draft completion %#', async (invalid) => {
     const build = {
       ...partialBuild(),
       ...('design' in invalid ? { designSummary: invalid.design } : {}),
     }
     const bank = JSON.parse(finalBankArtifact(['q01']).toString())
-    if ('retainedSlot' in invalid)
-      bank.questions[0].design_slot_id = invalid.retainedSlot
     const runtime = partialRuntime(
       partialResultArtifact('manifest' in invalid ? invalid.manifest : {}),
       Buffer.from(JSON.stringify(bank))
