@@ -69,6 +69,50 @@ describe('authedFetch', () => {
     expect(headers.get('authorization')).toBe('Bearer pwa-token')
   })
 
+  it.each([
+    '',
+    'https://chat-api.synthetic.localhost',
+  ])('preserves scoped transport for the selected origin %s', async (origin) => {
+    const { fetchChatApi } = await import('../src/lib/api/types')
+    vi.stubGlobal('document', {
+      documentElement: { dataset: { chatApiUrl: origin } },
+    })
+    sessionStorage.setItem(
+      PWA_CHAT_EMBED_SESSION_STORAGE_KEY,
+      'synthetic-embed-token'
+    )
+    const fetchMock = vi.fn().mockResolvedValue(new Response('{}'))
+    globalThis.fetch = fetchMock
+    await fetchChatApi('/api/chatbots/synthetic/threads')
+    expect(fetchMock.mock.calls[0]?.[0]).toBe(
+      `${origin}/api/chatbots/synthetic/threads`
+    )
+    const options = fetchMock.mock.calls[0]?.[1] as RequestInit
+    expect(new Headers(options.headers).get('authorization')).toBe(
+      'Bearer synthetic-embed-token'
+    )
+    expect(options.credentials).toBe(origin ? 'include' : undefined)
+  })
+
+  it.each([
+    'https://chat-api.synthetic.localhost/path',
+    'data:text/plain,synthetic',
+    'https://chat-api.synthetic.localhost/?unexpected=1',
+  ])('rejects invalid deployment origin %s before forwarding credentials', async (origin) => {
+    const { fetchChatApi } = await import('../src/lib/api/types')
+    vi.stubGlobal('document', {
+      documentElement: { dataset: { chatApiUrl: origin } },
+    })
+    sessionStorage.setItem(
+      CHAT_GUEST_SESSION_STORAGE_KEY,
+      'synthetic-guest-token'
+    )
+    const fetchMock = vi.fn()
+    globalThis.fetch = fetchMock
+    expect(() => fetchChatApi('/api/chatbots/synthetic/threads')).toThrow()
+    expect(fetchMock).not.toHaveBeenCalled()
+  })
+
   it('does not overwrite a caller-provided Authorization header', async () => {
     sessionStorage.setItem(CHAT_GUEST_SESSION_STORAGE_KEY, 'tkn-1')
     const fetchMock = vi.fn().mockResolvedValue(new Response('ok'))
