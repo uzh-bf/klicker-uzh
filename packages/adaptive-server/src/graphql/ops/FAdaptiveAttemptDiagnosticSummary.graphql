@@ -1,0 +1,80 @@
+fragment FAdaptiveAttemptNodeResult on AdaptiveAttemptNodeResult {
+  nodeId
+  parentId
+  name
+  kind
+  depth
+  theta
+  standardError
+  levelLabel
+  lowerLevelLabel
+  upperLevelLabel
+  responseCount
+  determined
+  coverageStatus
+  weightShare
+}
+
+fragment FAdaptiveAttemptReview on AdaptiveAttemptReview {
+  verdict
+  expectedOverallLevelLabel
+  expectedCompetenceLevels {
+    nodeId
+    levelLabel
+  }
+  comment
+  updatedAt
+}
+
+fragment FAdaptiveAttemptDiagnosticSummary on AdaptiveAttemptDiagnosticSummary {
+  attemptCode
+  participantCode
+  attemptNumber
+  startedAt
+  completedAt
+  elapsedSeconds
+  stopReason
+  answerCount
+  overall {
+    ...FAdaptiveAttemptNodeResult
+  }
+  competences {
+    ...FAdaptiveAttemptNodeResult
+  }
+  rating
+  ratingReasons {
+    code
+    severity
+    nodeName
+    value
+  }
+  estimatesComplete
+  review {
+    ...FAdaptiveAttemptReview
+  }
+  answers {
+    order
+    competenceName
+    subcompetenceName
+    nodeNamePath
+    elementTitle
+    itemLevelLabel
+    difficulty
+    discrimination
+    guessing
+    correct
+    score
+    overallThetaAfter
+    levelDistance
+    phase
+    competenceThetaBefore
+    competenceStandardErrorBefore
+    competenceLevelBefore
+    competenceThetaAfter
+    competenceStandardErrorAfter
+    competenceLevelAfter
+    competenceLowerLevelAfter
+    competenceUpperLevelAfter
+    levelDistanceBefore
+  }
+}

@@ -326,7 +326,7 @@ function Index() {
     <Layout
       displayName={t('manage.general.questionPool')}
       data={{ cy: 'homepage' }}
-      className={{ children: 'pb-2 sm:overflow-y-auto' }}
+      className={{ children: 'relative pb-2 sm:overflow-y-auto' }}
     >
       {typeof creationMode === 'undefined' && (
         <Suspense fallback={<div />}>
@@ -360,7 +360,10 @@ function Index() {
         />
       )}
 
-      <div className="flex min-h-0 flex-1 flex-col gap-4 overflow-y-auto sm:flex-row">
+      {/* relative: absolutely positioned descendants (sr-only labels) stay
+          clipped here. Otherwise a tall wizard step that squeezes the library
+          to no height lets them stretch the page below the footer. */}
+      <div className="relative flex min-h-0 flex-1 flex-col gap-4 overflow-y-auto sm:flex-row">
         <aside
           className="flex w-full shrink-0 flex-col items-start gap-3 sm:w-56"
           data-cy="element-library-sidebar"

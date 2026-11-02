@@ -19,6 +19,16 @@ const RECEIPT_SCHEMA_VERSION = 'klicker.image-scan-receipt/v1'
 // remove them today; the report is their audit source.
 const FAIL_SEVERITIES = ['HIGH', 'CRITICAL']
 
+// A reviewed exception accepts one advisory in one package until its expiry
+// date. Accepted findings stay in the report but stop gating; after the expiry
+// the finding gates again, which forces a fresh decision.
+const DEFAULT_EXCEPTIONS_PATH = path.join(
+  __dirname,
+  '..',
+  'image-scan-exceptions.json'
+)
+const DATE_PATTERN = /^[0-9]{4}-[0-9]{2}-[0-9]{2}$/
+
 const DIGEST_PATTERN = /^sha256:[0-9a-f]{64}$/
 const GIT_SHA_PATTERN = /^[0-9a-f]{40}$/
 const ENGINE_VERSION_PATTERN = /^v[0-9]+\.[0-9]+\.[0-9]+$/
@@ -95,6 +105,13 @@ function buildReceipt(input) {
       failOn: [...FAIL_SEVERITIES],
       failOnUnfixed: false,
       unfixedFindings: 'reported-not-gating',
+      acceptedExceptions: (input.acceptedExceptions ?? []).map(
+        ({ ids, package: packageName, expires }) => ({
+          ids: [...ids],
+          package: packageName,
+          expires,
+        })
+      ),
     },
     reports: {
       findings: requiredText('findingsReport', input.findingsReport),
@@ -125,10 +142,64 @@ function isFixable(vulnerability) {
   return vulnerability?.Status === 'fixed'
 }
 
-function evaluatePolicy(results) {
+function readExceptions(filePath = DEFAULT_EXCEPTIONS_PATH) {
+  if (!fs.existsSync(filePath)) {
+    return []
+  }
+  let entries
+  try {
+    entries = JSON.parse(fs.readFileSync(filePath, 'utf8'))
+  } catch (error) {
+    fail(`could not read the scan exceptions at ${filePath}: ${error.message}`)
+  }
+  if (!Array.isArray(entries)) {
+    fail(`the scan exceptions at ${filePath} are not a list`)
+  }
+  return entries.map((entry, index) => {
+    const label = `scan exception ${index + 1}`
+    if (
+      !Array.isArray(entry?.ids) ||
+      entry.ids.length === 0 ||
+      !entry.ids.every((id) => typeof id === 'string' && id.trim() !== '')
+    ) {
+      fail(`${label} needs a non-empty list of advisory ids`)
+    }
+    const expires = requiredText(`${label} expires`, entry.expires)
+    if (!DATE_PATTERN.test(expires) || Number.isNaN(Date.parse(expires))) {
+      fail(`${label} expires must be a YYYY-MM-DD date`)
+    }
+    return {
+      ids: entry.ids.map((id) => id.trim()),
+      package: requiredText(`${label} package`, entry.package),
+      expires,
+      reason: requiredText(`${label} reason`, entry.reason),
+    }
+  })
+}
+
+// An exception applies through the end of its expiry date (UTC).
+function activeExceptions(exceptions, now = new Date()) {
+  const today = now.toISOString().slice(0, 10)
+  return exceptions.filter((exception) => today <= exception.expires)
+}
+
+function isAccepted(vulnerability, exceptions) {
+  const ids = [
+    vulnerability?.VulnerabilityID,
+    ...(Array.isArray(vulnerability?.VendorIDs) ? vulnerability.VendorIDs : []),
+  ]
+  return exceptions.some(
+    (exception) =>
+      exception.package === vulnerability?.PkgName &&
+      exception.ids.some((id) => ids.includes(id))
+  )
+}
+
+function evaluatePolicy(results, exceptions = []) {
   const summary = {
     reported: 0,
     fixable: 0,
+    accepted: 0,
     unfixed: 0,
     fixableBySeverity: { HIGH: 0, CRITICAL: 0 },
     unfixedBySeverity: { HIGH: 0, CRITICAL: 0 },
@@ -144,7 +215,9 @@ function evaluatePolicy(results) {
         continue
       }
       summary.reported += 1
-      if (isFixable(vulnerability)) {
+      if (isFixable(vulnerability) && isAccepted(vulnerability, exceptions)) {
+        summary.accepted += 1
+      } else if (isFixable(vulnerability)) {
         summary.fixable += 1
         summary.fixableBySeverity[severity] += 1
       } else {
@@ -212,16 +285,21 @@ function writeReceiptForRun(args) {
       actionRef: args['action-ref'],
       findingsReport: args.findings,
       sbomReport: args.sbom,
+      acceptedExceptions: activeExceptions(readExceptions(args.exceptions)),
     })
   )
 }
 
 function checkPolicy(args) {
   const reportPath = requiredText('--report', args.report)
-  const summary = evaluatePolicy(readTrivyResults(reportPath))
+  const summary = evaluatePolicy(
+    readTrivyResults(reportPath),
+    activeExceptions(readExceptions(args.exceptions))
+  )
   console.log(
     `image-scan-receipt: ${reportPath} holds ${summary.reported} HIGH/CRITICAL ` +
-      `findings: ${summary.fixable} fixable, ${summary.unfixed} unfixed`
+      `findings: ${summary.fixable} fixable, ${summary.accepted} accepted by ` +
+      `an exception, ${summary.unfixed} unfixed`
   )
   if (!summary.violation) {
     return 0
@@ -258,9 +336,11 @@ if (require.main === module) {
 
 module.exports = {
   RECEIPT_SCHEMA_VERSION,
+  activeExceptions,
   buildReceipt,
   evaluatePolicy,
   formatReceipt,
+  readExceptions,
   readTrivyResults,
   writeReceipt,
 }

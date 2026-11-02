@@ -16,11 +16,10 @@ import type {
   InvitationResult,
 } from '../services/participantInvitations.js'
 import {
+  acceptParticipantInvitation,
   createParticipantInvitations,
   deduplicateParticipantInvitationInputs,
   findEligibleParticipantIds,
-  isSoleEligibleParticipant,
-  withSerializableInvitationTransaction,
 } from '../services/participantInvitations.js'
 
 // Configuration - adjust these values as needed
@@ -574,52 +573,20 @@ async function resolveBrokenAcceptedInvitation(
     return
   }
 
-  const repaired = await withSerializableInvitationTransaction(
-    prisma,
-    async (tx) => {
-      const currentParticipantIds = await findEligibleParticipantIds(
-        normalizedEmail,
-        emailMode,
-        tx
-      )
-
-      if (!isSoleEligibleParticipant(currentParticipantIds, participantId)) {
-        return false
-      }
-
-      const updateResult = await tx.participantInvitation.updateMany({
-        where: {
-          id: invitation.id,
-          status: InvitationStatus.ACCEPTED,
-          participantId: null,
-        },
-        data: {
-          participantId,
-          acceptedAt: invitation.acceptedAt ?? new Date(),
-        },
-      })
-
-      if (updateResult.count !== 1) {
-        return false
-      }
-
-      await tx.participation.upsert({
-        where: {
-          courseId_participantId: {
-            courseId: invitation.courseId,
-            participantId,
-          },
-        },
-        create: {
-          courseId: invitation.courseId,
-          participantId,
-        },
-        update: {},
-      })
-
-      return true
-    }
-  )
+  let repaired = false
+  try {
+    const result = await acceptParticipantInvitation({
+      invitationId: invitation.id,
+      courseId: invitation.courseId,
+      participantId,
+      acceptedAt: invitation.acceptedAt,
+    })
+    repaired = result.invitationId === invitation.id
+  } catch (error) {
+    console.warn(
+      `  Skipped repair for invitation ${invitation.id}: ${error instanceof Error ? error.message : String(error)}`
+    )
+  }
 
   if (!repaired) {
     console.warn(

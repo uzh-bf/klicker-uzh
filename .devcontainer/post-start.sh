@@ -73,6 +73,9 @@ if [ "${#evaluation_values[@]}" -gt 0 ]; then
   done
 fi
 
+# Keep the endpoint path at the runtime URL boundary, including primary checkouts.
+export NEXT_PUBLIC_ADD_RESPONSE_URL=https://response-api.klicker.localhost/AddResponse
+
 if [ "${LOCAL_MCP_BOOTSTRAPPED:-}" = 1 ]; then
   # The mock process group uses only the explicitly provisioned mock database.
   . "$ROOT/util/profile-resolver.sh"
