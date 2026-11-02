@@ -110,15 +110,6 @@ test('container lifecycle preserves fail-closed dependency verification', () => 
       `${script} must inherit the workspace policy`
     )
     if (script === 'post-start') continue
-    if (script === 'post-create') {
-      // post-create delegates every install and build to recover-bootstrap.
-      assert.match(
-        source,
-        /^exec bash "\$SCRIPT_ROOT\/\.devcontainer\/recover-bootstrap\.sh" "\$@"$/m,
-        'post-create delegates to recover-bootstrap'
-      )
-      continue
-    }
     const install = source.indexOf('\npnpm install ')
     const build = source.search(/^(?:if ! )?pnpm exec turbo run build\b/m)
     assert.ok(

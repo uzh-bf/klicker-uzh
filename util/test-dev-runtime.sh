@@ -189,6 +189,17 @@ assert_before() {
     fail "expected '$earlier' before '$later' in $file"
 }
 
+last_semantic_line() {
+  awk '$0 !~ /^[[:space:]]*($|#)/ { line = $0 } END { print line }' "$1"
+}
+
+assert_before \
+  "$REPO_ROOT/.devcontainer/post-create.sh" \
+  'bash "$SCRIPT_ROOT/util/dev-runtime.sh" begin-bootstrap' \
+  'ROOT="$(cd "$ROOT" && pwd)"'
+assert_equal \
+  "$(last_semantic_line "$REPO_ROOT/.devcontainer/post-create.sh")" \
+  'bash "$ROOT/util/dev-runtime.sh" complete-bootstrap'
 assert_before \
   "$REPO_ROOT/.devcontainer/post-start.sh" \
   'ROOT="$(cd "$ROOT" && pwd)"' \
@@ -206,14 +217,69 @@ mkdir -p \
   "$ROOT/apps/hatchet-worker-general" \
   "$ROOT/apps/hatchet-worker-response-processor" \
   "$ROOT/packages/graphql" \
+  "$ROOT/packages/prisma" \
   "$ROOT/util"
+write_file "$ROOT/packages/prisma/package.json" '{"name":"@klicker-uzh/prisma"}'
 write_file "$ROOT/.devcontainer/devcontainer.env" ''
-write_file "$ROOT/.devcontainer/.hatchet.env" 'HATCHET_CLIENT_TOKEN=synthetic-test-token'
 cp "$RUNTIME_SCRIPT" "$ROOT/util/dev-runtime.sh"
 cp "$REPO_ROOT/util/check-dev-pages-manifest.mjs" "$ROOT/util/check-dev-pages-manifest.mjs"
 cp "$REPO_ROOT/util/local-eduid-issuer.sh" "$ROOT/util/local-eduid-issuer.sh"
-# Post-create replay and failure admission are exercised by test-recover-bootstrap.sh.
 bash "$RUNTIME_SCRIPT" complete-bootstrap >/dev/null
+if KLICKER_DEVCONTAINER_ROOT="$TEST_ROOT/missing-root" \
+  bash "$REPO_ROOT/.devcontainer/post-create.sh" >/dev/null 2>&1; then
+  fail 'post-create accepted a missing configured root'
+fi
+assert_absent "$KLICKER_DEV_RUNTIME_BOOTSTRAP_STATE_DIR/bootstrap-complete"
+
+bash "$RUNTIME_SCRIPT" complete-bootstrap >/dev/null
+if KLICKER_DEVCONTAINER_ROOT="$ROOT" \
+  KLICKER_HATCHET_TOKEN_FILE="$TEST_ROOT/missing-hatchet-token" \
+  KLICKER_TEST_PNPM_FAIL_MATCH='exec turbo' \
+  bash "$REPO_ROOT/.devcontainer/post-create.sh" >/dev/null 2>&1; then
+  fail 'post-create ignored a failing middle bootstrap step'
+fi
+assert_absent "$KLICKER_DEV_RUNTIME_BOOTSTRAP_STATE_DIR/bootstrap-complete"
+: > "$INSTALL_LOG"
+rm -f "$ROOT/node_modules/.klicker-dependency-fingerprint"
+write_file "$TEST_ROOT/hatchet-token" 'synthetic-test-token'
+bash "$RUNTIME_SCRIPT" begin-bootstrap >/dev/null
+(
+  cd "$TEST_ROOT"
+  KLICKER_DEVCONTAINER_ROOT='repo' \
+    KLICKER_HATCHET_TOKEN_FILE="$TEST_ROOT/hatchet-token" \
+    bash "$REPO_ROOT/.devcontainer/post-create.sh" >/dev/null
+)
+assert_exists "$ROOT/.devcontainer/.hatchet.env"
+grep -Fq 'HATCHET_CLIENT_TOKEN=synthetic-test-token' \
+  "$ROOT/.devcontainer/.hatchet.env" || \
+  fail 'relative post-create root wrote the Hatchet environment incorrectly'
+bash "$RUNTIME_SCRIPT" require-bootstrap >/dev/null
+: > "$INSTALL_LOG"
+mkdir -p "$ROOT/util/local-kb"
+cp "$REPO_ROOT/util/local-kb/runtime-environment.sh" "$ROOT/util/local-kb/runtime-environment.sh"
+(
+  . "$ROOT/util/local-kb/runtime-environment.sh"
+  local_kb_capture_environment >/dev/null 2>&1 || true
+  for key in "${LOCAL_KB_ENV_KEYS[@]}"; do
+    export "$key=synthetic-isolated-value"
+  done
+KLICKER_DEVCONTAINER_ROOT="$ROOT" \
+  KLICKER_LOCAL_KB_RUNTIME_ONLY=1 \
+  HATCHET_CLIENT_TOKEN=synthetic-isolated-token \
+  bash "$REPO_ROOT/.devcontainer/post-create.sh" >/dev/null
+)
+if grep -Eq 'prisma:reset:raw|prisma:push:raw|seed:raw' "$INSTALL_LOG"; then
+  fail 'isolated post-create mutated the database'
+fi
+grep -Fq 'exec turbo run build' "$INSTALL_LOG" || \
+  fail 'isolated post-create skipped the application build'
+grep -Fq 'HATCHET_CLIENT_TOKEN=synthetic-test-token' \
+  "$ROOT/.devcontainer/.hatchet.env" || \
+  fail 'isolated post-create overwrote existing token state'
+bash "$RUNTIME_SCRIPT" require-bootstrap >/dev/null
+: > "$INSTALL_LOG"
+rm -f "$ROOT/node_modules/.klicker-dependency-fingerprint"
+
 post_start_status=0
 post_start_output="$(
   cd "$TEST_ROOT"
@@ -269,8 +335,6 @@ for profile in mcp chat; do
   assert_equal "$(sed -n '4p' "$KLICKER_TEST_PROCESS_ENV")" "external.invalid,$blob_host"
 done
 
-mkdir -p "$ROOT/util/local-kb"
-cp "$REPO_ROOT/util/local-kb/runtime-environment.sh" "$ROOT/util/local-kb/runtime-environment.sh"
 # Isolated startup preserves the supplied endpoint, so all local Blob naming
 # forms can be verified without a certificate mount or a real storage service.
 for blob_host in azurite klicker-uzh-azurite synthetic-workspace-azurite; do

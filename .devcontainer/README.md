@@ -599,6 +599,25 @@ replacement commands. A version pin does not establish that the installed tool
 can perform retained replacement. When that capability is unavailable, stop at
 that boundary rather than substituting raw Docker lifecycle operations.
 
+The callback requires the provider to inject exact 64-character application
+and PostgreSQL container IDs. It assumes the canonical container mount
+`/workspaces/klicker-uzh`. Both restricted disposable databases must already be
+provisioned and marked; normal post-create and the callback verify their existing
+identities and application schema without resetting, pushing schema, or seeding.
+Explicit initialization through `recover-bootstrap.sh --initialize-new-disposable`
+is a separate operation that requires approval. The startup hook rejects that
+argument. It never marks an existing retained database as disposable.
+The provisioning helper defaults to bootstrap login `klicker`
+for CI; the retained local environment explicitly selects the allow-listed
+`klicker-prod` login. Neither is the restricted `klicker_test` application login.
+
+Redis data uses project-scoped named volumes. When recreating containers whose
+Redis storage was anonymous, set `KLICKER_REDIS_EXEC_VOLUME`,
+`KLICKER_REDIS_CACHE_VOLUME`, and `KLICKER_REDIS_ASSESSMENT_VOLUME` to the exact
+previous volume names. Verify those volumes exist and the resolved Compose
+mounts match before startup; retain those overrides for subsequent lifecycle
+commands. Removing containers does not authorize discarding their data.
+
 The four hashes in `recover-runtime.sh` bind the reviewed consumer source.
 When one of those files changes, review the semantic change and refresh its pin
 in the same commit. Run `pnpm run test:dev-runtime` to catch pin drift before
@@ -621,15 +640,15 @@ stop at that capability boundary instead of substituting raw Docker mutations.
 
 Initialization is a separate, explicit operation for newly provisioned empty
 `klicker_test` and `klicker_test_shadow` databases with the restricted
-`klicker_test` login and disposable marker. Both targets must have no user schema
-objects before any schema push or synthetic seeding. Existing tables, views,
-sequences, functions, types or additional user schemas cause refusal, even when
-they contain no rows. A marker alone does not make retained contents expendable.
+`klicker_test` login and disposable marker. Both identities are verified before
+any schema push or synthetic seeding. The schema push force-resets the target, so
+confirm both databases hold no retained contents first. A marker alone does not
+make retained contents expendable.
 
 The consumer command for an authorized one-shot provider bootstrap is:
 
 ```bash
-bash .devcontainer/post-create.sh --initialize-new-disposable
+bash .devcontainer/recover-bootstrap.sh --initialize-new-disposable
 ```
 
 Supply that literal argument only through a supported managed provider path

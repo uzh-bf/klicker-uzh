@@ -87,6 +87,35 @@ write_file "$ROOT/apps/hatchet-worker-general/package.json" '{"name":"hatchet-wo
 write_file "$ROOT/apps/hatchet-worker-response-processor/package.json" '{"name":"hatchet-worker-response-processor"}'
 write_file "$ROOT/packages/graphql/package.json" '{"name":"@klicker-uzh/graphql"}'
 write_file "$ROOT/packages/prisma/package.json" '{"name":"@klicker-uzh/prisma"}'
+mkdir -p "$ROOT/packages/prisma/src"
+cp "$REPO_ROOT/packages/prisma/src/disposableDatabase.ts" \
+  "$ROOT/packages/prisma/src/disposableDatabase.ts"
+cat >"$ROOT/packages/prisma/synthetic-pg.mjs" <<'SYNTHETIC_PG'
+import { appendFileSync } from 'node:fs'
+
+export default {
+  Client: class {
+    constructor({ connectionString }) {
+      this.database = new URL(connectionString).pathname.slice(1)
+    }
+    async connect() {}
+    async end() {}
+    async query(query) {
+      if (typeof query !== 'string') return { rows: [] }
+      appendFileSync(process.env.KLICKER_TEST_COMMAND_LOG, `identity-${this.database}\n`)
+      const rejected = process.env.KLICKER_TEST_FAIL_DATABASE === this.database ||
+        process.env.KLICKER_TEST_FAIL_IDENTITY === '1'
+      return { rows: [{
+        database: this.database,
+        login: 'klicker_test',
+        role: 'klicker_test',
+        marker: rejected ? 'unmarked' : 'klicker-disposable-test-v1',
+        privileged: false,
+      }] }
+    }
+  },
+}
+SYNTHETIC_PG
 write_file "$ROOT/.devcontainer/devcontainer.env" 'DATABASE_URL=postgres://klicker_test:klicker@synthetic/klicker_test
 SHADOW_DATABASE_URL=postgres://klicker_test:klicker@synthetic/klicker_test_shadow'
 cp "$REPO_ROOT/util/dev-runtime.sh" "$ROOT/util-dev-runtime.sh"
@@ -132,27 +161,22 @@ case "${1:-}" in
         ;;
       tsx)
         [ "${3:-}" = '-e' ] || exit 40
-        if [ "${KLICKER_RECOVERY_CHECK_MODE:-}" = initialize ]; then
-          echo identity >>"$KLICKER_TEST_COMMAND_LOG"
-          [ "${KLICKER_TEST_FAIL_IDENTITY:-}" != 1 ] || exit 43
-          for database in main shadow; do
-            echo "empty-$database" >>"$KLICKER_TEST_COMMAND_LOG"
-            [ "${KLICKER_TEST_POPULATED_DATABASE:-}" != "$database" ] || exit 44
-          done
-          exit 0
-        fi
+        # Execute the real verifier and identity validator with a synthetic
+        # transport, so an omitted or rejected database cannot be hidden.
+        program="${4/import pg from \"pg\"/import pg from \".\/synthetic-pg.mjs\"}"
+        exec node --input-type=module-typescript -e "$program"
+        ;;
+      prisma)
+        [ "$*" = 'exec prisma migrate diff --config prisma.config.ts --from-config-datasource --to-schema src/prisma/schema --exit-code' ] || exit 44
+        printf 'schema-%s\n' "${KLICKER_TEST_SCHEMA_STATE:-missing}" >>"$KLICKER_TEST_COMMAND_LOG"
+        echo synthetic-connection-secret
+        echo synthetic-connection-secret >&2
         case "${KLICKER_TEST_SCHEMA_STATE:-missing}" in
-          missing)
-            printf "%s\n" verify-missing-schema >>"$KLICKER_TEST_COMMAND_LOG"
-            exit 1
-            ;;
-          push-compatible)
-            printf "%s\n" verify-push-compatible >>"$KLICKER_TEST_COMMAND_LOG"
-            exit 0
-            ;;
-          *)
-            exit 39
-            ;;
+          missing|drift) exit 2 ;;
+          push-compatible) exit 0 ;;
+          error) exit 1 ;;
+          interrupted) exit 137 ;;
+          *) exit 39 ;;
         esac
         ;;
       *)
@@ -196,6 +220,10 @@ case "${3:-}" in
   pg_isready)
     ;;
   bash)
+    if [ "${4:-}" = '/workspaces/klicker-uzh/.devcontainer/recover-bootstrap.sh' ]; then
+      [ "$#" -eq 4 ] || exit 44
+      [ "${KLICKER_TEST_CALLBACK_FAIL:-0}" != 1 ] || exit 45
+    fi
     ;;
   *)
     exit 43
@@ -239,6 +267,9 @@ assert_log_before "$RUNTIME_DOCKER_LOG" \
   'bash /workspaces/klicker-uzh/util/dev-runtime.sh begin-bootstrap'
 assert_equal "$(tail -n 1 "$RUNTIME_DOCKER_LOG")" \
   "exec $APP_CONTAINER_ID bash /workspaces/klicker-uzh/.devcontainer/recover-bootstrap.sh"
+if KLICKER_TEST_CALLBACK_FAIL=1 run_recovery_runtime; then
+  fail 'runtime callback concealed a failed preserving bootstrap'
+fi
 
 for pinned_source in \
   .devcontainer/recover-bootstrap.sh \
@@ -288,7 +319,7 @@ set -e
 assert_equal "$failure_status" '1'
 assert_absent "$MARKER_DIR/bootstrap-complete"
 assert_equal "$(tr '\n' ' ' <"$COMMAND_LOG")" \
-  'install build verify-missing-schema '
+  'install build identity-klicker_test identity-klicker_test_shadow schema-missing '
 if grep -E '^(reset|push|seed|migrate)$' "$COMMAND_LOG" >/dev/null; then
   fail 'database-changing command was executed during failed recovery'
 fi
@@ -304,7 +335,7 @@ KLICKER_TEST_SCHEMA_STATE=push-compatible \
 assert_contains "$MARKER_DIR/bootstrap-complete" \
   'klicker-devcontainer-bootstrap-v1'
 assert_equal "$(tr '\n' ' ' <"$COMMAND_LOG")" \
-  'install build verify-push-compatible '
+  'install build identity-klicker_test identity-klicker_test_shadow schema-push-compatible '
 assert_equal "$(cat "$ROOT/apps/hatchet-worker-general/.env")" 'existing-worker-env'
 assert_equal "$(cat "$ROOT/apps/hatchet-worker-response-processor/.env")" \
   'existing-processor-env'
@@ -322,100 +353,66 @@ fi
 
 : >"$COMMAND_LOG"
 KLICKER_TEST_SCHEMA_STATE=push-compatible bash "$ROOT/.devcontainer/recover-bootstrap.sh" --initialize-new-disposable >"$OUTPUT_LOG" 2>&1
-assert_equal "$(tr '\n' ' ' <"$COMMAND_LOG")" 'install build identity empty-main empty-shadow push seed verify-push-compatible '
+assert_equal "$(tr '\n' ' ' <"$COMMAND_LOG")" 'install build identity-klicker_test identity-klicker_test_shadow push seed identity-klicker_test identity-klicker_test_shadow schema-push-compatible '
 : >"$COMMAND_LOG"
 if KLICKER_TEST_FAIL_IDENTITY=1 KLICKER_TEST_SCHEMA_STATE=push-compatible bash "$ROOT/.devcontainer/recover-bootstrap.sh" --initialize-new-disposable >"$OUTPUT_LOG" 2>&1; then
   fail 'initialization continued with failed identity'
 fi
-assert_equal "$(tr '\n' ' ' <"$COMMAND_LOG")" 'install build identity '
+assert_equal "$(tr '\n' ' ' <"$COMMAND_LOG")" 'install build identity-klicker_test '
 assert_absent "$MARKER_DIR/bootstrap-complete"
-for database in main shadow; do
+
+# Exercise the actual provider entry point against retained schema fixtures.
+: >"$COMMAND_LOG"
+KLICKER_TEST_SCHEMA_STATE=push-compatible \
+  bash "$ROOT/.devcontainer/post-create.sh" >"$OUTPUT_LOG" 2>&1
+assert_equal "$(tr '\n' ' ' <"$COMMAND_LOG")" 'install build identity-klicker_test identity-klicker_test_shadow schema-push-compatible '
+bash "$ROOT/util/dev-runtime.sh" require-bootstrap >/dev/null
+for rejected_database in klicker_test klicker_test_shadow; do
   : >"$COMMAND_LOG"
-  if KLICKER_TEST_POPULATED_DATABASE="$database" KLICKER_TEST_SCHEMA_STATE=push-compatible \
-    bash "$ROOT/.devcontainer/recover-bootstrap.sh" --initialize-new-disposable >"$OUTPUT_LOG" 2>&1; then
-    fail "initialization accepted a populated $database database"
+  write_file "$MARKER_DIR/bootstrap-complete" 'klicker-devcontainer-bootstrap-v1'
+  if KLICKER_TEST_FAIL_DATABASE="$rejected_database" KLICKER_TEST_SCHEMA_STATE=push-compatible \
+    bash "$ROOT/.devcontainer/post-create.sh" >"$OUTPUT_LOG" 2>&1; then
+    fail "post-create accepted rejected identity $rejected_database"
   fi
   assert_absent "$MARKER_DIR/bootstrap-complete"
-  if grep -E '^(push|seed)$' "$COMMAND_LOG" >/dev/null; then
-    fail 'initialization wrote before both empty-database checks passed'
+  if grep -E '^(schema-|reset|push|seed|migrate)' "$COMMAND_LOG" >/dev/null; then
+    fail 'schema comparison or mutation ran before both identities passed'
   fi
 done
-
-# Exercise the provider's actual entry point, including a relative workspace.
-: >"$COMMAND_LOG"
-(
-  cd "$TEST_ROOT"
-  KLICKER_DEVCONTAINER_ROOT=repo KLICKER_TEST_SCHEMA_STATE=push-compatible \
-    bash "$ROOT/.devcontainer/post-create.sh" >"$OUTPUT_LOG" 2>&1
-)
-assert_equal "$(tr '\n' ' ' <"$COMMAND_LOG")" 'install build verify-push-compatible '
-bash "$ROOT/util/dev-runtime.sh" require-bootstrap >/dev/null
-
-if KLICKER_DEVCONTAINER_ROOT="$TEST_ROOT/missing-root" \
-  bash "$ROOT/.devcontainer/post-create.sh" >"$OUTPUT_LOG" 2>&1; then
-  fail 'post-create accepted a missing configured root'
-fi
-assert_absent "$MARKER_DIR/bootstrap-complete"
-
-for failure_stage in install build schema; do
+for failure_stage in install build missing drift error interrupted; do
   : >"$COMMAND_LOG"
   write_file "$MARKER_DIR/bootstrap-complete" 'klicker-devcontainer-bootstrap-v1'
   schema_state=push-compatible
-  [ "$failure_stage" != schema ] || schema_state=missing
+  case "$failure_stage" in
+    install|build) ;;
+    *) schema_state="$failure_stage" ;;
+  esac
   if KLICKER_TEST_FAIL_AT="$failure_stage" KLICKER_TEST_SCHEMA_STATE="$schema_state" \
-    KLICKER_RECOVERY_IDENTITY_ONLY=1 KLICKER_RECOVERY_CHECK_MODE=initialize \
     bash "$ROOT/.devcontainer/post-create.sh" >"$OUTPUT_LOG" 2>&1; then
-    fail "post-create succeeded after $failure_stage failed"
+    fail "post-create accepted failed $failure_stage"
   fi
-  if bash "$ROOT/util/dev-runtime.sh" require-bootstrap >/dev/null 2>&1; then
-    fail 'post-create failure admitted application startup'
-  fi
+  assert_absent "$MARKER_DIR/bootstrap-complete"
   if grep -E '^(reset|push|seed|migrate)$' "$COMMAND_LOG" >/dev/null; then
-    fail 'post-create failure performed a database mutation'
+    fail 'post-create mutated a retained database'
+  fi
+  if grep -Fq synthetic-connection-secret "$OUTPUT_LOG"; then
+    fail 'schema comparison exposed raw connection diagnostics'
   fi
 done
-
 : >"$COMMAND_LOG"
-KLICKER_TEST_SCHEMA_STATE=push-compatible \
-  bash "$ROOT/.devcontainer/post-create.sh" --initialize-new-disposable >"$OUTPUT_LOG" 2>&1
-assert_equal "$(tr '\n' ' ' <"$COMMAND_LOG")" \
-  'install build identity empty-main empty-shadow push seed verify-push-compatible '
-
-for arguments in '--unexpected' '--initialize-new-disposable extra'; do
-  : >"$COMMAND_LOG"
-  # Deliberate splitting exercises malformed literal argument sequences.
-  if bash "$ROOT/.devcontainer/post-create.sh" $arguments >"$OUTPUT_LOG" 2>&1; then
-    fail 'post-create accepted unsupported initialization arguments'
-  fi
-  assert_absent "$MARKER_DIR/bootstrap-complete"
-  assert_equal "$(cat "$COMMAND_LOG")" ''
-done
-
-# The isolated local knowledge-base runtime keeps its supplied settings and
-# token, and neither initializes nor verifies the disposable databases.
+if bash "$ROOT/.devcontainer/post-create.sh" --initialize-new-disposable >"$OUTPUT_LOG" 2>&1; then
+  fail 'provider startup accepted initialization intent'
+fi
+assert_equal "$(cat "$COMMAND_LOG")" ''
 mkdir -p "$ROOT/util/local-kb"
-cp "$REPO_ROOT/util/local-kb/runtime-environment.sh" \
-  "$ROOT/util/local-kb/runtime-environment.sh"
-(
-  . "$ROOT/util/local-kb/runtime-environment.sh"
-  local_kb_capture_environment >/dev/null 2>&1 || true
-  for key in "${LOCAL_KB_ENV_KEYS[@]}"; do
-    export "$key=synthetic-isolated-value"
-  done
-  : >"$COMMAND_LOG"
-  KLICKER_LOCAL_KB_RUNTIME_ONLY=1 \
-    bash "$ROOT/.devcontainer/post-create.sh" >"$OUTPUT_LOG" 2>&1
-  assert_equal "$(tr '\n' ' ' <"$COMMAND_LOG")" 'install build '
-  bash "$ROOT/util/dev-runtime.sh" require-bootstrap >/dev/null
-  : >"$COMMAND_LOG"
-  if KLICKER_LOCAL_KB_RUNTIME_ONLY=1 \
-    bash "$ROOT/.devcontainer/post-create.sh" --initialize-new-disposable \
-    >"$OUTPUT_LOG" 2>&1; then
-    fail 'isolated post-create accepted database initialization'
-  fi
-  assert_absent "$MARKER_DIR/bootstrap-complete"
-)
-assert_contains "$ROOT/.devcontainer/.hatchet.env" \
-  'HATCHET_CLIENT_TOKEN=synthetic-hatchet-token'
-
+write_file "$ROOT/util/local-kb/runtime-environment.sh" 'local_kb_capture_environment() {
+  echo isolated-capture >>"$KLICKER_TEST_COMMAND_LOG"
+  return 1
+}'
+: >"$COMMAND_LOG"
+if KLICKER_LOCAL_KB_RUNTIME_ONLY=1 bash "$ROOT/.devcontainer/post-create.sh" >"$OUTPUT_LOG" 2>&1; then
+  fail 'isolated startup concealed environment capture failure'
+fi
+assert_equal "$(cat "$COMMAND_LOG")" isolated-capture
+assert_absent "$MARKER_DIR/bootstrap-complete"
 echo '[test-recover-bootstrap] PASS'

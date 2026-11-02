@@ -1,8 +1,8 @@
 #!/usr/bin/env bash
-# Prepare app prerequisites for startup or application-container replacement.
+# Reconstruct app prerequisites after replacing the application container.
 # Role and database provisioning must already be complete. With the explicit
-# initialization option, verify both disposable identities and empty databases
-# before schema push and synthetic seeding; otherwise verify the existing schema.
+# initialization option, verify both disposable identities before schema push
+# and synthetic seeding; otherwise only verify the existing schema.
 set -euo pipefail
 
 SCRIPT_ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
@@ -30,11 +30,6 @@ write_secret_file() {
   fi
 }
 
-# Hatchet client token — automatically created by hatchet-lite-dev at the path
-# configured by HATCHET_TOKEN_FILE.
-# The backend's HatchetClient.init runs at MODULE LOAD (not lazy), so the backend
-# CRASHES at boot without it — capture it here so post-start sources it before
-# turbo dev.
 capture_hatchet_token() {
   local token hatchet_env
 
@@ -56,7 +51,7 @@ verify_databases() {
     'packages/prisma/package.json'
   (
     cd "$ROOT/packages/prisma"
-    KLICKER_RECOVERY_CHECK_MODE="${1:-preserve}" pnpm exec tsx -e "$(cat <<'TS'
+    pnpm exec tsx -e "$(cat <<'TS'
 import pg from "pg"
 import {
   assertDisposableDatabaseIdentity,
@@ -67,25 +62,9 @@ import {
 
 assertNoPostgresEnvironmentOverrides()
 
-const requiredSchemaColumns = [
-  { table_name: "User", column_name: "id" },
-  { table_name: "User", column_name: "email" },
-  { table_name: "User", column_name: "shortname" },
-  { table_name: "User", column_name: "betaEnabled" },
-  { table_name: "Course", column_name: "id" },
-  { table_name: "Course", column_name: "name" },
-  { table_name: "Course", column_name: "ownerId" },
-  { table_name: "Course", column_name: "isGamificationEnabled" },
-  { table_name: "Participant", column_name: "id" },
-  { table_name: "Participant", column_name: "username" },
-  { table_name: "Element", column_name: "id" },
-  { table_name: "Element", column_name: "ownerId" },
-]
-
 const check = async (
   connectionString: string | undefined,
-  database: "klicker_test" | "klicker_test_shadow",
-  requireSchema: boolean
+  database: "klicker_test" | "klicker_test_shadow"
 ) => {
   const validated = validateDisposableDatabaseUrl(connectionString, database)
   const client = new pg.Client({
@@ -96,43 +75,6 @@ const check = async (
     await client.connect()
     const identity = await client.query(disposableDatabaseIdentityQuery)
     assertDisposableDatabaseIdentity(identity.rows, database)
-
-    if (process.env.KLICKER_RECOVERY_CHECK_MODE === "initialize") {
-      const contents = await client.query(`
-        SELECT EXISTS (
-          SELECT 1 FROM pg_catalog.pg_namespace n
-          WHERE n.nspname !~ '^pg_' AND n.nspname <> 'information_schema'
-            AND (
-              n.nspname <> 'public'
-              OR EXISTS (SELECT 1 FROM pg_catalog.pg_class c WHERE c.relnamespace = n.oid)
-              OR EXISTS (SELECT 1 FROM pg_catalog.pg_proc p WHERE p.pronamespace = n.oid)
-              OR EXISTS (SELECT 1 FROM pg_catalog.pg_type t WHERE t.typnamespace = n.oid)
-            )
-        ) AS populated
-      `)
-      if (contents.rows.length !== 1 || contents.rows[0]?.populated !== false) {
-        throw new Error("Initialization requires empty disposable databases")
-      }
-    }
-
-    if (requireSchema) {
-      const schema = await client.query({
-        text: `
-          SELECT required.table_name, required.column_name
-          FROM jsonb_to_recordset($2::jsonb)
-            AS required(table_name text, column_name text)
-          LEFT JOIN information_schema.columns AS available
-            ON available.table_schema = $1
-           AND available.table_name = required.table_name
-           AND available.column_name = required.column_name
-          WHERE available.table_name IS NULL
-          ORDER BY required.table_name, required.column_name`,
-        values: ["public", JSON.stringify(requiredSchemaColumns)],
-      })
-      if (schema.rows.length !== 0) {
-        throw new Error("Application schema is not ready")
-      }
-    }
   } finally {
     await client.end().catch(() => undefined)
   }
@@ -140,11 +82,11 @@ const check = async (
 
 async function main() {
 try {
-  await check(process.env.DATABASE_URL, "klicker_test", process.env.KLICKER_RECOVERY_CHECK_MODE !== "initialize")
-  await check(process.env.SHADOW_DATABASE_URL, "klicker_test_shadow", false)
+  await check(process.env.DATABASE_URL, "klicker_test")
+  await check(process.env.SHADOW_DATABASE_URL, "klicker_test_shadow")
 } catch {
   console.error(
-    "[recover-bootstrap] Disposable database identity, emptiness or schema readiness check failed."
+    "[recover-bootstrap] Disposable database identity check failed."
   )
   process.exitCode = 1
 }
@@ -152,27 +94,30 @@ try {
 void main()
 TS
 )"
-  ) || die 'Marked disposable databases are not ready for the requested bootstrap mode.'
+  ) || die 'Marked disposable databases are not ready.'
+}
+
+verify_schema() {
+  local status=0
+
+  # Compare the complete Prisma-managed schema without replaying migrations
+  # or changing either database. Raw engine diagnostics may contain URLs.
+  (
+    cd "$ROOT/packages/prisma"
+    pnpm exec prisma migrate diff --config prisma.config.ts \
+      --from-config-datasource --to-schema src/prisma/schema --exit-code \
+      >/dev/null 2>&1
+  ) || status=$?
+  case "$status" in
+    0) ;;
+    2) die 'Retained application schema differs from the current Prisma schema; startup refused. No schema changes were applied.' ;;
+    *) die 'Application schema comparison failed; startup refused. No schema changes were applied.' ;;
+  esac
 }
 
 # Invalidate the old marker before resolving any other prerequisite. The
 # application cannot start successfully while this run is incomplete.
 bash "$SCRIPT_ROOT/../util/dev-runtime.sh" begin-bootstrap >/dev/null
-
-if [ "$#" -gt 1 ] || { [ "$#" -eq 1 ] && [ "$1" != '--initialize-new-disposable' ]; }; then
-  die 'Unsupported recovery bootstrap argument.'
-fi
-case "${KLICKER_LOCAL_KB_RUNTIME_ONLY:-0}" in
-  0) ;;
-  1)
-    # The isolated local knowledge-base runtime supplies its own database and
-    # Hatchet settings; it never initializes or verifies the disposable pair.
-    [ "$#" -eq 0 ] || die 'Isolated runtime cannot initialize databases.'
-    [ -n "${HATCHET_CLIENT_TOKEN:-}" ] ||
-      die 'Isolated setup must supply the Hatchet token.'
-    ;;
-  *) die 'Invalid isolated runtime mode.' ;;
-esac
 
 ROOT="$(cd "$ROOT" && pwd)" || die 'Configured container root is unavailable.'
 require_file "$ROOT/.devcontainer/devcontainer.env" \
@@ -180,11 +125,6 @@ require_file "$ROOT/.devcontainer/devcontainer.env" \
 require_file "$ROOT/util/dev-runtime.sh" 'util/dev-runtime.sh'
 
 cd "$ROOT"
-if [ "${KLICKER_LOCAL_KB_RUNTIME_ONLY:-0}" = 1 ]; then
-  # shellcheck source=/dev/null
-  . "$ROOT/util/local-kb/runtime-environment.sh"
-  local_kb_capture_environment
-fi
 
 # Re-source the canonical environment so values containing '=' survive the
 # container env-file handling. Sourced values stay in the process environment.
@@ -192,9 +132,6 @@ set -a
 # shellcheck source=/dev/null
 . "$ROOT/.devcontainer/devcontainer.env"
 set +a
-if [ "${KLICKER_LOCAL_KB_RUNTIME_ONLY:-0}" = 1 ]; then
-  local_kb_restore_environment
-fi
 
 # Install explicitly before build or verification; retain the workspace's
 # verifyDepsBeforeRun: error policy for every subsequent pnpm command.
@@ -205,34 +142,11 @@ echo '[recover-bootstrap] Installing frozen dependencies.'
 pnpm install --frozen-lockfile --prefer-offline
 bash "$ROOT/util/dev-runtime.sh" stamp-dependencies
 
-# Build the workspace PACKAGES (graphql, prisma, util, markdown, transactional,
-# types, i18n, ...) the apps import — turbo orders them by their dep graph, and
-# prisma's build runs `prisma generate`. ALSO pre-build backend-docker: its dev
-# is `rollup --watch` + `nodemon` in PARALLEL, and nodemon launches
-# dist/index.js immediately — if rollup hasn't emitted it yet, nodemon crashes
-# with MODULE_NOT_FOUND and waits, so the API never comes up. Pre-building means
-# dist/index.js exists before `turbo dev` starts. The Next apps use `next dev`
-# (compile on the fly) so they are NOT pre-built. (GOTCHAS: build the graph
-# before any dev server.)
 echo '[recover-bootstrap] Building workspace packages, backend, and LTI.'
-# The build writes its output to a log file instead of the lifecycle stdio
-# channel, so a failure can print a short tail below. One-shot rollup builds
-# pass --forceExit: @rollup/plugin-typescript runs a TypeScript watch program
-# even without --watch, and a file change in the last 250ms of a build can
-# recreate its file watchers after the plugin closes it. Without --forceExit
-# that rollup process prints "created dist" and never exits, which stalls
-# this script and container creation indefinitely.
-BUILD_LOG=/tmp/post-create-build.log
-if ! pnpm exec turbo run build \
+pnpm exec turbo run build \
   --filter='./packages/*' \
   --filter=@klicker-uzh/backend-docker \
-  --filter=@klicker-uzh/lti-service \
-  </dev/null >"$BUILD_LOG" 2>&1; then
-  echo "[recover-bootstrap] ERROR: package build failed; last lines of $BUILD_LOG:" >&2
-  tail -n 60 "$BUILD_LOG" >&2
-  exit 1
-fi
-echo "[recover-bootstrap] Build finished (full output: $BUILD_LOG)."
+  --filter=@klicker-uzh/lti-service
 
 echo '[recover-bootstrap] Ensuring required empty app environment files.'
 for app in response-api hatchet-worker-general hatchet-worker-response-processor; do
@@ -242,15 +156,16 @@ for app in response-api hatchet-worker-general hatchet-worker-response-processor
   fi
 done
 
-if [ "${KLICKER_LOCAL_KB_RUNTIME_ONLY:-0}" != 1 ]; then
-  capture_hatchet_token
-  if [ "${1:-}" = '--initialize-new-disposable' ]; then
-    verify_databases initialize
-    pnpm --filter @klicker-uzh/prisma run prisma:push:raw
-    pnpm --filter @klicker-uzh/prisma-data run seed:raw
-  fi
+capture_hatchet_token
+if [ "${1:-}" = '--initialize-new-disposable' ]; then
   verify_databases
+  pnpm --filter @klicker-uzh/prisma run prisma:push:raw
+  pnpm --filter @klicker-uzh/prisma-data run seed:raw
+elif [ "$#" -ne 0 ]; then
+  die 'Unsupported recovery bootstrap argument.'
 fi
+verify_databases
+verify_schema
 
 echo '[recover-bootstrap] Bootstrap prerequisites are ready; publishing marker.'
 bash "$ROOT/util/dev-runtime.sh" complete-bootstrap
