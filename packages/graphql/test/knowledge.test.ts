@@ -72,6 +72,7 @@ import {
   requestKbFileUpload,
   searchKbKnowledgeGraph,
   setKbKnowledgeGraphEnabled,
+  updateKb,
   updateKbResourceMaterialType,
 } from '../src/services/knowledge.js'
 import { seedCourse, testCleanup, testInitialization } from './helpers.js'
@@ -476,6 +477,25 @@ describe('Integration tests for knowledge base CRUD', () => {
     await testCleanup(prisma)
   })
 
+  it('opts a new knowledge base into the graph only for owners admitted to automatic preparation', async () => {
+    const evaluator = userOneCtx.featureFlags!
+    const admittedCtx: ContextWithUser = {
+      ...userOneCtx,
+      featureFlags: {
+        ...evaluator,
+        isEnabled: (key, attributes) =>
+          key === 'kb-auto-graph-preparation' ||
+          (evaluator.isEnabled(key, attributes) ?? false),
+      },
+    }
+
+    const optedIn = await createKb({ name: 'Auto graph' }, admittedCtx)
+    const manual = await createKb({ name: 'Manual graph' }, userOneCtx)
+
+    expect(optedIn.knowledgeGraphEnabled).toBe(true)
+    expect(manual.knowledgeGraphEnabled).toBe(false)
+  })
+
   it('requires graph opt-in and the rollout admission before dispatching a build', async () => {
     const kb = await createKb({ name: 'Graph controls' }, userOneCtx)
     const deniedCtx = withDeniedFeatureFlag(userOneCtx, 'kb-graph-builds')
@@ -574,9 +594,61 @@ describe('Integration tests for knowledge base CRUD', () => {
     ).resolves.toBe(1)
   })
 
-  it('reserves a build only for a complete, supported domain selection', async () => {
+  it('rejects an unusable selection on the knowledge base and freezes the stored pair onto the build', async () => {
     const catalog = getDefaultKBGraphDomainCatalog()
-    const kb = await createKb({ name: 'Domain-scoped graph' }, userOneCtx)
+    process.env.KB_GRAPH_DOMAIN_CATALOG_REVISION = catalog.revision
+
+    // The knowledge base owns the choice, so every rejection lands where the
+    // lecturer makes it instead of when a build is dispatched.
+    await expect(
+      createKb(
+        { name: 'Partial domain', domainPolicyId: 'finance' },
+        userOneCtx
+      )
+    ).rejects.toMatchObject({
+      extensions: { code: 'KB_GRAPH_DOMAIN_SELECTION_INCOMPLETE' },
+    })
+    await expect(
+      createKb(
+        {
+          name: 'Unknown domain',
+          domainPolicyId: 'retired-policy',
+          domainPolicyVersion: 1,
+          domainPolicyLanguage: 'German',
+        },
+        userOneCtx
+      )
+    ).rejects.toMatchObject({
+      extensions: { code: 'KB_GRAPH_DOMAIN_UNKNOWN_POLICY' },
+    })
+    await expect(
+      createKb(
+        {
+          name: 'Unsupported version',
+          domainPolicyId: 'finance',
+          domainPolicyVersion: 2,
+          domainPolicyLanguage: 'German',
+        },
+        userOneCtx
+      )
+    ).rejects.toMatchObject({
+      extensions: { code: 'KB_GRAPH_DOMAIN_UNSUPPORTED_VERSION' },
+    })
+
+    const kb = await createKb(
+      {
+        name: 'Domain-scoped graph',
+        domainPolicyId: 'finance',
+        domainPolicyVersion: 1,
+        domainPolicyLanguage: 'German',
+      },
+      userOneCtx
+    )
+    expect(kb).toMatchObject({
+      domainPolicyId: 'finance',
+      domainPolicyVersion: 1,
+      domainPolicyLanguage: 'German',
+    })
     await setKbKnowledgeGraphEnabled({ kbId: kb.id, enabled: true }, userOneCtx)
     await prisma.kBResource.create({
       data: {
@@ -590,108 +662,10 @@ describe('Integration tests for knowledge base CRUD', () => {
         activeContentSha256: 'c'.repeat(64),
       },
     })
-    process.env.KB_GRAPH_DOMAIN_CATALOG_REVISION = catalog.revision
 
-    // A partial selection is rejected before any cost reservation exists.
-    await expect(
-      rebuildKbKnowledgeGraph(
-        { kbId: kb.id, domainPolicyId: 'finance' },
-        userOneCtx
-      )
-    ).rejects.toMatchObject({
-      extensions: { code: 'KB_GRAPH_DOMAIN_SELECTION_INCOMPLETE' },
-    })
-    await expect(
-      rebuildKbKnowledgeGraph(
-        {
-          kbId: kb.id,
-          domainPolicyId: 'retired-policy',
-          domainPolicyVersion: 1,
-          domainPolicyLanguage: 'German',
-        },
-        userOneCtx
-      )
-    ).rejects.toMatchObject({
-      extensions: { code: 'KB_GRAPH_DOMAIN_UNKNOWN_POLICY' },
-    })
-    await expect(
-      rebuildKbKnowledgeGraph(
-        {
-          kbId: kb.id,
-          domainPolicyId: 'finance',
-          domainPolicyVersion: 2,
-          domainPolicyLanguage: 'German',
-        },
-        userOneCtx
-      )
-    ).rejects.toMatchObject({
-      extensions: { code: 'KB_GRAPH_DOMAIN_UNSUPPORTED_VERSION' },
-    })
-
-    // The same request without the capability gate is refused as well.
-    delete process.env.KB_GRAPH_DOMAIN_CATALOG_REVISION
-    await expect(
-      rebuildKbKnowledgeGraph(
-        {
-          kbId: kb.id,
-          domainPolicyId: 'finance',
-          domainPolicyVersion: 1,
-          domainPolicyLanguage: 'German',
-        },
-        userOneCtx
-      )
-    ).rejects.toMatchObject({
-      extensions: { code: 'KB_GRAPH_DOMAIN_CAPABILITY_DISABLED' },
-    })
-
-    await expect(
-      prisma.kBGraphBuild.count({ where: { kbId: kb.id } })
-    ).resolves.toBe(0)
-
-    // The catalog revision does not stand in for the actor's rollout. With the
-    // revision declared, an actor the rollout does not admit is refused, and
-    // the capability handshake advertises no options for that actor.
-    process.env.KB_GRAPH_DOMAIN_CATALOG_REVISION = catalog.revision
-    const deniedCtx = withDeniedFeatureFlag(
-      userOneCtx,
-      'kb-graph-domain-selection'
-    )
-    await expect(
-      rebuildKbKnowledgeGraph(
-        {
-          kbId: kb.id,
-          domainPolicyId: 'finance',
-          domainPolicyVersion: 1,
-          domainPolicyLanguage: 'German',
-        },
-        deniedCtx
-      )
-    ).rejects.toMatchObject({
-      extensions: { code: 'KB_GRAPH_DOMAIN_CAPABILITY_DISABLED' },
-    })
-    await expect(
-      getKbKnowledgeGraphDomainConfig({ kbId: kb.id }, deniedCtx)
-    ).resolves.toMatchObject({ capabilityEnabled: false, options: [] })
-    await expect(
-      rebuildKbKnowledgeGraph(
-        { kbId: kb.id, focusTopic: 'Capital budgeting' },
-        deniedCtx
-      )
-    ).rejects.toMatchObject({
-      extensions: { code: 'KB_GRAPH_DOMAIN_CAPABILITY_DISABLED' },
-    })
-
-    // A complete, supported selection is frozen onto the build.
-    process.env.KB_GRAPH_DOMAIN_CATALOG_REVISION = catalog.revision
-    const config = await rebuildKbKnowledgeGraph(
-      {
-        kbId: kb.id,
-        domainPolicyId: 'finance',
-        domainPolicyVersion: 1,
-        domainPolicyLanguage: 'German',
-      },
-      userOneCtx
-    )
+    // The build carries no selection of its own: it reads the stored pair and
+    // freezes it, so a later change to the knowledge base cannot relabel it.
+    const config = await rebuildKbKnowledgeGraph({ kbId: kb.id }, userOneCtx)
     expect(config).toMatchObject({
       domainPolicyId: 'finance',
       domainPolicyVersion: 1,
@@ -712,6 +686,83 @@ describe('Integration tests for knowledge base CRUD', () => {
       domainPolicyId: 'finance',
       domainPolicyVersion: 1,
       domainPolicyLanguage: 'German',
+    })
+
+    // The catalog revision does not stand in for the actor's rollout. An actor
+    // the rollout does not admit cannot record a selection, and the capability
+    // handshake advertises no options for them.
+    const deniedCtx = withDeniedFeatureFlag(
+      userOneCtx,
+      'kb-graph-domain-selection'
+    )
+    await expect(
+      updateKb(
+        {
+          id: kb.id,
+          domainPolicyId: 'economics',
+          domainPolicyVersion: 1,
+          domainPolicyLanguage: 'German',
+        },
+        deniedCtx
+      )
+    ).rejects.toMatchObject({
+      extensions: { code: 'KB_GRAPH_DOMAIN_CAPABILITY_DISABLED' },
+    })
+    await expect(
+      getKbKnowledgeGraphDomainConfig({ kbId: kb.id }, deniedCtx)
+    ).resolves.toMatchObject({ capabilityEnabled: false, options: [] })
+  })
+
+  it('builds on the provider default when the deployment cannot honor the stored pair', async () => {
+    const catalog = getDefaultKBGraphDomainCatalog()
+    process.env.KB_GRAPH_DOMAIN_CATALOG_REVISION = catalog.revision
+    const kb = await createKb(
+      {
+        name: 'Unhonorable domain graph',
+        domainPolicyId: 'finance',
+        domainPolicyVersion: 1,
+        domainPolicyLanguage: 'German',
+      },
+      userOneCtx
+    )
+    await setKbKnowledgeGraphEnabled({ kbId: kb.id, enabled: true }, userOneCtx)
+    await prisma.kBResource.create({
+      data: {
+        kbId: kb.id,
+        type: KBResourceType.URL,
+        title: 'Unhonorable domain source',
+        materialType: KBResourceMaterialType.COURSE_CONTENT,
+        sourceUrl: 'https://example.com/unhonorable-domain-source',
+        status: KBResourceStatus.READY,
+        activeResourceVersion: 1,
+        activeContentSha256: 'e'.repeat(64),
+      },
+    })
+
+    // A deployment shipping another catalog cannot honor the stored pair, and
+    // the same closed gate hides the controls that would replace it. Refusing
+    // would leave a knowledge base that can neither be rebuilt nor
+    // reconfigured, so the build runs on the provider default instead.
+    delete process.env.KB_GRAPH_DOMAIN_CATALOG_REVISION
+    const config = await rebuildKbKnowledgeGraph({ kbId: kb.id }, userOneCtx)
+    expect(config).toMatchObject({
+      domainPolicyId: null,
+      domainPolicyVersion: null,
+      domainPolicyLanguage: null,
+    })
+    await expect(
+      prisma.kBGraphBuild.findUniqueOrThrow({
+        where: { id: config.buildId! },
+        select: {
+          domainPolicyId: true,
+          domainPolicyVersion: true,
+          domainPolicyLanguage: true,
+        },
+      })
+    ).resolves.toEqual({
+      domainPolicyId: null,
+      domainPolicyVersion: null,
+      domainPolicyLanguage: null,
     })
   })
 
@@ -921,6 +972,7 @@ describe('Integration tests for knowledge base CRUD', () => {
       {
         chatbotId: chatbot.id,
         chatbotName: chatbot.name,
+        chatbotStatus: chatbot.status,
         enabledKbId: kb.id,
         enabledKbName: kb.name,
         enabledKbs: [{ id: kb.id, name: kb.name }],
@@ -2041,6 +2093,8 @@ describe('Integration tests for knowledge base CRUD', () => {
       sizeBytes: 1024,
     }
 
+    const runNoWait = vi.spyOn(userOneCtx.tasks.ingestKBResource, 'runNoWait')
+
     const first = await confirmKbFileUpload(args, userOneCtx)
     const second = await confirmKbFileUpload(args, userOneCtx)
     await expect(
@@ -2062,6 +2116,91 @@ describe('Integration tests for knowledge base CRUD', () => {
     await expect(
       prisma.kBUploadTicket.findUnique({ where: { id: first.id } })
     ).resolves.toBeNull()
+
+    // Confirmation now starts ingestion immediately instead of waiting for a
+    // separate manual trigger: the resource is claimed for its first upsert
+    // and the same attempt id backs both the resource and its run row.
+    expect(first).toMatchObject({
+      status: KBResourceStatus.QUEUED,
+      ingestionAttemptId: expect.any(String),
+      resourceVersion: 1,
+      ingestionOperation: KBIngestionOperation.UPSERT,
+    })
+    await expect(
+      prisma.kBIngestionRun.count({
+        where: { id: first.ingestionAttemptId!, resourceId: first.id },
+      })
+    ).resolves.toBe(1)
+    expect(runNoWait).toHaveBeenCalledOnce()
+    expect(runNoWait).toHaveBeenCalledWith(
+      expect.objectContaining({
+        resourceId: first.id,
+        resourceVersion: 1,
+      })
+    )
+
+    // Closing the rollout after a confirmation succeeded must not turn a
+    // client retry into a refusal: the resource exists and is already queued,
+    // so the retry is asking for nothing new.
+    await expect(
+      confirmKbFileUpload(
+        args,
+        withDeniedFeatureFlag(userOneCtx, 'kb-ingestion')
+      )
+    ).resolves.toMatchObject({ id: first.id })
+    expect(runNoWait).toHaveBeenCalledOnce()
+  })
+
+  it('leaves a confirmed upload queue-failed rather than stranded in QUEUED when dispatch is rejected', async () => {
+    const created = await createKb({ name: 'Finance notes' }, userOneCtx)
+    const ticket = await requestKbFileUpload(
+      {
+        kbId: created.id,
+        fileName: 'notes.pdf',
+        contentType: 'application/pdf',
+        sizeBytes: 1024,
+      },
+      userOneCtx
+    )
+    const runNoWait = vi
+      .spyOn(userOneCtx.tasks.ingestKBResource, 'runNoWait')
+      .mockRejectedValueOnce(new Error('queue unavailable'))
+
+    await expect(
+      confirmKbFileUpload(
+        {
+          kbId: created.id,
+          blobName: ticket.blobName,
+          title: 'Finance notes',
+          originalFilename: 'notes.pdf',
+          mimeType: 'application/pdf',
+          sizeBytes: 1024,
+        },
+        userOneCtx
+      )
+    ).rejects.toMatchObject({
+      extensions: { code: 'KB_INGESTION_QUEUE_FAILED' },
+    })
+    expect(runNoWait).toHaveBeenCalledOnce()
+
+    const blobId = ticket.blobName.slice(0, -4)
+    const failed = await prisma.kBResource.findUniqueOrThrow({
+      where: { id: blobId },
+    })
+    expect(failed).toMatchObject({
+      status: KBResourceStatus.FAILED,
+      statusMessage: 'The ingestion operation could not be queued.',
+      errorCode: 'QUEUE_DISPATCH_FAILED',
+    })
+    await expect(
+      prisma.kBIngestionRun.findUniqueOrThrow({
+        where: { id: failed.ingestionAttemptId! },
+      })
+    ).resolves.toMatchObject({
+      status: KBIngestionStatus.FAILED,
+      resourceId: blobId,
+      errorCode: 'QUEUE_DISPATCH_FAILED',
+    })
   })
 
   it('safely converts a legacy zero-size upload ticket under the KB quota lock', async () => {
@@ -2283,6 +2422,8 @@ describe('Integration tests for knowledge base CRUD', () => {
       sizeBytes: 1024,
     }
 
+    const runNoWait = vi.spyOn(userOneCtx.tasks.ingestKBResource, 'runNoWait')
+
     const [first, second] = await Promise.all([
       confirmKbFileUpload(args, userOneCtx),
       confirmKbFileUpload(args, userOneCtx),
@@ -2292,6 +2433,10 @@ describe('Integration tests for knowledge base CRUD', () => {
     await expect(
       prisma.kBResource.count({ where: { blobName: ticket.blobName } })
     ).resolves.toBe(1)
+    // The race must dispatch ingestion exactly once: whichever call loses
+    // the claim returns the winner's already-dispatched resource instead of
+    // queuing a second, duplicate attempt.
+    expect(runNoWait).toHaveBeenCalledOnce()
   })
 
   it('rejects absent blobs and deletes mismatched uploads', async () => {
@@ -2500,7 +2645,9 @@ describe('Integration tests for knowledge base CRUD', () => {
       })
     ).resolves.toBeNull()
     await expect(
-      prisma.kBIngestionRun.count({ where: { resourceId: resource.id } })
+      prisma.kBIngestionRun.count({
+        where: { resourceId: resource.id, resourceVersion: 2 },
+      })
     ).resolves.toBe(1)
     expect(deleteBlobIfExists).toHaveBeenCalledOnce()
     expect(requestedBlobName).toBe(originalTicket.blobName)
@@ -2524,7 +2671,9 @@ describe('Integration tests for knowledge base CRUD', () => {
     })
     expect(runNoWait).toHaveBeenCalledOnce()
     await expect(
-      prisma.kBIngestionRun.count({ where: { resourceId: resource.id } })
+      prisma.kBIngestionRun.count({
+        where: { resourceId: resource.id, resourceVersion: 2 },
+      })
     ).resolves.toBe(1)
   })
 
@@ -2592,7 +2741,9 @@ describe('Integration tests for knowledge base CRUD', () => {
       status: KBResourceStatus.QUEUED,
     })
     await expect(
-      prisma.kBIngestionRun.count({ where: { resourceId: resource.id } })
+      prisma.kBIngestionRun.count({
+        where: { resourceId: resource.id, resourceVersion: 2 },
+      })
     ).resolves.toBe(1)
     expect(runNoWait).toHaveBeenCalledOnce()
   })
@@ -2783,6 +2934,7 @@ describe('Integration tests for knowledge base CRUD', () => {
 
   it('creates and deletes an owned URL resource', async () => {
     const created = await createKb({ name: 'Finance notes' }, userOneCtx)
+    const runNoWait = vi.spyOn(userOneCtx.tasks.ingestKBResource, 'runNoWait')
     const resource = await createKbUrlResource(
       {
         kbId: created.id,
@@ -2797,10 +2949,34 @@ describe('Integration tests for knowledge base CRUD', () => {
       title: 'Lecture recording',
       type: KBResourceType.URL,
       sourceUrl: 'https://video.example.com/watch?id=123',
+      status: KBResourceStatus.QUEUED,
+      ingestionAttemptId: expect.any(String),
+      resourceVersion: 1,
+      ingestionOperation: KBIngestionOperation.UPSERT,
     })
+    await expect(
+      prisma.kBIngestionRun.count({
+        where: { id: resource.ingestionAttemptId!, resourceId: resource.id },
+      })
+    ).resolves.toBe(1)
+    expect(runNoWait).toHaveBeenCalledOnce()
+    expect(runNoWait).toHaveBeenCalledWith(
+      expect.objectContaining({
+        resourceId: resource.id,
+        resourceVersion: 1,
+      })
+    )
     await expect(
       deleteKbResource({ id: resource.id }, userTwoCtx)
     ).rejects.toThrow('KB resource not found')
+
+    // Creation auto-starts ingestion, so the resource must settle out of
+    // QUEUED before deletion is permitted; this update stands in for that
+    // completed ingestion rather than exercising deletion timing itself.
+    await prisma.kBResource.update({
+      where: { id: resource.id },
+      data: { status: KBResourceStatus.READY },
+    })
 
     await deleteKbResource({ id: resource.id }, userOneCtx)
     await expect(
@@ -2810,11 +2986,50 @@ describe('Integration tests for knowledge base CRUD', () => {
       deletedAt: expect.any(Date),
       ingestionOperation: KBIngestionOperation.DELETE,
       status: KBResourceStatus.QUEUED,
-      resourceVersion: 1,
+      resourceVersion: 2,
     })
     await expect(
       getKbResourcesConnection({ kbId: created.id }, userOneCtx)
     ).resolves.toMatchObject({ items: [] })
+  })
+
+  it('leaves a created URL resource queue-failed rather than stranded in QUEUED when dispatch is rejected', async () => {
+    const created = await createKb({ name: 'Finance notes' }, userOneCtx)
+    const runNoWait = vi
+      .spyOn(userOneCtx.tasks.ingestKBResource, 'runNoWait')
+      .mockRejectedValueOnce(new Error('queue unavailable'))
+
+    await expect(
+      createKbUrlResource(
+        {
+          kbId: created.id,
+          title: 'Lecture recording',
+          url: 'https://video.example.com/watch?id=123',
+        },
+        userOneCtx
+      )
+    ).rejects.toMatchObject({
+      extensions: { code: 'KB_INGESTION_QUEUE_FAILED' },
+    })
+    expect(runNoWait).toHaveBeenCalledOnce()
+
+    const failed = await prisma.kBResource.findFirstOrThrow({
+      where: { kbId: created.id },
+    })
+    expect(failed).toMatchObject({
+      status: KBResourceStatus.FAILED,
+      statusMessage: 'The ingestion operation could not be queued.',
+      errorCode: 'QUEUE_DISPATCH_FAILED',
+    })
+    await expect(
+      prisma.kBIngestionRun.findUniqueOrThrow({
+        where: { id: failed.ingestionAttemptId! },
+      })
+    ).resolves.toMatchObject({
+      status: KBIngestionStatus.FAILED,
+      resourceId: failed.id,
+      errorCode: 'QUEUE_DISPATCH_FAILED',
+    })
   })
 
   it('keeps a tombstone hidden when queueing its delete task fails', async () => {
@@ -2827,6 +3042,13 @@ describe('Integration tests for knowledge base CRUD', () => {
       },
       userOneCtx
     )
+    // Creation auto-starts ingestion, so the resource must settle out of
+    // QUEUED before deletion is permitted; this update stands in for that
+    // completed ingestion rather than exercising deletion timing itself.
+    await prisma.kBResource.update({
+      where: { id: resource.id },
+      data: { status: KBResourceStatus.READY },
+    })
     vi.spyOn(
       userOneCtx.tasks.deleteKBResource,
       'runNoWait'
@@ -2860,14 +3082,12 @@ describe('Integration tests for knowledge base CRUD', () => {
 
   it('returns only the five newest ingestion runs to the resource owner', async () => {
     const created = await createKb({ name: 'Finance notes' }, userOneCtx)
-    const resource = await createKbUrlResource(
-      {
-        kbId: created.id,
-        title: 'Lecture recording',
-        url: 'https://video.example.com/watch?id=123',
-      },
-      userOneCtx
-    )
+    // A direct create keeps this resource free of the automatic ingestion
+    // run that the ordinary creation mutation would enqueue, so the six
+    // runs seeded below are the only ones competing for the top five.
+    const resource = await prisma.kBResource.create({
+      data: legacyUrlResources(created.id, 1)[0]!,
+    })
     const runIds = Array.from({ length: 6 }, () => randomUUID())
 
     for (const [index, id] of runIds.entries()) {
@@ -3377,11 +3597,16 @@ describe('Integration tests for knowledge base CRUD', () => {
           type: KBResourceType.BLOB,
           title: 'Visible file',
           sizeBytes: 100,
+          // A failed replacement keeps serving the previous revision.
+          status: KBResourceStatus.FAILED,
+          resourceVersion: 2,
+          activeResourceVersion: 1,
         },
         {
           kbId: kb.id,
           type: KBResourceType.URL,
           title: 'Visible URL',
+          status: KBResourceStatus.QUEUED,
         },
         {
           kbId: kb.id,
@@ -3390,6 +3615,8 @@ describe('Integration tests for knowledge base CRUD', () => {
           sizeBytes: 50,
           deletedAt: new Date(),
           deletedById: userOneCtx.user.sub,
+          status: KBResourceStatus.READY,
+          activeResourceVersion: 1,
         },
       ],
     })
@@ -3417,6 +3644,10 @@ describe('Integration tests for knowledge base CRUD', () => {
       reservedResourceCount: 1,
       reservedSizeBytes: 25,
       linkedConsumerCount: 0,
+      servingResourceCount: 1,
+      processingResourceCount: 1,
+      failedResourceCount: 1,
+      lastChangedAt: expect.any(Date),
     })
   })
 
@@ -3427,6 +3658,7 @@ describe('Integration tests for knowledge base CRUD', () => {
     const kbA = await createKb({ name: 'Alpha KB' }, userOneCtx)
     const kbB = await createKb({ name: 'Beta KB' }, userOneCtx)
     const kbC = await createKb({ name: 'Gamma KB' }, userOneCtx)
+    const alphaLastChangedAt = new Date('2026-02-01T00:00:00Z')
 
     await prisma.kBResource.createMany({
       data: [
@@ -3436,12 +3668,16 @@ describe('Integration tests for knowledge base CRUD', () => {
           type: KBResourceType.BLOB,
           title: 'Alpha visible blob',
           sizeBytes: 100,
+          updatedAt: new Date('2026-01-01T00:00:00Z'),
         },
         {
           kbId: kbA.id,
           type: KBResourceType.URL,
           title: 'Alpha visible url (unknown size)',
+          updatedAt: alphaLastChangedAt,
         },
+        // The tombstone changed last, but a deleted resource is not a change
+        // the lecturer can see.
         {
           kbId: kbA.id,
           type: KBResourceType.BLOB,
@@ -3449,6 +3685,7 @@ describe('Integration tests for knowledge base CRUD', () => {
           sizeBytes: 30,
           deletedAt: new Date(),
           deletedById: userOneCtx.user.sub,
+          updatedAt: new Date('2026-03-01T00:00:00Z'),
         },
         // Beta: 1 visible resource, 2 unknown-size tombstones, no reservation, no consumer
         {
@@ -3523,6 +3760,10 @@ describe('Integration tests for knowledge base CRUD', () => {
       reservedResourceCount: 1,
       reservedSizeBytes: 10,
       linkedConsumerCount: 1,
+      servingResourceCount: 0,
+      processingResourceCount: 0,
+      failedResourceCount: 0,
+      lastChangedAt: alphaLastChangedAt,
     })
     expect(byId.get(kbB.id)?.metrics).toEqual({
       visibleResourceCount: 1,
@@ -3537,6 +3778,10 @@ describe('Integration tests for knowledge base CRUD', () => {
       reservedResourceCount: 0,
       reservedSizeBytes: 0,
       linkedConsumerCount: 0,
+      servingResourceCount: 0,
+      processingResourceCount: 0,
+      failedResourceCount: 0,
+      lastChangedAt: expect.any(Date),
     })
     expect(byId.get(kbC.id)?.metrics).toEqual({
       visibleResourceCount: 0,
@@ -3551,6 +3796,10 @@ describe('Integration tests for knowledge base CRUD', () => {
       reservedResourceCount: 1,
       reservedSizeBytes: 5,
       linkedConsumerCount: 0,
+      servingResourceCount: 0,
+      processingResourceCount: 0,
+      failedResourceCount: 0,
+      lastChangedAt: null,
     })
 
     // cross-check the single-KB detail path against the multi-KB catalog
@@ -3575,6 +3824,13 @@ describe('Integration tests for knowledge base CRUD', () => {
         )
       )
     )
+    // Creation auto-started ingestion, so each resource must settle out of
+    // QUEUED before bulk deletion is permitted; this stands in for that
+    // completed ingestion rather than exercising deletion timing itself.
+    await prisma.kBResource.updateMany({
+      where: { id: { in: resources.map(({ id }) => id) } },
+      data: { status: KBResourceStatus.READY },
+    })
     const runNoWait = vi
       .spyOn(userOneCtx.tasks.deleteKBResource, 'runNoWait')
       .mockRejectedValueOnce(new Error('queue unavailable'))
@@ -3742,6 +3998,7 @@ describe('Integration tests for knowledge base CRUD', () => {
       userOneCtx
     )
     const deniedCtx = withDeniedFeatureFlag(userOneCtx, 'kb-ingestion')
+    const deniedUploadBlobId = randomUUID()
 
     const blockedCalls: Array<() => Promise<unknown>> = [
       () =>
@@ -3750,6 +4007,18 @@ describe('Integration tests for knowledge base CRUD', () => {
             kbId: kb.id,
             title: 'Blocked',
             url: 'https://example.com/blocked',
+          },
+          deniedCtx
+        ),
+      () =>
+        confirmKbFileUpload(
+          {
+            kbId: kb.id,
+            blobName: `${deniedUploadBlobId}.pdf`,
+            title: 'Blocked upload',
+            originalFilename: 'blocked.pdf',
+            mimeType: 'application/pdf',
+            sizeBytes: 1024,
           },
           deniedCtx
         ),
@@ -3794,6 +4063,12 @@ describe('Integration tests for knowledge base CRUD', () => {
         extensions: { code: 'KB_INGESTION_DISABLED' },
       })
     }
+    // Upload confirmation starts real ingestion work, so a refusal must also
+    // leave no resource row behind rather than parking one that depends on a
+    // manual trigger the lecturer can no longer reach.
+    await expect(
+      prisma.kBResource.findUnique({ where: { id: deniedUploadBlobId } })
+    ).resolves.toBeNull()
 
     // The denied actor keeps everything it already owns: reads, deletion and
     // the graph lifecycle configuration stay independent of new-work admission.
@@ -3815,6 +4090,13 @@ describe('Integration tests for knowledge base CRUD', () => {
     await expect(
       getKbKnowledgeGraphConfig({ kbId: kb.id }, deniedCtx)
     ).resolves.toMatchObject({ isEnabled: false })
+    // Creation auto-started ingestion, so the resource must settle out of
+    // QUEUED before deletion is permitted; this stands in for that
+    // completed ingestion rather than exercising deletion timing itself.
+    await prisma.kBResource.update({
+      where: { id: existingResource.id },
+      data: { status: KBResourceStatus.READY },
+    })
     const deleted = await deleteKbResource(
       { id: existingResource.id },
       deniedCtx
@@ -3824,13 +4106,18 @@ describe('Integration tests for knowledge base CRUD', () => {
 
   it('classifies resources and keeps complete-KB ingestion counts across filters', async () => {
     const kb = await createKb({ name: 'Material categories' }, userOneCtx)
+    // Direct creation keeps these resources at their pre-ingestion ADDED
+    // status so the reconciliation counts below reflect the classification
+    // and status overrides this test applies, not the ordinary creation
+    // mutation's automatic QUEUED transition.
     const resources = await Promise.all(
       ['content', 'administrative', 'unclassified'].map((title) =>
-        createKbUrlResource(
-          {
+        prisma.kBResource.create({
+          data: {
             kbId: kb.id,
+            type: KBResourceType.URL,
             title,
-            url: `https://example.com/${title}`,
+            sourceUrl: `https://example.com/${title}`,
             materialType:
               title === 'content'
                 ? KBResourceMaterialType.COURSE_CONTENT
@@ -3838,8 +4125,7 @@ describe('Integration tests for knowledge base CRUD', () => {
                   ? KBResourceMaterialType.ADMINISTRATIVE
                   : undefined,
           },
-          userOneCtx
-        )
+        })
       )
     )
     const [content, administrative, unclassified] = resources as [

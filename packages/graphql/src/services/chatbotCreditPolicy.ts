@@ -1,4 +1,5 @@
 import * as DB from '@klicker-uzh/prisma/client'
+import { DEFAULT_CHATBOT_CREDIT_POLICY_VALUES } from '@klicker-uzh/util/chatbot-credit-policy-defaults'
 import { GraphQLError } from 'graphql'
 
 export const MAX_SIGNED_INT32 = 2_147_483_647
@@ -8,6 +9,14 @@ export type ChatbotCreditPolicy = {
   creditResetPeriod: DB.CreditResetPeriod
   creditResetAmount: number
   creditMaxCredits: number
+}
+
+export const DEFAULT_CHATBOT_CREDIT_POLICY: ChatbotCreditPolicy = {
+  ...DEFAULT_CHATBOT_CREDIT_POLICY_VALUES,
+  creditResetPeriod:
+    DB.CreditResetPeriod[
+      DEFAULT_CHATBOT_CREDIT_POLICY_VALUES.creditResetPeriod
+    ],
 }
 
 function invalidCreditPolicy(message: string) {

@@ -1,12 +1,3 @@
-import { type Chatbot, ChatbotStatus } from '@klicker-uzh/graphql/dist/ops'
-
-// The workspace helpers only read these fields, so a chatbot projection does
-// not have to select the whole entity for them.
-type ChatbotWorkspaceFacts = Pick<
-  Chatbot,
-  'courses' | 'disclaimerSummary' | 'name' | 'status'
->
-
 type ChatbotWorkspaceView =
   | 'overview'
   | 'knowledge'
@@ -47,41 +38,38 @@ function includesValue<T extends string>(
   return typeof value === 'string' && values.includes(value as T)
 }
 
-function hasCompleteBasics(chatbot: ChatbotWorkspaceFacts) {
-  return Boolean(chatbot.name.trim() && (chatbot.courses?.length ?? 0) > 0)
-}
+const defaultWorkspaceState: ChatbotWorkspaceState = { view: 'overview' }
 
-function hasCompleteDisclaimer(chatbot: ChatbotWorkspaceFacts) {
-  return Boolean(
-    chatbot.disclaimerSummary?.title?.trim() &&
-      chatbot.disclaimerSummary.introText?.trim()
-  )
-}
+type ChatbotSetupLinkTarget =
+  | 'materials'
+  | 'students'
+  | 'modes'
+  | 'usage'
+  | 'details'
+  | 'request'
 
-function getDefaultSetupStep(chatbot: ChatbotWorkspaceFacts): ChatbotSetupStep {
-  if (!hasCompleteBasics(chatbot)) return 'basics'
-  if (!hasCompleteDisclaimer(chatbot)) return 'disclaimer'
-  return 'review'
-}
-
-function getDefaultWorkspaceState(
-  chatbot: ChatbotWorkspaceFacts
-): ChatbotWorkspaceState {
-  if (
-    chatbot.status === ChatbotStatus.Draft ||
-    chatbot.status === ChatbotStatus.Rejected
-  ) {
-    const defaultStep = getDefaultSetupStep(chatbot)
-    return defaultStep === 'disclaimer'
-      ? { view: 'disclaimer' }
-      : { view: 'overview', step: defaultStep }
+// Links into the former workspace views open the matching section of the
+// setup page.
+function getSetupLinkTarget(
+  state: ChatbotWorkspaceState
+): ChatbotSetupLinkTarget | undefined {
+  switch (state.view) {
+    case 'knowledge':
+      return 'materials'
+    case 'disclaimer':
+      return 'students'
+    case 'behavior':
+      return 'modes'
+    case 'usage':
+      return 'usage'
+    case 'overview':
+      if (state.step === 'basics') return 'details'
+      if (state.step === 'review') return 'request'
+      return undefined
   }
-
-  return { view: 'overview' }
 }
 
 function normalizeLegacyWorkspaceState(
-  chatbot: ChatbotWorkspaceFacts,
   requestedView: string,
   requestedStep: string | undefined
 ): ChatbotWorkspaceState {
@@ -100,26 +88,21 @@ function normalizeLegacyWorkspaceState(
       return { view: 'overview', step: 'basics' }
     case 'review':
       return { view: 'overview', step: 'review' }
-    default: {
-      const defaultState = getDefaultWorkspaceState(chatbot)
-      return defaultState.view === 'disclaimer'
-        ? defaultState
-        : { view: 'overview', step: defaultState.step ?? 'basics' }
-    }
+    default:
+      return defaultWorkspaceState
   }
 }
 
 function normalizeWorkspaceState(
-  chatbot: ChatbotWorkspaceFacts,
   requestedView: string | undefined,
   requestedStep: string | undefined
 ): ChatbotWorkspaceState {
   if (requestedView === 'setup' || requestedView === 'advanced') {
-    return normalizeLegacyWorkspaceState(chatbot, requestedView, requestedStep)
+    return normalizeLegacyWorkspaceState(requestedView, requestedStep)
   }
 
   if (!includesValue(workspaceViews, requestedView)) {
-    return getDefaultWorkspaceState(chatbot)
+    return defaultWorkspaceState
   }
 
   if (requestedView === 'overview') {
@@ -142,14 +125,13 @@ function normalizeWorkspaceState(
 
 export type {
   ChatbotNavigationState,
+  ChatbotSetupLinkTarget,
   ChatbotSetupStep,
   ChatbotWorkspaceState,
   ChatbotWorkspaceView,
 }
 export {
-  getDefaultWorkspaceState,
-  hasCompleteBasics,
-  hasCompleteDisclaimer,
+  getSetupLinkTarget,
   normalizeWorkspaceState,
   setupSteps,
   workspaceViews,

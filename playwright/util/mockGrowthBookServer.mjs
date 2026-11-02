@@ -40,6 +40,14 @@ const server = createServer((request, response) => {
               },
             ],
           },
+          'ai-advanced-management': {
+            defaultValue: false,
+            rules: [{ condition: { id: enabledUserId }, force: true }],
+          },
+          'chatbot-response-examples': {
+            defaultValue: false,
+            rules: [{ condition: { id: enabledUserId }, force: true }],
+          },
           'kb-ingestion': {
             defaultValue: false,
             rules: [{ condition: { id: enabledUserId }, force: true }],

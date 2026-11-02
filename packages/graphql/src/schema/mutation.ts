@@ -1863,6 +1863,8 @@ export const Mutation = builder.mutationType({
           description: t.arg.string({ required: false }),
           avatar: t.arg.string({ required: false }),
           courseId: t.arg.string({ required: true }),
+          disclaimerTitle: t.arg.string({ required: false }),
+          disclaimerIntroText: t.arg.string({ required: false }),
         },
         resolve: async (_, args, ctx) => {
           return await ChatbotsService.createChatbot(args, ctx)
@@ -2224,9 +2226,28 @@ export const Mutation = builder.mutationType({
         args: {
           name: t.arg.string({ required: true }),
           description: t.arg.string({ required: false }),
+          domainPolicyId: t.arg.string({ required: false }),
+          domainPolicyVersion: t.arg.int({ required: false }),
+          domainPolicyLanguage: t.arg.string({ required: false }),
         },
         resolve: async (_, args, ctx) => {
           return await KnowledgeService.createKb(args, ctx)
+        },
+      }),
+
+      updateKb: t.withAuth(asUserFullAccess).field({
+        nullable: false,
+        type: KB,
+        args: {
+          id: t.arg.id({ required: true }),
+          name: t.arg.string({ required: false }),
+          description: t.arg.string({ required: false }),
+          domainPolicyId: t.arg.string({ required: false }),
+          domainPolicyVersion: t.arg.int({ required: false }),
+          domainPolicyLanguage: t.arg.string({ required: false }),
+        },
+        resolve: async (_, args, ctx) => {
+          return await KnowledgeService.updateKb(args, ctx)
         },
       }),
 
@@ -2416,11 +2437,10 @@ export const Mutation = builder.mutationType({
         args: {
           kbId: t.arg.id({ required: true }),
           qualityTier: t.arg({ type: KBGraphQualityTier, required: false }),
-          // An omitted triple is the legacy path, so one mutation can serve a
-          // deployment whose capability gate is closed.
-          domainPolicyId: t.arg.id({ required: false }),
-          domainPolicyVersion: t.arg.int({ required: false }),
-          domainPolicyLanguage: t.arg.string({ required: false }),
+          // The subject area and language belong to the knowledge base, so the
+          // build reads them there rather than accepting them per request. This
+          // mutation still differs from the plain rebuild by reporting the
+          // domain the resulting build runs with.
           focusTopic: t.arg.string({ required: false }),
         },
         resolve: async (_, args, ctx) => {

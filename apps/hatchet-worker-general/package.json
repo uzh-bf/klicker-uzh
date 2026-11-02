@@ -11,6 +11,7 @@
     "@graphql-yoga/redis-event-target": "1.0.0",
     "@hatchet-dev/typescript-sdk": "1.22.0",
     "@klicker-uzh/audit": "workspace:*",
+    "@klicker-uzh/feature-flags": "workspace:*",
     "@klicker-uzh/graphql": "workspace:*",
     "@klicker-uzh/hatchet": "workspace:*",
     "@klicker-uzh/logging": "workspace:*",

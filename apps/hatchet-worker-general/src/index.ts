@@ -4,7 +4,12 @@ import EventEmitter from 'node:events'
 import { createServer } from 'node:http'
 import { createRedisEventTarget } from '@graphql-yoga/redis-event-target'
 import { renderAssessmentAuditPrometheusMetrics } from '@klicker-uzh/audit'
-import { handlers, settleKbKnowledgeGraphResult } from '@klicker-uzh/graphql'
+import { NodeFeatureFlagClient } from '@klicker-uzh/feature-flags/node'
+import {
+  handlers,
+  settleKbKnowledgeGraphResult,
+  sweepKbGraphPreparation,
+} from '@klicker-uzh/graphql'
 import {
   createHatchetClient,
   createHatchetWorkerRuntime,
@@ -124,6 +129,21 @@ async function main() {
 
   const emitter = new EventEmitter()
 
+  // Scheduled graph preparation evaluates each KB owner's rollout without a
+  // request session; evaluation fails closed while GrowthBook is unavailable.
+  const featureFlags = new NodeFeatureFlagClient({
+    apiHost: process.env.GROWTHBOOK_API_HOST,
+    clientKey: process.env.GROWTHBOOK_CLIENT_KEY,
+    environment: process.env.GROWTHBOOK_ENV ?? process.env.NODE_ENV,
+    forcedOn: process.env.FEATURE_FLAGS_FORCED_ON,
+  })
+  process.once('exit', () => featureFlags.destroy())
+  const featureFlagsReady = await featureFlags.initialize()
+  logger.info(
+    { featureFlagsReady, featureFlagStatus: featureFlags.getStatus() },
+    'Feature flag evaluator initialized'
+  )
+
   logger.info({ event: 'hatchet.worker.connecting' }, 'Connecting to Hatchet')
 
   const preparedWorkflows = prepareHatchetTasks({
@@ -148,6 +168,14 @@ async function main() {
         { buildId, result, allowLateSuccess },
         finishedAt
       ),
+    runKBGraphPreparationSweep: async ({ tasks, logger: taskLogger }) => ({
+      ...(await sweepKbGraphPreparation({
+        prisma,
+        tasks,
+        featureFlags,
+        logger: taskLogger,
+      })),
+    }),
   })
 
   const selection = selectWorkflows(preparedWorkflows, {

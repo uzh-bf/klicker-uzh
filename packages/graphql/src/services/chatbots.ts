@@ -32,9 +32,11 @@ import {
 } from '../lib/featureFlags.js'
 import {
   type ChatbotCreditPolicy,
+  DEFAULT_CHATBOT_CREDIT_POLICY,
   MAX_SIGNED_INT32,
   normalizeAndValidateCreditPolicy,
 } from './chatbotCreditPolicy.js'
+import { getKbMetricsMap } from './knowledge.js'
 
 const chatModelSchema = z
   .object({
@@ -1997,7 +1999,14 @@ export async function getChatbotsInfo(ctx: ContextWithUser) {
     where: { ownerId: ctx.user.sub },
     select: {
       ...chatbotOwnerSelect,
-      course: { select: { id: true, name: true } },
+      course: {
+        select: {
+          id: true,
+          name: true,
+          // Prefills the expected student count of a publication request.
+          _count: { select: { participations: true } },
+        },
+      },
       disclaimer: {
         select: { id: true, name: true, title: true, introText: true },
       },
@@ -2083,6 +2092,13 @@ export async function getChatbotsInfo(ctx: ContextWithUser) {
   const messageCountById = new Map(
     messageCountRows.map((row) => [row.chatbotId, Number(row.count)])
   )
+  const kbMetricsById = await getKbMetricsMap(ctx.prisma, [
+    ...new Set(
+      chatbots.flatMap((chatbot) =>
+        chatbot.knowledgeBases.map(({ kb }) => kb.id)
+      )
+    ),
+  ])
 
   return chatbots.map((chatbot) => {
     const creditAggregate = creditAggregateById.get(chatbot.id)
@@ -2119,14 +2135,28 @@ export async function getChatbotsInfo(ctx: ContextWithUser) {
         }
       : null
 
+    const enabledKnowledgeBases = chatbot.knowledgeBases.map(({ kb }) => ({
+      ...kb,
+      metrics: kbMetricsById.get(kb.id) ?? null,
+    }))
+
     return {
       ...shapeChatbotResponse(chatbot),
+      courses: chatbot.course
+        ? [
+            {
+              id: chatbot.course.id,
+              name: chatbot.course.name,
+              numOfParticipants: chatbot.course._count.participations,
+            },
+          ]
+        : [],
       usageSummary,
       disclaimerSummary,
-      enabledKnowledgeBases: chatbot.knowledgeBases.map(({ kb }) => kb),
+      enabledKnowledgeBases,
       enabledKnowledgeBase:
-        chatbot.knowledgeBases.length === 1
-          ? (chatbot.knowledgeBases[0]?.kb ?? null)
+        enabledKnowledgeBases.length === 1
+          ? (enabledKnowledgeBases[0] ?? null)
           : null,
     }
   })
@@ -2216,6 +2246,8 @@ type CreateChatbotArgs = {
   description?: string | null
   avatar?: string | null
   courseId: string
+  disclaimerTitle?: string | null
+  disclaimerIntroText?: string | null
 }
 
 // New chatbots start on GPT-6 Luna, the BASE default model, which is also the
@@ -2254,6 +2286,19 @@ export async function createChatbot(
     throw chatbotError('Chatbot name must not be empty', 'BAD_USER_INPUT')
   }
 
+  // The client passes its localized suggested disclaimer so a new chatbot can
+  // request publication without a separate disclaimer step. Both texts are
+  // required together; omitting them keeps the chatbot without a disclaimer.
+  const hasDisclaimer =
+    args.disclaimerTitle != null || args.disclaimerIntroText != null
+  const disclaimerTitle = normalizeDisclaimerText(args.disclaimerTitle ?? '')
+  const disclaimerIntroText = normalizeDisclaimerText(
+    args.disclaimerIntroText ?? ''
+  )
+  if (hasDisclaimer) {
+    validateDisclaimerContent(disclaimerTitle, disclaimerIntroText)
+  }
+
   const defaultModelId = getNewChatbotModelId(getChatModelRegistry())
   if (!defaultModelId) {
     throw new GraphQLError(
@@ -2273,8 +2318,21 @@ export async function createChatbot(
       // New chatbots start with the participant map off (lecturer opts in).
       knowledgeGraphVisible: false,
       knowledgeGraphRetrievalEnabled: false,
+      ...DEFAULT_CHATBOT_CREDIT_POLICY,
       owner: { connect: { id: ctx.user.sub } },
       course: { connect: { id: args.courseId } },
+      ...(hasDisclaimer
+        ? {
+            disclaimer: {
+              create: {
+                name: `${args.name} disclaimer`,
+                title: disclaimerTitle,
+                introText: disclaimerIntroText,
+                owner: { connect: { id: ctx.user.sub } },
+              },
+            },
+          }
+        : {}),
       // systemPrompts intentionally left unset (null): the chat runtime
       // composes its Tutor and Explainer platform defaults and exposes Quizzer
       // only when course retrieval is available. Custom modes are added and

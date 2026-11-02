@@ -3,6 +3,7 @@ import { URL_MANAGE } from '../util/constants.js'
 import { getPrisma } from '../global-setup.js'
 import { seedResponseExamples } from '../../packages/prisma-data/src/data/seedResponseExamples.js'
 import { chatUrl, ensureChatbotSeeded } from '../util/chat.js'
+import { mockGrowthBookFeatureFlags } from '../util/fixtures/manage.js'
 import { gotoCommit } from '../util/workflow.js'
 
 const CHATBOT_ID_TEST = '8f9c2e1d-4b7a-4c3e-9f5d-1a2b3c4d5e6f'
@@ -130,12 +131,21 @@ test.describe('Chatbot response-example review', () => {
     const prisma = await getPrisma()
     await ensureChatbotSeeded()
     await seedResponseExamples(prisma)
+    // The review is hidden unless the response examples flag is on.
+    await mockGrowthBookFeatureFlags(page, {
+      aiBeta: true,
+      responseExamples: true,
+    })
     await loginLecturer()
     await gotoCommit(
       page,
       `${manageUrl}/resources/chatbots?chatbotId=${CHATBOT_ID_TEST}&view=knowledge&responseExampleId=${CANDIDATE_ID}`
     )
 
+    // The review link opens the knowledge graph section and its review.
+    await expect(
+      page.getByTestId('chatbot-section-graph-toggle')
+    ).toHaveAttribute('aria-expanded', 'true')
     const review = page.getByTestId('response-examples-review')
     await expect(review).toBeVisible()
     await expect(review.getByTestId('response-examples-loading')).toBeHidden()

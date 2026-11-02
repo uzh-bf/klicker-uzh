@@ -90,7 +90,7 @@ function readYaml(relativePath) {
 function templateImageSources() {
   return fs
     .readdirSync(path.join(CHART_DIR, 'templates'))
-    .filter((name) => name.endsWith('.yaml'))
+    .filter((name) => name.endsWith('.yaml') || name.endsWith('.tpl'))
     .flatMap((name) =>
       fs
         .readFileSync(path.join(CHART_DIR, 'templates', name), 'utf8')
