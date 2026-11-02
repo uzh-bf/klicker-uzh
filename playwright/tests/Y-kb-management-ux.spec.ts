@@ -4,6 +4,7 @@ import enMessages from '../../packages/i18n/messages/en.js'
 import { URL_MANAGE } from '../util/constants.js'
 import { expect, test } from '../util/fixtures.js'
 import { selectOption } from '../util/fixtures/activities.js'
+import { setAiSettingsMode } from '../util/fixtures/manage.js'
 
 const FAILURE_DETAILS = [
   'The fetched source did not match the version recorded when the source was added, so the import was rejected.',
@@ -16,6 +17,12 @@ const FAILURE_DETAILS = [
 const UNKNOWN_FAILURE_MARKER = `synthetic-unrecognized-prefix-${FAILURE_DETAILS[0]}-suffix`
 
 test.describe('Knowledge base management workspace', () => {
+  // The workspace checks below cover the advanced settings, which include
+  // search, filters, quotas and bulk ingestion.
+  test.beforeEach(async ({ page }) => {
+    await setAiSettingsMode(page, 'advanced')
+  })
+
   test('keeps the resource workspace scannable and add flow keyboard-accessible in English and German', async ({
     loginLecturer,
     page,
@@ -646,8 +653,16 @@ test.describe('Knowledge base management workspace', () => {
       await expect(page.getByTestId('kb-ingestion-summary')).toContainText(
         /1 need ingestion/
       )
-      // Bulk ingestion is part of the advanced settings.
+      await expect(page.getByTestId('ingest-all-kb-resources')).toBeVisible()
+      // The simple settings keep the resource list and hide the expert tools.
+      await page.getByTestId('ai-settings-mode-simple').click()
+      await expect(page.getByTestId('kb-ingestion-summary')).toHaveCount(0)
       await expect(page.getByTestId('ingest-all-kb-resources')).toHaveCount(0)
+      await expect(page.getByTestId('kb-metrics')).toHaveCount(0)
+      await expect(
+        page.getByTestId('kb-resource-material-type-filter')
+      ).toHaveCount(0)
+      await expect(resourceRow).toBeVisible()
       await page.getByTestId('ai-settings-mode-advanced').click()
       await expect(page.getByTestId('ingest-all-kb-resources')).toBeVisible()
       await selectOption(

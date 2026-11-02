@@ -621,7 +621,6 @@ describe('system-triggered KB graph builds', () => {
     await start(deps)
 
     expect(getAiBetaDecision).toHaveBeenCalledWith(
-
       expect.objectContaining({ id: ownerId, role: 'USER', catalyst: true })
     )
   })
@@ -630,7 +629,7 @@ describe('system-triggered KB graph builds', () => {
     process.env[KB_GRAPH_DOMAIN_CATALOG_REVISION_ENV] =
       getDefaultKBGraphDomainCatalog().revision
     const { deps, create } = createDeps({
-            publishedDomain: {
+      publishedDomain: {
         domainPolicyId: 'mathematics',
         domainPolicyVersion: 1,
         domainPolicyLanguage: 'German',
@@ -658,7 +657,7 @@ describe('system-triggered KB graph builds', () => {
     [
       'the stored subject is not in the catalog',
       {
-                kbDomain: {
+        kbDomain: {
           domainPolicyId: 'unknown-subject',
           domainPolicyVersion: 1,
           domainPolicyLanguage: 'German',
@@ -685,7 +684,7 @@ describe('system-triggered KB graph builds', () => {
     process.env[KB_GRAPH_DOMAIN_CATALOG_REVISION_ENV] =
       getDefaultKBGraphDomainCatalog().revision
     const { deps, create } = createDeps({
-            publishedDomain: {
+      publishedDomain: {
         domainPolicyId: 'mathematics',
         domainPolicyVersion: 1,
         domainPolicyLanguage: 'English',
@@ -703,7 +702,7 @@ describe('system-triggered KB graph builds', () => {
     process.env[KB_GRAPH_DOMAIN_CATALOG_REVISION_ENV] =
       getDefaultKBGraphDomainCatalog().revision
     const { deps, create } = createDeps({
-            publishedDomain: {
+      publishedDomain: {
         domainPolicyId: 'mathematics',
         domainPolicyVersion: 1,
         domainPolicyLanguage: 'English',

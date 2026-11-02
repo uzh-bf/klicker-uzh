@@ -53,7 +53,7 @@ function KnowledgeBasePage({ kbId }: { kbId: string }) {
           <KnowledgeBaseDetail
             kbId={kbId}
             backLink={backLink}
-            showBulkIngestion={settingsMode === 'advanced'}
+            advanced={settingsMode === 'advanced'}
           />
         </>
       ) : (
