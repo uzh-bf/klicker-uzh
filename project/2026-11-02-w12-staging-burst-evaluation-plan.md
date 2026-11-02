@@ -263,3 +263,17 @@ out of this file.
 - 2026-11-02: approved by the user (Cards 1, 3 and 4 as recommended; Card 2 waits for platform owner consent). Plan drafted; one independent critique applied (rollback drill
   replaced, X2/X3/X4 gates corrected against source, P4–P6 and P10 made
   measurable, E0 order and authority branches, D4 added). Next: E0.
+- 2026-11-02 E0: the cause is Argo CD's `RespectIgnoreDifferences=true` sync
+  option (v3.0.12 on staging). Before applying, Argo merges every existing
+  object's live state into its desired manifest, not only objects with an
+  ignore rule (`normalizeTargetResources` in `controller/sync.go`). The
+  selector is replaced as a whole, so the live selector without the tier
+  exclusion wins on every sync. Ruled out: a revision mismatch, Gatekeeper
+  mutators (none exist), duplicate renders, and the repo-server cache (a hard
+  refresh changed nothing). A per-resource `ServerSideApply` option would not
+  help because the merge runs before the apply, so the fix renames the
+  baseline PDB to `-frontend-pwa-baseline` while the burst tier is enabled.
+  Argo creates the new object as rendered and prunes the old one. Production
+  gets the same protection when its burst tier is enabled. Other in-place
+  changes to list-valued fields of existing objects can hit the same merge;
+  any resource that stays `OutOfSync` after a successful sync points here.
