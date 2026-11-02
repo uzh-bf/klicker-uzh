@@ -19,7 +19,7 @@ const DOWNSTREAM_ROOTS = {
 const STATUS_CONTEXT = 'sync-ancestry'
 
 function git(cwd, args) {
-  return execFileSync('git', args, {
+  return execFileSync('/usr/bin/git', args, {
     cwd,
     encoding: 'utf8',
     maxBuffer: 256 * 1024 * 1024,
@@ -28,10 +28,14 @@ function git(cwd, args) {
 
 function isAncestor(cwd, ancestor, descendant) {
   try {
-    execFileSync('git', ['merge-base', '--is-ancestor', ancestor, descendant], {
-      cwd,
-      stdio: 'ignore',
-    })
+    execFileSync(
+      '/usr/bin/git',
+      ['merge-base', '--is-ancestor', ancestor, descendant],
+      {
+        cwd,
+        stdio: 'ignore',
+      }
+    )
     return true
   } catch (error) {
     if (error.status === 1) return false
@@ -69,7 +73,7 @@ function findBackflow(cwd, { parent, head, downstreamSha, root }) {
 
 function hasCommit(cwd, sha) {
   try {
-    execFileSync('git', ['cat-file', '-e', `${sha}^{commit}`], {
+    execFileSync('/usr/bin/git', ['cat-file', '-e', `${sha}^{commit}`], {
       cwd,
       stdio: 'ignore',
     })

@@ -1,7 +1,7 @@
 'use client'
 import { create } from 'zustand'
 
-export const MAX_IMAGE_ATTACHMENTS = 3
+export { MAX_IMAGE_ATTACHMENTS } from '@/src/lib/config/attachmentLimits'
 
 interface ComposerStore {
   editRemovedAttachmentKeysByMessageId: Record<string, string[]>

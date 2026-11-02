@@ -108,7 +108,7 @@ jobs:
         id: check
         uses: ./.github/actions/changed-paths
         with:
-          pattern: '^(apps/olat-api/|packages/prisma/|packages/grading/|packages/util/|package\.json$|pnpm-lock\.yaml$|tsconfig\.json$|\.github/workflows/test-olat-api\.yml$|\.github/actions/changed-paths/|\.github/scripts/required-ci-status\.cjs$)'
+          pattern: '^(\.devcontainer/disposable-test-init\.sql$|\.github/scripts/olat-runner\.test\.cjs$|apps/olat-api/|packages/prisma/|packages/grading/|packages/util/|package\.json$|pnpm-lock\.yaml$|tsconfig\.json$|\.github/workflows/test-olat-api\.yml$|\.github/actions/changed-paths/|\.github/scripts/required-ci-status\.cjs$)'
           prior-check-name: test-olat-api-status
 
   test-olat-api:
@@ -135,12 +135,17 @@ jobs:
 
       - uses: pnpm/action-setup@v4
         with:
-          version: 11.5.0
+          version: 12.11.2
           run_install: true
+
+      - name: Check isolated runner failure handling
+        run: node --test .github/scripts/olat-runner.test.cjs
 
       - name: Run tests using Docker
         run: |
           cd packages/prisma
+          pnpm run build
+          cd ../types
           pnpm run build
           cd ../grading
           pnpm run build
@@ -208,7 +213,7 @@ jobs:
       contents: read
       issues: read
       pull-requests: read
-    uses: uzh-bf/klicker-uzh/.github/workflows/test-olat-api-execution.yml@a3286cc5cc77b98c7255b596084fd1032682bdaf
+    uses: uzh-bf/klicker-uzh/.github/workflows/test-olat-api-execution.yml@28c21d776517a88bbf981d11e3bde59c50cda483
 
   priority-status:
     name: ${{ (vars.PRIORITY_CI_ENABLED == 'true' && github.event_name == 'pull_request' && github.event.pull_request.state == 'open' && github.event.pull_request.draft == false && github.event.repository.private == false && github.event.pull_request.head.repo.full_name == github.repository && github.event.pull_request.user.type != 'Bot' && contains(github.event.pull_request.labels.*.name, 'ci:priority') && (github.event.action != 'labeled' || github.event.label.name == 'ci:priority')) && (github.event.action != 'labeled' || needs.priority-execution.outputs.run_label_event == 'true') && 'test-olat-api-status' || 'test-olat-api-status (priority not admitted)' }}

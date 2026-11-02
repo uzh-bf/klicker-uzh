@@ -78,7 +78,9 @@
         "W4-activity-wizard-safety.spec.ts",
         "W-activity-log.spec.ts",
         "X-review.spec.ts",
+        "Y-ai-beta-availability.spec.ts",
         "Y-chat.spec.ts",
+        "Y-kb-domain-selection.spec.ts",
         "Z-credential-verification.spec.ts"
       ]
     },
@@ -105,6 +107,7 @@
         "U-catalog.spec.ts",
         "W-activity-log.spec.ts",
         "X-review.spec.ts",
+        "Y-chat-lti-access.spec.ts",
         "Z-credential-verification.spec.ts"
       ]
     },
@@ -127,7 +130,12 @@
     {
       "id": "chat",
       "pathPrefixes": ["apps/chat/"],
-      "specs": ["A-login.spec.ts", "Y-chat.spec.ts"]
+      "specs": [
+        "A-login.spec.ts",
+        "Y-chat-lti-access.spec.ts",
+        "Y-chat-knowledge-graph.spec.ts",
+        "Y-chat.spec.ts"
+      ]
     },
     {
       "id": "auth",
@@ -159,6 +167,7 @@
         "W-activity-log.spec.ts",
         "X-review.spec.ts",
         "Y-chat.spec.ts",
+        "Y-kb-domain-selection.spec.ts",
         "Z-credential-verification.spec.ts"
       ]
     },

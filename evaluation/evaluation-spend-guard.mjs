@@ -164,7 +164,8 @@ export function requestReservation(policy, pathname, body) {
   if (!model) throw budgetError('provider_model_unqualified')
   if (body.n !== undefined && body.n !== 1)
     throw budgetError('provider_request_unbounded')
-  if (body.store === true) throw budgetError('provider_request_unqualified')
+  if (body.store !== undefined && body.store !== false)
+    throw budgetError('provider_request_unqualified')
   if (body.truncation !== undefined && body.truncation !== 'disabled')
     throw budgetError('provider_request_unbounded')
   if (
@@ -203,7 +204,14 @@ export function requestReservation(policy, pathname, body) {
   const input = pathname === '/v1/responses' ? body.input : body.messages
   if (!(typeof input === 'string' || Array.isArray(input)))
     throw budgetError('provider_input_invalid')
-  const checkModalities = (value, depth = 0) => {
+  const isToolSchemaPath = (path) =>
+    path[0] === 'tools' &&
+    /^(?:0|[1-9]\d*)$/.test(path[1]) &&
+    (pathname === '/v1/responses'
+      ? path.length === 3 && path[2] === 'parameters'
+      : path.length === 4 && path[2] === 'function' && path[3] === 'parameters')
+  const checkModalities = (value, depth = 0, path = []) => {
+    if (isToolSchemaPath(path)) return
     if (depth > 64) throw budgetError('provider_request_invalid')
     if (!value || typeof value !== 'object') return
     if (Object.hasOwn(value, 'cache_control'))
@@ -216,7 +224,8 @@ export function requestReservation(policy, pathname, body) {
     ) {
       throw budgetError('provider_modality_unqualified')
     }
-    for (const entry of Object.values(value)) checkModalities(entry, depth + 1)
+    for (const [key, entry] of Object.entries(value))
+      checkModalities(entry, depth + 1, [...path, key])
   }
   checkModalities(body)
   const output =

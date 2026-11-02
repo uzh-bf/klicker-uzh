@@ -1,0 +1,22 @@
+mutation ConfirmKbFileReplacement(
+  $kbId: ID!
+  $resourceId: ID!
+  $blobName: String!
+  $originalFilename: String!
+  $mimeType: String!
+  $sizeBytes: Int!
+) {
+  confirmKbFileReplacement(
+    kbId: $kbId
+    resourceId: $resourceId
+    blobName: $blobName
+    originalFilename: $originalFilename
+    mimeType: $mimeType
+    sizeBytes: $sizeBytes
+  ) {
+    id
+    status
+    resourceVersion
+    activeResourceVersion
+  }
+}

@@ -1,27 +1,29 @@
 #!/bin/bash
 
-set -e
+set -euo pipefail
 
 SCRIPT_DIR=$(cd -- "$(dirname -- "${BASH_SOURCE[0]}")" && pwd -P)
 OLAT_TEST_WORKSPACE=$(cd -- "$SCRIPT_DIR/../.." && pwd -P)
 export OLAT_TEST_WORKSPACE
+COMPOSE_PROJECT="olat-test-$$-$RANDOM"
+COMPOSE=(docker compose --project-name "$COMPOSE_PROJECT" -f "$SCRIPT_DIR/test/docker/docker-compose.test.yml")
 
-echo "Stopping any existing containers..."
-docker compose -f test/docker/docker-compose.test.yml down --volumes 2>/dev/null || true
+cleanup() {
+  local test_status=$?
+  trap - EXIT
+  "${COMPOSE[@]}" down --volumes --remove-orphans || {
+    local cleanup_status=$?
+    if [ "$test_status" -eq 0 ]; then
+      test_status=$cleanup_status
+    fi
+  }
+  exit "$test_status"
+}
+trap cleanup EXIT
 
 echo "Building test containers..."
-docker compose -f test/docker/docker-compose.test.yml build 
+"${COMPOSE[@]}" build
 
 # run the test container and capture its exit code directly
 echo "Running test containers..."
-docker compose -f test/docker/docker-compose.test.yml up --abort-on-container-exit
-
-# after container runs, find the exit code from docker-compose ps output
-TEST_EXIT_CODE=$(docker compose -f test/docker/docker-compose.test.yml ps -a --format json | grep -o '"ExitCode":[0-9]*' | grep -o '[0-9]*' | head -1)
-echo "Test exit code: ${TEST_EXIT_CODE}"
-
-echo "Cleaning up containers..."
-docker compose -f test/docker/docker-compose.test.yml down --volumes --remove-orphans
-
-echo "Tests completed with exit code: ${TEST_EXIT_CODE}"
-exit ${TEST_EXIT_CODE}
+"${COMPOSE[@]}" up --abort-on-container-exit --exit-code-from test

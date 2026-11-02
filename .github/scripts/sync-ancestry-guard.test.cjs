@@ -170,3 +170,71 @@ test('guards exactly the target branches of the sync chain', () => {
   assert.deepEqual([...workflow.on.push.branches].sort(), targets)
   assert.deepEqual([...workflow.on.pull_request.branches].sort(), targets)
 })
+
+test('does not resolve Git through PATH during ancestry analysis', (t) => {
+  const { cwd, git, commit, squash } = repository()
+  t.after(() => fs.rmSync(cwd, { recursive: true, force: true }))
+  git('switch', '-q', 'v3')
+  commit('new-source')
+  git('switch', '-q', '-c', 'sync', 'v3-ai')
+  git('merge', '-q', '--no-edit', 'v3')
+  git('switch', '-q', 'v3-ai')
+  const squashed = squash('sync')
+  const bin = path.join(cwd, 'poisoned-bin')
+  const executable = path.join(bin, 'git')
+  const marker = path.join(cwd, 'poisoned-git-ran')
+  fs.mkdirSync(bin)
+  fs.writeFileSync(
+    executable,
+    [
+      '#!/bin/sh',
+      'printf invoked > "$SYNC_ANCESTRY_GIT_MARKER"',
+      'exec /usr/bin/git "$@"',
+      '',
+    ].join('\n')
+  )
+  fs.chmodSync(executable, 0o755)
+  const modulePath = path.join(__dirname, 'sync-ancestry-guard.cjs')
+  const script = `
+    const { findUnrepairedSquashedSync } = require(${JSON.stringify(modulePath)})
+    findUnrepairedSquashedSync({
+      cwd: process.cwd(),
+      baseSha: process.argv[1],
+      sourceSha: process.argv[2],
+      resolvePullRequest: async (sha) => sha === process.argv[1]
+        ? { number: 7, headSha: process.argv[3] } : null,
+    }).then(
+      (result) => process.stdout.write(JSON.stringify(result)),
+      (error) => {
+        console.error(error)
+        process.exitCode = 1
+      }
+    )
+  `
+  const output = execFileSync(
+    process.execPath,
+    [
+      '-e',
+      script,
+      git('rev-parse', 'v3-ai'),
+      git('rev-parse', 'v3'),
+      squashed.headSha,
+    ],
+    {
+      cwd,
+      env: {
+        ...process.env,
+        PATH: [bin, process.env.PATH].filter(Boolean).join(path.delimiter),
+        SYNC_ANCESTRY_GIT_MARKER: marker,
+      },
+      encoding: 'utf8',
+    }
+  )
+
+  assert.deepEqual(JSON.parse(output), {
+    commit: squashed.commit,
+    number: 7,
+    headSha: squashed.headSha,
+  })
+  assert.equal(fs.existsSync(marker), false)
+})

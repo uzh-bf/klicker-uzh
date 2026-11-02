@@ -14,8 +14,14 @@ script="${1:?usage: run-hook-pnpm.sh <root pnpm script>}"
 # which then becomes newer than the marker.
 filtered_marker=node_modules/.playwright-host-filtered-install
 
+# Launcher runs that predate the marker leave filtered installs unmarked.
+# pnpm records whether the last install ran with a filter in its workspace
+# state file, so that flag is authoritative for those markerless installs.
+workspace_state=node_modules/.pnpm-workspace-state-v1.json
+
 if [[ -f node_modules/.modules.yaml ]]; then
-  if [[ ! -f "$filtered_marker" || node_modules/.modules.yaml -nt "$filtered_marker" ]]; then
+  if [[ ! -f "$filtered_marker" || node_modules/.modules.yaml -nt "$filtered_marker" ]] &&
+    ! grep -q '"filteredInstall": *true' "$workspace_state" 2>/dev/null; then
     exec pnpm run "$script"
   fi
   echo "⚠ Only the Playwright host launcher's filtered install exists in this checkout — skipping 'pnpm run ${script}'. Required CI enforces it; see docs/getting-started.md to run it in the container."

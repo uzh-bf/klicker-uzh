@@ -127,9 +127,29 @@ name; it never contains an email address or a matriculation number.
 (derived from edu-ID affiliation) or individual (subscribed). It gates feature
 limits and capacities, and is a property of the user rather than of any course.
 
+**Feature entitlement**: An account-level condition for using a
+rollout-controlled capability. It is additional to role, scope, and resource
+permissions and never replaces them.
+
 **Delegated login**: Signing in as a user through a `UserLogin` record with a
 scope, rather than through edu-ID. The scope becomes the session's authority
 and is enforced field-by-field in the API layer.
+
+## AI usage and quotas
+
+**Chat account usage budget**: A User's monthly allowance for participant
+chatbot model usage, split into base-model and advanced-model lanes and shared
+by that User's chatbots.
+_Avoid_: Balance, chatbot credits
+
+**Chatbot credit policy**: The per-chatbot allowance granted to each
+Participant, defined by initial credits, reset period, reset amount, and maximum
+credits.
+_Avoid_: Chat account usage budget
+
+**KB graph semester quota**: A User's semester allowance shared by knowledge
+graph construction and graph-backed element-generation actions.
+_Avoid_: Balance, chatbot credits, chat account usage budget
 
 ## Boundary rules
 
@@ -159,8 +179,10 @@ the two usage lanes shown for chatbot accounts.
 ### Authorization and lifecycle
 
 **AI usage authorization**:
-An account-level approval that requires an approved cost center and permits
-both base and advanced model usage. It is separate from publication approval.
+An account-level approval that permits base model usage. Advanced model usage
+additionally needs the advanced subscription tier and an approved cost center;
+setting a cost center grants that tier. It is separate from publication
+approval.
 _Avoid_: base authorization, advanced authorization, per-model approval
 
 **Publication approval**:
@@ -169,20 +191,47 @@ not authorize model usage by itself.
 _Avoid_: usage approval, activation
 
 **Standard-mode configuration**:
-The nullable owner-controlled Tutor, Explainer, and Quizzer settings stored on
-a chatbot. It contains explicit mode availability and bounded course context;
-the platform compiler treats valid values as lecturer context beneath its
-non-removable scaffolding. Missing or malformed values retain legacy/default
-behavior, and a new replacement must leave Tutor or Explainer enabled while
-Quizzer may be disabled independently.
+The lecturer-controlled settings for Tutor, Explainer, Quizzer, and Writing
+Coach. They define mode availability and lecturer context within the platform's
+fixed contracts. At least one of Tutor, Explainer, or Writing Coach remains
+enabled; Quizzer may be disabled independently. Writing Coach is disabled until
+the lecturer enables it. These nullable settings use existing JSON storage;
+missing or malformed values retain legacy/default behavior.
 _Avoid_: raw prompt, system prompt editor, custom-mode configuration
 
 **Effective mode set**:
 The server-resolved modes a participant may present or request for one
-chatbot. It combines standard-mode configuration, legacy custom-mode entries,
-and required MCP capability checks; a hidden mode is rejected before thread or
-provider work.
+chatbot. It combines standard-mode configuration and the approved custom-mode
+configuration; a saved draft mode is offered only in the owner preview, and a
+mode is not hidden because the chatbot declares a required retrieval binding
+elsewhere. An unsupported or typed-disabled mode is rejected before thread or
+provider work, and a mode whose declared required binding is unavailable fails
+closed at request time.
 _Avoid_: client mode list, available modes (when referring to server policy)
+
+**Knowledge base**:
+A user's reusable collection of course materials that chatbots answer from.
+One knowledge base can serve several chatbots, and a chatbot does not require
+one: without it, Tutor and Explainer answer from general model knowledge and
+Quizzer is not offered.
+_Avoid_: materials (for the collection itself), KB (in user-facing copy)
+
+### Writing feedback
+
+**Writing Coach**:
+A chatbot mode that gives feedback and revision advice on a participant's own
+writing using general writing criteria. The participant authors every revision;
+the coach does not supply replacement wording.
+
+**Lecturer context**:
+The lecturer's description of the chatbot's teaching context, intended audience,
+and learning priorities. It guides the enabled modes within their existing
+behavior and course boundaries.
+
+**Writing criteria**:
+The shared expectations Writing Coach uses to discuss purpose, reasoning,
+organization, clarity, and style. They provide general guidance and do not
+represent a lecturer's official marking scheme.
 
 ### Model classes and budgets
 

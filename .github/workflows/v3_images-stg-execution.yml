@@ -300,6 +300,11 @@ jobs:
           push: ${{ github.event_name != 'pull_request' }}
           tags: ${{ steps.meta.outputs.tags }}
           platforms: linux/arm64
+          build-args: |
+            NEXT_PUBLIC_ENV=staging
+            NEXT_PUBLIC_GROWTHBOOK_API_HOST=${{ vars.NEXT_PUBLIC_GROWTHBOOK_API_HOST_STG }}
+            NEXT_PUBLIC_GROWTHBOOK_CLIENT_KEY=${{ vars.NEXT_PUBLIC_GROWTHBOOK_CLIENT_KEY_STG }}
+            NEXT_PUBLIC_ELEARNING_EMBED_ORIGINS=${{ vars.NEXT_PUBLIC_ELEARNING_EMBED_ORIGINS_STG }}
           cache-from: ${{ github.event_name == 'push' && format('type=registry,ref=ghcr.io/{0}/{1}-arm:buildcache-trusted-{2}', github.repository, matrix.image, needs.plan.outputs.cache-epoch) || github.event_name == 'pull_request' && github.event.pull_request.head.repo.full_name == github.repository && format('type=registry,ref=ghcr.io/{0}/{1}-arm:buildcache', github.repository, matrix.image) || '' }}
           cache-to: ${{ github.event_name == 'push' && format('type=registry,ref=ghcr.io/{0}/{1}-arm:buildcache-trusted-{2},mode=max', github.repository, matrix.image, needs.plan.outputs.cache-epoch) || github.event_name == 'pull_request' && github.event.pull_request.head.repo.full_name == github.repository && format('type=registry,ref=ghcr.io/{0}/{1}-arm:buildcache,mode=max', github.repository, matrix.image) || '' }}
           labels: ${{ steps.meta.outputs.labels }}

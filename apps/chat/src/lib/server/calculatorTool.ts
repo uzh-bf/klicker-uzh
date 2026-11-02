@@ -1,5 +1,8 @@
 import { jsonSchema, type ToolSet, tool } from 'ai'
-import { REPLY_LANGUAGE_REMINDER } from '@/src/lib/server/languageInstructions'
+import {
+  REPLY_LANGUAGE_REMINDER,
+  type ReplyLanguageReminder,
+} from '@/src/lib/server/languageInstructions'
 import { renderPromptTemplate } from '@/src/lib/server/promptTemplates'
 
 export const CALCULATOR_TOOL_NAME = 'calculate'
@@ -149,15 +152,19 @@ const NUMERIC_PRECISION = renderPromptTemplate('numeric-precision', {})
  * only in the system prompt loses to recent conversation, so calculator modes
  * restate it here. It shares one message with the reply-language reminder,
  * which stays last, because separate trailing system messages weakened that
- * reminder in evaluation runs.
+ * reminder in evaluation runs. `languageReminder` carries a custom mode's
+ * locked language and meeting clock.
  */
-export function stepReminder(chatMode: string): {
+export function stepReminder(
+  chatMode: string,
+  languageReminder: ReplyLanguageReminder = REPLY_LANGUAGE_REMINDER
+): {
   role: 'system'
   content: string
 } {
-  if (!usesCalculator(chatMode)) return REPLY_LANGUAGE_REMINDER
+  if (!usesCalculator(chatMode)) return languageReminder
   return {
     role: 'system',
-    content: `${NUMERIC_PRECISION}\n\n${REPLY_LANGUAGE_REMINDER.content}`,
+    content: `${NUMERIC_PRECISION}\n\n${languageReminder.content}`,
   }
 }

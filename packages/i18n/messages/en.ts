@@ -1,5 +1,18 @@
 export default {
   chat: {
+    graphPanel: {
+      missingEndpoint: 'Unknown concept',
+      title: 'Knowledge graph',
+      open: 'Open knowledge graph',
+      close: 'Close knowledge graph',
+      fullscreen: 'Expand graph to fullscreen',
+      restore: 'Return graph to sidebar',
+      ask: 'Ask about this',
+      showConcept: 'Show this concept in the knowledge graph',
+      nodePrompt: 'Help me understand the concept “{topic}”.',
+      edgePrompt:
+        'Explain the relationship “{relationship}” between “{source}” and “{target}”.',
+    },
     common: {
       opensInNewTab: '(opens in new tab)',
     },
@@ -14,9 +27,13 @@ export default {
       explainer: 'Explainer',
       explainerDescription:
         'Get direct explanations with definitions and course-based examples.',
+      'writing-coach': 'Writing Coach',
+      'writing-coachDescription':
+        'Get specific feedback and tips on your writing, then make the revisions yourself.',
       quizzer: 'Quizzer',
       quizzerDescription:
         'Practise with exam-style course questions, one at a time, with formative feedback.',
+      custom: 'Custom mode',
     },
     settingsPanel: {
       title: 'Settings',
@@ -36,7 +53,7 @@ export default {
       usingPrimaryModel:
         'The automatic choice is used while credits are available.',
       usingFallbackModel:
-        'No credits remain. GPT-5.6 Luna may be used as the credit fallback.',
+        'No credits remain. The base model may be used as the credit fallback.',
       reasoningEffortLabel: 'Reasoning Effort',
       selectReasoningEffort: 'Select reasoning effort',
       reasoningEffortHint:
@@ -65,6 +82,7 @@ export default {
     },
     credits: {
       title: 'Available credits',
+      embeddedLabel: 'Credits: {percent}%',
       costHint:
         'Every message uses credits — how many depends on the model and the length of the exchange.',
       resetAt: 'Refills on {date}.',
@@ -84,6 +102,9 @@ export default {
       copyright:
         '©{year} DF Teaching Center, Department of Finance, University of Zurich. All rights reserved.',
     },
+    embedded: {
+      close: 'Close chat',
+    },
     assistant: {
       participationRequiredTitle: 'Course Access Required',
       participationRequiredDefaultMessage:
@@ -94,6 +115,150 @@ export default {
       disclaimerDeclinedMessage:
         'You declined the chatbot disclaimer. Accept the terms to continue using the chatbot.',
       showDisclaimerAgain: 'Show disclaimer again',
+      newConversation: 'Start a new conversation',
+      confirmNewConversation: 'Confirm starting a new conversation',
+      confirmNewConversationShort: 'Start over?',
+      newConversationWait: 'Wait until the current answer is complete',
+      newConversationArmed:
+        'Confirmation required: activate again to start a new conversation.',
+    },
+    manageAssistant: {
+      welcome: 'Hello! How can I help you?',
+      manageContext: 'Manage',
+      context: {
+        surface: {
+          questionPool: 'Question pool',
+          elementEditor: 'Question editor',
+          courseDashboard: 'Course dashboard',
+          activityCreation: 'Activity setup',
+          evaluation: 'Evaluation',
+          general: 'Manage',
+        },
+        course: 'Course {id}',
+        activity: 'Activity {id}',
+        question: 'Question {id}',
+        changed: 'Manage context changed to {context}',
+        cleared: 'The current Manage context is no longer available',
+      },
+      capabilitySearch: 'Search your courses and question pool',
+      capabilityDraft:
+        'Draft single-choice, multiple-choice, and free-text questions — saved to your pool only after you confirm',
+      capabilityNoSaveDraft: 'Prepare question drafts without saving them',
+      capabilityFeedback: 'Suggest improvements to question feedback',
+      capabilityDocumentation:
+        'Explain common KlickerUZH workflows using a curated index of documentation and tutorials',
+      capabilityChecking: 'Checking live data and draft availability…',
+      capabilityReadOnly:
+        'Live lookups are available, but this session cannot save draft proposals. No-save drafting and documentation help remain available.',
+      capabilityUnavailable:
+        'Live course and question-pool tools are temporarily unavailable. No-save drafting and documentation help remain available.',
+      capabilityRetry: 'Retry',
+      suggestions: {
+        'question-pool-draft': 'Draft a question',
+        'question-pool-find': 'Find questions',
+        'question-pool-feedback': 'Improve feedback',
+        'element-editor-improve': 'Improve this question',
+        'element-editor-variant': 'Draft a variant',
+        'element-editor-feedback': 'Better feedback',
+        'course-dashboard-summarize': 'Summarize this course',
+        'course-dashboard-draft': 'Draft course question',
+        'course-dashboard-find': 'Find course material',
+        'activity-creation-draft': 'Draft quiz questions',
+        'activity-creation-reuse': 'Reuse questions',
+        'activity-creation-balance': 'Balance difficulty',
+        'evaluation-explain': 'Explain results',
+        'evaluation-followup': 'Follow-up question',
+        'evaluation-similar': 'Similar questions',
+        'general-draft': 'Draft question',
+        'general-find': 'Find questions',
+        'general-feedback': 'Improve feedback',
+        planQuestion: 'Plan a question',
+        planQuizQuestions: 'Plan quiz questions',
+        planCourseQuestion: 'Plan course question',
+        planVariant: 'Plan a variant',
+        planFollowUp: 'Plan follow-up',
+        improveFeedback: 'Improve feedback',
+        documentation: 'KlickerUZH help',
+      },
+      limitsNote:
+        'Documentation help uses a curated index rather than a complete search. The assistant never publishes or edits existing content.',
+      degradedLimitsNote:
+        'Provide missing content directly when live lookup is unavailable. Nothing is saved without a proposal card and your confirmation.',
+      proposalReview: {
+        reviewLabel: 'Question draft review',
+        draftQuestion: 'Draft question',
+        question: 'Question',
+        correctAnswer: 'Correct answer',
+        correctAnswers: 'Correct answers',
+        correct: 'Correct',
+        incorrect: 'Incorrect',
+        answerFeedback: 'Answer feedback',
+        notProvided: 'Not provided',
+        sampleSolution: 'Sample solution',
+        maximumResponseLength:
+          'Maximum response length: {maxLength} characters',
+        generalExplanation: 'General explanation',
+        singleChoice: 'Single choice',
+        multipleChoice: 'Multiple choice',
+        freeText: 'Free text',
+      },
+      proposal: {
+        dismissed: 'Dismissed: {summary}',
+        draftCreated: 'Draft created',
+        confirmationRequired: 'Confirmation required',
+        draft: 'Draft',
+        createDraft: 'Create draft',
+        dismiss: 'Dismiss',
+        draftCreatedInQuestionPool: 'Draft created in the question pool',
+        openDraft: 'Open draft',
+        confirmationFailed: 'The draft could not be created. Please try again.',
+        showRawJson: 'Show raw JSON',
+      },
+    },
+    ownerPreview: {
+      badge: 'Owner preview',
+      description:
+        'Test the current chatbot configuration. This conversation is not added to your saved conversations.',
+      backToManage: 'Back to chatbot settings',
+      sidebarLabel: 'Owner preview conversations',
+      sidebarTitle: 'Test conversations',
+      conversationListLabel: 'Test conversation list',
+      newTestConversation: 'New test conversation',
+      testConversation: 'Test conversation {number}',
+      savedSettings: 'Saved settings',
+      savedSettingsNotice:
+        'This preview starts from the saved chatbot configuration.',
+      temporarySettings: 'Temporary settings',
+      temporarySettingsNotice:
+        'Model and reasoning changes apply only to this temporary conversation.',
+      fixedPolicy: 'Fixed model policy',
+      fixedPolicyNotice: 'Participants cannot change this saved policy.',
+      modelUnavailable: 'No model is available for this chatbot.',
+      toolLimitsTitle: 'Preview limits',
+      toolLimitsNotice:
+        'Preview supports document queries only. Attachments and other tools are unavailable.',
+      loginTitle: 'Lecturer login required',
+      loginMessage:
+        'Sign in to KlickerUZH Manage with the account that owns this chatbot to open its preview.',
+      loginButton: 'Go to KlickerUZH Manage',
+      opensInNewTab: '(opens in a new tab; return here after signing in)',
+      responseExample: {
+        captureAction: 'Save this answer as a response example',
+        captureUnavailable:
+          'This answer is not available to save. Start a new preview to try again.',
+        capturePending: 'Saving response example…',
+        captureCreated: 'Response example saved and ready for review.',
+        captureDuplicate:
+          'This response example is already saved and ready for review.',
+        captureStale:
+          'The source material changed. Start a new preview to capture this answer again.',
+        captureExpired:
+          'This capture expired. Start a new preview to try again.',
+        captureFailed: 'We could not save this response example.',
+        captureRetry: 'Try again',
+        reviewNow: 'Review now',
+        startNewPreview: 'Start a new preview',
+      },
     },
     recovery: {
       notFoundTitle: 'Chatbot not found',
@@ -102,6 +267,9 @@ export default {
       errorTitle: 'Chatbot unavailable',
       errorMessage:
         'We could not load this chatbot. Try again or return to KlickerUZH.',
+      accessDeniedTitle: 'No access to this chatbot',
+      accessDeniedMessage:
+        'Your account cannot open this chatbot. Return to KlickerUZH and open the chatbot from its course.',
       retry: 'Try again',
       openKlickerUzh: 'Open KlickerUZH',
     },
@@ -207,6 +375,7 @@ export default {
       exportUserLabel: 'You',
       exportAssistantLabel: 'Assistant',
       exportSourcesLabel: 'Sources',
+      elearningTag: 'eLearning',
     },
     thread: {
       viewportLabel: 'Conversation transcript',
@@ -221,8 +390,37 @@ export default {
       welcomeTo: 'You are chatting with {chatbot}.',
       welcomeSubtitle: 'Choose a starter or write your own question.',
       welcomeMode: 'Selected mode: {mode}',
+      learningContext: {
+        refreshUnavailable:
+          'Page context could not be refreshed for this question. Answers can use retrieved course materials.',
+        summary: 'Learning context used',
+        location: 'Location',
+        observed: 'Observed at',
+        evidence: 'Evidence',
+        completionLabel: 'Progress',
+        truncated: 'truncated',
+        completion: {
+          confirmed_complete: 'completed',
+          pending: 'pending',
+          incomplete: 'incomplete',
+          unavailable: 'unavailable',
+        },
+        availability: {
+          'full-text': 'Page text available',
+          metadata: 'metadata only',
+          unavailable: 'Content not inspectable',
+          unknown: 'Availability unknown',
+        },
+      },
     },
     suggestions: {
+      reviewWriting: 'Get feedback on writing',
+      reviewWritingPrompt:
+        'Give me feedback on the course-writing excerpt below. Explain the most useful improvements and how I can make them myself.\n\n[Paste your excerpt here]',
+      reviewRevision: 'Review my revision',
+      reviewRevisionPrompt:
+        'I have revised my course-writing excerpt. Give feedback on what improved and what I should focus on next.\n\n[Paste your revision here]',
+
       sectionLabel: 'Conversation starters',
       editHint: 'Choose a starter to edit it before sending.',
       practiceTopic: 'Practise a topic',
@@ -267,6 +465,11 @@ export default {
     },
     composer: {
       placeholder: 'Write a message...',
+      replyLanguageEn: 'This conversation is in English',
+      replyLanguageDe: 'This conversation is in German',
+      meetingClockNotStarted: 'The clock starts with your first message',
+      meetingClockElapsed: '{minutes} min since your first message',
+      meetingClockTime: '{time} (Zurich time)',
       modeUnavailable:
         'No chat mode is currently available. Please contact your lecturer.',
       send: 'Send message',
@@ -278,9 +481,11 @@ export default {
         'The image could not be read. Please try a different file.',
       dismissError: 'Dismiss error',
       dropFiles: 'Drop files to attach',
+      dropImages: 'Drop images to attach',
       attachmentPreviewAlt: 'Attachment preview',
       removeAttachment: 'Remove attachment',
       attachFile: 'Attach an image or document',
+      attachImage: 'Attach image',
       attachmentTypeError:
         'This file type cannot be attached. Use an image, PDF, Word (.docx), text, Markdown or CSV file.',
       documentOnlyTypeError:
@@ -1005,6 +1210,8 @@ Other participants will only see your public **participant profile**, including 
         'You are seeing an activity preview for the {activity} "{name}" (display name "{displayName}"). Please note that this preview is meant for the lecturer to test the activity from a student perspective. While most interaction functionalities are supported, no submitted responses are stored or will appear in the evaluation view.',
     },
     chatbot: {
+      graphChoiceLabel: 'Knowledge graph',
+      graphChoicePlaceholder: 'Select a knowledge graph',
       loginRequiredMessage:
         'You need a KlickerUZH account to access this chatbot. Please log in or create an account first.',
       goToLogin: 'Go to login',
@@ -1012,6 +1219,21 @@ Other participants will only see your public **participant profile**, including 
       participationRequiredMessage:
         'We could not activate your participation for this course. Open the course in OLAT/KlickerUZH and ensure you have joined it before trying again.',
       goToCourse: 'Open course',
+      courseChat: 'Course chatbot',
+      selectChatbot: 'Select chatbot',
+      openInNewTab: 'Open chat in new tab',
+      activeContext: 'Using current page context',
+      questionContext: 'Question {currentStep}/{totalSteps}',
+      noCourseChatbot: 'No course chatbot is available for this course yet.',
+      retrieval: {
+        searching: 'Searching lecture content for “{query}”…',
+        errorTitle: 'Search unavailable',
+        errorDescription:
+          'The lecture content could not be searched. Please try again.',
+        contentTitle: 'Lecture content',
+        questionLabel: 'Question',
+        noContent: 'No content available',
+      },
     },
     insights: {
       noCourseDataAvailable:
@@ -1747,7 +1969,388 @@ Since the KlickerUZH app is not yet available in the iOS App Store, follow these
       cohortSizeLabel: 'Comparison cohort: {count} active participants',
     },
   },
+  kb: {
+    title: 'Knowledge Bases',
+    create: 'Create knowledge base',
+    nameLabel: 'Name',
+    descriptionLabel: 'Description (optional)',
+    createSuccess: 'Knowledge base created.',
+    createError: 'The knowledge base could not be created.',
+    deleteTitle: 'Delete knowledge base',
+    deleteDescription:
+      '“{name}” will disappear immediately. Its stored files and external index are removed in the background. This action cannot be undone.',
+    deleteSuccess: 'Knowledge base removed. Background cleanup is in progress.',
+    deleteError: 'The knowledge base could not be deleted.',
+    emptyTitle: 'No knowledge bases yet',
+    emptyDescription: 'Create a knowledge base to add your first resources.',
+    noDescription: 'No description',
+    loadError: 'The knowledge bases could not be loaded.',
+    searchKnowledgeBases: 'Search knowledge bases',
+    searchKnowledgeBasesPlaceholder: 'Search by name or description',
+    noSearchResults: 'No matching knowledge bases',
+    noSearchResultsDescription: 'Try a different name or description.',
+    searchResultCount:
+      '{count, plural, =0 {No knowledge bases} one {# knowledge base} other {# knowledge bases}}',
+    catalogMetrics:
+      '{resources, plural, one {# resource} other {# resources}} and {chatbots, plural, one {# connected chatbot} other {# connected chatbots}}',
+    catalogDomain: 'Subject area: {domain}. Language: {language}.',
+    materialsReadinessNone: 'Chatbot materials: none added yet',
+    materialsReadinessAvailable:
+      'Chatbot materials: {available} of {total} available',
+    materialsReadinessProcessing: '{count} processing',
+    materialsReadinessFailed: '{count} failed',
+    questionReadiness: {
+      WAITING_FOR_MATERIALS:
+        'Question generation: waiting for materials to finish processing',
+      QUEUED:
+        'Question generation: prepared automatically overnight; usually ready the next morning.',
+      PROCESSING:
+        'Question generation: prepared automatically overnight; usually ready the next morning.',
+      READY: 'Question generation: ready',
+      DELAYED: 'Question generation: preparation is delayed.',
+      NEEDS_ATTENTION: 'Question generation: preparation needs attention.',
+      UNAVAILABLE:
+        'Question generation: automatic preparation is not available.',
+      NO_ELIGIBLE_MATERIALS: 'Question generation: no course material yet',
+      contact: 'Contact us',
+    },
+    loadMore: 'Load more knowledge bases',
+    notFound: 'The knowledge base could not be found.',
+    detailFallbackTitle: 'Knowledge base',
+    backToList: 'Back to knowledge bases',
+    metricsTitle: 'Usage and connections',
+    metricVisibleResources: 'Visible resources',
+    metricReservedResources:
+      '{count, plural, =0 {No upload reservations} one {# upload reservation} other {# upload reservations}}',
+    metricStorage: 'Storage quota',
+    metricStorageBreakdown:
+      '{visible} visible and {reserved} reserved for uploads',
+    unknownSizesReserved:
+      '{count, plural, one {# legacy resource reserves up to 25 MiB} other {# legacy resources reserve up to 25 MiB each}}',
+    metricPendingCleanup: 'Pending cleanup',
+    metricPendingCleanupSize: '{size} awaiting cleanup',
+    metricLinkedConsumers: 'Connected chatbots',
+    metricQuotaResources: '{count} resources count toward the quota',
+    quotaReleaseMessage:
+      'Deleted resources continue to count toward the quota until background cleanup finishes.',
+    fileUploadTitle: 'Upload a file',
+    fileUploadDescription: 'Add course material from your computer.',
+    fileDropPrompt: 'Drop a file here or click to choose one',
+    filesDropPrompt: 'Drop files here or click to choose them',
+    fileUploadFormats: 'PDF, TXT or MD, up to 25 MB',
+    uploading: 'Uploading…',
+    uploadingProgress: 'Uploading file {current} of {total}…',
+    fileUploadSuccess: 'File added to the knowledge base.',
+    fileUploadBatchSuccess: '{count} files added to the knowledge base.',
+    fileUploadBatchPartial:
+      '{succeeded} of {total} files were added. These failed: {files} ({reason})',
+    fileUploadError: 'The file could not be uploaded.',
+    fileRejected: 'Choose a supported file of no more than 25 MB.',
+    filesRejected:
+      'These files were skipped: {files}. Use PDF, TXT or MD files of no more than 25 MB.',
+    replaceFile: 'Replace file',
+    replaceFileTitle: 'Replace file',
+    replaceAndIngest: 'Replace and ingest',
+    replaceFileDescription:
+      'Choose a new file for “{title}”. Its category and identity stay the same, ingestion starts immediately, and the previous AI content remains available until the replacement is ready. The previous source file cannot be restored.',
+    replaceFileSuccess:
+      'Replacement queued. The previous version remains available until the new file is ready.',
+    linkTitle: 'Add a link',
+    linkDescription: 'Register a website or media resource for ingestion.',
+    resourceTitleLabel: 'Title',
+    materialType: 'Material category',
+    materialTypeUnclassified: 'Unclassified',
+    materialTypeCourseContent: 'Course content',
+    materialTypeAdministrative: 'Administrative',
+    urlLabel: 'URL',
+    invalidUrl: 'Enter a valid URL starting with http:// or https://.',
+    linkSuccess: 'Link added to the knowledge base.',
+    linkError: 'The link could not be added.',
+    resourcesTitle: 'Resources',
+    resourceColumn: 'Resource',
+    resourceActions: 'Actions',
+    resourcesLoadError: 'The resources could not be loaded.',
+    searchResources: 'Search resources',
+    searchResourcesPlaceholder: 'Search title, filename or URL',
+    filterType: 'Type',
+    filterStatus: 'Latest ingestion',
+    filterMaterialType: 'Category',
+    filterAll: 'All',
+    typeFile: 'File',
+    typeUrl: 'Link',
+    addResource: 'Add resource',
+    addResourceTitleFor: 'Add materials to {kbName}',
+    addResourceTitle: 'Add a resource',
+    addResourceDescription: 'Choose how you want to add this resource.',
+    addWebsite: 'Website',
+    addWebsiteDescription: 'Register a website URL for ingestion.',
+    addDocument: 'Document',
+    addDocumentDescription: 'Upload a PDF, TXT or Markdown file.',
+    addVideo: 'Video',
+    comingSoon: 'Coming soon',
+    configure: 'Configure',
+    backToResourceTypes: 'Back',
+    noResourceResults: 'No resources match these filters.',
+    resourceResultCount:
+      '{count, plural, =0 {No resources} one {# resource} other {# resources}}',
+    selectAllPage: 'Select up to 50 available resources',
+    selectResource: 'Select “{title}”',
+    loadMoreResources: 'Load more resources',
+    importedSourcesTitle: 'Indexed sources',
+    importedSourceColumn: 'Source',
+    importedSourcesNotice:
+      'Everything indexed in this knowledge base, whether you added it through the app or the course team imported it. App-managed resources count toward the resource and storage limits and are included in knowledge graph builds; manually imported sources are not.',
+    importedSourcesIncomplete:
+      'The list covers the most recently scanned sources. Older sources may not be listed yet.',
+    importedSourcesEmpty: 'No sources are indexed in this knowledge base yet.',
+    importedSourcesLoadError: 'The indexed sources could not be loaded.',
+    loadMoreImportedSources: 'Load more sources',
+    importedSourcesLoadMoreError:
+      'The additional sources could not be loaded. Try again.',
+    importedObservedAt: 'Observed {date}',
+    importedIngestedColumn: 'Ingested',
+    importedObservedColumn: 'Observed',
+    importedIngestionUnknown: 'Ingestion time not recorded',
+    importedSourceGeneric: 'Source',
+    importedSourceManagedBadge: 'App-managed',
+    importedSourceImportedBadge: 'Manually imported',
+    importedVideoNoFileHint:
+      'Video content is indexed without storing the original file.',
+    noResources: 'No resources have been added yet.',
+    emptyResourceHint: 'Use Add resource above to add a website or document.',
+    updatedAtLabel: 'Updated',
+    updatedAt: 'Updated {date}',
+    statusAdded: 'Added',
+    statusQueued: 'Queued',
+    statusProcessing: 'Processing',
+    statusReady: 'Ready',
+    statusFailed: 'Failed',
+    deleteResourceTitle: 'Delete resource',
+    deleteResourceDescription:
+      '“{title}” will disappear immediately. Its stored file and external index are removed in the background. This action cannot be undone.',
+    deleteResourceSuccess:
+      'Resource removed. Background cleanup is in progress.',
+    deleteResourceError: 'The resource could not be deleted.',
+    bulkDelete: 'Delete selected ({count})',
+    bulkDeleteTitle:
+      '{count, plural, one {Delete # resource} other {Delete # resources}}',
+    bulkDeleteConfirm:
+      '{count, plural, one {Delete resource} other {Delete # resources}}',
+    bulkDeleteDescription:
+      '{count, plural, one {The selected resource will disappear immediately. Stored files and external indexes are removed in the background. This action cannot be undone.} other {The # selected resources will disappear immediately. Stored files and external indexes are removed in the background. This action cannot be undone.}}',
+    bulkDeleteSuccess:
+      '{count, plural, one {Resource removed. Background cleanup is in progress.} other {# resources removed. Background cleanup is in progress.}}',
+    bulkDeleteError:
+      'The deletion could not be confirmed. Refresh the list before trying again.',
+    ingestResource: 'Ingest',
+    retryIngestion: 'Retry',
+    reingestResource: 'Re-ingest',
+    ingestResourceSuccess: 'Resource queued for ingestion.',
+    ingestResourceError: 'The resource could not be queued for ingestion.',
+    ingestAll: 'Ingest all',
+    ingestAllTitle: 'Ingest all resources',
+    ingestAllDescription:
+      '{count, plural, one {The server will queue # resource that is not available in its current form. Resources that are already current or in progress will stay unchanged.} other {The server will queue # resources that are not available in their current form. Resources that are already current or in progress will stay unchanged.}}',
+    ingestAllConfirm: 'Start ingestion',
+    ingestAllNeeds: 'Need ingestion',
+    ingestAllFailed: 'Failed attempts',
+    ingestAllInProgress: 'In progress',
+    ingestAllSummary:
+      '{needs} need ingestion, {failed} failed attempts and {inProgress} already in progress',
+    ingestAllSuccess:
+      'Queued {queued} resources. Retried {retried} failed resources. {current} were already current and {inProgress} already in progress. {failed} could not be queued.',
+    ingestAllError: 'The resources could not be queued for ingestion.',
+    updateMaterialTypeSuccess: 'Material category updated.',
+    updateMaterialTypeError: 'The material category could not be updated.',
+    operationStatus: 'Latest ingestion',
+    operationInProgress:
+      'This operation is running in the background. You can leave this page.',
+    backgroundOperationsMessage:
+      'One or more operations are still running. Statuses update automatically, and you can safely leave this page.',
+    servingStatus: 'Available to AI',
+    notServing: 'Not available yet',
+    servingCurrentVersion: 'Current version {version}',
+    servingPreviousVersion: 'Version {version} remains available',
+    servingNewerVersion: 'Version {version} (refreshed externally)',
+    servingSince: 'Available since {date}',
+    version: 'Version {version}',
+    recentAttempts: 'Recent attempts',
+    noRecentAttempts: 'No ingestion attempts yet.',
+    historyLoadError: 'Recent attempts could not be loaded.',
+    runStatusQueued: 'Queued',
+    runStatusProcessing: 'Processing',
+    runStatusSucceeded: 'Succeeded',
+    runStatusFailed: 'Failed',
+    runStatusSuperseded: 'Superseded',
+    ingestionStartError: 'The ingestion operation could not be started.',
+    storageLimitError:
+      'This resource exceeds the knowledge base storage limit.',
+    resourceLimitError:
+      'This knowledge base has reached its limit of 1,000 resources.',
+    uploadMismatchError:
+      'The uploaded file no longer matches its upload reservation. Please upload it again.',
+    ingestionFailed: 'The ingestion operation failed.',
+    ingestionSuperseded: 'The ingestion operation was superseded.',
+    ingestionFailureSourceVersionMismatch:
+      'The source no longer matches the version recorded when it was added.',
+    ingestionFailureSourceFetch: 'The source could not be retrieved.',
+    ingestionFailureSourceProcessing:
+      'The source content could not be processed.',
+    ingestionFailureSourceSizeLimit:
+      'The source is larger than the supported size limit.',
+    ingestionFailureActivation: 'The imported content could not be activated.',
+    inspectResource: 'Inspect',
+    inspectorTitle: 'Resource details',
+    sourceType: 'Source type',
+    sourceLocation: 'Source URL',
+    fileName: 'Original filename',
+    mimeType: 'Media type',
+    fileSize: 'File size',
+    createdAt: 'Created',
+    chatbotsTitle: 'Connected chatbots',
+    chatbotsDescription:
+      'Choose which chatbot can use this knowledge base. A chatbot can use one knowledge base at a time.',
+    chatbotsLoadError: 'The chatbots could not be loaded.',
+    noChatbots: 'Create a chatbot before connecting a knowledge base.',
+    chatbotSelectLabel: 'Chatbot',
+    chatbotSelectPlaceholder: 'Choose a chatbot',
+    attachChatbot: 'Connect chatbot',
+    replaceChatbot: 'Replace knowledge base',
+    detachChatbot: 'Disconnect',
+    linkedChatbots: 'Using this knowledge base',
+    noLinkedChatbots: 'No chatbot is using this knowledge base.',
+    chatbotReplacementWarning:
+      'This chatbot currently uses “{kbName}”. Connecting it here replaces that knowledge base.',
+    chatbotLiveChangeWarning:
+      'This chatbot is published. Connecting it here changes its materials for students immediately, without review.',
+    linkedChatbotLiveNote:
+      'Published: disconnecting takes effect for students immediately.',
+    chatbotAttachSuccess: 'Chatbot connected to the knowledge base.',
+    chatbotAttachError: 'The chatbot could not be connected.',
+    chatbotDetachSuccess: 'Chatbot disconnected from the knowledge base.',
+    chatbotDetachError: 'The chatbot could not be disconnected.',
+    previewAccessError:
+      'The knowledge base workspace is not available for your account yet.',
+    graphTitle: 'Knowledge graph',
+    graphDescription:
+      'Build a graph from the knowledge base resources and inspect the published result.',
+    graphQualityTierLabel: 'Build quality',
+    graphQualityStandard: 'Standard (lower cost)',
+    graphQualityHigh: 'High (higher cost)',
+    graphBuild: 'Build graph',
+    graphRebuild: 'Rebuild graph',
+    graphBuildCost: 'Estimated cost for this build: {amount}.',
+    graphEnableLabel: 'Enable the knowledge graph for this KB',
+    graphEnabledDescription:
+      'A published graph can be used by enabled chatbot bindings for this knowledge base.',
+    graphDisabledDescription:
+      'Enable this knowledge base before starting a graph build or serving it to students.',
+    graphCostUnavailable:
+      'Graph cost controls are not configured yet. Building remains disabled.',
+    graphEnableError: 'The knowledge graph setting could not be updated.',
+    graphBillingLabel: 'Billing mode',
+    graphBillingSemesterQuota: 'Semester quota',
+    graphBillingProvider: 'Provider-billed',
+    graphRemainingQuota: 'Remaining semester quota',
+    graphWorstCaseBalance: 'Balance after the maximum build',
+    graphMaxCost: 'Maximum reserved cost',
+    graphCostStatus: 'Cost reservation',
+    graphCostStatusReserved: 'Reserved',
+    graphCostStatusSettled: 'Settled',
+    graphCostStatusReleased: 'Released',
+    graphCostStatusNeedsHumanReview: 'Held for human review',
+    graphActualCost: 'Actual cost',
+    graphActualUsage:
+      'Actual usage: {requests} requests, {inputTokens} input tokens, {outputTokens} output tokens, {embeddingTokens} embedding tokens.',
+    graphStatusLabel: 'Status',
+    graphStatusEmpty: 'No build',
+    graphStatusQueued: 'Queued',
+    graphStatusProcessing: 'Processing',
+    graphStatusSucceeded: 'Succeeded',
+    graphStatusFailed: 'Failed',
+    graphStale: 'Stale',
+    graphBuildId: 'Build {buildId}',
+    graphLoading: 'Loading graph status…',
+    graphLoadError: 'The graph status could not be loaded.',
+    graphRetry: 'Retry',
+    graphBuildError: 'The graph build could not be started.',
+    graphNoCourseContent:
+      'No resources are categorized as “Course content”. Tag your course materials before building the graph — administrative resources are excluded.',
+    graphQuotaInsufficient:
+      'The selected build is estimated at {estimate}, but only {remaining} remains in your semester quota. Choose a lower-cost quality level if available, or wait for the quota to reset.',
+    graphPreviewTitle: 'Published graph',
+    graphGenerateElements: 'Generate Klicker elements',
+    graphElementGenerationUnavailable:
+      'This published graph does not include an element-generation bundle yet. Rebuild it to generate Klicker elements.',
+    graphPreviewUnavailable:
+      'Build and publish a graph before opening the lecturer viewer.',
+    graphDomainLabel: 'Domain',
+    graphDomainSelectPlaceholder: 'Select a domain',
+    graphFocusTopicLabel: 'Focus topic (optional)',
+    graphFocusTopicPlaceholder: 'e.g. Capital budgeting',
+    graphFocusTopicNote:
+      'Steers which material the extraction emphasizes. The focus is not a source: it cannot add facts, and the rest of the material keeps its coverage.',
+    graphDomainFinance: 'Finance',
+    graphDomainEconomics: 'Economics',
+    graphDomainBusiness: 'Business Administration',
+    graphDomainMathematics: 'Mathematics',
+    graphDomainInformatics: 'Informatics',
+    graphDomainGeneralAcademic: 'General / Mixed',
+    graphDomainCategoriesLabel: 'Generated categories',
+    graphDomainLanguageSelectPlaceholder: 'Select a language',
+    graphDomainVersionUnknown: 'unknown',
+    graphDomainPublished:
+      'Served graph: {domain} (version {version}, {language})',
+    graphDomainLanguageGerman: 'German',
+    graphDomainLanguageEnglish: 'English',
+    domainSettingsTitle: 'Subject area and language',
+    domainSettingsDescription:
+      'Used whenever a knowledge graph is prepared for this knowledge base. Graphs that already exist keep the subject area and language they were built with.',
+    domainSubjectLabel: 'Subject area',
+    domainLanguageLabel: 'Content language',
+    domainSettingsNotSet: 'Not set',
+    domainSettingsSaveError:
+      'The subject area and language could not be saved. Please try again.',
+    domainLanguageUnsupported:
+      '{domain} is not available in {language}. Choose another subject area or another language.',
+    ingestionDisabledError:
+      'Adding new content to knowledge bases is temporarily disabled.',
+  },
   manage: {
+    assistant: {
+      open: 'Assistant',
+      title: 'KlickerUZH Assistant',
+      subtitle: 'AI assistant for your courses and question pool',
+      openInNewTab:
+        'Start a new conversation in a new tab without this page context',
+      openFreshConversation: 'Start a separate conversation',
+      loading: 'Loading assistant…',
+      retrying: 'Reloading assistant…',
+      retry: 'Reload assistant',
+      delayedTitle: 'The assistant is taking longer than expected',
+      delayedDescription:
+        'You can keep waiting, reload the embedded assistant, or start a separate conversation without this page context.',
+      failedTitle: 'The assistant could not be loaded',
+      failedDescription:
+        'Reload the embedded assistant or start a separate conversation without this page context.',
+      resize: 'Resize assistant',
+      resizeHint: 'Drag to resize. The arrow keys also resize the assistant.',
+      panelSize: 'Assistant panel size',
+      panelSizeCustom: 'Custom size',
+      panelSizeDefault: 'Default',
+      panelSizeWide: 'Wide',
+      panelSizeMax: 'Max',
+      elementCreatedToast: 'Draft "{name}" added to your question pool',
+    },
+    ai: {
+      unavailableTitle: 'AI features unavailable',
+      unavailableDescription:
+        'The AI features are in beta and not yet available for your account. Please contact your administrator for access.',
+      temporarilyUnavailableTitle: 'AI features temporarily unavailable',
+      temporarilyUnavailableDescription:
+        'AI features are temporarily unavailable. Please try again in a moment.',
+      retry: 'Try again',
+    },
     general: {
       qrCode: 'QR Code',
       presentQrCode: 'Present QR code',
@@ -1758,6 +2361,8 @@ Since the KlickerUZH app is not yet available in the iOS App Store, follow these
       liveQuizzes: 'Live Quizzes',
       courses: 'Courses',
       resources: 'Resources',
+      ai: 'AI',
+      betaFeatures: 'Beta features',
       catalog: 'Catalog',
       mediaLibrary: 'Media Library',
       userGroups: 'User Groups',
@@ -1848,6 +2453,19 @@ Since the KlickerUZH app is not yet available in the iOS App Store, follow these
         'The specified user does not exist. Please check the email address and ensure that the user has logged in to KlickerUZH at least once.',
       grantAccessError:
         'An error occurred while granting access to private preview features. This might be due to insufficient permissions or a system error.',
+      aiFeaturesAvailability: 'Availability: AI Features',
+      aiFeaturesDescription:
+        'All users on the following list may use the AI features, which spend model budget. Only enable an account once a cost center has been supplied that the usage can be billed to. Enabling or disabling is done by entering the email address (primary Edu-ID email).',
+      aiFeaturesEnable: 'Enable',
+      aiFeaturesDisable: 'Disable',
+      aiFeaturesEnabled:
+        'The specified user has been enabled for the AI features.',
+      aiFeaturesDisabled:
+        'The specified user has been disabled for the AI features.',
+      aiFeaturesUnchanged:
+        'The specified user already had the requested AI feature setting.',
+      aiFeaturesError:
+        'An error occurred while changing the AI feature setting. This might be due to insufficient permissions or a system error.',
     },
     activities: {
       activityType: 'Activity Type',
@@ -2223,6 +2841,19 @@ Since the KlickerUZH app is not yet available in the iOS App Store, follow these
       chatAccountUsageTitle: 'Chatbot usage',
       chatAccountUsageUnauthorized:
         'Chatbot usage is not authorized for this account.',
+      chatAccountUsageSubscriptionLabel: 'Plan',
+      chatAccountUsageTierBase: 'Base models',
+      chatAccountUsageTierAdvanced: 'Base and advanced models',
+      chatAccountUsageClassUnavailable:
+        'This usage class is not enabled for your account.',
+      chatAccountUsageAdvancedCostCenter:
+        'Advanced models require the advanced AI subscription and a cost center that AI usage can be billed to.',
+      chatAccountUsageRefreshing: 'Refreshing usage…',
+      chatAccountUsageStale:
+        'The latest usage could not be loaded. The values below may be out of date.',
+      chatAccountUsageUnavailable:
+        'The latest usage could not be loaded. Retry to show the current values.',
+      chatAccountUsageRetry: 'Retry',
       usageBudget: 'Budget',
       usageBudgetEmpty: 'No budget is set for this usage class.',
       usageBudgetExhausted: 'The monthly budget is exhausted.',
@@ -2288,6 +2919,430 @@ Since the KlickerUZH app is not yet available in the iOS App Store, follow these
       remainingValidity: 'Remaining validity:',
       tokenExpired:
         'Unfortunately, your token has expired, please generate a new one.',
+    },
+    generationStatus: {
+      title: 'Background generation',
+      description:
+        'You can continue working while these operations run in the background.',
+      starting: 'Starting…',
+      graphQueued: 'Knowledge graph queued',
+      graphProcessing: 'Knowledge graph is being generated',
+      elementProgress:
+        '{generated} of {requested, plural, one {# element} other {# elements}} generated',
+      succeeded: '{label} is ready.',
+      incomplete: '{label} finished with fewer elements than requested.',
+      reviewRequired: '{label} is waiting for your decision.',
+      failed: 'Background generation failed.',
+      open: 'Open result',
+      review: 'Review result',
+    },
+    elementGeneration: {
+      eyebrow: 'AI-assisted creation',
+      title: 'Generate elements',
+      description:
+        'Create Klicker elements from a published knowledge graph. Single-choice, multiple-choice, KPRIM, and flashcards share the same workflow.',
+      actions: {
+        generate: 'Generate elements',
+        newGeneration: 'New generation',
+        retry: 'Retry',
+        publishIncomplete: 'Use generated elements',
+      },
+      configure: {
+        sourceTitle: 'Knowledge source',
+        sourceHelp:
+          'Choose a knowledge base. The generation stays linked to the prepared material it uses for traceability.',
+        sourceCount: '{count, plural, one {# source} other {# sources}}',
+        indexedAt: 'Prepared {date}',
+        staleGraph: 'Recent changes not included yet',
+        staleGraphHelp:
+          'This knowledge base has newer changes that are still being prepared. Questions generated now use the previously prepared material.',
+        basisLanguage: 'Questions in {language}',
+        settingsChangedHelp:
+          'The subject area or language of this knowledge base changed. New questions wait for a preparation that matches the new settings. Existing questions stay unchanged.',
+        contactSupport: 'Contact {email}',
+        preparation: {
+          WAITING_FOR_MATERIALS: 'Waiting for materials to finish processing',
+          QUEUED: 'Preparing automatically',
+          PROCESSING: 'Preparing automatically',
+          READY: 'Ready',
+          DELAYED: 'Preparation is delayed',
+          NEEDS_ATTENTION: 'Preparation needs attention',
+          UNAVAILABLE: 'Automatic preparation is not available',
+          NO_ELIGIBLE_MATERIALS: 'No course material yet',
+        },
+        preparationHelp: {
+          WAITING_FOR_MATERIALS:
+            'The uploaded materials are still being processed. Question preparation starts automatically afterwards.',
+          QUEUED:
+            'Question generation is prepared automatically overnight; usually ready the next morning.',
+          PROCESSING:
+            'Question generation is prepared automatically overnight; usually ready the next morning.',
+          READY: 'Ready for question generation.',
+          DELAYED:
+            'Preparation is taking longer than expected. Contact us so we can look into it.',
+          NEEDS_ATTENTION:
+            'Preparation could not be completed automatically. Check the materials of this knowledge base or contact us.',
+          UNAVAILABLE:
+            'Automatic preparation is not enabled for this knowledge base. Contact us to enable question generation.',
+          NO_ELIGIBLE_MATERIALS:
+            'Add course material to this knowledge base. Administrative documents are not used for question generation.',
+        },
+        sourceDetails: 'Included sources',
+        completeSource: 'The complete source will be used.',
+        pageFrom: 'From page',
+        pageTo: 'To page',
+        elementTypeTitle: 'Klicker element type',
+        elementTypeHelp:
+          'All types are generated as Klicker elements. Choose the format that best matches your learning goal.',
+        bloomTitle: "Bloom's taxonomy",
+        bloomHelp:
+          'Select one or more cognitive levels. The steps progress from recalling knowledge to making evidence-based judgments. Higher levels need more detailed source material, so a level can still fail for thin material.',
+        bloomLevel: 'Level {level}',
+        bloomSelected: 'Selected',
+        bloomSelect: 'Select level',
+        settingsTitle: 'Generation settings',
+        elementCount: 'Number of elements',
+        language: 'Language',
+        difficulty: 'Difficulty level',
+        difficultyHelp:
+          'Choose the reasoning demand for all generated elements. Difficulty comes from the task, not from confusing wording.',
+        focusTopic: 'Focus topic',
+        focusTopicHelp:
+          'Optional. Narrows this batch to one topic while the knowledge graph stays complete.',
+        focusTopicPlaceholder: 'E.g. Portfolio diversification',
+        objectives: 'Learning objectives',
+        objectivesHelp: 'Optional guidance for the generated elements.',
+        objectiveHint: 'Write observable, specific learning objectives.',
+        objectiveFormula:
+          'Useful pattern: action verb + subject matter + situation or constraint.',
+        objectiveExampleOne:
+          'Explain why diversification reduces idiosyncratic risk.',
+        objectiveExampleTwo:
+          'Apply the net-present-value rule to compare two investment projects.',
+        objectivePlaceholder:
+          'E.g. Analyze how a rate increase affects bond prices.',
+        addObjective: 'Add objective',
+        remove: 'Remove',
+        start: 'Generate elements',
+        starting: 'Starting…',
+        sourceNotReady: 'Not ready for question generation yet',
+        requestedSourceMissing:
+          'The requested knowledge base is unavailable. Choose one of your knowledge bases below.',
+        noSources: 'No knowledge base available',
+        noSourcesHelp:
+          'Create a knowledge base and add course material before generating elements.',
+      },
+      elementTypes: {
+        SC: {
+          label: 'Single choice',
+          description: 'One correct option among several choices.',
+        },
+        MC: {
+          label: 'Multiple choice',
+          description: 'One or more correct options among several choices.',
+        },
+        KPRIM: {
+          label: 'KPRIM',
+          description: 'Evaluate four statements as true or false.',
+        },
+        FLASHCARD: {
+          label: 'Flashcard',
+          description: 'A front-and-back element for active recall.',
+        },
+      },
+      language: {
+        de: 'German',
+        en: 'English',
+      },
+      bloom: {
+        remember: 'Remember',
+        understand: 'Understand',
+        apply: 'Apply',
+        analyze: 'Analyze',
+        evaluate: 'Evaluate',
+      },
+      bloomExamples: {
+        remember: 'Identify · define · recall',
+        understand: 'Explain · summarize · classify',
+        apply: 'Calculate · demonstrate · use',
+        analyze: 'Compare · distinguish · connect',
+        evaluate: 'Assess · justify · recommend',
+      },
+      difficulty: {
+        D1: {
+          label: 'Very easy',
+          description: 'Direct recall or recognition.',
+        },
+        D2: {
+          label: 'Easy',
+          description: 'One routine application or interpretation.',
+        },
+        D3: {
+          label: 'Medium',
+          description: 'Two linked steps or a meaningful choice.',
+        },
+        D4: {
+          label: 'Difficult',
+          description: 'Several dependent steps or multi-concept analysis.',
+        },
+        D5: {
+          label: 'Very difficult',
+          description: 'Non-routine synthesis or evaluation under constraints.',
+        },
+        EASY: 'Easy',
+        MIXED: 'Mixed',
+        HARD: 'Hard',
+      },
+      summary: {
+        title: 'Generation summary',
+        source: 'Knowledge base',
+        type: 'Element type',
+        count: 'Elements',
+      },
+      validation: {
+        sourceRequired: 'Select a knowledge source.',
+        sourceScopeRequired: 'Select at least one source.',
+        countRange: 'Choose between 1 and 20 elements.',
+        pagePair: 'Enter both the first and last page for a page range.',
+        pageRange: 'Use a valid page range starting at page 1.',
+        bloomRequired: 'Select at least one Bloom level.',
+      },
+      statuses: {
+        QUEUED: 'Queued',
+        RUNNING: 'Running',
+        PREPARING_INPUT: 'Preparing input',
+        DESIGNING: 'Designing',
+        WAITING_FOR_DESIGN_REVIEW: 'Design review',
+        WAITING_FOR_PLAN_REVIEW: 'Plan review',
+        GENERATING_ITEMS: 'Generating elements',
+        FINALIZING: 'Finalizing',
+        AWAITING_INCOMPLETE_PUBLICATION: 'Needs a decision',
+        PUBLISHING_INCOMPLETE: 'Preparing available elements',
+        COMPLETED: 'Ready for review',
+        INCOMPLETE: 'Partially ready',
+        FAILED: 'Failed',
+        REJECTED: 'Rejected',
+      },
+      failureClasses: {
+        user_input:
+          'This element could not be grounded in the selected material. Adjust the source scope or the learning objective and generate again.',
+        self_repairable:
+          'The workflow retried this element with alternative material but exhausted the usable evidence without grounding it.',
+        system:
+          'The generation service could not process this element, which is not caused by your input. Retry the generation; if the problem persists, contact support.',
+      },
+      failureClassLabels: {
+        user_input: 'Source material',
+        self_repairable: 'No alternative evidence',
+        system: 'System error',
+      },
+      reasons: {
+        NO_SUPPORTING_DOCUMENTS:
+          'The selected sources contain no matching documents for this element.',
+        TOPIC_NOT_IN_MATERIAL:
+          'The requested topic does not appear in the selected material.',
+        LEVEL_NOT_GROUNDABLE:
+          'The selected material does not support the requested cognitive level for this element.',
+        NO_DISTINCT_EVIDENCE:
+          'Several elements would rely on the same evidence, so this element was left out.',
+        GROUNDING_EXHAUSTED:
+          'The workflow used all usable evidence without producing a grounded element.',
+        SYSTEM_FAILURE:
+          'The generation service reported an internal failure for this element.',
+      },
+      build: {
+        title: '{type} generation',
+        stage: 'Current stage: {stage}',
+        generatedCount: '{generated} of {requested} generated',
+        generated: 'Generated',
+        unresolved: 'Unresolved',
+        warnings: 'Workflow warnings',
+        warningsHelp:
+          'Raised by the generation workflow, separate from the quality notes on individual elements.',
+        retries: 'Retries',
+        processing: 'The elements are being prepared',
+        processingHelp:
+          'This page updates automatically. You can safely leave and return using this URL.',
+        failed: 'Generation failed',
+        failedHelp: 'The worker could not complete this generation.',
+        incompleteTitle: 'Some elements could not be generated',
+        incompleteHelp:
+          '{generated} of {requested} elements are available. Retry, or continue with the available elements.',
+        incompleteAcknowledge:
+          'I understand that the resulting set contains fewer elements than requested.',
+        rejected: 'This generation was rejected during review.',
+        noDrafts: 'The generation completed without reviewable elements.',
+        legacyFailure:
+          'This run failed before the workflow reported per-element reasons.',
+        failureReasonsTitle:
+          '{count, plural, one {# element is missing from this generation} other {# elements are missing from this generation}}',
+        failureReasonsHelp:
+          'The workflow reported why these elements could not be generated. The delivered elements are unaffected and stay in review.',
+        failureModule: 'Module',
+        failureObjective: 'Learning objective',
+        failureLevel: 'Bloom level',
+        failureEvidence: 'Required evidence',
+        failureSuggestions: 'Topics covered by your material',
+        failureRetryGuidance:
+          'This is a system-side problem. Retry the generation; if it persists, contact support.',
+        failureDiagnostics: 'Technical diagnostics',
+      },
+      gate: {
+        eyebrow: 'Review gate',
+        designTitle: 'Review the generation design',
+        designDescription:
+          'Check how the requested elements are distributed across modules and objectives before generation continues.',
+        planTitle: 'Review the element plan',
+        planDescription:
+          'Check the planned prompts, cognitive levels, difficulty, and source coverage before generation continues.',
+        elementCount: '{count, plural, one {# element} other {# elements}}',
+        elementNumber: 'Element {number}',
+        objectives: 'Learning objectives',
+        noObjectives: 'No explicit learning objectives.',
+        generatedDefaultObjective: 'Generated default',
+        slotEvidence: 'Evidence per element',
+        noSlotEvidence: 'No evidence resolved',
+        concentrationTitle: 'Concentrated evidence',
+        concentrationNotice:
+          '{count, plural, one {# element} other {# elements}} in this module share the same evidence entities: {entities}.',
+        difficulty: 'Difficulty {difficulty}',
+        warnings: '{count, plural, one {# warning} other {# warnings}}',
+        acknowledgeWarnings: 'I reviewed and acknowledge these warnings.',
+        reject: 'Reject generation',
+        approve: 'Approve and continue',
+        submitting: 'Submitting…',
+      },
+      review: {
+        title: 'Review generated elements',
+        editTitle: 'Review generated element',
+        countSummary:
+          '{all} total · {open} to review · {attention, plural, one {# needs attention} other {# need attention}} · {kept} kept · {discarded} discarded',
+        filterLabel: 'Filter generated elements',
+        filters: {
+          all: 'All ({count})',
+          open: 'Needs review ({count})',
+          attention: 'Needs attention ({count})',
+          kept: 'Kept ({count})',
+          discarded: 'Discarded ({count})',
+        },
+        columns: {
+          element: 'Element',
+          type: 'Type',
+          source: 'Original source',
+          learningDesign: 'Learning design',
+          status: 'Status',
+          updated: 'Updated',
+          actions: 'Actions',
+        },
+        bloomLevel: 'Bloom: {level}',
+        difficultyLevel: 'Difficulty: {level}',
+        qualityAttention: 'Quality review recommended',
+        qualityReasons: {
+          difficultyReviewRequired:
+            'The predicted difficulty should be reviewed before use.',
+          difficultyValidationFailed:
+            'The difficulty check did not pass for this element.',
+          manualReviewRequired: 'This element was flagged for manual review.',
+          other: 'Additional quality checks flagged this element.',
+          acceptedUnsaved: 'Accepted, but not yet saved to your library.',
+        },
+        notApplicable: 'Not applicable',
+        sourceUnavailable: 'Source unavailable',
+        sourcesTitle: 'Sources',
+        sourceTypes: {
+          URL: 'Website',
+          BLOB: 'Document',
+        },
+        sourcePage: 'Page {page}',
+        sourcePages: 'Pages {from}–{to}',
+        open: 'Open',
+        openSaved: 'Open saved element',
+        restore: 'Restore',
+        keep: 'Keep element',
+        discard: 'Discard',
+        discardChangesTitle: 'Discard unsaved changes?',
+        discardChangesMessage:
+          'Your edits to this generated element have not been kept.',
+        discardChangesConfirm: 'Discard changes',
+        emptyFilter: 'No generated elements match this filter.',
+        states: {
+          OPEN: 'Needs review',
+          ATTENTION: 'Needs attention',
+          ACCEPTED: 'Kept',
+          REJECTED: 'Discarded',
+        },
+        recoverLegacy: 'Recover accepted elements',
+        summary: '{total} total · {accepted} accepted · {open} still undecided',
+        elementNumber: 'Element {number}',
+        copy: 'Copy {number}',
+        name: 'Internal name',
+        prompt: 'Prompt',
+        front: 'Front',
+        back: 'Back',
+        context: 'Context',
+        choices: 'Choices',
+        correctChoice: 'Mark choice {label} as correct',
+        explanation: 'Explanation',
+        cardType: 'Card type',
+        tags: 'Tags',
+        tagsPlaceholder: 'Separate tags with commas',
+        qualityFlags:
+          '{count, plural, one {Quality flag} other {Quality flags}}',
+        citations:
+          '{count, plural, one {# source citation} other {# source citations}}',
+        accept: 'Accept',
+        reject: 'Reject',
+        duplicate: 'Duplicate',
+        saveDraft: 'Save changes',
+        savingDraft: 'Saving…',
+        saveElements: 'Save {count} to library',
+        savingElements: 'Saving elements…',
+        savedElements:
+          '{count, plural, one {# element is in your library.} other {# elements are in your library.}}',
+        actionError: 'The element could not be updated. Please try again.',
+        saveElementsError:
+          'The accepted elements could not be saved. Please try again.',
+        tagSelection: {
+          missingHint:
+            'A selected tag is no longer available. Remove it or choose another tag before saving.',
+          removeMissing: 'Remove unavailable tag {id}',
+          title: 'Tags',
+          existingLabel: 'Matching tags',
+          existingHint:
+            'Typing a name that already exists selects the existing tag instead of creating a new one.',
+          newLabel: 'Suggested new tags',
+          newHint: 'New tags are created only when you keep the element.',
+          manualLabel: 'All tags',
+          placeholder: 'Select or type tags',
+          saveDraft: 'Save draft',
+          unsaved: 'Unsaved changes',
+          saved: 'Draft saved.',
+          saveError: 'The draft could not be saved. Please try again.',
+          conflict:
+            'This draft changed elsewhere. Reload before saving your edits.',
+        },
+      },
+      decisions: {
+        OPEN: 'Open',
+        ACCEPTED: 'Accepted',
+        REJECTED: 'Rejected',
+      },
+      cardTypes: {
+        definition: 'Definition',
+        formula: 'Formula',
+        calculation: 'Calculation',
+      },
+      errors: {
+        load: 'Element generation settings could not be loaded.',
+        notConfigured:
+          'Element generation is not configured for this environment.',
+        start: 'The generation could not be started. Please try again.',
+        buildLoad: 'This generation could not be loaded.',
+        action: 'The generation could not be updated. Please try again.',
+        withCode: 'The operation failed ({code}). Please try again.',
+        basisChanged:
+          'The prepared material of this knowledge base changed. Review the updated source and start again.',
+      },
     },
     questionPool: {
       createLiveQuiz: 'Create live quiz',
@@ -4085,6 +5140,10 @@ Since the KlickerUZH app is not yet available in the iOS App Store, follow these
       mediaLibraryAvailableSoon:
         'Your media library will be available here soon, allowing you to access all your uploaded resources.',
       chatbots: 'Chatbots',
+      resources: 'Resources',
+      switchChatbot: 'Switch chatbot',
+      chatbotNotFound:
+        'This chatbot could not be found or you do not have access to it.',
       availableChatbots: 'Available Chatbots',
       noChatbots: 'No chatbots have been created yet.',
       createChatbot: 'Create chatbot',
@@ -4093,13 +5152,146 @@ Since the KlickerUZH app is not yet available in the iOS App Store, follow these
       createChatbotDescription:
         'Create a course-bound draft chatbot and configure it before requesting publication.',
       chatbotMobileSelector: 'Current chatbot',
-      chatbotWorkspaceNavigation: 'Chatbot workspace',
       chatbotWorkspaceOverview: 'Overview',
-      chatbotWorkspaceSetup: 'Setup',
-      chatbotWorkspaceAdvanced: 'Advanced',
-      chatbotWorkspaceUsage: 'Usage & integrations',
+      chatbotDraftStepMaterialsDescription:
+        'Choose the knowledge base the chatbot answers from. It connects as soon as you select it.',
+      chatbotDraftStepStudentsDescription:
+        'Students read this text before they start chatting. We prepared a suggestion for you.',
+      chatbotSectionStatusDefault: 'Default',
+      chatbotSectionStatusSuggested: 'Suggested',
+      chatbotSectionStatusSaved: 'Saved',
+      chatbotSectionStatusWarning: 'Needs attention',
+      chatbotSectionStatusInvalid: 'Incomplete',
+      chatbotSectionStatusUnsaved: 'Unsaved changes',
+      chatbotSectionStatusNotSubmitted: 'Not yet submitted',
+      chatbotSectionSave: 'Save',
+      chatbotSectionSaving: 'Saving…',
+      chatbotSectionDiscard: 'Discard changes',
+      chatbotSectionMaterials: 'Materials',
+      chatbotSectionStudents: 'Student information',
+      chatbotSectionModes: 'Learning modes and framing',
+      chatbotSectionModel: 'Model',
+      chatbotSectionUsage: 'Usage limits',
+      chatbotSectionGraph: 'Knowledge graph',
+      chatbotSectionGroupOptional:
+        'Optional. The defaults work for most courses.',
+      chatbotSectionGroupAdvanced: 'Advanced',
+      chatbotPausedNotice:
+        'The team paused this chatbot. Settings cannot be changed until it is active again.',
+      chatbotSectionAppliesImmediately: 'Applies immediately',
+      chatbotSectionAppliesAfterReview: 'Applies after review',
+      chatbotSectionRequestPending: 'Publication request',
+      chatbotSectionSubmitChanges: 'Submit changes for review',
+      chatbotUnsubmittedSections:
+        'Saved changes not yet submitted: {sections}.',
+      chatbotUsageNoneYet: 'None yet',
+      chatbotUsageCreditsValue: '{current} of {total}',
+      chatbotUsageStudentInformationValue:
+        '{accepted} accepted, {declined} declined, {pending} not answered yet',
+      chatbotLiveCreditPolicy: 'Students currently get this: {policy}',
+      chatbotSectionRequest: 'Request publication',
+      chatbotSummaryMaterialsNone:
+        'No knowledge base is connected. Answers use general model knowledge.',
+      chatbotSummaryMaterialsConnected: 'Uses the knowledge base {name}.',
+      chatbotSummaryMaterialsReadiness:
+        '{total, plural, =0 {It has no resources yet.} one {{ready} of 1 resource is ready{failed, plural, =0 {} other {, # failed}}.} other {{ready} of # resources {ready, plural, one {is} other {are}} ready{failed, plural, =0 {} other {, # failed}}.}}',
+      chatbotNoKnowledgeBaseOption:
+        'No knowledge base. Answers use general model knowledge.',
+      chatbotSummaryStudents: 'Students see “{title}” before they start.',
+      chatbotSummaryStudentsSuggested: 'This is the suggested text.',
+      chatbotSummaryStudentsNotSaved:
+        'The suggested text is ready but not saved yet.',
+      chatbotSummaryStudentsInvalid:
+        'The title or the introduction is missing.',
+      chatbotStudentsPreview: 'Preview',
+      chatbotStudentsPreviewTitle: 'What students see',
+      chatbotSummaryModesOn:
+        '{modes} {count, plural, one {is} other {are}} on.',
+      chatbotSummaryModesNone: 'No learning mode is on.',
+      chatbotSummaryModesExtras:
+        '{framing, select, set {There is a framing} other {There is no framing}} and {custom, plural, =0 {no custom modes} one {one custom mode} other {# custom modes}}.',
+      chatbotSummaryModesQuizzerNeedsKb:
+        'Quizzer needs a knowledge base, so students do not see it yet.',
+      chatbotSummaryModelFixed: 'Students use {model}.',
+      chatbotSummaryModelFixedReasoning:
+        'Students use {model} with {effort} reasoning effort.',
+      chatbotSummaryModelNoChoice: 'They cannot switch models.',
+      chatbotSummaryModelChoice:
+        '{count, plural, one {Students use {models}.} other {Students can choose between {models}.}}',
+      chatbotSummaryUsageInitial:
+        'Each student starts with {initial, plural, one {1 credit} other {# credits}}.',
+      chatbotSummaryUsageRefill:
+        '{period, select, NONE {Credits are not refilled.} DAILY {Every day, {amount, plural, one {1 credit is} other {# credits are}} added, up to {max}.} WEEKLY {Every week, {amount, plural, one {1 credit is} other {# credits are}} added, up to {max}.} BIWEEKLY {Every two weeks, {amount, plural, one {1 credit is} other {# credits are}} added, up to {max}.} MONTHLY {Every month, {amount, plural, one {1 credit is} other {# credits are}} added, up to {max}.} other {Credits are refilled, up to {max}.}}',
+      chatbotSummaryGraph:
+        'The concept map is {visible, select, yes {shown to} other {hidden from}} students.',
+      chatbotSummaryGraphRetrieval:
+        'Graph search is {enabled, select, yes {on} other {off}}.',
+      chatbotEditDetails: 'Edit details',
+      chatbotEditDetailsTitle: 'Chatbot details',
+      chatbotChangesRequested: 'Changes requested',
+      chatbotDraftVisibility:
+        '{courses}. Students cannot see this chatbot yet.',
+      chatbotLiveVisibility: '{courses}. Students can use this chatbot.',
+      chatbotLiveVisibilityNoCourse: 'Students can use this chatbot.',
+      chatbotPausedVisibility:
+        '{courses}. Students cannot use this chatbot while it is paused.',
+      chatbotPausedVisibilityNoCourse:
+        'Students cannot use this chatbot while it is paused.',
+      chatbotOpenForCourse: 'Open the chatbot in {course}',
+      chatbotDraftVisibilityNoCourse: 'Students cannot see this chatbot yet.',
+      chatbotPublicationBlockersTitle: 'Before you send the request:',
+      chatbotPublicationBlockerUnsaved:
+        'Save or discard the changes in {section}.',
+      chatbotPublicationBlockerInvalid: 'Complete {section}.',
+      chatbotWorkspaceBehavior: 'Behavior',
+      chatbotWorkspaceDisclaimer: 'Disclaimer',
       chatbotWorkspaceOverviewDescription:
         'Review the chatbot status and use the workspace sections to update its setup or inspect operational details.',
+      chatbotWorkspaceBehaviorDescription:
+        'Choose the learning modes and framing used by this chatbot.',
+      chatbotWorkspaceDisclaimerDescription:
+        'Edit the participant-facing introduction and review the fixed institutional sections.',
+      chatbotKnowledgeBaseSelectPlaceholder: 'Choose a knowledge base',
+      chatbotKnowledgeBaseConnect: 'Connect',
+      chatbotKnowledgeBaseReplace: 'Replace',
+      chatbotKnowledgeBaseDisconnect: 'Disconnect',
+      chatbotKnowledgeBaseReplacementWarning:
+        'This chatbot currently uses “{kbName}”. Connecting another knowledge base replaces it.',
+      chatbotKnowledgeBaseLiveChangeNote:
+        'This chatbot is published. Connecting, replacing or disconnecting a knowledge base takes effect for participants immediately and is not part of the draft changes awaiting review.',
+      chatbotKnowledgeBaseListError:
+        'Your knowledge bases could not be loaded.',
+      chatbotKnowledgeBaseConnectSuccess: 'Knowledge base connected.',
+      chatbotKnowledgeBaseConnectError:
+        'The knowledge base could not be connected.',
+      chatbotKnowledgeBaseDisconnectSuccess: 'Knowledge base disconnected.',
+      chatbotKnowledgeBaseDisconnectError:
+        'The knowledge base could not be disconnected.',
+      chatbotKnowledgeBaseCreatedNotConnected:
+        'The knowledge base “{kbName}” was created but could not be connected to this chatbot. Retry the connection to use it here.',
+      chatbotKnowledgeBaseCardReusable:
+        'A knowledge base is a reusable collection of materials. Other chatbots can use it too.',
+      chatbotKnowledgeBaseCardOpen: 'Open knowledge base',
+      chatbotKnowledgeBaseCardResources: 'Resources',
+      chatbotKnowledgeBaseCardReady: 'Ready',
+      chatbotKnowledgeBaseCardProcessing: 'Processing',
+      chatbotKnowledgeBaseCardFailed: 'Failed',
+      chatbotKnowledgeBaseCardLastChanged: 'Last changed on {date}.',
+      chatbotKnowledgeBaseCardEmpty:
+        'This knowledge base has no materials yet.',
+      chatbotKnowledgeBaseCardRecent: 'Recently added',
+      chatbotKnowledgeBaseAddFiles: 'Add files',
+      chatbotKnowledgeBaseBanner:
+        'You are preparing materials for the chatbot {name}.',
+      backToChatbotSetup: 'Back to chatbot setup',
+      chatbotKnowledgeBaseRetryConnection: 'Retry connection',
+      chatbotKnowledgeBaseCreateChatbot:
+        'Create chatbot using this knowledge base',
+      chatbotKnowledgeBaseChatbotCreatedNotConnected:
+        'The chatbot was created but the knowledge base could not be connected. Connect it in the chatbot’s Materials section.',
+      chatbotTechnicalDetails: 'Technical details',
+      chatbotTechnicalId: 'ID',
+      chatbotTechnicalAvatar: 'Avatar',
       chatbotSetupTitle: 'Set up your chatbot',
       chatbotSetupDescription:
         'Use the sections below to complete and save your chatbot setup before requesting publication.',
@@ -4110,28 +5302,93 @@ Since the KlickerUZH app is not yet available in the iOS App Store, follow these
         'Choose which standard modes participants can use',
       chatbotSetupModesTitle: 'Learning modes',
       chatbotSetupModesDescriptionLong:
-        'Choose the standard modes that should be available to participants. Tutor and Explainer are available without course-material retrieval; Quizzer is shown only when its required capability is available.',
+        'Choose the standard modes available to participants. Writing Coach supports feedback on writing. Course-tool requirements still apply to every mode; Quizzer additionally needs course-material retrieval.',
+      chatbotModeWritingCoach: 'Writing Coach',
+      chatbotModeWritingCoachDescription:
+        'Gives specific writing feedback and revision strategies. Participants write every revision themselves.',
+      chatbotWritingCoachRequiredTool:
+        'Writing Coach is currently unavailable to participants because this chatbot requires a course-tool binding that the mode does not have. Contact the chatbot administrator to configure a compatible binding.',
       chatbotModeTutor: 'Tutor',
       chatbotModeTutorDescription:
-        'Guides participants with questions, hints, and formative feedback.',
+        'Guides students with questions, hints and feedback.',
       chatbotModeExplainer: 'Explainer',
       chatbotModeExplainerDescription:
         'Explains course concepts directly with definitions and grounded examples.',
       chatbotModeQuizzer: 'Quizzer',
       chatbotModeQuizzerDescription:
         'Practises exam-style course questions one at a time with formative feedback.',
-      chatbotModeInvariant: 'Keep Tutor or Explainer enabled.',
+      chatbotModeInvariant: 'Keep Tutor, Explainer or Writing Coach enabled.',
       chatbotModeQuizzerCapabilityNote:
         'Quizzer may still be hidden when its course-material capability is unavailable.',
       chatbotModeEnabled: 'Enabled',
       chatbotModeDisabled: 'Disabled',
+      chatbotCustomModesTitle: 'Custom modes',
+      chatbotCustomModesDescription:
+        'Add up to {count} custom modes with their own name, description, and persona text. Custom modes are reviewed together with the chatbot revision.',
+      chatbotCustomModesEmpty:
+        'There are no custom modes yet. Add one to offer students another mode.',
+      chatbotCustomModesNone: 'No custom modes are configured.',
+      chatbotCustomModesCount: '{count} of {max} custom modes used',
+      chatbotCustomMode: 'Custom mode {number}',
+      chatbotCustomModeName: 'Mode name',
+      chatbotCustomModeNameRequired: 'Each custom mode needs a name.',
+      chatbotCustomModeDescription: 'Short description',
+      chatbotCustomModePersonaText: 'Persona and instructions',
+      chatbotCustomModePersonaPlaceholder:
+        'Describe how this mode should respond to participants.',
+      chatbotCustomModeWelcomeMessage: 'Welcome message',
+      chatbotCustomModeWelcomePlaceholder:
+        'Shown in an empty chat for this mode. Leave empty to use the standard greeting.',
+      chatbotCustomModeStarterPrompts: 'Starter prompts',
+      chatbotCustomModeStarterPromptsDescription:
+        'Shown as suggestions in an empty chat for this mode. At most {count} starters; learners decide whether to send them.',
+      chatbotCustomModeStarterPrompt: 'Starter prompt {number}',
+      chatbotCustomModeStarterPromptAdd: 'Add starter prompt',
+      chatbotCustomModeShowReasoning: 'Show model reasoning to students',
+      chatbotCustomModeShowReasoningDescription:
+        'Off by default. The reasoning summary can paraphrase the persona and instructions of this mode, for example the hidden facts of a role-play. Owner preview always shows it.',
+      chatbotCustomModeReasoningShown:
+        'Model reasoning visible to participants',
+      chatbotCustomModeReasoningHidden:
+        'Model reasoning hidden from participants',
+      chatbotCustomModeReplyLanguage: 'Reply language',
+      chatbotCustomModeReplyLanguageDescription:
+        'By default, replies follow the language the participant writes in. Fix a language for role-plays that must stay in one language.',
+      chatbotCustomModeReplyLanguageFollow: 'Follow the participant',
+      chatbotCustomModeReplyLanguageEn: 'Always English',
+      chatbotCustomModeReplyLanguageDe: 'Always German',
+      chatbotCustomModeMeetingClock: 'Meeting clock',
+      chatbotCustomModeMeetingClockDescription:
+        "Off by default. Tells the model how many minutes have passed since the participant's first message, for timed role-plays. Keep the meeting length and phases in the persona.",
+      chatbotCustomModeMeetingClockOff: 'Off',
+      chatbotCustomModeMeetingClockElapsed: 'Elapsed minutes',
+      chatbotCustomModeMeetingClockElapsedAndTime:
+        'Elapsed minutes and time of day',
+      chatbotCustomModeAdd: 'Add custom mode',
+      chatbotCustomModeRemove: 'Remove',
+      chatbotCustomModesLimit: 'At most {count} custom modes are supported.',
+      chatbotCustomModesDuplicate: 'Each custom mode needs a unique name.',
+      chatbotCustomModesReadonly:
+        'Custom modes cannot be edited in this chatbot status.',
+      chatbotCustomModesSave: 'Save custom modes',
+      chatbotCustomModesSaving: 'Saving…',
+      chatbotCustomModesSaveSuccess: 'Custom modes saved.',
+      chatbotCustomModesSaveError:
+        'Could not save the custom modes. Please try again.',
       chatbotFraming: 'Chatbot framing',
       chatbotFramingDescription:
-        'Briefly describe the course, audience, or intended focus. This context is used in the standard learning modes.',
+        'Describe the course, audience, prior knowledge, typical tasks and learning priorities. This context guides responses in standard learning modes, including Writing Coach. For published chatbots, saved changes apply after approval.',
+      chatbotFramingExamples: 'Context examples',
+      chatbotFramingScientific: 'Scientific writing',
+      chatbotFramingScientificExample:
+        'This chatbot supports a bachelor-level biology lab course. Students write short experiment reports and interpret figures. They know basic genetics but are learning scientific argumentation. Focus on linking claims to results, distinguishing observation from interpretation, and expressing uncertainty. Explain unfamiliar terms briefly. Keep feedback direct and encouraging. Preserve the writer’s voice and assess only the excerpt provided.',
+      chatbotFramingInformal: 'Less formal writing',
+      chatbotFramingInformalExample:
+        'This chatbot supports a project-based communication course. Students write short updates and reflective notes for peers and project partners. Focus on a clear purpose, concrete examples, logical flow and an obvious next action when relevant. A natural, conversational tone is appropriate; academic vocabulary and citations are usually unnecessary. Give practical, encouraging feedback.',
       chatbotFramingPlaceholder:
         'For example: First-year organic chemistry for medical students.',
       chatbotFramingTooLong:
-        'Chatbot framing must be 200 characters or fewer when edited.',
+        'Chatbot framing must be {count} characters or fewer when edited.',
       chatbotModesSave: 'Save learning modes',
       chatbotModesSaving: 'Saving…',
       chatbotModesSaveSuccess: 'Learning modes saved.',
@@ -4151,18 +5408,55 @@ Since the KlickerUZH app is not yet available in the iOS App Store, follow these
       chatbotSetupDisclaimerTitle: 'Participant disclaimer',
       chatbotSetupDisclaimerDescriptionLong:
         'Explain what participants should know before using this chatbot. Save this section to update the participant-facing preview. The preview includes the fixed platform text.',
+      chatbotSetupCreditsTitle: 'Participant credits',
+      chatbotCreditPolicyDescription:
+        'Initial credits apply on first use. Recurring resets add credits up to the configured maximum.',
+      chatbotCreditAmountRequired: 'Enter a credit amount.',
+      chatbotCreditAmountInvalid:
+        'Enter a non-negative whole number no greater than 2,147,483,647.',
+      chatbotCreditResetPeriodRequired: 'Select a reset period.',
+      chatbotCreditResetAmountInvalid:
+        'Enter a positive whole number when recurring resets are enabled.',
+      chatbotCreditInitialAboveMaximum:
+        'Initial credits cannot exceed maximum credits.',
+      chatbotCreditResetAboveMaximum:
+        'The reset amount cannot exceed maximum credits.',
+      chatbotCreditPolicySaveSuccess: 'Participant credit settings saved.',
+      chatbotCreditPolicySaveError:
+        'Could not save participant credit settings. Please try again.',
       chatbotSetupReviewTitle: 'Review and submit',
       chatbotSetupReviewDescriptionLong:
         'Check the saved setup and provide the information the team needs to review your publication request. You can open the other sections to make changes.',
       chatbotSetupEdit: 'Edit',
       chatbotSetupPublicationNote:
-        'Publication details are submitted with your request and are not saved separately. You can edit them until you submit.',
+        'Publication details are submitted with your request and can be edited until you submit.',
       chatbotDiscardChangesConfirmation:
         'Discard your unsaved chatbot changes?',
       chatbotNavigationPending:
         'Please wait until the current chatbot change has finished saving.',
-      chatbotCreatedAt: 'Created',
-      chatbotUpdatedAt: 'Last updated',
+      chatbotPreviewUnsavedConfirmation:
+        'This preview opens the last saved live chatbot configuration. Continue without saving your unsaved changes?',
+      chatbotRevisionDraftOnly:
+        'This chatbot is a draft and not yet visible to participants.',
+      chatbotRevisionLiveOnly:
+        'Live configuration is active for participants. Save a revision to prepare changes for review.',
+      chatbotRevisionSaved: 'Saved revision {version} is ready for review.',
+      chatbotRevisionPending:
+        'Revision {version} is pending review. Its fields are locked until the review is complete.',
+      chatbotRevisionRejected:
+        'Revision {version} was rejected. Update the saved revision and resubmit it.',
+      chatbotRevisionReviewComment: 'Review comment:',
+      chatbotRevisionReload: 'Reload revision',
+      chatbotRevisionReloading: 'Reloading revision…',
+      chatbotRevisionConflict:
+        'This revision changed elsewhere. Reload the saved revision, then reapply your unsaved changes.',
+      chatbotRevisionRequiresSaved:
+        'Save the revision before submitting it for approval.',
+      chatbotRevisionWithdraw: 'Withdraw revision',
+      chatbotRevisionWithdrawn:
+        'Revision withdrawn. You can continue editing it.',
+      chatbotRevisionWithdrawError:
+        'Could not withdraw the revision. Please reload and try again.',
       chatbotName: 'Name',
       chatbotDescription: 'Description',
       chatbotCourse: 'Course',
@@ -4182,6 +5476,10 @@ Since the KlickerUZH app is not yet available in the iOS App Store, follow these
       chatbotPublication: 'Publication request',
       chatbotPublicationDescription:
         'Provide the information needed for the team to review this chatbot before publication.',
+      chatbotPublicationSavedNotVisible:
+        'Saved changes are not visible to students until publication is approved.',
+      chatbotPublicationPublishedStaysLive:
+        'The published version stays live for students while changes are saved, reviewed, rejected or withdrawn.',
       chatbotPublicationUseCase: 'Use case',
       chatbotPublicationUseCaseRequired: 'Describe the intended use case.',
       chatbotPublicationUseCaseTooLong:
@@ -4193,10 +5491,6 @@ Since the KlickerUZH app is not yet available in the iOS App Store, follow these
         'Enter the expected student count.',
       chatbotPublicationExpectedStudentCountInvalid:
         'Enter a positive whole number for the expected student count.',
-      chatbotPublicationProposedCredits: 'Proposed credits',
-      chatbotPublicationProposedCreditsRequired: 'Enter the proposed credits.',
-      chatbotPublicationProposedCreditsInvalid:
-        'Enter a positive whole number for the proposed credits.',
       requestChatbotPublication: 'Request publication',
       resubmitChatbotPublication: 'Resubmit for approval',
       chatbotPublicationSubmitted: 'Publication request submitted for review.',
@@ -4205,7 +5499,7 @@ Since the KlickerUZH app is not yet available in the iOS App Store, follow these
       chatbotPublicationDisclaimerRequired:
         'Save a complete disclaimer before requesting publication.',
       chatbotPublicationUnsavedSetup:
-        'Save or wait for changes in Basics, Learning modes, and Disclaimer before requesting publication.',
+        'Save or discard the unsaved changes on this page, including any open advanced settings, or wait for them to finish saving before requesting publication.',
       chatbotPublicationAuthorizationChecking:
         'Checking whether this account can request publication...',
       chatbotPublicationAuthorizationUnavailable:
@@ -4233,17 +5527,25 @@ Since the KlickerUZH app is not yet available in the iOS App Store, follow these
         'Metadata cannot be edited while the chatbot is awaiting review or paused.',
       chatbotDisclaimerAuthoring: 'Disclaimer Authoring',
       chatbotDisclaimerReadonly:
-        'The disclaimer cannot be edited after publication or while the chatbot is awaiting review or paused.',
-      chatbotDisclaimerTitle: 'Disclaimer title',
-      chatbotDisclaimerTitleRequired: 'Enter a disclaimer title.',
+        'The disclaimer cannot be edited while the chatbot is awaiting review or paused.',
+      chatbotDisclaimerTitle: 'Title',
+      chatbotDisclaimerTitleRequired: 'Enter a title.',
       chatbotDisclaimerTitleTooLong:
         'The disclaimer title must be 160 characters or fewer.',
-      chatbotDisclaimerIntro: 'Disclaimer introduction',
-      chatbotDisclaimerIntroRequired: 'Enter a disclaimer introduction.',
+      chatbotDisclaimerIntro: 'Introduction',
+      chatbotDisclaimerIntroRequired: 'Enter an introduction.',
       chatbotDisclaimerIntroTooLong:
         'The disclaimer introduction must be 10,000 characters or fewer.',
       chatbotDisclaimerIntroEditorPlaceholder:
-        'Explain what participants should know before using this chatbot.',
+        'Explain what students should know before they use this chatbot.',
+      chatbotDisclaimerSuggestedTitle: 'About this chatbot',
+      chatbotDisclaimerSuggestedIntro:
+        'This chatbot is provided as a learning aid for the linked course. Use its responses to support your learning and check important information against your course materials.',
+      chatbotDisclaimerSuggestedDescription:
+        'The current field is empty. You can add a suggested generic introduction and edit it before saving.',
+      chatbotDisclaimerUseSuggestedText: 'Use suggested text',
+      chatbotDisclaimerSuggestedUnsaved:
+        'This suggested text is not saved yet. Save it so students see it.',
       saveChatbotDisclaimer: 'Save disclaimer',
       chatbotDisclaimerSaveSuccess: 'Chatbot disclaimer saved.',
       chatbotDisclaimerSaveError:
@@ -4260,47 +5562,46 @@ Since the KlickerUZH app is not yet available in the iOS App Store, follow these
       chatbotId: 'Chatbot ID',
       avatarUrl: 'Avatar URL',
       avatarNone: 'No avatar',
-      linkedCourses: 'Linked Courses',
       linkedCoursesList: 'Linked to: {courses}',
       noLinkedCourses: 'No courses linked yet.',
+      chatbotListKnowledgeBase: 'Materials: {kbName}',
+      chatbotListNoKnowledgeBase: 'No materials connected yet.',
       chatbotStatusDraft: 'Draft',
       chatbotStatusPendingApproval: 'Pending approval',
       chatbotStatusPublished: 'Published',
       chatbotStatusPaused: 'Paused',
       chatbotStatusRejected: 'Rejected',
       chatbotStatusUnknown: 'Unknown status',
-      chatbotNotLive: 'Participant access is unavailable in this status.',
       credits: 'Credits',
       creditInitialCredits: 'Initial credits',
       creditResetPeriod: 'Reset period',
       creditResetAmount: 'Reset amount',
       creditMaxCredits: 'Max credits',
-      modelSelection: 'Let participants choose the model',
+      modelSelection: 'Let students choose the model',
       modelSelectionEnabled: 'Enabled',
       modelSelectionDisabled: 'Disabled',
       modelSelectionEnabledDescription:
-        'On: participants can choose one of the explicitly selected models.',
+        'On: students choose one of the models you select.',
       modelSelectionDisabledDescription:
-        'Off: the chatbot uses exactly one model selected by the lecturer.',
-      modelSelectionFixedDescription:
-        'Participants use this model. New chatbots start with Auto.',
-      answerPreferences: 'Let participants choose answer format and tone',
+        'Off: the chatbot always uses the model you choose.',
+      modelSelectionFixedDescription: 'Students use this model.',
+      answerPreferences: 'Let students choose answer format and tone',
       answerPreferencesEnabledDescription:
-        'On: participants can choose bullet points and a friendly or direct tone for new answers.',
+        'On: students can choose bullet points and a friendly or direct tone for new answers.',
       answerPreferencesDisabledDescription:
-        'Off: all participants get the same answer format and tone.',
+        'Off: all students get the same answer format and tone.',
       modelSelectionParticipantDescription:
-        'Participants can choose among these models. Select at least one.',
+        'Students can choose between these models. Select at least one.',
       selectedModel: 'Selected model',
       allowedModels: 'Allowed models',
+      modelUnavailableHint:
+        'Advanced models need the advanced AI subscription with a cost center.',
+      modelUnavailableSelected:
+        'Your account cannot use this advanced model, so students cannot chat with it. Choose another model.',
       allowedModelsAll: 'All',
-      chatbotModelSettings: 'Model & Reasoning Settings',
       reasoningEffortsByModel: 'Reasoning efforts by model',
       reasoningEffort: 'Reasoning effort',
       singleReasoningEffortFixed: 'Fixed by model: {effort}',
-      chatbotModelSettingsSave: 'Save model settings',
-      chatbotModelSettingsSaving: 'Saving...',
-      chatbotModelSettingsSaveSuccess: 'Model settings saved.',
       chatbotModelSettingsSaveError:
         'Could not save chatbot model settings. Please try again.',
       creditResetPeriodDaily: 'Daily',
@@ -4308,33 +5609,97 @@ Since the KlickerUZH app is not yet available in the iOS App Store, follow these
       creditResetPeriodBiweekly: 'Biweekly',
       creditResetPeriodMonthly: 'Monthly',
       creditResetPeriodNone: 'No reset',
-      usageSummary: 'Usage Summary',
-      usageThreads: 'Threads',
+      usageThreads: 'Conversations',
       usageMessages: 'Messages',
-      usageParticipants: 'Participants',
+      usageParticipants: 'Students',
       usageLastActivity: 'Last activity',
-      usageTotalCredits: 'Total credits',
-      usageCurrentCredits: 'Current credits',
-      usageTotalResets: 'Total resets',
+      usageCurrentCredits: 'Credits left across students',
       usageLastReset: 'Last reset',
       disclaimer: 'Disclaimer',
       noDisclaimer: 'No disclaimer assigned.',
       disclaimerName: 'Name',
       disclaimerTitle: 'Title',
-      disclaimerAccepted: 'Accepted',
       disclaimerDeclined: 'Declined',
-      disclaimerPending: 'Pending',
-      mcpConfigurations: 'MCP Configurations',
-      noMcpConfigurations: 'No MCP configurations.',
-      mcpServerActive: 'Server active',
-      mcpServerInactive: 'Server inactive',
-      mcpChatMode: 'Chat mode',
-      mcpStatus: 'Status',
-      mcpStatusEnabled: 'Enabled',
-      mcpStatusDisabled: 'Disabled',
-      mcpPriority: 'Priority',
-      mcpAllowedTools: 'Allowed tools',
-      openChatbot: 'Open Chatbot',
+      knowledgeBase: 'Knowledge base',
+      knowledgeGraphPolicy: 'Knowledge graph',
+      knowledgeGraphPolicyDescription:
+        'Choose whether students see the concept map and whether document search uses the graph. Both apply after the review.',
+      knowledgeGraphVisible: 'Show the concept map to students',
+      knowledgeGraphVisibleEnabledDescription:
+        'On: students can open the concept map for this chatbot.',
+      knowledgeGraphVisibleDisabledDescription:
+        'Off: the concept map stays hidden from students.',
+      knowledgeGraphRetrieval: 'Use graph connections for document search',
+      knowledgeGraphRetrievalEnabledDescription:
+        'On: document search may use related concepts from the published graph as additional search hints. Answers still cite document passages only.',
+      knowledgeGraphRetrievalDisabledDescription:
+        'Off: document search uses the question only, without graph hints.',
+      openOwnerPreview: 'Open owner preview',
+      chatbotOwnerPreviewLive: 'Live configuration',
+      chatbotOwnerPreviewLiveDescription:
+        'The owner preview uses the current live configuration. Saved revisions are not applied until approval.',
+      responseExamples: 'Response examples',
+      responseExamplesDescription:
+        'Review response examples before making them live.',
+      responseExamplesLoading: 'Loading response examples...',
+      responseExamplesError:
+        'Response examples could not be loaded. Please try again.',
+      responseExamplesEmpty:
+        'No response examples are available for this chatbot.',
+      responseExampleCandidate: 'Candidate',
+      responseExampleApproved: 'Approved',
+      responseExampleRejected: 'Rejected',
+      responseExampleNeedsReview: 'Needs review',
+      responseExampleQuestion: 'Question',
+      responseExampleReferenceAnswer: 'Expected chatbot answer',
+      responseExampleResponseStyle: 'Response style',
+      responseExampleSources: 'Evidence lineage',
+      responseExampleSourcesDescription:
+        'These references show where citations point. Source content is not shown here.',
+      responseExampleCitationParityComplete:
+        'All attached evidence is cited in this answer.',
+      responseExampleCitationParityIncomplete:
+        'The evidence and citations need review before approval.',
+      responseExampleNoSources: 'No evidence lineage is attached.',
+      responseExampleSourceId: 'Source ID',
+      responseExampleChunkId: 'Chunk ID',
+      responseExampleCitationIndex: 'Citation',
+      responseExampleCitationAnchor: 'Citation anchor',
+      responseExampleContentHash: 'Content hash',
+      responseExampleSourceDetails: 'Technical source details',
+      responseExampleCitationLabel: 'Citation {index}',
+      responseExampleSourceAvailable: 'Evidence is eligible',
+      responseExampleSourceUnavailable: 'Evidence needs review',
+      responseExampleStyleGuidedQuestions: 'Ask guiding questions',
+      responseExampleStyleStepByStepExplanation: 'Explain step by step',
+      responseExampleStyleConciseAnswer: 'Give a concise answer',
+      responseExampleStyleClarifyingQuestion: 'Ask for clarification',
+      responseExampleStyleWorkedExample: 'Work through an example',
+      responseExampleStyleCompareOptions: 'Compare options',
+      responseExampleSourcesRequired:
+        'A source must be attached and cited as [1], [2], ... before approving.',
+      responseExampleModeUnavailable:
+        'Select one of this chatbot’s available chat modes.',
+      responseExampleDuplicate:
+        'A response example with this question already exists for this chat mode.',
+      responseExampleApprove: 'Approve',
+      responseExampleEditAndApprove: 'Edit and approve',
+      responseExampleReject: 'Reject',
+      responseExampleEditTitle: 'Edit response example',
+      responseExampleEditChatMode: 'Chat mode',
+      responseExampleEditQuestion: 'Question',
+      responseExampleEditReferenceAnswer: 'Expected chatbot answer',
+      responseExampleEditReferenceAnswerPlaceholder:
+        'Write the full expected chatbot answer. Formatting is applied automatically; cite sources as [1], [2], ...',
+      responseExampleEditReferenceAnswerLength: '{count} / {max} characters',
+      responseExampleEditResponseStyle: 'Response style',
+      responseExampleSave: 'Save and approve',
+      responseExampleReviewActionError:
+        'This response example could not be updated. Please try again.',
+      responseExampleStaleUpdate:
+        'This example changed while you were editing. Your draft is still open. Close this dialog and reopen the example before saving again.',
+      responseExampleReviewForbidden:
+        'Only the chatbot owner can review response examples.',
       answerCollections: 'Answer Collections',
       answerCollectionsDescription:
         'Here you can find all your answer collections. You need these to create certain complex question types, such as selection questions and case studies. To import existing answer collections form other users or request access to these, please visit the <link>catalog</link>.',

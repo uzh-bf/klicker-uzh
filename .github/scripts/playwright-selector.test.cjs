@@ -450,6 +450,17 @@ test('uses the exact merge-base and diff range, with history failures falling ba
     })
     assert.equal(fallback.mode, 'full')
     assert.deepEqual(fallback.reasonCodes, ['history-unavailable'])
+
+    const deferred = selectPlaywrightPlan({
+      controlRoot: repositoryRoot,
+      candidateRoot: root,
+      baseSha: '0000000000000000000000000000000000000000',
+      headSha,
+      prState: 'deferred',
+    })
+    assert.equal(deferred.mode, 'skip')
+    assert.equal(deferred.shardCount, 0)
+    assert.deepEqual(deferred.selectedSpecs, [])
   } finally {
     fs.rmSync(root, { recursive: true, force: true })
   }

@@ -49,9 +49,7 @@ describe('getDocQueryChipState', () => {
       )
     ).toBe('failed')
   })
-  // Note: `isFailed` and `isRunning` are mutually exclusive by contract (the
-  // caller derives `isFailed` as `isError && !isRunning`), so there is no
-  // "both true" case to guard against here.
+
   test('running, regardless of a stale/partial result', () => {
     expect(
       getDocQueryChipState(baseParams({ isRunning: true, result: {} }))
@@ -88,15 +86,56 @@ describe('getDocQueryChipState', () => {
     expect(getDocQueryChipState(baseParams({ result }))).toBe('doneEmpty')
   })
 
+  test('documents mode treats renderable metadata-only sources as done', () => {
+    const result = {
+      mode: 'documents',
+      sources: [
+        {
+          reference: 'safe-synthetic-reference',
+          title: 'Synthetic document',
+          chunks: [],
+        },
+      ],
+    }
+    expect(getDocQueryChipState(baseParams({ result }))).toBe('done')
+  })
+
+  test('documents mode with an empty result is doneEmpty', () => {
+    expect(
+      getDocQueryChipState(
+        baseParams({ result: { mode: 'documents', sources: [] } })
+      )
+    ).toBe('doneEmpty')
+  })
+
   test('done with garbage/unparseable result stays plain done, not a crash', () => {
     expect(getDocQueryChipState(baseParams({ result: 'not json {' }))).toBe(
       'done'
     )
   })
 
-  // A cancelled call leaves the in-flight placeholder behind as the result
-  // (see `hooks/useChatResponse.ts`); claiming the search found nothing would
-  // be worse than the neutral label.
+  test.each([
+    {},
+    { sources: null },
+    { sources: 'invalid' },
+    { sources: [null] },
+  ])('does not claim an empty retrieval for a malformed object', (result) => {
+    expect(getDocQueryChipState(baseParams({ result }))).toBe('done')
+  })
+
+  test('counts retrieved documents without requiring display metadata', () => {
+    expect(
+      getDocQueryChipState(
+        baseParams({
+          result: {
+            mode: 'documents',
+            sources: [{ chunks: [{ content: 'Synthetic evidence' }] }],
+          },
+        })
+      )
+    ).toBe('done')
+  })
+
   test.each([
     'Loading...',
     'Executing...',
@@ -118,6 +157,7 @@ describe('parseDocQueryArgsQuery', () => {
       )
     ).toBe('fallback')
   })
+
   test('extracts the query field from valid args JSON', () => {
     expect(
       parseDocQueryArgsQuery(JSON.stringify({ query: 'What is the deadline?' }))

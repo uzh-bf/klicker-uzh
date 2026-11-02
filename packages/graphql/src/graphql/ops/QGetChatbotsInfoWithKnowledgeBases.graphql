@@ -1,0 +1,92 @@
+query QGetChatbotsInfoWithKnowledgeBases {
+  getChatbotsInfo {
+    id
+    name
+    description
+    avatar
+    status
+    revisionStatus
+    revisionVersion
+    publicationUseCase
+    expectedStudentCount
+    reviewComment
+    publishedAt
+    writingCoachUnavailableReason
+    standardModeConfig {
+      tutorEnabled
+      explainerEnabled
+      quizzerEnabled
+      writingCoachEnabled
+      courseName
+      subjectDomain
+      languageOfInstruction
+      scopeNote
+    }
+    customModeConfig {
+      modes {
+        key
+        name
+        description
+        personaText
+        welcomeMessage
+        starterPrompts
+        showReasoning
+        replyLanguage
+        meetingClock
+      }
+    }
+    authoringRevision {
+      ...ChatbotAuthoringRevisionData
+    }
+    modelSelection
+    answerPreferencesEnabled
+    knowledgeGraphVisible
+    knowledgeGraphRetrievalEnabled
+    allowedModelIds
+    allowedReasoningEffortsByModel {
+      modelId
+      efforts
+    }
+    creditInitialCredits
+    creditResetPeriod
+    creditResetAmount
+    creditMaxCredits
+    courses {
+      id
+      name
+      numOfParticipants
+    }
+    usageSummary {
+      threadCount
+      messageCount
+      participantCount
+      lastActivityAt
+      totalCredits
+      currentCredits
+      totalResets
+      lastResetAt
+    }
+    disclaimerSummary {
+      id
+      name
+      title
+      introText
+      acceptedCount
+      declinedCount
+      pendingCount
+    }
+    enabledKnowledgeBases {
+      id
+      name
+      materialsReadiness {
+        visibleResourceCount
+        servingResourceCount
+        processingResourceCount
+        failedResourceCount
+        lastChangedAt
+      }
+    }
+    createdAt
+    updatedAt
+  }
+}

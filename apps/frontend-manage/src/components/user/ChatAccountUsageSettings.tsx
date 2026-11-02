@@ -1,12 +1,14 @@
-import { useSuspenseQuery } from '@apollo/client'
+import { useQuery, useSuspenseQuery } from '@apollo/client'
 import {
+  AiSubscriptionTier,
   type ChatAccountUsageLane,
   GetChatAccountUsageDocument,
   GetUserLoginsDocument,
   UserLoginScope,
 } from '@klicker-uzh/graphql/dist/ops'
-import { H3 } from '@uzh-bf/design-system'
+import { Button, H3, UserNotification } from '@uzh-bf/design-system'
 import { useFormatter, useTranslations } from 'next-intl'
+import { useCallback, useEffect, useRef, useState } from 'react'
 import Setting from './Setting'
 
 function ChatAccountUsageSettings() {
@@ -19,10 +21,43 @@ function ChatAccountUsageSettings() {
 
 function ChatAccountUsageSettingsContent() {
   const t = useTranslations()
-  const { data } = useSuspenseQuery(GetChatAccountUsageDocument)
-  const overview = data.getChatAccountUsage
+  const { data, previousData, loading, error, refetch } = useQuery(
+    GetChatAccountUsageDocument,
+    {
+      fetchPolicy: 'cache-and-network',
+      notifyOnNetworkStatusChange: true,
+    }
+  )
+  const refreshInFlight = useRef(false)
+  const [refreshing, setRefreshing] = useState(false)
+  const [refreshFailed, setRefreshFailed] = useState(false)
+  const overview =
+    data?.getChatAccountUsage ?? previousData?.getChatAccountUsage ?? null
+  const refreshUnavailable = refreshFailed || Boolean(error)
 
-  if (!overview) return null
+  const refreshUsage = useCallback(async () => {
+    if (refreshInFlight.current || loading) return
+
+    refreshInFlight.current = true
+    setRefreshing(true)
+    try {
+      await refetch()
+      setRefreshFailed(false)
+    } catch {
+      setRefreshFailed(true)
+    } finally {
+      refreshInFlight.current = false
+      setRefreshing(false)
+    }
+  }, [loading, refetch])
+
+  useEffect(() => {
+    const refreshOnFocus = () => void refreshUsage()
+    window.addEventListener('focus', refreshOnFocus)
+    return () => window.removeEventListener('focus', refreshOnFocus)
+  }, [refreshUsage])
+
+  if (!overview && !loading && !error) return null
 
   return (
     <Setting title={t('manage.settings.chatAccountUsageTitle')}>
@@ -35,28 +70,82 @@ function ChatAccountUsageSettingsContent() {
           {t('manage.settings.chatAccountUsageBoundaryDescription')}
         </p>
 
-        {!overview.authorized && (
-          <div
-            role="status"
-            className="rounded-md border border-solid border-amber-300 bg-amber-50 px-3 py-2 text-amber-900"
-            data-cy="chat-account-usage-unauthorized"
-          >
-            {t('manage.settings.chatAccountUsageUnauthorized')}
-          </div>
-        )}
+        {refreshUnavailable ? (
+          <UserNotification type="warning">
+            <div className="flex flex-wrap items-center justify-between gap-3">
+              <span>
+                {t(
+                  overview
+                    ? 'manage.settings.chatAccountUsageStale'
+                    : 'manage.settings.chatAccountUsageUnavailable'
+                )}
+              </span>
+              <Button
+                onClick={() => void refreshUsage()}
+                loading={refreshing}
+                disabled={refreshing || loading}
+                data={{ cy: 'chat-account-usage-retry' }}
+              >
+                <Button.Label>
+                  {t('manage.settings.chatAccountUsageRetry')}
+                </Button.Label>
+              </Button>
+            </div>
+          </UserNotification>
+        ) : null}
 
-        <div className="grid gap-3 md:grid-cols-2">
-          <UsageLaneCard
-            label={t('manage.settings.baseModelUsage')}
-            lane={overview.baseModelUsage}
-            testId="chat-account-usage-base"
-          />
-          <UsageLaneCard
-            label={t('manage.settings.advancedModelUsage')}
-            lane={overview.advancedModelUsage}
-            testId="chat-account-usage-advanced"
-          />
-        </div>
+        {(refreshing || loading) && !refreshUnavailable ? (
+          <p className="text-sm text-gray-600" role="status">
+            {t('manage.settings.chatAccountUsageRefreshing')}
+          </p>
+        ) : null}
+
+        {overview ? (
+          <>
+            {!overview.authorized && (
+              <div
+                role="status"
+                className="rounded-md border border-solid border-amber-300 bg-amber-50 px-3 py-2 text-amber-900"
+                data-cy="chat-account-usage-unauthorized"
+              >
+                {t('manage.settings.chatAccountUsageUnauthorized')}
+              </div>
+            )}
+
+            <p
+              className="text-sm text-gray-700"
+              data-cy="chat-account-usage-subscription"
+            >
+              {t('manage.settings.chatAccountUsageSubscriptionLabel')}:{' '}
+              <span className="font-semibold">
+                {t(
+                  overview.subscriptionTier === AiSubscriptionTier.Advanced
+                    ? 'manage.settings.chatAccountUsageTierAdvanced'
+                    : 'manage.settings.chatAccountUsageTierBase'
+                )}
+              </span>
+            </p>
+
+            <div className="grid gap-3 md:grid-cols-2">
+              <UsageLaneCard
+                label={t('manage.settings.baseModelUsage')}
+                lane={overview.baseModelUsage}
+                entitlementHint={t(
+                  'manage.settings.chatAccountUsageClassUnavailable'
+                )}
+                testId="chat-account-usage-base"
+              />
+              <UsageLaneCard
+                label={t('manage.settings.advancedModelUsage')}
+                lane={overview.advancedModelUsage}
+                entitlementHint={t(
+                  'manage.settings.chatAccountUsageAdvancedCostCenter'
+                )}
+                testId="chat-account-usage-advanced"
+              />
+            </div>
+          </>
+        ) : null}
       </div>
     </Setting>
   )
@@ -65,10 +154,12 @@ function ChatAccountUsageSettingsContent() {
 function UsageLaneCard({
   label,
   lane,
+  entitlementHint,
   testId,
 }: {
   label: string
   lane: ChatAccountUsageLane
+  entitlementHint: string
   testId: string
 }) {
   const t = useTranslations()
@@ -87,6 +178,14 @@ function UsageLaneCard({
       data-cy={testId}
     >
       <H3 className={{ root: 'mb-2' }}>{label}</H3>
+      {!lane.entitled && (
+        <p
+          className="mb-2 text-sm font-medium text-amber-800"
+          data-cy={`${testId}-unavailable`}
+        >
+          {entitlementHint}
+        </p>
+      )}
       <dl className="grid grid-cols-2 gap-x-4 gap-y-2">
         <Metric
           label={t('manage.settings.usageBudget')}

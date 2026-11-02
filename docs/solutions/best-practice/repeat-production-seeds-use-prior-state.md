@@ -1,4 +1,7 @@
 ---
+type: Best Practice
+title: Repeat Production Seeds Must Validate Prior Mutable State
+description: Validate the exact mutable state that a follow-up production seed extends and bind dry-run evidence to the payload.
 module: prisma-data
 date: 2026-07-16
 problem_type: best_practice

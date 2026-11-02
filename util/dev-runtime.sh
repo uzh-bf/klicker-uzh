@@ -182,6 +182,7 @@ probe_url() {
     frontend-control) echo 'http://localhost:3003/login' ;;
     frontend-manage) echo 'http://localhost:3002/login' ;;
     frontend-pwa) echo 'http://localhost:3001/login' ;;
+    mcp-lecturer) echo 'http://localhost:7081/healthz' ;;
     response-api) echo 'http://localhost:7078/healthz' ;;
     *) return 1 ;;
   esac
@@ -198,6 +199,7 @@ probe_mode() {
     frontend-control | frontend-manage | frontend-pwa)
       echo 'html-shell'
       ;;
+    mcp-lecturer) echo 'health-text' ;;
     response-api) echo 'health-json' ;;
     *) return 1 ;;
   esac
@@ -307,7 +309,8 @@ prepare_runtime() {
   done
   ensure_dependencies
   echo '[dev-runtime] Building selected application dependencies before startup.'
-  (cd "$ROOT" && pnpm exec turbo run build "$@")
+  # Invoke the installed binary directly to avoid pnpm wrapper children.
+  (cd "$ROOT" && ./node_modules/.bin/turbo run build "$@")
   wait_for_preparation_children
 }
 
@@ -407,11 +410,17 @@ classify_response() {
       echo "ready: HTTP $status $content_type"
       return 0
     fi
+  elif [ "$mode" = 'health-text' ]; then
+    if [ "$status" = '200' ] && [[ "$content_type" == text/plain* ]]; then
+      echo "ready: HTTP $status $content_type"
+      return 0
+    fi
   else
     die "Unknown probe mode: $mode."
   fi
 
-  if [ "$mode" != 'health-json' ] && [ "$status" = '404' ] &&
+  if [ "$mode" != 'health-json' ] && [ "$mode" != 'health-text' ] &&
+    [ "$status" = '404' ] &&
     [[ "$content_type" == text/html* ]]; then
     echo "stale: HTTP $status $content_type"
     return "$STALE_STATUS"
@@ -589,6 +598,12 @@ start_runtime() {
   [ "$expected_generation" = "$(read_generation)" ] ||
     die "Runtime generation changed before process start; rerun devrouter ensure."
 
+  # The managed helper redirects this shell's stderr into the process log, so
+  # the marker proves the start path was reached even when the runtime command
+  # dies before printing anything.
+  printf '[dev-runtime] start requested (generation %s, fingerprint %s): %s\n' \
+    "$expected_generation" "${expected_fingerprint:0:12}" "$*" >&2
+
   ensure_dependencies
   apply_cache_policy
   exec "$@"
@@ -610,7 +625,7 @@ Usage:
   util/dev-runtime.sh prepare-playwright-ci
   util/dev-runtime.sh request-repair <next-app>
   util/dev-runtime.sh start <fingerprint> <generation> -- <command> [args...]
-  util/dev-runtime.sh classify-response <auth-json|auth-providers-json|html-shell|health-json> <status> <content-type>
+  util/dev-runtime.sh classify-response <auth-json|auth-providers-json|html-shell|health-json|health-text> <status> <content-type>
   util/dev-runtime.sh probe-app <runtime-app>
   util/dev-runtime.sh wait-app <runtime-app>
   util/dev-runtime.sh doctor

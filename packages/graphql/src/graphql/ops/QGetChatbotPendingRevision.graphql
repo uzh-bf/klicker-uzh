@@ -1,0 +1,8 @@
+query QGetChatbotPendingRevision($id: String!, $expectedRevisionVersion: Int) {
+  getChatbotPendingRevision(
+    id: $id
+    expectedRevisionVersion: $expectedRevisionVersion
+  ) {
+    ...ChatbotAuthoringRevisionData
+  }
+}

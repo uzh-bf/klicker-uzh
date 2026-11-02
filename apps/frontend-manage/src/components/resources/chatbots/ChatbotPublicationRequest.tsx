@@ -1,9 +1,9 @@
 import { useMutation } from '@apollo/client'
 import {
-  type Chatbot,
   ChatbotStatus,
-  QGetChatbotsInfoWithStandardModesDocument,
-  RequestChatbotPublicationDocument,
+  MSubmitChatbotRevisionDocument,
+  MWithdrawChatbotRevisionDocument,
+  QGetChatbotsInfoWithKnowledgeBasesDocument,
 } from '@klicker-uzh/graphql/dist/ops'
 import {
   Button,
@@ -17,23 +17,43 @@ import { Form, Formik } from 'formik'
 import { useTranslations } from 'next-intl'
 import { useEffect, useState } from 'react'
 import * as Yup from 'yup'
-import { getChatbotMutationErrorKey } from './chatbotErrorMessages'
+import {
+  getChatbotMutationErrorKey,
+  isChatbotRevisionConflict,
+} from './chatbotErrorMessages'
+import {
+  ChatbotRevisionConflictNotice,
+  FormikInitialValuesSynchronizer,
+  getChatbotRevisionReviewComment,
+  getChatbotRevisionStatus,
+  getChatbotRevisionValues,
+  getChatbotRevisionVersion,
+  isChatbotRevisionPending,
+  type RevisionChatbot,
+  useChatbotRevisionReload,
+} from './chatbotRevision'
 import type { ChatbotNavigationState } from './chatbotWorkspace'
 
 type ChatbotPublicationRequestProps = {
-  chatbot: Chatbot
+  chatbot: RevisionChatbot
   publishingAuthorized: boolean
   publishingAuthorizationLoading: boolean
   publishingAuthorizationError: boolean
   setupDirty?: boolean
   setupPending?: boolean
+  // Sections of the setup page that keep the request from being sent. When
+  // given, they replace the generic unsaved and incomplete notices.
+  blockers?: { id: string; label: string }[]
+  onBlockerClick?: (id: string) => void
+  // The setup page titles the card itself.
+  hideHeading?: boolean
   onNavigationStateChange?: (state: ChatbotNavigationState) => void
+  onRevisionConflict?: () => void
 }
 
 type PublicationFormValues = {
   useCase: string
   expectedStudentCount: string
-  proposedCredits: string
 }
 
 const MAX_SIGNED_INT32 = 2_147_483_647
@@ -93,34 +113,58 @@ function ChatbotPublicationAuthorizationNotice({
   return null
 }
 
-function ChatbotPublicationReadOnly({ chatbot }: { chatbot: Chatbot }) {
+/**
+ * Tells the lecturer whether students currently see anything. A published
+ * chatbot keeps serving its approved version while a revision is saved,
+ * reviewed, rejected or withdrawn; any other chatbot stays invisible until a
+ * publication request is approved.
+ */
+function ChatbotPublicationVisibilityNote({
+  published,
+}: {
+  published: boolean
+}) {
   const t = useTranslations()
-  const expectedStudentCount = readOnlyValue(
-    chatbot.expectedStudentCount,
-    t('shared.generic.unknown')
+
+  return (
+    <p
+      className="text-sm text-gray-600"
+      data-cy="chatbot-publication-visibility-note"
+      data-published={published}
+    >
+      {published
+        ? t('manage.resources.chatbotPublicationPublishedStaysLive')
+        : t('manage.resources.chatbotPublicationSavedNotVisible')}
+    </p>
   )
-  const proposedCredits = readOnlyValue(
-    chatbot.creditInitialCredits,
+}
+
+function ChatbotPublicationReadOnly({ chatbot }: { chatbot: RevisionChatbot }) {
+  const t = useTranslations()
+  const revisionValues = getChatbotRevisionValues(chatbot)
+  const expectedStudentCount = readOnlyValue(
+    revisionValues.expectedStudentCount,
     t('shared.generic.unknown')
   )
   const useCase = readOnlyValue(
-    chatbot.publicationUseCase,
+    revisionValues.publicationUseCase,
     t('shared.generic.unknown')
   )
 
   let stateDescription: string
-  switch (chatbot.status) {
-    case ChatbotStatus.PendingApproval:
-      stateDescription = t('manage.resources.chatbotPublicationPending')
-      break
-    case ChatbotStatus.Paused:
-      stateDescription = t('manage.resources.chatbotPublicationPaused')
-      break
-    case ChatbotStatus.Published:
-      stateDescription = t('manage.resources.chatbotPublicationPublished')
-      break
-    default:
-      stateDescription = t('manage.resources.chatbotPublicationReadonly')
+  if (isChatbotRevisionPending(chatbot)) {
+    stateDescription = t('manage.resources.chatbotPublicationPending')
+  } else {
+    switch (chatbot.status) {
+      case ChatbotStatus.Paused:
+        stateDescription = t('manage.resources.chatbotPublicationPaused')
+        break
+      case ChatbotStatus.Published:
+        stateDescription = t('manage.resources.chatbotPublicationPublished')
+        break
+      default:
+        stateDescription = t('manage.resources.chatbotPublicationReadonly')
+    }
   }
 
   const publishedAtLabel = chatbot.publishedAt
@@ -133,7 +177,7 @@ function ChatbotPublicationReadOnly({ chatbot }: { chatbot: Chatbot }) {
       data-cy="chatbot-publication-readonly"
     >
       <UserNotification>{stateDescription}</UserNotification>
-      <dl className="grid gap-2 text-sm md:grid-cols-3">
+      <dl className="grid gap-2 text-sm md:grid-cols-2">
         <div>
           <dt className="font-medium text-gray-600">
             {t('manage.resources.chatbotPublicationUseCase')}
@@ -145,12 +189,6 @@ function ChatbotPublicationReadOnly({ chatbot }: { chatbot: Chatbot }) {
             {t('manage.resources.chatbotPublicationExpectedStudentCount')}
           </dt>
           <dd className="mt-1 text-gray-900">{expectedStudentCount}</dd>
-        </div>
-        <div>
-          <dt className="font-medium text-gray-600">
-            {t('manage.resources.chatbotPublicationProposedCredits')}
-          </dt>
-          <dd className="mt-1 text-gray-900">{proposedCredits}</dd>
         </div>
       </dl>
       {chatbot.status === ChatbotStatus.Published ? (
@@ -171,23 +209,37 @@ function ChatbotPublicationRequest({
   publishingAuthorizationError,
   setupDirty = false,
   setupPending = false,
+  blockers,
+  onBlockerClick,
+  hideHeading = false,
   onNavigationStateChange,
+  onRevisionConflict,
 }: ChatbotPublicationRequestProps) {
   const t = useTranslations()
-  const [requestChatbotPublication, { loading: requestLoading }] = useMutation(
-    RequestChatbotPublicationDocument
+  const [submitChatbotRevision, { loading: submitLoading }] = useMutation(
+    MSubmitChatbotRevisionDocument
+  )
+  const [withdrawChatbotRevision, { loading: withdrawLoading }] = useMutation(
+    MWithdrawChatbotRevisionDocument
   )
   const [requestError, setRequestError] = useState<string | null>(null)
   const [requestSuccess, setRequestSuccess] = useState(false)
+  const [withdrawSuccess, setWithdrawSuccess] = useState(false)
+  const [revisionConflict, setRevisionConflict] = useState(false)
+  const { loading: revisionReloading, reload: reloadRevision } =
+    useChatbotRevisionReload()
 
   const editable =
-    chatbot.status === ChatbotStatus.Draft ||
-    chatbot.status === ChatbotStatus.Rejected
+    !isChatbotRevisionPending(chatbot) &&
+    (chatbot.status === ChatbotStatus.Draft ||
+      chatbot.status === ChatbotStatus.Rejected ||
+      chatbot.status === ChatbotStatus.Published)
   // Completeness matches the server guard: a linked disclaimer only enables
   // submission when its normalized title and introduction are both non-empty.
+  const revisionValues = getChatbotRevisionValues(chatbot)
   const hasDisclaimer = Boolean(
-    chatbot.disclaimerSummary?.title?.trim() &&
-      chatbot.disclaimerSummary?.introText?.trim()
+    revisionValues.disclaimerTitle?.trim() &&
+      revisionValues.disclaimerIntroText?.trim()
   )
   const canSubmit =
     editable &&
@@ -196,7 +248,19 @@ function ChatbotPublicationRequest({
     !publishingAuthorizationLoading &&
     !publishingAuthorizationError &&
     !setupDirty &&
-    !setupPending
+    !setupPending &&
+    (blockers?.length ?? 0) === 0
+
+  // A first request starts from the chatbot description and the enrolled
+  // participant count; the lecturer still confirms both before submitting.
+  const enrolledParticipants = chatbot.courses?.[0]?.numOfParticipants
+  const publicationValues: PublicationFormValues = {
+    useCase:
+      revisionValues.publicationUseCase ?? chatbot.description?.trim() ?? '',
+    expectedStudentCount:
+      revisionValues.expectedStudentCount?.toString() ??
+      (enrolledParticipants ? enrolledParticipants.toString() : ''),
+  }
 
   useEffect(() => {
     if (!editable) {
@@ -204,23 +268,89 @@ function ChatbotPublicationRequest({
     }
   }, [editable, onNavigationStateChange])
 
+  const pending = isChatbotRevisionPending(chatbot)
+  const revisionStatus = getChatbotRevisionStatus(chatbot)
+  const rejected =
+    chatbot.status === ChatbotStatus.Rejected ||
+    revisionStatus === ChatbotStatus.Rejected
+  const reviewComment = getChatbotRevisionReviewComment(chatbot)
+  const published = chatbot.status === ChatbotStatus.Published
+
+  const reloadAfterConflict = async () => {
+    await reloadRevision()
+    setRevisionConflict(false)
+  }
+
+  const handleWithdraw = async () => {
+    setRequestError(null)
+    setWithdrawSuccess(false)
+    try {
+      const result = await withdrawChatbotRevision({
+        variables: {
+          chatbotId: chatbot.id,
+          expectedRevisionVersion: getChatbotRevisionVersion(chatbot),
+        },
+        refetchQueries: [{ query: QGetChatbotsInfoWithKnowledgeBasesDocument }],
+        awaitRefetchQueries: true,
+      })
+      if (!result.data?.withdrawChatbotRevision) {
+        throw new Error('Revision withdrawal returned no chatbot')
+      }
+      setWithdrawSuccess(true)
+    } catch (error) {
+      if (isChatbotRevisionConflict(error)) {
+        setRevisionConflict(true)
+        onRevisionConflict?.()
+      }
+      setRequestError(t(getChatbotMutationErrorKey(error, 'publication')))
+    }
+  }
+
+  if (pending) {
+    return (
+      <div className="space-y-3" data-cy="chatbot-publication-request">
+        <ChatbotPublicationReadOnly chatbot={chatbot} />
+        <ChatbotPublicationVisibilityNote published={published} />
+        <Button
+          type="button"
+          loading={withdrawLoading}
+          disabled={withdrawLoading || setupPending || revisionReloading}
+          onClick={() => void handleWithdraw()}
+          data={{ cy: 'withdraw-chatbot-revision' }}
+        >
+          <Button.Label>
+            {t('manage.resources.chatbotRevisionWithdraw')}
+          </Button.Label>
+        </Button>
+        {revisionConflict ? (
+          <ChatbotRevisionConflictNotice
+            message={t('manage.resources.chatbotRevisionConflict')}
+            onReload={() => void reloadAfterConflict()}
+            reloading={revisionReloading}
+            testId="chatbot-revision-reload-publication"
+          />
+        ) : null}
+        {withdrawSuccess ? (
+          <span className="text-sm text-green-700" role="status">
+            {t('manage.resources.chatbotRevisionWithdrawn')}
+          </span>
+        ) : null}
+        {requestError ? (
+          <div role="alert">
+            <UserNotification type="error">{requestError}</UserNotification>
+          </div>
+        ) : null}
+      </div>
+    )
+  }
+
   if (!editable) {
     return <ChatbotPublicationReadOnly chatbot={chatbot} />
   }
 
-  const initialValues: PublicationFormValues = {
-    useCase: chatbot.publicationUseCase ?? '',
-    expectedStudentCount: chatbot.expectedStudentCount?.toString() ?? '',
-    proposedCredits:
-      chatbot.creditInitialCredits > 0
-        ? chatbot.creditInitialCredits.toString()
-        : '',
-  }
-
   return (
     <Formik
-      enableReinitialize
-      initialValues={initialValues}
+      initialValues={publicationValues}
       validateOnMount
       validationSchema={Yup.object({
         useCase: Yup.string()
@@ -237,67 +367,74 @@ function ChatbotPublicationRequest({
             t('manage.resources.chatbotPublicationExpectedStudentCountInvalid'),
             positiveInteger
           ),
-        proposedCredits: Yup.string()
-          .trim()
-          .required(
-            t('manage.resources.chatbotPublicationProposedCreditsRequired')
-          )
-          .test(
-            'positive-integer',
-            t('manage.resources.chatbotPublicationProposedCreditsInvalid'),
-            positiveInteger
-          ),
       })}
       onSubmit={async (values) => {
         setRequestError(null)
         setRequestSuccess(false)
+        setRevisionConflict(false)
         try {
-          const result = await requestChatbotPublication({
+          const result = await submitChatbotRevision({
             variables: {
-              id: chatbot.id,
+              chatbotId: chatbot.id,
+              expectedRevisionVersion: getChatbotRevisionVersion(chatbot),
               useCase: values.useCase.trim(),
               expectedStudentCount: Number(values.expectedStudentCount),
-              proposedCredits: Number(values.proposedCredits),
             },
             refetchQueries: [
-              { query: QGetChatbotsInfoWithStandardModesDocument },
+              { query: QGetChatbotsInfoWithKnowledgeBasesDocument },
             ],
             awaitRefetchQueries: true,
           })
 
-          if (!result.data?.requestChatbotPublication) {
+          if (!result.data?.submitChatbotRevision) {
             throw new Error('Publication request returned no chatbot')
           }
 
           setRequestSuccess(true)
         } catch (error) {
+          if (isChatbotRevisionConflict(error)) {
+            setRevisionConflict(true)
+            onRevisionConflict?.()
+          }
           setRequestError(t(getChatbotMutationErrorKey(error, 'publication')))
         }
       }}
     >
       {({ dirty, isSubmitting, isValid }) => (
         <Form className="space-y-4" data-cy="chatbot-publication-request">
+          <FormikInitialValuesSynchronizer initialValues={publicationValues} />
+          {revisionConflict ? (
+            <ChatbotRevisionConflictNotice
+              message={t('manage.resources.chatbotRevisionConflict')}
+              onReload={() => void reloadAfterConflict()}
+              reloading={revisionReloading}
+              testId="chatbot-revision-reload-publication"
+            />
+          ) : null}
           {onNavigationStateChange ? (
             <PublicationNavigationStateReporter
               dirty={dirty}
-              pending={isSubmitting || requestLoading}
+              pending={isSubmitting || submitLoading}
               onChange={onNavigationStateChange}
             />
           ) : null}
-          <div>
-            <H4>{t('manage.resources.chatbotPublication')}</H4>
-            <p className="mt-1 text-sm text-gray-600">
-              {t('manage.resources.chatbotPublicationDescription')}
-            </p>
-          </div>
+          {hideHeading ? null : (
+            <div>
+              <H4>{t('manage.resources.chatbotPublication')}</H4>
+              <p className="mt-1 text-sm text-gray-600">
+                {t('manage.resources.chatbotPublicationDescription')}
+              </p>
+            </div>
+          )}
 
-          {chatbot.status === ChatbotStatus.Rejected &&
-          chatbot.reviewComment ? (
+          <ChatbotPublicationVisibilityNote published={published} />
+
+          {rejected && reviewComment ? (
             <UserNotification type="error">
               <span className="font-semibold">
                 {t('manage.resources.chatbotPublicationReviewComment')}
               </span>{' '}
-              {chatbot.reviewComment}
+              {reviewComment}
             </UserNotification>
           ) : null}
 
@@ -307,14 +444,42 @@ function ChatbotPublicationRequest({
             error={publishingAuthorizationError}
           />
 
-          {!hasDisclaimer ? (
+          {blockers ? (
+            blockers.length > 0 ? (
+              <div
+                className="rounded-md border border-amber-200 bg-amber-50 p-3 text-sm text-amber-900"
+                data-cy="chatbot-publication-blockers"
+              >
+                <p className="font-medium">
+                  {t('manage.resources.chatbotPublicationBlockersTitle')}
+                </p>
+                <ul className="mt-1 space-y-1">
+                  {blockers.map((blocker) => (
+                    <li key={blocker.id}>
+                      <button
+                        type="button"
+                        className="text-left underline underline-offset-2"
+                        onClick={() => onBlockerClick?.(blocker.id)}
+                        data-cy={`chatbot-publication-blocker-${blocker.id}`}
+                      >
+                        {blocker.label}
+                      </button>
+                    </li>
+                  ))}
+                </ul>
+              </div>
+            ) : null
+          ) : !hasDisclaimer ? (
             <UserNotification type="warning">
               {t('manage.resources.chatbotPublicationDisclaimerRequired')}
             </UserNotification>
           ) : null}
 
-          {setupDirty || setupPending ? (
-            <UserNotification type="warning">
+          {!blockers && (setupDirty || setupPending) ? (
+            <UserNotification
+              type="warning"
+              data={{ cy: 'chatbot-publication-unsaved-setup' }}
+            >
               {t('manage.resources.chatbotPublicationUnsavedSetup')}
             </UserNotification>
           ) : null}
@@ -322,33 +487,24 @@ function ChatbotPublicationRequest({
           <FormikTextareaField
             required
             maxLength={2000}
-            disabled={isSubmitting || requestLoading}
+            disabled={
+              isSubmitting || submitLoading || setupPending || revisionConflict
+            }
             name="useCase"
             label={t('manage.resources.chatbotPublicationUseCase')}
             data={{ cy: 'chatbot-publication-use-case' }}
           />
-          <div className="grid gap-4 md:grid-cols-2">
-            <FormikNumberField
-              required
-              min={1}
-              precision={0}
-              disabled={isSubmitting || requestLoading}
-              name="expectedStudentCount"
-              label={t(
-                'manage.resources.chatbotPublicationExpectedStudentCount'
-              )}
-              data={{ cy: 'chatbot-publication-expected-student-count' }}
-            />
-            <FormikNumberField
-              required
-              min={1}
-              precision={0}
-              disabled={isSubmitting || requestLoading}
-              name="proposedCredits"
-              label={t('manage.resources.chatbotPublicationProposedCredits')}
-              data={{ cy: 'chatbot-publication-proposed-credits' }}
-            />
-          </div>
+          <FormikNumberField
+            required
+            min={1}
+            precision={0}
+            disabled={
+              isSubmitting || submitLoading || setupPending || revisionConflict
+            }
+            name="expectedStudentCount"
+            label={t('manage.resources.chatbotPublicationExpectedStudentCount')}
+            data={{ cy: 'chatbot-publication-expected-student-count' }}
+          />
 
           {requestError ? (
             <div role="alert">
@@ -360,16 +516,16 @@ function ChatbotPublicationRequest({
             <Button
               primary
               type="submit"
-              loading={isSubmitting || requestLoading}
-              disabled={
-                !isValid || !canSubmit || isSubmitting || requestLoading
-              }
+              loading={isSubmitting || submitLoading}
+              disabled={!isValid || !canSubmit || isSubmitting || submitLoading}
               data={{ cy: 'request-chatbot-publication' }}
             >
               <Button.Label>
-                {chatbot.status === ChatbotStatus.Rejected
+                {rejected
                   ? t('manage.resources.resubmitChatbotPublication')
-                  : t('manage.resources.requestChatbotPublication')}
+                  : published
+                    ? t('manage.resources.chatbotSectionSubmitChanges')
+                    : t('manage.resources.requestChatbotPublication')}
               </Button.Label>
             </Button>
             {requestSuccess ? (

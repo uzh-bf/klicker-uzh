@@ -1,7 +1,0 @@
-mutation RejectChatbotPublication($id: String!, $comment: String!) {
-  rejectChatbotPublication(id: $id, comment: $comment) {
-    id
-    status
-    reviewComment
-  }
-}

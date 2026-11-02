@@ -1,0 +1,3 @@
+mutation DetachKbFromChatbot($kbId: ID!, $chatbotId: ID!) {
+  detachKbFromChatbot(kbId: $kbId, chatbotId: $chatbotId)
+}

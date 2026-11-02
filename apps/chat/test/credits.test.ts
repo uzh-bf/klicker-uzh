@@ -4,6 +4,7 @@ import { afterEach, beforeEach, describe, expect, test, vi } from 'vitest'
 const mocks = vi.hoisted(() => ({
   chatUsageCreditsFindUnique: vi.fn(),
   chatbotFindUnique: vi.fn(),
+  transaction: vi.fn(),
   atomicDecrementCredits: vi.fn(),
   atomicInitializeCredits: vi.fn(),
   atomicResetCreditsIfNeeded: vi.fn(),
@@ -11,6 +12,7 @@ const mocks = vi.hoisted(() => ({
 
 vi.mock('@klicker-uzh/prisma', () => ({
   prisma: {
+    $transaction: mocks.transaction,
     chatUsageCredits: {
       findUnique: mocks.chatUsageCreditsFindUnique,
     },
@@ -20,11 +22,18 @@ vi.mock('@klicker-uzh/prisma', () => ({
   },
 }))
 
-vi.mock('../src/utils/transactions', () => ({
-  atomicDecrementCredits: mocks.atomicDecrementCredits,
-  atomicInitializeCredits: mocks.atomicInitializeCredits,
-  atomicResetCreditsIfNeeded: mocks.atomicResetCreditsIfNeeded,
-}))
+vi.mock('../src/utils/transactions', async () => {
+  const actual = await vi.importActual<
+    typeof import('../src/utils/transactions')
+  >('../src/utils/transactions')
+
+  return {
+    ...actual,
+    atomicDecrementCredits: mocks.atomicDecrementCredits,
+    atomicInitializeCredits: mocks.atomicInitializeCredits,
+    atomicResetCreditsIfNeeded: mocks.atomicResetCreditsIfNeeded,
+  }
+})
 
 import { CreditsService } from '../src/services/credits'
 
@@ -35,6 +44,16 @@ function decimal(value: number) {
 describe('CreditsService.previewUserCredits', () => {
   beforeEach(() => {
     vi.clearAllMocks()
+    mocks.transaction.mockImplementation(async (operation) =>
+      operation({
+        chatUsageCredits: {
+          findUnique: mocks.chatUsageCreditsFindUnique,
+        },
+        chatbot: {
+          findUnique: mocks.chatbotFindUnique,
+        },
+      })
+    )
   })
 
   afterEach(() => {

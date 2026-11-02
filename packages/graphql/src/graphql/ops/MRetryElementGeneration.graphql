@@ -1,0 +1,5 @@
+mutation RetryElementGeneration($input: ElementGenerationBuildInput!) {
+  retryElementGeneration(input: $input) {
+    ...ElementGenerationBuildData
+  }
+}

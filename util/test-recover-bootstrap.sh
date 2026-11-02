@@ -1,6 +1,10 @@
 #!/usr/bin/env bash
 set -euo pipefail
 
+# pnpm run disables repeat verification in its children. Isolate the synthetic
+# fixture so it checks lifecycle-script overrides, not the outer test runner.
+unset pnpm_config_verify_deps_before_run
+
 REPO_ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
 RECOVERY_SCRIPT="$REPO_ROOT/.devcontainer/recover-bootstrap.sh"
 RECOVERY_RUNTIME_SCRIPT="$REPO_ROOT/.devcontainer/recover-runtime.sh"
@@ -74,9 +78,10 @@ cp "$REPO_ROOT/.github/scripts/provision-disposable-postgres.sh" \
   "$RUNTIME_ROOT/.github/scripts/provision-disposable-postgres.sh"
 cp "$REPO_ROOT/util/dev-runtime.sh" "$RUNTIME_ROOT/util/dev-runtime.sh"
 
-write_file "$ROOT/package.json" '{"packageManager":"pnpm@11.5.0"}'
+write_file "$ROOT/package.json" '{"packageManager":"pnpm@12.11.2"}'
 write_file "$ROOT/pnpm-lock.yaml" 'lockfileVersion: 9'
-write_file "$ROOT/pnpm-workspace.yaml" 'packages: [apps/*, packages/*]'
+write_file "$ROOT/pnpm-workspace.yaml" 'packages: [apps/*, packages/*]
+verifyDepsBeforeRun: error'
 write_file "$ROOT/apps/response-api/package.json" '{"name":"response-api"}'
 write_file "$ROOT/apps/hatchet-worker-general/package.json" '{"name":"hatchet-worker-general"}'
 write_file "$ROOT/apps/hatchet-worker-response-processor/package.json" '{"name":"hatchet-worker-response-processor"}'
@@ -94,6 +99,9 @@ write_file "$TOKEN_FILE" 'synthetic-hatchet-token'
 cat >"$FAKE_BIN/pnpm" <<'FAKE_PNPM'
 #!/usr/bin/env bash
 set -euo pipefail
+
+[ "${npm_config_verify_deps_before_run:-error}" = error ] || exit 71
+[ "${pnpm_config_verify_deps_before_run:-error}" = error ] || exit 72
 
 case "${1:-}" in
   --filter)
@@ -382,5 +390,32 @@ for arguments in '--unexpected' '--initialize-new-disposable extra'; do
   assert_absent "$MARKER_DIR/bootstrap-complete"
   assert_equal "$(cat "$COMMAND_LOG")" ''
 done
+
+# The isolated local knowledge-base runtime keeps its supplied settings and
+# token, and neither initializes nor verifies the disposable databases.
+mkdir -p "$ROOT/util/local-kb"
+cp "$REPO_ROOT/util/local-kb/runtime-environment.sh" \
+  "$ROOT/util/local-kb/runtime-environment.sh"
+(
+  . "$ROOT/util/local-kb/runtime-environment.sh"
+  local_kb_capture_environment >/dev/null 2>&1 || true
+  for key in "${LOCAL_KB_ENV_KEYS[@]}"; do
+    export "$key=synthetic-isolated-value"
+  done
+  : >"$COMMAND_LOG"
+  KLICKER_LOCAL_KB_RUNTIME_ONLY=1 \
+    bash "$ROOT/.devcontainer/post-create.sh" >"$OUTPUT_LOG" 2>&1
+  assert_equal "$(tr '\n' ' ' <"$COMMAND_LOG")" 'install build '
+  bash "$ROOT/util/dev-runtime.sh" require-bootstrap >/dev/null
+  : >"$COMMAND_LOG"
+  if KLICKER_LOCAL_KB_RUNTIME_ONLY=1 \
+    bash "$ROOT/.devcontainer/post-create.sh" --initialize-new-disposable \
+    >"$OUTPUT_LOG" 2>&1; then
+    fail 'isolated post-create accepted database initialization'
+  fi
+  assert_absent "$MARKER_DIR/bootstrap-complete"
+)
+assert_contains "$ROOT/.devcontainer/.hatchet.env" \
+  'HATCHET_CLIENT_TOKEN=synthetic-hatchet-token'
 
 echo '[test-recover-bootstrap] PASS'

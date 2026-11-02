@@ -1,0 +1,39 @@
+query GetKbKnowledgeGraphOverviewWithRelations($kbId: ID!) {
+  getKbKnowledgeGraphOverview(kbId: $kbId) {
+    kbId
+    buildId
+    isStale
+    nodes {
+      id
+      labels
+      kind
+      displayLabel
+      summary
+      content
+      degree
+      sourceReferences {
+        resourceId
+        title
+        reference
+        pages
+      }
+    }
+    edges {
+      id
+      source
+      target
+      type
+      label
+      relationType
+      relationStatus
+      sourceReferences {
+        resourceId
+        title
+        reference
+        pages
+      }
+      properties
+    }
+    truncated
+  }
+}

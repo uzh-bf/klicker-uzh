@@ -4,6 +4,7 @@ import { useTranslations } from 'next-intl'
 
 import { getSourceSecondaryLine } from '@/src/lib/sources/sourceDisplay'
 import type { ChatSource } from '@/src/lib/sources/types'
+import { useMessageSourcesContext } from './message-sources-context'
 
 export function SourcePreviewContent({
   source,
@@ -13,7 +14,14 @@ export function SourcePreviewContent({
   showNavigationHint?: boolean
 }) {
   const t = useTranslations()
-  const secondaryLine = getSourceSecondaryLine(source, t)
+  // Cited pages, when the answer carries them; outside an assistant message
+  // the context default is empty and the retrieved range stays in place.
+  const { citedPageRanges } = useMessageSourcesContext()
+  const secondaryLine = getSourceSecondaryLine(
+    source,
+    t,
+    citedPageRanges.get(source.index)
+  )
 
   return (
     <div data-cy="chat-source-preview">

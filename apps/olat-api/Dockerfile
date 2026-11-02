@@ -12,7 +12,9 @@ WORKDIR /app
 RUN apk add --no-cache libc6-compat
 RUN apk update
 
-RUN npm i -g --ignore-scripts pnpm@11.5.0 turbo@2.10.11
+# pnpm 12 needs native setup for direct child-process execution on Alpine.
+RUN npm i -g --ignore-scripts pnpm@12.11.2 turbo@2.10.11 \
+ && node "$(npm root -g)/pnpm/install.js"
 
 COPY . .
 
@@ -25,7 +27,8 @@ WORKDIR /app
 RUN apk add --no-cache libc6-compat
 RUN apk update
 
-RUN npm i -g --ignore-scripts pnpm@11.5.0 turbo@2.10.11
+RUN npm i -g --ignore-scripts pnpm@12.11.2 turbo@2.10.11 \
+ && node "$(npm root -g)/pnpm/install.js"
 
 COPY --from=deps /app/out/json/ .
 COPY --from=deps /app/out/pnpm* .
@@ -43,7 +46,8 @@ WORKDIR /app
 
 ARG NODE_ENV="production"
 
-RUN npm i -g --ignore-scripts pnpm@11.5.0 turbo@2.10.11
+RUN npm i -g --ignore-scripts pnpm@12.11.2 turbo@2.10.11 \
+ && node "$(npm root -g)/pnpm/install.js"
 
 COPY --from=deps /app/out/json/ .
 COPY --from=deps /app/out/pnpm* .
@@ -52,7 +56,8 @@ COPY --from=deps /app/out/pnpm* .
 # the cache removal share one RUN so no build state lands in a committed layer.
 RUN pnpm i --prod --ignore-scripts \
  && npm rm -g --ignore-scripts pnpm turbo \
- && rm -rf /root/.cache/pnpm /root/.local/share/pnpm /root/.npm
+ && rm -rf /root/.cache/pnpm /root/.local/share/pnpm /root/.npm \
+ && rm -rf /usr/local/lib/node_modules/npm /usr/local/bin/npm /usr/local/bin/npx
 
 RUN addgroup --system --gid 1001 nodejs
 RUN adduser --system --uid 1001 nodejs

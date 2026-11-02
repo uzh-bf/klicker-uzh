@@ -1,0 +1,6 @@
+mutation SaveGeneratedElements($input: ElementGenerationBuildInput!) {
+  saveGeneratedElements(input: $input) {
+    createdElementIds
+    alreadySavedElementIds
+  }
+}

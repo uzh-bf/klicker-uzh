@@ -14,7 +14,9 @@ WORKDIR /app
 RUN apk add --no-cache libc6-compat
 RUN apk update
 
-RUN npm i -g --ignore-scripts pnpm@11.5.0 turbo@2.10.11
+# pnpm 12 needs native setup for direct child-process execution on Alpine.
+RUN npm i -g --ignore-scripts pnpm@12.11.2 turbo@2.10.11 \
+ && node "$(npm root -g)/pnpm/install.js"
 
 COPY . .
 
@@ -27,7 +29,8 @@ WORKDIR /app
 RUN apk add --no-cache libc6-compat
 RUN apk update
 
-RUN npm i -g --ignore-scripts pnpm@11.5.0 turbo@2.10.11
+RUN npm i -g --ignore-scripts pnpm@12.11.2 turbo@2.10.11 \
+ && node "$(npm root -g)/pnpm/install.js"
 
 COPY --from=builder /app/out/json/ .
 COPY --from=builder /app/out/pnpm* .

@@ -30,7 +30,7 @@ ENV NODE_USE_SYSTEM_CA=1
 
 # Install pnpm with npm (not corepack — signature verification can fail on a
 # pinned Node). Mirror the repo's packageManager pin. (GOTCHAS #8)
-RUN npm install -g pnpm@11.5.0
+RUN npm install -g pnpm@12.11.2
 
 # Use a stable path for the machine-local store mounted by Compose. (GOTCHAS #9)
 RUN pnpm config set store-dir "$PNPM_HOME/.pnpm-store"

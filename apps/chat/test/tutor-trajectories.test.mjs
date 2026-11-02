@@ -265,6 +265,7 @@ function trajectoryEnv(overrides = {}) {
   return {
     KLICKER_EVAL_API_ORIGIN: 'https://api.klicker.localhost',
     KLICKER_EVAL_CHAT_ORIGIN: 'https://chat.klicker.localhost',
+    KLICKER_EVAL_MODEL_ID: SYNTHETIC_MODEL,
     KLICKER_EVAL_PARTICIPANT_USERNAME: 'synthetic-participant',
     KLICKER_EVAL_PARTICIPANT_PASSWORD: 'synthetic-password',
     KLICKER_EVAL_POLL_INTERVAL_MS: '1',
@@ -446,7 +447,8 @@ function createTrajectoryTarget(overrides = {}) {
   return new KlickerEvaluationTarget({
     apiOrigin: 'https://api.klicker.localhost',
     chatOrigin: 'https://chat.klicker.localhost',
-    apiKey: 'target-key',
+    modelId: SYNTHETIC_MODEL,
+    apiKey: 'dummy-target-key',
     participantUsername: 'synthetic-participant',
     participantPassword: 'synthetic-password',
     pollTimeoutMs: 1000,

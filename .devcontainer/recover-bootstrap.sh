@@ -162,6 +162,17 @@ bash "$SCRIPT_ROOT/../util/dev-runtime.sh" begin-bootstrap >/dev/null
 if [ "$#" -gt 1 ] || { [ "$#" -eq 1 ] && [ "$1" != '--initialize-new-disposable' ]; }; then
   die 'Unsupported recovery bootstrap argument.'
 fi
+case "${KLICKER_LOCAL_KB_RUNTIME_ONLY:-0}" in
+  0) ;;
+  1)
+    # The isolated local knowledge-base runtime supplies its own database and
+    # Hatchet settings; it never initializes or verifies the disposable pair.
+    [ "$#" -eq 0 ] || die 'Isolated runtime cannot initialize databases.'
+    [ -n "${HATCHET_CLIENT_TOKEN:-}" ] ||
+      die 'Isolated setup must supply the Hatchet token.'
+    ;;
+  *) die 'Invalid isolated runtime mode.' ;;
+esac
 
 ROOT="$(cd "$ROOT" && pwd)" || die 'Configured container root is unavailable.'
 require_file "$ROOT/.devcontainer/devcontainer.env" \
@@ -169,6 +180,11 @@ require_file "$ROOT/.devcontainer/devcontainer.env" \
 require_file "$ROOT/util/dev-runtime.sh" 'util/dev-runtime.sh'
 
 cd "$ROOT"
+if [ "${KLICKER_LOCAL_KB_RUNTIME_ONLY:-0}" = 1 ]; then
+  # shellcheck source=/dev/null
+  . "$ROOT/util/local-kb/runtime-environment.sh"
+  local_kb_capture_environment
+fi
 
 # Re-source the canonical environment so values containing '=' survive the
 # container env-file handling. Sourced values stay in the process environment.
@@ -176,9 +192,13 @@ set -a
 # shellcheck source=/dev/null
 . "$ROOT/.devcontainer/devcontainer.env"
 set +a
+if [ "${KLICKER_LOCAL_KB_RUNTIME_ONLY:-0}" = 1 ]; then
+  local_kb_restore_environment
+fi
 
+# Install explicitly before build or verification; retain the workspace's
+# verifyDepsBeforeRun: error policy for every subsequent pnpm command.
 export CI=true
-export npm_config_verify_deps_before_run=false
 umask 077
 
 echo '[recover-bootstrap] Installing frozen dependencies.'
@@ -195,10 +215,24 @@ bash "$ROOT/util/dev-runtime.sh" stamp-dependencies
 # (compile on the fly) so they are NOT pre-built. (GOTCHAS: build the graph
 # before any dev server.)
 echo '[recover-bootstrap] Building workspace packages, backend, and LTI.'
-pnpm exec turbo run build \
+# The build writes its output to a log file instead of the lifecycle stdio
+# channel, so a failure can print a short tail below. One-shot rollup builds
+# pass --forceExit: @rollup/plugin-typescript runs a TypeScript watch program
+# even without --watch, and a file change in the last 250ms of a build can
+# recreate its file watchers after the plugin closes it. Without --forceExit
+# that rollup process prints "created dist" and never exits, which stalls
+# this script and container creation indefinitely.
+BUILD_LOG=/tmp/post-create-build.log
+if ! pnpm exec turbo run build \
   --filter='./packages/*' \
   --filter=@klicker-uzh/backend-docker \
-  --filter=@klicker-uzh/lti-service
+  --filter=@klicker-uzh/lti-service \
+  </dev/null >"$BUILD_LOG" 2>&1; then
+  echo "[recover-bootstrap] ERROR: package build failed; last lines of $BUILD_LOG:" >&2
+  tail -n 60 "$BUILD_LOG" >&2
+  exit 1
+fi
+echo "[recover-bootstrap] Build finished (full output: $BUILD_LOG)."
 
 echo '[recover-bootstrap] Ensuring required empty app environment files.'
 for app in response-api hatchet-worker-general hatchet-worker-response-processor; do
@@ -208,13 +242,15 @@ for app in response-api hatchet-worker-general hatchet-worker-response-processor
   fi
 done
 
-capture_hatchet_token
-if [ "${1:-}" = '--initialize-new-disposable' ]; then
-  verify_databases initialize
-  pnpm --filter @klicker-uzh/prisma run prisma:push:raw
-  pnpm --filter @klicker-uzh/prisma-data run seed:raw
+if [ "${KLICKER_LOCAL_KB_RUNTIME_ONLY:-0}" != 1 ]; then
+  capture_hatchet_token
+  if [ "${1:-}" = '--initialize-new-disposable' ]; then
+    verify_databases initialize
+    pnpm --filter @klicker-uzh/prisma run prisma:push:raw
+    pnpm --filter @klicker-uzh/prisma-data run seed:raw
+  fi
+  verify_databases
 fi
-verify_databases
 
 echo '[recover-bootstrap] Bootstrap prerequisites are ready; publishing marker.'
 bash "$ROOT/util/dev-runtime.sh" complete-bootstrap

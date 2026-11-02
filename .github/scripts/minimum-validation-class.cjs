@@ -164,6 +164,17 @@ function isDocumentationPath(value) {
   return !hasExtension(value, EXECUTABLE_EXTENSIONS)
 }
 
+// Local Git hooks can skip the application runtime only for prose whose path
+// and content policy they can prove without the working tree. Keep that
+// narrower decision here so the dispatcher cannot drift from the CI envelope.
+function isLocalHookDocumentationPath(value) {
+  return (
+    isSafeRepoPath(value) &&
+    DOCUMENTATION_TREES.some((tree) => matchesTree(value, tree)) &&
+    value.endsWith('.md')
+  )
+}
+
 function isCiPath(value) {
   return CI_TREES.some((tree) => matchesTree(value, tree))
 }
@@ -413,6 +424,7 @@ module.exports = {
   buildReceipt,
   formatSummary,
   isKnownClass,
+  isLocalHookDocumentationPath,
   isSafeRepoPath,
   main,
   parsePathList,

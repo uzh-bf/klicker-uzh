@@ -1,7 +1,10 @@
-import { type Chatbot, ChatbotStatus } from '@klicker-uzh/graphql/dist/ops'
-
-type ChatbotWorkspaceView = 'overview' | 'setup' | 'advanced' | 'usage'
-type ChatbotSetupStep = 'basics' | 'modes' | 'disclaimer' | 'review'
+type ChatbotWorkspaceView =
+  | 'overview'
+  | 'knowledge'
+  | 'behavior'
+  | 'disclaimer'
+  | 'usage'
+type ChatbotSetupStep = 'basics' | 'modes' | 'disclaimer' | 'credits' | 'review'
 
 type ChatbotWorkspaceState = {
   view: ChatbotWorkspaceView
@@ -15,14 +18,16 @@ type ChatbotNavigationState = {
 
 const workspaceViews: ChatbotWorkspaceView[] = [
   'overview',
-  'setup',
-  'advanced',
+  'knowledge',
+  'behavior',
+  'disclaimer',
   'usage',
 ]
 const setupSteps: ChatbotSetupStep[] = [
   'basics',
   'modes',
   'disclaimer',
+  'credits',
   'review',
 ]
 
@@ -33,79 +38,100 @@ function includesValue<T extends string>(
   return typeof value === 'string' && values.includes(value as T)
 }
 
-function hasCompleteBasics(chatbot: Chatbot) {
-  return Boolean(chatbot.name.trim() && (chatbot.courses?.length ?? 0) > 0)
+const defaultWorkspaceState: ChatbotWorkspaceState = { view: 'overview' }
+
+type ChatbotSetupLinkTarget =
+  | 'materials'
+  | 'students'
+  | 'modes'
+  | 'usage'
+  | 'details'
+  | 'request'
+
+// Links into the former workspace views open the matching section of the
+// setup page.
+function getSetupLinkTarget(
+  state: ChatbotWorkspaceState
+): ChatbotSetupLinkTarget | undefined {
+  switch (state.view) {
+    case 'knowledge':
+      return 'materials'
+    case 'disclaimer':
+      return 'students'
+    case 'behavior':
+      return 'modes'
+    case 'usage':
+      return 'usage'
+    case 'overview':
+      if (state.step === 'basics') return 'details'
+      if (state.step === 'review') return 'request'
+      return undefined
+  }
 }
 
-function hasCompleteDisclaimer(chatbot: Chatbot) {
-  return Boolean(
-    chatbot.disclaimerSummary?.title?.trim() &&
-      chatbot.disclaimerSummary.introText?.trim()
-  )
-}
-
-function getDefaultSetupStep(chatbot: Chatbot): ChatbotSetupStep {
-  if (!hasCompleteBasics(chatbot)) return 'basics'
-  if (!hasCompleteDisclaimer(chatbot)) return 'disclaimer'
-  return 'review'
-}
-
-function getDefaultWorkspaceState(chatbot: Chatbot): ChatbotWorkspaceState {
-  if (
-    chatbot.status === ChatbotStatus.Draft ||
-    chatbot.status === ChatbotStatus.Rejected
-  ) {
-    return { view: 'setup', step: getDefaultSetupStep(chatbot) }
+function normalizeLegacyWorkspaceState(
+  requestedView: string,
+  requestedStep: string | undefined
+): ChatbotWorkspaceState {
+  if (requestedView === 'advanced') {
+    return { view: 'behavior' }
   }
 
-  return { view: 'overview' }
+  switch (requestedStep) {
+    case 'modes':
+      return { view: 'behavior' }
+    case 'disclaimer':
+      return { view: 'disclaimer' }
+    case 'credits':
+      return { view: 'usage' }
+    case 'basics':
+      return { view: 'overview', step: 'basics' }
+    case 'review':
+      return { view: 'overview', step: 'review' }
+    default:
+      return defaultWorkspaceState
+  }
 }
 
 function normalizeWorkspaceState(
-  chatbot: Chatbot,
   requestedView: string | undefined,
   requestedStep: string | undefined
 ): ChatbotWorkspaceState {
+  if (requestedView === 'setup' || requestedView === 'advanced') {
+    return normalizeLegacyWorkspaceState(requestedView, requestedStep)
+  }
+
   if (!includesValue(workspaceViews, requestedView)) {
-    return getDefaultWorkspaceState(chatbot)
+    return defaultWorkspaceState
   }
 
-  if (requestedView !== 'setup') {
-    return { view: requestedView }
-  }
-
-  if (
-    chatbot.status === ChatbotStatus.PendingApproval ||
-    chatbot.status === ChatbotStatus.Paused
-  ) {
-    return { view: 'overview' }
-  }
-
-  if (chatbot.status === ChatbotStatus.Published) {
-    return {
-      view: 'setup',
-      step: includesValue(setupSteps, requestedStep) ? requestedStep : 'basics',
+  if (requestedView === 'overview') {
+    if (requestedStep === 'basics' || requestedStep === 'review') {
+      return { view: 'overview', step: requestedStep }
+    }
+    if (requestedStep === 'modes') {
+      return { view: 'behavior' }
+    }
+    if (requestedStep === 'disclaimer') {
+      return { view: 'disclaimer' }
+    }
+    if (requestedStep === 'credits') {
+      return { view: 'usage' }
     }
   }
 
-  const defaultStep = getDefaultSetupStep(chatbot)
-  if (!includesValue(setupSteps, requestedStep)) {
-    return { view: 'setup', step: defaultStep }
-  }
-
-  return { view: 'setup', step: requestedStep }
+  return { view: requestedView }
 }
 
 export type {
   ChatbotNavigationState,
+  ChatbotSetupLinkTarget,
   ChatbotSetupStep,
   ChatbotWorkspaceState,
   ChatbotWorkspaceView,
 }
 export {
-  getDefaultWorkspaceState,
-  hasCompleteBasics,
-  hasCompleteDisclaimer,
+  getSetupLinkTarget,
   normalizeWorkspaceState,
   setupSteps,
   workspaceViews,

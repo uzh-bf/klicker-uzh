@@ -18,7 +18,10 @@ import {
   MAX_TOOL_NAME_LENGTH,
   TOOL_NAME_SUFFIX_LENGTH,
 } from '../src/lib/config/toolNames.js'
-import { getAggregatedMCPTools } from '../src/services/mcpClients.js'
+import {
+  getAggregatedMCPTools,
+  type MCPToolsHandle,
+} from '../src/services/mcpClients.js'
 
 const SERVER_NAME = 'Klicker-compat' as const
 const CHAT_MODE = 'tutor' as const
@@ -881,7 +884,7 @@ function isSuccessfulToolResult(value: unknown): boolean {
   )
 }
 
-async function runProof(
+export async function runProof(
   proofUrl: string,
   candidateServer: any,
   chatbotId: string,
@@ -903,13 +906,16 @@ async function runProof(
     wrongTenant: 'failed',
     eduaiRoute: 'failed',
   }
+  const handles: MCPToolsHandle[] = []
 
   try {
-    const tools = await suppressOutput(() =>
+    const handle = await suppressOutput(() =>
       getAggregatedMCPTools([direct], chatbotId, {
         requestTimeoutMs: REQUEST_TIMEOUT_MS,
       })
     )
+    handles.push(handle)
+    const { tools } = handle
     const names = Object.keys(tools).sort((left, right) =>
       left.localeCompare(right)
     )
@@ -939,7 +945,7 @@ async function runProof(
     if (!isSuccessfulToolResult(retrieval)) return result
     result.retrieval = 'passed'
 
-    const wrong = await suppressOutput(() =>
+    const wrongHandle = await suppressOutput(() =>
       getAggregatedMCPTools(
         [
           {
@@ -954,25 +960,29 @@ async function runProof(
         { requestTimeoutMs: REQUEST_TIMEOUT_MS }
       )
     )
-    result.wrongBearer = Object.keys(wrong).length === 0 ? 'passed' : 'failed'
+    handles.push(wrongHandle)
+    result.wrongBearer =
+      Object.keys(wrongHandle.tools).length === 0 ? 'passed' : 'failed'
 
-    const missing = await suppressOutput(() =>
+    const missingHandle = await suppressOutput(() =>
       getAggregatedMCPTools(
         [{ ...direct, server: { ...direct.server, authSecret: undefined } }],
         chatbotId,
         { requestTimeoutMs: REQUEST_TIMEOUT_MS }
       )
     )
+    handles.push(missingHandle)
     result.missingBearer =
-      Object.keys(missing).length === 0 ? 'passed' : 'failed'
+      Object.keys(missingHandle.tools).length === 0 ? 'passed' : 'failed'
 
-    const wrongTenant = await suppressOutput(() =>
+    const wrongTenantHandle = await suppressOutput(() =>
       getAggregatedMCPTools([direct], randomUUID(), {
         requestTimeoutMs: REQUEST_TIMEOUT_MS,
       })
     )
+    handles.push(wrongTenantHandle)
     result.wrongTenant =
-      Object.keys(wrongTenant).length === 0 ? 'passed' : 'failed'
+      Object.keys(wrongTenantHandle.tools).length === 0 ? 'passed' : 'failed'
 
     const eduaiUrl = proofUrl.replace(/\/mcp\/klicker\/?$/, '/mcp/eduai')
     const eduaiStatus = await fixedRouteStatus(eduaiUrl)
@@ -991,6 +1001,10 @@ async function runProof(
     return result
   } catch {
     return result
+  } finally {
+    for (const handle of handles.toReversed()) {
+      await suppressOutput(() => handle.close())
+    }
   }
 }
 

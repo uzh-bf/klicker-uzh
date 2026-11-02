@@ -1,4 +1,4 @@
-import { useMutation, useQuery } from '@apollo/client'
+import { useApolloClient, useMutation, useQuery } from '@apollo/client'
 import {
   BetaEnrollmentDocument,
   ManageFeaturePreferencesDocument,
@@ -8,6 +8,7 @@ import Loader from '@klicker-uzh/shared-components/src/Loader'
 import { Switch, UserNotification } from '@uzh-bf/design-system'
 import { useTranslations } from 'next-intl'
 import { useState } from 'react'
+import { useManageAiCapability } from '../featureFlags/ManageFeatureFlagProvider'
 import Setting from './Setting'
 import SimpleSetting from './SimpleSetting'
 
@@ -24,6 +25,8 @@ function BetaEnrollmentSettings({
   dataCy?: string
 }) {
   const t = useTranslations()
+  const client = useApolloClient()
+  const { confirmBetaPreference } = useManageAiCapability()
   const { data, loading, refetch } = useQuery(BetaEnrollmentDocument, {
     fetchPolicy: 'cache-and-network',
     notifyOnNetworkStatusChange: true,
@@ -73,6 +76,20 @@ function BetaEnrollmentSettings({
       }
 
       setConfirmedMembership(savedMembership)
+      confirmBetaPreference(savedMembership)
+      client.cache.updateQuery(
+        { query: ManageFeaturePreferencesDocument },
+        (current) =>
+          current?.userProfile
+            ? {
+                ...current,
+                userProfile: {
+                  ...current.userProfile,
+                  betaEnabled: savedMembership,
+                },
+              }
+            : current
+      )
       setStatus('saved')
       setIsRefreshing(true)
 

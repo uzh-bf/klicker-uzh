@@ -5,7 +5,7 @@ import {
   SetResearchConsentDocument,
 } from '@klicker-uzh/graphql/dist/ops'
 import Loader from '@klicker-uzh/shared-components/src/Loader'
-import { PARTICIPANT_DATA_USE_DISCLOSURE_VERSION } from '@klicker-uzh/util/dist/participantAccountDataUse'
+import { PARTICIPANT_DATA_USE_DISCLOSURE_VERSION } from '@klicker-uzh/util/participant-account-data-use'
 import { isDataUseConflict } from '@lib/participantDataUseConflicts'
 import {
   Button,
