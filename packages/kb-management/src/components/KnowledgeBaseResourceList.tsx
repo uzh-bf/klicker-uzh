@@ -90,7 +90,7 @@ function isActiveResource(resource: KnowledgeBaseResource) {
   )
 }
 
-function RunStatusBadge({
+export function RunStatusBadge({
   status,
   dataCy,
 }: {
@@ -146,7 +146,7 @@ function RunStatusBadge({
   )
 }
 
-function RunStatusMessage({
+export function RunStatusMessage({
   status,
   errorCode,
   statusMessage,
@@ -410,8 +410,8 @@ function ResourceTableRow({
               <span className="sm:hidden">
                 {resource.type === KbResourceType.Blob
                   ? t('kb.typeFile')
-                  : t('kb.typeUrl')}{' '}
-                ·{' '}
+                  : t('kb.typeUrl')}
+                ,{' '}
               </span>
               {resource.type === KbResourceType.Blob
                 ? formatFileSize(resource.sizeBytes)
@@ -807,11 +807,15 @@ function KnowledgeBaseResourceList({
   refreshKey,
   onMetricsChanged,
   onAddResource,
+  showBulkIngestion = false,
 }: {
   kbId: string
   refreshKey: number
   onMetricsChanged: () => Promise<unknown>
   onAddResource: (trigger: HTMLElement) => void
+  // New resources queue themselves, and each row keeps its own retry action,
+  // so the bulk trigger is an expert tool the caller opts into.
+  showBulkIngestion?: boolean
 }) {
   const t = useTranslations()
   const format = useFormatter()
@@ -1613,7 +1617,7 @@ function KnowledgeBaseResourceList({
               inProgress: connection.inProgressCount,
             })}
           </p>
-          {connection.needsIngestionCount > 0 ? (
+          {showBulkIngestion && connection.needsIngestionCount > 0 ? (
             <Button
               onClick={() => setBulkIngestOpen(true)}
               disabled={bulkIngesting || ingestingId !== null}

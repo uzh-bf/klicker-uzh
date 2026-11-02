@@ -26,6 +26,11 @@ because the primary app container declares them as startup dependencies.
 
 ## How to Run
 
+These startup commands verify an existing application schema. For newly
+provisioned disposable databases, complete the explicit
+[fresh initialization](#fresh-disposable-database-initialization) first.
+Automatic lifecycle replay never resets or seeds retained databases.
+
 You can run the devcontainer in two modes:
 
 ### Mode 1: Primary checkout
@@ -583,25 +588,35 @@ restart is appropriate, stop the exact checkout with `devrouter stop <checkout>`
 and confirm its provider is stopped and its routes are gone before restarting.
 
 The repository's `.devcontainer/recover-runtime.sh` is a consumer callback for
-the separately reviewed devrouter retained-recovery implementation. It is not
-an ordinary startup hook or a command to invoke manually. The repository-pinned
-0.2.0 release does not provide this recovery contract. The recovery performed
-for this branch used devrouter source revision
-`aacf9ea595b9c76b0aaf66c0f4d52179b05197d8`, whose `recovery-preview`,
-`recovery-apply` and `recovery-resume` commands own the lifecycle locks, exact
-container identities and digest-bound journal. This is source-version evidence,
-not a claim that the contract is available in a published release. Confirm a
-release provides that contract before changing the repository version pin.
+a managed provider that owns the lifecycle locks and supplies exact 64-character
+application and PostgreSQL container IDs. It assumes the canonical mount
+`/workspaces/klicker-uzh`. It verifies the existing restricted disposable database
+identities and application schema without reset, schema push or seeding.
+
+The version pin in `.devrouter.yml` is the configuration source of truth.
+Inspect installed help and the provider contract before selecting recovery or
+replacement commands. A version pin does not establish that the installed tool
+can perform retained replacement. When that capability is unavailable, stop at
+that boundary rather than substituting raw Docker lifecycle operations.
 
 The callback requires the provider to inject exact 64-character application
 and PostgreSQL container IDs. It assumes the canonical container mount
 `/workspaces/klicker-uzh`. Both restricted disposable databases must already be
-provisioned and marked; the callback explicitly initializes their schema and
-synthetic seeds after verifying their identities. This path therefore requires
-approval for that initialization. It never marks an existing retained database
-as disposable. The provisioning helper defaults to bootstrap login `klicker`
+provisioned and marked; normal post-create and the callback verify their existing
+identities and application schema without resetting, pushing schema, or seeding.
+Explicit initialization through `recover-bootstrap.sh --initialize-new-disposable`
+is a separate operation that requires approval. The startup hook rejects that
+argument. It never marks an existing retained database as disposable.
+The provisioning helper defaults to bootstrap login `klicker`
 for CI; the retained local environment explicitly selects the allow-listed
 `klicker-prod` login. Neither is the restricted `klicker_test` application login.
+
+Redis data uses project-scoped named volumes. When recreating containers whose
+Redis storage was anonymous, set `KLICKER_REDIS_EXEC_VOLUME`,
+`KLICKER_REDIS_CACHE_VOLUME`, and `KLICKER_REDIS_ASSESSMENT_VOLUME` to the exact
+previous volume names. Verify those volumes exist and the resolved Compose
+mounts match before startup; retain those overrides for subsequent lifecycle
+commands. Removing containers does not authorize discarding their data.
 
 The four hashes in `recover-runtime.sh` bind the reviewed consumer source.
 When one of those files changes, review the semantic change and refresh its pin
@@ -614,9 +629,62 @@ publication. A pin failure must never be bypassed by deleting the guard.
 | `Repair requires a persisted degraded managed runtime`                | Use normal `ensure` for a stopped healthy runtime.                                                                                                 |
 | `Lifecycle worker completion is unknown` or an operation-request lock | Preserve the existing operation and inspect its owner/journal through devrouter; do not clear locks or start competing operations.                 |
 | `Managed stop Compose file identity changed`                          | Compare recorded and current source configuration through the provider's recovery preview; do not bypass identity checks with raw Docker commands. |
-| Disposable identity or schema refusal                                 | Stop initialization and verify configuration and marked identities without exposing connection strings; do not reset or reseed blindly.            |
+| Disposable identity or schema refusal                                 | Stop recovery and verify configuration and marked identities without exposing connection strings; missing schema never selects initialization.     |
 
 A partial recovery journal records work already performed. Resume only through
 the owning recovery command and its reviewed preview; repeating replacement
 can lose writable-layer data. If the installed tool lacks the required command,
 stop at that capability boundary instead of substituting raw Docker mutations.
+
+### Fresh disposable database initialization
+
+Initialization is a separate, explicit operation for newly provisioned empty
+`klicker_test` and `klicker_test_shadow` databases with the restricted
+`klicker_test` login and disposable marker. Both identities are verified before
+any schema push or synthetic seeding. The schema push force-resets the target, so
+confirm both databases hold no retained contents first. A marker alone does not
+make retained contents expendable.
+
+The consumer command for an authorized one-shot provider bootstrap is:
+
+```bash
+bash .devcontainer/recover-bootstrap.sh --initialize-new-disposable
+```
+
+Supply that literal argument only through a supported managed provider path
+bound to the exact new resources. Keep the committed `postCreateCommand` at its
+preserving default; do not persist an initialization flag in environment files
+or a reusable provider configuration. If the installed tool cannot deliver this
+one-shot bootstrap while owning its lifecycle/admission contract, stop before
+creating the runtime and report that capability gap. Ordinary `ensure` is not an
+initialization command. Existing explicit reset commands require their own data
+mutation authority.
+
+A failed initialization may leave partial schema or fixtures. Preserve that
+state and report the failed phase; a rerun must not reset or adopt it as empty.
+Default recovery still verifies both identities and the required application
+schema. Failed install, build, identity or schema checks leave bootstrap
+incomplete so post-start refuses application startup.
+
+### Synthetic provider acceptance
+
+Use a new task-owned scratch namespace and synthetic data. Before any mutation,
+record the source checkout, selected profile, effective overrides, exact
+resources/mounts, supported lifecycle commands, bootstrap state and downstream
+adapter effects. Include dependency preparation, token/generated files, local
+storage CORS, pending cache repair and selected processes/routes. Require the
+approved resource limits and exclude live inference and unrelated runtimes.
+
+After explicit fresh initialization, create a test-owned domain sentinel with
+meaningful values and a relationship. Verify those contents after one ordinary
+restart, then after one application-container replacement. Prove replacement
+through a changed app-container ID and stable database/service volume identities.
+Check application readiness separately from the bootstrap marker. Volume names
+alone do not establish preservation.
+
+Use the owning provider's exact stop and verify stopped state plus zero owned
+routes after success or failure. Preserve the synthetic database and sanitized
+diagnostics for review; database-volume and worktree deletion require separate
+authority. If the installed provider lacks any required transition or limit,
+report provider acceptance as blocked. Script regressions establish their
+mocked contract only; they do not substitute for this provider/content proof.

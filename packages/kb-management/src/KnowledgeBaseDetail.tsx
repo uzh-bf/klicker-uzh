@@ -6,12 +6,24 @@ import { useFormatter, useTranslations } from 'next-intl'
 import React, { useRef, useState } from 'react'
 import KnowledgeBaseAddResourceModal from './components/KnowledgeBaseAddResourceModal'
 import KnowledgeBaseChatbotBindings from './components/KnowledgeBaseChatbotBindings'
+import KnowledgeBaseDomainSettings from './components/KnowledgeBaseDomainSettings'
 import KnowledgeBaseImportedSourceList from './components/KnowledgeBaseImportedSourceList'
+import KnowledgeBaseQuestionReadiness from './components/KnowledgeBaseQuestionReadiness'
 import KnowledgeBaseResourceList from './components/KnowledgeBaseResourceList'
 import KnowledgeGraphPanel from './components/KnowledgeGraphPanel'
 import { getGraphQLErrorCode } from './graphqlError'
 
-function KnowledgeBaseDetail({ kbId }: { kbId: string }) {
+function KnowledgeBaseDetail({
+  kbId,
+  backLink,
+  showBulkIngestion,
+}: {
+  kbId: string
+  showBulkIngestion?: boolean
+  // A banner leading back, for example to the chatbot whose materials are
+  // being prepared. The caller owns and validates the target.
+  backLink?: { href: string; label: string; message: string }
+}) {
   const t = useTranslations()
   const format = useFormatter()
   const [resourceRefreshKey, setResourceRefreshKey] = useState(0)
@@ -97,11 +109,41 @@ function KnowledgeBaseDetail({ kbId }: { kbId: string }) {
       >
         {t('kb.backToList')}
       </Link>
+      {backLink ? (
+        <div
+          className="mt-4 flex flex-col gap-3 rounded-md border border-primary-40 bg-primary-20/40 p-4 sm:flex-row sm:items-center sm:justify-between"
+          data-cy="kb-chatbot-banner"
+        >
+          <p className="text-sm text-slate-800">{backLink.message}</p>
+          <Link
+            href={backLink.href}
+            className="inline-flex shrink-0 items-center justify-center rounded-md bg-primary-100 px-4 py-2 text-sm font-semibold text-white hover:bg-primary-80"
+            data-cy="kb-back-to-chatbot"
+          >
+            {backLink.label}
+          </Link>
+        </div>
+      ) : null}
       <H1 className={{ root: 'mt-4 break-words' }}>{data.getKb.name}</H1>
       {data.getKb.description ? (
         <p className="mt-2 break-words text-slate-600">
           {data.getKb.description}
         </p>
+      ) : null}
+      <KnowledgeBaseDomainSettings
+        kbId={kbId}
+        domain={{
+          id: data.getKb.domainPolicyId ?? null,
+          version: data.getKb.domainPolicyVersion ?? null,
+          language: data.getKb.domainPolicyLanguage ?? null,
+        }}
+      />
+      {data.getKb.questionPreparation ? (
+        <div className="mt-3">
+          <KnowledgeBaseQuestionReadiness
+            preparation={data.getKb.questionPreparation}
+          />
+        </div>
       ) : null}
       {metrics ? (
         <section
@@ -191,6 +233,7 @@ function KnowledgeBaseDetail({ kbId }: { kbId: string }) {
         kbId={kbId}
         refreshKey={resourceRefreshKey}
         onMetricsChanged={refreshMetrics}
+        showBulkIngestion={showBulkIngestion}
         onAddResource={(trigger) => {
           addResourceTriggerRef.current = trigger
           setAddResourceOpen(true)

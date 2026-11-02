@@ -245,6 +245,7 @@ export const Course = builder.objectType(CourseRef, {
 export interface ICourseListEntry {
   id: string
   name: string
+  numOfParticipants?: number | null
 }
 export const CourseListEntryRef =
   builder.objectRef<ICourseListEntry>('CourseListEntry')
@@ -252,6 +253,7 @@ export const CourseListEntry = builder.objectType(CourseListEntryRef, {
   fields: (t) => ({
     id: t.exposeID('id'),
     name: t.exposeString('name'),
+    numOfParticipants: t.exposeInt('numOfParticipants', { nullable: true }),
   }),
 })
 

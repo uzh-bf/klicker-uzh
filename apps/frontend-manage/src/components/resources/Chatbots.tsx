@@ -1,25 +1,29 @@
 import type { ParsedUrlQuery } from 'node:querystring'
-import { useQuery } from '@apollo/client'
+import { useMutation, useQuery } from '@apollo/client'
 import {
+  useFeatureFlag,
+  useFeatureFlagsReady,
+} from '@klicker-uzh/feature-flags/react'
+import {
+  AttachKbToChatbotDocument,
   type ChatModelCapability,
   GetChatbotPublishingCapabilityDocument,
   GetChatModelRegistryDocument,
+  GetKbDocument,
   GetUserCoursesDocument,
   QGetChatbotsInfoWithKnowledgeBasesDocument,
 } from '@klicker-uzh/graphql/dist/ops'
-import { Button, H2, Select } from '@uzh-bf/design-system'
+import { Button, H2, Select, toast } from '@uzh-bf/design-system'
 import { useRouter } from 'next/router'
 import { useTranslations } from 'next-intl'
-import { useCallback, useEffect, useMemo, useState } from 'react'
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import ChatbotCreateModal from './chatbots/ChatbotCreateModal'
 import ChatbotDetails from './chatbots/ChatbotDetails'
 import ChatbotList from './chatbots/ChatbotList'
 import { getChatbotStatusTranslationKey } from './chatbots/chatbotStatus'
 import {
   type ChatbotNavigationState,
-  type ChatbotSetupStep,
   type ChatbotWorkspaceState,
-  type ChatbotWorkspaceView,
   normalizeWorkspaceState,
 } from './chatbots/chatbotWorkspace'
 import useChatbotNavigationGuard from './chatbots/useChatbotNavigationGuard'
@@ -33,8 +37,19 @@ function Chatbots() {
   const t = useTranslations()
   const router = useRouter()
   const [createModalOpen, setCreateModalOpen] = useState(false)
+  // Set from a completed creation until its navigation to the new chatbot
+  // settles, so the query canonicalization below cannot replace that target.
+  const createdChatbotNavigationRef = useRef(false)
   const [navigationState, setNavigationState] =
     useState<ChatbotNavigationState>(cleanNavigationState)
+  // GrowthBook reports every flag as off until evaluation settles, so reading
+  // the flag before then would paint the ordinary surface and swap to the
+  // advanced one a moment later. useFeatureFlag already returns false when
+  // evaluation is unavailable altogether, so readiness is the only extra
+  // condition.
+  const flagsReady = useFeatureFlagsReady()
+  const advancedManagementEnabled = useFeatureFlag('ai-advanced-management')
+  const advancedManagement = flagsReady && advancedManagementEnabled
   const { data, loading } = useQuery(
     QGetChatbotsInfoWithKnowledgeBasesDocument,
     {
@@ -50,6 +65,27 @@ function Chatbots() {
   const { data: courseData } = useQuery(GetUserCoursesDocument, {
     fetchPolicy: 'cache-first',
   })
+  // A knowledge base page links here with `createForKb` to create a chatbot
+  // that uses it. The id is kept in state because workspace navigation drops
+  // the parameter from the URL, and only a knowledge base the lecturer owns
+  // opens the creation flow; an unknown id is ignored.
+  const requestedCreateForKbId =
+    typeof router.query?.createForKb === 'string'
+      ? router.query.createForKb
+      : undefined
+  const [createForKbId, setCreateForKbId] = useState<string | undefined>()
+  useEffect(() => {
+    if (requestedCreateForKbId) setCreateForKbId(requestedCreateForKbId)
+  }, [requestedCreateForKbId])
+  const { data: createForKbData } = useQuery(GetKbDocument, {
+    variables: { id: createForKbId ?? '' },
+    skip: !createForKbId,
+  })
+  const kbForNewChatbot =
+    createForKbId && createForKbData?.getKb.id === createForKbId
+      ? createForKbData.getKb
+      : undefined
+  const [attachKb] = useMutation(AttachKbToChatbotDocument)
   const {
     data: publishingCapabilityData,
     loading: publishingCapabilityLoading,
@@ -61,6 +97,10 @@ function Chatbots() {
   const chatbots = data?.getChatbotsInfo ?? []
   const modelRegistry: ChatModelCapability[] =
     modelRegistryData?.getChatModelRegistry ?? []
+  // Holding the details pane until flag evaluation settles avoids painting the
+  // ordinary surface first and swapping to the advanced one a moment later,
+  // which would remount the authoring forms and discard unsaved edits.
+  const detailsLoading = loading || modelRegistryLoading || !flagsReady
   const selectedId =
     typeof router.query?.chatbotId === 'string'
       ? router.query.chatbotId
@@ -78,7 +118,7 @@ function Chatbots() {
   const workspaceState = useMemo<ChatbotWorkspaceState>(
     () =>
       selectedChatbot
-        ? normalizeWorkspaceState(selectedChatbot, requestedView, requestedStep)
+        ? normalizeWorkspaceState(requestedView, requestedStep)
         : { view: 'overview' },
     [requestedStep, requestedView, selectedChatbot]
   )
@@ -106,6 +146,7 @@ function Chatbots() {
       } else {
         delete query.step
       }
+      delete query.createForKb
       if (state.view !== 'knowledge' || chatbotId !== selectedId) {
         delete query.responseExampleId
       }
@@ -114,8 +155,15 @@ function Chatbots() {
     [router.query, selectedId]
   )
 
+  const createModalShown =
+    createModalOpen || Boolean(kbForNewChatbot && courseData)
+
   useEffect(() => {
     if (!router.isReady || loading || !selectedChatbot) return
+    // The creation refetch can select a first chatbot as the list fallback
+    // before its creator navigates; canonicalizing then would open the
+    // default view instead of Materials.
+    if (createModalShown || createdChatbotNavigationRef.current) return
 
     const queryIsCanonical =
       selectedId === selectedChatbot.id &&
@@ -134,6 +182,7 @@ function Chatbots() {
       )
     )
   }, [
+    createModalShown,
     loading,
     buildWorkspaceQuery,
     requestedStep,
@@ -150,7 +199,7 @@ function Chatbots() {
     if (chatbotId === selectedChatbot?.id) return
     const chatbot = chatbots.find((item) => item.id === chatbotId)
     if (!chatbot) return
-    const nextState = normalizeWorkspaceState(chatbot, undefined, undefined)
+    const nextState = normalizeWorkspaceState(undefined, undefined)
     const navigate = () => {
       setNavigationState(cleanNavigationState)
       return router.push(
@@ -169,59 +218,79 @@ function Chatbots() {
     }
   }
 
-  const navigateWorkspace = (
-    view: ChatbotWorkspaceView,
-    step?: ChatbotSetupStep,
-    internal = false
-  ) => {
-    if (!selectedChatbot) return
-    if (
-      view === workspaceState.view &&
-      (view !== 'overview' || step === workspaceState.step)
-    ) {
-      return
-    }
-    const nextState = normalizeWorkspaceState(selectedChatbot, view, step)
-    const navigate = () => {
-      setNavigationState(cleanNavigationState)
-      return router.push(
-        {
-          pathname: router.pathname,
-          query: buildWorkspaceQuery(selectedChatbot.id, nextState),
-        },
-        undefined,
-        { shallow: true }
-      )
-    }
-    if (internal) {
-      runInternalNavigation(navigate)
-    } else {
-      runNavigation(navigate)
-    }
-  }
-
   const handleSelect = (chatbot: { id: string }) => selectChatbot(chatbot.id)
 
+  // A new chatbot continues into Materials; the Materials view then points to
+  // the student information that still has to be saved before publication.
   const selectCreatedChatbot = (chatbotId: string) => {
     runInternalNavigation(() => {
-      // The creation refetch may already have mounted the new draft and
-      // reported its unsaved disclaimer. Preserve that editor state.
-      return router.push(
-        {
-          pathname: router.pathname,
-          query: buildWorkspaceQuery(chatbotId, {
-            view: 'disclaimer',
-          }),
-        },
-        undefined,
-        { shallow: true }
-      )
+      // The creation refetch may already have mounted the new draft with its
+      // unsaved suggested student information. Skipping the discard prompt
+      // loses nothing, because the suggestion is offered again whenever
+      // Student information opens.
+      return router
+        .push(
+          {
+            pathname: router.pathname,
+            query: buildWorkspaceQuery(chatbotId, { view: 'knowledge' }),
+          },
+          undefined,
+          { shallow: true }
+        )
+        .finally(() => {
+          createdChatbotNavigationRef.current = false
+        })
     })
   }
 
   const openCreateModal = () => {
     if (!confirmNavigation()) return
     setCreateModalOpen(true)
+  }
+
+  const closeCreateModal = () => {
+    setCreateModalOpen(false)
+    setCreateForKbId(undefined)
+    if (!requestedCreateForKbId) return
+    const query = { ...router.query }
+    delete query.createForKb
+    runInternalNavigation(() =>
+      router.replace({ pathname: router.pathname, query }, undefined, {
+        shallow: true,
+      })
+    )
+  }
+
+  const handleChatbotCreated = async (chatbotId: string) => {
+    const kbId = kbForNewChatbot?.id
+    createdChatbotNavigationRef.current = true
+    // Clearing both triggers closes the modal before the connection runs, so
+    // the form cannot create a second chatbot meanwhile.
+    setCreateModalOpen(false)
+    setCreateForKbId(undefined)
+    if (!kbId) {
+      selectCreatedChatbot(chatbotId)
+      return
+    }
+
+    try {
+      await attachKb({
+        variables: { kbId, chatbotId },
+        refetchQueries: [{ query: QGetChatbotsInfoWithKnowledgeBasesDocument }],
+        awaitRefetchQueries: true,
+      })
+    } catch (error) {
+      console.error('Failed to attach KB to the new chatbot', error)
+      toast({
+        type: 'error',
+        message: t(
+          'manage.resources.chatbotKnowledgeBaseChatbotCreatedNotConnected'
+        ),
+      })
+    }
+    // The Knowledge view shows the connection, or offers to connect the
+    // knowledge base again when the attempt failed.
+    selectCreatedChatbot(chatbotId)
   }
 
   return (
@@ -241,7 +310,7 @@ function Chatbots() {
                 id="chatbot-mobile-selector"
                 items={chatbots.map((chatbot) => ({
                   value: chatbot.id,
-                  label: `${chatbot.name} · ${t(getChatbotStatusTranslationKey(chatbot.status))}`,
+                  label: `${chatbot.name} (${t(getChatbotStatusTranslationKey(chatbot.status))})`,
                   data: { cy: `chatbot-mobile-selector-option-${chatbot.id}` },
                 }))}
                 value={selectedChatbot?.id ?? ''}
@@ -277,10 +346,10 @@ function Chatbots() {
           <ChatbotDetails
             chatbot={selectedChatbot}
             modelRegistry={modelRegistry}
-            loading={loading || modelRegistryLoading}
+            loading={detailsLoading}
+            advancedManagement={advancedManagement}
             view={workspaceState.view}
             step={workspaceState.step}
-            onNavigate={navigateWorkspace}
             onNavigationStateChange={setNavigationState}
             publishingAuthorized={
               publishingCapabilityData?.getChatbotPublishingCapability ?? false
@@ -291,14 +360,12 @@ function Chatbots() {
           />
         </main>
       </div>
-      {createModalOpen ? (
+      {createModalShown ? (
         <ChatbotCreateModal
           courses={ownedCourses}
-          onClose={() => setCreateModalOpen(false)}
-          onCreated={(chatbotId) => {
-            setCreateModalOpen(false)
-            selectCreatedChatbot(chatbotId)
-          }}
+          requireCourseChoice={kbForNewChatbot != null}
+          onClose={closeCreateModal}
+          onCreated={handleChatbotCreated}
         />
       ) : null}
     </div>
