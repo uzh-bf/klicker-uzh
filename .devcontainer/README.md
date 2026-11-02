@@ -596,12 +596,21 @@ release provides that contract before changing the repository version pin.
 The callback requires the provider to inject exact 64-character application
 and PostgreSQL container IDs. It assumes the canonical container mount
 `/workspaces/klicker-uzh`. Both restricted disposable databases must already be
-provisioned and marked; the callback explicitly initializes their schema and
-synthetic seeds after verifying their identities. This path therefore requires
-approval for that initialization. It never marks an existing retained database
-as disposable. The provisioning helper defaults to bootstrap login `klicker`
+provisioned and marked; normal post-create and the callback verify their existing
+identities and application schema without resetting, pushing schema, or seeding.
+Explicit initialization through `recover-bootstrap.sh --initialize-new-disposable`
+is a separate operation that requires approval. The startup hook rejects that
+argument. It never marks an existing retained database as disposable.
+The provisioning helper defaults to bootstrap login `klicker`
 for CI; the retained local environment explicitly selects the allow-listed
 `klicker-prod` login. Neither is the restricted `klicker_test` application login.
+
+Redis data uses project-scoped named volumes. When recreating containers whose
+Redis storage was anonymous, set `KLICKER_REDIS_EXEC_VOLUME`,
+`KLICKER_REDIS_CACHE_VOLUME`, and `KLICKER_REDIS_ASSESSMENT_VOLUME` to the exact
+previous volume names. Verify those volumes exist and the resolved Compose
+mounts match before startup; retain those overrides for subsequent lifecycle
+commands. Removing containers does not authorize discarding their data.
 
 The four hashes in `recover-runtime.sh` bind the reviewed consumer source.
 When one of those files changes, review the semantic change and refresh its pin

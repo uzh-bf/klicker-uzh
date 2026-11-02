@@ -11,14 +11,13 @@ import PageContainer from './layout/PageContainer'
 interface LayoutProps {
   title: string
   children: React.ReactNode
-  quizId?: string
   className?: string
   // redesigned screens pass their own sticky header; this replaces the dark
   // title bar and the mobile menu bar of the original layout
   header?: React.ReactNode
 }
 
-function Layout({ title, children, quizId, className, header }: LayoutProps) {
+function Layout({ title, children, className, header }: LayoutProps) {
   const router = useRouter()
   const {
     loading: loadingUser,
@@ -77,7 +76,7 @@ function Layout({ title, children, quizId, className, header }: LayoutProps) {
         </div>
 
         <div className="fixed bottom-0 h-12 w-full md:hidden">
-          <MobileMenuBar quizId={quizId} />
+          <MobileMenuBar />
         </div>
       </div>
     </div>

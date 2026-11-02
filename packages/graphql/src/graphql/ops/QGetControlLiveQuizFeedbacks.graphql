@@ -3,6 +3,12 @@ query GetControlLiveQuizFeedbacks($id: String!) {
     id
     isLiveQAEnabled
     isModerationEnabled
+    isConfusionFeedbackEnabled
+    confusionSummary {
+      speed
+      difficulty
+      numberOfParticipants
+    }
     feedbacks {
       id
       isPublished
