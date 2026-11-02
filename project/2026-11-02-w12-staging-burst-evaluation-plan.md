@@ -308,19 +308,24 @@ out of this file.
   - P5 pass: 0 Service failures in all phases (99,069 requests). One baseline
     probe request timed out after 60 seconds at the plateau.
   - P6 pass: probe p95 burst 459 ms, baseline 496 ms.
-  - P4 scale-up marginal fail: CPU crossed the target about 21:39:30; the HPA
-    went 1, 2, 3, 4 one step per minute and reached 4 about 21:43, roughly
-    3.5 minutes against the 3-minute criterion. New burst Pods fail readiness
-    for about a minute after start, so each step waits for the previous one.
-  - P4 scale-down pass at the limit: load ended 22:13:30, 4 to 1 by 22:23:26.
-    A cool-down at 2 iterations per second held 4 replicas (about 55% CPU),
-    so only zero load returns the tier to 1.
+  - P4 scale-up pass at the limit: CPU crossed the target about 21:39:30; the
+    HPA went 2 to 3 at 21:41:34 and 3 to 4 at 21:42:34, about 3 minutes. Each
+    step waited for the previous Pod to become Ready, because the HPA leaves
+    unready Pods out of its CPU average. The default scale-up policy already
+    allows four Pods per 15 seconds, so an HPA `behavior` block would not help.
+  - P4 scale-down pass at the limit: load ended 22:13:30, 4 to 1 by 22:23:10.
+    A cool-down at 2 iterations per second held 4 replicas, because the
+    staging target is only 35m CPU per Pod.
   - P9 pass: no new Pending Pods on `asyncspot`; two Pending Pods in other
     namespaces predate the drill, and an ingestion rollout at 22:03 scheduled
     on its own pool.
-  - Finding: at the plateau both the baseline Pod and a burst Pod failed
-    liveness probes (`/login`, 1-second timeout, 3 failures). None restarted,
-    but a longer saturation would restart Pods exactly when load peaks.
-    Candidate fix under W12: a longer probe timeout or a cheaper health route,
-    plus an HPA `behavior.scaleUp` policy that adds more than one Pod per
-    step. Both ship as a chart PR pair before E4.
+  - Liveness and readiness probes (`/login`, 1-second timeout) failed at the
+    plateau on the baseline Pod and a burst Pod; none restarted.
+  - Confound: staging PWA Pods request 50m CPU with a 200m limit; production
+    requests 200m with no CPU limit. The two longest-running Pods were
+    throttled in 84% of CFS periods between 21:45 and 22:00. The probe
+    failures, the one-minute cold start and the low HPA target are therefore
+    staging-shape effects and say little about production. Proposed: repeat
+    E3 with the production shape (a staging values change) before E4; a probe change is considered only if
+    probes still fail then, and needs its own approval because it changes the
+    production render.
