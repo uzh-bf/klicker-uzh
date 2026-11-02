@@ -49,7 +49,7 @@
     "build:test": "bash ./util/_with_local_test_origins.sh cross-env NODE_ENV=test turbo run build:test",
     "check": "turbo run check --parallel --continue",
     "check:agents-md": "node ./util/check-agents-md.mjs",
-    "check:all": "run-p --npm-path pnpm check check:format check:lint check:syncpack check:agents-md check:git-identity check:removed-doc-artifacts check:prisma-sync check:playwright-ci check:playwright-host",
+    "check:all": "run-p --npm-path pnpm check format:check check:lint check:syncpack check:agents-md check:git-identity check:removed-doc-artifacts check:prisma-sync check:playwright-ci check:playwright-host",
     "check:format": "lint-staged",
     "check:git-identity": "node --test ./util/check-git-identity.test.mjs",
     "check:lint": "turbo run lint --parallel --continue",

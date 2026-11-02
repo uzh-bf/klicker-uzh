@@ -145,6 +145,12 @@ containers:
       httpGet:
         path: /login
         port: http
+    {{- with .Values.frontendPWA.preStopSleepSeconds }}
+    lifecycle:
+      preStop:
+        sleep:
+          seconds: {{ . }}
+    {{- end }}
     resources:
       {{- toYaml .Values.frontendPWA.resources | nindent 6 }}
 {{- end }}
