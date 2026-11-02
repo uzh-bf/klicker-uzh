@@ -372,6 +372,7 @@ export async function updateLiveQuizBlockResultsFromCache({
     return null
   }
 
+  const staleClosure = new Error('The live quiz block execution changed')
   try {
     const cachedResults = await getCachedBlockResults({
       redisExec: quiz.isAssessmentEnabled ? redisAssessmentExec : redisExec,
@@ -524,7 +525,7 @@ export async function updateLiveQuizBlockResultsFromCache({
         Number.isFinite(instanceResult.anonymousResults.total)
     )
 
-    const updatedQuiz = await prisma.liveQuiz.update({
+    const updateArgs = {
       where: { id: quizId },
       data: {
         ...(closeBlock ? { activeBlock: { disconnect: true } } : {}),
@@ -636,10 +637,45 @@ export async function updateLiveQuizBlockResultsFromCache({
           orderBy: { order: 'asc' },
         },
       },
-    })
+    } satisfies DB.Prisma.LiveQuizUpdateArgs
+
+    const updatedQuiz = closeBlock
+      ? await prisma.$transaction(async (tx) => {
+          const claim = await tx.liveQuiz.updateMany({
+            where: {
+              id: quizId,
+              status: DB.PublicationStatus.PUBLISHED,
+              activeBlockId: blockId,
+            },
+            data: { activeBlockId: null },
+          })
+          if (claim.count === 0) return null
+
+          // Read execution identity after acquiring the quiz lock. A reset or
+          // reactivation may have committed while the claim was waiting.
+          const currentBlock = await tx.elementBlock.findUnique({
+            where: { id: blockId },
+            select: { execution: true, startedAt: true, status: true },
+          })
+          if (
+            !currentBlock ||
+            currentBlock.status !== DB.ElementBlockStatus.ACTIVE ||
+            currentBlock.execution !== block.execution ||
+            currentBlock.startedAt?.getTime() !== block.startedAt?.getTime()
+          ) {
+            // Throwing rolls back the pointer claim before reporting a loser.
+            throw staleClosure
+          }
+
+          return tx.liveQuiz.update(updateArgs)
+        })
+      : await prisma.liveQuiz.update(updateArgs)
+
+    if (!updatedQuiz) return null
 
     return { updatedQuiz, activeInstanceIds }
   } catch (e) {
+    if (e === staleClosure) return null
     throw e
   }
 }

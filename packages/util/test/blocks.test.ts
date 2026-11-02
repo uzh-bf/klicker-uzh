@@ -37,7 +37,24 @@ function mockPrisma({
   blockStatus: string
 }) {
   const update = vi.fn(async () => ({ id: QUIZ_ID, blocks: [] }))
+  const block = {
+    id: BLOCK_ID,
+    liveQuizId: QUIZ_ID,
+    status: blockStatus,
+    execution: 0,
+    startedAt: new Date('2026-01-01T00:00:00.000Z'),
+    elements: [instance(1), instance(2)],
+  }
+  const transaction = {
+    elementBlock: { findUnique: vi.fn(async () => block) },
+    liveQuiz: {
+      updateMany: vi.fn(async () => ({ count: 1 })),
+      update,
+    },
+  }
   const prisma = {
+    $transaction: async (run: (tx: typeof transaction) => unknown) =>
+      run(transaction),
     liveQuiz: {
       findUnique: vi.fn(async () => ({
         id: QUIZ_ID,
@@ -46,14 +63,7 @@ function mockPrisma({
         courseId: null,
         course: null,
         activeBlockId,
-        blocks: [
-          {
-            id: BLOCK_ID,
-            liveQuizId: QUIZ_ID,
-            status: blockStatus,
-            elements: [instance(1), instance(2)],
-          },
-        ],
+        blocks: [block],
       })),
       update,
     },

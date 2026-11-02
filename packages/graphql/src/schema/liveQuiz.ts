@@ -157,6 +157,7 @@ export const LiveQuiz = LiveQuizRef.implement({
     }),
 
     startedAt: t.expose('startedAt', { type: 'Date', nullable: true }),
+    availableFrom: t.expose('availableFrom', { type: 'Date', nullable: true }),
     finishedAt: t.expose('finishedAt', { type: 'Date', nullable: true }),
     createdAt: t.expose('createdAt', { type: 'Date' }),
     updatedAt: t.expose('updatedAt', { type: 'Date', nullable: true }),
@@ -190,6 +191,25 @@ export const LiveQuizMeta = LiveQuizMetaRef.implement({
     name: t.exposeString('name'),
     status: t.expose('status', { type: PublicationStatus }),
     availableFrom: t.expose('availableFrom', { type: 'Date', nullable: true }),
+  }),
+})
+
+// how the controller wants a question's evaluation projected (PPT embed)
+export interface IEvaluationDisplaySetting {
+  instanceId: number
+  chartType?: string | null
+  showSolution: boolean
+  showPercentages: boolean
+}
+
+export const EvaluationDisplaySettingRef =
+  builder.objectRef<IEvaluationDisplaySetting>('EvaluationDisplaySetting')
+export const EvaluationDisplaySetting = EvaluationDisplaySettingRef.implement({
+  fields: (t) => ({
+    instanceId: t.exposeInt('instanceId'),
+    chartType: t.exposeString('chartType', { nullable: true }),
+    showSolution: t.exposeBoolean('showSolution'),
+    showPercentages: t.exposeBoolean('showPercentages'),
   }),
 })
 

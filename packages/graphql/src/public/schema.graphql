@@ -1871,6 +1871,13 @@ enum ElementType {
   SELECTION
 }
 
+type EvaluationDisplaySetting {
+  chartType: String
+  instanceId: Int!
+  showPercentages: Boolean!
+  showSolution: Boolean!
+}
+
 type Feedback {
   content: String!
   createdAt: Date!
@@ -2739,6 +2746,7 @@ type Level {
 type LiveQuiz {
   accessMode: LiveQuizAccessMode!
   activeBlock: ElementBlock
+  availableFrom: Date
   beforeFirstBlock: Boolean
   blocks: [ElementBlock!]
   confusionFeedbacks: [ConfusionTimestep!]
@@ -3062,6 +3070,7 @@ type Mutation {
   unsubscribeFromPush(courseId: String!, endpoint: String!): Boolean
   updateCourseSettings(color: String, description: String, displayName: String, endDate: Date, groupDeadlineDate: Date, id: String!, isGamificationEnabled: Boolean, isGroupCreationEnabled: Boolean, language: LocaleType!, name: String, notificationEmail: String, startDate: Date): Course
   updateElementInstances(elementId: Int!, includeTemplates: Boolean!): [ElementInstance!]
+  updateEvaluationDisplay(chartType: String, instanceId: Int!, quizId: String!, showPercentages: Boolean, showSolution: Boolean): EvaluationDisplaySetting
   updateGeneratedElementDraft(input: UpdateGeneratedElementDraftInput!): GeneratedElementDraft!
   updateKb(description: String, domainPolicyId: String, domainPolicyLanguage: String, domainPolicyVersion: Int, id: ID!, name: String): KB!
   updateKbResourceMaterialType(id: ID!, materialType: KBResourceMaterialType!): KBResource!
@@ -3555,6 +3564,7 @@ type Query {
   controlCourse(id: String!): Course
   controlCourses: [Course!]
   controlLiveQuiz(id: String!): LiveQuiz
+  controlLiveQuizFeedbacks(id: String!): LiveQuiz
   countCatalogSharingRequests: Int!
   course(id: String!): Course
   courseAssessmentReportRecordCount(courseId: String!): Int!
@@ -3652,6 +3662,7 @@ type Query {
   groupActivityInstances(courseId: String!, groupId: String!): [GroupActivityInstance!]
   liveQuiz(id: String!): LiveQuiz
   liveQuizEvaluation(hmac: String, id: String!): ActivityEvaluation
+  liveQuizEvaluationDisplay(hmac: String, id: String!): [EvaluationDisplaySetting!]
   liveQuizLeaderboard(hmac: String, quizId: String!): [LeaderboardEntry!]
   liveQuizStudentAssessmentResponses(liveQuizId: String!, participantId: String!): [StudentAssessmentBlockResponse!]
   manageAiCapability: ManageAiCapabilityState!
