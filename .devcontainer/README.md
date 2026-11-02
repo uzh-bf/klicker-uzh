@@ -139,7 +139,7 @@ marker creation to work around a refusal.
 
 ## Profiles
 
-This repository pins devrouter 0.5.1. Managed profiles, introduced in 0.0.40,
+This repository pins devrouter 0.6.1. Managed profiles, introduced in 0.0.40,
 select three independent dimensions: routed
 apps, optional Compose services, and managed processes. Merged selections are
 additive and order-insensitive; omitting `--profile` selects `standard`, which
