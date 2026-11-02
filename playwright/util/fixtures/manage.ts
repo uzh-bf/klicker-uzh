@@ -126,23 +126,35 @@ export async function mockManageUserProfileUnavailable(page: Page) {
   return { fulfilled }
 }
 
+// The lecturer's simple/advanced settings choice is a browser preference, so
+// tests seed it before the page loads.
+export async function setAiSettingsMode(
+  page: Page,
+  mode: 'simple' | 'advanced'
+) {
+  await page.addInitScript((value) => {
+    localStorage.setItem('klicker-manage-ai-settings-mode', value)
+  }, mode)
+}
+
 export async function mockGrowthBookFeatureFlags(
   page: Page,
   {
     aiBeta = false,
-    aiAdvancedManagement = true,
+    aiSettingsMode = 'advanced',
     responseExamples = false,
     failRefresh = false,
     learningAnalytics = true,
   }: {
     aiBeta?: boolean
-    aiAdvancedManagement?: boolean
+    aiSettingsMode?: 'simple' | 'advanced'
     responseExamples?: boolean
     failRefresh?: boolean
     learningAnalytics?: boolean
   } = {}
 ) {
   let requestCount = 0
+  await setAiSettingsMode(page, aiSettingsMode)
   await page.unroute(GROWTHBOOK_FEATURES_URL)
   await page.route(GROWTHBOOK_FEATURES_URL, (route) => {
     requestCount += 1
@@ -155,7 +167,6 @@ export async function mockGrowthBookFeatureFlags(
       body: JSON.stringify({
         features: {
           'ai-beta': { defaultValue: aiBeta },
-          'ai-advanced-management': { defaultValue: aiAdvancedManagement },
           'chatbot-response-examples': { defaultValue: responseExamples },
           'learning-analytics': { defaultValue: learningAnalytics },
         },

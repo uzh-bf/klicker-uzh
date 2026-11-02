@@ -21,6 +21,10 @@ import { useMemo } from 'react'
 import { isDeepEqual } from 'remeda'
 import util from 'util'
 import { createManageApolloCache } from './apolloCache'
+import {
+  STALE_QUERY_RELOAD_STORAGE_KEY,
+  shouldReloadForStalePersistedQuery,
+} from './stalePersistedQueryReload'
 
 interface PageProps {
   __APOLLO_STATE__: NormalizedCacheObject
@@ -57,6 +61,35 @@ function createIsomorphLink() {
         ]
 
   const errorLink = onError(({ graphQLErrors, networkError }) => {
+    if (isBrowser && graphQLErrors) {
+      let lastReloadAt: string | null = null
+      try {
+        lastReloadAt = window.sessionStorage.getItem(
+          STALE_QUERY_RELOAD_STORAGE_KEY
+        )
+      } catch {
+        // Storage can be unavailable; the reload still happens once.
+      }
+      if (
+        shouldReloadForStalePersistedQuery({
+          messages: graphQLErrors.map(({ message }) => message),
+          lastReloadAt,
+          now: Date.now(),
+        })
+      ) {
+        try {
+          window.sessionStorage.setItem(
+            STALE_QUERY_RELOAD_STORAGE_KEY,
+            String(Date.now())
+          )
+        } catch {
+          // Without storage the cooldown cannot be recorded.
+        }
+        window.location.reload()
+        return
+      }
+    }
+
     if (graphQLErrors)
       graphQLErrors.forEach(({ message, locations, path, extensions }) => {
         console.log(

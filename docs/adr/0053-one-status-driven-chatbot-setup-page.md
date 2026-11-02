@@ -23,8 +23,9 @@ and what still waits for review.
 
 Every chatbot status renders the same page of collapsible sections:
 Materials, Student information, Learning modes and framing, Model, Usage
-limits and, for advanced management, Knowledge graph. Each section shows a
-status and a short summary when closed, has one Save button, and collapses
+limits and Knowledge graph. Model and Knowledge graph appear only in the
+advanced settings mode. Each section shows a status and a short summary when
+closed, has one Save button, and collapses
 after saving. The status changes what the sections allow, not which layout
 appears:
 

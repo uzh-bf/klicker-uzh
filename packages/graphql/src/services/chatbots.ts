@@ -1275,7 +1275,8 @@ async function assertGraphRetrievalTransition(
   try {
     allowed =
       owner !== null &&
-      ctx.featureFlags?.isEnabled('chatbot-graphrag', {
+      owner.betaEnabled === true &&
+      ctx.featureFlags?.isEnabled('ai-beta', {
         id: ownerId,
         actorType: 'user',
         role: owner.role,

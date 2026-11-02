@@ -477,20 +477,12 @@ describe('Integration tests for knowledge base CRUD', () => {
     await testCleanup(prisma)
   })
 
-  it('opts a new knowledge base into the graph only for owners admitted to automatic preparation', async () => {
-    const evaluator = userOneCtx.featureFlags!
-    const admittedCtx: ContextWithUser = {
-      ...userOneCtx,
-      featureFlags: {
-        ...evaluator,
-        isEnabled: (key, attributes) =>
-          key === 'kb-auto-graph-preparation' ||
-          (evaluator.isEnabled(key, attributes) ?? false),
-      },
-    }
-
-    const optedIn = await createKb({ name: 'Auto graph' }, admittedCtx)
-    const manual = await createKb({ name: 'Manual graph' }, userOneCtx)
+  it('opts a new knowledge base into the graph only for owners admitted to the AI beta', async () => {
+    const optedIn = await createKb({ name: 'Auto graph' }, userOneCtx)
+    const manual = await createKb(
+      { name: 'Manual graph' },
+      withDeniedFeatureFlag(userOneCtx, 'ai-beta')
+    )
 
     expect(optedIn.knowledgeGraphEnabled).toBe(true)
     expect(manual.knowledgeGraphEnabled).toBe(false)
@@ -498,7 +490,12 @@ describe('Integration tests for knowledge base CRUD', () => {
 
   it('requires graph opt-in and the rollout admission before dispatching a build', async () => {
     const kb = await createKb({ name: 'Graph controls' }, userOneCtx)
-    const deniedCtx = withDeniedFeatureFlag(userOneCtx, 'kb-graph-builds')
+    // New knowledge bases start opted in; switching off is never gated.
+    await setKbKnowledgeGraphEnabled(
+      { kbId: kb.id, enabled: false },
+      userOneCtx
+    )
+    const deniedCtx = withDeniedFeatureFlag(userOneCtx, 'ai-beta')
 
     await expect(
       rebuildKbKnowledgeGraph({ kbId: kb.id }, userOneCtx)
@@ -691,10 +688,7 @@ describe('Integration tests for knowledge base CRUD', () => {
     // The catalog revision does not stand in for the actor's rollout. An actor
     // the rollout does not admit cannot record a selection, and the capability
     // handshake advertises no options for them.
-    const deniedCtx = withDeniedFeatureFlag(
-      userOneCtx,
-      'kb-graph-domain-selection'
-    )
+    const deniedCtx = withDeniedFeatureFlag(userOneCtx, 'ai-beta')
     await expect(
       updateKb(
         {
@@ -2143,10 +2137,7 @@ describe('Integration tests for knowledge base CRUD', () => {
     // client retry into a refusal: the resource exists and is already queued,
     // so the retry is asking for nothing new.
     await expect(
-      confirmKbFileUpload(
-        args,
-        withDeniedFeatureFlag(userOneCtx, 'kb-ingestion')
-      )
+      confirmKbFileUpload(args, withDeniedFeatureFlag(userOneCtx, 'ai-beta'))
     ).resolves.toMatchObject({ id: first.id })
     expect(runNoWait).toHaveBeenCalledOnce()
   })
@@ -3997,7 +3988,7 @@ describe('Integration tests for knowledge base CRUD', () => {
       { kbId: kb.id, title: 'Existing', url: 'https://example.com/existing' },
       userOneCtx
     )
-    const deniedCtx = withDeniedFeatureFlag(userOneCtx, 'kb-ingestion')
+    const deniedCtx = withDeniedFeatureFlag(userOneCtx, 'ai-beta')
     const deniedUploadBlobId = randomUUID()
 
     const blockedCalls: Array<() => Promise<unknown>> = [
@@ -4089,7 +4080,7 @@ describe('Integration tests for knowledge base CRUD', () => {
     })
     await expect(
       getKbKnowledgeGraphConfig({ kbId: kb.id }, deniedCtx)
-    ).resolves.toMatchObject({ isEnabled: false })
+    ).resolves.toMatchObject({ isEnabled: true })
     // Creation auto-started ingestion, so the resource must settle out of
     // QUEUED before deletion is permitted; this stands in for that
     // completed ingestion rather than exercising deletion timing itself.

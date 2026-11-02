@@ -1,6 +1,9 @@
 import { expect, test, type Page, type Route } from '@playwright/test'
 import { getPrisma } from '../global-setup.js'
-import { openChatbotSection } from '../util/fixtures/manage.js'
+import {
+  openChatbotSection,
+  setAiSettingsMode,
+} from '../util/fixtures/manage.js'
 import { loginLecturer } from '../util/workflow.js'
 import {
   CHATBOT_ID,
@@ -898,10 +901,9 @@ test.describe('Knowledge graph suggestion request lifecycle', () => {
   })
 })
 
-test('GraphRAG rollout controls retrieval independently of the student map', async ({
+test('GraphRAG retrieval is controlled independently of the student map', async ({
   page,
 }) => {
-  let enabled = false
   let payloadReads = 0
   await page.route('**/api/features/*', async (route) => {
     payloadReads += 1
@@ -910,15 +912,12 @@ test('GraphRAG rollout controls retrieval independently of the student map', asy
       body: JSON.stringify({
         features: {
           'ai-beta': { defaultValue: true },
-          // Both knowledge-graph switches are advanced controls, so the
-          // ordinary surface shows neither; this test is about the separate
-          // GraphRAG rollout, not about who may see the switches.
-          'ai-advanced-management': { defaultValue: true },
-          'chatbot-graphrag': { defaultValue: enabled },
         },
       }),
     })
   })
+  // Both knowledge-graph switches are advanced controls.
+  await setAiSettingsMode(page, 'advanced')
   await loginLecturer(page)
   const url = `${process.env.URL_MANAGE}/resources/chatbots?chatbotId=${CHATBOT_ID}&view=knowledge`
   await page.goto(url)
@@ -926,14 +925,8 @@ test('GraphRAG rollout controls retrieval independently of the student map', asy
   const map = page.getByTestId('chatbot-knowledge-graph-visible-switch')
   const retrieval = page.getByTestId('chatbot-knowledge-graph-retrieval-switch')
   await expect(map).toBeVisible()
-  await expect(retrieval).toHaveCount(0)
-  expect(payloadReads).toBeGreaterThan(0)
-  enabled = true
-  await page.evaluate(() => localStorage.clear())
-  await page.reload()
-  await openChatbotSection(page, 'graph')
-  await expect(map).toBeVisible()
   await expect(retrieval).toBeVisible()
+  expect(payloadReads).toBeGreaterThan(0)
   const initial = await retrieval.isChecked()
   await retrieval.setChecked(!initial)
   await expect(retrieval).toBeChecked({ checked: !initial })

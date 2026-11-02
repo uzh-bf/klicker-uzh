@@ -99,10 +99,10 @@ export async function isChatbotGraphRetrievalEnabled(
         betaEnabled: true,
       },
     })
-    if (!owner) return false
+    if (!owner || owner.betaEnabled !== true) return false
     const flags = getFeatureFlagClient()
     await flags.initialize()
-    return flags.isEnabled('chatbot-graphrag', {
+    return flags.isEnabled('ai-beta', {
       id: ownerId,
       actorType: 'user',
       role: owner.role,
