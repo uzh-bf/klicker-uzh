@@ -11,7 +11,6 @@ export const FEATURE_FLAG_DEFAULTS = {
   // stay live is a gap, not a finer control.
   'ai-beta': false,
   'learning-analytics': false,
-  'chatbot-graphrag': false,
   // Reveals the advanced chatbot-management controls in Manage: model
   // selection, reasoning effort, credit editing, usage summary, MCP
   // configuration and knowledge-graph controls. Off is the ordinary lecturer
@@ -22,22 +21,10 @@ export const FEATURE_FLAG_DEFAULTS = {
   // separate from advanced management so the review stays hidden for every
   // lecturer until it is rolled out. The chat runtime does not read it.
   'chatbot-response-examples': false,
-  // Knowledge-base admission controls. Each one answers whether an actor may
-  // start new work; the provider contract still decides what a worker can
-  // execute, and an accepted build keeps the inputs it was accepted with.
-  // Ingestion reads, deletion, cleanup and reconciliation stay outside them.
-  'kb-ingestion': false,
-  'kb-graph-builds': false,
-  'kb-graph-domain-selection': false,
-  'question-focus-topic': false,
   // Raises the persona limit for custom chat modes the lecturer writes or
   // edits from 10,000 to 100,000 characters. Stored long personas stay
   // readable and savable unchanged without it.
   'chatbot-long-custom-prompts': false,
-  // Admits the owner of a knowledge base to scheduled graph preparation, so
-  // the platform prepares graphs without a lecturer request. Each automatic
-  // build still passes the owner's AI entitlement and `kb-graph-builds`.
-  'kb-auto-graph-preparation': false,
 } as const satisfies Record<string, false>
 
 export type KlickerFeatureFlags = {

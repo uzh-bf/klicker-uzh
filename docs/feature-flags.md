@@ -41,18 +41,13 @@ and worker-only KB settlement are unaffected.
 
 ## Active flags
 
-| Key                           | Consumer                                                               | Fallback | Disabled behavior                                                                                                                    |
-| ----------------------------- | ---------------------------------------------------------------------- | -------- | ------------------------------------------------------------------------------------------------------------------------------------ |
-| `learning-analytics`          | Lecturer UI/Manage                                                     | `false`  | Analytics controls remain visible but are not usable                                                                                 |
-| `ai-beta`                     | Server-side chatbot authoring and account-usage rollout                | `false`  | Authoring UI is not mounted; authoring API calls are denied and protected reads return no data                                       |
-| `ai-advanced-management`      | Lecturer Manage UI                                                     | `false`  | Manage shows the simplified chatbot surface; the advanced controls are not mounted                                                   |
-| `chatbot-response-examples`   | Response example review in Manage                                      | `false`  | The review is not mounted and its query does not run; the chat runtime keeps using approved examples                                 |
-| `kb-ingestion`                | Lecturer KB ingestion admission                                        | `false`  | New upload, upload confirmation, URL, replacement and ingest requests are refused; reads, deletion, cleanup and queued work continue |
-| `kb-graph-builds`             | Lecturer graph opt-in and rebuilds                                     | `false`  | New opt-ins and rebuilds are refused before any cost reservation; published graphs and accepted builds continue                      |
-| `kb-graph-domain-selection`   | Explicit graph-domain and graph-focus requests                         | `false`  | The capability handshake advertises no options and a complete selection is refused                                                   |
-| `question-focus-topic`        | Per-batch question-generation focus                                    | `false`  | `supportsFocusTopic` is false and a requested focus is refused                                                                       |
-| `kb-auto-graph-preparation`   | System-triggered (scheduled) graph preparation; new KBs start opted in | `false`  | No automatic graph build is admitted; lecturer-requested builds are unaffected                                                       |
-| `chatbot-long-custom-prompts` | Custom chat mode persona length in Manage and on save                  | `false`  | New or edited persona text is capped at 10,000 characters; stored longer text keeps compiling and saves unchanged                    |
+| Key                           | Consumer                                                | Fallback | Disabled behavior                                                                                                 |
+| ----------------------------- | ------------------------------------------------------- | -------- | ----------------------------------------------------------------------------------------------------------------- |
+| `learning-analytics`          | Lecturer UI/Manage                                      | `false`  | Analytics controls remain visible but are not usable                                                              |
+| `ai-beta`                     | Server-side chatbot authoring and account-usage rollout | `false`  | Authoring UI is not mounted; authoring API calls are denied and protected reads return no data                    |
+| `ai-advanced-management`      | Lecturer Manage UI                                      | `false`  | Manage shows the simplified chatbot surface; the advanced controls are not mounted                                |
+| `chatbot-response-examples`   | Response example review in Manage                       | `false`  | The review is not mounted and its query does not run; the chat runtime keeps using approved examples              |
+| `chatbot-long-custom-prompts` | Custom chat mode persona length in Manage and on save   | `false`  | New or edited persona text is capped at 10,000 characters; stored longer text keeps compiling and saves unchanged |
 
 Beta Features is discoverable in account settings and the first-login dialog
 regardless of Catalyst, login scope, or rollout availability. The information
@@ -586,42 +581,42 @@ quickly a change takes effect; this is not an instantaneous kill switch.
 
 ### Chatbot graph-assisted retrieval
 
-`chatbot-graphrag` defaults off. It exposes the lecturer retrieval control and
-allows retrieval only together with the approved chatbot retrieval policy.
-Backend activation/publication and Chat runtime target the owning lecturer's
-current id, role, Catalyst status and beta preference. The map remains an
-independent lecturer opt-in and does not depend on this retrieval flag.
-Missing/unusable flag configuration fails closed. Shared refresh (30 seconds)
-and maximum payload age (120 seconds) bound eventual revocation; this is not
-an instantaneous global kill switch. Deploy the source disabled, validate map
-and ordinary retrieval on staging, then enable only a named evaluation cohort.
+Graph-assisted retrieval is available to every lecturer who has `ai-beta`; no
+separate flag exists. Retrieval is allowed only together with the approved
+chatbot retrieval policy. Backend activation/publication and the Chat runtime
+evaluate `ai-beta` for the owning lecturer's current id, role, Catalyst status
+and beta preference, and deny the owner who has not opted into the beta.
+The map remains an independent lecturer opt-in. Missing/unusable flag
+configuration fails closed. Shared refresh (30 seconds) and maximum payload age
+(120 seconds) bound eventual revocation; this is not an instantaneous global
+kill switch.
 
 ### Knowledge-base admission controls
 
-Five flags decide whether an actor may start new knowledge-base work. They are
-backend-enforced entitlements under [ADR 0038](./adr/0038-backend-enforced-feature-entitlements.md):
-the capability queries advertise what the requesting actor's own evaluation
-allows, and every entry point re-evaluates the flag before it accepts work.
+Whether an actor may start new knowledge-base work is decided by `ai-beta`
+alone. This covers ingestion (upload tickets, upload confirmation, URL
+resources, file replacement, and ingest/retry work), graph opt-in and rebuilds,
+explicit graph-domain selection, per-batch question-generation focus, and
+scheduled graph preparation. New knowledge bases start opted into the graph for
+every lecturer with `ai-beta`. These are backend-enforced entitlements under
+[ADR 0038](./adr/0038-backend-enforced-feature-entitlements.md): the capability
+queries advertise what the requesting actor's own evaluation allows, and every
+entry point re-evaluates it before it accepts work. Refusals keep their error
+codes: `KB_INGESTION_DISABLED`, `KB_GRAPH_DISABLED`,
+`KB_GRAPH_DOMAIN_CAPABILITY_DISABLED`, and `CONFIGURATION_INVALID` for a
+requested question focus. Reads, deletion, cleanup, queued reconciliation,
+published graphs, and accepted builds stay live.
 
-| Key                         | Admits                                                                                                                     | Closed or unavailable behavior                                                                                                              |
-| --------------------------- | -------------------------------------------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------- |
-| `kb-ingestion`              | Upload tickets, upload confirmation, URL resources, file replacement, and ingest/retry work                                | `KB_INGESTION_DISABLED` on new requests only; reads, deletion, cleanup and queued reconciliation stay live                                  |
-| `kb-graph-builds`           | Graph opt-in, rebuild and focus requests, before any cost reservation                                                      | `KB_GRAPH_DISABLED` on new requests only; a published graph keeps being served and an accepted build keeps running, settling and publishing |
-| `kb-graph-domain-selection` | Explicit domain selection and the graph build focus                                                                        | `KB_GRAPH_DOMAIN_CAPABILITY_DISABLED`; the capability handshake advertises no options                                                       |
-| `question-focus-topic`      | A per-batch question-generation focus                                                                                      | `CONFIGURATION_INVALID` for a requested focus, and `supportsFocusTopic: false` in the capability query                                      |
-| `kb-auto-graph-preparation` | Scheduled graph preparation for the KB owner, in addition to `kb-graph-builds`; also opts newly created KBs into the graph | The worker sweep skips the owner's KBs before any reservation; lecturer requests and accepted builds are unaffected                         |
-
-These flags narrow existing provider contracts and never replace them. Explicit
+`ai-beta` narrows existing provider contracts and never replaces them. Explicit
 domain selection still requires `KB_GRAPH_DOMAIN_CATALOG_REVISION` to match the
 shipped catalog, and question focus still needs a question worker that
 understands the blueprint field, because the provider rejects an unknown field
 instead of ignoring it. A deployment declares what its provider pipeline
-supports; GrowthBook decides who may use it.
+supports; GrowthBook decides who holds the beta.
 
 A denied or unusable evaluation refuses new work and never rewrites an accepted
 request. Persisted builds keep the inputs they were accepted with, and their
-settlement, publication, cleanup and reconciliation paths do not read these
-flags.
+settlement, publication, cleanup and reconciliation paths do not read the flag.
 
 Every key falls back to `false`, so a missing definition closes the capability
 everywhere until its environment's default value or a targeting rule admits it.

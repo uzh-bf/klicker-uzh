@@ -48,22 +48,6 @@ const server = createServer((request, response) => {
             defaultValue: false,
             rules: [{ condition: { id: enabledUserId }, force: true }],
           },
-          'kb-ingestion': {
-            defaultValue: false,
-            rules: [{ condition: { id: enabledUserId }, force: true }],
-          },
-          'kb-graph-builds': {
-            defaultValue: false,
-            rules: [{ condition: { id: enabledUserId }, force: true }],
-          },
-          'kb-graph-domain-selection': {
-            defaultValue: false,
-            rules: [{ condition: { id: enabledUserId }, force: true }],
-          },
-          'question-focus-topic': {
-            defaultValue: false,
-            rules: [{ condition: { id: enabledUserId }, force: true }],
-          },
         },
       })
     )

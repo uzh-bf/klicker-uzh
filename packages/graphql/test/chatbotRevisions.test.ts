@@ -33,9 +33,7 @@ describe('chatbot authoring revision transitions', () => {
       ...contexts.userOneCtx,
       featureFlags: {
         ...contexts.userOneCtx.featureFlags,
-        isEnabled: vi.fn(
-          (key) => key === 'ai-beta' || key === 'chatbot-graphrag'
-        ),
+        isEnabled: vi.fn((key) => key === 'ai-beta'),
       } as NonNullable<ContextWithUser['featureFlags']>,
     }
     admin = {
@@ -767,7 +765,7 @@ describe('chatbot authoring revision transitions', () => {
       ...owner,
       featureFlags: {
         ...owner.featureFlags,
-        isEnabled: (key: string) => key !== 'chatbot-graphrag',
+        isEnabled: (key: string) => key !== 'ai-beta',
       } as NonNullable<ContextWithUser['featureFlags']>,
     }
     await expect(

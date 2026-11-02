@@ -11,15 +11,9 @@ describe('feature flag contracts', () => {
     expect(FEATURE_FLAG_DEFAULTS).toEqual({
       'ai-beta': false,
       'learning-analytics': false,
-      'chatbot-graphrag': false,
       'ai-advanced-management': false,
       'chatbot-response-examples': false,
-      'kb-ingestion': false,
-      'kb-graph-builds': false,
-      'kb-graph-domain-selection': false,
-      'question-focus-topic': false,
       'chatbot-long-custom-prompts': false,
-      'kb-auto-graph-preparation': false,
     })
   })
 

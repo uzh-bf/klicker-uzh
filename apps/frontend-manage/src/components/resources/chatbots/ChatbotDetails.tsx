@@ -262,7 +262,7 @@ function ChatbotDetails({
   focusedResponseExampleId?: string
 }) {
   const t = useTranslations()
-  const graphRetrievalAvailable = useFeatureFlag('chatbot-graphrag')
+  const graphRetrievalAvailable = useFeatureFlag('ai-beta')
   const responseExamplesEnabled = useFeatureFlag('chatbot-response-examples')
   const { locale } = useRouter()
   const { data: scopeData } = useQuery(QGetCatalystRequestAccessDocument)
