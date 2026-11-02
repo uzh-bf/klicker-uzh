@@ -23,10 +23,10 @@ vi.mock('@klicker-uzh/prisma', () => ({
   getEffectiveChatAccountUsage: mocks.getEffectiveChatAccountUsage,
   prisma: mocks.prisma,
 }))
-vi.mock('../src/utils/transactions', () => ({
+vi.mock('@klicker-uzh/chat-api/host/utils/transactions', () => ({
   withTransaction: mocks.withTransaction,
 }))
-vi.mock('../src/services/credits', () => ({
+vi.mock('@klicker-uzh/chat-api/host/services/credits', () => ({
   CreditsService: {
     decrementCreditsInTransaction: mocks.decrementCreditsInTransaction,
   },

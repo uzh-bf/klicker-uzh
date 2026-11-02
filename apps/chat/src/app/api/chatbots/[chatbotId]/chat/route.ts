@@ -129,6 +129,7 @@ import {
   matchesPersistedLearningHistory,
   normalizePersistedLearningContext,
   resolveElearningThreadOrigin,
+  resolveElearningTurnContext,
   verifyAndNormalizeElearningChatContext,
 } from '@/src/services/elearningContext'
 import {
@@ -1177,42 +1178,24 @@ export async function POST(
       : { present: false }
   }
 
-  let elearningSnapshot: ELearningSnapshotContent | null = null
-  let persistElearningContext: ELearningSnapshotContent | null = null
-  if (isElearningThread) {
-    // An edited question branches from an existing message and keeps that
-    // message's stored snapshot, including a stored null that recorded the
-    // original question had no page evidence. A branch source outside this
-    // thread is refused rather than silently re-anchored to the live page.
-    let inherited:
-      | { present: false }
-      | { present: true; snapshot: ELearningSnapshotContent | null }
-      | null = null
-    if (sourceMessageId && sourceMessageId !== userMessageId) {
-      inherited = await findPersistedLearningContext(sourceMessageId)
-      if (!inherited.present) {
-        await discardCreatedThread('branch.source')
-        return NextResponse.json(
-          { error: 'Source message not found' },
-          { status: 400 }
-        )
-      }
-    }
-
-    const saved = userMessageId
-      ? await findPersistedLearningContext(userMessageId)
-      : ({ present: false } as const)
-
-    if (inherited?.present) {
-      elearningSnapshot = inherited.snapshot
-      persistElearningContext = inherited.snapshot
-    } else if (saved.present) {
-      elearningSnapshot = saved.snapshot
-    } else if (verifiedElearningContext) {
-      elearningSnapshot = verifiedElearningContext.snapshot
-      persistElearningContext = verifiedElearningContext.snapshot
-    }
+  const learningContext = await resolveElearningTurnContext(
+    {
+      isElearningThread,
+      userMessageId,
+      sourceMessageId,
+      verifiedContext: verifiedElearningContext,
+    },
+    findPersistedLearningContext
+  )
+  if (learningContext.sourceMessageMissing) {
+    await discardCreatedThread('branch.source')
+    return NextResponse.json(
+      { error: 'Source message not found' },
+      { status: 400 }
+    )
   }
+  const elearningSnapshot = learningContext.snapshot
+  const persistElearningContext = learningContext.persistSnapshot
 
   let turnClaim: Awaited<ReturnType<typeof claimChatTurn>>
   try {

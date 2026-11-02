@@ -987,4 +987,128 @@ describePostgres('account usage PostgreSQL integration', () => {
     })
     expect(usage.usedCredits.toString()).toBe('1.1')
   })
+
+  test.each([
+    'false',
+    'true',
+  ])('settles a fenced failed attempt once and fences stale settlement and cleanup with writer=%s', async (writer) => {
+    process.env.CHAT_TURN_LIFECYCLE_WRITES_ENABLED = writer
+    const messageId = randomUUID()
+    const claim = () =>
+      accountUsage.claimChatTurn({
+        ownerId: OWNER_ID,
+        chatbotId: CHATBOT_ID,
+        threadId: THREAD_ONE_ID,
+        assistantMessageId: messageId,
+        parentId: null,
+        requireAttemptFence: true,
+      })
+    const first = await claim()
+    if (first.outcome !== 'claimed') throw new Error('Expected fenced claim')
+    expect(first.lifecycleAttemptId).not.toBeNull()
+    const failed = {
+      ...turnInput(messageId, {
+        content: [],
+        rawCreditsUsed: 0.25,
+        outcome: 'failed',
+      }),
+      lifecycleAttemptId: first.lifecycleAttemptId,
+    }
+    const results = await Promise.all([
+      accountUsage.finalizeChatTurn(failed),
+      accountUsage.finalizeChatTurn(failed),
+    ])
+    expect(results.map((result) => result.outcome).sort()).toEqual([
+      'duplicate',
+      'failed',
+    ])
+    expect(
+      (await prisma.chatMessage.findUniqueOrThrow({ where: { id: messageId } }))
+        .lifecycleStatus
+    ).toBe('FAILED')
+    await expect(
+      accountUsage.finalizeChatTurn({
+        ...failed,
+        outcome: 'completed',
+        content: [{ type: 'text', text: 'late-answer' }],
+      })
+    ).rejects.toBeInstanceOf(accountUsage.ChatTurnConflictError)
+    const [retry] = await Promise.all([
+      claim(),
+      accountUsage.failChatTurn({
+        assistantMessageId: messageId,
+        threadId: THREAD_ONE_ID,
+        lifecycleAttemptId: first.lifecycleAttemptId,
+      }),
+      accountUsage.finalizeChatTurn(failed).catch((error: unknown) => {
+        if (!(error instanceof accountUsage.ChatTurnConflictError)) throw error
+      }),
+    ])
+    if (retry.outcome !== 'claimed')
+      throw new Error('Expected retryable failed claim')
+    expect(retry.lifecycleAttemptId).not.toBe(first.lifecycleAttemptId)
+    await Promise.all([
+      expect(accountUsage.finalizeChatTurn(failed)).rejects.toBeInstanceOf(
+        accountUsage.ChatTurnConflictError
+      ),
+      accountUsage.failChatTurn({
+        assistantMessageId: messageId,
+        threadId: THREAD_ONE_ID,
+        lifecycleAttemptId: first.lifecycleAttemptId,
+      }),
+    ])
+    expect(
+      await prisma.chatMessage.findUniqueOrThrow({ where: { id: messageId } })
+    ).toMatchObject({
+      lifecycleStatus: 'IN_PROGRESS',
+      lifecycleAttemptId: retry.lifecycleAttemptId,
+    })
+    await accountUsage.finalizeChatTurn({
+      ...turnInput(messageId, { rawCreditsUsed: 0.5 }),
+      lifecycleAttemptId: retry.lifecycleAttemptId,
+    })
+    const [usage, balance] = await Promise.all([
+      prisma.chatAccountUsage.findUniqueOrThrow({
+        where: {
+          ownerId_usageClass_monthStart: {
+            ownerId: OWNER_ID,
+            usageClass: 'BASE',
+            monthStart: MONTH_START,
+          },
+        },
+      }),
+      prisma.chatUsageCredits.findUniqueOrThrow({
+        where: {
+          participantId_chatbotId: {
+            participantId: PARTICIPANT_ID,
+            chatbotId: CHATBOT_ID,
+          },
+        },
+      }),
+    ])
+    expect(usage.usedCredits.toString()).toBe('0.75')
+    expect(balance.current.toString()).toBe('0.25')
+  })
+
+  test('does not introduce failed charging into an unfenced legacy attempt', async () => {
+    process.env.CHAT_TURN_LIFECYCLE_WRITES_ENABLED = 'false'
+    const input = await claimedTurnInput(randomUUID(), {
+      content: [],
+      outcome: 'failed',
+    })
+    expect(input.lifecycleAttemptId).toBeNull()
+    await expect(accountUsage.finalizeChatTurn(input)).rejects.toBeInstanceOf(
+      accountUsage.ChatTurnConflictError
+    )
+    const usage = await prisma.chatAccountUsage.findUniqueOrThrow({
+      where: {
+        ownerId_usageClass_monthStart: {
+          ownerId: OWNER_ID,
+          usageClass: 'BASE',
+          monthStart: MONTH_START,
+        },
+      },
+    })
+    expect(usage.usedCredits.toString()).toBe('0')
+  })
 })

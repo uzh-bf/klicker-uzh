@@ -1,17 +1,18 @@
 import {
   CHAT_ENGINE_CONTRACT_VERSION,
+  type EngineContractVersion,
   MCP_EXECUTION_TOKEN_HEADER,
+  parseEngineManifest,
+  type SupportedEngineChatRequest,
+  type SupportedEngineManifest,
   TRACEPARENT_HEADER,
   TRACESTATE_HEADER,
-  parseEngineManifest,
-  type EngineChatRequest,
-  type EngineManifest,
 } from '@klicker-uzh/chat-engine-contract'
 
 export type EngineClient = {
-  manifest(options?: { signal?: AbortSignal }): Promise<EngineManifest>
+  manifest(options?: { signal?: AbortSignal }): Promise<SupportedEngineManifest>
   chat(
-    request: EngineChatRequest,
+    request: SupportedEngineChatRequest,
     options: {
       providerAuthorization?: string
       mcpExecutionToken?: string
@@ -25,6 +26,7 @@ export type EngineClientOptions = {
   baseUrl?: string
   serviceToken?: string
   fetch?: typeof globalThis.fetch
+  contractVersion?: EngineContractVersion
 }
 
 function trimBaseUrl(value: string | undefined): string | null {
@@ -49,6 +51,8 @@ export function createEngineClient(
   const serviceToken =
     options.serviceToken ?? process.env.CHAT_ENGINE_SERVICE_TOKEN
   const request = options.fetch ?? globalThis.fetch
+  const contractVersion =
+    options.contractVersion ?? CHAT_ENGINE_CONTRACT_VERSION
 
   const requireBaseUrl = () => {
     if (!baseUrl) throw new Error('CHAT_ENGINE_URL is not configured.')
@@ -57,17 +61,24 @@ export function createEngineClient(
 
   return {
     async manifest(options = {}) {
-      const response = await request(`${requireBaseUrl()}/v1/manifest`, {
-        headers: serviceHeaders(serviceToken),
-        signal: options.signal,
-      })
+      const response = await request(
+        `${requireBaseUrl()}/${contractVersion}/manifest`,
+        {
+          headers: serviceHeaders(serviceToken),
+          signal: options.signal,
+        }
+      )
       if (!response.ok) {
         throw new Error(`Engine manifest returned HTTP ${response.status}.`)
       }
-      return parseEngineManifest(await response.json())
+      return parseEngineManifest(await response.json(), contractVersion)
     },
 
     async chat(engineRequest, chatOptions) {
+      if (engineRequest.contractVersion !== contractVersion)
+        throw new Error(
+          'Engine request does not match the selected contract generation.'
+        )
       const headers = new Headers({
         ...serviceHeaders(serviceToken),
         'content-type': 'application/json',
@@ -84,12 +95,15 @@ export function createEngineClient(
           headers.set(TRACESTATE_HEADER, chatOptions.traceContext.tracestate)
         }
       }
-      const response = await request(`${requireBaseUrl()}/v1/chat`, {
-        method: 'POST',
-        headers,
-        body: JSON.stringify(engineRequest),
-        signal: chatOptions.signal,
-      })
+      const response = await request(
+        `${requireBaseUrl()}/${contractVersion}/chat`,
+        {
+          method: 'POST',
+          headers,
+          body: JSON.stringify(engineRequest),
+          signal: chatOptions.signal,
+        }
+      )
       if (!response.ok) {
         const detail = await response.text().catch(() => '')
         throw new EngineHttpError(
@@ -115,9 +129,10 @@ export class EngineHttpError extends Error {
 
 export type EngineReadiness = {
   ok: boolean
-  contractVersion: typeof CHAT_ENGINE_CONTRACT_VERSION
+  contractVersion: EngineContractVersion
   engineId: string | null
   reason: string | null
+  features?: SupportedEngineManifest['features']
 }
 
 export class EngineReadinessProbe {
@@ -133,7 +148,9 @@ export class EngineReadinessProbe {
   constructor(
     private readonly engine: EngineClient,
     private readonly ttlMs = 15_000,
-    private readonly manifestTimeoutMs = 5_000
+    private readonly manifestTimeoutMs = 5_000,
+    private readonly expectedEngineId = process.env.CHAT_ENGINE_ID,
+    private readonly contractVersion: EngineContractVersion = CHAT_ENGINE_CONTRACT_VERSION
   ) {}
 
   async get(): Promise<EngineReadiness> {
@@ -160,19 +177,23 @@ export class EngineReadinessProbe {
         this.engine.manifest({ signal: abortController.signal }),
         timeout,
       ])
+      const compatible =
+        manifest.contractVersion === this.contractVersion &&
+        Boolean(this.expectedEngineId) &&
+        manifest.engineId === this.expectedEngineId
       this.state = {
-        ok: manifest.contractVersion === CHAT_ENGINE_CONTRACT_VERSION,
+        ok: compatible,
         contractVersion: manifest.contractVersion,
         engineId: manifest.engineId,
-        reason:
-          manifest.contractVersion === CHAT_ENGINE_CONTRACT_VERSION
-            ? null
-            : 'Engine contract version is incompatible.',
+        features: manifest.features,
+        reason: compatible
+          ? null
+          : 'Engine identity or contract version is incompatible.',
       }
     } catch (error) {
       this.state = {
         ok: false,
-        contractVersion: CHAT_ENGINE_CONTRACT_VERSION,
+        contractVersion: this.contractVersion,
         engineId: null,
         reason: error instanceof Error ? error.message : 'Engine unavailable.',
       }

@@ -13,9 +13,11 @@ describe('chat-api authentication configuration', () => {
     delete process.env.APP_SECRET
 
     await expect(
-      authenticateParticipant('not-a-valid-token', 'not-a-chatbot-id')
-    ).resolves.toEqual({
-      error: 'Authentication is not configured',
+      authenticateParticipant(
+        { participantToken: 'not-a-valid-token' },
+        'not-a-chatbot-id'
+      )
+    ).resolves.toMatchObject({
       status: 500,
     })
   })

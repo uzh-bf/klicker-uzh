@@ -1,6 +1,16 @@
+import { GUEST_ACCOUNT_TYPE } from '@klicker-uzh/chat-api/host/lib/server/chatGuestToken'
+
+export {
+  type AuthMode,
+  type ChatGuestTokenPayload,
+  GUEST_ACCOUNT_TYPE,
+  signChatGuestToken,
+  verifyChatGuestToken,
+} from '@klicker-uzh/chat-api/host/lib/server/chatGuestToken'
+
 import { prisma } from '@klicker-uzh/prisma'
 import { Prisma } from '@klicker-uzh/prisma/client'
-import { signJWT, verifyJWT } from '@klicker-uzh/util'
+import { verifyJWT } from '@klicker-uzh/util'
 import bcrypt from 'bcryptjs'
 import { createHmac, randomBytes } from 'crypto'
 
@@ -8,12 +18,8 @@ import { createHmac, randomBytes } from 'crypto'
 // personas to a real account by `(ltiSub, courseId)`. Do not change without
 // a migration plan for existing guest rows.
 export const GUEST_SSO_PREFIX = 'chat-guest:'
-export const GUEST_ACCOUNT_TYPE = 'lti_guest'
-const CHAT_GUEST_TOKEN_EXPIRY = '14d'
-const CHAT_GUEST_SCOPE = 'CHAT_GUEST'
 
 export type LtiScope = 'LTI1.3'
-export type AuthMode = 'account' | 'anonymous'
 
 // ---------------------------------------------------------------------------
 // Secret resolution — fail fast on first use in production rather than at
@@ -33,22 +39,6 @@ function getChatGuestSeed(): string {
   const appSecret = process.env.APP_SECRET
   if (!appSecret) throw new Error('APP_SECRET is required')
   return createHmac('sha256', appSecret).update('chat-guest-seed').digest('hex')
-}
-
-function getChatGuestSecret(): string {
-  if (process.env.APP_CHAT_GUEST_SECRET)
-    return process.env.APP_CHAT_GUEST_SECRET
-  if (process.env.NODE_ENV === 'production') {
-    throw new Error(
-      'APP_CHAT_GUEST_SECRET is required in production. Falling back to ' +
-        'APP_SECRET-derived value would let APP_SECRET-knowers forge guest tokens.'
-    )
-  }
-  const appSecret = process.env.APP_SECRET
-  if (!appSecret) throw new Error('APP_SECRET is required')
-  return createHmac('sha256', appSecret)
-    .update('chat-guest-secret')
-    .digest('hex')
 }
 
 // ---------------------------------------------------------------------------
@@ -174,49 +164,6 @@ export async function findOrCreateGuestPersona(
       }
     }
     throw error
-  }
-}
-
-// ---------------------------------------------------------------------------
-// Chat-guest JWT (separate signing secret, scope CHAT_GUEST, host-only cookie)
-// ---------------------------------------------------------------------------
-
-export interface ChatGuestTokenPayload {
-  sub: string
-  scope: typeof CHAT_GUEST_SCOPE
-  // Opaque eLearning learner pseudonym; only present on tokens minted
-  // through the eLearning chat handoff. PWA quiz paths never set it.
-  learnerBinding?: string
-}
-
-export async function signChatGuestToken(
-  participantId: string,
-  learnerBinding?: string
-): Promise<string> {
-  return signJWT(
-    {
-      sub: participantId,
-      scope: CHAT_GUEST_SCOPE,
-      ...(learnerBinding ? { learnerBinding } : {}),
-    },
-    getChatGuestSecret(),
-    { algorithm: 'HS256', expiresIn: CHAT_GUEST_TOKEN_EXPIRY }
-  )
-}
-
-export async function verifyChatGuestToken(
-  token: string
-): Promise<ChatGuestTokenPayload> {
-  const payload = await verifyJWT(token, getChatGuestSecret())
-  if (payload.scope !== CHAT_GUEST_SCOPE || typeof payload.sub !== 'string') {
-    throw new Error('Invalid chat guest token: wrong scope or sub')
-  }
-  return {
-    sub: payload.sub,
-    scope: CHAT_GUEST_SCOPE,
-    ...(typeof payload.learnerBinding === 'string'
-      ? { learnerBinding: payload.learnerBinding }
-      : {}),
   }
 }
 

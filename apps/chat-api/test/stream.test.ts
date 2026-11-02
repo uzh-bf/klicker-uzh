@@ -647,3 +647,74 @@ test.each([
     await new Promise<void>((resolve) => server.close(() => resolve()))
   }
 })
+
+test.each([
+  'v1',
+  'v2',
+] as const)('keeps hidden reasoning canonical while suppressing every participant transport: %s', async (contractVersion) => {
+  const finishMetadata = {
+    ...metadata(),
+    contractVersion,
+    reasoningContent: 'synthetic private reasoning',
+  }
+  const finalize = vi.fn(async (_state: StreamState) => ({
+    creditsUsed: 0,
+    finalPersistenceStatus: 'persisted' as const,
+  }))
+  const response = await read(
+    createValidatedPlatformStream(
+      responseFor([
+        {
+          type: 'start',
+          messageId: 'assistant-1',
+          ...(contractVersion === 'v2'
+            ? { messageMetadata: finishMetadata }
+            : {}),
+        },
+        { type: 'reasoning-start', id: 'reason' },
+        {
+          type: 'reasoning-delta',
+          id: 'reason',
+          delta: finishMetadata.reasoningContent,
+        },
+        { type: 'reasoning-end', id: 'reason' },
+        { type: 'message-metadata', messageMetadata: finishMetadata },
+        { type: 'text-start', id: 'answer' },
+        { type: 'text-delta', id: 'answer', delta: 'synthetic answer' },
+        { type: 'text-end', id: 'answer' },
+        {
+          type: 'finish',
+          finishReason: 'stop',
+          messageMetadata: finishMetadata,
+        },
+      ]),
+      {
+        contractVersion,
+        showReasoning: false,
+        finalize,
+        metadata: () => ({
+          chatMode: 'cm_hidden',
+          modelId: 'model',
+          reasoningEffort: 'low',
+          userMessageId: 'user',
+          assistantMessageId: 'assistant',
+          creditsUsed: null,
+          finalPersistenceStatus: 'not-persisted',
+        }),
+      }
+    )
+  )
+  const parts = response
+    .split('\n')
+    .filter((line) => line.startsWith('data: {'))
+    .map((line) => JSON.parse(line.slice(6)))
+  expect(parts.some((part) => part.type.startsWith('reasoning-'))).toBe(false)
+  expect(
+    parts
+      .filter((part) => part.messageMetadata)
+      .every((part) => part.messageMetadata.reasoningContent === null)
+  ).toBe(true)
+  expect(finalize.mock.calls[0]?.[0].reasoning).toBe(
+    finishMetadata.reasoningContent
+  )
+})

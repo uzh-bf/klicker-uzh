@@ -8,7 +8,7 @@ vi.mock('@ai-sdk/mcp', () => ({
   experimental_createMCPClient: createSDKMCPClientMock,
 }))
 
-vi.mock('@/src/lib/server/docQueryScopeToken', () => ({
+vi.mock('@klicker-uzh/chat-api/host/lib/server/docQueryScopeToken', () => ({
   signDocQueryScopeToken: signDocQueryScopeTokenMock,
 }))
 
