@@ -43,6 +43,14 @@ no new production module, dependency, migration, UI content or configuration.
 The existing result, question draft, Design and Plan primitives are reused.
 No new domain or architecture decision requires an ADR.
 
+### Primitive impact
+
+| Product primitive | Disposition | Contract delta | Consumers and evidence |
+| --- | --- | --- | --- |
+| Approved Design | Reuse | Its slot identities remain the authority for retained and missing slots. | Design summary, worker slot contracts and final-bank parser. |
+| Generation build | Extend validation | Partial success requires consistent counts, current evidence and an exact Design partition before draft admission. Incompatible historical partials fail closed, as approved. | Result parser and existing finalization caller. |
+| Question draft | Reuse | Valid questions retain Plan identities and review flags; invalid partial artifacts cannot invoke completion. | Existing completion adapter and synthetic lifecycle regressions. |
+
 ### Contracts
 
 Partial manifests must report the expected requested count, a nonempty strict
@@ -114,11 +122,15 @@ The actual user approval is recovered. The target matches the reviewed source;
 an isolated task worktree is created and other owners' work is preserved.
 The proposal critique and its focused correction are complete and reused.
 Private candidate probes reproduce the defect and demonstrate the intended
-correction, but they do not establish package type correctness.
+correction. The pinned Node/pnpm container and frozen dependencies are ready;
+the unchanged baseline passes 114 focused tests. Maintained regressions expose
+33 failures against that source, including invalid draft admission.
 
-The current step prepares the pinned Node/pnpm check image and frozen
-dependencies. Baseline package checks, implementation, maintained tests,
-independent source review and draft delivery remain unfinished. The first
-useful acceptance is rejection of malformed partial artifacts before the
-existing completion adapter receives drafts. Broader product delivery and
-native question quality remain incomplete.
+The approved source correction is implemented. All 151 focused parser and
+caller checks pass, along with GraphQL and workspace type checks, formatting,
+lint, dependency consistency, host contracts and scoped scans. The production
+build passes all 27 tasks. Hook-equivalent checks ran with Git on the host and
+compiler checks in the container; no managed application runtime was started.
+Independent source review and draft delivery remain pending. The check
+container has no network access, database or provider credentials. Broader
+product delivery and native question quality remain incomplete.

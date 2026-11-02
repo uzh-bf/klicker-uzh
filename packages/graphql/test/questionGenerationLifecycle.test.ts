@@ -216,6 +216,7 @@ function finalBankArtifact(ids: string[]): Buffer {
       metadata: { format: 'MC5', total_questions: ids.length },
       questions: ids.map((id) => ({
         id,
+        design_slot_id: id,
         stem: `Synthetic question ${id}`,
         bloom_level: 'remember',
         origin_mode: 'new',
@@ -1817,6 +1818,9 @@ describe('partial question-generation delivery lifecycle', () => {
       providerWorkflowRunId: 'question-run',
       lastSynchronizedAt: new Date('2026-08-26T12:05:00.000Z'),
       planSummary: twoSlotPlanSummary(),
+      designSummary: {
+        slots: ['q01', 'q02'].map((sourceQuestionId) => ({ sourceQuestionId })),
+      },
       // These builds pin no graph evidence, so the delivered bank needs no
       // provenance index; the graph-evidence path has its own artifact suite.
       sourceGraphBuild: {
@@ -1933,6 +1937,104 @@ describe('partial question-generation delivery lifecycle', () => {
     expect(delivered.map((question) => question.sourceQuestionId)).toEqual([
       'q01',
     ])
+  })
+
+  it('delivers a valid partial result when Design-slot and Plan-question IDs differ', async () => {
+    const build = {
+      ...partialBuild(),
+      designSummary: {
+        slots: ['slot-A', 'slot-B'].map((sourceQuestionId) => ({
+          sourceQuestionId,
+        })),
+      },
+    }
+    const bank = JSON.parse(finalBankArtifact(['q01']).toString())
+    bank.questions[0].design_slot_id = 'slot-A'
+    const runtime = partialRuntime(
+      partialResultArtifact({
+        slot_failures: [groundingSlotFailure({ slot_id: 'slot-B' })],
+      }),
+      Buffer.from(JSON.stringify(bank))
+    )
+    const { ctx } = partialContext(build, runtime, {
+      ...build,
+      status: DB.ElementGenerationBuildStatus.INCOMPLETE,
+      stage: 'incomplete',
+    })
+
+    await getQuestionGenerationBuild(fixtures.buildId, ctx)
+
+    expect(completeElementGeneration).toHaveBeenCalledExactlyOnceWith(
+      expect.objectContaining({
+        resultStatus: 'incomplete',
+        unresolvedElementCount: 1,
+        questions: [expect.objectContaining({ sourceQuestionId: 'q01' })],
+        slotFailures: [expect.objectContaining({ slotId: 'slot-B' })],
+      }),
+      ctx
+    )
+  })
+
+  it.each([
+    { manifest: { requested_questions: 3 } },
+    { manifest: { generated_questions: 0 } },
+    { manifest: { generated_questions: 2 } },
+    { manifest: { review_required_questions: undefined } },
+    {
+      manifest: {
+        slot_failures: [groundingSlotFailure(), groundingSlotFailure()],
+      },
+    },
+    { manifest: { slot_failures: [groundingSlotFailure({ slot_id: 'q01' })] } },
+    {
+      manifest: {
+        slot_failures: [groundingSlotFailure({ slot_id: 'foreign' })],
+      },
+    },
+    { manifest: { schema_version: 2 } },
+    { design: null },
+    { design: { slots: [] } },
+    {
+      design: {
+        slots: [{ sourceQuestionId: 'q01' }, { sourceQuestionId: 'q01' }],
+      },
+    },
+    { retainedSlot: undefined },
+    { retainedSlot: 'foreign' },
+  ])('rejects malformed partial delivery before draft completion %#', async (invalid) => {
+    const build = {
+      ...partialBuild(),
+      ...('design' in invalid ? { designSummary: invalid.design } : {}),
+    }
+    const bank = JSON.parse(finalBankArtifact(['q01']).toString())
+    if ('retainedSlot' in invalid)
+      bank.questions[0].design_slot_id = invalid.retainedSlot
+    const runtime = partialRuntime(
+      partialResultArtifact('manifest' in invalid ? invalid.manifest : {}),
+      Buffer.from(JSON.stringify(bank))
+    )
+    const { ctx, updateMany } = partialContext(build, runtime, {
+      ...build,
+      status: DB.ElementGenerationBuildStatus.FAILED,
+      stage: 'failed',
+      errorCode: 'ARTIFACT_INVALID',
+    })
+    const errorLog = vi.spyOn(console, 'error').mockImplementation(() => {})
+    try {
+      await getQuestionGenerationBuild(fixtures.buildId, ctx)
+    } finally {
+      errorLog.mockRestore()
+    }
+
+    expect(completeElementGeneration).not.toHaveBeenCalled()
+    expect(updateMany).toHaveBeenCalledWith(
+      expect.objectContaining({
+        data: expect.objectContaining({
+          status: DB.ElementGenerationBuildStatus.FAILED,
+          errorCode: 'ARTIFACT_INVALID',
+        }),
+      })
+    )
   })
 
   it('serves the persisted attention cards of a partial build without a download', async () => {
