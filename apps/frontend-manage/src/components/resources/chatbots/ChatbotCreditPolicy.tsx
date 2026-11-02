@@ -18,7 +18,7 @@ import {
   type FormikValues,
   useFormikContext,
 } from 'formik'
-import { useFormatter, useTranslations } from 'next-intl'
+import { useTranslations } from 'next-intl'
 import { type MutableRefObject, useCallback, useEffect, useState } from 'react'
 import * as Yup from 'yup'
 import {
@@ -74,54 +74,6 @@ function resetPeriodMessageKey(period: CreditResetPeriod) {
     case CreditResetPeriod.None:
       return 'manage.resources.creditResetPeriodNone' as const
   }
-}
-
-function ChatbotCreditPolicySummary({ chatbot }: { chatbot: RevisionChatbot }) {
-  const t = useTranslations()
-  const format = useFormatter()
-  const revisionValues = getChatbotRevisionValues(chatbot)
-  const formatCredits = (value: number) =>
-    format.number(value, { maximumFractionDigits: 0 })
-
-  return (
-    <dl
-      className="grid gap-3 text-sm sm:grid-cols-2"
-      data-cy="chatbot-credit-policy-summary"
-    >
-      <div>
-        <dt className="font-medium text-gray-600">
-          {t('manage.resources.creditInitialCredits')}
-        </dt>
-        <dd className="mt-1 text-gray-900">
-          {formatCredits(revisionValues.creditInitialCredits)}
-        </dd>
-      </div>
-      <div>
-        <dt className="font-medium text-gray-600">
-          {t('manage.resources.creditResetPeriod')}
-        </dt>
-        <dd className="mt-1 text-gray-900">
-          {t(resetPeriodMessageKey(revisionValues.creditResetPeriod))}
-        </dd>
-      </div>
-      <div>
-        <dt className="font-medium text-gray-600">
-          {t('manage.resources.creditResetAmount')}
-        </dt>
-        <dd className="mt-1 text-gray-900">
-          {formatCredits(revisionValues.creditResetAmount)}
-        </dd>
-      </div>
-      <div>
-        <dt className="font-medium text-gray-600">
-          {t('manage.resources.creditMaxCredits')}
-        </dt>
-        <dd className="mt-1 text-gray-900">
-          {formatCredits(revisionValues.creditMaxCredits)}
-        </dd>
-      </div>
-    </dl>
-  )
 }
 
 function CreditPolicyFormEffects({
@@ -402,5 +354,5 @@ function ChatbotCreditPolicy({
   )
 }
 
-export { ChatbotCreditPolicySummary, creditPolicyEditableStatuses }
+export { creditPolicyEditableStatuses }
 export default ChatbotCreditPolicy

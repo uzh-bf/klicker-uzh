@@ -45,7 +45,6 @@ and worker-only KB settlement are unaffected.
 | ----------------------------- | ------------------------------------------------------- | -------- | ----------------------------------------------------------------------------------------------------------------- |
 | `learning-analytics`          | Lecturer UI/Manage                                      | `false`  | Analytics controls remain visible but are not usable                                                              |
 | `ai-beta`                     | Server-side chatbot authoring and account-usage rollout | `false`  | Authoring UI is not mounted; authoring API calls are denied and protected reads return no data                    |
-| `ai-advanced-management`      | Lecturer Manage UI                                      | `false`  | Manage shows the simplified chatbot surface; the advanced controls are not mounted                                |
 | `chatbot-response-examples`   | Response example review in Manage                       | `false`  | The review is not mounted and its query does not run; the chat runtime keeps using approved examples              |
 | `chatbot-long-custom-prompts` | Custom chat mode persona length in Manage and on save   | `false`  | New or edited persona text is capped at 10,000 characters; stored longer text keeps compiling and saves unchanged |
 
@@ -562,22 +561,22 @@ The architectural rationale is recorded in
 [ADR 0008](./adr/0008-use-growthbook-for-feature-flags.md) and
 [ADR 0038](./adr/0038-backend-enforced-feature-entitlements.md).
 
-### Advanced chatbot management
+### Simple and advanced chatbot settings
 
-`ai-advanced-management` defaults off. It reveals the advanced
-chatbot-management surface in Manage: model selection, reasoning effort,
-credit editing, usage summary, MCP configuration and knowledge-graph controls
-(the knowledge-graph panel on the knowledge-base page). Response examples have
-their own flag, `chatbot-response-examples`, so they stay hidden even with
-advanced management on. Off is the ordinary lecturer surface, not a
-degradation — every lecturer sees the simplified chatbot surface by default,
-and turning the flag on only adds controls on top of it. Evaluation happens
-in the browser inside Manage, so this is a UI reveal and not an authorization
-boundary; see [ADR 0038](./adr/0038-backend-enforced-feature-entitlements.md)
-for the backend-enforced entitlements that gate the underlying mutations
-regardless of this flag. It inherits generic boolean evaluation, so the
-shared 30-second refresh and the 120-second maximum payload age bound how
-quickly a change takes effect; this is not an instantaneous kill switch.
+Manage has no feature flag for advanced chatbot settings. Lecturers choose
+between "Simple settings" and "Advanced settings" with a switch next to the
+chatbot header and on the knowledge-base page. The choice is stored in the
+browser (`klicker-manage-ai-settings-mode` in local storage) and defaults to
+simple. Simple settings show materials, student information, learning modes,
+usage limits and the publication request. Advanced settings add model
+selection, the knowledge-graph controls, the technical details block and the
+"Ingest all" action on the knowledge-base page. Usage limits are budgets in US
+dollars and are always visible. Manage has no MCP settings UI, so there is
+nothing to reveal for MCP. The switch is a display preference, not an
+authorization boundary; see
+[ADR 0038](./adr/0038-backend-enforced-feature-entitlements.md) for the
+backend-enforced entitlements that gate the underlying mutations. Response
+examples keep their own flag, `chatbot-response-examples`.
 
 ### Chatbot graph-assisted retrieval
 

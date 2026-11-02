@@ -1,6 +1,9 @@
 import { expect, test, type Page, type Route } from '@playwright/test'
 import { getPrisma } from '../global-setup.js'
-import { openChatbotSection } from '../util/fixtures/manage.js'
+import {
+  openChatbotSection,
+  setAiSettingsMode,
+} from '../util/fixtures/manage.js'
 import { loginLecturer } from '../util/workflow.js'
 import {
   CHATBOT_ID,
@@ -909,13 +912,12 @@ test('GraphRAG retrieval is controlled independently of the student map', async 
       body: JSON.stringify({
         features: {
           'ai-beta': { defaultValue: true },
-          // Both knowledge-graph switches are advanced controls, so the
-          // ordinary surface shows neither.
-          'ai-advanced-management': { defaultValue: true },
         },
       }),
     })
   })
+  // Both knowledge-graph switches are advanced controls.
+  await setAiSettingsMode(page, 'advanced')
   await loginLecturer(page)
   const url = `${process.env.URL_MANAGE}/resources/chatbots?chatbotId=${CHATBOT_ID}&view=knowledge`
   await page.goto(url)

@@ -1,10 +1,6 @@
 import type { ParsedUrlQuery } from 'node:querystring'
 import { useMutation, useQuery } from '@apollo/client'
 import {
-  useFeatureFlag,
-  useFeatureFlagsReady,
-} from '@klicker-uzh/feature-flags/react'
-import {
   AttachKbToChatbotDocument,
   type ChatModelCapability,
   GetChatbotPublishingCapabilityDocument,
@@ -42,14 +38,6 @@ function Chatbots() {
   const createdChatbotNavigationRef = useRef(false)
   const [navigationState, setNavigationState] =
     useState<ChatbotNavigationState>(cleanNavigationState)
-  // GrowthBook reports every flag as off until evaluation settles, so reading
-  // the flag before then would paint the ordinary surface and swap to the
-  // advanced one a moment later. useFeatureFlag already returns false when
-  // evaluation is unavailable altogether, so readiness is the only extra
-  // condition.
-  const flagsReady = useFeatureFlagsReady()
-  const advancedManagementEnabled = useFeatureFlag('ai-advanced-management')
-  const advancedManagement = flagsReady && advancedManagementEnabled
   const { data, loading } = useQuery(
     QGetChatbotsInfoWithKnowledgeBasesDocument,
     {
@@ -97,10 +85,7 @@ function Chatbots() {
   const chatbots = data?.getChatbotsInfo ?? []
   const modelRegistry: ChatModelCapability[] =
     modelRegistryData?.getChatModelRegistry ?? []
-  // Holding the details pane until flag evaluation settles avoids painting the
-  // ordinary surface first and swapping to the advanced one a moment later,
-  // which would remount the authoring forms and discard unsaved edits.
-  const detailsLoading = loading || modelRegistryLoading || !flagsReady
+  const detailsLoading = loading || modelRegistryLoading
   const selectedId =
     typeof router.query?.chatbotId === 'string'
       ? router.query.chatbotId
@@ -347,7 +332,6 @@ function Chatbots() {
             chatbot={selectedChatbot}
             modelRegistry={modelRegistry}
             loading={detailsLoading}
-            advancedManagement={advancedManagement}
             view={workspaceState.view}
             step={workspaceState.step}
             onNavigationStateChange={setNavigationState}

@@ -646,6 +646,9 @@ test.describe('Knowledge base management workspace', () => {
       await expect(page.getByTestId('kb-ingestion-summary')).toContainText(
         /1 need ingestion/
       )
+      // Bulk ingestion is part of the advanced settings.
+      await expect(page.getByTestId('ingest-all-kb-resources')).toHaveCount(0)
+      await page.getByTestId('ai-settings-mode-advanced').click()
       await expect(page.getByTestId('ingest-all-kb-resources')).toBeVisible()
       await selectOption(
         page,

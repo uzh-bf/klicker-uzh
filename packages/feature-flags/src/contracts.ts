@@ -11,15 +11,8 @@ export const FEATURE_FLAG_DEFAULTS = {
   // stay live is a gap, not a finer control.
   'ai-beta': false,
   'learning-analytics': false,
-  // Reveals the advanced chatbot-management controls in Manage: model
-  // selection, reasoning effort, credit editing, usage summary, MCP
-  // configuration and knowledge-graph controls. Off is the ordinary lecturer
-  // surface, not a degraded one — it shows the simplified chatbot surface that
-  // every lecturer sees by default.
-  'ai-advanced-management': false,
   // Shows the owner review of curated response examples in Manage. It is
-  // separate from advanced management so the review stays hidden for every
-  // lecturer until it is rolled out. The chat runtime does not read it.
+  // hidden for every lecturer until it is rolled out. The chat runtime does not read it.
   'chatbot-response-examples': false,
   // Raises the persona limit for custom chat modes the lecturer writes or
   // edits from 10,000 to 100,000 characters. Stored long personas stay

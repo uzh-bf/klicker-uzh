@@ -11,7 +11,6 @@ describe('feature flag contracts', () => {
     expect(FEATURE_FLAG_DEFAULTS).toEqual({
       'ai-beta': false,
       'learning-analytics': false,
-      'ai-advanced-management': false,
       'chatbot-response-examples': false,
       'chatbot-long-custom-prompts': false,
     })
