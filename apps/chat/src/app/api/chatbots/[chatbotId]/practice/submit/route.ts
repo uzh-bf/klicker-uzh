@@ -1,15 +1,17 @@
-import { withChatbotAuth } from '@/src/lib/server/apiGuards'
-import {
-  StudentPracticeMcpToolError,
-  statusForStudentPracticeMcpError,
-  submitPracticeStackAnswer,
-} from '@/src/services/studentPracticeMcp'
+import type { AppLogger } from '@klicker-uzh/logging/node'
 import {
   FlashcardCorrectness,
   STUDENT_MCP_SUPPORTED_ELEMENT_TYPES,
 } from '@klicker-uzh/types'
 import { NextRequest, NextResponse } from 'next/server'
 import { z } from 'zod'
+import { withChatbotAuth } from '@/src/lib/server/apiGuards'
+import { withRouteLogging } from '@/src/lib/server/requestLogging'
+import {
+  StudentPracticeMcpToolError,
+  statusForStudentPracticeMcpError,
+  submitPracticeStackAnswer,
+} from '@/src/services/studentPracticeMcp'
 
 export const runtime = 'nodejs'
 
@@ -35,12 +37,13 @@ const bodySchema = z.object({
   stackAnswerTimeSeconds: z.number().int().min(0),
 })
 
-export async function POST(
+async function handlePOST(
   req: NextRequest,
-  { params }: { params: Promise<{ chatbotId: string }> }
+  { params }: { params: Promise<{ chatbotId: string }> },
+  log: AppLogger
 ) {
   const { chatbotId } = await params
-  const authResult = await withChatbotAuth(req, chatbotId)
+  const authResult = await withChatbotAuth(req, chatbotId, log)
   if ('response' in authResult) {
     return authResult.response
   }
@@ -76,9 +79,10 @@ export async function POST(
 
     return NextResponse.json(result)
   } catch (error) {
-    console.error('Failed to submit student practice answer:', {
-      error,
-    })
+    log.error(
+      { event: 'chat.student_practice.submit.failed' },
+      'Failed to submit student practice answer'
+    )
 
     if (error instanceof StudentPracticeMcpToolError) {
       return NextResponse.json(
@@ -92,4 +96,15 @@ export async function POST(
       { status: 500 }
     )
   }
+}
+
+export function POST(
+  req: NextRequest,
+  context: { params: Promise<{ chatbotId: string }> }
+) {
+  return withRouteLogging(
+    req,
+    '/api/chatbots/:chatbotId/practice/submit',
+    (log) => handlePOST(req, context, log)
+  )
 }

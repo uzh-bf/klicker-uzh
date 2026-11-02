@@ -3,16 +3,16 @@ import {
   gradeQuestionNumerical,
 } from '@klicker-uzh/grading'
 import * as DB from '@klicker-uzh/prisma/client'
-import {
-  type CaseStudyCaseSolution,
-  type ElementResultsCaseStudy,
-  type ElementResultsChoices,
-  type ElementResultsContent,
-  type ElementResultsFlashcard,
-  type ElementResultsOpen,
-  type ElementResultsSelection,
+import type {
+  CaseStudyCaseSolution,
+  ElementResultsCaseStudy,
+  ElementResultsChoices,
+  ElementResultsContent,
+  ElementResultsFlashcard,
+  ElementResultsOpen,
+  ElementResultsSelection,
 } from '@klicker-uzh/types'
-import { Redis } from 'ioredis'
+import type { Redis } from 'ioredis'
 import { omitBy } from 'remeda'
 import { getInitialInstanceResults } from './elements.js'
 
@@ -332,6 +332,7 @@ export async function updateLiveQuizBlockResultsFromCache({
   updateResults,
   updateLeaderboards,
   closeBlock,
+  transaction,
 }: {
   quizId: string
   blockId: number
@@ -343,6 +344,12 @@ export async function updateLiveQuizBlockResultsFromCache({
   // true: close the active block and persist its results (block closure)
   // false: re-aggregate an already closed block (delayed aggregation)
   closeBlock: boolean
+  // Runs the writes in a caller-owned transaction, e.g. with audit events.
+  transaction?: <T>(
+    write: (
+      tx: Pick<DB.Prisma.TransactionClient, 'liveQuiz' | 'elementBlock'>
+    ) => Promise<T>
+  ) => Promise<T>
 }) {
   const quiz = await prisma.liveQuiz.findUnique({
     where: { id: quizId },
@@ -639,8 +646,9 @@ export async function updateLiveQuizBlockResultsFromCache({
       },
     } satisfies DB.Prisma.LiveQuizUpdateArgs
 
-    const updatedQuiz = closeBlock
-      ? await prisma.$transaction(async (tx) => {
+    const closeActiveBlock = async (
+      tx: Pick<DB.Prisma.TransactionClient, 'liveQuiz' | 'elementBlock'>
+    ) => {
           const claim = await tx.liveQuiz.updateMany({
             where: {
               id: quizId,
@@ -663,13 +671,29 @@ export async function updateLiveQuizBlockResultsFromCache({
             currentBlock.execution !== block.execution ||
             currentBlock.startedAt?.getTime() !== block.startedAt?.getTime()
           ) {
+            if (transaction) {
+              // A caller-owned transaction still commits after this function
+              // reports a loser, so restore the claimed pointer explicitly.
+              await tx.liveQuiz.update({
+                where: { id: quizId },
+                data: { activeBlockId: blockId },
+              })
+              return null
+            }
             // Throwing rolls back the pointer claim before reporting a loser.
             throw staleClosure
           }
 
           return tx.liveQuiz.update(updateArgs)
-        })
-      : await prisma.liveQuiz.update(updateArgs)
+    }
+
+    const updatedQuiz = transaction
+      ? await transaction((tx) =>
+          closeBlock ? closeActiveBlock(tx) : tx.liveQuiz.update(updateArgs)
+        )
+      : closeBlock
+        ? await prisma.$transaction(closeActiveBlock)
+        : await prisma.liveQuiz.update(updateArgs)
 
     if (!updatedQuiz) return null
 

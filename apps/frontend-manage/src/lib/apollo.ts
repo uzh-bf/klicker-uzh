@@ -31,6 +31,16 @@ export const APOLLO_STATE_PROP_NAME = '__APOLLO_STATE__'
 
 const MAX_QUERY_RETRY_ATTEMPTS = 3
 
+// Persisted queries are sent as GET, which puts the variables in the URL.
+// These operations carry large inputs (a whole competence tree), so they use
+// POST: the staging ingress drops requests with URLs beyond roughly 16 KB,
+// which the browser then reports as a blocked cross-origin request.
+const POST_PERSISTED_OPERATIONS = new Set([
+  'QGetCourseVerificationRecords',
+  'ValidateCompetenceTree',
+  'ValidateCompetenceTreeWithRuntimeDefaults',
+])
+
 let apolloClient: ApolloClient<NormalizedCacheObject>
 
 function createIsomorphLink() {
@@ -41,8 +51,7 @@ function createIsomorphLink() {
       ? []
       : [
           split(
-            ({ operationName }) =>
-              operationName === 'QGetCourseVerificationRecords',
+            ({ operationName }) => POST_PERSISTED_OPERATIONS.has(operationName),
             createPersistedQueryLink({
               useGETForHashedQueries: false,
               // eslint-disable-next-line react-hooks/rules-of-hooks

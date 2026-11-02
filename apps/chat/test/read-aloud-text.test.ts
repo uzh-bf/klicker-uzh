@@ -11,6 +11,24 @@ describe('toSpeakableText', () => {
     )
   })
 
+  test.each([
+    '[1, p. 6]',
+    '[1, S. 6–7]',
+    '[2–4, pages 10-12]',
+    '[1, Kapitel 2]',
+    '[1, p. 01:20–02:30]',
+  ])('drops labelled citation detail %s', (marker) => {
+    expect(speak(`Result ${marker}.`)).toBe('Result.')
+  })
+
+  test.each([
+    '[1, 2]',
+    '[1,]',
+    '[1, S. IV]',
+  ])('keeps non-citation brackets %s', (brackets) => {
+    expect(speak(brackets)).toBe(brackets)
+  })
+
   test('replaces every display-math spelling with the spoken label', () => {
     expect(speak('A\n\n$$\nx^2 + [1]\n$$\n\nB')).toBe('A\n\nFORMULA\n\nB')
     expect(speak('A \\[ x^2 \\] B')).toBe('A FORMULA B')

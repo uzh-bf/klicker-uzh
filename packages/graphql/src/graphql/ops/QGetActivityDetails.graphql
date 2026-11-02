@@ -1,6 +1,10 @@
 query GetActivityDetails($activityId: String!, $activityType: ActivityType!) {
   activityDetails(activityId: $activityId, activityType: $activityType) {
     id
+    isAdaptive
+    adaptiveTreeName
+    adaptiveElementCount
+    adaptivePoolPublished
     name
     displayName
     status
