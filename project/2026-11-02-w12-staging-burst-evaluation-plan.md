@@ -277,3 +277,16 @@ out of this file.
   gets the same protection when its burst tier is enabled. Other in-place
   changes to list-valued fields of existing objects can hit the same merge;
   any resource that stays `OutOfSync` after a successful sync points here.
+- 2026-11-02 E1: added `deploy/dashboards/klicker-pwa-burst.json` (tier
+  replicas, HPA state, CPU and memory per tier, spot node pressure from other
+  tenants, restarts and evictions) and the "PWA spot burst tier" section in
+  `docs/ci-and-deployment.md`. Every query was checked against staging
+  Prometheus. The E0 rename and E1 ship together in #6797 (`v3-ai`) and
+  #6798 (`v3`); staging gets them through the next `v3-ai` to
+  `v3-adaptive-learning` sync.
+- 2026-11-02 D1: the staging HAProxy ingress writes no HTTP access logs, so
+  the fallback in D1 does not exist. The PWA has no Next.js proxy
+  (middleware) today, so an `X-Served-By` header means adding one that runs on
+  every PWA route in both environments. Proposed change for E3: measure P6 by
+  running k6 inside `stg-klicker` against each tier's Pods directly, and leave
+  the PWA source unchanged. Waiting for the user's decision before E3.
