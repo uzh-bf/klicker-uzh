@@ -490,7 +490,7 @@ describe('system-triggered KB graph builds', () => {
       aiFeaturesEnabled: true,
       betaEnabled: true,
     },
-    enabledFlags = ['kb-auto-graph-preparation', 'kb-graph-builds'],
+    aiBetaDecision = 'enabled' as 'enabled' | 'disabled',
     kbDomain = {
       domainPolicyId: 'mathematics',
       domainPolicyVersion: 1,
@@ -503,7 +503,7 @@ describe('system-triggered KB graph builds', () => {
     },
   }: {
     owner?: { aiFeaturesEnabled: boolean; betaEnabled: boolean } | null
-    enabledFlags?: string[]
+    aiBetaDecision?: 'enabled' | 'disabled'
     kbDomain?: Record<string, unknown>
     publishedDomain?: Record<string, unknown>
   } = {}) {
@@ -563,8 +563,8 @@ describe('system-triggered KB graph builds', () => {
     const $transaction = vi.fn((fn: (tx: unknown) => unknown) =>
       fn(transaction)
     )
-    const isEnabled = vi.fn((key: string) => enabledFlags.includes(key))
-    const getAiBetaDecision = vi.fn(() => 'enabled' as const)
+    const isEnabled = vi.fn(() => false)
+    const getAiBetaDecision = vi.fn(() => aiBetaDecision)
     const deps = {
       prisma: {
         user: {
@@ -604,14 +604,9 @@ describe('system-triggered KB graph builds', () => {
       'AI_BETA_ACCESS_REQUIRED',
     ],
     [
-      'an owner outside the graph build rollout',
-      { enabledFlags: ['kb-auto-graph-preparation'] },
-      'KB_GRAPH_DISABLED',
-    ],
-    [
-      'an owner outside automatic preparation',
-      { enabledFlags: ['kb-graph-builds'] },
-      'KB_GRAPH_DISABLED',
+      'an owner outside the AI beta rollout',
+      { aiBetaDecision: 'disabled' as const },
+      'AI_BETA_ACCESS_REQUIRED',
     ],
   ])('refuses %s before touching the KB', async (_, options, code) => {
     const { deps, $transaction } = createDeps(options)
@@ -621,12 +616,11 @@ describe('system-triggered KB graph builds', () => {
   })
 
   it('evaluates the rollout for the stored owner, not a session', async () => {
-    const { deps, isEnabled } = createDeps()
+    const { deps, getAiBetaDecision } = createDeps()
 
     await start(deps)
 
-    expect(isEnabled).toHaveBeenCalledWith(
-      'kb-graph-builds',
+    expect(getAiBetaDecision).toHaveBeenCalledWith(
       expect.objectContaining({ id: ownerId, role: 'USER', catalyst: true })
     )
   })
@@ -635,11 +629,6 @@ describe('system-triggered KB graph builds', () => {
     process.env[KB_GRAPH_DOMAIN_CATALOG_REVISION_ENV] =
       getDefaultKBGraphDomainCatalog().revision
     const { deps, create } = createDeps({
-      enabledFlags: [
-        'kb-auto-graph-preparation',
-        'kb-graph-builds',
-        'kb-graph-domain-selection',
-      ],
       publishedDomain: {
         domainPolicyId: 'mathematics',
         domainPolicyVersion: 1,
@@ -655,15 +644,19 @@ describe('system-triggered KB graph builds', () => {
   })
 
   it.each([
-    ['domain selection is closed for the owner', {}],
+    [
+      'no stored subject can be honored',
+      {
+        kbDomain: {
+          domainPolicyId: null,
+          domainPolicyVersion: null,
+          domainPolicyLanguage: null,
+        },
+      },
+    ],
     [
       'the stored subject is not in the catalog',
       {
-        enabledFlags: [
-          'kb-auto-graph-preparation',
-          'kb-graph-builds',
-          'kb-graph-domain-selection',
-        ],
         kbDomain: {
           domainPolicyId: 'unknown-subject',
           domainPolicyVersion: 1,
@@ -691,11 +684,6 @@ describe('system-triggered KB graph builds', () => {
     process.env[KB_GRAPH_DOMAIN_CATALOG_REVISION_ENV] =
       getDefaultKBGraphDomainCatalog().revision
     const { deps, create } = createDeps({
-      enabledFlags: [
-        'kb-auto-graph-preparation',
-        'kb-graph-builds',
-        'kb-graph-domain-selection',
-      ],
       publishedDomain: {
         domainPolicyId: 'mathematics',
         domainPolicyVersion: 1,
@@ -714,11 +702,6 @@ describe('system-triggered KB graph builds', () => {
     process.env[KB_GRAPH_DOMAIN_CATALOG_REVISION_ENV] =
       getDefaultKBGraphDomainCatalog().revision
     const { deps, create } = createDeps({
-      enabledFlags: [
-        'kb-auto-graph-preparation',
-        'kb-graph-builds',
-        'kb-graph-domain-selection',
-      ],
       publishedDomain: {
         domainPolicyId: 'mathematics',
         domainPolicyVersion: 1,

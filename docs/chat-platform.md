@@ -1157,10 +1157,10 @@ graph-assisted document search independently with
 approval lifecycle. The first opt-in rollout resets existing live and draft map policies to off;
 new chatbots also start with both options off. The forward migration preserves
 other draft settings and advances changed rows' revision versions to reject stale
-editors. Retrieval additionally requires the default-off `chatbot-graphrag`
-GrowthBook flag. Manage hides its retrieval switch while the flag is off; the
+editors. Retrieval additionally requires the owner to hold `ai-beta`
+(including the owner's own beta opt-in); the
 server evaluates the chatbot owner's current cohort before enabling or publishing
-retrieval, and at runtime tool checkpoints. Flag-off permits disabling and
+retrieval, and at runtime tool checkpoints. Beta-off permits disabling and
 unrelated edits to an already-enabled policy. Map visibility remains independent.
 The shared flag client refreshes every 30 seconds and rejects payloads older than
 120 seconds; disabling a hosted flag is therefore not an instantaneous global
@@ -1940,6 +1940,6 @@ A dynamic URL can change between downloads. The expected-hash check rejects that
 input before graph generation but cannot recover earlier bytes; parsing may
 already have incurred cost. Producer-owned immutable raw snapshots and automatic
 parser-only freshness remain deferred. Parser changes require an explicit rebuild.
-The existing `chatbot-graphrag` GrowthBook flag and lecturer controls govern
+The owner's `ai-beta` access and lecturer controls govern
 student graph retrieval. Map interaction and retrieval quality remain separate
 acceptance checks.

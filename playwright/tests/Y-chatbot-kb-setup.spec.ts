@@ -223,11 +223,10 @@ test.describe('Chatbot knowledge base setup', () => {
     await prisma.kB.create({ data: { name: KB_NAME, ownerId: USER_ID_TEST } })
     const manageUrl = process.env.URL_MANAGE ?? URL_MANAGE
 
-    // Without the advanced-management flag the lecturer sees the reduced
-    // workspace.
+    // Simple settings are the default and show the reduced workspace.
     await mockGrowthBookFeatureFlags(page, {
       aiBeta: true,
-      aiAdvancedManagement: false,
+      aiSettingsMode: 'simple',
     })
     // GrowthBook keeps the beforeEach payload in localStorage for a minute,
     // so the new payload only applies once that cache is gone.
@@ -239,6 +238,8 @@ test.describe('Chatbot knowledge base setup', () => {
     // A draft is prepared on one page of sections.
     await expect(page.getByTestId('chatbot-draft-setup')).toBeVisible()
     await expect(page.getByTestId('chatbot-technical-details')).toHaveCount(0)
+    await expect(page.getByTestId('chatbot-section-model')).toHaveCount(0)
+    await expect(page.getByTestId('chatbot-section-graph')).toHaveCount(0)
     await expect(
       page.getByTestId('chatbot-section-materials-toggle')
     ).toBeVisible()

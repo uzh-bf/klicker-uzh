@@ -14,7 +14,6 @@ import type {
 } from '@klicker-uzh/types'
 import { QUESTION_GENERATION_CAPABILITIES } from '@klicker-uzh/types'
 import type { ContextWithUser } from '../lib/context.js'
-import { isFeatureFlagEnabledForAccount } from '../lib/featureFlags.js'
 import { assertManageAiEnabled } from '../lib/manageAiFeatureGate.js'
 import { isElementGenerationGraphBundleReady } from './elementGenerationGraphReadiness.js'
 import {
@@ -272,7 +271,7 @@ export type QuestionGenerationSourceInputs = {
   courseContent: { processing: number; failed: number }
   admission: {
     /**
-     * AI entitlement, `kb-graph-builds`, the per-KB opt-in and the graph cost
+     * AI entitlement, the per-KB opt-in and the graph cost
      * configuration admit a new build.
      */
     buildAdmitted: boolean
@@ -506,11 +505,6 @@ async function loadQuestionGenerationSources(
   const buildsAdmitted =
     owner !== null &&
     ownerAdmission.capability === 'enabled' &&
-    isFeatureFlagEnabledForAccount(
-      ctx.featureFlags,
-      owner,
-      'kb-graph-builds'
-    ) &&
     isKBGraphCostConfigured()
   const now = new Date()
 
