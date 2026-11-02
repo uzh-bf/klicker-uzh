@@ -920,7 +920,7 @@ export async function upsertDailyTimelineEntry({
     create: {
       type: DB.TimelineEntryType.DAILY,
       timestamp: new Date(),
-      collectedPoints: participation.isActive ? pointsAwarded : 0,
+      collectedPoints: pointsAwarded,
       collectedXp: xpAwarded,
       computedAt: new Date(),
       course: {
@@ -1143,9 +1143,7 @@ async function updateWeeklyTimelineEntriesFromDailys({
       }
     }
 
-    acc[participationId]!.collectedPoints += entry.participation?.isActive
-      ? entry.collectedPoints
-      : 0
+    acc[participationId]!.collectedPoints += entry.collectedPoints
     acc[participationId]!.collectedXp += entry.collectedXp
 
     return acc
