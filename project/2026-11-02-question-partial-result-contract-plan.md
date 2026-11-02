@@ -30,7 +30,8 @@ acceptance boundaries.
 
 - Branch: `fix/question-partial-result-contract`, based on `v3-ai` at
   `3982d84e2baf5c01510f70930e67e042e8e52c26`.
-- Artifacts root: the existing `project/` directory. PR: none yet.
+- Artifacts root: the existing `project/` directory.
+  [Draft PR #6804](https://github.com/uzh-bf/klicker-uzh/pull/6804) targets `v3-ai`.
 - The main session owns this finite final-result-validation batch.
 - [The existing library PR](https://github.com/uzh-bf/klicker-uzh/pull/6317)
   retains its owner and work. Both batches touch `synchronizeLeasedBuild` in
@@ -59,6 +60,10 @@ the required schema/provenance pair. The bank must match the generated count.
 Its retained `design_slot_id` values and missing-slot IDs must partition the
 existing approved Design universe exactly. The existing Plan question-ID check
 remains separate.
+
+Retained slot IDs use the existing Design and failure-ID whitespace
+normalization before partition checks. Normalization must still reject duplicate
+slots, non-string IDs and IDs outside the approved universe.
 
 The current Design summary records Design-slot IDs in
 `slots[].sourceQuestionId`; the Plan summary uses that property for question
@@ -126,11 +131,18 @@ correction. The pinned Node/pnpm container and frozen dependencies are ready;
 the unchanged baseline passes 114 focused tests. Maintained regressions expose
 33 failures against that source, including invalid draft admission.
 
-The approved source correction is implemented. All 143 focused parser and
-caller checks pass, along with GraphQL and workspace type checks, formatting,
-lint, dependency consistency, host contracts and scoped scans. The production
-build passes all 27 tasks. Hook-equivalent checks ran with Git on the host and
-compiler checks in the container; no managed application runtime was started.
-Independent source review and draft delivery remain pending. The check
-container has no network access, database or provider credentials. Broader
-product delivery and native question quality remain incomplete.
+The approved source correction and its independent review are delivered in the
+draft. A later forge review identified inconsistent whitespace handling of
+retained Design-slot IDs. A padded-ID regression fails on that candidate; the
+minimum normalization correction passes while padded duplicates stay blocked.
+The optional fixture-field type is corrected: the earlier combined
+check reported its later successful command without propagating the GraphQL
+type failure. Earlier GraphQL type-pass claims are superseded. The affected
+tests and type checks now use fail-fast execution. All 144 focused tests and
+both GraphQL type checks pass; unchanged passing evidence is retained at its
+actual boundary. Formatting and scoped scans pass. The correction follows the
+forge review's exact normalization recommendation and is main-verified; the
+earlier independent review remains applicable outside that narrow change.
+Final build verification and ordinary draft update are pending. No managed
+application runtime or database has started. Broader product delivery and
+native quality remain incomplete.

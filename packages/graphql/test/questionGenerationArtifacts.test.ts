@@ -306,6 +306,7 @@ function finalBank(questionOverrides: Record<string, unknown> = {}) {
     questions: [
       {
         id: 'q01',
+        design_slot_id: undefined as string | undefined,
         stem: 'Welche Umwandlung findet bei der malolaktischen Gärung statt?',
         context_inline: 'Eine Weinprobe wird nach der Gärung untersucht.',
         bloom_level: 'understand',
@@ -2553,7 +2554,10 @@ describe('question-generation artifact normalization', () => {
     ).toThrowError(expect.objectContaining({ code: 'ARTIFACT_INVALID' }))
   })
 
-  it('accepts a partial bank with a verified Design partition and distinct Plan IDs', () => {
+  it.each([
+    'slot-A',
+    '  slot-A\t',
+  ])('accepts normalized partial Design IDs separately from Plan IDs %#', (retainedSlotId) => {
     const result = parseQuestionGenerationResult(
       bytes(
         partialResult({
@@ -2566,7 +2570,7 @@ describe('question-generation artifact normalization', () => {
     )
 
     const questions = parseQuestionGenerationFinalBank(
-      bytes(finalBank({ design_slot_id: 'slot-A' })),
+      bytes(finalBank({ design_slot_id: retainedSlotId })),
       {
         questionCount: 2,
         sourceSnapshot,
@@ -2660,7 +2664,11 @@ describe('question-generation artifact normalization', () => {
     )
     const bank = finalBank({ design_slot_id: 'slot-A' })
     bank.metadata.total_questions = 2
-    bank.questions.push({ ...bank.questions[0]!, id: 'q02' })
+    bank.questions.push({
+      ...bank.questions[0]!,
+      id: 'q02',
+      design_slot_id: ' slot-A ',
+    })
 
     expect(() =>
       parseQuestionGenerationFinalBank(bytes(bank), {

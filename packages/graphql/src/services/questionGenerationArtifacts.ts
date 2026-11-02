@@ -2224,8 +2224,10 @@ export function parseQuestionGenerationFinalBank(
 
   if (partialBank) {
     const approvedSlotIds = expected.expectedDesignSlotIds ?? []
-    const retainedSlotIds = bank.questions.map(
-      (question) => question.design_slot_id
+    const retainedSlotIds = bank.questions.map((question) =>
+      typeof question.design_slot_id === 'string'
+        ? question.design_slot_id.trim()
+        : question.design_slot_id
     )
     const failedSlotIds = expected.result.slotFailures.map(
       (failure) => failure.slotId
