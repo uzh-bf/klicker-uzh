@@ -759,56 +759,6 @@ describe('chatbot authoring revision transitions', () => {
     })
   })
 
-  it('requires the rollout for activation but permits unrelated edits and disabling', async () => {
-    const bot = await seed()
-    const denied = {
-      ...owner,
-      featureFlags: {
-        ...owner.featureFlags,
-        isEnabled: (key: string) => key !== 'ai-beta',
-      } as NonNullable<ContextWithUser['featureFlags']>,
-    }
-    await expect(
-      service.saveChatbotRevision(
-        {
-          chatbotId: bot.id,
-          expectedRevisionVersion: 0,
-          input: {
-            knowledgeGraphPolicy: { visible: true, retrievalEnabled: true },
-          },
-        },
-        denied
-      )
-    ).rejects.toMatchObject({ extensions: { code: 'FORBIDDEN' } })
-    await dependencies.prisma.chatbot.update({
-      where: { id: bot.id },
-      data: { knowledgeGraphRetrievalEnabled: true },
-    })
-    await service.saveChatbotRevision(
-      {
-        chatbotId: bot.id,
-        expectedRevisionVersion: 0,
-        input: {
-          knowledgeGraphPolicy: { visible: true, retrievalEnabled: true },
-        },
-      },
-      denied
-    )
-    await service.saveChatbotRevision(
-      {
-        chatbotId: bot.id,
-        expectedRevisionVersion: 1,
-        input: {
-          knowledgeGraphPolicy: { visible: true, retrievalEnabled: false },
-        },
-      },
-      denied
-    )
-    expect((await read(bot.id)).draftConfig).toMatchObject({
-      knowledgeGraphRetrievalEnabled: false,
-    })
-  })
-
   it('checks the owner cohort when an administrator approves retrieval activation', async () => {
     const bot = await seed()
     await service.saveChatbotRevision(

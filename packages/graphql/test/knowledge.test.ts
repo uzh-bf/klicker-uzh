@@ -490,6 +490,11 @@ describe('Integration tests for knowledge base CRUD', () => {
 
   it('requires graph opt-in and the rollout admission before dispatching a build', async () => {
     const kb = await createKb({ name: 'Graph controls' }, userOneCtx)
+    // New knowledge bases start opted in; switching off is never gated.
+    await setKbKnowledgeGraphEnabled(
+      { kbId: kb.id, enabled: false },
+      userOneCtx
+    )
     const deniedCtx = withDeniedFeatureFlag(userOneCtx, 'ai-beta')
 
     await expect(
@@ -4075,7 +4080,7 @@ describe('Integration tests for knowledge base CRUD', () => {
     })
     await expect(
       getKbKnowledgeGraphConfig({ kbId: kb.id }, deniedCtx)
-    ).resolves.toMatchObject({ isEnabled: false })
+    ).resolves.toMatchObject({ isEnabled: true })
     // Creation auto-started ingestion, so the resource must settle out of
     // QUEUED before deletion is permitted; this stands in for that
     // completed ingestion rather than exercising deletion timing itself.
