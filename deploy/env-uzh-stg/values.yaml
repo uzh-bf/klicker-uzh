@@ -224,7 +224,7 @@ chat:
 
   modelRegistry:
     # Staging makes Auto the global automatic-model primary, so chatbots using
-    # automatic model selection exercise auto-router-v4 ahead of production.
+    # automatic model selection exercise auto-router-v4, as in production.
     # Explicit model selections remain respected, and new chatbots
     # still start fixed on GPT-6 Luna. GPT-6 Luna is the participant-credit
     # fallback.
