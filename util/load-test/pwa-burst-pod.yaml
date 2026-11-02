@@ -1,0 +1,48 @@
+# Short-lived k6 Pod for the PWA burst load drill (pwa-burst.js). Usage and
+# the Pod IP variables are in README.md under "PWA burst tier drill".
+apiVersion: v1
+kind: Pod
+metadata:
+  name: pwa-burst-k6
+  labels:
+    app.kubernetes.io/name: pwa-burst-k6
+spec:
+  restartPolicy: Never
+  automountServiceAccountToken: false
+  activeDeadlineSeconds: 3000
+  securityContext:
+    runAsNonRoot: true
+    runAsUser: 12345
+    runAsGroup: 12345
+    seccompProfile:
+      type: RuntimeDefault
+  containers:
+    - name: k6
+      image: grafana/k6:2.2.0
+      args: ['run', '/scripts/pwa-burst.js']
+      envFrom:
+        - configMapRef:
+            name: pwa-burst-k6-env
+      resources:
+        requests:
+          cpu: 100m
+          memory: 128Mi
+        limits:
+          cpu: '1'
+          memory: 512Mi
+      securityContext:
+        allowPrivilegeEscalation: false
+        readOnlyRootFilesystem: true
+        capabilities:
+          drop: ['ALL']
+      volumeMounts:
+        - name: script
+          mountPath: /scripts
+        - name: tmp
+          mountPath: /tmp
+  volumes:
+    - name: script
+      configMap:
+        name: pwa-burst-k6-script
+    - name: tmp
+      emptyDir: {}

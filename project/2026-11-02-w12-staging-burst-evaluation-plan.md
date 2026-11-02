@@ -290,3 +290,37 @@ out of this file.
   every PWA route in both environments. Proposed change for E3: measure P6 by
   running k6 inside `stg-klicker` against each tier's Pods directly, and leave
   the PWA source unchanged. Waiting for the user's decision before E3.
+- 2026-11-02 E0 live: staging promoted `2c2655171e` (the #6802 ancestry
+  repair after #6801 was squash-merged). Argo reports `Synced` with no
+  out-of-sync resources; the old budget is pruned; `-frontend-pwa-baseline`
+  excludes the tier and `-frontend-pwa-burst` allows one disruption. Staging
+  runs one baseline replica against `minAvailable: 2`, so the baseline Pod
+  can never be voluntarily evicted; this predates the burst tier and matters
+  for the E4 drain drill.
+- 2026-11-02 E2 dropped as a separate wait (user agreed): staging has no real
+  load, so its load-independent checks (spot preemption, Argo drift,
+  restarts, HPA floor) move into E5. D1 settled: k6 runs inside `stg-klicker`
+  and probes one Pod per tier at the same rate; the PWA source stays
+  unchanged.
+- 2026-11-02 E3, 21:37:57–22:13:00 UTC, `util/load-test/pwa-burst.js`, peak
+  30 iterations per second (one `/login` render and two static assets each),
+  about 47 requests per second at the plateau:
+  - P5 pass: 0 Service failures in all phases (99,069 requests). One baseline
+    probe request timed out after 60 seconds at the plateau.
+  - P6 pass: probe p95 burst 459 ms, baseline 496 ms.
+  - P4 scale-up marginal fail: CPU crossed the target about 21:39:30; the HPA
+    went 1, 2, 3, 4 one step per minute and reached 4 about 21:43, roughly
+    3.5 minutes against the 3-minute criterion. New burst Pods fail readiness
+    for about a minute after start, so each step waits for the previous one.
+  - P4 scale-down pass at the limit: load ended 22:13:30, 4 to 1 by 22:23:26.
+    A cool-down at 2 iterations per second held 4 replicas (about 55% CPU),
+    so only zero load returns the tier to 1.
+  - P9 pass: no new Pending Pods on `asyncspot`; two Pending Pods in other
+    namespaces predate the drill, and an ingestion rollout at 22:03 scheduled
+    on its own pool.
+  - Finding: at the plateau both the baseline Pod and a burst Pod failed
+    liveness probes (`/login`, 1-second timeout, 3 failures). None restarted,
+    but a longer saturation would restart Pods exactly when load peaks.
+    Candidate fix under W12: a longer probe timeout or a cheaper health route,
+    plus an HPA `behavior.scaleUp` policy that adds more than one Pod per
+    step. Both ship as a chart PR pair before E4.
