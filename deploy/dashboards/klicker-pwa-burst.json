@@ -1,0 +1,300 @@
+{
+  "title": "Klicker PWA burst tier",
+  "uid": "klicker-pwa-burst",
+  "schemaVersion": 39,
+  "version": 1,
+  "editable": true,
+  "time": {
+    "from": "now-6h",
+    "to": "now"
+  },
+  "refresh": "30s",
+  "tags": ["klicker", "burst", "spot"],
+  "templating": {
+    "list": [
+      {
+        "name": "datasource",
+        "type": "datasource",
+        "query": "prometheus",
+        "label": "Prometheus"
+      },
+      {
+        "name": "namespace",
+        "type": "custom",
+        "query": "stg-klicker,prd-klicker",
+        "current": {
+          "text": "stg-klicker",
+          "value": "stg-klicker"
+        }
+      },
+      {
+        "name": "release",
+        "type": "constant",
+        "query": "app-klicker-klicker-uzh-v2",
+        "hide": 2
+      },
+      {
+        "name": "spot_tenants",
+        "type": "custom",
+        "label": "Other asyncspot tenants (regex)",
+        "query": "stg-doc-processing|stg-web-scraping|stg-elearning|stg-aibuddy-librechat|dev-aibuddy-librechat",
+        "current": {
+          "text": "stg-doc-processing|stg-web-scraping|stg-elearning|stg-aibuddy-librechat|dev-aibuddy-librechat",
+          "value": "stg-doc-processing|stg-web-scraping|stg-elearning|stg-aibuddy-librechat|dev-aibuddy-librechat"
+        }
+      }
+    ]
+  },
+  "panels": [
+    {
+      "type": "timeseries",
+      "title": "Replicas per tier (P1)",
+      "gridPos": {
+        "x": 0,
+        "y": 0,
+        "w": 12,
+        "h": 8
+      },
+      "datasource": {
+        "type": "prometheus",
+        "uid": "${datasource}"
+      },
+      "targets": [
+        {
+          "refId": "A",
+          "expr": "kube_deployment_status_replicas_available{namespace=\"$namespace\",deployment=\"$release-frontend-pwa\"}",
+          "legendFormat": "baseline available"
+        },
+        {
+          "refId": "B",
+          "expr": "kube_deployment_status_replicas_available{namespace=\"$namespace\",deployment=\"$release-frontend-pwa-burst\"}",
+          "legendFormat": "burst available"
+        },
+        {
+          "refId": "C",
+          "expr": "kube_deployment_spec_replicas{namespace=\"$namespace\",deployment=\"$release-frontend-pwa-burst\"}",
+          "legendFormat": "burst desired"
+        }
+      ],
+      "fieldConfig": {
+        "defaults": {},
+        "overrides": []
+      },
+      "description": "P1: burst available should track burst desired outside deploy windows and the 5 minutes after an eviction."
+    },
+    {
+      "type": "timeseries",
+      "title": "Burst HPA replicas (P4)",
+      "gridPos": {
+        "x": 12,
+        "y": 0,
+        "w": 12,
+        "h": 8
+      },
+      "datasource": {
+        "type": "prometheus",
+        "uid": "${datasource}"
+      },
+      "targets": [
+        {
+          "refId": "A",
+          "expr": "kube_horizontalpodautoscaler_status_current_replicas{namespace=\"$namespace\",horizontalpodautoscaler=\"$release-frontend-pwa-burst\"}",
+          "legendFormat": "current"
+        },
+        {
+          "refId": "B",
+          "expr": "kube_horizontalpodautoscaler_status_desired_replicas{namespace=\"$namespace\",horizontalpodautoscaler=\"$release-frontend-pwa-burst\"}",
+          "legendFormat": "desired"
+        },
+        {
+          "refId": "C",
+          "expr": "kube_horizontalpodautoscaler_spec_max_replicas{namespace=\"$namespace\",horizontalpodautoscaler=\"$release-frontend-pwa-burst\"}",
+          "legendFormat": "max"
+        }
+      ],
+      "fieldConfig": {
+        "defaults": {},
+        "overrides": []
+      }
+    },
+    {
+      "type": "timeseries",
+      "title": "CPU per tier against requests",
+      "gridPos": {
+        "x": 0,
+        "y": 8,
+        "w": 12,
+        "h": 8
+      },
+      "datasource": {
+        "type": "prometheus",
+        "uid": "${datasource}"
+      },
+      "targets": [
+        {
+          "refId": "A",
+          "expr": "sum(rate(container_cpu_usage_seconds_total{namespace=\"$namespace\",pod=~\"$release-frontend-pwa-burst-.*\",container!=\"\"}[2m]))",
+          "legendFormat": "burst used"
+        },
+        {
+          "refId": "B",
+          "expr": "sum(kube_pod_container_resource_requests{namespace=\"$namespace\",pod=~\"$release-frontend-pwa-burst-.*\",resource=\"cpu\"})",
+          "legendFormat": "burst requested"
+        },
+        {
+          "refId": "C",
+          "expr": "sum(rate(container_cpu_usage_seconds_total{namespace=\"$namespace\",pod=~\"$release-frontend-pwa-[a-z0-9]+-[a-z0-9]+\",container!=\"\"}[2m]))",
+          "legendFormat": "baseline used"
+        },
+        {
+          "refId": "D",
+          "expr": "sum(kube_pod_container_resource_requests{namespace=\"$namespace\",pod=~\"$release-frontend-pwa-[a-z0-9]+-[a-z0-9]+\",resource=\"cpu\"})",
+          "legendFormat": "baseline requested"
+        }
+      ],
+      "fieldConfig": {
+        "defaults": {
+          "unit": "cores"
+        },
+        "overrides": []
+      }
+    },
+    {
+      "type": "timeseries",
+      "title": "Pending burst Pods (P3)",
+      "gridPos": {
+        "x": 12,
+        "y": 8,
+        "w": 12,
+        "h": 8
+      },
+      "datasource": {
+        "type": "prometheus",
+        "uid": "${datasource}"
+      },
+      "targets": [
+        {
+          "refId": "A",
+          "expr": "sum(kube_pod_status_phase{namespace=\"$namespace\",pod=~\"$release-frontend-pwa-burst-.*\",phase=\"Pending\"}) or vector(0)",
+          "legendFormat": "pending"
+        }
+      ],
+      "fieldConfig": {
+        "defaults": {},
+        "overrides": []
+      },
+      "description": "P3: no burst Pod Pending longer than 10 minutes while asyncspot has headroom."
+    },
+    {
+      "type": "timeseries",
+      "title": "Burst Pods per spot node",
+      "gridPos": {
+        "x": 0,
+        "y": 16,
+        "w": 12,
+        "h": 8
+      },
+      "datasource": {
+        "type": "prometheus",
+        "uid": "${datasource}"
+      },
+      "targets": [
+        {
+          "refId": "A",
+          "expr": "count by (node) (kube_pod_info{namespace=\"$namespace\",pod=~\"$release-frontend-pwa-burst-.*\"})",
+          "legendFormat": "{{node}}"
+        }
+      ],
+      "fieldConfig": {
+        "defaults": {},
+        "overrides": []
+      }
+    },
+    {
+      "type": "timeseries",
+      "title": "asyncspot nodes and CPU request headroom",
+      "gridPos": {
+        "x": 12,
+        "y": 16,
+        "w": 12,
+        "h": 8
+      },
+      "datasource": {
+        "type": "prometheus",
+        "uid": "${datasource}"
+      },
+      "targets": [
+        {
+          "refId": "A",
+          "expr": "count(kube_node_info{node=~\"aks-asyncspot-.*\"})",
+          "legendFormat": "nodes"
+        },
+        {
+          "refId": "B",
+          "expr": "sum(kube_pod_container_resource_requests{node=~\"aks-asyncspot-.*\",resource=\"cpu\"}) / sum(kube_node_status_allocatable{node=~\"aks-asyncspot-.*\",resource=\"cpu\"})",
+          "legendFormat": "CPU requested / allocatable"
+        }
+      ],
+      "fieldConfig": {
+        "defaults": {},
+        "overrides": []
+      }
+    },
+    {
+      "type": "timeseries",
+      "title": "Restarts per tier (5m)",
+      "gridPos": {
+        "x": 0,
+        "y": 24,
+        "w": 12,
+        "h": 8
+      },
+      "datasource": {
+        "type": "prometheus",
+        "uid": "${datasource}"
+      },
+      "targets": [
+        {
+          "refId": "A",
+          "expr": "sum(increase(kube_pod_container_status_restarts_total{namespace=\"$namespace\",pod=~\"$release-frontend-pwa-burst-.*\"}[5m]))",
+          "legendFormat": "burst"
+        },
+        {
+          "refId": "B",
+          "expr": "sum(increase(kube_pod_container_status_restarts_total{namespace=\"$namespace\",pod=~\"$release-frontend-pwa-[a-z0-9]+-[a-z0-9]+\"}[5m]))",
+          "legendFormat": "baseline"
+        }
+      ],
+      "fieldConfig": {
+        "defaults": {},
+        "overrides": []
+      }
+    },
+    {
+      "type": "timeseries",
+      "title": "Pending Pods of other asyncspot tenants (P9)",
+      "gridPos": {
+        "x": 12,
+        "y": 24,
+        "w": 12,
+        "h": 8
+      },
+      "datasource": {
+        "type": "prometheus",
+        "uid": "${datasource}"
+      },
+      "targets": [
+        {
+          "refId": "A",
+          "expr": "sum by (namespace) (kube_pod_status_phase{phase=\"Pending\",namespace=~\"$spot_tenants\"})",
+          "legendFormat": "{{namespace}}"
+        }
+      ],
+      "fieldConfig": {
+        "defaults": {},
+        "overrides": []
+      },
+      "description": "P9: drills must not add Pending Pods to other workloads that schedule on asyncspot."
+    }
+  ]
+}

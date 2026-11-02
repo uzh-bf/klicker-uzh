@@ -1419,6 +1419,26 @@ reports itself as not applicable and can be removed with the branch.
 - **Topology spread contract**: production values define zone + hostname `topologySpreadConstraints` for seven workloads — the three Hatchet workers, the assessment frontend and backend, and the two MCP servers. The chart renders the value at each pod spec only when non-empty (chart defaults are `[]` and render nothing), and every constraint selector must match the workload's own `app.kubernetes.io/component` pod label — the assessment frontend selects `frontend-assessment`, not `frontend-pwa-assessment`. The required `check` workflow runs `node --test deploy/scripts/verify-topology-spread.test.mjs` and `node deploy/scripts/verify-topology-spread.mjs`: the script lints and renders the chart with defaults, staging values, and production values, requires exactly one zone and one hostname constraint for each of the seven workloads with `maxSkew: 1` and `whenUnsatisfiable: ScheduleAnyway`, requires every selector to match the workload's pod label, requires the default and staging renders to contain no spread field at all, and rejects constraints on any workload outside that contract. It also compares the contract's values paths with the production values in both directions, so a workload cannot leave the assertions unnoticed by deleting its contract entry. The MCP pair already rendered its constraints before these template additions, so the contract pins them instead of relaxing them. The check is not part of `check:all`, which must run in any working copy, because the Helm CLI is not part of the dev container; the hosted runner provides it. A passing render is still source-level proof — live spread behavior must be confirmed against the synced cluster.
 - `deploy/compose*` are v2-era self-hoster examples; `deploy/scripts/rollout.sh` is a legacy manual `kubectl rollout restart`.
 
+### PWA spot burst tier
+
+With `frontendPWA.burst.enabled`, a `-frontend-pwa-burst` Deployment runs on
+`asyncspot` nodes and its HPA owns its replicas; the baseline keeps static
+replicas on regular nodes, and the Service selects both. Each tier has its own
+disruption budget, so a Pod always matches exactly one.
+
+The Klicker Applications use Argo CD's `RespectIgnoreDifferences=true` sync
+option for the burst replica exception. Before applying, Argo merges every
+existing object's live state into the desired manifest, so an in-place change
+to a list-valued field such as a label selector may never apply. A resource
+that stays `OutOfSync` after a successful sync is the symptom. The chart
+therefore gives the baseline PWA budget its own name while the burst tier is
+enabled, and a future selector change needs the same approach.
+
+Import `deploy/dashboards/klicker-pwa-burst.json` into Grafana to watch both
+tiers, the burst HPA, Pending burst Pods, `asyncspot` headroom and the other
+workloads on that pool. Kube-state-metrics exports no node labels, so the
+dashboard selects spot nodes by their `aks-asyncspot-` name prefix.
+
 ## Deployment migrations
 
 `prisma migrate deploy` runs automatically as an ArgoCD **`PreSync` hook Job** (`deploy/charts/klicker-uzh-v3/templates/job-migrate.yaml`) before each stg and prd rollout. **On prd the hook is enabled** (`migrator.enabled: true`) because the pinned release tags have matching migrator images, so normal prd rollouts apply pending Prisma migrations to the primary GraphQL database before its application Deployments start. The assessment database is covered only if its separate backend Secret targets that same database; otherwise it needs a separately proven migration path. The dedicated `backend-docker-migrator` image (`packages/prisma/Dockerfile`) is CI-built in lockstep with `backend-docker` (`v3_backend-docker-{stg,prd}.yml`); its tag auto-tracks the backend tag (the chart defaults `migrator.image.tag` to `backendGraphql.image.tag`), so it always matches the app release with no separate per-env pin. A failed hook aborts the whole sync, so app Deployments in the main wave never start against an unmigrated DB. The hook uses **ArgoCD-native** annotations (`argocd.argoproj.io/hook: PreSync`), not Helm chart hooks — the two must not be mixed, because a single ArgoCD hook annotation makes ArgoCD ignore _all_ Helm-native hooks on the chart. Full details: [Data & Migrations → Deployment migrations](./data-and-migrations.md#deployment-migrations). Manual `pnpm --filter @klicker-uzh/prisma prisma:deploy:prod` remains a break-glass fallback only.
