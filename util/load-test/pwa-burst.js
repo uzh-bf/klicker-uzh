@@ -3,7 +3,10 @@
 //
 // - `service` ramps unauthenticated /login renders plus their static assets
 //   through the PWA Service, which splits traffic across baseline and burst
-//   Pods and drives the burst HPA.
+//   Pods and drives the burst HPA. The Service balances per connection, so
+//   k6's reused connections stay on the Pods that existed at the start. Set
+//   PWA_INGRESS_IP to route the public host through the ingress controller
+//   instead, which balances per request as production traffic does.
 // - `probe_baseline` and `probe_burst` send the same small constant rate to
 //   one named Pod of each tier, so their latencies compare at equal load.
 //
@@ -30,6 +33,7 @@ const rampMinutes = Number(__ENV.RAMP_MINUTES || 10)
 const plateauMinutes = Number(__ENV.PLATEAU_MINUTES || 10)
 const coolMinutes = Number(__ENV.COOL_MINUTES || 15)
 const assetsPerPage = Number(__ENV.ASSETS_PER_PAGE || 2)
+const ingressIp = __ENV.PWA_INGRESS_IP
 const totalMinutes = rampMinutes + plateauMinutes + coolMinutes
 
 if (peakRate > 100) {
@@ -49,6 +53,9 @@ const probeScenario = (url, tier) => ({
 })
 
 export const options = {
+  // Resolves the public host in PWA_SERVICE_URL to the ingress controller, so
+  // TLS and host routing work as for external clients.
+  hosts: ingressIp ? { [serviceUrl.split('/')[2]]: ingressIp } : {},
   scenarios: {
     service: {
       executor: 'ramping-arrival-rate',

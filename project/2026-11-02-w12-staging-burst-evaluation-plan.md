@@ -330,3 +330,30 @@ out of this file.
     production (#6806) and repeating E3 on it before E4. A probe change is
     considered only if probes still fail then, and needs its own approval
     because it changes the production render.
+- 2026-11-03 E3 rerun on the production resource shape (#6806 and sync
+  #6808 merged by the user; staging at `56be8acc75`), 17:10:28–17:45:30 UTC,
+  same script and load profile:
+  - P5 pass: 0 failures in 99,119 requests, including all probe requests.
+  - P6 pass: probe p95 burst 20 ms, baseline 34 ms. Both probed Pods carried
+    about 0.23 cores at the plateau.
+  - P4 scale-up: the HPA went 1 to 2 at 17:11:29, 2 to 3 at 17:12:29 and 3 to
+    4 at 17:14:29, about 3 minutes after crossing the target.
+  - P4 scale-down pass at the limit: load ended 17:45:30; 4 to 2 at 17:51:08
+    and 2 to 1 at 17:55:09, about 9.5 minutes. The cool-down at 2 iterations
+    per second held 4 replicas: at about 55% average CPU against the 70%
+    target, the HPA still asks for 4, and one hot Pod kept that average up
+    (see the confound below).
+  - No Unhealthy probe events and no restarts. Without a CPU limit there is
+    no CFS quota, so throttling cannot occur. The baseline Pod's memory
+    working set peaked at 201 MiB, which is at the old 200Mi staging limit;
+    the first run was therefore also close to an OOM kill.
+  - Confound: the ramp went through the PWA Service, which balances per
+    connection. k6's reused connections stayed on the two Pods that existed
+    at the start (about 0.23 cores each), while the three new burst Pods
+    served almost nothing (about 0.009 cores each). One hot burst Pod at
+    about 480% of its request kept the HPA average near 133% and the HPA at
+    its maximum. This run proves the probe failures and throttling were
+    staging-shape effects, but not that new burst Pods share load. The drill
+    now routes the ramp through the ingress controller (`PWA_INGRESS_IP`),
+    which balances per request as production traffic does. E3 runs a third
+    time that way; E4 waits until the burst Pods share load at the plateau.
