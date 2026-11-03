@@ -158,6 +158,20 @@ describe('getDisplayUrl', () => {
 })
 
 describe('getSourceSecondaryLine', () => {
+  test('shows the full recording timeframe in source cards and previews', () => {
+    expect(
+      getSourceSecondaryLine(
+        source({ type: 'video', startSec: 42, endSec: 59 }),
+        t
+      )
+    ).toBe('0:42–0:59')
+    expect(
+      getSourceSecondaryLine(
+        source({ type: 'video', startSec: 42, endSec: 42 }),
+        t
+      )
+    ).toBe('0:42')
+  })
   test.each(['36', ' 36 '])('uses the publisher label (%s)', (label) => {
     expect(
       getSourceSecondaryLine(source({ page: 36, labeledPage: label }), t)
