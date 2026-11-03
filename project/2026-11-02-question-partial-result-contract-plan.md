@@ -219,6 +219,10 @@ container bound to this checkout, even when stopped. The approved retain-and-sto
 lifecycle does not authorize removing that container. No initialization attempt
 or database write has occurred. Existing unchanged source/build checks remain
 reusable, and no other owner's source is modified.
+An actual no-database parser probe verifies the synthetic manifest, provenance
+streams, final bank and index, accepting the valid partition and rejecting the
+overlap. This corrects the fixture's canonical graph filename and establishes
+artifact compatibility only; it does not substitute for the unexecuted SQL test.
 
 ### Source-only delivery history
 

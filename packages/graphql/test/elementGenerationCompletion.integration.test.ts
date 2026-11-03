@@ -472,7 +472,7 @@ describe('initial Element completion', () => {
     })
     const nodeId = `node_${'a'.repeat(32)}`
     const graph = put(
-      'graph.graphml',
+      'graph_chunk_entity_relation.graphml',
       `<graphml xmlns="http://graphml.graphdrawing.org/xmlns"><key id="node-id" for="node" attr.name="kg_node_id" attr.type="string"/><graph edgedefault="undirected"><node id="physical"><data key="node-id">${nodeId}</data></node></graph></graphml>`
     )
     const chunks = put('vdb_chunks.json', {
