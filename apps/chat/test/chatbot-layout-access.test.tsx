@@ -4,6 +4,7 @@ const mocks = vi.hoisted(() => ({
   cookies: vi.fn(),
   headers: vi.fn(),
   getChatbotOr404: vi.fn(),
+  loadChatDataUseState: vi.fn(),
   notFound: vi.fn(),
   resolveParticipantIdentity: vi.fn(),
   authorizeIdentityForChatbot: vi.fn(),
@@ -29,6 +30,7 @@ vi.mock('../src/components/assistant', () => ({
 
 vi.mock('../src/lib/server/apiGuards', () => ({
   getChatbotOr404: mocks.getChatbotOr404,
+  loadChatDataUseState: mocks.loadChatDataUseState,
   resolveParticipantIdentity: mocks.resolveParticipantIdentity,
   authorizeIdentityForChatbot: mocks.authorizeIdentityForChatbot,
 }))
@@ -78,6 +80,14 @@ beforeEach(() => {
       mcpConfigurations: [],
     },
   })
+  mocks.loadChatDataUseState.mockResolvedValue({
+    complete: true,
+    dataUseRevision: 1,
+    researchConsent: false,
+    researchChoiceRecorded: true,
+    learningAnalyticsConsent: false,
+    learningAnalyticsChoiceRecorded: true,
+  })
   mocks.notFound.mockImplementation(() => {
     throw new Error('not found')
   })
@@ -103,7 +113,10 @@ describe('chatbot layout access', () => {
     )
     expect(mocks.authorizeIdentityForChatbot).toHaveBeenCalledWith(
       { participantId: 'participant-1', authMode: 'account' },
-      CHATBOT_ID
+      CHATBOT_ID,
+      // The completion step has to stay reachable for an incomplete account;
+      // the attributed routes enforce the completed state themselves.
+      { allowIncompleteDataUse: true }
     )
     const authorizationOrder =
       mocks.authorizeIdentityForChatbot.mock.invocationCallOrder[0] ?? -1
@@ -143,8 +156,52 @@ describe('chatbot layout access', () => {
     )
     expect(mocks.authorizeIdentityForChatbot).toHaveBeenCalledWith(
       { participantId: 'guest-1', authMode: 'anonymous' },
-      CHATBOT_ID
+      CHATBOT_ID,
+      { allowIncompleteDataUse: true }
     )
+  })
+
+  test('hands the resolved data-use state and guest flag to the assistant', async () => {
+    mocks.resolveParticipantIdentity.mockResolvedValue({
+      participantId: 'guest-1',
+      authMode: 'anonymous',
+    })
+    mocks.authorizeIdentityForChatbot.mockResolvedValue({
+      participantId: 'guest-1',
+      authMode: 'anonymous',
+      chatbot: { courseId: 'course-1' },
+    })
+    mocks.loadChatDataUseState.mockResolvedValue({
+      complete: false,
+      dataUseRevision: 0,
+      researchConsent: false,
+      researchChoiceRecorded: false,
+      learningAnalyticsConsent: false,
+      learningAnalyticsChoiceRecorded: false,
+    })
+
+    const layout = await ChatLayout({
+      children: null,
+      params: Promise.resolve({ chatbotId: CHATBOT_ID }),
+    })
+
+    expect(mocks.loadChatDataUseState).toHaveBeenCalledWith('guest-1')
+    expect(layout.props.children[0].props).toMatchObject({
+      dataUseState: { complete: false, dataUseRevision: 0 },
+      isGuest: true,
+    })
+    expect(mocks.notFound).not.toHaveBeenCalled()
+  })
+
+  test('keeps the not-found response when the participant row is gone', async () => {
+    mocks.loadChatDataUseState.mockResolvedValue(null)
+
+    await expect(
+      ChatLayout({
+        children: null,
+        params: Promise.resolve({ chatbotId: CHATBOT_ID }),
+      })
+    ).rejects.toThrow('not found')
   })
 
   test('keeps the not-found response when participant access fails', async () => {
