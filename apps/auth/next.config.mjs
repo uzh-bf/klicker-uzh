@@ -10,4 +10,6 @@ const nextConfig = getNextBaseConfig({
   NEXT_PUBLIC_ENV: process.env.NEXT_PUBLIC_ENV,
 })
 
+nextConfig.logging = { incomingRequests: false }
+
 export default withNextIntl(nextConfig)

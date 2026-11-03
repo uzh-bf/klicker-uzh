@@ -7,3 +7,4 @@ metadata:
     {{- include "chart.labels" . | nindent 4 }}
 data:
   NEXTAUTH_URL: {{ .Values.global.appOrigins.auth | quote }}
+  CONTROL_NATIVE_TRUSTED_PROXY_CIDRS: {{ .Values.auth.nativeTrustedProxyCidrs | default "" | quote }}

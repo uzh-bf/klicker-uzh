@@ -53,6 +53,18 @@ export async function proxy(request: NextRequest) {
   // the return destination travels with the sign-in request and is stored
   // in the audience-namespaced NextAuth callback-URL cookie.
   if (pathname === '/') {
+    const nativeTransactions =
+      request.nextUrl.searchParams.getAll('nativeTransaction')
+    if (nativeTransactions.length) {
+      if (
+        nativeTransactions.length !== 1 ||
+        !/^[A-Za-z0-9_-]{43}$/.test(nativeTransactions[0]!) ||
+        request.nextUrl.searchParams.has('redirectTo')
+      ) {
+        return new NextResponse('Invalid sign-in attempt', { status: 400 })
+      }
+      return NextResponse.next()
+    }
     const redirectTo = request.nextUrl.searchParams.get('redirectTo')
     if (redirectTo) {
       const validation = validateRedirectTarget(redirectTo, LECTURER_HOSTS, {

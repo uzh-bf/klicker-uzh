@@ -1,4 +1,5 @@
 import { randomBytes } from 'node:crypto'
+import { signJWT, verifyJWT } from '@klicker-uzh/util'
 import { afterAll, describe, expect, test, vi } from 'vitest'
 import { decode, encode } from '../src/lib/jwt'
 
@@ -125,4 +126,36 @@ describe('next-auth JWT contracts', () => {
     }
     vi.stubEnv('APP_ORIGIN_AUTH', AUTH_URL)
   })
+})
+
+test('web issuance and renewal set expiry from the effective maxAge; legacy tokens still decode', async () => {
+  const now = Math.floor(Date.now() / 1000)
+  const initial = await encode({
+    token: { sub: 'synthetic-expiry' },
+    secret: SECRET,
+    maxAge: 900,
+  })
+  const first = await decode({ token: initial, secret: SECRET })
+  expect(first!.exp).toBeGreaterThanOrEqual(now + 900)
+  expect(first!.exp).toBeLessThanOrEqual(now + 901)
+  const renewed = await encode({
+    token: { ...first, exp: now + 60 },
+    secret: SECRET,
+    maxAge: 1800,
+  })
+  const second = await decode({ token: renewed, secret: SECRET })
+  expect(second!.exp).toBeGreaterThanOrEqual(now + 1800)
+  expect(second!.exp).toBeLessThanOrEqual(now + 1801)
+  const legacy = await signJWT({ sub: 'synthetic-legacy' }, SECRET, {
+    issuer: AUTH_URL,
+  })
+  await expect(
+    decode({ token: legacy, secret: SECRET })
+  ).resolves.toMatchObject({ sub: 'synthetic-legacy' })
+  const expired = await encode({
+    token: { sub: 'synthetic-expired' },
+    secret: SECRET,
+    maxAge: -120,
+  })
+  await expect(verifyJWT(expired, SECRET)).rejects.toThrow()
 })

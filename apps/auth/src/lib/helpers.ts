@@ -2,6 +2,7 @@ import { prisma } from '@klicker-uzh/prisma'
 import type { UserRole } from '@klicker-uzh/prisma/client'
 import {
   type CollectedInvitationEmails,
+  type ControlNativeSource,
   collectInvitationEmails,
   extractProviderFromAffiliationId,
   generateRandomString,
@@ -12,6 +13,7 @@ import {
 import bcrypt from 'bcryptjs'
 import crypto from 'crypto'
 import type { Account, Profile } from 'next-auth'
+import { authEvent, createAuthCorrelationId } from '@/lib/telemetry'
 import { sendTeamsNotifications } from '@/lib/util'
 import { updateAssessmentParticipantIdentity } from './assessmentIdentity'
 import { DEFAULT_LECTURER_HOSTS, DEFAULT_STUDENT_HOSTS } from './constants'
@@ -38,6 +40,7 @@ export interface ExtendedUser {
   scope: string
   catalystInstitutional: boolean
   catalystIndividual: boolean
+  controlNativeSource?: ControlNativeSource
 }
 
 export function getStudentHosts(): string[] {
@@ -76,7 +79,10 @@ export async function autoAcceptInvitations(
   try {
     if (!participantId) {
       if (normalizedLookupEmails.length === 0) {
-        console.log('No emails provided for participant lookup')
+        authEvent('auth.helper.invitation', createAuthCorrelationId(), {
+          action: 'invitation_lookup',
+          outcome: 'lookup_skipped',
+        })
         return 0
       }
 
@@ -89,7 +95,10 @@ export async function autoAcceptInvitations(
       })
 
       if (!participant) {
-        console.log('No participant found for emails:', normalizedLookupEmails)
+        authEvent('auth.helper.invitation', createAuthCorrelationId(), {
+          action: 'invitation_lookup',
+          outcome: 'lookup_missed',
+        })
         return 0
       }
 
@@ -97,13 +106,10 @@ export async function autoAcceptInvitations(
     }
 
     if (normalizedInvitationEmails.length === 0) {
-      console.log(
-        `Invitation mode ${invitationEmailMode} provided no eligible emails.`,
-        {
-          profileEmails: emailCollection.profileEmails,
-          affiliationEmails: emailCollection.affiliationEmails,
-        }
-      )
+      authEvent('auth.helper.invitation', createAuthCorrelationId(), {
+        action: 'invitation_lookup',
+        outcome: 'no_eligible_invitations',
+      })
       return 0
     }
 
@@ -115,10 +121,12 @@ export async function autoAcceptInvitations(
       },
     })
 
-    console.log(
-      `Found ${pendingInvitations.length} pending invitations for mode ${invitationEmailMode}:`,
-      normalizedInvitationEmails
-    )
+    authEvent('auth.helper.invitation', createAuthCorrelationId(), {
+      action: 'invitation_lookup',
+      outcome: pendingInvitations.length
+        ? 'pending_invitations_found'
+        : 'no_pending_invitations',
+    })
 
     let acceptedCount = 0
     for (const invitation of pendingInvitations) {
@@ -151,7 +159,11 @@ export async function autoAcceptInvitations(
 
         acceptedCount++
       } catch (error) {
-        console.error(`Error accepting invitation ${invitation.id}:`, error)
+        authEvent('auth.helper.invitation', createAuthCorrelationId(), {
+          action: 'invitation_accept',
+          outcome: 'invitation_accept_failed',
+          errorCategory: 'database',
+        })
       }
     }
 
@@ -164,7 +176,11 @@ export async function autoAcceptInvitations(
 
     return acceptedCount
   } catch (error) {
-    console.error('Error in autoAcceptInvitations:', error)
+    authEvent('auth.helper.invitation', createAuthCorrelationId(), {
+      action: 'invitation_process',
+      outcome: 'invitation_processing_failed',
+      errorCategory: 'database',
+    })
     return 0
   }
 }
@@ -202,7 +218,11 @@ export async function createUserAffiliations(
           },
         })
       } catch (error) {
-        console.error(`Failed to add affiliation ${affiliationId}:`, error)
+        authEvent('auth.helper.affiliation', createAuthCorrelationId(), {
+          action: 'user_affiliation_link',
+          outcome: 'affiliation_link_failed',
+          errorCategory: 'database',
+        })
         // Continue with other affiliations
       }
     }
@@ -253,10 +273,11 @@ async function createParticipantAffiliations(
 
       processedAffiliations.add(affiliationId)
     } catch (error) {
-      console.error(
-        `Failed to add participant affiliation ${affiliationId}:`,
-        error
-      )
+      authEvent('auth.helper.affiliation', createAuthCorrelationId(), {
+        action: 'participant_affiliation_link',
+        outcome: 'participant_affiliation_link_failed',
+        errorCategory: 'database',
+      })
     }
   }
   return [...processedAffiliations]
@@ -292,20 +313,13 @@ export async function createOrLinkParticipant(profile: ExtendedProfile) {
           profile.swissEduIDLinkedAffiliationMail
         )
 
-        const acceptedCount = await autoAcceptInvitations(
-          tx,
-          emailCollection,
-          existing.participantId
-        )
-        console.log(
-          `Auto-accepted ${acceptedCount} invitations for existing user with emails:`,
-          emailCollection.allEmails
-        )
+        await autoAcceptInvitations(tx, emailCollection, existing.participantId)
       } catch (error) {
-        console.error(
-          'Error auto-accepting invitations for existing user:',
-          error
-        )
+        authEvent('auth.helper.invitation', createAuthCorrelationId(), {
+          action: 'invitation_process',
+          outcome: 'invitation_auto_accept_failed',
+          errorCategory: 'database',
+        })
       }
 
       await updateAssessmentParticipantIdentity(
@@ -400,20 +414,13 @@ export async function createOrLinkParticipant(profile: ExtendedProfile) {
         profile.swissEduIDLinkedAffiliationMail
       )
 
-      const acceptedCount = await autoAcceptInvitations(
-        tx,
-        emailCollection,
-        participant.id
-      )
-      console.log(
-        `Auto-accepted ${acceptedCount} invitations for new participant with emails:`,
-        emailCollection.allEmails
-      )
+      await autoAcceptInvitations(tx, emailCollection, participant.id)
     } catch (error) {
-      console.error(
-        'Error auto-accepting invitations for new participant:',
-        error
-      )
+      authEvent('auth.helper.invitation', createAuthCorrelationId(), {
+        action: 'invitation_process',
+        outcome: 'invitation_auto_accept_failed',
+        errorCategory: 'database',
+      })
     }
 
     await updateAssessmentParticipantIdentity(tx, participant.id, profile)

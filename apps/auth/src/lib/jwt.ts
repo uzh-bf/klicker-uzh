@@ -19,6 +19,7 @@
 
 import type { JWTPayload } from '@klicker-uzh/util'
 import { signJWT, verifyJWT } from '@klicker-uzh/util'
+import { SESSION_MAX_AGE_SECONDS } from '@klicker-uzh/util/client-auth'
 import type {
   DefaultJWT,
   JWTDecodeParams,
@@ -40,7 +41,7 @@ export async function encode({ token, secret, salt, maxAge }: JWTEncodeParams) {
     // being accepted once the session cookie would have expired; maxAge is in
     // seconds and must be passed as a relative span (jose reads a bare number
     // as an absolute timestamp)
-    expiresIn: maxAge ? `${maxAge}s` : undefined,
+    expiresIn: `${maxAge ?? SESSION_MAX_AGE_SECONDS}s`,
   })
 }
 

@@ -6721,5 +6721,18 @@ Da die KlickerUZH-App noch nicht im iOS-App-Store verfügbar ist, folgen Sie die
       sending: 'Wird gesendet...',
       missingId: 'Objekt-ID fehlt. Kommentare kann nicht angezeigt werden.',
     },
+    nativeLogin: {
+      accountFallback: 'Dozent:in',
+      failed:
+        'Diese Anmeldung ist abgelaufen oder konnte nicht abgeschlossen werden. Kehre zur App zurück und versuche es erneut.',
+      continueAs: 'Als <emphasis>{account}</emphasis> zur App wechseln?',
+      continue: 'Weiter zu Control',
+      otherAccount: 'Anderes Konto verwenden',
+      signInHint:
+        'Melde dich mit deinem bestehenden Dozierendenkonto an, um fortzufahren.',
+    },
+    accessibility: {
+      signIn: 'Anmelden',
+    },
   },
 }

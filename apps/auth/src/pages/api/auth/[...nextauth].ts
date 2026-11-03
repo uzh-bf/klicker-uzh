@@ -4,10 +4,11 @@ import { UserLoginScope } from '@klicker-uzh/prisma/client'
 import {
   deriveCookieDomainFromURL,
   generateRandomString,
+  nativePasswordDigest,
   reduceCatalyst,
 } from '@klicker-uzh/util'
+import { SESSION_MAX_AGE_SECONDS } from '@klicker-uzh/util/client-auth'
 import bcrypt from 'bcryptjs'
-import crypto from 'crypto'
 import type { NextApiRequest, NextApiResponse } from 'next'
 import type { NextAuthOptions } from 'next-auth'
 import NextAuth from 'next-auth'
@@ -41,14 +42,22 @@ import {
   getStudentHosts,
 } from '@/lib/helpers'
 import { decode as jwtDecode, encode as jwtEncode } from '@/lib/jwt'
+import { nativeLoginBinding } from '@/lib/nativeHandoff'
 import { isSameOriginRedirect } from '@/lib/redirect'
 import { hostFromUrl, validateRedirectTarget } from '@/lib/redirectTarget'
-import { authEvent } from '@/lib/telemetry'
+import {
+  type AuthCorrelationId,
+  authEvent,
+  createAuthCorrelationId,
+} from '@/lib/telemetry'
 import { sendTeamsNotifications } from '@/lib/util'
 
 // Validate required environment variables
 if (!process.env.APP_ORIGIN_AUTH) {
-  console.error('APP_ORIGIN_AUTH is required but not defined')
+  authEvent('auth.configuration', undefined, {
+    outcome: 'configuration_error',
+    errorCategory: 'configuration',
+  })
   process.exit(1)
 }
 
@@ -88,6 +97,7 @@ const SHARED_OPTIONS: Partial<NextAuthOptions> = {
 
   session: {
     strategy: 'jwt',
+    maxAge: SESSION_MAX_AGE_SECONDS,
   },
 
   jwt: {
@@ -104,6 +114,53 @@ function secureCookies(): boolean {
     process.env.NEXTAUTH_URL,
     process.env.AUTH_SECURE_COOKIES
   )
+}
+
+function nextAuthErrorCategory(code: string): string {
+  switch (code) {
+    case 'OAUTH_CALLBACK_ERROR':
+    case 'OAUTH_CALLBACK_HANDLER_ERROR':
+    case 'CALLBACK_OAUTH_ERROR':
+      return 'oauth_callback'
+    case 'SIGNIN_OAUTH_ERROR':
+    case 'OAUTH_SIGNIN_ERROR':
+      return 'oauth_signin'
+    case 'CALLBACK_CREDENTIALS_HANDLER_ERROR':
+    case 'CALLBACK_CREDENTIALS_JWT_ERROR':
+      return 'credentials_callback'
+    case 'JWT_SESSION_ERROR':
+    case 'SESSION_ERROR':
+    case 'CALLBACK_SESSION_ERROR':
+      return 'session'
+    case 'ADAPTER_ERROR':
+    case 'CREATE_USER_ERROR':
+    case 'GET_USER_BY_ACCOUNT_ERROR':
+    case 'LINK_ACCOUNT_ERROR':
+      return 'adapter'
+    case 'MISSING_NEXTAUTH_API_ROUTE_ERROR':
+    case 'NO_SECRET':
+      return 'configuration'
+    default:
+      return 'other'
+  }
+}
+
+function createNextAuthLogger(requestId: AuthCorrelationId) {
+  return {
+    error(code: string, _metadata?: unknown) {
+      authEvent('auth.nextauth_error', requestId, {
+        outcome: 'library_error',
+        errorCategory: nextAuthErrorCategory(code),
+      })
+    },
+    warn(code: string, _metadata?: unknown) {
+      authEvent('auth.nextauth_warning', requestId, {
+        outcome: 'library_warning',
+        errorCategory: nextAuthErrorCategory(code),
+      })
+    },
+    debug() {},
+  }
 }
 
 function participantFallbackUrl(): string {
@@ -127,7 +184,7 @@ function participantReturnTarget({
   secure,
   storedTarget,
 }: {
-  requestId: string
+  requestId: AuthCorrelationId
   secure: boolean
   storedTarget: string | undefined
 }): string {
@@ -157,7 +214,7 @@ function participantReturnTarget({
 function getParticipantConfig({
   requestId,
 }: {
-  requestId: string
+  requestId: AuthCorrelationId
 }): NextAuthOptions {
   // Derive shared cookie domain for NextAuth session cookies by removing the first
   // label from the NEXTAUTH_URL hostname (e.g., auth.klicker.com -> klicker.com).
@@ -211,7 +268,11 @@ function getParticipantConfig({
           profile(profile) {
             // Ensure we have the required fields for NextAuth
             if (!profile.sub) {
-              console.error('Missing sub in EduID profile')
+              authEvent('auth.account_handling', requestId, {
+                audience: 'participant',
+                outcome: 'profile_missing',
+                errorCategory: 'provider_profile',
+              })
               throw new Error('Missing sub in EduID profile')
             }
 
@@ -228,6 +289,8 @@ function getParticipantConfig({
 
   return {
     ...SHARED_OPTIONS,
+
+    logger: createNextAuthLogger(requestId),
 
     useSecureCookies: secure,
 
@@ -259,7 +322,11 @@ function getParticipantConfig({
         })
 
         if (!profile) {
-          console.error('No profile provided for participant sign-in')
+          authEvent('auth.account_handling', requestId, {
+            audience: 'participant',
+            outcome: 'profile_missing',
+            errorCategory: 'provider_profile',
+          })
           return false
         }
 
@@ -269,9 +336,11 @@ function getParticipantConfig({
           )
 
           if (!participant) {
-            console.error(
-              'Failed to create/link participant: no participant returned'
-            )
+            authEvent('auth.account_handling', requestId, {
+              audience: 'participant',
+              outcome: 'participant_missing',
+              errorCategory: 'account',
+            })
             return false
           }
           // Store participantId for jwt callback
@@ -282,7 +351,11 @@ function getParticipantConfig({
           })
           return true
         } catch (error) {
-          console.error('Failed to create/link participant:', error)
+          authEvent('auth.account_handling', requestId, {
+            audience: 'participant',
+            outcome: 'participant_link_failed',
+            errorCategory: 'database',
+          })
           return false
         }
       },
@@ -303,9 +376,11 @@ function getParticipantConfig({
 
           if (!participant) {
             // Participant doesn't exist in current database - invalidate token
-            console.warn(
-              `Participant ${token.sub} not found in database, invalidating token`
-            )
+            authEvent('auth.account_handling', requestId, {
+              audience: 'participant',
+              outcome: 'participant_missing',
+              errorCategory: 'account',
+            })
             // Return empty token to force re-authentication
             return { sub: '', role: '', scope: '', email: '', name: '' }
           }
@@ -357,9 +432,14 @@ function getParticipantConfig({
 
 function getLecturerConfig({
   requestId,
+  cookies,
+  action,
 }: {
-  requestId: string
+  requestId: AuthCorrelationId
+  cookies: NextApiRequest['cookies']
+  action: ReturnType<typeof parseAuthAction>['action']
 }): NextAuthOptions {
+  let nativeCallbackUrl: string | undefined
   // Derive shared cookie domain for NextAuth session cookies by removing the first
   // label from the NEXTAUTH_URL hostname (e.g., auth.klicker.com -> klicker.com).
   // Avoid setting Domain for localhost or IPs.
@@ -423,6 +503,10 @@ function getLecturerConfig({
         label: 'Shortname of Main Account',
         type: 'text',
         placeholder: 'banking23',
+        autoCapitalize: 'none',
+        autoCorrect: 'off',
+        autoComplete: 'username',
+        spellCheck: 'false',
         required: true,
         'data-cy': 'identifier-field',
       },
@@ -466,6 +550,14 @@ function getLecturerConfig({
             scope: login.scope,
             catalystInstitutional: user.catalystInstitutional,
             catalystIndividual: user.catalystIndividual,
+            controlNativeSource: {
+              kind: 'delegated',
+              id: login.id,
+              passwordDigest: nativePasswordDigest(
+                login.password,
+                process.env.APP_SECRET ?? ''
+              ),
+            },
           }
         }
       }
@@ -476,6 +568,8 @@ function getLecturerConfig({
 
   return {
     ...SHARED_OPTIONS,
+
+    logger: createNextAuthLogger(requestId),
 
     useSecureCookies: secure,
 
@@ -554,12 +648,25 @@ function getLecturerConfig({
         return true
       },
 
-      async jwt({ token, user, profile }) {
+      async jwt({ token, user, profile, account, trigger }) {
         // Lecturer JWT handling (existing logic)
         const profileData = profile as ExtendedProfile
         const userData = user as ExtendedUser
 
         if (typeof user !== 'undefined') {
+          // Only a completed sign-in can bind this session to a native handoff.
+          // Session reads and renewal must never create fresh-login evidence.
+          delete token.controlNativeLogin
+          if (
+            action === 'callback' &&
+            (trigger === 'signIn' || trigger === 'signUp') &&
+            nativeCallbackUrl
+          )
+            token.controlNativeLogin = nativeLoginBinding(
+              nativeCallbackUrl,
+              cookies,
+              userData.id
+            )
           token.shortname = userData.shortname
 
           if (typeof profileData?.swissEduPersonUniqueID === 'string') {
@@ -571,6 +678,25 @@ function getLecturerConfig({
           token.catalystInstitutional = userData.catalystInstitutional
           token.catalystIndividual = userData.catalystIndividual
           token.role = userData.role
+
+          if (userData.controlNativeSource) {
+            token.controlNativeSource = userData.controlNativeSource
+          } else if (account?.provider && account.providerAccountId) {
+            const identity = await prisma.account.findUnique({
+              where: {
+                provider_providerAccountId: {
+                  provider: account.provider,
+                  providerAccountId: account.providerAccountId,
+                },
+              },
+            })
+            if (identity?.userId === userData.id && identity.isVerified) {
+              token.controlNativeSource = {
+                kind: 'institutional',
+                id: identity.id,
+              }
+            }
+          }
 
           // handle the affiliation creation after the creation of the actual user
           if (
@@ -584,10 +710,11 @@ function getLecturerConfig({
                 profileData.swissEduIDLinkedAffiliationUniqueID
               )
             } catch (error) {
-              console.error(
-                'Error creating user affiliations in JWT callback:',
-                error
-              )
+              authEvent('auth.account_handling', requestId, {
+                audience: 'lecturer',
+                outcome: 'affiliation_link_failed',
+                errorCategory: 'database',
+              })
             }
           }
         }
@@ -597,6 +724,7 @@ function getLecturerConfig({
 
       async redirect({ url, baseUrl }) {
         if (isSameOriginRedirect(url, baseUrl)) {
+          nativeCallbackUrl = url
           return url
         }
 
@@ -604,6 +732,7 @@ function getLecturerConfig({
         // /discourse_handoff supplied by NextAuth as a same-origin path)
         if (url.startsWith('/')) {
           const out = `${baseUrl}${url}`
+          nativeCallbackUrl = out
           return out
         }
 
@@ -658,11 +787,7 @@ function sendRestartRedirect(res: NextApiResponse) {
 // handler runs so a query can never replace verified transaction context.
 export default async function auth(req: NextApiRequest, res: NextApiResponse) {
   const startedAt = Date.now()
-  const headerRequestId = Array.isArray(req.headers['x-request-id'])
-    ? req.headers['x-request-id'][0]
-    : req.headers['x-request-id']
-  const requestId =
-    headerRequestId || `na-${crypto.randomBytes(6).toString('hex')}`
+  const requestId = createAuthCorrelationId()
 
   const { nextauth, ...query } = req.query as { nextauth?: string[] } & Record<
     string,
@@ -674,7 +799,6 @@ export default async function auth(req: NextApiRequest, res: NextApiResponse) {
     action,
     providerId,
     method: req.method,
-    path: req.url?.split('?')[0],
   })
 
   if (action === 'callback' && providerId === eduIdProviderId()) {
@@ -786,7 +910,7 @@ export default async function auth(req: NextApiRequest, res: NextApiResponse) {
     const authOptions =
       audience === 'participant'
         ? getParticipantConfig({ requestId })
-        : getLecturerConfig({ requestId })
+        : getLecturerConfig({ requestId, cookies: req.cookies, action })
 
     if (audience === 'participant') {
       // A failure inside the library returns a redirect to its generic
@@ -799,7 +923,6 @@ export default async function auth(req: NextApiRequest, res: NextApiResponse) {
           authEvent('auth.failure_recovery', requestId, {
             audience: 'participant',
             outcome: 'participant_restart',
-            path: to,
             errorCategory:
               new URL(from, authBase).searchParams.get('error') ?? undefined,
           })

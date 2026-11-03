@@ -111,6 +111,9 @@ export interface AuthTestRequest {
   cookies?: Record<string, string>
   headers?: Record<string, string>
   body?: unknown
+  url?: string
+  remoteAddress?: string
+  rawHeaders?: string[]
 }
 
 export interface AuthTestResult {
@@ -136,6 +139,14 @@ function createRequestDouble(request: AuthTestRequest): NextApiRequest {
     cookies: request.cookies ?? {},
     headers: request.headers ?? {},
     body: request.body,
+    url: request.url,
+    socket: { remoteAddress: request.remoteAddress },
+    rawHeaders:
+      request.rawHeaders ??
+      Object.entries(request.headers ?? {}).flatMap(([name, value]) => [
+        name,
+        value,
+      ]),
   } as unknown as NextApiRequest
 }
 

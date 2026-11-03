@@ -6568,5 +6568,17 @@ Since the KlickerUZH app is not yet available in the iOS App Store, follow these
       sending: 'Sending...',
       missingId: 'Object ID is missing. comments cannot be displayed.',
     },
+    nativeLogin: {
+      accountFallback: 'Lecturer',
+      failed:
+        'This sign-in attempt expired or could not be completed. Return to the app and try again.',
+      continueAs: 'Continue to the app as <emphasis>{account}</emphasis>?',
+      continue: 'Continue to Control',
+      otherAccount: 'Use another account',
+      signInHint: 'Sign in with your existing lecturer account to continue.',
+    },
+    accessibility: {
+      signIn: 'Sign in',
+    },
   },
 }
