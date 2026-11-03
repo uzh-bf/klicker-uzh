@@ -218,14 +218,30 @@ execution are unexecuted. The user subsequently authorized removing the exact
 stopped compiler container, which is now removed with source, image and pnpm cache
 retained. Native startup was refused before provisioning: the default Blob port
 was occupied, and the existing checkout-local port override exposed a second
-guard rejecting explicit Redis volume names. No fresh initialization attempt,
-provider registration or database write occurred. Canonical stop verified an
-absent runtime and zero routes. The temporary bootstrap patch was restored to
-the published baseline. A three-line local-only Compose correction is proposed;
-rendering proves it keeps the same default project-scoped Redis names. That file
-is outside the approved mutation list and requires a finite amendment before
-execution. Existing unchanged source/build checks remain reusable, and no other
-owner's source or runtime is modified.
+guard rejecting explicit Redis volume names. Those refusals occurred before any
+initialization attempt or database write. The user then approved a finite
+amendment for the three-line local-only Compose correction and a fresh execution
+window. Rendering verified identical default project-scoped Redis names. Both
+temporary configuration changes were frozen in an unpublished Git snapshot and
+independently reviewed before effects. The single fresh initialization succeeded.
+
+All 76 real-PostgreSQL completion, persistence, accounting and start-failure
+checks pass, including both actual partial-result caller cases and concurrent
+identical saves from incomplete builds. All three selected Chromium cases pass:
+canonical editor/save round trips, reason nodes and distinct terminal states.
+The last case includes intercepted status presentations, separately from real
+seeded-build navigation. SQL evidence was captured before the one successful
+initial browser cleanup/reseed; no repeat was needed. Native initial-generation
+quality and automatic producer-to-browser transport are not established.
+
+Canonical shutdown and provider status verify stopped state, all seven selected
+containers stopped and zero routes. Data and volumes are retained; both temporary
+configuration files are restored to their published baseline. No paid generation
+ran, and historical financial reservations and recovery limits are unchanged.
+The setup changes remain unpublished because trusted CI tool delivery is still
+separate. Existing source/build evidence remains reusable. Hosted CI, serving
+image inclusion, promotion, deployed behavior and the complete accepted exam/local
+package remain unqualified. No other owner's source or runtime was modified.
 An actual no-database parser probe verifies the synthetic manifest, provenance
 streams, final bank and index, accepting the valid partition and rejecting the
 overlap. This corrects the fixture's canonical graph filename and establishes
