@@ -214,11 +214,18 @@ publishing the new Devrouter minimum would conflict with the trusted CI
 toolchain. The configuration change is therefore excluded from the published
 diff and retained as a private local qualification patch. Updating the trusted
 CI toolchain and promoting it remain outside this batch. SQL and browser
-execution are unexecuted: fresh initialization also refuses an existing compiler
-container bound to this checkout, even when stopped. The approved retain-and-stop
-lifecycle does not authorize removing that container. No initialization attempt
-or database write has occurred. Existing unchanged source/build checks remain
-reusable, and no other owner's source is modified.
+execution are unexecuted. The user subsequently authorized removing the exact
+stopped compiler container, which is now removed with source, image and pnpm cache
+retained. Native startup was refused before provisioning: the default Blob port
+was occupied, and the existing checkout-local port override exposed a second
+guard rejecting explicit Redis volume names. No fresh initialization attempt,
+provider registration or database write occurred. Canonical stop verified an
+absent runtime and zero routes. The temporary bootstrap patch was restored to
+the published baseline. A three-line local-only Compose correction is proposed;
+rendering proves it keeps the same default project-scoped Redis names. That file
+is outside the approved mutation list and requires a finite amendment before
+execution. Existing unchanged source/build checks remain reusable, and no other
+owner's source or runtime is modified.
 An actual no-database parser probe verifies the synthetic manifest, provenance
 streams, final bank and index, accepting the valid partition and rejecting the
 overlap. This corrects the fixture's canonical graph filename and establishes
