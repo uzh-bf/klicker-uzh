@@ -1,3 +1,4 @@
+import { MAX_RESPONSE_LIMIT } from '@klicker-uzh/types'
 import {
   Button,
   FormikNumberField,
@@ -29,6 +30,21 @@ function FreeTextOptions({ inputsDisabled, values }: FreeTextOptionsProps) {
           precision={0}
           data={{ cy: 'set-free-text-length' }}
           hideError
+        />
+        <FormikNumberField
+          disabled={inputsDisabled}
+          name="options.responseLimit"
+          label={t('manage.elements.responseLimit')}
+          tooltip={t('manage.elements.responseLimitTooltip')}
+          className={{
+            root: 'ml-6',
+            field: 'w-44',
+          }}
+          placeholder="1"
+          precision={0}
+          min={1}
+          max={MAX_RESPONSE_LIMIT}
+          data={{ cy: 'set-free-text-response-limit' }}
         />
       </div>
       {values.options.hasSampleSolution && (
