@@ -287,7 +287,18 @@ describe('real generated Element persistence', () => {
     await prisma.$disconnect()
   })
 
-  it('keeps simultaneous identical requests as one Element and one set of related rows', async () => {
+  it.each([
+    DB.ElementGenerationBuildStatus.COMPLETED,
+    DB.ElementGenerationBuildStatus.INCOMPLETE,
+  ])('keeps simultaneous identical requests for a %s build as one Element and one set of related rows', async (status) => {
+    const draft = await prisma.generatedElementDraft.findUniqueOrThrow({
+      where: { id: draftId },
+      select: { buildId: true },
+    })
+    await prisma.elementGenerationBuild.update({
+      where: { id: draft.buildId },
+      data: { status },
+    })
     const ctx = concurrentContext()
     const [first, second] = await Promise.all([
       keepGeneratedElementDraft(keepInput(), ctx),
