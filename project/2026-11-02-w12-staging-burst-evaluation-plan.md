@@ -357,3 +357,24 @@ out of this file.
     now routes the ramp through the ingress controller (`PWA_INGRESS_IP`),
     which balances per request as production traffic does. E3 runs a third
     time that way; E4 waits until the burst Pods share load at the plateau.
+- 2026-11-03 E3 third run through the ingress controller
+  (`PWA_INGRESS_IP`), 17:56:58–18:32:00 UTC, same load profile. This run is
+  the E3 result:
+  - P5 pass: 0 failures in 99,119 requests.
+  - P6 pass: probe p95 burst 21 ms, baseline 27 ms; Service plateau p95
+    16 ms.
+  - Load sharing: at the plateau all five PWA Pods used 100–126m CPU each,
+    so new burst Pods take their share as soon as they are Ready.
+  - P4 scale-up pass: the target was crossed at about 17:58; the HPA went 1
+    to 2 at 17:58:24, 2 to 3 at 17:59:25 and 3 to 4 at 18:00:25, about 2.5
+    minutes.
+  - P4 scale-down pass at the limit: load ended 18:32:30; 4 to 3 at 18:37:16,
+    3 to 2 at 18:38:17 and 2 to 1 at 18:42:18, about 10 minutes.
+  - No Unhealthy probe events and no restarts.
+  - Finding for production sizing: at 30 iterations per second the HPA sat
+    at its maximum of 4 with about 220% of the 50m request, while latency
+    stayed low. The 70% target on a 50m request makes the tier reach its
+    maximum at modest absolute load (about 35m CPU per Pod). Production uses
+    the same request and target. Whether to raise the burst request, the
+    target or `maxReplicas` before production enablement is a separate
+    decision; nothing here changes the production render.
