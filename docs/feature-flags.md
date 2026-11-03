@@ -32,10 +32,11 @@ build on it:
 - **Knowledge bases and chatbots.** These also require the account's
   `aiFeaturesEnabled` approval. Auth sets it when a UZH account is created
   (`isUzhAffiliated` in `packages/util/src/auth.ts`: email or eduID affiliation
-  on `uzh.ch` or a subdomain), and administrators can change it. Creating a
-  chatbot, publishing it and model usage check the approval; editing and
-  withdrawing an existing chatbot use the authoring gate (beta preference,
-  `ai-beta`, Catalyst and allowed account scope). See
+  on `uzh.ch` or a subdomain), and administrators can change it. Manage shows
+  the Chatbots surface only with the approval. On the API, creating,
+  publishing and model usage check the approval, while saving and withdrawing
+  an existing chatbot keep the authoring gate (beta preference, `ai-beta`,
+  Catalyst and allowed account scope). See
   [Chat platform](./chat-platform.md#auth-guard-pattern-route-handlers).
 - **Question and flashcard generation.** These additionally require the
   `question-generation` flag, so the approval alone does not open them.
@@ -71,8 +72,8 @@ from a broken control without implying that lecturers can enable it themselves.
 
 ### AI capability states
 
-The backend-owned capability for Knowledge Bases, generation, and Manage assistants
-has three states. Chatbot authoring keeps its separate upstream gate.
+The backend-owned capability for Knowledge Bases, chatbots and generation has
+three states. The Manage assistant uses its own gate without the AI approval.
 
 | State                    | Meaning                                                      | Manage behavior                                    |
 | ------------------------ | ------------------------------------------------------------ | -------------------------------------------------- |
@@ -445,11 +446,12 @@ evaluation only; it does not persist or mutate beta membership. Token
 provisioning and validation belong to v3-ai and are outside this contract.
 
 `User.aiFeaturesEnabled` defaults to `false` and remains the sole account
-approval gate for Knowledge Base access, question/graph generation, chatbot
-publication, and model usage, even when budget enforcement is disabled.
-Chatbot authoring is preapproval and may use the beta preference and `ai-beta`
-rollout without that approval, but neither grants it. Per-chatbot publication
-review and published participant access remain separate and unchanged.
+approval gate for Knowledge Base access, chatbot creation and publication,
+question/graph generation, and model usage, even when budget enforcement is
+disabled. Auth sets it when a UZH account is created. Question and flashcard
+generation additionally require `question-generation`. The Manage assistant
+does not require the approval. Per-chatbot publication review and published
+participant access remain separate and unchanged.
 
 ### Transition from saved-group targeting
 
