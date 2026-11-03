@@ -53,7 +53,6 @@ import {
 } from 'react'
 import * as Yup from 'yup'
 import ContentInput from '../../common/ContentInput'
-import { ChatbotCreditPolicySummary } from './ChatbotCreditPolicy'
 import ChatbotDisclaimerPreview from './ChatbotDisclaimerPreview'
 import ChatbotPublicationRequest from './ChatbotPublicationRequest'
 import {
@@ -952,7 +951,6 @@ function CustomModesEditor({
 
 function ChatbotAuthoring({
   chatbot,
-  advancedManagement,
   step,
   sections,
   publishingAuthorized,
@@ -971,7 +969,6 @@ function ChatbotAuthoring({
   onNavigationStateChange,
 }: {
   chatbot: RevisionChatbot
-  advancedManagement: boolean
   step: ChatbotSetupStep
   sections?: readonly ChatbotSetupStep[]
   // The host page supplies the section titles and keeps the sections open, so
@@ -2388,28 +2385,6 @@ function ChatbotAuthoring({
                     )}
                   </div>
                 </div>
-
-                {advancedManagement && !embedded && (
-                  // The Edit button opens the credit editor in the Usage
-                  // view, which is itself operator-only tuning.
-                  <div className="rounded-md border border-gray-200 bg-gray-50 p-4">
-                    <div className="mb-3 flex items-center justify-between gap-3">
-                      <h5 className="font-semibold text-gray-900">
-                        {t('manage.resources.chatbotSetupCreditsTitle')}
-                      </h5>
-                      <Button
-                        type="button"
-                        onClick={() => openSection('credits')}
-                        data={{ cy: 'chatbot-setup-edit-credits' }}
-                      >
-                        <Button.Label>
-                          {t('manage.resources.chatbotSetupEdit')}
-                        </Button.Label>
-                      </Button>
-                    </div>
-                    <ChatbotCreditPolicySummary chatbot={chatbot} />
-                  </div>
-                )}
 
                 {embedded ? null : (
                   <UserNotification>

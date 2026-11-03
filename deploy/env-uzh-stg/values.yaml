@@ -559,13 +559,14 @@ frontendPWA:
   strategy:
     type: Recreate
 
+  # Matches the production PWA shape, so burst tier drills on staging see the
+  # same CPU headroom and HPA target as production.
   resources:
     requests:
       cpu: 50m
-      memory: 50Mi
+      memory: 320Mi
     limits:
-      cpu: 200m
-      memory: 200Mi
+      memory: 1Gi
 
 frontendManage:
   priorityClassName: staging-workload

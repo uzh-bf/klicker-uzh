@@ -2902,7 +2902,7 @@ Da die KlickerUZH-App noch nicht im iOS-App-Store verfügbar ist, folgen Sie die
       usageBudget: 'Budget',
       usageBudgetEmpty: 'Für diese Nutzungsklasse ist kein Budget festgelegt.',
       usageBudgetExhausted: 'Das monatliche Budget ist ausgeschöpft.',
-      usageCredits: 'Credits',
+      usageCredits: 'USD',
       usageRemaining: 'Verbleibend',
       usageResetDate: 'Zurücksetzung',
       usageUsed: 'Verwendet',
@@ -5298,7 +5298,7 @@ Da die KlickerUZH-App noch nicht im iOS-App-Store verfügbar ist, folgen Sie die
       chatbotUnsubmittedSections:
         'Gespeichert, aber noch nicht eingereicht: {sections}.',
       chatbotUsageNoneYet: 'Noch keine',
-      chatbotUsageCreditsValue: '{current} von {total}',
+      chatbotUsageCreditsValue: 'USD {current} von USD {total}',
       chatbotUsageStudentInformationValue:
         '{accepted} akzeptiert, {declined} abgelehnt, {pending} noch offen',
       chatbotLiveCreditPolicy:
@@ -5333,9 +5333,9 @@ Da die KlickerUZH-App noch nicht im iOS-App-Store verfügbar ist, folgen Sie die
       chatbotSummaryModelChoice:
         '{count, plural, one {Studierende nutzen {models}.} other {Studierende wählen zwischen {models}.}}',
       chatbotSummaryUsageInitial:
-        'Alle Studierenden starten mit {initial, plural, one {1 Credit} other {# Credits}}.',
+        'Alle Studierenden starten mit USD {initial}.',
       chatbotSummaryUsageRefill:
-        '{period, select, NONE {Credits werden nicht aufgefüllt.} DAILY {Jeden Tag {amount, plural, one {kommt 1 Credit} other {kommen # Credits}} dazu, bis höchstens {max}.} WEEKLY {Jede Woche {amount, plural, one {kommt 1 Credit} other {kommen # Credits}} dazu, bis höchstens {max}.} BIWEEKLY {Alle zwei Wochen {amount, plural, one {kommt 1 Credit} other {kommen # Credits}} dazu, bis höchstens {max}.} MONTHLY {Jeden Monat {amount, plural, one {kommt 1 Credit} other {kommen # Credits}} dazu, bis höchstens {max}.} other {Credits werden bis höchstens {max} aufgefüllt.}}',
+        '{period, select, NONE {Das Budget wird nicht aufgestockt.} DAILY {Jeden Tag kommen USD {amount} dazu, bis höchstens USD {max}.} WEEKLY {Jede Woche kommen USD {amount} dazu, bis höchstens USD {max}.} BIWEEKLY {Alle zwei Wochen kommen USD {amount} dazu, bis höchstens USD {max}.} MONTHLY {Jeden Monat kommen USD {amount} dazu, bis höchstens USD {max}.} other {Das Budget wird bis höchstens USD {max} aufgestockt.}}',
       chatbotSummaryGraph:
         'Die Konzeptkarte ist für Studierende {visible, select, yes {sichtbar} other {ausgeblendet}}.',
       chatbotSummaryGraphRetrieval:
@@ -5533,20 +5533,20 @@ Da die KlickerUZH-App noch nicht im iOS-App-Store verfügbar ist, folgen Sie die
       chatbotSetupDisclaimerTitle: 'Disclaimer für Teilnehmende',
       chatbotSetupDisclaimerDescriptionLong:
         'Erklären Sie, was Teilnehmende vor der Nutzung dieses Chatbots wissen sollten. Speichern Sie diesen Bereich, um die Vorschau für Teilnehmende zu aktualisieren. Die Vorschau enthält den festen Plattformtext.',
-      chatbotSetupCreditsTitle: 'Credits für Teilnehmende',
       chatbotCreditPolicyDescription:
-        'Start-Credits gelten bei der ersten Nutzung. Wiederkehrende Zurücksetzungen fügen Credits bis zum festgelegten Maximum hinzu.',
-      chatbotCreditAmountRequired: 'Bitte geben Sie eine Credit-Menge ein.',
+        'Credits sind US-Dollar. Jede Antwort wird dem Budget der Studierenden mit ihren Modellkosten in US-Dollar belastet. Das Startbudget gilt bei der ersten Nutzung, und wiederkehrende Aufstockungen erhöhen es bis zum maximalen Guthaben.',
+      chatbotCreditAmountRequired:
+        'Bitte geben Sie einen Betrag in US-Dollar ein.',
       chatbotCreditAmountInvalid:
-        'Bitte geben Sie eine nicht negative ganze Zahl bis 2 147 483 647 ein.',
+        'Bitte geben Sie eine nicht negative ganze Zahl in US-Dollar bis 2 147 483 647 ein.',
       chatbotCreditResetPeriodRequired:
         'Bitte wählen Sie ein Zurücksetzungsintervall.',
       chatbotCreditResetAmountInvalid:
-        'Bitte geben Sie bei aktivierten Zurücksetzungen eine positive ganze Zahl ein.',
+        'Bitte geben Sie bei aktivierten Aufstockungen eine positive ganze Zahl in US-Dollar ein.',
       chatbotCreditInitialAboveMaximum:
-        'Die Start-Credits dürfen die maximalen Credits nicht überschreiten.',
+        'Das Startbudget darf das maximale Guthaben nicht überschreiten.',
       chatbotCreditResetAboveMaximum:
-        'Die Zurücksetzungsmenge darf die maximalen Credits nicht überschreiten.',
+        'Der Aufstockungsbetrag darf das maximale Guthaben nicht überschreiten.',
       chatbotCreditPolicySaveSuccess:
         'Die Credit-Einstellungen für Teilnehmende wurden gespeichert.',
       chatbotCreditPolicySaveError:
@@ -5707,10 +5707,10 @@ Da die KlickerUZH-App noch nicht im iOS-App-Store verfügbar ist, folgen Sie die
       chatbotStatusRejected: 'Abgelehnt',
       chatbotStatusUnknown: 'Unbekannter Status',
       credits: 'Credits',
-      creditInitialCredits: 'Start-Credits',
-      creditResetPeriod: 'Zurücksetzungsintervall',
-      creditResetAmount: 'Zurücksetzungsmenge',
-      creditMaxCredits: 'Maximale Credits',
+      creditInitialCredits: 'Startbudget pro Studierende (USD)',
+      creditResetPeriod: 'Aufstockungsintervall',
+      creditResetAmount: 'Aufstockungsbetrag (USD)',
+      creditMaxCredits: 'Maximales Guthaben pro Studierende (USD)',
       modelSelection: 'Studierende wählen das Modell',
       modelSelectionEnabled: 'Aktiviert',
       modelSelectionDisabled: 'Deaktiviert',
@@ -5747,7 +5747,7 @@ Da die KlickerUZH-App noch nicht im iOS-App-Store verfügbar ist, folgen Sie die
       usageMessages: 'Nachrichten',
       usageParticipants: 'Studierende',
       usageLastActivity: 'Letzte Aktivität',
-      usageCurrentCredits: 'Verbleibende Credits aller Studierenden',
+      usageCurrentCredits: 'Verbleibendes Budget aller Studierenden',
       usageLastReset: 'Letzte Zurücksetzung',
       disclaimer: 'Disclaimer',
       noDisclaimer: 'Kein Disclaimer zugewiesen.',
@@ -5770,6 +5770,9 @@ Da die KlickerUZH-App noch nicht im iOS-App-Store verfügbar ist, folgen Sie die
       knowledgeGraphRetrievalDisabledDescription:
         'Aus: Die Dokumentsuche verwendet nur die Frage, ohne Hinweise aus dem Graphen.',
       openOwnerPreview: 'Eigentümer-Vorschau öffnen',
+      aiSettingsModeLabel: 'Detailgrad der Einstellungen',
+      aiSettingsModeSimple: 'Einfache Einstellungen',
+      aiSettingsModeAdvanced: 'Erweiterte Einstellungen',
       chatbotOwnerPreviewLive: 'Live-Konfiguration',
       chatbotOwnerPreviewLiveDescription:
         'Die Eigentümer-Vorschau verwendet die aktuelle Live-Konfiguration. Gespeicherte Revisionen werden erst nach der Freigabe angewendet.',

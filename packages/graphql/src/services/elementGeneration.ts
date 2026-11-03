@@ -79,7 +79,7 @@ async function resolveRequestedQuestionFocusTopic(
   if (!normalized) {
     return null
   }
-  if (!(await isFeatureFlagEnabled(ctx, 'question-focus-topic'))) {
+  if (!(await isFeatureFlagEnabled(ctx, 'ai-beta'))) {
     throw questionGenerationServiceError(
       'CONFIGURATION_INVALID',
       'This deployment does not support question focus topics'
@@ -831,10 +831,7 @@ export async function getElementGenerationSources(ctx: ContextWithUser) {
 
 export async function getElementGenerationCapabilities(ctx: ContextWithUser) {
   await assertQuestionGenerationPreviewAccess(ctx)
-  const focusTopicEnabled = await isFeatureFlagEnabled(
-    ctx,
-    'question-focus-topic'
-  )
+  const focusTopicEnabled = await isFeatureFlagEnabled(ctx, 'ai-beta')
   return {
     elementTypes: [...ELEMENT_GENERATION_CAPABILITIES.elementTypes],
     languages: [...ELEMENT_GENERATION_CAPABILITIES.languages],

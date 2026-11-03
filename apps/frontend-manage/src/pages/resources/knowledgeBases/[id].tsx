@@ -1,5 +1,4 @@
 import { useQuery } from '@apollo/client'
-import { useFeatureFlag } from '@klicker-uzh/feature-flags/react'
 import { QGetChatbotsInfoWithKnowledgeBasesDocument } from '@klicker-uzh/graphql/dist/ops'
 import { KnowledgeBaseDetail } from '@klicker-uzh/kb-management'
 import type { GetStaticPropsContext } from 'next'
@@ -8,11 +7,15 @@ import { useTranslations } from 'next-intl'
 import AiBetaUnavailable from '../../../components/AiBetaUnavailable'
 import Layout from '../../../components/Layout'
 import { useAiFeaturesEnabled } from '../../../lib/hooks/useAiFeaturesEnabled'
+import {
+  AiSettingsModeSwitch,
+  useAiSettingsMode,
+} from '../../../lib/hooks/useAiSettingsMode'
 
 function KnowledgeBasePage({ kbId }: { kbId: string }) {
   const t = useTranslations()
   const aiFeaturesEnabled = useAiFeaturesEnabled()
-  const advancedManagementEnabled = useFeatureFlag('ai-advanced-management')
+  const [settingsMode, setSettingsMode] = useAiSettingsMode()
   const router = useRouter()
   const requestedChatbotId =
     typeof router.query.chatbotId === 'string'
@@ -40,11 +43,19 @@ function KnowledgeBasePage({ kbId }: { kbId: string }) {
   return (
     <Layout displayName={t('kb.title')}>
       {aiFeaturesEnabled ? (
-        <KnowledgeBaseDetail
-          kbId={kbId}
-          backLink={backLink}
-          showBulkIngestion={advancedManagementEnabled}
-        />
+        <>
+          <div className="flex justify-end px-4 pt-4 lg:px-6">
+            <AiSettingsModeSwitch
+              mode={settingsMode}
+              onChange={setSettingsMode}
+            />
+          </div>
+          <KnowledgeBaseDetail
+            kbId={kbId}
+            backLink={backLink}
+            advanced={settingsMode === 'advanced'}
+          />
+        </>
       ) : (
         <AiBetaUnavailable />
       )}

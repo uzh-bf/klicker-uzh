@@ -2860,7 +2860,7 @@ Since the KlickerUZH app is not yet available in the iOS App Store, follow these
       usageBudget: 'Budget',
       usageBudgetEmpty: 'No budget is set for this usage class.',
       usageBudgetExhausted: 'The monthly budget is exhausted.',
-      usageCredits: 'credits',
+      usageCredits: 'USD',
       usageRemaining: 'Remaining',
       usageResetDate: 'Reset date',
       usageUsed: 'Used',
@@ -5188,7 +5188,7 @@ Since the KlickerUZH app is not yet available in the iOS App Store, follow these
       chatbotUnsubmittedSections:
         'Saved changes not yet submitted: {sections}.',
       chatbotUsageNoneYet: 'None yet',
-      chatbotUsageCreditsValue: '{current} of {total}',
+      chatbotUsageCreditsValue: 'USD {current} of USD {total}',
       chatbotUsageStudentInformationValue:
         '{accepted} accepted, {declined} declined, {pending} not answered yet',
       chatbotLiveCreditPolicy: 'Students currently get this: {policy}',
@@ -5221,10 +5221,9 @@ Since the KlickerUZH app is not yet available in the iOS App Store, follow these
       chatbotSummaryModelNoChoice: 'They cannot switch models.',
       chatbotSummaryModelChoice:
         '{count, plural, one {Students use {models}.} other {Students can choose between {models}.}}',
-      chatbotSummaryUsageInitial:
-        'Each student starts with {initial, plural, one {1 credit} other {# credits}}.',
+      chatbotSummaryUsageInitial: 'Each student starts with USD {initial}.',
       chatbotSummaryUsageRefill:
-        '{period, select, NONE {Credits are not refilled.} DAILY {Every day, {amount, plural, one {1 credit is} other {# credits are}} added, up to {max}.} WEEKLY {Every week, {amount, plural, one {1 credit is} other {# credits are}} added, up to {max}.} BIWEEKLY {Every two weeks, {amount, plural, one {1 credit is} other {# credits are}} added, up to {max}.} MONTHLY {Every month, {amount, plural, one {1 credit is} other {# credits are}} added, up to {max}.} other {Credits are refilled, up to {max}.}}',
+        '{period, select, NONE {The budget is not topped up.} DAILY {Every day, USD {amount} is added, up to USD {max}.} WEEKLY {Every week, USD {amount} is added, up to USD {max}.} BIWEEKLY {Every two weeks, USD {amount} is added, up to USD {max}.} MONTHLY {Every month, USD {amount} is added, up to USD {max}.} other {The budget is topped up, up to USD {max}.}}',
       chatbotSummaryGraph:
         'The concept map is {visible, select, yes {shown to} other {hidden from}} students.',
       chatbotSummaryGraphRetrieval:
@@ -5411,19 +5410,18 @@ Since the KlickerUZH app is not yet available in the iOS App Store, follow these
       chatbotSetupDisclaimerTitle: 'Participant disclaimer',
       chatbotSetupDisclaimerDescriptionLong:
         'Explain what participants should know before using this chatbot. Save this section to update the participant-facing preview. The preview includes the fixed platform text.',
-      chatbotSetupCreditsTitle: 'Participant credits',
       chatbotCreditPolicyDescription:
-        'Initial credits apply on first use. Recurring resets add credits up to the configured maximum.',
-      chatbotCreditAmountRequired: 'Enter a credit amount.',
+        "Credits are US dollars. Each answer is charged to the student's budget at its model cost in US dollars. The starting budget applies on first use, and recurring top-ups add to it up to the maximum balance.",
+      chatbotCreditAmountRequired: 'Enter an amount in US dollars.',
       chatbotCreditAmountInvalid:
-        'Enter a non-negative whole number no greater than 2,147,483,647.',
+        'Enter a non-negative whole number of US dollars, no greater than 2,147,483,647.',
       chatbotCreditResetPeriodRequired: 'Select a reset period.',
       chatbotCreditResetAmountInvalid:
-        'Enter a positive whole number when recurring resets are enabled.',
+        'Enter a positive whole number of US dollars when recurring top-ups are enabled.',
       chatbotCreditInitialAboveMaximum:
-        'Initial credits cannot exceed maximum credits.',
+        'The starting budget cannot exceed the maximum balance.',
       chatbotCreditResetAboveMaximum:
-        'The reset amount cannot exceed maximum credits.',
+        'The top-up amount cannot exceed the maximum balance.',
       chatbotCreditPolicySaveSuccess: 'Participant credit settings saved.',
       chatbotCreditPolicySaveError:
         'Could not save participant credit settings. Please try again.',
@@ -5576,10 +5574,10 @@ Since the KlickerUZH app is not yet available in the iOS App Store, follow these
       chatbotStatusRejected: 'Rejected',
       chatbotStatusUnknown: 'Unknown status',
       credits: 'Credits',
-      creditInitialCredits: 'Initial credits',
-      creditResetPeriod: 'Reset period',
-      creditResetAmount: 'Reset amount',
-      creditMaxCredits: 'Max credits',
+      creditInitialCredits: 'Starting budget per student (USD)',
+      creditResetPeriod: 'Top-up period',
+      creditResetAmount: 'Top-up amount (USD)',
+      creditMaxCredits: 'Maximum balance per student (USD)',
       modelSelection: 'Let students choose the model',
       modelSelectionEnabled: 'Enabled',
       modelSelectionDisabled: 'Disabled',
@@ -5616,7 +5614,7 @@ Since the KlickerUZH app is not yet available in the iOS App Store, follow these
       usageMessages: 'Messages',
       usageParticipants: 'Students',
       usageLastActivity: 'Last activity',
-      usageCurrentCredits: 'Credits left across students',
+      usageCurrentCredits: 'Budget left across students',
       usageLastReset: 'Last reset',
       disclaimer: 'Disclaimer',
       noDisclaimer: 'No disclaimer assigned.',
@@ -5638,6 +5636,9 @@ Since the KlickerUZH app is not yet available in the iOS App Store, follow these
       knowledgeGraphRetrievalDisabledDescription:
         'Off: document search uses the question only, without graph hints.',
       openOwnerPreview: 'Open owner preview',
+      aiSettingsModeLabel: 'Settings detail',
+      aiSettingsModeSimple: 'Simple settings',
+      aiSettingsModeAdvanced: 'Advanced settings',
       chatbotOwnerPreviewLive: 'Live configuration',
       chatbotOwnerPreviewLiveDescription:
         'The owner preview uses the current live configuration. Saved revisions are not applied until approval.',
