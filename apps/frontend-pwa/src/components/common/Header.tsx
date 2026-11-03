@@ -281,7 +281,11 @@ function Header({
                   <span>{t('shared.generic.documentation')}</span>
                 </div>
               ),
-              onClick: () => router.push(`/docs`),
+              onClick: () =>
+                router.push({
+                  pathname: '/docs',
+                  query: courseId ? { courseId } : {},
+                }),
               data: { cy: 'course-docs' },
             },
             ...(process.env.NEXT_PUBLIC_IS_ASSESSMENT !== 'true' && !pageInFrame
