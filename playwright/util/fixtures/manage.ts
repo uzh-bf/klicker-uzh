@@ -141,7 +141,7 @@ export async function mockGrowthBookFeatureFlags(
   page: Page,
   {
     aiBeta = false,
-    questionGeneration = aiBeta,
+    questionGeneration = true,
     aiSettingsMode = 'advanced',
     responseExamples = false,
     failRefresh = false,
