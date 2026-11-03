@@ -321,11 +321,12 @@ out of this file.
     on its own pool.
   - Liveness and readiness probes (`/login`, 1-second timeout) failed at the
     plateau on the baseline Pod and a burst Pod; none restarted.
-  - Confound: staging PWA Pods request 50m CPU with a 200m limit; production
-    requests 200m with no CPU limit. The two longest-running Pods were
-    throttled in 84% of CFS periods between 21:45 and 22:00. The probe
-    failures, the one-minute cold start and the low HPA target are therefore
-    staging-shape effects and say little about production. Proposed: repeat
-    E3 with the production shape (a staging values change) before E4; a probe change is considered only if
-    probes still fail then, and needs its own approval because it changes the
-    production render.
+  - Confound: staging PWA Pods had a 200m CPU limit and 50Mi/200Mi memory;
+    production requests the same 50m CPU with no CPU limit and 320Mi/1Gi
+    memory. The two longest-running Pods were throttled in 84% of CFS periods
+    between 21:45 and 22:00, so the probe failures and the one-minute cold
+    start may be staging-shape effects. The HPA target (70% of 50m) is the
+    same in production. The user approved matching the staging shape to
+    production (#6806) and repeating E3 on it before E4. A probe change is
+    considered only if probes still fail then, and needs its own approval
+    because it changes the production render.
