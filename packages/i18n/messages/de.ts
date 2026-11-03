@@ -2873,7 +2873,7 @@ Da die KlickerUZH-App noch nicht im iOS-App-Store verfügbar ist, folgen Sie die
         'Ihre Beta-Anmeldung wird gespeichert. Der aktuelle Status bleibt unverändert, bis der Speichervorgang abgeschlossen ist.',
       betaFeaturesTitle: 'Beta-Features',
       chatbotBetaAccessRequired:
-        'Die Erstellung von Chatbots ist ein Beta-Feature. Sie erfordert AI-Beta-Zugang, Catalyst und vollen Kontozugriff. Die Beta-Anmeldung finden Sie in Ihren Kontoeinstellungen.',
+        'Die Erstellung von Chatbots ist ein Beta-Feature. Sie erfordert AI-Beta-Zugang, Catalyst, vollen Kontozugriff und die Freigabe der KI-Funktionen durch eine Administratorin oder einen Administrator. Die Beta-Anmeldung finden Sie in Ihren Kontoeinstellungen.',
       betaFeaturesUnavailable:
         'Ihre Beta-Einstellung kann derzeit nicht angezeigt oder geändert werden. Es wurde keine Einstellung angenommen.',
       chatAccountUsageDescription:
@@ -2981,6 +2981,8 @@ Da die KlickerUZH-App noch nicht im iOS-App-Store verfügbar ist, folgen Sie die
       review: 'Ergebnis prüfen',
     },
     elementGeneration: {
+      rolloutUnavailable:
+        'Die Generierung von Elementen ist für Ihr Konto noch nicht freigeschaltet. Sie wird schrittweise eingeführt.',
       eyebrow: 'KI-unterstützte Erstellung',
       title: 'Elemente generieren',
       description:

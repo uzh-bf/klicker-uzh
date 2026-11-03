@@ -35,7 +35,7 @@ function ChatbotsPage() {
     >
       {canAuthor ? (
         <Chatbots />
-      ) : (
+      ) : aiCapability === 'unresolved' ? null : (
         <div data-cy="chatbot-authoring-unavailable">
           <UserNotification type="info">
             <p>{t('manage.settings.chatbotBetaAccessRequired')}</p>

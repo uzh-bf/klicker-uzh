@@ -513,7 +513,10 @@ No live rule or saved-group contents were verified for this change.
 - For `ai-beta`, an explicit backend denial and an unavailable GrowthBook
   decision use separate capability states and public error contracts. Only the
   unavailable state preserves a visible, disabled Manage entry for recovery;
-  neither state authorizes a protected operation.
+  neither state authorizes a protected operation. The Manage assistant launcher
+  follows the browser `ai-beta` evaluation instead, so it stays hidden while the
+  browser has no usable payload; the chat app still renders its own retryable
+  state for a backend outage.
 - Feature definitions and targeting rules are managed in GrowthBook. Ordinary
   SDK evaluation never uses the optional management API key; the beta
   preference path uses only the read-only SDK payload and has no management

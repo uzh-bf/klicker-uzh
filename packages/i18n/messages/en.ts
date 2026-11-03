@@ -2831,7 +2831,7 @@ Since the KlickerUZH app is not yet available in the iOS App Store, follow these
         'Saving your beta enrollment. Your current setting will remain unchanged until the save completes.',
       betaFeaturesTitle: 'Beta features',
       chatbotBetaAccessRequired:
-        'Chatbot creation is a beta feature. It requires AI beta access, Catalyst, and full account access. You can find beta enrollment in your account settings.',
+        'Chatbot creation is a beta feature. It requires AI beta access, Catalyst, full account access, and AI features approved by an administrator. You can find beta enrollment in your account settings.',
       betaFeaturesUnavailable:
         'Your beta preference cannot be displayed or changed right now. No preference has been assumed.',
       chatAccountUsageDescription:
@@ -2937,6 +2937,8 @@ Since the KlickerUZH app is not yet available in the iOS App Store, follow these
       review: 'Review result',
     },
     elementGeneration: {
+      rolloutUnavailable:
+        'Element generation is not yet available for your account. It is being rolled out gradually.',
       eyebrow: 'AI-assisted creation',
       title: 'Generate elements',
       description:

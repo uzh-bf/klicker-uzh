@@ -58,6 +58,7 @@ function featurePayload() {
         ],
       },
       'learning-analytics': enrolledLecturerPayload(learningAnalyticsEnabled),
+      'question-generation': enrolledLecturerPayload(true),
     },
   }
 }
