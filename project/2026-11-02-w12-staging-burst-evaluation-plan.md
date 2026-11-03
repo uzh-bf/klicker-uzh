@@ -403,3 +403,39 @@ out of this file.
   - Recovery checklist: uncordon every `asyncspot` node and confirm none is
     `SchedulingDisabled`; Argo `Synced` and `Healthy`; baseline back to 1;
     burst HPA back to 1; k6 Pod and both ConfigMaps deleted.
+- 2026-11-03 E4 run (20:08–21:22 UTC, one k6 run through the ingress at
+  30 iterations per second with a 40-minute plateau, then a short rerun for
+  E4.2):
+  - Plateau: 0 of 215,697 Service requests failed across E4.1, E4.3 and
+    E4.4; Service p95 17 ms, baseline probe p95 32 ms. The only failures
+    were the burst probe against the Pod deleted in E4.4, read separately.
+  - E4.1 pass: the burst node already hosted other tenants' Pods, so the
+    drill cordoned it and evicted only the burst Pods
+    (`kubectl drain --pod-selector=klicker.uzh.ch/tier=burst`). The node had
+    two burst Pods; the PDB refused the second eviction until the first
+    replacement was Ready, then allowed it (18 seconds in total).
+  - E4.3 pass: scaling the baseline to 2 was reverted to 1 by Argo
+    self-heal within 6 seconds; the running baseline Pod was kept. The
+    burst HPA's replica count was left alone throughout.
+  - E4.4 partial: with all five `asyncspot` nodes cordoned, the four burst
+    Pods went Pending and the single baseline Pod carried the full load
+    without a probe failure or restart. The cluster autoscaler then added a
+    sixth `asyncspot` node (the pool was below its maximum), and all four
+    burst Pods were Ready on it about 100 seconds after the delete. The
+    baseline therefore carried the plateau alone for about 100 seconds, not
+    15 minutes. Spot capacity exhaustion stays untested: it needs the pool
+    at its maximum, which a node-pool change would require. One cordoned
+    node was removed by the autoscaler during the hold; the pool ended
+    with five Ready nodes and none `SchedulingDisabled`.
+  - All four burst Pods landed on the one new node, so losing it removes
+    the whole tier. This supports the X1 soft hostname topology spread.
+  - E4.2 partial: the k6 Pod hit its 50-minute `activeDeadlineSeconds`
+    before the cool phase. The rerun (1-minute ramp, 4-minute plateau, 18
+    minutes at 1 iteration per second) had 0 of 35,759 failures, 0 in the
+    cool phase. The HPA removed one Pod under load (4 to 3 at 21:11); at
+    1 iteration per second three Pods sat at about 50% of request, so it
+    held 3 until the load ended. The k6 Pod deadline is raised to 90
+    minutes.
+  - Recovery: every `asyncspot` node uncordoned, Argo `Synced` and
+    `Healthy`, baseline at 1, k6 Pod and ConfigMaps deleted; the burst HPA
+    returns to 1 on its own after the load.

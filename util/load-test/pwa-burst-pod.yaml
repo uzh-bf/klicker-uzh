@@ -9,7 +9,9 @@ metadata:
 spec:
   restartPolicy: Never
   automountServiceAccountToken: false
-  activeDeadlineSeconds: 3000
+  # Must exceed RAMP_MINUTES + PLATEAU_MINUTES + COOL_MINUTES, or the Pod is
+  # killed before the cool phase ends.
+  activeDeadlineSeconds: 5400
   securityContext:
     runAsNonRoot: true
     runAsUser: 12345
