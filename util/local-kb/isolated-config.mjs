@@ -176,7 +176,7 @@ const GRAPH_NODES = [
   [
     'documentProcessing',
     'provider-service',
-    ['docProcessingBacking'],
+    ['docProcessingBacking', 'ingestionBacking'],
     'docProcessing',
     'documentProcessing',
     'docProcessing',

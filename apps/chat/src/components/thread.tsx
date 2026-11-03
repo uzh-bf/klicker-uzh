@@ -112,6 +112,7 @@ import {
 import { BranchPicker } from './branch-picker'
 import { useChatUi, useDisclaimerGateOpen } from './chat-ui-context'
 import { ChatbotAvatar } from './chatbot-avatar'
+import { CourseImagesSection } from './course-images-section'
 import { useDictationContext } from './dictation-context'
 import {
   DictationButton,
@@ -2507,6 +2508,7 @@ const AssistantMessage: FC<{
         >
           <AssistantMessageParts />
           {showSources && <SourcesSection />}
+          {showSources && <CourseImagesSection />}
         </MessageSourcesProvider>
         <MessageMetadata includeCredits />
         <AssistantMessageError />

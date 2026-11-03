@@ -115,7 +115,14 @@ export async function observeProviderLauncher(
       if (status.ownership !== 'verified' || typeof status.ready !== 'boolean')
         throw new Error()
       prepared = status.setup === 'ready'
-      endpointReady = status.ready
+      if (
+        status.worker_registration !== undefined &&
+        !['unknown', 'ready', 'unavailable'].includes(
+          status.worker_registration
+        )
+      )
+        throw new Error()
+      endpointReady = status.ready && status.worker_registration === 'ready'
       stopped =
         status.api === 'stopped' &&
         Object.values(status.workers ?? {}).every(
@@ -406,8 +413,8 @@ function boundCommands({
     return args
   })
   return {
-    lifecycleOrder: ['scraping', 'docProcessing', 'ingestion', 'retrieval'],
-    stopOrder: ['retrieval', 'ingestion', 'docProcessing', 'scraping'],
+    lifecycleOrder: ['scraping', 'ingestion', 'docProcessing', 'retrieval'],
+    stopOrder: ['retrieval', 'docProcessing', 'ingestion', 'scraping'],
     providers: { scraping, docProcessing, ingestion, retrieval },
   }
 }

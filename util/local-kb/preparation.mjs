@@ -390,7 +390,6 @@ const ingestionResumeRootEntries = [
 const ingestionResumeChildEntries = [
   'bootstrap-intent.json',
   'claim.json',
-  'docProcessing-reconciliation.json',
   'ingestion-intent.json',
 ]
 
@@ -445,10 +444,6 @@ async function requireIngestionResumePrefix(
       throw new Error()
     for (const [name, receipt] of [
       ['bootstrap-intent.json', { candidate, executor: childExecutor }],
-      [
-        'docProcessing-reconciliation.json',
-        { candidate, executor: childExecutor, prepared: true },
-      ],
       ['ingestion-intent.json', { candidate, executor: childExecutor }],
     ])
       if (
@@ -704,7 +699,9 @@ export async function continuePreparation(
     }
     if (
       commands.lifecycleOrder.some(
-        (name, index) => classifications[index] !== expected[name]
+        (name, index) =>
+          classifications[index] !== expected[name] &&
+          !(name === 'docProcessing' && classifications[index] === 'untouched')
       )
     )
       throw new Error('Retained provider prefix has changed.')
@@ -726,13 +723,15 @@ export async function continuePreparation(
     })
     const expected = {
       scraping: 'complete',
-      docProcessing: 'complete',
+      docProcessing: 'reconcile',
       ingestion: 'pending-ingestion',
       retrieval: 'untouched',
     }
     if (
       commands.lifecycleOrder.some(
-        (name, index) => classifications[index] !== expected[name]
+        (name, index) =>
+          classifications[index] !== expected[name] &&
+          !(name === 'docProcessing' && classifications[index] === 'untouched')
       )
     )
       throw new Error('Retained provider prefix has changed.')
@@ -1346,6 +1345,7 @@ export async function prepareLocalConfiguration(config, candidateRevision) {
     namedCurve: 'prime256v1',
   })
   generated.environment.chat = {
+    ...generated.environment.chat,
     DOC_QUERY_SCOPE_PRIVATE_KEY: privateKey
       .export({ type: 'pkcs8', format: 'pem' })
       .replaceAll('\n', '\\n'),
@@ -2063,10 +2063,8 @@ async function launchInfrastructure(
         ...environment,
       })
     }
-    for (const name of ['scraping', 'docProcessing']) {
-      stage = `provider ${name} start`
-      await runProvider(commands.providers[name].lifecycle.start, environment)
-    }
+    stage = 'provider scraping start'
+    await runProvider(commands.providers.scraping.lifecycle.start, environment)
     stage = 'consumer backing services'
     await runDocker([
       '--context',
@@ -2102,6 +2100,21 @@ async function launchInfrastructure(
     }
     stage = 'provider ingestion start'
     await runProvider(commands.providers.ingestion.lifecycle.start, environment)
+    stage = 'provider docProcessing start'
+    await runProvider(
+      commands.providers.docProcessing.lifecycle.start,
+      environment
+    )
+    const processing = await observeProviderLauncher(
+      config,
+      'docProcessing',
+      runProvider,
+      environment
+    )
+    if (!processing.endpointReady)
+      throw new Error(
+        'Document processing storage or staged worker registration is unavailable.'
+      )
     stage = 'provider retrieval start'
     await runProvider(commands.providers.retrieval.lifecycle.start, {
       ...retrievalEnvironment,

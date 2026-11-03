@@ -218,6 +218,7 @@ test('resolves two independent stacks with complete provider and state ownership
   }
   assert.deepEqual(first.dependencyGraph.nodes.documentProcessing.dependsOn, [
     'docProcessingBacking',
+    'ingestionBacking',
   ])
   assert.deepEqual(first.dependencyGraph.nodes.ingestionApi.dependsOn, [
     'ingestionBacking',

@@ -108,10 +108,12 @@ export function renderProviderLocalConfiguration(credentials, input) {
   }
   // The provider's isolated Azurite uses its documented public development
   // account. It is distinct from Klicker's source-upload account and storage.
-  const artifactConnection =
+  const artifactAccount =
     'DefaultEndpointsProtocol=http;AccountName=devstoreaccount1;' +
-    'AccountKey=Eby8vdM02xNOcqFlqUwJPLlmEtlCDXJ1OUzFT50uSRZ6IFsuFq2UVErCz4I6tq/K1SZFPTOtr/KBHBeksoGMGw==;' + // gitleaks:allow -- Azurite's documented public development account key.
-    'BlobEndpoint=http://azurite:10000/devstoreaccount1;'
+    'AccountKey=Eby8vdM02xNOcqFlqUwJPLlmEtlCDXJ1OUzFT50uSRZ6IFsuFq2UVErCz4I6tq/K1SZFPTOtr/KBHBeksoGMGw==;' // gitleaks:allow -- Azurite's documented public development account key.
+  const artifactConnection =
+    artifactAccount + 'BlobEndpoint=http://azurite:10000/devstoreaccount1;'
+  const projectionContainer = 'doc-processing'
   const environment = {
     postgres: {
       POSTGRES_USER: 'local_kb',
@@ -148,6 +150,13 @@ export function renderProviderLocalConfiguration(credentials, input) {
       INGESTION_ALLOWED_MILVUS_TARGETS: `default:${bindings.collection}`,
       AZURE_STORAGE_CONNECTION_STRING: artifactConnection,
     },
+    chat: {
+      COURSE_IMAGE_PROJECTION_STORAGE_CONNECTION_STRING:
+        artifactAccount +
+        `BlobEndpoint=http://host.docker.internal:${ports.ingestion.azurite}/devstoreaccount1;`,
+      COURSE_IMAGE_PROJECTION_STORAGE_CONTAINER: projectionContainer,
+      COURSE_IMAGE_PROJECTION_STORAGE_PREFIX: 'projection',
+    },
     klicker: {
       DATABASE_URL: `postgresql://klicker_test:${credentials.klickerDatabase}@${databaseHost}:5432/klicker_test`,
       SHADOW_DATABASE_URL: `postgresql://klicker_test:${credentials.klickerDatabase}@${databaseHost}:5432/klicker_test_shadow`,
@@ -182,6 +191,11 @@ export function renderProviderLocalConfiguration(credentials, input) {
     },
     scrapingApiKey: credentials.scraping,
     docProcessing: {
+      blob: {
+        kind: 'azurite',
+        endpoint: `http://127.0.0.1:${ports.ingestion.azurite}/devstoreaccount1`,
+        container: projectionContainer,
+      },
       backing: {
         kind: 'isolated',
         postgres_port: ports.docProcessing.postgres,
@@ -193,6 +207,8 @@ export function renderProviderLocalConfiguration(credentials, input) {
         UVICORN_HOST: '127.0.0.1',
         UVICORN_PORT: String(ports.docProcessing.api),
         DOC_PROCESSING_API_KEY: credentials.documentProcessing,
+        DOC_PROCESSING_DEFAULT_PIPELINE_MODE: 'staged',
+        DOC_PROCESSING_DEFAULT_PICTURE_DESCRIPTION: 'off',
       },
     },
     project: {
