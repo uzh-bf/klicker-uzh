@@ -1,4 +1,5 @@
 import assert from 'node:assert/strict'
+import { spawnSync } from 'node:child_process'
 import {
   existsSync,
   mkdirSync,
@@ -237,6 +238,167 @@ test('a discovery or validation failure preserves the previous artifact', () => 
       statSync(first.outputPath, { bigint: true }).mtimeNs,
       previousMtime
     )
+  } finally {
+    rmSync(root, { recursive: true, force: true })
+  }
+})
+
+test('retained Redis clauses preserve dependency mounts and alias expressions', () => {
+  const packages = ['apps/frontend-control', 'packages/prisma']
+  const ordinary = createDependencyCompose(packages)
+  const retained = createDependencyCompose(packages, true)
+  assert.deepEqual(retained.services, ordinary.services)
+  for (const [key, value] of Object.entries(ordinary.volumes)) {
+    assert.deepEqual(retained.volumes[key], value)
+  }
+  for (const kind of ['exec', 'assessment', 'cache']) {
+    const key = `redis_${kind}_data`
+    assert.equal(ordinary.volumes[key], undefined)
+    assert.deepEqual(retained.volumes[key], {
+      name: `\${KLICKER_REDIS_${kind.toUpperCase()}_VOLUME:-\${COMPOSE_PROJECT_NAME}_${key}}`,
+    })
+  }
+})
+
+test('alias or selector presence keeps retained clauses until absence is proved', () => {
+  const root = fixtureRoot()
+  try {
+    addPackage(root, 'apps/valid')
+    const options = { environment: {}, workingDirectory: root }
+    const clean = generateDependencyMounts(root, options)
+    for (const key of [
+      'KLICKER_REDIS_EXEC_VOLUME',
+      'KLICKER_REDIS_ASSESSMENT_VOLUME',
+      'KLICKER_REDIS_CACHE_VOLUME',
+      'COMPOSE_ENV_FILES',
+      'COMPOSE_FILE',
+      'COMPOSE_DISABLE_ENV_FILE',
+    ]) {
+      for (const value of ['', 'synthetic-retained-input']) {
+        const retained = generateDependencyMounts(root, {
+          ...options,
+          environment: { [key]: value },
+        })
+        assert.deepEqual(
+          retained.compose,
+          createDependencyCompose(['apps/valid'], true)
+        )
+        assert.equal(
+          readFileSync(retained.outputPath, 'utf8').includes(
+            'synthetic-retained-input'
+          ),
+          false
+        )
+      }
+    }
+    const restored = generateDependencyMounts(root, options)
+    assert.deepEqual(restored.compose, clean.compose)
+    const bytes = readFileSync(restored.outputPath)
+    assert.throws(() =>
+      generateDependencyMounts(root, {
+        ...options,
+        workingDirectory: join(root, 'missing'),
+      })
+    )
+    assert.deepEqual(readFileSync(restored.outputPath), bytes)
+  } finally {
+    rmSync(root, { recursive: true, force: true })
+  }
+})
+
+test('dotenv metadata in all invocation locations conservatively retains aliases', () => {
+  const root = fixtureRoot()
+  const invocationRoot = fixtureRoot()
+  try {
+    addPackage(root, 'apps/valid')
+    const options = { environment: {}, workingDirectory: invocationRoot }
+    const clean = generateDependencyMounts(root, options)
+    for (const location of [
+      join(root, '.env'),
+      join(root, '.devcontainer', '.env'),
+      join(invocationRoot, '.env'),
+    ]) {
+      writeFileSync(
+        location,
+        'KLICKER_REDIS_EXEC_VOLUME=synthetic-retained\n',
+        {
+          mode: 0o000,
+        }
+      )
+      const opaqueFile = generateDependencyMounts(root, options)
+      assert.deepEqual(
+        opaqueFile.compose,
+        createDependencyCompose(['apps/valid'], true)
+      )
+      rmSync(location)
+      symlinkSync(join(root, 'missing-env-target'), location)
+      const retained = generateDependencyMounts(root, options)
+      assert.deepEqual(
+        retained.compose,
+        createDependencyCompose(['apps/valid'], true)
+      )
+      rmSync(location)
+    }
+    assert.deepEqual(
+      generateDependencyMounts(root, options).compose,
+      clean.compose
+    )
+  } finally {
+    rmSync(root, { recursive: true, force: true })
+    rmSync(invocationRoot, { recursive: true, force: true })
+  }
+})
+
+test('host prepare and provider initialize generate identical selected bytes', () => {
+  const root = fixtureRoot()
+  try {
+    addPackage(root, 'apps/valid')
+    mkdirSync(join(root, 'util'))
+    mkdirSync(join(root, '.devcontainer'))
+    mkdirSync(join(root, 'fake-bin'))
+    writeFileSync(
+      join(root, 'util', 'generate-dependency-mounts.mjs'),
+      readFileSync(new URL('./generate-dependency-mounts.mjs', import.meta.url))
+    )
+    writeFileSync(
+      join(root, '.devcontainer', 'initialize.sh'),
+      readFileSync(new URL('../.devcontainer/initialize.sh', import.meta.url))
+    )
+    writeFileSync(join(root, 'fake-bin', 'docker'), '#!/bin/sh\nexit 0\n', {
+      mode: 0o755,
+    })
+    writeFileSync(join(root, 'fake-bin', 'mkcert'), '#!/bin/sh\nexit 1\n', {
+      mode: 0o755,
+    })
+    const environment = { ...process.env }
+    for (const key of Object.keys(environment)) {
+      if (key.startsWith('COMPOSE_') || key.startsWith('KLICKER_REDIS_')) {
+        delete environment[key]
+      }
+    }
+    environment.PATH = `${join(root, 'fake-bin')}:${environment.PATH}`
+    for (const alias of [false, true]) {
+      if (alias) environment.KLICKER_REDIS_EXEC_VOLUME = 'synthetic-retained'
+      const prepare = spawnSync(
+        process.execPath,
+        ['util/generate-dependency-mounts.mjs'],
+        { cwd: root, env: environment, encoding: 'utf8' }
+      )
+      assert.equal(prepare.status, 0, prepare.stderr)
+      const output = join(
+        root,
+        '.devcontainer',
+        'docker-compose.dependencies.yml'
+      )
+      const prepared = readFileSync(output)
+      const initialize = spawnSync('bash', ['.devcontainer/initialize.sh'], {
+        cwd: root,
+        env: environment,
+        encoding: 'utf8',
+      })
+      assert.equal(initialize.status, 0, initialize.stderr)
+      assert.deepEqual(readFileSync(output), prepared)
+    }
   } finally {
     rmSync(root, { recursive: true, force: true })
   }

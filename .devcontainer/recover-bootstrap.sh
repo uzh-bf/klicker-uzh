@@ -1,8 +1,8 @@
 #!/usr/bin/env bash
 # Reconstruct app prerequisites after replacing the application container.
 # Role and database provisioning must already be complete. With the explicit
-# initialization option, verify both disposable identities before schema push
-# and synthetic seeding; otherwise only verify the existing schema.
+# initialization option, verify both disposable identities and empty databases
+# before schema push and synthetic seeding; otherwise verify the existing schema.
 set -euo pipefail
 
 SCRIPT_ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
@@ -47,11 +47,16 @@ HATCHET_LOG_LEVEL=INFO"
 }
 
 verify_databases() {
+  local require_empty=false
+  if [ "${1:-}" = '--require-empty' ]; then
+    require_empty=true
+  fi
   require_file "$ROOT/packages/prisma/package.json" \
     'packages/prisma/package.json'
   (
     cd "$ROOT/packages/prisma"
-    pnpm exec tsx -e "$(cat <<'TS'
+    pnpm exec tsx -e "const requireEmpty = $require_empty
+$(cat <<'TS'
 import pg from "pg"
 import {
   assertDisposableDatabaseIdentity,
@@ -75,6 +80,35 @@ const check = async (
     await client.connect()
     const identity = await client.query(disposableDatabaseIdentityQuery)
     assertDisposableDatabaseIdentity(identity.rows, database)
+    if (requireEmpty) {
+      const result = await client.query(`
+        SELECT NOT (
+          EXISTS (
+            SELECT 1 FROM pg_catalog.pg_namespace
+            WHERE nspname !~ '^pg_' AND nspname NOT IN ('public', 'information_schema')
+          ) OR EXISTS (
+            SELECT 1 FROM pg_catalog.pg_class c
+            JOIN pg_catalog.pg_namespace n ON n.oid = c.relnamespace
+            WHERE n.nspname !~ '^pg_' AND n.nspname <> 'information_schema'
+          ) OR EXISTS (
+            SELECT 1 FROM pg_catalog.pg_proc p
+            JOIN pg_catalog.pg_namespace n ON n.oid = p.pronamespace
+            WHERE n.nspname !~ '^pg_' AND n.nspname <> 'information_schema'
+          ) OR EXISTS (
+            SELECT 1 FROM pg_catalog.pg_type t
+            JOIN pg_catalog.pg_namespace n ON n.oid = t.typnamespace
+            WHERE n.nspname !~ '^pg_' AND n.nspname <> 'information_schema'
+          ) OR EXISTS (
+            SELECT 1 FROM pg_catalog.pg_extension WHERE extname <> 'plpgsql'
+          ) OR EXISTS (SELECT 1 FROM pg_catalog.pg_largeobject_metadata)
+            OR EXISTS (SELECT 1 FROM pg_catalog.pg_foreign_server)
+            OR EXISTS (SELECT 1 FROM pg_catalog.pg_publication)
+        ) AS empty
+      `)
+      if (result.rows.length !== 1 || result.rows[0]?.empty !== true) {
+        throw new Error("Fresh initialization requires empty databases.")
+      }
+    }
   } finally {
     await client.end().catch(() => undefined)
   }
@@ -86,7 +120,9 @@ try {
   await check(process.env.SHADOW_DATABASE_URL, "klicker_test_shadow")
 } catch {
   console.error(
-    "[recover-bootstrap] Disposable database identity check failed."
+    requireEmpty
+      ? "[recover-bootstrap] Fresh disposable database verification failed."
+      : "[recover-bootstrap] Disposable database identity check failed."
   )
   process.exitCode = 1
 }
@@ -158,7 +194,7 @@ done
 
 capture_hatchet_token
 if [ "${1:-}" = '--initialize-new-disposable' ]; then
-  verify_databases
+  verify_databases --require-empty
   pnpm --filter @klicker-uzh/prisma run prisma:push:raw
   pnpm --filter @klicker-uzh/prisma-data run seed:raw
 elif [ "$#" -ne 0 ]; then

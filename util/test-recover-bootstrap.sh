@@ -102,6 +102,13 @@ export default {
     async end() {}
     async query(query) {
       if (typeof query !== 'string') return { rows: [] }
+      if (query.includes('AS empty')) {
+        appendFileSync(process.env.KLICKER_TEST_COMMAND_LOG, `empty-${this.database}\n`)
+        if (process.env.KLICKER_TEST_FAIL_EMPTY_DATABASE === this.database) {
+          throw new Error('synthetic-connection-secret')
+        }
+        return { rows: [{ empty: process.env.KLICKER_TEST_NONEMPTY_DATABASE !== this.database }] }
+      }
       appendFileSync(process.env.KLICKER_TEST_COMMAND_LOG, `identity-${this.database}\n`)
       const rejected = process.env.KLICKER_TEST_FAIL_DATABASE === this.database ||
         process.env.KLICKER_TEST_FAIL_IDENTITY === '1'
@@ -353,7 +360,37 @@ fi
 
 : >"$COMMAND_LOG"
 KLICKER_TEST_SCHEMA_STATE=push-compatible bash "$ROOT/.devcontainer/recover-bootstrap.sh" --initialize-new-disposable >"$OUTPUT_LOG" 2>&1
-assert_equal "$(tr '\n' ' ' <"$COMMAND_LOG")" 'install build identity-klicker_test identity-klicker_test_shadow push seed identity-klicker_test identity-klicker_test_shadow schema-push-compatible '
+assert_equal "$(tr '\n' ' ' <"$COMMAND_LOG")" 'install build identity-klicker_test empty-klicker_test identity-klicker_test_shadow empty-klicker_test_shadow push seed identity-klicker_test identity-klicker_test_shadow schema-push-compatible '
+for rejected_database in klicker_test klicker_test_shadow; do
+  for refusal in nonempty unavailable; do
+    nonempty_database=''
+    unavailable_database=''
+    case "$refusal" in
+      nonempty) nonempty_database="$rejected_database" ;;
+      unavailable) unavailable_database="$rejected_database" ;;
+    esac
+    : >"$COMMAND_LOG"
+    write_file "$MARKER_DIR/bootstrap-complete" 'klicker-devcontainer-bootstrap-v1'
+    if KLICKER_TEST_NONEMPTY_DATABASE="$nonempty_database" \
+      KLICKER_TEST_FAIL_EMPTY_DATABASE="$unavailable_database" \
+      KLICKER_TEST_SCHEMA_STATE=push-compatible \
+      bash "$ROOT/.devcontainer/recover-bootstrap.sh" --initialize-new-disposable >"$OUTPUT_LOG" 2>&1; then
+      fail "initialization accepted $refusal database $rejected_database"
+    fi
+    assert_absent "$MARKER_DIR/bootstrap-complete"
+    if grep -E '^(reset|push|seed|migrate)$' "$COMMAND_LOG" >/dev/null; then
+      fail 'initialization changed a database before proving both empty'
+    fi
+    if grep -Fq synthetic-connection-secret "$OUTPUT_LOG"; then
+      fail 'empty-database verification exposed connection diagnostics'
+    fi
+  done
+  : >"$COMMAND_LOG"
+  KLICKER_TEST_NONEMPTY_DATABASE="$rejected_database" KLICKER_TEST_SCHEMA_STATE=push-compatible \
+    bash "$ROOT/.devcontainer/recover-bootstrap.sh" >"$OUTPUT_LOG" 2>&1
+  assert_contains "$MARKER_DIR/bootstrap-complete" 'klicker-devcontainer-bootstrap-v1'
+  assert_equal "$(tr '\n' ' ' <"$COMMAND_LOG")" 'install build identity-klicker_test identity-klicker_test_shadow schema-push-compatible '
+done
 : >"$COMMAND_LOG"
 if KLICKER_TEST_FAIL_IDENTITY=1 KLICKER_TEST_SCHEMA_STATE=push-compatible bash "$ROOT/.devcontainer/recover-bootstrap.sh" --initialize-new-disposable >"$OUTPUT_LOG" 2>&1; then
   fail 'initialization continued with failed identity'

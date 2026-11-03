@@ -611,12 +611,30 @@ The provisioning helper defaults to bootstrap login `klicker`
 for CI; the retained local environment explicitly selects the allow-listed
 `klicker-prod` login. Neither is the restricted `klicker_test` application login.
 
-Redis data uses project-scoped named volumes. When recreating containers whose
+Redis data uses project-scoped named volumes. The base declares unnamed logical
+volumes, so Compose supplies the same project-prefixed default names. The
+existing dependency generator adds the original Redis name expressions to its
+generated overlay whenever any retained alias key or Compose environment/file
+selector is present, including an empty value. It also retains them when a
+potential dotenv file exists in the checkout, Compose or invocation directory;
+symlinks count as present. It inspects metadata only and leaves interpolation
+to Compose. An uninspectable input refuses generation without replacing the
+previous artifact. Keep the same inputs for host preparation and provider
+initialization; both invoke this generator.
+
+When recreating containers whose
 Redis storage was anonymous, set `KLICKER_REDIS_EXEC_VOLUME`,
 `KLICKER_REDIS_CACHE_VOLUME`, and `KLICKER_REDIS_ASSESSMENT_VOLUME` to the exact
 previous volume names. Verify those volumes exist and the resolved Compose
 mounts match before startup; retain those overrides for subsequent lifecycle
 commands. Removing containers does not authorize discarding their data.
+
+Fresh admission is initially qualified only with those alias/selector inputs
+and potential dotenv files absent. Otherwise the generated name clauses remain
+visible to Devrouter's fresh-only guard and startup refuses before provisioning.
+Do not unset retained inputs to force admission. Moving the clauses changes
+source/generated fingerprints even when resolved names match; it does not
+authorize adopting changed source or baselines into a retained runtime.
 
 The four hashes in `recover-runtime.sh` bind the reviewed consumer source.
 When one of those files changes, review the semantic change and refresh its pin
@@ -640,10 +658,10 @@ stop at that capability boundary instead of substituting raw Docker mutations.
 
 Initialization is a separate, explicit operation for newly provisioned empty
 `klicker_test` and `klicker_test_shadow` databases with the restricted
-`klicker_test` login and disposable marker. Both identities are verified before
-any schema push or synthetic seeding. The schema push force-resets the target, so
-confirm both databases hold no retained contents first. A marker alone does not
-make retained contents expendable.
+`klicker_test` login and disposable marker. Both identities and the absence of
+application objects/data in both databases are verified before any schema push
+or synthetic seeding. A failed or unavailable check refuses initialization.
+A marker alone does not make retained contents expendable.
 
 The consumer command for an authorized one-shot provider bootstrap is:
 
@@ -653,15 +671,21 @@ bash .devcontainer/recover-bootstrap.sh --initialize-new-disposable
 
 Supply that literal argument only through a supported managed provider path
 bound to the exact new resources. Keep the committed `postCreateCommand` at its
-preserving default; do not persist an initialization flag in environment files
-or a reusable provider configuration. If the installed tool cannot deliver this
-one-shot bootstrap while owning its lifecycle/admission contract, stop before
-creating the runtime and report that capability gap. Ordinary `ensure` is not an
-initialization command. Existing explicit reset commands require their own data
-mutation authority.
+preserving default; do not persist an initialization flag in environment files.
+The `.devrouter.yml` freshBootstrap declaration supplies this literal command,
+the six stateful Compose volume keys and only pnpm_store as a shared cache.
+It is inert during ordinary startup. Devrouter 0.6.4 qualifies installed
+Devsy 1.19.0 or 1.24.0 for explicit `devrouter ensure <exact-checkout> --profile
+<selection> --initialize-new --json`. Its admission must prove the exact new
+local resources, mounts and one-shot ownership before running the consumer.
+Unlisted selected dependency volumes must also be new local storage. If that
+qualified path is unavailable, stop before creating the runtime; never
+substitute ordinary `ensure`. Existing explicit reset commands require their
+own data mutation authority.
 
 A failed initialization may leave partial schema or fixtures. Preserve that
-state and report the failed phase; a rerun must not reset or adopt it as empty.
+state and its durable attempt fence and report the failed phase; never clear,
+rearm or replay it, or adopt it as empty after interruption or unknown completion.
 Default recovery still verifies both identities and the required application
 schema. Failed install, build, identity or schema checks leave bootstrap
 incomplete so post-start refuses application startup.

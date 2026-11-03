@@ -33,6 +33,12 @@ const STABLE_VOLUME_NAMES = new Map([
   ['packages/types', 'node_modules_types'],
 ])
 
+const REDIS_VOLUME_ALIASES = new Map([
+  ['redis_exec_data', 'KLICKER_REDIS_EXEC_VOLUME'],
+  ['redis_assessment_data', 'KLICKER_REDIS_ASSESSMENT_VOLUME'],
+  ['redis_cache_data', 'KLICKER_REDIS_CACHE_VOLUME'],
+])
+
 function fail(message) {
   throw new Error(message)
 }
@@ -273,9 +279,15 @@ function volumeNameForPackage(packagePath) {
  * Build the JSON-compatible Compose overlay. JSON is valid YAML and keeps the
  * generated artifact deterministic without adding a YAML dependency.
  */
-export function createDependencyCompose(packagePaths) {
+export function createDependencyCompose(
+  packagePaths,
+  retainRedisAliases = false
+) {
   if (!Array.isArray(packagePaths)) {
     fail('workspace package paths must be an array')
+  }
+  if (typeof retainRedisAliases !== 'boolean') {
+    fail('Redis alias selection must be a boolean')
   }
 
   const normalizedPaths = [...packagePaths].sort()
@@ -314,6 +326,13 @@ export function createDependencyCompose(packagePaths) {
   const declaredVolumes = Object.fromEntries(
     [...volumesByName.keys()].map((volume) => [volume, {}])
   )
+  if (retainRedisAliases) {
+    for (const [volume, variable] of REDIS_VOLUME_ALIASES) {
+      declaredVolumes[volume] = {
+        name: `\${${variable}:-\${COMPOSE_PROJECT_NAME}_${volume}}`,
+      }
+    }
+  }
 
   return {
     services: {
@@ -410,10 +429,35 @@ function writeAtomicIfChanged(outputPath, contents) {
   return true
 }
 
-export function generateDependencyMounts(root = SCRIPT_ROOT) {
+export function generateDependencyMounts(
+  root = SCRIPT_ROOT,
+  { environment = process.env, workingDirectory = process.cwd() } = {}
+) {
   const checkoutRoot = canonicalRoot(root)
   const packagePaths = discoverWorkspacePackages(checkoutRoot)
-  const compose = createDependencyCompose(packagePaths)
+  const invocationRoot = canonicalRoot(workingDirectory)
+  const aliasInputs = [
+    ...REDIS_VOLUME_ALIASES.values(),
+    'COMPOSE_ENV_FILES',
+    'COMPOSE_FILE',
+    'COMPOSE_DISABLE_ENV_FILE',
+  ]
+  // Leave interpolation to Compose. An opaque input must retain the old
+  // clauses, so unproved absence cannot allocate replacement Redis storage.
+  const retainRedisAliases =
+    aliasInputs.some((key) => Object.hasOwn(environment, key)) ||
+    [checkoutRoot, join(checkoutRoot, '.devcontainer'), invocationRoot].some(
+      (directory) => {
+        try {
+          lstatSync(join(directory, '.env'))
+          return true
+        } catch (error) {
+          if (error?.code === 'ENOENT') return false
+          return fail('Compose environment input could not be inspected')
+        }
+      }
+    )
+  const compose = createDependencyCompose(packagePaths, retainRedisAliases)
   const outputPath = join(
     checkoutRoot,
     '.devcontainer',
