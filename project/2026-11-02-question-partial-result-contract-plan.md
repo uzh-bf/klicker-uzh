@@ -123,6 +123,94 @@ needed for these focused tests.
 
 ## Progress
 
+### Approved local SQL and browser qualification
+
+On 3 November 2026 the user approved extending this same draft with the reviewed
+local qualification proposal. Approval mode is `executable batch`. The main
+session remains the only writer. The source baseline is
+`d3c7fd948fc86fe303e57bc165168403b46c7bdf`; its 144 focused tests, fail-fast
+GraphQL type checks and production build passed. Existing review evidence is
+reused outside the test/configuration extension below.
+
+This extension qualifies the actual result-reader/finalization caller through
+real local PostgreSQL, then lecturer review/save and existing quota settlement.
+The provider allowance is zero. It preserves the broader shared-generator,
+Klicker delivery and complete accepted exam/local-package outcomes, Q24,
+historical judgments, reservations and native recovery limits.
+
+1. Add only the repository-local Devrouter 0.6.6 minimum and supported
+   `freshBootstrap` declaration. Extend the existing completion integration
+   test with a current provenance-bound partial result through the actual
+   caller and a malformed partition that must produce no drafts or elements.
+   Guard the accounting suite's actual client before setup and cleanup.
+   Reuse persistence and browser tests; extend those only for a demonstrated
+   missing partial-review/save invariant.
+2. Commit and independently review the exact test/configuration candidate
+   before managed startup or SQL effects. Preserve the completed plan critique;
+   allow the same implementation reviewer one focused correction.
+3. Recheck exact source ownership, absence of a retained provider runtime and
+   routes, and values-free provider-key/optional-overlay status. Start only
+   this checkout's canonical `manage` profile: api/auth/blob/manage, postgres,
+   hatchet, azurite, three Redis roles and managed `klicker-dev`. Use
+   `devrouter ensure <this-checkout> --profile manage --initialize-new --json`.
+   No LLM proxy, generation worker, Chat app, real credentials or global setup.
+4. The one-shot managed bootstrap must prove new checkout-owned data resources
+   and empty newly created `klicker_test` and `klicker_test_shadow` databases,
+   restricted login and disposable markers before schema initialization and
+   synthetic seeding. Existing initialization rejects pre-existing test roles
+   and databases. A failed or unknown initialization preserves partial state
+   and its durable attempt fence; it cannot be replayed or reset.
+5. Run the existing completion, persistence, accounting and start-failure
+   suites serially in the managed container. External artifacts stay synthetic;
+   the parser, provenance checks, finalization, transaction and save are real.
+   Preserve distinct Plan question IDs and Design slot IDs. App fixed-price
+   quota/spend evidence is separate from native provider USD accounting.
+6. Capture SQL evidence before the single authorized initial browser
+   cleanup/reseed. Run `pnpm playwright:host --runtime-profile manage
+   playwright/tests/Y-question-generation-review.spec.ts --project chromium
+   --workers 1 --retries 0 --max-failures 1 --grep 'reviews synthetic generated
+   elements through the canonical editor|explains quality flags and a pending
+   save through reason nodes|keeps review, completion, partial, and failure
+   outcomes distinct'`. Later invocations require `--preserve-database` before
+   Playwright arguments and verified known synthetic fixtures. A server-mode
+   recovery may add `--ci-runtime`, retaining that preservation option.
+7. Publish normal task commits and update the existing draft with verified
+   evidence and limitations. CI waiting stays skipped. Stop the exact managed
+   owner and verify stopped provider state plus zero source-path routes.
+   Preserve data, volumes, caches and all other owners' work.
+
+The only additional mutable source paths are `.devrouter.yml`, this plan,
+`elementGenerationCompletion.integration.test.ts`,
+`elementGenerationAccounting.test.ts`, and, only if needed,
+`elementGenerationPersistence.integration.test.ts`,
+`Y-question-generation-review.spec.ts` and its existing fixture. There is no
+production behavior, model/price/finance-policy, schema or migration change.
+Verified production defects stop their dependent branch and return a minimum
+correction proposal; independent authorized checks continue.
+
+The whole batch has four hours, then twenty minutes for graceful shutdown.
+After the non-replayable initialization, allow one same-source harness/setup
+correction and affected rerun per reproduced fault, at most three material
+corrections total. Ownership, data-guard, provider-boundary or exhausted-recovery
+failures stop that branch. No new runtime profile, permission change or global
+tool repair follows. No paid calls, real cloud/production writes, merge, ready,
+deployment, reviewer request, comments or deletion are approved.
+
+The terminal is verified local caller-to-SQL, save/quota and browser evidence,
+or explicit failed/incomplete requirements with minimum corrections, reviewed
+draft delivery and verified runtime shutdown. Synthetic compatibility does not
+prove native generation quality, semantic goal coverage or release. Those and
+the complete Finance I exam/local package remain incomplete.
+
+The qualification candidate adds the two caller-to-SQL cases and guards the
+accounting suite. Both actual GraphQL type checks, touched-file formatting and
+lint, installed profile-schema resolution, host runtime/launcher contracts and
+scoped scans pass. SQL and browser execution remain pending independent source
+review and the one-shot startup gate. Existing unchanged source/build checks
+remain reusable. No other owner's source is modified.
+
+### Source-only delivery history
+
 The actual user approval is recovered. The target matches the reviewed source;
 an isolated task worktree is created and other owners' work is preserved.
 The proposal critique and its focused correction are complete and reused.
@@ -143,6 +231,6 @@ both GraphQL type checks pass; unchanged passing evidence is retained at its
 actual boundary. Formatting and scoped scans pass. The correction follows the
 forge review's exact normalization recommendation and is main-verified; the
 earlier independent review remains applicable outside that narrow change.
-Final build verification and ordinary draft update are pending. No managed
+Final build verification and ordinary draft update completed. No managed
 application runtime or database has started. Broader product delivery and
 native quality remain incomplete.
