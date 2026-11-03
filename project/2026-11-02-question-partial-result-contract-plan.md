@@ -138,8 +138,11 @@ The provider allowance is zero. It preserves the broader shared-generator,
 Klicker delivery and complete accepted exam/local-package outcomes, Q24,
 historical judgments, reservations and native recovery limits.
 
-1. Add only the repository-local Devrouter 0.6.6 minimum and supported
-   `freshBootstrap` declaration. Extend the existing completion integration
+1. Prepare the repository-local Devrouter 0.6.6 minimum and supported
+   `freshBootstrap` declaration for local qualification. Publishing that change
+   depends on the trusted CI toolchain reaching the same version first; keep
+   the patch private until its separate delivery boundary is resolved.
+   Extend the existing completion integration
    test with a current provenance-bound partial result through the actual
    caller and a malformed partition that must produce no drafts or elements.
    Guard the accounting suite's actual client before setup and cleanup.
@@ -203,11 +206,19 @@ prove native generation quality, semantic goal coverage or release. Those and
 the complete Finance I exam/local package remain incomplete.
 
 The qualification candidate adds the two caller-to-SQL cases and guards the
-accounting suite. Both actual GraphQL type checks, touched-file formatting and
+accounting suite. The existing idempotent concurrent-save check now also covers
+an incomplete build. Both actual GraphQL type checks, touched-file formatting and
 lint, installed profile-schema resolution, host runtime/launcher contracts and
-scoped scans pass. SQL and browser execution remain pending independent source
-review and the one-shot startup gate. Existing unchanged source/build checks
-remain reusable. No other owner's source is modified.
+scoped scans pass. The source review verified the test logic and identified that
+publishing the new Devrouter minimum would conflict with the trusted CI
+toolchain. The configuration change is therefore excluded from the published
+diff and retained as a private local qualification patch. Updating the trusted
+CI toolchain and promoting it remain outside this batch. SQL and browser
+execution are unexecuted: fresh initialization also refuses an existing compiler
+container bound to this checkout, even when stopped. The approved retain-and-stop
+lifecycle does not authorize removing that container. No initialization attempt
+or database write has occurred. Existing unchanged source/build checks remain
+reusable, and no other owner's source is modified.
 
 ### Source-only delivery history
 
