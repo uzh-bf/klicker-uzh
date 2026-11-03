@@ -1,3 +1,4 @@
+import { signJWT } from '@klicker-uzh/util'
 import { afterAll, beforeEach, describe, expect, test, vi } from 'vitest'
 import { PARTICIPANT_COOKIE_NAME } from '../src/lib/constants'
 import { encode as jwtEncode } from '../src/lib/jwt'
@@ -114,9 +115,15 @@ describe('student session lookup', () => {
   })
 
   test('reports no session for an expired token', async () => {
-    const expired = await participantToken({
-      exp: Math.floor(Date.now() / 1000) - 60,
-    })
+    const expired = await signJWT(
+      {
+        sub: PARTICIPANT_ID,
+        role: 'PARTICIPANT',
+        exp: Math.floor(Date.now() / 1000) - 60,
+      },
+      APP_SECRET,
+      { issuer: AUTH_URL }
+    )
 
     const result = await invoke({ [PARTICIPANT_COOKIE_NAME]: expired })
 

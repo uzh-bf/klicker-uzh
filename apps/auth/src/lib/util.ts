@@ -1,4 +1,5 @@
 import axios from 'axios'
+import { authEvent, createAuthCorrelationId } from '@/lib/telemetry'
 
 export async function sendTeamsNotifications(scope: string, text: string) {
   if (process.env.TEAMS_WEBHOOK_URL) {
@@ -11,7 +12,11 @@ export async function sendTeamsNotifications(scope: string, text: string) {
         text: `[${process.env.NODE_ENV}:${scope}] ${text}`,
       })
     } catch (error) {
-      console.error('Failed to send Teams notification:', error)
+      authEvent('auth.helper.notification', createAuthCorrelationId(), {
+        action: 'notification',
+        outcome: 'notification_failed',
+        errorCategory: 'notification',
+      })
       return null
     }
   }

@@ -1,3 +1,5 @@
+export const SESSION_MAX_AGE_SECONDS = 30 * 24 * 60 * 60
+
 type SessionStorageLike = {
   getItem: (key: string) => string | null
   setItem: (key: string, value: string) => void

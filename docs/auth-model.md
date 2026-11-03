@@ -21,6 +21,29 @@ tags:
 
 A `Bearer` authorization header is always the final fallback (assessment live-quiz mode depends on it — marked `DO NOT TOUCH` in the source). Whatever token is found is verified with `verifyJWT(token, APP_SECRET)`; failure just yields an unauthenticated context, not an error. Consequence for local setups: apps and backend must share `APP_SECRET`, and cookie domains must match the origin the backend expects — this is why the Traefik `*.klicker.com` path mirrors production more faithfully than raw localhost.
 
+## Bundled Control authentication
+
+Bundled Control exchanges a proof-bound, one-use code for a restricted
+`control-native+jwt` credential with fixed 30-day expiry. It reuses the existing
+NextAuth sign-in and shared JWT policy; the system browser's cookie is not
+copied into the app. A server-selected derived signing key isolates native
+credentials from generic web consumers. The API verifies signature, issuer,
+audience, purpose and expiry, then rechecks current lecturer identity and scope.
+Native requests cannot fall back to browser cookies or legacy bearer selection.
+
+Redis stores only the short-lived login transaction, one-use code and rate
+limits. There is no persistent native session record, opaque token lookup or
+revoke endpoint. Device-only secure storage restores the credential until its
+fixed deadline. Local logout clears the credential even offline; a copied JWT
+can remain valid until expiry unless current account checks reject it. There is
+no native refresh protocol or implicit all-device logout.
+
+[ADR 0057](./adr/0057-share-nextauth-policy-with-native-control.md) owns the current
+contract and coordinated pilot migration. [ADR 0056](./adr/0056-control-native-session-contract.md)
+is historical and superseded. The system-browser handoff and native transport
+remain small application adapters; NextAuth's cookie renewal does not provide
+a native bearer renewal endpoint.
+
 ## Lecturer login (`apps/auth`)
 
 NextAuth (Auth.js) with `@auth/prisma-adapter`, JWT session strategy with a custom `encode` (so the backend can verify the same token), configured in `apps/auth/src/pages/api/auth/[...nextauth].ts`. Two provider groups:

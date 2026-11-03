@@ -186,6 +186,9 @@ hatchet:
       topologySpreadConstraints: []
 
 auth:
+  # Explicit proxy ranges for native login quotas; empty uses the socket peer.
+  nativeTrustedProxyCidrs: ''
+
   priorityClassName: production-workload
 
   replicaCount: 1

@@ -1,4 +1,5 @@
 import crypto from 'node:crypto'
+import axios from 'axios'
 import {
   afterAll,
   beforeAll,
@@ -20,9 +21,11 @@ import {
   invokeAuthHandler,
   loadAuthHandler,
   prismaCalls,
+  prismaOverrides,
   resetAuthTestState,
   startFakeIdentityProvider,
   testHelpers,
+  testPrisma,
 } from './helpers/auth'
 
 // Participant callback journeys against the real NextAuth handler.
@@ -320,6 +323,240 @@ describe('participant callback journeys against the real NextAuth handler', () =
     expect(prismaCalls).toEqual([])
     expect(result.sessionCookies[PARTICIPANT_COOKIE_NAME]).toBeUndefined()
     expect(result.sessionCookies[MANAGER_COOKIE_NAME]).toBeUndefined()
+  })
+
+  test('NextAuth failures omit secret sentinels and request-controlled log fields', async () => {
+    const markers = {
+      requestId: 'auth-log-request-id-secret',
+      path: 'auth-log-path-secret',
+      cookie: 'auth-log-cookie-secret',
+      code: 'auth-log-code-secret',
+      provider: 'auth-log-provider-secret',
+      referer: 'auth-log-referer-secret',
+    }
+    const state = 'state-auth-log-failure'
+    const cookies = await participantCallbackCookies(state)
+    cookies[participantCookies.pkceCodeVerifier] = markers.cookie
+
+    const unhandledConsole: string[] = []
+    const captureUnhandled = (...args: unknown[]) => {
+      unhandledConsole.push(args.map(String).join(' '))
+    }
+    const infoSpy = vi
+      .spyOn(console, 'info')
+      .mockImplementation(captureUnhandled)
+    const debugSpy = vi
+      .spyOn(console, 'debug')
+      .mockImplementation(captureUnhandled)
+
+    let failedCallback:
+      | Awaited<ReturnType<typeof invokeAuthHandler>>
+      | undefined
+    let providerProbe: Awaited<ReturnType<typeof invokeAuthHandler>> | undefined
+    try {
+      failedCallback = await invokeAuthHandler({
+        query: { ...callbackQuery(state), code: markers.code },
+        cookies,
+        url: `/api/auth/callback/${markers.path}?token=${markers.path}`,
+        headers: {
+          host: 'auth.klicker.uzh.ch',
+          'x-request-id': markers.requestId,
+          referer: `${AUTH_URL}/${markers.referer}`,
+        },
+      })
+      providerProbe = await invokeAuthHandler({
+        query: { nextauth: ['csrf', markers.provider] },
+        url: `/api/auth/${markers.path}?provider=${markers.provider}`,
+        headers: {
+          host: 'auth.klicker.uzh.ch',
+          'x-request-id': markers.requestId,
+        },
+      })
+    } finally {
+      infoSpy.mockRestore()
+      debugSpy.mockRestore()
+    }
+
+    expect(failedCallback?.location).toBe(
+      '/restart?audience=participant&error=OAuthCallback'
+    )
+    const libraryError = failedCallback?.telemetry.find(
+      (event) => event.event === 'auth.nextauth_error'
+    )
+    expect(libraryError?.outcome).toBe('library_error')
+    expect(libraryError?.errorCategory).toBe('oauth_callback')
+
+    const request = failedCallback?.telemetry.find(
+      (event) => event.event === 'auth.request'
+    )
+    expect(request?.requestId).toMatch(/^na-[a-f0-9]{12}$/)
+    expect(request?.route).toBe('/api/auth/[...nextauth]')
+    expect(request).not.toHaveProperty('path')
+
+    const providerRequest = providerProbe?.telemetry.find(
+      (event) => event.event === 'auth.request'
+    )
+    expect(providerRequest?.providerId).toBe('other')
+    expect(providerRequest?.route).toBe('/api/auth/[...nextauth]')
+
+    const output = JSON.stringify({
+      failedCallback,
+      providerProbe,
+      unhandledConsole,
+    })
+    for (const marker of Object.values(markers)) {
+      expect(output).not.toContain(marker)
+    }
+  })
+
+  test('participant account-link failures omit helper error messages', async () => {
+    const marker = 'auth-log-participant-link-error-secret'
+    identityProvider.setTokenOutcome('success')
+    testHelpers.createOrLinkParticipant = async () => {
+      throw new Error(marker)
+    }
+    const state = 'state-account-link-log-failure'
+    const result = await invokeAuthHandler({
+      query: callbackQuery(state),
+      cookies: await participantCallbackCookies(state),
+      url: '/api/auth/callback/eduid',
+      headers: { host: 'auth.klicker.uzh.ch' },
+    })
+
+    const failure = result.telemetry.find(
+      (event) =>
+        event.event === 'auth.account_handling' &&
+        event.outcome === 'participant_link_failed'
+    )
+    expect(failure?.errorCategory).toBe('database')
+    expect(result.sessionCookies[PARTICIPANT_COOKIE_NAME]).toBeUndefined()
+    expect(JSON.stringify(result)).not.toContain(marker)
+  })
+
+  test('real invitation helper failures log bounded outcomes without payload data', async () => {
+    const markers = {
+      email: 'auth-log-email-secret@example.invalid',
+      database: 'auth-log-database-error-secret',
+      notification: 'auth-log-notification-error-secret',
+    }
+    const actualHelpers =
+      await vi.importActual<typeof import('../src/lib/helpers')>(
+        '../src/lib/helpers'
+      )
+    const output: string[] = []
+    const capture = (...args: unknown[]) => {
+      output.push(args.map(String).join(' '))
+    }
+    const spies = [
+      vi.spyOn(console, 'log').mockImplementation(capture),
+      vi.spyOn(console, 'error').mockImplementation(capture),
+      vi.spyOn(console, 'warn').mockImplementation(capture),
+      vi.spyOn(console, 'info').mockImplementation(capture),
+      vi.spyOn(console, 'debug').mockImplementation(capture),
+    ]
+    const axiosPost = vi
+      .spyOn(axios, 'post')
+      .mockRejectedValue(new Error(markers.notification))
+    const teamsWebhook = process.env.TEAMS_WEBHOOK_URL
+    vi.stubEnv('TEAMS_WEBHOOK_URL', 'https://example.invalid/webhook')
+    prismaOverrides['participantInvitation.findMany'] = async () => {
+      throw new Error(markers.database)
+    }
+
+    try {
+      const failed = await actualHelpers.autoAcceptInvitations(
+        testPrisma as never,
+        {
+          profileEmails: [],
+          affiliationEmails: [markers.email],
+          allEmails: [markers.email],
+        },
+        'synthetic-participant'
+      )
+      expect(failed).toBe(0)
+
+      prismaOverrides['participantInvitation.findMany'] = async () => []
+      const empty = await actualHelpers.autoAcceptInvitations(
+        testPrisma as never,
+        {
+          profileEmails: [],
+          affiliationEmails: [markers.email],
+          allEmails: [markers.email],
+        },
+        'synthetic-participant'
+      )
+      expect(empty).toBe(0)
+      expect(axiosPost).not.toHaveBeenCalled()
+
+      prismaOverrides['participantInvitation.findMany'] = async () => [
+        { id: 'synthetic-invitation', courseId: 'synthetic-course' },
+      ]
+      prismaOverrides['participation.upsert'] = async () => ({})
+      prismaOverrides['participantInvitation.update'] = async () => ({})
+
+      const accepted = await actualHelpers.autoAcceptInvitations(
+        testPrisma as never,
+        {
+          profileEmails: [],
+          affiliationEmails: [markers.email],
+          allEmails: [markers.email],
+        },
+        'synthetic-participant'
+      )
+      expect(accepted).toBe(1)
+      expect(axiosPost).toHaveBeenCalledTimes(1)
+    } finally {
+      axiosPost.mockRestore()
+      for (const spy of spies) spy.mockRestore()
+      vi.stubEnv('TEAMS_WEBHOOK_URL', teamsWebhook)
+    }
+
+    const emitted = output.flatMap((line) => {
+      try {
+        return [JSON.parse(line) as Record<string, unknown>]
+      } catch {
+        return []
+      }
+    })
+    const serialized = JSON.stringify(output)
+    for (const marker of Object.values(markers)) {
+      expect(serialized).not.toContain(marker)
+    }
+    expect(
+      emitted.some(
+        (event) =>
+          event.event === 'auth.helper.invitation' &&
+          event.outcome === 'invitation_processing_failed' &&
+          event.errorCategory === 'database'
+      )
+    ).toBe(true)
+    expect(
+      emitted.some(
+        (event) =>
+          event.event === 'auth.helper.invitation' &&
+          event.outcome === 'pending_invitations_found'
+      )
+    ).toBe(true)
+    expect(
+      emitted.some(
+        (event) =>
+          event.event === 'auth.helper.invitation' &&
+          event.outcome === 'no_pending_invitations'
+      )
+    ).toBe(true)
+    expect(
+      emitted.some(
+        (event) =>
+          event.event === 'auth.helper.notification' &&
+          event.outcome === 'notification_failed' &&
+          event.errorCategory === 'notification'
+      )
+    ).toBe(true)
+    expect(
+      emitted.every((event) =>
+        /^na-[a-f0-9]{12}$/.test(String(event.requestId))
+      )
+    ).toBe(true)
   })
 
   test('an invalid PKCE cookie recovers into the participant restart page', async () => {

@@ -23,12 +23,14 @@ export async function signJWT(
     algorithm?: 'HS256'
     expiresIn?: string | number
     issuer?: string
+    audience?: string
+    type?: string
     issuedAt?: Date
   } = {}
 ): Promise<string> {
   const alg = options.algorithm ?? 'HS256'
   let jwt = new jose.SignJWT(payload as Record<string, unknown>)
-    .setProtectedHeader({ alg, typ: 'JWT' })
+    .setProtectedHeader({ alg, typ: options.type ?? 'JWT' })
     .setIssuedAt(options.issuedAt)
 
   if (options.expiresIn) {
@@ -38,6 +40,8 @@ export async function signJWT(
   if (options.issuer) {
     jwt = jwt.setIssuer(options.issuer)
   }
+
+  if (options.audience) jwt = jwt.setAudience(options.audience)
 
   return jwt.sign(getSecretKey(secret))
 }
@@ -49,6 +53,9 @@ export async function verifyJWT(
     algorithms?: 'HS256'[]
     clockTolerance?: string | number
     issuer?: string
+    audience?: string
+    type?: string
+    requiredClaims?: string[]
   } = {}
 ): Promise<JWTPayload> {
   try {
@@ -56,10 +63,13 @@ export async function verifyJWT(
       algorithms: opts.algorithms ?? ['HS256'],
       clockTolerance: opts.clockTolerance ?? '5s',
       issuer: opts.issuer,
+      audience: opts.audience,
+      typ: opts.type,
+      requiredClaims: opts.requiredClaims,
     })
     return payload as JWTPayload
-  } catch (error) {
-    console.error('JWT verification failed:', error)
+  } catch {
+    console.error('JWT verification failed')
     throw new Error('Invalid token')
   }
 }

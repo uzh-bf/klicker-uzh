@@ -1,5 +1,11 @@
+import { createHmac, randomBytes } from 'node:crypto'
+import { SignJWT } from 'jose'
 import { beforeAll, describe, expect, it } from 'vitest'
-import { decodeJWT, signJWT, verifyJWT, type JWTPayload } from '../src/jwt.js'
+import {
+  signControlNativeToken,
+  verifyControlNativeToken,
+} from '../src/controlNativeSession.js'
+import { decodeJWT, type JWTPayload, signJWT, verifyJWT } from '../src/jwt.js'
 
 describe('JWT Utilities', () => {
   const testSecret = 'test-secret-key-for-jwt-testing'
@@ -248,5 +254,90 @@ describe('JWT Utilities', () => {
       expect(verified.email).toBe('lti@example.com')
       expect(verified.scope).toBe('LTI1.3')
     })
+  })
+})
+
+describe('restricted native JWT contract', () => {
+  const secret = randomBytes(32).toString('hex')
+  const issuer = 'https://auth.example.invalid'
+  const principal = {
+    sub: 'synthetic-native-user',
+    scope: 'SESSION_EXEC' as const,
+    source: { kind: 'institutional' as const, id: 'synthetic-native-account' },
+  }
+  it('validates native signature and isolates it from generic web verification', async () => {
+    const issued = await signControlNativeToken(principal, secret, issuer)
+    await expect(
+      verifyControlNativeToken(issued.access_token, secret, issuer)
+    ).resolves.toMatchObject({ ...principal, role: 'USER' })
+    await expect(
+      verifyControlNativeToken(issued.access_token, secret, `${issuer}/`)
+    ).resolves.toMatchObject({ ...principal, role: 'USER' })
+    await expect(verifyJWT(issued.access_token, secret)).rejects.toThrow()
+    await expect(
+      verifyControlNativeToken(
+        issued.access_token,
+        secret,
+        'https://other.invalid'
+      )
+    ).rejects.toThrow()
+  })
+  it('accepts bounded issuer clock skew while keeping expiration strict', async () => {
+    const issued = await signControlNativeToken(
+      principal,
+      secret,
+      issuer,
+      Date.now() + 30000
+    )
+    await expect(
+      verifyControlNativeToken(issued.access_token, secret, issuer)
+    ).resolves.toMatchObject({ ...principal, role: 'USER' })
+  })
+  it('rejects signed credentials with missing, wrong or overlong claims', async () => {
+    const key = Buffer.from(
+      createHmac('sha256', secret)
+        .update('control-native-session:v2')
+        .digest('hex')
+    )
+    const now = Math.floor(Date.now() / 1000)
+    const payload = {
+      ...principal,
+      role: 'USER',
+      purpose: 'lecturer-control',
+      iat: now,
+      exp: now + 30 * 86400,
+    }
+    for (const patch of [
+      { exp: undefined },
+      { iat: undefined },
+      { iat: now + 120 },
+      { exp: now + 31 * 86400 },
+      { role: 'ADMIN' },
+      { scope: 'ACCOUNT_OWNER' },
+      { purpose: 'other' },
+      { source: null },
+    ]) {
+      const token = await new SignJWT({ ...payload, ...patch })
+        .setProtectedHeader({ alg: 'HS256', typ: 'control-native+jwt' })
+        .setIssuer(issuer)
+        .setAudience('control-graphql')
+        .sign(key)
+      await expect(
+        verifyControlNativeToken(token, secret, issuer)
+      ).rejects.toThrow()
+    }
+    for (const [typ, aud] of [
+      ['JWT', 'control-graphql'],
+      ['control-native+jwt', 'other'],
+    ]) {
+      const token = await new SignJWT(payload)
+        .setProtectedHeader({ alg: 'HS256', typ })
+        .setIssuer(issuer)
+        .setAudience(aud!)
+        .sign(key)
+      await expect(
+        verifyControlNativeToken(token, secret, issuer)
+      ).rejects.toThrow()
+    }
   })
 })

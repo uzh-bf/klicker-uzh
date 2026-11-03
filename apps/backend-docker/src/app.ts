@@ -15,6 +15,7 @@ import cookieParser from 'cookie-parser'
 import cors from 'cors'
 import express from 'express'
 import { createYoga } from 'graphql-yoga'
+import { createControlNativeAuth } from './controlNativeAuth.js'
 import { registerKBHttpRoutes } from './kbHttpRoutes.js'
 
 const require = createRequire(import.meta.url)
@@ -43,6 +44,16 @@ function prepareApp({
   const enhancements = armor.protect()
 
   const app = express()
+  const controlNativeAuth = createControlNativeAuth({
+    prisma,
+    authOrigin: process.env.APP_ORIGIN_AUTH,
+    appSecret: process.env.APP_SECRET,
+  })
+
+  // Native JWTs use a separate signing context and must be resolved
+  // before any route or the legacy JWT middleware can interpret the request.
+  // Invalid native credentials never fall back.
+  app.use(controlNativeAuth.authenticateNative)
 
   // Local browsers use the same explicit development flags as the backend.
   if (process.env.NODE_ENV === 'development') {
@@ -59,13 +70,15 @@ function prepareApp({
   }
 
   app.use(
-    cors({
-      origin(origin, cb) {
-        cb(null, origin)
-      },
-      credentials: true,
-      optionsSuccessStatus: 200,
-    })
+    controlNativeAuth.withCredentialedCors(
+      cors({
+        origin(origin, cb) {
+          cb(null, origin)
+        },
+        credentials: true,
+        optionsSuccessStatus: 200,
+      })
+    )
   )
 
   // Custom JWT middleware to replace passport-jwt
@@ -134,7 +147,7 @@ function prepareApp({
   registerKBHttpRoutes(app, { prisma })
 
   app.use(cookieParser())
-  app.use(jwtMiddleware)
+  app.use(controlNativeAuth.withLegacyAuthentication(jwtMiddleware))
 
   const yogaApp = createYoga({
     schema,

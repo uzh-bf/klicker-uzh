@@ -8,18 +8,29 @@ import { useTranslations } from 'next-intl'
 import Head from 'next/head'
 import Image from 'next/image'
 import { useRouter } from 'next/router'
-import { useMemo } from 'react'
 
 function SignInOutButton() {
   const t = useTranslations()
   const router = useRouter()
 
-  const { value, setValue: setTosChecked } = useStickyState(
-    'tos-agreement-2024-v2',
+  const {
+    value,
+    setValue: setTosChecked,
+    hasInitialized,
+  } = useStickyState(
+    'tos-agreement-privacy-2026-09-14-terms-2023-08-26',
     'false'
   )
+  const tosChecked = hasInitialized && (value === true || value === 'true')
 
-  const tosChecked = useMemo(() => JSON.parse(value), [value])
+  const nativeTransaction =
+    typeof router.query.nativeTransaction === 'string' &&
+    /^[A-Za-z0-9_-]{43}$/.test(router.query.nativeTransaction)
+      ? router.query.nativeTransaction
+      : null
+  const callbackUrl = nativeTransaction
+    ? `${typeof window !== 'undefined' ? window.location.origin : ''}/native/complete?transaction=${nativeTransaction}`
+    : (router.query?.redirectTo as string) || process.env.NEXT_PUBLIC_MANAGE_URL
 
   const { data: session, status } = useSession()
 
@@ -43,7 +54,7 @@ function SignInOutButton() {
           </Button>
           <Button
             primary
-            onClick={() => router.push(process.env.NEXT_PUBLIC_MANAGE_URL!)}
+            onClick={() => router.push(callbackUrl!)}
             data={{ cy: 'auth-open-manage-button' }}
           >
             {t('shared.generic.openApplication')}
@@ -64,20 +75,30 @@ function SignInOutButton() {
           content="Log in interface for lecturers to manage their courses and materials."
         />
       </Head>
+      {nativeTransaction && (
+        <p className="font-semibold">{t('control.home.appName')}</p>
+      )}
       <p className="rounded border-slate-300 bg-slate-100 px-3 py-2 shadow">
         {t('auth.loginInfo')}
       </p>
       <Checkbox
+        id="lecturer-policy-agreement"
+        size="xl"
+        disabled={!hasInitialized}
         className={{
-          root: !tosChecked ? 'border border-red-500 bg-red-100' : undefined,
+          root: 'h-11 w-11',
+          label: 'min-w-0 max-w-none flex-1',
         }}
         data={{ cy: 'tos-checkbox' }}
         label={
-          <div className="text-sm">
+          <label
+            htmlFor="lecturer-policy-agreement"
+            className="block cursor-pointer py-2 text-base leading-relaxed [overflow-wrap:anywhere]"
+          >
             {t.rich('auth.tosAgreement', {
               privacy: () => (
                 <a
-                  className="text-blue-500 underline hover:text-red-500"
+                  className="rounded-sm text-blue-700 underline underline-offset-2 hover:text-blue-800 focus-visible:outline-2 focus-visible:outline-offset-2"
                   href={t('auth.privacyUrl')}
                   target="_blank"
                   rel="noopener noreferrer"
@@ -87,7 +108,7 @@ function SignInOutButton() {
               ),
               tos: () => (
                 <a
-                  className="text-blue-500 underline hover:text-red-500"
+                  className="rounded-sm text-blue-700 underline underline-offset-2 hover:text-blue-800 focus-visible:outline-2 focus-visible:outline-offset-2"
                   href={t('auth.tosUrl')}
                   target="_blank"
                   rel="noopener noreferrer"
@@ -96,9 +117,9 @@ function SignInOutButton() {
                 </a>
               ),
             })}
-          </div>
+          </label>
         }
-        onCheck={() => setTosChecked(!tosChecked)}
+        onCheck={() => setTosChecked(String(!tosChecked))}
         checked={tosChecked}
       />
 
@@ -119,9 +140,7 @@ function SignInOutButton() {
           className={{ root: 'p-4 disabled:opacity-50' }}
           onClick={() =>
             signIn(process.env.NEXT_PUBLIC_EDUID_ID, {
-              callbackUrl:
-                (router.query?.redirectTo as string) ||
-                process.env.NEXT_PUBLIC_MANAGE_URL,
+              callbackUrl,
             })
           }
         >
@@ -137,15 +156,13 @@ function SignInOutButton() {
       </span>
       <Button
         className={{
-          root: 'justify-center italic disabled:opacity-50',
+          root: 'min-h-11 justify-center italic disabled:opacity-50',
         }}
         disabled={!tosChecked}
         data={{ cy: 'delegated-login-button' }}
         onClick={() =>
           signIn('delegation', {
-            callbackUrl:
-              (router.query?.redirectTo as string) ||
-              process.env.NEXT_PUBLIC_MANAGE_URL,
+            callbackUrl,
           })
         }
       >
@@ -172,8 +189,10 @@ export function Index() {
             data-cy="login-logo"
           />
         </div>
-        <div className="flex w-full flex-row justify-between px-6 sm:px-10 md:mx-0">
-          <H1 className={{ root: 'mb-0' }}>{t('auth.authentication')}</H1>
+        <div className="flex w-full flex-wrap items-center justify-between gap-3 px-6 sm:px-10 md:mx-0">
+          <H1 className={{ root: 'mb-0 min-w-0 [overflow-wrap:anywhere]' }}>
+            {t('auth.authentication')}
+          </H1>
           <div>
             <LanguageChanger
               value={router.locale as string}
