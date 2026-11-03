@@ -1,3 +1,4 @@
+import { useFeatureFlag } from '@klicker-uzh/feature-flags/react'
 import type { GetStaticPropsContext } from 'next'
 import { useRouter } from 'next/router'
 import { useTranslations } from 'next-intl'
@@ -11,6 +12,7 @@ function ElementGenerationPage() {
   const t = useTranslations('manage.elementGeneration')
   const router = useRouter()
   const aiFeaturesEnabled = useAiFeaturesEnabled()
+  const questionGenerationEnabled = useFeatureFlag('question-generation')
   const buildId =
     typeof router.query.buildId === 'string' ? router.query.buildId : undefined
   const kbId =
@@ -30,7 +32,7 @@ function ElementGenerationPage() {
 
   return (
     <Layout displayName={t('title')}>
-      {!aiFeaturesEnabled ? (
+      {!aiFeaturesEnabled || !questionGenerationEnabled ? (
         <AiBetaUnavailable />
       ) : (
         <main className="mx-auto w-full max-w-7xl px-2 py-4 md:px-4">

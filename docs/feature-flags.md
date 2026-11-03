@@ -23,21 +23,26 @@ product and admission flag listed under [Active flags](#active-flags) and
 [Knowledge-base admission controls](#knowledge-base-admission-controls).
 Applications initialize GrowthBook only when they adopt their first flag.
 
-`ai-beta` is not the whole gate over the lecturer AI surfaces. For Knowledge
-Base access and question/graph generation, the account's `aiFeaturesEnabled`
-column remains an independent approval gate, and both conditions must hold.
-Chatbot authoring is preapproval: it uses the database beta preference and the
-`ai-beta` rollout with Catalyst and allowed account scope, without requiring
-`aiFeaturesEnabled`. Chatbot publication and model usage still require that
-approval — see [Chat platform](./chat-platform.md#auth-guard-pattern-route-handlers).
-In `frontend-manage`, `aiFeaturesEnabled` controls the Knowledge Bases and
-generation entries while the separate authoring gate can expose the Chatbots
-entry before AI approval; each denied route renders a localized unavailable
-state instead of redirecting. GraphQL applies the combined flag and approval
-gate to every lecturer KB and question/graph-generation entry point. Chatbot
-authoring uses the separate beta preference and rollout gate, while publication
-and model usage still check `aiFeaturesEnabled`; participant chatbot discovery
-and worker-only KB settlement are unaffected.
+`ai-beta` is not the whole gate over the lecturer AI surfaces. Three gates
+build on it:
+
+- **Manage assistant.** Every Catalyst lecturer with the database beta
+  preference and the `ai-beta` rollout. It does not require
+  `aiFeaturesEnabled`; its per-user rate limits bound its use.
+- **Knowledge bases and chatbots.** These also require the account's
+  `aiFeaturesEnabled` approval. Auth sets it when a UZH account is created
+  (`isUzhAffiliated` in `packages/util/src/auth.ts`: email or eduID affiliation
+  on `uzh.ch` or a subdomain), and administrators can change it. Creating a
+  chatbot, publishing it and model usage check the approval; editing and
+  withdrawing an existing chatbot use the authoring gate (beta preference,
+  `ai-beta`, Catalyst and allowed account scope). See
+  [Chat platform](./chat-platform.md#auth-guard-pattern-route-handlers).
+- **Question and flashcard generation.** These additionally require the
+  `question-generation` flag, so the approval alone does not open them.
+
+In `frontend-manage`, each denied route renders a localized unavailable state
+instead of redirecting. Participant chatbot discovery and worker-only KB
+settlement are unaffected.
 
 ## Active flags
 
@@ -47,6 +52,7 @@ and worker-only KB settlement are unaffected.
 | `ai-beta`                     | Server-side chatbot authoring and account-usage rollout | `false`  | Authoring UI is not mounted; authoring API calls are denied and protected reads return no data                    |
 | `chatbot-response-examples`   | Response example review in Manage                       | `false`  | The review is not mounted and its query does not run; the chat runtime keeps using approved examples              |
 | `chatbot-long-custom-prompts` | Custom chat mode persona length in Manage and on save   | `false`  | New or edited persona text is capped at 10,000 characters; stored longer text keeps compiling and saves unchanged |
+| `question-generation`         | Question and flashcard generation in Manage and GraphQL | `false`  | The generate entry points are hidden and every generation API call is denied                                      |
 
 Beta Features is discoverable in account settings and the first-login dialog
 regardless of Catalyst, login scope, or rollout availability. The information

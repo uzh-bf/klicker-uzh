@@ -141,12 +141,14 @@ export async function mockGrowthBookFeatureFlags(
   page: Page,
   {
     aiBeta = false,
+    questionGeneration = aiBeta,
     aiSettingsMode = 'advanced',
     responseExamples = false,
     failRefresh = false,
     learningAnalytics = true,
   }: {
     aiBeta?: boolean
+    questionGeneration?: boolean
     aiSettingsMode?: 'simple' | 'advanced'
     responseExamples?: boolean
     failRefresh?: boolean
@@ -167,6 +169,7 @@ export async function mockGrowthBookFeatureFlags(
       body: JSON.stringify({
         features: {
           'ai-beta': { defaultValue: aiBeta },
+          'question-generation': { defaultValue: questionGeneration },
           'chatbot-response-examples': { defaultValue: responseExamples },
           'learning-analytics': { defaultValue: learningAnalytics },
         },

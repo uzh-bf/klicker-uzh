@@ -397,6 +397,26 @@ describe('real generated Element persistence', () => {
     await expectUnchangedDraft()
   })
 
+  it('denies generated keep for an approved account outside the question-generation rollout', async () => {
+    const ctx = context()
+    ctx.featureFlags = {
+      isEnabled: (key: string) => key !== 'question-generation',
+      getAiBetaDecision: () => 'enabled',
+      refresh: async () => {},
+    } as unknown as ContextWithUser['featureFlags']
+
+    await expect(keepGeneratedElementDraft(keepInput(), ctx)).rejects.toThrow(
+      'Forbidden'
+    )
+    expect(await persistedCounts()).toEqual({
+      elements: 0,
+      tags: 0,
+      logs: 0,
+      permissions: 0,
+    })
+    await expectUnchangedDraft()
+  })
+
   it('denies generated keep without entitlement but preserves manual Element authoring', async () => {
     await prisma.user.update({
       where: { id: ownerId },

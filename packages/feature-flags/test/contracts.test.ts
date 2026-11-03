@@ -13,6 +13,7 @@ describe('feature flag contracts', () => {
       'learning-analytics': false,
       'chatbot-response-examples': false,
       'chatbot-long-custom-prompts': false,
+      'question-generation': false,
     })
   })
 

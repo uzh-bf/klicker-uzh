@@ -15,12 +15,13 @@ import Chatbots from '../../components/resources/Chatbots'
 function ChatbotsPage() {
   const t = useTranslations()
   const aiBetaEnabled = useFeatureFlag('ai-beta')
-  const { betaEnabled } = useManageAiCapability()
+  const { state: aiCapability, betaEnabled } = useManageAiCapability()
   const { data } = useQuery(ManageUserProfileDocument, {
     fetchPolicy: 'cache-first',
     ssr: false,
   })
   const canAuthor =
+    (aiCapability === 'enabled' || aiCapability === 'temporarilyUnavailable') &&
     aiBetaEnabled &&
     betaEnabled &&
     data?.userProfile?.catalyst === true &&
