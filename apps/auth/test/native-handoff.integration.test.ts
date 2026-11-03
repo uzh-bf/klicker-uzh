@@ -126,8 +126,9 @@ async function attempt(bindBrowser = true) {
   )
   touched.add(`control-native:v1:attempt:${created.transaction}`)
   const browser = random()
+  if (bindBrowser) await service.bind(created.transaction, browser)
   const csrf = bindBrowser
-    ? await service.bind(created.transaction, browser)
+    ? service.csrf(created.transaction, browser, user.id)
     : ''
   return { ...created, state, verifier, cancelSecret, browser, csrf }
 }
@@ -598,6 +599,81 @@ describe('native browser broker', () => {
       codeDigest: nativeHash(callback.searchParams.get('code')!),
     })
     expect(approved.sessionCookies[cookieName]).toBe('')
+  })
+
+  test('requires a new confirmation when the browser account changes', async () => {
+    const a = await attempt(false)
+    const page = await invokeBroker(a.transaction, {
+      method: 'GET',
+      cookies: { [MANAGER_COOKIE_NAME]: await lecturerCookie() },
+    })
+    const cookieName = `__Host-control-native-${a.transaction}`
+    const browser = page.sessionCookies[cookieName]!
+    currentUser = { ...user, id: 'synthetic-other-native-owner' }
+    currentLogin = {
+      ...login,
+      id: 'synthetic-other-native-login',
+      userId: currentUser.id,
+    }
+    const otherToken = await encode({
+      token: {
+        ...evidence({
+          kind: 'delegated',
+          id: currentLogin.id,
+          passwordDigest: nativePasswordDigest(currentLogin.password, secret),
+        }),
+        sub: currentUser.id,
+        email: 'other@example.invalid',
+      },
+      secret,
+    })
+    const cookies = {
+      [MANAGER_COOKIE_NAME]: otherToken,
+      [cookieName]: browser,
+    }
+    const post = (csrf: string) =>
+      invokeBroker(
+        a.transaction,
+        {
+          method: 'POST',
+          cookies,
+          headers: {
+            origin: service.authOrigin,
+            'content-type': 'application/x-www-form-urlencoded',
+          },
+        },
+        new URLSearchParams({ csrf }).toString()
+      )
+    const rejected = await post(page.props.csrf)
+    expect(rejected.statusCode).toBe(400)
+    expect(rejected.location).toBeUndefined()
+    const stored = JSON.parse(
+      (await redis.get(`control-native:v1:attempt:${a.transaction}`))!
+    )
+    expect(stored.status).toBe('bound')
+    expect(stored.codeDigest).toBeUndefined()
+    const refreshed = await invokeBroker(a.transaction, {
+      method: 'GET',
+      cookies,
+    })
+    expect(refreshed.props.csrf).not.toBe(page.props.csrf)
+    const accepted = await post(refreshed.props.csrf)
+    expect(accepted.statusCode).toBe(303)
+    const callback = new URL(accepted.location!)
+    const issued = await service.exchange({
+      client_id: 'klicker-control-v1',
+      transaction: a.transaction,
+      verifier: a.verifier,
+      state: a.state,
+      code: callback.searchParams.get('code'),
+    })
+    expect(
+      await verifyControlNativeToken(
+        issued.access_token,
+        secret,
+        service.authOrigin
+      )
+    ).toMatchObject({ sub: currentUser.id })
   })
 
   test.each([

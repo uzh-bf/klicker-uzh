@@ -240,12 +240,11 @@ export class NativeHandoff {
         browserDigest: digest,
       })
     }
-    return this.csrf(id, browser)
   }
 
-  csrf(id: string, browser: string) {
+  csrf(id: string, browser: string, subject: string) {
     return createHmac('sha256', this.secret)
-      .update(`control-native-csrf:v1\0${id}\0${browser}`)
+      .update(`control-native-csrf:v2\0${id}\0${browser}\0${subject}`)
       .digest('hex')
   }
 
@@ -273,11 +272,12 @@ export class NativeHandoff {
     if (
       attempt.status !== 'bound' ||
       !attempt.browserDigest ||
-      !equal(attempt.browserDigest, nativeHash(browser)) ||
-      !equal(this.csrf(id, browser), csrf)
+      !equal(attempt.browserDigest, nativeHash(browser))
     )
       throw new NativeAuthError()
     const principal = await this.principal(evidence)
+    if (!equal(this.csrf(id, browser, principal.sub), csrf))
+      throw new NativeAuthError()
     const code = random()
     await this.replace(id, raw, {
       ...attempt,

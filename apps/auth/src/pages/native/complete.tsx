@@ -146,14 +146,15 @@ export const getServerSideProps: GetServerSideProps<Props> = async ({
           `${cookieName}=${browser}; Path=/; HttpOnly; Secure; SameSite=Lax; Max-Age=300`
         )
       }
-      props.csrf = await service.bind(transaction, browser)
+      await service.bind(transaction, browser)
       const evidence = await nativeBrowserEvidence(req)
       if (!evidence) {
         const login = `${locale === 'de' ? '/de' : ''}/?nativeTransaction=${encodeURIComponent(transaction)}`
         return { redirect: { destination: login, permanent: false } }
       }
       try {
-        await service.principal(evidence)
+        const principal = await service.principal(evidence)
+        props.csrf = service.csrf(transaction, browser, principal.sub)
         const binding = nativeLoginBinding(
           `${service.authOrigin}/native/complete?transaction=${transaction}`,
           req.cookies,
