@@ -652,6 +652,10 @@ backendGraphql:
     port: '6379'
     tls: 'false'
     queryTimeoutMs: '5000'
+    # Opens explicit subject and language selection and lets scheduled graph
+    # preparation run. It must equal the revision of the domain catalog the
+    # deployed images ship.
+    domainCatalogRevision: 'kg-domains-v1-793deb4279a163c357bd976868bee17606d6a352f9596a7b961dc4c200f65e72'
     cost:
       currency: 'CHF'
       standardEstimateMinorUnits: '100'

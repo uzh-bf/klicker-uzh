@@ -1491,7 +1491,7 @@ branches re-export it would remove the divergence this gate watches for.
 - `deploy/compose*` are v2-era self-hoster examples; `deploy/scripts/rollout.sh` is a legacy manual `kubectl rollout restart`.
 - **KB graph builds couple two values**: `hatchet.kbGraph.workflowName` and `backendGraphql.knowledgeGraph.host` must be set together, or the chart stops at render time with an explicit `fail`.
 - **KB graph token ordering**: the general worker's external secret must already carry `KB_GRAPH_HATCHET_CLIENT_TOKEN` before `hatchet.kbGraph.workflowName` is set. The token alone does not arm the worker's startup gate (so a secret rollout cannot stop unrelated jobs), but once any chart-owned `KB_GRAPH_*` value is present the token is required and startup fails without it.
-- **KB ingestion staging contract is rendered explicitly**: `pnpm run check:kb-ingestion-stg` renders the STG backend and worker ConfigMaps and requires this layer's exact state: the cluster-local ingestion and source-gateway endpoints on the general worker, no ingestion or graph kill-switch key in either ConfigMap, response-processor isolation, and no ingestion secret keys in ConfigMaps. Whether an actor may start new ingestion or graph work is a GrowthBook decision rather than a values key — see [Feature Flags](./feature-flags.md#knowledge-base-admission-controls).
+- **KB ingestion staging contract is rendered explicitly**: `pnpm run check:kb-ingestion-stg` renders the STG backend and worker ConfigMaps and requires this layer's exact state: the cluster-local ingestion and source-gateway endpoints on the general worker, no ingestion or graph kill-switch key in either ConfigMap, response-processor isolation, and no ingestion secret keys in ConfigMaps. Whether an actor may start new ingestion or graph work is an `ai-beta` GrowthBook decision rather than a values key — see [Feature Flags](./feature-flags.md#knowledge-base-admission-controls).
 
 ### Replica ownership
 
@@ -1525,6 +1525,46 @@ the shared codebase workflow. It runs the same gate for pushes to `v3` and
 `v3*`, and when a pull request is opened, synchronized, or reopened. The gate
 also rejects unsupported autoscaling stanzas in the base, staging, and
 production values files.
+
+### PWA spot burst tier
+
+With `frontendPWA.burst.enabled`, a `-frontend-pwa-burst` Deployment runs on
+`asyncspot` nodes and its HPA owns its replicas; the baseline keeps static
+replicas on regular nodes, and the Service selects both. Each tier has its own
+disruption budget, so a Pod always matches exactly one.
+
+The Klicker Applications use Argo CD's `RespectIgnoreDifferences=true` sync
+option for the burst replica exception. Before applying, Argo merges every
+existing object's live state into the desired manifest, so an in-place change
+to a list-valued field such as a label selector may never apply. A resource
+that stays `OutOfSync` after a successful sync is the symptom. The chart
+therefore gives the baseline PWA budget its own name while the burst tier is
+enabled, and a future selector change needs the same approach.
+
+Import `deploy/dashboards/klicker-pwa-burst.json` into Grafana to watch both
+tiers, the burst HPA, Pending burst Pods, `asyncspot` headroom and the other
+workloads on that pool. Kube-state-metrics exports no node labels, so the
+dashboard selects spot nodes by their `aks-asyncspot-` name prefix.
+
+### PWA spot burst tier
+
+With `frontendPWA.burst.enabled`, a `-frontend-pwa-burst` Deployment runs on
+`asyncspot` nodes and its HPA owns its replicas; the baseline keeps static
+replicas on regular nodes, and the Service selects both. Each tier has its own
+disruption budget, so a Pod always matches exactly one.
+
+The Klicker Applications use Argo CD's `RespectIgnoreDifferences=true` sync
+option for the burst replica exception. Before applying, Argo merges every
+existing object's live state into the desired manifest, so an in-place change
+to a list-valued field such as a label selector may never apply. A resource
+that stays `OutOfSync` after a successful sync is the symptom. The chart
+therefore gives the baseline PWA budget its own name while the burst tier is
+enabled, and a future selector change needs the same approach.
+
+Import `deploy/dashboards/klicker-pwa-burst.json` into Grafana to watch both
+tiers, the burst HPA, Pending burst Pods, `asyncspot` headroom and the other
+workloads on that pool. Kube-state-metrics exports no node labels, so the
+dashboard selects spot nodes by their `aks-asyncspot-` name prefix.
 
 ## Deployment migrations
 

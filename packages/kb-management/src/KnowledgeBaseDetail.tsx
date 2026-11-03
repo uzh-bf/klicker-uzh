@@ -16,10 +16,14 @@ import { getGraphQLErrorCode } from './graphqlError'
 function KnowledgeBaseDetail({
   kbId,
   backLink,
-  showBulkIngestion,
+  advanced = false,
 }: {
   kbId: string
-  showBulkIngestion?: boolean
+  // Advanced mode adds usage and quota figures, resource search and filters,
+  // the bulk ingestion action, the indexed sources and the knowledge graph
+  // panel. The simple page keeps what a lecturer needs to describe the
+  // materials, add them and see that they are ready.
+  advanced?: boolean
   // A banner leading back, for example to the chatbot whose materials are
   // being prepared. The caller owns and validates the target.
   backLink?: { href: string; label: string; message: string }
@@ -145,7 +149,7 @@ function KnowledgeBaseDetail({
           />
         </div>
       ) : null}
-      {metrics ? (
+      {advanced && metrics ? (
         <section
           className="mt-6"
           aria-labelledby="kb-metrics-title"
@@ -233,15 +237,15 @@ function KnowledgeBaseDetail({
         kbId={kbId}
         refreshKey={resourceRefreshKey}
         onMetricsChanged={refreshMetrics}
-        showBulkIngestion={showBulkIngestion}
+        advanced={advanced}
         onAddResource={(trigger) => {
           addResourceTriggerRef.current = trigger
           setAddResourceOpen(true)
         }}
       />
-      <KnowledgeBaseImportedSourceList kbId={kbId} />
+      {advanced ? <KnowledgeBaseImportedSourceList kbId={kbId} /> : null}
       <KnowledgeBaseChatbotBindings kbId={kbId} onChanged={refreshMetrics} />
-      <KnowledgeGraphPanel kbId={kbId} />
+      {advanced ? <KnowledgeGraphPanel kbId={kbId} /> : null}
       {addResourceOpen ? (
         <KnowledgeBaseAddResourceModal
           kbId={kbId}

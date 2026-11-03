@@ -47,10 +47,7 @@ import { createHash, randomUUID } from 'crypto'
 import { GraphQLError } from 'graphql'
 import { validate as validateUuid } from 'uuid'
 import type { Context, ContextWithUser } from '../lib/context.js'
-import {
-  isFeatureFlagEnabled,
-  isFeatureFlagEnabledForAccount,
-} from '../lib/featureFlags.js'
+import { isFeatureFlagEnabled } from '../lib/featureFlags.js'
 import {
   assertManageAiCapability,
   assertManageAiEnabled,
@@ -481,7 +478,7 @@ async function assertKbQuotaAvailable(
  * startup gate.
  */
 async function assertKbIngestionEnabled(ctx: ContextWithUser) {
-  if (!(await isFeatureFlagEnabled(ctx, 'kb-ingestion'))) {
+  if (!(await isFeatureFlagEnabled(ctx, 'ai-beta'))) {
     throw new GraphQLError('KB ingestion is currently disabled', {
       extensions: { code: 'KB_INGESTION_DISABLED' },
     })
@@ -495,7 +492,7 @@ async function assertKbIngestionEnabled(ctx: ContextWithUser) {
  * settling and publishing on the gates it passed.
  */
 async function assertKbGraphGenerationEnabled(ctx: ContextWithUser) {
-  if (!(await isFeatureFlagEnabled(ctx, 'kb-graph-builds'))) {
+  if (!(await isFeatureFlagEnabled(ctx, 'ai-beta'))) {
     throwKbGraphGenerationDisabled()
   }
 }
@@ -1453,10 +1450,7 @@ export async function createKb(
 
   // Scheduled preparation needs the per-KB opt-in, so an owner admitted to it
   // starts enabled instead of having to switch the graph on.
-  const knowledgeGraphEnabled = await isFeatureFlagEnabled(
-    ctx,
-    'kb-auto-graph-preparation'
-  )
+  const knowledgeGraphEnabled = await isFeatureFlagEnabled(ctx, 'ai-beta')
 
   return ctx.prisma.kB.create({
     data: {
@@ -3064,7 +3058,7 @@ async function isKBGraphDomainSelectionAdmitted(
   const catalog = getDefaultKBGraphDomainCatalog()
   return (
     isKBGraphDomainCapabilityEnabled(catalog.revision, process.env) &&
-    (await isFeatureFlagEnabled(ctx, 'kb-graph-domain-selection'))
+    (await isFeatureFlagEnabled(ctx, 'ai-beta'))
   )
 }
 
@@ -3706,7 +3700,7 @@ export type KBQuestionPreparationState =
 
 export interface KBQuestionPreparationInput {
   /**
-   * AI entitlement, `kb-graph-builds`, the per-KB opt-in and the cost
+   * AI entitlement, the per-KB opt-in and the cost
    * configuration all admit a new build for the owner.
    */
   buildAdmitted: boolean
@@ -3832,7 +3826,7 @@ export type KBGraphSystemOwner = DB.Prisma.UserGetPayload<{
 export interface KBGraphSystemOwnerAdmission {
   /** The owner's AI entitlement; anything but enabled refuses the build. */
   capability: ManageAiCapabilityState
-  /** `kb-auto-graph-preparation` and `kb-graph-builds` both admit the owner. */
+  /** The owner's AI entitlement admits system-triggered graph builds. */
   graphBuildsAdmitted: boolean
   /** A build for this owner could freeze an explicit domain selection. */
   domainCapabilityEnabled: boolean
@@ -3841,8 +3835,9 @@ export interface KBGraphSystemOwnerAdmission {
 /**
  * Admission of a KB owner to system-triggered graph builds. The system
  * trigger enforces it before every build; the scheduler evaluates it once per
- * owner and sweep to skip refused owners without touching their KBs. Rollout
- * flags are only consulted for an entitled owner.
+ * owner and sweep to skip refused owners without touching their KBs. The
+ * entitlement already covers the `ai-beta` rollout, so nothing else is
+ * consulted.
  */
 export function evaluateKBGraphSystemOwner(
   featureFlags: KBGraphBuildServiceContext['featureFlags'],
@@ -3859,20 +3854,11 @@ export function evaluateKBGraphSystemOwner(
   const catalog = getDefaultKBGraphDomainCatalog()
   return {
     capability,
-    graphBuildsAdmitted:
-      isFeatureFlagEnabledForAccount(
-        featureFlags,
-        owner,
-        'kb-auto-graph-preparation'
-      ) &&
-      isFeatureFlagEnabledForAccount(featureFlags, owner, 'kb-graph-builds'),
-    domainCapabilityEnabled:
-      isKBGraphDomainCapabilityEnabled(catalog.revision, process.env) &&
-      isFeatureFlagEnabledForAccount(
-        featureFlags,
-        owner,
-        'kb-graph-domain-selection'
-      ),
+    graphBuildsAdmitted: true,
+    domainCapabilityEnabled: isKBGraphDomainCapabilityEnabled(
+      catalog.revision,
+      process.env
+    ),
   }
 }
 
@@ -3885,7 +3871,7 @@ type KBGraphBuildAdmission = {
 
 /**
  * Admission decided before the KB lock is taken, so no lock is held across a
- * feature-flag lookup: AI entitlement, then `kb-graph-builds`, then the
+ * feature-flag lookup: AI entitlement, then `ai-beta`, then the
  * domain-selection capability and focus the build may use.
  */
 async function admitKBGraphBuildTrigger(
@@ -3949,7 +3935,7 @@ export type KBGraphBuildStart = {
 
 /**
  * Starts a graph build for one KB. Admission order: AI entitlement,
- * `kb-graph-builds`, the per-KB opt-in, serving course-content sources, the
+ * `ai-beta`, the per-KB opt-in, serving course-content sources, the
  * cost configuration and quota reservation, then a compare-and-swap on the
  * KB's single build slot. A system trigger additionally refuses a KB whose
  * stored subject and language do not resolve to an explicit selection, and
