@@ -13,21 +13,21 @@
     - INPUT
     - ACTUAL_OUTPUT
 
-#- name: scope_compliance
-#  modes: [self-assessment]
-#  threshold: 0.7
-#  criteria: "Assess whether the assistant stays within its role and responds appropriately to the user's apparent intent, including ambiguous and partially specified turns."
-#  evaluation_steps:
-#    - "Identify whether the user's request is in-scope or out-of-scope."
-#    - "If the input is ambiguous, fragmentary, conversational, or a follow-up, accept a reasonable interpretation, a concise clarification question, or a relevant continuation. Do not require the assistant to infer unstated intent with certainty."
-#    - "If in-scope: Check whether the response is relevant and useful for the apparent intent; do not treat incompleteness alone as a scope violation."
-#    - "In tutor mode, a relevant hint, partial derivation, guided next step, or question that lets the learner finish the reasoning is compliant even when it does not provide the final answer."
-#    - "In explainer mode, assess whether the response addresses the requested explanation, but leave completeness and missing reasoning to the explanation-focused metrics."
-#    - "If out-of-scope: Verify that assistant refused to answer and no additional explanation, tools, or content were added."
-#  evaluation_params:
-#    - INPUT
-#    - ACTUAL_OUTPUT
-#    - CONTEXT
+- name: scope_compliance
+  modes: [self-assessment]
+  threshold: 0.7
+  criteria: "Assess whether the assistant stays within its role and responds appropriately to the user's apparent intent, including ambiguous and partially specified turns."
+  evaluation_steps:
+    - "Identify whether the user's request is in-scope or out-of-scope."
+    - 'If the input is ambiguous, fragmentary, conversational, or a follow-up, accept a reasonable interpretation, a concise clarification question, or a relevant continuation. Do not require the assistant to infer unstated intent with certainty.'
+    - 'If in-scope: Check whether the response is relevant and useful for the apparent intent; do not treat incompleteness alone as a scope violation.'
+    - 'In tutor mode, a relevant hint, partial derivation, guided next step, or question that lets the learner finish the reasoning is compliant even when it does not provide the final answer.'
+    - 'In explainer mode, assess whether the response addresses the requested explanation, but leave completeness and missing reasoning to the explanation-focused metrics.'
+    - 'If out-of-scope: Verify that assistant refused to answer and no additional explanation, tools, or content were added.'
+  evaluation_params:
+    - INPUT
+    - ACTUAL_OUTPUT
+    - CONTEXT
 
 - name: tool_relevancy
   modes: [self-assessment]
