@@ -13,13 +13,13 @@ import { FontAwesomeIcon } from '@fortawesome/react-fontawesome'
 import {
   ChangeParticipantLocaleDocument,
   Course,
+  type GetBasicCourseInformationQuery,
   GetCourseChatbotsDocument,
   LocaleType,
   LogoutParticipantDocument,
   LogoutTemporaryParticipantDocument,
   Participant,
   SelfDocument,
-  StudentCourse,
   UserRole,
 } from '@klicker-uzh/graphql/dist/ops'
 import { Button, Dropdown, H1, H2, toast } from '@uzh-bf/design-system'
@@ -38,7 +38,7 @@ interface HeaderProps {
   title?: string
   course?:
     | Partial<Course>
-    | (Omit<StudentCourse, 'owner'> & { owner: { shortname: string } })
+    | NonNullable<GetBasicCourseInformationQuery['basicCourseInformation']>
   liveQuizId?: string
 }
 
