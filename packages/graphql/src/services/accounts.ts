@@ -221,13 +221,29 @@ const TIME_WINDOW = 60 * 60 * 1000 // 1 hour in milliseconds
 
 interface SendMagicLinkArgs {
   usernameOrEmail: string
+  redirectTo?: string | null
 }
 
 export async function sendMagicLink(
-  { usernameOrEmail }: SendMagicLinkArgs,
+  { usernameOrEmail, redirectTo }: SendMagicLinkArgs,
   ctx: Context
 ) {
   const trimmedUsernameOrEmail = usernameOrEmail.trim()
+
+  // A return target (e.g. a course join page) is only carried through the
+  // emailed link when it is a same-origin relative path; anything else is
+  // dropped so the link can never become an open redirect.
+  let safeRedirectSuffix = ''
+  if (
+    redirectTo &&
+    redirectTo.startsWith('/') &&
+    !redirectTo.startsWith('//') &&
+    !redirectTo.includes('\\') &&
+    !redirectTo.includes('://') &&
+    !/[\u0000-\u0020\u007f]/.test(redirectTo)
+  ) {
+    safeRedirectSuffix = `&redirect_to=${encodeURIComponent(redirectTo)}`
+  }
 
   const currentTime = Date.now()
 
@@ -282,7 +298,7 @@ export async function sendMagicLink(
     }
   )
 
-  const magicLink = `${process.env.APP_ORIGIN_PWA}/magicLogin?token=${magicLinkJWT}`
+  const magicLink = `${process.env.APP_ORIGIN_PWA}/magicLogin?token=${magicLinkJWT}${safeRedirectSuffix}`
 
   const emailHtml = await EmailService.hydrateTemplate(
     {
@@ -552,7 +568,7 @@ export async function deleteParticipantAccount(ctx: ContextWithUser) {
   })
 
   // if a participant group is empty after the participant leaves it, delete the group as well
-  let deletionPromises: any[] = []
+  const deletionPromises: any[] = []
   for (const group of participant.participantGroups) {
     if (group.participants.length === 1) {
       deletionPromises.push(
@@ -633,6 +649,20 @@ async function resolveOrCreateParticipantForLti(
 
     const ensureParticipation = async (participantId: string) => {
       if (courseId) {
+        // Courses pending deletion must not acquire new participation, even
+        // though their rows still resolve until deletion completes.
+        const course = await prisma.course.findUnique({
+          where: { id: courseId },
+          select: { isAssessmentEnabled: true, deletionRequestedAt: true },
+        })
+
+        if (!isCourseJoinable(course)) {
+          console.warn(
+            `event=lti_participation_skipped_ineligible_course courseId=${courseId}`
+          )
+          return
+        }
+
         await prisma.participation.upsert({
           where: {
             courseId_participantId: { courseId, participantId },
@@ -842,12 +872,13 @@ export async function createParticipantAccount(
 ) {
   const initialDataUse = validateInitialParticipantDataUse(dataUse)
   // verify that the course that should be joined is not an assessment course
+  // and is not marked for deletion
   if (courseId) {
     const course = await ctx.prisma.course.findUnique({
       where: { id: courseId },
     })
 
-    if (!course || course.isAssessmentEnabled) {
+    if (!isCourseJoinable(course)) {
       return null
     }
   }
@@ -920,23 +951,6 @@ export async function createParticipantAccount(
         },
       })
 
-      // if a courseId is specified, add a participation in the corresponding course
-      if (courseId) {
-        await prisma.participation.upsert({
-          where: {
-            courseId_participantId: {
-              courseId,
-              participantId: participant.id,
-            },
-          },
-          create: {
-            course: { connect: { id: courseId } },
-            participant: { connect: { id: participant.id } },
-          },
-          update: {},
-        })
-      }
-
       return participant
     })
 
@@ -1001,17 +1015,30 @@ interface LoginParticipantWithLtiArgs {
   courseId?: string | null
 }
 
+function isCourseJoinable(
+  course: {
+    isAssessmentEnabled: boolean
+    deletionRequestedAt: Date | null
+  } | null
+): course is {
+  isAssessmentEnabled: boolean
+  deletionRequestedAt: null
+} & Record<string, unknown> {
+  return !!course && !course.isAssessmentEnabled && !course.deletionRequestedAt
+}
+
 export async function loginParticipantWithLti(
   { signedLtiData, courseId }: LoginParticipantWithLtiArgs,
   ctx: Context
 ) {
   // verify that the course that should be joined is not an assessment course
+  // and is not marked for deletion
   if (courseId) {
     const course = await ctx.prisma.course.findUnique({
       where: { id: courseId },
     })
 
-    if (!course || course.isAssessmentEnabled) {
+    if (!isCourseJoinable(course)) {
       return null
     }
   }

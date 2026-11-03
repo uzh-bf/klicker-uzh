@@ -2,6 +2,10 @@
   "version": 1,
   "groups": [
     {
+      "profile": "pwa",
+      "specs": ["Z-course-lti-enrollment.spec.ts"]
+    },
+    {
       "profile": "manage,pwa",
       "specs": [
         "0-baseline-ops.spec.ts",

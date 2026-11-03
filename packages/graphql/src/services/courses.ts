@@ -110,20 +110,22 @@ export async function joinCourseLeaderboard(
 
   if (!course) return null
 
-  // upsert or activate participation in the course
-  const participation = await ctx.prisma.participation.upsert({
+  const existingParticipation = await ctx.prisma.participation.findUnique({
     where: {
       courseId_participantId: {
         courseId,
         participantId: ctx.user.sub,
       },
     },
-    create: {
-      isActive: true,
-      course: { connect: { id: courseId } },
-      participant: { connect: { id: ctx.user.sub } },
-    },
-    update: { isActive: true },
+    select: { id: true },
+  })
+
+  if (!existingParticipation) return null
+
+  // Leaderboard opt-in changes an existing membership; enrollment happens separately.
+  const participation = await ctx.prisma.participation.update({
+    where: { id: existingParticipation.id },
+    data: { isActive: true },
   })
 
   if (!participation) return null
