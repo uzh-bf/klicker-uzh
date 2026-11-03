@@ -378,3 +378,28 @@ out of this file.
     the same request and target. Whether to raise the burst request, the
     target or `maxReplicas` before production enablement is a separate
     decision; nothing here changes the production render.
+- 2026-11-03 E4 preparation (read-only, no cluster writes):
+  - P8 second half pass: the staging render at `56be8acc75` with
+    `frontendPWA.burst.enabled=false` drops the burst Deployment, HPA and
+    PDB and returns the baseline PDB to `-frontend-pwa` without the tier
+    exclusion; nothing else changes. `app-klicker` syncs with
+    `prune: true`, so Argo removes the three objects.
+  - Drain target: the burst Pod's `asyncspot` node runs no other workload
+    Pods. The pool also hosts document processing, web scraping, e-learning
+    and two LibreChat instances; all their ScaledObjects were inactive. The
+    15-minute pool cordon (E4.4) would hold any of their scale-ups Pending.
+  - The baseline node had about 1.1 cores free, enough for the single
+    baseline Pod to carry the plateau alone in E4.4 (about 0.5–0.6 cores
+    expected from E3).
+  - Design: one k6 run through the ingress with a 40-minute plateau. Under
+    the plateau, in order: E4.1 drain the burst node; E4.3 scale the
+    baseline up to 2 and watch Argo revert it (never down, since one replica
+    already misses `minAvailable: 2`); E4.4 cordon all `asyncspot` nodes,
+    delete the burst Pods and hold at most 15 minutes, then uncordon. E4.2
+    follows with `START_RATE=1`, because the run 3 cool-down at 2 iterations
+    per second held 4 replicas and terminated no Pod under load.
+  - E4.5 waits for the next ordinary staging promotion or the X1
+    `RollingUpdate` override; it is not forced.
+  - Recovery checklist: uncordon every `asyncspot` node and confirm none is
+    `SchedulingDisabled`; Argo `Synced` and `Healthy`; baseline back to 1;
+    burst HPA back to 1; k6 Pod and both ConfigMaps deleted.
