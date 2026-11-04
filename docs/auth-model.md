@@ -58,9 +58,9 @@ kubectl -n <namespace> logs -l app.kubernetes.io/component=lti -c lti \
   rg 'lti_request_failed|lti_provider_error'
 ```
 
-For `INVALID_STATE`, an explicit fetch-site value other than `same-origin` is rejected before recovered-state verification; a missing header is permitted. With `same-origin` or a missing header, an empty recovered state points to failed browser recovery. A non-empty state still requires verification. These fields describe what reached the server, rather than proving a browser-storage policy caused it. A browser failure before the callback reaches the service still requires browser-console evidence.
+For `INVALID_STATE`, an explicit fetch-site value other than `same-origin` is rejected before recovered-state verification; a missing header is permitted. With `same-origin` or a missing header, an empty recovered state points to failed browser recovery, including a duplicate callback after the first recovery page removed the stored value. A non-empty state still requires verification and can fail because the recovery token or state JWT is invalid or expired. These fields describe what reached the server, rather than proving a browser-storage policy caused it. A browser failure before the callback reaches the service still requires browser-console evidence.
 
-The new records contain no token or state values, hashes, cookies, authorization headers, full URLs, user identifiers, IP addresses, or raw browser information. They use the existing operational log destination, access controls, and retention.
+The new records contain no token or state values, hashes, cookies, authorization headers, full URLs, user identifiers, IP addresses, or raw browser information. Raw ltijs error messages are deliberately suppressed even when `DEBUG` is enabled, because they may contain authentication material or upstream payloads. An `UNCLASSIFIED_ERROR` therefore needs a controlled reproduction to investigate further. Debug and warning messages retain their existing gating. These records use the existing operational log destination, access controls, and retention.
 
 ### LTI chatbot entry
 
