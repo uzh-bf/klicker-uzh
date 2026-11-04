@@ -13,7 +13,11 @@ test('failed requests produce bounded diagnostics without DEBUG or HTTP changes'
     else process.env.DEBUG = previousDebug
   })
   const records = []
-  t.mock.method(console, 'error', (line) => records.push(JSON.parse(line)))
+  const consoleCalls = []
+  t.mock.method(console, 'error', (...args) => {
+    consoleCalls.push(args)
+    records.push(JSON.parse(args[0]))
+  })
   const logging = createRequestLogging()
   const handler = new ExpressHttpHandler(logging.logger, {
     port: 0,
@@ -210,5 +214,12 @@ test('failed requests produce bounded diagnostics without DEBUG or HTTP changes'
   assert.equal(records.at(-1).errorCode, 'UNCLASSIFIED_ERROR')
   assert.equal(records.at(-1).component, 'http_handler')
   assert.equal(records.length, 8)
-  assert.equal(JSON.stringify(records).includes('SYNTHETIC_PRIVATE'), false)
+  for (const args of consoleCalls) {
+    assert.equal(args.length, 1)
+    assert.equal(typeof args[0], 'string')
+  }
+  assert.equal(
+    JSON.stringify(consoleCalls).includes('SYNTHETIC_PRIVATE'),
+    false
+  )
 })
