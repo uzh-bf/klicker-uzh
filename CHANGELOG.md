@@ -2,6 +2,18 @@
 
 All notable changes to this project will be documented in this file. See [standard-version](https://github.com/conventional-changelog/standard-version) for commit guidelines.
 
+## [3.4.0-alpha.91](https://github.com/uzh-bf/klicker-uzh/compare/v3.4.0-alpha.90...v3.4.0-alpha.91) (2026-11-04)
+
+
+### Bug Fixes
+
+* **auth:** allow control frontend as lecturer redirect target ([#6813](https://github.com/uzh-bf/klicker-uzh/issues/6813)) ([d1e0438](https://github.com/uzh-bf/klicker-uzh/commit/d1e04387f5883e101fd94d298b903ca04190fa2c))
+
+
+### Enhancements
+
+* **ai:** open the assistant to Catalyst and AI features to UZH lecturers ([#6812](https://github.com/uzh-bf/klicker-uzh/issues/6812)) ([bb832af](https://github.com/uzh-bf/klicker-uzh/commit/bb832af19785722cda2b08421a12c015f5162170))
+
 ## [3.4.0-alpha.90](https://github.com/uzh-bf/klicker-uzh/compare/v3.4.0-alpha.89...v3.4.0-alpha.90) (2026-11-02)
 
 
