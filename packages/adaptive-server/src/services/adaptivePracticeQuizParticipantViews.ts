@@ -1,8 +1,3 @@
-import {
-  classificationIntervalWithinLevelBand,
-  isNearLevelBoundary,
-  levelMasteryOf,
-} from '@klicker-uzh/adaptive-contract'
 import * as DB from '@klicker-uzh/prisma/client'
 import { adaptivePracticeQuizError } from './adaptivePracticeQuizErrors.js'
 import { getEffectivelyEnabledRuntimeNodes } from './adaptivePracticeQuizEstimatePersistence.js'
@@ -21,9 +16,7 @@ import {
 } from './adaptivePracticeQuizRoughEstimate.js'
 import {
   type AdaptiveParticipantElement,
-  type AdaptiveRuntimeLevel,
   type AdaptiveRuntimeNode,
-  type AdaptiveRuntimeSettings,
   MIN_REPORTING_RESPONSES,
   normalizeRuntimeEstimateForChart,
   serializeAdaptiveParticipantElement,
@@ -38,6 +31,11 @@ import {
   withAttemptTestingEstimates,
 } from './adaptivePracticeQuizTestingAttemptView.js'
 import type { AdaptiveTestingHistory } from './adaptivePracticeQuizTestingInfo.js'
+import {
+  NO_MASTERY,
+  serializeEstimateView,
+  serializeMasteryView,
+} from './adaptivePracticeQuizV1EstimateView.js'
 import {
   normalizeV2Position,
   serializeV2EstimateView,
@@ -100,8 +98,6 @@ export type AdaptiveResultTrajectoryPoint = {
   upperPosition: number
   levelLabel: string | null
 }
-
-const NO_MASTERY = { mastered: null, nextLevelLabel: null } as const
 
 export type AdaptiveStudentResultNode = {
   id: number
@@ -300,37 +296,18 @@ function serializeAdaptiveStudentResultCore(
       )
     ),
   })
-  // Annotates a reported level; the level itself is unchanged.
-  const orderedLevels = runtime.algorithm.levels
-    .slice()
-    .sort((a, b) => a.order - b.order)
-  const masteryView = (
-    estimate: (typeof attempt.estimates)[number] | undefined
-  ) => {
-    const level =
-      estimate?.levelId != null ? levelsById.get(estimate.levelId) : undefined
-    if (!level || estimate?.theta == null) return NO_MASTERY
-    const mastery = levelMasteryOf({
-      theta: estimate.theta,
-      levels: runtime.algorithm.levels,
-      range: settings.thetaRange,
-      mappingRule: settings.levelMappingRule,
-      masteryFrom: runtime.masteryFrom,
-    })
-    return {
-      // Only for the band of the reported level, so it never contradicts it.
-      mastered: mastery?.order === level.order ? mastery.mastered : null,
-      nextLevelLabel:
-        orderedLevels[orderedLevels.indexOf(level) + 1]?.label ?? null,
-    }
-  }
   const reportedView = (
     nodeId: number | null,
     estimate: (typeof attempt.estimates)[number] | undefined
   ) => {
     const view = {
       ...serializeEstimateView({ estimate, levelsById, settings }),
-      ...masteryView(estimate),
+      ...serializeMasteryView({
+        estimate,
+        levelsById,
+        settings,
+        masteryFrom: runtime.masteryFrom,
+      }),
     }
     return view.levelLabel !== null &&
       estimate &&
@@ -662,66 +639,4 @@ function legacyClassification(
   return stopReason === DB.AdaptivePracticeQuizStopReason.POOL_EXHAUSTED
     ? DB.AdaptiveResultStatus.POOL_LIMITED
     : DB.AdaptiveResultStatus.INSUFFICIENT_EVIDENCE
-}
-
-function serializeEstimateView({
-  estimate,
-  levelsById,
-  settings,
-}: {
-  estimate:
-    | Pick<
-        DB.AdaptivePracticeQuizEstimate,
-        'theta' | 'standardError' | 'responseCount' | 'levelId'
-      >
-    | undefined
-  levelsById: Map<number, AdaptiveRuntimeLevel>
-  settings: AdaptiveRuntimeSettings
-}) {
-  if (
-    !estimate ||
-    estimate.responseCount < MIN_REPORTING_RESPONSES ||
-    estimate.theta === null ||
-    estimate.standardError === null ||
-    estimate.levelId === null
-  ) {
-    return {
-      levelLabel: null,
-      confidence: 'INSUFFICIENT_DATA' as const,
-      nearBoundary: false,
-      position: null,
-      lowerPosition: null,
-      upperPosition: null,
-    }
-  }
-  const level = levelsById.get(estimate.levelId)
-  const normalized = normalizeRuntimeEstimateForChart({ estimate, settings })!
-  const classified = classificationIntervalWithinLevelBand({
-    theta: estimate.theta,
-    standardError: estimate.standardError,
-    levels: [...levelsById.values()],
-    range: settings.thetaRange,
-    mappingRule: settings.levelMappingRule,
-    reachedFrom: settings.levelReachedFrom ?? 0,
-    z: settings.classificationZ,
-    toleranceBands: settings.classificationToleranceBands ?? 0,
-  })
-  const nearBoundary = isNearLevelBoundary({
-    theta: estimate.theta,
-    levels: [...levelsById.values()],
-    range: settings.thetaRange,
-    mappingRule: settings.levelMappingRule,
-    reachedFrom: settings.levelReachedFrom ?? 0,
-    margin: settings.classificationZ * estimate.standardError,
-  })
-  return {
-    levelLabel: level?.label ?? null,
-    confidence: classified
-      ? ('HIGH' as const)
-      : nearBoundary
-        ? ('LOW' as const)
-        : ('MODERATE' as const),
-    nearBoundary,
-    ...normalized,
-  }
 }
