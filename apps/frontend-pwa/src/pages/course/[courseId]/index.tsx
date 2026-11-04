@@ -1,4 +1,11 @@
 import { useBackgroundQuery, useMutation, useQuery } from '@apollo/client'
+import SuspendedGroupView from '@components/course/SuspendedGroupView'
+import SuspendedAssessmentResults from '@components/insights/assessmentResults/SuspendedAssessmentResults'
+import Layout from '@components/Layout'
+import GroupCreationActions from '@components/participant/groups/GroupCreationActions'
+import LeaveLeaderboardModal from '@components/participant/LeaveLeaderboardModal'
+import ParticipantProfileModal from '@components/participant/ParticipantProfileModal'
+import StudyStreakCard from '@components/participant/StudyStreakCard'
 import { faLock } from '@fortawesome/free-solid-svg-icons'
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome'
 import {
@@ -9,10 +16,10 @@ import {
   LeaveCourseLeaderboardDocument,
 } from '@klicker-uzh/graphql/dist/ops'
 import { Markdown } from '@klicker-uzh/markdown'
+import DynamicMarkdown from '@klicker-uzh/shared-components/src/evaluation/DynamicMarkdown'
 import Leaderboard from '@klicker-uzh/shared-components/src/Leaderboard'
 import Loader from '@klicker-uzh/shared-components/src/Loader'
 import { Podium } from '@klicker-uzh/shared-components/src/Podium'
-import DynamicMarkdown from '@klicker-uzh/shared-components/src/evaluation/DynamicMarkdown'
 import { addApolloState, initializeApollo } from '@lib/apollo'
 import getParticipantToken from '@lib/getParticipantToken'
 import useParticipantToken from '@lib/useParticipantToken'
@@ -27,21 +34,15 @@ import {
   UserNotification,
 } from '@uzh-bf/design-system'
 import dayjs from 'dayjs'
-import { GetServerSidePropsContext } from 'next'
-import { useTranslations } from 'next-intl'
+import type { GetServerSidePropsContext } from 'next'
 import { useRouter } from 'next/router'
+import { useTranslations } from 'next-intl'
 import nookies from 'nookies'
 import Rank1Img from 'public/rank1.svg'
 import Rank2Img from 'public/rank2.svg'
 import Rank3Img from 'public/rank3.svg'
 import { Suspense, useEffect, useState } from 'react'
 import { twMerge } from 'tailwind-merge'
-import Layout from '../../../components/Layout'
-import SuspendedGroupView from '../../../components/course/SuspendedGroupView'
-import SuspendedAssessmentResults from '../../../components/insights/assessmentResults/SuspendedAssessmentResults'
-import LeaveLeaderboardModal from '../../../components/participant/LeaveLeaderboardModal'
-import ParticipantProfileModal from '../../../components/participant/ParticipantProfileModal'
-import GroupCreationActions from '../../../components/participant/groups/GroupCreationActions'
 
 interface Props {
   courseId: string
@@ -308,8 +309,33 @@ function CourseOverview({
                   value="global"
                   className={{ root: 'md:px-4' }}
                 >
-                  <div className="flex flex-col gap-6 overflow-x-auto md:flex-row">
-                    <div className="flex w-full flex-col justify-between gap-6 md:w-1/2">
+                  {participation?.isActive && (
+                    <div className="mb-6">
+                      <StudyStreakCard
+                        current={participation.studyStreakCurrent ?? 0}
+                        longest={participation.studyStreakLongest ?? 0}
+                        freezeBalance={
+                          participation.studyStreakFreezeBalance ?? 0
+                        }
+                        qualifiedToday={
+                          participation.studyStreakQualifiedToday ?? false
+                        }
+                        responsesRemainingToday={
+                          participation.studyStreakResponsesRemainingToday
+                        }
+                      />
+                    </div>
+                  )}
+
+                  <div
+                    className={twMerge(
+                      'grid gap-6',
+                      course.isGroupCreationEnabled
+                        ? 'md:grid-cols-2'
+                        : 'md:grid-cols-1'
+                    )}
+                  >
+                    <div className="flex min-w-0 w-full flex-col justify-between gap-6">
                       <div>
                         <div className="flex w-full flex-col justify-between md:flex-row">
                           <H3
@@ -389,7 +415,6 @@ function CourseOverview({
                                   rank2: Rank2Img,
                                   rank3: Rank3Img,
                                 }}
-                                topKOnly={10}
                               />
                             )}
                             {participant?.id && !participation?.isActive && (
@@ -457,7 +482,7 @@ function CourseOverview({
                     </div>
 
                     {course.isGroupCreationEnabled && (
-                      <div className="flex w-full flex-1 flex-col justify-between gap-8 md:w-1/2">
+                      <div className="flex min-w-0 w-full flex-1 flex-col justify-between gap-8">
                         <H3 className={{ root: 'mb-4' }}>
                           {t('pwa.courses.groupLeaderboard')}
                         </H3>

@@ -39,7 +39,9 @@ function ProfileData({
   const remainingAchievements = useMemo(
     () =>
       possibleAchievements?.filter(
-        (a) => !achievements?.some((b) => b.achievement.id === a.id)
+        (a) =>
+          a.isDiscoverable &&
+          !achievements?.some((b) => b.achievement.id === a.id)
       ),
     [achievements, possibleAchievements]
   )
@@ -117,8 +119,8 @@ function ProfileData({
             {((!isSelf && (!achievements || achievements.length === 0)) ||
               (isSelf &&
                 (!achievements || achievements.length === 0) &&
-                (!possibleAchievements ||
-                  possibleAchievements.length === 0))) && (
+                (!remainingAchievements ||
+                  remainingAchievements.length === 0))) && (
               <div>{t('pwa.achievements.noAchievements')}</div>
             )}
           </div>
@@ -127,6 +129,7 @@ function ProfileData({
               <ReceivedAchievementTile
                 key={achievement.id}
                 instance={achievement}
+                isSelf={isSelf}
               />
             ))}
             {isSelf &&
