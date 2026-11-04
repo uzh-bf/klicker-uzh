@@ -8,6 +8,7 @@ import { Button, H3, UserNotification } from '@uzh-bf/design-system'
 import { useFormatter, useTranslations } from 'next-intl'
 import { useEffect, useRef } from 'react'
 import AdaptiveCompetenceProfile from './AdaptiveCompetenceProfile'
+import AdaptiveMasteryNote from './AdaptiveMasteryNote'
 import AdaptiveTestingHistory from './AdaptiveTestingHistory'
 import { getAdaptiveReportedLevelLabel } from './adaptiveReportedLevel'
 import {
@@ -218,6 +219,18 @@ function AdaptivePracticeQuizResult({
             >
               {resultLabel}
             </div>
+            {!placementPilot &&
+              result.classification ===
+                AdaptivePracticeQuizResultClassification.Classified &&
+              result.levelLabel &&
+              typeof result.mastered === 'boolean' && (
+                <AdaptiveMasteryNote
+                  mastered={result.mastered}
+                  levelLabel={result.levelLabel}
+                  nextLevelLabel={result.nextLevelLabel}
+                  className="mt-2 text-sm"
+                />
+              )}
             {!researchOnly && !placementPilot && (
               <p
                 className="mt-2 max-w-2xl text-sm text-slate-700"
@@ -311,6 +324,8 @@ function AdaptivePracticeQuizResult({
               position: result.position,
               lowerPosition: result.lowerPosition,
               upperPosition: result.upperPosition,
+              mastered: result.mastered,
+              nextLevelLabel: result.nextLevelLabel,
             }}
             levelBands={result.levelBands}
             nodes={result.competenceProfile}

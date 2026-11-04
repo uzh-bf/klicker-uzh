@@ -26,6 +26,9 @@ query QAdaptivePracticeQuizResultWithPlacementPilot($attemptId: String!) {
       hasElements
     }
     classificationToleranceBands
+    masteryFrom
+    mastered
+    nextLevelLabel
     competenceProfile {
       ...FAdaptivePracticeQuizResultNodeLevel1
     }

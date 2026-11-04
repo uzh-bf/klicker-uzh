@@ -1,7 +1,3 @@
-import {
-  classificationIntervalWithinLevelBand,
-  isNearLevelBoundary,
-} from '@klicker-uzh/adaptive-contract'
 import * as DB from '@klicker-uzh/prisma/client'
 import { adaptivePracticeQuizError } from './adaptivePracticeQuizErrors.js'
 import { getEffectivelyEnabledRuntimeNodes } from './adaptivePracticeQuizEstimatePersistence.js'
@@ -20,9 +16,7 @@ import {
 } from './adaptivePracticeQuizRoughEstimate.js'
 import {
   type AdaptiveParticipantElement,
-  type AdaptiveRuntimeLevel,
   type AdaptiveRuntimeNode,
-  type AdaptiveRuntimeSettings,
   MIN_REPORTING_RESPONSES,
   normalizeRuntimeEstimateForChart,
   serializeAdaptiveParticipantElement,
@@ -37,6 +31,11 @@ import {
   withAttemptTestingEstimates,
 } from './adaptivePracticeQuizTestingAttemptView.js'
 import type { AdaptiveTestingHistory } from './adaptivePracticeQuizTestingInfo.js'
+import {
+  NO_MASTERY,
+  serializeEstimateView,
+  serializeMasteryView,
+} from './adaptivePracticeQuizV1EstimateView.js'
 import {
   normalizeV2Position,
   serializeV2EstimateView,
@@ -123,6 +122,12 @@ export type AdaptiveStudentResultNode = {
   coverageStatus: DB.AdaptiveLeafCoverageStatus | null
   // Competences only: share of this competence in the overall level.
   weightShare: number | null
+  // Mastery indication of the reported level (`levelMasteryOf`): true from
+  // the quiz's mastery mark of the level band on; null without a reported
+  // level, with the indicator off, or for IRT v2.
+  mastered: boolean | null
+  // The level after the reported one ("ready for"), null at the top.
+  nextLevelLabel: string | null
   children: AdaptiveStudentResultNode[]
 }
 
@@ -147,6 +152,10 @@ export type AdaptiveStudentResult = {
   levelBands: AdaptiveResultLevelBand[]
   // IRT_V1 classification tolerance in level bands (0 = exact level).
   classificationToleranceBands: number
+  // Share of a level band from which it counts as mastered; 0 = no indicator.
+  masteryFrom: number
+  mastered: boolean | null
+  nextLevelLabel: string | null
   trajectory: AdaptiveResultTrajectoryPoint[]
   competenceProfile: AdaptiveStudentResultNode[]
   // Debug-only answer history; null unless ADAPTIVE_QUIZ_SHOW_SOLUTIONS=true.
@@ -291,7 +300,15 @@ function serializeAdaptiveStudentResultCore(
     nodeId: number | null,
     estimate: (typeof attempt.estimates)[number] | undefined
   ) => {
-    const view = serializeEstimateView({ estimate, levelsById, settings })
+    const view = {
+      ...serializeEstimateView({ estimate, levelsById, settings }),
+      ...serializeMasteryView({
+        estimate,
+        levelsById,
+        settings,
+        masteryFrom: runtime.masteryFrom,
+      }),
+    }
     return view.levelLabel !== null &&
       estimate &&
       determination.isDetermined(nodeId, {
@@ -300,7 +317,7 @@ function serializeAdaptiveStudentResultCore(
         stopReason: estimate.stopReason,
       })
       ? view
-      : { ...view, levelLabel: null }
+      : { ...view, levelLabel: null, ...NO_MASTERY }
   }
   const overallView = reportedView(null, overall)
   const childrenByParent = new Map<number | null, AdaptiveRuntimeNode[]>()
@@ -323,6 +340,7 @@ function serializeAdaptiveStudentResultCore(
             levels: runtime.algorithm.levels,
             range: settings.thetaRange,
             mappingRule: settings.levelMappingRule,
+            reachedFrom: settings.levelReachedFrom ?? 0,
             z: settings.classificationZ,
           })
         : null
@@ -411,6 +429,7 @@ function serializeAdaptiveStudentResultCore(
     leadingLevelLabels: [],
     classificationProbability: null,
     ...overallView,
+    masteryFrom: runtime.masteryFrom,
     levelBands: withLevelBandElements(
       serializeLevelBands(
         runtime.algorithm.levels,
@@ -498,6 +517,8 @@ function serializeAdaptiveV2StudentResult(
     }
     const view = serializeV2EstimateView({ estimate, levels, runtime })
     return {
+      // IRT v2 has no mastery mark.
+      ...NO_MASTERY,
       id: node.id,
       name,
       kind: node.kind,
@@ -567,6 +588,8 @@ function serializeAdaptiveV2StudentResult(
   }
 
   return {
+    ...NO_MASTERY,
+    masteryFrom: 0,
     isPlacementPilot:
       runtime.publication.preset === DB.AdaptivePracticeQuizPreset.PLACEMENT,
     attemptId: attempt.id,
@@ -616,64 +639,4 @@ function legacyClassification(
   return stopReason === DB.AdaptivePracticeQuizStopReason.POOL_EXHAUSTED
     ? DB.AdaptiveResultStatus.POOL_LIMITED
     : DB.AdaptiveResultStatus.INSUFFICIENT_EVIDENCE
-}
-
-function serializeEstimateView({
-  estimate,
-  levelsById,
-  settings,
-}: {
-  estimate:
-    | Pick<
-        DB.AdaptivePracticeQuizEstimate,
-        'theta' | 'standardError' | 'responseCount' | 'levelId'
-      >
-    | undefined
-  levelsById: Map<number, AdaptiveRuntimeLevel>
-  settings: AdaptiveRuntimeSettings
-}) {
-  if (
-    !estimate ||
-    estimate.responseCount < MIN_REPORTING_RESPONSES ||
-    estimate.theta === null ||
-    estimate.standardError === null ||
-    estimate.levelId === null
-  ) {
-    return {
-      levelLabel: null,
-      confidence: 'INSUFFICIENT_DATA' as const,
-      nearBoundary: false,
-      position: null,
-      lowerPosition: null,
-      upperPosition: null,
-    }
-  }
-  const level = levelsById.get(estimate.levelId)
-  const normalized = normalizeRuntimeEstimateForChart({ estimate, settings })!
-  const classified = classificationIntervalWithinLevelBand({
-    theta: estimate.theta,
-    standardError: estimate.standardError,
-    levels: [...levelsById.values()],
-    range: settings.thetaRange,
-    mappingRule: settings.levelMappingRule,
-    z: settings.classificationZ,
-    toleranceBands: settings.classificationToleranceBands ?? 0,
-  })
-  const nearBoundary = isNearLevelBoundary({
-    theta: estimate.theta,
-    levels: [...levelsById.values()],
-    range: settings.thetaRange,
-    mappingRule: settings.levelMappingRule,
-    margin: settings.classificationZ * estimate.standardError,
-  })
-  return {
-    levelLabel: level?.label ?? null,
-    confidence: classified
-      ? ('HIGH' as const)
-      : nearBoundary
-        ? ('LOW' as const)
-        : ('MODERATE' as const),
-    nearBoundary,
-    ...normalized,
-  }
 }

@@ -476,6 +476,8 @@ export function createAdaptivePracticeQuizRuntimeSchema(
         nullable: true,
       }),
       weightShare: t.exposeFloat('weightShare', { nullable: true }),
+      mastered: t.exposeBoolean('mastered', { nullable: true }),
+      nextLevelLabel: t.exposeString('nextLevelLabel', { nullable: true }),
       children: t.expose('children', {
         type: [AdaptiveStudentResultNodeRef],
       }),
@@ -517,6 +519,9 @@ export function createAdaptivePracticeQuizRuntimeSchema(
         type: [AdaptiveResultLevelBandRef],
       }),
       classificationToleranceBands: t.exposeInt('classificationToleranceBands'),
+      masteryFrom: t.exposeFloat('masteryFrom'),
+      mastered: t.exposeBoolean('mastered', { nullable: true }),
+      nextLevelLabel: t.exposeString('nextLevelLabel', { nullable: true }),
       trajectory: t.expose('trajectory', {
         type: [AdaptiveResultTrajectoryPointRef],
       }),
