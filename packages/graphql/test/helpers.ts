@@ -362,9 +362,11 @@ export async function testInitialization(
     },
     prisma,
     featureFlags: {
-      // The seeded owners hold the AI beta; a case that exercises a denial
-      // builds its own context from this one.
-      isEnabled: vi.fn((key) => key === 'ai-beta'),
+      // The seeded owners hold the AI beta and question generation; a case
+      // that exercises a denial builds its own context from this one.
+      isEnabled: vi.fn(
+        (key) => key === 'ai-beta' || key === 'question-generation'
+      ),
       getAiBetaDecision: vi.fn(() => 'enabled' as const),
       refresh: vi.fn(async () => undefined),
     },

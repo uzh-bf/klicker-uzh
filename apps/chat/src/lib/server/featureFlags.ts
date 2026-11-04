@@ -37,32 +37,28 @@ export function manageFeatureFlagAttributes(
 }
 
 /**
- * The complete gate over every lecturer-facing AI surface: the `ai-beta` flag,
- * which decides whether the beta is open to this lecturer at all, and the
- * account's `aiFeaturesEnabled` setting, which records that an administrator
- * has a cost center to bill the resulting model usage to. Both must hold.
+ * The gate over the Manage assistant: the assistant page, its API routes, the
+ * lecturer MCP tools it is given and the proposal confirmation route. It opens
+ * to every Catalyst lecturer who keeps the beta preference and is in the
+ * `ai-beta` rollout. Unlike knowledge bases, chatbots and question generation,
+ * it does not require the account's `aiFeaturesEnabled` approval; the
+ * assistant's own per-user rate limits bound its use.
  *
- * The account setting is read live rather than from the session token, so
- * withdrawing it takes effect on the next request instead of at the lecturer's
- * next sign-in — it is the switch that stops spending, and a stale snapshot
- * would keep spending against a revoked cost center.
- *
- * An absent account entitlement returns `disabled` before GrowthBook is
- * evaluated. An unavailable GrowthBook answer stays distinct so callers can
- * preserve the AI entry point while refusing requests and asking the client to
- * retry.
+ * A non-Catalyst session or a withdrawn beta preference returns `disabled`
+ * before GrowthBook is evaluated, so an outage cannot make a denied account
+ * appear temporarily unavailable.
  */
-export async function getManageAiCapability(
+export async function getManageAssistantCapability(
   user: AuthenticatedManageUser
 ): Promise<AiBetaDecision> {
+  if (!user.catalyst) return 'disabled'
+
   const account = await prisma.user.findUnique({
-    select: { aiFeaturesEnabled: true, betaEnabled: true },
+    select: { betaEnabled: true },
     where: { id: user.sub },
   })
 
-  if (account?.aiFeaturesEnabled !== true || account.betaEnabled !== true) {
-    return 'disabled'
-  }
+  if (account?.betaEnabled !== true) return 'disabled'
 
   const featureFlags = getFeatureFlagClient()
   try {
@@ -77,12 +73,6 @@ export async function getManageAiCapability(
     )
     return 'temporarilyUnavailable'
   }
-}
-
-export async function isManageAiEnabled(
-  user: AuthenticatedManageUser
-): Promise<boolean> {
-  return (await getManageAiCapability(user)) === 'enabled'
 }
 
 /** Graph retrieval targets the owning lecturer, independently of map visibility. */

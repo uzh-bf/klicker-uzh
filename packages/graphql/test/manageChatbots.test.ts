@@ -54,6 +54,7 @@ describe('Integration tests for lecturer chatbot management', () => {
       isEnabled: (key) => key === 'ai-beta',
     } as NonNullable<ContextWithUser['featureFlags']>
     userTwoCtx = ctx2
+    userTwoCtx.featureFlags = userOneCtx.featureFlags
     await prisma.user.updateMany({
       where: { id: { in: [userOneCtx.user.sub, userTwoCtx.user.sub] } },
       // The built-in model registry classifies Auto as advanced.
@@ -158,6 +159,21 @@ describe('Integration tests for lecturer chatbot management', () => {
           userOneCtx
         )
       ).rejects.toThrow()
+    })
+
+    it('rejects creation without the AI approval', async () => {
+      const course = await seedCourse({}, userOneCtx)
+      await prisma.user.update({
+        where: { id: userOneCtx.user.sub },
+        data: { aiFeaturesEnabled: false },
+      })
+
+      await expect(
+        createChatbot({ name: 'Unapproved', courseId: course.id }, userOneCtx)
+      ).rejects.toThrow()
+      await expect(
+        prisma.chatbot.count({ where: { courseId: course.id } })
+      ).resolves.toBe(0)
     })
 
     it('rejects creation against a course the caller does not own', async () => {

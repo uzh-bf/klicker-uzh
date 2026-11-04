@@ -9,6 +9,7 @@ import type { KBGraphPreparationCandidate } from '../src/services/knowledgeGraph
 
 const mocks = vi.hoisted(() => ({
   access: vi.fn(),
+  questionGenerationAccess: vi.fn(async () => undefined),
   published: vi.fn(),
   findBuild: vi.fn(),
   findBuilds: vi.fn(),
@@ -20,6 +21,10 @@ const mocks = vi.hoisted(() => ({
 vi.mock('../src/lib/manageAiFeatureGate.js', async (importOriginal) => ({
   ...(await importOriginal<object>()),
   assertManageAiEnabled: mocks.access,
+}))
+vi.mock('../src/lib/featureFlags.js', async (importOriginal) => ({
+  ...(await importOriginal<object>()),
+  requireFeatureFlagAccess: mocks.questionGenerationAccess,
 }))
 vi.mock('@klicker-uzh/knowledge-graph', async (importOriginal) => ({
   ...(await importOriginal<object>()),
