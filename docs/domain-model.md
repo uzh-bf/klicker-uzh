@@ -263,3 +263,17 @@ requester lost ADMIN/OWNER permission in the meantime.
 - Leaderboards: `LeaderboardEntry` with `LeaderboardType` `SESSION | COURSE`, updated via `stacks.ts:updateLeaderboardOnQuestionResponse`.
 - `Achievement` (`gamification.prisma`) has `type` PARTICIPANT/GROUP/CLASS and `scope` GLOBAL/COURSE, with per-subject instance models; `Level` defines XP thresholds as a linked list; `Title` and `AwardEntry` complete the set.
 - **Unmapped (verify in code before relying on it):** the exact trigger points for achievement awards, and the LiveQuiz bonus-point formula (time-decay multipliers).
+
+### Current response-example baseline
+
+`ResponseExampleBaselineReport` is the latest owner-only comparison for a
+response-example set. Its cases snapshot questions, ideal answers and canonical
+source references; changing live examples or execution configuration makes it
+stale. Replacing the report removes old case results and prevents old workers
+from publishing into the replacement.
+
+`ResponseExampleBaselineOperation` records a stable target/judge accounting
+operation independently of the replaceable report. It owns one unresolved
+baseline stage per owner and settles actual BASE usage exactly once without
+participant rows. Uncertain dispatched operations remain unresolved until an
+authoritative outcome exists.
