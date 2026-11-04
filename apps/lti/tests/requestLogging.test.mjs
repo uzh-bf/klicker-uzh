@@ -20,11 +20,19 @@ test('failed requests produce bounded diagnostics without DEBUG or HTTP changes'
     cors: false,
   })
   handler.app.use(logging.middleware)
+  let arrivals = 0
+  const bothEntered = Promise.withResolvers()
   handler.registerRoute('/', ['POST'], async (request) => {
-    if (request.body.ltijs_recovered_state === '') {
-      await new Promise((resolve) => setTimeout(resolve, 20))
+    if (arrivals < 2) {
+      arrivals += 1
+      if (arrivals === 2) bothEntered.resolve()
+      await bothEntered.promise
     }
-    throw new LtijsError('INVALID_STATE')
+    throw new LtijsError(
+      request.body.fixture_error === 'SESSION_NOT_FOUND'
+        ? 'SESSION_NOT_FOUND'
+        : 'INVALID_STATE'
+    )
   })
   handler.registerRoute('/login', ['POST'], async (_request, response) => {
     response.json({ ok: true })
@@ -51,6 +59,7 @@ test('failed requests produce bounded diagnostics without DEBUG or HTTP changes'
   const post = (path, fields, headers = {}) =>
     fetch(`${base}${path}`, {
       method: 'POST',
+      mode: 'cors',
       headers: {
         'content-type': 'application/x-www-form-urlencoded',
         ...headers,
@@ -73,17 +82,20 @@ test('failed requests produce bounded diagnostics without DEBUG or HTTP changes'
     ),
     post(
       '/',
-      { ltijs_recovered_state: 'SYNTHETIC_PRIVATE_RECOVERY' },
+      {
+        ltijs_recovered_state: 'SYNTHETIC_PRIVATE_RECOVERY',
+        fixture_error: 'SESSION_NOT_FOUND',
+      },
       {
         'sec-fetch-site': 'cross-site',
       }
     ),
   ])
-  for (const response of results) {
+  for (const [index, response] of results.entries()) {
     assert.equal(response.status, 400)
     assert.deepEqual(await response.json(), {
       error: 'LtijsError',
-      message: 'INVALID_STATE',
+      message: index === 0 ? 'INVALID_STATE' : 'SESSION_NOT_FOUND',
     })
   }
   assert.equal(records.length, 2)
@@ -95,8 +107,17 @@ test('failed requests produce bounded diagnostics without DEBUG or HTTP changes'
     records.find((r) => r.recoveredState === 'present').secFetchSite,
     'cross-site'
   )
+  assert.equal(
+    records.find((r) => r.recoveredState === 'empty').secFetchDest,
+    'iframe'
+  )
   for (const record of records) {
-    assert.equal(record.errorCode, 'INVALID_STATE')
+    assert.equal(record.event, 'lti_request_failed')
+    assert.equal(record.secFetchMode, 'cors')
+    assert.equal(
+      record.errorCode,
+      record.recoveredState === 'empty' ? 'INVALID_STATE' : 'SESSION_NOT_FOUND'
+    )
     assert.equal(record.status, 400)
     assert.equal(record.route, '/')
     assert.equal(record.method, 'POST')
@@ -121,6 +142,17 @@ test('failed requests produce bounded diagnostics without DEBUG or HTTP changes'
     )
   }
 
+  const crossSite = await post(
+    '/',
+    { ltijs_recovered_state: 'SYNTHETIC_PRIVATE_RECOVERY' },
+    { 'sec-fetch-site': 'cross-site' }
+  )
+  assert.equal(crossSite.status, 400)
+  assert.equal((await crossSite.json()).message, 'INVALID_STATE')
+  assert.equal(records.at(-1).recoveredState, 'present')
+  assert.equal(records.at(-1).secFetchSite, 'cross-site')
+  assert.equal(records.at(-1).errorCode, 'INVALID_STATE')
+
   await post('/', {})
   assert.equal(records.at(-1).recoveredState, 'missing')
   assert.equal(records.at(-1).secFetchSite, 'missing')
@@ -138,11 +170,13 @@ test('failed requests produce bounded diagnostics without DEBUG or HTTP changes'
   const success = await post('/login', {})
   assert.equal(success.status, 200)
   assert.deepEqual(await success.json(), { ok: true })
-  assert.equal(records.length, 4)
+  assert.equal(records.length, 5)
   const handoff = await fetch(`${base}/handoff?ltik=SYNTHETIC_PRIVATE_HANDOFF`)
   assert.equal(handoff.status, 401)
   assert.deepEqual(await handoff.json(), { error: 'invalid_launch' })
   assert.equal(records.at(-1).errorCode, 'HTTP_ERROR')
+  assert.equal(records.at(-1).route, '/handoff')
+  assert.equal(records.at(-1).method, 'GET')
 
   const unknown = await post(
     '/unrecognized?private=SYNTHETIC_PRIVATE_URL',
@@ -175,6 +209,6 @@ test('failed requests produce bounded diagnostics without DEBUG or HTTP changes'
   assert.equal(records.at(-1).event, 'lti_provider_error')
   assert.equal(records.at(-1).errorCode, 'UNCLASSIFIED_ERROR')
   assert.equal(records.at(-1).component, 'http_handler')
-  assert.equal(records.length, 7)
+  assert.equal(records.length, 8)
   assert.equal(JSON.stringify(records).includes('SYNTHETIC_PRIVATE'), false)
 })
