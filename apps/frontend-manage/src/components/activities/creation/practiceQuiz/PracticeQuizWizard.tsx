@@ -2,6 +2,7 @@ import { useMutation, useQuery } from '@apollo/client'
 import {
   ADAPTIVE_MAX_RETAKE_START_MAX_AGE_DAYS,
   ADAPTIVE_MIN_RETAKE_START_MAX_AGE_DAYS,
+  MAX_ADAPTIVE_LEVEL_REACHED_FROM,
   MAX_CONFIGURABLE_ITEMS_PER_COVERAGE_CELL,
   MIN_CONFIGURABLE_ITEMS_PER_COVERAGE_CELL,
 } from '@klicker-uzh/adaptive-contract'
@@ -241,7 +242,7 @@ function PracticeQuizWizard({
         ),
       minQuestionsPerLeaf: requiredNumber()
         .integer(t('manage.activityWizard.adaptive.validation.integer'))
-        .min(1, t('manage.activityWizard.adaptive.validation.positive'))
+        .min(0, t('manage.activityWizard.adaptive.validation.nonNegative'))
         .max(
           ADAPTIVE_MAX_QUESTION_CAP,
           t('manage.activityWizard.adaptive.validation.questionCapMax')
@@ -283,6 +284,16 @@ function PracticeQuizWizard({
         .max(
           ADAPTIVE_MAX_CLASSIFICATION_Z,
           t('manage.activityWizard.adaptive.validation.classificationZMax')
+        ),
+      // A share of the level band, entered as a percentage.
+      levelReachedFrom: optionalNumber()
+        .min(
+          0,
+          t('manage.activityWizard.adaptive.validation.levelReachedFromRange')
+        )
+        .max(
+          MAX_ADAPTIVE_LEVEL_REACHED_FROM,
+          t('manage.activityWizard.adaptive.validation.levelReachedFromRange')
         ),
       topInformationRatio: optionalNumber().when('preset', {
         is: AdaptivePracticeQuizPreset.Research,

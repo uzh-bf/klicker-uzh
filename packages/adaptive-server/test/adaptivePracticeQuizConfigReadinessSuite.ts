@@ -1,3 +1,10 @@
+import { schema } from '@klicker-uzh/adaptive-test-host/schema'
+import {
+  manipulatePracticeQuiz,
+  publishPracticeQuiz,
+  unpublishPracticeQuiz,
+} from '@klicker-uzh/adaptive-test-host/services/practiceQuizzes'
+import type { ContextWithUser } from '@klicker-uzh/graphql/adaptive-context-types'
 import { prisma } from '@klicker-uzh/prisma'
 import {
   AdaptivePracticeQuizPreset,
@@ -7,18 +14,11 @@ import {
   PublicationStatus,
   UserLoginScope,
 } from '@klicker-uzh/prisma/client'
-import { schema } from '@klicker-uzh/adaptive-test-host/schema'
-import type { ContextWithUser } from '@klicker-uzh/graphql/adaptive-context-types'
 import {
   getAdaptivePracticeQuizPreview,
   getAdaptivePracticeQuizSetupPreview,
   getPracticeQuizPublicationPreview,
 } from '../src/services/adaptivePracticeQuizConfig.js'
-import {
-  manipulatePracticeQuiz,
-  publishPracticeQuiz,
-  unpublishPracticeQuiz,
-} from '@klicker-uzh/adaptive-test-host/services/practiceQuizzes'
 
 const owner = {
   id: '10000000-0000-4000-8000-000000000001',
@@ -36,6 +36,7 @@ const outsider = {
   shortname: 'adaptive-outsider',
 }
 
+import { itWithAdaptiveEngine } from './adaptiveEngineTestEnv.js'
 import {
   cleanup,
   contextFor,
@@ -46,7 +47,6 @@ import {
   editAdaptiveQuiz,
   quizInput,
 } from './adaptivePracticeQuizConfigTestSupport.js'
-import { itWithAdaptiveEngine } from './adaptiveEngineTestEnv.js'
 
 export function registerAdaptivePracticeQuizConfigReadinessTests() {
   let ownerCtx: ContextWithUser
@@ -311,20 +311,20 @@ export function registerAdaptivePracticeQuizConfigReadinessTests() {
   )
 
   itWithAdaptiveEngine(
-    'keeps an unready adaptive quiz in draft and explains the blocking cell',
+    'keeps an unready adaptive quiz in draft and explains the blocking subcompetence',
     async () => {
       const course = await createCourse(owner.id)
       const fixture = await createTreeFixture(course.id, ownerCtx)
+      // The first ten assignments are all Reading (Scanning) questions; with
+      // none left, Scanning cannot get its minimum questions. Empty or thin
+      // coverage cells alone only warn in a diagnostic quiz.
       const quiz = await createAdaptiveQuiz({
         courseId: course.id,
         fixture,
         ctx: ownerCtx,
-        elementOverrides: [
-          {
-            assignmentId: fixture.assignmentIds[0]!,
-            enabled: false,
-          },
-        ],
+        elementOverrides: fixture.assignmentIds
+          .slice(0, 10)
+          .map((assignmentId) => ({ assignmentId, enabled: false })),
       })
 
       const preview = await getAdaptivePracticeQuizPreview(
@@ -334,8 +334,11 @@ export function registerAdaptivePracticeQuizConfigReadinessTests() {
       expect(preview?.readiness.ready).toBe(false)
       expect(preview?.readiness.errors).toContainEqual(
         expect.objectContaining({
-          code: 'ADAPTIVE_COVERAGE_BELOW_PRODUCT_MINIMUM',
+          code: 'ADAPTIVE_MINIMUM_EVIDENCE_UNREACHABLE',
         })
+      )
+      expect(preview?.readiness.warnings).toContainEqual(
+        expect.objectContaining({ code: 'ADAPTIVE_COVERAGE_CELL_EMPTY' })
       )
       await expect(
         getPracticeQuizPublicationPreview({ id: quiz.id }, ownerCtx)

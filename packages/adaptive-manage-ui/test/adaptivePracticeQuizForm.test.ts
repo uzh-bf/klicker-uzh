@@ -209,9 +209,34 @@ describe('adaptive practice quiz Manage form', () => {
 
     const form = mapAdaptivePracticeQuizPreviewToForm(preview)
     expect(form.minItemsPerCoverageCell).toBe('3')
+    expect(form.levelReachedFrom).toBe('0')
     expect(
       serializeAdaptivePracticeQuizConfig(form)?.minItemsPerCoverageCell
     ).toBe(3)
+  })
+})
+
+describe('level reached from', () => {
+  test('new quizzes place students from 70% of a level', () => {
+    const config = {
+      ...createAdaptivePracticeQuizDefaultConfig(),
+      competenceTreeId: 'tree-id',
+    }
+    expect(config.levelReachedFrom).toBe('0.7')
+    expect(serializeAdaptivePracticeQuizConfig(config)).toMatchObject({
+      levelReachedFrom: 0.7,
+    })
+  })
+
+  test('calibrated-scale quizzes send no value', () => {
+    const config = {
+      ...createAdaptivePracticeQuizDefaultConfig(),
+      competenceTreeId: 'tree-id',
+      scaleVersionId: 'scale-id',
+    }
+    expect(
+      serializeAdaptivePracticeQuizConfig(config)?.levelReachedFrom
+    ).toBeUndefined()
   })
 })
 

@@ -6,6 +6,7 @@ export {
 export {
   type AdaptiveAttemptDiagnosticDetail,
   type AdaptiveAttemptDiagnosticsList,
+  type AdaptiveAttemptVersion,
   getAdaptivePracticeQuizAttemptDiagnostic,
   getAdaptivePracticeQuizAttemptDiagnostics,
 } from './adaptivePracticeQuizAttemptDiagnostics.js'

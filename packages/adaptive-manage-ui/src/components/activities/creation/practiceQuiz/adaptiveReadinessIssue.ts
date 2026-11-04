@@ -139,6 +139,14 @@ export function formatAdaptiveReadinessIssue(
           enabledAssignmentCount: p.enabledAssignmentCount ?? 0,
         }
       )
+    case 'ADAPTIVE_COVERAGE_BELOW_RECOMMENDED':
+      return t(
+        'manage.activityWizard.adaptive.readiness.issues.ADAPTIVE_COVERAGE_BELOW_RECOMMENDED',
+        {
+          minimumValue: p.minimumValue ?? 0,
+          enabledAssignmentCount: p.enabledAssignmentCount ?? 0,
+        }
+      )
     case 'ADAPTIVE_COVERAGE_MINIMUM_BELOW_RECOMMENDED':
       return t(
         'manage.activityWizard.adaptive.readiness.issues.ADAPTIVE_COVERAGE_MINIMUM_BELOW_RECOMMENDED',

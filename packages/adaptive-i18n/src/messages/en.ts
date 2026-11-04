@@ -238,6 +238,11 @@ const messages = {
           INSUFFICIENT_DATA:
             'There was not enough evidence for a complete result.',
         },
+        mastery: {
+          mastered: '{level} mastered',
+          masteredNext: '{level} mastered – ready for {next}',
+          notYetMastered: '{level} not yet fully mastered',
+        },
         profile: {
           estimatedLevel: 'Estimated level: {level}',
           determinedLevel: 'Your level: {level}',
@@ -410,22 +415,20 @@ const messages = {
             'Stops early when the overall estimate is sufficiently concentrated after minimum coverage. Otherwise it continues to the question or time limit and may show a range. This pilot has not been empirically validated.',
           title: 'When should the quiz finish?',
           description:
-            'The quiz can finish early once every enabled competence has enough evidence and its uncertainty interval fits within one level.',
+            'The quiz can finish early once every enabled competence has enough evidence and the quiz is as certain about its level as required below.',
           maxQuestions: 'Maximum questions',
           maxQuestionsHint: 'The quiz never asks more than this limit.',
-          interval: 'Confidence interval for early stopping',
-          interval80: '80% · shorter quizzes (default)',
-          interval90: '90% · more evidence',
-          interval95: '95% · more cautious',
-          customInterval: 'Existing custom setting (z = {value})',
-          intervalHint:
-            'A higher percentage gives a wider uncertainty interval and usually needs more questions. This is a model-based interval, not a guarantee that the reported level is correct.',
-          precision: 'Classification precision',
-          precisionExact: 'Exact level',
-          precisionTolerance:
-            '{count, plural, one {±# level} other {±# levels}}',
-          precisionHint:
-            'With “±1 level”, a level counts as determined when the uncertainty interval stays within one level of the reported level; results then show, for example, “B1.2 (±1 level)”. Recommended for scales with {levelCount} or more levels, where an exact level is rarely reachable. Requires the upgraded adaptive engine; publishing fails with a clear message otherwise.',
+          certainty: 'Required certainty',
+          certainty1: 'Within ±1 level (recommended)',
+          certainty2: 'Within ±2 levels (shorter quiz)',
+          certaintyExact: 'Exact level (rarely finishes early)',
+          certaintyWithin:
+            '{count, plural, one {Within ±# level} other {Within ±# levels}}',
+          certaintyHint:
+            'How sure the quiz must be before a competence counts as determined: the student is, with 80% certainty, within this many levels of the reported level. ±1 gives the more precise result; ±2 lets most students finish much earlier. An exact level is not offered because on fine scales it is almost never reached, so the quiz would always run to the maximum. Requires the upgraded adaptive engine; publishing fails with a clear message otherwise.',
+          reachedFrom: 'Mastered from',
+          reachedFromHint:
+            'Where within a level the student counts as having mastered it (0–95%; recommended 70%). The result shows the level the estimate lies in, plus “mastered – ready for the next level” from this share of the level on, or “not yet fully mastered” below it. It only adds this indication: the questions asked, when the quiz stops and the reported level stay the same. 0% switches the indication off.',
           scalePolicy:
             'Confidence and early stopping follow the approved policy of the selected calibrated scale. The question and time limits below still apply.',
           enableTimeLimit: 'Also set a time limit',
@@ -434,11 +437,8 @@ const messages = {
             'The first question or time limit reached ends the quiz, even if uncertainty remains. The result will include the available estimate and uncertainty.',
           coverage: 'Coverage settings (optional)',
           coverageHint:
-            'Require some answers in each subcompetence before finishing early. Leave the per-subcompetence maximum empty to use only the overall limit.',
+            'Require some answers in each subcompetence before finishing early. 0 (recommended) lets the quiz ask where the result still needs evidence; higher values only work when subcompetences × minimum fit into the maximum questions, otherwise the quiz never finishes early. Leave the per-subcompetence maximum empty to use only the overall limit.',
           minPerLeaf: 'Minimum questions per subcompetence',
-          minPerCell: 'Minimum elements per cell',
-          minPerCellHint:
-            'The minimum number of enabled elements that each switched-on subcompetence and level combination (cell) of the content blueprint needs before the quiz can be published. 5 is recommended. Lower values (down to 1) let you publish quizzes for fine-grained competence trees, but the quiz then has fewer alternative questions per cell.',
           maxPerLeaf: 'Maximum questions per subcompetence (optional)',
         },
         settings: {
@@ -570,9 +570,11 @@ const messages = {
           coverageGroups: {
             summary: {
               ADAPTIVE_COVERAGE_CELL_EMPTY:
-                '{count, plural, one {# enabled leaf and level combination has} other {# enabled leaf and level combinations have}} no enabled elements. Add elements or switch off these combinations in the content blueprint of the competence tree.',
+                '{count, plural, one {# enabled leaf and level combination has} other {# enabled leaf and level combinations have}} no enabled elements. The quiz asks no questions there; placement quizzes cannot be published until each has one. Add elements or switch off these combinations in the content blueprint of the competence tree.',
               ADAPTIVE_COVERAGE_BELOW_PRODUCT_MINIMUM:
                 '{count, plural, one {# enabled leaf and level combination has} other {# enabled leaf and level combinations have}} fewer than the {minimumValue} independent, enabled, scorable elements that this quiz requires per combination.',
+              ADAPTIVE_COVERAGE_BELOW_RECOMMENDED:
+                '{count, plural, one {# enabled leaf and level combination has} other {# enabled leaf and level combinations have}} fewer than the recommended {minimumValue} elements. The quiz can still be published; with fewer alternatives, students see the same questions more often.',
               ADAPTIVE_COVERAGE_BELOW_TARGET:
                 '{count, plural, one {# enabled leaf and level combination is} other {# enabled leaf and level combinations are}} below the target number of elements.',
             },
@@ -580,6 +582,8 @@ const messages = {
               ADAPTIVE_COVERAGE_CELL_EMPTY: '{cell}: no enabled elements',
               ADAPTIVE_COVERAGE_BELOW_PRODUCT_MINIMUM:
                 '{cell}: {enabledAssignmentCount} of {minimumValue} elements',
+              ADAPTIVE_COVERAGE_BELOW_RECOMMENDED:
+                '{cell}: {enabledAssignmentCount} of {minimumValue} recommended elements',
               ADAPTIVE_COVERAGE_BELOW_TARGET:
                 '{cell}: {enabledAssignmentCount} of {targetItemCount} elements',
             },
@@ -604,9 +608,11 @@ const messages = {
             ADAPTIVE_ITEM_PARAMETERS_INVALID:
               'The element "{elementName}" has invalid effective item parameters.',
             ADAPTIVE_COVERAGE_CELL_EMPTY:
-              'Every enabled leaf and level combination needs at least one enabled element.',
+              'This leaf and level combination has no enabled element, so the quiz asks no questions here. Placement quizzes need at least one.',
             ADAPTIVE_COVERAGE_BELOW_PRODUCT_MINIMUM:
               'This quiz requires {minimumValue} independent, enabled, scorable elements in this leaf and level combination; {enabledAssignmentCount} are available.',
+            ADAPTIVE_COVERAGE_BELOW_RECOMMENDED:
+              '{minimumValue} independent, enabled, scorable elements are recommended in this leaf and level combination; {enabledAssignmentCount} are available. The quiz can still be published.',
             ADAPTIVE_COVERAGE_MINIMUM_BELOW_RECOMMENDED:
               'Each enabled leaf and level combination needs only {minimumValue} {minimumValue, plural, one {element} other {elements}}. {maximumValue} are recommended so that the quiz has enough alternative questions in every combination.',
             ADAPTIVE_COVERAGE_CELL_MINIMUM_INVALID:
@@ -638,7 +644,7 @@ const messages = {
             ADAPTIVE_CLASSIFICATION_BANDS_UNREACHABLE:
               'The planning estimate supports a precise result in {classifiableLevelCount} of {levelCount} levels for "{nodeName}". With this question limit, some results may remain uncertain.',
             ADAPTIVE_CLASSIFICATION_TOLERANCE_SUGGESTED:
-              'With these questions, no exact level of "{nodeName}" ({levelCount} levels) can be determined. Consider setting the classification precision to “±1 level”.',
+              'With these questions, no exact level of "{nodeName}" ({levelCount} levels) can be determined. Consider setting the required certainty to “Within ±1 level”.',
             ADAPTIVE_TIME_BUDGET_EXCEEDED:
               'The coverage is expected to take about {estimatedDurationMinutes} minutes using {secondsPerItem} seconds per item.',
             ADAPTIVE_CONFIG_INTEGER_RANGE:
@@ -708,6 +714,7 @@ const messages = {
           integer: 'Enter a whole number.',
           positive: 'Enter a value greater than 0.',
           questionCapMax: 'Enter no more than 1000 questions.',
+          levelReachedFromRange: 'Enter a whole percentage from 0 to 95.',
           classificationZMax: 'Enter a value no greater than 5.',
           ratioMax: 'Enter a value no greater than 1.',
           cellMinimumRange: 'Enter a whole number between {min} and {max}.',
@@ -732,6 +739,11 @@ const messages = {
     },
     evaluation: {
       adaptive: {
+        levelReachedFrom: {
+          nearest: 'of the level · no indication',
+          ofTheLevel: 'of the level',
+          invalid: 'Enter a whole number from 0 to {max}.',
+        },
         title: 'Adaptive cohort results',
         attemptSummary: 'Attempt summary',
         attempts: {
@@ -879,20 +891,29 @@ const messages = {
           title: 'Dry runs',
           testingOnly: 'Testing only',
           description:
-            'Run simulated students through this quiz before real students take it. Each simulated student has a true level and answers every question up to that level correctly and every question above it incorrectly; the noise flips single answers. Stop settings can be changed for a run; the quiz itself stays unchanged. Dry runs are not part of any results.',
+            'Run simulated students through this quiz before real students take it, to see how often it finds their true level and how many questions it needs. Stop settings can be changed per run; the quiz itself stays unchanged. Dry runs are not part of any results.',
           unavailable:
             'Publish the quiz (IRT v1) to start a dry run. Dry runs use the current publication.',
           form: {
-            sameStudents:
-              'Same simulated students as run #{number}. Only the stop settings can change, so the runs compare fairly.',
-            newStudents: 'Use new students',
-            EVENHint:
-              'Students are spread evenly over these levels: an overview of the whole scale.',
-            FIXEDHint:
-              'All students have this level: a close look at one spot of the scale.',
-            SAME_LEVELHint: 'Each student is equally good in every competence.',
-            INDEPENDENTHint:
-              'Each competence gets its own random level, like an uneven real profile.',
+            studentsGroup: 'Simulated students',
+            trueLevelsHint:
+              'Evenly over a range: the students are spread evenly over these levels, for an overview of the whole scale. One fixed level: all students have this level, for a close look at one spot of the scale.',
+            competencesHint:
+              'Same level in all: each student is equally good in every competence. Independent: each competence gets its own random level, like an uneven real profile.',
+            answerModelHint:
+              'Ideal pattern: right up to the true level, wrong above it; the noise flips single answers. Shows the algorithm at its best. Realistic: each answer is random, with the chance of a right answer the model expects (high on easy questions, about half near the student’s level, low on hard ones). Closer to real students.',
+            seed: 'Seed (optional)',
+            seedPlaceholder: 'random',
+            seedHint:
+              'Decides which random students are simulated. The same seed with the same student settings gives exactly the same students, so you can compare stop settings fairly. Leave it empty for new random students; every run shows the seed it used.',
+            seedInvalid: 'Up to 64 letters, digits, hyphens or underscores.',
+            stopSettings: 'Stop settings (prefilled from the quiz)',
+            totalQuestionCapHint:
+              'An attempt ends after at most this many questions, even if the level is not certain yet.',
+            reachedFromHint:
+              'Where within a level the student counts as having mastered it. The result shows “mastered” or “not yet mastered” next to the reported level, and the dashed line in each student’s picture marks it. It does not change the questions, the stop or the reported level.',
+            minQuestionsPerLeafHint:
+              'Each subcompetence that matters for the student gets at least this many questions before the quiz may stop.',
             title: 'New dry run',
             students: 'Students',
             studentsHint: 'Up to {max} simulated students per run.',
@@ -901,32 +922,46 @@ const messages = {
             EVEN: 'Evenly over a range',
             FIXED: 'One fixed level',
             rangeInvalid: 'The first level must not be above the second.',
+            answerModel: 'Student answers',
+            answerModelIDEAL: 'Ideal pattern',
+            answerModelREALISTIC: 'Realistic',
             noise: 'Noise: {noise}%',
             noiseHint:
               'Chance that a single answer is the opposite of the ideal pattern.',
             competences: 'Competences',
             SAME_LEVEL: 'Same level in all',
             INDEPENDENT: 'Independent per competence',
-            stopSettings:
-              'Stop settings for this run (prefilled from the quiz)',
             totalQuestionCap: 'Maximum questions',
             capInvalid: 'Choose between 1 and 1000.',
             tooLarge: 'Students × maximum questions may not exceed {max}.',
-            precision: 'Classification precision',
-            precision0: 'Exact level',
-            precision1: '±1 level',
-            precision2: '±2 levels',
-            confidence: 'Confidence',
+            reachedFrom: 'Mastered from',
             minQuestionsPerLeaf: 'Minimum per subcompetence',
             minInvalid: 'Choose a number between 0 and the maximum questions.',
             start: 'Start dry run',
           },
           result: {
+            exactTooltip:
+              'Share of results that match the true level exactly (sublevel, e.g. B1.2).',
+            withinOneTooltip:
+              'Share of results at most one sublevel away from the true level.',
+            biasTooltip:
+              'Average difference between the reported and the true level, in sublevels. +0.3 means the quiz reports on average about a third of a sublevel too high; 0 means no systematic error in either direction.',
+            questionsTooltip:
+              'Questions an attempt needed on average, over all competences.',
+            determinedTooltip:
+              'Share of competences for which the quiz was sure enough to stop early, instead of reaching the question limit.',
+            seed: 'Seed',
+            useSeed: 'Use this seed',
+            useSeedHint:
+              'Puts this seed into the form above. Keep the student settings, change the stop settings and start: the new run gets the same students.',
+            tabOverview: 'Overview',
+            tabStudents: 'Students',
+            tabQuestions: 'Questions and stops',
             engine: 'Engine: {revision}',
             title: 'Dry run #{number}',
-            meta: '{students} students · true levels {levels} · {noise}% noise · {competences} · {date} · {seconds} s',
+            meta: '{students} students · true levels {levels} · {realistic, select, yes {realistic answers} other {{noise}% noise}} · {competences} · {date} · {seconds} s',
             settings:
-              'max. {cap} questions · precision {precision, select, 0 {exact} other {±{precision}}} · {confidence}% confidence · min. {minPerLeaf} per subcompetence',
+              'max. {cap} questions · certainty {precision, select, 0 {exact} other {±{precision}}} · {confidence}% confidence · min. {minPerLeaf} per subcompetence · {reachedFrom, select, 0 {no mastery indication} other {mastered from {reachedFrom}%}}',
             olderPublication:
               'This run used an earlier publication of the quiz.',
             exact: 'Exact level',
@@ -937,6 +972,9 @@ const messages = {
             questionsHint: 'median {median}, max. {max}',
             determined: 'Level determined',
             competence: 'Competence',
+            levelsView: 'Show true and reported levels as',
+            levelsViewCHART: 'Chart',
+            levelsViewTABLE: 'Table',
             confusion: 'True and reported levels',
             confusionHint:
               'Rows: true level, columns: reported level, at sublevel precision. Green = exact, amber = one sublevel off, red = further off. The last column is the share of exact results per true level.',
@@ -947,71 +985,66 @@ const messages = {
             itemUse: 'Question use',
             itemUseSummary:
               '{used} of {pool} questions used, {unused} never used · {flipped} of the answers flipped by noise. Most used:',
-            showStudents: 'Students',
-            hideStudents: 'Hide students',
             export: 'CSV',
-            sameStudents: 'Same students, new settings',
           },
-          subcompetences: {
-            summary:
-              '{count} subcompetences · {gaps, plural, =0 {all levels covered} one {# with missing levels} other {# with missing levels}}',
-            title: 'Subcompetences',
-            hint: 'How often each subcompetence was asked and counted, and which levels its questions cover. The deviation is only a rough indicator: a simulated student has the same true level in all subcompetences of a competence, and a subcompetence gets only a few answers.',
-            subcompetence: 'Subcompetence',
-            answers: 'Answers per attempt',
-            min: 'min. {min}',
-            covered: 'Covered',
-            notSampled: 'Not sampled',
-            outOfRange: 'Out of range',
-            pool: 'Questions per level',
-            poolCell: '{level}: {count} questions, {used} used',
-            gaps: 'No questions for {levels}',
-            deviation: 'Rough deviation',
-            estimated: '{count} with a level',
-            legend:
-              "Questions per level: green = used in this run, grey = never used, red = no question at this level. Covered = got its minimum answers; not sampled = skipped this attempt; out of range = far from the student's level, not required.",
-          },
-          mastery: {
-            sublevels: 'Sublevels (e.g. B1.3)',
-            mainLevels: 'Main levels (e.g. B1 = B1.1 to B1.3)',
-            title: 'Mastery (client reading)',
-            hint: 'A level counts as mastered when the ability lies at or beyond the mastery point of its band, e.g. 70% of B1.3. The mastery probability says how likely that is, given the estimate and its uncertainty; from the required probability on, the level is shown as mastered. Measured against the simulated students, who have mastered their true level but not the next one.',
-            masteryPoint: 'Mastered from {value}% of the level',
-            probability: 'Shown as mastered from {value}% probability',
+          chart: {
+            title: 'True and reported levels per student',
+            clickHint: 'Click a dot to open that student.',
+            hint: 'One dot per student and competence. Left to right: where the student truly is. Bottom to top: where the quiz placed them; the horizontal stripes are the reported levels. A dot inside the green box of its column got its true level. Click a dot to open the student.',
+            hintIdeal:
+              'A true level covers what the quiz reports as that level. Ideal-pattern students sit in the middle of it, spread a little so equal students stay visible.',
+            hintRealistic:
+              'A true level covers what the quiz reports as that level. Realistic students sit at their simulated true ability inside it.',
+            overall: 'Overall level',
+            pooled: 'All competences (pooled)',
+            noScale:
+              'The levels of this run are not available, so the overall level cannot be compared. Choose a competence instead.',
+            agreementTitle: '{count} results',
+            hintOverall:
+              "Overall level: one dot per student. The quiz's overall estimate is the average of the competence estimates, so the true overall level is the level that the average of the student's true competence abilities falls into.",
+            xAxis: 'True level',
+            yAxis: 'Estimate (reported level)',
             loading: 'Loading the students…',
-            tiles: {
-              mainMastered: 'Shown as mastered',
-              mainMasteredRight: 'Right when shown as mastered',
-              mainHighestExact: 'Highest mastered main level correct',
-              mastered: 'Shown as mastered',
-              masteredRight: 'Right when shown as mastered',
-              highestExact: 'Highest mastered level correct',
-              highestWithinOne: '… within ±1 level',
+            point:
+              'Student #{index} · {competence}: true {trueLevel} → reported {reported}',
+            legend: {
+              right: 'right level',
+              oneOff: 'one level off',
+              moreOff: 'more than one off',
+              zone: 'right zone',
             },
-            tileHints: {
-              mainMastered: 'e.g. "B1 mastered" with enough probability',
-              mainMasteredRight:
-                "the true level is at least the main level's last sublevel",
-              mainHighestExact:
-                'true: the main level whose last sublevel is reached',
-              mastered: 'results with enough probability',
-              masteredRight: 'the true level is at least the reported one',
-              highestExact:
-                'mastered: the reported level, otherwise the one below',
-              highestWithinOne: 'highest mastered level at most one off',
+            student: {
+              title: 'True and reported level per competence',
+              hint: 'The result is right when the green line (true ability) lies inside the blue box (reported level). The curve shows where the student probably is: the higher, the more likely. The dark line is the estimate (θ); the dashed line marks where the level counts as mastered.',
+              truth: 'True level {level}',
+              reported: 'Reported level {level}',
+              thetaLabel: 'θ {theta}',
+              masteryMarkAt:
+                'Mastered from here on: θ {theta} (mastery mark of the level)',
+              summary: {
+                reported: 'reported',
+                mastered: 'mastered',
+                notMastered: 'not yet mastered',
+                theta: 'θ {theta} ± {se}',
+                into: '{share}% into {level} (mastered from θ {mark})',
+                trueTheta: 'true θ {theta}',
+                true: 'true {level}',
+                correct: '✓ right',
+                tooHigh: '{count} too high',
+                tooLow: '{count} too low',
+                withinOne: '{probability}% chance it is within ±1 level',
+              },
+              legend: {
+                trueTheta: 'true ability (θ)',
+                reported: 'reported level',
+                curve: 'where the student probably is',
+                estimate: 'estimate (θ)',
+                masteryMark: 'mastered from ({share}% of the level)',
+              },
             },
           },
           students: {
-            mainMastery:
-              'Main level {level} · mastered with {probability}% probability.',
-            mainRowHint:
-              'Probability that the main level is mastered (✓ = shown as mastered)',
-            mastery:
-              'At {position}% of {level} · mastered with {probability}% probability.',
-            mastered: '{level} mastered',
-            notMastered: '{level} not yet mastered',
-            rowHint:
-              'Probability that the level is mastered (✓ = shown as mastered)',
+            rowHint: 'Chance that the student is exactly at the reported level',
             hint: 'Open a student to see why each result came out the way it did: which questions were asked, which answers the true level predicts, and how the level moved after each answer.',
             student: 'Student',
             competences: 'True → reported level',
@@ -1019,28 +1052,49 @@ const messages = {
             questions: 'Questions',
             unexpectedAnswers: 'Unexpected answers',
             stop: 'Stop',
-            determined: 'Level determined',
-            notDetermined: 'Not determined',
-            result:
-              'True level <strong>{trueLevel}</strong> → result <strong>{result}</strong>.',
-            matches: 'Correct.',
-            tooHigh:
-              '{count, plural, one {# level too high.} other {# levels too high.}}',
-            tooLow:
-              '{count, plural, one {# level too low.} other {# levels too low.}}',
+            determined: 'Sure enough to stop early',
+            notDetermined: 'Not sure enough to stop early',
+            determinedHint:
+              'The quiz was sure enough about this competence to stop asking about it before the question limit.',
+            notDeterminedHint:
+              'The quiz was never sure enough to stop early and asked until the end. The level shown is still its best guess.',
+            explain: {
+              result: '<strong>Result: {result}</strong> —',
+              correct: 'correct.',
+              tooHigh:
+                '{count, plural, one {# level too high.} other {# levels too high.}}',
+              tooLow:
+                '{count, plural, one {# level too low.} other {# levels too low.}}',
+              trueLevel: '(The simulated student is {level}.)',
+              why: 'Why:',
+              howSure: 'How sure:',
+              splitExactly: '{probability}% exactly {level}',
+              splitHigher: '{probability}% higher (mostly {level})',
+              splitLower: '{probability}% lower (mostly {level})',
+            },
             patterns: {
               NONE: 'No question was asked for this competence.',
               ALL_CORRECT:
-                'All {count} answers were correct, the hardest at {highest}. Without a wrong answer nothing limits the estimate from above, so it moves up to {result}.',
+                'all {count} answers right, up to {highest}. With no wrong answer, the quiz cannot tell how far up the student goes and settles on {result}.',
               ALL_WRONG:
-                'All {count} answers were wrong, the easiest at {lowest}. Without a correct answer nothing limits the estimate from below, so it moves down to {result}.',
+                'all {count} answers wrong, down to {lowest}. With no right answer, the quiz cannot tell how far down the student goes and settles on {result}.',
               CLEAR_BOUNDARY:
-                'Correct up to {highest}, wrong from {lowest}. The result lies at this boundary: {result}.',
+                'all questions up to {highest} right, from {lowest} on wrong.',
+              CLEAR_BOUNDARYBELOW:
+                'all questions up to {highest} right, from {lowest} on wrong, but too few right answers at {highest} to count it as reached.',
+              CLEAR_BOUNDARYABOVE:
+                'all questions up to {highest} right, from {lowest} on wrong, and close enough to {lowest} to count as {result}.',
               MIXED:
-                'Mixed answers: correct up to {highest}, but already wrong at {lowest}. The result balances both: {result}.',
+                'mixed answers: right up to {highest}, but already some wrong from {lowest} on. The quiz weighs both and settles on {result}.',
             },
+            farNote:
+              '{start, select, previous {The questions started at {first}, where the previous competence ended, and} other {The questions started at {first} and}} only {near} of {count} were within one level of {trueLevel}, so the quiz had too little evidence near the student.',
+            levelBelow: 'below {level}',
+            levelAbove: 'above {level}',
+            boundHint:
+              'Only wrong (or only right) answers so far: the student is below the easiest wrong (or above the hardest right) question, but how far is not known yet. The quiz then reports the end of the scale.',
             unexpectedNote:
-              '{count, plural, one {# answer} other {# answers}} went against the true level (noise).',
+              '{count, plural, one {# answer did} other {# answers did}} not match the true level.',
             questionLevel: 'Question level',
             expected: 'Expected',
             answer: 'Answer',
@@ -1059,10 +1113,12 @@ const messages = {
           },
           runs: {
             title: 'Saved dry runs',
+            scrollHint:
+              'The latest {visible} are shown; scroll the list for {older, plural, one {# older run} other {# older runs}}.',
             empty: 'No dry run yet.',
             run: 'Run',
             settings: 'Settings',
-            spec: '{students} students · {noise}% noise',
+            spec: '{students} students · {realistic, select, yes {realistic answers} other {{noise}% noise}}',
             select: 'Select run #{number} for comparison',
             compare: 'Compare 2 runs',
             hideCompare: 'Hide comparison',
@@ -1080,6 +1136,24 @@ const messages = {
           },
         },
         attemptDiagnostics: {
+          scrollHint:
+            'The latest {visible} are shown; scroll the list for {older, plural, one {# older attempt} other {# older attempts}}.',
+          versions: {
+            title: 'Algorithm versions',
+            tooltip:
+              'Which version of the algorithm the completed attempts ran on, and when. A version is the quiz publication (with the stop settings frozen at publishing), the engine build and the estimator. A new row starts whenever the quiz is published again or a new engine is deployed. Attempts before the engine was recorded show “not recorded”.',
+            publication: 'Publication',
+            publicationVersion: 'v{version}',
+            current: 'current',
+            publishedAt: 'published {date}',
+            settings: 'Stop settings',
+            engine: 'Engine',
+            estimator: 'Estimator',
+            attempts: 'Attempts',
+            period: 'Started',
+            unknown: 'unknown',
+            notRecorded: 'not recorded',
+          },
           title: 'Attempts (testing environment)',
           description:
             'How each attempt was evaluated, question by question. Only available in testing environments; students appear as pseudonymous codes. Open an attempt to review its result.',
@@ -1091,6 +1165,8 @@ const messages = {
             CHECK: 'Quality: check',
             GOOD: 'Quality: good',
           },
+          engineRevision: 'Engine: {revision}',
+          engineShort: 'engine {revision}',
           exportAll: 'Export answers (CSV)',
           exportAttempt: 'Export this attempt (CSV)',
           accuracy: {

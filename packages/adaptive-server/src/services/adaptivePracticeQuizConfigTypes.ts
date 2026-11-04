@@ -31,6 +31,7 @@ export type AdaptivePracticeQuizConfigInput = {
   minItemsPerCoverageCell?: number | null
   classificationZ?: number | null
   classificationToleranceBands?: number | null
+  levelReachedFrom?: number | null
   showTimer?: boolean | null
   retakeStartFromPreviousResult?: boolean | null
   retakeStartMaxAgeDays?: number | null
@@ -55,6 +56,7 @@ export type AdaptivePracticeQuizConfigView = Pick<
   | 'minItemsPerCoverageCell'
   | 'classificationZ'
   | 'classificationToleranceBands'
+  | 'levelReachedFrom'
   | 'topInformationRatio'
   | 'defaultDiscrimination'
   | 'levelMappingRule'

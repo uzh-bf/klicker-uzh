@@ -250,33 +250,39 @@ function PracticeQuizSettingsStep({
                       </div>
                     </div>
                     <div className="flex flex-col gap-3">
-                      <FormikSelectField
-                        required
-                        name="adaptiveConfig.preset"
-                        label={t(
-                          'manage.activityWizard.adaptive.settings.preset'
-                        )}
-                        items={getAuthorableAdaptivePresets(
-                          values.adaptiveConfig.preset
-                        ).map((preset) => ({
-                          value: preset,
-                          label: t(
-                            preset === AdaptivePracticeQuizPreset.Placement
-                              ? 'manage.activityWizard.adaptive.preset.PLACEMENT_UNAVAILABLE'
-                              : `manage.activityWizard.adaptive.preset.${preset}`
-                          ),
-                          disabled:
-                            preset === AdaptivePracticeQuizPreset.Placement,
-                          data: {
-                            cy: `adaptive-preset-${preset.toLowerCase()}`,
-                          },
-                        }))}
-                        data={{ cy: 'adaptive-preset' }}
-                        className={{
-                          root: 'w-full',
-                          select: { root: 'w-full', trigger: 'w-full' },
-                        }}
-                      />
+                      {/* Only while there is a choice: today only the
+                          diagnostic preset can be authored. */}
+                      {getAuthorableAdaptivePresets(
+                        values.adaptiveConfig.preset
+                      ).length > 1 ? (
+                        <FormikSelectField
+                          required
+                          name="adaptiveConfig.preset"
+                          label={t(
+                            'manage.activityWizard.adaptive.settings.preset'
+                          )}
+                          items={getAuthorableAdaptivePresets(
+                            values.adaptiveConfig.preset
+                          ).map((preset) => ({
+                            value: preset,
+                            label: t(
+                              preset === AdaptivePracticeQuizPreset.Placement
+                                ? 'manage.activityWizard.adaptive.preset.PLACEMENT_UNAVAILABLE'
+                                : `manage.activityWizard.adaptive.preset.${preset}`
+                            ),
+                            disabled:
+                              preset === AdaptivePracticeQuizPreset.Placement,
+                            data: {
+                              cy: `adaptive-preset-${preset.toLowerCase()}`,
+                            },
+                          }))}
+                          data={{ cy: 'adaptive-preset' }}
+                          className={{
+                            root: 'w-full',
+                            select: { root: 'w-full', trigger: 'w-full' },
+                          }}
+                        />
+                      ) : null}
                       <FormikSwitchField
                         name="adaptiveConfig.showTimer"
                         label={t(

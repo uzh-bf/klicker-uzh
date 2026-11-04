@@ -8,7 +8,16 @@ const dryRunStudentSchema = z
   .object({
     index: z.number().int().positive(),
     trueLevels: z
-      .array(z.object({ nodeId: id, levelId: id }).strict())
+      .array(
+        z
+          .object({
+            nodeId: id,
+            levelId: id,
+            // True ability of REALISTIC students (engines since answerModel).
+            theta: z.number().finite().optional(),
+          })
+          .strict()
+      )
       .max(500),
     answers: z
       .array(

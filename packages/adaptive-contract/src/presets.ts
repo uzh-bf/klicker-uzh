@@ -21,9 +21,13 @@ export const MAX_CONFIGURABLE_ITEMS_PER_COVERAGE_CELL =
 // engine with SEQUENTIAL_ROOTS_V6 and are only sent when above 0.
 export const ADAPTIVE_DEFAULT_CLASSIFICATION_TOLERANCE_BANDS = 0
 export const ADAPTIVE_MAX_CLASSIFICATION_TOLERANCE_BANDS = 5
-export const ADAPTIVE_CLASSIFICATION_TOLERANCE_OPTIONS = [0, 1, 2] as const
-// Scales with at least this many levels are recommended to use ±1.
-export const ADAPTIVE_TOLERANCE_RECOMMENDED_MIN_LEVELS = 10
+// "Required certainty" offered to authors: within ±1 or ±2 levels. An exact
+// level is not offered: on fine scales the uncertainty interval almost never
+// fits into one level, so the quiz would always run to its question cap.
+// Existing exact configurations keep 0 and still show it.
+export const ADAPTIVE_REQUIRED_CERTAINTY_OPTIONS = [1, 2] as const
+// Required certainty of new quizzes.
+export const ADAPTIVE_RECOMMENDED_CLASSIFICATION_TOLERANCE_BANDS = 1
 
 export function isValidAdaptiveClassificationToleranceBands(value: number) {
   return (
@@ -59,6 +63,11 @@ export type AdaptivePresetDefaults = {
   minItemsPerCoverageCell: number
   classificationZ: number
   classificationToleranceBands: number
+  /**
+   * IRT_V1 mastery mark ("mastered from"), see `levelMasteryOf`. Stored under
+   * its former name; it annotates the reported level and moves no band.
+   */
+  levelReachedFrom: number
   topInformationRatio: number
   defaultDiscrimination: number
   levelMappingRule: 'NEAREST' | 'MASTERY'
@@ -69,6 +78,22 @@ export type AdaptivePresetDefaults = {
   retakePreferNewQuestions: boolean
 }
 
+/**
+ * Mastery mark for new IRT_V1 quizzes: the reported level counts as mastered
+ * from 70% of its band (the client definition of a mastered sublevel). Authors
+ * may enter any share up to the maximum; 0 switches the indicator off.
+ */
+export const ADAPTIVE_DEFAULT_LEVEL_REACHED_FROM = 0.7
+export const MAX_ADAPTIVE_LEVEL_REACHED_FROM = 0.95
+
+export function isValidAdaptiveLevelReachedFrom(value: number) {
+  return (
+    Number.isFinite(value) &&
+    value >= 0 &&
+    value <= MAX_ADAPTIVE_LEVEL_REACHED_FROM
+  )
+}
+
 const SHARED_PRESET_DEFAULTS = {
   totalQuestionCap: 50,
   perLeafQuestionCap: null,
@@ -76,6 +101,7 @@ const SHARED_PRESET_DEFAULTS = {
   minItemsPerCoverageCell: MIN_PRODUCT_ITEMS_PER_COVERAGE_CELL,
   classificationZ: 1.28,
   classificationToleranceBands: ADAPTIVE_DEFAULT_CLASSIFICATION_TOLERANCE_BANDS,
+  levelReachedFrom: ADAPTIVE_DEFAULT_LEVEL_REACHED_FROM,
   topInformationRatio: DEFAULT_TOP_INFORMATION_RATIO,
   defaultDiscrimination: DEFAULT_DISCRIMINATION,
   showTimer: true,

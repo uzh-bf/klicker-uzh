@@ -15,6 +15,22 @@ query QAdaptivePracticeQuizAttemptDiagnostics($practiceQuizId: String!) {
       meanLevelDifference
       meanAbsoluteLevelDifference
     }
+    versions {
+      publicationVersion
+      publishedAt
+      current
+      engineRevision
+      estimatorImplementationVersion
+      measurementVersion
+      attemptCount
+      firstStartedAt
+      lastStartedAt
+      totalQuestionCap
+      minQuestionsPerLeaf
+      classificationZ
+      classificationToleranceBands
+      levelReachedFrom
+    }
     attempts {
       ...FAdaptiveAttemptDiagnosticSummary
     }

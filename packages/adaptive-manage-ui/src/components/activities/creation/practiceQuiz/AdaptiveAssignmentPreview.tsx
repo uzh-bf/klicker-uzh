@@ -1,4 +1,4 @@
-import {
+import type {
   AdaptivePracticeQuizSetupPreviewQuery,
   CompetenceTreeQuery,
 } from '@klicker-uzh/graphql/dist/ops'
@@ -7,7 +7,7 @@ import { useTranslations } from 'next-intl'
 import { useEffect, useId, useMemo, useState } from 'react'
 import { useAdaptiveManageHost } from '../../../../ports'
 import type { AdaptivePracticeQuizConfigFormValues } from '../../../../types/practiceQuiz'
-import { AdaptiveCoverageReadinessData } from './AdaptiveReadinessPanel'
+import type { AdaptiveCoverageReadinessData } from './AdaptiveReadinessPanel'
 
 const DEFAULT_PAGE_SIZE = 20
 

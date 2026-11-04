@@ -145,6 +145,7 @@ export async function createAdaptiveAttempt({
       participantId,
       participationId,
       nextPoolItemId: decision.nextPoolItem.id,
+      engineRevision: process.env.ADAPTIVE_ENGINE_REVISION || null,
       ...(retakeContext ? { retakeContext } : {}),
       ...nextAdaptiveV2DeliveryData(loadedDecision),
     },

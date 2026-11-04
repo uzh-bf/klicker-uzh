@@ -17,7 +17,8 @@ export function serializeLevelBands(
   return mapLevelsToTheta(
     levels,
     settings.thetaRange,
-    settings.levelMappingRule
+    settings.levelMappingRule,
+    settings.levelReachedFrom ?? 0
   ).map((level) => ({
     label: level.label,
     order: level.order,
@@ -49,7 +50,8 @@ export function mapLevelForTheta(
   const mapped = mapLevelsToTheta(
     levels,
     settings.thetaRange,
-    settings.levelMappingRule
+    settings.levelMappingRule,
+    settings.levelReachedFrom ?? 0
   ).find((level) => theta >= level.lowerBound && theta < level.upperBound)
   return mapped
     ? levels.find(

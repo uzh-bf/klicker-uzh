@@ -86,6 +86,7 @@ export function classificationIntervalWithinLevelBand({
   mappingRule = 'NEAREST',
   z = 1.28,
   toleranceBands = 0,
+  reachedFrom = 0,
 }: {
   theta: number
   standardError: number
@@ -94,6 +95,8 @@ export function classificationIntervalWithinLevelBand({
   mappingRule?: LevelMappingRule
   z?: number
   toleranceBands?: number
+  /** See `mapLevelsToTheta`. */
+  reachedFrom?: number
 }) {
   if (!Number.isFinite(standardError) || standardError < 0) return false
 
@@ -101,7 +104,7 @@ export function classificationIntervalWithinLevelBand({
     theta,
     lower: theta - z * standardError,
     upper: theta + z * standardError,
-    bands: mapLevelsToTheta(levels, range, mappingRule),
+    bands: mapLevelsToTheta(levels, range, mappingRule, reachedFrom),
     toleranceBands,
   })
 }
@@ -112,14 +115,16 @@ export function isNearLevelBoundary({
   range = DEFAULT_THETA_RANGE,
   mappingRule = 'NEAREST',
   margin,
+  reachedFrom = 0,
 }: {
   theta: number
   levels: LevelDefinition[]
   range?: ThetaRange
   mappingRule?: LevelMappingRule
   margin: number
+  reachedFrom?: number
 }) {
-  const boundaries = mapLevelsToTheta(levels, range, mappingRule)
+  const boundaries = mapLevelsToTheta(levels, range, mappingRule, reachedFrom)
     .flatMap((level) => [level.lowerBound, level.upperBound])
     .filter((boundary) => Number.isFinite(boundary))
 

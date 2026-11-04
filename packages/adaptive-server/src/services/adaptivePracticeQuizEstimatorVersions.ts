@@ -429,8 +429,17 @@ export function buildAdaptiveDecisionRequest({
 export function v1EngineSettings(
   settings: AdaptiveRuntimeSettings
 ): AdaptiveRuntimeSettings {
-  const { classificationToleranceBands, ...exact } = settings
-  return classificationToleranceBands && classificationToleranceBands > 0
-    ? { ...exact, classificationToleranceBands }
-    : exact
+  // "Level reached from" is never sent: KlickerUZH routes, stops and reports
+  // on the plain bands and uses the stored share as a mastery mark only.
+  const {
+    classificationToleranceBands,
+    levelReachedFrom: _masteryMark,
+    ...exact
+  } = settings
+  return {
+    ...exact,
+    ...(classificationToleranceBands && classificationToleranceBands > 0
+      ? { classificationToleranceBands }
+      : {}),
+  }
 }
