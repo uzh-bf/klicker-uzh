@@ -46,6 +46,22 @@ Two related properties of that resolver are worth knowing before changing it: it
 
 Note the account-duplication trap: participant emails are only unique per auth mode (`@@unique([email, isSSOAccount])` — details in [Data & Migrations](./data-and-migrations.md)).
 
+### LTI failure diagnostics
+
+The LTI service emits `lti_request_failed` JSON records to stderr for failed HTTP requests, independently of `DEBUG`. Each record contains the HTTP status, fixed route and method categories, normalized `Sec-Fetch-Site`/`Mode`/`Dest`, recovered-state presence (`missing`, `empty`, `present`, or `invalid_type`), and booleans for ID-token and state presence. Known ltijs errors retain their machine code; other exception messages become `UNCLASSIFIED_ERROR`. The request-local context keeps concurrent launches separate. Parser errors occur before that context exists and emit a minimal `lti_provider_error` record instead.
+
+For a fresh reproduction, inspect all LTI replicas in the intended environment:
+
+```bash
+kubectl -n <namespace> logs -l app.kubernetes.io/component=lti -c lti \
+  --since=15m --timestamps --prefix --tail=-1 |
+  rg 'lti_request_failed|lti_provider_error'
+```
+
+For `INVALID_STATE`, an explicit fetch-site value other than `same-origin` is rejected before recovered-state verification; a missing header is permitted. With `same-origin` or a missing header, an empty recovered state points to failed browser recovery. A non-empty state still requires verification. These fields describe what reached the server, rather than proving a browser-storage policy caused it. A browser failure before the callback reaches the service still requires browser-console evidence.
+
+The new records contain no token or state values, hashes, cookies, authorization headers, full URLs, user identifiers, IP addresses, or raw browser information. They use the existing operational log destination, access controls, and retention.
+
 ### LTI chatbot entry
 
 Both direct Chat launch targets and existing PWA `/course/:courseId/chatbot/:chatbotId`
