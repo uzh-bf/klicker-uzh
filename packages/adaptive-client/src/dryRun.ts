@@ -18,6 +18,17 @@ const dryRunStudentSchema = z
             levelId: id,
             correct: z.boolean(),
             flipped: z.boolean(),
+            // The item's competence right after this answer (engines since
+            // the per-answer trace; absent on older ones).
+            after: z
+              .object({
+                theta: z.number().finite().nullable(),
+                standardError: z.number().finite().nonnegative().nullable(),
+                levelId: id.nullable(),
+                roughLevelId: id.nullable().optional(),
+              })
+              .strict()
+              .optional(),
           })
           .strict()
       )
@@ -55,15 +66,17 @@ export function parseDryRunResponse(input: unknown, request: DryRunRequest) {
     ...result,
     students: result.students.map((student, index) => {
       if (
-        student.index !== index + 1 ||
+        student.index !== (request.dryRun.firstStudent ?? 0) + index + 1 ||
         student.questionCount !== student.answers.length ||
         student.trueLevels.some(
           ({ nodeId, levelId }) =>
             !rootIds.has(nodeId) || !levelIds.has(levelId)
         ) ||
         student.answers.some(
-          ({ poolItemId, levelId }) =>
-            poolById.get(poolItemId)?.levelId !== levelId
+          ({ poolItemId, levelId, after }) =>
+            poolById.get(poolItemId)?.levelId !== levelId ||
+            (after?.levelId != null && !levelIds.has(after.levelId)) ||
+            (after?.roughLevelId != null && !levelIds.has(after.roughLevelId))
         )
       )
         fail()

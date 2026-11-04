@@ -1,9 +1,13 @@
 import { describe, expect, it, vi } from 'vitest'
-import { summarizeAdaptiveDryRun } from '../src/services/adaptivePracticeQuizDryRunSummary.js'
+import {
+  summarizeAdaptiveDryRun,
+  summarizeAdaptiveDryRunSubcompetences,
+} from '../src/services/adaptivePracticeQuizDryRunSummary.js'
 import {
   buildAdaptiveDryRunSpec,
   getAdaptivePracticeQuizDryRuns,
   runAdaptivePracticeQuizDryRun,
+  splitAdaptiveDryRunRequest,
 } from '../src/services/adaptivePracticeQuizDryRuns.js'
 
 // Synthetic scale: three levels, two competences (nodes 1 and 10).
@@ -132,6 +136,94 @@ describe('dry-run summary', () => {
   })
 })
 
+describe('dry-run subcompetence summary', () => {
+  it('counts answers, coverage, rough deviation and pool gaps per leaf', () => {
+    const base = student(1, 2, [[2, true]], 2)
+    const students = [
+      {
+        ...base,
+        answers: [answer(1), answer(2)],
+        subcompetences: [
+          {
+            nodeId: 2,
+            responseCount: 2,
+            levelId: 3,
+            coverageStatus: 'COVERED',
+          },
+          {
+            nodeId: 3,
+            responseCount: 0,
+            levelId: null,
+            coverageStatus: 'NOT_SAMPLED',
+          },
+        ],
+      },
+      {
+        ...base,
+        index: 2,
+        answers: [answer(1)],
+        subcompetences: [
+          {
+            nodeId: 2,
+            responseCount: 4,
+            levelId: 2,
+            coverageStatus: 'COVERED',
+          },
+          {
+            nodeId: 3,
+            responseCount: 1,
+            levelId: null,
+            coverageStatus: 'OUT_OF_RANGE',
+          },
+        ],
+      },
+      // stored before the breakdown: no leaf rows
+      { ...base, index: 3 },
+    ]
+    const pool = [
+      { id: 1, leafNodeId: 2, levelId: 1 },
+      { id: 2, leafNodeId: 2, levelId: 2 },
+      { id: 3, leafNodeId: 2, levelId: 2 },
+      // counts for leaf 3 through an additional mapping
+      { id: 4, leafNodeId: 2, additionalLeafNodeIds: [3], levelId: 3 },
+    ]
+    const [leaf2, leaf3] = summarizeAdaptiveDryRunSubcompetences({
+      students,
+      levels,
+      leaves: [
+        { nodeId: 2, rootId: 1 },
+        { nodeId: 3, rootId: 1 },
+      ],
+      pool,
+    })
+    expect(leaf2).toMatchObject({
+      meanAnswers: 3,
+      minAnswers: 2,
+      coverage: { COVERED: 2, NOT_SAMPLED: 0, OUT_OF_RANGE: 0 },
+      estimatedCount: 2,
+      // true level 2: reported 3 (+1) and 2 (0)
+      meanDeviation: 0.5,
+      pool: [
+        { levelId: 1, count: 1, used: 1 },
+        { levelId: 2, count: 2, used: 1 },
+        { levelId: 3, count: 1, used: 0 },
+      ],
+    })
+    expect(leaf3).toMatchObject({
+      meanAnswers: 0.5,
+      minAnswers: 0,
+      coverage: { COVERED: 0, NOT_SAMPLED: 1, OUT_OF_RANGE: 1 },
+      estimatedCount: 0,
+      meanDeviation: null,
+      pool: [
+        { levelId: 1, count: 0, used: 0 },
+        { levelId: 2, count: 0, used: 0 },
+        { levelId: 3, count: 1, used: 0 },
+      ],
+    })
+  })
+})
+
 describe('dry-run spec', () => {
   const seed = 'a'.repeat(64)
 
@@ -179,6 +271,25 @@ describe('dry-run spec', () => {
           extensions: { code: 'ADAPTIVE_DRY_RUN_INVALID' },
         })
       )
+  })
+})
+
+describe('dry-run parts', () => {
+  it('splits a run into parts of at most 2,500 decisions', () => {
+    const request = {
+      settings: { totalQuestionCap: 100 },
+      dryRun: { students: 60, seed: 'a'.repeat(64) },
+    } as never
+    expect(
+      splitAdaptiveDryRunRequest(request).map(({ dryRun }) => [
+        dryRun.firstStudent,
+        dryRun.students,
+      ])
+    ).toEqual([
+      [0, 25],
+      [25, 25],
+      [50, 10],
+    ])
   })
 })
 

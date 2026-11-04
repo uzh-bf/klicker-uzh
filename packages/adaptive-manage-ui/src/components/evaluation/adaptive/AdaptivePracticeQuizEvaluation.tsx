@@ -11,6 +11,7 @@ import AdaptiveCompetenceDistributions from './AdaptiveCompetenceDistributions'
 import AdaptiveDistributionBars from './AdaptiveDistributionBars'
 import AdaptivePilotMetrics from './AdaptivePilotMetrics'
 import AdaptiveAttemptDiagnostics from './attemptDiagnostics/AdaptiveAttemptDiagnostics'
+import AdaptiveDryRuns from './dryRuns/AdaptiveDryRuns'
 import type { AdaptiveCohortAttemptSummary } from './types'
 
 function Metric({
@@ -273,6 +274,7 @@ function AdaptivePracticeQuizEvaluation({
           cohortSize={results.cohortSize ?? null}
         />
         <AdaptiveAttemptDiagnostics practiceQuizId={practiceQuizId} />
+        <AdaptiveDryRuns practiceQuizId={practiceQuizId} />
       </main>
     </Layout>
   )

@@ -59,6 +59,18 @@ export function createAdaptiveDryRunSchema(builder: AdaptiveSchemaBuilder) {
       }),
     })
 
+  const SubcompetenceType = builder
+    .objectRef<AdaptiveDryRunWorkspace['subcompetences'][number]>(
+      'AdaptiveDryRunSubcompetence'
+    )
+    .implement({
+      fields: (t) => ({
+        nodeId: t.exposeInt('nodeId'),
+        rootId: t.exposeInt('rootId'),
+        name: t.exposeString('name'),
+      }),
+    })
+
   const ItemType = builder
     .objectRef<AdaptiveDryRunWorkspace['items'][number]>('AdaptiveDryRunItem')
     .implement({
@@ -66,7 +78,20 @@ export function createAdaptiveDryRunSchema(builder: AdaptiveSchemaBuilder) {
         poolItemId: t.exposeInt('poolItemId'),
         elementName: t.exposeString('elementName'),
         levelId: t.exposeInt('levelId'),
+        rootId: t.exposeInt('rootId'),
         nodeNames: t.exposeStringList('nodeNames'),
+      }),
+    })
+
+  const ScaleType = builder
+    .objectRef<NonNullable<AdaptiveDryRunWorkspace['scale']>>(
+      'AdaptiveDryRunScale'
+    )
+    .implement({
+      fields: (t) => ({
+        thetaMin: t.exposeFloat('thetaMin'),
+        thetaMax: t.exposeFloat('thetaMax'),
+        levelMappingRule: t.exposeString('levelMappingRule'),
       }),
     })
 
@@ -81,8 +106,12 @@ export function createAdaptiveDryRunSchema(builder: AdaptiveSchemaBuilder) {
         publicationId: t.exposeString('publicationId', { nullable: true }),
         levels: t.expose('levels', { type: [LevelType] }),
         competences: t.expose('competences', { type: [CompetenceType] }),
+        subcompetences: t.expose('subcompetences', {
+          type: [SubcompetenceType],
+        }),
         items: t.expose('items', { type: [ItemType] }),
         defaults: t.expose('defaults', { type: 'Json', nullable: true }),
+        scale: t.expose('scale', { type: ScaleType, nullable: true }),
         maxStudents: t.exposeInt('maxStudents'),
         maxDecisions: t.exposeInt('maxDecisions'),
         runs: t.expose('runs', { type: [AdaptiveDryRunRef] }),
