@@ -7,9 +7,10 @@
 -- The column defaults to false, so a deliberate administrator opt-out cannot
 -- be told apart and is switched on as well. Question and flashcard generation
 -- keep their own rollout flag and do not open with this approval.
+-- Administrator accounts are lecturers too and are included.
 UPDATE "User" AS u
 SET "aiFeaturesEnabled" = true
-WHERE u."role" = 'USER'
+WHERE u."role" IN ('USER', 'ADMIN')
   AND u."aiFeaturesEnabled" = false
   AND (
     lower(split_part(u."email", '@', 2)) = 'uzh.ch'
