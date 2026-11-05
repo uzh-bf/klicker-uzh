@@ -74,9 +74,9 @@ describe('credits balance display', () => {
       mocks.settings.credits = { current: 2.98, total: 3, nextResetAt: null }
       expect(display(render(), cy)).toBe('2.98 / 3')
 
-      // a sub-cent charge still moves the balance off the whole credit
-      mocks.settings.credits = { current: 2.995, total: 3, nextResetAt: null }
-      expect(display(render(), cy)).toBe('2.99 / 3')
+      // a BASE-model message costs about 0.0005 and must still move it
+      mocks.settings.credits = { current: 2.97945, total: 3, nextResetAt: null }
+      expect(display(render(), cy)).toBe('2.9794 / 3')
     })
   }
 

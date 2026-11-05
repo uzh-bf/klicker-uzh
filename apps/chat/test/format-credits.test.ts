@@ -44,21 +44,27 @@ describe('formatCreditBalance', () => {
 
   test('shows a fractional balance so each message moves it', () => {
     expect(formatCreditBalance(2.98)).toBe('2.98')
-    expect(formatCreditBalance(2.96)).toBe('2.96')
     expect(formatCreditBalance(2.9)).toBe('2.9')
     expect(formatCreditBalance(0.29)).toBe('0.29')
+    // a typical BASE-model message costs about 0.0005 credits
+    expect(formatCreditBalance(2.98 - 0.00055)).toBe('2.9794')
+    expect(formatCreditBalance(2.97945 - 0.00055)).toBe('2.9789')
   })
 
-  test('truncates instead of rounding up to the next whole credit', () => {
-    // 3 - 0.005 must not read as a full "3"
-    expect(formatCreditBalance(2.995)).toBe('2.99')
-    expect(formatCreditBalance(2.999999)).toBe('2.99')
-    expect(formatCreditBalance(0.019)).toBe('0.01')
+  test('truncates instead of rounding up', () => {
+    // 3 minus a tiny charge must not read as a full "3"
+    expect(formatCreditBalance(2.99999)).toBe('2.9999')
+    expect(formatCreditBalance(2.999999)).toBe('2.9999')
+    expect(formatCreditBalance(0.019)).toBe('0.019')
+    expect(formatCreditBalance(0.0049)).toBe('0.0049')
+    expect(formatCreditBalance(0.009999)).toBe('0.0099')
+    expect(formatCreditBalance(0.000049)).toBe('0.00004')
   })
 
   test('keeps the first significant digit of a nearly empty balance', () => {
     expect(formatCreditBalance(0.004)).toBe('0.004')
-    expect(formatCreditBalance(0.0004)).toBe('0.0004')
+    expect(formatCreditBalance(0.00004)).toBe('0.00004')
+    expect(formatCreditBalance(0.000001)).toBe('0.000001')
   })
 
   test('handles zero, negative and non-finite input', () => {

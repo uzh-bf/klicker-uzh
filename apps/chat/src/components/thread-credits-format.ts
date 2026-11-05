@@ -19,24 +19,31 @@ export const formatCredits = (value: number) => {
   return rounded.replace(/(\.\d*?)0+$/, '$1').replace(/\.$/, '')
 }
 
+// Per-message costs range from a few hundredths of a credit down to well
+// below 0.001 (the BASE fallback model charges about 0.0005 for a typical
+// exchange), so the balance needs four decimals before most messages move it.
+const BALANCE_DECIMALS = 4
+
 /**
- * Renders a remaining credit balance so that every charged message visibly
- * moves it. Per-message costs are fractions of a credit (often 0.01–0.05), so
- * rounding the balance to whole credits left it stuck at e.g. "3" after
- * several messages. Balances keep up to two decimals and are truncated rather
- * than rounded, so the display never overstates what is left (2.999 shows
- * "2.99", not "3"). Below 0.01 the first significant digit is kept, so a
- * nearly-empty balance does not read as "0" while it can still be spent.
+ * Renders a remaining credit balance so that a charged message visibly moves
+ * it. Balances keep up to four decimals (trailing zeros trimmed, so a fresh
+ * balance still reads "3" and 2.98 reads "2.98") and are truncated rather than
+ * rounded, so the display never overstates what is left: 2.99999 shows
+ * "2.9999", not "3", and 0.0049 shows "0.0049", not "0.005". Balances below
+ * 0.0001 keep their first significant digit so they do not read as "0" while
+ * they can still be spent.
  */
 export const formatCreditBalance = (value: number) => {
   if (!Number.isFinite(value) || value <= 0) return '0'
-  if (value < 0.01) return formatCredits(value)
 
-  // The epsilon absorbs binary representation error (0.29 * 100 is
-  // 28.999999999999996); balances are stored with at most six decimals.
-  const truncated = Math.floor(value * 100 + 1e-9) / 100
+  const decimals = Math.max(BALANCE_DECIMALS, -Math.floor(Math.log10(value)))
+  const factor = 10 ** decimals
+  // The epsilon absorbs binary representation error (0.29 * 10000 is
+  // 2899.9999999999995); stored balances have at most six decimals, so it
+  // never lifts a value into the next step.
+  const truncated = Math.floor(value * factor + 1e-6) / factor
   return truncated
-    .toFixed(2)
+    .toFixed(decimals)
     .replace(/(\.\d*?)0+$/, '$1')
     .replace(/\.$/, '')
 }
