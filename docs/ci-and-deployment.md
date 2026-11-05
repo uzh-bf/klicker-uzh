@@ -1367,6 +1367,40 @@ assets. The Dockerfiles declare and export matching build arguments before the
 Next build. See [Feature Flags](./feature-flags.md) for the complete runtime and
 operator contract.
 
+## Northflank preview pilot
+
+The provisional preview workflow plans only. The profile planner uses the
+existing image inventory and Devrouter closure, with an explicit branch
+allowlist and opt-in same-repository PRs. Public forks are excluded. The native
+graph and argument assembler create inactive service definitions; credential
+attachment and ordered startup remain separate stages. See the
+[pilot plan](../project/2026-10-24-northflank-dev-environment-plan.md) for hosted
+evidence and the remaining automatic-provisioning work.
+
+`packages/prisma/scripts/northflankBootstrap.ts` prepares a newly owned,
+initially empty PostgreSQL addon. Its native job must receive
+`KLICKER_NORTHFLANK_BOOTSTRAP_DATABASE_URL`,
+`KLICKER_NORTHFLANK_POSTGRES_HOST`, `KLICKER_NORTHFLANK_DISPOSABLE=1` and
+`KLICKER_NORTHFLANK_APP_PASSWORD`; `KLICKER_NORTHFLANK_HATCHET_PASSWORD` adds a
+separate restricted Hatchet role/database. These are job-local inputs, not
+application credentials or a retained-database migration command. The controller
+must verify the addon's recorded ownership before injecting its administrator
+connection. Keep that connection restricted to the bootstrap job.
+
+Bootstrap defaults to a dry run. Applying with `DRY_RUN=false` creates marked
+app/shadow databases and restricted roles, then verifies the actual app login
+and schema privileges. Existing roles, markers, application objects or other
+client connections cause refusal. It neither resets nor retries a partially
+initialized target; recovery requires recreating the owned disposable target.
+
+Pass private values directly to scoped project secret groups in memory.
+Northflank's [template-time secret references appear in run
+logs](https://northflank.com/docs/v1/application/secure/reference-global-secrets).
+The assembler accepts only deferred runtime references in secret arguments and
+keeps service instances at zero, including for admitted updates. Reference
+resolution, recipient coverage, bootstrap-job wiring and the later ordered
+start still require provider qualification before automatic creation is enabled.
+
 ## Release flow
 
 Version bumps are **local and manual** via standard-version: `pnpm run release[:alpha|:beta|:rc]` bumps the root plus ~20 package.jsons (`.versionrc.js`), writes the changelog, commits, and tags. Pushing the tag triggers the prd image builds; strict `vX.Y.Z` tags additionally create a GitHub Release (`release.yml`) — alpha tags build prd images without a Release. The Helm `Chart.yaml` auto-bump is commented out in `.versionrc.js`, which is why the chart version drifts.
@@ -1389,6 +1423,10 @@ which `v3-ai` never carried.
 pull requests whose base is `v3`. It compares the candidate revision with
 `origin/v3-ai` and names every path under `deploy/` that differs. A push to `v3`
 is an authoritative check of the branch itself and must match.
+
+`deploy/northflank/` is excluded because its isolated preview resources are
+deployed independently of the production chart and environment values. This
+exception does not cover other paths under `deploy/`.
 
 A pull request is responsible only for the `deploy/` paths it edits: it passes
 its base revision, so a change that leaves `deploy/` untouched reports an

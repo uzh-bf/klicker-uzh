@@ -1,5 +1,6 @@
 import { prisma } from '@klicker-uzh/prisma'
 import { ChatbotStatus, type Prisma } from '@klicker-uzh/prisma/client'
+import { previewCookieName } from '@klicker-uzh/util'
 import { jwtVerify } from 'jose'
 import { type NextRequest, NextResponse } from 'next/server'
 import { z } from 'zod'
@@ -108,7 +109,7 @@ export async function withChatbotAuth(
   | { response: NextResponse }
 > {
   return withChatbotTokenAuth(
-    req.cookies.get('participant_token')?.value,
+    req.cookies.get(previewCookieName('participant_token'))?.value,
     chatbotId
   )
 }

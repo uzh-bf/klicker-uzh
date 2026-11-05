@@ -1,15 +1,29 @@
 .**
 
+# The five Next image builds load these committed build defaults. Keep every
+# other nested environment file, including local overrides, out of the context.
+**/.env*
+!apps/auth/.env.production
+!apps/chat/.env.production
+!apps/frontend-control/.env.production
+!apps/frontend-manage/.env.production
+!apps/frontend-pwa/.env.production
+
 __**
 
-deploy/
+deploy/*
+!deploy/northflank/
+deploy/northflank/*
+!deploy/northflank/Dockerfile.fixtures
 docs/
 legacy/
 newsletter/
+project/
 **/.next/
 **/node_modules/
 **/.turbo/
 **/.venv/
-util/
+util/**
+!util/preview-build-env.mjs
 
 Dockerfile
