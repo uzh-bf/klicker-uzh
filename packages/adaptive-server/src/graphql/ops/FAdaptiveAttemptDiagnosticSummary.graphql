@@ -33,6 +33,7 @@ fragment FAdaptiveAttemptDiagnosticSummary on AdaptiveAttemptDiagnosticSummary {
   startedAt
   completedAt
   elapsedSeconds
+  engineRevision
   stopReason
   answerCount
   overall {
