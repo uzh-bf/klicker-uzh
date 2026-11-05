@@ -4,12 +4,18 @@ import { Progress } from '@uzh-bf/design-system'
 import { Zap } from 'lucide-react'
 import { useFormatter, useTranslations } from 'next-intl'
 import { useSettingsStore } from '../stores/settingsStore'
-import { formatCredits } from './thread-credits-format'
+import { formatCreditBalance, formatCredits } from './thread-credits-format'
 
-function CreditBalance({ current, total }: { current: number; total: number }) {
+export function CreditBalance({
+  current,
+  total,
+}: {
+  current: number
+  total: number
+}) {
   return (
     <>
-      {formatCredits(current)} / {formatCredits(total)}
+      {formatCreditBalance(current)} / {formatCredits(total)}
     </>
   )
 }
@@ -85,7 +91,7 @@ export function CreditsFooter() {
           data-cy="chat-credits-display"
           className="text-muted-foreground ml-auto text-sm tabular-nums"
         >
-          {Math.round(credits.current)} / {credits.total}
+          <CreditBalance current={credits.current} total={credits.total} />
         </span>
       </div>
 
@@ -105,6 +111,11 @@ export function CreditsFooter() {
           indicator: `h-1.5 ${indicatorColor}`,
         }}
         formatter={() => null}
+        // The indicator otherwise keeps a 40px minimum width for its (unused)
+        // label, so a nearly empty or exhausted balance would still look like
+        // a sizable bar. Each message moves the balance by a fraction of a
+        // credit, and the bar has to show that.
+        noMinWidth
       />
 
       <p className="text-muted-foreground text-xs">
