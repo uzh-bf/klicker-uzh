@@ -1,6 +1,6 @@
 import { describe, expect, test } from 'vitest'
 import {
-  formatCreditBalance,
+  creditPercent,
   formatCredits,
 } from '../src/components/thread-credits-format'
 
@@ -36,40 +36,29 @@ describe('formatCredits', () => {
   })
 })
 
-describe('formatCreditBalance', () => {
-  test('keeps whole balances whole', () => {
-    expect(formatCreditBalance(3)).toBe('3')
-    expect(formatCreditBalance(100)).toBe('100')
+describe('creditPercent', () => {
+  test('shows a full budget as 100', () => {
+    expect(creditPercent(3, 3)).toBe(100)
   })
 
-  test('shows a fractional balance so each message moves it', () => {
-    expect(formatCreditBalance(2.98)).toBe('2.98')
-    expect(formatCreditBalance(2.9)).toBe('2.9')
-    expect(formatCreditBalance(0.29)).toBe('0.29')
-    // a typical BASE-model message costs about 0.0005 credits
-    expect(formatCreditBalance(2.98 - 0.00055)).toBe('2.9794')
-    expect(formatCreditBalance(2.97945 - 0.00055)).toBe('2.9789')
+  test('rounds down so it never overstates what is left', () => {
+    expect(creditPercent(2.98, 3)).toBe(99)
+    expect(creditPercent(2.999, 3)).toBe(99)
+    expect(creditPercent(1.5, 3)).toBe(50)
+    expect(creditPercent(0.0049, 3)).toBe(0)
   })
 
-  test('truncates instead of rounding up', () => {
-    // 3 minus a tiny charge must not read as a full "3"
-    expect(formatCreditBalance(2.99999)).toBe('2.9999')
-    expect(formatCreditBalance(2.999999)).toBe('2.9999')
-    expect(formatCreditBalance(0.019)).toBe('0.019')
-    expect(formatCreditBalance(0.0049)).toBe('0.0049')
-    expect(formatCreditBalance(0.009999)).toBe('0.0099')
-    expect(formatCreditBalance(0.000049)).toBe('0.00004')
+  test('absorbs floating-point error at exact steps', () => {
+    // 2.97 / 3 * 100 is 98.99999999999999 in binary floating point
+    expect(creditPercent(2.97, 3)).toBe(99)
+    expect(creditPercent(0.29, 1)).toBe(29)
   })
 
-  test('keeps the first significant digit of a nearly empty balance', () => {
-    expect(formatCreditBalance(0.004)).toBe('0.004')
-    expect(formatCreditBalance(0.00004)).toBe('0.00004')
-    expect(formatCreditBalance(0.000001)).toBe('0.000001')
-  })
-
-  test('handles zero, negative and non-finite input', () => {
-    expect(formatCreditBalance(0)).toBe('0')
-    expect(formatCreditBalance(-0.5)).toBe('0')
-    expect(formatCreditBalance(Number.NaN)).toBe('0')
+  test('clamps to 0-100 and handles an empty or invalid budget', () => {
+    expect(creditPercent(0, 3)).toBe(0)
+    expect(creditPercent(-1, 3)).toBe(0)
+    expect(creditPercent(4, 3)).toBe(100)
+    expect(creditPercent(1, 0)).toBe(0)
+    expect(creditPercent(Number.NaN, 3)).toBe(0)
   })
 })

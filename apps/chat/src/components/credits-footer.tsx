@@ -4,21 +4,7 @@ import { Progress } from '@uzh-bf/design-system'
 import { Zap } from 'lucide-react'
 import { useFormatter, useTranslations } from 'next-intl'
 import { useSettingsStore } from '../stores/settingsStore'
-import { formatCreditBalance, formatCredits } from './thread-credits-format'
-
-export function CreditBalance({
-  current,
-  total,
-}: {
-  current: number
-  total: number
-}) {
-  return (
-    <>
-      {formatCreditBalance(current)} / {formatCredits(total)}
-    </>
-  )
-}
+import { creditPercent } from './thread-credits-format'
 
 /**
  * Keeps the balance and exhausted state visible in the main mobile layout
@@ -46,7 +32,7 @@ export function MobileCreditsBar() {
           data-cy="chat-mobile-credits-display"
           className="ml-auto shrink-0 font-medium tabular-nums"
         >
-          <CreditBalance current={credits.current} total={credits.total} />
+          {creditPercent(credits.current, credits.total)}%
         </span>
       </div>
       {credits.current === 0 ? (
@@ -91,7 +77,7 @@ export function CreditsFooter() {
           data-cy="chat-credits-display"
           className="text-muted-foreground ml-auto text-sm tabular-nums"
         >
-          <CreditBalance current={credits.current} total={credits.total} />
+          {creditPercent(credits.current, credits.total)}%
         </span>
       </div>
 

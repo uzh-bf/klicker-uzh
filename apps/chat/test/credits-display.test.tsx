@@ -14,7 +14,8 @@ const mocks = vi.hoisted(() => ({
 }))
 
 vi.mock('next-intl', () => ({
-  useTranslations: () => (key: string) => key,
+  useTranslations: () => (key: string, values?: { percent?: number }) =>
+    key === 'chat.credits.embeddedLabel' ? `Credits: ${values?.percent}%` : key,
   useFormatter: () => ({ dateTime: () => 'date' }),
 }))
 
@@ -27,6 +28,7 @@ import {
   CreditsFooter,
   MobileCreditsBar,
 } from '../src/components/credits-footer'
+import { EmbeddedCreditsBar } from '../src/components/embedded-settings'
 
 function display(markup: string, dataCy: string) {
   const match = markup.match(
@@ -55,20 +57,33 @@ describe('credits balance display', () => {
   })
 
   for (const { name, Component, cy } of views) {
-    test(`${name} shows the fractional balance after a message`, () => {
+    test(`${name} shows the remaining percentage after a message`, () => {
       const render = () => renderToStaticMarkup(React.createElement(Component))
 
-      expect(display(render(), cy)).toBe('3 / 3')
+      expect(display(render(), cy)).toBe('100%')
 
       // a refreshed balance after a 0.02-credit message
       mocks.settings.credits = { current: 2.98, total: 3, nextResetAt: null }
-      expect(display(render(), cy)).toBe('2.98 / 3')
+      expect(display(render(), cy)).toBe('99%')
 
-      // a BASE-model message costs about 0.0005 and must still move it
-      mocks.settings.credits = { current: 2.97945, total: 3, nextResetAt: null }
-      expect(display(render(), cy)).toBe('2.9794 / 3')
+      mocks.settings.credits = { current: 1.5, total: 3, nextResetAt: null }
+      expect(display(render(), cy)).toBe('50%')
     })
   }
+
+  test('all three views show the same percentage', () => {
+    for (const current of [3, 2.98, 2.97, 1.5, 0.0049, 0]) {
+      mocks.settings.credits = { current, total: 3, nextResetAt: null }
+      const [sidebar, mobile] = views.map(({ Component, cy }) =>
+        display(renderToStaticMarkup(React.createElement(Component)), cy)
+      )
+      const embedded = renderToStaticMarkup(
+        React.createElement(EmbeddedCreditsBar)
+      )
+      expect(mobile).toBe(sidebar)
+      expect(embedded).toContain(`Credits: ${sidebar}`)
+    }
+  })
 
   test('the progress bar follows the fractional balance', () => {
     mocks.settings.credits = { current: 1.5, total: 3, nextResetAt: null }
@@ -94,6 +109,6 @@ describe('credits balance display', () => {
     const markup = renderToStaticMarkup(React.createElement(CreditsFooter))
     expect(markup).toContain('chat.credits.resetAt')
     expect(markup).toContain('data-cy="chat-credits-empty-message"')
-    expect(display(markup, 'chat-credits-display')).toBe('0 / 3')
+    expect(display(markup, 'chat-credits-display')).toBe('0%')
   })
 })
