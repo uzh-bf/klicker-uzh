@@ -453,6 +453,24 @@ frontendPWA:
   # burst HPA, which the stg Argo CD Application excludes from replica drift.
   burst:
     enabled: true
+    # Soft spread, so losing one spot node does not remove the whole tier
+    # while a tight pool can still place every burst pod. The selector names
+    # the tier label, so baseline pods do not count toward the skew.
+    topologySpreadConstraints:
+      - maxSkew: 1
+        topologyKey: topology.kubernetes.io/zone
+        whenUnsatisfiable: ScheduleAnyway
+        labelSelector:
+          matchLabels:
+            app.kubernetes.io/component: frontend-pwa
+            klicker.uzh.ch/tier: burst
+      - maxSkew: 1
+        topologyKey: kubernetes.io/hostname
+        whenUnsatisfiable: ScheduleAnyway
+        labelSelector:
+          matchLabels:
+            app.kubernetes.io/component: frontend-pwa
+            klicker.uzh.ch/tier: burst
 
   preStopSleepSeconds: 5
 

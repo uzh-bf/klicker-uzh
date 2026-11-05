@@ -10,6 +10,7 @@ import {
   evaluateSpreadContract,
   evaluateValuesContract,
   expectedSpread,
+  expectedStagingSpread,
   findRenderedSpreadFields,
   findUnlistedSpreadFields,
   inspectRenderedDeployments,
@@ -250,6 +251,42 @@ describe('topology spread contract', () => {
           failure.includes('app-klicker-unlabelled') &&
           failure.includes('without an app.kubernetes.io/component pod label')
       ),
+      `unexpected failures: ${failures.join(' | ')}`
+    )
+  })
+})
+
+describe('staging burst spread contract', () => {
+  const burstConstraint = (topologyKey, tier) =>
+    spreadConstraint('frontend-pwa', topologyKey, {
+      labelSelector: {
+        matchLabels: {
+          'app.kubernetes.io/component': 'frontend-pwa',
+          'klicker.uzh.ch/tier': tier,
+        },
+      },
+    })
+  const stagingFailures = (tier) =>
+    evaluateSpreadContract(
+      inspectRenderedDeployments([
+        deployment('frontend-pwa', undefined),
+        deployment('frontend-pwa', [
+          burstConstraint(zoneKey, tier),
+          burstConstraint(hostnameKey, tier),
+        ]),
+      ]),
+      expectedStagingSpread,
+      'staging'
+    )
+
+  it('accepts burst constraints that select the burst tier', () => {
+    assert.deepEqual(stagingFailures('burst'), [])
+  })
+
+  it('rejects burst constraints that would count baseline pods', () => {
+    const failures = stagingFailures(undefined)
+    assert.ok(
+      failures.some((failure) => failure.includes('expected burst')),
       `unexpected failures: ${failures.join(' | ')}`
     )
   })

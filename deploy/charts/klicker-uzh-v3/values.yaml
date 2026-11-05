@@ -443,6 +443,8 @@ frontendPWA:
         cpu: 150m
     # Kept below the roughly 30-second spot eviction notice.
     terminationGracePeriodSeconds: 25
+    # Burst pod spread. Empty renders no field.
+    topologySpreadConstraints: []
 
   # Optional delay before SIGTERM on both PWA tiers, so Service endpoints drop a
   # terminating pod before the server stops. It counts against the termination

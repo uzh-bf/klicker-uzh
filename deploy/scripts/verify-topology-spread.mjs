@@ -27,6 +27,7 @@ const productionValuesPath = join(
 
 const releaseName = 'app-klicker'
 const componentLabel = 'app.kubernetes.io/component'
+const tierLabel = 'klicker.uzh.ch/tier'
 const spreadField = 'topologySpreadConstraints'
 const expectedMaxSkew = 1
 const expectedWhenUnsatisfiable = 'ScheduleAnyway'
@@ -72,6 +73,17 @@ export const expectedSpread = [
     component: 'mcp-lecturer',
     valuesPath: 'mcpLecturer',
     origin: 'pre-existing',
+  },
+]
+
+// The staging contract: only the PWA burst tier spreads there. Its selector
+// also names the tier, so the baseline PWA pods do not count toward the skew.
+export const expectedStagingSpread = [
+  {
+    component: 'frontend-pwa',
+    tier: 'burst',
+    valuesPath: 'frontendPWA.burst',
+    origin: 'this-change',
   },
 ]
 
@@ -122,7 +134,7 @@ export function inspectRenderedDeployments(documents) {
 // below inspects it in detail. A values-driven workload of another kind (the
 // PreSync migrate Job renders `migrator` values into its pod spec) would
 // otherwise carry a scheduling policy that no assertion looks at.
-export function findUnlistedSpreadFields(documents) {
+export function findUnlistedSpreadFields(documents, label = 'production') {
   return findRenderedSpreadFields(documents)
     .filter(
       (field) =>
@@ -130,12 +142,12 @@ export function findUnlistedSpreadFields(documents) {
     )
     .map(
       (field) =>
-        `production values: ${field.kind} ${field.name} renders ${field.path}; ` +
-        'the production contract covers only Deployment pod specs'
+        `${label} values: ${field.kind} ${field.name} renders ${field.path}; ` +
+        `the ${label} contract covers only Deployment pod specs`
     )
 }
 
-function evaluateConstraint(component, topologyKey, constraint) {
+function evaluateConstraint({ component, tier }, topologyKey, constraint) {
   const failures = []
   if (constraint?.maxSkew !== expectedMaxSkew) {
     failures.push(
@@ -161,10 +173,22 @@ function evaluateConstraint(component, topologyKey, constraint) {
       )}, expected ${component}`
     )
   }
+  const selectedTier = constraint?.labelSelector?.matchLabels?.[tierLabel]
+  if (tier !== undefined && selectedTier !== tier) {
+    failures.push(
+      `${component}: the ${topologyKey} constraint selects tier ${JSON.stringify(
+        selectedTier
+      )}, expected ${tier}`
+    )
+  }
   return failures
 }
 
-export function evaluateSpreadContract(deployments, expected = expectedSpread) {
+export function evaluateSpreadContract(
+  deployments,
+  expected = expectedSpread,
+  label = 'production'
+) {
   const failures = []
   const renderedComponents = new Set()
   const renderedSpread = new Map()
@@ -191,14 +215,14 @@ export function evaluateSpreadContract(deployments, expected = expectedSpread) {
     if (!renderedComponents.has(entry.component)) {
       failures.push(
         `${entry.component}: no Deployment carries this ${componentLabel} ` +
-          'label in the production render'
+          `label in the ${label} render`
       )
       continue
     }
     const constraints = renderedSpread.get(entry.component)
     if (constraints === undefined) {
       failures.push(
-        `${entry.component}: the production render forwards no ${spreadField} ` +
+        `${entry.component}: the ${label} render forwards no ${spreadField} ` +
           `to the pod spec, so ${entry.valuesPath} stays inert`
       )
       continue
@@ -220,9 +244,7 @@ export function evaluateSpreadContract(deployments, expected = expectedSpread) {
         )
         continue
       }
-      failures.push(
-        ...evaluateConstraint(entry.component, topologyKey, matching[0])
-      )
+      failures.push(...evaluateConstraint(entry, topologyKey, matching[0]))
     }
   }
 
@@ -256,7 +278,11 @@ export function findValuesSpreadOwners(value, path = []) {
   )
 }
 
-export function evaluateValuesContract(values, expected = expectedSpread) {
+export function evaluateValuesContract(
+  values,
+  expected = expectedSpread,
+  label = 'production'
+) {
   const failures = []
   const defined = new Set(findValuesSpreadOwners(values))
   const covered = new Set(expected.map((entry) => entry.valuesPath))
@@ -264,7 +290,7 @@ export function evaluateValuesContract(values, expected = expectedSpread) {
   for (const valuesPath of defined) {
     if (covered.has(valuesPath)) continue
     failures.push(
-      `production values: ${valuesPath}.${spreadField} defines a scheduling ` +
+      `${label} values: ${valuesPath}.${spreadField} defines a scheduling ` +
         'policy that the expected contract does not cover; extend ' +
         'expectedSpread or remove the values entry'
     )
@@ -272,7 +298,7 @@ export function evaluateValuesContract(values, expected = expectedSpread) {
   for (const valuesPath of covered) {
     if (defined.has(valuesPath)) continue
     failures.push(
-      `expectedSpread covers ${valuesPath}, but the production values define ` +
+      `the ${label} contract covers ${valuesPath}, but the ${label} values define ` +
         `no ${spreadField} there; the contract entry is stale`
     )
   }
@@ -280,13 +306,11 @@ export function evaluateValuesContract(values, expected = expectedSpread) {
   return failures
 }
 
-export function readProductionValues() {
-  const documents = parseAllDocuments(
-    readFileSync(productionValuesPath, 'utf8')
-  )
+export function readValues(valuesPath = productionValuesPath) {
+  const documents = parseAllDocuments(readFileSync(valuesPath, 'utf8'))
   const parseErrors = documents.flatMap((document) => document.errors)
   if (parseErrors.length > 0) {
-    throw new Error(`production values are not valid YAML: ${parseErrors[0]}`)
+    throw new Error(`${valuesPath} is not valid YAML: ${parseErrors[0]}`)
   }
   return documents.map((document) => document.toJS()).filter(Boolean)
 }
@@ -334,15 +358,18 @@ export function renderChart(valuesPath) {
 }
 
 // Lint and render every supported configuration, then assert that only the
-// production workloads in the expected contract carry spread constraints and
-// that each of them carries the intended scheduling settings.
+// workloads in the production and staging contracts carry spread constraints
+// and that each of them carries the intended scheduling settings.
 export function verifyChartContract() {
   for (const render of renderConfigurations) lintChart(render.valuesPath)
 
   const failures = []
   failures.push(
-    ...readProductionValues().flatMap((values) =>
-      evaluateValuesContract(values)
+    ...readValues().flatMap((values) => evaluateValuesContract(values))
+  )
+  failures.push(
+    ...readValues(stagingValuesPath).flatMap((values) =>
+      evaluateValuesContract(values, expectedStagingSpread, 'staging')
     )
   )
   let productionDocuments = []
@@ -350,6 +377,17 @@ export function verifyChartContract() {
     const documents = renderChart(render.valuesPath)
     if (render.label === 'production values') {
       productionDocuments = documents
+      continue
+    }
+    if (render.label === 'staging values') {
+      failures.push(...findUnlistedSpreadFields(documents, 'staging'))
+      failures.push(
+        ...evaluateSpreadContract(
+          inspectRenderedDeployments(documents),
+          expectedStagingSpread,
+          'staging'
+        )
+      )
       continue
     }
     for (const field of findRenderedSpreadFields(documents)) {
@@ -379,7 +417,9 @@ export function summarizeContract() {
     `(${rendered.map((entry) => entry.component).join(', ')}); ` +
     `${existing.length} keep the constraints they already rendered ` +
     `(${existing.map((entry) => entry.component).join(', ')}); ` +
-    'chart defaults and staging values render no spread field'
+    `staging values spread only ${expectedStagingSpread
+      .map((entry) => `${entry.component} ${entry.tier}`)
+      .join(', ')}; chart defaults render no spread field`
   )
 }
 
