@@ -30,6 +30,7 @@ import {
   isFeatureFlagEnabled,
   requireFeatureFlagAccess,
 } from '../lib/featureFlags.js'
+import { assertManageAiEnabled } from '../lib/manageAiFeatureGate.js'
 import {
   type ChatbotCreditPolicy,
   DEFAULT_CHATBOT_CREDIT_POLICY,
@@ -2273,6 +2274,10 @@ export async function createChatbot(
   args: CreateChatbotArgs,
   ctx: ContextWithUser
 ) {
+  // Creating a chatbot needs the account's AI approval, like knowledge bases.
+  // Editing and withdrawing existing chatbots keep the authoring gate alone.
+  await assertManageAiEnabled(ctx)
+
   // Resource-level authorization: the target course must belong to the
   // requesting lecturer. Pothos already checked authenticate + catalyst; this
   // is the third (execute-time ownership) layer of the auth model.

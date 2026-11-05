@@ -52,9 +52,11 @@ async function cleanupAuthoringChatbots() {
     where: { name: { startsWith: CHATBOT_PREFIX } },
   })
 
+  // Chatbot authoring requires the AI approval; tests that exercise a
+  // missing approval switch it off themselves.
   await prisma.user.update({
     where: { id: USER_ID_TEST },
-    data: { aiFeaturesEnabled: false },
+    data: { aiFeaturesEnabled: true },
   })
 }
 
@@ -1778,7 +1780,7 @@ test.describe.serial('Lecturer chatbot draft authoring', () => {
     await expect(page.getByTestId('chatbot-publication-readonly')).toBeVisible()
   })
 
-  test('keeps an unauthorized draft available for preparation', async ({
+  test('withholds chatbot authoring without the AI approval', async ({
     page,
   }) => {
     await setPublishingAuthorization(false)
@@ -1789,14 +1791,10 @@ test.describe.serial('Lecturer chatbot draft authoring', () => {
     })
     await page.reload()
 
-    await expect(page.getByTestId('chatbot-setup-review')).toBeVisible()
-    await expect(page.getByTestId('chatbot-publication-use-case')).toBeVisible()
-    await expect(page.getByTestId('request-chatbot-publication')).toBeDisabled()
     await expect(
-      page.getByText(
-        'This account is not approved to request chatbot publication.'
-      )
+      page.getByTestId('chatbot-authoring-unavailable')
     ).toBeVisible()
+    await expect(page.getByTestId('create-chatbot')).not.toBeAttached()
   })
 
   test('blocks submission for a linked but incomplete disclaimer', async ({

@@ -44,6 +44,10 @@ const server = createServer((request, response) => {
             defaultValue: false,
             rules: [{ condition: { id: enabledUserId }, force: true }],
           },
+          'question-generation': {
+            defaultValue: false,
+            rules: [{ condition: { id: enabledUserId }, force: true }],
+          },
         },
       })
     )

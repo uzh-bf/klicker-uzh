@@ -1,6 +1,6 @@
 import type { AppLogger } from '@klicker-uzh/logging/node'
 import { type NextRequest, NextResponse } from 'next/server'
-import { getManageAiCapability } from '@/src/lib/server/featureFlags'
+import { getManageAssistantCapability } from '@/src/lib/server/featureFlags'
 import { getAuthenticatedManageUser } from '@/src/lib/server/manageAuth'
 import { withRouteLogging } from '@/src/lib/server/requestLogging'
 import { loadLecturerMcpTools } from '@/src/services/lecturerMcp'
@@ -36,7 +36,7 @@ async function handleGET(req: NextRequest, log: AppLogger) {
   if (!manageUser) return capabilityResponse('unavailable', 401)
 
   try {
-    const aiCapability = await getManageAiCapability(manageUser)
+    const aiCapability = await getManageAssistantCapability(manageUser)
     if (aiCapability === 'disabled') {
       return capabilityResponse('unavailable', 403)
     }

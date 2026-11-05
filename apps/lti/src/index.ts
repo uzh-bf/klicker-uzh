@@ -1,6 +1,5 @@
 import { signJWT } from '@klicker-uzh/util'
 import {
-  DefaultLogger,
   ExpressHttpHandler,
   IdTokenValidationMethod,
   type LaunchContext,
@@ -18,6 +17,7 @@ import {
   parsePlatform,
   resolvePlatforms,
 } from './platforms.js'
+import { createRequestLogging } from './requestLogging.js'
 
 // Validate required environment variables
 if (!process.env.APP_ORIGIN_LTI) {
@@ -45,16 +45,19 @@ const database = new PostgresDatabaseManager(
 const port = Number(process.env.LTI_PORT ?? 4000)
 
 // No browser calls the LTI service cross-origin, so CORS stays off.
-const httpHandler = new ExpressHttpHandler(new DefaultLogger(), {
+const requestLogging = createRequestLogging()
+const httpHandler = new ExpressHttpHandler(requestLogging.logger, {
   port,
   cors: false,
 })
+httpHandler.app.use(requestLogging.middleware)
 
 // ltijs 7 keeps the launch state in the browser's localStorage instead of
 // cookies, so launches inside an LMS iframe also work when the browser blocks
 // third-party cookies. The routes keep the paths the platforms are registered
 // with.
 const provider = new Provider({
+  logger: requestLogging.logger,
   databaseManager: database,
   httpHandler,
   routes: { loginRoute: '/login', launchRoute: '/', keysetRoute: '/keys' },

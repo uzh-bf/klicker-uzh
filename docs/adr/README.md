@@ -41,6 +41,7 @@ The durable record of **why** — the significant, hard-to-reverse choices behin
 - [0051](./0051-ai-releases-tag-v3-ai-with-deploy-parity.md) — AI releases are tagged on `v3-ai` and rendered from `v3` under deploy parity
 - [0053](./0053-one-status-driven-chatbot-setup-page.md) — One status-driven setup page replaces the tabbed chatbot workspace
 - [0054](./0054-student-answer-style-layer.md) — Students choose how answers read (style and tone), never how much help they get, below every fixed prompt contract
+- [0056](./0056-lecturer-ai-access-by-feature.md) — Lecturer AI features open by feature: the assistant to Catalyst, knowledge bases and chatbots to UZH by default, question generation behind its own flag
 
 `0001`, `0003`, and `0008` are each used twice — their lines were numbered
 independently before this index existed. Numbers are not reassigned, because

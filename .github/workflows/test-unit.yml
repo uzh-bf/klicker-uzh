@@ -117,7 +117,7 @@ jobs:
         id: check
         uses: ./.github/actions/changed-paths
         with:
-          pattern: '^(apps/auth/|apps/frontend-pwa/|apps/chat/|packages/feature-flags/|packages/grading/|packages/graphql/|packages/i18n/|packages/knowledge-graph/|packages/markdown/|packages/next-config/|packages/prisma/|packages/shared-components/|packages/types/|packages/util/|\.devcontainer/disposable-test-init\.sql$|\.github/scripts/provision-disposable-postgres\.sh$|package\.json$|pnpm-lock\.yaml$|pnpm-workspace\.yaml$|turbo\.json$|tsconfig\.json$|\.github/workflows/test-unit\.yml$|\.github/scripts/ci-equivalent-run\.cjs$|\.github/actions/setup-node-pnpm/|\.github/actions/changed-paths/|\.github/scripts/required-ci-status\.cjs$)'
+          pattern: '^(apps/auth/|apps/frontend-pwa/|apps/chat/|apps/lti/|packages/feature-flags/|packages/grading/|packages/graphql/|packages/i18n/|packages/knowledge-graph/|packages/markdown/|packages/next-config/|packages/prisma/|packages/shared-components/|packages/types/|packages/util/|\.devcontainer/disposable-test-init\.sql$|\.github/scripts/provision-disposable-postgres\.sh$|package\.json$|pnpm-lock\.yaml$|pnpm-workspace\.yaml$|turbo\.json$|tsconfig\.json$|\.github/workflows/test-unit\.yml$|\.github/scripts/ci-equivalent-run\.cjs$|\.github/actions/setup-node-pnpm/|\.github/actions/changed-paths/|\.github/scripts/required-ci-status\.cjs$)'
           prior-check-name: test-unit-status
 
   test-unit:
@@ -222,6 +222,10 @@ jobs:
       - name: Test frontend PWA
         if: ${{ !cancelled() && steps.build.outcome == 'success' }}
         run: pnpm --filter @klicker-uzh/frontend-pwa test:run
+
+      - name: Test LTI service
+        if: ${{ !cancelled() && steps.build.outcome == 'success' }}
+        run: pnpm --filter @klicker-uzh/lti-service test:run
 
       - name: Test auth unit and handler integration suites
         if: ${{ !cancelled() && steps.build.outcome == 'success' }}
@@ -358,7 +362,7 @@ jobs:
       contents: read
       issues: read
       pull-requests: read
-    uses: uzh-bf/klicker-uzh/.github/workflows/test-unit-execution.yml@28c21d776517a88bbf981d11e3bde59c50cda483
+    uses: uzh-bf/klicker-uzh/.github/workflows/test-unit-execution.yml@3f0b3e7aa0e38e0c80ace240e1f0969e24ff1c17
     secrets: inherit
 
   priority-status:

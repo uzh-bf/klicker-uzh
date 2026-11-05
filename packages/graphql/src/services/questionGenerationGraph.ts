@@ -15,6 +15,7 @@ import type {
 } from '@klicker-uzh/types'
 import { QUESTION_GENERATION_CAPABILITIES } from '@klicker-uzh/types'
 import type { ContextWithUser } from '../lib/context.js'
+import { requireFeatureFlagAccess } from '../lib/featureFlags.js'
 import { assertManageAiEnabled } from '../lib/manageAiFeatureGate.js'
 import { isElementGenerationGraphBundleReady } from './elementGenerationGraphReadiness.js'
 import {
@@ -223,6 +224,9 @@ export async function assertQuestionGenerationPreviewAccess(
   ctx: ContextWithUser
 ): Promise<void> {
   await assertManageAiEnabled(ctx)
+  // The AI approval also opens knowledge bases and chatbots; question and
+  // flashcard generation additionally need their own rollout.
+  await requireFeatureFlagAccess(ctx, 'question-generation')
 }
 
 export async function assertQuestionGenerationGraphEligible(

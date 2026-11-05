@@ -18,6 +18,11 @@ export const FEATURE_FLAG_DEFAULTS = {
   // edits from 10,000 to 100,000 characters. Stored long personas stay
   // readable and savable unchanged without it.
   'chatbot-long-custom-prompts': false,
+  // Admits AI question and flashcard generation on top of the AI approval
+  // (`aiFeaturesEnabled`), so approved lecturers can use knowledge bases and
+  // chatbots without question generation. Without it, the generation entry
+  // points are hidden and every generation API call is denied.
+  'question-generation': false,
 } as const satisfies Record<string, false>
 
 export type KlickerFeatureFlags = {
