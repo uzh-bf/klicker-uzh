@@ -235,25 +235,51 @@ fi
 
 set -- ${EVAL_ARGS[@]+"${EVAL_ARGS[@]}"}
 
-DEFAULT_EVAL_MODEL='klickeruzh/azure/gpt-5.6-luna-high'
+DEFAULT_EVAL_MODEL='klickeruzh/azure/gpt-6-luna-high'
 EFFECTIVE_EVAL_MODEL="${EVAL_MODEL:-$DEFAULT_EVAL_MODEL}"
 if [ "$EFFECTIVE_EVAL_MODEL" = "$DEFAULT_EVAL_MODEL" ]; then
-  EFFECTIVE_CAPABILITY_MODEL="${EVAL_MODEL_CAPABILITY_MODEL:-gpt-5.6-luna}"
+  EFFECTIVE_CAPABILITY_MODEL="${EVAL_MODEL_CAPABILITY_MODEL:-gpt-6-luna}"
 else
   EFFECTIVE_CAPABILITY_MODEL="${EVAL_MODEL_CAPABILITY_MODEL:-}"
 fi
 
 cd "$REPO_ROOT"
 
-if [ "$LOCAL_TARGET" = true ] && [ -z "${EVAL_METRICS_PATH:-}" ]; then
-  EFFECTIVE_METRICS_PATH="$REPO_ROOT/evaluation/data/metrics/klicker_fineco_semantic_similarity.yaml"
-else
-  EFFECTIVE_METRICS_PATH="${EVAL_METRICS_PATH:-$FRAMEWORK_ROOT/data/input/metrics/metrics.yaml}"
+# Committed non-secret defaults; the caller's environment wins. Only allowlisted
+# names are read, so the file cannot redirect the judge or inject credentials.
+DEFAULTS_FILE="${KLICKER_EVAL_DEFAULTS_FILE:-$REPO_ROOT/evaluation/defaults.env}"
+load_eval_defaults() {
+  local line name value
+  [ -f "$DEFAULTS_FILE" ] || return 0
+  while IFS= read -r line || [ -n "$line" ]; do
+    case "$line" in '' | '#'*) continue ;; esac
+    name="${line%%=*}"
+    value="${line#*=}"
+    case "$name" in
+      EVAL_METRICS_PATH | EVAL_OUTPUT_DIR) ;;
+      *)
+        echo "Error: unsupported variable in $DEFAULTS_FILE: $name" >&2
+        exit 1
+        ;;
+    esac
+    if [ -z "${!name:-}" ]; then
+      export "$name=$value"
+    fi
+  done <"$DEFAULTS_FILE"
+}
+load_eval_defaults
+
+if [ -z "${EVAL_METRICS_PATH:-}" ]; then
+  echo "Error: set EVAL_METRICS_PATH or define it in $DEFAULTS_FILE" >&2
+  exit 1
 fi
+EFFECTIVE_METRICS_PATH="$EVAL_METRICS_PATH"
 EFFECTIVE_TOOLS_PATH="${EVAL_TOOLS_PATH:-$REPO_ROOT/evaluation/data/tools/klicker_fineco.yaml}"
 EFFECTIVE_GT_ROOT_DIR="${GT_ROOT_DIR:-$REPO_ROOT/evaluation/data/ground_truth/klicker_fineco}"
 EFFECTIVE_DEFAULT_GT_DIR="${DEFAULT_GT_DIR:-$REPO_ROOT/evaluation/data/ground_truth/klicker_fineco}"
 EFFECTIVE_LOCAL_GT_DIR="${KLICKER_EVAL_GT_DIR:-$EFFECTIVE_DEFAULT_GT_DIR}"
+# Top-level *.md files are shared judge context; chat_modes/<mode>.md applies per mode.
+EFFECTIVE_CONTEXT_DIR="${EVAL_CONTEXT_DIR:-$REPO_ROOT/evaluation/data/context}"
 set -- ${EVAL_ARGS[@]+"${EVAL_ARGS[@]}"}
 
 require_readable_file() {
@@ -407,7 +433,7 @@ validate_framework_args() {
           index=$((index + 1))
         done
         ;;
-      --no-dotenv|--smoke|--all|--recursive)
+      --no-dotenv|--smoke|--recursive)
         index=$((index + 1))
         ;;
       --*)
@@ -437,6 +463,11 @@ EFFECTIVE_TOOLS_PATH="$(resolve_input_path "$EFFECTIVE_TOOLS_PATH")"
 EFFECTIVE_GT_ROOT_DIR="$(resolve_input_path "$EFFECTIVE_GT_ROOT_DIR")"
 EFFECTIVE_DEFAULT_GT_DIR="$(resolve_input_path "$EFFECTIVE_DEFAULT_GT_DIR")"
 EFFECTIVE_LOCAL_GT_DIR="$(resolve_input_path "$EFFECTIVE_LOCAL_GT_DIR")"
+EFFECTIVE_CONTEXT_DIR="$(resolve_input_path "$EFFECTIVE_CONTEXT_DIR")"
+EFFECTIVE_OUTPUT_DIR=""
+if [ -n "${EVAL_OUTPUT_DIR:-}" ]; then
+  EFFECTIVE_OUTPUT_DIR="$(resolve_input_path "$EVAL_OUTPUT_DIR")"
+fi
 
 validate_framework_args
 set -- ${EVAL_ARGS[@]+"${EVAL_ARGS[@]}"}
@@ -794,8 +825,12 @@ EVAL_ENV+=(
   "EVAL_TOOLS_PATH=$EFFECTIVE_TOOLS_PATH"
   "GT_ROOT_DIR=$EFFECTIVE_GT_ROOT_DIR"
   "DEFAULT_GT_DIR=$EFFECTIVE_DEFAULT_GT_DIR"
+  "EVAL_CONTEXT_DIR=$EFFECTIVE_CONTEXT_DIR"
   "TOOL_PROFILE=${TOOL_PROFILE:-catalog_expert_v1}"
 )
+if [ -n "$EFFECTIVE_OUTPUT_DIR" ]; then
+  EVAL_ENV+=("EVAL_OUTPUT_DIR=$EFFECTIVE_OUTPUT_DIR")
+fi
 if [ "$NEEDS_JUDGE" = true ]; then
   export LITELLM_API_BASE LITELLM_API_KEY
 fi

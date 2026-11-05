@@ -10,6 +10,10 @@ Klicker application stack.
 - `data/` contains committed synthetic evaluation assets, including ground
   truth cases under `data/ground_truth/`. Do not add production or personal
   data.
+- `data/context/` is the judge context the launcher passes as `EVAL_CONTEXT_DIR`.
+  Top-level `*.md` files go to every case; `data/context/chat_modes/<mode>.md`
+  goes only to cases whose `mode`/`chat_mode` matches. Regenerate the mode files
+  with `evaluation/scripts/render-chat-context.mts`, which writes there by default.
 
 ## Trajectories and provider admission
 
@@ -347,7 +351,7 @@ uv sync --frozen --project evaluation/framework
 ### Standalone Docker judge
 
 Start only the evaluation judge in a separate terminal. It uses Azure's
-OpenAI-compatible `/openai/v1` endpoint and the `gpt-5.6-luna` deployment.
+OpenAI-compatible `/openai/v1` endpoint and the `gpt-6-luna` deployment.
 Start it from the repository root after logging in to the team's Infisical instance:
 
 ```bash
@@ -384,21 +388,25 @@ this local gateway automatically. They fail before evaluation if it is not runni
 never select a judge. Explicit configuration, including incomplete configuration,
 does not fall back to the local gateway after a failure.
 
-Place the supplied QA and metrics files at their requested paths under the
-ignored framework data directories, then run from the Klicker repository:
+Place the supplied QA file in the Git-ignored `evaluation/data/output/qa_pairs/`,
+then run from the Klicker repository. The committed, non-secret
+`evaluation/defaults.env` sets the default metrics file (`EVAL_METRICS_PATH`) and
+output directory (`EVAL_OUTPUT_DIR`, `evaluation/data/output`); results land in
+its `test_results/` folder. Export either variable, or pass `--metrics`, to
+override it. The wrapper reads only allowlisted names from that file and never
+lets it override a value already set in your environment.
 
 ```bash
 pnpm run eval:klicker -- \
   --mode eval \
-  --qa-file evaluation/framework/data/output/qa_pairs/qa_pairs_fineco_chatbot_clean.json \
-  --metrics evaluation/framework/data/input/metrics/klicker_chatbot.yaml \
+  --qa-file evaluation/data/output/qa_pairs/<file>.json \
   --eval-mode self-assessment \
   --limit 1
 ```
 
-No `LITELLM_*` exports or `PIPELINES_LITELLM_API_KEY` are needed for this local
-path. The QA and metric files are supplied separately; they are not generated
-or replaced by the launcher. Keep QA data and result files uncommitted.
+No `LITELLM_*` exports are needed for this local path. The QA file is supplied
+separately; the launcher does not generate or replace it. Keep QA data and result
+files uncommitted.
 
 ### Remote judge through Infisical
 
@@ -492,12 +500,6 @@ not require routine export commands. Automated agent runs use the existing
 restricted rs-infisical-operator allowlist for approved values. Do not place
 credentials in prompts, arguments, logs, or committed files, and do not invent
 a new secret mapping when the approved scope is unavailable.
-
-Query output is written under EVAL_OUTPUT_DIR (the framework default is
-evaluation/framework/data/output): QA JSON files live in qa_pairs/, and
-last_output_file_name.txt points to the latest artifact. Keep generated QA,
-evaluation output, and receipts outside the repository when they contain
-anything other than synthetic data.
 
 ## Portable integration check
 

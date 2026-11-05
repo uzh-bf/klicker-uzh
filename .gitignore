@@ -99,3 +99,7 @@ evaluation/config.local.json
 # Local agent-tool state (session plans, tool permissions) — machine-specific
 .commandcode/
 .zcode/
+
+# Evaluation inputs and outputs (QA exports, results, conversations) contain real
+# chatbot conversations; keep them out of this public repository.
+evaluation/data/output/
