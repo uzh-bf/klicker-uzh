@@ -18,10 +18,6 @@ vi.mock('next-intl', () => ({
   useFormatter: () => ({ dateTime: () => 'date' }),
 }))
 
-vi.mock('../src/components/chat-ui-context', () => ({
-  useChatUi: () => ({ showMinimalSettings: true }),
-}))
-
 vi.mock('../src/stores/settingsStore', () => ({
   useSettingsStore: (selector: (state: typeof mocks.settings) => unknown) =>
     selector(mocks.settings),
@@ -31,7 +27,6 @@ import {
   CreditsFooter,
   MobileCreditsBar,
 } from '../src/components/credits-footer'
-import { EmbeddedCreditsBar } from '../src/components/embedded-settings'
 
 function display(markup: string, dataCy: string) {
   const match = markup.match(
@@ -50,11 +45,6 @@ const views = [
     name: 'mobile bar',
     Component: MobileCreditsBar,
     cy: 'chat-mobile-credits-display',
-  },
-  {
-    name: 'embedded bar',
-    Component: EmbeddedCreditsBar,
-    cy: 'chat-embedded-credits-display',
   },
 ]
 
