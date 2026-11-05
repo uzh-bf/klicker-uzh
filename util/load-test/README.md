@@ -73,6 +73,34 @@ KLICKER_SESSION_TOKEN=<session-token> \
   k6 run util/load-test/k6.js
 ```
 
+### 5. `pwa-burst.js` (PWA burst tier drill, in-cluster)
+
+Ramps unauthenticated `/login` renders and their static assets through the PWA Service, and probes one baseline and one burst Pod at the same small rate so their latencies compare at equal load. `/login` calls no other backend. The script runs inside the cluster because only there can it reach individual Pods. The default shape ramps for 10 minutes, holds the peak for 10 and cools down for 15; `PEAK_RATE` is capped at 100 iterations per second. Each iteration requests one page and `ASSETS_PER_PAGE` assets.
+
+Run it only on staging and in an announced window:
+
+```bash
+kc() { kubectl --context=aks-stg-apps-admin -n stg-klicker "$@"; }
+B=$(kc get pod -l 'app.kubernetes.io/component=frontend-pwa,!klicker.uzh.ch/tier' \
+  --field-selector=status.phase=Running -o jsonpath='{.items[0].status.podIP}')
+U=$(kc get pod -l klicker.uzh.ch/tier=burst \
+  --field-selector=status.phase=Running -o jsonpath='{.items[0].status.podIP}')
+kc create configmap pwa-burst-k6-script --from-file=util/load-test/pwa-burst.js
+I=$(kubectl --context=aks-stg-apps-admin -n hap get svc \
+  df-infra-k8s-chart-hap-stg-apps-kubernetes-ingress -o jsonpath='{.spec.clusterIP}')
+kc create configmap pwa-burst-k6-env \
+  --from-literal=PWA_SERVICE_URL=https://pwa.klicker.stg.df-app.ch \
+  --from-literal=PWA_INGRESS_IP=$I \
+  --from-literal=PWA_BASELINE_POD_URL=http://$B:3000 \
+  --from-literal=PWA_BURST_POD_URL=http://$U:3000 \
+  --from-literal=PEAK_RATE=30
+kc apply -f util/load-test/pwa-burst-pod.yaml
+kc logs -f pwa-burst-k6
+kc delete pod/pwa-burst-k6 configmap/pwa-burst-k6-script configmap/pwa-burst-k6-env
+```
+
+The summary reports failures per phase (`ramp`, `plateau`, `cool`) and p95 latency per probed tier. A probe fails when the HPA removes the probed burst Pod during scale-down; read those failures separately from Service failures. Staging's untainted node pools often run at their autoscaler maximum, so the k6 Pod keeps a small CPU request. Route the ramp through the ingress controller as shown: the PWA Service balances per connection, so k6's reused connections would keep the load on the Pods that existed when the drill started.
+
 ---
 
 ## Pre-requisites for Chatbot Testing

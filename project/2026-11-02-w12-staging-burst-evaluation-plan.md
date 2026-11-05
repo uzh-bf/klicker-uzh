@@ -290,3 +290,152 @@ out of this file.
   every PWA route in both environments. Proposed change for E3: measure P6 by
   running k6 inside `stg-klicker` against each tier's Pods directly, and leave
   the PWA source unchanged. Waiting for the user's decision before E3.
+- 2026-11-02 E0 live: staging promoted `2c2655171e` (the #6802 ancestry
+  repair after #6801 was squash-merged). Argo reports `Synced` with no
+  out-of-sync resources; the old budget is pruned; `-frontend-pwa-baseline`
+  excludes the tier and `-frontend-pwa-burst` allows one disruption. Staging
+  runs one baseline replica against `minAvailable: 2`, so the baseline Pod
+  can never be voluntarily evicted; this predates the burst tier and matters
+  for the E4 drain drill.
+- 2026-11-02 E2 dropped as a separate wait (user agreed): staging has no real
+  load, so its load-independent checks (spot preemption, Argo drift,
+  restarts, HPA floor) move into E5. D1 settled: k6 runs inside `stg-klicker`
+  and probes one Pod per tier at the same rate; the PWA source stays
+  unchanged.
+- 2026-11-02 E3, 21:37:57–22:13:00 UTC, `util/load-test/pwa-burst.js`, peak
+  30 iterations per second (one `/login` render and two static assets each),
+  about 47 requests per second at the plateau:
+  - P5 pass: 0 Service failures in all phases (99,069 requests). One baseline
+    probe request timed out after 60 seconds at the plateau.
+  - P6 pass: probe p95 burst 459 ms, baseline 496 ms.
+  - P4 scale-up pass at the limit: CPU crossed the target about 21:39:30; the
+    HPA went 2 to 3 at 21:41:34 and 3 to 4 at 21:42:34, about 3 minutes. Each
+    step waited for the previous Pod to become Ready, because the HPA leaves
+    unready Pods out of its CPU average. The default scale-up policy already
+    allows four Pods per 15 seconds, so an HPA `behavior` block would not help.
+  - P4 scale-down pass at the limit: load ended 22:13:30, 4 to 1 by 22:23:10.
+    A cool-down at 2 iterations per second held 4 replicas, because the
+    staging target is only 35m CPU per Pod.
+  - P9 pass: no new Pending Pods on `asyncspot`; two Pending Pods in other
+    namespaces predate the drill, and an ingestion rollout at 22:03 scheduled
+    on its own pool.
+  - Liveness and readiness probes (`/login`, 1-second timeout) failed at the
+    plateau on the baseline Pod and a burst Pod; none restarted.
+  - Confound: staging PWA Pods had a 200m CPU limit and 50Mi/200Mi memory;
+    production requests the same 50m CPU with no CPU limit and 320Mi/1Gi
+    memory. The two longest-running Pods were throttled in 84% of CFS periods
+    between 21:45 and 22:00, so the probe failures and the one-minute cold
+    start may be staging-shape effects. The HPA target (70% of 50m) is the
+    same in production. The user approved matching the staging shape to
+    production (#6806) and repeating E3 on it before E4. A probe change is
+    considered only if probes still fail then, and needs its own approval
+    because it changes the production render.
+- 2026-11-03 E3 rerun on the production resource shape (#6806 and sync
+  #6808 merged by the user; staging at `56be8acc75`), 17:10:28–17:45:30 UTC,
+  same script and load profile:
+  - P5 pass: 0 failures in 99,119 requests, including all probe requests.
+  - P6 pass: probe p95 burst 20 ms, baseline 34 ms. Both probed Pods carried
+    about 0.23 cores at the plateau.
+  - P4 scale-up: the HPA went 1 to 2 at 17:11:29, 2 to 3 at 17:12:29 and 3 to
+    4 at 17:14:29, about 3 minutes after crossing the target.
+  - P4 scale-down pass at the limit: load ended 17:45:30; 4 to 2 at 17:51:08
+    and 2 to 1 at 17:55:09, about 9.5 minutes. The cool-down at 2 iterations
+    per second held 4 replicas: at about 55% average CPU against the 70%
+    target, the HPA still asks for 4, and one hot Pod kept that average up
+    (see the confound below).
+  - No Unhealthy probe events and no restarts. Without a CPU limit there is
+    no CFS quota, so throttling cannot occur. The baseline Pod's memory
+    working set peaked at 201 MiB, which is at the old 200Mi staging limit;
+    the first run was therefore also close to an OOM kill.
+  - Confound: the ramp went through the PWA Service, which balances per
+    connection. k6's reused connections stayed on the two Pods that existed
+    at the start (about 0.23 cores each), while the three new burst Pods
+    served almost nothing (about 0.009 cores each). One hot burst Pod at
+    about 480% of its request kept the HPA average near 133% and the HPA at
+    its maximum. This run proves the probe failures and throttling were
+    staging-shape effects, but not that new burst Pods share load. The drill
+    now routes the ramp through the ingress controller (`PWA_INGRESS_IP`),
+    which balances per request as production traffic does. E3 runs a third
+    time that way; E4 waits until the burst Pods share load at the plateau.
+- 2026-11-03 E3 third run through the ingress controller
+  (`PWA_INGRESS_IP`), 17:56:58–18:32:00 UTC, same load profile. This run is
+  the E3 result:
+  - P5 pass: 0 failures in 99,119 requests.
+  - P6 pass: probe p95 burst 21 ms, baseline 27 ms; Service plateau p95
+    16 ms.
+  - Load sharing: at the plateau all five PWA Pods used 100–126m CPU each,
+    so new burst Pods take their share as soon as they are Ready.
+  - P4 scale-up pass: the target was crossed at about 17:58; the HPA went 1
+    to 2 at 17:58:24, 2 to 3 at 17:59:25 and 3 to 4 at 18:00:25, about 2.5
+    minutes.
+  - P4 scale-down pass at the limit: load ended 18:32:30; 4 to 3 at 18:37:16,
+    3 to 2 at 18:38:17 and 2 to 1 at 18:42:18, about 10 minutes.
+  - No Unhealthy probe events and no restarts.
+  - Finding for production sizing: at 30 iterations per second the HPA sat
+    at its maximum of 4 with about 220% of the 50m request, while latency
+    stayed low. The 70% target on a 50m request makes the tier reach its
+    maximum at modest absolute load (about 35m CPU per Pod). Production uses
+    the same request and target. Whether to raise the burst request, the
+    target or `maxReplicas` before production enablement is a separate
+    decision; nothing here changes the production render.
+- 2026-11-03 E4 preparation (read-only, no cluster writes):
+  - P8 second half pass: the staging render at `56be8acc75` with
+    `frontendPWA.burst.enabled=false` drops the burst Deployment, HPA and
+    PDB and returns the baseline PDB to `-frontend-pwa` without the tier
+    exclusion; nothing else changes. `app-klicker` syncs with
+    `prune: true`, so Argo removes the three objects.
+  - Drain target: the burst Pod's `asyncspot` node runs no other workload
+    Pods. The pool also hosts document processing, web scraping, e-learning
+    and two LibreChat instances; all their ScaledObjects were inactive. The
+    15-minute pool cordon (E4.4) would hold any of their scale-ups Pending.
+  - The baseline node had about 1.1 cores free, enough for the single
+    baseline Pod to carry the plateau alone in E4.4 (about 0.5–0.6 cores
+    expected from E3).
+  - Design: one k6 run through the ingress with a 40-minute plateau. Under
+    the plateau, in order: E4.1 drain the burst node; E4.3 scale the
+    baseline up to 2 and watch Argo revert it (never down, since one replica
+    already misses `minAvailable: 2`); E4.4 cordon all `asyncspot` nodes,
+    delete the burst Pods and hold at most 15 minutes, then uncordon. E4.2
+    follows with `START_RATE=1`, because the run 3 cool-down at 2 iterations
+    per second held 4 replicas and terminated no Pod under load.
+  - E4.5 waits for the next ordinary staging promotion or the X1
+    `RollingUpdate` override; it is not forced.
+  - Recovery checklist: uncordon every `asyncspot` node and confirm none is
+    `SchedulingDisabled`; Argo `Synced` and `Healthy`; baseline back to 1;
+    burst HPA back to 1; k6 Pod and both ConfigMaps deleted.
+- 2026-11-03 E4 run (20:08–21:22 UTC, one k6 run through the ingress at
+  30 iterations per second with a 40-minute plateau, then a short rerun for
+  E4.2):
+  - Plateau: 0 of 215,697 Service requests failed across E4.1, E4.3 and
+    E4.4; Service p95 17 ms, baseline probe p95 32 ms. The only failures
+    were the burst probe against the Pod deleted in E4.4, read separately.
+  - E4.1 pass: the burst node already hosted other tenants' Pods, so the
+    drill cordoned it and evicted only the burst Pods
+    (`kubectl drain --pod-selector=klicker.uzh.ch/tier=burst`). The node had
+    two burst Pods; the PDB refused the second eviction until the first
+    replacement was Ready, then allowed it (18 seconds in total).
+  - E4.3 pass: scaling the baseline to 2 was reverted to 1 by Argo
+    self-heal within 6 seconds; the running baseline Pod was kept. The
+    burst HPA's replica count was left alone throughout.
+  - E4.4 partial: with all five `asyncspot` nodes cordoned, the four burst
+    Pods went Pending and the single baseline Pod carried the full load
+    without a probe failure or restart. The cluster autoscaler then added a
+    sixth `asyncspot` node (the pool was below its maximum), and all four
+    burst Pods were Ready on it about 100 seconds after the delete. The
+    baseline therefore carried the plateau alone for about 100 seconds, not
+    15 minutes. Spot capacity exhaustion stays untested: it needs the pool
+    at its maximum, which a node-pool change would require. One cordoned
+    node was removed by the autoscaler during the hold; the pool ended
+    with five Ready nodes and none `SchedulingDisabled`.
+  - All four burst Pods landed on the one new node, so losing it removes
+    the whole tier. This supports the X1 soft hostname topology spread.
+  - E4.2 partial: the k6 Pod hit its 50-minute `activeDeadlineSeconds`
+    before the cool phase. The rerun (1-minute ramp, 4-minute plateau, 18
+    minutes at 1 iteration per second) had 0 of 35,759 failures, 0 in the
+    cool phase. The HPA removed one Pod under load (4 to 3 at 21:11); at
+    1 iteration per second three Pods sat at about 50% of request, so it
+    held 3 until the load ended. The k6 Pod deadline is raised to 90
+    minutes.
+  - Recovery: every `asyncspot` node uncordoned, Argo `Synced` and
+    `Healthy`, baseline at 1, k6 Pod and ConfigMaps deleted; the burst HPA
+    returns to 1 on its own after the load.
