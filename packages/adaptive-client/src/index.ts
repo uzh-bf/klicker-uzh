@@ -6,12 +6,15 @@ import {
 } from './analysis.js'
 import {
   type DecisionRequest,
+  type DryRunRequest,
   decisionRequestSchema,
+  dryRunRequestSchema,
   type EstimateRequest,
   estimateRequestSchema,
   type ValidationRequest,
   validationRequestSchema,
 } from './contract.js'
+import { type DryRunResponse, parseDryRunResponse } from './dryRun.js'
 import {
   type PosteriorBatchRequest,
   type PosteriorBatchResponse,
@@ -28,13 +31,24 @@ import {
 } from './response.js'
 
 export {
+  ADAPTIVE_DRY_RUN_MAX_DECISIONS,
+  ADAPTIVE_DRY_RUN_MAX_STUDENTS,
   type DecisionRequest,
+  type DryRunRequest,
+  type DryRunSpec,
   decisionRequestSchema,
+  dryRunRequestSchema,
+  dryRunSpecSchema,
   type EstimateRequest,
   estimateRequestSchema,
   type ValidationRequest,
   validationRequestSchema,
 } from './contract.js'
+export {
+  type DryRunResponse,
+  dryRunResponseSchema,
+  parseDryRunResponse,
+} from './dryRun.js'
 export {
   MAX_POSTERIOR_BATCH_RESPONSES,
   MAX_POSTERIOR_BATCH_SUBJECTS,
@@ -160,6 +174,7 @@ export function createAdaptiveClient({
     | EstimateRequest
     | ValidationRequest
     | BankAnalysisRequest
+    | DryRunRequest
   async function post(path: string, request: EngineRequest): Promise<unknown> {
     const body = JSON.stringify(request)
     if (Buffer.byteLength(body) > MAX_REQUEST_BYTES)
@@ -312,6 +327,17 @@ export function createAdaptiveClient({
       try {
         return parseBankAnalysisResponse(
           await post('adaptive/v1/bank-analysis', request),
+          request
+        )
+      } catch (error) {
+        throw toUnavailable(error)
+      }
+    },
+    async dryRun(input: DryRunRequest): Promise<DryRunResponse> {
+      const request = dryRunRequestSchema.parse(input)
+      try {
+        return parseDryRunResponse(
+          await post('adaptive/v1/dry-run', request),
           request
         )
       } catch (error) {

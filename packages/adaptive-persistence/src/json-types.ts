@@ -252,5 +252,79 @@ declare global {
             }>
           }
         }
+
+    // Adaptive dry runs (testing environments only).
+    type PrismaAdaptiveDryRunSpec = {
+      students: number
+      seed: string
+      noiseProbability: number
+      trueLevels:
+        | { kind: 'FIXED'; levelId: number }
+        | { kind: 'EVEN'; fromLevelId: number; toLevelId: number }
+      competences: 'SAME_LEVEL' | 'INDEPENDENT'
+    }
+
+    type PrismaAdaptiveDryRunSettings = {
+      totalQuestionCap: number
+      minQuestionsPerLeaf: number
+      classificationZ: number
+      classificationToleranceBands: number
+    }
+
+    type PrismaAdaptiveDryRunMetrics = {
+      count: number
+      exactShare: number
+      withinOneShare: number
+      /** Mean signed difference reported − true, in levels. */
+      bias: number
+      meanAbsoluteError: number
+      determinedShare: number
+    }
+
+    type PrismaAdaptiveDryRunSummary = {
+      studentCount: number
+      answerCount: number
+      flippedShare: number
+      /** Over all (student, competence) pairs. */
+      metrics: PrismaAdaptiveDryRunMetrics
+      competences: Array<PrismaAdaptiveDryRunMetrics & { nodeId: number }>
+      questions: { min: number; median: number; mean: number; max: number }
+      stopReasons: Array<{ reason: string; count: number }>
+      /** Reported levels per true level, over (student, competence) pairs. */
+      confusion: Array<{
+        trueLevelId: number
+        reported: Array<{ levelId: number | null; count: number }>
+      }>
+      itemUse: {
+        poolSize: number
+        usedCount: number
+        top: Array<{ poolItemId: number; count: number }>
+      }
+    }
+
+    type PrismaAdaptiveDryRunStudents = Array<{
+      index: number
+      trueLevels: Array<{ nodeId: number; levelId: number }>
+      stopReason: string
+      questionCount: number
+      answers: Array<{
+        poolItemId: number
+        levelId: number
+        correct: boolean
+        flipped: boolean
+      }>
+      overall: {
+        theta: number | null
+        standardError: number | null
+        levelId: number | null
+      }
+      competences: Array<{
+        nodeId: number
+        theta: number | null
+        standardError: number | null
+        levelId: number | null
+        classified: boolean
+      }>
+    }>
   }
 }
