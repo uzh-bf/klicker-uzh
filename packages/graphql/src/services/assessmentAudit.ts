@@ -1,0 +1,117 @@
+import { randomUUID } from 'node:crypto'
+import {
+  AzureAuditManifestStore,
+  AzureTableAppendSink,
+  AzureTableAuditReader,
+  collectAssessmentAuditMonitorSnapshot,
+  createAzureAuditClients,
+  dispatchAssessmentAuditOutbox,
+  PrismaAuditMonitorRepository,
+  PrismaAuditOutboxRepository,
+  PrismaAuditSealRepository,
+  readAzureAuditStorageConfig,
+  recordAssessmentAuditDispatcherSuccess,
+  recordAssessmentAuditMonitorSuccess,
+  sealAssessmentAudit,
+} from '@klicker-uzh/audit'
+import type { HatchetHandlers } from '@klicker-uzh/types'
+
+let auditClients: ReturnType<typeof createAzureAuditClients> | undefined
+
+function getAuditClients() {
+  auditClients ??= createAzureAuditClients(readAzureAuditStorageConfig())
+  return auditClients
+}
+
+function auditWorkerId(): string {
+  const hostname = (process.env.HOSTNAME ?? 'local')
+    .replaceAll(/[^a-zA-Z0-9_.:-]/g, '-')
+    .slice(0, 64)
+  return `audit:${hostname}:${randomUUID()}`
+}
+
+export const handleDispatchAssessmentAuditOutbox: HatchetHandlers['handleDispatchAssessmentAuditOutbox'] =
+  async (_input, globalCtx, executionCtx) => {
+    const clients = getAuditClients()
+    const summary = await dispatchAssessmentAuditOutbox({
+      repository: new PrismaAuditOutboxRepository(globalCtx.prisma),
+      sink: new AzureTableAppendSink(clients.tables),
+      workerId: auditWorkerId(),
+    })
+    recordAssessmentAuditDispatcherSuccess()
+    await executionCtx.logger.info(
+      JSON.stringify({
+        operation: 'ASSESSMENT_AUDIT_DISPATCH',
+        ...summary,
+      })
+    )
+    return true
+  }
+
+export const handleMonitorAssessmentAudit: HatchetHandlers['handleMonitorAssessmentAudit'] =
+  async (_input, globalCtx, executionCtx) => {
+    const capacityBytes = Number(
+      process.env.ASSESSMENT_AUDIT_DELIVERED_UNSEALED_CAPACITY_BYTES ?? 0
+    )
+    const growthBytesPerWeek = Number(
+      process.env.ASSESSMENT_AUDIT_DELIVERED_UNSEALED_GROWTH_BYTES_PER_WEEK ?? 0
+    )
+    const snapshot = await collectAssessmentAuditMonitorSnapshot({
+      repository: new PrismaAuditMonitorRepository(globalCtx.prisma),
+      ...(Number.isFinite(capacityBytes) && capacityBytes > 0
+        ? { deliveredUnsealedCapacityBytes: capacityBytes }
+        : {}),
+      ...(Number.isFinite(growthBytesPerWeek) && growthBytesPerWeek > 0
+        ? { deliveredUnsealedGrowthBytesPerWeek: growthBytesPerWeek }
+        : {}),
+    })
+    recordAssessmentAuditMonitorSuccess(snapshot)
+    const metadata = {
+      operation: 'ASSESSMENT_AUDIT_MONITOR',
+      observedAt: snapshot.observedAt,
+      status: snapshot.status,
+      pendingCount: snapshot.pendingCount,
+      oldestPendingSeconds: snapshot.oldestPendingSeconds,
+      quarantinedCount: snapshot.quarantinedCount,
+      differentHashConflictCount: snapshot.differentHashConflictCount,
+      deliveredUnsealedCount: snapshot.deliveredUnsealedCount,
+      deliveredUnsealedBytes: snapshot.deliveredUnsealedBytes,
+      deliveredUnsealedCapacityWeeksRemaining:
+        snapshot.deliveredUnsealedCapacityWeeksRemaining,
+      activationFailureCount: snapshot.activationFailureCount,
+      coveredSubmissionWithoutTerminalCount:
+        snapshot.coveredSubmissionWithoutTerminalCount,
+      oldestCoveredSubmissionWithoutTerminalSeconds:
+        snapshot.oldestCoveredSubmissionWithoutTerminalSeconds,
+      signals: snapshot.signals,
+    }
+    if (snapshot.status === 'CRITICAL') {
+      await executionCtx.logger.error(JSON.stringify(metadata))
+      throw new Error('Assessment audit monitor detected a critical signal')
+    }
+    await executionCtx.logger.info(JSON.stringify(metadata))
+    return true
+  }
+
+export const handleSealAssessmentAudit: HatchetHandlers['handleSealAssessmentAudit'] =
+  async (_input, globalCtx, executionCtx) => {
+    const clients = getAuditClients()
+    const summary = await sealAssessmentAudit({
+      repository: new PrismaAuditSealRepository(globalCtx.prisma),
+      reader: new AzureTableAuditReader(clients.tables),
+      manifests: new AzureAuditManifestStore(clients.blobs.manifests),
+    })
+    const metadata = JSON.stringify({
+      operation: 'ASSESSMENT_AUDIT_SEAL',
+      ...summary,
+    })
+    // Failure details (quiz and reason) must be visible at error level.
+    if (summary.failures.length > 0) await executionCtx.logger.error(metadata)
+    else await executionCtx.logger.info(metadata)
+    if (summary.failures.length > 0 || summary.deferredCount > 0) {
+      throw new Error(
+        `Audit sealing: ${summary.failures.length} failed assessments, ${summary.deferredCount} events deferred to the next run`
+      )
+    }
+    return true
+  }

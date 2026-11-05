@@ -154,3 +154,27 @@ containers:
     resources:
       {{- toYaml .Values.frontendPWA.resources | nindent 6 }}
 {{- end }}
+
+{{/*
+Assessment audit rollout selection. Every process that can activate audit
+coverage needs it: the backend (new and reopened quizzes) and the general
+Hatchet worker (course copies, scheduled readiness). Render it from one place
+so the two cannot drift; outside an enabled audit the code defaults to disabled.
+*/}}
+{{- define "chart.assessmentAuditRolloutEnv" -}}
+ASSESSMENT_AUDIT_ROLLOUT: {{ .Values.assessmentAudit.rollout | quote }}
+ASSESSMENT_AUDIT_PILOT_LIVE_QUIZ_IDS: {{ .Values.assessmentAudit.pilotLiveQuizIds | quote }}
+{{- end }}
+
+{{/*
+Adaptive engine base URL for the backend and the general Hatchet worker. An
+explicit backendGraphql.adaptiveEngine.url wins; otherwise the chart's own
+engine Service is used when adaptiveEngine.enabled. Empty means unconfigured.
+*/}}
+{{- define "chart.adaptiveEngineUrl" -}}
+{{- if .Values.backendGraphql.adaptiveEngine.url -}}
+{{- .Values.backendGraphql.adaptiveEngine.url -}}
+{{- else if .Values.adaptiveEngine.enabled -}}
+{{- printf "http://%s-adaptive-engine:%v" (include "chart.fullname" .) .Values.adaptiveEngine.service.port -}}
+{{- end -}}
+{{- end }}

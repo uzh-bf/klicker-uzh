@@ -14,7 +14,7 @@ function Footer({ className, children }: FooterProps): React.ReactElement {
         children
       ) : (
         <>
-          <p className="m-0 py-2 text-center text-xs leading-5 text-gray-400">
+          <p className="m-0 py-2 text-center text-xs leading-5 text-gray-600">
             &copy;
             {new Date().getFullYear()} DF Teaching Center, Department of
             Finance, University of Zurich. All rights reserved.

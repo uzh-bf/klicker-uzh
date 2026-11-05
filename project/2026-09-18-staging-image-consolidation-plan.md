@@ -342,24 +342,30 @@ Updated 2026-09-18.
   tests, the `check.yml` contract list and `docs/ci-and-deployment.md` all read
   the one workflow. The superseded `required-build-status` module and its
   fifteen-file fixture suite are removed.
-- **S3 done on the `v3-audit` branch.** The consolidated tree is merged in, the
-  two MCP staging workflows are deleted, and `mcp-lecturer-arm` and
+- **S3 done on this branch.** The consolidated tree is merged in, the two MCP
+  staging workflows are deleted, and `mcp-lecturer-arm` and
   `mcp-student-arm` build through the shared matrix. The audit-only
   `stg-release-ref-promotion.test.cjs` is rebound to the trusted inventory.
 - **S4 done for the canary path.** Both draft PRs are open (#6141 on `v3`,
   #6147 on `v3-audit`). The consolidated staging workflow ran to success on
-  both draft heads: run `35361628890` for `eb6abcd255` on `v3` (plan
-  success, `build-images-status` success, six `matrix.jobName` legs skipped
-  with no runner allocated) and run `35360584817` for `2be208ee30` on
-  `v3-audit` with the same shape. Queue depth fell from roughly 153 to 14.
-  This proves the draft-deferral contract and the required `build-images-status`
+  both draft heads: run `35360584817` for `2be208ee30` on `v3-audit`
+  (plan success, `build-images-status` success, six `matrix.jobName` legs
+  skipped with no runner allocated) and run `35361628890` for `eb6abcd255`
+  on `v3` with the same shape. Queue depth fell from roughly 153 to 14. This
+  proves the draft-deferral contract and the required `build-images-status`
   context; it does not yet exercise a real build or publish, which only a
   ready-for-review or push run triggers.
 - **Format regression fixed.** The plan and status helpers created in earlier
   sessions carried Biome format errors that failed `check-suite` on both PRs.
   `biome format --write` and the Prettier check now pass on the full changed
-  file set; the fix is committed on both branches
-  (`17d6795d15` on `v3`, `d36ecf4c93` on `v3-audit`).
+  file set; the fix is committed on both branches (`d36ecf4c93` here,
+  `17d6795d15` on `v3`).
+- **Vitest spec drift fixed on this line.** Merging `v3` brought in the exact
+  `3.2.4` pin from #6137, but ten audit-only packages still floated on
+  `~3.2.4`, so `syncpack lint` failed the codebase check here while `v3`
+  passed. The manifests now carry the exact pin (`95b9020a0d`); the lockfile
+  already recorded `specifier: 3.2.4` for all ten, so no dependency
+  re-resolution was needed. `check-suite` is green on both heads again.
 
 Local verification on both trees: `node --test` over the CI contract list
 passes (293 tests on `v3`, 301 on `v3-audit`), Biome and Prettier are clean,

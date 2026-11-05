@@ -1,0 +1,6 @@
+mutation ImportAdaptiveItemCalibrations($artifact: Json!) {
+  importAdaptiveItemCalibrations(artifact: $artifact) {
+    calibrationIds
+    importedCount
+  }
+}

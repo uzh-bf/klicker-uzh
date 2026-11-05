@@ -9,6 +9,7 @@ describe('getUserActivities pagination', () => {
   const context = {
     prisma: {
       userActivities: { findMany, count },
+      practiceQuiz: { findMany: vi.fn().mockResolvedValue([]) },
       course: { findMany: vi.fn().mockResolvedValue([]) },
     },
     user: { sub: 'user-id' },
