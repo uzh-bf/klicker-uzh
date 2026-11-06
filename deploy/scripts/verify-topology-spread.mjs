@@ -120,14 +120,24 @@ export function findRenderedSpreadFields(documents) {
   )
 }
 
+// A workload is its component, plus its pod tier where it has one: the
+// baseline and burst PWA Deployments share the frontend-pwa component.
+function workloadIdentity(component, tier) {
+  return tier === undefined ? component : `${component} (${tier} tier)`
+}
+
 export function inspectRenderedDeployments(documents) {
   return documents
     .filter((document) => document?.kind === 'Deployment')
-    .map((deployment) => ({
-      name: deployment.metadata?.name ?? 'Deployment without name',
-      component: deployment.spec?.template?.metadata?.labels?.[componentLabel],
-      constraints: deployment.spec?.template?.spec?.[spreadField],
-    }))
+    .map((deployment) => {
+      const labels = deployment.spec?.template?.metadata?.labels
+      return {
+        name: deployment.metadata?.name ?? 'Deployment without name',
+        component: labels?.[componentLabel],
+        tier: labels?.[tierLabel],
+        constraints: deployment.spec?.template?.spec?.[spreadField],
+      }
+    })
 }
 
 // The production render must carry the field only where the workload contract
@@ -149,6 +159,7 @@ export function findUnlistedSpreadFields(documents, label = 'production') {
 
 function evaluateConstraint({ component, tier }, topologyKey, constraint) {
   const failures = []
+  const workload = workloadIdentity(component, tier)
   if (constraint?.maxSkew !== expectedMaxSkew) {
     failures.push(
       `${component}: the ${topologyKey} constraint has maxSkew ${JSON.stringify(
@@ -174,11 +185,13 @@ function evaluateConstraint({ component, tier }, topologyKey, constraint) {
     )
   }
   const selectedTier = constraint?.labelSelector?.matchLabels?.[tierLabel]
-  if (tier !== undefined && selectedTier !== tier) {
+  // An untiered workload's pods carry no tier label, so a selector naming a
+  // tier would match none of them.
+  if (selectedTier !== tier) {
     failures.push(
-      `${component}: the ${topologyKey} constraint selects tier ${JSON.stringify(
+      `${workload}: the ${topologyKey} constraint selects tier ${JSON.stringify(
         selectedTier
-      )}, expected ${tier}`
+      )}, expected ${JSON.stringify(tier)}`
     )
   }
   return failures
@@ -203,33 +216,35 @@ export function evaluateSpreadContract(
       }
       continue
     }
-    renderedComponents.add(deployment.component)
+    const workload = workloadIdentity(deployment.component, deployment.tier)
+    renderedComponents.add(workload)
     if (Array.isArray(deployment.constraints)) {
-      renderedSpread.set(deployment.component, deployment.constraints)
+      renderedSpread.set(workload, deployment.constraints)
     }
   }
 
   const expectedComponents = new Set()
   for (const entry of expected) {
-    expectedComponents.add(entry.component)
-    if (!renderedComponents.has(entry.component)) {
+    const workload = workloadIdentity(entry.component, entry.tier)
+    expectedComponents.add(workload)
+    if (!renderedComponents.has(workload)) {
       failures.push(
-        `${entry.component}: no Deployment carries this ${componentLabel} ` +
-          `label in the ${label} render`
+        `${workload}: no Deployment carries these pod labels ` +
+          `in the ${label} render`
       )
       continue
     }
-    const constraints = renderedSpread.get(entry.component)
+    const constraints = renderedSpread.get(workload)
     if (constraints === undefined) {
       failures.push(
-        `${entry.component}: the ${label} render forwards no ${spreadField} ` +
+        `${workload}: the ${label} render forwards no ${spreadField} ` +
           `to the pod spec, so ${entry.valuesPath} stays inert`
       )
       continue
     }
     if (constraints.length !== topologyKeys.length) {
       failures.push(
-        `${entry.component}: expected exactly ${topologyKeys.length} constraints ` +
+        `${workload}: expected exactly ${topologyKeys.length} constraints ` +
           `(${topologyKeys.join(', ')}), found ${constraints.length}`
       )
     }
@@ -239,7 +254,7 @@ export function evaluateSpreadContract(
       )
       if (matching.length !== 1) {
         failures.push(
-          `${entry.component}: expected exactly one ${topologyKey} constraint, ` +
+          `${workload}: expected exactly one ${topologyKey} constraint, ` +
             `found ${matching.length}`
         )
         continue

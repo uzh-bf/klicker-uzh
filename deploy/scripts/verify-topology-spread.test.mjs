@@ -194,7 +194,7 @@ describe('topology spread contract', () => {
       failures.some(
         (failure) =>
           failure.includes('backend-assessment') &&
-          failure.includes('no Deployment carries this')
+          failure.includes('no Deployment carries these pod labels')
       ),
       `unexpected failures: ${failures.join(' | ')}`
     )
@@ -257,36 +257,96 @@ describe('topology spread contract', () => {
 })
 
 describe('staging burst spread contract', () => {
-  const burstConstraint = (topologyKey, tier) =>
-    spreadConstraint('frontend-pwa', topologyKey, {
-      labelSelector: {
-        matchLabels: {
-          'app.kubernetes.io/component': 'frontend-pwa',
-          'klicker.uzh.ch/tier': tier,
+  const burstConstraints = (tier) =>
+    [zoneKey, hostnameKey].map((topologyKey) =>
+      spreadConstraint('frontend-pwa', topologyKey, {
+        labelSelector: {
+          matchLabels: {
+            'app.kubernetes.io/component': 'frontend-pwa',
+            'klicker.uzh.ch/tier': tier,
+          },
         },
-      },
-    })
-  const stagingFailures = (tier) =>
+      })
+    )
+  // The staging render: a baseline PWA Deployment without a tier label next
+  // to the burst Deployment, which carries the burst tier pod label.
+  const pwaDeployments = ({ baseline, burst }) => {
+    const burstDeployment = deployment('frontend-pwa', burst)
+    burstDeployment.metadata.name = 'app-klicker-frontend-pwa-burst'
+    burstDeployment.spec.template.metadata.labels['klicker.uzh.ch/tier'] =
+      'burst'
+    return [deployment('frontend-pwa', baseline), burstDeployment]
+  }
+  const stagingFailures = (documents) =>
     evaluateSpreadContract(
-      inspectRenderedDeployments([
-        deployment('frontend-pwa', undefined),
-        deployment('frontend-pwa', [
-          burstConstraint(zoneKey, tier),
-          burstConstraint(hostnameKey, tier),
-        ]),
-      ]),
+      inspectRenderedDeployments(documents),
       expectedStagingSpread,
       'staging'
     )
 
-  it('accepts burst constraints that select the burst tier', () => {
-    assert.deepEqual(stagingFailures('burst'), [])
+  it('accepts burst constraints on the burst Deployment', () => {
+    assert.deepEqual(
+      stagingFailures(pwaDeployments({ burst: burstConstraints('burst') })),
+      []
+    )
   })
 
   it('rejects burst constraints that would count baseline pods', () => {
-    const failures = stagingFailures(undefined)
+    const failures = stagingFailures(
+      pwaDeployments({ burst: burstConstraints(undefined) })
+    )
     assert.ok(
-      failures.some((failure) => failure.includes('expected burst')),
+      failures.some((failure) => failure.includes('expected "burst"')),
+      `unexpected failures: ${failures.join(' | ')}`
+    )
+  })
+
+  it('rejects burst constraints on the baseline Deployment', () => {
+    const failures = stagingFailures(
+      pwaDeployments({ baseline: burstConstraints('burst') })
+    )
+    assert.ok(
+      failures.some((failure) =>
+        failure.includes(
+          'frontend-pwa (burst tier): the staging render forwards no'
+        )
+      ),
+      `unexpected failures: ${failures.join(' | ')}`
+    )
+    assert.ok(
+      failures.some(
+        (failure) =>
+          failure.startsWith('frontend-pwa: renders') &&
+          failure.includes('does not cover this workload')
+      ),
+      `unexpected failures: ${failures.join(' | ')}`
+    )
+  })
+})
+
+describe('production tier selectors', () => {
+  it('rejects a production selector that names a tier', () => {
+    const failures = evaluateSpreadContract(
+      inspectRenderedDeployments(
+        withConstraints(renderedContract(), 'mcp-student', [
+          spreadConstraint('mcp-student', zoneKey),
+          spreadConstraint('mcp-student', hostnameKey, {
+            labelSelector: {
+              matchLabels: {
+                'app.kubernetes.io/component': 'mcp-student',
+                'klicker.uzh.ch/tier': 'burst',
+              },
+            },
+          }),
+        ])
+      )
+    )
+    assert.ok(
+      failures.some(
+        (failure) =>
+          failure.startsWith('mcp-student:') &&
+          failure.includes('expected undefined')
+      ),
       `unexpected failures: ${failures.join(' | ')}`
     )
   })
