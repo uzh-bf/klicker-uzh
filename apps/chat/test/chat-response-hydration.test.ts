@@ -811,6 +811,55 @@ describe('useChatResponse attachment hydration', () => {
     ).toBe(false)
   })
 
+  for (const regenerate of [false, true]) {
+    test(`refreshes the credit balance once the ${regenerate ? 'regenerated' : 'new'} answer has finished`, async () => {
+      // The balance view reads the store that `loadCredits` fills, so the
+      // refetch must start only after the answer (and its server-side charge)
+      // has finished streaming. Record what the thread looked like at that
+      // moment; an expect inside the mock would be swallowed by the hook.
+      let messagesAtRefresh: unknown[] | undefined
+      loadCreditsMock.mockImplementationOnce(async () => {
+        messagesAtRefresh = JSON.parse(
+          JSON.stringify(storeState.threads[0]?.messages ?? [])
+        )
+      })
+      const fetchSpy = vi
+        .fn()
+        .mockResolvedValue(
+          createStreamingResponse([
+            'data: {"type":"text-delta","delta":"finished answer"}',
+            'data: {"type":"finish","messageMetadata":{"finishReason":"stop","creditsUsed":0.02}}',
+            'data: [DONE]',
+          ])
+        )
+      vi.stubGlobal('fetch', fetchSpy)
+
+      const { generateChatResponse } = useChatResponse(
+        'model-1',
+        'chat',
+        'medium'
+      )
+
+      await generateChatResponse(
+        [
+          {
+            id: 'message-1',
+            role: 'user',
+            content: [{ type: 'text', text: 'hello' }],
+            parentId: null,
+          },
+        ] as any,
+        'thread-1',
+        regenerate ? { allowRegeneration: true } : undefined
+      )
+
+      expect(loadCreditsMock).toHaveBeenCalledTimes(1)
+      expect(loadCreditsMock).toHaveBeenCalledWith('chatbot-1')
+      expect(JSON.stringify(messagesAtRefresh)).toContain('finished answer')
+      expect(JSON.stringify(messagesAtRefresh)).toContain('"creditsUsed":0.02')
+    })
+  }
+
   test('an aborted request writes the stopped turn to both message arrays after the cancel resync', async () => {
     const fetchSpy = vi.fn().mockRejectedValue(
       Object.assign(new Error('The user aborted a request.'), {
