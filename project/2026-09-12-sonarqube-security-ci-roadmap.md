@@ -1,5 +1,11 @@
 # SonarQube quality and dependency security in KlickerUZH CI
 
+For the current `v3` / `v3-ai` evidence and next priorities, see the
+[2026-10-14 static-analysis refresh](2026-10-14-static-analysis-improvement-plan.md).
+The observations and activation proposals below remain dated implementation
+history; do not reuse their original backlog counts or baseline diagnosis as
+current state.
+
 ## Approval summary
 
 Make source analysis, dependency vulnerabilities, and container vulnerabilities
