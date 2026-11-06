@@ -627,7 +627,7 @@ follow_up_stacks:
 
 ## Progress
 
-- Status: `a4_gate_3_ready`
+- Status: `stack_b_b0_committed_local`
 - Baseline: PR #5637 exact head `85ffe927774b44b7a1b0759fa4fdbfeae81c5a96`
   and PR #5670 exact head `c0d71a444dce3b9b4c83ee94db9e0fd5a27f3e53`
   are open, non-draft, and mergeable after the user-managed stack rebase. All
@@ -1114,3 +1114,43 @@ follow_up_stacks:
   browser execution remains deferred at this stacked layer, where the browser
   jobs are filtered. This receipt is documentation-only; PR #5704 stays a
   draft and no merge or deployment is included in this Gate 3 handoff.
+- S6 integration (user-directed, 2026-09-03): The stack was rebased onto the
+  latest `v3-ai` (`36f43eed037`) after review. The single real conflict
+  (`_app.tsx`, responsive layer) merged the parent's
+  `appContent`/`GenerationStatusProvider` structure with this stack's
+  assistant app-content wrapper. The top layer added `429de085f` fixing the
+  Azurite `devrouter` base/profile service overlap created by v3-ai's new
+  profile contract: Azurite stays a managed base service and left the opt-in
+  `profileServices` list and the redundant `manage` profile selection; the
+  real-planner contract test passes 15/15. Exact-top-head local verification:
+  full build 26/26 and complete `check:all` (all lanes, Playwright contract
+  suites 9/9 and 63/63) pass. All five PR bodies record the new heads and the
+  integration receipts; per-head pre-rebase evidence above stays historical.
+  S6 is complete with this reconciliation; the dated-log requirement is
+  satisfied by this dated Progress record and the repository-reserved
+  `docs/log/` path stays absent.
+- Stack A landed: The user merged PR #5637, #5670, #5679, #5702, and #5704 at
+  2026-09-03T16:45Z. S0-S5 are delivered; wiki and skill updates for the
+  landed behavior shipped inside the layers.
+- S7 start: Stack B uses its own repo-local worktree
+  `trees/rs/manage-assistant-docs-manifest` on branch
+  `rs/manage-assistant-docs-manifest` created from the merged `v3-ai`
+  (`fa7e707bdf`). Survey of the authoritative sources: 49 MDX pages under
+  `apps/docs/docs/` (frontmatter carries only `title` and occasional
+  `hide_title`), and the `USE_CASES` catalogue in
+  `apps/docs/src/constants.tsx` currently holds 11 records with matching
+  `src/pages/use_cases/` routes (the plan sketch said twelve; the generator
+  covers the live catalogue). Media references are same-site `/img/...`
+  paths plus `upload://` schemes, which the contract omits. B0 implements the
+  deterministic manifest generator, drift guard, and tests next.
+- B0 (2026-09-03): Commit `3662ec22b3` adds the deterministic manifest
+  generator (`apps/docs/scripts/generate-docs-manifest.mjs`), 12 unit tests,
+  the checked-in 49-page / 11-use-case manifest, the `generate:docs-manifest`
+  and `test:run` package scripts, and a Biome ignore for the generated
+  artifact (repo convention for generated files; the byte-identity drift test
+  pins its exact content). Double-run equality, `--check` drift mode, and
+  duplicate-route/missing-media failures verified. Complete `check:all` passed
+  in the pre-commit hook. Simplifier disclosure: no subagent dispatch exists in
+  this session, so a main-session simplification pass covered the committed
+  scope; it removed one dead parameter and found no other reductions. Push and
+  draft-PR publication remain withheld pending explicit authority.
