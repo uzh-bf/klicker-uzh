@@ -977,7 +977,12 @@ fetched by exact SHA from the existing origin without making the checkout shallo
 unavailable content, mutable refs and mismatches fail the check. Priority callers execute the
 published envelopes at an exact reviewed commit, which allows runner-group access
 to be restricted to those immutable workflow refs. Publish an executor commit
-before updating caller pins; GitHub resolves even disabled reusable calls. Before publication, draft CI exercises
+before updating caller pins; GitHub resolves even disabled reusable calls. A
+pin must name a commit that a long-lived branch contains. A squash merge leaves
+the PR branch commits off that branch, and once the PR branch is deleted GitHub
+cannot resolve them, so every run of the caller fails at startup with "workflow
+was not found". After squash-merging an executor change, repin its caller to the
+squash commit. Before publication, draft CI exercises
 ordinary jobs and synthetic new-source contracts only. Source validation is
 separate from actual paid job, artifact, aggregate and billing acceptance.
 
