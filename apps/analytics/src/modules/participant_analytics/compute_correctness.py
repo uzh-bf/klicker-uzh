@@ -112,6 +112,9 @@ def compute_correctness(db, df_details, verbose=False):
             len(df_details),
         )
 
+    if df_details.empty:
+        return None, None
+
     # Filter out the columns that are not needed
     df_details = df_details[
         [

@@ -22,17 +22,19 @@ from src.modules.activity_progress.save_practice_quiz_progress import (
 from src.modules.activity_progress.save_microlearning_progress import (
     save_microlearning_progress,
 )
+from src.modules.analytics_eligibility import capture_analytics_eligibility
 
 
 db = Prisma()
 db.connect()
+eligibility = capture_analytics_eligibility(db)
 
 # Script settings
 verbose = False
 
 
 # Fetch all courses from the database
-df_courses = get_running_past_courses(db)
+df_courses = get_running_past_courses(db, eligibility)
 
 # Iterate over the course and fetch all question responses linked to it
 for idx, course in df_courses.iterrows():
@@ -43,7 +45,7 @@ for idx, course in df_courses.iterrows():
     course_participants = len(course["participations"])
 
     # fetch all practice quizzes and microlearnings linked to the course
-    pqs, mls = get_course_progress_activities(db, course_id)
+    pqs, mls = get_course_progress_activities(db, course_id, eligibility)
 
     for quiz in pqs:
         started_count, completed_count, repeated_count = compute_progress_counts(quiz)
@@ -57,6 +59,7 @@ for idx, course in df_courses.iterrows():
             repeated_count,
             course_id,
             quiz["id"],
+            eligibility,
         )
 
     for ml in mls:
@@ -70,6 +73,7 @@ for idx, course in df_courses.iterrows():
             completed_count,
             course_id,
             ml["id"],
+            eligibility,
         )
 
 
