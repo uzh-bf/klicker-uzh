@@ -439,3 +439,20 @@ out of this file.
   - Recovery: every `asyncspot` node uncordoned, Argo `Synced` and
     `Healthy`, baseline at 1, k6 Pod and ConfigMaps deleted; the burst HPA
     returns to 1 on its own after the load.
+- 2026-11-07 E3 rerun on the burst sizing and spread change (#6818, sync
+  #6822; staging at `874ece72c6`): burst requests 150m CPU and carries a
+  soft zone and hostname spread. Through the ingress, 21:21:24–21:56:35
+  UTC, same load profile:
+  - P5 pass: 0 of 90,675 Service requests failed (ramp, plateau and cool).
+  - P6 pass: probe p95 burst 16 ms, baseline 55 ms; Service plateau p95
+    29 ms.
+  - Sizing pass: the HPA went 1 to 2 at about 21:26 and held 2 through the
+    plateau at 62–67% of the 70% target. The tier no longer sits at its
+    maximum of 4 under this load.
+  - Spread pass: the two burst Pods ran on different `asyncspot` nodes in
+    different zones.
+  - Scale-down: load ended about 21:41:30; 2 to 1 at about 21:48.
+  - The burst probe failed 803 of 3,968 requests. Their count matches the
+    time after the HPA removed the probed Pod at 21:48 (expected; see the
+    README). No Unhealthy probe events under load and no restarts.
+  - Recovery: k6 Pod and ConfigMaps deleted; Argo `Synced` and `Healthy`.
