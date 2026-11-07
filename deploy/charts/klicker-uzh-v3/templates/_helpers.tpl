@@ -109,7 +109,7 @@ release: {{ .Chart.AppVersion }}
 
 {{/*
 Frontend PWA pod spec without node scheduling, shared by the baseline and burst
-Deployments.
+Deployments. A context with `podResources` replaces frontendPWA.resources.
 */}}
 {{- define "chart.frontendPWAPodSpec" -}}
 priorityClassName: {{ include "chart.fullname" . }}-{{ .Values.frontendPWA.priorityClassName }}
@@ -152,7 +152,7 @@ containers:
           seconds: {{ . }}
     {{- end }}
     resources:
-      {{- toYaml .Values.frontendPWA.resources | nindent 6 }}
+      {{- toYaml (.podResources | default .Values.frontendPWA.resources) | nindent 6 }}
 {{- end }}
 
 {{/*
