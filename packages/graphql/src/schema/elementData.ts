@@ -19,6 +19,7 @@ import {
   type FreeTextRestrictions as FreeTextRestrictionsType,
   type NumericalRestrictions as NumericalRestrictionsType,
   type NumericalSolutionRange as NumericalSolutionRangeType,
+  getEscapeRoomInstanceHints,
 } from '@klicker-uzh/types'
 import builder from '../builder.js'
 
@@ -297,7 +298,11 @@ export const ElementInstanceOptions = builder
       // the `requestEscapeRoomHint` mutation after attempt-ownership validation.
       hasHint: t.boolean({
         nullable: true,
-        resolve: (options) => !!options.escapeRoomHint,
+        resolve: (options) => getEscapeRoomInstanceHints(options).length > 0,
+      }),
+      hintCount: t.int({
+        nullable: true,
+        resolve: (options) => getEscapeRoomInstanceHints(options).length,
       }),
     }),
   })

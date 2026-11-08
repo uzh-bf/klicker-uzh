@@ -178,6 +178,57 @@ describe('escape-room hint authoring', () => {
     expect(instances[1]!.options.escapeRoomHint).toBe('duplicate only')
   })
 
+  it('stores ordered hint lists and scoring rules, and rejects invalid rules', async () => {
+    const { quiz, instance } = await seedDraftQuizWithHint('legacy')
+    await recomputeDerivedPermissions({ practiceQuizId: quiz.id }, prisma)
+    const args = editArgs(quiz, instance)
+    Object.assign(args.stacks[0]!.elements[0]!, {
+      escapeRoomHints: [
+        { text: ' first ', penalty: null },
+        { text: '', penalty: 10 },
+        { text: 'second', penalty: 240 },
+      ],
+    })
+    const rules = {
+      hintPenalties: [120, 240],
+      wrongAnswerPenalty: 30,
+      maxWrongAttempts: 5,
+      revealPenalty: 480,
+      skipPenalty: 600,
+      bonusSeconds: 180,
+    }
+
+    await manipulatePracticeQuiz(
+      { ...args, escapeRoomRules: rules },
+      lecturerCtx
+    )
+
+    await expect(
+      prisma.escapeRoomConfig.findUniqueOrThrow({
+        where: { practiceQuizId: quiz.id },
+      })
+    ).resolves.toMatchObject(rules)
+    await expect(
+      getEscapeRoomHints({ practiceQuizId: quiz.id }, lecturerCtx)
+    ).resolves.toEqual([
+      {
+        instanceId: instance.id,
+        hint: 'first',
+        hints: [
+          { text: 'first', penalty: null },
+          { text: 'second', penalty: 240 },
+        ],
+      },
+    ])
+
+    await expect(
+      manipulatePracticeQuiz(
+        { ...args, escapeRoomRules: { ...rules, skipPenalty: -1 } },
+        lecturerCtx
+      )
+    ).rejects.toThrow('skip penalty')
+  })
+
   it('returns raw hints to WRITE collaborators but not READ-only users', async () => {
     const { quiz, instance } = await seedDraftQuizWithHint('owner only')
     const otherLecturer = await prisma.user.create({
@@ -213,10 +264,22 @@ describe('escape-room hint authoring', () => {
         { practiceQuizId: quiz.id },
         createUserCtx(otherLecturer.id)
       )
-    ).resolves.toEqual([{ instanceId: instance.id, hint: 'owner only' }])
+    ).resolves.toEqual([
+      {
+        instanceId: instance.id,
+        hint: 'owner only',
+        hints: [{ text: 'owner only', penalty: null }],
+      },
+    ])
     await expect(
       getEscapeRoomHints({ practiceQuizId: quiz.id }, lecturerCtx)
-    ).resolves.toEqual([{ instanceId: instance.id, hint: 'owner only' }])
+    ).resolves.toEqual([
+      {
+        instanceId: instance.id,
+        hint: 'owner only',
+        hints: [{ text: 'owner only', penalty: null }],
+      },
+    ])
   })
 
   it('creates, reads, preserves, updates, clears, and duplicates group hints', async () => {
@@ -259,7 +322,13 @@ describe('escape-room hint authoring', () => {
     expect(instance.options.escapeRoomHint).toBe('group original')
     await expect(
       getEscapeRoomHints({ groupActivityId: created.id }, lecturerCtx)
-    ).resolves.toEqual([{ instanceId: instance.id, hint: 'group original' }])
+    ).resolves.toEqual([
+      {
+        instanceId: instance.id,
+        hint: 'group original',
+        hints: [{ text: 'group original', penalty: null }],
+      },
+    ])
 
     const edit = (escapeRoomHint?: string | null) =>
       manipulateGroupActivity(

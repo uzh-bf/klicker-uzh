@@ -15,6 +15,7 @@ import dayjs from 'dayjs'
 import { GraphQLError } from 'graphql'
 import { v4 as uuidv4 } from 'uuid'
 import type { Context, ContextWithUser } from '../lib/context.js'
+import type { IEscapeRoomRulesInput } from '../schema/escapeRoomConfig.js'
 import { orderStacks } from '../lib/util.js'
 import {
   activityInputContainsElementType,
@@ -23,6 +24,7 @@ import {
   UNPUBLISHED_ACTIVITY_STATUSES,
 } from './activities.js'
 import {
+  getEscapeRoomRulesData,
   isEscapeRoomStackCleared,
   restoreUsedEscapeRoomHints,
   validateEscapeRoomConfig,
@@ -223,6 +225,7 @@ interface ManipulatePracticeQuizArgs {
   escapeRoomTimeLimit?: number | null
   escapeRoomHintPenalty?: number | null
   escapeRoomIntroText?: string | null
+  escapeRoomRules?: IEscapeRoomRulesInput | null
 }
 
 export async function manipulatePracticeQuiz(
@@ -240,6 +243,7 @@ export async function manipulatePracticeQuiz(
     escapeRoomTimeLimit,
     escapeRoomHintPenalty,
     escapeRoomIntroText,
+    escapeRoomRules,
   }: ManipulatePracticeQuizArgs,
   ctx: ContextWithUser,
   transactionPrisma?: PrismaTransactionClient
@@ -252,7 +256,7 @@ export async function manipulatePracticeQuiz(
   if (isEscapeRoom) {
     validateEscapeRoomConfig({
       timeLimit: escapeRoomTimeLimit ?? 3600,
-      hintPenalty: escapeRoomHintPenalty ?? 120,
+      hintPenalty: escapeRoomHintPenalty ?? 30,
     })
   }
 
@@ -374,9 +378,10 @@ export async function manipulatePracticeQuiz(
   const escapeRoomConfigData = isEscapeRoom
     ? {
         timeLimit: escapeRoomTimeLimit ?? 3600,
-        hintPenalty: escapeRoomHintPenalty ?? 120,
+        hintPenalty: escapeRoomHintPenalty ?? 30,
         lockoutSeconds: 5,
         introText: escapeRoomIntroText?.trim() || null,
+        ...getEscapeRoomRulesData(escapeRoomRules),
       }
     : null
 
@@ -388,6 +393,7 @@ export async function manipulatePracticeQuiz(
           timeLimit: escapeRoomConfigData.timeLimit,
           hintPenalty: escapeRoomConfigData.hintPenalty,
           introText: escapeRoomConfigData.introText,
+          ...getEscapeRoomRulesData(escapeRoomRules),
         },
       },
     }
@@ -420,7 +426,8 @@ export async function manipulatePracticeQuiz(
           options: {
             ...instance.options,
             ...getEscapeRoomHintUpdate(
-              persistentInputs.get(instance.id)?.escapeRoomHint
+              persistentInputs.get(instance.id)?.escapeRoomHint,
+              persistentInputs.get(instance.id)?.escapeRoomHints
             ),
             resetTimeDays,
             pointsMultiplier: multiplier * elementMultiplier,

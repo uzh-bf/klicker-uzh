@@ -18,6 +18,7 @@ import {
   type ElementOptionsNumerical,
   type ElementOptionsSelection,
   type ElementResultsCaseStudy,
+  type EscapeRoomHintEntry,
 } from '@klicker-uzh/types'
 import { pick } from 'remeda'
 
@@ -453,11 +454,16 @@ export function getActivityInstanceConnectOrCreate({
         elementData: existingInstance.elementData,
         options: {
           ...additionalInstanceOptions,
-          ...getEscapeRoomHintUpdate(
-            typeof instance.escapeRoomHint === 'undefined'
-              ? existingInstance.options.escapeRoomHint
-              : instance.escapeRoomHint
-          ),
+          ...(typeof instance.escapeRoomHint === 'undefined' &&
+          typeof instance.escapeRoomHints === 'undefined'
+            ? getEscapeRoomHintUpdate(
+                existingInstance.options.escapeRoomHint,
+                existingInstance.options.escapeRoomHints ?? undefined
+              )
+            : getEscapeRoomHintUpdate(
+                instance.escapeRoomHint,
+                instance.escapeRoomHints
+              )),
           basePoints: existingInstance.elementData.basePoints,
           pointsMultiplier:
             activityMultiplier * existingInstance.elementData.pointsMultiplier,
@@ -500,7 +506,10 @@ export function getActivityInstanceConnectOrCreate({
         elementData: elementData,
         options: {
           ...additionalInstanceOptions,
-          ...getEscapeRoomHintUpdate(instance.escapeRoomHint),
+          ...getEscapeRoomHintUpdate(
+            instance.escapeRoomHint,
+            instance.escapeRoomHints
+          ),
           basePoints: element.basePoints,
           pointsMultiplier: activityMultiplier * element.pointsMultiplier,
         },
@@ -520,9 +529,31 @@ export function getActivityInstanceConnectOrCreate({
   }
 }
 
-export function getEscapeRoomHintUpdate(hint: string | null | undefined) {
+export function getEscapeRoomHintUpdate(
+  hint: string | null | undefined,
+  hints?: EscapeRoomHintEntry[] | null
+) {
+  // A hint list wins; `escapeRoomHint` mirrors its first text so clients that
+  // only know the single hint keep working.
+  if (Array.isArray(hints)) {
+    const normalizedHints = hints.flatMap((entry) => {
+      const text = entry?.text?.trim()
+      if (!text) return []
+      const penalty =
+        Number.isInteger(entry.penalty) &&
+        entry.penalty! >= 0 &&
+        entry.penalty! <= 3_600
+          ? entry.penalty!
+          : null
+      return [{ text, penalty }]
+    })
+    return {
+      escapeRoomHints: normalizedHints,
+      escapeRoomHint: normalizedHints[0]?.text ?? null,
+    }
+  }
   if (typeof hint === 'undefined') return {}
 
   const normalizedHint = (hint ?? '').trim()
-  return { escapeRoomHint: normalizedHint || null }
+  return { escapeRoomHint: normalizedHint || null, escapeRoomHints: null }
 }

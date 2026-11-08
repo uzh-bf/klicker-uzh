@@ -139,6 +139,7 @@ export type ElementInstanceInput = {
   // Escape-room per-instance hint text (optional). Persisted into the instance
   // `options` on create/duplicate; see ElementInstanceOptions.escapeRoomHint.
   escapeRoomHint?: string | null
+  escapeRoomHints?: EscapeRoomHintEntry[] | null
 }
 
 export type ElementVersionInput = {
@@ -760,6 +761,32 @@ export type ElementInstanceOptions = {
   // derives a content-free `hasHint` boolean; the text is returned exclusively by
   // the `requestEscapeRoomHint` mutation after attempt-ownership checks.
   escapeRoomHint?: string | null
+  // Ordered hint list with optional per-hint penalties. When present it wins
+  // over `escapeRoomHint`, which then mirrors the first hint's text.
+  escapeRoomHints?: EscapeRoomHintEntry[] | null
+}
+
+export interface EscapeRoomHintEntry {
+  text: string
+  // Seconds; null falls back to the Escape Room's configured hint penalties.
+  penalty?: number | null
+}
+
+export function getEscapeRoomInstanceHints(options: {
+  escapeRoomHint?: string | null
+  escapeRoomHints?: EscapeRoomHintEntry[] | null
+}): EscapeRoomHintEntry[] {
+  if (Array.isArray(options.escapeRoomHints)) {
+    return options.escapeRoomHints.filter((hint) => !!hint?.text?.trim())
+  }
+  const legacyHint = options.escapeRoomHint?.trim()
+  return legacyHint ? [{ text: legacyHint, penalty: null }] : []
+}
+
+// The first hint keeps the key used before hint lists existed, so attempts
+// that revealed a single hint stay valid.
+export function getEscapeRoomHintKey(instanceId: number, hintIndex: number) {
+  return hintIndex === 0 ? String(instanceId) : `${instanceId}:${hintIndex}`
 }
 
 export type ElementResultsChoices = {

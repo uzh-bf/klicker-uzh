@@ -486,6 +486,15 @@ model EscapeRoomConfig {
   lockoutSeconds Int     @default(5)
   introText      String?
 
+  // Scoring rules; every rule defaults to off. See @klicker-uzh/grading
+  // escapeRoomRules for their semantics.
+  hintPenalties      Int[] @default([])
+  wrongAnswerPenalty Int   @default(0)
+  maxWrongAttempts   Int?
+  revealPenalty      Int   @default(0)
+  skipPenalty        Int?
+  bonusSeconds       Int?
+
   practiceQuiz   PracticeQuiz?  @relation(fields: [practiceQuizId], references: [id], onDelete: Cascade)
   practiceQuizId String?        @unique @db.Uuid
 
@@ -510,6 +519,10 @@ model EscapeRoomAttempt {
   // as [{ instanceId, response, clearedAt }]. Individual modes derive stage
   // progress from participant responses instead.
   stageResponses Json             @default("[]")
+  // Per-stage rule state in every mode, as [{ stageKey, wrongAttempts,
+  // outcome, at, creditSeconds }]; the stage key is the stack id in
+  // individual modes and the element instance id in Group Activity.
+  stageOutcomes  Json             @default("[]")
   status         EscapeRoomStatus @default(IN_PROGRESS)
   completedAt    DateTime?
   lockoutUntil   DateTime?
