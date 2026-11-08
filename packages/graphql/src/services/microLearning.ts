@@ -6,6 +6,7 @@ import {
 } from '@klicker-uzh/types'
 import {
   getActivityInstanceConnectOrCreate,
+  getEscapeRoomHintUpdate,
   propagateActivityToElements,
   recomputeDerivedPermissions,
   type PrismaTransactionClient,
@@ -20,6 +21,11 @@ import {
   persistActivityWithPermissions,
   UNPUBLISHED_ACTIVITY_STATUSES,
 } from './activities.js'
+import {
+  isEscapeRoomStackCleared,
+  restoreUsedEscapeRoomHints,
+  validateEscapeRoomConfig,
+} from './escapeRooms.js'
 import { splitActivityInstances } from './liveQuizzes.js'
 import { sendTeamsNotification } from './notifications.js'
 import { computeStackEvaluation } from './stacks.js'
@@ -42,9 +48,14 @@ export async function getMicroLearningData(
     },
     include: {
       course: true,
+      escapeRoomConfig: true,
       stacks: {
         include: {
           elements: {
+            include:
+              ctx.user?.sub && ctx.user.role === DB.UserRole.PARTICIPANT
+                ? { responses: { where: { participantId: ctx.user.sub } } }
+                : undefined,
             orderBy: {
               order: 'asc',
             },
@@ -57,17 +68,57 @@ export async function getMicroLearningData(
     },
   })
 
-  return microLearning
-    ? {
-        ...microLearning,
-        isOwner:
-          ctx.user?.sub &&
-          (ctx.user.role === DB.UserRole.USER ||
-            ctx.user.role === DB.UserRole.ADMIN)
-            ? ctx.user.sub === microLearning.ownerId
-            : false,
+  if (!microLearning) return null
+  const isOwner =
+    ctx.user?.sub &&
+    (ctx.user.role === DB.UserRole.USER || ctx.user.role === DB.UserRole.ADMIN)
+      ? ctx.user.sub === microLearning.ownerId
+      : false
+
+  if (ctx.user?.sub && ctx.user.role === DB.UserRole.PARTICIPANT) {
+    const orderedStacks = microLearning.stacks
+
+    let filteredStacks = orderedStacks
+    let attempt: DB.EscapeRoomAttempt | null = null
+    if (microLearning.escapeRoomConfig) {
+      attempt = await ctx.prisma.escapeRoomAttempt.findUnique({
+        where: {
+          participantId_microLearningId: {
+            participantId: ctx.user.sub,
+            microLearningId: microLearning.id,
+          },
+        },
+      })
+      if (!attempt || attempt.status === DB.EscapeRoomStatus.EXPIRED) {
+        filteredStacks = []
+      } else if (attempt.status === DB.EscapeRoomStatus.IN_PROGRESS) {
+        const firstUnclearedIx = orderedStacks.findIndex(
+          (stack) => !isEscapeRoomStackCleared(stack.elements)
+        )
+        if (firstUnclearedIx !== -1) {
+          filteredStacks = orderedStacks.slice(0, firstUnclearedIx + 1)
+        }
       }
-    : null
+    }
+
+    return {
+      ...microLearning,
+      isOwner,
+      stacks: restoreUsedEscapeRoomHints(filteredStacks, attempt?.hintsUsed),
+    }
+  }
+
+  // Escape room content must never reach a non-participant, non-owner caller
+  // (the participant path above masks locked stacks; this covers anonymous /
+  // temporary callers that fall through without an attempt).
+  if (microLearning.escapeRoomConfig && !isOwner) {
+    return { ...microLearning, isOwner, stacks: [] }
+  }
+
+  return {
+    ...microLearning,
+    isOwner,
+  }
 }
 
 export async function getMicroLearningEvaluation(
@@ -128,6 +179,7 @@ export async function getSingleMicroLearning(
     },
     include: {
       course: true,
+      escapeRoomConfig: true,
       stacks: {
         include: { elements: { orderBy: { order: 'asc' } } },
         orderBy: { order: 'asc' },
@@ -192,6 +244,10 @@ interface ManipulateMicroLearningArgs {
   multiplier: number
   startDate: Date
   endDate: Date
+  isEscapeRoom?: boolean | null
+  escapeRoomTimeLimit?: number | null
+  escapeRoomHintPenalty?: number | null
+  escapeRoomIntroText?: string | null
 }
 
 export async function manipulateMicroLearning(
@@ -205,11 +261,22 @@ export async function manipulateMicroLearning(
     multiplier,
     startDate,
     endDate,
+    isEscapeRoom,
+    escapeRoomTimeLimit,
+    escapeRoomHintPenalty,
+    escapeRoomIntroText,
   }: ManipulateMicroLearningArgs,
   ctx: ContextWithUser,
   transactionPrisma?: PrismaTransactionClient
 ) {
   const prisma = transactionPrisma ?? ctx.prisma
+
+  if (isEscapeRoom) {
+    validateEscapeRoomConfig({
+      timeLimit: escapeRoomTimeLimit ?? 3600,
+      hintPenalty: escapeRoomHintPenalty ?? 120,
+    })
+  }
 
   // in EDIT mode - validate that the microlearning exists and is not published
   let existingActivity: DB.MicroLearning | null = null
@@ -253,6 +320,7 @@ export async function manipulateMicroLearning(
   } = await splitActivityInstances({ stacksOrBlocks: stacks }, ctx, prisma)
 
   if (
+    !isEscapeRoom &&
     activityInputContainsElementType({
       stacksOrBlocks: stacks,
       persistentInstances,
@@ -262,7 +330,7 @@ export async function manipulateMicroLearning(
     })
   ) {
     throw new GraphQLError(
-      'QR scan questions are not supported in activities yet',
+      'QR scan questions are only supported in escape room activities',
       { extensions: { code: 'BAD_USER_INPUT' } }
     )
   }
@@ -292,7 +360,7 @@ export async function manipulateMicroLearning(
     stacksToDelete = stacks.map((stack) => stack.id)
   }
 
-  const createOrUpdateJSON = {
+  const createOrUpdateJSON: any = {
     name: name.trim(),
     displayName: displayName.trim(),
     description,
@@ -334,7 +402,37 @@ export async function manipulateMicroLearning(
     course: { connect: { id: courseId } },
   }
 
+  // nested upsert is only valid on the update branch of the activity upsert;
+  // the create branch needs a plain nested create
+  const escapeRoomConfigData = isEscapeRoom
+    ? {
+        timeLimit: escapeRoomTimeLimit ?? 3600,
+        hintPenalty: escapeRoomHintPenalty ?? 120,
+        lockoutSeconds: 5,
+        introText: escapeRoomIntroText?.trim() || null,
+      }
+    : null
+
+  if (escapeRoomConfigData) {
+    createOrUpdateJSON.escapeRoomConfig = {
+      upsert: {
+        create: escapeRoomConfigData,
+        update: {
+          timeLimit: escapeRoomConfigData.timeLimit,
+          hintPenalty: escapeRoomConfigData.hintPenalty,
+          introText: escapeRoomConfigData.introText,
+        },
+      },
+    }
+  }
+
   const persistMicroLearning = async (prisma: PrismaTransactionClient) => {
+    const persistentInputs = new Map(
+      stacks
+        .flatMap((stack) => stack.elements)
+        .filter((instance) => !instance.duplicateInstance)
+        .map((instance) => [instance.existingInstanceId, instance])
+    )
     // delete all instances that are not used anymore
     await prisma.elementInstance.deleteMany({
       where: {
@@ -358,6 +456,9 @@ export async function manipulateMicroLearning(
           order: persistentInstanceOrderMap[instance.id],
           options: {
             ...instance.options,
+            ...getEscapeRoomHintUpdate(
+              persistentInputs.get(instance.id)?.escapeRoomHint
+            ),
             pointsMultiplier: multiplier * elementMultiplier,
           },
         },
@@ -371,10 +472,21 @@ export async function manipulateMicroLearning(
       },
     })
 
+    if (!isEscapeRoom && id) {
+      await prisma.escapeRoomConfig
+        .delete({
+          where: { microLearningId: id },
+        })
+        .catch(() => {})
+    }
+
     const upsertedMicrolearning = await prisma.microLearning.upsert({
       where: { id: id ?? uuidv4() },
       create: {
         ...createOrUpdateJSON,
+        ...(escapeRoomConfigData
+          ? { escapeRoomConfig: { create: escapeRoomConfigData } }
+          : {}),
         owner: { connect: { id: ctx.user.sub } }, // only connect the owner during activity creation (not editing)!
       },
       update: createOrUpdateJSON,

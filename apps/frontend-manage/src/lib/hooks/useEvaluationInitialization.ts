@@ -1,6 +1,10 @@
-import { ElementInstanceEvaluation } from '@klicker-uzh/graphql/dist/ops'
-import { Dispatch, SetStateAction, useEffect } from 'react'
-import { ActivityEvaluationType } from '../../components/evaluation/ActivityEvaluation'
+import type {
+  ActiveStackType,
+  ActivityEvaluationType,
+} from '@components/evaluation/ActivityEvaluation'
+import type { ElementInstanceEvaluation } from '@klicker-uzh/graphql/dist/ops'
+import type { Dispatch, SetStateAction } from 'react'
+import { useEffect } from 'react'
 
 function useEvaluationInitialization({
   setActiveInstance,
@@ -12,9 +16,7 @@ function useEvaluationInitialization({
   type,
 }: {
   setActiveInstance: Dispatch<SetStateAction<number>>
-  setActiveStack: Dispatch<
-    SetStateAction<number | 'feedbacks' | 'confusion' | 'leaderboard'>
-  >
+  setActiveStack: Dispatch<SetStateAction<ActiveStackType>>
   questionIx?: string | null
   results: (ElementInstanceEvaluation & { stackIx: number })[]
   showLeaderboard?: boolean

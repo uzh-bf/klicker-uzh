@@ -174,6 +174,11 @@ function extractFormValuesFromElementInstance({
       ...sharedAttributes,
       type: ElementType.Content,
     }
+  } else if (element.type === ElementType.QrScan) {
+    return {
+      ...sharedAttributes,
+      type: ElementType.QrScan,
+    }
   }
 
   // default / fallback case (should not happen)

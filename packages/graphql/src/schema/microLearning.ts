@@ -1,9 +1,11 @@
 import * as DB from '@klicker-uzh/prisma/client'
 import builder from '../builder.js'
 import { type ICourse, CourseRef } from './course.js'
+import { EscapeRoomConfigRef } from './escapeRoomConfig.js'
 import {
   type IElementStack,
   ElementStackRef,
+  EscapeRoomAttemptRef,
   PublicationStatus,
 } from './practiceQuiz.js'
 
@@ -12,6 +14,8 @@ export interface IMicroLearning extends DB.MicroLearning {
   stacks?: IElementStack[]
   numOfStacks?: number
   isOwner?: boolean
+  escapeRoomConfig?: DB.EscapeRoomConfig | null
+  escapeRoomAttempts?: DB.EscapeRoomAttempt[] | null
 }
 
 export const MicroLearningRef =
@@ -26,6 +30,24 @@ export const MicroLearning = MicroLearningRef.implement({
     description: t.exposeString('description', { nullable: true }),
     templateName: t.exposeString('templateName', { nullable: true }),
     pointsMultiplier: t.exposeFloat('pointsMultiplier'),
+
+    escapeRoomConfig: t.expose('escapeRoomConfig', {
+      type: EscapeRoomConfigRef,
+      nullable: true,
+    }),
+    escapeRoomAttempts: t.field({
+      type: [EscapeRoomAttemptRef],
+      nullable: true,
+      resolve: async (parent, _args, ctx) => {
+        if (!ctx.user?.sub) return null
+        return await ctx.prisma.escapeRoomAttempt.findMany({
+          where: {
+            microLearningId: parent.id,
+            participantId: ctx.user.sub,
+          },
+        })
+      },
+    }),
 
     scheduledStartAt: t.expose('scheduledStartAt', { type: 'Date' }),
     scheduledEndAt: t.expose('scheduledEndAt', { type: 'Date' }),

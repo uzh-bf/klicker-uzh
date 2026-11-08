@@ -210,6 +210,9 @@ model ElementBlock {
   liveQuizId       String     @db.Uuid
   activeInLiveQuiz LiveQuiz[] @relation(name: "ActiveElementBlock")
 
+  escapeRoomConfig   EscapeRoomConfig?
+  escapeRoomAttempts EscapeRoomAttempt[]
+
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 

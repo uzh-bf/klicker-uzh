@@ -453,6 +453,11 @@ export function getActivityInstanceConnectOrCreate({
         elementData: existingInstance.elementData,
         options: {
           ...additionalInstanceOptions,
+          ...getEscapeRoomHintUpdate(
+            typeof instance.escapeRoomHint === 'undefined'
+              ? existingInstance.options.escapeRoomHint
+              : instance.escapeRoomHint
+          ),
           basePoints: existingInstance.elementData.basePoints,
           pointsMultiplier:
             activityMultiplier * existingInstance.elementData.pointsMultiplier,
@@ -495,6 +500,7 @@ export function getActivityInstanceConnectOrCreate({
         elementData: elementData,
         options: {
           ...additionalInstanceOptions,
+          ...getEscapeRoomHintUpdate(instance.escapeRoomHint),
           basePoints: element.basePoints,
           pointsMultiplier: activityMultiplier * element.pointsMultiplier,
         },
@@ -512,4 +518,11 @@ export function getActivityInstanceConnectOrCreate({
       },
     }
   }
+}
+
+export function getEscapeRoomHintUpdate(hint: string | null | undefined) {
+  if (typeof hint === 'undefined') return {}
+
+  const normalizedHint = (hint ?? '').trim()
+  return { escapeRoomHint: normalizedHint || null }
 }

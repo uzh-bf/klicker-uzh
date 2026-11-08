@@ -1,3 +1,4 @@
+import EscapeRoomSettingsFields from '@components/activities/creation/EscapeRoomSettingsFields'
 import { faCrown, faGears } from '@fortawesome/free-solid-svg-icons'
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome'
 import { ElementOrderType } from '@klicker-uzh/graphql/dist/ops'
@@ -49,7 +50,14 @@ function PracticeQuizSettingsStep({
       innerRef={formRef}
       validationSchema={validationSchema}
     >
-      {({ values, isValid, isSubmitting, setTouched, setValues }) => (
+      {({
+        values,
+        isValid,
+        isSubmitting,
+        setTouched,
+        setValues,
+        setFieldValue,
+      }) => (
         <Form className="h-full w-full">
           <CreationFormValidator
             isValid={isValid}
@@ -149,10 +157,20 @@ function PracticeQuizSettingsStep({
                       }
                     })}
                     required
+                    disabled={!!values.isEscapeRoom}
                     data={{ cy: 'select-order' }}
                     className={{
                       root: 'w-full',
                       tooltip: 'z-20',
+                    }}
+                  />
+                  <EscapeRoomSettingsFields
+                    isEscapeRoom={!!values.isEscapeRoom}
+                    onToggle={(next) => {
+                      setFieldValue('isEscapeRoom', next)
+                      // practice-quiz ONLY: force sequential order when enabling
+                      if (next)
+                        setFieldValue('order', ElementOrderType.Sequential)
                     }}
                   />
                 </div>
