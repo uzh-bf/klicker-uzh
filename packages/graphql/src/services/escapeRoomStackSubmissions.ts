@@ -1,3 +1,9 @@
+import {
+  applyEscapeRoomWrongAnswer,
+  type EscapeRoomRules,
+  getEscapeRoomBonusCredit,
+  isEscapeRoomBonusStage,
+} from '@klicker-uzh/grading'
 import * as DB from '@klicker-uzh/prisma/client'
 import type { StackResponseInput } from '@klicker-uzh/types'
 import {
@@ -15,6 +21,14 @@ import {
   isEscapeRoomStackCleared,
   releaseEscapeRoomLifecycleClaim,
 } from './escapeRooms.js'
+import {
+  type EscapeRoomStageOutcomeEntry,
+  getEscapeRoomRules,
+  getStageOutcome,
+  isBonusAnswered,
+  parseEscapeRoomStageOutcomes,
+  setStageOutcome,
+} from './escapeRoomStageOutcomes.js'
 
 type ParticipantStack = DB.Prisma.ElementStackGetPayload<{
   include: {
@@ -37,6 +51,8 @@ export type EscapeRoomStackSubmissionState =
       attemptId: string
       stackId: number
       lockoutSeconds: number
+      rules: EscapeRoomRules
+      isBonus: boolean
       activityStacks: ActivityStack[]
       claimKey: string
       claimToken: string
@@ -123,16 +139,69 @@ async function loadActivityStacks(
   })
 }
 
-function assertCurrentStack(activityStacks: ActivityStack[], stackId: number) {
+function isStackCleared(
+  stack: ActivityStack,
+  outcomes: EscapeRoomStageOutcomeEntry[]
+) {
+  return isEscapeRoomStackCleared(
+    stack.elements,
+    getStageOutcome(outcomes, stack.id)
+  )
+}
+
+// Resolves whether the stack can be answered now: it must be the first
+// uncleared stage of an in-progress attempt, or the unanswered bonus stage of
+// a completed attempt whose time has not run out.
+async function assertAnswerableStage(
+  {
+    attempt,
+    activityStacks,
+    rules,
+    stackId,
+  }: {
+    attempt: DB.EscapeRoomAttempt | null
+    activityStacks: ActivityStack[]
+    rules: EscapeRoomRules
+    stackId: number
+  },
+  ctx: Context,
+  options?: { conditionalExpiryUpdate?: boolean }
+) {
+  const outcomes = parseEscapeRoomStageOutcomes(attempt?.stageOutcomes)
+  const stageIndex = activityStacks.findIndex((stack) => stack.id === stackId)
+  const isBonus = isEscapeRoomBonusStage(
+    rules,
+    stageIndex,
+    activityStacks.length
+  )
+
+  if (isBonus && attempt?.status === DB.EscapeRoomStatus.COMPLETED) {
+    if (
+      isEscapeRoomExpired(attempt) ||
+      isBonusAnswered(getStageOutcome(outcomes, stackId))
+    ) {
+      throw noAttemptError()
+    }
+  } else {
+    await assertActiveAttempt(attempt, ctx, options)
+  }
+
   const currentStack = activityStacks.find(
-    (stack) => !isEscapeRoomStackCleared(stack.elements)
+    (stack) => !isStackCleared(stack, outcomes)
   )
   if (currentStack?.id !== stackId) {
+    const currentIndex = currentStack
+      ? activityStacks.indexOf(currentStack)
+      : activityStacks.length
     throw new GraphQLError(
-      'This escape room step has already been cleared or is no longer active',
+      stageIndex > currentIndex
+        ? 'You must answer all preceding questions correctly before attempting this step'
+        : 'This escape room step has already been cleared or is no longer active',
       { extensions: { code: 'ESCAPE_ROOM_GATED' } }
     )
   }
+
+  return { attempt: attempt!, isBonus }
 }
 
 export async function prepareEscapeRoomStackSubmission(
@@ -245,27 +314,18 @@ export async function prepareEscapeRoomStackSubmission(
             microLearningId: activityId,
           },
         }
-  const attempt = await assertActiveAttempt(
-    await ctx.prisma.escapeRoomAttempt.findUnique({ where: attemptWhere }),
+  const rules = getEscapeRoomRules(config)
+  const { attempt } = await assertAnswerableStage(
+    {
+      attempt: await ctx.prisma.escapeRoomAttempt.findUnique({
+        where: attemptWhere,
+      }),
+      activityStacks: await loadActivityStacks(stack, participantId, ctx),
+      rules,
+      stackId,
+    },
     ctx
   )
-
-  const initialActivityStacks = await loadActivityStacks(
-    stack,
-    participantId,
-    ctx
-  )
-  for (const precedingStack of initialActivityStacks) {
-    if (
-      precedingStack.order < stack.order &&
-      !isEscapeRoomStackCleared(precedingStack.elements)
-    ) {
-      throw new GraphQLError(
-        'You must answer all preceding questions correctly before attempting this step',
-        { extensions: { code: 'ESCAPE_ROOM_GATED' } }
-      )
-    }
-  }
 
   const claimKey = getEscapeRoomLifecycleClaimKey(
     activityKind,
@@ -282,21 +342,27 @@ export async function prepareEscapeRoomStackSubmission(
   }
 
   try {
-    await assertActiveAttempt(
-      await ctx.prisma.escapeRoomAttempt.findUnique({
-        where: { id: attempt.id },
-      }),
+    const activityStacks = await loadActivityStacks(stack, participantId, ctx)
+    const { isBonus } = await assertAnswerableStage(
+      {
+        attempt: await ctx.prisma.escapeRoomAttempt.findUnique({
+          where: { id: attempt.id },
+        }),
+        activityStacks,
+        rules,
+        stackId,
+      },
       ctx,
       { conditionalExpiryUpdate: true }
     )
-    const activityStacks = await loadActivityStacks(stack, participantId, ctx)
-    assertCurrentStack(activityStacks, stackId)
     return {
       kind: 'escape-room',
       isOwner: false,
       attemptId: attempt.id,
       stackId,
       lockoutSeconds: config.lockoutSeconds,
+      rules,
+      isBonus,
       activityStacks,
       claimKey,
       claimToken,
@@ -314,30 +380,77 @@ export async function finalizeEscapeRoomStackSubmission(
 ) {
   if (state.kind !== 'escape-room') return
 
-  if (stackFeedback === StackFeedbackStatus.CORRECT) {
-    const otherStacksCorrect = state.activityStacks
-      .filter((stack) => stack.id !== state.stackId)
-      .every((stack) => isEscapeRoomStackCleared(stack.elements))
-    if (otherStacksCorrect) {
-      await ctx.prisma.escapeRoomAttempt.update({
-        where: { id: state.attemptId },
-        data: {
-          status: DB.EscapeRoomStatus.COMPLETED,
-          completedAt: new Date(),
-        },
-      })
-    }
-    return
-  }
+  // The lifecycle claim is still held, so this read-modify-write is the only
+  // writer of the attempt's stage state.
+  const attempt = await ctx.prisma.escapeRoomAttempt.findUniqueOrThrow({
+    where: { id: state.attemptId },
+  })
+  const outcomes = parseEscapeRoomStageOutcomes(attempt.stageOutcomes)
+  const current = getStageOutcome(outcomes, state.stackId)
+  const correct = stackFeedback === StackFeedbackStatus.CORRECT
+  const now = new Date()
 
-  if (state.lockoutSeconds > 0) {
+  if (state.isBonus) {
     await ctx.prisma.escapeRoomAttempt.update({
       where: { id: state.attemptId },
       data: {
-        lockoutUntil: dayjs().add(state.lockoutSeconds, 'second').toDate(),
+        stageOutcomes: setStageOutcome(outcomes, {
+          ...current,
+          outcome: correct ? 'BONUS_CORRECT' : 'BONUS_WRONG',
+          at: now.toISOString(),
+          creditSeconds: getEscapeRoomBonusCredit(state.rules, correct),
+        }) as unknown as DB.Prisma.InputJsonValue,
       },
     })
+    return
   }
+
+  const wrong = correct
+    ? null
+    : applyEscapeRoomWrongAnswer(state.rules, current.wrongAttempts)
+  const nextEntry: EscapeRoomStageOutcomeEntry = correct
+    ? { ...current, outcome: 'SOLVED', at: now.toISOString() }
+    : {
+        ...current,
+        wrongAttempts: wrong!.wrongAttempts,
+        ...(wrong!.revealed
+          ? { outcome: 'REVEALED' as const, at: now.toISOString() }
+          : {}),
+      }
+  const nextOutcomes = setStageOutcome(outcomes, nextEntry)
+  const stageCleared = correct || wrong!.revealed
+  const completed =
+    stageCleared &&
+    state.activityStacks.every(
+      (stack, index) =>
+        stack.id === state.stackId ||
+        isEscapeRoomBonusStage(
+          state.rules,
+          index,
+          state.activityStacks.length
+        ) ||
+        isStackCleared(stack, nextOutcomes)
+    )
+
+  await ctx.prisma.escapeRoomAttempt.update({
+    where: { id: state.attemptId },
+    data: {
+      stageOutcomes: nextOutcomes as unknown as DB.Prisma.InputJsonValue,
+      ...(wrong && wrong.penaltySeconds > 0
+        ? { penaltySeconds: { increment: wrong.penaltySeconds } }
+        : {}),
+      ...(wrong && !wrong.revealed && state.lockoutSeconds > 0
+        ? {
+            lockoutUntil: dayjs(now)
+              .add(state.lockoutSeconds, 'second')
+              .toDate(),
+          }
+        : {}),
+      ...(completed
+        ? { status: DB.EscapeRoomStatus.COMPLETED, completedAt: now }
+        : {}),
+    },
+  })
 }
 
 export async function releaseEscapeRoomStackSubmission(

@@ -1,8 +1,15 @@
+import {
+  type EscapeRoomRules,
+  getEscapeRoomHintPenalty,
+  getEscapeRoomSkipPenalty,
+  isEscapeRoomBonusStage,
+} from '@klicker-uzh/grading'
 import * as DB from '@klicker-uzh/prisma/client'
 import {
   ESCAPE_ROOM_GRACE_SECONDS,
   ESCAPE_ROOM_SUPPORTED_ELEMENT_TYPES,
   getCurrentEscapeRoomInstance,
+  getEscapeRoomHintKey,
   getEscapeRoomInstanceHints,
   getEscapeRoomLifecycleClaimKey,
   isEscapeRoomExpired,
@@ -13,7 +20,19 @@ import { randomUUID } from 'node:crypto'
 import type { ContextWithUser } from '../lib/context.js'
 import type { IEscapeRoomRulesInput } from '../schema/escapeRoomConfig.js'
 import {
+  type EscapeRoomStageOutcomeEntry,
+  getEscapeRoomRules,
+  getStageOutcome,
+  isBonusAnswered,
+  isClearedWithoutAnswer,
+  parseEscapeRoomStageOutcomes,
+  setStageOutcome,
+} from './escapeRoomStageOutcomes.js'
+import {
+  completeGroupEscapeRoomDecisions,
   getGroupEscapeRoomStages,
+  type GroupEscapeRoomStageResponse,
+  isGroupEscapeRoomComplete,
   parseGroupEscapeRoomStageResponses,
 } from './groupEscapeRoomSubmissions.js'
 import { checkAccess } from './sharing.js'
@@ -120,10 +139,7 @@ export function getEscapeRoomRemainingSeconds(
   now = Date.now()
 ) {
   const elapsedSeconds = (now - new Date(attempt.startedAt).getTime()) / 1000
-  return Math.max(
-    0,
-    Math.ceil(attempt.timeLimit - attempt.penaltySeconds - elapsedSeconds)
-  )
+  return Math.max(0, Math.ceil(attempt.timeLimit - elapsedSeconds))
 }
 
 export function getEscapeRoomExpiresInSeconds(
@@ -206,36 +222,53 @@ export async function getEscapeRoomHints(
   })
 }
 
+type HintOptions = Parameters<typeof getEscapeRoomInstanceHints>[0]
+
 type StackWithRevealedHints<
   T extends {
-    elements: Array<{
-      id: number
-      options: { escapeRoomHint?: string | null }
-    }>
+    elements: Array<{ id: number; options: HintOptions }>
   },
 > = Omit<T, 'elements'> & {
-  elements: Array<T['elements'][number] & { revealedHint: string | null }>
+  elements: Array<
+    T['elements'][number] & {
+      revealedHint: string | null
+      revealedHints: string[]
+    }
+  >
+}
+
+export function getRevealedEscapeRoomHints(
+  instanceId: number,
+  options: HintOptions,
+  hintsUsed: unknown
+) {
+  const usedHintKeys = new Set(
+    Array.isArray(hintsUsed) ? hintsUsed.map(String) : []
+  )
+  return getEscapeRoomInstanceHints(options).flatMap((hint, index) =>
+    usedHintKeys.has(getEscapeRoomHintKey(instanceId, index)) ? [hint.text] : []
+  )
 }
 
 export function restoreUsedEscapeRoomHints<
   T extends {
-    elements: Array<{
-      id: number
-      options: { escapeRoomHint?: string | null }
-    }>
+    elements: Array<{ id: number; options: HintOptions }>
   },
 >(stacks: T[], hintsUsed: unknown): StackWithRevealedHints<T>[] {
-  const usedHintIds = new Set(
-    Array.isArray(hintsUsed) ? hintsUsed.map(String) : []
-  )
   return stacks.map((stack) => ({
     ...stack,
-    elements: stack.elements.map((element) => ({
-      ...element,
-      revealedHint: usedHintIds.has(String(element.id))
-        ? (element.options.escapeRoomHint ?? null)
-        : null,
-    })),
+    elements: stack.elements.map((element) => {
+      const revealedHints = getRevealedEscapeRoomHints(
+        element.id,
+        element.options,
+        hintsUsed
+      )
+      return {
+        ...element,
+        revealedHint: revealedHints[0] ?? null,
+        revealedHints,
+      }
+    }),
   }))
 }
 
@@ -245,8 +278,12 @@ export function isEscapeRoomStackCleared(
     responses?: Array<{
       lastResponseCorrectness: DB.ResponseCorrectness | null
     }>
-  }>
+  }>,
+  // The stack's rule state; a revealed, skipped or answered bonus stage
+  // counts as cleared without a correct response.
+  outcome?: Pick<EscapeRoomStageOutcomeEntry, 'outcome'>
 ) {
+  if (isClearedWithoutAnswer(outcome) || isBonusAnswered(outcome)) return true
   return elements.every((element) =>
     element.responses?.some(
       (response) =>
@@ -298,7 +335,7 @@ function getEscapeRoomActivityReference({
 interface ResolvedParticipantEscapeRoom {
   reference: EscapeRoomActivityReference
   groupId: string | null
-  config: Pick<DB.EscapeRoomConfig, 'timeLimit' | 'hintPenalty'>
+  config: DB.EscapeRoomConfig
 }
 
 async function resolveParticipantEscapeRoom(
@@ -584,7 +621,11 @@ interface RequestEscapeRoomHintArgs extends EscapeRoomActivityArgs {
 }
 
 export interface EscapeRoomHintResult {
+  // The hint revealed by this request (or the last one when none is left).
   hint: string
+  // Every revealed hint of the instance, in order.
+  hints: string[]
+  hasMoreHints: boolean
   attempt: DB.EscapeRoomAttempt
 }
 
@@ -686,8 +727,13 @@ async function revealEscapeRoomHint(
         },
       },
     })
+    const outcomes = parseEscapeRoomStageOutcomes(attempt.stageOutcomes)
     const currentStack = stacks.find(
-      (stack) => !isEscapeRoomStackCleared(stack.elements)
+      (stack) =>
+        !isEscapeRoomStackCleared(
+          stack.elements,
+          getStageOutcome(outcomes, stack.id)
+        )
     )
     if (!currentStack || instance.elementStackId !== currentStack.id) {
       throw new GraphQLError(
@@ -743,27 +789,49 @@ async function revealEscapeRoomHint(
     }
   }
 
-  const hint = instance.options.escapeRoomHint
-  if (!hint) {
+  const hints = getEscapeRoomInstanceHints(instance.options)
+  if (hints.length === 0) {
     throw new GraphQLError('No hint available for this element', {
       extensions: { code: 'ESCAPE_ROOM_NO_HINT' },
     })
   }
 
-  const hintKey = String(instanceId)
-  await ctx.prisma.$executeRaw`
-    UPDATE "EscapeRoomAttempt"
-    SET "penaltySeconds" = "penaltySeconds" + ${activity.config.hintPenalty},
-        "hintsUsed" = "hintsUsed" || ${JSON.stringify([hintKey])}::jsonb
-    WHERE "id" = ${attempt.id}::uuid
-      AND NOT ("hintsUsed" @> ${JSON.stringify([hintKey])}::jsonb)
-  `
+  // Hints reveal in order; a request after the last hint is idempotent.
+  const usedHintKeys = new Set(
+    Array.isArray(attempt.hintsUsed) ? attempt.hintsUsed.map(String) : []
+  )
+  const hintIndex = hints.findIndex(
+    (_, index) => !usedHintKeys.has(getEscapeRoomHintKey(instanceId, index))
+  )
+  if (hintIndex !== -1) {
+    const hintKey = getEscapeRoomHintKey(instanceId, hintIndex)
+    const penalty = getEscapeRoomHintPenalty(
+      getEscapeRoomRules(activity.config),
+      hintIndex,
+      hints[hintIndex]!.penalty
+    )
+    await ctx.prisma.$executeRaw`
+      UPDATE "EscapeRoomAttempt"
+      SET "penaltySeconds" = "penaltySeconds" + ${penalty},
+          "hintsUsed" = "hintsUsed" || ${JSON.stringify([hintKey])}::jsonb
+      WHERE "id" = ${attempt.id}::uuid
+        AND NOT ("hintsUsed" @> ${JSON.stringify([hintKey])}::jsonb)
+    `
+  }
 
+  const updatedAttempt = await ctx.prisma.escapeRoomAttempt.findUniqueOrThrow({
+    where: { id: attempt.id },
+  })
+  const revealedHints = getRevealedEscapeRoomHints(
+    instanceId,
+    instance.options,
+    updatedAttempt.hintsUsed
+  )
   return {
-    hint,
-    attempt: await ctx.prisma.escapeRoomAttempt.findUniqueOrThrow({
-      where: { id: attempt.id },
-    }),
+    hint: revealedHints.at(-1) ?? hints[0]!.text,
+    hints: revealedHints,
+    hasMoreHints: revealedHints.length < hints.length,
+    attempt: updatedAttempt,
   }
 }
 
@@ -818,6 +886,239 @@ export async function requestEscapeRoomHint(
 
   try {
     return await revealEscapeRoomHint(instanceId, participantId, activity, ctx)
+  } finally {
+    await releaseEscapeRoomLifecycleClaim(ctx, claimKey, claimToken)
+  }
+}
+
+function assertSkippableAttempt(attempt: DB.EscapeRoomAttempt | null) {
+  if (!attempt || attempt.status !== DB.EscapeRoomStatus.IN_PROGRESS) {
+    throw new GraphQLError(
+      'No active escape room attempt found for this activity',
+      { extensions: { code: 'ESCAPE_ROOM_NO_ATTEMPT' } }
+    )
+  }
+  if (isEscapeRoomExpired(attempt)) {
+    throw new GraphQLError('Escape room time has expired', {
+      extensions: { code: 'ESCAPE_ROOM_EXPIRED' },
+    })
+  }
+  return attempt
+}
+
+function skipGatedError() {
+  return new GraphQLError('Only the current escape room stage can be skipped', {
+    extensions: { code: 'ESCAPE_ROOM_GATED' },
+  })
+}
+
+async function skipIndividualStage(
+  activity: ResolvedParticipantEscapeRoom,
+  participantId: string,
+  rules: EscapeRoomRules,
+  skipPenalty: number,
+  ctx: ContextWithUser
+) {
+  const attempt = assertSkippableAttempt(
+    await ctx.prisma.escapeRoomAttempt.findUnique({
+      where: getAttemptWhere(activity, participantId),
+    })
+  )
+  const stacks = await ctx.prisma.elementStack.findMany({
+    where:
+      activity.reference.kind === 'practiceQuiz'
+        ? { practiceQuizId: activity.reference.id as string }
+        : { microLearningId: activity.reference.id as string },
+    orderBy: { order: 'asc' },
+    select: {
+      id: true,
+      elements: {
+        select: {
+          elementType: true,
+          responses: {
+            where: { participantId },
+            select: { lastResponseCorrectness: true },
+          },
+        },
+      },
+    },
+  })
+  const outcomes = parseEscapeRoomStageOutcomes(attempt.stageOutcomes)
+  const isCleared = (
+    stack: (typeof stacks)[number],
+    entries: EscapeRoomStageOutcomeEntry[]
+  ) =>
+    isEscapeRoomStackCleared(stack.elements, getStageOutcome(entries, stack.id))
+  const currentIndex = stacks.findIndex((stack) => !isCleared(stack, outcomes))
+  if (
+    currentIndex === -1 ||
+    isEscapeRoomBonusStage(rules, currentIndex, stacks.length)
+  ) {
+    throw skipGatedError()
+  }
+
+  const now = new Date()
+  const nextOutcomes = setStageOutcome(outcomes, {
+    ...getStageOutcome(outcomes, stacks[currentIndex]!.id),
+    outcome: 'SKIPPED',
+    at: now.toISOString(),
+  })
+  const completed = stacks.every(
+    (stack, index) =>
+      isEscapeRoomBonusStage(rules, index, stacks.length) ||
+      isCleared(stack, nextOutcomes)
+  )
+  return ctx.prisma.escapeRoomAttempt.update({
+    where: { id: attempt.id },
+    data: {
+      stageOutcomes: nextOutcomes as unknown as DB.Prisma.InputJsonValue,
+      penaltySeconds: { increment: skipPenalty },
+      ...(completed
+        ? { status: DB.EscapeRoomStatus.COMPLETED, completedAt: now }
+        : {}),
+    },
+  })
+}
+
+async function skipGroupStage(
+  activity: ResolvedParticipantEscapeRoom,
+  rules: EscapeRoomRules,
+  skipPenalty: number,
+  ctx: ContextWithUser
+) {
+  const groupActivityId = activity.reference.id as string
+  const groupId = activity.groupId!
+  return ctx.prisma.$transaction(
+    async (prisma) => {
+      const attempt = assertSkippableAttempt(
+        await prisma.escapeRoomAttempt.findUnique({
+          where: { groupId_groupActivityId: { groupId, groupActivityId } },
+        })
+      )
+      const stacks = await prisma.elementStack.findMany({
+        where: { groupActivityId },
+        select: {
+          order: true,
+          elements: { select: { id: true, elementType: true, order: true } },
+        },
+      })
+      const stages = getGroupEscapeRoomStages(stacks)
+      const entries = parseGroupEscapeRoomStageResponses(attempt.stageResponses)
+      const clearedIds = new Set(entries.map((entry) => entry.instanceId))
+      const currentIndex = stages.findIndex(
+        (stage) => !clearedIds.has(stage.id)
+      )
+      if (
+        currentIndex === -1 ||
+        isEscapeRoomBonusStage(rules, currentIndex, stages.length)
+      ) {
+        throw skipGatedError()
+      }
+
+      const now = new Date()
+      const stage = stages[currentIndex]!
+      const nextEntries: GroupEscapeRoomStageResponse[] = [
+        ...entries,
+        {
+          instanceId: stage.id,
+          response: null,
+          clearedAt: now.toISOString(),
+          outcome: 'SKIPPED',
+        },
+      ]
+      const outcomes = parseEscapeRoomStageOutcomes(attempt.stageOutcomes)
+      const completed = isGroupEscapeRoomComplete(stages, nextEntries, rules)
+      const updated = await prisma.escapeRoomAttempt.update({
+        where: { id: attempt.id },
+        data: {
+          stageResponses: nextEntries as unknown as DB.Prisma.InputJsonValue,
+          stageOutcomes: setStageOutcome(outcomes, {
+            ...getStageOutcome(outcomes, stage.id),
+            outcome: 'SKIPPED',
+            at: now.toISOString(),
+          }) as unknown as DB.Prisma.InputJsonValue,
+          penaltySeconds: { increment: skipPenalty },
+          ...(completed
+            ? { status: DB.EscapeRoomStatus.COMPLETED, completedAt: now }
+            : {}),
+        },
+      })
+      if (completed) {
+        const instance = await prisma.groupActivityInstance.findUnique({
+          where: { groupActivityId_groupId: { groupActivityId, groupId } },
+          select: { id: true },
+        })
+        if (instance) {
+          await completeGroupEscapeRoomDecisions(
+            prisma,
+            instance.id,
+            nextEntries
+          )
+        }
+      }
+      return updated
+    },
+    { isolationLevel: DB.Prisma.TransactionIsolationLevel.Serializable }
+  )
+}
+
+// Clears the current stage at the configured skip penalty. Live Quiz blocks
+// keep their own stage state and do not offer skipping yet.
+export async function skipEscapeRoomStage(
+  args: EscapeRoomActivityArgs,
+  ctx: ContextWithUser
+): Promise<DB.EscapeRoomAttempt> {
+  const participantId = requireParticipant(ctx, 'skip escape room stages')
+  const activity = await resolveParticipantEscapeRoom(
+    getEscapeRoomActivityReference(args),
+    participantId,
+    args.groupId,
+    ctx
+  )
+  const rules = getEscapeRoomRules(activity.config)
+  const skipPenalty = getEscapeRoomSkipPenalty(rules)
+  if (activity.reference.kind === 'liveQuizBlock' || skipPenalty === null) {
+    throw new GraphQLError('Skipping is not enabled for this escape room', {
+      extensions: { code: 'ESCAPE_ROOM_SKIP_DISABLED' },
+    })
+  }
+
+  const claimKey = getEscapeRoomLifecycleClaimKey(
+    activity.reference.kind,
+    activity.reference.id,
+    activity.groupId ?? participantId
+  )
+  const claimToken = randomUUID()
+  const claimed = await ctx.redisExec.set(claimKey, claimToken, 'EX', 300, 'NX')
+  if (claimed !== 'OK') {
+    throw new GraphQLError(
+      'Another escape room response is already being processed',
+      { extensions: { code: 'ESCAPE_ROOM_RESPONSE_PROCESSING' } }
+    )
+  }
+
+  try {
+    return activity.reference.kind === 'groupActivity'
+      ? await skipGroupStage(activity, rules, skipPenalty, ctx)
+      : await skipIndividualStage(
+          activity,
+          participantId,
+          rules,
+          skipPenalty,
+          ctx
+        )
+  } catch (error) {
+    if (
+      typeof error === 'object' &&
+      error !== null &&
+      'code' in error &&
+      error.code === 'P2034'
+    ) {
+      throw new GraphQLError('This skip conflicted with another response', {
+        extensions: { code: 'ESCAPE_ROOM_CONFLICT' },
+      })
+    }
+    throw error
   } finally {
     await releaseEscapeRoomLifecycleClaim(ctx, claimKey, claimToken)
   }
