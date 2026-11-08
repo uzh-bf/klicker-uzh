@@ -176,11 +176,15 @@ async function assertAnswerableStage(
   )
 
   if (isBonus && attempt?.status === DB.EscapeRoomStatus.COMPLETED) {
-    if (
-      isEscapeRoomExpired(attempt) ||
-      isBonusAnswered(getStageOutcome(outcomes, stackId))
-    ) {
-      throw noAttemptError()
+    if (isEscapeRoomExpired(attempt)) {
+      throw new GraphQLError('Escape room time has expired', {
+        extensions: { code: 'ESCAPE_ROOM_EXPIRED' },
+      })
+    }
+    if (isBonusAnswered(getStageOutcome(outcomes, stackId))) {
+      throw new GraphQLError('The bonus question has already been answered', {
+        extensions: { code: 'ESCAPE_ROOM_GATED' },
+      })
     }
   } else {
     await assertActiveAttempt(attempt, ctx, options)

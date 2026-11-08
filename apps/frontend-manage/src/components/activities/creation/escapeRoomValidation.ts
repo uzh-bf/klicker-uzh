@@ -31,8 +31,11 @@ function parseOptionalNumber(value: string | undefined) {
 }
 
 // One hint per line; each hint costs its indexed hint penalty when revealed.
+// Without loaded text (duplication and conversion skip the hint query) the
+// list is omitted, so the server copies the source instance's hints.
 export function getEscapeRoomHintsInput(text: string | null | undefined) {
-  return (text ?? '')
+  if (text == null) return undefined
+  return text
     .split('\n')
     .map((line) => line.trim())
     .filter((line) => line !== '')

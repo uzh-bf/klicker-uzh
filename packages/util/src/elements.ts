@@ -534,7 +534,8 @@ export function getEscapeRoomHintUpdate(
   hints?: EscapeRoomHintEntry[] | null
 ) {
   // A hint list wins; `escapeRoomHint` mirrors its first text so clients that
-  // only know the single hint keep working.
+  // only know the single hint keep working. An explicit null clears both.
+  if (hints === null) return { escapeRoomHints: null, escapeRoomHint: null }
   if (Array.isArray(hints)) {
     const normalizedHints = hints.flatMap((entry) => {
       const text = entry?.text?.trim()

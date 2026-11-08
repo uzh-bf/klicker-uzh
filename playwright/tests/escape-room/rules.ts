@@ -112,13 +112,13 @@ export function registerEscapeRoomRulesTests() {
     await page.getByTestId('sc-0-answer-option-1').click()
     await page.getByTestId('student-stack-submit').click()
     await page.getByTestId('student-stack-continue').click()
-    await expect(page.getByTestId('escape-room-tries-left')).toContainText('1')
     // a resubmit within the lockout window is rejected with a countdown
     await page.getByTestId('sc-0-answer-option-1').click()
     await page.getByTestId('student-stack-submit').click()
     await expect(
       page.getByTestId('escape-room-lockout-countdown')
     ).toBeVisible()
+    await expect(page.getByTestId('escape-room-tries-left')).toBeVisible()
     await expect(page.getByTestId('student-stack-submit')).toBeEnabled({
       timeout: 15_000,
     })

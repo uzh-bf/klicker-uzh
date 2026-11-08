@@ -70,12 +70,17 @@ function getScoredStages(attempt: {
   stageOutcomes: unknown
 }): EscapeRoomScoredStage[] {
   if (attempt.groupId) {
-    return parseGroupEscapeRoomStageResponses(attempt.stageResponses).map(
-      (entry) => ({
-        outcome: entry.outcome ?? 'SOLVED',
-        at: entry.clearedAt,
-        creditSeconds: entry.creditSeconds,
-      })
+    return parseGroupEscapeRoomStageResponses(attempt.stageResponses).flatMap(
+      (entry) =>
+        Number.isNaN(new Date(entry.clearedAt).getTime())
+          ? []
+          : [
+              {
+                outcome: entry.outcome ?? 'SOLVED',
+                at: entry.clearedAt,
+                creditSeconds: entry.creditSeconds,
+              },
+            ]
     )
   }
   return parseEscapeRoomStageOutcomes(attempt.stageOutcomes).flatMap((entry) =>
@@ -312,10 +317,10 @@ export async function getEscapeRoomProgress(
         ? attempt.status === DB.EscapeRoomStatus.COMPLETED
           ? totalStacks
           : 0
-        : attempt.participantId != null
-          ? (clearedByParticipant.get(attempt.participantId) ?? 0)
-          : attempt.status === DB.EscapeRoomStatus.COMPLETED
-            ? totalStacks
+        : attempt.status === DB.EscapeRoomStatus.COMPLETED
+          ? totalStacks
+          : attempt.participantId != null
+            ? (clearedByParticipant.get(attempt.participantId) ?? 0)
             : Math.min(
                 parseGroupEscapeRoomStageResponses(attempt.stageResponses)
                   .length,

@@ -277,6 +277,7 @@ export function registerPracticeEscapeRoomTests() {
     await page.getByTestId(`practice-quiz-${QUIZ.displayName}`).click()
     await page.getByTestId('start-practice-quiz').click()
     await expect(page.getByText(SC1.content).first()).toBeVisible()
+    const beforeHintAt = Date.now()
     const beforeHint = timerSeconds(
       (await page.getByRole('timer').textContent()) ?? '0:00'
     )
@@ -309,8 +310,9 @@ export function registerPracticeEscapeRoomTests() {
       (await page.getByRole('timer').textContent()) ?? '0:00'
     )
     // the 30-second hint penalty counts toward the ranked time only; the
-    // countdown keeps running at its normal pace
-    expect(afterHint).toBeGreaterThan(beforeHint - 25)
+    // countdown drops by the elapsed wall-clock time, not by the penalty
+    const elapsedSeconds = Math.ceil((Date.now() - beforeHintAt) / 1000)
+    expect(afterHint).toBeGreaterThanOrEqual(beforeHint - elapsedSeconds - 5)
 
     await page.getByTestId('sc-0-answer-option-0').click()
     await page.getByTestId('student-stack-submit').click()

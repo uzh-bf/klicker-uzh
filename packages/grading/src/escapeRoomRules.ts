@@ -24,9 +24,6 @@ export interface EscapeRoomRules {
   bonusSeconds: number | null
 }
 
-// The preset lives in @klicker-uzh/types so the editors can use it too.
-export { ESCAPE_ROOM_CLASSROOM_PRESET } from '@klicker-uzh/types'
-
 export function getEscapeRoomHintPenalty(
   rules: Pick<EscapeRoomRules, 'hintPenalty' | 'hintPenalties'>,
   hintIndex: number,
@@ -59,10 +56,7 @@ export function applyEscapeRoomWrongAnswer(
     penaltySeconds:
       rules.wrongAnswerPenalty + (revealed ? rules.revealPenalty : 0),
     revealed,
-    attemptsLeft:
-      rules.maxWrongAttempts === null
-        ? null
-        : Math.max(rules.maxWrongAttempts - wrongAttempts, 0),
+    attemptsLeft: getEscapeRoomAttemptsLeft(rules, wrongAttempts),
   }
 }
 

@@ -1400,7 +1400,8 @@ Since the KlickerUZH app is not yet available in the iOS App Store, follow these
       escapeRoomHintRevealedToast:
         'Hint revealed — {penalty}s added to your ranked time.',
       escapeRoomNextHint: 'Show next hint (+{penalty}s ranked time)',
-      escapeRoomTriesLeft: 'Tries left: {count}',
+      escapeRoomTriesLeft:
+        '{count, plural, one {One try left} other {Tries left: #}}',
       escapeRoomWrongTriesToast:
         'Incorrect answer! {count, plural, one {# try} other {# tries}} left.',
       escapeRoomRevealedNotice:
@@ -3044,7 +3045,7 @@ Since the KlickerUZH app is not yet available in the iOS App Store, follow these
         'QR scan questions can only be used in escape room blocks.',
       escapeRoomHintPlaceholder: 'Optional hint (costs time when revealed)',
       escapeRoomHintsPlaceholder:
-        'Optional hints, one per line (each costs time when revealed; later hints cost more)',
+        'Optional hints, one per line (each adds a penalty when revealed; later hints can cost more)',
       escapeRoomTimeLimitRequired: 'Time limit is required',
       escapeRoomInteger: 'Must be an integer',
       escapeRoomTimeLimitPositive: 'Must be a positive number of minutes',

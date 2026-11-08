@@ -1,12 +1,12 @@
 import {
   applyEscapeRoomWrongAnswer,
-  ESCAPE_ROOM_CLASSROOM_PRESET,
   getEscapeRoomHintPenalty,
   isEscapeRoomBonusStage,
   rankEscapeRoomScores,
   scoreEscapeRoomAttempt,
   type EscapeRoomRules,
 } from '../src/index.js'
+import { ESCAPE_ROOM_CLASSROOM_PRESET } from '@klicker-uzh/types'
 
 const defaults: EscapeRoomRules = {
   hintPenalty: 30,
