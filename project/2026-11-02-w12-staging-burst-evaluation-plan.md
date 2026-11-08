@@ -456,3 +456,21 @@ out of this file.
     time after the HPA removed the probed Pod at 21:48 (expected; see the
     README). No Unhealthy probe events under load and no restarts.
   - Recovery: k6 Pod and ConfigMaps deleted; Argo `Synced` and `Healthy`.
+- 2026-11-08 E4.5 on the ordinary promotion of sync #6824 (staging
+  `874ece72c6` to `cca9595e4b`). One k6 run through the ingress at 15
+  iterations per second, 12:55:25–13:24 UTC; Argo synced about 12:58 and
+  both PWA Deployments rolled with staging's `Recreate` strategy:
+  - Service: 340 of 70,917 requests failed, all at the plateau and all
+    between about 12:58:20 and 12:59:10, while the old baseline and burst
+    Pods were gone and the new ones were not yet Ready (113 pages, 227
+    assets). Ramp and cool phases had 0 failures.
+  - P10 inconclusive: the script counts failures but does not record their
+    status codes, and the staging ingress keeps no access logs. The window
+    matches a `Recreate` gap (no Ready endpoint), not a version-skew 404,
+    but that is not proven.
+  - Probe failures (87% per tier) are expected: both probed Pods were
+    replaced by the rollout.
+  - Readiness probes failed only on new Pods during startup; no restarts.
+    Recovery: k6 Pod and ConfigMaps deleted; Argo `Synced` and `Healthy`.
+  - A conclusive P10 needs the X1 staging `RollingUpdate` override and a
+    status-code tag on failed requests in `pwa-burst.js`.
