@@ -29,6 +29,13 @@ interface CommonFormValues {
   escapeRoomTimeLimit?: string
   escapeRoomHintPenalty?: string
   escapeRoomIntroText?: string
+  // Scoring rules as entered; an empty optional field turns the rule off.
+  escapeRoomHintPenalties?: string
+  escapeRoomWrongAnswerPenalty?: string
+  escapeRoomMaxWrongAttempts?: string
+  escapeRoomRevealPenalty?: string
+  escapeRoomSkipPenalty?: string
+  escapeRoomBonusSeconds?: string
 }
 
 export interface ElementInstanceFormInput {

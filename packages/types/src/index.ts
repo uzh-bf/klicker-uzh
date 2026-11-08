@@ -23,6 +23,19 @@ export const ESCAPE_ROOM_SUPPORTED_ELEMENT_TYPES: readonly ElementType[] = [
 
 export const ESCAPE_ROOM_GRACE_SECONDS = 5
 
+// The lecturer-tested classroom values, offered as a preset in the editor.
+// Durations are in seconds unless the name says otherwise.
+export const ESCAPE_ROOM_CLASSROOM_PRESET = {
+  timeLimitMinutes: 45,
+  hintPenalty: 120,
+  hintPenalties: [120, 240],
+  wrongAnswerPenalty: 30,
+  maxWrongAttempts: 5,
+  revealPenalty: 480,
+  skipPenalty: 600,
+  bonusSeconds: 180,
+} as const
+
 export type EscapeRoomLifecycleTargetKind =
   | 'practiceQuiz'
   | 'microLearning'

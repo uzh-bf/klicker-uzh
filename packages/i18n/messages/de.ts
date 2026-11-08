@@ -3057,6 +3057,8 @@ Da die KlickerUZH-App noch nicht im iOS-App-Store verfügbar ist, folgen Sie die
       escapeRoomNoQrOutside:
         'QR-Scan-Fragen können nur in Escape-Room-Blöcken verwendet werden.',
       escapeRoomHintPlaceholder: 'Optionaler Hinweis (kostet Zeit bei Anzeige)',
+      escapeRoomHintsPlaceholder:
+        'Optionale Hinweise, einer pro Zeile (jeder kostet Zeit bei Anzeige; spätere Hinweise kosten mehr)',
       escapeRoomTimeLimitRequired: 'Zeitlimit ist erforderlich',
       escapeRoomInteger: 'Muss eine ganze Zahl sein',
       escapeRoomTimeLimitPositive: 'Muss eine positive Anzahl Minuten sein',
@@ -3071,6 +3073,25 @@ Da die KlickerUZH-App noch nicht im iOS-App-Store verfügbar ist, folgen Sie die
         'Stimmen Sie die Teilnehmenden ein — wird auf dem Startbildschirm vor dem Start des Timers angezeigt (Markdown wird unterstützt)',
       escapeRoomIntroTextMax:
         'Die Einleitungsgeschichte darf 5000 Zeichen nicht überschreiten',
+      escapeRoomRulesTitle: 'Bewertungsregeln',
+      escapeRoomApplyPreset: 'Klassenzimmer-Vorlage anwenden',
+      escapeRoomHintPenalties:
+        'Strafe pro Hinweis, der Reihe nach (Sekunden, durch Kommas getrennt)',
+      escapeRoomHintPenaltiesInvalid:
+        'Bis zu 10 ganze Zahlen zwischen 0 und 3600, durch Kommas getrennt',
+      escapeRoomWrongAnswerPenalty: 'Strafe pro falscher Antwort (Sekunden)',
+      escapeRoomMaxWrongAttempts:
+        'Falsche Antworten, bis die Lösung aufgedeckt wird (leer = nie)',
+      escapeRoomMaxWrongAttemptsRange:
+        'Muss eine ganze Zahl zwischen 1 und 50 sein',
+      escapeRoomRevealPenalty:
+        'Strafe, wenn die Lösung aufgedeckt wird (Sekunden)',
+      escapeRoomSkipPenalty:
+        'Strafe für das Überspringen einer Frage (Sekunden, leer = Überspringen deaktiviert)',
+      escapeRoomBonusSeconds:
+        'Zeitgutschrift für eine richtige Bonus-Schlussfrage (Sekunden, leer = kein Bonus)',
+      escapeRoomRuleSecondsRange:
+        'Muss eine ganze Zahl zwischen 0 und 3600 Sekunden sein',
       selectGamifiedCourse:
         'Bitte wählen Sie einen gamifizierten Kurs für die Erstellung dieses Elements.',
       groupActivityInformation:

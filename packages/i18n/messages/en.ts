@@ -3019,6 +3019,8 @@ Since the KlickerUZH app is not yet available in the iOS App Store, follow these
       escapeRoomNoQrOutside:
         'QR scan questions can only be used in escape room blocks.',
       escapeRoomHintPlaceholder: 'Optional hint (costs time when revealed)',
+      escapeRoomHintsPlaceholder:
+        'Optional hints, one per line (each costs time when revealed; later hints cost more)',
       escapeRoomTimeLimitRequired: 'Time limit is required',
       escapeRoomInteger: 'Must be an integer',
       escapeRoomTimeLimitPositive: 'Must be a positive number of minutes',
@@ -3030,6 +3032,25 @@ Since the KlickerUZH app is not yet available in the iOS App Store, follow these
       escapeRoomIntroTextPlaceholder:
         'Set the scene for your participants — shown on the start screen before the timer begins (Markdown supported)',
       escapeRoomIntroTextMax: 'Intro story may not exceed 5000 characters',
+      escapeRoomRulesTitle: 'Scoring rules',
+      escapeRoomApplyPreset: 'Apply classroom preset',
+      escapeRoomHintPenalties:
+        'Penalty per hint, in order (seconds, comma-separated)',
+      escapeRoomHintPenaltiesInvalid:
+        'Enter up to 10 whole numbers between 0 and 3600, separated by commas',
+      escapeRoomWrongAnswerPenalty: 'Penalty per wrong answer (seconds)',
+      escapeRoomMaxWrongAttempts:
+        'Wrong answers before the solution is revealed (empty = never)',
+      escapeRoomMaxWrongAttemptsRange:
+        'Must be a whole number between 1 and 50',
+      escapeRoomRevealPenalty:
+        'Penalty when the solution is revealed (seconds)',
+      escapeRoomSkipPenalty:
+        'Penalty for skipping a question (seconds, empty = skipping disabled)',
+      escapeRoomBonusSeconds:
+        'Time credit for a correct final bonus question (seconds, empty = no bonus)',
+      escapeRoomRuleSecondsRange:
+        'Must be a whole number between 0 and 3600 seconds',
       selectGamifiedCourse:
         'Please select a gamified course for the creation of this element.',
       groupActivityInformation:

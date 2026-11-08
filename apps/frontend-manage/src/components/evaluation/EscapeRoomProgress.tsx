@@ -1,7 +1,7 @@
 import { useMutation } from '@apollo/client'
 import {
   EscapeRoomProgressStatus,
-  type EscapeRoomProgress as EscapeRoomProgressType,
+  EscapeRoomProgress as EscapeRoomProgressType,
   ResetEscapeRoomAttemptDocument,
 } from '@klicker-uzh/graphql/dist/ops'
 import { Button, UserNotification } from '@uzh-bf/design-system'

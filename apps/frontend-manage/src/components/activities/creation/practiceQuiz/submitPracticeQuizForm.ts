@@ -11,6 +11,10 @@ import {
   EditPracticeQuizMutationVariables,
   GetSingleCourseDocument,
 } from '@klicker-uzh/graphql/dist/ops'
+import {
+  getEscapeRoomHintsInput,
+  getEscapeRoomRulesInput,
+} from '../escapeRoomValidation'
 import { ElementStackFormValues, PracticeQuizFormValues } from '../WizardLayout'
 
 interface PracticeQuizFormSubmissionProps {
@@ -76,8 +80,8 @@ async function submitPracticeQuizForm({
               order: ix,
               existingInstanceId: element.existingInstanceId,
               duplicateInstance: element.duplicateInstance,
-              escapeRoomHint: values.isEscapeRoom
-                ? (element.escapeRoomHint ?? undefined)
+              escapeRoomHints: values.isEscapeRoom
+                ? getEscapeRoomHintsInput(element.escapeRoomHint)
                 : undefined,
             }
           }),
@@ -96,6 +100,9 @@ async function submitPracticeQuizForm({
         : undefined,
       escapeRoomIntroText: values.isEscapeRoom
         ? values.escapeRoomIntroText || undefined
+        : undefined,
+      escapeRoomRules: values.isEscapeRoom
+        ? getEscapeRoomRulesInput(values)
         : undefined,
     }
 
