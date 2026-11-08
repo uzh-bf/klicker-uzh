@@ -24,6 +24,7 @@ mutation SkipEscapeRoomStage(
       stageKey
       wrongAttempts
       outcome
+      at
     }
   }
 }

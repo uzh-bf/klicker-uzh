@@ -9,6 +9,7 @@ import {
   RequestEscapeRoomHintDocument,
   ResponseCorrectnessType,
   SelectionElementData,
+  SkipEscapeRoomStageDocument,
   SubmitGroupActivityDecisionsDocument,
 } from '@klicker-uzh/graphql/dist/ops'
 import StudentElement, {
@@ -25,6 +26,7 @@ import { useRouter } from 'next/router'
 import { useEffect, useState } from 'react'
 import { twMerge } from 'tailwind-merge'
 import useStackElementFeedbacks from '../hooks/useStackElementFeedbacks'
+import EscapeRoomSkipButton from '../practiceQuiz/EscapeRoomSkipButton'
 import InstanceHeader from '../practiceQuiz/InstanceHeader'
 
 interface GroupActivityStackProps {
@@ -38,10 +40,28 @@ interface GroupActivityStackProps {
   groupActivityId?: string
   groupId?: string
   hintPenalty?: number
+  // Scoring rules and attempt state of a group escape room. Penalties only
+  // count toward the ranked time, never the countdown.
+  escapeRoomRules?: {
+    hintPenalties: number[]
+    maxWrongAttempts?: number | null
+    revealPenalty: number
+    skipPenalty?: number | null
+    stageOutcomes: {
+      stageKey: string
+      wrongAttempts: number
+      outcome?: string | null
+    }[]
+    attemptInProgress: boolean
+    // the bonus stage (last response element), if the rules grant one
+    bonusInstanceId?: number
+    // the bonus stage can be answered now, after the attempt completed
+    bonusOpen: boolean
+  }
   onEscapeRoomStateChanged?: () => Promise<unknown> | void
 }
 
-function isGroupEscapeRoomResponseType(type: ElementType) {
+export function isGroupEscapeRoomResponseType(type: ElementType) {
   return [
     ElementType.Sc,
     ElementType.Mc,
@@ -65,6 +85,7 @@ function GroupActivityStack({
   groupActivityId,
   groupId,
   hintPenalty = 0,
+  escapeRoomRules,
   onEscapeRoomStateChanged,
 }: GroupActivityStackProps) {
   const t = useTranslations()
@@ -87,7 +108,12 @@ function GroupActivityStack({
   const [requestEscapeRoomHint, { loading: hintLoading }] = useMutation(
     RequestEscapeRoomHintDocument
   )
-  const [revealedHints, setRevealedHints] = useState<Record<number, string>>({})
+  const [skipEscapeRoomStage, { loading: skipLoading }] = useMutation(
+    SkipEscapeRoomStageDocument
+  )
+  const [revealedHints, setRevealedHints] = useState<Record<number, string[]>>(
+    {}
+  )
   const [lockoutRemaining, setLockoutRemaining] = useState(0)
   const elementFeedbacks = useStackElementFeedbacks({
     instanceIds: stack.elements?.map((element) => element.id) ?? [],
@@ -106,10 +132,20 @@ function GroupActivityStack({
 
   // Escape-room group activities unlock one response element (stage) at a
   // time; cleared stages stay visible read-only with the team's answer.
-  const isStagedEscapeRoom = !!groupActivityId && !decisions
-  const clearedStageIds = new Set(
-    (stageDecisions ?? []).map((decision) => decision.instanceId)
-  )
+  // The bonus stage stays answerable after completion, when the instance
+  // already carries its decisions.
+  const isBonusPhase = !!escapeRoomRules?.bonusOpen
+  const isStagedEscapeRoom = !!groupActivityId && (!decisions || isBonusPhase)
+  // Revealed and skipped stages have no team answer, so they only show up in
+  // the stage outcomes.
+  const clearedStageIds = new Set([
+    ...(stageDecisions ?? []).map((decision) => decision.instanceId),
+    ...(escapeRoomRules?.stageOutcomes ?? [])
+      .filter(
+        (entry) => entry.outcome === 'REVEALED' || entry.outcome === 'SKIPPED'
+      )
+      .map((entry) => Number(entry.stageKey)),
+  ])
   const currentStageId = isStagedEscapeRoom
     ? stack.elements?.find(
         (element) =>
@@ -232,19 +268,22 @@ function GroupActivityStack({
 
     setStudentResponse((prev) =>
       loadedResponses
-        ? decisions
+        ? decisions && !isBonusPhase
           ? loadedResponses
           : { ...prev, ...loadedResponses }
         : prev
     )
-  }, [decisions, stageDecisions, groupActivityId, stack.elements])
+  }, [decisions, stageDecisions, groupActivityId, stack.elements, isBonusPhase])
 
   useEffect(() => {
     setRevealedHints(
       Object.fromEntries(
-        (stack.elements ?? []).flatMap((element) =>
-          element.revealedHint ? [[element.id, element.revealedHint]] : []
-        )
+        (stack.elements ?? []).flatMap((element) => {
+          const hints =
+            element.revealedHints ??
+            (element.revealedHint ? [element.revealedHint] : [])
+          return hints.length > 0 ? [[element.id, hints]] : []
+        })
       )
     )
   }, [stack.elements])
@@ -274,10 +313,31 @@ function GroupActivityStack({
         : undefined
     if (escapeError?.extensions?.code === 'ESCAPE_ROOM_LOCKOUT') {
       const remaining = escapeError.extensions.lockoutRemainingSeconds
+      const attemptsLeft = escapeError.extensions.attemptsLeft
       if (typeof remaining === 'number') setLockoutRemaining(remaining)
+      // Without a lockout window the answer is simply wrong: try again.
       toast({
         type: 'error',
-        message: t('pwa.practiceQuiz.escapeRoomLockoutToast'),
+        message:
+          typeof remaining === 'number' && remaining <= 0
+            ? typeof attemptsLeft === 'number'
+              ? t('pwa.practiceQuiz.escapeRoomWrongTriesToast', {
+                  count: attemptsLeft,
+                })
+              : t('pwa.practiceQuiz.escapeRoomIncorrectToast')
+            : t('pwa.practiceQuiz.escapeRoomLockoutToast'),
+      })
+    } else if (escapeError?.extensions?.code === 'ESCAPE_ROOM_REVEALED') {
+      // The stage is cleared without a correct answer; the refetch below
+      // unlocks the next one.
+      toast({
+        type: 'error',
+        message: t('pwa.practiceQuiz.escapeRoomRevealedToast'),
+      })
+    } else if (escapeError?.extensions?.code === 'ESCAPE_ROOM_SKIP_DISABLED') {
+      toast({
+        type: 'error',
+        message: t('pwa.practiceQuiz.escapeRoomSkipDisabledToast'),
       })
     } else if (
       escapeError?.extensions?.code === 'ESCAPE_ROOM_GATED' ||
@@ -295,22 +355,42 @@ function GroupActivityStack({
     await onEscapeRoomStateChanged?.()
   }
 
+  const getNextHintPenalty = (revealedCount: number) =>
+    escapeRoomRules?.hintPenalties[revealedCount] ?? hintPenalty
+
   const revealHint = async (instanceId: number) => {
-    if (!groupActivityId || !groupId || revealedHints[instanceId]) return
+    if (!groupActivityId || !groupId) return
+    const penalty = getNextHintPenalty(revealedHints[instanceId]?.length ?? 0)
     try {
       const result = await requestEscapeRoomHint({
         variables: { groupActivityId, groupId, instanceId },
       })
-      const hint = result.data?.requestEscapeRoomHint?.hint
-      if (hint) {
-        setRevealedHints((current) => ({ ...current, [instanceId]: hint }))
+      const hints = result.data?.requestEscapeRoomHint?.hints
+      if (hints) {
+        setRevealedHints((current) => ({ ...current, [instanceId]: hints }))
         toast({
           type: 'success',
           message: t('pwa.practiceQuiz.escapeRoomHintRevealedToast', {
-            penalty: hintPenalty,
+            penalty,
           }),
         })
       }
+      await onEscapeRoomStateChanged?.()
+    } catch (error) {
+      await handleEscapeRoomError(error)
+    }
+  }
+
+  const skipStage = async () => {
+    if (!groupActivityId || !groupId) return
+    try {
+      await skipEscapeRoomStage({ variables: { groupActivityId, groupId } })
+      toast({
+        type: 'success',
+        message: t('pwa.practiceQuiz.escapeRoomSkippedToast', {
+          penalty: escapeRoomRules?.skipPenalty ?? 0,
+        }),
+      })
       await onEscapeRoomStateChanged?.()
     } catch (error) {
       await handleEscapeRoomError(error)
@@ -323,6 +403,19 @@ function GroupActivityStack({
         {stack.elements &&
           stack.elements.length > 0 &&
           stack.elements.map((element, elementIx) => {
+            // the bonus stage is not a required stage until the attempt is
+            // completed and its question is offered
+            if (
+              isStagedEscapeRoom &&
+              element.id === escapeRoomRules?.bonusInstanceId &&
+              !escapeRoomRules.bonusOpen &&
+              !clearedStageIds.has(element.id)
+            ) {
+              return null
+            }
+            const stageOutcome = escapeRoomRules?.stageOutcomes.find(
+              (entry) => entry.stageKey === String(element.id)
+            )
             const grading = results?.grading.find(
               (grading) => grading.instanceId === element.id
             )
@@ -371,36 +464,92 @@ function GroupActivityStack({
                   setStudentResponse={setStudentResponse}
                   hideReadButton
                   disabledInput={
-                    !!decisions ||
+                    (!!decisions && !isBonusPhase) ||
                     activityEnded ||
                     (isStagedEscapeRoom && element.id !== currentStageId)
                   }
                 />
                 {groupActivityId &&
                   element.options?.hasHint &&
-                  (revealedHints[element.id] ||
+                  ((revealedHints[element.id]?.length ?? 0) > 0 ||
                     element.id === currentStageId) && (
-                    <div className="mt-2">
-                      {revealedHints[element.id] ? (
+                    <div className="mt-2 flex flex-col gap-2">
+                      {(revealedHints[element.id] ?? []).map((hint, hintIx) => (
                         <UserNotification
+                          key={hintIx}
                           type="info"
-                          message={revealedHints[element.id]}
+                          message={hint}
                         />
-                      ) : (
-                        <Button
-                          basic
-                          disabled={lockoutRemaining > 0}
-                          loading={hintLoading}
-                          onClick={() => revealHint(element.id)}
-                          data={{ cy: `group-escape-room-hint-${elementIx}` }}
-                        >
-                          <Button.Label>
-                            {t('pwa.practiceQuiz.escapeRoomRequestHint', {
-                              penalty: hintPenalty,
-                            })}
-                          </Button.Label>
-                        </Button>
-                      )}
+                      ))}
+                      {element.id === currentStageId &&
+                        (revealedHints[element.id]?.length ?? 0) <
+                          (element.options?.hintCount ?? 1) && (
+                          <Button
+                            basic
+                            disabled={lockoutRemaining > 0}
+                            loading={hintLoading}
+                            onClick={() => revealHint(element.id)}
+                            data={{
+                              cy: revealedHints[element.id]?.length
+                                ? 'escape-room-next-hint'
+                                : `group-escape-room-hint-${elementIx}`,
+                            }}
+                          >
+                            <Button.Label>
+                              {t(
+                                revealedHints[element.id]?.length
+                                  ? 'pwa.practiceQuiz.escapeRoomNextHint'
+                                  : 'pwa.practiceQuiz.escapeRoomRequestHint',
+                                {
+                                  penalty: getNextHintPenalty(
+                                    revealedHints[element.id]?.length ?? 0
+                                  ),
+                                }
+                              )}
+                            </Button.Label>
+                          </Button>
+                        )}
+                    </div>
+                  )}
+                {isStagedEscapeRoom && stageOutcome?.outcome === 'REVEALED' && (
+                  <UserNotification
+                    type="warning"
+                    className={{ root: 'mt-2' }}
+                    message={t('pwa.practiceQuiz.escapeRoomRevealedNotice', {
+                      penalty: escapeRoomRules?.revealPenalty ?? 0,
+                    })}
+                    data={{ cy: 'escape-room-revealed-notice' }}
+                  />
+                )}
+                {isStagedEscapeRoom &&
+                  element.id === currentStageId &&
+                  element.id !== escapeRoomRules?.bonusInstanceId &&
+                  typeof escapeRoomRules?.maxWrongAttempts === 'number' && (
+                    <UserNotification
+                      type="info"
+                      className={{ root: 'mt-2' }}
+                      message={t('pwa.practiceQuiz.escapeRoomTriesLeft', {
+                        count: Math.max(
+                          escapeRoomRules.maxWrongAttempts -
+                            (stageOutcome?.wrongAttempts ?? 0),
+                          0
+                        ),
+                      })}
+                      data={{ cy: 'escape-room-tries-left' }}
+                    />
+                  )}
+                {isStagedEscapeRoom &&
+                  element.id === currentStageId &&
+                  element.id !== escapeRoomRules?.bonusInstanceId &&
+                  escapeRoomRules?.attemptInProgress &&
+                  typeof escapeRoomRules.skipPenalty === 'number' &&
+                  !activityEnded && (
+                    <div className="mt-2 flex flex-col">
+                      <EscapeRoomSkipButton
+                        penalty={escapeRoomRules.skipPenalty}
+                        loading={skipLoading}
+                        onSkip={skipStage}
+                      />
                     </div>
                   )}
                 {grading && correctness && (
@@ -444,7 +593,7 @@ function GroupActivityStack({
             )
           })}
       </div>
-      {!decisions && !activityEnded ? (
+      {(!decisions || isBonusPhase) && !activityEnded ? (
         <Button
           primary
           disabled={

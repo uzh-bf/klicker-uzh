@@ -36,6 +36,16 @@ interface EscapeRoomOverlayProps {
   // lecturer-authored story shown on the start screen instead of the
   // generic mode description (markdown supported)
   introText?: string | null
+  // set when the room has a bonus stage that follows completion; the bonus
+  // question is answered once while the clock still runs
+  bonus?: {
+    seconds: number
+    available: boolean
+    // BONUS_CORRECT, BONUS_WRONG, or any other value once answered with an
+    // unknown result
+    outcome?: string | null
+    onStart?: () => void
+  }
 }
 
 function formatTime(seconds: number) {
@@ -67,6 +77,7 @@ export default function EscapeRoomOverlay({
   clearedStacks,
   totalStacks,
   introText,
+  bonus,
 }: EscapeRoomOverlayProps) {
   const t = useTranslations()
 
@@ -202,6 +213,37 @@ export default function EscapeRoomOverlay({
           <p className="text-sm leading-relaxed text-slate-300">
             {t('pwa.practiceQuiz.escapeRoomCompletedDesc')}
           </p>
+          {bonus?.available && bonus.onStart && (
+            <div className="w-full space-y-3 rounded-lg border border-amber-700/50 bg-slate-900/50 p-4 text-sm text-slate-300">
+              <p>{t('pwa.practiceQuiz.escapeRoomBonusDesc')}</p>
+              <Button
+                primary
+                className={{ root: 'w-full font-bold' }}
+                onClick={bonus.onStart}
+                data={{ cy: 'escape-room-bonus' }}
+              >
+                <Button.Label>
+                  {t('pwa.practiceQuiz.escapeRoomBonusOffer', {
+                    seconds: bonus.seconds,
+                  })}
+                </Button.Label>
+              </Button>
+            </div>
+          )}
+          {bonus?.outcome && (
+            <p
+              className="text-sm font-semibold text-amber-400"
+              data-cy="escape-room-bonus-result"
+            >
+              {bonus.outcome === 'BONUS_CORRECT'
+                ? t('pwa.practiceQuiz.escapeRoomBonusCorrect', {
+                    seconds: bonus.seconds,
+                  })
+                : bonus.outcome === 'BONUS_WRONG'
+                  ? t('pwa.practiceQuiz.escapeRoomBonusWrong')
+                  : t('pwa.practiceQuiz.escapeRoomBonusSubmitted')}
+            </p>
+          )}
           {(escapeSeconds !== null ||
             hintsUsedCount !== null ||
             penaltySeconds > 0) && (

@@ -65,8 +65,10 @@ fragment PracticeQuizDataWithoutSolutions on PracticeQuiz {
       type
       elementType
       revealedHint
+      revealedHints
       options {
         hasHint
+        hintCount
       }
       ...ElementDataWithoutSolutions
     }

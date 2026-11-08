@@ -183,6 +183,11 @@ describe('escape room scoring rules', () => {
 
     expect(individualByStage).toEqual(EXPECTED_OUTCOMES)
     expect(groupByStage).toEqual(EXPECTED_OUTCOMES)
+    expect(
+      parseEscapeRoomStageOutcomes(group.stageOutcomes).find(
+        (entry) => entry.stageKey === String(stages[3]!.id)
+      )?.outcome
+    ).toBe('BONUS_CORRECT')
     expect(individual.penaltySeconds).toBe(EXPECTED_PENALTY)
     expect(group.penaltySeconds).toBe(EXPECTED_PENALTY)
     expect(group.status).toBe(DB.EscapeRoomStatus.COMPLETED)

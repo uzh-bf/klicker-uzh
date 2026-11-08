@@ -75,10 +75,12 @@ query GroupActivityDetails($activityId: String!, $groupId: String!) {
       elements {
         id
         revealedHint
+        revealedHints
         type
         elementType
         options {
           hasHint
+          hintCount
         }
         ...ElementDataWithoutSolutions
       }

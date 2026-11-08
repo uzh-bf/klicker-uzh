@@ -444,16 +444,24 @@ export async function submitEscapeRoomGroupActivityDecisions(
         const now = new Date()
 
         if (isBonus) {
+          const outcome = correct ? 'BONUS_CORRECT' : 'BONUS_WRONG'
+          const outcomes = parseEscapeRoomStageOutcomes(attempt.stageOutcomes)
           await prisma.escapeRoomAttempt.update({
             where: { id: attempt.id },
             data: {
+              // Mirrored into stageOutcomes so team members can read the result.
+              stageOutcomes: setStageOutcome(outcomes, {
+                ...getStageOutcome(outcomes, currentStage.id),
+                outcome,
+                at: now.toISOString(),
+              }) as unknown as DB.Prisma.InputJsonValue,
               stageResponses: [
                 ...clearedStages,
                 {
                   instanceId: currentStage.id,
                   response: withoutQrScanCode(response),
                   clearedAt: now.toISOString(),
-                  outcome: correct ? 'BONUS_CORRECT' : 'BONUS_WRONG',
+                  outcome,
                   creditSeconds: getEscapeRoomBonusCredit(rules, correct),
                 },
               ] as unknown as DB.Prisma.InputJsonValue,

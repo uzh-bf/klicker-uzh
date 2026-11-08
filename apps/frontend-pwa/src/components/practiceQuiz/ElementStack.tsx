@@ -8,7 +8,8 @@ import {
   GetPreviousStackEvaluationDocument,
   RequestEscapeRoomHintDocument,
   RespondToElementStackDocument,
-  type StackFeedbackStatus,
+  SkipEscapeRoomStageDocument,
+  StackFeedbackStatus,
 } from '@klicker-uzh/graphql/dist/ops'
 import DynamicMarkdown from '@klicker-uzh/shared-components/src/evaluation/DynamicMarkdown'
 import useStudentResponse from '@klicker-uzh/shared-components/src/hooks/useStudentResponse'
@@ -32,6 +33,7 @@ import useComponentVisibleCounter from '../hooks/useComponentVisibleCounter'
 import useStackElementFeedbacks from '../hooks/useStackElementFeedbacks'
 import Bookmark from './Bookmark'
 import type { EmbedQuizNavigationState } from './embed'
+import EscapeRoomSkipButton from './EscapeRoomSkipButton'
 import InstanceHeader from './InstanceHeader'
 
 // Choices render their explanation inline. Other element types render their
@@ -76,9 +78,18 @@ interface ElementStackProps {
   // elements whose options.hasHint is true). Revealing charges hintPenalty
   // seconds server-side; onStateChanged refetches so timer/lockout state stays
   // synchronized after hints and submissions.
+  // Scoring rules (see getEscapeRoomStageRules) drive the next-hint price, the
+  // tries-left counter, the revealed notice and the skip button; penalties only
+  // count toward the ranked time, never the countdown.
   escapeRoom?: {
     activityType: 'practiceQuiz' | 'microLearning'
     hintPenalty: number
+    hintPenalties?: number[]
+    maxWrongAttempts?: number | null
+    revealPenalty?: number
+    // null when skipping is not offered for this stage
+    skipPenalty?: number | null
+    stageOutcome?: { wrongAttempts: number; outcome?: string | null }
     onStateChanged: () => void | Promise<unknown>
   }
 }
@@ -128,9 +139,14 @@ function ElementStack({
   // once unlocked. The server charge is idempotent, but we also track a
   // per-instance "requesting" flag to disable the button while in flight.
   const [requestEscapeRoomHint] = useMutation(RequestEscapeRoomHintDocument)
-  const [revealedHints, setRevealedHints] = useState<Record<number, string>>({})
+  const [revealedHints, setRevealedHints] = useState<Record<number, string[]>>(
+    {}
+  )
   const [requestingHintFor, setRequestingHintFor] = useState<number | null>(
     null
+  )
+  const [skipEscapeRoomStage, { loading: skipping }] = useMutation(
+    SkipEscapeRoomStageDocument
   )
   const elementFeedbacks = useStackElementFeedbacks({
     instanceIds: stack.elements?.map((element) => element.id) ?? [],
@@ -214,6 +230,12 @@ function ElementStack({
           type: 'error',
         })
         break
+      case 'ESCAPE_ROOM_SKIP_DISABLED':
+        toast({
+          message: t('pwa.practiceQuiz.escapeRoomSkipDisabledToast'),
+          type: 'error',
+        })
+        break
       default:
         toast({
           message: t('pwa.practiceQuiz.escapeRoomForbiddenToast'),
@@ -222,11 +244,25 @@ function ElementStack({
     }
   }
 
+  // Hints revealed so far for an instance: the latest of the locally tracked
+  // list and the list restored from the server after a reload.
+  const getRevealedHints = (
+    element: NonNullable<ElementStackType['elements']>[number]
+  ) => {
+    const restored =
+      element.revealedHints ??
+      (element.revealedHint ? [element.revealedHint] : [])
+    const local = revealedHints[element.id] ?? []
+    return local.length > restored.length ? local : restored
+  }
+
+  const getNextHintPenalty = (revealedCount: number) =>
+    escapeRoom?.hintPenalties?.[revealedCount] ?? escapeRoom?.hintPenalty ?? 0
+
   const handleRequestHint = async (instanceId: number) => {
-    const restoredHint = stack.elements?.find(
-      (element) => element.id === instanceId
-    )?.revealedHint
-    if (!escapeRoom || revealedHints[instanceId] || restoredHint) return
+    const element = stack.elements?.find((entry) => entry.id === instanceId)
+    if (!escapeRoom || !element) return
+    const penalty = getNextHintPenalty(getRevealedHints(element).length)
     setRequestingHintFor(instanceId)
     try {
       const result = await requestEscapeRoomHint({
@@ -237,22 +273,46 @@ function ElementStack({
             : { practiceQuizId: parentId }),
         },
       })
-      const hint = result.data?.requestEscapeRoomHint?.hint
-      if (hint) {
-        setRevealedHints((prev) => ({ ...prev, [instanceId]: hint }))
+      const hints = result.data?.requestEscapeRoomHint?.hints
+      if (hints) {
+        setRevealedHints((prev) => ({ ...prev, [instanceId]: hints }))
         toast({
           message: t('pwa.practiceQuiz.escapeRoomHintRevealedToast', {
-            penalty: escapeRoom.hintPenalty,
+            penalty,
           }),
           type: 'success',
         })
-        // Refetch so the live countdown picks up the newly charged penalty.
+        // Refetch so the attempt's penalty and hint state stay in sync.
         await escapeRoom.onStateChanged()
       }
     } catch (error) {
       handleEscapeRoomError(error)
     } finally {
       setRequestingHintFor(null)
+    }
+  }
+
+  // Skipping clears the current stage at a ranked-time penalty; the stage is
+  // final, so move on like after a correct answer.
+  const handleSkip = async () => {
+    if (!escapeRoom) return
+    try {
+      await skipEscapeRoomStage({
+        variables:
+          escapeRoom.activityType === 'microLearning'
+            ? { microLearningId: parentId }
+            : { practiceQuizId: parentId },
+      })
+      toast({
+        message: t('pwa.practiceQuiz.escapeRoomSkippedToast', {
+          penalty: escapeRoom.skipPenalty ?? 0,
+        }),
+        type: 'success',
+      })
+      await escapeRoom.onStateChanged()
+      handleNextElement(StackFeedbackStatus.Correct)
+    } catch (error) {
+      handleEscapeRoomError(error)
     }
   }
 
@@ -797,8 +857,7 @@ function ElementStack({
           {stack.elements &&
             stack.elements.length > 0 &&
             stack.elements.map((element, elementIx) => {
-              const revealedHint =
-                revealedHints[element.id] ?? element.revealedHint
+              const elementHints = getRevealedHints(element)
               return (
                 <div key={`${element.id}-student`}>
                   <InstanceHeader
@@ -848,34 +907,86 @@ function ElementStack({
                   />
                   {withParticipant &&
                     escapeRoom &&
-                    element.options?.hasHint &&
-                    (revealedHint ? (
-                      <UserNotification
-                        type="success"
-                        className={{ root: 'mt-2' }}
-                        message={revealedHint}
-                        data={{ cy: `escape-room-hint-text-${element.id}` }}
-                      />
-                    ) : (
-                      <Button
-                        className={{ root: 'mt-2' }}
-                        loading={requestingHintFor === element.id}
-                        disabled={requestingHintFor !== null}
-                        onClick={() => handleRequestHint(element.id)}
-                        data={{ cy: `request-escape-room-hint-${element.id}` }}
-                      >
-                        <Button.Label>
-                          {t('pwa.practiceQuiz.escapeRoomRequestHint', {
-                            penalty: escapeRoom.hintPenalty,
-                          })}
-                        </Button.Label>
-                      </Button>
-                    ))}
+                    element.options?.hasHint && (
+                      <div className="mt-2 flex flex-col gap-2">
+                        {elementHints.map((hint, hintIx) => (
+                          <UserNotification
+                            key={hintIx}
+                            type="success"
+                            message={hint}
+                            data={{
+                              cy:
+                                hintIx === 0
+                                  ? `escape-room-hint-text-${element.id}`
+                                  : `escape-room-hint-text-${element.id}-${hintIx}`,
+                            }}
+                          />
+                        ))}
+                        {elementHints.length <
+                          (element.options?.hintCount ?? 1) && (
+                          <Button
+                            loading={requestingHintFor === element.id}
+                            disabled={requestingHintFor !== null}
+                            onClick={() => handleRequestHint(element.id)}
+                            data={{
+                              cy:
+                                elementHints.length === 0
+                                  ? `request-escape-room-hint-${element.id}`
+                                  : 'escape-room-next-hint',
+                            }}
+                          >
+                            <Button.Label>
+                              {t(
+                                elementHints.length === 0
+                                  ? 'pwa.practiceQuiz.escapeRoomRequestHint'
+                                  : 'pwa.practiceQuiz.escapeRoomNextHint',
+                                {
+                                  penalty: getNextHintPenalty(
+                                    elementHints.length
+                                  ),
+                                }
+                              )}
+                            </Button.Label>
+                          </Button>
+                        )}
+                      </div>
+                    )}
                 </div>
               )
             })}
         </div>
       </div>
+
+      {escapeRoom &&
+        !previewOnly &&
+        escapeRoom.stageOutcome?.outcome === 'REVEALED' && (
+          <UserNotification
+            type="warning"
+            className={{ root: 'mt-4' }}
+            message={t('pwa.practiceQuiz.escapeRoomRevealedNotice', {
+              penalty: escapeRoom.revealPenalty ?? 0,
+            })}
+            data={{ cy: 'escape-room-revealed-notice' }}
+          />
+        )}
+
+      {escapeRoom &&
+        !previewOnly &&
+        typeof escapeRoom.maxWrongAttempts === 'number' &&
+        !escapeRoom.stageOutcome?.outcome && (
+          <UserNotification
+            type="info"
+            className={{ root: 'mt-4' }}
+            message={t('pwa.practiceQuiz.escapeRoomTriesLeft', {
+              count: Math.max(
+                escapeRoom.maxWrongAttempts -
+                  (escapeRoom.stageOutcome?.wrongAttempts ?? 0),
+                0
+              ),
+            })}
+            data={{ cy: 'escape-room-tries-left' }}
+          />
+        )}
 
       {/* display continue button if question was already answered */}
       {typeof stackStorage !== 'undefined' && !showMarkAsRead
@@ -921,6 +1032,20 @@ function ElementStack({
           data={{ cy: 'escape-room-lockout-countdown' }}
         />
       )}
+
+      {escapeRoom &&
+        !previewOnly &&
+        typeof escapeRoom.skipPenalty === 'number' &&
+        !escapeRoom.stageOutcome?.outcome &&
+        typeof stackStorage === 'undefined' && (
+          <div className="mt-4 flex flex-col">
+            <EscapeRoomSkipButton
+              penalty={escapeRoom.skipPenalty}
+              loading={skipping}
+              onSkip={handleSkip}
+            />
+          </div>
+        )}
 
       {typeof stackStorage === 'undefined' &&
         !showMarkAsRead &&

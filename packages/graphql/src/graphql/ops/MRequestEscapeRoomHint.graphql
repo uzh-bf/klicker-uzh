@@ -32,6 +32,7 @@ mutation RequestEscapeRoomHint(
         stageKey
         wrongAttempts
         outcome
+        at
       }
     }
   }
