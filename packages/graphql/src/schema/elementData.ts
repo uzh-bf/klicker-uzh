@@ -291,6 +291,14 @@ export const ElementInstanceOptions = builder
       basePoints: t.exposeBoolean('basePoints', { nullable: true }),
       pointsMultiplier: t.exposeInt('pointsMultiplier', { nullable: true }),
       resetTimeDays: t.exposeInt('resetTimeDays', { nullable: true }),
+      // SECURITY: expose only whether a hint exists, never the text itself. The
+      // raw `escapeRoomHint` string is deliberately NOT declared here, so Pothos
+      // never serializes it to any client. The text is returned exclusively by
+      // the `requestEscapeRoomHint` mutation after attempt-ownership validation.
+      hasHint: t.boolean({
+        nullable: true,
+        resolve: (options) => !!options.escapeRoomHint,
+      }),
     }),
   })
 

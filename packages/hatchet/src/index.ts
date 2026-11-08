@@ -327,6 +327,21 @@ export function prepareHatchetTasks({
       // return { success }
     },
   })
+
+  const pruneEscapeRooms = hatchet.task({
+    name: 'prune-escape-rooms',
+    retries: 3,
+    onCrons: [
+      '0 2 * * *', // running daily at 2:00 AM (UTC)
+    ],
+    fn: async (_, executionContext) => {
+      const success = await handlers.handlePruneEscapeRooms(
+        globalContext,
+        executionContext
+      )
+      return { success: Number(success) === 1 || success === true }
+    },
+  })
   // #endregion
 
   const processCourseDuplication = hatchet.task({
@@ -409,6 +424,7 @@ export function prepareHatchetTasks({
     processCourseDuplication,
     sweepStaleCourseDuplications,
     processCourseDeletion,
+    pruneEscapeRooms,
   }
 
   preparedTasks = tasks

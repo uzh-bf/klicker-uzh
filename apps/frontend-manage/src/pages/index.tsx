@@ -12,8 +12,12 @@ import { GetStaticPropsContext } from 'next'
 import { useTranslations } from 'next-intl'
 import { useRouter } from 'next/router'
 import { Suspense, useCallback, useEffect, useState } from 'react'
+import { twMerge } from 'tailwind-merge'
 import ActivityCreation from '../components/activities/ActivityCreation'
-import { getActivityAcceptedElementTypes } from '../components/activities/creation/activityAcceptedElementTypes'
+import {
+  getActivityAcceptedElementTypes,
+  getEscapeRoomAcceptedElementTypes,
+} from '../components/activities/creation/activityAcceptedElementTypes'
 import SuspendedCreationButtons from '../components/activities/creation/SuspendedCreationButtons'
 import Pagination, {
   isPaginationPageSize,
@@ -114,8 +118,11 @@ function Index() {
     toggleAnswerFeedbackFilter,
   } = useSortingAndFiltering(storedFiltering)
 
+  const [isEscapeRoomCreation, setIsEscapeRoomCreation] = useState(false)
   const acceptedTypes = creationMode
-    ? getActivityAcceptedElementTypes(creationMode)
+    ? isEscapeRoomCreation
+      ? getEscapeRoomAcceptedElementTypes(creationMode)
+      : getActivityAcceptedElementTypes(creationMode)
     : undefined
 
   const handleResetCleanURL = useCallback(() => {
@@ -346,10 +353,12 @@ function Index() {
       {creationMode && (
         <ActivityCreation
           creationMode={creationMode}
+          onEscapeRoomChange={setIsEscapeRoomCreation}
           closeWizard={() => {
             setSelectedElements({})
             router.push('/')
             setCreationMode(() => undefined)
+            setIsEscapeRoomCreation(false)
           }}
           activityId={router.query.elementId as string}
           editMode={router.query.editMode as ActivityType}

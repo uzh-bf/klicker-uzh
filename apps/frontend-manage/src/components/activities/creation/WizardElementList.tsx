@@ -12,7 +12,8 @@ import {
   ElementType,
 } from '@klicker-uzh/graphql/dist/ops'
 import { Ellipsis } from '@klicker-uzh/markdown'
-import { Button } from '@uzh-bf/design-system'
+import { Button, FormikTextField } from '@uzh-bf/design-system'
+import { useTranslations } from 'next-intl'
 import { useMemo } from 'react'
 import { swapIndices } from 'remeda'
 import { twMerge } from 'tailwind-merge'
@@ -29,6 +30,8 @@ interface BaseProps {
   selectionActive: boolean
   outdatedInstances: ElementInstanceVersionInfo[]
   refetchOutdatedInstances: OutdatedInstancesRefetchFunction
+  isEscapeRoom?: boolean
+  singleStackMode?: boolean
 }
 
 interface StackWizardElementListProps extends BaseProps {
@@ -57,7 +60,10 @@ function WizardElementList({
   selectionActive,
   outdatedInstances,
   refetchOutdatedInstances,
+  isEscapeRoom,
+  singleStackMode,
 }: StackWizardElementListProps | BlockWizardElementListProps) {
+  const t = useTranslations()
   const outdatedInstanceMap = useMemo(() => {
     return outdatedInstances.reduce<{
       [instanceId: number]: ElementInstanceVersionInfo
@@ -89,169 +95,191 @@ function WizardElementList({
           <div
             key={`${stackIx}-${elementIdx}-${element.title}-outdated-${instanceOutdated}`}
             className={twMerge(
-              'flex flex-row items-center justify-between border-b border-solid border-slate-200 pl-1 text-xs last:border-b-0',
+              'flex flex-col border-b border-solid border-slate-200 last:border-b-0',
               instanceOutdated && 'bg-uzh-red-20'
             )}
             data-cy={`element-${elementIdx}-${type}-${stackIx}`}
           >
-            <Ellipsis
-              maxLines={1}
-              className={{ content: 'mr-auto text-xs' }}
-              withMarkdown={false}
-              withMarkdownTooltip={false}
-            >
-              {element.title}
-            </Ellipsis>
+            <div className="flex flex-row items-center justify-between pl-1 text-xs">
+              <Ellipsis
+                maxLines={1}
+                className={{ content: 'mr-auto text-xs' }}
+                withMarkdown={false}
+                withMarkdownTooltip={false}
+              >
+                {element.title}
+              </Ellipsis>
 
-            <div className="flex flex-row items-center">
-              {errors?.[elementIdx] && (
-                <FontAwesomeIcon
-                  icon={faCircleExclamation}
-                  className="mr-1 text-red-600"
-                />
-              )}
-              {highlightFTNoSL &&
-              element.type === ElementType.FreeText &&
-              !element.hasSampleSolution ? (
-                <FontAwesomeIcon
-                  icon={faWarning}
-                  className="mr-1 text-orange-500"
-                />
-              ) : null}
-              {!!outdatedInstanceMap[element.existingInstanceId ?? -1] && (
+              <div className="flex flex-row items-center">
+                {errors?.[elementIdx] && (
+                  <FontAwesomeIcon
+                    icon={faCircleExclamation}
+                    className="mr-1 text-red-600"
+                  />
+                )}
+                {highlightFTNoSL &&
+                element.type === ElementType.FreeText &&
+                !element.hasSampleSolution ? (
+                  <FontAwesomeIcon
+                    icon={faWarning}
+                    className="mr-1 text-orange-500"
+                  />
+                ) : null}
+                {!!outdatedInstanceMap[element.existingInstanceId ?? -1] && (
+                  <Button
+                    basic
+                    onClick={async () => {
+                      const outdatedInstance =
+                        outdatedInstanceMap[element.existingInstanceId ?? -1]!
+
+                      replace(stackIx, {
+                        ...stack,
+                        elements: stack.elements.map((el, idx) =>
+                          idx === elementIdx
+                            ? {
+                                ...el,
+                                existingInstanceId: null, // unset the existing instance ID to use the latest version of the element
+                                duplicateInstance: false,
+                                title: outdatedInstance.newTitle, // update the title to the new one
+                                hasSampleSolution:
+                                  outdatedInstance.newSampleSolution, // update the sample solution to the new one
+                              }
+                            : el
+                        ),
+                      })
+
+                      await refetchOutdatedInstances({
+                        instanceIds: outdatedInstances
+                          .filter((el) => el.id !== element.existingInstanceId)
+                          .map((el) => el.id),
+                      })
+                    }}
+                    className={{
+                      root: 'px-1 text-orange-500 hover:bg-transparent hover:text-orange-500',
+                    }}
+                    data={{
+                      cy: `update-element-${elementIdx}-${type}-${stackIx}`,
+                    }}
+                  >
+                    <Button.Icon withoutLabel icon={faArrowsRotate} />
+                  </Button>
+                )}
                 <Button
                   basic
-                  onClick={async () => {
-                    const outdatedInstance =
-                      outdatedInstanceMap[element.existingInstanceId ?? -1]!
-
-                    replace(stackIx, {
-                      ...stack,
-                      elements: stack.elements.map((el, idx) =>
-                        idx === elementIdx
-                          ? {
-                              ...el,
-                              existingInstanceId: null, // unset the existing instance ID to use the latest version of the element
-                              duplicateInstance: false,
-                              title: outdatedInstance.newTitle, // update the title to the new one
-                              hasSampleSolution:
-                                outdatedInstance.newSampleSolution, // update the sample solution to the new one
-                            }
-                          : el
-                      ),
-                    })
-
-                    await refetchOutdatedInstances({
-                      instanceIds: outdatedInstances
-                        .filter((el) => el.id !== element.existingInstanceId)
-                        .map((el) => el.id),
-                    })
-                  }}
                   className={{
-                    root: 'px-1 text-orange-500 hover:bg-transparent hover:text-orange-500',
+                    root: twMerge(
+                      'px-1 disabled:hidden',
+                      !!outdatedInstanceMap[element.existingInstanceId ?? -1] &&
+                        'hover:bg-transparent'
+                    ),
+                  }}
+                  disabled={stack.elements.length === 1}
+                  onClick={() => {
+                    if (!(elementIdx === 0 || stack.elements.length === 1)) {
+                      replace(stackIx, {
+                        ...stack,
+                        elements: swapIndices(
+                          stack.elements,
+                          elementIdx,
+                          elementIdx - 1
+                        ),
+                      })
+                    }
                   }}
                   data={{
-                    cy: `update-element-${elementIdx}-${type}-${stackIx}`,
+                    cy: `move-element-${elementIdx}-${type}-${stackIx}-up`,
                   }}
                 >
-                  <Button.Icon withoutLabel icon={faArrowsRotate} />
+                  <Button.Icon
+                    withoutLabel
+                    icon={faArrowUp}
+                    className={{ root: 'h-3 w-3' }}
+                  />
                 </Button>
-              )}
-              <Button
-                basic
-                className={{
-                  root: twMerge(
-                    'px-1 disabled:hidden',
-                    !!outdatedInstanceMap[element.existingInstanceId ?? -1] &&
-                      'hover:bg-transparent'
-                  ),
-                }}
-                disabled={stack.elements.length === 1}
-                onClick={() => {
-                  if (!(elementIdx === 0 || stack.elements.length === 1)) {
+                <Button
+                  basic
+                  className={{
+                    root: twMerge(
+                      'px-1 disabled:hidden',
+                      !!outdatedInstanceMap[element.existingInstanceId ?? -1] &&
+                        'hover:bg-transparent'
+                    ),
+                  }}
+                  disabled={stack.elements.length === 1}
+                  onClick={() => {
+                    if (
+                      !(
+                        stack.elements.length === elementIdx - 1 ||
+                        stack.elements.length === 1
+                      )
+                    ) {
+                      replace(stackIx, {
+                        ...stack,
+                        elements: swapIndices(
+                          stack.elements,
+                          elementIdx,
+                          elementIdx + 1
+                        ),
+                      })
+                    }
+                  }}
+                  data={{
+                    cy: `move-element-${elementIdx}-${type}-${stackIx}-down`,
+                  }}
+                >
+                  <Button.Icon
+                    withoutLabel
+                    icon={faArrowDown}
+                    className={{ root: 'h-3 w-3' }}
+                  />
+                </Button>
+                <Button
+                  basic
+                  className={{
+                    root: twMerge(
+                      `px-1 hover:text-red-600`,
+                      !!outdatedInstanceMap[element.existingInstanceId ?? -1] &&
+                        'hover:bg-transparent'
+                    ),
+                  }}
+                  onClick={() => {
                     replace(stackIx, {
                       ...stack,
-                      elements: swapIndices(
-                        stack.elements,
-                        elementIdx,
-                        elementIdx - 1
-                      ),
+                      elements: stack.elements
+                        .slice(0, elementIdx)
+                        .concat(stack.elements.slice(elementIdx + 1)),
                     })
-                  }
-                }}
-                data={{
-                  cy: `move-element-${elementIdx}-${type}-${stackIx}-up`,
-                }}
-              >
-                <Button.Icon
-                  withoutLabel
-                  icon={faArrowUp}
-                  className={{ root: 'h-3 w-3' }}
-                />
-              </Button>
-              <Button
-                basic
-                className={{
-                  root: twMerge(
-                    'px-1 disabled:hidden',
-                    !!outdatedInstanceMap[element.existingInstanceId ?? -1] &&
-                      'hover:bg-transparent'
-                  ),
-                }}
-                disabled={stack.elements.length === 1}
-                onClick={() => {
-                  if (
-                    !(
-                      stack.elements.length === elementIdx - 1 ||
-                      stack.elements.length === 1
-                    )
-                  ) {
-                    replace(stackIx, {
-                      ...stack,
-                      elements: swapIndices(
-                        stack.elements,
-                        elementIdx,
-                        elementIdx + 1
-                      ),
-                    })
-                  }
-                }}
-                data={{
-                  cy: `move-element-${elementIdx}-${type}-${stackIx}-down`,
-                }}
-              >
-                <Button.Icon
-                  withoutLabel
-                  icon={faArrowDown}
-                  className={{ root: 'h-3 w-3' }}
-                />
-              </Button>
-              <Button
-                basic
-                className={{
-                  root: twMerge(
-                    `px-1 hover:text-red-600`,
-                    !!outdatedInstanceMap[element.existingInstanceId ?? -1] &&
-                      'hover:bg-transparent'
-                  ),
-                }}
-                onClick={() => {
-                  replace(stackIx, {
-                    ...stack,
-                    elements: stack.elements
-                      .slice(0, elementIdx)
-                      .concat(stack.elements.slice(elementIdx + 1)),
-                  })
-                }}
-                data={{ cy: `remove-element-${elementIdx}-${type}-${stackIx}` }}
-              >
-                <Button.Icon
-                  withoutLabel
-                  icon={faTrash}
-                  className={{ root: 'h-3 w-3' }}
-                />
-              </Button>
+                  }}
+                  data={{
+                    cy: `remove-element-${elementIdx}-${type}-${stackIx}`,
+                  }}
+                >
+                  <Button.Icon
+                    withoutLabel
+                    icon={faTrash}
+                    className={{ root: 'h-3 w-3' }}
+                  />
+                </Button>
+              </div>
             </div>
+            {isEscapeRoom && (type === 'stack' || type === 'block') && (
+              <FormikTextField
+                name={
+                  type === 'block'
+                    ? `blocks.${stackIx}.elements.${elementIdx}.escapeRoomHint`
+                    : singleStackMode
+                      ? `stack.elements.${elementIdx}.escapeRoomHint`
+                      : `stacks.${stackIx}.elements.${elementIdx}.escapeRoomHint`
+                }
+                placeholder={t(
+                  'manage.activityWizard.escapeRoomHintPlaceholder'
+                )}
+                className={{ root: 'mb-1 px-1', field: '!mt-0' }}
+                data={{
+                  cy: `escape-room-hint-${type}-${stackIx}-${elementIdx}`,
+                }}
+              />
+            )}
           </div>
         )
       })}

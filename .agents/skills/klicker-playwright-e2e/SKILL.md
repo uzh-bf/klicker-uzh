@@ -119,6 +119,7 @@ render of the starter grid.
 - Sudden Firefox/WebKit execution: Playwright is running all configured projects. Pass `--project=chromium` or keep non-Chromium projects commented in config if Chromium-only is desired.
 - UI mode does not automatically mean tests execute; prefer CLI runs for verification and use UI mode only for interactive debugging.
 - A passing `CLEANUP` followed by immediate failures often means frontend apps or auth URLs are unavailable after setup.
+- A failure screenshot on `auth.klicker.localhost` during a namespaced run means the frontend was compiled without the workspace-specific public auth URL. Restart that exact app with the post-start environment before changing locators.
 
 Before blaming a test, probe the apps:
 

@@ -56,6 +56,7 @@ import {
   handlePublishScheduledMicroLearning,
 } from '@/services/microLearning.js'
 import { handlePublishScheduledPracticeQuiz } from '@/services/practiceQuizzes.js'
+import { handlePruneEscapeRooms } from '@/services/pruneEscapeRooms.js'
 import type { ContextWithUser } from '../src/lib/context.js'
 import { createAnswerCollection } from '../src/services/resources.js'
 import { createCatalogCollection } from '../src/services/sharing.js'
@@ -319,6 +320,16 @@ export async function testInitialization(
         )
         return { success }
       }),
+    }),
+    pruneEscapeRooms: hatchet.task({
+      name: 'prune-escape-rooms',
+      fn: async (_, executionContext) => {
+        const success = await handlePruneEscapeRooms(
+          hatchetCtx,
+          executionContext
+        )
+        return { success: Number(success) === 1 || success === true }
+      },
     }),
   }
   hatchetCtx.tasks = tasks

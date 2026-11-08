@@ -156,7 +156,7 @@ When blocked by environment or authentication, complete every independent local 
 - [x] Initialize `gh stack` with `codex/escape-room-qr` rooted at `v3`.
 - [x] Commit and independently review this plan; revision findings incorporated.
 - [x] Extract and verify Layer 1.
-- [ ] Add, extract, and verify Layer 2.
+- [x] Add, extract, and verify Layer 2.
 - [ ] Add, extract, and verify Layer 3.
 - [ ] Add, extract, and verify Layer 4.
 - [ ] Run final stack-wide review and verification gates.
@@ -215,3 +215,38 @@ The review found that client-only filtering after the existing `numEntries`/`off
 - **Verification:** affected package checks, 13 focused GraphQL contract and placement tests, full `check:all`, full production build, Prisma 7 empty-schema replay and clean diff, analytics schema parity, and desktop/mobile browser evidence all passed.
 - **Independent review:** the security/correctness review found one minor no-op QR sample-solution control. QR Scan was removed from that UI capability group and the owner edit flow was rechecked semantically and visually. The simplification review found no code changes that reduced complexity without weakening the contracts.
 - **Known unrelated validation debt:** the engineering-wiki validator still reports the pre-existing missing `type` field in `docs/solutions/best-practice/repeat-production-seeds-use-prior-state.md`; Layer 1 documentation itself passes repository formatting and type checks.
+
+## Layer 2 evidence
+
+- **Implementation commits:** `0ab3141bf`, `c2bd07757`, `ae33b4e4d`,
+  `ecef38846`, `844de0875`, `43ab3c0ee`, and review correction
+  `4d408b883`.
+- **Verification:** 60 focused GraphQL Escape Room tests, three QR utility
+  tests, one PWA response-state test, repository-wide `check:all`, the full
+  22-workspace production build, and all 16 routed Individual Escape Room
+  Playwright scenarios passed.
+- **Migration proof:** a disposable empty PostgreSQL database accepted all 179
+  migrations through Prisma 7 `migrate deploy`; the deployed database had no
+  schema diff, contained `retentionProcessedAt` and no legacy
+  `statsAggregatedAt`, and exposed `Element_qrScanCode_key` as both unique and
+  valid. The analytics Prisma mirror remained in sync.
+- **Browser evidence:** the current branch records desktop and mobile evidence
+  for persisted Practice Quiz settings, the participant introduction, hint and
+  timer state, the German QR manual fallback, and lecturer progress before any
+  attempt. The final routed rerun covered Practice Quiz and Microlearning
+  creation, editing, publication, gating, hint charging, lockout, reset,
+  completion, and QR fallback.
+- **Independent review:** the first review found a hint/submission lifecycle
+  race and deferred Live Quiz fields in public inputs. The correction shares
+  the lifecycle claim across hint, response, and reset paths; removes deferred
+  fields from both public inputs; adds regression contracts; and renames the
+  retention marker. The reviewer confirmed both blockers resolved with no new
+  correctness or security finding. The simplification review found no required
+  structural reduction; its safe naming and unreachable-guard suggestions are
+  included in the correction.
+- **Extraction boundary:** generalized dormant Group Activity and Live Quiz
+  database relations remain for later layers, but the effective Layer 2 API,
+  authoring UI, participant runtime, GraphQL operations, tests, and browser
+  suite expose only Practice Quiz and Microlearning Escape Rooms. The
+  per-layer verification README records the deferred source paths and
+  behaviors.

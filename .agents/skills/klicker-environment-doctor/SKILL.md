@@ -122,6 +122,8 @@ Continuation for app work: `.github/scripts/wait-for-infra.sh`, then `./util/_cr
 
 Feature "does nothing" / mutation fails `workflow not found` → the Hatchet engine or a worker is missing, or a worker points at the wrong DB. Workers need the **same `DATABASE_URL`, `APP_SECRET`, Redis settings** as the apps, plus `HATCHET_CLIENT_TOKEN`. See [docs/async-and-workers.md](../../../docs/async-and-workers.md).
 
+In development, both workers must run emitted JavaScript under nodemon while Rollup watches separately. A connection message is not sufficient health proof: observe each plain `node --env-file .env dist/index.js` process beyond the four-second heartbeat interval and reject `TypeError: this.logger[message.type] is not a function`. Do not switch these workers to `tsx --watch` or `node --watch`; see the linked solution note in the worker wiki.
+
 ## Check 8 — database state (config-derived)
 
 Seeded dev DB contains the AGENTS.md test accounts (`lecturer`, `testuser1..50` — values in AGENTS.md only). Prisma 7 reset/migrate commands are seed-free. On the legacy host stack, `pnpm run prisma:setup` wraps the reset/push/seed composite with Infisical. In the self-contained DevPod, use `pnpm --filter @klicker-uzh/prisma run prisma:reset:raw --force`, then `pnpm --filter @klicker-uzh/prisma run prisma:push:raw`, then `pnpm --filter @klicker-uzh/prisma-data run seed:raw` as shown in `.devcontainer/post-create.sh`. Use either path **only after confirming the volume holds no real work** (fresh volume, test course names like "Testkurs"). When in doubt, ask the user.

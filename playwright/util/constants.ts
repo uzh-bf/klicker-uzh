@@ -113,6 +113,7 @@ export const PARTICIPANT_GROUP_IDS_SINGLE = [
 ]
 
 // URLs (mirrors cypress.config.ts env block)
+export const URL_API = 'http://127.0.0.1:3000'
 export const URL_STUDENT = 'http://127.0.0.1:3001'
 export const URL_STUDENT_LOGIN = 'http://127.0.0.1:3001/login'
 export const URL_MANAGE = 'http://127.0.0.1:3002'
