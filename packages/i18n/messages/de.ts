@@ -1414,7 +1414,8 @@ Da die KlickerUZH-App noch nicht im iOS-App-Store verfügbar ist, folgen Sie die
         'Hinweis angezeigt — {penalty}s zu deiner Wertungszeit hinzugefügt.',
       escapeRoomNextHint:
         'Nächsten Hinweis anzeigen (+{penalty}s Wertungszeit)',
-      escapeRoomTriesLeft: 'Verbleibende Versuche: {count}',
+      escapeRoomTriesLeft:
+        '{count, plural, one {Noch ein Versuch} other {Verbleibende Versuche: #}}',
       escapeRoomWrongTriesToast:
         'Falsche Antwort! {count, plural, one {# Versuch} other {# Versuche}} übrig.',
       escapeRoomRevealedNotice:
@@ -3084,7 +3085,7 @@ Da die KlickerUZH-App noch nicht im iOS-App-Store verfügbar ist, folgen Sie die
         'QR-Scan-Fragen können nur in Escape-Room-Blöcken verwendet werden.',
       escapeRoomHintPlaceholder: 'Optionaler Hinweis (kostet Zeit bei Anzeige)',
       escapeRoomHintsPlaceholder:
-        'Optionale Hinweise, einer pro Zeile (jeder kostet Zeit bei Anzeige; spätere Hinweise kosten mehr)',
+        'Optionale Hinweise, einer pro Zeile (jeder kostet eine Strafe bei Anzeige; spätere Hinweise können mehr kosten)',
       escapeRoomTimeLimitRequired: 'Zeitlimit ist erforderlich',
       escapeRoomInteger: 'Muss eine ganze Zahl sein',
       escapeRoomTimeLimitPositive: 'Muss eine positive Anzahl Minuten sein',

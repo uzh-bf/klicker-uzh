@@ -132,10 +132,7 @@ export function getRemainingSecondsUntil(deadline: Date, now = Date.now()) {
 }
 
 export function getEscapeRoomRemainingSeconds(
-  attempt: Pick<
-    DB.EscapeRoomAttempt,
-    'startedAt' | 'timeLimit' | 'penaltySeconds'
-  >,
+  attempt: Pick<DB.EscapeRoomAttempt, 'startedAt' | 'timeLimit'>,
   now = Date.now()
 ) {
   const elapsedSeconds = (now - new Date(attempt.startedAt).getTime()) / 1000
@@ -143,10 +140,7 @@ export function getEscapeRoomRemainingSeconds(
 }
 
 export function getEscapeRoomExpiresInSeconds(
-  attempt: Pick<
-    DB.EscapeRoomAttempt,
-    'startedAt' | 'timeLimit' | 'penaltySeconds'
-  >,
+  attempt: Pick<DB.EscapeRoomAttempt, 'startedAt' | 'timeLimit'>,
   now = Date.now()
 ) {
   return getEscapeRoomRemainingSeconds(
@@ -1080,6 +1074,29 @@ export async function skipEscapeRoomStage(
   if (activity.reference.kind === 'liveQuizBlock' || skipPenalty === null) {
     throw new GraphQLError('Skipping is not enabled for this escape room', {
       extensions: { code: 'ESCAPE_ROOM_SKIP_DISABLED' },
+    })
+  }
+
+  // Skipping follows the same activity window as answering.
+  const window =
+    activity.reference.kind === 'microLearning'
+      ? await ctx.prisma.microLearning.findUnique({
+          where: { id: activity.reference.id },
+          select: { scheduledStartAt: true, scheduledEndAt: true },
+        })
+      : activity.reference.kind === 'groupActivity'
+        ? await ctx.prisma.groupActivity.findUnique({
+            where: { id: activity.reference.id },
+            select: { scheduledStartAt: true, scheduledEndAt: true },
+          })
+        : null
+  if (
+    window &&
+    (dayjs().isBefore(window.scheduledStartAt) ||
+      dayjs().isAfter(window.scheduledEndAt))
+  ) {
+    throw new GraphQLError('This activity is not open', {
+      extensions: { code: 'ESCAPE_ROOM_FORBIDDEN' },
     })
   }
 
