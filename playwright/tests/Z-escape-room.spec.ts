@@ -14,6 +14,7 @@ import {
   runTask,
 } from '../util/workflow.js'
 import { registerGroupEscapeRoomTests } from './escape-room/group.js'
+import { registerLiveQuizEscapeRoomTests } from './escape-room/live-quiz.js'
 import {
   registerMicrolearningCreationTest,
   registerMicrolearningFlowTest,
@@ -70,4 +71,5 @@ test.describe.serial('Escape room workflows', () => {
   registerQrFallbackTest()
   registerMicrolearningFlowTest()
   registerGroupEscapeRoomTests()
+  registerLiveQuizEscapeRoomTests()
 })

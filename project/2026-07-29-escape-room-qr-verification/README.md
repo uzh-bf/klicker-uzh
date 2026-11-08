@@ -41,3 +41,8 @@ Authorization and placement boundaries are covered by focused GraphQL service
 tests: only the exact owner may query answer-bearing print data, and QR elements
 are rejected from practice quizzes, microlearnings, group activities, live
 quizzes, and live-quiz templates until the escape-room runtime layer lands.
+
+The final review pass also confirmed that non-integer decoy counts are
+truncated and bounded before allocation. Shared QR GraphQL definitions live in
+focused modules so the central element schema remains below the repository's
+maintainability threshold.

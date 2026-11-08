@@ -41,3 +41,6 @@ export * from './participantAccountDataUse.js'
 
 // export QR scan code helpers
 export * from './qrScan.js'
+
+// Coordinate synchronous Live Quiz Escape Room responses with block closure.
+export * from './escapeRoomResponseGate.js'

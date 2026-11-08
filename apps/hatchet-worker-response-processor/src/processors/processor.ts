@@ -11,11 +11,15 @@ import type {
   LiveQuizResponseInput,
   NumericalRestrictions,
 } from '@klicker-uzh/types'
-import { verifyJWT, type JWTPayload } from '@klicker-uzh/util'
+import { pendingEventKey, verifyJWT, type JWTPayload } from '@klicker-uzh/util'
 import { strict as assert } from 'assert'
 import { createHash } from 'crypto'
 import type { ChainableCommander } from 'ioredis'
 import { getRedis } from '../redis.js'
+import {
+  assertRedisHashKeysCompatible,
+  withEscapeResponseDedup,
+} from './escapeResponseDedup.js'
 import {
   getCaseStudyQuestionPoints,
   getChoicesQuestionPoints,
@@ -31,16 +35,18 @@ import {
 
 const redisExec = getRedis() // use standard redis instance for regular response processor
 
-export async function processResponseMessage(
+async function processResponseMessageUnprotected(
   message: {
     messageId: string
     sessionId: string
+    blockId?: number
     instanceId: string
     response: LiveQuizResponseInput
     cookie?: string
     responseTimestamp: number
   },
-  ctx: Context<JsonObject, {}> | DurableContext<JsonObject, {}>
+  ctx: Context<JsonObject, {}> | DurableContext<JsonObject, {}>,
+  dedupDoneKey?: string
 ) {
   ctx.logger.info('ProcessResponse: received message', {
     messageId: message.messageId,
@@ -62,9 +68,30 @@ export async function processResponseMessage(
     return { status: 200 }
   }
 
+  const responseHashKeys = new Set<string>()
+  const responseIncrements = new Map<string, { key: string; field: string }>()
   let redisMulti: ChainableCommander
   // redisMulti = redisExec.multi() -> transaction
-  redisMulti = redisExec.pipeline() // -> pipeline (not atomic)
+  const redisCommands = dedupDoneKey ? redisExec.multi() : redisExec.pipeline()
+  redisMulti = new Proxy(redisCommands, {
+    get(target, property, receiver) {
+      if (property === 'hset' || property === 'hincrby') {
+        return (key: string, ...args: unknown[]) => {
+          responseHashKeys.add(key)
+          if (property === 'hincrby') {
+            const field = String(args[0])
+            responseIncrements.set(`${key}\0${field}`, { key, field })
+          }
+          return Reflect.apply(
+            Reflect.get(target, property, receiver),
+            target,
+            [key, ...args]
+          )
+        }
+      }
+      return Reflect.get(target, property, receiver)
+    },
+  })
 
   try {
     const liveQuizKey = `lq:${message.sessionId}`
@@ -286,7 +313,7 @@ export async function processResponseMessage(
           ) {
             // if we are processing a first response, set the timestamp on the instance
             // this will allow us to award points for response timing
-            redisExec.hset(
+            redisMulti.hset(
               `${instanceKey}:info`,
               'firstResponseReceivedAt',
               responseTimestamp
@@ -363,7 +390,7 @@ export async function processResponseMessage(
           if (parsedSolutions && pointsPercentage && !firstResponseReceivedAt) {
             // if we are processing a first response, set the timestamp on the instance
             // this will allow us to award points for response timing
-            redisExec.hset(
+            redisMulti.hset(
               `${instanceKey}:info`,
               'firstResponseReceivedAt',
               responseTimestamp
@@ -441,7 +468,7 @@ export async function processResponseMessage(
           if (pointsPercentage && !firstResponseReceivedAt) {
             // if we are processing a first response, set the timestamp on the instance
             // this will allow us to award points for response timing
-            redisExec.hset(
+            redisMulti.hset(
               `${instanceKey}:info`,
               'firstResponseReceivedAt',
               responseTimestamp
@@ -524,7 +551,7 @@ export async function processResponseMessage(
           ) {
             // if we are processing a first response, set the timestamp on the instance
             // this will allow us to award points for response timing
-            redisExec.hset(
+            redisMulti.hset(
               `${instanceKey}:info`,
               'firstResponseReceivedAt',
               responseTimestamp
@@ -625,7 +652,7 @@ export async function processResponseMessage(
           ) {
             // if we are processing a first response, set the timestamp on the instance
             // this will allow us to award points for response timing
-            redisExec.hset(
+            redisMulti.hset(
               `${instanceKey}:info`,
               'firstResponseReceivedAt',
               responseTimestamp
@@ -666,7 +693,22 @@ export async function processResponseMessage(
   }
 
   try {
-    await redisMulti.exec()
+    if (dedupDoneKey) {
+      await assertRedisHashKeysCompatible({
+        keys: [...responseHashKeys],
+        increments: [...responseIncrements.values()],
+        redis: redisExec,
+      })
+      redisMulti.set(dedupDoneKey, '1', 'EX', 60 * 60 * 24 * 30)
+      if (message.blockId != null) {
+        redisMulti.zrem(pendingEventKey(message.blockId), message.messageId)
+      }
+    }
+    const results = await redisMulti.exec()
+    const commandError = results?.find(([error]) => error)?.[0]
+    if (!results || commandError) {
+      throw commandError ?? new Error('Redis transaction returned no results')
+    }
     ctx.logger.info("Successfully processed participant's response", {
       messageId: message.messageId,
       sessionId: message.sessionId,
@@ -685,4 +727,18 @@ export async function processResponseMessage(
     redisMulti?.discard()
     throw new Error(`Redis transaction failed ${String(e)}`)
   }
+}
+
+export async function processResponseMessage(
+  message: Parameters<typeof processResponseMessageUnprotected>[0],
+  ctx: Parameters<typeof processResponseMessageUnprotected>[1]
+) {
+  return withEscapeResponseDedup({
+    messageId: message.messageId,
+    redis: redisExec,
+    pendingEventKey:
+      message.blockId != null ? pendingEventKey(message.blockId) : undefined,
+    process: (doneKey) =>
+      processResponseMessageUnprotected(message, ctx, doneKey),
+  })
 }

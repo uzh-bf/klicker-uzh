@@ -10,7 +10,7 @@ import { useEffect, useState } from 'react'
 import { twMerge } from 'tailwind-merge'
 
 interface EscapeRoomProgressProps {
-  activityType: 'practiceQuiz' | 'microLearning' | 'groupActivity'
+  activityType: 'practiceQuiz' | 'microLearning' | 'groupActivity' | 'liveQuiz'
   activityId: string
   progress: EscapeRoomProgressType
   onReset: () => Promise<unknown>
@@ -78,7 +78,10 @@ function EscapeRoomProgress({
     const updateCurrentTime = () => setCurrentTime(Date.now())
     updateCurrentTime()
     const interval = window.setInterval(updateCurrentTime, 1000)
-    return () => window.clearInterval(interval)
+
+    return () => {
+      window.clearInterval(interval)
+    }
   }, [])
 
   const { totalStacks, attempts } = progress
@@ -94,7 +97,9 @@ function EscapeRoomProgress({
             ? { microLearningId: activityId }
             : activityType === 'groupActivity'
               ? { groupActivityId: activityId }
-              : { practiceQuizId: activityId }),
+              : activityType === 'liveQuiz'
+                ? { elementBlockId: Number(activityId) }
+                : { practiceQuizId: activityId }),
           participantId: attempt.participantId ?? undefined,
           groupId: attempt.groupId ?? undefined,
         },

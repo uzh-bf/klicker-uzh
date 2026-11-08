@@ -15,6 +15,7 @@ export const EscapeRoomConfig = EscapeRoomConfigRef.implement({
     practiceQuizId: t.exposeString('practiceQuizId', { nullable: true }),
     microLearningId: t.exposeString('microLearningId', { nullable: true }),
     groupActivityId: t.exposeString('groupActivityId', { nullable: true }),
+    elementBlockId: t.exposeInt('elementBlockId', { nullable: true }),
   }),
 })
 
