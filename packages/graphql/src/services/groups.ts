@@ -25,6 +25,7 @@ import {
 } from 'unique-names-generator'
 import { v4 as uuidv4 } from 'uuid'
 import type { Context, ContextWithUser } from '../lib/context.js'
+import type { IEscapeRoomRulesInput } from '../schema/escapeRoomConfig.js'
 import {
   splitGroupsFinal,
   splitGroupsRunning,
@@ -39,6 +40,7 @@ import {
 } from './activities.js'
 import { isGroupEscapeRoomResponseType } from './escapeRoomResponseValidation.js'
 import {
+  getEscapeRoomRulesData,
   restoreUsedEscapeRoomHints,
   validateEscapeRoomConfig,
 } from './escapeRooms.js'
@@ -859,6 +861,7 @@ interface CreateGroupActivityArgs {
   escapeRoomTimeLimit?: number | null
   escapeRoomHintPenalty?: number | null
   escapeRoomIntroText?: string | null
+  escapeRoomRules?: IEscapeRoomRulesInput | null
 }
 
 function validateGroupEscapeRoomComposition({
@@ -931,6 +934,7 @@ export async function manipulateGroupActivity(
     escapeRoomTimeLimit,
     escapeRoomHintPenalty,
     escapeRoomIntroText,
+    escapeRoomRules,
   }: CreateGroupActivityArgs,
   ctx: ContextWithUser,
   transactionPrisma?: PrismaTransactionClient
@@ -940,7 +944,7 @@ export async function manipulateGroupActivity(
   if (isEscapeRoom) {
     validateEscapeRoomConfig({
       timeLimit: escapeRoomTimeLimit ?? 3600,
-      hintPenalty: escapeRoomHintPenalty ?? 120,
+      hintPenalty: escapeRoomHintPenalty ?? 30,
     })
   }
 
@@ -1093,9 +1097,10 @@ export async function manipulateGroupActivity(
   const escapeRoomConfigData = isEscapeRoom
     ? {
         timeLimit: escapeRoomTimeLimit ?? 3600,
-        hintPenalty: escapeRoomHintPenalty ?? 120,
+        hintPenalty: escapeRoomHintPenalty ?? 30,
         lockoutSeconds: 5,
         introText: escapeRoomIntroText?.trim() || null,
+        ...getEscapeRoomRulesData(escapeRoomRules),
       }
     : null
 
@@ -1118,6 +1123,7 @@ export async function manipulateGroupActivity(
                 timeLimit: escapeRoomConfigData.timeLimit,
                 hintPenalty: escapeRoomConfigData.hintPenalty,
                 introText: escapeRoomConfigData.introText,
+                ...getEscapeRoomRulesData(escapeRoomRules),
               },
             },
           },
@@ -1162,7 +1168,8 @@ export async function manipulateGroupActivity(
           options: {
             ...instance.options,
             ...getEscapeRoomHintUpdate(
-              persistentInputs.get(instance.id)?.escapeRoomHint
+              persistentInputs.get(instance.id)?.escapeRoomHint,
+              persistentInputs.get(instance.id)?.escapeRoomHints
             ),
             pointsMultiplier: multiplier * elementMultiplier,
           },

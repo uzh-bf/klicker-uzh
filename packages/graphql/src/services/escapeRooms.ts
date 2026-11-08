@@ -3,6 +3,7 @@ import {
   ESCAPE_ROOM_GRACE_SECONDS,
   ESCAPE_ROOM_SUPPORTED_ELEMENT_TYPES,
   getCurrentEscapeRoomInstance,
+  getEscapeRoomInstanceHints,
   getEscapeRoomLifecycleClaimKey,
   isEscapeRoomExpired,
 } from '@klicker-uzh/types'
@@ -10,6 +11,7 @@ import dayjs from 'dayjs'
 import { GraphQLError } from 'graphql'
 import { randomUUID } from 'node:crypto'
 import type { ContextWithUser } from '../lib/context.js'
+import type { IEscapeRoomRulesInput } from '../schema/escapeRoomConfig.js'
 import {
   getGroupEscapeRoomStages,
   parseGroupEscapeRoomStageResponses,
@@ -55,6 +57,54 @@ export function validateEscapeRoomConfig({
       'Escape room hint penalty must be an integer between 0 and 3600 seconds',
       { extensions: { code: 'BAD_USER_INPUT' } }
     )
+  }
+}
+
+function getRuleSeconds(value: number | null | undefined, field: string) {
+  if (value == null) return null
+  if (!Number.isInteger(value) || value < 0 || value > 3_600) {
+    throw new GraphQLError(
+      `Escape room ${field} must be an integer between 0 and 3600 seconds`,
+      { extensions: { code: 'BAD_USER_INPUT' } }
+    )
+  }
+  return value
+}
+
+// Validates the scoring rules and returns the complete config data. Without
+// an input the stored rules stay unchanged (and default to off on create).
+export function getEscapeRoomRulesData(
+  rules: IEscapeRoomRulesInput | null | undefined
+) {
+  if (!rules) return {}
+  const hintPenalties = rules.hintPenalties ?? []
+  if (hintPenalties.length > 10) {
+    throw new GraphQLError('Escape rooms support at most 10 hint penalties', {
+      extensions: { code: 'BAD_USER_INPUT' },
+    })
+  }
+  const maxWrongAttempts = rules.maxWrongAttempts ?? null
+  if (
+    maxWrongAttempts !== null &&
+    (!Number.isInteger(maxWrongAttempts) ||
+      maxWrongAttempts < 1 ||
+      maxWrongAttempts > 50)
+  ) {
+    throw new GraphQLError(
+      'Escape room attempts before reveal must be an integer between 1 and 50',
+      { extensions: { code: 'BAD_USER_INPUT' } }
+    )
+  }
+  return {
+    hintPenalties: hintPenalties.map(
+      (penalty) => getRuleSeconds(penalty, 'hint penalty')!
+    ),
+    wrongAnswerPenalty:
+      getRuleSeconds(rules.wrongAnswerPenalty, 'wrong answer penalty') ?? 0,
+    maxWrongAttempts,
+    revealPenalty: getRuleSeconds(rules.revealPenalty, 'reveal penalty') ?? 0,
+    skipPenalty: getRuleSeconds(rules.skipPenalty, 'skip penalty'),
+    bonusSeconds: getRuleSeconds(rules.bonusSeconds, 'bonus time'),
   }
 }
 
@@ -149,8 +199,10 @@ export async function getEscapeRoomHints(
   })
 
   return elements.flatMap((element) => {
-    const hint = element.options.escapeRoomHint?.trim()
-    return hint ? [{ instanceId: element.id, hint }] : []
+    const hints = getEscapeRoomInstanceHints(element.options)
+    return hints.length > 0
+      ? [{ instanceId: element.id, hint: hints[0]!.text, hints }]
+      : []
   })
 }
 

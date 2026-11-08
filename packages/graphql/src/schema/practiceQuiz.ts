@@ -26,7 +26,10 @@ import {
 import { CourseRef, type ICourse } from './course.js'
 import { ElementInstanceRef, InstanceEvaluation } from './element.js'
 import { ElementType } from './elementData.js'
-import { EscapeRoomConfigRef } from './escapeRoomConfig.js'
+import {
+  EscapeRoomConfigRef,
+  EscapeRoomHintEntryInputRef,
+} from './escapeRoomConfig.js'
 import { GroupActivityDecisionRef } from './groupActivity.js'
 import { IStackFeedback } from './evaluation.js'
 
@@ -92,6 +95,10 @@ export const ElementInstanceInput = ElementInstanceInputRef.implement({
     existingInstanceId: t.int({ required: false }),
     duplicateInstance: t.boolean({ required: true }),
     escapeRoomHint: t.string({ required: false }),
+    escapeRoomHints: t.field({
+      type: [EscapeRoomHintEntryInputRef],
+      required: false,
+    }),
   }),
 })
 

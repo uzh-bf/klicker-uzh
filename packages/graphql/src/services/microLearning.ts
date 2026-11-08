@@ -15,6 +15,7 @@ import dayjs from 'dayjs'
 import { GraphQLError } from 'graphql'
 import { v4 as uuidv4 } from 'uuid'
 import type { Context, ContextWithUser } from '../lib/context.js'
+import type { IEscapeRoomRulesInput } from '../schema/escapeRoomConfig.js'
 import {
   activityInputContainsElementType,
   deleteWithPublicationStatusGuard,
@@ -22,6 +23,7 @@ import {
   UNPUBLISHED_ACTIVITY_STATUSES,
 } from './activities.js'
 import {
+  getEscapeRoomRulesData,
   isEscapeRoomStackCleared,
   restoreUsedEscapeRoomHints,
   validateEscapeRoomConfig,
@@ -248,6 +250,7 @@ interface ManipulateMicroLearningArgs {
   escapeRoomTimeLimit?: number | null
   escapeRoomHintPenalty?: number | null
   escapeRoomIntroText?: string | null
+  escapeRoomRules?: IEscapeRoomRulesInput | null
 }
 
 export async function manipulateMicroLearning(
@@ -265,6 +268,7 @@ export async function manipulateMicroLearning(
     escapeRoomTimeLimit,
     escapeRoomHintPenalty,
     escapeRoomIntroText,
+    escapeRoomRules,
   }: ManipulateMicroLearningArgs,
   ctx: ContextWithUser,
   transactionPrisma?: PrismaTransactionClient
@@ -274,7 +278,7 @@ export async function manipulateMicroLearning(
   if (isEscapeRoom) {
     validateEscapeRoomConfig({
       timeLimit: escapeRoomTimeLimit ?? 3600,
-      hintPenalty: escapeRoomHintPenalty ?? 120,
+      hintPenalty: escapeRoomHintPenalty ?? 30,
     })
   }
 
@@ -407,9 +411,10 @@ export async function manipulateMicroLearning(
   const escapeRoomConfigData = isEscapeRoom
     ? {
         timeLimit: escapeRoomTimeLimit ?? 3600,
-        hintPenalty: escapeRoomHintPenalty ?? 120,
+        hintPenalty: escapeRoomHintPenalty ?? 30,
         lockoutSeconds: 5,
         introText: escapeRoomIntroText?.trim() || null,
+        ...getEscapeRoomRulesData(escapeRoomRules),
       }
     : null
 
@@ -421,6 +426,7 @@ export async function manipulateMicroLearning(
           timeLimit: escapeRoomConfigData.timeLimit,
           hintPenalty: escapeRoomConfigData.hintPenalty,
           introText: escapeRoomConfigData.introText,
+          ...getEscapeRoomRulesData(escapeRoomRules),
         },
       },
     }
@@ -457,7 +463,8 @@ export async function manipulateMicroLearning(
           options: {
             ...instance.options,
             ...getEscapeRoomHintUpdate(
-              persistentInputs.get(instance.id)?.escapeRoomHint
+              persistentInputs.get(instance.id)?.escapeRoomHint,
+              persistentInputs.get(instance.id)?.escapeRoomHints
             ),
             pointsMultiplier: multiplier * elementMultiplier,
           },
