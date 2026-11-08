@@ -1490,6 +1490,7 @@ type EscapeRoomAttempt {
 
 type EscapeRoomAttemptProgress {
   avatar: String
+  bonusCorrect: Boolean
   clearedStacks: Int!
   completedAt: Date
   displayName: String!
@@ -1499,6 +1500,11 @@ type EscapeRoomAttemptProgress {
   lockoutUntil: Date
   participantId: String
   penaltySeconds: Int!
+  rank: Int
+  rankedSeconds: Int
+  revealedStages: Int!
+  skippedStages: Int!
+  solvedStages: Int!
   startedAt: Date
   status: EscapeRoomProgressStatus!
   timeSpentSeconds: Int

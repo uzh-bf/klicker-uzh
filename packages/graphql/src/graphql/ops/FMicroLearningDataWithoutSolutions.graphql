@@ -13,6 +13,12 @@ fragment MicroLearningDataWithoutSolutions on MicroLearning {
     timeLimit
     hintPenalty
     lockoutSeconds
+    hintPenalties
+    wrongAnswerPenalty
+    maxWrongAttempts
+    revealPenalty
+    skipPenalty
+    bonusSeconds
     introText
   }
   escapeRoomAttempts {
@@ -23,6 +29,12 @@ fragment MicroLearningDataWithoutSolutions on MicroLearning {
     remainingSeconds
     expiresInSeconds
     hintsUsed
+    stageOutcomes {
+      stageKey
+      wrongAttempts
+      outcome
+      at
+    }
     status
     completedAt
     lockoutUntil

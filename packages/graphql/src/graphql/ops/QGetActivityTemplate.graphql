@@ -36,6 +36,12 @@ query GetActivityTemplate($templateId: String!) {
           timeLimit
           hintPenalty
           lockoutSeconds
+          hintPenalties
+          wrongAnswerPenalty
+          maxWrongAttempts
+          revealPenalty
+          skipPenalty
+          bonusSeconds
           introText
         }
         elements {
@@ -63,6 +69,12 @@ query GetActivityTemplate($templateId: String!) {
         timeLimit
         hintPenalty
         lockoutSeconds
+        hintPenalties
+        wrongAnswerPenalty
+        maxWrongAttempts
+        revealPenalty
+        skipPenalty
+        bonusSeconds
         introText
       }
 
@@ -97,6 +109,12 @@ query GetActivityTemplate($templateId: String!) {
         timeLimit
         hintPenalty
         lockoutSeconds
+        hintPenalties
+        wrongAnswerPenalty
+        maxWrongAttempts
+        revealPenalty
+        skipPenalty
+        bonusSeconds
         introText
       }
 
@@ -131,6 +149,12 @@ query GetActivityTemplate($templateId: String!) {
         timeLimit
         hintPenalty
         lockoutSeconds
+        hintPenalties
+        wrongAnswerPenalty
+        maxWrongAttempts
+        revealPenalty
+        skipPenalty
+        bonusSeconds
         introText
       }
 

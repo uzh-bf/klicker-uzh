@@ -1,23 +1,22 @@
 import * as DB from '@klicker-uzh/prisma/client'
 import {
-  CaseStudyCaseResponse as CaseStudyCaseResponseType,
-  CaseStudyCriterionResponse as CaseStudyCriterionResponseType,
-  CaseStudyItemResponse as CaseStudyItemResponseType,
-  ChoicesResponse as ChoicesResponseType,
-  ElementBlockInput as ElementBlockInputType,
-  ElementInstanceInput as ElementInstanceInputType,
-  ElementStackInput as ElementStackInputType,
+  type CaseStudyCaseResponse as CaseStudyCaseResponseType,
+  type CaseStudyCriterionResponse as CaseStudyCriterionResponseType,
+  type CaseStudyItemResponse as CaseStudyItemResponseType,
+  type ChoicesResponse as ChoicesResponseType,
+  type ElementBlockInput as ElementBlockInputType,
+  type ElementInstanceInput as ElementInstanceInputType,
+  type ElementStackInput as ElementStackInputType,
   FlashcardCorrectness,
   type GroupActivityDecision as GroupActivityDecisionType,
   StackFeedbackStatus as StackFeedbackStatusType,
-  StackResponseInput as StackResponseInputType,
+  type StackResponseInput as StackResponseInputType,
 } from '@klicker-uzh/types'
 import builder from '../builder.js'
 import {
   type EscapeRoomStageOutcomeEntry,
   parseEscapeRoomStageOutcomes,
 } from '../services/escapeRoomStageOutcomes.js'
-import { parseGroupEscapeRoomStageResponses } from '../services/groupEscapeRoomSubmissions.js'
 import type {
   EscapeRoomAttemptProgress as IEscapeRoomAttemptProgress,
   EscapeRoomHintResult as IEscapeRoomHintResult,
@@ -27,6 +26,7 @@ import {
   getEscapeRoomExpiresInSeconds,
   getEscapeRoomRemainingSeconds,
 } from '../services/escapeRooms.js'
+import { parseGroupEscapeRoomStageResponses } from '../services/groupEscapeRoomSubmissions.js'
 import { CourseRef, type ICourse } from './course.js'
 import { ElementInstanceRef, InstanceEvaluation } from './element.js'
 import { ElementType } from './elementData.js'
@@ -34,8 +34,8 @@ import {
   EscapeRoomConfigRef,
   EscapeRoomHintEntryInputRef,
 } from './escapeRoomConfig.js'
+import type { IStackFeedback } from './evaluation.js'
 import { GroupActivityDecisionRef } from './groupActivity.js'
-import { IStackFeedback } from './evaluation.js'
 
 export const ElementOrderType = builder.enumType('ElementOrderType', {
   values: Object.values(DB.ElementOrderType),
@@ -406,6 +406,12 @@ export const EscapeRoomAttemptProgress = EscapeRoomAttemptProgressRef.implement(
       hintsUsedCount: t.exposeInt('hintsUsedCount'),
       clearedStacks: t.exposeInt('clearedStacks'),
       timeSpentSeconds: t.exposeInt('timeSpentSeconds', { nullable: true }),
+      rank: t.exposeInt('rank', { nullable: true }),
+      solvedStages: t.exposeInt('solvedStages'),
+      revealedStages: t.exposeInt('revealedStages'),
+      skippedStages: t.exposeInt('skippedStages'),
+      bonusCorrect: t.exposeBoolean('bonusCorrect', { nullable: true }),
+      rankedSeconds: t.exposeInt('rankedSeconds', { nullable: true }),
     }),
   }
 )

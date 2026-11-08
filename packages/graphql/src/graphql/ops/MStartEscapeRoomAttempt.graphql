@@ -20,6 +20,12 @@ mutation StartEscapeRoomAttempt(
     expiresInSeconds
     lockoutUntil
     hintsUsed
+    stageOutcomes {
+      stageKey
+      wrongAttempts
+      outcome
+      at
+    }
     status
     completedAt
   }

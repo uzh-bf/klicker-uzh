@@ -14,6 +14,12 @@ fragment PracticeQuizDataWithoutSolutions on PracticeQuiz {
     timeLimit
     hintPenalty
     lockoutSeconds
+    hintPenalties
+    wrongAnswerPenalty
+    maxWrongAttempts
+    revealPenalty
+    skipPenalty
+    bonusSeconds
     introText
   }
   escapeRoomAttempts {
@@ -24,6 +30,12 @@ fragment PracticeQuizDataWithoutSolutions on PracticeQuiz {
     remainingSeconds
     expiresInSeconds
     hintsUsed
+    stageOutcomes {
+      stageKey
+      wrongAttempts
+      outcome
+      at
+    }
     status
     completedAt
     lockoutUntil

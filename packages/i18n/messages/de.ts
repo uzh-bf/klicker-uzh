@@ -3670,6 +3670,11 @@ Da die KlickerUZH-App noch nicht im iOS-App-Store verfügbar ist, folgen Sie die
       escapeRoomColHints: 'Hinweise',
       escapeRoomColPenalty: 'Strafzeit',
       escapeRoomColTime: 'Zeit',
+      escapeRoomColRank: 'Rang',
+      escapeRoomOutcomeSummary:
+        '{revealed} aufgedeckt · {skipped} übersprungen',
+      escapeRoomBonusSolved: 'Bonus gelöst',
+      escapeRoomRankedTime: 'Wertung: {time}',
       escapeRoomColActions: 'Aktionen',
       escapeRoomStatusInProgress: 'Laufend',
       escapeRoomStatusNotStarted: 'Nicht gestartet',
