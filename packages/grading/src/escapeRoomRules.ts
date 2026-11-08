@@ -24,17 +24,8 @@ export interface EscapeRoomRules {
   bonusSeconds: number | null
 }
 
-// The lecturer-tested classroom values, offered as a preset in the editor.
-export const ESCAPE_ROOM_CLASSROOM_PRESET = {
-  timeLimitMinutes: 45,
-  hintPenalty: 120,
-  hintPenalties: [120, 240],
-  wrongAnswerPenalty: 30,
-  maxWrongAttempts: 5,
-  revealPenalty: 480,
-  skipPenalty: 600,
-  bonusSeconds: 180,
-} as const
+// The preset lives in @klicker-uzh/types so the editors can use it too.
+export { ESCAPE_ROOM_CLASSROOM_PRESET } from '@klicker-uzh/types'
 
 export function getEscapeRoomHintPenalty(
   rules: Pick<EscapeRoomRules, 'hintPenalty' | 'hintPenalties'>,
