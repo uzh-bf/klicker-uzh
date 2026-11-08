@@ -95,13 +95,25 @@ export function setup() {
   if (res.status !== 200) {
     throw new Error(`PWA login page returned ${res.status}`)
   }
-  const assets = [
-    ...new Set(res.body.match(/\/_next\/static\/[^"'\s]+\.(?:js|css)/g) || []),
-  ]
+  const assets = pageAssets(res.body)
   if (assets.length === 0) {
     throw new Error('No static assets found on the PWA login page')
   }
   return { assets, startedAt: Date.now() }
+}
+
+function pageAssets(body) {
+  return [
+    ...new Set(body.match(/\/_next\/static\/[^"'\s]+\.(?:js|css)/g) || []),
+  ]
+}
+
+// Logs each failed Service request, because the summary counts failures but
+// cannot tell a 404 for a missing asset from a 5xx while no Pod is Ready.
+function logFailure(res, kind, tags) {
+  if (res.status !== 200) {
+    console.warn(`failed kind=${kind} status=${res.status} phase=${tags.phase}`)
+  }
 }
 
 function phase(startedAt) {
@@ -117,12 +129,18 @@ export function service(data) {
     tags: { ...tags, kind: 'page' },
   })
   check(page, { 'page 200': (r) => r.status === 200 })
+  logFailure(page, 'page', tags)
+  // Request the assets this page references, as a browser would, so a page
+  // from a new Pod and an asset from an old Pod show up as a 404.
+  const pageList = page.status === 200 ? pageAssets(page.body) : []
+  const assets = pageList.length > 0 ? pageList : data.assets
   for (let i = 0; i < assetsPerPage; i++) {
-    const asset = data.assets[Math.floor(Math.random() * data.assets.length)]
+    const asset = assets[Math.floor(Math.random() * assets.length)]
     const res = http.get(`${serviceUrl}${asset}`, {
       tags: { ...tags, kind: 'asset' },
     })
     check(res, { 'asset 200': (r) => r.status === 200 })
+    logFailure(res, 'asset', tags)
   }
 }
 

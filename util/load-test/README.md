@@ -99,7 +99,7 @@ kc logs -f pwa-burst-k6
 kc delete pod/pwa-burst-k6 configmap/pwa-burst-k6-script configmap/pwa-burst-k6-env
 ```
 
-The summary reports failures per phase (`ramp`, `plateau`, `cool`) and p95 latency per probed tier. A probe fails when the HPA removes the probed burst Pod during scale-down; read those failures separately from Service failures. Staging's untainted node pools often run at their autoscaler maximum, so the k6 Pod keeps a small CPU request. Route the ramp through the ingress controller as shown: the PWA Service balances per connection, so k6's reused connections would keep the load on the Pods that existed when the drill started.
+The summary reports failures per phase (`ramp`, `plateau`, `cool`) and p95 latency per probed tier. A probe fails when the HPA removes the probed burst Pod during scale-down; read those failures separately from Service failures. Each failed Service request is logged as `failed kind=<page|asset> status=<code> phase=<phase>`; count them with `kc logs pwa-burst-k6 | grep -o 'failed kind=[^"]*' | sort | uniq -c`. Each iteration requests assets from the page it just loaded, so a rollout drill shows version skew as asset 404s, but only when the promoted build changes the PWA's static assets. Staging's untainted node pools often run at their autoscaler maximum, so the k6 Pod keeps a small CPU request. Route the ramp through the ingress controller as shown: the PWA Service balances per connection, so k6's reused connections would keep the load on the Pods that existed when the drill started.
 
 ---
 
