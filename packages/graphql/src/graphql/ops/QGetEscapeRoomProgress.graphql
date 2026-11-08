@@ -29,6 +29,12 @@ query GetEscapeRoomProgress(
       hintsUsedCount
       clearedStacks
       timeSpentSeconds
+      rank
+      solvedStages
+      revealedStages
+      skippedStages
+      bonusCorrect
+      rankedSeconds
     }
   }
 }

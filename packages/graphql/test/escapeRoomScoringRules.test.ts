@@ -1,11 +1,12 @@
 import { describe, expect, it } from 'vitest'
-import { skipEscapeRoomStage } from '../src/services/escapeRooms.js'
 import { parseEscapeRoomStageOutcomes } from '../src/services/escapeRoomStageOutcomes.js'
+import { skipEscapeRoomStage } from '../src/services/escapeRooms.js'
 import { parseGroupEscapeRoomStageResponses } from '../src/services/groupEscapeRoomSubmissions.js'
 import {
   courseId,
   createdParticipantIds,
   DB,
+  getEscapeRoomProgress,
   groupScResponse,
   lecturerCtx,
   participantCtx,
@@ -188,6 +189,38 @@ describe('escape room scoring rules', () => {
     // Only the solved stage carries a team answer into the decisions.
     expect(instance.decisions).toHaveLength(1)
     expect(instance.decisionsSubmittedAt).not.toBeNull()
+
+    // The dashboard scores both attempts identically.
+    const expectedScore = {
+      clearedStacks: 4,
+      solvedStages: 1,
+      revealedStages: 1,
+      skippedStages: 1,
+      bonusCorrect: true,
+      rank: 1,
+    }
+    const individualProgress = await getEscapeRoomProgress(
+      { practiceQuizId: quiz.id },
+      lecturerCtx
+    )
+    const groupProgress = await getEscapeRoomProgress(
+      { groupActivityId: fixture.groupActivity.id },
+      lecturerCtx
+    )
+    const individualRow = individualProgress?.attempts.find(
+      (entry) => entry.id === individual.id
+    )
+    const groupRow = groupProgress?.attempts.find(
+      (entry) => entry.id === group.id
+    )
+    expect(individualRow).toMatchObject(expectedScore)
+    expect(groupRow).toMatchObject(expectedScore)
+    expect(individualRow?.rankedSeconds).toBeGreaterThanOrEqual(
+      EXPECTED_PENALTY - RULES.bonusSeconds
+    )
+    expect(groupRow?.rankedSeconds).toBeGreaterThanOrEqual(
+      EXPECTED_PENALTY - RULES.bonusSeconds
+    )
   })
 
   it('charges a concurrent skip by two team members only once', async () => {

@@ -33,6 +33,12 @@ query GetCockpitQuiz($id: String!) {
         timeLimit
         hintPenalty
         lockoutSeconds
+        hintPenalties
+        wrongAnswerPenalty
+        maxWrongAttempts
+        revealPenalty
+        skipPenalty
+        bonusSeconds
         introText
       }
       elements {
@@ -49,6 +55,12 @@ query GetCockpitQuiz($id: String!) {
         timeLimit
         hintPenalty
         lockoutSeconds
+        hintPenalties
+        wrongAnswerPenalty
+        maxWrongAttempts
+        revealPenalty
+        skipPenalty
+        bonusSeconds
         introText
       }
     }

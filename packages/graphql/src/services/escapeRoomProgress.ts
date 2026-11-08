@@ -1,3 +1,8 @@
+import {
+  type EscapeRoomScoredStage,
+  rankEscapeRoomScores,
+  scoreEscapeRoomAttempt,
+} from '@klicker-uzh/grading'
 import * as DB from '@klicker-uzh/prisma/client'
 import {
   ESCAPE_ROOM_SUPPORTED_ELEMENT_TYPES,
@@ -6,9 +11,16 @@ import {
 import { GraphQLError } from 'graphql'
 import type { ContextWithUser } from '../lib/context.js'
 import {
+  getStageOutcome,
+  isBonusAnswered,
+  isClearedWithoutAnswer,
+  parseEscapeRoomStageOutcomes,
+} from './escapeRoomStageOutcomes.js'
+import {
   getGroupEscapeRoomStages,
   parseGroupEscapeRoomStageResponses,
 } from './groupEscapeRoomSubmissions.js'
+
 interface EscapeRoomProgressArgs {
   practiceQuizId?: string | null
   microLearningId?: string | null
@@ -34,6 +46,49 @@ export interface EscapeRoomAttemptProgress {
   hintsUsedCount: number
   clearedStacks: number
   timeSpentSeconds: number | null
+  // Ranking by the shared scoring rules; null until a stage has an outcome.
+  rank: number | null
+  solvedStages: number
+  revealedStages: number
+  skippedStages: number
+  bonusCorrect: boolean | null
+  rankedSeconds: number | null
+}
+
+const UNSCORED = {
+  rank: null,
+  solvedStages: 0,
+  revealedStages: 0,
+  skippedStages: 0,
+  bonusCorrect: null,
+  rankedSeconds: null,
+} as const
+
+function getScoredStages(attempt: {
+  groupId: string | null
+  stageResponses: unknown
+  stageOutcomes: unknown
+}): EscapeRoomScoredStage[] {
+  if (attempt.groupId) {
+    return parseGroupEscapeRoomStageResponses(attempt.stageResponses).map(
+      (entry) => ({
+        outcome: entry.outcome ?? 'SOLVED',
+        at: entry.clearedAt,
+        creditSeconds: entry.creditSeconds,
+      })
+    )
+  }
+  return parseEscapeRoomStageOutcomes(attempt.stageOutcomes).flatMap((entry) =>
+    entry.outcome && entry.at
+      ? [
+          {
+            outcome: entry.outcome,
+            at: entry.at,
+            creditSeconds: entry.creditSeconds,
+          },
+        ]
+      : []
+  )
 }
 
 export interface EscapeRoomProgress {
@@ -221,14 +276,24 @@ export async function getEscapeRoomProgress(
       correct.get(resp.participantId)!.add(resp.elementInstanceId)
     }
 
-    for (const participantId of participantIds) {
+    for (const attempt of attempts) {
+      const participantId = attempt.participantId
+      if (participantId == null) continue
       const correctSet = correct.get(participantId) ?? new Set<number>()
+      const outcomes = parseEscapeRoomStageOutcomes(attempt.stageOutcomes)
       let cleared = 0
       for (const stack of stacks) {
+        const outcome = getStageOutcome(outcomes, stack.id)
         const allCorrect =
           stack.elements.length > 0 &&
           stack.elements.every((elem) => correctSet.has(elem.id))
-        if (!allCorrect) break
+        if (
+          !allCorrect &&
+          !isClearedWithoutAnswer(outcome) &&
+          !isBonusAnswered(outcome)
+        ) {
+          break
+        }
         cleared += 1
       }
       clearedByParticipant.set(participantId, cleared)
@@ -282,6 +347,12 @@ export async function getEscapeRoomProgress(
       hintsUsedCount,
       clearedStacks,
       timeSpentSeconds,
+      rank: null,
+      ...scoreEscapeRoomAttempt({
+        startedAt: attempt.startedAt,
+        penaltySeconds: attempt.penaltySeconds,
+        stages: getScoredStages(attempt),
+      }),
     }
   }
 
@@ -330,6 +401,7 @@ export async function getEscapeRoomProgress(
             hintsUsedCount: 0,
             clearedStacks: 0,
             timeSpentSeconds: null,
+            ...UNSCORED,
           }
     })
     // Never drop a real attempt: keep participant attempts whose participation
@@ -375,6 +447,7 @@ export async function getEscapeRoomProgress(
             hintsUsedCount: 0,
             clearedStacks: 0,
             timeSpentSeconds: null,
+            ...UNSCORED,
           }
     })
     const orphanProgress = attempts
@@ -385,10 +458,19 @@ export async function getEscapeRoomProgress(
     progress = [...rosterProgress, ...orphanProgress]
   }
 
+  const ranks = new Map(
+    rankEscapeRoomScores(
+      progress.map((entry, index) => ({ ...entry, index }))
+    ).map((entry) => [entry.index, entry.rank])
+  )
+
   return {
     activityId,
     totalStacks,
     timeLimit: config.timeLimit,
-    attempts: progress,
+    attempts: progress.map((entry, index) => ({
+      ...entry,
+      rank: ranks.get(index) ?? null,
+    })),
   }
 }

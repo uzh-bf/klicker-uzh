@@ -11,6 +11,12 @@ query GroupActivityDetails($activityId: String!, $groupId: String!) {
       timeLimit
       hintPenalty
       lockoutSeconds
+      hintPenalties
+      wrongAnswerPenalty
+      maxWrongAttempts
+      revealPenalty
+      skipPenalty
+      bonusSeconds
       introText
     }
     escapeRoomAttempts {
@@ -21,6 +27,12 @@ query GroupActivityDetails($activityId: String!, $groupId: String!) {
       remainingSeconds
       expiresInSeconds
       hintsUsed
+      stageOutcomes {
+        stageKey
+        wrongAttempts
+        outcome
+        at
+      }
       status
       completedAt
       lockoutUntil
