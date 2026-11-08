@@ -6,11 +6,11 @@ import {
 } from '@klicker-uzh/graphql/dist/ops'
 import { Button, UserNotification } from '@uzh-bf/design-system'
 import { useTranslations } from 'next-intl'
-import { useState } from 'react'
+import { useEffect, useState } from 'react'
 import { twMerge } from 'tailwind-merge'
 
 interface EscapeRoomProgressProps {
-  activityType: 'practiceQuiz' | 'microLearning'
+  activityType: 'practiceQuiz' | 'microLearning' | 'groupActivity'
   activityId: string
   progress: EscapeRoomProgressType
   onReset: () => Promise<unknown>
@@ -72,6 +72,14 @@ function EscapeRoomProgress({
   const [confirmingId, setConfirmingId] = useState<string | null>(null)
   const [resettingId, setResettingId] = useState<string | null>(null)
   const [error, setError] = useState<string | null>(null)
+  const [currentTime, setCurrentTime] = useState<number | null>(null)
+
+  useEffect(() => {
+    const updateCurrentTime = () => setCurrentTime(Date.now())
+    updateCurrentTime()
+    const interval = window.setInterval(updateCurrentTime, 1000)
+    return () => window.clearInterval(interval)
+  }, [])
 
   const { totalStacks, attempts } = progress
 
@@ -84,8 +92,11 @@ function EscapeRoomProgress({
         variables: {
           ...(activityType === 'microLearning'
             ? { microLearningId: activityId }
-            : { practiceQuizId: activityId }),
+            : activityType === 'groupActivity'
+              ? { groupActivityId: activityId }
+              : { practiceQuizId: activityId }),
           participantId: attempt.participantId ?? undefined,
+          groupId: attempt.groupId ?? undefined,
         },
       })
       await onReset()
@@ -154,10 +165,16 @@ function EscapeRoomProgress({
                     totalStacks > 0
                       ? Math.round((attempt.clearedStacks / totalStacks) * 100)
                       : 0
-                  const lockedOut = attempt.lockoutUntil != null
+                  const lockedOut =
+                    currentTime !== null &&
+                    attempt.lockoutUntil != null &&
+                    new Date(attempt.lockoutUntil).getTime() > currentTime
                   return (
                     <tr
-                      key={attempt.id ?? `participant-${attempt.participantId}`}
+                      key={
+                        attempt.id ??
+                        `participant-${attempt.participantId ?? attempt.groupId}`
+                      }
                       className="border-b last:border-b-0"
                       data-cy={`escape-room-attempt-${attempt.displayName}`}
                     >

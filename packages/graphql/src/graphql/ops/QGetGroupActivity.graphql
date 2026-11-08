@@ -7,7 +7,13 @@ query GetGroupActivity($id: String!) {
     pointsMultiplier
     scheduledStartAt
     scheduledEndAt
-
+    escapeRoomConfig {
+      id
+      timeLimit
+      hintPenalty
+      lockoutSeconds
+      introText
+    }
     clues {
       id
       type
@@ -21,6 +27,7 @@ query GetGroupActivity($id: String!) {
       id
       displayName
       description
+      isCorrect
       elements {
         id
         type

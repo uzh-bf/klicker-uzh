@@ -1,4 +1,4 @@
-import { useMutation } from '@apollo/client'
+import { ApolloError, useMutation } from '@apollo/client'
 import {
   CaseStudyCaseResponse,
   ElementStack,
@@ -6,6 +6,7 @@ import {
   GroupActivityDecision,
   GroupActivityDetailsDocument,
   GroupActivityResults,
+  RequestEscapeRoomHintDocument,
   ResponseCorrectnessType,
   SelectionElementData,
   SubmitGroupActivityDecisionsDocument,
@@ -18,7 +19,7 @@ import DynamicMarkdown from '@klicker-uzh/shared-components/src/evaluation/Dynam
 import useStudentResponse from '@klicker-uzh/shared-components/src/hooks/useStudentResponse'
 import getEmptySelectionResponse from '@klicker-uzh/shared-components/src/utils/getEmptySelectionResponse'
 import { ChoicesResponse } from '@klicker-uzh/types'
-import { Button } from '@uzh-bf/design-system'
+import { Button, UserNotification, toast } from '@uzh-bf/design-system'
 import { useTranslations } from 'next-intl'
 import { useRouter } from 'next/router'
 import { useEffect, useState } from 'react'
@@ -31,8 +32,26 @@ interface GroupActivityStackProps {
   activityEnded: boolean
   stack: ElementStack
   decisions?: GroupActivityDecision[] | null
+  stageDecisions?: GroupActivityDecision[] | null
   results?: GroupActivityResults | null
   submittedAt?: string
+  groupActivityId?: string
+  groupId?: string
+  hintPenalty?: number
+  onEscapeRoomStateChanged?: () => Promise<unknown> | void
+}
+
+function isGroupEscapeRoomResponseType(type: ElementType) {
+  return [
+    ElementType.Sc,
+    ElementType.Mc,
+    ElementType.Kprim,
+    ElementType.Numerical,
+    ElementType.FreeText,
+    ElementType.Selection,
+    ElementType.CaseStudy,
+    ElementType.QrScan,
+  ].includes(type)
 }
 
 function GroupActivityStack({
@@ -40,8 +59,13 @@ function GroupActivityStack({
   activityEnded,
   stack,
   decisions,
+  stageDecisions,
   results,
   submittedAt,
+  groupActivityId,
+  groupId,
+  hintPenalty = 0,
+  onEscapeRoomStateChanged,
 }: GroupActivityStackProps) {
   const t = useTranslations()
   const router = useRouter()
@@ -60,6 +84,11 @@ function GroupActivityStack({
         },
       ],
     })
+  const [requestEscapeRoomHint, { loading: hintLoading }] = useMutation(
+    RequestEscapeRoomHintDocument
+  )
+  const [revealedHints, setRevealedHints] = useState<Record<number, string>>({})
+  const [lockoutRemaining, setLockoutRemaining] = useState(0)
   const elementFeedbacks = useStackElementFeedbacks({
     instanceIds: stack.elements?.map((element) => element.id) ?? [],
     withParticipant: true,
@@ -75,8 +104,24 @@ function GroupActivityStack({
     defaultRead: true,
   })
 
+  // Escape-room group activities unlock one response element (stage) at a
+  // time; cleared stages stay visible read-only with the team's answer.
+  const isStagedEscapeRoom = !!groupActivityId && !decisions
+  const clearedStageIds = new Set(
+    (stageDecisions ?? []).map((decision) => decision.instanceId)
+  )
+  const currentStageId = isStagedEscapeRoom
+    ? stack.elements?.find(
+        (element) =>
+          isGroupEscapeRoomResponseType(element.elementType) &&
+          !clearedStageIds.has(element.id)
+      )?.id
+    : undefined
+
   useEffect(() => {
-    const loadedResponses = decisions?.reduce<StackStudentResponseType>(
+    const loadedDecisions =
+      decisions ?? (groupActivityId ? stageDecisions : undefined)
+    const loadedResponses = loadedDecisions?.reduce<StackStudentResponseType>(
       (acc, decision) => {
         if (!decision) return acc
 
@@ -185,8 +230,92 @@ function GroupActivityStack({
       {}
     )
 
-    setStudentResponse((prev) => loadedResponses || prev)
-  }, [decisions, stack.elements])
+    setStudentResponse((prev) =>
+      loadedResponses
+        ? decisions
+          ? loadedResponses
+          : { ...prev, ...loadedResponses }
+        : prev
+    )
+  }, [decisions, stageDecisions, groupActivityId, stack.elements])
+
+  useEffect(() => {
+    setRevealedHints(
+      Object.fromEntries(
+        (stack.elements ?? []).flatMap((element) =>
+          element.revealedHint ? [[element.id, element.revealedHint]] : []
+        )
+      )
+    )
+  }, [stack.elements])
+
+  useEffect(() => {
+    if (lockoutRemaining <= 0) return
+    const timeout = setTimeout(
+      () => setLockoutRemaining((remaining) => Math.max(0, remaining - 1)),
+      1000
+    )
+    return () => clearTimeout(timeout)
+  }, [lockoutRemaining])
+
+  const responseEntries = Object.entries(studentResponse)
+  const submissionEntries = isStagedEscapeRoom
+    ? responseEntries.filter(
+        ([instanceId]) => parseInt(instanceId) === currentStageId
+      )
+    : responseEntries
+
+  const handleEscapeRoomError = async (error: unknown) => {
+    const escapeError =
+      error instanceof ApolloError
+        ? error.graphQLErrors.find((entry) =>
+            String(entry.extensions?.code).startsWith('ESCAPE_ROOM_')
+          )
+        : undefined
+    if (escapeError?.extensions?.code === 'ESCAPE_ROOM_LOCKOUT') {
+      const remaining = escapeError.extensions.lockoutRemainingSeconds
+      if (typeof remaining === 'number') setLockoutRemaining(remaining)
+      toast({
+        type: 'error',
+        message: t('pwa.practiceQuiz.escapeRoomLockoutToast'),
+      })
+    } else if (
+      escapeError?.extensions?.code === 'ESCAPE_ROOM_GATED' ||
+      escapeError?.extensions?.code === 'ESCAPE_ROOM_CONFLICT'
+    ) {
+      // A teammate cleared this stage first; the refetch below shows it.
+    } else if (escapeError?.extensions?.code === 'ESCAPE_ROOM_EXPIRED') {
+      toast({
+        type: 'error',
+        message: t('pwa.practiceQuiz.escapeRoomExpiredToast'),
+      })
+    } else {
+      toast({ type: 'error', message: t('shared.generic.systemError') })
+    }
+    await onEscapeRoomStateChanged?.()
+  }
+
+  const revealHint = async (instanceId: number) => {
+    if (!groupActivityId || !groupId || revealedHints[instanceId]) return
+    try {
+      const result = await requestEscapeRoomHint({
+        variables: { groupActivityId, groupId, instanceId },
+      })
+      const hint = result.data?.requestEscapeRoomHint?.hint
+      if (hint) {
+        setRevealedHints((current) => ({ ...current, [instanceId]: hint }))
+        toast({
+          type: 'success',
+          message: t('pwa.practiceQuiz.escapeRoomHintRevealedToast', {
+            penalty: hintPenalty,
+          }),
+        })
+      }
+      await onEscapeRoomStateChanged?.()
+    } catch (error) {
+      await handleEscapeRoomError(error)
+    }
+  }
 
   return (
     <>
@@ -206,7 +335,21 @@ function GroupActivityStack({
               : undefined
 
             return (
-              <div key={`${element.id}-student`} className="mb-2 text-lg">
+              <div
+                key={`${element.id}-student`}
+                className="mb-2 text-lg"
+                data-cy={
+                  isStagedEscapeRoom
+                    ? `group-escape-stage-${elementIx}-${
+                        element.id === currentStageId
+                          ? 'current'
+                          : clearedStageIds.has(element.id)
+                            ? 'cleared'
+                            : 'content'
+                      }`
+                    : undefined
+                }
+              >
                 <InstanceHeader
                   index={elementIx}
                   instanceId={element.id}
@@ -227,8 +370,39 @@ function GroupActivityStack({
                   studentResponse={studentResponse}
                   setStudentResponse={setStudentResponse}
                   hideReadButton
-                  disabledInput={!!decisions || activityEnded}
+                  disabledInput={
+                    !!decisions ||
+                    activityEnded ||
+                    (isStagedEscapeRoom && element.id !== currentStageId)
+                  }
                 />
+                {groupActivityId &&
+                  element.options?.hasHint &&
+                  (revealedHints[element.id] ||
+                    element.id === currentStageId) && (
+                    <div className="mt-2">
+                      {revealedHints[element.id] ? (
+                        <UserNotification
+                          type="info"
+                          message={revealedHints[element.id]}
+                        />
+                      ) : (
+                        <Button
+                          basic
+                          disabled={lockoutRemaining > 0}
+                          loading={hintLoading}
+                          onClick={() => revealHint(element.id)}
+                          data={{ cy: `group-escape-room-hint-${elementIx}` }}
+                        >
+                          <Button.Label>
+                            {t('pwa.practiceQuiz.escapeRoomRequestHint', {
+                              penalty: hintPenalty,
+                            })}
+                          </Button.Label>
+                        </Button>
+                      )}
+                    </div>
+                  )}
                 {grading && correctness && (
                   <div
                     className={twMerge(
@@ -274,16 +448,18 @@ function GroupActivityStack({
         <Button
           primary
           disabled={
-            Object.values(studentResponse).some(
-              (response) => !response.valid
-            ) || activityEnded
+            submissionEntries.length === 0 ||
+            (isStagedEscapeRoom && !currentStageId) ||
+            submissionEntries.some(([, response]) => !response.valid) ||
+            activityEnded ||
+            lockoutRemaining > 0
           }
           onClick={async () => {
-            const result = await submitGroupActivityDecisions({
-              variables: {
-                activityId: activityId,
-                responses: Object.entries(studentResponse).map(
-                  ([instanceId, value]) => {
+            try {
+              const result = await submitGroupActivityDecisions({
+                variables: {
+                  activityId: activityId,
+                  responses: submissionEntries.map(([instanceId, value]) => {
                     if (
                       value.type === ElementType.Sc ||
                       value.type === ElementType.Mc ||
@@ -315,6 +491,12 @@ function GroupActivityStack({
                         instanceId: parseInt(instanceId),
                         type: ElementType.FreeText,
                         freeTextResponse: value.response,
+                      }
+                    } else if (value.type === ElementType.QrScan) {
+                      return {
+                        instanceId: parseInt(instanceId),
+                        type: ElementType.QrScan,
+                        qrScanResponse: value.response,
                       }
                     } else if (value.type === ElementType.Content) {
                       return {
@@ -381,18 +563,23 @@ function GroupActivityStack({
                         response: value.response,
                       }
                     }
-                  }
-                ),
-              },
-            })
+                  }),
+                },
+              })
 
-            if (!result?.data?.submitGroupActivityDecisions) {
-              console.error('Error submitting response')
-              return
+              if (!result?.data?.submitGroupActivityDecisions) {
+                toast({
+                  type: 'error',
+                  message: t('shared.generic.systemError'),
+                })
+                return
+              }
+
+              if (!groupActivityId) setStudentResponse({})
+              await onEscapeRoomStateChanged?.()
+            } catch (error) {
+              await handleEscapeRoomError(error)
             }
-
-            // set status and score according to returned correctness
-            setStudentResponse({})
           }}
           type="submit"
           loading={submitLoading}
