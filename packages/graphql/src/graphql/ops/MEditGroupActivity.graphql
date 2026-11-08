@@ -9,6 +9,10 @@ mutation EditGroupActivity(
   $endDate: Date!
   $clues: [GroupActivityClueInput!]!
   $stack: ElementStackInput!
+  $isEscapeRoom: Boolean
+  $escapeRoomTimeLimit: Int
+  $escapeRoomHintPenalty: Int
+  $escapeRoomIntroText: String
 ) {
   editGroupActivity(
     id: $id
@@ -21,6 +25,10 @@ mutation EditGroupActivity(
     endDate: $endDate
     clues: $clues
     stack: $stack
+    isEscapeRoom: $isEscapeRoom
+    escapeRoomTimeLimit: $escapeRoomTimeLimit
+    escapeRoomHintPenalty: $escapeRoomHintPenalty
+    escapeRoomIntroText: $escapeRoomIntroText
   ) {
     ...ActivityInfoData
   }

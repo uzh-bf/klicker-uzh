@@ -1,11 +1,15 @@
 mutation ResetEscapeRoomAttempt(
   $practiceQuizId: String
   $microLearningId: String
+  $groupActivityId: String
   $participantId: String
+  $groupId: String
 ) {
   resetEscapeRoomAttempt(
     practiceQuizId: $practiceQuizId
     microLearningId: $microLearningId
+    groupActivityId: $groupActivityId
     participantId: $participantId
+    groupId: $groupId
   )
 }

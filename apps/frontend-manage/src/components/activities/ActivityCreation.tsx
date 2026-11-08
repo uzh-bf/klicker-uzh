@@ -105,11 +105,14 @@ function ActivityCreation({
           editMode === ActivityType.PracticeQuiz ? activityId : undefined,
         microLearningId:
           editMode === ActivityType.MicroLearning ? activityId : undefined,
+        groupActivityId:
+          editMode === ActivityType.GroupActivity ? activityId : undefined,
       },
       skip:
         !activityId ||
         (editMode !== ActivityType.PracticeQuiz &&
-          editMode !== ActivityType.MicroLearning),
+          editMode !== ActivityType.MicroLearning &&
+          editMode !== ActivityType.GroupActivity),
       fetchPolicy: 'network-only',
     })
   const { data: dataGroupActivity, loading: groupActivityLoading } = useQuery(
@@ -328,6 +331,7 @@ function ActivityCreation({
           <GroupActivityWizard
             title={t('shared.generic.groupActivity')}
             closeWizard={closeWizard}
+            onEscapeRoomChange={onEscapeRoomChange}
             courses={courseSelection ?? []}
             selection={selectedElements}
             resetSelection={resetSelection}
@@ -337,6 +341,7 @@ function ActivityCreation({
             }
             editMode={editMode === ActivityType.GroupActivity}
             duplicationMode={duplicationMode === ActivityType.GroupActivity}
+            escapeRoomHints={dataEscapeRoomHints?.escapeRoomHints ?? []}
           />
         )}
       </div>

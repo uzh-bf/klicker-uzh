@@ -506,6 +506,10 @@ model EscapeRoomAttempt {
   timeLimit      Int
   penaltySeconds Int              @default(0)
   hintsUsed      Json             @default("[]") // Store used hint IDs/keys
+  // Group Activity escape rooms: correct stage answers in clearing order,
+  // as [{ instanceId, response, clearedAt }]. Individual modes derive stage
+  // progress from participant responses instead.
+  stageResponses Json             @default("[]")
   status         EscapeRoomStatus @default(IN_PROGRESS)
   completedAt    DateTime?
   lockoutUntil   DateTime?

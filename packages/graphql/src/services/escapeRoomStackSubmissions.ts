@@ -13,14 +13,8 @@ import { hasExactEscapeRoomResponseSet } from './escapeRoomResponseValidation.js
 import {
   getRemainingSecondsUntil,
   isEscapeRoomStackCleared,
+  releaseEscapeRoomLifecycleClaim,
 } from './escapeRooms.js'
-
-const RELEASE_ESCAPE_ROOM_CLAIM = `
-  if redis.call('get', KEYS[1]) == ARGV[1] then
-    return redis.call('del', KEYS[1])
-  end
-  return 0
-`
 
 type ParticipantStack = DB.Prisma.ElementStackGetPayload<{
   include: {
@@ -308,7 +302,7 @@ export async function prepareEscapeRoomStackSubmission(
       claimToken,
     }
   } catch (error) {
-    await ctx.redisExec.eval(RELEASE_ESCAPE_ROOM_CLAIM, 1, claimKey, claimToken)
+    await releaseEscapeRoomLifecycleClaim(ctx, claimKey, claimToken)
     throw error
   }
 }
@@ -351,10 +345,5 @@ export async function releaseEscapeRoomStackSubmission(
   ctx: Context
 ) {
   if (state.kind !== 'escape-room') return
-  await ctx.redisExec.eval(
-    RELEASE_ESCAPE_ROOM_CLAIM,
-    1,
-    state.claimKey,
-    state.claimToken
-  )
+  await releaseEscapeRoomLifecycleClaim(ctx, state.claimKey, state.claimToken)
 }

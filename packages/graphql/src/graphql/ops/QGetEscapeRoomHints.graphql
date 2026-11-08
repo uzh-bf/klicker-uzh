@@ -1,7 +1,12 @@
-query GetEscapeRoomHints($practiceQuizId: String, $microLearningId: String) {
+query GetEscapeRoomHints(
+  $practiceQuizId: String
+  $microLearningId: String
+  $groupActivityId: String
+) {
   escapeRoomHints(
     practiceQuizId: $practiceQuizId
     microLearningId: $microLearningId
+    groupActivityId: $groupActivityId
   ) {
     instanceId
     hint
