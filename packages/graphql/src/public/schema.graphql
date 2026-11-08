@@ -1363,6 +1363,7 @@ type ElementInstance {
   id: Int!
   options: ElementInstanceOptions
   revealedHint: String
+  revealedHints: [String!]
   type: ElementInstanceType!
 }
 
@@ -1481,6 +1482,7 @@ type EscapeRoomAttempt {
   practiceQuizId: String
   remainingSeconds: Int!
   stageDecisions: [GroupActivityDecision!]
+  stageOutcomes: [EscapeRoomStageOutcome!]!
   startedAt: Date!
   status: EscapeRoomStatus!
   timeLimit: Int!
@@ -1538,7 +1540,9 @@ input EscapeRoomHintEntryInput {
 
 type EscapeRoomHintResult {
   attempt: EscapeRoomAttempt!
+  hasMoreHints: Boolean!
   hint: String!
+  hints: [String!]!
 }
 
 type EscapeRoomProgress {
@@ -1562,6 +1566,13 @@ input EscapeRoomRulesInput {
   revealPenalty: Int
   skipPenalty: Int
   wrongAnswerPenalty: Int
+}
+
+type EscapeRoomStageOutcome {
+  at: String
+  outcome: String
+  stageKey: String!
+  wrongAttempts: Int!
 }
 
 enum EscapeRoomStatus {
@@ -2307,6 +2318,7 @@ type Mutation {
   setResearchConsent(consent: Boolean!, disclosureVersion: String!, expectedRevision: Int!): ParticipantDataUse
   shareElementsBatch(elementIds: [Int!]!, permissionLevel: PermissionLevel!, shortnameOrEmail: String, userGroupId: Int): ElementBatchSharingResult!
   shareObject(objectId: String!, objectType: ObjectType!, permissionLevel: PermissionLevel!, propagation: Boolean!, shortnameOrEmail: String, userGroupId: Int): PermissionInfo
+  skipEscapeRoomStage(groupActivityId: String, groupId: String, microLearningId: String, practiceQuizId: String): EscapeRoomAttempt
   startCourseDuplication(color: String, description: String, displayName: String!, duplicateGroupActivities: Boolean, duplicateLiveQuizzes: Boolean, duplicateMicrolearnings: Boolean, duplicatePracticeQuizzes: Boolean, endDate: Date!, groupDeadlineDate: Date!, isGamificationEnabled: Boolean, isGroupCreationEnabled: Boolean!, language: LocaleType!, maxGroupSize: Int!, name: String!, notificationEmail: String, preferredGroupSize: Int!, sourceCourseId: String!, startDate: Date!): CourseDuplicationStatus
   startEscapeRoomAttempt(elementBlockId: Int, groupActivityId: String, groupId: String, microLearningId: String, practiceQuizId: String): EscapeRoomAttempt
   startGroupActivity(activityId: String!, groupId: String!): GroupActivityDetails

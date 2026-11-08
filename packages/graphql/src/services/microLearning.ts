@@ -28,6 +28,10 @@ import {
   restoreUsedEscapeRoomHints,
   validateEscapeRoomConfig,
 } from './escapeRooms.js'
+import {
+  getStageOutcome,
+  parseEscapeRoomStageOutcomes,
+} from './escapeRoomStageOutcomes.js'
 import { splitActivityInstances } from './liveQuizzes.js'
 import { sendTeamsNotification } from './notifications.js'
 import { computeStackEvaluation } from './stacks.js'
@@ -94,8 +98,13 @@ export async function getMicroLearningData(
       if (!attempt || attempt.status === DB.EscapeRoomStatus.EXPIRED) {
         filteredStacks = []
       } else if (attempt.status === DB.EscapeRoomStatus.IN_PROGRESS) {
+        const outcomes = parseEscapeRoomStageOutcomes(attempt.stageOutcomes)
         const firstUnclearedIx = orderedStacks.findIndex(
-          (stack) => !isEscapeRoomStackCleared(stack.elements)
+          (stack) =>
+            !isEscapeRoomStackCleared(
+              stack.elements,
+              getStageOutcome(outcomes, stack.id)
+            )
         )
         if (firstUnclearedIx !== -1) {
           filteredStacks = orderedStacks.slice(0, firstUnclearedIx + 1)

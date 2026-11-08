@@ -41,14 +41,14 @@ export function isEscapeRoomExpired(
   attempt: {
     startedAt: Date | string
     timeLimit: number
-    penaltySeconds: number
+    penaltySeconds?: number
   },
   now = Date.now()
 ) {
+  // Penalties count toward the ranked time only; they never shorten play.
   const deadline =
     new Date(attempt.startedAt).getTime() +
-    (attempt.timeLimit - attempt.penaltySeconds + ESCAPE_ROOM_GRACE_SECONDS) *
-      1000
+    (attempt.timeLimit + ESCAPE_ROOM_GRACE_SECONDS) * 1000
 
   // Preserve the established action-grace contract: the exact deadline is
   // still valid; the attempt expires immediately after it.

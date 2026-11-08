@@ -13,6 +13,10 @@ import {
   StackResponseInput as StackResponseInputType,
 } from '@klicker-uzh/types'
 import builder from '../builder.js'
+import {
+  type EscapeRoomStageOutcomeEntry,
+  parseEscapeRoomStageOutcomes,
+} from '../services/escapeRoomStageOutcomes.js'
 import { parseGroupEscapeRoomStageResponses } from '../services/groupEscapeRoomSubmissions.js'
 import type {
   EscapeRoomAttemptProgress as IEscapeRoomAttemptProgress,
@@ -307,6 +311,18 @@ export const EscapeRoomProgressStatus = builder.enumType(
   }
 )
 
+export const EscapeRoomStageOutcomeRef =
+  builder.objectRef<EscapeRoomStageOutcomeEntry>('EscapeRoomStageOutcome')
+export const EscapeRoomStageOutcome = EscapeRoomStageOutcomeRef.implement({
+  fields: (t) => ({
+    stageKey: t.exposeString('stageKey'),
+    wrongAttempts: t.exposeInt('wrongAttempts'),
+    // SOLVED, REVEALED, SKIPPED, BONUS_CORRECT or BONUS_WRONG; null while open.
+    outcome: t.exposeString('outcome', { nullable: true }),
+    at: t.exposeString('at', { nullable: true }),
+  }),
+})
+
 export const EscapeRoomAttemptRef =
   builder.objectRef<DB.EscapeRoomAttempt>('EscapeRoomAttempt')
 export const EscapeRoomAttempt = EscapeRoomAttemptRef.implement({
@@ -337,10 +353,17 @@ export const EscapeRoomAttempt = EscapeRoomAttemptRef.implement({
       nullable: true,
       resolve: (parent) =>
         parent.groupId
-          ? parseGroupEscapeRoomStageResponses(parent.stageResponses).map(
-              (entry) => entry.response as GroupActivityDecisionType
+          ? parseGroupEscapeRoomStageResponses(parent.stageResponses).flatMap(
+              (entry) =>
+                entry.response
+                  ? [entry.response as GroupActivityDecisionType]
+                  : []
             )
           : null,
+    }),
+    stageOutcomes: t.field({
+      type: [EscapeRoomStageOutcomeRef],
+      resolve: (parent) => parseEscapeRoomStageOutcomes(parent.stageOutcomes),
     }),
     participantId: t.exposeString('participantId', { nullable: true }),
     groupId: t.exposeString('groupId', { nullable: true }),
@@ -359,6 +382,8 @@ export const EscapeRoomHintResultRef = builder.objectRef<IEscapeRoomHintResult>(
 export const EscapeRoomHintResult = EscapeRoomHintResultRef.implement({
   fields: (t) => ({
     hint: t.exposeString('hint'),
+    hints: t.exposeStringList('hints'),
+    hasMoreHints: t.exposeBoolean('hasMoreHints'),
     attempt: t.expose('attempt', { type: EscapeRoomAttemptRef }),
   }),
 })

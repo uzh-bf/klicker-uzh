@@ -1,0 +1,29 @@
+mutation SkipEscapeRoomStage(
+  $practiceQuizId: String
+  $microLearningId: String
+  $groupActivityId: String
+  $groupId: String
+) {
+  skipEscapeRoomStage(
+    practiceQuizId: $practiceQuizId
+    microLearningId: $microLearningId
+    groupActivityId: $groupActivityId
+    groupId: $groupId
+  ) {
+    id
+    startedAt
+    timeLimit
+    penaltySeconds
+    remainingSeconds
+    expiresInSeconds
+    lockoutUntil
+    hintsUsed
+    status
+    completedAt
+    stageOutcomes {
+      stageKey
+      wrongAttempts
+      outcome
+    }
+  }
+}

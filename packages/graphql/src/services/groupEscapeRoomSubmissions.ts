@@ -1,3 +1,10 @@
+import {
+  applyEscapeRoomWrongAnswer,
+  type EscapeRoomRules,
+  type EscapeRoomStageOutcome,
+  getEscapeRoomBonusCredit,
+  isEscapeRoomBonusStage,
+} from '@klicker-uzh/grading'
 import * as DB from '@klicker-uzh/prisma/client'
 import type {
   ElementInstanceResults,
@@ -22,6 +29,12 @@ import {
   releaseEscapeRoomLifecycleClaim,
 } from './escapeRooms.js'
 import {
+  getEscapeRoomRules,
+  getStageOutcome,
+  parseEscapeRoomStageOutcomes,
+  setStageOutcome,
+} from './escapeRoomStageOutcomes.js'
+import {
   evaluateCaseStudyAnswerCorrectness,
   evaluateChoicesAnswerCorrectness,
   evaluateFreeTextAnswerCorrectness,
@@ -40,8 +53,12 @@ type GroupEscapeRoomInstance = DB.Prisma.ElementInstanceGetPayload<{
 
 export interface GroupEscapeRoomStageResponse {
   instanceId: number
-  response: StackResponseInput
+  // null when the stage was revealed or skipped instead of answered
+  response: StackResponseInput | null
   clearedAt: string
+  // Missing on entries written before scoring rules existed; read as SOLVED.
+  outcome?: EscapeRoomStageOutcome
+  creditSeconds?: number
 }
 
 /**
@@ -67,6 +84,37 @@ export function parseGroupEscapeRoomStageResponses(
       entry !== null &&
       typeof (entry as { instanceId?: unknown }).instanceId === 'number'
   )
+}
+
+// The attempt completes once every stage except a bonus stage has an entry.
+export function isGroupEscapeRoomComplete(
+  stages: Array<{ id: number }>,
+  entries: GroupEscapeRoomStageResponse[],
+  rules: EscapeRoomRules
+) {
+  return stages.every(
+    (stage, index) =>
+      isEscapeRoomBonusStage(rules, index, stages.length) ||
+      entries.some((entry) => entry.instanceId === stage.id)
+  )
+}
+
+// Writes the team's answered stages as the group's decisions, so grading and
+// evaluation see the same record as a regular group activity submission.
+export async function completeGroupEscapeRoomDecisions(
+  prisma: DB.Prisma.TransactionClient,
+  activityId: number,
+  entries: GroupEscapeRoomStageResponse[]
+) {
+  await prisma.groupActivityInstance.update({
+    where: { id: activityId },
+    data: {
+      decisions: entries.flatMap((entry) =>
+        entry.response ? [entry.response] : []
+      ),
+      decisionsSubmittedAt: new Date(),
+    },
+  })
 }
 
 function withoutQrScanCode(response: StackResponseInput): StackResponseInput {
@@ -276,7 +324,6 @@ export async function submitEscapeRoomGroupActivityDecisions(
           transactionInstance.groupId !== groupId ||
           transactionInstance.groupActivityId !== groupActivityId ||
           transactionInstance.group.participants.length === 0 ||
-          transactionInstance.decisionsSubmittedAt ||
           !transactionInstance.groupActivity.escapeRoomConfig ||
           transactionInstance.groupActivity.status !==
             DB.PublicationStatus.PUBLISHED ||
@@ -290,16 +337,53 @@ export async function submitEscapeRoomGroupActivityDecisions(
           )
         }
 
+        const config = transactionInstance.groupActivity.escapeRoomConfig
+        const rules = getEscapeRoomRules(config)
         const attempt = await prisma.escapeRoomAttempt.findUnique({
           where: { groupId_groupActivityId: { groupId, groupActivityId } },
         })
-        if (!attempt || attempt.status !== DB.EscapeRoomStatus.IN_PROGRESS) {
+        const stages = getGroupEscapeRoomStages(
+          transactionInstance.groupActivity.stacks
+        )
+        if (stages.some((instance) => !hasEscapeRoomSampleSolution(instance))) {
+          throw new GraphQLError(
+            'Escape room group activity instances require sample solutions'
+          )
+        }
+
+        // Stages unlock in order: only the first uncleared stage may be
+        // answered, one response per submission.
+        const clearedStages = parseGroupEscapeRoomStageResponses(
+          attempt?.stageResponses
+        )
+        const clearedIds = new Set(
+          clearedStages.map((entry) => entry.instanceId)
+        )
+        const currentStage = stages.find((stage) => !clearedIds.has(stage.id))
+        const isBonus =
+          !!currentStage &&
+          isEscapeRoomBonusStage(
+            rules,
+            stages.indexOf(currentStage),
+            stages.length
+          )
+
+        // A completed attempt still accepts its one bonus answer in time.
+        const bonusAfterCompletion =
+          isBonus && attempt?.status === DB.EscapeRoomStatus.COMPLETED
+        if (
+          !attempt ||
+          (attempt.status !== DB.EscapeRoomStatus.IN_PROGRESS &&
+            !bonusAfterCompletion) ||
+          (transactionInstance.decisionsSubmittedAt && !bonusAfterCompletion)
+        ) {
           throw new GraphQLError(
             'No active escape room attempt found for this activity',
             { extensions: { code: 'ESCAPE_ROOM_NO_ATTEMPT' } }
           )
         }
         if (
+          !bonusAfterCompletion &&
           attempt.lockoutUntil &&
           dayjs().isBefore(dayjs(attempt.lockoutUntil))
         ) {
@@ -317,31 +401,18 @@ export async function submitEscapeRoomGroupActivityDecisions(
           )
         }
         if (isEscapeRoomExpired(attempt)) {
+          if (bonusAfterCompletion) {
+            throw new GraphQLError('Escape room time has expired', {
+              extensions: { code: 'ESCAPE_ROOM_EXPIRED' },
+            })
+          }
           await prisma.escapeRoomAttempt.update({
             where: { id: attempt.id },
             data: { status: DB.EscapeRoomStatus.EXPIRED },
           })
-          return { expired: true, correct: false }
+          return { kind: 'expired' as const }
         }
 
-        const stages = getGroupEscapeRoomStages(
-          transactionInstance.groupActivity.stacks
-        )
-        if (stages.some((instance) => !hasEscapeRoomSampleSolution(instance))) {
-          throw new GraphQLError(
-            'Escape room group activity instances require sample solutions'
-          )
-        }
-
-        // Stages unlock in order: only the first uncleared stage may be
-        // answered, one response per submission.
-        const clearedStages = parseGroupEscapeRoomStageResponses(
-          attempt.stageResponses
-        )
-        const clearedIds = new Set(
-          clearedStages.map((entry) => entry.instanceId)
-        )
-        const currentStage = stages.find((stage) => !clearedIds.has(stage.id))
         const [response] = responses
         if (!currentStage || !response) throw invalidResponseSet()
         if (
@@ -370,73 +441,117 @@ export async function submitEscapeRoomGroupActivityDecisions(
           instance: currentStage,
           response,
         })
+        const now = new Date()
 
-        if (!correct) {
+        if (isBonus) {
           await prisma.escapeRoomAttempt.update({
             where: { id: attempt.id },
             data: {
-              lockoutUntil: dayjs()
-                .add(
-                  transactionInstance.groupActivity.escapeRoomConfig
-                    .lockoutSeconds,
-                  'second'
-                )
+              stageResponses: [
+                ...clearedStages,
+                {
+                  instanceId: currentStage.id,
+                  response: withoutQrScanCode(response),
+                  clearedAt: now.toISOString(),
+                  outcome: correct ? 'BONUS_CORRECT' : 'BONUS_WRONG',
+                  creditSeconds: getEscapeRoomBonusCredit(rules, correct),
+                },
+              ] as unknown as DB.Prisma.InputJsonValue,
+            },
+          })
+          return { kind: 'bonus' as const }
+        }
+
+        const outcomes = parseEscapeRoomStageOutcomes(attempt.stageOutcomes)
+        const currentOutcome = getStageOutcome(outcomes, currentStage.id)
+        const wrong = correct
+          ? null
+          : applyEscapeRoomWrongAnswer(rules, currentOutcome.wrongAttempts)
+
+        if (wrong && !wrong.revealed) {
+          await prisma.escapeRoomAttempt.update({
+            where: { id: attempt.id },
+            data: {
+              stageOutcomes: setStageOutcome(outcomes, {
+                ...currentOutcome,
+                wrongAttempts: wrong.wrongAttempts,
+              }) as unknown as DB.Prisma.InputJsonValue,
+              ...(wrong.penaltySeconds > 0
+                ? { penaltySeconds: { increment: wrong.penaltySeconds } }
+                : {}),
+              lockoutUntil: dayjs(now)
+                .add(config.lockoutSeconds, 'second')
                 .toDate(),
             },
           })
-          return { expired: false, correct: false }
+          return { kind: 'wrong' as const, attemptsLeft: wrong.attemptsLeft }
         }
 
-        const nextStages = [
+        const nextStages: GroupEscapeRoomStageResponse[] = [
           ...clearedStages,
-          {
-            instanceId: currentStage.id,
-            response: withoutQrScanCode(response),
-            clearedAt: new Date().toISOString(),
-          },
+          wrong
+            ? {
+                instanceId: currentStage.id,
+                response: null,
+                clearedAt: now.toISOString(),
+                outcome: 'REVEALED',
+              }
+            : {
+                instanceId: currentStage.id,
+                response: withoutQrScanCode(response),
+                clearedAt: now.toISOString(),
+                outcome: 'SOLVED',
+              },
         ]
-        const completed = stages.every((stage) =>
-          nextStages.some((entry) => entry.instanceId === stage.id)
-        )
+        const completed = isGroupEscapeRoomComplete(stages, nextStages, rules)
         await prisma.escapeRoomAttempt.update({
           where: { id: attempt.id },
           data: {
             stageResponses: nextStages as unknown as DB.Prisma.InputJsonValue,
-            ...(completed
+            ...(wrong
               ? {
-                  status: DB.EscapeRoomStatus.COMPLETED,
-                  completedAt: new Date(),
+                  stageOutcomes: setStageOutcome(outcomes, {
+                    ...currentOutcome,
+                    wrongAttempts: wrong.wrongAttempts,
+                    outcome: 'REVEALED',
+                    at: now.toISOString(),
+                  }) as unknown as DB.Prisma.InputJsonValue,
+                  penaltySeconds: { increment: wrong.penaltySeconds },
                 }
+              : {}),
+            ...(completed
+              ? { status: DB.EscapeRoomStatus.COMPLETED, completedAt: now }
               : {}),
           },
         })
         if (completed) {
-          await prisma.groupActivityInstance.update({
-            where: { id: activityId },
-            data: {
-              decisions: nextStages.map((entry) => entry.response),
-              decisionsSubmittedAt: new Date(),
-            },
-          })
+          await completeGroupEscapeRoomDecisions(prisma, activityId, nextStages)
         }
 
-        return { expired: false, correct: true }
+        return { kind: wrong ? ('revealed' as const) : ('correct' as const) }
       },
       { isolationLevel: DB.Prisma.TransactionIsolationLevel.Serializable }
     )
 
-    if (result.expired) {
+    if (result.kind === 'expired') {
       throw new GraphQLError('Escape room time has expired', {
         extensions: { code: 'ESCAPE_ROOM_EXPIRED' },
       })
     }
-    if (!result.correct) {
+    if (result.kind === 'wrong') {
       throw new GraphQLError('This answer is incorrect. You are locked out.', {
         extensions: {
           code: 'ESCAPE_ROOM_LOCKOUT',
           lockoutRemainingSeconds: lockoutSeconds,
+          attemptsLeft: result.attemptsLeft,
         },
       })
+    }
+    if (result.kind === 'revealed') {
+      throw new GraphQLError(
+        'Too many incorrect answers. The solution was revealed.',
+        { extensions: { code: 'ESCAPE_ROOM_REVEALED' } }
+      )
     }
     return activityId
   } catch (error) {

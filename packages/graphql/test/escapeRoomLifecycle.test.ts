@@ -678,7 +678,7 @@ describe('respondToElementStack - attempt expiry', () => {
 // #endregion
 
 describe('server-authoritative remaining time', () => {
-  it('calculates from server time, including penalties and boundary clamping', () => {
+  it('calculates from server time and ignores ranked-time penalties', () => {
     const serverNow = Date.parse('2026-07-11T12:00:00.000Z')
     const attempt = {
       startedAt: new Date(serverNow - 10_250),
@@ -686,13 +686,13 @@ describe('server-authoritative remaining time', () => {
       penaltySeconds: 5,
     }
 
-    expect(getEscapeRoomRemainingSeconds(attempt, serverNow)).toBe(45)
-    expect(getEscapeRoomExpiresInSeconds(attempt, serverNow)).toBe(50)
-    expect(getEscapeRoomRemainingSeconds(attempt, serverNow + 44_749)).toBe(1)
+    expect(getEscapeRoomRemainingSeconds(attempt, serverNow)).toBe(50)
+    expect(getEscapeRoomExpiresInSeconds(attempt, serverNow)).toBe(55)
+    expect(getEscapeRoomRemainingSeconds(attempt, serverNow + 49_749)).toBe(1)
     expect(getEscapeRoomRemainingSeconds(attempt, serverNow + 60_000)).toBe(0)
-    expect(getEscapeRoomExpiresInSeconds(attempt, serverNow + 49_749)).toBe(1)
-    expect(getEscapeRoomExpiresInSeconds(attempt, serverNow + 50_000)).toBe(0)
-    expect(isEscapeRoomExpired(attempt, serverNow + 49_750)).toBe(false)
-    expect(isEscapeRoomExpired(attempt, serverNow + 49_751)).toBe(true)
+    expect(getEscapeRoomExpiresInSeconds(attempt, serverNow + 54_749)).toBe(1)
+    expect(getEscapeRoomExpiresInSeconds(attempt, serverNow + 55_000)).toBe(0)
+    expect(isEscapeRoomExpired(attempt, serverNow + 54_750)).toBe(false)
+    expect(isEscapeRoomExpired(attempt, serverNow + 54_751)).toBe(true)
   })
 })

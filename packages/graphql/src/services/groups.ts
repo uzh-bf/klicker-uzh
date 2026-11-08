@@ -1684,7 +1684,10 @@ export async function submitGroupActivityDecisions(
   if (
     !groupActivityInstance ||
     groupActivityInstance.group.participants.length === 0 ||
-    !!groupActivityInstance.decisionsSubmittedAt ||
+    // Escape rooms check submitted decisions themselves: a completed attempt
+    // still accepts its bonus answer.
+    (!!groupActivityInstance.decisionsSubmittedAt &&
+      !groupActivityInstance.groupActivity.escapeRoomConfig) ||
     groupActivityInstance.groupActivity.status === DB.PublicationStatus.DRAFT ||
     groupActivityInstance.groupActivity.status ===
       DB.PublicationStatus.SCHEDULED ||
