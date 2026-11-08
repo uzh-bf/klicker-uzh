@@ -1393,7 +1393,7 @@ Da die KlickerUZH-App noch nicht im iOS-App-Store verfügbar ist, folgen Sie die
         'Die Zeit ist abgelaufen! Dieser Versuch ist abgelaufen.',
       escapeRoomCompletedTitle: 'Erfolgreich entkommen!',
       escapeRoomCompletedDesc:
-        'Herzlichen Glückwunsch! Du hast alle Fragen richtig beantwortet und den Escape Room abgeschlossen.',
+        'Herzlichen Glückwunsch! Du hast alle Fragen hinter dir und den Escape Room abgeschlossen.',
       escapeRoomTitle: 'Escape Room',
       escapeRoomTimeRemaining: 'Verbleibende Zeit',
       escapeRoomContactLecturer:

@@ -1380,7 +1380,7 @@ Since the KlickerUZH app is not yet available in the iOS App Store, follow these
       escapeRoomExpiredDesc: 'You ran out of time! This attempt has expired.',
       escapeRoomCompletedTitle: 'Escaped successfully!',
       escapeRoomCompletedDesc:
-        'Congratulations! You answered all questions correctly and completed the escape room.',
+        'Congratulations! You cleared every question and completed the escape room.',
       escapeRoomTitle: 'Escape Room',
       escapeRoomTimeRemaining: 'Time remaining',
       escapeRoomContactLecturer:

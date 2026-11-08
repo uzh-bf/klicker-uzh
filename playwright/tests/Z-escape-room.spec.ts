@@ -23,6 +23,7 @@ import {
   registerPracticeEscapeRoomTests,
   registerQrFallbackTest,
 } from './escape-room/practice-quiz.js'
+import { registerEscapeRoomRulesTests } from './escape-room/rules.js'
 import { CT1, QR, SC1, SC2 } from './escape-room/shared.js'
 
 test.describe.serial('Escape room workflows', () => {
@@ -67,6 +68,7 @@ test.describe.serial('Escape room workflows', () => {
   })
 
   registerPracticeEscapeRoomTests()
+  registerEscapeRoomRulesTests()
   registerMicrolearningCreationTest()
   registerQrFallbackTest()
   registerMicrolearningFlowTest()
