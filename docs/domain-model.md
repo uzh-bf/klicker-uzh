@@ -169,7 +169,7 @@ Practice Quizzes, Microlearnings, Group Activities, and individual Live Quiz blo
 - **Penalties count only toward the ranked time.** The countdown ignores them, so an attempt expires at `startedAt + timeLimit` plus the grace period.
 - **Ranking** orders attempts by solved stages (reveal, skip, and bonus excluded), then by ranked time: the last non-bonus stage outcome minus the start, plus penalties, minus the bonus credit. The lecturer dashboard shows the rank, the outcome counts, and the ranked time.
 
-Individual attempts store outcomes in `EscapeRoomAttempt.stageOutcomes`, keyed by stack ID. Group attempts append revealed, skipped, and bonus stages to `stageResponses` (with a `null` response for reveal and skip); their `stageOutcomes` only count wrong attempts.
+Individual attempts store outcomes in `EscapeRoomAttempt.stageOutcomes`, keyed by stack ID. Group attempts append revealed, skipped, and bonus stages to `stageResponses` (with a `null` response for reveal and skip); their `stageOutcomes` hold the wrong-attempt counts and mirror the reveal, skip, and bonus outcomes that the participant view reads.
 
 ### Individual Practice Quiz and Microlearning
 

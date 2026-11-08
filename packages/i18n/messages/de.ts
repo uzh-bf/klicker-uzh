@@ -1409,9 +1409,35 @@ Da die KlickerUZH-App noch nicht im iOS-App-Store verfügbar ist, folgen Sie die
         'Beantworte die vorherigen Fragen richtig, bevor du diesen Schritt bearbeitest.',
       escapeRoomForbiddenToast:
         'Dieser Escape Room kann nur mit einem aktiven Versuch beantwortet werden.',
-      escapeRoomRequestHint: 'Hinweis anzeigen (−{penalty}s)',
+      escapeRoomRequestHint: 'Hinweis anzeigen (+{penalty}s Wertungszeit)',
       escapeRoomHintRevealedToast:
-        'Hinweis angezeigt — {penalty}s zu deiner Zeit hinzugefügt.',
+        'Hinweis angezeigt — {penalty}s zu deiner Wertungszeit hinzugefügt.',
+      escapeRoomNextHint:
+        'Nächsten Hinweis anzeigen (+{penalty}s Wertungszeit)',
+      escapeRoomTriesLeft: 'Verbleibende Versuche: {count}',
+      escapeRoomWrongTriesToast:
+        'Falsche Antwort! {count, plural, one {# Versuch} other {# Versuche}} übrig.',
+      escapeRoomRevealedNotice:
+        'Keine Versuche mehr. Die Frage gilt als gelöst (+{penalty}s Wertungszeit).',
+      escapeRoomRevealedToast:
+        'Keine Versuche mehr — die Frage gilt als gelöst. Weiter geht es.',
+      escapeRoomSkip: 'Frage überspringen (+{penalty}s Wertungszeit)',
+      escapeRoomSkipConfirm:
+        'Diese Frage überspringen? Sie gilt als gelöst und addiert {penalty}s zu deiner Wertungszeit.',
+      escapeRoomSkipConfirmButton: 'Ja, überspringen',
+      escapeRoomSkippedToast:
+        'Frage übersprungen — {penalty}s zu deiner Wertungszeit hinzugefügt.',
+      escapeRoomSkipDisabledToast:
+        'Überspringen ist in diesem Escape Room nicht erlaubt.',
+      escapeRoomBonusOffer:
+        'Bonus: Bei richtiger Antwort −{seconds}s Wertungszeit',
+      escapeRoomBonusDesc:
+        'Eine Bonusfrage ist noch offen, solange Zeit bleibt. Du hast nur einen Versuch.',
+      escapeRoomBonusCorrect:
+        'Bonusfrage richtig beantwortet: −{seconds}s Wertungszeit.',
+      escapeRoomBonusWrong:
+        'Bonusfrage falsch beantwortet: keine Zeitgutschrift.',
+      escapeRoomBonusSubmitted: 'Bonus-Antwort abgegeben.',
       escapeRoomStagesLabel: 'Stationen',
       escapeRoomStagesCleared: 'Gelöste Stationen',
       escapeRoomClearedProgress:

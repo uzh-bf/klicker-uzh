@@ -56,8 +56,10 @@ fragment MicroLearningDataWithoutSolutions on MicroLearning {
       type
       elementType
       revealedHint
+      revealedHints
       options {
         hasHint
+        hintCount
       }
       ...ElementDataWithoutSolutions
     }
