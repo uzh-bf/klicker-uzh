@@ -31,6 +31,8 @@ function ElementTypeMonitor({
       setElementDataTypename('SelectionElementData')
     } else if (elementType === ElementType.CaseStudy) {
       setElementDataTypename('CaseStudyElementData')
+    } else if (elementType === ElementType.QrScan) {
+      setElementDataTypename('QrScanElementData')
     } else {
       setElementDataTypename('ContentElementData')
     }

@@ -52,7 +52,12 @@ Facts (auth ladder, layering, error conventions): [docs/graphql-api-layer.md](..
    never gate administrative mutations with a visibility flag (see
    `services/chatAccountUsage.ts` for the pattern).
 
+   Answer-bearing fields require defense in depth: use the exact object-level
+   `OWNER` gate in the schema and repeat the exact-owner predicate in the
+   service query. UI visibility is not authorization.
+
 4. **Arg validation** — Zod plugin `validate:` on args (email/regex/length examples in `mutation.ts`).
+   For activity element inputs, validate the resolved new, retained, and duplicated element types in the service before any write. Template instantiation is a separate input path and needs the same fail-closed check.
 5. **Client op** — new file `packages/graphql/src/graphql/ops/<Prefix><Name>.graphql`; prefix `Q`/`M`/`S`/`F` matches the kind. Reuse `F*` fragments where they exist.
 6. **Codegen — never skip:**
 

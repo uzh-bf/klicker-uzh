@@ -38,3 +38,6 @@ export * from './chatModelRegistry.js'
 export * from './chatbotStandardModeConfig.js'
 
 export * from './participantAccountDataUse.js'
+
+// export QR scan code helpers
+export * from './qrScan.js'

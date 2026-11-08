@@ -95,6 +95,15 @@ export function processElementData(
       id: `${element.id}-v${element.version}`,
       elementId: element.id,
     }
+  } else if (element.type === PrismaElementType.QR_SCAN) {
+    // Never copy Element.qrScanCode into participant-facing instance data.
+    return {
+      ...pick(element, QUESTION_KEYS),
+      type: element.type,
+      options: {},
+      id: `${element.id}-v${element.version}`,
+      elementId: element.id,
+    }
   } else if (
     element.type === PrismaElementType.SELECTION &&
     'hasSampleSolution' in element.options &&
@@ -218,6 +227,8 @@ export function getInitialInstanceResults(
     return {
       total: 0,
     }
+  } else if (elementData.type === PrismaElementType.QR_SCAN) {
+    return { total: 0 }
   } else if (elementData.type === PrismaElementType.SELECTION) {
     if (
       !('answerCollection' in elementData.options) ||

@@ -235,5 +235,27 @@ query GetSingleElement($id: Int!) {
         order
       }
     }
+
+    ... on QrScanElement {
+      id
+      version
+      name
+      status
+      type
+      content
+      explanation
+      basePoints
+      pointsMultiplier
+
+      isOwner
+      isManager
+      isEditor
+
+      tags {
+        id
+        name
+        order
+      }
+    }
   }
 }

@@ -2,6 +2,7 @@ import type { Hatchet } from '@hatchet-dev/typescript-sdk'
 import {
   AuditLogType,
   ElementInstanceType,
+  ElementStatus,
   ElementType,
   ObjectAccess,
   ObjectType,
@@ -11,10 +12,12 @@ import {
 import { ChoicesElementData, ElementInstanceResults } from '@klicker-uzh/types'
 import {
   MISSING_CATALOG_COLLECTION_ID,
+  generateQrScanCode,
   recomputeDerivedPermissions,
 } from '@klicker-uzh/util'
 import { EventEmitter } from 'events'
 import type { ContextWithUser } from '../src/lib/context.js'
+import { getQrScanPrintData } from '../src/services/elements.js'
 import {
   addObjectToCatalog,
   cancelObjectSharingRequest,
@@ -2479,6 +2482,52 @@ describe('Integration tests for sharing functionalities of elements (questions, 
     expect(publicRequestUserFour2?.userId).toBe(userFour.id)
     expect(publicRequestUserFour2?.userEmail).toBe(userFour.email)
     expect(publicRequestUserFour2?.userShortname).toBe(userFour.shortname)
+  })
+
+  it('regenerates QR scan codes when importing a catalog element', async () => {
+    const sourceCode = generateQrScanCode()
+    const source = await prisma.element.create({
+      data: {
+        type: ElementType.QR_SCAN,
+        status: ElementStatus.READY,
+        name: 'Catalog QR source',
+        content: 'Find the source code',
+        explanation: null,
+        basePoints: true,
+        pointsMultiplier: 1,
+        options: {},
+        qrScanCode: sourceCode,
+        ownerId: userOne.id,
+      },
+    })
+
+    await prisma.catalogCollectionAssignment.create({
+      data: {
+        access: ObjectAccess.PUBLIC,
+        catalogCollectionId: MISSING_CATALOG_COLLECTION_ID,
+        elementId: source.id,
+      },
+    })
+
+    await expect(
+      copyElementToAccount(
+        {
+          catalogCollectionId: MISSING_CATALOG_COLLECTION_ID,
+          elementId: source.id,
+        },
+        userFiveCtx
+      )
+    ).resolves.toBe(true)
+
+    const imported = await prisma.element.findFirstOrThrow({
+      where: { originalId: String(source.id), ownerId: userFive.id },
+    })
+
+    expect(imported.qrScanCode).toMatch(/^[A-Za-z0-9_-]{12}$/)
+    expect(imported.qrScanCode).not.toBe(sourceCode)
+    await expect(
+      getQrScanPrintData({ elementId: imported.id, decoyCount: 0 }, userFiveCtx)
+    ).resolves.toMatchObject({ code: imported.qrScanCode })
   })
   // #endregion
 })
