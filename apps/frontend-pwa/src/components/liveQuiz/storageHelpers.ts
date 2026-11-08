@@ -9,7 +9,11 @@ import {
   validateScResponse,
   validateSelectionResponse,
 } from '@klicker-uzh/shared-components/src/utils/validateResponse'
-import { FreeTextElementData, NumericalElementData } from '@klicker-uzh/types'
+import {
+  FreeTextElementData,
+  isValidQrScanCode,
+  NumericalElementData,
+} from '@klicker-uzh/types'
 import dayjs from 'dayjs'
 import localforage from 'localforage'
 import { Dispatch, SetStateAction } from 'react'
@@ -124,6 +128,9 @@ export async function loadStoredResponse({
             options: (currentInstance.elementData as FreeTextElementData)
               .options,
           })
+          setStudentResponse((prev) => ({ ...prev, valid }))
+        } else if (currentInstance.elementType === ElementType.QrScan) {
+          const valid = isValidQrScanCode(tempStored)
           setStudentResponse((prev) => ({ ...prev, valid }))
         } else if (currentInstance.elementType === ElementType.Selection) {
           const valid = validateSelectionResponse({ response: tempStored })

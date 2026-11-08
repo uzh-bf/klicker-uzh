@@ -1,6 +1,6 @@
 # Escape Room — Stacked Delivery Plan
 
-- **Status:** Approved; execution in progress
+- **Status:** Implemented, verified, and published as a draft stack
 - **Goal:** Replace the oversized PR #5143 with a reviewable stack while preserving its completed implementation.
 - **Source of truth:** `codex/escape-room-production` at `4be19aa61`
 - **Starting trunk:** `v3` at `f16b9ceb4` (Prisma 7)
@@ -158,13 +158,29 @@ When blocked by environment or authentication, complete every independent local 
 - [x] Extract and verify Layer 1.
 - [x] Add, extract, and verify Layer 2.
 - [x] Add, extract, and verify Layer 3.
-- [ ] Add, extract, and verify Layer 4.
-- [ ] Run final stack-wide review and verification gates.
-- [ ] Publish draft PRs and read back stack/PR state.
+- [x] Add, extract, and verify Layer 4.
+- [x] Run final stack-wide review and verification gates.
+- [x] Publish draft PRs and read back stack/PR state.
 
-## Current blocker
+## Publication state
 
-- `gh auth status` reports that the active `rschlaefli` token is invalid. Local stack work can continue; draft publication requires re-authentication before `gh stack submit --auto`.
+- `gh auth status` confirms the active `rschlaefli` account is authenticated
+  with repository and workflow scopes. No external publication blocker is
+  currently known.
+- `gh stack submit --auto` pushed all four branches and created GitHub stack
+  #5228. The original SSH remote was restored after authenticated HTTPS
+  submission worked around a local SSH-agent refusal.
+- GitHub read-back confirmed each PR's title, full body, chained base and head,
+  open state, and draft state:
+
+| Layer | Draft PR | Base | Head |
+| --- | --- | --- | --- |
+| QR Scan foundation | [#5224](https://github.com/uzh-bf/klicker-uzh/pull/5224) | `v3` | `codex/escape-room-qr` |
+| Individual Escape Rooms | [#5225](https://github.com/uzh-bf/klicker-uzh/pull/5225) | `codex/escape-room-qr` | `codex/escape-room-individual` |
+| Group Activity Escape Rooms | [#5226](https://github.com/uzh-bf/klicker-uzh/pull/5226) | `codex/escape-room-individual` | `codex/escape-room-group` |
+| Live Quiz Escape Rooms | [#5227](https://github.com/uzh-bf/klicker-uzh/pull/5227) | `codex/escape-room-group` | `codex/escape-room-live` |
+
+- No PR was marked ready, merged, queued, reordered, unstacked, or deleted.
 
 ## Layer 1 corrective follow-up — 2026-08-01
 
@@ -211,16 +227,23 @@ The review found that client-only filtering after the existing `numEntries`/`off
 
 ## Layer 1 evidence
 
-- **Primary implementation commits:** `4ce964b08`, `01b7693a4`, `a270c49b5`, `37eacfb31`; the final review correction is committed with this progress update.
-- **Verification:** affected package checks, 13 focused GraphQL contract and placement tests, full `check:all`, full production build, Prisma 7 empty-schema replay and clean diff, analytics schema parity, and desktop/mobile browser evidence all passed.
+- **Implementation commits:** `4ce964b08`, `01b7693a4`, `a270c49b5`,
+  `37eacfb31`, `0a430ec8e`, `b469e382a`, and `488ff84e3`.
+- **Verification:** affected package checks, 14 focused GraphQL contract and
+  placement tests, full `check:all`, full production build, Prisma 7
+  empty-schema replay and clean diff, analytics schema parity, and
+  desktop/mobile browser evidence all passed.
 - **Independent review:** the security/correctness review found one minor no-op QR sample-solution control. QR Scan was removed from that UI capability group and the owner edit flow was rechecked semantically and visually. The simplification review found no code changes that reduced complexity without weakening the contracts.
+- **Final review corrections:** shared GraphQL element definitions were split
+  into focused modules after `element.ts` crossed the repository's
+  maintainability threshold, and requested QR decoy counts are truncated and
+  bounded before allocation.
 - **Known unrelated validation debt:** the engineering-wiki validator still reports the pre-existing missing `type` field in `docs/solutions/best-practice/repeat-production-seeds-use-prior-state.md`; Layer 1 documentation itself passes repository formatting and type checks.
 
 ## Layer 2 evidence
 
-- **Implementation commits:** `0ab3141bf`, `c2bd07757`, `ae33b4e4d`,
-  `ecef38846`, `844de0875`, `43ab3c0ee`, and review correction
-  `4d408b883`.
+- **Implementation commits:** `768b5a596`, `679323573`, `731f064a6`,
+  `65f7e38fa`, `2a3535fbf`, `0818f7abd`, `d99c16f44`, and `4ecd7a29a`.
 - **Verification:** 60 focused GraphQL Escape Room tests, three QR utility
   tests, one PWA response-state test, repository-wide `check:all`, the full
   22-workspace production build, and all 16 routed Individual Escape Room
@@ -253,8 +276,8 @@ The review found that client-only filtering after the existing `numEntries`/`off
 
 ## Layer 3 evidence
 
-- **Implementation commits:** `b07726167`, `ffc79e4d2`, `40d1e99e8`,
-  `4d4e682f6`, `33275873a`, and review correction `ac8a49d15`.
+- **Implementation commits:** `79b3fb0b3`, `30d352956`, `6ef0a66a9`,
+  `ee6e83a98`, `ef45b977a`, `bcb239d03`, and `b45f1c4d9`.
 - **Verification:** 85 focused GraphQL Escape Room tests, affected GraphQL,
   PWA, and Playwright checks, repository-wide `check:all`, the full
   22-workspace production build, and all 18 routed Escape Room Playwright
@@ -279,3 +302,62 @@ The review found that client-only filtering after the existing `numEntries`/`off
   response API/worker behavior, or Live-specific GraphQL inputs. The per-layer
   verification README records the screenshots, commands, review corrections,
   and the unchanged wiki-validator baseline warning.
+
+## Layer 4 evidence
+
+- **Implementation commits:** `5d5ed60fe`, `613a68b00`, `a18f3e1e3`,
+  `e9d7f462c`, `6dcf20daf`, `f83839158`, `216f004f0`, `b31c50c41`, and
+  `f20681e83`.
+- **Verification:** 102 non-template GraphQL Escape Room/QR tests and the
+  isolated template test, 27 Response API enforcement tests, four util
+  response-closure tests, eight response-processor deduplication tests, one PWA
+  response serialization/parsing test, and affected GraphQL, Response API,
+  worker, Manage, PWA, and Playwright checks passed. Generated GraphQL
+  artifacts are current.
+- **Browser evidence:** all 20 ordered Escape Room Chromium scenarios passed.
+  Live-specific coverage verifies block-setting edit round-trip, explicit
+  participant start, incorrect-answer lockout, reload, completion, German
+  cockpit progress, lecturer reset, and return to the protected start state
+  through the real Response API and worker.
+- **Environment correction:** browser verification exposed that all
+  devcontainer variants configured the Response API origin without the
+  required `/AddResponse` path. Primary, linked, and direct-local URLs now
+  route Live Quiz submissions to the actual POST endpoint; devrouter
+  fingerprint reconciliation restarted the exact stack process with the
+  corrected value.
+- **Documentation:** the lecturer and student tutorials now cover all four
+  Escape Room modes. The engineering wiki and data-model, GraphQL, frontend,
+  and verification skills describe the Live-specific contracts. The
+  production Docusaurus build passed.
+- **Extraction boundary:** the Live layer reuses the source implementation at
+  `4be19aa61` while preserving lower-layer corrections: explicit routed Group
+  identity, group roster monitoring, QR placement regression tests, and
+  fail-closed template validation. The per-layer verification README records
+  exact commands, screenshots, and the final OKF validator result.
+- **Final stack-wide gates:** repository-wide `check:all`, the full
+  22-workspace production build, and the current-head ordered Chromium suite
+  all passed; the browser suite completed 20/20 scenarios against the exact
+  routed DevPod. The response path now rejects malformed payload shapes with a
+  400 response, reuses the canonical supported element set for progress, and
+  keeps timers monotonic across reloads.
+- **Security and static analysis:** the branch security review found no
+  high-confidence finding in the new authorization, response, CORS, lifecycle,
+  or data-disclosure paths. Opengrep reported one new changed-line match for
+  the exact-origin CORS allowlist; manual inspection confirmed that the
+  allowlist compares the full request origin against configured application
+  origins and does not use the flagged substring pattern.
+
+## Top-of-stack source disposition
+
+The final source-path inventory against `4be19aa61` has the following
+intentional omissions:
+
+| Source path | Disposition |
+| --- | --- |
+| `packages/graphql/src/graphql/ops/QGetCourseGroupActivities.graphql` | The source added `escapeRoomConfig`, but the only course-list consumer does not read it; the activity detail query owns runtime settings. Omitting the unused fields avoids list overfetch without removing behavior. |
+| `project/2026-07-07-pr-5143-escape-room-quiz-mode-plan.md` and `project/2026-07-10-pr-5143-escape-room-implementation-review.md` | Superseded by this approved stacked-delivery plan and its per-layer progress/evidence. |
+| `project/2026-07-19-escape-room-verification/*` | Superseded by current-head, per-layer browser evidence under the four dated verification directories. |
+
+The source's Live Quiz SSR authentication note, local `/AddResponse` routing
+note, and OKF solution frontmatter are retained. Generated artifacts were
+regenerated on current `v3`; no source behavior is omitted implicitly.

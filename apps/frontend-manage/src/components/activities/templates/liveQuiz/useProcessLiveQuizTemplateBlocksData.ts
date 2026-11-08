@@ -15,6 +15,7 @@ import {
   prepareFlashcardArgs,
   prepareFreeTextArgs,
   prepareNumericalArgs,
+  prepareQrScanArgs,
   prepareSelectionArgs,
 } from '../../../elements/manipulation/helpers'
 import extractFormValuesFromElementInstance from '../extractFormValuesFromElementInstance'
@@ -128,6 +129,21 @@ function useProcessLiveQuizTemplateBlocksData() {
                   ...omitBy(args, (_, key) => key === 'options'),
                   type: ElementType.FreeText,
                   freeTextOptions: args.options,
+                }
+
+                break
+              }
+
+              case ElementType.QrScan: {
+                const args = prepareQrScanArgs({
+                  elementId: undefined,
+                  isDuplication: false,
+                  values: { ...values, status: ElementStatus.Ready },
+                })
+
+                elementManipulationData = {
+                  ...args,
+                  type: ElementType.QrScan,
                 }
 
                 break
@@ -263,6 +279,11 @@ function useProcessLiveQuizTemplateBlocksData() {
       return {
         order: blockIx,
         timeLimit: block.timeLimit ? parseFloat(block.timeLimit) : null,
+        isEscapeRoom: block.isEscapeRoom,
+        escapeRoomTimeLimit: block.escapeRoomTimeLimit,
+        escapeRoomHintPenalty: block.escapeRoomHintPenalty,
+        escapeRoomLockoutSeconds: block.escapeRoomLockoutSeconds,
+        escapeRoomIntroText: block.escapeRoomIntroText,
         elements: resolvedElements,
       }
     })

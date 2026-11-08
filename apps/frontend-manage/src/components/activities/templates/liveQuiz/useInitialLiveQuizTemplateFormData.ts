@@ -40,6 +40,11 @@ function useInitialLiveQuizTemplateFormData({
       blocks:
         liveQuiz.blocks?.map((block) => ({
           timeLimit: block.timeLimit ? String(block.timeLimit) : undefined,
+          isEscapeRoom: !!block.escapeRoomConfig,
+          escapeRoomTimeLimit: block.escapeRoomConfig?.timeLimit,
+          escapeRoomHintPenalty: block.escapeRoomConfig?.hintPenalty,
+          escapeRoomLockoutSeconds: block.escapeRoomConfig?.lockoutSeconds,
+          escapeRoomIntroText: block.escapeRoomConfig?.introText,
           elements:
             block.elements?.map((element) => ({
               processed: false,

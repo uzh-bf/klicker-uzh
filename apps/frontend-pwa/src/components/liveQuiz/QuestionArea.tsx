@@ -1,3 +1,4 @@
+import useRemainingInstances from '@components/hooks/useRemainingInstances'
 import { faCheck } from '@fortawesome/free-solid-svg-icons'
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome'
 import { ElementInstance, ElementType } from '@klicker-uzh/graphql/dist/ops'
@@ -14,7 +15,14 @@ import { useTranslations } from 'next-intl'
 import dynamic from 'next/dynamic'
 import React, { useEffect, useRef, useState } from 'react'
 import { isDeepEqual } from 'remeda'
-import useRemainingInstances from '../hooks/useRemainingInstances'
+import {
+  type LiveQuizEscapeRoomAttempt,
+  useLiveQuizEscapeRoom,
+} from '../hooks/useLiveQuizEscapeRoom'
+import {
+  LiveQuizEscapeRoomOverlay,
+  LiveQuizEscapeRoomQuestionControls,
+} from './LiveQuizEscapeRoomControls'
 import { loadStoredResponse, updateStoredResponses } from './storageHelpers'
 
 const ConfettiExplosion = dynamic(() => import('react-confetti-explosion'), {
@@ -38,11 +46,27 @@ interface QuestionAreaProps {
     type: ElementType
     answer: any
     correlationKey?: string | null
-  }) => Promise<{ statusCode: number; responseTimestamp?: number }>
+  }) => Promise<{
+    statusCode: number
+    responseTimestamp?: number
+    responseStatus?: string
+    lockoutUntil?: string
+    completed?: boolean
+  }>
   quizId: string
   execution: number
   timeLimit?: number
   isStaticPreview?: boolean
+  blockId?: number
+  escapeRoomConfig?: {
+    timeLimit: number
+    hintPenalty: number
+    introText?: string | null
+  } | null
+  initialEscapeRoomAttempt?: LiveQuizEscapeRoomAttempt | null
+  escapeRoomTotalInstances?: number | null
+  escapeRoomClearedInstances?: number | null
+  refetchLiveQuiz?: () => Promise<unknown>
 }
 
 function QuestionArea({
@@ -54,6 +78,12 @@ function QuestionArea({
   quizId,
   timeLimit,
   execution,
+  blockId,
+  escapeRoomConfig,
+  initialEscapeRoomAttempt,
+  escapeRoomTotalInstances,
+  escapeRoomClearedInstances,
+  refetchLiveQuiz,
 }: QuestionAreaProps): React.ReactElement {
   const t = useTranslations()
 
@@ -62,10 +92,30 @@ function QuestionArea({
   const [remainingQuestions, setRemainingQuestions] = useState<number[] | null>(
     null
   )
-
   const [submittedAt, setSubmittedAt] = useState<number | null>(null)
   const [activeInstance, setActiveInstance] = useState<number>(0)
   const currentInstance = instances[activeInstance]
+  const escapeRoom = useLiveQuizEscapeRoom({
+    blockId,
+    config: escapeRoomConfig,
+    initialAttempt: initialEscapeRoomAttempt,
+    instances,
+    currentInstance,
+    refetch: refetchLiveQuiz,
+  })
+  const responseStorageQuizId = escapeRoom.attempt?.id
+    ? `${quizId}-escape-${escapeRoom.attempt.id}`
+    : quizId
+  const renderedAttemptIdRef = useRef(initialEscapeRoomAttempt?.id ?? null)
+
+  useEffect(() => {
+    const nextAttemptId = escapeRoom.attempt?.id ?? null
+    if (renderedAttemptIdRef.current === nextAttemptId) return
+
+    renderedAttemptIdRef.current = nextAttemptId
+    setRemainingQuestions(null)
+    setActiveInstance(0)
+  }, [escapeRoom.attempt?.id])
 
   // initialize student response with default state (FT question) - is overwritten on instance change
   const [studentResponse, setStudentResponse] =
@@ -79,6 +129,7 @@ function QuestionArea({
   useSingleStudentResponse({
     instance: currentInstance,
     setStudentResponse,
+    resetKey: responseStorageQuizId,
   })
 
   // keep a ref to the latest studentResponse for autosave
@@ -101,7 +152,7 @@ function QuestionArea({
     setSubmittedAt(null)
 
     loadStoredResponse({
-      quizId,
+      quizId: responseStorageQuizId,
       execution,
       currentInstance,
       setStudentResponse: safeSetStudentResponse,
@@ -113,7 +164,7 @@ function QuestionArea({
     }
 
     // re-run when quizId/execution/instance changes
-  }, [quizId, execution, currentInstance?.id])
+  }, [responseStorageQuizId, execution, currentInstance?.id])
 
   // periodically store the in-progress response in a temporary key
   useEffect(() => {
@@ -124,11 +175,11 @@ function QuestionArea({
       if (!currentInstance) return
 
       // if the answer to this instance has already been submitted, do not store a temporary response
-      const storageKey = `lq-${quizId}-ex-${execution}-i-${currentInstance.id}`
+      const storageKey = `lq-${responseStorageQuizId}-ex-${execution}-i-${currentInstance.id}`
       const stored = await localforage.getItem(storageKey)
       if (stored) return
 
-      const key = `lq-${quizId}-ex-${execution}-i-${currentInstance.id}-temp`
+      const key = `lq-${responseStorageQuizId}-ex-${execution}-i-${currentInstance.id}-temp`
       interval = setInterval(async () => {
         const latest = latestStudentResponseRef.current
         // only persist if there is something to store
@@ -144,11 +195,11 @@ function QuestionArea({
     return () => {
       if (interval) clearInterval(interval)
     }
-  }, [quizId, execution, currentInstance?.id])
+  }, [responseStorageQuizId, execution, currentInstance?.id])
 
   // compute remaining instances based on stored responses
   useRemainingInstances({
-    quizId,
+    quizId: responseStorageQuizId,
     instances,
     execution,
     isBlockCompleted: !isBlockActive,
@@ -157,6 +208,7 @@ function QuestionArea({
   })
 
   const onSubmit = async (): Promise<void> => {
+    if (escapeRoom.lockoutRemaining > 0) return
     // lock the submission button temporarily to avoid double submissions
     setSubmitting(true)
 
@@ -181,7 +233,12 @@ function QuestionArea({
     if (!success) return
 
     // update the stored responses
-    await updateStoredResponses(instanceId, quizId, execution)
+    await updateStoredResponses(instanceId, responseStorageQuizId, execution)
+
+    if (escapeRoomConfig && refetchLiveQuiz) {
+      await refetchLiveQuiz()
+      return
+    }
 
     // calculate the new indices of remaining questions
     const newRemaining = (remainingQuestions ?? []).filter(
@@ -218,7 +275,11 @@ function QuestionArea({
     const remainingQuestionIds = (remainingQuestions ?? []).map(
       (index: number) => instances[index].id
     )
-    await updateStoredResponses(remainingQuestionIds, quizId, execution)
+    await updateStoredResponses(
+      remainingQuestionIds,
+      responseStorageQuizId,
+      execution
+    )
 
     // automatically skip all possibly remaining questions
     setRemainingQuestions([])
@@ -232,7 +293,22 @@ function QuestionArea({
     push(['trackEvent', 'Live Quiz', 'Time expired'])
   }
 
-  function showStatusCodeToast(statusCode: number) {
+  function showStatusCodeToast(statusCode: number, responseStatus?: string) {
+    if (responseStatus === 'incorrect') {
+      toast({
+        message: t('pwa.practiceQuiz.escapeRoomIncorrectToast'),
+        type: 'error',
+      })
+      return
+    }
+    if (statusCode === 429) {
+      toast({
+        message: t('pwa.practiceQuiz.escapeRoomLockoutToast'),
+        type: 'error',
+      })
+      return
+    }
+
     // status code 200 (regular and assessment responses) -> successful submission
     if (statusCode === 200) {
       toast({
@@ -277,6 +353,15 @@ function QuestionArea({
     }
   }
 
+  async function submitLiveQuizResponse(
+    input: Parameters<QuestionAreaProps['handleNewResponse']>[0]
+  ) {
+    const result = await handleNewResponse(input)
+    showStatusCodeToast(result.statusCode, result.responseStatus)
+    escapeRoom.onResponse(result)
+    return result
+  }
+
   // use the handleNewResponse function to add a response to the question instance
   // return value is status code: 0 = success, 1 = invalid input, 2 = submission failed, 3 = unsupported type
   async function answerQuestion({
@@ -290,7 +375,7 @@ function QuestionArea({
     input: InstanceStackStudentResponseType
     correlationKey?: string | null
   }): Promise<boolean> {
-    const storageKey = `lq-${quizId}-ex-${execution}-i-${instanceId}`
+    const storageKey = `lq-${responseStorageQuizId}-ex-${execution}-i-${instanceId}`
 
     if (!input.valid) {
       toast({
@@ -305,7 +390,7 @@ function QuestionArea({
       typeof input.response !== 'undefined'
     ) {
       // submit responses as an array of objects with answer ix and selected boolean
-      const result = await handleNewResponse({
+      const result = await submitLiveQuizResponse({
         liveQuizId: quizId,
         instanceId,
         type,
@@ -315,12 +400,12 @@ function QuestionArea({
         })),
         correlationKey,
       })
-
-      // --> show toast based on status code
-      showStatusCodeToast(result.statusCode)
-
       // if request was successful, store the submitted answer locally to be shown and remove any temporary saved response
-      if (result.statusCode >= 200 && result.statusCode < 300) {
+      if (
+        result.statusCode >= 200 &&
+        result.statusCode < 300 &&
+        result.responseStatus !== 'incorrect'
+      ) {
         // store the submitted answer locally to be shown and remove any temporary saved response
         await localforage.setItem(storageKey, {
           response: input.response,
@@ -338,7 +423,7 @@ function QuestionArea({
       typeof input.response !== 'undefined'
     ) {
       // submit responses as a string
-      const result = await handleNewResponse({
+      const result = await submitLiveQuizResponse({
         liveQuizId: quizId,
         instanceId,
         type,
@@ -346,10 +431,11 @@ function QuestionArea({
         correlationKey,
       })
 
-      // --> show toast based on status code
-      showStatusCodeToast(result.statusCode)
-
-      if (result.statusCode >= 200 && result.statusCode < 300) {
+      if (
+        result.statusCode >= 200 &&
+        result.statusCode < 300 &&
+        result.responseStatus !== 'incorrect'
+      ) {
         await localforage.setItem(storageKey, {
           response: input.response,
           responseTimestamp: result.responseTimestamp ?? Date.now(),
@@ -361,12 +447,39 @@ function QuestionArea({
         return false
       }
     } else if (
+      ElementType.QrScan === type &&
+      input.type === ElementType.QrScan &&
+      typeof input.response !== 'undefined'
+    ) {
+      const result = await submitLiveQuizResponse({
+        liveQuizId: quizId,
+        instanceId,
+        type,
+        answer: input.response,
+        correlationKey,
+      })
+
+      if (
+        result.statusCode >= 200 &&
+        result.statusCode < 300 &&
+        result.responseStatus !== 'incorrect'
+      ) {
+        await localforage.setItem(storageKey, {
+          response: input.response,
+          responseTimestamp: result.responseTimestamp ?? Date.now(),
+        } as any)
+        setSubmittedAt(result.responseTimestamp ?? Date.now())
+        await localforage.removeItem(`${storageKey}-temp`)
+        return true
+      }
+      return false
+    } else if (
       ElementType.Numerical === type &&
       input.type === ElementType.Numerical &&
       typeof input.response !== 'undefined'
     ) {
       // submit responses as a number (float)
-      const result = await handleNewResponse({
+      const result = await submitLiveQuizResponse({
         liveQuizId: quizId,
         instanceId,
         type,
@@ -374,10 +487,11 @@ function QuestionArea({
         correlationKey,
       })
 
-      // --> show toast based on status code
-      showStatusCodeToast(result.statusCode)
-
-      if (result.statusCode >= 200 && result.statusCode < 300) {
+      if (
+        result.statusCode >= 200 &&
+        result.statusCode < 300 &&
+        result.responseStatus !== 'incorrect'
+      ) {
         await localforage.setItem(storageKey, {
           response: input.response,
           responseTimestamp: result.responseTimestamp ?? Date.now(),
@@ -394,7 +508,7 @@ function QuestionArea({
       typeof input.response !== 'undefined'
     ) {
       // submit responses as an array of answer ids that were selected
-      const result = await handleNewResponse({
+      const result = await submitLiveQuizResponse({
         liveQuizId: quizId,
         instanceId,
         type,
@@ -404,10 +518,11 @@ function QuestionArea({
         correlationKey,
       })
 
-      // --> show toast based on status code
-      showStatusCodeToast(result.statusCode)
-
-      if (result.statusCode >= 200 && result.statusCode < 300) {
+      if (
+        result.statusCode >= 200 &&
+        result.statusCode < 300 &&
+        result.responseStatus !== 'incorrect'
+      ) {
         await localforage.setItem(storageKey, {
           response: input.response,
           responseTimestamp: result.responseTimestamp ?? Date.now(),
@@ -424,7 +539,7 @@ function QuestionArea({
       typeof input.response !== 'undefined'
     ) {
       // submit responses as an object with case, item and criterion ids as nested keys
-      const result = await handleNewResponse({
+      const result = await submitLiveQuizResponse({
         liveQuizId: quizId,
         instanceId,
         type,
@@ -432,10 +547,11 @@ function QuestionArea({
         correlationKey,
       })
 
-      // --> show toast based on status code
-      showStatusCodeToast(result.statusCode)
-
-      if (result.statusCode >= 200 && result.statusCode < 300) {
+      if (
+        result.statusCode >= 200 &&
+        result.statusCode < 300 &&
+        result.responseStatus !== 'incorrect'
+      ) {
         await localforage.setItem(storageKey, {
           response: input.response,
           responseTimestamp: result.responseTimestamp ?? Date.now(),
@@ -448,7 +564,7 @@ function QuestionArea({
       }
     } else if (type === ElementType.Content) {
       // for content elements, only the number of reads / next clicks are counted
-      const result = await handleNewResponse({
+      const result = await submitLiveQuizResponse({
         liveQuizId: quizId,
         instanceId,
         type,
@@ -456,10 +572,11 @@ function QuestionArea({
         correlationKey,
       })
 
-      // --> show toast based on status code
-      showStatusCodeToast(result.statusCode)
-
-      if (result.statusCode >= 200 && result.statusCode < 300) {
+      if (
+        result.statusCode >= 200 &&
+        result.statusCode < 300 &&
+        result.responseStatus !== 'incorrect'
+      ) {
         await localforage.setItem(storageKey, {
           response: input.response,
           responseTimestamp: result.responseTimestamp ?? Date.now(),
@@ -480,13 +597,33 @@ function QuestionArea({
     }
   }
 
-  // while the remaining questions are still initializing, do not return anything
-  if (remainingQuestions === null) {
+  const escapeRoomOverlay = escapeRoomConfig ? (
+    <LiveQuizEscapeRoomOverlay
+      controller={escapeRoom}
+      config={escapeRoomConfig}
+      clearedInstances={
+        escapeRoomClearedInstances ??
+        instances.length - (remainingQuestions?.length ?? 0)
+      }
+      totalInstances={escapeRoomTotalInstances ?? instances.length}
+    />
+  ) : null
+
+  if (escapeRoomConfig && instances.length === 0) {
+    return (
+      <div className="min-h-content relative h-full">{escapeRoomOverlay}</div>
+    )
+  }
+
+  // Escape-room instances are hidden until the attempt starts. Wait for the
+  // active index to catch up when the first visible instance arrives.
+  if (remainingQuestions === null || !currentInstance) {
     return <></>
   }
 
   return (
     <div className="min-h-content relative mt-1.5 h-full w-full">
+      {escapeRoomOverlay}
       <div className="flex flex-row items-center justify-between">
         <H2 className={{ root: 'mb-0 pt-2' }}>
           {t('shared.generic.questions')}
@@ -532,7 +669,11 @@ function QuestionArea({
           isCurrentUnanswered={remainingQuestions.includes(activeInstance)}
           isContent={currentInstance.elementType === ElementType.Content}
           isBlockOver={remainingQuestions.length === 0}
-          canSubmit={!!studentResponse.valid && !submitting}
+          canSubmit={
+            !!studentResponse.valid &&
+            !submitting &&
+            escapeRoom.lockoutRemaining === 0
+          }
           onPrev={() => setActiveInstance((prev) => Math.max(0, prev - 1))}
           onNext={() =>
             setActiveInstance((prev) =>
@@ -561,6 +702,13 @@ function QuestionArea({
           singleStudentResponse={studentResponse}
           setSingleStudentResponse={setStudentResponse}
         />
+        {escapeRoomConfig && (
+          <LiveQuizEscapeRoomQuestionControls
+            controller={escapeRoom}
+            config={escapeRoomConfig}
+            currentInstance={currentInstance}
+          />
+        )}
       </div>
     </div>
   )
