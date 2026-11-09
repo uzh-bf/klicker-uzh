@@ -24,10 +24,12 @@ const path = require('node:path')
 // controller admits, 'publishGuard' marks the targets that check the full-SHA
 // tag before publishing, 'amd' marks the targets that also publish an AMD64
 // image, 'syncSchema' marks the targets that run util/sync-schema.sh first, and
-// 'optional' marks the targets whose dockerfile exists on the integration lines
-// only. An optional target allocates no runner where it is absent, and the
-// promotion controller tolerates its absence from a candidate tree while
-// failing closed on the absence of any other target.
+// 'releaseAssets' marks the targets whose image carries the static assets of
+// the release staging currently runs, so the build receives that image as
+// PREVIOUS_IMAGE, and 'optional' marks the targets whose dockerfile exists on
+// the integration lines only. An optional target allocates no runner where it
+// is absent, and the promotion controller tolerates its absence from a
+// candidate tree while failing closed on the absence of any other target.
 //
 // 'reuse' marks the targets whose image may be adopted from an earlier
 // publication by input fingerprint instead of being rebuilt. It is set only for
@@ -266,6 +268,7 @@ const STAGING_IMAGE_TARGETS = Object.freeze([
       'mv apps/frontend-pwa/.env.assessment.stg apps/frontend-pwa/.env.production',
     ],
     publishGuard: true,
+    releaseAssets: true,
     stage: 'independent',
   },
   {
@@ -395,6 +398,7 @@ const STAGING_IMAGE_TARGETS = Object.freeze([
       'mv apps/frontend-pwa/.env.stg apps/frontend-pwa/.env.production',
     ],
     publishGuard: true,
+    releaseAssets: true,
     stage: 'independent',
   },
   {

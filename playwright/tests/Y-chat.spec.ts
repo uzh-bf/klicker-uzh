@@ -1909,9 +1909,7 @@ test.describe('Chatbot Settings Panel', () => {
       await setAllowedModelIds(['auto'])
       await setCredits(participantId, 50, 100)
       await visitChat(page)
-      await expect(page.getByTestId('chat-credits-display')).toContainText(
-        '50 / 100'
-      )
+      await expect(page.getByTestId('chat-credits-display')).toHaveText('50%')
       await openSettings(page)
 
       const modelSection = page.getByTestId('chat-model-selection')
@@ -1924,9 +1922,7 @@ test.describe('Chatbot Settings Panel', () => {
       // concrete model rather than Auto, so the copy must change with it.
       await setAllowedModelIds(['gpt-4.1'])
       await page.reload({ waitUntil: 'domcontentloaded' })
-      await expect(page.getByTestId('chat-credits-display')).toContainText(
-        '50 / 100'
-      )
+      await expect(page.getByTestId('chat-credits-display')).toHaveText('50%')
       await openSettings(page)
       await expect(modelSection).toContainText('GPT-4.1')
       await expect(modelSection).toContainText(copy.fixed)
@@ -1937,9 +1933,7 @@ test.describe('Chatbot Settings Panel', () => {
       // participant-credit fallback path.
       await setCredits(participantId, 0, 100)
       await page.reload({ waitUntil: 'domcontentloaded' })
-      await expect(page.getByTestId('chat-credits-display')).toContainText(
-        '0 / 100'
-      )
+      await expect(page.getByTestId('chat-credits-display')).toHaveText('0%')
       await openSettings(page)
       await expect(modelSection).toContainText(copy.fixed)
       await expect(modelSection).toContainText(copy.fallback)
@@ -2092,16 +2086,12 @@ test.describe('Chatbot Settings Panel', () => {
     )
   })
 
-  test('Credits display shows current/total and percentage', async ({
-    page,
-  }) => {
+  test('Credits display shows the remaining percentage', async ({ page }) => {
     await setCredits(participantId, 75, 100)
     await visitChat(page)
 
     await expect(page.getByTestId('chat-credits-section')).toBeVisible()
-    await expect(page.getByTestId('chat-credits-display')).toContainText(
-      '75 / 100'
-    )
+    await expect(page.getByTestId('chat-credits-display')).toHaveText('75%')
   })
 
   test('Zero credits preserves the selected class and shows availability', async ({
@@ -2112,9 +2102,7 @@ test.describe('Chatbot Settings Panel', () => {
     await visitChat(page)
 
     await expect(page.getByTestId('chat-credits-section')).toBeVisible()
-    await expect(page.getByTestId('chat-credits-display')).toContainText(
-      '0 / 100'
-    )
+    await expect(page.getByTestId('chat-credits-display')).toHaveText('0%')
     await expect(page.getByTestId('chat-credits-empty-message')).toBeVisible()
 
     await openSettings(page)
@@ -2291,8 +2279,8 @@ test.describe('Chatbot Settings Panel', () => {
     await visitChat(page)
 
     await expect(page.getByTestId('chat-mobile-credits-bar')).toBeVisible()
-    await expect(page.getByTestId('chat-mobile-credits-display')).toContainText(
-      '0 / 100'
+    await expect(page.getByTestId('chat-mobile-credits-display')).toHaveText(
+      '0%'
     )
     await expect(page.getByTestId('chat-mobile-fallback-notice')).toContainText(
       'Some models may no longer be available'
@@ -2305,9 +2293,7 @@ test.describe('Chatbot Settings Panel', () => {
     await setCredits(participantId, 0, 0)
     await visitChat(page)
 
-    await expect(page.getByTestId('chat-credits-display')).toContainText(
-      '0 / 0'
-    )
+    await expect(page.getByTestId('chat-credits-display')).toHaveText('0%')
   })
 
   test('Model selection dropdown changes the model used for messages', async ({

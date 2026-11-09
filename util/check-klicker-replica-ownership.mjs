@@ -745,9 +745,9 @@ for (const environment of environments) {
     // Enabling assessmentAudit adds the audit dispatcher Deployment alongside
     // the 17 shared application ones; retiring the media-policy worker left no
     // further audit Deployment. Staging also enables the audit sealer and runs
-    // the adaptive engine Deployment, which owns its replicas statically, and
-    // the frontend PWA burst tier.
-    { base: 17, stg: 21, prd: 17 }[environment.name]
+    // the adaptive engine Deployment, which owns its replicas statically, the
+    // frontend PWA burst tier, and the two release asset Deployments.
+    { base: 17, stg: 23, prd: 17 }[environment.name]
   )
   if (environment.name === 'stg') {
     assertPwaBurstTier(resources, environment.name)
