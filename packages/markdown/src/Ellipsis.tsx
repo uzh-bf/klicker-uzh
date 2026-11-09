@@ -42,6 +42,7 @@ export interface EllipsisBaseProps {
   className?: {
     root?: string
     tooltip?: string
+    trigger?: string
     markdown?: string
     content?: string
   }
@@ -96,6 +97,7 @@ function Ellipsis({
           )
         }
         className={{
+          trigger: className?.trigger,
           tooltip: twMerge(
             'max-w-md border bg-white text-sm text-black shadow-sm',
             className?.tooltip
@@ -270,6 +272,7 @@ function Ellipsis({
             )
           }
           className={{
+            trigger: className?.trigger,
             tooltip: twMerge(
               'max-w-[50%] text-sm md:max-w-[60%]',
               className?.tooltip
