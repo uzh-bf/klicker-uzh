@@ -43,6 +43,7 @@ import {
   setGeneratedQuestionDecision,
   updateGeneratedQuestionDraft,
 } from './questionGenerationDrafts.js'
+import { elementTypeSupportsRevision } from './elementGenerationProvider.js'
 import { questionGenerationServiceError } from './questionGenerationErrors.js'
 import {
   assertQuestionGenerationBasisCurrent,
@@ -864,6 +865,9 @@ export async function getElementGenerationCapabilities(ctx: ContextWithUser) {
         // errorRetryable decides whether the retry is offered for one build.
         supportsRetry: true,
         supportsIncompletePublication: elementType === 'FLASHCARD',
+        // Revision needs the slot-revision worker; flashcards have none.
+        supportsIndividualRegeneration:
+          elementTypeSupportsRevision(elementType),
       })
     ),
     supportsIndividualRegeneration:

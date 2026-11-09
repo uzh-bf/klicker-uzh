@@ -716,6 +716,8 @@ export type QuestionGenerationGraphLineage = {
 export type QuestionGenerationGraphEvidence = QuestionGenerationGraphLineage & {
   graphArtifact: QuestionGenerationArtifactRef
   chunksArtifact: QuestionGenerationArtifactRef
+  domainPolicyArtifact: QuestionGenerationArtifactRef
+  generationRecipeArtifact: QuestionGenerationArtifactRef
 }
 
 export type QuestionGenerationProvenanceAuthority = {
@@ -1759,6 +1761,8 @@ export function parseQuestionGenerationGraphManifest(
     generationRecipeDigest: manifest.generation_recipe_digest,
     graphArtifact: toArtifactRef(graphArtifacts[0]!),
     chunksArtifact: toArtifactRef(chunkArtifacts[0]!),
+    domainPolicyArtifact: toArtifactRef(manifest.policy),
+    generationRecipeArtifact: toArtifactRef(manifest.recipe),
   }
 }
 
@@ -2242,6 +2246,9 @@ export function parseQuestionGenerationFinalBank(
     result: QuestionGenerationResultManifest
     lineage?: QuestionGenerationGraphLineage | null
     provenanceAuthority?: QuestionGenerationProvenanceAuthority | null
+    // A revision must state the difficulty it targeted instead of inheriting
+    // the generated one.
+    requireTargetDifficulty?: boolean
   }
 ): GeneratedQuestionWithProvenance[] {
   const parsed = finalBankSchema.safeParse(parseArtifactJson(bytes))
@@ -2249,6 +2256,14 @@ export function parseQuestionGenerationFinalBank(
     return artifactError('Final question bank is unsupported')
   }
   const bank = parsed.data
+  if (
+    expected.requireTargetDifficulty &&
+    bank.questions.some(
+      (question) => question.target_difficulty_scale === undefined
+    )
+  ) {
+    return artifactError('Revised question has no target difficulty')
+  }
   const expectedItemType = expected.itemType ?? 'SC'
   // A partial result delivers only the slots the worker could ground, so its
   // bank is a non-empty subset of the Plan universe. A strict run still has to

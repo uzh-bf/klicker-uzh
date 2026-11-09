@@ -521,6 +521,16 @@ describe('question-generation artifact normalization', () => {
         blobName: 'bundle/vdb_chunks.json',
         sha256: '5'.repeat(64),
       },
+      domainPolicyArtifact: {
+        containerName: 'graph-artifacts',
+        blobName: 'bundle/resolved_domain_policy.json',
+        sha256: '3'.repeat(64),
+      },
+      generationRecipeArtifact: {
+        containerName: 'graph-artifacts',
+        blobName: 'bundle/generation_recipe.json',
+        sha256: '4'.repeat(64),
+      },
     })
     expect(() =>
       parseQuestionGenerationGraphManifest(

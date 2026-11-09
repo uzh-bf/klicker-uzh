@@ -21,6 +21,13 @@ const COST_ENV_BY_SPEND_CLASS: Record<SpendClass, string> = {
   FLASHCARD_RETRY: 'KB_ELEMENT_GENERATION_FLASHCARD_RETRY_COST_MINOR_UNITS',
 }
 
+const FINISHED_REVISION_STATUSES: DB.ElementGenerationBuildStatus[] = [
+  DB.ElementGenerationBuildStatus.COMPLETED,
+  DB.ElementGenerationBuildStatus.INCOMPLETE,
+  DB.ElementGenerationBuildStatus.REJECTED,
+  DB.ElementGenerationBuildStatus.FAILED,
+]
+
 const PRICING_VERSION_ENV = 'KB_ELEMENT_GENERATION_COST_PRICING_VERSION'
 const PRICING_VERSION_PATTERN = /^[A-Za-z0-9._-]{1,100}$/
 export const ELEMENT_GENERATION_DISPATCH_CLAIM_GRACE_MS = 15 * 60 * 1000
@@ -316,6 +323,7 @@ export async function reserveElementGenerationRetrySpend(
     ownerId,
     dispatchAttemptId,
     spendClass,
+    parentRequestedElementCount,
     elementTypes,
     expectedStatus,
     clearCompletedAt = false,
@@ -325,7 +333,9 @@ export async function reserveElementGenerationRetrySpend(
     buildId: string
     ownerId: string
     dispatchAttemptId: string
-    spendClass: SpendClass
+    spendClass: SpendClass | typeof DB.KBGraphQuotaSpendClass.ELEMENT_REVISION
+    // Required for a revision retry, which is priced from its parent build.
+    parentRequestedElementCount?: number
     elementTypes: DB.ElementType[]
     expectedStatus: DB.ElementGenerationBuildStatus
     clearCompletedAt?: boolean
@@ -333,8 +343,46 @@ export async function reserveElementGenerationRetrySpend(
     now?: Date
   }
 ): Promise<boolean> {
-  const config = requireElementGenerationCostConfiguration(spendClass, env, now)
+  const isRevision = spendClass === DB.KBGraphQuotaSpendClass.ELEMENT_REVISION
+  if (isRevision && parentRequestedElementCount === undefined) {
+    throw new Error('A revision retry requires its parent question count')
+  }
+  const baseConfig = requireElementGenerationCostConfiguration(
+    isRevision ? DB.KBGraphQuotaSpendClass.QUESTION_GENERATION : spendClass,
+    env,
+    now
+  )
+  const config = isRevision
+    ? {
+        ...baseConfig,
+        amountMinorUnits: elementRevisionPriceMinorUnits(
+          baseConfig.amountMinorUnits,
+          parentRequestedElementCount!
+        ),
+      }
+    : baseConfig
+  // A child build's parent link never changes, so it can be read before the
+  // locks that depend on it.
+  const parentBuildId = isRevision
+    ? (
+        await prisma.elementGenerationBuild.findUnique({
+          where: { id: buildId },
+          select: { parentBuildId: true },
+        })
+      )?.parentBuildId
+    : null
   return prisma.$transaction(async (transaction) => {
+    // A revision request locks the parent build before its child, as the
+    // decision that creates a child does, so a retry and a newer request for
+    // the same draft cannot both pass the checks below.
+    if (parentBuildId) {
+      await transaction.$queryRaw<Array<{ id: string }>>`
+        SELECT "id"
+        FROM "public"."ElementGenerationBuild"
+        WHERE "id" = CAST(${parentBuildId} AS UUID)
+        FOR UPDATE
+      `
+    }
     await transaction.$queryRaw<Array<{ id: string }>>`
       SELECT "id"
       FROM "public"."ElementGenerationBuild"
@@ -349,9 +397,29 @@ export async function reserveElementGenerationRetrySpend(
         status: expectedStatus,
         costAccountingVersion: 1,
       },
-      select: { id: true },
+      select: { id: true, createdAt: true, revisionOfDraftId: true },
     })
     if (!build) return false
+    if (parentBuildId && build.revisionOfDraftId) {
+      // Only the latest request for a draft may run again, and never beside
+      // another unfinished one.
+      const competing = await transaction.elementGenerationBuild.count({
+        where: {
+          id: { not: buildId },
+          revisionOfDraftId: build.revisionOfDraftId,
+          OR: [
+            { status: { notIn: FINISHED_REVISION_STATUSES } },
+            { createdAt: { gt: build.createdAt } },
+          ],
+        },
+      })
+      if (competing > 0) {
+        throw questionGenerationServiceError(
+          'INVALID_STAGE',
+          'This draft has a newer or unfinished revision request'
+        )
+      }
+    }
 
     const quota = await ensureLockedKBGraphQuota(
       transaction,

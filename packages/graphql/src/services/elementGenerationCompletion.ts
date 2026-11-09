@@ -1,12 +1,13 @@
 import * as DB from '@klicker-uzh/prisma/client'
-import type {
-  ElementGenerationSlotFailure,
-  ElementGenerationSlotSpecification,
-  GeneratedFlashcard,
-  GeneratedQuestionWithProvenance,
-  QuestionGenerationArtifactRef,
-  QuestionGenerationDesignSummary,
-  QuestionGenerationPlanSummary,
+import {
+  clearSlotSpecificationEvidence,
+  type ElementGenerationSlotFailure,
+  type ElementGenerationSlotSpecification,
+  type GeneratedFlashcard,
+  type GeneratedQuestionWithProvenance,
+  type QuestionGenerationArtifactRef,
+  type QuestionGenerationDesignSummary,
+  type QuestionGenerationPlanSummary,
 } from '@klicker-uzh/types'
 import type { ContextWithUser } from '../lib/context.js'
 import { normalizeGeneratedFlashcardEditable } from './flashcardGenerationDrafts.js'
@@ -102,6 +103,122 @@ export function withSlotSpecifications(
   }
 }
 
+// A child build's one question joins the parent's review as a new draft of
+// the same slot, linked to the draft it reworks. The row lock on the parent
+// serializes the duplication index with keep, duplicate and decisions, and the
+// lease-and-status guard on the child makes a repeated completion roll back
+// instead of adding a second draft.
+async function completeRevisionChildBuild(
+  transaction: DB.Prisma.TransactionClient,
+  input: QuestionElementGenerationCompletionInput,
+  parentBuildId: string,
+  revisionOfDraftId: string | null
+) {
+  await transaction.$queryRaw`
+    SELECT "id"
+    FROM "ElementGenerationBuild"
+    WHERE "id" = ${parentBuildId}::uuid
+    FOR UPDATE
+  `
+  const [question] = input.questions
+  const previous = revisionOfDraftId
+    ? await transaction.generatedElementDraft.findUnique({
+        where: { id: revisionOfDraftId },
+      })
+    : null
+  if (
+    input.questions.length !== 1 ||
+    !question ||
+    !previous ||
+    previous.buildId !== parentBuildId ||
+    previous.sourceElementId !== question.sourceQuestionId
+  ) {
+    return draftError('Revised question does not match the reworked draft')
+  }
+  const parent = await transaction.elementGenerationBuild.findUniqueOrThrow({
+    where: { id: parentBuildId },
+    select: { designSummary: true, evidencePurgedAt: true },
+  })
+  const { provenance, ...original } = question
+  const maximum = await transaction.generatedElementDraft.aggregate({
+    where: {
+      buildId: parentBuildId,
+      sourceElementId: previous.sourceElementId,
+    },
+    _max: { duplicationIndex: true },
+  })
+  await transaction.generatedElementDraft.create({
+    data: {
+      buildId: parentBuildId,
+      sourceElementId: previous.sourceElementId,
+      order: previous.order,
+      duplicationIndex: (maximum._max.duplicationIndex ?? 0) + 1,
+      elementType: original.itemType,
+      parentDraftId: previous.id,
+      revisionOfDraftId: previous.id,
+      original,
+      current: {
+        itemType: original.itemType ?? 'SC',
+        name: original.name,
+        stem: original.stem,
+        context: original.context,
+        explanation: original.explanation,
+        tags: original.tags,
+        choices: original.choices.map((choice) => ({ ...choice })),
+      },
+      bloomLevel: original.bloomLevel,
+      targetDifficulty: original.targetDifficulty,
+      predictedDifficulty: original.predictedDifficulty,
+      qualityFlags: original.qualityFlags,
+      citations: original.citations,
+      provenance: provenance ?? DB.Prisma.DbNull,
+    },
+  })
+
+  // The fresh specification replaces the slot's stored one, so the next
+  // revision in a chain starts from it. After a purge it keeps no evidence.
+  const refreshed = withSlotSpecifications(
+    parent.designSummary as QuestionGenerationDesignSummary | null,
+    input.slotSpecifications?.map((specification) =>
+      parent.evidencePurgedAt !== null
+        ? clearSlotSpecificationEvidence(specification)
+        : specification
+    )
+  )
+  if (refreshed) {
+    await transaction.elementGenerationBuild.update({
+      where: { id: parentBuildId },
+      data: { designSummary: refreshed },
+    })
+  }
+
+  const completed = await transaction.elementGenerationBuild.updateMany({
+    where: {
+      id: input.buildId,
+      status: DB.ElementGenerationBuildStatus.FINALIZING,
+      syncLeaseOwner: input.leaseOwner,
+    },
+    data: {
+      resultManifestArtifact: input.resultManifestArtifact,
+      finalBankArtifact: input.finalBankArtifact,
+      provenanceIndexArtifact:
+        input.questionProvenanceIndexArtifact ?? DB.Prisma.DbNull,
+      generatedElementCount: 1,
+      unresolvedElementCount: 0,
+      status: DB.ElementGenerationBuildStatus.COMPLETED,
+      stage: 'completed',
+      completedAt: new Date(),
+      lastSynchronizedAt: new Date(),
+    },
+  })
+  if (completed.count !== 1) {
+    throw questionGenerationServiceError(
+      'CONCURRENT_MODIFICATION',
+      'Question-generation build completion lost its lease'
+    )
+  }
+}
+
 export async function completeElementGeneration(
   input: CompleteElementGenerationInput,
   ctx: ContextWithUser
@@ -126,6 +243,8 @@ export async function completeElementGeneration(
         elementType: true,
         planSummary: true,
         designSummary: true,
+        parentBuildId: true,
+        revisionOfDraftId: true,
       },
     })
     if (!build) {
@@ -148,6 +267,14 @@ export async function completeElementGeneration(
       )
     }
 
+    if (input.kind === 'questions' && build.parentBuildId) {
+      return completeRevisionChildBuild(
+        transaction,
+        input,
+        build.parentBuildId,
+        build.revisionOfDraftId
+      )
+    }
     const slotSpecificationSummary =
       input.kind === 'questions'
         ? withSlotSpecifications(
