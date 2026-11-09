@@ -156,6 +156,7 @@ async function completeRevisionChildBuild(
       elementType: original.itemType,
       parentDraftId: previous.id,
       revisionOfDraftId: previous.id,
+      revisionBuildId: input.buildId,
       original,
       current: {
         itemType: original.itemType ?? 'SC',

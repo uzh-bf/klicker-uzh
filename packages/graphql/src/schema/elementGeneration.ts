@@ -804,23 +804,13 @@ GeneratedElementDraftRef.implement({
     duplicationIndex: t.exposeInt('duplicationIndex'),
     parentDraftId: t.exposeID('parentDraftId', { nullable: true }),
     revisionOfDraftId: t.exposeID('revisionOfDraftId', { nullable: true }),
-    // The note of the request that produced this draft: the newest finished
-    // child build of the draft it revises.
+    // The note of the request that produced this draft.
     revisionNote: t.string({
       nullable: true,
       resolve: async (draft, _args, ctx) => {
-        if (!draft.revisionOfDraftId) return null
-        const child = await ctx.prisma.elementGenerationBuild.findFirst({
-          where: {
-            revisionOfDraftId: draft.revisionOfDraftId,
-            status: {
-              in: [
-                DB.ElementGenerationBuildStatus.COMPLETED,
-                DB.ElementGenerationBuildStatus.INCOMPLETE,
-              ],
-            },
-          },
-          orderBy: { createdAt: 'desc' },
+        if (!draft.revisionBuildId) return null
+        const child = await ctx.prisma.elementGenerationBuild.findUnique({
+          where: { id: draft.revisionBuildId },
           select: { revisionNote: true },
         })
         return child?.revisionNote ?? null

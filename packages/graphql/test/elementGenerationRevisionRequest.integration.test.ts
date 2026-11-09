@@ -26,16 +26,34 @@ vi.mock(
   }
 )
 
+vi.mock(
+  '../src/services/questionGenerationArtifacts.js',
+  async (importOriginal) => {
+    const actual =
+      await importOriginal<
+        typeof import('../src/services/questionGenerationArtifacts.js')
+      >()
+    return {
+      ...actual,
+      parseQuestionGenerationPlan: vi.fn(actual.parseQuestionGenerationPlan),
+    }
+  }
+)
+
 import type { ContextWithUser } from '../src/lib/context.js'
 import { keepGeneratedElementDraft } from '../src/services/elementGeneration.js'
 import { completeElementGeneration } from '../src/services/elementGenerationCompletion.js'
-import { reserveElementGenerationRetrySpend } from '../src/services/elementGenerationAccounting.js'
+import {
+  createElementGenerationBuildWithSpend,
+  reserveElementGenerationRetrySpend,
+} from '../src/services/elementGenerationAccounting.js'
 import { acquireElementGenerationLease } from '../src/services/elementGenerationLease.js'
 import {
   getQuestionGenerationBuild,
   questionWorkflowStartManifestSha256,
   questionWorkflowStartPayload,
 } from '../src/services/questionGeneration.js'
+import { parseQuestionGenerationPlan } from '../src/services/questionGenerationArtifacts.js'
 import {
   setGeneratedQuestionDecision,
   updateGeneratedQuestionDraft,
@@ -786,6 +804,7 @@ describe('revision child build dispatch and completion', () => {
       runStatus?: 'SUCCEEDED' | 'FAILED'
       result?: (childId: string) => Buffer
       bank?: Buffer
+      provenanceIndex?: Buffer
     } = {}
   ) {
     let childId = ''
@@ -827,7 +846,9 @@ describe('revision child build dispatch and completion', () => {
         downloadVerified: vi.fn(async (artifact: { blobName: string }) =>
           artifact.blobName.endsWith('final.json')
             ? (options.bank ?? bankBytes())
-            : graphManifestBytes()
+            : artifact.blobName.endsWith('question_provenance_index.json')
+              ? options.provenanceIndex!
+              : graphManifestBytes()
         ),
       },
     }
@@ -1050,6 +1071,61 @@ describe('revision child build dispatch and completion', () => {
     ).toBe(1)
   })
 
+  it('shows each request note on the draft it produced', async () => {
+    const { context, draft } = await withRuntime('purged')
+    await getQuestionGenerationBuild(parentId, context)
+    await getQuestionGenerationBuild(parentId, context)
+    await setGeneratedQuestionDecision(
+      { draftId: draft.id, decision: 'REVISION_REQUESTED', note: 'Shorter' },
+      context
+    )
+    await getQuestionGenerationBuild(parentId, context)
+    await getQuestionGenerationBuild(parentId, context)
+
+    const revised = await prisma.generatedElementDraft.findMany({
+      where: { revisionOfDraftId: draft.id },
+      orderBy: { duplicationIndex: 'asc' },
+      include: { revisionBuild: true },
+    })
+    expect(revised.map((row) => row.revisionBuild?.revisionNote)).toEqual([
+      'Make it harder',
+      'Shorter',
+    ])
+  })
+
+  it('fails the child when the graph is purged between dispatch and result', async () => {
+    await setup('available')
+    const fake = fakeRuntime({
+      result: (childId) =>
+        resultBytes(childId, {
+          schema_version: 2,
+          question_provenance_index: {
+            container_name: 'question-results',
+            blob_name: `element-results/${childId}/questions/question_provenance_index.json`,
+            sha256: 'a'.repeat(64),
+          },
+        }),
+    })
+    const context = await request(fake.runtime)
+
+    await getQuestionGenerationBuild(parentId, context)
+    await prisma.kBGraphBuild.update({
+      where: { id: graphBuildId },
+      data: { generationArtifactsPurgedAt: new Date() },
+    })
+    await getQuestionGenerationBuild(parentId, context)
+
+    const [child] = await prisma.elementGenerationBuild.findMany({
+      where: { parentBuildId: parentId },
+    })
+    expect(child!.revisionUsedGraph).toBe(true)
+    expect(child!.status).toBe(DB.ElementGenerationBuildStatus.FAILED)
+    expect(child!.errorCode).toBe('ARTIFACT_INVALID')
+    expect(
+      await prisma.generatedElementDraft.count({ where: { buildId: parentId } })
+    ).toBe(1)
+  })
+
   it('accepts a v1 result only while the graph is purged', async () => {
     const { context } = await withRuntime('available')
 
@@ -1087,7 +1163,139 @@ describe('slot-specification request switch', () => {
     language: 'en' as const,
   }
 
-  afterEach(() => vi.unstubAllEnvs())
+  afterEach(async () => {
+    vi.unstubAllEnvs()
+    if (ownerId) {
+      await prisma.user.deleteMany({ where: { id: ownerId } })
+    }
+  })
+
+  it('keeps the start-manifest hash of a dispatched build when the switch flips before plan review', async () => {
+    vi.stubEnv('NODE_ENV', 'test')
+    for (const [key, value] of Object.entries(costEnv)) vi.stubEnv(key, value)
+    vi.stubEnv('ELEMENT_REVISION_WORKER_ENABLED', 'true')
+    ownerId = randomUUID()
+    const kbId = randomUUID()
+    graphBuildId = randomUUID()
+    const buildId = randomUUID()
+    await prisma.user.create({
+      data: {
+        id: ownerId,
+        email: `${ownerId}@example.org`,
+        shortname: `switch-${ownerId.slice(0, 8)}`,
+      },
+    })
+    await prisma.kB.create({
+      data: { id: kbId, ownerId, name: 'Slot specification switch test KB' },
+    })
+    await prisma.kBGraphBuild.create({
+      data: {
+        id: graphBuildId,
+        kbId,
+        requestedById: ownerId,
+        sourceContentDigest: 'a'.repeat(64),
+        graphName: `klickeruzh:kb:${kbId}:${graphBuildId}`,
+        graphBundleStorageName: 'synthetic-storage',
+        graphBundleSha256: 'b'.repeat(64),
+        graphSha256: 'c'.repeat(64),
+        graphManifestArtifact: input.graphManifest,
+      },
+    })
+    await createElementGenerationBuildWithSpend(prisma, {
+      ownerId,
+      idempotencyKey: `switch-${buildId}`,
+      spendClass: DB.KBGraphQuotaSpendClass.QUESTION_GENERATION,
+      data: {
+        id: buildId,
+        ownerId,
+        sourceGraphBuildId: graphBuildId,
+        elementType: DB.ElementType.SC,
+        idempotencyKey: `switch-${buildId}`,
+        configurationHash: 'switch',
+        configuration: configuration as never,
+        requestedElementCount: 1,
+        inputArtifactContainer: 'question-inputs',
+        inputArtifactPrefix: `question-builds/${buildId}`,
+        outputArtifactContainer: 'question-results',
+        outputArtifactPrefix: `element-results/${buildId}`,
+      },
+    })
+    const start = vi.fn(
+      async (
+        _payload: unknown,
+        _scope: string,
+        _attempt: string,
+        before: () => Promise<void>
+      ) => {
+        await before()
+        return { eventId: 'event-1' }
+      }
+    )
+    const runtime = {
+      questionInputContainer: 'question-inputs',
+      questionOutputContainer: 'question-results',
+      questionOutputPrefix: 'element-results',
+      uploadCreateOnly: vi.fn(async () => undefined),
+      start,
+      findRunByBuildId: vi.fn(async () => null),
+      getRun: vi.fn(async () => ({ runId: 'run-1', status: 'SUCCEEDED' })),
+      getRunById: vi.fn(async () => ({ runId: 'run-1', status: 'SUCCEEDED' })),
+      downloadImmutable: vi.fn(async (_container: string, blob: string) => ({
+        ref: { ...input.blueprint, blobName: blob },
+        bytes: Buffer.from('{}'),
+      })),
+    }
+    const context = {
+      ...ctx(),
+      elementGenerationRuntime: runtime,
+    } as unknown as ContextWithUser
+    const planSummary = { questionCount: 1, questions: [], warnings: [] }
+    const reviewedHash = async () => {
+      await prisma.elementGenerationBuild.update({
+        where: { id: buildId },
+        data: {
+          status: DB.ElementGenerationBuildStatus.GENERATING_ITEMS,
+          stage: 'stems',
+        },
+      })
+      vi.mocked(parseQuestionGenerationPlan).mockReturnValueOnce(
+        planSummary as never
+      )
+      await getQuestionGenerationBuild(buildId, context)
+      const options = vi.mocked(parseQuestionGenerationPlan).mock.lastCall![1]
+      return options.v3Evidence!.startManifestSha256
+    }
+
+    await getQuestionGenerationBuild(buildId, context)
+    const dispatched = start.mock.calls[0]![0] as Parameters<
+      typeof questionWorkflowStartManifestSha256
+    >[0]
+    expect(dispatched).toMatchObject({ emit_slot_specifications: true })
+    expect(
+      (
+        await prisma.elementGenerationBuild.findUniqueOrThrow({
+          where: { id: buildId },
+        })
+      ).slotSpecificationsRequested
+    ).toBe(true)
+
+    vi.stubEnv('ELEMENT_REVISION_WORKER_ENABLED', 'false')
+    expect(await reviewedHash()).toBe(
+      questionWorkflowStartManifestSha256(dispatched)
+    )
+
+    // A build dispatched before the setting existed never asked for slot
+    // specifications, even if the setting is on by the time its plan is read.
+    await prisma.elementGenerationBuild.update({
+      where: { id: buildId },
+      data: { slotSpecificationsRequested: null },
+    })
+    vi.stubEnv('ELEMENT_REVISION_WORKER_ENABLED', 'true')
+    const { emit_slot_specifications: _omitted, ...withoutFlag } = dispatched
+    expect(await reviewedHash()).toBe(
+      questionWorkflowStartManifestSha256(withoutFlag as typeof dispatched)
+    )
+  })
 
   it('leaves the start input and its manifest hash untouched while off', () => {
     vi.stubEnv('ELEMENT_REVISION_WORKER_ENABLED', '')

@@ -341,8 +341,9 @@ export function questionWorkflowStartPayload(
 ): QuestionWorkflowStartPayload {
   const allowPartialResults =
     options.allowPartialResults ?? QUESTION_PARTIAL_RESULTS_ENABLED
-  // Like the partial-result flag, this joins the start-manifest hash, so it
-  // must not change while a build sits between dispatch and plan review.
+  // Like the partial-result flag, this joins the start-manifest hash. Callers
+  // that rebuild the payload after dispatch pass the value stored on the
+  // build, so a later change of the rollout setting cannot alter the hash.
   const emitSlotSpecifications =
     options.emitSlotSpecifications ?? isElementRevisionWorkerEnabled()
   return {
@@ -367,7 +368,8 @@ function questionWorkflowPayload(
     QuestionBuild,
     'id' | 'blueprintArtifact' | 'configuration' | 'sourceGraphBuild'
   >,
-  runtime: QuestionGenerationRuntime
+  runtime: QuestionGenerationRuntime,
+  emitSlotSpecifications: boolean
 ): QuestionWorkflowStartPayload {
   if (
     !build.blueprintArtifact ||
@@ -380,18 +382,21 @@ function questionWorkflowPayload(
     )
   }
   const configuration = build.configuration as QuestionGenerationConfiguration
-  return questionWorkflowStartPayload({
-    buildId: build.id,
-    graphVersionId: build.sourceGraphBuild.id,
-    graphManifest: build.sourceGraphBuild.graphManifestArtifact,
-    storageName: build.sourceGraphBuild.graphBundleStorageName,
-    blueprint: build.blueprintArtifact,
-    output: {
-      containerName: runtime.questionOutputContainer,
-      blobPrefix: runtime.questionOutputPrefix,
+  return questionWorkflowStartPayload(
+    {
+      buildId: build.id,
+      graphVersionId: build.sourceGraphBuild.id,
+      graphManifest: build.sourceGraphBuild.graphManifestArtifact,
+      storageName: build.sourceGraphBuild.graphBundleStorageName,
+      blueprint: build.blueprintArtifact,
+      output: {
+        containerName: runtime.questionOutputContainer,
+        blobPrefix: runtime.questionOutputPrefix,
+      },
+      language: configuration.language,
     },
-    language: configuration.language,
-  })
+    { emitSlotSpecifications }
+  )
 }
 
 // Whether the source graph's artifacts still exist. Ordinary builds keep
@@ -403,6 +408,14 @@ function questionBuildGraphAvailable(build: QuestionBuild) {
     (!build.parentBuildId ||
       build.sourceGraphBuild.generationArtifactsPurgedAt === null)
   )
+}
+
+// Which result version a build's output is verified against: a child build
+// fixed it at dispatch, so a later purge of the graph does not change it.
+function questionBuildGraphUsed(build: QuestionBuild) {
+  return build.parentBuildId
+    ? build.revisionUsedGraph === true
+    : build.sourceGraphBuild.graphManifestArtifact !== null
 }
 
 async function dispatchPreparingRevisionBuild(
@@ -535,6 +548,7 @@ async function dispatchPreparingRevisionBuild(
       providerWorkflowRunId: recoveredRunId,
       status: DB.ElementGenerationBuildStatus.FINALIZING,
       stage: 'revising',
+      revisionUsedGraph: graphRefs.graph_manifest !== undefined,
       startedAt: new Date(),
       ...(retryDispatch ? { retryCount: { increment: 1 } } : {}),
     },
@@ -578,9 +592,11 @@ async function dispatchPreparingQuestionBuild(
     await runtime.downloadVerified(blueprintArtifact)
   }
 
+  const slotSpecificationsRequested = isElementRevisionWorkerEnabled()
   const payload = questionWorkflowPayload(
     { ...build, blueprintArtifact },
-    runtime
+    runtime,
+    slotSpecificationsRequested
   )
   const { eventId, recoveredRunId } =
     await dispatchCostAccountedElementGeneration({
@@ -616,6 +632,7 @@ async function dispatchPreparingQuestionBuild(
     },
     data: {
       blueprintArtifact,
+      slotSpecificationsRequested,
       providerEventId: eventId,
       providerWorkflowRunId: recoveredRunId,
       status: DB.ElementGenerationBuildStatus.DESIGNING,
@@ -922,18 +939,23 @@ async function synchronizeLeasedBuild(
         // The provenance check recomputes the dispatched start-manifest hash,
         // so this payload must be built by the same function as the dispatch
         // payload above; otherwise the optional rollout-gated fields diverge.
-        const startPayload = questionWorkflowStartPayload({
-          buildId: build.id,
-          graphVersionId: build.sourceGraphBuild.id,
-          graphManifest,
-          storageName: build.sourceGraphBuild.graphBundleStorageName!,
-          blueprint,
-          output: {
-            containerName: runtime.questionOutputContainer,
-            blobPrefix: runtime.questionOutputPrefix,
+        const startPayload = questionWorkflowStartPayload(
+          {
+            buildId: build.id,
+            graphVersionId: build.sourceGraphBuild.id,
+            graphManifest,
+            storageName: build.sourceGraphBuild.graphBundleStorageName!,
+            blueprint,
+            output: {
+              containerName: runtime.questionOutputContainer,
+              blobPrefix: runtime.questionOutputPrefix,
+            },
+            language: configuration.language,
           },
-          language: configuration.language,
-        })
+          // The value dispatched with this build; builds that predate it
+          // never asked for slot specifications.
+          { emitSlotSpecifications: build.slotSpecificationsRequested === true }
+        )
         v3Evidence = {
           graphVersionId: build.sourceGraphBuild.id,
           graphManifest,
@@ -968,7 +990,7 @@ async function synchronizeLeasedBuild(
       const result = parseQuestionGenerationResult(artifact.bytes, {
         buildId: build.id,
         questionCount: build.requestedElementCount,
-        requiresCompleteProvenance: questionBuildGraphAvailable(build),
+        requiresCompleteProvenance: questionBuildGraphUsed(build),
       })
       if (result.status === 'rejected') {
         await ctx.prisma.elementGenerationBuild.updateMany({
@@ -1030,7 +1052,7 @@ async function synchronizeLeasedBuild(
           )
         }
         const provenanceIndex = result.questionProvenanceIndex
-        const graphAvailable = questionBuildGraphAvailable(build)
+        const graphAvailable = questionBuildGraphUsed(build)
         if (
           (graphAvailable &&
             (provenanceIndex === null ||
@@ -1047,6 +1069,16 @@ async function synchronizeLeasedBuild(
           return serviceError(
             'ARTIFACT_INVALID',
             'Completed question-generation result has invalid provenance coordinates'
+          )
+        }
+        if (graphAvailable && !questionBuildGraphAvailable(build)) {
+          // The graph was used at dispatch and purged before the result was
+          // read. Without its files the cited ids cannot be verified, so the
+          // child fails without a retry; a new revision request dispatches
+          // without the graph.
+          return serviceError(
+            'ARTIFACT_INVALID',
+            'The knowledge graph was purged before the revision result could be verified'
           )
         }
         const finalBytes = await runtime.downloadVerified(finalQuestions)
