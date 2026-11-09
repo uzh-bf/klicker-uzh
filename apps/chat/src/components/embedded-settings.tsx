@@ -1,16 +1,25 @@
 'use client'
 
 import { ChevronDown, Plus, X, Zap } from 'lucide-react'
-import { useLocale, useTranslations } from 'next-intl'
 import { useParams } from 'next/navigation'
+import { useLocale, useTranslations } from 'next-intl'
 import { useEffect, useRef, useState } from 'react'
-import { useChatStore } from '../stores/chatStore'
-import { useChatContextStore } from '../stores/chatContextStore'
 import { twMerge } from 'tailwind-merge'
-import { isKnownMode } from '../lib/config/modes'
 import { useEmbedded } from '../hooks/useEmbedded'
+import {
+  ANSWER_STYLES,
+  ANSWER_TONES,
+  type AnswerStyle,
+  type AnswerTone,
+} from '../lib/config/answerStyles'
+import { type ChatModeOptions, formatModeLabel } from '../lib/config/modes'
+import { useChatContextStore } from '../stores/chatContextStore'
+import { useChatStore } from '../stores/chatStore'
 import { useSettingsStore } from '../stores/settingsStore'
 import { useChatUi } from './chat-ui-context'
+
+const COMPACT_SELECT_CLASS =
+  'border-input bg-background bg-none text-foreground hover:border-ring focus-visible:ring-ring w-full cursor-pointer appearance-none truncate rounded-md border py-1 pl-2 pr-6 text-xs outline-none transition-colors focus-visible:ring-1'
 
 // Host contract for closing the embedded conversation from inside the chat.
 const EMBEDDED_CLOSE_MESSAGE_TYPE = 'klicker:chat-close'
@@ -51,7 +60,7 @@ export function resolveHostTargetOrigin(
  */
 export function hasEmbeddedModeSettings(
   showMinimalSettings: boolean,
-  modeOptions: Record<string, string>
+  modeOptions: ChatModeOptions
 ) {
   return showMinimalSettings && Object.keys(modeOptions).length > 1
 }
@@ -75,14 +84,12 @@ export function EmbeddedModeSelect({ className }: { className?: string }) {
         aria-label={t('chat.modes.switcherLabel')}
         className="border-input bg-background text-foreground hover:border-ring focus-visible:ring-ring w-full cursor-pointer appearance-none bg-none truncate rounded-md border py-1 pl-2 pr-6 text-xs outline-none transition-colors focus-visible:ring-1"
       >
-        {/* Same localized-label source as mode-switcher.tsx (`chat.modes.*`
-            + isKnownMode, D3-pattern for unknown modes) — labels here must
-            not fall back to `modeOptions[key]`, which is the English-only
-            registry description, or the DE select leaks raw English. */}
+        {/* Same label source as mode-switcher.tsx: localized labels for
+            standard modes, the authored custom-mode name otherwise. The
+            English registry description stays out of labels so the DE
+            select cannot leak raw English. */}
         {modeKeys.map((key) => {
-          const label = isKnownMode(key)
-            ? t(`chat.modes.${key}`)
-            : key.charAt(0).toUpperCase() + key.slice(1)
+          const label = formatModeLabel(t, key, modeOptions)
           return (
             <option key={key} value={key}>
               {label}
@@ -101,14 +108,85 @@ export function EmbeddedModeSelect({ className }: { className?: string }) {
   )
 }
 
-export function EmbeddedSettings() {
-  const { showMinimalSettings } = useChatUi()
-  const { modeOptions } = useSettingsStore()
+function EmbeddedAnswerPreferences({ className }: { className?: string }) {
+  const t = useTranslations()
+  const {
+    answerStyle,
+    setAnswerStyle,
+    answerTone,
+    setAnswerTone,
+    answerPreferencesEnabled,
+  } = useSettingsStore()
 
-  if (!hasEmbeddedModeSettings(showMinimalSettings, modeOptions)) return null
+  if (!answerPreferencesEnabled) return null
 
   return (
-    <EmbeddedModeSelect className="ml-auto max-w-[10rem] shrink sm:max-w-[12rem]" />
+    <div
+      className={twMerge(
+        'flex min-w-0 shrink items-center gap-1.5 sm:gap-2',
+        className
+      )}
+    >
+      <div className="relative min-w-0 max-w-[9rem] shrink sm:max-w-[12rem]">
+        <select
+          data-cy="chat-embedded-answer-style-select"
+          value={answerStyle}
+          onChange={(e) => setAnswerStyle(e.target.value as AnswerStyle)}
+          aria-label={t('chat.settingsPanel.answerStyleLabel')}
+          className={COMPACT_SELECT_CLASS}
+        >
+          {ANSWER_STYLES.map((value) => (
+            <option key={value} value={value}>
+              {t(`chat.settingsPanel.answerStyles.${value}`)}
+            </option>
+          ))}
+        </select>
+        <ChevronDown
+          aria-hidden
+          className="text-muted-foreground pointer-events-none absolute right-2 top-1/2 size-3 -translate-y-1/2"
+        />
+      </div>
+      <div className="relative min-w-0 max-w-[7rem] shrink sm:max-w-[9rem]">
+        <select
+          data-cy="chat-embedded-answer-tone-select"
+          value={answerTone}
+          onChange={(e) => setAnswerTone(e.target.value as AnswerTone)}
+          aria-label={t('chat.settingsPanel.answerToneLabel')}
+          className={COMPACT_SELECT_CLASS}
+        >
+          {ANSWER_TONES.map((value) => (
+            <option key={value} value={value}>
+              {t(`chat.settingsPanel.answerTones.${value}`)}
+            </option>
+          ))}
+        </select>
+        <ChevronDown
+          aria-hidden
+          className="text-muted-foreground pointer-events-none absolute right-2 top-1/2 size-3 -translate-y-1/2"
+        />
+      </div>
+    </div>
+  )
+}
+
+export function EmbeddedSettings() {
+  const { showMinimalSettings } = useChatUi()
+  const { modeOptions, answerPreferencesEnabled } = useSettingsStore()
+  const hasModeSelect = hasEmbeddedModeSettings(
+    showMinimalSettings,
+    modeOptions
+  )
+
+  if (!showMinimalSettings || (!hasModeSelect && !answerPreferencesEnabled))
+    return null
+
+  return (
+    <div className="flex min-w-0 shrink items-center gap-1.5 sm:gap-2">
+      {hasModeSelect ? (
+        <EmbeddedModeSelect className="ml-auto max-w-[10rem] shrink sm:max-w-[12rem]" />
+      ) : null}
+      <EmbeddedAnswerPreferences />
+    </div>
   )
 }
 
@@ -286,13 +364,16 @@ export function EmbeddedToolbar() {
   return (
     <div
       data-cy="chat-embedded-toolbar"
-      className="flex w-full min-w-0 items-center gap-2"
+      className="flex w-full min-w-0 flex-wrap items-center gap-2"
     >
       <EmbeddedCreditsBar />
       {/* The select takes the flexible middle so the row has no dead gap
           between the controls; without one the credits and the actions are
           the whole row and the actions still sit at the end. */}
       {hasModeSelect ? <EmbeddedModeSelect className="flex-1" /> : null}
+      {showMinimalSettings ? (
+        <EmbeddedAnswerPreferences className="order-last w-full sm:order-none sm:w-auto" />
+      ) : null}
       <EmbeddedNewConversation className="ml-auto" />
       <EmbeddedCloseButton />
     </div>

@@ -1,8 +1,20 @@
 import {
+  copyDocumentOriginal,
+  extractDocumentsForSending,
   extractLocalImageAttachments,
+  getDocumentAttachmentKey,
   getEditedMessageSource,
   getImageAttachmentKey,
+  rememberDocumentOriginal,
+  setPendingDocumentPages,
 } from '@/src/lib/attachments/attachmentState'
+import {
+  applyVisualReview,
+  composeMessageText,
+  type DocumentForSending,
+  getDocumentBlocks,
+  MAX_DOCUMENT_ATTACHMENTS,
+} from '@/src/lib/attachments/documentText'
 import { generateId } from '@/src/lib/utils/chatUtils'
 import {
   type ExtendedThreadMessageLike,
@@ -12,11 +24,20 @@ import {
   MAX_IMAGE_ATTACHMENTS,
   useComposerStore,
 } from '@/src/stores/composerStore'
-import { useSettingsStore } from '@/src/stores/settingsStore'
+import {
+  selectModelReadsDocumentPages,
+  useSettingsStore,
+} from '@/src/stores/settingsStore'
 import { type AppendMessage } from '@assistant-ui/react'
+import { useTranslations } from 'next-intl'
 import { useParams, useRouter, useSearchParams } from 'next/navigation'
 import { useCallback } from 'react'
 import { truncateMessagesForReload } from '../components/message-parts-state'
+
+const getTypedText = (message: AppendMessage): string =>
+  message.content
+    .map((part) => (part.type === 'text' ? part.text : ''))
+    .join('')
 
 /**
  * Hook for managing chat thread operations.
@@ -40,6 +61,7 @@ export function useThreadManagement(
   abortControllerRef: React.MutableRefObject<AbortController | null>,
   selectedModeOverride?: string
 ) {
+  const t = useTranslations()
   const { chatbotId } = useParams<{ chatbotId: string }>()
   const router = useRouter()
   const searchParams = useSearchParams()
@@ -51,6 +73,59 @@ export function useThreadManagement(
   const selectedModel = useSettingsStore((state) => state.selectedModel)
   const selectedReasoningEffort = useSettingsStore(
     (state) => state.selectedReasoningEffort
+  )
+  const supportsImageAttachments = useSettingsStore((state) =>
+    selectModelReadsDocumentPages(state, selectedModel)
+  )
+
+  // The original files stay in this tab for the document preview; a message
+  // keeps at most MAX_DOCUMENT_ATTACHMENTS documents, from `offset` on.
+  const rememberDocumentOriginals = (
+    messageId: string,
+    documents: DocumentForSending[],
+    offset = 0
+  ) => {
+    documents.forEach(({ file }, position) => {
+      const index = offset + position
+      if (file && index < MAX_DOCUMENT_ATTACHMENTS) {
+        rememberDocumentOriginal(messageId, index, file)
+      }
+    })
+  }
+
+  // Document text follows the typed question in a single text part, so it is
+  // sent, stored and reloaded like typed text. A message with only files
+  // gets a default question so the thread title and history stay readable.
+  // Rendered PDF pages are returned separately; the send flow holds them
+  // aside for the request of this message only.
+  const buildContent = useCallback(
+    (
+      message: AppendMessage,
+      documents: DocumentForSending[]
+    ): {
+      content: ExtendedThreadMessageLike['content']
+      pageImages: string[]
+    } => {
+      const { blocks, pageImages } = applyVisualReview(
+        documents.slice(0, MAX_DOCUMENT_ATTACHMENTS),
+        { supportsImages: supportsImageAttachments }
+      )
+      if (blocks.length === 0) return { content: message.content, pageImages }
+      const typedText = getTypedText(message).trim()
+      return {
+        content: [
+          {
+            type: 'text',
+            text: composeMessageText(
+              typedText || t('chat.composer.documentDefaultQuestion'),
+              blocks
+            ),
+          },
+        ],
+        pageImages,
+      }
+    },
+    [supportsImageAttachments, t]
   )
 
   /**
@@ -85,10 +160,13 @@ export function useThreadManagement(
       ).slice(0, MAX_IMAGE_ATTACHMENTS)
 
       // create user message with unique ID and metadata
+      const userMessageId = generateId()
+      const documents = extractDocumentsForSending(message.attachments)
+      const { content, pageImages } = buildContent(message, documents)
       const userMessage: ExtendedThreadMessageLike = {
-        id: generateId(),
+        id: userMessageId,
         role: 'user',
-        content: message.content,
+        content,
         createdAt: new Date(),
         parentId: message.parentId || null,
         chatMode: selectedMode,
@@ -103,7 +181,8 @@ export function useThreadManagement(
       }
 
       try {
-        await addMessage(chatbotId, userMessage, threadId)
+        const addedThreadId = await addMessage(chatbotId, userMessage, threadId)
+        if (!addedThreadId) return
       } catch (error) {
         console.error('Failed to add message', error)
         return
@@ -114,9 +193,12 @@ export function useThreadManagement(
           ?.messages || []
 
       // generate response based on current conversation
+      setPendingDocumentPages(userMessageId, pageImages)
+      rememberDocumentOriginals(userMessageId, documents)
       await generateChatResponse(currentMessages, threadId)
     },
     [
+      buildContent,
       createThread,
       addMessage,
       generateChatResponse,
@@ -164,10 +246,11 @@ export function useThreadManagement(
       const sourceMessageId = sourceId ?? editedMessageId
 
       // create edited message with new ID
-      const editedMessage: ExtendedThreadMessageLike = {
+      const editedMessageNewId = generateId()
+      let editedMessage: ExtendedThreadMessageLike = {
         role: 'user',
         content: message.content,
-        id: generateId(),
+        id: editedMessageNewId,
         createdAt: new Date(),
         parentId: parentId,
         chatMode: selectedMode,
@@ -220,6 +303,29 @@ export function useThreadManagement(
       if (mergedAttachments.length > 0) {
         editedMessage.imageAttachments = mergedAttachments
       }
+
+      const keptDocuments = originalMessage
+        ? getDocumentBlocks(
+            typeof originalMessage.content === 'string'
+              ? originalMessage.content
+              : originalMessage.content
+                  .map((part) => (part.type === 'text' ? part.text : ''))
+                  .join('')
+          )
+            .map((block, index) => ({ block, index }))
+            .filter(
+              ({ index }) =>
+                !removedAttachmentKeys.has(getDocumentAttachmentKey(index))
+            )
+        : []
+      const newDocuments = extractDocumentsForSending(message.attachments)
+      // Kept documents have no page images any more, so applyVisualReview
+      // marks their pages as not reviewed in the new message.
+      const { content, pageImages } = buildContent(message, [
+        ...keptDocuments.map(({ block }) => ({ block, pageImages: [] })),
+        ...newDocuments,
+      ])
+      editedMessage = { ...editedMessage, content }
       editedMessage.attachmentSourceMessageId =
         originalMessage?.attachmentSourceMessageId ??
         originalMessage?.id ??
@@ -256,9 +362,29 @@ export function useThreadManagement(
       }))
 
       // generate new response from the edited conversation state
+      setPendingDocumentPages(editedMessageNewId, pageImages)
+      keptDocuments.forEach(({ index }, position) => {
+        if (originalMessage?.id && position < MAX_DOCUMENT_ATTACHMENTS) {
+          copyDocumentOriginal(
+            { messageId: originalMessage.id, index },
+            { messageId: editedMessageNewId, index: position }
+          )
+        }
+      })
+      rememberDocumentOriginals(
+        editedMessageNewId,
+        newDocuments,
+        keptDocuments.length
+      )
       await generateChatResponse(newCurrentPath, threadId)
     },
-    [generateChatResponse, selectedMode, selectedModel, selectedReasoningEffort]
+    [
+      buildContent,
+      generateChatResponse,
+      selectedMode,
+      selectedModel,
+      selectedReasoningEffort,
+    ]
   )
 
   /**

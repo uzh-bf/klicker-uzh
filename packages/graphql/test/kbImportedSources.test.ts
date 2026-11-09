@@ -120,6 +120,8 @@ function createContext({
   kb = { id: KB_ID, ownerId: OWNER_ID },
   account = { aiFeaturesEnabled: true, betaEnabled: true },
   managedResourceIds = [],
+  managedResourceType = 'BLOB',
+  managedSourceUrl = null,
   mcpServer = {
     id: 'mcp-1',
     isActive: true,
@@ -131,6 +133,8 @@ function createContext({
   kb?: { id: string; ownerId: string } | null
   account?: { aiFeaturesEnabled: boolean; betaEnabled: boolean } | null
   managedResourceIds?: string[]
+  managedResourceType?: 'BLOB' | 'URL'
+  managedSourceUrl?: string | null
   mcpServer?: Record<string, unknown> | null
 } = {}) {
   return {
@@ -152,8 +156,8 @@ function createContext({
               .filter((id) => where.id.in.includes(id))
               .map((id) => ({
                 id,
-                type: 'BLOB',
-                sourceUrl: null,
+                type: managedResourceType,
+                sourceUrl: managedSourceUrl,
                 ingestedAt: MANAGED_INGESTED_AT,
               }))
         ),
@@ -704,6 +708,40 @@ describe('getKbImportedSourcesConnection', () => {
       origin: 'MANAGED',
       sourceUrl: null,
       ingestedAt: MANAGED_INGESTED_AT,
+    })
+  })
+
+  it('retains a managed website link and prefers its inventory ingestion time', async () => {
+    const sourceUrl = 'https://example.org/course-material'
+    const ingestedAt = '2026-07-18T14:30:00.000Z'
+    const factory = createClientFactory([
+      textResult(
+        envelope({
+          sources: [
+            documentSource({
+              external_resource_id: MANAGED_RESOURCE_ID,
+              source_url: `${SOURCE_GATEWAY_ORIGIN}/internal`,
+              ingested_at: ingestedAt,
+            }),
+          ],
+        })
+      ),
+    ])
+
+    const connection = await getKbImportedSourcesConnection(
+      { kbId: KB_ID },
+      createContext({
+        managedResourceIds: [MANAGED_RESOURCE_ID],
+        managedResourceType: 'URL',
+        managedSourceUrl: sourceUrl,
+      }),
+      createDeps(factory)
+    )
+
+    expect(connection.items[0]).toMatchObject({
+      origin: 'MANAGED',
+      sourceUrl,
+      ingestedAt: new Date(ingestedAt),
     })
   })
 

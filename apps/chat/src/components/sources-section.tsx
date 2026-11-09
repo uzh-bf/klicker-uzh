@@ -40,6 +40,12 @@ const SOURCE_TYPE_ICONS: Record<
   document: FileTextIcon,
 }
 
+// Cited cards are previewed inline up to this count. The remaining cited cards
+// move into the "Other retrieved material" disclosure together with the
+// uncited sources; every card still renders and keeps its `src-...` DOM id, so
+// a citation chip can open the disclosure and focus its card.
+const CITED_SOURCES_PREVIEW_LIMIT = 12
+
 function SourceCard({
   source,
   messageId,
@@ -187,6 +193,12 @@ export function SourcesSection() {
     citationCounts
   )
 
+  const previewSources = citedSources.slice(0, CITED_SOURCES_PREVIEW_LIMIT)
+  const otherSources = [
+    ...citedSources.slice(CITED_SOURCES_PREVIEW_LIMIT),
+    ...uncitedSources,
+  ]
+
   const headingId = `chat-sources-heading-${messageId}`
 
   // Embedded (and other narrow) layouts render the same normalized list as
@@ -261,7 +273,7 @@ export function SourcesSection() {
         {t('chat.sources.title')} · {sources.length}
       </h3>
 
-      {citedSources.length > 0 && (
+      {previewSources.length > 0 && (
         <>
           <h4 className="text-muted-foreground mb-2 text-xs font-semibold uppercase tracking-wide">
             {t('chat.sources.cited')}
@@ -273,7 +285,7 @@ export function SourcesSection() {
             data-cy="chat-cited-sources"
             className="grid grid-cols-[repeat(auto-fit,minmax(min(230px,100%),1fr))] items-stretch gap-2"
           >
-            {citedSources.map((source) => (
+            {previewSources.map((source) => (
               <SourceCard
                 key={source.id}
                 source={source}
@@ -285,7 +297,7 @@ export function SourcesSection() {
         </>
       )}
 
-      {uncitedSources.length > 0 && (
+      {otherSources.length > 0 && (
         <details
           data-cy="chat-other-sources"
           className="mt-3 rounded-md border border-dashed px-3 py-2"
@@ -295,11 +307,11 @@ export function SourcesSection() {
             className="text-muted-foreground cursor-pointer text-xs font-semibold uppercase tracking-wide outline-none focus-visible:ring-1"
           >
             {t('chat.sources.otherRetrieved', {
-              count: uncitedSources.length,
+              count: otherSources.length,
             })}
           </summary>
           <div className="mt-2 grid grid-cols-[repeat(auto-fit,minmax(min(230px,100%),1fr))] items-stretch gap-2">
-            {uncitedSources.map((source) => (
+            {otherSources.map((source) => (
               <SourceCard
                 key={source.id}
                 source={source}

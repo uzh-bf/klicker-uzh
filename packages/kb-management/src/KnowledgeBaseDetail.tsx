@@ -6,12 +6,28 @@ import { useFormatter, useTranslations } from 'next-intl'
 import React, { useCallback, useRef, useState } from 'react'
 import KnowledgeBaseAddResourceModal from './components/KnowledgeBaseAddResourceModal'
 import KnowledgeBaseChatbotBindings from './components/KnowledgeBaseChatbotBindings'
+import KnowledgeBaseDomainSettings from './components/KnowledgeBaseDomainSettings'
 import KnowledgeBaseImportedSourceList from './components/KnowledgeBaseImportedSourceList'
+import KnowledgeBaseQuestionReadiness from './components/KnowledgeBaseQuestionReadiness'
 import KnowledgeBaseResourceList from './components/KnowledgeBaseResourceList'
 import KnowledgeGraphPanel from './components/KnowledgeGraphPanel'
 import { getGraphQLErrorCode } from './graphqlError'
 
-function KnowledgeBaseDetail({ kbId }: { kbId: string }) {
+function KnowledgeBaseDetail({
+  kbId,
+  backLink,
+  advanced = false,
+}: {
+  kbId: string
+  // Advanced mode adds usage and quota figures, resource search and filters,
+  // the bulk ingestion action, the indexed sources and the knowledge graph
+  // panel. The simple page keeps what a lecturer needs to describe the
+  // materials, add them and see that they are ready.
+  advanced?: boolean
+  // A banner leading back, for example to the chatbot whose materials are
+  // being prepared. The caller owns and validates the target.
+  backLink?: { href: string; label: string; message: string }
+}) {
   const t = useTranslations()
   const format = useFormatter()
   const [resourceRefreshKey, setResourceRefreshKey] = useState(0)
@@ -102,13 +118,43 @@ function KnowledgeBaseDetail({ kbId }: { kbId: string }) {
       >
         {t('kb.backToList')}
       </Link>
+      {backLink ? (
+        <div
+          className="mt-4 flex flex-col gap-3 rounded-md border border-primary-40 bg-primary-20/40 p-4 sm:flex-row sm:items-center sm:justify-between"
+          data-cy="kb-chatbot-banner"
+        >
+          <p className="text-sm text-slate-800">{backLink.message}</p>
+          <Link
+            href={backLink.href}
+            className="inline-flex shrink-0 items-center justify-center rounded-md bg-primary-100 px-4 py-2 text-sm font-semibold text-white hover:bg-primary-80"
+            data-cy="kb-back-to-chatbot"
+          >
+            {backLink.label}
+          </Link>
+        </div>
+      ) : null}
       <H1 className={{ root: 'mt-4 break-words' }}>{data.getKb.name}</H1>
       {data.getKb.description ? (
         <p className="mt-2 break-words text-slate-600">
           {data.getKb.description}
         </p>
       ) : null}
-      {metrics ? (
+      <KnowledgeBaseDomainSettings
+        kbId={kbId}
+        domain={{
+          id: data.getKb.domainPolicyId ?? null,
+          version: data.getKb.domainPolicyVersion ?? null,
+          language: data.getKb.domainPolicyLanguage ?? null,
+        }}
+      />
+      {data.getKb.questionPreparation ? (
+        <div className="mt-3">
+          <KnowledgeBaseQuestionReadiness
+            preparation={data.getKb.questionPreparation}
+          />
+        </div>
+      ) : null}
+      {advanced && metrics ? (
         <section
           className="mt-6"
           aria-labelledby="kb-metrics-title"
@@ -197,17 +243,20 @@ function KnowledgeBaseDetail({ kbId }: { kbId: string }) {
         refreshKey={resourceRefreshKey}
         onMetricsChanged={refreshMetrics}
         onIngestionSettled={refreshImportedSources}
+        advanced={advanced}
         onAddResource={(trigger) => {
           addResourceTriggerRef.current = trigger
           setAddResourceOpen(true)
         }}
       />
-      <KnowledgeBaseImportedSourceList
-        kbId={kbId}
-        refreshKey={importedSourcesRefreshKey}
-      />
+      {advanced ? (
+        <KnowledgeBaseImportedSourceList
+          kbId={kbId}
+          refreshKey={importedSourcesRefreshKey}
+        />
+      ) : null}
       <KnowledgeBaseChatbotBindings kbId={kbId} onChanged={refreshMetrics} />
-      <KnowledgeGraphPanel kbId={kbId} />
+      {advanced ? <KnowledgeGraphPanel kbId={kbId} /> : null}
       {addResourceOpen ? (
         <KnowledgeBaseAddResourceModal
           kbId={kbId}

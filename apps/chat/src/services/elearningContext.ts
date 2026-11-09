@@ -1,12 +1,12 @@
 import type {
+  ELearningCompletionState,
   ELearningMaterialAvailability,
   ELearningSnapshotContent,
-  ELearningCompletionState,
 } from '@klicker-uzh/types'
 import {
+  getElearningChatHandoffSecret,
   learnerBindingsEqual,
   verifyElearningSnapshotEnvelope,
-  getElearningChatHandoffSecret,
 } from '@klicker-uzh/util'
 import { z } from 'zod'
 
@@ -170,11 +170,12 @@ export function hasElearningPageEvidence(
   return getElearningPageEvidenceText(snapshot).trim().length > 0
 }
 
-// Formats the materials-only grounding policy for an eLearning-origin answer,
-// with the verified snapshot as delimited data when one was supplied. The
-// policy itself is always emitted so a turn that lost its snapshot keeps the
-// eLearning evidence rules instead of silently answering like ordinary chat.
-export function formatElearningGroundingPolicy(
+// Formats the verified snapshot as delimited data for one turn. It carries the
+// per-turn facts (including `observedAt` and the snapshot-dependent limitation
+// notes), so it belongs in the turn's context message, not in the stable
+// instructions. A turn that lost its snapshot says so instead of silently
+// answering like ordinary chat.
+export function formatElearningSnapshotContext(
   snapshot: ELearningSnapshotContent | null
 ): string {
   const lines = ['## Verified learning context (eLearning)']
@@ -199,32 +200,35 @@ export function formatElearningGroundingPolicy(
       ),
       '```'
     )
+    if (!hasElearningPageEvidence(snapshot)) {
+      lines.push(
+        'No usable page text was supplied for this material, so answers must come from retrieved course material and must state the limitation when that does not support the question.'
+      )
+    }
   } else {
     lines.push(
       'No page snapshot was supplied with this question, so no page text is available for it. Do not assume any particular page or location; name the missing evidence instead of guessing what the student is looking at.'
     )
   }
 
-  lines.push(
-    [
-      'eLearning evidence policy:',
-      '- Ground subject teaching only in the supplied text above and in retrieved course material. If neither supports the question, say so and name the missing evidence; do not fill the gap from general knowledge.',
-      "Never claim to have inspected underlying files, animations, interactive content or quiz state when the material availability is 'metadata', 'unavailable' or 'unknown'. Explain the supplied description instead.",
-      'A title or description does not prove access to the underlying material. Retrieved results remain a partial view; empty retrieval is not proof of absence.',
-      'When retrieval is unavailable, empty or failed, disclose that. The supplied page text is usable only when it actually addresses the question; if it does not, name the missing evidence instead of stretching the page text to fit.',
-      ...(snapshot && !hasElearningPageEvidence(snapshot)
-        ? [
-            'No usable page text was supplied for this material, so answers must come from retrieved course material and must state the limitation when that does not support the question.',
-          ]
-        : []),
-      'Completion facts describe recorded progress, never mastery or understanding.',
-    ].join('\n')
-  )
-
   return lines.join('\n')
 }
 
-export type { ELearningMaterialAvailability, ELearningCompletionState }
+// The materials-only evidence policy for an eLearning-origin thread. It is
+// bound to the conversation origin and never varies per turn, so it stays in
+// the stable instructions and a turn that lost its snapshot keeps the rules.
+export function formatElearningEvidencePolicy(): string {
+  return [
+    'eLearning evidence policy:',
+    '- Ground subject teaching only in the supplied page text of the verified learning context and in retrieved course material. If neither supports the question, say so and name the missing evidence; do not fill the gap from general knowledge.',
+    "Never claim to have inspected underlying files, animations, interactive content or quiz state when the material availability is 'metadata', 'unavailable' or 'unknown'. Explain the supplied description instead.",
+    'A title or description does not prove access to the underlying material. Retrieved results remain a partial view; empty retrieval is not proof of absence.',
+    'When retrieval is unavailable, empty or failed, disclose that. The supplied page text is usable only when it actually addresses the question; if it does not, name the missing evidence instead of stretching the page text to fit.',
+    'Completion facts describe recorded progress, never mastery or understanding.',
+  ].join('\n')
+}
+
+export type { ELearningCompletionState, ELearningMaterialAvailability }
 
 // History sent by the browser chooses a branch, but cannot author previous
 // assistant responses or alter the questions that carry saved page evidence.

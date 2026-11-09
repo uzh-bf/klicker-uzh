@@ -32,10 +32,10 @@ hatchet:
     apiUrl: 'http://app-hatchet-svc-api.stg-hatchet-svc.svc.cluster.local:8080'
     tlsStrategy: 'none'
     workflowName: 'course-kg-ingestion'
-    standardGenerationModel: 'klickeruzh/azure/gpt-5.6-luna'
-    standardCleaningModel: 'klickeruzh/azure/gpt-5.6-luna'
-    highGenerationModel: 'klickeruzh/azure/gpt-5.6-luna'
-    highCleaningModel: 'klickeruzh/azure/gpt-5.6-luna'
+    standardGenerationModel: 'klickeruzh/azure/gpt-6-luna'
+    standardCleaningModel: 'klickeruzh/azure/gpt-6-luna'
+    highGenerationModel: 'klickeruzh/azure/gpt-6-luna'
+    highCleaningModel: 'klickeruzh/azure/gpt-6-luna'
   workers:
     general:
       replicaCount: 1
@@ -191,7 +191,7 @@ auth:
       memory: 192Mi
     limits:
       cpu: 200m
-      memory: 200Mi
+      memory: 512Mi
 
 chat:
   allowedFrameAncestors: 'https://*.df-app.ch https://*.olat.uzh.ch https://lms.uzh.ch'
@@ -207,37 +207,54 @@ chat:
     enabled: true
     environment: 'staging'
 
+  # Account usage has two independent switches: lifecycle writes record attempt
+  # markers and credit counters, and enforcement rejects a participant request
+  # before the provider call when the selected class has no available budget.
+  # STG ships both switches disabled. The release that carries them stays
+  # deployable without usage data; each switch is activated separately only
+  # after the base-budget backfill and cohort evidence for this environment.
+  # Order, rollback, and partial-failure recovery: docs/chat-platform.md,
+  # "Account usage activation".
+  lifecycleWritersEnabled: false
+  accountUsageEnforcementEnabled: false
+
   automaticModels:
     primaryId: auto
-    fallbackId: gpt-5.6-luna
+    fallbackId: gpt-6-luna
 
   modelRegistry:
-    # "Auto" routes through the LiteLLM auto-router, which self-selects the
-    # tier per request (SIMPLE=gpt-5.6-luna-medium, MEDIUM=gpt-5.6-luna-high,
-    # COMPLEX=gpt-5.6-luna-xhigh, REASONING=gpt-5.6-sol-medium; match_threshold
-    # 0.55). It is a normal selectable model (fallback: false) and is also the
-    # global automatic-model primary. Chatbots using automatic model selection
-    # therefore use Auto by default; explicit model selections remain respected.
+    # Staging makes Auto the global automatic-model primary, so chatbots using
+    # automatic model selection exercise auto-router-v4, as in production.
+    # Explicit model selections remain respected, and new chatbots
+    # still start fixed on GPT-6 Luna. GPT-6 Luna is the participant-credit
+    # fallback.
+    # "Auto" routes through the LiteLLM auto-router-v4, which self-selects the
+    # tier per request (SIMPLE=gpt-6.1-terra-low, MEDIUM=gpt-6.1-sol-low,
+    # COMPLEX=gpt-6.1-sol-medium, REASONING=gpt-6.1-sol-high), with
+    # Microsoft-Decision-1 classifying every request. Auto is a BASE model; Sol
+    # selected directly stays ADVANCED.
     # A chatbot can be pinned to Auto-only via its DB columns
     # (modelSelection=false + allowedModelIds=["auto"]); see the vorkurs chatbot.
-    # The accounting rate is the accepted rounded blend for an observed
-    # generation mix of about 90% Luna and 10% Sol. Classifier and embedding
-    # overhead remain outside the registry's selected-model token fields.
+    # Auto's accounting rate matches a generation mix of about 50% Luna and
+    # 50% Sol at GPT-6 list prices. With v2, Sol serves most routed requests,
+    # so the rate is below list cost until prompt-cache data justify a new
+    # price. Classifier overhead remains outside the registry's
+    # selected-model token fields.
     - id: auto
-      deploymentId: klickeruzh/azure/auto-router
+      deploymentId: klickeruzh/azure/auto-router-v4
       name: Auto
       description: Automatic model selection (routes to the best model per request)
       supportsImageAttachments: true
       usesResponsesApi: true
       fallback: false
-      usageClass: ADVANCED
+      usageClass: BASE
       maxOutputTokens: 4096
       cost:
         input: 1.0
         output: 5.0
-    - id: gpt-5.6-luna
-      deploymentId: klickeruzh/azure/gpt-5.6-luna
-      name: GPT-5.6 Luna
+    - id: gpt-6-luna
+      deploymentId: klickeruzh/azure/gpt-6-luna
+      name: GPT-6 Luna
       description: OpenAI reasoning model
       supportsImageAttachments: true
       supportsReasoning: true
@@ -250,55 +267,55 @@ chat:
       usageClass: BASE
       maxOutputTokens: 4096
       cost:
-        input: 0.2
-        output: 1.2
-    - id: gpt-4.1
-      deploymentId: klickeruzh/azure/gpt-4.1
-      name: GPT-4.1
-      description: OpenAI model
+        input: 0.1
+        output: 0.5
+    - id: gpt-6-sol
+      deploymentId: klickeruzh/azure/gpt-6-sol
+      name: GPT-6 Sol
+      description: OpenAI frontier reasoning model
       supportsImageAttachments: true
+      supportsReasoning: true
+      supportedReasoningEfforts:
+        - low
+        - medium
+        - high
       fallback: false
       usageClass: ADVANCED
       maxOutputTokens: 4096
       cost:
         input: 2.0
-        output: 8.0
-    - id: gpt-5.1
-      deploymentId: klickeruzh/azure/gpt-5.1
-      name: GPT-5.1
-      description: OpenAI reasoning model
-      supportsImageAttachments: true
-      supportsReasoning: true
-      supportedReasoningEfforts:
-        - none
-        - minimal
-        - low
-        - medium
-        - high
-      fallback: false
-      usageClass: ADVANCED
-      maxOutputTokens: 4096
-      cost:
-        input: 1.25
         output: 10.0
-    - id: gpt-5.4
-      deploymentId: klickeruzh/azure/gpt-5.4
-      name: GPT-5.4
-      description: OpenAI reasoning model
+    - id: gpt-6.1-sol
+      deploymentId: klickeruzh/azure/gpt-6.1-sol
+      name: GPT-6.1 Sol
+      description: OpenAI frontier reasoning model
       supportsImageAttachments: true
       supportsReasoning: true
       supportedReasoningEfforts:
-        - minimal
         - low
         - medium
         - high
-        - xhigh
       fallback: false
       usageClass: ADVANCED
       maxOutputTokens: 4096
       cost:
-        input: 2.5
-        output: 15.0
+        input: 2.0
+        output: 10.0
+    - id: gpt-5.6-sol
+      deploymentId: klickeruzh/azure/gpt-5.6-sol
+      name: GPT-5.6 Sol
+      description: OpenAI frontier reasoning model
+      supportsImageAttachments: true
+      supportsReasoning: true
+      supportedReasoningEfforts:
+        - low
+        - medium
+      fallback: false
+      usageClass: ADVANCED
+      maxOutputTokens: 4096
+      cost:
+        input: 5.0
+        output: 30.0
   replicaCount: 1
 
   affinity:
@@ -432,6 +449,31 @@ frontendPWA:
   autoscaling:
     enabled: false
 
+  # Spot burst tier next to the static replica. Its replicas are owned by the
+  # burst HPA, which the stg Argo CD Application excludes from replica drift.
+  burst:
+    enabled: true
+    # Soft spread, so losing one spot node does not remove the whole tier
+    # while a tight pool can still place every burst pod. The selector names
+    # the tier label, so baseline pods do not count toward the skew.
+    topologySpreadConstraints:
+      - maxSkew: 1
+        topologyKey: topology.kubernetes.io/zone
+        whenUnsatisfiable: ScheduleAnyway
+        labelSelector:
+          matchLabels:
+            app.kubernetes.io/component: frontend-pwa
+            klicker.uzh.ch/tier: burst
+      - maxSkew: 1
+        topologyKey: kubernetes.io/hostname
+        whenUnsatisfiable: ScheduleAnyway
+        labelSelector:
+          matchLabels:
+            app.kubernetes.io/component: frontend-pwa
+            klicker.uzh.ch/tier: burst
+
+  preStopSleepSeconds: 5
+
   affinity:
     podAntiAffinity:
       preferredDuringSchedulingIgnoredDuringExecution:
@@ -464,16 +506,20 @@ frontendPWA:
         hosts:
           - pwa.klicker.stg.df-app.ch
 
+  # One replica on staging: start the new Pod before stopping the old one.
   strategy:
-    type: Recreate
+    type: RollingUpdate
+    rollingUpdate:
+      maxUnavailable: 0
 
+  # Matches the production PWA shape, so burst tier drills on staging see the
+  # same CPU headroom and HPA target as production.
   resources:
     requests:
       cpu: 50m
-      memory: 50Mi
+      memory: 320Mi
     limits:
-      cpu: 200m
-      memory: 200Mi
+      memory: 1Gi
 
 frontendManage:
   priorityClassName: staging-workload
@@ -517,8 +563,11 @@ frontendManage:
         hosts:
           - manage.klicker.stg.df-app.ch
 
+  # One replica on staging: start the new Pod before stopping the old one.
   strategy:
-    type: Recreate
+    type: RollingUpdate
+    rollingUpdate:
+      maxUnavailable: 0
 
   resources:
     requests:
@@ -568,8 +617,11 @@ frontendControl:
         hosts:
           - control.klicker.stg.df-app.ch
 
+  # One replica on staging: start the new Pod before stopping the old one.
   strategy:
-    type: Recreate
+    type: RollingUpdate
+    rollingUpdate:
+      maxUnavailable: 0
 
   resources:
     requests:
@@ -629,7 +681,11 @@ backendGraphql:
       standardEstimateMinorUnits: '100'
       highEstimateMinorUnits: '200'
       maxCostMinorUnits: '250'
-      semesterQuotaMinorUnits: '1000'
+      # Staging carries the full domain and language comparison plus element
+      # generation, so the 10.00 CHF semester budget does not cover a test
+      # cycle. The backend adopts a configured limit at or above an owner's
+      # granted ledger limit; a lower configured value never reduces it.
+      semesterQuotaMinorUnits: '5000'
       pricingVersion: 'stg-canary-v1'
       billingMode: 'SEMESTER_QUOTA'
       semesterKey: '2026-H2'
@@ -668,8 +724,11 @@ backendGraphql:
           - api.klicker.stg.df-app.ch
           # - backend-sls.klicker.stg.df-app.ch
 
+  # One replica on staging: start the new Pod before stopping the old one.
   strategy:
-    type: Recreate
+    type: RollingUpdate
+    rollingUpdate:
+      maxUnavailable: 0
 
   resources:
     requests:
@@ -717,8 +776,11 @@ olatApi:
         hosts:
           - olat-api.klicker.stg.df-app.ch
 
+  # One replica on staging: start the new Pod before stopping the old one.
   strategy:
-    type: Recreate
+    type: RollingUpdate
+    rollingUpdate:
+      maxUnavailable: 0
 
   resources:
     requests:
@@ -791,6 +853,15 @@ lti:
         hosts:
           - lti.klicker.stg.df-app.ch
 
+  # The chart default (200m CPU / 200Mi memory) over-reserves this service: its
+  # staging VPA sits at the clamp floor (15m CPU / 100Mi memory) while live usage
+  # is about 1m CPU and 63Mi memory. CPU matches the 50m used by every other
+  # staging app; the chart's 500Mi memory limit is retained.
+  resources:
+    requests:
+      cpu: 50m
+      memory: 128Mi
+
 responseApi:
   corsAllowedOrigins: 'https://pwa.klicker.stg.df-app.ch'
 
@@ -833,8 +904,13 @@ responseApi:
         hosts:
           - response-api.klicker.stg.df-app.ch
 
+  # One replica on staging: start the new Pod before stopping the old one.
+  # The chart has no readiness probe here yet, so the new Pod counts as
+  # Ready when its container starts, before the server listens.
   strategy:
-    type: Recreate
+    type: RollingUpdate
+    rollingUpdate:
+      maxUnavailable: 0
 
   resources:
     requests:
@@ -896,8 +972,11 @@ assessment:
           hosts:
             - assessment.klicker.stg.df-app.ch
 
+    # One replica on staging: start the new Pod before stopping the old one.
     strategy:
-      type: Recreate
+      type: RollingUpdate
+      rollingUpdate:
+        maxUnavailable: 0
 
     resources:
       requests:
@@ -969,8 +1048,11 @@ assessment:
           hosts:
             - assessment-api.klicker.stg.df-app.ch
 
+    # One replica on staging: start the new Pod before stopping the old one.
     strategy:
-      type: Recreate
+      type: RollingUpdate
+      rollingUpdate:
+        maxUnavailable: 0
 
     resources:
       requests:
@@ -1034,8 +1116,13 @@ assessment:
           hosts:
             - response-api-assessment.klicker.stg.df-app.ch
 
+    # One replica on staging: start the new Pod before stopping the old one.
+    # The chart has no readiness probe here yet, so the new Pod counts as
+    # Ready when its container starts, before the server listens.
     strategy:
-      type: Recreate
+      type: RollingUpdate
+      rollingUpdate:
+        maxUnavailable: 0
 
     resources:
       requests:

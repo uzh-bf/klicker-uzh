@@ -7,6 +7,7 @@ const test = require('node:test')
 const {
   buildPlanMetadata,
   writeGithubOutputs,
+  main,
 } = require('./playwright-plan-metadata.cjs')
 
 function plan(
@@ -27,6 +28,155 @@ function plan(
     })),
   }
 }
+
+test('only a validated nonempty plan can request admission before output publication', async (t) => {
+  const directory = fs.mkdtempSync(path.join(os.tmpdir(), 'plan-admission-'))
+  t.after(() => fs.rmSync(directory, { recursive: true, force: true }))
+  const planFile = path.join(directory, 'plan.json')
+  const routeFile = path.join(directory, 'route.json')
+  const output = path.join(directory, 'output')
+  const env = {
+    EVENT_NAME: 'pull_request',
+    REPOSITORY: 'uzh-bf/klicker-uzh',
+    REPOSITORY_PRIVATE: 'false',
+    HEAD_REPOSITORY: 'uzh-bf/klicker-uzh',
+    PR_AUTHOR: 'synthetic',
+    PR_DRAFT: 'false',
+    PR_NUMBER: '1234',
+    PUBLIC_ROLLOUT_ENABLED: 'true',
+    GITHUB_RUN_ID: '100',
+    GITHUB_RUN_ATTEMPT: '1',
+    HEAD_SHA: 'a'.repeat(40),
+    BASE_SHA: 'b'.repeat(40),
+    CONTROL_SHA: 'c'.repeat(40),
+    WARPBUILD_ADMISSION_URL: 'https://admission.example.invalid/admit',
+    ACTIONS_ID_TOKEN_REQUEST_URL:
+      'https://pipelines.actions.githubusercontent.com/token',
+    ACTIONS_ID_TOKEN_REQUEST_TOKEN: 'synthetic',
+  }
+  const route = { route: 'public-pr', selectorPrState: 'ready' }
+  let earlyCalls = 0
+  t.mock.method(globalThis, 'fetch', async () => {
+    earlyCalls++
+    throw new Error('admission before plan')
+  })
+  await require('./playwright-route.cjs').main(['--output', routeFile], env)
+  assert.equal(earlyCalls, 0)
+  let calls = 0
+  const network = async () => {
+    calls++
+    return calls % 2 === 1
+      ? Response.json({ value: 'synthetic-token' })
+      : Response.json({
+          ticket: {
+            runId: '100',
+            runAttempt: '1',
+            pullRequestNumber: '1234',
+            headSha: env.HEAD_SHA,
+            baseSha: env.BASE_SHA,
+            controlSha: env.CONTROL_SHA,
+            expiresAt: new Date(Date.now() + 60000).toISOString(),
+          },
+        })
+  }
+  const args = ['--plan', planFile, '--route', routeFile, '--output', output]
+  for (const candidate of [
+    plan('skip', 0, 'documentation-and-planning'),
+    plan('full', 8),
+  ]) {
+    fs.writeFileSync(planFile, JSON.stringify(candidate))
+    fs.writeFileSync(routeFile, JSON.stringify(route))
+    await main(args, env, network)
+    const result = JSON.parse(fs.readFileSync(routeFile))
+    assert.equal(calls, candidate.mode === 'skip' ? 0 : 2)
+    assert.equal(
+      result.provider,
+      candidate.mode === 'skip' ? undefined : 'warpbuild'
+    )
+    assert.match(
+      fs.readFileSync(output, 'utf8'),
+      candidate.mode === 'skip' ? /should_run=false/ : /provider=warpbuild/
+    )
+  }
+  fs.writeFileSync(planFile, JSON.stringify(plan('full', 0)))
+  await assert.rejects(main(args, env, network))
+  assert.equal(calls, 2)
+  fs.writeFileSync(planFile, JSON.stringify(plan('full', 8)))
+  fs.writeFileSync(routeFile, JSON.stringify(route))
+  fs.writeFileSync(output, '')
+  let fallbackCalls = 0
+  await main(args, env, async () =>
+    ++fallbackCalls === 1
+      ? Response.json({ value: 'synthetic-token' })
+      : Response.json({ reason: 'unavailable' }, { status: 409 })
+  )
+  const fallback = JSON.parse(fs.readFileSync(routeFile))
+  assert.equal(fallbackCalls, 2)
+  assert.equal(fallback.provider, undefined)
+  assert.equal(fallback.admissionAttempt, undefined)
+  assert.match(fs.readFileSync(output, 'utf8'), /^provider=public-pool$/m)
+  assert.match(fs.readFileSync(output, 'utf8'), /^should_run=true$/m)
+})
+
+test('provider metadata selects only fixed runners and binds paid attempts', () => {
+  const route = {
+    route: 'public-pr',
+    selectorPrState: 'ready',
+    provider: 'warpbuild',
+    admissionAttempt: '2',
+  }
+  const cloud = buildPlanMetadata(plan('full', 8), route)
+  assert.deepEqual(cloud.buildRunner, {
+    group: 'Default',
+    labels: 'warp-ubuntu-2404-arm64-8x',
+  })
+  assert.deepEqual(cloud.shardRunner, {
+    group: 'Default',
+    labels: 'warp-ubuntu-2404-arm64-4x',
+  })
+  assert.equal(cloud.admissionAttempt, '2')
+  assert.equal(cloud.jobTimeout, 45)
+  const ordinary = buildPlanMetadata(plan('full', 8), {
+    route: 'public-pr',
+    selectorPrState: 'ready',
+  })
+  assert.equal(ordinary.provider, 'public-pool')
+  assert.deepEqual(ordinary.buildRunner, {
+    group: 'public-pr-arm64',
+    labels: [
+      'linux',
+      'arm64',
+      'docker',
+      'public-pr-arm64',
+      'playwright',
+      'playwright-build',
+    ],
+  })
+  assert.deepEqual(ordinary.shardRunner, {
+    group: 'public-pr-arm64',
+    labels: [
+      'linux',
+      'arm64',
+      'docker',
+      'public-pr-arm64',
+      'playwright',
+      'playwright-shard',
+    ],
+  })
+  assert.equal(ordinary.jobTimeout, 120)
+  for (const overrides of [
+    { provider: 'arbitrary' },
+    { route: 'hosted' },
+    { selectorPrState: 'draft' },
+    { admissionAttempt: '' },
+    { admissionAttempt: '1\ninjected=x' },
+  ]) {
+    assert.throws(
+      () => buildPlanMetadata(plan('full', 8), { ...route, ...overrides }),
+      /provider|admission/
+    )
+  }
+})
 
 test('metadata exposes one matrix for selected plans and no matrix for skips', () => {
   const selected = buildPlanMetadata(plan('selected', 2), {
@@ -183,5 +333,81 @@ test('duplicate shard indices and unsafe reason codes fail closed', () => {
         selectorPrState: 'draft',
       }),
     /reason codes/
+  )
+})
+
+test('deferred execution attests only the skip plan', () => {
+  const deferred = buildPlanMetadata(plan('skip'), {
+    route: 'hosted',
+    selectorPrState: 'deferred',
+  })
+  assert.equal(deferred.shouldRun, false)
+  assert.equal(deferred.selectorPrState, 'deferred')
+  assert.throws(
+    () =>
+      buildPlanMetadata(plan('selected'), {
+        route: 'hosted',
+        selectorPrState: 'deferred',
+      }),
+    /deferred execution must use the skip/
+  )
+})
+
+test('priority duration reaches the published build and shard metadata without widening defaults', () => {
+  const { choosePlaywrightRoute, envInput } = require('./playwright-route.cjs')
+  const input = envInput({
+    EVENT_NAME: 'pull_request',
+    REPOSITORY: 'uzh-bf/klicker-uzh',
+    REPOSITORY_PRIVATE: 'false',
+    HEAD_REPOSITORY: 'uzh-bf/klicker-uzh',
+    PR_AUTHOR: 'synthetic',
+    PR_DRAFT: 'false',
+    PR_NUMBER: '1234',
+    PRIORITY_ADMITTED: 'true',
+    PRIORITY_ATTEMPT: '1',
+    GITHUB_RUN_ATTEMPT: '1',
+    PRIORITY_JOB_TIMEOUT: '7',
+  })
+  const decision = choosePlaywrightRoute(input)
+  assert.equal(buildPlanMetadata(plan('full', 8), decision).jobTimeout, 7)
+  assert.equal(
+    buildPlanMetadata(plan('full', 8), { ...decision, jobTimeout: undefined })
+      .jobTimeout,
+    45
+  )
+  const hosted = { route: 'hosted', selectorPrState: 'ready' }
+  assert.equal(buildPlanMetadata(plan('full', 8), hosted).jobTimeout, 120)
+  for (const jobTimeout of [0, 16, 1.5, '7', null]) {
+    assert.throws(
+      () => buildPlanMetadata(plan('full', 8), { ...decision, jobTimeout }),
+      /invalid priority job timeout/
+    )
+  }
+  assert.throws(
+    () => buildPlanMetadata(plan('full', 8), { ...hosted, jobTimeout: 7 }),
+    /invalid priority job timeout/
+  )
+  assert.throws(
+    () =>
+      buildPlanMetadata(plan('full', 8), {
+        route: 'public-pr',
+        selectorPrState: 'ready',
+        jobTimeout: 7,
+      }),
+    /invalid priority job timeout/
+  )
+})
+
+test('ordinary paid admission cannot carry priority-only duration metadata', () => {
+  assert.throws(
+    () =>
+      buildPlanMetadata(plan('full', 8), {
+        route: 'public-pr',
+        provider: 'warpbuild',
+        selectorPrState: 'ready',
+        admissionAttempt: '1',
+        jobTimeout: 7,
+      }),
+    /invalid priority job timeout/
   )
 })

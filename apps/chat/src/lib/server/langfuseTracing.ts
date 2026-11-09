@@ -54,17 +54,27 @@ export function isAiTelemetryEnabled() {
   return getLangfuseTelemetryConfiguration().enabled
 }
 
-export async function getChatTraceContext({
-  assistantMessageId,
-  chatbotId,
-  threadId,
-}: {
+type ChatTraceIdentity = {
   assistantMessageId: string
   chatbotId: string
   threadId: string
-}) {
+}
+
+/** Pseudonymous Langfuse trace id of one assistant answer. */
+export function getTraceIdForMessage({
+  assistantMessageId,
+  chatbotId,
+  threadId,
+}: ChatTraceIdentity) {
+  return createTraceId(
+    `chat-turn:${chatbotId}:${threadId}:${assistantMessageId}`
+  )
+}
+
+export async function getChatTraceContext(identity: ChatTraceIdentity) {
+  const { chatbotId, threadId } = identity
   const [traceId, sessionId, pseudonymousChatbotId] = await Promise.all([
-    createTraceId(`chat-turn:${chatbotId}:${threadId}:${assistantMessageId}`),
+    getTraceIdForMessage(identity),
     createTraceId(`chat-session:${threadId}`),
     createTraceId(`chatbot:${chatbotId}`),
   ])

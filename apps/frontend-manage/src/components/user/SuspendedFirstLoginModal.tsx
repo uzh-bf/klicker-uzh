@@ -296,12 +296,12 @@ function SuspendedFirstLoginModal({
                 id="kmsembed-0_ugtkafd3"
                 width="100%"
                 height="400"
-                src="https://uzh.mediaspace.cast.switch.ch/embed/secure/iframe/entryId/0_ugtkafd3/uiConfId/23448425/st/0"
+                src="https://api.cast.switch.ch/p/106/sp/10600/embedIframeJs/uiconf_id/23448425/partner_id/106?iframeembed=true&playerId=kaltura_player&entry_id=0_ugtkafd3"
                 className="kmsembed"
                 allowFullScreen
                 allow="autoplay *; fullscreen *; encrypted-media *"
                 referrerPolicy="no-referrer-when-downgrade"
-                sandbox="allow-downloads allow-forms allow-same-origin allow-scripts allow-top-navigation allow-pointer-lock allow-popups allow-modals allow-orientation-lock allow-popups-to-escape-sandbox allow-presentation allow-top-navigation-by-user-activation"
+                sandbox="allow-downloads allow-forms allow-same-origin allow-scripts allow-pointer-lock allow-popups allow-modals allow-orientation-lock allow-popups-to-escape-sandbox allow-presentation"
                 title="KlickerUZH_CoreConcepts_AudioEnhanced"
               />
 

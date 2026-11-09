@@ -10,7 +10,7 @@
   "dependencies": {
     "@klicker-uzh/prisma": "workspace:*",
     "@klicker-uzh/types": "workspace:*",
-    "@scalar/express-api-reference": "0.8.7",
+    "@scalar/express-api-reference": "0.10.28",
     "dayjs": "1.11.20",
     "express": "4.21.2",
     "express-rate-limit": "7.5.0",
@@ -35,7 +35,7 @@
     "vitest": "3.2.4"
   },
   "scripts": {
-    "build": "cross-env NODE_ENV=production rollup -c",
+    "build": "cross-env NODE_ENV=production rollup -c --forceExit",
     "build:test": "pnpm run build",
     "check": "tsc --noEmit --tsBuildInfoFile dist/tsconfig.check.tsbuildinfo",
     "dev": "pnpm dev:ts",

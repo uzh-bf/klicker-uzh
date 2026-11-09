@@ -96,6 +96,7 @@ async function confirmResponseDeletionIfAvailable(
   expectedResponsesText?: string
 ) {
   const dialog = page.getByRole('dialog', { name: 'Delete Live Quiz' })
+  await expect(dialog).toBeVisible()
   const responseSummary = dialog.getByText(
     /\d+ response\(s\) in this live quiz/
   )

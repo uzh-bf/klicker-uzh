@@ -8,6 +8,10 @@ case "${KLICKER_LOCAL_KB_RUNTIME_ONLY:-0}" in
   *) echo '[post-create] ERROR: invalid isolated runtime mode.' >&2; exit 1 ;;
 esac
 SCRIPT_ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
+if [ "${KLICKER_LOCAL_KB_RUNTIME_ONLY:-0}" = 0 ]; then
+  [ "$#" -eq 0 ] || { echo '[post-create] ERROR: initialization is not a startup operation.' >&2; exit 1; }
+  exec bash "$SCRIPT_ROOT/.devcontainer/recover-bootstrap.sh"
+fi
 bash "$SCRIPT_ROOT/util/dev-runtime.sh" begin-bootstrap
 
 ROOT="${KLICKER_DEVCONTAINER_ROOT:-/workspaces/klicker-uzh}"
@@ -28,10 +32,9 @@ if [ "${KLICKER_LOCAL_KB_RUNTIME_ONLY:-0}" = 1 ]; then
   local_kb_restore_environment
 fi
 
-# No-TTY pnpm hardening: CI=true auto-confirms a stale node_modules purge;
-# verify-deps-before-run=false stops implicit installs hanging on stdin. (GOTCHAS #18)
+# Keep installs non-interactive and explicit. The workspace's
+# verifyDepsBeforeRun: error policy rejects drift before subsequent commands.
 export CI=true
-export npm_config_verify_deps_before_run=false
 
 # Retry a command through transient failures (e.g. fresh-Postgres warmup);
 # print a clear error and return non-zero if it never succeeds (caller `|| exit 1`).
@@ -61,21 +64,21 @@ bash ./util/dev-runtime.sh stamp-dependencies
 # (compile on the fly) so they are NOT pre-built. (GOTCHAS: build the graph
 # before any dev server.)
 echo "[post-create] Building workspace packages + backend (turbo)..."
-pnpm exec turbo run build --filter='./packages/*' --filter=@klicker-uzh/backend-docker --filter=@klicker-uzh/lti-service
-
-# Prepare the database. klicker's prisma:reset prompts (and the non-interactive
-# variants wrap Infisical), so call prisma directly with --force. A brand-new
-# Postgres volume has a short warmup where it emits an empty search_path (42601)
-# even though pg_isready is healthy — retry. (GOTCHAS #12)
-if [ "${KLICKER_LOCAL_KB_RUNTIME_ONLY:-0}" != 1 ]; then
-echo "[post-create] Resetting + pushing Prisma schema (retrying through DB warmup)..."
-retry 12 "prisma reset/push" bash -c '
-  pnpm --filter @klicker-uzh/prisma run prisma:reset:raw --force \
-  && pnpm --filter @klicker-uzh/prisma run prisma:push:raw' || exit 1
-
-echo "[post-create] Seeding test data (lecturer/abcd, testuser1..50/abcdabcd)..."
-retry 5 "prisma-data seed" pnpm --filter @klicker-uzh/prisma-data run seed:raw || exit 1
+# The build writes its output to a log file instead of the lifecycle stdio
+# channel, so a failure can print a short tail below. One-shot rollup builds
+# pass --forceExit: @rollup/plugin-typescript runs a TypeScript watch program
+# even without --watch, and a file change in the last 250ms of a build can
+# recreate its file watchers after the plugin closes it. Without --forceExit
+# that rollup process prints "created dist" and never exits, which stalls
+# this script and container creation indefinitely.
+BUILD_LOG=/tmp/post-create-build.log
+if ! pnpm exec turbo run build --filter='./packages/*' --filter=@klicker-uzh/backend-docker --filter=@klicker-uzh/lti-service \
+  </dev/null >"$BUILD_LOG" 2>&1; then
+  echo "[post-create] ERROR: package build failed; last lines of $BUILD_LOG:" >&2
+  tail -n 60 "$BUILD_LOG" >&2
+  exit 1
 fi
+echo "[post-create] Build finished (full output: $BUILD_LOG)."
 
 # response-api uses `tsx --watch --env-file=.env`; both Hatchet workers use
 # nodemon with `node --env-file .env`. Node 24 HARD-ERRORS if .env is missing

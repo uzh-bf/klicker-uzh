@@ -211,7 +211,8 @@ function assertEffectiveConfigurationMatchesScope(
 /**
  * Resolves the knowledge-base scope shared by the enabled configuration
  * snapshot. A chatbot becomes scoped as soon as an enabled KB configuration
- * is present, and every KB mode must then have one consistent binding.
+ * is present, and every KB binding must then resolve one consistent scope. A
+ * selected mode that carries no enabled KB binding serves without a scope.
  */
 export function resolveMcpScope(
   configurations: readonly MCPScopedConfiguration[],
@@ -244,6 +245,10 @@ export function resolveMcpScope(
       (configuration): configuration is ResolvedMcpScope =>
         configuration !== undefined
     )
+  // A mode with no knowledge-base binding serves without retrieval instead of
+  // failing the request. The chatbot-wide scope checks above still constrain
+  // every mode that does bind one.
+  if (effectiveKbConfigurations.length === 0) return undefined
   assertEffectiveConfigurationMatchesScope(
     effectiveKbConfigurations,
     selectedMode,

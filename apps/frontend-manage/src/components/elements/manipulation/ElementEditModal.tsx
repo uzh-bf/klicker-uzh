@@ -114,6 +114,10 @@ function ElementEditModal({
     question: dataQuestion?.element,
     isDuplication,
   })
+  const originalNumericalOptions =
+    dataQuestion?.element?.__typename === 'NumericalElement'
+      ? dataQuestion.element.options
+      : undefined
 
   // only update the form values on initial rendering in creation or edit mode (not in duplication mode)
   // (otherwise, saving the question will directly trigger another save)
@@ -137,6 +141,7 @@ function ElementEditModal({
         Object.keys(formikInitialValues).length === 0
       }
       initialValues={formikInitialValues}
+      originalNumericalOptions={originalNumericalOptions}
       onClose={async () => {
         // close the modal
         handleSetIsOpen(false)
@@ -230,6 +235,7 @@ function ElementEditModal({
                 elementId,
                 isDuplication,
                 values,
+                originalOptions: originalNumericalOptions,
               })
 
               const result = await manipulateNumericalQuestion({

@@ -15,6 +15,7 @@ import {
 } from '@/src/lib/server/chatModelRegistry'
 import { resolveEffectiveChatModeOptions } from '@/src/lib/server/effectiveChatModes'
 import { getOwnerPreviewAccess } from '@/src/lib/server/ownerPreviewAuth'
+import { resolveOwnerPreviewModeConfiguration } from '@/src/lib/server/previewAuthoringConfig'
 
 type OwnerPreviewPageProps = {
   params: Promise<{ chatbotId: string }>
@@ -24,7 +25,7 @@ export default async function OwnerPreviewPage({
   params,
 }: OwnerPreviewPageProps) {
   const { chatbotId } = await params
-  if (!z.string().uuid().safeParse(chatbotId).success) notFound()
+  if (!z.string().guid().safeParse(chatbotId).success) notFound()
 
   const access = await getOwnerPreviewAccess(chatbotId)
   if ('error' in access) {
@@ -46,6 +47,8 @@ export default async function OwnerPreviewPage({
       status: true,
       systemPrompts: true,
       standardModeConfig: true,
+      customModeConfig: true,
+      draftConfig: true,
       modelSelection: true,
       allowedModelIds: true,
       allowedReasoningEffortsByModel: true,
@@ -66,7 +69,11 @@ export default async function OwnerPreviewPage({
   const initialModeOptions = resolveEffectiveChatModeOptions(
     chatbot.systemPrompts,
     chatbot.mcpConfigurations,
-    chatbot.standardModeConfig
+    chatbot.standardModeConfig,
+    {
+      allowUnapprovedModes: true,
+      customModeConfig: resolveOwnerPreviewModeConfiguration(chatbot),
+    }
   )
   const availableModels = getModelsForChatbot(chatbot)
   const automaticModelId = getAutomaticModelId(chatbot.allowedModelIds)

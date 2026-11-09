@@ -1,6 +1,7 @@
 import { useMutation, useQuery } from '@apollo/client'
 import {
   AttachKbToChatbotDocument,
+  ChatbotStatus,
   DetachKbFromChatbotDocument,
   QGetKbChatbotBindingsWithKnowledgeBasesDocument,
   QGetChatbotsInfoWithKnowledgeBasesDocument,
@@ -12,6 +13,7 @@ import {
   UserNotification,
   toast,
 } from '@uzh-bf/design-system'
+import Link from 'next/link'
 import { useTranslations } from 'next-intl'
 import React, { useState } from 'react'
 import { refreshAfterMutation } from '../refreshAfterMutation'
@@ -123,6 +125,15 @@ function KnowledgeBaseChatbotBindings({
       </summary>
       <section className="mt-3" data-cy="kb-chatbot-bindings">
         <p className="text-sm text-slate-600">{t('kb.chatbotsDescription')}</p>
+        {/* The chatbots page validates this id against the lecturer's own
+            knowledge bases before offering to connect it. */}
+        <Link
+          href={`/resources/chatbots?createForKb=${encodeURIComponent(kbId)}`}
+          className="mt-2 inline-block text-sm font-medium text-primary-100 hover:underline"
+          data-cy="kb-create-chatbot"
+        >
+          {t('manage.resources.chatbotKnowledgeBaseCreateChatbot')}
+        </Link>
 
         {loading ? (
           <Skeleton
@@ -183,6 +194,16 @@ function KnowledgeBaseChatbotBindings({
                 data={{ cy: 'kb-chatbot-replacement-warning' }}
               />
             ) : null}
+            {/* Connections are not part of a chatbot revision, so a change for
+                a published chatbot reaches students without review. */}
+            {selectedBinding?.chatbotStatus === ChatbotStatus.Published ? (
+              <UserNotification
+                type="warning"
+                className={{ root: 'mt-3' }}
+                message={t('kb.chatbotLiveChangeWarning')}
+                data={{ cy: 'kb-chatbot-live-change-warning' }}
+              />
+            ) : null}
 
             <div className="mt-5">
               <div className="text-sm font-medium text-slate-700">
@@ -203,8 +224,18 @@ function KnowledgeBaseChatbotBindings({
                       className="flex items-center justify-between gap-3 py-3"
                       data-cy={`kb-linked-chatbot-${binding.chatbotId}`}
                     >
-                      <span className="break-words font-medium">
-                        {binding.chatbotName}
+                      <span className="flex min-w-0 flex-col">
+                        <span className="break-words font-medium">
+                          {binding.chatbotName}
+                        </span>
+                        {binding.chatbotStatus === ChatbotStatus.Published ? (
+                          <span
+                            className="text-sm text-amber-700"
+                            data-cy={`kb-linked-chatbot-live-${binding.chatbotId}`}
+                          >
+                            {t('kb.linkedChatbotLiveNote')}
+                          </span>
+                        ) : null}
                       </span>
                       <Button
                         disabled={mutating}

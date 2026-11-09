@@ -3,6 +3,7 @@ import {
   graphSearchNeighborsQuery,
   graphSearchSeedsQuery,
   graphSearchTerms,
+  selectGraphMentions,
   selectGraphSearchSeeds,
 } from '../src/retrieval.js'
 
@@ -48,5 +49,46 @@ describe('native graph retrieval queries', () => {
       seedIds: ['1'],
       terms: ['risk'],
     })
+  })
+})
+
+describe('concept mentions in answer text', () => {
+  const nodes = [
+    'Present value',
+    'Net present value (NPV)',
+    'Value',
+    'Risk (market)',
+    'Risk (credit)',
+    'Discount rate',
+    'Concept 42',
+  ].map((displayLabel, index) => ({
+    id: String(index),
+    displayLabel,
+  })) as Parameters<typeof selectGraphMentions>[0]
+
+  it('links the longest exact label once, in text order, with its written form', () => {
+    const mentions = selectGraphMentions(
+      nodes,
+      'The Net Present Value sums each present value at the discount rate. Present value again.'
+    )
+    expect(mentions.map(({ node, text }) => [node.id, text])).toEqual([
+      ['1', 'Net Present Value'],
+      ['0', 'present value'],
+      ['5', 'discount rate'],
+    ])
+  })
+
+  it('never guesses between concepts that share a label head', () => {
+    const mentions = selectGraphMentions(
+      nodes,
+      'Risk and value; Concept 42 is generic.'
+    )
+    expect(mentions.map(({ node }) => node.id)).toEqual(['2'])
+  })
+
+  it('bounds the number of mentions', () => {
+    expect(
+      selectGraphMentions(nodes, 'value discount rate present value', 2)
+    ).toHaveLength(2)
   })
 })

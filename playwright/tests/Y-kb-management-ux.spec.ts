@@ -1,9 +1,28 @@
 import { readFile } from 'node:fs/promises'
+import deMessages from '../../packages/i18n/messages/de.js'
+import enMessages from '../../packages/i18n/messages/en.js'
 import { URL_MANAGE } from '../util/constants.js'
 import { expect, test } from '../util/fixtures.js'
 import { selectOption } from '../util/fixtures/activities.js'
+import { setAiSettingsMode } from '../util/fixtures/manage.js'
+
+const FAILURE_DETAILS = [
+  'The fetched source did not match the version recorded when the source was added, so the import was rejected.',
+  'The source could not be fetched.',
+  'The source content could not be processed.',
+  'The source is larger than the supported size limit.',
+  'The imported content could not be activated.',
+] as const
+
+const UNKNOWN_FAILURE_MARKER = `synthetic-unrecognized-prefix-${FAILURE_DETAILS[0]}-suffix`
 
 test.describe('Knowledge base management workspace', () => {
+  // The workspace checks below cover the advanced settings, which include
+  // search, filters, quotas and bulk ingestion.
+  test.beforeEach(async ({ page }) => {
+    await setAiSettingsMode(page, 'advanced')
+  })
+
   test('keeps the resource workspace scannable and add flow keyboard-accessible in English and German', async ({
     loginLecturer,
     page,
@@ -88,6 +107,11 @@ test.describe('Knowledge base management workspace', () => {
       let replaceCalls = 0
       let syntheticFileVisible = false
       let syntheticFileReplaced = false
+      let syntheticFailureVisible = false
+      let syntheticHistoryBatch:
+        | 'knownReasons'
+        | 'fallbackAndStatus'
+        | 'errorCodePrecedence' = 'knownReasons'
       // Synthetic imported inventory: a video-derived source without any
       // stored file, a link source with a safe original URL and an unknown
       // ingestion time, a document source, and a document with a signed
@@ -149,6 +173,68 @@ test.describe('Knowledge base management workspace', () => {
       const uploadStarted = new Promise<void>((resolve) => {
         signalUploadStarted = resolve
       })
+      const syntheticHistoryRuns = {
+        knownReasons: FAILURE_DETAILS.map((statusMessage, index) => ({
+          id: `synthetic-failure-reason-${index}`,
+          status: 'FAILED',
+          resourceVersion: 2,
+          errorCode: null,
+          statusMessage,
+          createdAt: new Date(0).toISOString(),
+        })),
+        fallbackAndStatus: [
+          {
+            id: 'synthetic-unknown-failure',
+            status: 'FAILED',
+            resourceVersion: 2,
+            errorCode: null,
+            statusMessage: UNKNOWN_FAILURE_MARKER,
+            createdAt: new Date(0).toISOString(),
+          },
+          {
+            id: 'synthetic-queued-with-detail',
+            status: 'QUEUED',
+            resourceVersion: 3,
+            errorCode: null,
+            statusMessage: FAILURE_DETAILS[0],
+            createdAt: new Date(0).toISOString(),
+          },
+          {
+            id: 'synthetic-superseded-with-detail',
+            status: 'SUPERSEDED',
+            resourceVersion: 1,
+            errorCode: null,
+            statusMessage: FAILURE_DETAILS[0],
+            createdAt: new Date(0).toISOString(),
+          },
+        ],
+        errorCodePrecedence: [
+          {
+            id: 'synthetic-queue-dispatch-error',
+            status: 'FAILED',
+            resourceVersion: 2,
+            errorCode: 'QUEUE_DISPATCH_FAILED',
+            statusMessage: FAILURE_DETAILS[0],
+            createdAt: new Date(0).toISOString(),
+          },
+          {
+            id: 'synthetic-ingestion-dispatch-error',
+            status: 'FAILED',
+            resourceVersion: 2,
+            errorCode: 'INGESTION_DISPATCH_FAILED',
+            statusMessage: FAILURE_DETAILS[0],
+            createdAt: new Date(0).toISOString(),
+          },
+          {
+            id: 'synthetic-storage-limit-error',
+            status: 'FAILED',
+            resourceVersion: 2,
+            errorCode: 'KB_STORAGE_LIMIT_REACHED',
+            statusMessage: FAILURE_DETAILS[0],
+            createdAt: new Date(0).toISOString(),
+          },
+        ],
+      }
 
       const persistedOperations = JSON.parse(
         await readFile(
@@ -337,13 +423,32 @@ test.describe('Knowledge base management workspace', () => {
           return
         }
 
-        if (operationName === 'GetKbResources' && syntheticFileVisible) {
+        if (operationName === 'GetKbResourceIngestionRunsWithFailureDetail') {
+          await route.fulfill({
+            status: 200,
+            contentType: 'application/json',
+            body: JSON.stringify({
+              data: {
+                getKbResourceIngestionRuns:
+                  syntheticHistoryRuns[syntheticHistoryBatch],
+              },
+            }),
+          })
+          return
+        }
+
+        if (
+          operationName === 'GetKbResourcesWithFailureDetail' &&
+          syntheticFileVisible
+        ) {
           const response = await route.fetch()
           const body = (await response.json()) as {
             data?: {
               getKbResources?: {
                 items: Array<Record<string, unknown> & { id: string }>
                 totalCount: number
+                failedIngestionCount: number
+                needsIngestionCount: number
                 inProgressCount: number
               }
             }
@@ -362,26 +467,60 @@ test.describe('Knowledge base management workspace', () => {
                   : 'pending.txt',
                 mimeType: 'text/plain',
                 sizeBytes: syntheticFileReplaced ? 16 : 14,
-                status: syntheticFileReplaced ? 'QUEUED' : 'READY',
+                status: syntheticFailureVisible
+                  ? 'FAILED'
+                  : syntheticFileReplaced
+                    ? 'QUEUED'
+                    : 'READY',
                 ingestedAt: new Date(0).toISOString(),
                 resourceVersion: syntheticFileReplaced ? 2 : 1,
                 activeResourceVersion: 1,
                 latestIngestionRun: syntheticFileReplaced
                   ? {
                       id: 'replacement-attempt',
-                      status: 'QUEUED',
+                      status: syntheticFailureVisible ? 'FAILED' : 'QUEUED',
                       errorCode: null,
+                      statusMessage: syntheticFailureVisible
+                        ? FAILURE_DETAILS[0]
+                        : null,
                     }
                   : null,
                 createdAt: new Date(0).toISOString(),
                 updatedAt: new Date(0).toISOString(),
               },
+              // Ordinary uploads and URLs are queued on creation, so a
+              // resource that still waits for ingestion comes from a seed or
+              // an import. It keeps the bulk-ingestion path reachable.
+              {
+                id: 'synthetic-imported-resource',
+                type: 'BLOB',
+                materialType: 'COURSE_CONTENT',
+                title: 'imported-notes.txt',
+                sourceUrl: null,
+                originalFilename: 'imported-notes.txt',
+                mimeType: 'text/plain',
+                sizeBytes: 14,
+                status: 'ADDED',
+                ingestedAt: null,
+                resourceVersion: 1,
+                activeResourceVersion: null,
+                latestIngestionRun: null,
+                createdAt: new Date(0).toISOString(),
+                updatedAt: new Date(0).toISOString(),
+              },
               ...connection.items.filter(
-                ({ id }) => id !== 'synthetic-resource'
+                ({ id }) =>
+                  id !== 'synthetic-resource' &&
+                  id !== 'synthetic-imported-resource'
               ),
             ]
-            connection.totalCount += 1
-            if (syntheticFileReplaced) connection.inProgressCount += 1
+            connection.totalCount += 2
+            connection.needsIngestionCount += 1
+            if (syntheticFailureVisible) {
+              connection.failedIngestionCount += 1
+            } else if (syntheticFileReplaced) {
+              connection.inProgressCount += 1
+            }
           }
           await route.fulfill({ response, json: body })
           return
@@ -506,12 +645,25 @@ test.describe('Knowledge base management workspace', () => {
       })
       await expect(resourceRow).toBeVisible()
       await expect(resourceRow).toContainText(/Administrative/)
+      // Adding a URL starts its ingestion right away, so the row has left
+      // the added state; how far the worker got is not fixed at this point.
       await expect(
         resourceRow.locator('[data-cy^="kb-resource-status-"]')
-      ).toContainText(/Added|Hinzugefügt/)
+      ).not.toContainText(/Added|Hinzugefügt/)
       await expect(page.getByTestId('kb-ingestion-summary')).toContainText(
         /1 need ingestion/
       )
+      await expect(page.getByTestId('ingest-all-kb-resources')).toBeVisible()
+      // The simple settings keep the resource list and hide the expert tools.
+      await page.getByTestId('ai-settings-mode-simple').click()
+      await expect(page.getByTestId('kb-ingestion-summary')).toHaveCount(0)
+      await expect(page.getByTestId('ingest-all-kb-resources')).toHaveCount(0)
+      await expect(page.getByTestId('kb-metrics')).toHaveCount(0)
+      await expect(
+        page.getByTestId('kb-resource-material-type-filter')
+      ).toHaveCount(0)
+      await expect(resourceRow).toBeVisible()
+      await page.getByTestId('ai-settings-mode-advanced').click()
       await expect(page.getByTestId('ingest-all-kb-resources')).toBeVisible()
       await selectOption(
         page,
@@ -540,7 +692,7 @@ test.describe('Knowledge base management workspace', () => {
       ).toContainText('Administrative')
       await expect(
         page.getByTestId('ingest-kb-resource-inspector')
-      ).toContainText(/Ingest|Verarbeiten/)
+      ).toContainText(/Re-ingest|Retry|Neu verarbeiten|Erneut versuchen/)
       await page.getByTestId('done-kb-resource-inspector').click()
 
       await resourceRow.getByTestId(/kb-resource-actions-/).click()
@@ -569,9 +721,92 @@ test.describe('Knowledge base management workspace', () => {
       await page.getByTestId('confirm-kb-file-replacement').click()
       await expect(replaceModal).toBeHidden()
       expect(replaceCalls).toBe(1)
+      syntheticFailureVisible = true
       await page.reload()
       await expect(detail).toBeVisible()
-      await expect(fileRow).toContainText(/Version 1 remains|Version 1 bleibt/)
+      await expect(fileRow).toContainText(
+        enMessages.kb.servingPreviousVersion.replace('{version}', '1')
+      )
+      await expect(
+        page.getByTestId('kb-resource-status-synthetic-resource')
+      ).toContainText(enMessages.kb.runStatusFailed)
+      const latestFailureMessage = page.getByTestId(
+        'kb-resource-status-message-synthetic-resource'
+      )
+      await expect(latestFailureMessage).toContainText(
+        enMessages.kb.ingestionFailureSourceVersionMismatch
+      )
+
+      await fileRow.getByTestId(/inspect-kb-resource-/).click()
+      const resourceHistory = page.getByTestId(
+        'kb-resource-history-synthetic-resource'
+      )
+      await resourceHistory.locator('summary').click()
+      for (const [index, expectedMessage] of [
+        enMessages.kb.ingestionFailureSourceVersionMismatch,
+        enMessages.kb.ingestionFailureSourceFetch,
+        enMessages.kb.ingestionFailureSourceProcessing,
+        enMessages.kb.ingestionFailureSourceSizeLimit,
+        enMessages.kb.ingestionFailureActivation,
+      ].entries()) {
+        const run = resourceHistory.getByTestId(
+          `kb-ingestion-run-synthetic-failure-reason-${index}`
+        )
+        await expect(run).toContainText(expectedMessage)
+      }
+      await page.setViewportSize({ width: 1440, height: 900 })
+      await page.screenshot({
+        path: testInfo.outputPath('kb-ingestion-failure-history-en.png'),
+        fullPage: true,
+      })
+
+      const loadHistoryBatch = async (batch: typeof syntheticHistoryBatch) => {
+        await resourceHistory.locator('summary').click()
+        syntheticHistoryBatch = batch
+        await resourceHistory.locator('summary').click()
+      }
+      await loadHistoryBatch('fallbackAndStatus')
+      const unknownFailureRun = resourceHistory.getByTestId(
+        'kb-ingestion-run-synthetic-unknown-failure'
+      )
+      await expect(unknownFailureRun).toContainText(
+        enMessages.kb.ingestionFailed
+      )
+      await expect(unknownFailureRun).not.toContainText(UNKNOWN_FAILURE_MARKER)
+
+      const queuedRun = resourceHistory.getByTestId(
+        'kb-ingestion-run-synthetic-queued-with-detail'
+      )
+      await expect(queuedRun).toContainText(enMessages.kb.runStatusQueued)
+      await expect(queuedRun).not.toContainText(
+        enMessages.kb.ingestionFailureSourceVersionMismatch
+      )
+
+      const supersededRun = resourceHistory.getByTestId(
+        'kb-ingestion-run-synthetic-superseded-with-detail'
+      )
+      await expect(supersededRun).toContainText(
+        enMessages.kb.ingestionSuperseded
+      )
+      await expect(supersededRun).not.toContainText(
+        enMessages.kb.ingestionFailureSourceVersionMismatch
+      )
+
+      await loadHistoryBatch('errorCodePrecedence')
+      for (const [id, expectedMessage] of [
+        ['queue-dispatch-error', enMessages.kb.ingestResourceError],
+        ['ingestion-dispatch-error', enMessages.kb.ingestionStartError],
+        ['storage-limit-error', enMessages.kb.storageLimitError],
+      ] as const) {
+        const run = resourceHistory.getByTestId(
+          `kb-ingestion-run-synthetic-${id}`
+        )
+        await expect(run).toContainText(expectedMessage)
+        await expect(run).not.toContainText(
+          enMessages.kb.ingestionFailureSourceVersionMismatch
+        )
+      }
+      await page.getByTestId('done-kb-resource-inspector').click()
 
       const importedSection = page.getByTestId('kb-imported-sources')
       await expect(importedSection).toBeVisible()
@@ -636,6 +871,37 @@ test.describe('Knowledge base management workspace', () => {
       await expect(page.getByTestId('add-kb-resource')).toContainText(
         'Ressource hinzufügen'
       )
+      const germanResourceRow = page
+        .getByRole('table', { name: /Ressourcen/ })
+        .getByRole('row')
+        .filter({ hasText: 'pending.txt' })
+      await expect(
+        page.getByTestId('kb-resource-status-message-synthetic-resource')
+      ).toContainText(deMessages.kb.ingestionFailureSourceVersionMismatch)
+      await germanResourceRow.getByTestId(/inspect-kb-resource-/).click()
+      const germanResourceHistory = page.getByTestId(
+        'kb-resource-history-synthetic-resource'
+      )
+      syntheticHistoryBatch = 'knownReasons'
+      await germanResourceHistory.locator('summary').click()
+      for (const [index, expectedMessage] of [
+        deMessages.kb.ingestionFailureSourceVersionMismatch,
+        deMessages.kb.ingestionFailureSourceFetch,
+        deMessages.kb.ingestionFailureSourceProcessing,
+        deMessages.kb.ingestionFailureSourceSizeLimit,
+        deMessages.kb.ingestionFailureActivation,
+      ].entries()) {
+        await expect(
+          germanResourceHistory.getByTestId(
+            `kb-ingestion-run-synthetic-failure-reason-${index}`
+          )
+        ).toContainText(expectedMessage)
+      }
+      await page.screenshot({
+        path: testInfo.outputPath('kb-ingestion-failure-history-de.png'),
+        fullPage: true,
+      })
+      await page.getByTestId('done-kb-resource-inspector').click()
       await expect(
         page.getByTestId('kb-chatbot-settings').getByText('Konfigurieren')
       ).toBeVisible()
@@ -645,7 +911,7 @@ test.describe('Knowledge base management workspace', () => {
         fullPage: true,
       })
 
-      await page.setViewportSize({ width: 375, height: 812 })
+      await page.setViewportSize({ width: 390, height: 844 })
       await expect(page.getByTestId('kb-imported-sources')).toBeVisible()
       await page.screenshot({
         path: testInfo.outputPath('kb-management-de-mobile.png'),
@@ -703,6 +969,190 @@ test.describe('Knowledge base management workspace', () => {
           await page.getByTestId('confirm-delete-knowledge-base').click()
           await expect(knowledgeBaseRow).toHaveCount(0)
         }
+      }
+    }
+  })
+
+  test('adds several documents in one drop and keeps the batch intact when one file fails', async ({
+    loginLecturer,
+    page,
+  }) => {
+    await loginLecturer()
+
+    const manageUrl = process.env.URL_MANAGE ?? URL_MANAGE
+    const kbName = `Batch upload ${Date.now()}`
+
+    try {
+      await page.goto(`${manageUrl}/resources/knowledgeBases`)
+      await expect(page.getByTestId('knowledge-base-loading')).toBeHidden()
+      await page.getByTestId('create-knowledge-base').click()
+      await page.getByTestId('knowledge-base-name').fill(kbName)
+      await page.getByTestId('submit-create-knowledge-base').click()
+
+      const knowledgeBaseLink = page
+        .getByRole('link')
+        .filter({ hasText: kbName })
+      await expect(knowledgeBaseLink).toBeVisible()
+      await knowledgeBaseLink.click()
+      await expect(page.getByTestId('knowledge-base-detail')).toBeVisible()
+
+      const persistedOperations = JSON.parse(
+        await readFile(
+          new URL(
+            '../../packages/graphql/src/public/client.json',
+            import.meta.url
+          ),
+          'utf8'
+        )
+      ) as Record<string, string>
+      const persistedNames = Object.fromEntries(
+        Object.entries(persistedOperations).map(([name, hash]) => [hash, name])
+      )
+
+      // Each reservation is named after its position in the batch so that the
+      // blob route can reject exactly the second transfer.
+      let reservedUploads = 0
+      let confirmedUploads = 0
+
+      await page.route('**/graphql*', async (route) => {
+        const request = route.request()
+        const requestUrl = new URL(request.url())
+        let operationName =
+          requestUrl.searchParams.get('operationName') ?? undefined
+
+        if (!operationName && request.method() === 'POST') {
+          operationName = (request.postDataJSON() as { operationName?: string })
+            .operationName
+        }
+        if (!operationName) {
+          const extensions = requestUrl.searchParams.get('extensions')
+          const hash = extensions
+            ? (
+                JSON.parse(extensions) as {
+                  persistedQuery?: { sha256Hash?: string }
+                }
+              ).persistedQuery?.sha256Hash
+            : undefined
+          operationName = hash ? persistedNames[hash] : undefined
+        }
+
+        if (operationName === 'RequestKbFileUpload') {
+          reservedUploads += 1
+          await route.fulfill({
+            status: 200,
+            contentType: 'application/json',
+            body: JSON.stringify({
+              data: {
+                requestKbFileUpload: {
+                  uploadSasURL: 'https://kb-upload.invalid/?sig=test',
+                  containerName: 'kb',
+                  blobName: `batch-${reservedUploads}.txt`,
+                },
+              },
+            }),
+          })
+          return
+        }
+        if (operationName === 'ConfirmKbFileUpload') {
+          confirmedUploads += 1
+          await route.fulfill({
+            status: 200,
+            contentType: 'application/json',
+            body: JSON.stringify({
+              data: {
+                confirmKbFileUpload: {
+                  id: `batch-resource-${confirmedUploads}`,
+                },
+              },
+            }),
+          })
+          return
+        }
+
+        await route.continue()
+      })
+
+      await page.route('https://kb-upload.invalid/**', async (route) => {
+        if (route.request().method() === 'OPTIONS') {
+          await route.fulfill({
+            status: 204,
+            headers: {
+              'access-control-allow-headers': '*',
+              'access-control-allow-methods': 'PUT, OPTIONS',
+              'access-control-allow-origin': '*',
+            },
+          })
+          return
+        }
+
+        // A 403 is refused outright by the storage client, so the second file
+        // fails once instead of running through the retry policy.
+        if (new URL(route.request().url()).pathname.includes('batch-2')) {
+          await route.fulfill({
+            status: 403,
+            headers: { 'access-control-allow-origin': '*' },
+          })
+          return
+        }
+
+        await route.fulfill({
+          status: 201,
+          headers: {
+            'access-control-allow-origin': '*',
+            etag: '"synthetic-etag"',
+            'last-modified': new Date(0).toUTCString(),
+            'x-ms-request-id': 'synthetic-request',
+            'x-ms-version': '2025-11-05',
+          },
+        })
+      })
+
+      const modal = page.getByTestId('kb-add-resource-modal')
+      await page.getByTestId('add-kb-resource').click()
+      await page.getByTestId('choose-kb-resource-document').click()
+      await page.getByTestId('kb-file-input').setInputFiles([
+        {
+          name: 'alpha.txt',
+          mimeType: 'text/plain',
+          buffer: Buffer.from('first of the batch'),
+        },
+        {
+          name: 'beta.txt',
+          mimeType: 'text/plain',
+          buffer: Buffer.from('second of the batch'),
+        },
+        {
+          name: 'gamma.txt',
+          mimeType: 'text/plain',
+          buffer: Buffer.from('third of the batch'),
+        },
+      ])
+
+      const errorToast = page.locator('[data-sonner-toast][data-type="error"]')
+      await expect(errorToast).toContainText(
+        /2 of 3 files were added|2 von 3 Dateien wurden hinzugefügt/
+      )
+      await expect(errorToast).toContainText('beta.txt')
+      await expect(errorToast).not.toContainText('alpha.txt')
+
+      // The files after the failed one were still transferred, and the modal
+      // stays open so the failed file can be chosen again.
+      expect(reservedUploads).toBe(3)
+      expect(confirmedUploads).toBe(2)
+      await expect(modal).toBeVisible()
+
+      await page.getByTestId('close-kb-add-resource-modal').click()
+      await expect(modal).toBeHidden()
+    } finally {
+      await page.unrouteAll({ behavior: 'ignoreErrors' })
+      await page.goto(`${manageUrl}/resources/knowledgeBases`)
+      const knowledgeBaseRow = page.locator('li').filter({ hasText: kbName })
+      if (await knowledgeBaseRow.count()) {
+        await knowledgeBaseRow
+          .getByRole('button', { name: /Delete|Löschen/ })
+          .click()
+        await page.getByTestId('confirm-delete-knowledge-base').click()
+        await expect(knowledgeBaseRow).toHaveCount(0)
       }
     }
   })

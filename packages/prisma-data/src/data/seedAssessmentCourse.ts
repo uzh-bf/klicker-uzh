@@ -7,11 +7,28 @@ import {
 } from '@klicker-uzh/util'
 import {
   COURSE_ID_TEST4 as COURSE_ID_ASSESSMENT,
+  COURSE_ID_ASSESSMENT_ENDED,
   USER_ID_TEST,
 } from './constants.js'
 
-const ASSESSMENT_LIVE_QUIZ_ID = '0d4b7c3d-0230-4f7b-b95a-319891171295'
-const LEGACY_ASSESSMENT_LIVE_QUIZ_ID = '5840b720-a5fd-4f73-9081-22c06d0c4069'
+// The ongoing course issues reports with points only; the ended course issues
+// reports with the peer comparison.
+const ASSESSMENT_FIXTURES = [
+  {
+    courseId: COURSE_ID_ASSESSMENT,
+    liveQuizId: '0d4b7c3d-0230-4f7b-b95a-319891171295',
+    legacyLiveQuizId: '5840b720-a5fd-4f73-9081-22c06d0c4069',
+    name: 'Completed Assessment Live Quiz',
+    pinCode: 'ASM001',
+  },
+  {
+    courseId: COURSE_ID_ASSESSMENT_ENDED,
+    liveQuizId: '8b1e6f3a-9c27-4d5e-b0a4-6f2c1d8e9a73',
+    legacyLiveQuizId: null,
+    name: 'Ended Assessment Live Quiz',
+    pinCode: 'ASM002',
+  },
+] as const
 const PARTICIPANT_COUNT = 30
 const QUIZ_STARTED_AT = new Date('2025-06-15T09:00:00.000Z')
 const QUIZ_FINISHED_AT = new Date('2025-06-15T09:02:00.000Z')
@@ -83,25 +100,41 @@ async function seedAssessmentCourse(prismaClient: Prisma.PrismaClient) {
     )
   }
 
+  for (const fixture of ASSESSMENT_FIXTURES) {
+    await seedCompletedAssessmentQuiz(
+      prismaClient,
+      orderedParticipants,
+      fixture
+    )
+  }
+}
+
+async function seedCompletedAssessmentQuiz(
+  prismaClient: Prisma.PrismaClient,
+  orderedParticipants: ({ id: string; username: string } | undefined)[],
+  fixture: (typeof ASSESSMENT_FIXTURES)[number]
+) {
   const assessmentElementId = await prismaClient.$transaction(
     async (tx) => {
       const assessmentCourse = await tx.course.findUnique({
-        where: { id: COURSE_ID_ASSESSMENT, isAssessmentEnabled: true },
+        where: { id: fixture.courseId, isAssessmentEnabled: true },
         select: { id: true },
       })
       if (!assessmentCourse) {
         throw new Error('The seeded assessment course is missing')
       }
 
-      await tx.liveQuiz.deleteMany({
-        where: {
-          id: LEGACY_ASSESSMENT_LIVE_QUIZ_ID,
-          courseId: COURSE_ID_ASSESSMENT,
-        },
-      })
+      if (fixture.legacyLiveQuizId) {
+        await tx.liveQuiz.deleteMany({
+          where: {
+            id: fixture.legacyLiveQuizId,
+            courseId: fixture.courseId,
+          },
+        })
+      }
 
       const liveQuiz = await tx.liveQuiz.findUnique({
-        where: { id: ASSESSMENT_LIVE_QUIZ_ID },
+        where: { id: fixture.liveQuizId },
         include: {
           blocks: {
             orderBy: { order: 'asc' },
@@ -124,7 +157,7 @@ async function seedAssessmentCourse(prismaClient: Prisma.PrismaClient) {
       const instance = block?.elements[0]
       if (
         !liveQuiz ||
-        liveQuiz.courseId !== COURSE_ID_ASSESSMENT ||
+        liveQuiz.courseId !== fixture.courseId ||
         liveQuiz.blocks.length !== 1 ||
         !block ||
         block.elements.length !== 1 ||
@@ -138,11 +171,11 @@ async function seedAssessmentCourse(prismaClient: Prisma.PrismaClient) {
       await tx.liveQuiz.update({
         where: { id: liveQuiz.id },
         data: {
-          name: 'Completed Assessment Live Quiz',
-          displayName: 'Completed Assessment Live Quiz',
+          name: fixture.name,
+          displayName: fixture.name,
           description:
             'A completed assessment activity for testing results, point corrections, and performance reports.',
-          pinCode: 'ASM001',
+          pinCode: fixture.pinCode,
           status: Prisma.PublicationStatus.ENDED,
           reviewStatus: Prisma.ReviewStatus.REVIEWED,
           startedAt: QUIZ_STARTED_AT,
@@ -249,12 +282,12 @@ async function seedAssessmentCourse(prismaClient: Prisma.PrismaClient) {
         await tx.participation.upsert({
           where: {
             courseId_participantId: {
-              courseId: COURSE_ID_ASSESSMENT,
+              courseId: fixture.courseId,
               participantId: participant.id,
             },
           },
           create: {
-            courseId: COURSE_ID_ASSESSMENT,
+            courseId: fixture.courseId,
             participantId: participant.id,
             isActive: true,
           },
@@ -264,12 +297,12 @@ async function seedAssessmentCourse(prismaClient: Prisma.PrismaClient) {
           where: {
             email_courseId: {
               email: invitationEmail,
-              courseId: COURSE_ID_ASSESSMENT,
+              courseId: fixture.courseId,
             },
           },
           create: {
             email: invitationEmail,
-            courseId: COURSE_ID_ASSESSMENT,
+            courseId: fixture.courseId,
             participantId: participant.id,
             status: Prisma.InvitationStatus.ACCEPTED,
             invitedAt: invitationDate,
@@ -327,7 +360,7 @@ async function seedAssessmentCourse(prismaClient: Prisma.PrismaClient) {
     prismaClient
   )
   await recomputeDerivedPermissions(
-    { liveQuizId: ASSESSMENT_LIVE_QUIZ_ID, userId: USER_ID_TEST },
+    { liveQuizId: fixture.liveQuizId, userId: USER_ID_TEST },
     prismaClient
   )
 }

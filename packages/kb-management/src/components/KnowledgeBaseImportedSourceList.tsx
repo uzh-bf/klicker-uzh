@@ -17,6 +17,7 @@ import {
   ShadcnTableHeader,
   ShadcnTableRow,
   Skeleton,
+  toast,
   UserNotification,
 } from '@uzh-bf/design-system'
 import { useFormatter, useTranslations } from 'next-intl'
@@ -267,8 +268,9 @@ function KnowledgeBaseImportedSourceList({
     if (refreshKey === 0) return
     void refetch().catch((refreshError) => {
       console.error('Failed to refresh indexed KB sources', refreshError)
+      toast({ type: 'error', message: t('kb.importedSourcesLoadError') })
     })
-  }, [refetch, refreshKey])
+  }, [refetch, refreshKey, t])
 
   const loadMore = async () => {
     if (!connection?.pageInfo.hasNextPage || loadingMore) return
@@ -299,9 +301,9 @@ function KnowledgeBaseImportedSourceList({
     }
   }
 
-  // Only an initial load without a connection maps to the load error. A
-  // rejected page keeps the already loaded rows while `error` is set, so
-  // pagination failures surface exclusively through the load-more error.
+  // Only an initial load without a connection replaces the table with an
+  // error. Pagination and refresh failures keep loaded rows usable and
+  // surface feedback through their respective handlers.
   const renderInventoryBody = () => {
     if (loading && !connection) {
       return (

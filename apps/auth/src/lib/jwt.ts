@@ -36,6 +36,11 @@ export async function encode({ token, secret, salt, maxAge }: JWTEncodeParams) {
   }
   return signJWT((token as JWTPayload) ?? {}, secretString, {
     issuer: process.env.APP_ORIGIN_AUTH,
+    // bind the token lifetime to the session maxAge so a copied token stops
+    // being accepted once the session cookie would have expired; maxAge is in
+    // seconds and must be passed as a relative span (jose reads a bare number
+    // as an absolute timestamp)
+    expiresIn: maxAge ? `${maxAge}s` : undefined,
   })
 }
 

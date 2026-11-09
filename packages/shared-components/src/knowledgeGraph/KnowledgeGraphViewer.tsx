@@ -1,6 +1,9 @@
 'use client'
 
-import type { KnowledgeGraphResponse } from '@klicker-uzh/types'
+import type {
+  KnowledgeGraphNode,
+  KnowledgeGraphResponse,
+} from '@klicker-uzh/types'
 import cytoscape from 'cytoscape'
 import React, {
   type FormEvent,
@@ -45,11 +48,13 @@ import {
 } from './knowledgeGraphState'
 import {
   edgeAskSelection,
+  isSymmetricRelationType,
   KNOWLEDGE_GRAPH_MAX_ZOOM,
   KNOWLEDGE_GRAPH_MIN_ZOOM,
   type KnowledgeGraphAskSelection,
   nextKnowledgeGraphZoom,
   nodeAskSelection,
+  relationshipDisplayLabel,
   relationshipLabels,
 } from './knowledgeGraphView'
 
@@ -70,6 +75,14 @@ type KnowledgeGraphViewerProps = {
   detailsLayout?: 'sidebar' | 'contained'
   /** Keeps the current zoom and pan when the canvas container resizes. */
   preserveViewportOnResize?: boolean
+  /** Focuses a concept the host already resolved; a new nonce repeats it. */
+  focusRequest?: KnowledgeGraphFocusRequest
+}
+
+export type KnowledgeGraphFocusRequest = {
+  response: KnowledgeGraphResponse
+  nodeId: string
+  nonce: number
 }
 
 function fitGraphElements(cy: cytoscape.Core) {
@@ -142,10 +155,14 @@ export function KnowledgeGraphViewer({
   onAsk,
   detailsLayout = 'sidebar',
   preserveViewportOnResize = false,
+  focusRequest,
 }: KnowledgeGraphViewerProps) {
   const searchFirst = initialView === 'search'
   const initialViewRef = useRef(initialView)
   initialViewRef.current = initialView
+  // Cleared whenever the source resets the view, so a requested focus is
+  // applied again on top of the fresh overview instead of being lost.
+  const handledFocusNonceRef = useRef<number | null>(null)
   const labels = useMemo(
     () => resolveKnowledgeGraphLabels(labelOverrides),
     [labelOverrides]
@@ -453,6 +470,7 @@ export function KnowledgeGraphViewer({
     renderedBuildIdRef.current = null
     expansionOriginRef.current = null
     pendingFocusRef.current = null
+    handledFocusNonceRef.current = null
     cyRef.current?.elements().remove()
     setSearchQuery('')
     setActiveSuggestionIndex(-1)
@@ -758,7 +776,8 @@ export function KnowledgeGraphViewer({
     askSelection = edgeAskSelection(
       selectedEdge,
       indexes.nodes,
-      labels.details.missingEndpoint
+      labels.details.missingEndpoint,
+      labels.details.relationTypes
     )
   }
   const relationshipEntries = useMemo(
@@ -894,7 +913,13 @@ export function KnowledgeGraphViewer({
     if (suggestion === undefined || response === null) {
       return
     }
+    await focusResolvedConcept(response, suggestion)
+  }
 
+  async function focusResolvedConcept(
+    response: KnowledgeGraphResponse,
+    suggestion: KnowledgeGraphNode
+  ) {
     // The suggestion keeps its originating build and node id; its label is
     // never used to refetch the concept.
     beginViewRequest()
@@ -914,6 +939,24 @@ export function KnowledgeGraphViewer({
       buildId: response.buildId,
     })
   }
+
+  const focusResolvedConceptRef = useRef(focusResolvedConcept)
+  focusResolvedConceptRef.current = focusResolvedConcept
+  useEffect(() => {
+    if (
+      focusRequest === undefined ||
+      handledFocusNonceRef.current === focusRequest.nonce
+    )
+      return
+    handledFocusNonceRef.current = focusRequest.nonce
+    const node = focusRequest.response.nodes.find(
+      (candidate) => candidate.id === focusRequest.nodeId
+    )
+    if (node !== undefined) {
+      setSearchQuery(node.displayLabel)
+      void focusResolvedConceptRef.current(focusRequest.response, node)
+    }
+  }, [focusRequest])
 
   const resetToOverview = useCallback(() => {
     beginViewRequest()
@@ -1412,33 +1455,47 @@ export function KnowledgeGraphViewer({
               </p>
             ) : (
               <ul className="space-y-1">
-                {relationshipEntries.map(({ edge, source, target }) => (
-                  <li key={edge.id}>
-                    <button
-                      type="button"
-                      data-cy="knowledge-graph-loaded-relationship"
-                      aria-label={labels.selectRelationshipAriaLabel(
-                        source,
-                        target,
-                        edge.label
-                      )}
-                      aria-pressed={state.selectedEdgeId === edge.id}
-                      onClick={() =>
-                        dispatch({
-                          type: 'select-edge',
-                          edgeId: edge.id,
-                          announcement: labels.selectedRelationshipAnnouncement,
-                        })
-                      }
-                      className="min-h-11 w-full rounded px-3 py-2 text-left text-sm text-[#121212] hover:bg-[#F5F5FB] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#0028A5] aria-pressed:bg-[#F5F5FB] aria-pressed:text-[#0028A5]"
-                    >
-                      <span className="block font-semibold">
-                        {source} → {target}
-                      </span>
-                      <span className="block text-[#4C4C4C]">{edge.label}</span>
-                    </button>
-                  </li>
-                ))}
+                {relationshipEntries.map(({ edge, source, target }) => {
+                  const relationshipLabel = relationshipDisplayLabel(
+                    edge,
+                    labels.details.relationTypes
+                  )
+                  return (
+                    <li key={edge.id}>
+                      <button
+                        type="button"
+                        data-cy="knowledge-graph-loaded-relationship"
+                        aria-label={labels.selectRelationshipAriaLabel(
+                          source,
+                          target,
+                          relationshipLabel,
+                          isSymmetricRelationType(edge.relationType)
+                        )}
+                        aria-pressed={state.selectedEdgeId === edge.id}
+                        onClick={() =>
+                          dispatch({
+                            type: 'select-edge',
+                            edgeId: edge.id,
+                            announcement:
+                              labels.selectedRelationshipAnnouncement,
+                          })
+                        }
+                        className="min-h-11 w-full rounded px-3 py-2 text-left text-sm text-[#121212] hover:bg-[#F5F5FB] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#0028A5] aria-pressed:bg-[#F5F5FB] aria-pressed:text-[#0028A5]"
+                      >
+                        <span className="block font-semibold">
+                          {source}{' '}
+                          {isSymmetricRelationType(edge.relationType)
+                            ? '–'
+                            : '→'}{' '}
+                          {target}
+                        </span>
+                        <span className="block text-[#4C4C4C]">
+                          {relationshipLabel}
+                        </span>
+                      </button>
+                    </li>
+                  )
+                })}
               </ul>
             )}
           </section>

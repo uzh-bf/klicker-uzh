@@ -1,0 +1,58 @@
+query GetPendingChatbotRevisionReviews {
+  getPendingChatbotPublications {
+    ownerShortname
+    ownerEmail
+    ownerPublishingEnabled
+    disclaimerTitle
+    disclaimerIntroText
+    tools {
+      serverName
+      chatMode
+      enabled
+      allowedTools
+    }
+    chatbot {
+      id
+      name
+      description
+      status
+      revisionStatus
+      revisionVersion
+      authoringRevision {
+        ...ChatbotAuthoringRevisionData
+      }
+      updatedAt
+      publicationUseCase
+      expectedStudentCount
+      creditInitialCredits
+      creditResetPeriod
+      creditResetAmount
+      creditMaxCredits
+      modelSelection
+      knowledgeGraphVisible
+      knowledgeGraphRetrievalEnabled
+      allowedModelIds
+      allowedReasoningEffortsByModel {
+        modelId
+        efforts
+      }
+      standardModeConfig {
+        tutorEnabled
+        explainerEnabled
+        quizzerEnabled
+        courseName
+        subjectDomain
+        languageOfInstruction
+        scopeNote
+      }
+      courses {
+        id
+        name
+      }
+    }
+  }
+  getChatModelRegistry {
+    id
+    name
+  }
+}

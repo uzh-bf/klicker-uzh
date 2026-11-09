@@ -17,8 +17,10 @@
 //   from push runs of the candidate SHA on the selected source branch, so a
 //   pull-request result can never satisfy release admission.
 // - The selected source branch is itself a `v3-*` branch, so every run on an
-//   integration branch stays out of the reusable set exactly as
-//   `.github/scripts/ci-equivalent-run.cjs` requires.
+//   integration branch stays out of the reusable set. The one reuse
+//   `.github/scripts/ci-equivalent-run.cjs` allows there binds a merge commit
+//   to its merged pull request, never a push and a pull request sharing one
+//   head, so this same-head audit does not measure it.
 
 const fs = require('node:fs')
 

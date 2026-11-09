@@ -324,6 +324,39 @@ export function stopRunningChildren(children, signal) {
   }
 }
 
+// Mirrors the bounded CI build in .github/actions/playwright-build: the same
+// filters that start:test serves, with their build:test dependencies.
+export function buildBuildCommand(plan) {
+  return {
+    command: 'bash',
+    args: [
+      './util/_with_local_test_origins.sh',
+      'cross-env',
+      'NODE_ENV=test',
+      'turbo',
+      'run',
+      'build:test',
+      ...plan.turboFilters,
+    ],
+  }
+}
+
+function buildRuntime(plan) {
+  console.log(`Building Playwright profile ${plan.profile} for production`)
+  const buildCommand = buildBuildCommand(plan)
+  const result = spawnSync(buildCommand.command, buildCommand.args, {
+    cwd: REPOSITORY_ROOT,
+    env: process.env,
+    stdio: 'inherit',
+  })
+  if (result.error) {
+    fail(`Playwright build could not start: ${result.error.message}`)
+  }
+  if (result.status !== 0) {
+    fail(`Playwright build failed with exit status ${result.status}`)
+  }
+}
+
 function startRuntime(plan) {
   console.log(
     `Starting Playwright profile ${plan.profile}: ${plan.apps.join(', ')}`
@@ -414,12 +447,13 @@ function main(args = process.argv.slice(2)) {
     return
   }
 
-  if (command === 'start') {
+  if (command === 'build' || command === 'start') {
     rejectUnknownOptions(options, new Set(['--plan']))
     const plan = validateRuntimePlan(
       readJson(planPath(options), 'Playwright runtime plan')
     )
-    startRuntime(plan)
+    if (command === 'build') buildRuntime(plan)
+    else startRuntime(plan)
     return
   }
 

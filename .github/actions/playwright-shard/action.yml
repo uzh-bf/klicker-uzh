@@ -47,11 +47,17 @@ runs:
         test ! -e "$GITHUB_WORKSPACE/.ci-control" && test ! -L "$GITHUB_WORKSPACE/.ci-control"
 
     - name: Check out trusted CI control
-      uses: actions/checkout@v4
+      uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4
       with:
         repository: ${{ job.workflow_repository }}
         ref: ${{ job.workflow_sha }}
         path: .ci-control
+        sparse-checkout-cone-mode: false
+        sparse-checkout: |
+          /.github/
+          /playwright/
+          /.devrouter.yml
+          /.gitattributes
         persist-credentials: false
 
     - name: Trust mounted workspace
@@ -59,14 +65,15 @@ runs:
       run: git config --global --add safe.directory "$GITHUB_WORKSPACE"
 
     - name: Define node version
-      uses: actions/setup-node@v4
+      uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020 # v4
       with:
-        node-version-file: package.json
+        # Keep this exact trusted pin aligned with package.json volta.node.
+        node-version: '24.21.0'
 
     - name: Install pnpm
-      uses: pnpm/action-setup@v4
+      uses: pnpm/action-setup@b906affcce14559ad1aafd4ab0e942779e9f58b1 # v4
       with:
-        version: 11.5.0
+        package_json_file: package.json
         run_install: false
 
     - name: Compute cache contract
@@ -83,7 +90,7 @@ runs:
       if: inputs.cache-enabled == 'true' && steps.cache-contract.outcome == 'success'
       id: pnpm-cache
       continue-on-error: true
-      uses: actions/cache/restore@v4
+      uses: actions/cache/restore@0057852bfaa89a56745cba8c7296529d2fc39830 # v4
       with:
         path: ${{ env.STORE_PATH }}
         key: playwright-${{ runner.os }}-${{ runner.arch }}-pnpm-${{ steps.cache-contract.outputs.dependency-fingerprint }}
@@ -102,10 +109,10 @@ runs:
 
     - name: Install Devrouter profile planner
       shell: bash
-      run: bash .ci-control/.github/scripts/install-devrouter.sh
+      run: bash .ci-control/.github/scripts/install-devrouter-locked.sh
 
     - name: Download canonical Playwright execution plan
-      uses: actions/download-artifact@v4
+      uses: actions/download-artifact@d3f86a106a0bac45b974a628896c90dbdf5c8093 # v4
       with:
         name: playwright-execution-plan
 
@@ -134,7 +141,7 @@ runs:
         NODE
 
     - name: Download Playwright build outputs
-      uses: actions/download-artifact@v4
+      uses: actions/download-artifact@d3f86a106a0bac45b974a628896c90dbdf5c8093 # v4
       with:
         name: playwright-build-artifact
 
@@ -187,6 +194,7 @@ runs:
         DATABASE_URL: postgres://klicker_test:klicker@postgres:5432/klicker_test
 
     - name: Start services, wait for readiness, and run Playwright tests
+      id: tests
       shell: bash
       run: |
         set -euo pipefail
@@ -270,6 +278,12 @@ runs:
         REDIS_ASSESSMENT_PORT: 6379
         REDIS_ASSESSMENT_PASS: ''
         REDIS_ASSESSMENT_HOST: redis_assessment_exec
+        EMAIL_HOST: mailhog
+        EMAIL_PORT: '1025'
+        EMAIL_FROM: noreply@klicker.test
+        # The MailHog image is amd64-only, so only the hosted route runs it;
+        # the one-time login link test skips on the arm64 public-pr route.
+        MAILHOG_URL: ${{ inputs.route == 'hosted' && 'http://mailhog:8025' || '' }}
         HATCHET_CHECK_HOST: hatchet
         HATCHET_HTTP_PORT: 8888
         HATCHET_GRPC_PORT: 7077
@@ -287,9 +301,15 @@ runs:
         APP_ORIGIN_ASSESSMENT_API: http://127.0.0.1:3000
         APP_ORIGIN_ASSESSMENT_PWA: http://127.0.0.1:3001
 
+    - name: Report tests that passed only on retry
+      if: always()
+      continue-on-error: true
+      shell: bash
+      run: node .ci-control/.github/scripts/playwright-flaky-summary.cjs playwright/test-results/results.json "$GITHUB_STEP_SUMMARY"
+
     - name: Upload Playwright JUnit results
       if: always()
-      uses: actions/upload-artifact@v4
+      uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4
       with:
         name: playwright-results-${{ inputs.shard-index }}-of-${{ inputs.shard-total }}
         path: playwright/test-results/junit.xml
@@ -298,7 +318,7 @@ runs:
 
     - name: Upload Playwright diagnostics
       if: failure()
-      uses: actions/upload-artifact@v4
+      uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4
       with:
         name: playwright-diagnostics-${{ inputs.shard-index }}-of-${{ inputs.shard-total }}
         path: |
@@ -322,7 +342,7 @@ runs:
         PNPM_CACHE_MATCHED_KEY: ${{ steps.pnpm-cache.outputs.cache-matched-key }}
         PLAYWRIGHT_SHARD_INDEX: ${{ inputs.shard-index }}
         PLAYWRIGHT_SHARD_TOTAL: ${{ inputs.shard-total }}
-        PLAYWRIGHT_CONCLUSION: ${{ job.status }}
+        PLAYWRIGHT_CONCLUSION: ${{ steps.tests.outcome }}
       run: |
         started="${PLAYWRIGHT_STARTED_SECONDS:-$(date +%s)}"
         export PLAYWRIGHT_DURATION_SECONDS="$(( $(date +%s) - started ))"
@@ -331,7 +351,7 @@ runs:
     - name: Upload shard telemetry
       if: always()
       continue-on-error: true
-      uses: actions/upload-artifact@v4
+      uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4
       with:
         name: playwright-telemetry-${{ inputs.shard-index }}-of-${{ inputs.shard-total }}
         path: |

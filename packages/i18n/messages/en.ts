@@ -8,6 +8,7 @@ export default {
       fullscreen: 'Expand graph to fullscreen',
       restore: 'Return graph to sidebar',
       ask: 'Ask about this',
+      showConcept: 'Show this concept in the knowledge graph',
       nodePrompt: 'Help me understand the concept “{topic}”.',
       edgePrompt:
         'Explain the relationship “{relationship}” between “{source}” and “{target}”.',
@@ -26,9 +27,13 @@ export default {
       explainer: 'Explainer',
       explainerDescription:
         'Get direct explanations with definitions and course-based examples.',
+      'writing-coach': 'Writing Coach',
+      'writing-coachDescription':
+        'Get specific feedback and tips on your writing, then make the revisions yourself.',
       quizzer: 'Quizzer',
       quizzerDescription:
         'Practise with exam-style course questions, one at a time, with formative feedback.',
+      custom: 'Custom mode',
     },
     settingsPanel: {
       title: 'Settings',
@@ -48,7 +53,7 @@ export default {
       usingPrimaryModel:
         'The automatic choice is used while credits are available.',
       usingFallbackModel:
-        'No credits remain. GPT-5.6 Luna may be used as the credit fallback.',
+        'No credits remain. The base model may be used as the credit fallback.',
       reasoningEffortLabel: 'Reasoning Effort',
       selectReasoningEffort: 'Select reasoning effort',
       reasoningEffortHint:
@@ -60,6 +65,19 @@ export default {
         medium: 'Medium',
         high: 'High',
         xhigh: 'Extra high',
+      },
+      answerStyleLabel: 'Answer format',
+      answerStyleHint:
+        'Changes how new answers are laid out, not how much help you get.',
+      answerStyles: {
+        balanced: 'Standard',
+        bullets: 'Bullet points',
+      },
+      answerToneLabel: 'Tone',
+      answerTones: {
+        neutral: 'Neutral',
+        friendly: 'Friendly',
+        direct: 'Direct',
       },
     },
     credits: {
@@ -224,6 +242,23 @@ export default {
         'Sign in to KlickerUZH Manage with the account that owns this chatbot to open its preview.',
       loginButton: 'Go to KlickerUZH Manage',
       opensInNewTab: '(opens in a new tab; return here after signing in)',
+      responseExample: {
+        captureAction: 'Save this answer as a response example',
+        captureUnavailable:
+          'This answer is not available to save. Start a new preview to try again.',
+        capturePending: 'Saving response example…',
+        captureCreated: 'Response example saved and ready for review.',
+        captureDuplicate:
+          'This response example is already saved and ready for review.',
+        captureStale:
+          'The source material changed. Start a new preview to capture this answer again.',
+        captureExpired:
+          'This capture expired. Start a new preview to try again.',
+        captureFailed: 'We could not save this response example.',
+        captureRetry: 'Try again',
+        reviewNow: 'Review now',
+        startNewPreview: 'Start a new preview',
+      },
     },
     recovery: {
       notFoundTitle: 'Chatbot not found',
@@ -232,6 +267,9 @@ export default {
       errorTitle: 'Chatbot unavailable',
       errorMessage:
         'We could not load this chatbot. Try again or return to KlickerUZH.',
+      accessDeniedTitle: 'No access to this chatbot',
+      accessDeniedMessage:
+        'Your account cannot open this chatbot. Return to KlickerUZH and open the chatbot from its course.',
       retry: 'Try again',
       openKlickerUzh: 'Open KlickerUZH',
     },
@@ -254,6 +292,20 @@ export default {
       inProgress: 'In progress',
       partial: 'Partial response',
       error: 'Error',
+    },
+    documentNotice: {
+      title: 'Before you attach documents',
+      allowed:
+        'Attach only material you may share: your own notes and work, course material you have permission to use, or openly licensed material.',
+      notAllowed:
+        'Do not attach complete copyrighted works without permission, or documents with personal or confidential information about others, sensitive data or passwords.',
+      access:
+        'Having access to a file does not mean you may share it. When in doubt, ask your lecturer.',
+      dataBoundary:
+        'Document text is sent to the AI model provider. When the selected model can read images, rendered PDF pages may also be sent for visual review. KlickerUZH saves the text and any generated visual summary with this conversation, but does not save the page images.',
+      once: 'This notice appears once on this device.',
+      remove: 'Remove documents',
+      accept: 'I understand',
     },
     disclaimer: {
       mediaTitle: 'Disclaimer media',
@@ -284,6 +336,13 @@ export default {
         'Image attachments for this message could not be loaded. Please try again.',
       attachedImageAlt: 'Attached image {index}',
     },
+    documentPreview: {
+      open: 'Preview {name}',
+      extractedText: 'Text the chat read from this file:',
+      extractedTextOnly:
+        'The original file is not stored, so after a reload only the text the chat read from it is shown:',
+      openOriginal: 'Open original file',
+    },
     imageViewer: {
       previewUnavailable: 'Preview unavailable',
       title: 'Image attachment',
@@ -308,6 +367,14 @@ export default {
       loadError: 'Your chats could not be loaded.',
       retry: 'Retry',
       loading: 'Loading conversations...',
+      filterLabel: 'Filter conversations by title',
+      filterPlaceholder: 'Filter by title',
+      filterClear: 'Clear filter',
+      filterNoMatch: 'No conversations match this filter.',
+      exportMarkdown: 'Export as Markdown',
+      exportUserLabel: 'You',
+      exportAssistantLabel: 'Assistant',
+      exportSourcesLabel: 'Sources',
       elearningTag: 'eLearning',
     },
     thread: {
@@ -347,6 +414,13 @@ export default {
       },
     },
     suggestions: {
+      reviewWriting: 'Get feedback on writing',
+      reviewWritingPrompt:
+        'Give me feedback on the course-writing excerpt below. Explain the most useful improvements and how I can make them myself.\n\n[Paste your excerpt here]',
+      reviewRevision: 'Review my revision',
+      reviewRevisionPrompt:
+        'I have revised my course-writing excerpt. Give feedback on what improved and what I should focus on next.\n\n[Paste your revision here]',
+
       sectionLabel: 'Conversation starters',
       editHint: 'Choose a starter to edit it before sending.',
       practiceTopic: 'Practise a topic',
@@ -377,6 +451,9 @@ export default {
       editDisabledTooltip:
         'Cannot edit: selected model does not support images',
       copy: 'Copy',
+      readAloud: 'Read aloud',
+      stopReadAloud: 'Stop reading aloud',
+      readAloudFormula: 'formula',
       refresh: 'Refresh',
       retry: 'Try again',
       rateUp: 'Helpful answer',
@@ -388,6 +465,11 @@ export default {
     },
     composer: {
       placeholder: 'Write a message...',
+      replyLanguageEn: 'This conversation is in English',
+      replyLanguageDe: 'This conversation is in German',
+      meetingClockNotStarted: 'The clock starts with your first message',
+      meetingClockElapsed: '{minutes} min since your first message',
+      meetingClockTime: '{time} (Zurich time)',
       modeUnavailable:
         'No chat mode is currently available. Please contact your lecturer.',
       send: 'Send message',
@@ -398,10 +480,69 @@ export default {
       attachmentReadError:
         'The image could not be read. Please try a different file.',
       dismissError: 'Dismiss error',
+      dropFiles: 'Drop files to attach',
       dropImages: 'Drop images to attach',
       attachmentPreviewAlt: 'Attachment preview',
       removeAttachment: 'Remove attachment',
+      attachFile: 'Attach an image or document',
       attachImage: 'Attach image',
+      attachmentTypeError:
+        'This file type cannot be attached. Use an image, PDF, Word (.docx), text, Markdown or CSV file.',
+      documentOnlyTypeError:
+        'The selected model cannot read images. Use a PDF, Word (.docx), text, Markdown or CSV file.',
+      documentLimitError: 'You can only attach up to {max} documents.',
+      documentTooLarge: 'Documents must be smaller than {max} MB.',
+      documentNoText: 'This file contains no readable text.',
+      documentPdfNoText:
+        'This PDF contains no selectable text. Scanned PDFs cannot be read yet.',
+      documentPresentation:
+        'PowerPoint files cannot be read. Save the presentation as a PDF and attach the PDF.',
+      documentReadError:
+        'The document could not be read. Please try a different file.',
+      documentReading: 'Reading document…',
+      documentPages: '{count, plural, one {# page} other {# pages}}',
+      documentTokens: '~{count} tokens',
+      documentShortened: 'Shortened to the first {max} tokens',
+      documentVisualReviewed:
+        '{count, plural, one {Page reviewed visually} other {Pages reviewed visually}}',
+      documentVisualTooManyPages:
+        '{count, plural, one {Page not reviewed visually} other {Pages not reviewed visually}}: up to {max} pages per message',
+      documentVisualNoImageSupport:
+        '{count, plural, one {Page not reviewed visually} other {Pages not reviewed visually}}: this model cannot read images',
+      documentVisualSkipped:
+        '{count, plural, one {Page not reviewed visually} other {Pages not reviewed visually}}',
+      documentDefaultQuestion: 'Please refer to the attached file(s).',
+      dictation: 'Dictate message',
+      dictationSetup: 'Set up dictation',
+      dictationStop: 'Stop dictation',
+      dictationListening: 'Listening...',
+      dictationLanguageHint: 'English dictation uses US English.',
+      dictationSheetTitle: 'Enable on-device dictation',
+      dictationSheetBody:
+        'Recognition runs on this device, and no audio is sent to the chat service. Your browser will ask for microphone access when you start dictation.',
+      dictationSheetDownload: 'Download',
+      dictationSheetNotNow: 'Not now',
+      dictationSheetInstalling: 'Downloading the language pack...',
+      dictationSheetFailed:
+        'The language pack could not be installed. Try again or continue typing.',
+      dictationSheetRetry: 'Try download again',
+      dictationSheetCheckAgain: 'Check availability again',
+      dictationSheetReady: 'The language pack is ready on this device.',
+      dictationSheetStart: 'Start dictation',
+      dictationErrorAborted: 'Dictation was cancelled.',
+      dictationErrorAudioCapture:
+        'The microphone could not be opened. Check your browser permissions.',
+      dictationErrorInstall: 'The local language pack could not be installed.',
+      dictationErrorLanguageNotSupported:
+        'This language is not supported for on-device dictation.',
+      dictationErrorNetwork:
+        'The browser reported a network error for dictation.',
+      dictationErrorNoSpeech: 'No speech was detected. Try again.',
+      dictationErrorNotAllowed:
+        'Microphone access was denied. Allow it in your browser settings.',
+      dictationErrorServiceNotAllowed:
+        'The browser did not allow the dictation service.',
+      dictationErrorUnknown: 'Dictation could not be started. Try again.',
       attachmentFallbackLabel: 'Attachment',
       editCancel: 'Cancel',
       editSend: 'Send',
@@ -966,6 +1107,9 @@ export default {
       rank: 'Rank',
       username: 'Username',
       email: 'Email',
+      entryAriaLabel: 'Rank {rank}: {name}, {points} points',
+      selfPositionDivider: 'your position',
+      podiumEmpty: 'No entries on the podium yet',
     },
     error: {
       '404': '404 Page not found',
@@ -1752,7 +1896,7 @@ Since the KlickerUZH app is not yet available in the iOS App Store, follow these
         'The chart shows the aggregated distribution of total scores for active participants. Your score range is highlighted.',
       histogramUserRange: 'Your score range: {range}.',
       notEnoughDataForComparison:
-        'No peer comparison is available. It is only included for at least 10 active participants and a non-zero available score range.',
+        'This report contains no peer comparison. It is included in reports issued after the course has ended, for at least 10 active participants and a non-zero available score range. Reports issued during the course contain your points only.',
       exportReportButton: 'Export Performance Report',
       exportReportExplanation:
         'Issue a report from the current assessment record. Once it is ready, you can view it in your browser or use the browser print dialog to save a single-page A4 PDF. The report includes a link for checking its current status and claims.',
@@ -1778,7 +1922,7 @@ Since the KlickerUZH app is not yet available in the iOS App Store, follow these
       exportReportPrintError:
         'The report could not be opened for printing. Allow pop-ups for this page and try again.',
       privacyAndTransparencyNotice:
-        'Peer comparison is released only for at least 10 active participants. Ten initial score ranges are merged until every displayed range represents at least 3 participants. The report contains no peer scores or identifiers.',
+        'Peer comparison is included only in reports issued after the course has ended, and only for at least 10 active participants. Ten initial score ranges are merged until every displayed range represents at least 3 participants. The report contains no peer scores or identifiers.',
       courseNameLabel: 'Course',
       studentNameLabel: 'Student name',
       studentEmailAddressLabel: 'Email address',
@@ -1848,7 +1992,28 @@ Since the KlickerUZH app is not yet available in the iOS App Store, follow these
     searchResultCount:
       '{count, plural, =0 {No knowledge bases} one {# knowledge base} other {# knowledge bases}}',
     catalogMetrics:
-      '{resources, plural, one {# resource} other {# resources}} · {chatbots, plural, one {# connected chatbot} other {# connected chatbots}}',
+      '{resources, plural, one {# resource} other {# resources}} and {chatbots, plural, one {# connected chatbot} other {# connected chatbots}}',
+    catalogDomain: 'Subject area: {domain}. Language: {language}.',
+    materialsReadinessNone: 'Chatbot materials: none added yet',
+    materialsReadinessAvailable:
+      'Chatbot materials: {available} of {total} available',
+    materialsReadinessProcessing: '{count} processing',
+    materialsReadinessFailed: '{count} failed',
+    questionReadiness: {
+      WAITING_FOR_MATERIALS:
+        'Question generation: waiting for materials to finish processing',
+      QUEUED:
+        'Question generation: prepared automatically overnight; usually ready the next morning.',
+      PROCESSING:
+        'Question generation: prepared automatically overnight; usually ready the next morning.',
+      READY: 'Question generation: ready',
+      DELAYED: 'Question generation: preparation is delayed.',
+      NEEDS_ATTENTION: 'Question generation: preparation needs attention.',
+      UNAVAILABLE:
+        'Question generation: automatic preparation is not available.',
+      NO_ELIGIBLE_MATERIALS: 'Question generation: no course material yet',
+      contact: 'Contact us',
+    },
     loadMore: 'Load more knowledge bases',
     notFound: 'The knowledge base could not be found.',
     detailFallbackTitle: 'Knowledge base',
@@ -1859,7 +2024,7 @@ Since the KlickerUZH app is not yet available in the iOS App Store, follow these
       '{count, plural, =0 {No upload reservations} one {# upload reservation} other {# upload reservations}}',
     metricStorage: 'Storage quota',
     metricStorageBreakdown:
-      '{visible} visible · {reserved} reserved for uploads',
+      '{visible} visible and {reserved} reserved for uploads',
     unknownSizesReserved:
       '{count, plural, one {# legacy resource reserves up to 25 MiB} other {# legacy resources reserve up to 25 MiB each}}',
     metricPendingCleanup: 'Pending cleanup',
@@ -1871,11 +2036,18 @@ Since the KlickerUZH app is not yet available in the iOS App Store, follow these
     fileUploadTitle: 'Upload a file',
     fileUploadDescription: 'Add course material from your computer.',
     fileDropPrompt: 'Drop a file here or click to choose one',
-    fileUploadFormats: 'PDF, TXT or MD · maximum 25 MB',
+    filesDropPrompt: 'Drop files here or click to choose them',
+    fileUploadFormats: 'PDF, TXT or MD, up to 25 MB',
     uploading: 'Uploading…',
+    uploadingProgress: 'Uploading file {current} of {total}…',
     fileUploadSuccess: 'File added to the knowledge base.',
+    fileUploadBatchSuccess: '{count} files added to the knowledge base.',
+    fileUploadBatchPartial:
+      '{succeeded} of {total} files were added. These failed: {files} ({reason})',
     fileUploadError: 'The file could not be uploaded.',
     fileRejected: 'Choose a supported file of no more than 25 MB.',
+    filesRejected:
+      'These files were skipped: {files}. Use PDF, TXT or MD files of no more than 25 MB.',
     replaceFile: 'Replace file',
     replaceFileTitle: 'Replace file',
     replaceAndIngest: 'Replace and ingest',
@@ -1907,6 +2079,7 @@ Since the KlickerUZH app is not yet available in the iOS App Store, follow these
     typeFile: 'File',
     typeUrl: 'Link',
     addResource: 'Add resource',
+    addResourceTitleFor: 'Add materials to {kbName}',
     addResourceTitle: 'Add a resource',
     addResourceDescription: 'Choose how you want to add this resource.',
     addWebsite: 'Website',
@@ -1983,7 +2156,7 @@ Since the KlickerUZH app is not yet available in the iOS App Store, follow these
     ingestAllFailed: 'Failed attempts',
     ingestAllInProgress: 'In progress',
     ingestAllSummary:
-      '{needs} need ingestion · {failed} failed attempts · {inProgress} already in progress',
+      '{needs} need ingestion, {failed} failed attempts and {inProgress} already in progress',
     ingestAllSuccess:
       'Queued {queued} resources. Retried {retried} failed resources. {current} were already current and {inProgress} already in progress. {failed} could not be queued.',
     ingestAllError: 'The resources could not be queued for ingestion.',
@@ -2018,6 +2191,14 @@ Since the KlickerUZH app is not yet available in the iOS App Store, follow these
       'The uploaded file no longer matches its upload reservation. Please upload it again.',
     ingestionFailed: 'The ingestion operation failed.',
     ingestionSuperseded: 'The ingestion operation was superseded.',
+    ingestionFailureSourceVersionMismatch:
+      'The source no longer matches the version recorded when it was added.',
+    ingestionFailureSourceFetch: 'The source could not be retrieved.',
+    ingestionFailureSourceProcessing:
+      'The source content could not be processed.',
+    ingestionFailureSourceSizeLimit:
+      'The source is larger than the supported size limit.',
+    ingestionFailureActivation: 'The imported content could not be activated.',
     inspectResource: 'Inspect',
     inspectorTitle: 'Resource details',
     sourceType: 'Source type',
@@ -2040,6 +2221,10 @@ Since the KlickerUZH app is not yet available in the iOS App Store, follow these
     noLinkedChatbots: 'No chatbot is using this knowledge base.',
     chatbotReplacementWarning:
       'This chatbot currently uses “{kbName}”. Connecting it here replaces that knowledge base.',
+    chatbotLiveChangeWarning:
+      'This chatbot is published. Connecting it here changes its materials for students immediately, without review.',
+    linkedChatbotLiveNote:
+      'Published: disconnecting takes effect for students immediately.',
     chatbotAttachSuccess: 'Chatbot connected to the knowledge base.',
     chatbotAttachError: 'The chatbot could not be connected.',
     chatbotDetachSuccess: 'Chatbot disconnected from the knowledge base.',
@@ -2112,21 +2297,22 @@ Since the KlickerUZH app is not yet available in the iOS App Store, follow these
     graphDomainInformatics: 'Informatics',
     graphDomainGeneralAcademic: 'General / Mixed',
     graphDomainCategoriesLabel: 'Generated categories',
-    graphDomainLanguageNote:
-      'The graph is generated in the selected language. The interface language does not change the categories.',
-    graphDomainLanguageLabel: 'Generation language',
     graphDomainLanguageSelectPlaceholder: 'Select a language',
-    graphDomainCurrentUnavailable:
-      'The selected domain {domain} (version {version}) is not available in this deployment. Choose a supported domain to build again.',
-    graphDomainLanguageUnavailable:
-      'The selected domain {domain} does not serve {language} in this deployment. Choose a supported generation language to build again.',
-    graphDomainRebuildBlocked:
-      'This knowledge base uses an explicit domain ({domain}, version {version}, {language}) that this deployment cannot reapply. Rebuilding is blocked until an explicit domain selection is available again.',
     graphDomainVersionUnknown: 'unknown',
     graphDomainPublished:
       'Served graph: {domain} (version {version}, {language})',
     graphDomainLanguageGerman: 'German',
     graphDomainLanguageEnglish: 'English',
+    domainSettingsTitle: 'Subject area and language',
+    domainSettingsDescription:
+      'Used whenever a knowledge graph is prepared for this knowledge base. Graphs that already exist keep the subject area and language they were built with.',
+    domainSubjectLabel: 'Subject area',
+    domainLanguageLabel: 'Content language',
+    domainSettingsNotSet: 'Not set',
+    domainSettingsSaveError:
+      'The subject area and language could not be saved. Please try again.',
+    domainLanguageUnsupported:
+      '{domain} is not available in {language}. Choose another subject area or another language.',
     ingestionDisabledError:
       'Adding new content to knowledge bases is temporarily disabled.',
   },
@@ -2216,6 +2402,38 @@ Since the KlickerUZH app is not yet available in the iOS App Store, follow these
       nextPage: 'Next',
     },
     admin: {
+      chatbotRejectionReason: 'Reason for rejection',
+      chatbotRejectConsequence:
+        'The owner will see this reason and can revise the chatbot before requesting approval again.',
+      chatbotReject: 'Reject request',
+      chatbotRejected:
+        '“{name}” was rejected. The owner can revise and resubmit it.',
+      chatbotRejectionError:
+        'Rejection could not be confirmed. Refresh the list and check the current status before trying again.',
+      chatbotAllTools: 'All tools',
+      chatbotDefaultReasoning: 'All reasoning levels supported by the model',
+      adminOnly: 'This page is available to administrators only.',
+      chatbotApprovals: 'Chatbot approvals',
+      chatbotApprovalsDescription:
+        'Review pending publication requests. Open a chatbot to check its configuration before approving participant access.',
+      chatbotOwner: 'Owner',
+      chatbotAccountApproval: 'Account publishing permission',
+      chatbotAccountApproved: 'Approved',
+      chatbotAccountNotApproved: 'Not approved',
+      chatbotConnectedTools: 'Connected tools',
+      chatbotNoConnectedTools: 'No connected tools.',
+      chatbotRefresh: 'Refresh requests',
+      chatbotQueueEmpty: 'No chatbots are awaiting approval.',
+      chatbotQueueError:
+        'Could not load publication requests. Refresh to try again.',
+      chatbotOwnerBlocked:
+        'The owner is not currently approved for chatbot publishing. Account approval is required before this chatbot can be published.',
+      chatbotApproveConsequence:
+        'Approving publishes this chatbot immediately for participants in its course. Account usage budgets remain unchanged.',
+      chatbotApprove: 'Approve and publish',
+      chatbotPublished: '“{name}” has been published.',
+      chatbotApprovalError:
+        'Publication could not be confirmed. The request list has been refreshed; check the current status before trying again.',
       pageName: 'Admin Panel',
       privatePreviewAvailability: 'Availability: Private Features',
       privatePreviewDescription:
@@ -2613,7 +2831,7 @@ Since the KlickerUZH app is not yet available in the iOS App Store, follow these
         'Saving your beta enrollment. Your current setting will remain unchanged until the save completes.',
       betaFeaturesTitle: 'Beta features',
       chatbotBetaAccessRequired:
-        'Chatbot creation is a beta feature. It requires AI beta access, Catalyst, and full account access. You can find beta enrollment in your account settings.',
+        'Chatbot creation is a beta feature. It requires AI beta access, Catalyst, full account access, and AI features approved by an administrator. You can find beta enrollment in your account settings.',
       betaFeaturesUnavailable:
         'Your beta preference cannot be displayed or changed right now. No preference has been assumed.',
       chatAccountUsageDescription:
@@ -2623,6 +2841,13 @@ Since the KlickerUZH app is not yet available in the iOS App Store, follow these
       chatAccountUsageTitle: 'Chatbot usage',
       chatAccountUsageUnauthorized:
         'Chatbot usage is not authorized for this account.',
+      chatAccountUsageSubscriptionLabel: 'Plan',
+      chatAccountUsageTierBase: 'Base models',
+      chatAccountUsageTierAdvanced: 'Base and advanced models',
+      chatAccountUsageClassUnavailable:
+        'This usage class is not enabled for your account.',
+      chatAccountUsageAdvancedCostCenter:
+        'Advanced models require the advanced AI subscription and a cost center that AI usage can be billed to.',
       chatAccountUsageRefreshing: 'Refreshing usage…',
       chatAccountUsageStale:
         'The latest usage could not be loaded. The values below may be out of date.',
@@ -2632,7 +2857,7 @@ Since the KlickerUZH app is not yet available in the iOS App Store, follow these
       usageBudget: 'Budget',
       usageBudgetEmpty: 'No budget is set for this usage class.',
       usageBudgetExhausted: 'The monthly budget is exhausted.',
-      usageCredits: 'credits',
+      usageCredits: 'USD',
       usageRemaining: 'Remaining',
       usageResetDate: 'Reset date',
       usageUsed: 'Used',
@@ -2712,6 +2937,8 @@ Since the KlickerUZH app is not yet available in the iOS App Store, follow these
       review: 'Review result',
     },
     elementGeneration: {
+      rolloutUnavailable:
+        'Element generation is not yet available for your account. It is being rolled out gradually.',
       eyebrow: 'AI-assisted creation',
       title: 'Generate elements',
       description:
@@ -2725,12 +2952,43 @@ Since the KlickerUZH app is not yet available in the iOS App Store, follow these
       configure: {
         sourceTitle: 'Knowledge source',
         sourceHelp:
-          'Choose a knowledge base with a published graph. The generation remains linked to this graph build for traceability.',
+          'Choose a knowledge base. The generation stays linked to the prepared material it uses for traceability.',
         sourceCount: '{count, plural, one {# source} other {# sources}}',
-        indexedAt: 'Published {date}',
-        staleGraph: 'Update available',
+        indexedAt: 'Prepared {date}',
+        staleGraph: 'Recent changes not included yet',
         staleGraphHelp:
-          'This published graph is still usable, but the knowledge base has newer changes. Rebuild it first if those changes should be included.',
+          'This knowledge base has newer changes that are still being prepared. Questions generated now use the previously prepared material.',
+        basisLanguage: 'Questions in {language}',
+        settingsChangedHelp:
+          'The subject area or language of this knowledge base changed. New questions wait for a preparation that matches the new settings. Existing questions stay unchanged.',
+        contactSupport: 'Contact {email}',
+        preparation: {
+          WAITING_FOR_MATERIALS: 'Waiting for materials to finish processing',
+          QUEUED: 'Preparing automatically',
+          PROCESSING: 'Preparing automatically',
+          READY: 'Ready',
+          DELAYED: 'Preparation is delayed',
+          NEEDS_ATTENTION: 'Preparation needs attention',
+          UNAVAILABLE: 'Automatic preparation is not available',
+          NO_ELIGIBLE_MATERIALS: 'No course material yet',
+        },
+        preparationHelp: {
+          WAITING_FOR_MATERIALS:
+            'The uploaded materials are still being processed. Question preparation starts automatically afterwards.',
+          QUEUED:
+            'Question generation is prepared automatically overnight; usually ready the next morning.',
+          PROCESSING:
+            'Question generation is prepared automatically overnight; usually ready the next morning.',
+          READY: 'Ready for question generation.',
+          DELAYED:
+            'Preparation is taking longer than expected. Contact us so we can look into it.',
+          NEEDS_ATTENTION:
+            'Preparation could not be completed automatically. Check the materials of this knowledge base or contact us.',
+          UNAVAILABLE:
+            'Automatic preparation is not enabled for this knowledge base. Contact us to enable question generation.',
+          NO_ELIGIBLE_MATERIALS:
+            'Add course material to this knowledge base. Administrative documents are not used for question generation.',
+        },
         sourceDetails: 'Included sources',
         completeSource: 'The complete source will be used.',
         pageFrom: 'From page',
@@ -2769,9 +3027,12 @@ Since the KlickerUZH app is not yet available in the iOS App Store, follow these
         remove: 'Remove',
         start: 'Generate elements',
         starting: 'Starting…',
-        noSources: 'No published knowledge graph available',
+        sourceNotReady: 'Not ready for question generation yet',
+        requestedSourceMissing:
+          'The requested knowledge base is unavailable. Choose one of your knowledge bases below.',
+        noSources: 'No knowledge base available',
         noSourcesHelp:
-          'Create a knowledge base and publish its knowledge graph before generating elements.',
+          'Create a knowledge base and add course material before generating elements.',
       },
       elementTypes: {
         SC: {
@@ -3081,6 +3342,8 @@ Since the KlickerUZH app is not yet available in the iOS App Store, follow these
         buildLoad: 'This generation could not be loaded.',
         action: 'The generation could not be updated. Please try again.',
         withCode: 'The operation failed ({code}). Please try again.',
+        basisChanged:
+          'The prepared material of this knowledge base changed. Review the updated source and start again.',
       },
     },
     questionPool: {
@@ -3963,7 +4226,8 @@ Since the KlickerUZH app is not yet available in the iOS App Store, follow these
         'The minimum value must be less than the maximum value.',
       NROneValueRequired:
         'For solution ranges at least one boundary value must be entered.',
-      NRPrecision: 'The number of decimal places must be at least 0.',
+      NRPrecision:
+        'The number of decimal places must be a whole number from 0 to 100.',
       chooseSolutionType:
         'Please choose a solution type for your numerical question or deactivate the sample solution.',
       solutionRangeRequired: 'Please enter at least one valid solution range.',
@@ -4890,34 +5154,145 @@ Since the KlickerUZH app is not yet available in the iOS App Store, follow these
       createChatbotDescription:
         'Create a course-bound draft chatbot and configure it before requesting publication.',
       chatbotMobileSelector: 'Current chatbot',
-      chatbotWorkspaceNavigation: 'Chatbot workspace',
       chatbotWorkspaceOverview: 'Overview',
-      chatbotWorkspaceKnowledge: 'Knowledge',
+      chatbotDraftStepMaterialsDescription:
+        'Choose the knowledge base the chatbot answers from. It connects as soon as you select it.',
+      chatbotDraftStepStudentsDescription:
+        'Students read this text before they start chatting. We prepared a suggestion for you.',
+      chatbotSectionStatusDefault: 'Default',
+      chatbotSectionStatusSuggested: 'Suggested',
+      chatbotSectionStatusSaved: 'Saved',
+      chatbotSectionStatusWarning: 'Needs attention',
+      chatbotSectionStatusInvalid: 'Incomplete',
+      chatbotSectionStatusUnsaved: 'Unsaved changes',
+      chatbotSectionStatusNotSubmitted: 'Not yet submitted',
+      chatbotSectionSave: 'Save',
+      chatbotSectionSaving: 'Saving…',
+      chatbotSectionDiscard: 'Discard changes',
+      chatbotSectionMaterials: 'Materials',
+      chatbotSectionStudents: 'Student information',
+      chatbotSectionModes: 'Learning modes and framing',
+      chatbotSectionModel: 'Model',
+      chatbotSectionUsage: 'Usage limits',
+      chatbotSectionGraph: 'Knowledge graph',
+      chatbotSectionGroupOptional:
+        'Optional. The defaults work for most courses.',
+      chatbotSectionGroupAdvanced: 'Advanced',
+      chatbotPausedNotice:
+        'The team paused this chatbot. Settings cannot be changed until it is active again.',
+      chatbotSectionAppliesImmediately: 'Applies immediately',
+      chatbotSectionAppliesAfterReview: 'Applies after review',
+      chatbotSectionRequestPending: 'Publication request',
+      chatbotSectionSubmitChanges: 'Submit changes for review',
+      chatbotUnsubmittedSections:
+        'Saved changes not yet submitted: {sections}.',
+      chatbotUsageNoneYet: 'None yet',
+      chatbotUsageCreditsValue: 'USD {current} of USD {total}',
+      chatbotUsageStudentInformationValue:
+        '{accepted} accepted, {declined} declined, {pending} not answered yet',
+      chatbotLiveCreditPolicy: 'Students currently get this: {policy}',
+      chatbotSectionRequest: 'Request publication',
+      chatbotSummaryMaterialsNone:
+        'No knowledge base is connected. Answers use general model knowledge.',
+      chatbotSummaryMaterialsConnected: 'Uses the knowledge base {name}.',
+      chatbotSummaryMaterialsReadiness:
+        '{total, plural, =0 {It has no resources yet.} one {{ready} of 1 resource is ready{failed, plural, =0 {} other {, # failed}}.} other {{ready} of # resources {ready, plural, one {is} other {are}} ready{failed, plural, =0 {} other {, # failed}}.}}',
+      chatbotNoKnowledgeBaseOption:
+        'No knowledge base. Answers use general model knowledge.',
+      chatbotSummaryStudents: 'Students see “{title}” before they start.',
+      chatbotSummaryStudentsSuggested: 'This is the suggested text.',
+      chatbotSummaryStudentsNotSaved:
+        'The suggested text is ready but not saved yet.',
+      chatbotSummaryStudentsInvalid:
+        'The title or the introduction is missing.',
+      chatbotStudentsPreview: 'Preview',
+      chatbotStudentsPreviewTitle: 'What students see',
+      chatbotSummaryModesOn:
+        '{modes} {count, plural, one {is} other {are}} on.',
+      chatbotSummaryModesNone: 'No learning mode is on.',
+      chatbotSummaryModesExtras:
+        '{framing, select, set {There is a framing} other {There is no framing}} and {custom, plural, =0 {no custom modes} one {one custom mode} other {# custom modes}}.',
+      chatbotSummaryModesQuizzerNeedsKb:
+        'Quizzer needs a knowledge base, so students do not see it yet.',
+      chatbotSummaryModelFixed: 'Students use {model}.',
+      chatbotSummaryModelFixedReasoning:
+        'Students use {model} with {effort} reasoning effort.',
+      chatbotSummaryModelNoChoice: 'They cannot switch models.',
+      chatbotSummaryModelChoice:
+        '{count, plural, one {Students use {models}.} other {Students can choose between {models}.}}',
+      chatbotSummaryUsageInitial: 'Each student starts with USD {initial}.',
+      chatbotSummaryUsageRefill:
+        '{period, select, NONE {The budget is not topped up.} DAILY {Every day, USD {amount} is added, up to USD {max}.} WEEKLY {Every week, USD {amount} is added, up to USD {max}.} BIWEEKLY {Every two weeks, USD {amount} is added, up to USD {max}.} MONTHLY {Every month, USD {amount} is added, up to USD {max}.} other {The budget is topped up, up to USD {max}.}}',
+      chatbotSummaryGraph:
+        'The concept map is {visible, select, yes {shown to} other {hidden from}} students.',
+      chatbotSummaryGraphRetrieval:
+        'Graph search is {enabled, select, yes {on} other {off}}.',
+      chatbotEditDetails: 'Edit details',
+      chatbotEditDetailsTitle: 'Chatbot details',
+      chatbotChangesRequested: 'Changes requested',
+      chatbotDraftVisibility:
+        '{courses}. Students cannot see this chatbot yet.',
+      chatbotLiveVisibility: '{courses}. Students can use this chatbot.',
+      chatbotLiveVisibilityNoCourse: 'Students can use this chatbot.',
+      chatbotPausedVisibility:
+        '{courses}. Students cannot use this chatbot while it is paused.',
+      chatbotPausedVisibilityNoCourse:
+        'Students cannot use this chatbot while it is paused.',
+      chatbotOpenForCourse: 'Open the chatbot in {course}',
+      chatbotDraftVisibilityNoCourse: 'Students cannot see this chatbot yet.',
+      chatbotPublicationBlockersTitle: 'Before you send the request:',
+      chatbotPublicationBlockerUnsaved:
+        'Save or discard the changes in {section}.',
+      chatbotPublicationBlockerInvalid: 'Complete {section}.',
       chatbotWorkspaceBehavior: 'Behavior',
       chatbotWorkspaceDisclaimer: 'Disclaimer',
-      chatbotWorkspaceSetup: 'Setup',
-      chatbotWorkspaceAdvanced: 'Advanced',
-      chatbotWorkspaceUsage: 'Usage',
       chatbotWorkspaceOverviewDescription:
         'Review the chatbot status and use the workspace sections to update its setup or inspect operational details.',
       chatbotWorkspaceBehaviorDescription:
-        'Choose learning modes, framing, and the model policy used by this chatbot.',
+        'Choose the learning modes and framing used by this chatbot.',
       chatbotWorkspaceDisclaimerDescription:
         'Edit the participant-facing introduction and review the fixed institutional sections.',
-      chatbotWorkspaceKnowledgeDescription:
-        'Review the active knowledge base and open its management page. Multiple knowledge-base attachments are not available in this editor yet.',
-      chatbotKnowledgeSingleActive:
-        'One active knowledge base is currently supported here.',
-      chatbotKnowledgeEmptyDescription:
-        'The chatbot can still be used without course-material retrieval.',
-      chatbotKnowledgeManagementLink:
-        'Manage documents, ingestion, and knowledge-base readiness in Knowledge Bases.',
+      chatbotKnowledgeBaseSelectPlaceholder: 'Choose a knowledge base',
+      chatbotKnowledgeBaseConnect: 'Connect',
+      chatbotKnowledgeBaseReplace: 'Replace',
+      chatbotKnowledgeBaseDisconnect: 'Disconnect',
+      chatbotKnowledgeBaseReplacementWarning:
+        'This chatbot currently uses “{kbName}”. Connecting another knowledge base replaces it.',
+      chatbotKnowledgeBaseLiveChangeNote:
+        'This chatbot is published. Connecting, replacing or disconnecting a knowledge base takes effect for participants immediately and is not part of the draft changes awaiting review.',
+      chatbotKnowledgeBaseListError:
+        'Your knowledge bases could not be loaded.',
+      chatbotKnowledgeBaseConnectSuccess: 'Knowledge base connected.',
+      chatbotKnowledgeBaseConnectError:
+        'The knowledge base could not be connected.',
+      chatbotKnowledgeBaseDisconnectSuccess: 'Knowledge base disconnected.',
+      chatbotKnowledgeBaseDisconnectError:
+        'The knowledge base could not be disconnected.',
+      chatbotKnowledgeBaseCreatedNotConnected:
+        'The knowledge base “{kbName}” was created but could not be connected to this chatbot. Retry the connection to use it here.',
+      chatbotKnowledgeBaseCardReusable:
+        'A knowledge base is a reusable collection of materials. Other chatbots can use it too.',
+      chatbotKnowledgeBaseCardOpen: 'Open knowledge base',
+      chatbotKnowledgeBaseCardResources: 'Resources',
+      chatbotKnowledgeBaseCardReady: 'Ready',
+      chatbotKnowledgeBaseCardProcessing: 'Processing',
+      chatbotKnowledgeBaseCardFailed: 'Failed',
+      chatbotKnowledgeBaseCardLastChanged: 'Last changed on {date}.',
+      chatbotKnowledgeBaseCardEmpty:
+        'This knowledge base has no materials yet.',
+      chatbotKnowledgeBaseCardRecent: 'Recently added',
+      chatbotKnowledgeBaseAddFiles: 'Add files',
+      chatbotKnowledgeBaseBanner:
+        'You are preparing materials for the chatbot {name}.',
+      backToChatbotSetup: 'Back to chatbot setup',
+      chatbotKnowledgeBaseRetryConnection: 'Retry connection',
+      chatbotKnowledgeBaseCreateChatbot:
+        'Create chatbot using this knowledge base',
+      chatbotKnowledgeBaseChatbotCreatedNotConnected:
+        'The chatbot was created but the knowledge base could not be connected. Connect it in the chatbot’s Materials section.',
       chatbotTechnicalDetails: 'Technical details',
       chatbotTechnicalId: 'ID',
       chatbotTechnicalAvatar: 'Avatar',
-      chatbotUsageTechnicalIntegrations: 'Technical integrations',
-      chatbotUsageTechnicalIntegrationsDescription:
-        'Inspect configured MCP integrations and their current status.',
       chatbotSetupTitle: 'Set up your chatbot',
       chatbotSetupDescription:
         'Use the sections below to complete and save your chatbot setup before requesting publication.',
@@ -4928,28 +5303,93 @@ Since the KlickerUZH app is not yet available in the iOS App Store, follow these
         'Choose which standard modes participants can use',
       chatbotSetupModesTitle: 'Learning modes',
       chatbotSetupModesDescriptionLong:
-        'Choose the standard modes that should be available to participants. Tutor and Explainer are available without course-material retrieval; Quizzer is shown only when its required capability is available.',
+        'Choose the standard modes available to participants. Writing Coach supports feedback on writing. Course-tool requirements still apply to every mode; Quizzer additionally needs course-material retrieval.',
+      chatbotModeWritingCoach: 'Writing Coach',
+      chatbotModeWritingCoachDescription:
+        'Gives specific writing feedback and revision strategies. Participants write every revision themselves.',
+      chatbotWritingCoachRequiredTool:
+        'Writing Coach is currently unavailable to participants because this chatbot requires a course-tool binding that the mode does not have. Contact the chatbot administrator to configure a compatible binding.',
       chatbotModeTutor: 'Tutor',
       chatbotModeTutorDescription:
-        'Guides participants with questions, hints, and formative feedback.',
+        'Guides students with questions, hints and feedback.',
       chatbotModeExplainer: 'Explainer',
       chatbotModeExplainerDescription:
         'Explains course concepts directly with definitions and grounded examples.',
       chatbotModeQuizzer: 'Quizzer',
       chatbotModeQuizzerDescription:
         'Practises exam-style course questions one at a time with formative feedback.',
-      chatbotModeInvariant: 'Keep Tutor or Explainer enabled.',
+      chatbotModeInvariant: 'Keep Tutor, Explainer or Writing Coach enabled.',
       chatbotModeQuizzerCapabilityNote:
         'Quizzer may still be hidden when its course-material capability is unavailable.',
       chatbotModeEnabled: 'Enabled',
       chatbotModeDisabled: 'Disabled',
+      chatbotCustomModesTitle: 'Custom modes',
+      chatbotCustomModesDescription:
+        'Add up to {count} custom modes with their own name, description, and persona text. Custom modes are reviewed together with the chatbot revision.',
+      chatbotCustomModesEmpty:
+        'There are no custom modes yet. Add one to offer students another mode.',
+      chatbotCustomModesNone: 'No custom modes are configured.',
+      chatbotCustomModesCount: '{count} of {max} custom modes used',
+      chatbotCustomMode: 'Custom mode {number}',
+      chatbotCustomModeName: 'Mode name',
+      chatbotCustomModeNameRequired: 'Each custom mode needs a name.',
+      chatbotCustomModeDescription: 'Short description',
+      chatbotCustomModePersonaText: 'Persona and instructions',
+      chatbotCustomModePersonaPlaceholder:
+        'Describe how this mode should respond to participants.',
+      chatbotCustomModeWelcomeMessage: 'Welcome message',
+      chatbotCustomModeWelcomePlaceholder:
+        'Shown in an empty chat for this mode. Leave empty to use the standard greeting.',
+      chatbotCustomModeStarterPrompts: 'Starter prompts',
+      chatbotCustomModeStarterPromptsDescription:
+        'Shown as suggestions in an empty chat for this mode. At most {count} starters; learners decide whether to send them.',
+      chatbotCustomModeStarterPrompt: 'Starter prompt {number}',
+      chatbotCustomModeStarterPromptAdd: 'Add starter prompt',
+      chatbotCustomModeShowReasoning: 'Show model reasoning to students',
+      chatbotCustomModeShowReasoningDescription:
+        'Off by default. The reasoning summary can paraphrase the persona and instructions of this mode, for example the hidden facts of a role-play. Owner preview always shows it.',
+      chatbotCustomModeReasoningShown:
+        'Model reasoning visible to participants',
+      chatbotCustomModeReasoningHidden:
+        'Model reasoning hidden from participants',
+      chatbotCustomModeReplyLanguage: 'Reply language',
+      chatbotCustomModeReplyLanguageDescription:
+        'By default, replies follow the language the participant writes in. Fix a language for role-plays that must stay in one language.',
+      chatbotCustomModeReplyLanguageFollow: 'Follow the participant',
+      chatbotCustomModeReplyLanguageEn: 'Always English',
+      chatbotCustomModeReplyLanguageDe: 'Always German',
+      chatbotCustomModeMeetingClock: 'Meeting clock',
+      chatbotCustomModeMeetingClockDescription:
+        "Off by default. Tells the model how many minutes have passed since the participant's first message, for timed role-plays. Keep the meeting length and phases in the persona.",
+      chatbotCustomModeMeetingClockOff: 'Off',
+      chatbotCustomModeMeetingClockElapsed: 'Elapsed minutes',
+      chatbotCustomModeMeetingClockElapsedAndTime:
+        'Elapsed minutes and time of day',
+      chatbotCustomModeAdd: 'Add custom mode',
+      chatbotCustomModeRemove: 'Remove',
+      chatbotCustomModesLimit: 'At most {count} custom modes are supported.',
+      chatbotCustomModesDuplicate: 'Each custom mode needs a unique name.',
+      chatbotCustomModesReadonly:
+        'Custom modes cannot be edited in this chatbot status.',
+      chatbotCustomModesSave: 'Save custom modes',
+      chatbotCustomModesSaving: 'Saving…',
+      chatbotCustomModesSaveSuccess: 'Custom modes saved.',
+      chatbotCustomModesSaveError:
+        'Could not save the custom modes. Please try again.',
       chatbotFraming: 'Chatbot framing',
       chatbotFramingDescription:
-        'Briefly describe the course, audience, or intended focus. This context is used in the standard learning modes.',
+        'Describe the course, audience, prior knowledge, typical tasks and learning priorities. This context guides responses in standard learning modes, including Writing Coach. For published chatbots, saved changes apply after approval.',
+      chatbotFramingExamples: 'Context examples',
+      chatbotFramingScientific: 'Scientific writing',
+      chatbotFramingScientificExample:
+        'This chatbot supports a bachelor-level biology lab course. Students write short experiment reports and interpret figures. They know basic genetics but are learning scientific argumentation. Focus on linking claims to results, distinguishing observation from interpretation, and expressing uncertainty. Explain unfamiliar terms briefly. Keep feedback direct and encouraging. Preserve the writer’s voice and assess only the excerpt provided.',
+      chatbotFramingInformal: 'Less formal writing',
+      chatbotFramingInformalExample:
+        'This chatbot supports a project-based communication course. Students write short updates and reflective notes for peers and project partners. Focus on a clear purpose, concrete examples, logical flow and an obvious next action when relevant. A natural, conversational tone is appropriate; academic vocabulary and citations are usually unnecessary. Give practical, encouraging feedback.',
       chatbotFramingPlaceholder:
         'For example: First-year organic chemistry for medical students.',
       chatbotFramingTooLong:
-        'Chatbot framing must be 200 characters or fewer when edited.',
+        'Chatbot framing must be {count} characters or fewer when edited.',
       chatbotModesSave: 'Save learning modes',
       chatbotModesSaving: 'Saving…',
       chatbotModesSaveSuccess: 'Learning modes saved.',
@@ -4958,9 +5398,6 @@ Since the KlickerUZH app is not yet available in the iOS App Store, follow these
         'Learning modes cannot be edited in this chatbot status.',
       chatbotSetupDisclaimer: 'Disclaimer',
       chatbotSetupDisclaimerDescription: 'Participant-facing introduction',
-      chatbotSetupCredits: 'Credits',
-      chatbotSetupCreditsDescription:
-        'Per-participant limits and reset schedule',
       chatbotSetupReview: 'Review and submit',
       chatbotSetupReviewDescription:
         'Confirm saved details and request publication',
@@ -4972,21 +5409,18 @@ Since the KlickerUZH app is not yet available in the iOS App Store, follow these
       chatbotSetupDisclaimerTitle: 'Participant disclaimer',
       chatbotSetupDisclaimerDescriptionLong:
         'Explain what participants should know before using this chatbot. Save this section to update the participant-facing preview. The preview includes the fixed platform text.',
-      chatbotSetupCreditsTitle: 'Participant credits',
-      chatbotSetupCreditsDescriptionLong:
-        'Configure the credit allowance each participant receives. Credit settings are locked while a revision is pending review.',
       chatbotCreditPolicyDescription:
-        'Initial credits apply on first use. Recurring resets add credits up to the configured maximum.',
-      chatbotCreditAmountRequired: 'Enter a credit amount.',
+        "Credits are US dollars. Each answer is charged to the student's budget at its model cost in US dollars. The starting budget applies on first use, and recurring top-ups add to it up to the maximum balance.",
+      chatbotCreditAmountRequired: 'Enter an amount in US dollars.',
       chatbotCreditAmountInvalid:
-        'Enter a non-negative whole number no greater than 2,147,483,647.',
+        'Enter a non-negative whole number of US dollars, no greater than 2,147,483,647.',
       chatbotCreditResetPeriodRequired: 'Select a reset period.',
       chatbotCreditResetAmountInvalid:
-        'Enter a positive whole number when recurring resets are enabled.',
+        'Enter a positive whole number of US dollars when recurring top-ups are enabled.',
       chatbotCreditInitialAboveMaximum:
-        'Initial credits cannot exceed maximum credits.',
+        'The starting budget cannot exceed the maximum balance.',
       chatbotCreditResetAboveMaximum:
-        'The reset amount cannot exceed maximum credits.',
+        'The top-up amount cannot exceed the maximum balance.',
       chatbotCreditPolicySaveSuccess: 'Participant credit settings saved.',
       chatbotCreditPolicySaveError:
         'Could not save participant credit settings. Please try again.',
@@ -4995,13 +5429,15 @@ Since the KlickerUZH app is not yet available in the iOS App Store, follow these
         'Check the saved setup and provide the information the team needs to review your publication request. You can open the other sections to make changes.',
       chatbotSetupEdit: 'Edit',
       chatbotSetupPublicationNote:
-        'Participant credit settings are saved separately and shown here for review. Publication details are submitted with your request and can be edited until you submit.',
+        'Publication details are submitted with your request and can be edited until you submit.',
       chatbotDiscardChangesConfirmation:
         'Discard your unsaved chatbot changes?',
       chatbotNavigationPending:
         'Please wait until the current chatbot change has finished saving.',
       chatbotPreviewUnsavedConfirmation:
         'This preview opens the last saved live chatbot configuration. Continue without saving your unsaved changes?',
+      chatbotRevisionDraftOnly:
+        'This chatbot is a draft and not yet visible to participants.',
       chatbotRevisionLiveOnly:
         'Live configuration is active for participants. Save a revision to prepare changes for review.',
       chatbotRevisionSaved: 'Saved revision {version} is ready for review.',
@@ -5021,8 +5457,6 @@ Since the KlickerUZH app is not yet available in the iOS App Store, follow these
         'Revision withdrawn. You can continue editing it.',
       chatbotRevisionWithdrawError:
         'Could not withdraw the revision. Please reload and try again.',
-      chatbotCreatedAt: 'Created',
-      chatbotUpdatedAt: 'Last updated',
       chatbotName: 'Name',
       chatbotDescription: 'Description',
       chatbotCourse: 'Course',
@@ -5042,6 +5476,10 @@ Since the KlickerUZH app is not yet available in the iOS App Store, follow these
       chatbotPublication: 'Publication request',
       chatbotPublicationDescription:
         'Provide the information needed for the team to review this chatbot before publication.',
+      chatbotPublicationSavedNotVisible:
+        'Saved changes are not visible to students until publication is approved.',
+      chatbotPublicationPublishedStaysLive:
+        'The published version stays live for students while changes are saved, reviewed, rejected or withdrawn.',
       chatbotPublicationUseCase: 'Use case',
       chatbotPublicationUseCaseRequired: 'Describe the intended use case.',
       chatbotPublicationUseCaseTooLong:
@@ -5061,7 +5499,7 @@ Since the KlickerUZH app is not yet available in the iOS App Store, follow these
       chatbotPublicationDisclaimerRequired:
         'Save a complete disclaimer before requesting publication.',
       chatbotPublicationUnsavedSetup:
-        'Save or wait for changes in Basics, Learning modes, Disclaimer, and Credits before requesting publication.',
+        'Save or discard the unsaved changes on this page, including any open advanced settings, or wait for them to finish saving before requesting publication.',
       chatbotPublicationAuthorizationChecking:
         'Checking whether this account can request publication...',
       chatbotPublicationAuthorizationUnavailable:
@@ -5090,16 +5528,16 @@ Since the KlickerUZH app is not yet available in the iOS App Store, follow these
       chatbotDisclaimerAuthoring: 'Disclaimer Authoring',
       chatbotDisclaimerReadonly:
         'The disclaimer cannot be edited while the chatbot is awaiting review or paused.',
-      chatbotDisclaimerTitle: 'Disclaimer title',
-      chatbotDisclaimerTitleRequired: 'Enter a disclaimer title.',
+      chatbotDisclaimerTitle: 'Title',
+      chatbotDisclaimerTitleRequired: 'Enter a title.',
       chatbotDisclaimerTitleTooLong:
         'The disclaimer title must be 160 characters or fewer.',
-      chatbotDisclaimerIntro: 'Disclaimer introduction',
-      chatbotDisclaimerIntroRequired: 'Enter a disclaimer introduction.',
+      chatbotDisclaimerIntro: 'Introduction',
+      chatbotDisclaimerIntroRequired: 'Enter an introduction.',
       chatbotDisclaimerIntroTooLong:
         'The disclaimer introduction must be 10,000 characters or fewer.',
       chatbotDisclaimerIntroEditorPlaceholder:
-        'Explain what participants should know before using this chatbot.',
+        'Explain what students should know before they use this chatbot.',
       chatbotDisclaimerSuggestedTitle: 'About this chatbot',
       chatbotDisclaimerSuggestedIntro:
         'This chatbot is provided as a learning aid for the linked course. Use its responses to support your learning and check important information against your course materials.',
@@ -5107,7 +5545,7 @@ Since the KlickerUZH app is not yet available in the iOS App Store, follow these
         'The current field is empty. You can add a suggested generic introduction and edit it before saving.',
       chatbotDisclaimerUseSuggestedText: 'Use suggested text',
       chatbotDisclaimerSuggestedUnsaved:
-        'This suggested text is not saved yet. Save your changes to use it for participants.',
+        'This suggested text is not saved yet. Save it so students see it.',
       saveChatbotDisclaimer: 'Save disclaimer',
       chatbotDisclaimerSaveSuccess: 'Chatbot disclaimer saved.',
       chatbotDisclaimerSaveError:
@@ -5124,42 +5562,46 @@ Since the KlickerUZH app is not yet available in the iOS App Store, follow these
       chatbotId: 'Chatbot ID',
       avatarUrl: 'Avatar URL',
       avatarNone: 'No avatar',
-      linkedCourses: 'Linked Courses',
       linkedCoursesList: 'Linked to: {courses}',
       noLinkedCourses: 'No courses linked yet.',
+      chatbotListKnowledgeBase: 'Materials: {kbName}',
+      chatbotListNoKnowledgeBase: 'No materials connected yet.',
       chatbotStatusDraft: 'Draft',
       chatbotStatusPendingApproval: 'Pending approval',
       chatbotStatusPublished: 'Published',
       chatbotStatusPaused: 'Paused',
       chatbotStatusRejected: 'Rejected',
       chatbotStatusUnknown: 'Unknown status',
-      chatbotNotLive: 'Participant access is unavailable in this status.',
       credits: 'Credits',
-      creditInitialCredits: 'Initial credits',
-      creditResetPeriod: 'Reset period',
-      creditResetAmount: 'Reset amount',
-      creditMaxCredits: 'Max credits',
-      modelSelection: 'Let participants choose the model',
+      creditInitialCredits: 'Starting budget per student (USD)',
+      creditResetPeriod: 'Top-up period',
+      creditResetAmount: 'Top-up amount (USD)',
+      creditMaxCredits: 'Maximum balance per student (USD)',
+      modelSelection: 'Let students choose the model',
       modelSelectionEnabled: 'Enabled',
       modelSelectionDisabled: 'Disabled',
       modelSelectionEnabledDescription:
-        'On: participants can choose one of the explicitly selected models.',
+        'On: students choose one of the models you select.',
       modelSelectionDisabledDescription:
-        'Off: the chatbot uses exactly one model selected by the lecturer.',
-      modelSelectionFixedDescription:
-        'Participants use this model. New chatbots start with Auto.',
+        'Off: the chatbot always uses the model you choose.',
+      modelSelectionFixedDescription: 'Students use this model.',
+      answerPreferences: 'Let students choose answer format and tone',
+      answerPreferencesEnabledDescription:
+        'On: students can choose bullet points and a friendly or direct tone for new answers.',
+      answerPreferencesDisabledDescription:
+        'Off: all students get the same answer format and tone.',
       modelSelectionParticipantDescription:
-        'Participants can choose among these models. Select at least one.',
+        'Students can choose between these models. Select at least one.',
       selectedModel: 'Selected model',
       allowedModels: 'Allowed models',
+      modelUnavailableHint:
+        'Advanced models need the advanced AI subscription with a cost center.',
+      modelUnavailableSelected:
+        'Your account cannot use this advanced model, so students cannot chat with it. Choose another model.',
       allowedModelsAll: 'All',
-      chatbotModelSettings: 'Model & Reasoning Settings',
       reasoningEffortsByModel: 'Reasoning efforts by model',
       reasoningEffort: 'Reasoning effort',
       singleReasoningEffortFixed: 'Fixed by model: {effort}',
-      chatbotModelSettingsSave: 'Save model settings',
-      chatbotModelSettingsSaving: 'Saving...',
-      chatbotModelSettingsSaveSuccess: 'Model settings saved.',
       chatbotModelSettingsSaveError:
         'Could not save chatbot model settings. Please try again.',
       creditResetPeriodDaily: 'Daily',
@@ -5167,50 +5609,35 @@ Since the KlickerUZH app is not yet available in the iOS App Store, follow these
       creditResetPeriodBiweekly: 'Biweekly',
       creditResetPeriodMonthly: 'Monthly',
       creditResetPeriodNone: 'No reset',
-      usageSummary: 'Usage Summary',
-      usageThreads: 'Threads',
+      usageThreads: 'Conversations',
       usageMessages: 'Messages',
-      usageParticipants: 'Participants',
+      usageParticipants: 'Students',
       usageLastActivity: 'Last activity',
-      usageTotalCredits: 'Total credits',
-      usageCurrentCredits: 'Current credits',
-      usageTotalResets: 'Total resets',
+      usageCurrentCredits: 'Budget left across students',
       usageLastReset: 'Last reset',
       disclaimer: 'Disclaimer',
       noDisclaimer: 'No disclaimer assigned.',
       disclaimerName: 'Name',
       disclaimerTitle: 'Title',
-      disclaimerAccepted: 'Accepted',
       disclaimerDeclined: 'Declined',
-      disclaimerPending: 'Pending',
-      mcpConfigurations: 'MCP Configurations',
       knowledgeBase: 'Knowledge base',
       knowledgeGraphPolicy: 'Knowledge graph',
       knowledgeGraphPolicyDescription:
-        'Control the participant concept map and graph-assisted document search independently. Both are staged in the chatbot revision and apply after approval.',
-      knowledgeGraphVisible: 'Show the participant concept map',
+        'Choose whether students see the concept map and whether document search uses the graph. Both apply after the review.',
+      knowledgeGraphVisible: 'Show the concept map to students',
       knowledgeGraphVisibleEnabledDescription:
-        'On: participants can open the concept map for this chatbot.',
+        'On: students can open the concept map for this chatbot.',
       knowledgeGraphVisibleDisabledDescription:
-        'Off: the concept map stays hidden from participants.',
+        'Off: the concept map stays hidden from students.',
       knowledgeGraphRetrieval: 'Use graph connections for document search',
-      knowledgeGraphRetrievalDescription:
+      knowledgeGraphRetrievalEnabledDescription:
         'On: document search may use related concepts from the published graph as additional search hints. Answers still cite document passages only.',
-      knowledgeGraphSave: 'Save knowledge graph settings',
-      knowledgeGraphSaveSuccess: 'Knowledge graph settings saved.',
-      noEnabledKnowledgeBase:
-        'No knowledge base is connected. This chatbot cannot search course material.',
-      noMcpConfigurations: 'No MCP configurations.',
-      mcpServerActive: 'Server active',
-      mcpServerInactive: 'Server inactive',
-      mcpChatMode: 'Chat mode',
-      mcpStatus: 'Status',
-      mcpStatusEnabled: 'Enabled',
-      mcpStatusDisabled: 'Disabled',
-      mcpPriority: 'Priority',
-      mcpAllowedTools: 'Allowed tools',
-      openChatbot: 'Open Chatbot',
+      knowledgeGraphRetrievalDisabledDescription:
+        'Off: document search uses the question only, without graph hints.',
       openOwnerPreview: 'Open owner preview',
+      aiSettingsModeLabel: 'Settings detail',
+      aiSettingsModeSimple: 'Simple settings',
+      aiSettingsModeAdvanced: 'Advanced settings',
       chatbotOwnerPreviewLive: 'Live configuration',
       chatbotOwnerPreviewLiveDescription:
         'The owner preview uses the current live configuration. Saved revisions are not applied until approval.',
@@ -5948,6 +6375,20 @@ Since the KlickerUZH app is not yet available in the iOS App Store, follow these
       listLiveQuizzesNoCourse: 'List of all live quizzes without course',
       loadingLiveQuizzesFailed:
         'An error occurred while loading your live quizzes. Please try again later.',
+      appName: 'KlickerUZH Control',
+      running: 'Running',
+      stopQuiz: 'End',
+      stopSheetQuiz: '<b>{name}</b> will be ended.',
+      stopSheetActiveBlock:
+        'Block {number} is running and will be closed first; its answers are saved.',
+      stopSheetNotStarted:
+        '{count, plural, one {# block has} other {# blocks have}} not been started and will be skipped.',
+      quizStopped: '{name} has been ended.',
+      chooseCourse: 'Choose a course',
+      archived: 'Archived',
+      noCourse: 'No course',
+      liveQuizCount:
+        '{count, plural, one {# live quiz} other {# live quizzes}}',
     },
     course: {
       courseOverview: 'Course overview',
@@ -5961,12 +6402,23 @@ Since the KlickerUZH app is not yet available in the iOS App Store, follow these
       noPlannedLiveQuizzes: 'No planned live quizzes',
       liveQuizStartFailed:
         'Unfortunately, your live quiz could not be started due to an error. Please try again later.',
-      pptEmbedding: 'PPT-Embedding Evaluation',
       startLiveQuiz: 'Start quiz',
       confirmStartLiveQuiz:
         'Are you sure you want to start the following live quiz?',
       explanationStartLiveQuiz:
         'Please note that a started live quiz is generally publicly accessible. Running live quizzes can be canceled or stopped using the KlickerUZH management app.',
+      liveQuizzes: 'Live quizzes',
+      statusRunning: 'Running',
+      statusScheduled: 'Scheduled',
+      statusScheduledAt: 'Scheduled · {date}',
+      statusReady: 'Ready to start',
+      controlQuiz: 'Control',
+      noLiveQuizzes: 'No live quizzes.',
+      assessmentBadge: 'Exam',
+      startSheetTitle: 'Start live quiz',
+      startSheetBody: 'Start <b>{name}</b>? Participants can join afterwards.',
+      assessmentStartHint:
+        '<b>Exam mode:</b> no points and no leaderboard. Results are not projected on the screen.',
     },
     liveQuiz: {
       liveQuizControl: 'Live Quiz Control',
@@ -5984,6 +6436,128 @@ Since the KlickerUZH app is not yet available in the iOS App Store, follow these
       endQuiz: 'End Quiz',
       hintLastBlock:
         'The currently running block is the last of this live quiz. After closing it, the quiz can be ended.',
+      blockRunning: 'Block {number} of {total} · running',
+      upNext: 'Up next · Block {number} of {total}',
+      allBlocksDone: 'All blocks completed',
+      allBlocksDoneHint: 'End the quiz to release the final evaluation.',
+      remaining: 'remaining',
+      timeUp: 'Time is up',
+      noTimeLimit: 'no time limit',
+      answers: 'answers',
+      submissions: 'submissions',
+      startBlockN: 'Start block {number}',
+      closeBlockN: 'Close block {number}',
+      blockProgress: '{done} of {total} blocks completed',
+      endSheetTitle: 'End live quiz?',
+      endSheetBody:
+        'Participants will then see the final evaluation. The quiz cannot be started again.',
+      endConfirm: 'End',
+      ended: 'Quiz ended',
+      endedSummary: '{name} · {blocks, plural, one {# block} other {# blocks}}',
+      backToCourse: 'Back to course',
+      actionFailed: 'The action failed. Please try again.',
+      audienceFeedbackTitle: 'Audience feedback',
+      audienceFeedbackOpen: 'Open audience feedback details',
+      audienceFeedbackWindow: 'Last 10 min',
+      audienceFeedbackCount:
+        '{count, plural, one {# response} other {# responses}}',
+      audienceFeedbackNoResponses: 'No responses',
+      audienceFeedbackLoading: 'Loading audience feedback…',
+      audienceFeedbackLoadError: 'Audience feedback could not be loaded.',
+      audienceFeedbackRefreshError:
+        'Refresh failed. Showing the last available audience feedback.',
+      audienceFeedbackOff: 'Off',
+      audienceFeedbackSpeed: 'Speed',
+      audienceFeedbackDifficulty: 'Difficulty',
+      audienceFeedbackSpeedLow: 'slow',
+      audienceFeedbackSpeedCenter: 'on pace',
+      audienceFeedbackSpeedHigh: 'fast',
+      audienceFeedbackDifficultyLow: 'easy',
+      audienceFeedbackDifficultyCenter: 'manageable',
+      audienceFeedbackDifficultyHigh: 'hard',
+      audienceFeedbackMeterLabel: '{dimension}: {value}, scale from -2 to 2',
+      audienceFeedbackSheetHint:
+        'Average response direction from the last 10 minutes. The scale ranges from -2 to 2.',
+      audienceFeedbackToggle: 'Collect confusion feedback',
+      audienceFeedbackToggleOnHint:
+        'Participants can rate the pace and difficulty.',
+      audienceFeedbackToggleOffHint:
+        'Participants cannot submit pace or difficulty ratings.',
+      liveEvaluation: 'Live evaluation',
+      resultBlockN: 'Result block {number}',
+      noAnswersYet: 'No answers yet.',
+      questionN: 'Question {number}',
+      submissionsPerQuestion: 'Submissions per question',
+      evaluationInManage:
+        'The evaluation for this question type is available in the management app.',
+      screen: 'Screen',
+      screenSynced: 'synced',
+      screenSaving: 'saving…',
+      screenHint:
+        'Changes appear on the screen and in PowerPoint within a few seconds.',
+      screenDisplay: 'Display',
+      screenShowSolution: 'Show solution',
+      screenSolutionAfterClose: 'Available once the block is closed.',
+      screenShowPercentages: 'Percent instead of count',
+      screenLocked:
+        'Exam mode: no points, no leaderboard, nothing is projected on the screen.',
+      tabControl: 'Control',
+      tabQA: 'Q&A',
+      qaPendingCount:
+        '{count, plural, one {# question to review} other {# questions to review}}',
+      qaEnabled: 'Live Q&A',
+      qaEnabledHint: 'Participants can ask questions.',
+      qaDisabledHint: 'Q&A is turned off for this quiz.',
+      qaModeration: 'Moderation',
+      qaModerationOnHint: 'Questions appear only after you approve them.',
+      qaModerationOffHint: 'Questions appear immediately for everyone.',
+      qaModerationOffTitle: 'Turn off moderation?',
+      qaModerationOffBody:
+        '{count, plural, one {One question still awaiting review becomes} other {# questions still awaiting review become}} visible to everyone immediately.',
+      qaModerationOffConfirm: 'Turn off',
+      qaFilterPending: 'To review',
+      qaFilterOpen: 'Open',
+      qaFilterAnswered: 'Answered',
+      qaEmpty: 'No questions in this list.',
+      qaVotes: '{count, plural, one {# vote} other {# votes}}',
+      qaJustNow: 'just now',
+      qaMinutesAgo: '{minutes} min ago',
+      qaHoursAgo: '{hours} h ago',
+      qaPinned: 'pinned',
+      qaNew: 'new',
+      qaAnswer: 'Answer:',
+      qaAnswerPlaceholder: 'Answer for all participants',
+      qaSend: 'Send',
+      qaPublish: 'Approve',
+      qaReject: 'Reject',
+      qaRespond: 'Answer',
+      qaResolve: 'Done',
+      qaPin: 'Pin',
+      qaUnpin: 'Unpin',
+      qaHide: 'Hide',
+      qaReopen: 'Reopen',
+      qaDeleteTitle: 'Remove question?',
+      qaDeleteBody:
+        'The question is deleted permanently and disappears for all participants.',
+      qaDeleteConfirm: 'Remove',
+      tabStats: 'Statistics',
+      statsBlocks: 'Blocks',
+      statsBlocksSub: 'started',
+      statsVotes: 'Votes',
+      statsSubmissions: 'Submissions',
+      statsVotesSub: 'across all questions',
+      statsAvgParticipants: 'Participants',
+      statsAvgParticipantsSub: 'avg. per block',
+      statsQuestions: 'Q&A questions',
+      statsQuestionsSub: '{count} unanswered',
+      statsQuestionsOff: 'Q&A turned off',
+      statsPerBlock: 'Participants per block',
+      statsBlockN: 'Block {number}',
+      statsRunning: 'running',
+      statsClosed: 'closed',
+      statsScheduled: 'scheduled',
+      statsBlockDetail:
+        '{participants, plural, one {# person} other {# people}} · {votes, plural, one {# vote} other {# votes}} · {questions, plural, one {# question} other {# questions}}',
     },
     activity: {
       title: '{type} Activity',

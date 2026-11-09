@@ -7,9 +7,32 @@ type Execute<Options, Result> = (
   options: Options
 ) => Result | PromiseLike<Result>
 export type GraphQueryScope = { enabled: boolean; buildId?: string }
+export type GraphQueryDiagnostic = {
+  outcome:
+    | 'ineligible'
+    | 'already_augmented'
+    | 'scope_changed'
+    | 'invalid_baseline'
+    | 'no_hints'
+    | 'hints_unavailable'
+    | 'unsafe_hints'
+    | 'expansion_failed'
+    | 'expansion_unusable'
+    | 'fused'
+    | 'aborted'
+    | 'failed'
+  expansionAttempted: boolean
+  hintCount: number | null
+  baselinePassages: number | null
+  expandedPassages: number | null
+  resultPassages: number | null
+  resultCharacters: number | null
+  elapsedMs: number
+}
 export type GraphQueryDependencies = {
   validateScope: () => Promise<GraphQueryScope>
   hints: (query: string) => Promise<string[]>
+  observe?: (diagnostic: GraphQueryDiagnostic) => void
 }
 
 function record(value: unknown): value is RecordValue {
@@ -136,6 +159,54 @@ function passageKey(passage: Passage): string {
   })
 }
 
+// Graph discoveries are appended to the full original result within this
+// headroom, so graph mode never sends less evidence than ordinary chat.
+const ADDED_PASSAGE_LIMIT = 6
+const ADDED_CHARACTER_LIMIT = 8000
+
+/**
+ * Relevance order of one search. Providers group chunks by source, so the flat
+ * order lets the first document crowd out every other one. A complete numeric
+ * `global_rank` gives the provider's own order; otherwise sources are visited
+ * round-robin in provider order. `lanes` is the number of provider source
+ * groups when the order is round-robin, and 1 when it is ranked.
+ */
+function relevanceOrder(candidates: Passage[]): {
+  ordered: Passage[]
+  lanes: number
+} {
+  if (
+    candidates.every(
+      ({ chunk }) =>
+        typeof chunk.global_rank === 'number' &&
+        Number.isFinite(chunk.global_rank)
+    )
+  )
+    return {
+      ordered: candidates
+        .map((passage, index) => ({ passage, index }))
+        .sort(
+          (a, b) =>
+            (a.passage.chunk.global_rank as number) -
+              (b.passage.chunk.global_rank as number) || a.index - b.index
+        )
+        .map(({ passage }) => passage),
+      lanes: 1,
+    }
+  const lanes: Passage[][] = []
+  for (const passage of candidates) {
+    const lane = lanes.at(-1)
+    if (lane && lane[0]?.source === passage.source) lane.push(passage)
+    else lanes.push([passage])
+  }
+  const ordered: Passage[] = []
+  const deepest = Math.max(...lanes.map((lane) => lane.length))
+  for (let depth = 0; depth < deepest; depth += 1)
+    for (const lane of lanes)
+      if (depth < lane.length) ordered.push(lane[depth]!)
+  return { ordered, lanes: lanes.length }
+}
+
 /** Combine exact passages, never infer identity from a filename or similar text. */
 export function combineGraphSearchDocuments(
   original: unknown,
@@ -144,49 +215,44 @@ export function combineGraphSearchDocuments(
   const first = passages(original)
   const second = passages(expanded)
   if (!first || !second || second.length === 0) return original
-  const ranked = new Map<
-    string,
-    { passage: Passage; score: number; ranks: number[] }
-  >()
-  for (const [search, candidates] of [first, second].entries()) {
-    candidates.forEach((passage, index) => {
-      const key = passageKey(passage)
-      const candidate = ranked.get(key) ?? {
-        passage,
-        score: 0,
-        ranks: [Infinity, Infinity],
-      }
-      if (candidate.ranks[search] !== Infinity) return
-      candidate.score += 1 / (60 + index + 1)
-      candidate.ranks[search] = index
-      ranked.set(key, candidate)
-    })
-  }
-  const selected: Passage[] = []
-  const seen = new Set<string>()
+  const seen = new Set(first.map(passageKey))
+  const { ordered, lanes } = relevanceOrder(second)
+  const added: Passage[] = []
+  const sourceCharacters = new Map<RecordValue, number>()
   let characters = 0
-  function admit(passage: Passage) {
-    const key = passageKey(passage)
-    const size = String(passage.chunk.content).length
-    if (seen.has(key) || selected.length >= 12 || characters + size > 16000)
-      return
-    seen.add(key)
-    characters += size
-    selected.push(passage)
+  function admit(shareLimit: number) {
+    for (const passage of ordered) {
+      if (added.length === ADDED_PASSAGE_LIMIT) return
+      const key = passageKey(passage)
+      const size = String(passage.chunk.content).length
+      const used = sourceCharacters.get(passage.source) ?? 0
+      if (
+        seen.has(key) ||
+        characters + size > ADDED_CHARACTER_LIMIT ||
+        used + size > shareLimit
+      )
+        continue
+      seen.add(key)
+      characters += size
+      sourceCharacters.set(passage.source, used + size)
+      added.push(passage)
+    }
   }
-  // Reserve the strongest original evidence before admitting graph discoveries.
-  for (const passage of first) {
-    if (selected.length === 3) break
-    admit(passage)
-  }
-  for (const { passage } of [...ranked.values()].sort(
-    (a, b) =>
-      b.score - a.score ||
-      a.ranks[0]! - b.ranks[0]! ||
-      a.ranks[1]! - b.ranks[1]!
-  ))
-    admit(passage)
-  if (selected.length === 0) return original
+  // Without a provider rank, each source first gets an equal share of the
+  // character headroom, so one long passage cannot exclude every other
+  // source; the remaining headroom is then filled in the same order.
+  if (lanes > 1) admit(ADDED_CHARACTER_LIMIT / lanes)
+  admit(Infinity)
+  if (added.length === 0) return original
+  // Added passages from one provider source form a single group, so the
+  // citation UI shows one card per added document; original groups are kept.
+  const addedBySource = new Map<RecordValue, Passage[]>()
+  for (const passage of added)
+    addedBySource.set(passage.source, [
+      ...(addedBySource.get(passage.source) ?? []),
+      passage,
+    ])
+  const selected = [...first, ...[...addedBySource.values()].flat()]
   // Keep each provider source group: the citation UI displays its first chunk's locator.
   // Coalescing groups from two searches could hide the newly retrieved page.
   const groups: RecordValue[] = []
@@ -239,79 +305,131 @@ export function graphAssistedDocumentQuery<
 ): Execute<Options, Result> {
   let augmentationUsed = false
   return async (input, options) => {
+    const startedAt = performance.now()
+    let original: unknown
+    let expanded: unknown
+    let expansionAttempted = false
+    let hintCount: number | null = null
     const signal =
       options.abortSignal instanceof AbortSignal
         ? options.abortSignal
         : undefined
-    signal?.throwIfAborted()
-    const initial = await dependencies.validateScope()
-    const query = record(input) ? input.query : undefined
-    const eligible =
-      !augmentationUsed &&
-      initial.enabled &&
-      initial.buildId &&
-      typeof query === 'string' &&
-      query.trim() &&
-      query.length <= 2000
-    const graphSignal = AbortSignal.timeout(1500)
-    const hintsPromise = eligible
-      ? untilAbort(
-          Promise.resolve().then(() => dependencies.hints(query as string)),
-          signal ? AbortSignal.any([signal, graphSignal]) : graphSignal
-        ).catch(() => [])
-      : Promise.resolve([])
-    const original = await execute(input, options)
-    signal?.throwIfAborted()
-    const hints = await hintsPromise
-    signal?.throwIfAborted()
-    const current = await dependencies.validateScope()
-    if (
-      !eligible ||
-      augmentationUsed ||
-      !current.enabled ||
-      current.buildId !== initial.buildId ||
-      !passages(original) ||
-      hints.length === 0
-    )
-      return original
-    const safeHints = hints
-      .filter(
-        (hint) =>
-          typeof hint === 'string' &&
-          hint.length <= 100 &&
-          /^[\p{L}\p{N}\s()&.,+/-]+$/u.test(hint)
-      )
-      .slice(0, 6)
-    if (safeHints.length === 0) return original
-    augmentationUsed = true
-    const augmentationSignal = signal
-      ? AbortSignal.any([signal, AbortSignal.timeout(3000)])
-      : AbortSignal.timeout(3000)
-    let expanded: unknown
-    try {
-      expanded = await untilAbort(
-        Promise.resolve(
-          execute(
-            {
-              ...(input as RecordValue),
-              query: `${query}\nRelated concepts: ${safeHints.join(', ')}`,
-            },
-            { ...options, abortSignal: augmentationSignal }
-          )
-        ),
-        augmentationSignal
-      )
-    } catch {
-      signal?.throwIfAborted()
-      await dependencies.validateScope()
-      return original
+    function finish(value: unknown, outcome: GraphQueryDiagnostic['outcome']) {
+      const result = passages(value)
+      try {
+        dependencies.observe?.({
+          outcome,
+          expansionAttempted,
+          hintCount,
+          baselinePassages: passages(original)?.length ?? null,
+          expandedPassages: passages(expanded)?.length ?? null,
+          resultPassages: result?.length ?? null,
+          resultCharacters:
+            result?.reduce(
+              (total, passage) => total + String(passage.chunk.content).length,
+              0
+            ) ?? null,
+          elapsedMs: Math.max(0, Math.round(performance.now() - startedAt)),
+        })
+      } catch {
+        // Operational diagnostics must not change retrieval or authorization.
+      }
+      return value as Result
     }
-    signal?.throwIfAborted()
-    const finalScope = await dependencies.validateScope()
-    if (!finalScope.enabled || finalScope.buildId !== initial.buildId)
-      return original
-    // The combiner only reconstructs validated document envelopes; other
-    // provider result contracts pass through unchanged.
-    return combineGraphSearchDocuments(original, expanded) as Result
+    try {
+      signal?.throwIfAborted()
+      const initial = await dependencies.validateScope()
+      const queryField =
+        record(input) &&
+        typeof input.question === 'string' &&
+        input.question.trim()
+          ? 'question'
+          : 'query'
+      const query = record(input) ? input[queryField] : undefined
+      const eligible =
+        !augmentationUsed &&
+        initial.enabled &&
+        initial.buildId &&
+        typeof query === 'string' &&
+        query.trim() &&
+        query.length <= 2000
+      const graphSignal = AbortSignal.timeout(1500)
+      let hintsUnavailable = false
+      const hintsPromise = eligible
+        ? untilAbort(
+            Promise.resolve().then(() => dependencies.hints(query as string)),
+            signal ? AbortSignal.any([signal, graphSignal]) : graphSignal
+          ).catch(() => {
+            hintsUnavailable = true
+            return []
+          })
+        : Promise.resolve([])
+      original = await execute(input, options)
+      signal?.throwIfAborted()
+      const hints = await hintsPromise
+      hintCount = eligible && !hintsUnavailable ? hints.length : null
+      signal?.throwIfAborted()
+      const current = await dependencies.validateScope()
+      if (!eligible)
+        return finish(
+          original,
+          augmentationUsed ? 'already_augmented' : 'ineligible'
+        )
+      if (augmentationUsed) return finish(original, 'already_augmented')
+      if (!current.enabled || current.buildId !== initial.buildId)
+        return finish(original, 'scope_changed')
+      if (!passages(original)) return finish(original, 'invalid_baseline')
+      if (hints.length === 0)
+        return finish(
+          original,
+          hintsUnavailable ? 'hints_unavailable' : 'no_hints'
+        )
+      const safeHints = hints
+        .filter(
+          (hint) =>
+            typeof hint === 'string' &&
+            hint.length <= 100 &&
+            /^[\p{L}\p{N}\s()&.,+/-]+$/u.test(hint)
+        )
+        .slice(0, 6)
+      if (safeHints.length === 0) return finish(original, 'unsafe_hints')
+      augmentationUsed = true
+      expansionAttempted = true
+      const augmentationSignal = signal
+        ? AbortSignal.any([signal, AbortSignal.timeout(3000)])
+        : AbortSignal.timeout(3000)
+      try {
+        expanded = await untilAbort(
+          Promise.resolve(
+            execute(
+              {
+                ...(input as RecordValue),
+                [queryField]: `${query}\nRelated concepts: ${safeHints.join(', ')}`,
+              },
+              { ...options, abortSignal: augmentationSignal }
+            )
+          ),
+          augmentationSignal
+        )
+      } catch {
+        signal?.throwIfAborted()
+        await dependencies.validateScope()
+        return finish(original, 'expansion_failed')
+      }
+      signal?.throwIfAborted()
+      const finalScope = await dependencies.validateScope()
+      if (!finalScope.enabled || finalScope.buildId !== initial.buildId)
+        return finish(original, 'scope_changed')
+      // The combiner only reconstructs validated document envelopes; other
+      // provider result contracts pass through unchanged.
+      const combined = combineGraphSearchDocuments(original, expanded)
+      return finish(
+        combined,
+        combined === original ? 'expansion_unusable' : 'fused'
+      )
+    } catch (error) {
+      finish(undefined, signal?.aborted ? 'aborted' : 'failed')
+      throw error
+    }
   }
 }

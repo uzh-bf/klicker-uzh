@@ -221,23 +221,38 @@ export async function createElementGenerationBuildWithSpend(
   }
 }
 
-export async function reserveFlashcardRetrySpend(
+// A retry is a second dispatch attempt against an existing build, so it
+// reserves its own spend and returns the build to PREPARING_INPUT for the
+// synchronizer to dispatch again. The row lock plus the expected status and
+// element types keep a stale retry request from touching a build that already
+// moved on or belongs to another workflow. Only a caller that re-dispatches a
+// terminal failure as a fresh in-flight run clears completedAt; the flashcard
+// retry keeps it, because its failure paths restore the recorded prior failure
+// that the lecturer was shown.
+export async function reserveElementGenerationRetrySpend(
   prisma: DB.PrismaClient,
   {
     buildId,
     ownerId,
     dispatchAttemptId,
+    spendClass,
+    elementTypes,
+    expectedStatus,
+    clearCompletedAt = false,
     env = process.env,
     now = new Date(),
   }: {
     buildId: string
     ownerId: string
     dispatchAttemptId: string
+    spendClass: SpendClass
+    elementTypes: DB.ElementType[]
+    expectedStatus: DB.ElementGenerationBuildStatus
+    clearCompletedAt?: boolean
     env?: NodeJS.ProcessEnv
     now?: Date
   }
 ): Promise<boolean> {
-  const spendClass = DB.KBGraphQuotaSpendClass.FLASHCARD_RETRY
   const config = requireElementGenerationCostConfiguration(spendClass, env, now)
   return prisma.$transaction(async (transaction) => {
     await transaction.$queryRaw<Array<{ id: string }>>`
@@ -250,8 +265,8 @@ export async function reserveFlashcardRetrySpend(
       where: {
         id: buildId,
         ownerId,
-        elementType: DB.ElementType.FLASHCARD,
-        status: DB.ElementGenerationBuildStatus.AWAITING_INCOMPLETE_PUBLICATION,
+        elementType: { in: elementTypes },
+        status: expectedStatus,
         costAccountingVersion: 1,
       },
       select: { id: true },
@@ -280,9 +295,39 @@ export async function reserveFlashcardRetrySpend(
         providerDispatchAttemptId: dispatchAttemptId,
         providerEventId: null,
         providerWorkflowRunId: null,
+        ...(clearCompletedAt ? { completedAt: null } : {}),
       },
     })
     return true
+  })
+}
+
+export async function reserveFlashcardRetrySpend(
+  prisma: DB.PrismaClient,
+  {
+    buildId,
+    ownerId,
+    dispatchAttemptId,
+    env = process.env,
+    now = new Date(),
+  }: {
+    buildId: string
+    ownerId: string
+    dispatchAttemptId: string
+    env?: NodeJS.ProcessEnv
+    now?: Date
+  }
+): Promise<boolean> {
+  return reserveElementGenerationRetrySpend(prisma, {
+    buildId,
+    ownerId,
+    dispatchAttemptId,
+    spendClass: DB.KBGraphQuotaSpendClass.FLASHCARD_RETRY,
+    elementTypes: [DB.ElementType.FLASHCARD],
+    expectedStatus:
+      DB.ElementGenerationBuildStatus.AWAITING_INCOMPLETE_PUBLICATION,
+    env,
+    now,
   })
 }
 

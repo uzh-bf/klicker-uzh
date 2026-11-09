@@ -1,6 +1,9 @@
 import { Locale } from '@klicker-uzh/prisma/client'
 import { describe, expect, it } from 'vitest'
 import {
+  CHATBOT_STANDARD_MODE_SCOPE_NOTE_MAX_LENGTH,
+  getWritingCoachUnavailableReason,
+  isChatbotStandardModeKey,
   normalizeChatbotStandardModeConfig,
   parseChatbotStandardModeConfigInput,
 } from '../src/chatbotStandardModeConfig.js'
@@ -21,6 +24,7 @@ describe('chatbot standard mode configuration', () => {
       tutorEnabled: true,
       explainerEnabled: false,
       quizzerEnabled: true,
+      writingCoachEnabled: false,
       courseName: 'Economics',
       subjectDomain: 'Finance',
       languageOfInstruction: Locale.de,
@@ -28,14 +32,14 @@ describe('chatbot standard mode configuration', () => {
     })
   })
 
-  it('keeps Tutor or Explainer enabled even when Quizzer is enabled', () => {
+  it('rejects Quizzer as the only conversational mode', () => {
     expect(() =>
       parseChatbotStandardModeConfigInput({
         tutorEnabled: false,
         explainerEnabled: false,
         quizzerEnabled: true,
       })
-    ).toThrow('Tutor or Explainer must remain enabled')
+    ).toThrow()
   })
 
   it('requires Quizzer in strict mutation input', () => {
@@ -64,7 +68,7 @@ describe('chatbot standard mode configuration', () => {
         quizzerEnabled: true,
         scopeNote: 'x'.repeat(1001),
       })
-    ).toThrow('scopeNote must be at most 1000 characters long')
+    ).toThrow()
   })
 
   it('treats null and malformed persisted values as legacy defaults', () => {
@@ -72,6 +76,7 @@ describe('chatbot standard mode configuration', () => {
       tutorEnabled: true,
       explainerEnabled: true,
       quizzerEnabled: true,
+      writingCoachEnabled: false,
       courseName: null,
       subjectDomain: null,
       languageOfInstruction: null,
@@ -117,6 +122,7 @@ describe('chatbot standard mode configuration', () => {
       tutorEnabled: true,
       explainerEnabled: false,
       quizzerEnabled: false,
+      writingCoachEnabled: false,
       courseName: 'Course',
       subjectDomain: 'Domain',
       languageOfInstruction: Locale.en,
@@ -139,5 +145,68 @@ describe('chatbot standard mode configuration', () => {
       explainerEnabled: true,
       quizzerEnabled: false,
     })
+  })
+
+  it('accepts the full context limit and a standalone Writing Coach', () => {
+    const scopeNote = 'x'.repeat(CHATBOT_STANDARD_MODE_SCOPE_NOTE_MAX_LENGTH)
+    const config = {
+      tutorEnabled: false,
+      explainerEnabled: false,
+      quizzerEnabled: false,
+      writingCoachEnabled: true,
+      scopeNote,
+    }
+    expect(parseChatbotStandardModeConfigInput(config)).toMatchObject(config)
+    expect(normalizeChatbotStandardModeConfig(config)).toMatchObject(config)
+  })
+
+  it.each([
+    null,
+    {},
+    { tutorEnabled: true, explainerEnabled: false, quizzerEnabled: false },
+  ])('keeps Writing Coach off for historical configuration %j', (config) => {
+    expect(normalizeChatbotStandardModeConfig(config).writingCoachEnabled).toBe(
+      false
+    )
+  })
+
+  it('rejects a non-boolean Writing Coach flag', () => {
+    expect(() =>
+      parseChatbotStandardModeConfigInput({
+        tutorEnabled: true,
+        explainerEnabled: false,
+        quizzerEnabled: false,
+        writingCoachEnabled: 'true',
+      })
+    ).toThrow()
+  })
+
+  it('explains required-tool exclusions without inheriting tools', () => {
+    const requiredTutor = { chatMode: 'tutor', parameters: { required: true } }
+    expect(getWritingCoachUnavailableReason()).toBeNull()
+    expect(getWritingCoachUnavailableReason([requiredTutor])).toBe(
+      'REQUIRED_TOOL_BINDING'
+    )
+    expect(
+      getWritingCoachUnavailableReason([{ ...requiredTutor, isEnabled: false }])
+    ).toBeNull()
+    expect(
+      getWritingCoachUnavailableReason([
+        requiredTutor,
+        { chatMode: 'writing-coach' },
+      ])
+    ).toBe('REQUIRED_TOOL_BINDING')
+    expect(
+      getWritingCoachUnavailableReason([
+        requiredTutor,
+        { ...requiredTutor, chatMode: 'writing-coach' },
+      ])
+    ).toBeNull()
+  })
+
+  it('recognizes the standard modes case-sensitively', () => {
+    expect(isChatbotStandardModeKey('quizzer')).toBe(true)
+    expect(isChatbotStandardModeKey('Quizzer')).toBe(false)
+    expect(isChatbotStandardModeKey('case-interview')).toBe(false)
   })
 })

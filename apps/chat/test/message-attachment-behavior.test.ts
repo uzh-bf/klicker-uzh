@@ -7,6 +7,30 @@ import {
 } from '../src/lib/attachments/attachmentUi'
 
 describe('message attachment behavior', () => {
+  test('document-capable runtimes accept attachments independently of image support', () => {
+    expect(
+      canUseComposerAttachments({
+        maxImageAttachments: 0,
+        supportsImages: false,
+        supportsDocuments: true,
+      })
+    ).toBe(true)
+    expect(
+      canUseComposerAttachments({
+        maxImageAttachments: 5,
+        supportsImages: false,
+        supportsDocuments: false,
+      })
+    ).toBe(false)
+    expect(
+      canUseComposerAttachments({
+        maxImageAttachments: 0,
+        supportsImages: true,
+        supportsDocuments: false,
+      })
+    ).toBe(false)
+  })
+
   test('disables attachment ingestion when the surface allows zero images', () => {
     expect(
       canUseComposerAttachments({

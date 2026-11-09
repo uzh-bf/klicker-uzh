@@ -39,7 +39,8 @@ export interface MarkdownAstNode {
 const SKIPPED_PARENT_TYPES = new Set(['link', 'linkReference'])
 
 // A page detail that some models append inside a marker, e.g.
-// `[1, p. 6–7]` or `[1, S. 8-18]`. Only a *labelled* page is accepted: a
+// `[1, p. 6–7]` or `[1, S. 8-18]`. A labelled video clock is also stripped
+// to the source number; its timestamp belongs to the source card. A
 // bare `[1, 2]` is overwhelmingly a coordinate or a bracket list in real
 // course answers, while no observed course citation omits the label.
 //
@@ -54,9 +55,10 @@ const PAGE_LABEL = '(?:pages?|seiten?|kapitel|kap\\.|p{1,2}\\.|s\\.|p{1,2}|s)'
 // branch that wraps it is optional. Without this, a bare comma such as
 // `[1,]` or `[2, ]` would match, swallow the comma and silently degrade
 // to a citation chip. `[1]` still matches because the wrapper stays optional.
-// The start and end page digits are captured so `extractCitedPages` can read
-// the page an answer cites; the pre-check below ignores the extra groups.
-const PAGE_REFERENCE = `(?:${PAGE_LABEL}[ \t]*(\\d{1,3})(?:[ \t]*[-–—][ \t]*(\\d{1,3}))?)`
+// Only page digits are captured so `extractCitedPages` never treats a clock
+// as a page. Clock minutes and seconds stay within their valid range.
+const CLOCK_REFERENCE = String.raw`(?:\d{1,2}:)?[0-5]?\d:[0-5]\d`
+const PAGE_REFERENCE = `(?:${PAGE_LABEL}[ \t]*(?:(\\d{1,3})(?:[ \t]*[-–—][ \t]*(\\d{1,3}))?|${CLOCK_REFERENCE}(?:[ \t]*[-–—][ \t]*${CLOCK_REFERENCE})?))`
 
 // Complete numbered marker, e.g. `[1]`, `[12]`, `[2–4]`, or `[2–4, S. 10–12]`.
 // Hyphen and em dash variants are accepted because models do not reliably emit

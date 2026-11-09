@@ -3,6 +3,7 @@ import type {
   ElementStack,
   QuestionResponse,
 } from '@klicker-uzh/prisma/client'
+import { createHash } from 'node:crypto'
 import dayjs from 'dayjs'
 import minMax from 'dayjs/plugin/minMax.js'
 import timezone from 'dayjs/plugin/timezone.js'
@@ -45,6 +46,17 @@ export function computeRanks<T extends { score: number }>(
 
     return { ...entry, rank }
   })
+}
+
+// Temporary live-quiz participants have no numeric database id, but the
+// LeaderboardEntry.id field is a GraphQL Int. Deriving it from the participant
+// id keeps it stable across refetches instead of changing on every poll.
+// readInt32BE is deliberate: GraphQL Int is a signed 32-bit value, so an
+// unsigned read would make roughly half of all ids fail serialization and null
+// out the whole leaderboard. This is not collision-free; rendering identity
+// uses participantId instead.
+export function temporaryLeaderboardEntryId(participantId: string): number {
+  return createHash('sha256').update(participantId).digest().readInt32BE(0)
 }
 
 export function checkCronToken(ctx: Context) {

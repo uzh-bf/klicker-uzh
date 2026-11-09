@@ -46,8 +46,12 @@ surfaces, highlight the group containing the student's score, and retain the
 exact range/count table for accessible detail. Show percentile as a 0–100
 ruler with a marker at the student's inclusive percentile rank; do not imply
 that the score groups form a normal or continuous distribution. The comparison
-remains omitted below the existing cohort threshold, and the stored V1 report
-contract is unchanged.
+remains omitted below the existing cohort threshold and in interim reports
+issued before the course end date. Every report issued after the course end
+includes a comparison. While the student's own claims are unchanged, the active
+post-end report is reused even if peer scores change, so two reports cannot be
+differenced to infer a single peer's change. The stored V1 report contract is
+unchanged.
 
 ## Next.js tooling
 
@@ -71,6 +75,7 @@ contract is unchanged.
 - **Design system first**: `@uzh-bf/design-system` provides `Button`, `Modal`, `FormikTextField`, `H1–H4`, `toast`, etc. Design-system components take the test hook as a prop: `data={{ cy: 'save-button' }}`; raw elements use a plain `data-cy` attribute.
 - **Tailwind v4, CSS-first**: no `tailwind.config.js` — theme tokens live in each app's `globals.css` (`@theme` block, `--color-uzh-blue`, shadcn-style tokens) and the design system is scanned via `@source "../node_modules/@uzh-bf/design-system/src"`. Conditional classes via `twMerge`.
 - **Shared components** (`packages/shared-components`): Loader, DataTable, question renderers, Leaderboard, charts, evaluation. **Deep-import** them (`@klicker-uzh/shared-components/src/Loader`) — there is no barrel index.
+- **Animations**: `motion` (declared as a dependency of `packages/shared-components`) powers the shared Leaderboard — podium rise-in, FLIP rank reordering on score changes, and staggered row entry. Gate every motion animation on `useReducedMotion()` from `motion/react`; keep durations at or below 0.5s. For app-local animation needs, prefer the Tailwind v4 `--animate-*` tokens already defined in each app's `globals.css` (e.g. `animate-fade-in`) or the installed `tw-animate-css` utilities over adding another JS animation dependency.
 - Function components with hooks only; PascalCase files; app-local components under `src/components/` with relative imports.
 - Clickable rows must ignore events from marked interactive subtrees so opening a dropdown or modal cannot also trigger the row navigation.
 - Async Formik submit handlers must return or await their mutation promise so `isSubmitting` remains active and users cannot navigate away before the save completes.
@@ -113,7 +118,7 @@ contract is unchanged.
 
 ## Data fetching
 
-Apollo Client with **generated documents only** — `import { UserProfileDocument } from '@klicker-uzh/graphql/dist/ops'`; never inline `gql`. Standard query guard: `if (!data?.field) return <Loader />`. Mutations declare `refetchQueries`. New/changed ops require the codegen ritual ([API layer](./graphql-api-layer.md)). Server state lives in Apollo cache; local state in React hooks. The PWA additionally uses **localforage** as an offline side-channel for live-quiz answers (`apps/frontend-pwa/src/components/liveQuiz/storageHelpers.ts`).
+Apollo Client with **generated documents only** — `import { UserProfileDocument } from '@klicker-uzh/graphql/dist/ops'`; never inline `gql`. Standard query guard: `if (!data?.field) return <Loader />`. Exception for refetchable lists: render a skeleton only while `data` is still undefined and keep the previous list mounted during refetches, so updates never unmount the list or reset scroll (`apps/frontend-pwa/src/components/common/LiveQuizLeaderboard.tsx`). Mutations declare `refetchQueries`. New/changed ops require the codegen ritual ([API layer](./graphql-api-layer.md)). Server state lives in Apollo cache; local state in React hooks. The PWA additionally uses **localforage** as an offline side-channel for live-quiz answers (`apps/frontend-pwa/src/components/liveQuiz/storageHelpers.ts`).
 
 ## Knowledge-base management
 
@@ -137,7 +142,7 @@ KB mutations and their follow-up refreshes are separate outcomes (`packages/kb-m
 
 The KB file picker exposes only the production ingestion contract: PDF, TXT, and MD up to 25 MiB. Markdown is uploaded as `text/plain`; do not re-add DOCX/PPTX until the external ingestion platform supports them. Stable quota error codes are localized rather than exposing worker messages.
 
-`packages/kb-management/src/components/KnowledgeBaseChatbotBindings.tsx:KnowledgeBaseChatbotBindings` owns the single-enabled-KB binding UI. Replacing an existing chatbot binding requires an explicit warning step; detach is available from the current KB. `apps/frontend-manage/src/components/resources/chatbots/ChatbotDetails.tsx:ChatbotDetails` shows the reciprocal linked-KB state or an actionable no-KB warning.
+`packages/kb-management/src/components/KnowledgeBaseChatbotBindings.tsx:KnowledgeBaseChatbotBindings` owns the single-enabled-KB binding UI. Replacing an existing chatbot binding requires an explicit warning step; detach is available from the current KB. `apps/frontend-manage/src/components/resources/chatbots/ChatbotDetails.tsx:ChatbotDetails` shows the reciprocal linked-KB state or an actionable no-KB warning, and `ChatbotKnowledgeBaseSetup.tsx` connects, replaces, disconnects, or creates and connects a KB from the chatbot side. Bindings are not part of the chatbot revision, so a change applies to a published chatbot immediately; the chatbot setup and the KB bindings panel both warn about that for published chatbots. The chatbot list and the KB list summarize material readiness through `KBMaterialsReadiness`: a resource counts as available while it has a serving revision, even when a newer revision is processing or has failed. That summary covers retrieval only and says nothing about question generation. A KB created there is proposed in the chatbot course's language (`en` English, `de` German) when the suggested subject serves it. After creating a KB there, the lecturer lands on its detail page with `?chatbotId=`, which renders a back link only when the id matches one of the lecturer's own chatbots; if the connection fails, the created KB stays selected with a Retry connection action instead of prompting a second creation. In the other direction, the KB bindings link to `/resources/chatbots?createForKb=`, which opens chatbot creation only after `getKb` confirms the lecturer owns that KB, requires an explicit course choice when several courses are eligible, and connects the KB to the new chatbot.
 
 The detail metrics distinguish visible data, quota usage, upload reservations, pending asynchronous cleanup, unknown-size conservative reservations, and linked consumers. Do not present tombstoned storage as already released or treat derived values as mutable counters.
 

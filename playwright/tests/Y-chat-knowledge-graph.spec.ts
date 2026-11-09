@@ -1,5 +1,9 @@
 import { expect, test, type Page, type Route } from '@playwright/test'
 import { getPrisma } from '../global-setup.js'
+import {
+  openChatbotSection,
+  setAiSettingsMode,
+} from '../util/fixtures/manage.js'
 import { loginLecturer } from '../util/workflow.js'
 import {
   CHATBOT_ID,
@@ -174,6 +178,76 @@ test('Native knowledge graph exploration and lecturer visibility policy', async 
     expect(after.knowledgeGraphRetrievalEnabled).toBe(
       policy.knowledgeGraphRetrievalEnabled
     )
+  } finally {
+    await prisma.chatbot.update({
+      where: { id: CHATBOT_ID },
+      data: { knowledgeGraphVisible: policy.knowledgeGraphVisible },
+    })
+  }
+})
+
+test('Native answer concepts link to the published graph', async ({ page }) => {
+  test.skip(
+    !process.env.GRAPH_RETRIEVAL_TEST_PORT,
+    'Requires local FalkorDB fixture'
+  )
+  const prisma = await getPrisma()
+  const policy = await prisma.chatbot.findUniqueOrThrow({
+    where: { id: CHATBOT_ID },
+    select: { knowledgeGraphVisible: true },
+  })
+  const participantId = await getEnrolledParticipantId()
+  await setDisclaimerState(participantId, 'accepted')
+  await setParticipantToken(page, participantId)
+  await prisma.chatbot.update({
+    where: { id: CHATBOT_ID },
+    data: { knowledgeGraphVisible: true },
+  })
+  try {
+    await page.setViewportSize({ width: 1440, height: 1000 })
+    const thread = await seedThread(participantId, {
+      title: 'Native linked concepts',
+      messages: [
+        { role: 'user', content: [{ type: 'text', text: 'Explain it.' }] },
+        {
+          role: 'assistant',
+          content: [
+            {
+              type: 'text',
+              text: 'Diversification lowers portfolio risk when the covariance between assets is low.',
+            },
+          ],
+        },
+      ],
+    })
+    await page.goto(`${chatUrl()}/${CHATBOT_ID}/threads/${thread.id}`)
+
+    const links = page.getByTestId('chat-concept-link')
+    await expect(links).toHaveText([
+      'Diversification',
+      'portfolio risk',
+      'covariance',
+    ])
+    const covariance = links.filter({ hasText: 'covariance' })
+    await covariance.hover()
+    // The fixture merges two descriptions; only the first one is shown.
+    const hoverCard = page.getByTestId('chat-concept-definition')
+    await expect(hoverCard).toContainText('how two asset returns move together')
+    await expect(hoverCard).not.toContainText('<SEP>')
+    await covariance.click()
+
+    await expect(page.getByTestId('chat-knowledge-graph-panel')).toBeVisible()
+    await expect(
+      page
+        .getByTestId('knowledge-graph-loaded-node')
+        .filter({ hasText: 'Covariance' })
+    ).toBeVisible()
+    await expect(page.getByTestId('knowledge-graph-definition')).toContainText(
+      'how two asset returns move together'
+    )
+    await expect(
+      page.getByTestId('knowledge-graph-back-to-overview')
+    ).toBeVisible()
   } finally {
     await prisma.chatbot.update({
       where: { id: CHATBOT_ID },
@@ -466,6 +540,9 @@ test.describe('Knowledge graph suggestion request lifecycle', () => {
               target: nodes[1]!.id,
               type: 'RELATED',
               label: 'connects',
+              relationType: 'related',
+              relationStatus: 'extracted',
+              sourceReferences: [],
               properties: {},
             },
           ],
@@ -677,6 +754,68 @@ test.describe('Knowledge graph suggestion request lifecycle', () => {
     await expect(page.getByTestId('knowledge-graph-suggestion')).toHaveCount(0)
   })
 
+  test('a concept named in an answer opens the panel focused on that concept', async ({
+    page,
+  }) => {
+    const concept = { ...syntheticNode('Synthetic linked concept'), id: '101' }
+    await page.route('**/api/chatbots/*/knowledge-graph**', async (route) => {
+      const operation = new URL(route.request().url()).searchParams.get(
+        'operation'
+      )
+      if (operation === 'mentions') {
+        await route.fulfill({
+          status: 200,
+          contentType: 'application/json',
+          body: JSON.stringify({
+            ...syntheticGraphResponse([]),
+            nodes: [concept],
+            mentions: [{ nodeId: '101', text: 'synthetic linked concept' }],
+          }),
+        })
+        return
+      }
+      await route.fulfill({
+        status: 200,
+        contentType: 'application/json',
+        body: JSON.stringify(
+          syntheticGraphResponse(operation === 'overview' ? overviewLabels : [])
+        ),
+      })
+    })
+    await page.setViewportSize({ width: 1440, height: 1000 })
+    const thread = await seedThread(await getEnrolledParticipantId(), {
+      title: 'Linked concepts',
+      messages: [
+        { role: 'user', content: [{ type: 'text', text: 'Explain it.' }] },
+        {
+          role: 'assistant',
+          content: [
+            {
+              type: 'text',
+              text: 'The synthetic linked concept connects both ideas.',
+            },
+          ],
+        },
+      ],
+    })
+    await page.goto(`${chatUrl()}/${CHATBOT_ID}/threads/${thread.id}`)
+
+    const link = page.getByTestId('chat-concept-link')
+    await expect(link).toHaveText('synthetic linked concept')
+    await expect(page.getByTestId('chat-knowledge-graph-panel')).toHaveCount(0)
+    await link.click()
+
+    await expect(page.getByTestId('chat-knowledge-graph-panel')).toBeVisible()
+    await expect(
+      page
+        .getByTestId('knowledge-graph-loaded-node')
+        .filter({ hasText: 'Synthetic linked concept' })
+    ).toBeVisible()
+    await expect(
+      page.getByTestId('knowledge-graph-back-to-overview')
+    ).toBeVisible()
+  })
+
   test('selecting a suggestion with the pointer replaces the view with its node', async ({
     page,
   }) => {
@@ -762,10 +901,9 @@ test.describe('Knowledge graph suggestion request lifecycle', () => {
   })
 })
 
-test('GraphRAG rollout controls retrieval independently of the student map', async ({
+test('GraphRAG retrieval is controlled independently of the student map', async ({
   page,
 }) => {
-  let enabled = false
   let payloadReads = 0
   await page.route('**/api/features/*', async (route) => {
     payloadReads += 1
@@ -774,24 +912,21 @@ test('GraphRAG rollout controls retrieval independently of the student map', asy
       body: JSON.stringify({
         features: {
           'ai-beta': { defaultValue: true },
-          'chatbot-graphrag': { defaultValue: enabled },
         },
       }),
     })
   })
+  // Both knowledge-graph switches are advanced controls.
+  await setAiSettingsMode(page, 'advanced')
   await loginLecturer(page)
   const url = `${process.env.URL_MANAGE}/resources/chatbots?chatbotId=${CHATBOT_ID}&view=knowledge`
   await page.goto(url)
+  await openChatbotSection(page, 'graph')
   const map = page.getByTestId('chatbot-knowledge-graph-visible-switch')
   const retrieval = page.getByTestId('chatbot-knowledge-graph-retrieval-switch')
   await expect(map).toBeVisible()
-  await expect(retrieval).toHaveCount(0)
-  expect(payloadReads).toBeGreaterThan(0)
-  enabled = true
-  await page.evaluate(() => localStorage.clear())
-  await page.reload()
-  await expect(map).toBeVisible()
   await expect(retrieval).toBeVisible()
+  expect(payloadReads).toBeGreaterThan(0)
   const initial = await retrieval.isChecked()
   await retrieval.setChecked(!initial)
   await expect(retrieval).toBeChecked({ checked: !initial })

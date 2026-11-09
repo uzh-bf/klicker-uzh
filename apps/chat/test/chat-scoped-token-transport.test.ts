@@ -23,6 +23,7 @@ import {
 import {
   authorizeIdentityForChatbot,
   resolveParticipantIdentity,
+  withChatbotAuth,
 } from '../src/lib/server/apiGuards'
 import { signChatGuestToken } from '../src/lib/server/ltiGuest'
 import { signPwaEmbedSessionToken } from '../src/lib/server/pwaEmbed'
@@ -444,5 +445,136 @@ describe('scoped account fallback liveness', () => {
     })
     expect(identity).not.toHaveProperty('participantId')
     if ('response' in identity) expect(identity.response.status).toBe(401)
+  })
+})
+
+describe('stale embed session account fallback', () => {
+  const API_ISSUER = 'https://api.test'
+
+  async function accountToken(sub: string) {
+    return signJWT({ sub, role: 'PARTICIPANT' }, 'test-app-secret', {
+      expiresIn: '1h',
+      issuer: API_ISSUER,
+    })
+  }
+
+  async function otherBotEmbedToken() {
+    return signPwaEmbedSessionToken({
+      participantId: 'participant-1',
+      chatbotId: OTHER_CHATBOT_ID,
+      courseId: COURSE_A,
+    })
+  }
+
+  it('prefers the account session when the embed cookie targets another chatbot', async () => {
+    vi.stubEnv('APP_ORIGIN_API', API_ISSUER)
+
+    const identity = await resolveParticipantIdentity(
+      {
+        pwaEmbedToken: await otherBotEmbedToken(),
+        participantToken: await accountToken('account-1'),
+      },
+      { targetChatbotId: CHATBOT_ID }
+    )
+
+    expect(identity).toMatchObject({
+      participantId: 'account-1',
+      authMode: 'account',
+    })
+    expect(identity).not.toHaveProperty('pwaEmbedScope')
+  })
+
+  it('keeps the embed identity when no account session resolves', async () => {
+    const identity = await resolveParticipantIdentity(
+      { pwaEmbedToken: await otherBotEmbedToken() },
+      { targetChatbotId: CHATBOT_ID }
+    )
+
+    expect(identity).toMatchObject({
+      participantId: 'participant-1',
+      pwaEmbedScope: { chatbotId: OTHER_CHATBOT_ID, courseId: COURSE_A },
+    })
+  })
+
+  it('keeps a matching embed session ahead of the account session', async () => {
+    vi.stubEnv('APP_ORIGIN_API', API_ISSUER)
+    const embedToken = await signPwaEmbedSessionToken({
+      participantId: 'participant-1',
+      chatbotId: CHATBOT_ID,
+      courseId: COURSE_A,
+    })
+
+    const identity = await resolveParticipantIdentity(
+      {
+        pwaEmbedToken: embedToken,
+        participantToken: await accountToken('account-1'),
+      },
+      { targetChatbotId: CHATBOT_ID }
+    )
+
+    expect(identity).toMatchObject({
+      participantId: 'participant-1',
+      pwaEmbedScope: { chatbotId: CHATBOT_ID, courseId: COURSE_A },
+    })
+  })
+
+  it('applies the same fallback to the scoped header transport', async () => {
+    vi.stubEnv('APP_ORIGIN_API', API_ISSUER)
+
+    const identity = await resolveParticipantIdentity(
+      {
+        scopedFallbackToken: await otherBotEmbedToken(),
+        participantToken: await accountToken('account-1'),
+      },
+      { targetChatbotId: CHATBOT_ID }
+    )
+
+    expect(identity).toMatchObject({
+      participantId: 'account-1',
+      authMode: 'account',
+    })
+    expect(identity).not.toHaveProperty('pwaEmbedScope')
+  })
+
+  it('leaves guest precedence untouched next to a stale embed cookie', async () => {
+    const guestToken = await signChatGuestToken('guest-participant')
+
+    const identity = await resolveParticipantIdentity(
+      {
+        chatGuestToken: guestToken,
+        pwaEmbedToken: await otherBotEmbedToken(),
+      },
+      { targetChatbotId: CHATBOT_ID }
+    )
+
+    expect(identity).toMatchObject({
+      participantId: 'guest-participant',
+      authMode: 'anonymous',
+    })
+  })
+
+  it('falls back inside withChatbotAuth so every chatbot route benefits', async () => {
+    vi.stubEnv('APP_ORIGIN_API', API_ISSUER)
+    mocks.chatbotFindUnique.mockResolvedValue({
+      courseId: COURSE_A,
+      status: 'PUBLISHED',
+    })
+    mocks.participationFindUnique.mockResolvedValue({
+      id: 'participation-1',
+    })
+
+    const request = new NextRequest(chatbotUrl(''), {
+      headers: {
+        cookie: `${PWA_CHAT_EMBED_SESSION_COOKIE}=${await otherBotEmbedToken()}; participant_token=${await accountToken('account-1')}`,
+      },
+    })
+
+    const authorization = await withChatbotAuth(request, CHATBOT_ID)
+
+    expect(authorization).toMatchObject({
+      participantId: 'account-1',
+      authMode: 'account',
+      chatbot: { courseId: COURSE_A },
+    })
   })
 })

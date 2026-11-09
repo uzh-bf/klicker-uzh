@@ -1923,6 +1923,8 @@ export async function changeObjectPermissionLevel(
   const previousPermission = await ctx.prisma.permission.findUnique({
     where: {
       id: permissionId,
+      // the owner's permission is only changed through an ownership transfer
+      permissionLevel: { not: DB.PermissionLevel.OWNER },
       catalogCollectionId,
       answerCollectionId,
       elementId,

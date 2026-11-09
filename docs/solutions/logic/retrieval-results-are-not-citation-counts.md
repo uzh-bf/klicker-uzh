@@ -35,8 +35,28 @@ Navigation metadata is also separate from identity. A supplied public origin
 can improve a link without changing deduplication or citation numbering.
 Missing origins remain unavailable; chunk text is not trusted URL metadata.
 
+Evaluation receipts must use the same source normalizer and citation-index
+projection as the application. Deduplicating by title/reference alone loses
+page and video-position identity; truncating each tool call separately diverges
+from the message-wide sequence. The trajectory evaluator records original
+per-call source positions, nullable indices and hashed normalized identities.
+This reconstructs citation membership from persisted tools, rather than proving
+what evidence the historical model actually received.
+
+The visible card preview must also remain separate from citation admission.
+Sharing a 12-item limit let the first broad search consume every citation slot,
+so even a useful first result from a later refined search received a null index.
+The full text still reached the model: this was unavailable citation capacity,
+not missing retrieval content. The registry now admits up to 99 stable identities,
+within the existing two-digit parser, while the initial cited-card preview stays
+at 12. Citation navigation opens the disclosure before focusing a hidden card.
+See [the citation contract](../../chat-platform.md#sources-and-citations).
+
 ## Prevention
 
 Keep synthetic tests for unnamed chunks, multiple tool calls, capped citation
 lists, and persisted reload. These tests establish consumer reconstruction and
 display behavior, not upstream retrieval quality or deployed corpus provenance.
+Include a useful source after the preview limit, a refined second search, the
+highest admitted index, and the first overflow entry. Neither retrieved presence
+nor an assigned citation number establishes that the passage supports a claim.

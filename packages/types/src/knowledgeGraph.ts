@@ -2,7 +2,25 @@ export type KnowledgeGraphSourceReference = {
   resourceId: string
   title: string
   reference?: string
+  pages?: number[]
 }
+
+export type KnowledgeGraphRelationType =
+  | 'prerequisite_of'
+  | 'part_of'
+  | 'example_of'
+  | 'applies_to'
+  | 'is_a'
+  | 'has_formula'
+  | 'has_variable'
+  | 'decision_rule'
+  | 'advantage_of'
+  | 'disadvantage_of'
+  | 'contrasts_with'
+  | 'synonym_of'
+  | 'related'
+
+export type KnowledgeGraphRelationStatus = 'source' | 'inferred' | 'extracted'
 
 export type KnowledgeGraphNode = {
   id: string
@@ -21,6 +39,9 @@ export type KnowledgeGraphEdge = {
   target: string
   type: string
   label: string
+  relationType: KnowledgeGraphRelationType
+  relationStatus: KnowledgeGraphRelationStatus
+  sourceReferences: KnowledgeGraphSourceReference[]
   properties: Record<string, string | number | boolean>
 }
 

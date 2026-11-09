@@ -233,3 +233,19 @@ const SCAFFOLD_FILES = [
   '.github/workflows/public-pr-playwright-shards.yml',
   '.github/workflows/test-playwright.yml',
 ]
+
+test('candidate pnpm pins isolate build and dependency caches', (t) => {
+  const root = fixtureRoot({
+    'package.json': JSON.stringify({ packageManager: 'pnpm@11.5.0' }),
+  })
+  t.after(() => fs.rmSync(root, { recursive: true, force: true }))
+  const input = { root, files: ['package.json'] }
+  const build = buildFingerprint(input)
+  const dependencies = dependencyFingerprint(input)
+  fs.writeFileSync(
+    path.join(root, 'package.json'),
+    JSON.stringify({ packageManager: 'pnpm@12.11.2' })
+  )
+  assert.notEqual(buildFingerprint(input), build)
+  assert.notEqual(dependencyFingerprint(input), dependencies)
+})

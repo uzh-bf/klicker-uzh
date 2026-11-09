@@ -6,7 +6,9 @@ query GetLiveQuizLeaderboard($quizId: String!) {
     username
     avatar
     score
+    level
     isSelf
+    isTemporary
     lastBlockOrder
   }
 }

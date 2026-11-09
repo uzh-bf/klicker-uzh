@@ -7,7 +7,9 @@ import {
   GetUserRunningLiveQuizzesDocument,
 } from '@klicker-uzh/graphql/dist/ops'
 import Loader from '@klicker-uzh/shared-components/src/Loader'
+import { toast } from '@uzh-bf/design-system'
 import { GetStaticPropsContext } from 'next'
+import { useTranslations } from 'next-intl'
 import { useRouter } from 'next/router'
 import AudienceInteraction from '../../../components/interaction/AudienceInteraction'
 import Layout from '../../../components/Layout'
@@ -15,6 +17,7 @@ import LiveQuizTimeline from '../../../components/liveQuiz/cockpit/LiveQuizTimel
 
 function Cockpit() {
   const router = useRouter()
+  const t = useTranslations()
 
   const [activateLiveQuizBlock, { loading: activatingBlock }] = useMutation(
     ActivateLiveQuizBlockDocument
@@ -50,6 +53,7 @@ function Cockpit() {
     loading: cockpitLoading,
     data: cockpitData,
     subscribeToMore,
+    refetch,
   } = useQuery(GetCockpitQuizDocument, {
     variables: {
       id: router.query.id as string,
@@ -96,7 +100,15 @@ function Cockpit() {
           language={course?.language ?? null}
           isGamificationEnabled={isGamificationEnabled}
           handleEndLiveQuiz={async () => {
-            await endLiveQuiz({ variables: { id: id } })
+            const result = await endLiveQuiz({ variables: { id: id } })
+            if (!result.data?.endLiveQuiz) {
+              toast({
+                type: 'error',
+                message: t('shared.generic.systemError'),
+              })
+              await refetch()
+              return
+            }
             router.push('/activities')
           }}
           handleOpenBlock={async (blockId: number) => {

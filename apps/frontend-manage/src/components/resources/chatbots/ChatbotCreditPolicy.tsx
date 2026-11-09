@@ -11,9 +11,15 @@ import {
   FormikSelectField,
   UserNotification,
 } from '@uzh-bf/design-system'
-import { Form, Formik, useFormikContext } from 'formik'
-import { useFormatter, useTranslations } from 'next-intl'
-import { useCallback, useEffect, useState } from 'react'
+import {
+  Form,
+  Formik,
+  type FormikProps,
+  type FormikValues,
+  useFormikContext,
+} from 'formik'
+import { useTranslations } from 'next-intl'
+import { type MutableRefObject, useCallback, useEffect, useState } from 'react'
 import * as Yup from 'yup'
 import {
   getChatbotMutationErrorKey,
@@ -70,54 +76,6 @@ function resetPeriodMessageKey(period: CreditResetPeriod) {
   }
 }
 
-function ChatbotCreditPolicySummary({ chatbot }: { chatbot: RevisionChatbot }) {
-  const t = useTranslations()
-  const format = useFormatter()
-  const revisionValues = getChatbotRevisionValues(chatbot)
-  const formatCredits = (value: number) =>
-    format.number(value, { maximumFractionDigits: 0 })
-
-  return (
-    <dl
-      className="grid gap-3 text-sm sm:grid-cols-2"
-      data-cy="chatbot-credit-policy-summary"
-    >
-      <div>
-        <dt className="font-medium text-gray-600">
-          {t('manage.resources.creditInitialCredits')}
-        </dt>
-        <dd className="mt-1 text-gray-900">
-          {formatCredits(revisionValues.creditInitialCredits)}
-        </dd>
-      </div>
-      <div>
-        <dt className="font-medium text-gray-600">
-          {t('manage.resources.creditResetPeriod')}
-        </dt>
-        <dd className="mt-1 text-gray-900">
-          {t(resetPeriodMessageKey(revisionValues.creditResetPeriod))}
-        </dd>
-      </div>
-      <div>
-        <dt className="font-medium text-gray-600">
-          {t('manage.resources.creditResetAmount')}
-        </dt>
-        <dd className="mt-1 text-gray-900">
-          {formatCredits(revisionValues.creditResetAmount)}
-        </dd>
-      </div>
-      <div>
-        <dt className="font-medium text-gray-600">
-          {t('manage.resources.creditMaxCredits')}
-        </dt>
-        <dd className="mt-1 text-gray-900">
-          {formatCredits(revisionValues.creditMaxCredits)}
-        </dd>
-      </div>
-    </dl>
-  )
-}
-
 function CreditPolicyFormEffects({
   onChange,
   onDirty,
@@ -155,12 +113,18 @@ function ChatbotCreditPolicy({
   onNavigationStateChange,
   onRevisionConflict,
   onSaved,
+  formRef,
+  embedded = false,
 }: {
   chatbot: RevisionChatbot
   publicationPending: boolean
   onNavigationStateChange: (state: ChatbotNavigationState) => void
   onRevisionConflict?: () => void
   onSaved?: () => void
+  // Embedded in the setup page, the section footer saves the form through
+  // this ref, so the editor shows no description or Save button of its own.
+  formRef?: MutableRefObject<FormikProps<FormikValues> | null>
+  embedded?: boolean
 }) {
   const t = useTranslations()
   const [saveRevision] = useMutation(MSaveChatbotRevisionDocument)
@@ -192,6 +156,13 @@ function ChatbotCreditPolicy({
   return (
     <Formik
       validateOnMount
+      innerRef={
+        formRef
+          ? (instance: FormikProps<CreditPolicyFormValues> | null) => {
+              formRef.current = instance as FormikProps<FormikValues> | null
+            }
+          : undefined
+      }
       initialValues={initialValues}
       validationSchema={Yup.object({
         creditInitialCredits: Yup.string()
@@ -294,9 +265,11 @@ function ChatbotCreditPolicy({
             onChange={onNavigationStateChange}
             onDirty={clearSaveSuccess}
           />
-          <p className="text-sm text-gray-600">
-            {t('manage.resources.chatbotCreditPolicyDescription')}
-          </p>
+          {embedded ? null : (
+            <p className="text-sm text-gray-600">
+              {t('manage.resources.chatbotCreditPolicyDescription')}
+            </p>
+          )}
           <div className="grid gap-4 md:grid-cols-2">
             <FormikNumberField
               required
@@ -350,7 +323,10 @@ function ChatbotCreditPolicy({
               <UserNotification type="error">{saveError}</UserNotification>
             </div>
           ) : null}
-          <div className="flex flex-wrap items-center justify-end gap-3 border-t border-gray-200 pt-4">
+          <div
+            hidden={embedded}
+            className="flex flex-wrap items-center justify-end gap-3 border-t border-gray-200 pt-4"
+          >
             <Button
               primary
               type="submit"
@@ -378,5 +354,5 @@ function ChatbotCreditPolicy({
   )
 }
 
-export { ChatbotCreditPolicySummary, creditPolicyEditableStatuses }
+export { creditPolicyEditableStatuses }
 export default ChatbotCreditPolicy

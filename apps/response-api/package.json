@@ -8,7 +8,7 @@
     "dist"
   ],
   "dependencies": {
-    "@hatchet-dev/typescript-sdk": "1.9.4",
+    "@hatchet-dev/typescript-sdk": "1.22.0",
     "@klicker-uzh/hatchet": "workspace:*",
     "@klicker-uzh/prisma": "workspace:*",
     "@klicker-uzh/types": "workspace:*",
@@ -26,7 +26,7 @@
   "scripts": {
     "build": "run-s --npm-path pnpm build:ts",
     "build:test": "pnpm run build",
-    "build:ts": "cross-env NODE_ENV=production rollup -c",
+    "build:ts": "cross-env NODE_ENV=production rollup -c --forceExit",
     "check": "tsc --noEmit --tsBuildInfoFile dist/tsconfig.check.tsbuildinfo",
     "dev": "run-p --npm-path pnpm dev:ts",
     "dev:assessment": "pnpm run dev",

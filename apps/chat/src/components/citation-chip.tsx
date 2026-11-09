@@ -49,10 +49,18 @@ export function CitationChip({ index }: { index: number }) {
   const handleClick = (event: MouseEvent) => {
     event.preventDefault()
     const target = document.getElementById(`src-${messageId}-${source.index}`)
-    target?.scrollIntoView({ behavior: 'smooth', block: 'center' })
+    if (!target) return
+    // A cited card beyond the preview limit sits inside the collapsed "Other
+    // retrieved material" disclosure, which has to be open before the scroll
+    // and focus below can land on a visible card.
+    const disclosure = target.closest('details')
+    if (disclosure && !disclosure.open) {
+      disclosure.open = true
+    }
+    target.scrollIntoView({ behavior: 'smooth', block: 'center' })
     // `preventScroll` avoids fighting the smooth scroll above: `.focus()`
     // would otherwise jump the card into view instantly on its own.
-    target?.focus({ preventScroll: true })
+    target.focus({ preventScroll: true })
   }
 
   return (

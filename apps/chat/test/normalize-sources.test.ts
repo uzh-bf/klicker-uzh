@@ -2,11 +2,21 @@ import { describe, expect, test } from 'vitest'
 import {
   countDocQueryDocuments,
   isDocQueryToolName,
+  normalizeResponseExampleEvidenceFromParts,
   normalizeSourcesFromParts,
 } from '../src/lib/sources/normalizeSources'
 
 function toolCallPart(toolName: string, result: unknown, isError = false) {
   return { type: 'tool-call', toolName, result, isError }
+}
+
+function answerSource(number: number) {
+  return {
+    expert: 'Prof. Muster',
+    source_url: `https://example.com/doc-${number}.pdf`,
+    file_name: `doc-${number}.pdf`,
+    page_number: number,
+  }
 }
 
 describe('resource citation provenance', () => {
@@ -538,20 +548,53 @@ describe('normalizeSourcesFromParts', () => {
     expect(result.map((source) => source.index)).toEqual([1, 2, 3])
   })
 
-  test('caps the total number of sources at 12', () => {
-    const sources = Array.from({ length: 20 }, (_, i) => ({
-      expert: 'Prof. Muster',
-      source_url: `https://example.com/doc-${i}.pdf`,
-      file_name: `doc-${i}.pdf`,
-      page_number: i,
-    }))
+  test('caps the total number of sources at 99', () => {
+    const sources = Array.from({ length: 120 }, (_, i) => answerSource(i))
 
     const result = normalizeSourcesFromParts([
       toolCallPart('KB_doc_query', { answer: 'text', sources }),
     ])
 
-    expect(result).toHaveLength(12)
-    expect(result[11]?.index).toBe(12)
+    expect(result).toHaveLength(99)
+    expect(result[98]?.index).toBe(99)
+  })
+
+  test('numbers a new source from a refined call 21 after twenty earlier sources', () => {
+    const firstBatch = Array.from({ length: 20 }, (_, i) => answerSource(i))
+    const result = normalizeSourcesFromParts([
+      toolCallPart('KB_doc_query', { answer: 'first', sources: firstBatch }),
+      toolCallPart('KB_doc_query', {
+        answer: 'refined',
+        // The refined call repeats the first two sources and adds one new.
+        sources: [answerSource(0), answerSource(1), answerSource(20)],
+      }),
+    ])
+
+    expect(result).toHaveLength(21)
+    expect(result.map((source) => source.index)).toEqual(
+      Array.from({ length: 21 }, (_, i) => i + 1)
+    )
+    expect(result[0]?.title).toBe('doc-0.pdf')
+    expect(result[20]?.title).toBe('doc-20.pdf')
+  })
+
+  test('dedupes a repeated source at the cap boundary without admitting past 99', () => {
+    const firstBatch = Array.from({ length: 98 }, (_, i) => answerSource(i))
+    const result = normalizeSourcesFromParts([
+      toolCallPart('KB_doc_query', { answer: 'first', sources: firstBatch }),
+      toolCallPart('KB_doc_query', {
+        answer: 'refined',
+        sources: [answerSource(0), answerSource(98), answerSource(99)],
+      }),
+    ])
+
+    expect(result).toHaveLength(99)
+    expect(result[98]?.index).toBe(99)
+    expect(result[98]?.title).toBe('doc-98.pdf')
+    expect(
+      result.filter((source) => source.title === 'doc-0.pdf')
+    ).toHaveLength(1)
+    expect(result.some((source) => source.title === 'doc-99.pdf')).toBe(false)
   })
 
   test('accepts page_number as a numeric string', () => {
@@ -794,6 +837,136 @@ describe('normalizeSourcesFromParts', () => {
     ])
 
     expect(result[0]?.url).toBe('https://example.com/lecture-01.pdf')
+  })
+
+  test('keeps display deduplication independent from capture lineage', () => {
+    const sharedLineage = {
+      source_id: '33ec1c89-f892-4ab6-97cb-27ed037ec33d',
+      chunk_id: 'chunk-7',
+      content_hash: 'b'.repeat(64),
+      citation_anchor: 'page=7',
+    }
+    const result = normalizeSourcesFromParts([
+      toolCallPart('KB_doc_query', {
+        answer: 'text',
+        sources: [
+          {
+            ...sharedLineage,
+            file_name: 'lecture-01.pdf',
+            source_url: 'https://example.com/lecture-01.pdf',
+          },
+          {
+            ...sharedLineage,
+            file_name: 'course-notes.html',
+            source_url: 'https://example.com/course-notes.html',
+          },
+        ],
+      }),
+    ])
+
+    expect(result.map(({ id }) => id)).toEqual([
+      'url:https://example.com/lecture-01.pdf||',
+      'url:https://example.com/course-notes.html||',
+    ])
+  })
+})
+
+describe('normalizeResponseExampleEvidenceFromParts', () => {
+  const sourceId = '33ec1c89-f892-4ab6-97cb-27ed037ec33d'
+  const contentHash = 'b'.repeat(64)
+
+  test('returns only complete lineage cited by the final Markdown answer', () => {
+    const parts = [
+      toolCallPart('KB_doc_query', {
+        answer: 'Some answer text.',
+        sources: [
+          {
+            expert: 'Course source',
+            file_name: 'lecture-01.pdf',
+            source_id: sourceId,
+            chunk_id: 'chunk-7',
+            content_hash: contentHash,
+            citation_anchor: 'page=7',
+          },
+          {
+            expert: 'Unused source',
+            file_name: 'lecture-02.pdf',
+            source_id: 'b3ef3f06-ab00-4ff3-9ca2-c24cab723af3',
+            chunk_id: 'chunk-9',
+            content_hash: 'c'.repeat(64),
+            citation_anchor: 'page=9',
+          },
+        ],
+      }),
+    ]
+
+    expect(
+      normalizeResponseExampleEvidenceFromParts(
+        parts,
+        'The relevant explanation is grounded here. [1]'
+      )
+    ).toEqual([
+      {
+        citationIndex: 1,
+        sourceId,
+        chunkId: 'chunk-7',
+        contentHash,
+        citationAnchor: 'page=7',
+      },
+    ])
+  })
+
+  test('reads documents-mode lineage from the cited source chunk', () => {
+    const parts = [
+      toolCallPart('KB_doc_query', {
+        mode: 'documents',
+        sources: [
+          {
+            reference: 'lecture-01.pdf',
+            source_type: 'pdf',
+            source_id: sourceId,
+            chunks: [
+              {
+                chunk_id: 'chunk-7',
+                content_hash: contentHash,
+                citation_anchor: 'page=7',
+                content: 'Relevant excerpt',
+              },
+            ],
+          },
+        ],
+      }),
+    ]
+
+    expect(
+      normalizeResponseExampleEvidenceFromParts(parts, 'Answer [1]')
+    ).toEqual([
+      {
+        citationIndex: 1,
+        sourceId,
+        chunkId: 'chunk-7',
+        contentHash,
+        citationAnchor: 'page=7',
+      },
+    ])
+  })
+
+  test('fails closed for missing lineage or an unresolved citation', () => {
+    const parts = [
+      toolCallPart('KB_doc_query', {
+        sources: [{ expert: 'Course source', file_name: 'lecture.pdf' }],
+      }),
+    ]
+
+    expect(
+      normalizeResponseExampleEvidenceFromParts(parts, 'Answer [1]')
+    ).toBeNull()
+    expect(
+      normalizeResponseExampleEvidenceFromParts(parts, 'Answer [2]')
+    ).toBeNull()
+    expect(
+      normalizeResponseExampleEvidenceFromParts(parts, 'Answer')
+    ).toBeNull()
   })
 })
 

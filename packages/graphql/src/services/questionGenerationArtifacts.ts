@@ -169,7 +169,7 @@ const pinnedQuestionEvidenceSchema = z
 const questionBlueprintWorkflowV1Schema = z
   .object({
     schema_version: z.literal(1),
-    question_build_id: z.string().uuid(),
+    question_build_id: z.string().guid(),
     generation_policy: z.literal('new_only'),
     requested_questions: z.number().int().min(1).max(20),
     frozen_graph_sha256: z.string().regex(SHA256_PATTERN),
@@ -523,7 +523,7 @@ function normalizeSlotFailure(
 const resultSchema = z
   .object({
     schema_version: z.union([z.literal(1), z.literal(2)]),
-    question_build_id: z.string().uuid(),
+    question_build_id: z.string().guid(),
     status: z.enum([
       'completed',
       'completed_with_review',

@@ -104,6 +104,8 @@ function maintenancePrisma({
         .mockResolvedValueOnce(pendingUpsertRetries)
         .mockResolvedValueOnce(deletedResources),
       findUnique: vi.fn().mockResolvedValue(currentResource),
+      findFirst: vi.fn().mockResolvedValue(currentResource),
+      aggregate: vi.fn().mockResolvedValue({ _sum: { sizeBytes: 1024 } }),
       updateMany: vi.fn().mockResolvedValue({ count: 1 }),
       deleteMany: vi.fn().mockResolvedValue({ count: 1 }),
     },
@@ -112,6 +114,7 @@ function maintenancePrisma({
       updateMany: vi.fn().mockResolvedValue({ count: 1 }),
     },
     kBUploadTicket: {
+      aggregate: vi.fn().mockResolvedValue({ _sum: { sizeBytes: 0 } }),
       count: vi.fn().mockResolvedValue(expiredTicketCount),
       findMany: vi.fn().mockResolvedValue(expiredTickets),
       deleteMany: vi.fn().mockResolvedValue({ count: 1 }),
@@ -127,6 +130,7 @@ function maintenancePrisma({
       updateMany: vi.fn().mockResolvedValue({ count: 1 }),
     },
     $transaction: vi.fn(),
+    $queryRaw: vi.fn().mockResolvedValue([{ id: KB_ID }]),
   }
   prisma.$transaction.mockImplementation(async (callback) => callback(prisma))
   return prisma
@@ -599,6 +603,56 @@ describe('KB retention maintenance', () => {
         data: { cleanupStartedAt: NOW },
       })
     )
+  })
+
+  it('names the failing build when graph cleanup cannot complete', async () => {
+    const prisma = maintenancePrisma({
+      retainedGraphBuilds: [
+        {
+          id: BUILD_ID,
+          kbId: KB_ID,
+          status: KBGraphBuildStatus.SUCCEEDED,
+          graphName: GRAPH_NAME,
+          graphmlBlobName: GRAPHML_BLOB_NAME,
+          kb: {
+            ownerId: OWNER_ID,
+            activeGraphBuildId: null,
+            publishedGraphBuildId: null,
+          },
+        },
+      ],
+    })
+    const error = vi.fn().mockResolvedValue(undefined)
+    const deleteGraph = vi
+      .fn()
+      .mockRejectedValue(new Error('graph database unavailable'))
+
+    await maintainKBResources({
+      prisma: prisma as never,
+      client: client(),
+      now: () => NOW,
+      logger: { error },
+      deleteBlob: vi.fn().mockResolvedValue(undefined),
+      deleteGraph,
+    })
+
+    // The claim is released for a later sweep, and the entry names the row that
+    // failed instead of repeating the same anonymous message every pass.
+    expect(prisma.kBGraphBuild.updateMany).toHaveBeenCalledWith(
+      expect.objectContaining({
+        where: expect.objectContaining({
+          id: BUILD_ID,
+          kbId: KB_ID,
+          cleanedAt: null,
+          cleanupStartedAt: NOW,
+        }),
+        data: { cleanupStartedAt: null },
+      })
+    )
+
+    const logged = String(error.mock.calls[0]?.[0])
+    expect(logged).toContain(BUILD_ID)
+    expect(logged).toContain(KB_ID)
   })
 
   it('purges the pinned artifact of a build that never produced an export', async () => {
