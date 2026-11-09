@@ -26,6 +26,27 @@ const TERMINAL_STATUSES = new Set<ElementGenerationBuildStatus>([
   ElementGenerationBuildStatus.AwaitingIncompletePublication,
 ])
 
+const FINISHED_REVISION_STATUSES = new Set<ElementGenerationBuildStatus>([
+  ElementGenerationBuildStatus.Completed,
+  ElementGenerationBuildStatus.Incomplete,
+  ElementGenerationBuildStatus.Failed,
+  ElementGenerationBuildStatus.Rejected,
+])
+
+export function isRevisionBuildFinished(status: ElementGenerationBuildStatus) {
+  return FINISHED_REVISION_STATUSES.has(status)
+}
+
+// A revision request is fulfilled by a child build that keeps running after
+// the parent build has settled, so the page keeps polling until it finishes.
+export function hasUnfinishedRevision(build: ElementGenerationBuildData) {
+  return build.drafts.some((draft) =>
+    draft.revisionBuilds.some(
+      (revisionBuild) => !isRevisionBuildFinished(revisionBuild.status)
+    )
+  )
+}
+
 export function isElementGenerationSettled(
   status: ElementGenerationBuildStatus
 ) {

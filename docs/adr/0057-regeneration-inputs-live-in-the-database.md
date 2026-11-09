@@ -10,7 +10,7 @@ tags:
 
 # 57. Regeneration inputs live in the database
 
-Status: Proposed (2026-11-09)
+Status: Accepted (2026-11-09)
 
 A revision request reworks one slot of an element generation build, possibly
 long after the build ran. The build's working files (start manifest, design,
@@ -23,9 +23,8 @@ evidence the question cites. A revision is a one-slot child build that starts fr
 specification, the previous question and the lecturer's note; blob artifacts
 are a cache that may refresh evidence while it exists. Evidence text follows
 its knowledge base: deleting or purging the knowledge base removes it, and a
-later revision proceeds without fresh evidence. Builds that predate this
-record are backfilled while their files exist and otherwise revised from the
-stored slot summary.
+later revision proceeds without fresh evidence. Builds that predate slot
+specifications are revised from the stored slot summary.
 
 ## Considered options
 
