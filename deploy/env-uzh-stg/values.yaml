@@ -574,8 +574,11 @@ frontendPWA:
         hosts:
           - pwa.klicker.stg.df-app.ch
 
+  # One replica on staging: start the new Pod before stopping the old one.
   strategy:
-    type: Recreate
+    type: RollingUpdate
+    rollingUpdate:
+      maxUnavailable: 0
 
   # Matches the production PWA shape, so burst tier drills on staging see the
   # same CPU headroom and HPA target as production.
@@ -628,8 +631,11 @@ frontendManage:
         hosts:
           - manage.klicker.stg.df-app.ch
 
+  # One replica on staging: start the new Pod before stopping the old one.
   strategy:
-    type: Recreate
+    type: RollingUpdate
+    rollingUpdate:
+      maxUnavailable: 0
 
   resources:
     requests:
@@ -679,8 +685,11 @@ frontendControl:
         hosts:
           - control.klicker.stg.df-app.ch
 
+  # One replica on staging: start the new Pod before stopping the old one.
   strategy:
-    type: Recreate
+    type: RollingUpdate
+    rollingUpdate:
+      maxUnavailable: 0
 
   resources:
     requests:
@@ -787,8 +796,11 @@ backendGraphql:
           - api.klicker.stg.df-app.ch
           # - backend-sls.klicker.stg.df-app.ch
 
+  # One replica on staging: start the new Pod before stopping the old one.
   strategy:
-    type: Recreate
+    type: RollingUpdate
+    rollingUpdate:
+      maxUnavailable: 0
 
   resources:
     requests:
@@ -836,8 +848,11 @@ olatApi:
         hosts:
           - olat-api.klicker.stg.df-app.ch
 
+  # One replica on staging: start the new Pod before stopping the old one.
   strategy:
-    type: Recreate
+    type: RollingUpdate
+    rollingUpdate:
+      maxUnavailable: 0
 
   resources:
     requests:
@@ -961,8 +976,13 @@ responseApi:
         hosts:
           - response-api.klicker.stg.df-app.ch
 
+  # One replica on staging: start the new Pod before stopping the old one.
+  # The chart has no readiness probe here yet, so the new Pod counts as
+  # Ready when its container starts, before the server listens.
   strategy:
-    type: Recreate
+    type: RollingUpdate
+    rollingUpdate:
+      maxUnavailable: 0
 
   resources:
     requests:
@@ -1024,8 +1044,11 @@ assessment:
           hosts:
             - assessment.klicker.stg.df-app.ch
 
+    # One replica on staging: start the new Pod before stopping the old one.
     strategy:
-      type: Recreate
+      type: RollingUpdate
+      rollingUpdate:
+        maxUnavailable: 0
 
     resources:
       requests:
@@ -1097,8 +1120,11 @@ assessment:
           hosts:
             - assessment-api.klicker.stg.df-app.ch
 
+    # One replica on staging: start the new Pod before stopping the old one.
     strategy:
-      type: Recreate
+      type: RollingUpdate
+      rollingUpdate:
+        maxUnavailable: 0
 
     resources:
       requests:
@@ -1161,8 +1187,13 @@ assessment:
           hosts:
             - response-api-assessment.klicker.stg.df-app.ch
 
+    # One replica on staging: start the new Pod before stopping the old one.
+    # The chart has no readiness probe here yet, so the new Pod counts as
+    # Ready when its container starts, before the server listens.
     strategy:
-      type: Recreate
+      type: RollingUpdate
+      rollingUpdate:
+        maxUnavailable: 0
 
     resources:
       requests:
