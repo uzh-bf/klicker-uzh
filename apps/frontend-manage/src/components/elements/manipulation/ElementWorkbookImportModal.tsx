@@ -5,7 +5,6 @@ import {
   faCircleInfo,
   faDownload,
   faFileExcel,
-  faImage,
   faUpload,
 } from '@fortawesome/free-solid-svg-icons'
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome'
@@ -191,6 +190,7 @@ function ElementWorkbookImportModal({
   const [result, setResult] = useState<{
     created: number
     skipped: number
+    images: number
   } | null>(null)
   const [downloadingTemplate, setDownloadingTemplate] = useState(false)
 
@@ -305,6 +305,7 @@ function ElementWorkbookImportModal({
       setResult({
         created: imported.createdElementIds.length,
         skipped: imported.skippedCount,
+        images: imagesToCopy,
       })
       setStep('done')
       refetchElements()
@@ -469,17 +470,6 @@ function ElementWorkbookImportModal({
                 </li>
               ))}
             </ul>
-            {imagesToCopy > 0 && counts.create > 0 && (
-              <p
-                className="flex gap-2 text-xs text-slate-600"
-                data-cy="element-workbook-images"
-              >
-                <FontAwesomeIcon icon={faImage} className="mt-0.5" />
-                {t('manage.elementWorkbook.imagesToCopy', {
-                  count: imagesToCopy,
-                })}
-              </p>
-            )}
             <p className="flex gap-2 text-xs text-slate-600">
               <FontAwesomeIcon icon={faCircleInfo} className="mt-0.5" />
               {counts.create === 0
@@ -506,6 +496,16 @@ function ElementWorkbookImportModal({
                 skipped: result.skipped,
               })}
             </div>
+            {result.images > 0 && (
+              <div
+                className="text-sm text-slate-600"
+                data-cy="element-workbook-images"
+              >
+                {t('manage.elementWorkbook.imagesAdded', {
+                  count: result.images,
+                })}
+              </div>
+            )}
           </div>
         )}
 

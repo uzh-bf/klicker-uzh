@@ -2333,8 +2333,8 @@ Da die KlickerUZH-App noch nicht im iOS-App-Store verfügbar ist, folgen Sie die
       countRepeated: 'Mehrfach in dieser Datei',
       reviewHint:
         'Neue Elemente sind privat und starten mit dem Status «Review». Tags bleiben erhalten. Duplikate werden übersprungen.',
-      imagesToCopy:
-        '{count, plural, =1 {1 Bild aus einer anderen KlickerUZH-Bibliothek wird in Ihre Medienbibliothek kopiert.} other {# Bilder aus anderen KlickerUZH-Bibliotheken werden in Ihre Medienbibliothek kopiert.}}',
+      imagesAdded:
+        '{count, plural, =1 {1 Bild wurde zu Ihrer Medienbibliothek hinzugefügt.} other {# Bilder wurden zu Ihrer Medienbibliothek hinzugefügt.}}',
       importButton:
         '{count, plural, =1 {1 Element importieren} other {# Elemente importieren}}',
       importing: 'Wird importiert…',

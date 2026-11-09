@@ -2316,8 +2316,8 @@ Since the KlickerUZH app is not yet available in the iOS App Store, follow these
       countRepeated: 'Repeated in this file',
       reviewHint:
         'New elements are private and start with status Review. Tags are kept. Duplicates are skipped.',
-      imagesToCopy:
-        '{count, plural, =1 {1 image from another KlickerUZH library will be copied to your media library.} other {# images from other KlickerUZH libraries will be copied to your media library.}}',
+      imagesAdded:
+        '{count, plural, =1 {1 image was added to your media library.} other {# images were added to your media library.}}',
       importButton:
         '{count, plural, =1 {Import 1 element} other {Import # elements}}',
       importing: 'Importing…',
