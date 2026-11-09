@@ -1,7 +1,7 @@
 ---
 type: Decision Record
 title: Regeneration inputs live in the database
-description: Each generated element draft keeps a slot specification in PostgreSQL so its slot can be reworked after blob artifacts are purged.
+description: Each element generation build keeps a slot specification per slot in PostgreSQL so a slot can be reworked after blob artifacts are purged.
 timestamp: '2026-11-09'
 tags:
   - backend
@@ -17,9 +17,9 @@ long after the build ran. The build's working files (start manifest, design,
 plan, bank and the pinned graph bundle) live on blob storage and are purged
 with the knowledge base, so a revision that depends on them fails exactly when
 it is most likely to be needed. We therefore store a self-contained slot
-specification with each generated element draft when the build completes:
+specification for each slot with its build when the build completes:
 the slot's design entry with its graph selection as ids, and the text of the
-evidence the question cites. A revision is rebuilt from the slot
+evidence the question cites. A revision is a one-slot child build that starts from the slot
 specification, the previous question and the lecturer's note; blob artifacts
 are a cache that may refresh evidence while it exists. Evidence text follows
 its knowledge base: deleting or purging the knowledge base removes it, and a
@@ -39,5 +39,6 @@ stored slot summary.
 - The kg worker gains a slot-revision entry point that starts from a slot
   specification instead of the build's start manifest, and emits slot
   specifications with each completed build.
-- The kg pool store records the same slot specification per draft, so its
-  drafts can be reworked without uncommitted run folders.
+- The kg pool store records the same slot specification per slot with its
+  generation builds, so its drafts can be reworked without uncommitted run
+  folders.

@@ -363,7 +363,7 @@ draft fills. Duplicates and revisions of a draft fill the same slot. Lecturers
 see the element, not the slot. _Avoid_: position, item.
 
 **Slot specification**:
-What the design asked of one slot, kept with its draft so the slot can be
+What the design asked of one slot, kept with its build so the slot can be
 reworked later without the build's working files: learning objective, topic,
 type, difficulty and the evidence the question was grounded in. Evidence text
 is removed with its knowledge base; the rest lives as long as the build.
@@ -373,13 +373,14 @@ _Avoid_: slot design, blueprint (the blueprint describes the whole build).
 The lecturer's verdict on one generated element draft: open, accepted,
 revision requested or rejected. Revision requested means the draft should be
 reworked; here it starts a revision request at once. The kg pool store uses
-the same values and meaning but reworks through a later generation. _Avoid_:
-approval, status.
+the same values and meaning. Accepting one draft of a revision chain rejects
+the chain's other unsaved drafts. _Avoid_: approval, status.
 
 **Revision request**:
 A lecturer's request to rework one generated element draft, with an optional
-note on what should change. It produces a new draft for the same slot; the
-note stays with the request, so every rework of a draft keeps its own reason.
+note on what should change. A generation build for that one slot fulfils it
+and produces a new draft for the same slot; the note stays with the request,
+so every rework of a draft keeps its own reason.
 Any element type can use it; questions come first. _Avoid_: slot revision,
 regeneration, rework.
 
