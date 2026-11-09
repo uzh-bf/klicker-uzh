@@ -2289,6 +2289,122 @@ Since the KlickerUZH app is not yet available in the iOS App Store, follow these
       tokenExpired:
         'Unfortunately, your token has expired, please generate a new one.',
     },
+    elementWorkbook: {
+      importFromExcel: 'Import from Excel',
+      exportToExcel: 'Export to Excel ({count})',
+      importTitle: 'Import elements from Excel',
+      exportTitle: 'Export to Excel',
+      stepUpload: 'Upload',
+      stepReview: 'Review',
+      stepDone: 'Done',
+      templateTitle: 'Fill in the KlickerUZH template',
+      templateDescription:
+        'One tab per element type, one row per element. The example rows show the format.',
+      downloadTemplate: 'Download template',
+      dropTitle: 'Drop your filled-in template here',
+      dropDescription:
+        'or click to choose a file · .xlsx, up to 5 MB and 2,000 elements',
+      chooseAnotherFile: 'Click to choose another file',
+      checkFile: 'Check file',
+      uploading: 'Uploading file…',
+      checking: 'Checking file…',
+      willBeCreated: 'Will be created',
+      alreadyInLibrary: 'Already in your library: {name}',
+      repeatedInFile: 'Same as row {row}',
+      countCreate: 'Will be created',
+      countExisting: 'Already in your library',
+      countRepeated: 'Repeated in this file',
+      reviewHint:
+        'New elements are private and start with status Review. Tags are kept. Duplicates are skipped.',
+      imagesToCopy:
+        '{count, plural, =1 {1 image from another KlickerUZH library will be copied to your media library.} other {# images from other KlickerUZH libraries will be copied to your media library.}}',
+      importButton:
+        '{count, plural, =1 {Import 1 element} other {Import # elements}}',
+      importing: 'Importing…',
+      nothingToImport: 'Every element in this file is already in your library.',
+      importedTitle:
+        '{count, plural, =1 {1 element imported} other {# elements imported}}',
+      importedDescription:
+        '{skipped, plural, =0 {Find the new elements under status Review.} =1 {1 row was skipped as a duplicate. Find the new elements under status Review.} other {# rows were skipped as duplicates. Find the new elements under status Review.}}',
+      showElements: 'Show elements',
+      previewStale:
+        'Your library changed while you were reviewing. The preview was updated; check it and import again.',
+      fileTooLarge:
+        'This file is larger than 5 MB. Split it into smaller files.',
+      fileTypeInvalid: 'Choose an Excel file (.xlsx).',
+      exportSummary: '{exported} of {total} selected elements will be exported',
+      exportDescription:
+        'Saved in the KlickerUZH template, so you can edit offline, share with colleagues, or import into another account.',
+      exportUnsupportedTitle:
+        "{count, plural, =1 {1 element can't be exported to Excel} other {# elements can't be exported to Excel}}",
+      includeTags: 'Include tags',
+      downloadElements:
+        '{count, plural, =1 {Download 1 element} other {Download # elements}}',
+      preparingExport: 'Preparing file…',
+      exportedDescription:
+        '{count, plural, =1 {1 element exported.} other {# elements exported.}} Edit the file and use Import from Excel to bring changes back as new elements.',
+      exportFailed: "The file couldn't be created. Try again.",
+      tooManyElements: 'Select at most 2,000 elements to export.',
+      unsupportedReason: {
+        TYPE_NOT_SUPPORTED:
+          'Case studies and selection elements have no tab in the template.',
+        TOO_MANY_ANSWERS:
+          'More answers than the template has columns for (10 for single and multiple choice, 6 solutions for numerical and free text).',
+        NOT_REPRESENTABLE:
+          "Some content can't be stored in Excel without changes.",
+      },
+      errorLocation: '{sheet}, row {row}, column {column}:',
+      errorLocationSheet: '{sheet}:',
+      errors: {
+        WORKBOOK_TOO_LARGE:
+          'The file is too large (at most 5 MB and 2,000 elements).',
+        INVALID_WORKBOOK: "This file isn't a valid Excel workbook.",
+        UNSUPPORTED_WORKBOOK_CONTENT:
+          'The file contains macros, embedded objects or images. Remove them and upload again.',
+        EMBEDDED_IMAGES_UNSUPPORTED:
+          'Pasted images are not supported. Use image links in the text instead.',
+        MISSING_WORKSHEET:
+          'This tab is missing. Start from the KlickerUZH template.',
+        UNEXPECTED_WORKSHEET:
+          'This tab is not part of the template. Remove it and upload again.',
+        INVALID_HEADERS:
+          "The column headers don't match the template. Keep rows 1–7 unchanged.",
+        UNEXPECTED_COLUMN:
+          'This column is not part of the template. Remove its content.',
+        UNSUPPORTED_CELL:
+          'Formulas, hyperlinks and dates are not supported. Enter plain text or numbers.',
+        CELL_TOO_LONG: 'This cell has too much text.',
+        REQUIRED_VALUE: 'This field is required.',
+        NAME_TOO_LONG: 'The name can be at most 255 characters long.',
+        INVALID_BOOLEAN: 'Enter Yes or No.',
+        INVALID_TAGS:
+          'Separate tags with semicolons (at most 50 tags of up to 255 characters).',
+        INVALID_ROW: 'This row is incomplete.',
+        INVALID_NUMBER: 'Enter a valid number within the allowed limits.',
+        INVALID_MULTIPLIER: 'Enter a whole number from 1 to 4.',
+        INVALID_DISPLAY_MODE: 'Enter LIST or GRID.',
+        INVALID_VALUE: "This value isn't allowed here.",
+        KPRIM_FOUR_ANSWERS: 'Kprim questions need exactly four statements.',
+        ORPHAN_CHOICE_DATA:
+          'Correctness or feedback is filled in for an empty answer.',
+        DISABLED_SOLUTION_DATA:
+          'Solution or feedback values need Sample solution? (and Answer feedback?) set to Yes.',
+        SC_ONE_CORRECT:
+          'Mark exactly one answer as correct when a sample solution is enabled.',
+        MC_CORRECT_REQUIRED:
+          'Mark at least one answer as correct when a sample solution is enabled.',
+        AMBIGUOUS_SOLUTION:
+          'Use either exact numbers or ranges, matching the Solution type.',
+        RATE_LIMITED:
+          'Too many imports or exports in a short time. Wait a minute and try again.',
+        UPLOAD_NOT_FOUND:
+          'The uploaded file is no longer available. Choose the file again.',
+        EMPTY_WORKBOOK:
+          'The file contains no elements. Fill in at least one row from row 8.',
+        UNKNOWN: "The file couldn't be checked. Try again.",
+      },
+      fixAndRetry: 'Fix the file and upload it again.',
+    },
     questionPool: {
       createLiveQuiz: 'Create live quiz',
       createLiveQuizDescription: 'Engage participants live during a session.',

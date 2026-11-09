@@ -2306,6 +2306,127 @@ Da die KlickerUZH-App noch nicht im iOS-App-Store verfügbar ist, folgen Sie die
       tokenExpired:
         'Ihr Token ist leider abgelaufen, bitte generieren Sie einen neuen.',
     },
+    elementWorkbook: {
+      importFromExcel: 'Aus Excel importieren',
+      exportToExcel: 'Nach Excel exportieren ({count})',
+      importTitle: 'Elemente aus Excel importieren',
+      exportTitle: 'Nach Excel exportieren',
+      stepUpload: 'Hochladen',
+      stepReview: 'Prüfen',
+      stepDone: 'Fertig',
+      templateTitle: 'KlickerUZH-Vorlage ausfüllen',
+      templateDescription:
+        'Ein Tabellenblatt pro Elementtyp, eine Zeile pro Element. Die Beispielzeilen zeigen das Format.',
+      downloadTemplate: 'Vorlage herunterladen',
+      dropTitle: 'Ausgefüllte Vorlage hier ablegen',
+      dropDescription:
+        'oder klicken, um eine Datei auszuwählen · .xlsx, bis 5 MB und 2000 Elemente',
+      chooseAnotherFile: 'Klicken, um eine andere Datei auszuwählen',
+      checkFile: 'Datei prüfen',
+      uploading: 'Datei wird hochgeladen…',
+      checking: 'Datei wird geprüft…',
+      willBeCreated: 'Wird erstellt',
+      alreadyInLibrary: 'Bereits in Ihrer Bibliothek: {name}',
+      repeatedInFile: 'Gleich wie Zeile {row}',
+      countCreate: 'Werden erstellt',
+      countExisting: 'Bereits in Ihrer Bibliothek',
+      countRepeated: 'Mehrfach in dieser Datei',
+      reviewHint:
+        'Neue Elemente sind privat und starten mit dem Status «Review». Tags bleiben erhalten. Duplikate werden übersprungen.',
+      imagesToCopy:
+        '{count, plural, =1 {1 Bild aus einer anderen KlickerUZH-Bibliothek wird in Ihre Medienbibliothek kopiert.} other {# Bilder aus anderen KlickerUZH-Bibliotheken werden in Ihre Medienbibliothek kopiert.}}',
+      importButton:
+        '{count, plural, =1 {1 Element importieren} other {# Elemente importieren}}',
+      importing: 'Wird importiert…',
+      nothingToImport:
+        'Alle Elemente in dieser Datei sind bereits in Ihrer Bibliothek.',
+      importedTitle:
+        '{count, plural, =1 {1 Element importiert} other {# Elemente importiert}}',
+      importedDescription:
+        '{skipped, plural, =0 {Die neuen Elemente finden Sie unter dem Status «Review».} =1 {1 Zeile wurde als Duplikat übersprungen. Die neuen Elemente finden Sie unter dem Status «Review».} other {# Zeilen wurden als Duplikate übersprungen. Die neuen Elemente finden Sie unter dem Status «Review».}}',
+      showElements: 'Elemente anzeigen',
+      previewStale:
+        'Ihre Bibliothek hat sich während der Prüfung geändert. Die Vorschau wurde aktualisiert; prüfen Sie sie und importieren Sie erneut.',
+      fileTooLarge:
+        'Diese Datei ist grösser als 5 MB. Teilen Sie sie in kleinere Dateien auf.',
+      fileTypeInvalid: 'Wählen Sie eine Excel-Datei (.xlsx).',
+      exportSummary:
+        '{exported} von {total} ausgewählten Elementen werden exportiert',
+      exportDescription:
+        'Gespeichert in der KlickerUZH-Vorlage: offline bearbeiten, mit Kolleg:innen teilen oder in ein anderes Konto importieren.',
+      exportUnsupportedTitle:
+        '{count, plural, =1 {1 Element kann nicht nach Excel exportiert werden} other {# Elemente können nicht nach Excel exportiert werden}}',
+      includeTags: 'Tags einschliessen',
+      downloadElements:
+        '{count, plural, =1 {1 Element herunterladen} other {# Elemente herunterladen}}',
+      preparingExport: 'Datei wird erstellt…',
+      exportedDescription:
+        '{count, plural, =1 {1 Element exportiert.} other {# Elemente exportiert.}} Bearbeiten Sie die Datei und nutzen Sie «Aus Excel importieren», um Änderungen als neue Elemente zu übernehmen.',
+      exportFailed:
+        'Die Datei konnte nicht erstellt werden. Versuchen Sie es erneut.',
+      tooManyElements: 'Wählen Sie höchstens 2000 Elemente für den Export aus.',
+      unsupportedReason: {
+        TYPE_NOT_SUPPORTED:
+          'Fallstudien und Selektionselemente haben kein Tabellenblatt in der Vorlage.',
+        TOO_MANY_ANSWERS:
+          'Mehr Antworten als die Vorlage Spalten hat (10 bei Single und Multiple Choice, 6 Lösungen bei Numerisch und Freitext).',
+        NOT_REPRESENTABLE:
+          'Ein Teil des Inhalts lässt sich in Excel nicht unverändert speichern.',
+      },
+      errorLocation: '{sheet}, Zeile {row}, Spalte {column}:',
+      errorLocationSheet: '{sheet}:',
+      errors: {
+        WORKBOOK_TOO_LARGE:
+          'Die Datei ist zu gross (höchstens 5 MB und 2000 Elemente).',
+        INVALID_WORKBOOK: 'Diese Datei ist keine gültige Excel-Arbeitsmappe.',
+        UNSUPPORTED_WORKBOOK_CONTENT:
+          'Die Datei enthält Makros, eingebettete Objekte oder Bilder. Entfernen Sie diese und laden Sie die Datei erneut hoch.',
+        EMBEDDED_IMAGES_UNSUPPORTED:
+          'Eingefügte Bilder werden nicht unterstützt. Verwenden Sie stattdessen Bildlinks im Text.',
+        MISSING_WORKSHEET:
+          'Dieses Tabellenblatt fehlt. Beginnen Sie mit der KlickerUZH-Vorlage.',
+        UNEXPECTED_WORKSHEET:
+          'Dieses Tabellenblatt gehört nicht zur Vorlage. Entfernen Sie es und laden Sie die Datei erneut hoch.',
+        INVALID_HEADERS:
+          'Die Spaltenüberschriften stimmen nicht mit der Vorlage überein. Lassen Sie die Zeilen 1–7 unverändert.',
+        UNEXPECTED_COLUMN:
+          'Diese Spalte gehört nicht zur Vorlage. Entfernen Sie ihren Inhalt.',
+        UNSUPPORTED_CELL:
+          'Formeln, Hyperlinks und Datumswerte werden nicht unterstützt. Geben Sie reinen Text oder Zahlen ein.',
+        CELL_TOO_LONG: 'Diese Zelle enthält zu viel Text.',
+        REQUIRED_VALUE: 'Dieses Feld ist erforderlich.',
+        NAME_TOO_LONG: 'Der Name darf höchstens 255 Zeichen lang sein.',
+        INVALID_BOOLEAN: 'Geben Sie Yes oder No ein.',
+        INVALID_TAGS:
+          'Trennen Sie Tags mit Semikolons (höchstens 50 Tags mit je bis zu 255 Zeichen).',
+        INVALID_ROW: 'Diese Zeile ist unvollständig.',
+        INVALID_NUMBER:
+          'Geben Sie eine gültige Zahl innerhalb der erlaubten Grenzen ein.',
+        INVALID_MULTIPLIER: 'Geben Sie eine ganze Zahl von 1 bis 4 ein.',
+        INVALID_DISPLAY_MODE: 'Geben Sie LIST oder GRID ein.',
+        INVALID_VALUE: 'Dieser Wert ist hier nicht erlaubt.',
+        KPRIM_FOUR_ANSWERS: 'Kprim-Fragen brauchen genau vier Aussagen.',
+        ORPHAN_CHOICE_DATA:
+          'Korrektheit oder Feedback ist für eine leere Antwort ausgefüllt.',
+        DISABLED_SOLUTION_DATA:
+          'Lösungs- oder Feedbackwerte erfordern «Sample solution?» (und «Answer feedback?») auf Yes.',
+        SC_ONE_CORRECT:
+          'Markieren Sie genau eine Antwort als korrekt, wenn eine Musterlösung aktiviert ist.',
+        MC_CORRECT_REQUIRED:
+          'Markieren Sie mindestens eine Antwort als korrekt, wenn eine Musterlösung aktiviert ist.',
+        AMBIGUOUS_SOLUTION:
+          'Verwenden Sie entweder exakte Zahlen oder Bereiche, passend zu «Solution type».',
+        RATE_LIMITED:
+          'Zu viele Importe oder Exporte in kurzer Zeit. Warten Sie eine Minute und versuchen Sie es erneut.',
+        UPLOAD_NOT_FOUND:
+          'Die hochgeladene Datei ist nicht mehr verfügbar. Wählen Sie die Datei erneut aus.',
+        EMPTY_WORKBOOK:
+          'Die Datei enthält keine Elemente. Füllen Sie ab Zeile 8 mindestens eine Zeile aus.',
+        UNKNOWN:
+          'Die Datei konnte nicht geprüft werden. Versuchen Sie es erneut.',
+      },
+      fixAndRetry: 'Korrigieren Sie die Datei und laden Sie sie erneut hoch.',
+    },
     questionPool: {
       createLiveQuiz: 'Live Quiz erstellen',
       createLiveQuizDescription:
