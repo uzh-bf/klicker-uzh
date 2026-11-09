@@ -1,0 +1,133 @@
+{{/*
+Release asset server of one PWA host: the PWA image run as a separate
+Deployment that ingress routes /_next/static to. The image carries the static
+files of the retained earlier releases, so a page of any retained release finds
+its assets while PWA Pods of two releases overlap. Sync wave -1 starts it ahead
+of the PWA Deployment, whose Pods then never lead their own assets.
+Arguments: name (resource name suffix), component, pwa (the PWA values).
+*/}}
+{{- define "chart.releaseAssets" -}}
+{{- $root := .root -}}
+{{- $pwa := .pwa -}}
+{{- $assets := $pwa.releaseAssets -}}
+{{- $name := printf "%s-%s" (include "chart.fullname" $root) .name -}}
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: {{ $name }}
+  labels:
+    {{- include "chart.labels" $root | nindent 4 }}
+    app.kubernetes.io/component: {{ .component }}
+  annotations:
+    argocd.argoproj.io/sync-wave: "-1"
+spec:
+  revisionHistoryLimit: 5
+  strategy:
+    type: RollingUpdate
+    rollingUpdate:
+      maxUnavailable: 0
+  replicas: {{ $assets.replicaCount }}
+  selector:
+    matchLabels:
+      {{- include "chart.selectorLabels" $root | nindent 6 }}
+      app.kubernetes.io/component: {{ .component }}
+  template:
+    metadata:
+      annotations:
+        release: {{ $root.Chart.AppVersion }}
+      labels:
+        {{- include "chart.selectorLabels" $root | nindent 8 }}
+        app.kubernetes.io/component: {{ .component }}
+    spec:
+      priorityClassName: {{ include "chart.fullname" $root }}-{{ $pwa.priorityClassName }}
+      automountServiceAccountToken: false
+      {{- with $pwa.imagePullSecrets }}
+      imagePullSecrets:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
+      {{- with $pwa.podSecurityContext }}
+      securityContext:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
+      containers:
+        - name: {{ .component }}
+          {{- with $pwa.securityContext }}
+          securityContext:
+            {{- toYaml . | nindent 12 }}
+          {{- end }}
+          image: "{{ $pwa.image.repository }}:{{ $root.Values.global.imageTag | default $pwa.image.tag | default $root.Chart.AppVersion }}"
+          imagePullPolicy: {{ $pwa.image.pullPolicy }}
+          ports:
+            - name: http
+              containerPort: 3000
+              protocol: TCP
+          # The release index exists in every image of this chain and answers
+          # without rendering a page, so it needs neither environment nor secrets.
+          livenessProbe:
+            httpGet:
+              path: /_next/static/releases/index.txt
+              port: http
+          readinessProbe:
+            httpGet:
+              path: /_next/static/releases/index.txt
+              port: http
+          resources:
+            {{- toYaml $assets.resources | nindent 12 }}
+      {{- with $assets.nodeSelector }}
+      nodeSelector:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
+      {{- with $assets.affinity }}
+      affinity:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
+      {{- with $assets.tolerations }}
+      tolerations:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: {{ $name }}
+  labels:
+    {{- include "chart.labels" $root | nindent 4 }}
+  annotations:
+    argocd.argoproj.io/sync-wave: "-1"
+spec:
+  type: {{ $pwa.service.type }}
+  ports:
+    - port: {{ $pwa.service.port }}
+      targetPort: http
+      protocol: TCP
+      name: http
+  selector:
+    {{- include "chart.selectorLabels" $root | nindent 4 }}
+    app.kubernetes.io/component: {{ .component }}
+{{- if gt (int $assets.replicaCount) 1 }}
+---
+apiVersion: policy/v1
+kind: PodDisruptionBudget
+metadata:
+  name: {{ $name }}
+  labels:
+    {{- include "chart.labels" $root | nindent 4 }}
+    app.kubernetes.io/component: {{ .component }}
+  annotations:
+    argocd.argoproj.io/sync-wave: "-1"
+spec:
+  minAvailable: 1
+  selector:
+    matchLabels:
+      {{- include "chart.selectorLabels" $root | nindent 6 }}
+      app.kubernetes.io/component: {{ .component }}
+{{- end }}
+{{- end }}
+{{- if .Values.frontendPWA.releaseAssets.enabled }}
+---
+{{ include "chart.releaseAssets" (dict "root" . "name" "frontend-pwa-assets" "component" "frontend-pwa-assets" "pwa" .Values.frontendPWA) }}
+{{- end }}
+{{- if .Values.assessment.frontendPWA.releaseAssets.enabled }}
+---
+{{ include "chart.releaseAssets" (dict "root" . "name" "frontend-assessment-assets" "component" "frontend-assessment-assets" "pwa" .Values.assessment.frontendPWA) }}
+{{- end }}

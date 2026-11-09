@@ -404,6 +404,25 @@ jobs:
         shell: bash
         run: .github/scripts/stg-image-publish-guard.sh
 
+      - name: Resolve the previous release image
+        id: previous_release
+        if: matrix.releaseAssets
+        env:
+          IMAGE: ${{ format('{0}/{1}/{2}-arm', 'ghcr.io', github.repository, matrix.image) }}
+        shell: bash
+        run: |
+          set -euo pipefail
+          # The image at the stg-release SHA is what staging currently runs.
+          # Without a usable image the build starts a fresh asset history.
+          sha="$(git ls-remote origin refs/heads/stg-release | cut -f1)"
+          image=""
+          if [ -n "$sha" ] && docker buildx imagetools inspect "${IMAGE}:${sha}" >/dev/null 2>&1; then
+            image="${IMAGE}:${sha}"
+          else
+            echo "::warning::no image found at the stg-release SHA; building without release history"
+          fi
+          echo "image=${image}" >> "$GITHUB_OUTPUT"
+
       - name: Build and push Docker image
         id: build
         if: github.event_name == 'pull_request' || steps.publish_guard.outputs.publish == 'true'
@@ -419,6 +438,8 @@ jobs:
           # builds the assessment image). These Dockerfiles are the only ones
           # that declare the arguments and a Dockerfile that does not declare
           # one ignores it, so the values ride along with every build leg.
+          # PREVIOUS_IMAGE is the exception: only the targets flagged with
+          # releaseAssets resolve it, and every other leg passes an empty value.
           # All web targets are independent-stage, so they all build here. The
           # workflow publishes from branches only, so the environment stays
           # staging. An empty eLearning origin allowlist makes the embedded
@@ -429,6 +450,7 @@ jobs:
             NEXT_PUBLIC_GROWTHBOOK_API_HOST=${{ vars.NEXT_PUBLIC_GROWTHBOOK_API_HOST_STG }}
             NEXT_PUBLIC_GROWTHBOOK_CLIENT_KEY=${{ vars.NEXT_PUBLIC_GROWTHBOOK_CLIENT_KEY_STG }}
             NEXT_PUBLIC_ELEARNING_EMBED_ORIGINS=${{ vars.NEXT_PUBLIC_ELEARNING_EMBED_ORIGINS_STG }}
+            PREVIOUS_IMAGE=${{ steps.previous_release.outputs.image }}
           # A publication reads and writes only the trusted namespace of the
           # current epoch; a pull request reads and writes only the untrusted
           # one. See the workflow header for the freshness contract.
@@ -855,7 +877,7 @@ jobs:
       issues: read
       pull-requests: read
       packages: write
-    uses: uzh-bf/klicker-uzh/.github/workflows/v3_images-stg-execution.yml@28c21d776517a88bbf981d11e3bde59c50cda483
+    uses: uzh-bf/klicker-uzh/.github/workflows/v3_images-stg-execution.yml@406d9bfa2aa867c57d396f0699d1c6df39107a51
 
   priority-status:
     name: ${{ (vars.PRIORITY_CI_ENABLED == 'true' && github.event_name == 'pull_request' && github.event.pull_request.state == 'open' && github.event.pull_request.draft == false && github.event.repository.private == false && github.event.pull_request.head.repo.full_name == github.repository && github.event.pull_request.user.type != 'Bot' && contains(github.event.pull_request.labels.*.name, 'ci:priority') && (github.event.action != 'labeled' || github.event.label.name == 'ci:priority')) && (github.event.action != 'labeled' || needs.priority-execution.outputs.run_label_event == 'true') && 'build-images-status' || 'build-images-status (priority not admitted)' }}
