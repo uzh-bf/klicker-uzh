@@ -116,6 +116,7 @@ export function markClassifiedAdaptiveRootEstimates(
         levels: runtime.algorithm.levels,
         range: runtime.algorithm.settings.thetaRange,
         mappingRule: runtime.algorithm.settings.levelMappingRule,
+        reachedFrom: runtime.algorithm.settings.levelReachedFrom ?? 0,
         z: runtime.algorithm.settings.classificationZ,
         toleranceBands:
           runtime.algorithm.settings.classificationToleranceBands ?? 0,

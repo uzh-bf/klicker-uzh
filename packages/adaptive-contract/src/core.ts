@@ -36,42 +36,104 @@ export type MappedLevel = LevelDefinition & {
 export function mapLevelsToTheta(
   levels: LevelDefinition[],
   range: ThetaRange = DEFAULT_THETA_RANGE,
-  mappingRule: LevelMappingRule = 'NEAREST'
+  mappingRule: LevelMappingRule = 'NEAREST',
+  /**
+   * "Level reached from" (0 <= x < 1), mirroring the Catalyst kernel: moves the lower boundary of every
+   * level above the first up by x of that level's band, so a level is
+   * reported only once the estimate reaches x of its band. The band of the
+   * top level counts up to the end of the range, where estimates are
+   * clamped, so it stays reachable. 0 keeps the bands of `mappingRule`. Item
+   * positions (`theta`) never move.
+   */
+  reachedFrom = 0
 ): MappedLevel[] {
   const ordered = levels.slice().sort((a, b) => a.order - b.order)
   const span = range.max - range.min
+  const shift = Number.isFinite(reachedFrom)
+    ? Math.min(Math.max(reachedFrom, 0), 0.95)
+    : 0
+  const isMastery = mappingRule === 'MASTERY' && ordered.length > 1
+  const denominator = isMastery
+    ? ordered.length
+    : Math.max(ordered.length - 1, 1)
+  const thetaAt = (index: number) =>
+    ordered.length === 1
+      ? range.min + span / 2
+      : range.min + (span * index) / denominator
+  // Lower boundary of each level under `mappingRule`; the first is open.
+  const baseLower = ordered.map((_, index) =>
+    index === 0
+      ? Number.NEGATIVE_INFINITY
+      : isMastery
+        ? thetaAt(index)
+        : (thetaAt(index) + thetaAt(index - 1)) / 2
+  )
+  const lower = baseLower.map((bound, index) => {
+    if (index === 0 || shift === 0) return bound
+    const upper =
+      index === ordered.length - 1 ? range.max : baseLower[index + 1]!
+    return bound + shift * Math.max(Math.min(upper, range.max) - bound, 0)
+  })
 
-  return ordered.map((level, index) => {
-    const isMastery = mappingRule === 'MASTERY' && ordered.length > 1
-    const denominator = isMastery
-      ? ordered.length
-      : Math.max(ordered.length - 1, 1)
-    const theta =
-      ordered.length === 1
-        ? range.min + span / 2
-        : range.min + (span * index) / denominator
-    const previousTheta = range.min + (span * (index - 1)) / denominator
-    const nextTheta = range.min + (span * (index + 1)) / denominator
-    const lowerBound =
-      index === 0
-        ? Number.NEGATIVE_INFINITY
-        : isMastery
-          ? theta
-          : (theta + previousTheta) / 2
-    const upperBound =
+  return ordered.map((level, index) => ({
+    ...level,
+    theta: thetaAt(index),
+    lowerBound: lower[index]!,
+    upperBound:
       index === ordered.length - 1
         ? Number.POSITIVE_INFINITY
-        : isMastery
-          ? nextTheta
-          : (theta + nextTheta) / 2
+        : lower[index + 1]!,
+  }))
+}
 
-    return {
-      ...level,
-      theta,
-      lowerBound,
-      upperBound,
-    }
-  })
+export type LevelMastery = {
+  /** Order of the plain (unshifted) level band that holds the estimate. */
+  order: number
+  /** How far into that band the estimate lies, 0 at its start, 1 at its end. */
+  share: number
+  /** At or above `masteryFrom` of the band; null when the indicator is off. */
+  mastered: boolean | null
+}
+
+/**
+ * Mastery indication on top of the reported level, for presentation only: a
+ * level counts as mastered once the estimate reaches `masteryFrom` (0 < x < 1)
+ * of its plain band (`mapLevelsToTheta` without "level reached from"). The
+ * open outer bands are closed at the ends of `range`, where estimates are
+ * clamped. 0 switches the indicator off. Never affects estimates, routing,
+ * stopping or the reported level.
+ */
+export function levelMasteryOf({
+  theta,
+  levels,
+  range = DEFAULT_THETA_RANGE,
+  mappingRule = 'NEAREST',
+  masteryFrom,
+}: {
+  theta: number
+  levels: LevelDefinition[]
+  range?: ThetaRange
+  mappingRule?: LevelMappingRule
+  masteryFrom: number
+}): LevelMastery | null {
+  if (!Number.isFinite(theta) || levels.length === 0) return null
+  const bands = mapLevelsToTheta(levels, range, mappingRule)
+  const band =
+    bands.find(({ upperBound }) => theta < upperBound) ?? bands.at(-1)!
+  const lower = Number.isFinite(band.lowerBound) ? band.lowerBound : range.min
+  const upper = Number.isFinite(band.upperBound) ? band.upperBound : range.max
+  const share =
+    upper > lower
+      ? Math.min(Math.max((theta - lower) / (upper - lower), 0), 1)
+      : 1
+  return {
+    order: band.order,
+    share,
+    mastered:
+      Number.isFinite(masteryFrom) && masteryFrom > 0
+        ? share >= masteryFrom - 1e-9
+        : null,
+  }
 }
 
 export function deriveGuessingParameter({

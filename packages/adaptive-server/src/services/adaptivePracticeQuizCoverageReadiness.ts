@@ -93,11 +93,17 @@ export function evaluateAdaptiveCoverageReadiness({
   enabledLeafIds,
   assignmentsByCell,
   requiredItemCount,
+  advisoryOnly = false,
 }: {
   coverages: AdaptiveConfiguredCoverage[]
   enabledLeafIds: ReadonlySet<number>
   assignmentsByCell: ReadonlyMap<string, AdaptiveConfiguredAssignment[]>
   requiredItemCount: number
+  /**
+   * Diagnostic quizzes: empty or thin cells only warn. The engine routes
+   * around levels without questions, so they never block publishing.
+   */
+  advisoryOnly?: boolean
 }): {
   coverages: AdaptiveCoverageReadiness[]
   errors: AdaptiveReadinessIssue[]
@@ -124,11 +130,24 @@ export function evaluateAdaptiveCoverageReadiness({
     })
 
     if (enabledAssignmentCount === 0) {
-      errors.push({
+      ;(advisoryOnly ? warnings : errors).push({
         code: 'ADAPTIVE_COVERAGE_CELL_EMPTY',
-        message:
-          'Every enabled leaf-level coverage cell needs at least one enabled element.',
+        message: advisoryOnly
+          ? 'This enabled leaf-level coverage cell has no enabled element; the quiz asks no questions here.'
+          : 'Every enabled leaf-level coverage cell needs at least one enabled element.',
         parameters: {},
+        path: `coverages.${coverage.id}`,
+        leafNodeId: coverage.leafNodeId,
+        levelId: coverage.levelId,
+      })
+    } else if (!ready && advisoryOnly) {
+      warnings.push({
+        code: 'ADAPTIVE_COVERAGE_BELOW_RECOMMENDED',
+        message: `${requiredItemCount} independent, enabled, scorable elements are recommended in every enabled leaf-level cell; this cell has ${enabledAssignmentCount}.`,
+        parameters: {
+          minimumValue: requiredItemCount,
+          enabledAssignmentCount,
+        },
         path: `coverages.${coverage.id}`,
         leafNodeId: coverage.leafNodeId,
         levelId: coverage.levelId,

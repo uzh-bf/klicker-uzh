@@ -534,55 +534,62 @@ function AdaptivePracticeQuizSetupStep({
                       }
                     />
                   ) : null}
-                  <section data-cy="adaptive-preset-selection">
-                    <label
-                      htmlFor="adaptive-preset"
-                      className="mb-1 block text-sm font-bold"
-                    >
-                      {t('manage.activityWizard.adaptive.settings.preset')}
-                    </label>
-                    <Select
-                      id="adaptive-preset"
-                      value={values.adaptiveConfig.preset}
-                      onChange={(preset) =>
-                        updateConfig(
-                          preset === AdaptivePracticeQuizPreset.Placement
-                            ? applyPlacementPilotDefaults(values.adaptiveConfig)
-                            : {
-                                ...values.adaptiveConfig,
-                                preset: preset as AdaptivePracticeQuizPreset,
-                              }
-                        )
-                      }
-                      items={getAuthorableAdaptivePresets(
-                        values.adaptiveConfig.preset
-                      ).map((preset) => ({
-                        value: preset,
-                        label: t(
-                          preset === AdaptivePracticeQuizPreset.Placement &&
+                  {/* Only while there is a choice: today only the
+                      diagnostic preset can be authored. */}
+                  {getAuthorableAdaptivePresets(values.adaptiveConfig.preset)
+                    .length > 1 ? (
+                    <section data-cy="adaptive-preset-selection">
+                      <label
+                        htmlFor="adaptive-preset"
+                        className="mb-1 block text-sm font-bold"
+                      >
+                        {t('manage.activityWizard.adaptive.settings.preset')}
+                      </label>
+                      <Select
+                        id="adaptive-preset"
+                        value={values.adaptiveConfig.preset}
+                        onChange={(preset) =>
+                          updateConfig(
+                            preset === AdaptivePracticeQuizPreset.Placement
+                              ? applyPlacementPilotDefaults(
+                                  values.adaptiveConfig
+                                )
+                              : {
+                                  ...values.adaptiveConfig,
+                                  preset: preset as AdaptivePracticeQuizPreset,
+                                }
+                          )
+                        }
+                        items={getAuthorableAdaptivePresets(
+                          values.adaptiveConfig.preset
+                        ).map((preset) => ({
+                          value: preset,
+                          label: t(
+                            preset === AdaptivePracticeQuizPreset.Placement &&
+                              values.adaptiveConfig.scaleVersionId
+                              ? 'manage.activityWizard.adaptive.placementPilot.label'
+                              : `manage.activityWizard.adaptive.preset.${preset}`
+                          ),
+                          disabled: !isManageAdaptivePresetSelectable(
+                            preset,
                             values.adaptiveConfig.scaleVersionId
-                            ? 'manage.activityWizard.adaptive.placementPilot.label'
-                            : `manage.activityWizard.adaptive.preset.${preset}`
-                        ),
-                        disabled: !isManageAdaptivePresetSelectable(
-                          preset,
-                          values.adaptiveConfig.scaleVersionId
-                        ),
-                      }))}
-                      data={{ cy: 'adaptive-preset-select' }}
-                    />
-                    {values.adaptiveConfig.preset ===
-                      AdaptivePracticeQuizPreset.Placement &&
-                    values.adaptiveConfig.scaleVersionId ? (
-                      <UserNotification
-                        type="info"
-                        message={t(
-                          'manage.activityWizard.adaptive.placementPilot.notice'
-                        )}
-                        data={{ cy: 'adaptive-placement-pilot-notice' }}
+                          ),
+                        }))}
+                        data={{ cy: 'adaptive-preset-select' }}
                       />
-                    ) : null}
-                  </section>
+                      {values.adaptiveConfig.preset ===
+                        AdaptivePracticeQuizPreset.Placement &&
+                      values.adaptiveConfig.scaleVersionId ? (
+                        <UserNotification
+                          type="info"
+                          message={t(
+                            'manage.activityWizard.adaptive.placementPilot.notice'
+                          )}
+                          data={{ cy: 'adaptive-placement-pilot-notice' }}
+                        />
+                      ) : null}
+                    </section>
+                  ) : null}
                   <AdaptiveHierarchyOverrides
                     nodes={selectedTree.nodes}
                     assignments={selectedTree.elementAssignments}

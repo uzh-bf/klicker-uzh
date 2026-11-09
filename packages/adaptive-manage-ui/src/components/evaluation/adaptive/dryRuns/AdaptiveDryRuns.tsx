@@ -10,6 +10,10 @@ import { Button, H3, UserNotification } from '@uzh-bf/design-system'
 import { useFormatter, useTranslations } from 'next-intl'
 import { useState } from 'react'
 import { twMerge } from 'tailwind-merge'
+import {
+  useVisibleRowsHeight,
+  VISIBLE_ROWS as VISIBLE_RUNS,
+} from '../useVisibleRowsHeight'
 import AdaptiveDryRunForm, { type DryRunFormValues } from './AdaptiveDryRunForm'
 import { formatBias } from './AdaptiveDryRunMetrics'
 import AdaptiveDryRunResult, {
@@ -34,7 +38,9 @@ function AdaptiveDryRuns({ practiceQuizId }: { practiceQuizId: string }) {
   const settingsText = useDryRunSettingsText()
   const [selectedId, setSelectedId] = useState<string | null>(null)
   const [latest, setLatest] = useState<DryRun | null>(null)
-  const [sameStudentsAs, setSameStudentsAs] = useState<DryRun | null>(null)
+  // The form's seed: empty for new random students, or a run's seed to
+  // simulate its students again.
+  const [seed, setSeed] = useState('')
   const [compareIds, setCompareIds] = useState<string[]>([])
   const [comparing, setComparing] = useState(false)
   const { data, loading, error, refetch } = useQuery(
@@ -45,6 +51,10 @@ function AdaptiveDryRuns({ practiceQuizId }: { practiceQuizId: string }) {
     MRunAdaptivePracticeQuizDryRunDocument
   )
   const [deleteDryRun] = useMutation(MDeleteAdaptivePracticeQuizDryRunDocument)
+  // The latest runs; older ones are a scroll away.
+  const runList = useVisibleRowsHeight({
+    rowCount: data?.adaptivePracticeQuizDryRuns?.runs.length ?? 0,
+  })
 
   if (loading && !data) return <Loader />
   if (error) return <UserNotification type="error" message={error.message} />
@@ -99,13 +109,11 @@ function AdaptiveDryRuns({ practiceQuizId }: { practiceQuizId: string }) {
       {workspace.available ? (
         <div id="adaptive-dry-run-form-anchor" className="scroll-mt-20">
           <AdaptiveDryRunForm
-            // Remount so the fields start from the chosen run (or the quiz).
-            key={sameStudentsAs?.id ?? 'new'}
             workspace={workspace}
             loading={runState.loading}
             onRun={start}
-            sameStudentsAs={sameStudentsAs}
-            onNewStudents={() => setSameStudentsAs(null)}
+            seed={seed}
+            onSeedChange={setSeed}
           />
         </div>
       ) : (
@@ -124,8 +132,8 @@ function AdaptiveDryRuns({ practiceQuizId }: { practiceQuizId: string }) {
           practiceQuizId={practiceQuizId}
           run={selected}
           workspace={workspace}
-          onSameStudents={(run) => {
-            setSameStudentsAs(run)
+          onUseSeed={(runSeed) => {
+            setSeed(runSeed)
             document
               .getElementById('adaptive-dry-run-form-anchor')
               ?.scrollIntoView({ behavior: 'smooth', block: 'start' })
@@ -135,9 +143,19 @@ function AdaptiveDryRuns({ practiceQuizId }: { practiceQuizId: string }) {
 
       <div data-cy="adaptive-dry-run-list">
         <div className="mb-2 flex flex-wrap items-center justify-between gap-2">
-          <h4 className="font-semibold">
-            {t('manage.evaluation.adaptive.dryRuns.runs.title')}
-          </h4>
+          <div>
+            <h4 className="font-semibold">
+              {t('manage.evaluation.adaptive.dryRuns.runs.title')}
+            </h4>
+            {runs.length > VISIBLE_RUNS ? (
+              <p className="text-xs text-gray-600">
+                {t('manage.evaluation.adaptive.dryRuns.runs.scrollHint', {
+                  visible: VISIBLE_RUNS,
+                  older: runs.length - VISIBLE_RUNS,
+                })}
+              </p>
+            ) : null}
+          </div>
           <Button
             disabled={compareIds.length !== 2}
             onClick={() => setComparing(!comparing)}
@@ -155,9 +173,14 @@ function AdaptiveDryRuns({ practiceQuizId }: { practiceQuizId: string }) {
             {t('manage.evaluation.adaptive.dryRuns.runs.empty')}
           </p>
         ) : (
-          <div className="overflow-x-auto rounded border border-gray-200">
+          <div
+            ref={runList.ref}
+            className="overflow-auto rounded border border-gray-200"
+            style={runList.height ? { maxHeight: runList.height } : undefined}
+            data-cy="adaptive-dry-run-list-scroll"
+          >
             <table className="w-full min-w-[56rem] text-left text-sm">
-              <thead className="bg-gray-50 text-xs text-gray-700">
+              <thead className="sticky top-0 z-10 bg-gray-50 text-xs text-gray-700">
                 <tr>
                   <th className="px-3 py-2" />
                   <th className="px-3 py-2">
@@ -220,6 +243,10 @@ function AdaptiveDryRuns({ practiceQuizId }: { practiceQuizId: string }) {
                           {t('manage.evaluation.adaptive.dryRuns.runs.spec', {
                             students: run.spec.students,
                             noise: Math.round(run.spec.noiseProbability * 100),
+                            realistic:
+                              run.spec.answerModel === 'REALISTIC'
+                                ? 'yes'
+                                : 'no',
                           })}
                         </div>
                         <div className="text-gray-600">{settingsText(run)}</div>

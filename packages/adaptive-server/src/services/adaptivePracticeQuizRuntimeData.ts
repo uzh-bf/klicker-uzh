@@ -204,6 +204,9 @@ async function prepareAdaptiveRuntime(
     ...((evidence.classificationToleranceBands ?? 0) > 0
       ? { classificationToleranceBands: evidence.classificationToleranceBands }
       : {}),
+    // The stored "level reached from" share is the mastery mark only
+    // (`masteryFrom` below): routing, stopping and reported levels use the
+    // plain bands, so it is never part of the engine settings.
   }
 
   try {
@@ -250,6 +253,11 @@ async function prepareAdaptiveRuntime(
       config,
       tree,
       publication,
+      /** Mastery mark of the reported level (`levelMasteryOf`); 0 = off. */
+      masteryFrom:
+        publication.measurementVersion === DB.AdaptiveMeasurementVersion.IRT_V1
+          ? (evidence.levelReachedFrom ?? 0)
+          : 0,
       pool,
       publishedPool,
       poolById: new Map(pool.map((item) => [item.id, item])),

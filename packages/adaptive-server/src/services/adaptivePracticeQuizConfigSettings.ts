@@ -1,6 +1,7 @@
 import {
   getAdaptivePresetDefaults,
   isValidAdaptiveClassificationToleranceBands,
+  isValidAdaptiveLevelReachedFrom,
   isValidAdaptiveRetakeStartMaxAgeDays,
 } from '@klicker-uzh/adaptive-contract'
 import * as DB from '@klicker-uzh/prisma/client'
@@ -11,6 +12,7 @@ import type { AdaptiveConfiguredSettings } from './adaptivePracticeQuizReadiness
 export type ResolvedPresetSettings = AdaptiveConfiguredSettings & {
   minItemsPerCoverageCell: number
   classificationToleranceBands: number
+  levelReachedFrom: number
   preset: DB.AdaptivePracticeQuizPreset
   attemptSelectionPolicy: DB.AdaptiveAttemptSelectionPolicy
   levelMappingRule: DB.AdaptiveLevelMappingRule
@@ -62,6 +64,17 @@ export function resolvePresetSettings(
     )
   }
 
+  // The placement pilot keeps its fixed plain bands.
+  const levelReachedFrom = pilot
+    ? 0
+    : (input.levelReachedFrom ?? defaults.levelReachedFrom)
+  if (!isValidAdaptiveLevelReachedFrom(levelReachedFrom)) {
+    throw configurationError(
+      'The level-reached share must lie between 0% and 95% of a level.',
+      'ADAPTIVE_LEVEL_REACHED_FROM_INVALID'
+    )
+  }
+
   const retakeStartMaxAgeDays =
     input.retakeStartMaxAgeDays ?? defaults.retakeStartMaxAgeDays
   if (!isValidAdaptiveRetakeStartMaxAgeDays(retakeStartMaxAgeDays)) {
@@ -92,6 +105,7 @@ export function resolvePresetSettings(
       input.minItemsPerCoverageCell ?? defaults.minItemsPerCoverageCell,
     classificationZ: input.classificationZ ?? defaults.classificationZ,
     classificationToleranceBands,
+    levelReachedFrom,
     topInformationRatio: isResearch
       ? (research?.topInformationRatio ?? defaults.topInformationRatio)
       : defaults.topInformationRatio,

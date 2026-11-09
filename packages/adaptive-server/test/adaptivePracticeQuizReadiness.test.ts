@@ -233,19 +233,14 @@ describe('adaptive practice quiz readiness', () => {
   })
 
   it.each([
-    ['PLACEMENT', 0, 'ADAPTIVE_COVERAGE_CELL_EMPTY'],
-    ['PLACEMENT', 1, 'ADAPTIVE_COVERAGE_BELOW_PRODUCT_MINIMUM'],
-    ['PLACEMENT', 4, 'ADAPTIVE_COVERAGE_BELOW_PRODUCT_MINIMUM'],
-    ['PLACEMENT', 5, null],
-    ['PLACEMENT', 6, null],
-    ['DIAGNOSTIC', 0, 'ADAPTIVE_COVERAGE_CELL_EMPTY'],
-    ['DIAGNOSTIC', 1, 'ADAPTIVE_COVERAGE_BELOW_PRODUCT_MINIMUM'],
-    ['DIAGNOSTIC', 4, 'ADAPTIVE_COVERAGE_BELOW_PRODUCT_MINIMUM'],
-    ['DIAGNOSTIC', 5, null],
-    ['DIAGNOSTIC', 6, null],
-  ] as const)('%s requires five usable items per enabled coverage cell (count: %i)', async (preset, itemCount, expectedErrorCode) => {
+    [0, 'ADAPTIVE_COVERAGE_CELL_EMPTY'],
+    [1, 'ADAPTIVE_COVERAGE_BELOW_PRODUCT_MINIMUM'],
+    [4, 'ADAPTIVE_COVERAGE_BELOW_PRODUCT_MINIMUM'],
+    [5, null],
+    [6, null],
+  ] as const)('PLACEMENT requires five usable items per enabled coverage cell (count: %i)', async (itemCount, expectedErrorCode) => {
     const result = await validateAdaptiveQuizReadiness({
-      settings: { ...settings, preset },
+      settings: { ...settings, preset: 'PLACEMENT' },
       nodes: nodes.slice(0, 2),
       coverages: [{ ...coverages[0]!, targetItemCount: 5 }],
       assignments: Array.from({ length: itemCount }, (_, index) =>
@@ -701,68 +696,48 @@ describe('adaptive practice quiz readiness', () => {
   })
 
   it.each([
-    [1, 0, 'ADAPTIVE_COVERAGE_CELL_EMPTY'],
-    [1, 1, null],
-    [3, 2, 'ADAPTIVE_COVERAGE_BELOW_PRODUCT_MINIMUM'],
-    [3, 3, null],
-    [5, 4, 'ADAPTIVE_COVERAGE_BELOW_PRODUCT_MINIMUM'],
-    [5, 5, null],
-  ] as const)('DIAGNOSTIC applies a configured minimum of %i items per coverage cell (count: %i)', async (minimum, itemCount, expectedErrorCode) => {
-    const result = await validateAdaptiveQuizReadiness({
-      settings: {
-        ...settings,
-        preset: 'DIAGNOSTIC',
-        minItemsPerCoverageCell: minimum,
-      },
-      nodes: nodes.slice(0, 2),
-      coverages: [{ ...coverages[0]!, targetItemCount: 1 }],
-      assignments: Array.from({ length: itemCount }, (_, index) =>
-        assignment({
-          id: 100 + index,
-          leafNodeId: 2,
-          elementName: `Reading item ${index + 1}`,
-        })
-      ),
-      levels,
-      thetaRange,
-    })
+    [0, 'ADAPTIVE_COVERAGE_CELL_EMPTY'],
+    [1, 'ADAPTIVE_COVERAGE_BELOW_RECOMMENDED'],
+    [4, 'ADAPTIVE_COVERAGE_BELOW_RECOMMENDED'],
+    [5, null],
+  ] as const)('DIAGNOSTIC only warns about empty or thin coverage cells (count: %i)', async (itemCount, expectedWarningCode) => {
+    // A stored per-quiz minimum no longer applies.
+    for (const minItemsPerCoverageCell of [1, 5]) {
+      const result = await validateAdaptiveQuizReadiness({
+        settings: {
+          ...settings,
+          preset: 'DIAGNOSTIC',
+          minItemsPerCoverageCell,
+        },
+        nodes: nodes.slice(0, 2),
+        coverages: [{ ...coverages[0]!, targetItemCount: 1 }],
+        assignments: Array.from({ length: itemCount }, (_, index) =>
+          assignment({
+            id: 100 + index,
+            leafNodeId: 2,
+            elementName: `Reading item ${index + 1}`,
+          })
+        ),
+        levels,
+        thetaRange,
+      })
 
-    expect(result.ready).toBe(expectedErrorCode === null)
-    expect(result.coverages[0]?.ready).toBe(itemCount >= minimum)
-    if (expectedErrorCode) {
-      expect(result.errors).toContainEqual(
-        expect.objectContaining({ code: expectedErrorCode })
+      expect(
+        result.errors.filter(({ code }) => code.startsWith('ADAPTIVE_COVERAGE'))
+      ).toEqual([])
+      expect(result.coverages[0]?.ready).toBe(itemCount >= 5)
+      const coverageWarnings = result.warnings.filter(({ code }) =>
+        code.startsWith('ADAPTIVE_COVERAGE')
       )
-    }
-    if (expectedErrorCode === 'ADAPTIVE_COVERAGE_BELOW_PRODUCT_MINIMUM') {
-      expect(result.errors).toContainEqual(
-        expect.objectContaining({
-          code: 'ADAPTIVE_COVERAGE_BELOW_PRODUCT_MINIMUM',
-          parameters: {
-            minimumValue: minimum,
-            enabledAssignmentCount: itemCount,
-          },
+      expect(coverageWarnings.map(({ code }) => code)).toEqual(
+        expectedWarningCode ? [expectedWarningCode] : []
+      )
+      if (expectedWarningCode === 'ADAPTIVE_COVERAGE_BELOW_RECOMMENDED')
+        expect(coverageWarnings[0]?.parameters).toEqual({
+          minimumValue: 5,
+          enabledAssignmentCount: itemCount,
         })
-      )
     }
-
-    const advisory = result.warnings.filter(
-      ({ code }) => code === 'ADAPTIVE_COVERAGE_MINIMUM_BELOW_RECOMMENDED'
-    )
-    expect(advisory).toEqual(
-      minimum < 5
-        ? [
-            expect.objectContaining({
-              path: 'minItemsPerCoverageCell',
-              parameters: {
-                field: 'minItemsPerCoverageCell',
-                minimumValue: minimum,
-                maximumValue: 5,
-              },
-            }),
-          ]
-        : []
-    )
   })
 
   it('keeps Research at one item per cell regardless of the configured minimum', async () => {
@@ -836,6 +811,14 @@ describe('adaptive practice quiz readiness', () => {
         minItemsPerCoverageCell: minimum,
       }).map(({ code }) => code)
     ).not.toContain('ADAPTIVE_COVERAGE_CELL_MINIMUM_INVALID')
+  })
+
+  it('accepts no minimum per subcompetence', () => {
+    expect(
+      validateAdaptiveSettings({ ...settings, minQuestionsPerLeaf: 0 }).filter(
+        ({ path }) => path === 'minQuestionsPerLeaf'
+      )
+    ).toEqual([])
   })
 
   it('rejects non-finite and out-of-range planning settings', () => {

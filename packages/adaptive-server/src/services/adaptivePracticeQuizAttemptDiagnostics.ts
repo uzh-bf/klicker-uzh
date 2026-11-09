@@ -78,9 +78,33 @@ const attemptSelect = (reviewerId: string) =>
     },
   }) satisfies DB.Prisma.AdaptivePracticeQuizAttemptSelect
 
+/**
+ * Completed attempts of one algorithm version: the publication (with its
+ * frozen stop settings), the engine build and the estimator implementation
+ * they ran on, and when the first and last of them started.
+ */
+export type AdaptiveAttemptVersion = {
+  publicationVersion: number | null
+  publishedAt: Date | null
+  current: boolean
+  engineRevision: string | null
+  estimatorImplementationVersion: string | null
+  measurementVersion: string
+  attemptCount: number
+  firstStartedAt: Date
+  lastStartedAt: Date
+  totalQuestionCap: number | null
+  minQuestionsPerLeaf: number | null
+  classificationZ: number | null
+  classificationToleranceBands: number | null
+  levelReachedFrom: number | null
+}
+
 export type AdaptiveAttemptDiagnosticsList = {
   levelLabels: string[]
   attempts: AdaptiveDiagnosticSummary[]
+  /** Every algorithm version completed attempts ran on, newest first. */
+  versions: AdaptiveAttemptVersion[]
   earlierPublicationAttemptCount: number
   /** Attempts whose answers still lack stored competence estimates. */
   incompleteEstimateAttemptCount: number
@@ -180,6 +204,71 @@ function buildDiagnostics(
   })
 }
 
+/** Groups all completed attempts of the quiz by algorithm version. */
+export async function loadAdaptiveAttemptVersions(
+  practiceQuizId: string,
+  currentPublicationId: string,
+  prisma: ContextWithUser['prisma']
+): Promise<AdaptiveAttemptVersion[]> {
+  const groups = await prisma.adaptivePracticeQuizAttempt.groupBy({
+    by: [
+      'publicationId',
+      'engineRevision',
+      'estimatorImplementationVersion',
+      'measurementVersion',
+    ],
+    where: {
+      practiceQuizId,
+      status: DB.AdaptivePracticeQuizAttemptStatus.COMPLETED,
+    },
+    _count: { _all: true },
+    _min: { startedAt: true },
+    _max: { startedAt: true },
+  })
+  const publicationIds = [
+    ...new Set(groups.flatMap(({ publicationId }) => publicationId ?? [])),
+  ]
+  const publications = new Map(
+    (
+      await prisma.practiceQuizAdaptivePublication.findMany({
+        where: { id: { in: publicationIds } },
+        select: {
+          id: true,
+          version: true,
+          publishedAt: true,
+          totalQuestionCap: true,
+          evidenceMinimumSnapshot: true,
+        },
+      })
+    ).map((publication) => [publication.id, publication])
+  )
+  return groups
+    .map((group) => {
+      const publication = group.publicationId
+        ? publications.get(group.publicationId)
+        : undefined
+      const evidence = publication?.evidenceMinimumSnapshot
+      return {
+        publicationVersion: publication?.version ?? null,
+        publishedAt: publication?.publishedAt ?? null,
+        current: group.publicationId === currentPublicationId,
+        engineRevision: group.engineRevision,
+        estimatorImplementationVersion: group.estimatorImplementationVersion,
+        measurementVersion: group.measurementVersion,
+        attemptCount: group._count._all,
+        firstStartedAt: group._min.startedAt!,
+        lastStartedAt: group._max.startedAt!,
+        totalQuestionCap: publication?.totalQuestionCap ?? null,
+        minQuestionsPerLeaf: evidence?.minimumResponsesPerLeaf ?? null,
+        classificationZ: evidence?.classificationZ ?? null,
+        classificationToleranceBands:
+          evidence?.classificationToleranceBands ?? null,
+        levelReachedFrom: evidence?.levelReachedFrom ?? null,
+      }
+    })
+    .sort((a, b) => b.lastStartedAt.getTime() - a.lastStartedAt.getTime())
+}
+
 const levelLabelsOf = (runtime: LoadedAdaptiveRuntime) =>
   runtime.algorithm.levels
     .slice()
@@ -194,6 +283,11 @@ export async function getAdaptivePracticeQuizAttemptDiagnostics(
   if (!isAdaptiveTestingInfoEnabled(showSolutions)) return null
   const { runtime, attempts, earlierPublicationAttemptCount } =
     await loadDiagnosticsInput(practiceQuizId, ctx)
+  const versions = await loadAdaptiveAttemptVersions(
+    practiceQuizId,
+    runtime.publication.id,
+    ctx.prisma
+  )
   // Newest first for the table.
   const summaries = buildDiagnostics(runtime, attempts)
     .map(({ summary }) => summary)
@@ -201,6 +295,7 @@ export async function getAdaptivePracticeQuizAttemptDiagnostics(
   return {
     levelLabels: levelLabelsOf(runtime),
     attempts: summaries,
+    versions,
     earlierPublicationAttemptCount,
     incompleteEstimateAttemptCount: summaries.filter(
       ({ estimatesComplete }) => !estimatesComplete

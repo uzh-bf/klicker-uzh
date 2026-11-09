@@ -1,20 +1,34 @@
+import { Label } from '@uzh-bf/design-system'
 import { useTranslations } from 'next-intl'
 import { type DryRunSummary, percent } from './adaptiveDryRunTypes'
 
+const R = 'manage.evaluation.adaptive.dryRuns.result'
+
 function Tile({
   label,
+  tooltip,
   value,
   hint,
   cy,
 }: {
   label: string
+  tooltip: string
   value: string
   hint?: string
   cy: string
 }) {
   return (
     <div className="rounded border border-gray-200 px-3 py-2" data-cy={cy}>
-      <div className="text-xs text-gray-600">{label}</div>
+      <Label
+        label={label}
+        tooltip={tooltip}
+        showTooltipSymbol
+        tooltipSymbolSize="sm"
+        className={{
+          root: 'text-xs font-normal text-gray-600',
+          tooltip: 'max-w-80 text-sm',
+        }}
+      />
       <div className="text-xl font-semibold tabular-nums">{value}</div>
       {hint ? <div className="text-xs text-gray-500">{hint}</div> : null}
     </div>
@@ -30,32 +44,37 @@ function AdaptiveDryRunMetrics({ summary }: { summary: DryRunSummary }) {
   return (
     <div className="grid grid-cols-[repeat(auto-fit,minmax(10rem,1fr))] gap-2">
       <Tile
-        label={t('manage.evaluation.adaptive.dryRuns.result.exact')}
+        label={t(`${R}.exact`)}
+        tooltip={t(`${R}.exactTooltip`)}
         value={percent(metrics.exactShare)}
         cy="adaptive-dry-run-metric-exact"
       />
       <Tile
-        label={t('manage.evaluation.adaptive.dryRuns.result.withinOne')}
+        label={t(`${R}.withinOne`)}
+        tooltip={t(`${R}.withinOneTooltip`)}
         value={percent(metrics.withinOneShare)}
         cy="adaptive-dry-run-metric-within-one"
       />
       <Tile
-        label={t('manage.evaluation.adaptive.dryRuns.result.bias')}
+        label={t(`${R}.bias`)}
+        tooltip={t(`${R}.biasTooltip`)}
         value={formatBias(metrics.bias)}
-        hint={t('manage.evaluation.adaptive.dryRuns.result.biasHint')}
+        hint={t(`${R}.biasHint`)}
         cy="adaptive-dry-run-metric-bias"
       />
       <Tile
-        label={t('manage.evaluation.adaptive.dryRuns.result.questions')}
+        label={t(`${R}.questions`)}
+        tooltip={t(`${R}.questionsTooltip`)}
         value={questions.mean.toFixed(1)}
-        hint={t('manage.evaluation.adaptive.dryRuns.result.questionsHint', {
+        hint={t(`${R}.questionsHint`, {
           median: questions.median,
           max: questions.max,
         })}
         cy="adaptive-dry-run-metric-questions"
       />
       <Tile
-        label={t('manage.evaluation.adaptive.dryRuns.result.determined')}
+        label={t(`${R}.determined`)}
+        tooltip={t(`${R}.determinedTooltip`)}
         value={percent(metrics.determinedShare)}
         cy="adaptive-dry-run-metric-determined"
       />

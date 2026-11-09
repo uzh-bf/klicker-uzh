@@ -242,7 +242,7 @@ export function summarizeAdaptiveDryRun({
 /** Compact per-student rows stored with a run. */
 export function toAdaptiveDryRunStudent(student: {
   index: number
-  trueLevels: Array<{ nodeId: number; levelId: number }>
+  trueLevels: Array<{ nodeId: number; levelId: number; theta?: number }>
   answers: DryRunStudent['answers']
   stopReason: string
   questionCount: number

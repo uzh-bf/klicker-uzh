@@ -632,6 +632,7 @@ function buildEvidenceMinimumSnapshot(
       ? {
           classificationToleranceBands:
             prepared.config.classificationToleranceBands,
+          levelReachedFrom: prepared.config.levelReachedFrom,
         }
       : {}),
     topInformationRatio: prepared.config.topInformationRatio,

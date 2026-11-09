@@ -8,9 +8,11 @@ import Loader from '@klicker-uzh/shared-components/src/Loader'
 import { Button, H3, Select, UserNotification } from '@uzh-bf/design-system'
 import { useFormatter, useTranslations } from 'next-intl'
 import { useState } from 'react'
+import { useVisibleRowsHeight, VISIBLE_ROWS } from '../useVisibleRowsHeight'
 import AdaptiveAttemptAccuracy from './AdaptiveAttemptAccuracy'
 import AdaptiveAttemptDiagnosticDetail from './AdaptiveAttemptDiagnosticDetail'
 import AdaptiveAttemptRating from './AdaptiveAttemptRating'
+import AdaptiveAttemptVersions from './AdaptiveAttemptVersions'
 import {
   type AdaptiveAttemptSummaryData,
   buildAttemptAnswersCsv,
@@ -61,6 +63,17 @@ function AdaptiveAttemptDiagnostics({
   const [backfill, backfillState] = useMutation(
     MBackfillAdaptivePracticeQuizAttemptEstimatesDocument
   )
+  // The latest attempts (newest first); older ones are a scroll away, and an
+  // opened attempt adds its detail to the height.
+  const attemptCount =
+    data?.adaptivePracticeQuizAttemptDiagnostics?.attempts.filter((attempt) =>
+      matchesFilter(attempt, filter)
+    ).length ?? 0
+  const attemptList = useVisibleRowsHeight({
+    rowCount: attemptCount,
+    rowSelector: 'tbody tr[data-attempt-row]',
+    expandedSelector: 'tbody tr[data-attempt-detail]',
+  })
 
   if (loading && !data) return <Loader />
   if (error) {
@@ -120,6 +133,7 @@ function AdaptiveAttemptDiagnostics({
       </div>
 
       <AdaptiveAttemptAccuracy accuracy={diagnostics.accuracy} />
+      <AdaptiveAttemptVersions versions={diagnostics.versions} />
 
       {diagnostics.incompleteEstimateAttemptCount > 0 ? (
         <div
@@ -167,14 +181,29 @@ function AdaptiveAttemptDiagnostics({
         </p>
       ) : null}
 
+      {attempts.length > VISIBLE_ROWS ? (
+        <p className="mb-1 text-xs text-gray-600">
+          {t('manage.evaluation.adaptive.attemptDiagnostics.scrollHint', {
+            visible: VISIBLE_ROWS,
+            older: attempts.length - VISIBLE_ROWS,
+          })}
+        </p>
+      ) : null}
       {attempts.length === 0 ? (
         <p className="text-sm text-gray-600">
           {t('manage.evaluation.adaptive.attemptDiagnostics.empty')}
         </p>
       ) : (
-        <div className="overflow-x-auto rounded border border-gray-200">
+        <div
+          ref={attemptList.ref}
+          className="overflow-auto rounded border border-gray-200"
+          style={
+            attemptList.height ? { maxHeight: attemptList.height } : undefined
+          }
+          data-cy="adaptive-attempts-scroll"
+        >
           <table className="w-full min-w-[60rem] text-left text-sm">
-            <thead className="bg-gray-50 text-xs text-gray-700">
+            <thead className="sticky top-0 z-10 bg-gray-50 text-xs text-gray-700">
               <tr>
                 <th className="px-3 py-2">
                   {t('manage.evaluation.adaptive.attemptDiagnostics.attempt')}
@@ -216,6 +245,7 @@ function AdaptiveAttemptDiagnostics({
                       setOpenCode(open ? null : attempt.attemptCode)
                     }
                     aria-expanded={open}
+                    data-attempt-row
                     data-cy={`adaptive-attempt-row-${attempt.attemptCode}`}
                   >
                     <td className="px-3 py-2 font-mono text-xs">
@@ -285,7 +315,10 @@ function AdaptiveAttemptDiagnostics({
                     </td>
                   </tr>,
                   open ? (
-                    <tr key={`${attempt.attemptCode}-detail`}>
+                    <tr
+                      key={`${attempt.attemptCode}-detail`}
+                      data-attempt-detail
+                    >
                       <td colSpan={7} className="bg-gray-50 px-3 py-4">
                         <AdaptiveAttemptDiagnosticDetail
                           practiceQuizId={practiceQuizId}

@@ -132,6 +132,7 @@ export function createAdaptiveV1LevelDetermination({
           levels: runtime.algorithm.levels,
           range: settings.thetaRange,
           mappingRule: settings.levelMappingRule,
+          reachedFrom: settings.levelReachedFrom ?? 0,
           z: settings.classificationZ,
           toleranceBands: settings.classificationToleranceBands ?? 0,
         })
