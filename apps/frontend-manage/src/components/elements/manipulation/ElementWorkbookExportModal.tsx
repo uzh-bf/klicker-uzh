@@ -143,16 +143,22 @@ function ElementWorkbookExportModal({
                   count: unsupported.length,
                 })}
               </div>
-              <ul className="list-inside list-disc">
-                {unsupported.map((element) => (
-                  <li key={element.id}>
-                    {element.name} ·{' '}
-                    {t(
-                      `manage.elementWorkbook.unsupportedReason.${element.reason}`
-                    )}
-                  </li>
-                ))}
-              </ul>
+              {[...new Set(unsupported.map((element) => element.reason))].map(
+                (reason) => (
+                  <div key={reason} className="mt-2">
+                    <p>
+                      {t(`manage.elementWorkbook.unsupportedReason.${reason}`)}
+                    </p>
+                    <ul className="list-inside list-disc">
+                      {unsupported
+                        .filter((element) => element.reason === reason)
+                        .map((element) => (
+                          <li key={element.id}>{element.name}</li>
+                        ))}
+                    </ul>
+                  </div>
+                )
+              )}
             </div>
           </UserNotification>
         )}

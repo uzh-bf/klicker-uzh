@@ -415,8 +415,8 @@ function Index() {
 
         <div className="flex min-w-0 w-full flex-1 flex-col">
           <>
-            <div className="flex flex-none flex-row content-center items-end justify-between pb-2.5">
-              <div className="flex min-w-0 flex-1 flex-row flex-wrap items-center gap-1.5">
+            <div className="flex flex-none flex-row flex-wrap content-center items-end justify-between gap-2 pb-2.5">
+              <div className="flex min-w-80 flex-1 flex-row flex-wrap items-center gap-1.5">
                 <ElementListSelectAllCheckbox
                   elements={elements}
                   selectedElements={selectedElements}
@@ -435,7 +435,7 @@ function Index() {
                 />
               </div>
 
-              <div className="flex flex-row items-center gap-2">
+              <div className="flex flex-row flex-wrap items-center justify-end gap-2">
                 {!creationMode && Object.keys(selectedElements).length > 0 ? (
                   <Button
                     className={{ root: 'h-9' }}
