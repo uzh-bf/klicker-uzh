@@ -12,13 +12,24 @@ query QAdaptivePracticeQuizDryRuns($practiceQuizId: String!) {
       nodeId
       name
     }
+    subcompetences {
+      nodeId
+      rootId
+      name
+    }
     items {
       poolItemId
       elementName
       levelId
+      rootId
       nodeNames
     }
     defaults
+    scale {
+      thetaMin
+      thetaMax
+      levelMappingRule
+    }
     maxStudents
     maxDecisions
     runs {

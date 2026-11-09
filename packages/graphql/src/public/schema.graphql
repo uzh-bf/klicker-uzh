@@ -435,12 +435,25 @@ type AdaptiveDryRunItem {
   levelId: Int!
   nodeNames: [String!]!
   poolItemId: Int!
+  rootId: Int!
 }
 
 type AdaptiveDryRunLevel {
   id: Int!
   label: String!
   order: Int!
+}
+
+type AdaptiveDryRunScale {
+  levelMappingRule: String!
+  thetaMax: Float!
+  thetaMin: Float!
+}
+
+type AdaptiveDryRunSubcompetence {
+  name: String!
+  nodeId: Int!
+  rootId: Int!
 }
 
 type AdaptiveDryRunWorkspace {
@@ -453,6 +466,8 @@ type AdaptiveDryRunWorkspace {
   maxStudents: Int!
   publicationId: String
   runs: [AdaptiveDryRun!]!
+  scale: AdaptiveDryRunScale
+  subcompetences: [AdaptiveDryRunSubcompetence!]!
   unavailableReason: String
 }
 

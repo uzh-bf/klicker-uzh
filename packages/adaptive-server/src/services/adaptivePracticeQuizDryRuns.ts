@@ -11,6 +11,7 @@ import type { ContextWithUser } from '@klicker-uzh/graphql/adaptive-context-type
 import * as DB from '@klicker-uzh/prisma/client'
 import {
   summarizeAdaptiveDryRun,
+  summarizeAdaptiveDryRunSubcompetences,
   toAdaptiveDryRunStudent,
 } from './adaptivePracticeQuizDryRunSummary.js'
 import { adaptivePracticeQuizError } from './adaptivePracticeQuizErrors.js'
@@ -66,13 +67,21 @@ export type AdaptiveDryRunWorkspace = {
   publicationId: string | null
   levels: Array<{ id: number; label: string; order: number }>
   competences: Array<{ nodeId: number; name: string }>
+  subcompetences: Array<{ nodeId: number; rootId: number; name: string }>
   items: Array<{
     poolItemId: number
     elementName: string
     levelId: number
+    rootId: number
     nodeNames: string[]
   }>
   defaults: PrismaJson.PrismaAdaptiveDryRunSettings | null
+  /** Level bands of the publication, for presentation (positions, hints). */
+  scale: {
+    thetaMin: number
+    thetaMax: number
+    levelMappingRule: string
+  } | null
   maxStudents: number
   maxDecisions: number
   runs: AdaptiveDryRunRecord[]
@@ -163,14 +172,29 @@ export async function getAdaptivePracticeQuizDryRuns(
           nodeId: id,
           name: nodeNames.get(id) ?? `#${id}`,
         })) ?? [],
+    subcompetences: runtime
+      ? dryRunLeaves(runtime).map(({ nodeId, rootId }) => ({
+          nodeId,
+          rootId,
+          name: nodeNames.get(nodeId) ?? `#${nodeId}`,
+        }))
+      : [],
     items:
       runtime?.publishedPool.map((item) => ({
         poolItemId: item.id,
         elementName: item.elementName,
         levelId: item.levelId,
+        rootId: item.nodePath[0]!,
         nodeNames: [...item.nodeNamePath],
       })) ?? [],
     defaults: runtime ? settingsOf(runtime) : null,
+    scale: runtime
+      ? {
+          thetaMin: runtime.algorithm.settings.thetaRange.min,
+          thetaMax: runtime.algorithm.settings.thetaRange.max,
+          levelMappingRule: runtime.algorithm.settings.levelMappingRule,
+        }
+      : null,
     maxStudents: ADAPTIVE_DRY_RUN_MAX_STUDENTS,
     maxDecisions: ADAPTIVE_DRY_RUN_MAX_DECISIONS,
     runs: runs.map((run) => ({ ...run, students: null })),
@@ -199,6 +223,41 @@ export async function deleteAdaptivePracticeQuizDryRun(
     where: { id, practiceQuizId },
   })
   return count > 0
+}
+
+/** Enabled leaves (subcompetences) with their root competence. */
+function dryRunLeaves(runtime: LoadedAdaptiveRuntime) {
+  const nodes = runtime.algorithm.nodes
+  const byId = new Map(nodes.map((node) => [node.id, node]))
+  const parents = new Set(nodes.map(({ parentId }) => parentId))
+  const rootOf = (id: number): number => {
+    const parentId = byId.get(id)?.parentId ?? null
+    return parentId === null ? id : rootOf(parentId)
+  }
+  const enabledPath = (id: number): boolean => {
+    const node = byId.get(id)
+    if (!node?.enabled) return false
+    return node.parentId === null || enabledPath(node.parentId)
+  }
+  // Tree order (depth first, siblings by order), as in the tree editor.
+  const children = (parentId: number | null) =>
+    nodes
+      .filter((node) => node.parentId === parentId)
+      .sort((a, b) => a.order - b.order)
+  const ordered: typeof nodes = []
+  const visit = (parentId: number | null) => {
+    for (const node of children(parentId)) {
+      ordered.push(node)
+      visit(node.id)
+    }
+  }
+  visit(null)
+  return ordered
+    .filter(
+      ({ id, parentId }) =>
+        parentId !== null && !parents.has(id) && enabledPath(id)
+    )
+    .map(({ id }) => ({ nodeId: id, rootId: rootOf(id) }))
 }
 
 function invalidInput(message: string) {
@@ -346,14 +405,32 @@ export async function runAdaptivePracticeQuizDryRun(
   )
   const request = buildAdaptiveDryRunRequest(runtime, spec, settings)
   const startedAt = now()
-  const response = await runEngine(request)
+  const parts = splitAdaptiveDryRunRequest(request)
+  const responses: DryRunResponse[] = []
+  // Two parts at a time leave engine workers free for real attempts.
+  for (let i = 0; i < parts.length; i += DRY_RUN_PARALLEL_PARTS)
+    responses.push(
+      ...(await Promise.all(
+        parts.slice(i, i + DRY_RUN_PARALLEL_PARTS).map(runEngine)
+      ))
+    )
   const durationMs = Math.max(0, Math.round(now() - startedAt))
-  const students = response.students.map(toAdaptiveDryRunStudent)
-  const summary = summarizeAdaptiveDryRun({
-    students,
-    levels: runtime.algorithm.levels,
-    poolSize: runtime.algorithm.pool.length,
-  })
+  const students = responses
+    .flatMap((response) => response.students)
+    .map(toAdaptiveDryRunStudent)
+  const summary = {
+    ...summarizeAdaptiveDryRun({
+      students,
+      levels: runtime.algorithm.levels,
+      poolSize: runtime.algorithm.pool.length,
+    }),
+    subcompetences: summarizeAdaptiveDryRunSubcompetences({
+      students,
+      levels: runtime.algorithm.levels,
+      leaves: dryRunLeaves(runtime),
+      pool: runtime.algorithm.pool,
+    }),
+  }
 
   // Run numbers count up per quiz; the unique key settles concurrent runs.
   const latest = await ctx.prisma.adaptivePracticeQuizDryRun.findFirst({
@@ -376,6 +453,33 @@ export async function runAdaptivePracticeQuizDryRun(
     },
     select: { ...runSelect, students: true },
   })
+}
+
+// Decision cost grows with the tree and pool (200 x 100 on a 1,200-item,
+// 60-subcompetence tree takes ~17 s), so a run is sent in parts that stay well
+// inside the engine's 10 s worker deadline. Parts number their students from
+// `firstStudent`, so the result equals one unsplit run.
+const DRY_RUN_DECISIONS_PER_PART = 2500
+const DRY_RUN_PARALLEL_PARTS = 2
+
+export function splitAdaptiveDryRunRequest(
+  request: DryRunRequest
+): DryRunRequest[] {
+  const perPart = Math.max(
+    1,
+    Math.floor(DRY_RUN_DECISIONS_PER_PART / request.settings.totalQuestionCap)
+  )
+  const parts: DryRunRequest[] = []
+  for (let first = 0; first < request.dryRun.students; first += perPart)
+    parts.push({
+      ...request,
+      dryRun: {
+        ...request.dryRun,
+        firstStudent: first,
+        students: Math.min(perPart, request.dryRun.students - first),
+      },
+    })
+  return parts
 }
 
 async function defaultEngineRunner(request: DryRunRequest) {

@@ -470,6 +470,13 @@ export const ADAPTIVE_DRY_RUN_MAX_DECISIONS = 20000
 export const dryRunSpecSchema = z
   .object({
     students: z.number().int().min(1).max(ADAPTIVE_DRY_RUN_MAX_STUDENTS),
+    // Large runs are sent in parts; a part numbers its students from here.
+    firstStudent: z
+      .number()
+      .int()
+      .min(0)
+      .max(ADAPTIVE_DRY_RUN_MAX_STUDENTS - 1)
+      .optional(),
     seed: z.string().regex(/^[a-f0-9]{64}$/),
     noiseProbability: finite.min(0).max(0.5),
     trueLevels: z.discriminatedUnion('kind', [
@@ -520,7 +527,9 @@ export const dryRunRequestSchema = z
       reject('Invalid dry-run levels')
     if (
       dryRun.students * request.settings.totalQuestionCap >
-      ADAPTIVE_DRY_RUN_MAX_DECISIONS
+        ADAPTIVE_DRY_RUN_MAX_DECISIONS ||
+      (dryRun.firstStudent ?? 0) + dryRun.students >
+        ADAPTIVE_DRY_RUN_MAX_STUDENTS
     )
       reject('Dry run is too large')
   })
