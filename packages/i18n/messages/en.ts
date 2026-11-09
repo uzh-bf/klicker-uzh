@@ -3272,6 +3272,7 @@ Since the KlickerUZH app is not yet available in the iOS App Store, follow these
           ATTENTION: 'Needs attention',
           ACCEPTED: 'Kept',
           REJECTED: 'Discarded',
+          REVISION_REQUESTED: 'Revision requested',
         },
         recoverLegacy: 'Recover accepted elements',
         summary: '{total} total · {accepted} accepted · {open} still undecided',

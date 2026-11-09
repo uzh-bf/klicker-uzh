@@ -1,9 +1,11 @@
 import * as DB from '@klicker-uzh/prisma/client'
 import type {
   ElementGenerationSlotFailure,
+  ElementGenerationSlotSpecification,
   GeneratedFlashcard,
   GeneratedQuestionWithProvenance,
   QuestionGenerationArtifactRef,
+  QuestionGenerationDesignSummary,
   QuestionGenerationPlanSummary,
 } from '@klicker-uzh/types'
 import type { ContextWithUser } from '../lib/context.js'
@@ -35,6 +37,9 @@ type QuestionElementGenerationCompletionInput = {
   // summary so the reviewing client can serve the attention cards without
   // downloading the result manifest again.
   slotFailures?: ElementGenerationSlotFailure[]
+  // Present when the worker's result provided slot specifications; builds from
+  // an older worker keep the design summary as it is.
+  slotSpecifications?: ElementGenerationSlotSpecification[]
   resultManifestArtifact: QuestionGenerationArtifactRef
   finalBankArtifact: QuestionGenerationArtifactRef
   questionProvenanceIndexArtifact: QuestionGenerationArtifactRef | null
@@ -61,6 +66,42 @@ function draftError(message: string): never {
   throw questionGenerationServiceError('DRAFT_INVALID', message)
 }
 
+// Stores each slot's specification beside its design slot summary. A
+// specification for a slot the design does not list is a contract violation.
+// Returns null when there is nothing to store, so callers keep the summary.
+export function withSlotSpecifications(
+  designSummary: QuestionGenerationDesignSummary | null,
+  specifications: ElementGenerationSlotSpecification[] | undefined
+): QuestionGenerationDesignSummary | null {
+  if (!specifications || specifications.length === 0) return null
+  if (!designSummary) {
+    return draftError('Slot specifications require a design summary')
+  }
+  const bySlot = new Map(
+    specifications.map((specification) => [
+      specification.question_id,
+      specification,
+    ])
+  )
+  if (
+    specifications.some(
+      (specification) =>
+        !designSummary.slots.some(
+          (slot) => slot.sourceQuestionId === specification.question_id
+        )
+    )
+  ) {
+    return draftError('Slot specifications do not match the design slots')
+  }
+  return {
+    ...designSummary,
+    slots: designSummary.slots.map((slot) => {
+      const specification = bySlot.get(slot.sourceQuestionId)
+      return specification ? { ...slot, specification } : slot
+    }),
+  }
+}
+
 export async function completeElementGeneration(
   input: CompleteElementGenerationInput,
   ctx: ContextWithUser
@@ -81,7 +122,11 @@ export async function completeElementGeneration(
               status: { in: FLASHCARD_COMPLETION_STATUSES },
               syncLeaseOwner: input.leaseOwner,
             },
-      select: { elementType: true, planSummary: true },
+      select: {
+        elementType: true,
+        planSummary: true,
+        designSummary: true,
+      },
     })
     if (!build) {
       throw questionGenerationServiceError(
@@ -103,6 +148,13 @@ export async function completeElementGeneration(
       )
     }
 
+    const slotSpecificationSummary =
+      input.kind === 'questions'
+        ? withSlotSpecifications(
+            build.designSummary as QuestionGenerationDesignSummary | null,
+            input.slotSpecifications
+          )
+        : null
     const completion =
       input.kind === 'questions'
         ? {
@@ -110,8 +162,8 @@ export async function completeElementGeneration(
             // stores its per-slot attention cards alongside the reviewed Plan
             // so the build query can serve them without re-reading the result
             // manifest; a strict run leaves the summary untouched.
-            summaryData:
-              input.slotFailures && input.slotFailures.length > 0
+            summaryData: {
+              ...(input.slotFailures && input.slotFailures.length > 0
                 ? {
                     planSummary: {
                       ...((build.planSummary ??
@@ -119,7 +171,11 @@ export async function completeElementGeneration(
                       slotFailures: input.slotFailures,
                     },
                   }
-                : {},
+                : {}),
+              ...(slotSpecificationSummary
+                ? { designSummary: slotSpecificationSummary }
+                : {}),
+            },
             draftData: input.questions.map((question, order) => {
               const { provenance, ...original } = question
               return {

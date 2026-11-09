@@ -80,6 +80,7 @@ function draftContext(fullDraft: ReturnType<typeof storedDraft>) {
   const updateMany = vi.fn(async () => ({ count: 1 }))
   const transaction = {
     $queryRaw: vi.fn(async () => []),
+    elementGenerationBuild: { count: vi.fn(async () => 0) },
     generatedElementDraft: {
       findFirst: vi.fn(async () => fullDraft),
       updateMany,

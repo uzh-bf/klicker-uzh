@@ -280,6 +280,56 @@ export type ElementGenerationPlanSummary = {
   warnings: ElementGenerationWarning[]
 }
 
+// The self-contained inputs a slot needs to be reworked after the build's
+// blob artifacts are gone (ADR 0057), stored as the worker emitted them
+// (slot specification v1). Everything except `evidence` and the assertion text
+// is ids and design settings; those two follow their knowledge base.
+export type ElementGenerationSlotSpecification = {
+  question_id: string
+  design_slot_id: string
+  module_id: string
+  module_name: string
+  objective_id: string | null
+  objective_source: string | null
+  learning_objective: string
+  topic_targets: unknown[]
+  item_format: string
+  bloom_level: string
+  content_type: string
+  difficulty_scale: number
+  difficulty_mechanism: string
+  planned_true_count: number | null
+  permitted_aids: unknown
+  evidence_target: string | null
+  focus_topic?: string | null
+  points?: number | null
+  question_kind: string
+  difficulty_label: string
+  graph_resolution: Record<string, unknown>
+  evidence: Array<Record<string, unknown>>
+  assertions: Array<{
+    id: string
+    version: number | string
+    statement: string | null
+    rationale: string | null
+  }>
+}
+
+// Drops the evidence records and the assertion text, keeping assertion ids.
+export function clearSlotSpecificationEvidence(
+  specification: ElementGenerationSlotSpecification
+): ElementGenerationSlotSpecification {
+  return {
+    ...specification,
+    evidence: [],
+    assertions: specification.assertions.map((assertion) => ({
+      ...assertion,
+      statement: null,
+      rationale: null,
+    })),
+  }
+}
+
 export const ELEMENT_GENERATION_CAPABILITIES = {
   elementTypes: ['SC', 'MC', 'KPRIM', 'FLASHCARD'],
   languages: ['de', 'en'],

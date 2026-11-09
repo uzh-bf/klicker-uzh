@@ -1317,6 +1317,7 @@ describe('question-generation artifact normalization', () => {
       reviewRequiredQuestions: 0,
       reviewRequiredQuestionIds: [],
       slotFailures: [],
+      slotSpecifications: null,
       legacyCompleted: false,
       rejectedAt: null,
       reviewedBy: null,

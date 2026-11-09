@@ -2137,6 +2137,7 @@ enum GeneratedElementDecision {
   ACCEPTED
   OPEN
   REJECTED
+  REVISION_REQUESTED
 }
 
 type GeneratedElementDraft {
@@ -3906,6 +3907,7 @@ type SelectionInstanceEvaluation {
 input SetGeneratedElementDecisionInput {
   decision: GeneratedElementDecision!
   draftId: ID!
+  note: String
 }
 
 type SharingRequestResponse {

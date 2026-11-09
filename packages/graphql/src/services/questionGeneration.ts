@@ -2,6 +2,7 @@ import { createHash, randomUUID } from 'node:crypto'
 import * as DB from '@klicker-uzh/prisma/client'
 import type {
   ElementGenerationSlotFailure,
+  ElementGenerationSlotSpecification,
   ElementManipulationInput,
   GeneratedQuestionEditable,
   QuestionGenerationArtifactRef,
@@ -46,6 +47,7 @@ import {
   parseQuestionGenerationPlan,
   parseQuestionGenerationProvenanceClaims,
   parseQuestionGenerationProvenanceIndex,
+  parseQuestionGenerationSlotSpecifications,
   parseQuestionGenerationResult,
   type QuestionGenerationGraphLineage,
   type QuestionGenerationProvenanceAuthority,
@@ -940,6 +942,28 @@ async function synchronizeLeasedBuild(
             questions
           )
         }
+        let slotSpecifications: ElementGenerationSlotSpecification[] | undefined
+        if (result.slotSpecifications) {
+          if (
+            result.slotSpecifications.containerName !==
+              runtime.questionOutputContainer ||
+            result.slotSpecifications.blobName !==
+              elementGenerationOutputBlobName(
+                runtime,
+                build.id,
+                'slot-specifications.json'
+              )
+          ) {
+            return serviceError(
+              'ARTIFACT_INVALID',
+              'Question-generation result has invalid slot specification coordinates'
+            )
+          }
+          slotSpecifications = parseQuestionGenerationSlotSpecifications(
+            await runtime.downloadVerified(result.slotSpecifications),
+            questions.map((question) => question.sourceQuestionId)
+          )
+        }
         await completeElementGeneration(
           {
             kind: 'questions',
@@ -952,6 +976,7 @@ async function synchronizeLeasedBuild(
                 : 'completed',
             unresolvedElementCount: result.slotFailures.length,
             slotFailures: result.slotFailures,
+            ...(slotSpecifications ? { slotSpecifications } : {}),
             resultManifestArtifact: artifact.ref,
             finalBankArtifact: finalQuestions,
             questionProvenanceIndexArtifact: provenanceIndex,
