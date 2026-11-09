@@ -639,7 +639,10 @@ describe('initial Element completion', () => {
         ...context(),
         user: { sub: ownerId },
         elementGenerationRuntime: runtime,
-        featureFlags: { getAiBetaDecision: () => 'enabled' },
+        featureFlags: {
+          getAiBetaDecision: () => 'enabled',
+          isEnabled: (key: string) => key === 'question-generation',
+        },
       } as unknown as ContextWithUser)
     } finally {
       errorLog.mockRestore()
