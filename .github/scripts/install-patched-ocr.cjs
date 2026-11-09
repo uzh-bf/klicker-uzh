@@ -9,6 +9,7 @@ const path = require('node:path')
 const SOURCE_COMMIT = '1672852136fc87748249d22bce0819f33419ea79'
 const SOURCE_SHA256 =
   'a1378ddc336bb874349ad47ad370fdf725e8db1dd03753d7df73347342ae093f'
+const GO_VERSION = '1.26.9'
 const PATCH_PATH = path.resolve(
   __dirname,
   '../open-code-review/ocr-compression.patch'
@@ -43,23 +44,7 @@ function install(directory, archive) {
   if (!directory || !path.isAbsolute(directory)) {
     throw new Error('An absolute installation directory is required')
   }
-  const toolCache = process.env.RUNNER_TOOL_CACHE
-  if (toolCache !== undefined && !path.isAbsolute(toolCache)) {
-    throw new Error('The runner tool cache must be an absolute path')
-  }
-  const go = toolCache
-    ? path.join(toolCache, 'go', '1.26.9', process.arch, 'bin', 'go')
-    : process.platform === 'darwin'
-      ? process.arch === 'arm64'
-        ? '/opt/homebrew/bin/go'
-        : '/usr/local/bin/go'
-      : '/usr/local/go/bin/go'
-  const env = {
-    ...process.env,
-    PATH: `${path.dirname(go)}:/usr/bin:/bin`,
-    GOTOOLCHAIN: 'local',
-    GOFLAGS: '-mod=readonly',
-  }
+  const env = { ...process.env, GOTOOLCHAIN: 'local', GOFLAGS: '-mod=readonly' }
   delete env.MISTRAL_API_KEY
   delete env.OCR_LLM_TOKEN
   delete env.GH_TOKEN
@@ -71,19 +56,19 @@ function install(directory, archive) {
       timeout: 10 * 60 * 1000,
       ...options,
     })
-  const goVersion = execFileSync(go, ['version'], {
+  const goVersion = execFileSync('go', ['version'], {
     env,
     encoding: 'utf8',
     timeout: 30000,
   })
-  if (!goVersion.startsWith('go version go1.26.9 ')) {
-    throw new Error('OCR source build requires Go 1.26.9')
+  if (!goVersion.startsWith(`go version go${GO_VERSION} `)) {
+    throw new Error(`OCR source build requires Go ${GO_VERSION}`)
   }
   fs.mkdirSync(directory, { recursive: true })
   const source = fs.mkdtempSync(path.join(directory, 'source-'))
   const archivePath = archive ?? path.join(source, 'upstream.tar.gz')
   if (!archive) {
-    run('/usr/bin/curl', [
+    run('curl', [
       '--fail',
       '--silent',
       '--show-error',
@@ -98,18 +83,14 @@ function install(directory, archive) {
     ])
   }
   verifyArchive(fs.readFileSync(archivePath))
-  run(
-    '/usr/bin/tar',
-    ['-xzf', archivePath, '--strip-components=1', '-C', source],
-    {
-      timeout: 30000,
-    }
-  )
-  run('/usr/bin/patch', ['--batch', '--fuzz=0', '-p1', '--input', PATCH_PATH], {
+  run('tar', ['-xzf', archivePath, '--strip-components=1', '-C', source], {
+    timeout: 30000,
+  })
+  run('patch', ['--batch', '--fuzz=0', '-p1', '--input', PATCH_PATH], {
     cwd: source,
     timeout: 30000,
   })
-  run(go, ['test', '-race', './internal/llmloop', './internal/agent'], {
+  run('go', ['test', '-race', './internal/llmloop', './internal/agent'], {
     cwd: source,
   })
   const patchBytes = fs.readFileSync(PATCH_PATH)
@@ -117,7 +98,7 @@ function install(directory, archive) {
   const commit = commitTag(patchBytes)
   const binary = path.join(directory, 'ocr')
   run(
-    go,
+    'go',
     [
       'build',
       '-trimpath',
@@ -150,7 +131,15 @@ function install(directory, archive) {
   return binary
 }
 
-module.exports = { expectedVersion, verifyVersion, verifyArchive, install }
+module.exports = {
+  expectedVersion,
+  verifyVersion,
+  verifyArchive,
+  install,
+  SOURCE_COMMIT,
+  SOURCE_SHA256,
+  GO_VERSION,
+}
 
 if (require.main === module) {
   if (process.argv[2] === 'verify-version') verifyVersion(process.argv[3])

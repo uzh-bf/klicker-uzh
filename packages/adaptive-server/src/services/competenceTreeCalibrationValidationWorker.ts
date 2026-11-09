@@ -34,8 +34,8 @@ const validationManifestSchema = z
     schemaVersion: z.literal(1),
     datasetVersion: z.string().trim().min(1).max(160),
     splitPolicyVersion: z.string().trim().min(1).max(160),
-    treeId: z.string().uuid(),
-    scaleVersionId: z.string().uuid(),
+    treeId: z.string().guid(),
+    scaleVersionId: z.string().guid(),
     generatedAt: z.string().datetime({ offset: true }),
     calibration: z
       .object({

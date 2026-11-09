@@ -2,7 +2,7 @@ import type { AppLogger } from '@klicker-uzh/logging/node'
 import { cookies } from 'next/headers'
 import { NextRequest, NextResponse } from 'next/server'
 import { z } from 'zod'
-import { getManageAiCapability } from '@/src/lib/server/featureFlags'
+import { getManageAssistantCapability } from '@/src/lib/server/featureFlags'
 import { getAuthenticatedManageUser } from '@/src/lib/server/manageAuth'
 import {
   getRouteLogger,
@@ -51,7 +51,7 @@ async function handlePOST(req: NextRequest, log: AppLogger) {
   // Proposals can only originate from the lecturer MCP tools, so confirmation
   // follows the same gate. A proposal token minted while the beta was open to
   // this lecturer must not stay redeemable after it is closed again.
-  const aiCapability = await getManageAiCapability(manageUser)
+  const aiCapability = await getManageAssistantCapability(manageUser)
   if (aiCapability === 'disabled') {
     return NextResponse.json({ error: 'Not available' }, { status: 403 })
   }

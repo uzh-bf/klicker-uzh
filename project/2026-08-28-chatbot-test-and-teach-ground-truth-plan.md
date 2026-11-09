@@ -1,6 +1,11 @@
 # Chatbot Test & Teach ground-truth plan
 
-## Plan identity
+Current report direction is in the [lecturer baseline report plan](2026-10-28-chatbot-baseline-report-plan.md).
+It supersedes K7's historical assumptions about an existing execution kernel and
+owner-only BASE settlement. This is a planning refresh; report implementation
+requires its own approval. Capture PR #5764 remains the active delivery package.
+
+## Historical plan identity
 
 - Date: 2026-08-28
 - Ceremony: full-path, multi-package product plan
@@ -978,6 +983,23 @@ paths named by the package plan and do not revert other work.
 
 ## Progress
 
+### Current checkpoint — 28 October 2026
+
+Capture PR #5764 is open into `v3-ai` at the reviewed `e9d12df867` head, with
+passing CI/final AI review and no unresolved threads before this refresh. The
+user approved refreshing the lecturer-report plan and updating that PR with
+current `v3-ai`. The target update pins `8df0efb23281b6b33c5eaafda90ad864c97ca774`;
+verification and publication are in progress. No report implementation, merge,
+deployment or live activation is part of this continuation.
+
+The linked report plan reuses current evaluation contracts and makes the missing
+execution and accounting seams explicit. Historical K7 slices below remain
+context; the refreshed plan owns the proposed implementation sequence. Current
+upstream lineage/active-serving evidence must be checked before any later live
+proof or automatic generation; older upstream-blocked statements are historical.
+
+### Historical runtime-skill delivery
+
 - Status: K6 is source-complete and published as open, non-draft PR #5650
   against `v3-ai`. The runtime skill, participant composition, and deterministic
   current-source seed are committed; all implementation review gates are
@@ -985,10 +1007,12 @@ paths named by the package plan and do not revert other work.
   `origin/v3-ai@54fbfc921` is complete at merge head `256ff4d4b`. PR #5650
   remains a standalone PR into the long-lived `v3-ai` consolidation
   branch; the user removed the invalid native stack registration with the
-  separate eventual promotion PR into `v3`. Merge, deployment, and live model
-  use remain withheld. Published head `dea34488a` passed all ordinary exact-head
-  checks. Its successful final review identified three medium corrections; the
-  branch now normalizes citation spans consistently, shares the current-
+  separate eventual promotion PR into `v3`. The user merged PR #5650 into
+  `v3-ai` on 2026-09-03 at merge commit `36f43eed03`; deployment and live
+  model use remain withheld. The corrective head `c06b1ecce` passed all
+  ordinary exact-head checks and a clean consolidation-branch final review.
+  Its earlier successful final review had identified three medium corrections;
+  the branch normalizes citation spans consistently, shares the current-
   eligibility reconciliation core, and batches reconciliation writes.
 - Completed: current `v3-ai` and PR #5633 seam mapping; response-example schema,
   API, and Manage workflow mapping; owner-preview mapping; Doc Query lineage
@@ -997,18 +1021,17 @@ paths named by the package plan and do not revert other work.
   current-evidence slice; K6.2 bounded hybrid skill; K6.3 authenticated
   participant composition; native util, chat, PostgreSQL, GraphQL, type/schema,
   formatting, and lint verification; and the first slice review corrections.
-- Ready now: publish the corrective PR #5650 head, settle its exact-head checks,
-  and rerun final review under the consolidation-branch policy merged through
-  PR #5674 as `v3@e24287c97`. K5 starts only after K6 lands on `v3-ai`.
-  K7 planning can follow the K6 runtime contract without waiting for W8.
+- Ready now: K5 is active under its approved execution plan after K6 and
+  owner-preview PR #5633 landed in `v3-ai`. K7 planning can follow the landed
+  K6 runtime contract without waiting for W8.
 - External decision: U0 cannot create a branch until the `mcp-doc-query`
   `main`/`dev` flow is explicitly resolved.
 - Blocked: K8 remains blocked on W8 synthetic active-serving proof. U0-backed
   live source proof, deployment, and activation remain separately withheld.
-- Delivery: K6 is `delivery_pending` at standalone PR #5650 into `v3-ai`
-  until the corrective head is published and its exact-head CI and final review
-  settle. The eventual `v3-ai` to `v3` promotion is not part of this package or
-  a native stack. K5 becomes the next independent package after K6 is merged
-  and separately authorized.
-- Next action: publish the review-correction head and settle exact-head CI and
-  final review. Merge remains separately withheld.
+- Delivery: K6 is `merged` - PR #5650 landed in `v3-ai` at `36f43eed03` on
+  2026-09-03 after a clean exact-head final review at `c06b1ecce`. Owner-preview
+  PR #5633 landed at `7249e57eb7`. The eventual `v3-ai` to `v3` promotion is
+  not part of this package or a native stack.
+- Next action (Phase 5 reconciliation, 2026-09-03): execute K5, the lecturer
+  owner-preview response-example capture package, through its PR-ready boundary.
+  U0-backed live source proof, merge, deployment, and activation remain withheld.

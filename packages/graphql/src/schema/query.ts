@@ -137,6 +137,7 @@ import {
   KBResourceType,
 } from './knowledge.js'
 import {
+  EvaluationDisplaySetting,
   Feedback,
   LiveQuiz,
   LiveQuizEmbeddingInfo,
@@ -732,6 +733,20 @@ export const Query = builder.queryType({
         ),
       }),
 
+      controlLiveQuizFeedbacks: t.withAuth(asUser).field({
+        nullable: true,
+        type: LiveQuiz,
+        args: { id: t.arg.string({ required: true }) },
+        resolve: withPermission(
+          (args) => ({ liveQuizId: args.id }),
+          // unpublished questions are only visible to those who moderate
+          DB.PermissionLevel.EXECUTE,
+          async (_, args, ctx) => {
+            return await LiveQuizService.getControlLiveQuizFeedbacks(args, ctx)
+          }
+        ),
+      }),
+
       practiceQuiz: t.field({
         nullable: true,
         type: PracticeQuiz,
@@ -845,6 +860,37 @@ export const Query = builder.queryType({
           }
 
           return await LiveQuizService.getLiveQuizEvaluation(args, ctx)
+        },
+      }),
+
+      liveQuizEvaluationDisplay: t.field({
+        nullable: true,
+        type: [EvaluationDisplaySetting],
+        args: {
+          id: t.arg.string({ required: true }),
+          hmac: t.arg.string(),
+        },
+        resolve: async (_, args, ctx) => {
+          // >= READ permissions on live quiz required if hmac is not provided
+          if (!args.hmac) {
+            const validAccess = ctx.user?.sub
+              ? await checkAccess(
+                  [
+                    {
+                      liveQuizId: args.id,
+                      minimumPermissionLevel: DB.PermissionLevel.READ,
+                    },
+                  ],
+                  ctx as PrismaTransactionContextWithUser
+                )
+              : false
+
+            if (!validAccess) {
+              return null
+            }
+          }
+
+          return await LiveQuizService.getLiveQuizEvaluationDisplay(args, ctx)
         },
       }),
 
@@ -1678,7 +1724,7 @@ export const Query = builder.queryType({
       getKbKnowledgeGraphDomainConfig: t.withAuth(asUserFullAccess).field({
         nullable: false,
         type: KBKnowledgeGraphDomainConfigType,
-        args: { kbId: t.arg.id({ required: true }) },
+        args: { kbId: t.arg.id({ required: false }) },
         resolve: async (_, args, ctx) => {
           return await KnowledgeService.getKbKnowledgeGraphDomainConfig(
             args,
@@ -2385,6 +2431,15 @@ export const Query = builder.queryType({
           objectType: t.arg({ type: ObjectType, required: true }),
         },
         resolve: async (_, args, ctx) => {
+          // object types without an activity log produce no access check below
+          // and must not fall through to an unfiltered activity query
+          if (
+            args.objectType === DB.ObjectType.CATALOG_COLLECTION ||
+            args.objectType === DB.ObjectType.USER_GROUP
+          ) {
+            return null
+          }
+
           // >= READ permissions on the corresponding object
           const validAccess = await checkAccess(
             [

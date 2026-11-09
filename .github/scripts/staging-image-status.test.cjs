@@ -68,6 +68,46 @@ function pushContext() {
   }
 }
 
+test('priority image status accepts only its exact execution namespace and complete unique producers', async () => {
+  for (const [jobs, expected] of [
+    [[job('priority-execution / build-arm-auth')], true],
+    [[job('other-execution / build-arm-auth')], false],
+    [[job('build-arm-auth')], false],
+    [
+      [
+        job('priority-execution / build-arm-auth'),
+        job('priority-execution / build-arm-auth'),
+      ],
+      false,
+    ],
+    [
+      [job('priority-execution / build-arm-auth', { conclusion: 'failure' })],
+      false,
+    ],
+  ]) {
+    const directory = fs.mkdtempSync(path.join(os.tmpdir(), 'priority-status-'))
+    const evidencePath = path.join(directory, 'evidence.json')
+    const request = {
+      context: pushContext(),
+      env: { ...planEnv(), PRIORITY_JOB_NAMESPACE: 'priority-execution / ' },
+      evidencePath,
+      github: {
+        rest: {
+          actions: {
+            listJobsForWorkflowRunAttempt: async () => ({ data: { jobs } }),
+          },
+        },
+      },
+      maxAttempts: 1,
+    }
+    if (expected)
+      assert.equal((await evaluateStagingImageStatus(request)).ok, true)
+    else
+      await assert.rejects(() => evaluateStagingImageStatus(request), /blocked/)
+    fs.rmSync(directory, { recursive: true, force: true })
+  }
+})
+
 test('the plan outputs round-trip through the environment', () => {
   const plan = readPlanFromEnv(
     planEnv({ scanJobNames: ['scan-arm-backend-docker'] })

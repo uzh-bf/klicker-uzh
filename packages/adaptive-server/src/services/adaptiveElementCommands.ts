@@ -21,7 +21,7 @@ export function createAdaptiveElementCommands({
   getManipulatedElementCreationIdentity,
   manipulateElement,
 }: AdaptiveElementHost) {
-  const creationRequestIdSchema = z.string().uuid()
+  const creationRequestIdSchema = z.string().guid()
 
   async function manipulateElementWithInitialCompetenceTreeAssignment(
     {

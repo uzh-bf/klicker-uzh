@@ -1,0 +1,13 @@
+{
+  "schema": "ocr-repository/v1",
+  "profile": "draft-v1",
+  "contextRoots": ["docs", ".agents/skills"],
+  "rootFiles": ["AGENTS.md", "CONTEXT.md"],
+  "guides": ["docs/ci-and-deployment.md"],
+  "publicLibraries": [
+    "/vercel/next.js",
+    "/reactjs/react.dev",
+    "/prisma/web",
+    "/microsoft/typescript"
+  ]
+}

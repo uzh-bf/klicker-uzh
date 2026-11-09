@@ -15,7 +15,7 @@ const safeModelIdentifier = z
 
 const uuidString = z
   .string()
-  .uuid()
+  .guid()
   .transform((value) => value.toLowerCase())
 
 const sha256String = z

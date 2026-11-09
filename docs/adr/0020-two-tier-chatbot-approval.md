@@ -6,6 +6,10 @@ Accepted. The budget-control and pilot-cutover portions are superseded by
 [ADR 0041](./0041-chatbot-trusted-pilot-boundary.md); account authorization,
 publication approval, and usage-class semantics remain in force.
 
+Preapproval chatbot creation is superseded by
+[ADR 0056](./0056-lecturer-ai-access-by-feature.md): creating a chatbot now
+requires `aiFeaturesEnabled`.
+
 Lecturer setup editing after publication is superseded by
 [ADR 0043](./0043-review-chatbot-revisions-before-activation.md). Its saved
 revision and approval contract leaves unrelated runtime dependencies unchanged.

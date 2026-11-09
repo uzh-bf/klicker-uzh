@@ -12,6 +12,16 @@ The required-MCP visibility rule below is superseded by
 [ADR 0050](./0050-per-mode-retrieval-scope-and-kb-attachment.md), which makes
 availability per mode and resolves retrieval scope for the selected mode.
 
+Writing Coach amends the mode and context clauses below: `writing-coach` is a
+fourth platform standard mode and starts disabled. A valid configuration must
+leave Tutor, Explainer or Writing Coach enabled; Quizzer alone remains invalid.
+Historical configurations without `writingCoachEnabled` keep it disabled, while
+an older update that omits the flag preserves an explicit stored choice. Writing
+Coach receives the same full typed lecturer context as Tutor and Explainer.
+Manage and the server now share the 1,000-character `scopeNote` limit, replacing
+the earlier 200-character authoring limit. These rules supersede the three-mode,
+Tutor-or-Explainer and shorter authoring-limit statements below.
+
 ## Context
 
 Historically a chatbot's `systemPrompts[mode].prompt` fully replaced the
