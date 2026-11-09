@@ -1,4 +1,8 @@
 const crypto = require('node:crypto')
+const {
+  PLAYWRIGHT_SHARD_COUNT,
+  PLAYWRIGHT_ROUTE_JOBS,
+} = require('./ci-equivalent-run.cjs')
 const { execFileSync } = require('node:child_process')
 const fs = require('node:fs')
 const os = require('node:os')
@@ -140,8 +144,8 @@ const REQUIRED_CI_WORKFLOWS = Object.freeze(
       id === 'test-playwright-status'
         ? [
             { id },
-            ...Array.from({ length: 8 }, (_, i) => ({
-              id: `test-playwright-execution / test-playwright-hosted (${i + 1}, 8)`,
+            ...Array.from({ length: PLAYWRIGHT_SHARD_COUNT }, (_, i) => ({
+              id: `test-playwright-execution ${PLAYWRIGHT_ROUTE_JOBS.hosted.shards}${i + 1}, ${PLAYWRIGHT_SHARD_COUNT})`,
             })),
           ]
         : [{ id }, ...(CI_SUITE_JOBS[file] ?? []).map((id) => ({ id }))],
@@ -641,6 +645,77 @@ function jobState(job, expectedJobId, candidateSha) {
   return 'failed'
 }
 
+function skippedHostedShardEvidence(workflow, jobs, run, candidateSha) {
+  const matrixName = `test-playwright-execution ${PLAYWRIGHT_ROUTE_JOBS.hosted.shards.slice(0, -2)}`
+  const expectedIds = Array.from(
+    { length: PLAYWRIGHT_SHARD_COUNT },
+    (_, index) => `${matrixName} (${index + 1}, ${PLAYWRIGHT_SHARD_COUNT})`
+  )
+  const reported = jobs.filter(
+    (job) => typeof job?.name === 'string' && job.name.startsWith(matrixName)
+  )
+  if (
+    !reported.some(
+      (job) => job.name === matrixName || job.conclusion === 'skipped'
+    )
+  ) {
+    return null
+  }
+  const inventories = [
+    workflow.jobs.map(({ id }) => id),
+    requiredJobIds(workflow),
+  ].map((ids) => ids.filter((id) => id.startsWith(matrixName)))
+  if (
+    workflow.path !== '.github/workflows/test-playwright.yml' ||
+    inventories.some(
+      (inventory) =>
+        inventory.length !== expectedIds.length ||
+        expectedIds.some(
+          (id) => inventory.filter((actual) => actual === id).length !== 1
+        )
+    )
+  ) {
+    throw new Error('hosted-shard-inventory-invalid')
+  }
+  // GitHub collapses an entirely skipped matrix to one unsuffixed job. Neither
+  // that placeholder nor eight individually skipped jobs prove execution. They
+  // may only map the exact trusted inventory to independently verified reuse.
+  const collapsed = reported.length === 1 && reported[0].name === matrixName
+  const expanded =
+    reported.length === expectedIds.length &&
+    expectedIds.every(
+      (id) => reported.filter((job) => job.name === id).length === 1
+    )
+  if (
+    (!collapsed && !expanded) ||
+    new Set(reported.map((job) => job.id)).size !== reported.length ||
+    reported.some(
+      (job) =>
+        !Number.isSafeInteger(job.id) ||
+        job.id <= 0 ||
+        jobs.filter((actual) => actual.id === job.id).length !== 1 ||
+        job.run_id !== run.id ||
+        job.run_attempt !== run.run_attempt ||
+        job.head_sha !== candidateSha ||
+        job.status !== 'completed' ||
+        job.conclusion !== 'skipped'
+    )
+  ) {
+    throw new Error('hosted-shard-skip-shape-invalid')
+  }
+  return {
+    shape: collapsed ? 'collapsed' : 'expanded',
+    requiredJobIds: expectedIds,
+    jobs: reported,
+    matches: new Map(
+      expectedIds.map((id) => [
+        id,
+        collapsed ? reported[0] : reported.find((job) => job.name === id),
+      ])
+    ),
+  }
+}
+
 async function collectWorkflowEvidence({
   github,
   context,
@@ -710,6 +785,40 @@ async function collectWorkflowEvidence({
       per_page: 100,
     }
   )
+  let validationReuse = null
+  let skippedHostedShards = null
+  try {
+    skippedHostedShards = skippedHostedShardEvidence(
+      workflow,
+      jobs,
+      exact,
+      candidateSha
+    )
+    if (skippedHostedShards) {
+      // The trusted controller reconstructs proof; no candidate receipt or green
+      // reporter can authorize promotion by itself. All other gates still run.
+      validationReuse =
+        await require('./ci-verified-reuse.cjs').verifyPromotionReuse({
+          github,
+          context,
+          run: exact,
+          candidateSha,
+          sourceBranch,
+          controlSha: process.env.TRUSTED_WORKFLOW_SHA,
+          enabled: process.env.CI_VERIFIED_REUSE_ENABLED === 'true',
+        })
+    }
+  } catch (error) {
+    const cause = /^[a-z0-9-]+$/.test(error?.message ?? '')
+      ? error.message
+      : 'evidence-unavailable'
+    return {
+      path: workflow.path,
+      reason: `skipped Playwright shards lack independently verified reuse (${cause})`,
+      run: exact,
+      status: 'wrong_evidence',
+    }
+  }
   const verifiedJobs = []
   // Every job the candidate had to complete must be present and successful, but
   // only the ARM64 publisher jobs carry an image reference for promotion.
@@ -719,9 +828,11 @@ async function collectWorkflowEvidence({
     // job that delegates is still proved from the run's own job list. More than
     // one match stays a hard failure: two reported names cannot both be the one
     // trusted job this identifier names.
-    const matches = jobs.filter((job) =>
-      jobNameMatches(job?.name, requiredJobId)
-    )
+    const reusedJob =
+      validationReuse && skippedHostedShards.matches.get(requiredJobId)
+    const matches = reusedJob
+      ? [reusedJob]
+      : jobs.filter((job) => jobNameMatches(job?.name, requiredJobId))
     if (matches.length > 1) {
       return {
         path: workflow.path,
@@ -731,8 +842,10 @@ async function collectWorkflowEvidence({
       }
     }
     const matching = matches[0]
-    const stateForJob = jobState(matching, requiredJobId, candidateSha)
-    if (stateForJob !== 'success') {
+    const stateForJob = reusedJob
+      ? 'skipped'
+      : jobState(matching, requiredJobId, candidateSha)
+    if (stateForJob !== 'success' && !reusedJob) {
       return {
         path: workflow.path,
         reason: `${requiredJobId} is ${stateForJob.replace('_', ' ')}`,
@@ -749,6 +862,8 @@ async function collectWorkflowEvidence({
       }
     }
     if (!publisherIds.has(requiredJobId)) continue
+    if (reusedJob && verifiedJobs.some((job) => job.id === matching.id))
+      continue
     verifiedJobs.push({
       id: matching.id,
       name: matching.name,
@@ -757,6 +872,19 @@ async function collectWorkflowEvidence({
     })
   }
   return {
+    ...(validationReuse
+      ? {
+          validationReuse,
+          validationReuseCoverage: {
+            shape: skippedHostedShards.shape,
+            requiredJobIds: skippedHostedShards.requiredJobIds,
+            jobs: skippedHostedShards.jobs.map(({ id, name }) => ({
+              id,
+              name,
+            })),
+          },
+        }
+      : {}),
     jobs: verifiedJobs,
     observedJobs: jobs.map(({ id, name, status, conclusion }) => ({
       id,

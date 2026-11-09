@@ -260,12 +260,12 @@ chat:
 
   modelRegistry:
     # Staging makes Auto the global automatic-model primary, so chatbots using
-    # automatic model selection exercise auto-router-v2, as in production.
+    # automatic model selection exercise auto-router-v4, as in production.
     # Explicit model selections remain respected, and new chatbots
     # still start fixed on GPT-6 Luna. GPT-6 Luna is the participant-credit
     # fallback.
-    # "Auto" routes through the LiteLLM auto-router-v2, which self-selects the
-    # tier per request (SIMPLE=gpt-6-luna-high, MEDIUM=gpt-6.1-sol-low,
+    # "Auto" routes through the LiteLLM auto-router-v4, which self-selects the
+    # tier per request (SIMPLE=gpt-6.1-terra-low, MEDIUM=gpt-6.1-sol-low,
     # COMPLEX=gpt-6.1-sol-medium, REASONING=gpt-6.1-sol-high), with
     # Microsoft-Decision-1 classifying every request. Auto is a BASE model; Sol
     # selected directly stays ADVANCED.
@@ -277,7 +277,7 @@ chat:
     # price. Classifier overhead remains outside the registry's
     # selected-model token fields.
     - id: auto
-      deploymentId: klickeruzh/azure/auto-router-v2
+      deploymentId: klickeruzh/azure/auto-router-v4
       name: Auto
       description: Automatic model selection (routes to the best model per request)
       supportsImageAttachments: true
@@ -463,7 +463,7 @@ adaptiveEngine:
     tag: 9f9afd457709fb089092cd7b31975c78b4130036-arm
   resources:
     requests:
-      cpu: 100m
+      cpu: 25m
       memory: 128Mi
     limits:
       cpu: 1000m
@@ -517,6 +517,31 @@ frontendPWA:
   autoscaling:
     enabled: false
 
+  # Spot burst tier next to the static replica. Its replicas are owned by the
+  # burst HPA, which the stg Argo CD Application excludes from replica drift.
+  burst:
+    enabled: true
+    # Soft spread, so losing one spot node does not remove the whole tier
+    # while a tight pool can still place every burst pod. The selector names
+    # the tier label, so baseline pods do not count toward the skew.
+    topologySpreadConstraints:
+      - maxSkew: 1
+        topologyKey: topology.kubernetes.io/zone
+        whenUnsatisfiable: ScheduleAnyway
+        labelSelector:
+          matchLabels:
+            app.kubernetes.io/component: frontend-pwa
+            klicker.uzh.ch/tier: burst
+      - maxSkew: 1
+        topologyKey: kubernetes.io/hostname
+        whenUnsatisfiable: ScheduleAnyway
+        labelSelector:
+          matchLabels:
+            app.kubernetes.io/component: frontend-pwa
+            klicker.uzh.ch/tier: burst
+
+  preStopSleepSeconds: 5
+
   affinity:
     podAntiAffinity:
       preferredDuringSchedulingIgnoredDuringExecution:
@@ -552,13 +577,14 @@ frontendPWA:
   strategy:
     type: Recreate
 
+  # Matches the production PWA shape, so burst tier drills on staging see the
+  # same CPU headroom and HPA target as production.
   resources:
     requests:
       cpu: 50m
-      memory: 50Mi
+      memory: 320Mi
     limits:
-      cpu: 200m
-      memory: 200Mi
+      memory: 1Gi
 
 frontendManage:
   priorityClassName: staging-workload

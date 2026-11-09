@@ -126,19 +126,37 @@ export async function mockManageUserProfileUnavailable(page: Page) {
   return { fulfilled }
 }
 
+// The lecturer's simple/advanced settings choice is a browser preference, so
+// tests seed it before the page loads.
+export async function setAiSettingsMode(
+  page: Page,
+  mode: 'simple' | 'advanced'
+) {
+  await page.addInitScript((value) => {
+    localStorage.setItem('klicker-manage-ai-settings-mode', value)
+  }, mode)
+}
+
 export async function mockGrowthBookFeatureFlags(
   page: Page,
   {
     aiBeta = false,
+    questionGeneration = true,
+    aiSettingsMode = 'advanced',
+    responseExamples = false,
     failRefresh = false,
     learningAnalytics = true,
   }: {
     aiBeta?: boolean
+    questionGeneration?: boolean
+    aiSettingsMode?: 'simple' | 'advanced'
+    responseExamples?: boolean
     failRefresh?: boolean
     learningAnalytics?: boolean
   } = {}
 ) {
   let requestCount = 0
+  await setAiSettingsMode(page, aiSettingsMode)
   await page.unroute(GROWTHBOOK_FEATURES_URL)
   await page.route(GROWTHBOOK_FEATURES_URL, (route) => {
     requestCount += 1
@@ -151,6 +169,8 @@ export async function mockGrowthBookFeatureFlags(
       body: JSON.stringify({
         features: {
           'ai-beta': { defaultValue: aiBeta },
+          'question-generation': { defaultValue: questionGeneration },
+          'chatbot-response-examples': { defaultValue: responseExamples },
           'learning-analytics': { defaultValue: learningAnalytics },
         },
       }),
@@ -166,6 +186,19 @@ export async function mockGrowthBookLearningAnalytics(
     aiBeta: true,
     learningAnalytics: enabled,
   })
+}
+
+// Opens a section of the chatbot setup page unless it is already open.
+export async function openChatbotSection(
+  page: Page,
+  id: 'materials' | 'students' | 'modes' | 'model' | 'usage' | 'graph'
+) {
+  const toggle = page.getByTestId(`chatbot-section-${id}-toggle`)
+  await expect(toggle).toBeVisible()
+  if ((await toggle.getAttribute('aria-expanded')) !== 'true') {
+    await toggle.click()
+  }
+  await expect(toggle).toHaveAttribute('aria-expanded', 'true')
 }
 
 export async function mockBetaEnrollmentGraphQL(

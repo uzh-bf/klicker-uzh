@@ -58,7 +58,7 @@ import NumericalOptions from './options/NumericalOptions'
 import OptionsLabel from './options/OptionsLabel'
 import SelectionOptions from './options/SelectionOptions'
 import StudentElementPreview from './StudentElementPreview'
-import type { ElementFormTypes } from './types'
+import type { ElementFormTypes, ElementFormTypesNumerical } from './types'
 import useValidationSchema from './useValidationSchema'
 
 function ElementEditForm({
@@ -75,6 +75,7 @@ function ElementEditForm({
   elementId,
   loading,
   initialValues,
+  originalNumericalOptions,
   autoSavePayload,
   onAutoSavePayloadChange,
   onSubmitElement,
@@ -111,6 +112,10 @@ function ElementEditForm({
   loading: boolean
   // form data props
   initialValues?: ElementFormTypes
+  originalNumericalOptions?: Pick<
+    ElementFormTypesNumerical['options'],
+    'accuracy' | 'exactSolutions'
+  >
   autoSavePayload?: ElementAutosavePayload
   onAutoSavePayloadChange?: (payload: ElementAutosavePayload | null) => void
   onSubmitElement: (
@@ -168,6 +173,7 @@ function ElementEditForm({
 
   const questionManipulationSchema = useValidationSchema({
     numberOfAnswerOptions: answerCollectionEntries.length,
+    originalNumericalOptions,
   })
 
   const {

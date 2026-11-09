@@ -4,6 +4,7 @@ import enMessages from '../../packages/i18n/messages/en.js'
 import { URL_MANAGE } from '../util/constants.js'
 import { expect, test } from '../util/fixtures.js'
 import { selectOption } from '../util/fixtures/activities.js'
+import { setAiSettingsMode } from '../util/fixtures/manage.js'
 
 const FAILURE_DETAILS = [
   'The fetched source did not match the version recorded when the source was added, so the import was rejected.',
@@ -16,6 +17,12 @@ const FAILURE_DETAILS = [
 const UNKNOWN_FAILURE_MARKER = `synthetic-unrecognized-prefix-${FAILURE_DETAILS[0]}-suffix`
 
 test.describe('Knowledge base management workspace', () => {
+  // The workspace checks below cover the advanced settings, which include
+  // search, filters, quotas and bulk ingestion.
+  test.beforeEach(async ({ page }) => {
+    await setAiSettingsMode(page, 'advanced')
+  })
+
   test('keeps the resource workspace scannable and add flow keyboard-accessible in English and German', async ({
     loginLecturer,
     page,
@@ -441,6 +448,7 @@ test.describe('Knowledge base management workspace', () => {
                 items: Array<Record<string, unknown> & { id: string }>
                 totalCount: number
                 failedIngestionCount: number
+                needsIngestionCount: number
                 inProgressCount: number
               }
             }
@@ -480,11 +488,34 @@ test.describe('Knowledge base management workspace', () => {
                 createdAt: new Date(0).toISOString(),
                 updatedAt: new Date(0).toISOString(),
               },
+              // Ordinary uploads and URLs are queued on creation, so a
+              // resource that still waits for ingestion comes from a seed or
+              // an import. It keeps the bulk-ingestion path reachable.
+              {
+                id: 'synthetic-imported-resource',
+                type: 'BLOB',
+                materialType: 'COURSE_CONTENT',
+                title: 'imported-notes.txt',
+                sourceUrl: null,
+                originalFilename: 'imported-notes.txt',
+                mimeType: 'text/plain',
+                sizeBytes: 14,
+                status: 'ADDED',
+                ingestedAt: null,
+                resourceVersion: 1,
+                activeResourceVersion: null,
+                latestIngestionRun: null,
+                createdAt: new Date(0).toISOString(),
+                updatedAt: new Date(0).toISOString(),
+              },
               ...connection.items.filter(
-                ({ id }) => id !== 'synthetic-resource'
+                ({ id }) =>
+                  id !== 'synthetic-resource' &&
+                  id !== 'synthetic-imported-resource'
               ),
             ]
-            connection.totalCount += 1
+            connection.totalCount += 2
+            connection.needsIngestionCount += 1
             if (syntheticFailureVisible) {
               connection.failedIngestionCount += 1
             } else if (syntheticFileReplaced) {
@@ -614,12 +645,25 @@ test.describe('Knowledge base management workspace', () => {
       })
       await expect(resourceRow).toBeVisible()
       await expect(resourceRow).toContainText(/Administrative/)
+      // Adding a URL starts its ingestion right away, so the row has left
+      // the added state; how far the worker got is not fixed at this point.
       await expect(
         resourceRow.locator('[data-cy^="kb-resource-status-"]')
-      ).toContainText(/Added|Hinzugefügt/)
+      ).not.toContainText(/Added|Hinzugefügt/)
       await expect(page.getByTestId('kb-ingestion-summary')).toContainText(
         /1 need ingestion/
       )
+      await expect(page.getByTestId('ingest-all-kb-resources')).toBeVisible()
+      // The simple settings keep the resource list and hide the expert tools.
+      await page.getByTestId('ai-settings-mode-simple').click()
+      await expect(page.getByTestId('kb-ingestion-summary')).toHaveCount(0)
+      await expect(page.getByTestId('ingest-all-kb-resources')).toHaveCount(0)
+      await expect(page.getByTestId('kb-metrics')).toHaveCount(0)
+      await expect(
+        page.getByTestId('kb-resource-material-type-filter')
+      ).toHaveCount(0)
+      await expect(resourceRow).toBeVisible()
+      await page.getByTestId('ai-settings-mode-advanced').click()
       await expect(page.getByTestId('ingest-all-kb-resources')).toBeVisible()
       await selectOption(
         page,
@@ -648,7 +692,7 @@ test.describe('Knowledge base management workspace', () => {
       ).toContainText('Administrative')
       await expect(
         page.getByTestId('ingest-kb-resource-inspector')
-      ).toContainText(/Ingest|Verarbeiten/)
+      ).toContainText(/Re-ingest|Retry|Neu verarbeiten|Erneut versuchen/)
       await page.getByTestId('done-kb-resource-inspector').click()
 
       await resourceRow.getByTestId(/kb-resource-actions-/).click()
@@ -925,6 +969,190 @@ test.describe('Knowledge base management workspace', () => {
           await page.getByTestId('confirm-delete-knowledge-base').click()
           await expect(knowledgeBaseRow).toHaveCount(0)
         }
+      }
+    }
+  })
+
+  test('adds several documents in one drop and keeps the batch intact when one file fails', async ({
+    loginLecturer,
+    page,
+  }) => {
+    await loginLecturer()
+
+    const manageUrl = process.env.URL_MANAGE ?? URL_MANAGE
+    const kbName = `Batch upload ${Date.now()}`
+
+    try {
+      await page.goto(`${manageUrl}/resources/knowledgeBases`)
+      await expect(page.getByTestId('knowledge-base-loading')).toBeHidden()
+      await page.getByTestId('create-knowledge-base').click()
+      await page.getByTestId('knowledge-base-name').fill(kbName)
+      await page.getByTestId('submit-create-knowledge-base').click()
+
+      const knowledgeBaseLink = page
+        .getByRole('link')
+        .filter({ hasText: kbName })
+      await expect(knowledgeBaseLink).toBeVisible()
+      await knowledgeBaseLink.click()
+      await expect(page.getByTestId('knowledge-base-detail')).toBeVisible()
+
+      const persistedOperations = JSON.parse(
+        await readFile(
+          new URL(
+            '../../packages/graphql/src/public/client.json',
+            import.meta.url
+          ),
+          'utf8'
+        )
+      ) as Record<string, string>
+      const persistedNames = Object.fromEntries(
+        Object.entries(persistedOperations).map(([name, hash]) => [hash, name])
+      )
+
+      // Each reservation is named after its position in the batch so that the
+      // blob route can reject exactly the second transfer.
+      let reservedUploads = 0
+      let confirmedUploads = 0
+
+      await page.route('**/graphql*', async (route) => {
+        const request = route.request()
+        const requestUrl = new URL(request.url())
+        let operationName =
+          requestUrl.searchParams.get('operationName') ?? undefined
+
+        if (!operationName && request.method() === 'POST') {
+          operationName = (request.postDataJSON() as { operationName?: string })
+            .operationName
+        }
+        if (!operationName) {
+          const extensions = requestUrl.searchParams.get('extensions')
+          const hash = extensions
+            ? (
+                JSON.parse(extensions) as {
+                  persistedQuery?: { sha256Hash?: string }
+                }
+              ).persistedQuery?.sha256Hash
+            : undefined
+          operationName = hash ? persistedNames[hash] : undefined
+        }
+
+        if (operationName === 'RequestKbFileUpload') {
+          reservedUploads += 1
+          await route.fulfill({
+            status: 200,
+            contentType: 'application/json',
+            body: JSON.stringify({
+              data: {
+                requestKbFileUpload: {
+                  uploadSasURL: 'https://kb-upload.invalid/?sig=test',
+                  containerName: 'kb',
+                  blobName: `batch-${reservedUploads}.txt`,
+                },
+              },
+            }),
+          })
+          return
+        }
+        if (operationName === 'ConfirmKbFileUpload') {
+          confirmedUploads += 1
+          await route.fulfill({
+            status: 200,
+            contentType: 'application/json',
+            body: JSON.stringify({
+              data: {
+                confirmKbFileUpload: {
+                  id: `batch-resource-${confirmedUploads}`,
+                },
+              },
+            }),
+          })
+          return
+        }
+
+        await route.continue()
+      })
+
+      await page.route('https://kb-upload.invalid/**', async (route) => {
+        if (route.request().method() === 'OPTIONS') {
+          await route.fulfill({
+            status: 204,
+            headers: {
+              'access-control-allow-headers': '*',
+              'access-control-allow-methods': 'PUT, OPTIONS',
+              'access-control-allow-origin': '*',
+            },
+          })
+          return
+        }
+
+        // A 403 is refused outright by the storage client, so the second file
+        // fails once instead of running through the retry policy.
+        if (new URL(route.request().url()).pathname.includes('batch-2')) {
+          await route.fulfill({
+            status: 403,
+            headers: { 'access-control-allow-origin': '*' },
+          })
+          return
+        }
+
+        await route.fulfill({
+          status: 201,
+          headers: {
+            'access-control-allow-origin': '*',
+            etag: '"synthetic-etag"',
+            'last-modified': new Date(0).toUTCString(),
+            'x-ms-request-id': 'synthetic-request',
+            'x-ms-version': '2025-11-05',
+          },
+        })
+      })
+
+      const modal = page.getByTestId('kb-add-resource-modal')
+      await page.getByTestId('add-kb-resource').click()
+      await page.getByTestId('choose-kb-resource-document').click()
+      await page.getByTestId('kb-file-input').setInputFiles([
+        {
+          name: 'alpha.txt',
+          mimeType: 'text/plain',
+          buffer: Buffer.from('first of the batch'),
+        },
+        {
+          name: 'beta.txt',
+          mimeType: 'text/plain',
+          buffer: Buffer.from('second of the batch'),
+        },
+        {
+          name: 'gamma.txt',
+          mimeType: 'text/plain',
+          buffer: Buffer.from('third of the batch'),
+        },
+      ])
+
+      const errorToast = page.locator('[data-sonner-toast][data-type="error"]')
+      await expect(errorToast).toContainText(
+        /2 of 3 files were added|2 von 3 Dateien wurden hinzugefügt/
+      )
+      await expect(errorToast).toContainText('beta.txt')
+      await expect(errorToast).not.toContainText('alpha.txt')
+
+      // The files after the failed one were still transferred, and the modal
+      // stays open so the failed file can be chosen again.
+      expect(reservedUploads).toBe(3)
+      expect(confirmedUploads).toBe(2)
+      await expect(modal).toBeVisible()
+
+      await page.getByTestId('close-kb-add-resource-modal').click()
+      await expect(modal).toBeHidden()
+    } finally {
+      await page.unrouteAll({ behavior: 'ignoreErrors' })
+      await page.goto(`${manageUrl}/resources/knowledgeBases`)
+      const knowledgeBaseRow = page.locator('li').filter({ hasText: kbName })
+      if (await knowledgeBaseRow.count()) {
+        await knowledgeBaseRow
+          .getByRole('button', { name: /Delete|Löschen/ })
+          .click()
+        await page.getByTestId('confirm-delete-knowledge-base').click()
+        await expect(knowledgeBaseRow).toHaveCount(0)
       }
     }
   })

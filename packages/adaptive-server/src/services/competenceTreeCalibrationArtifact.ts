@@ -78,8 +78,8 @@ const calibrationEntrySchema = z
 export const adaptiveCalibrationArtifactSchema = z
   .object({
     schemaVersion: z.literal(1),
-    treeId: z.string().uuid(),
-    scaleVersionId: z.string().uuid(),
+    treeId: z.string().guid(),
+    scaleVersionId: z.string().guid(),
     datasetVersion: versionSchema,
     datasetChecksum: sha256Schema,
     calibrationJobId: versionSchema,
@@ -126,8 +126,8 @@ const cutRationaleSchema = z
 export const adaptiveStandardSettingArtifactSchema = z
   .object({
     schemaVersion: z.literal(1),
-    treeId: z.string().uuid(),
-    scaleVersionId: z.string().uuid(),
+    treeId: z.string().guid(),
+    scaleVersionId: z.string().guid(),
     method: z.enum(['ANGOFF', 'BOOKMARK', 'BODY_OF_WORK', 'OTHER']),
     methodVersion: versionSchema,
     panelSize: positiveIntegerSchema,
@@ -164,17 +164,17 @@ const linkMetricSchema = z
 
 const scaleLinkAnchorSchema = z
   .object({
-    fromCalibrationId: z.string().uuid(),
-    toCalibrationId: z.string().uuid(),
+    fromCalibrationId: z.string().guid(),
+    toCalibrationId: z.string().guid(),
   })
   .strict()
 
 export const adaptiveScaleLinkArtifactSchema = z
   .object({
     schemaVersion: z.literal(1),
-    treeId: z.string().uuid(),
-    fromScaleVersionId: z.string().uuid(),
-    toScaleVersionId: z.string().uuid(),
+    treeId: z.string().guid(),
+    fromScaleVersionId: z.string().guid(),
+    toScaleVersionId: z.string().guid(),
     method: z.enum(['COMMON_ITEM_NONEQUIVALENT_GROUPS', 'FIXED_ANCHOR']),
     implementationVersion: versionSchema,
     generatedAt: z.string().datetime({ offset: true }),
@@ -229,10 +229,10 @@ export const adaptiveScaleLinkArtifactSchema = z
 export const adaptiveEmpiricalValidationRequestSchema = z
   .object({
     schemaVersion: z.literal(1),
-    configId: z.string().uuid(),
-    treeId: z.string().uuid(),
-    scaleVersionId: z.string().uuid(),
-    exportRequestId: z.string().uuid(),
+    configId: z.string().guid(),
+    treeId: z.string().guid(),
+    scaleVersionId: z.string().guid(),
+    exportRequestId: z.string().guid(),
     criterionArtifactChecksum: sha256Schema,
     criterionArtifactKey: z
       .string()

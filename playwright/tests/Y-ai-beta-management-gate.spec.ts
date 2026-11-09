@@ -6,8 +6,9 @@ import { expect, test } from '../util/fixtures.js'
 /**
  * Lecturer AI beta management gate (apps/frontend-manage).
  *
- * Broader AI requires beta enrollment, GrowthBook `ai-beta`, and approval.
- * Eligible chatbot authors do not require administrative AI approval.
+ * Knowledge bases and chatbots require beta enrollment, GrowthBook `ai-beta`,
+ * and the AI approval. The Manage assistant needs only Catalyst, beta
+ * enrollment and `ai-beta`.
  * The dev E2E environment forces the flag on and the seeded lecturer starts
  * with the entitlement, so the denied half of the gate is exercised by
  * flipping the entitlement off through the database and reloading.
@@ -49,7 +50,7 @@ test.describe('AI beta management navigation gate', () => {
     await expect(page.getByTestId('chatbot-list')).toBeVisible()
   })
 
-  test('revoking AI approval denies knowledge bases but preserves eligible chatbot authoring', async ({
+  test('revoking AI approval denies knowledge bases and chatbots but keeps the assistant', async ({
     loginLecturer,
     page,
   }) => {
@@ -65,7 +66,7 @@ test.describe('AI beta management navigation gate', () => {
       await prisma.user.update({
         where: { id: USER_ID_TEST },
         // Keep beta enrollment open so this isolates administrative approval
-        // from the independent chatbot authoring gate.
+        // from the assistant gate, which does not need it.
         data: { aiFeaturesEnabled: false, betaEnabled: true },
       })
       await page.reload()
@@ -74,11 +75,16 @@ test.describe('AI beta management navigation gate', () => {
       const navigation = page.getByTestId('navigation')
       await navigation.getByTestId('resources').click()
       await expect(page.getByTestId('knowledge-bases')).not.toBeAttached()
-      await expect(page.getByTestId('chatbots')).toBeVisible()
-      await page.getByTestId('chatbots').click()
-      await expect(page.getByTestId('chatbot-list')).toBeVisible()
+      await expect(page.getByTestId('chatbots')).not.toBeAttached()
+      await expect(page.getByTestId('generate-elements')).not.toBeAttached()
+      await expect(page.getByTestId('manage-assistant-open')).toBeVisible()
 
       const manageUrl = process.env.URL_MANAGE ?? URL_MANAGE
+
+      await page.goto(`${manageUrl}/resources/chatbots`)
+      await expect(
+        page.getByTestId('chatbot-authoring-unavailable')
+      ).toBeVisible()
 
       for (const path of [
         '/resources/knowledgeBases',

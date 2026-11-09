@@ -3,7 +3,7 @@ import type { AppLogger } from '@klicker-uzh/logging/node'
 import { convertToModelMessages, isStepCount, streamText } from 'ai'
 import { type NextRequest, NextResponse } from 'next/server'
 import { getChatModelRegistry } from '@/src/lib/server/chatModelRegistry'
-import { getManageAiCapability } from '@/src/lib/server/featureFlags'
+import { getManageAssistantCapability } from '@/src/lib/server/featureFlags'
 import { getAuthenticatedManageUser } from '@/src/lib/server/manageAuth'
 import {
   MANAGE_CHAT_BODY_TIMEOUT_MS,
@@ -77,7 +77,7 @@ async function handlePOST(req: NextRequest, log: AppLogger) {
   }
   const userId = manageUser.sub
 
-  const aiCapability = await getManageAiCapability(manageUser)
+  const aiCapability = await getManageAssistantCapability(manageUser)
   if (aiCapability === 'disabled') {
     return NextResponse.json({ error: 'Not available' }, { status: 403 })
   }

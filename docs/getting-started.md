@@ -60,6 +60,9 @@ the needed app roots, optional services, and managed processes while keeping
 Postgres and Hatchet as the boot-critical base.
 The lecturer MCP server (`apps/mcp-lecturer`, port 7081) and the student MCP server (`apps/mcp-student`, port 7080) start automatically with the rest of the stack (`package.json:dev:container`); both have no external route, and `apps/chat` reaches them in-container.
 
+Before starting either checkout kind, install the devrouter version required by
+[`.devrouter.yml`](../.devrouter.yml) and run `devrouter setup --yes` once.
+
 1. **Start and prove the checkout:**
    ```bash
    devrouter ensure .
@@ -68,7 +71,7 @@ The lecturer MCP server (`apps/mcp-lecturer`, port 7081) and the student MCP ser
 2. **Accessing the apps:**
    - **Mode 1 (Primary checkout):** Stable routes such as `https://manage.klicker.localhost` plus the fixed localhost application ports; the database listens on an ephemeral loopback port or `db.klicker.localhost:5432` through the router. Lecturer login is `lecturer`/`abcd`.
    - **Mode 2 (linked checkout):** Routes linked-worktree traffic over HTTPS at `https://manage.klicker.<workspace>.localhost`. Requires:
-     1. Install devrouter ≥ 0.5.1 and run `devrouter setup --yes` once. Version 0.0.42 does not enforce post-create lifecycle ordering for managed adapters, 0.0.44 serializes shared TLS refresh, 0.0.45 assigns collision-safe identities to parallel DevPod and Devsy worktrees, 0.0.46 queues parallel provider transitions fairly with visible wait progress and fail-closed detached-state recovery, 0.0.52 adds explicit `ensure --repair` for a retained degraded runtime, and 0.0.53-0.0.55 add synchronous adapter dependency preparation and correct retained-runtime configuration and mount comparison.
+     1. Complete the host prerequisite above before starting the linked checkout.
      2. From an existing linked worktree, start and prove the environment with:
         ```bash
         devrouter ensure .
@@ -193,7 +196,7 @@ pnpm run build        # 21 production-mode turbo tasks, ~1.5min; needs NO secret
 pnpm run check        # typecheck — only passes AFTER build (generated artifacts)
 ```
 
-Order matters: on a fresh clone, `pnpm run check` fails in ~19 packages until `pnpm run build` has produced the Prisma client, GraphQL codegen output, and package dists. The root build script forces `NODE_ENV=production`, even when the devcontainer exports `NODE_ENV=development` for live apps. Direct checks for the five Next apps are self-contained with respect to Next-generated route types: each app runs `next typegen` before `tsc --noEmit`, so those ignored types do not require a prior app build. Workspace dependency builds are still required; CI builds changed packages before checking them. Git hooks depend on the same broader workspace state: pre-commit runs `check:all`, pre-push runs `build` — both fail hard without `node_modules` and the required workspace-generated artifacts.
+Order matters: on a fresh clone, `pnpm run check` fails in ~19 packages until `pnpm run build` has produced the Prisma client, GraphQL codegen output, and package dists. The root build script forces `NODE_ENV=production`, even when the devcontainer exports `NODE_ENV=development` for live apps. Direct checks for the five Next apps are self-contained with respect to Next-generated route types: each app runs `next typegen` before `tsc --noEmit`, so those ignored types do not require a prior app build. Workspace dependency builds are still required; CI builds changed packages before checking them. Git hooks normally run the full pre-commit `check:all` and pre-push `build` paths, which fail hard without `node_modules` and the required workspace-generated artifacts. Regular, non-executable Markdown additions and modifications under `docs/`, `project/` and `.agents/skills/` can use host formatting, parsing and document-policy checks against exact Git content. A push qualifies only for one linear fast-forward of an existing non-integration branch from its checked-out HEAD. New branches, integration branches, multiple refs, mode changes and uncertain validation policy retain the full build. Secret and identity scans remain in place.
 
 ### Git hooks with isolated container dependencies
 

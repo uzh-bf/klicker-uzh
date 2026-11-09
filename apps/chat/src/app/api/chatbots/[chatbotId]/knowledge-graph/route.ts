@@ -55,11 +55,11 @@ function parseReadRequest(
     )
     const kbId = z
       .string()
-      .uuid()
+      .guid()
       .safeParse(req.nextUrl.searchParams.get('kbId'))
     const buildId = z
       .string()
-      .uuid()
+      .guid()
       .safeParse(req.nextUrl.searchParams.get('buildId'))
     return nodeId.success && kbId.success && buildId.success
       ? {
@@ -76,7 +76,7 @@ function parseReadRequest(
 
 const mentionsBodySchema = z.object({
   text: z.string().trim().min(1).max(8000),
-  kbId: z.string().uuid().optional(),
+  kbId: z.string().guid().optional(),
 })
 
 async function handleGET(
@@ -90,7 +90,7 @@ async function handleGET(
     if (readRequest === null) return null
     const kbId = z
       .string()
-      .uuid()
+      .guid()
       .optional()
       .safeParse(req.nextUrl.searchParams.get('kbId') ?? undefined)
     if (!kbId.success) return null

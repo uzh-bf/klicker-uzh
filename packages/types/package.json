@@ -11,7 +11,7 @@
     "@klicker-uzh/prisma": "workspace:*"
   },
   "devDependencies": {
-    "@hatchet-dev/typescript-sdk": "~1.9.4",
+    "@hatchet-dev/typescript-sdk": "~1.22.0",
     "@types/node": "^24.10.1",
     "cross-env": "~7.0.3",
     "graphql-yoga": "~3.9.1",
@@ -20,7 +20,7 @@
     "typescript": "~6.0.3"
   },
   "peerDependencies": {
-    "@hatchet-dev/typescript-sdk": "^1.9.4",
+    "@hatchet-dev/typescript-sdk": "^1.22.0",
     "graphql-yoga": "^3.9.1",
     "ioredis": "^5.4.1"
   },

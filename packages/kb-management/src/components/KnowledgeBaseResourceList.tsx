@@ -90,7 +90,7 @@ function isActiveResource(resource: KnowledgeBaseResource) {
   )
 }
 
-function RunStatusBadge({
+export function RunStatusBadge({
   status,
   dataCy,
 }: {
@@ -146,7 +146,7 @@ function RunStatusBadge({
   )
 }
 
-function RunStatusMessage({
+export function RunStatusMessage({
   status,
   errorCode,
   statusMessage,
@@ -410,8 +410,8 @@ function ResourceTableRow({
               <span className="sm:hidden">
                 {resource.type === KbResourceType.Blob
                   ? t('kb.typeFile')
-                  : t('kb.typeUrl')}{' '}
-                ·{' '}
+                  : t('kb.typeUrl')}
+                ,{' '}
               </span>
               {resource.type === KbResourceType.Blob
                 ? formatFileSize(resource.sizeBytes)
@@ -807,11 +807,16 @@ function KnowledgeBaseResourceList({
   refreshKey,
   onMetricsChanged,
   onAddResource,
+  advanced = false,
 }: {
   kbId: string
   refreshKey: number
   onMetricsChanged: () => Promise<unknown>
   onAddResource: (trigger: HTMLElement) => void
+  // New resources queue themselves, and each row keeps its own retry action,
+  // so search, filters and the ingestion summary with its bulk trigger are
+  // expert tools the caller opts into.
+  advanced?: boolean
 }) {
   const t = useTranslations()
   const format = useFormatter()
@@ -1511,97 +1516,107 @@ function KnowledgeBaseResourceList({
         </div>
       </div>
 
-      <div className="mt-4 grid gap-3 rounded-md border border-slate-200 bg-slate-50 p-4 lg:grid-cols-[minmax(0,1fr)_12rem_12rem_14rem]">
-        <TextField
-          id="kb-resource-search"
-          autoComplete="off"
-          spellCheck={false}
-          value={search}
-          onChange={setSearch}
-          label={t('kb.searchResources')}
-          placeholder={t('kb.searchResourcesPlaceholder')}
-          data={{ cy: 'kb-resource-search' }}
-        />
-        <SelectField
-          id="kb-resource-type-filter"
-          label={t('kb.filterType')}
-          value={typeFilter || FILTER_ALL_VALUE}
-          onChange={(newValue) =>
-            setTypeFilter(
-              newValue === FILTER_ALL_VALUE ? '' : (newValue as KbResourceType)
-            )
-          }
-          items={[
-            { value: FILTER_ALL_VALUE, label: t('kb.filterAll') },
-            { value: KbResourceType.Blob, label: t('kb.typeFile') },
-            { value: KbResourceType.Url, label: t('kb.typeUrl') },
-          ]}
-          data={{ cy: 'kb-resource-type-filter' }}
-          className={{ root: 'w-full', select: { trigger: 'w-full' } }}
-        />
-        <SelectField
-          id="kb-resource-status-filter"
-          label={t('kb.filterStatus')}
-          value={statusFilter || FILTER_ALL_VALUE}
-          onChange={(newValue) =>
-            setStatusFilter(
-              newValue === FILTER_ALL_VALUE
-                ? ''
-                : (newValue as KbIngestionStatus)
-            )
-          }
-          items={[
-            { value: FILTER_ALL_VALUE, label: t('kb.filterAll') },
-            { value: KbIngestionStatus.Queued, label: t('kb.runStatusQueued') },
-            {
-              value: KbIngestionStatus.Processing,
-              label: t('kb.runStatusProcessing'),
-            },
-            {
-              value: KbIngestionStatus.Succeeded,
-              label: t('kb.runStatusSucceeded'),
-            },
-            { value: KbIngestionStatus.Failed, label: t('kb.runStatusFailed') },
-            {
-              value: KbIngestionStatus.Superseded,
-              label: t('kb.runStatusSuperseded'),
-            },
-          ]}
-          data={{ cy: 'kb-resource-status-filter' }}
-          className={{ root: 'w-full', select: { trigger: 'w-full' } }}
-        />
-        <SelectField
-          id="kb-resource-material-type-filter"
-          label={t('kb.filterMaterialType')}
-          value={materialTypeFilter || FILTER_ALL_VALUE}
-          onChange={(newValue) =>
-            setMaterialTypeFilter(
-              newValue === FILTER_ALL_VALUE
-                ? ''
-                : (newValue as KbResourceMaterialType)
-            )
-          }
-          items={[
-            { value: FILTER_ALL_VALUE, label: t('kb.filterAll') },
-            {
-              value: KbResourceMaterialType.Unclassified,
-              label: t('kb.materialTypeUnclassified'),
-            },
-            {
-              value: KbResourceMaterialType.CourseContent,
-              label: t('kb.materialTypeCourseContent'),
-            },
-            {
-              value: KbResourceMaterialType.Administrative,
-              label: t('kb.materialTypeAdministrative'),
-            },
-          ]}
-          data={{ cy: 'kb-resource-material-type-filter' }}
-          className={{ root: 'w-full', select: { trigger: 'w-full' } }}
-        />
-      </div>
+      {advanced ? (
+        <div className="mt-4 grid gap-3 rounded-md border border-slate-200 bg-slate-50 p-4 lg:grid-cols-[minmax(0,1fr)_12rem_12rem_14rem]">
+          <TextField
+            id="kb-resource-search"
+            autoComplete="off"
+            spellCheck={false}
+            value={search}
+            onChange={setSearch}
+            label={t('kb.searchResources')}
+            placeholder={t('kb.searchResourcesPlaceholder')}
+            data={{ cy: 'kb-resource-search' }}
+          />
+          <SelectField
+            id="kb-resource-type-filter"
+            label={t('kb.filterType')}
+            value={typeFilter || FILTER_ALL_VALUE}
+            onChange={(newValue) =>
+              setTypeFilter(
+                newValue === FILTER_ALL_VALUE
+                  ? ''
+                  : (newValue as KbResourceType)
+              )
+            }
+            items={[
+              { value: FILTER_ALL_VALUE, label: t('kb.filterAll') },
+              { value: KbResourceType.Blob, label: t('kb.typeFile') },
+              { value: KbResourceType.Url, label: t('kb.typeUrl') },
+            ]}
+            data={{ cy: 'kb-resource-type-filter' }}
+            className={{ root: 'w-full', select: { trigger: 'w-full' } }}
+          />
+          <SelectField
+            id="kb-resource-status-filter"
+            label={t('kb.filterStatus')}
+            value={statusFilter || FILTER_ALL_VALUE}
+            onChange={(newValue) =>
+              setStatusFilter(
+                newValue === FILTER_ALL_VALUE
+                  ? ''
+                  : (newValue as KbIngestionStatus)
+              )
+            }
+            items={[
+              { value: FILTER_ALL_VALUE, label: t('kb.filterAll') },
+              {
+                value: KbIngestionStatus.Queued,
+                label: t('kb.runStatusQueued'),
+              },
+              {
+                value: KbIngestionStatus.Processing,
+                label: t('kb.runStatusProcessing'),
+              },
+              {
+                value: KbIngestionStatus.Succeeded,
+                label: t('kb.runStatusSucceeded'),
+              },
+              {
+                value: KbIngestionStatus.Failed,
+                label: t('kb.runStatusFailed'),
+              },
+              {
+                value: KbIngestionStatus.Superseded,
+                label: t('kb.runStatusSuperseded'),
+              },
+            ]}
+            data={{ cy: 'kb-resource-status-filter' }}
+            className={{ root: 'w-full', select: { trigger: 'w-full' } }}
+          />
+          <SelectField
+            id="kb-resource-material-type-filter"
+            label={t('kb.filterMaterialType')}
+            value={materialTypeFilter || FILTER_ALL_VALUE}
+            onChange={(newValue) =>
+              setMaterialTypeFilter(
+                newValue === FILTER_ALL_VALUE
+                  ? ''
+                  : (newValue as KbResourceMaterialType)
+              )
+            }
+            items={[
+              { value: FILTER_ALL_VALUE, label: t('kb.filterAll') },
+              {
+                value: KbResourceMaterialType.Unclassified,
+                label: t('kb.materialTypeUnclassified'),
+              },
+              {
+                value: KbResourceMaterialType.CourseContent,
+                label: t('kb.materialTypeCourseContent'),
+              },
+              {
+                value: KbResourceMaterialType.Administrative,
+                label: t('kb.materialTypeAdministrative'),
+              },
+            ]}
+            data={{ cy: 'kb-resource-material-type-filter' }}
+            className={{ root: 'w-full', select: { trigger: 'w-full' } }}
+          />
+        </div>
+      ) : null}
 
-      {connection ? (
+      {advanced && connection ? (
         <div
           className="mt-3 flex flex-wrap items-center justify-between gap-3 rounded-md border border-primary-100/20 bg-primary-100/5 px-4 py-3 text-sm"
           data-cy="kb-ingestion-summary"

@@ -138,6 +138,11 @@ function ElementEditModal({
     isDuplication,
   })
 
+  const originalNumericalOptions =
+    dataQuestion?.element?.__typename === 'NumericalElement'
+      ? dataQuestion.element.options
+      : undefined
+
   const shouldRestoreAutoSave =
     !isDuplication ||
     (autoSavePayload !== null && autoSavePayload.pendingMapping !== null)
@@ -219,6 +224,7 @@ function ElementEditModal({
         Object.keys(formikInitialValues).length === 0
       }
       initialValues={formikInitialValues}
+      originalNumericalOptions={originalNumericalOptions}
       autoSavePayload={formAutoSavePayload}
       onAutoSavePayloadChange={setStoredAutoSave}
       onClose={async () => {
@@ -333,6 +339,7 @@ function ElementEditModal({
               elementId: submissionElementId,
               isDuplication: submissionIsDuplication,
               values,
+              originalOptions: originalNumericalOptions,
             })
 
             const result = await manipulateNumericalQuestion({
