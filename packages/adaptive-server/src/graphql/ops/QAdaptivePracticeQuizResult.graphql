@@ -25,6 +25,9 @@ query QAdaptivePracticeQuizResult($attemptId: String!) {
       hasElements
     }
     classificationToleranceBands
+    masteryFrom
+    mastered
+    nextLevelLabel
     competenceProfile {
       ...FAdaptivePracticeQuizResultNodeLevel1
     }
@@ -81,4 +84,6 @@ fragment FAdaptivePracticeQuizResultNodeFields on AdaptivePracticeQuizResultNode
   upperPosition
   coverageStatus
   weightShare
+  mastered
+  nextLevelLabel
 }

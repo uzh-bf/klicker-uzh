@@ -6,6 +6,7 @@ import {
 } from '@klicker-uzh/graphql/dist/ops'
 import { useTranslations } from 'next-intl'
 import { type ReactNode, useState } from 'react'
+import AdaptiveMasteryNote from './AdaptiveMasteryNote'
 import { getAdaptiveProfileNotTestedLabelKey } from './adaptiveLeafCoverage'
 import {
   ADAPTIVE_LEVEL_MARKER_COLOR,
@@ -44,6 +45,8 @@ export type AdaptiveCompetenceProfileNode = {
   upperPosition?: number | null
   coverageStatus?: string | null
   weightShare?: number | null
+  mastered?: boolean | null
+  nextLevelLabel?: string | null
   children?: AdaptiveCompetenceProfileNode[] | null
 }
 
@@ -65,6 +68,9 @@ type ProfileEstimate = {
   coverageStatus?: string | null
   // Competences only: share in the overall level (0-1).
   weightShare?: number | null
+  // Mastery of the reported level (null: no indicator), see AdaptiveMasteryNote.
+  mastered?: boolean | null
+  nextLevelLabel?: string | null
 }
 
 type LevelBands = Array<{
@@ -487,6 +493,18 @@ function ProfileRow({
             <CertaintyBadge level={certainty} label={certaintyLabel} />
           )}
         </div>
+        {!isPlacementPilot &&
+          estimate.classification ===
+            AdaptivePracticeQuizResultClassification.Classified &&
+          estimate.levelLabel &&
+          typeof estimate.mastered === 'boolean' && (
+            <AdaptiveMasteryNote
+              mastered={estimate.mastered}
+              levelLabel={estimate.levelLabel}
+              nextLevelLabel={estimate.nextLevelLabel}
+              className="mt-1"
+            />
+          )}
         {rangeSentence && (
           <p className="mt-1 text-xs text-slate-600">{rangeSentence}</p>
         )}
