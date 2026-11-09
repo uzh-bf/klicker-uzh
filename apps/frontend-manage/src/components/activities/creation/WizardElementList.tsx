@@ -96,7 +96,7 @@ function WizardElementList({
           >
             <Ellipsis
               maxLines={1}
-              className={{ content: 'mr-auto text-xs' }}
+              className={{ trigger: 'min-w-0', content: 'mr-auto text-xs' }}
               withMarkdown={false}
               withMarkdownTooltip={false}
             >

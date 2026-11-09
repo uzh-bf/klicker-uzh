@@ -20,7 +20,7 @@ Use this skill for Klicker-specific Playwright work. Combine it with `playwright
 
 ## Coverage And Parity Rules
 
-Before adding coverage, apply the [test-scope policy in AGENTS.md](../../../AGENTS.md#tests) to decide whether to extend an existing flow or use browser verification.
+Before adding coverage, apply the [test-scope policy in AGENTS.md](../../../AGENTS.md#tests) to decide whether to add a Playwright spec for an uncovered key user flow, extend an existing flow, or use browser verification.
 
 - Preserve test count and test intent. Do not skip, merge, delete, or weaken tests to make the suite pass faster.
 - Treat `playwright/tests` as the active suite. Ignore `playwright/example` for active parity unless the user says otherwise.

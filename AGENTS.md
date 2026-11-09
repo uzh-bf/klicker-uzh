@@ -88,7 +88,7 @@ GraphQL tooling.
 
 ### Tests
 
-Reserve Playwright E2E tests for key user flows. For a small UI or layout regression, prefer a focused assertion in an existing flow that already exercises the functionality; do not add a standalone spec solely for component geometry, styling, or individual controls. When no suitable flow exists, verify the change in the browser and record the evidence.
+Reserve Playwright E2E tests for key user flows. Add a new spec when a key user flow lacks coverage. For a small UI or layout regression, prefer a focused assertion in an existing flow that already exercises the functionality; do not add a standalone spec solely for component geometry, styling, or individual controls. When no suitable flow exists, verify the change in the browser and record the evidence.
 
 ```bash
 pnpm run test:run             # vitest across all packages
