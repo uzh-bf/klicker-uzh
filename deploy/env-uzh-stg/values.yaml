@@ -521,6 +521,18 @@ frontendPWA:
     limits:
       memory: 1Gi
 
+  # Serves /_next/static from its own Deployment, so pages of an earlier
+  # release keep their assets during and after a rollout.
+  releaseAssets:
+    enabled: true
+    replicaCount: 1
+    resources:
+      requests:
+        cpu: 20m
+        memory: 128Mi
+      limits:
+        memory: 256Mi
+
 frontendManage:
   priorityClassName: staging-workload
   podAnnotations:
@@ -985,6 +997,18 @@ assessment:
       limits:
         cpu: 200m
         memory: 200Mi
+
+    # Serves /_next/static from its own Deployment, so pages of an earlier
+    # release keep their assets during and after a rollout.
+    releaseAssets:
+      enabled: true
+      replicaCount: 1
+      resources:
+        requests:
+          cpu: 20m
+          memory: 128Mi
+        limits:
+          memory: 256Mi
 
   backendGraphql:
     priorityClassName: staging-workload
