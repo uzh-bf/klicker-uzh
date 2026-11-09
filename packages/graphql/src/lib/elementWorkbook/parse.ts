@@ -2,16 +2,18 @@ import { parse } from 'csv-parse/sync'
 import ExcelJS from 'exceljs'
 
 export const MAX_ELEMENT_WORKBOOK_BYTES = 5 * 1024 * 1024
-export const MAX_ELEMENT_WORKBOOK_ELEMENTS = 500
+export const MAX_ELEMENT_WORKBOOK_ELEMENTS = 2000
 export const ELEMENT_WORKBOOK_HEADER_ROW = 6
 export const ELEMENT_WORKBOOK_DATA_ROW = 8
 
 const MAX_WORKSHEETS = 8
 const MAX_ROWS = 10_000
 const MAX_COLUMNS = 64
-const MAX_CELLS = 100_000
+const MAX_CELLS = 150_000
 const MAX_CELL_TEXT_LENGTH = 32_767
-const MAX_EXPANDED_BYTES = 20 * 1024 * 1024
+// ExcelJS holds the whole workbook in memory at several times its XML size,
+// so this bounds per-request memory. 2,000 elements need about 2 MB.
+const MAX_EXPANDED_BYTES = 25 * 1024 * 1024
 const MAX_ZIP_ENTRIES = 250
 const MAX_TAGS = 50
 const MAX_POINTS_MULTIPLIER = 4

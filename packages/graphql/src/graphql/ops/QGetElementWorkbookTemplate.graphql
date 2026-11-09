@@ -1,0 +1,6 @@
+query GetElementWorkbookTemplate {
+  elementWorkbookTemplate {
+    filename
+    contentBase64
+  }
+}

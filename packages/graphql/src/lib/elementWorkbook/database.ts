@@ -6,6 +6,7 @@ import {
   type ExistingIdentity,
   elementIdentity,
   planImport,
+  type TextNormalizer,
 } from './plan.js'
 
 const selection = {
@@ -32,6 +33,30 @@ const selection = {
   },
 } satisfies Prisma.ElementSelect
 
+/**
+ * Imported images are copies whose `originalId` is the source link. Mapping
+ * them back keeps an imported element identical to the workbook row it came
+ * from, so re-importing the same file is still detected as a duplicate.
+ */
+async function mediaNormalizer(
+  tx: Prisma.TransactionClient,
+  ownerId: string
+): Promise<TextNormalizer> {
+  const copies = await tx.mediaFile.findMany({
+    where: { ownerId, originalId: { not: null } },
+    select: { href: true, originalId: true },
+  })
+  if (copies.length === 0) return (text) => text
+  const links = copies
+    .map((copy) => [copy.href, copy.originalId!] as const)
+    .sort(([a], [b]) => b.length - a.length)
+  return (text) =>
+    links.reduce(
+      (result, [href, source]) => result.replaceAll(href, source),
+      text
+    )
+}
+
 /** Snapshot hashes avoid writing existing teaching content or user profiles to disk. */
 export async function readImportState(
   tx: Prisma.TransactionClient,
@@ -45,6 +70,7 @@ export async function readImportState(
     throw new ElementImportError(
       'Target owner must be an existing lecturer or administrator'
     )
+  const normalize = await mediaNormalizer(tx, ownerId)
   const existing: ExistingIdentity[] = []
   const rows: { id: number; hash: string }[] = []
   let cursor: number | undefined
@@ -73,10 +99,13 @@ export async function readImportState(
     for (const element of batch) {
       existing.push({
         id: element.id,
-        identity: elementIdentity({
-          ...element,
-          type: element.type as WorkbookElement['type'],
-        }),
+        identity: elementIdentity(
+          {
+            ...element,
+            type: element.type as WorkbookElement['type'],
+          },
+          normalize
+        ),
       })
       rows.push({ id: element.id, hash: digest(element) })
     }
@@ -94,6 +123,7 @@ export async function readImportState(
   })
   return {
     existing,
+    normalize,
     state: {
       owner,
       elements: rows,
@@ -112,7 +142,7 @@ export async function previewImport(
       const snapshot = await readImportState(tx, ownerId)
       return {
         state: snapshot.state,
-        decisions: planImport(elements, snapshot.existing),
+        decisions: planImport(elements, snapshot.existing, snapshot.normalize),
       }
     },
     { isolationLevel: 'RepeatableRead', timeout: 120_000 }
@@ -123,7 +153,7 @@ export async function executeImport(
   prisma: PrismaClient,
   ownerId: string,
   elements: WorkbookElement[],
-  expected: Awaited<ReturnType<typeof previewImport>>,
+  expected: Awaited<ReturnType<typeof previewImport>> | string,
   payloadHash: string
 ) {
   return prisma.$transaction(
@@ -132,8 +162,10 @@ export async function executeImport(
       // from other writers fail closed; there is no automatic write retry.
       await tx.$executeRaw`SELECT pg_advisory_xact_lock(hashtext('klicker-excel-v6'), hashtext(${ownerId}))`
       const before = await readImportState(tx, ownerId)
-      const decisions = planImport(elements, before.existing)
-      if (digest({ state: before.state, decisions }) !== digest(expected))
+      const decisions = planImport(elements, before.existing, before.normalize)
+      const expectedDigest =
+        typeof expected === 'string' ? expected : digest(expected)
+      if (digest({ state: before.state, decisions }) !== expectedDigest)
         throw new ElementImportError(
           'Database changed since the dry run; use a fresh preview'
         )
@@ -185,8 +217,10 @@ export async function executeImport(
           saved.status !== 'REVIEW' ||
           saved.isArchived ||
           saved.isDeleted ||
-          elementIdentity({ ...saved, type: element.type }) !==
-            elementIdentity(element) ||
+          elementIdentity(
+            { ...saved, type: element.type },
+            before.normalize
+          ) !== elementIdentity(element, before.normalize) ||
           digest(saved.tags.map((t) => t.id).sort((a, b) => a - b)) !==
             digest(tagIds.map((t) => t.id).sort((a, b) => a - b)) ||
           saved.permissions.length !== 1 ||

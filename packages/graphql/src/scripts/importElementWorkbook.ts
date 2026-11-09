@@ -3,13 +3,13 @@ import { createHash } from 'node:crypto'
 import { mkdir, readFile, rm, stat, writeFile } from 'node:fs/promises'
 import { resolve } from 'node:path'
 import { parseArgs } from 'node:util'
-import { ElementImportError } from './elementWorkbook/errors.js'
+import { ElementImportError } from '../lib/elementWorkbook/errors.js'
 import {
   ElementWorkbookParseError,
   MAX_ELEMENT_WORKBOOK_BYTES,
   parseElementWorkbook,
-} from './elementWorkbook/parse.js'
-import { comparisonCsv, digest } from './elementWorkbook/plan.js'
+} from '../lib/elementWorkbook/parse.js'
+import { comparisonCsv, digest } from '../lib/elementWorkbook/plan.js'
 
 const help = `Import all seven element types in the Klicker Excel template (no media fetching).
   pnpm exec tsx src/scripts/importElementWorkbook.ts --file /absolute/input.xlsx --validate-only
@@ -108,7 +108,7 @@ async function main() {
       log: [],
     })
     const { executeImport, previewImport } = await import(
-      './elementWorkbook/database.js'
+      '../lib/elementWorkbook/database.js'
     )
     try {
       const current = {

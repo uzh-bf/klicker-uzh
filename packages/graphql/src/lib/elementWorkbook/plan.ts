@@ -24,8 +24,15 @@ type IdentityInput = Pick<
   'type' | 'content' | 'explanation' | 'basePoints' | 'pointsMultiplier'
 > & { options: unknown }
 
+/** Maps stored text to its canonical form, e.g. copied image links back to their source. */
+export type TextNormalizer = (text: string) => string
+const unchanged: TextNormalizer = (text) => text
+
 /** Titles, tags, review state, and internal choice ids are not teaching content. */
-export function elementIdentity(element: IdentityInput): string | null {
+export function elementIdentity(
+  element: IdentityInput,
+  normalize: TextNormalizer = unchanged
+): string | null {
   let options: unknown = {}
   if (['SC', 'MC', 'KPRIM'].includes(element.type)) {
     const input = element.options as Record<string, unknown> | null
@@ -49,9 +56,11 @@ export function elementIdentity(element: IdentityInput): string | null {
       choices: [...choices]
         .sort((a, b) => Number(a.ix) - Number(b.ix))
         .map((choice) => ({
-          value: choice.value,
+          value: normalize(choice.value as string),
           ...(hasSampleSolution ? { correct: choice.correct } : {}),
-          ...(hasAnswerFeedbacks ? { feedback: choice.feedback ?? '' } : {}),
+          ...(hasAnswerFeedbacks
+            ? { feedback: normalize((choice.feedback as string) ?? '') }
+            : {}),
         })),
     }
   } else if (element.type === 'NUMERICAL' || element.type === 'FREE_TEXT') {
@@ -109,12 +118,14 @@ export function elementIdentity(element: IdentityInput): string | null {
       }
     }
   }
+  // Content and flashcards are never scored, so their scoring fields are noise.
+  const scored = element.type !== 'CONTENT' && element.type !== 'FLASHCARD'
   return digest({
     type: element.type,
-    content: element.content,
-    explanation: element.explanation || null,
-    basePoints: element.basePoints,
-    pointsMultiplier: element.pointsMultiplier,
+    content: normalize(element.content),
+    explanation: element.explanation ? normalize(element.explanation) : null,
+    basePoints: scored ? element.basePoints : false,
+    pointsMultiplier: scored ? element.pointsMultiplier : 1,
     options,
   })
 }
@@ -132,7 +143,8 @@ export type ImportDecision = {
 
 export function planImport(
   elements: WorkbookElement[],
-  existing: ExistingIdentity[]
+  existing: ExistingIdentity[],
+  normalize: TextNormalizer = unchanged
 ): ImportDecision[] {
   const library = new Map<string, number>()
   for (const item of existing) {
@@ -141,7 +153,7 @@ export function planImport(
   }
   const seen = new Map<string, number>()
   return elements.map((element) => {
-    const identity = elementIdentity(element)
+    const identity = elementIdentity(element, normalize)
     if (!identity) throw new Error('Cannot identify a validated element')
     const base = {
       sheet: element.sheet,
