@@ -32,7 +32,11 @@ spec:
 apiVersion: policy/v1
 kind: PodDisruptionBudget
 metadata:
-  name: {{ include "chart.fullname" . }}-frontend-pwa
+  # With the burst tier this budget gets its own name. Argo CD's
+  # RespectIgnoreDifferences sync option merges an existing object's live
+  # selector into the desired one, so an in-place selector change never
+  # applies; a new object is created exactly as rendered.
+  name: {{ include "chart.fullname" . }}-frontend-pwa{{ if .Values.frontendPWA.burst.enabled }}-baseline{{ end }}
   labels:
     {{- include "chart.labels" . | nindent 4 }}
     app.kubernetes.io/component: frontend-pwa
@@ -42,7 +46,34 @@ spec:
     matchLabels:
       {{- include "chart.selectorLabels" . | nindent 6 }}
       app.kubernetes.io/component: frontend-pwa
+    {{- if .Values.frontendPWA.burst.enabled }}
+    # Burst pods carry the tier label and have their own budget below. The
+    # eviction API rejects a pod that matches more than one budget, and a
+    # shared budget would let a single burst pod block node drains.
+    matchExpressions:
+      - key: klicker.uzh.ch/tier
+        operator: DoesNotExist
+    {{- end }}
 ---
+{{- if .Values.frontendPWA.burst.enabled }}
+# Frontend PWA burst tier PDB
+apiVersion: policy/v1
+kind: PodDisruptionBudget
+metadata:
+  name: {{ include "chart.fullname" . }}-frontend-pwa-burst
+  labels:
+    {{- include "chart.labels" . | nindent 4 }}
+    app.kubernetes.io/component: frontend-pwa
+    klicker.uzh.ch/tier: burst
+spec:
+  maxUnavailable: 1
+  selector:
+    matchLabels:
+      {{- include "chart.selectorLabels" . | nindent 6 }}
+      app.kubernetes.io/component: frontend-pwa
+      klicker.uzh.ch/tier: burst
+---
+{{- end }}
 # Frontend Manage PDB
 apiVersion: policy/v1
 kind: PodDisruptionBudget
@@ -97,7 +128,7 @@ metadata:
     {{- include "chart.labels" . | nindent 4 }}
     app.kubernetes.io/component: hatchet-worker-general
 spec:
-  minAvailable: 1
+  minAvailable: {{ .Values.hatchet.workers.general.podDisruptionBudget.minAvailable }}
   selector:
     matchLabels:
       {{- include "chart.selectorLabels" . | nindent 6 }}
@@ -112,7 +143,7 @@ metadata:
     {{- include "chart.labels" . | nindent 4 }}
     app.kubernetes.io/component: hatchet-worker-response-processor
 spec:
-  minAvailable: 2
+  minAvailable: {{ .Values.hatchet.workers.responseProcessor.podDisruptionBudget.minAvailable }}
   selector:
     matchLabels:
       {{- include "chart.selectorLabels" . | nindent 6 }}

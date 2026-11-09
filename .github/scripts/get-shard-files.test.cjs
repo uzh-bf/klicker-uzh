@@ -9,6 +9,7 @@ const {
   canonicalProfile,
   parseProfileManifest,
   parseTimings,
+  productionSpecs,
   SELECTED_MAX_SHARDS,
   SELECTED_TARGET_SHARD_SECONDS,
   selectedDurationMap,
@@ -27,10 +28,13 @@ const timings = JSON.parse(
   fs.readFileSync(path.join(repositoryRoot, 'playwright/timings.json'), 'utf8')
 )
 
-test('the profile manifest assigns every active spec exactly once', () => {
+test('the profile manifest assigns every active and production spec exactly once', () => {
   const profiles = parseProfileManifest(manifest, allFiles)
 
-  assert.deepEqual([...profiles.keys()].sort(), allFiles)
+  assert.deepEqual(
+    [...profiles.keys()].sort(),
+    [...allFiles, ...productionSpecs(manifest)].sort()
+  )
 })
 
 test('activity lifecycle specs select the worker-bearing live-quiz profile', () => {

@@ -1,0 +1,205 @@
+name: Production translation context
+
+run-name: >-
+  ${{ vars.PRIORITY_CI_ENABLED == 'true' &&
+      github.event_name == 'pull_request' &&
+      github.event.pull_request.state == 'open' &&
+      github.event.pull_request.draft == false &&
+      github.event.repository.private == false &&
+      github.event.pull_request.head.repo.full_name == github.repository &&
+      github.event.pull_request.user.type != 'Bot' &&
+      contains(github.event.pull_request.labels.*.name, 'ci:priority') &&
+      (github.event.action != 'labeled' || github.event.label.name == 'ci:priority') &&
+      format('priority:{0}:{1}:{2}', github.event.pull_request.number, github.event.pull_request.head.sha, github.event.pull_request.base.sha)
+      || format('ordinary:{0}', github.run_id) }}
+on:
+  push:
+    branches: ['v3', 'v3-*']
+  pull_request:
+    branches: ['v3', 'v3-*']
+    # No "edited": a title or body edit never changes the tested tree, and a
+    # base retarget is revalidated by the restack push or a close and reopen.
+    types: [opened, synchronize, reopened, labeled]
+permissions:
+  contents: read
+  # The selector reads this workflow's prior required-status result for the head
+  # to decide whether a metadata-only edit may skip the suite.
+  checks: read
+concurrency:
+  group: >-
+    ${{ github.event.action == 'labeled' &&
+        (vars.PRIORITY_CI_ENABLED == 'true' &&
+         github.event.label.name == 'ci:priority' &&
+         github.event.pull_request.state == 'open' &&
+      github.event.pull_request.draft == false &&
+         github.event.repository.private == false &&
+         github.event.pull_request.head.repo.full_name == github.repository &&
+         github.event.pull_request.user.type != 'Bot' &&
+         format('{0}-priority-{1}-{2}-{3}', github.workflow, github.event.pull_request.number, github.event.pull_request.head.sha, github.event.pull_request.base.sha) ||
+         format('{0}-ignored-{1}', github.workflow, github.run_id)) ||
+        (vars.PRIORITY_CI_ENABLED == 'true' &&
+         github.event_name == 'pull_request' &&
+         github.event.pull_request.state == 'open' &&
+      github.event.pull_request.draft == false &&
+         github.event.repository.private == false &&
+         github.event.pull_request.head.repo.full_name == github.repository &&
+         github.event.pull_request.user.type != 'Bot' &&
+         contains(github.event.pull_request.labels.*.name, 'ci:priority') &&
+         format('{0}-priority-{1}-{2}-{3}', github.workflow, github.event.pull_request.number, github.event.pull_request.head.sha, github.event.pull_request.base.sha)) ||
+        format('intl-production-{0}', github.event.pull_request.number || github.ref) }}
+  cancel-in-progress: >-
+    ${{ github.event.action != 'labeled' &&
+        !(vars.PRIORITY_CI_ENABLED == 'true' &&
+          github.event_name == 'pull_request' &&
+          github.event.pull_request.state == 'open' &&
+      github.event.pull_request.draft == false &&
+          github.event.repository.private == false &&
+          github.event.pull_request.head.repo.full_name == github.repository &&
+          github.event.pull_request.user.type != 'Bot' &&
+          contains(github.event.pull_request.labels.*.name, 'ci:priority')) }}
+jobs:
+  priority-route:
+    if: >-
+      !(vars.PRIORITY_CI_ENABLED == 'true' && github.event_name == 'pull_request' && github.event.pull_request.state == 'open' && github.event.pull_request.draft == false && github.event.repository.private == false && github.event.pull_request.head.repo.full_name == github.repository && github.event.pull_request.user.type != 'Bot' && contains(github.event.pull_request.labels.*.name, 'ci:priority') && (github.event.action != 'labeled' || github.event.label.name == 'ci:priority')) &&
+      (vars.PRIORITY_CI_ENABLED == 'true' && github.event_name == 'pull_request' && github.event.pull_request.state == 'open' && github.event.pull_request.draft == false && github.event.repository.private == false && github.event.pull_request.head.repo.full_name == github.repository && github.event.pull_request.user.type != 'Bot' && contains(github.event.pull_request.labels.*.name, 'ci:priority'))
+    runs-on: ubuntu-latest
+    permissions:
+      actions: read
+      contents: read
+      issues: read
+      pull-requests: read
+    outputs:
+      admitted: ${{ steps.route.outputs.admitted }}
+      run_label_event: ${{ steps.route.outputs.run_label_event }}
+      run_attempt: ${{ steps.route.outputs.run_attempt }}
+      job_timeout: ${{ steps.route.outputs.job_timeout }}
+      runner_x64: ${{ steps.route.outputs.runner_x64 }}
+      runner_build: ${{ steps.route.outputs.runner_build }}
+      runner_arm: ${{ steps.route.outputs.runner_arm }}
+    steps:
+      - name: Check out the trusted priority router
+        uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4
+        with:
+          repository: uzh-bf/klicker-uzh
+          ref: v3
+          path: .ci-priority
+          sparse-checkout: .github/actions/priority-ci-route
+          persist-credentials: false
+      - name: Route priority validation
+        id: route
+        uses: ./.ci-priority/.github/actions/priority-ci-route
+
+  filter:
+    needs: priority-route
+    if: >-
+      !(vars.PRIORITY_CI_ENABLED == 'true' && github.event_name == 'pull_request' && github.event.pull_request.state == 'open' && github.event.pull_request.draft == false && github.event.repository.private == false && github.event.pull_request.head.repo.full_name == github.repository && github.event.pull_request.user.type != 'Bot' && contains(github.event.pull_request.labels.*.name, 'ci:priority') && (github.event.action != 'labeled' || github.event.label.name == 'ci:priority')) &&
+      (!cancelled() && (github.event.action != 'labeled' || needs.priority-route.outputs.run_label_event == 'true'))
+    runs-on: ubuntu-latest
+    outputs:
+      should_run: ${{ github.event_name == 'push' && 'true' || steps.check.outputs.should_run }}
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+      - name: Check for changes
+        id: check
+        uses: ./.github/actions/changed-paths
+        with:
+          pattern: '^(apps/frontend-pwa/|apps/frontend-manage/|apps/frontend-control/|apps/auth/|apps/chat/|packages/|package\.json$|pnpm-lock\.yaml$|pnpm-workspace\.yaml$|\.npmrc$|turbo\.json$|tsconfig\.json$|\.github/workflows/test-intl-production\.yml$|\.github/scripts/intl-production-smoke\.mjs$|\.github/fixtures/intl-production/|util/test-intl-resolution\.mjs$|\.github/actions/changed-paths/|\.github/scripts/required-ci-status\.cjs$)'
+          prior-check-name: test-intl-production-status
+
+  intl-production-smoke:
+    name: intl-production-smoke (${{ matrix.app }})
+    needs: [filter, priority-route]
+    if: >-
+      !(vars.PRIORITY_CI_ENABLED == 'true' && github.event_name == 'pull_request' && github.event.pull_request.state == 'open' && github.event.pull_request.draft == false && github.event.repository.private == false && github.event.pull_request.head.repo.full_name == github.repository && github.event.pull_request.user.type != 'Bot' && contains(github.event.pull_request.labels.*.name, 'ci:priority') && (github.event.action != 'labeled' || github.event.label.name == 'ci:priority')) &&
+      (!cancelled() && (github.event.action != 'labeled' || needs.priority-route.outputs.run_label_event == 'true') && (needs.priority-route.outputs.admitted != 'true' || needs.priority-route.outputs.run_attempt == format('{0}', github.run_attempt)) && needs.filter.outputs.should_run == 'true')
+    runs-on: ${{ needs.priority-route.outputs.runner_x64 || 'ubuntu-24.04' }}
+    timeout-minutes: ${{ needs.priority-route.outputs.admitted == 'true' && fromJSON(needs.priority-route.outputs.job_timeout || '30') || 30 }}
+    strategy:
+      fail-fast: false
+      matrix:
+        app: [frontend-pwa, frontend-manage]
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: ${{ github.event.pull_request.head.sha || github.sha }}
+          persist-credentials: false
+      - name: Build and render through the production provider
+        run: node .github/scripts/intl-production-smoke.mjs '${{ matrix.app }}' '${{ github.event.pull_request.head.sha || github.sha }}'
+
+  # Always reports a status even when the path filter selects nothing, so this
+  # job is the required check. It runs unconditionally so a skipped context can
+  # never read as acceptable; the helper fails on cancellation, an unexpected
+  # skip or a failed smoke.
+  test-intl-production-status:
+    name: ${{ (vars.PRIORITY_CI_ENABLED == 'true' && github.event_name == 'pull_request' && github.event.pull_request.state == 'open' && github.event.pull_request.draft == false && github.event.repository.private == false && github.event.pull_request.head.repo.full_name == github.repository && github.event.pull_request.user.type != 'Bot' && contains(github.event.pull_request.labels.*.name, 'ci:priority') && (github.event.action != 'labeled' || github.event.label.name == 'ci:priority')) && 'test-intl-production-status (delegated)' || ((github.event.action != 'labeled' || needs.priority-route.outputs.run_label_event == 'true') && 'test-intl-production-status' || 'test-intl-production-status (priority not admitted)') }}
+    needs: [filter, intl-production-smoke, priority-route]
+    if: >-
+      !(vars.PRIORITY_CI_ENABLED == 'true' && github.event_name == 'pull_request' && github.event.pull_request.state == 'open' && github.event.pull_request.draft == false && github.event.repository.private == false && github.event.pull_request.head.repo.full_name == github.repository && github.event.pull_request.user.type != 'Bot' && contains(github.event.pull_request.labels.*.name, 'ci:priority') && (github.event.action != 'labeled' || github.event.label.name == 'ci:priority')) &&
+      (always() && (github.event.action != 'labeled' || needs.priority-route.outputs.run_label_event == 'true'))
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+          sparse-checkout: .github/scripts
+      - name: Report required status
+        env:
+          EVENT_NAME: ${{ github.event_name }}
+          ACTION: ${{ github.event.action }}
+          DRAFT: ${{ github.event_name == 'pull_request' && github.event.pull_request.draft == true }}
+          FILTER_RESULT: ${{ needs.filter.result }}
+          SHOULD_RUN: ${{ needs.filter.outputs.should_run }}
+          TEST_RESULT: ${{ needs.intl-production-smoke.result }}
+          REF_NAME: ${{ github.ref_name }}
+          REF: ${{ github.ref }}
+          SHA: ${{ github.sha }}
+          HEAD_SHA: ${{ github.event.pull_request.head.sha || github.sha }}
+          REPOSITORY: ${{ github.repository }}
+          RUN_ID: ${{ github.run_id }}
+          RUN_ATTEMPT: ${{ github.run_attempt }}
+          WORKFLOW_PATH: .github/workflows/test-intl-production.yml
+          TERMINAL_JOB: test-intl-production-status
+          EVIDENCE_PATH: required-ci-evidence.json
+          SELECTION_JOB: filter
+          SELECTION_JOB_RESULT: ${{ needs.filter.result }}
+          SUITE_JOBS: '["intl-production-smoke (frontend-pwa)","intl-production-smoke (frontend-manage)"]'
+          SUITE_JOB_RESULT: ${{ needs.intl-production-smoke.result }}
+        run: node .github/scripts/required-ci-status.cjs report
+      - name: Upload required CI evidence
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: required-ci-evidence
+          path: required-ci-evidence.json
+          if-no-files-found: error
+          retention-days: 7
+
+  priority-execution:
+    if: >-
+      vars.PRIORITY_CI_ENABLED == 'true' && github.event_name == 'pull_request' && github.event.pull_request.state == 'open' && github.event.pull_request.draft == false && github.event.repository.private == false && github.event.pull_request.head.repo.full_name == github.repository && github.event.pull_request.user.type != 'Bot' && contains(github.event.pull_request.labels.*.name, 'ci:priority') && (github.event.action != 'labeled' || github.event.label.name == 'ci:priority')
+    permissions:
+      actions: read
+      checks: read
+      contents: read
+      issues: read
+      pull-requests: read
+    uses: uzh-bf/klicker-uzh/.github/workflows/test-intl-production-execution.yml@a3286cc5cc77b98c7255b596084fd1032682bdaf
+
+  priority-status:
+    name: ${{ (vars.PRIORITY_CI_ENABLED == 'true' && github.event_name == 'pull_request' && github.event.pull_request.state == 'open' && github.event.pull_request.draft == false && github.event.repository.private == false && github.event.pull_request.head.repo.full_name == github.repository && github.event.pull_request.user.type != 'Bot' && contains(github.event.pull_request.labels.*.name, 'ci:priority') && (github.event.action != 'labeled' || github.event.label.name == 'ci:priority')) && (github.event.action != 'labeled' || needs.priority-execution.outputs.run_label_event == 'true') && 'test-intl-production-status' || 'test-intl-production-status (priority not admitted)' }}
+    needs: priority-execution
+    if: >-
+      always() && (vars.PRIORITY_CI_ENABLED == 'true' && github.event_name == 'pull_request' && github.event.pull_request.state == 'open' && github.event.pull_request.draft == false && github.event.repository.private == false && github.event.pull_request.head.repo.full_name == github.repository && github.event.pull_request.user.type != 'Bot' && contains(github.event.pull_request.labels.*.name, 'ci:priority') && (github.event.action != 'labeled' || github.event.label.name == 'ci:priority'))
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    permissions: {}
+    steps:
+      - name: Require the actual trusted terminal result
+        if: github.event.action != 'labeled' || needs.priority-execution.outputs.run_label_event == 'true'
+        env:
+          EXECUTION_RESULT: ${{ needs.priority-execution.result }}
+          REQUIRED_RESULT: ${{ needs.priority-execution.outputs.required_result }}
+        run: test "$EXECUTION_RESULT" = success && test "$REQUIRED_RESULT" = success

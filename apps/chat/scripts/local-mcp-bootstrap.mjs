@@ -2,6 +2,8 @@ import { spawn, spawnSync } from 'node:child_process'
 import { generateKeyPairSync, randomBytes, randomUUID } from 'node:crypto'
 import { realpathSync } from 'node:fs'
 import pg from 'pg'
+import { loadLocalMcpDocuments } from './local-mcp-documents.mjs'
+import { loadLocalMcpFixture } from './local-mcp-fixture.mjs'
 import { repairLocalMcpSeed } from './local-mcp-seed.mjs'
 
 const ROOT = '/workspaces/klicker-uzh'
@@ -55,6 +57,12 @@ try {
   )
     throw new Error('Local MCP runtime boundary rejected')
 
+  const fixture = loadLocalMcpFixture(process.env)
+  if (fixture)
+    loadLocalMcpDocuments(
+      { LOCAL_MCP_DOCUMENTS_FILE: fixture.documentsFile },
+      []
+    )
   ownsProcesses = true
   stopOwnedProcesses()
   if (interrupted) throw new Error('Local MCP startup interrupted')
@@ -73,7 +81,7 @@ try {
   db.on('error', () => {})
   try {
     await db.connect()
-    await repairLocalMcpSeed(db, token, () => interrupted)
+    await repairLocalMcpSeed(db, token, () => interrupted, fixture)
   } finally {
     await db.end()
   }

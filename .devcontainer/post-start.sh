@@ -8,6 +8,16 @@ ROOT="$(cd "$ROOT" && pwd)"
 bash "$ROOT/util/dev-runtime.sh" require-bootstrap
 cd "$ROOT"
 
+# Preserve explicit guarded evaluation settings across canonical development
+# defaults. A fresh nonsecret generation marks synthetic credential changes.
+evaluation_names=(KLICKER_EVAL_GUARD_ORIGIN OPENAI_BASE_URL OPENAI_API_KEY CHAT_MODEL_REGISTRY_JSON KLICKER_EVAL_GUARD_GENERATION)
+evaluation_values=()
+if [ "${KLICKER_EVAL_GUARD_ORIGIN+x}" = x ] || [ "${KLICKER_EVAL_GUARD_GENERATION+x}" = x ]; then
+  for evaluation_name in "${evaluation_names[@]}"; do
+    evaluation_values+=("${!evaluation_name:-}")
+  done
+fi
+
 # Re-source the canonical env (DevPod truncates env_file values at '='), then the
 # runtime Hatchet token written by post-create (if any). (GOTCHAS #1)
 set -a
@@ -16,6 +26,16 @@ set -a
 # shellcheck source=/dev/null
 [ -f "$ROOT/.devcontainer/.hatchet.env" ] && . "$ROOT/.devcontainer/.hatchet.env"
 set +a
+
+if [ "${#evaluation_values[@]}" -gt 0 ]; then
+  for evaluation_index in "${!evaluation_names[@]}"; do
+    [ -n "${evaluation_values[$evaluation_index]}" ] || {
+      echo "[post-start] ERROR: guarded evaluation configuration is incomplete: ${evaluation_names[$evaluation_index]} is unset or empty. Supply all five guarded settings, or stop the evaluation and unset ${evaluation_names[*]} to return to ordinary development." >&2
+      exit 2
+    }
+    export "${evaluation_names[$evaluation_index]}=${evaluation_values[$evaluation_index]}"
+  done
+fi
 
 # Detect if devrouter routing is active (via mkcert CA mount) or fallback to plain localhost ports
 if [ ! -s /etc/devrouter/mkcert-rootCA.pem ]; then
@@ -37,11 +57,14 @@ if [ ! -s /etc/devrouter/mkcert-rootCA.pem ]; then
   export NEXT_PUBLIC_PWA_URL=http://localhost:3001
   export NEXT_PUBLIC_ASSESSMENT_URL=http://localhost:3001
   export NEXT_PUBLIC_CONTROL_URL=http://localhost:3003
-  export NEXT_PUBLIC_ADD_RESPONSE_URL=http://localhost:7078
+  export NEXT_PUBLIC_ADD_RESPONSE_URL=http://localhost:7078/AddResponse
   export NEXT_PUBLIC_CHAT_URL=http://localhost:3004
   export NEXT_PUBLIC_GROWTHBOOK_API_HOST=http://localhost:3002/__growthbook__
   export CORS_ALLOWED_ORIGINS=http://localhost:3001
   export NODE_EXTRA_CA_CERTS=""
+  # The OIDC mock shares this container's network namespace, so without routing
+  # the browser and the auth server both reach it on plain localhost:8090.
+  OIDC_ISSUER='http://localhost:8090/default'
 elif [ -n "${WORKSPACE:-}" ]; then
   echo "[post-start] Namespacing URLs for workspace: $WORKSPACE"
   export APP_ORIGIN_API=https://api.klicker.${WORKSPACE}.localhost
@@ -62,7 +85,7 @@ elif [ -n "${WORKSPACE:-}" ]; then
   export NEXT_PUBLIC_PWA_URL=https://pwa.klicker.${WORKSPACE}.localhost
   export NEXT_PUBLIC_ASSESSMENT_URL=https://pwa.klicker.${WORKSPACE}.localhost
   export NEXT_PUBLIC_CONTROL_URL=https://control.klicker.${WORKSPACE}.localhost
-  export NEXT_PUBLIC_ADD_RESPONSE_URL=https://response-api.klicker.${WORKSPACE}.localhost
+  export NEXT_PUBLIC_ADD_RESPONSE_URL=https://response-api.klicker.${WORKSPACE}.localhost/AddResponse
   export NEXT_PUBLIC_GROWTHBOOK_API_HOST=https://manage.klicker.${WORKSPACE}.localhost/__growthbook__
   export CORS_ALLOWED_ORIGINS=https://pwa.klicker.${WORKSPACE}.localhost
   export AUTH_LECTURER_ALLOWED_HOSTS=manage.klicker.${WORKSPACE}.localhost,127.0.0.1:3002
@@ -70,7 +93,48 @@ elif [ -n "${WORKSPACE:-}" ]; then
   export APP_ORIGIN_LTI=https://lti.klicker.${WORKSPACE}.localhost
   export NEXT_PUBLIC_CHAT_URL=https://chat.klicker.${WORKSPACE}.localhost
   export APP_ORIGIN_CHAT=https://chat.klicker.${WORKSPACE}.localhost
+  OIDC_ISSUER="https://oidc.klicker.${WORKSPACE}.localhost/default"
+else
+  OIDC_ISSUER="https://oidc.klicker.localhost/default"
 fi
+
+# Local Edu-ID replacement. SWITCH edu-ID registers redirect URIs per client, so
+# this devclient can only ever accept the primary checkout's callback; a linked
+# worktree callback (https://auth.klicker.<workspace>.localhost/...) is rejected
+# by the provider, and no local configuration can change that. The OIDC mock
+# accepts any redirect_uri, which makes Edu-ID login testable in every checkout.
+#
+# The mock is wired only while the active selection routes it, so no checkout
+# advertises a provider it cannot reach. A real EDUID_CLIENT_SECRET always wins:
+# the mock is devcontainer-only wiring and must never displace configured
+# provider credentials. Issuer reachability is not a startup gate; the stack
+# keeps starting and the mock reports itself as disabled instead.
+# shellcheck source=/dev/null
+. "$ROOT/util/local-eduid-issuer.sh"
+local_eduid_wire "$OIDC_ISSUER"
+case "$LOCAL_EDUID_STATE" in
+  enabled)
+    export EDUID_CLIENT_SECRET='dev-only-not-a-secret'
+    export EDUID_CLIENT_ID="${EDUID_CLIENT_ID:-klicker-local-dev}"
+    export NEXT_PUBLIC_EDUID_ID="${NEXT_PUBLIC_EDUID_ID:-eduid-test}"
+    export EDUID_WELL_KNOWN="${OIDC_ISSUER}/.well-known/openid-configuration"
+    echo "[post-start] Local Edu-ID mock issuer: $OIDC_ISSUER"
+    ;;
+  external)
+    echo '[post-start] EDUID_CLIENT_SECRET is set; using the configured Edu-ID provider instead of the local mock.'
+    ;;
+  not-selected)
+    echo "[post-start] Local Edu-ID mock: ${LOCAL_EDUID_REASON}; add the eduid component to route it (for example --profile ${DEVROUTER_PROFILE:-full},eduid)."
+    ;;
+  disabled)
+    echo "[post-start] WARN: the local Edu-ID mock stays disabled: ${LOCAL_EDUID_REASON}." >&2
+    echo "[post-start] WARN: run 'devrouter setup --yes' and 'devrouter ensure .' to restore the issuer route; delegated login is unaffected." >&2
+    ;;
+  *)
+    echo "[post-start] ERROR: ${LOCAL_EDUID_REASON}." >&2
+    exit 2
+    ;;
+esac
 
 # No-TTY pnpm hardening (see post-create.sh). (GOTCHAS #18)
 export CI=true
@@ -95,12 +159,42 @@ if [ -f "$ROOT/.devcontainer/.runtime/beta-enrollment-fixture" ]; then
   DEV_TURBO_TASK=dev:test
   export NEXT_PUBLIC_GROWTHBOOK_CLIENT_KEY=sdk-test
 fi
+# The host Playwright launcher writes this marker for runs against the dev
+# servers. Their dev:test scripts load the same synthetic feature flag fixture
+# and test controller as CI's start:test processes.
+if [ -f "$ROOT/.devcontainer/.runtime/playwright-dev-test" ]; then
+  DEV_TURBO_TASK=dev:test
+  export NEXT_PUBLIC_GROWTHBOOK_CLIENT_KEY=sdk-test
+  echo '[post-start] Playwright dev test mode: dev servers run their dev:test scripts.'
+fi
+# The host Playwright launcher's --ci-runtime mode writes CI's resolved runtime
+# plan here. Its presence replaces the dev servers with the production test
+# builds and start:test processes that CI runs, served on the routed origins;
+# the launcher removes it again on its next run without --ci-runtime.
+PLAYWRIGHT_CI_PLAN="$ROOT/.devcontainer/.runtime/playwright-ci-plan.json"
+PLAYWRIGHT_CI_BUILD_FILE="$ROOT/.devcontainer/.runtime/playwright-ci-build-id"
+if [ -f "$PLAYWRIGHT_CI_PLAN" ]; then
+  if [ "$DEV_TURBO_TASK" != dev ]; then
+    echo '[post-start] ERROR: the CI-parity Playwright runtime cannot combine with a dev:test fixture marker.' >&2
+    exit 1
+  fi
+  DEV_TURBO_TASK=start:test
+  export PLAYWRIGHT_RUNTIME_PLAN="$PLAYWRIGHT_CI_PLAN"
+  export KLICKER_TEST_ROUTED_DOMAIN="klicker${WORKSPACE:+.$WORKSPACE}.localhost"
+  # Each launcher run writes a new build id, so a changed id replaces the
+  # process group and rebuilds; Turbo's cache keeps an unchanged build cheap.
+  PLAYWRIGHT_CI_BUILD_ID="$(cat "$PLAYWRIGHT_CI_PLAN" "$PLAYWRIGHT_CI_BUILD_FILE" 2>/dev/null | sha256sum)"
+  export PLAYWRIGHT_CI_BUILD_ID="${PLAYWRIGHT_CI_BUILD_ID%% *}"
+  echo "[post-start] Playwright CI runtime: production test builds on https://<app>.${KLICKER_TEST_ROUTED_DOMAIN}"
+fi
 export DEV_TURBO_TASK
 
 : "${DEVROUTER_PROCESS_HELPER:?Run devrouter ensure to start this managed application process.}"
 
-export DEVROUTER_PROCESS_FINGERPRINT_ENV='APP_ORIGIN_API,APP_ORIGIN_AUTH,APP_ORIGIN_PWA,APP_ORIGIN_MANAGE,APP_ORIGIN_CONTROL,APP_ORIGIN_ASSESSMENT_API,APP_ORIGIN_ASSESSMENT_PWA,APP_ORIGIN_LTI,APP_ORIGIN_CHAT,APP_MANAGE_SUBDOMAIN,APP_STUDENT_SUBDOMAIN,APP_CONTROL_SUBDOMAIN,NEXTAUTH_URL,COOKIE_DOMAIN,NEXT_PUBLIC_API_URL,NEXT_PUBLIC_AUTH_URL,NEXT_PUBLIC_MANAGE_URL,NEXT_PUBLIC_PWA_URL,NEXT_PUBLIC_ASSESSMENT_URL,NEXT_PUBLIC_CONTROL_URL,NEXT_PUBLIC_ADD_RESPONSE_URL,NEXT_PUBLIC_CHAT_URL,NEXT_PUBLIC_GROWTHBOOK_API_HOST,NEXT_PUBLIC_GROWTHBOOK_CLIENT_KEY,CORS_ALLOWED_ORIGINS,AUTH_LECTURER_ALLOWED_HOSTS,AUTH_STUDENT_ALLOWED_HOSTS,NODE_EXTRA_CA_CERTS,DEVROUTER_PROFILE'
-export DEVROUTER_PROCESS_FINGERPRINT_ENV="${DEVROUTER_PROCESS_FINGERPRINT_ENV},DEV_TURBO_TASK"
+export DEVROUTER_PROCESS_FINGERPRINT_ENV='APP_ORIGIN_API,APP_ORIGIN_AUTH,APP_ORIGIN_PWA,APP_ORIGIN_MANAGE,APP_ORIGIN_CONTROL,APP_ORIGIN_ASSESSMENT_API,APP_ORIGIN_ASSESSMENT_PWA,APP_ORIGIN_LTI,APP_ORIGIN_CHAT,APP_MANAGE_SUBDOMAIN,APP_STUDENT_SUBDOMAIN,APP_CONTROL_SUBDOMAIN,NEXTAUTH_URL,COOKIE_DOMAIN,NEXT_PUBLIC_API_URL,NEXT_PUBLIC_AUTH_URL,NEXT_PUBLIC_MANAGE_URL,NEXT_PUBLIC_PWA_URL,NEXT_PUBLIC_ASSESSMENT_URL,NEXT_PUBLIC_CONTROL_URL,NEXT_PUBLIC_ADD_RESPONSE_URL,NEXT_PUBLIC_CHAT_URL,NEXT_PUBLIC_GROWTHBOOK_API_HOST,NEXT_PUBLIC_GROWTHBOOK_CLIENT_KEY,CORS_ALLOWED_ORIGINS,AUTH_LECTURER_ALLOWED_HOSTS,AUTH_STUDENT_ALLOWED_HOSTS,NODE_EXTRA_CA_CERTS,DEVROUTER_PROFILE,EDUID_WELL_KNOWN,EDUID_CLIENT_ID,NEXT_PUBLIC_EDUID_ID'
+export DEVROUTER_PROCESS_FINGERPRINT_ENV="${DEVROUTER_PROCESS_FINGERPRINT_ENV},DEV_TURBO_TASK,PLAYWRIGHT_CI_BUILD_ID"
+# Keep credentials out of fingerprints; rotate the generation with guard keys.
+export DEVROUTER_PROCESS_FINGERPRINT_ENV="${DEVROUTER_PROCESS_FINGERPRINT_ENV},KLICKER_EVAL_GUARD_ORIGIN,OPENAI_BASE_URL,CHAT_MODEL_REGISTRY_JSON,KLICKER_EVAL_GUARD_GENERATION"
 
 # Resolve the complete selection first through the pure table in
 # util/profile-resolver.sh: exact turbo roots, readiness apps, and process
@@ -121,13 +215,31 @@ else
   PROFILE_WANTS_MCP=no
 fi
 DEV_TURBO_FILTERS="$(profile_turbo_filters)"
-DEV_BUILD_FILTERS="$(bash ./util/dev-runtime.sh preparation-filters)"
-if [ "$PROFILE_WANTS_DEV" = yes ] &&
-  ! "$DEVROUTER_PROCESS_HELPER" ensure --help | grep -F -- '--prepare-command' >/dev/null; then
-  echo '[post-start] ERROR: Managed startup requires a helper with --prepare-command support.' >&2
-  exit 1
+DEV_BUILD_FILTERS=''
+if [ "$PROFILE_WANTS_DEV" = yes ]; then
+  DEV_BUILD_FILTERS="$(bash ./util/dev-runtime.sh preparation-filters)"
+  if ! "$DEVROUTER_PROCESS_HELPER" ensure --help | grep -F -- '--prepare-command' >/dev/null; then
+    echo '[post-start] ERROR: Managed startup requires a helper with --prepare-command support.' >&2
+    exit 1
+  fi
 fi
 READINESS_APPS="$(profile_readiness_apps)"
+if [ "$DEV_TURBO_TASK" = start:test ]; then
+  # CI's runtime plan, not the dev profile, decides which apps start, so only
+  # probe the apps whose package the plan's Turbo filters select.
+  READINESS_APPS="$(node -e '
+    const plan = JSON.parse(require("node:fs").readFileSync(process.argv[1], "utf8"))
+    const filters = new Set(plan.bindings.turboFilters)
+    console.log(process.argv.slice(2).filter((app) => filters.has(`--filter=@klicker-uzh/${app}`)).join(" "))
+  ' "$PLAYWRIGHT_RUNTIME_PLAN" ${READINESS_APPS})"
+elif [ "$DEV_TURBO_TASK" = dev:test ]; then
+  # Turbo skips packages without a dev:test script, so only probe the apps
+  # that define one.
+  READINESS_APPS="$(node -e '
+    const { readFileSync } = require("node:fs")
+    console.log(process.argv.slice(1).filter((app) => JSON.parse(readFileSync(`apps/${app}/package.json`, "utf8")).scripts?.["dev:test"]).join(" "))
+  ' ${READINESS_APPS})"
+fi
 export READINESS_APPS
 if profile_wants klicker-workers; then
   PROFILE_WANTS_WORKERS=yes
@@ -203,16 +315,36 @@ fi
 # repository owns only the application command and environment above.
 start_managed_runtime() {
   local runtime_fingerprint runtime_generation
+  local prepare_args=()
+  # Cache-only repair restarts pass no-prepare: removing a stale .next cache
+  # changes no dependencies, so rebuilding the dependency closure again would
+  # only replay the turbo graph moments after the initial start did.
+  if [ "${1:-}" != no-prepare ]; then
+    prepare_args=(--prepare-command "bash ./util/dev-runtime.sh prepare ${DEV_BUILD_FILTERS}")
+  fi
 
   runtime_fingerprint="$(bash ./util/dev-runtime.sh fingerprint)"
   runtime_generation="$(bash ./util/dev-runtime.sh generation)"
-  if [ -n "${DEV_TURBO_FILTERS}" ]; then
+  if [ "$DEV_TURBO_TASK" = start:test ]; then
+    # The plan's build:test outputs are the production apps, served by the
+    # same start:playwright:ci entry that CI's shards run.
+    if [ "${1:-}" != no-prepare ]; then
+      prepare_args=(--prepare-command 'bash ./util/dev-runtime.sh prepare-playwright-ci')
+    fi
+    "$DEVROUTER_PROCESS_HELPER" ensure \
+      --name klicker-dev \
+      --match 'playwright-profile-runtime.mjs start' \
+      --log /tmp/dev.log \
+      "${prepare_args[@]}" \
+      -- bash ./util/dev-runtime.sh start "$runtime_fingerprint" "$runtime_generation" \
+      -- pnpm run start:playwright:ci
+  elif [ -n "${DEV_TURBO_FILTERS}" ]; then
     # shellcheck disable=SC2086 # intentional word splitting of filter flags
     "$DEVROUTER_PROCESS_HELPER" ensure \
       --name klicker-dev \
       --match 'turbo run dev' \
       --log /tmp/dev.log \
-      --prepare-command "bash ./util/dev-runtime.sh prepare ${DEV_BUILD_FILTERS}" \
+      "${prepare_args[@]}" \
       -- bash ./util/dev-runtime.sh start "$runtime_fingerprint" "$runtime_generation" \
       -- pnpm exec turbo run "$DEV_TURBO_TASK" ${DEV_TURBO_FILTERS}
   else
@@ -220,7 +352,7 @@ start_managed_runtime() {
       --name klicker-dev \
       --match 'turbo run dev' \
       --log /tmp/dev.log \
-      --prepare-command "bash ./util/dev-runtime.sh prepare ${DEV_BUILD_FILTERS}" \
+      "${prepare_args[@]}" \
       -- bash ./util/dev-runtime.sh start "$runtime_fingerprint" "$runtime_generation" \
       -- pnpm run dev:container
   fi
@@ -246,7 +378,9 @@ run_readiness_pass() {
   for app in ${READINESS_APPS}; do
     status=0
     bash ./util/dev-runtime.sh wait-app "$app" || status=$?
-    if [ "$status" -eq 20 ]; then
+    # A production test build has no dev cache to repair; removing its .next
+    # would delete the build itself.
+    if [ "$status" -eq 20 ] && [ "$DEV_TURBO_TASK" != start:test ]; then
       STALE_NEXT_APPS+=("$app")
     elif [ "$status" -ne 0 ]; then
       echo "[post-start] ERROR: $app failed semantic readiness; no cache cleanup was attempted." >&2
@@ -269,7 +403,7 @@ if [ "$READINESS_STATUS" -eq 20 ]; then
   for app in "${STALE_NEXT_APPS[@]}"; do
     bash ./util/dev-runtime.sh request-repair "$app"
   done
-  start_managed_runtime
+  start_managed_runtime no-prepare
 
   READINESS_STATUS=0
   run_readiness_pass || READINESS_STATUS=$?

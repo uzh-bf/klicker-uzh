@@ -6,3 +6,6 @@ metadata:
   labels:
     {{- include "chart.labels" . | nindent 4 }}
 data:
+  NEXTAUTH_URL: {{ .Values.global.appOrigins.auth | quote }}
+  # The auth service only redirects lecturers back to these hosts after login.
+  AUTH_LECTURER_ALLOWED_HOSTS: {{ printf "%s,%s" (urlParse .Values.global.appOrigins.manage).host (urlParse .Values.global.appOrigins.control).host | quote }}

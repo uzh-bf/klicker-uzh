@@ -2217,7 +2217,17 @@ export async function getPreviousPointCorrections(
 
   // fetch the course and include all live quiz and instance corrections
   const course = await ctx.prisma.course.findUnique({
-    where: { id: courseId! },
+    where: {
+      id: courseId!,
+      permissions: {
+        some: {
+          userId: ctx.user.sub,
+          permissionLevel: {
+            in: [DB.PermissionLevel.OWNER, DB.PermissionLevel.ADMIN],
+          },
+        },
+      },
+    },
     include: {
       liveQuizzes: {
         include: {
@@ -3350,7 +3360,7 @@ export async function deleteCourse(
 
       return { deleted, deletionCancelled: false }
     },
-    { timeout: 60000 }
+    { timeout: 1200000 }
   )
 
   if (!deletedCourse.deleted) {

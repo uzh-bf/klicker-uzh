@@ -8,6 +8,10 @@ import isoWeek from 'dayjs/plugin/isoWeek.js'
 import { prop, sortBy } from 'remeda'
 import isEmail from 'validator/lib/isEmail.js'
 import type { Context, ContextWithUser } from '../lib/context.js'
+import {
+  type ParticipantDataUseFields,
+  participantDataUseSelect,
+} from '../lib/learningAnalytics.js'
 
 dayjs.extend(isoWeek)
 
@@ -251,6 +255,17 @@ export async function getParticipation(
   })
 
   return participation
+}
+
+export async function getParticipantDataUse(
+  ctx: ContextWithUser
+): Promise<ParticipantDataUseFields | null> {
+  if (ctx.user.role !== DB.UserRole.PARTICIPANT) return null
+
+  return ctx.prisma.participant.findUnique({
+    where: { id: ctx.user.sub },
+    select: participantDataUseSelect,
+  })
 }
 
 // interface RegisterParticipantFromLTIArgs {

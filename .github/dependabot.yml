@@ -7,6 +7,10 @@ updates:
     # Align with pnpm minimumReleaseAge (14 days) in pnpm-workspace.yaml
     cooldown:
       default-days: 14
+    # Every open update pull request costs a complete validation wave that
+    # cannot use the self-hosted pool: the shared check, SonarCloud, CodeQL,
+    # dependency review, and eight full Playwright shards on hosted runners.
+    open-pull-requests-limit: 2
     # Group minor and patch updates to reduce noise
     groups:
       dependencies:
@@ -27,3 +31,43 @@ updates:
       interval: 'weekly'
     cooldown:
       default-days: 14
+    open-pull-requests-limit: 2
+    # One pull request per weekly run instead of one per action.
+    groups:
+      github-actions:
+        patterns:
+          - '*'
+
+  - package-ecosystem: 'uv'
+    directory: '/apps/analytics'
+    schedule:
+      interval: 'weekly'
+    cooldown:
+      default-days: 14
+    open-pull-requests-limit: 2
+    # The analytics dependency set is not shipped by any runtime image, so its
+    # patch and minor bumps share one pull request and one validation wave.
+    groups:
+      analytics-python:
+        patterns:
+          - '*'
+
+  # One entry for every application directory that builds and publishes its own
+  # image. `directories` with a glob replaces twelve per-directory entries,
+  # because those produced twelve separate pull requests for a single shared
+  # base-image bump: on 2026-09-14 nine `node-26.8-alpine` pull requests opened
+  # within twenty minutes, and each one triggered the complete validation suite.
+  # `group-by: dependency-name` collapses the directories into one pull request
+  # per updated image. The shared migrator image in packages/prisma and the
+  # local reverse proxy in util/traefik stay outside this list.
+  - package-ecosystem: 'docker'
+    directories:
+      - '/apps/*'
+    schedule:
+      interval: 'weekly'
+    open-pull-requests-limit: 3
+    groups:
+      docker-base-images:
+        patterns:
+          - '*'
+        group-by: dependency-name

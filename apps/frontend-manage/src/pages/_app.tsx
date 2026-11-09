@@ -3,7 +3,7 @@ import { config } from '@fortawesome/fontawesome-svg-core'
 import '@fortawesome/fontawesome-svg-core/styles.css'
 import { getMessageFallback, onError, routing } from '@klicker-uzh/i18n'
 import { sourceSansPro } from '@klicker-uzh/shared-components/src/font'
-import { init } from '@socialgouv/matomo-next'
+import { init, push } from '@socialgouv/matomo-next'
 import { Toaster } from '@uzh-bf/design-system'
 import dayjs from 'dayjs'
 import timezone from 'dayjs/plugin/timezone'
@@ -16,6 +16,7 @@ import { DndProvider } from 'react-dnd'
 import { HTML5Backend } from 'react-dnd-html5-backend'
 import { CourseDuplicationProvider } from '../components/courses/CourseDuplicationStatusProvider'
 import ManageFeatureFlagProvider from '../components/featureFlags/ManageFeatureFlagProvider'
+import 'katex/dist/katex.min.css'
 import '../globals.css'
 import { useApollo } from '../lib/apollo'
 
@@ -34,7 +35,14 @@ function App({ Component, pageProps }: AppProps) {
 
   useEffect(() => {
     if (MATOMO_URL && MATOMO_SITE_ID) {
-      init({ url: MATOMO_URL, siteId: MATOMO_SITE_ID })
+      init({
+        url: MATOMO_URL,
+        siteId: MATOMO_SITE_ID,
+        // track the path only: the initial page view would otherwise report
+        // the full URL, including login tokens passed as query parameters
+        onInitialization: () =>
+          push(['setCustomUrl', window.location.pathname]),
+      })
     }
   }, [])
 

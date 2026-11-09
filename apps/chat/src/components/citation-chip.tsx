@@ -1,7 +1,7 @@
 'use client'
 
 import { useTranslations } from 'next-intl'
-import type { MouseEvent } from 'react'
+import { type MouseEvent, useLayoutEffect } from 'react'
 import { twMerge } from 'tailwind-merge'
 
 import { resolveCitationSource } from '@/src/lib/sources/normalizeSources'
@@ -26,8 +26,18 @@ export const CITATION_CHIP_JOINER = '\u2060'
  */
 export function CitationChip({ index }: { index: number }) {
   const t = useTranslations()
-  const { messageId, sources } = useMessageSourcesContext()
+  const { messageId, registerCitation, sources } = useMessageSourcesContext()
   const source = resolveCitationSource(index, sources)
+  const sourceIndex = source?.index
+
+  // Register the link that actually resolved to a source. The hook stays
+  // unconditional so invalid markers and valid markers follow the same hook
+  // order, while its cleanup mirrors every registration for duplicate chips,
+  // Strict Mode, and replaced streamed text parts.
+  useLayoutEffect(() => {
+    if (sourceIndex === undefined) return
+    return registerCitation(sourceIndex)
+  }, [registerCitation, sourceIndex])
 
   if (!source) return <>{`[${index}]`}</>
 
@@ -39,10 +49,18 @@ export function CitationChip({ index }: { index: number }) {
   const handleClick = (event: MouseEvent) => {
     event.preventDefault()
     const target = document.getElementById(`src-${messageId}-${source.index}`)
-    target?.scrollIntoView({ behavior: 'smooth', block: 'center' })
+    if (!target) return
+    // A cited card beyond the preview limit sits inside the collapsed "Other
+    // retrieved material" disclosure, which has to be open before the scroll
+    // and focus below can land on a visible card.
+    const disclosure = target.closest('details')
+    if (disclosure && !disclosure.open) {
+      disclosure.open = true
+    }
+    target.scrollIntoView({ behavior: 'smooth', block: 'center' })
     // `preventScroll` avoids fighting the smooth scroll above: `.focus()`
     // would otherwise jump the card into view instantly on its own.
-    target?.focus({ preventScroll: true })
+    target.focus({ preventScroll: true })
   }
 
   return (

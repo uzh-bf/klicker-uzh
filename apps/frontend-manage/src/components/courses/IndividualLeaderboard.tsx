@@ -1,11 +1,6 @@
-import { LeaderboardEntry } from '@klicker-uzh/graphql/dist/ops'
+import type { LeaderboardEntry } from '@klicker-uzh/graphql/dist/ops'
 import Loader from '@klicker-uzh/shared-components/src/Loader'
-import {
-  Button,
-  SelectField,
-  TabContent,
-  UserNotification,
-} from '@uzh-bf/design-system'
+import { Button, SelectField, TabContent } from '@uzh-bf/design-system'
 import dayjs from 'dayjs'
 import customParseFormat from 'dayjs/plugin/customParseFormat'
 import { useTranslations } from 'next-intl'
@@ -190,10 +185,20 @@ function IndividualLeaderboard({
           )}
         </div>
       </div>
-      <UserNotification
-        message={t('manage.course.emailsInLeaderboardExport')}
-        className={{ root: 'mb-3' }}
-      />
+      <p className="mb-1 text-sm text-slate-600">
+        {t('manage.course.leaderboardSummary')}
+      </p>
+      <details className="mb-3 text-sm">
+        <summary
+          className="w-fit cursor-pointer text-primary-100"
+          data-cy="course-leaderboard-inclusion-help"
+        >
+          {t('manage.course.leaderboardInclusionHelp')}
+        </summary>
+        <p className="mt-1 text-slate-600">
+          {t('manage.course.leaderboardInclusion')}
+        </p>
+      </details>
       <Suspense fallback={<Loader />}>
         <SuspendedCourseLeaderboard
           courseId={courseId}
@@ -205,6 +210,17 @@ function IndividualLeaderboard({
           customEndDate={customEndDate}
         />
       </Suspense>
+      <details className="text-sm">
+        <summary
+          className="w-fit cursor-pointer text-primary-100"
+          data-cy="course-leaderboard-export-help"
+        >
+          {t('manage.course.leaderboardExportHelp')}
+        </summary>
+        <p className="mt-1 text-slate-600">
+          {t('manage.course.leaderboardExportDescription')}
+        </p>
+      </details>
     </TabContent>
   )
 }

@@ -2,6 +2,24 @@ import { existsSync } from 'node:fs'
 
 export const HOST_RUNNER_ENV = 'KLICKER_PLAYWRIGHT_HOST_RUNNER'
 
+export function preserveLocalDatabase(env = process.env) {
+  if (env.KLICKER_PLAYWRIGHT_PRESERVE_DATABASE !== '1') return false
+
+  if (env[HOST_RUNNER_ENV] !== '1') {
+    throw new Error(
+      'Explicit database preservation requires the Playwright host launcher marker.'
+    )
+  }
+
+  if (env.CI || env.GITHUB_ACTIONS) {
+    throw new Error(
+      'Explicit database preservation is incompatible with CI or GitHub Actions.'
+    )
+  }
+
+  return true
+}
+
 export function isContainerRuntime({
   cwd = process.cwd(),
   env = process.env,
@@ -25,13 +43,13 @@ export function assertPlaywrightHostBoundary(options = {}) {
 
   if (isContainerRuntime({ ...options, env })) {
     throw new Error(
-      'Local Playwright execution is host-only. Exit the devcontainer and run `pnpm playwright:host -- <args>` from the host.'
+      'Local Playwright execution is host-only. Exit the devcontainer and run `node util/run-playwright-host.mjs <args>` from the host.'
     )
   }
 
   if (env[HOST_RUNNER_ENV] !== '1') {
     throw new Error(
-      'Local Playwright must use the host launcher so it targets the exact devrouter workspace. Run `pnpm playwright:host -- <args>`.'
+      'Local Playwright must use the host launcher so it targets the exact devrouter workspace. Run `node util/run-playwright-host.mjs <args>`.'
     )
   }
 }

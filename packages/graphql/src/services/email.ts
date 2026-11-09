@@ -1,12 +1,12 @@
 import * as DB from '@klicker-uzh/prisma/client'
-import nodemailer from 'nodemailer'
+import nodemailer, { type Transporter } from 'nodemailer'
 
 type AVAILABLE_EMAIL_TEMPLATES =
   | 'MagicLinkRequested'
   | 'ParticipantAccountActivation'
   | 'RandomizedGroupCreationFailure'
 
-let transport: nodemailer.Transporter | undefined
+let transport: Transporter | undefined
 
 export async function createTransport() {
   if (transport) {

@@ -2,8 +2,13 @@ import { createHash, randomUUID } from 'node:crypto'
 import { createOpenAI } from '@ai-sdk/openai'
 import { prisma } from '@klicker-uzh/prisma'
 import type { Chatbot, Prisma } from '@klicker-uzh/prisma/client'
+import { HANDOFF_SOURCES } from '@klicker-uzh/shared-components/src/utils/handoff'
 import { safeDecrypt } from '@klicker-uzh/util'
-import { startActiveObservation } from '@langfuse/tracing'
+import {
+  type LangfuseSpan,
+  propagateAttributes,
+  startActiveObservation,
+} from '@langfuse/tracing'
 import {
   consumeStream,
   generateText,
@@ -13,10 +18,30 @@ import {
   streamText,
   type ToolSet,
 } from 'ai'
-import { type NextRequest, NextResponse } from 'next/server'
+import { after, type NextRequest, NextResponse } from 'next/server'
 import { z } from 'zod'
+import {
+  appendTextToModelContent,
+  buildDocumentPageSummaryRow,
+  DOCUMENT_PAGE_SUMMARY_ROW_FILTER,
+  IMAGE_ROW_FILTER,
+  MAX_DOCUMENT_PAGE_DATA_URL_LENGTH,
+} from '@/src/lib/attachments/attachmentState'
+import {
+  MAX_VISUAL_REVIEW_PAGES,
+  stripDocumentBlocks,
+} from '@/src/lib/attachments/documentText'
+import {
+  DEFAULT_ANSWER_STYLE,
+  DEFAULT_ANSWER_TONE,
+} from '@/src/lib/config/answerStyles'
 import type { ReasoningEffort } from '@/src/lib/config/reasoning'
+import {
+  answerStyleSchema,
+  answerToneSchema,
+} from '@/src/lib/server/answerStyleInstructions'
 import { withChatbotAuth } from '@/src/lib/server/apiGuards'
+import { withCalculatorTool } from '@/src/lib/server/calculatorTool'
 import {
   type ChatModelConfig,
   getAllowedReasoningEffortsForModel,
@@ -24,28 +49,36 @@ import {
   getChatModelRegistry,
   getParticipantFallbackModelId,
 } from '@/src/lib/server/chatModelRegistry'
+import { withModelCitationIndices } from '@/src/lib/server/citationInstructions'
 import {
   resolveEffectiveChatModeOptions,
   resolveEffectiveMCPConfigurations,
   resolveRequestedChatMode,
 } from '@/src/lib/server/effectiveChatModes'
+import { trailingStepMessage } from '@/src/lib/server/feedbackEvidence'
 import { ensureImagePreviewBase64 } from '@/src/lib/server/imagePreview'
 import {
-  getParentSpanContext,
-  getTraceIdForMessage,
+  flushLangfuseTelemetry,
+  getChatTraceContext,
+  getLangfuseAiSdkIntegration,
   isAiTelemetryEnabled,
+  LANGFUSE_CHAT_TRACE_NAME,
 } from '@/src/lib/server/langfuseTracing'
 import {
   REQUIRED_MCP_UNAVAILABLE_CODE,
   RequiredMCPUnavailableError,
 } from '@/src/lib/server/mcpRuntimePolicy'
-import { createOpenAIFetch } from '@/src/lib/server/openaiCachePolicy'
+import {
+  assertEvaluationRouting,
+  createOpenAIFetch,
+} from '@/src/lib/server/openaiCachePolicy'
 import { getOpenAIResponsesStore } from '@/src/lib/server/openaiResponsesOptions'
 import {
   buildAbortedAssistantContent,
   mapAssistantStepContent,
 } from '@/src/lib/server/persistedAssistantContent'
 import { buildPromptCacheRequest } from '@/src/lib/server/promptCacheIdentity'
+import { renderPromptTemplate } from '@/src/lib/server/promptTemplates'
 import { compileSystemPrompt } from '@/src/lib/server/systemPromptCompiler'
 import { isDocQueryToolName } from '@/src/lib/sources/normalizeSources'
 import {
@@ -142,6 +175,7 @@ function getOpenAIModel(
 }
 
 function getModel(chatbot: Chatbot, modelConfig: ChatModelConfig) {
+  assertEvaluationRouting(chatbot)
   // Use per-chatbot configuration if available
   const hasCustomKey =
     typeof chatbot.openaiApiKey === 'string' && chatbot.openaiApiKey.length > 0
@@ -642,6 +676,15 @@ export async function POST(
       message: 'Must be a base64 data URL for jpeg, png, gif, or webp',
     })
 
+  // Rendered PDF pages: JPEG only, scaled to about 1,600 px in the browser,
+  // so one page stays far below the cap of a full-size image.
+  const documentPageDataUrlSchema = z
+    .string()
+    .max(MAX_DOCUMENT_PAGE_DATA_URL_LENGTH)
+    .refine((value) => value.startsWith('data:image/jpeg;base64,'), {
+      message: 'Must be a base64 data URL for jpeg',
+    })
+
   const bodySchema = z.object({
     messages: z.array(
       z.object({
@@ -654,9 +697,12 @@ export async function POST(
     selectedModel: z.string().min(1),
     selectedMode: z.string().optional().default('tutor'),
     reasoningEffort: z.string().min(1).optional().default('none'),
+    answerStyle: answerStyleSchema,
+    answerTone: answerToneSchema,
     parentId: z.string().min(1).nullable().optional(),
     assistantMessageId: z.string().min(1),
     allowRegeneration: z.boolean().optional().default(false),
+    handoffSource: z.enum(HANDOFF_SOURCES).optional(),
     images: z
       .array(
         z.union([
@@ -668,6 +714,11 @@ export async function POST(
         ])
       )
       .max(3)
+      .optional()
+      .default([]),
+    documentPages: z
+      .array(documentPageDataUrlSchema)
+      .max(MAX_VISUAL_REVIEW_PAGES)
       .optional()
       .default([]),
   })
@@ -683,10 +734,14 @@ export async function POST(
     threadId,
     selectedMode: requestedMode,
     reasoningEffort: requestedReasoningEffort,
+    answerStyle,
+    answerTone,
     parentId,
     assistantMessageId,
     allowRegeneration,
+    handoffSource,
     images,
+    documentPages,
   } = parsed
 
   const normalizedImages: IncomingImageAttachment[] = images.map((image) =>
@@ -787,6 +842,15 @@ export async function POST(
     modelRegistry.some((model) => allowedIds.has(model.id))
   let automaticModelId: string | null = null
 
+  // A lecturer can turn the student choices off for this chatbot (ADR 0054).
+  // The defaults then apply, whatever a browser still sends.
+  const appliedAnswerStyle = chatbot.answerPreferencesEnabled
+    ? answerStyle
+    : DEFAULT_ANSWER_STYLE
+  const appliedAnswerTone = chatbot.answerPreferencesEnabled
+    ? answerTone
+    : DEFAULT_ANSWER_TONE
+
   if (!chatbot.modelSelection) {
     automaticModelId = getAutomaticModelId(chatbot.allowedModelIds as string[])
     if (!automaticModelId) {
@@ -885,6 +949,20 @@ export async function POST(
         return chatModelUnavailableResponse(selectedModelConfig.usageClass)
       }
     }
+  }
+
+  // Checked against the effective model, after any zero-credit fallback.
+  if (
+    documentPages.length > 0 &&
+    !selectedModelConfig.supportsImageAttachments
+  ) {
+    return NextResponse.json(
+      {
+        error: 'The selected model cannot read document pages as images',
+        code: 'DOCUMENT_PAGES_NOT_SUPPORTED',
+      },
+      { status: 400 }
+    )
   }
 
   const enabledMCPConfigurations = (chatbot.mcpConfigurations ?? []).filter(
@@ -1069,6 +1147,42 @@ export async function POST(
   }
 
   let providerStreamStarted = false
+  let langfuseTrace: LangfuseSpan | null = null
+  let langfuseTraceEnded = false
+
+  const finishLangfuseTrace = (
+    status: 'success' | 'error' | 'aborted',
+    summary: Record<string, string | number | boolean | null> = {}
+  ) => {
+    if (!langfuseTrace || langfuseTraceEnded) return
+    langfuseTraceEnded = true
+    try {
+      langfuseTrace.update({
+        output: { status, ...summary },
+        ...(status === 'error'
+          ? {
+              level: 'ERROR' as const,
+              statusMessage: 'Chat generation failed',
+            }
+          : {}),
+      })
+    } catch (error) {
+      console.error('[chat] Failed to update Langfuse trace:', {
+        requestId,
+        errorType: error instanceof Error ? error.name : typeof error,
+      })
+    }
+
+    try {
+      langfuseTrace.end()
+    } catch (error) {
+      console.error('[chat] Failed to end Langfuse trace:', {
+        requestId,
+        errorType: error instanceof Error ? error.name : typeof error,
+      })
+    }
+  }
+
   try {
     // Discover MCP tools only after read-only participant authorization.
     let mcpTools: ToolSet
@@ -1094,10 +1208,12 @@ export async function POST(
     }
 
     const toolNames = Object.keys(mcpTools || {})
+    // The calculator is added after the system prompt inputs are fixed, so
+    // course grounding and citation rules still see only course tools.
+    const chatTools = withCalculatorTool(selectedMode, mcpTools)
+    const docQueryToolName = toolNames.find(isDocQueryToolName)
     const quizzerDocQueryToolName =
-      selectedMode === 'quizzer'
-        ? toolNames.find(isDocQueryToolName)
-        : undefined
+      selectedMode === 'quizzer' ? docQueryToolName : undefined
 
     if (selectedMode === 'quizzer' && !quizzerDocQueryToolName) {
       await failOrDiscardUnstartedClaim('mcp.quizzer')
@@ -1122,6 +1238,8 @@ export async function POST(
         courseDisplayName: chatbot.course.displayName,
         toolNames,
         standardModeConfig: chatbot.standardModeConfig,
+        answerStyle: appliedAnswerStyle,
+        answerTone: appliedAnswerTone,
       }
     )
 
@@ -1137,6 +1255,7 @@ export async function POST(
       role: msg.role,
       content: msg.content,
     }))
+    const stepReminder = trailingStepMessage(selectedMode, messages)
 
     const maxOutputTokens = selectedModelConfig.maxOutputTokens
 
@@ -1165,7 +1284,7 @@ export async function POST(
               ? 'responses'
               : 'chat',
             instructions: systemPrompt,
-            tools: mcpTools,
+            tools: chatTools,
           })
         : null
 
@@ -1173,17 +1292,58 @@ export async function POST(
       normalizedImages.map((image) => ensureImagePreviewBase64(image))
     )
 
-    // create image descriptions if images attached
+    // create image descriptions if images attached, and one visual summary
+    // of the attached PDF pages; later turns see these texts, not the images
     let imageDescriptionCost: number = 0
     const imageAttachments: {
       imageBase64: string
       imagePreviewBase64: string | null
       imageDescription: string | null
     }[] = []
+    let documentPageSummary: string | null = null
+    const hasDocumentPages =
+      documentPages.length > 0 && lastMessage?.role === 'user'
+    // Built inside a promise, so a prompt-rendering error also ends in the
+    // "no summary" path instead of failing the turn.
+    const documentPageSummaryTask = hasDocumentPages
+      ? Promise.resolve()
+          .then(() =>
+            generateText({
+              model: model,
+              // A client that cancels before the answer starts also stops this call.
+              abortSignal: req.signal,
+              messages: [
+                {
+                  role: 'user',
+                  content: [
+                    ...documentPages.map((page) => ({
+                      type: 'image' as const,
+                      image: page,
+                    })),
+                    {
+                      type: 'text',
+                      text: renderPromptTemplate('document-pages-summary', {
+                        userContent: stripDocumentBlocks(
+                          lastMessage?.content ?? ''
+                        ),
+                        pageCount: documentPages.length,
+                      }),
+                    },
+                  ],
+                },
+              ],
+              maxOutputTokens: 1500,
+              telemetry: { isEnabled: false },
+            })
+          )
+          .then(
+            // settled here, so a failure while the image descriptions are still
+            // running is never an unhandled rejection
+            (result) => ({ result, error: null }),
+            (error: unknown) => ({ result: null, error })
+          )
+      : null
     if (normalizedImages.length > 0 && lastMessage?.role === 'user') {
-      const descriptionPrompt = (userContent: string | undefined) =>
-        `${userContent ? `User message context: ${userContent}\n\n` : ''}Describe this image in detail. Include all visible text, diagrams, charts, equations, labels, and notable visual elements. This description will serve as context for an ongoing conversation.`
-
       const results = await Promise.allSettled(
         resolvedImages.map(async (image) => {
           const descriptionResult = await generateText({
@@ -1195,12 +1355,15 @@ export async function POST(
                   { type: 'image', image: image.imageBase64 },
                   {
                     type: 'text',
-                    text: descriptionPrompt(lastMessage?.content),
+                    text: renderPromptTemplate('image-description', {
+                      userContent: lastMessage?.content ?? '',
+                    }),
                   },
                 ],
               },
             ],
             maxOutputTokens: 1000,
+            telemetry: { isEnabled: false },
           })
           return { image, descriptionResult }
         })
@@ -1236,23 +1399,64 @@ export async function POST(
           })
         }
       }
+    }
 
-      const lastMessageIndex = messages.length - 1
-      if (lastMessageIndex >= 0) {
-        const messageText = messages[lastMessageIndex]?.content
-
-        modelMessages[lastMessageIndex] = {
-          ...modelMessages[lastMessageIndex],
-          content: [
-            ...(messageText
-              ? [{ type: 'text' as const, text: messageText }]
-              : []),
-            ...resolvedImages.map((image) => ({
-              type: 'image' as const,
-              image: image.imageBase64,
-            })),
-          ],
+    if (documentPageSummaryTask) {
+      const { result: summaryResult, error } = await documentPageSummaryTask
+      if (summaryResult) {
+        // A blank summary (for example a filtered completion) is not stored,
+        // so it cannot replace an earlier one; its usage is still charged.
+        documentPageSummary = summaryResult.text.trim() || null
+        if (summaryResult.usage) {
+          imageDescriptionCost += calcCost(
+            selectedModelConfig.cost,
+            summaryResult.usage.inputTokens || 0,
+            summaryResult.usage.outputTokens || 0
+          )
         }
+      } else {
+        // No summary row is written, so a transient failure cannot replace a
+        // stored summary or persist a placeholder; the text stays available.
+        // A cancelled request is not a failure. The provider error is reduced
+        // to name and message: it may echo the request with the page images.
+        const aborted =
+          req.signal.aborted ||
+          (error instanceof Error && error.name === 'AbortError')
+        if (!aborted) {
+          console.error('Failed to summarize document pages:', {
+            requestId,
+            error:
+              error instanceof Error
+                ? { name: error.name, message: error.message.slice(0, 500) }
+                : 'unknown error',
+          })
+        }
+      }
+    }
+
+    const lastMessageIndex = messages.length - 1
+    if (
+      lastMessageIndex >= 0 &&
+      lastMessage?.role === 'user' &&
+      (normalizedImages.length > 0 || hasDocumentPages)
+    ) {
+      const messageText = messages[lastMessageIndex]?.content
+
+      modelMessages[lastMessageIndex] = {
+        ...modelMessages[lastMessageIndex],
+        content: [
+          ...(messageText
+            ? [{ type: 'text' as const, text: messageText }]
+            : []),
+          ...resolvedImages.map((image) => ({
+            type: 'image' as const,
+            image: image.imageBase64,
+          })),
+          ...(hasDocumentPages ? documentPages : []).map((page) => ({
+            type: 'image' as const,
+            image: page,
+          })),
+        ],
       }
     }
 
@@ -1274,6 +1478,8 @@ export async function POST(
       selectedMode,
       reasoningEffort: appliedReasoningEffort,
       allowedReasoningEfforts,
+      answerStyle: appliedAnswerStyle,
+      answerTone: appliedAnswerTone,
       maxOutputTokens: maxOutputTokens ?? null,
       toolCount: toolNames.length,
       toolNames,
@@ -1285,6 +1491,7 @@ export async function POST(
       imageAttachmentSizes: resolvedImages.map((image) =>
         Buffer.byteLength(image.imageBase64, 'utf8')
       ),
+      documentPageCount: documentPages.length,
       elapsedMsFromRequestStart: Date.now() - requestStartedAtMs,
     })
 
@@ -1294,24 +1501,55 @@ export async function POST(
     })
 
     // inject image descriptions from prior messages into model context; fetch from DB
-    const priorMessageIds = messages
-      .filter(
-        (m) =>
-          m.role === 'user' &&
-          !(imageAttachments.length > 0 && m.id === lastMessage?.id) // skip current
-      )
-      .map((m) => m.id)
-    if (owningThread && priorMessageIds.length > 0) {
+    // The current message is skipped for whichever kind it brings anew, so a
+    // regenerated answer still gets the stored text of the other kind.
+    const hasNewAttachments =
+      imageAttachments.length > 0 || documentPageSummary != null
+    const priorUserMessageIds = (skipCurrent: boolean) =>
+      messages
+        .filter(
+          (m) => m.role === 'user' && !(skipCurrent && m.id === lastMessage?.id)
+        )
+        .map((m) => m.id)
+    const priorMessageIds = priorUserMessageIds(imageAttachments.length > 0)
+    const priorSummaryMessageIds = priorUserMessageIds(
+      documentPageSummary != null
+    )
+    if (
+      owningThread &&
+      (priorMessageIds.length > 0 || priorSummaryMessageIds.length > 0)
+    ) {
       try {
-        const priorAttachments = await prisma.chatAttachment.findMany({
-          where: {
-            messageId: { in: priorMessageIds },
-            imageDescription: { not: null },
-            message: { threadId: owningThread.id },
-          },
-          select: { messageId: true, imageDescription: true },
-          orderBy: [{ messageId: 'asc' }, { position: 'asc' }],
-        })
+        const priorWhere = {
+          imageDescription: { not: null },
+          message: { threadId: owningThread.id },
+        }
+        const [priorAttachments, priorPageSummaries] = await Promise.all([
+          prisma.chatAttachment.findMany({
+            where: {
+              ...priorWhere,
+              ...IMAGE_ROW_FILTER,
+              messageId: { in: priorMessageIds },
+            },
+            select: { messageId: true, imageDescription: true },
+            orderBy: [{ messageId: 'asc' }, { position: 'asc' }],
+          }),
+          prisma.chatAttachment.findMany({
+            where: {
+              ...priorWhere,
+              ...DOCUMENT_PAGE_SUMMARY_ROW_FILTER,
+              messageId: { in: priorSummaryMessageIds },
+            },
+            select: { messageId: true, imageDescription: true },
+            orderBy: [{ messageId: 'asc' }, { position: 'asc' }],
+          }),
+        ])
+        const pageSummariesByMsgId = new Map<string, string[]>()
+        for (const a of priorPageSummaries) {
+          const existing = pageSummariesByMsgId.get(a.messageId) ?? []
+          existing.push(a.imageDescription!)
+          pageSummariesByMsgId.set(a.messageId, existing)
+        }
         const descriptionsByMsgId = new Map<string, string[]>()
         for (const a of priorAttachments) {
           // get existing descriptions for this message, append if exist, or create new array
@@ -1335,8 +1573,22 @@ export async function POST(
                     .join('\n\n')
             modelMessages[i] = {
               ...modelMessages[i],
-              content: `${modelMessages[i].content}${suffix}`,
-            }
+              content: appendTextToModelContent(
+                modelMessages[i].content,
+                suffix.trimStart()
+              ),
+            } as (typeof modelMessages)[number]
+          }
+          for (const summary of pageSummariesByMsgId.get(messages[i].id) ??
+            []) {
+            const marker = `[Visual summary of the attached document pages: ${summary}]`
+            modelMessages[i] = {
+              ...modelMessages[i],
+              content: appendTextToModelContent(
+                modelMessages[i].content,
+                marker
+              ),
+            } as (typeof modelMessages)[number]
           }
         }
       } catch (error) {
@@ -1362,20 +1614,40 @@ export async function POST(
         }
 
         const persistAttachments = async (messageId: string) => {
-          if (imageAttachments.length === 0) return
+          if (!hasNewAttachments) return
 
-          // delete existing attachments for this message, then create new ones
+          // replace the attachment kinds this request brings anew; the page
+          // summary row keeps only text, the page images are dropped
           await prisma.$transaction([
-            prisma.chatAttachment.deleteMany({ where: { messageId } }),
-            prisma.chatAttachment.createMany({
-              data: imageAttachments.map((att, position) => ({
-                type: 'IMAGE' as const,
+            prisma.chatAttachment.deleteMany({
+              where: {
                 messageId,
-                position,
-                imageBase64: att.imageBase64 ?? null,
-                imagePreviewBase64: att.imagePreviewBase64 ?? null,
-                imageDescription: att.imageDescription ?? null,
-              })),
+                ...(documentPageSummary == null ? IMAGE_ROW_FILTER : {}),
+                ...(imageAttachments.length === 0
+                  ? DOCUMENT_PAGE_SUMMARY_ROW_FILTER
+                  : {}),
+              },
+            }),
+            prisma.chatAttachment.createMany({
+              data: [
+                ...imageAttachments.map((att, position) => ({
+                  type: 'IMAGE' as const,
+                  messageId,
+                  position,
+                  imageBase64: att.imageBase64 ?? null,
+                  imagePreviewBase64: att.imagePreviewBase64 ?? null,
+                  imageDescription: att.imageDescription ?? null,
+                })),
+                ...(documentPageSummary != null
+                  ? [
+                      buildDocumentPageSummaryRow({
+                        messageId,
+                        position: imageAttachments.length,
+                        summary: documentPageSummary,
+                      }),
+                    ]
+                  : []),
+              ],
             }),
           ])
         }
@@ -1529,18 +1801,62 @@ export async function POST(
       elapsedMsFromRequestStart: Date.now() - requestStartedAtMs,
     })
 
-    // Langfuse v4 addresses traces by OTel trace id, so the id is derived from the
-    // assistant message id here and re-derived when a rating comes in later.
-    const traceId = isAiTelemetryEnabled
-      ? await getTraceIdForMessage(assistantMessageId)
-      : null
+    let langfuseContext: Awaited<
+      ReturnType<typeof getChatTraceContext>
+    > | null = null
+    let langfuseAiSdkIntegration: ReturnType<
+      typeof getLangfuseAiSdkIntegration
+    > | null = null
+    if (isAiTelemetryEnabled()) {
+      try {
+        const [context, integration] = await Promise.all([
+          getChatTraceContext({
+            assistantMessageId,
+            chatbotId,
+            threadId: owningThread.id,
+          }),
+          Promise.resolve(getLangfuseAiSdkIntegration()),
+        ])
+        langfuseContext = context
+        langfuseAiSdkIntegration = integration
+      } catch (error) {
+        console.error('[chat] Failed to prepare Langfuse telemetry:', {
+          requestId,
+          errorType: error instanceof Error ? error.name : typeof error,
+        })
+      }
+    }
+    const langfuseTelemetryEnabled = Boolean(
+      langfuseContext && langfuseAiSdkIntegration
+    )
+    if (langfuseTelemetryEnabled) {
+      // Next keeps `after` work alive after the streamed response closes and
+      // drains it during self-hosted graceful shutdown. At that point all AI
+      // SDK child spans and the custom root have ended, so the batch is ready.
+      try {
+        after(flushLangfuseTelemetry)
+      } catch (error) {
+        console.error('[chat] Failed to schedule a Langfuse flush:', {
+          requestId,
+          errorType: error instanceof Error ? error.name : typeof error,
+        })
+      }
+    }
 
     const startStream = () => {
       providerStreamStarted = true
       return streamText({
         model,
         maxOutputTokens,
-        telemetry: { isEnabled: isAiTelemetryEnabled },
+        telemetry: {
+          isEnabled: langfuseTelemetryEnabled,
+          recordInputs: false,
+          recordOutputs: false,
+          functionId: LANGFUSE_CHAT_TRACE_NAME,
+          ...(langfuseAiSdkIntegration
+            ? { integrations: [langfuseAiSdkIntegration] }
+            : {}),
+        },
         providerOptions: {
           openai: {
             ...(promptCacheRequest
@@ -1549,6 +1865,12 @@ export async function POST(
             ...(selectedModelConfig.usesResponsesApi && {
               store: getOpenAIResponsesStore(),
             }),
+            ...(process.env.KLICKER_EVAL_GUARD_ORIGIN &&
+              selectedModelConfig.usesResponsesApi &&
+              selectedModelConfig.supportsReasoning &&
+              providerReasoningEffort && {
+                forceReasoning: true,
+              }),
             ...(providerReasoningEffort && {
               reasoningEffort: providerReasoningEffort,
               reasoningSummary: 'auto',
@@ -1556,20 +1878,34 @@ export async function POST(
           },
         },
         messages: modelMessages as ModelMessage[],
-        tools: promptCacheRequest?.tools ?? mcpTools,
+        tools: promptCacheRequest?.tools ?? chatTools,
         toolOrder: promptCacheRequest?.toolOrder,
         toolChoice: 'auto',
-        prepareStep: quizzerDocQueryToolName
-          ? ({ stepNumber }) =>
-              stepNumber === 0
-                ? {
-                    toolChoice: {
-                      type: 'tool' as const,
-                      toolName: quizzerDocQueryToolName,
-                    },
-                  }
-                : {}
-          : undefined,
+        // The feedback, precision and reply-language reminders end every step, after
+        // tool output, so retrieved material cannot override them.
+        allowSystemInMessages: true,
+        prepareStep: ({
+          stepNumber,
+          steps,
+          initialMessages,
+          responseMessages,
+        }) => ({
+          ...(docQueryToolName && stepNumber === 0
+            ? {
+                toolChoice: {
+                  type: 'tool' as const,
+                  toolName: docQueryToolName,
+                },
+              }
+            : {}),
+          messages: [
+            ...initialMessages,
+            ...(docQueryToolName && stepNumber > 0
+              ? withModelCitationIndices(responseMessages, steps)
+              : responseMessages),
+            stepReminder,
+          ],
+        }),
         stopWhen: isStepCount(5),
         instructions: systemPrompt,
 
@@ -1694,6 +2030,11 @@ export async function POST(
                 : null,
               stepsCount: result.steps?.length ?? 0,
             })
+            finishLangfuseTrace('success', {
+              responseLength: partialContent.length,
+              reasoningLength: partialReasoningContent.length,
+              stepsCount: result.steps?.length ?? 0,
+            })
           }
         },
 
@@ -1753,6 +2094,11 @@ export async function POST(
 
           emitFinalOnce('aborted', {
             elapsedMsFromStreamStart: Date.now() - streamStartedAtMs,
+            stepsCount: Array.isArray(steps?.steps) ? steps.steps.length : 0,
+          })
+          finishLangfuseTrace('aborted', {
+            responseLength: partialContent.length,
+            reasoningLength: partialReasoningContent.length,
             stepsCount: Array.isArray(steps?.steps) ? steps.steps.length : 0,
           })
         },
@@ -1816,19 +2162,66 @@ export async function POST(
             elapsedMsFromStreamStart: Date.now() - streamStartedAtMs,
             classification: classification.classification,
           })
+          finishLangfuseTrace('error', {
+            errorClassification: classification.classification,
+          })
           await failAssistantClaim('stream.error')
         },
       })
     }
 
-    // The wrapper span only exists to put the derived trace id on the context the
-    // AI SDK reads when it opens its own spans; it is created and closed around
-    // the synchronous streamText call, while the spans it parents keep streaming.
-    const result = traceId
-      ? startActiveObservation('chat.stream', startStream, {
-          parentSpanContext: getParentSpanContext(traceId),
+    let result: ReturnType<typeof startStream>
+    if (langfuseContext) {
+      try {
+        result = propagateAttributes(
+          {
+            traceName: LANGFUSE_CHAT_TRACE_NAME,
+            sessionId: langfuseContext.sessionId,
+            tags: ['chat'],
+            metadata: {
+              requestId,
+              chatbotId: langfuseContext.pseudonymousChatbotId,
+              chatMode: selectedMode,
+              modelId: selectedModelConfig.id,
+              deploymentId: selectedModelConfig.deploymentId,
+              routingSource: routing.source,
+              reasoningEffort: appliedReasoningEffort ?? 'none',
+              toolCount: String(toolNames.length),
+              imageAttachmentCount: String(images.length),
+              handoffSource: handoffSource ?? 'direct',
+            },
+          },
+          () =>
+            startActiveObservation(
+              LANGFUSE_CHAT_TRACE_NAME,
+              (observation) => {
+                langfuseTrace = observation
+                observation.update({
+                  input: {
+                    messageCount: messages.length,
+                    imageAttachmentCount: images.length,
+                  },
+                })
+                return startStream()
+              },
+              {
+                parentSpanContext: langfuseContext.parentSpanContext,
+                endOnExit: false,
+              }
+            )
+        )
+      } catch (error) {
+        if (providerStreamStarted) throw error
+        finishLangfuseTrace('error', { stage: 'telemetry-setup' })
+        console.error('[chat] Failed to start Langfuse trace:', {
+          requestId,
+          errorType: error instanceof Error ? error.name : typeof error,
         })
-      : startStream()
+        result = startStream()
+      }
+    } else {
+      result = startStream()
+    }
 
     logEvent('response.stream.created', {
       stage: 'response-object-created',
@@ -1850,6 +2243,9 @@ export async function POST(
           suggestedAction: classification.suggestedAction,
         })
         void failAssistantClaim('response.stream.error')
+        finishLangfuseTrace('error', {
+          errorClassification: classification.classification,
+        })
 
         return 'An error occurred while processing the request.'
       },
@@ -1881,6 +2277,7 @@ export async function POST(
       },
     })
   } catch (error) {
+    finishLangfuseTrace('error', { stage: 'request' })
     if (providerStreamStarted) await failAssistantClaim('request')
     else await failOrDiscardUnstartedClaim('request')
     throw error

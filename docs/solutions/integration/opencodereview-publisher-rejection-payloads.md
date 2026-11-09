@@ -87,6 +87,47 @@ context, and model output intended for publication.
 
 ## Prevention
 
+### Distinguish process failure from publisher rejection
+
+The diagnostic boundary above starts after a review result exists. In
+[run 34326218356](https://github.com/uzh-bf/klicker-uzh/actions/runs/34326218356),
+`ocr version` succeeded but `ocr review` exited 127 before findings. No rejected
+publisher input existed, so widening the publisher artifact list would not
+explain this failure. Its exact historical cause remains unproved.
+
+The install step reported `open-code-review v1.11.0 (c7dd11e03) linux/amd64`.
+This observed banner supports the exact version-token boundary in the guard;
+the synthetic test is not its only evidence.
+
+OCR 1.11.0's [npm launcher](https://github.com/alibaba/open-code-review/blob/v1.11.0/bin/ocr.js)
+starts a detached updater even for `ocr version`. Its
+[updater](https://github.com/alibaba/open-code-review/blob/v1.11.0/scripts/update.js)
+can replace the pinned global installation with registry latest. The workflow
+therefore sets `OCR_NO_UPDATE=1` at job scope and checks the expected version
+before every review attempt. A pinned install alone does not prevent this drift.
+
+Process failures record the stage, original exit status, numeric output sizes and
+fixed sanitized CLI error categories. Any existing result JSON supplies bounded
+coverage counts and failure classes through a diagnostic-only command before
+the shell returns the original nonzero status. Raw stderr stays suppressed
+because it may contain provider or credential details.
+
+Check the HTTP request deadline separately from the per-task deadline. OCR
+1.13.0 defaults HTTP requests to five minutes even when `--timeout` permits a
+longer task. Align `OCR_LLM_TIMEOUT` (seconds) with the existing manual task
+deadline; increasing the job limit alone cannot fix that earlier timeout.
+The adapter's fetch transport also imposed an independent five-minute header
+and body limit. Its native HTTPS transport now leaves the existing
+AbortController deadline in charge. Qualify this layer through a real delayed
+upstream socket: a mock that replaces `fetch` proves OCR's timeout setting but
+bypasses the transport whose timeout must be checked.
+
+Shell-boundary tests must call the extracted function directly under
+`set -e`; calling it inside an `if` condition disables that error behavior and
+can conceal the regression the test intends to reproduce.
+
+### Keep publisher artifacts narrow
+
 - Keep source tests that assert the exact failure condition, pinned upload
   action, file list, and one-day retention
   ([final-ai-review.test.js](../../../.github/scripts/final-ai-review.test.js#L839),

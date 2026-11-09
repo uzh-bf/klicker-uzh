@@ -2,12 +2,20 @@ import { prisma } from '@klicker-uzh/prisma'
 import {
   CourseAuthType,
   CredentialStatus,
+  ElementInstanceType,
+  ElementType,
   InvitationStatus,
   PermissionLevel,
+  PublicationStatus,
   UserLoginScope,
   UserRole,
 } from '@klicker-uzh/prisma/client'
-import { recomputeDerivedPermissions } from '@klicker-uzh/util'
+import {
+  getInitialInstanceResults,
+  PARTICIPANT_DATA_USE_DISCLOSURE_VERSION,
+  processElementData,
+  recomputeDerivedPermissions,
+} from '@klicker-uzh/util'
 import { afterAll, afterEach, describe, expect, it } from 'vitest'
 import { schema } from '../src/index.js'
 import type { Context, ContextWithUser } from '../src/lib/context.js'
@@ -27,6 +35,17 @@ import {
 } from '../src/services/verification.js'
 
 const TEST_PREFIX = `assessment-report-test-${Date.now()}`
+
+// Assessment-report participants exercise resolver-level authorization; the
+// account gate needs their persisted data-use state to read as complete.
+const acknowledgedParticipantDataUse = {
+  dataUseAcknowledgedAt: new Date(),
+  dataUseAcknowledgedVersion: PARTICIPANT_DATA_USE_DISCLOSURE_VERSION,
+  researchConsentChoiceAt: new Date(),
+  researchConsentDisclosureVersion: PARTICIPANT_DATA_USE_DISCLOSURE_VERSION,
+  learningAnalyticsChoiceAt: new Date(),
+  learningAnalyticsDisclosureVersion: PARTICIPANT_DATA_USE_DISCLOSURE_VERSION,
+}
 const fixtureIds: {
   courseIds: string[]
   participantIds: string[]
@@ -102,6 +121,7 @@ async function createFixture() {
       email: `${TEST_PREFIX}-untrusted-${suffix}@example.net`,
       password: 'not-used',
       isActive: true,
+      ...acknowledgedParticipantDataUse,
       invitations: {
         create: {
           courseId: course.id,
@@ -125,6 +145,80 @@ async function createFixture() {
     participantCtx: participantContext(participant.id),
     lecturerCtx: lecturerContext(lecturer.id),
   }
+}
+
+// Adds enough peers and one ended assessed live quiz with non-zero available
+// points so that the course is eligible for a peer comparison.
+async function addComparisonCohort(fixture: {
+  course: { id: string }
+  lecturer: { id: string }
+}) {
+  for (let index = 0; index < 9; index++) {
+    const peer = await prisma.participant.create({
+      data: {
+        username: `${TEST_PREFIX}-peer-${index}-${fixture.course.id}`,
+        password: 'not-used',
+        isActive: true,
+        participations: {
+          create: { courseId: fixture.course.id, isActive: true },
+        },
+      },
+    })
+    fixtureIds.participantIds.push(peer.id)
+  }
+
+  const element = await prisma.element.create({
+    data: {
+      status: 'READY',
+      type: ElementType.SC,
+      name: 'Assessment Report Question',
+      content: 'Which option is correct?',
+      options: {
+        choices: [
+          { ix: 0, value: 'A', correct: true },
+          { ix: 1, value: 'B', correct: false },
+        ],
+        displayMode: 'LIST',
+        hasSampleSolution: true,
+        hasAnswerFeedbacks: false,
+      },
+      pointsMultiplier: 1,
+      ownerId: fixture.lecturer.id,
+    },
+  })
+  const elementData = processElementData(element)
+  await prisma.liveQuiz.create({
+    data: {
+      name: 'Assessment Report Quiz',
+      displayName: 'Assessment Report Quiz',
+      status: PublicationStatus.ENDED,
+      isAssessmentEnabled: true,
+      pinCode: 'R3P0RT',
+      ownerId: fixture.lecturer.id,
+      courseId: fixture.course.id,
+      defaultPoints: 10,
+      defaultCorrectPoints: 10,
+      maxBonusPoints: 0,
+      blocks: {
+        create: {
+          order: 0,
+          elements: {
+            create: {
+              type: ElementInstanceType.LIVE_QUIZ,
+              elementId: element.id,
+              elementType: ElementType.SC,
+              order: 0,
+              options: { pointsMultiplier: 1, basePoints: true },
+              elementData,
+              results: getInitialInstanceResults(elementData),
+              anonymousResults: getInitialInstanceResults(elementData),
+              ownerId: fixture.lecturer.id,
+            },
+          },
+        },
+      },
+    },
+  })
 }
 
 async function cleanupFixtures() {
@@ -733,6 +827,100 @@ describe('assessment report credential services', () => {
       revokedAt: null,
       supersededAt: null,
     })
+  })
+
+  it('includes the peer comparison in every report issued after the course end', async () => {
+    const fixture = await createFixture()
+    await addComparisonCohort(fixture)
+
+    const interim = await issueAssessmentReport(
+      { courseId: fixture.course.id },
+      fixture.participantCtx
+    )
+    expect(interim.snapshot.comparison).toBeNull()
+
+    await prisma.course.update({
+      where: { id: fixture.course.id },
+      data: { endDate: new Date(Date.now() - 1_000) },
+    })
+    const final = await issueAssessmentReport(
+      { courseId: fixture.course.id },
+      fixture.participantCtx
+    )
+    expect(final.token).not.toBe(interim.token)
+    expect(final.snapshot.comparison).toMatchObject({ cohortSize: 10 })
+
+    const repeated = await issueAssessmentReport(
+      { courseId: fixture.course.id },
+      fixture.participantCtx
+    )
+    expect(repeated.token).toBe(final.token)
+
+    // A cohort change alone must not produce a second, differing comparison.
+    const latePeer = await prisma.participant.create({
+      data: {
+        username: `${TEST_PREFIX}-late-peer-${fixture.course.id}`,
+        password: 'not-used',
+        isActive: true,
+        participations: {
+          create: { courseId: fixture.course.id, isActive: true },
+        },
+      },
+    })
+    fixtureIds.participantIds.push(latePeer.id)
+    const afterCohortChange = await issueAssessmentReport(
+      { courseId: fixture.course.id },
+      fixture.participantCtx
+    )
+    expect(afterCohortChange.token).toBe(final.token)
+
+    await prisma.course.update({
+      where: { id: fixture.course.id },
+      data: { displayName: 'Renamed After Course End' },
+    })
+    const replacement = await issueAssessmentReport(
+      { courseId: fixture.course.id },
+      fixture.participantCtx
+    )
+    expect(replacement.token).not.toBe(final.token)
+    expect(replacement.snapshot.comparison).toMatchObject({ cohortSize: 11 })
+  })
+
+  it('replaces a mid-course comparison with the current one after the course end', async () => {
+    const fixture = await createFixture()
+    await addComparisonCohort(fixture)
+    const interim = await issueAssessmentReport(
+      { courseId: fixture.course.id },
+      fixture.participantCtx
+    )
+
+    // Reports issued before this rule existed carried a comparison mid-course.
+    const legacySnapshot = {
+      ...interim.snapshot,
+      comparison: {
+        cohortSize: 10,
+        percentile: 100,
+        histogram: [{ binStart: 0, binEnd: 1, count: 10 }],
+      },
+    }
+    await prisma.verifiableCredential.update({
+      where: { token: interim.token },
+      data: {
+        snapshot: legacySnapshot,
+        snapshotHash: hashAssessmentReportSnapshot(legacySnapshot),
+      },
+    })
+    await prisma.course.update({
+      where: { id: fixture.course.id },
+      data: { endDate: new Date(interim.issuedAt.getTime() + 1) },
+    })
+
+    const final = await issueAssessmentReport(
+      { courseId: fixture.course.id },
+      fixture.participantCtx
+    )
+    expect(final.token).not.toBe(interim.token)
+    expect(final.snapshot.comparison).toMatchObject({ cohortSize: 10 })
   })
 
   it('blocks a revoked report when only comparison claims have drifted', async () => {

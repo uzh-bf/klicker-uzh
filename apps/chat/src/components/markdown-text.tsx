@@ -9,10 +9,18 @@ import {
   unstable_memoizeMarkdownComponents as memoizeMarkdownComponents,
   useIsMarkdownCodeBlock,
 } from '@assistant-ui/react-markdown'
+import { parseVideoEmbedUrl, VideoEmbed } from '@klicker-uzh/markdown'
 import { CheckIcon, CopyIcon } from 'lucide-react'
 import { useTranslations } from 'next-intl'
-import { type FC, memo, useCallback, useState } from 'react'
+import {
+  type ComponentProps,
+  type FC,
+  memo,
+  useCallback,
+  useState,
+} from 'react'
 import rehypeKatex from 'rehype-katex'
+import 'katex/contrib/mhchem'
 import remarkGfm from 'remark-gfm'
 import remarkMath from 'remark-math'
 
@@ -21,6 +29,7 @@ import {
   remarkCitationMarkers,
 } from '../lib/markdown/remarkCitationMarkers'
 import {
+  escapeNonMathDollars,
   hideIncompleteMath,
   inspectStreamingMath,
 } from '../lib/markdown/streamingMath'
@@ -31,7 +40,9 @@ import { Tooltip, TooltipContent, TooltipTrigger } from './ui/tooltip'
 // Stable module-scope reference: recreating this array on every render would
 // defeat `MarkdownTextPrimitive`'s own memoization of the parsed tree.
 const remarkPlugins = [remarkGfm, remarkMath, remarkCitationMarkers]
-const rehypePlugins = [rehypeKatex]
+const rehypePlugins: NonNullable<
+  ComponentProps<typeof MarkdownTextPrimitive>['rehypePlugins']
+> = [[rehypeKatex, { trust: false }]]
 
 const MarkdownTextImpl = () => {
   const { text, status } = useMessagePartText()
@@ -174,6 +185,14 @@ const defaultComponents = memoizeMarkdownComponents({
     const citationIndex = parseCitationHref(href)
     if (citationIndex !== null) return <CitationChip index={citationIndex} />
 
+    // Model-written course video links arrive as `[video](...)` / `[embed](...)`.
+    // Reuse the shared player so they play inline instead of opening an anchor.
+    const labelText =
+      typeof children === 'string' ? children.trim().toLowerCase() : ''
+    const isVideoLabel = labelText === 'video' || labelText === 'embed'
+    const video = href && isVideoLabel ? parseVideoEmbedUrl(href) : null
+    if (video) return <VideoEmbed {...video} />
+
     return (
       <a
         className={cn(
@@ -283,8 +302,10 @@ const defaultComponents = memoizeMarkdownComponents({
 })
 
 export function normalizeCustomMathTags(input: string): string {
+  // Escape currency before converting the explicit delimiters, so converted
+  // spans are always rendered as math.
   return (
-    input
+    escapeNonMathDollars(input)
       // Keep display-math fences on their own lines so multiline formulas
       // cannot consume the Markdown that follows them.
       .replace(

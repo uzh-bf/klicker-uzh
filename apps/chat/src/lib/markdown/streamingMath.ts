@@ -235,3 +235,97 @@ export function hideIncompleteMath(input: string) {
     ? input
     : input.slice(0, incompleteMathStart)
 }
+
+function isSingleDollar(input: string, index: number) {
+  return (
+    input[index] === '$' &&
+    input[index - 1] !== '$' &&
+    input[index + 1] !== '$' &&
+    !isEscaped(input, index)
+  )
+}
+
+// Pandoc's rule: a closing `$` follows a non-space character and is not
+// followed by a digit, so "$90,000, leaving $10,000" is not a formula. Only
+// the next single `$` can close, as in remark-math, and dollars inside code
+// spans are skipped because they never close math.
+function findInlineMathClose(input: string, opening: number) {
+  for (let index = opening + 1; index < input.length; index++) {
+    if (input.startsWith('\n\n', index)) return -1
+    if (input[index] === '`') {
+      const codeLength = countRun(input, index, '`')
+      const closing = input.indexOf('`'.repeat(codeLength), index + codeLength)
+      index = (closing === -1 ? index : closing) + codeLength - 1
+      continue
+    }
+    if (isSingleDollar(input, index)) {
+      const closes =
+        !/\s/.test(input[index - 1] ?? '') && !/\d/.test(input[index + 1] ?? '')
+      return closes ? index : -1
+    }
+  }
+
+  return -1
+}
+
+/**
+ * Escapes single dollar signs that do not form inline math, such as currency
+ * amounts, because remark-math would otherwise pair them across prose. Code
+ * spans, fenced code and `$$` display math are left unchanged.
+ */
+export function escapeNonMathDollars(input: string) {
+  let output = ''
+  let fence: Fence | null = null
+
+  for (let index = 0; index < input.length; index++) {
+    if (isLineStart(input, index)) {
+      const candidate = readFence(input, index)
+      const opens: boolean = !fence && candidate !== null
+      if (opens || (fence && isFenceClose(input, index, fence))) {
+        fence = opens ? candidate : null
+        const lineEnd = input.indexOf('\n', index)
+        const end = lineEnd === -1 ? input.length : lineEnd
+        output += input.slice(index, end)
+        index = end - 1
+        continue
+      }
+    }
+    if (fence) {
+      output += input[index]
+      continue
+    }
+
+    if (input[index] === '`') {
+      const codeLength = countRun(input, index, '`')
+      const closing = input.indexOf('`'.repeat(codeLength), index + codeLength)
+      const end = closing === -1 ? index + codeLength : closing + codeLength
+      output += input.slice(index, end)
+      index = end - 1
+      continue
+    }
+
+    if (!isEscaped(input, index) && input.startsWith('$$', index)) {
+      const closing = input.indexOf('$$', index + 2)
+      const end = closing === -1 ? input.length : closing + 2
+      output += input.slice(index, end)
+      index = end - 1
+      continue
+    }
+
+    if (isSingleDollar(input, index)) {
+      const opensMath = !/\s/.test(input[index + 1] ?? ' ')
+      const closing = opensMath ? findInlineMathClose(input, index) : -1
+      if (closing !== -1) {
+        output += input.slice(index, closing + 1)
+        index = closing
+        continue
+      }
+      output += '\\$'
+      continue
+    }
+
+    output += input[index]
+  }
+
+  return output
+}

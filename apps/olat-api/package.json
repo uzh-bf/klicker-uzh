@@ -32,10 +32,10 @@
     "supertest": "~7.1.1",
     "tsx": "~4.19.4",
     "typescript": "~6.0.3",
-    "vitest": "~3.2.4"
+    "vitest": "3.2.4"
   },
   "scripts": {
-    "build": "cross-env NODE_ENV=production rollup -c",
+    "build": "cross-env NODE_ENV=production rollup -c --forceExit",
     "build:test": "pnpm run build",
     "check": "tsc --noEmit --tsBuildInfoFile dist/tsconfig.check.tsbuildinfo",
     "dev": "pnpm dev:ts",

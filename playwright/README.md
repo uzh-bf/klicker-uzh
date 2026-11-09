@@ -19,6 +19,21 @@ playwright/
 
 ## Local run
 
+Inspect the launcher from a host shell without installing dependencies or
+starting services:
+
+```bash
+node util/run-playwright-host.mjs --help
+node util/run-playwright-host.mjs --version
+```
+
+Version output uses the locally installed Playwright version when readable;
+otherwise it reports the declared requirement and labels the installation as
+missing or its version as unavailable. The direct Node form works on a cold
+checkout. The `pnpm run playwright:host` wrapper reaches the same launcher, but
+pnpm rejects a missing or stale dependency install before running its script.
+Keep that dependency guard enabled.
+
 Run from a host shell at the repository root. The launcher starts or reconciles
 the exact devrouter workspace, resolves its namespaced routes and database, and
 keeps the Playwright process and browser binaries on the host.
@@ -36,27 +51,55 @@ starting Devrouter infrastructure.
 
 ```bash
 # run all Chromium tests
-pnpm playwright:host -- --project=chromium
+node util/run-playwright-host.mjs --project=chromium
 
 # run one spec
-pnpm playwright:host -- --project=chromium tests/A-login.spec.ts
+node util/run-playwright-host.mjs --project=chromium tests/A-login.spec.ts
+
+# match CI: production test builds instead of the dev servers
+node util/run-playwright-host.mjs --ci-runtime --project=chromium
 
 # inspect the resolved workspace without printing credentials
-pnpm playwright:host -- --print-env
+node util/run-playwright-host.mjs --print-env
 ```
 
 Direct local `playwright test` calls fail before database cleanup. Never run
 Playwright or install its browsers inside the devcontainer. GitHub Actions keeps
 using the official Playwright container directly.
 
+## Fast local iterations
+
+Explicit spec paths automatically select the union of their entries in
+`profiles.json`. Broad runs and filters that cannot be resolved safely use the
+`playwright` runtime profile, which excludes optional AI and email services.
+Override inference with `--runtime-profile` before Playwright arguments.
+Applying a profile reconciles the runtime downward: services outside the
+selected profile (for example LiteLLM, MailHog or the local MCP process) are
+stopped, so pass `--runtime-profile` explicitly when you need them running.
+
+The one-time login link test in `A-login.spec.ts` reads the delivered message
+from MailHog and skips when `MAILHOG_URL` is unset. CI sets it on the hosted
+route only, because the MailHog image has no arm64 build. Locally, keep
+MailHog running with `--runtime-profile manage,chat,email` and expose its port
+8025 to the host, for example through a temporary `alpine/socat` container on
+the workspace's compose network, then set `MAILHOG_URL` to that address.
+
+Use one worker per runtime: specs share seeded identities and database-wide resets.
+Concurrent shards require separate worktrees and complete isolated runtimes,
+including PostgreSQL, Redis, Hatchet and report directories. A second browser
+worker or a cloned database alone does not provide that isolation.
+
+Normal runs clean and seed the synthetic database. `--preserve-database` is only
+for debugging an existing baseline; it is not clean-run acceptance evidence.
+
 ## Useful commands
 
 ```bash
 # UI / interactive mode
-pnpm playwright:host -- --ui
+node util/run-playwright-host.mjs --ui
 
 # Headed Chromium only
-pnpm playwright:host -- --headed --project=chromium
+node util/run-playwright-host.mjs --headed --project=chromium
 
 # Show last HTML report
 pnpm --filter @klicker-uzh/playwright show-report

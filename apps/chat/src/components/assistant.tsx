@@ -21,6 +21,7 @@ import { ChatUiProvider, useChatUi } from './chat-ui-context'
 import { MobileCreditsBar } from './credits-footer'
 import { DisclaimerModal } from './disclaimer-modal'
 import { EmbeddedCreditsBar, EmbeddedSettings } from './embedded-settings'
+import { HandoffPrefill } from './handoff-prefill'
 import { ModeSwitcher } from './mode-switcher'
 import { Thread } from './thread'
 import { Tooltip, TooltipContent, TooltipTrigger } from './ui/tooltip'
@@ -121,6 +122,7 @@ export function Assistant({ chatbot, initialModeOptions }: AssistantProps) {
           chatbotId={chatbot.id}
           initialModeOptions={initialModeOptions}
         >
+          <HandoffPrefill />
           <AssistantLayout chatbot={chatbot} />
         </RuntimeProvider>
       </ChatUiProvider>

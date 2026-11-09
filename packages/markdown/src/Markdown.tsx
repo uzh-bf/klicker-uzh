@@ -3,6 +3,7 @@ import { FontAwesomeIcon } from '@fortawesome/react-fontawesome'
 import React, { useMemo } from 'react'
 import rehypeExternalLinks from 'rehype-external-links'
 import rehypeKatex from 'rehype-katex'
+import 'katex/contrib/mhchem'
 // import rehypePrism from 'rehype-prism-plus'
 import rehypeReact from 'rehype-react'
 import rehypeSanitize, { defaultSchema } from 'rehype-sanitize'
@@ -111,7 +112,7 @@ function Markdown({
             target: '_blank',
             rel: ['noopener', 'noreferrer', 'nofollow'],
           })
-          .use(rehypeKatex)
+          .use(rehypeKatex, { trust: false })
           .use(rehypeReact, {
             ...runtime,
             components: {

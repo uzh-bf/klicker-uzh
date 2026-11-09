@@ -91,7 +91,9 @@ next_configuration_files() {
 
   for app in "${NEXT_APPS[@]}"; do
     app_root="$ROOT/apps/$app"
-    find "$app_root" -maxdepth 2 -type f \
+    # A production build writes .next/package.json; generated output is not
+    # configuration and must not change the fingerprint it was built under.
+    find "$app_root" -maxdepth 2 -path "$app_root/.next" -prune -o -type f \
       \( -name 'next.config.*' -o -name 'package.json' -o \
       -name 'tsconfig*.json' -o -name 'proxy.*' -o -name 'middleware.*' \) \
       -print
@@ -175,7 +177,7 @@ valid_next_app() {
 
 probe_url() {
   case "$1" in
-    auth) echo 'http://localhost:3010/' ;;
+    auth) echo 'http://localhost:3010/api/auth/providers' ;;
     chat) echo "$CHAT_PROBE_URL" ;;
     frontend-control) echo 'http://localhost:3003/login' ;;
     frontend-manage) echo 'http://localhost:3002/login' ;;
@@ -185,14 +187,15 @@ probe_url() {
   esac
 }
 
-# Chat proves its nested dynamic API route graph through the authentication
-# contract above. The other apps prove their static route table through a
-# committed shell page that renders HTML without database content, so a 404
-# there can never be a legitimate data-driven miss.
+# Auth and Chat prove their dynamic API route graphs through authentication
+# endpoints. Pages apps first prove their dynamic development inventory,
+# then a committed shell page without database content. A shell 404 cannot be
+# a legitimate data-driven miss, but an incomplete inventory is not cache damage.
 probe_mode() {
   case "$1" in
+    auth) echo 'auth-providers-json' ;;
     chat) echo 'auth-json' ;;
-    auth | frontend-control | frontend-manage | frontend-pwa)
+    frontend-control | frontend-manage | frontend-pwa)
       echo 'html-shell'
       ;;
     response-api) echo 'health-json' ;;
@@ -305,6 +308,27 @@ prepare_runtime() {
   ensure_dependencies
   echo '[dev-runtime] Building selected application dependencies before startup.'
   (cd "$ROOT" && pnpm exec turbo run build "$@")
+  wait_for_preparation_children
+}
+
+# The CI-parity Playwright runtime builds the plan's production test apps
+# instead of dev dependencies; the plan path comes from PLAYWRIGHT_RUNTIME_PLAN.
+prepare_playwright_ci_runtime() {
+  local app
+
+  ensure_dependencies
+  # A production build type-checks .next/dev/types as well, and the dev
+  # servers' generated validator there duplicates the build's own. CI builds
+  # from a clean checkout, so drop the dev output first.
+  for app in "${NEXT_APPS[@]}"; do
+    rm -rf "$ROOT/apps/$app/.next/dev"
+  done
+  # Put the installed binaries on PATH directly to avoid pnpm wrapper children.
+  (cd "$ROOT" && PATH="$ROOT/node_modules/.bin:$PATH" node ./util/playwright-profile-runtime.mjs build)
+  wait_for_preparation_children
+}
+
+wait_for_preparation_children() {
   # Turbo can return before its Git subprocess exits. Preparation must leave
   # no live children for the managed process lifecycle to accept it.
   local preparation_pgid preparation_deadline preparation_processes
@@ -378,7 +402,7 @@ classify_response() {
       echo "ready: HTTP $status redirect"
       return 0
     fi
-  elif [ "$mode" = 'health-json' ]; then
+  elif [ "$mode" = 'health-json' ] || [ "$mode" = 'auth-providers-json' ]; then
     if [ "$status" = '200' ] && [[ "$content_type" == application/json* ]]; then
       echo "ready: HTTP $status $content_type"
       return 0
@@ -398,10 +422,38 @@ classify_response() {
 
 probe_app() {
   local app="$1" timeout="${2:-15}" mode url response status content_type curl_status=0
+  local deadline=$((SECONDS + timeout)) inventory inventory_status=0
 
   mode="$(probe_mode "$app")" || die "No probe contract is defined for: $app"
   url="$(probe_url "$app")" || die "No probe URL is defined for: $app"
   require_tool curl
+  if [ "$mode" = 'html-shell' ] && [ "${DEV_TURBO_TASK:-dev}" = dev ]; then
+    require_tool node
+    response="$(curl --silent --show-error --output - \
+      --write-out $'\n%{http_code}\t%{content_type}' \
+      --connect-timeout 2 --max-time "$timeout" --noproxy '*' \
+      "${url%/*}/_next/static/development/_devPagesManifest.json" 2>/dev/null)" || curl_status=$?
+    if [ "$curl_status" -ne 0 ]; then
+      echo "waiting: $app development inventory transport failed (curl $curl_status)"
+      return "$WAITING_STATUS"
+    fi
+    inventory="${response%$'\n'*}"
+    response="${response##*$'\n'}"
+    status="${response%%$'\t'*}"
+    content_type="${response#*$'\t'}"
+    if [ "$status" != 200 ] || [[ "${content_type,,}" != application/json* ]]; then
+      echo "unexpected: $app development inventory HTTP $status ${content_type:-unknown-content-type}"
+      return "$UNEXPECTED_STATUS"
+    fi
+    node "$(dirname "$SCRIPT_PATH")/check-dev-pages-manifest.mjs" \
+      "$ROOT/apps/$app/src/pages" <<<"$inventory" || inventory_status=$?
+    [ "$inventory_status" -eq 0 ] || return "$inventory_status"
+    timeout=$((deadline - SECONDS))
+    if [ "$timeout" -le 0 ]; then
+      echo "waiting: $app readiness request budget exhausted"
+      return "$WAITING_STATUS"
+    fi
+  fi
   response="$(curl --silent --show-error --output /dev/null \
     --write-out $'%{http_code}\t%{content_type}' \
     --connect-timeout 2 --max-time "$timeout" --noproxy '*' \
@@ -555,9 +607,10 @@ Usage:
   util/dev-runtime.sh ensure-dependencies
   util/dev-runtime.sh preparation-filters
   util/dev-runtime.sh prepare <dependency-filter> [dependency-filter...]
+  util/dev-runtime.sh prepare-playwright-ci
   util/dev-runtime.sh request-repair <next-app>
   util/dev-runtime.sh start <fingerprint> <generation> -- <command> [args...]
-  util/dev-runtime.sh classify-response <auth-json|html-shell|health-json> <status> <content-type>
+  util/dev-runtime.sh classify-response <auth-json|auth-providers-json|html-shell|health-json> <status> <content-type>
   util/dev-runtime.sh probe-app <runtime-app>
   util/dev-runtime.sh wait-app <runtime-app>
   util/dev-runtime.sh doctor
@@ -606,6 +659,10 @@ main() {
     prepare)
       shift
       prepare_runtime "$@"
+      ;;
+    prepare-playwright-ci)
+      [ "$#" -eq 1 ] || die 'prepare-playwright-ci takes no arguments.'
+      prepare_playwright_ci_runtime
       ;;
     request-repair)
       [ "$#" -eq 2 ] || die "request-repair requires one app name."

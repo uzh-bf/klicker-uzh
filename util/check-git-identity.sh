@@ -49,7 +49,11 @@ case "$mode" in
       if [[ "$remote_sha" == "$zero" ]]; then
         check_range "$local_sha" --not --remotes
       else
-        check_range "${remote_sha}..${local_sha}"
+        # The guard stops commits from leaving the machine for the first
+        # time. Commits already reachable from a remote-tracking ref were
+        # scanned when they were first pushed and may legitimately reappear
+        # here through merged upstream history (e.g. a v3 sync merge).
+        check_range "${remote_sha}..${local_sha}" --not --remotes
       fi
     done
     ;;

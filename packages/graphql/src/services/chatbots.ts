@@ -117,9 +117,9 @@ const DEFAULT_CHAT_MODEL_REGISTRY_INPUT = [
     cost: { input: 1.0, output: 5.0 },
   },
   {
-    id: 'gpt-5.6-luna',
-    deploymentId: 'gpt-5.6-luna',
-    name: 'GPT-5.6 Luna',
+    id: 'gpt-6-luna',
+    deploymentId: 'gpt-6-luna',
+    name: 'GPT-6 Luna',
     description: 'OpenAI reasoning model',
     fallback: true,
     supportsReasoning: true,
@@ -128,7 +128,7 @@ const DEFAULT_CHAT_MODEL_REGISTRY_INPUT = [
     maxOutputTokens: 4096,
     usageClass: 'BASE',
     apiVersion: 'preview',
-    cost: { input: 0.2, output: 1.2 },
+    cost: { input: 0.1, output: 0.5 },
   },
   {
     id: 'gpt-4.1',
@@ -404,6 +404,7 @@ const chatbotOwnerSelect = {
   modelSelection: true,
   allowedModelIds: true,
   allowedReasoningEffortsByModel: true,
+  answerPreferencesEnabled: true,
   creditInitialCredits: true,
   creditResetPeriod: true,
   creditResetAmount: true,
@@ -507,6 +508,61 @@ export async function getChatbotPublishingCapability(ctx: ContextWithUser) {
   })
 
   return user.aiFeaturesEnabled
+}
+
+export async function getPendingChatbotPublications(ctx: ContextWithUser) {
+  if (ctx.user.role !== DB.UserRole.ADMIN) {
+    throw new GraphQLError('Not authorized')
+  }
+
+  const chatbots = await ctx.prisma.chatbot.findMany({
+    where: { status: DB.ChatbotStatus.PENDING_APPROVAL },
+    orderBy: [{ updatedAt: 'asc' }, { id: 'asc' }],
+    select: {
+      ...chatbotOwnerSelect,
+      owner: {
+        select: { shortname: true, email: true, aiFeaturesEnabled: true },
+      },
+      course: { select: { id: true, name: true } },
+      disclaimer: { select: { title: true, introText: true } },
+      mcpConfigurations: {
+        select: {
+          chatMode: true,
+          isEnabled: true,
+          priority: true,
+          allowedTools: true,
+          mcpServer: {
+            select: { id: true, name: true, isActive: true },
+          },
+        },
+      },
+    },
+  })
+
+  return chatbots.map(
+    ({ owner, disclaimer, mcpConfigurations, ...chatbot }) => ({
+      ownerShortname: owner.shortname,
+      ownerEmail: owner.email,
+      ownerPublishingEnabled: owner.aiFeaturesEnabled,
+      disclaimerTitle: disclaimer?.title ?? null,
+      disclaimerIntroText: disclaimer?.introText ?? null,
+      chatbot: shapeChatbotResponse(chatbot),
+      tools: mcpConfigurations.map((config) => ({
+        serverName: config.mcpServer.name,
+        chatMode: config.chatMode,
+        enabled: config.isEnabled && config.mcpServer.isActive,
+        // Empty/null allow-lists allow all tools in the existing MCP client.
+        // Unknown shapes stay null so review never mislabels them as unrestricted.
+        allowedTools:
+          config.allowedTools == null
+            ? []
+            : Array.isArray(config.allowedTools) &&
+                config.allowedTools.every((tool) => typeof tool === 'string')
+              ? (config.allowedTools as string[])
+              : null,
+      })),
+    })
+  )
 }
 
 export async function getChatbotsInfo(ctx: ContextWithUser) {
@@ -812,7 +868,10 @@ export async function updateChatbotModelSettings(
   return shapeChatbotResponse(updated, { resolveLegacyFixedPolicy: false })
 }
 
-type UpdateChatbotModelPolicyArgs = UpdateChatbotModelSettingsArgs
+type UpdateChatbotModelPolicyArgs = UpdateChatbotModelSettingsArgs & {
+  // Optional so older clients that only save the model policy keep working.
+  answerPreferencesEnabled?: boolean | null
+}
 
 function normalizeStrictReasoningConfig(
   args: UpdateChatbotModelPolicyArgs,
@@ -968,6 +1027,9 @@ export async function updateChatbotModelPolicy(
         status: { in: metadataAndModelEditableStatuses },
       },
       data: {
+        ...(typeof args.answerPreferencesEnabled === 'boolean'
+          ? { answerPreferencesEnabled: args.answerPreferencesEnabled }
+          : {}),
         modelSelection: args.modelSelection,
         allowedModelIds: normalizedAllowedModelIds,
         allowedReasoningEffortsByModel:
@@ -1031,7 +1093,7 @@ export async function createChatbot(
   const auto = modelRegistry.find((model) => model.id === 'auto')
   if (autoPolicyIssues.length > 0 || !auto) {
     throw new GraphQLError(
-      'Chatbot defaults require exactly one valid non-reasoning ADVANCED Auto model'
+      'Chatbot defaults require exactly one valid non-reasoning Auto model'
     )
   }
 

@@ -13,7 +13,7 @@ spec:
   strategy:
     {{- toYaml . | nindent 4 }}
   {{- end }}
-  {{- if not .Values.assessment.frontendPWA.autoscaling.enabled }}
+  {{- if hasKey .Values.assessment.frontendPWA "replicaCount" }}
   replicas: {{ .Values.assessment.frontendPWA.replicaCount }}
   {{- end }}
   selector:
@@ -43,7 +43,7 @@ spec:
         - name: frontend-assessment
           securityContext:
             {{- toYaml .Values.assessment.frontendPWA.securityContext | nindent 12 }}
-          image: "{{ .Values.assessment.frontendPWA.image.repository }}:{{ .Values.assessment.frontendPWA.image.tag | default .Chart.AppVersion }}"
+          image: "{{ .Values.assessment.frontendPWA.image.repository }}:{{ .Values.global.imageTag | default .Values.assessment.frontendPWA.image.tag | default .Chart.AppVersion }}"
           imagePullPolicy: {{ .Values.assessment.frontendPWA.image.pullPolicy }}
           ports:
             - name: http
@@ -74,6 +74,10 @@ spec:
       affinity:
         {{- toYaml . | nindent 8 }}
       {{- end }}
+      {{- with .Values.assessment.frontendPWA.topologySpreadConstraints }}
+      topologySpreadConstraints:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
       {{- with .Values.assessment.frontendPWA.tolerations }}
       tolerations:
         {{- toYaml . | nindent 8 }}
@@ -92,7 +96,7 @@ spec:
   strategy:
     {{- toYaml . | nindent 4 }}
   {{- end }}
-  {{- if not .Values.assessment.backendGraphql.autoscaling.enabled }}
+  {{- if hasKey .Values.assessment.backendGraphql "replicaCount" }}
   replicas: {{ .Values.assessment.backendGraphql.replicaCount }}
   {{- end }}
   selector:
@@ -122,7 +126,7 @@ spec:
         - name: backend-assessment
           securityContext:
             {{- toYaml .Values.assessment.backendGraphql.securityContext | nindent 12 }}
-          image: "{{ .Values.assessment.backendGraphql.image.repository }}:{{ .Values.assessment.backendGraphql.image.tag | default .Chart.AppVersion }}"
+          image: "{{ .Values.assessment.backendGraphql.image.repository }}:{{ .Values.global.imageTag | default .Values.assessment.backendGraphql.image.tag | default .Chart.AppVersion }}"
           imagePullPolicy: {{ .Values.assessment.backendGraphql.image.pullPolicy }}
           ports:
             - name: http
@@ -158,6 +162,10 @@ spec:
       {{- end }}
       {{- with .Values.assessment.backendGraphql.affinity }}
       affinity:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
+      {{- with .Values.assessment.backendGraphql.topologySpreadConstraints }}
+      topologySpreadConstraints:
         {{- toYaml . | nindent 8 }}
       {{- end }}
       {{- with .Values.assessment.backendGraphql.tolerations }}

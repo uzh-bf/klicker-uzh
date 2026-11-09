@@ -1,0 +1,75 @@
+name: Change envelope
+description: >-
+  Classify this run's changed paths into the repository's minimum validation
+  envelope, so a validation lane can decide what it still has to run. One
+  classifier serves every lane: this action collects the same rename-aware
+  records the selectors use and hands them to
+  .github/scripts/minimum-validation-class.cjs.
+
+  The action fails open. An unresolvable diff, a crashed classifier, or a
+  classification that cannot be read leaves every output empty, and a lane must
+  read an empty decision as the full envelope. Narrowing is therefore always
+  backed by a recorded class and the paths that justified it.
+
+inputs:
+  receipt-path:
+    description: >-
+      Optional file path for the machine-readable classification receipt, which
+      records the class, the decisions, and the exact paths that produced them.
+      Empty writes no receipt.
+    required: false
+    default: ''
+
+outputs:
+  change_class:
+    description: 'The one change class this diff resolved to, empty when unproven'
+    value: ${{ steps.classify.outputs.change_class }}
+  change_class_reason:
+    description: 'Why the class resolved, including a fail-closed expansion'
+    value: ${{ steps.classify.outputs.change_class_reason }}
+  changed_path_count:
+    description: 'Number of changed paths that justified the class'
+    value: ${{ steps.classify.outputs.changed_path_count }}
+  playwright:
+    description: 'Playwright decision for this class: full, bounded, or skip'
+    value: ${{ steps.classify.outputs.playwright }}
+  codebase_check:
+    description: 'Codebase check decision for this class: full or bounded'
+    value: ${{ steps.classify.outputs.codebase_check }}
+  static_analysis:
+    description: 'Static analysis decision for this class: run or skip'
+    value: ${{ steps.classify.outputs.static_analysis }}
+
+runs:
+  using: composite
+  steps:
+    # The records come from the shared filter so a lane cannot classify a
+    # different diff than the one the selection decided on.
+    - id: records
+      uses: ./.github/actions/changed-paths
+      with:
+        # Not a path filter: this action only needs the records.
+        pattern: '.'
+        records-path: changed-paths.records
+
+    - id: classify
+      shell: bash
+      run: |
+        records="${{ steps.records.outputs.records_path }}"
+        if [ -n "$records" ] && [ -f "$records" ]; then
+          records_args=(--name-status-z "$records")
+        else
+          echo "No changed-path records for this event; the envelope expands."
+          records_args=()
+        fi
+        receipt="${{ inputs.receipt-path }}"
+        if [ -n "$receipt" ]; then
+          records_args+=(--receipt "$receipt")
+        fi
+        # A failing classification expands the envelope instead of failing the
+        # lane: it is an efficiency input, and its failure mode is the full
+        # validation that the lane ran before the envelope existed.
+        if ! node .github/scripts/minimum-validation-class.cjs \
+          "${records_args[@]}"; then
+          echo "::warning::Minimum validation classification failed; this lane runs in full."
+        fi

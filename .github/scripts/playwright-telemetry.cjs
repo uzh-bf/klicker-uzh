@@ -18,6 +18,11 @@ function buildTelemetry() {
     phase: value('PLAYWRIGHT_TELEMETRY_PHASE', 'unknown'),
     route: value('PLAYWRIGHT_ROUTE', 'unknown'),
     mode: value('PLAYWRIGHT_MODE', 'unknown'),
+    // The build graph a wave actually ran: 'bounded' spends its build only on
+    // the applications the shard profiles select, 'full' builds all of them.
+    buildGraphMode: value('PLAYWRIGHT_BUILD_GRAPH_MODE', 'unknown'),
+    buildGraphProfile: value('PLAYWRIGHT_BUILD_GRAPH_PROFILE'),
+    buildGraphReason: value('PLAYWRIGHT_BUILD_GRAPH_REASON'),
     runner: value('RUNNER_NAME', 'unknown'),
     platform: value('RUNNER_OS', 'unknown'),
     architecture: value('RUNNER_ARCH', 'unknown'),

@@ -11,4 +11,8 @@ const nextConfig = getNextBaseConfig({
   NEXT_PUBLIC_ENV: process.env.NEXT_PUBLIC_ENV,
 }) as NextConfig
 
+nextConfig.outputFileTracingIncludes = {
+  '/*': ['./src/prompts/*.hbs'],
+}
+
 export default withNextIntl(nextConfig)

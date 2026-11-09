@@ -3,28 +3,37 @@ const fs = require('node:fs')
 const path = require('node:path')
 const { execFileSync } = require('node:child_process')
 
-const CACHE_SCHEMA = '2'
+const CACHE_SCHEMA = '3'
 const BUILD_ENVIRONMENT_SCHEMA = '1'
 const NODE_VERSION = '24'
 const PNPM_VERSION = '11.5.0'
 const BUILD_IMAGE_DIGEST =
   'sha256:6446946a1d9fd62d9ae501312a2d76a43ee688542b21622056a372959b65d63d'
 
-const FIXED_FILES = [
+// Files whose contents can change what the build produces or how the build
+// executes. A change to any of these files invalidates cached build
+// artifacts for both build and shard jobs.
+const BUILD_FINGERPRINT_FILES = [
   '.github/actions/playwright-build/action.yml',
   '.github/actions/playwright-shard/action.yml',
   '.github/scripts/playwright-cache-contract.cjs',
-  '.github/scripts/playwright-telemetry.cjs',
-  '.github/scripts/turbo-telemetry.cjs',
   '.github/workflows/playwright-cache-seed.yml',
-  '.github/workflows/public-pr-playwright-shards.yml',
-  '.github/workflows/test-playwright.yml',
   '.npmrc',
   'playwright/profiles.json',
   'playwright/runtime-contract.yml',
   'pnpm-lock.yaml',
   'pnpm-workspace.yaml',
   'turbo.json',
+]
+
+// Orchestration and telemetry files schedule or observe the build without
+// changing its outputs, so they stay out of the build fingerprint. Trusted
+// run-reuse evidence still binds them through the control revision.
+const ORCHESTRATION_FILES = [
+  '.github/scripts/playwright-telemetry.cjs',
+  '.github/scripts/turbo-telemetry.cjs',
+  '.github/workflows/public-pr-playwright-shards.yml',
+  '.github/workflows/test-playwright.yml',
 ]
 
 function compareNames(a, b) {
@@ -47,7 +56,8 @@ function isPackageManifest(file) {
 function relevantFiles(files) {
   const selected = new Set(
     files.filter(
-      (file) => FIXED_FILES.includes(file) || isPackageManifest(file)
+      (file) =>
+        BUILD_FINGERPRINT_FILES.includes(file) || isPackageManifest(file)
     )
   )
 
@@ -175,8 +185,9 @@ if (require.main === module) {
 module.exports = {
   BUILD_ENVIRONMENT_SCHEMA,
   BUILD_IMAGE_DIGEST,
+  BUILD_FINGERPRINT_FILES,
   CACHE_SCHEMA,
-  FIXED_FILES,
+  ORCHESTRATION_FILES,
   NODE_VERSION,
   PNPM_VERSION,
   buildFingerprint,

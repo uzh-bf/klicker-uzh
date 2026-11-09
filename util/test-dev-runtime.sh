@@ -53,6 +53,9 @@ write_file "$ROOT/packages/example/package.json" '{"name":"example"}'
 for app in "${NEXT_APPS[@]}"; do
   write_file "$ROOT/apps/$app/package.json" "{\"name\":\"$app\"}"
   write_file "$ROOT/apps/$app/next.config.mjs" 'export default {}'
+  if [ "$app" != chat ]; then
+    write_file "$ROOT/apps/$app/src/pages/item/[id]/index.tsx" 'export default true'
+  fi
 done
 write_file "$ROOT/apps/chat/src/app/api/example/route.ts" 'export const GET = true'
 write_file "$ROOT/apps/auth/src/pages/index.tsx" 'export default true'
@@ -72,6 +75,8 @@ write_file "$FAKE_BIN/curl" '#!/usr/bin/env bash
 url="${!#}"
 printf "%s\n" "$url" >>"$KLICKER_TEST_CURL_LOG"
 case "$url" in
+  */api/auth/providers) printf "200\tapplication/json" ;;
+  */_devPagesManifest.json) printf "{\"pages\":[\"/item/[id]\"]}\n200\tapplication/json" ;;
   */api/chatbots/*) printf "401\tapplication/json" ;;
   */healthz) printf "200\tapplication/json" ;;
   *) printf "307\ttext/html" ;;
@@ -131,6 +136,9 @@ INIT_ROOT="$TEST_ROOT/init-repo/.devcontainer"
 MKCERT_CAROOT="$TEST_ROOT/mkcert"
 mkdir -p "$INIT_ROOT" "$MKCERT_CAROOT"
 cp "$REPO_ROOT/.devcontainer/initialize.sh" "$INIT_ROOT/initialize.sh"
+# Dependency generation has its own contract suite; isolate certificate and
+# shared-volume initialization in this fixture.
+write_file "$INIT_ROOT/../util/generate-dependency-mounts.mjs" 'process.exit(0)'
 write_file "$MKCERT_CAROOT/rootCA.pem" 'test CA'
 export KLICKER_TEST_MKCERT_CAROOT="$MKCERT_CAROOT"
 
@@ -173,17 +181,6 @@ assert_before() {
     fail "expected '$earlier' before '$later' in $file"
 }
 
-last_semantic_line() {
-  awk '$0 !~ /^[[:space:]]*($|#)/ { line = $0 } END { print line }' "$1"
-}
-
-assert_before \
-  "$REPO_ROOT/.devcontainer/post-create.sh" \
-  'bash "$SCRIPT_ROOT/util/dev-runtime.sh" begin-bootstrap' \
-  'ROOT="$(cd "$ROOT" && pwd)"'
-assert_equal \
-  "$(last_semantic_line "$REPO_ROOT/.devcontainer/post-create.sh")" \
-  'bash "$ROOT/util/dev-runtime.sh" complete-bootstrap'
 assert_before \
   "$REPO_ROOT/.devcontainer/post-start.sh" \
   'ROOT="$(cd "$ROOT" && pwd)"' \
@@ -203,40 +200,12 @@ mkdir -p \
   "$ROOT/packages/graphql" \
   "$ROOT/util"
 write_file "$ROOT/.devcontainer/devcontainer.env" ''
+write_file "$ROOT/.devcontainer/.hatchet.env" 'HATCHET_CLIENT_TOKEN=synthetic-test-token'
 cp "$RUNTIME_SCRIPT" "$ROOT/util/dev-runtime.sh"
+cp "$REPO_ROOT/util/check-dev-pages-manifest.mjs" "$ROOT/util/check-dev-pages-manifest.mjs"
+cp "$REPO_ROOT/util/local-eduid-issuer.sh" "$ROOT/util/local-eduid-issuer.sh"
+# Post-create replay and failure admission are exercised by test-recover-bootstrap.sh.
 bash "$RUNTIME_SCRIPT" complete-bootstrap >/dev/null
-if KLICKER_DEVCONTAINER_ROOT="$TEST_ROOT/missing-root" \
-  bash "$REPO_ROOT/.devcontainer/post-create.sh" >/dev/null 2>&1; then
-  fail 'post-create accepted a missing configured root'
-fi
-assert_absent "$KLICKER_DEV_RUNTIME_BOOTSTRAP_STATE_DIR/bootstrap-complete"
-
-bash "$RUNTIME_SCRIPT" complete-bootstrap >/dev/null
-if KLICKER_DEVCONTAINER_ROOT="$ROOT" \
-  KLICKER_HATCHET_TOKEN_FILE="$TEST_ROOT/missing-hatchet-token" \
-  KLICKER_TEST_PNPM_FAIL_MATCH='exec turbo' \
-  bash "$REPO_ROOT/.devcontainer/post-create.sh" >/dev/null 2>&1; then
-  fail 'post-create ignored a failing middle bootstrap step'
-fi
-assert_absent "$KLICKER_DEV_RUNTIME_BOOTSTRAP_STATE_DIR/bootstrap-complete"
-: > "$INSTALL_LOG"
-rm -f "$ROOT/node_modules/.klicker-dependency-fingerprint"
-write_file "$TEST_ROOT/hatchet-token" 'synthetic-test-token'
-bash "$RUNTIME_SCRIPT" begin-bootstrap >/dev/null
-(
-  cd "$TEST_ROOT"
-  KLICKER_DEVCONTAINER_ROOT='repo' \
-    KLICKER_HATCHET_TOKEN_FILE="$TEST_ROOT/hatchet-token" \
-    bash "$REPO_ROOT/.devcontainer/post-create.sh" >/dev/null
-)
-assert_exists "$ROOT/.devcontainer/.hatchet.env"
-grep -Fq 'HATCHET_CLIENT_TOKEN=synthetic-test-token' \
-  "$ROOT/.devcontainer/.hatchet.env" || \
-  fail 'relative post-create root wrote the Hatchet environment incorrectly'
-bash "$RUNTIME_SCRIPT" require-bootstrap >/dev/null
-: > "$INSTALL_LOG"
-rm -f "$ROOT/node_modules/.klicker-dependency-fingerprint"
-
 post_start_status=0
 post_start_output="$(
   cd "$TEST_ROOT"
@@ -392,6 +361,25 @@ assert_equal \
   "$(bash "$RUNTIME_SCRIPT" classify-response auth-json 401 'application/json; charset=utf-8')" \
   'ready: HTTP 401 application/json; charset=utf-8'
 
+assert_equal \
+  "$(bash "$RUNTIME_SCRIPT" classify-response auth-providers-json 200 'application/json; charset=utf-8')" \
+  'ready: HTTP 200 application/json; charset=utf-8'
+
+classification_status=0
+classification_output="$(
+  bash "$RUNTIME_SCRIPT" classify-response auth-providers-json 404 'text/html; charset=utf-8'
+)" || classification_status=$?
+assert_equal "$classification_status" '20'
+assert_equal "$classification_output" 'stale: HTTP 404 text/html; charset=utf-8'
+
+classification_status=0
+bash "$RUNTIME_SCRIPT" classify-response auth-providers-json 200 text/html >/dev/null || classification_status=$?
+assert_equal "$classification_status" '22'
+
+classification_status=0
+bash "$RUNTIME_SCRIPT" classify-response auth-providers-json 400 application/json >/dev/null || classification_status=$?
+assert_equal "$classification_status" '22'
+
 classification_status=0
 classification_output="$(
   bash "$RUNTIME_SCRIPT" classify-response auth-json 404 'text/html; charset=utf-8'
@@ -462,6 +450,10 @@ if bash "$RUNTIME_SCRIPT" probe-app unsupported >/dev/null 2>&1; then
 fi
 
 : >"$CURL_LOG"
+READINESS_APPS=auth bash "$RUNTIME_SCRIPT" doctor >/dev/null
+assert_equal "$(cat "$CURL_LOG")" 'http://localhost:3010/api/auth/providers'
+
+: >"$CURL_LOG"
 READINESS_APPS=response-api bash "$RUNTIME_SCRIPT" doctor >/dev/null
 assert_equal "$(cat "$CURL_LOG")" 'http://localhost:7078/healthz'
 
@@ -472,7 +464,11 @@ READINESS_APPS='' bash "$RUNTIME_SCRIPT" doctor >/dev/null
 : >"$CURL_LOG"
 unset READINESS_APPS
 bash "$RUNTIME_SCRIPT" doctor >/dev/null
-assert_equal "$(wc -l <"$CURL_LOG" | tr -d ' ')" '6'
+assert_equal "$(wc -l <"$CURL_LOG" | tr -d ' ')" '9'
+
+: >"$CURL_LOG"
+READINESS_APPS=auth DEV_TURBO_TASK=dev:test bash "$RUNTIME_SCRIPT" doctor >/dev/null
+assert_equal "$(cat "$CURL_LOG")" 'http://localhost:3010/api/auth/providers'
 
 cp "$REPO_ROOT/util/profile-resolver.sh" "$ROOT/util/profile-resolver.sh"
 cp "$RUNTIME_SCRIPT" "$ROOT/util/dev-runtime.sh"
@@ -549,6 +545,31 @@ if [ "${2:-}" = --help ]; then
 fi
 printf "%s\n" "$*" >>"$KLICKER_TEST_HELPER_LOG"
 [ "$1" = ensure ] || exit 0
+if [ -n "${KLICKER_TEST_EVALUATION_GENERATION:-}" ]; then
+  [ "${KLICKER_EVAL_GUARD_ORIGIN:-}" = "http://127.0.0.1:1418" ] || exit 31
+  [ "${OPENAI_BASE_URL:-}" = "http://127.0.0.1:1418/v1" ] || exit 32
+  [ "${OPENAI_API_KEY:-}" = "synthetic-evaluation-key" ] || exit 33
+  [ "${CHAT_MODEL_REGISTRY_JSON:-}" = "[]" ] || exit 34
+  [ "${KLICKER_EVAL_GUARD_GENERATION:-}" = "$KLICKER_TEST_EVALUATION_GENERATION" ] || exit 35
+  for name in KLICKER_EVAL_GUARD_ORIGIN OPENAI_BASE_URL CHAT_MODEL_REGISTRY_JSON KLICKER_EVAL_GUARD_GENERATION; do
+    case ",$DEVROUTER_PROCESS_FINGERPRINT_ENV," in
+      *",$name,"*) ;;
+      *) exit 36 ;;
+    esac
+  done
+  case ",$DEVROUTER_PROCESS_FINGERPRINT_ENV," in
+    *",OPENAI_API_KEY,"*) exit 37 ;;
+  esac
+  echo "evaluation-generation:$KLICKER_EVAL_GUARD_GENERATION" >>"$KLICKER_TEST_HELPER_LOG"
+fi
+if [ -n "${KLICKER_TEST_EXPECT_CANONICAL:-}" ]; then
+  [ "${OPENAI_BASE_URL:-}" = "http://litellm:4000" ] || exit 41
+  [ "${OPENAI_API_KEY:-}" = "synthetic-default-key" ] || exit 42
+  [ "${CHAT_MODEL_REGISTRY_JSON:-}" = "default-registry" ] || exit 43
+  [ "${KLICKER_EVAL_GUARD_ORIGIN+x}" != x ] || exit 44
+  [ "${KLICKER_EVAL_GUARD_GENERATION+x}" != x ] || exit 45
+  echo "canonical-openai-base-url:${OPENAI_BASE_URL}" >>"$KLICKER_TEST_HELPER_LOG"
+fi
 shift
 while [ "$#" -gt 0 ]; do
   if [ "$1" = --prepare-command ]; then
@@ -577,5 +598,52 @@ if grep -Fx launched "$HELPER_LOG" >/dev/null; then
   fail 'post-start launched after failed preparation'
 fi
 [ ! -s "$CURL_LOG" ] || fail 'failed preparation reached readiness'
+
+# Canonical development defaults cannot displace explicit guarded settings.
+write_file "$ROOT/.devcontainer/devcontainer.env" 'OPENAI_BASE_URL=http://litellm:4000'
+: >"$HELPER_LOG"
+KLICKER_DEVCONTAINER_ROOT="$ROOT" DEVROUTER_PROCESS_HELPER="$FAKE_BIN/process-helper" \
+  KLICKER_EVAL_GUARD_ORIGIN=http://127.0.0.1:1418 \
+  OPENAI_BASE_URL=http://127.0.0.1:1418/v1 OPENAI_API_KEY=synthetic-evaluation-key \
+  CHAT_MODEL_REGISTRY_JSON='[]' KLICKER_EVAL_GUARD_GENERATION=synthetic-generation \
+  KLICKER_TEST_EVALUATION_GENERATION=synthetic-generation \
+  KLICKER_TEST_PNPM_FAIL_MATCH='exec turbo run build' \
+  bash "$REPO_ROOT/.devcontainer/post-start.sh" >/dev/null 2>&1 && \
+  fail 'synthetic preparation failure unexpectedly succeeded'
+grep -Fx 'evaluation-generation:synthetic-generation' "$HELPER_LOG" >/dev/null || \
+  fail 'managed helper did not receive restored guarded configuration'
+
+# Complementary ordinary path: compose's canonical OPENAI_* values arrive via
+# env_file without the guard markers. Post-start must pass them through and
+# fail only on the simulated dependency preparation, never on the guarded gate.
+: >"$HELPER_LOG"
+canonical_status=0
+KLICKER_DEVCONTAINER_ROOT="$ROOT" DEVROUTER_PROCESS_HELPER="$FAKE_BIN/process-helper" \
+  OPENAI_BASE_URL=http://litellm:4000 OPENAI_API_KEY=synthetic-default-key \
+  CHAT_MODEL_REGISTRY_JSON=default-registry \
+  KLICKER_TEST_EXPECT_CANONICAL=1 \
+  KLICKER_TEST_PNPM_FAIL_MATCH='exec turbo run build' \
+  bash "$REPO_ROOT/.devcontainer/post-start.sh" >/dev/null 2>&1 || canonical_status=$?
+assert_equal "$canonical_status" 17
+grep -Fx 'canonical-openai-base-url:http://litellm:4000' "$HELPER_LOG" >/dev/null || \
+  fail 'helper did not receive canonical configuration without guard markers'
+: >"$HELPER_LOG"
+incomplete_status=0
+KLICKER_DEVCONTAINER_ROOT="$ROOT" DEVROUTER_PROCESS_HELPER="$FAKE_BIN/process-helper" \
+  KLICKER_EVAL_GUARD_ORIGIN=http://127.0.0.1:1418 OPENAI_BASE_URL=http://127.0.0.1:1418/v1 \
+  OPENAI_API_KEY=synthetic-evaluation-key CHAT_MODEL_REGISTRY_JSON='[]' \
+  KLICKER_EVAL_GUARD_GENERATION='' \
+  bash "$REPO_ROOT/.devcontainer/post-start.sh" >/dev/null 2>&1 || incomplete_status=$?
+[ "$incomplete_status" -eq 2 ] || fail 'incomplete guarded configuration did not use its failure status'
+[ ! -s "$HELPER_LOG" ] || fail 'incomplete guarded configuration reached the helper'
+
+incomplete_status=0
+KLICKER_DEVCONTAINER_ROOT="$ROOT" DEVROUTER_PROCESS_HELPER="$FAKE_BIN/process-helper" \
+  KLICKER_EVAL_GUARD_ORIGIN='' OPENAI_BASE_URL=http://127.0.0.1:1418/v1 \
+  OPENAI_API_KEY=synthetic-evaluation-key CHAT_MODEL_REGISTRY_JSON='[]' \
+  KLICKER_EVAL_GUARD_GENERATION=synthetic-generation \
+  bash "$REPO_ROOT/.devcontainer/post-start.sh" >/dev/null 2>&1 || incomplete_status=$?
+[ "$incomplete_status" -eq 2 ] || fail 'empty guarded origin did not fail closed'
+[ ! -s "$HELPER_LOG" ] || fail 'empty guarded origin reached the helper'
 
 echo '[test-dev-runtime] PASS'

@@ -20,6 +20,9 @@ export async function seedUsers(prisma: Prisma.PrismaClient) {
       catalystInstitutional: true,
       publicPreview: true,
       privatePreview: true,
+      // The one seeded account enabled for the AI features, so local work can
+      // exercise both sides of that gate without editing the database.
+      aiFeaturesEnabled: true,
       role: 'ADMIN',
     })
   )

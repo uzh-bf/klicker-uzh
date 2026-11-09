@@ -3,8 +3,10 @@ import { mkdtempSync, readFileSync, rmSync, statSync } from 'node:fs'
 import { tmpdir } from 'node:os'
 import { join } from 'node:path'
 import test from 'node:test'
+import YAML from 'yaml'
 
 import {
+  buildBuildCommand,
   buildStartCommand,
   resolveRuntimePlan,
   validateRuntimePlan,
@@ -233,15 +235,32 @@ test('the start command passes validated filters as distinct argv entries', () =
   })
 })
 
+test('the local CI-runtime build covers exactly the apps the start command serves', () => {
+  const runtime = validateRuntimePlan(profilePlan())
+  const start = buildStartCommand(runtime)
+
+  assert.deepEqual(buildBuildCommand(runtime), {
+    ...start,
+    args: start.args.map((arg) => (arg === 'start:test' ? 'build:test' : arg)),
+  })
+})
+
 test('workflow shard startup steps explicitly select Bash', () => {
-  const action = readFileSync(
-    new URL('../.github/actions/playwright-shard/action.yml', import.meta.url),
-    'utf8'
+  const action = YAML.parse(
+    readFileSync(
+      new URL(
+        '../.github/actions/playwright-shard/action.yml',
+        import.meta.url
+      ),
+      'utf8'
+    )
   )
-  assert.match(
-    action,
-    /- name: Start services, wait for readiness, and run Playwright tests\n\s+shell: bash\n\s+run: \|/
+  const startup = action.runs.steps.find((step) =>
+    step.run?.includes('exec playwright test')
   )
+
+  assert.ok(startup, 'Playwright test producer must exist')
+  assert.equal(startup.shell, 'bash')
 })
 
 test('workflow shard startup supports only complete profile or legacy runtimes', () => {

@@ -1,0 +1,92 @@
+name: Staging image input fingerprint
+description: >-
+  Resolve the canonical input fingerprint of one staging image target and, when
+  every build input is unchanged, adopt the digest an earlier publication
+  already built and had scanned. Inputs come from the trusted inventory through
+  .github/scripts/image-input-fingerprint.cjs; a target the inventory does not
+  mark reusable never reaches the registry. The action is fail-closed: an
+  unresolvable base image, an untracked input, or an unclear registry answer
+  fails the step instead of producing a fingerprint or an adopted digest.
+
+# The action runs after the caller has checked out the candidate and set up
+# Buildx. It writes the reuse record next to the digest the scan leg consumes,
+# so a promoted digest always carries the input identity that produced it.
+
+inputs:
+  fingerprint-output:
+    description: 'Path for the fingerprint record the release manifest consumes'
+    required: false
+    default: 'image-input-fingerprint.json'
+  reuse-record:
+    description: >-
+      Path for the reuse record: whether this publication adopted an
+      already-qualified digest or built one, and under which fingerprint tag
+    required: false
+    default: 'image-reuse-record.json'
+  image:
+    description: 'Fully qualified registry image the caller publishes'
+    required: true
+  sha:
+    description: 'Candidate commit whose full-SHA tag this publication owns'
+    required: true
+  target:
+    description: 'Trusted inventory target id'
+    required: true
+  workflow-path:
+    description: 'Publication workflow, part of the fingerprinted input set'
+    required: false
+    default: '.github/workflows/v3_images-stg.yml'
+
+outputs:
+  adopt:
+    description: 'true when an already-qualified digest answers this fingerprint'
+    value: ${{ steps.check.outputs.adopt }}
+  adopted_digest:
+    description: 'Digest of the adopted image, empty when the target must build'
+    value: ${{ steps.check.outputs.digest }}
+  fingerprint:
+    description: 'Canonical input fingerprint of this target'
+    value: ${{ steps.resolve.outputs.fingerprint }}
+  tag:
+    description: 'Registry tag the fingerprint is published under'
+    value: ${{ steps.resolve.outputs.tag }}
+
+runs:
+  using: composite
+  steps:
+    - id: resolve
+      shell: bash
+      env:
+        FINGERPRINT_OUTPUT: ${{ inputs.fingerprint-output }}
+        TARGET: ${{ inputs.target }}
+        WORKFLOW_PATH: ${{ inputs.workflow-path }}
+      run: |
+        set -euo pipefail
+        node .github/scripts/image-input-fingerprint.cjs \
+          --target "$TARGET" \
+          --workflow-path "$WORKFLOW_PATH" \
+          --output "$FINGERPRINT_OUTPUT"
+
+    # The tag is the record: it exists on the digest an earlier publication
+    # built from exactly these inputs, and nowhere else.
+    - id: check
+      if: steps.resolve.outputs.reuse == 'true'
+      shell: bash
+      env:
+        IMAGE: ${{ inputs.image }}
+        MODE: check
+        REUSE_RECORD: ${{ inputs.reuse-record }}
+        TAG: ${{ steps.resolve.outputs.tag }}
+      run: .github/scripts/stg-image-reuse-guard.sh
+
+    - id: adopt
+      if: steps.check.outputs.adopt == 'true'
+      shell: bash
+      env:
+        DIGEST: ${{ steps.check.outputs.digest }}
+        IMAGE: ${{ inputs.image }}
+        MODE: adopt
+        REUSE_RECORD: ${{ inputs.reuse-record }}
+        SHA: ${{ inputs.sha }}
+        TAG: ${{ steps.resolve.outputs.tag }}
+      run: .github/scripts/stg-image-reuse-guard.sh

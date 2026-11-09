@@ -38,31 +38,4 @@ describe('withCitationContract', () => {
     expect(result.trim()).toBe(result)
     expect(result).toContain('[1]')
   })
-
-  test('the appended block instructs bracketed-number citations like [1] and [2]', () => {
-    const result = withCitationContract('Base prompt.', ['doc_query'])
-    expect(result).toContain('[1]')
-    expect(result).toContain('[2]')
-    expect(result).toContain('[2–4]')
-    expect(result.toLowerCase()).toContain('every number in the range')
-    expect(result.toLowerCase()).toContain('citation')
-  })
-
-  // The UI's dedupe keeps a repeat source's original number and never mints a
-  // new one, so a model that kept counting upward would emit a marker beyond
-  // the resolvable range (see normalizeSourcesFromParts / resolveCitationSource).
-  test('the appended block tells the model to reuse a repeat source number', () => {
-    const result = withCitationContract('Base prompt.', ['doc_query'])
-    expect(result.toLowerCase()).toContain('reuse the number')
-  })
-
-  test('the appended block resets numbering for each assistant message', () => {
-    const result = withCitationContract('Base prompt.', ['doc_query'])
-    expect(result.toLowerCase()).toContain(
-      'start at [1] in every new assistant message'
-    )
-    expect(result.toLowerCase()).toContain(
-      'never continue numbering from an earlier message'
-    )
-  })
 })

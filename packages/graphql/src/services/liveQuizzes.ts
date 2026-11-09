@@ -32,7 +32,7 @@ import { createHash, createHmac } from 'node:crypto'
 import { omitBy, pick, prop, sortBy } from 'remeda'
 import { v4 as uuidv4 } from 'uuid'
 import type { Context, ContextWithUser } from '../lib/context.js'
-import { computeRanks } from '../lib/util.js'
+import { computeRanks, temporaryLeaderboardEntryId } from '../lib/util.js'
 import {
   getPermissionBooleans,
   liveQuizCourseVisibilityFilter,
@@ -905,6 +905,21 @@ export async function scheduleLiveQuiz(
 ) {
   // if the live quiz starts in the future, change its status to scheduled, otherwise publish it
   if (availableFrom && dayjs(availableFrom).isAfter(dayjs())) {
+    // only draft or already scheduled quizzes can be (re)scheduled; checked
+    // before the publication task is created so a running or ended quiz is
+    // never republished
+    const schedulableQuiz = await ctx.prisma.liveQuiz.findFirst({
+      where: {
+        id,
+        isDeleted: false,
+        status: {
+          in: [DB.PublicationStatus.DRAFT, DB.PublicationStatus.SCHEDULED],
+        },
+      },
+      select: { id: true },
+    })
+    if (!schedulableQuiz) return null
+
     try {
       // schedule the task to publish the live quiz
       const scheduledTask = await ctx.tasks.publishScheduledLiveQuiz.schedule(
@@ -915,7 +930,13 @@ export async function scheduleLiveQuiz(
 
       // change the status of the live quiz to scheduled
       const updatedQuiz = await ctx.prisma.liveQuiz.update({
-        where: { id, isDeleted: false },
+        where: {
+          id,
+          isDeleted: false,
+          status: {
+            in: [DB.PublicationStatus.DRAFT, DB.PublicationStatus.SCHEDULED],
+          },
+        },
         data: {
           availableFrom,
           status: DB.PublicationStatus.SCHEDULED,
@@ -3173,7 +3194,7 @@ export async function getLiveQuizLeaderboard(
       .concat(
         quiz?.temporaryLeaderboard?.flatMap((entry) => {
           return {
-            id: Math.floor(Math.random() * 1000000000), // generate a random large number for temporary leaderboard entries
+            id: temporaryLeaderboardEntryId(entry.id),
             participantId: entry.id,
             username: participantProfilesVisible ? entry.username : 'Anonymous',
             avatar: participantProfilesVisible ? entry.avatar : null,

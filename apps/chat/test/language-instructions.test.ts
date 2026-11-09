@@ -1,6 +1,9 @@
 import { describe, expect, test } from 'vitest'
 
-import { withLanguageStyleContract } from '../src/lib/server/languageInstructions'
+import {
+  REPLY_LANGUAGE_REMINDER,
+  withLanguageStyleContract,
+} from '../src/lib/server/languageInstructions'
 
 describe('withLanguageStyleContract', () => {
   test('appends the contract to a non-empty base prompt', () => {
@@ -44,5 +47,12 @@ describe('withLanguageStyleContract', () => {
     const result = withLanguageStyleContract(base)
     expect(result.trim()).toBe(result)
     expect(result).toContain('Swiss Standard German')
+  })
+})
+
+describe('REPLY_LANGUAGE_REMINDER', () => {
+  test('is a non-empty system message', () => {
+    expect(REPLY_LANGUAGE_REMINDER.role).toBe('system')
+    expect(REPLY_LANGUAGE_REMINDER.content.length).toBeGreaterThan(0)
   })
 })

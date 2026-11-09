@@ -1,4 +1,6 @@
-const INPUT_CONTEXT_CONTRACT = `Attachment context: user messages may contain [Attached image description: ...] or [Attached image N description: ...]. These blocks represent visual information from the user's image attachment. Use relevant details as visual context. Do not expose the marker syntax or the description pipeline, and do not claim that you cannot access the image merely because its content is represented this way.`
+import { renderPromptTemplate } from '@/src/lib/server/promptTemplates'
+
+const INPUT_CONTEXT_CONTRACT = renderPromptTemplate('input-context', {})
 
 /**
  * Appends the fixed interpretation of server-generated attachment descriptions

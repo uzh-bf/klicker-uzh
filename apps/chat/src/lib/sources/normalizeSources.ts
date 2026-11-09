@@ -1,7 +1,11 @@
 import { TOOL_NAME_SUFFIX_LENGTH } from '../config/toolNames'
+import { getPublicSourceUrl } from './sourceUrl'
 import type { ChatSource, ChatSourceType } from './types'
 
-export const MAX_SOURCES = 12
+// 99 is the largest index the two-digit marker parser and `parseCitationHref`
+// accept, so it is also the citation cap: sources beyond it stay model-visible
+// with a null `citation_index` instead of being dropped or renumbered.
+export const MAX_SOURCES = 99
 const EXCERPT_MAX_LENGTH = 240
 
 // MCP tools are namespaced by server, e.g. `KB_doc_query` (see
@@ -113,6 +117,25 @@ export function normalizeSourcesFromParts(
   }
 
   return sources
+}
+
+/** Maps original source positions to the message registry without renumbering. */
+export function sourceCitationIndices(
+  payload: Record<string, unknown>,
+  sources: readonly ChatSource[]
+): Array<number | null> {
+  if (!Array.isArray(payload.sources)) return []
+  const indices = new Map(sources.map((source) => [source.id, source.index]))
+  return payload.sources.map((source) => {
+    const [normalized] = normalizeSourcesFromParts([
+      {
+        type: 'tool-call',
+        toolName: 'doc_query',
+        result: { ...payload, sources: [source] },
+      },
+    ])
+    return normalized ? (indices.get(normalized.id) ?? null) : null
+  })
 }
 
 function isQualifyingPart(
@@ -370,7 +393,7 @@ function normalizeAnswerModeSources(
       title,
       page,
       labeledPage,
-      url,
+      url: getPublicSourceUrl(url),
       dedupeKey: buildDedupeKey({
         url: ingestionReference ? rawUrl : url,
         title,
@@ -437,7 +460,7 @@ function normalizeDocumentsModeSources(
       title,
       page,
       labeledPage,
-      url,
+      url: getPublicSourceUrl(source.source_url) ?? getPublicSourceUrl(url),
       excerpt,
       startSec,
       endSec,

@@ -366,6 +366,7 @@ function LiveQuizSettingsStep({
                         'manage.activityWizard.liveQuizFeedbackChannel'
                       )}
                       data={{ cy: 'set-feedback-enabled' }}
+                      className={{ element: 'shrink-0' }}
                     />
                     <FormikSwitchField
                       required
@@ -373,6 +374,7 @@ function LiveQuizSettingsStep({
                       label={t('shared.generic.liveQA')}
                       tooltip={t('manage.activityWizard.liveQuizLiveQA')}
                       data={{ cy: 'set-liveqa-enabled' }}
+                      className={{ element: 'shrink-0' }}
                     />
                     <FormikSwitchField
                       required
@@ -381,6 +383,7 @@ function LiveQuizSettingsStep({
                       label={t('shared.generic.moderation')}
                       tooltip={t('manage.activityWizard.liveQuizModeration')}
                       data={{ cy: 'set-liveqa-moderation' }}
+                      className={{ element: 'shrink-0' }}
                     />
                   </div>
                 </div>

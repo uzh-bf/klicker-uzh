@@ -51,7 +51,7 @@ approval while the account authorization is valid. Publication approval
 remains a separate lifecycle decision; it does not serve as a usage funding or
 per-model approval.
 
-Usage is tracked in two explicit model classes. Registry entries are classified
+The original model policy tracked usage in two explicit classes. Registry entries are classified
 as `BASE` or `ADVANCED`. GPT-5.6 Luna is the only `BASE` model and the
 participant-credit fallback. Every other current registry entry, including
 `Auto`, is `ADVANCED`. Exhausting participant credits intentionally replaces
@@ -60,6 +60,16 @@ the selected entry with Luna and therefore meters that effective turn as
 remains class-specific and never switches classes. Provider-level LiteLLM
 fallbacks remain separate: they do not change the selected registry entry or
 its usage class.
+
+Compatibility amendment, 2026-10-11: the policy already released in
+[alpha.86](https://github.com/uzh-bf/klicker-uzh/releases/tag/v3.4.0-alpha.86)
+supersedes the original sole-BASE and ADVANCED-only Auto restrictions above.
+GPT-6 Luna is the required `BASE` participant-credit fallback. Other `BASE`
+entries are permitted, including `Auto`; Auto must still be unique,
+non-reasoning and non-fallback. This restores the September 28 and October 3
+amendments recorded in the release source rather than introducing a new model
+policy. Class-specific accounting and account-budget exhaustion remain as
+described above.
 
 Registry costs use Azure Global Standard short-context USD prices per one
 million input and output tokens, verified on 2026-08-24. The registry cannot
@@ -100,8 +110,8 @@ to the v3-ai workflow.
 - Post-publication edits to non-gated knobs (knowledge, standard-mode fields,
   and model choices within the account authorization) take effect
   without another approval; this bounded risk is accepted.
-- Both registry consumers reject configurations that do not make GPT-5.6 Luna
-  the sole `BASE` model and participant-credit fallback. CI pins registry
+- Both registry consumers reject configurations that do not make GPT-6 Luna
+  a `BASE` model and participant-credit fallback. CI verifies registry
   class, fallback, and accounting-rate parity across built-in, staging, and
   production declarations.
 - Base and advanced budgets are visible as separate usage lanes, while the

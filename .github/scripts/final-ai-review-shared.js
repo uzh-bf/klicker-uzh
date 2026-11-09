@@ -90,10 +90,23 @@ function workflowRunUrl(context, runId = context.runId) {
   return `${context.serverUrl}/${context.repo.owner}/${context.repo.repo}/actions/runs/${runId}`
 }
 
+function isWorkflowCheckUrl(context, check, workflowRunId) {
+  if (check.details_url === workflowRunUrl(context, workflowRunId)) return true
+  // Checks created with GITHUB_TOKEN use their own GitHub URL even when
+  // the publisher supplies the workflow URL as details_url.
+  return (
+    Number.isSafeInteger(check.id) &&
+    check.id > 0 &&
+    check.details_url ===
+      `${context.serverUrl}/${context.repo.owner}/${context.repo.repo}/runs/${check.id}`
+  )
+}
+
 module.exports = {
   getPermission,
   isConsolidationBaseBranch,
   isEligibleBaseBranch,
+  isWorkflowCheckUrl,
   listCheckRunsForRef,
   repositoryName,
   safeFence,

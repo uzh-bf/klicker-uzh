@@ -267,6 +267,7 @@ services:
     environment:
       - UPSTREAM_OPENAI_API_KEY
       - UPSTREAM_OPENAI_BASE_URL
+      - LITELLM_MASTER_KEY
     volumes:
       - './util/litellm/config.yaml:/app/config.yaml'
     command: ['--config', '/app/config.yaml', '--port', '4000']

@@ -2,7 +2,7 @@
 
 ## Status
 
-Accepted — 2026-08-29
+Accepted — 2026-08-29. Superseded by [ADR-0051](./0051-ai-releases-tag-v3-ai-with-deploy-parity.md) — 2026-10-08.
 
 ## Context
 

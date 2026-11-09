@@ -7,8 +7,8 @@ import * as ActivitiesService from '../services/activities.js'
 import * as BetaEnrollmentService from '../services/betaEnrollment.js'
 import * as ChatAccountUsageService from '../services/chatAccountUsage.js'
 import * as ChatbotsService from '../services/chatbots.js'
-import * as CourseDuplicationService from '../services/courseDuplication.js'
 import * as CourseDeletionService from '../services/courseDeletion.js'
+import * as CourseDuplicationService from '../services/courseDuplication.js'
 import * as CourseService from '../services/courses.js'
 import * as ElementService from '../services/elements.js'
 import * as FeedbackService from '../services/feedbacks.js'
@@ -16,6 +16,10 @@ import * as GroupService from '../services/groups.js'
 import * as LiveQuizService from '../services/liveQuizzes.js'
 import * as MicroLearningService from '../services/microLearning.js'
 import * as NotificationService from '../services/notifications.js'
+import {
+  completeParticipantDataUse,
+  updateParticipantDataUseChoice,
+} from '../services/participantAccountDataUse.js'
 import * as ParticipantInvitationService from '../services/participantInvitations.js'
 import * as ParticipantService from '../services/participants.js'
 import * as PracticeQuizService from '../services/practiceQuizzes.js'
@@ -65,7 +69,10 @@ import {
   GroupMessage,
   LeaveCourseParticipation,
   Participant,
+  ParticipantAccountDataUse,
+  ParticipantDataUse,
   ParticipantGroup,
+  ParticipantInitialDataUseInput,
   ParticipantLearningData,
   ParticipantTokenData,
   Participation,
@@ -333,6 +340,10 @@ export const Mutation = builder.mutationType({
           isProfilePublic: t.arg.boolean({ required: true }),
           courseId: t.arg.string({ required: false }),
           signedLtiData: t.arg.string({ required: false }),
+          dataUse: t.arg({
+            type: ParticipantInitialDataUseInput,
+            required: true,
+          }),
         },
         resolve: async (_, args, ctx) => {
           return await AccountService.createParticipantAccount(args, ctx)
@@ -412,7 +423,7 @@ export const Mutation = builder.mutationType({
         },
       }),
 
-      manualRandomGroupAssignments: t.withAuth(asUser).field({
+      manualRandomGroupAssignments: t.withAuth(asUserFullAccess).field({
         type: [ParticipantGroup],
         nullable: true,
         args: { courseId: t.arg.string({ required: true }) },
@@ -462,6 +473,44 @@ export const Mutation = builder.mutationType({
         },
         resolve: async (_, args, ctx) => {
           return await ParticipantService.updateParticipantAvatar(args, ctx)
+        },
+      }),
+
+      completeParticipantDataUse: t.withAuth(asParticipant).field({
+        type: ParticipantAccountDataUse,
+        args: {
+          expectedRevision: t.arg.int({ required: true }),
+          disclosureVersion: t.arg.string({ required: true }),
+          researchConsent: t.arg.boolean({ required: true }),
+          learningAnalyticsConsent: t.arg.boolean({ required: true }),
+          acknowledged: t.arg.boolean({ required: true }),
+        },
+        resolve: (_, args, ctx) => completeParticipantDataUse(args, ctx),
+      }),
+
+      setResearchConsent: t.withAuth(asParticipant).field({
+        nullable: true,
+        type: ParticipantDataUse,
+        args: {
+          consent: t.arg.boolean({ required: true }),
+          expectedRevision: t.arg.int({ required: true }),
+          disclosureVersion: t.arg.string({ required: true }),
+        },
+        resolve: async (_, args, ctx) => {
+          return await updateParticipantDataUseChoice('research', args, ctx)
+        },
+      }),
+
+      setLearningAnalyticsConsent: t.withAuth(asParticipant).field({
+        nullable: true,
+        type: ParticipantDataUse,
+        args: {
+          consent: t.arg.boolean({ required: true }),
+          expectedRevision: t.arg.int({ required: true }),
+          disclosureVersion: t.arg.string({ required: true }),
+        },
+        resolve: async (_, args, ctx) => {
+          return await updateParticipantDataUseChoice('analytics', args, ctx)
         },
       }),
 
@@ -678,7 +727,7 @@ export const Mutation = builder.mutationType({
         ),
       }),
 
-      requestCourseDeletion: t.withAuth(asUser).field({
+      requestCourseDeletion: t.withAuth(asUserFullAccess).field({
         nullable: true,
         type: CourseDeletionRequestPayload,
         args: {
@@ -1496,6 +1545,7 @@ export const Mutation = builder.mutationType({
             type: [ChatbotReasoningConfigInput],
             required: false,
           }),
+          answerPreferencesEnabled: t.arg.boolean({ required: false }),
         },
         resolve: async (_, args, ctx) => {
           return await ChatbotsService.updateChatbotModelPolicy(args, ctx)
@@ -1647,7 +1697,7 @@ export const Mutation = builder.mutationType({
         ),
       }),
 
-      toggleArchiveCourse: t.withAuth(asUser).field({
+      toggleArchiveCourse: t.withAuth(asUserFullAccess).field({
         nullable: true,
         type: Course,
         args: {
@@ -2692,6 +2742,11 @@ export const Mutation = builder.mutationType({
           propagation: t.arg.boolean({ required: true }),
         },
         resolve: async (_, args, ctx) => {
+          // ownership is only moved through transferObjectOwnership
+          if (args.permissionLevel === DB.PermissionLevel.OWNER) {
+            return null
+          }
+
           // >= ADMIN permissions on the object required
           const validAccess = await checkAccess(
             [
@@ -2942,6 +2997,11 @@ export const Mutation = builder.mutationType({
           propagation: t.arg.boolean({ required: true }),
         },
         resolve: async (_, args, ctx) => {
+          // ownership is only moved through transferObjectOwnership
+          if (args.permissionLevel === DB.PermissionLevel.OWNER) {
+            return false
+          }
+
           // >= ADMIN permissions on the object required
           const validAccess = await checkAccess(
             [
@@ -3312,6 +3372,11 @@ export const Mutation = builder.mutationType({
           propagation: t.arg.boolean({ required: true }),
         },
         resolve: async (_, args, ctx) => {
+          // ownership is only moved through transferObjectOwnership
+          if (args.permissionLevel === DB.PermissionLevel.OWNER) {
+            return false
+          }
+
           return await SharingService.resolveObjectSharingRequest(
             { ...args, approved: true },
             ctx

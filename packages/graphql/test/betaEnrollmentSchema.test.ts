@@ -1,10 +1,22 @@
 import { UserLoginScope, UserRole } from '@klicker-uzh/prisma/client'
+import { PARTICIPANT_DATA_USE_DISCLOSURE_VERSION } from '@klicker-uzh/util'
 import { createYoga } from 'graphql-yoga'
 import { afterEach, describe, expect, it, vi } from 'vitest'
 import { schema } from '../src/index.js'
 import type { Context } from '../src/lib/context.js'
 
 const USER_ID = '00000000-0000-4000-8000-000000000001'
+
+// A participant principal must carry complete account data-use state to reach
+// the field authorization boundary; refusing both optional purposes is valid.
+const completedParticipantDataUse = {
+  dataUseAcknowledgedAt: new Date(),
+  dataUseAcknowledgedVersion: PARTICIPANT_DATA_USE_DISCLOSURE_VERSION,
+  researchConsentChoiceAt: new Date(),
+  researchConsentDisclosureVersion: PARTICIPANT_DATA_USE_DISCLOSURE_VERSION,
+  learningAnalyticsChoiceAt: new Date(),
+  learningAnalyticsDisclosureVersion: PARTICIPANT_DATA_USE_DISCLOSURE_VERSION,
+}
 
 function createPrisma() {
   return {
@@ -14,6 +26,9 @@ function createPrisma() {
     user: {
       findUnique: vi.fn(),
       update: vi.fn(),
+    },
+    participant: {
+      findUnique: vi.fn(),
     },
   }
 }
@@ -91,6 +106,9 @@ describe('beta enrollment schema authorization', () => {
       }
       if (ctx.user && actor === 'participant') {
         ctx.user.role = UserRole.PARTICIPANT
+        prisma.participant.findUnique.mockResolvedValue(
+          completedParticipantDataUse
+        )
       }
       prisma.course.findUnique.mockResolvedValue({
         owner: { id: USER_ID, betaEnabled: true, aiFeaturesEnabled: false },
