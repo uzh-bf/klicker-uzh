@@ -45,6 +45,7 @@ model PracticeQuiz {
 
   adaptiveConfig   PracticeQuizAdaptiveConfig?
   adaptiveAttempts AdaptivePracticeQuizAttempt[]
+  adaptiveDryRuns  AdaptivePracticeQuizDryRun[]
 
   responses               QuestionResponse[]
   responseDetails         QuestionResponseDetail[]
