@@ -457,6 +457,22 @@ frontendPWA:
 
   affinity: {}
 
+  # Serves /_next/static from a separate Deployment of the same image, which
+  # keeps the static files of the retained earlier releases (see
+  # docs/ci-and-deployment.md). The image must carry release history (PREVIOUS_IMAGE build input).
+  releaseAssets:
+    enabled: false
+    replicaCount: 2
+    resources:
+      requests:
+        cpu: 20m
+        memory: 128Mi
+      limits:
+        memory: 256Mi
+    nodeSelector: {}
+    tolerations: []
+    affinity: {}
+
 frontendManage:
   priorityClassName: production-workload
 
@@ -773,6 +789,22 @@ assessment:
     affinity: {}
 
     topologySpreadConstraints: []
+
+    # Serves /_next/static from a separate Deployment of the same image, which
+    # keeps the static files of the retained earlier releases (see
+    # docs/ci-and-deployment.md). The image must carry release history (PREVIOUS_IMAGE build input).
+    releaseAssets:
+      enabled: false
+      replicaCount: 2
+      resources:
+        requests:
+          cpu: 20m
+          memory: 128Mi
+        limits:
+          memory: 256Mi
+      nodeSelector: {}
+      tolerations: []
+      affinity: {}
 
   backendGraphql:
     priorityClassName: production-workload

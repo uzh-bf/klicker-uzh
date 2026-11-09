@@ -1571,6 +1571,38 @@ tiers, the burst HPA, Pending burst Pods, `asyncspot` headroom and the other
 workloads on that pool. Kube-state-metrics exports no node labels, so the
 dashboard selects spot nodes by their `aks-asyncspot-` name prefix.
 
+### PWA release asset Deployment
+
+Each PWA Pod serves `/_next/static` from its own image, so during a rollout a
+page of one release can request assets that a Pod of the other release lacks.
+With `frontendPWA.releaseAssets.enabled` (and the same flag under
+`assessment.frontendPWA`), the chart adds a `-frontend-pwa-assets` Deployment,
+Service and, above one replica, a disruption budget. They run the PWA image
+with a distinct component label, so the PWA Service and budgets do not select
+them. Ingress sends `/_next/static` (`Prefix`) to the asset Service and
+everything else to the PWA Service. The resources carry Argo CD sync wave `-1`,
+so the asset Pods are healthy before the PWA Pods change. Staging enables it;
+production does not yet.
+
+The PWA Dockerfile accepts the build argument `PREVIOUS_IMAGE`. When set, the
+build merges that image's `.next/static` into its own without overwriting any
+new file, using the per-release manifests that
+`apps/frontend-pwa/scripts/merge-release-assets.mjs` writes to
+`.next/static/releases/`. The build keeps its own files plus those of the five
+most recent earlier releases, and a content-hashed file shared with a retained
+release stays. Staging builds pass the image at the current `stg-release` SHA
+(what staging runs); production builds pass the image of the tag pinned in
+`deploy/env-uzh-prd/values.yaml`. The chains stay per image, so the PWA and the
+assessment never mix. A workflow passes an empty value, and starts a fresh
+history, when that image cannot be found. The first build after introduction
+adopts an image without manifests as one retained release.
+`/_next/static/releases/` holds file lists only, and the asset Pods use its
+`index.txt` as their probe.
+
+A rollback deploys an older asset set that lacks the newer release's files, so
+pages of the newer release can see 404s until the next forward release. Revert
+by rolling forward.
+
 ## Deployment migrations
 
 `prisma migrate deploy` runs automatically as an ArgoCD **`PreSync` hook Job** (`deploy/charts/klicker-uzh-v3/templates/job-migrate.yaml`) before each stg and prd rollout. **On prd the hook is enabled** (`migrator.enabled: true`) because the pinned release tags have matching migrator images, so normal prd rollouts apply pending Prisma migrations to the primary GraphQL database before its application Deployments start. The assessment database is covered only if its separate backend Secret targets that same database; otherwise it needs a separately proven migration path. The dedicated `backend-docker-migrator` image (`packages/prisma/Dockerfile`) is CI-built in lockstep with `backend-docker` (`v3_backend-docker-{stg,prd}.yml`). Without a global override, its tag tracks `migrator.image.tag`, then `backendGraphql.image.tag`; on Phase 1 staging, `global.imageTag` takes precedence so the hook and all app workloads use ArgoCD's same resolved commit. Production receives no global override and keeps its pinned release tag. A failed hook aborts the whole sync, so app Deployments in the main wave never start against an unmigrated DB. The hook uses **ArgoCD-native** annotations (`argocd.argoproj.io/hook: PreSync`), not Helm chart hooks — the two must not be mixed, because a single ArgoCD hook annotation makes ArgoCD ignore _all_ Helm-native hooks on the chart. Full details: [Data & Migrations → Deployment migrations](./data-and-migrations.md#deployment-migrations). Manual `pnpm --filter @klicker-uzh/prisma prisma:deploy:prod` remains a break-glass fallback only.

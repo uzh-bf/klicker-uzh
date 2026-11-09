@@ -155,6 +155,25 @@ test('every matrix entry names the registry image it publishes', () => {
   )
 })
 
+// A build argument that its Dockerfile does not declare is silently dropped, so
+// the flag would promise release history that the image never carries.
+test('release assets are requested only by Dockerfiles that declare the input', () => {
+  const flagged = STAGING_IMAGE_TARGETS.filter(
+    (target) => matrixEntry(target).releaseAssets
+  )
+  assert.deepEqual(
+    flagged.map((target) => target.id),
+    ['frontend-assessment-arm', 'frontend-pwa-arm']
+  )
+  for (const target of flagged) {
+    assert.match(
+      fs.readFileSync(path.join(root, target.dockerfile), 'utf8'),
+      /^ARG PREVIOUS_IMAGE\b/m,
+      target.id + ' does not declare PREVIOUS_IMAGE'
+    )
+  }
+})
+
 test('availability follows the tree, not the branch name', () => {
   const limited = scratch()
   fs.mkdirSync(path.join(limited, 'apps/auth'), { recursive: true })
