@@ -905,6 +905,8 @@ responseApi:
           - response-api.klicker.stg.df-app.ch
 
   # One replica on staging: start the new Pod before stopping the old one.
+  # The chart has no readiness probe here yet, so the new Pod counts as
+  # Ready when its container starts, before the server listens.
   strategy:
     type: RollingUpdate
     rollingUpdate:
@@ -1115,6 +1117,8 @@ assessment:
             - response-api-assessment.klicker.stg.df-app.ch
 
     # One replica on staging: start the new Pod before stopping the old one.
+    # The chart has no readiness probe here yet, so the new Pod counts as
+    # Ready when its container starts, before the server listens.
     strategy:
       type: RollingUpdate
       rollingUpdate:
