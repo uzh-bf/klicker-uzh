@@ -362,6 +362,13 @@ The position in an element generation build's design that a generated element
 draft fills. Duplicates and revisions of a draft fill the same slot. Lecturers
 see the element, not the slot. _Avoid_: position, item.
 
+**Slot specification**:
+What the design asked of one slot, kept with its draft so the slot can be
+reworked later without the build's working files: learning objective, topic,
+type, difficulty and the evidence the question was grounded in. Evidence text
+is removed with its knowledge base; the rest lives as long as the build.
+_Avoid_: slot design, blueprint (the blueprint describes the whole build).
+
 **Draft decision**:
 The lecturer's verdict on one generated element draft: open, accepted,
 revision requested or rejected. Revision requested means the draft should be
