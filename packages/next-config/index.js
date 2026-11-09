@@ -44,6 +44,15 @@ function getNextBaseConfig({
     // runs. Error overlays are unaffected.
     devIndicators: NODE_ENV === 'development' ? false : undefined,
     outputFileTracingRoot: monorepoRoot,
+    // Image builds pass one ID per release. All Pods of a release then share
+    // the build ID, and a client whose page came from another release
+    // reloads on its next navigation instead of failing on missing assets.
+    ...(process.env.NEXT_DEPLOYMENT_ID
+      ? {
+          deploymentId: process.env.NEXT_DEPLOYMENT_ID,
+          generateBuildId: async () => process.env.NEXT_DEPLOYMENT_ID,
+        }
+      : {}),
     productionBrowserSourceMaps: isStaging,
     turbopack: {
       root: monorepoRoot,
