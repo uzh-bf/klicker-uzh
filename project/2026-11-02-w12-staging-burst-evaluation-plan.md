@@ -490,3 +490,15 @@ out of this file.
   - Probe failures (88% per tier) are expected: both probed Pods were
     replaced. Recovery: k6 Pod and ConfigMaps deleted; Argo `Synced` and
     `Healthy`.
+- 2026-11-09 Release asset Deployments (#6832, executor repin #6833, sync
+  #6834) reached staging at `7e2fd139dc`. Both asset Deployments run, and
+  both ingresses route `/_next/static` to them ahead of `/`. One k6 run
+  through the ingress at 15 iterations per second, 21:05–21:34 UTC:
+  - 0 page failures; Service plateau p95 21 ms.
+  - 33 of 67,500 plateau requests returned 404, all assets, all between
+    21:06:45 and 21:06:46. That second matches the first ingress update to
+    the new route (21:06:44), which Argo applied together with the PWA
+    rollout. This promotion created the asset Deployments, so it does not
+    show the steady-state behaviour.
+  - P10 stays open until the next ordinary promotion, when the asset
+    Deployment already exists and only rolls ahead of the PWA.
