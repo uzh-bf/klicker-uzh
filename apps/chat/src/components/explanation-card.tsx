@@ -82,9 +82,11 @@ function ExplanationFrame({
 export function ExplanationCard({
   result,
   status,
+  isError,
 }: {
   result?: unknown
   status: { type: string }
+  isError?: boolean
 }) {
   const params = useParams<{ chatbotId?: string }>()
   const parsed = asResult(result)
@@ -127,12 +129,14 @@ export function ExplanationCard({
         text="Preparing an interactive explanation..."
       />
     )
-  if (parsed?.kind === 'explanation-invalid')
+  // A rejected draft or a call whose input did not parse: the tutor usually
+  // tries again, and otherwise explains in text.
+  if (parsed?.kind === 'explanation-invalid' || (isError && !parsed))
     return (
       <Chip
         tone="muted"
         icon={<WrenchIcon className="size-4" />}
-        text="Correcting the interactive explanation..."
+        text="Interactive explanation draft rejected"
       />
     )
   if (!content || (page && 'failed' in page))

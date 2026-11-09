@@ -194,7 +194,7 @@ export const ToolFallback: FC<ToolFallbackProps> = ({
   }
 
   if (toolName === SHOW_EXPLANATION_TOOL_NAME) {
-    return <ExplanationCard result={result} status={status} />
+    return <ExplanationCard result={result} status={status} isError={isError} />
   }
 
   const manageProposalResult = getManageProposalResult(result)
