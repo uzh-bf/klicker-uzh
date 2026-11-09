@@ -351,11 +351,30 @@ publication and element editing states).
 
 **Generated element draft**:
 A lecturer-facing generated item inside an element generation build, awaiting
-the lecturer's individual accept, reject, or save decision. Saving copies its
+the lecturer's individual draft decision or save. Saving copies its
 content into an ordinary lecturer element that records its AI origin. Distinct
 from the candidate element in the student chat. _Avoid_: generation candidate,
 candidate (alone — ambiguous with candidate elements and the response-example
 review status).
+
+**Slot**:
+The position in an element generation build's design that a generated element
+draft fills. Duplicates and revisions of a draft fill the same slot. Lecturers
+see the element, not the slot. _Avoid_: position, item.
+
+**Draft decision**:
+The lecturer's verdict on one generated element draft: open, accepted,
+revision requested or rejected. Revision requested means the draft should be
+reworked; here it starts a revision request at once. The kg pool store uses
+the same values and meaning but reworks through a later generation. _Avoid_:
+approval, status.
+
+**Revision request**:
+A lecturer's request to rework one generated element draft, with an optional
+note on what should change. It produces a new draft for the same slot; the
+note stays with the request, so every rework of a draft keeps its own reason.
+Any element type can use it; questions come first. _Avoid_: slot revision,
+regeneration, rework.
 
 **Card plan**:
 The list of proposed personal elements the chatbot presents after retrieving
