@@ -474,3 +474,19 @@ out of this file.
     Recovery: k6 Pod and ConfigMaps deleted; Argo `Synced` and `Healthy`.
   - A conclusive P10 needs the X1 staging `RollingUpdate` override and a
     status-code tag on failed requests in `pwa-burst.js`.
+- 2026-11-09 E4.5 rerun with rolling updates (#6825, sync #6830; staging
+  `3f8e8be4a5` to `f5c0a04efa`). Staging now rolls all its Deployments with
+  `maxUnavailable: 0`. One k6 run through the ingress at 15 iterations per
+  second, 11:56:41–12:25 UTC; the PWA rolled about 11:59:
+  - Availability pass: 0 page failures; Service plateau p95 23 ms. The
+    `Recreate` gap of the previous run is gone.
+  - P10 fail: 36 of 67,500 plateau requests returned 404, all assets,
+    between 11:59:16 and 11:59:22 UTC. Each iteration requests the assets
+    of the page it just loaded, so these are pages from a new Pod whose
+    assets landed on an old Pod.
+  - The promotion changed only staging values, yet the rebuilt images
+    serve different asset paths. Every promotion therefore causes this
+    skew window, in production too, where the PWA also rolls.
+  - Probe failures (88% per tier) are expected: both probed Pods were
+    replaced. Recovery: k6 Pod and ConfigMaps deleted; Argo `Synced` and
+    `Healthy`.
