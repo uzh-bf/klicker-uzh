@@ -153,12 +153,12 @@ function draftStatusClass(
   needsAttention: boolean
 ) {
   if (draft.decision === GeneratedElementDecision.Accepted && !needsAttention) {
-    return 'rounded-full bg-green-100 px-2.5 py-1 text-xs font-semibold text-green-800'
+    return 'inline-block rounded-full bg-green-100 px-2.5 py-1 text-xs font-semibold text-green-800'
   }
   if (draft.decision === GeneratedElementDecision.Rejected) {
-    return 'rounded-full bg-slate-200 px-2.5 py-1 text-xs font-semibold text-slate-700'
+    return 'inline-block rounded-full bg-slate-200 px-2.5 py-1 text-xs font-semibold text-slate-700'
   }
-  return 'rounded-full bg-amber-100 px-2.5 py-1 text-xs font-semibold text-amber-900'
+  return 'inline-block rounded-full bg-amber-100 px-2.5 py-1 text-xs font-semibold text-amber-900'
 }
 
 function difficultyLabelKey(level: number | null | undefined) {
@@ -695,7 +695,7 @@ function RevisionRequestPanel({
 
   return (
     <div
-      className="space-y-2 p-2"
+      className="sticky left-0 max-w-[calc(100vw-3rem)] space-y-2 p-2"
       data-cy={`generated-element-revision-panel-${draft.id}`}
     >
       <label className="block font-medium text-slate-900">
