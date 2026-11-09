@@ -68,6 +68,10 @@ describe('credits balance display', () => {
 
       mocks.settings.credits = { current: 1.5, total: 3, nextResetAt: null }
       expect(display(render(), cy)).toBe('50%')
+
+      // a positive balance below 1% must not read like used-up credits
+      mocks.settings.credits = { current: 0.0049, total: 3, nextResetAt: null }
+      expect(display(render(), cy)?.replaceAll('&lt;', '<')).toBe('<1%')
     })
   }
 
@@ -75,11 +79,14 @@ describe('credits balance display', () => {
     for (const current of [3, 2.98, 2.97, 1.5, 0.0049, 0]) {
       mocks.settings.credits = { current, total: 3, nextResetAt: null }
       const [sidebar, mobile] = views.map(({ Component, cy }) =>
-        display(renderToStaticMarkup(React.createElement(Component)), cy)
+        display(
+          renderToStaticMarkup(React.createElement(Component)),
+          cy
+        )?.replaceAll('&lt;', '<')
       )
       const embedded = renderToStaticMarkup(
         React.createElement(EmbeddedCreditsBar)
-      )
+      ).replaceAll('&lt;', '<')
       expect(mobile).toBe(sidebar)
       expect(embedded).toContain(`Credits: ${sidebar}`)
     }
@@ -110,5 +117,9 @@ describe('credits balance display', () => {
     expect(markup).toContain('chat.credits.resetAt')
     expect(markup).toContain('data-cy="chat-credits-empty-message"')
     expect(display(markup, 'chat-credits-display')).toBe('0%')
+    const embedded = renderToStaticMarkup(
+      React.createElement(EmbeddedCreditsBar)
+    )
+    expect(embedded).toContain('title="chat.credits.exhausted"')
   })
 })

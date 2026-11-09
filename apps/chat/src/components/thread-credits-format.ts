@@ -19,16 +19,34 @@ export const formatCredits = (value: number) => {
   return rounded.replace(/(\.\d*?)0+$/, '$1').replace(/\.$/, '')
 }
 
+// Credit balances are stored as Decimal(18,6), so they are exact in whole
+// micro-credits. Working in those integers keeps the floor below exact without
+// an epsilon, which could lift a balance just under a boundary to the next
+// percent.
+const MICRO_CREDITS = 1_000_000
+
 /**
- * Remaining credits as a whole percentage of the budget, shared by the
- * sidebar footer, the mobile bar and the embedded chip so all three show the
- * same number. Rounding down can never advertise more than is left. The
- * epsilon absorbs binary representation error (2.97 / 3 * 100 is
- * 98.99999999999999, which must read 99, not 98).
+ * Remaining credits as a whole percentage of the budget, rounded down so it
+ * never advertises more than is left (2.97 of 3 is 99, 2.999 of 3 is 99).
  */
 export const creditPercent = (current: number, total: number) => {
-  if (!Number.isFinite(current) || !Number.isFinite(total) || total <= 0) {
-    return 0
-  }
-  return Math.min(100, Math.max(0, Math.floor((current / total) * 100 + 1e-9)))
+  if (!Number.isFinite(current) || !Number.isFinite(total)) return 0
+  const currentMicro = Math.round(current * MICRO_CREDITS)
+  const totalMicro = Math.round(total * MICRO_CREDITS)
+  if (totalMicro <= 0 || currentMicro <= 0) return 0
+  return Math.min(100, Math.floor((currentMicro * 100) / totalMicro))
+}
+
+/**
+ * The percentage label shared by the sidebar footer, the mobile bar and the
+ * embedded chip, so all three show the same text. A positive balance below 1%
+ * reads "<1" rather than "0", which would look like the credits are used up.
+ */
+export const formatCreditPercent = (current: number, total: number) => {
+  const percent = creditPercent(current, total)
+  const hasCredits =
+    Number.isFinite(current) && Math.round(current * MICRO_CREDITS) > 0
+  return percent === 0 && hasCredits && Number.isFinite(total) && total > 0
+    ? '<1'
+    : String(percent)
 }

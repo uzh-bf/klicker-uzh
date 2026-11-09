@@ -1,6 +1,7 @@
 import { describe, expect, test } from 'vitest'
 import {
   creditPercent,
+  formatCreditPercent,
   formatCredits,
 } from '../src/components/thread-credits-format'
 
@@ -48,10 +49,13 @@ describe('creditPercent', () => {
     expect(creditPercent(0.0049, 3)).toBe(0)
   })
 
-  test('absorbs floating-point error at exact steps', () => {
+  test('is exact at percentage boundaries', () => {
     // 2.97 / 3 * 100 is 98.99999999999999 in binary floating point
     expect(creditPercent(2.97, 3)).toBe(99)
     expect(creditPercent(0.29, 1)).toBe(29)
+    // just below a boundary must not be lifted to the next percent
+    expect(creditPercent(1000.009999, 100001)).toBe(0)
+    expect(creditPercent(2.969999, 3)).toBe(98)
   })
 
   test('clamps to 0-100 and handles an empty or invalid budget', () => {
@@ -60,5 +64,25 @@ describe('creditPercent', () => {
     expect(creditPercent(4, 3)).toBe(100)
     expect(creditPercent(1, 0)).toBe(0)
     expect(creditPercent(Number.NaN, 3)).toBe(0)
+  })
+})
+
+describe('formatCreditPercent', () => {
+  test('matches the whole percentage at or above 1%', () => {
+    expect(formatCreditPercent(3, 3)).toBe('100')
+    expect(formatCreditPercent(2.98, 3)).toBe('99')
+    expect(formatCreditPercent(0.03, 3)).toBe('1')
+  })
+
+  test('shows a positive balance below 1% as <1, not 0', () => {
+    expect(formatCreditPercent(0.0049, 3)).toBe('<1')
+    expect(formatCreditPercent(0.000001, 3)).toBe('<1')
+  })
+
+  test('shows 0 only when nothing is left or there is no budget', () => {
+    expect(formatCreditPercent(0, 3)).toBe('0')
+    expect(formatCreditPercent(-1, 3)).toBe('0')
+    expect(formatCreditPercent(1, 0)).toBe('0')
+    expect(formatCreditPercent(Number.NaN, 3)).toBe('0')
   })
 })
