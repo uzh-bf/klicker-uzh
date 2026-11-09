@@ -6,6 +6,7 @@ import type {
   GeneratedQuestionEditable,
   QuestionGenerationArtifactRef,
   QuestionGenerationConfiguration,
+  QuestionGenerationDesignSummary,
   QuestionGenerationPlanSummary,
 } from '@klicker-uzh/types'
 import type { ContextWithUser } from '../lib/context.js'
@@ -921,6 +922,8 @@ async function synchronizeLeasedBuild(
             'Completed question-generation build has no verified Plan'
           )
         }
+        const designSummary =
+          build.designSummary as QuestionGenerationDesignSummary | null
         const questions = parseQuestionGenerationFinalBank(finalBytes, {
           itemType: configuration.itemType ?? 'SC',
           questionCount: build.requestedElementCount,
@@ -928,6 +931,9 @@ async function synchronizeLeasedBuild(
             build.sourceGraphBuild.sources
           ),
           expectedQuestionIds,
+          expectedDesignSlotIds: Array.isArray(designSummary?.slots)
+            ? designSummary.slots.map((slot) => slot?.sourceQuestionId)
+            : undefined,
           result,
           lineage,
           provenanceAuthority,

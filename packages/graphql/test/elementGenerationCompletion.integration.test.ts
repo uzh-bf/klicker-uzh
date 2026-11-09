@@ -1,4 +1,4 @@
-import { randomUUID } from 'node:crypto'
+import { createHash, randomUUID } from 'node:crypto'
 import { prisma, requireDisposableDatabase } from '@klicker-uzh/prisma'
 import * as DB from '@klicker-uzh/prisma/client'
 import type {
@@ -7,10 +7,20 @@ import type {
   QuestionGenerationArtifactRef,
   QuestionGenerationItemType,
 } from '@klicker-uzh/types'
-import { afterAll, afterEach, beforeEach, describe, expect, it } from 'vitest'
+import {
+  afterAll,
+  afterEach,
+  beforeEach,
+  describe,
+  expect,
+  it,
+  vi,
+} from 'vitest'
 import type { ContextWithUser } from '../src/lib/context.js'
 import { completeElementGeneration } from '../src/services/elementGenerationCompletion.js'
 import { acquireElementGenerationLease } from '../src/services/elementGenerationLease.js'
+import { getQuestionGenerationBuild } from '../src/services/questionGeneration.js'
+import type { QuestionGenerationRuntime } from '../src/services/questionGenerationRuntime.js'
 
 const NOW = new Date('2026-09-05T10:00:00Z')
 const artifact: QuestionGenerationArtifactRef = {
@@ -381,6 +391,293 @@ describe('initial Element completion', () => {
     // The passing question is delivered for review; nothing is published.
     expect(after.drafts).toHaveLength(1)
     expect(after.drafts[0]).toMatchObject({ decision: 'OPEN' })
+    expect(await prisma.element.count({ where: { ownerId } })).toBe(0)
+  })
+
+  it.each([
+    false,
+    true,
+  ])('validates a provenance-bound partial result before SQL completion (invalid partition: %s)', async (invalidPartition) => {
+    const build = await createBuild('question', {
+      requestedElementCount: 2,
+      costAccountingVersion: 1,
+      configuration: {
+        itemType: 'SC',
+        language: 'en',
+        questionCount: 2,
+        difficultyPreset: 'D1',
+        difficultyCounts: { d1: 2, d2: 0, d3: 0, d4: 0, d5: 0 },
+        sourceScopes: [],
+        objectives: [],
+        bloomLevels: ['remember'],
+        focusTopic: null,
+      },
+      planSummary: {
+        questionCount: 2,
+        questions: ['question-1', 'question-2'].map((sourceQuestionId) => ({
+          sourceQuestionId,
+          moduleId: 'M1',
+          objectiveId: null,
+          stem: 'Synthetic plan',
+          bloomLevel: 'remember',
+          targetDifficulty: 1,
+          sources: [],
+        })),
+        warnings: [],
+      },
+      designSummary: {
+        title: 'Synthetic design',
+        questionCount: 2,
+        objectives: [],
+        modules: [
+          { moduleId: 'M1', moduleName: 'Synthetic module', questionCount: 2 },
+        ],
+        sources: [],
+        slots: ['slot-A', 'slot-B'].map((sourceQuestionId) => ({
+          sourceQuestionId,
+          moduleId: 'M1',
+          objectiveId: null,
+          bloomLevel: 'remember',
+          targetDifficulty: 1,
+          evidenceEntityIds: [],
+        })),
+        warnings: [],
+      },
+    })
+    await prisma.user.update({
+      where: { id: ownerId },
+      data: { aiFeaturesEnabled: true, betaEnabled: true },
+    })
+    const stored = new Map<
+      string,
+      { ref: QuestionGenerationArtifactRef; bytes: Buffer }
+    >()
+    const put = (blobName: string, value: unknown) => {
+      const bytes =
+        typeof value === 'string'
+          ? Buffer.from(value)
+          : Buffer.from(JSON.stringify(value))
+      const ref = {
+        containerName: 'synthetic',
+        blobName,
+        sha256: createHash('sha256').update(bytes).digest('hex'),
+      }
+      stored.set(blobName, { ref, bytes })
+      return ref
+    }
+    const wireRef = (ref: QuestionGenerationArtifactRef) => ({
+      container_name: ref.containerName,
+      blob_name: ref.blobName,
+      sha256: ref.sha256,
+    })
+    const nodeId = `node_${'a'.repeat(32)}`
+    const graph = put(
+      'graph_chunk_entity_relation.graphml',
+      `<graphml xmlns="http://graphml.graphdrawing.org/xmlns"><key id="node-id" for="node" attr.name="kg_node_id" attr.type="string"/><graph edgedefault="undirected"><node id="physical"><data key="node-id">${nodeId}</data></node></graph></graphml>`
+    )
+    const chunks = put('vdb_chunks.json', {
+      data: [{ __id__: 'chunk-1' }],
+      matrix: '',
+    })
+    const policy = put('resolved_domain_policy.json', {})
+    const recipe = put('generation_recipe.json', {})
+    const graphArtifact = (
+      ref: QuestionGenerationArtifactRef,
+      contentType: string
+    ) => ({
+      ...wireRef(ref),
+      filename: ref.blobName,
+      size_bytes: stored.get(ref.blobName)!.bytes.length,
+      content_type: contentType,
+    })
+    const manifest = put('manifest.json', {
+      schema_version: 2,
+      course_id: graphBuildId,
+      storage_name: graphBuildId,
+      falkordb_graph_name: `synthetic:${graphBuildId}`,
+      bundle_sha256: 'b'.repeat(64),
+      graph_sha256: graph.sha256,
+      domain_policy_digest: policy.sha256,
+      generation_recipe_digest: recipe.sha256,
+      artifacts: [
+        graphArtifact(graph, 'application/graphml+xml'),
+        graphArtifact(chunks, 'application/json'),
+        graphArtifact(policy, 'application/json'),
+        graphArtifact(recipe, 'application/json'),
+      ],
+      policy: graphArtifact(policy, 'application/json'),
+      recipe: graphArtifact(recipe, 'application/json'),
+      parent_bundle_sha256: null,
+      correction_set: null,
+      instructor_assertions: [],
+    })
+    await prisma.kBGraphBuild.update({
+      where: { id: graphBuildId },
+      data: {
+        graphManifestArtifact: manifest,
+        graphBundleSha256: 'b'.repeat(64),
+        graphSha256: graph.sha256,
+        graphManifestSchemaVersion: 2,
+        graphBundleStorageName: graphBuildId,
+      },
+    })
+    const bank = put(`question-builds/${build.id}/questions/final.json`, {
+      metadata: { format: 'SC', item_format: 'sc', total_questions: 1 },
+      questions: [
+        {
+          id: 'question-1',
+          design_slot_id: invalidPartition ? 'slot-B' : 'slot-A',
+          stem: 'Synthetic prompt',
+          bloom_level: 'remember',
+          origin_mode: 'new',
+          item_format: 'single_choice',
+          difficulty_scale: 1,
+          difficulty_status: 'llm_reviewed',
+          options: [
+            { label: 'A', text: 'First', is_correct: true },
+            { label: 'B', text: 'Second', is_correct: false },
+          ],
+          correct_label: 'A',
+          citations: [],
+          provenance: {
+            schema_version: 1,
+            lineage_status: 'complete',
+            graph_version_id: graphBuildId,
+            bundle_sha256: 'b'.repeat(64),
+            graph_sha256: graph.sha256,
+            domain_policy_digest: policy.sha256,
+            generation_recipe_digest: recipe.sha256,
+            node_ids: [nodeId],
+            relationship_ids: [],
+            source_citations: [
+              {
+                element_type: 'node',
+                element_id: nodeId,
+                chunk_ids: ['chunk-1'],
+                source_pages: [],
+                lecture_markers: [],
+              },
+            ],
+            assertion_citations: [],
+          },
+        },
+      ],
+    })
+    const index = put(
+      `question-builds/${build.id}/questions/question_provenance_index.json`,
+      {
+        schema_version: 1,
+        question_ids: ['question-1'],
+        by_node_id: { [nodeId]: ['question-1'] },
+        by_relationship_id: {},
+        by_assertion_id: {},
+        by_source_ref: { 'chunk:chunk-1': ['question-1'] },
+      }
+    )
+    put(`question-builds/${build.id}/result.json`, {
+      schema_version: 2,
+      question_build_id: build.id,
+      status: 'completed_partial',
+      generation_policy: 'new_only',
+      requested_questions: 2,
+      generated_questions: 1,
+      final_questions: wireRef(bank),
+      question_provenance_index: wireRef(index),
+      review_required_questions: 0,
+      review_required_question_ids: [],
+      rejected_at: null,
+      reviewed_by: null,
+      slot_failures: [
+        {
+          slot_id: 'slot-B',
+          module_id: 'M1',
+          objective: 'Synthetic missing objective',
+          objective_source: 'provided',
+          requested_level: 'remember',
+          evidence_target: null,
+          reason_code: 'NO_SUPPORTING_DOCUMENTS',
+          failure_class: 'user_input',
+          detail: null,
+          suggestions: [],
+        },
+      ],
+    })
+    const verify = (ref: QuestionGenerationArtifactRef) => {
+      const entry = stored.get(ref.blobName)
+      expect(entry?.ref).toEqual(ref)
+      if (!entry) throw new Error('Unexpected synthetic artifact')
+      return entry.bytes
+    }
+    const unused = vi.fn(async () => {
+      throw new Error('Unexpected provider operation')
+    })
+    const runtime: QuestionGenerationRuntime = {
+      questionInputContainer: 'synthetic',
+      questionOutputContainer: 'synthetic',
+      questionOutputPrefix: 'question-builds',
+      downloadImmutable: vi.fn(async (containerName, blobName) => {
+        const entry = stored.get(blobName)!
+        expect(entry.ref.containerName).toBe(containerName)
+        return entry
+      }),
+      downloadVerified: vi.fn(async (ref) => verify(ref)),
+      downloadVerifiedStream: vi.fn(async function* (ref) {
+        yield verify(ref)
+      }),
+      uploadCreateOnly: unused,
+      start: unused,
+      review: unused,
+      getRun: unused,
+      getRunById: unused,
+      findRunByBuildId: unused,
+      findRunByQuestionReview: unused,
+    }
+    const errorLog = vi.spyOn(console, 'error').mockImplementation(() => {})
+    let result: Awaited<ReturnType<typeof getQuestionGenerationBuild>>
+    try {
+      result = await getQuestionGenerationBuild(build.id, {
+        ...context(),
+        user: { sub: ownerId },
+        elementGenerationRuntime: runtime,
+        featureFlags: { getAiBetaDecision: () => 'enabled' },
+      } as unknown as ContextWithUser)
+    } finally {
+      errorLog.mockRestore()
+    }
+    const after = await snapshot(build.id)
+    expect(result.status).toBe(invalidPartition ? 'FAILED' : 'INCOMPLETE')
+    expect(after.build.syncLeaseOwner).toBeNull()
+    expect(after.drafts).toHaveLength(invalidPartition ? 0 : 1)
+    if (invalidPartition) {
+      expect(after.build.errorCode).toBe('ARTIFACT_INVALID')
+    } else {
+      expect(after.build).toMatchObject({
+        generatedElementCount: 1,
+        unresolvedElementCount: 1,
+        provenanceIndexArtifact: index,
+      })
+      expect(after.build.planSummary).toMatchObject({
+        slotFailures: [
+          expect.objectContaining({
+            slotId: 'slot-B',
+            reasonCode: 'NO_SUPPORTING_DOCUMENTS',
+          }),
+        ],
+      })
+      expect(after.drafts[0]).toMatchObject({
+        sourceElementId: 'question-1',
+        decision: 'OPEN',
+        savedElementId: null,
+        provenance: {
+          lineageStatus: 'complete',
+          graphVersionId: graphBuildId,
+          nodeIds: [nodeId],
+        },
+      })
+      expect(runtime.downloadVerifiedStream).toHaveBeenCalledTimes(2)
+      expect(runtime.downloadVerified).toHaveBeenCalledWith(index)
+    }
+    expect(unused).not.toHaveBeenCalled()
     expect(await prisma.element.count({ where: { ownerId } })).toBe(0)
   })
 
