@@ -1,0 +1,6 @@
+mutation SubmitCompetenceTreeScaleForReview($artifact: Json!) {
+  submitCompetenceTreeScaleForReview(artifact: $artifact) {
+    id
+    status
+  }
+}

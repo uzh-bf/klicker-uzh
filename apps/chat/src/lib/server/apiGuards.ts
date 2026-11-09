@@ -1,3 +1,4 @@
+import { type AppLogger, toSafeError } from '@klicker-uzh/logging/node'
 import { prisma } from '@klicker-uzh/prisma'
 import {
   ChatbotStatus,
@@ -19,6 +20,7 @@ import {
   verifyChatGuestToken,
 } from '@/src/lib/server/ltiGuest'
 import { verifyPwaEmbedSessionToken } from '@/src/lib/server/pwaEmbed'
+import { getRouteLogger } from './requestLogging'
 
 export type { AuthMode }
 
@@ -91,9 +93,14 @@ export function extractChatTransportTokens(
 // preferAccountOnScopeMiss).
 export async function getParticipantId(
   req: NextRequest,
-  context?: ChatIdentityResolutionContext
+  context?: ChatIdentityResolutionContext,
+  log: AppLogger = getRouteLogger()
 ): Promise<ParticipantIdentity | { response: NextResponse }> {
-  return resolveParticipantIdentity(extractChatTransportTokens(req), context)
+  return resolveParticipantIdentity(
+    extractChatTransportTokens(req),
+    context,
+    log
+  )
 }
 
 /**
@@ -107,7 +114,8 @@ export async function resolveParticipantIdentity(
     pwaEmbedToken,
     scopedFallbackToken,
   }: ChatTransportTokens,
-  context?: ChatIdentityResolutionContext
+  context?: ChatIdentityResolutionContext,
+  log: AppLogger = getRouteLogger()
 ): Promise<ParticipantIdentity | { response: NextResponse }> {
   if (chatGuestToken) {
     try {
@@ -121,8 +129,14 @@ export async function resolveParticipantIdentity(
             : {}),
         }
       }
-    } catch (error) {
-      console.error('Chat guest token verification failed:', error)
+    } catch {
+      log.info(
+        {
+          event: 'chat.authentication.rejected',
+          outcome: 'invalid_guest_token',
+        },
+        'Rejected chat guest token'
+      )
       // Fall through to the scoped PWA embed / account session below.
     }
   }
@@ -148,13 +162,26 @@ export async function resolveParticipantIdentity(
               : {}),
           },
           participantToken,
-          context
+          context,
+          log
         )
       }
-      console.error('PWA embed session token subject is not an active account')
+      log.info(
+        {
+          event: 'chat.authentication.rejected',
+          outcome: 'invalid_embed_account',
+        },
+        'Rejected PWA embed session token subject'
+      )
       // Fall through to the scoped fallback token / account session below.
-    } catch (error) {
-      console.error('PWA embed session token verification failed:', error)
+    } catch {
+      log.info(
+        {
+          event: 'chat.authentication.rejected',
+          outcome: 'invalid_embed_token',
+        },
+        'Rejected PWA embed session token'
+      )
       // Fall through to the scoped fallback token / account session below.
     }
   }
@@ -165,12 +192,13 @@ export async function resolveParticipantIdentity(
       return preferAccountOnScopeMiss(
         fallbackIdentity,
         participantToken,
-        context
+        context,
+        log
       )
     }
   }
 
-  return getParticipantIdFromToken(participantToken)
+  return getParticipantIdFromToken(participantToken, log)
 }
 
 /**
@@ -185,7 +213,8 @@ export async function resolveParticipantIdentity(
 async function preferAccountOnScopeMiss(
   identity: ParticipantIdentity,
   participantToken: string | undefined,
-  context: ChatIdentityResolutionContext | undefined
+  context: ChatIdentityResolutionContext | undefined,
+  log: AppLogger = getRouteLogger()
 ): Promise<ParticipantIdentity | { response: NextResponse }> {
   if (
     !identity.pwaEmbedScope ||
@@ -195,7 +224,7 @@ async function preferAccountOnScopeMiss(
     return identity
   }
 
-  const accountIdentity = await getParticipantIdFromToken(participantToken)
+  const accountIdentity = await getParticipantIdFromToken(participantToken, log)
   if ('response' in accountIdentity) {
     return identity
   }
@@ -224,9 +253,14 @@ async function isActiveAccountParticipant(
 }
 
 export async function getParticipantIdFromToken(
-  participantToken: string | undefined
+  participantToken: string | undefined,
+  log: AppLogger = getRouteLogger()
 ): Promise<ParticipantIdentity | { response: NextResponse }> {
   if (!participantToken) {
+    log.info(
+      { event: 'chat.authentication.rejected', outcome: 'missing_token' },
+      'Rejected chat authentication'
+    )
     return {
       response: NextResponse.json(
         { error: 'No authentication token found' },
@@ -271,6 +305,10 @@ export async function getParticipantIdFromToken(
         : null
 
     if (!participantId || jwtPayload.payload.role !== UserRole.PARTICIPANT) {
+      log.info(
+        { event: 'chat.authentication.rejected', outcome: 'invalid_token' },
+        'Rejected chat authentication'
+      )
       return {
         response: NextResponse.json(
           { error: 'Invalid authentication token' },
@@ -289,8 +327,11 @@ export async function getParticipantIdFromToken(
     }
 
     return { participantId, authMode: 'account' }
-  } catch (error) {
-    console.error('JWT verification failed:', error)
+  } catch {
+    log.info(
+      { event: 'chat.authentication.rejected', outcome: 'invalid_token' },
+      'Rejected chat authentication'
+    )
     return {
       response: NextResponse.json(
         { error: 'Invalid authentication token' },
@@ -410,7 +451,8 @@ export async function getChatbotOr404<TSelect extends Prisma.ChatbotSelect>(
 
 export async function withChatbotAuth(
   req: NextRequest,
-  chatbotId: string
+  chatbotId: string,
+  log: AppLogger = getRouteLogger()
 ): Promise<
   | {
       participantId: string
@@ -420,14 +462,16 @@ export async function withChatbotAuth(
     }
   | { response: NextResponse }
 > {
-  const participantResult = await getParticipantId(req, {
-    targetChatbotId: chatbotId,
-  })
+  const participantResult = await getParticipantId(
+    req,
+    { targetChatbotId: chatbotId },
+    log
+  )
   if ('response' in participantResult) {
     return participantResult
   }
 
-  return authorizeIdentityForChatbot(participantResult, chatbotId)
+  return authorizeIdentityForChatbot(participantResult, chatbotId, log)
 }
 
 /**
@@ -438,7 +482,8 @@ export async function withChatbotAuth(
  */
 export async function authorizeIdentityForChatbot(
   participantResult: ParticipantIdentity,
-  chatbotId: string
+  chatbotId: string,
+  log: AppLogger = getRouteLogger()
 ): Promise<
   | {
       participantId: string
@@ -475,7 +520,8 @@ export async function authorizeIdentityForChatbot(
 
   const participationResult = await requireParticipation(
     participantId,
-    chatbotResult.chatbot.courseId
+    chatbotResult.chatbot.courseId,
+    log
   )
   if ('response' in participationResult) {
     return participationResult
@@ -491,7 +537,8 @@ export async function authorizeIdentityForChatbot(
 
 export async function requireParticipation(
   participantId: string,
-  courseId: string
+  courseId: string,
+  log: AppLogger = getRouteLogger()
 ): Promise<{ ok: true } | { response: NextResponse }> {
   try {
     const participation = await prisma.participation.findUnique({
@@ -514,8 +561,14 @@ export async function requireParticipation(
     }
 
     return { ok: true }
-  } catch (error) {
-    console.error('Error checking participation:', error)
+  } catch {
+    log.error(
+      {
+        event: 'chat.participation.check.failed',
+        err: toSafeError('Error checking participation'),
+      },
+      'Error checking participation'
+    )
     return {
       response: NextResponse.json(
         { error: 'Error checking participation' },

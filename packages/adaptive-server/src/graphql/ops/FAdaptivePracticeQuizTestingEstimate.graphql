@@ -1,0 +1,10 @@
+fragment FAdaptivePracticeQuizTestingEstimate on AdaptivePracticeQuizTestingEstimate {
+  responseCount
+  theta
+  standardError
+  lowerBound
+  upperBound
+  levelLabel
+  levelIsTentative
+  resultStatus
+}

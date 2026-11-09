@@ -1,0 +1,20 @@
+query ValidateCompetenceTree($input: CompetenceTreeInput!) {
+  validateCompetenceTree(input: $input) {
+    valid
+    effectiveMaxDepth
+    errors {
+      code
+      message
+      path
+    }
+    warnings {
+      code
+      message
+      path
+    }
+    normalizedRootWeights {
+      nodeId
+      weight
+    }
+  }
+}

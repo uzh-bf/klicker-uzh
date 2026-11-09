@@ -67,7 +67,7 @@ const PAGE_REFERENCE = `(?:${PAGE_LABEL}[ \t]*(?:(\\d{1,3})(?:[ \t]*[-–—][ \
 // used only inside `splitCitationMarkers`. Its groups are 1 the marker index,
 // 2 the end of a contiguous index range, and 3 and 4 the start and end page of
 // the labelled detail.
-const HAS_CITATION_MARKER_RE = new RegExp(
+export const HAS_CITATION_MARKER_RE = new RegExp(
   `\\[\\d{1,2}(?:[ \\t]*[-–—][ \\t]*\\d{1,2})?(?:[ \\t]*,[ \\t]*${PAGE_REFERENCE})?\\]`,
   'i'
 )

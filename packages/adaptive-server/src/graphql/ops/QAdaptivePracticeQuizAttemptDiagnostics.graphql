@@ -1,0 +1,38 @@
+query QAdaptivePracticeQuizAttemptDiagnostics($practiceQuizId: String!) {
+  adaptivePracticeQuizAttemptDiagnostics(practiceQuizId: $practiceQuizId) {
+    levelLabels
+    earlierPublicationAttemptCount
+    incompleteEstimateAttemptCount
+    accuracy {
+      reviewedAttempts
+      asExpected
+      tooHigh
+      tooLow
+      unsure
+      levelComparisons
+      exactShare
+      withinOneLevelShare
+      meanLevelDifference
+      meanAbsoluteLevelDifference
+    }
+    versions {
+      publicationVersion
+      publishedAt
+      current
+      engineRevision
+      estimatorImplementationVersion
+      measurementVersion
+      attemptCount
+      firstStartedAt
+      lastStartedAt
+      totalQuestionCap
+      minQuestionsPerLeaf
+      classificationZ
+      classificationToleranceBands
+      levelReachedFrom
+    }
+    attempts {
+      ...FAdaptiveAttemptDiagnosticSummary
+    }
+  }
+}

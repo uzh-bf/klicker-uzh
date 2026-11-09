@@ -1,0 +1,394 @@
+import type {
+  AdaptiveEstimateNodeKind,
+  ElementType,
+} from '@klicker-uzh/prisma/client'
+
+declare global {
+  namespace PrismaJson {
+    type AdaptivePrivacyField =
+      | 'DISTRIBUTION'
+      | 'RESULT_CLASSIFICATION'
+      | 'CLASSIFIED'
+      | 'CAPPED'
+      | 'POOL_EXHAUSTED'
+      | 'STOPPED_INSUFFICIENT_DATA'
+      | 'INSUFFICIENT_DATA'
+      | 'NEAR_BOUNDARY'
+      | 'QUESTION_COUNT_PERCENTILES'
+      | 'DURATION_PERCENTILES'
+      | 'RESPONSE_COUNT_MISMATCH'
+      | 'DURATION_MISSING'
+      | 'ITEM_EXPOSURE'
+      | 'ITEM_ACCURACY'
+      | 'ITEM_RESIDUAL'
+
+    type AdaptivePrivacySuppressionReason =
+      | 'BELOW_RELEASE_THRESHOLD'
+      | 'SMALL_CELL_OR_COMPLEMENT'
+      | 'SMALL_KNOWN_OR_MISSING_PARTITION'
+      | 'MINIMUM_RESPONSES'
+
+    type AdaptivePrivacySuppression = {
+      field: AdaptivePrivacyField
+      reason: AdaptivePrivacySuppressionReason
+    }
+
+    type PrismaAdaptiveBandProbabilities = Record<string, number>
+    // Lecturer review: expected level per competence (root node).
+    type PrismaAdaptiveRetakeContext = {
+      /** The completed attempt whose result is the starting point, if any. */
+      sourceAttemptId: string | null
+      startingEstimates: Array<{ nodeId: number; theta: number }>
+      seenPoolItemIds: number[]
+    }
+
+    type PrismaAdaptiveAttemptReviewExpectedLevels = Array<{
+      nodeId: number
+      levelLabel: string
+    }>
+
+    type PrismaAdaptiveCutRationale = Array<{
+      scaleLevelOrder: number
+      codes: string[]
+      note?: string
+    }>
+
+    type PrismaAdaptiveScaleLinkMetrics = Record<string, number | string | null>
+
+    type PrismaAdaptiveParameterUncertainty = {
+      discriminationStandardError: number | null
+      difficultyStandardError: number | null
+      guessingStandardError: number | null
+      discriminationInterval: [number, number] | null
+      difficultyInterval: [number, number] | null
+      guessingInterval: [number, number] | null
+    }
+
+    type PrismaAdaptiveCalibrationDiagnostics = {
+      fitStatus: 'PASS' | 'WARN' | 'FAIL'
+      difStatus: 'PASS' | 'WARN' | 'FAIL'
+      driftStatus: 'PASS' | 'WARN' | 'FAIL'
+      fitStatistics: Record<string, number | null>
+      warningCodes: string[]
+      dif: Record<string, number | string | null>
+      drift: Record<string, number | string | null>
+    }
+
+    type PrismaAdaptiveCutScoreSnapshot = Array<{
+      scaleLevelId: number
+      sourceLevelId: number | null
+      order: number
+      label: string
+      lowerBound: number | null
+      itemDifficultyPrior: number
+    }>
+
+    type PrismaAdaptiveHierarchicalWeightSnapshot = Array<{
+      nodeId: number
+      name: string
+      parentId: number | null
+      kind: 'COMPETENCE' | 'SUBCOMPETENCE'
+      depth: number
+      order: number
+      nodePath: number[]
+      enabled: boolean
+      normalizedWeight: number
+      effectiveLeafWeight: number | null
+    }>
+
+    type PrismaAdaptiveEvidenceMinimumSnapshot = {
+      minimumResponsesPerLeaf: number
+      minimumResponsesPerRoot: number
+      requiredRootIds: number[]
+      classificationZ: number
+      // IRT_V1 classification tolerance in level bands; absent in
+      // publications written before it existed (= 0, the exact rule).
+      classificationToleranceBands?: number
+      // IRT_V1 "level reached from"; absent in publications written before it
+      // existed (= 0, the plain bands).
+      levelReachedFrom?: number
+      topInformationRatio: number
+      levelMappingRule: 'NEAREST' | 'MASTERY'
+      thetaMin: number
+      thetaMax: number
+    }
+
+    type PrismaAdaptiveQuestionCapSnapshot = {
+      root: Record<string, number | null>
+      node: Record<string, number | null>
+      leaf: Record<string, number | null>
+    }
+
+    type PrismaAdaptiveResearchAllocationPolicy = {
+      version: string
+      anchorProbability: number
+      fieldTestProbability: number
+      collectionDesignVersion: string
+      minimumAnchorCountPerLeafBand: number
+      fieldTestResponsesPerLeaf: number
+      minimumDistinctAnchorItemsPerLeafBand: number
+      minimumDistinctFieldTestItemsPerLeaf: number
+      splitPolicyVersion: string
+    }
+
+    type PrismaAdaptiveValidationInterval = {
+      lower: number
+      upper: number
+      confidenceLevel: number
+    }
+
+    type PrismaAdaptiveValidationMetrics = {
+      exactAgreement: number
+      adjacentAgreement: number
+      meanAbsoluteLevelError: number
+      capRate: number
+      maximumExposure: number
+      calibrationError: number
+      logLoss: number
+      exactAgreementInterval: PrismaAdaptiveValidationInterval
+      adjacentAgreementInterval: PrismaAdaptiveValidationInterval
+      capRateInterval: PrismaAdaptiveValidationInterval
+      maximumExposureInterval: PrismaAdaptiveValidationInterval
+    }
+
+    type PrismaAdaptiveValidationStratumMetrics = Array<{
+      key: string
+      learnerCount: number
+      metrics: PrismaAdaptiveValidationMetrics
+    }>
+
+    type PrismaAdaptivePracticeQuizCohortSnapshot =
+      | {
+          schemaVersion: 1
+          result: Record<string, unknown>
+        }
+      | {
+          schemaVersion: 2
+          result: {
+            practiceQuizId: string
+            cohortSize: number | null
+            suppressed: boolean
+            attemptSummary: {
+              suppressed: boolean
+              suppressions: AdaptivePrivacySuppression[]
+              classified: number | null
+              betweenLevels: number | null
+              insufficientEvidence: number | null
+              poolLimited: number | null
+              researchOnly: number | null
+              capped: number | null
+              poolExhausted: number | null
+              stoppedClassified: number | null
+              stoppedInsufficientData: number | null
+              insufficientData: number | null
+              nearBoundary: number | null
+            }
+            pilotMetrics: {
+              suppressed: boolean
+              suppressions: AdaptivePrivacySuppression[]
+              questionCountBoxPlot?: {
+                min: number
+                q1: number
+                median: number
+                q3: number
+                max: number
+                count: number
+              } | null
+              completionTimeBoxPlot?: {
+                min: number
+                q1: number
+                median: number
+                q3: number
+                max: number
+                count: number
+              } | null
+              medianQuestionCount: number | null
+              p95QuestionCount: number | null
+              medianElapsedSeconds: number | null
+              p95ElapsedSeconds: number | null
+              nearBoundaryRate: number | null
+              responseCountMismatchDetected: boolean | null
+              durationMissingDetected: boolean | null
+            }
+            itemDiagnostics: Array<{
+              poolItemId: number
+              elementName: string
+              elementType: ElementType
+              nodeNamePath: string[]
+              levelLabel: string
+              suppressed: boolean
+              suppressions: AdaptivePrivacySuppression[]
+              responseCount: number | null
+              exposureRate: number | null
+              observedCorrectRate: number | null
+              expectedCorrectRate: number | null
+              residual: number | null
+              highExposure: boolean | null
+              misfitFlag: boolean | null
+            }>
+            distributions: Array<{
+              nodeId: number | null
+              parentNodeId: number | null
+              nodeName: string
+              nodeKind: AdaptiveEstimateNodeKind
+              depth: number
+              order: number
+              suppressed: boolean
+              suppressions: AdaptivePrivacySuppression[]
+              classifiedCount: number | null
+              betweenLevelsCount: number | null
+              insufficientEvidenceCount: number | null
+              poolLimitedCount: number | null
+              researchOnlyCount: number | null
+              insufficientDataCount: number | null
+              // Absent in snapshots written before not-tested reporting.
+              notTestedCount?: number | null
+              // Absent in snapshots written before leaf coverage status.
+              outOfRangeCount?: number | null
+              // Absent in snapshots written before weight shares.
+              weightShare?: number | null
+              buckets: Array<{
+                levelLabel: string
+                levelOrder: number
+                count: number
+              }>
+            }>
+          }
+        }
+
+    // Adaptive dry runs (testing environments only).
+    type PrismaAdaptiveDryRunSpec = {
+      students: number
+      seed: string
+      noiseProbability: number
+      trueLevels:
+        | { kind: 'FIXED'; levelId: number }
+        | { kind: 'EVEN'; fromLevelId: number; toLevelId: number }
+      competences: 'SAME_LEVEL' | 'INDEPENDENT'
+      /** Absent for the ideal pattern (and in older runs). */
+      answerModel?: 'REALISTIC'
+      /**
+       * Ideal pattern only: HALF when the student's own level is answered
+       * right and wrong in turn (ability in the middle of the level). Absent
+       * in earlier runs, where the whole own level was answered right.
+       */
+      idealOwnLevel?: 'HALF'
+    }
+
+    type PrismaAdaptiveDryRunSettings = {
+      totalQuestionCap: number
+      minQuestionsPerLeaf: number
+      classificationZ: number
+      classificationToleranceBands: number
+      /** Absent in runs stored before the setting (= 0). */
+      levelReachedFrom?: number
+      /**
+       * True when `levelReachedFrom` is the mastery mark only (plain bands).
+       * Absent in earlier runs, where it shifted the level bands.
+       */
+      masteryMark?: boolean
+    }
+
+    type PrismaAdaptiveDryRunMetrics = {
+      count: number
+      exactShare: number
+      withinOneShare: number
+      /** Mean signed difference reported − true, in levels. */
+      bias: number
+      meanAbsoluteError: number
+      determinedShare: number
+    }
+
+    type PrismaAdaptiveDryRunSummary = {
+      studentCount: number
+      answerCount: number
+      flippedShare: number
+      /** Over all (student, competence) pairs. */
+      metrics: PrismaAdaptiveDryRunMetrics
+      competences: Array<PrismaAdaptiveDryRunMetrics & { nodeId: number }>
+      questions: { min: number; median: number; mean: number; max: number }
+      stopReasons: Array<{ reason: string; count: number }>
+      /** Reported levels per true level, over (student, competence) pairs. */
+      confusion: Array<{
+        trueLevelId: number
+        reported: Array<{ levelId: number | null; count: number }>
+      }>
+      itemUse: {
+        poolSize: number
+        usedCount: number
+        top: Array<{ poolItemId: number; count: number }>
+      }
+      /** Absent in runs stored before the subcompetence breakdown. */
+      subcompetences?: Array<{
+        nodeId: number
+        rootId: number
+        meanAnswers: number
+        minAnswers: number
+        /** Attempts per leaf coverage status; NONE = no status reported. */
+        coverage: {
+          COVERED: number
+          SAMPLED_PENDING: number
+          NOT_SAMPLED: number
+          OUT_OF_RANGE: number
+          NONE: number
+        }
+        /** Attempts with a leaf level, and their mean signed error in levels. */
+        estimatedCount: number
+        meanDeviation: number | null
+        /** Pool items mapped to the leaf, per level, and how many were used. */
+        pool: Array<{ levelId: number; count: number; used: number }>
+      }>
+      /**
+       * Levels and ability range of the publication the run used, so the run
+       * is drawn as it ran after a republish. Absent in older runs.
+       */
+      scale?: {
+        thetaMin: number
+        thetaMax: number
+        levelMappingRule: string
+        levels: Array<{ id: number; label: string; order: number }>
+      }
+    }
+
+    type PrismaAdaptiveDryRunStudents = Array<{
+      index: number
+      /** `theta`: true ability of realistic students. */
+      trueLevels: Array<{ nodeId: number; levelId: number; theta?: number }>
+      stopReason: string
+      questionCount: number
+      answers: Array<{
+        poolItemId: number
+        levelId: number
+        correct: boolean
+        flipped: boolean
+        /** The item's competence after this answer; absent in older runs. */
+        after?: {
+          theta: number | null
+          standardError: number | null
+          levelId: number | null
+          /** Level the estimate maps to before a level is reported. */
+          roughLevelId?: number | null
+        }
+      }>
+      overall: {
+        theta: number | null
+        standardError: number | null
+        levelId: number | null
+      }
+      competences: Array<{
+        nodeId: number
+        theta: number | null
+        standardError: number | null
+        levelId: number | null
+        classified: boolean
+      }>
+      /** Absent in runs stored before the subcompetence breakdown. */
+      subcompetences?: Array<{
+        nodeId: number
+        responseCount: number
+        levelId: number | null
+        coverageStatus: string | null
+      }>
+    }>
+  }
+}

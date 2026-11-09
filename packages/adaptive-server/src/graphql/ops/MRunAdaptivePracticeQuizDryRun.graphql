@@ -1,0 +1,34 @@
+mutation MRunAdaptivePracticeQuizDryRun(
+  $practiceQuizId: String!
+  $students: Int!
+  $noiseProbability: Float!
+  $fromLevelId: Int!
+  $toLevelId: Int!
+  $competences: String!
+  $answerModel: String
+  $seed: String
+  $totalQuestionCap: Int!
+  $minQuestionsPerLeaf: Int!
+  $classificationZ: Float!
+  $classificationToleranceBands: Int!
+  $levelReachedFrom: Float!
+) {
+  runAdaptivePracticeQuizDryRun(
+    practiceQuizId: $practiceQuizId
+    students: $students
+    noiseProbability: $noiseProbability
+    fromLevelId: $fromLevelId
+    toLevelId: $toLevelId
+    competences: $competences
+    answerModel: $answerModel
+    seed: $seed
+    totalQuestionCap: $totalQuestionCap
+    minQuestionsPerLeaf: $minQuestionsPerLeaf
+    classificationZ: $classificationZ
+    classificationToleranceBands: $classificationToleranceBands
+    levelReachedFrom: $levelReachedFrom
+  ) {
+    ...AdaptiveDryRunData
+    students
+  }
+}

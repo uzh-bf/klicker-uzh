@@ -436,6 +436,35 @@ function assertStaticLti(resources, source, expectedReplicas) {
   )
 }
 
+function assertStaticAdaptiveEngine(resources, source, expectedReplicas) {
+  const engines = resources.filter(
+    (resource) =>
+      resource.kind === 'Deployment' &&
+      resource.metadata?.labels?.['app.kubernetes.io/component'] ===
+        'adaptive-engine'
+  )
+
+  if (expectedReplicas === null) {
+    assert.equal(
+      engines.length,
+      0,
+      `${source}: the adaptive engine must stay disabled`
+    )
+    return
+  }
+
+  assert.equal(
+    engines.length,
+    1,
+    `${source}: expected one adaptive engine Deployment`
+  )
+  assert.equal(
+    engines[0].spec?.replicas,
+    expectedReplicas,
+    `${source}: the adaptive engine must be a static Deployment with ${expectedReplicas} replicas`
+  )
+}
+
 function assertWorkerDisruptionBudgets(resources, source, expectedBudgets) {
   const disruptionBudgets = resources.filter(
     ({ kind }) => kind === 'PodDisruptionBudget'
@@ -713,7 +742,12 @@ for (const environment of environments) {
   assertReplicaOwnership(
     resources,
     environment.name,
-    { base: 17, stg: 20, prd: 17 }[environment.name]
+    // Enabling assessmentAudit adds the audit dispatcher Deployment alongside
+    // the 17 shared application ones; retiring the media-policy worker left no
+    // further audit Deployment. Staging also enables the audit sealer and runs
+    // the adaptive engine Deployment, which owns its replicas statically, the
+    // frontend PWA burst tier, and the two release asset Deployments.
+    { base: 17, stg: 23, prd: 17 }[environment.name]
   )
   if (environment.name === 'stg') {
     assertPwaBurstTier(resources, environment.name)
@@ -722,6 +756,13 @@ for (const environment of environments) {
     resources,
     environment.name,
     { base: 2, stg: 1, prd: 2 }[environment.name]
+  )
+  assertStaticAdaptiveEngine(
+    resources,
+    environment.name,
+    // Staging spreads engine bursts over two pods; one pod computes at most
+    // four requests at once.
+    { base: null, stg: 2, prd: null }[environment.name]
   )
   assertWorkerDisruptionBudgets(
     resources,
