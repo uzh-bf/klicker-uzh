@@ -13,6 +13,10 @@ import { renderPromptTemplate } from '@/src/lib/server/promptTemplates'
  */
 
 const REQUEST_TIMEOUT_MS = 10_000
+/* The schema fetch blocks the start of every tutor turn, so it fails fast and
+ * a failure is remembered briefly instead of retried on each turn. */
+const SCHEMA_TIMEOUT_MS = 2_000
+const SCHEMA_RETRY_AFTER_MS = 60_000
 /* Errors beyond this many add little for a repair and cost tokens. */
 const MAX_REPORTED_ERRORS = 25
 
@@ -36,7 +40,7 @@ export function isExplanationToolEnabled(chatMode: string): boolean {
 
 async function call<T>(
   path: string,
-  init: { method: 'GET' | 'POST'; body?: unknown }
+  init: { method: 'GET' | 'POST'; body?: unknown; timeoutMs?: number }
 ): Promise<{ status: number; data: T }> {
   const config = serviceConfig()
   if (!config) throw new Error('Explainer service is not configured')
@@ -49,17 +53,21 @@ async function call<T>(
         : { 'content-type': 'application/json' }),
     },
     body: init.body === undefined ? undefined : JSON.stringify(init.body),
-    signal: AbortSignal.timeout(REQUEST_TIMEOUT_MS),
+    signal: AbortSignal.timeout(init.timeoutMs ?? REQUEST_TIMEOUT_MS),
   })
   return { status: response.status, data: (await response.json()) as T }
 }
 
 let schemaPromise: Promise<Record<string, unknown>> | null = null
+let schemaFailedAt = 0
 
 /** The content schema changes only with a service release, so one fetch per process is enough. */
 export function getExplanationSchema(): Promise<Record<string, unknown>> {
+  if (!schemaPromise && Date.now() - schemaFailedAt < SCHEMA_RETRY_AFTER_MS)
+    return Promise.reject(new Error('schema request failed recently'))
   schemaPromise ??= call<Record<string, unknown>>('/explainer/v1/schema', {
     method: 'GET',
+    timeoutMs: SCHEMA_TIMEOUT_MS,
   })
     .then(({ status, data }) => {
       if (status !== 200) throw new Error(`schema request failed: ${status}`)
@@ -70,6 +78,7 @@ export function getExplanationSchema(): Promise<Record<string, unknown>> {
     })
     .catch((error) => {
       schemaPromise = null
+      schemaFailedAt = Date.now()
       throw error
     })
   return schemaPromise
@@ -137,8 +146,8 @@ export async function createShowExplanationTool() {
 type StepPart = { type: string; toolName?: string; output?: unknown }
 
 /**
- * Failed attempts so far in this turn: results the service rejected and calls
- * whose input did not parse. After the cap the tool is withdrawn, so a model
+ * Failed attempts so far in this turn: results the service rejected or could
+ * not check, and calls whose input did not parse. After the cap the tool is withdrawn, so a model
  * that cannot reach valid content falls back to text.
  */
 export function failedExplanationAttempts(
@@ -151,8 +160,9 @@ export function failedExplanationAttempts(
       if (part.type === 'tool-error') failed++
       else if (
         part.type === 'tool-result' &&
-        (part.output as { kind?: string } | undefined)?.kind ===
-          'explanation-invalid'
+        ['explanation-invalid', 'explanation-unavailable'].includes(
+          (part.output as { kind?: string } | undefined)?.kind ?? ''
+        )
       )
         failed++
     }

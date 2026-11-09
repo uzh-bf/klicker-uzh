@@ -16,6 +16,15 @@ export async function POST(
   const { chatbotId } = await params
   const authResult = await withChatbotAuth(req, chatbotId)
   if ('response' in authResult) return authResult.response
+  // The prototype flag turns the proxy off too, so a configured service is
+  // not reachable while explanations are disabled.
+  if (process.env.CHAT_EXPLANATION_TOOL !== '1') {
+    return NextResponse.json({ error: 'Not found' }, { status: 404 })
+  }
+  // The service refuses bodies above 300 KB; refuse them before parsing.
+  if (Number(req.headers.get('content-length') ?? 0) > 300_000) {
+    return NextResponse.json({ error: 'Content too large' }, { status: 413 })
+  }
 
   let body: unknown
   try {

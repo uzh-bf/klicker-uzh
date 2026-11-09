@@ -95,6 +95,9 @@ export function ExplanationCard({
     null
   )
   const dialogRef = useRef<HTMLDialogElement>(null)
+  // The large frame is mounted only while the dialog is open, so each
+  // explanation runs once.
+  const [dialogOpen, setDialogOpen] = useState(false)
 
   useEffect(() => {
     if (!content || !params.chatbotId) return
@@ -160,7 +163,10 @@ export function ExplanationCard({
           type="button"
           className="inline-flex items-center gap-1 rounded px-2 py-1 hover:bg-slate-100 disabled:opacity-50"
           disabled={!page}
-          onClick={() => dialogRef.current?.showModal()}
+          onClick={() => {
+            setDialogOpen(true)
+            dialogRef.current?.showModal()
+          }}
         >
           <Maximize2Icon className="size-3.5" />
           Open large
@@ -186,6 +192,7 @@ export function ExplanationCard({
         ref={dialogRef}
         className="m-auto h-[90vh] w-[min(1200px,95vw)] max-w-none rounded-md p-0 backdrop:bg-black/40"
         aria-label={title}
+        onClose={() => setDialogOpen(false)}
       >
         <div className="flex h-full flex-col">
           <div className="flex items-center justify-end border-b border-slate-200 px-2 py-1">
@@ -198,7 +205,7 @@ export function ExplanationCard({
               Close
             </button>
           </div>
-          {page && 'html' in page ? (
+          {dialogOpen && page && 'html' in page ? (
             <ExplanationFrame
               html={page.html}
               title={title}
