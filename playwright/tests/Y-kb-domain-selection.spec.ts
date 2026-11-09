@@ -336,6 +336,14 @@ async function installKbMocks(page: Page, state: DomainMockState) {
       } | null
       const variables = body?.variables ?? {}
       state.updateVariables.push(variables)
+      // The settings refetch the knowledge base after saving, so the mocked
+      // save must also be what that refetch reports.
+      state.kbDomain = {
+        domainPolicyId: (variables.domainPolicyId as string) ?? null,
+        domainPolicyVersion: (variables.domainPolicyVersion as number) ?? null,
+        domainPolicyLanguage:
+          (variables.domainPolicyLanguage as string) ?? null,
+      }
       await route.fulfill({
         status: 200,
         contentType: 'application/json',
@@ -517,7 +525,7 @@ test.describe('Knowledge base subject area and language', () => {
         domainPolicyLanguage: 'English',
       })
 
-      // The saved pair replaces the read view without a refetch.
+      // The saved pair replaces the read view.
       await expect(
         page.getByTestId('kb-domain-settings-subject-value')
       ).toHaveText(EN_DOMAIN_LABELS.business)
