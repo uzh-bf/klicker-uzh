@@ -1,6 +1,6 @@
 {
   "name": "@klicker-uzh/util",
-  "version": "3.4.0-alpha.88",
+  "version": "3.4.0-alpha.91",
   "license": "AGPL-3.0",
   "main": "dist/index.js",
   "types": "dist/index.d.ts",
@@ -81,6 +81,10 @@
       "types": "./dist/responseExampleEligibility.d.ts",
       "default": "./dist/responseExampleEligibility.js"
     },
+    "./response-example-receipt": {
+      "types": "./dist/responseExampleReceipt.d.ts",
+      "default": "./dist/responseExampleReceipt.js"
+    },
     "./response-example-runtime": {
       "types": "./dist/responseExampleRuntime.d.ts",
       "default": "./dist/responseExampleRuntime.js"
@@ -88,6 +92,10 @@
     "./chatbot-custom-mode-limits": {
       "types": "./dist/chatbotCustomModeLimits.d.ts",
       "default": "./dist/chatbotCustomModeLimits.js"
+    },
+    "./chatbot-credit-policy-defaults": {
+      "types": "./dist/chatbotCreditPolicyDefaults.d.ts",
+      "default": "./dist/chatbotCreditPolicyDefaults.js"
     }
   },
   "type": "module"

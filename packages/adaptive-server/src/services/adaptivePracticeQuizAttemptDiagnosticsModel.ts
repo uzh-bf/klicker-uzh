@@ -94,6 +94,8 @@ export type AdaptiveDiagnosticSummary = {
   startedAt: Date
   completedAt: Date | null
   elapsedSeconds: number | null
+  /** Engine build that started the attempt; null when not recorded. */
+  engineRevision: string | null
   stopReason: DB.AdaptivePracticeQuizStopReason | null
   answerCount: number
   overall: AdaptiveDiagnosticNodeResult
@@ -117,6 +119,7 @@ export type AdaptiveDiagnosticAttemptRecord = {
   stopReason: DB.AdaptivePracticeQuizStopReason | null
   startedAt: Date
   completedAt: Date | null
+  engineRevision?: string | null
   elapsedSeconds: number | null
   estimates: Array<{
     nodeKind: DB.AdaptiveEstimateNodeKind
@@ -382,6 +385,7 @@ export function buildAdaptiveAttemptDiagnostic(
     startedAt: attempt.startedAt,
     completedAt: attempt.completedAt,
     elapsedSeconds: attempt.elapsedSeconds,
+    engineRevision: attempt.engineRevision ?? null,
     stopReason: attempt.stopReason,
     answerCount: attempt.responses.length,
     overall,

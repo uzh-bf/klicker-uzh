@@ -43,6 +43,7 @@ import {
 } from './questionGenerationDrafts.js'
 import { questionGenerationServiceError } from './questionGenerationErrors.js'
 import {
+  assertQuestionGenerationBasisCurrent,
   assertQuestionGenerationPreviewAccess,
   getQuestionGenerationSources,
 } from './questionGenerationGraph.js'
@@ -78,7 +79,7 @@ async function resolveRequestedQuestionFocusTopic(
   if (!normalized) {
     return null
   }
-  if (!(await isFeatureFlagEnabled(ctx, 'question-focus-topic'))) {
+  if (!(await isFeatureFlagEnabled(ctx, 'ai-beta'))) {
     throw questionGenerationServiceError(
       'CONFIGURATION_INVALID',
       'This deployment does not support question focus topics'
@@ -88,7 +89,10 @@ async function resolveRequestedQuestionFocusTopic(
 }
 
 export type StartElementGenerationInput = {
+  kbId: string
   graphBuildId: string
+  /** Preparation identity of `graphBuildId` as listed for `kbId`. */
+  basisFingerprint: string
   elementType: 'SC' | 'MC' | 'KPRIM' | 'FLASHCARD'
   language: string
   elementCount: number
@@ -185,19 +189,21 @@ export async function startElementGeneration(
     input.focusTopic,
     ctx
   )
-  if (input.elementType === 'FLASHCARD') {
-    if (
-      input.difficultyPreset != null ||
+  if (
+    input.elementType === 'FLASHCARD' &&
+    (input.difficultyPreset != null ||
       (input.sourceScopes?.length ?? 0) > 0 ||
       (input.bloomLevels?.length ?? 0) > 0 ||
       input.objectives?.some((objective) => objective.bloomLevel != null) ||
-      focusTopic !== null
-    ) {
-      throw questionGenerationServiceError(
-        'CONFIGURATION_INVALID',
-        'Flashcard generation does not support difficulty, Bloom, source scoping, or a focus topic'
-      )
-    }
+      focusTopic !== null)
+  ) {
+    throw questionGenerationServiceError(
+      'CONFIGURATION_INVALID',
+      'Flashcard generation does not support difficulty, Bloom, source scoping, or a focus topic'
+    )
+  }
+  await assertQuestionGenerationBasisCurrent(input, ctx)
+  if (input.elementType === 'FLASHCARD') {
     return startFlashcardGeneration(
       {
         graphBuildId: input.graphBuildId,
@@ -825,10 +831,7 @@ export async function getElementGenerationSources(ctx: ContextWithUser) {
 
 export async function getElementGenerationCapabilities(ctx: ContextWithUser) {
   await assertQuestionGenerationPreviewAccess(ctx)
-  const focusTopicEnabled = await isFeatureFlagEnabled(
-    ctx,
-    'question-focus-topic'
-  )
+  const focusTopicEnabled = await isFeatureFlagEnabled(ctx, 'ai-beta')
   return {
     elementTypes: [...ELEMENT_GENERATION_CAPABILITIES.elementTypes],
     languages: [...ELEMENT_GENERATION_CAPABILITIES.languages],

@@ -166,6 +166,9 @@ async function assertParticipantPrincipal(result: {
   const decoded = await jwtDecode({ token: sessionToken, secret: APP_SECRET })
   expect(decoded?.role).toBe('PARTICIPANT')
   expect(decoded?.sub).toBe(PARTICIPANT_ID)
+  // next-auth must pass the session maxAge to the custom encode, so the
+  // issued token expires with the session
+  expect(Number(decoded?.exp)).toBeGreaterThan(Date.now() / 1000)
   expect(
     result.sessionCookies[MANAGER_COOKIE_NAME],
     'no manager session may be issued for a participant callback'

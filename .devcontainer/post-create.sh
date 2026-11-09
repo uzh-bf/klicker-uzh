@@ -8,6 +8,10 @@ case "${KLICKER_LOCAL_KB_RUNTIME_ONLY:-0}" in
   *) echo '[post-create] ERROR: invalid isolated runtime mode.' >&2; exit 1 ;;
 esac
 SCRIPT_ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
+if [ "${KLICKER_LOCAL_KB_RUNTIME_ONLY:-0}" = 0 ]; then
+  [ "$#" -eq 0 ] || { echo '[post-create] ERROR: initialization is not a startup operation.' >&2; exit 1; }
+  exec bash "$SCRIPT_ROOT/.devcontainer/recover-bootstrap.sh"
+fi
 bash "$SCRIPT_ROOT/util/dev-runtime.sh" begin-bootstrap
 
 ROOT="${KLICKER_DEVCONTAINER_ROOT:-/workspaces/klicker-uzh}"
@@ -75,20 +79,6 @@ if ! pnpm exec turbo run build --filter='./packages/*' --filter=@klicker-uzh/bac
   exit 1
 fi
 echo "[post-create] Build finished (full output: $BUILD_LOG)."
-
-# Prepare the database. klicker's prisma:reset prompts (and the non-interactive
-# variants wrap Infisical), so call prisma directly with --force. A brand-new
-# Postgres volume has a short warmup where it emits an empty search_path (42601)
-# even though pg_isready is healthy — retry. (GOTCHAS #12)
-if [ "${KLICKER_LOCAL_KB_RUNTIME_ONLY:-0}" != 1 ]; then
-echo "[post-create] Resetting + pushing Prisma schema (retrying through DB warmup)..."
-retry 12 "prisma reset/push" bash -c '
-  pnpm --filter @klicker-uzh/prisma run prisma:reset:raw --force \
-  && pnpm --filter @klicker-uzh/prisma run prisma:push:raw' || exit 1
-
-echo "[post-create] Seeding test data (lecturer/abcd, testuser1..50/abcdabcd)..."
-retry 5 "prisma-data seed" pnpm --filter @klicker-uzh/prisma-data run seed:raw || exit 1
-fi
 
 # response-api uses `tsx --watch --env-file=.env`; both Hatchet workers use
 # nodemon with `node --env-file .env`. Node 24 HARD-ERRORS if .env is missing

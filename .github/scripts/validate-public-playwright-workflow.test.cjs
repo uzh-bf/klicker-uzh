@@ -5,6 +5,7 @@ const os = require('node:os')
 const path = require('node:path')
 const test = require('node:test')
 const YAML = require('yaml')
+const { CONTROL_SPARSE_PATHS } = require('./ci-verified-reuse.cjs')
 
 const {
   EXPECTED_CALL,
@@ -37,8 +38,14 @@ test('the current public workflow satisfies the runner trust boundary', () => {
     ),
   ]
   assert.ok(sources[0].includes(EXPECTED_CALL))
-  assert.match(sources[1], /playwright-build@refs\/heads\/v3/)
-  assert.match(sources[1], /playwright-shard@refs\/heads\/v3/)
+  assert.match(
+    sources[1],
+    /uses: \.\/\.ci-action\/\.github\/actions\/playwright-build/
+  )
+  assert.match(
+    sources[1],
+    /uses: \.\/\.ci-action\/\.github\/actions\/playwright-shard/
+  )
   assert.match(sources[2], /repository: \$\{\{ job\.workflow_repository \}\}/)
   assert.match(sources[2], /ref: \$\{\{ job\.workflow_sha \}\}/)
   // The build artifact archives every workspace package through one wildcard,
@@ -326,6 +333,18 @@ test('public runner jobs require their exact scheduling role and reject unknown 
         "  'display' + require('./.candidate/script.cjs'),"
       summary.run = lines.join('\n')
     },
+    ...['route', 'metadata'].flatMap((id) => [
+      (w) => {
+        delete w.jobs.prepare.steps.find((step) => step.id === id).env
+          .PRIORITY_JOB_TIMEOUT
+      },
+      (w) => {
+        w.jobs.prepare.steps.find(
+          (step) => step.id === id
+        ).env.PRIORITY_JOB_TIMEOUT =
+          '${{ vars.PRIORITY_CI_CANARY_JOB_TIMEOUT_MINUTES }}'
+      },
+    ]),
     ...Object.entries({
       PATH: '.candidate/bin',
       BASH_ENV: '.candidate/bootstrap.sh',
@@ -540,6 +559,7 @@ test('the reusable envelope owns lifecycle routing and selector shadow planning'
   const parsed = YAML.parse(workflow)
   assert.deepEqual(parsed.on.push.branches, ['v3', 'v3*'])
   assert.deepEqual(parsed.on.pull_request.types, [
+    'labeled',
     'opened',
     'synchronize',
     'reopened',
@@ -613,6 +633,22 @@ test('lifecycle policy rejects cancellation outside the exact closed-PR boundary
     'utf8'
   )
   const mutations = {
+    'missing priority run marker': (w) => {
+      w['run-name'] = 'ordinary'
+    },
+    'denied label uses the required name': (w) => {
+      w.jobs['test-playwright-status'].name = 'test-playwright-status'
+    },
+    'reporter loses its label-event input': (w) => {
+      delete w.jobs['test-playwright-status'].steps.find(
+        (step) => step.name === 'Check result'
+      ).env.IS_LABEL_EVENT
+    },
+    'reporter substitutes label admission': (w) => {
+      w.jobs['test-playwright-status'].steps.find(
+        (step) => step.name === 'Check result'
+      ).env.PRIORITY_LABEL_EVENT = 'true'
+    },
     'wrong close key': (w) => {
       w.jobs['cancel-closed-pr'].concurrency.group = 'other'
     },
@@ -621,6 +657,14 @@ test('lifecycle policy rejects cancellation outside the exact closed-PR boundary
     },
     'missing cancellation': (w) => {
       w.jobs['cancel-closed-pr'].concurrency['cancel-in-progress'] = false
+    },
+    'execution cancels the readiness wait': (w) => {
+      w.jobs['test-playwright-execution'].concurrency['cancel-in-progress'] =
+        true
+    },
+    'execution uses an unrelated readiness expression': (w) => {
+      w.jobs['test-playwright-execution'].concurrency['cancel-in-progress'] =
+        "${{ github.event.action != 'synchronize' }}"
     },
     'workflow concurrency': (w) => {
       w.concurrency = 'other'
@@ -699,6 +743,25 @@ test('lifecycle policy rejects cancellation outside the exact closed-PR boundary
   }
 })
 
+test('the reusable reporter output preserves the priority label admission result', () => {
+  const source = fs.readFileSync(
+    path.join(__dirname, '../workflows/public-pr-playwright-shards.yml'),
+    'utf8'
+  )
+  for (const mutate of [
+    (w) => {
+      w.jobs.prepare.outputs.priority_label_event = 'true'
+    },
+    (w) => {
+      w.on.workflow_call.outputs.priority_label_event.value = 'true'
+    },
+  ]) {
+    const workflow = YAML.parse(source)
+    mutate(workflow)
+    assert.notDeepEqual(validatePublicRunnerRoles(workflow), [])
+  }
+})
+
 function readStatusScript() {
   const root = path.join(__dirname, '../..')
   const workflow = YAML.parse(
@@ -770,6 +833,36 @@ function runStatusReporter(t, overrides = {}) {
       : {},
   }
 }
+
+test('denied label reports are neutral while ordinary and admitted reports retain validation', (t) => {
+  const skipped = {
+    MODE: 'skip',
+    ENVELOPE_CLASS: 'application',
+    SHOULD_RUN: 'false',
+    SHARD_MATRIX: JSON.stringify({ include: [] }),
+  }
+  for (const admitted of ['', 'false']) {
+    const denied = runStatusReporter(t, {
+      ...skipped,
+      IS_LABEL_EVENT: 'true',
+      PRIORITY_LABEL_EVENT: admitted,
+    })
+    assert.equal(denied.status, 0, denied.output)
+  }
+  for (const label of [false, true]) {
+    const invalid = runStatusReporter(t, {
+      ...skipped,
+      IS_LABEL_EVENT: String(label),
+      PRIORITY_LABEL_EVENT: 'true',
+    })
+    assert.equal(invalid.status, 1, invalid.output)
+    const valid = runStatusReporter(t, {
+      IS_LABEL_EVENT: String(label),
+      PRIORITY_LABEL_EVENT: 'true',
+    })
+    assert.equal(valid.status, 0, valid.output)
+  }
+})
 
 test('status reporter accepts the trusted plan for drafts and a full plan for ready', (t) => {
   const cloud = runStatusReporter(t, {
@@ -1055,38 +1148,40 @@ test('status reporter accepts the trusted plan for drafts and a full plan for re
   assert.equal(pushSkippedSelection.status, 1, pushSkippedSelection.output)
 })
 
-test('status reporter reuses only validated pull-request runs', (t) => {
-  // v3 and the staging source must validate their pushes independently: a
-  // duplicate offered there, or while the staging source is unknown, is
-  // rejected whatever it contains.
+test('status reporter accepts verified push reuse only after rollout opt-in', (t) => {
+  // Until rollout is enabled, every push duplicate is rejected. Once enabled,
+  // only v3 and v3-* may reuse; promotion independently verifies the evidence.
   const push = {
     IS_PULL_REQUEST: 'false',
     ROUTE: 'hosted',
     DUPLICATE_RUN_ID: '123',
-    STG_SOURCE_BRANCH: 'v3-adaptive-learning',
   }
-  const rejected = {
-    'numeric push run id': { ...push, PUSH_REF: 'refs/heads/v3' },
-    'non-numeric push run id': {
+  for (const PUSH_REF of [
+    'refs/heads/v3',
+    'refs/heads/v3-ai',
+    'refs/heads/v3-adaptive-learning',
+    '',
+  ]) {
+    const result = runStatusReporter(t, {
       ...push,
-      PUSH_REF: 'refs/heads/v3',
-      DUPLICATE_RUN_ID: '123abc',
-    },
-    'staging source push': {
-      ...push,
-      PUSH_REF: 'refs/heads/v3-adaptive-learning',
-    },
-    'unknown staging source': {
-      ...push,
-      PUSH_REF: 'refs/heads/v3-ai',
-      STG_SOURCE_BRANCH: '',
-    },
-    'missing push ref': push,
+      PUSH_REF,
+      VERIFIED_REUSE_ENABLED: '',
+    })
+    assert.equal(result.status, 1, `${PUSH_REF}: ${result.output}`)
+    assert.equal(result.metadata.duplicate_run_id, push.DUPLICATE_RUN_ID)
+    assert.match(result.output, /Verified push reuse is disabled/)
   }
-  for (const [name, overrides] of Object.entries(rejected)) {
-    const result = runStatusReporter(t, overrides)
-    assert.equal(result.status, 1, `${name}: ${result.output}`)
-    assert.equal(result.metadata.duplicate_run_id, overrides.DUPLICATE_RUN_ID)
+  for (const PUSH_REF of ['refs/heads/feature', 'refs/tags/v3', '']) {
+    const result = runStatusReporter(t, {
+      ...push,
+      PUSH_REF,
+      VERIFIED_REUSE_ENABLED: 'true',
+    })
+    assert.equal(result.status, 1, `${PUSH_REF}: ${result.output}`)
+    assert.match(
+      result.output,
+      /Verified push reuse is not eligible for this branch/
+    )
   }
 
   // A pull-request lifecycle event accepts the duplicate only from the trusted
@@ -1100,12 +1195,19 @@ test('status reporter reuses only validated pull-request runs', (t) => {
   assert.equal(reused.metadata.duplicate_run_id, '123')
   assert.match(reused.summary, /Reused validated run: `123`/)
 
-  // Another integration branch accepts the merged pull request's validation.
-  const integration = runStatusReporter(t, {
-    ...push,
-    PUSH_REF: 'refs/heads/v3-ai',
-  })
-  assert.equal(integration.status, 0, integration.output)
+  // Every eligible branch uses the same opted-in reporter contract.
+  for (const PUSH_REF of [
+    'refs/heads/v3',
+    'refs/heads/v3-ai',
+    'refs/heads/v3-adaptive-learning',
+  ]) {
+    const integration = runStatusReporter(t, {
+      ...push,
+      PUSH_REF,
+      VERIFIED_REUSE_ENABLED: 'true',
+    })
+    assert.equal(integration.status, 0, integration.output)
+  }
 
   // Reuse cannot launder a cancelled or failed execution into a green gate.
   for (const [name, overrides] of [
@@ -1233,4 +1335,203 @@ test('exact-base workflow fetch preserves a divergent PR merge-base', (t) => {
     git('-C', '.candidate', 'merge-base', env.BASE_SHA, 'HEAD'),
     ancestor
   )
+})
+
+function copyPolicyFixture(t, prefix) {
+  const repository = path.join(__dirname, '../..')
+  const root = fs.mkdtempSync(path.join(os.tmpdir(), prefix))
+  t.after(() => fs.rmSync(root, { recursive: true, force: true }))
+  for (const file of [
+    '.github/workflows/test-playwright.yml',
+    '.github/workflows/public-pr-playwright-shards.yml',
+    '.github/workflows/playwright-cache-seed.yml',
+    '.github/actions/playwright-build/action.yml',
+    '.github/actions/playwright-shard/action.yml',
+  ]) {
+    const target = path.join(root, file)
+    fs.mkdirSync(path.dirname(target), { recursive: true })
+    fs.copyFileSync(path.join(repository, file), target)
+  }
+  assert.equal(validatePublicPlaywrightWorkflow(root).ok, true)
+  return root
+}
+
+function mutatePolicyFixture(root, file, mutate) {
+  const target = path.join(root, file)
+  const parsed = YAML.parse(fs.readFileSync(target, 'utf8'))
+  mutate(parsed)
+  fs.writeFileSync(target, YAML.stringify(parsed, { lineWidth: 0 }))
+}
+
+test('every local execution action must immediately follow the reserved immutable trusted checkout', (t) => {
+  const mutations = {
+    'missing reserve': (steps, index) => {
+      steps[index - 2].run = 'true'
+    },
+    'wrong pinned checkout': (steps, index) => {
+      steps[index - 1].uses = 'actions/checkout@' + 'a'.repeat(40)
+    },
+    'wrong repository': (steps, index) => {
+      steps[index - 1].with.repository = '${{ github.repository }}'
+    },
+    'wrong ref': (steps, index) => {
+      steps[index - 1].with.ref = '${{ github.sha }}'
+    },
+    'wrong target path': (steps, index) => {
+      steps[index - 1].with.path = '.candidate-action'
+    },
+    'wrong order': (steps, index) => {
+      ;[steps[index - 1], steps[index]] = [steps[index], steps[index - 1]]
+    },
+    'additional unverified action input': (steps, index) => {
+      steps[index - 1].with.clean = false
+    },
+  }
+  for (const job of [
+    'build-and-compile-hosted',
+    'build-and-compile-public-pr',
+    'test-playwright-hosted',
+    'test-playwright-public-pr',
+  ]) {
+    for (const [name, mutate] of Object.entries(mutations)) {
+      const root = copyPolicyFixture(t, 'public-playwright-action-')
+      mutatePolicyFixture(
+        root,
+        '.github/workflows/public-pr-playwright-shards.yml',
+        (workflow) => {
+          const steps = workflow.jobs[job].steps
+          const index = steps.findIndex((step) =>
+            step.uses?.startsWith('./.ci-action/')
+          )
+          assert.ok(index >= 2)
+          mutate(steps, index)
+        }
+      )
+      const result = validatePublicPlaywrightWorkflow(root)
+      assert.equal(result.ok, false, `${job}/${name}`)
+      assert.ok(
+        result.issues.some((issue) =>
+          issue.includes('reserved immutable trusted checkout')
+        ),
+        `${job}/${name}: ${result.issues.join('\n')}`
+      )
+    }
+  }
+})
+
+test('all public checkout locations reject mutable refs and persisted credentials independently', (t) => {
+  for (const file of [
+    '.github/workflows/public-pr-playwright-shards.yml',
+    '.github/actions/playwright-build/action.yml',
+    '.github/actions/playwright-shard/action.yml',
+  ]) {
+    for (const mode of ['mutable', 'persisted', 'both']) {
+      const root = copyPolicyFixture(t, 'public-playwright-checkout-')
+      mutatePolicyFixture(root, file, (parsed) => {
+        const steps = parsed.jobs
+          ? parsed.jobs['build-and-compile-hosted'].steps
+          : parsed.runs.steps
+        const checkout = steps.find((step) =>
+          step.uses?.startsWith('actions/checkout@')
+        )
+        assert.ok(checkout)
+        if (mode !== 'persisted') checkout.uses = 'actions/checkout@v4'
+        if (mode !== 'mutable') delete checkout.with['persist-credentials']
+      })
+      const result = validatePublicPlaywrightWorkflow(root)
+      assert.equal(result.ok, false, `${file}/${mode}`)
+      if (mode !== 'persisted') {
+        assert.ok(
+          result.issues.some((issue) =>
+            issue.includes('pinned to a full commit SHA')
+          ),
+          `${file}/${mode}: ${result.issues.join('\n')}`
+        )
+      }
+      if (mode !== 'mutable') {
+        assert.ok(
+          result.issues.some((issue) =>
+            issue.includes('persist-credentials: false')
+          ),
+          `${file}/${mode}: ${result.issues.join('\n')}`
+        )
+      }
+    }
+  }
+})
+
+test('every trusted checkout materializes the complete shared fingerprint boundary', (t) => {
+  const expectedSparse = `${CONTROL_SPARSE_PATHS.join('\n')}\n`
+  const sourcePath = path.join(
+    __dirname,
+    '../workflows/public-pr-playwright-shards.yml'
+  )
+  const source = YAML.parse(fs.readFileSync(sourcePath, 'utf8'))
+  const targets = []
+  for (const [name, job] of Object.entries(source.jobs)) {
+    for (const [index, step] of job.steps.entries()) {
+      if (step.with?.repository !== '${{ job.workflow_repository }}') continue
+      assert.equal(step.with['sparse-checkout'], expectedSparse)
+      targets.push({
+        file: '.github/workflows/public-pr-playwright-shards.yml',
+        name,
+        index,
+      })
+    }
+  }
+  for (const name of ['playwright-build', 'playwright-shard']) {
+    const file = `.github/actions/${name}/action.yml`
+    const action = YAML.parse(
+      fs.readFileSync(path.join(__dirname, '../..', file), 'utf8')
+    )
+    const index = action.runs.steps.findIndex(
+      (step) => step.with?.repository === '${{ job.workflow_repository }}'
+    )
+    assert.notEqual(index, -1)
+    assert.equal(
+      action.runs.steps[index].with['sparse-checkout'],
+      expectedSparse
+    )
+    targets.push({ file, index })
+  }
+  assert.equal(targets.length, 7)
+  for (const target of targets) {
+    const root = copyPolicyFixture(t, 'public-playwright-boundary-')
+    mutatePolicyFixture(root, target.file, (parsed) => {
+      const steps = target.name
+        ? parsed.jobs[target.name].steps
+        : parsed.runs.steps
+      steps[target.index].with['sparse-checkout'] += '/unfingerprinted/\n'
+    })
+    const result = validatePublicPlaywrightWorkflow(root)
+    assert.equal(result.ok, false, `${target.file}/${target.name ?? ''}`)
+    assert.ok(
+      result.issues.some((issue) =>
+        issue.includes('exactly the fingerprinted control boundary')
+      ),
+      result.issues.join('\n')
+    )
+  }
+  for (const mutation of ['cone', 'filter']) {
+    const root = copyPolicyFixture(t, 'public-playwright-boundary-option-')
+    mutatePolicyFixture(
+      root,
+      '.github/actions/playwright-shard/action.yml',
+      (parsed) => {
+        const checkout = parsed.runs.steps.find(
+          (step) => step.with?.path === '.ci-control'
+        )
+        if (mutation === 'cone')
+          checkout.with['sparse-checkout-cone-mode'] = true
+        else checkout.with.filter = 'blob:none'
+      }
+    )
+    const result = validatePublicPlaywrightWorkflow(root)
+    assert.equal(result.ok, false, mutation)
+    assert.ok(
+      result.issues.some((issue) =>
+        issue.includes('exactly the fingerprinted control boundary')
+      )
+    )
+  }
 })

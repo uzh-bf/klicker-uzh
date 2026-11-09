@@ -4,7 +4,9 @@ import {
   existsSync,
   mkdirSync,
   mkdtempSync,
+  readdirSync,
   readFileSync,
+  realpathSync,
   rmSync,
   symlinkSync,
   utimesSync,
@@ -112,6 +114,7 @@ test('local runner options preserve defaults and forward test selectors', () => 
     profile: undefined,
     mode: undefined,
     preserveDatabase: false,
+    ciRuntime: false,
   })
   assert.deepEqual(
     parseLocalOptions([
@@ -125,7 +128,17 @@ test('local runner options preserve defaults and forward test selectors', () => 
       profile: 'chat',
       mode: undefined,
       preserveDatabase: true,
+      ciRuntime: false,
     }
+  )
+  assert.equal(parseLocalOptions(['--ci-runtime', 'x.spec.ts']).ciRuntime, true)
+  assert.throws(
+    () => parseLocalOptions(['tests/example.spec.ts', '--ci-runtime']),
+    /before Playwright arguments/
+  )
+  assert.throws(
+    () => parseLocalOptions(['--show-report', '--ci-runtime']),
+    /cannot select the CI runtime/
   )
   assert.throws(() => parseLocalOptions(['--runtime-profile', '--help']))
   assert.throws(() => parseLocalOptions(['--runtime-profile']))
@@ -270,6 +283,7 @@ function syntheticHostEnvironment({
 
 function createLauncherHarness({
   playwrightCli = true,
+  installedPlaywrightVersion,
   prismaDist = true,
   typesDist = true,
   workspaceIdentity = true,
@@ -283,6 +297,8 @@ function createLauncherHarness({
   const calls = []
   const logs = []
   const writes = []
+  const removals = []
+  const plans = []
   const root = '/synthetic/klicker-uzh'
   const workspaceGitDir = '/synthetic/git/worktrees/launcher'
   const testsRoot = `${root}/playwright/tests`
@@ -315,6 +331,11 @@ function createLauncherHarness({
     if (path.endsWith('/playwright/node_modules/@playwright/test/cli.js')) {
       return playwrightCli
     }
+    if (
+      path.endsWith('/playwright/node_modules/@playwright/test/package.json')
+    ) {
+      return installedPlaywrightVersion !== undefined
+    }
     if (path.endsWith('/packages/prisma/dist/index.js')) return prismaDist
     if (path.endsWith('/packages/types/dist/index.js')) return typesDist
     if (path.endsWith('/devrouter-workspace')) return workspaceIdentity
@@ -328,6 +349,16 @@ function createLauncherHarness({
   }
 
   const readFile = (path) => {
+    if (
+      path.endsWith('/playwright/node_modules/@playwright/test/package.json')
+    ) {
+      return JSON.stringify({ version: installedPlaywrightVersion })
+    }
+    if (path === `${root}/playwright/package.json`) {
+      return JSON.stringify({
+        devDependencies: { '@playwright/test': '~9.8.7' },
+      })
+    }
     if (path.endsWith('/devrouter-workspace')) return 'synthetic-launcher\n'
     if (path === `${root}/playwright/profiles.json`) {
       return JSON.stringify(profileManifest)
@@ -345,6 +376,8 @@ function createLauncherHarness({
     calls,
     logs,
     writes,
+    removals,
+    plans,
     dependencies: {
       resolveDevrouterFn: () => '/synthetic/bin/devrouter',
       commandExistsFn: () => false,
@@ -354,6 +387,12 @@ function createLauncherHarness({
       pathExists,
       readFile,
       writeFile: (path) => writes.push(path),
+      removeFile: (path) => removals.push(path),
+      makeDirectory: () => {},
+      resolveRuntimePlanFn: (options) => {
+        plans.push(options)
+        calls.push({ command: 'resolve-plan', args: [], options })
+      },
       readDirectory: (path) => {
         if (path === testsRoot) return [...specFiles].sort()
         throw new Error(`unexpected synthetic directory: ${path}`)
@@ -363,6 +402,138 @@ function createLauncherHarness({
     },
   }
 }
+
+test('informational requests avoid all preparation in cold and warm environments', () => {
+  for (const installedPlaywrightVersion of [undefined, '9.8.6']) {
+    for (const args of [
+      ['--help'],
+      ['--', '--help'],
+      ['--runtime-profile=chat', '--help'],
+      ['--version'],
+      ['--', '--version'],
+    ]) {
+      const harness = createLauncherHarness({
+        playwrightCli: installedPlaywrightVersion !== undefined,
+        installedPlaywrightVersion,
+        environment: { KLICKER_DEVCONTAINER: '1' },
+      })
+      harness.dependencies.commandExistsFn = () => {
+        assert.fail('informational requests must not probe executables')
+      }
+      harness.dependencies.resolveDevrouterFn = () => {
+        harness.calls.push({ command: 'resolveDevrouter' })
+        assert.fail('informational requests must not resolve Devrouter')
+      }
+      harness.dependencies.makeDirectory = () => {
+        assert.fail('informational requests must not create directories')
+      }
+      runPlaywrightHost(args, harness.dependencies)
+      assert.deepEqual(harness.calls, [])
+      assert.deepEqual(harness.writes, [])
+      assert.deepEqual(harness.removals, [])
+      assert.deepEqual(harness.plans, [])
+      assert.equal(harness.logs.length, 1)
+      if (args.includes('--version')) {
+        assert.ok(
+          harness.logs[0].includes(installedPlaywrightVersion ?? '~9.8.7')
+        )
+      }
+    }
+  }
+})
+
+test('unreadable or incomplete installed metadata falls back without preparation', () => {
+  for (const metadata of [null, '{', '{}', '{"version":""}']) {
+    const harness = createLauncherHarness({
+      installedPlaywrightVersion: '9.8.6',
+    })
+    const readFile = harness.dependencies.readFile
+    harness.dependencies.readFile = (path) => {
+      if (
+        path.endsWith('/playwright/node_modules/@playwright/test/package.json')
+      ) {
+        if (metadata === null)
+          throw new Error('synthetic metadata read failure')
+        return metadata
+      }
+      return readFile(path)
+    }
+    harness.dependencies.commandExistsFn = () => {
+      assert.fail('version fallback must not probe executables')
+    }
+    harness.dependencies.resolveDevrouterFn = () => {
+      harness.calls.push({ command: 'resolveDevrouter' })
+      assert.fail('version fallback must not resolve Devrouter')
+    }
+    harness.dependencies.makeDirectory = () => {
+      assert.fail('version fallback must not create directories')
+    }
+    runPlaywrightHost(['--version'], harness.dependencies)
+    assert.ok(harness.logs[0].includes('~9.8.7'))
+    assert.deepEqual(harness.calls, [])
+    assert.deepEqual(harness.writes, [])
+    assert.deepEqual(harness.removals, [])
+    assert.deepEqual(harness.plans, [])
+  }
+})
+
+test('informational flags used as option values remain test arguments', () => {
+  for (const args of [['--grep', '--help'], ['--grep=--version']]) {
+    const harness = createLauncherHarness()
+    runPlaywrightHost(args, harness.dependencies)
+    assert.deepEqual(
+      pnpmCalls(harness.calls).at(-1).args.slice(-args.length),
+      args
+    )
+    assert.ok(harness.calls.length > 0)
+  }
+  const harness = createLauncherHarness()
+  assert.throws(() =>
+    runPlaywrightHost(['--runtime-profile', '--help'], harness.dependencies)
+  )
+  assert.deepEqual(harness.calls, [])
+})
+
+test('the cold executable exposes information without dependencies or external commands', (t) => {
+  const root = realpathSync(
+    mkdtempSync(join(tmpdir(), 'klicker-host-information-'))
+  )
+  t.after(() => rmSync(root, { recursive: true, force: true }))
+  for (const relative of [
+    'util/run-playwright-host.mjs',
+    'util/devrouter-cli.mjs',
+    'util/playwright-host-policy.mjs',
+    'util/playwright-profile-runtime.mjs',
+    '.github/scripts/get-shard-files.js',
+    'playwright/package.json',
+  ]) {
+    const target = join(root, relative)
+    mkdirSync(dirname(target), { recursive: true })
+    writeFileSync(target, readFileSync(join(repoRoot, relative)))
+  }
+  const before = readdirSync(root, { recursive: true }).sort()
+  for (const args of [
+    ['--help'],
+    ['--version'],
+    ['--', '--help'],
+    ['--', '--version'],
+  ]) {
+    const result = spawnSync(
+      process.execPath,
+      [join(root, 'util/run-playwright-host.mjs'), ...args],
+      {
+        cwd: root,
+        env: { PATH: join(root, 'unavailable'), KLICKER_DEVCONTAINER: '1' },
+        encoding: 'utf8',
+        timeout: 10000,
+      }
+    )
+    assert.equal(result.status, 0, result.stderr)
+    assert.ok(result.stdout.trim())
+    assert.equal(result.stderr, '')
+    assert.deepEqual(readdirSync(root, { recursive: true }).sort(), before)
+  }
+})
 
 test('launcher falls back to the maximal playwright profile and forwards Playwright arguments verbatim', () => {
   const { calls, dependencies } = createLauncherHarness()
@@ -491,6 +662,60 @@ test('explicit profiles reach runtime reconciliation for testing and print-env',
       }
     }
   }
+})
+
+test('the CI runtime writes its plan before reconciliation and targets the baked GrowthBook host', () => {
+  const { calls, dependencies, plans, removals, writes } =
+    createLauncherHarness()
+  runPlaywrightHost(
+    ['--ci-runtime', '--runtime-profile', 'manage', '--', '--project=chromium'],
+    dependencies
+  )
+  const planPath = `${dependencies.root}/.devcontainer/.runtime/playwright-ci-plan.json`
+  assert.deepEqual(plans, [
+    {
+      profile: 'manage',
+      output: planPath,
+      repo: dependencies.root,
+      devrouterBin: '/synthetic/bin/devrouter',
+    },
+  ])
+  assert.ok(
+    calls.findIndex(({ command }) => command === 'resolve-plan') <
+      calls.indexOf(ensureCall(calls))
+  )
+  assert.ok(writes.some((path) => path.endsWith('/playwright-ci-build-id')))
+  assert.deepEqual(removals, [
+    `${dependencies.root}/.devcontainer/.runtime/playwright-dev-test`,
+  ])
+  assert.equal(
+    pnpmCalls(calls).at(-1).options.env.NEXT_PUBLIC_GROWTHBOOK_API_HOST,
+    'https://growthbook.test'
+  )
+})
+
+test('dev runs replace the CI runtime with the dev test servers while print-env keeps the selection', () => {
+  const dev = createLauncherHarness()
+  runPlaywrightHost(['--project=chromium'], dev.dependencies)
+  assert.deepEqual(dev.removals, [
+    `${dev.dependencies.root}/.devcontainer/.runtime/playwright-ci-plan.json`,
+    `${dev.dependencies.root}/.devcontainer/.runtime/playwright-ci-build-id`,
+  ])
+  assert.ok(dev.writes.some((path) => path.endsWith('/playwright-dev-test')))
+  assert.deepEqual(dev.plans, [])
+  assert.equal(
+    pnpmCalls(dev.calls).at(-1).options.env.NEXT_PUBLIC_GROWTHBOOK_API_HOST,
+    'https://manage.klicker.synthetic-launcher.localhost/__growthbook__'
+  )
+
+  const inspect = createLauncherHarness()
+  runPlaywrightHost(['--print-env'], inspect.dependencies)
+  assert.deepEqual(inspect.removals, [])
+  assert.deepEqual(
+    inspect.writes.filter((path) => path.includes('/.runtime/')),
+    []
+  )
+  assert.deepEqual(inspect.plans, [])
 })
 
 test('invalid launcher options have no external effects', () => {
@@ -1182,6 +1407,7 @@ test('cold runs stop before host preparation and reconcile afterward', () => {
   assert.ok(ensure > install)
   assert.deepEqual(harness.writes, [
     '/synthetic/klicker-uzh/node_modules/.playwright-host-filtered-install',
+    '/synthetic/klicker-uzh/.devcontainer/.runtime/playwright-dev-test',
   ])
   assert.equal(
     harness.calls.filter(

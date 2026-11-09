@@ -390,6 +390,9 @@ model AdaptivePracticeQuizAttempt {
   finalStandardError            Float?
   finalLevelId                  Int?
   finalScaleLevelId             Int?
+  /// Engine build that started the attempt (ADAPTIVE_ENGINE_REVISION, the
+  /// Catalyst image tag); null when the host has no revision configured.
+  engineRevision                String?
   elapsedSeconds                Int?
   nextPoolItemId                Int?
   nextAdministrationProbability Float?

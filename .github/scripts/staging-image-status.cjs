@@ -259,7 +259,7 @@ async function paginate(github, endpoint, params) {
   }
 }
 
-async function listRunJobs({ github, context, binding }) {
+async function listRunJobs({ github, context, binding, namespace = '' }) {
   if (typeof github.rest.actions.listJobsForWorkflowRunAttempt !== 'function') {
     throw new Error('workflow jobs are unavailable')
   }
@@ -274,6 +274,15 @@ async function listRunJobs({ github, context, binding }) {
     }
   )
   if (jobs === null) throw new Error('the workflow job list is truncated')
+  if (namespace) {
+    if (namespace !== 'priority-execution / ')
+      throw new Error('unknown image execution namespace')
+    return jobs
+      .filter(
+        (job) => typeof job.name === 'string' && job.name.startsWith(namespace)
+      )
+      .map((job) => ({ ...job, name: job.name.slice(namespace.length) }))
+  }
   return jobs
 }
 
@@ -314,7 +323,12 @@ async function evaluateStagingImageStatus({
   for (let attempt = 1; attempt <= Math.max(1, maxAttempts); attempt += 1) {
     attemptCount = attempt
     try {
-      const jobs = await listRunJobs({ github, context, binding })
+      const jobs = await listRunJobs({
+        github,
+        context,
+        binding,
+        namespace: env.PRIORITY_JOB_NAMESPACE ?? '',
+      })
       decision = determineStagingDecision({ binding, observedJobs: jobs, plan })
     } catch (error) {
       apiFailureCount += 1

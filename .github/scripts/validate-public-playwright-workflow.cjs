@@ -2,9 +2,39 @@ const fs = require('node:fs')
 const path = require('node:path')
 const { isDeepStrictEqual } = require('node:util')
 const YAML = require('yaml')
+const { CONTROL_SPARSE_PATHS } = require('./ci-verified-reuse.cjs')
 
+const CONTROL_SPARSE_CHECKOUT = `${CONTROL_SPARSE_PATHS.join('\n')}\n`
+
+const PRIORITY_REQUEST =
+  "vars.PRIORITY_CI_ENABLED == 'true' && github.event_name == 'pull_request' && github.event.pull_request.state == 'open' && github.event.pull_request.draft == false && github.event.repository.private == false && github.event.pull_request.head.repo.full_name == github.repository && !endsWith(github.event.pull_request.user.login, '[bot]') && contains(github.event.pull_request.labels.*.name, 'ci:priority') && (github.event.action != 'labeled' || github.event.label.name == 'ci:priority')"
+const PRIORITY_MARKER =
+  "format('priority:{0}:{1}:{2}', github.event.pull_request.number, github.event.pull_request.head.sha, github.event.pull_request.base.sha)"
+const PRIORITY_RUN_NAME =
+  '${{ ' +
+  PRIORITY_REQUEST +
+  ' && ' +
+  PRIORITY_MARKER +
+  " || format('ordinary:{0}', github.run_id) }}"
+const PRIORITY_STATUS_NAME =
+  "${{ (github.event.action != 'labeled' || needs.test-playwright-execution.outputs.priority_label_event == 'true') && 'test-playwright-status' || 'test-playwright-status (priority not admitted)' }}"
+const PRIORITY_OUTER_GROUP =
+  '${{ github.workflow }}-${{ ' +
+  PRIORITY_REQUEST +
+  ' && ' +
+  PRIORITY_MARKER +
+  " || format('ordinary:{0}', github.run_id) }}"
 const EXECUTION_GROUP =
-  '${{ github.workflow }}-playwright-${{ github.event.pull_request.number || github.ref }}'
+  "${{ github.event.action == 'labeled' && format('ignored:{0}', github.run_id) || (" +
+  PRIORITY_REQUEST +
+  ') && ' +
+  PRIORITY_MARKER +
+  " || format('{0}-playwright-{1}', github.workflow, github.event.pull_request.number || github.ref) }}"
+const EXECUTION_CANCEL =
+  "${{ github.event.action != 'ready_for_review' && github.event.action != 'labeled' && !(" +
+  PRIORITY_REQUEST +
+  ') }}'
+
 // Lifecycle events on a merged or closed pull request must launch neither
 // execution nor reporting; the open-state guard subsumes the closed action.
 const OPEN_EVENT =
@@ -34,19 +64,25 @@ function validateCallerLifecycle(caller) {
   const close = jobs['cancel-closed-pr']
   if (
     caller?.name !== 'Klicker automated testing with playwright' ||
+    caller?.['run-name'] !== PRIORITY_RUN_NAME ||
     !caller?.on?.pull_request?.types?.includes('closed') ||
     caller.on.pull_request.types.includes('converted_to_draft') ||
-    caller.concurrency !== undefined
+    caller.concurrency?.group !== PRIORITY_OUTER_GROUP ||
+    caller.concurrency?.['cancel-in-progress'] !== false
   ) {
     issues.push(
-      'caller must preserve workflow identity, handle closed PRs, and omit draft-conversion triggers and workflow concurrency'
+      'caller must preserve workflow identity, handle closed PRs, and omit draft-conversion triggers and serialize exact priority requests'
     )
   }
   for (const [name, job] of Object.entries(jobs)) {
     if (['test-playwright-execution', 'cancel-closed-pr'].includes(name)) {
       if (
-        job.concurrency?.group !== EXECUTION_GROUP ||
-        job.concurrency?.['cancel-in-progress'] !== true
+        job.concurrency?.group !==
+          (name === 'cancel-closed-pr'
+            ? '${{ github.workflow }}-playwright-${{ github.event.pull_request.number || github.ref }}'
+            : EXECUTION_GROUP) ||
+        job.concurrency?.['cancel-in-progress'] !==
+          (name === 'test-playwright-execution' ? EXECUTION_CANCEL : true)
       ) {
         issues.push(`${name} must use the exact PR execution concurrency group`)
       }
@@ -61,6 +97,16 @@ function validateCallerLifecycle(caller) {
   const statusEnv = status?.steps?.find(
     (step) => step.name === 'Check result'
   )?.env
+  if (
+    status?.name !== PRIORITY_STATUS_NAME ||
+    statusEnv?.IS_LABEL_EVENT !== "${{ github.event.action == 'labeled' }}" ||
+    statusEnv?.PRIORITY_LABEL_EVENT !==
+      '${{ needs.test-playwright-execution.outputs.priority_label_event }}'
+  ) {
+    issues.push(
+      'status must preserve the denied label-only name and admission inputs'
+    )
+  }
   if (
     statusEnv?.PROVIDER !==
       `\${{ needs.test-playwright-execution.outputs.provider }}` ||
@@ -137,9 +183,9 @@ function validateCallerLifecycle(caller) {
 const EXPECTED_CALL =
   'uses: uzh-bf/klicker-uzh/.github/workflows/public-pr-playwright-shards.yml@v3'
 const EXPECTED_BUILD_ACTION =
-  'uses: uzh-bf/klicker-uzh/.github/actions/playwright-build@refs/heads/v3'
+  'uses: ./.ci-action/.github/actions/playwright-build'
 const EXPECTED_SHARD_ACTION =
-  'uses: uzh-bf/klicker-uzh/.github/actions/playwright-shard@refs/heads/v3'
+  'uses: ./.ci-action/.github/actions/playwright-shard'
 // The build artifact must cover every workspace package, not a hand-maintained
 // list that silently drops a package with its own build output (for example
 // packages/audit/dist). The wildcard keeps full coverage as packages are added.
@@ -222,6 +268,16 @@ function validatePublicRunnerRoles(workflow) {
     }
   }
   if (
+    jobs.prepare?.outputs?.priority_label_event !==
+      '${{ steps.priority.outputs.run_label_event }}' ||
+    workflow?.on?.workflow_call?.outputs?.priority_label_event?.value !==
+      '${{ jobs.prepare.outputs.priority_label_event }}'
+  ) {
+    issues.push(
+      'reusable workflow must expose exact priority label admission to its reporter'
+    )
+  }
+  if (
     Object.keys(workflow?.env ?? {}).length !== 1 ||
     workflow?.env?.PLAYWRIGHT_CACHE_ENABLED !==
       `\${{ github.event_name != 'pull_request' || vars.PUBLIC_PR_PLAYWRIGHT_CACHE_ENABLED == 'true' || vars.PUBLIC_PR_PLAYWRIGHT_CACHE_CANARY_PR == format('{0}', github.event.pull_request.number) }}` ||
@@ -249,6 +305,12 @@ function validatePublicRunnerRoles(workflow) {
     FORCE_HOSTED_CANARY_PR: `\${{ vars.PUBLIC_PR_ARM64_PLAYWRIGHT_FORCE_HOSTED_CANARY_PR }}`,
     ROUTE_HINT: `\${{ inputs.route_hint }}`,
     WARPBUILD_ADMISSIONS: `\${{ vars.PUBLIC_PR_PLAYWRIGHT_WARPBUILD_ADMISSIONS }}`,
+    PR_ACTION: '${{ github.event.action }}',
+    PRIORITY_REQUESTED: '${{ ' + PRIORITY_REQUEST + ' }}',
+    PRIORITY_ADMITTED: '${{ steps.priority.outputs.admitted }}',
+    PRIORITY_ATTEMPT: '${{ steps.priority.outputs.run_attempt }}',
+    PRIORITY_LABEL_EVENT: '${{ steps.priority.outputs.run_label_event }}',
+    PRIORITY_JOB_TIMEOUT: '${{ steps.priority.outputs.job_timeout }}',
     HEAD_SHA: `\${{ github.event.pull_request.head.sha }}`,
     BASE_SHA: `\${{ github.event.pull_request.base.sha }}`,
     CONTROL_SHA: `\${{ job.workflow_sha }}`,
@@ -259,16 +321,18 @@ function validatePublicRunnerRoles(workflow) {
   // expressions, action inputs and step order are part of the trusted boundary.
   const expectedSteps = [
     {
-      uses: 'actions/checkout@v4',
+      uses: 'actions/checkout@11d5960a326750d5838078e36cf38b85af677262',
       with: {
         repository: `\${{ job.workflow_repository }}`,
         ref: `\${{ job.workflow_sha }}`,
         path: '.ci-control',
+        'sparse-checkout-cone-mode': false,
+        'sparse-checkout': CONTROL_SPARSE_CHECKOUT,
         'persist-credentials': false,
       },
     },
     {
-      uses: 'actions/checkout@v4',
+      uses: 'actions/checkout@11d5960a326750d5838078e36cf38b85af677262',
       with: {
         repository: `\${{ github.event_name == 'pull_request' && github.event.pull_request.head.repo.full_name || github.repository }}`,
         ref: headSha,
@@ -276,6 +340,11 @@ function validatePublicRunnerRoles(workflow) {
         'fetch-depth': 0,
         'persist-credentials': false,
       },
+    },
+    {
+      id: 'priority',
+      if: PRIORITY_REQUEST,
+      uses: './.ci-control/.github/actions/priority-ci-route',
     },
     {
       id: 'route',
@@ -334,22 +403,26 @@ function validatePublicRunnerRoles(workflow) {
     },
     {
       id: 'equivalent',
-      if: `steps.metadata.outputs.provider != 'warpbuild' && ((github.event_name == 'push' && github.ref != 'refs/heads/v3') || (github.event_name == 'pull_request' && contains(fromJSON('["ready_for_review","edited","reopened"]'), github.event.action)))`,
+      if: `steps.metadata.outputs.provider != 'warpbuild' && ((github.event_name == 'push' && inputs.allow_push_reuse) || (github.event_name == 'pull_request' && contains(fromJSON('["ready_for_review","edited","reopened"]'), github.event.action)))`,
       'continue-on-error': true,
       uses: 'actions/github-script@3a2844b7e9c422d3c10d287c895573f7108da1b3',
       env: {
         CONTROL_SHA: `\${{ job.workflow_sha }}`,
         ALLOW_PUSH_REUSE: `\${{ inputs.allow_push_reuse }}`,
-        STG_SOURCE_BRANCH: `\${{ vars.STG_SOURCE_BRANCH }}`,
+        CI_VERIFIED_REUSE_ENABLED: `\${{ vars.CI_VERIFIED_REUSE_ENABLED }}`,
+        CURRENT_PROVIDER: `\${{ steps.metadata.outputs.provider }}`,
+        PUBLIC_WORKERS: `\${{ vars.PUBLIC_PR_PLAYWRIGHT_WORKERS || '1' }}`,
       },
       with: {
         script: [
           "const fs = require('node:fs')",
-          "await require('./.ci-control/.github/scripts/ci-equivalent-run.cjs').reportEquivalentRun({",
+          "await require('./.ci-control/.github/scripts/ci-verified-reuse.cjs').reportVerifiedRun({",
           "  github, context, core, kind: 'playwright',",
           '  controlSha: process.env.CONTROL_SHA,',
           "  allowPushReuse: process.env.ALLOW_PUSH_REUSE === 'true',",
-          '  stagingSourceBranch: process.env.STG_SOURCE_BRANCH,',
+          "  enabled: process.env.CI_VERIFIED_REUSE_ENABLED === 'true',",
+          '  provider: process.env.CURRENT_PROVIDER,',
+          "  workers: JSON.parse(fs.readFileSync('route.json', 'utf8')).route === 'hosted' ? '1' : process.env.PUBLIC_WORKERS,",
           "  plan: JSON.parse(fs.readFileSync('playwright-execution-plan.json', 'utf8')),",
           "  route: JSON.parse(fs.readFileSync('route.json', 'utf8')).route,",
           '})',
@@ -394,7 +467,7 @@ function validatePublicRunnerRoles(workflow) {
             if: "github.event_name == 'pull_request' && github.event.pull_request.draft == true",
           }
         : {}),
-      uses: 'actions/upload-artifact@v4',
+      uses: 'actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02',
       with: {
         name,
         path: artifactPath,
@@ -486,12 +559,15 @@ function validatePublicPlaywrightWorkflow(root) {
     issues.push('public reusable workflow policy must be valid YAML')
   }
   const seedWorkflow = readWorkflow(root, 'playwright-cache-seed.yml', issues)
-  const publicActions = [
+  const actionSources = [
     readAction(root, 'playwright-build', issues),
     readAction(root, 'playwright-shard', issues),
-  ].join('\n')
+  ]
+  const publicActions = actionSources.join('\n')
   const publicCacheRestoreSteps = namedSteps(publicActions).filter((step) =>
-    step.includes('uses: actions/cache/restore@v4')
+    step.includes(
+      'uses: actions/cache/restore@0057852bfaa89a56745cba8c7296529d2fc39830'
+    )
   )
   const publicCacheContractSteps = namedSteps(publicActions).filter((step) =>
     step.includes('id: cache-contract')
@@ -552,8 +628,16 @@ function validatePublicPlaywrightWorkflow(root) {
   }
 
   const checkoutCount = (
-    `${publicWorkflow}\n${publicActions}`.match(/actions\/checkout@v4/g) ?? []
+    `${publicWorkflow}\n${publicActions}`.match(
+      /actions\/checkout@[a-f0-9]{40}/g
+    ) ?? []
   ).length
+  const totalCheckoutCount = (
+    `${publicWorkflow}\n${publicActions}`.match(/actions\/checkout@/g) ?? []
+  ).length
+  if (checkoutCount !== totalCheckoutCount) {
+    issues.push('every public checkout must be pinned to a full commit SHA')
+  }
   const nonPersistedCheckoutCount = (
     `${publicWorkflow}\n${publicActions}`.match(
       /persist-credentials:\s+false/g
@@ -564,7 +648,8 @@ function validatePublicPlaywrightWorkflow(root) {
   }
 
   const trustedControl = `${publicWorkflow}\n${publicActions}`
-  // The fixed shape has one preparation checkout and one checkout in each trusted action.
+  // Seven trusted checkouts: one preparation checkout, one .ci-action checkout
+  // in each of four execution jobs, and one .ci-control checkout per composite.
   const trustedRepositoryCount = (
     trustedControl.match(/repository: \$\{\{ job\.workflow_repository \}\}/g) ??
     []
@@ -572,22 +657,67 @@ function validatePublicPlaywrightWorkflow(root) {
   const trustedRefCount = (
     trustedControl.match(/ref: \$\{\{ job\.workflow_sha \}\}/g) ?? []
   ).length
-  if (trustedRepositoryCount !== 3 || trustedRefCount !== 3) {
+  if (trustedRepositoryCount !== 7 || trustedRefCount !== 7) {
     issues.push(
       'every trusted control checkout must use the called workflow repository and commit'
     )
+  }
+
+  const checkoutStepGroups = Object.values(publicParsed?.jobs ?? {}).map(
+    (job) => job.steps ?? []
+  )
+  for (const action of actionSources) {
+    try {
+      const parsed = YAML.parse(action)
+      if (!Array.isArray(parsed?.runs?.steps)) {
+        issues.push('public composite actions must have a step list')
+        continue
+      }
+      checkoutStepGroups.push(parsed.runs.steps)
+    } catch {
+      issues.push('public composite actions must be valid YAML')
+    }
+  }
+  for (const steps of checkoutStepGroups) {
+    for (const step of steps) {
+      if (!step.uses?.startsWith('actions/checkout@')) continue
+      if (!/^actions\/checkout@[a-f0-9]{40}$/.test(step.uses)) {
+        issues.push('every public checkout must be pinned to a full commit SHA')
+      }
+      if (step.with?.['persist-credentials'] !== false) {
+        issues.push('every public checkout must set persist-credentials: false')
+      }
+      const input = step.with ?? {}
+      const isTrusted =
+        ['.ci-control', '.ci-action'].includes(input.path) ||
+        input.repository === '${{ job.workflow_repository }}' ||
+        input.ref === '${{ job.workflow_sha }}'
+      if (
+        isTrusted &&
+        (!['.ci-control', '.ci-action'].includes(input.path) ||
+          input.repository !== '${{ job.workflow_repository }}' ||
+          input.ref !== '${{ job.workflow_sha }}' ||
+          input['sparse-checkout-cone-mode'] !== false ||
+          input['sparse-checkout'] !== CONTROL_SPARSE_CHECKOUT ||
+          input.filter !== undefined)
+      ) {
+        issues.push(
+          'every trusted checkout must materialize exactly the fingerprinted control boundary'
+        )
+      }
+    }
   }
 
   issues.push(...validatePublicRunnerRoles(publicParsed))
 
   const buildActionCount = (
     publicWorkflow.match(
-      /uses: uzh-bf\/klicker-uzh\/.github\/actions\/playwright-build@refs\/heads\/v3/g
+      /uses: \.\/\.ci-action\/\.github\/actions\/playwright-build/g
     ) ?? []
   ).length
   const shardActionCount = (
     publicWorkflow.match(
-      /uses: uzh-bf\/klicker-uzh\/.github\/actions\/playwright-shard@refs\/heads\/v3/g
+      /uses: \.\/\.ci-action\/\.github\/actions\/playwright-shard/g
     ) ?? []
   ).length
   if (
@@ -599,6 +729,31 @@ function validatePublicPlaywrightWorkflow(root) {
     issues.push(
       'execution jobs must use the trusted v3 composite actions, not candidate-local actions'
     )
+  }
+
+  for (const job of Object.values(publicParsed?.jobs ?? {})) {
+    for (const [index, step] of (job.steps ?? []).entries()) {
+      if (!step.uses?.startsWith('./.ci-action/')) continue
+      const checkout = job.steps[index - 1]
+      const reserve = job.steps[index - 2]
+      if (
+        checkout?.uses !==
+          'actions/checkout@11d5960a326750d5838078e36cf38b85af677262' ||
+        !isDeepStrictEqual(checkout.with, {
+          repository: '${{ job.workflow_repository }}',
+          ref: '${{ job.workflow_sha }}',
+          path: '.ci-action',
+          'sparse-checkout-cone-mode': false,
+          'sparse-checkout': CONTROL_SPARSE_CHECKOUT,
+          'persist-credentials': false,
+        }) ||
+        reserve?.run !== 'rm -rf -- "$GITHUB_WORKSPACE/.ci-action"'
+      ) {
+        issues.push(
+          'local execution action must immediately follow reserved immutable trusted checkout'
+        )
+      }
+    }
   }
 
   if ((publicWorkflow.match(/concurrency:/g) ?? []).length !== 0) {
@@ -667,6 +822,7 @@ function validatePublicPlaywrightWorkflow(root) {
       contents: 'read',
       actions: 'read',
       'pull-requests': 'read',
+      issues: 'read',
       'id-token': 'write',
     })
   ) {

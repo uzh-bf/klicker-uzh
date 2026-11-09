@@ -13,6 +13,8 @@ export type ThreadSuggestionId =
   | 'compareConcepts'
   | 'startPracticeQuiz'
   | 'practiceWeakSpot'
+  | 'reviewWriting'
+  | 'reviewRevision'
 
 export interface ThreadSuggestion {
   id: ThreadSuggestionId
@@ -22,6 +24,7 @@ const THREAD_SUGGESTIONS_BY_MODE: Record<KnownMode, ThreadSuggestion[]> = {
   tutor: [{ id: 'practiceTopic' }, { id: 'workThroughProblem' }],
   explainer: [{ id: 'explainConcept' }, { id: 'compareConcepts' }],
   quizzer: [{ id: 'startPracticeQuiz' }, { id: 'practiceWeakSpot' }],
+  'writing-coach': [{ id: 'reviewWriting' }, { id: 'reviewRevision' }],
 }
 
 export function getThreadSuggestions(mode: string): ThreadSuggestion[] {

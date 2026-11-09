@@ -290,6 +290,11 @@ chat:
     audience: ''
     keyId: ''
 
+  responseExampleReceipt:
+    issuer: ''
+    audience: ''
+    keyId: ''
+
   image:
     repository: ghcr.io/uzh-bf/klicker-uzh/chat
     pullPolicy: Always
@@ -521,6 +526,30 @@ frontendPWA:
     minReplicas: 3
     maxReplicas: 10
     targetCPUUtilizationPercentage: 70
+
+  # Optional HPA-scaled PWA tier on spot nodes, added next to the static
+  # baseline replicas. It requires the baseline HPA to stay disabled and ignores
+  # the nodeSelector, affinity and tolerations below.
+  burst:
+    enabled: false
+    minReplicas: 1
+    maxReplicas: 4
+    targetCPUUtilizationPercentage: 70
+    # Merged over frontendPWA.resources for burst pods only. A request near
+    # the CPU a pod uses under load makes the HPA target meaningful and
+    # reserves that CPU on the spot node.
+    resources:
+      requests:
+        cpu: 150m
+    # Kept below the roughly 30-second spot eviction notice.
+    terminationGracePeriodSeconds: 25
+    # Burst pod spread. Empty renders no field.
+    topologySpreadConstraints: []
+
+  # Optional delay before SIGTERM on both PWA tiers, so Service endpoints drop a
+  # terminating pod before the server stops. It counts against the termination
+  # grace period. Unset renders no preStop hook.
+  preStopSleepSeconds: null
 
   nodeSelector: {}
 

@@ -38,6 +38,7 @@ const attemptSelect = (reviewerId: string) =>
     startedAt: true,
     completedAt: true,
     elapsedSeconds: true,
+    engineRevision: true,
     estimates: {
       select: {
         nodeKind: true,
