@@ -8,6 +8,7 @@ All notable changes to this project will be documented in this file. See [standa
 ### Bug Fixes
 
 * **chat:** show remaining credits as a percentage in every view ([#6819](https://github.com/uzh-bf/klicker-uzh/issues/6819)) ([bca850b](https://github.com/uzh-bf/klicker-uzh/commit/bca850b0f8a86a757a5c38f56e22754ced41c77b))
+* **ci:** find the previous staging image behind imageless stg-release commits ([#6850](https://github.com/uzh-bf/klicker-uzh/issues/6850)) ([4a209da](https://github.com/uzh-bf/klicker-uzh/commit/4a209da8b9791ff0bbb36c5943be2ed77b9b9a2e))
 * **ci:** pin the staging image executor to its squash commit ([#6833](https://github.com/uzh-bf/klicker-uzh/issues/6833)) ([f10d2b7](https://github.com/uzh-bf/klicker-uzh/commit/f10d2b778b42eae2bc315fe6035f33b1000fe570))
 * **ci:** pin the unit executor to a commit on v3-ai ([#6823](https://github.com/uzh-bf/klicker-uzh/issues/6823)) ([645df09](https://github.com/uzh-bf/klicker-uzh/commit/645df09b3cbf4097c692e8c85465599461c3e6e1))
 * **deploy:** roll staging Deployments instead of recreating them ([#6825](https://github.com/uzh-bf/klicker-uzh/issues/6825)) ([fa84966](https://github.com/uzh-bf/klicker-uzh/commit/fa84966358b98400c1c29c024da7c744cb8908d1))
@@ -39,6 +40,11 @@ All notable changes to this project will be documented in this file. See [standa
 * **generation:** keep partial delivery caller checks focused ([eab2708](https://github.com/uzh-bf/klicker-uzh/commit/eab2708f927839669bfb5265771769eeed032698))
 * **generation:** qualify partial delivery with guarded SQL ([60fcc89](https://github.com/uzh-bf/klicker-uzh/commit/60fcc89b3742045c90db0d00367d720ca1541024))
 * **generation:** use the canonical graph fixture artifact ([1daf194](https://github.com/uzh-bf/klicker-uzh/commit/1daf1944c94db6a3c675d4c0474e6e7a018bf995))
+
+
+### Build and CI
+
+* pin the staging image executor to the merged fallback fix ([#6851](https://github.com/uzh-bf/klicker-uzh/issues/6851)) ([441eacf](https://github.com/uzh-bf/klicker-uzh/commit/441eacfe84c6f56195e29bb1a7c82f63cdf63e67))
 
 ## [3.4.0-alpha.91](https://github.com/uzh-bf/klicker-uzh/compare/v3.4.0-alpha.90...v3.4.0-alpha.91) (2026-11-04)
 
