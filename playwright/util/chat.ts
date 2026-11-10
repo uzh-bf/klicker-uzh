@@ -187,10 +187,15 @@ export async function setParticipantToken(page: Page, participantId: string) {
 
 /** Scoped session for the seeded participant, course and chatbot. */
 export async function mintPwaEmbedSessionToken(participantId: string) {
+  const prisma = await getPrisma()
+  const chatbot = await prisma.chatbot.findUniqueOrThrow({
+    where: { id: CHATBOT_ID },
+    select: { courseId: true },
+  })
   return new jose.SignJWT({
     sub: participantId,
     scope: 'PWA_CHAT_EMBED_SESSION',
-    courseId: COURSE_ID_TEST,
+    courseId: chatbot.courseId,
     chatbotId: CHATBOT_ID,
   })
     .setProtectedHeader({ alg: 'HS256' })
