@@ -119,11 +119,6 @@ describe('Sonar classification contract', () => {
         '.github/scripts/test_update_playwright_timings.py',
         '.github/scripts/test_update_playwright_timings.py',
       ],
-      [
-        'util/test-klicker-eval-integration.py',
-        'util/test-klicker-eval-integration.py',
-      ],
-      ['util/test-klicker-eval-judge.py', 'util/test-klicker-eval-judge.py'],
     ]) {
       assert.ok(
         [...roots].some((root) => file.startsWith(`${root}/`)),

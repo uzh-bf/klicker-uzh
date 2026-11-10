@@ -133,15 +133,13 @@ model key. It is a local regression gate, not evidence that a real upstream
 first turn works in staging.
 
 For the local Klicker target evaluation adapter, run
-
-    bash util/test-klicker-eval-wrapper.sh
-
-before any credentialed run. Start the exact worktree with the developer
+`apps/chat/test/klicker-evaluation-target.test.mjs` here and the launcher's
+`evaluation/tests/test-klicker-eval-wrapper.sh` in `klicker-uzh-catalyst` before any
+credentialed run. Start the exact worktree with the developer
 Foundry values mapped to `UPSTREAM_OPENAI_API_KEY` and
 `UPSTREAM_OPENAI_BASE_URL` by the approved secret manager. The repository
 wrapper does not require a personal operator or fetch secrets itself. Native
-Infisical and CI examples are documented in
-[`evaluation/README.md`](../evaluation/README.md).
+Infisical examples are documented in `klicker-uzh-catalyst`'s `evaluation/README.md`.
 
 The VPN must be active. If the worktree runtime already exists with different
 upstream values, stop that exact checkout and run the command again; ensure

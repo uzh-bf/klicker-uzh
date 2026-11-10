@@ -245,14 +245,11 @@ into other documents.
 
 ### Klicker chatbot evaluation
 
-Run the external evaluation framework from the main repository with:
-
-```bash
-git submodule update --init --checkout evaluation/framework
-pnpm run eval:klicker -- --mode eval --qa-file /path/to/synthetic-qa.json --limit 1
-```
-
-The wrapper's restricted secret mapping, model defaults, runtime requirements,
-and proof boundaries are documented in the
-[evaluation README](../evaluation/README.md). Eval mode judges an existing QA
-artifact; it does not test Klicker's authenticated chat target.
+The evaluation launcher, judge, metrics, ground truth and trajectory runner
+live in the `klicker-uzh-catalyst` repository under `evaluation/` (run
+`pnpm run eval:klicker` there). This repository keeps only the chat-side
+target pieces in `apps/chat/scripts/`: the local evaluation target, the
+trajectory driver, the budget ledger and the spend guard. The catalyst
+launcher loads them from a klicker-uzh checkout set by `KLICKER_REPO_ROOT`.
+Eval mode judges an existing QA artifact; it does not test Klicker's
+authenticated chat target.
