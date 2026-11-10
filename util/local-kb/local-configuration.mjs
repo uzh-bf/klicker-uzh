@@ -247,6 +247,7 @@ export function renderProviderLocalConfiguration(
       },
       ...(bounded
         ? {
+            chunking: { auto_detect: { enabled: false } },
             language_detection: { enabled: false },
             metadata_extraction: { enabled: false },
             context: { enabled: false },

@@ -437,7 +437,11 @@ test('accepts local immutable workload IDs and rejects mutable image tags', () =
 test('guarded upstream binds a distinct local port and bounded retrieval commands', () => {
   const input = {
     ...makeInput('a'),
-    aiUpstream: { kind: 'guarded', port: 18020 },
+    aiUpstream: {
+      kind: 'guarded',
+      port: 18020,
+      chatModels: [{ id: 'synthetic' }],
+    },
   }
   const config = resolveIsolatedConfig(input)
   input.aiUpstream.port = 18021
@@ -457,6 +461,7 @@ test('guarded upstream binds a distinct local port and bounded retrieval command
     }
   }
   for (const upstream of [
+    { kind: 'guarded', port: 18020, chatModels: undefined },
     { kind: 'guarded', port: 18001 },
     { kind: 'guarded', port: 80 },
     { kind: 'guarded', port: '18020' },
@@ -464,7 +469,10 @@ test('guarded upstream binds a distinct local port and bounded retrieval command
     { kind: 'other', port: 18020 },
   ]) {
     assert.throws(() =>
-      resolveIsolatedConfig({ ...input, aiUpstream: upstream })
+      resolveIsolatedConfig({
+        ...input,
+        aiUpstream: { chatModels: input.aiUpstream.chatModels, ...upstream },
+      })
     )
   }
 })

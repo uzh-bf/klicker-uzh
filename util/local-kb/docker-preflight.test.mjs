@@ -82,7 +82,11 @@ test('AI credentials reach only the explicit managed startup environment', async
 })
 
 test('guarded startup accepts only its bound host port and cannot forward credentials to stop', async () => {
-  const upstream = { kind: 'guarded', port: 18020 }
+  const upstream = {
+    kind: 'guarded',
+    port: 18020,
+    chatModels: [{ id: 'synthetic' }],
+  }
   const environment = {
     UPSTREAM_OPENAI_API_KEY: 'synthetic-guard-key',
     UPSTREAM_OPENAI_BASE_URL: 'http://host.docker.internal:18020/v1',

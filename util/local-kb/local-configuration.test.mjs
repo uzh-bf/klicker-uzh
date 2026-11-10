@@ -352,6 +352,7 @@ test('bounded qualification disables extra inference and limits each resource em
   })
   for (const name of ['language_detection', 'metadata_extraction', 'context'])
     assert.equal(bounded.project[name].enabled, false)
+  assert.equal(bounded.project.chunking.auto_detect.enabled, false)
   assert.equal(bounded.project.cleaning.cleanup, 'none')
   assert.equal(
     bounded.retrievalEnvironment

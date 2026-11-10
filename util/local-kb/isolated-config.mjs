@@ -401,24 +401,14 @@ export function localAiBaseUrl(aiUpstream) {
   if (aiUpstream === undefined) return undefined
   if (aiUpstream === 'openrouter') return 'https://openrouter.ai/api/v1'
   object(aiUpstream, 'aiUpstream')
-  exactKeys(
-    aiUpstream,
-    [
-      'kind',
-      'port',
-      ...(Object.hasOwn(aiUpstream, 'chatModels') ? ['chatModels'] : []),
-    ],
-    'aiUpstream'
+  exactKeys(aiUpstream, ['kind', 'port', 'chatModels'], 'aiUpstream')
+  ensure(
+    Array.isArray(aiUpstream.chatModels) &&
+      aiUpstream.chatModels.length > 0 &&
+      aiUpstream.chatModels.length <= 20 &&
+      JSON.stringify(aiUpstream.chatModels).length <= 65536,
+    'Guarded Chat models must be a bounded registry array.'
   )
-  if (Object.hasOwn(aiUpstream, 'chatModels')) {
-    ensure(
-      Array.isArray(aiUpstream.chatModels) &&
-        aiUpstream.chatModels.length > 0 &&
-        aiUpstream.chatModels.length <= 20 &&
-        JSON.stringify(aiUpstream.chatModels).length <= 65536,
-      'Guarded Chat models must be a bounded registry array.'
-    )
-  }
   ensure(aiUpstream.kind === 'guarded', 'aiUpstream.kind must be guarded.')
   ensure(
     Number.isInteger(aiUpstream.port) &&

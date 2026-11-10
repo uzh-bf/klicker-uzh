@@ -243,11 +243,17 @@ or establish successful retrieval.
 
 ### Guarded qualification
 
-For a bounded synthetic run, `aiUpstream: { "kind": "guarded", "port": 18020 }`
-binds the gateway to a separately operated host guard at
+For a bounded synthetic run, set `aiUpstream.kind` to `guarded`,
+`aiUpstream.port` to the guard port (for example, 18020), and supply the required
+`aiUpstream.chatModels` array in the native Chat model-registry format. Keep the
+required BASE fallback entry and select a fixed, guard-priced model for the run.
+The managed application validates the registry at startup. This binds the gateway
+to a separately operated host guard at
 `http://host.docker.internal:18020/v1`. Inject the guard credential as
 `UPSTREAM_OPENAI_API_KEY` and that exact URL as `UPSTREAM_OPENAI_BASE_URL`.
-The actual upstream credential stays in the guard process. The guard port must
+Chat connects directly to the same guard through its workspace API localhost
+alias, using the existing evaluation-routing checks and runtime-only guard
+credential. The actual upstream credential stays in the guard process. The guard port must
 be distinct from the configured provider ports and retained endpoints. Mode and
 port are part of preparation identity; they cannot be changed on retained state.
 
