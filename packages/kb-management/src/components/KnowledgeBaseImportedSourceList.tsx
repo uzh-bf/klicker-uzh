@@ -21,7 +21,7 @@ import {
   UserNotification,
 } from '@uzh-bf/design-system'
 import { useFormatter, useTranslations } from 'next-intl'
-import React, { useEffect, useState } from 'react'
+import React, { useCallback, useEffect, useState } from 'react'
 
 const PAGE_SIZE = 20
 
@@ -248,6 +248,7 @@ function ImportedSourceTable({
  * Displays the paginated indexed-source inventory for a KB.
  * A nonzero refresh key triggers a refetch after ingestion settles. Failed
  * refreshes or pagination requests report errors while retaining loaded rows.
+ * A failed refresh remains retryable after resource polling has stopped.
  */
 function KnowledgeBaseImportedSourceList({
   kbId,
@@ -258,6 +259,7 @@ function KnowledgeBaseImportedSourceList({
 }>) {
   const t = useTranslations()
   const [loadMoreFailed, setLoadMoreFailed] = useState(false)
+  const [refreshFailed, setRefreshFailed] = useState(false)
   const { data, loading, error, fetchMore, networkStatus, refetch } = useQuery(
     GetKbImportedSourcesDocument,
     {
@@ -268,14 +270,24 @@ function KnowledgeBaseImportedSourceList({
   const connection = data?.getKbImportedSources
   const sources = connection?.items ?? []
   const loadingMore = networkStatus === NetworkStatus.fetchMore
+  const refreshing = networkStatus === NetworkStatus.refetch
+
+  /** Refetches the inventory, keeping failed attempts visible and retryable. */
+  const refreshSources = useCallback(async () => {
+    try {
+      await refetch()
+      setRefreshFailed(false)
+    } catch (refreshError) {
+      console.error('Failed to refresh indexed KB sources', refreshError)
+      setRefreshFailed(true)
+      toast({ type: 'error', message: t('kb.importedSourcesLoadError') })
+    }
+  }, [refetch, t])
 
   useEffect(() => {
     if (refreshKey === 0) return
-    void refetch().catch((refreshError) => {
-      console.error('Failed to refresh indexed KB sources', refreshError)
-      toast({ type: 'error', message: t('kb.importedSourcesLoadError') })
-    })
-  }, [refetch, refreshKey, t])
+    void refreshSources()
+  }, [refreshSources, refreshKey])
 
   const loadMore = async () => {
     if (!connection?.pageInfo.hasNextPage || loadingMore) return
@@ -376,6 +388,25 @@ function KnowledgeBaseImportedSourceList({
           message={t('kb.importedSourcesIncomplete')}
           data={{ cy: 'kb-imported-sources-incomplete' }}
         />
+      ) : null}
+      {refreshFailed ? (
+        <div
+          className="mt-3 rounded-md border border-red-200 bg-red-50 p-3 text-sm text-red-950"
+          role="alert"
+          data-cy="kb-imported-sources-refresh-error"
+        >
+          <div className="flex flex-wrap items-center justify-between gap-3">
+            <span>{t('kb.importedSourcesLoadError')}</span>
+            <Button
+              onClick={() => void refreshSources()}
+              loading={refreshing}
+              disabled={loading}
+              data={{ cy: 'retry-imported-sources-refresh' }}
+            >
+              <Button.Label>{t('shared.generic.tryAgain')}</Button.Label>
+            </Button>
+          </div>
+        </div>
       ) : null}
       {renderInventoryBody()}
     </section>

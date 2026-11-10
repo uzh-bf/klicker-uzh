@@ -19,6 +19,11 @@ for (const scenario of [
     const manageUrl = process.env.URL_MANAGE ?? URL_MANAGE
     const kbName = `Settlement regression ${Date.now()}`
     const refreshFails = scenario === 'a visible refresh error'
+    let inventoryUnavailable = refreshFails
+    let releaseInventoryRetry = () => {}
+    const inventoryRetryGate = new Promise<void>((resolve) => {
+      releaseInventoryRetry = resolve
+    })
     const delayedFilter = scenario === 'completion during a filter request'
     const multiplePages = scenario === 'reconciliation of loaded pages'
     let releaseFilter = () => {}
@@ -128,13 +133,13 @@ for (const scenario of [
       }
       if (operation === 'GetKbImportedSources') {
         inventoryRequests += 1
-        if (settled && refreshFails) {
+        if (settled && inventoryUnavailable) {
           await route.fulfill({
-            status: 500,
             json: { errors: [{ message: 'Synthetic refresh failure' }] },
           })
           return
         }
+        if (settled && refreshFails) await inventoryRetryGate
         await route.fulfill({
           json: {
             data: {
@@ -225,10 +230,33 @@ for (const scenario of [
         ).toBeHidden()
       }
       if (refreshFails) {
-        await expect(
-          page.getByText(enMessages.kb.importedSourcesLoadError)
-        ).toBeVisible()
+        const refreshError = page.getByTestId(
+          'kb-imported-sources-refresh-error'
+        )
+        const retry = page.getByTestId('retry-imported-sources-refresh')
+        await expect(refreshError).toContainText(
+          enMessages.kb.importedSourcesLoadError
+        )
         await expect(inventory).toContainText('Previously indexed document')
+        await inventory.screenshot({
+          path: testInfo.outputPath('refresh-failed.png'),
+        })
+        const requestsBeforeRetry = inventoryRequests
+        await retry.click()
+        await expect.poll(() => inventoryRequests).toBe(requestsBeforeRetry + 1)
+        await expect(retry).toBeEnabled()
+        await expect(refreshError).toBeVisible()
+        await expect(inventory).toContainText('Previously indexed document')
+
+        inventoryUnavailable = false
+        await retry.click()
+        await expect(retry).toBeDisabled()
+        await expect(inventory).toContainText('Previously indexed document')
+        releaseInventoryRetry()
+        await expect(inventory).toContainText('Newly indexed document')
+        await expect(inventory).not.toContainText('Previously indexed document')
+        await expect(refreshError).toBeHidden()
+        await expect(retry).toBeHidden()
       } else {
         await expect(inventory).toContainText('Newly indexed document')
         await expect(inventory).not.toContainText('Previously indexed document')
@@ -239,6 +267,7 @@ for (const scenario of [
       })
     } finally {
       releaseFilter()
+      releaseInventoryRetry()
       await page.unroute('**/graphql*')
       await page.goto(`${manageUrl}/resources/knowledgeBases`)
       const row = page.locator('li').filter({ hasText: kbName })
