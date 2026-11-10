@@ -6,6 +6,7 @@
       "specs": [
         "Y-ai-beta-availability.spec.ts",
         "Y-chatbot-kb-setup.spec.ts",
+        "Y-kb-ingestion-settlement.spec.ts",
         "Y-question-generation-failure-gallery.spec.ts",
         "Y-question-generation-review.spec.ts"
       ]
