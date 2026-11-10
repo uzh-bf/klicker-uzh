@@ -1,3 +1,4 @@
+import type { Prisma } from '@klicker-uzh/prisma/client'
 import { type Page } from '@playwright/test'
 import * as jose from 'jose'
 import { randomUUID } from 'node:crypto'
@@ -182,6 +183,20 @@ export async function setParticipantToken(page: Page, participantId: string) {
       secure: url.protocol === 'https:',
     },
   ])
+}
+
+/** Scoped session for the seeded participant, course and chatbot. */
+export async function mintPwaEmbedSessionToken(participantId: string) {
+  return new jose.SignJWT({
+    sub: participantId,
+    scope: 'PWA_CHAT_EMBED_SESSION',
+    courseId: COURSE_ID_TEST,
+    chatbotId: CHATBOT_ID,
+  })
+    .setProtectedHeader({ alg: 'HS256' })
+    .setIssuedAt()
+    .setExpirationTime('2h')
+    .sign(chatSecret())
 }
 
 // ---------------------------------------------------------------------------
@@ -398,10 +413,7 @@ export type SeedMessage = {
         toolCallId: string
         toolName: string
         args?: Record<string, unknown>
-        result?: {
-          content?: Array<{ type: string; text: string }>
-          isError?: boolean
-        }
+        result?: Prisma.InputJsonValue
       }
   >
   parentId?: string | null
