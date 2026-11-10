@@ -321,3 +321,11 @@ Until runtime acceptance is complete, there is no qualified one-command full
 local KB stack in this launcher. The API-only
 helper documented in the [devcontainer guide](../../../.devcontainer/README.md#local-kb-ingestion-and-graph-builder)
 does not fill that gap.
+
+A retained continuation that stopped during processor credential preparation can
+resume with `--resume-processor-executor <original-executor-sha>` only after the
+provider-owned recovery reports prepared and stopped. The consumer verifies the
+original continuation claim and its bootstrap, scraping, ingestion and processor
+receipts, then creates one exclusive continuation child. It does not retry token
+issuance or completed providers. Any unexpected downstream progress or prior
+child attempt requires inspection. Retain all earlier receipts and provider data.

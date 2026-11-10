@@ -2063,7 +2063,7 @@ function continuationRunner(config, root, overrides = {}) {
           join(
             root,
             'setup-continuation',
-            'resume-after-profile',
+            overrides.attemptName ?? 'resume-after-profile',
             'bootstrap-intent.json'
           ),
           'utf8'
@@ -2580,5 +2580,99 @@ test('unavailable Azurite blocks initial and retained staged startup despite hea
       /storage or staged worker registration is unavailable/
     )
     assert.deepEqual(starts, ['scraping', 'ingestion', 'docProcessing'])
+  }
+})
+
+async function recoveredProcessorFixture(overrides = {}) {
+  const f = await retainedContinuationPrefix()
+  await mkdir(f.parent, { mode: 0o700 })
+  for (const [name, value] of Object.entries({
+    'claim.json': {
+      ...f.claim,
+      executor: priorExecutor,
+      context: continuationContext,
+    },
+    'bootstrap-intent.json': { candidate: revision, executor: priorExecutor },
+    'scraping-reconciliation.json': {
+      candidate: revision,
+      executor: priorExecutor,
+      prepared: true,
+    },
+    'ingestion-intent.json': { candidate: revision, executor: priorExecutor },
+    'docProcessing-intent.json': {
+      candidate: revision,
+      executor: priorExecutor,
+    },
+  }))
+    await writeFile(join(f.parent, name), JSON.stringify(value), {
+      mode: 0o600,
+    })
+  await mkdir(join(f.root, 'state/ingestion'), { mode: 0o700 })
+  await writeFile(
+    join(f.root, 'provider-setup/ingestion.json'),
+    JSON.stringify({ setupCompleted: true }),
+    { mode: 0o600 }
+  )
+  const run = continuationRunner(f.config, f.root, {
+    attemptName: 'resume-after-processor',
+    ...overrides,
+  })
+  return {
+    ...f,
+    ...run,
+    options: { ...run.options, resumeProcessorExecutor: priorExecutor },
+  }
+}
+
+test('processor recovery reconciles prepared storage without replaying previous providers', async () => {
+  const f = await recoveredProcessorFixture()
+  const before = await readFile(join(f.parent, 'claim.json'))
+  assert.equal(
+    (await continuePreparation(f.config, revision, nextExecutor, f.options))
+      .prepared,
+    true
+  )
+  assert.deepEqual(f.calls, ['retrieval', 'application'])
+  assert.deepEqual(await readFile(join(f.parent, 'claim.json')), before)
+  await assert.rejects(
+    continuePreparation(f.config, revision, nextExecutor, f.options)
+  )
+  assert.deepEqual(f.calls, ['retrieval', 'application'])
+})
+
+test('processor recovery rejects changed ancestry, progress and interrupted reentry', async () => {
+  for (const change of [
+    'lineage',
+    'receipt',
+    'retrieval',
+    'application',
+    'duplicate',
+    'failure',
+    'mixed',
+  ]) {
+    const f = await recoveredProcessorFixture({
+      setupFailure: change === 'failure',
+    })
+    if (change === 'lineage') f.options.resumeProcessorExecutor = '0'.repeat(40)
+    if (change === 'receipt')
+      await writeFile(join(f.parent, 'ingestion-intent.json'), '{}')
+    if (change === 'retrieval')
+      await mkdir(join(f.root, 'state/retrieval'), { mode: 0o700 })
+    if (change === 'application')
+      await mkdir(join(f.root, 'application-setup'), { mode: 0o700 })
+    if (change === 'duplicate')
+      await mkdir(join(f.parent, 'resume-after-processor'), { mode: 0o700 })
+    if (change === 'mixed') f.options.resumeExecutor = priorExecutor
+    await assert.rejects(
+      continuePreparation(f.config, revision, nextExecutor, f.options),
+      undefined,
+      change
+    )
+    assert.deepEqual(f.calls, change === 'failure' ? ['retrieval'] : [], change)
+    const calls = [...f.calls]
+    await assert.rejects(
+      continuePreparation(f.config, revision, nextExecutor, f.options)
+    )
+    assert.deepEqual(f.calls, calls)
   }
 })

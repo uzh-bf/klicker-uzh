@@ -43,7 +43,8 @@ export async function runLocalManaged(
     (args.length !== 5 ||
       args[0] !== 'ensure' ||
       args[2] !== '--profile' ||
-      args[3] !== LOCAL_KB_MANAGED_PROFILE ||
+      (args[3] !== LOCAL_KB_MANAGED_PROFILE &&
+        !(aiUpstream?.kind === 'guarded' && args[3] === 'local-kb-setup')) ||
       args[4] !== '--json')
   ) {
     throw new Error('Local AI environment is restricted to managed AI startup.')

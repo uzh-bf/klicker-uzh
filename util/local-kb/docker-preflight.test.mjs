@@ -203,3 +203,37 @@ test('shared and malformed volume declarations are rejected before Docker access
     )
   }
 })
+
+test('guarded route-free setup receives only the bound local guard credential', async (t) => {
+  const names = ['UPSTREAM_OPENAI_API_KEY', 'UPSTREAM_OPENAI_BASE_URL']
+  const previous = names.map((name) => process.env[name])
+  t.after(() =>
+    names.forEach((name, i) => {
+      if (previous[i] === undefined) delete process.env[name]
+      else process.env[name] = previous[i]
+    })
+  )
+  process.env.UPSTREAM_OPENAI_API_KEY = 'synthetic-guard-key'
+  process.env.UPSTREAM_OPENAI_BASE_URL = 'http://host.docker.internal:18020/v1'
+  const upstream = {
+    kind: 'guarded',
+    port: 18020,
+    chatModels: [{ id: 'synthetic' }],
+  }
+  let calls = 0
+  await runLocalManaged(
+    ['ensure', '/synthetic/runtime', '--profile', 'local-kb-setup', '--json'],
+    upstream,
+    async (_command, argv, options) => {
+      calls++
+      assert.equal(options.env.OPENAI_API_KEY, 'synthetic-guard-key')
+      assert.equal(
+        options.env.UPSTREAM_OPENAI_BASE_URL,
+        process.env.UPSTREAM_OPENAI_BASE_URL
+      )
+      assert.equal(JSON.stringify(argv).includes('synthetic-guard-key'), false)
+      return { stdout: '{}' }
+    }
+  )
+  assert.equal(calls, 1)
+})

@@ -199,6 +199,27 @@ test('ingestion recovery option accepts one immutable predecessor only', () => {
   }
 })
 
+test('processor recovery option accepts one immutable predecessor only', () => {
+  const input = isolatedConfigInput({ aiUpstream: 'openrouter' })
+  const base = ['--candidate', 'a'.repeat(40), '--executor', 'b'.repeat(40)]
+  const option = ['--resume-processor-executor', 'c'.repeat(40)]
+  const accepted = runConfigPlan(input, 'continue-setup', [...base, ...option])
+  assert.equal(accepted.status, 1)
+  assert.match(accepted.stderr, /^LOCAL_AI_CONFIGURATION_REQUIRED:/)
+  for (const extra of [
+    [...base, ...option, '--resume-executor', 'd'.repeat(40)],
+    [...base, ...option, ...option],
+    [...base, '--resume-processor-executor', 'invalid'],
+    [...base, '__proto__', 'c'.repeat(40)],
+    [...base, 'constructor', 'c'.repeat(40)],
+    [...option, ...base],
+  ]) {
+    const rejected = runConfigPlan(input, 'continue-setup', extra)
+    assert.equal(rejected.status, 1)
+    assert.match(rejected.stderr, /Usage:/)
+  }
+})
+
 test('config plan resolves a full synthetic input and rejects remote endpoints safely', () => {
   const valid = runConfigPlan(isolatedConfigInput())
   assert.equal(valid.error, undefined)

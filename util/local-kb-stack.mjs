@@ -229,6 +229,7 @@ function configPlan(config) {
 const recoveryOptions = {
   '--resume-executor': 'resumeExecutor',
   '--resume-ingestion-executor': 'resumeIngestionExecutor',
+  '--resume-processor-executor': 'resumeProcessorExecutor',
 }
 
 function parseArguments(args) {
@@ -275,7 +276,7 @@ function parseArguments(args) {
     return { command: args[0], configPath: args[2] }
   }
   throw new Error(
-    'Usage: node util/local-kb-stack.mjs <status|plan> [--config <absolute JSON input path>], <setup|start|resume|stop|status> --config <path> --candidate <commit>, or continue-setup --config <path> --candidate <commit> --executor <commit> [--resume-executor <commit> | --resume-ingestion-executor <commit>]'
+    'Usage: node util/local-kb-stack.mjs <status|plan> [--config <absolute JSON input path>], <setup|start|resume|stop|status> --config <path> --candidate <commit>, or continue-setup --config <path> --candidate <commit> --executor <commit> [--resume-executor <commit> | --resume-ingestion-executor <commit> | --resume-processor-executor <commit>]'
   )
 }
 
@@ -288,6 +289,7 @@ if (process.argv[1] === fileURLToPath(import.meta.url)) {
       executorRevision,
       resumeExecutor,
       resumeIngestionExecutor,
+      resumeProcessorExecutor,
     } = parseArguments(process.argv.slice(2))
     if (configPath !== undefined) {
       const config = readConfigPlanInput(configPath)
@@ -300,7 +302,11 @@ if (process.argv[1] === fileURLToPath(import.meta.url)) {
               config,
               candidateRevision,
               executorRevision,
-              { resumeExecutor, resumeIngestionExecutor }
+              {
+                resumeExecutor,
+                resumeIngestionExecutor,
+                resumeProcessorExecutor,
+              }
             )
           )
         )
