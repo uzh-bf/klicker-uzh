@@ -394,7 +394,9 @@ if (process.argv[1] === fileURLToPath(import.meta.url)) {
       }
     }
   } catch (error) {
-    console.error(error.message)
+    console.error(
+      error.code ? `${error.code}: ${error.message}` : error.message
+    )
     process.exitCode = 1
   }
 }

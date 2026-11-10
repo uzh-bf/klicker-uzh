@@ -272,6 +272,7 @@ export function providerCommands(config) {
     revision,
     command,
     bindings: config.bindings,
+    boundedModelCalls: config.aiUpstream?.kind === 'guarded',
     ingestionConfigDir: join(stateDir('ingestion'), 'project-configs'),
     retrievalConfigDir: join(runtimeRoot, 'doc-query-tools'),
   })
@@ -284,6 +285,7 @@ function boundCommands({
   revision,
   command,
   bindings,
+  boundedModelCalls = false,
   ingestionConfigDir,
   retrievalConfigDir,
 }) {
@@ -341,6 +343,9 @@ function boundCommands({
         '--project-configs-source',
         join(runtimeRoot, 'project-configs')
       )
+      if (bindings.images.minio) {
+        args.push('--minio-image', bindings.images.minio)
+      }
       for (const [flag, port] of Object.entries(portFlags)) {
         args.push(`--${flag}`, String(ports.ingestion[port]))
       }
@@ -407,6 +412,14 @@ function boundCommands({
       'OPENAI_BASE_URL',
       'OPENAI_API_KEY',
       'RETRIEVAL_MODEL',
+      ...(boundedModelCalls
+        ? [
+            'RETRIEVAL_MAX_RETRIES',
+            'DOC_QUERY_RESPONSE_MODE',
+            'RERANKER_TYPE',
+            'RETRIEVAL_QUERY_EXPANSION_ENABLED',
+          ]
+        : []),
     ]) {
       args.push('--env', `${name}=KLICKER_LOCAL_RETRIEVAL_${name}`)
     }

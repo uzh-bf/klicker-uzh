@@ -397,6 +397,38 @@ function safeDestination(value, field, projectIdentity, reserved) {
   )
 }
 
+export function localAiBaseUrl(aiUpstream) {
+  if (aiUpstream === undefined) return undefined
+  if (aiUpstream === 'openrouter') return 'https://openrouter.ai/api/v1'
+  object(aiUpstream, 'aiUpstream')
+  exactKeys(
+    aiUpstream,
+    [
+      'kind',
+      'port',
+      ...(Object.hasOwn(aiUpstream, 'chatModels') ? ['chatModels'] : []),
+    ],
+    'aiUpstream'
+  )
+  if (Object.hasOwn(aiUpstream, 'chatModels')) {
+    ensure(
+      Array.isArray(aiUpstream.chatModels) &&
+        aiUpstream.chatModels.length > 0 &&
+        aiUpstream.chatModels.length <= 20 &&
+        JSON.stringify(aiUpstream.chatModels).length <= 65536,
+      'Guarded Chat models must be a bounded registry array.'
+    )
+  }
+  ensure(aiUpstream.kind === 'guarded', 'aiUpstream.kind must be guarded.')
+  ensure(
+    Number.isInteger(aiUpstream.port) &&
+      aiUpstream.port >= 1024 &&
+      aiUpstream.port <= 65535,
+    'aiUpstream.port must be an unprivileged TCP port.'
+  )
+  return `http://host.docker.internal:${aiUpstream.port}/v1`
+}
+
 function validateInput(input) {
   exactKeys(
     input,
@@ -406,7 +438,8 @@ function validateInput(input) {
     'input'
   )
   if (Object.hasOwn(input, 'aiUpstream')) {
-    ensure(input.aiUpstream === 'openrouter', 'aiUpstream must be openrouter.')
+    ensure(input.aiUpstream !== undefined, 'aiUpstream must be explicit.')
+    localAiBaseUrl(input.aiUpstream)
   }
   canonicalPath(input.primaryCheckoutPath, 'primaryCheckoutPath')
   canonicalPath(input.runtimeCheckoutPath, 'runtimeCheckoutPath')
@@ -471,8 +504,14 @@ function validateInput(input) {
     input.projectIdentity,
     input.retainedEndpointOrigins
   )
-  exactKeys(input.images, ['api', 'worker'], 'images')
-  for (const name of ['api', 'worker']) {
+  object(input.images, 'images')
+  const imageNames = [
+    'api',
+    'worker',
+    ...(Object.hasOwn(input.images, 'minio') ? ['minio'] : []),
+  ]
+  exactKeys(input.images, imageNames, 'images')
+  for (const name of imageNames) {
     ensure(
       typeof input.images[name] === 'string' &&
         /^(?:[a-zA-Z0-9][a-zA-Z0-9._:/-]*@)?sha256:[a-f0-9]{64}$/.test(
@@ -482,6 +521,20 @@ function validateInput(input) {
     )
   }
   bindings.images = { ...input.images }
+  if (input.aiUpstream?.kind === 'guarded') {
+    ensure(
+      !Object.values(bindings.ports).some((ports) =>
+        Object.values(ports).includes(input.aiUpstream.port)
+      ),
+      'The model guard must use a separate port.'
+    )
+    ensure(
+      !input.retainedEndpointOrigins.some(
+        (origin) => Number(new URL(origin).port) === input.aiUpstream.port
+      ),
+      'The model guard port is retained by another endpoint.'
+    )
+  }
   const host = bindings.hostBases
   const endpoints = {
     klicker: `${host.backend}/graphql`,
@@ -501,7 +554,9 @@ function validateInput(input) {
   }
   return {
     primaryCheckoutPath: input.primaryCheckoutPath,
-    ...(input.aiUpstream ? { aiUpstream: input.aiUpstream } : {}),
+    ...(input.aiUpstream
+      ? { aiUpstream: structuredClone(input.aiUpstream) }
+      : {}),
     runtimeCheckoutPath: input.runtimeCheckoutPath,
     retainedCheckoutPaths: [...input.retainedCheckoutPaths],
     projectIdentity: input.projectIdentity,
@@ -619,7 +674,9 @@ function buildConfig(normalized) {
 
   return {
     schemaVersion: 'isolated-local-kb.provider-config.v2',
-    ...(normalized.aiUpstream ? { aiUpstream: normalized.aiUpstream } : {}),
+    ...(normalized.aiUpstream
+      ? { aiUpstream: structuredClone(normalized.aiUpstream) }
+      : {}),
     bindings: normalized.bindings,
     model: 'validation-only',
     deployment: {

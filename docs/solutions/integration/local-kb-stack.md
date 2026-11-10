@@ -241,6 +241,30 @@ receipts. Check both initial startup and retained resume without printing the
 sentinel or later real credentials. Unit checks do not qualify that transport
 or establish successful retrieval.
 
+### Guarded qualification
+
+For a bounded synthetic run, `aiUpstream: { "kind": "guarded", "port": 18020 }`
+binds the gateway to a separately operated host guard at
+`http://host.docker.internal:18020/v1`. Inject the guard credential as
+`UPSTREAM_OPENAI_API_KEY` and that exact URL as `UPSTREAM_OPENAI_BASE_URL`.
+The actual upstream credential stays in the guard process. The guard port must
+be distinct from the configured provider ports and retained endpoints. Mode and
+port are part of preparation identity; they cannot be changed on retained state.
+
+This mode limits each resource to one bounded embedding request with at most four
+chunks and 16 KiB input, disables extra ingestion inference, and uses documents-mode
+retrieval without expansion, reranking or SDK retries. A separate, qualified guard
+must enforce aggregate request/spend ceilings and reject repeated upstream attempts;
+these configuration bounds alone do not enforce a total financial budget or disable
+Chat's SDK retries. Verify that all inference reaches that guard before injecting a
+real upstream key. Description generation and optional pixel inspection remain off.
+
+`images.minio` optionally supplies an immutable local image ID or repository digest
+to the ingestion launcher's `--minio-image`. It requires a provider revision supporting
+that flag. The provider retains the selection for start/stop; omitting it preserves
+its existing default. Record the source/package and image identity when qualifying a
+locally built backing image, and keep it distinct from the published container.
+
 ## Provisioning and acceptance
 
 ### Findings from the first completed end-to-end run

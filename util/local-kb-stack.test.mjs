@@ -128,7 +128,7 @@ test('opt-in setup rejects missing injection before provider or preparation acce
   )
   assert.equal(result.status, 1)
   assert.equal(result.stdout, '')
-  assert.match(result.stderr, /runtime-injected OpenRouter/)
+  assert.match(result.stderr, /^LOCAL_AI_CONFIGURATION_REQUIRED:/)
 })
 
 test('continuation requires an immutable executor and rejects missing AI injection before effects', () => {
@@ -147,7 +147,7 @@ test('continuation requires an immutable executor and rejects missing AI injecti
   ])
   assert.equal(result.status, 1)
   assert.equal(result.stdout, '')
-  assert.match(result.stderr, /runtime-injected OpenRouter/)
+  assert.match(result.stderr, /^LOCAL_AI_CONFIGURATION_REQUIRED:/)
 })
 
 test('continue-setup accepts --resume-executor only after the seven explicit arguments', () => {
@@ -165,7 +165,7 @@ test('continue-setup accepts --resume-executor only after the seven explicit arg
   ])
   assert.equal(accepted.status, 1)
   assert.equal(accepted.stdout, '')
-  assert.match(accepted.stderr, /runtime-injected OpenRouter/)
+  assert.match(accepted.stderr, /^LOCAL_AI_CONFIGURATION_REQUIRED:/)
   for (const extra of [
     [...base, 'c'.repeat(40), 'extra'],
     [...base],
@@ -184,7 +184,7 @@ test('ingestion recovery option accepts one immutable predecessor only', () => {
   const option = ['--resume-ingestion-executor', 'c'.repeat(40)]
   const accepted = runConfigPlan(input, 'continue-setup', [...base, ...option])
   assert.equal(accepted.status, 1)
-  assert.match(accepted.stderr, /runtime-injected OpenRouter/)
+  assert.match(accepted.stderr, /^LOCAL_AI_CONFIGURATION_REQUIRED:/)
   for (const extra of [
     [...base, ...option, '--resume-executor', 'd'.repeat(40)],
     [...base, ...option, ...option],

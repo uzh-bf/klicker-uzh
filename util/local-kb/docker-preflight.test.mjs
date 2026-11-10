@@ -75,10 +75,40 @@ test('AI credentials reach only the explicit managed startup environment', async
     assert.throws(
       () =>
         requireLocalAiEnvironment({ aiUpstream: 'openrouter' }, environment),
-      /runtime-injected/
+      { code: 'LOCAL_AI_CONFIGURATION_REQUIRED' }
     )
   }
   assert.deepEqual(requireLocalAiEnvironment({}, process.env), {})
+})
+
+test('guarded startup accepts only its bound host port and cannot forward credentials to stop', async () => {
+  const upstream = { kind: 'guarded', port: 18020 }
+  const environment = {
+    UPSTREAM_OPENAI_API_KEY: 'synthetic-guard-key',
+    UPSTREAM_OPENAI_BASE_URL: 'http://host.docker.internal:18020/v1',
+  }
+  assert.deepEqual(
+    requireLocalAiEnvironment({ aiUpstream: upstream }, environment),
+    { ...environment, OPENAI_API_KEY: environment.UPSTREAM_OPENAI_API_KEY }
+  )
+  for (const url of [
+    'https://openrouter.ai/api/v1',
+    'http://host.docker.internal:18021/v1',
+    'http://remote.example:18020/v1',
+  ]) {
+    assert.throws(() =>
+      requireLocalAiEnvironment(
+        { aiUpstream: upstream },
+        { ...environment, UPSTREAM_OPENAI_BASE_URL: url }
+      )
+    )
+  }
+  await assert.rejects(
+    runLocalManaged(['stop', '/synthetic/runtime'], upstream, () => {
+      throw new Error('must not execute')
+    }),
+    /restricted/
+  )
 })
 
 const compose = {

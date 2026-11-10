@@ -1346,7 +1346,8 @@ export async function prepareLocalConfiguration(config, candidateRevision) {
   )
   const generated = renderProviderLocalConfiguration(
     credentials,
-    config.bindings
+    config.bindings,
+    config.aiUpstream?.kind === 'guarded'
   )
   const { publicKey, privateKey } = generateKeyPairSync('ec', {
     namedCurve: 'prime256v1',
