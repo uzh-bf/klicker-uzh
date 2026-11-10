@@ -1,0 +1,48 @@
+# Discourse image for the Klicker community forum (community.klicker.uzh.ch),
+# built with discourse/launcher v2 `build` and run on Kubernetes.
+#
+# The image holds no secrets or site configuration. Kubernetes supplies the
+# database, Redis, SMTP and hostname settings as environment variables, and
+# MIGRATE_ON_BOOT / PRECOMPILE_ON_BOOT finish setup when the container starts.
+# TLS terminates at the cluster ingress, so the SSL and Let's Encrypt
+# templates are not used. Postgres and Redis run outside this container.
+#
+# Upgrades: bump `version`, `base_image`, the discourse_docker ref in the
+# workflow and the plugin commits together, then rebuild.
+
+base_image: discourse/base:2.0.20260812-0036
+
+templates:
+  - "templates/web.template.yml"
+
+params:
+  version: v2026.4.2
+  db_default_text_search_config: "pg_catalog.english"
+
+env:
+  LC_ALL: en_US.UTF-8
+  LANG: en_US.UTF-8
+  LANGUAGE: en_US.UTF-8
+  EMBER_CLI_PROD_ASSETS: 1
+
+hooks:
+  after_code:
+    - exec:
+        cd: $home/plugins
+        cmd:
+          - git clone https://github.com/discourse/discourse-signatures.git
+          - git -C discourse-signatures checkout 0ea590fb558168e41db4f607d355bf59f451a824
+          - git clone https://github.com/discourse/discourse-matomo-analytics.git
+          - git -C discourse-matomo-analytics checkout 70a0dc83d3ffed0e2d050468ed76a7d90506b0b2
+
+run:
+  # Behind the cluster ingress every request arrives from a pod IP. Trust the
+  # AKS pod range so nginx and Discourse see the client address from
+  # X-Forwarded-For (rate limits, logs, IP-based moderation).
+  - file:
+      path: /etc/nginx/conf.d/outlets/server/real-ip.conf
+      chmod: 644
+      contents: |
+        set_real_ip_from 10.244.0.0/16;
+        real_ip_header X-Forwarded-For;
+        real_ip_recursive on;
