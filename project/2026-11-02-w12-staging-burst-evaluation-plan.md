@@ -521,3 +521,15 @@ out of this file.
   - Probe failures (90% and 92% per tier) are expected: both probed Pods
     were replaced. Recovery: k6 Pod and ConfigMaps deleted; Argo `Synced`
     and `Healthy`.
+- 2026-11-10 Rollout drill after the previous-image fallback (#6850, repin
+  #6851, sync #6853), promotion to `70109011d4`. One k6 run through the
+  ingress at 15 iterations per second, 17:49–18:18 UTC:
+  - The new asset image listed both the new and the previous build ID in
+    `releases/index.txt`.
+  - 0 page failures and 0 asset 404s; Service plateau failure rate 0.00%,
+    p95 20 ms.
+  - One asset request returned 503 at 17:51:24, when the asset Pod rolled.
+    It is a single request under 76,000 and not a missing asset.
+  - P10 passes: no client saw missing assets during a rollout under load.
+  - Probe failures are expected, as both probed Pods were replaced.
+    Recovery: k6 Pod and ConfigMaps deleted; Argo `Synced` and `Healthy`.
