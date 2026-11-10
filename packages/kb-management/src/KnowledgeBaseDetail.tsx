@@ -13,6 +13,11 @@ import KnowledgeBaseResourceList from './components/KnowledgeBaseResourceList'
 import KnowledgeGraphPanel from './components/KnowledgeGraphPanel'
 import { getGraphQLErrorCode } from './graphqlError'
 
+/**
+ * Renders the KB workspace with optional advanced management panels.
+ * Coordinates separate resource and indexed-source refreshes so completing
+ * ingestion updates the inventory without reloading the page.
+ */
 function KnowledgeBaseDetail({
   kbId,
   backLink,

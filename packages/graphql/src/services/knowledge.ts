@@ -180,6 +180,11 @@ export interface KBIngestAllResult {
   queueFailureCount: number
 }
 
+/**
+ * Extracts a normalized resource UUID from an explicit ID or a legacy ingestion
+ * URL on the configured source gateway. Returns null when neither is valid.
+ * The candidate is not proof of ownership: callers must match it within the KB.
+ */
 function getManagedResourceCandidateId(source: KbImportedSourceItem) {
   if (source.externalResourceId && validateUuid(source.externalResourceId)) {
     return source.externalResourceId.toLowerCase()
@@ -204,9 +209,8 @@ function getManagedResourceCandidateId(source: KbImportedSourceItem) {
     }
 
     const pathname = sourceUrl.pathname
-    const match = pathname.match(
-      /^\/api\/ingestion\/resources\/([^/]+)\/versions\/\d+\/?$/
-    )
+    const match =
+      /^\/api\/ingestion\/resources\/([^/]+)\/versions\/\d+\/?$/.exec(pathname)
     if (!match?.[1]) return null
     const resourceId = decodeURIComponent(match[1])
     return validateUuid(resourceId) ? resourceId.toLowerCase() : null
@@ -1175,6 +1179,12 @@ export async function getKbResourcesConnection(
   }
 }
 
+/**
+ * Loads one indexed-source page after checking AI access and KB ownership.
+ * Resolves managed resource IDs within this KB, hides internal blob gateway
+ * URLs, and preserves public website URLs and the inventory's scan metadata.
+ * Inventory and enrichment failures are surfaced as a GraphQL error.
+ */
 export async function getKbImportedSourcesConnection(
   {
     kbId,

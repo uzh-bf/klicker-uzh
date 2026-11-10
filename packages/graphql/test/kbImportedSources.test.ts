@@ -116,6 +116,11 @@ function createDeps(
   }
 }
 
+/**
+ * Builds a synthetic lecturer context with configurable access and MCP stubs.
+ * The resource lookup returns only configured IDs present in the query; tests
+ * assert the KB constraint separately because this stub does not enforce it.
+ */
 function createContext({
   kb = { id: KB_ID, ownerId: OWNER_ID },
   account = { aiFeaturesEnabled: true, betaEnabled: true },

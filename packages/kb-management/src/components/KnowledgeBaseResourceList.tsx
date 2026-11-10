@@ -802,6 +802,12 @@ function ResourceListContent({
   )
 }
 
+/**
+ * Manages resource actions and pagination while polling active ingestion.
+ * Uses the unfiltered active count across filter changes and reconciles all
+ * loaded pages before notifying the parent that ingestion has settled.
+ * Failed reconciliation retains the active state so polling can retry.
+ */
 function KnowledgeBaseResourceList({
   kbId,
   refreshKey,

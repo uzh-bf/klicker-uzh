@@ -244,13 +244,18 @@ function ImportedSourceTable({
   )
 }
 
+/**
+ * Displays the paginated indexed-source inventory for a KB.
+ * A nonzero refresh key triggers a refetch after ingestion settles. Failed
+ * refreshes or pagination requests report errors while retaining loaded rows.
+ */
 function KnowledgeBaseImportedSourceList({
   kbId,
   refreshKey,
-}: {
+}: Readonly<{
   kbId: string
   refreshKey: number
-}) {
+}>) {
   const t = useTranslations()
   const [loadMoreFailed, setLoadMoreFailed] = useState(false)
   const { data, loading, error, fetchMore, networkStatus, refetch } = useQuery(
