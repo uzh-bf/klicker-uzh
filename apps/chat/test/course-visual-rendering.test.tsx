@@ -33,8 +33,13 @@ vi.mock('../src/components/message-sources-context', () => ({
     courseImageSourcesByAssetId: new Map(),
   }),
 }))
-// Keep the real cards and shared viewer; only Next's image adapter needs a
-// stand-in in this Node-only suite. Browser verification exercises zoom/focus.
+// Resolve document downloads synchronously in this server-rendered fixture.
+// The loader has separate tests; keep the real cards and shared image viewer.
+vi.mock('../src/hooks/useCourseImageUrl', () => ({
+  useCourseImageUrl: (src: string) => ({ url: src }),
+}))
+// Next's image adapter needs a stand-in in this Node-only suite.
+// Browser verification exercises zoom/focus.
 vi.mock('next/image', () => ({
   default: ({
     unoptimized: _unoptimized,

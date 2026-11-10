@@ -42,6 +42,23 @@ function sourcesFor(parts: readonly ChatSourcePart[]) {
 }
 
 describe('course image source citation', () => {
+  it('omits conflicting identities within one retrieval, even alongside an unambiguous retrieval', () => {
+    const payload = structuredClone(fixture)
+    const image = figureFrom(payload)
+    const other = structuredClone(payload.sources[0])
+    other.reference = 'https://synthetic.invalid/other.pdf'
+    other.source_url = other.reference
+    payload.sources.push(other)
+    for (const parts of [
+      [docQueryPart(payload)],
+      [docQueryPart(payload), docQueryPart(fixture)],
+    ]) {
+      expect(
+        courseImageSourceMap(sourcesFor(parts), parts).has(image.asset_id)
+      ).toBe(false)
+    }
+  })
+
   it('links the figure to the source card its asset came from', () => {
     const payload = structuredClone(fixture)
     const image = figureFrom(payload)

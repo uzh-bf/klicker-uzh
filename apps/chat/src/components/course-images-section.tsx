@@ -5,6 +5,7 @@ import Image from 'next/image'
 import { useParams } from 'next/navigation'
 import { useTranslations } from 'next-intl'
 import { useState } from 'react'
+import { useCourseImageUrl } from '@/src/hooks/useCourseImageUrl'
 import {
   courseImagePlacements,
   firstCourseImagePlacementIndex,
@@ -64,8 +65,10 @@ export function CourseImageCard({
   src: string
 }>) {
   const t = useTranslations('chat.courseImages')
-  const [failed, setFailed] = useState(false)
+  const [failedUrl, setFailedUrl] = useState<string>()
   const [attempt, setAttempt] = useState(0)
+  const loaded = useCourseImageUrl(src, attempt)
+  const failed = loaded?.failed || (loaded?.url && loaded.url === failedUrl)
   const label = t('source', {
     title: image.title,
     page: image.logical_page_number ?? image.physical_page_number,
@@ -88,16 +91,16 @@ export function CourseImageCard({
             type="button"
             className="mt-2 min-h-11 rounded-md border px-3 focus-visible:outline focus-visible:outline-2"
             onClick={() => {
-              setFailed(false)
+              setFailedUrl(undefined)
               setAttempt((value) => value + 1)
             }}
           >
             {t('retry')}
           </button>
         </div>
-      ) : (
+      ) : loaded?.url ? (
         <CourseImageViewer
-          src={src}
+          src={loaded.url}
           alt={caption || label}
           label={label}
           caption={caption}
@@ -106,15 +109,17 @@ export function CourseImageCard({
         >
           <Image
             key={attempt}
-            src={src}
+            src={loaded.url}
             alt={caption || label}
             width={image.width_px}
             height={image.height_px}
             unoptimized
-            onError={() => setFailed(true)}
+            onError={() => setFailedUrl(loaded.url)}
             className="h-auto w-full object-contain"
           />
         </CourseImageViewer>
+      ) : (
+        <div aria-busy="true" className="min-h-24" />
       )}
       <figcaption className="mt-2 text-xs text-muted-foreground">
         {image.captions?.map((entry) => (
