@@ -16,6 +16,8 @@ The active `deploy/charts/klicker-uzh-v3` chart enables storage through `chat.co
 
 The image GET requires the participant's stored assistant message, current chatbot KB scope, and a READY, non-deleted resource whose requested and active versions equal the selected version. Updating or withdrawing a resource therefore fails closed. Physical pages remain asset locators; captions prefer a verified logical number and fall back to the physical page.
 
+Figure cards fetch image bytes through Chat’s authenticated transport, including the scoped Bearer fallback when embedded browsers block cookies. The card and viewer share a component-owned object URL; navigation, retry and unmount abort pending reads and release the URL. Tokens never appear in image URLs. Citation matching considers every source occurrence before deduplication and omits ambiguous links, including disagreements within a single retrieval. Source parsing is keyed on tool results; streamed answer text updates cited page ranges independently.
+
 Deploy processor, ingestion, query and Chat changes together. Publish the updated processor client before updating ingestion's SDK pin; no local editable SDK paths belong in deployment. Re-ingest existing documents to obtain bound figures and corrected labels. The raw uploaded-PDF job-output path carries references independently of the SDK.
 
 Qualification must cover the actual Blob object layout, the released processor SDK, and lecturer upload through ingestion, retrieval, authorized display, reload, and withdrawal/replacement. Mounted-store fixtures alone do not verify that chain.

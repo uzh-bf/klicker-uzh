@@ -112,7 +112,7 @@ const FINDING_CATEGORIES = new Set([
 const FINDING_SEVERITIES = new Set(['critical', 'high', 'medium', 'low'])
 const DISPOSITION_STATES = new Set(['fixed', 'follow-up', 'rejected'])
 const FINDING_CONTENT_PREFIX_RE =
-  /^Confidence: (\d{1,3})\/100\nAutofix: (mechanical|manual|not-applicable)\nMotivating line: `([^`\r\n]+)`(?:\n|$)/
+  /^Confidence: (\d{1,3})\/100\nAutofix: (mechanical|manual|not-applicable)\nMotivating line: (`+)(?!`)([^\r\n]+?)(?<!`)\3(?!`)(?:\n|$)/
 
 function buildFinalReviewEvidenceDigest(value) {
   return sha256(JSON.stringify(value))
@@ -2037,7 +2037,13 @@ function validateFinding(comment, index) {
   const confidenceMatch = content.match(FINDING_CONTENT_PREFIX_RE)
   const confidence = Number(confidenceMatch?.[1])
   const threshold = severity === 'critical' ? 50 : 75
-  if (!confidenceMatch || confidence < threshold || confidence > 100) {
+  if (
+    !confidenceMatch ||
+    confidence < threshold ||
+    confidence > 100 ||
+    !confidenceMatch[4].trim() ||
+    confidenceMatch[4].includes(confidenceMatch[3])
+  ) {
     throw new Error(`Finding ${index + 1} has an invalid confidence score`)
   }
   if (
@@ -2282,7 +2288,9 @@ function validateOCRResult(result) {
   }
   validateOCRResumeEnvelope(result, coverage, 'Complete OCR result')
 
-  result.comments.forEach((comment, index) => validateFinding(comment, index))
+  result.comments.forEach((comment, index) => {
+    validateFinding(comment, index)
+  })
   return result
 }
 
@@ -2539,7 +2547,9 @@ function planOCRResume(result, maxTokensBudget) {
   if (result.comments.length > 100) {
     throw new Error('Partial OCR result has too many comments')
   }
-  result.comments.forEach((comment, index) => validateFinding(comment, index))
+  result.comments.forEach((comment, index) => {
+    validateFinding(comment, index)
+  })
   if (hasOCRBudgetExhaustion(result, coverage)) {
     throw ocrRejection(
       'budget_exhausted',

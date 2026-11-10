@@ -55,7 +55,6 @@ export function useMessageSources(): MessageSources {
     if (part.type === 'text') {
       const text = part.text ?? ''
       answerText += `${text}\n`
-      fingerprint += `|t${text.length}`
       continue
     }
 
@@ -83,7 +82,6 @@ export function useMessageSources(): MessageSources {
   // Cited pages come from the answer Markdown, not from the retrieval payload:
   // the payload lists the chunks that came back, while only the answer's own
   // markers say which of them it used.
-  // biome-ignore lint/correctness/useExhaustiveDependencies: answer text is intentionally keyed by the message fingerprint.
   const citedPageRanges = useMemo(() => {
     if (!answerText.includes(',')) return EMPTY_CITED_PAGE_RANGES
 
@@ -94,9 +92,7 @@ export function useMessageSources(): MessageSources {
     }
 
     return ranges.size > 0 ? ranges : EMPTY_CITED_PAGE_RANGES
-    // Keyed on the fingerprint like `sources` above, for the same reason.
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [fingerprint])
+  }, [answerText])
 
   // biome-ignore lint/correctness/useExhaustiveDependencies: parts are intentionally keyed by the same stable fingerprint as sources.
   const courseImageSourcesByAssetId = useMemo(

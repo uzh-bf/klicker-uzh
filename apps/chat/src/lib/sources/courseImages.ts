@@ -156,13 +156,11 @@ function sourceIdentity(
   return normalized ? normalized.id : undefined
 }
 
-export function courseImageCandidatesWithSource(
-  raw: unknown
-): CourseImageCandidate[] {
+function courseImageCandidateOccurrences(raw: unknown): CourseImageCandidate[] {
   if (record(raw)?.isError) return []
   const payload = parseDocQueryPayload(raw)
   if (payload?.mode !== 'documents' || 'error' in payload) return []
-  const found = new Map<string, CourseImageCandidate>()
+  const found = new Map<string, CourseImageCandidate[]>()
   for (const rawSource of (Array.isArray(payload.sources)
     ? payload.sources
     : []
@@ -214,12 +212,29 @@ export function courseImageCandidatesWithSource(
           image.physical_page_number > end
         )
           continue
-        if (found.size < COURSE_IMAGE_LIMITS.candidates)
-          found.set(image.asset_id, { image, sourceId })
+        const occurrences = found.get(image.asset_id)
+        if (occurrences) occurrences.push({ image, sourceId })
+        else if (found.size < COURSE_IMAGE_LIMITS.candidates)
+          found.set(image.asset_id, [{ image, sourceId }])
       }
     }
   }
-  return [...found.values()]
+  return [...found.values()].flat()
+}
+
+export function courseImageCandidatesWithSource(
+  raw: unknown
+): CourseImageCandidate[] {
+  // Selection still receives one candidate per asset. Citation matching below
+  // must inspect all occurrences before this deduplication loses identities.
+  return [
+    ...new Map(
+      courseImageCandidateOccurrences(raw).map((candidate) => [
+        candidate.image.asset_id,
+        candidate,
+      ])
+    ).values(),
+  ]
 }
 
 export function courseImageCandidates(raw: unknown): CourseImage[] {
@@ -282,7 +297,7 @@ export function courseImageSourceMap(
     if (typeof part.toolName !== 'string' || !isCourseSearchTool(part.toolName))
       continue
 
-    for (const candidate of courseImageCandidatesWithSource(part.result)) {
+    for (const candidate of courseImageCandidateOccurrences(part.result)) {
       if (!candidate.sourceId) continue
       const identities = identitiesByAssetId.get(candidate.image.asset_id)
       if (identities) {
