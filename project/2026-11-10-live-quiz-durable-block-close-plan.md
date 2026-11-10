@@ -130,3 +130,8 @@
   Docker's network address pools were exhausted, so the typecheck and unit
   tests run in CI, and the local restart and registration-order checks are
   still open.
+- 2026-11-10 Draft PR #6862 opened. The independent implementation review
+  found one high issue: the graphql integration test helper's task map lacked
+  the new task, which would fail the typecheck. Fixed in `7838dd35a0`. The
+  local restart and registration-order checks stay open until the local
+  Docker network pools are freed.
