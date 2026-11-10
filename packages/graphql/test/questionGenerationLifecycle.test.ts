@@ -2431,6 +2431,28 @@ describe('native question budget build lifetime', () => {
   })
 
   it.each([
+    DB.ElementGenerationBuildStatus.COMPLETED,
+    DB.ElementGenerationBuildStatus.INCOMPLETE,
+    DB.ElementGenerationBuildStatus.REJECTED,
+    DB.ElementGenerationBuildStatus.FAILED,
+  ])('keeps settled %s builds readable after output configuration changes', async (status) => {
+    const h = harness()
+    h.current.status = status
+    h.runtime.questionOutputContainer = 'rotated-results'
+    h.runtime.questionOutputPrefix = 'rotated-prefix'
+    await expect(
+      getQuestionGenerationBuild(h.current.id, h.ctx as never)
+    ).resolves.toBe(h.current)
+    await expect(
+      startQuestionGeneration(input as never, h.ctx as never)
+    ).resolves.toBe(h.current)
+    expect(createElementGenerationBuildWithSpend).not.toHaveBeenCalled()
+    expect(reserveElementGenerationRetrySpend).not.toHaveBeenCalled()
+    expect(h.runtime.uploadCreateOnly).not.toHaveBeenCalled()
+    expect(h.runtime.start).not.toHaveBeenCalled()
+  })
+
+  it.each([
     null,
     {},
     { mode: 'budgeted' },

@@ -333,7 +333,7 @@ async function findOwnedBuild(buildId: string, ctx: ContextWithUser) {
     )
   }
   nativeBudgetMetadata(build.configuration)
-  if (ctx.elementGenerationRuntime)
+  if (ctx.elementGenerationRuntime && !TERMINAL_STATUSES.has(build.status))
     questionBuildOutput(build, ctx.elementGenerationRuntime)
   return build
 }
@@ -601,7 +601,9 @@ export async function startQuestionGeneration(
     include: buildInclude,
   })
   if (existing) {
-    questionBuildOutput(existing, runtime)
+    nativeBudgetMetadata(existing.configuration)
+    if (!TERMINAL_STATUSES.has(existing.status))
+      questionBuildOutput(existing, runtime)
     assertMatchingIdempotentBuild(existing, {
       configurationHash: normalized.configurationHash,
       graphBuildId: graph.id,
@@ -667,6 +669,7 @@ export async function retryQuestionGeneration(
   const runtime = requireRuntime(ctx)
   const build = await findOwnedBuild(buildId, ctx)
   assertElementGenerationCostAccounted(build)
+  questionBuildOutput(build, runtime)
   if (
     build.status !== DB.ElementGenerationBuildStatus.FAILED ||
     build.errorRetryable !== true

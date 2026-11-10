@@ -62,7 +62,16 @@ retry. Missing or corrupt budgeted metadata and destination drift reject further
 dispatch or evidence acceptance. Metadata-absent historical builds retain their
 original manifest normalization; new builds use the current worker defaults.
 The client cannot choose this policy. Changing or removing the server template
-does not rewrite existing builds.
+does not rewrite existing builds. Settled builds remain readable after output
+configuration changes; an explicit retry still checks the bound destination
+before reserving another product spend.
+
+Deployment must pair this application with a worker whose normalized manifest
+includes `question_library_snapshot: null`, even for new unbudgeted builds.
+Control new admission across the paired rollout and rollback, and finish
+historical in-flight builds with their original manifest interpretation before
+changing workers. Omitting the budget setting keeps new builds unbudgeted;
+an empty configured value is invalid.
 
 Product credits remain separate from provider-dollar exposure. The worker's
 existing durable ledger retains settled, pending and unknown usage for the
