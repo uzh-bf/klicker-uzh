@@ -5,7 +5,109 @@ import {
 import {
   normalizeQuestionGenerationConfiguration,
   type QuestionGenerationConfigurationInput,
+  questionNativeBudgetFromEnv,
+  questionNativeBudgetMetadata,
 } from '../src/services/questionGenerationConfiguration.js'
+
+describe('server-owned native question budget', () => {
+  const policy = {
+    budget_usd: '+5.00',
+    price_ceilings: {
+      'Azure/sol': { prompt: '0.000012', completion: '0.000025' },
+      'azure/embedding': { prompt: '1e-6', completion: '-0.0' },
+    },
+  }
+
+  it('keeps missing policy unbudgeted and normalizes native defaults without floats', () => {
+    expect(questionNativeBudgetFromEnv({})).toEqual({ mode: 'unbudgeted' })
+    expect(
+      questionNativeBudgetFromEnv({
+        KB_QUESTION_NATIVE_BUDGET_POLICY: JSON.stringify(policy),
+      })
+    ).toEqual({
+      mode: 'budgeted',
+      policy: {
+        schema_version: 1,
+        budget_usd: '5.00',
+        price_ceilings: {
+          'Azure/sol': { prompt: '0.000012', completion: '0.000025' },
+          'azure/embedding': { prompt: '0.000001', completion: '-0.0' },
+        },
+        max_output_tokens: 16000,
+      },
+    })
+  })
+
+  it.each([
+    '',
+    'null',
+    '{}',
+    '{',
+    JSON.stringify({ ...policy, unknown: true }),
+    JSON.stringify({ ...policy, schema_version: 2 }),
+    ...['NaN', 'Infinity', '-1', '0', '1e1001', '1'.repeat(257)].map(
+      (budget_usd) => JSON.stringify({ ...policy, budget_usd })
+    ),
+    JSON.stringify({ ...policy, budget_usd: 5 }),
+    JSON.stringify({ ...policy, price_ceilings: {} }),
+    JSON.stringify({
+      ...policy,
+      price_ceilings: { ' route': { prompt: '0', completion: '0' } },
+    }),
+    JSON.stringify({
+      ...policy,
+      price_ceilings: { route: { prompt: '-1', completion: '0' } },
+    }),
+    JSON.stringify({
+      ...policy,
+      price_ceilings: { route: { prompt: '0', completion: '0', extra: true } },
+    }),
+    ...[0, 128001, 1.5, true].map((max_output_tokens) =>
+      JSON.stringify({ ...policy, max_output_tokens })
+    ),
+  ])('rejects invalid policy %s', (value) => {
+    expect(() =>
+      questionNativeBudgetFromEnv({ KB_QUESTION_NATIVE_BUDGET_POLICY: value })
+    ).toThrowError(expect.objectContaining({ code: 'CONFIGURATION_INVALID' }))
+  })
+
+  it('keeps client fields outside the server policy and request hash', () => {
+    const ordinary = configurationInput()
+    const injected = {
+      ...ordinary,
+      nativeBudget: { mode: 'budgeted', policy },
+      budget_policy: policy,
+    }
+    const expected = normalizeQuestionGenerationConfiguration(
+      ordinary,
+      graphVersion
+    )
+    expect(
+      normalizeQuestionGenerationConfiguration(injected, graphVersion)
+    ).toEqual(expected)
+    expect(expected.configuration).not.toHaveProperty('nativeBudget')
+    expect(expected.configuration).not.toHaveProperty('budget_policy')
+  })
+
+  it('distinguishes genuine legacy rows from incomplete or malformed metadata', () => {
+    expect(questionNativeBudgetMetadata({})).toBeNull()
+    expect(
+      questionNativeBudgetMetadata({ nativeBudget: { mode: 'unbudgeted' } })
+    ).toEqual({ mode: 'unbudgeted' })
+    for (const nativeBudget of [
+      null,
+      {},
+      { mode: 'other' },
+      { mode: 'budgeted' },
+      { mode: 'budgeted', policy: null },
+      { mode: 'unbudgeted', policy },
+    ]) {
+      expect(() => questionNativeBudgetMetadata({ nativeBudget })).toThrowError(
+        expect.objectContaining({ code: 'CONFIGURATION_INVALID' })
+      )
+    }
+  })
+})
 
 const sourceSnapshot: KBGraphSourceSnapshot = [
   {

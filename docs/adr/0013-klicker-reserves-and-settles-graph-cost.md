@@ -45,3 +45,28 @@ attempt. A claim is released only before provider contact or after its recovery
 grace expires and an exact provider lookup proves that no matching run exists.
 Review and publication events are state transitions on the same generation build
 and do not create additional spend.
+
+Question builds may additionally use an optional server-owned native provider
+budget. `KB_QUESTION_NATIVE_BUDGET_POLICY` supplies the existing worker policy:
+version 1, a positive decimal-string USD limit, per-token prompt/completion
+price ceilings keyed by model route, and an output-token ceiling. No default
+USD amount or tariff is supplied. Decimal spelling is bounded to 256 characters
+and an exponent magnitude of 1000; amounts are normalized without binary floats.
+Invalid configured policy rejects new admission before product credits or
+provider contact. Flashcards and historical builds retain their existing path.
+
+Each new question build records an explicit budget mode in its existing
+configuration JSON. A budgeted build freezes its normalized policy and native
+output destination for its lifetime, including idempotent recovery and explicit
+retry. Missing or corrupt budgeted metadata and destination drift reject further
+dispatch or evidence acceptance. Metadata-absent historical builds retain their
+original manifest normalization; new builds use the current worker defaults.
+The client cannot choose this policy. Changing or removing the server template
+does not rewrite existing builds.
+
+Product credits remain separate from provider-dollar exposure. The worker's
+existing durable ledger retains settled, pending and unknown usage for the
+same build and output location; an application retry cannot create a fresh
+budget or ledger. Admission relies on the declared price/reservation assumptions,
+not an upstream wallet or final-invoice guarantee. Enabling a policy, qualifying
+actual routes/prices and running paid generation remain operational decisions.
