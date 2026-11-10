@@ -204,6 +204,27 @@ export function formatCitedPageRanges(
   return ranges.join(', ')
 }
 
+function getVideoSecondaryLine(
+  source: ChatSource,
+  t: Translate,
+  pageLabel?: string
+): string {
+  const timestamp = getSourceTimestamp(source)
+  if (timestamp) {
+    if (
+      source.startSec !== undefined &&
+      source.endSec !== undefined &&
+      source.endSec > source.startSec
+    )
+      return `${timestamp}–${formatTimestamp(source.endSec)}`
+    return timestamp
+  }
+  const label = t('chat.sources.video')
+  if (timestamp === undefined && pageLabel)
+    return `${label} · ${t('chat.sources.page', { page: pageLabel })}`
+  return label
+}
+
 /**
  * The locator line under a source's name, by what that kind of source is
  * actually addressed by: a page for documents, a position for videos, an
@@ -226,24 +247,8 @@ export function getSourceSecondaryLine(
   const parts: string[] = []
   const pageLabel = citedPageRange ?? getSourcePageRange(source)
 
-  if (source.type === 'video') {
-    const timestamp = getSourceTimestamp(source)
-    const end =
-      source.startSec !== undefined &&
-      source.endSec !== undefined &&
-      source.endSec > source.startSec
-        ? formatTimestamp(source.endSec)
-        : undefined
-    parts.push(
-      timestamp
-        ? `${timestamp}${end ? `–${end}` : ''}`
-        : t('chat.sources.video')
-    )
-    if (timestamp === undefined && pageLabel) {
-      parts.push(t('chat.sources.page', { page: pageLabel }))
-    }
-    return parts.join(' · ')
-  }
+  if (source.type === 'video')
+    return getVideoSecondaryLine(source, t, pageLabel)
 
   if (source.type === 'image') {
     parts.push(t('chat.sources.image'))

@@ -45,50 +45,55 @@ function record(value: unknown): Record<string, unknown> | undefined {
     : undefined
 }
 
+function boundedArray(value: unknown, limit: number): unknown[] {
+  return Array.isArray(value) ? value.slice(0, limit) : []
+}
+
+function chunkVideoFrames(rawChunk: unknown, title: string): VideoFrame[] {
+  const chunk = record(rawChunk)
+  const envelope = record(chunk?.video_frames)
+  if (!chunk || envelope?.version !== 1 || !Array.isArray(envelope.assets))
+    return []
+  const frames: VideoFrame[] = []
+  for (const rawAsset of envelope.assets.slice(0, MAX_VIDEO_ASSETS_PER_CHUNK)) {
+    const asset = record(rawAsset)
+    if (!asset) continue
+    const parsed = videoFrameSchema.safeParse({ ...envelope, ...asset, title })
+    if (!parsed.success) {
+      console.warn('[chat] ignoring invalid video frame metadata', {
+        issues: parsed.error.issues.map((issue) => issue.path.join('.')),
+      })
+      continue
+    }
+    frames.push(parsed.data)
+  }
+  return frames
+}
+
+function sourceVideoFrames(rawSource: unknown): VideoFrame[] {
+  const source = record(rawSource)
+  if (!source || String(source.source_type).toLowerCase() !== 'video') return []
+  const title = [source.title, source.display_name, source.file_name]
+    .map((value) => (typeof value === 'string' ? value.trim() : undefined))
+    .find((value) => value !== undefined && value.length > 0)
+  if (!title) return []
+  return boundedArray(source.chunks, MAX_VIDEO_CHUNKS_PER_SOURCE).flatMap(
+    (chunk) => chunkVideoFrames(chunk, title)
+  )
+}
+
 export function videoFrameCandidates(raw: unknown): VideoFrame[] {
   if (record(raw)?.isError) return []
   const payload = parseDocQueryPayload(raw)
   if (payload?.mode !== 'documents' || 'error' in payload) return []
   const found = new Map<string, VideoFrame>()
-  for (const rawSource of (Array.isArray(payload.sources)
-    ? payload.sources
-    : []
-  ).slice(0, MAX_VIDEO_SOURCES_SCANNED)) {
-    const source = record(rawSource)
-    if (!source || String(source.source_type).toLowerCase() !== 'video')
-      continue
-    const title = [source.title, source.display_name, source.file_name]
-      .map((value) => (typeof value === 'string' ? value.trim() : undefined))
-      .find((value) => value !== undefined && value.length > 0)
-    if (!title) continue
-    for (const rawChunk of (Array.isArray(source.chunks)
-      ? source.chunks
-      : []
-    ).slice(0, MAX_VIDEO_CHUNKS_PER_SOURCE)) {
-      const chunk = record(rawChunk)
-      const envelope = record(chunk?.video_frames)
-      if (!chunk || envelope?.version !== 1 || !Array.isArray(envelope.assets))
-        continue
-      for (const rawAsset of envelope.assets.slice(
-        0,
-        MAX_VIDEO_ASSETS_PER_CHUNK
-      )) {
-        const asset = record(rawAsset)
-        if (!asset) continue
-        const parsed = videoFrameSchema.safeParse({
-          ...envelope,
-          ...asset,
-          title,
-        })
-        if (!parsed.success) {
-          console.warn('[chat] ignoring invalid video frame metadata', {
-            issues: parsed.error.issues.map((issue) => issue.path.join('.')),
-          })
-          continue
-        }
-        if (found.size < MAX_VIDEO_FRAME_CANDIDATES)
-          found.set(parsed.data.asset_id, parsed.data)
-      }
+  for (const source of boundedArray(
+    payload.sources,
+    MAX_VIDEO_SOURCES_SCANNED
+  )) {
+    for (const frame of sourceVideoFrames(source)) {
+      if (found.size < MAX_VIDEO_FRAME_CANDIDATES)
+        found.set(frame.asset_id, frame)
     }
   }
   return [...found.values()]

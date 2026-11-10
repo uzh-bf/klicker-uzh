@@ -15,10 +15,10 @@ import { useMessageSourcesContext } from './message-sources-context'
 export function SourcePreviewContent({
   source,
   showNavigationHint = false,
-}: {
+}: Readonly<{
   source: ChatSource
   showNavigationHint?: boolean
-}) {
+}>) {
   const t = useTranslations()
   const { frameSrc } = useSourceMedia(source)
   // Cited pages, when the answer carries them; outside an assistant message
@@ -56,10 +56,10 @@ export function SourcePreviewContent({
 function SourceFramePreview({
   src,
   source,
-}: {
+}: Readonly<{
   src: string
   source: ChatSource
-}) {
+}>) {
   const t = useTranslations('chat.videoFrames')
   const [failed, setFailed] = useState(false)
   const frame = source.videoFrame

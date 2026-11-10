@@ -40,6 +40,37 @@ type CachedManifest = {
 // Separate injected readers cannot share entries, even for the same digest.
 const manifestCaches = new WeakMap<BlobReader, Map<string, CachedManifest>>()
 
+function cacheVerifiedManifest(
+  cache: Map<string, CachedManifest>,
+  key: string,
+  manifest: Manifest,
+  byteLength: number
+) {
+  // Concurrent misses may finish twice; replace without double-counting.
+  cache.delete(key)
+  for (const [entryKey, entry] of cache) {
+    if (entry.expiresAt <= Date.now()) cache.delete(entryKey)
+  }
+  let retainedBytes = [...cache.values()].reduce(
+    (total, entry) => total + entry.bytes,
+    0
+  )
+  while (
+    cache.size >= MAX_CACHED_MANIFESTS ||
+    retainedBytes + byteLength > MAX_CACHED_MANIFEST_BYTES
+  ) {
+    const oldest = cache.entries().next().value
+    if (!oldest) break
+    cache.delete(oldest[0])
+    retainedBytes -= oldest[1].bytes
+  }
+  cache.set(key, {
+    manifest,
+    bytes: byteLength,
+    expiresAt: Date.now() + MANIFEST_CACHE_TTL_MS,
+  })
+}
+
 async function readVerifiedManifest(
   frame: VideoFrame,
   root: string | undefined,
@@ -77,31 +108,7 @@ async function readVerifiedManifest(
     blobReader
   )
   const manifest = manifestSchema.parse(JSON.parse(bytes.toString()))
-  if (cache) {
-    // Concurrent misses may finish twice; replace without double-counting.
-    cache.delete(key)
-    for (const [entryKey, entry] of cache) {
-      if (entry.expiresAt <= Date.now()) cache.delete(entryKey)
-    }
-    let retainedBytes = [...cache.values()].reduce(
-      (total, entry) => total + entry.bytes,
-      0
-    )
-    while (
-      cache.size >= MAX_CACHED_MANIFESTS ||
-      retainedBytes + bytes.length > MAX_CACHED_MANIFEST_BYTES
-    ) {
-      const oldest = cache.entries().next().value
-      if (!oldest) break
-      cache.delete(oldest[0])
-      retainedBytes -= oldest[1].bytes
-    }
-    cache.set(key, {
-      manifest,
-      bytes: bytes.length,
-      expiresAt: Date.now() + MANIFEST_CACHE_TTL_MS,
-    })
-  }
+  if (cache) cacheVerifiedManifest(cache, key, manifest, bytes.length)
   return manifest
 }
 

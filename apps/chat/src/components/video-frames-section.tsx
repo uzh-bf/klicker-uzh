@@ -15,10 +15,10 @@ import { useMessageSourcesContext } from './message-sources-context'
 export function VideoFrameCard({
   frame,
   frameSrc,
-}: {
+}: Readonly<{
   frame: VideoFrame
   frameSrc: string
-}) {
+}>) {
   const t = useTranslations('chat.videoFrames')
   const { sources } = useMessageSourcesContext()
   const [failed, setFailed] = useState(false)
