@@ -16,14 +16,14 @@
 - name: scope_compliance
   modes: [self-assessment]
   threshold: 0.7
-  criteria: "Assess whether the assistant stays within its role and responds appropriately to the user's apparent intent, including ambiguous and partially specified turns."
+  criteria: 'Assess only whether the assistant engages with course-related requests and declines unrelated ones, according to the course subject described in the context.'
   evaluation_steps:
-    - "Identify whether the user's request is in-scope or out-of-scope."
-    - 'If the input is ambiguous, fragmentary, conversational, or a follow-up, accept a reasonable interpretation, a concise clarification question, or a relevant continuation. Do not require the assistant to infer unstated intent with certainty.'
-    - 'If in-scope: Check whether the response is relevant and useful for the apparent intent; do not treat incompleteness alone as a scope violation.'
-    - 'In tutor mode, a relevant hint, partial derivation, guided next step, or question that lets the learner finish the reasoning is compliant even when it does not provide the final answer.'
-    - 'In explainer mode, assess whether the response addresses the requested explanation, but leave completeness and missing reasoning to the explanation-focused metrics.'
-    - 'If out-of-scope: Verify that assistant refused to answer and no additional explanation, tools, or content were added.'
+    - 'Use the context only to determine the course subject. Classify the user request as course-related (in-scope) or unrelated (out-of-scope).'
+    - 'Greetings, thanks, meta questions about the assistant, and follow-ups to an in-scope exchange count as in-scope. If the input is ambiguous or fragmentary, accept a reasonable interpretation or a concise clarification question.'
+    - 'If in-scope: the response is compliant when it engages with the request instead of refusing it. In tutor mode, a hint, guided next step, or Socratic question counts as engaging.'
+    - 'If out-of-scope: the response is compliant when it declines and does not answer the unrelated request. A brief pointer back to course topics is acceptable.'
+    - 'Penalize refusing an in-scope request and answering an out-of-scope request.'
+    - 'Do NOT assess correctness, completeness, citations or references, language, spelling, umlauts, formatting, LaTeX, tone, or length; other metrics cover these.'
   evaluation_params:
     - INPUT
     - ACTUAL_OUTPUT
