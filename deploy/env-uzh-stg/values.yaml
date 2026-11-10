@@ -753,7 +753,7 @@ backendGraphql:
   cookieDomain: .klicker.stg.df-app.ch
 
   knowledgeGraph:
-    host: 'stg-falkordb-aigeneric-falkordb-falkordb.stg-kb-falkordb-aigeneric.svc.cluster.local'
+    host: 'stg-falkordb-aigeneric-ha-falkordb-falkordb.stg-kb-falkordb-aigeneric.svc.cluster.local'
     port: '6379'
     tls: 'false'
     queryTimeoutMs: '5000'
