@@ -413,13 +413,21 @@ jobs:
         run: |
           set -euo pipefail
           # The image at the stg-release SHA is what staging currently runs.
-          # Without a usable image the build starts a fresh asset history.
-          sha="$(git ls-remote origin refs/heads/stg-release | cut -f1)"
+          # A commit merged directly into stg-release has no image, and Argo
+          # then keeps running the last one that had, so walk back along the
+          # first-parent history to the newest commit with an image. Without
+          # a usable image the build starts a fresh asset history.
           image=""
-          if [ -n "$sha" ] && docker buildx imagetools inspect "${IMAGE}:${sha}" >/dev/null 2>&1; then
-            image="${IMAGE}:${sha}"
-          else
-            echo "::warning::no image found at the stg-release SHA; building without release history"
+          if git fetch --quiet --no-tags --depth=20 origin stg-release; then
+            for sha in $(git rev-list --first-parent FETCH_HEAD); do
+              if docker buildx imagetools inspect "${IMAGE}:${sha}" >/dev/null 2>&1; then
+                image="${IMAGE}:${sha}"
+                break
+              fi
+            done
+          fi
+          if [ -z "$image" ]; then
+            echo "::warning::no image found in recent stg-release history; building without release history"
           fi
           echo "image=${image}" >> "$GITHUB_OUTPUT"
 
@@ -877,7 +885,7 @@ jobs:
       issues: read
       pull-requests: read
       packages: write
-    uses: uzh-bf/klicker-uzh/.github/workflows/v3_images-stg-execution.yml@406d9bfa2aa867c57d396f0699d1c6df39107a51
+    uses: uzh-bf/klicker-uzh/.github/workflows/v3_images-stg-execution.yml@eab081c0520cdf558988ac218a4c6ba1f7f2dd2b
 
   priority-status:
     name: ${{ (vars.PRIORITY_CI_ENABLED == 'true' && github.event_name == 'pull_request' && github.event.pull_request.state == 'open' && github.event.pull_request.draft == false && github.event.repository.private == false && github.event.pull_request.head.repo.full_name == github.repository && github.event.pull_request.user.type != 'Bot' && contains(github.event.pull_request.labels.*.name, 'ci:priority') && (github.event.action != 'labeled' || github.event.label.name == 'ci:priority')) && (github.event.action != 'labeled' || needs.priority-execution.outputs.run_label_event == 'true') && 'build-images-status' || 'build-images-status (priority not admitted)' }}
