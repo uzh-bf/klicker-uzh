@@ -9,6 +9,7 @@ import {
   claimPreparation,
   completePreparation,
   continuePreparation,
+  continueInfrastructureStart,
   initializeManagedApplication,
   initializeProviderLaunchers,
   initializeProviderStorage,
@@ -241,7 +242,8 @@ function parseArguments(args) {
       (args.length === 9 &&
         recoveryOption !== undefined &&
         /^[a-f0-9]{40}$/.test(args[8]))) &&
-    args[0] === 'continue-setup' &&
+    (args[0] === 'continue-setup' ||
+      (args[0] === 'continue-start' && args.length === 7)) &&
     args[1] === '--config' &&
     args[3] === '--candidate' &&
     args[5] === '--executor' &&
@@ -276,7 +278,7 @@ function parseArguments(args) {
     return { command: args[0], configPath: args[2] }
   }
   throw new Error(
-    'Usage: node util/local-kb-stack.mjs <status|plan> [--config <absolute JSON input path>], <setup|start|resume|stop|status> --config <path> --candidate <commit>, or continue-setup --config <path> --candidate <commit> --executor <commit> [--resume-executor <commit> | --resume-ingestion-executor <commit> | --resume-processor-executor <commit>]'
+    'Usage: node util/local-kb-stack.mjs <status|plan> [--config <absolute JSON input path>], <setup|start|resume|stop|status> --config <path> --candidate <commit>, or continue-start --config <path> --candidate <commit> --executor <commit>, or continue-setup --config <path> --candidate <commit> --executor <commit> [--resume-executor <commit> | --resume-ingestion-executor <commit> | --resume-processor-executor <commit>]'
   )
 }
 
@@ -293,7 +295,19 @@ if (process.argv[1] === fileURLToPath(import.meta.url)) {
     } = parseArguments(process.argv.slice(2))
     if (configPath !== undefined) {
       const config = readConfigPlanInput(configPath)
-      if (command === 'continue-setup') {
+      if (command === 'continue-start') {
+        requireLocalAiEnvironment(config)
+        requireProviderSources(config)
+        console.log(
+          JSON.stringify(
+            await continueInfrastructureStart(
+              config,
+              candidateRevision,
+              executorRevision
+            )
+          )
+        )
+      } else if (command === 'continue-setup') {
         requireLocalAiEnvironment(config)
         requireProviderSources(config)
         console.log(

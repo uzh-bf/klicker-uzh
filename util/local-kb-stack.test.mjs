@@ -411,3 +411,16 @@ test('source observation rejects dirty, mismatched and missing provider checkout
     rmSync(path, { recursive: true, force: true })
   }
 })
+
+test('initial startup continuation requires an immutable executor without setup-resume flags', () => {
+  const input = isolatedConfigInput({ aiUpstream: 'openrouter' })
+  const args = ['--candidate', 'a'.repeat(40), '--executor', 'b'.repeat(40)]
+  const accepted = runConfigPlan(input, 'continue-start', args)
+  assert.match(accepted.stderr, /^LOCAL_AI_CONFIGURATION_REQUIRED:/)
+  for (const extra of [
+    [...args, '--resume-executor', 'c'.repeat(40)],
+    [...args.slice(0, -1), 'invalid'],
+  ]) {
+    assert.match(runConfigPlan(input, 'continue-start', extra).stderr, /Usage:/)
+  }
+})

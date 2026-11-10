@@ -1296,8 +1296,30 @@ async function requirePrivateDirectory(path, message) {
 }
 
 async function requireStartedInfrastructure(runtime) {
+  const original = join(runtime.directory, 'infrastructure-start')
+  const recovery = join(runtime.directory, 'infrastructure-start-recovery')
+  const recovered = !(await absent(recovery))
+  if (recovered) {
+    await requirePrivateDirectory(
+      original,
+      'Original startup attempt must be private.'
+    )
+    await requirePrivateDirectory(recovery, 'Startup recovery must be private.')
+    if ((await readdir(original)).length !== 0)
+      throw new Error('Startup recovery parent has changed.')
+    const claim = await readOwned(join(recovery, 'claim.json'))
+    if (
+      !sameLifecycleReceipt(claim, lifecycleReceipt(runtime)) ||
+      claim.configurationDigest !== runtime.configurationDigest ||
+      claim.sourcePath !== runtime.checkout ||
+      claim.parent !== 'infrastructure-start' ||
+      !/^[a-f0-9]{40}$/.test(claim.executor ?? '') ||
+      !/^[a-f0-9]{64}$/.test(claim.appContainer ?? '')
+    )
+      throw new Error('Startup recovery claim does not match the runtime.')
+  }
   const started = await readOwned(
-    join(runtime.directory, 'infrastructure-start/complete.json')
+    join(recovered ? recovery : original, 'complete.json')
   )
   if (!sameLifecycleReceipt(started, lifecycleReceipt(runtime))) {
     throw new Error(
@@ -2047,6 +2069,122 @@ export async function startPreparedInfrastructure(
       runtime,
       attempt,
       runManaged,
+      runDocker,
+      undefined,
+      runProvider
+    )
+  })
+}
+
+// Explicit continuation of a stopped, incomplete initial startup. The failed
+// parent remains immutable; a claimed recovery can never dispatch twice.
+export async function continueInfrastructureStart(
+  config,
+  candidateRevision,
+  executor,
+  {
+    runManaged = runLocalManaged,
+    runDocker = runLocalDocker,
+    runProvider = runProviderCommand,
+    verifySources = verifyContinuationSources,
+  } = {}
+) {
+  requireLocalAiEnvironment(config)
+  if (config.aiUpstream?.kind !== 'guarded')
+    throw new Error('Startup continuation requires guarded qualification.')
+  await verifySources(config, candidateRevision, executor)
+  const runtime = await preparedRuntime(config, candidateRevision, runDocker)
+  return withInfrastructureOperation(runtime, 'continue-start', async () => {
+    const parent = join(runtime.directory, 'infrastructure-start')
+    await requirePrivateDirectory(
+      parent,
+      'Original startup attempt must be private.'
+    )
+    if ((await readdir(parent)).length !== 0)
+      throw new Error('Initial startup is not an untouched failed attempt.')
+    for (const name of [
+      'infrastructure-resume',
+      'infrastructure-stop',
+      'infrastructure-start-recovery',
+    ])
+      if (!(await absent(join(runtime.directory, name))))
+        throw new Error('Startup continuation already has downstream evidence.')
+    const backing = await observeOwnedProviders(config, runtime, runDocker)
+    if (
+      infrastructureServices.some(
+        (service) =>
+          backing.filter((row) => row.service === service).length !== 1
+      ) ||
+      backing.some(
+        ({ state }) => !['exited', 'created', 'dead'].includes(state)
+      )
+    )
+      throw new Error(
+        'Stop all owned backing services before startup continuation.'
+      )
+    const providers = await observeProviderLaunchers(
+      config,
+      runProvider,
+      { DOCKER_CONTEXT: runtime.context },
+      await readOwned(join(runtime.directory, 'retrieval-environment.json'))
+    )
+    if (providers.some((row) => !row.prepared || !row.stopped))
+      throw new Error('All providers must be prepared and stopped.')
+    const observation = JSON.parse(
+      await runManaged(['status', '--repo', runtime.checkout, '--json'])
+    )
+    const managed = observation.repo?.managedRuntime
+    const appContainer = managed?.mountNesting?.container
+    if (
+      observation.dockerContext !== runtime.context ||
+      observation.repo?.path !== runtime.checkout ||
+      observation.repo?.valid !== true ||
+      managed?.mode !== 'managed' ||
+      managed.workspace !== runtime.workspace ||
+      managed.status !== 'stopped' ||
+      managed.activeProfile !== 'local-kb-setup' ||
+      managed.mountNesting?.status !== 'effective' ||
+      !/^[a-z0-9][a-z0-9_-]*$/.test(managed.composeProject ?? '') ||
+      !/^[a-f0-9]{64}$/.test(appContainer ?? '')
+    )
+      throw new Error(
+        'Original managed setup runtime must be stopped and verified.'
+      )
+    const apps = JSON.parse(
+      await runDocker(['--context', runtime.context, 'inspect', appContainer])
+    )
+    if (
+      apps.length !== 1 ||
+      apps[0].Id !== appContainer ||
+      apps[0].State?.Running !== false ||
+      apps[0].Config?.Labels?.['com.docker.compose.project'] !==
+        managed.composeProject
+    )
+      throw new Error('Retained managed app identity is unavailable.')
+    const attempt = join(runtime.directory, 'infrastructure-start-recovery')
+    await mkdir(attempt, { mode: 0o700 })
+    await writeExclusive(join(attempt, 'claim.json'), {
+      ...lifecycleReceipt(runtime),
+      configurationDigest: runtime.configurationDigest,
+      sourcePath: runtime.checkout,
+      parent: 'infrastructure-start',
+      executor,
+      appContainer,
+    })
+    const preservingManaged = async (args, upstream) => {
+      const result = await runManaged(args, upstream)
+      if (args[0] === 'ensure') {
+        const value = JSON.parse(result)
+        if (value.managedRuntime?.mountNesting?.container !== appContainer)
+          throw new Error('Startup changed the retained managed app identity.')
+      }
+      return result
+    }
+    return launchInfrastructure(
+      config,
+      runtime,
+      attempt,
+      preservingManaged,
       runDocker,
       undefined,
       runProvider

@@ -22,6 +22,7 @@ import {
   claimPreparation as claimObservedPreparation,
   completePreparation,
   continuePreparation,
+  continueInfrastructureStart,
   deliverHatchetToken,
   initializeManagedApplication,
   initializeProviderLaunchers,
@@ -2674,5 +2675,178 @@ test('processor recovery rejects changed ancestry, progress and interrupted reen
       continuePreparation(f.config, revision, nextExecutor, f.options)
     )
     assert.deepEqual(f.calls, calls)
+  }
+})
+
+async function stoppedInitialStartFixture(t) {
+  const upstream = {
+    kind: 'guarded',
+    port: 18020,
+    chatModels: [{ id: 'synthetic' }],
+  }
+  const keys = ['UPSTREAM_OPENAI_API_KEY', 'UPSTREAM_OPENAI_BASE_URL']
+  const prior = keys.map((key) => process.env[key])
+  t.after(() =>
+    keys.forEach((key, i) => {
+      if (prior[i] === undefined) delete process.env[key]
+      else process.env[key] = prior[i]
+    })
+  )
+  process.env.UPSTREAM_OPENAI_API_KEY = 'synthetic-local-guard'
+  process.env.UPSTREAM_OPENAI_BASE_URL = 'http://host.docker.internal:18020/v1'
+  const { config, checkout, read } = await installationFixture(upstream)
+  await prepareLocalConfiguration(config, revision)
+  await installManagedConfiguration(config, revision, read)
+  const identity = {
+    kind: 'linked',
+    repoPath: checkout,
+    workspace: 'synthetic-runtime',
+    profile: 'local-kb-setup',
+  }
+  await installProviderRouting(config, revision, identity)
+  await setupReceipts(config)
+  await completePreparation(config, revision)
+  const directory = join(checkout, '.local-kb')
+  await mkdir(join(directory, 'infrastructure-start'), { mode: 0o700 })
+  const appContainer = 'c'.repeat(64)
+  const managedState = {
+    mode: 'managed',
+    workspace: identity.workspace,
+    status: 'stopped',
+    activeProfile: 'local-kb-setup',
+    composeProject: 'synthetic-compose',
+    mountNesting: { status: 'effective', container: appContainer },
+  }
+  const calls = []
+  const managed = async (args) => {
+    if (args[0] === 'status')
+      return JSON.stringify({
+        dockerContext: 'synthetic-local',
+        repo: { path: checkout, valid: true, managedRuntime: managedState },
+      })
+    calls.push(args[0])
+    if (args[0] === 'stop')
+      return JSON.stringify({ ...identity, stopped: true })
+    return JSON.stringify({
+      ...identity,
+      profile: LOCAL_KB_MANAGED_PROFILE,
+      managedRuntime: managedState,
+    })
+  }
+  const docker = async (args) => {
+    if (args[0] === 'context') return 'unix:///synthetic/docker.sock'
+    if (args.includes('--format')) {
+      const service = ['postgres', 'redis', 'blob', 'hatchet'][
+        Number(args.at(-1)[0]) - 1
+      ]
+      return `${config.project.identity}|${directory}|${join(directory, 'providers.compose.json')}|${service}|exited|healthy`
+    }
+    if (args.includes('inspect'))
+      return JSON.stringify([
+        {
+          Id: appContainer,
+          State: { Running: false },
+          Config: {
+            Labels: { 'com.docker.compose.project': 'synthetic-compose' },
+          },
+        },
+      ])
+    if (args.includes('ls'))
+      return [1, 2, 3, 4].map((n) => String(n).repeat(64)).join('\n')
+    calls.push(args.includes('stop') ? 'backing-stop' : 'backing-start')
+    return ''
+  }
+  const provider = lifecycleRunner(config)
+  const options = {
+    runManaged: managed,
+    runDocker: docker,
+    runProvider: provider,
+    verifySources: async () => {},
+  }
+  return {
+    config,
+    directory,
+    calls,
+    managedState,
+    options,
+    managed,
+    docker,
+    provider,
+  }
+}
+
+test('explicit initial-start recovery preserves its parent and supports later stop and resume', async (t) => {
+  const f = await stoppedInitialStartFixture(t)
+  const recover = () =>
+    continueInfrastructureStart(f.config, revision, nextExecutor, f.options)
+  assert.equal((await recover()).infrastructureStarted, true)
+  assert.deepEqual(await readdir(join(f.directory, 'infrastructure-start')), [])
+  const before = [...f.calls]
+  await assert.rejects(recover())
+  assert.deepEqual(f.calls, before)
+  await stopInfrastructure(f.config, revision, f.managed, f.docker, f.provider)
+  assert.equal(
+    (
+      await resumeInfrastructure(
+        f.config,
+        revision,
+        f.managed,
+        f.docker,
+        f.provider
+      )
+    ).infrastructureStarted,
+    true
+  )
+})
+
+test('initial-start recovery refuses changed evidence and keeps an interrupted claim', async (t) => {
+  for (const failure of [
+    'parent',
+    'existing-child',
+    'running-app',
+    'foreign-owner',
+    'interruption',
+    'replacement',
+  ]) {
+    const f = await stoppedInitialStartFixture(t)
+    if (failure === 'parent')
+      await writeFile(
+        join(f.directory, 'infrastructure-start/complete.json'),
+        '{}',
+        { mode: 0o600 }
+      )
+    if (failure === 'existing-child')
+      await mkdir(join(f.directory, 'infrastructure-start-recovery'), {
+        mode: 0o700,
+      })
+    if (failure === 'running-app') f.managedState.status = 'ready'
+    if (failure === 'foreign-owner') f.managedState.workspace = 'foreign'
+    if (failure === 'interruption' || failure === 'replacement') {
+      const run = f.options.runManaged
+      f.options.runManaged = async (args) => {
+        if (args[0] !== 'ensure') return run(args)
+        if (failure === 'interruption')
+          throw new Error('synthetic interruption')
+        return JSON.stringify({
+          managedRuntime: { mountNesting: { container: 'd'.repeat(64) } },
+        })
+      }
+    }
+    await assert.rejects(
+      continueInfrastructureStart(f.config, revision, nextExecutor, f.options),
+      undefined,
+      failure
+    )
+    const before = [...f.calls]
+    await assert.rejects(
+      continueInfrastructureStart(f.config, revision, nextExecutor, f.options)
+    )
+    assert.deepEqual(f.calls, before)
+    if (
+      ['parent', 'existing-child', 'running-app', 'foreign-owner'].includes(
+        failure
+      )
+    )
+      assert.deepEqual(f.calls, [])
   }
 })
