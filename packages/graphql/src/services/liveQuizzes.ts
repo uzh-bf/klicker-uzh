@@ -42,8 +42,21 @@ import { sendTeamsNotification } from './notifications.js'
 import { upsertDailyTimelineEntry } from './participants.js'
 import { computeStackEvaluation } from './stacks.js'
 
-// TODO: rework scheduling for serverless
+// In-process close timers, used only when scheduling the durable Hatchet
+// close fails. They live as long as the Pod that activated the block.
 const scheduledJobs: Record<string, any> = {}
+
+// The context fields that closing a block reads. Both GraphQL requests and the
+// Hatchet worker provide them, so the worker can close an expired block.
+export type LiveQuizBlockCloseContext = Pick<
+  Context,
+  | 'prisma'
+  | 'redisExec'
+  | 'redisAssessmentExec'
+  | 'pubSub'
+  | 'emitter'
+  | 'tasks'
+>
 
 const FIRST_ACHIEVEMENT_ID = 5
 const SECOND_ACHIEVEMENT_ID = 6
@@ -1140,19 +1153,6 @@ export async function activateLiveQuizBlock(
     },
   })
 
-  if (updatedQuiz.activeBlock?.expiresAt) {
-    scheduledJobs[blockId] = schedule.scheduleJob(
-      dayjs(updatedQuiz.activeBlock.expiresAt).add(10, 'second').toDate(),
-      async () => {
-        await deactivateLiveQuizBlock({ quizId, blockId }, ctx, true)
-        ctx.emitter.emit('invalidate', {
-          typename: 'LiveQuiz',
-          id: updatedQuiz.id,
-        })
-      }
-    )
-  }
-
   // update the quiz with an updated version through the corresponding subscription
   ctx.pubSub.publish('runningLiveQuizUpdated', {
     id: updatedQuiz.id,
@@ -1339,12 +1339,58 @@ export async function activateLiveQuizBlock(
   })
 
   redisMulti.exec()
+
+  // Scheduled after the publish above, because scheduling is an HTTP call to
+  // the Hatchet API while the block's countdown is already running.
+  if (updatedQuiz.activeBlock?.expiresAt) {
+    await scheduleLiveQuizBlockClose(
+      { quizId, blockId, expiresAt: updatedQuiz.activeBlock.expiresAt },
+      ctx
+    )
+  }
+
   return updatedQuiz
+}
+
+// Closes a timed block 10 seconds after it expires. The close runs as a
+// Hatchet task, so it survives the end of the Pod that activated the block.
+// If scheduling fails, an in-process timer keeps the close on this Pod.
+async function scheduleLiveQuizBlockClose(
+  {
+    quizId,
+    blockId,
+    expiresAt,
+  }: { quizId: string; blockId: number; expiresAt: Date },
+  ctx: ContextWithUser
+) {
+  const closeAt = dayjs(expiresAt).add(10, 'second').toDate()
+
+  try {
+    await ctx.tasks.closeExpiredLiveQuizBlock.schedule(closeAt, {
+      liveQuizId: quizId,
+      blockId,
+      expiresAt: expiresAt.toISOString(),
+    })
+    return
+  } catch (error: any) {
+    console.error(
+      `Failed to schedule the close of block ${blockId} in live quiz ${quizId}:`,
+      error
+    )
+    await sendTeamsNotification({
+      scope: 'graphql/activateLiveQuizBlock',
+      text: `WARNING - failed to schedule the durable close of block ${blockId} in live quiz ${quizId}, falling back to an in-process timer: ${error?.message || error}`,
+    })
+  }
+
+  scheduledJobs[blockId] = schedule.scheduleJob(closeAt, async () => {
+    await deactivateLiveQuizBlock({ quizId, blockId }, ctx, true)
+  })
 }
 
 export async function deactivateLiveQuizBlock(
   { quizId, blockId }: { quizId: string; blockId: number },
-  ctx: ContextWithUser,
+  ctx: LiveQuizBlockCloseContext,
   isScheduled?: boolean
 ) {
   let isAssessmentEnabled = false
@@ -3288,6 +3334,44 @@ export const handlePublishScheduledLiveQuiz: HatchetHandlers['handlePublishSched
       })
       throw error // rethrow to allow Hatchet to handle retries
     }
+  }
+
+// Closes a timed block once its countdown has run out. A schedule is stale
+// when the lecturer closed the block, another block is active, or the quiz
+// was reset or the block activated again since; such a run does nothing.
+// Returning false completes the task; only a thrown error retries it.
+export const handleCloseExpiredLiveQuizBlock: HatchetHandlers['handleCloseExpiredLiveQuizBlock'] =
+  async ({ liveQuizId, blockId, expiresAt }, globalCtx, executionCtx) => {
+    const quiz = await globalCtx.prisma.liveQuiz.findUnique({
+      where: { id: liveQuizId },
+      select: {
+        activeBlockId: true,
+        blocks: {
+          where: { id: blockId },
+          select: { status: true, expiresAt: true },
+        },
+      },
+    })
+    const block = quiz?.blocks[0]
+
+    if (
+      !quiz ||
+      !block ||
+      quiz.activeBlockId !== blockId ||
+      block.status !== DB.ElementBlockStatus.ACTIVE ||
+      block.expiresAt?.getTime() !== new Date(expiresAt).getTime()
+    ) {
+      executionCtx.logger.info(
+        `Skipping the close of block ${blockId} in live quiz ${liveQuizId}: it is no longer the block this schedule was created for`
+      )
+      return false
+    }
+
+    return await deactivateLiveQuizBlock(
+      { quizId: liveQuizId, blockId },
+      globalCtx,
+      true
+    )
   }
 
 export const handleStandardLiveQuizBlockClosureAggregation: HatchetHandlers['handleStandardLiveQuizBlockClosureAggregation'] =
