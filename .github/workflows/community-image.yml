@@ -65,8 +65,13 @@ jobs:
           VERSION=$(grep -E '^\s+version:' deploy/community/containers/app.yml | awk '{print $2}')
           TAG="${REGISTRY}/${IMAGE_NAME}:${VERSION}"
           echo "TAG=${TAG}" >> "$GITHUB_ENV"
+          # Plugin asset compilation boots Rails, which otherwise reads the
+          # secret key base from Redis. A throwaway value avoids needing Redis
+          # during the build; the cluster supplies the real one at runtime.
+          BUILD_SECRET=$(openssl rand -hex 64)
           ./launcher --conf-dir deploy/community/containers --templates-dir discourse_docker \
-            build --tag "${TAG}" app --platform linux/arm64 --load
+            build --tag "${TAG}" --set "env.DISCOURSE_SECRET_KEY_BASE=${BUILD_SECRET}" \
+            app --platform linux/arm64 --load
 
       - name: Push image
         if: github.event_name != 'pull_request'
