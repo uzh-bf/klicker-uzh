@@ -1900,6 +1900,7 @@ describe('partial question-generation delivery lifecycle', () => {
       ctx: {
         user: { sub: fixtures.ownerId },
         elementGenerationRuntime: runtime,
+        log: createLogger({ service: 'graphql-test', level: 'silent' }),
         prisma: {
           elementGenerationBuild: {
             findFirst,
