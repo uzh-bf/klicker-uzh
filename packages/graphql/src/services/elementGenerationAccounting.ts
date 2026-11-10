@@ -124,7 +124,7 @@ async function createSpend(
     buildId: string
     quotaId: string
     dispatchAttemptId: string
-    spendClass: SpendClass
+    spendClass: SpendClass | typeof DB.KBGraphQuotaSpendClass.ELEMENT_REVISION
     config: ElementGenerationCostConfiguration
   }
 ) {
@@ -219,6 +219,86 @@ export async function createElementGenerationBuildWithSpend(
     if (!raced) throw error
     return { buildId: raced.id, created: false }
   }
+}
+
+// One revision costs one question's share of the build price the lecturer
+// pays for a whole question build, rounded up so the share never undercharges.
+export function elementRevisionPriceMinorUnits(
+  questionBuildPriceMinorUnits: number,
+  parentRequestedElementCount: number
+): number {
+  return Math.ceil(
+    questionBuildPriceMinorUnits / Math.max(1, parentRequestedElementCount)
+  )
+}
+
+// Creates the child build of a revision request and reserves its spend inside
+// the caller's transaction, so the decision, the child build and the
+// reservation commit or roll back together. The caller holds the parent
+// build's row lock; the quota lock is taken after it, as in the retry path.
+// A repeated request with the same idempotency key returns the existing build.
+export async function createElementRevisionBuildInTransaction(
+  transaction: Transaction,
+  {
+    data,
+    ownerId,
+    idempotencyKey,
+    parentRequestedElementCount,
+    env = process.env,
+    now = new Date(),
+  }: {
+    data: DB.Prisma.ElementGenerationBuildUncheckedCreateInput
+    ownerId: string
+    idempotencyKey: string
+    parentRequestedElementCount: number
+    env?: NodeJS.ProcessEnv
+    now?: Date
+  }
+): Promise<{ buildId: string; created: boolean }> {
+  if (data.ownerId !== ownerId || data.idempotencyKey !== idempotencyKey) {
+    throw new Error('Element-generation spend does not match its build')
+  }
+  const config = requireElementGenerationCostConfiguration(
+    DB.KBGraphQuotaSpendClass.QUESTION_GENERATION,
+    env,
+    now
+  )
+  const revisionConfig = {
+    ...config,
+    amountMinorUnits: elementRevisionPriceMinorUnits(
+      config.amountMinorUnits,
+      parentRequestedElementCount
+    ),
+  }
+  const existing = await transaction.elementGenerationBuild.findUnique({
+    where: { ownerId_idempotencyKey: { ownerId, idempotencyKey } },
+    select: { id: true },
+  })
+  if (existing) return { buildId: existing.id, created: false }
+
+  const quota = await ensureLockedKBGraphQuota(
+    transaction,
+    ownerId,
+    revisionConfig,
+    now
+  )
+  await reserveKBGraphQuotaAmount(
+    transaction,
+    quota,
+    revisionConfig.amountMinorUnits
+  )
+  const build = await transaction.elementGenerationBuild.create({
+    data: { ...data, costAccountingVersion: 1 },
+    select: { id: true, providerDispatchAttemptId: true },
+  })
+  await createSpend(transaction, {
+    buildId: build.id,
+    quotaId: quota.id,
+    dispatchAttemptId: build.providerDispatchAttemptId,
+    spendClass: DB.KBGraphQuotaSpendClass.ELEMENT_REVISION,
+    config: revisionConfig,
+  })
+  return { buildId: build.id, created: true }
 }
 
 // A retry is a second dispatch attempt against an existing build, so it

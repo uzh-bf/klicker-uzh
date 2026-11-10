@@ -3323,6 +3323,7 @@ Da die KlickerUZH-App noch nicht im iOS-App-Store verfügbar ist, folgen Sie die
           ATTENTION: 'Aufmerksamkeit nötig',
           ACCEPTED: 'Behalten',
           REJECTED: 'Verworfen',
+          REVISION_REQUESTED: 'Überarbeitung angefragt',
         },
         recoverLegacy: 'Angenommene Elemente wiederherstellen',
         summary:

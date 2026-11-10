@@ -1185,6 +1185,7 @@ export const GeneratedElementDraftInputRef = builder
 export type SetGeneratedElementDecisionInput = {
   draftId: string
   decision: DB.GeneratedElementDecision
+  note?: string | null
 }
 export const SetGeneratedElementDecisionInputRef = builder
   .inputRef<SetGeneratedElementDecisionInput>(
@@ -1197,6 +1198,10 @@ export const SetGeneratedElementDecisionInputRef = builder
         validate: { schema: z.string().guid() },
       }),
       decision: t.field({ type: GeneratedElementDecision, required: true }),
+      note: t.string({
+        required: false,
+        validate: { schema: z.string().max(1000) },
+      }),
     }),
   })
 

@@ -1,10 +1,14 @@
+import { createHash, randomUUID } from 'node:crypto'
 import * as DB from '@klicker-uzh/prisma/client'
 import type {
   GeneratedQuestionEditable,
   GeneratedQuestionTagSelection,
+  QuestionGenerationConfiguration,
   QuestionGenerationItemType,
 } from '@klicker-uzh/types'
 import type { ContextWithUser } from '../lib/context.js'
+import { createElementRevisionBuildInTransaction } from './elementGenerationAccounting.js'
+import { canonicalElementGenerationJson } from './elementGenerationProvider.js'
 import { questionGenerationServiceError } from './questionGenerationErrors.js'
 import { assertQuestionGenerationPreviewAccess } from './questionGenerationGraph.js'
 
@@ -24,6 +28,22 @@ const REVIEWABLE_BUILD_STATUSES: DB.ElementGenerationBuildStatus[] = [
   DB.ElementGenerationBuildStatus.COMPLETED,
   DB.ElementGenerationBuildStatus.INCOMPLETE,
 ]
+
+// A revision request is fulfilled by a child build; its draft stays frozen
+// until that build reaches one of these states.
+const FINISHED_BUILD_STATUSES: DB.ElementGenerationBuildStatus[] = [
+  DB.ElementGenerationBuildStatus.COMPLETED,
+  DB.ElementGenerationBuildStatus.INCOMPLETE,
+  DB.ElementGenerationBuildStatus.REJECTED,
+  DB.ElementGenerationBuildStatus.FAILED,
+]
+
+const MAX_REVISION_NOTE_LENGTH = 1000
+
+// Element types whose drafts can be revised. Layer 2 of the revision request
+// enables questions once the child build can be dispatched; until then every
+// request is refused.
+export const REVISION_SUPPORTED_ELEMENT_TYPES = new Set<DB.ElementType>()
 
 export type UpdateGeneratedQuestionDraftInput = {
   draftId: string
@@ -61,7 +81,11 @@ function normalizeTags(value: string[] | null | undefined): string[] {
   return tags
 }
 
-export type GeneratedQuestionDecisionInput = 'OPEN' | 'ACCEPTED' | 'REJECTED'
+export type GeneratedQuestionDecisionInput =
+  | 'OPEN'
+  | 'ACCEPTED'
+  | 'REJECTED'
+  | 'REVISION_REQUESTED'
 
 function draftError(message: string): never {
   throw questionGenerationServiceError('DRAFT_INVALID', message)
@@ -212,6 +236,77 @@ async function lockQuestionGenerationBuild(
   `
 }
 
+export async function assertNoUnfinishedRevision(
+  transaction: DB.Prisma.TransactionClient,
+  draftId: string
+) {
+  const unfinished = await transaction.elementGenerationBuild.count({
+    where: {
+      revisionOfDraftId: draftId,
+      status: { notIn: FINISHED_BUILD_STATUSES },
+    },
+  })
+  if (unfinished > 0) {
+    throw questionGenerationServiceError(
+      'INVALID_STAGE',
+      'This draft has a revision in progress'
+    )
+  }
+}
+
+// Accepting any draft of a revision chain rejects the chain's other unsaved
+// drafts. The chain is every draft reachable through `revisionOfDraftId`
+// links in either direction; manual duplicates are not linked that way. A
+// chain with an unfinished revision build refuses the accept, because the
+// build would otherwise deliver a draft for an already rejected one. The
+// caller holds the parent build's row lock.
+export async function rejectOtherRevisionChainDrafts(
+  transaction: DB.Prisma.TransactionClient,
+  draftId: string
+) {
+  const chain = new Set<string>([draftId])
+  let frontier = [draftId]
+  while (frontier.length > 0) {
+    const linked = await transaction.generatedElementDraft.findMany({
+      where: {
+        OR: [{ id: { in: frontier } }, { revisionOfDraftId: { in: frontier } }],
+      },
+      select: { id: true, revisionOfDraftId: true },
+    })
+    frontier = []
+    for (const draft of linked) {
+      for (const id of [draft.id, draft.revisionOfDraftId]) {
+        if (id !== null && !chain.has(id)) {
+          chain.add(id)
+          frontier.push(id)
+        }
+      }
+    }
+  }
+  const unfinished = await transaction.elementGenerationBuild.count({
+    where: {
+      revisionOfDraftId: { in: [...chain] },
+      status: { notIn: FINISHED_BUILD_STATUSES },
+    },
+  })
+  if (unfinished > 0) {
+    throw questionGenerationServiceError(
+      'INVALID_STAGE',
+      'A draft of this revision chain has a revision in progress'
+    )
+  }
+  chain.delete(draftId)
+  if (chain.size === 0) return
+  await transaction.generatedElementDraft.updateMany({
+    where: {
+      id: { in: [...chain] },
+      savedElementId: null,
+      decision: { not: DB.GeneratedElementDecision.REJECTED },
+    },
+    data: { decision: DB.GeneratedElementDecision.REJECTED },
+  })
+}
+
 export async function updateGeneratedQuestionDraft(
   input: UpdateGeneratedQuestionDraftInput,
   ctx: ContextWithUser
@@ -238,6 +333,7 @@ export async function updateGeneratedQuestionDraft(
       )
     }
     assertDraftCanChange(draft)
+    await assertNoUnfinishedRevision(transaction, draft.id)
     const storedCurrent = draft.current as GeneratedQuestionEditable
     const current = normalizeGeneratedQuestionEditable(
       input.current,
@@ -321,15 +417,55 @@ export async function duplicateGeneratedQuestionDraft(
   })
 }
 
+function normalizeRevisionNote(value: string | null | undefined) {
+  const note = value?.trim() ?? ''
+  if (note.length > MAX_REVISION_NOTE_LENGTH) {
+    return draftError('The revision note is too long')
+  }
+  return note || null
+}
+
+// A one-slot configuration derived from the parent build: the slot keeps the
+// parent's sources, objectives and language and asks for the draft's level.
+function revisionConfiguration(
+  parent: QuestionGenerationConfiguration,
+  targetDifficulty: number | null
+): QuestionGenerationConfiguration {
+  const level =
+    targetDifficulty !== null && targetDifficulty >= 1 && targetDifficulty <= 5
+      ? targetDifficulty
+      : 3
+  return {
+    ...parent,
+    questionCount: 1,
+    difficultyPreset:
+      `D${level}` as QuestionGenerationConfiguration['difficultyPreset'],
+    difficultyCounts: { d1: 0, d2: 0, d3: 0, d4: 0, d5: 0, [`d${level}`]: 1 },
+  }
+}
+
 export async function setGeneratedQuestionDecision(
-  input: { draftId: string; decision: GeneratedQuestionDecisionInput },
+  input: {
+    draftId: string
+    decision: GeneratedQuestionDecisionInput
+    note?: string | null
+  },
   ctx: ContextWithUser
 ) {
   await assertQuestionGenerationPreviewAccess(ctx)
   if (!Object.values(DB.GeneratedElementDecision).includes(input.decision)) {
     return draftError('Generated question decision is invalid')
   }
+  const isRevision =
+    input.decision === DB.GeneratedElementDecision.REVISION_REQUESTED
+  const note = normalizeRevisionNote(input.note)
+  if (note !== null && !isRevision) {
+    return draftError('A note is only accepted with a revision request')
+  }
   const draft = await findOwnedDraft(input.draftId, ctx)
+  if (isRevision && !REVISION_SUPPORTED_ELEMENT_TYPES.has(draft.elementType)) {
+    return draftError('Revision requests are not available yet')
+  }
   if (draft.savedElementId !== null && draft.decision !== input.decision) {
     return draftError('A saved generated question decision is immutable')
   }
@@ -339,26 +475,90 @@ export async function setGeneratedQuestionDecision(
       'Generated question decisions require a completed build'
     )
   }
-  if (draft.decision === input.decision) return draft
+  if (draft.decision === input.decision && !isRevision) return draft
 
-  const updated = await ctx.prisma.generatedElementDraft.updateMany({
-    where: {
-      id: draft.id,
-      savedElementId: null,
-      build: {
-        is: { status: { in: REVIEWABLE_BUILD_STATUSES } },
-      },
-    },
-    data: { decision: input.decision },
-  })
-  if (updated.count !== 1) {
-    throw questionGenerationServiceError(
-      'CONCURRENT_MODIFICATION',
-      'Generated question draft was saved by another request'
-    )
-  }
-  return ctx.prisma.generatedElementDraft.findUniqueOrThrow({
-    where: { id: draft.id },
-    include: { build: { select: { status: true } } },
+  return ctx.prisma.$transaction(async (transaction) => {
+    await lockQuestionGenerationBuild(transaction, draft.buildId)
+    const current = await transaction.generatedElementDraft.findFirst({
+      where: { id: draft.id, build: { is: { ownerId: ctx.user.sub } } },
+      include: { build: true },
+    })
+    if (
+      !current ||
+      current.savedElementId !== null ||
+      !REVIEWABLE_BUILD_STATUSES.includes(current.build.status)
+    ) {
+      throw questionGenerationServiceError(
+        'CONCURRENT_MODIFICATION',
+        'Generated question draft was saved by another request'
+      )
+    }
+    await assertNoUnfinishedRevision(transaction, current.id)
+    if (current.decision === input.decision && !isRevision) return current
+
+    if (isRevision) {
+      const runtime = ctx.elementGenerationRuntime
+      if (!runtime) {
+        throw questionGenerationServiceError(
+          'QUESTION_GENERATION_UNAVAILABLE',
+          'Question generation is not configured'
+        )
+      }
+      const attempt = await transaction.elementGenerationBuild.count({
+        where: { revisionOfDraftId: current.id },
+      })
+      const configuration = revisionConfiguration(
+        current.build.configuration as QuestionGenerationConfiguration,
+        current.targetDifficulty
+      )
+      const buildId = randomUUID()
+      const idempotencyKey = `revision:${current.id}:${current.revision}:${attempt}`
+      await createElementRevisionBuildInTransaction(transaction, {
+        ownerId: ctx.user.sub,
+        idempotencyKey,
+        parentRequestedElementCount: current.build.requestedElementCount,
+        data: {
+          id: buildId,
+          ownerId: ctx.user.sub,
+          sourceGraphBuildId: current.build.sourceGraphBuildId,
+          elementType: current.build.elementType,
+          idempotencyKey,
+          configurationHash: createHash('sha256')
+            .update(
+              JSON.stringify(canonicalElementGenerationJson(configuration))
+            )
+            .digest('hex'),
+          configuration,
+          requestedElementCount: 1,
+          parentBuildId: current.buildId,
+          revisionOfDraftId: current.id,
+          revisionNote: note,
+          revisionDraftSnapshot:
+            current.current as DB.GeneratedElementDraft['current'],
+          inputArtifactContainer: runtime.questionInputContainer,
+          inputArtifactPrefix: `question-builds/${buildId}`,
+          outputArtifactContainer: runtime.questionOutputContainer,
+          outputArtifactPrefix: `${runtime.questionOutputPrefix}/${buildId}`,
+        },
+      })
+    }
+
+    const updated = await transaction.generatedElementDraft.updateMany({
+      where: { id: current.id, savedElementId: null },
+      data: { decision: input.decision },
+    })
+    if (updated.count !== 1) {
+      throw questionGenerationServiceError(
+        'CONCURRENT_MODIFICATION',
+        'Generated question draft was saved by another request'
+      )
+    }
+    if (input.decision === DB.GeneratedElementDecision.ACCEPTED) {
+      await rejectOtherRevisionChainDrafts(transaction, current.id)
+    }
+    return transaction.generatedElementDraft.findUniqueOrThrow({
+      where: { id: current.id },
+      include: { build: { select: { status: true } } },
+    })
   })
 }
