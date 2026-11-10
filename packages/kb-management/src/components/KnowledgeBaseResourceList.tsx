@@ -845,6 +845,7 @@ function KnowledgeBaseResourceList({
     Record<string, number>
   >({})
   const pollInFlightRef = useRef(false)
+  const pollErrorShownRef = useRef(false)
   const wasPollingRef = useRef(false)
   const loadMoreInFlightRef = useRef(false)
   const refreshAfterLoadMoreRef = useRef(false)
@@ -869,11 +870,18 @@ function KnowledgeBaseResourceList({
     status: statusFilter || null,
     materialType: materialTypeFilter || null,
   }
-  const { data, loading, error, fetchMore, networkStatus, updateQuery } =
-    useQuery(GetKbResourcesDocument, {
-      variables,
-      notifyOnNetworkStatusChange: true,
-    })
+  const {
+    data,
+    previousData,
+    loading,
+    error,
+    fetchMore,
+    networkStatus,
+    updateQuery,
+  } = useQuery(GetKbResourcesDocument, {
+    variables,
+    notifyOnNetworkStatusChange: true,
+  })
   const apolloClient = useApolloClient()
   const [ingestResource] = useMutation(IngestKbResourceDocument)
   const [ingestAllResources, { loading: bulkIngesting }] = useMutation(
@@ -884,7 +892,11 @@ function KnowledgeBaseResourceList({
   const resources = connection?.items ?? []
   const loadedResourceCountRef = useRef(resources.length)
   loadedResourceCountRef.current = resources.length
-  const polling = (connection?.inProgressCount ?? 0) > 0
+  // A filter cache miss is an unknown count, not completed ingestion.
+  const polling =
+    (connection?.inProgressCount ??
+      previousData?.getKbResources.inProgressCount ??
+      0) > 0
   const loadingMore = networkStatus === NetworkStatus.fetchMore
   const inspectorResource = useMemo(
     () => resources.find(({ id }) => id === inspectorId) ?? null,
@@ -1085,6 +1097,16 @@ function KnowledgeBaseResourceList({
 
       if (requestId !== refreshRequestRef.current) return false
 
+      // An untracked page may have changed since the last full walk. Reconcile
+      // it before publishing zero and stopping the interval. A failed walk
+      // leaves the previous count intact, so the next tick retries it.
+      if (
+        page0Connection?.inProgressCount === 0 &&
+        targetPages.length < loadedPageCount
+      ) {
+        return refreshLoadedResources()
+      }
+
       fetchedByPage.forEach((items, pageIndex) => {
         if (items.some(isActiveResource)) {
           activePageIndexesRef.current.add(pageIndex)
@@ -1159,11 +1181,11 @@ function KnowledgeBaseResourceList({
         // on pages the bounded poll doesn't track, and bounds the staleness
         // of totalCount/pageInfo, restoring parity with polling every loaded
         // page at a fixed bound.
-        if (pollTickRef.current % 10 === 0) {
-          await refreshLoadedResources()
-        } else {
-          await pollActivePages()
-        }
+        const refreshed =
+          pollTickRef.current % 10 === 0
+            ? await refreshLoadedResources()
+            : await pollActivePages()
+        if (refreshed) pollErrorShownRef.current = false
       } finally {
         pollInFlightRef.current = false
       }
@@ -1172,6 +1194,10 @@ function KnowledgeBaseResourceList({
     const intervalId = window.setInterval(() => {
       void pollCurrentPage().catch((pollError) => {
         console.error('Failed to poll KB resource operations', pollError)
+        if (!pollErrorShownRef.current) {
+          pollErrorShownRef.current = true
+          toast({ type: 'error', message: t('kb.resourcesLoadError') })
+        }
       })
     }, 2000)
     return () => {
@@ -1179,13 +1205,14 @@ function KnowledgeBaseResourceList({
       refreshRequestRef.current += 1
       pollInFlightRef.current = false
     }
-  }, [polling, pollActivePages, refreshLoadedResources])
+  }, [polling, pollActivePages, refreshLoadedResources, t])
 
   useEffect(() => {
+    if (!connection) return
     const wasPolling = wasPollingRef.current
     wasPollingRef.current = polling
     if (wasPolling && !polling) onIngestionSettled()
-  }, [onIngestionSettled, polling])
+  }, [connection, onIngestionSettled, polling])
 
   // These values are intentionally effect triggers: the reset clears state
   // that belongs to the previous query context without otherwise reading them.

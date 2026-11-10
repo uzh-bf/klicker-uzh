@@ -182,7 +182,7 @@ export interface KBIngestAllResult {
 
 function getManagedResourceCandidateId(source: KbImportedSourceItem) {
   if (source.externalResourceId && validateUuid(source.externalResourceId)) {
-    return source.externalResourceId
+    return source.externalResourceId.toLowerCase()
   }
   if (!source.sourceUrl) return null
 
@@ -209,7 +209,7 @@ function getManagedResourceCandidateId(source: KbImportedSourceItem) {
     )
     if (!match?.[1]) return null
     const resourceId = decodeURIComponent(match[1])
-    return validateUuid(resourceId) ? resourceId : null
+    return validateUuid(resourceId) ? resourceId.toLowerCase() : null
   } catch {
     return null
   }

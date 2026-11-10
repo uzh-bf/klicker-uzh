@@ -4,8 +4,13 @@ import { URL_MANAGE } from '../util/constants.js'
 import { expect, test } from '../util/fixtures.js'
 import { setAiSettingsMode } from '../util/fixtures/manage.js'
 
-for (const refreshFails of [false, true]) {
-  test(`ingestion outside the visible resource list settles with ${refreshFails ? 'a visible refresh error' : 'fresh indexed sources'}`, async ({
+for (const scenario of [
+  'fresh indexed sources',
+  'a visible refresh error',
+  'completion during a filter request',
+  'reconciliation of loaded pages',
+]) {
+  test(`ingestion outside the visible resource list settles with ${scenario}`, async ({
     loginLecturer,
     page,
   }, testInfo) => {
@@ -13,15 +18,21 @@ for (const refreshFails of [false, true]) {
     await loginLecturer()
     const manageUrl = process.env.URL_MANAGE ?? URL_MANAGE
     const kbName = `Settlement regression ${Date.now()}`
+    const refreshFails = scenario === 'a visible refresh error'
+    const delayedFilter = scenario === 'completion during a filter request'
+    const multiplePages = scenario === 'reconciliation of loaded pages'
+    let releaseFilter = () => {}
+    const filterGate = new Promise<void>((resolve) => {
+      releaseFilter = resolve
+    })
+    let filteredRequests = 0
+    let reconciliationFailures = 0
     let settled = false
     let inventoryRequests = 0
     let resourceRequests = 0
     const persistedOperations = JSON.parse(
       await readFile(
-        new URL(
-          '../../packages/graphql/src/public/client.json',
-          import.meta.url
-        ),
+        new URL('../../packages/graphql/dist/client.json', import.meta.url),
         'utf8'
       )
     ) as Record<string, string>
@@ -51,15 +62,61 @@ for (const refreshFails of [false, true]) {
         persistedNames[extensions.persistedQuery?.sha256Hash]
       if (operation === 'GetKbResourcesWithFailureDetail') {
         resourceRequests += 1
+        const variables =
+          payload?.variables ??
+          JSON.parse(url.searchParams.get('variables') ?? '{}')
+        if (delayedFilter && variables.search) {
+          filteredRequests += 1
+          await filterGate
+        }
+        const secondPage = Boolean(variables.after)
+        if (
+          multiplePages &&
+          secondPage &&
+          settled &&
+          reconciliationFailures === 0
+        ) {
+          reconciliationFailures += 1
+          await route.fulfill({
+            json: { errors: [{ message: 'Synthetic reconciliation failure' }] },
+          })
+          return
+        }
+        const items = multiplePages
+          ? Array.from({ length: secondPage ? 1 : 20 }, (_, index) => ({
+              id: `synthetic-resource-${secondPage ? 20 : index}`,
+              type: 'BLOB',
+              materialType: 'COURSE_CONTENT',
+              title: secondPage
+                ? settled
+                  ? 'Reconciled second page'
+                  : 'Previous second page'
+                : `Synthetic resource ${index}`,
+              sourceUrl: null,
+              originalFilename: 'synthetic.txt',
+              mimeType: 'text/plain',
+              sizeBytes: 14,
+              status: 'READY',
+              ingestedAt: '2026-09-21T14:44:00.000Z',
+              resourceVersion: 1,
+              activeResourceVersion: 1,
+              latestIngestionRun: null,
+              createdAt: '2026-09-21T14:44:00.000Z',
+              updatedAt: '2026-09-21T14:44:00.000Z',
+            }))
+          : []
         // The active resource is outside the loaded window. Only the global
         // count exposes its activity; no rendered row can drive polling.
         await route.fulfill({
           json: {
             data: {
               getKbResources: {
-                items: [],
-                pageInfo: { hasNextPage: false, endCursor: null },
-                totalCount: 0,
+                items,
+                pageInfo: {
+                  hasNextPage: multiplePages && !secondPage,
+                  endCursor: multiplePages && !secondPage ? 'page-two' : null,
+                },
+                totalCount: multiplePages ? 21 : 0,
                 needsIngestionCount: 0,
                 failedIngestionCount: 0,
                 inProgressCount: settled ? 0 : 1,
@@ -111,27 +168,62 @@ for (const refreshFails of [false, true]) {
 
     try {
       await kbLink.click()
-      await page.getByTestId('kb-resource-search').fill('outside-the-filter')
       const inventory = page.getByTestId('kb-imported-sources')
       await expect(inventory).toContainText('Previously indexed document')
       await expect(page.getByTestId('kb-background-operations')).toBeVisible()
+      const requestsBeforeFilter = inventoryRequests
+      if (multiplePages) {
+        await page.getByTestId('load-more-kb-resources').click()
+        await expect(
+          page.getByText('Previous second page', { exact: true })
+        ).toBeVisible()
+      } else {
+        await page.getByTestId('kb-resource-search').fill('outside-the-filter')
+      }
+      if (delayedFilter) {
+        await expect.poll(() => filteredRequests).toBeGreaterThan(0)
+        await expect(page.getByTestId('kb-background-operations')).toBeVisible()
+        expect(inventoryRequests).toBe(requestsBeforeFilter)
+      }
       const requestsBeforePolling = resourceRequests
-      await expect
-        .poll(() => resourceRequests, { timeout: 15000 })
-        .toBeGreaterThan(requestsBeforePolling + 1)
+      if (!delayedFilter) {
+        await expect
+          .poll(() => resourceRequests, { timeout: 15000 })
+          .toBeGreaterThan(requestsBeforePolling + 1)
+      }
       await page.screenshot({
         path: testInfo.outputPath('before-settlement.png'),
         fullPage: true,
       })
       const requestsBeforeSettlement = inventoryRequests
       settled = true
+      releaseFilter()
+      if (multiplePages) {
+        await expect(
+          page.getByText(enMessages.kb.resourcesLoadError)
+        ).toBeVisible()
+        await expect(page.getByTestId('kb-background-operations')).toBeVisible()
+        expect(inventoryRequests).toBe(requestsBeforeSettlement)
+      }
       await expect
-        .poll(() => inventoryRequests)
+        .poll(() => inventoryRequests, { timeout: 15000 })
         .toBeGreaterThan(requestsBeforeSettlement)
       await expect(page.getByTestId('kb-background-operations')).toBeHidden()
       await expect(page.getByTestId('kb-ingestion-summary')).toContainText(
         '0 already in progress'
       )
+      if (multiplePages) {
+        expect(reconciliationFailures).toBe(1)
+        await expect(
+          page.getByText('Synthetic resource 0', { exact: true })
+        ).toBeVisible()
+        await expect(
+          page.getByText('Reconciled second page', { exact: true })
+        ).toBeVisible()
+        await expect(
+          page.getByText('Previous second page', { exact: true })
+        ).toBeHidden()
+      }
       if (refreshFails) {
         await expect(
           page.getByText(enMessages.kb.importedSourcesLoadError)
@@ -146,6 +238,7 @@ for (const refreshFails of [false, true]) {
         fullPage: true,
       })
     } finally {
+      releaseFilter()
       await page.unroute('**/graphql*')
       await page.goto(`${manageUrl}/resources/knowledgeBases`)
       const row = page.locator('li').filter({ hasText: kbName })
