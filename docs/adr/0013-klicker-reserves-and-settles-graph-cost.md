@@ -117,3 +117,16 @@ A revision request for one generated question runs as a one-slot child build and
 spends one `ELEMENT_REVISION` dispatch. Its price is the question price divided
 by the requested count of the parent build, rounded up (`ceil(build price /
 requested count)`), so revising a slot never costs more than generating it.
+
+Native budget accounting for individual revision children is not yet qualified.
+A child currently inherits its parent's budgeted configuration marker, but its
+revision payload does not carry `budget_policy`. That marker is therefore not
+evidence of a capped revision run. Keep `ELEMENT_REVISION_WORKER_ENABLED`
+disabled wherever budgeted parent builds can be revised, including after the
+server budget setting is removed: existing parents retain their frozen policy.
+Do not strip the inherited marker or reopen legacy retries to work around this
+limitation. Enabling budgeted revisions requires a separately qualified child
+accounting contract and worker evidence for manifests combining `budget_policy`
+with `emit_slot_specifications`. This is an operational release hold, not an
+additional runtime guard; the original-build and retry guarantees above do not
+establish revision-child accounting.
