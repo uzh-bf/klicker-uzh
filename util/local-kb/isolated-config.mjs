@@ -475,7 +475,7 @@ function validateInput(input) {
   for (const name of ['api', 'worker']) {
     ensure(
       typeof input.images[name] === 'string' &&
-        /^[a-zA-Z0-9][a-zA-Z0-9._:/-]*@sha256:[a-f0-9]{64}$/.test(
+        /^(?:[a-zA-Z0-9][a-zA-Z0-9._:/-]*@)?sha256:[a-f0-9]{64}$/.test(
           input.images[name]
         ),
       `images.${name} must be an immutable image reference.`

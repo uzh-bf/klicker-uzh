@@ -373,6 +373,33 @@ test('rejects altered dependency wiring in a persisted configuration', () => {
   )
 })
 
+test('accepts local immutable workload IDs and rejects mutable image tags', () => {
+  const input = makeInput('a')
+  input.images = {
+    api: `sha256:${'a'.repeat(64)}`,
+    worker: `sha256:${'b'.repeat(64)}`,
+  }
+  const config = resolveIsolatedConfig(input)
+  assert.deepEqual(config.bindings.images, input.images)
+  assert.equal(validateIsolatedConfig(config), true)
+  const commands = providerCommands(config)
+  for (const image of Object.values(input.images)) {
+    assert.ok(commands.providers.ingestion.lifecycle.setup.args.includes(image))
+  }
+  for (const image of [
+    'example.invalid/api:latest',
+    'sha256:abc',
+    'sha256:' + 'A'.repeat(64),
+  ]) {
+    assert.throws(() =>
+      resolveIsolatedConfig({
+        ...input,
+        images: { ...input.images, api: image },
+      })
+    )
+  }
+})
+
 test('rejects a runtime checkout equal to or inside a retained source', () => {
   const input = makeInput('a')
   assert.throws(() =>
