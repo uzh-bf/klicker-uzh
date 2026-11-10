@@ -73,7 +73,6 @@
     "dev:prepare-prod": "./util/_prepare_local_prod.sh",
     "dev:raw": "turbo run dev --concurrency 30",
     "disk:usage": "node ./util/disk-usage.mjs",
-    "eval:klicker": "./util/_run_klicker_eval.sh",
     "format": "biome format --write . && prettier --write \"**/*.{md,mdx,yaml,yml}\" playwright/ --config .prettierrc.mjs",
     "format:check": "biome format . && prettier --check \"**/*.{md,mdx,yaml,yml}\" playwright/ --config .prettierrc.mjs",
     "knip": "knip",

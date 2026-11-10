@@ -56,10 +56,10 @@ a failed fixture assertion can otherwise resemble a routing failure.
 The standalone evaluation judge has a separate retry boundary. LiteLLM's Router
 can inherit the OpenAI SDK retry default even when the evaluator admits one
 attempt. Set both `num_retries` and `max_fallbacks` to zero in
-[the judge configuration](../../../evaluation/litellm.yaml). Qualify the actual
+the judge configuration (`evaluation/litellm.yaml` in `klicker-uzh-catalyst`). Qualify the actual
 proxy config loader and HTTP completion endpoint, counting provider transport
 sends on synthetic success and failure. A Router-only probe misses config-loader
-behavior; [the existing judge tests](../../../util/test-klicker-eval-judge.py)
+behavior; the existing judge tests (`evaluation/tests/test-klicker-eval-judge.py` in `klicker-uzh-catalyst`)
 exercise that seam inside the launcher's pinned image with networking disabled.
 
 Managed startup re-sources canonical development settings. Explicit guarded
@@ -67,7 +67,7 @@ settings must survive that sourcing, and configuration changes must replace
 the owned process. Use a nonsecret generation for credential changes rather
 than hashing keys into a process fingerprint. The application must reject
 per-chatbot routing overrides before decryption or provider construction.
-See [evaluation routing setup](../../../evaluation/README.md#trajectories-and-provider-admission)
+See the evaluation routing setup in `klicker-uzh-catalyst`'s `evaluation/README.md`
 and [the evaluator correction PR](https://github.com/uzh-bf/klicker-uzh/pull/6489).
 
 ### Paid upstream smoke

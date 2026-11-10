@@ -283,8 +283,9 @@ the target process. The committed KB_doc_query canary proves synthetic
 transport and persistence only; it must not be reported as FineCo quality or
 replace an authorized EXPERT_df_fineco_expert binding.
 
-For assistance-attribution checks, `evaluation/run-tutor-trajectories.mjs`
-uses the same local target directly, without extending its single-message HTTP
+For assistance-attribution checks, `evaluation/bin/run-tutor-trajectories.mjs`
+in `klicker-uzh-catalyst` (paths in this section are relative to that repository) uses the same
+local target directly, without extending its single-message HTTP
 API. The corpus schema, per-turn verification and trajectory driver live in
 `apps/chat/scripts/tutor-trajectory.mjs`; the target module keeps transport. It follows actual persisted replies and parent IDs across a trajectory,
 checks streamed text against saved text, and requires successful `KB_doc_query`
@@ -301,7 +302,7 @@ obligations to case IDs and one-based assessment turns without changing the
 strict trajectory schema. Pass it with `--numeric` so the runner rejects an
 obligation without a matching assessment turn before login. Annotate claims from visible responses, convert their
 units, then call `compareTutorNumericClaim` from
-`evaluation/tutor-numeric-reference.mjs` with the formula, explicit
+`evaluation/bin/tutor-numeric-reference.mjs` with the formula, explicit
 inputs, numeric claim and the sidecar's absolute tolerance. Rates are decimal
 fractions and cash flows use annual periods. Missing claims remain unassessed;
 a numerical match alone does not establish correct assistance attribution.
@@ -323,7 +324,7 @@ The default model is the fixed `gpt-6-luna` selection. Auto routing remains
 unqualified for paid evaluation; an `auto` arm label does not select that route.
 
 ```sh
-node evaluation/run-tutor-trajectories.mjs \
+node evaluation/bin/run-tutor-trajectories.mjs \
   --corpus evaluation/data/trajectories/tutor-attribution-v2.json \
   --numeric evaluation/data/trajectories/tutor-attribution-v2-numeric.json \
   --output project/_local/tutor-baseline.jsonl --arm baseline --repeats 2 \
@@ -913,7 +914,7 @@ without the solution-scope and closing-check rules, bulleted and prior-knowledge
 the Tutor's closing question and some options worked out corrected results the default left to the
 student. With them, no option changed the teaching move in the rerun. The prior-knowledge options
 were removed afterwards. The sample was small; repeat it when the template or model changes.
-`evaluation/run-tutor-trajectories.mjs` accepts `--answer-style` and `--answer-tone` for this.
+`klicker-uzh-catalyst`'s `evaluation/bin/run-tutor-trajectories.mjs` accepts `--answer-style` and `--answer-tone` for this.
 
 A lecturer can turn both choices off for a chatbot in the manage app's advanced chatbot settings
 (`Chatbot.answerPreferencesEnabled`, default on, saved through `updateChatbotModelPolicy`). The chat
