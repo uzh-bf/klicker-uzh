@@ -250,6 +250,26 @@ describe('KB graph external dispatch', () => {
     ).resolves.toEqual(result)
   })
 
+  it('reads the terminal task output when the run output belongs to another task', async () => {
+    const client = createClient()
+    const result = { contract_version: 'klicker-kb-graph/v1' }
+    vi.mocked(client.runs.get).mockResolvedValue({
+      run: { output: { artifacts: [] } },
+      tasks: [
+        { displayName: 'persist-graph-artifacts', output: { artifacts: [] } },
+        {
+          displayName: 'summarize-kg-run',
+          actionId: 'course-kg-ingestion:summarize-kg-run',
+          output: result,
+        },
+      ],
+    })
+
+    await expect(
+      getKBGraphTerminalResult('external-run-id', client)
+    ).resolves.toEqual(result)
+  })
+
   it('allows an unconfigured worker but rejects a partial graph integration', () => {
     expect(() => validateKBGraphWorkerConfig({})).not.toThrow()
     // The out-of-repo worker secret alone must not arm the gate: doing so would

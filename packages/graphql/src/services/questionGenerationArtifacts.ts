@@ -2072,6 +2072,18 @@ export function parseQuestionGenerationResult(
     // reports the failed status instead, so a partial result without passing
     // questions or without reasons is inconsistent.
     if (
+      !currentSuccessMetadata ||
+      result.requested_questions !== expected.questionCount ||
+      result.generated_questions === 0 ||
+      result.generated_questions >= expected.questionCount ||
+      result.generated_questions + slotFailures.length !==
+        expected.questionCount ||
+      new Set(slotFailures.map((failure) => failure.slotId)).size !==
+        slotFailures.length ||
+      (expected.requiresCompleteProvenance === true &&
+        (result.schema_version !== 2 || questionProvenanceIndex === null)) ||
+      (result.schema_version === 2 && questionProvenanceIndex === null) ||
+      (result.schema_version === 1 && questionProvenanceIndex !== null) ||
       result.final_questions === null ||
       slotFailures.length === 0 ||
       result.rejected_at !== null ||
@@ -2166,6 +2178,7 @@ export function parseQuestionGenerationFinalBank(
     questionCount: number
     sourceSnapshot: KBGraphSourceSnapshot
     expectedQuestionIds: string[]
+    expectedDesignSlotIds?: string[]
     result: QuestionGenerationResultManifest
     lineage?: QuestionGenerationGraphLineage | null
     provenanceAuthority?: QuestionGenerationProvenanceAuthority | null
@@ -2207,6 +2220,39 @@ export function parseQuestionGenerationFinalBank(
         expected.expectedQuestionIds.length !== expected.questionCount)
   ) {
     return artifactError('Final question bank does not match the build')
+  }
+
+  if (partialBank) {
+    const approvedSlotIds = expected.expectedDesignSlotIds ?? []
+    const retainedSlotIds = bank.questions.map((question) =>
+      typeof question.design_slot_id === 'string'
+        ? question.design_slot_id.trim()
+        : question.design_slot_id
+    )
+    const failedSlotIds = expected.result.slotFailures.map(
+      (failure) => failure.slotId
+    )
+    const retainedSlots = new Set(retainedSlotIds)
+    const failedSlots = new Set(failedSlotIds)
+    if (
+      approvedSlotIds.length !== expected.questionCount ||
+      new Set(approvedSlotIds).size !== approvedSlotIds.length ||
+      bank.questions.length !== expected.result.generatedQuestions ||
+      retainedSlots.size !== retainedSlotIds.length ||
+      retainedSlotIds.some(
+        (slotId) =>
+          typeof slotId !== 'string' || !approvedSlotIds.includes(slotId)
+      ) ||
+      failedSlots.size !== failedSlotIds.length ||
+      failedSlotIds.some((slotId) => !approvedSlotIds.includes(slotId)) ||
+      approvedSlotIds.some(
+        (slotId) => retainedSlots.has(slotId) === failedSlots.has(slotId)
+      )
+    ) {
+      return artifactError(
+        'Partial question bank does not partition the approved design slots'
+      )
+    }
   }
 
   const reviewRequiredQuestionIds = bank.questions.flatMap((question) => {
