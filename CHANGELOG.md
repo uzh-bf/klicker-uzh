@@ -2,6 +2,44 @@
 
 All notable changes to this project will be documented in this file. See [standard-version](https://github.com/conventional-changelog/standard-version) for commit guidelines.
 
+## [3.4.0-alpha.92](https://github.com/uzh-bf/klicker-uzh/compare/v3.4.0-alpha.91...v3.4.0-alpha.92) (2026-11-10)
+
+
+### Bug Fixes
+
+* **chat:** show remaining credits as a percentage in every view ([#6819](https://github.com/uzh-bf/klicker-uzh/issues/6819)) ([bca850b](https://github.com/uzh-bf/klicker-uzh/commit/bca850b0f8a86a757a5c38f56e22754ced41c77b))
+* **ci:** pin the staging image executor to its squash commit ([#6833](https://github.com/uzh-bf/klicker-uzh/issues/6833)) ([f10d2b7](https://github.com/uzh-bf/klicker-uzh/commit/f10d2b778b42eae2bc315fe6035f33b1000fe570))
+* **ci:** pin the unit executor to a commit on v3-ai ([#6823](https://github.com/uzh-bf/klicker-uzh/issues/6823)) ([645df09](https://github.com/uzh-bf/klicker-uzh/commit/645df09b3cbf4097c692e8c85465599461c3e6e1))
+* **deploy:** roll staging Deployments instead of recreating them ([#6825](https://github.com/uzh-bf/klicker-uzh/issues/6825)) ([fa84966](https://github.com/uzh-bf/klicker-uzh/commit/fa84966358b98400c1c29c024da7c744cb8908d1))
+* **generation:** normalize partial bank design slot identities ([d3c7fd9](https://github.com/uzh-bf/klicker-uzh/commit/d3c7fd948fc86fe303e57bc165168403b46c7bdf))
+* **generation:** validate partial results before draft completion ([0a4f637](https://github.com/uzh-bf/klicker-uzh/commit/0a4f63707da3afee9b2426139956abdca314de2e))
+* **generation:** validate partial results before draft completion ([#6804](https://github.com/uzh-bf/klicker-uzh/issues/6804)) ([afae1e2](https://github.com/uzh-bf/klicker-uzh/commit/afae1e20f981a24768d8376fee13bcfa32bce109))
+* **kb-graph:** read the terminal result from its own task ([#6841](https://github.com/uzh-bf/klicker-uzh/issues/6841)) ([48c037e](https://github.com/uzh-bf/klicker-uzh/commit/48c037e5e963378ce4628380c478ea7eb34bd928))
+* **lti:** log launch failures without authentication data ([#6817](https://github.com/uzh-bf/klicker-uzh/issues/6817)) ([3f0b3e7](https://github.com/uzh-bf/klicker-uzh/commit/3f0b3e7aa0e38e0c80ace240e1f0969e24ff1c17))
+
+
+### Documentation
+
+* **project:** add partial question result validation plan ([bf1ce16](https://github.com/uzh-bf/klicker-uzh/commit/bf1ce16d9028961de232871cf43ecfee9d854a61))
+* **project:** record fresh runtime qualification boundary ([9375525](https://github.com/uzh-bf/klicker-uzh/commit/93755256cc8371e611b602808dfba8992d34e3a1))
+* **project:** record verified local partial-result qualification ([22cb472](https://github.com/uzh-bf/klicker-uzh/commit/22cb4727568e9527d68f7788a754d9ef4ba480c0))
+
+
+### Enhancements
+
+* **deploy:** size and spread the PWA burst tier ([#6818](https://github.com/uzh-bf/klicker-uzh/issues/6818)) ([d817c5c](https://github.com/uzh-bf/klicker-uzh/commit/d817c5c4b5e7fa17beef36cbe86128cfd28d3c03))
+* **pwa:** serve retained release assets during rollouts ([#6832](https://github.com/uzh-bf/klicker-uzh/issues/6832)) ([406d9bf](https://github.com/uzh-bf/klicker-uzh/commit/406d9bfa2aa867c57d396f0699d1c6df39107a51))
+
+
+### Other
+
+* **generation:** cover idempotent saves of partial builds ([b057e69](https://github.com/uzh-bf/klicker-uzh/commit/b057e696e41d8831932cfd32e164a1ae0b64aec9))
+* **generation:** enable rollout in partial completion fixture ([#6839](https://github.com/uzh-bf/klicker-uzh/issues/6839)) ([5d949cc](https://github.com/uzh-bf/klicker-uzh/commit/5d949cc60a60492af98ed8141f20b7a1fab9fb53))
+* **generation:** hold bootstrap setup behind CI compatibility ([e76c322](https://github.com/uzh-bf/klicker-uzh/commit/e76c322f6cd4cc5eb4a1757211dda4f1567c868c))
+* **generation:** keep partial delivery caller checks focused ([eab2708](https://github.com/uzh-bf/klicker-uzh/commit/eab2708f927839669bfb5265771769eeed032698))
+* **generation:** qualify partial delivery with guarded SQL ([60fcc89](https://github.com/uzh-bf/klicker-uzh/commit/60fcc89b3742045c90db0d00367d720ca1541024))
+* **generation:** use the canonical graph fixture artifact ([1daf194](https://github.com/uzh-bf/klicker-uzh/commit/1daf1944c94db6a3c675d4c0474e6e7a018bf995))
+
 ## [3.4.0-alpha.91](https://github.com/uzh-bf/klicker-uzh/compare/v3.4.0-alpha.90...v3.4.0-alpha.91) (2026-11-04)
 
 
