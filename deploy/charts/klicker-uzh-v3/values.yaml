@@ -435,8 +435,16 @@ frontendPWA:
     minReplicas: 1
     maxReplicas: 4
     targetCPUUtilizationPercentage: 70
+    # Merged over frontendPWA.resources for burst pods only. A request near
+    # the CPU a pod uses under load makes the HPA target meaningful and
+    # reserves that CPU on the spot node.
+    resources:
+      requests:
+        cpu: 150m
     # Kept below the roughly 30-second spot eviction notice.
     terminationGracePeriodSeconds: 25
+    # Burst pod spread. Empty renders no field.
+    topologySpreadConstraints: []
 
   # Optional delay before SIGTERM on both PWA tiers, so Service endpoints drop a
   # terminating pod before the server stops. It counts against the termination
@@ -448,6 +456,22 @@ frontendPWA:
   tolerations: []
 
   affinity: {}
+
+  # Serves /_next/static from a separate Deployment of the same image, which
+  # keeps the static files of the retained earlier releases (see
+  # docs/ci-and-deployment.md). The image must carry release history (PREVIOUS_IMAGE build input).
+  releaseAssets:
+    enabled: false
+    replicaCount: 2
+    resources:
+      requests:
+        cpu: 20m
+        memory: 128Mi
+      limits:
+        memory: 256Mi
+    nodeSelector: {}
+    tolerations: []
+    affinity: {}
 
 frontendManage:
   priorityClassName: production-workload
@@ -765,6 +789,22 @@ assessment:
     affinity: {}
 
     topologySpreadConstraints: []
+
+    # Serves /_next/static from a separate Deployment of the same image, which
+    # keeps the static files of the retained earlier releases (see
+    # docs/ci-and-deployment.md). The image must carry release history (PREVIOUS_IMAGE build input).
+    releaseAssets:
+      enabled: false
+      replicaCount: 2
+      resources:
+        requests:
+          cpu: 20m
+          memory: 128Mi
+        limits:
+          memory: 256Mi
+      nodeSelector: {}
+      tolerations: []
+      affinity: {}
 
   backendGraphql:
     priorityClassName: production-workload
