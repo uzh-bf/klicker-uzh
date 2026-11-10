@@ -4,11 +4,16 @@ import type {
   GeneratedQuestionEditable,
   GeneratedQuestionTagSelection,
   QuestionGenerationConfiguration,
+  QuestionGenerationDesignSummary,
   QuestionGenerationItemType,
+  QuestionGenerationPlanSummary,
 } from '@klicker-uzh/types'
 import type { ContextWithUser } from '../lib/context.js'
 import { createElementRevisionBuildInTransaction } from './elementGenerationAccounting.js'
-import { canonicalElementGenerationJson } from './elementGenerationProvider.js'
+import {
+  canonicalElementGenerationJson,
+  elementTypeSupportsRevision,
+} from './elementGenerationProvider.js'
 import { questionGenerationServiceError } from './questionGenerationErrors.js'
 import { assertQuestionGenerationPreviewAccess } from './questionGenerationGraph.js'
 
@@ -39,11 +44,6 @@ const FINISHED_BUILD_STATUSES: DB.ElementGenerationBuildStatus[] = [
 ]
 
 const MAX_REVISION_NOTE_LENGTH = 1000
-
-// Element types whose drafts can be revised. Layer 2 of the revision request
-// enables questions once the child build can be dispatched; until then every
-// request is refused.
-export const REVISION_SUPPORTED_ELEMENT_TYPES = new Set<DB.ElementType>()
 
 export type UpdateGeneratedQuestionDraftInput = {
   draftId: string
@@ -444,6 +444,41 @@ function revisionConfiguration(
   }
 }
 
+function revisionSlotSummaries(
+  parent: Pick<DB.ElementGenerationBuild, 'designSummary' | 'planSummary'>,
+  slotId: string
+) {
+  const design = parent.designSummary as QuestionGenerationDesignSummary | null
+  const plan = parent.planSummary as QuestionGenerationPlanSummary | null
+  const slot = design?.slots.find((entry) => entry.sourceQuestionId === slotId)
+  const question = plan?.questions.find(
+    (entry) => entry.sourceQuestionId === slotId
+  )
+  return {
+    ...(design && slot
+      ? {
+          designSummary: {
+            ...design,
+            questionCount: 1,
+            modules: design.modules.filter(
+              (entry) => entry.moduleId === slot.moduleId
+            ),
+            slots: [slot],
+          },
+        }
+      : {}),
+    ...(plan && question
+      ? {
+          planSummary: {
+            questionCount: 1,
+            questions: [question],
+            warnings: [],
+          },
+        }
+      : {}),
+  }
+}
+
 export async function setGeneratedQuestionDecision(
   input: {
     draftId: string
@@ -463,7 +498,7 @@ export async function setGeneratedQuestionDecision(
     return draftError('A note is only accepted with a revision request')
   }
   const draft = await findOwnedDraft(input.draftId, ctx)
-  if (isRevision && !REVISION_SUPPORTED_ELEMENT_TYPES.has(draft.elementType)) {
+  if (isRevision && !elementTypeSupportsRevision(draft.elementType)) {
     return draftError('Revision requests are not available yet')
   }
   if (draft.savedElementId !== null && draft.decision !== input.decision) {
@@ -533,6 +568,10 @@ export async function setGeneratedQuestionDecision(
           parentBuildId: current.buildId,
           revisionOfDraftId: current.id,
           revisionNote: note,
+          // The child carries its own one-slot design and plan so that its
+          // result is verified against the slot it reworks, even after the
+          // old draft or the parent's summaries change.
+          ...revisionSlotSummaries(current.build, current.sourceElementId),
           revisionDraftSnapshot:
             current.current as DB.GeneratedElementDraft['current'],
           inputArtifactContainer: runtime.questionInputContainer,

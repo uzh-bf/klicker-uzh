@@ -104,6 +104,7 @@ type ElementGenerationTypeCapability = {
   supportsFocusTopic: boolean
   supportsRetry: boolean
   supportsIncompletePublication: boolean
+  supportsIndividualRegeneration: boolean
 }
 const ElementGenerationTypeCapabilityRef =
   builder.objectRef<ElementGenerationTypeCapability>(
@@ -125,6 +126,9 @@ ElementGenerationTypeCapabilityRef.implement({
     supportsRetry: t.exposeBoolean('supportsRetry'),
     supportsIncompletePublication: t.exposeBoolean(
       'supportsIncompletePublication'
+    ),
+    supportsIndividualRegeneration: t.exposeBoolean(
+      'supportsIndividualRegeneration'
     ),
   }),
 })
@@ -775,6 +779,21 @@ ElementGenerationReviewRef.implement({
   }),
 })
 
+// A child build that fulfils one revision request for a draft.
+export const ElementRevisionBuildRef =
+  builder.objectRef<DB.ElementGenerationBuild>('ElementRevisionBuild')
+ElementRevisionBuildRef.implement({
+  fields: (t) => ({
+    id: t.exposeID('id'),
+    status: t.expose('status', { type: ElementGenerationBuildStatus }),
+    note: t.exposeString('revisionNote', { nullable: true }),
+    errorCode: t.exposeString('errorCode', { nullable: true }),
+    errorMessage: t.exposeString('errorMessage', { nullable: true }),
+    errorRetryable: t.exposeBoolean('errorRetryable', { nullable: true }),
+    createdAt: t.expose('createdAt', { type: 'Date' }),
+  }),
+})
+
 export const GeneratedElementDraftRef =
   builder.objectRef<DB.GeneratedElementDraft>('GeneratedElementDraft')
 GeneratedElementDraftRef.implement({
@@ -784,6 +803,36 @@ GeneratedElementDraftRef.implement({
     order: t.exposeInt('order'),
     duplicationIndex: t.exposeInt('duplicationIndex'),
     parentDraftId: t.exposeID('parentDraftId', { nullable: true }),
+    revisionOfDraftId: t.exposeID('revisionOfDraftId', { nullable: true }),
+    // The note of the request that produced this draft.
+    revisionNote: t.string({
+      nullable: true,
+      resolve: async (draft, _args, ctx) => {
+        if (!draft.revisionBuildId) return null
+        const child = await ctx.prisma.elementGenerationBuild.findUnique({
+          where: { id: draft.revisionBuildId },
+          select: { revisionNote: true },
+        })
+        return child?.revisionNote ?? null
+      },
+    }),
+    revisionBuilds: t.field({
+      type: [ElementRevisionBuildRef],
+      resolve: (draft, _args, ctx) =>
+        ctx.prisma.elementGenerationBuild.findMany({
+          where: { revisionOfDraftId: draft.id },
+          orderBy: { createdAt: 'desc' },
+        }),
+    }),
+    evidencePurged: t.boolean({
+      resolve: async (draft, _args, ctx) => {
+        const build = await ctx.prisma.elementGenerationBuild.findUnique({
+          where: { id: draft.buildId },
+          select: { evidencePurgedAt: true },
+        })
+        return build?.evidencePurgedAt != null
+      },
+    }),
     elementType: t.field({
       type: GeneratableElementType,
       resolve: (draft) => draft.elementType as GeneratableElementType,
