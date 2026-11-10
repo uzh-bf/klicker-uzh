@@ -382,7 +382,7 @@ export async function finalizeEscapeRoomStackSubmission(
   stackFeedback: StackFeedbackStatus,
   ctx: Context
 ) {
-  if (state.kind !== 'escape-room') return
+  if (state.kind !== 'escape-room') return false
 
   // The lifecycle claim is still held, so this read-modify-write is the only
   // writer of the attempt's stage state.
@@ -406,7 +406,7 @@ export async function finalizeEscapeRoomStackSubmission(
         }) as unknown as DB.Prisma.InputJsonValue,
       },
     })
-    return
+    return false
   }
 
   const wrong = correct
@@ -455,6 +455,48 @@ export async function finalizeEscapeRoomStackSubmission(
         : {}),
     },
   })
+
+  // Whether the stage is still open: its solution must stay hidden.
+  return !stageCleared
+}
+
+// Previous evaluations of an escape room stack may only be revealed once the
+// requesting participant has cleared its stage.
+export async function isEscapeRoomStageOpenForParticipant(
+  { stackId, participantId }: { stackId: number; participantId: string },
+  ctx: Context
+) {
+  const stack = await ctx.prisma.elementStack.findUnique({
+    where: { id: stackId },
+    include: {
+      microLearning: { include: { escapeRoomConfig: true } },
+      practiceQuiz: { include: { escapeRoomConfig: true } },
+      elements: { include: { responses: { where: { participantId } } } },
+    },
+  })
+  const activity = stack?.practiceQuiz ?? stack?.microLearning
+  if (!stack || !activity?.escapeRoomConfig) return false
+
+  const attempt = await ctx.prisma.escapeRoomAttempt.findUnique({
+    where: stack.practiceQuiz
+      ? {
+          participantId_practiceQuizId: {
+            participantId,
+            practiceQuizId: activity.id,
+          },
+        }
+      : {
+          participantId_microLearningId: {
+            participantId,
+            microLearningId: activity.id,
+          },
+        },
+  })
+  const outcomes = parseEscapeRoomStageOutcomes(attempt?.stageOutcomes)
+  return !isEscapeRoomStackCleared(
+    stack.elements,
+    getStageOutcome(outcomes, stackId)
+  )
 }
 
 export async function releaseEscapeRoomStackSubmission(

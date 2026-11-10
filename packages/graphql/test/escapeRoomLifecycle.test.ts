@@ -508,6 +508,47 @@ describe('respondToElementStack - sequential answer gating', () => {
 })
 // #endregion
 
+// ! Solution data stays hidden while a stage is open
+// #region
+describe('respondToElementStack - open stage solution privacy', () => {
+  it('returns no evaluation after a wrong answer on an open stage and the full evaluation once cleared', async () => {
+    const quiz = await seedEscapeRoomQuiz(1, { lockoutSeconds: 0 })
+    const stack0 = quiz.stacks[0]!
+    const instance = stack0.elements[0]!
+    const participant = await seedParticipant('open-stage')
+    await startEscapeRoomAttempt(
+      { practiceQuizId: quiz.id },
+      participantCtx(participant.id)
+    )
+
+    const wrongResult = await respondToElementStack(
+      {
+        stackId: stack0.id,
+        courseId,
+        responses: [scResponse(instance.id, 1)],
+        stackAnswerTime: 10,
+      },
+      participantCtx(participant.id)
+    )
+    expect(wrongResult!.status).toBe(StackFeedbackStatus.INCORRECT)
+    expect(wrongResult).not.toHaveProperty('evaluations')
+    expect(wrongResult).not.toHaveProperty('score')
+
+    const correctResult = await respondToElementStack(
+      {
+        stackId: stack0.id,
+        courseId,
+        responses: [scResponse(instance.id, 0)],
+        stackAnswerTime: 10,
+      },
+      participantCtx(participant.id)
+    )
+    expect(correctResult!.status).toBe(StackFeedbackStatus.CORRECT)
+    expect(correctResult!.evaluations).toHaveLength(1)
+  })
+})
+// #endregion
+
 // ! Lockout after an incorrect answer
 // #region
 describe('respondToElementStack - lockout after an incorrect answer', () => {

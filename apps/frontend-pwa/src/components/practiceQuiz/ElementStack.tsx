@@ -988,6 +988,20 @@ function ElementStack({
           />
         )}
 
+      {/* an open escape room stage returns no evaluation, only the status */}
+      {escapeRoom &&
+        !previewOnly &&
+        typeof stackStorage !== 'undefined' &&
+        lastGradedStatus === StackFeedbackStatus.Incorrect &&
+        !Object.values(stackStorage).some((entry) => entry.evaluation) && (
+          <UserNotification
+            type="error"
+            className={{ root: 'mt-4' }}
+            message={t('pwa.practiceQuiz.escapeRoomIncorrectToast')}
+            data={{ cy: 'escape-room-incorrect-notice' }}
+          />
+        )}
+
       {/* display continue button if question was already answered */}
       {typeof stackStorage !== 'undefined' && !showMarkAsRead
         ? wrapEmbedded(
