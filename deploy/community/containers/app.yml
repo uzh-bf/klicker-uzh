@@ -13,11 +13,11 @@
 base_image: discourse/base:2.0.20260812-0036
 
 templates:
-  - "templates/web.template.yml"
+  - 'templates/web.template.yml'
 
 params:
   version: v2026.4.2
-  db_default_text_search_config: "pg_catalog.english"
+  db_default_text_search_config: 'pg_catalog.english'
 
 env:
   LC_ALL: en_US.UTF-8
