@@ -502,3 +502,22 @@ out of this file.
     show the steady-state behaviour.
   - P10 stays open until the next ordinary promotion, when the asset
     Deployment already exists and only rolls ahead of the PWA.
+- 2026-11-10 First ordinary promotion with the asset Deployments in place
+  (`9f9f5cea50`). One k6 run through the ingress at 15 iterations per
+  second, 15:43–16:12 UTC:
+  - 0 page failures; Service plateau failure rate 0.23%, p95 24 ms.
+  - 161 plateau requests returned 404, all assets, between 15:45:22 and
+    15:46:06. The asset Pod rolled first, the PWA Pods about 50 seconds
+    later, so old pages asked the new asset Pod for old assets.
+  - Cause: the new asset image held only its own release
+    (`releases/index.txt` listed one build ID). The image build ran while
+    `stg-release` pointed at a commit merged directly into it, which has
+    no images, so the previous-image lookup found nothing and the build
+    took the `no-previous-release` path.
+  - P10 still fails, but this run did not test the design. Fix: the lookup
+    must fall back to the newest earlier `stg-release` commit that has an
+    image (or read the image staging actually runs). Rerun at the next
+    promotion after that fix.
+  - Probe failures (90% and 92% per tier) are expected: both probed Pods
+    were replaced. Recovery: k6 Pod and ConfigMaps deleted; Argo `Synced`
+    and `Healthy`.
