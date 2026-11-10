@@ -23,9 +23,9 @@ tags:
 
 ## Current review routes
 
-Draft reviews use Mistral-hosted `zai-glm-5-3-flash`; manual reviews
-and the bounded draft advisor use Mistral-hosted `zai-glm-5-3`. Both models use
-maximum reasoning. The manual tool canary and stack topology request call the
+Draft and manual main reviews use Mistral-hosted
+`deepseek-v4-1-flash-1017` through the `mistral-deepseek` profile. The bounded
+advisor uses Mistral-hosted `zai-glm-5-3`. Both models use maximum reasoning. The manual tool canary and stack topology request call the
 fixed Mistral endpoint directly. OCR uses the runner-local
 [adapter](../../../.github/scripts/ocr-mistral-adapter.cjs), which translates
 `max_completion_tokens` to `max_tokens` and restores native thinking chunks

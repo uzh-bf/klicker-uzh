@@ -8,7 +8,7 @@
     "dist"
   ],
   "dependencies": {
-    "@hatchet-dev/typescript-sdk": "1.9.4",
+    "@hatchet-dev/typescript-sdk": "1.22.0",
     "@klicker-uzh/hatchet": "workspace:*",
     "@klicker-uzh/prisma": "workspace:*",
     "@klicker-uzh/types": "workspace:*",

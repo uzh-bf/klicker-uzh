@@ -1,5 +1,5 @@
 import { type NextRequest, NextResponse } from 'next/server'
-import { getManageAiCapability } from '@/src/lib/server/featureFlags'
+import { getManageAssistantCapability } from '@/src/lib/server/featureFlags'
 import { getAuthenticatedManageUser } from '@/src/lib/server/manageAuth'
 import { loadLecturerMcpTools } from '@/src/services/lecturerMcp'
 import type { ManageAssistantCapabilityState } from '@/src/services/manageAssistantCapabilities'
@@ -34,7 +34,7 @@ export async function GET(req: NextRequest) {
   if (!manageUser) return capabilityResponse('unavailable', 401)
 
   try {
-    const aiCapability = await getManageAiCapability(manageUser)
+    const aiCapability = await getManageAssistantCapability(manageUser)
     if (aiCapability === 'disabled') {
       return capabilityResponse('unavailable', 403)
     }

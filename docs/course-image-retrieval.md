@@ -79,13 +79,24 @@ descriptions remain untrusted evidence, and requests for text-only answers still
 apply. `show_course_image`, its three-selection budget, persisted selection and
 student display authorization are unchanged. No preview grants display access.
 
+Each successful selection records a server-generated `model_input` value:
+`pixels` only when that exact figure occurrence was attached to the model-facing
+retrieval result before selection, otherwise `description_only`. The tool details
+show “Pixels provided to model” or “Description only”; the expanded explanation
+clarifies that this records supplied input, not the model's reliance or understanding.
+Prepared previews without a matching model message do not count. The value is
+snapshotted before display validation, shared by concurrent duplicate selections,
+and persisted with the tool result (never pixel bytes). Older results without
+this evidence remain unlabeled. Retrieved metadata and model arguments cannot
+set the label. Skipped or unavailable selections have no per-figure label.
+
 Backend contracts in processor !88, ingestion !181 and doc-query !90 are unchanged:
 description generation continues during processing; this toggle changes only
 Chat's use of existing stored figures. It needs no re-ingestion solely to enable
 previews for already valid figure descriptors. Existing resources without bound
 figures still need the separately authorized upgrade described above.
 
-Enabling previews sends bounded image crops to the selected model's configured
+Enabling previews sends resized image previews to the selected model's configured
 provider and increases model input and latency; it makes no additional standalone
 LLM call. It does not guarantee a better explanation. The existing nine-figure
 local comparison observed roughly 17% higher median latency and 5% higher mean

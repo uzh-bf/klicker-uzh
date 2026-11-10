@@ -104,6 +104,24 @@ function record(value: unknown): Record<string, unknown> | undefined {
     : undefined
 }
 
+export type CourseImageModelInput = 'pixels' | 'description_only'
+
+/** Only server-produced selection results carry model-input evidence. */
+export function courseImageModelInput(
+  result: unknown
+): CourseImageModelInput | undefined {
+  const selection = record(result)
+  if (
+    selection?.status !== 'selected' ||
+    !courseImageSchema.safeParse(selection.image).success
+  )
+    return undefined
+  return selection.model_input === 'pixels' ||
+    selection.model_input === 'description_only'
+    ? selection.model_input
+    : undefined
+}
+
 /**
  * One retrieved figure together with the identity of the source record it was
  * found in.

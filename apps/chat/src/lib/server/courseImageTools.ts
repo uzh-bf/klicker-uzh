@@ -6,6 +6,7 @@ import {
   COURSE_IMAGE_LIMITS,
   COURSE_IMAGE_TOOL,
   type CourseImage,
+  type CourseImageModelInput,
   courseImageCandidates,
   isCourseSearchTool,
 } from '@/src/lib/sources/courseImages'
@@ -27,14 +28,16 @@ export function withCourseImageTool(
   tools: ToolSet,
   kbIds: readonly string[],
   readImage: (image: CourseImage) => Promise<unknown>,
-  visionEnabled = false
+  visionEnabled = false,
+  hasPixelInput: (image: CourseImage) => boolean = () => false
 ): ToolSet {
   if (Object.hasOwn(tools, COURSE_IMAGE_TOOL)) {
     throw new Error(`Tool name conflict: ${COURSE_IMAGE_TOOL}`)
   }
   const candidates = new Map<string, CourseImage>()
-  const selected = new Map<string, CourseImage>()
-  const inFlight = new Map<string, Promise<CourseImage | undefined>>()
+  type Selection = { image: CourseImage; model_input: CourseImageModelInput }
+  const selected = new Map<string, Selection>()
+  const inFlight = new Map<string, Promise<Selection | undefined>>()
   const wrapped: ToolSet = { ...tools }
   for (const [name, definition] of Object.entries(tools)) {
     if (!isCourseSearchTool(name) || !definition.execute) continue
@@ -87,7 +90,7 @@ export function withCourseImageTool(
       if (asset_id === null) return { status: 'skipped' as const, reason }
       const validated = selected.get(asset_id)
       if (validated)
-        return { status: 'selected' as const, image: validated, reason }
+        return { status: 'selected' as const, ...validated, reason }
       let validation = inFlight.get(asset_id)
       if (!validation) {
         const image = candidates.get(asset_id)
@@ -99,11 +102,17 @@ export function withCourseImageTool(
           return { status: 'unavailable' as const }
         // Reserve a slot before invoking storage, but publish only validated
         // images. Duplicate calls share both the success and failure result.
+        // Snapshot before awaiting storage. Later model steps must not change
+        // the evidence for this decision; concurrent duplicates share it too.
+        const selection: Selection = {
+          image,
+          model_input: hasPixelInput(image) ? 'pixels' : 'description_only',
+        }
         validation = Promise.resolve()
           .then(() => readImage(image))
           .then(() => {
-            selected.set(asset_id, image)
-            return image
+            selected.set(asset_id, selection)
+            return selection
           })
           .catch((error) => {
             console.error('Failed to read selected course image', error)
@@ -112,13 +121,13 @@ export function withCourseImageTool(
           .finally(() => inFlight.delete(asset_id))
         inFlight.set(asset_id, validation)
       }
-      const image = await validation
-      if (!image) return { status: 'unavailable' as const }
+      const selection = await validation
+      if (!selection) return { status: 'unavailable' as const }
       return {
         status: 'selected' as const,
-        image,
+        ...selection,
         reason,
-        placement_marker: courseImageMarker(image.asset_id),
+        placement_marker: courseImageMarker(selection.image.asset_id),
       }
     },
   })

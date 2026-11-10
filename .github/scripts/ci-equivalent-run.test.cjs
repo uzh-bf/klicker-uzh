@@ -615,7 +615,8 @@ test('reuse wiring preserves the canonical plan and execution gates', () => {
     fs.readFileSync(path.join(__dirname, '../workflows/test-unit.yml'), 'utf8')
   )
   assert.equal(units.jobs['equivalent-validation'], undefined)
-  assert.equal(units.jobs['test-unit'].needs, 'filter')
+  for (const dependency of ['filter', 'priority-route'])
+    assert.ok(units.jobs['test-unit'].needs.includes(dependency))
   assert.ok(units.jobs['test-unit'].if.includes('!cancelled()'))
 })
 

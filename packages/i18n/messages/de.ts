@@ -1,6 +1,12 @@
 export default {
   chat: {
     courseImages: {
+      pixelsProvided: 'Bildpixel an das Modell übermittelt',
+      descriptionOnly: 'Nur Beschreibung',
+      pixelsProvidedExplanation:
+        'Die Pixel dieser Abbildung waren vor der Auswahl in der Modelleingabe enthalten. Das belegt nicht, auf welche Eingaben sich das Modell gestützt hat.',
+      descriptionOnlyExplanation:
+        'Die Pixel dieser Abbildung waren vor der Auswahl nicht in der Modelleingabe enthalten. Dem Modell standen der abgerufene Text und gegebenenfalls die Bildunterschrift oder Beschreibung zur Verfügung.',
       expandLabel: 'Bild vergrößern: {label}',
       closeViewer: 'Bildansicht schließen',
       zoomIn: 'Vergrößern',
@@ -39,6 +45,9 @@ export default {
       explainer: 'Erklärer',
       explainerDescription:
         'Erhalte direkte Erklärungen mit Definitionen und Beispielen aus den Kursunterlagen.',
+      'writing-coach': 'Schreibcoach',
+      'writing-coachDescription':
+        'Erhalte konkretes Feedback und Tipps zu deinem Text und überarbeite ihn anschliessend selbst.',
       quizzer: 'Quiz',
       quizzerDescription:
         'Übe mit prüfungsnahen Fragen aus den Kursunterlagen, jeweils eine nach der anderen, mit Rückmeldung.',
@@ -257,6 +266,23 @@ export default {
       loginButton: 'KlickerUZH Manage öffnen',
       opensInNewTab:
         '(öffnet in einem neuen Tab; kehre nach der Anmeldung hierher zurück)',
+      responseExample: {
+        captureAction: 'Diese Antwort als Antwortbeispiel speichern',
+        captureUnavailable:
+          'Diese Antwort kann nicht gespeichert werden. Starte eine neue Vorschau, um es erneut zu versuchen.',
+        capturePending: 'Antwortbeispiel wird gespeichert…',
+        captureCreated: 'Antwortbeispiel gespeichert und zur Prüfung bereit.',
+        captureDuplicate:
+          'Dieses Antwortbeispiel ist bereits gespeichert und zur Prüfung bereit.',
+        captureStale:
+          'Das Quellenmaterial hat sich geändert. Starte eine neue Vorschau, um diese Antwort erneut zu erfassen.',
+        captureExpired:
+          'Diese Erfassung ist abgelaufen. Starte eine neue Vorschau, um es erneut zu versuchen.',
+        captureFailed: 'Das Antwortbeispiel konnte nicht gespeichert werden.',
+        captureRetry: 'Erneut versuchen',
+        reviewNow: 'Jetzt prüfen',
+        startNewPreview: 'Neue Vorschau starten',
+      },
     },
     recovery: {
       notFoundTitle: 'Chatbot nicht gefunden',
@@ -413,6 +439,13 @@ export default {
       },
     },
     suggestions: {
+      reviewWriting: 'Feedback zum Text',
+      reviewWritingPrompt:
+        'Gib mir Feedback zum folgenden Textausschnitt aus meiner Kursarbeit. Erkläre die wichtigsten Verbesserungen und wie ich sie selbst umsetzen kann.\n\n[Textausschnitt hier einfügen]',
+      reviewRevision: 'Überarbeitung prüfen',
+      reviewRevisionPrompt:
+        'Ich habe meinen Textausschnitt aus der Kursarbeit überarbeitet. Gib mir Feedback dazu, was sich verbessert hat und worauf ich als Nächstes achten sollte.\n\n[Überarbeitung hier einfügen]',
+
       sectionLabel: 'Gesprächseinstiege',
       editHint: 'Wähle einen Einstieg und passe ihn vor dem Senden an.',
       practiceTopic: 'Ein Thema üben',
@@ -2000,7 +2033,29 @@ Da die KlickerUZH-App noch nicht im iOS-App-Store verfügbar ist, folgen Sie die
     searchResultCount:
       '{count, plural, =0 {Keine Wissensdatenbanken} one {# Wissensdatenbank} other {# Wissensdatenbanken}}',
     catalogMetrics:
-      '{resources, plural, one {# Ressource} other {# Ressourcen}} · {chatbots, plural, one {# verknüpfter Chatbot} other {# verknüpfte Chatbots}}',
+      '{resources, plural, one {# Ressource} other {# Ressourcen}} und {chatbots, plural, one {# verknüpfter Chatbot} other {# verknüpfte Chatbots}}',
+    catalogDomain: 'Fachgebiet: {domain}. Sprache: {language}.',
+    materialsReadinessNone: 'Chatbot-Materialien: noch keine hinzugefügt',
+    materialsReadinessAvailable:
+      'Chatbot-Materialien: {available} von {total} verfügbar',
+    materialsReadinessProcessing: '{count} in Verarbeitung',
+    materialsReadinessFailed: '{count} fehlgeschlagen',
+    questionReadiness: {
+      WAITING_FOR_MATERIALS:
+        'Fragengenerierung: wartet auf die Verarbeitung der Materialien',
+      QUEUED:
+        'Fragengenerierung: wird automatisch über Nacht vorbereitet; in der Regel am nächsten Morgen bereit.',
+      PROCESSING:
+        'Fragengenerierung: wird automatisch über Nacht vorbereitet; in der Regel am nächsten Morgen bereit.',
+      READY: 'Fragengenerierung: bereit',
+      DELAYED: 'Fragengenerierung: Vorbereitung verzögert.',
+      NEEDS_ATTENTION:
+        'Fragengenerierung: Vorbereitung erfordert Aufmerksamkeit.',
+      UNAVAILABLE:
+        'Fragengenerierung: automatische Vorbereitung nicht verfügbar.',
+      NO_ELIGIBLE_MATERIALS: 'Fragengenerierung: noch kein Kursmaterial',
+      contact: 'Kontakt aufnehmen',
+    },
     loadMore: 'Weitere Wissensdatenbanken laden',
     notFound: 'Die Wissensdatenbank konnte nicht gefunden werden.',
     detailFallbackTitle: 'Wissensdatenbank',
@@ -2011,7 +2066,7 @@ Da die KlickerUZH-App noch nicht im iOS-App-Store verfügbar ist, folgen Sie die
       '{count, plural, =0 {Keine Upload-Reservierungen} one {# Upload-Reservierung} other {# Upload-Reservierungen}}',
     metricStorage: 'Speicherlimit',
     metricStorageBreakdown:
-      '{visible} sichtbar · {reserved} für Uploads reserviert',
+      '{visible} sichtbar und {reserved} für Uploads reserviert',
     unknownSizesReserved:
       '{count, plural, one {# ältere Ressource reserviert bis zu 25 MiB} other {# ältere Ressourcen reservieren je bis zu 25 MiB}}',
     metricPendingCleanup: 'Ausstehende Bereinigung',
@@ -2023,11 +2078,19 @@ Da die KlickerUZH-App noch nicht im iOS-App-Store verfügbar ist, folgen Sie die
     fileUploadTitle: 'Datei hochladen',
     fileUploadDescription: 'Fügen Sie Kursmaterial von Ihrem Computer hinzu.',
     fileDropPrompt: 'Datei hier ablegen oder zum Auswählen klicken',
-    fileUploadFormats: 'PDF, TXT oder MD · maximal 25 MB',
+    filesDropPrompt: 'Dateien hier ablegen oder zum Auswählen klicken',
+    fileUploadFormats: 'PDF, TXT oder MD, bis 25 MB',
     uploading: 'Wird hochgeladen…',
+    uploadingProgress: 'Datei {current} von {total} wird hochgeladen…',
     fileUploadSuccess: 'Datei wurde zur Wissensdatenbank hinzugefügt.',
+    fileUploadBatchSuccess:
+      '{count} Dateien wurden zur Wissensdatenbank hinzugefügt.',
+    fileUploadBatchPartial:
+      '{succeeded} von {total} Dateien wurden hinzugefügt. Fehlgeschlagen: {files} ({reason})',
     fileUploadError: 'Die Datei konnte nicht hochgeladen werden.',
     fileRejected: 'Wählen Sie eine unterstützte Datei mit maximal 25 MB.',
+    filesRejected:
+      'Diese Dateien wurden übersprungen: {files}. Verwenden Sie PDF-, TXT- oder MD-Dateien mit maximal 25 MB.',
     replaceFile: 'Datei ersetzen',
     replaceFileTitle: 'Datei ersetzen',
     replaceAndIngest: 'Ersetzen und verarbeiten',
@@ -2061,6 +2124,7 @@ Da die KlickerUZH-App noch nicht im iOS-App-Store verfügbar ist, folgen Sie die
     typeFile: 'Datei',
     typeUrl: 'Link',
     addResource: 'Ressource hinzufügen',
+    addResourceTitleFor: 'Materialien zu {kbName} hinzufügen',
     addResourceTitle: 'Ressource hinzufügen',
     addResourceDescription:
       'Wählen Sie, wie Sie diese Ressource hinzufügen möchten.',
@@ -2142,7 +2206,7 @@ Da die KlickerUZH-App noch nicht im iOS-App-Store verfügbar ist, folgen Sie die
     ingestAllFailed: 'Fehlgeschlagene Versuche',
     ingestAllInProgress: 'In Verarbeitung',
     ingestAllSummary:
-      '{needs} benötigen Verarbeitung · {failed} fehlgeschlagene Versuche · {inProgress} bereits in Verarbeitung',
+      '{needs} benötigen Verarbeitung, {failed} fehlgeschlagene Versuche und {inProgress} bereits in Verarbeitung',
     ingestAllSuccess:
       '{queued} Ressourcen eingeplant. {retried} fehlgeschlagene Ressourcen erneut versucht. {current} waren bereits aktuell und {inProgress} bereits in Verarbeitung. {failed} konnten nicht eingeplant werden.',
     ingestAllError:
@@ -2212,6 +2276,10 @@ Da die KlickerUZH-App noch nicht im iOS-App-Store verfügbar ist, folgen Sie die
     noLinkedChatbots: 'Kein Chatbot verwendet diese Wissensdatenbank.',
     chatbotReplacementWarning:
       'Dieser Chatbot verwendet derzeit „{kbName}“. Durch die Verknüpfung wird diese Wissensdatenbank ersetzt.',
+    chatbotLiveChangeWarning:
+      'Dieser Chatbot ist veröffentlicht. Eine Verknüpfung hier ändert seine Materialien für Studierende sofort und ohne Prüfung.',
+    linkedChatbotLiveNote:
+      'Veröffentlicht: Das Aufheben der Verknüpfung wirkt sich sofort auf Studierende aus.',
     chatbotAttachSuccess: 'Chatbot wurde mit der Wissensdatenbank verknüpft.',
     chatbotAttachError: 'Der Chatbot konnte nicht verknüpft werden.',
     chatbotDetachSuccess: 'Die Verknüpfung des Chatbots wurde aufgehoben.',
@@ -2286,21 +2354,22 @@ Da die KlickerUZH-App noch nicht im iOS-App-Store verfügbar ist, folgen Sie die
     graphDomainInformatics: 'Informatik',
     graphDomainGeneralAcademic: 'Allgemein / Gemischt',
     graphDomainCategoriesLabel: 'Erzeugte Kategorien',
-    graphDomainLanguageNote:
-      'Der Graph wird in der gewählten Sprache erzeugt. Die Oberflächensprache ändert die Kategorien nicht.',
-    graphDomainLanguageLabel: 'Generierungssprache',
     graphDomainLanguageSelectPlaceholder: 'Sprache wählen',
-    graphDomainCurrentUnavailable:
-      'Die gewählte Domäne {domain} (Version {version}) ist in dieser Installation nicht verfügbar. Wählen Sie eine unterstützte Domäne, um erneut aufzubauen.',
-    graphDomainLanguageUnavailable:
-      'Die gewählte Domäne {domain} bietet {language} in dieser Installation nicht an. Wählen Sie eine unterstützte Generierungssprache, um erneut aufzubauen.',
-    graphDomainRebuildBlocked:
-      'Diese Wissensdatenbank verwendet eine explizite Domäne ({domain}, Version {version}, {language}), die diese Installation nicht erneut anwenden kann. Ein Neuaufbau ist blockiert, bis eine explizite Domänenwahl wieder möglich ist.',
     graphDomainVersionUnknown: 'unbekannt',
     graphDomainPublished:
       'Ausgelieferter Graph: {domain} (Version {version}, {language})',
     graphDomainLanguageGerman: 'Deutsch',
     graphDomainLanguageEnglish: 'Englisch',
+    domainSettingsTitle: 'Fachgebiet und Sprache',
+    domainSettingsDescription:
+      'Wird für jede Aufbereitung eines Wissensgraphen dieser Wissensbasis verwendet. Bereits bestehende Graphen behalten das Fachgebiet und die Sprache, mit denen sie erstellt wurden.',
+    domainSubjectLabel: 'Fachgebiet',
+    domainLanguageLabel: 'Inhaltssprache',
+    domainSettingsNotSet: 'Nicht festgelegt',
+    domainSettingsSaveError:
+      'Fachgebiet und Sprache konnten nicht gespeichert werden. Bitte versuchen Sie es erneut.',
+    domainLanguageUnsupported:
+      '{domain} ist nicht in {language} verfügbar. Wählen Sie ein anderes Fachgebiet oder eine andere Sprache.',
     ingestionDisabledError:
       'Das Hinzufügen neuer Inhalte zu Wissensdatenbanken ist vorübergehend deaktiviert.',
   },
@@ -2827,7 +2896,7 @@ Da die KlickerUZH-App noch nicht im iOS-App-Store verfügbar ist, folgen Sie die
         'Ihre Beta-Anmeldung wird gespeichert. Der aktuelle Status bleibt unverändert, bis der Speichervorgang abgeschlossen ist.',
       betaFeaturesTitle: 'Beta-Features',
       chatbotBetaAccessRequired:
-        'Die Erstellung von Chatbots ist ein Beta-Feature. Sie erfordert AI-Beta-Zugang, Catalyst und vollen Kontozugriff. Die Beta-Anmeldung finden Sie in Ihren Kontoeinstellungen.',
+        'Die Erstellung von Chatbots ist ein Beta-Feature. Sie erfordert AI-Beta-Zugang, Catalyst, vollen Kontozugriff und die Freigabe der KI-Funktionen durch eine Administratorin oder einen Administrator. Die Beta-Anmeldung finden Sie in Ihren Kontoeinstellungen.',
       betaFeaturesUnavailable:
         'Ihre Beta-Einstellung kann derzeit nicht angezeigt oder geändert werden. Es wurde keine Einstellung angenommen.',
       chatAccountUsageDescription:
@@ -2853,7 +2922,7 @@ Da die KlickerUZH-App noch nicht im iOS-App-Store verfügbar ist, folgen Sie die
       usageBudget: 'Budget',
       usageBudgetEmpty: 'Für diese Nutzungsklasse ist kein Budget festgelegt.',
       usageBudgetExhausted: 'Das monatliche Budget ist ausgeschöpft.',
-      usageCredits: 'Credits',
+      usageCredits: 'USD',
       usageRemaining: 'Verbleibend',
       usageResetDate: 'Zurücksetzung',
       usageUsed: 'Verwendet',
@@ -2935,6 +3004,8 @@ Da die KlickerUZH-App noch nicht im iOS-App-Store verfügbar ist, folgen Sie die
       review: 'Ergebnis prüfen',
     },
     elementGeneration: {
+      rolloutUnavailable:
+        'Die Generierung von Elementen ist für Ihr Konto noch nicht freigeschaltet. Sie wird schrittweise eingeführt.',
       eyebrow: 'KI-unterstützte Erstellung',
       title: 'Elemente generieren',
       description:
@@ -2948,12 +3019,43 @@ Da die KlickerUZH-App noch nicht im iOS-App-Store verfügbar ist, folgen Sie die
       configure: {
         sourceTitle: 'Wissensquelle',
         sourceHelp:
-          'Wählen Sie eine Wissensbasis mit einem veröffentlichten Graphen. Die Generierung bleibt für die Nachvollziehbarkeit mit diesem Graph-Build verknüpft.',
+          'Wählen Sie eine Wissensbasis. Die Generierung bleibt für die Nachvollziehbarkeit mit dem vorbereiteten Material verknüpft, das sie verwendet.',
         sourceCount: '{count, plural, one {# Quelle} other {# Quellen}}',
-        indexedAt: 'Veröffentlicht {date}',
-        staleGraph: 'Aktualisierung verfügbar',
+        indexedAt: 'Vorbereitet {date}',
+        staleGraph: 'Neueste Änderungen noch nicht enthalten',
         staleGraphHelp:
-          'Dieser veröffentlichte Graph kann weiterhin verwendet werden, aber die Wissensbasis enthält neuere Änderungen. Erstellen Sie ihn zuerst neu, wenn diese Änderungen einbezogen werden sollen.',
+          'Diese Wissensbasis enthält neuere Änderungen, die noch vorbereitet werden. Jetzt generierte Fragen verwenden das zuvor vorbereitete Material.',
+        basisLanguage: 'Fragen auf {language}',
+        settingsChangedHelp:
+          'Das Fachgebiet oder die Sprache dieser Wissensbasis wurde geändert. Neue Fragen warten auf eine Vorbereitung, die den neuen Einstellungen entspricht. Bestehende Fragen bleiben unverändert.',
+        contactSupport: 'Kontakt: {email}',
+        preparation: {
+          WAITING_FOR_MATERIALS: 'Wartet auf die Verarbeitung der Materialien',
+          QUEUED: 'Wird automatisch vorbereitet',
+          PROCESSING: 'Wird automatisch vorbereitet',
+          READY: 'Bereit',
+          DELAYED: 'Vorbereitung verzögert',
+          NEEDS_ATTENTION: 'Vorbereitung erfordert Aufmerksamkeit',
+          UNAVAILABLE: 'Automatische Vorbereitung nicht verfügbar',
+          NO_ELIGIBLE_MATERIALS: 'Noch kein Kursmaterial',
+        },
+        preparationHelp: {
+          WAITING_FOR_MATERIALS:
+            'Die hochgeladenen Materialien werden noch verarbeitet. Die Vorbereitung der Fragengenerierung beginnt danach automatisch.',
+          QUEUED:
+            'Die Fragengenerierung wird automatisch über Nacht vorbereitet; in der Regel am nächsten Morgen bereit.',
+          PROCESSING:
+            'Die Fragengenerierung wird automatisch über Nacht vorbereitet; in der Regel am nächsten Morgen bereit.',
+          READY: 'Bereit für die Fragengenerierung.',
+          DELAYED:
+            'Die Vorbereitung dauert länger als erwartet. Kontaktieren Sie uns, damit wir es prüfen können.',
+          NEEDS_ATTENTION:
+            'Die Vorbereitung konnte nicht automatisch abgeschlossen werden. Prüfen Sie die Materialien dieser Wissensbasis oder kontaktieren Sie uns.',
+          UNAVAILABLE:
+            'Die automatische Vorbereitung ist für diese Wissensbasis nicht aktiviert. Kontaktieren Sie uns, um die Fragengenerierung zu aktivieren.',
+          NO_ELIGIBLE_MATERIALS:
+            'Fügen Sie dieser Wissensbasis Kursmaterial hinzu. Administrative Dokumente werden für die Fragengenerierung nicht verwendet.',
+        },
         sourceDetails: 'Enthaltene Quellen',
         completeSource: 'Die vollständige Quelle wird verwendet.',
         pageFrom: 'Von Seite',
@@ -2992,9 +3094,12 @@ Da die KlickerUZH-App noch nicht im iOS-App-Store verfügbar ist, folgen Sie die
         remove: 'Entfernen',
         start: 'Elemente generieren',
         starting: 'Wird gestartet…',
-        noSources: 'Kein veröffentlichter Wissensgraph verfügbar',
+        sourceNotReady: 'Noch nicht bereit für die Fragengenerierung',
+        requestedSourceMissing:
+          'Die angeforderte Wissensbasis ist nicht verfügbar. Wählen Sie unten eine Ihrer Wissensbasen.',
+        noSources: 'Keine Wissensbasis verfügbar',
         noSourcesHelp:
-          'Erstellen Sie eine Wissensbasis und veröffentlichen Sie ihren Wissensgraphen, bevor Sie Elemente generieren.',
+          'Erstellen Sie eine Wissensbasis und fügen Sie Kursmaterial hinzu, bevor Sie Elemente generieren.',
       },
       elementTypes: {
         SC: {
@@ -3317,6 +3422,8 @@ Da die KlickerUZH-App noch nicht im iOS-App-Store verfügbar ist, folgen Sie die
           'Die Generierung konnte nicht aktualisiert werden. Versuchen Sie es erneut.',
         withCode:
           'Der Vorgang ist fehlgeschlagen ({code}). Versuchen Sie es erneut.',
+        basisChanged:
+          'Das vorbereitete Material dieser Wissensbasis hat sich geändert. Prüfen Sie die aktualisierte Quelle und starten Sie erneut.',
       },
     },
     questionPool: {
@@ -4224,7 +4331,8 @@ Da die KlickerUZH-App noch nicht im iOS-App-Store verfügbar ist, folgen Sie die
       NRMinLessThanMax: 'Das Minimum muss kleiner als das Maximum sein.',
       NROneValueRequired:
         'Bei einem Lösungsbereich muss mindestens ein Wert angegeben werden.',
-      NRPrecision: 'Die Anzahl Nachkommastellen muss mindestens 0 sein.',
+      NRPrecision:
+        'Die Anzahl Nachkommastellen muss eine ganze Zahl von 0 bis 100 sein.',
       chooseSolutionType:
         'Bitte wählen Sie einen Lösungstyp für Ihre numerische Frage aus oder deaktivieren Sie die Musterlösung.',
       solutionRangeRequired:
@@ -5179,28 +5287,150 @@ Da die KlickerUZH-App noch nicht im iOS-App-Store verfügbar ist, folgen Sie die
       createChatbotDescription:
         'Erstellen Sie einen kursgebundenen Chatbot-Entwurf und konfigurieren Sie ihn, bevor Sie die Veröffentlichung beantragen.',
       chatbotMobileSelector: 'Aktueller Chatbot',
-      chatbotWorkspaceNavigation: 'Chatbot-Arbeitsbereich',
       chatbotWorkspaceOverview: 'Übersicht',
-      chatbotWorkspaceKnowledge: 'Wissensbasis',
+      chatbotDraftStepMaterialsDescription:
+        'Wählen Sie die Wissensdatenbank, aus der der Chatbot antwortet. Sie wird sofort verbunden, sobald Sie sie auswählen.',
+      chatbotDraftStepStudentsDescription:
+        'Studierende lesen diesen Text, bevor sie den Chat starten. Wir haben einen Vorschlag für Sie vorbereitet.',
+      chatbotSectionStatusDefault: 'Standard',
+      chatbotSectionStatusSuggested: 'Vorschlag',
+      chatbotSectionStatusSaved: 'Gespeichert',
+      chatbotSectionStatusWarning: 'Bitte prüfen',
+      chatbotSectionStatusInvalid: 'Unvollständig',
+      chatbotSectionStatusUnsaved: 'Nicht gespeichert',
+      chatbotSectionStatusNotSubmitted: 'Noch nicht eingereicht',
+      chatbotSectionSave: 'Speichern',
+      chatbotSectionSaving: 'Wird gespeichert …',
+      chatbotSectionDiscard: 'Änderungen verwerfen',
+      chatbotSectionMaterials: 'Materialien',
+      chatbotSectionStudents: 'Information für Studierende',
+      chatbotSectionModes: 'Lernmodi und Rahmung',
+      chatbotSectionModel: 'Modell',
+      chatbotSectionUsage: 'Nutzungslimits',
+      chatbotSectionGraph: 'Wissensgraph',
+      chatbotSectionGroupOptional:
+        'Optional. Die Standardwerte passen für die meisten Kurse.',
+      chatbotSectionGroupAdvanced: 'Erweitert',
+      chatbotPausedNotice:
+        'Das Team hat diesen Chatbot pausiert. Bis er wieder aktiv ist, lassen sich die Einstellungen nicht ändern.',
+      chatbotSectionAppliesImmediately: 'Gilt sofort',
+      chatbotSectionAppliesAfterReview: 'Gilt nach der Prüfung',
+      chatbotSectionRequestPending: 'Veröffentlichungsanfrage',
+      chatbotSectionSubmitChanges: 'Änderungen zur Prüfung einreichen',
+      chatbotUnsubmittedSections:
+        'Gespeichert, aber noch nicht eingereicht: {sections}.',
+      chatbotUsageNoneYet: 'Noch keine',
+      chatbotUsageCreditsValue: 'USD {current} von USD {total}',
+      chatbotUsageStudentInformationValue:
+        '{accepted} akzeptiert, {declined} abgelehnt, {pending} noch offen',
+      chatbotLiveCreditPolicy:
+        'Studierende erhalten derzeit Folgendes: {policy}',
+      chatbotSectionRequest: 'Veröffentlichung beantragen',
+      chatbotSummaryMaterialsNone:
+        'Es ist keine Wissensdatenbank verbunden. Antworten nutzen allgemeines Modellwissen.',
+      chatbotSummaryMaterialsConnected: 'Nutzt die Wissensdatenbank {name}.',
+      chatbotSummaryMaterialsReadiness:
+        '{total, plural, =0 {Sie enthält noch keine Ressourcen.} one {{ready} von 1 Ressource ist bereit{failed, plural, =0 {} other {, # fehlgeschlagen}}.} other {{ready} von # Ressourcen {ready, plural, one {ist} other {sind}} bereit{failed, plural, =0 {} other {, # fehlgeschlagen}}.}}',
+      chatbotNoKnowledgeBaseOption:
+        'Keine Wissensdatenbank. Antworten nutzen allgemeines Modellwissen.',
+      chatbotSummaryStudents:
+        'Studierende sehen „{title}“, bevor sie beginnen.',
+      chatbotSummaryStudentsSuggested: 'Das ist der vorgeschlagene Text.',
+      chatbotSummaryStudentsNotSaved:
+        'Der vorgeschlagene Text ist bereit, aber noch nicht gespeichert.',
+      chatbotSummaryStudentsInvalid: 'Der Titel oder die Einleitung fehlt.',
+      chatbotStudentsPreview: 'Vorschau',
+      chatbotStudentsPreviewTitle: 'Was Studierende sehen',
+      chatbotSummaryModesOn:
+        '{modes} {count, plural, one {ist} other {sind}} aktiv.',
+      chatbotSummaryModesNone: 'Kein Lernmodus ist aktiv.',
+      chatbotSummaryModesExtras:
+        '{framing, select, set {Es gibt eine Rahmung} other {Es gibt keine Rahmung}} und {custom, plural, =0 {keine eigenen Modi} one {einen eigenen Modus} other {# eigene Modi}}.',
+      chatbotSummaryModesQuizzerNeedsKb:
+        'Quizzer braucht eine Wissensdatenbank, deshalb sehen Studierende ihn noch nicht.',
+      chatbotSummaryModelFixed: 'Studierende nutzen {model}.',
+      chatbotSummaryModelFixedReasoning:
+        'Studierende nutzen {model} mit dem Reasoning-Level {effort}.',
+      chatbotSummaryModelNoChoice: 'Sie können das Modell nicht wechseln.',
+      chatbotSummaryModelChoice:
+        '{count, plural, one {Studierende nutzen {models}.} other {Studierende wählen zwischen {models}.}}',
+      chatbotSummaryUsageInitial:
+        'Alle Studierenden starten mit USD {initial}.',
+      chatbotSummaryUsageRefill:
+        '{period, select, NONE {Das Budget wird nicht aufgestockt.} DAILY {Jeden Tag kommen USD {amount} dazu, bis höchstens USD {max}.} WEEKLY {Jede Woche kommen USD {amount} dazu, bis höchstens USD {max}.} BIWEEKLY {Alle zwei Wochen kommen USD {amount} dazu, bis höchstens USD {max}.} MONTHLY {Jeden Monat kommen USD {amount} dazu, bis höchstens USD {max}.} other {Das Budget wird bis höchstens USD {max} aufgestockt.}}',
+      chatbotSummaryGraph:
+        'Die Konzeptkarte ist für Studierende {visible, select, yes {sichtbar} other {ausgeblendet}}.',
+      chatbotSummaryGraphRetrieval:
+        'Die Graphsuche ist {enabled, select, yes {aktiv} other {aus}}.',
+      chatbotEditDetails: 'Details bearbeiten',
+      chatbotEditDetailsTitle: 'Chatbot-Details',
+      chatbotChangesRequested: 'Änderungen angefordert',
+      chatbotDraftVisibility:
+        '{courses}. Studierende sehen diesen Chatbot noch nicht.',
+      chatbotLiveVisibility:
+        '{courses}. Studierende können diesen Chatbot nutzen.',
+      chatbotLiveVisibilityNoCourse:
+        'Studierende können diesen Chatbot nutzen.',
+      chatbotPausedVisibility:
+        '{courses}. Studierende können diesen Chatbot nicht nutzen, solange er pausiert ist.',
+      chatbotPausedVisibilityNoCourse:
+        'Studierende können diesen Chatbot nicht nutzen, solange er pausiert ist.',
+      chatbotOpenForCourse: 'Chatbot in {course} öffnen',
+      chatbotDraftVisibilityNoCourse:
+        'Studierende sehen diesen Chatbot noch nicht.',
+      chatbotPublicationBlockersTitle: 'Bevor Sie den Antrag senden:',
+      chatbotPublicationBlockerUnsaved:
+        'Speichern oder verwerfen Sie die Änderungen im Bereich {section}.',
+      chatbotPublicationBlockerInvalid:
+        'Vervollständigen Sie den Bereich {section}.',
       chatbotWorkspaceBehavior: 'Verhalten',
       chatbotWorkspaceDisclaimer: 'Disclaimer',
-      chatbotWorkspaceSetup: 'Einrichtung',
-      chatbotWorkspaceAdvanced: 'Erweitert',
-      chatbotWorkspaceUsage: 'Nutzung',
       chatbotWorkspaceOverviewDescription:
         'Prüfen Sie den Chatbot-Status und verwenden Sie die Bereiche, um die Einrichtung zu bearbeiten oder Betriebsinformationen einzusehen.',
       chatbotWorkspaceBehaviorDescription:
-        'Wählen Sie Lernmodi, Rahmung und die Modellrichtlinie für diesen Chatbot.',
+        'Wählen Sie die Lernmodi und die Rahmung für diesen Chatbot.',
       chatbotWorkspaceDisclaimerDescription:
         'Bearbeiten Sie die Einleitung für Teilnehmende und prüfen Sie die festen institutionellen Abschnitte.',
-      chatbotWorkspaceKnowledgeDescription:
-        'Prüfen Sie die aktive Wissensbasis und öffnen Sie deren Verwaltung. Mehrere Wissensbasen werden in diesem Editor derzeit noch nicht unterstützt.',
-      chatbotKnowledgeSingleActive:
-        'Hier wird derzeit eine aktive Wissensbasis unterstützt.',
-      chatbotKnowledgeEmptyDescription:
-        'Der Chatbot kann auch ohne Abruf von Kursmaterialien verwendet werden.',
-      chatbotKnowledgeManagementLink:
-        'Verwalten Sie Dokumente, Verarbeitung und Bereitschaft der Wissensbasis unter Wissensbasen.',
+      chatbotKnowledgeBaseSelectPlaceholder: 'Wissensdatenbank auswählen',
+      chatbotKnowledgeBaseConnect: 'Verknüpfen',
+      chatbotKnowledgeBaseReplace: 'Ersetzen',
+      chatbotKnowledgeBaseDisconnect: 'Verknüpfung aufheben',
+      chatbotKnowledgeBaseReplacementWarning:
+        'Dieser Chatbot verwendet derzeit „{kbName}“. Wenn Sie eine andere Wissensdatenbank verknüpfen, wird diese ersetzt.',
+      chatbotKnowledgeBaseLiveChangeNote:
+        'Dieser Chatbot ist veröffentlicht. Das Verknüpfen, Ersetzen oder Aufheben einer Wissensdatenbank wirkt sich sofort für Teilnehmende aus und ist nicht Teil der Entwurfsänderungen, die auf Prüfung warten.',
+      chatbotKnowledgeBaseListError:
+        'Ihre Wissensdatenbanken konnten nicht geladen werden.',
+      chatbotKnowledgeBaseConnectSuccess:
+        'Die Wissensdatenbank wurde verknüpft.',
+      chatbotKnowledgeBaseConnectError:
+        'Die Wissensdatenbank konnte nicht verknüpft werden.',
+      chatbotKnowledgeBaseDisconnectSuccess:
+        'Die Verknüpfung der Wissensdatenbank wurde aufgehoben.',
+      chatbotKnowledgeBaseDisconnectError:
+        'Die Verknüpfung der Wissensdatenbank konnte nicht aufgehoben werden.',
+      chatbotKnowledgeBaseCreatedNotConnected:
+        'Die Wissensdatenbank „{kbName}“ wurde erstellt, konnte aber nicht mit diesem Chatbot verknüpft werden. Versuchen Sie die Verknüpfung erneut, um sie hier zu verwenden.',
+      chatbotKnowledgeBaseCardReusable:
+        'Eine Wissensdatenbank ist eine wiederverwendbare Sammlung von Materialien. Auch andere Chatbots können sie nutzen.',
+      chatbotKnowledgeBaseCardOpen: 'Wissensdatenbank öffnen',
+      chatbotKnowledgeBaseCardResources: 'Ressourcen',
+      chatbotKnowledgeBaseCardReady: 'Bereit',
+      chatbotKnowledgeBaseCardProcessing: 'In Verarbeitung',
+      chatbotKnowledgeBaseCardFailed: 'Fehlgeschlagen',
+      chatbotKnowledgeBaseCardLastChanged: 'Zuletzt geändert am {date}.',
+      chatbotKnowledgeBaseCardEmpty:
+        'Diese Wissensdatenbank enthält noch keine Materialien.',
+      chatbotKnowledgeBaseCardRecent: 'Zuletzt hinzugefügt',
+      chatbotKnowledgeBaseAddFiles: 'Dateien hinzufügen',
+      chatbotKnowledgeBaseBanner:
+        'Sie bereiten Materialien für den Chatbot {name} vor.',
+      backToChatbotSetup: 'Zurück zur Chatbot-Einrichtung',
+      chatbotKnowledgeBaseRetryConnection: 'Verknüpfung erneut versuchen',
+      chatbotKnowledgeBaseCreateChatbot:
+        'Chatbot mit dieser Wissensdatenbank erstellen',
+      chatbotKnowledgeBaseChatbotCreatedNotConnected:
+        'Der Chatbot wurde erstellt, die Wissensdatenbank konnte aber nicht verknüpft werden. Verknüpfen Sie sie im Bereich „Materialien“ des Chatbots.',
       chatbotTechnicalDetails: 'Technische Details',
       chatbotTechnicalId: 'ID',
       chatbotTechnicalAvatar: 'Avatar',
@@ -5214,17 +5444,23 @@ Da die KlickerUZH-App noch nicht im iOS-App-Store verfügbar ist, folgen Sie die
         'Wählen Sie die verfügbaren Standardmodi für Teilnehmende',
       chatbotSetupModesTitle: 'Lernmodi',
       chatbotSetupModesDescriptionLong:
-        'Wählen Sie die Standardmodi, die Teilnehmenden zur Verfügung stehen sollen. Tutor und Erklärer sind ohne Abruf von Kursmaterialien verfügbar; der Quizzer wird nur angezeigt, wenn seine erforderliche Fähigkeit verfügbar ist.',
+        'Wählen Sie die Standardmodi für Teilnehmende. Der Schreibcoach gibt Feedback zu Texten. Kurswerkzeug-Vorgaben gelten weiterhin für jeden Modus; der Quizzer benötigt zusätzlich Zugriff auf Kursmaterialien.',
+      chatbotModeWritingCoach: 'Schreibcoach',
+      chatbotModeWritingCoachDescription:
+        'Gibt konkretes Schreibfeedback und Strategien zur Überarbeitung. Die Teilnehmenden schreiben jede Überarbeitung selbst.',
+      chatbotWritingCoachRequiredTool:
+        'Der Schreibcoach ist für Teilnehmende derzeit nicht verfügbar, weil diesem Modus eine für den Chatbot erforderliche Kurswerkzeug-Verknüpfung fehlt. Kontaktieren Sie die Chatbot-Administration, um eine passende Verknüpfung einzurichten.',
       chatbotModeTutor: 'Tutor',
       chatbotModeTutorDescription:
-        'Führt Teilnehmende mit Fragen, Hinweisen und formativen Rückmeldungen.',
+        'Führt Studierende mit Fragen, Hinweisen und Rückmeldungen.',
       chatbotModeExplainer: 'Erklärer',
       chatbotModeExplainerDescription:
         'Erklärt Kurskonzepte direkt mit Definitionen und passenden Beispielen.',
       chatbotModeQuizzer: 'Quizzer',
       chatbotModeQuizzerDescription:
         'Übt nacheinander klausurähnliche Fragen aus dem Kurs mit formativen Rückmeldungen.',
-      chatbotModeInvariant: 'Tutor oder Erklärer muss aktiviert bleiben.',
+      chatbotModeInvariant:
+        'Tutor, Erklärer oder Schreibcoach muss aktiviert bleiben.',
       chatbotModeQuizzerCapabilityNote:
         'Der Quizzer kann weiterhin ausgeblendet sein, wenn die Fähigkeit für Kursmaterialien nicht verfügbar ist.',
       chatbotModeEnabled: 'Aktiviert',
@@ -5233,7 +5469,7 @@ Da die KlickerUZH-App noch nicht im iOS-App-Store verfügbar ist, folgen Sie die
       chatbotCustomModesDescription:
         'Fügen Sie bis zu {count} eigene Modi mit eigenem Namen, eigener Beschreibung und eigenem Persona-Text hinzu. Eigene Modi werden zusammen mit der Chatbot-Revision geprüft.',
       chatbotCustomModesEmpty:
-        'Noch keine eigenen Modi. Fügen Sie einen hinzu, um Teilnehmenden einen zusätzlichen Modus anzubieten.',
+        'Es gibt noch keine eigenen Modi. Fügen Sie einen hinzu, um Studierenden einen weiteren Modus anzubieten.',
       chatbotCustomModesNone: 'Es sind keine eigenen Modi konfiguriert.',
       chatbotCustomModesCount: '{count} von {max} eigenen Modi verwendet',
       chatbotCustomMode: 'Eigener Modus {number}',
@@ -5252,7 +5488,7 @@ Da die KlickerUZH-App noch nicht im iOS-App-Store verfügbar ist, folgen Sie die
       chatbotCustomModeStarterPrompt: 'Starter {number}',
       chatbotCustomModeStarterPromptAdd: 'Starter hinzufügen',
       chatbotCustomModeShowReasoning:
-        'Denkprozess des Modells für Teilnehmende anzeigen',
+        'Denkprozess des Modells für Studierende anzeigen',
       chatbotCustomModeShowReasoningDescription:
         'Standardmässig aus. Die Zusammenfassung des Denkprozesses kann Persona und Anweisungen dieses Modus wiedergeben, zum Beispiel die verborgenen Fakten eines Rollenspiels. In der Eigentümer-Vorschau ist sie immer sichtbar.',
       chatbotCustomModeReasoningShown:
@@ -5287,11 +5523,18 @@ Da die KlickerUZH-App noch nicht im iOS-App-Store verfügbar ist, folgen Sie die
         'Die eigenen Modi konnten nicht gespeichert werden. Bitte versuchen Sie es erneut.',
       chatbotFraming: 'Rahmung des Chatbots',
       chatbotFramingDescription:
-        'Beschreiben Sie kurz den Kurs, die Zielgruppe oder den gewünschten Schwerpunkt. Dieser Kontext wird in den Standard-Lernmodi verwendet.',
+        'Beschreiben Sie den Kurs, die Zielgruppe, Vorkenntnisse, typische Aufgaben und Lernschwerpunkte. Dieser Kontext steuert Antworten in den Standard-Lernmodi einschliesslich des Schreibcoachs. Bei veröffentlichten Chatbots werden gespeicherte Änderungen nach der Freigabe wirksam.',
+      chatbotFramingExamples: 'Kontextbeispiele',
+      chatbotFramingScientific: 'Wissenschaftliches Schreiben',
+      chatbotFramingScientificExample:
+        'Dieser Chatbot unterstützt einen Biologie-Laborkurs auf Bachelorstufe. Die Studierenden schreiben kurze Versuchsberichte und interpretieren Abbildungen. Sie kennen die Grundlagen der Genetik und lernen wissenschaftliches Argumentieren. Achten Sie auf die Verbindung von Aussagen und Ergebnissen, die Trennung von Beobachtung und Interpretation sowie den Umgang mit Unsicherheit. Erklären Sie unbekannte Begriffe kurz. Geben Sie direktes, ermutigendes Feedback. Bewahren Sie den individuellen Schreibstil und beurteilen Sie nur den vorgelegten Ausschnitt.',
+      chatbotFramingInformal: 'Weniger formelles Schreiben',
+      chatbotFramingInformalExample:
+        'Dieser Chatbot unterstützt einen projektbasierten Kommunikationskurs. Die Studierenden schreiben kurze Updates und Reflexionen für Mitstudierende und Projektpartner. Achten Sie auf einen klaren Zweck, konkrete Beispiele, einen logischen Aufbau und gegebenenfalls einen erkennbaren nächsten Schritt. Ein natürlicher Gesprächston passt zu diesen Aufgaben; wissenschaftliche Fachsprache und Quellenangaben sind meist nicht nötig. Geben Sie praktische, ermutigende Rückmeldungen.',
       chatbotFramingPlaceholder:
         'Zum Beispiel: Organische Chemie im ersten Jahr für Medizinstudierende.',
       chatbotFramingTooLong:
-        'Die Rahmung des Chatbots darf beim Bearbeiten höchstens 200 Zeichen enthalten.',
+        'Die Rahmung des Chatbots darf beim Bearbeiten höchstens {count} Zeichen enthalten.',
       chatbotModesSave: 'Lernmodi speichern',
       chatbotModesSaving: 'Wird gespeichert…',
       chatbotModesSaveSuccess: 'Lernmodi gespeichert.',
@@ -5301,9 +5544,6 @@ Da die KlickerUZH-App noch nicht im iOS-App-Store verfügbar ist, folgen Sie die
         'Die Lernmodi können in diesem Chatbot-Status nicht bearbeitet werden.',
       chatbotSetupDisclaimer: 'Disclaimer',
       chatbotSetupDisclaimerDescription: 'Einleitung für Teilnehmende',
-      chatbotSetupCredits: 'Credits',
-      chatbotSetupCreditsDescription:
-        'Limiten und Zurücksetzungsintervall pro teilnehmende Person',
       chatbotSetupReview: 'Prüfen und einreichen',
       chatbotSetupReviewDescription:
         'Gespeicherte Angaben prüfen und Veröffentlichung beantragen',
@@ -5315,22 +5555,20 @@ Da die KlickerUZH-App noch nicht im iOS-App-Store verfügbar ist, folgen Sie die
       chatbotSetupDisclaimerTitle: 'Disclaimer für Teilnehmende',
       chatbotSetupDisclaimerDescriptionLong:
         'Erklären Sie, was Teilnehmende vor der Nutzung dieses Chatbots wissen sollten. Speichern Sie diesen Bereich, um die Vorschau für Teilnehmende zu aktualisieren. Die Vorschau enthält den festen Plattformtext.',
-      chatbotSetupCreditsTitle: 'Credits für Teilnehmende',
-      chatbotSetupCreditsDescriptionLong:
-        'Konfigurieren Sie die Credits, die jede teilnehmende Person erhält. Die Einstellungen sind gesperrt, solange eine Revision geprüft wird.',
       chatbotCreditPolicyDescription:
-        'Start-Credits gelten bei der ersten Nutzung. Wiederkehrende Zurücksetzungen fügen Credits bis zum festgelegten Maximum hinzu.',
-      chatbotCreditAmountRequired: 'Bitte geben Sie eine Credit-Menge ein.',
+        'Credits sind US-Dollar. Jede Antwort wird dem Budget der Studierenden mit ihren Modellkosten in US-Dollar belastet. Das Startbudget gilt bei der ersten Nutzung, und wiederkehrende Aufstockungen erhöhen es bis zum maximalen Guthaben.',
+      chatbotCreditAmountRequired:
+        'Bitte geben Sie einen Betrag in US-Dollar ein.',
       chatbotCreditAmountInvalid:
-        'Bitte geben Sie eine nicht negative ganze Zahl bis 2 147 483 647 ein.',
+        'Bitte geben Sie eine nicht negative ganze Zahl in US-Dollar bis 2 147 483 647 ein.',
       chatbotCreditResetPeriodRequired:
         'Bitte wählen Sie ein Zurücksetzungsintervall.',
       chatbotCreditResetAmountInvalid:
-        'Bitte geben Sie bei aktivierten Zurücksetzungen eine positive ganze Zahl ein.',
+        'Bitte geben Sie bei aktivierten Aufstockungen eine positive ganze Zahl in US-Dollar ein.',
       chatbotCreditInitialAboveMaximum:
-        'Die Start-Credits dürfen die maximalen Credits nicht überschreiten.',
+        'Das Startbudget darf das maximale Guthaben nicht überschreiten.',
       chatbotCreditResetAboveMaximum:
-        'Die Zurücksetzungsmenge darf die maximalen Credits nicht überschreiten.',
+        'Der Aufstockungsbetrag darf das maximale Guthaben nicht überschreiten.',
       chatbotCreditPolicySaveSuccess:
         'Die Credit-Einstellungen für Teilnehmende wurden gespeichert.',
       chatbotCreditPolicySaveError:
@@ -5340,13 +5578,15 @@ Da die KlickerUZH-App noch nicht im iOS-App-Store verfügbar ist, folgen Sie die
         'Prüfen Sie die gespeicherte Einrichtung und geben Sie die Informationen für die Prüfung Ihres Veröffentlichungsantrags an. Für Änderungen können Sie die anderen Bereiche öffnen.',
       chatbotSetupEdit: 'Bearbeiten',
       chatbotSetupPublicationNote:
-        'Die Credit-Einstellungen für Teilnehmende werden separat gespeichert und hier zur Prüfung angezeigt. Die Veröffentlichungsangaben werden mit dem Antrag eingereicht und können bis zum Einreichen bearbeitet werden.',
+        'Die Veröffentlichungsangaben werden mit dem Antrag eingereicht und können bis zum Einreichen bearbeitet werden.',
       chatbotDiscardChangesConfirmation:
         'Möchten Sie Ihre ungespeicherten Chatbot-Änderungen verwerfen?',
       chatbotNavigationPending:
         'Bitte warten Sie, bis die aktuelle Chatbot-Änderung gespeichert wurde.',
       chatbotPreviewUnsavedConfirmation:
         'Diese Vorschau öffnet die zuletzt gespeicherte Live-Konfiguration des Chatbots. Möchten Sie trotz ungespeicherter Änderungen fortfahren?',
+      chatbotRevisionDraftOnly:
+        'Dieser Chatbot ist ein Entwurf und für Teilnehmende noch nicht sichtbar.',
       chatbotRevisionLiveOnly:
         'Die Live-Konfiguration ist für Teilnehmende aktiv. Speichern Sie eine Revision, um Änderungen zur Prüfung vorzubereiten.',
       chatbotRevisionSaved:
@@ -5367,8 +5607,6 @@ Da die KlickerUZH-App noch nicht im iOS-App-Store verfügbar ist, folgen Sie die
         'Die Revision wurde zurückgezogen. Sie können sie weiter bearbeiten.',
       chatbotRevisionWithdrawError:
         'Die Revision konnte nicht zurückgezogen werden. Laden Sie sie neu und versuchen Sie es erneut.',
-      chatbotCreatedAt: 'Erstellt',
-      chatbotUpdatedAt: 'Zuletzt aktualisiert',
       chatbotName: 'Name',
       chatbotDescription: 'Beschreibung',
       chatbotCourse: 'Kurs',
@@ -5391,6 +5629,10 @@ Da die KlickerUZH-App noch nicht im iOS-App-Store verfügbar ist, folgen Sie die
       chatbotPublication: 'Veröffentlichungsantrag',
       chatbotPublicationDescription:
         'Geben Sie die Informationen an, die das Team für die Prüfung dieses Chatbots vor der Veröffentlichung benötigt.',
+      chatbotPublicationSavedNotVisible:
+        'Gespeicherte Änderungen sind für Studierende erst sichtbar, wenn die Veröffentlichung freigegeben ist.',
+      chatbotPublicationPublishedStaysLive:
+        'Die veröffentlichte Version bleibt für Studierende aktiv, während Änderungen gespeichert, geprüft, abgelehnt oder zurückgezogen werden.',
       chatbotPublicationUseCase: 'Einsatzbereich',
       chatbotPublicationUseCaseRequired:
         'Bitte beschreiben Sie den vorgesehenen Einsatzbereich.',
@@ -5412,7 +5654,7 @@ Da die KlickerUZH-App noch nicht im iOS-App-Store verfügbar ist, folgen Sie die
       chatbotPublicationDisclaimerRequired:
         'Speichern Sie vor dem Veröffentlichungsantrag einen vollständigen Disclaimer.',
       chatbotPublicationUnsavedSetup:
-        'Speichern Sie Änderungen in den Grundangaben, Lernmodi, im Disclaimer und bei den Credits oder warten Sie, bis sie gespeichert sind, bevor Sie die Veröffentlichung beantragen.',
+        'Speichern oder verwerfen Sie die ungespeicherten Änderungen auf dieser Seite, auch in geöffneten erweiterten Einstellungen, oder warten Sie, bis sie gespeichert sind, bevor Sie die Veröffentlichung beantragen.',
       chatbotPublicationAuthorizationChecking:
         'Es wird geprüft, ob dieses Konto eine Veröffentlichung beantragen kann ...',
       chatbotPublicationAuthorizationUnavailable:
@@ -5442,18 +5684,16 @@ Da die KlickerUZH-App noch nicht im iOS-App-Store verfügbar ist, folgen Sie die
       chatbotDisclaimerAuthoring: 'Disclaimer bearbeiten',
       chatbotDisclaimerReadonly:
         'Der Disclaimer kann während der Prüfung oder im pausierten Zustand nicht bearbeitet werden.',
-      chatbotDisclaimerTitle: 'Disclaimer-Titel',
-      chatbotDisclaimerTitleRequired:
-        'Bitte geben Sie einen Disclaimer-Titel ein.',
+      chatbotDisclaimerTitle: 'Titel',
+      chatbotDisclaimerTitleRequired: 'Geben Sie einen Titel ein.',
       chatbotDisclaimerTitleTooLong:
         'Der Disclaimer-Titel darf höchstens 160 Zeichen enthalten.',
-      chatbotDisclaimerIntro: 'Disclaimer-Einleitung',
-      chatbotDisclaimerIntroRequired:
-        'Bitte geben Sie eine Disclaimer-Einleitung ein.',
+      chatbotDisclaimerIntro: 'Einleitung',
+      chatbotDisclaimerIntroRequired: 'Geben Sie eine Einleitung ein.',
       chatbotDisclaimerIntroTooLong:
         'Die Disclaimer-Einleitung darf höchstens 10 000 Zeichen enthalten.',
       chatbotDisclaimerIntroEditorPlaceholder:
-        'Erklären Sie, was Teilnehmende vor der Nutzung dieses Chatbots wissen sollten.',
+        'Erklären Sie, was Studierende wissen sollten, bevor sie diesen Chatbot nutzen.',
       chatbotDisclaimerSuggestedTitle: 'Über diesen Chatbot',
       chatbotDisclaimerSuggestedIntro:
         'Dieser Chatbot dient als Lernhilfe für den verknüpften Kurs. Nutzen Sie seine Antworten zur Unterstützung Ihres Lernens und prüfen Sie wichtige Informationen anhand Ihrer Kursmaterialien.',
@@ -5461,7 +5701,7 @@ Da die KlickerUZH-App noch nicht im iOS-App-Store verfügbar ist, folgen Sie die
         'Das aktuelle Feld ist leer. Sie können eine allgemeine vorgeschlagene Einleitung einfügen und vor dem Speichern bearbeiten.',
       chatbotDisclaimerUseSuggestedText: 'Vorgeschlagenen Text verwenden',
       chatbotDisclaimerSuggestedUnsaved:
-        'Dieser vorgeschlagene Text ist noch nicht gespeichert. Speichern Sie Ihre Änderungen, damit Teilnehmende ihn verwenden können.',
+        'Dieser vorgeschlagene Text ist noch nicht gespeichert. Speichern Sie ihn, damit Studierende ihn sehen.',
       saveChatbotDisclaimer: 'Disclaimer speichern',
       chatbotDisclaimerSaveSuccess: 'Chatbot-Disclaimer gespeichert.',
       chatbotDisclaimerSaveError:
@@ -5478,52 +5718,46 @@ Da die KlickerUZH-App noch nicht im iOS-App-Store verfügbar ist, folgen Sie die
       chatbotId: 'Chatbot-ID',
       avatarUrl: 'Avatar-URL',
       avatarNone: 'Kein Avatar',
-      linkedCourses: 'Verknüpfte Kurse',
       linkedCoursesList: 'Verknüpft mit: {courses}',
       noLinkedCourses: 'Noch keine Kurse verknüpft.',
+      chatbotListKnowledgeBase: 'Materialien: {kbName}',
+      chatbotListNoKnowledgeBase: 'Noch keine Materialien verknüpft.',
       chatbotStatusDraft: 'Entwurf',
       chatbotStatusPendingApproval: 'Ausstehende Freigabe',
       chatbotStatusPublished: 'Veröffentlicht',
       chatbotStatusPaused: 'Pausiert',
       chatbotStatusRejected: 'Abgelehnt',
       chatbotStatusUnknown: 'Unbekannter Status',
-      chatbotNotLive:
-        'Der Teilnehmenden-Zugriff ist in diesem Status nicht verfügbar.',
       credits: 'Credits',
-      creditInitialCredits: 'Start-Credits',
-      creditResetPeriod: 'Zurücksetzungsintervall',
-      creditResetAmount: 'Zurücksetzungsmenge',
-      creditMaxCredits: 'Maximale Credits',
-      modelSelection: 'Modellauswahl durch Teilnehmende',
+      creditInitialCredits: 'Startbudget pro Studierende (USD)',
+      creditResetPeriod: 'Aufstockungsintervall',
+      creditResetAmount: 'Aufstockungsbetrag (USD)',
+      creditMaxCredits: 'Maximales Guthaben pro Studierende (USD)',
+      modelSelection: 'Studierende wählen das Modell',
       modelSelectionEnabled: 'Aktiviert',
       modelSelectionDisabled: 'Deaktiviert',
       modelSelectionEnabledDescription:
-        'Aktiv: Teilnehmende können eines der explizit ausgewählten Modelle wählen.',
+        'Ein: Studierende wählen eines der Modelle, die Sie auswählen.',
       modelSelectionDisabledDescription:
-        'Inaktiv: Der Chatbot verwendet genau ein von der Lehrperson ausgewähltes Modell.',
-      modelSelectionFixedDescription:
-        'Teilnehmende verwenden dieses Modell. Neue Chatbots starten mit Auto.',
-      answerPreferences: 'Antwortformat und Ton durch Teilnehmende',
+        'Aus: Der Chatbot nutzt immer das Modell, das Sie wählen.',
+      modelSelectionFixedDescription: 'Studierende nutzen dieses Modell.',
+      answerPreferences: 'Antwortformat und Ton durch Studierende',
       answerPreferencesEnabledDescription:
-        'Aktiv: Teilnehmende können für neue Antworten Stichpunkte und einen freundlichen oder direkten Ton wählen.',
+        'Ein: Studierende können für neue Antworten Stichpunkte und einen freundlichen oder direkten Ton wählen.',
       answerPreferencesDisabledDescription:
-        'Inaktiv: Alle Teilnehmenden erhalten dasselbe Antwortformat und denselben Ton.',
+        'Aus: Alle Studierenden erhalten dasselbe Antwortformat und denselben Ton.',
       modelSelectionParticipantDescription:
-        'Teilnehmende können zwischen diesen Modellen wählen. Wählen Sie mindestens eines.',
+        'Studierende können zwischen diesen Modellen wählen. Wählen Sie mindestens eines.',
       selectedModel: 'Ausgewähltes Modell',
       allowedModels: 'Erlaubte Modelle',
       modelUnavailableHint:
         'Fortgeschrittene Modelle erfordern das fortgeschrittene AI-Abonnement mit einer Kostenstelle.',
       modelUnavailableSelected:
-        'Ihr Konto kann dieses fortgeschrittene Modell nicht verwenden, daher können Teilnehmende damit nicht chatten. Wählen Sie ein anderes Modell.',
+        'Ihr Konto kann dieses fortgeschrittene Modell nicht nutzen, deshalb können Studierende damit nicht chatten. Wählen Sie ein anderes Modell.',
       allowedModelsAll: 'Alle',
-      chatbotModelSettings: 'Modell- und Reasoning-Einstellungen',
       reasoningEffortsByModel: 'Reasoning-Level pro Modell',
       reasoningEffort: 'Reasoning-Level',
       singleReasoningEffortFixed: 'Vom Modell vorgegeben: {effort}',
-      chatbotModelSettingsSave: 'Modelleinstellungen speichern',
-      chatbotModelSettingsSaving: 'Speichern...',
-      chatbotModelSettingsSaveSuccess: 'Modelleinstellungen gespeichert.',
       chatbotModelSettingsSaveError:
         'Die Chatbot-Modelleinstellungen konnten nicht gespeichert werden. Bitte erneut versuchen.',
       creditResetPeriodDaily: 'Täglich',
@@ -5531,43 +5765,36 @@ Da die KlickerUZH-App noch nicht im iOS-App-Store verfügbar ist, folgen Sie die
       creditResetPeriodBiweekly: 'Alle zwei Wochen',
       creditResetPeriodMonthly: 'Monatlich',
       creditResetPeriodNone: 'Keine Zurücksetzung',
-      usageSummary: 'Nutzungsübersicht',
-      usageThreads: 'Threads',
+      usageThreads: 'Unterhaltungen',
       usageMessages: 'Nachrichten',
-      usageParticipants: 'Teilnehmende',
+      usageParticipants: 'Studierende',
       usageLastActivity: 'Letzte Aktivität',
-      usageTotalCredits: 'Gesamt-Credits',
-      usageCurrentCredits: 'Aktuelle Credits',
-      usageTotalResets: 'Anzahl Zurücksetzungen',
+      usageCurrentCredits: 'Verbleibendes Budget aller Studierenden',
       usageLastReset: 'Letzte Zurücksetzung',
       disclaimer: 'Disclaimer',
       noDisclaimer: 'Kein Disclaimer zugewiesen.',
       disclaimerName: 'Name',
       disclaimerTitle: 'Titel',
-      disclaimerAccepted: 'Akzeptiert',
       disclaimerDeclined: 'Abgelehnt',
-      disclaimerPending: 'Ausstehend',
       knowledgeBase: 'Wissensdatenbank',
       knowledgeGraphPolicy: 'Wissensgraph',
       knowledgeGraphPolicyDescription:
-        'Steuern Sie die Konzeptkarte für Teilnehmende und die graphgestützte Dokumentsuche unabhängig voneinander. Beide Einstellungen werden in der Chatbot-Revision gespeichert und nach der Freigabe wirksam.',
-      knowledgeGraphVisible: 'Konzeptkarte für Teilnehmende anzeigen',
+        'Legen Sie fest, ob Studierende die Konzeptkarte sehen und ob die Dokumentsuche den Graphen nutzt. Beides gilt nach der Prüfung.',
+      knowledgeGraphVisible: 'Konzeptkarte für Studierende anzeigen',
       knowledgeGraphVisibleEnabledDescription:
-        'Ein: Teilnehmende können die Konzeptkarte für diesen Chatbot öffnen.',
+        'Ein: Studierende können die Konzeptkarte für diesen Chatbot öffnen.',
       knowledgeGraphVisibleDisabledDescription:
-        'Aus: Die Konzeptkarte bleibt für Teilnehmende verborgen.',
+        'Aus: Die Konzeptkarte bleibt für Studierende verborgen.',
       knowledgeGraphRetrieval:
         'Graphverbindungen für die Dokumentsuche verwenden',
       knowledgeGraphRetrievalEnabledDescription:
         'Ein: Die Dokumentsuche kann verwandte Konzepte aus dem veröffentlichten Graphen als zusätzliche Suchhinweise verwenden. Antworten belegen weiterhin ausschliesslich Dokumentstellen.',
       knowledgeGraphRetrievalDisabledDescription:
         'Aus: Die Dokumentsuche verwendet nur die Frage, ohne Hinweise aus dem Graphen.',
-      knowledgeGraphSave: 'Wissensgraph-Einstellungen speichern',
-      knowledgeGraphSaveSuccess: 'Wissensgraph-Einstellungen gespeichert.',
-      noEnabledKnowledgeBase:
-        'Es ist keine Wissensdatenbank verknüpft. Dieser Chatbot kann Kursmaterial nicht durchsuchen.',
-      openChatbot: 'Chatbot öffnen',
       openOwnerPreview: 'Eigentümer-Vorschau öffnen',
+      aiSettingsModeLabel: 'Detailgrad der Einstellungen',
+      aiSettingsModeSimple: 'Einfache Einstellungen',
+      aiSettingsModeAdvanced: 'Erweiterte Einstellungen',
       chatbotOwnerPreviewLive: 'Live-Konfiguration',
       chatbotOwnerPreviewLiveDescription:
         'Die Eigentümer-Vorschau verwendet die aktuelle Live-Konfiguration. Gespeicherte Revisionen werden erst nach der Freigabe angewendet.',
@@ -6319,6 +6546,20 @@ Da die KlickerUZH-App noch nicht im iOS-App-Store verfügbar ist, folgen Sie die
       listLiveQuizzesNoCourse: 'Liste aller Live Quizzes ohne Kurs',
       loadingLiveQuizzesFailed:
         'Beim Laden Ihrer Live Quizzes ist ein Fehler aufgetreten. Bitte versuchen Sie es später erneut.',
+      appName: 'KlickerUZH Steuerung',
+      running: 'Läuft',
+      stopQuiz: 'Beenden',
+      stopSheetQuiz: '<b>{name}</b> wird beendet.',
+      stopSheetActiveBlock:
+        'Block {number} läuft und wird zuerst geschlossen; seine Antworten werden gespeichert.',
+      stopSheetNotStarted:
+        '{count, plural, one {# Block wurde} other {# Blöcke wurden}} noch nicht gestartet und {count, plural, one {entfällt} other {entfallen}}.',
+      quizStopped: '{name} wurde beendet.',
+      chooseCourse: 'Kurs wählen',
+      archived: 'Archiviert',
+      noCourse: 'Ohne Kurs',
+      liveQuizCount:
+        '{count, plural, one {# Live-Quiz} other {# Live-Quizzes}}',
     },
     course: {
       courseOverview: 'Kursübersicht',
@@ -6332,12 +6573,24 @@ Da die KlickerUZH-App noch nicht im iOS-App-Store verfügbar ist, folgen Sie die
       noPlannedLiveQuizzes: 'Keine geplanten Live Quizzes',
       liveQuizStartFailed:
         'Leider konnte Ihr Live Quiz aufgrund eines Fehlers nicht gestartet werden. Bitte versuchen Sie es später erneut.',
-      pptEmbedding: 'PPT-Einbettung Evaluation',
       startLiveQuiz: 'Quiz starten',
       confirmStartLiveQuiz:
         'Sind Sie sich sicher, dass sie das folgende Live Quiz starten möchten?',
       explanationStartLiveQuiz:
         'Bitte beachten Sie, dass ein gestartetes Live Quiz grundsätzlich öffentlich zugänglich ist. Laufende Live Quizzes können über die KlickerUZH Management-App abgebrochen oder gestoppt werden.',
+      liveQuizzes: 'Live-Quizzes',
+      statusRunning: 'Läuft',
+      statusScheduled: 'Geplant',
+      statusScheduledAt: 'Geplant · {date}',
+      statusReady: 'Bereit zum Start',
+      controlQuiz: 'Steuern',
+      noLiveQuizzes: 'Keine Live-Quizzes.',
+      assessmentBadge: 'Prüfung',
+      startSheetTitle: 'Live-Quiz starten',
+      startSheetBody:
+        '<b>{name}</b> starten? Teilnehmende können danach beitreten.',
+      assessmentStartHint:
+        '<b>Prüfungsmodus:</b> keine Punkte und keine Rangliste. Ergebnisse werden nicht auf die Leinwand projiziert.',
     },
     liveQuiz: {
       liveQuizControl: 'Live Quiz-Steuerung',
@@ -6355,6 +6608,131 @@ Da die KlickerUZH-App noch nicht im iOS-App-Store verfügbar ist, folgen Sie die
       endQuiz: 'Quiz beenden',
       hintLastBlock:
         'Der aktuell laufende Block is der letzte dieses Live Quizzes. Nach Schliessen dieses Blockes kann das Live Quiz beendet werden.',
+      blockRunning: 'Block {number} von {total} · läuft',
+      upNext: 'Als Nächstes · Block {number} von {total}',
+      allBlocksDone: 'Alle Blöcke abgeschlossen',
+      allBlocksDoneHint:
+        'Beenden Sie das Quiz, um die Schlussauswertung freizugeben.',
+      remaining: 'verbleibend',
+      timeUp: 'Zeit abgelaufen',
+      noTimeLimit: 'ohne Zeitlimit',
+      answers: 'Antworten',
+      submissions: 'Abgaben',
+      startBlockN: 'Block {number} starten',
+      closeBlockN: 'Block {number} schliessen',
+      blockProgress: '{done} von {total} Blöcken abgeschlossen',
+      endSheetTitle: 'Live-Quiz beenden?',
+      endSheetBody:
+        'Teilnehmende sehen danach die Schlussauswertung. Das Quiz kann nicht erneut gestartet werden.',
+      endConfirm: 'Beenden',
+      ended: 'Quiz beendet',
+      endedSummary: '{name} · {blocks, plural, one {# Block} other {# Blöcke}}',
+      backToCourse: 'Zurück zum Kurs',
+      actionFailed:
+        'Die Aktion ist fehlgeschlagen. Bitte versuchen Sie es erneut.',
+      audienceFeedbackTitle: 'Publikumsfeedback',
+      audienceFeedbackOpen: 'Details zum Publikumsfeedback öffnen',
+      audienceFeedbackWindow: 'Letzte 10 Min.',
+      audienceFeedbackCount:
+        '{count, plural, one {# Rückmeldung} other {# Rückmeldungen}}',
+      audienceFeedbackNoResponses: 'Keine Rückmeldungen',
+      audienceFeedbackLoading: 'Publikumsfeedback wird geladen…',
+      audienceFeedbackLoadError:
+        'Publikumsfeedback konnte nicht geladen werden.',
+      audienceFeedbackRefreshError:
+        'Aktualisierung fehlgeschlagen. Das zuletzt verfügbare Publikumsfeedback wird angezeigt.',
+      audienceFeedbackOff: 'Aus',
+      audienceFeedbackSpeed: 'Tempo',
+      audienceFeedbackDifficulty: 'Schwierigkeit',
+      audienceFeedbackSpeedLow: 'langsam',
+      audienceFeedbackSpeedCenter: 'passend',
+      audienceFeedbackSpeedHigh: 'schnell',
+      audienceFeedbackDifficultyLow: 'einfach',
+      audienceFeedbackDifficultyCenter: 'machbar',
+      audienceFeedbackDifficultyHigh: 'schwierig',
+      audienceFeedbackMeterLabel: '{dimension}: {value}, Skala von -2 bis 2',
+      audienceFeedbackSheetHint:
+        'Durchschnittliche Rückmeldungen der letzten 10 Minuten. Die Skala reicht von -2 bis 2.',
+      audienceFeedbackToggle: 'Konfusions-Feedback erfassen',
+      audienceFeedbackToggleOnHint:
+        'Teilnehmende können Tempo und Schwierigkeit bewerten.',
+      audienceFeedbackToggleOffHint:
+        'Teilnehmende können Tempo und Schwierigkeit nicht bewerten.',
+      liveEvaluation: 'Live-Auswertung',
+      resultBlockN: 'Ergebnis Block {number}',
+      noAnswersYet: 'Noch keine Antworten.',
+      questionN: 'Frage {number}',
+      submissionsPerQuestion: 'Abgaben je Frage',
+      evaluationInManage:
+        'Die Auswertung für diesen Fragetyp finden Sie in der Management-App.',
+      screen: 'Leinwand',
+      screenSynced: 'synchronisiert',
+      screenSaving: 'wird gespeichert…',
+      screenHint:
+        'Änderungen erscheinen innert weniger Sekunden auf der Leinwand und in PowerPoint.',
+      screenDisplay: 'Darstellung',
+      screenShowSolution: 'Lösung anzeigen',
+      screenSolutionAfterClose: 'Verfügbar, sobald der Block geschlossen ist.',
+      screenShowPercentages: 'Prozent statt Anzahl',
+      screenLocked:
+        'Prüfungsmodus: keine Punkte, keine Rangliste, nichts wird auf die Leinwand projiziert.',
+      tabControl: 'Steuerung',
+      tabQA: 'Q&A',
+      qaPendingCount:
+        '{count, plural, one {# Frage zu prüfen} other {# Fragen zu prüfen}}',
+      qaEnabled: 'Live Q&A',
+      qaEnabledHint: 'Teilnehmende können Fragen stellen.',
+      qaDisabledHint: 'Q&A ist für dieses Quiz ausgeschaltet.',
+      qaModeration: 'Moderation',
+      qaModerationOnHint: 'Fragen erscheinen erst nach Ihrer Freigabe.',
+      qaModerationOffHint: 'Fragen erscheinen sofort für alle.',
+      qaModerationOffTitle: 'Moderation ausschalten?',
+      qaModerationOffBody:
+        '{count, plural, one {Eine Frage, die noch zu prüfen ist, wird} other {# Fragen, die noch zu prüfen sind, werden}} sofort für alle sichtbar.',
+      qaModerationOffConfirm: 'Ausschalten',
+      qaFilterPending: 'Zu prüfen',
+      qaFilterOpen: 'Offen',
+      qaFilterAnswered: 'Beantwortet',
+      qaEmpty: 'Keine Fragen in dieser Liste.',
+      qaVotes: '{count, plural, one {# Stimme} other {# Stimmen}}',
+      qaJustNow: 'gerade eben',
+      qaMinutesAgo: 'vor {minutes} Min',
+      qaHoursAgo: 'vor {hours} Std',
+      qaPinned: 'angeheftet',
+      qaNew: 'neu',
+      qaAnswer: 'Antwort:',
+      qaAnswerPlaceholder: 'Antwort für alle Teilnehmenden',
+      qaSend: 'Senden',
+      qaPublish: 'Freigeben',
+      qaReject: 'Ablehnen',
+      qaRespond: 'Antworten',
+      qaResolve: 'Erledigt',
+      qaPin: 'Anheften',
+      qaUnpin: 'Lösen',
+      qaHide: 'Ausblenden',
+      qaReopen: 'Wieder öffnen',
+      qaDeleteTitle: 'Frage entfernen?',
+      qaDeleteBody:
+        'Die Frage wird endgültig gelöscht und verschwindet für alle Teilnehmenden.',
+      qaDeleteConfirm: 'Entfernen',
+      tabStats: 'Statistik',
+      statsBlocks: 'Blöcke',
+      statsBlocksSub: 'gestartet',
+      statsVotes: 'Stimmen',
+      statsSubmissions: 'Abgaben',
+      statsVotesSub: 'über alle Fragen',
+      statsAvgParticipants: 'Teilnehmende',
+      statsAvgParticipantsSub: 'Ø pro Block',
+      statsQuestions: 'Q&A-Fragen',
+      statsQuestionsSub: '{count} unbeantwortet',
+      statsQuestionsOff: 'Q&A ausgeschaltet',
+      statsPerBlock: 'Teilnehmende je Block',
+      statsBlockN: 'Block {number}',
+      statsRunning: 'läuft',
+      statsClosed: 'geschlossen',
+      statsScheduled: 'geplant',
+      statsBlockDetail:
+        '{participants, plural, one {# Person} other {# Personen}} · {votes, plural, one {# Stimme} other {# Stimmen}} · {questions, plural, one {# Frage} other {# Fragen}}',
     },
     activity: {
       title: '{type} Aktivitäten',

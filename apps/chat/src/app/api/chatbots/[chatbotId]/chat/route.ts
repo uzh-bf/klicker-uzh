@@ -58,10 +58,7 @@ import {
 import { buildChatTurnRequest } from '@/src/lib/server/chatTurnRequest'
 import { withModelCitationIndices } from '@/src/lib/server/citationInstructions'
 import { readCourseImagePreview } from '@/src/lib/server/courseImagePreviewStore'
-import {
-  courseImageStoreConfigured,
-  readCourseImage,
-} from '@/src/lib/server/courseImageStore'
+import { courseImageStoreConfigured } from '@/src/lib/server/courseImageStore'
 import {
   canRegisterCourseImageTool,
   withCourseImageTool,
@@ -1517,7 +1514,7 @@ export async function POST(
     const imageVisionEnabled =
       imageDecisionEnabled &&
       courseImageVisionEnabled(selectedModelConfig.supportsImageAttachments)
-    const prepareCourseImagePreviews = imageVisionEnabled
+    const courseImageVision = imageVisionEnabled
       ? createCourseImageVision({
           kbIds: scopedKbIds ?? [],
           readImage: (image) =>
@@ -1528,8 +1525,9 @@ export async function POST(
       chatTools = withCourseImageTool(
         chatTools,
         scopedKbIds ?? [],
-        readCourseImage,
-        imageVisionEnabled
+        (image) => readCourseImagePreview(image, scopedKbIds ?? []),
+        imageVisionEnabled,
+        courseImageVision?.hasPixelInput
       )
     }
     const toolNames = Object.keys(chatTools)
@@ -2369,10 +2367,10 @@ export async function POST(
           }
           // Keep the off path synchronous and unchanged. Preview bytes exist
           // only in model input, never in persisted steps or streamed tool data.
-          return prepareCourseImagePreviews
-            ? prepareCourseImagePreviews(prepared.messages, steps).then(
-                ({ messages }) => ({ ...prepared, messages })
-              )
+          return courseImageVision
+            ? courseImageVision
+                .prepareMessages(prepared.messages, steps)
+                .then(({ messages }) => ({ ...prepared, messages }))
             : prepared
         },
         stopWhen: isStepCount(5),

@@ -5,25 +5,33 @@ import { SMALL_BAR_THRESHOLD } from '../constants'
 
 interface UseEvaluationBarChartDataProps {
   instance: ElementInstanceEvaluation
+  // label bars with their share of all answers instead of the absolute count
+  showPercentages?: boolean
 }
 
 function useEvaluationBarChartData({
   instance,
+  showPercentages = false,
 }: UseEvaluationBarChartDataProps) {
   const t = useTranslations()
 
   const labeledData = useMemo(() => {
+    const label = (count: number, total: number) =>
+      showPercentages
+        ? `${total > 0 ? Math.round((count / total) * 100) : 0}%`
+        : count
+
     if (instance.__typename === 'ChoicesActivityEvaluationData') {
       const results = instance.results
       return results.choices.map((choice, idx) => ({
         count: choice.count,
         labelIn:
           choice.count / results.totalAnswers > SMALL_BAR_THRESHOLD
-            ? choice.count
+            ? label(choice.count, results.totalAnswers)
             : undefined,
         labelOut:
           choice.count / results.totalAnswers <= SMALL_BAR_THRESHOLD
-            ? choice.count
+            ? label(choice.count, results.totalAnswers)
             : undefined,
         xLabel: String.fromCharCode(Number(idx) + 65),
       }))
@@ -34,11 +42,11 @@ function useEvaluationBarChartData({
           count: results.incorrectCount,
           labelIn:
             results.incorrectCount / results.totalAnswers > SMALL_BAR_THRESHOLD
-              ? results.incorrectCount
+              ? label(results.incorrectCount, results.totalAnswers)
               : undefined,
           labelOut:
             results.incorrectCount / results.totalAnswers <= SMALL_BAR_THRESHOLD
-              ? results.incorrectCount
+              ? label(results.incorrectCount, results.totalAnswers)
               : undefined,
           xLabel: t('manage.evaluation.answerNotRemembered'),
         },
@@ -46,11 +54,11 @@ function useEvaluationBarChartData({
           count: results.partialCount,
           labelIn:
             results.partialCount / results.totalAnswers > SMALL_BAR_THRESHOLD
-              ? results.partialCount
+              ? label(results.partialCount, results.totalAnswers)
               : undefined,
           labelOut:
             results.partialCount / results.totalAnswers <= SMALL_BAR_THRESHOLD
-              ? results.partialCount
+              ? label(results.partialCount, results.totalAnswers)
               : undefined,
           xLabel: t('manage.evaluation.answerPartiallyRemembered'),
         },
@@ -58,11 +66,11 @@ function useEvaluationBarChartData({
           count: results.correctCount,
           labelIn:
             results.correctCount / results.totalAnswers > SMALL_BAR_THRESHOLD
-              ? results.correctCount
+              ? label(results.correctCount, results.totalAnswers)
               : undefined,
           labelOut:
             results.correctCount / results.totalAnswers <= SMALL_BAR_THRESHOLD
-              ? results.correctCount
+              ? label(results.correctCount, results.totalAnswers)
               : undefined,
           xLabel: t('manage.evaluation.answerRemembered'),
         },
@@ -70,7 +78,7 @@ function useEvaluationBarChartData({
     } else {
       return []
     }
-  }, [instance])
+  }, [instance, showPercentages, t])
 
   return labeledData
 }

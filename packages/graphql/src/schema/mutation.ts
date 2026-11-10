@@ -1,6 +1,7 @@
 import * as DB from '@klicker-uzh/prisma/client'
 import { ActivityType as ActivityTypeEnum } from '@klicker-uzh/types'
 import { MISSING_CATALOG_COLLECTION_ID } from '@klicker-uzh/util'
+import { z } from 'zod'
 import builder from '../builder.js'
 import * as AccountService from '../services/accounts.js'
 import * as ActivitiesService from '../services/activities.js'
@@ -88,6 +89,7 @@ import {
 } from './knowledge.js'
 import {
   ConfusionTimestep,
+  EvaluationDisplaySetting,
   Feedback,
   FeedbackResponse,
   LiveQuiz,
@@ -130,7 +132,11 @@ import {
   Chatbot,
   ChatbotRevisionSaveInputRef,
 } from './resource.js'
-import { ResponseExampleSet, ResponseExampleStyle } from './responseExample.js'
+import {
+  CaptureResponseExampleResult,
+  ResponseExampleSet,
+  ResponseExampleStyle,
+} from './responseExample.js'
 import {
   ActivityLogEntry,
   CatalogCollection,
@@ -386,8 +392,14 @@ export const Mutation = builder.mutationType({
         type: LtiChatbotLogin,
         args: {
           signedLtiData: t.arg.string({ required: true }),
-          courseId: t.arg.string({ required: true, validate: { uuid: true } }),
-          chatbotId: t.arg.string({ required: true, validate: { uuid: true } }),
+          courseId: t.arg.string({
+            required: true,
+            validate: { schema: z.string().guid() },
+          }),
+          chatbotId: t.arg.string({
+            required: true,
+            validate: { schema: z.string().guid() },
+          }),
           participantToken: t.arg.string(),
         },
         resolve: (_, args, ctx) =>
@@ -398,8 +410,14 @@ export const Mutation = builder.mutationType({
         type: LtiChatbotLogin,
         args: {
           grant: t.arg.string({ required: true }),
-          courseId: t.arg.string({ required: true, validate: { uuid: true } }),
-          chatbotId: t.arg.string({ required: true, validate: { uuid: true } }),
+          courseId: t.arg.string({
+            required: true,
+            validate: { schema: z.string().guid() },
+          }),
+          chatbotId: t.arg.string({
+            required: true,
+            validate: { schema: z.string().guid() },
+          }),
         },
         resolve: (_, args, ctx) =>
           AccountService.loginParticipantForElearningChatbot(args, ctx),
@@ -477,7 +495,7 @@ export const Mutation = builder.mutationType({
         },
       }),
 
-      manualRandomGroupAssignments: t.withAuth(asUser).field({
+      manualRandomGroupAssignments: t.withAuth(asUserFullAccess).field({
         type: [ParticipantGroup],
         nullable: true,
         args: { courseId: t.arg.string({ required: true }) },
@@ -781,7 +799,7 @@ export const Mutation = builder.mutationType({
         ),
       }),
 
-      requestCourseDeletion: t.withAuth(asUser).field({
+      requestCourseDeletion: t.withAuth(asUserFullAccess).field({
         nullable: true,
         type: CourseDeletionRequestPayload,
         args: {
@@ -1008,6 +1026,25 @@ export const Mutation = builder.mutationType({
           DB.PermissionLevel.EXECUTE,
           async (_, args, ctx) => {
             return await LiveQuizService.deactivateLiveQuizBlock(args, ctx)
+          }
+        ),
+      }),
+
+      updateEvaluationDisplay: t.withAuth(asUserSessionExec).field({
+        nullable: true,
+        type: EvaluationDisplaySetting,
+        args: {
+          quizId: t.arg.string({ required: true }),
+          instanceId: t.arg.int({ required: true }),
+          chartType: t.arg.string({ required: false }),
+          showSolution: t.arg.boolean({ required: false }),
+          showPercentages: t.arg.boolean({ required: false }),
+        },
+        resolve: withPermission(
+          (args) => ({ liveQuizId: args.quizId }),
+          DB.PermissionLevel.EXECUTE,
+          async (_, args, ctx) => {
+            return await LiveQuizService.updateEvaluationDisplay(args, ctx)
           }
         ),
       }),
@@ -1683,6 +1720,8 @@ export const Mutation = builder.mutationType({
           description: t.arg.string({ required: false }),
           avatar: t.arg.string({ required: false }),
           courseId: t.arg.string({ required: true }),
+          disclaimerTitle: t.arg.string({ required: false }),
+          disclaimerIntroText: t.arg.string({ required: false }),
         },
         resolve: async (_, args, ctx) => {
           return await ChatbotsService.createChatbot(args, ctx)
@@ -1697,6 +1736,20 @@ export const Mutation = builder.mutationType({
         },
         resolve: async (_, args, ctx) => {
           return await ResponseExamplesService.approveResponseExample(args, ctx)
+        },
+      }),
+
+      captureResponseExample: t.withAuth(asUserFullAccess).field({
+        nullable: true,
+        type: CaptureResponseExampleResult,
+        args: {
+          chatbotId: t.arg.string({ required: true }),
+          receipt: t.arg.string({ required: true }),
+          question: t.arg.string({ required: true }),
+          answer: t.arg.string({ required: true }),
+        },
+        resolve: async (_, args, ctx) => {
+          return await ResponseExamplesService.captureResponseExample(args, ctx)
         },
       }),
 
@@ -1745,7 +1798,7 @@ export const Mutation = builder.mutationType({
         ),
       }),
 
-      toggleArchiveCourse: t.withAuth(asUser).field({
+      toggleArchiveCourse: t.withAuth(asUserFullAccess).field({
         nullable: true,
         type: Course,
         args: {
@@ -2033,9 +2086,28 @@ export const Mutation = builder.mutationType({
         args: {
           name: t.arg.string({ required: true }),
           description: t.arg.string({ required: false }),
+          domainPolicyId: t.arg.string({ required: false }),
+          domainPolicyVersion: t.arg.int({ required: false }),
+          domainPolicyLanguage: t.arg.string({ required: false }),
         },
         resolve: async (_, args, ctx) => {
           return await KnowledgeService.createKb(args, ctx)
+        },
+      }),
+
+      updateKb: t.withAuth(asUserFullAccess).field({
+        nullable: false,
+        type: KB,
+        args: {
+          id: t.arg.id({ required: true }),
+          name: t.arg.string({ required: false }),
+          description: t.arg.string({ required: false }),
+          domainPolicyId: t.arg.string({ required: false }),
+          domainPolicyVersion: t.arg.int({ required: false }),
+          domainPolicyLanguage: t.arg.string({ required: false }),
+        },
+        resolve: async (_, args, ctx) => {
+          return await KnowledgeService.updateKb(args, ctx)
         },
       }),
 
@@ -2225,11 +2297,10 @@ export const Mutation = builder.mutationType({
         args: {
           kbId: t.arg.id({ required: true }),
           qualityTier: t.arg({ type: KBGraphQualityTier, required: false }),
-          // An omitted triple is the legacy path, so one mutation can serve a
-          // deployment whose capability gate is closed.
-          domainPolicyId: t.arg.id({ required: false }),
-          domainPolicyVersion: t.arg.int({ required: false }),
-          domainPolicyLanguage: t.arg.string({ required: false }),
+          // The subject area and language belong to the knowledge base, so the
+          // build reads them there rather than accepting them per request. This
+          // mutation still differs from the plain rebuild by reporting the
+          // domain the resulting build runs with.
           focusTopic: t.arg.string({ required: false }),
         },
         resolve: async (_, args, ctx) => {
@@ -2344,7 +2415,10 @@ export const Mutation = builder.mutationType({
         nullable: false,
         type: GeneratedElementDraftRef,
         args: {
-          draftId: t.arg.id({ required: true, validate: { uuid: true } }),
+          draftId: t.arg.id({
+            required: true,
+            validate: { schema: z.string().guid() },
+          }),
           expectedRevision: t.arg.int({
             required: true,
             validate: { min: 0 },
@@ -3217,6 +3291,11 @@ export const Mutation = builder.mutationType({
           propagation: t.arg.boolean({ required: true }),
         },
         resolve: async (_, args, ctx) => {
+          // ownership is only moved through transferObjectOwnership
+          if (args.permissionLevel === DB.PermissionLevel.OWNER) {
+            return null
+          }
+
           // >= ADMIN permissions on the object required
           const validAccess = await checkAccess(
             [
@@ -3467,6 +3546,11 @@ export const Mutation = builder.mutationType({
           propagation: t.arg.boolean({ required: true }),
         },
         resolve: async (_, args, ctx) => {
+          // ownership is only moved through transferObjectOwnership
+          if (args.permissionLevel === DB.PermissionLevel.OWNER) {
+            return false
+          }
+
           // >= ADMIN permissions on the object required
           const validAccess = await checkAccess(
             [
@@ -3837,6 +3921,11 @@ export const Mutation = builder.mutationType({
           propagation: t.arg.boolean({ required: true }),
         },
         resolve: async (_, args, ctx) => {
+          // ownership is only moved through transferObjectOwnership
+          if (args.permissionLevel === DB.PermissionLevel.OWNER) {
+            return false
+          }
+
           return await SharingService.resolveObjectSharingRequest(
             { ...args, approved: true },
             ctx

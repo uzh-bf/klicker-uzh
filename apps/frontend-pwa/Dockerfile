@@ -1,3 +1,7 @@
+# Image whose static assets the new build keeps serving next to its own. Empty
+# starts a fresh history. A set but unpullable image fails the build.
+ARG PREVIOUS_IMAGE=""
+
 FROM docker.io/library/node:24.21.0-alpine AS base
 
 # See apps/backend-docker/Dockerfile: patched Alpine packages and npm for every
@@ -63,6 +67,24 @@ COPY --from=builder /app/out/full/ .
 RUN pnpm run build --filter=@klicker-uzh/frontend-pwa
 
 
+FROM base AS no-previous-release
+RUN mkdir -p /app/apps/frontend-pwa/.next/static
+
+
+FROM ${PREVIOUS_IMAGE:-no-previous-release} AS previous-release
+
+
+FROM base AS release-assets
+WORKDIR /release
+
+COPY --from=installer /app/apps/frontend-pwa/.next/BUILD_ID ./BUILD_ID
+COPY --from=installer /app/apps/frontend-pwa/.next/static ./static
+COPY --from=previous-release /app/apps/frontend-pwa/.next/static ./previous
+COPY apps/frontend-pwa/scripts/merge-release-assets.mjs ./
+
+RUN node merge-release-assets.mjs ./static "$(cat BUILD_ID)" ./previous
+
+
 FROM base AS runner
 WORKDIR /app
 
@@ -74,7 +96,7 @@ COPY --from=installer /app/apps/frontend-pwa/next.config.mjs .
 COPY --from=installer /app/apps/frontend-pwa/package.json .
 
 COPY --from=installer --chown=nextjs:nodejs /app/apps/frontend-pwa/.next/standalone ./
-COPY --from=installer --chown=nextjs:nodejs --chmod=550 /app/apps/frontend-pwa/.next/static ./apps/frontend-pwa/.next/static
+COPY --from=release-assets --chown=nextjs:nodejs --chmod=550 /release/static ./apps/frontend-pwa/.next/static
 COPY --from=installer --chown=nextjs:nodejs --chmod=550 /app/apps/frontend-pwa/public ./apps/frontend-pwa/public
 
 ARG NODE_ENV="production"

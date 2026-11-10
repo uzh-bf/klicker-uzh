@@ -60,12 +60,18 @@ services:
   redis_exec:
     image: redis:7
     networks: [default]
+    volumes:
+      - redis_exec_data:/data
   redis_assessment:
     image: redis:7
     networks: [default]
+    volumes:
+      - redis_assessment_data:/data
   redis_cache:
     image: redis:7
     networks: [default]
+    volumes:
+      - redis_cache_data:/data
 
   # --- fake SMTP for dev email ---
   mailhog:
@@ -276,6 +282,12 @@ volumes:
     external: true
     name: klicker-uzh-pnpm-store-v1
   hatchet_lite_config:
+  redis_exec_data:
+    name: '${KLICKER_REDIS_EXEC_VOLUME:-${COMPOSE_PROJECT_NAME}_redis_exec_data}'
+  redis_assessment_data:
+    name: '${KLICKER_REDIS_ASSESSMENT_VOLUME:-${COMPOSE_PROJECT_NAME}_redis_assessment_data}'
+  redis_cache_data:
+    name: '${KLICKER_REDIS_CACHE_VOLUME:-${COMPOSE_PROJECT_NAME}_redis_cache_data}'
 
 networks:
   devnet:

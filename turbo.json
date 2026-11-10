@@ -31,6 +31,7 @@
     "BLOB_STORAGE_ACCOUNT_NAME",
     "BLOB_STORAGE_ACCOUNT_URL",
     "BLOB_STORAGE_INTERNAL_ACCOUNT_URL",
+    "CONTROL_API_PROXY_URL",
     "COOKIE_DOMAIN",
     "CORS_ALLOWED_ORIGINS",
     "CRON_TOKEN",
@@ -98,6 +99,14 @@
     "KB_GRAPH_HIGH_GENERATION_MODEL",
     "KB_GRAPH_HIGH_CLEANING_MODEL",
     "KB_GRAPH_UPLOAD_GENERATION_ARTIFACTS",
+    "KB_GRAPH_AUTO_PREPARATION_WINDOW",
+    "KB_GRAPH_AUTO_PREPARATION_WINDOW_TIMEZONE",
+    "KB_GRAPH_AUTO_PREPARATION_QUIET_PERIOD_MINUTES",
+    "KB_GRAPH_AUTO_PREPARATION_MAX_DEFERRAL_MINUTES",
+    "KB_GRAPH_AUTO_PREPARATION_FAILURE_BACKOFF_MINUTES",
+    "KB_GRAPH_AUTO_PREPARATION_MAX_CONSECUTIVE_FAILURES",
+    "KB_GRAPH_AUTO_PREPARATION_CONCURRENCY",
+    "KB_GRAPH_AUTO_PREPARATION_HEADROOM_MINOR_UNITS",
     "KB_QUESTION_GENERATION_HATCHET_CLIENT_TOKEN",
     "KB_GENERATION_HATCHET_CLIENT_HOST_PORT",
     "KB_GENERATION_HATCHET_CLIENT_SERVER_URL",
@@ -122,10 +131,13 @@
     "DOC_QUERY_SCOPE_KID",
     "DOC_QUERY_SCOPE_ISSUER",
     "DOC_QUERY_SCOPE_AUDIENCE",
+    "RESPONSE_EXAMPLE_RECEIPT_PUBLIC_KEY",
+    "RESPONSE_EXAMPLE_RECEIPT_KID",
+    "RESPONSE_EXAMPLE_RECEIPT_ISSUER",
+    "RESPONSE_EXAMPLE_RECEIPT_AUDIENCE",
     "DOC_QUERY_SCOPED_MCP_SERVER_ID",
     "DOC_QUERY_SCOPED_MCP_LEGACY_URL",
     "DOC_QUERY_SCOPED_MCP_URL",
-    "LTI_DB_TYPE",
     "LTI_DB_HOST",
     "LTI_DB_PORT",
     "LTI_DB_USER",
@@ -138,13 +150,11 @@
     "LTI_KEYS_ENDPOINT",
     "LTI_CLIENT_ID",
     "LTI_ADDITIONAL_PLATFORMS",
-    "LTI_DB_CONNECTION_STRING",
     "LTI_ENCRYPTION_KEY",
     "LTI_PORT",
     "LTI_REDIRECT_URL",
-    "LTI_DEV_MODE",
-    "LTI_AAS_MODE",
     "NEXTAUTH_URL",
+    "NEXT_PUBLIC_CONTROL_API_URL",
     "NEXT_PUBLIC_EDUID_ID",
     "NEXT_PUBLIC_ENV",
     "NEXT_PUBLIC_FEATURE_FLAGS_FORCED_ON",
@@ -289,6 +299,12 @@
       "dependsOn": ["^build"],
       "persistent": true
     },
+    "@klicker-uzh/chat#dev": {
+      "cache": false,
+      "dependsOn": ["^build"],
+      "env": ["RESPONSE_EXAMPLE_RECEIPT_PRIVATE_KEY"],
+      "persistent": true
+    },
     "dev:lti": {
       "cache": false,
       "dependsOn": ["^build"],
@@ -312,6 +328,12 @@
       "cache": false,
       "persistent": true
     },
+    "@klicker-uzh/chat#dev:test": {
+      "cache": false,
+      "env": ["RESPONSE_EXAMPLE_RECEIPT_PRIVATE_KEY"],
+      "outputs": ["dist/**", ".next/**", "build/**", "out/**"],
+      "persistent": true
+    },
     "publish": {
       "cache": false,
       "dependsOn": ["build"]
@@ -320,8 +342,18 @@
       "dependsOn": ["^build", "build"],
       "outputs": ["dist/**", ".next/**", "build/**", "out/**"]
     },
+    "@klicker-uzh/chat#start": {
+      "dependsOn": ["^build", "build"],
+      "env": ["RESPONSE_EXAMPLE_RECEIPT_PRIVATE_KEY"],
+      "outputs": ["dist/**", ".next/**", "build/**", "out/**"]
+    },
     "start:test": {
       "cache": false,
+      "persistent": true
+    },
+    "@klicker-uzh/chat#start:test": {
+      "cache": false,
+      "env": ["RESPONSE_EXAMPLE_RECEIPT_PRIVATE_KEY"],
       "persistent": true
     },
     "test": {

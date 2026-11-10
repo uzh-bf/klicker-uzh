@@ -224,12 +224,12 @@ chat:
 
   modelRegistry:
     # Staging makes Auto the global automatic-model primary, so chatbots using
-    # automatic model selection exercise auto-router-v2, as in production.
+    # automatic model selection exercise auto-router-v4, as in production.
     # Explicit model selections remain respected, and new chatbots
     # still start fixed on GPT-6 Luna. GPT-6 Luna is the participant-credit
     # fallback.
-    # "Auto" routes through the LiteLLM auto-router-v2, which self-selects the
-    # tier per request (SIMPLE=gpt-6-luna-high, MEDIUM=gpt-6.1-sol-low,
+    # "Auto" routes through the LiteLLM auto-router-v4, which self-selects the
+    # tier per request (SIMPLE=gpt-6.1-terra-low, MEDIUM=gpt-6.1-sol-low,
     # COMPLEX=gpt-6.1-sol-medium, REASONING=gpt-6.1-sol-high), with
     # Microsoft-Decision-1 classifying every request. Auto is a BASE model; Sol
     # selected directly stays ADVANCED.
@@ -241,7 +241,7 @@ chat:
     # price. Classifier overhead remains outside the registry's
     # selected-model token fields.
     - id: auto
-      deploymentId: klickeruzh/azure/auto-router-v2
+      deploymentId: klickeruzh/azure/auto-router-v4
       name: Auto
       description: Automatic model selection (routes to the best model per request)
       supportsImageAttachments: true
@@ -449,6 +449,31 @@ frontendPWA:
   autoscaling:
     enabled: false
 
+  # Spot burst tier next to the static replica. Its replicas are owned by the
+  # burst HPA, which the stg Argo CD Application excludes from replica drift.
+  burst:
+    enabled: true
+    # Soft spread, so losing one spot node does not remove the whole tier
+    # while a tight pool can still place every burst pod. The selector names
+    # the tier label, so baseline pods do not count toward the skew.
+    topologySpreadConstraints:
+      - maxSkew: 1
+        topologyKey: topology.kubernetes.io/zone
+        whenUnsatisfiable: ScheduleAnyway
+        labelSelector:
+          matchLabels:
+            app.kubernetes.io/component: frontend-pwa
+            klicker.uzh.ch/tier: burst
+      - maxSkew: 1
+        topologyKey: kubernetes.io/hostname
+        whenUnsatisfiable: ScheduleAnyway
+        labelSelector:
+          matchLabels:
+            app.kubernetes.io/component: frontend-pwa
+            klicker.uzh.ch/tier: burst
+
+  preStopSleepSeconds: 5
+
   affinity:
     podAntiAffinity:
       preferredDuringSchedulingIgnoredDuringExecution:
@@ -481,16 +506,32 @@ frontendPWA:
         hosts:
           - pwa.klicker.stg.df-app.ch
 
+  # One replica on staging: start the new Pod before stopping the old one.
   strategy:
-    type: Recreate
+    type: RollingUpdate
+    rollingUpdate:
+      maxUnavailable: 0
 
+  # Matches the production PWA shape, so burst tier drills on staging see the
+  # same CPU headroom and HPA target as production.
   resources:
     requests:
       cpu: 50m
-      memory: 50Mi
+      memory: 320Mi
     limits:
-      cpu: 200m
-      memory: 200Mi
+      memory: 1Gi
+
+  # Serves /_next/static from its own Deployment, so pages of an earlier
+  # release keep their assets during and after a rollout.
+  releaseAssets:
+    enabled: true
+    replicaCount: 1
+    resources:
+      requests:
+        cpu: 20m
+        memory: 128Mi
+      limits:
+        memory: 256Mi
 
 frontendManage:
   priorityClassName: staging-workload
@@ -534,8 +575,11 @@ frontendManage:
         hosts:
           - manage.klicker.stg.df-app.ch
 
+  # One replica on staging: start the new Pod before stopping the old one.
   strategy:
-    type: Recreate
+    type: RollingUpdate
+    rollingUpdate:
+      maxUnavailable: 0
 
   resources:
     requests:
@@ -585,8 +629,11 @@ frontendControl:
         hosts:
           - control.klicker.stg.df-app.ch
 
+  # One replica on staging: start the new Pod before stopping the old one.
   strategy:
-    type: Recreate
+    type: RollingUpdate
+    rollingUpdate:
+      maxUnavailable: 0
 
   resources:
     requests:
@@ -689,8 +736,11 @@ backendGraphql:
           - api.klicker.stg.df-app.ch
           # - backend-sls.klicker.stg.df-app.ch
 
+  # One replica on staging: start the new Pod before stopping the old one.
   strategy:
-    type: Recreate
+    type: RollingUpdate
+    rollingUpdate:
+      maxUnavailable: 0
 
   resources:
     requests:
@@ -738,8 +788,11 @@ olatApi:
         hosts:
           - olat-api.klicker.stg.df-app.ch
 
+  # One replica on staging: start the new Pod before stopping the old one.
   strategy:
-    type: Recreate
+    type: RollingUpdate
+    rollingUpdate:
+      maxUnavailable: 0
 
   resources:
     requests:
@@ -863,8 +916,13 @@ responseApi:
         hosts:
           - response-api.klicker.stg.df-app.ch
 
+  # One replica on staging: start the new Pod before stopping the old one.
+  # The chart has no readiness probe here yet, so the new Pod counts as
+  # Ready when its container starts, before the server listens.
   strategy:
-    type: Recreate
+    type: RollingUpdate
+    rollingUpdate:
+      maxUnavailable: 0
 
   resources:
     requests:
@@ -926,8 +984,11 @@ assessment:
           hosts:
             - assessment.klicker.stg.df-app.ch
 
+    # One replica on staging: start the new Pod before stopping the old one.
     strategy:
-      type: Recreate
+      type: RollingUpdate
+      rollingUpdate:
+        maxUnavailable: 0
 
     resources:
       requests:
@@ -936,6 +997,18 @@ assessment:
       limits:
         cpu: 200m
         memory: 200Mi
+
+    # Serves /_next/static from its own Deployment, so pages of an earlier
+    # release keep their assets during and after a rollout.
+    releaseAssets:
+      enabled: true
+      replicaCount: 1
+      resources:
+        requests:
+          cpu: 20m
+          memory: 128Mi
+        limits:
+          memory: 256Mi
 
   backendGraphql:
     priorityClassName: staging-workload
@@ -999,8 +1072,11 @@ assessment:
           hosts:
             - assessment-api.klicker.stg.df-app.ch
 
+    # One replica on staging: start the new Pod before stopping the old one.
     strategy:
-      type: Recreate
+      type: RollingUpdate
+      rollingUpdate:
+        maxUnavailable: 0
 
     resources:
       requests:
@@ -1064,8 +1140,13 @@ assessment:
           hosts:
             - response-api-assessment.klicker.stg.df-app.ch
 
+    # One replica on staging: start the new Pod before stopping the old one.
+    # The chart has no readiness probe here yet, so the new Pod counts as
+    # Ready when its container starts, before the server listens.
     strategy:
-      type: Recreate
+      type: RollingUpdate
+      rollingUpdate:
+        maxUnavailable: 0
 
     resources:
       requests:

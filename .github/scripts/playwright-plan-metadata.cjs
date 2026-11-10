@@ -53,6 +53,16 @@ function buildPlanMetadata(plan, routeDecision) {
     fail('unsupported execution provider for the trust route')
   }
   const cloud = provider === 'warpbuild'
+  if (
+    routeDecision.jobTimeout !== undefined &&
+    (!cloud ||
+      routeDecision.priorityAdmission !== true ||
+      !Number.isInteger(routeDecision.jobTimeout) ||
+      routeDecision.jobTimeout < 1 ||
+      routeDecision.jobTimeout > 15)
+  ) {
+    fail('invalid priority job timeout')
+  }
   const admissionAttempt = cloud ? routeDecision.admissionAttempt : ''
   if (
     cloud &&
@@ -155,7 +165,7 @@ function buildPlanMetadata(plan, routeDecision) {
     admissionAttempt,
     buildRunner: runner('playwright-build', 8),
     shardRunner: runner('playwright-shard', 4),
-    jobTimeout: cloud ? 45 : 120,
+    jobTimeout: routeDecision.jobTimeout ?? (cloud ? 45 : 120),
     mode: plan.mode,
     envelopeClass,
     selectorPrState: routeDecision.selectorPrState,
@@ -208,7 +218,11 @@ async function main(
   let route = readJson(args.route, 'Playwright route decision')
   let metadata = buildPlanMetadata(plan, route)
   // Validate the entire plan before a request can reserve paid capacity.
-  if (metadata.shouldRun && env.WARPBUILD_ADMISSION_URL) {
+  if (
+    metadata.shouldRun &&
+    env.WARPBUILD_ADMISSION_URL &&
+    env.PRIORITY_REQUESTED !== 'true'
+  ) {
     route = await chooseRouteWithAdmission(envInput(env), env, network)
     metadata = buildPlanMetadata(plan, route)
     fs.writeFileSync(args.route, `${JSON.stringify(route, null, 2)}\n`)

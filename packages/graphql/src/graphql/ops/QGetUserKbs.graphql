@@ -4,10 +4,23 @@ query GetUserKbs($first: Int, $after: String, $search: String) {
       id
       name
       description
+      domainPolicyId
+      domainPolicyLanguage
       metrics {
         visibleResourceCount
         visibleSizeBytes
         linkedConsumerCount
+      }
+      materialsReadiness {
+        visibleResourceCount
+        servingResourceCount
+        processingResourceCount
+        failedResourceCount
+      }
+      questionPreparation {
+        state
+        pendingReason
+        hasBasis
       }
     }
     pageInfo {

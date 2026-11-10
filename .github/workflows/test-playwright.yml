@@ -1,26 +1,33 @@
 name: Klicker automated testing with playwright
 
+run-name: ${{ vars.PRIORITY_CI_ENABLED == 'true' && github.event_name == 'pull_request' && github.event.pull_request.state == 'open' && github.event.pull_request.draft == false && github.event.repository.private == false && github.event.pull_request.head.repo.full_name == github.repository && !endsWith(github.event.pull_request.user.login, '[bot]') && contains(github.event.pull_request.labels.*.name, 'ci:priority') && (github.event.action != 'labeled' || github.event.label.name == 'ci:priority') && format('priority:{0}:{1}:{2}', github.event.pull_request.number, github.event.pull_request.head.sha, github.event.pull_request.base.sha) || format('ordinary:{0}', github.run_id) }}
+
+concurrency:
+  group: ${{ github.workflow }}-${{ vars.PRIORITY_CI_ENABLED == 'true' && github.event_name == 'pull_request' && github.event.pull_request.state == 'open' && github.event.pull_request.draft == false && github.event.repository.private == false && github.event.pull_request.head.repo.full_name == github.repository && !endsWith(github.event.pull_request.user.login, '[bot]') && contains(github.event.pull_request.labels.*.name, 'ci:priority') && (github.event.action != 'labeled' || github.event.label.name == 'ci:priority') && format('priority:{0}:{1}:{2}', github.event.pull_request.number, github.event.pull_request.head.sha, github.event.pull_request.base.sha) || format('ordinary:{0}', github.run_id) }}
+  cancel-in-progress: false
+
 on:
   push:
     branches: ['v3', 'v3*']
   pull_request:
     branches: ['v3', 'v3*']
     types: [
+        labeled,
         opened,
         synchronize,
         reopened,
         # The ready boundary runs the envelope so it can validate the draft-era
         # full proof instead of rebuilding and retesting an unchanged head.
         ready_for_review,
-        # A closed pull request cancels its in-flight execution.
+        # A closed pull request cancels its ordinary in-flight execution.
         closed,
       ]
 
 jobs:
-  # A closed pull request cancels its in-flight execution through the shared
-  # group without an API token. A draft conversion must not cancel: the running
-  # plan stays valid evidence, and the next event selects the plan its own pull
-  # request state requires.
+  # A closed pull request cancels ordinary execution through the shared group
+  # without an API token. Submitted priority work runs to completion. A draft
+  # conversion must not cancel: the running plan stays valid evidence, and the
+  # next event selects the plan its own pull request state requires.
   cancel-closed-pr:
     if: github.event_name == 'pull_request' && github.event.action == 'closed'
     concurrency:
@@ -45,13 +52,14 @@ jobs:
       github.event_name != 'pull_request' ||
       github.event.pull_request.state == 'open'
     concurrency:
-      group: ${{ github.workflow }}-playwright-${{ github.event.pull_request.number || github.ref }}
+      group: ${{ github.event.action == 'labeled' && format('ignored:{0}', github.run_id) || (vars.PRIORITY_CI_ENABLED == 'true' && github.event_name == 'pull_request' && github.event.pull_request.state == 'open' && github.event.pull_request.draft == false && github.event.repository.private == false && github.event.pull_request.head.repo.full_name == github.repository && !endsWith(github.event.pull_request.user.login, '[bot]') && contains(github.event.pull_request.labels.*.name, 'ci:priority') && (github.event.action != 'labeled' || github.event.label.name == 'ci:priority')) && format('priority:{0}:{1}:{2}', github.event.pull_request.number, github.event.pull_request.head.sha, github.event.pull_request.base.sha) || format('{0}-playwright-{1}', github.workflow, github.event.pull_request.number || github.ref) }}
       # A readiness event waits for the existing execution; new code still cancels.
-      cancel-in-progress: ${{ github.event.action != 'ready_for_review' }}
+      cancel-in-progress: ${{ github.event.action != 'ready_for_review' && github.event.action != 'labeled' && !(vars.PRIORITY_CI_ENABLED == 'true' && github.event_name == 'pull_request' && github.event.pull_request.state == 'open' && github.event.pull_request.draft == false && github.event.repository.private == false && github.event.pull_request.head.repo.full_name == github.repository && !endsWith(github.event.pull_request.user.login, '[bot]') && contains(github.event.pull_request.labels.*.name, 'ci:priority') && (github.event.action != 'labeled' || github.event.label.name == 'ci:priority')) }}
     permissions:
       contents: read
       actions: read
       pull-requests: read
+      issues: read
       id-token: write
     uses: uzh-bf/klicker-uzh/.github/workflows/public-pr-playwright-shards.yml@v3
     with:
@@ -64,6 +72,7 @@ jobs:
   # requests report nothing: their gate no longer exists, and reporting could
   # only launch reporting work for a merged branch.
   test-playwright-status:
+    name: ${{ (github.event.action != 'labeled' || needs.test-playwright-execution.outputs.priority_label_event == 'true') && 'test-playwright-status' || 'test-playwright-status (priority not admitted)' }}
     needs: test-playwright-execution
     # Unconditional for open events: a skipped required context can count as
     # acceptable, so cancellation must fail inside the job instead.
@@ -84,6 +93,8 @@ jobs:
           PROVIDER: ${{ needs.test-playwright-execution.outputs.provider }}
           ADMISSION_ATTEMPT: ${{ needs.test-playwright-execution.outputs.admission_attempt }}
           CURRENT_ATTEMPT: ${{ github.run_attempt }}
+          IS_LABEL_EVENT: ${{ github.event.action == 'labeled' }}
+          PRIORITY_LABEL_EVENT: ${{ needs.test-playwright-execution.outputs.priority_label_event }}
           MODE: ${{ needs.test-playwright-execution.outputs.mode }}
           ENVELOPE_CLASS: ${{ needs.test-playwright-execution.outputs.envelope_class }}
           SHOULD_RUN: ${{ needs.test-playwright-execution.outputs.should_run }}
@@ -118,6 +129,11 @@ jobs:
               echo "- Reused validated run: \`${DUPLICATE_RUN_ID}\`"
             fi
           } >> "$GITHUB_STEP_SUMMARY"
+
+          # Denied label-only reports use a non-required name and attest no work.
+          if [ "${IS_LABEL_EVENT:-}" = 'true' ] && [ "${PRIORITY_LABEL_EVENT:-}" != 'true' ]; then
+            exit 0
+          fi
 
           # A cancelled invocation may be obsolete, but this job has no proof
           # that a newer invocation survived. Keep the required status failed.

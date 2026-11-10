@@ -2105,7 +2105,7 @@ function continuationRunner(config, root, overrides = {}) {
       }
       return runner(command, env)
     },
-    unusedProvider: async () => {},
+    portOccupied: async () => false,
     initializeApplication: async () => {
       calls.push('application')
       await mkdir(join(root, 'application-setup'), { mode: 0o700 })
@@ -2122,6 +2122,88 @@ function continuationRunner(config, root, overrides = {}) {
   }
   return { calls, observed, options }
 }
+
+test('profile recovery initializes untouched document processing after checking its effects', async () => {
+  const { config, root, parent } = await retainedContinuationPrefix({
+    profileAttempt: true,
+    processorPrepared: false,
+  })
+  const { calls, options } = continuationRunner(config, root)
+  const before = await readFile(join(parent, 'claim.json'), 'utf8')
+  const result = await continuePreparation(config, revision, nextExecutor, {
+    ...options,
+    resumeExecutor: priorExecutor,
+  })
+  assert.equal(result.prepared, true)
+  assert.deepEqual(calls, [
+    'ingestion',
+    'docProcessing',
+    'retrieval',
+    'application',
+  ])
+  assert.equal(await readFile(join(parent, 'claim.json'), 'utf8'), before)
+})
+
+test('untouched processor recovery rejects retained Docker resources and occupied or unknown ports', async () => {
+  for (const recovery of ['profile', 'ingestion']) {
+    for (const effect of [
+      'container',
+      'network',
+      'volume',
+      'api',
+      'postgres',
+      'hatchetHttp',
+      'hatchetGrpc',
+      'unknown-port',
+      'unknown-docker',
+    ]) {
+      const f =
+        recovery === 'ingestion'
+          ? await pendingIngestionFixture(false)
+          : await retainedContinuationPrefix({
+              profileAttempt: true,
+              processorPrepared: false,
+            })
+      const base =
+        recovery === 'ingestion' ? f : continuationRunner(f.config, f.root)
+      const { config, root } = f
+      const state = join(root, 'state/docProcessing')
+      const digest = createHash('sha256')
+        .update(
+          `${config.providers.docProcessing.sourcePath}:${state}:${config.project.identity}`
+        )
+        .digest('hex')
+        .slice(0, 24)
+      const filter = `label=com.docker.compose.project=doc-processing-local-${digest}`
+      const docker = base.options.runDocker
+      const options = {
+        ...base.options,
+        ...(recovery === 'profile' ? { resumeExecutor: priorExecutor } : {}),
+        runDocker: async (args) => {
+          if (args.includes(filter)) {
+            if (effect === 'unknown-docker')
+              throw new Error('Docker inventory unavailable')
+            if (args.includes(effect)) return 'retained-resource'
+          }
+          return docker(args)
+        },
+        portOccupied: async (port) => {
+          const ports = config.bindings.ports.docProcessing
+          if (Object.values(ports).includes(port) && effect === 'unknown-port')
+            throw new Error('Local port occupancy is unknown.')
+          return port === ports[effect]
+        },
+      }
+      await assert.rejects(
+        continuePreparation(config, revision, '9'.repeat(40), options),
+        /Document processing|Docker inventory unavailable|Local port occupancy is unknown/,
+        `${recovery}: ${effect}`
+      )
+      assert.deepEqual(base.calls, [], `${recovery}: ${effect}`)
+      await assert.rejects(stat(state), { code: 'ENOENT' })
+    }
+  }
+})
 
 test('managed workspace allocation must be exactly absent with zero routes', async () => {
   const cases = [

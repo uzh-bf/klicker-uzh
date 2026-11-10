@@ -1,10 +1,10 @@
 import { z } from 'zod'
 import type { LecturerMcpSession } from './auth.js'
 import {
-  LecturerMcpAuthorizationError,
-  requireDerivedPermission,
   type LecturerDerivedPermission,
+  LecturerMcpAuthorizationError,
   type LecturerPermissionLevel,
+  requireDerivedPermission,
 } from './authorization.js'
 
 const MAX_COURSES = 20
@@ -62,7 +62,7 @@ export const courseListSchema = z.object({
 export const courseGetSchema = z.object({
   courseId: z
     .string()
-    .uuid()
+    .guid()
     .describe('Readable course id (uuid) to fetch details for.'),
 })
 
@@ -102,7 +102,7 @@ export const elementGetSchema = z.object({
 export const questionDraftSchema = z.object({
   courseId: z
     .string()
-    .uuid()
+    .guid()
     .optional()
     .describe('Optional readable course id to associate with the draft.'),
   difficulty: z
