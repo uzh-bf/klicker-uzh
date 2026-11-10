@@ -24,6 +24,7 @@ import {
 } from '../manipulation/helpers'
 import type { ElementFormTypes } from '../manipulation/types'
 import {
+  draftHasUnfinishedRevision,
   type ElementGenerationBuildData,
   type GeneratedElementDraftData,
   isRevisionBuildFinished,
@@ -50,10 +51,10 @@ function sortedRevisionBuilds(draft: GeneratedElementDraftData) {
   )
 }
 
-function draftHasUnfinishedRevision(draft: GeneratedElementDraftData) {
-  return draft.revisionBuilds.some(
-    (revisionBuild) => !isRevisionBuildFinished(revisionBuild.status)
-  )
+function revisionRequestState(status: ElementGenerationBuildStatus) {
+  if (!isRevisionBuildFinished(status)) return 'running'
+  if (status === ElementGenerationBuildStatus.Failed) return 'failed'
+  return 'completed'
 }
 
 function toGeneratableElementType(type: ElementType) {
@@ -570,6 +571,7 @@ function RevisionState({
   const [retryFailed, setRetryFailed] = useState(false)
   const requests = sortedRevisionBuilds(draft)
   const latest = requests.at(-1)
+  const latestState = latest ? revisionRequestState(latest.status) : undefined
   const original = draft.revisionOfDraftId
     ? build.drafts.find((candidate) => candidate.id === draft.revisionOfDraftId)
     : undefined
@@ -597,20 +599,15 @@ function RevisionState({
         <div
           className="mt-2 text-xs text-slate-700"
           data-cy={`generated-element-revision-status-${draft.id}`}
-          data-state={
-            !isRevisionBuildFinished(latest.status)
-              ? 'running'
-              : latest.status === ElementGenerationBuildStatus.Failed
-                ? 'failed'
-                : 'completed'
-          }
+          data-state={latestState}
           role="status"
         >
-          {!isRevisionBuildFinished(latest.status) ? (
+          {latestState === 'running' ? (
             <div className="font-medium text-amber-900">
               {t('review.revision.running')}
             </div>
-          ) : latest.status === ElementGenerationBuildStatus.Failed ? (
+          ) : null}
+          {latestState === 'failed' ? (
             <div className="font-medium text-red-800">
               {t('review.revision.failed')}
               {latest.errorMessage ? ` ${latest.errorMessage}` : ''}
@@ -625,9 +622,14 @@ function RevisionState({
                       await retryGeneration({
                         variables: { input: { buildId: latest.id } },
                       })
-                      await onChanged()
                     } catch {
                       setRetryFailed(true)
+                      return
+                    }
+                    try {
+                      await onChanged()
+                    } catch {
+                      toast({ type: 'error', message: t('review.actionError') })
                     }
                   }}
                   data={{ cy: `generated-element-revision-retry-${draft.id}` }}
@@ -636,9 +638,10 @@ function RevisionState({
                 </Button>
               ) : null}
             </div>
-          ) : (
+          ) : null}
+          {latestState === 'completed' ? (
             <div>{t('review.revision.completed')}</div>
-          )}
+          ) : null}
           {latest.note ? (
             <div className="mt-1">
               {t('review.revision.noteShown', { note: latest.note })}
@@ -760,7 +763,11 @@ function RevisionRequestPanel({
         >
           <Button.Label>{t('review.revision.submit')}</Button.Label>
         </Button>
-        <Button type="button" onClick={onCancel}>
+        <Button
+          type="button"
+          onClick={onCancel}
+          data={{ cy: `generated-element-revision-cancel-${draft.id}` }}
+        >
           <Button.Label>{t('review.revision.cancel')}</Button.Label>
         </Button>
       </div>
@@ -1094,7 +1101,14 @@ export default function GeneratedElementReview({
                           onCancel={() => setRevisionDraftId(undefined)}
                           onRequested={async () => {
                             setRevisionDraftId(undefined)
-                            await onChanged()
+                            try {
+                              await onChanged()
+                            } catch {
+                              toast({
+                                type: 'error',
+                                message: t('review.actionError'),
+                              })
+                            }
                           }}
                         />
                       </td>
