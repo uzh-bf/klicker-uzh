@@ -510,7 +510,7 @@ frontendPWA:
   image:
     repository: ghcr.io/uzh-bf/klicker-uzh/frontend-pwa-arm
     pullPolicy: IfNotPresent
-    tag: v3.4.0-alpha.88
+    tag: v3.4.0-alpha.91
 
   ingress:
     className: haproxy
@@ -947,7 +947,7 @@ assessment:
     image:
       repository: ghcr.io/uzh-bf/klicker-uzh/frontend-assessment-arm
       pullPolicy: IfNotPresent
-      tag: v3.4.0-alpha.88
+      tag: v3.4.0-alpha.91
 
     ingress:
       className: haproxy
