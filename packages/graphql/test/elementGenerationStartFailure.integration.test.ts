@@ -271,6 +271,10 @@ describe('generation start failure ordering', () => {
       const ctx = {
         prisma: observed,
         user: { sub: ownerId },
+        betaPreference: { userId: ownerId, value: Promise.resolve(true) },
+        featureFlags: {
+          isEnabled: (key: string) => key === 'question-generation-admission',
+        },
         elementGenerationRuntime: {
           questionInputContainer: 'synthetic',
           uploadCreateOnly: async () => {

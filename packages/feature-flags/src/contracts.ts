@@ -23,6 +23,9 @@ export const FEATURE_FLAG_DEFAULTS = {
   // chatbots without question generation. Without it, the generation entry
   // points are hidden and every generation API call is denied.
   'question-generation': false,
+  // Admits new question builds and explicit retries. Existing builds retain
+  // their review, polling, save and settlement paths under their access gate.
+  'question-generation-admission': false,
 } as const satisfies Record<string, false>
 
 export type KlickerFeatureFlags = {

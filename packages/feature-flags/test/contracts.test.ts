@@ -14,6 +14,7 @@ describe('feature flag contracts', () => {
       'chatbot-response-examples': false,
       'chatbot-long-custom-prompts': false,
       'question-generation': false,
+      'question-generation-admission': false,
     })
   })
 

@@ -816,6 +816,11 @@ describe('question-generation retry lifecycle', () => {
     } satisfies QuestionGenerationRuntime
     const ctx = {
       user: { sub: fixtures.ownerId },
+      betaPreference: {
+        userId: fixtures.ownerId,
+        value: Promise.resolve(true),
+      },
+      featureFlags: { isEnabled: vi.fn(() => true) },
       elementGenerationRuntime: runtime,
       prisma: {
         elementGenerationBuild: {
@@ -1358,6 +1363,7 @@ describe('question-generation review dispatch lifecycle', () => {
     } satisfies QuestionGenerationRuntime
     const ctx = {
       user: { sub: fixtures.ownerId },
+      featureFlags: { isEnabled: vi.fn(() => false) },
       elementGenerationRuntime: runtime,
       prisma: {
         elementGenerationReview: { create: createReview },
@@ -1392,6 +1398,7 @@ describe('question-generation review dispatch lifecycle', () => {
     expect(result.status).toBe(DB.ElementGenerationBuildStatus.GENERATING_ITEMS)
 
     expect(createReview).toHaveBeenCalledBefore(dispatchReview)
+    expect(ctx.featureFlags.isEnabled).not.toHaveBeenCalled()
     expect(persistedReviewId).not.toBe('')
     expect(runtime.findRunByQuestionReview).toHaveBeenCalledWith(
       fixtures.buildId,
@@ -2228,7 +2235,11 @@ describe('native question budget build lifetime', () => {
     KB_QUESTION_NATIVE_BUDGET_POLICY: JSON.stringify(template),
   })
 
-  function harness(existing = true, nativeBudget: unknown = policy) {
+  function harness(
+    existing = true,
+    nativeBudget: unknown = policy,
+    admission: (() => boolean) | undefined = () => true
+  ) {
     const current = {
       ...preparingBuild(),
       configuration: { ...fixtures.configuration, nativeBudget },
@@ -2254,6 +2265,11 @@ describe('native question budget build lifetime', () => {
     })
     const ctx = {
       user: { sub: fixtures.ownerId },
+      betaPreference: {
+        userId: fixtures.ownerId,
+        value: Promise.resolve(true),
+      },
+      featureFlags: admission ? { isEnabled: vi.fn(admission) } : undefined,
       elementGenerationRuntime: runtime,
       prisma: {
         elementGenerationBuild: {
@@ -2278,6 +2294,48 @@ describe('native question budget build lifetime', () => {
   afterEach(() => {
     vi.unstubAllEnvs()
     vi.restoreAllMocks()
+  })
+
+  it.each([
+    'missing',
+    'closed',
+    'error',
+  ] as const)('blocks new starts and retries when admission is %s', async (mode) => {
+    const h = harness(false, policy, () => {
+      if (mode === 'error') throw new Error('Synthetic evaluator failure')
+      return false
+    })
+    if (mode === 'missing') h.ctx.featureFlags = undefined
+    const warn = vi.spyOn(console, 'warn').mockImplementation(() => undefined)
+    h.current.status = DB.ElementGenerationBuildStatus.FAILED
+    await expect(
+      startQuestionGeneration(input as never, h.ctx as never)
+    ).rejects.toMatchObject({ code: 'QUESTION_GENERATION_UNAVAILABLE' })
+    await expect(
+      retryQuestionGeneration(h.current.id, h.ctx as never)
+    ).rejects.toMatchObject({ code: 'QUESTION_GENERATION_UNAVAILABLE' })
+    expect(createElementGenerationBuildWithSpend).not.toHaveBeenCalled()
+    expect(reserveElementGenerationRetrySpend).not.toHaveBeenCalled()
+    expect(h.runtime.uploadCreateOnly).not.toHaveBeenCalled()
+    expect(h.runtime.start).not.toHaveBeenCalled()
+    expect(
+      h.ctx.prisma.elementGenerationBuild.updateMany
+    ).not.toHaveBeenCalled()
+    warn.mockRestore()
+  })
+
+  it.each([
+    'poll',
+    'idempotent start',
+  ] as const)('continues accepted preparation through %s after admission closes', async (path) => {
+    const h = harness(true, policy, () => false)
+    await (path === 'poll'
+      ? getQuestionGenerationBuild(h.current.id, h.ctx as never)
+      : startQuestionGeneration(input as never, h.ctx as never))
+    expect(h.runtime.start).toHaveBeenCalledOnce()
+    expect(createElementGenerationBuildWithSpend).not.toHaveBeenCalled()
+    expect(reserveElementGenerationRetrySpend).not.toHaveBeenCalled()
+    expect(h.ctx.featureFlags?.isEnabled).not.toHaveBeenCalled()
   })
 
   it('rejects invalid new admission before product credit, upload or provider contact', async () => {

@@ -10,6 +10,7 @@ import type {
   QuestionGenerationPlanSummary,
 } from '@klicker-uzh/types'
 import type { ContextWithUser } from '../lib/context.js'
+import { isFeatureFlagEnabled } from '../lib/featureFlags.js'
 import {
   assertElementGenerationCostAccounted,
   createElementGenerationBuildWithSpend,
@@ -573,6 +574,15 @@ async function resumePreparingQuestionBuild(
   return findOwnedBuild(build.id, ctx)
 }
 
+async function assertQuestionGenerationAdmission(ctx: ContextWithUser) {
+  if (!(await isFeatureFlagEnabled(ctx, 'question-generation-admission'))) {
+    return serviceError(
+      'QUESTION_GENERATION_UNAVAILABLE',
+      'New question generation is currently unavailable'
+    )
+  }
+}
+
 export async function startQuestionGeneration(
   input: StartQuestionGenerationInput,
   ctx: ContextWithUser
@@ -612,6 +622,8 @@ export async function startQuestionGeneration(
       ? resumePreparingQuestionBuild(existing, runtime, ctx)
       : existing
   }
+
+  await assertQuestionGenerationAdmission(ctx)
 
   let nativeBudget: QuestionNativeBudgetMetadata
   try {
@@ -679,6 +691,7 @@ export async function retryQuestionGeneration(
       'Only a retryable failed question build can be retried'
     )
   }
+  await assertQuestionGenerationAdmission(ctx)
   const dispatchAttemptId = randomUUID()
   const claimed = await reserveElementGenerationRetrySpend(ctx.prisma, {
     buildId: build.id,
