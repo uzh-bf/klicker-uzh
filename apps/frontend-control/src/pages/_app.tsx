@@ -34,9 +34,10 @@ function useAppMessages(
   locale: AppLocale,
   pageMessages: AbstractIntlMessages | undefined
 ) {
-  if (pageMessages && typeof window !== 'undefined') {
-    messageCache[locale] = pageMessages
-  }
+  // effects run only in the browser, so the server never fills the cache
+  useEffect(() => {
+    if (pageMessages) messageCache[locale] = pageMessages
+  }, [locale, pageMessages])
 
   const [loaded, setLoaded] = useState<{
     locale: AppLocale
