@@ -189,6 +189,16 @@ rendering checks, request-time malformed-policy rejection, frozen retry policy,
 post-integration revision-disabled checks and shared correction limits. The
 reports are private; they qualify this approach, not implementation or rollout.
 
-Closure progress: target matches the approved SHA. Four conflicts are resolved
-by preserving both financial-policy and revision contracts. Integration checks
-are in progress. No live admission or configuration was changed.
+Closure progress: the pinned target is integrated and mandatory hooks pass.
+The shared admission hold and optional chart policy are implemented in existing
+modules. The integration exposed a replay issue: the slot-specification switch
+was read again on retry. New builds now freeze it before reservation and all
+later dispatch/evidence paths use that value; historical null values stay
+omitted. Existing lifecycle tests protect this alongside the frozen budget.
+The focused configuration/lifecycle/runtime/artifact/provider suite passes
+256 checks. The existing staging chart check now covers null omission and
+non-null valid/empty/invalid JSON forwarding only to the backend. It passes
+locally with Helm 4.3.0; required CI qualifies its pinned Helm 3.21.4.
+No new test file, dependency, migration or live configuration was added.
+Integrated source review and required candidate CI remain pending. Legacy
+retry reopening and all live effects remain gated.

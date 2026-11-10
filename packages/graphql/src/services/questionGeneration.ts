@@ -11,7 +11,6 @@ import type {
   QuestionGenerationPlanSummary,
 } from '@klicker-uzh/types'
 import type { ContextWithUser } from '../lib/context.js'
-import { isFeatureFlagEnabled } from '../lib/featureFlags.js'
 import {
   assertElementGenerationCostAccounted,
   createElementGenerationBuildWithSpend,
@@ -25,6 +24,7 @@ import {
   releaseElementGenerationLease,
 } from './elementGenerationLease.js'
 import {
+  assertElementGenerationAdmission,
   canonicalElementGenerationJson,
   elementGenerationArtifactPayload,
   isElementRevisionWorkerEnabled,
@@ -678,7 +678,7 @@ async function dispatchPreparingQuestionBuild(
     await runtime.downloadVerified(blueprintArtifact)
   }
 
-  const slotSpecificationsRequested = isElementRevisionWorkerEnabled()
+  const slotSpecificationsRequested = build.slotSpecificationsRequested === true
   const payload = questionWorkflowPayload(
     { ...build, blueprintArtifact },
     runtime,
@@ -758,15 +758,6 @@ async function resumePreparingQuestionBuild(
   return findOwnedBuild(build.id, ctx)
 }
 
-async function assertQuestionGenerationAdmission(ctx: ContextWithUser) {
-  if (!(await isFeatureFlagEnabled(ctx, 'question-generation-admission'))) {
-    return serviceError(
-      'QUESTION_GENERATION_UNAVAILABLE',
-      'New question generation is currently unavailable'
-    )
-  }
-}
-
 export async function startQuestionGeneration(
   input: StartQuestionGenerationInput,
   ctx: ContextWithUser
@@ -807,7 +798,7 @@ export async function startQuestionGeneration(
       : existing
   }
 
-  await assertQuestionGenerationAdmission(ctx)
+  await assertElementGenerationAdmission(ctx)
 
   let nativeBudget: QuestionNativeBudgetMetadata
   try {
@@ -832,6 +823,7 @@ export async function startQuestionGeneration(
       idempotencyKey,
       configurationHash: normalized.configurationHash,
       configuration,
+      slotSpecificationsRequested: isElementRevisionWorkerEnabled(),
       requestedElementCount: normalized.configuration.questionCount,
       inputArtifactContainer: runtime.questionInputContainer,
       inputArtifactPrefix: `question-builds/${buildId}`,
@@ -875,7 +867,7 @@ export async function retryQuestionGeneration(
       'Only a retryable failed question build can be retried'
     )
   }
-  await assertQuestionGenerationAdmission(ctx)
+  await assertElementGenerationAdmission(ctx)
   const dispatchAttemptId = randomUUID()
   // A revision retry is charged like the original revision: one question's
   // share of the parent build price.

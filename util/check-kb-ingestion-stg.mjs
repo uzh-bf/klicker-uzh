@@ -1,3 +1,4 @@
+import assert from 'node:assert/strict'
 import { spawnSync } from 'node:child_process'
 import { parseAllDocuments } from 'yaml'
 
@@ -25,7 +26,7 @@ function fail(message) {
   throw new Error(`KB ingestion STG render check failed: ${message}`)
 }
 
-function renderConfigMaps() {
+function renderConfigMaps(extraArgs = []) {
   const result = spawnSync(
     'helm',
     [
@@ -38,6 +39,7 @@ function renderConfigMaps() {
       'templates/cm-backend-graphql.yaml',
       '--show-only',
       'templates/cm-hatchet-workers.yaml',
+      ...extraArgs,
     ],
     { encoding: 'utf8' }
   )
@@ -116,6 +118,35 @@ for (const configMap of configMaps) {
     if (key in (configMap.data ?? {})) {
       fail(`${configMap.metadata.name} must not render secret key ${key}`)
     }
+  }
+}
+
+const nativeBudgetKey = 'KB_QUESTION_NATIVE_BUDGET_POLICY'
+requireAbsent(backend, [nativeBudgetKey])
+const budgetPolicy = {
+  schema_version: 1,
+  budget_usd: '5.00',
+  price_ceilings: {
+    'synthetic/model': { prompt: '0.000001', completion: '0.000002' },
+  },
+  max_output_tokens: 100,
+}
+for (const policy of [null, budgetPolicy, {}, [], '', false, 0, 'null']) {
+  const rendered = renderConfigMaps([
+    '--set-json',
+    `backendGraphql.elementGeneration.nativeBudgetPolicy=${JSON.stringify(policy)}`,
+  ])
+  const renderedBackend = findConfigMap(rendered, '-config-backend-graphql')
+  if (policy === null) {
+    requireAbsent(renderedBackend, [nativeBudgetKey])
+  } else {
+    const value = renderedBackend.data?.[nativeBudgetKey]
+    assert.equal(typeof value, 'string')
+    assert.deepEqual(JSON.parse(value), policy)
+  }
+  for (const configMap of rendered) {
+    if (configMap !== renderedBackend)
+      requireAbsent(configMap, [nativeBudgetKey])
   }
 }
 

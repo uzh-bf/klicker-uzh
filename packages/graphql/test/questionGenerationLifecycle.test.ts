@@ -24,9 +24,11 @@ const fixtures = vi.hoisted(() => ({
   },
 }))
 
-vi.mock('../src/services/elementGenerationProvider.js', () => ({
+vi.mock('../src/services/elementGenerationProvider.js', async (original) => ({
+  ...(await original<
+    typeof import('../src/services/elementGenerationProvider.js')
+  >()),
   canonicalElementGenerationJson: (value: unknown) => value,
-  isElementRevisionWorkerEnabled: () => false,
   elementGenerationArtifactPayload: (ref: {
     containerName: string
     blobName: string
@@ -115,7 +117,9 @@ import { completeElementGeneration } from '../src/services/elementGenerationComp
 import {
   getFlashcardGenerationBuild,
   retryFlashcardGeneration,
+  startFlashcardGeneration,
 } from '../src/services/flashcardGeneration.js'
+import { normalizeFlashcardGenerationConfiguration } from '../src/services/flashcardGenerationConfiguration.js'
 import {
   getQuestionGenerationBuild,
   questionWorkflowStartManifestSha256,
@@ -709,6 +713,11 @@ describe('flashcard retry preparation lifecycle', () => {
     } satisfies FlashcardGenerationRuntime
     const ctx = {
       user: { sub: fixtures.ownerId },
+      betaPreference: {
+        userId: fixtures.ownerId,
+        value: Promise.resolve(true),
+      },
+      featureFlags: { isEnabled: () => true },
       elementGenerationRuntime: runtime,
       prisma: {
         elementGenerationBuild: {
@@ -2226,6 +2235,134 @@ describe('partial question-generation delivery lifecycle', () => {
   })
 })
 
+describe('flashcard admission lifecycle', () => {
+  const input = {
+    graphBuildId: fixtures.graphBuildId,
+    idempotencyKey: 'stable-request',
+    language: 'de',
+    flashcardCount: 1,
+  }
+
+  function harness(existing: boolean, admission?: () => boolean) {
+    const normalized = normalizeFlashcardGenerationConfiguration(input, {})
+    const current = {
+      ...preparingBuild(),
+      ...normalized,
+      elementType: DB.ElementType.FLASHCARD,
+      status: DB.ElementGenerationBuildStatus
+        .PREPARING_INPUT as DB.ElementGenerationBuildStatus,
+    }
+    const runtime = {
+      ...failedBuildRuntime(vi.fn()),
+      startFlashcards: vi.fn(async (_payload, _scope, _attempt, before) => {
+        await before()
+        return { eventId: 'flashcard-event' }
+      }),
+      publishIncompleteFlashcards: vi.fn(),
+      findRunByFlashcardBuildId: vi.fn(async () => null),
+    }
+    const ctx = {
+      user: { sub: fixtures.ownerId },
+      betaPreference: {
+        userId: fixtures.ownerId,
+        value: Promise.resolve(true),
+      },
+      featureFlags: admission ? { isEnabled: vi.fn(admission) } : undefined,
+      elementGenerationRuntime: runtime,
+      prisma: {
+        elementGenerationBuild: {
+          findUnique: vi.fn(async () => (existing ? current : null)),
+          findFirst: vi.fn(async () => current),
+          updateMany: vi.fn(async ({ data }) => {
+            Object.assign(current, data)
+            return { count: 1 }
+          }),
+        },
+      },
+    }
+    return { current, runtime, ctx }
+  }
+
+  beforeEach(() => {
+    vi.mocked(createElementGenerationBuildWithSpend).mockReset()
+    vi.mocked(reserveFlashcardRetrySpend).mockReset()
+    vi.mocked(isFlashcardRetrySpend).mockResolvedValue(false)
+  })
+  afterEach(() => {
+    vi.unstubAllEnvs()
+    vi.restoreAllMocks()
+  })
+
+  it.each([
+    'missing',
+    'closed',
+    'error',
+  ] as const)('refuses new starts and retries with %s admission before spending', async (mode) => {
+    const h = harness(
+      false,
+      mode === 'missing'
+        ? undefined
+        : () => {
+            if (mode === 'error') throw new Error('Synthetic flag failure')
+            return false
+          }
+    )
+    const warn = vi.spyOn(console, 'warn').mockImplementation(() => undefined)
+    h.current.status =
+      DB.ElementGenerationBuildStatus.AWAITING_INCOMPLETE_PUBLICATION
+    await expect(
+      startFlashcardGeneration(input, h.ctx as never)
+    ).rejects.toMatchObject({
+      code: 'QUESTION_GENERATION_UNAVAILABLE',
+    })
+    await expect(
+      retryFlashcardGeneration(h.current.id, h.ctx as never)
+    ).rejects.toMatchObject({
+      code: 'QUESTION_GENERATION_UNAVAILABLE',
+    })
+    expect(createElementGenerationBuildWithSpend).not.toHaveBeenCalled()
+    expect(reserveFlashcardRetrySpend).not.toHaveBeenCalled()
+    expect(h.runtime.uploadCreateOnly).not.toHaveBeenCalled()
+    expect(h.runtime.startFlashcards).not.toHaveBeenCalled()
+    expect(
+      h.ctx.prisma.elementGenerationBuild.updateMany
+    ).not.toHaveBeenCalled()
+    warn.mockRestore()
+  })
+
+  it('admits a flashcard start without adopting the question budget policy', async () => {
+    const h = harness(false, () => true)
+    vi.stubEnv('KB_QUESTION_NATIVE_BUDGET_POLICY', '{}')
+    vi.mocked(createElementGenerationBuildWithSpend).mockImplementationOnce(
+      async (_db, args) => {
+        Object.assign(h.current, args.data)
+        return { created: true, buildId: h.current.id } as never
+      }
+    )
+    await startFlashcardGeneration(input, h.ctx as never)
+    expect(createElementGenerationBuildWithSpend).toHaveBeenCalledOnce()
+    expect(h.runtime.startFlashcards).toHaveBeenCalledOnce()
+    expect(h.runtime.startFlashcards.mock.calls[0]![0]).not.toHaveProperty(
+      'budget_policy'
+    )
+    expect(h.current.configuration).not.toHaveProperty('nativeBudget')
+  })
+
+  it.each([
+    'poll',
+    'idempotent start',
+  ] as const)('continues accepted flashcard preparation through %s after admission closes', async (path) => {
+    const h = harness(true, () => false)
+    await (path === 'poll'
+      ? getFlashcardGenerationBuild(h.current.id, h.ctx as never)
+      : startFlashcardGeneration(input, h.ctx as never))
+    expect(h.runtime.startFlashcards).toHaveBeenCalledOnce()
+    expect(createElementGenerationBuildWithSpend).not.toHaveBeenCalled()
+    expect(reserveFlashcardRetrySpend).not.toHaveBeenCalled()
+    expect(h.ctx.featureFlags?.isEnabled).not.toHaveBeenCalled()
+  })
+})
+
 describe('native question budget build lifetime', () => {
   const template = {
     budget_usd: '+5.00',
@@ -2342,9 +2479,16 @@ describe('native question budget build lifetime', () => {
     expect(h.ctx.featureFlags?.isEnabled).not.toHaveBeenCalled()
   })
 
-  it('rejects invalid new admission before product credit, upload or provider contact', async () => {
+  it.each([
+    '{}',
+    '[]',
+    'false',
+    '0',
+    '""',
+    '"null"',
+  ])('rejects configured policy %s before product credit, upload or provider contact', async (value) => {
     const h = harness(false)
-    vi.stubEnv('KB_QUESTION_NATIVE_BUDGET_POLICY', '{}')
+    vi.stubEnv('KB_QUESTION_NATIVE_BUDGET_POLICY', value)
     await expect(
       startQuestionGeneration(input as never, h.ctx as never)
     ).rejects.toMatchObject({ code: 'CONFIGURATION_INVALID' })
@@ -2359,6 +2503,7 @@ describe('native question budget build lifetime', () => {
   ])('persists server mode before first spend for policy %s', async (value) => {
     const h = harness(false)
     vi.stubEnv('KB_QUESTION_NATIVE_BUDGET_POLICY', value)
+    vi.stubEnv('ELEMENT_REVISION_WORKER_ENABLED', 'true')
     vi.mocked(createElementGenerationBuildWithSpend).mockImplementationOnce(
       async (_db, args) => {
         Object.assign(h.current, args.data)
@@ -2366,6 +2511,10 @@ describe('native question budget build lifetime', () => {
       }
     )
     await startQuestionGeneration(input as never, h.ctx as never)
+    expect(h.current).toMatchObject({ slotSpecificationsRequested: true })
+    expect(h.runtime.start.mock.calls[0]![0]).toMatchObject({
+      emit_slot_specifications: true,
+    })
     const expected = questionNativeBudgetFromEnv({
       KB_QUESTION_NATIVE_BUDGET_POLICY: value,
     })
@@ -2441,10 +2590,19 @@ describe('native question budget build lifetime', () => {
     )
   })
 
-  it('keeps the same build, policy and ledger on an explicit product retry', async () => {
+  it.each([
+    true,
+    false,
+    null,
+  ])('keeps the same build, policy, ledger and slot setting %s on retry', async (slotSpecificationsRequested) => {
     const h = harness()
+    Object.assign(h.current, { slotSpecificationsRequested })
+    vi.stubEnv(
+      'ELEMENT_REVISION_WORKER_ENABLED',
+      String(!slotSpecificationsRequested)
+    )
     h.current.status = DB.ElementGenerationBuildStatus.FAILED
-    vi.stubEnv('KB_QUESTION_NATIVE_BUDGET_POLICY', undefined)
+    vi.stubEnv('KB_QUESTION_NATIVE_BUDGET_POLICY', '{}')
     vi.mocked(reserveElementGenerationRetrySpend).mockImplementationOnce(
       async (_db, args) => {
         Object.assign(h.current, {
@@ -2457,6 +2615,9 @@ describe('native question budget build lifetime', () => {
     )
     await retryQuestionGeneration(h.current.id, h.ctx as never)
     expect(reserveElementGenerationRetrySpend).toHaveBeenCalledOnce()
+    expect(h.runtime.start.mock.calls[0]![0].emit_slot_specifications).toBe(
+      slotSpecificationsRequested === true ? true : undefined
+    )
     expect(h.runtime.start.mock.calls[0]![0]).toMatchObject({
       question_build_id: fixtures.buildId,
       output: {

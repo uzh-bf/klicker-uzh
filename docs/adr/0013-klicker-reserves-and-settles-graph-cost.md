@@ -73,22 +73,33 @@ historical in-flight builds with their original manifest interpretation before
 changing workers. Omitting the budget setting keeps new builds unbudgeted;
 an empty configured value is invalid.
 
-New question builds and explicit retries additionally require the per-actor
-`question-generation-admission` feature decision. Its default is false; absent,
+The chart's optional `backendGraphql.elementGeneration.nativeBudgetPolicy`
+value delivers this JSON to the GraphQL backend. Null omits the environment
+setting. Every other value is emitted, including empty maps, so malformed
+configuration fails request admission rather than silently disabling the
+budget. It does not prevent process startup or affect accepted builds using
+their frozen policy. Flashcards share the admission hold, not this dollar policy.
+The slot-specification switch is also frozen before a new question build's
+first reservation; retries and evidence reconstruction reuse its stored value.
+Historical null values omit that optional field.
+
+New question and flashcard builds and explicit retries additionally require the
+per-actor `question-generation-admission` feature decision. Its default is false; absent,
 stale or erroring evaluation denies new work before credit reservation or
 provider dispatch. A release that should keep admission open must configure
 that flag for the intended actors before deploying this code. Existing builds,
 including an idempotent start returning a prior build, retain their polling,
 review, save and settlement paths. The existing `question-generation` and AI
-access gates remain required for those operations. Flashcard admission is
-unchanged. Do not close the shared access gate to drain question builds.
+access gates remain required for those operations. The admission hold includes
+flashcards because they share the question worker.
+Do not close the shared access gate to drain accepted work.
 
 Flag decisions use the existing authenticated actor attributes and refresh
 asynchronously. Closing admission is not an atomic cutoff: previously admitted
 requests can still reserve or dispatch. Before changing workers, verify the
 closed decision across serving instances and account for requests accepted on
-the previous payload. Finish all nonterminal question stages, including waiting
-review and publication, and reconcile reserved or uncertain product/native
+the previous payload. Finish all nonterminal question and flashcard stages,
+including waiting review and publication, and reconcile reserved or uncertain product/native
 exposure. A quiet queue, elapsed refresh interval or a flag write alone is not
 proof of drain. If these facts cannot be established, hold the rollout. Retain
 the existing worker for accepted builds until their manifest interpretation no
