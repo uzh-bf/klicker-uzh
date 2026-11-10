@@ -1612,8 +1612,13 @@ serve recording bytes. Ingestion's explicit `citation_handle` mapping supplies t
 internal reference is never turned into a fabricated recording link.
 
 Chat checks message ownership and current KB scope before serving a selected frame or a retrieved
-source preview. It reads frame artifacts on the server, enforces byte limits, and verifies SHA-256
-and manifest membership. The source-video digest identifies the frame's recording; it does not
+source preview. Explicitly disabled Quizzer bindings block inheritance from Tutor, matching the
+Chat route. It reads frame artifacts on the server, enforces byte limits, and verifies SHA-256
+and manifest membership. Verified Blob manifests use an in-process LRU cache with at most 32
+entries, an 8 MB serialized-metadata budget, and a five-minute lifetime per entry. Storage
+account, endpoint, and container are part of the cache key. Failures, JPEG bytes, and local
+fixture reads are not cached. Ownership, current scope, recording/occurrence binding, and JPEG
+integrity checks still run on each request. The source-video digest identifies the frame's recording; it does not
 require a stored recording object. A representative frame may lie outside the cited transcript
 chunk's time range. The local `CHAT_VIDEO_FRAME_STORE_PATH` adapter exists for development fixtures.
 A deployed Chat pod needs `CHAT_VIDEO_BLOB_CONTAINER`, `BLOB_STORAGE_ACCOUNT_NAME`, and

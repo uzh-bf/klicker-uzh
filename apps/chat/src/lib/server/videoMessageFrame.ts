@@ -47,14 +47,13 @@ export async function resolveAuthorizedVideoFrame({
     where: { id: chatbotId },
     select: { mcpConfigurations: { include: { mcpServer: true } } },
   })
-  const configs = (chatbot?.mcpConfigurations ?? []).filter(
-    (config) => config.isEnabled !== false
-  )
+  const allConfigs = chatbot?.mcpConfigurations ?? []
+  const configs = allConfigs.filter((config) => config.isEnabled !== false)
   const mode = message.chatMode ?? 'tutor'
   const kbIds = resolveMcpScope(
     configs,
     mode,
-    resolveEffectiveMCPConfigurations(configs, mode)
+    resolveEffectiveMCPConfigurations(allConfigs, mode)
   )
   return kbIds?.includes(frame.kb_id) ? frame : undefined
 }

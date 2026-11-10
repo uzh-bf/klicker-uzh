@@ -25,6 +25,86 @@ const manifestSchema = z.object({
   ),
 })
 
+// Cache verified Blob metadata only. Permissions and occurrence checks stay on
+// every request; local fixtures and JPEG bytes are deliberately not cached.
+const MAX_CACHED_MANIFESTS = 32
+const MAX_CACHED_MANIFEST_BYTES = 8_000_000
+const MANIFEST_CACHE_TTL_MS = 5 * 60_000
+type BlobReader = (key: string, limit: number) => Promise<Buffer>
+type Manifest = z.infer<typeof manifestSchema>
+type CachedManifest = {
+  manifest: Manifest
+  bytes: number
+  expiresAt: number
+}
+// Separate injected readers cannot share entries, even for the same digest.
+const manifestCaches = new WeakMap<BlobReader, Map<string, CachedManifest>>()
+
+async function readVerifiedManifest(
+  frame: VideoFrame,
+  root: string | undefined,
+  blobReader: BlobReader
+): Promise<Manifest> {
+  let cache: Map<string, CachedManifest> | undefined
+  const key = JSON.stringify([
+    process.env.BLOB_STORAGE_ACCOUNT_NAME,
+    process.env.BLOB_STORAGE_ACCOUNT_URL,
+    process.env.CHAT_VIDEO_BLOB_CONTAINER,
+    frame.manifest_sha256,
+  ])
+  if (!root) {
+    cache = manifestCaches.get(blobReader)
+    if (!cache) {
+      cache = new Map()
+      manifestCaches.set(blobReader, cache)
+    }
+    const cached = cache.get(key)
+    if (cached) {
+      cache.delete(key)
+      if (cached.expiresAt > Date.now()) {
+        cache.set(key, cached)
+        return cached.manifest
+      }
+    }
+  }
+
+  const bytes = await readObject(
+    root,
+    'manifests',
+    frame.manifest_sha256,
+    'json',
+    MAX_MANIFEST_BYTES,
+    blobReader
+  )
+  const manifest = manifestSchema.parse(JSON.parse(bytes.toString()))
+  if (cache) {
+    // Concurrent misses may finish twice; replace without double-counting.
+    cache.delete(key)
+    for (const [entryKey, entry] of cache) {
+      if (entry.expiresAt <= Date.now()) cache.delete(entryKey)
+    }
+    let retainedBytes = [...cache.values()].reduce(
+      (total, entry) => total + entry.bytes,
+      0
+    )
+    while (
+      cache.size >= MAX_CACHED_MANIFESTS ||
+      retainedBytes + bytes.length > MAX_CACHED_MANIFEST_BYTES
+    ) {
+      const oldest = cache.entries().next().value
+      if (!oldest) break
+      cache.delete(oldest[0])
+      retainedBytes -= oldest[1].bytes
+    }
+    cache.set(key, {
+      manifest,
+      bytes: bytes.length,
+      expiresAt: Date.now() + MANIFEST_CACHE_TTL_MS,
+    })
+  }
+  return manifest
+}
+
 type VideoFrameStoreEnvironment = Partial<
   Pick<
     NodeJS.ProcessEnv,
@@ -139,20 +219,7 @@ export async function readVideoFrame(
   root = process.env.CHAT_VIDEO_FRAME_STORE_PATH,
   blobReader = readBlobObject
 ): Promise<Buffer> {
-  const manifest = manifestSchema.parse(
-    JSON.parse(
-      (
-        await readObject(
-          root,
-          'manifests',
-          frame.manifest_sha256,
-          'json',
-          MAX_MANIFEST_BYTES,
-          blobReader
-        )
-      ).toString()
-    )
-  )
+  const manifest = await readVerifiedManifest(frame, root, blobReader)
   if (
     manifest.schema_version !== 'video_frame_assets.v1' ||
     manifest.source_video_sha256 !== frame.source_video_sha256
