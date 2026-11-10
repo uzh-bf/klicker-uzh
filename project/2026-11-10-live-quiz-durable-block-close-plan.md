@@ -123,3 +123,10 @@
   fallback, unverified Hatchet registration order, test seams and stale
   cases, no Playwright coverage claim, typed task and handler maps, task
   catalog docs.
+- 2026-11-10 S1 implemented in `3c843636e3`: the task and its guarded
+  handler, scheduling after the publish with the in-process fallback, the
+  narrowed close context, the typed task and handler maps, unit tests and
+  the task catalog entry. The local devcontainer could not start because
+  Docker's network address pools were exhausted, so the typecheck and unit
+  tests run in CI, and the local restart and registration-order checks are
+  still open.
