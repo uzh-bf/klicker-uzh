@@ -1,0 +1,175 @@
+{
+  "version": 1,
+  "cases": [
+    {
+      "id": "skip-lookup-sharpe-formula",
+      "group": "development",
+      "language": "en",
+      "mode": "explainer",
+      "support": "quick formula lookup",
+      "rubric": [
+        "Gives the Sharpe ratio as excess return over the risk-free rate divided by the standard deviation of returns.",
+        "Ends without a comprehension, application or recall question."
+      ],
+      "assessmentTurns": [1],
+      "turns": [
+        {
+          "message": "What is the formula for the Sharpe ratio? Just the formula, please."
+        }
+      ]
+    },
+    {
+      "id": "skip-definition-beta",
+      "group": "development",
+      "language": "de",
+      "mode": "explainer",
+      "support": "short definition request",
+      "rubric": [
+        "Defines beta as the sensitivity of an asset's return to market returns, or as its covariance with the market divided by market variance.",
+        "Ends without a comprehension, application or recall question."
+      ],
+      "assessmentTurns": [1],
+      "turns": [
+        {
+          "message": "Was ist Beta bei einer Aktie? Nur eine kurze Definition."
+        }
+      ]
+    },
+    {
+      "id": "skip-followup-perfect-correlation",
+      "group": "development",
+      "language": "en",
+      "mode": "explainer",
+      "support": "short follow-up after an explanation",
+      "rubric": [
+        "Turn 2 states that two assets with correlation +1 give no diversification benefit, so portfolio volatility is the weighted average of the two volatilities.",
+        "Turn 2 ends without a comprehension, application or recall question."
+      ],
+      "assessmentTurns": [2],
+      "turns": [
+        {
+          "message": "Explain why holding many stocks reduces portfolio risk, but not all of it."
+        },
+        {
+          "message": "And with two stocks that are perfectly correlated?"
+        }
+      ]
+    },
+    {
+      "id": "skip-revision-diversification",
+      "group": "development",
+      "language": "de",
+      "mode": "explainer",
+      "support": "revision of an earlier explanation",
+      "rubric": [
+        "Turn 2 shortens the earlier explanation to at most two bullet points and keeps the distinction between diversifiable and systematic risk.",
+        "Turn 2 ends without a comprehension, application or recall question."
+      ],
+      "assessmentTurns": [2],
+      "turns": [
+        {
+          "message": "Erkläre mir, warum Diversifikation das Risiko eines Portfolios senkt, aber nicht ganz beseitigt."
+        },
+        {
+          "message": "Fasse das bitte in höchstens zwei Stichpunkten zusammen."
+        }
+      ]
+    },
+    {
+      "id": "skip-understanding-shown-beta",
+      "group": "development",
+      "language": "en",
+      "mode": "explainer",
+      "support": "student already shows understanding of the explained idea",
+      "rubric": [
+        "Turn 2 confirms that under the CAPM a negative-beta asset has an expected return below the risk-free rate, because it lowers the risk of a diversified portfolio.",
+        "Turn 2 ends without a comprehension, application or recall question."
+      ],
+      "assessmentTurns": [2],
+      "turns": [
+        {
+          "message": "Explain why the CAPM rewards beta rather than total volatility."
+        },
+        {
+          "message": "So a stock with high volatility but negative beta should, under the CAPM, have an expected return below the risk-free rate, since it hedges market risk. Can you confirm why that follows?"
+        }
+      ]
+    },
+    {
+      "id": "explain-diversification-limit",
+      "group": "development",
+      "language": "en",
+      "mode": "explainer",
+      "support": "conceptual explanation request",
+      "rubric": [
+        "Explains that idiosyncratic risk averages out across assets while systematic market risk remains.",
+        "Ends with exactly one check question.",
+        "The check asks the student to apply the idea to a new case, predict an outcome, or explain it in their own words, and does not ask them to recall a fact stated in the answer."
+      ],
+      "assessmentTurns": [1],
+      "turns": [
+        {
+          "message": "Explain why holding many stocks reduces portfolio risk, but not all of it."
+        }
+      ]
+    },
+    {
+      "id": "explain-capm-beta-pricing",
+      "group": "development",
+      "language": "de",
+      "mode": "explainer",
+      "support": "conceptual explanation of a model's reasoning",
+      "rubric": [
+        "Explains that under the CAPM only systematic risk is priced because diversifiable risk can be removed at no cost, and beta measures that systematic exposure.",
+        "Ends with exactly one check question.",
+        "The check asks the student to apply the idea to a new case, predict an outcome, or explain it in their own words, and does not ask them to recall a fact stated in the answer."
+      ],
+      "assessmentTurns": [1],
+      "turns": [
+        {
+          "message": "Erkläre mir die Intuition hinter dem CAPM. Ich verstehe nicht, warum nur Beta und nicht die gesamte Volatilität bepreist wird."
+        }
+      ]
+    },
+    {
+      "id": "explain-loss-gain-asymmetry",
+      "group": "development",
+      "language": "en",
+      "mode": "explainer",
+      "support": "worked mechanism explanation",
+      "rubric": [
+        "Shows that a 10% loss followed by a 10% gain ends at 99% of the starting value because the gain applies to a smaller base.",
+        "Ends with exactly one check question.",
+        "The check asks the student to apply the idea to a new case, predict an outcome, or explain it in their own words, and does not ask them to recall a fact stated in the answer."
+      ],
+      "assessmentTurns": [1],
+      "turns": [
+        {
+          "message": "Walk me through why losing 10% and then gaining 10% leaves me below where I started."
+        }
+      ]
+    },
+    {
+      "id": "check-answered-correlation",
+      "group": "development",
+      "language": "en",
+      "mode": "explainer",
+      "support": "student answers a closing check with one correct and one incorrect claim",
+      "rubric": [
+        "Turn 2 opens with feedback on the student's answer before any new material.",
+        "Turn 2 confirms that correlation -1 allows a zero-risk portfolio with suitable weights.",
+        "Turn 2 corrects the +1 claim: perfect positive correlation gives no diversification benefit, and portfolio volatility is the weighted average of the two volatilities, in one or two sentences.",
+        "Turn 2 feedback is brief and specific, without generic praise."
+      ],
+      "assessmentTurns": [2],
+      "turns": [
+        {
+          "message": "Explain how the correlation between two assets affects the risk of a portfolio that holds both. Then check my understanding with one question about correlations of +1 and -1."
+        },
+        {
+          "message": "Let me try your check: with correlation +1, mixing the two still lowers the risk a little, and with correlation -1 the right weights can bring the risk down to zero."
+        }
+      ]
+    }
+  ]
+}
