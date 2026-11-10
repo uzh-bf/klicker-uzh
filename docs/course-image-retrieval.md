@@ -96,7 +96,7 @@ Chat's use of existing stored figures. It needs no re-ingestion solely to enable
 previews for already valid figure descriptors. Existing resources without bound
 figures still need the separately authorized upgrade described above.
 
-Enabling previews sends bounded image crops to the selected model's configured
+Enabling previews sends resized image previews to the selected model's configured
 provider and increases model input and latency; it makes no additional standalone
 LLM call. It does not guarantee a better explanation. The existing nine-figure
 local comparison observed roughly 17% higher median latency and 5% higher mean

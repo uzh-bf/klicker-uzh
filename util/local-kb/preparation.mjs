@@ -156,7 +156,13 @@ export async function verifyContinuationSources(
   return profileRepair
 }
 
-async function requireUnusedProvider(config, name, context, runDocker) {
+async function requireUnusedProvider(
+  config,
+  name,
+  context,
+  runDocker,
+  portOccupied = occupiedLocalPort
+) {
   const state = join(
     config.project.runtimeCheckoutPath,
     '.local-kb/state',
@@ -173,30 +179,31 @@ async function requireUnusedProvider(config, name, context, runDocker) {
       ingestionComposeProject(config, state),
       'Untouched ingestion provider has existing Docker resources.'
     )
-  } else if (name === 'retrieval') {
-    await new Promise((resolve, reject) => {
-      const socket = createConnection({
-        host: '127.0.0.1',
-        port: config.bindings.ports.retrieval.api,
-      })
-      socket.setTimeout(2000)
-      socket.once('connect', () => {
-        socket.destroy()
-        reject(new Error('Retrieval listener is already occupied.'))
-      })
-      socket.once('timeout', () => {
-        socket.destroy()
-        reject(new Error('Retrieval listener state is unknown.'))
-      })
-      socket.once('error', (error) =>
-        error.code === 'ECONNREFUSED'
-          ? resolve()
-          : reject(new Error('Retrieval listener state is unknown.'))
+  } else if (name === 'docProcessing') {
+    // Match the provider launcher's IsolatedBacking.project identity. A missing
+    // state root also rules out its process records and port-claim files.
+    const suffix = createHash('sha256')
+      .update(
+        `${config.providers.docProcessing.sourcePath}:${state}:${config.project.identity}`
       )
-    })
+      .digest('hex')
+      .slice(0, 24)
+    await requireAbsentComposeResources(
+      runDocker,
+      context,
+      `doc-processing-local-${suffix}`,
+      'Document processing has existing Docker resources.'
+    )
+    for (const port of Object.values(config.bindings.ports.docProcessing)) {
+      if (await portOccupied(port))
+        throw new Error('Document processing listener is already occupied.')
+    }
+  } else if (name === 'retrieval') {
+    if (await portOccupied(config.bindings.ports.retrieval.api))
+      throw new Error('Retrieval listener is already occupied.')
   } else
     throw new Error(
-      'Only untouched ingestion and retrieval stages may be initialized.'
+      'Only untouched ingestion, document processing and retrieval stages may be initialized.'
     )
 }
 
@@ -630,7 +637,7 @@ export async function continuePreparation(
       join(directory, 'provider-setup', `${name}.json`)
     )
     if (missing && (await absent(join(directory, 'state', name)))) {
-      await unusedProvider(config, name, context, runDocker)
+      await unusedProvider(config, name, context, runDocker, portOccupied)
       return 'untouched'
     }
     await requirePrivateDirectory(

@@ -58,10 +58,7 @@ import {
 import { buildChatTurnRequest } from '@/src/lib/server/chatTurnRequest'
 import { withModelCitationIndices } from '@/src/lib/server/citationInstructions'
 import { readCourseImagePreview } from '@/src/lib/server/courseImagePreviewStore'
-import {
-  courseImageStoreConfigured,
-  readCourseImage,
-} from '@/src/lib/server/courseImageStore'
+import { courseImageStoreConfigured } from '@/src/lib/server/courseImageStore'
 import {
   canRegisterCourseImageTool,
   withCourseImageTool,
@@ -1519,7 +1516,7 @@ export async function POST(
       chatTools = withCourseImageTool(
         chatTools,
         scopedKbIds ?? [],
-        readCourseImage,
+        (image) => readCourseImagePreview(image, scopedKbIds ?? []),
         imageVisionEnabled,
         courseImageVision?.hasPixelInput
       )
