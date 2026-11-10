@@ -1419,12 +1419,12 @@ Da die KlickerUZH-App noch nicht im iOS-App-Store verfügbar ist, folgen Sie die
       escapeRoomWrongTriesToast:
         'Falsche Antwort! {count, plural, one {# Versuch} other {# Versuche}} übrig.',
       escapeRoomRevealedNotice:
-        'Keine Versuche mehr. Die Frage gilt als gelöst (+{penalty}s Wertungszeit).',
+        'Keine Versuche mehr. Die Frage gilt als abgeschlossen (+{penalty}s Wertungszeit).',
       escapeRoomRevealedToast:
-        'Keine Versuche mehr — die Frage gilt als gelöst. Weiter geht es.',
+        'Keine Versuche mehr — die Frage gilt als abgeschlossen. Weiter geht es.',
       escapeRoomSkip: 'Frage überspringen (+{penalty}s Wertungszeit)',
       escapeRoomSkipConfirm:
-        'Diese Frage überspringen? Sie gilt als gelöst und addiert {penalty}s zu deiner Wertungszeit.',
+        'Diese Frage überspringen? Sie gilt als abgeschlossen und addiert {penalty}s zu deiner Wertungszeit.',
       escapeRoomSkipConfirmButton: 'Ja, überspringen',
       escapeRoomSkippedToast:
         'Frage übersprungen — {penalty}s zu deiner Wertungszeit hinzugefügt.',
@@ -1442,7 +1442,7 @@ Da die KlickerUZH-App noch nicht im iOS-App-Store verfügbar ist, folgen Sie die
       escapeRoomStagesLabel: 'Stationen',
       escapeRoomStagesCleared: 'Gelöste Stationen',
       escapeRoomClearedProgress:
-        'Du hast {cleared} von {total} Stationen gelöst, bevor die Zeit abgelaufen ist.',
+        'Du hast {cleared} von {total} Stationen abgeschlossen, bevor die Zeit abgelaufen ist.',
       escapeRoomStatsTime: 'Fluchtzeit',
       escapeRoomStatsHints: 'Genutzte Hinweise',
       escapeRoomStatsPenalty: 'Zeitstrafe',
