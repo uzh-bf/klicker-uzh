@@ -352,3 +352,62 @@ test('deferred execution attests only the skip plan', () => {
     /deferred execution must use the skip/
   )
 })
+
+test('priority duration reaches the published build and shard metadata without widening defaults', () => {
+  const { choosePlaywrightRoute, envInput } = require('./playwright-route.cjs')
+  const input = envInput({
+    EVENT_NAME: 'pull_request',
+    REPOSITORY: 'uzh-bf/klicker-uzh',
+    REPOSITORY_PRIVATE: 'false',
+    HEAD_REPOSITORY: 'uzh-bf/klicker-uzh',
+    PR_AUTHOR: 'synthetic',
+    PR_DRAFT: 'false',
+    PR_NUMBER: '1234',
+    PRIORITY_ADMITTED: 'true',
+    PRIORITY_ATTEMPT: '1',
+    GITHUB_RUN_ATTEMPT: '1',
+    PRIORITY_JOB_TIMEOUT: '7',
+  })
+  const decision = choosePlaywrightRoute(input)
+  assert.equal(buildPlanMetadata(plan('full', 8), decision).jobTimeout, 7)
+  assert.equal(
+    buildPlanMetadata(plan('full', 8), { ...decision, jobTimeout: undefined })
+      .jobTimeout,
+    45
+  )
+  const hosted = { route: 'hosted', selectorPrState: 'ready' }
+  assert.equal(buildPlanMetadata(plan('full', 8), hosted).jobTimeout, 120)
+  for (const jobTimeout of [0, 16, 1.5, '7', null]) {
+    assert.throws(
+      () => buildPlanMetadata(plan('full', 8), { ...decision, jobTimeout }),
+      /invalid priority job timeout/
+    )
+  }
+  assert.throws(
+    () => buildPlanMetadata(plan('full', 8), { ...hosted, jobTimeout: 7 }),
+    /invalid priority job timeout/
+  )
+  assert.throws(
+    () =>
+      buildPlanMetadata(plan('full', 8), {
+        route: 'public-pr',
+        selectorPrState: 'ready',
+        jobTimeout: 7,
+      }),
+    /invalid priority job timeout/
+  )
+})
+
+test('ordinary paid admission cannot carry priority-only duration metadata', () => {
+  assert.throws(
+    () =>
+      buildPlanMetadata(plan('full', 8), {
+        route: 'public-pr',
+        provider: 'warpbuild',
+        selectorPrState: 'ready',
+        admissionAttempt: '1',
+        jobTimeout: 7,
+      }),
+    /invalid priority job timeout/
+  )
+})

@@ -13,6 +13,7 @@ vi.mock('../src/services/flashcardGeneration.js', () => ({
   startFlashcardGeneration: starts.flashcard,
 }))
 vi.mock('../src/services/questionGenerationGraph.js', () => ({
+  assertQuestionGenerationBasisCurrent: async () => undefined,
   assertQuestionGenerationPreviewAccess: async () => undefined,
   getQuestionGenerationSources: async () => [],
 }))
@@ -59,7 +60,9 @@ function input(
   overrides: Partial<StartElementGenerationInput> = {}
 ): StartElementGenerationInput {
   return {
+    kbId: '0f3c1f8e-5a47-4c4f-9a61-1d2f5c7b8e90',
     graphBuildId: '5e21a46a-94b4-44e9-8966-b36dc1908790',
+    basisFingerprint: 'focus-topic-basis',
     elementType: 'SC',
     language: 'de',
     elementCount: 6,

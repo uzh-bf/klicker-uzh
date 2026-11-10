@@ -3,6 +3,7 @@ import {
   faListCheck,
   faWandMagicSparkles,
 } from '@fortawesome/free-solid-svg-icons'
+import { useFeatureFlag } from '@klicker-uzh/feature-flags/react'
 import {
   ActivityType,
   Element,
@@ -46,6 +47,7 @@ function Index() {
   const { state: aiCapability } = useManageAiCapability()
   const aiFeaturesEnabled = aiCapability === 'enabled'
   const aiTemporarilyUnavailable = aiCapability === 'temporarilyUnavailable'
+  const questionGenerationEnabled = useFeatureFlag('question-generation')
 
   // search, filter and pagination states
   const [searchInput, setSearchInput] = useState('')
@@ -438,7 +440,8 @@ function Index() {
                     </Button.Label>
                   </Button>
                 ) : null}
-                {aiFeaturesEnabled || aiTemporarilyUnavailable ? (
+                {questionGenerationEnabled &&
+                (aiFeaturesEnabled || aiTemporarilyUnavailable) ? (
                   <Button
                     disabled={aiTemporarilyUnavailable}
                     title={

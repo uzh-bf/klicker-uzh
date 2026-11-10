@@ -1,0 +1,13 @@
+query GetControlCourseLiveQuizzes($courseId: String!) {
+  controlCourse(id: $courseId) {
+    id
+    name
+    liveQuizzes {
+      id
+      name
+      status
+      isAssessmentEnabled
+      availableFrom
+    }
+  }
+}

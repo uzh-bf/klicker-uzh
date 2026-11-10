@@ -14,6 +14,12 @@ tags:
 
 ## Automated review context and portability
 
+Runtime changes and Klicker's caller-pin update normally share one PR. Commit
+the runtime first, then pin its full SHA in a later caller commit. Ordinary CI
+fetches that exact source commit and verifies that the final candidate ships the
+same runtime manifest and assets. Read [the shared runtime guide](ocr-runtime.md#prepare-a-caller-upgrade)
+for source, squash-merge and post-merge verification boundaries.
+
 The [ocr-reviewer skill](../.agents/skills/ocr-reviewer/SKILL.md) is portable
 across repositories and forges. Copy it unchanged when adopting this OCR
 approach; keep repository-specific contracts and skill pointers in local docs.
@@ -385,19 +391,19 @@ see **Bounded codebase check** below. Pushes always run the full suite.
 - **Unused code**: `check` runs Knip **advisory** (non-blocking); ratchet it to blocking only after the per-workspace entry config is tuned.
 - **Secret scanning**: `check-gitleaks` runs a **blocking** Gitleaks scan of commits introduced by the push or pull request (`.gitleaks.toml`, default ruleset + false-positive allowlist). For a branch-creation push, where GitHub supplies an all-zero `before` SHA, it fetches the repository default branch and scans from its merge base to the new tip; it fails closed when the default branch or merge base cannot be resolved. The configured push trigger covers `v3` and `v3*`; other branch names are covered when a pull request is opened or updated. A local husky pre-commit hook scans staged changes when the binary is present.
 - **SonarCloud suppressions must live in `sonar-project.properties`.** Sonar reports rules such as `typescript:S3776` on the function declaration line, and Biome always moves a trailing `NOSONAR` comment onto its own line, so an inline marker silently stops suppressing after formatting. Use a scoped `sonar.issue.ignore.multicriteria` entry instead (current example: the chat POST handler's cognitive complexity).
-- **Security analysis**: `codeql-analysis.yml` analyzes JavaScript/TypeScript, the analytics Python sources, and the GitHub Actions workflows with SHA-pinned CodeQL v4 actions, and runs the `security-extended` suite as a pilot; the job is not a required check. A documentation-and-planning pull request skips the analysis in both workflows, because it changes no analyzed source: each workflow computes the class in a small classify job from the same changed-path records, and each analysis gate repeats the pull-request-only boundary, so a push, the weekly CodeQL run, and any class the classifier cannot prove still analyze. `v3_sonarcloud.yml` pins the Sonar scanner, derives the project version from the root `package.json`, awaits the quality gate on a pull request, and imports LCOV coverage only from a test run that belongs to the analyzed head and recorded the same tested source tree, rewriting the imported report paths to repository-relative form (`.github/scripts/sonar-coverage-inputs.cjs`, `.github/scripts/sonar-coverage-transport.cjs`); a missing or unverified report leaves coverage "not computed" in SonarCloud instead of reporting a satisfied metric, and no coverage threshold is armed yet. `.github/workflows/sonar-analysis.yml` holds the single analysis definition, and `v3_sonarcloud.yml` (branch push and ready-for-review boundary) and both coverage producers call it, so the analysis has one definition instead of one per host: the producer run that observes every producer terminal imports the coverage and analyzes, and a run that still sees a queued producer defers with a named reason instead of holding a runner, so no analysis job waits for a queued test run. At most one analysis is published per pull request, head, and base: a successful scan uploads a receipt artifact named for that revision, a later host that finds the receipt defers, and an explicit re-run (`github.run_attempt > 1`) ignores it and analyzes again. Fork and Dependabot pull requests cannot receive `SONAR_TOKEN`, so their analysis fails closed with a named unavailable result rather than an authorization error. **New-code definition**: SonarCloud fixes a branch's type at its first analysis and never changes it, and the type decides what new code means. A long-lived branch — the main branch, or a name matching the organization's `sonar.branch.longLivedBranches.regex` pattern — uses the project New Code definition. A short-lived branch has no project definition: its new code is everything that differs from the branch it merges into. The `uzh-bf_klicker-uzh` project keeps the repository's former default branch `dev` as its main branch, last analysed 2022-08-20, and neither `v3` nor `v3-*` matches the inherited `(branch|release)-.*` pattern. Before the project pattern was widened, `v3` was therefore a short-lived branch measured against `dev`, so nearly the whole repository counted as new code there and the branch gate failed on historical findings while the pull-request analysis of the same code stayed healthy. The project pattern is now `(branch|release)-.*|v3(-.*)?`, so every `v3` branch is long-lived and uses the project definition; a branch re-analysed after that change reports the definition on its next analysis, so no separate New Code setting is required. Because the type is fixed at a branch’s first analysis, the branch analysis is published without awaiting the gate — a failure there would block the staging promotion controller without changing the condition — and only the pull request, where new code is the diff against the base, remains gated. The red `v3` check is not caused by the scanner's `-Dsonar.projectVersion`: a version cannot inflate a short-lived branch, and the pre-#5924 job never awaited the gate, so it surfaced only once the workflow began to. `.github/scripts/sonar-new-code-boundary.cjs` names the cause from the branch's recorded type and merge target plus the measured `lines` and `new_lines`; it runs after the scan so the branch analysis is always published, carries `if: always()` so it also runs when the awaited pull-request gate has already failed the job, and stays non-fatal when either API is unavailable or the branch has no measures yet; it reports the boundary and never gates a branch run. Because the type is assigned once, correcting it is a platform action: extend the long-lived branch pattern on the project's Branches page to cover the `v3` names, delete the branch analysis through `api/project_branches/delete`, then re-analyse so the branch is recreated with the type the pattern assigns — or recreate the project with `v3` as its main branch. The project pattern is the lever because the organization-level pattern is Enterprise-only. It was applied on 2026-09-16 with the repository's own `SONAR_TOKEN`, which does carry project administration, from a disposable push-triggered workflow rather than an operator console. `dependency-review.yml` reviews changed dependencies and fails on high severity. The prior pnpm 11.5 workspace had verified GitHub dependency-graph coverage: the `v3` SBOM records 4,487 npm packages with 10,757 dependency edges, and the 336 open alerts are attributed to the root `pnpm-lock.yaml` (250), workspace `package.json` files (83), and `apps/analytics/uv.lock` (3), with resolved npm versions matching the `pnpm-workspace.yaml` override targets. Those counts describe the earlier pnpm 11.5 snapshot; recheck graph coverage after the pnpm 12 rollout. PR-time blocking of a newly introduced vulnerable dependency, and triage of the existing backlog, remain unverified. Trivy scanning is piloted on the staging backend-docker image and migrator by the `scan-arm-backend-docker` and `scan-arm-backend-docker-migrator` legs of `v3_images-stg.yml`, and the trusted staging controller admits a candidate only when the receipt of each scanned image matches the digest it is about to promote. The pilot scope is still those two images, so the other staging images publish no receipt yet. Because the controller runs the workflow definition of its own revision, this admission applies to the controller once this source reaches the default branch.
+- **Security analysis**: `codeql-analysis.yml` analyzes JavaScript/TypeScript, the analytics Python sources, and the GitHub Actions workflows with SHA-pinned CodeQL v4 actions, and runs the `security-extended` suite as a pilot; the job is not a required check. A documentation-and-planning pull request skips the analysis in both workflows, because it changes no analyzed source: each workflow computes the class in a small classify job from the same changed-path records, and each analysis gate repeats the pull-request-only boundary, so a push, the weekly CodeQL run, and any class the classifier cannot prove still analyze. `v3_sonarcloud.yml` pins the Sonar scanner, derives the project version from the root `package.json`, awaits the quality gate on a pull request, and imports LCOV coverage only from a test run that belongs to the analyzed head and recorded the same tested source tree, rewriting the imported report paths to repository-relative form (`.github/scripts/sonar-coverage-inputs.cjs`, `.github/scripts/sonar-coverage-transport.cjs`); a missing or unverified report leaves coverage "not computed" in SonarCloud instead of reporting a satisfied metric, and no coverage threshold is armed yet. `.github/workflows/sonar-analysis.yml` holds the single analysis definition, and `v3_sonarcloud.yml` (branch push and ready-for-review boundary) and both coverage producers call it, so the analysis has one definition instead of one per host: the producer run that observes every producer terminal imports the coverage and analyzes, and a run that still sees a queued producer defers with a named reason instead of holding a runner, so no analysis job waits for a queued test run. At most one analysis is published per pull request, head, and base: a successful scan uploads a receipt artifact named for that revision, a later host that finds the receipt defers, and an explicit re-run (`github.run_attempt > 1`) ignores it and analyzes again. Fork and Dependabot pull requests cannot receive `SONAR_TOKEN`, so their analysis fails closed with a named unavailable result rather than an authorization error. **Analysis scope**: `sonar-project.properties` keeps application code, packages, deployment definitions, utilities and CI scripts in scope. Explicit test roots share those directories; test inclusions also act as source exclusions, keeping the indexed source and test sets disjoint. The three named Python test entry points are classified as tests. PostgreSQL owns `.sql`, `.pgsql` and `.psql`; PL/SQL retains `.tab` and `.pkb`, so Prisma migrations and initialization SQL are not analyzed as Oracle PL/SQL. A dialect change can change applicable rules and findings; it does not relax the shared quality gate. **New-code definition**: long-lived branches use the project definition, while short-lived branches compare against their merge target. The project pattern `(branch|release)-.*|v3(-.*)?` covers the maintained `v3` integration branches, which use the fourteen-day definition. The legacy `dev` analysis remains the project's main dashboard; use an explicit branch link when checking current development. `.github/scripts/sonar-new-code-boundary.cjs` reads the recorded branch type, merge target and measured scope rather than assuming that every `v3` branch is short-lived. It runs after the scan, including a failed pull-request gate, and stays non-fatal when an API or measures are unavailable. Branch analyses remain published without awaiting their quality gate; pull-request analyses await it against their actual base. Changing the main dashboard requires a separately approved, history-preserving migration; deleting branch analyses is not part of ordinary setup. Draft pull requests deliberately defer analysis. Their existing `ready_for_review` event analyzes the held revision after readiness is authorized. The scanner job executes no contributor build, test or dependency lifecycle script; see [ADR0043](adr/0043-sonar-analysis-credential-and-coverage-input-boundary.md). Missing external TypeScript configurations, Helm rendering warnings and incomplete coverage inputs remain explicit limitations rather than reasons for blanket exclusions or an unverified coverage threshold. `dependency-review.yml` reviews changed dependencies and fails on high severity. The prior pnpm 11.5 workspace had verified GitHub dependency-graph coverage: the `v3` SBOM records 4,487 npm packages with 10,757 dependency edges, and the 336 open alerts are attributed to the root `pnpm-lock.yaml` (250), workspace `package.json` files (83), and `apps/analytics/uv.lock` (3), with resolved npm versions matching the `pnpm-workspace.yaml` override targets. Those counts describe the earlier pnpm 11.5 snapshot; recheck graph coverage after the pnpm 12 rollout. PR-time blocking of a newly introduced vulnerable dependency, and triage of the existing backlog, remain unverified. Trivy scanning is piloted on the staging backend-docker image and migrator by the `scan-arm-backend-docker` and `scan-arm-backend-docker-migrator` legs of `v3_images-stg.yml`, and the trusted staging controller admits a candidate only when the receipt of each scanned image matches the digest it is about to promote. The pilot scope is still those two images, so the other staging images publish no receipt yet. Because the controller runs the workflow definition of its own revision, this admission applies to the controller once this source reaches the default branch.
 - **Automation**: `claude-code-review.yml` auto-reviews every PR; `claude.yml` responds to @claude mentions; CodeQL (JavaScript/TypeScript, Python, and Actions; weekly + PR) and SonarCloud run alongside — note that `sonar-project.properties` puts `packages/i18n/messages/**` in `sonar.cpd.exclusions`, because locale catalogs are parallel translations of one key structure and copy-paste detection reads that as duplication by construction, failing the new-code duplication gate on any string-heavy PR; the files stay in scope for every other rule, so do not remove the exclusion. Conventional commits per `.versionrc.js` (feat/enhance/fix/docs/refactor/…); PRs are squash-merged, so the PR title must be a valid conventional commit.
 - **Playwright timing feedback**: `update-playwright-timings.yml` listens for a successful direct `v3` run of `test-playwright`, validates all eight compact JUnit artifacts, and opens or updates one human-reviewed timing PR on `automation/playwright-timings`. It requires `PLAYWRIGHT_TIMINGS_BOT_TOKEN` with repository contents and pull-request write permissions. The default `GITHUB_TOKEN` is deliberately insufficient because PRs it creates do not trigger their required checks; the timing workflow never auto-merges.
 
 Shard durations differ by architecture, so `playwright/timings.json` names the architecture its weights were measured on. The timing workflow maps the run's recorded route to `x64` for hosted runs and `arm64` for the public pool, passes it to the updater as `--architecture`, and the updater leaves the table untouched when it is calibrated for a different architecture, reporting why instead of writing. An untagged table is adopted by the producing architecture on its first tagged write. Replacing a calibration with another architecture's measurements is therefore a human decision rather than an automatic side effect of a successful run.
 
-- **AI review**: While a PR is a draft, OpenCodeReview runs GLM 5.3 Flash (`zai-glm-5-3-flash`) through Mistral at max reasoning through a runner-local adapter against the exact PR head and its immediate base. A ready transition cancels an in-flight draft run, and ready PRs do not start new automatic reviews. Draft review diffs are sent to Mistral and incur usage cost.
+- **AI review**: While a PR is a draft, OpenCodeReview runs DeepSeek V4.1 Flash 1017 (`deepseek-v4-1-flash-1017`) through Mistral at max reasoning through a runner-local adapter against the exact PR head and its immediate base. A ready transition cancels an in-flight draft run, and ready PRs do not start new automatic reviews. Draft review diffs are sent to Mistral and incur usage cost. New commits (`synchronize`) on same-repository `sync/` branches skip automatic draft review; their initial opening, reopening or conversion to draft remains eligible. Ordinary feature PRs retain automatic review on new commits. Manual final review remains a separate gate for the current head.
 - **Draft advisor and repository context**: The trusted draft runner bootstraps
   `.agents/skills/ocr-reviewer/SKILL.md` as merged review rules. Its
   `read_review_context` MCP tool reads bounded Markdown from the trusted policy
   revision under `docs/` and `.agents/skills/`; it never loads candidate policy.
   The reviewer may ask `ask_review_advisor` a focused question with up to three
-  source ranges from the immutable PR head. One broker shares two attempted
+  source ranges from the immutable PR head. One broker shares eight attempted
   consultations across planning and all four review workers. It consults
   Mistral `zai-glm-5-3` at max reasoning with a 16 KiB complete request bound,
   16,384-token output cap, 480-second deadline and no retries. Failures consume
@@ -413,7 +419,7 @@ Shard durations differ by architecture, so `playwright/timings.json` names the a
   keys stay in trusted adapter instances; the OCR child receives only local
   capabilities and no publication token. Sanitized seven-day receipts report
   registration, actual consultations and provider usage. Advisor receipts and
-  job summaries also retain local dispatch counts and up to two attempt outcomes
+  job summaries also retain local dispatch counts and up to eight attempt outcomes
   with fixed stages and sanitized reasons. A local dispatch is not evidence of a
   provider request. Deadline labels distinguish timer expiry from client
   cancellation while preserving existing client errors and counters. Older
@@ -455,7 +461,7 @@ Shard durations differ by architecture, so `playwright/timings.json` names the a
   React, Prisma and TypeScript documentation IDs through that explicit trusted
   configuration. Adopters select their own public-library IDs instead of
   inheriting this stack. Four attempted uncached
-  lookups are shared across the run, independently of the two advisor attempts.
+  lookups are shared across the run, independently of the eight advisor attempts.
   Each lookup has a 15-second deadline, no retry, a bounded upstream body and an
   8 KiB returned JSON envelope. Completed results are cached by library, query,
   version and language; concurrent misses may consume separate attempts.
@@ -485,13 +491,13 @@ Shard durations differ by architecture, so `playwright/timings.json` names the a
   cost and cache-savings formula remains scoped to those two models. Docs consume
   ordinary model context within the existing OCR ceilings. GitLab adopters can
   reuse the broker and skill with their own trusted CI and publisher.
-- **Manual final review**: After CI and the draft feedback are settled, a collaborator with calculated `write` or `admin` permission posts `/final-review` on an unstacked PR or on one verified native stack layer. The workflow uses `zai-glm-5-3` with max reasoning, applies the repository's diff-led operational lenses, and publishes one consolidated review attached to an immutable head. Before review fan-out, one fixed public-safe request must return the expected function call; failure stops the run with bounded provider diagnostics. The manual jobs pin OpenCodeReview 1.13.0 and use its low review-effort preset for one review round; this does not lower the model's max reasoning setting. Both manual command paths use OCR's 200,000-token prompt ceiling, with estimated compression thresholds at 120,000 and 160,000 tokens. The separate completion cap remains 16,384 tokens. Before paid execution, one offline preview runs at the same prompt limit; malformed selection data or any `too_large` size exclusion stops the review. Other intentional rule and path exclusions remain valid: `final-review-rules.json` excludes unit tests and their support code (`*.test.*`, `__tests__`, `__mocks__`, `test/` directories and `tests/` directories under `apps/` and `packages/`) and documentation, in addition to OCR's default filters. Its `include` entry `playwright/**/*.ts` bypasses OCR's built-in test filter, so Playwright specs, helpers and configuration are reviewed. User excludes take precedence over `include`, so no exclude pattern may match `playwright/`. A successful selection preview does not prove that rendered group prompts fit or that the review completed. Each individual OCR task has a 45-minute deadline, and an individual range has a 10,000,000-token aggregate ceiling on billable tokens (uncached input plus output; see the cache accounting below). When the first attempt returns structurally valid partial coverage for a non-budget failure, the same job may resume that exact session once with only the unused token allowance. Strict lineage and identity checks protect checkpoint reuse, and combined usage cannot exceed the original range ceiling. Budget exhaustion, an invalid session, or a still-partial resume fails immediately. The job has a 90-minute ceiling and reserves time after OCR for cleanup and finalization. No incomplete result reaches publication. The result CLI commands also emit a bounded JSON diagnostic to stderr
+- **Manual final review**: After CI and the draft feedback are settled, a collaborator with calculated `write` or `admin` permission posts `/final-review` on an unstacked PR or on one verified native stack layer. The workflow uses `deepseek-v4-1-flash-1017` with max reasoning, applies the repository's diff-led operational lenses, and publishes one consolidated review attached to an immutable head. Before review fan-out, one fixed public-safe request must return the expected function call; failure stops the run with bounded provider diagnostics. The manual jobs pin OpenCodeReview 1.13.0 and use its low review-effort preset for one review round; this does not lower the model's max reasoning setting. Both manual command paths use OCR's 200,000-token prompt ceiling, with estimated compression thresholds at 120,000 and 160,000 tokens. The separate completion cap remains 16,384 tokens. Before paid execution, one offline preview runs at the same prompt limit; malformed selection data or any `too_large` size exclusion stops the review. Other intentional rule and path exclusions remain valid: `final-review-rules.json` excludes unit tests and their support code (`*.test.*`, `__tests__`, `__mocks__`, `test/` directories and `tests/` directories under `apps/` and `packages/`) and documentation, in addition to OCR's default filters. Its `include` entry `playwright/**/*.ts` bypasses OCR's built-in test filter, so Playwright specs, helpers and configuration are reviewed. User excludes take precedence over `include`, so no exclude pattern may match `playwright/`. A successful selection preview does not prove that rendered group prompts fit or that the review completed. Each individual OCR task has a 45-minute deadline, and an individual range has a 10,000,000-token aggregate ceiling on billable tokens (uncached input plus output; see the cache accounting below). When the first attempt returns structurally valid partial coverage for a non-budget failure, the same job may resume that exact session once with only the unused token allowance. Strict lineage and identity checks protect checkpoint reuse, and combined usage cannot exceed the original range ceiling. Budget exhaustion, an invalid session, or a still-partial resume fails immediately. The job has a 90-minute ceiling and reserves time after OCR for cleanup and finalization. No incomplete result reaches publication. The result CLI commands also emit a bounded JSON diagnostic to stderr
   with status, coverage counts, allowlisted failure classifications, resume outcome
   and a fixed rejection code. A still-partial resume has a terminal-status rejection
   rather than an identity error. The two-line resume-plan and JSON merge stdout
-  protocols, coverage requirements and retry decisions remain unchanged. The mode-0600 OCR config contains an environment-based loopback token command, never the upstream key. Each OCR attempt starts its own adapter and removes `MISTRAL_API_KEY` from OCR's child environment. The wrapper closes the listener before returning, and always-run configuration cleanup must succeed before publication. Keep these jobs on fresh GitHub-hosted runners. If no actionable findings exist, it records an evidence-bound clean success status with description `zai-glm-5-3 final review clean; evidence=<64-hex evidence digest>` and skips the PR comment. The evidence digest covers the exact PR range, review mode, root review, stack identity, dispositions, and policy. A later descendant containing only bounded, declared repairs may be attested incrementally; material scope changes, stale stack identities, missing dispositions, or exceeded bounds require another complete manual review. For a finding-bearing report, a permitted collaborator records the exact machine-readable marker `<!-- final-ai-disposition/v1 {"schema_version":"final-ai-disposition/v1","review_id":"...","root_head":"...","workflow_run_id":123,"entries":[{"finding_id":"...","state":"fixed|follow-up|rejected","reference":"public-safe reference","paths":["path/to/finding"]}]} -->`; every entry must cover exactly one root finding and include its finding path in the explicit remediation paths. Malformed or missing records force a complete review. Findings are advisory: collaborators verify them and record each blocker as fixed, follow-up, or rejected.
+  protocols, coverage requirements and retry decisions remain unchanged. The mode-0600 OCR config contains an environment-based loopback token command, never the upstream key. Each OCR attempt starts its own adapter and removes `MISTRAL_API_KEY` from OCR's child environment. The wrapper closes the listener before returning, and always-run configuration cleanup must succeed before publication. Keep these jobs on fresh GitHub-hosted runners. If no actionable findings exist, it records an evidence-bound clean success status with description `deepseek-v4-1-flash-1017 final review clean; evidence=<64-hex evidence digest>` and skips the PR comment. The evidence digest covers the exact PR range, review mode, root review, stack identity, dispositions, and policy. A later descendant containing only bounded, declared repairs may be attested incrementally; material scope changes, stale stack identities, missing dispositions, or exceeded bounds require another complete manual review. For a finding-bearing report, a permitted collaborator records the exact machine-readable marker `<!-- final-ai-disposition/v1 {"schema_version":"final-ai-disposition/v1","review_id":"...","root_head":"...","workflow_run_id":123,"entries":[{"finding_id":"...","state":"fixed|follow-up|rejected","reference":"public-safe reference","paths":["path/to/finding"]}]} -->`; every entry must cover exactly one root finding and include its finding path in the explicit remediation paths. Malformed or missing records force a complete review. Findings are advisory: collaborators verify them and record each blocker as fixed, follow-up, or rejected.
 - **Individual requirements context**: `/final-review` sends the normalized PR title and up to 8,000 Unicode code points of the description as untrusted context. Put the problem, intended behavior, boundaries and acceptance criteria first. Hidden HTML comments and image embeds are omitted before truncation; fenced and inline code examples remain data. The structured context marks descriptions as complete, truncated or absent; missing descriptions retain a title-only fallback. Links and images are never fetched. Description text cannot override trusted review rules, waive findings, change settings or grant authority. The effective background digest binds authorization, startup, evidence reuse, publication and finalization; an effective context edit during the run prevents stale success. The individual review also appends the pull request's changed `project/**/*-plan.md` documents, read from the head commit, as untrusted context: hidden comments and images are removed, and all plans share 16,000 code points in path order, so the earliest-dated plan comes first. At most ten plan files are read, a plan larger than 256 KiB is omitted, and only the first 65,536 code points of a plan are normalized, which bounds the cost of crafted content. The plans are context, not reviewed files; the background digest still covers only the title and description, because plan content is fixed by the bound head commit. Cumulative `/final-review-stack` retains its existing background and per-layer topology descriptions.
-- **Manual stack review**: For a verified native stack, post `/final-review-stack` on the top PR. The workflow uses `zai-glm-5-3` with max reasoning to review the cumulative change and stack topology, assigns cross-layer findings to exact layer deltas, and publishes one report on the top PR. Each cumulative OCR task has a 30-minute deadline. A full-stack range has a 20,000,000-token ceiling; each incremental layer range retains its own 750,000-token ceiling. The first eligible partial range in declared order may consume the job's single resume allowance and shares that range's ceiling. A later or ineligible partial fails immediately. The 90-minute job uses an inner code-review deadline to reserve time for cleanup, topology review, publication, and finalization. Partial coverage is never published. The topology request removes derivation-only patch operations before sending evidence and fails closed above its bounded request and output budgets. It receives bounded excerpts of prior code findings, reports only defects that depend on a cross-layer interaction, and suppresses a topology result when it restates an overlapping code finding with the same path and category. Metadata retains both generated and published topology counts for later evaluation. If neither pass produces an actionable finding, it records an evidence-bound clean success status with description `zai-glm-5-3 stack review clean; evidence=<64-hex evidence digest>` and skips the PR comment. It stores the immutable reviewed-path and rename-alias set in the trusted `Final AI stack clean evidence` check output so an unrelated default-branch advance can be revalidated without recreating a comment. The stack evidence digest covers the ordered layer identities, topology identity, exact range, dispositions, and policy. A later repair in one or more layers may use the same bounded, disposition-backed attestation contract when every changed layer descends from its reviewed head, every upper layer contains the current parent head, and each per-layer remediation range remains within the declared bounds. Topology drift, material scope changes, or missing dispositions require another cumulative review. Any layer drift resets the top `final-ai-stack-review` status, even when the top PR's SHA is unchanged. Neither final status grants merge authority; merge readiness still requires current evidence, green required CI, and terminal dispositions. The repository grants agents and the shared PR babysitter standing approval to post `/final-review` or `/final-review-stack` after exact-head CI and ordinary feedback settle; no per-run approval is required for the configured external Mistral request and its usage cost. This standing approval does not cover non-public payloads or grant merge authority. The babysitter still stops after two autonomous head-changing rounds and never guesses a tracker destination. Add `final-ai-review` or `final-ai-stack-review` to branch protection only after a controlled live run has proved its status lifecycle.
+- **Manual stack review**: For a verified native stack, post `/final-review-stack` on the top PR. The workflow uses `deepseek-v4-1-flash-1017` with max reasoning to review the cumulative change and stack topology, assigns cross-layer findings to exact layer deltas, and publishes one report on the top PR. Each cumulative OCR task has a 30-minute deadline. A full-stack range has a 20,000,000-token ceiling; each incremental layer range retains its own 750,000-token ceiling. The first eligible partial range in declared order may consume the job's single resume allowance and shares that range's ceiling. A later or ineligible partial fails immediately. The 90-minute job uses an inner code-review deadline to reserve time for cleanup, topology review, publication, and finalization. Partial coverage is never published. The topology request removes derivation-only patch operations before sending evidence and fails closed above its bounded request and output budgets. It receives bounded excerpts of prior code findings, reports only defects that depend on a cross-layer interaction, and suppresses a topology result when it restates an overlapping code finding with the same path and category. Metadata retains both generated and published topology counts for later evaluation. If neither pass produces an actionable finding, it records an evidence-bound clean success status with description `deepseek-v4-1-flash-1017 stack review clean; evidence=<64-hex evidence digest>` and skips the PR comment. It stores the immutable reviewed-path and rename-alias set in the trusted `Final AI stack clean evidence` check output so an unrelated default-branch advance can be revalidated without recreating a comment. The stack evidence digest covers the ordered layer identities, topology identity, exact range, dispositions, and policy. A later repair in one or more layers may use the same bounded, disposition-backed attestation contract when every changed layer descends from its reviewed head, every upper layer contains the current parent head, and each per-layer remediation range remains within the declared bounds. Topology drift, material scope changes, or missing dispositions require another cumulative review. Any layer drift resets the top `final-ai-stack-review` status, even when the top PR's SHA is unchanged. Neither final status grants merge authority; merge readiness still requires current evidence, green required CI, and terminal dispositions. The repository grants agents and the shared PR babysitter standing approval to post `/final-review` or `/final-review-stack` after exact-head CI and ordinary feedback settle; no per-run approval is required for the configured external Mistral request and its usage cost. This standing approval does not cover non-public payloads or grant merge authority. The babysitter still stops after two autonomous head-changing rounds and never guesses a tracker destination. Add `final-ai-review` or `final-ai-stack-review` to branch protection only after a controlled live run has proved its status lifecycle.
 - **Stack topology evidence**: The topology pass receives unified Git diffs for
   every frozen layer, including unchanged lower layers during incremental repair.
   The root diff starts at the verified merge base; upper diffs use their recorded
@@ -528,14 +534,21 @@ trusted helper suites dependency-free. YAML-based workflow assertions belong in
 `ocr-self-update-guard.test.cjs`, which runs after dependency installation in
 the codebase check.
 
-The draft workflow selects `OCR_ADAPTER_PROVIDER=mistral-flash` for both startup
+The draft workflow selects `OCR_ADAPTER_PROVIDER=mistral-deepseek` for both startup
 and the separate summary process. Drafts and the advisor require only
 `MISTRAL_API_KEY`. The draft endpoint is
 `https://api.mistral.ai/v1/chat/completions`, the model is
-`zai-glm-5-3-flash`, and `reasoning_effort` is fixed to `max`.
-Manual final reviews retain the default Mistral profile and `MISTRAL_API_KEY`:
-`https://api.mistral.ai/v1/chat/completions`, `zai-glm-5-3`, with `high` or `max`
-reasoning effort accepted and omitted effort defaulting to `max`. Unknown
+`deepseek-v4-1-flash-1017`, and `reasoning_effort` is fixed to `max`.
+Manual final, stack code, topology and preflight reviews select the same DeepSeek
+profile with maximum reasoning. Full `zai-glm-5-3` at maximum reasoning is used
+only for focused advisor questions. The advisor receives one question and up to
+three source ranges, each at most 120 lines and 8 KiB; the complete request is
+at most 16 KiB. Eight attempted consultations are shared across the job's
+workers, ranges, resume and topology. Its separate allowance is initialized
+once and cannot reset on a missing or corrupt continuation state. The portable
+reviewer skill directs difficult and architectural questions to the advisor
+after source inspection. The main reviewer validates the advice and owns all
+coverage and final findings. See [the runtime guide](ocr-runtime.md). Unknown
 profiles and missing selected credentials fail closed without a provider switch.
 The adapter converts OCR's `max_completion_tokens` to `max_tokens` and exposes
 only final text plus separate reasoning metadata. OpenRouter's native
@@ -701,11 +714,12 @@ defaults to one adapter lifetime.
 `MISTRAL_PRICING` and each profile in `PROVIDERS` in
 `ocr-mistral-adapter.cjs` hold profile-specific USD reference rates and dates,
 sourced from [Mistral's model pricing](https://docs.mistral.ai/models/zai-glm-5-3)
-and [OpenRouter's snapshot catalog](https://openrouter.ai/deepseek/deepseek-v4.1-flash-1017). Draft Flash uses
-[Mistral Flash pricing](https://docs.mistral.ai/models/zai-glm-5-3-flash): $0.15
-input, $0.03 cached input and $0.50 output per million tokens, checked
-2026-10-23. New receipts include exact profile/model identity; legacy receipts
-without identity are accepted only for full GLM. Draft and advisor estimates
+and [OpenRouter's snapshot catalog](https://openrouter.ai/deepseek/deepseek-v4.1-flash-1017). Main reviews use
+[Mistral DeepSeek pricing](https://docs.mistral.ai/models/deepseek-v4-flash-1017):
+$0.30 input, $0.007 cached input and $1.20 output per million tokens, checked
+2026-10-28. The historical GLM Flash profile retains its own rates for explicit
+receipt interpretation; it is not an automatic fallback. New receipts include exact profile/model identity; legacy receipts
+without identity are accepted only for full GLM. Main-review and advisor estimates
 remain separate before combining, even when they share one Mistral key.
 OpenRouter estimates use the catalog reference rates of $0.15 input, $0.003 cached
 input and $0.60 output per million tokens, checked 2026-10-17. Actual endpoint
@@ -715,6 +729,40 @@ refuse to apply a profile's rates to another profile's receipts.
 Refresh the rates and date together when provider pricing changes.
 Summaries label the pricing date and exclude account discounts, taxes, and runner
 costs; these are estimates, not billing receipts.
+
+### Provider unavailable or paused
+
+Set the repository variable `OCR_PROVIDER_PAUSED` to `true` to pause model calls
+in new eligible OCR runs. Unset it or set it to `false` to resume on the next
+normal event. Invalid values fail closed. Changing the variable requires
+maintainer authority; neither pause nor resume triggers replay or backfill.
+Existing admission, activation and final-review authorization still apply.
+Already-running jobs use the value resolved when they started.
+
+A confirmed numeric upstream HTTP 402 latches provider unavailability for that
+review invocation. Subsequent main and advisor requests are refused locally;
+already-dispatched requests may finish and retain their usage. The adapter
+returns a fixed payment error instead of translating it into a transient 502.
+Rate limits and server errors retain their existing retry behavior. The payment
+status does not identify whether an allowance, credit balance or billing setting
+caused the rejection.
+
+Draft runs emit `OCR availability status=unavailable` and preserve valid partial
+findings. An early rejection can leave no OCR result; coverage and cost remain
+unknown where receipts are missing. Successful handling of this advisory does
+not establish a passed review. Publication still requires a validated result for
+the frozen head and an open draft PR. Malformed results and unrelated execution
+failures remain failures.
+
+Individual and stack final reviews remain blocking while unavailable. Their
+fixed reason appears in logs, summaries and the authoritative final status.
+Payment rejection prevents later resume attempts, stack ranges and topology
+calls through the existing failed-stage dependencies. No clean evidence is
+published. Models, maximum reasoning, token budgets and accounting are unchanged.
+
+The shared action supplies the draft pause interface. Existing callers need an
+immutable pin to a release containing this behavior after it merges; source
+publication alone does not activate it in pinned adopters.
 
 To investigate scheduling delays, read the existing workflow `created_at` and
 `run_started_at`, then each job's `created_at`, `started_at` and `completed_at`
@@ -731,6 +779,23 @@ The sanitized outcome artifact and logs distinguish selected, completed, failed,
 reused and waived coverage; a partial result remains advisory and emits a warning.
 Sticky summaries, incremental comment deduplication, low-severity routing and
 existing OCR reasoning, budgets, timeouts and retry behavior are preserved.
+
+The draft adapter recognizes the pinned CLI's planning task affinity shape and
+supplies guidance only from a `stop` response with nonempty final text. Truncated
+or empty plans reach the stock CLI as an empty answer without reasoning, using
+its existing continue-without-plan path. HTTP success, original finish reason,
+returned usage and private native history remain intact; this adds no provider
+request or retry. Main-review reasoning and unrecognized task identities retain
+their existing handling. The separate final-review adapter is unchanged.
+
+`OCR planning` logs and summaries count recognized responses as `usable`,
+`length`, `empty` or `invalid_finish`. `status=complete` means those diagnostic
+counters are available; `usable` identifies completed final plans. Missing or
+unfinished diagnostics report `status=unavailable`. Counters contain no affinity
+keys or response content. The CLI's `phase_completed phase=planning` progress
+event records that its planning request returned; it alone does not prove usable
+guidance. Raw usage journals retain the original response sizes and finish reason
+before the compatibility projection, and aggregate accounting remains unchanged.
 
 Manual individual and stack code reviews use human-audience progress through the
 adapter's `OCR_ADAPTER_PROGRESS_FD=3` opt-in. Their shell functions bind descriptor
@@ -853,6 +918,82 @@ trusted-policy runner. PR lifecycle status handling and exact review commands
 retain their existing authorization and serialized status locks.
 
 ## Public ARM64 runner operations
+
+### Priority pull-request validation
+
+A maintainer can request the paid validation lane with the `ci:priority` label.
+The lane is disabled unless `PRIORITY_CI_ENABLED` is exactly `true`.
+`PRIORITY_CI_CANARY_PR`, when present, limits admission to one exact PR number. Optional
+`PRIORITY_CI_CANARY_HEAD_SHA` and `PRIORITY_CI_CANARY_BASE_SHA` freeze its
+source inputs; `PRIORITY_CI_EXPIRES_AT` denies admission after an absolute
+deadline. Set all four in a finite qualification packet before enabling it.
+For a fully pinned finite canary, optional
+`PRIORITY_CI_CANARY_JOB_TIMEOUT_MINUTES` sets each paid compute job to an integer
+from 1 through 15 minutes. It requires all four matching canary controls above.
+Invalid or incomplete values deny priority, and expiry is checked again after
+admission evidence is collected. An unset value preserves existing job limits;
+ordinary hosted execution retains its own limits. The duration covers checks,
+secret scanning, suites, both translation legs, selected image builds, and the
+Playwright build and every selected shard. A short duration can cause genuine
+validation failure without reducing the selected coverage.
+
+Before enabling this control, verify that the frozen candidate workflows, their
+immutable executor pins and the trusted router all contain its implementation.
+Older definitions cannot acquire it retroactively. Reserve the exact selected
+matrix against runner rates, billing rounding and margin; per-job timeouts do
+not enforce an account spending limit. Admission expiry prevents new selection,
+while submitted jobs retain their timeouts and continue.
+
+Apply the label to an open ready public same-repository PR. Subsequent pushes
+remain eligible while labeled. Removing the label changes future selection;
+already submitted jobs retain their assignment and continue.
+
+Trusted preparation verifies the current head and base, the latest label setter's
+write/maintain/admin permission, the exact first run attempt and complete prior
+run inventory. The first priority invocation for each workflow/PR/head/base owns
+the request even if it fails or is cancelled. Label reapplication and job reruns
+do not authorize another paid attempt. A new head or base is a new validation.
+Missing, stale or ambiguous evidence denies paid admission. A denied label-only
+event does not publish a passing required context; ordinary source events retain
+normal validation. Exact legacy Playwright tickets, burst grants or admission
+endpoints conflict with a priority request and must be independently reconciled.
+Ordinary unlabeled execution keeps the existing admission behavior.
+
+Independent compute jobs use fixed WarpBuild runners: x64 suites, secret scans,
+translation builds and affected image builds, plus the existing ARM Playwright
+build and canonical shard matrix. Dependencies still apply: Playwright builds
+once before its eight full-plan shards run in parallel. No shared matrix cap
+serializes the shards. Filtered or bounded plans retain their actual smaller
+coverage; a priority label does not prove an unfiltered suite ran. Selectors and
+required reporters stay hosted. Publication-only pushes retain hosted runners.
+Runner startup, dependencies and external services can still delay execution.
+
+The canonical workflows generate their priority-only execution envelopes with
+`node .github/scripts/priority-ci-workflows.cjs --write`. Edit the canonical
+workflow, regenerate and format the envelopes; CI checks parsed semantic parity using
+`node .github/scripts/priority-ci-workflows.cjs`. The same check compares each
+caller's pinned executor with its generated definition. Missing Git objects are
+fetched by exact SHA from the existing origin without making the checkout shallow;
+unavailable content, mutable refs and mismatches fail the check. Priority callers execute the
+published envelopes at an exact reviewed commit, which allows runner-group access
+to be restricted to those immutable workflow refs. Publish an executor commit
+before updating caller pins; GitHub resolves even disabled reusable calls. A
+pin must name a commit that a long-lived branch contains. A squash merge leaves
+the PR branch commits off that branch, and once the PR branch is deleted GitHub
+cannot resolve them, so every run of the caller fails at startup with "workflow
+was not found". After squash-merging an executor change, repin its caller to the
+squash commit. Before publication, draft CI exercises
+ordinary jobs and synthetic new-source contracts only. Source validation is
+separate from actual paid job, artifact, aggregate and billing acceptance.
+
+Activation requires a finite operator packet covering the exact runner-group
+allowlist, preserved repository selection and other policy fields, one validation,
+spending reservation, deadline, billing reconciliation and independent rollback
+of each owned setting. Removing admission prevents new selection and preserves
+submitted jobs. The enable switch is not an atomic account spending ledger;
+several labeled PRs and subsequent pushes can create concurrent paid work.
+Keep operational values, access and billing receipts outside source and artifacts.
+No external admission service or new secret is required by this route.
 
 ### Opt-in WarpBuild overflow
 
@@ -1351,11 +1492,11 @@ branches re-export it would remove the divergence this gate watches for.
 - **Hatchet worker runtime contract**: the base chart and both environment overlays render separate per-pod identities and slot budgets for the general, regular-response, and assessment workers. General, regular-response, and assessment workers expose named ports 8001, 8002, and 8003 respectively, plus `/healthz` liveness, `/readyz` readiness, and a 90-second termination grace period (`deploy/charts/klicker-uzh-v3/templates/deployment-hatchet-workers.yaml`). This is desired-state evidence; it does not prove a deployed or live worker. See [Async & Workers](./async-and-workers.md#worker-runtime-contract).
 - **Hatchet worker disruption budgets**: staging sets `minAvailable: 0` for all three singleton worker Deployments so voluntary node drains can proceed, while production keeps one general worker and two workers in each response-processing mode available. The base chart defaults each worker budget to one. The render gate verifies these worker-only values and that the assessment backend keeps its independent floor of two.
 - **Rollout strategy**: use `RollingUpdate` in prd values; `Recreate` can leave a service with zero endpoints during slow image pulls (PDBs don't protect against Deployment-driven scale-downs). `maxUnavailable: 0` only for singletons.
-- **Topology spread contract**: production values define zone + hostname `topologySpreadConstraints` for seven workloads — the three Hatchet workers, the assessment frontend and backend, and the two MCP servers. The chart renders the value at each pod spec only when non-empty (chart defaults are `[]` and render nothing), and every constraint selector must match the workload's own `app.kubernetes.io/component` pod label — the assessment frontend selects `frontend-assessment`, not `frontend-pwa-assessment`. The required `check` workflow runs `node --test deploy/scripts/verify-topology-spread.test.mjs` and `node deploy/scripts/verify-topology-spread.mjs`: the script lints and renders the chart with defaults, staging values, and production values, requires exactly one zone and one hostname constraint for each of the seven workloads with `maxSkew: 1` and `whenUnsatisfiable: ScheduleAnyway`, requires every selector to match the workload's pod label, requires the default and staging renders to contain no spread field at all, and rejects constraints on any workload outside that contract. It also compares the contract's values paths with the production values in both directions, so a workload cannot leave the assertions unnoticed by deleting its contract entry. The MCP pair already rendered its constraints before these template additions, so the contract pins them instead of relaxing them. The check is not part of `check:all`, which must run in any working copy, because the Helm CLI is not part of the dev container; the hosted runner provides it. A passing render is still source-level proof — live spread behavior must be confirmed against the synced cluster.
+- **Topology spread contract**: production values define zone + hostname `topologySpreadConstraints` for seven workloads — the three Hatchet workers, the assessment frontend and backend, and the two MCP servers. The chart renders the value at each pod spec only when non-empty (chart defaults are `[]` and render nothing), and every constraint selector must match the workload's own `app.kubernetes.io/component` pod label — the assessment frontend selects `frontend-assessment`, not `frontend-pwa-assessment`. The required `check` workflow runs `node --test deploy/scripts/verify-topology-spread.test.mjs` and `node deploy/scripts/verify-topology-spread.mjs`: the script lints and renders the chart with defaults, staging values, and production values, requires exactly one zone and one hostname constraint for each of the seven workloads with `maxSkew: 1` and `whenUnsatisfiable: ScheduleAnyway`, requires every selector to match the workload's pod label, requires the default render to contain no spread field at all, and rejects constraints on any workload outside that contract. Staging values have their own contract: only the PWA burst tier (`frontendPWA.burst.topologySpreadConstraints`) spreads there, with the same zone + hostname shape, and its selectors must also name `klicker.uzh.ch/tier: burst` so baseline PWA pods do not count toward the skew. It also compares the contract's values paths with the production values in both directions, so a workload cannot leave the assertions unnoticed by deleting its contract entry. The MCP pair already rendered its constraints before these template additions, so the contract pins them instead of relaxing them. The check is not part of `check:all`, which must run in any working copy, because the Helm CLI is not part of the dev container; the hosted runner provides it. A passing render is still source-level proof — live spread behavior must be confirmed against the synced cluster.
 - `deploy/compose*` are v2-era self-hoster examples; `deploy/scripts/rollout.sh` is a legacy manual `kubectl rollout restart`.
 - **KB graph builds couple two values**: `hatchet.kbGraph.workflowName` and `backendGraphql.knowledgeGraph.host` must be set together, or the chart stops at render time with an explicit `fail`.
 - **KB graph token ordering**: the general worker's external secret must already carry `KB_GRAPH_HATCHET_CLIENT_TOKEN` before `hatchet.kbGraph.workflowName` is set. The token alone does not arm the worker's startup gate (so a secret rollout cannot stop unrelated jobs), but once any chart-owned `KB_GRAPH_*` value is present the token is required and startup fails without it.
-- **KB ingestion staging contract is rendered explicitly**: `pnpm run check:kb-ingestion-stg` renders the STG backend and worker ConfigMaps and requires this layer's exact state: the cluster-local ingestion and source-gateway endpoints on the general worker, no ingestion or graph kill-switch key in either ConfigMap, response-processor isolation, and no ingestion secret keys in ConfigMaps. Whether an actor may start new ingestion or graph work is a GrowthBook decision rather than a values key — see [Feature Flags](./feature-flags.md#knowledge-base-admission-controls).
+- **KB ingestion staging contract is rendered explicitly**: `pnpm run check:kb-ingestion-stg` renders the STG backend and worker ConfigMaps and requires this layer's exact state: the cluster-local ingestion and source-gateway endpoints on the general worker, no ingestion or graph kill-switch key in either ConfigMap, response-processor isolation, and no ingestion secret keys in ConfigMaps. Whether an actor may start new ingestion or graph work is an `ai-beta` GrowthBook decision rather than a values key — see [Feature Flags](./feature-flags.md#knowledge-base-admission-controls).
 
 ### Replica ownership
 
@@ -1389,6 +1530,78 @@ the shared codebase workflow. It runs the same gate for pushes to `v3` and
 `v3*`, and when a pull request is opened, synchronized, or reopened. The gate
 also rejects unsupported autoscaling stanzas in the base, staging, and
 production values files.
+
+### PWA spot burst tier
+
+With `frontendPWA.burst.enabled`, a `-frontend-pwa-burst` Deployment runs on
+`asyncspot` nodes and its HPA owns its replicas; the baseline keeps static
+replicas on regular nodes, and the Service selects both. Each tier has its own
+disruption budget, so a Pod always matches exactly one.
+
+The Klicker Applications use Argo CD's `RespectIgnoreDifferences=true` sync
+option for the burst replica exception. Before applying, Argo merges every
+existing object's live state into the desired manifest, so an in-place change
+to a list-valued field such as a label selector may never apply. A resource
+that stays `OutOfSync` after a successful sync is the symptom. The chart
+therefore gives the baseline PWA budget its own name while the burst tier is
+enabled, and a future selector change needs the same approach.
+
+Import `deploy/dashboards/klicker-pwa-burst.json` into Grafana to watch both
+tiers, the burst HPA, Pending burst Pods, `asyncspot` headroom and the other
+workloads on that pool. Kube-state-metrics exports no node labels, so the
+dashboard selects spot nodes by their `aks-asyncspot-` name prefix.
+
+### PWA spot burst tier
+
+With `frontendPWA.burst.enabled`, a `-frontend-pwa-burst` Deployment runs on
+`asyncspot` nodes and its HPA owns its replicas; the baseline keeps static
+replicas on regular nodes, and the Service selects both. Each tier has its own
+disruption budget, so a Pod always matches exactly one.
+
+The Klicker Applications use Argo CD's `RespectIgnoreDifferences=true` sync
+option for the burst replica exception. Before applying, Argo merges every
+existing object's live state into the desired manifest, so an in-place change
+to a list-valued field such as a label selector may never apply. A resource
+that stays `OutOfSync` after a successful sync is the symptom. The chart
+therefore gives the baseline PWA budget its own name while the burst tier is
+enabled, and a future selector change needs the same approach.
+
+Import `deploy/dashboards/klicker-pwa-burst.json` into Grafana to watch both
+tiers, the burst HPA, Pending burst Pods, `asyncspot` headroom and the other
+workloads on that pool. Kube-state-metrics exports no node labels, so the
+dashboard selects spot nodes by their `aks-asyncspot-` name prefix.
+
+### PWA release asset Deployment
+
+Each PWA Pod serves `/_next/static` from its own image, so during a rollout a
+page of one release can request assets that a Pod of the other release lacks.
+With `frontendPWA.releaseAssets.enabled` (and the same flag under
+`assessment.frontendPWA`), the chart adds a `-frontend-pwa-assets` Deployment,
+Service and, above one replica, a disruption budget. They run the PWA image
+with a distinct component label, so the PWA Service and budgets do not select
+them. Ingress sends `/_next/static` (`Prefix`) to the asset Service and
+everything else to the PWA Service. The resources carry Argo CD sync wave `-1`,
+so the asset Pods are healthy before the PWA Pods change. Staging enables it;
+production does not yet.
+
+The PWA Dockerfile accepts the build argument `PREVIOUS_IMAGE`. When set, the
+build merges that image's `.next/static` into its own without overwriting any
+new file, using the per-release manifests that
+`apps/frontend-pwa/scripts/merge-release-assets.mjs` writes to
+`.next/static/releases/`. The build keeps its own files plus those of the five
+most recent earlier releases, and a content-hashed file shared with a retained
+release stays. Staging builds pass the image at the current `stg-release` SHA
+(what staging runs); production builds pass the image of the tag pinned in
+`deploy/env-uzh-prd/values.yaml`. The chains stay per image, so the PWA and the
+assessment never mix. A workflow passes an empty value, and starts a fresh
+history, when that image cannot be found. The first build after introduction
+adopts an image without manifests as one retained release.
+`/_next/static/releases/` holds file lists only, and the asset Pods use its
+`index.txt` as their probe.
+
+A rollback deploys an older asset set that lacks the newer release's files, so
+pages of the newer release can see 404s until the next forward release. Revert
+by rolling forward.
 
 ## Deployment migrations
 

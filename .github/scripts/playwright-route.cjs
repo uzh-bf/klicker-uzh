@@ -121,6 +121,15 @@ function choosePlaywrightRoute(input) {
     }
   }
 
+  if (input.prAction === 'labeled' && input.priorityLabelEvent !== 'true') {
+    return {
+      schemaVersion: ROUTE_SCHEMA_VERSION,
+      route: 'hosted',
+      selectorPrState: 'deferred',
+      reasonCodes: ['priority-label-not-admitted'],
+    }
+  }
+
   const reasons = []
   const nonEmptyString = (value) =>
     typeof value === 'string' && value.trim().length > 0
@@ -192,17 +201,44 @@ function choosePlaywrightRoute(input) {
   }
   const smartDraftApplies =
     prDraft === 'true' && publicEligible && smartDraft && !forceHosted
+  const priority =
+    input.priorityAdmitted === 'true' &&
+    input.priorityAttempt === input.runAttempt &&
+    input.runAttempt === '1'
+  if (
+    input.priorityJobTimeout &&
+    !/^(?:[1-9]|1[0-5])$/.test(input.priorityJobTimeout)
+  ) {
+    throw new Error('invalid priority job timeout')
+  }
   const publicReady =
-    prDraft === 'false' && publicEligible && publicRollout && !forceHosted
+    prDraft === 'false' &&
+    publicEligible &&
+    (publicRollout || priority) &&
+    !forceHosted
   if (publicReady) reasons.push('public-pr-rollout')
   else reasons.push('hosted-fallback')
 
-  const admissionAttempt = publicReady ? admittedWarpbuildAttempt(input) : ''
+  const admissionAttempt = publicReady
+    ? priority
+      ? input.runAttempt
+      : input.priorityRequested === 'true'
+        ? ''
+        : admittedWarpbuildAttempt(input)
+    : ''
 
   return {
     schemaVersion: ROUTE_SCHEMA_VERSION,
     route: publicReady ? 'public-pr' : 'hosted',
     ...(admissionAttempt ? { provider: 'warpbuild', admissionAttempt } : {}),
+    ...(publicReady && priority
+      ? {
+          priorityAdmission: true,
+          ...(input.priorityJobTimeout
+            ? { jobTimeout: Number(input.priorityJobTimeout) }
+            : {}),
+        }
+      : {}),
     selectorPrState: smartDraftApplies ? 'draft' : 'ready',
     reasonCodes: sortedReasonCodes(reasons),
   }
@@ -211,6 +247,12 @@ function choosePlaywrightRoute(input) {
 function envInput(env = process.env) {
   return {
     eventName: env.EVENT_NAME,
+    prAction: env.PR_ACTION,
+    priorityRequested: env.PRIORITY_REQUESTED,
+    priorityAdmitted: env.PRIORITY_ADMITTED,
+    priorityAttempt: env.PRIORITY_ATTEMPT,
+    priorityLabelEvent: env.PRIORITY_LABEL_EVENT,
+    priorityJobTimeout: env.PRIORITY_JOB_TIMEOUT,
     repository: env.REPOSITORY,
     repositoryPrivate: env.REPOSITORY_PRIVATE,
     headRepository: env.HEAD_REPOSITORY,
@@ -261,6 +303,7 @@ async function chooseRouteWithAdmission(
   if (
     ordinary.route !== 'public-pr' ||
     ordinary.provider === 'warpbuild' ||
+    input.priorityRequested === 'true' ||
     input.runAttempt !== '1' ||
     !env.WARPBUILD_ADMISSION_URL ||
     !env.ACTIONS_ID_TOKEN_REQUEST_URL ||

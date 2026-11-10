@@ -101,6 +101,11 @@ function useProcessLiveQuizTemplateBlocksData() {
                   elementId: undefined,
                   isDuplication: false,
                   values: { ...values, status: ElementStatus.Ready },
+                  originalOptions:
+                    element.instance.elementData.__typename ===
+                    'NumericalElementData'
+                      ? element.instance.elementData.options
+                      : undefined,
                 })
 
                 elementManipulationData = {

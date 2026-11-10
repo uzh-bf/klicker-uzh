@@ -108,6 +108,9 @@ if [ ! -s /etc/devrouter/mkcert-rootCA.pem ]; then
   export NEXT_PUBLIC_PWA_URL=http://localhost:3001
   export NEXT_PUBLIC_ASSESSMENT_URL=http://localhost:3001
   export NEXT_PUBLIC_CONTROL_URL=http://localhost:3003
+  # localhost cookies ignore the port, so the controller can call the API
+  # directly; the same-origin proxy is only needed for *.localhost routing
+  unset NEXT_PUBLIC_CONTROL_API_URL CONTROL_API_PROXY_URL
   export NEXT_PUBLIC_ADD_RESPONSE_URL=http://localhost:7078/AddResponse
   export NEXT_PUBLIC_CHAT_URL=http://localhost:3004
   export NEXT_PUBLIC_GROWTHBOOK_API_HOST=http://localhost:3002/__growthbook__
@@ -144,7 +147,8 @@ elif [ -n "${WORKSPACE:-}" ]; then
   export NEXT_PUBLIC_ADD_RESPONSE_URL=https://response-api.klicker.${WORKSPACE}.localhost/AddResponse
   export NEXT_PUBLIC_GROWTHBOOK_API_HOST=https://manage.klicker.${WORKSPACE}.localhost/__growthbook__
   export CORS_ALLOWED_ORIGINS=https://pwa.klicker.${WORKSPACE}.localhost
-  export AUTH_LECTURER_ALLOWED_HOSTS=manage.klicker.${WORKSPACE}.localhost,127.0.0.1:3002
+  export AUTH_LECTURER_ALLOWED_HOSTS=manage.klicker.${WORKSPACE}.localhost,127.0.0.1:3002,control.klicker.${WORKSPACE}.localhost,127.0.0.1:3003
+  export NEXT_PUBLIC_CONTROL_API_URL=https://control.klicker.${WORKSPACE}.localhost/api/graphql
   export AUTH_STUDENT_ALLOWED_HOSTS=pwa.klicker.${WORKSPACE}.localhost,127.0.0.1:3001
   export APP_ORIGIN_LTI=https://lti.klicker.${WORKSPACE}.localhost
   export NEXT_PUBLIC_CHAT_URL=https://chat.klicker.${WORKSPACE}.localhost
@@ -241,16 +245,40 @@ if [ -f "$ROOT/.devcontainer/.runtime/beta-enrollment-fixture" ]; then
   DEV_TURBO_TASK=dev:test
   export NEXT_PUBLIC_GROWTHBOOK_CLIENT_KEY=sdk-test
 fi
+# The host Playwright launcher writes this marker for runs against the dev
+# servers. Their dev:test scripts load the same synthetic feature flag fixture
+# and test controller as CI's start:test processes.
+if [ -f "$ROOT/.devcontainer/.runtime/playwright-dev-test" ]; then
+  DEV_TURBO_TASK=dev:test
+  export NEXT_PUBLIC_GROWTHBOOK_CLIENT_KEY=sdk-test
+  echo '[post-start] Playwright dev test mode: dev servers run their dev:test scripts.'
+fi
+# The host Playwright launcher's --ci-runtime mode writes CI's resolved runtime
+# plan here. Its presence replaces the dev servers with the production test
+# builds and start:test processes that CI runs, served on the routed origins;
+# the launcher removes it again on its next run without --ci-runtime.
+PLAYWRIGHT_CI_PLAN="$ROOT/.devcontainer/.runtime/playwright-ci-plan.json"
+PLAYWRIGHT_CI_BUILD_FILE="$ROOT/.devcontainer/.runtime/playwright-ci-build-id"
+if [ -f "$PLAYWRIGHT_CI_PLAN" ]; then
+  if [ "$DEV_TURBO_TASK" != dev ]; then
+    echo '[post-start] ERROR: the CI-parity Playwright runtime cannot combine with a dev:test fixture marker.' >&2
+    exit 1
+  fi
+  DEV_TURBO_TASK=start:test
+  export PLAYWRIGHT_RUNTIME_PLAN="$PLAYWRIGHT_CI_PLAN"
+  export KLICKER_TEST_ROUTED_DOMAIN="klicker${WORKSPACE:+.$WORKSPACE}.localhost"
+  # Each launcher run writes a new build id, so a changed id replaces the
+  # process group and rebuilds; Turbo's cache keeps an unchanged build cheap.
+  PLAYWRIGHT_CI_BUILD_ID="$(cat "$PLAYWRIGHT_CI_PLAN" "$PLAYWRIGHT_CI_BUILD_FILE" 2>/dev/null | sha256sum)"
+  export PLAYWRIGHT_CI_BUILD_ID="${PLAYWRIGHT_CI_BUILD_ID%% *}"
+  echo "[post-start] Playwright CI runtime: production test builds on https://<app>.${KLICKER_TEST_ROUTED_DOMAIN}"
+fi
 export DEV_TURBO_TASK
 
 : "${DEVROUTER_PROCESS_HELPER:?Run devrouter ensure to start this managed application process.}"
 
-if [ "${KLICKER_LOCAL_KB_RUNTIME_ONLY:-0}" != 1 ]; then
-  pnpm --filter @klicker-uzh/graphql exec tsx src/scripts/setupLocalBlobStorage.ts
-fi
-
-export DEVROUTER_PROCESS_FINGERPRINT_ENV='APP_ORIGIN_API,APP_ORIGIN_AUTH,APP_ORIGIN_PWA,APP_ORIGIN_MANAGE,APP_ORIGIN_CONTROL,APP_ORIGIN_ASSESSMENT_API,APP_ORIGIN_ASSESSMENT_PWA,APP_ORIGIN_LTI,APP_ORIGIN_CHAT,APP_MANAGE_SUBDOMAIN,APP_STUDENT_SUBDOMAIN,APP_CONTROL_SUBDOMAIN,NEXTAUTH_URL,COOKIE_DOMAIN,NEXT_PUBLIC_API_URL,NEXT_PUBLIC_AUTH_URL,NEXT_PUBLIC_MANAGE_URL,NEXT_PUBLIC_PWA_URL,NEXT_PUBLIC_ASSESSMENT_URL,NEXT_PUBLIC_CONTROL_URL,NEXT_PUBLIC_ADD_RESPONSE_URL,NEXT_PUBLIC_CHAT_URL,NEXT_PUBLIC_GROWTHBOOK_API_HOST,NEXT_PUBLIC_GROWTHBOOK_CLIENT_KEY,CORS_ALLOWED_ORIGINS,AUTH_LECTURER_ALLOWED_HOSTS,AUTH_STUDENT_ALLOWED_HOSTS,BLOB_STORAGE_ACCOUNT_URL,BLOB_STORAGE_INTERNAL_ACCOUNT_URL,KB_GRAPH_BLOB_ACCOUNT_URL,KB_SOURCE_GATEWAY_URL,KB_INGESTION_API_URL,KB_INGESTION_PROJECT_ID,KB_GRAPH_HATCHET_CLIENT_HOST_PORT,KB_GRAPH_HATCHET_API_URL,KB_GRAPH_HATCHET_CLIENT_TLS_STRATEGY,KB_GRAPH_HATCHET_WORKFLOW_NAME,KB_FALKORDB_HOST,KB_FALKORDB_PORT,KB_FALKORDB_TLS,NODE_EXTRA_CA_CERTS,DEVROUTER_PROFILE,EDUID_WELL_KNOWN,EDUID_CLIENT_ID,NEXT_PUBLIC_EDUID_ID'
-export DEVROUTER_PROCESS_FINGERPRINT_ENV="${DEVROUTER_PROCESS_FINGERPRINT_ENV},DEV_TURBO_TASK"
+export DEVROUTER_PROCESS_FINGERPRINT_ENV='APP_ORIGIN_API,APP_ORIGIN_AUTH,APP_ORIGIN_PWA,APP_ORIGIN_MANAGE,APP_ORIGIN_CONTROL,APP_ORIGIN_ASSESSMENT_API,APP_ORIGIN_ASSESSMENT_PWA,APP_ORIGIN_LTI,APP_ORIGIN_CHAT,APP_MANAGE_SUBDOMAIN,APP_STUDENT_SUBDOMAIN,APP_CONTROL_SUBDOMAIN,NEXTAUTH_URL,COOKIE_DOMAIN,NEXT_PUBLIC_API_URL,NEXT_PUBLIC_AUTH_URL,NEXT_PUBLIC_MANAGE_URL,NEXT_PUBLIC_PWA_URL,NEXT_PUBLIC_ASSESSMENT_URL,NEXT_PUBLIC_CONTROL_URL,NEXT_PUBLIC_CONTROL_API_URL,CONTROL_API_PROXY_URL,NEXT_PUBLIC_ADD_RESPONSE_URL,NEXT_PUBLIC_CHAT_URL,NEXT_PUBLIC_GROWTHBOOK_API_HOST,NEXT_PUBLIC_GROWTHBOOK_CLIENT_KEY,CORS_ALLOWED_ORIGINS,AUTH_LECTURER_ALLOWED_HOSTS,AUTH_STUDENT_ALLOWED_HOSTS,BLOB_STORAGE_ACCOUNT_URL,BLOB_STORAGE_INTERNAL_ACCOUNT_URL,KB_GRAPH_BLOB_ACCOUNT_URL,KB_SOURCE_GATEWAY_URL,KB_INGESTION_API_URL,KB_INGESTION_PROJECT_ID,KB_GRAPH_HATCHET_CLIENT_HOST_PORT,KB_GRAPH_HATCHET_API_URL,KB_GRAPH_HATCHET_CLIENT_TLS_STRATEGY,KB_GRAPH_HATCHET_WORKFLOW_NAME,KB_FALKORDB_HOST,KB_FALKORDB_PORT,KB_FALKORDB_TLS,NODE_EXTRA_CA_CERTS,DEVROUTER_PROFILE,EDUID_WELL_KNOWN,EDUID_CLIENT_ID,NEXT_PUBLIC_EDUID_ID'
+export DEVROUTER_PROCESS_FINGERPRINT_ENV="${DEVROUTER_PROCESS_FINGERPRINT_ENV},DEV_TURBO_TASK,PLAYWRIGHT_CI_BUILD_ID"
 # Keep credentials out of fingerprints; rotate the generation with guard keys.
 export DEVROUTER_PROCESS_FINGERPRINT_ENV="${DEVROUTER_PROCESS_FINGERPRINT_ENV},KLICKER_EVAL_GUARD_ORIGIN,OPENAI_BASE_URL,CHAT_MODEL_REGISTRY_JSON,KLICKER_EVAL_GUARD_GENERATION"
 
@@ -286,6 +314,22 @@ if [ "$PROFILE_WANTS_DEV" = yes ]; then
   fi
 fi
 READINESS_APPS="$(profile_readiness_apps)"
+if [ "$DEV_TURBO_TASK" = start:test ]; then
+  # CI's runtime plan, not the dev profile, decides which apps start, so only
+  # probe the apps whose package the plan's Turbo filters select.
+  READINESS_APPS="$(node -e '
+    const plan = JSON.parse(require("node:fs").readFileSync(process.argv[1], "utf8"))
+    const filters = new Set(plan.bindings.turboFilters)
+    console.log(process.argv.slice(2).filter((app) => filters.has(`--filter=@klicker-uzh/${app}`)).join(" "))
+  ' "$PLAYWRIGHT_RUNTIME_PLAN" ${READINESS_APPS})"
+elif [ "$DEV_TURBO_TASK" = dev:test ]; then
+  # Turbo skips packages without a dev:test script, so only probe the apps
+  # that define one.
+  READINESS_APPS="$(node -e '
+    const { readFileSync } = require("node:fs")
+    console.log(process.argv.slice(1).filter((app) => JSON.parse(readFileSync(`apps/${app}/package.json`, "utf8")).scripts?.["dev:test"]).join(" "))
+  ' ${READINESS_APPS})"
+fi
 export READINESS_APPS
 if profile_wants klicker-workers; then
   PROFILE_WANTS_WORKERS=yes
@@ -426,7 +470,20 @@ start_managed_runtime() {
 
   runtime_fingerprint="$(bash ./util/dev-runtime.sh fingerprint)"
   runtime_generation="$(bash ./util/dev-runtime.sh generation)"
-  if [ -n "${DEV_TURBO_FILTERS}" ]; then
+  if [ "$DEV_TURBO_TASK" = start:test ]; then
+    # The plan's build:test outputs are the production apps, served by the
+    # same start:playwright:ci entry that CI's shards run.
+    if [ "${1:-}" != no-prepare ]; then
+      prepare_args=(--prepare-command 'bash ./util/dev-runtime.sh prepare-playwright-ci')
+    fi
+    "$DEVROUTER_PROCESS_HELPER" ensure \
+      --name klicker-dev \
+      --match 'playwright-profile-runtime.mjs start' \
+      --log /tmp/dev.log \
+      "${prepare_args[@]}" \
+      -- bash ./util/dev-runtime.sh start "$runtime_fingerprint" "$runtime_generation" \
+      -- pnpm run start:playwright:ci
+  elif [ -n "${DEV_TURBO_FILTERS}" ]; then
     # shellcheck disable=SC2086 # intentional word splitting of filter flags
     "$DEVROUTER_PROCESS_HELPER" ensure \
       --name klicker-dev \
@@ -454,6 +511,15 @@ else
   "$DEVROUTER_PROCESS_HELPER" stop --name klicker-dev >/dev/null 2>&1 || true
 fi
 
+# Blob setup runs pnpm, whose verifyDepsBeforeRun policy fails on a changed
+# lockfile or workspace manifest. Application profiles install dependencies in
+# the managed preparation above, after the old process group has stopped;
+# capability-only profiles have no running app process and install here.
+if [ "${KLICKER_LOCAL_KB_RUNTIME_ONLY:-0}" != 1 ]; then
+  [ "$PROFILE_WANTS_DEV" = yes ] || bash ./util/dev-runtime.sh ensure-dependencies
+  pnpm --filter @klicker-uzh/graphql exec tsx src/scripts/setupLocalBlobStorage.ts
+fi
+
 # Probe the profile's application readiness contracts. Status 20 is reserved
 # for a confirmed stale Next.js route; any other failure fails closed without
 # cache cleanup. Collect every stale Next app first so one managed restart
@@ -467,7 +533,9 @@ run_readiness_pass() {
   for app in ${READINESS_APPS}; do
     status=0
     bash ./util/dev-runtime.sh wait-app "$app" || status=$?
-    if [ "$status" -eq 20 ]; then
+    # A production test build has no dev cache to repair; removing its .next
+    # would delete the build itself.
+    if [ "$status" -eq 20 ] && [ "$DEV_TURBO_TASK" != start:test ]; then
       STALE_NEXT_APPS+=("$app")
     elif [ "$status" -ne 0 ]; then
       echo "[post-start] ERROR: $app failed semantic readiness; no cache cleanup was attempted." >&2

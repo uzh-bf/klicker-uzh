@@ -68,7 +68,7 @@ function NumericalOptions({ inputsDisabled, values }: NumericalOptionsProps) {
           <NumericalExactSolutionsInput
             disabled={inputsDisabled}
             exactSolutions={values.options.exactSolutions}
-            precision={String(values.options.accuracy)}
+            precision={values.options.accuracy}
           />
         )}
     </div>

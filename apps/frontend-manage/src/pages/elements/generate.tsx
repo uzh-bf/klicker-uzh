@@ -1,3 +1,8 @@
+import {
+  useFeatureFlag,
+  useFeatureFlagsReady,
+} from '@klicker-uzh/feature-flags/react'
+import { UserNotification } from '@uzh-bf/design-system'
 import type { GetStaticPropsContext } from 'next'
 import { useRouter } from 'next/router'
 import { useTranslations } from 'next-intl'
@@ -11,6 +16,8 @@ function ElementGenerationPage() {
   const t = useTranslations('manage.elementGeneration')
   const router = useRouter()
   const aiFeaturesEnabled = useAiFeaturesEnabled()
+  const flagsReady = useFeatureFlagsReady()
+  const questionGenerationEnabled = useFeatureFlag('question-generation')
   const buildId =
     typeof router.query.buildId === 'string' ? router.query.buildId : undefined
   const kbId =
@@ -32,6 +39,13 @@ function ElementGenerationPage() {
     <Layout displayName={t('title')}>
       {!aiFeaturesEnabled ? (
         <AiBetaUnavailable />
+      ) : !flagsReady ? null : !questionGenerationEnabled ? (
+        <UserNotification
+          type="info"
+          message={t('rolloutUnavailable')}
+          data={{ cy: 'question-generation-unavailable' }}
+          className={{ root: 'mx-auto w-max max-w-full' }}
+        />
       ) : (
         <main className="mx-auto w-full max-w-7xl px-2 py-4 md:px-4">
           <div className="mb-6">

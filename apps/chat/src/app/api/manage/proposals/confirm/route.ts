@@ -1,4 +1,4 @@
-import { getManageAiCapability } from '@/src/lib/server/featureFlags'
+import { getManageAssistantCapability } from '@/src/lib/server/featureFlags'
 import { getAuthenticatedManageUser } from '@/src/lib/server/manageAuth'
 import {
   confirmManageProposal,
@@ -45,7 +45,7 @@ export async function POST(req: NextRequest) {
   // Proposals can only originate from the lecturer MCP tools, so confirmation
   // follows the same gate. A proposal token minted while the beta was open to
   // this lecturer must not stay redeemable after it is closed again.
-  const aiCapability = await getManageAiCapability(manageUser)
+  const aiCapability = await getManageAssistantCapability(manageUser)
   if (aiCapability === 'disabled') {
     return NextResponse.json({ error: 'Not available' }, { status: 403 })
   }

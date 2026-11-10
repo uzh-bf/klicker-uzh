@@ -1,6 +1,7 @@
 # 38. Permit backend-enforced GrowthBook feature entitlements
 
-- **Status:** Accepted — 2026-08-25
+- **Status:** Accepted — 2026-08-25. The Manage assistant no longer requires
+  `aiFeaturesEnabled`; see [ADR 0056](./0056-lecturer-ai-access-by-feature.md).
 
 ## Context
 

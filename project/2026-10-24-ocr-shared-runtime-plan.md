@@ -719,3 +719,183 @@ local/published matrix; source publication and caller adoption remain distinct
 phases. Only the selector changes in `check.yml`; its execution limits and
 credential isolation stay intact. Recheck the selector and request the single
 focused integrated-review correction before claiming final source acceptance.
+
+
+## Additive usage and context diagnostics
+
+### Approved outcome and boundary
+
+The user approved the next shared diagnostics package: persist sanitized usage
+as responses finish, measure trusted-context activity, and expose cached,
+uncached and output cost components. Execution mode remains standard. Reuse
+`trees/rs/ocr-shared-runtime` on `rs/ocr-usage-diagnostics`, based on merged
+`v3` revision `51e8e7259f2f31d220cc78ff64e54d205837fb76`. This authorizes
+source changes, synthetic verification, commits, ordinary push and one draft
+PR against `v3`. Models, maximum reasoning, budgets, aggregate accounting,
+retry/resume policy, concurrency, deadlines and publication remain unchanged.
+No provider replay, private activation, live setting or merge is included.
+No product primitive changes; this adds diagnostic evidence only.
+
+### Diagnostic contract
+
+Extend the existing adapter with a separate bounded JSONL usage journal next to
+its aggregate diagnostics. Record dispatch, observed response and terminal
+outcome using a random invocation ID, attempt ordinal, existing opaque
+conversation identity, fixed provider/model/stage/kind, validated numeric usage
+and fixed finish/failure codes. Write a response receipt synchronously once
+its JSON is parsed, before downstream validation or another await. Preserve
+usage returned by rejected completions. Missing or invalid counters stay null;
+an uncompleted dispatch stays unknown. A closed or killed process must leave
+previously written responses readable; a hard runner loss may still prevent
+artifact upload. Bound journal bytes/rows and report truncation/write failure
+without changing provider execution. Retain no source, prompts, tool arguments,
+reasoning, provider IDs, raw errors, URLs or credential values. Existing
+aggregate receipts stay one row per invocation and retain their formulas.
+
+The shared broker reports successful calls and serialized result bytes by the
+three fixed tool names. It has no reliable worker identity. The adapter reports
+observed trusted-context tool results and UTF-8 content bytes per existing
+opaque conversation, deduplicating replayed call IDs within bounded memory.
+Label this as observed input evidence, not authoritative broker activity;
+compression, missing keys and diagnostic caps must remain explicit. No new
+MCP field, header, tool schema or model-visible text is introduced.
+
+Add component cost lines per stage only when that stage has a complete estimate:
+uncached input, cached input, output and cached share of estimated charge.
+Use the existing pinned rates and counters without changing existing estimate
+lines or budget units. Unavailable stages retain unavailable components.
+
+### Ownership, files and verification
+
+Main owns adapter code/tests, draft wiring, action/final artifact paths, release
+manifest and documentation. A bounded executor owns only
+`.github/scripts/ocr-review-tools.cjs` and its existing test file for aggregate
+tool/result-byte diagnostics. No overlapping writers. Main owns adapter-side
+conversation observations because they share the usage-journal identity seam.
+Use existing files; the separate generated journal is the only new artifact.
+Update `ocr-draft-review.cjs`, the composite action and both existing final
+workflow artifact lists; the existing diagnostics-path convention derives the
+sidecar path. Refresh manifest hashes for changed release assets. The portable
+skill and caller pin remain unchanged: publishing new release source does not
+automatically migrate a caller pinned to an older revision.
+
+Acceptance uses synthetic providers and the actual stock binary where existing
+fixtures require it. Verify response durability after a later SIGKILL, unknown
+in-flight usage, rejected/malformed responses, journal saturation/I/O failure,
+replay deduplication and conversation isolation, broker byte counts, and
+complete/unavailable cost components. Existing cost reports and OCR-facing
+usage must match prior fixtures; release verification and pinned caller checks
+remain valid. Use Node24 in an isolated test container and existing formatters,
+with no application environment or screenshots. Required source gates are one
+planner challenge, simplification plus privacy/correctness slice review, and
+one integrated Claude final review on the complete committed package. Reuse
+the completed Opus consultation for design advice; no additional broad audit.
+
+Terminal: focused checks and source reviews pass, bounded diagnostic artifacts
+are wired into existing retention, and a clean ordinary push/draft PR accurately
+distinguishes source/CI proof from post-merge live acceptance. Review feedback
+and CI may be observed without extra paid replays; scheduling remains separate.
+
+### Implementation evidence
+
+Planner approved the diagnostics contract. The shared journal, broker counters,
+conversation observations, component costs and existing artifact wiring are
+implemented without changing the portable skill, caller pin or execution profile.
+The complete affected set passes 307 Node24.21 checks with zero skips, including
+the actual stock OCR1.13.0 binary and verified pinned publisher under synthetic
+provider/tools responses. A response survives a later SIGKILL; its subsequent
+dispatch retains unknown usage. Privacy, byte/row limits, unwritable/symlink
+sinks, rejected usage, replay deduplication and cost components are covered.
+The first kill fixture returned an unsupported response body shape; replacing
+it with the existing Response fixture fixed the test and did not require a
+provider/production change. No paid replay or application environment was used.
+One cohesive package owns the new evidence from capture through artifact
+retention; central runtime fixtures remain central. Planner, simplification,
+focused risk review and integrated final source review passed. The simplification
+pass removed redundant assertions on a test's expected literal; the affected
+behavior check passed again. Existing cost values and summary lines match the
+baseline, and parsed workflow fields match except the explicit artifact paths.
+
+[Draft PR #6711](https://github.com/uzh-bf/klicker-uzh/pull/6711) contains the
+diagnostics package. On runtime head `36aa29f7943a0cd9f78dae0aa594bbfeb49ca7d4`,
+[codebase CI](https://github.com/uzh-bf/klicker-uzh/actions/runs/40209744432)
+passed both stock runtime and patched engine qualification, and
+[selected Playwright CI](https://github.com/uzh-bf/klicker-uzh/actions/runs/40209744503)
+passed. Later documentation-only receipt updates reuse the source review and
+synthetic evidence; the PR description records their current CI separately.
+The draft caller's immutable pin remains unchanged. Live acceptance of the new
+draft diagnostics requires a later pin update and a genuine ordinary review.
+
+## Advisor completion diagnostics
+
+The approved follow-up investigates advisor completions that reach their output
+limit. Source inspection establishes that the named `review_advice` tool choice
+is forwarded. Existing evidence cannot distinguish reasoning, answer content
+and tool arguments, so this package adds measurements before proposing a change
+to the completion contract. It makes no claim to repair provider behavior.
+
+Execution mode is standard. Main owns one implementation slice in the existing
+adapter, adapter tests, runtime manifest and runtime guide. The package starts
+from `v3` revision `256e461610e5055251863239d770ad0089e69713` on
+`rs/ocr-advisor-completion`. The read-only planner approved this contract.
+Source publication through an ordinary push and draft PR is authorized;
+activation, caller-pin adoption, settings, paid replays and merge are separate.
+
+Add numeric `reasoning_bytes`, `content_bytes`, `tool_calls` and
+`tool_arguments_bytes` to parsed response journal events. Reuse the adapter's
+message normalization inside a diagnostic-only failure boundary. Unsupported
+message shapes produce null shape counters. Count UTF-8 bytes, not characters
+or tokens. Record `reasoning_tokens` only when the provider reports a safe,
+nonnegative value no larger than a valid completion-token count; otherwise
+retain null. Emit these fields before ordinary response validation in both
+adapter entry points. Retain no response content or new free-form labels.
+
+Acceptance uses synthetic responses to exercise forced advisor tool selection,
+maximum reasoning and the existing output ceiling across the real adapter
+boundary. Cover length finishes, partial tool arguments, Unicode bytes,
+missing/invalid usage and unsupported shapes. Verify privacy with synthetic
+sentinels and preserve rejected-response usage and existing aggregate costs.
+Update the adapter's release hash and document unknown values and the
+source-versus-live boundary. Preserve models, reasoning, budgets, accounting,
+attempts, retry/resume, concurrency, deadlines and existing publication behavior.
+
+Run focused adapter, broker and runtime contracts with Node24 in an isolated
+test container; use existing formatting and staged data-hygiene checks. Run
+slice simplification and privacy/correctness review on the committed change,
+then one integrated final review. No application runtime or screenshot applies.
+Terminal: verified source, reviewed complete range, ordinary task-branch push
+and one accurately described draft PR against `v3`. Live evidence awaits
+separate caller adoption and the next ordinary review.
+
+### Source verification progress
+
+The adapter now emits the five numeric observations at both parsed-response
+journal seams. The complete affected suite passes 284 Node24 contracts with
+zero skips, including the actual stock OCR binary with synthetic providers.
+Formatting, release-manifest verification, staged Gitleaks and diff checks pass.
+The forced-advisor boundary test preserves the named tool choice, maximum
+reasoning and output ceiling; malformed responses retain their existing rejection
+behavior. Synthetic sentinels verify that journals contain no response content.
+
+The simplification review found no justified reduction: one helper serves two
+callers and reuses the existing normalizer. Privacy/correctness slice review and
+integrated final review passed without findings. This cohesive package has 248 substantive
+changed lines excluding project-artifact documentation; no active draft exists
+to absorb it. The diagnostic gap follows the prior evidence package, so the
+runtime guide records the observation contract alongside its existing journal
+contract. Live failure hypotheses remain in private investigation notes until
+new evidence can distinguish them. No provider repair or live acceptance is
+claimed, and the caller's immutable runtime pin is unchanged.
+
+[Draft PR #6715](https://github.com/uzh-bf/klicker-uzh/pull/6715) contains this
+package. Its initial codebase check exposed an unchanged artifact guard that
+still expected the list from before the event sidecars were added. The failure
+was reproduced locally; the guard now requires both existing journal sidecars.
+This corrects the upload-contract expectation without changing runtime source,
+caller selection or workflow behavior. The new test-only correction receives
+focused verification and a final review addendum; prior runtime checks and
+source reviews remain applicable to the identical runtime files. Ordinary
+review suggestions about shared mutable state, missing usage and array content
+were checked against the per-call object, optional chaining and normalized
+message contract and require no runtime change. Current-head hosted CI remains
+separate from the completed local source proof.

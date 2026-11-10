@@ -1,6 +1,6 @@
 {
   "name": "@klicker-uzh/hatchet-worker-response-processor",
-  "version": "3.4.0-alpha.88",
+  "version": "3.4.0-alpha.91",
   "license": "AGPL-3.0",
   "main": "dist/index.js",
   "types": "dist/index.d.ts",
@@ -8,7 +8,7 @@
     "dist"
   ],
   "dependencies": {
-    "@hatchet-dev/typescript-sdk": "1.9.4",
+    "@hatchet-dev/typescript-sdk": "1.22.0",
     "@klicker-uzh/grading": "workspace:*",
     "@klicker-uzh/hatchet": "workspace:*",
     "@klicker-uzh/prisma": "workspace:*",
