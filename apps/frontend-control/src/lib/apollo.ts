@@ -39,6 +39,23 @@ async function waitBeforeSubscriptionReconnect(retries: number) {
   await new Promise((resolve) => setTimeout(resolve, delay))
 }
 
+let catchUpTimer: ReturnType<typeof setTimeout> | undefined
+let lastCatchUp = 0
+
+// The server does not replay events published while the socket was down, so
+// the active queries are reloaded after a reconnect. The short delay lets the
+// resent subscriptions register first, and the 10-second spacing keeps a
+// flapping connection from reloading every query on each reconnect.
+function catchUpAfterReconnect() {
+  if (catchUpTimer) return
+  const wait = Math.max(500, lastCatchUp + 10_000 - Date.now())
+  catchUpTimer = setTimeout(() => {
+    catchUpTimer = undefined
+    lastCatchUp = Date.now()
+    void apolloClient?.refetchQueries({ include: 'active' })
+  }, wait)
+}
+
 function createIsomorphLink() {
   const isBrowser = typeof window !== 'undefined'
 
@@ -124,17 +141,15 @@ function createIsomorphLink() {
         //   };
         // },
         retryAttempts: Infinity,
-        // A failed reconnect reports an error event before its close event,
-        // and the default only retries close events, so the first failed
-        // attempt would end every subscription.
-        shouldRetry: () => true,
+        // A failed reconnect reports a socket error event before its close
+        // event, and the default only retries close events, so the first
+        // failed attempt would end every subscription. Errors the client
+        // throws itself, such as protocol violations, still end it.
+        shouldRetry: (errOrCloseEvent) => !(errOrCloseEvent instanceof Error),
         retryWait: waitBeforeSubscriptionReconnect,
         on: {
           connected: (_socket, _payload, wasRetry) => {
-            // The server does not replay events published while the socket
-            // was down, so reload the active queries after a reconnect.
-            if (wasRetry)
-              void apolloClient?.refetchQueries({ include: 'active' })
+            if (wasRetry) catchUpAfterReconnect()
           },
         },
       })
