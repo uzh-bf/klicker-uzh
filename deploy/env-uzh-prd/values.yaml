@@ -539,6 +539,11 @@ frontendPWA:
     limits:
       memory: 1Gi
 
+  # Serves /_next/static from its own Deployment, so pages of an earlier
+  # release keep their assets during and after a rollout.
+  releaseAssets:
+    enabled: true
+
 frontendManage:
   priorityClassName: production-workload
 
@@ -975,6 +980,26 @@ assessment:
         memory: 200Mi
       limits:
         memory: 1Gi
+
+    # Serves /_next/static from its own Deployment, so pages of an earlier
+    # release keep their assets during and after a rollout. It runs on the
+    # reserved assessment nodes like the frontend it serves.
+    releaseAssets:
+      enabled: true
+      affinity:
+        nodeAffinity:
+          requiredDuringSchedulingIgnoredDuringExecution:
+            nodeSelectorTerms:
+              - matchExpressions:
+                  - key: klickerasm
+                    operator: In
+                    values:
+                      - reserved
+      tolerations:
+        - key: klickerasm
+          operator: Equal
+          value: reserved
+          effect: NoSchedule
 
   backendGraphql:
     priorityClassName: production-workload

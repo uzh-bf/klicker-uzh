@@ -713,7 +713,7 @@ for (const environment of environments) {
   assertReplicaOwnership(
     resources,
     environment.name,
-    { base: 17, stg: 20, prd: 17 }[environment.name]
+    { base: 17, stg: 20, prd: 19 }[environment.name]
   )
   if (environment.name === 'stg') {
     assertPwaBurstTier(resources, environment.name)
