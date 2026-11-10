@@ -992,7 +992,8 @@ function ElementStack({
       {escapeRoom &&
         !previewOnly &&
         typeof stackStorage !== 'undefined' &&
-        lastGradedStatus === StackFeedbackStatus.Incorrect &&
+        (lastGradedStatus === StackFeedbackStatus.Incorrect ||
+          lastGradedStatus === StackFeedbackStatus.Partial) &&
         !Object.values(stackStorage).some((entry) => entry.evaluation) && (
           <UserNotification
             type="error"

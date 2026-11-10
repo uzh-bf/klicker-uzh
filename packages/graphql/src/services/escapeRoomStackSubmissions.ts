@@ -466,6 +466,19 @@ export async function isEscapeRoomStageOpenForParticipant(
   { stackId, participantId }: { stackId: number; participantId: string },
   ctx: Context
 ) {
+  // Ordinary stacks only pay for this narrow lookup.
+  const escapeRoomStack = await ctx.prisma.elementStack.findFirst({
+    where: {
+      id: stackId,
+      OR: [
+        { microLearning: { escapeRoomConfig: { isNot: null } } },
+        { practiceQuiz: { escapeRoomConfig: { isNot: null } } },
+      ],
+    },
+    select: { id: true },
+  })
+  if (!escapeRoomStack) return false
+
   const stack = await ctx.prisma.elementStack.findUnique({
     where: { id: stackId },
     include: {
