@@ -33,6 +33,15 @@ const MAX_QUERY_RETRY_ATTEMPTS = 3
 
 let apolloClient: ApolloClient<NormalizedCacheObject>
 
+// Subscriptions keep reconnecting through a long outage instead of giving up
+// after a few attempts. The backoff is capped at 10 seconds, and the random
+// part spreads the reconnects of all clients that lost the same server.
+async function waitBeforeSubscriptionReconnect(retries: number) {
+  const delay =
+    Math.min(1000 * 2 ** retries, 10_000) + 300 + Math.random() * 2700
+  await new Promise((resolve) => setTimeout(resolve, delay))
+}
+
 function createIsomorphLink() {
   const isBrowser = typeof window !== 'undefined'
 
@@ -138,6 +147,20 @@ function createIsomorphLink() {
         //     Authorization: `Bearer ${session.token}`,
         //   };
         // },
+        retryAttempts: Infinity,
+        // A failed reconnect reports an error event before its close event,
+        // and the default only retries close events, so the first failed
+        // attempt would end every subscription.
+        shouldRetry: () => true,
+        retryWait: waitBeforeSubscriptionReconnect,
+        on: {
+          connected: (_socket, _payload, wasRetry) => {
+            // The server does not replay events published while the socket
+            // was down, so reload the active queries after a reconnect.
+            if (wasRetry)
+              void apolloClient?.refetchQueries({ include: 'active' })
+          },
+        },
       })
     )
 
