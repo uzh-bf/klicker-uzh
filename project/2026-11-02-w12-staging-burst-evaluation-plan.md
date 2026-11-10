@@ -533,3 +533,14 @@ out of this file.
   - P10 passes: no client saw missing assets during a rollout under load.
   - Probe failures are expected, as both probed Pods were replaced.
     Recovery: k6 Pod and ConfigMaps deleted; Argo `Synced` and `Healthy`.
+- 2026-11-10 E5 closed early by maintainer decision, ahead of the planned
+  five days, to ship with the current release. Evidence at close:
+  - P1: the burst HPA held its floor of one Pod (`cpu 6%/70%`) through the
+    soak; the burst Pod sits on the spot pool, whose nodes were all
+    replaced during the day, and was rescheduled each time.
+  - P3: Argo `Synced` and `Healthy`; no replica drift on the burst
+    Deployment.
+  - P9: no restarts on the PWA, burst, assessment or asset Pods since the
+    last rollout; no eviction, OOM or back-off events in the retained
+    event window.
+  - Verdict: go for production enablement, under the Production section.
