@@ -38,9 +38,12 @@ import {
   startQuestionGeneration,
 } from './questionGeneration.js'
 import {
+  assertNoUnfinishedRevision,
+  rejectOtherRevisionChainDrafts,
   setGeneratedQuestionDecision,
   updateGeneratedQuestionDraft,
 } from './questionGenerationDrafts.js'
+import { elementTypeSupportsRevision } from './elementGenerationProvider.js'
 import { questionGenerationServiceError } from './questionGenerationErrors.js'
 import {
   assertQuestionGenerationBasisCurrent,
@@ -603,13 +606,15 @@ export async function keepGeneratedElementDraft(
     }
     const canKeep =
       draft.decision === DB.GeneratedElementDecision.OPEN ||
-      draft.decision === DB.GeneratedElementDecision.ACCEPTED
+      draft.decision === DB.GeneratedElementDecision.ACCEPTED ||
+      draft.decision === DB.GeneratedElementDecision.REVISION_REQUESTED
     if (!canKeep) {
       throw questionGenerationServiceError(
         'DRAFT_INVALID',
-        'Only an open or accepted unsaved generated element can be kept'
+        'Only an open, accepted or revision-requested unsaved generated element can be kept'
       )
     }
+    await assertNoUnfinishedRevision(transaction, draft.id)
     if (draft.revision !== input.expectedRevision) {
       throw questionGenerationServiceError(
         'CONCURRENT_MODIFICATION',
@@ -670,6 +675,7 @@ export async function keepGeneratedElementDraft(
         'Generated element draft was changed by another request'
       )
     }
+    await rejectOtherRevisionChainDrafts(transaction, draft.id)
     return transaction.generatedElementDraft.findUniqueOrThrow({
       where: { id: draft.id },
     })
@@ -816,13 +822,21 @@ export async function duplicateGeneratedElementDraft(
 
 export async function setGeneratedElementDecision(
   draftId: string,
-  decision: 'OPEN' | 'ACCEPTED' | 'REJECTED',
-  ctx: ContextWithUser
+  decision: 'OPEN' | 'ACCEPTED' | 'REJECTED' | 'REVISION_REQUESTED',
+  ctx: ContextWithUser,
+  note?: string | null
 ) {
   const elementType = await ownedDraftType(draftId, ctx)
-  return elementType === DB.ElementType.FLASHCARD
-    ? setGeneratedFlashcardDecision({ draftId, decision }, ctx)
-    : setGeneratedQuestionDecision({ draftId, decision }, ctx)
+  if (elementType === DB.ElementType.FLASHCARD) {
+    if (decision === 'REVISION_REQUESTED') {
+      throw questionGenerationServiceError(
+        'DRAFT_INVALID',
+        'Revision requests are not available yet'
+      )
+    }
+    return setGeneratedFlashcardDecision({ draftId, decision }, ctx)
+  }
+  return setGeneratedQuestionDecision({ draftId, decision, note }, ctx)
 }
 
 export async function getElementGenerationSources(ctx: ContextWithUser) {
@@ -851,6 +865,9 @@ export async function getElementGenerationCapabilities(ctx: ContextWithUser) {
         // errorRetryable decides whether the retry is offered for one build.
         supportsRetry: true,
         supportsIncompletePublication: elementType === 'FLASHCARD',
+        // Revision needs the slot-revision worker; flashcards have none.
+        supportsIndividualRegeneration:
+          elementTypeSupportsRevision(elementType),
       })
     ),
     supportsIndividualRegeneration:

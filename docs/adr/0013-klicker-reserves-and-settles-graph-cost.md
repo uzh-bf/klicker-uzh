@@ -101,3 +101,8 @@ same build and output location; an application retry cannot create a fresh
 budget or ledger. Admission relies on the declared price/reservation assumptions,
 not an upstream wallet or final-invoice guarantee. Enabling a policy, qualifying
 actual routes/prices and running paid generation remain operational decisions.
+
+A revision request for one generated question runs as a one-slot child build and
+spends one `ELEMENT_REVISION` dispatch. Its price is the question price divided
+by the requested count of the parent build, rounded up (`ceil(build price /
+requested count)`), so revising a slot never costs more than generating it.

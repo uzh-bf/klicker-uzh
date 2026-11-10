@@ -125,3 +125,70 @@ Main owns implementation, review and draft delivery. Use the same isolated retai
 Planning critique: Opus5.5/high requested/reported, packet-only; four findings verified and dispositioned. Caller inventory, retry semantics, per-actor/defaultclosed effect and concrete drain criteria above resolve the actionable issues. No additional plan review is needed to restate those source facts. Private evidence and new-batch counters live beside the previous source review. Next: implementation, focused checks, commit, one actual-source review and ordinary task CI; reconcile terminal evidence privately without a receipt-only commit.
 
 Extension progress: implementation is confined to two existing production files, three existing test files and ADR0013. Focused lifecycle/configuration/runtime/artifact tests pass (241); feature-flag package tests pass (75). Actual helper evaluation is exercised in deny/allow cases; accepted preparation and design review proceed with admission false. Full hooks, source review and current-source CI remain pending. No live configuration was changed.
+
+
+## Approved source closure — 10 November 2026
+
+The user approved the source-only closure and required CI (message
+msg_01a1c717-8423-7c73-8a47-43d7c3d16141). This is the active batch;
+previous batch limits and terminal evidence remain historical. Preserve the
+existing goal, old manifests, financial reservations and recovery limits.
+
+Integrate target `a71ce5ae59e58d5df66c05ccad8b43481a48dde6` into this task
+branch, retaining the target's revision support with its default-off worker
+switch. Preserve independently frozen native budget and slot-specification
+fields in dispatch and provenance. The default-off revision route must not
+dispatch a child; no new revision enablement is part of the pilot.
+
+Extend `question-generation-admission` to flashcard new starts and explicit
+retries, after idempotent lookup and before reservation or dispatch. Accepted
+question and flashcard lifecycle operations remain authorized through existing
+entitlement checks. Reuse existing service modules and lifecycle tests; no new
+flag, endpoint, worker, schema or dependency. The broader flag meaning must be
+disclosed before any later rollout. Direct native issuers require their own
+owner-controlled drain; this application gate does not control them.
+
+Add optional structured
+`backendGraphql.elementGeneration.nativeBudgetPolicy` to the chart, null by
+default. Emit every non-null value, including an empty map, as JSON in
+`KB_QUESTION_NATIVE_BUDGET_POLICY`. An absent/null value omits the setting;
+a malformed configured value blocks only new question starts before
+reservation, without process startup failure. Existing question retries use
+their frozen metadata; flashcards depend on the admission flag without adopting
+the question-dollar policy. No policy amount or staging override is activated.
+
+Verification extends existing lifecycle/configuration/runtime tests for both
+admission paths, accepted continuation, frozen retry policy and combined
+manifest options. Add one chart rendering contract test only if existing tests
+cannot observe absent/null, valid and non-null empty/invalid values. Preserve
+unchanged core financial/oracle and source review evidence. Required current-head
+CI supplies disposable SQL and browser coverage; local checks use only the
+retained compiler, with no local database or application server.
+
+Main owns conflict resolution, source and exact-head checks, one integrated
+Opus 5.5/high review plus one focused correction, ordinary non-force task push
+and this draft PR's description. The four-hour window starts at the first source
+mutation. Allow three commits (integration, implementation, one correction),
+one shared review/deterministic-CI correction round and one justified transient
+CI retry. Gather known required failures before the corrective commit, then
+verify its diff through the same review route and current-head CI. Further
+required corrections, unsafe conflicts or the deadline leave an explicit hold.
+No automatic target chasing or cancellation of healthy external CI.
+
+Terminal: reviewed exact source and required CI on the draft, stopped retained
+compiler and a concrete later release decision or named remaining blocker.
+Merge into a target, ready/hosted-final-review trigger, deployment, live flag or
+policy changes, real fixture/application writes, paid generation and deletion
+remain separately gated. Legacy retry reopening is excluded. Ordinary draft
+CI/automated review costs remain disclosed as not dollar-capped.
+
+Plan critique: one initial Opus 5.5/high packet review and one focused correction
+completed. Main verified blueprint dispatch is the existing guarded question
+start path; accepted explicit flashcard release ownership, nil-versus-empty
+rendering checks, request-time malformed-policy rejection, frozen retry policy,
+post-integration revision-disabled checks and shared correction limits. The
+reports are private; they qualify this approach, not implementation or rollout.
+
+Closure progress: target matches the approved SHA. Four conflicts are resolved
+by preserving both financial-policy and revision contracts. Integration checks
+are in progress. No live admission or configuration was changed.

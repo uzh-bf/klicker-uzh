@@ -65,6 +65,7 @@ enum KBGraphQuotaSpendClass {
   QUESTION_GENERATION
   FLASHCARD_GENERATION
   FLASHCARD_RETRY
+  ELEMENT_REVISION
 }
 
 enum ElementGenerationBuildStatus {
@@ -98,6 +99,7 @@ enum GeneratedElementDecision {
   OPEN
   ACCEPTED
   REJECTED
+  REVISION_REQUESTED
 }
 
 model KB {
@@ -441,6 +443,37 @@ model ElementGenerationBuild {
   incompletePublishedById String?   @db.Uuid
   incompletePublishedAt   DateTime?
 
+  // A child build fulfils one revision request: one slot, hidden from build
+  // lists, deleted with its parent. It records the reworked draft, the
+  // lecturer's note and the draft as it was when the revision was requested.
+  parentBuild   ElementGenerationBuild?  @relation("ElementGenerationBuildRevisions", fields: [parentBuildId], references: [id], onDelete: Cascade, onUpdate: Cascade)
+  parentBuildId String?                  @db.Uuid
+  childBuilds   ElementGenerationBuild[] @relation("ElementGenerationBuildRevisions")
+
+  revisionOfDraft   GeneratedElementDraft? @relation("ElementGenerationBuildRevisionOfDraft", fields: [revisionOfDraftId], references: [id], onDelete: SetNull, onUpdate: Cascade)
+  revisionOfDraftId String?                @db.Uuid
+  revisionNote      String?
+  /// [PrismaGeneratedElementEditable]
+  revisionDraftSnapshot Json?
+
+  // Whether the dispatched revision used the source graph; fixes the result
+  // version the child's output is verified against, even if the graph is
+  // purged before the result arrives. Set at every dispatch.
+  revisionUsedGraph Boolean?
+
+  // Whether the dispatched start input asked the worker for slot
+  // specifications. The start-manifest hash depends on it, so plan review reads
+  // this value instead of the current rollout setting. Empty on builds that
+  // predate it, which did not ask.
+  slotSpecificationsRequested Boolean?
+
+  // The drafts this child build produced.
+  revisionDrafts GeneratedElementDraft[] @relation("GeneratedElementDraftRevisionBuild")
+
+  // Set when the knowledge base purge removed the evidence text of this
+  // build's slot specifications.
+  evidencePurgedAt DateTime?
+
   reviews ElementGenerationReview[]
   drafts  GeneratedElementDraft[]
   spends  ElementGenerationSpend[]
@@ -452,6 +485,8 @@ model ElementGenerationBuild {
   @@index([ownerId, createdAt])
   @@index([sourceGraphBuildId, status])
   @@index([status, syncLeaseUntil])
+  @@index([parentBuildId])
+  @@index([revisionOfDraftId])
 }
 
 model ElementGenerationSpend {
@@ -519,6 +554,16 @@ model GeneratedElementDraft {
   parentDraftId String?                 @db.Uuid
   duplicates    GeneratedElementDraft[] @relation("GeneratedElementDraftDuplicates")
 
+  // The reworked draft of a revision request; chains group by this link.
+  revisionOfDraft   GeneratedElementDraft?  @relation("GeneratedElementDraftRevisions", fields: [revisionOfDraftId], references: [id], onDelete: SetNull, onUpdate: Cascade)
+  revisionOfDraftId String?                 @db.Uuid
+  revisions         GeneratedElementDraft[] @relation("GeneratedElementDraftRevisions")
+
+  // The child build that produced this draft; carries the revision note.
+  revisionBuild   ElementGenerationBuild? @relation("GeneratedElementDraftRevisionBuild", fields: [revisionBuildId], references: [id], onDelete: SetNull, onUpdate: Cascade)
+  revisionBuildId String?                 @db.Uuid
+  revisionBuilds    ElementGenerationBuild[] @relation("ElementGenerationBuildRevisionOfDraft")
+
   /// [PrismaGeneratedElementOriginal]
   original Json
   /// [PrismaGeneratedElementEditable]
@@ -546,6 +591,8 @@ model GeneratedElementDraft {
   @@unique([buildId, sourceElementId, duplicationIndex])
   @@index([buildId, order])
   @@index([buildId, decision, savedElementId])
+  @@index([revisionOfDraftId])
+  @@index([revisionBuildId])
 }
 
 model KBUploadTicket {
