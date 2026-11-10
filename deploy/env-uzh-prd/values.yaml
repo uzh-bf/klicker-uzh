@@ -489,7 +489,9 @@ frontendPWA:
   allowedFrameAncestors: 'https://*.klicker.uzh.ch https://lms.uzh.ch https://*.olat.uzh.ch https://elearning.klicker.uzh.ch https://ius.zone https://*.df-app.ch https://moodle.fernuni.ch https://*.localhost'
   priorityClassName: production-workload
 
-  replicaCount: 4
+  # Three static replicas leave one voluntary disruption under the baseline
+  # budget's minimum of two; the burst tier adds up to five on spot.
+  replicaCount: 3
 
   autoscaling:
     enabled: false
@@ -499,6 +501,7 @@ frontendPWA:
   # Application excludes from replica drift.
   burst:
     enabled: true
+    maxReplicas: 5
     # Soft spread, so losing one spot node does not remove the whole tier
     # while a tight pool can still place every burst pod. The selector names
     # the tier label, so baseline pods do not count toward the skew.
