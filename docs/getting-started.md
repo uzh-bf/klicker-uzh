@@ -245,11 +245,13 @@ into other documents.
 
 ### Klicker chatbot evaluation
 
-The evaluation launcher, judge, metrics, ground truth and trajectory runner
+The evaluation launcher, LiteLLM judge, metrics, ground truth and judge context
 live in the `klicker-uzh-catalyst` repository under `evaluation/` (run
-`pnpm run eval:klicker` there). This repository keeps only the chat-side
-target pieces in `apps/chat/scripts/`: the local evaluation target, the
-trajectory driver, the budget ledger and the spend guard. The catalyst
-launcher loads them from a klicker-uzh checkout set by `KLICKER_REPO_ROOT`.
+`pnpm run eval:klicker` there). Everything that runs Klicker chat code stays in
+`apps/chat/`: the local evaluation target, trajectory driver and runner,
+numeric reference, budget ledger, spend guard and context renderer in
+`scripts/`, and the synthetic trajectory corpora in `evaluation/`. The catalyst
+launcher loads the target from a klicker-uzh checkout set by
+`KLICKER_REPO_ROOT`.
 Eval mode judges an existing QA artifact; it does not test Klicker's
 authenticated chat target.
