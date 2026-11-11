@@ -1,4 +1,5 @@
 import { randomUUID } from 'node:crypto'
+import { createLogger } from '@klicker-uzh/logging/node'
 import { prisma } from '@klicker-uzh/prisma'
 import * as DB from '@klicker-uzh/prisma/client'
 import type { QuestionGenerationConfiguration } from '@klicker-uzh/types'
@@ -105,6 +106,7 @@ let parentId: string
 const ctx = () =>
   ({
     prisma,
+    log: createLogger({ service: 'graphql-test', level: 'silent' }),
     user: { sub: ownerId },
     elementGenerationRuntime: {
       questionInputContainer: 'question-inputs',
