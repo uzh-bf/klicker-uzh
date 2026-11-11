@@ -783,6 +783,7 @@ backendGraphql:
     inputContainer: 'question-inputs'
     outputContainer: 'question-results'
     outputPrefix: 'question-builds'
+    revisionWorkerEnabled: true
     cost:
       questionMinorUnits: '1'
       flashcardMinorUnits: '1'
