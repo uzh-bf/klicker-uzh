@@ -1,0 +1,59 @@
+name: Build scoped chat citation image
+
+on:
+  push:
+    branches: [release/chat-citation-6865-accepted]
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.sha }}
+  cancel-in-progress: false
+
+permissions:
+  contents: read
+  packages: write
+
+jobs:
+  build-arm:
+    runs-on: ubuntu-24.04-arm
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+
+      - name: Select production build configuration
+        run: |
+          rm apps/chat/.env.production
+          mv apps/chat/.env.prd apps/chat/.env.production
+
+      - uses: docker/setup-buildx-action@v2
+
+      - name: Log into the image registry
+        uses: docker/login-action@v2
+        with:
+          registry: ghcr.io
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Preserve an existing immutable image
+        id: publish
+        env:
+          IMAGE: ghcr.io/${{ github.repository }}/chat-arm
+          SHA: citation-6865-${{ github.sha }}
+        run: bash .github/scripts/stg-image-publish-guard.sh
+
+      - name: Build and publish the source-bound image
+        if: steps.publish.outputs.publish == 'true'
+        uses: docker/build-push-action@v5
+        with:
+          context: .
+          file: apps/chat/Dockerfile
+          push: true
+          platforms: linux/arm64
+          no-cache: true
+          tags: ghcr.io/${{ github.repository }}/chat-arm:citation-6865-${{ github.sha }}
+          labels: |
+            org.opencontainers.image.source=https://github.com/${{ github.repository }}
+            org.opencontainers.image.revision=${{ github.sha }}
+          build-args: |
+            NEXT_PUBLIC_ENV=production
+            NEXT_PUBLIC_GROWTHBOOK_API_HOST=${{ vars.NEXT_PUBLIC_GROWTHBOOK_API_HOST_PRD }}
+            NEXT_PUBLIC_GROWTHBOOK_CLIENT_KEY=${{ vars.NEXT_PUBLIC_GROWTHBOOK_CLIENT_KEY_PRD }}
+            NEXT_PUBLIC_ELEARNING_EMBED_ORIGINS=${{ vars.NEXT_PUBLIC_ELEARNING_EMBED_ORIGINS_PRD }}
