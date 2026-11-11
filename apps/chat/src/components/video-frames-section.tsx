@@ -3,6 +3,7 @@
 import Image from 'next/image'
 import { useTranslations } from 'next-intl'
 import { useState } from 'react'
+import { useCourseImageUrl } from '@/src/hooks/useCourseImageUrl'
 import { formatTimestamp } from '@/src/lib/sources/sourceDisplay'
 import {
   sourceForVideoFrame,
@@ -21,8 +22,10 @@ export function VideoFrameCard({
 }>) {
   const t = useTranslations('chat.videoFrames')
   const { sources } = useMessageSourcesContext()
-  const [failed, setFailed] = useState(false)
+  const [failedUrl, setFailedUrl] = useState<string>()
   const [attempt, setAttempt] = useState(0)
+  const loaded = useCourseImageUrl(frameSrc, attempt)
+  const failed = loaded?.failed || (loaded?.url && loaded.url === failedUrl)
   const source = sourceForVideoFrame(frame, sources)
   const label = t('source', {
     title: frame.title,
@@ -40,16 +43,16 @@ export function VideoFrameCard({
             type="button"
             className="mt-2 min-h-11 rounded-md border px-3 focus-visible:outline focus-visible:outline-2"
             onClick={() => {
-              setFailed(false)
+              setFailedUrl(undefined)
               setAttempt((value) => value + 1)
             }}
           >
             {t('retry')}
           </button>
         </div>
-      ) : (
+      ) : loaded?.url ? (
         <CourseImageViewer
-          src={frameSrc}
+          src={loaded.url}
           alt={label}
           label={label}
           width={frame.width_px}
@@ -57,15 +60,17 @@ export function VideoFrameCard({
         >
           <Image
             key={attempt}
-            src={frameSrc}
+            src={loaded.url}
             alt={label}
             width={frame.width_px}
             height={frame.height_px}
             unoptimized
-            onError={() => setFailed(true)}
+            onError={() => setFailedUrl(loaded.url)}
             className="h-auto w-full object-contain"
           />
         </CourseImageViewer>
+      ) : (
+        <div aria-busy="true" className="min-h-24" />
       )}
       <figcaption className="mt-2 text-xs text-muted-foreground">
         <p>

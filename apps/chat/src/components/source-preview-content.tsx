@@ -3,6 +3,7 @@
 import Image from 'next/image'
 import { useTranslations } from 'next-intl'
 import { useState } from 'react'
+import { useCourseImageUrl } from '@/src/hooks/useCourseImageUrl'
 import { useSourceMedia } from '@/src/hooks/useSourceMedia'
 
 import {
@@ -62,14 +63,16 @@ function SourceFramePreview({
 }>) {
   const t = useTranslations('chat.videoFrames')
   const [failed, setFailed] = useState(false)
+  const loaded = useCourseImageUrl(src, 0)
   const frame = source.videoFrame
   if (!frame) return null
-  if (failed)
+  if (failed || loaded?.failed)
     return <span className="mt-2 block text-xs">{t('unavailable')}</span>
+  if (!loaded?.url) return <span aria-busy="true" className="mt-2 block" />
   return (
     <Image
       data-cy="chat-source-frame-preview"
-      src={src}
+      src={loaded.url}
       alt={t('source', {
         title: source.title,
         timestamp: formatTimestamp(frame.timestamp_sec),

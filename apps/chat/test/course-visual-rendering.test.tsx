@@ -6,6 +6,7 @@ import type { ChatSourcePart } from '../src/lib/sources/normalizeSources'
 
 const state = vi.hoisted(() => ({
   partIndex: 1,
+  mediaState: 'loaded',
   message: {
     id: 'message',
     status: { type: 'complete' },
@@ -31,12 +32,20 @@ vi.mock('../src/components/message-sources-context', () => ({
   useMessageSourcesContext: () => ({
     sources: [],
     courseImageSourcesByAssetId: new Map(),
+    citedPageRanges: new Map(),
   }),
 }))
-// Resolve document downloads synchronously in this server-rendered fixture.
+// Resolve authenticated downloads synchronously in this rendering fixture.
 // The loader has separate tests; keep the real cards and shared image viewer.
 vi.mock('../src/hooks/useCourseImageUrl', () => ({
-  useCourseImageUrl: (src: string) => ({ url: src }),
+  useCourseImageUrl: (src: string) => {
+    if (state.mediaState === 'loading') return undefined
+    if (state.mediaState === 'failed') return { failed: true }
+    return { url: `blob:${src}` }
+  },
+}))
+vi.mock('../src/hooks/useSourceMedia', () => ({
+  useSourceMedia: () => ({ frameSrc: '/api/frame-preview' }),
 }))
 // Next's image adapter needs a stand-in in this Node-only suite.
 // Browser verification exercises zoom/focus.
@@ -53,6 +62,7 @@ import {
   CourseImagesSection,
   InlineCourseImage,
 } from '../src/components/course-images-section'
+import { SourcePreviewContent } from '../src/components/source-preview-content'
 import { courseImageMarker } from '../src/lib/markdown/remarkCourseImages'
 import { courseImageCandidates } from '../src/lib/sources/courseImages'
 import { videoFrameCandidates } from '../src/lib/sources/videoFrames'
@@ -79,6 +89,7 @@ const placed = {
 
 beforeEach(() => {
   state.partIndex = 1
+  state.mediaState = 'loaded'
   state.message.status.type = 'complete'
   state.message.content = [selection, placed]
 })
@@ -91,6 +102,8 @@ describe('shared course image rendering for video stills', () => {
     expect(html).toContain('data-cy="course-image-expand"')
     expect(html).toContain(`/messages/message/frames/${frame.asset_id}`)
     expect(html).not.toContain('<video')
+    expect(html).toContain('src="blob:/api/')
+    expect(html).not.toContain('src="/api/')
     expect(renderToStaticMarkup(<CourseImagesSection />)).toBe('')
   })
 
@@ -120,6 +133,38 @@ describe('shared course image rendering for video stills', () => {
     expect(html).toContain(`/images/${image.asset_id}`)
     expect(html).toContain(`/frames/${frame.asset_id}`)
     expect(html.match(/data-cy="course-image-expand"/g)).toHaveLength(2)
+  })
+
+  it.each([
+    'loaded',
+    'loading',
+    'failed',
+  ])('keeps protected frame routes out of image requests while %s', (mediaState) => {
+    state.mediaState = mediaState
+    const card = renderToStaticMarkup(
+      <InlineCourseImage assetId={frame.asset_id} />
+    )
+    const preview = renderToStaticMarkup(
+      <SourcePreviewContent
+        source={{
+          id: 'video-source',
+          index: 1,
+          title: frame.title,
+          type: 'video',
+          videoFrame: frame,
+        }}
+      />
+    )
+    for (const html of [card, preview]) {
+      expect(html).not.toContain('src="/api/')
+      if (mediaState === 'loaded') expect(html).toContain('src="blob:/api/')
+      else {
+        expect(html).not.toContain('<img')
+        expect(html).toContain(
+          mediaState === 'failed' ? 'unavailable' : 'aria-busy="true"'
+        )
+      }
+    }
   })
 
   it.each([

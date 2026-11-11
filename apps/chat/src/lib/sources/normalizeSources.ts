@@ -1,6 +1,7 @@
 import { extractCitationIndexes } from '@klicker-uzh/util/citations'
 import type { ResponseExampleSearchEvidence } from '@klicker-uzh/util/response-example-runtime'
 import { TOOL_NAME_SUFFIX_LENGTH } from '../config/toolNames'
+import { isVideoSourceType } from './sourceType'
 import { getPublicSourceUrl } from './sourceUrl'
 import type { ChatSource, ChatSourceType } from './types'
 
@@ -521,7 +522,7 @@ function inferSourceType(
   url: string | undefined
 ): ChatSourceType {
   const lower = (typeHint ?? '').toLowerCase()
-  if (lower.includes('video') || lower.includes('youtube')) return 'video'
+  if (isVideoSourceType(typeHint)) return 'video'
   if (
     lower.includes('image') ||
     lower.includes('figure') ||

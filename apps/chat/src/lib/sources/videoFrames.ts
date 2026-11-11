@@ -4,6 +4,7 @@ import {
   isDocQueryToolName,
   parseDocQueryPayload,
 } from './normalizeSources'
+import { isVideoSourceType } from './sourceType'
 import type { ChatSource } from './types'
 
 export const VIDEO_FRAME_TOOL = 'show_video_frame'
@@ -72,7 +73,7 @@ function chunkVideoFrames(rawChunk: unknown, title: string): VideoFrame[] {
 
 function sourceVideoFrames(rawSource: unknown): VideoFrame[] {
   const source = record(rawSource)
-  if (!source || String(source.source_type).toLowerCase() !== 'video') return []
+  if (!source || !isVideoSourceType(source.source_type)) return []
   const title = [source.title, source.display_name, source.file_name]
     .map((value) => (typeof value === 'string' ? value.trim() : undefined))
     .find((value) => value !== undefined && value.length > 0)

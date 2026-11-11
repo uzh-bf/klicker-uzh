@@ -69,6 +69,17 @@ describe('video frame selection', () => {
     ).toEqual([candidate])
   })
 
+  it.each([
+    'video',
+    'VIDEO',
+    'Video Recording',
+    'youtube',
+  ])('accepts the same video source label as citations: %s', (label) => {
+    const labelled = structuredClone(fixture)
+    labelled.sources[0].source_type = label
+    expect(videoFrameCandidates(labelled)).toEqual([candidate])
+  })
+
   it('rejects non-video, failed and reversed-range frame evidence', () => {
     expect(videoFrameCandidates({ isError: true, ...fixture })).toEqual([])
     const broken = structuredClone(fixture)
