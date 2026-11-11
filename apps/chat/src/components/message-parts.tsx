@@ -28,6 +28,7 @@ import {
   normalizeCustomMathTags,
 } from '@/src/components/markdown-text'
 import { formatReasoningEffort } from '@/src/lib/config/reasoning'
+import { SHOW_EXPLANATION_TOOL_NAME } from '@/src/lib/explanations'
 import { resolveDisclosureOpen } from './message-parts-state'
 import { useHasAvailableChatMode } from './mode-options-context'
 import { ResponseExampleCaptureAction } from './response-example-capture-action'
@@ -239,14 +240,23 @@ const ChatStoppedPart: FC = () => {
   )
 }
 
+const groupByType = groupPartByType({
+  reasoning: ['group-reasoning'],
+  'tool-call': ['group-tool'],
+})
+
+// An interactive explanation is the answer itself, so it stays visible
+// instead of collapsing into the tool-call group.
+const groupAssistantParts: typeof groupByType = (part, context) =>
+  part.type === 'tool-call' && part.toolName === SHOW_EXPLANATION_TOOL_NAME
+    ? []
+    : groupByType(part, context)
+
 export const AssistantMessageParts: FC = () => {
   return (
     <MessagePrimitive.GroupedParts
       indicator="never"
-      groupBy={groupPartByType({
-        reasoning: ['group-reasoning'],
-        'tool-call': ['group-tool'],
-      })}
+      groupBy={groupAssistantParts}
     >
       {({ part, children }) => {
         switch (part.type) {

@@ -1,0 +1,17 @@
+Show the student an interactive step-by-step explanation: a diagram that stays in place and a panel that walks through one change per step. Use it when a mechanism, process or decomposition is easier to follow as a sequence than as text, and at most once per reply. Still answer in text: one or two sentences that say what the explanation shows.
+
+The input is one complete explainer/1 content object with format "explainer/1", locale "de" or "en" (the reply language) and a built-in diagram in content.diagram:
+- causal: persistent nodes and arrows with contrasting scenarios, e.g. how a policy rate change reaches inflation. At most 9 nodes.
+- accounts: balance sheets that change step by step and stay balanced, e.g. a bank loan or a repo. At most 2 entities and 4 rows per side.
+- parts: components that add up to a total, optionally per year, e.g. interest on savings.
+
+Keep it small: at most 6 steps per track, 10 glossary entries and 4 presets. Words per item: lead 35, overview text 35, path description 18, step title 10, step text 70. Write each step as: what changes, why, and what to notice. Mark illustrative numbers as illustrative and never invent sources.
+
+Each parameter needs label, min, max (above min), step, value and format. In a parts diagram, every part id is also a key in components. Compute numbers with expressions in calc and values, not with other tools; the explanation recalculates them as the student moves a slider.
+
+Text is plain: {term|label} opens a glossary entry with that id, \{{name}} inserts a value defined in values, and HTML is not allowed. Numbers come from expressions over params and calc, never from code.
+
+A minimal valid object, to copy the shape from (a real explanation has more steps):
+{"format":"explainer/1","id":"simple-interest","version":1,"locale":"en","title":"Principal and interest after n years","lead":"Split a savings balance into the amount deposited and the interest earned. Values are illustrative.","params":{"order":["r","n"],"items":{"r":{"label":"Interest rate","min":0,"max":10,"step":0.5,"value":3,"format":{"style":"number","decimals":1,"unit":{"one":"%","other":"%"}}},"n":{"label":"Years","min":1,"max":10,"step":1,"value":5,"format":{"style":"number","unit":{"one":"year","other":"years"}}}}},"calc":{"p":"1000","interest":"round(p * ((1 + r / 100) ^ n - 1))"},"values":{"interest":{"expr":"interest","format":{"style":"money","currency":"CHF","decimals":0}}},"diagram":{"type":"parts","format":{"style":"money","currency":"CHF","decimals":0},"parts":{"principal":{"expr":"p"},"interest":{"expr":"interest"}},"total":{"expr":"p + interest","label":"Balance"}},"components":{"principal":{"label":"Principal","color":"grey"},"interest":{"label":"Interest","color":"green"}},"tracks":{"main":{"steps":["base","grow"]}},"steps":{"base":{"title":"Start with the deposit","text":"You deposit CHF 1,000. This {principal|principal} is the base of the balance.","data":{"show":["principal"]}},"grow":{"title":"Interest adds on top","text":"After the chosen years, interest adds \{{interest}}. Move the sliders to see how rate and time change it.","data":{"show":["interest"]}}},"glossary":{"principal":{"term":"Principal","definition":"The amount deposited at the start."}},"footer":{"assumptions":"Interest is credited yearly and left in the account. Illustrative rate."}}
+
+If the tool reports errors, fix every listed error and call it again with the complete corrected object. After a third failed attempt, explain in text instead.
