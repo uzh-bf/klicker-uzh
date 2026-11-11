@@ -978,6 +978,7 @@ describe('revision child build dispatch and completion', () => {
       slot_summary: expect.objectContaining({ sourceQuestionId: 'slot-1' }),
     })
     for (const key of [
+      'graph_version_id',
       'graph_manifest',
       'resolved_domain_policy',
       'generation_recipe',
@@ -994,6 +995,7 @@ describe('revision child build dispatch and completion', () => {
     await getQuestionGenerationBuild(parentId, context)
 
     expect(startSlotRevision.mock.calls[0]![0]).toMatchObject({
+      graph_version_id: graphBuildId,
       graph_manifest: { blob_name: 'bundle/manifest.json' },
       resolved_domain_policy: { blob_name: 'bundle/policy.json' },
       generation_recipe: { blob_name: 'bundle/recipe.json' },
