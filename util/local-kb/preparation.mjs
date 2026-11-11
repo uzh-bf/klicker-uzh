@@ -2082,6 +2082,7 @@ export async function continueInfrastructureStart(
   config,
   candidateRevision,
   executor,
+  appContainer,
   {
     runManaged = runLocalManaged,
     runDocker = runLocalDocker,
@@ -2134,7 +2135,6 @@ export async function continueInfrastructureStart(
       await runManaged(['status', '--repo', runtime.checkout, '--json'])
     )
     const managed = observation.repo?.managedRuntime
-    const appContainer = managed?.mountNesting?.container
     if (
       observation.dockerContext !== runtime.context ||
       observation.repo?.path !== runtime.checkout ||
@@ -2143,7 +2143,6 @@ export async function continueInfrastructureStart(
       managed.workspace !== runtime.workspace ||
       managed.status !== 'stopped' ||
       managed.activeProfile !== 'local-kb-setup' ||
-      managed.mountNesting?.status !== 'effective' ||
       !/^[a-z0-9][a-z0-9_-]*$/.test(managed.composeProject ?? '') ||
       !/^[a-f0-9]{64}$/.test(appContainer ?? '')
     )
@@ -2158,7 +2157,8 @@ export async function continueInfrastructureStart(
       apps[0].Id !== appContainer ||
       apps[0].State?.Running !== false ||
       apps[0].Config?.Labels?.['com.docker.compose.project'] !==
-        managed.composeProject
+        managed.composeProject ||
+      apps[0].Config?.Labels?.['com.docker.compose.service'] !== 'app'
     )
       throw new Error('Retained managed app identity is unavailable.')
     const attempt = join(runtime.directory, 'infrastructure-start-recovery')

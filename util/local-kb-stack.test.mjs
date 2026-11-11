@@ -414,7 +414,14 @@ test('source observation rejects dirty, mismatched and missing provider checkout
 
 test('initial startup continuation requires an immutable executor without setup-resume flags', () => {
   const input = isolatedConfigInput({ aiUpstream: 'openrouter' })
-  const args = ['--candidate', 'a'.repeat(40), '--executor', 'b'.repeat(40)]
+  const args = [
+    '--candidate',
+    'a'.repeat(40),
+    '--executor',
+    'b'.repeat(40),
+    '--retained-app',
+    'c'.repeat(64),
+  ]
   const accepted = runConfigPlan(input, 'continue-start', args)
   assert.match(accepted.stderr, /^LOCAL_AI_CONFIGURATION_REQUIRED:/)
   for (const extra of [

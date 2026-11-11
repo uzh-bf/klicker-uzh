@@ -2747,7 +2747,10 @@ async function stoppedInitialStartFixture(t) {
           Id: appContainer,
           State: { Running: false },
           Config: {
-            Labels: { 'com.docker.compose.project': 'synthetic-compose' },
+            Labels: {
+              'com.docker.compose.project': 'synthetic-compose',
+              'com.docker.compose.service': 'app',
+            },
           },
         },
       ])
@@ -2778,7 +2781,13 @@ async function stoppedInitialStartFixture(t) {
 test('explicit initial-start recovery preserves its parent and supports later stop and resume', async (t) => {
   const f = await stoppedInitialStartFixture(t)
   const recover = () =>
-    continueInfrastructureStart(f.config, revision, nextExecutor, f.options)
+    continueInfrastructureStart(
+      f.config,
+      revision,
+      nextExecutor,
+      'c'.repeat(64),
+      f.options
+    )
   assert.equal((await recover()).infrastructureStarted, true)
   assert.deepEqual(await readdir(join(f.directory, 'infrastructure-start')), [])
   const before = [...f.calls]
@@ -2833,13 +2842,25 @@ test('initial-start recovery refuses changed evidence and keeps an interrupted c
       }
     }
     await assert.rejects(
-      continueInfrastructureStart(f.config, revision, nextExecutor, f.options),
+      continueInfrastructureStart(
+        f.config,
+        revision,
+        nextExecutor,
+        'c'.repeat(64),
+        f.options
+      ),
       undefined,
       failure
     )
     const before = [...f.calls]
     await assert.rejects(
-      continueInfrastructureStart(f.config, revision, nextExecutor, f.options)
+      continueInfrastructureStart(
+        f.config,
+        revision,
+        nextExecutor,
+        'c'.repeat(64),
+        f.options
+      )
     )
     assert.deepEqual(f.calls, before)
     if (
