@@ -1,6 +1,6 @@
 import { execFile, execFileSync } from 'node:child_process'
 import { promisify } from 'node:util'
-import { LOCAL_KB_MANAGED_PROFILE } from './isolated-config.mjs'
+import { LOCAL_KB_MANAGED_PROFILE, localAiBaseUrl } from './isolated-config.mjs'
 
 const execute = promisify(execFile)
 
@@ -13,18 +13,23 @@ export async function runLocalDocker(args) {
 export function requireLocalAiEnvironment(config, environment = process.env) {
   if (config.aiUpstream === undefined) return {}
   if (
-    config.aiUpstream !== 'openrouter' ||
     typeof environment.UPSTREAM_OPENAI_API_KEY !== 'string' ||
     !environment.UPSTREAM_OPENAI_API_KEY.trim() ||
-    environment.UPSTREAM_OPENAI_BASE_URL !== 'https://openrouter.ai/api/v1'
+    environment.UPSTREAM_OPENAI_BASE_URL !== localAiBaseUrl(config.aiUpstream)
   ) {
-    throw new Error(
-      'Local AI requires runtime-injected OpenRouter credentials and the exact API endpoint.'
+    throw Object.assign(
+      new Error(
+        'Local AI requires runtime-injected credentials and its configured API endpoint.'
+      ),
+      { code: 'LOCAL_AI_CONFIGURATION_REQUIRED' }
     )
   }
   return {
     UPSTREAM_OPENAI_API_KEY: environment.UPSTREAM_OPENAI_API_KEY,
     UPSTREAM_OPENAI_BASE_URL: environment.UPSTREAM_OPENAI_BASE_URL,
+    ...(config.aiUpstream?.kind === 'guarded'
+      ? { OPENAI_API_KEY: environment.UPSTREAM_OPENAI_API_KEY }
+      : {}),
   }
 }
 
@@ -38,7 +43,8 @@ export async function runLocalManaged(
     (args.length !== 5 ||
       args[0] !== 'ensure' ||
       args[2] !== '--profile' ||
-      args[3] !== LOCAL_KB_MANAGED_PROFILE ||
+      (args[3] !== LOCAL_KB_MANAGED_PROFILE &&
+        !(aiUpstream?.kind === 'guarded' && args[3] === 'local-kb-setup')) ||
       args[4] !== '--json')
   ) {
     throw new Error('Local AI environment is restricted to managed AI startup.')

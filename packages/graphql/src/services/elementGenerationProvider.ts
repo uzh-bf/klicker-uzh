@@ -9,6 +9,26 @@ import type { QuestionGenerationRuntime } from './questionGenerationRuntime.js'
 
 const IDEMPOTENCY_KEY_MAX_LENGTH = 200
 
+// The slot-revision worker is deployed separately from this backend and the
+// worker rejects unknown start-input fields, so everything that reaches it
+// stays off until the switch is set: the slot-specification request on build
+// starts, the revision start event and the per-type revision capability.
+export function isElementRevisionWorkerEnabled(
+  env: NodeJS.ProcessEnv = process.env
+): boolean {
+  return env.ELEMENT_REVISION_WORKER_ENABLED?.trim().toLowerCase() === 'true'
+}
+
+export function elementTypeSupportsRevision(
+  elementType: string,
+  env: NodeJS.ProcessEnv = process.env
+): boolean {
+  return (
+    isElementRevisionWorkerEnabled(env) &&
+    (elementType === 'SC' || elementType === 'MC' || elementType === 'KPRIM')
+  )
+}
+
 export function normalizeElementGenerationIdempotencyKey(
   value: string
 ): string {

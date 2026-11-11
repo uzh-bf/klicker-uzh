@@ -465,6 +465,215 @@ test.describe('Generated element review inbox', () => {
   })
 })
 
+test.describe('Generated element revision requests', () => {
+  // The backend serves the revision capability only behind a worker switch, so
+  // the journey enables it on the real capability answer.
+  async function enableRevisionCapability(page: Page) {
+    const persisted = JSON.parse(
+      readFileSync(
+        new URL(
+          '../../packages/graphql/src/public/client.json',
+          import.meta.url
+        ),
+        'utf8'
+      )
+    ) as Record<string, string>
+    const operationNames = new Map(
+      Object.entries(persisted).map(([name, hash]) => [hash, name])
+    )
+    const requests: Record<string, number> = {}
+    await page.route('**/graphql*', async (route) => {
+      const request = route.request()
+      const url = new URL(request.url())
+      const body = request.method() === 'POST' ? request.postDataJSON() : null
+      const extensions =
+        body?.extensions ??
+        JSON.parse(url.searchParams.get('extensions') ?? '{}')
+      const operation =
+        body?.operationName ??
+        url.searchParams.get('operationName') ??
+        operationNames.get(extensions.persistedQuery?.sha256Hash)
+      if (operation) requests[operation] = (requests[operation] ?? 0) + 1
+      if (operation !== 'ElementGenerationCapabilities') {
+        await route.continue()
+        return
+      }
+      const response = await route.fetch()
+      const json = await response.json()
+      for (const capability of json.data?.elementGenerationCapabilities
+        ?.typeCapabilities ?? []) {
+        capability.supportsIndividualRegeneration =
+          capability.elementType !== 'FLASHCARD'
+      }
+      await route.fulfill({ response, json })
+    })
+    return requests
+  }
+
+  async function withFixture(
+    run: (
+      fixture: Awaited<ReturnType<typeof seedQuestionGenerationReviewFixture>>
+    ) => Promise<void>
+  ) {
+    const prisma = await getPrisma()
+    const previousAccess = await prisma.user.findUniqueOrThrow({
+      where: { id: USER_ID_TEST },
+      select: { aiFeaturesEnabled: true, betaEnabled: true },
+    })
+    try {
+      await prisma.user.update({
+        where: { id: USER_ID_TEST },
+        data: { aiFeaturesEnabled: true, betaEnabled: true },
+      })
+      await run(await seedQuestionGenerationReviewFixture())
+    } finally {
+      try {
+        await cleanupQuestionGenerationReviewFixture()
+      } finally {
+        await prisma.user.update({
+          where: { id: USER_ID_TEST },
+          data: previousAccess,
+        })
+      }
+    }
+  }
+
+  test('offers the request for questions only and shows every request state', async ({
+    loginLecturer,
+    page,
+  }) => {
+    const manageUrl = process.env.URL_MANAGE ?? URL_MANAGE
+    await withFixture(async (fixture) => {
+      const requests = await enableRevisionCapability(page)
+      await loginLecturer()
+
+      // A mixed build offers the action on question rows and not on the card.
+      await gotoCommit(
+        page,
+        `${manageUrl}/elements/generate?buildId=${fixture.primaryBuildId}`
+      )
+      const primary = page.getByTestId('generated-element-review')
+      await expect(
+        primary.getByTestId(
+          `element-generation-revise-${fixture.draftIdsByType.SC}`
+        )
+      ).toBeVisible()
+      await expect(
+        primary.getByTestId(
+          `element-generation-revise-${fixture.draftIdsByType.FLASHCARD}`
+        )
+      ).toHaveCount(0)
+
+      await gotoCommit(
+        page,
+        `${manageUrl}/elements/generate?buildId=${fixture.revisionBuildId}`
+      )
+      const review = page.getByTestId('generated-element-review')
+      const ids = fixture.revisionDraftIds
+
+      // Running: progress and note, and no new request or editing.
+      const running = review.getByTestId(
+        `generated-element-revision-status-${ids.running}`
+      )
+      await expect(running).toHaveAttribute('data-state', 'running')
+      await expect(running).toContainText('Make the distractors more plausible')
+      await expect(
+        review.getByTestId(`element-generation-revise-${ids.running}`)
+      ).toHaveCount(0)
+      await expect(
+        review.getByTestId(`element-generation-open-${ids.running}`)
+      ).toHaveCount(0)
+
+      // Failed: the reason, the retry and the earlier request as history.
+      const failed = review.getByTestId(
+        `generated-element-revision-status-${ids.failed}`
+      )
+      await expect(failed).toHaveAttribute('data-state', 'failed')
+      await expect(failed).toContainText('Synthetic revision failure.')
+      await expect(failed).toContainText('Shorter stem please')
+      await expect(
+        review.getByTestId(`generated-element-revision-retry-${ids.failed}`)
+      ).toBeVisible()
+      await expect(
+        review.getByTestId(`generated-element-revision-history-${ids.failed}`)
+      ).toHaveAttribute('data-count', '1')
+
+      // Finished: the original keeps its note, the revised draft is labelled.
+      const finished = review.getByTestId(
+        `generated-element-revision-status-${ids.original}`
+      )
+      await expect(finished).toHaveAttribute('data-state', 'completed')
+      await expect(finished).toContainText('Use a real-world example')
+      const revisedLabel = review.getByTestId(
+        `generated-element-revision-of-${ids.revised}`
+      )
+      await expect(revisedLabel).toContainText('Use a real-world example')
+
+      // A plain draft can request a revision with an optional note.
+      await review.getByTestId(`element-generation-revise-${ids.plain}`).click()
+      const note = review.getByTestId(
+        `generated-element-revision-note-${ids.plain}`
+      )
+      await expect(note).toHaveAttribute('maxlength', '1000')
+      await expect(
+        review.getByTestId(`generated-element-evidence-purged-${ids.plain}`)
+      ).toHaveCount(0)
+
+      // Polling continues while a child build is unfinished.
+      const before = requests.ElementGenerationBuild ?? 0
+      await expect
+        .poll(() => requests.ElementGenerationBuild ?? 0, { timeout: 15_000 })
+        .toBeGreaterThan(before + 1)
+    })
+  })
+
+  test('submits the note and hints when the source material is gone', async ({
+    loginLecturer,
+    page,
+  }) => {
+    const manageUrl = process.env.URL_MANAGE ?? URL_MANAGE
+    await withFixture(async (fixture) => {
+      await enableRevisionCapability(page)
+      await loginLecturer()
+      await gotoCommit(
+        page,
+        `${manageUrl}/elements/generate?buildId=${fixture.purgedBuildId}`
+      )
+      const review = page.getByTestId('generated-element-review')
+      await review
+        .getByTestId(`element-generation-revise-${fixture.purgedDraftId}`)
+        .click()
+      await expect(
+        review.getByTestId(
+          `generated-element-evidence-purged-${fixture.purgedDraftId}`
+        )
+      ).toBeVisible()
+
+      // The backend refuses the request without the revision worker, so the
+      // submitted variables are asserted on the intercepted mutation.
+      const mutation = page.waitForRequest(
+        (request) =>
+          request.method() === 'POST' &&
+          (request.postData() ?? '').includes('SetGeneratedElementDecision')
+      )
+      await review
+        .getByTestId(`generated-element-revision-note-${fixture.purgedDraftId}`)
+        .fill('Ask about the second example')
+      await review
+        .getByTestId(
+          `generated-element-revision-submit-${fixture.purgedDraftId}`
+        )
+        .click()
+      const input = (await mutation).postDataJSON().variables.input
+      expect(input).toEqual({
+        draftId: fixture.purgedDraftId,
+        decision: 'REVISION_REQUESTED',
+        note: 'Ask about the second example',
+      })
+    })
+  })
+})
+
 test.describe('Background generation notifications', () => {
   test('keeps review, completion, partial, and failure outcomes distinct', async ({
     page,
@@ -900,6 +1109,7 @@ test('generation configuration follows graph language and scopes focus to questi
             supportsFocusTopic: elementType === 'SC',
             supportsRetry: elementType === 'FLASHCARD',
             supportsIncompletePublication: elementType === 'FLASHCARD',
+            supportsIndividualRegeneration: false,
           })),
         },
       }
@@ -1055,6 +1265,7 @@ test('refreshes the generation capabilities after a rejected submission', async 
                   supportsFocusTopic: focusAdmitted,
                   supportsRetry: false,
                   supportsIncompletePublication: false,
+                  supportsIndividualRegeneration: false,
                 },
               ],
             },
@@ -1220,6 +1431,7 @@ test.describe('Generation source readiness', () => {
                     supportsFocusTopic: false,
                     supportsRetry: false,
                     supportsIncompletePublication: false,
+                    supportsIndividualRegeneration: false,
                   },
                 ],
               },

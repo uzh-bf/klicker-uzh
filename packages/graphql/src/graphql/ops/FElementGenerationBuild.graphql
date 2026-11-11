@@ -123,6 +123,18 @@ fragment ElementGenerationBuildData on ElementGenerationBuild {
     order
     duplicationIndex
     parentDraftId
+    revisionOfDraftId
+    revisionNote
+    evidencePurged
+    revisionBuilds {
+      id
+      status
+      note
+      errorCode
+      errorMessage
+      errorRetryable
+      createdAt
+    }
     elementType
     original {
       name

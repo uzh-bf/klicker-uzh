@@ -7,7 +7,7 @@
 export const LAUNCHER_CONTRACTS = {
   ingestion: {
     facade: 'scripts/local_launcher.py',
-    revision: '6f0911f0f2536a52469791bce21461f29c22b17a',
+    revision: '38986fa72c570e867fabf394aa6e248aa54c4994',
     globalFlags: ['--strict'],
     verbs: {
       setup: {
@@ -28,6 +28,7 @@ export const LAUNCHER_CONTRACTS = {
           '--milvus-attu-port',
         ],
         optional: [
+          '--minio-image',
           '--worker-image',
           '--project-configs-source',
           '--api-image',

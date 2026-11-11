@@ -62,7 +62,13 @@ export const localCredentialNames = [
 
 // Provider launchers own their backing services and credentials. This result
 // contains only the private consumer inputs they accept, never their manifests.
-export function renderProviderLocalConfiguration(credentials, input) {
+export function renderProviderLocalConfiguration(
+  credentials,
+  input,
+  bounded = false
+) {
+  if (typeof bounded !== 'boolean')
+    throw new TypeError('Bounded model configuration must be explicit.')
   const bindings = resolveProviderBindings(
     input?.ports,
     input?.instance,
@@ -188,6 +194,14 @@ export function renderProviderLocalConfiguration(credentials, input) {
       // The isolated model gateway serves the Luna family only, so the
       // retrieval answer model must override the doc-query production default.
       KLICKER_LOCAL_RETRIEVAL_RETRIEVAL_MODEL: 'gpt-5.6-luna',
+      ...(bounded
+        ? {
+            KLICKER_LOCAL_RETRIEVAL_RETRIEVAL_MAX_RETRIES: '0',
+            KLICKER_LOCAL_RETRIEVAL_DOC_QUERY_RESPONSE_MODE: 'documents',
+            KLICKER_LOCAL_RETRIEVAL_RERANKER_TYPE: 'none',
+            KLICKER_LOCAL_RETRIEVAL_RETRIEVAL_QUERY_EXPANSION_ENABLED: 'false',
+          }
+        : {}),
     },
     scrapingApiKey: credentials.scraping,
     docProcessing: {
@@ -219,7 +233,32 @@ export function renderProviderLocalConfiguration(credentials, input) {
         collection_name: bindings.collection,
         milvus: { uri: container.milvus, db_name: 'default' },
       },
-      embedding: { model: 'text-embedding-3-small', dimensions: 1536 },
+      embedding: {
+        model: 'text-embedding-3-small',
+        dimensions: 1536,
+        ...(bounded
+          ? {
+              max_retries: 0,
+              application_retries: 0,
+              timeout_seconds: 60,
+              require_complete: true,
+            }
+          : {}),
+      },
+      ...(bounded
+        ? {
+            chunking: { auto_detect: { enabled: false } },
+            language_detection: { enabled: false },
+            metadata_extraction: { enabled: false },
+            context: { enabled: false },
+            cleaning: { cleanup: 'none' },
+            resource_embedding_limits: {
+              max_chunks: 4,
+              max_input_bytes: 16384,
+              max_requests: 1,
+            },
+          }
+        : {}),
       artifacts: {
         enabled: true,
         backend: 'azure_blob',

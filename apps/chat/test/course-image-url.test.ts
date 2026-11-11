@@ -1,7 +1,10 @@
 import { afterEach, expect, it, vi } from 'vitest'
 import { loadCourseImageUrl } from '../src/lib/client/courseImageUrl'
 
-afterEach(() => vi.restoreAllMocks())
+afterEach(() => {
+  vi.restoreAllMocks()
+  vi.unstubAllGlobals()
+})
 
 it('loads authorized bytes into a local URL, passing cancellation and cookies', async () => {
   const blob = new Blob(['png'], { type: 'image/png' })
@@ -40,7 +43,7 @@ it('does not leak an object URL when navigation aborts during the download', asy
   expect(create).not.toHaveBeenCalled()
 })
 
-it('sends the scoped Bearer token without cookies or URL credentials', async () => {
+it('adds the scoped Bearer token without putting it in the URL', async () => {
   vi.stubGlobal('sessionStorage', {
     getItem: (key: string) =>
       key === 'chat_participant_token' ? 'synthetic-guest' : null,

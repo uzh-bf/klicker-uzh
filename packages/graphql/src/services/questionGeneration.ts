@@ -2,6 +2,7 @@ import { createHash, randomUUID } from 'node:crypto'
 import * as DB from '@klicker-uzh/prisma/client'
 import type {
   ElementGenerationSlotFailure,
+  ElementGenerationSlotSpecification,
   ElementManipulationInput,
   GeneratedQuestionEditable,
   QuestionGenerationArtifactRef,
@@ -25,6 +26,7 @@ import {
 import {
   canonicalElementGenerationJson,
   elementGenerationArtifactPayload,
+  isElementRevisionWorkerEnabled,
   elementGenerationOutputBlobName,
   loadReadyElementGenerationGraph,
   normalizeElementGenerationIdempotencyKey,
@@ -47,6 +49,7 @@ import {
   parseQuestionGenerationPlan,
   parseQuestionGenerationProvenanceClaims,
   parseQuestionGenerationProvenanceIndex,
+  parseQuestionGenerationSlotSpecifications,
   parseQuestionGenerationResult,
   type QuestionGenerationGraphLineage,
   type QuestionGenerationProvenanceAuthority,
@@ -70,6 +73,7 @@ import type {
   QuestionGenerationRuntime,
   QuestionWorkflowReviewEvent,
   QuestionWorkflowStartPayload,
+  SlotRevisionWorkflowPayload,
 } from './questionGenerationRuntime.js'
 
 const REVIEW_DISPATCH_RECOVERY_MILLISECONDS = 15_000
@@ -136,6 +140,7 @@ const buildInclude = {
       graphSha256: true,
       graphManifestSchemaVersion: true,
       graphBundleStorageName: true,
+      generationArtifactsPurgedAt: true,
       sources: {
         select: {
           resourceId: true,
@@ -329,10 +334,18 @@ export function questionWorkflowStartPayload(
     output: { containerName: string; blobPrefix: string }
     language: QuestionGenerationConfiguration['language']
   },
-  options: { allowPartialResults?: boolean } = {}
+  options: {
+    allowPartialResults?: boolean
+    emitSlotSpecifications?: boolean
+  } = {}
 ): QuestionWorkflowStartPayload {
   const allowPartialResults =
     options.allowPartialResults ?? QUESTION_PARTIAL_RESULTS_ENABLED
+  // Like the partial-result flag, this joins the start-manifest hash. Callers
+  // that rebuild the payload after dispatch pass the value stored on the
+  // build, so a later change of the rollout setting cannot alter the hash.
+  const emitSlotSpecifications =
+    options.emitSlotSpecifications ?? isElementRevisionWorkerEnabled()
   return {
     schema_version: 3,
     question_build_id: input.buildId,
@@ -346,6 +359,7 @@ export function questionWorkflowStartPayload(
     },
     language: input.language,
     ...(allowPartialResults ? { allow_partial_results: true } : {}),
+    ...(emitSlotSpecifications ? { emit_slot_specifications: true } : {}),
   }
 }
 
@@ -354,7 +368,8 @@ function questionWorkflowPayload(
     QuestionBuild,
     'id' | 'blueprintArtifact' | 'configuration' | 'sourceGraphBuild'
   >,
-  runtime: QuestionGenerationRuntime
+  runtime: QuestionGenerationRuntime,
+  emitSlotSpecifications: boolean
 ): QuestionWorkflowStartPayload {
   if (
     !build.blueprintArtifact ||
@@ -367,18 +382,183 @@ function questionWorkflowPayload(
     )
   }
   const configuration = build.configuration as QuestionGenerationConfiguration
-  return questionWorkflowStartPayload({
-    buildId: build.id,
-    graphVersionId: build.sourceGraphBuild.id,
-    graphManifest: build.sourceGraphBuild.graphManifestArtifact,
-    storageName: build.sourceGraphBuild.graphBundleStorageName,
-    blueprint: build.blueprintArtifact,
-    output: {
-      containerName: runtime.questionOutputContainer,
-      blobPrefix: runtime.questionOutputPrefix,
+  return questionWorkflowStartPayload(
+    {
+      buildId: build.id,
+      graphVersionId: build.sourceGraphBuild.id,
+      graphManifest: build.sourceGraphBuild.graphManifestArtifact,
+      storageName: build.sourceGraphBuild.graphBundleStorageName,
+      blueprint: build.blueprintArtifact,
+      output: {
+        containerName: runtime.questionOutputContainer,
+        blobPrefix: runtime.questionOutputPrefix,
+      },
+      language: configuration.language,
     },
+    { emitSlotSpecifications }
+  )
+}
+
+// Whether the source graph's artifacts still exist. Ordinary builds keep
+// requiring their graph evidence; a child build proceeds without it once the
+// knowledge base purge removed the bundle.
+function questionBuildGraphAvailable(build: QuestionBuild) {
+  return (
+    build.sourceGraphBuild.graphManifestArtifact !== null &&
+    (!build.parentBuildId ||
+      build.sourceGraphBuild.generationArtifactsPurgedAt === null)
+  )
+}
+
+// Which result version a build's output is verified against: a child build
+// fixed it at dispatch, so a later purge of the graph does not change it.
+function questionBuildGraphUsed(build: QuestionBuild) {
+  return build.parentBuildId
+    ? build.revisionUsedGraph === true
+    : build.sourceGraphBuild.graphManifestArtifact !== null
+}
+
+async function dispatchPreparingRevisionBuild(
+  build: QuestionBuild,
+  runtime: QuestionGenerationRuntime,
+  leaseOwner: string,
+  ctx: ContextWithUser
+) {
+  const { startSlotRevision, findRunBySlotRevision } = runtime
+  if (!startSlotRevision || !findRunBySlotRevision) {
+    return serviceError(
+      'QUESTION_GENERATION_UNAVAILABLE',
+      'Slot revision is not configured'
+    )
+  }
+  const configuration = build.configuration as QuestionGenerationConfiguration
+  const design = build.designSummary as QuestionGenerationDesignSummary | null
+  const slot = design?.slots[0]
+  const outputPrefix = build.outputArtifactPrefix
+  if (
+    !build.parentBuildId ||
+    !slot ||
+    !build.revisionDraftSnapshot ||
+    !outputPrefix ||
+    design?.slots.length !== 1
+  ) {
+    return serviceError(
+      'ARTIFACT_INVALID',
+      'Revision build is missing its slot or previous draft'
+    )
+  }
+
+  let graphRefs: Pick<
+    SlotRevisionWorkflowPayload,
+    | 'graph_manifest'
+    | 'resolved_domain_policy'
+    | 'generation_recipe'
+    | 'domain_policy_digest'
+    | 'generation_recipe_digest'
+  > = {}
+  if (questionBuildGraphAvailable(build)) {
+    const manifest = build.sourceGraphBuild
+      .graphManifestArtifact as QuestionGenerationArtifactRef
+    if (
+      build.sourceGraphBuild.graphSha256 === null ||
+      build.sourceGraphBuild.graphBundleSha256 === null ||
+      build.sourceGraphBuild.graphBundleStorageName === null
+    ) {
+      return serviceError(
+        'ARTIFACT_INVALID',
+        'Question-generation graph build has no graph digest'
+      )
+    }
+    const evidence = parseQuestionGenerationGraphManifest(
+      await runtime.downloadVerified(manifest),
+      {
+        graphVersionId: build.sourceGraphBuild.id,
+        storageName: build.sourceGraphBuild.graphBundleStorageName,
+        falkordbGraphName: build.sourceGraphBuild.graphName,
+        bundleSha256: build.sourceGraphBuild.graphBundleSha256,
+        graphSha256: build.sourceGraphBuild.graphSha256,
+      }
+    )
+    graphRefs = {
+      graph_manifest: elementGenerationArtifactPayload(manifest),
+      resolved_domain_policy: elementGenerationArtifactPayload(
+        evidence.domainPolicyArtifact
+      ),
+      generation_recipe: elementGenerationArtifactPayload(
+        evidence.generationRecipeArtifact
+      ),
+      domain_policy_digest: evidence.domainPolicyDigest,
+      generation_recipe_digest: evidence.generationRecipeDigest,
+    }
+  }
+
+  const specification = slot.specification
+  const payload: SlotRevisionWorkflowPayload = {
+    schema_version: 1,
+    build_id: build.id,
+    parent_build_id: build.parentBuildId,
+    dispatch_attempt_id: build.providerDispatchAttemptId,
+    element_type: 'question',
+    question_id: slot.sourceQuestionId,
+    design_slot_id: specification?.design_slot_id ?? slot.sourceQuestionId,
     language: configuration.language,
+    ...(specification
+      ? { slot_specification: specification }
+      : { slot_summary: slot }),
+    previous_element: build.revisionDraftSnapshot,
+    ...(build.revisionNote ? { note: build.revisionNote } : {}),
+    output: {
+      container_name: runtime.questionOutputContainer,
+      blob_prefix: outputPrefix,
+    },
+    ...graphRefs,
+  }
+  const { eventId, recoveredRunId } =
+    await dispatchCostAccountedElementGeneration({
+      prisma: ctx.prisma,
+      dispatchAttemptId: build.providerDispatchAttemptId,
+      recover: () =>
+        findRunBySlotRevision.call(
+          runtime,
+          build.id,
+          build.providerDispatchAttemptId,
+          build.createdAt
+        ),
+      dispatch: (beforeProviderDispatch) =>
+        startSlotRevision.call(
+          runtime,
+          payload,
+          `question-build:${build.id}`,
+          beforeProviderDispatch
+        ),
+    })
+
+  const retryDispatch = build.stage === 'retry_dispatching'
+  // A revision has no Design or Plan gate: the worker writes the result
+  // directly, so the build waits in FINALIZING for it.
+  const updated = await ctx.prisma.elementGenerationBuild.updateMany({
+    where: {
+      id: build.id,
+      ownerId: ctx.user.sub,
+      status: DB.ElementGenerationBuildStatus.PREPARING_INPUT,
+      syncLeaseOwner: leaseOwner,
+    },
+    data: {
+      providerEventId: eventId,
+      providerWorkflowRunId: recoveredRunId,
+      status: DB.ElementGenerationBuildStatus.FINALIZING,
+      stage: 'revising',
+      revisionUsedGraph: graphRefs.graph_manifest !== undefined,
+      startedAt: new Date(),
+      ...(retryDispatch ? { retryCount: { increment: 1 } } : {}),
+    },
   })
+  if (updated.count !== 1) {
+    return serviceError(
+      'CONCURRENT_MODIFICATION',
+      'Revision build preparation was changed by another request'
+    )
+  }
 }
 
 async function dispatchPreparingQuestionBuild(
@@ -387,6 +567,9 @@ async function dispatchPreparingQuestionBuild(
   leaseOwner: string,
   ctx: ContextWithUser
 ) {
+  if (build.parentBuildId) {
+    return dispatchPreparingRevisionBuild(build, runtime, leaseOwner, ctx)
+  }
   const configuration = build.configuration as QuestionGenerationConfiguration
   const blueprintBytes = await createQuestionGenerationBlueprint(
     configuration,
@@ -409,9 +592,11 @@ async function dispatchPreparingQuestionBuild(
     await runtime.downloadVerified(blueprintArtifact)
   }
 
+  const slotSpecificationsRequested = isElementRevisionWorkerEnabled()
   const payload = questionWorkflowPayload(
     { ...build, blueprintArtifact },
-    runtime
+    runtime,
+    slotSpecificationsRequested
   )
   const { eventId, recoveredRunId } =
     await dispatchCostAccountedElementGeneration({
@@ -447,6 +632,7 @@ async function dispatchPreparingQuestionBuild(
     },
     data: {
       blueprintArtifact,
+      slotSpecificationsRequested,
       providerEventId: eventId,
       providerWorkflowRunId: recoveredRunId,
       status: DB.ElementGenerationBuildStatus.DESIGNING,
@@ -578,11 +764,24 @@ export async function retryQuestionGeneration(
     )
   }
   const dispatchAttemptId = randomUUID()
+  // A revision retry is charged like the original revision: one question's
+  // share of the parent build price.
+  const parent = build.parentBuildId
+    ? await ctx.prisma.elementGenerationBuild.findUniqueOrThrow({
+        where: { id: build.parentBuildId },
+        select: { requestedElementCount: true },
+      })
+    : null
   const claimed = await reserveElementGenerationRetrySpend(ctx.prisma, {
     buildId: build.id,
     ownerId: ctx.user.sub,
     dispatchAttemptId,
-    spendClass: DB.KBGraphQuotaSpendClass.QUESTION_GENERATION,
+    spendClass: parent
+      ? DB.KBGraphQuotaSpendClass.ELEMENT_REVISION
+      : DB.KBGraphQuotaSpendClass.QUESTION_GENERATION,
+    ...(parent
+      ? { parentRequestedElementCount: parent.requestedElementCount }
+      : {}),
     elementTypes: QUESTION_ELEMENT_TYPES,
     expectedStatus: DB.ElementGenerationBuildStatus.FAILED,
     clearCompletedAt: true,
@@ -740,18 +939,23 @@ async function synchronizeLeasedBuild(
         // The provenance check recomputes the dispatched start-manifest hash,
         // so this payload must be built by the same function as the dispatch
         // payload above; otherwise the optional rollout-gated fields diverge.
-        const startPayload = questionWorkflowStartPayload({
-          buildId: build.id,
-          graphVersionId: build.sourceGraphBuild.id,
-          graphManifest,
-          storageName: build.sourceGraphBuild.graphBundleStorageName!,
-          blueprint,
-          output: {
-            containerName: runtime.questionOutputContainer,
-            blobPrefix: runtime.questionOutputPrefix,
+        const startPayload = questionWorkflowStartPayload(
+          {
+            buildId: build.id,
+            graphVersionId: build.sourceGraphBuild.id,
+            graphManifest,
+            storageName: build.sourceGraphBuild.graphBundleStorageName!,
+            blueprint,
+            output: {
+              containerName: runtime.questionOutputContainer,
+              blobPrefix: runtime.questionOutputPrefix,
+            },
+            language: configuration.language,
           },
-          language: configuration.language,
-        })
+          // The value dispatched with this build; builds that predate it
+          // never asked for slot specifications.
+          { emitSlotSpecifications: build.slotSpecificationsRequested === true }
+        )
         v3Evidence = {
           graphVersionId: build.sourceGraphBuild.id,
           graphManifest,
@@ -786,8 +990,7 @@ async function synchronizeLeasedBuild(
       const result = parseQuestionGenerationResult(artifact.bytes, {
         buildId: build.id,
         questionCount: build.requestedElementCount,
-        requiresCompleteProvenance:
-          build.sourceGraphBuild.graphManifestArtifact !== null,
+        requiresCompleteProvenance: questionBuildGraphUsed(build),
       })
       if (result.status === 'rejected') {
         await ctx.prisma.elementGenerationBuild.updateMany({
@@ -849,8 +1052,9 @@ async function synchronizeLeasedBuild(
           )
         }
         const provenanceIndex = result.questionProvenanceIndex
+        const graphAvailable = questionBuildGraphUsed(build)
         if (
-          (build.sourceGraphBuild.graphManifestArtifact !== null &&
+          (graphAvailable &&
             (provenanceIndex === null ||
               provenanceIndex.containerName !==
                 runtime.questionOutputContainer ||
@@ -860,19 +1064,28 @@ async function synchronizeLeasedBuild(
                   build.id,
                   'questions/question_provenance_index.json'
                 ))) ||
-          (build.sourceGraphBuild.graphManifestArtifact === null &&
-            provenanceIndex !== null)
+          (!graphAvailable && provenanceIndex !== null)
         ) {
           return serviceError(
             'ARTIFACT_INVALID',
             'Completed question-generation result has invalid provenance coordinates'
           )
         }
+        if (graphAvailable && !questionBuildGraphAvailable(build)) {
+          // The graph was used at dispatch and purged before the result was
+          // read. Without its files the cited ids cannot be verified, so the
+          // child fails without a retry; a new revision request dispatches
+          // without the graph.
+          return serviceError(
+            'ARTIFACT_INVALID',
+            'The knowledge graph was purged before the revision result could be verified'
+          )
+        }
         const finalBytes = await runtime.downloadVerified(finalQuestions)
         let lineage: QuestionGenerationGraphLineage | null = null
         let provenanceAuthority: QuestionGenerationProvenanceAuthority | null =
           null
-        if (build.sourceGraphBuild.graphManifestArtifact !== null) {
+        if (graphAvailable) {
           const registeredManifest = build.sourceGraphBuild
             .graphManifestArtifact as QuestionGenerationArtifactRef
           const dispatchedManifest = registeredManifest
@@ -937,6 +1150,7 @@ async function synchronizeLeasedBuild(
           result,
           lineage,
           provenanceAuthority,
+          requireTargetDifficulty: Boolean(build.parentBuildId),
         })
         if (provenanceIndex) {
           const provenanceIndexBytes =
@@ -944,6 +1158,28 @@ async function synchronizeLeasedBuild(
           parseQuestionGenerationProvenanceIndex(
             provenanceIndexBytes,
             questions
+          )
+        }
+        let slotSpecifications: ElementGenerationSlotSpecification[] | undefined
+        if (result.slotSpecifications) {
+          if (
+            result.slotSpecifications.containerName !==
+              runtime.questionOutputContainer ||
+            result.slotSpecifications.blobName !==
+              elementGenerationOutputBlobName(
+                runtime,
+                build.id,
+                'slot-specifications.json'
+              )
+          ) {
+            return serviceError(
+              'ARTIFACT_INVALID',
+              'Question-generation result has invalid slot specification coordinates'
+            )
+          }
+          slotSpecifications = parseQuestionGenerationSlotSpecifications(
+            await runtime.downloadVerified(result.slotSpecifications),
+            questions.map((question) => question.sourceQuestionId)
           )
         }
         await completeElementGeneration(
@@ -958,6 +1194,7 @@ async function synchronizeLeasedBuild(
                 : 'completed',
             unresolvedElementCount: result.slotFailures.length,
             slotFailures: result.slotFailures,
+            ...(slotSpecifications ? { slotSpecifications } : {}),
             resultManifestArtifact: artifact.ref,
             finalBankArtifact: finalQuestions,
             questionProvenanceIndexArtifact: provenanceIndex,
@@ -1087,6 +1324,44 @@ async function withQuestionSlotFailureReasons(
   }
 }
 
+async function synchronizeRevisionChildBuilds(
+  parentBuildId: string,
+  runtime: QuestionGenerationRuntime,
+  ctx: ContextWithUser
+) {
+  const children = await ctx.prisma.elementGenerationBuild.findMany({
+    where: {
+      parentBuildId,
+      ownerId: ctx.user.sub,
+      status: { notIn: [...TERMINAL_STATUSES] },
+    },
+    select: { id: true },
+    orderBy: { createdAt: 'asc' },
+  })
+  for (const { id } of children) {
+    const child = await findOwnedBuild(id, ctx)
+    try {
+      assertElementGenerationCostAccounted(child)
+      if (child.status === DB.ElementGenerationBuildStatus.PREPARING_INPUT) {
+        await resumePreparingQuestionBuild(child, runtime, ctx)
+        continue
+      }
+      const leaseOwner = await acquireElementGenerationLease(ctx.prisma, {
+        buildId: child.id,
+        ownerId: ctx.user.sub,
+      })
+      if (!leaseOwner) continue
+      try {
+        await synchronizeLeasedBuild(child, runtime, leaseOwner, ctx)
+      } finally {
+        await releaseElementGenerationLease(ctx.prisma, child.id, leaseOwner)
+      }
+    } catch {
+      // The child records its own failure; the parent poll must still succeed.
+    }
+  }
+}
+
 export async function getQuestionGenerationBuild(
   buildId: string,
   ctx: ContextWithUser
@@ -1103,7 +1378,11 @@ export async function getQuestionGenerationBuild(
       ? withQuestionSlotFailureReasons(current, runtime)
       : current
   if (TERMINAL_STATUSES.has(build.status)) {
-    return withFailureReasons(build)
+    // Revision requests are fulfilled by child builds that outlive the
+    // parent's own lifecycle, so a poll of the parent advances them too. A
+    // child's failure stays on the child.
+    await synchronizeRevisionChildBuilds(build.id, runtime, ctx)
+    return withFailureReasons(await findOwnedBuild(buildId, ctx))
   }
   assertElementGenerationCostAccounted(build)
   if (build.status === DB.ElementGenerationBuildStatus.PREPARING_INPUT) {

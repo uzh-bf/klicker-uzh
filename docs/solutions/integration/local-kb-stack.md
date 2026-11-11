@@ -241,6 +241,36 @@ receipts. Check both initial startup and retained resume without printing the
 sentinel or later real credentials. Unit checks do not qualify that transport
 or establish successful retrieval.
 
+### Guarded qualification
+
+For a bounded synthetic run, set `aiUpstream.kind` to `guarded`,
+`aiUpstream.port` to the guard port (for example, 18020), and supply the required
+`aiUpstream.chatModels` array in the native Chat model-registry format. Keep the
+required BASE fallback entry and select a fixed, guard-priced model for the run.
+The managed application validates the registry at startup. This binds the gateway
+to a separately operated host guard at
+`http://host.docker.internal:18020/v1`. Inject the guard credential as
+`UPSTREAM_OPENAI_API_KEY` and that exact URL as `UPSTREAM_OPENAI_BASE_URL`.
+Chat connects directly to the same guard through its workspace API localhost
+alias, using the existing evaluation-routing checks and runtime-only guard
+credential. The actual upstream credential stays in the guard process. The guard port must
+be distinct from the configured provider ports and retained endpoints. Mode and
+port are part of preparation identity; they cannot be changed on retained state.
+
+This mode limits each resource to one bounded embedding request with at most four
+chunks and 16 KiB input, disables extra ingestion inference, and uses documents-mode
+retrieval without expansion, reranking or SDK retries. A separate, qualified guard
+must enforce aggregate request/spend ceilings and reject repeated upstream attempts;
+these configuration bounds alone do not enforce a total financial budget or disable
+Chat's SDK retries. Verify that all inference reaches that guard before injecting a
+real upstream key. Description generation and optional pixel inspection remain off.
+
+`images.minio` optionally supplies an immutable local image ID or repository digest
+to the ingestion launcher's `--minio-image`. It requires a provider revision supporting
+that flag. The provider retains the selection for start/stop; omitting it preserves
+its existing default. Record the source/package and image identity when qualifying a
+locally built backing image, and keep it distinct from the published container.
+
 ## Provisioning and acceptance
 
 ### Findings from the first completed end-to-end run
@@ -291,3 +321,11 @@ Until runtime acceptance is complete, there is no qualified one-command full
 local KB stack in this launcher. The API-only
 helper documented in the [devcontainer guide](../../../.devcontainer/README.md#local-kb-ingestion-and-graph-builder)
 does not fill that gap.
+
+A retained continuation that stopped during processor credential preparation can
+resume with `--resume-processor-executor <original-executor-sha>` only after the
+provider-owned recovery reports prepared and stopped. The consumer verifies the
+original continuation claim and its bootstrap, scraping, ingestion and processor
+receipts, then creates one exclusive continuation child. It does not retry token
+issuance or completed providers. Any unexpected downstream progress or prior
+child attempt requires inspection. Retain all earlier receipts and provider data.

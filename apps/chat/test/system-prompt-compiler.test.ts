@@ -9,7 +9,7 @@ vi.mock('@/src/lib/server/promptTemplates', async (importOriginal) => {
     renderPromptTemplate: (name: string, context: unknown) =>
       name === 'citation-contract'
         ? '<SYNTHETIC-CITATION-CONTRACT>'
-        : name === 'course-images'
+        : name === 'course-images' || name === 'course-image-vision'
           ? JSON.stringify({ template: name, context })
           : actual.renderPromptTemplate(name as never, context as never),
   }
@@ -656,20 +656,28 @@ describe('compileSystemPrompt', () => {
   })
 
   test.each([
-    { toolNames: [], enabled: false },
-    { toolNames: [COURSE_IMAGE_TOOL], enabled: false },
-    { toolNames: [DOC_TOOL], enabled: false },
-    { toolNames: [DOC_TOOL, COURSE_IMAGE_TOOL], enabled: true },
+    { toolNames: [], enabled: false, vision: true },
+    { toolNames: [COURSE_IMAGE_TOOL], enabled: false, vision: true },
+    { toolNames: [DOC_TOOL], enabled: false, vision: true },
+    { toolNames: [DOC_TOOL, COURSE_IMAGE_TOOL], enabled: true, vision: false },
+    { toolNames: [DOC_TOOL, COURSE_IMAGE_TOOL], enabled: true, vision: true },
   ])('includes the image template when enabled=$enabled: $toolNames', ({
     toolNames,
     enabled,
+    vision,
   }) => {
-    const result = compilePrompt(null, 'explainer', toolNames)
+    const result = compileSystemPrompt(null, 'explainer', {
+      courseDisplayName: COURSE_DISPLAY_NAME,
+      toolNames,
+      courseImageVision: vision,
+    })
     const rendered = JSON.stringify({
       template: 'course-images',
       context: {
         courseImageTool: COURSE_IMAGE_TOOL,
-        visualEvidence: '',
+        visualEvidence: vision
+          ? JSON.stringify({ template: 'course-image-vision', context: {} })
+          : '',
       },
     })
     expect(result.includes(rendered)).toBe(enabled)

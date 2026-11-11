@@ -223,6 +223,7 @@ describe('course image selection', () => {
       status: 'selected',
       model_input: 'description_only',
       image: candidate,
+      placement_marker: `[course-image:${candidate.asset_id}]`,
       reason: 'The retrieved passage identifies the requested figure.',
     })
     expect(read).toHaveBeenCalledTimes(1)

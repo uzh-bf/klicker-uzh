@@ -22,6 +22,7 @@ import {
   claimPreparation as claimObservedPreparation,
   completePreparation,
   continuePreparation,
+  continueInfrastructureStart,
   deliverHatchetToken,
   initializeManagedApplication,
   initializeProviderLaunchers,
@@ -2063,7 +2064,7 @@ function continuationRunner(config, root, overrides = {}) {
           join(
             root,
             'setup-continuation',
-            'resume-after-profile',
+            overrides.attemptName ?? 'resume-after-profile',
             'bootstrap-intent.json'
           ),
           'utf8'
@@ -2580,5 +2581,406 @@ test('unavailable Azurite blocks initial and retained staged startup despite hea
       /storage or staged worker registration is unavailable/
     )
     assert.deepEqual(starts, ['scraping', 'ingestion', 'docProcessing'])
+  }
+})
+
+async function recoveredProcessorFixture(overrides = {}) {
+  const f = await retainedContinuationPrefix()
+  await mkdir(f.parent, { mode: 0o700 })
+  for (const [name, value] of Object.entries({
+    'claim.json': {
+      ...f.claim,
+      executor: priorExecutor,
+      context: continuationContext,
+    },
+    'bootstrap-intent.json': { candidate: revision, executor: priorExecutor },
+    'scraping-reconciliation.json': {
+      candidate: revision,
+      executor: priorExecutor,
+      prepared: true,
+    },
+    'ingestion-intent.json': { candidate: revision, executor: priorExecutor },
+    'docProcessing-intent.json': {
+      candidate: revision,
+      executor: priorExecutor,
+    },
+  }))
+    await writeFile(join(f.parent, name), JSON.stringify(value), {
+      mode: 0o600,
+    })
+  await mkdir(join(f.root, 'state/ingestion'), { mode: 0o700 })
+  await writeFile(
+    join(f.root, 'provider-setup/ingestion.json'),
+    JSON.stringify({ setupCompleted: true }),
+    { mode: 0o600 }
+  )
+  const run = continuationRunner(f.config, f.root, {
+    attemptName: 'resume-after-processor',
+    ...overrides,
+  })
+  return {
+    ...f,
+    ...run,
+    options: { ...run.options, resumeProcessorExecutor: priorExecutor },
+  }
+}
+
+test('processor recovery reconciles prepared storage without replaying previous providers', async () => {
+  const f = await recoveredProcessorFixture()
+  const before = await readFile(join(f.parent, 'claim.json'))
+  assert.equal(
+    (await continuePreparation(f.config, revision, nextExecutor, f.options))
+      .prepared,
+    true
+  )
+  assert.deepEqual(f.calls, ['retrieval', 'application'])
+  assert.deepEqual(await readFile(join(f.parent, 'claim.json')), before)
+  await assert.rejects(
+    continuePreparation(f.config, revision, nextExecutor, f.options)
+  )
+  assert.deepEqual(f.calls, ['retrieval', 'application'])
+})
+
+test('processor recovery rejects changed ancestry, progress and interrupted reentry', async () => {
+  for (const change of [
+    'lineage',
+    'receipt',
+    'retrieval',
+    'application',
+    'duplicate',
+    'failure',
+    'mixed',
+  ]) {
+    const f = await recoveredProcessorFixture({
+      setupFailure: change === 'failure',
+    })
+    if (change === 'lineage') f.options.resumeProcessorExecutor = '0'.repeat(40)
+    if (change === 'receipt')
+      await writeFile(join(f.parent, 'ingestion-intent.json'), '{}')
+    if (change === 'retrieval')
+      await mkdir(join(f.root, 'state/retrieval'), { mode: 0o700 })
+    if (change === 'application')
+      await mkdir(join(f.root, 'application-setup'), { mode: 0o700 })
+    if (change === 'duplicate')
+      await mkdir(join(f.parent, 'resume-after-processor'), { mode: 0o700 })
+    if (change === 'mixed') f.options.resumeExecutor = priorExecutor
+    await assert.rejects(
+      continuePreparation(f.config, revision, nextExecutor, f.options),
+      undefined,
+      change
+    )
+    assert.deepEqual(f.calls, change === 'failure' ? ['retrieval'] : [], change)
+    const calls = [...f.calls]
+    await assert.rejects(
+      continuePreparation(f.config, revision, nextExecutor, f.options)
+    )
+    assert.deepEqual(f.calls, calls)
+  }
+})
+
+async function stoppedInitialStartFixture(t) {
+  const upstream = {
+    kind: 'guarded',
+    port: 18020,
+    chatModels: [{ id: 'synthetic' }],
+  }
+  const keys = ['UPSTREAM_OPENAI_API_KEY', 'UPSTREAM_OPENAI_BASE_URL']
+  const prior = keys.map((key) => process.env[key])
+  t.after(() =>
+    keys.forEach((key, i) => {
+      if (prior[i] === undefined) delete process.env[key]
+      else process.env[key] = prior[i]
+    })
+  )
+  process.env.UPSTREAM_OPENAI_API_KEY = 'synthetic-local-guard'
+  process.env.UPSTREAM_OPENAI_BASE_URL = 'http://host.docker.internal:18020/v1'
+  const { config, checkout, read } = await installationFixture(upstream)
+  await prepareLocalConfiguration(config, revision)
+  await installManagedConfiguration(config, revision, read)
+  const identity = {
+    kind: 'linked',
+    repoPath: checkout,
+    workspace: 'synthetic-runtime',
+    profile: 'local-kb-setup',
+  }
+  await installProviderRouting(config, revision, identity)
+  await setupReceipts(config)
+  await completePreparation(config, revision)
+  const directory = join(checkout, '.local-kb')
+  await mkdir(join(directory, 'infrastructure-start'), { mode: 0o700 })
+  const appContainer = 'c'.repeat(64)
+  const managedState = {
+    mode: 'managed',
+    workspace: identity.workspace,
+    status: 'stopped',
+    activeProfile: 'local-kb-setup',
+    composeProject: 'synthetic-compose',
+    mountNesting: { status: 'effective', container: appContainer },
+  }
+  const calls = []
+  const managed = async (args) => {
+    if (args[0] === 'status')
+      return JSON.stringify({
+        dockerContext: 'synthetic-local',
+        repo: { path: checkout, valid: true, managedRuntime: managedState },
+      })
+    calls.push(args[0])
+    if (args[0] === 'stop')
+      return JSON.stringify({ ...identity, stopped: true })
+    return JSON.stringify({
+      ...identity,
+      profile: LOCAL_KB_MANAGED_PROFILE,
+      managedRuntime: managedState,
+    })
+  }
+  const docker = async (args) => {
+    if (args[0] === 'context') return 'unix:///synthetic/docker.sock'
+    if (args.includes('--format')) {
+      const service = ['postgres', 'redis', 'blob', 'hatchet'][
+        Number(args.at(-1)[0]) - 1
+      ]
+      return `${config.project.identity}|${directory}|${join(directory, 'providers.compose.json')}|${service}|exited|healthy`
+    }
+    if (args.includes('inspect'))
+      return JSON.stringify([
+        {
+          Id: appContainer,
+          State: { Running: false },
+          Config: {
+            Labels: {
+              'com.docker.compose.project': 'synthetic-compose',
+              'com.docker.compose.service': 'app',
+            },
+          },
+        },
+      ])
+    if (args.includes('ls'))
+      return [1, 2, 3, 4].map((n) => String(n).repeat(64)).join('\n')
+    calls.push(args.includes('stop') ? 'backing-stop' : 'backing-start')
+    return ''
+  }
+  const provider = lifecycleRunner(config)
+  const options = {
+    runManaged: managed,
+    runDocker: docker,
+    runProvider: provider,
+    verifySources: async () => {},
+  }
+  return {
+    config,
+    directory,
+    calls,
+    managedState,
+    options,
+    managed,
+    docker,
+    provider,
+  }
+}
+
+test('explicit initial-start recovery preserves its parent and supports later stop and resume', async (t) => {
+  const f = await stoppedInitialStartFixture(t)
+  const recover = () =>
+    continueInfrastructureStart(
+      f.config,
+      revision,
+      nextExecutor,
+      'c'.repeat(64),
+      f.options
+    )
+  assert.equal((await recover()).infrastructureStarted, true)
+  assert.deepEqual(await readdir(join(f.directory, 'infrastructure-start')), [])
+  const before = [...f.calls]
+  await assert.rejects(recover())
+  assert.deepEqual(f.calls, before)
+  await stopInfrastructure(f.config, revision, f.managed, f.docker, f.provider)
+  assert.equal(
+    (
+      await resumeInfrastructure(
+        f.config,
+        revision,
+        f.managed,
+        f.docker,
+        f.provider
+      )
+    ).infrastructureStarted,
+    true
+  )
+})
+
+test('initial-start recovery refuses changed evidence and keeps an interrupted claim', async (t) => {
+  for (const failure of [
+    'parent',
+    'existing-child',
+    'running-app',
+    'foreign-owner',
+    'interruption',
+    'replacement',
+  ]) {
+    const f = await stoppedInitialStartFixture(t)
+    if (failure === 'parent')
+      await writeFile(
+        join(f.directory, 'infrastructure-start/complete.json'),
+        '{}',
+        { mode: 0o600 }
+      )
+    if (failure === 'existing-child')
+      await mkdir(join(f.directory, 'infrastructure-start-recovery'), {
+        mode: 0o700,
+      })
+    if (failure === 'running-app') f.managedState.status = 'ready'
+    if (failure === 'foreign-owner') f.managedState.workspace = 'foreign'
+    if (failure === 'interruption' || failure === 'replacement') {
+      const run = f.options.runManaged
+      f.options.runManaged = async (args) => {
+        if (args[0] !== 'ensure') return run(args)
+        if (failure === 'interruption')
+          throw new Error('synthetic interruption')
+        return JSON.stringify({
+          managedRuntime: { mountNesting: { container: 'd'.repeat(64) } },
+        })
+      }
+    }
+    await assert.rejects(
+      continueInfrastructureStart(
+        f.config,
+        revision,
+        nextExecutor,
+        'c'.repeat(64),
+        f.options
+      ),
+      undefined,
+      failure
+    )
+    const before = [...f.calls]
+    await assert.rejects(
+      continueInfrastructureStart(
+        f.config,
+        revision,
+        nextExecutor,
+        'c'.repeat(64),
+        f.options
+      )
+    )
+    assert.deepEqual(f.calls, before)
+    if (
+      ['parent', 'existing-child', 'running-app', 'foreign-owner'].includes(
+        failure
+      )
+    )
+      assert.deepEqual(f.calls, [])
+  }
+})
+
+async function failedStartupRecoveryFixture(t) {
+  const f = await stoppedInitialStartFixture(t)
+  const managed = f.options.runManaged
+  await assert.rejects(
+    continueInfrastructureStart(
+      f.config,
+      revision,
+      nextExecutor,
+      'c'.repeat(64),
+      {
+        ...f.options,
+        runManaged: (args) => {
+          if (args[0] === 'ensure')
+            throw new Error('synthetic provider refusal')
+          return managed(args)
+        },
+      }
+    )
+  )
+  f.calls.length = 0
+  return f
+}
+
+test('explicit startup recovery child preserves its failed claim through stop and resume', async (t) => {
+  const f = await failedStartupRecoveryFixture(t)
+  const parent = join(f.directory, 'infrastructure-start-recovery')
+  const claim = await readFile(join(parent, 'claim.json'), 'utf8')
+  const recover = () =>
+    continueInfrastructureStart(
+      f.config,
+      revision,
+      'a'.repeat(40),
+      'c'.repeat(64),
+      { ...f.options, resumeExecutor: nextExecutor }
+    )
+  assert.equal((await recover()).infrastructureStarted, true)
+  assert.equal(await readFile(join(parent, 'claim.json'), 'utf8'), claim)
+  assert.deepEqual((await readdir(parent)).sort(), ['claim.json', 'resume'])
+  const before = [...f.calls]
+  await assert.rejects(recover())
+  assert.deepEqual(f.calls, before)
+  await stopInfrastructure(f.config, revision, f.managed, f.docker, f.provider)
+  assert.equal(
+    (
+      await resumeInfrastructure(
+        f.config,
+        revision,
+        f.managed,
+        f.docker,
+        f.provider
+      )
+    ).infrastructureStarted,
+    true
+  )
+})
+
+test('startup recovery child rejects changed or interrupted ancestry before another dispatch', async (t) => {
+  for (const failure of [
+    'executor',
+    'binding',
+    'parent-complete',
+    'child',
+    'interruption',
+    'replacement',
+  ]) {
+    const f = await failedStartupRecoveryFixture(t)
+    const parent = join(f.directory, 'infrastructure-start-recovery')
+    if (failure === 'binding') {
+      const p = join(parent, 'claim.json')
+      const claim = JSON.parse(await readFile(p, 'utf8'))
+      await writeFile(
+        p,
+        JSON.stringify({ ...claim, configurationDigest: 'foreign' }),
+        { mode: 0o600 }
+      )
+    }
+    if (failure === 'parent-complete')
+      await writeFile(join(parent, 'complete.json'), '{}', { mode: 0o600 })
+    if (failure === 'child')
+      await mkdir(join(parent, 'resume'), { mode: 0o700 })
+    if (failure === 'interruption' || failure === 'replacement') {
+      const run = f.options.runManaged
+      f.options.runManaged = (args) => {
+        if (args[0] !== 'ensure') return run(args)
+        if (failure === 'interruption')
+          throw new Error('synthetic interruption')
+        return JSON.stringify({
+          managedRuntime: { mountNesting: { container: 'd'.repeat(64) } },
+        })
+      }
+    }
+    const recover = () =>
+      continueInfrastructureStart(
+        f.config,
+        revision,
+        'a'.repeat(40),
+        'c'.repeat(64),
+        {
+          ...f.options,
+          resumeExecutor:
+            failure === 'executor' ? 'e'.repeat(40) : nextExecutor,
+        }
+      )
+    await assert.rejects(recover(), undefined, failure)
+    const before = [...f.calls]
+    await assert.rejects(recover())
+    assert.deepEqual(f.calls, before)
+    if (!['interruption', 'replacement'].includes(failure))
+      assert.deepEqual(f.calls, [])
+    else assert.deepEqual(await readdir(join(parent, 'resume')), ['claim.json'])
   }
 })

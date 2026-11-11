@@ -337,3 +337,46 @@ test('projection readers and processor follow the selected ingestion Blob port',
     String(ports.klicker.blob)
   )
 })
+
+test('bounded qualification disables extra inference and limits each resource embedding request', () => {
+  const input = { instance: 'kb-bounded', ports: providerPorts() }
+  const bounded = renderProviderLocalConfiguration(fixture(), input, true)
+  const ordinary = renderProviderLocalConfiguration(fixture(), input)
+  assert.equal(bounded.project.embedding.max_retries, 0)
+  assert.equal(bounded.project.embedding.application_retries, 0)
+  assert.equal(bounded.project.embedding.require_complete, true)
+  assert.deepEqual(bounded.project.resource_embedding_limits, {
+    max_chunks: 4,
+    max_input_bytes: 16384,
+    max_requests: 1,
+  })
+  for (const name of ['language_detection', 'metadata_extraction', 'context'])
+    assert.equal(bounded.project[name].enabled, false)
+  assert.equal(bounded.project.chunking.auto_detect.enabled, false)
+  assert.equal(bounded.project.cleaning.cleanup, 'none')
+  assert.equal(
+    bounded.retrievalEnvironment
+      .KLICKER_LOCAL_RETRIEVAL_DOC_QUERY_RESPONSE_MODE,
+    'documents'
+  )
+  assert.equal(
+    bounded.retrievalEnvironment.KLICKER_LOCAL_RETRIEVAL_RETRIEVAL_MAX_RETRIES,
+    '0'
+  )
+  assert.equal(
+    bounded.retrievalEnvironment.KLICKER_LOCAL_RETRIEVAL_RERANKER_TYPE,
+    'none'
+  )
+  assert.equal(
+    bounded.retrievalEnvironment
+      .KLICKER_LOCAL_RETRIEVAL_RETRIEVAL_QUERY_EXPANSION_ENABLED,
+    'false'
+  )
+  assert.equal(ordinary.project.resource_embedding_limits, undefined)
+  assert.equal(ordinary.project.embedding.max_retries, undefined)
+  assert.equal(
+    ordinary.retrievalEnvironment
+      .KLICKER_LOCAL_RETRIEVAL_DOC_QUERY_RESPONSE_MODE,
+    undefined
+  )
+})
