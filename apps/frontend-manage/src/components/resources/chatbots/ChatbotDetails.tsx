@@ -57,7 +57,10 @@ import {
   isChatbotRevisionConflict,
 } from './chatbotErrorMessages'
 import { canUseChatbotOwnerPreview } from './chatbotOwnerPreviewAccess'
-import { buildChatbotOwnerPreviewUrl } from './chatbotOwnerPreviewUrl'
+import {
+  buildChatbotConversationExportUrl,
+  buildChatbotOwnerPreviewUrl,
+} from './chatbotOwnerPreviewUrl'
 import {
   ChatbotRevisionConflictNotice,
   type ChatbotRevisionValues,
@@ -658,6 +661,20 @@ function ChatbotDetails({
   const ownerPreviewUrl = buildChatbotOwnerPreviewUrl({
     chatbotId: chatbot.id,
     chatUrl: process.env.NEXT_PUBLIC_CHAT_URL,
+  })
+  const conversationExportLinks = (
+    [
+      ['index', t('manage.resources.conversationExportIndex')],
+      ['transcripts', t('manage.resources.conversationExportTranscripts')],
+      ['json', t('manage.resources.conversationExportJson')],
+    ] as const
+  ).flatMap(([format, label]) => {
+    const href = buildChatbotConversationExportUrl({
+      chatbotId: chatbot.id,
+      chatUrl: process.env.NEXT_PUBLIC_CHAT_URL,
+      format,
+    })
+    return href ? [{ format, label, href }] : []
   })
   const ownerPreviewPending = viewNavigationState.pending
   const ownerPreviewDirty = viewNavigationState.dirty
@@ -1868,6 +1885,28 @@ function ChatbotDetails({
               </div>
             ))}
           </dl>
+        ) : null}
+
+        {(chatbot.status === ChatbotStatus.Published || paused) &&
+        conversationExportLinks.length > 0 ? (
+          <div
+            className="flex flex-wrap items-center gap-x-4 gap-y-1 text-sm"
+            data-cy="chatbot-conversation-export"
+          >
+            <span className="text-gray-500">
+              {t('manage.resources.conversationExportLabel')}
+            </span>
+            {conversationExportLinks.map(({ format, label, href }) => (
+              <a
+                key={format}
+                href={href}
+                className="text-primary-100 font-medium hover:underline"
+                data-cy={`chatbot-conversation-export-${format}`}
+              >
+                {label}
+              </a>
+            ))}
+          </div>
         ) : null}
 
         <div

@@ -41,7 +41,10 @@ export type OwnerPreviewAccessResult =
 
 export async function getOwnerPreviewAccess(
   chatbotId: string,
-  dependencies: OwnerPreviewAuthDependencies = defaultDependencies
+  dependencies: OwnerPreviewAuthDependencies = defaultDependencies,
+  // Reading stored data (e.g. the conversation export) must keep working
+  // after an operator stop, so such callers may accept PAUSED chatbots.
+  { allowPaused = false }: { allowPaused?: boolean } = {}
 ): Promise<OwnerPreviewAccessResult> {
   try {
     const manageUser = await dependencies.getManageUser()
@@ -64,7 +67,7 @@ export async function getOwnerPreviewAccess(
 
     // PAUSED is the operator-only serving stop. REJECTED remains an
     // owner-editable pre-publication state and can still be previewed.
-    if (chatbot.status === ChatbotStatus.PAUSED) {
+    if (!allowPaused && chatbot.status === ChatbotStatus.PAUSED) {
       return { error: 'UNAVAILABLE' }
     }
 
@@ -80,9 +83,10 @@ export async function getOwnerPreviewAccess(
 
 export async function withOwnerPreviewAuth(
   chatbotId: string,
-  dependencies: OwnerPreviewAuthDependencies = defaultDependencies
+  dependencies: OwnerPreviewAuthDependencies = defaultDependencies,
+  options: { allowPaused?: boolean } = {}
 ): Promise<OwnerPreviewAuthResult> {
-  const access = await getOwnerPreviewAccess(chatbotId, dependencies)
+  const access = await getOwnerPreviewAccess(chatbotId, dependencies, options)
   if (!('error' in access)) return access
 
   switch (access.error) {
